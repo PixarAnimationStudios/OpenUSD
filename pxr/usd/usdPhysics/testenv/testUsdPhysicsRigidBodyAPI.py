@@ -560,5 +560,34 @@ class TestUsdPhysicsRigidBodyAPI(unittest.TestCase):
                                 
         self.compare_mass_information(rigidBodyAPI, 1000.0 * 2.0, expectedCoM=Gf.Vec3f(0.0))
 
+    def test_mass_rigid_body_nested(self):
+        self.setup_scene()
+
+        # Create test nested bodies
+        rbo0_xform = UsdGeom.Xform.Define(self.stage, "/rbo0")
+        rigidBodyAPI0 = UsdPhysics.RigidBodyAPI.Apply(rbo0_xform.GetPrim())
+
+        cube = UsdGeom.Cube.Define(self.stage, "/rbo0/cube")
+        cube.GetSizeAttr().Set(1.0)
+        UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+
+        rbo1_xform = UsdGeom.Xform.Define(self.stage, "/rbo0/rbo1")
+        rigidBodyAPI1 = UsdPhysics.RigidBodyAPI.Apply(rbo1_xform.GetPrim())
+
+        cube = UsdGeom.Cube.Define(self.stage, "/rbo0/rbo1/cube")
+        cube.GetSizeAttr().Set(2.0)
+        UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+
+        self.rigidBodyWorldTransform = UsdGeom.Xformable(rbo0_xform.GetPrim()).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        self.rigidBodyPrim = rbo0_xform.GetPrim()
+                        
+        self.compare_mass_information(rigidBodyAPI0, 1000.0, expectedCoM=Gf.Vec3f(0.0), expectedInertia=Gf.Vec3f(166.667))
+
+        self.rigidBodyWorldTransform = UsdGeom.Xformable(rbo1_xform.GetPrim()).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        self.rigidBodyPrim = rbo1_xform.GetPrim()
+                        
+        self.compare_mass_information(rigidBodyAPI1, 8000.0, expectedCoM=Gf.Vec3f(0.0))
+
+
 if __name__ == "__main__":
     unittest.main()
