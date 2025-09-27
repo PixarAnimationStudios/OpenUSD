@@ -1,0 +1,117 @@
+#usda 1.0
+#Shows a two body hinged articulation which is fixed to the default prim.
+#The bodies are nested within each other. While this is not required for
+#articulations, it is more convenient to specify relative transforms
+#between articulated bodies.
+(
+    defaultPrim = "Hinge"
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def PhysicsScene "PhysicsScene"
+{
+    vector3f physics:gravityDirection = (0, 0, -1)
+    float physics:gravityMagnitude = 9.81
+}
+
+def Xform "Hinge"
+{
+    # The first body is the root of the articulation
+    # It has no explicit mass, so the implicit mass is computed from the colliders
+    # that belong to this body (i.e. Body1 mass = 1.5).
+    def Xform "Body1" (
+        apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsArticulationRootAPI"]
+    )
+    {
+        # Many articulation simulators prefer to author orient quaternions rather than rotation angles
+        quatf xformOp:orient = (1, 0, 0, 0)
+        float3 xformOp:scale = (1, 1, 1)
+        double3 xformOp:translate = (0, 0, 1)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+        def Cube "Box1" (
+            apiSchemas = ["PhysicsCollisionAPI", "PhysicsMassAPI"]
+        )
+        {
+            # explicit mass on the collider contributes to implicit mass on the Body1
+            float physics:mass = 1.5
+            double size = 2
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            color3f[] primvars:displayColor = [(1, 0, 1)] (
+                interpolation = "constant"
+            )
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (0.1, 0.5, 0.1)
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+        }
+
+        # The second body is nested within the first body for legibility only.
+        # This does not imply a jointed connection between the two bodies.
+        def Xform "Body2" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+        )
+        {
+            # Its position and orientation are specified relative to the first body,
+            # which is the preferred way to specify relative transforms between
+            # articulated bodies in reduced coordinate solvers.
+            quatf xformOp:orient = (1, 0, 0, 0)
+            float3 xformOp:scale = (1, 1, 1)
+            double3 xformOp:translate = (0, 0.5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+
+            # explicit mass on this body does not contribute to the implicit mass on Body1
+            float physics:mass = 0.75
+
+            def Cube "Box2" (
+                apiSchemas = ["PhysicsCollisionAPI"]
+            )
+            {
+                double size = 2
+                float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+                color3f[] primvars:displayColor = [(1, 1, 0)] (
+                    interpolation = "constant"
+                )
+                quatf xformOp:orient = (1, 0, 0, 0)
+                float3 xformOp:scale = (0.05, 0.5, 0.05)
+                double3 xformOp:translate = (0, 0.6, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient", "xformOp:scale"]
+            }
+
+            # The revolute joint connects the two bodies. Again, the prim hierarchy
+            # does not imply a jointed connection between the two bodies, and is only
+            # placed here for legibility. The body0 and body1 rels are explicit and
+            # required to define the articulated constraint.
+            def PhysicsRevoluteJoint "PhysicsRevoluteJoint"
+            {
+                uniform token physics:axis = "X"
+                # body rels can be specified via relative paths for convenience,
+                # but this is not required
+                rel physics:body0 = <../..> # /Hinge/Body1
+                rel physics:body1 = <..>    # /Hinge/Body1/Body2
+                point3f physics:localPos0 = (0, 0.6, 0)
+                point3f physics:localPos1 = (0, 0.1, 0)
+                quatf physics:localRot0 = (1, 0, 0, 0)
+                quatf physics:localRot1 = (1, 0, 0, 0)
+                float physics:lowerLimit = -90
+                float physics:upperLimit = 10
+            }
+        }
+
+        # The fixed joint is targeting the default prim for the body0 rel,
+        # allowing the articulation to be placed at a fixed position and orientation
+        # within a larger assembly
+        def PhysicsFixedJoint "PhysicsFixedJoint"
+        {
+            # Relative paths for convenience only, not required
+            rel physics:body0 = <../..>  # /Hinge
+            rel physics:body1 = <..>     # /Hinge/Body1
+            point3f physics:localPos0 = (0, 0, 1)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+        }
+    }
+}

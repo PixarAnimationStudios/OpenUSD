@@ -652,7 +652,7 @@ articulation.
 \subsection usdPhysics_examples Examples
 
 \subsubsection usdPhysics_box_on_box Box on Box
-\include examples/usdPhysicsBoxOnBox2.usda
+\include examples/usdPhysicsBoxOnBox.usda
 
 \subsubsection usdPhysics_box_on_quad Box on Quad
 \include examples/usdPhysicsBoxOnQuad.usda
@@ -671,5 +671,8 @@ articulation.
 
 \subsubsection usdPhysics_distance_joint_example Distance Joint
 \include examples/usdPhysicsDistanceJoint.usda
+
+\subsubsection usdPhysics_nested_articulation_example Nested Articulation
+\include examples/usdPhysicsNestedArticulation.usda
 
 */
