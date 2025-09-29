@@ -72,6 +72,35 @@ class TestUsdPrimRange(unittest.TestCase):
                         ['/c1', '/c1/c2', '/c1/c2/c3']]
             self.assertEqual(actual, expected)
 
+    def test_PrimHasAbstractSpecifier(self):
+        for fmt in allFormats:
+            stageFile = 'testHasAbstractSpecifier.' + fmt
+            stage = Usd.Stage.Open(stageFile)
+
+            root = stage.GetPrimAtPath('/a1')
+            actual = []
+            expected = [stage.GetPrimAtPath(x) for x in ['/a1/a2']]
+            for prim in Usd.PrimRange.AllPrims(root):
+                if prim.HasAbstractSpecifier():
+                    actual.append(prim)
+            self.assertEqual(actual, expected)
+
+            root = stage.GetPrimAtPath('/b1')
+            actual = []
+            expected = [stage.GetPrimAtPath(x) for x in 
+                        ['/b1/b2', '/b1/b2/b3/b4/b5/b6']]
+            for prim in Usd.PrimRange(root, Usd.PrimIsActive):
+                if prim.HasAbstractSpecifier():
+                    actual.append(prim)
+            self.assertEqual(actual, expected)
+
+            # Note that the over is not included in our traversal.
+            root = stage.GetPrimAtPath('/c1')
+            actual = list(Usd.PrimRange(root, Usd.PrimHasAbstractSpecifier))
+            expected = [stage.GetPrimAtPath(x) for x in 
+                        ['/c1', '/c1/c2', '/c1/c2/c3']]
+            self.assertEqual(actual, expected)         
+
     def test_PrimIsActive(self):
         for fmt in allFormats:
             s = Usd.Stage.CreateInMemory('TestPrimIsActive.'+fmt)

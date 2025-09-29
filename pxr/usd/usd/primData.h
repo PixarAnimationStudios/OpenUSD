@@ -125,6 +125,12 @@ public:
         return _flags[Usd_PrimHasDefiningSpecifierFlag]; 
     }
 
+    /// Return true if this prim has a specifier of type SdfSpecifierClass. 
+    /// \sa SdfIsAbstractSpecifier
+    bool HasAbstractSpecifier() const {
+        return _flags[Usd_PrimHasAbstractSpecifierFlag];
+    }
+
     /// Return true if this prim has one or more payload composition arcs.
     bool HasPayload() const { return _flags[Usd_PrimHasPayloadFlag]; }
 

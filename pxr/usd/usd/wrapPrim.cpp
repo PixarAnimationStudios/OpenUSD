@@ -271,6 +271,7 @@ void wrapUsdPrim()
         .def("IsAbstract", &UsdPrim::IsAbstract)
         .def("IsDefined", &UsdPrim::IsDefined)
         .def("HasDefiningSpecifier", &UsdPrim::HasDefiningSpecifier)
+        .def("HasAbstractSpecifier", &UsdPrim::HasAbstractSpecifier)
 
         .def("GetPropertyNames", &_WrapGetPropertyNames,
              (arg("predicate")=pxr_boost::python::object()),

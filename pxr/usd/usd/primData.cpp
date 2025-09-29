@@ -114,6 +114,7 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
         _flags[Usd_PrimComponentFlag] = false;
         _flags[Usd_PrimDefinedFlag] = true;
         _flags[Usd_PrimHasDefiningSpecifierFlag] = true;
+        _flags[Usd_PrimHasAbstractSpecifierFlag] = false;
         _flags[Usd_PrimPrototypeFlag] = isPrototypePrim;
         _flags[Usd_PrimPseudoRootFlag] = !parent;
     } 
@@ -154,13 +155,17 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
         // Get specifier.
         const SdfSpecifier specifier = GetSpecifier();
 
+        bool isClassSpecifier = specifier == SdfSpecifierClass;
         // This prim is abstract if its parent is or if it's a class.
         _flags[Usd_PrimAbstractFlag] =
-            parent->IsAbstract() || specifier == SdfSpecifierClass;
+            parent->IsAbstract() || isClassSpecifier;
 
         // Cache whether or not this prim has an authored defining specifier.
         const bool isDefiningSpec = SdfIsDefiningSpecifier(specifier);
         _flags[Usd_PrimHasDefiningSpecifierFlag] = isDefiningSpec;
+
+        // Cache whether or not this prim has an authored abstract specifier.
+        _flags[Usd_PrimHasAbstractSpecifierFlag] = isClassSpecifier;
 
         // This prim is defined if its parent is and its specifier is defining.
         _flags[Usd_PrimDefinedFlag] = isDefiningSpec && parent->IsDefined();

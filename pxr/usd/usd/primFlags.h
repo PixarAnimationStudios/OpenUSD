@@ -79,6 +79,7 @@ enum Usd_PrimFlags {
     Usd_PrimDefinedFlag,
     Usd_PrimHasDefiningSpecifierFlag,
     Usd_PrimInstanceFlag,
+    Usd_PrimHasAbstractSpecifierFlag,
 
     // Flags for internal use.
     Usd_PrimHasPayloadFlag,
@@ -489,6 +490,8 @@ extern unspecified UsdPrimIsDefined;
 extern unspecified UsdPrimIsInstance;
 /// Tests UsdPrim::HasDefiningSpecifier()
 extern unspecified UsdPrimHasDefiningSpecifier;
+/// Tests UsdPrim::HasAbstractSpecifier()
+extern unspecified UsdPrimHasAbstractSpecifier;
 
 /// The default predicate used for prim traversals in methods like
 /// UsdPrim::GetChildren, UsdStage::Traverse, and by UsdPrimRange.
@@ -520,6 +523,8 @@ static const Usd_PrimFlags UsdPrimIsDefined = Usd_PrimDefinedFlag;
 static const Usd_PrimFlags UsdPrimIsInstance = Usd_PrimInstanceFlag;
 static const Usd_PrimFlags UsdPrimHasDefiningSpecifier 
     = Usd_PrimHasDefiningSpecifierFlag;
+static const Usd_PrimFlags UsdPrimHasAbstractSpecifier 
+    = Usd_PrimHasAbstractSpecifierFlag;
 
 USD_API extern const Usd_PrimFlagsConjunction UsdPrimDefaultPredicate;
 USD_API extern const Usd_PrimFlagsPredicate UsdPrimAllPrimsPredicate;

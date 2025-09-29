@@ -1,0 +1,43 @@
+#usda 1.0
+
+def "a1"
+{
+    class "a2" 
+    {
+        over "a3"
+        {
+        }
+    }
+}
+
+over "b1" 
+{
+    class "b2"
+    {
+        over "b3"
+        {
+            over "b4"
+            {
+                over "b5" 
+                {
+                    class "b6" 
+                    {
+                    }
+                }
+            }
+        }
+    }
+}
+
+class "c1" 
+{
+    class "c2"
+    {
+        class "c3"
+        {
+            over "c4"
+            {
+            }
+        }
+    }
+}

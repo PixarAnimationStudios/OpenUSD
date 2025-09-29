@@ -289,6 +289,12 @@ public:
         return _Prim()->HasDefiningSpecifier(); 
     }
 
+    /// Return true if this prim has a specifier of type SdfSpecifierClass. 
+    /// \sa SdfIsAbstractSpecifier
+    bool HasAbstractSpecifier() const {
+        return _Prim()->HasAbstractSpecifier();
+    }
+
     /// Return a vector containing the names of API schemas which have
     /// been applied to this prim.
     ///
