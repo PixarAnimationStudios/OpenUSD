@@ -2,38 +2,7 @@
 
 The UsdGeom schema domain contains schemas for working with 3D geometry and related concepts. UsdGeom is designed to provide a common way to represent, organize, and interchange geometry between different 3D applications, making it easier for artists and developers to work with 3D content across various tools and pipelines.
 
-## Boundable
-
-
-### Setting Extents
-
-```{code-block} python
-from pxr import Usd, UsdGeom
-
-stage = Usd.Stage.CreateInMemory()
-sphere = UsdGeom.Sphere.Define(stage, "/MySphere")
-
-# Set the sphere's radius
-sphere.CreateRadiusAttr(5)
-
-# Calculate and set the extent (bounding box)
-sphere.CreateExtentAttr(UsdGeom.Boundable.ComputeExtentFromPlugins(sphere, Usd.TimeCode.Default()))
-```
-
-### Bounds vs Extents
-
-Every 3D object needs to know its size and position in space. UsdGeom uses two related but different concepts:
-
-- **Extents**: Authored bounding box data stored as an attribute on geometry prims. This is a rectilinear (box-shaped) volume in local space that contains the geometry.
-- **Bounds**: Computed bounding boxes that can be calculated at runtime, often combining multiple extents or computing them dynamically.
-
-**Why both?** Extents provide fast, pre-computed bounding information for performance, while bounds can be calculated on-demand for more complex scenarios. For animated geometry, extents should be authored using timeSamples.
-
-For more details, see the [USD Boundable documentation](https://openusd.org/release/api/class_usd_geom_boundable.html#UsdGeom_Boundable_Extent).
-
-
-
-## UsdGeom Schemas and Concepts
+## UsdGeom Features and Concepts
 
 UsdGeom includes several schemas that provide the following features:
 
@@ -41,7 +10,6 @@ UsdGeom includes several schemas that provide the following features:
 - Support for complex geometry (meshes, curves, etc.)
 - Transform capabilities
 - Primitive variables (primvars) for shader data
-- Motion and animation support
 - Purpose-based geometry classification
 
 Each of these is described in the following sections.
@@ -57,13 +25,16 @@ UsdGeom provides several simple geometric primitives that are useful for basic s
 - **Plane**: A flat surface centered at the origin
 - **Capsule**: A cylinder capped by two half-spheres
 
-**Note**: These "intrinsic" primitives (Cube, Sphere, Cylinder, Cone, Capsule) are not supported by all 3D applications. They're particularly useful for:
+```{note}
+Rendering of "intrinsic" primitives (Cube, Sphere, Cylinder, Cone, Capsule) may not be supported by all 3D applications. While these primitives may not render directly in all applications, they can be converted to meshes or used as pass-through geometry in tools that don't support them natively.
+```
+
+These basic geometric primitives are particularly useful for:
 - **Lighting effects**: Defining light volumes and areas
 - **Physics simulations**: Creating collision shapes for rigid body physics
 - **Procedural tools**: Using as "kill spheres" or modifiers in particle systems
 - **Proxy geometry**: Creating simplified representations of complex models
 
-While these primitives may not render directly in all applications, they can be converted to meshes or used as pass-through geometry in tools that don't support them natively.
 
 ### Complex Geometry Types
 
@@ -74,7 +45,8 @@ For more complex geometry, UsdGeom provides:
 - **NurbsCurves**: For representing NURBS curves
 - **NurbsPatch**: For representing NURBS surfaces
 - **Points**: For representing point clouds
-- **PointInstancer**: For efficiently instancing many copies of scene subgraphs.
+- **PointInstancer**: For efficiently instancing many copies of scene subgraphs
+
 ### Transform Capabilities
 
 All geometry in UsdGeom can be transformed. The Xformable schema provides:
@@ -124,22 +96,23 @@ def Mesh "MyMesh"
 }
 ```
 
-### Motion
+```{seealso}
+For an in-depth guide on primvars, refer to the [Primvars User Guide](../../primvars).
+```
 
-UsdGeom provides several ways to handle motion beyond functionality that is achievable with timeSamples and animation splines:
+### Boundable
 
-1. **Velocity-based Motion**
-   - Specify velocities for points to describe how fast they're moving
-   - Essential for accurate motion blur rendering
-   - Useful for geometry that changes topology (like particles or fluid simulations)
-   - Allows renderers to sample motion at multiple times for smooth blur effects
+Boundables in OpenUSD are used for efficiently managing and querying the spatial properties of geometry. In UsdGeom, a **Boundable** is any prim that can have a bounding box—called an *extent*—authored or computed for it. This bounding box describes the minimum and maximum corners of a box that fully contains the geometry in the prim's local space.
 
-2. **Motion API**
-   - Control motion blur amount per object using `motion:blurScale`
-   - Adjust perceived motion without changing the actual animation
-   - Scale motion blur for different objects (e.g., more blur for fast-moving objects)
+The Boundable schema is the base class for all geometry types that support bounding boxes, such as Meshes, Spheres, and other geometric primitives. By providing extents, Boundables enable fast spatial queries, frustum culling, collision detection, and other operations that depend on knowing where objects are in space.
 
+Key points about Boundables:
+- **Extent Attribute**: Boundables have an `extent` attribute, which stores the bounding box as two 3D points: the minimum and maximum corners.
+- **Performance**: Authoring extents allows tools and renderers to quickly determine if an object is visible or interacts with other objects, without recalculating bounds every time.
+- **Animation Support**: For animated geometry, extents can be authored with time samples to reflect changes in shape or position over time.
+- **Extent Computation**: If an extent is not authored, USD can compute it on demand, but pre-authoring is recommended for performance-critical workflows.
 
+Boundables are fundamental for scalable scene management in OpenUSD, making it possible to handle large and complex scenes efficiently.
 
 ### Purpose
 
@@ -198,5 +171,4 @@ When working with UsdGeom, consider these best practices:
 3. Use primvars for shader data
 4. Consider using purpose to organize geometry
 5. Be consistent with coordinate system and orientation
-6. Use motion blur controls when needed
-7. Specify stage metrics for better interoperability
+6. Specify stage metrics for better interoperability

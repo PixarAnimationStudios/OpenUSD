@@ -36,25 +36,40 @@ over "Sphere" (
 ## Examples
 
 ### Basic Sphere
+This is the most basic sphere, with a radius of 1.0 from the Sphere schema's fallback value.
 ```{code-block} usda
 #usda 1.0
 
 def Sphere "BasicSphere"
-{
-    double radius = 2.0
-    color3f[] primvars:displayColor = [(1, 0, 0)] (
-        interpolation = "constant"
-    )
+{    
 }
 ```
+```{note}
+A Sphere prim represents a mathematically perfect sphere, but may not be rendered as such in 3D applications. For example, in usdview, the sphere's level of detail is controlled by **Display -> Complexity** in the viewport menu.
+```
+`````{grid} 1 2 2 2
+
+````{grid-item}
+```{figure} ./basic_sphere.png
+Sphere rendered with low complexity.
+```
+````
+````{grid-item}
+```{figure} ./basic_sphere_high.png
+Sphere rendered with high complexity.
+```
+````
+`````
 
 ### Transformed Sphere
+Spheres are Xformable, so they can be transformed using xformOp attributes.
 ```{code-block} usda
 #usda 1.0
 
 def Sphere "TransformedSphere"
 {
-    double radius = 1.0
+    double radius = 2.0
+    float3[] extent = [(-2, -2, -2), (2, 2, 2)]
     double3 xformOp:translate = (2, 3, 4)
     double3 xformOp:rotateXYZ = (45, 30, 0)
     uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
@@ -62,46 +77,23 @@ def Sphere "TransformedSphere"
 ```
 
 ### Sphere with Purpose
+This sphere is meant to be used as a guide while working a 3D scene. It will only render when the guide purpose is turned on.
 ```{code-block} usda
 #usda 1.0
 
 def Sphere "GuideSphere"
 {
-    double radius = 1.0
-    token purpose = "guide"  # Only included when the guide purpose is turned on.
-    color3f[] primvars:displayColor = [(0.5, 0.5, 0.5)] (
+    double radius = 3.0
+    float3[] extent = [(-3, -3, -3), (3, 3, 3)]
+    token purpose = "guide"  
+    color3f[] primvars:displayColor = [(1.0, 0.0, 0.0)] (
         interpolation = "constant"
     )
 }
 ```
 
-### Double-sided Sphere
-```{code-block} usda
-#usda 1.0
+![A guide sphere in usdview.](./guide_sphere.png)
 
-def Sphere "DoubleSidedSphere"
-{
-    double radius = 1.0
-    bool doubleSided = true  # Visible from both sides
-    color3f[] primvars:displayColor = [(0, 1, 0)] (
-        interpolation = "constant"
-    )
-}
-```
-
-### Sphere with Extent
-```{code-block} usda
-#usda 1.0
-
-def Sphere "SphereWithExtent"
-{
-    double radius = 2.0
-    float3[] extent = [(-2, -2, -2), (2, 2, 2)]  # Bounding box
-    color3f[] primvars:displayColor = [(1, 0.5, 0)] (
-        interpolation = "constant"
-    )
-}
-```
 
 ## Best Practices
 
@@ -132,10 +124,7 @@ def Sphere "SphereWithExtent"
     double radius (
         customData = {
             string userDocBrief = """Specifies the radius of the sphere."""
-            string userDoc = """The radius of the sphere in stage linear units. This
- determines the size of the sphere, with the sphere being centered at the origin. A radius 
- of 1.0 creates a sphere with a diameter of 2.0 units. 
-"""
+            string userDoc = """The radius of the sphere in stage linear units. This determines the size of the sphere, with the sphere being centered at the origin. A radius of 1.0 creates a sphere with a diameter of 2.0 units."""
         }
     )
 
@@ -152,20 +141,8 @@ over "Imageable" (
 2. **Purpose Classification**: Organizing geometry into categories (render, proxy, guide, default)
 3. **Proxy Relationships**: Linking high-detail render geometry to lightweight proxy representations
 4. **Rendering Optimization**: Enabling renderers to filter and optimize based on purpose
-5. **Multi-User Collaboration**: Allowing different artists to work on different aspects of the same scene
 
 ## Examples
-
-### Basic Imageable Prim
-```{code-block} usda
-#usda 1.0
-
-def Xform "MyObject"
-{
-    token visibility = "inherited"
-    token purpose = "default"
-}
-```
 
 ### Render and Proxy Setup
 ```{code-block} usda
@@ -188,8 +165,12 @@ def Sphere "ProxySphere"
 ### Visibility Animation
 ```{code-block} usda
 #usda 1.0
-
-def Sphere "AnimatedVisibility"
+(
+    startTimeCode = 1
+    endTimeCode = 48
+    timeCodesPerSecond = 24
+)
+def Plane "AnimatedVisibility"
 {
     token visibility.timeSamples = {
         0: "inherited",
@@ -200,18 +181,22 @@ def Sphere "AnimatedVisibility"
 ```
 
 ### Guide Geometry
+This sphere is meant to be used as a guide while working a 3D scene. It will only render when the guide purpose is turned on.
 ```{code-block} usda
 #usda 1.0
 
 def Sphere "GuideSphere"
 {
-    token purpose = "guide"
-    token visibility = "inherited"
-    color3f[] primvars:displayColor = [(0.5, 0.5, 0.5)] (
+    double radius = 3.0
+    float3[] extent = [(-3, -3, -3), (3, 3, 3)]
+    token purpose = "guide"  
+    color3f[] primvars:displayColor = [(1.0, 0.0, 0.0)] (
         interpolation = "constant"
     )
 }
 ```
+
+![A guide sphere in usdview.](./guide_sphere.png)
 
 ## Best Practices
 
@@ -295,11 +280,11 @@ over "Xformable" (
 
 ## Examples
 
-### Basic Transform
+### Basic Transformation
 ```{code-block} usda
 #usda 1.0
 
-def Xform "MyTransform"
+def Cube "MyCube"
 {
     double3 xformOp:translate = (10, 5, 0)
     double3 xformOp:rotateXYZ = (0, 45, 0)
@@ -308,11 +293,15 @@ def Xform "MyTransform"
 }
 ```
 
-### Animated Transform
+### Animated Transformations
 ```{code-block} usda
 #usda 1.0
-
-def Xform "AnimatedTransform"
+(
+    startTimeCode = 1
+    endTimeCode = 48
+    timeCodesPerSecond = 24
+)
+def Cylinder "AnimatedTransformations"
 {
     double3 xformOp:translate.timeSamples = {
         0: (0, 0, 0),
@@ -328,32 +317,8 @@ def Xform "AnimatedTransform"
 }
 ```
 
-### Complex Transform with Pivot
-```{code-block} usda
-#usda 1.0
-
-def Xform "PivotTransform"
-{
-    double3 xformOp:translate = (5, 0, 0)
-    double3 xformOp:translate:pivot = (2, 0, 0)
-    double3 xformOp:rotateXYZ = (0, 45, 0)
-    double3 xformOp:scale = (1.5, 1.5, 1.5)
-    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:translate:pivot", "xformOp:rotateXYZ", "xformOp:scale", "!invert!xformOp:translate:pivot"]
-}
-```
-
-### Reset Transform Stack
-```{code-block} usda
-#usda 1.0
-
-def Xform "ResetTransform"
-{
-    double3 xformOp:translate = (0, 10, 0)
-    uniform token[] xformOpOrder = ["!resetXformStack!", "xformOp:translate"]
-}
-```
-
-### Real-world Transform Example
+### Real-world Transformation Example
+Here is an example involving multiple hierarchical transformations.
 ```{code-block} usda
 #usda 1.0
 
@@ -401,11 +366,8 @@ def Xform "Car"
 
 4. **Animation**:
    - Use timeSamples for animated transforms
-   - Avoid animating individual components when possible
-   - Consider using quaternions for smooth rotation interpolation
 
 5. **Hierarchy**:
-   - Use Xform prims to group related geometry
    - Apply transforms at the appropriate level in the hierarchy
    - Consider the impact of parent transforms on child prims
 """
@@ -450,83 +412,54 @@ def Sphere "MySphere"
     color3f[] primvars:displayColor = [(1, 0, 0)] (
         interpolation = "constant"
     )
-    float[] primvars:displayOpacity = [0.8] (
+    float[] primvars:displayOpacity = [0.4] (
         interpolation = "constant"
     )
-    bool doubleSided = false
-    token orientation = "rightHanded"
-}
-```
-
-### Double-Sided Gprim
-```{code-block} usda
-#usda 1.0
-
-def Plane "DoubleSidedPlane"
-{
     bool doubleSided = true
-    color3f[] primvars:displayColor = [(0, 1, 0)] (
-        interpolation = "constant"
-    )
 }
 ```
-
-### Left-Handed Gprim
-```{code-block} usda
-#usda 1.0
-
-def Cube "LeftHandedCube"
-{
-    token orientation = "leftHanded"
-    color3f[] primvars:displayColor = [(0, 0, 1)] (
-        interpolation = "constant"
-    )
-}
-```
+![transparent sphere in usdview](./transparent_sphere.png)
 
 ### Gprim with Animated Display Color
 ```{code-block} usda
 #usda 1.0
-
-def Sphere "AnimatedColor"
+(
+    startTimeCode = 1
+    endTimeCode = 72
+    timeCodesPerSecond = 24
+)
+def Cube "AnimatedColor"
 {
-    double radius = 1.0
     color3f[] primvars:displayColor.timeSamples = {
         0: [(1, 0, 0)],
-        12: [(0, 1, 0)],
-        24: [(0, 0, 1)]
-    } (
-        interpolation = "constant"
-    )
+        24: [(0, 1, 0)],
+        48: [(0, 0, 1)],
+        72: [(1, 0, 0)]
+    }
 }
 ```
+![animated displayColor in usdview](./animated_display_color.gif)
 
 ## Best Practices
-
 1. **Extent Management**:
-   - Always provide authored extents for animated geometry
+   - Always provide authored extents to avoid expensive runtime extent computation.
    - Update extents when geometry properties change
    - Use ComputeExtent() for dynamic extent calculation
-
 2. **Display Properties**:
    - Use displayColor and displayOpacity for viewport visualization
    - Set appropriate interpolation for primvars
    - Consider using these as shader overrides
-
 3. **Orientation**:
    - Use "rightHanded" for standard USD geometry
    - Use "leftHanded" for geometry from left-handed coordinate systems
    - Be aware that transforms can flip orientation
-
 4. **Double-Sided Rendering**:
    - Set doubleSided=true for thin objects like paper, cloth, or leaves
    - Use doubleSided=false for solid objects to enable backface culling
    - Consider performance implications of double-sided rendering
-
 5. **Performance**:
    - Use appropriate level of detail for your use case
    - Consider using proxy representations for complex geometry
-   - Leverage USD's instancing for repeated geometry
 """
     }
 )
@@ -589,6 +522,19 @@ An **extent** is a bounding box that describes the spatial bounds of a prim in i
 - **Local-space**: The extent is defined in the prim's own coordinate system, before any transforms are applied
 - **Cached**: The extent is stored as an attribute so it doesn't need to be recalculated every time
 
+## Bounds vs Extents
+
+Every 3D object needs to know its size and position in space. UsdGeom uses two related but different concepts:
+
+- **Extents**: Authored bounding box data stored as an attribute on geometry prims. This is a rectilinear (box-shaped) volume in local space that contains the geometry.
+- **Bounds**: Computed bounding boxes that can be calculated at runtime, often combining multiple extents or computing them dynamically.
+
+**Why both?** Extents provide fast, pre-computed bounding information for performance, while bounds can be calculated on-demand for more complex scenarios. For animated geometry, extents should be authored using timeSamples.
+
+```{seealso}
+For more details, see the [USD Boundable API documentation](https://openusd.org/release/api/class_usd_geom_boundable.html#UsdGeom_Boundable_Extent).
+```
+
 ## Common Use Cases
 
 1. **Frustum Culling**: Quickly determining if geometry is visible in a camera's view
@@ -627,13 +573,28 @@ def Sphere "AnimatedSphere"
 }
 ```
 
+### Setting Extents
+
+```{code-block} python
+from pxr import Usd, UsdGeom
+
+stage = Usd.Stage.CreateInMemory()
+sphere = UsdGeom.Sphere.Define(stage, "/MySphere")
+
+# Set the sphere's radius
+sphere.CreateRadiusAttr(5)
+
+# Calculate and set the extent (bounding box)
+sphere.CreateExtentAttr(UsdGeom.Boundable.ComputeExtentFromPlugins(sphere, Usd.TimeCode.Default()))
+
+stage.Save()
+```
+
 ## Best Practices
 
-1. **Always Author Extents**: For animated geometry, always provide authored extents that capture the changing shape
+1. **Always Author Extents**: To avoid expensive runtime extent computation.
 2. **Update When Needed**: When geometry properties change, update the extent accordingly
 3. **Use ComputeExtent()**: For dynamic extent calculation, use the appropriate ComputeExtent() methods
-4. **Consider Performance**: Extents are cached for performance, so keep them up to date
-5. **Empty Extents**: Use empty extents (min = max) to indicate prims with no spatial extent
 """
     }
 )
