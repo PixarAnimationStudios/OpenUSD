@@ -762,8 +762,6 @@ bool Hio_OpenEXRImage::_OpenForReading(std::string const &filename,
     }
 
     if (_exrReader.numMipLevels <= mip) {
-        TF_DIAGNOSTIC_WARNING("In image \"%s\" mip level %d does not exist",
-                        filename.c_str(), mip);
         return false;
     }
     
