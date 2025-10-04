@@ -33,7 +33,7 @@ ARCH_PRAGMA_POP
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-OIIO_NAMESPACE_USING
+using namespace OIIO;
 
 // _ioProxySupportedExtensions is a list of hardcoded file extensions that
 // support ioProxy. Although OIIO has an api call for checking whether or
