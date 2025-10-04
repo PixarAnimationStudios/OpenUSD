@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/sphericalHarmonicsAPI.h"
+#include "pxr/usd/usdLightField/scaleAttributeAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -16,63 +16,63 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdLightFieldSphericalHarmonicsAPI,
+    TfType::Define<UsdLightFieldScaleAttributeAPI,
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
 
 /* virtual */
-UsdLightFieldSphericalHarmonicsAPI::~UsdLightFieldSphericalHarmonicsAPI()
+UsdLightFieldScaleAttributeAPI::~UsdLightFieldScaleAttributeAPI()
 {
 }
 
 /* static */
-UsdLightFieldSphericalHarmonicsAPI
-UsdLightFieldSphericalHarmonicsAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdLightFieldScaleAttributeAPI
+UsdLightFieldScaleAttributeAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdLightFieldSphericalHarmonicsAPI();
+        return UsdLightFieldScaleAttributeAPI();
     }
-    return UsdLightFieldSphericalHarmonicsAPI(stage->GetPrimAtPath(path));
+    return UsdLightFieldScaleAttributeAPI(stage->GetPrimAtPath(path));
 }
 
 
 /* virtual */
-UsdSchemaKind UsdLightFieldSphericalHarmonicsAPI::_GetSchemaKind() const
+UsdSchemaKind UsdLightFieldScaleAttributeAPI::_GetSchemaKind() const
 {
-    return UsdLightFieldSphericalHarmonicsAPI::schemaKind;
+    return UsdLightFieldScaleAttributeAPI::schemaKind;
 }
 
 /* static */
 bool
-UsdLightFieldSphericalHarmonicsAPI::CanApply(
+UsdLightFieldScaleAttributeAPI::CanApply(
     const UsdPrim &prim, std::string *whyNot)
 {
-    return prim.CanApplyAPI<UsdLightFieldSphericalHarmonicsAPI>(whyNot);
+    return prim.CanApplyAPI<UsdLightFieldScaleAttributeAPI>(whyNot);
 }
 
 /* static */
-UsdLightFieldSphericalHarmonicsAPI
-UsdLightFieldSphericalHarmonicsAPI::Apply(const UsdPrim &prim)
+UsdLightFieldScaleAttributeAPI
+UsdLightFieldScaleAttributeAPI::Apply(const UsdPrim &prim)
 {
-    if (prim.ApplyAPI<UsdLightFieldSphericalHarmonicsAPI>()) {
-        return UsdLightFieldSphericalHarmonicsAPI(prim);
+    if (prim.ApplyAPI<UsdLightFieldScaleAttributeAPI>()) {
+        return UsdLightFieldScaleAttributeAPI(prim);
     }
-    return UsdLightFieldSphericalHarmonicsAPI();
+    return UsdLightFieldScaleAttributeAPI();
 }
 
 /* static */
 const TfType &
-UsdLightFieldSphericalHarmonicsAPI::_GetStaticTfType()
+UsdLightFieldScaleAttributeAPI::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdLightFieldSphericalHarmonicsAPI>();
+    static TfType tfType = TfType::Find<UsdLightFieldScaleAttributeAPI>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdLightFieldSphericalHarmonicsAPI::_IsTypedSchema()
+UsdLightFieldScaleAttributeAPI::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -80,22 +80,22 @@ UsdLightFieldSphericalHarmonicsAPI::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdLightFieldSphericalHarmonicsAPI::_GetTfType() const
+UsdLightFieldScaleAttributeAPI::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 UsdAttribute
-UsdLightFieldSphericalHarmonicsAPI::GetPrimvarsSphericalHarmonicsAttr() const
+UsdLightFieldScaleAttributeAPI::GetScalesAttr() const
 {
-    return GetPrim().GetAttribute(UsdLightFieldTokens->primvarsSphericalHarmonics);
+    return GetPrim().GetAttribute(UsdLightFieldTokens->scales);
 }
 
 UsdAttribute
-UsdLightFieldSphericalHarmonicsAPI::CreatePrimvarsSphericalHarmonicsAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdLightFieldScaleAttributeAPI::CreateScalesAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLightFieldTokens->primvarsSphericalHarmonics,
-                       SdfValueTypeNames->Half3Array,
+    return UsdSchemaBase::_CreateAttr(UsdLightFieldTokens->scales,
+                       SdfValueTypeNames->Float3Array,
                        /* custom = */ false,
                        SdfVariabilityVarying,
                        defaultValue,
@@ -103,16 +103,16 @@ UsdLightFieldSphericalHarmonicsAPI::CreatePrimvarsSphericalHarmonicsAttr(VtValue
 }
 
 UsdAttribute
-UsdLightFieldSphericalHarmonicsAPI::GetPrimvarsSphericalHarmonicsfAttr() const
+UsdLightFieldScaleAttributeAPI::GetScaleshAttr() const
 {
-    return GetPrim().GetAttribute(UsdLightFieldTokens->primvarsSphericalHarmonicsf);
+    return GetPrim().GetAttribute(UsdLightFieldTokens->scalesh);
 }
 
 UsdAttribute
-UsdLightFieldSphericalHarmonicsAPI::CreatePrimvarsSphericalHarmonicsfAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdLightFieldScaleAttributeAPI::CreateScaleshAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLightFieldTokens->primvarsSphericalHarmonicsf,
-                       SdfValueTypeNames->Float3Array,
+    return UsdSchemaBase::_CreateAttr(UsdLightFieldTokens->scalesh,
+                       SdfValueTypeNames->Half3Array,
                        /* custom = */ false,
                        SdfVariabilityVarying,
                        defaultValue,
@@ -133,11 +133,11 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 
 /*static*/
 const TfTokenVector&
-UsdLightFieldSphericalHarmonicsAPI::GetSchemaAttributeNames(bool includeInherited)
+UsdLightFieldScaleAttributeAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLightFieldTokens->primvarsSphericalHarmonics,
-        UsdLightFieldTokens->primvarsSphericalHarmonicsf,
+        UsdLightFieldTokens->scales,
+        UsdLightFieldTokens->scalesh,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

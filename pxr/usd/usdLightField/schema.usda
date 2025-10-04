@@ -10,130 +10,329 @@ over "GLOBAL" (
     customData = {
         string libraryName       = "usdLightField"
         string libraryPath       = "pxr/usd/usdLightField"
-        string libraryPrefix     = "UsdLightField"
-        string tokensPrefix      = "UsdLightField"
     }
-) {
+)
+{
 }
 
-class "GaussiansAPI" (
-    doc = """AppliedAPI schema to extend UsdGeomPoints to describe Gaussians.
+class ParticleField "ParticleField" (
+    doc = """A ParticleField prim is used as a base to desribe different types
+            of concrete ParticleField implementations, such as, but not limited
+            to, 3D Gaussian Splats.
 
-    Orientations and Scales are provided in both half and float precision data to allow flexibility
-    in storage. Renderers should prefer the float precision data if present, and they are capable.
+            It is a concrete prim type that can have different
+            ParticleField related appliedAPI schemas applied to it, to
+            specialize its definition.
 
-    UsdGeomPoints already provides a Widths attribute that represents the size of the point.  In order
-    to allow renderers that do not support rendering Gaussians we suggest setting Widths to the length
-    of the Scales attribute, and then normalizing the Scales attribute.  Renderers reconstruct the
-    original Scales attribute value by multiplying by the UsdGeomPoints Widths attribute.
-    """
+            The ParticleField appliedAPI schemas represent the different
+            features of a ParticleField, such as positions, orientations,
+            scales, kernel shape, kernel fall-off functions and radiance.
+
+            Without atleast some of these appliedAPI schemas the ParticleField
+            is just an empty abstract container, but adding different
+            combinations of these appliedAPI schemas it allows us to describe a
+            varying family of types of ParticleFields."""
+    inherits = </Gprim>
+)
+{
+}
+
+class "PositionAttributeAPI" (
+    doc = """A ParticleField related appliedAPI schema that provides a position
+             attribute to define the locations of the particles.
+
+             Attributes are provided in both `float` and `half` types for some
+             easy data footprint affordance, data consumers should prefer
+             `float` version if available."""
     inherits = </APISchemaBase>
-
     customData = {
         token apiSchemaType = "singleApply"
-        token[] apiSchemaCanOnlyApplyTo = ["UsdGeomPoints"]
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
     }
-)  {
-    uniform token gaussianShape = "ellipsoid" (
-        allowedTokens = ["ellipsoid", "triangle", "plane"]
-        doc = """The shape of the gaussian to render.
-        Gaussians may be available in a range of shapes, therefore this list of allowedTokens is not strictly
-        comprehensive. A renderer may support a subset or superset of the allowed tokens.
+)
+{
+    point3f[] positions (
+        doc = "Defines the position for each particle in local space."
+    )
+    point3h[] positionsh (
+        doc = """Defines the position for each particle in local space. If the
+                float precision version is available it should be preferred."""
+    )
+}
 
-        An ellipsoid is what many people will colloquially refer to as a splat.
+class "OrientationAttributeAPI" (
+    doc = """A ParticleField related appliedAPI schema that provides an
+             orientation attribute to define the orientation of the particles.
+
+             Attributes are provided in both `float` and `half` types for some
+             easy data footprint affordance, data consumers should prefer
+             `float` version if available.
+             """
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+    }
+)
+{
+    quatf[] orientations (
+        doc = "Quaternion orientation for each particle."
+    )
+    quath[] orientationsh (
+        doc = """Quaternion orientation for each particle. If the float
+                precision version is available it should be preferred."""
+    )
+}
+
+class "ScaleAttributeAPI" (
+    doc = """A ParticleField related appliedAPI schema that provides a
+             scale attribute to define the scale of the particles.
+
+             Attributes are provided in both `float` and `half` types for some
+             easy data footprint affordance, data consumers should prefer
+             `float` version if available.
+             """
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+    }
+)
+{
+    float3[] scales (
+        doc = """Affine scale factor applied to the base shape defined in the
+                'shape' attribute."""
+    )
+    half3[] scalesh (
+        doc = """Affine scale factor applied to the base shape defined in the
+                'shape' attribute. If the float precision version is available
+                it should be preferred."""
+    )
+}
+
+class "OpacityAttributeAPI" (
+    doc = """A ParticleField related appliedAPI schema that provides a
+             opacity attribute to define the opacity of the particles.
+
+             The opacity here should be in the range [0, 1], and inline with the
+             traditional sense of computer graphics opacity, not the
+             transformed data sometimes seen in PLY files associated with
+             gaussian splats, where the values need to be processed with a
+             sigmoid activation function.
+
+             Attributes are provided in both `float` and `half` types for some
+             easy data footprint affordance, data consumers should prefer
+             `float` version if available.
+             """
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+    }
+)
+{
+    float[] opacities (
+        doc = "Opacity for each particle."
+    )
+    half[] opacitiesh (
+        doc = """Opacity for each particle. If the float precision version is
+                available it should be preferred."""
+    )
+}
+
+class "GaussianShapeAPI" (
+    doc = """Defines the Gaussian shape function.
+    This is really just a spherical region the shape of which is reshaped by
+    the associated scale data source."""
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+    }
+)
+{
+}
+
+# This is an example of an alternate shape. No concrete use-case for this
+# shape yet.
+class "TriangleShapeAPI" (
+    doc = """Defines a base shape as a equilateral triangle with given edge
+            length."""
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+    }
+)
+{
+    float kernelShape:triangle:edgeLength = 1 (
+        doc = """The edge length of the equilateral triangle before any scaling
+                is applied."""
+    )
+}
+
+
+class "GaussianFalloffFunctionAPI" (
+    doc = """Defines a Gaussian fall-off function. An opacity data source is
+            required and it used to control the gaussian peak."""
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+    }
+)
+{
+}
+
+class "ImplicitShapeFalloffThresholdAPI" (
+    doc = """Defines a shape implicitly by providing a threshold value for the
+             fall-off function linked with the associated shape appliedAPI."""
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+    }
+)
+{
+    float kernelFalloff:implicitShapeFalloff:threshold = 0.01 (
+        doc = """The threshold value for the kernel's fall-off function that
+                defines the surface boundary."""
+    )
+}
+
+
+class "SphericalHarmonicsAttributeAPI" (
+    doc = """A ParticleField related appliedAPI schema that provides spherical
+            harmonics attributes to define the radiance of the particles.
+
+            Attributes are provided in both `float` and `half` types for some
+            easy data footprint affordance, data consumers should prefer
+            `float` version if available."""
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+    }
+)
+{
+    uniform int radiance:sphericalHarmonicsDegree = 3 (
+        doc = "The maximum degree of the spherical harmonics."
+    )
+    float3[] primvars:radiance:sphericalHarmonicsCoefficients (
+        doc = """Flattened array of SH coefficients.
+         The each of the different SH coefficients are not interleaved. The SH
+         coefficents for a given particle are encoded in the array sequentially,
+         with the all of the SH coefficients for the first particle being defined
+         first, followed by all the SH coefficients for the second particle and
+         so on. This means the elementSize metadata can be authored, but is
+         dependent on the degree of the spherical harmonic data being applied."""
+    )
+    half3[] primvars:radiance:sphericalHarmonicsCoefficientsh (
+        doc = """Flattened array of SH coefficients.
+         The each of the different SH coefficients are not interleaved. The SH
+         coefficents for a given particle are encoded in the array sequentially,
+         with the all of the SH coefficients for the first particle being defined
+         first, followed by all the SH coefficients for the second particle and
+         so on. This means the elementSize metadata can be authored, but is
+         dependent on the degree of the spherical harmonic data being applied.
+
+         If the float precision version is available it should be preferred."""
+    )
+}
+
+# TODO : this is just placeholder - I haven't fully digested the DBS paper yet.
+class "SphericalBetaAttributeAPI" (
+    doc = """A ParticleField related appliedAPI schema that provides spherical
+            beta attributes to define the radiance of the particles."""
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+    }
+)
+{
+    float[] primvars:sphericalBeta:beta (
+        doc = "Beta parameter per-particle."
+    )
+}
+
+class ParticleField_3DGaussianSplat "ParticleField_3DGaussianSplat" (
+    doc = """This is a concrete ParticleField representing the original 3D
+            Gaussian Splats technique (https://arxiv.org/abs/2308.04079).
+
+            It inherits from the ParticleField base prim, and has a set of
+            appliedAPI schema automatically applied to provide the required
+            attributes for original 3DGS.
+
+            Also contains some rendering hints that can optionally inform
+            how the splats should be rendered."""
+    inherits = </ParticleField>
+
+    customData = {
+        string extraIncludes = """
+            #include "pxr/usd/usdLightField/positionAttributeAPI.h"
+            #include "pxr/usd/usdLightField/orientationAttributeAPI.h"
+            #include "pxr/usd/usdLightField/scaleAttributeAPI.h"
+            #include "pxr/usd/usdLightField/opacityAttributeAPI.h"
+            #include "pxr/usd/usdLightField/gaussianShapeAPI.h"
+            #include "pxr/usd/usdLightField/gaussianFalloffFunctionAPI.h"
+            #include "pxr/usd/usdLightField/sphericalHarmonicsAttributeAPI.h"
         """
+        token[] reflectedAPISchemas = [
+            "PositionAttributeAPI",
+            "OrientationAttributeAPI",
+            "ScaleAttributeAPI",
+            "OpacityAttributeAPI",
+            "GaussianShapeAPI",
+            "GaussianFalloffFunctionAPI",
+            "SphericalHarmonicsAttributeAPI"
+        ]
+    }
+    prepend apiSchemas = [
+        "PositionAttributeAPI",
+        "OrientationAttributeAPI",
+        "ScaleAttributeAPI",
+        "OpacityAttributeAPI",
+        "GaussianShapeAPI",
+        "GaussianFalloffFunctionAPI",
+        "SphericalHarmonicsAttributeAPI"
+    ]
+)
+{
+    uniform token projectionModeHint = "perspective" (
+        allowedTokens = ["perspective", "tangential"]
+        customData = { string group = "Metadata" }
+        doc = """A hint for the renderer on how to project the gaussian to
+                achieve a perspective correct view. Renderers are free to
+                ignore this, but the hint is often valuable to tune the
+                rendering of the scene.
+
+               'Perspective' projection is similar to standard object rendering
+               from a camera view. Gaussians are projected with scaling and
+               distortion based on depth.
+
+               'Tangential' projection treats the image plane as a tangent to
+               the viewing sphere. Gaussians are projected orthogonally,
+               preserving shape and scale better, which helps reduce distortion
+               for certain rendering applications like novel view synthesis."""
     )
 
     uniform token sortingModeHint = "zDepth" (
         allowedTokens = ["zDepth", "cameraDistance"]
-        doc = """A hint for the renderer on how to sort the gaussians while drawing.
-        Renderers are free to ignore this, but the hint is often valuable to tune the rendering of the scene.
+        customData = { string group = "Metadata" }
+        doc = """A hint for the renderer on how to sort the gaussians while
+        drawing. Renderers are free to ignore this, but the hint is often
+        valuable to tune the rendering of the scene.
 
-        Rasterizers usually sort gaussians from back to front.
-        This attribute is a hint for the metric used to sort the gaussians with respect to the camera.
+        Rasterizers usually sort gaussians from back to front. This attribute
+        is a hint for the metric used to sort the gaussians with respect to the
+        camera.
 
-        'zDepth' sorts the gaussians using the z component of the position of the gaussians once
-        transformed in to the cameras projection space.
+        'zDeph': The particles are sorted based on the z component of the
+        particle position when transformed in to the cameras local space.
 
-        'cameraDistance' sorts the gaussians using the euclidean distance between the gaussians
-        and the camera in world space."""
+        'cameraDistance': The particles are sorted based on the euclidian
+        distance from the particle to the camera."""
     )
-
-    uniform token projectionModeHint = "perspective" (
-        allowedTokens = ["perspective", "tangential"]
-        doc = """A hint for the renderer on how to project the gaussian to achieve a perspective correct view.
-        Renderers are free to ignore this, but the hint is often valuable to tune the rendering of the scene.
-
-        'Perspective' projection is similar to standard object rendering from a camera view.
-        Gaussians are projected with scaling and distortion based on depth.
-
-        'Tangential' projection treats the image plane as a tangent to the viewing sphere.
-        Gaussians are projected orthogonally, preserving shape and scale better, which helps reduce
-        distortion for certain rendering applications like novel view synthesis
-        """
-    )
-
-    quath[] orientations (
-        doc = """Orientation of the gaussians coordinate frame for scale to be applied in (quaternion).
-        Half precision data."""
-    )
-
-    quatf[] orientationsf (
-        doc = """Orientation of the gaussians coordinate frame for scale to be applied in (quaternion).
-        Float precision data, renderers should prefer float data over half if present."""
-    )
-
-    half3[] scales (
-        doc = """Scale of each point in an XYZ coordinate frame defined by orientation.
-        Half precision data."""
-    )
-
-    float3[] scalesf (
-        doc = """Scale of each point in an XYZ coordinate frame defined by orientation.
-        Float precision data, renderers should prefer float data over half if present."""
-    )
-
 }
 
-class "SphericalHarmonicsAPI" (
-    doc = """AppliedAPI schema to extend UsdGeomPoints to describe Spherical Harmonic data.
-    Spherical harmonics data must be interpreted in context of the point types it is applied to, for example
-    with ellipsoid gaussians using the GaussianAPI above.
-
-    The spherical harmonic coefficients can be provided as either half or float based data.
-    If floats are present, then renderers should prefer the higher precision data if they are able.
-
-    The spherical harmonic data is provided as an array of half3 or float3 data.  They are represented by 3 component values
-    as they are constructed to be the eigenfunctions of the angular part of the Laplacian in three dimensions. The 3
-    component values being represeted as a RGB float3 triplet.
-
-    Each point must have the same number of spherical harmonic coefficients, and therefore the array size must be equal
-    to the number of points multiplied by the number of spherical harmonic coefficients.
-    This allows the number of coefficients present for each point can be inferred by the array size.
-
-    Spherical Harmoics contain all but the 0th degree spherical harmonic, which is already encoded in the UsdGeomPoints.displayColor attribute.
-    Each point must have the same number of spherical harmonic coefficients, and therefore the array size must be
-    equal to the number of points multiplied by the number of spherical harmonic coefficients (minus one due to the 0th degree being used for color).
-    This allows the number of coefficients present for each point can be inferred by the array size.
-
-    Authors are responsible for authoring the correct color space metadata for their spherical harmonics data.
-    """
-    inherits = </APISchemaBase>
-
-    customData = {
-        token apiSchemaType = "singleApply"
-        token[] apiSchemaCanOnlyApplyTo = ["UsdGeomPoints"]
-    }
-)  {
-
-    half3[] primvars:sphericalHarmonics (
-        doc = """Half buffer containing spherical harmonics data.
-        See the description of the API for more information on interpreting the data."""
-    )
-
-    float3[] primvars:sphericalHarmonicsf (
-        doc = """Float buffer containing SH data.
-        See the description of the API for more information on interpreting the data."""
-    )
-
-}

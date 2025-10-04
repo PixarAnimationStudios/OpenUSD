@@ -5,17 +5,21 @@ pxr_library(usdLightField
     INCLUDE_SCHEMA_FILES
 
     LIBRARIES
-        plug
         tf
         sdf
         vt
         gf
+        pcp
         usd
         usdGeom
+        arch
+
+    CPPFILES
+        # List non-schema cpp files
 
     PUBLIC_HEADERS
         api.h
-    
+
     PYMODULE_FILES
         __init__.py
 )

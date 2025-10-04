@@ -4,10 +4,10 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef USDLIGHTFIELD_GENERATED_SPHERICALHARMONICSAPI_H
-#define USDLIGHTFIELD_GENERATED_SPHERICALHARMONICSAPI_H
+#ifndef USDLIGHTFIELD_GENERATED_ORIENTATIONATTRIBUTEAPI_H
+#define USDLIGHTFIELD_GENERATED_ORIENTATIONATTRIBUTEAPI_H
 
-/// \file usdLightField/sphericalHarmonicsAPI.h
+/// \file usdLightField/orientationAttributeAPI.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLightField/api.h"
@@ -30,35 +30,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// SPHERICALHARMONICSAPI                                                      //
+// ORIENTATIONATTRIBUTEAPI                                                    //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdLightFieldSphericalHarmonicsAPI
+/// \class UsdLightFieldOrientationAttributeAPI
 ///
-/// AppliedAPI schema to extend UsdGeomPoints to describe Spherical Harmonic data.
-/// Spherical harmonics data must be interpreted in context of the point types it is applied to, for example
-/// with ellipsoid gaussians using the GaussianAPI above.
+/// A ParticleField related appliedAPI schema that provides an
+/// orientation attribute to define the orientation of the particles.
 /// 
-/// The spherical harmonic coefficients can be provided as either half or float based data.
-/// If floats are present, then renderers should prefer the higher precision data if they are able.
-/// 
-/// The spherical harmonic data is provided as an array of half3 or float3 data.  They are represented by 3 component values
-/// as they are constructed to be the eigenfunctions of the angular part of the Laplacian in three dimensions. The 3
-/// component values being represeted as a RGB float3 triplet.
-/// 
-/// Each point must have the same number of spherical harmonic coefficients, and therefore the array size must be equal
-/// to the number of points multiplied by the number of spherical harmonic coefficients.
-/// This allows the number of coefficients present for each point can be inferred by the array size.
-/// 
-/// Spherical Harmoics contain all but the 0th degree spherical harmonic, which is already encoded in the UsdGeomPoints.displayColor attribute.
-/// Each point must have the same number of spherical harmonic coefficients, and therefore the array size must be
-/// equal to the number of points multiplied by the number of spherical harmonic coefficients (minus one due to the 0th degree being used for color).
-/// This allows the number of coefficients present for each point can be inferred by the array size.
-/// 
-/// Authors are responsible for authoring the correct color space metadata for their spherical harmonics data.
+/// Attributes are provided in both `float` and `half` types for some
+/// easy data footprint affordance, data consumers should prefer
+/// `float` version if available.
 /// 
 ///
-class UsdLightFieldSphericalHarmonicsAPI : public UsdAPISchemaBase
+class UsdLightFieldOrientationAttributeAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -66,26 +51,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::SingleApplyAPI;
 
-    /// Construct a UsdLightFieldSphericalHarmonicsAPI on UsdPrim \p prim .
-    /// Equivalent to UsdLightFieldSphericalHarmonicsAPI::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdLightFieldOrientationAttributeAPI on UsdPrim \p prim .
+    /// Equivalent to UsdLightFieldOrientationAttributeAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdLightFieldSphericalHarmonicsAPI(const UsdPrim& prim=UsdPrim())
+    explicit UsdLightFieldOrientationAttributeAPI(const UsdPrim& prim=UsdPrim())
         : UsdAPISchemaBase(prim)
     {
     }
 
-    /// Construct a UsdLightFieldSphericalHarmonicsAPI on the prim held by \p schemaObj .
-    /// Should be preferred over UsdLightFieldSphericalHarmonicsAPI(schemaObj.GetPrim()),
+    /// Construct a UsdLightFieldOrientationAttributeAPI on the prim held by \p schemaObj .
+    /// Should be preferred over UsdLightFieldOrientationAttributeAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdLightFieldSphericalHarmonicsAPI(const UsdSchemaBase& schemaObj)
+    explicit UsdLightFieldOrientationAttributeAPI(const UsdSchemaBase& schemaObj)
         : UsdAPISchemaBase(schemaObj)
     {
     }
 
     /// Destructor.
     USDLIGHTFIELD_API
-    virtual ~UsdLightFieldSphericalHarmonicsAPI();
+    virtual ~UsdLightFieldOrientationAttributeAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -94,17 +79,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdLightFieldSphericalHarmonicsAPI holding the prim adhering to this
+    /// Return a UsdLightFieldOrientationAttributeAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdLightFieldSphericalHarmonicsAPI(stage->GetPrimAtPath(path));
+    /// UsdLightFieldOrientationAttributeAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDLIGHTFIELD_API
-    static UsdLightFieldSphericalHarmonicsAPI
+    static UsdLightFieldOrientationAttributeAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
@@ -129,11 +114,11 @@ public:
     CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "SphericalHarmonicsAPI" to the 
+    /// This information is stored by adding "OrientationAttributeAPI" to the 
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     /// 
-    /// \return A valid UsdLightFieldSphericalHarmonicsAPI object is returned upon success. 
-    /// An invalid (or empty) UsdLightFieldSphericalHarmonicsAPI object is returned upon 
+    /// \return A valid UsdLightFieldOrientationAttributeAPI object is returned upon success. 
+    /// An invalid (or empty) UsdLightFieldOrientationAttributeAPI object is returned upon 
     /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
     /// resulting in failure. 
     /// 
@@ -144,7 +129,7 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDLIGHTFIELD_API
-    static UsdLightFieldSphericalHarmonicsAPI 
+    static UsdLightFieldOrientationAttributeAPI 
     Apply(const UsdPrim &prim);
 
 protected:
@@ -168,49 +153,48 @@ private:
 
 public:
     // --------------------------------------------------------------------- //
-    // PRIMVARSSPHERICALHARMONICS 
+    // ORIENTATIONS 
     // --------------------------------------------------------------------- //
-    /// Half buffer containing spherical harmonics data.
-    /// See the description of the API for more information on interpreting the data.
+    /// Quaternion orientation for each particle.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `half3[] primvars:sphericalHarmonics` |
-    /// | C++ Type | VtArray<GfVec3h> |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Half3Array |
+    /// | Declaration | `quatf[] orientations` |
+    /// | C++ Type | VtArray<GfQuatf> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->QuatfArray |
     USDLIGHTFIELD_API
-    UsdAttribute GetPrimvarsSphericalHarmonicsAttr() const;
+    UsdAttribute GetOrientationsAttr() const;
 
-    /// See GetPrimvarsSphericalHarmonicsAttr(), and also 
+    /// See GetOrientationsAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDLIGHTFIELD_API
-    UsdAttribute CreatePrimvarsSphericalHarmonicsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateOrientationsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // PRIMVARSSPHERICALHARMONICSF 
+    // ORIENTATIONSH 
     // --------------------------------------------------------------------- //
-    /// Float buffer containing SH data.
-    /// See the description of the API for more information on interpreting the data.
+    /// Quaternion orientation for each particle. If the float
+    /// precision version is available it should be preferred.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float3[] primvars:sphericalHarmonicsf` |
-    /// | C++ Type | VtArray<GfVec3f> |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3Array |
+    /// | Declaration | `quath[] orientationsh` |
+    /// | C++ Type | VtArray<GfQuath> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->QuathArray |
     USDLIGHTFIELD_API
-    UsdAttribute GetPrimvarsSphericalHarmonicsfAttr() const;
+    UsdAttribute GetOrientationshAttr() const;
 
-    /// See GetPrimvarsSphericalHarmonicsfAttr(), and also 
+    /// See GetOrientationshAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDLIGHTFIELD_API
-    UsdAttribute CreatePrimvarsSphericalHarmonicsfAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateOrientationshAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/sphericalHarmonicsAPI.h"
+#include "pxr/usd/usdLightField/sphericalHarmonicsAttributeAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -34,54 +34,61 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
-_CreatePrimvarsSphericalHarmonicsAttr(UsdLightFieldSphericalHarmonicsAPI &self,
+_CreateRadianceSphericalHarmonicsDegreeAttr(UsdLightFieldSphericalHarmonicsAttributeAPI &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreatePrimvarsSphericalHarmonicsAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Half3Array), writeSparsely);
+    return self.CreateRadianceSphericalHarmonicsDegreeAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
 }
         
 static UsdAttribute
-_CreatePrimvarsSphericalHarmonicsfAttr(UsdLightFieldSphericalHarmonicsAPI &self,
+_CreatePrimvarsRadianceSphericalHarmonicsCoefficientsAttr(UsdLightFieldSphericalHarmonicsAttributeAPI &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreatePrimvarsSphericalHarmonicsfAttr(
+    return self.CreatePrimvarsRadianceSphericalHarmonicsCoefficientsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
+}
+        
+static UsdAttribute
+_CreatePrimvarsRadianceSphericalHarmonicsCoefficientshAttr(UsdLightFieldSphericalHarmonicsAttributeAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreatePrimvarsRadianceSphericalHarmonicsCoefficientshAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Half3Array), writeSparsely);
 }
 
 static std::string
-_Repr(const UsdLightFieldSphericalHarmonicsAPI &self)
+_Repr(const UsdLightFieldSphericalHarmonicsAttributeAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdLightField.SphericalHarmonicsAPI(%s)",
+        "UsdLightField.SphericalHarmonicsAttributeAPI(%s)",
         primRepr.c_str());
 }
 
-struct UsdLightFieldSphericalHarmonicsAPI_CanApplyResult : 
+struct UsdLightFieldSphericalHarmonicsAttributeAPI_CanApplyResult : 
     public TfPyAnnotatedBoolResult<std::string>
 {
-    UsdLightFieldSphericalHarmonicsAPI_CanApplyResult(bool val, std::string const &msg) :
+    UsdLightFieldSphericalHarmonicsAttributeAPI_CanApplyResult(bool val, std::string const &msg) :
         TfPyAnnotatedBoolResult<std::string>(val, msg) {}
 };
 
-static UsdLightFieldSphericalHarmonicsAPI_CanApplyResult
+static UsdLightFieldSphericalHarmonicsAttributeAPI_CanApplyResult
 _WrapCanApply(const UsdPrim& prim)
 {
     std::string whyNot;
-    bool result = UsdLightFieldSphericalHarmonicsAPI::CanApply(prim, &whyNot);
-    return UsdLightFieldSphericalHarmonicsAPI_CanApplyResult(result, whyNot);
+    bool result = UsdLightFieldSphericalHarmonicsAttributeAPI::CanApply(prim, &whyNot);
+    return UsdLightFieldSphericalHarmonicsAttributeAPI_CanApplyResult(result, whyNot);
 }
 
 } // anonymous namespace
 
-void wrapUsdLightFieldSphericalHarmonicsAPI()
+void wrapUsdLightFieldSphericalHarmonicsAttributeAPI()
 {
-    typedef UsdLightFieldSphericalHarmonicsAPI This;
+    typedef UsdLightFieldSphericalHarmonicsAttributeAPI This;
 
-    UsdLightFieldSphericalHarmonicsAPI_CanApplyResult::Wrap<UsdLightFieldSphericalHarmonicsAPI_CanApplyResult>(
+    UsdLightFieldSphericalHarmonicsAttributeAPI_CanApplyResult::Wrap<UsdLightFieldSphericalHarmonicsAttributeAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
-        cls("SphericalHarmonicsAPI");
+        cls("SphericalHarmonicsAttributeAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -110,17 +117,24 @@ void wrapUsdLightFieldSphericalHarmonicsAPI()
         .def(!self)
 
         
-        .def("GetPrimvarsSphericalHarmonicsAttr",
-             &This::GetPrimvarsSphericalHarmonicsAttr)
-        .def("CreatePrimvarsSphericalHarmonicsAttr",
-             &_CreatePrimvarsSphericalHarmonicsAttr,
+        .def("GetRadianceSphericalHarmonicsDegreeAttr",
+             &This::GetRadianceSphericalHarmonicsDegreeAttr)
+        .def("CreateRadianceSphericalHarmonicsDegreeAttr",
+             &_CreateRadianceSphericalHarmonicsDegreeAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetPrimvarsSphericalHarmonicsfAttr",
-             &This::GetPrimvarsSphericalHarmonicsfAttr)
-        .def("CreatePrimvarsSphericalHarmonicsfAttr",
-             &_CreatePrimvarsSphericalHarmonicsfAttr,
+        .def("GetPrimvarsRadianceSphericalHarmonicsCoefficientsAttr",
+             &This::GetPrimvarsRadianceSphericalHarmonicsCoefficientsAttr)
+        .def("CreatePrimvarsRadianceSphericalHarmonicsCoefficientsAttr",
+             &_CreatePrimvarsRadianceSphericalHarmonicsCoefficientsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetPrimvarsRadianceSphericalHarmonicsCoefficientshAttr",
+             &This::GetPrimvarsRadianceSphericalHarmonicsCoefficientshAttr)
+        .def("CreatePrimvarsRadianceSphericalHarmonicsCoefficientshAttr",
+             &_CreatePrimvarsRadianceSphericalHarmonicsCoefficientshAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
