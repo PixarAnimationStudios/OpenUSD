@@ -8,6 +8,7 @@
 #define PXR_USD_IMAGING_USD_SKEL_IMAGING_EXT_COMPUTATIONS_H
 
 #include "pxr/usdImaging/usdSkelImaging/api.h"
+#include "pxr/usdImaging/usdSkelImaging/tokens.h"
 
 #include "pxr/imaging/hd/extComputationSchema.h"
 
@@ -29,9 +30,19 @@ UsdSkelImagingInvokeExtComputation(
 /// Data source for skinning CPU computation.
 USDSKELIMAGING_API
 HdExtComputationCpuCallbackDataSourceHandle
+UsdSkelImagingExtComputationCpuCallback(const TfToken &skinningMethod, const TfToken& computationType);
+
+/// Data source for skinning CPU computation (points only, for backward compatibility).
+USDSKELIMAGING_API
+HdExtComputationCpuCallbackDataSourceHandle
 UsdSkelImagingExtComputationCpuCallback(const TfToken &skinningMethod);
 
 /// Data source for skinning GPU computation.
+USDSKELIMAGING_API
+HdStringDataSourceHandle
+UsdSkelImagingExtComputationGlslKernel(const TfToken &skinningMethod, const TfToken& computationType);
+
+/// Data source for skinning GPU computation (points only, for backward compatibility).
 USDSKELIMAGING_API
 HdStringDataSourceHandle
 UsdSkelImagingExtComputationGlslKernel(const TfToken &skinningMethod);

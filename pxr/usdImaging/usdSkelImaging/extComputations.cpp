@@ -29,6 +29,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (skinPointsLBSKernel)
     (skinPointsDQSKernel)
+    (skinNormalsLBSKernel)
+    (skinNormalsDQSKernel)
 );
 
 TF_DEFINE_ENV_SETTING(USDSKELIMAGING_FORCE_CPU_COMPUTE, false,
@@ -249,7 +251,7 @@ _ExtComputationCpuCallbackDataSource(const TfToken &skinningMethod)
 
 
 HdExtComputationCpuCallbackDataSourceHandle
-UsdSkelImagingExtComputationCpuCallback(const TfToken &skinningMethod)
+UsdSkelImagingExtComputationCpuCallback(const TfToken &skinningMethod, const TfToken & /*computationType*/)
 {
     TRACE_FUNCTION();
 
@@ -269,6 +271,14 @@ UsdSkelImagingExtComputationCpuCallback(const TfToken &skinningMethod)
     TF_WARN("Unknown skinning method %s\n", skinningMethod.GetText());
 
     return nullptr;
+}
+
+HdExtComputationCpuCallbackDataSourceHandle
+UsdSkelImagingExtComputationCpuCallback(const TfToken &skinningMethod)
+{
+    return UsdSkelImagingExtComputationCpuCallback(
+        skinningMethod, 
+        UsdSkelImagingExtComputationTypeTokens->points);
 }
 ///////////////////////////////////////////////////////////////////////////////
 /// UsdSkelImagingExtComputationGlslKernel
@@ -300,7 +310,7 @@ _LoadSkinningComputeKernel(const TfToken &kernelKey)
 }
 
 HdStringDataSourceHandle
-UsdSkelImagingExtComputationGlslKernel(const TfToken &skinningMethod)
+UsdSkelImagingExtComputationGlslKernel(const TfToken &skinningMethod, const TfToken &computationType)
 {
     TRACE_FUNCTION();
 
@@ -308,20 +318,39 @@ UsdSkelImagingExtComputationGlslKernel(const TfToken &skinningMethod)
         return nullptr;
     }
 
-    if (skinningMethod == UsdSkelTokens->classicLinear) {
+    if (skinningMethod == UsdSkelTokens->classicLinear && computationType == UsdSkelImagingExtComputationTypeTokens->points) {
         static HdStringDataSourceHandle const result =
             _LoadSkinningComputeKernel(_tokens->skinPointsLBSKernel);
         return result;
     }
-    if (skinningMethod == UsdSkelTokens->dualQuaternion) {
+    if (skinningMethod == UsdSkelTokens->dualQuaternion && computationType == UsdSkelImagingExtComputationTypeTokens->points) {
         static HdStringDataSourceHandle const result =
             _LoadSkinningComputeKernel(_tokens->skinPointsDQSKernel);
+        return result;
+    }
+    if (skinningMethod == UsdSkelTokens->classicLinear && computationType == UsdSkelImagingExtComputationTypeTokens->normals) {
+        static HdStringDataSourceHandle const result =
+            _LoadSkinningComputeKernel(_tokens->skinNormalsLBSKernel);
+        return result;
+    }
+    if (skinningMethod == UsdSkelTokens->dualQuaternion && computationType == UsdSkelImagingExtComputationTypeTokens->normals) {
+        static HdStringDataSourceHandle const result =
+            _LoadSkinningComputeKernel(_tokens->skinNormalsDQSKernel);
         return result;
     }
 
     TF_WARN("Unknown skinning method %s\n", skinningMethod.GetText());
 
     return nullptr;
+}
+
+
+HdStringDataSourceHandle
+UsdSkelImagingExtComputationGlslKernel(const TfToken &skinningMethod)
+{
+    return UsdSkelImagingExtComputationGlslKernel(
+        skinningMethod,
+        UsdSkelImagingExtComputationTypeTokens->points);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

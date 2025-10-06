@@ -2309,7 +2309,7 @@ UsdSkelImagingSkeletonAdapter::_GetSkinningComputationPath(
     const SdfPath& skinnedPrimPath) const
 {
     return skinnedPrimPath.AppendChild(
-        UsdSkelImagingExtComputationNameTokens->computation);
+        UsdSkelImagingExtComputationNameTokens->pointsComputation);
 }
 
 
@@ -2318,7 +2318,7 @@ UsdSkelImagingSkeletonAdapter::_GetSkinningInputAggregatorComputationPath(
     const SdfPath& skinnedPrimPath) const
 {
     return skinnedPrimPath.AppendChild(
-        UsdSkelImagingExtComputationNameTokens->aggregatorComputation);
+        UsdSkelImagingExtComputationNameTokens->pointsAggregatorComputation);
 }
 
 
@@ -2327,7 +2327,7 @@ UsdSkelImagingSkeletonAdapter::_IsSkinningComputationPath(
     const SdfPath& cachePath) const
 {
     return cachePath.GetName() == UsdSkelImagingExtComputationNameTokens
-                                      ->computation;
+                                      ->pointsComputation;
 }
 
 
@@ -2336,7 +2336,7 @@ UsdSkelImagingSkeletonAdapter::_IsSkinningInputAggregatorComputationPath(
     const SdfPath& cachePath) const
 {
     return cachePath.GetName() == UsdSkelImagingExtComputationNameTokens
-                                      ->aggregatorComputation;
+                                      ->pointsAggregatorComputation;
 }
 
 
