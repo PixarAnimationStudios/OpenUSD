@@ -234,11 +234,13 @@ class SdfAssetPath;
 /// \ref Usd_PrimSpecifiers "specifier" of "def", "over", or "class".  The
 /// default traversals skip over prims that are "pure overs" or classes.  So
 /// to protect prototypes from all generic traversals and processing, place
-/// them under a prim that is just an "over".  For example,
+/// them under a prim that is an "class" or "over". "class" is recommended
+/// , while "over" should be used when backwards compatibility with older
+/// versions of USD is needed. For example,
 /// \code
 /// 01 def PointInstancer "Crowd_Mid"
 /// 02 {
-/// 03     rel prototypes = [ </Crowd_Mid/Prototypes/MaleThin_Business>, </Crowd_Mid/Prototypes/MaleThin_Casual> ]
+/// 03     rel prototypes = [ </Crowd_Mid/Prototypes/MaleThin_Business>, </Crowd_Mid/OtherPrototypes/MaleThin_Casual> ]
 /// 04     
 /// 05     over "Prototypes" 
 /// 06     {
@@ -250,11 +252,14 @@ class SdfAssetPath;
 /// 12              }
 /// 13          )
 /// 14          { ... }
-/// 15          
-/// 16          def "MaleThin_Casual"
-/// 17          ...
-/// 18     }
-/// 19 }
+/// 15     }
+/// 16
+/// 17     class "OtherPrototypes"
+/// 18     {
+/// 19          def "MaleThin_Casual"
+/// 20          ...
+/// 21     }
+/// 22 }
 /// \endcode
 /// 
 ///
