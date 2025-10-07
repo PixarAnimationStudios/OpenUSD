@@ -1444,7 +1444,7 @@ private:
 
         bool HandlesFormat(const std::string& extension) const
         {
-            return _packageFormat == extension;
+            return _packageFormat == TfStringToLowerAscii(extension);
         }
 
     private:
