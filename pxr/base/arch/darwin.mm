@@ -7,14 +7,12 @@
 
 #include "pxr/base/arch/darwin.h"
 #import <Foundation/Foundation.h>
-#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
 const char* Arch_DarwinGetTemporaryDirectory() {
-    std::string tmpDir = [NSTemporaryDirectory() UTF8String];
-    return tmpDir.c_str();
+    return [NSTemporaryDirectory() UTF8String];
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

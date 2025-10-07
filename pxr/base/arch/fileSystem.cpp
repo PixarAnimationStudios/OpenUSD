@@ -736,7 +736,7 @@ Arch_InitTmpDir()
     _TmpDir = _strdup(ArchWindowsUtf16ToUtf8(tmpPath).c_str());
 #elif defined(ARCH_OS_DARWIN)
     // On Apple platforms, we use the system APIs to get the designated temp directory
-    _TmpDir = Arch_DarwinGetTemporaryDirectory();
+    _TmpDir = strdup(Arch_DarwinGetTemporaryDirectory());
 #else
     const std::string tmpdir = ArchGetEnv("TMPDIR");
     if (!tmpdir.empty()) {
