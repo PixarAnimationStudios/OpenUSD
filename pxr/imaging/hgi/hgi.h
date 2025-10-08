@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/vt/value.h"
 
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/blitCmds.h"
@@ -28,7 +29,9 @@
 #include "pxr/imaging/hgi/version.h"
 
 #include <atomic>
+#include <map>
 #include <memory>
+#include <string_view>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,6 +39,10 @@ class HgiCapabilities;
 class HgiIndirectCommandEncoder;
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
+
+// Using std::less<> enables transparent comparisons so we can avoid string
+// allocations.
+using HgiCreationHints = std::map<std::string, VtValue, std::less<>>;
 
 
 /// \class Hgi
@@ -115,15 +122,19 @@ public:
 
     /// *** DEPRECATED *** Please use: CreatePlatformDefaultHgi
     HGI_API
-    static Hgi* GetPlatformDefaultHgi();
+    static Hgi* GetPlatformDefaultHgi(const HgiCreationHints& hints = {});
 
     /// Helper function to return a Hgi object for the current platform.
     /// For example on Linux this may return HgiGL while on macOS HgiMetal.
     /// Caller, usually the application, owns the lifetime of the Hgi object and
     /// the object is destroyed when the caller drops the unique ptr.
+    /// Implementation specific hints can be passed to Hgi to influence things
+    /// like device selection. See the individual Hgi implementations for more
+    /// information on supported hints.
     /// Thread safety: Not thread safe.
     HGI_API
-    static HgiUniquePtr CreatePlatformDefaultHgi();
+    static HgiUniquePtr CreatePlatformDefaultHgi(
+        const HgiCreationHints& hints = {});
 
     /// Helper function to return a Hgi object of choice supported by current 
     /// platform and build configuration.
@@ -137,9 +148,13 @@ public:
     /// HgiTokens.
     /// Caller, usually the application, owns the lifetime of the Hgi object and
     /// the object is destroyed when the caller drops the unique ptr.
+    /// Implementation specific hints can be passed to Hgi to influence things
+    /// like device selection. See the individual Hgi implementations for more
+    /// information on supported hints.
     /// Thread safety: Not thread safe.
     HGI_API
-    static HgiUniquePtr CreateNamedHgi(const TfToken& hgiToken);
+    static HgiUniquePtr CreateNamedHgi(const TfToken& hgiToken,
+        const HgiCreationHints& hints = {});
 
     /// Determine if Hgi instance can run on current hardware.
     /// Thread safety: This call is thread safe.
@@ -353,20 +368,35 @@ private:
     std::atomic<uint64_t> _uniqueIdCounter;
 };
 
+/// Search for a hint with the given name and a value of exactly type T.
+/// Returns true if found. Other returns false and the value arg is unchanged.
+template<typename T>
+[[nodiscard]]
+static bool HgiTryGetHintValue(const HgiCreationHints& hints,
+    const std::string_view& name, T& value) {
+    if (const auto iter = hints.find(name); iter != hints.end()) {
+        if (iter->second.IsHolding<T>()) {
+            value = iter->second.UncheckedGet<T>();
+            return true;
+        }
+    }
+
+    return false;
+}
 
 ///
 /// Hgi factory for plugin system
 ///
 class HgiFactoryBase : public TfType::FactoryBase {
 public:
-    virtual Hgi* New() const = 0;
+    virtual Hgi* New(const HgiCreationHints& hints) const = 0;
 };
 
 template <class T>
 class HgiFactory : public HgiFactoryBase {
 public:
-    Hgi* New() const {
-        return new T;
+    Hgi* New(const HgiCreationHints& hints) const {
+        return new T{hints};
     }
 };
 

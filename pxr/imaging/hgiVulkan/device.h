@@ -9,9 +9,11 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgiVulkan/api.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 
+#include <array>
 #include <mutex>
 #include <unordered_map>
 #include <vector>
@@ -23,6 +25,42 @@ class HgiVulkanCommandQueue;
 class HgiVulkanInstance;
 class HgiVulkanPipelineCache;
 
+/// \struct HgiVulkanDeviceCreationParams
+///
+/// Parameters for HgiVulkanDevice creation.
+///
+/// When searching for a device, any device meeting the minimum requirements for
+/// HgiVulkan will be matched against any of the given fields in this struct. If
+/// a match for an exclusive identifier is found, the device is immediately
+/// chosen. Otherwise the device with the most matching fields is chosen.
+///
+/// If multiple exclusive identifiers are specified, then the first one matching
+/// is used. The matching order is unspecified.
+struct HgiVulkanDeviceCreationParams
+{
+    /// If available, match VkPhysicalDeviceProperties::vendorID.
+    /// If deviceId is also available, then they are matched as pair that
+    /// exclusively identifies the device, and other values are ignored.
+    std::optional<uint32_t> vendorId;
+    /// If available, match VkPhysicalDeviceProperties::deviceID.
+    /// If vendorId is also available, then they are matched as pair that
+    /// exclusively identifies the device, and other values are ignored.
+    std::optional<uint32_t> deviceId;
+    /// If available, match VkPhysicalDeviceProperties::deviceType.
+    /// If not available, then this defaults to the value of the
+    /// HGIVULKAN_PREFERRED_DEVICE_TYPE environment variable setting, which
+    /// itself defaults to VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU.
+    std::optional<VkPhysicalDeviceType> deviceType;
+    /// If available, match VkPhysicalDeviceProperties::deviceName.
+    std::optional<std::string> deviceName;
+    /// If available, match VkPhysicalDeviceIDProperties::deviceUUID.
+    /// This value exclusively identifies the device, other values are ignored.
+    std::optional<std::array<uint8_t, VK_UUID_SIZE>> deviceUuid;
+    /// If available, match VkPhysicalDeviceIDProperties::deviceLUID
+    /// (when deviceLUIDValid is true).
+    /// This value exclusively identifies the device, other values are ignored.
+    std::optional<std::array<uint8_t, VK_LUID_SIZE>> deviceLuid;
+};
 
 /// \class HgiVulkanDevice
 ///
@@ -32,7 +70,8 @@ class HgiVulkanDevice final
 {
 public:
     HGIVULKAN_API
-    HgiVulkanDevice(HgiVulkanInstance* instance);
+    HgiVulkanDevice(HgiVulkanInstance* instance,
+        const HgiVulkanDeviceCreationParams& params);
 
     HGIVULKAN_API
     ~HgiVulkanDevice();

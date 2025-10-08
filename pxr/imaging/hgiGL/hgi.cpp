@@ -43,7 +43,7 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 
-HgiGL::HgiGL()
+HgiGL::HgiGL(const HgiCreationHints&)
     : _device(nullptr)
     , _frameDepth(0)
 {

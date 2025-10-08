@@ -30,11 +30,27 @@ class HgiVulkanInstance;
 ///
 /// Vulkan implementation of the Hydra Graphics Interface.
 ///
+/// Supported creation hints:
+///   - vkVendorId: uint32_t
+///     Prefer a physical device with this vendor ID
+///   - vkDeviceId: uint32_t
+///     Prefer a physical device with this ID
+///   - vkDeviceType: VkPhysicalDeviceType
+///     Prefer a physical device of this type
+///   - vkDeviceName: std::string
+///     Prefer a physical device with this name
+///   - vkDeviceUUID: std::array<uint8_t, VK_UUID_SIZE>
+///     Prefer a physical device with this UUID
+///   - vkDeviceLUID: std::array<uint8_t, VK_LUID_SIZE>
+///     Prefer a physical device with this LUID
+///
+/// For more information on how device preference hints are used,
+/// see \struct HgiVulkanDeviceCreationParams.
 class HgiVulkan final : public Hgi
 {
 public:
     HGIVULKAN_API
-    HgiVulkan();
+    HgiVulkan(const HgiCreationHints& hints = {});
 
     HGIVULKAN_API
     ~HgiVulkan() override;

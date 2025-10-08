@@ -88,7 +88,8 @@ _RemoveUnsupportedInstanceExtensions(
     return extensions;
 }
 
-HgiVulkanInstance::HgiVulkanInstance()
+HgiVulkanInstance::HgiVulkanInstance(
+    const HgiVulkanInstanceCreationParams& params)
     : vkDebugMessenger(nullptr)
     , vkCreateDebugUtilsMessengerEXT(nullptr)
     , vkDestroyDebugUtilsMessengerEXT(nullptr)

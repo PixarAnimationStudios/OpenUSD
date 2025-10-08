@@ -9,10 +9,20 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgiVulkan/api.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+/// \struct HgiVulkanInstanceCreationParams
+///
+/// Parameters for HgiVulkanInstance creation.
+///
+struct HgiVulkanInstanceCreationParams
+{
+    // For now this is empty
+};
 
 
 /// \class HgiVkInstance
@@ -23,7 +33,7 @@ class HgiVulkanInstance final
 {
 public:
     HGIVULKAN_API
-    HgiVulkanInstance();
+    HgiVulkanInstance(const HgiVulkanInstanceCreationParams& params);
 
     HGIVULKAN_API
     ~HgiVulkanInstance();

@@ -8,13 +8,16 @@
 #include "pxr/imaging/hgiVulkan/commandQueue.h"
 #include "pxr/imaging/hgiVulkan/device.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
-#include "pxr/imaging/hgiVulkan/hgi.h"
 #include "pxr/imaging/hgiVulkan/instance.h"
 #include "pxr/imaging/hgiVulkan/pipelineCache.h"
 #include "pxr/imaging/hgiVulkan/vk_mem_alloc.h"
 
 #include "pxr/base/tf/diagnostic.h"
 
+#include <vulkan/vk_enum_string_helper.h>
+
+#include <sstream>
+#include <iomanip>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -22,15 +25,16 @@ TF_DEFINE_ENV_SETTING(HGIVULKAN_PREFERRED_DEVICE_TYPE,
     VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU,
     "Preferred device type. Use VkPhysicalDeviceType enum values.");
 
+namespace {
 // VMA links this to the interop pool
-static VkExportMemoryAllocateInfoKHR _exportInfo =
+VkExportMemoryAllocateInfoKHR _exportInfo =
 {
     VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO,
     nullptr,
     VK_EXTERNAL_MEMORY_HANDLE_AUTO
 };
 
-static uint32_t
+uint32_t
 _GetGraphicsQueueFamilyIndex(VkPhysicalDevice physicalDevice)
 {
     uint32_t queueCount = 0;
@@ -52,7 +56,7 @@ _GetGraphicsQueueFamilyIndex(VkPhysicalDevice physicalDevice)
     return VK_QUEUE_FAMILY_IGNORED;
 }
 
-static bool
+bool
 _SupportsPresentation(
     VkPhysicalDevice physicalDevice,
     uint32_t familyIndex)
@@ -75,7 +79,142 @@ _SupportsPresentation(
 #endif
 }
 
-HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
+std::string
+_IdToString(uint32_t id)
+{
+    std::ostringstream string;
+    string << "0x" << std::setw(4) << std::setfill('0') << std::hex << id;
+    return string.str();
+}
+
+template<size_t uidSize>
+std::string
+_UidToString(const std::array<uint8_t, uidSize>& uid)
+{
+    static_assert(uidSize >= 1);
+    std::ostringstream string;
+    string<< std::setfill('0') << std::hex;
+    string << "[0x" << std::setw(2)  << static_cast<uint32_t>(uid[0]);
+    for (size_t i = 1; i < uidSize; i++) {
+        string << ", 0x" << std::setw(2)  << static_cast<uint32_t>(uid[i]);
+    }
+    string << "]";
+    return string.str();
+}
+
+struct _DevicePreference
+{
+    std::string name;
+    std::string value;
+    std::function<bool(const VkPhysicalDeviceProperties&,
+        const VkPhysicalDeviceIDProperties&)> isMet;
+    bool exclusive = false;
+};
+
+std::vector<_DevicePreference>
+_GetDevicePreferencesFromParams(HgiVulkanDeviceCreationParams params)
+{
+    std::vector<_DevicePreference> preferences;
+
+    if (params.vendorId && params.deviceId) {
+        preferences.push_back({"VendorAndDeviceID",
+            _IdToString(*params.vendorId) + "/" + _IdToString(*params.deviceId),
+            [&params](const VkPhysicalDeviceProperties& properties,
+                const VkPhysicalDeviceIDProperties&) {
+                return properties.vendorID == *params.vendorId &&
+                    properties.deviceID == *params.deviceId;
+            }, true});
+    } else if (params.vendorId) {
+        preferences.push_back({"VendorID", _IdToString(*params.vendorId),
+            [&params](const VkPhysicalDeviceProperties& properties,
+                const VkPhysicalDeviceIDProperties&) {
+                return properties.vendorID == *params.vendorId;
+            }});
+    } else if (params.deviceId) {
+        preferences.push_back({"DeviceID", _IdToString(*params.deviceId),
+            [&params](const VkPhysicalDeviceProperties& properties,
+                const VkPhysicalDeviceIDProperties&) {
+                return properties.deviceID == *params.deviceId;
+            }});
+    }
+
+    const auto deviceType = params.deviceType ?
+        *params.deviceType :
+        static_cast<VkPhysicalDeviceType>(
+            TfGetEnvSetting(HGIVULKAN_PREFERRED_DEVICE_TYPE));
+    preferences.push_back(
+        {"DeviceType", string_VkPhysicalDeviceType(deviceType),
+            [deviceType](const VkPhysicalDeviceProperties& properties,
+                const VkPhysicalDeviceIDProperties&) {
+                return properties.deviceType == deviceType;
+            }});
+
+    if (params.deviceName) {
+        preferences.push_back({"DeviceName", "\"" + *params.deviceName + "\"",
+            [&params](const VkPhysicalDeviceProperties& properties,
+                const VkPhysicalDeviceIDProperties&) {
+                return std::string_view{properties.deviceName} ==
+                    *params.deviceName;
+            }});
+    }
+
+    if (params.deviceUuid) {
+        static_assert(sizeof(*params.deviceUuid) ==
+            sizeof(VkPhysicalDeviceIDProperties{}.deviceUUID));
+        preferences.push_back({"DeviceUUID", _UidToString(*params.deviceUuid),
+            [&params](const VkPhysicalDeviceProperties&,
+                const VkPhysicalDeviceIDProperties& idProperties) {
+                return std::memcmp(params.deviceUuid->data(),
+                    idProperties.deviceUUID,
+                    sizeof(idProperties.deviceUUID)) == 0;
+            },
+            true});
+    }
+
+    if (params.deviceLuid) {
+        static_assert(sizeof(*params.deviceLuid) ==
+            sizeof(VkPhysicalDeviceIDProperties{}.deviceLUID));
+        preferences.push_back({"DeviceLUID", _UidToString(*params.deviceLuid),
+            [&params](const VkPhysicalDeviceProperties&,
+                const VkPhysicalDeviceIDProperties& idProperties) {
+                return idProperties.deviceLUIDValid &&
+                    std::memcmp(params.deviceLuid->data(),
+                        idProperties.deviceLUID,
+                        sizeof(idProperties.deviceLUID)) == 0;
+            },
+            true});
+    }
+
+    return preferences;
+}
+
+int
+_GetDevicePreferenceMatch(const std::vector<_DevicePreference>& preferences,
+    const VkPhysicalDeviceProperties& properties,
+    const VkPhysicalDeviceIDProperties& idProperties,
+    std::vector<bool>& metPreferences,
+    bool& exclusiveMatch)
+{
+    int metPreferenceCount = 0;
+    metPreferences.assign(preferences.size(), false);
+    exclusiveMatch = false;
+    for (size_t i = 0; i < preferences.size(); i++) {
+        if (preferences[i].isMet(properties, idProperties)) {
+            metPreferenceCount++;
+            metPreferences[i] = true;
+            if (preferences[i].exclusive) {
+                exclusiveMatch = true;
+                break;
+            }
+        }
+    }
+
+    return metPreferenceCount;
+}
+}
+
+HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance,
+    const HgiVulkanDeviceCreationParams& params)
     : _vkPhysicalDevice(nullptr)
     , _vkDevice(nullptr)
     , _vmaAllocator(nullptr)
@@ -87,7 +226,7 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     // Determine physical device
     //
 
-    const uint32_t maxDevices = 64;
+    static constexpr uint32_t maxDevices = 64;
     VkPhysicalDevice physicalDevices[maxDevices];
     uint32_t physicalDeviceCount = maxDevices;
     HGIVULKAN_VERIFY_VK_RESULT(
@@ -97,15 +236,20 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
             physicalDevices)
     );
 
-    const auto preferredDeviceType = static_cast<VkPhysicalDeviceType>(
-        TfGetEnvSetting(HGIVULKAN_PREFERRED_DEVICE_TYPE));
+    const std::vector<_DevicePreference> preferences =
+        _GetDevicePreferencesFromParams(params);
+    int bestMetPreferenceCount = -1;
+    std::vector<bool> bestMetPreferences;
     for (uint32_t i = 0; i < physicalDeviceCount; i++) {
-        VkPhysicalDeviceProperties props;
-        vkGetPhysicalDeviceProperties(physicalDevices[i], &props);
+        VkPhysicalDeviceIDProperties idProperties{
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
+        VkPhysicalDeviceProperties2 properties{
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+        properties.pNext = &idProperties;
+        vkGetPhysicalDeviceProperties2(physicalDevices[i], &properties);
 
-        uint32_t familyIndex =
+        const uint32_t familyIndex =
             _GetGraphicsQueueFamilyIndex(physicalDevices[i]);
-
         if (familyIndex == VK_QUEUE_FAMILY_IGNORED) continue;
 
         // Assume we always want a presentation capable device for now.
@@ -114,25 +258,51 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
             continue;
         }
 
-        if (props.apiVersion < VK_API_VERSION_1_0) continue;
+        if (properties.properties.apiVersion < VK_API_VERSION_1_3) continue;
 
         // Try to find a preferred device type. Until we find one, store the
         // first non-preferred device as fallback in case we never find a
         // preferred device at all.
-        if (props.deviceType == preferredDeviceType) {
+        std::vector<bool> metPreferences;
+        bool exclusiveMatch = false;
+        const int metPreferenceCount =
+            _GetDevicePreferenceMatch(preferences, properties.properties,
+                idProperties, metPreferences, exclusiveMatch);
+        if (exclusiveMatch || metPreferenceCount > bestMetPreferenceCount) {
+            bestMetPreferenceCount = metPreferenceCount;
+            bestMetPreferences = metPreferences;
             _vkPhysicalDevice = physicalDevices[i];
             _vkGfxsQueueFamilyIndex = familyIndex;
             break;
         }
-        if (!_vkPhysicalDevice) {
-            _vkPhysicalDevice = physicalDevices[i];
-            _vkGfxsQueueFamilyIndex = familyIndex;
-        }
     }
 
     if (!_vkPhysicalDevice) {
-        TF_CODING_ERROR("VULKAN_ERROR: Unable to determine physical device");
+        TF_RUNTIME_ERROR("VULKAN_ERROR: Unable to find a physical device with "
+                        "the minimum requirements");
         return;
+    }
+
+    if (bestMetPreferenceCount < preferences.size()) {
+        bool warn = false;
+        std::ostringstream partialPreferencesMessage;
+        partialPreferencesMessage << "Could not find a device exactly matching "
+            "the preferences:\n";
+        for (size_t i = 0; i < preferences.size(); i++) {
+            partialPreferencesMessage << "    " << preferences[i].name;
+            if (preferences[i].exclusive) {
+                partialPreferencesMessage << " (exclusive)";
+                // Warn on unmet exclusive preferences
+                warn |= !bestMetPreferences[i];
+            }
+            partialPreferencesMessage << " = " << preferences[i].value <<
+                ": " << (bestMetPreferences[i] ? "met" : "unmet") << "\n";
+        }
+        if (warn) {
+            TF_WARN("%s", partialPreferencesMessage.str().c_str());
+        } else {
+            TF_STATUS("%s", partialPreferencesMessage.str().c_str());
+        }
     }
 
     //

@@ -30,6 +30,11 @@ enum {
 ///
 /// Metal implementation of the Hydra Graphics Interface.
 ///
+/// Supported creation hints:
+///   - mtlDevice: id<MTLDevice>
+///     Use this device and skip selection logic
+///   - mtlUseIntegratedGpu: bool
+///     When choosing a device, prefer an integrated GPU (Mac only)
 class HgiMetal final : public Hgi
 {
 public:
@@ -40,7 +45,7 @@ public:
     };
     
     HGIMETAL_API
-    HgiMetal(id<MTLDevice> device = nil);
+    HgiMetal(const HgiCreationHints& hints = {});
 
     HGIMETAL_API
     ~HgiMetal() override;

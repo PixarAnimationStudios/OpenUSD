@@ -55,7 +55,7 @@ class HgiGL final : public Hgi
 {
 public:
     HGIGL_API
-    HgiGL();
+    HgiGL(const HgiCreationHints& hints = {});
 
     HGIGL_API
     ~HgiGL() override;

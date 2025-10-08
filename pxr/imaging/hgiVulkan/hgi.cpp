@@ -32,16 +32,54 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType t = TfType::Define<HgiVulkan, TfType::Bases<Hgi> >();
     t.SetFactory<HgiFactory<HgiVulkan>>();
 }
 
-HgiVulkan::HgiVulkan()
-    : _instance(new HgiVulkanInstance())
-    , _device(new HgiVulkanDevice(_instance))
+namespace {
+HgiVulkanInstanceCreationParams
+_GetInstanceCreationParamsFromHints(const HgiCreationHints& hints)
+{
+    return {};
+}
+
+HgiVulkanDeviceCreationParams
+_GetDeviceCreationParamsFromHints(const HgiCreationHints& hints)
+{
+    HgiVulkanDeviceCreationParams params{};
+    if (uint32_t id{}; HgiTryGetHintValue(hints, "vkVendorId", id)) {
+        params.vendorId = id;
+    }
+    if (uint32_t id{}; HgiTryGetHintValue(hints, "vkDeviceId", id)) {
+        params.deviceId = id;
+    }
+    if (VkPhysicalDeviceType deviceType{};
+        HgiTryGetHintValue(hints, "vkDeviceType", deviceType)) {
+        params.deviceType = deviceType;
+    }
+    if (std::string deviceName;
+        HgiTryGetHintValue(hints, "vkDeviceName", deviceName)) {
+        params.deviceName = deviceName;
+    }
+    if (std::array<uint8_t, VK_UUID_SIZE> uuid{};
+        HgiTryGetHintValue(hints, "vkDeviceUUID", uuid)) {
+        params.deviceUuid = uuid;
+    }
+    if (std::array<uint8_t, VK_LUID_SIZE> luid{};
+        HgiTryGetHintValue(hints, "vkDeviceLUID", luid)) {
+        params.deviceLuid = luid;
+    }
+    return params;
+}
+}
+
+HgiVulkan::HgiVulkan(const HgiCreationHints& hints)
+    : _instance(new HgiVulkanInstance(
+        _GetInstanceCreationParamsFromHints(hints)))
+    , _device(new HgiVulkanDevice(_instance,
+        _GetDeviceCreationParamsFromHints(hints)))
     , _garbageCollector(new HgiVulkanGarbageCollector(this))
     , _threadId(std::this_thread::get_id())
     , _frameDepth(0)

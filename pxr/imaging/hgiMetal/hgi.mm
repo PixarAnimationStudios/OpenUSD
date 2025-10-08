@@ -37,6 +37,18 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory<HgiFactory<HgiMetal>>();
 }
 
+#if defined(ARCH_OS_OSX)
+TF_DEFINE_ENV_SETTING(HGIMETAL_USE_INTEGRATED_GPU, false,
+   "Always use an integrated GPU (if one is available)");
+
+static bool
+_UseIntegratedGpu()
+{
+   static bool enabled = TfGetEnvSetting(HGIMETAL_USE_INTEGRATED_GPU);
+   return enabled;
+}
+#endif
+
 struct HgiMetal::AutoReleasePool
 {
 #if !__has_feature(objc_arc)
@@ -61,17 +73,23 @@ struct HgiMetal::AutoReleasePool
 #endif
 };
 
-HgiMetal::HgiMetal(id<MTLDevice> device)
-: _device(device)
+HgiMetal::HgiMetal(const HgiCreationHints& hints)
+: _device(nil)
 , _currentCmds(nullptr)
 , _frameDepth(0)
 , _workToFlush(false)
 , _pool(std::make_unique<AutoReleasePool>())
 {
-    if (!_device) {
+    (void)HgiTryGetHintValue(hints, "mtlDevice", _device);
 #if defined(ARCH_OS_OSX)
-        if( TfGetenvBool("HGIMETAL_USE_INTEGRATED_GPU", false)) {
-            auto devices = MTLCopyAllDevices();
+    if (!_device) {
+        bool useIntegratedGpu = false;
+        if (!HgiTryGetHintValue(hints, "mtlUseIntegratedGpu",
+            useIntegratedGpu)) {
+            useIntegratedGpu = _UseIntegratedGpu();
+        }
+        if (useIntegratedGpu) {
+            const auto devices = MTLCopyAllDevices();
             for (id<MTLDevice> d in devices) {
                 if ([d isLowPower]) {
                     _device = d;
@@ -79,10 +97,11 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
                 }
             }
         }
+    }
 #endif
-        if (!_device) {
-            _device = MTLCreateSystemDefaultDevice();
-        }
+
+    if (!_device) {
+        _device = MTLCreateSystemDefaultDevice();
     }
 
     static int const commandBufferPoolSize = 256;

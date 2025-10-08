@@ -43,7 +43,7 @@ Hgi::SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
 }
 
 static Hgi*
-_MakeNewPlatformDefaultHgi()
+_MakeNewPlatformDefaultHgi(const HgiCreationHints& hints)
 {
     TF_DEBUG(HGI_DEBUG_INSTANCE_CREATION).Msg("Attempting to create platform "
         "default Hgi\n");
@@ -95,7 +95,7 @@ _MakeNewPlatformDefaultHgi()
         return nullptr;
     }
 
-    Hgi* instance = factory->New();
+    Hgi* instance = factory->New(hints);
     if (!instance) {
         TF_CODING_ERROR("[PluginLoad] Cannot construct instance of type '%s'\n",
                 plugType.GetTypeName().c_str());
@@ -120,7 +120,7 @@ _MakeNewPlatformDefaultHgi()
 }
 
 static Hgi*
-_MakeNamedHgi(const TfToken& hgiToken)
+_MakeNamedHgi(const TfToken& hgiToken, const HgiCreationHints& hints)
 {
     TF_DEBUG(HGI_DEBUG_INSTANCE_CREATION).Msg("Attempting to create named Hgi "
         "%s\n", hgiToken.GetText());
@@ -140,7 +140,7 @@ _MakeNamedHgi(const TfToken& hgiToken)
         hgiType = "HgiMetal";
 #endif
     } else if (hgiToken.IsEmpty()) {
-        return _MakeNewPlatformDefaultHgi();
+        return _MakeNewPlatformDefaultHgi(hints);
     } else {
         // If an invalid token is provided, return nullptr.
         TF_CODING_ERROR("Unsupported token %s was provided.",
@@ -175,7 +175,7 @@ _MakeNamedHgi(const TfToken& hgiToken)
         return nullptr;
     }
 
-    Hgi* instance = factory->New();
+    Hgi* instance = factory->New(hints);
     if (!instance) {
         TF_CODING_ERROR("[PluginLoad] Cannot construct instance of type '%s'\n",
             plugType.GetTypeName().c_str());
@@ -196,24 +196,24 @@ _MakeNamedHgi(const TfToken& hgiToken)
 }
 
 Hgi*
-Hgi::GetPlatformDefaultHgi()
+Hgi::GetPlatformDefaultHgi(const HgiCreationHints& hints)
 {
     TF_WARN("GetPlatformDefaultHgi is deprecated. "
             "Please use CreatePlatformDefaultHgi");
 
-    return _MakeNewPlatformDefaultHgi();
+    return _MakeNewPlatformDefaultHgi(hints);
 }
 
 HgiUniquePtr
-Hgi::CreatePlatformDefaultHgi()
+Hgi::CreatePlatformDefaultHgi(const HgiCreationHints& hints)
 {
-    return HgiUniquePtr(_MakeNewPlatformDefaultHgi());
+    return HgiUniquePtr(_MakeNewPlatformDefaultHgi(hints));
 }
 
 HgiUniquePtr 
-Hgi::CreateNamedHgi(const TfToken& hgiToken)
+Hgi::CreateNamedHgi(const TfToken& hgiToken, const HgiCreationHints& hints)
 {
-    return HgiUniquePtr(_MakeNamedHgi(hgiToken));
+    return HgiUniquePtr(_MakeNamedHgi(hgiToken, hints));
 }
 
 bool
