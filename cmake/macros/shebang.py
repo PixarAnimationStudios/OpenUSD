@@ -29,5 +29,8 @@ if len(sys.argv) == 3:
 else:
     with open(sys.argv[2], 'r') as s:
         with open(sys.argv[3], 'w') as d:
-            for line in s:
-                d.write(line.replace('/pxrpythonsubst', sys.argv[1]))
+            for idx, line in enumerate(s):
+                if idx == 0:
+                    d.write(line.replace('/pxrpythonsubst', sys.argv[1]))
+                else:
+                    d.write(line)
