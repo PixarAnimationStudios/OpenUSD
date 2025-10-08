@@ -21,15 +21,12 @@ find_package(Threads REQUIRED)
 set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 
 if(PXR_ENABLE_OPENVDB_SUPPORT)
-    # Find Boost package before getting any boost specific components as we need to
-    # disable boost-provided cmake config, based on the boost version found.
-    find_package(Boost REQUIRED)
-    # If a user explicitly sets Boost_NO_BOOST_CMAKE to On, following will
-    # disable the use of boost provided cmake config.
-    option(Boost_NO_BOOST_CMAKE "Disable boost-provided cmake config" OFF)
-    if (Boost_NO_BOOST_CMAKE)
-      message(STATUS "Disabling boost-provided cmake config")
+    # FindBoost.cmake was removed in newer CMake versions.
+    # Use the BoostConfig.cmake module provided by the upstream Boost project.
+    if (POLICY CMP0167)
+        cmake_policy(SET CMP0167 NEW)
     endif()
+    find_package(Boost REQUIRED)
 endif()
 
 if(PXR_ENABLE_PYTHON_SUPPORT)
