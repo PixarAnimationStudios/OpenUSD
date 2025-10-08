@@ -107,6 +107,16 @@ set(PXR_INSTALL_LOCATION ""
     "Intended final location for plugin resource files."
 )
 
+if (WIN32)
+    set(pxr_cmake_dir "cmake")
+else()
+    set(pxr_cmake_dir "${CMAKE_INSTALL_LIBDIR}/cmake/pxr")
+endif()
+set(PXR_CMAKE_INSTALL_DESTINATION "${pxr_cmake_dir}"
+    CACHE
+    STRING
+    "Destination within the installation for CMake package files")
+
 set(PXR_OVERRIDE_PLUGINPATH_NAME ""
     CACHE
     STRING

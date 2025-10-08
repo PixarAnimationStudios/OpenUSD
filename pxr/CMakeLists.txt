@@ -67,7 +67,11 @@ configure_file(pxrConfig.cmake.in
   "${PROJECT_BINARY_DIR}/pxrConfig.cmake" @ONLY)
 install(FILES
   "${PROJECT_BINARY_DIR}/pxrConfig.cmake"
-  DESTINATION "${CMAKE_INSTALL_PREFIX}"
+  DESTINATION "${PXR_CMAKE_INSTALL_DESTINATION}"
 )
 
-install(EXPORT pxrTargets DESTINATION "cmake")
+install(
+    EXPORT pxrTargets
+    DESTINATION "${PXR_CMAKE_INSTALL_DESTINATION}"
+    NAMESPACE "pxr::"
+)

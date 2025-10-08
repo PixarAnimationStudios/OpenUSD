@@ -18,6 +18,7 @@ list(APPEND CMAKE_MODULE_PATH
     ${PROJECT_SOURCE_DIR}/cmake/modules
     ${PROJECT_SOURCE_DIR}/cmake/macros)
 
+include(GNUInstallDirs)
 include(Options)
 include(ProjectDefaults)
 include(Packages)
