@@ -9,19 +9,19 @@
 """
 import re
 
-make_re = lambda s: re.compile('(Time\ to\ )' + s + '(.*s)')
+make_re = lambda s: re.compile(r'(Time\ to\ )' + s + '(.*s)')
 
 # `usdview --timing` metrics
 METRICS = [
-    ("configure_and_load_plugins",  make_re('(configure\ and\ load\ plugins:)')),
-    ("open_stage", make_re('(open\ stage.*:)')),
-    ("reset_prim_browser", make_re('(reset\ Prim\ Browser\ to.*:)')),
-    ("bring_up_the_ui", make_re('(bring\ up\ the\ UI:)')),
-    ("create_first_image", make_re('(create\ first\ image:)')),
-    ("shut_down_hydra", make_re('(shut\ down\ Hydra:)')),
-    ("close_stage", make_re('(close\ stage.*:)')),
-    ("tear_down_the_ui", make_re('(tear\ down\ the\ UI:)')),
-    ("open_and_close_usdview", make_re('(open\ and\ close\ usdview:)')),
+    ("configure_and_load_plugins",  make_re(r'(configure\ and\ load\ plugins:)')),
+    ("open_stage", make_re(r'(open\ stage.*:)')),
+    ("reset_prim_browser", make_re(r'(reset\ Prim\ Browser\ to.*:)')),
+    ("bring_up_the_ui", make_re(r'(bring\ up\ the\ UI:)')),
+    ("create_first_image", make_re(r'(create\ first\ image:)')),
+    ("shut_down_hydra", make_re(r'(shut\ down\ Hydra:)')),
+    ("close_stage", make_re(r'(close\ stage.*:)')),
+    ("tear_down_the_ui", make_re(r'(tear\ down\ the\ UI:)')),
+    ("open_and_close_usdview", make_re(r'(open\ and\ close\ usdview:)')),
 ]
 
 
