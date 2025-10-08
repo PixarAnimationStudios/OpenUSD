@@ -87,8 +87,8 @@ if dll_path != None and os.name == "nt":
 #
 try:
     cdWriterModule = importlib.import_module(".cdWriter" + output_format, package="doxygenlib")
-except ImportError:
-    Error("No writer plugin exists for format '%s'" % output_format)
+except ImportError as err:
+    Error(f"No writer plugin exists for format '{output_format}': {err}")
 else:
     Writer = cdWriterModule.Writer
 
