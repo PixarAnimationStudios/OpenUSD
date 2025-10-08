@@ -39,6 +39,9 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Turn on folder usage
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+# Generate compile_commands.json for use by developer tools.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Default build type
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
