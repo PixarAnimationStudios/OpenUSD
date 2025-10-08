@@ -245,11 +245,11 @@ class Writer:
         # support the PARA and NEWLINE tokens that we inserted above
         newlines = []
         for x in lines:
-            x = re.sub("PARA\s*::", "::", x)  # don't para break before ::
+            x = re.sub(r"PARA\s*::", "::", x)  # don't para break before ::
             #x = re.sub("::", "NEWLINE::", x)  # but do put :: on a new line
             # Original line above, KRC's hack below
-            x = re.sub("::\s*$", "NEWLINE::", x)  # No, but do NOT put a :: on a new line willy nilly!
-                                                  # Only if the :: is at the end of a line.  
+            x = re.sub(r"::\s*$", "NEWLINE::", x)  # No, but do NOT put a :: on a new line willy nilly!
+                                                   # Only if the :: is at the end of a line.
 
             for y in x.split('PARA'):
                 for z in y.strip().split("NEWLINE"):
