@@ -43,6 +43,7 @@ enum PcpErrorType {
     PcpErrorType_InvalidTargetPath,
     PcpErrorType_InvalidReferenceOffset,
     PcpErrorType_InvalidSublayerOffset,
+    PcpErrorType_InvalidSublayerTimeCodesPerSecond,
     PcpErrorType_InvalidSublayerOwnership,
     PcpErrorType_InvalidSublayerPath,
     PcpErrorType_InvalidVariantSelection,
@@ -590,6 +591,35 @@ public:
 private:
     /// Constructor is private. Use New() instead.
     PcpErrorInvalidSublayerOffset();
+};
+
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Forward declarations:
+class PcpErrorInvalidSublayerTimeCodesPerSecond;
+typedef std::shared_ptr<PcpErrorInvalidSublayerTimeCodesPerSecond>
+    PcpErrorInvalidSublayerTimeCodesPerSecondPtr;
+
+/// \class PcpErrorInvalidSublayerTimeCodesPerSecond
+///
+/// Sublayers that have an invalid Timecodes Per Second
+///
+class PcpErrorInvalidSublayerTimeCodesPerSecond : public PcpErrorBase {
+public:
+    /// Returns a new error object.
+    static PcpErrorInvalidSublayerTimeCodesPerSecondPtr New();
+    /// Destructor.
+    PCP_API ~PcpErrorInvalidSublayerTimeCodesPerSecond() override;
+    /// Converts error to string message.
+    PCP_API std::string ToString() const override;
+
+    SdfLayerHandle layer;
+    double timeCodesPerSecond;
+
+private:
+    /// Constructor is private. Use New() instead.
+    PcpErrorInvalidSublayerTimeCodesPerSecond();
 };
 
 ///////////////////////////////////////////////////////////////////////////////
