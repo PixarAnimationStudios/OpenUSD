@@ -119,23 +119,23 @@ BasicTest()
             HdReprSelectorVector({surface}));
         _VerifyDirtyListSize(&dl, numGeometryPrims);
 
-        // geometry -> guide : The tracked render tag set is grown since the
-        // no rprims have been added/removed, and the repr opinion of rprims
-        // hasn't changed. The dirty list will be rebuilt to include both
-        // geometry and guide prims.
+        // geometry -> guide : The tracked render tag set changes from
+        // {'geometry'} to {'guide'}, and the repr opinion of rprims hasn't
+        // changed. The dirty list will be rebuilt to include just the guide
+        // prims but ignore geometry prims.
         dl.UpdateRenderTagsAndReprSelectors(
             TfTokenVector({HdRenderTagTokens->guide}),
             HdReprSelectorVector({surface}));
 
-        _VerifyDirtyListSize(&dl, numGeometryPrims + numGuidePrims);
+        _VerifyDirtyListSize(&dl, numGuidePrims);
         _VerifyCounter(&perfLog, HdPerfTokens->dirtyListsRebuilt, 2);
 
-        // guide -> geometry : Dirty list will be rebuilt to just the varying
-        // ones (which is none).
+        // guide -> geometry : Dirty list will be rebuilt to include geometry
+        // prims again.
         dl.UpdateRenderTagsAndReprSelectors(
             TfTokenVector({HdRenderTagTokens->geometry}),
             HdReprSelectorVector({surface}));
-        _VerifyDirtyListSize(&dl, 0);
+        _VerifyDirtyListSize(&dl, numGeometryPrims);
         _VerifyCounter(&perfLog, HdPerfTokens->dirtyListsRebuilt, 3);
     }
 
@@ -144,6 +144,11 @@ BasicTest()
     {
         std::cout << "4. Add an rprim\n";
         perfLog.ResetCounters();
+
+        // Reset render tag and repr trackers to an all-pass filter.
+        dl.UpdateRenderTagsAndReprSelectors(
+            TfTokenVector({/*empty render tags*/}),
+            HdReprSelectorVector({surface}));
 
         delegate.AddCube(SdfPath("/cube4"), GfMatrix4f());
         numGeometryPrims++;

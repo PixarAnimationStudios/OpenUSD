@@ -131,21 +131,20 @@ HdDirtyList::UpdateRenderTagsAndReprSelectors(
 {
     bool trackedRenderTagsChanged = false;
 
-    // Grow the tracked render tags set if necessary.
-    // XXX The additive only nature of this policy can result in more Rprims
-    // being sync'd than necessary.
+    // Update the tracked render tags set if necessary.
     {
         // See comment in_DirtyRprimIdsFilterPredicate re: empty render tags.
-        TRACE_SCOPE("Render tag combine");
-        TfTokenVector combinedRenderTags;
-        std::set_union(_trackedRenderTags.cbegin(),
-                       _trackedRenderTags.cend(),
-                       tags.cbegin(),
-                       tags.cend(),
-                       std::back_inserter(combinedRenderTags));
+        TRACE_SCOPE("Render tag update");
 
-        if (_trackedRenderTags != combinedRenderTags) {
-            _trackedRenderTags.swap(combinedRenderTags);
+        // Sort and remove duplicates to avoid unnecessary changes.
+        TfTokenVector sortedRenderTags(tags);
+        std::sort(sortedRenderTags.begin(), sortedRenderTags.end());
+        sortedRenderTags.erase(
+            std::unique(sortedRenderTags.begin(), sortedRenderTags.end()),
+            sortedRenderTags.end());
+
+        if (_trackedRenderTags != sortedRenderTags) {
+            _trackedRenderTags.swap(sortedRenderTags);
             trackedRenderTagsChanged = true;
         }
     }
