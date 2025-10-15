@@ -56,6 +56,7 @@ HgiShaderFunctionTessellationDesc::HgiShaderFunctionTessellationDesc()
 
 HgiShaderFunctionDesc::HgiShaderFunctionDesc() 
   : shaderStage(0)
+  , shaderCodeExtensions(nullptr)
   , shaderCodeDeclarations(nullptr)
   , shaderCode(nullptr)
   , generatedShaderCodeOut(nullptr)
@@ -245,6 +246,7 @@ bool operator==(
     return lhs.debugName == rhs.debugName &&
            lhs.shaderStage == rhs.shaderStage &&
            // Omitted. Only used tmp during shader compile
+           // lhs.shaderCodeExtensions == rhs.shaderCodeExtensions
            // lhs.shaderCodeDeclarations == rhs.shaderCodeDeclarations
            // lhs.shaderCode == rhs.shaderCode
            // lhs.generatedShaderCodeOut == rhs.generatedShaderCodeOut
