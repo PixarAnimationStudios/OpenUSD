@@ -103,7 +103,7 @@ GfNumericCast(From from, GfNumericCastFailureType *failType = nullptr)
     // bool -> int
     if constexpr (std::is_same_v<From, bool> && std::is_integral_v<To>) {
         // No need to range check bool to int
-        return from ? static_cast<To>(1) : static_cast<To>(0);
+        return To{from};
     }
     // int -> bool
     else if constexpr (std::is_integral_v<From> && std::is_same_v<To, bool>) {
