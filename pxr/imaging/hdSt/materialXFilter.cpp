@@ -20,7 +20,11 @@
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/hgi/capabilities.h"
 
+#include "pxr/base/gf/color.h"
+#include "pxr/base/gf/colorSpace.h"
 #include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix3d.h"
 #include "pxr/base/gf/matrix4d.h"
 
@@ -1089,6 +1093,71 @@ _ReplaceFilenameInput(
         mxFilenameInputName.c_str(), mxNodeDef->getName().c_str());
 }
 
+// Official list of color spaces supported by MaterialX
+TF_DEFINE_PRIVATE_TOKENS(
+    _MaterialXColorSpaceNames,
+    (lin_rec709)
+    (g18_rec709)
+    (gamma18)
+    (g22_rec709)
+    (gamma22)
+    (rec709_display)
+    (gamma24)
+    (acescg)
+    (lin_ap1)
+    (g22_ap1)
+    (srgb_texture)
+    (lin_adobergb)
+    (adobergb)
+    (srgb_displayp3)
+    (lin_displayp3)
+);
+
+// Get a GfColorSpace to convert static values to the rendering color space.
+GfColorSpace
+_GetColorSpace(TfToken matxColorSpace) {
+    // Native USD nanocolor space.
+    if (GfColorSpace::IsValid(matxColorSpace)) {
+        return GfColorSpace(matxColorSpace);
+    }
+
+    // Legacy MaterialX color space with native USD nanocolor equivalent.
+    static const auto kMaterialXToUsdMap = std::unordered_map<TfToken, TfToken, TfToken::HashFunctor> {
+        {_MaterialXColorSpaceNames->lin_rec709, GfColorSpaceNames->LinearRec709 },
+        {_MaterialXColorSpaceNames->g18_rec709, GfColorSpaceNames->G18Rec709 },
+        {_MaterialXColorSpaceNames->gamma18, GfColorSpaceNames->G18Rec709 },
+        {_MaterialXColorSpaceNames->g22_rec709, GfColorSpaceNames->G22Rec709 },
+        {_MaterialXColorSpaceNames->gamma22, GfColorSpaceNames->G22Rec709 },
+        {_MaterialXColorSpaceNames->acescg, GfColorSpaceNames->LinearAP1 },
+        {_MaterialXColorSpaceNames->lin_ap1, GfColorSpaceNames->LinearAP1 },
+        {_MaterialXColorSpaceNames->g22_ap1, GfColorSpaceNames->G22AP1 },
+        {_MaterialXColorSpaceNames->srgb_texture, GfColorSpaceNames->SRGBRec709 },
+        {_MaterialXColorSpaceNames->lin_adobergb, GfColorSpaceNames->LinearAdobeRGB },
+        {_MaterialXColorSpaceNames->adobergb, GfColorSpaceNames->G22AdobeRGB },
+        {_MaterialXColorSpaceNames->srgb_displayp3, GfColorSpaceNames->SRGBP3D65 },
+        {_MaterialXColorSpaceNames->lin_displayp3, GfColorSpaceNames->LinearDisplayP3 },
+    };
+    const auto mxToUSD = kMaterialXToUsdMap.find(matxColorSpace);
+    if (mxToUSD != kMaterialXToUsdMap.end()) {
+        return GfColorSpace(mxToUSD->second);
+    }
+
+    // Legacy MaterialX color space not defined in nanocolor.
+    if (matxColorSpace == _MaterialXColorSpaceNames->rec709_display ||
+        matxColorSpace == _MaterialXColorSpaceNames->gamma24) {
+        return GfColorSpace(_MaterialXColorSpaceNames->rec709_display,
+                          { 0.640f, 0.330f }, // Rec 709 primaries
+                          { 0.300f, 0.600f },
+                          { 0.150f, 0.060f },
+                          { 0.3127, 0.3290 }, // D65 White Point
+                          2.4f, // Gamma 2.4
+                          0.0f); // No linear section
+    }
+
+    // Unknown.
+    return GfColorSpace(GfColorSpaceNames->Unknown);
+}
+
 // Gather the Material Params from the glslfx ShaderPtr
 void
 _AddMaterialXParams(
@@ -1106,6 +1175,14 @@ _AddMaterialXParams(
     // Storm can only find primvar nodes when they are connected to the terminal
     _ConnectPrimvarNodesToTerminalNode(terminalNodePath, hdNetwork);
 
+    // Assume lin_rec709_scene, but in a future where Storm supports other
+    // rendering spaces, we will have to consult (or be told about) the
+    // value of UsdRender::RenderSettings::renderingColorSpace.
+    //
+    // Note that this will require teaching MaterialX about other rendering
+    // spaces, or to enable the optional MaterialXOCIO feature.
+    const auto renderingColorSpace = GfColorSpace(GfColorSpaceNames->LinearRec709);
+
     // Store all the parameter values, mapped by the anonymized names used 
     // for MaterialXShaderGen
     // <annonNodeName_paramName, hdParamVtValue>
@@ -1119,13 +1196,54 @@ _AddMaterialXParams(
                 annonNodeNamePrefix = annonNodePathIt->second.GetName() + "_";
             }
         }
+        // Convert all colors to the rendering color space:
         for (auto const& param: node.second.parameters) {
+            if (!param.second.IsHolding<TfToken>()) {
+                continue;
+            }
+
+            const auto colorManagedInput =
+                SdfPath::StripPrefixNamespace(param.first.GetString(),
+                                                SdfFieldKeys->ColorSpace);
+            if (!colorManagedInput.second) {
+                continue;
+            }
+
+            const auto sourceColorSpace = _GetColorSpace(param.second.Get<TfToken>());
+            if (sourceColorSpace.GetName() == GfColorSpaceNames->Unknown) {
+                continue;
+            }
+
+            const TfToken colorInputParam(colorManagedInput.first);
+            auto colorInputIt = node.second.parameters.find(colorInputParam);
+            if (colorInputIt == node.second.parameters.end()) {
+                continue;
+            }
+
+            VtValue colorInputValue = colorInputIt->second;
+            if (colorInputValue.IsHolding<GfVec3f>()) {
+                GfColor col = renderingColorSpace.Convert(sourceColorSpace, colorInputValue.Get<GfVec3f>());
+                mxParamNameToValue.emplace(
+                    annonNodeNamePrefix + colorManagedInput.first, VtValue(col.GetRGB()));
+            } else if (colorInputValue.IsHolding<GfVec4f>()) {
+                const auto& color4 = colorInputValue.Get<GfVec4f>();
+                GfColor col = renderingColorSpace.Convert(sourceColorSpace, GfVec3f(color4.data()));
+                const auto& dstColor = col.GetRGB();
+                mxParamNameToValue.emplace(
+                    annonNodeNamePrefix + colorManagedInput.first,
+                    VtValue(GfVec4f(dstColor[0], dstColor[1], dstColor[2], color4[3])));
+            }
+        }
+
+        for (auto const& param: node.second.parameters) {
+            const auto anonParamName = annonNodeNamePrefix + param.first.GetString();
             if (param.second.IsHolding<std::string>() ||
-                param.second.IsHolding<TfToken>()) {
+                param.second.IsHolding<TfToken>() ||
+                mxParamNameToValue.find(anonParamName) != mxParamNameToValue.end()) {
                 continue;
             }
             mxParamNameToValue.emplace(
-                annonNodeNamePrefix + param.first.GetString(), param.second);
+                anonParamName, param.second);
         }
     }
 
@@ -1406,7 +1524,6 @@ _BuildEquivalentMaterialNetwork(
                     SdfPath::StripPrefixNamespace(param.first.GetString(),
                                                   SdfFieldKeys->ColorSpace);
                 if (colorManagedInput.second) {
-                    outNode.parameters.insert(param);
 
                     // Get the parameter value for the input
                     const TfToken colorInputParam(colorManagedInput.first);
@@ -1415,14 +1532,25 @@ _BuildEquivalentMaterialNetwork(
                     if (colorInputIt != inNode.parameters.end()) {
                         VtValue colorInputValue = colorInputIt->second;
 
-                        // Use an empty asset for color managed files
                         if (colorInputValue.IsHolding<SdfAssetPath>()) {
+                            // Use an empty asset for color managed files
                             colorInputValue = VtValue(SdfAssetPath());
+                        } else if (colorInputValue.IsHolding<GfVec3f>() ||
+                                   colorInputValue.IsHolding<GfVec4f>()) {
+                            // We will convert color managed static color
+                            // values into the rendering color space, so
+                            // they are no longer topological.
+                            continue;
+                        } else {
+                            TF_CODING_ERROR("Found color space tag on non-color attribute %s",
+                                            param.first.GetString().c_str());
+                            continue;
                         }
                         outNode.parameters.emplace(
                             colorInputParam, 
                             colorInputValue); 
                     }
+                    outNode.parameters.insert(param);
                 }
             }
 
