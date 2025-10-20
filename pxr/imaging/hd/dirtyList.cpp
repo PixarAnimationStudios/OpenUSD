@@ -137,15 +137,9 @@ HdDirtyList::UpdateRenderTagsAndReprSelectors(
     {
         // See comment in_DirtyRprimIdsFilterPredicate re: empty render tags.
         TRACE_SCOPE("Render tag combine");
-        TfTokenVector combinedRenderTags;
-        std::set_union(_trackedRenderTags.cbegin(),
-                       _trackedRenderTags.cend(),
-                       tags.cbegin(),
-                       tags.cend(),
-                       std::back_inserter(combinedRenderTags));
 
-        if (_trackedRenderTags != combinedRenderTags) {
-            _trackedRenderTags.swap(combinedRenderTags);
+        if (tags != _trackedRenderTags) {
+            _trackedRenderTags = tags;
             trackedRenderTagsChanged = true;
         }
     }
