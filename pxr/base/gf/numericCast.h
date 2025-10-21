@@ -30,15 +30,6 @@ template <class T, class U>
 constexpr bool
 GfIntegerCompareLess(T t, U u) noexcept
 {
-    // XXX: 
-    // On Visual Studio warning C4018 (signed/unsigned mismatch) is emitted
-    // when this function is used with boolean values. Just disable this
-    // for now.
-#if defined(ARCH_COMPILER_MSVC)
-    ARCH_PRAGMA_PUSH
-    ARCH_PRAGMA(warning(disable:4018))
-#endif    
-
     static_assert(std::is_integral_v<T> && std::is_integral_v<U>);
 
     if constexpr (std::is_signed_v<T> == std::is_signed_v<U>) {
@@ -50,10 +41,6 @@ GfIntegerCompareLess(T t, U u) noexcept
     else {
         return u >= 0 && t < std::make_unsigned_t<U>(u);
     }
-
-#if defined(ARCH_COMPILER_MSVC)
-    ARCH_PRAGMA_POP
-#endif
 }
 
 enum GfNumericCastFailureType {
