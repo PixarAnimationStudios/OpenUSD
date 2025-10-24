@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/sphericalBetaAttributeAPI.h"
+#include "pxr/usd/usdLightField/kernelBaseAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -32,49 +32,42 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-        
-static UsdAttribute
-_CreateSphericalBetaBetaAttr(UsdLightFieldSphericalBetaAttributeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateSphericalBetaBetaAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
-}
 
 static std::string
-_Repr(const UsdLightFieldSphericalBetaAttributeAPI &self)
+_Repr(const UsdLightFieldKernelBaseAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdLightField.SphericalBetaAttributeAPI(%s)",
+        "UsdLightField.KernelBaseAPI(%s)",
         primRepr.c_str());
 }
 
-struct UsdLightFieldSphericalBetaAttributeAPI_CanApplyResult : 
+struct UsdLightFieldKernelBaseAPI_CanApplyResult : 
     public TfPyAnnotatedBoolResult<std::string>
 {
-    UsdLightFieldSphericalBetaAttributeAPI_CanApplyResult(bool val, std::string const &msg) :
+    UsdLightFieldKernelBaseAPI_CanApplyResult(bool val, std::string const &msg) :
         TfPyAnnotatedBoolResult<std::string>(val, msg) {}
 };
 
-static UsdLightFieldSphericalBetaAttributeAPI_CanApplyResult
+static UsdLightFieldKernelBaseAPI_CanApplyResult
 _WrapCanApply(const UsdPrim& prim)
 {
     std::string whyNot;
-    bool result = UsdLightFieldSphericalBetaAttributeAPI::CanApply(prim, &whyNot);
-    return UsdLightFieldSphericalBetaAttributeAPI_CanApplyResult(result, whyNot);
+    bool result = UsdLightFieldKernelBaseAPI::CanApply(prim, &whyNot);
+    return UsdLightFieldKernelBaseAPI_CanApplyResult(result, whyNot);
 }
 
 } // anonymous namespace
 
-void wrapUsdLightFieldSphericalBetaAttributeAPI()
+void wrapUsdLightFieldKernelBaseAPI()
 {
-    typedef UsdLightFieldSphericalBetaAttributeAPI This;
+    typedef UsdLightFieldKernelBaseAPI This;
 
-    UsdLightFieldSphericalBetaAttributeAPI_CanApplyResult::Wrap<UsdLightFieldSphericalBetaAttributeAPI_CanApplyResult>(
+    UsdLightFieldKernelBaseAPI_CanApplyResult::Wrap<UsdLightFieldKernelBaseAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
-        cls("SphericalBetaAttributeAPI");
+        cls("KernelBaseAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -102,16 +95,7 @@ void wrapUsdLightFieldSphericalBetaAttributeAPI()
 
         .def(!self)
 
-        
-        .def("GetSphericalBetaBetaAttr",
-             &This::GetSphericalBetaBetaAttr)
-        .def("CreateSphericalBetaBetaAttr",
-             &_CreateSphericalBetaBetaAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
-
-        .def("LightFieldRadianceBaseAPI", &This::LightFieldRadianceBaseAPI)
         .def("__repr__", ::_Repr)
     ;
 

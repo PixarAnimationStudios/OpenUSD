@@ -16,6 +16,9 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLightField/tokens.h"
 
+            #include "pxr/usd/usdLightField/radianceBaseAPI.h"
+        
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -30,12 +33,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// SPHERICALHARMONICSATTRIBUTEAPI                                             //
+// LIGHTFIELDSPHERICALHARMONICSATTRIBUTEAPI                                   //
 // -------------------------------------------------------------------------- //
 
 /// \class UsdLightFieldSphericalHarmonicsAttributeAPI
 ///
-/// A ParticleField related appliedAPI schema that provides spherical
+/// A ParticleField related applied schema that provides spherical
 /// harmonics attributes to define the radiance of the particles.
 /// 
 /// Attributes are provided in both `float` and `half` types for some
@@ -113,7 +116,7 @@ public:
     CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "SphericalHarmonicsAttributeAPI" to the 
+    /// This information is stored by adding "LightFieldSphericalHarmonicsAttributeAPI" to the 
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     /// 
     /// \return A valid UsdLightFieldSphericalHarmonicsAttributeAPI object is returned upon success. 
@@ -175,7 +178,7 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
-    // PRIMVARSRADIANCESPHERICALHARMONICSCOEFFICIENTS 
+    // RADIANCESPHERICALHARMONICSCOEFFICIENTS 
     // --------------------------------------------------------------------- //
     /// Flattened array of SH coefficients.
     /// The each of the different SH coefficients are not interleaved. The SH
@@ -187,23 +190,23 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float3[] primvars:radiance:sphericalHarmonicsCoefficients` |
+    /// | Declaration | `float3[] radiance:sphericalHarmonicsCoefficients` |
     /// | C++ Type | VtArray<GfVec3f> |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3Array |
     USDLIGHTFIELD_API
-    UsdAttribute GetPrimvarsRadianceSphericalHarmonicsCoefficientsAttr() const;
+    UsdAttribute GetRadianceSphericalHarmonicsCoefficientsAttr() const;
 
-    /// See GetPrimvarsRadianceSphericalHarmonicsCoefficientsAttr(), and also 
+    /// See GetRadianceSphericalHarmonicsCoefficientsAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDLIGHTFIELD_API
-    UsdAttribute CreatePrimvarsRadianceSphericalHarmonicsCoefficientsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateRadianceSphericalHarmonicsCoefficientsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // PRIMVARSRADIANCESPHERICALHARMONICSCOEFFICIENTSH 
+    // RADIANCESPHERICALHARMONICSCOEFFICIENTSH 
     // --------------------------------------------------------------------- //
     /// Flattened array of SH coefficients.
     /// The each of the different SH coefficients are not interleaved. The SH
@@ -217,20 +220,33 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `half3[] primvars:radiance:sphericalHarmonicsCoefficientsh` |
+    /// | Declaration | `half3[] radiance:sphericalHarmonicsCoefficientsh` |
     /// | C++ Type | VtArray<GfVec3h> |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Half3Array |
     USDLIGHTFIELD_API
-    UsdAttribute GetPrimvarsRadianceSphericalHarmonicsCoefficientshAttr() const;
+    UsdAttribute GetRadianceSphericalHarmonicsCoefficientshAttr() const;
 
-    /// See GetPrimvarsRadianceSphericalHarmonicsCoefficientshAttr(), and also 
+    /// See GetRadianceSphericalHarmonicsCoefficientshAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDLIGHTFIELD_API
-    UsdAttribute CreatePrimvarsRadianceSphericalHarmonicsCoefficientshAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateRadianceSphericalHarmonicsCoefficientshAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
+public:
+    /// \name LightFieldRadianceBaseAPI
+    /// 
+    /// Convenience accessors for the built-in UsdLightFieldRadianceBaseAPI
+    /// 
+    /// @{
+
+    /// Constructs and returns a UsdLightFieldRadianceBaseAPI object.
+    /// Use this object to access UsdLightFieldRadianceBaseAPI custom methods.
+    USDLIGHTFIELD_API
+    UsdLightFieldRadianceBaseAPI LightFieldRadianceBaseAPI() const;
+
+    /// @}
 public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 

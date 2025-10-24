@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/gaussianShapeAPI.h"
+#include "pxr/usd/usdLightField/kernelGaussianEllipsoidAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -34,40 +34,40 @@ WRAP_CUSTOM;
 
 
 static std::string
-_Repr(const UsdLightFieldGaussianShapeAPI &self)
+_Repr(const UsdLightFieldKernelGaussianEllipsoidAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdLightField.GaussianShapeAPI(%s)",
+        "UsdLightField.KernelGaussianEllipsoidAPI(%s)",
         primRepr.c_str());
 }
 
-struct UsdLightFieldGaussianShapeAPI_CanApplyResult : 
+struct UsdLightFieldKernelGaussianEllipsoidAPI_CanApplyResult : 
     public TfPyAnnotatedBoolResult<std::string>
 {
-    UsdLightFieldGaussianShapeAPI_CanApplyResult(bool val, std::string const &msg) :
+    UsdLightFieldKernelGaussianEllipsoidAPI_CanApplyResult(bool val, std::string const &msg) :
         TfPyAnnotatedBoolResult<std::string>(val, msg) {}
 };
 
-static UsdLightFieldGaussianShapeAPI_CanApplyResult
+static UsdLightFieldKernelGaussianEllipsoidAPI_CanApplyResult
 _WrapCanApply(const UsdPrim& prim)
 {
     std::string whyNot;
-    bool result = UsdLightFieldGaussianShapeAPI::CanApply(prim, &whyNot);
-    return UsdLightFieldGaussianShapeAPI_CanApplyResult(result, whyNot);
+    bool result = UsdLightFieldKernelGaussianEllipsoidAPI::CanApply(prim, &whyNot);
+    return UsdLightFieldKernelGaussianEllipsoidAPI_CanApplyResult(result, whyNot);
 }
 
 } // anonymous namespace
 
-void wrapUsdLightFieldGaussianShapeAPI()
+void wrapUsdLightFieldKernelGaussianEllipsoidAPI()
 {
-    typedef UsdLightFieldGaussianShapeAPI This;
+    typedef UsdLightFieldKernelGaussianEllipsoidAPI This;
 
-    UsdLightFieldGaussianShapeAPI_CanApplyResult::Wrap<UsdLightFieldGaussianShapeAPI_CanApplyResult>(
+    UsdLightFieldKernelGaussianEllipsoidAPI_CanApplyResult::Wrap<UsdLightFieldKernelGaussianEllipsoidAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
-        cls("GaussianShapeAPI");
+        cls("KernelGaussianEllipsoidAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -96,6 +96,8 @@ void wrapUsdLightFieldGaussianShapeAPI()
         .def(!self)
 
 
+
+        .def("LightFieldKernelBaseAPI", &This::LightFieldKernelBaseAPI)
         .def("__repr__", ::_Repr)
     ;
 

@@ -4,16 +4,19 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef USDLIGHTFIELD_GENERATED_GAUSSIANFALLOFFFUNCTIONAPI_H
-#define USDLIGHTFIELD_GENERATED_GAUSSIANFALLOFFFUNCTIONAPI_H
+#ifndef USDLIGHTFIELD_GENERATED_KERNELCONSTANTTRIANGLEAPI_H
+#define USDLIGHTFIELD_GENERATED_KERNELCONSTANTTRIANGLEAPI_H
 
-/// \file usdLightField/gaussianFalloffFunctionAPI.h
+/// \file usdLightField/kernelConstantTriangleAPI.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLightField/api.h"
 #include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+
+            #include "pxr/usd/usdLightField/kernelBaseAPI.h"
+        
 
 #include "pxr/base/vt/value.h"
 
@@ -29,15 +32,21 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// GAUSSIANFALLOFFFUNCTIONAPI                                                 //
+// LIGHTFIELDKERNELCONSTANTTRIANGLEAPI                                        //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdLightFieldGaussianFalloffFunctionAPI
+/// \class UsdLightFieldKernelConstantTriangleAPI
 ///
-/// Defines a Gaussian fall-off function. An opacity data source is
-/// required and it used to control the gaussian peak.
+/// Defines the gaussian triangle kernel for a given ParticleField.
+/// 
+/// The kernal shape is an equilateral triangle centered at the origin, with
+/// the base of the triangle, parallel to the x-axis, and the apex of the
+/// triangle on the y-axis.
+/// 
+/// The falloff function for this kernel is constant and the value is directly
+/// defined by the opacity data source.
 ///
-class UsdLightFieldGaussianFalloffFunctionAPI : public UsdAPISchemaBase
+class UsdLightFieldKernelConstantTriangleAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -45,26 +54,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::SingleApplyAPI;
 
-    /// Construct a UsdLightFieldGaussianFalloffFunctionAPI on UsdPrim \p prim .
-    /// Equivalent to UsdLightFieldGaussianFalloffFunctionAPI::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdLightFieldKernelConstantTriangleAPI on UsdPrim \p prim .
+    /// Equivalent to UsdLightFieldKernelConstantTriangleAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdLightFieldGaussianFalloffFunctionAPI(const UsdPrim& prim=UsdPrim())
+    explicit UsdLightFieldKernelConstantTriangleAPI(const UsdPrim& prim=UsdPrim())
         : UsdAPISchemaBase(prim)
     {
     }
 
-    /// Construct a UsdLightFieldGaussianFalloffFunctionAPI on the prim held by \p schemaObj .
-    /// Should be preferred over UsdLightFieldGaussianFalloffFunctionAPI(schemaObj.GetPrim()),
+    /// Construct a UsdLightFieldKernelConstantTriangleAPI on the prim held by \p schemaObj .
+    /// Should be preferred over UsdLightFieldKernelConstantTriangleAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdLightFieldGaussianFalloffFunctionAPI(const UsdSchemaBase& schemaObj)
+    explicit UsdLightFieldKernelConstantTriangleAPI(const UsdSchemaBase& schemaObj)
         : UsdAPISchemaBase(schemaObj)
     {
     }
 
     /// Destructor.
     USDLIGHTFIELD_API
-    virtual ~UsdLightFieldGaussianFalloffFunctionAPI();
+    virtual ~UsdLightFieldKernelConstantTriangleAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -73,17 +82,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdLightFieldGaussianFalloffFunctionAPI holding the prim adhering to this
+    /// Return a UsdLightFieldKernelConstantTriangleAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdLightFieldGaussianFalloffFunctionAPI(stage->GetPrimAtPath(path));
+    /// UsdLightFieldKernelConstantTriangleAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDLIGHTFIELD_API
-    static UsdLightFieldGaussianFalloffFunctionAPI
+    static UsdLightFieldKernelConstantTriangleAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
@@ -108,11 +117,11 @@ public:
     CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "GaussianFalloffFunctionAPI" to the 
+    /// This information is stored by adding "LightFieldKernelConstantTriangleAPI" to the 
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     /// 
-    /// \return A valid UsdLightFieldGaussianFalloffFunctionAPI object is returned upon success. 
-    /// An invalid (or empty) UsdLightFieldGaussianFalloffFunctionAPI object is returned upon 
+    /// \return A valid UsdLightFieldKernelConstantTriangleAPI object is returned upon success. 
+    /// An invalid (or empty) UsdLightFieldKernelConstantTriangleAPI object is returned upon 
     /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
     /// resulting in failure. 
     /// 
@@ -123,7 +132,7 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDLIGHTFIELD_API
-    static UsdLightFieldGaussianFalloffFunctionAPI 
+    static UsdLightFieldKernelConstantTriangleAPI 
     Apply(const UsdPrim &prim);
 
 protected:
@@ -145,6 +154,19 @@ private:
     USDLIGHTFIELD_API
     const TfType &_GetTfType() const override;
 
+public:
+    /// \name LightFieldKernelBaseAPI
+    /// 
+    /// Convenience accessors for the built-in UsdLightFieldKernelBaseAPI
+    /// 
+    /// @{
+
+    /// Constructs and returns a UsdLightFieldKernelBaseAPI object.
+    /// Use this object to access UsdLightFieldKernelBaseAPI custom methods.
+    USDLIGHTFIELD_API
+    UsdLightFieldKernelBaseAPI LightFieldKernelBaseAPI() const;
+
+    /// @}
 public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 

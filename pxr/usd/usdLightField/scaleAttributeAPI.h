@@ -30,12 +30,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// SCALEATTRIBUTEAPI                                                          //
+// LIGHTFIELDSCALEATTRIBUTEAPI                                                //
 // -------------------------------------------------------------------------- //
 
 /// \class UsdLightFieldScaleAttributeAPI
 ///
-/// A ParticleField related appliedAPI schema that provides a
+/// A ParticleField related applied schema that provides a
 /// scale attribute to define the scale of the particles.
 /// 
 /// Attributes are provided in both `float` and `half` types for some
@@ -114,7 +114,7 @@ public:
     CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "ScaleAttributeAPI" to the 
+    /// This information is stored by adding "LightFieldScaleAttributeAPI" to the 
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     /// 
     /// \return A valid UsdLightFieldScaleAttributeAPI object is returned upon success. 

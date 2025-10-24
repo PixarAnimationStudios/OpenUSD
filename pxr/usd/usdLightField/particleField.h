@@ -34,21 +34,21 @@ class SdfAssetPath;
 
 /// \class UsdLightFieldParticleField
 ///
-/// A ParticleField prim is used as a base to desribe different types
+/// A ParticleField prim is used as a base to describe different types
 /// of concrete ParticleField implementations, such as, but not limited
 /// to, 3D Gaussian Splats.
 /// 
 /// It is a concrete prim type that can have different
-/// ParticleField related appliedAPI schemas applied to it, to
+/// ParticleField related applied schemas applied to it, to
 /// specialize its definition.
 /// 
-/// The ParticleField appliedAPI schemas represent the different
+/// The ParticleField applied schemas represent the different
 /// features of a ParticleField, such as positions, orientations,
 /// scales, kernel shape, kernel fall-off functions and radiance.
 /// 
-/// Without atleast some of these appliedAPI schemas the ParticleField
+/// Without at least some of these applied schemas the ParticleField
 /// is just an empty abstract container, but adding different
-/// combinations of these appliedAPI schemas it allows us to describe a
+/// combinations of these applied schemas allows us to describe a
 /// varying family of types of ParticleFields.
 ///
 class UsdLightFieldParticleField : public UsdGeomGprim

@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/gaussianShapeAPI.h"
+#include "pxr/usd/usdLightField/kernelGaussianEllipsoidAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -16,63 +16,63 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdLightFieldGaussianShapeAPI,
+    TfType::Define<UsdLightFieldKernelGaussianEllipsoidAPI,
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
 
 /* virtual */
-UsdLightFieldGaussianShapeAPI::~UsdLightFieldGaussianShapeAPI()
+UsdLightFieldKernelGaussianEllipsoidAPI::~UsdLightFieldKernelGaussianEllipsoidAPI()
 {
 }
 
 /* static */
-UsdLightFieldGaussianShapeAPI
-UsdLightFieldGaussianShapeAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdLightFieldKernelGaussianEllipsoidAPI
+UsdLightFieldKernelGaussianEllipsoidAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdLightFieldGaussianShapeAPI();
+        return UsdLightFieldKernelGaussianEllipsoidAPI();
     }
-    return UsdLightFieldGaussianShapeAPI(stage->GetPrimAtPath(path));
+    return UsdLightFieldKernelGaussianEllipsoidAPI(stage->GetPrimAtPath(path));
 }
 
 
 /* virtual */
-UsdSchemaKind UsdLightFieldGaussianShapeAPI::_GetSchemaKind() const
+UsdSchemaKind UsdLightFieldKernelGaussianEllipsoidAPI::_GetSchemaKind() const
 {
-    return UsdLightFieldGaussianShapeAPI::schemaKind;
+    return UsdLightFieldKernelGaussianEllipsoidAPI::schemaKind;
 }
 
 /* static */
 bool
-UsdLightFieldGaussianShapeAPI::CanApply(
+UsdLightFieldKernelGaussianEllipsoidAPI::CanApply(
     const UsdPrim &prim, std::string *whyNot)
 {
-    return prim.CanApplyAPI<UsdLightFieldGaussianShapeAPI>(whyNot);
+    return prim.CanApplyAPI<UsdLightFieldKernelGaussianEllipsoidAPI>(whyNot);
 }
 
 /* static */
-UsdLightFieldGaussianShapeAPI
-UsdLightFieldGaussianShapeAPI::Apply(const UsdPrim &prim)
+UsdLightFieldKernelGaussianEllipsoidAPI
+UsdLightFieldKernelGaussianEllipsoidAPI::Apply(const UsdPrim &prim)
 {
-    if (prim.ApplyAPI<UsdLightFieldGaussianShapeAPI>()) {
-        return UsdLightFieldGaussianShapeAPI(prim);
+    if (prim.ApplyAPI<UsdLightFieldKernelGaussianEllipsoidAPI>()) {
+        return UsdLightFieldKernelGaussianEllipsoidAPI(prim);
     }
-    return UsdLightFieldGaussianShapeAPI();
+    return UsdLightFieldKernelGaussianEllipsoidAPI();
 }
 
 /* static */
 const TfType &
-UsdLightFieldGaussianShapeAPI::_GetStaticTfType()
+UsdLightFieldKernelGaussianEllipsoidAPI::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdLightFieldGaussianShapeAPI>();
+    static TfType tfType = TfType::Find<UsdLightFieldKernelGaussianEllipsoidAPI>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdLightFieldGaussianShapeAPI::_IsTypedSchema()
+UsdLightFieldKernelGaussianEllipsoidAPI::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -80,14 +80,14 @@ UsdLightFieldGaussianShapeAPI::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdLightFieldGaussianShapeAPI::_GetTfType() const
+UsdLightFieldKernelGaussianEllipsoidAPI::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 /*static*/
 const TfTokenVector&
-UsdLightFieldGaussianShapeAPI::GetSchemaAttributeNames(bool includeInherited)
+UsdLightFieldKernelGaussianEllipsoidAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
     static TfTokenVector allNames =
@@ -97,6 +97,12 @@ UsdLightFieldGaussianShapeAPI::GetSchemaAttributeNames(bool includeInherited)
         return allNames;
     else
         return localNames;
+}
+
+UsdLightFieldKernelBaseAPI
+UsdLightFieldKernelGaussianEllipsoidAPI::LightFieldKernelBaseAPI() const
+{
+    return UsdLightFieldKernelBaseAPI(GetPrim());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

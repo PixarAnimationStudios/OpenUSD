@@ -103,15 +103,15 @@ UsdLightFieldSphericalHarmonicsAttributeAPI::CreateRadianceSphericalHarmonicsDeg
 }
 
 UsdAttribute
-UsdLightFieldSphericalHarmonicsAttributeAPI::GetPrimvarsRadianceSphericalHarmonicsCoefficientsAttr() const
+UsdLightFieldSphericalHarmonicsAttributeAPI::GetRadianceSphericalHarmonicsCoefficientsAttr() const
 {
-    return GetPrim().GetAttribute(UsdLightFieldTokens->primvarsRadianceSphericalHarmonicsCoefficients);
+    return GetPrim().GetAttribute(UsdLightFieldTokens->radianceSphericalHarmonicsCoefficients);
 }
 
 UsdAttribute
-UsdLightFieldSphericalHarmonicsAttributeAPI::CreatePrimvarsRadianceSphericalHarmonicsCoefficientsAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdLightFieldSphericalHarmonicsAttributeAPI::CreateRadianceSphericalHarmonicsCoefficientsAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLightFieldTokens->primvarsRadianceSphericalHarmonicsCoefficients,
+    return UsdSchemaBase::_CreateAttr(UsdLightFieldTokens->radianceSphericalHarmonicsCoefficients,
                        SdfValueTypeNames->Float3Array,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -120,15 +120,15 @@ UsdLightFieldSphericalHarmonicsAttributeAPI::CreatePrimvarsRadianceSphericalHarm
 }
 
 UsdAttribute
-UsdLightFieldSphericalHarmonicsAttributeAPI::GetPrimvarsRadianceSphericalHarmonicsCoefficientshAttr() const
+UsdLightFieldSphericalHarmonicsAttributeAPI::GetRadianceSphericalHarmonicsCoefficientshAttr() const
 {
-    return GetPrim().GetAttribute(UsdLightFieldTokens->primvarsRadianceSphericalHarmonicsCoefficientsh);
+    return GetPrim().GetAttribute(UsdLightFieldTokens->radianceSphericalHarmonicsCoefficientsh);
 }
 
 UsdAttribute
-UsdLightFieldSphericalHarmonicsAttributeAPI::CreatePrimvarsRadianceSphericalHarmonicsCoefficientshAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdLightFieldSphericalHarmonicsAttributeAPI::CreateRadianceSphericalHarmonicsCoefficientshAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLightFieldTokens->primvarsRadianceSphericalHarmonicsCoefficientsh,
+    return UsdSchemaBase::_CreateAttr(UsdLightFieldTokens->radianceSphericalHarmonicsCoefficientsh,
                        SdfValueTypeNames->Half3Array,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -154,8 +154,8 @@ UsdLightFieldSphericalHarmonicsAttributeAPI::GetSchemaAttributeNames(bool includ
 {
     static TfTokenVector localNames = {
         UsdLightFieldTokens->radianceSphericalHarmonicsDegree,
-        UsdLightFieldTokens->primvarsRadianceSphericalHarmonicsCoefficients,
-        UsdLightFieldTokens->primvarsRadianceSphericalHarmonicsCoefficientsh,
+        UsdLightFieldTokens->radianceSphericalHarmonicsCoefficients,
+        UsdLightFieldTokens->radianceSphericalHarmonicsCoefficientsh,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -166,6 +166,12 @@ UsdLightFieldSphericalHarmonicsAttributeAPI::GetSchemaAttributeNames(bool includ
         return allNames;
     else
         return localNames;
+}
+
+UsdLightFieldRadianceBaseAPI
+UsdLightFieldSphericalHarmonicsAttributeAPI::LightFieldRadianceBaseAPI() const
+{
+    return UsdLightFieldRadianceBaseAPI(GetPrim());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -120,16 +120,16 @@ _CreateRadianceSphericalHarmonicsDegreeAttr(UsdLightFieldParticleField_3DGaussia
 }
         
 static UsdAttribute
-_CreatePrimvarsRadianceSphericalHarmonicsCoefficientsAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
+_CreateRadianceSphericalHarmonicsCoefficientsAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreatePrimvarsRadianceSphericalHarmonicsCoefficientsAttr(
+    return self.CreateRadianceSphericalHarmonicsCoefficientsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
 }
         
 static UsdAttribute
-_CreatePrimvarsRadianceSphericalHarmonicsCoefficientshAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
+_CreateRadianceSphericalHarmonicsCoefficientshAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreatePrimvarsRadianceSphericalHarmonicsCoefficientshAttr(
+    return self.CreateRadianceSphericalHarmonicsCoefficientshAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Half3Array), writeSparsely);
 }
 } // anonymous namespace
@@ -194,7 +194,7 @@ void wrapUsdLightFieldParticleField_3DGaussianSplat()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
-        .def("PositionAttributeAPI", &This::PositionAttributeAPI)
+        .def("LightFieldPositionAttributeAPI", &This::LightFieldPositionAttributeAPI)
         
         .def("GetOrientationsAttr",
              &This::GetOrientationsAttr)
@@ -210,7 +210,7 @@ void wrapUsdLightFieldParticleField_3DGaussianSplat()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
-        .def("OrientationAttributeAPI", &This::OrientationAttributeAPI)
+        .def("LightFieldOrientationAttributeAPI", &This::LightFieldOrientationAttributeAPI)
         
         .def("GetScalesAttr",
              &This::GetScalesAttr)
@@ -226,7 +226,7 @@ void wrapUsdLightFieldParticleField_3DGaussianSplat()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
-        .def("ScaleAttributeAPI", &This::ScaleAttributeAPI)
+        .def("LightFieldScaleAttributeAPI", &This::LightFieldScaleAttributeAPI)
         
         .def("GetOpacitiesAttr",
              &This::GetOpacitiesAttr)
@@ -242,11 +242,9 @@ void wrapUsdLightFieldParticleField_3DGaussianSplat()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
-        .def("OpacityAttributeAPI", &This::OpacityAttributeAPI)
+        .def("LightFieldOpacityAttributeAPI", &This::LightFieldOpacityAttributeAPI)
 
-        .def("GaussianShapeAPI", &This::GaussianShapeAPI)
-
-        .def("GaussianFalloffFunctionAPI", &This::GaussianFalloffFunctionAPI)
+        .def("LightFieldKernelGaussianEllipsoidAPI", &This::LightFieldKernelGaussianEllipsoidAPI)
         
         .def("GetRadianceSphericalHarmonicsDegreeAttr",
              &This::GetRadianceSphericalHarmonicsDegreeAttr)
@@ -255,21 +253,21 @@ void wrapUsdLightFieldParticleField_3DGaussianSplat()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetPrimvarsRadianceSphericalHarmonicsCoefficientsAttr",
-             &This::GetPrimvarsRadianceSphericalHarmonicsCoefficientsAttr)
-        .def("CreatePrimvarsRadianceSphericalHarmonicsCoefficientsAttr",
-             &_CreatePrimvarsRadianceSphericalHarmonicsCoefficientsAttr,
+        .def("GetRadianceSphericalHarmonicsCoefficientsAttr",
+             &This::GetRadianceSphericalHarmonicsCoefficientsAttr)
+        .def("CreateRadianceSphericalHarmonicsCoefficientsAttr",
+             &_CreateRadianceSphericalHarmonicsCoefficientsAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetPrimvarsRadianceSphericalHarmonicsCoefficientshAttr",
-             &This::GetPrimvarsRadianceSphericalHarmonicsCoefficientshAttr)
-        .def("CreatePrimvarsRadianceSphericalHarmonicsCoefficientshAttr",
-             &_CreatePrimvarsRadianceSphericalHarmonicsCoefficientshAttr,
+        .def("GetRadianceSphericalHarmonicsCoefficientshAttr",
+             &This::GetRadianceSphericalHarmonicsCoefficientshAttr)
+        .def("CreateRadianceSphericalHarmonicsCoefficientshAttr",
+             &_CreateRadianceSphericalHarmonicsCoefficientshAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 
-        .def("SphericalHarmonicsAttributeAPI", &This::SphericalHarmonicsAttributeAPI)
+        .def("LightFieldSphericalHarmonicsAttributeAPI", &This::LightFieldSphericalHarmonicsAttributeAPI)
         .def("__repr__", ::_Repr)
     ;
 

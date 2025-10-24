@@ -16,29 +16,44 @@ over "GLOBAL" (
 }
 
 class ParticleField "ParticleField" (
-    doc = """A ParticleField prim is used as a base to desribe different types
+    doc = """A ParticleField prim is used as a base to describe different types
             of concrete ParticleField implementations, such as, but not limited
             to, 3D Gaussian Splats.
 
             It is a concrete prim type that can have different
-            ParticleField related appliedAPI schemas applied to it, to
+            ParticleField related applied schemas applied to it, to
             specialize its definition.
 
-            The ParticleField appliedAPI schemas represent the different
+            The ParticleField applied schemas represent the different
             features of a ParticleField, such as positions, orientations,
             scales, kernel shape, kernel fall-off functions and radiance.
 
-            Without atleast some of these appliedAPI schemas the ParticleField
+            Without at least some of these applied schemas the ParticleField
             is just an empty abstract container, but adding different
-            combinations of these appliedAPI schemas it allows us to describe a
+            combinations of these applied schemas allows us to describe a
             varying family of types of ParticleFields."""
     inherits = </Gprim>
 )
 {
 }
 
-class "PositionAttributeAPI" (
-    doc = """A ParticleField related appliedAPI schema that provides a position
+class "LightFieldPositionBaseAPI" (
+    doc = """Defines a base-class type applied schema that all applied schema
+            that provides the a ParticleField kernel will automatically apply.
+            The purpose of this base class is to allow validation to enforce
+            that a kernel definition is present for a ParticleField"""
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "PositionBaseAPI"
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+    }
+)
+{
+}
+
+class "LightFieldPositionAttributeAPI" (
+    doc = """A ParticleField related applied schema that provides a position
              attribute to define the locations of the particles.
 
              Attributes are provided in both `float` and `half` types for some
@@ -46,9 +61,19 @@ class "PositionAttributeAPI" (
              `float` version if available."""
     inherits = </APISchemaBase>
     customData = {
+        string className = "PositionAttributeAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+        string extraIncludes = """
+            #include "pxr/usd/usdLightField/positionBaseAPI.h"
+        """
+        token[] reflectedAPISchemas = [
+            "LightFieldPositionBaseAPI"
+        ]
     }
+    prepend apiSchemas = [
+        "LightFieldPositionBaseAPI"
+    ]
 )
 {
     point3f[] positions (
@@ -60,8 +85,8 @@ class "PositionAttributeAPI" (
     )
 }
 
-class "OrientationAttributeAPI" (
-    doc = """A ParticleField related appliedAPI schema that provides an
+class "LightFieldOrientationAttributeAPI" (
+    doc = """A ParticleField related applied schema that provides an
              orientation attribute to define the orientation of the particles.
 
              Attributes are provided in both `float` and `half` types for some
@@ -70,6 +95,7 @@ class "OrientationAttributeAPI" (
              """
     inherits = </APISchemaBase>
     customData = {
+        string className = "OrientationAttributeAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
     }
@@ -84,8 +110,8 @@ class "OrientationAttributeAPI" (
     )
 }
 
-class "ScaleAttributeAPI" (
-    doc = """A ParticleField related appliedAPI schema that provides a
+class "LightFieldScaleAttributeAPI" (
+    doc = """A ParticleField related applied schema that provides a
              scale attribute to define the scale of the particles.
 
              Attributes are provided in both `float` and `half` types for some
@@ -94,6 +120,7 @@ class "ScaleAttributeAPI" (
              """
     inherits = </APISchemaBase>
     customData = {
+        string className = "ScaleAttributeAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
     }
@@ -110,8 +137,8 @@ class "ScaleAttributeAPI" (
     )
 }
 
-class "OpacityAttributeAPI" (
-    doc = """A ParticleField related appliedAPI schema that provides a
+class "LightFieldOpacityAttributeAPI" (
+    doc = """A ParticleField related applied schema that provides a
              opacity attribute to define the opacity of the particles.
 
              The opacity here should be in the range [0, 1], and inline with the
@@ -126,6 +153,7 @@ class "OpacityAttributeAPI" (
              """
     inherits = </APISchemaBase>
     customData = {
+        string className = "OpacityAttributeAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
     }
@@ -140,12 +168,14 @@ class "OpacityAttributeAPI" (
     )
 }
 
-class "GaussianShapeAPI" (
-    doc = """Defines the Gaussian shape function.
-    This is really just a spherical region the shape of which is reshaped by
-    the associated scale data source."""
+class "LightFieldKernelBaseAPI" (
+    doc = """Defines a base-class type applied schema that all applied schema
+            that provides the a ParticleField kernel will automatically apply.
+            The purpose of this base class is to allow validation to enforce
+            that a kernel definition is present for a ParticleField"""
     inherits = </APISchemaBase>
     customData = {
+        string className = "KernelBaseAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
     }
@@ -153,30 +183,108 @@ class "GaussianShapeAPI" (
 {
 }
 
-# This is an example of an alternate shape. No concrete use-case for this
-# shape yet.
-class "TriangleShapeAPI" (
-    doc = """Defines a base shape as a equilateral triangle with given edge
-            length."""
+# All kernel API should full define their geometric representation, if not
+# defined with local attributes, then declaritvely in their documentation.
+class "LightFieldKernelGaussianEllipsoidAPI" (
+    doc = """Defines the gaussian ellipsoid kernel for a given ParticleField.
+
+    The kernel shape is a circular region that is reshaped by the associated
+    scale data source, and rotated by the orientation data source.
+
+    The falloff function for this kernel is the gaussian falloff function,
+    where the peak of the falloff function is defined by the opacity data
+    source.
+    """
     inherits = </APISchemaBase>
     customData = {
+        string className = "KernelGaussianEllipsoidAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+        string extraIncludes = """
+            #include "pxr/usd/usdLightField/kernelBaseAPI.h"
+        """
+        token[] reflectedAPISchemas = [
+            "LightFieldKernelBaseAPI"
+        ]
     }
+    prepend apiSchemas = [
+        "LightFieldKernelBaseAPI"
+    ]
 )
 {
-    float kernelShape:triangle:edgeLength = 1 (
+}
+
+class "LightFieldKernelGaussianTriangleAPI" (
+    doc = """Defines the gaussian triangle kernel for a given ParticleField.
+
+    The kernal shape is an equilateral triangle centered at the origin, with
+    the base of the triangle, parallel to the x-axis, and the apex of the
+    triangle on the y-axis.
+
+    The falloff function for this kernel is the gaussian falloff function,
+    where the peak of the falloff function is defined by the opacity data
+    source.
+    """
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "KernelGaussianTriangleAPI"
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+        string extraIncludes = """
+            #include "pxr/usd/usdLightField/kernelBaseAPI.h"
+        """
+        token[] reflectedAPISchemas = [
+            "LightFieldKernelBaseAPI"
+        ]
+    }
+    prepend apiSchemas = [
+        "LightFieldKernelBaseAPI"
+    ]
+)
+{
+    float kernel:triangle:edgeLength = 1 (
         doc = """The edge length of the equilateral triangle before any scaling
                 is applied."""
     )
 }
 
 
-class "GaussianFalloffFunctionAPI" (
-    doc = """Defines a Gaussian fall-off function. An opacity data source is
-            required and it used to control the gaussian peak."""
+class "LightFieldKernelConstantTriangleAPI" (
+    doc = """Defines the gaussian triangle kernel for a given ParticleField.
+
+     The kernal shape is an equilateral triangle centered at the origin, with
+     the base of the triangle, parallel to the x-axis, and the apex of the
+     triangle on the y-axis.
+
+     The falloff function for this kernel is constant and the value is directly
+     defined by the opacity data source."""
     inherits = </APISchemaBase>
     customData = {
+        string className = "KernelConstantTriangleAPI"
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+        string extraIncludes = """
+            #include "pxr/usd/usdLightField/kernelBaseAPI.h"
+        """
+        token[] reflectedAPISchemas = [
+            "LightFieldKernelBaseAPI"
+        ]
+    }
+    prepend apiSchemas = [
+        "LightFieldKernelBaseAPI"
+    ]
+)
+{
+}
+
+class "LightFieldRadianceBaseAPI" (
+    doc = """Defines a base-class type applied schema that all applied schema
+            that provides the a ParticleField kernel will automatically apply.
+            The purpose of this base class is to allow validation to enforce
+            that a kernel definition is present for a ParticleField"""
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "RadianceBaseAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
     }
@@ -184,25 +292,8 @@ class "GaussianFalloffFunctionAPI" (
 {
 }
 
-class "ImplicitShapeFalloffThresholdAPI" (
-    doc = """Defines a shape implicitly by providing a threshold value for the
-             fall-off function linked with the associated shape appliedAPI."""
-    inherits = </APISchemaBase>
-    customData = {
-        token apiSchemaType = "singleApply"
-        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
-    }
-)
-{
-    float kernelFalloff:implicitShapeFalloff:threshold = 0.01 (
-        doc = """The threshold value for the kernel's fall-off function that
-                defines the surface boundary."""
-    )
-}
-
-
-class "SphericalHarmonicsAttributeAPI" (
-    doc = """A ParticleField related appliedAPI schema that provides spherical
+class "LightFieldSphericalHarmonicsAttributeAPI" (
+    doc = """A ParticleField related applied schema that provides spherical
             harmonics attributes to define the radiance of the particles.
 
             Attributes are provided in both `float` and `half` types for some
@@ -210,15 +301,25 @@ class "SphericalHarmonicsAttributeAPI" (
             `float` version if available."""
     inherits = </APISchemaBase>
     customData = {
+        string className = "SphericalHarmonicsAttributeAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+        string extraIncludes = """
+            #include "pxr/usd/usdLightField/radianceBaseAPI.h"
+        """
+        token[] reflectedAPISchemas = [
+            "LightFieldRadianceBaseAPI"
+        ]
     }
+    prepend apiSchemas = [
+        "LightFieldRadianceBaseAPI"
+    ]
 )
 {
     uniform int radiance:sphericalHarmonicsDegree = 3 (
         doc = "The maximum degree of the spherical harmonics."
     )
-    float3[] primvars:radiance:sphericalHarmonicsCoefficients (
+    float3[] radiance:sphericalHarmonicsCoefficients (
         doc = """Flattened array of SH coefficients.
          The each of the different SH coefficients are not interleaved. The SH
          coefficents for a given particle are encoded in the array sequentially,
@@ -227,7 +328,7 @@ class "SphericalHarmonicsAttributeAPI" (
          so on. This means the elementSize metadata can be authored, but is
          dependent on the degree of the spherical harmonic data being applied."""
     )
-    half3[] primvars:radiance:sphericalHarmonicsCoefficientsh (
+    half3[] radiance:sphericalHarmonicsCoefficientsh (
         doc = """Flattened array of SH coefficients.
          The each of the different SH coefficients are not interleaved. The SH
          coefficents for a given particle are encoded in the array sequentially,
@@ -241,17 +342,30 @@ class "SphericalHarmonicsAttributeAPI" (
 }
 
 # TODO : this is just placeholder - I haven't fully digested the DBS paper yet.
-class "SphericalBetaAttributeAPI" (
-    doc = """A ParticleField related appliedAPI schema that provides spherical
+# I'm not proposing we merge this initially - its just here to demonstrate
+# other possible radiance contributions
+
+class "LightFieldSphericalBetaAttributeAPI" (
+    doc = """A ParticleField related applied schema that provides spherical
             beta attributes to define the radiance of the particles."""
     inherits = </APISchemaBase>
     customData = {
+        string className = "SphericalBetaAttributeAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+        string extraIncludes = """
+            #include "pxr/usd/usdLightField/radianceBaseAPI.h"
+        """
+        token[] reflectedAPISchemas = [
+            "LightFieldRadianceBaseAPI"
+        ]
     }
+    prepend apiSchemas = [
+        "LightFieldRadianceBaseAPI"
+    ]
 )
 {
-    float[] primvars:sphericalBeta:beta (
+    float[] sphericalBeta:beta (
         doc = "Beta parameter per-particle."
     )
 }
@@ -261,7 +375,7 @@ class ParticleField_3DGaussianSplat "ParticleField_3DGaussianSplat" (
             Gaussian Splats technique (https://arxiv.org/abs/2308.04079).
 
             It inherits from the ParticleField base prim, and has a set of
-            appliedAPI schema automatically applied to provide the required
+            applied schema automatically applied to provide the required
             attributes for original 3DGS.
 
             Also contains some rendering hints that can optionally inform
@@ -274,28 +388,25 @@ class ParticleField_3DGaussianSplat "ParticleField_3DGaussianSplat" (
             #include "pxr/usd/usdLightField/orientationAttributeAPI.h"
             #include "pxr/usd/usdLightField/scaleAttributeAPI.h"
             #include "pxr/usd/usdLightField/opacityAttributeAPI.h"
-            #include "pxr/usd/usdLightField/gaussianShapeAPI.h"
-            #include "pxr/usd/usdLightField/gaussianFalloffFunctionAPI.h"
+            #include "pxr/usd/usdLightField/kernelGaussianEllipsoidAPI.h"
             #include "pxr/usd/usdLightField/sphericalHarmonicsAttributeAPI.h"
         """
         token[] reflectedAPISchemas = [
-            "PositionAttributeAPI",
-            "OrientationAttributeAPI",
-            "ScaleAttributeAPI",
-            "OpacityAttributeAPI",
-            "GaussianShapeAPI",
-            "GaussianFalloffFunctionAPI",
-            "SphericalHarmonicsAttributeAPI"
+            "LightFieldPositionAttributeAPI",
+            "LightFieldOrientationAttributeAPI",
+            "LightFieldScaleAttributeAPI",
+            "LightFieldOpacityAttributeAPI",
+            "LightFieldKernelGaussianEllipsoidAPI",
+            "LightFieldSphericalHarmonicsAttributeAPI"
         ]
     }
     prepend apiSchemas = [
-        "PositionAttributeAPI",
-        "OrientationAttributeAPI",
-        "ScaleAttributeAPI",
-        "OpacityAttributeAPI",
-        "GaussianShapeAPI",
-        "GaussianFalloffFunctionAPI",
-        "SphericalHarmonicsAttributeAPI"
+        "LightFieldPositionAttributeAPI",
+        "LightFieldOrientationAttributeAPI",
+        "LightFieldScaleAttributeAPI",
+        "LightFieldOpacityAttributeAPI",
+        "LightFieldKernelGaussianEllipsoidAPI",
+        "LightFieldSphericalHarmonicsAttributeAPI"
     ]
 )
 {
@@ -328,7 +439,7 @@ class ParticleField_3DGaussianSplat "ParticleField_3DGaussianSplat" (
         is a hint for the metric used to sort the gaussians with respect to the
         camera.
 
-        'zDeph': The particles are sorted based on the z component of the
+        'zDepth': The particles are sorted based on the z component of the
         particle position when transformed in to the cameras local space.
 
         'cameraDistance': The particles are sorted based on the euclidian

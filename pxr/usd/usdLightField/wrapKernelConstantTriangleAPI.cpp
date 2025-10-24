@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/triangleShapeAPI.h"
+#include "pxr/usd/usdLightField/kernelConstantTriangleAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -32,49 +32,42 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-        
-static UsdAttribute
-_CreateKernelShapeTriangleEdgeLengthAttr(UsdLightFieldTriangleShapeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateKernelShapeTriangleEdgeLengthAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
 
 static std::string
-_Repr(const UsdLightFieldTriangleShapeAPI &self)
+_Repr(const UsdLightFieldKernelConstantTriangleAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdLightField.TriangleShapeAPI(%s)",
+        "UsdLightField.KernelConstantTriangleAPI(%s)",
         primRepr.c_str());
 }
 
-struct UsdLightFieldTriangleShapeAPI_CanApplyResult : 
+struct UsdLightFieldKernelConstantTriangleAPI_CanApplyResult : 
     public TfPyAnnotatedBoolResult<std::string>
 {
-    UsdLightFieldTriangleShapeAPI_CanApplyResult(bool val, std::string const &msg) :
+    UsdLightFieldKernelConstantTriangleAPI_CanApplyResult(bool val, std::string const &msg) :
         TfPyAnnotatedBoolResult<std::string>(val, msg) {}
 };
 
-static UsdLightFieldTriangleShapeAPI_CanApplyResult
+static UsdLightFieldKernelConstantTriangleAPI_CanApplyResult
 _WrapCanApply(const UsdPrim& prim)
 {
     std::string whyNot;
-    bool result = UsdLightFieldTriangleShapeAPI::CanApply(prim, &whyNot);
-    return UsdLightFieldTriangleShapeAPI_CanApplyResult(result, whyNot);
+    bool result = UsdLightFieldKernelConstantTriangleAPI::CanApply(prim, &whyNot);
+    return UsdLightFieldKernelConstantTriangleAPI_CanApplyResult(result, whyNot);
 }
 
 } // anonymous namespace
 
-void wrapUsdLightFieldTriangleShapeAPI()
+void wrapUsdLightFieldKernelConstantTriangleAPI()
 {
-    typedef UsdLightFieldTriangleShapeAPI This;
+    typedef UsdLightFieldKernelConstantTriangleAPI This;
 
-    UsdLightFieldTriangleShapeAPI_CanApplyResult::Wrap<UsdLightFieldTriangleShapeAPI_CanApplyResult>(
+    UsdLightFieldKernelConstantTriangleAPI_CanApplyResult::Wrap<UsdLightFieldKernelConstantTriangleAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
-        cls("TriangleShapeAPI");
+        cls("KernelConstantTriangleAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -102,14 +95,9 @@ void wrapUsdLightFieldTriangleShapeAPI()
 
         .def(!self)
 
-        
-        .def("GetKernelShapeTriangleEdgeLengthAttr",
-             &This::GetKernelShapeTriangleEdgeLengthAttr)
-        .def("CreateKernelShapeTriangleEdgeLengthAttr",
-             &_CreateKernelShapeTriangleEdgeLengthAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
+
+        .def("LightFieldKernelBaseAPI", &This::LightFieldKernelBaseAPI)
         .def("__repr__", ::_Repr)
     ;
 

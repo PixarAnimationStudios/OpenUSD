@@ -49,14 +49,10 @@ struct UsdLightFieldTokensType {
     /// 
     /// Possible value for UsdLightFieldParticleField_3DGaussianSplat::GetSortingModeHintAttr()
     const TfToken cameraDistance;
-    /// \brief "kernelFalloff:implicitShapeFalloff:threshold"
+    /// \brief "kernel:triangle:edgeLength"
     /// 
-    /// UsdLightFieldImplicitShapeFalloffThresholdAPI
-    const TfToken kernelFalloffImplicitShapeFalloffThreshold;
-    /// \brief "kernelShape:triangle:edgeLength"
-    /// 
-    /// UsdLightFieldTriangleShapeAPI
-    const TfToken kernelShapeTriangleEdgeLength;
+    /// UsdLightFieldKernelGaussianTriangleAPI
+    const TfToken kernelTriangleEdgeLength;
     /// \brief "opacities"
     /// 
     /// UsdLightFieldOpacityAttributeAPI
@@ -85,22 +81,18 @@ struct UsdLightFieldTokensType {
     /// 
     /// UsdLightFieldPositionAttributeAPI
     const TfToken positionsh;
-    /// \brief "primvars:radiance:sphericalHarmonicsCoefficients"
-    /// 
-    /// UsdLightFieldSphericalHarmonicsAttributeAPI
-    const TfToken primvarsRadianceSphericalHarmonicsCoefficients;
-    /// \brief "primvars:radiance:sphericalHarmonicsCoefficientsh"
-    /// 
-    /// UsdLightFieldSphericalHarmonicsAttributeAPI
-    const TfToken primvarsRadianceSphericalHarmonicsCoefficientsh;
-    /// \brief "primvars:sphericalBeta:beta"
-    /// 
-    /// UsdLightFieldSphericalBetaAttributeAPI
-    const TfToken primvarsSphericalBetaBeta;
     /// \brief "projectionModeHint"
     /// 
     /// UsdLightFieldParticleField_3DGaussianSplat
     const TfToken projectionModeHint;
+    /// \brief "radiance:sphericalHarmonicsCoefficients"
+    /// 
+    /// UsdLightFieldSphericalHarmonicsAttributeAPI
+    const TfToken radianceSphericalHarmonicsCoefficients;
+    /// \brief "radiance:sphericalHarmonicsCoefficientsh"
+    /// 
+    /// UsdLightFieldSphericalHarmonicsAttributeAPI
+    const TfToken radianceSphericalHarmonicsCoefficientsh;
     /// \brief "radiance:sphericalHarmonicsDegree"
     /// 
     /// UsdLightFieldSphericalHarmonicsAttributeAPI
@@ -117,6 +109,10 @@ struct UsdLightFieldTokensType {
     /// 
     /// UsdLightFieldParticleField_3DGaussianSplat
     const TfToken sortingModeHint;
+    /// \brief "sphericalBeta:beta"
+    /// 
+    /// UsdLightFieldSphericalBetaAttributeAPI
+    const TfToken sphericalBetaBeta;
     /// \brief "tangential"
     /// 
     /// Possible value for UsdLightFieldParticleField_3DGaussianSplat::GetProjectionModeHintAttr()
@@ -125,26 +121,50 @@ struct UsdLightFieldTokensType {
     /// 
     /// Fallback value for UsdLightFieldParticleField_3DGaussianSplat::GetSortingModeHintAttr()
     const TfToken zDepth;
-    /// \brief "GaussianFalloffFunctionAPI"
+    /// \brief "LightFieldKernelBaseAPI"
     /// 
-    /// Schema identifer and family for UsdLightFieldGaussianFalloffFunctionAPI
-    const TfToken GaussianFalloffFunctionAPI;
-    /// \brief "GaussianShapeAPI"
+    /// Schema identifer and family for UsdLightFieldKernelBaseAPI
+    const TfToken LightFieldKernelBaseAPI;
+    /// \brief "LightFieldKernelConstantTriangleAPI"
     /// 
-    /// Schema identifer and family for UsdLightFieldGaussianShapeAPI
-    const TfToken GaussianShapeAPI;
-    /// \brief "ImplicitShapeFalloffThresholdAPI"
+    /// Schema identifer and family for UsdLightFieldKernelConstantTriangleAPI
+    const TfToken LightFieldKernelConstantTriangleAPI;
+    /// \brief "LightFieldKernelGaussianEllipsoidAPI"
     /// 
-    /// Schema identifer and family for UsdLightFieldImplicitShapeFalloffThresholdAPI
-    const TfToken ImplicitShapeFalloffThresholdAPI;
-    /// \brief "OpacityAttributeAPI"
+    /// Schema identifer and family for UsdLightFieldKernelGaussianEllipsoidAPI
+    const TfToken LightFieldKernelGaussianEllipsoidAPI;
+    /// \brief "LightFieldKernelGaussianTriangleAPI"
+    /// 
+    /// Schema identifer and family for UsdLightFieldKernelGaussianTriangleAPI
+    const TfToken LightFieldKernelGaussianTriangleAPI;
+    /// \brief "LightFieldOpacityAttributeAPI"
     /// 
     /// Schema identifer and family for UsdLightFieldOpacityAttributeAPI
-    const TfToken OpacityAttributeAPI;
-    /// \brief "OrientationAttributeAPI"
+    const TfToken LightFieldOpacityAttributeAPI;
+    /// \brief "LightFieldOrientationAttributeAPI"
     /// 
     /// Schema identifer and family for UsdLightFieldOrientationAttributeAPI
-    const TfToken OrientationAttributeAPI;
+    const TfToken LightFieldOrientationAttributeAPI;
+    /// \brief "LightFieldPositionAttributeAPI"
+    /// 
+    /// Schema identifer and family for UsdLightFieldPositionAttributeAPI
+    const TfToken LightFieldPositionAttributeAPI;
+    /// \brief "LightFieldRadianceBaseAPI"
+    /// 
+    /// Schema identifer and family for UsdLightFieldRadianceBaseAPI
+    const TfToken LightFieldRadianceBaseAPI;
+    /// \brief "LightFieldScaleAttributeAPI"
+    /// 
+    /// Schema identifer and family for UsdLightFieldScaleAttributeAPI
+    const TfToken LightFieldScaleAttributeAPI;
+    /// \brief "LightFieldSphericalBetaAttributeAPI"
+    /// 
+    /// Schema identifer and family for UsdLightFieldSphericalBetaAttributeAPI
+    const TfToken LightFieldSphericalBetaAttributeAPI;
+    /// \brief "LightFieldSphericalHarmonicsAttributeAPI"
+    /// 
+    /// Schema identifer and family for UsdLightFieldSphericalHarmonicsAttributeAPI
+    const TfToken LightFieldSphericalHarmonicsAttributeAPI;
     /// \brief "ParticleField"
     /// 
     /// Schema identifer and family for UsdLightFieldParticleField
@@ -153,26 +173,6 @@ struct UsdLightFieldTokensType {
     /// 
     /// Schema identifer and family for UsdLightFieldParticleField_3DGaussianSplat
     const TfToken ParticleField_3DGaussianSplat;
-    /// \brief "PositionAttributeAPI"
-    /// 
-    /// Schema identifer and family for UsdLightFieldPositionAttributeAPI
-    const TfToken PositionAttributeAPI;
-    /// \brief "ScaleAttributeAPI"
-    /// 
-    /// Schema identifer and family for UsdLightFieldScaleAttributeAPI
-    const TfToken ScaleAttributeAPI;
-    /// \brief "SphericalBetaAttributeAPI"
-    /// 
-    /// Schema identifer and family for UsdLightFieldSphericalBetaAttributeAPI
-    const TfToken SphericalBetaAttributeAPI;
-    /// \brief "SphericalHarmonicsAttributeAPI"
-    /// 
-    /// Schema identifer and family for UsdLightFieldSphericalHarmonicsAttributeAPI
-    const TfToken SphericalHarmonicsAttributeAPI;
-    /// \brief "TriangleShapeAPI"
-    /// 
-    /// Schema identifer and family for UsdLightFieldTriangleShapeAPI
-    const TfToken TriangleShapeAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

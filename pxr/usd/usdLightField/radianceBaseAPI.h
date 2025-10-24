@@ -4,17 +4,16 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef USDLIGHTFIELD_GENERATED_IMPLICITSHAPEFALLOFFTHRESHOLDAPI_H
-#define USDLIGHTFIELD_GENERATED_IMPLICITSHAPEFALLOFFTHRESHOLDAPI_H
+#ifndef USDLIGHTFIELD_GENERATED_RADIANCEBASEAPI_H
+#define USDLIGHTFIELD_GENERATED_RADIANCEBASEAPI_H
 
-/// \file usdLightField/implicitShapeFalloffThresholdAPI.h
+/// \file usdLightField/radianceBaseAPI.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLightField/api.h"
 #include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usdLightField/tokens.h"
 
 #include "pxr/base/vt/value.h"
 
@@ -30,15 +29,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// IMPLICITSHAPEFALLOFFTHRESHOLDAPI                                           //
+// LIGHTFIELDRADIANCEBASEAPI                                                  //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdLightFieldImplicitShapeFalloffThresholdAPI
+/// \class UsdLightFieldRadianceBaseAPI
 ///
-/// Defines a shape implicitly by providing a threshold value for the
-/// fall-off function linked with the associated shape appliedAPI.
+/// Defines a base-class type applied schema that all applied schema
+/// that provides the a ParticleField kernel will automatically apply.
+/// The purpose of this base class is to allow validation to enforce
+/// that a kernel definition is present for a ParticleField
 ///
-class UsdLightFieldImplicitShapeFalloffThresholdAPI : public UsdAPISchemaBase
+class UsdLightFieldRadianceBaseAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -46,26 +47,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::SingleApplyAPI;
 
-    /// Construct a UsdLightFieldImplicitShapeFalloffThresholdAPI on UsdPrim \p prim .
-    /// Equivalent to UsdLightFieldImplicitShapeFalloffThresholdAPI::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdLightFieldRadianceBaseAPI on UsdPrim \p prim .
+    /// Equivalent to UsdLightFieldRadianceBaseAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdLightFieldImplicitShapeFalloffThresholdAPI(const UsdPrim& prim=UsdPrim())
+    explicit UsdLightFieldRadianceBaseAPI(const UsdPrim& prim=UsdPrim())
         : UsdAPISchemaBase(prim)
     {
     }
 
-    /// Construct a UsdLightFieldImplicitShapeFalloffThresholdAPI on the prim held by \p schemaObj .
-    /// Should be preferred over UsdLightFieldImplicitShapeFalloffThresholdAPI(schemaObj.GetPrim()),
+    /// Construct a UsdLightFieldRadianceBaseAPI on the prim held by \p schemaObj .
+    /// Should be preferred over UsdLightFieldRadianceBaseAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdLightFieldImplicitShapeFalloffThresholdAPI(const UsdSchemaBase& schemaObj)
+    explicit UsdLightFieldRadianceBaseAPI(const UsdSchemaBase& schemaObj)
         : UsdAPISchemaBase(schemaObj)
     {
     }
 
     /// Destructor.
     USDLIGHTFIELD_API
-    virtual ~UsdLightFieldImplicitShapeFalloffThresholdAPI();
+    virtual ~UsdLightFieldRadianceBaseAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -74,17 +75,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdLightFieldImplicitShapeFalloffThresholdAPI holding the prim adhering to this
+    /// Return a UsdLightFieldRadianceBaseAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdLightFieldImplicitShapeFalloffThresholdAPI(stage->GetPrimAtPath(path));
+    /// UsdLightFieldRadianceBaseAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDLIGHTFIELD_API
-    static UsdLightFieldImplicitShapeFalloffThresholdAPI
+    static UsdLightFieldRadianceBaseAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
@@ -109,11 +110,11 @@ public:
     CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "ImplicitShapeFalloffThresholdAPI" to the 
+    /// This information is stored by adding "LightFieldRadianceBaseAPI" to the 
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     /// 
-    /// \return A valid UsdLightFieldImplicitShapeFalloffThresholdAPI object is returned upon success. 
-    /// An invalid (or empty) UsdLightFieldImplicitShapeFalloffThresholdAPI object is returned upon 
+    /// \return A valid UsdLightFieldRadianceBaseAPI object is returned upon success. 
+    /// An invalid (or empty) UsdLightFieldRadianceBaseAPI object is returned upon 
     /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
     /// resulting in failure. 
     /// 
@@ -124,7 +125,7 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDLIGHTFIELD_API
-    static UsdLightFieldImplicitShapeFalloffThresholdAPI 
+    static UsdLightFieldRadianceBaseAPI 
     Apply(const UsdPrim &prim);
 
 protected:
@@ -145,29 +146,6 @@ private:
     // override SchemaBase virtuals.
     USDLIGHTFIELD_API
     const TfType &_GetTfType() const override;
-
-public:
-    // --------------------------------------------------------------------- //
-    // KERNELFALLOFFIMPLICITSHAPEFALLOFFTHRESHOLD 
-    // --------------------------------------------------------------------- //
-    /// The threshold value for the kernel's fall-off function that
-    /// defines the surface boundary.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `float kernelFalloff:implicitShapeFalloff:threshold = 0.01` |
-    /// | C++ Type | float |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
-    USDLIGHTFIELD_API
-    UsdAttribute GetKernelFalloffImplicitShapeFalloffThresholdAttr() const;
-
-    /// See GetKernelFalloffImplicitShapeFalloffThresholdAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDLIGHTFIELD_API
-    UsdAttribute CreateKernelFalloffImplicitShapeFalloffThresholdAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //

@@ -86,15 +86,15 @@ UsdLightFieldSphericalBetaAttributeAPI::_GetTfType() const
 }
 
 UsdAttribute
-UsdLightFieldSphericalBetaAttributeAPI::GetPrimvarsSphericalBetaBetaAttr() const
+UsdLightFieldSphericalBetaAttributeAPI::GetSphericalBetaBetaAttr() const
 {
-    return GetPrim().GetAttribute(UsdLightFieldTokens->primvarsSphericalBetaBeta);
+    return GetPrim().GetAttribute(UsdLightFieldTokens->sphericalBetaBeta);
 }
 
 UsdAttribute
-UsdLightFieldSphericalBetaAttributeAPI::CreatePrimvarsSphericalBetaBetaAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdLightFieldSphericalBetaAttributeAPI::CreateSphericalBetaBetaAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLightFieldTokens->primvarsSphericalBetaBeta,
+    return UsdSchemaBase::_CreateAttr(UsdLightFieldTokens->sphericalBetaBeta,
                        SdfValueTypeNames->FloatArray,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -119,7 +119,7 @@ const TfTokenVector&
 UsdLightFieldSphericalBetaAttributeAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLightFieldTokens->primvarsSphericalBetaBeta,
+        UsdLightFieldTokens->sphericalBetaBeta,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -130,6 +130,12 @@ UsdLightFieldSphericalBetaAttributeAPI::GetSchemaAttributeNames(bool includeInhe
         return allNames;
     else
         return localNames;
+}
+
+UsdLightFieldRadianceBaseAPI
+UsdLightFieldSphericalBetaAttributeAPI::LightFieldRadianceBaseAPI() const
+{
+    return UsdLightFieldRadianceBaseAPI(GetPrim());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -20,8 +20,7 @@
             #include "pxr/usd/usdLightField/orientationAttributeAPI.h"
             #include "pxr/usd/usdLightField/scaleAttributeAPI.h"
             #include "pxr/usd/usdLightField/opacityAttributeAPI.h"
-            #include "pxr/usd/usdLightField/gaussianShapeAPI.h"
-            #include "pxr/usd/usdLightField/gaussianFalloffFunctionAPI.h"
+            #include "pxr/usd/usdLightField/kernelGaussianEllipsoidAPI.h"
             #include "pxr/usd/usdLightField/sphericalHarmonicsAttributeAPI.h"
         
 
@@ -48,7 +47,7 @@ class SdfAssetPath;
 /// Gaussian Splats technique (https://arxiv.org/abs/2308.04079).
 /// 
 /// It inherits from the ParticleField base prim, and has a set of
-/// appliedAPI schema automatically applied to provide the required
+/// applied schema automatically applied to provide the required
 /// attributes for original 3DGS.
 /// 
 /// Also contains some rendering hints that can optionally inform
@@ -201,7 +200,7 @@ public:
     /// is a hint for the metric used to sort the gaussians with respect to the
     /// camera.
     /// 
-    /// 'zDeph': The particles are sorted based on the z component of the
+    /// 'zDepth': The particles are sorted based on the z component of the
     /// particle position when transformed in to the cameras local space.
     /// 
     /// 'cameraDistance': The particles are sorted based on the euclidian
@@ -226,7 +225,7 @@ public:
     UsdAttribute CreateSortingModeHintAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
-    /// \name PositionAttributeAPI
+    /// \name LightFieldPositionAttributeAPI
     /// 
     /// Convenience accessors for the built-in UsdLightFieldPositionAttributeAPI
     /// 
@@ -235,7 +234,7 @@ public:
     /// Constructs and returns a UsdLightFieldPositionAttributeAPI object.
     /// Use this object to access UsdLightFieldPositionAttributeAPI custom methods.
     USDLIGHTFIELD_API
-    UsdLightFieldPositionAttributeAPI PositionAttributeAPI() const;
+    UsdLightFieldPositionAttributeAPI LightFieldPositionAttributeAPI() const;
 
     /// See UsdLightFieldPositionAttributeAPI::GetPositionsAttr().
     USDLIGHTFIELD_API
@@ -259,7 +258,7 @@ public:
 
     /// @}
 public:
-    /// \name OrientationAttributeAPI
+    /// \name LightFieldOrientationAttributeAPI
     /// 
     /// Convenience accessors for the built-in UsdLightFieldOrientationAttributeAPI
     /// 
@@ -268,7 +267,7 @@ public:
     /// Constructs and returns a UsdLightFieldOrientationAttributeAPI object.
     /// Use this object to access UsdLightFieldOrientationAttributeAPI custom methods.
     USDLIGHTFIELD_API
-    UsdLightFieldOrientationAttributeAPI OrientationAttributeAPI() const;
+    UsdLightFieldOrientationAttributeAPI LightFieldOrientationAttributeAPI() const;
 
     /// See UsdLightFieldOrientationAttributeAPI::GetOrientationsAttr().
     USDLIGHTFIELD_API
@@ -292,7 +291,7 @@ public:
 
     /// @}
 public:
-    /// \name ScaleAttributeAPI
+    /// \name LightFieldScaleAttributeAPI
     /// 
     /// Convenience accessors for the built-in UsdLightFieldScaleAttributeAPI
     /// 
@@ -301,7 +300,7 @@ public:
     /// Constructs and returns a UsdLightFieldScaleAttributeAPI object.
     /// Use this object to access UsdLightFieldScaleAttributeAPI custom methods.
     USDLIGHTFIELD_API
-    UsdLightFieldScaleAttributeAPI ScaleAttributeAPI() const;
+    UsdLightFieldScaleAttributeAPI LightFieldScaleAttributeAPI() const;
 
     /// See UsdLightFieldScaleAttributeAPI::GetScalesAttr().
     USDLIGHTFIELD_API
@@ -325,7 +324,7 @@ public:
 
     /// @}
 public:
-    /// \name OpacityAttributeAPI
+    /// \name LightFieldOpacityAttributeAPI
     /// 
     /// Convenience accessors for the built-in UsdLightFieldOpacityAttributeAPI
     /// 
@@ -334,7 +333,7 @@ public:
     /// Constructs and returns a UsdLightFieldOpacityAttributeAPI object.
     /// Use this object to access UsdLightFieldOpacityAttributeAPI custom methods.
     USDLIGHTFIELD_API
-    UsdLightFieldOpacityAttributeAPI OpacityAttributeAPI() const;
+    UsdLightFieldOpacityAttributeAPI LightFieldOpacityAttributeAPI() const;
 
     /// See UsdLightFieldOpacityAttributeAPI::GetOpacitiesAttr().
     USDLIGHTFIELD_API
@@ -358,33 +357,20 @@ public:
 
     /// @}
 public:
-    /// \name GaussianShapeAPI
+    /// \name LightFieldKernelGaussianEllipsoidAPI
     /// 
-    /// Convenience accessors for the built-in UsdLightFieldGaussianShapeAPI
-    /// 
-    /// @{
-
-    /// Constructs and returns a UsdLightFieldGaussianShapeAPI object.
-    /// Use this object to access UsdLightFieldGaussianShapeAPI custom methods.
-    USDLIGHTFIELD_API
-    UsdLightFieldGaussianShapeAPI GaussianShapeAPI() const;
-
-    /// @}
-public:
-    /// \name GaussianFalloffFunctionAPI
-    /// 
-    /// Convenience accessors for the built-in UsdLightFieldGaussianFalloffFunctionAPI
+    /// Convenience accessors for the built-in UsdLightFieldKernelGaussianEllipsoidAPI
     /// 
     /// @{
 
-    /// Constructs and returns a UsdLightFieldGaussianFalloffFunctionAPI object.
-    /// Use this object to access UsdLightFieldGaussianFalloffFunctionAPI custom methods.
+    /// Constructs and returns a UsdLightFieldKernelGaussianEllipsoidAPI object.
+    /// Use this object to access UsdLightFieldKernelGaussianEllipsoidAPI custom methods.
     USDLIGHTFIELD_API
-    UsdLightFieldGaussianFalloffFunctionAPI GaussianFalloffFunctionAPI() const;
+    UsdLightFieldKernelGaussianEllipsoidAPI LightFieldKernelGaussianEllipsoidAPI() const;
 
     /// @}
 public:
-    /// \name SphericalHarmonicsAttributeAPI
+    /// \name LightFieldSphericalHarmonicsAttributeAPI
     /// 
     /// Convenience accessors for the built-in UsdLightFieldSphericalHarmonicsAttributeAPI
     /// 
@@ -393,7 +379,7 @@ public:
     /// Constructs and returns a UsdLightFieldSphericalHarmonicsAttributeAPI object.
     /// Use this object to access UsdLightFieldSphericalHarmonicsAttributeAPI custom methods.
     USDLIGHTFIELD_API
-    UsdLightFieldSphericalHarmonicsAttributeAPI SphericalHarmonicsAttributeAPI() const;
+    UsdLightFieldSphericalHarmonicsAttributeAPI LightFieldSphericalHarmonicsAttributeAPI() const;
 
     /// See UsdLightFieldSphericalHarmonicsAttributeAPI::GetRadianceSphericalHarmonicsDegreeAttr().
     USDLIGHTFIELD_API
@@ -405,23 +391,23 @@ public:
         VtValue const &defaultValue = VtValue(), 
         bool writeSparsely=false) const;
 
-    /// See UsdLightFieldSphericalHarmonicsAttributeAPI::GetPrimvarsRadianceSphericalHarmonicsCoefficientsAttr().
+    /// See UsdLightFieldSphericalHarmonicsAttributeAPI::GetRadianceSphericalHarmonicsCoefficientsAttr().
     USDLIGHTFIELD_API
-    UsdAttribute GetPrimvarsRadianceSphericalHarmonicsCoefficientsAttr() const;
+    UsdAttribute GetRadianceSphericalHarmonicsCoefficientsAttr() const;
 
-    /// See UsdLightFieldSphericalHarmonicsAttributeAPI::CreatePrimvarsRadianceSphericalHarmonicsCoefficientsAttr().
+    /// See UsdLightFieldSphericalHarmonicsAttributeAPI::CreateRadianceSphericalHarmonicsCoefficientsAttr().
     USDLIGHTFIELD_API
-    UsdAttribute CreatePrimvarsRadianceSphericalHarmonicsCoefficientsAttr(
+    UsdAttribute CreateRadianceSphericalHarmonicsCoefficientsAttr(
         VtValue const &defaultValue = VtValue(), 
         bool writeSparsely=false) const;
 
-    /// See UsdLightFieldSphericalHarmonicsAttributeAPI::GetPrimvarsRadianceSphericalHarmonicsCoefficientshAttr().
+    /// See UsdLightFieldSphericalHarmonicsAttributeAPI::GetRadianceSphericalHarmonicsCoefficientshAttr().
     USDLIGHTFIELD_API
-    UsdAttribute GetPrimvarsRadianceSphericalHarmonicsCoefficientshAttr() const;
+    UsdAttribute GetRadianceSphericalHarmonicsCoefficientshAttr() const;
 
-    /// See UsdLightFieldSphericalHarmonicsAttributeAPI::CreatePrimvarsRadianceSphericalHarmonicsCoefficientshAttr().
+    /// See UsdLightFieldSphericalHarmonicsAttributeAPI::CreateRadianceSphericalHarmonicsCoefficientshAttr().
     USDLIGHTFIELD_API
-    UsdAttribute CreatePrimvarsRadianceSphericalHarmonicsCoefficientshAttr(
+    UsdAttribute CreateRadianceSphericalHarmonicsCoefficientshAttr(
         VtValue const &defaultValue = VtValue(), 
         bool writeSparsely=false) const;
 

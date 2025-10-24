@@ -22,4 +22,7 @@ pxr_library(usdLightField
 
     PYMODULE_FILES
         __init__.py
+
+    DOXYGEN_FILES
+        overview.dox
 )

@@ -30,12 +30,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// OPACITYATTRIBUTEAPI                                                        //
+// LIGHTFIELDOPACITYATTRIBUTEAPI                                              //
 // -------------------------------------------------------------------------- //
 
 /// \class UsdLightFieldOpacityAttributeAPI
 ///
-/// A ParticleField related appliedAPI schema that provides a
+/// A ParticleField related applied schema that provides a
 /// opacity attribute to define the opacity of the particles.
 /// 
 /// The opacity here should be in the range [0, 1], and inline with the
@@ -120,7 +120,7 @@ public:
     CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "OpacityAttributeAPI" to the 
+    /// This information is stored by adding "LightFieldOpacityAttributeAPI" to the 
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     /// 
     /// \return A valid UsdLightFieldOpacityAttributeAPI object is returned upon success. 

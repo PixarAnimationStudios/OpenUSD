@@ -4,17 +4,19 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef USDLIGHTFIELD_GENERATED_POSITIONATTRIBUTEAPI_H
-#define USDLIGHTFIELD_GENERATED_POSITIONATTRIBUTEAPI_H
+#ifndef USDLIGHTFIELD_GENERATED_KERNELGAUSSIANELLIPSOIDAPI_H
+#define USDLIGHTFIELD_GENERATED_KERNELGAUSSIANELLIPSOIDAPI_H
 
-/// \file usdLightField/positionAttributeAPI.h
+/// \file usdLightField/kernelGaussianEllipsoidAPI.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLightField/api.h"
 #include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usdLightField/tokens.h"
+
+            #include "pxr/usd/usdLightField/kernelBaseAPI.h"
+        
 
 #include "pxr/base/vt/value.h"
 
@@ -30,19 +32,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// LIGHTFIELDPOSITIONATTRIBUTEAPI                                             //
+// LIGHTFIELDKERNELGAUSSIANELLIPSOIDAPI                                       //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdLightFieldPositionAttributeAPI
+/// \class UsdLightFieldKernelGaussianEllipsoidAPI
 ///
-/// A ParticleField related applied schema that provides a position
-/// attribute to define the locations of the particles.
+/// Defines the gaussian ellipsoid kernel for a given ParticleField.
 /// 
-/// Attributes are provided in both `float` and `half` types for some
-/// easy data footprint affordance, data consumers should prefer
-/// `float` version if available.
+/// The kernel shape is a circular region that is reshaped by the associated
+/// scale data source, and rotated by the orientation data source.
+/// 
+/// The falloff function for this kernel is the gaussian falloff function,
+/// where the peak of the falloff function is defined by the opacity data
+/// source.
+/// 
 ///
-class UsdLightFieldPositionAttributeAPI : public UsdAPISchemaBase
+class UsdLightFieldKernelGaussianEllipsoidAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -50,26 +55,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::SingleApplyAPI;
 
-    /// Construct a UsdLightFieldPositionAttributeAPI on UsdPrim \p prim .
-    /// Equivalent to UsdLightFieldPositionAttributeAPI::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdLightFieldKernelGaussianEllipsoidAPI on UsdPrim \p prim .
+    /// Equivalent to UsdLightFieldKernelGaussianEllipsoidAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdLightFieldPositionAttributeAPI(const UsdPrim& prim=UsdPrim())
+    explicit UsdLightFieldKernelGaussianEllipsoidAPI(const UsdPrim& prim=UsdPrim())
         : UsdAPISchemaBase(prim)
     {
     }
 
-    /// Construct a UsdLightFieldPositionAttributeAPI on the prim held by \p schemaObj .
-    /// Should be preferred over UsdLightFieldPositionAttributeAPI(schemaObj.GetPrim()),
+    /// Construct a UsdLightFieldKernelGaussianEllipsoidAPI on the prim held by \p schemaObj .
+    /// Should be preferred over UsdLightFieldKernelGaussianEllipsoidAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdLightFieldPositionAttributeAPI(const UsdSchemaBase& schemaObj)
+    explicit UsdLightFieldKernelGaussianEllipsoidAPI(const UsdSchemaBase& schemaObj)
         : UsdAPISchemaBase(schemaObj)
     {
     }
 
     /// Destructor.
     USDLIGHTFIELD_API
-    virtual ~UsdLightFieldPositionAttributeAPI();
+    virtual ~UsdLightFieldKernelGaussianEllipsoidAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -78,17 +83,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdLightFieldPositionAttributeAPI holding the prim adhering to this
+    /// Return a UsdLightFieldKernelGaussianEllipsoidAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdLightFieldPositionAttributeAPI(stage->GetPrimAtPath(path));
+    /// UsdLightFieldKernelGaussianEllipsoidAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDLIGHTFIELD_API
-    static UsdLightFieldPositionAttributeAPI
+    static UsdLightFieldKernelGaussianEllipsoidAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
@@ -113,11 +118,11 @@ public:
     CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "LightFieldPositionAttributeAPI" to the 
+    /// This information is stored by adding "LightFieldKernelGaussianEllipsoidAPI" to the 
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     /// 
-    /// \return A valid UsdLightFieldPositionAttributeAPI object is returned upon success. 
-    /// An invalid (or empty) UsdLightFieldPositionAttributeAPI object is returned upon 
+    /// \return A valid UsdLightFieldKernelGaussianEllipsoidAPI object is returned upon success. 
+    /// An invalid (or empty) UsdLightFieldKernelGaussianEllipsoidAPI object is returned upon 
     /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
     /// resulting in failure. 
     /// 
@@ -128,7 +133,7 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDLIGHTFIELD_API
-    static UsdLightFieldPositionAttributeAPI 
+    static UsdLightFieldKernelGaussianEllipsoidAPI 
     Apply(const UsdPrim &prim);
 
 protected:
@@ -151,50 +156,18 @@ private:
     const TfType &_GetTfType() const override;
 
 public:
-    // --------------------------------------------------------------------- //
-    // POSITIONS 
-    // --------------------------------------------------------------------- //
-    /// Defines the position for each particle in local space.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `point3f[] positions` |
-    /// | C++ Type | VtArray<GfVec3f> |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Point3fArray |
-    USDLIGHTFIELD_API
-    UsdAttribute GetPositionsAttr() const;
+    /// \name LightFieldKernelBaseAPI
+    /// 
+    /// Convenience accessors for the built-in UsdLightFieldKernelBaseAPI
+    /// 
+    /// @{
 
-    /// See GetPositionsAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
+    /// Constructs and returns a UsdLightFieldKernelBaseAPI object.
+    /// Use this object to access UsdLightFieldKernelBaseAPI custom methods.
     USDLIGHTFIELD_API
-    UsdAttribute CreatePositionsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdLightFieldKernelBaseAPI LightFieldKernelBaseAPI() const;
 
-public:
-    // --------------------------------------------------------------------- //
-    // POSITIONSH 
-    // --------------------------------------------------------------------- //
-    /// Defines the position for each particle in local space. If the
-    /// float precision version is available it should be preferred.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `point3h[] positionsh` |
-    /// | C++ Type | VtArray<GfVec3h> |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Point3hArray |
-    USDLIGHTFIELD_API
-    UsdAttribute GetPositionshAttr() const;
-
-    /// See GetPositionshAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDLIGHTFIELD_API
-    UsdAttribute CreatePositionshAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
+    /// @}
 public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 

@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/gaussianFalloffFunctionAPI.h"
+#include "pxr/usd/usdLightField/kernelGaussianTriangleAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -32,42 +32,49 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
+        
+static UsdAttribute
+_CreateKernelTriangleEdgeLengthAttr(UsdLightFieldKernelGaussianTriangleAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateKernelTriangleEdgeLengthAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
 
 static std::string
-_Repr(const UsdLightFieldGaussianFalloffFunctionAPI &self)
+_Repr(const UsdLightFieldKernelGaussianTriangleAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdLightField.GaussianFalloffFunctionAPI(%s)",
+        "UsdLightField.KernelGaussianTriangleAPI(%s)",
         primRepr.c_str());
 }
 
-struct UsdLightFieldGaussianFalloffFunctionAPI_CanApplyResult : 
+struct UsdLightFieldKernelGaussianTriangleAPI_CanApplyResult : 
     public TfPyAnnotatedBoolResult<std::string>
 {
-    UsdLightFieldGaussianFalloffFunctionAPI_CanApplyResult(bool val, std::string const &msg) :
+    UsdLightFieldKernelGaussianTriangleAPI_CanApplyResult(bool val, std::string const &msg) :
         TfPyAnnotatedBoolResult<std::string>(val, msg) {}
 };
 
-static UsdLightFieldGaussianFalloffFunctionAPI_CanApplyResult
+static UsdLightFieldKernelGaussianTriangleAPI_CanApplyResult
 _WrapCanApply(const UsdPrim& prim)
 {
     std::string whyNot;
-    bool result = UsdLightFieldGaussianFalloffFunctionAPI::CanApply(prim, &whyNot);
-    return UsdLightFieldGaussianFalloffFunctionAPI_CanApplyResult(result, whyNot);
+    bool result = UsdLightFieldKernelGaussianTriangleAPI::CanApply(prim, &whyNot);
+    return UsdLightFieldKernelGaussianTriangleAPI_CanApplyResult(result, whyNot);
 }
 
 } // anonymous namespace
 
-void wrapUsdLightFieldGaussianFalloffFunctionAPI()
+void wrapUsdLightFieldKernelGaussianTriangleAPI()
 {
-    typedef UsdLightFieldGaussianFalloffFunctionAPI This;
+    typedef UsdLightFieldKernelGaussianTriangleAPI This;
 
-    UsdLightFieldGaussianFalloffFunctionAPI_CanApplyResult::Wrap<UsdLightFieldGaussianFalloffFunctionAPI_CanApplyResult>(
+    UsdLightFieldKernelGaussianTriangleAPI_CanApplyResult::Wrap<UsdLightFieldKernelGaussianTriangleAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
-        cls("GaussianFalloffFunctionAPI");
+        cls("KernelGaussianTriangleAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -95,7 +102,16 @@ void wrapUsdLightFieldGaussianFalloffFunctionAPI()
 
         .def(!self)
 
+        
+        .def("GetKernelTriangleEdgeLengthAttr",
+             &This::GetKernelTriangleEdgeLengthAttr)
+        .def("CreateKernelTriangleEdgeLengthAttr",
+             &_CreateKernelTriangleEdgeLengthAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
+
+        .def("LightFieldKernelBaseAPI", &This::LightFieldKernelBaseAPI)
         .def("__repr__", ::_Repr)
     ;
 

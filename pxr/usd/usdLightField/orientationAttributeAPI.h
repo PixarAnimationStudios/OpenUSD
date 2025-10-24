@@ -30,12 +30,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// ORIENTATIONATTRIBUTEAPI                                                    //
+// LIGHTFIELDORIENTATIONATTRIBUTEAPI                                          //
 // -------------------------------------------------------------------------- //
 
 /// \class UsdLightFieldOrientationAttributeAPI
 ///
-/// A ParticleField related appliedAPI schema that provides an
+/// A ParticleField related applied schema that provides an
 /// orientation attribute to define the orientation of the particles.
 /// 
 /// Attributes are provided in both `float` and `half` types for some
@@ -114,7 +114,7 @@ public:
     CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "OrientationAttributeAPI" to the 
+    /// This information is stored by adding "LightFieldOrientationAttributeAPI" to the 
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     /// 
     /// \return A valid UsdLightFieldOrientationAttributeAPI object is returned upon success. 

@@ -5,7 +5,7 @@
 
 class ParticleField "ParticleField" (
     customData = {
-        string userDocBrief = """A ParticleField prim is used as a base to desribe different types
+        string userDocBrief = """A ParticleField prim is used as a base to describe different types
             of concrete ParticleField implementations, such as, but not limited
             to, 3D Gaussian Splats."""
     }
@@ -81,9 +81,9 @@ class ParticleField "ParticleField" (
     )
 }
 
-class "PositionAttributeAPI" (
+class "LightFieldPositionAttributeAPI" (
     customData = {
-        string userDocBrief = """A ParticleField related appliedAPI schema that provides a position
+        string userDocBrief = """A ParticleField related applied schema that provides a position
              attribute to define the locations of the particles."""
     }
 )
@@ -100,9 +100,9 @@ class "PositionAttributeAPI" (
     )
 }
 
-class "OrientationAttributeAPI" (
+class "LightFieldOrientationAttributeAPI" (
     customData = {
-        string userDocBrief = """A ParticleField related appliedAPI schema that provides an
+        string userDocBrief = """A ParticleField related applied schema that provides an
              orientation attribute to define the orientation of the particles."""
     }
 )
@@ -119,9 +119,9 @@ class "OrientationAttributeAPI" (
     )
 }
 
-class "ScaleAttributeAPI" (
+class "LightFieldScaleAttributeAPI" (
     customData = {
-        string userDocBrief = """A ParticleField related appliedAPI schema that provides a
+        string userDocBrief = """A ParticleField related applied schema that provides a
              scale attribute to define the scale of the particles."""
     }
 )
@@ -140,9 +140,9 @@ class "ScaleAttributeAPI" (
     )
 }
 
-class "OpacityAttributeAPI" (
+class "LightFieldOpacityAttributeAPI" (
     customData = {
-        string userDocBrief = """A ParticleField related appliedAPI schema that provides a
+        string userDocBrief = """A ParticleField related applied schema that provides a
              opacity attribute to define the opacity of the particles."""
     }
 )
@@ -159,22 +159,32 @@ class "OpacityAttributeAPI" (
     )
 }
 
-class "GaussianShapeAPI" (
+class "LightFieldKernelBaseAPI" (
     customData = {
-        string userDocBrief = "Defines the Gaussian shape function."
+        string userDocBrief = """Defines a base-class type applied schema that all applied schema
+            that provides the a ParticleField kernel will automatically apply."""
     }
 )
 {
 }
 
-class "TriangleShapeAPI" (
+class "LightFieldKernelGaussianEllipsoidAPI" (
+    apiSchemas = ["LightFieldKernelBaseAPI"]
     customData = {
-        string userDocBrief = """Defines a base shape as a equilateral triangle with given edge
-            length."""
+        string userDocBrief = "Defines the gaussian ellipsoid kernel for a given ParticleField."
     }
 )
 {
-    float kernelShape:triangle:edgeLength = 1 (
+}
+
+class "LightFieldKernelGaussianTriangleAPI" (
+    apiSchemas = ["LightFieldKernelBaseAPI"]
+    customData = {
+        string userDocBrief = "Defines the gaussian triangle kernel for a given ParticleField."
+    }
+)
+{
+    float kernel:triangle:edgeLength = 1 (
         customData = {
             string userDocBrief = """The edge length of the equilateral triangle before any scaling
                 is applied."""
@@ -182,42 +192,38 @@ class "TriangleShapeAPI" (
     )
 }
 
-class "GaussianFalloffFunctionAPI" (
+class "LightFieldKernelConstantTriangleAPI" (
+    apiSchemas = ["LightFieldKernelBaseAPI"]
     customData = {
-        string userDocBrief = "Defines a Gaussian fall-off function."
+        string userDocBrief = "Defines the gaussian triangle kernel for a given ParticleField."
     }
 )
 {
 }
 
-class "ImplicitShapeFalloffThresholdAPI" (
+class "LightFieldRadianceBaseAPI" (
     customData = {
-        string userDocBrief = """Defines a shape implicitly by providing a threshold value for the
-             fall-off function linked with the associated shape appliedAPI."""
+        string userDocBrief = """Defines a base-class type applied schema that all applied schema
+            that provides the a ParticleField kernel will automatically apply."""
     }
 )
 {
-    float kernelFalloff:implicitShapeFalloff:threshold = 0.01 (
-        customData = {
-            string userDocBrief = """The threshold value for the kernel's fall-off function that
-                defines the surface boundary."""
-        }
-    )
 }
 
-class "SphericalHarmonicsAttributeAPI" (
+class "LightFieldSphericalHarmonicsAttributeAPI" (
+    apiSchemas = ["LightFieldRadianceBaseAPI"]
     customData = {
-        string userDocBrief = """A ParticleField related appliedAPI schema that provides spherical
+        string userDocBrief = """A ParticleField related applied schema that provides spherical
             harmonics attributes to define the radiance of the particles."""
     }
 )
 {
-    float3[] primvars:radiance:sphericalHarmonicsCoefficients (
+    float3[] radiance:sphericalHarmonicsCoefficients (
         customData = {
             string userDocBrief = "Flattened array of SH coefficients."
         }
     )
-    half3[] primvars:radiance:sphericalHarmonicsCoefficientsh (
+    half3[] radiance:sphericalHarmonicsCoefficientsh (
         customData = {
             string userDocBrief = "Flattened array of SH coefficients."
         }
@@ -229,14 +235,15 @@ class "SphericalHarmonicsAttributeAPI" (
     )
 }
 
-class "SphericalBetaAttributeAPI" (
+class "LightFieldSphericalBetaAttributeAPI" (
+    apiSchemas = ["LightFieldRadianceBaseAPI"]
     customData = {
-        string userDocBrief = """A ParticleField related appliedAPI schema that provides spherical
+        string userDocBrief = """A ParticleField related applied schema that provides spherical
             beta attributes to define the radiance of the particles."""
     }
 )
 {
-    float[] primvars:sphericalBeta:beta (
+    float[] sphericalBeta:beta (
         customData = {
             string userDocBrief = "Beta parameter per-particle."
         }
@@ -244,7 +251,7 @@ class "SphericalBetaAttributeAPI" (
 }
 
 class ParticleField_3DGaussianSplat "ParticleField_3DGaussianSplat" (
-    apiSchemas = ["PositionAttributeAPI", "OrientationAttributeAPI", "ScaleAttributeAPI", "OpacityAttributeAPI", "GaussianShapeAPI", "GaussianFalloffFunctionAPI", "SphericalHarmonicsAttributeAPI"]
+    apiSchemas = ["LightFieldPositionAttributeAPI", "LightFieldOrientationAttributeAPI", "LightFieldScaleAttributeAPI", "LightFieldOpacityAttributeAPI", "LightFieldKernelGaussianEllipsoidAPI", "LightFieldSphericalHarmonicsAttributeAPI"]
     customData = {
         string userDocBrief = """This is a concrete ParticleField representing the original 3D
             Gaussian Splats technique (https://arxiv.org/abs/2308.04079)."""

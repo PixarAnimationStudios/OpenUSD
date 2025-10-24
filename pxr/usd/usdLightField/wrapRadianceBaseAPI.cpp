@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/implicitShapeFalloffThresholdAPI.h"
+#include "pxr/usd/usdLightField/radianceBaseAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -32,49 +32,42 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-        
-static UsdAttribute
-_CreateKernelFalloffImplicitShapeFalloffThresholdAttr(UsdLightFieldImplicitShapeFalloffThresholdAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateKernelFalloffImplicitShapeFalloffThresholdAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
 
 static std::string
-_Repr(const UsdLightFieldImplicitShapeFalloffThresholdAPI &self)
+_Repr(const UsdLightFieldRadianceBaseAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdLightField.ImplicitShapeFalloffThresholdAPI(%s)",
+        "UsdLightField.RadianceBaseAPI(%s)",
         primRepr.c_str());
 }
 
-struct UsdLightFieldImplicitShapeFalloffThresholdAPI_CanApplyResult : 
+struct UsdLightFieldRadianceBaseAPI_CanApplyResult : 
     public TfPyAnnotatedBoolResult<std::string>
 {
-    UsdLightFieldImplicitShapeFalloffThresholdAPI_CanApplyResult(bool val, std::string const &msg) :
+    UsdLightFieldRadianceBaseAPI_CanApplyResult(bool val, std::string const &msg) :
         TfPyAnnotatedBoolResult<std::string>(val, msg) {}
 };
 
-static UsdLightFieldImplicitShapeFalloffThresholdAPI_CanApplyResult
+static UsdLightFieldRadianceBaseAPI_CanApplyResult
 _WrapCanApply(const UsdPrim& prim)
 {
     std::string whyNot;
-    bool result = UsdLightFieldImplicitShapeFalloffThresholdAPI::CanApply(prim, &whyNot);
-    return UsdLightFieldImplicitShapeFalloffThresholdAPI_CanApplyResult(result, whyNot);
+    bool result = UsdLightFieldRadianceBaseAPI::CanApply(prim, &whyNot);
+    return UsdLightFieldRadianceBaseAPI_CanApplyResult(result, whyNot);
 }
 
 } // anonymous namespace
 
-void wrapUsdLightFieldImplicitShapeFalloffThresholdAPI()
+void wrapUsdLightFieldRadianceBaseAPI()
 {
-    typedef UsdLightFieldImplicitShapeFalloffThresholdAPI This;
+    typedef UsdLightFieldRadianceBaseAPI This;
 
-    UsdLightFieldImplicitShapeFalloffThresholdAPI_CanApplyResult::Wrap<UsdLightFieldImplicitShapeFalloffThresholdAPI_CanApplyResult>(
+    UsdLightFieldRadianceBaseAPI_CanApplyResult::Wrap<UsdLightFieldRadianceBaseAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
-        cls("ImplicitShapeFalloffThresholdAPI");
+        cls("RadianceBaseAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -102,13 +95,6 @@ void wrapUsdLightFieldImplicitShapeFalloffThresholdAPI()
 
         .def(!self)
 
-        
-        .def("GetKernelFalloffImplicitShapeFalloffThresholdAttr",
-             &This::GetKernelFalloffImplicitShapeFalloffThresholdAttr)
-        .def("CreateKernelFalloffImplicitShapeFalloffThresholdAttr",
-             &_CreateKernelFalloffImplicitShapeFalloffThresholdAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;

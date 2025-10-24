@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/gaussianFalloffFunctionAPI.h"
+#include "pxr/usd/usdLightField/kernelConstantTriangleAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -16,63 +16,63 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdLightFieldGaussianFalloffFunctionAPI,
+    TfType::Define<UsdLightFieldKernelConstantTriangleAPI,
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
 
 /* virtual */
-UsdLightFieldGaussianFalloffFunctionAPI::~UsdLightFieldGaussianFalloffFunctionAPI()
+UsdLightFieldKernelConstantTriangleAPI::~UsdLightFieldKernelConstantTriangleAPI()
 {
 }
 
 /* static */
-UsdLightFieldGaussianFalloffFunctionAPI
-UsdLightFieldGaussianFalloffFunctionAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdLightFieldKernelConstantTriangleAPI
+UsdLightFieldKernelConstantTriangleAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdLightFieldGaussianFalloffFunctionAPI();
+        return UsdLightFieldKernelConstantTriangleAPI();
     }
-    return UsdLightFieldGaussianFalloffFunctionAPI(stage->GetPrimAtPath(path));
+    return UsdLightFieldKernelConstantTriangleAPI(stage->GetPrimAtPath(path));
 }
 
 
 /* virtual */
-UsdSchemaKind UsdLightFieldGaussianFalloffFunctionAPI::_GetSchemaKind() const
+UsdSchemaKind UsdLightFieldKernelConstantTriangleAPI::_GetSchemaKind() const
 {
-    return UsdLightFieldGaussianFalloffFunctionAPI::schemaKind;
+    return UsdLightFieldKernelConstantTriangleAPI::schemaKind;
 }
 
 /* static */
 bool
-UsdLightFieldGaussianFalloffFunctionAPI::CanApply(
+UsdLightFieldKernelConstantTriangleAPI::CanApply(
     const UsdPrim &prim, std::string *whyNot)
 {
-    return prim.CanApplyAPI<UsdLightFieldGaussianFalloffFunctionAPI>(whyNot);
+    return prim.CanApplyAPI<UsdLightFieldKernelConstantTriangleAPI>(whyNot);
 }
 
 /* static */
-UsdLightFieldGaussianFalloffFunctionAPI
-UsdLightFieldGaussianFalloffFunctionAPI::Apply(const UsdPrim &prim)
+UsdLightFieldKernelConstantTriangleAPI
+UsdLightFieldKernelConstantTriangleAPI::Apply(const UsdPrim &prim)
 {
-    if (prim.ApplyAPI<UsdLightFieldGaussianFalloffFunctionAPI>()) {
-        return UsdLightFieldGaussianFalloffFunctionAPI(prim);
+    if (prim.ApplyAPI<UsdLightFieldKernelConstantTriangleAPI>()) {
+        return UsdLightFieldKernelConstantTriangleAPI(prim);
     }
-    return UsdLightFieldGaussianFalloffFunctionAPI();
+    return UsdLightFieldKernelConstantTriangleAPI();
 }
 
 /* static */
 const TfType &
-UsdLightFieldGaussianFalloffFunctionAPI::_GetStaticTfType()
+UsdLightFieldKernelConstantTriangleAPI::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdLightFieldGaussianFalloffFunctionAPI>();
+    static TfType tfType = TfType::Find<UsdLightFieldKernelConstantTriangleAPI>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdLightFieldGaussianFalloffFunctionAPI::_IsTypedSchema()
+UsdLightFieldKernelConstantTriangleAPI::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -80,14 +80,14 @@ UsdLightFieldGaussianFalloffFunctionAPI::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdLightFieldGaussianFalloffFunctionAPI::_GetTfType() const
+UsdLightFieldKernelConstantTriangleAPI::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 /*static*/
 const TfTokenVector&
-UsdLightFieldGaussianFalloffFunctionAPI::GetSchemaAttributeNames(bool includeInherited)
+UsdLightFieldKernelConstantTriangleAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
     static TfTokenVector allNames =
@@ -97,6 +97,12 @@ UsdLightFieldGaussianFalloffFunctionAPI::GetSchemaAttributeNames(bool includeInh
         return allNames;
     else
         return localNames;
+}
+
+UsdLightFieldKernelBaseAPI
+UsdLightFieldKernelConstantTriangleAPI::LightFieldKernelBaseAPI() const
+{
+    return UsdLightFieldKernelBaseAPI(GetPrim());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

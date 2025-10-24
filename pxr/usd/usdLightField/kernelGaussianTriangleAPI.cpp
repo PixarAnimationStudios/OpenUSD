@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/implicitShapeFalloffThresholdAPI.h"
+#include "pxr/usd/usdLightField/kernelGaussianTriangleAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -16,63 +16,63 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdLightFieldImplicitShapeFalloffThresholdAPI,
+    TfType::Define<UsdLightFieldKernelGaussianTriangleAPI,
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
 
 /* virtual */
-UsdLightFieldImplicitShapeFalloffThresholdAPI::~UsdLightFieldImplicitShapeFalloffThresholdAPI()
+UsdLightFieldKernelGaussianTriangleAPI::~UsdLightFieldKernelGaussianTriangleAPI()
 {
 }
 
 /* static */
-UsdLightFieldImplicitShapeFalloffThresholdAPI
-UsdLightFieldImplicitShapeFalloffThresholdAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdLightFieldKernelGaussianTriangleAPI
+UsdLightFieldKernelGaussianTriangleAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdLightFieldImplicitShapeFalloffThresholdAPI();
+        return UsdLightFieldKernelGaussianTriangleAPI();
     }
-    return UsdLightFieldImplicitShapeFalloffThresholdAPI(stage->GetPrimAtPath(path));
+    return UsdLightFieldKernelGaussianTriangleAPI(stage->GetPrimAtPath(path));
 }
 
 
 /* virtual */
-UsdSchemaKind UsdLightFieldImplicitShapeFalloffThresholdAPI::_GetSchemaKind() const
+UsdSchemaKind UsdLightFieldKernelGaussianTriangleAPI::_GetSchemaKind() const
 {
-    return UsdLightFieldImplicitShapeFalloffThresholdAPI::schemaKind;
+    return UsdLightFieldKernelGaussianTriangleAPI::schemaKind;
 }
 
 /* static */
 bool
-UsdLightFieldImplicitShapeFalloffThresholdAPI::CanApply(
+UsdLightFieldKernelGaussianTriangleAPI::CanApply(
     const UsdPrim &prim, std::string *whyNot)
 {
-    return prim.CanApplyAPI<UsdLightFieldImplicitShapeFalloffThresholdAPI>(whyNot);
+    return prim.CanApplyAPI<UsdLightFieldKernelGaussianTriangleAPI>(whyNot);
 }
 
 /* static */
-UsdLightFieldImplicitShapeFalloffThresholdAPI
-UsdLightFieldImplicitShapeFalloffThresholdAPI::Apply(const UsdPrim &prim)
+UsdLightFieldKernelGaussianTriangleAPI
+UsdLightFieldKernelGaussianTriangleAPI::Apply(const UsdPrim &prim)
 {
-    if (prim.ApplyAPI<UsdLightFieldImplicitShapeFalloffThresholdAPI>()) {
-        return UsdLightFieldImplicitShapeFalloffThresholdAPI(prim);
+    if (prim.ApplyAPI<UsdLightFieldKernelGaussianTriangleAPI>()) {
+        return UsdLightFieldKernelGaussianTriangleAPI(prim);
     }
-    return UsdLightFieldImplicitShapeFalloffThresholdAPI();
+    return UsdLightFieldKernelGaussianTriangleAPI();
 }
 
 /* static */
 const TfType &
-UsdLightFieldImplicitShapeFalloffThresholdAPI::_GetStaticTfType()
+UsdLightFieldKernelGaussianTriangleAPI::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdLightFieldImplicitShapeFalloffThresholdAPI>();
+    static TfType tfType = TfType::Find<UsdLightFieldKernelGaussianTriangleAPI>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdLightFieldImplicitShapeFalloffThresholdAPI::_IsTypedSchema()
+UsdLightFieldKernelGaussianTriangleAPI::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -80,21 +80,21 @@ UsdLightFieldImplicitShapeFalloffThresholdAPI::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdLightFieldImplicitShapeFalloffThresholdAPI::_GetTfType() const
+UsdLightFieldKernelGaussianTriangleAPI::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 UsdAttribute
-UsdLightFieldImplicitShapeFalloffThresholdAPI::GetKernelFalloffImplicitShapeFalloffThresholdAttr() const
+UsdLightFieldKernelGaussianTriangleAPI::GetKernelTriangleEdgeLengthAttr() const
 {
-    return GetPrim().GetAttribute(UsdLightFieldTokens->kernelFalloffImplicitShapeFalloffThreshold);
+    return GetPrim().GetAttribute(UsdLightFieldTokens->kernelTriangleEdgeLength);
 }
 
 UsdAttribute
-UsdLightFieldImplicitShapeFalloffThresholdAPI::CreateKernelFalloffImplicitShapeFalloffThresholdAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdLightFieldKernelGaussianTriangleAPI::CreateKernelTriangleEdgeLengthAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdLightFieldTokens->kernelFalloffImplicitShapeFalloffThreshold,
+    return UsdSchemaBase::_CreateAttr(UsdLightFieldTokens->kernelTriangleEdgeLength,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -116,10 +116,10 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 
 /*static*/
 const TfTokenVector&
-UsdLightFieldImplicitShapeFalloffThresholdAPI::GetSchemaAttributeNames(bool includeInherited)
+UsdLightFieldKernelGaussianTriangleAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLightFieldTokens->kernelFalloffImplicitShapeFalloffThreshold,
+        UsdLightFieldTokens->kernelTriangleEdgeLength,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -130,6 +130,12 @@ UsdLightFieldImplicitShapeFalloffThresholdAPI::GetSchemaAttributeNames(bool incl
         return allNames;
     else
         return localNames;
+}
+
+UsdLightFieldKernelBaseAPI
+UsdLightFieldKernelGaussianTriangleAPI::LightFieldKernelBaseAPI() const
+{
+    return UsdLightFieldKernelBaseAPI(GetPrim());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

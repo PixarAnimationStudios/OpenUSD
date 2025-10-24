@@ -16,6 +16,9 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLightField/tokens.h"
 
+            #include "pxr/usd/usdLightField/radianceBaseAPI.h"
+        
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -30,12 +33,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// SPHERICALBETAATTRIBUTEAPI                                                  //
+// LIGHTFIELDSPHERICALBETAATTRIBUTEAPI                                        //
 // -------------------------------------------------------------------------- //
 
 /// \class UsdLightFieldSphericalBetaAttributeAPI
 ///
-/// A ParticleField related appliedAPI schema that provides spherical
+/// A ParticleField related applied schema that provides spherical
 /// beta attributes to define the radiance of the particles.
 ///
 class UsdLightFieldSphericalBetaAttributeAPI : public UsdAPISchemaBase
@@ -109,7 +112,7 @@ public:
     CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "SphericalBetaAttributeAPI" to the 
+    /// This information is stored by adding "LightFieldSphericalBetaAttributeAPI" to the 
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     /// 
     /// \return A valid UsdLightFieldSphericalBetaAttributeAPI object is returned upon success. 
@@ -148,26 +151,39 @@ private:
 
 public:
     // --------------------------------------------------------------------- //
-    // PRIMVARSSPHERICALBETABETA 
+    // SPHERICALBETABETA 
     // --------------------------------------------------------------------- //
     /// Beta parameter per-particle.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float[] primvars:sphericalBeta:beta` |
+    /// | Declaration | `float[] sphericalBeta:beta` |
     /// | C++ Type | VtArray<float> |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->FloatArray |
     USDLIGHTFIELD_API
-    UsdAttribute GetPrimvarsSphericalBetaBetaAttr() const;
+    UsdAttribute GetSphericalBetaBetaAttr() const;
 
-    /// See GetPrimvarsSphericalBetaBetaAttr(), and also 
+    /// See GetSphericalBetaBetaAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDLIGHTFIELD_API
-    UsdAttribute CreatePrimvarsSphericalBetaBetaAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateSphericalBetaBetaAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
+public:
+    /// \name LightFieldRadianceBaseAPI
+    /// 
+    /// Convenience accessors for the built-in UsdLightFieldRadianceBaseAPI
+    /// 
+    /// @{
+
+    /// Constructs and returns a UsdLightFieldRadianceBaseAPI object.
+    /// Use this object to access UsdLightFieldRadianceBaseAPI custom methods.
+    USDLIGHTFIELD_API
+    UsdLightFieldRadianceBaseAPI LightFieldRadianceBaseAPI() const;
+
+    /// @}
 public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
