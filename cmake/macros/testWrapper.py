@@ -165,7 +165,7 @@ def _diff(fileName, baselineDir, verbose, failuresDir=None):
     isWindows = platform.system() == 'Windows'
 
     diffTool = shutil.which('diff')
-    diffToolBaseArgs = ['--strip-trailing-cr']
+    diffToolBaseArgs = []
     if not diffTool and isWindows:
         diffTool = 'fc.exe'
         diffToolBaseArgs = ['/t']

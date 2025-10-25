@@ -243,7 +243,7 @@ pxr_build_test(testHdStBasicDrawing
 )
 endif()
 
-if (X11_FOUND)
+if (X11_FOUND OR PXR_ENABLE_VULKAN_SUPPORT)
 pxr_build_test(testHdStBarAllocationLimit
     LIBRARIES
         hdSt
@@ -621,6 +621,111 @@ pxr_register_test(testHdStQualifiers
         TF_DEBUG=HD_SAFE_MODE
 )
 
+function(register_codegen_tests suffix hgi_env)
+    pxr_install_test_dir(
+        SRC testenv/testHdStCodeGen${suffix}
+        DEST testHdStCodeGen${suffix}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Indirect
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_indirect.out
+        DIFF_COMPARE codegen_mesh_indirect.out
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Indirect_SmoothNormals
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --smoothNormals"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_indirect_smoothNormals.out
+        DIFF_COMPARE codegen_mesh_indirect_smoothNormals.out
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Indirect_DoubleSided
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --doubleSided"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_indirect_doubleSided.out
+        DIFF_COMPARE codegen_mesh_indirect_doubleSided.out
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Indirect_FaceVarying
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --faceVarying"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_indirect_faceVarying.out
+        DIFF_COMPARE codegen_mesh_indirect_faceVarying.out
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Indirect_Instance
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --instance"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_indirect_instance.out
+        DIFF_COMPARE codegen_mesh_indirect_instance.out
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_EdgeOnly
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --edgeOnly"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_edgeonly.out
+        DIFF_COMPARE codegen_mesh_edgeonly.out
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_EdgeOnly_BlendWireframe
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --edgeOnly --blendWireframe"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_edgeonly_blendwireframe.out
+        DIFF_COMPARE codegen_mesh_edgeonly_blendwireframe.out
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Curves_Indirect
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --curves"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_curves_indirect.out
+        DIFF_COMPARE codegen_curves_indirect.out
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Points_Indirect
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --points"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_points_indirect.out
+        DIFF_COMPARE codegen_points_indirect.out
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+endfunction()
+
+# OpenGL codegen tests require X11 to create a context
+if(PXR_ENABLE_GL_SUPPORT AND X11_FOUND)
+    register_codegen_tests(_GL "HGI_ENABLE_VULKAN=0;HGIGL_ENABLE_BINDLESS_BUFFER=1;HGIGL_ENABLE_BINDLESS_TEXTURE=1;HGIGL_GLSL_VERSION=450")
+endif()
+if(PXR_ENABLE_VULKAN_SUPPORT)
+    register_codegen_tests(_Vulkan "HGI_ENABLE_VULKAN=1;")
+endif()
+
 if (APPLE)
     message(STATUS "Skipping rest of ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
     return()
@@ -661,14 +766,6 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testHdStClipPlanes
     DEST testHdStClipPlanes
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStCodeGen_GL
-    DEST testHdStCodeGen_GL
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStCodeGen_Vulkan
-    DEST testHdStCodeGen_Vulkan
 )
 pxr_install_test_dir(
     SRC testenv/testHdStCurveDrawing
@@ -2373,106 +2470,6 @@ pxr_register_test(testHdStClipPlanes2
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
-
-function(register_codegen_tests suffix hgi_env)
-    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Indirect
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh"
-        EXPECTED_RETURN_CODE 0
-        STDOUT_REDIRECT codegen_mesh_indirect.out
-        DIFF_COMPARE codegen_mesh_indirect.out
-        TESTENV testHdStCodeGen${suffix}
-        ENV
-            TF_DEBUG=HD_SAFE_MODE
-            ${hgi_env}
-    )
-    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Indirect_SmoothNormals
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --smoothNormals"
-        EXPECTED_RETURN_CODE 0
-        STDOUT_REDIRECT codegen_mesh_indirect_smoothNormals.out
-        DIFF_COMPARE codegen_mesh_indirect_smoothNormals.out
-        TESTENV testHdStCodeGen${suffix}
-        ENV
-            TF_DEBUG=HD_SAFE_MODE
-            ${hgi_env}
-    )
-    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Indirect_DoubleSided
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --doubleSided"
-        EXPECTED_RETURN_CODE 0
-        STDOUT_REDIRECT codegen_mesh_indirect_doubleSided.out
-        DIFF_COMPARE codegen_mesh_indirect_doubleSided.out
-        TESTENV testHdStCodeGen${suffix}
-        ENV
-            TF_DEBUG=HD_SAFE_MODE
-            ${hgi_env}
-    )
-    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Indirect_FaceVarying
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --faceVarying"
-        EXPECTED_RETURN_CODE 0
-        STDOUT_REDIRECT codegen_mesh_indirect_faceVarying.out
-        DIFF_COMPARE codegen_mesh_indirect_faceVarying.out
-        TESTENV testHdStCodeGen${suffix}
-        ENV
-            TF_DEBUG=HD_SAFE_MODE
-            ${hgi_env}
-    )
-    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Indirect_Instance
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --instance"
-        EXPECTED_RETURN_CODE 0
-        STDOUT_REDIRECT codegen_mesh_indirect_instance.out
-        DIFF_COMPARE codegen_mesh_indirect_instance.out
-        TESTENV testHdStCodeGen${suffix}
-        ENV
-            TF_DEBUG=HD_SAFE_MODE
-            ${hgi_env}
-    )
-    pxr_register_test(testHdStCodeGen${suffix}_Mesh_EdgeOnly
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --edgeOnly"
-        EXPECTED_RETURN_CODE 0
-        STDOUT_REDIRECT codegen_mesh_edgeonly.out
-        DIFF_COMPARE codegen_mesh_edgeonly.out
-        TESTENV testHdStCodeGen${suffix}
-        ENV
-            TF_DEBUG=HD_SAFE_MODE
-            ${hgi_env}
-    )
-    pxr_register_test(testHdStCodeGen${suffix}_Mesh_EdgeOnly_BlendWireframe
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --edgeOnly --blendWireframe"
-        EXPECTED_RETURN_CODE 0
-        STDOUT_REDIRECT codegen_mesh_edgeonly_blendwireframe.out
-        DIFF_COMPARE codegen_mesh_edgeonly_blendwireframe.out
-        TESTENV testHdStCodeGen${suffix}
-        ENV
-            TF_DEBUG=HD_SAFE_MODE
-            ${hgi_env}
-    )
-    pxr_register_test(testHdStCodeGen${suffix}_Curves_Indirect
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --curves"
-        EXPECTED_RETURN_CODE 0
-        STDOUT_REDIRECT codegen_curves_indirect.out
-        DIFF_COMPARE codegen_curves_indirect.out
-        TESTENV testHdStCodeGen${suffix}
-        ENV
-            TF_DEBUG=HD_SAFE_MODE
-            ${hgi_env}
-    )
-    pxr_register_test(testHdStCodeGen${suffix}_Points_Indirect
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --points"
-        EXPECTED_RETURN_CODE 0
-        STDOUT_REDIRECT codegen_points_indirect.out
-        DIFF_COMPARE codegen_points_indirect.out
-        TESTENV testHdStCodeGen${suffix}
-        ENV
-            TF_DEBUG=HD_SAFE_MODE
-            ${hgi_env}
-    )
-endfunction()
-# OpenGL codegen tests require X11 to create a context
-if(PXR_ENABLE_GL_SUPPORT AND X11_FOUND)
-    register_codegen_tests(_GL "HGI_ENABLE_VULKAN=0;HGIGL_ENABLE_BINDLESS_BUFFER=1;HGIGL_ENABLE_BINDLESS_TEXTURE=1;HGIGL_GLSL_VERSION=450")
-endif()
-if(PXR_ENABLE_VULKAN_SUPPORT)
-    register_codegen_tests(_Vulkan "HGI_ENABLE_VULKAN=1;")
-endif()
 
 pxr_register_test(testHdStCurveDrawing_lv0_refined
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCurveDrawing --offscreen --repr refined --refineLevel 0 --write testHdStCurveDrawing_lv0_refined.png"
