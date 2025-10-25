@@ -28,6 +28,7 @@
 #include "pxr/base/tf/stringUtils.h"
 
 #include <optional>
+#include <array>
 #include <ostream>
 #include <string>
 #include <vector>

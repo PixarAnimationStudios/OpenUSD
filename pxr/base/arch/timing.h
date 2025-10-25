@@ -21,7 +21,8 @@
 
 // See if we should use the x86 TSC register for timing.
 #if defined(PXR_ARCH_PREFER_TSC_TIMING) &&                              \
-    defined(ARCH_OS_LINUX) &&                                           \
+    defined(ARCH_OS_LINUX) &&											\
+	defined(ARCH_OS_FREEBSD) &&                                           \
     defined(ARCH_CPU_INTEL) &&                                          \
     (defined(ARCH_COMPILER_CLANG) || defined(ARCH_COMPILER_GCC))
 #define ARCH_USE_TSC_TIMING 1
@@ -31,7 +32,6 @@
 
 #if ARCH_USE_TSC_TIMING
 #include <x86intrin.h>
-#endif
 
 #include <atomic>
 #include <chrono>
