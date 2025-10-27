@@ -51,6 +51,9 @@
     #define ARCH_PRAGMA_STRINGOP_OVERFLOW \
         _Pragma("GCC diagnostic ignored \"-Wstringop-overflow=\"")
 
+    #define ARCH_PRAGMA_SELF_MOVE \
+        _Pragma("GCC diagnostic ignored \"-Wself-move\"")
+
 #elif defined(ARCH_COMPILER_CLANG)
 
     #define ARCH_PRAGMA_PUSH \
