@@ -165,6 +165,16 @@ _ComputeJointLocalTransforms(
         return UsdSkelImagingGetTypedValue(restTransforms);
     }
 
+    // If all transform components were empty, that could mean:
+    // - the attributes were never authored
+    // - the attributes were blocked
+    // - the attributes were authored with empty arrays (possibly intentionally)
+    // In many of these cases, we should expect the animation to be silently
+    // ignored, so throw no warning.
+    if (animTransforms.empty()) {
+        return UsdSkelImagingGetTypedValue(restTransforms);
+    }
+
     if (data.animMapper.IsIdentity()) {
         return animTransforms;
     }
