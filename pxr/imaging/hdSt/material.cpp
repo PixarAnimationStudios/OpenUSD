@@ -19,6 +19,11 @@
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+#include "pxr/imaging/hdSt/materialXSyncSceneIndex.h"
+#include "pxr/imaging/hdSt/renderDelegate.h"
+#endif
+
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -172,48 +177,91 @@ HdStMaterial::_ProcessTextureDescriptors(
 /* virtual */
 void
 HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
-                 HdRenderParam   *renderParam,
-                 HdDirtyBits     *dirtyBits)
+                   HdRenderParam   *renderParam,
+                   HdDirtyBits     *dirtyBits)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdStResourceRegistrySharedPtr const& resourceRegistry =
-        std::static_pointer_cast<HdStResourceRegistry>(
-            sceneDelegate->GetRenderIndex().GetResourceRegistry());
-
-    HdDirtyBits bits = *dirtyBits;
+    const HdDirtyBits bits = *dirtyBits;
 
     if (!(bits & DirtyResource) && !(bits & DirtyParams)) {
         *dirtyBits = Clean;
         return;
     }
 
-    bool markBatchesDirty = false;
+    bool processedMaterialNetwork = false;
+
+    HdStResourceRegistrySharedPtr const& resourceRegistry =
+        std::static_pointer_cast<HdStResourceRegistry>(
+            sceneDelegate->GetRenderIndex().GetResourceRegistry());
+
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+    {
+        HdStRenderDelegate* stormDelegate = static_cast<HdStRenderDelegate*>(
+            sceneDelegate->GetRenderIndex().GetRenderDelegate());
+
+        HdSt_MaterialFilterTaskSharedPtr filterTask;
+
+        // This scene index manages early parallel MaterialX codegen. It exists
+        // when that optimization is enabled.
+        if (HdSt_MaterialXSyncSceneIndex* sceneIndex =
+            stormDelegate->GetMaterialXSyncSceneIndex()) {
+
+            // Wait for all early parallel codegen tasks to complete and
+            // retrieve the state cached for this sprim when codegen was
+            // started
+            filterTask = sceneIndex->WaitAndExtractFilterTask(GetId());
+        }
+
+        if (filterTask) {
+            // We only use filter tasks for non-volume materials
+            constexpr bool isVolume = false;
+
+            _hdStMaterialNetwork.ProcessFilterTask(
+                GetId(), filterTask,
+                isVolume, resourceRegistry.get());
+
+            processedMaterialNetwork = true;
+        }
+    }
+#endif
+
+    // The serial MaterialX codegen code path - executed only if we haven't
+    // already processed the material network above
+    if (!processedMaterialNetwork) {
+        VtValue vtMat = sceneDelegate->GetMaterialResource(GetId());
+        if (vtMat.IsHolding<HdMaterialNetworkMap>()) {
+
+            HdMaterialNetworkMap const& hdNetworkMap =
+                vtMat.UncheckedGet<HdMaterialNetworkMap>();
+
+            if (!hdNetworkMap.terminals.empty() && !hdNetworkMap.map.empty()) {
+                _hdStMaterialNetwork.ProcessMaterialNetwork(GetId(),
+                    hdNetworkMap, resourceRegistry.get());
+
+                processedMaterialNetwork = true;
+            }
+        }
+    }
 
     std::string fragmentSource;
     std::string displacementSource;
     std::string volumeSource;
+
     VtDictionary materialMetadata;
     TfToken materialTag = _materialTag;
     HdSt_MaterialParamVector params;
     HdStMaterialNetwork::TextureDescriptorVector textureDescriptors;
 
-    VtValue vtMat = sceneDelegate->GetMaterialResource(GetId());
-    if (vtMat.IsHolding<HdMaterialNetworkMap>()) {
-        HdMaterialNetworkMap const& hdNetworkMap =
-            vtMat.UncheckedGet<HdMaterialNetworkMap>();
-        if (!hdNetworkMap.terminals.empty() && !hdNetworkMap.map.empty()) {
-            _networkProcessor.ProcessMaterialNetwork(GetId(), hdNetworkMap,
-                                                    resourceRegistry.get());
-            fragmentSource = _networkProcessor.GetFragmentCode();
-            volumeSource = _networkProcessor.GetVolumeCode();
-            displacementSource = _networkProcessor.GetDisplacementCode();
-            materialMetadata = _networkProcessor.GetMetadata();
-            materialTag = _networkProcessor.GetMaterialTag();
-            params = _networkProcessor.GetMaterialParams();
-                textureDescriptors = _networkProcessor.GetTextureDescriptors();
-        }
+    if (processedMaterialNetwork) {
+        fragmentSource = _hdStMaterialNetwork.GetFragmentCode();
+        volumeSource = _hdStMaterialNetwork.GetVolumeCode();
+        displacementSource = _hdStMaterialNetwork.GetDisplacementCode();
+        materialMetadata = _hdStMaterialNetwork.GetMetadata();
+        materialTag = _hdStMaterialNetwork.GetMaterialTag();
+        params = _hdStMaterialNetwork.GetMaterialParams();
+        textureDescriptors = _hdStMaterialNetwork.GetTextureDescriptors();
     }
 
     // Use fallback shader when there is no source for
@@ -225,6 +273,8 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         fragmentSource = _fallbackGlslfx->GetSurfaceSource();
         materialMetadata = _fallbackGlslfx->GetMetadata();
     }
+
+    bool markBatchesDirty = false;
 
     // Update volume material data.
     if (_volumeMaterialData.source != volumeSource) {

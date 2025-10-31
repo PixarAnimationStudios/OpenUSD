@@ -666,6 +666,15 @@ HdStResourceRegistry::RegisterMaterialXShader(
 {
     return _materialXShaderRegistry.GetInstance(id);
 }
+
+bool
+HdStResourceRegistry::ContainsMaterialXShader(
+        HdInstance<MaterialX::ShaderPtr>::ID id)
+{
+    bool found = false;
+    _materialXShaderRegistry.FindInstance(id, &found);
+    return found;
+}
 #endif
 
 HdInstance<HgiResourceBindingsSharedPtr>

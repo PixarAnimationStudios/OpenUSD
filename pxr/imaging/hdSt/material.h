@@ -8,9 +8,11 @@
 #define PXR_IMAGING_HD_ST_MATERIAL_H
 
 #include "pxr/pxr.h"
+
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/materialNetwork.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
+
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -123,7 +125,7 @@ private:
     TfToken _materialTag;
     size_t _textureHash;
 
-    HdStMaterialNetwork _networkProcessor;
+    HdStMaterialNetwork _hdStMaterialNetwork;
 };
 
 inline bool HdStMaterial::HasPtex() const

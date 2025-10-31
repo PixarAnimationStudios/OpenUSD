@@ -151,6 +151,9 @@ public:
     // ------------------------------------------------------------------------
     // Material API
 
+    static HD_API VtValue GetMaterialResourceFromSceneIndexPrim(
+        HdSceneIndexPrim& prim, const TfTokenVector& renderContexts);
+
     SdfPath GetMaterialId(SdfPath const &id) override;
     VtValue GetMaterialResource(SdfPath const &id) override;
     HdIdVectorSharedPtr GetCoordSysBindings(SdfPath const &id) override;

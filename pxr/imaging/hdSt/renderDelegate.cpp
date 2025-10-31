@@ -45,6 +45,10 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/staticTokens.h"
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+#include "pxr/imaging/hdSt/materialXSyncSceneIndex.h"
+#endif
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -54,6 +58,10 @@ TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_TINY_PRIM_CULLING, false,
 TF_DEFINE_ENV_SETTING(HDST_MAX_LIGHTS, 16,
                       "Maximum number of lights to render with");
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_PARALLEL_MTLX_CODEGEN, false,
+                      "Enable early parallelized MaterialX codegen");
+#endif
 TF_DEFINE_ENV_SETTING(HDST_DOME_LIGHT_CUBEMAP_TARGET_MEMORY_MB, 0,
                       "Maximum memory target in MB for the cubemap computed "
                       "from the latlong texture for the dome light.");
@@ -625,5 +633,25 @@ HdStRenderDelegate::_ApplyTextureSettings()
     _resourceRegistry->SetMemoryRequestForTextureType(
         HdStTextureType::Field, 1048576 * memInMb);
 }
+
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+void
+HdStRenderDelegate::SetTerminalSceneIndex(
+    const HdSceneIndexBaseRefPtr &terminalSceneIndex)
+{
+    if (!TfGetEnvSetting(HDST_ENABLE_PARALLEL_MTLX_CODEGEN)) {
+        return;
+    }
+
+    _materialXSyncSceneIndex =
+        HdSt_MaterialXSyncSceneIndex::New(terminalSceneIndex, *this);
+}
+
+HdSt_MaterialXSyncSceneIndex*
+HdStRenderDelegate::GetMaterialXSyncSceneIndex()
+{
+    return get_pointer(_materialXSyncSceneIndex);
+}
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
