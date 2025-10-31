@@ -411,6 +411,10 @@ HgiGLShaderGenerator::_WriteInOuts(
         { HgiShaderKeywordTokens->hdLayer, "gl_Layer"},
         { HgiShaderKeywordTokens->hdViewportIndex, "gl_ViewportIndex"},
         { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"},
+        { HgiShaderKeywordTokens->hdLocalInvocationID, "gl_LocalInvocationID"},
+        { HgiShaderKeywordTokens->hdWorkGroupID, "gl_WorkGroupID"},
+        { HgiShaderKeywordTokens->hdWorkGroupSize, "gl_WorkGroupSize"},
+        { HgiShaderKeywordTokens->hdNumWorkGroups, "gl_NumWorkGroups"},
         { HgiShaderKeywordTokens->hdBaryCoordNoPersp, "gl_BaryCoordNoPerspNV"},
         { HgiShaderKeywordTokens->hdSampleMaskIn, "gl_SampleMaskIn[0]"}
     };
