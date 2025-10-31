@@ -432,6 +432,7 @@ struct HgiShaderFunctionDesc
     std::vector<HgiShaderFunctionBufferDesc> buffers;
     std::vector<HgiShaderFunctionParamDesc> constantParams;
     std::vector<HgiShaderFunctionParamDesc> stageGlobalMembers;
+    std::vector<HgiShaderFunctionParamDesc> stageWorkGroupLocalMembers;
     std::vector<HgiShaderFunctionParamDesc> stageInputs;
     std::vector<HgiShaderFunctionParamDesc> stageOutputs;
     std::vector<HgiShaderFunctionParamBlockDesc> stageInputBlocks;
@@ -537,6 +538,15 @@ void
 HgiShaderFunctionAddStageInput(
         HgiShaderFunctionDesc *functionDesc,
         HgiShaderFunctionParamDesc const &paramDesc);
+
+/// Adds thread local storage variables.
+HGI_API
+void
+HgiShaderFunctionAddWorkGroupLocalVariable(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    const std::string &type,
+    const std::string &arraySize);
 
 /// Interstage input.
 HGI_API

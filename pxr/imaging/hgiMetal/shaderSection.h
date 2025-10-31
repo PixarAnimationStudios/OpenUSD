@@ -49,6 +49,8 @@ public:
     HGIMETAL_API
     virtual bool VisitEntryPointParameterDeclarations(std::ostream &ss);
     HGIMETAL_API
+    virtual bool VisitWorkGroupLocalDeclarations(std::ostream &ss);
+    HGIMETAL_API
     virtual bool VisitEntryPointFunctionExecutions(
         std::ostream& ss,
         const std::string &scopeInstanceName);
@@ -272,6 +274,45 @@ private:
     const bool _unused;
     const std::string _samplerSharedIdentifier;
     const std::string _parentScopeIdentifier;
+};
+
+/// \class HgiMetalWorkGroupLocalShaderSection
+///
+/// Declares the Thread local storage
+///
+class HgiMetalWorkGroupLocalShaderSection final
+        : public HgiMetalShaderSection
+{
+public:
+    HGIMETAL_API
+    HgiMetalWorkGroupLocalShaderSection(
+        const std::string &samplerSharedIdentifier,
+        const std::string &type,
+        const std::string &arraySize,
+        const HgiShaderSectionAttributeVector &attributes);
+
+    HGIMETAL_API
+    void WriteType(std::ostream& ss) const override;
+
+    HGIMETAL_API
+    bool VisitScopeMemberDeclarations(std::ostream &ss) override;
+    HGIMETAL_API
+    bool VisitScopeConstructorDeclarations(std::ostream &ss) override;
+    HGIMETAL_API
+    bool VisitScopeConstructorInitialization(std::ostream &ss) override;
+    HGIMETAL_API
+    bool VisitScopeConstructorInstantiation(std::ostream &ss) override;
+    HGIMETAL_API
+    bool VisitWorkGroupLocalDeclarations(std::ostream &ss) override;
+
+private:
+    HgiMetalWorkGroupLocalShaderSection() = delete;
+    HgiMetalWorkGroupLocalShaderSection & operator=(
+        const HgiMetalTextureShaderSection&) = delete;
+    HgiMetalWorkGroupLocalShaderSection(const HgiMetalWorkGroupLocalShaderSection&) = delete;
+
+    const std::string _type;
+    const std::string _arraySize;
 };
 
 /// \class HgiMetalStructTypeDeclarationShaderSection

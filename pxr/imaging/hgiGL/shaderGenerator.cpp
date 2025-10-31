@@ -185,6 +185,7 @@ HgiGLShaderGenerator::HgiGLShaderGenerator(
     _WriteConstantParams(descriptor.constantParams);
     _WriteInOuts(descriptor.stageOutputs, "out");
     _WriteInOutBlocks(descriptor.stageOutputBlocks, "out");
+    _WriteWorkGroupLocals(descriptor.stageWorkGroupLocalMembers);
 }
 
 void
@@ -371,6 +372,22 @@ HgiGLShaderGenerator::_WriteConstantParams(
         "ParamBuffer",
         parameters,
         0);
+}
+
+void
+HgiGLShaderGenerator::_WriteWorkGroupLocals(
+    const HgiShaderFunctionParamDescVector &parameters)
+{
+    if (parameters.size() < 1) {
+        return;
+    }
+
+    for(const HgiShaderFunctionParamDesc &param : parameters) {
+        CreateShaderSection<HgiGLWorkGroupLocalShaderSection>(
+            param.nameInShader,
+            param.type,
+            param.arraySize);
+    }
 }
 
 void
@@ -574,6 +591,12 @@ HgiGLShaderGenerator::_Execute(std::ostream &ss)
     for (const std::unique_ptr<HgiGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalMemberDeclarations(ss);
+    }
+
+    ss << "\n// //////// WorkGroup Shared Declarations ////////\n";
+    for (const std::unique_ptr<HgiGLShaderSection>
+            &shaderSection : *shaderSections) {
+        shaderSection->VisitWorkGroupLocalDeclarations(ss);
     }
 
     ss << "\n// //////// Global Function Definitions ////////\n";

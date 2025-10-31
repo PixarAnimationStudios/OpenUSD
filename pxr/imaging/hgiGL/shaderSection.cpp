@@ -96,6 +96,12 @@ HgiGLShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
     return false;
 }
 
+bool
+HgiGLShaderSection::VisitWorkGroupLocalDeclarations(std::ostream &ss)
+{
+    return false;
+}
+
 HgiGLMacroShaderSection::HgiGLMacroShaderSection(
     const std::string &macroDeclaration,
     const std::string &macroComment)
@@ -578,6 +584,40 @@ HgiGLInterstageBlockShaderSection::VisitGlobalMemberDeclarations(
     WriteBlockInstanceIdentifier(ss);
     WriteArraySize(ss);
     ss << ";\n";
+    return true;
+}
+
+HgiGLWorkGroupLocalShaderSection::HgiGLWorkGroupLocalShaderSection(
+    const std::string &identifier,
+    const std::string &type,
+    const std::string &arraySize)
+    : HgiGLShaderSection(identifier,
+                         HgiShaderSectionAttributeVector(),
+                         std::string(),
+                         std::string(),
+                         arraySize,
+                         std::string())
+    , _type(type)
+{
+}
+
+HgiGLWorkGroupLocalShaderSection::~HgiGLWorkGroupLocalShaderSection() = default;
+
+void
+HgiGLWorkGroupLocalShaderSection::WriteType(std::ostream& ss) const
+{
+    ss << _type;
+}
+
+bool HgiGLWorkGroupLocalShaderSection::VisitWorkGroupLocalDeclarations(std::ostream &ss)
+{
+    ss << "shared ";
+    WriteType(ss);
+    ss << " ";
+    WriteIdentifier(ss);
+    ss << GetArraySize();
+    ss << ";\n";
+
     return true;
 }
 
