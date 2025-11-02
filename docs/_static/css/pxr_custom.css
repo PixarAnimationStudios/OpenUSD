@@ -5,6 +5,11 @@
     --monospace: ui-monospace, -apple-system-ui-serif, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", Courier, 'Andale Mono', 'Ubuntu Mono', monospace;
 }
 
+.document {
+  container-type: inline-size;
+  container-name: document;
+}
+
 body, .rst-content {
     font-family: var(--san-serif);
 }
@@ -35,6 +40,10 @@ h4 {
 .iu {
   font-style: italic;
   text-decoration: underline;
+}
+
+.mono {
+  overflow-wrap: break-word;
 }
 
 .mono, .rst-content .linenodiv pre, .rst-content div[class^=highlight] pre, .rst-content pre.literal-block {
@@ -153,3 +162,24 @@ div.usd-tutorial-admonition > p {
   color: #6A0E0E;
 } 
 
+@container document (max-width: 72rem) {
+  .fourcolumn {
+    -webkit-column-count: 3; /* Chrome, Safari, Opera */
+    -moz-column-count: 3; /* Firefox */
+    column-count: 3;
+  }
+}
+
+@container document (max-width: 48rem) {
+  .fourcolumn {
+    -webkit-column-count: 2; /* Chrome, Safari, Opera */
+    -moz-column-count: 2; /* Firefox */
+    column-count: 2;
+  }
+
+  .threecolumn {
+    -webkit-column-count: 2; /* Chrome, Safari, Opera */
+    -moz-column-count: 2; /* Firefox */
+    column-count: 2;
+  }
+}
