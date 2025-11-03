@@ -4,8 +4,6 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#define _CRT_SECURE_NO_WARNINGS
-
 #include "pxr/pxr.h"
 #include "pxr/base/arch/testArchUtil.h"
 #include "pxr/base/arch/debugger.h"
