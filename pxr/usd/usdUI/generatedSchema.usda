@@ -110,7 +110,7 @@ provide more details."""
 prim."""
         }
     )
-    uniform token accessibility:__INSTANCE_NAME__:priority = "standard" (
+    token accessibility:__INSTANCE_NAME__:priority = "standard" (
         allowedTokens = ["low", "standard", "high"]
         customData = {
             string userDocBrief = """A hint to the accessibility runtime of how 
