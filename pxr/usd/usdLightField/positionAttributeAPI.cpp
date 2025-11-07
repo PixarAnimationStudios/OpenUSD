@@ -150,6 +150,12 @@ UsdLightFieldPositionAttributeAPI::GetSchemaAttributeNames(bool includeInherited
         return localNames;
 }
 
+UsdLightFieldPositionBaseAPI
+UsdLightFieldPositionAttributeAPI::LightFieldPositionBaseAPI() const
+{
+    return UsdLightFieldPositionBaseAPI(GetPrim());
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 // ===================================================================== //

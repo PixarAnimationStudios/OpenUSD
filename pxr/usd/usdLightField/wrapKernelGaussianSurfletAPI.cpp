@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/kernelGaussianTriangleAPI.h"
+#include "pxr/usd/usdLightField/kernelGaussianSurfletAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -32,49 +32,42 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-        
-static UsdAttribute
-_CreateKernelTriangleEdgeLengthAttr(UsdLightFieldKernelGaussianTriangleAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateKernelTriangleEdgeLengthAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
-}
 
 static std::string
-_Repr(const UsdLightFieldKernelGaussianTriangleAPI &self)
+_Repr(const UsdLightFieldKernelGaussianSurfletAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdLightField.KernelGaussianTriangleAPI(%s)",
+        "UsdLightField.KernelGaussianSurfletAPI(%s)",
         primRepr.c_str());
 }
 
-struct UsdLightFieldKernelGaussianTriangleAPI_CanApplyResult : 
+struct UsdLightFieldKernelGaussianSurfletAPI_CanApplyResult : 
     public TfPyAnnotatedBoolResult<std::string>
 {
-    UsdLightFieldKernelGaussianTriangleAPI_CanApplyResult(bool val, std::string const &msg) :
+    UsdLightFieldKernelGaussianSurfletAPI_CanApplyResult(bool val, std::string const &msg) :
         TfPyAnnotatedBoolResult<std::string>(val, msg) {}
 };
 
-static UsdLightFieldKernelGaussianTriangleAPI_CanApplyResult
+static UsdLightFieldKernelGaussianSurfletAPI_CanApplyResult
 _WrapCanApply(const UsdPrim& prim)
 {
     std::string whyNot;
-    bool result = UsdLightFieldKernelGaussianTriangleAPI::CanApply(prim, &whyNot);
-    return UsdLightFieldKernelGaussianTriangleAPI_CanApplyResult(result, whyNot);
+    bool result = UsdLightFieldKernelGaussianSurfletAPI::CanApply(prim, &whyNot);
+    return UsdLightFieldKernelGaussianSurfletAPI_CanApplyResult(result, whyNot);
 }
 
 } // anonymous namespace
 
-void wrapUsdLightFieldKernelGaussianTriangleAPI()
+void wrapUsdLightFieldKernelGaussianSurfletAPI()
 {
-    typedef UsdLightFieldKernelGaussianTriangleAPI This;
+    typedef UsdLightFieldKernelGaussianSurfletAPI This;
 
-    UsdLightFieldKernelGaussianTriangleAPI_CanApplyResult::Wrap<UsdLightFieldKernelGaussianTriangleAPI_CanApplyResult>(
+    UsdLightFieldKernelGaussianSurfletAPI_CanApplyResult::Wrap<UsdLightFieldKernelGaussianSurfletAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
-        cls("KernelGaussianTriangleAPI");
+        cls("KernelGaussianSurfletAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -102,13 +95,6 @@ void wrapUsdLightFieldKernelGaussianTriangleAPI()
 
         .def(!self)
 
-        
-        .def("GetKernelTriangleEdgeLengthAttr",
-             &This::GetKernelTriangleEdgeLengthAttr)
-        .def("CreateKernelTriangleEdgeLengthAttr",
-             &_CreateKernelTriangleEdgeLengthAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
 
         .def("LightFieldKernelBaseAPI", &This::LightFieldKernelBaseAPI)

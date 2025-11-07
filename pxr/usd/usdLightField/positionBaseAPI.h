@@ -4,20 +4,16 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef USDLIGHTFIELD_GENERATED_KERNELGAUSSIANTRIANGLEAPI_H
-#define USDLIGHTFIELD_GENERATED_KERNELGAUSSIANTRIANGLEAPI_H
+#ifndef USDLIGHTFIELD_GENERATED_POSITIONBASEAPI_H
+#define USDLIGHTFIELD_GENERATED_POSITIONBASEAPI_H
 
-/// \file usdLightField/kernelGaussianTriangleAPI.h
+/// \file usdLightField/positionBaseAPI.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLightField/api.h"
 #include "pxr/usd/usd/apiSchemaBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usdLightField/tokens.h"
-
-            #include "pxr/usd/usdLightField/kernelBaseAPI.h"
-        
 
 #include "pxr/base/vt/value.h"
 
@@ -33,23 +29,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// LIGHTFIELDKERNELGAUSSIANTRIANGLEAPI                                        //
+// LIGHTFIELDPOSITIONBASEAPI                                                  //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdLightFieldKernelGaussianTriangleAPI
+/// \class UsdLightFieldPositionBaseAPI
 ///
-/// Defines the gaussian triangle kernel for a given ParticleField.
-/// 
-/// The kernal shape is an equilateral triangle centered at the origin, with
-/// the base of the triangle, parallel to the x-axis, and the apex of the
-/// triangle on the y-axis.
-/// 
-/// The falloff function for this kernel is the gaussian falloff function,
-/// where the peak of the falloff function is defined by the opacity data
-/// source.
-/// 
+/// Defines a base-class type applied schema that all applied schema
+/// that provides the a ParticleField kernel will automatically apply.
+/// The purpose of this base class is to allow validation to enforce
+/// that a kernel definition is present for a ParticleField
 ///
-class UsdLightFieldKernelGaussianTriangleAPI : public UsdAPISchemaBase
+class UsdLightFieldPositionBaseAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -57,26 +47,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::SingleApplyAPI;
 
-    /// Construct a UsdLightFieldKernelGaussianTriangleAPI on UsdPrim \p prim .
-    /// Equivalent to UsdLightFieldKernelGaussianTriangleAPI::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdLightFieldPositionBaseAPI on UsdPrim \p prim .
+    /// Equivalent to UsdLightFieldPositionBaseAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdLightFieldKernelGaussianTriangleAPI(const UsdPrim& prim=UsdPrim())
+    explicit UsdLightFieldPositionBaseAPI(const UsdPrim& prim=UsdPrim())
         : UsdAPISchemaBase(prim)
     {
     }
 
-    /// Construct a UsdLightFieldKernelGaussianTriangleAPI on the prim held by \p schemaObj .
-    /// Should be preferred over UsdLightFieldKernelGaussianTriangleAPI(schemaObj.GetPrim()),
+    /// Construct a UsdLightFieldPositionBaseAPI on the prim held by \p schemaObj .
+    /// Should be preferred over UsdLightFieldPositionBaseAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdLightFieldKernelGaussianTriangleAPI(const UsdSchemaBase& schemaObj)
+    explicit UsdLightFieldPositionBaseAPI(const UsdSchemaBase& schemaObj)
         : UsdAPISchemaBase(schemaObj)
     {
     }
 
     /// Destructor.
     USDLIGHTFIELD_API
-    virtual ~UsdLightFieldKernelGaussianTriangleAPI();
+    virtual ~UsdLightFieldPositionBaseAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -85,17 +75,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdLightFieldKernelGaussianTriangleAPI holding the prim adhering to this
+    /// Return a UsdLightFieldPositionBaseAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdLightFieldKernelGaussianTriangleAPI(stage->GetPrimAtPath(path));
+    /// UsdLightFieldPositionBaseAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDLIGHTFIELD_API
-    static UsdLightFieldKernelGaussianTriangleAPI
+    static UsdLightFieldPositionBaseAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
@@ -120,11 +110,11 @@ public:
     CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "LightFieldKernelGaussianTriangleAPI" to the 
+    /// This information is stored by adding "LightFieldPositionBaseAPI" to the 
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     /// 
-    /// \return A valid UsdLightFieldKernelGaussianTriangleAPI object is returned upon success. 
-    /// An invalid (or empty) UsdLightFieldKernelGaussianTriangleAPI object is returned upon 
+    /// \return A valid UsdLightFieldPositionBaseAPI object is returned upon success. 
+    /// An invalid (or empty) UsdLightFieldPositionBaseAPI object is returned upon 
     /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
     /// resulting in failure. 
     /// 
@@ -135,7 +125,7 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDLIGHTFIELD_API
-    static UsdLightFieldKernelGaussianTriangleAPI 
+    static UsdLightFieldPositionBaseAPI 
     Apply(const UsdPrim &prim);
 
 protected:
@@ -157,42 +147,6 @@ private:
     USDLIGHTFIELD_API
     const TfType &_GetTfType() const override;
 
-public:
-    // --------------------------------------------------------------------- //
-    // KERNELTRIANGLEEDGELENGTH 
-    // --------------------------------------------------------------------- //
-    /// The edge length of the equilateral triangle before any scaling
-    /// is applied.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `float kernel:triangle:edgeLength = 1` |
-    /// | C++ Type | float |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
-    USDLIGHTFIELD_API
-    UsdAttribute GetKernelTriangleEdgeLengthAttr() const;
-
-    /// See GetKernelTriangleEdgeLengthAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDLIGHTFIELD_API
-    UsdAttribute CreateKernelTriangleEdgeLengthAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    /// \name LightFieldKernelBaseAPI
-    /// 
-    /// Convenience accessors for the built-in UsdLightFieldKernelBaseAPI
-    /// 
-    /// @{
-
-    /// Constructs and returns a UsdLightFieldKernelBaseAPI object.
-    /// Use this object to access UsdLightFieldKernelBaseAPI custom methods.
-    USDLIGHTFIELD_API
-    UsdLightFieldKernelBaseAPI LightFieldKernelBaseAPI() const;
-
-    /// @}
 public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 

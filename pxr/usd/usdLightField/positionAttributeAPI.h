@@ -16,6 +16,9 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLightField/tokens.h"
 
+            #include "pxr/usd/usdLightField/positionBaseAPI.h"
+        
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -195,6 +198,19 @@ public:
     USDLIGHTFIELD_API
     UsdAttribute CreatePositionshAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
+public:
+    /// \name LightFieldPositionBaseAPI
+    /// 
+    /// Convenience accessors for the built-in UsdLightFieldPositionBaseAPI
+    /// 
+    /// @{
+
+    /// Constructs and returns a UsdLightFieldPositionBaseAPI object.
+    /// Use this object to access UsdLightFieldPositionBaseAPI custom methods.
+    USDLIGHTFIELD_API
+    UsdLightFieldPositionBaseAPI LightFieldPositionBaseAPI() const;
+
+    /// @}
 public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 

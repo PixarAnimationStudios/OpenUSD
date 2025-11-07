@@ -4,10 +4,10 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef USDLIGHTFIELD_GENERATED_KERNELGAUSSIANELLIPSOIDAPI_H
-#define USDLIGHTFIELD_GENERATED_KERNELGAUSSIANELLIPSOIDAPI_H
+#ifndef USDLIGHTFIELD_GENERATED_KERNELCONSTANTSURFLETAPI_H
+#define USDLIGHTFIELD_GENERATED_KERNELCONSTANTSURFLETAPI_H
 
-/// \file usdLightField/kernelGaussianEllipsoidAPI.h
+/// \file usdLightField/kernelConstantSurfletAPI.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLightField/api.h"
@@ -32,22 +32,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// LIGHTFIELDKERNELGAUSSIANELLIPSOIDAPI                                       //
+// LIGHTFIELDKERNELCONSTANTSURFLETAPI                                         //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdLightFieldKernelGaussianEllipsoidAPI
+/// \class UsdLightFieldKernelConstantSurfletAPI
 ///
-/// Defines the gaussian ellipsoid kernel for a given ParticleField.
+/// Defines the constant surflet kernel for a given ParticleField.
 /// 
-/// The kernel shape is a spherical region that is reshaped by the associated
-/// scale data source, and rotated by the orientation data source.
+/// The kernal shape is a circular disk centered at the origin, with the normal
+/// of the plane being oriented along the positive z-axis.
 /// 
-/// The falloff function for this kernel is the gaussian falloff function,
-/// where the peak of the falloff function is defined by the opacity data
-/// source.
-/// 
+/// The falloff function for this kernel is constant and the value is directly
+/// defined by the opacity data source.
 ///
-class UsdLightFieldKernelGaussianEllipsoidAPI : public UsdAPISchemaBase
+class UsdLightFieldKernelConstantSurfletAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -55,26 +53,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::SingleApplyAPI;
 
-    /// Construct a UsdLightFieldKernelGaussianEllipsoidAPI on UsdPrim \p prim .
-    /// Equivalent to UsdLightFieldKernelGaussianEllipsoidAPI::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdLightFieldKernelConstantSurfletAPI on UsdPrim \p prim .
+    /// Equivalent to UsdLightFieldKernelConstantSurfletAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdLightFieldKernelGaussianEllipsoidAPI(const UsdPrim& prim=UsdPrim())
+    explicit UsdLightFieldKernelConstantSurfletAPI(const UsdPrim& prim=UsdPrim())
         : UsdAPISchemaBase(prim)
     {
     }
 
-    /// Construct a UsdLightFieldKernelGaussianEllipsoidAPI on the prim held by \p schemaObj .
-    /// Should be preferred over UsdLightFieldKernelGaussianEllipsoidAPI(schemaObj.GetPrim()),
+    /// Construct a UsdLightFieldKernelConstantSurfletAPI on the prim held by \p schemaObj .
+    /// Should be preferred over UsdLightFieldKernelConstantSurfletAPI(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdLightFieldKernelGaussianEllipsoidAPI(const UsdSchemaBase& schemaObj)
+    explicit UsdLightFieldKernelConstantSurfletAPI(const UsdSchemaBase& schemaObj)
         : UsdAPISchemaBase(schemaObj)
     {
     }
 
     /// Destructor.
     USDLIGHTFIELD_API
-    virtual ~UsdLightFieldKernelGaussianEllipsoidAPI();
+    virtual ~UsdLightFieldKernelConstantSurfletAPI();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -83,17 +81,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdLightFieldKernelGaussianEllipsoidAPI holding the prim adhering to this
+    /// Return a UsdLightFieldKernelConstantSurfletAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdLightFieldKernelGaussianEllipsoidAPI(stage->GetPrimAtPath(path));
+    /// UsdLightFieldKernelConstantSurfletAPI(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDLIGHTFIELD_API
-    static UsdLightFieldKernelGaussianEllipsoidAPI
+    static UsdLightFieldKernelConstantSurfletAPI
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 
@@ -118,11 +116,11 @@ public:
     CanApply(const UsdPrim &prim, std::string *whyNot=nullptr);
 
     /// Applies this <b>single-apply</b> API schema to the given \p prim.
-    /// This information is stored by adding "LightFieldKernelGaussianEllipsoidAPI" to the 
+    /// This information is stored by adding "LightFieldKernelConstantSurfletAPI" to the 
     /// token-valued, listOp metadata \em apiSchemas on the prim.
     /// 
-    /// \return A valid UsdLightFieldKernelGaussianEllipsoidAPI object is returned upon success. 
-    /// An invalid (or empty) UsdLightFieldKernelGaussianEllipsoidAPI object is returned upon 
+    /// \return A valid UsdLightFieldKernelConstantSurfletAPI object is returned upon success. 
+    /// An invalid (or empty) UsdLightFieldKernelConstantSurfletAPI object is returned upon 
     /// failure. See \ref UsdPrim::ApplyAPI() for conditions 
     /// resulting in failure. 
     /// 
@@ -133,7 +131,7 @@ public:
     /// \sa UsdPrim::RemoveAPI()
     ///
     USDLIGHTFIELD_API
-    static UsdLightFieldKernelGaussianEllipsoidAPI 
+    static UsdLightFieldKernelConstantSurfletAPI 
     Apply(const UsdPrim &prim);
 
 protected:

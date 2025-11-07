@@ -18,7 +18,6 @@ void wrapUsdLightFieldTokens()
     pxr_boost::python::class_<UsdLightFieldTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, cameraDistance);
-    _ADD_TOKEN(cls, kernelTriangleEdgeLength);
     _ADD_TOKEN(cls, opacities);
     _ADD_TOKEN(cls, opacitiesh);
     _ADD_TOKEN(cls, orientations);
@@ -37,12 +36,13 @@ void wrapUsdLightFieldTokens()
     _ADD_TOKEN(cls, tangential);
     _ADD_TOKEN(cls, zDepth);
     _ADD_TOKEN(cls, LightFieldKernelBaseAPI);
-    _ADD_TOKEN(cls, LightFieldKernelConstantTriangleAPI);
+    _ADD_TOKEN(cls, LightFieldKernelConstantSurfletAPI);
     _ADD_TOKEN(cls, LightFieldKernelGaussianEllipsoidAPI);
-    _ADD_TOKEN(cls, LightFieldKernelGaussianTriangleAPI);
+    _ADD_TOKEN(cls, LightFieldKernelGaussianSurfletAPI);
     _ADD_TOKEN(cls, LightFieldOpacityAttributeAPI);
     _ADD_TOKEN(cls, LightFieldOrientationAttributeAPI);
     _ADD_TOKEN(cls, LightFieldPositionAttributeAPI);
+    _ADD_TOKEN(cls, LightFieldPositionBaseAPI);
     _ADD_TOKEN(cls, LightFieldRadianceBaseAPI);
     _ADD_TOKEN(cls, LightFieldScaleAttributeAPI);
     _ADD_TOKEN(cls, LightFieldSphericalBetaAttributeAPI);

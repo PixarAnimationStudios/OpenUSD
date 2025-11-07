@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/positionAttributeAPI.h"
+#include "pxr/usd/usdLightField/kernelConstantSurfletAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -32,56 +32,42 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-        
-static UsdAttribute
-_CreatePositionsAttr(UsdLightFieldPositionAttributeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreatePositionsAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Point3fArray), writeSparsely);
-}
-        
-static UsdAttribute
-_CreatePositionshAttr(UsdLightFieldPositionAttributeAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreatePositionshAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Point3hArray), writeSparsely);
-}
 
 static std::string
-_Repr(const UsdLightFieldPositionAttributeAPI &self)
+_Repr(const UsdLightFieldKernelConstantSurfletAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdLightField.PositionAttributeAPI(%s)",
+        "UsdLightField.KernelConstantSurfletAPI(%s)",
         primRepr.c_str());
 }
 
-struct UsdLightFieldPositionAttributeAPI_CanApplyResult : 
+struct UsdLightFieldKernelConstantSurfletAPI_CanApplyResult : 
     public TfPyAnnotatedBoolResult<std::string>
 {
-    UsdLightFieldPositionAttributeAPI_CanApplyResult(bool val, std::string const &msg) :
+    UsdLightFieldKernelConstantSurfletAPI_CanApplyResult(bool val, std::string const &msg) :
         TfPyAnnotatedBoolResult<std::string>(val, msg) {}
 };
 
-static UsdLightFieldPositionAttributeAPI_CanApplyResult
+static UsdLightFieldKernelConstantSurfletAPI_CanApplyResult
 _WrapCanApply(const UsdPrim& prim)
 {
     std::string whyNot;
-    bool result = UsdLightFieldPositionAttributeAPI::CanApply(prim, &whyNot);
-    return UsdLightFieldPositionAttributeAPI_CanApplyResult(result, whyNot);
+    bool result = UsdLightFieldKernelConstantSurfletAPI::CanApply(prim, &whyNot);
+    return UsdLightFieldKernelConstantSurfletAPI_CanApplyResult(result, whyNot);
 }
 
 } // anonymous namespace
 
-void wrapUsdLightFieldPositionAttributeAPI()
+void wrapUsdLightFieldKernelConstantSurfletAPI()
 {
-    typedef UsdLightFieldPositionAttributeAPI This;
+    typedef UsdLightFieldKernelConstantSurfletAPI This;
 
-    UsdLightFieldPositionAttributeAPI_CanApplyResult::Wrap<UsdLightFieldPositionAttributeAPI_CanApplyResult>(
+    UsdLightFieldKernelConstantSurfletAPI_CanApplyResult::Wrap<UsdLightFieldKernelConstantSurfletAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
-        cls("PositionAttributeAPI");
+        cls("KernelConstantSurfletAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -109,23 +95,9 @@ void wrapUsdLightFieldPositionAttributeAPI()
 
         .def(!self)
 
-        
-        .def("GetPositionsAttr",
-             &This::GetPositionsAttr)
-        .def("CreatePositionsAttr",
-             &_CreatePositionsAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetPositionshAttr",
-             &This::GetPositionshAttr)
-        .def("CreatePositionshAttr",
-             &_CreatePositionshAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
 
-        .def("LightFieldPositionBaseAPI", &This::LightFieldPositionBaseAPI)
+        .def("LightFieldKernelBaseAPI", &This::LightFieldKernelBaseAPI)
         .def("__repr__", ::_Repr)
     ;
 

@@ -183,12 +183,10 @@ class "LightFieldKernelBaseAPI" (
 {
 }
 
-# All kernel API should full define their geometric representation, if not
-# defined with local attributes, then declaritvely in their documentation.
 class "LightFieldKernelGaussianEllipsoidAPI" (
     doc = """Defines the gaussian ellipsoid kernel for a given ParticleField.
 
-    The kernel shape is a circular region that is reshaped by the associated
+    The kernel shape is a spherical region that is reshaped by the associated
     scale data source, and rotated by the orientation data source.
 
     The falloff function for this kernel is the gaussian falloff function,
@@ -214,12 +212,11 @@ class "LightFieldKernelGaussianEllipsoidAPI" (
 {
 }
 
-class "LightFieldKernelGaussianTriangleAPI" (
-    doc = """Defines the gaussian triangle kernel for a given ParticleField.
+class "LightFieldKernelGaussianSurfletAPI" (
+    doc = """Defines the gaussian surflet kernel for a given ParticleField.
 
-    The kernal shape is an equilateral triangle centered at the origin, with
-    the base of the triangle, parallel to the x-axis, and the apex of the
-    triangle on the y-axis.
+    The kernal shape is a circular disk centered at the origin, with the normal
+    of the plane being oriented along the positive z-axis.
 
     The falloff function for this kernel is the gaussian falloff function,
     where the peak of the falloff function is defined by the opacity data
@@ -227,7 +224,7 @@ class "LightFieldKernelGaussianTriangleAPI" (
     """
     inherits = </APISchemaBase>
     customData = {
-        string className = "KernelGaussianTriangleAPI"
+        string className = "KernelGaussianSurfletAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
         string extraIncludes = """
@@ -242,25 +239,19 @@ class "LightFieldKernelGaussianTriangleAPI" (
     ]
 )
 {
-    float kernel:triangle:edgeLength = 1 (
-        doc = """The edge length of the equilateral triangle before any scaling
-                is applied."""
-    )
 }
 
+class "LightFieldKernelConstantSurfletAPI" (
+    doc = """Defines the constant surflet kernel for a given ParticleField.
 
-class "LightFieldKernelConstantTriangleAPI" (
-    doc = """Defines the gaussian triangle kernel for a given ParticleField.
+    The kernal shape is a circular disk centered at the origin, with the normal
+    of the plane being oriented along the positive z-axis.
 
-     The kernal shape is an equilateral triangle centered at the origin, with
-     the base of the triangle, parallel to the x-axis, and the apex of the
-     triangle on the y-axis.
-
-     The falloff function for this kernel is constant and the value is directly
-     defined by the opacity data source."""
+    The falloff function for this kernel is constant and the value is directly
+    defined by the opacity data source."""
     inherits = </APISchemaBase>
     customData = {
-        string className = "KernelConstantTriangleAPI"
+        string className = "KernelConstantSurfletAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
         string extraIncludes = """

@@ -49,10 +49,6 @@ struct UsdLightFieldTokensType {
     /// 
     /// Possible value for UsdLightFieldParticleField_3DGaussianSplat::GetSortingModeHintAttr()
     const TfToken cameraDistance;
-    /// \brief "kernel:triangle:edgeLength"
-    /// 
-    /// UsdLightFieldKernelGaussianTriangleAPI
-    const TfToken kernelTriangleEdgeLength;
     /// \brief "opacities"
     /// 
     /// UsdLightFieldOpacityAttributeAPI
@@ -125,18 +121,18 @@ struct UsdLightFieldTokensType {
     /// 
     /// Schema identifer and family for UsdLightFieldKernelBaseAPI
     const TfToken LightFieldKernelBaseAPI;
-    /// \brief "LightFieldKernelConstantTriangleAPI"
+    /// \brief "LightFieldKernelConstantSurfletAPI"
     /// 
-    /// Schema identifer and family for UsdLightFieldKernelConstantTriangleAPI
-    const TfToken LightFieldKernelConstantTriangleAPI;
+    /// Schema identifer and family for UsdLightFieldKernelConstantSurfletAPI
+    const TfToken LightFieldKernelConstantSurfletAPI;
     /// \brief "LightFieldKernelGaussianEllipsoidAPI"
     /// 
     /// Schema identifer and family for UsdLightFieldKernelGaussianEllipsoidAPI
     const TfToken LightFieldKernelGaussianEllipsoidAPI;
-    /// \brief "LightFieldKernelGaussianTriangleAPI"
+    /// \brief "LightFieldKernelGaussianSurfletAPI"
     /// 
-    /// Schema identifer and family for UsdLightFieldKernelGaussianTriangleAPI
-    const TfToken LightFieldKernelGaussianTriangleAPI;
+    /// Schema identifer and family for UsdLightFieldKernelGaussianSurfletAPI
+    const TfToken LightFieldKernelGaussianSurfletAPI;
     /// \brief "LightFieldOpacityAttributeAPI"
     /// 
     /// Schema identifer and family for UsdLightFieldOpacityAttributeAPI
@@ -149,6 +145,10 @@ struct UsdLightFieldTokensType {
     /// 
     /// Schema identifer and family for UsdLightFieldPositionAttributeAPI
     const TfToken LightFieldPositionAttributeAPI;
+    /// \brief "LightFieldPositionBaseAPI"
+    /// 
+    /// Schema identifer and family for UsdLightFieldPositionBaseAPI
+    const TfToken LightFieldPositionBaseAPI;
     /// \brief "LightFieldRadianceBaseAPI"
     /// 
     /// Schema identifer and family for UsdLightFieldRadianceBaseAPI

@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/kernelConstantTriangleAPI.h"
+#include "pxr/usd/usdLightField/positionBaseAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -34,40 +34,40 @@ WRAP_CUSTOM;
 
 
 static std::string
-_Repr(const UsdLightFieldKernelConstantTriangleAPI &self)
+_Repr(const UsdLightFieldPositionBaseAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdLightField.KernelConstantTriangleAPI(%s)",
+        "UsdLightField.PositionBaseAPI(%s)",
         primRepr.c_str());
 }
 
-struct UsdLightFieldKernelConstantTriangleAPI_CanApplyResult : 
+struct UsdLightFieldPositionBaseAPI_CanApplyResult : 
     public TfPyAnnotatedBoolResult<std::string>
 {
-    UsdLightFieldKernelConstantTriangleAPI_CanApplyResult(bool val, std::string const &msg) :
+    UsdLightFieldPositionBaseAPI_CanApplyResult(bool val, std::string const &msg) :
         TfPyAnnotatedBoolResult<std::string>(val, msg) {}
 };
 
-static UsdLightFieldKernelConstantTriangleAPI_CanApplyResult
+static UsdLightFieldPositionBaseAPI_CanApplyResult
 _WrapCanApply(const UsdPrim& prim)
 {
     std::string whyNot;
-    bool result = UsdLightFieldKernelConstantTriangleAPI::CanApply(prim, &whyNot);
-    return UsdLightFieldKernelConstantTriangleAPI_CanApplyResult(result, whyNot);
+    bool result = UsdLightFieldPositionBaseAPI::CanApply(prim, &whyNot);
+    return UsdLightFieldPositionBaseAPI_CanApplyResult(result, whyNot);
 }
 
 } // anonymous namespace
 
-void wrapUsdLightFieldKernelConstantTriangleAPI()
+void wrapUsdLightFieldPositionBaseAPI()
 {
-    typedef UsdLightFieldKernelConstantTriangleAPI This;
+    typedef UsdLightFieldPositionBaseAPI This;
 
-    UsdLightFieldKernelConstantTriangleAPI_CanApplyResult::Wrap<UsdLightFieldKernelConstantTriangleAPI_CanApplyResult>(
+    UsdLightFieldPositionBaseAPI_CanApplyResult::Wrap<UsdLightFieldPositionBaseAPI_CanApplyResult>(
         "_CanApplyResult", "whyNot");
 
     class_<This, bases<UsdAPISchemaBase> >
-        cls("KernelConstantTriangleAPI");
+        cls("PositionBaseAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -96,8 +96,6 @@ void wrapUsdLightFieldKernelConstantTriangleAPI()
         .def(!self)
 
 
-
-        .def("LightFieldKernelBaseAPI", &This::LightFieldKernelBaseAPI)
         .def("__repr__", ::_Repr)
     ;
 

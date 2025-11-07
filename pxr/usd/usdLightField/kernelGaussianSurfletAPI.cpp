@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/kernelConstantTriangleAPI.h"
+#include "pxr/usd/usdLightField/kernelGaussianSurfletAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -16,63 +16,63 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdLightFieldKernelConstantTriangleAPI,
+    TfType::Define<UsdLightFieldKernelGaussianSurfletAPI,
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
 
 /* virtual */
-UsdLightFieldKernelConstantTriangleAPI::~UsdLightFieldKernelConstantTriangleAPI()
+UsdLightFieldKernelGaussianSurfletAPI::~UsdLightFieldKernelGaussianSurfletAPI()
 {
 }
 
 /* static */
-UsdLightFieldKernelConstantTriangleAPI
-UsdLightFieldKernelConstantTriangleAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdLightFieldKernelGaussianSurfletAPI
+UsdLightFieldKernelGaussianSurfletAPI::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdLightFieldKernelConstantTriangleAPI();
+        return UsdLightFieldKernelGaussianSurfletAPI();
     }
-    return UsdLightFieldKernelConstantTriangleAPI(stage->GetPrimAtPath(path));
+    return UsdLightFieldKernelGaussianSurfletAPI(stage->GetPrimAtPath(path));
 }
 
 
 /* virtual */
-UsdSchemaKind UsdLightFieldKernelConstantTriangleAPI::_GetSchemaKind() const
+UsdSchemaKind UsdLightFieldKernelGaussianSurfletAPI::_GetSchemaKind() const
 {
-    return UsdLightFieldKernelConstantTriangleAPI::schemaKind;
+    return UsdLightFieldKernelGaussianSurfletAPI::schemaKind;
 }
 
 /* static */
 bool
-UsdLightFieldKernelConstantTriangleAPI::CanApply(
+UsdLightFieldKernelGaussianSurfletAPI::CanApply(
     const UsdPrim &prim, std::string *whyNot)
 {
-    return prim.CanApplyAPI<UsdLightFieldKernelConstantTriangleAPI>(whyNot);
+    return prim.CanApplyAPI<UsdLightFieldKernelGaussianSurfletAPI>(whyNot);
 }
 
 /* static */
-UsdLightFieldKernelConstantTriangleAPI
-UsdLightFieldKernelConstantTriangleAPI::Apply(const UsdPrim &prim)
+UsdLightFieldKernelGaussianSurfletAPI
+UsdLightFieldKernelGaussianSurfletAPI::Apply(const UsdPrim &prim)
 {
-    if (prim.ApplyAPI<UsdLightFieldKernelConstantTriangleAPI>()) {
-        return UsdLightFieldKernelConstantTriangleAPI(prim);
+    if (prim.ApplyAPI<UsdLightFieldKernelGaussianSurfletAPI>()) {
+        return UsdLightFieldKernelGaussianSurfletAPI(prim);
     }
-    return UsdLightFieldKernelConstantTriangleAPI();
+    return UsdLightFieldKernelGaussianSurfletAPI();
 }
 
 /* static */
 const TfType &
-UsdLightFieldKernelConstantTriangleAPI::_GetStaticTfType()
+UsdLightFieldKernelGaussianSurfletAPI::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdLightFieldKernelConstantTriangleAPI>();
+    static TfType tfType = TfType::Find<UsdLightFieldKernelGaussianSurfletAPI>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdLightFieldKernelConstantTriangleAPI::_IsTypedSchema()
+UsdLightFieldKernelGaussianSurfletAPI::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -80,14 +80,14 @@ UsdLightFieldKernelConstantTriangleAPI::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdLightFieldKernelConstantTriangleAPI::_GetTfType() const
+UsdLightFieldKernelGaussianSurfletAPI::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 /*static*/
 const TfTokenVector&
-UsdLightFieldKernelConstantTriangleAPI::GetSchemaAttributeNames(bool includeInherited)
+UsdLightFieldKernelGaussianSurfletAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
     static TfTokenVector allNames =
@@ -100,7 +100,7 @@ UsdLightFieldKernelConstantTriangleAPI::GetSchemaAttributeNames(bool includeInhe
 }
 
 UsdLightFieldKernelBaseAPI
-UsdLightFieldKernelConstantTriangleAPI::LightFieldKernelBaseAPI() const
+UsdLightFieldKernelGaussianSurfletAPI::LightFieldKernelBaseAPI() const
 {
     return UsdLightFieldKernelBaseAPI(GetPrim());
 }

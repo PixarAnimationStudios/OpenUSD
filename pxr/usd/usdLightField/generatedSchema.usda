@@ -81,7 +81,17 @@ class ParticleField "ParticleField" (
     )
 }
 
+class "LightFieldPositionBaseAPI" (
+    customData = {
+        string userDocBrief = """Defines a base-class type applied schema that all applied schema
+            that provides the a ParticleField kernel will automatically apply."""
+    }
+)
+{
+}
+
 class "LightFieldPositionAttributeAPI" (
+    apiSchemas = ["LightFieldPositionBaseAPI"]
     customData = {
         string userDocBrief = """A ParticleField related applied schema that provides a position
              attribute to define the locations of the particles."""
@@ -177,25 +187,19 @@ class "LightFieldKernelGaussianEllipsoidAPI" (
 {
 }
 
-class "LightFieldKernelGaussianTriangleAPI" (
+class "LightFieldKernelGaussianSurfletAPI" (
     apiSchemas = ["LightFieldKernelBaseAPI"]
     customData = {
-        string userDocBrief = "Defines the gaussian triangle kernel for a given ParticleField."
+        string userDocBrief = "Defines the gaussian surflet kernel for a given ParticleField."
     }
 )
 {
-    float kernel:triangle:edgeLength = 1 (
-        customData = {
-            string userDocBrief = """The edge length of the equilateral triangle before any scaling
-                is applied."""
-        }
-    )
 }
 
-class "LightFieldKernelConstantTriangleAPI" (
+class "LightFieldKernelConstantSurfletAPI" (
     apiSchemas = ["LightFieldKernelBaseAPI"]
     customData = {
-        string userDocBrief = "Defines the gaussian triangle kernel for a given ParticleField."
+        string userDocBrief = "Defines the constant surflet kernel for a given ParticleField."
     }
 )
 {

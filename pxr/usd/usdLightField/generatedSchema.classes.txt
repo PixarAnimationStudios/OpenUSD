@@ -2,14 +2,15 @@
 
 # Public Classes
 kernelBaseAPI
-kernelConstantTriangleAPI
+kernelConstantSurfletAPI
 kernelGaussianEllipsoidAPI
-kernelGaussianTriangleAPI
+kernelGaussianSurfletAPI
 opacityAttributeAPI
 orientationAttributeAPI
 particleField
 particleField_3DGaussianSplat
 positionAttributeAPI
+positionBaseAPI
 radianceBaseAPI
 scaleAttributeAPI
 sphericalBetaAttributeAPI
@@ -19,14 +20,15 @@ tokens
 # Python Module Files
 module.cpp
 wrapKernelBaseAPI.cpp
-wrapKernelConstantTriangleAPI.cpp
+wrapKernelConstantSurfletAPI.cpp
 wrapKernelGaussianEllipsoidAPI.cpp
-wrapKernelGaussianTriangleAPI.cpp
+wrapKernelGaussianSurfletAPI.cpp
 wrapOpacityAttributeAPI.cpp
 wrapOrientationAttributeAPI.cpp
 wrapParticleField.cpp
 wrapParticleField_3DGaussianSplat.cpp
 wrapPositionAttributeAPI.cpp
+wrapPositionBaseAPI.cpp
 wrapRadianceBaseAPI.cpp
 wrapScaleAttributeAPI.cpp
 wrapSphericalBetaAttributeAPI.cpp
