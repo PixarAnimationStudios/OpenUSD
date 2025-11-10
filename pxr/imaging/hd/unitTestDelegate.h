@@ -189,6 +189,26 @@ public:
                         HdInterpolation widthInterpolation,
                         SdfPath const &instancerId=SdfPath());
 
+    HD_API
+    void AddDashDotLines(SdfPath const &id,
+                         VtVec3fArray const &points,
+                         VtIntArray const &curveVertexCounts,
+                         VtIntArray const &curveIndices,
+                         TfToken const& shapeDetail,
+                         bool const& screenSpacePattern,
+                         VtValue const &color,
+                         HdInterpolation colorInterpolation,
+                         VtValue const &opacity,
+                         HdInterpolation opacityInterpolation,
+                         VtValue const &width,
+                         HdInterpolation widthInterpolation,
+                         VtValue const& pattern,
+                         VtValue const& patternPeriod,
+                         VtValue const& patternScale,
+                         VtValue const& startCapType,
+                         VtValue const& endCapType,
+                         SdfPath const &instancerId=SdfPath());
+
     /// Add a basis curves prim containing two curves
     HD_API
     void AddCurves(SdfPath const &id, TfToken const &type, TfToken const &basis,
@@ -197,6 +217,20 @@ public:
                    HdInterpolation widthInterp=HdInterpolationConstant,
                    bool authoredNormals=false,
                    SdfPath const &instancerId=SdfPath());
+
+    /// Add a dashDotLines prim containing two dashDotLines
+    HD_API
+    void AddDashDotLines(SdfPath const &id, TfToken const & shapeDetail,
+                         bool const &screenSpacePattern,
+                         VtVec2fArray const& pattern,
+                         float const& patternPeriod,
+                         float const& patternScale,
+                         TfToken const& startCapType,
+                         TfToken const& endCapType,
+                         GfMatrix4f const &transform,
+                         HdInterpolation colorInterp=HdInterpolationConstant,
+                         HdInterpolation widthInterp=HdInterpolationConstant,
+                         SdfPath const &instancerId=SdfPath());
     
     HD_API
     void SetCurveWrapMode(SdfPath const &id, TfToken const &wrap);
@@ -361,6 +395,9 @@ public:
     virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id) 
         override;
     HD_API
+    virtual HdDashDotLinesTopology GetDashDotLinesTopology(SdfPath const& id)
+        override;
+    HD_API
     virtual TfToken GetRenderTag(SdfPath const& id) override;
     HD_API
     virtual TfTokenVector GetTaskRenderTags(SdfPath const &taskId) override;
@@ -467,7 +504,7 @@ private:
                 TfToken const &type,
                 TfToken const &basis,
                 TfToken const &wrap = HdTokens->nonperiodic) :
-            points(points), curveVertexCounts(curveVertexCounts), 
+            points(points), curveVertexCounts(curveVertexCounts),
             curveIndices(curveIndices), type(type), basis(basis), wrap(wrap) { }
 
         VtVec3fArray points;
@@ -476,6 +513,23 @@ private:
         TfToken type;
         TfToken basis;
         TfToken wrap;
+    };
+    struct _DashDotLines {
+        _DashDotLines() {}
+        _DashDotLines(VtVec3fArray const& points,
+            VtIntArray const& curveVertexCounts,
+            VtIntArray const& curveIndices,
+            TfToken const& shapeDetail,
+            bool const& screenSpacePattern) :
+            points(points), curveVertexCounts(curveVertexCounts),
+            curveIndices(curveIndices), shapeDetail(shapeDetail),
+            screenSpacePattern(screenSpacePattern) { }
+
+        VtVec3fArray points;
+        VtIntArray curveVertexCounts;
+        VtIntArray curveIndices;
+        TfToken shapeDetail;
+        bool screenSpacePattern;
     };
     struct _Points {
         _Points() { }
@@ -547,6 +601,7 @@ private:
 
     std::map<SdfPath, _Mesh> _meshes;
     std::map<SdfPath, _Curves> _curves;
+    std::map<SdfPath, _DashDotLines> _dashDotLines;
     std::map<SdfPath, _Points> _points;
     std::map<SdfPath, _Instancer> _instancers;
     std::map<SdfPath, _Primvars> _primvars;

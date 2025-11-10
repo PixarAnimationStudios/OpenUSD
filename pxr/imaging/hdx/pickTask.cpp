@@ -564,6 +564,9 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
                 viewport,
                 _contextParams.clipPlanes);
         }
+        _index->SetCameraFramingState(_contextParams.viewMatrix,
+            _contextParams.projectionMatrix,
+            viewport);
     }
 
     _pickableRenderPassState->SetAovBindings(_pickableAovBindings);

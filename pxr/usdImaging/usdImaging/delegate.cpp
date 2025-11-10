@@ -18,6 +18,8 @@
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/camera.h"
+#include "pxr/imaging/hd/dashDotLines.h"
+#include "pxr/imaging/hd/dashDotLinesTopology.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/light.h"
@@ -1992,6 +1994,28 @@ UsdImagingDelegate::GetBasisCurvesTopology(SdfPath const& id)
     }
 
     return HdBasisCurvesTopology();
+}
+
+/*virtual*/
+HdDashDotLinesTopology
+UsdImagingDelegate::GetDashDotLinesTopology(SdfPath const& id)
+{
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    SdfPath cachePath = ConvertIndexPathToCachePath(id);
+    _HdPrimInfo* primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        VtValue topology = primInfo->adapter->GetTopology(
+            primInfo->usdPrim,
+            cachePath,
+            _time);
+        if (topology.IsHolding<HdDashDotLinesTopology>()) {
+            return topology.Get<HdDashDotLinesTopology>();
+        }
+    }
+
+    return HdDashDotLinesTopology();
 }
 
 /*virtual*/

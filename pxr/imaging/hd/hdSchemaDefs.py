@@ -235,6 +235,38 @@
     ),
 
     #--------------------------------------------------------------------------
+    # dashDotLines
+    dict(
+        SCHEMA_NAME = 'DashDotLines',
+        SCHEMA_TOKEN = 'dashDotLines',
+        SCHEMA_INCLUDES =
+            ['{{LIBRARY_PATH}}/dashDotLinesTopologySchema'],
+
+        MEMBERS = [
+            ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
+            ('topology', 'HdDashDotLinesTopologySchema', {}),
+        ],
+
+        ADD_DEFAULT_LOCATOR = True,
+    ),
+
+    #--------------------------------------------------------------------------
+    # dashDotLinesTopology
+    dict(
+        SCHEMA_NAME = 'DashDotLinesTopology',
+        SCHEMA_TOKEN = 'topology',
+        IMPL_SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/dashDotLinesSchema'],
+        LOCATOR_PREFIX = 'HdDashDotLinesSchema::GetDefaultLocator()',
+        ADD_DEFAULT_LOCATOR = True,
+        MEMBERS = [
+            ('curveVertexCounts', T_INTARRAY, {}),
+            ('curveIndices', T_INTARRAY, {}),
+            ('shapeDetail', T_TOKEN, {}),
+            ('screenSpacePattern', T_BOOL, {}),
+        ],
+    ),
+    
+    #--------------------------------------------------------------------------
     # nurbsCurves
     dict(
         SCHEMA_NAME = 'NurbsCurves',

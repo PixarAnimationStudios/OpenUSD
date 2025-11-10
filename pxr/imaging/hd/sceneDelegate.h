@@ -13,6 +13,7 @@
 
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
+#include "pxr/imaging/hd/dashDotLinesTopology.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -449,6 +450,10 @@ public:
     /// Gets the topological curve data for a given prim.
     HD_API
     virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id);
+
+    /// Gets the topological curve data for a given prim.
+    HD_API
+    virtual HdDashDotLinesTopology GetDashDotLinesTopology(SdfPath const& id);
 
     /// Gets the subdivision surface tags (sharpness, holes, etc).
     HD_API

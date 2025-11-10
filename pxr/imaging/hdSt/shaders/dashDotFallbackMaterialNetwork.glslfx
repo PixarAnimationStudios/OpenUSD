@@ -1,0 +1,46 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2025 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/dashDotFallbackMaterialNetwork.glslfx
+
+---
+--- The dashDotFallbackMaterialNetwork shader is used as a replacement shader
+--- if no material binding was provided for the dashdot lines. 
+--- It needs to define both the surfaceShader() and displacementShader()
+--- terminals. The shader will do nothing.
+---
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "displacementShader": {
+                "source": [ "DashDotFallback.Displacement" ]
+            },
+            "surfaceShader": {
+                "source": [ "DashDotFallback.Surface" ]
+            }
+        }
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl DashDotFallback.Surface
+
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    return color;
+}
+--- --------------------------------------------------------------------------
+-- glsl DashDotFallback.Displacement
+
+vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
+{
+    return Peye;
+}

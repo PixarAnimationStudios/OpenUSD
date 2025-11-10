@@ -78,6 +78,7 @@ public:
 
     HdMeshTopology GetMeshTopology(SdfPath const &id) override;
     HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const &id) override;
+    HdDashDotLinesTopology GetDashDotLinesTopology(SdfPath const& id) override;
     PxOsdSubdivTags GetSubdivTags(SdfPath const &id) override;
     GfRange3d GetExtent(SdfPath const &id) override;
     bool GetVisible(SdfPath const &id) override;

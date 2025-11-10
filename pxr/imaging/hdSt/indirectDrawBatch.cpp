@@ -457,14 +457,13 @@ _GetShaderBar(HdSt_MaterialNetworkShaderSharedPtr const & shader)
     return shader ? shader->GetShaderData() : nullptr;
 }
 
-using TextureResourceID = HdSt_MaterialNetworkShader::ID;
+using TextureResourceID = HdStShaderCode::ID;
 
 TextureResourceID
-_GetTextureResourceID(HdStDrawItem const * drawItem)
+_GetTextureResourceID(HdStShaderCodeSharedPtr const& shader)
 {
-    if (HdSt_MaterialNetworkShaderSharedPtr const &materialNetworkShader =
-            drawItem->GetMaterialNetworkShader()) {
-        return materialNetworkShader->ComputeTextureSourceHash();
+    if (shader) {
+        return shader->ComputeTextureSourceHash();
     }
     return 0;
 }
@@ -552,10 +551,12 @@ HdSt_IndirectDrawBatch::_CompileBatch(
 
     if (_drawItemInstances.empty()) return;
 
+    HdStDrawItem const* drawItem = _drawItemInstances[0]->GetDrawItem();
+
     size_t const numDrawItemInstances = _drawItemInstances.size();
 
     size_t const instancerNumLevels =
-        _drawItemInstances[0]->GetDrawItem()->GetInstancePrimvarNumLevels();
+        drawItem->GetInstancePrimvarNumLevels();
 
     // Get the layout of the command buffer we are building.
     _DrawCommandTraits const traits =
@@ -580,8 +581,10 @@ HdSt_IndirectDrawBatch::_CompileBatch(
     // We'll need to rebind textures while drawing if we have
     // a draw item instance with a different texture resource id
     // than the first draw item.
-    TextureResourceID const firstTextureResourceID =
-        _GetTextureResourceID(_drawItemInstances[0]->GetDrawItem());
+    TextureResourceID const firstGeometricTextureID =
+        _GetTextureResourceID(drawItem->GetGeometricShader());
+    TextureResourceID const firstMaterialTextureID =
+        _GetTextureResourceID(drawItem->GetMaterialNetworkShader());
     _needsTextureResourceRebinding = false;
 
     TF_DEBUG(HDST_DRAW).Msg(" - Processing Items:\n");
@@ -597,9 +600,12 @@ HdSt_IndirectDrawBatch::_CompileBatch(
         _DrawItemState const dc(drawItem);
 
         if (_allowTextureResourceRebinding && !_needsTextureResourceRebinding) {
-            TextureResourceID const textureResourceID =
-                                            _GetTextureResourceID(drawItem);
-            if (firstTextureResourceID != textureResourceID) {
+            TextureResourceID const geometricTextureID =
+                _GetTextureResourceID(drawItem->GetGeometricShader());
+            TextureResourceID const materialTextureID =
+                _GetTextureResourceID(drawItem->GetMaterialNetworkShader());
+            if (firstGeometricTextureID != geometricTextureID ||
+                firstMaterialTextureID != materialTextureID) {
                 _needsTextureResourceRebinding = true;
             }
         }
@@ -1053,6 +1059,17 @@ _BindingState::BindResourcesForDrawing(
         shader->BindResources(
                 glslProgram->GetProgram()->GetRawResource(), binder);
     }
+    
+    // Bind resources for geometric shader.
+    HdStBufferArrayRangeSharedPtr shaderBar =
+        std::static_pointer_cast<HdStBufferArrayRange>(
+            geometricShader->GetShaderData());
+    if (shaderBar) {
+        binder.BindBuffer(HdTokens->materialParams,
+            shaderBar->GetResource());
+    }
+    geometricShader->BindResources(
+        glslProgram->GetProgram()->GetRawResource(), binder);
 
     renderPassState->Bind(hgiCapabilities);
     renderPassState->ApplyStateFromGeometricShader(binder, geometricShader);
@@ -1082,6 +1099,16 @@ _BindingState::UnbindResourcesForDrawing(
         }
         shader->UnbindResources(0, binder);
     }
+    
+    // Unbind resources for geometric shader.
+    HdStBufferArrayRangeSharedPtr shaderBar =
+        std::static_pointer_cast<HdStBufferArrayRange>(
+            geometricShader->GetShaderData());
+    if (shaderBar) {
+        binder.UnbindBuffer(HdTokens->materialParams,
+            shaderBar->GetResource());
+    }
+    geometricShader->UnbindResources(0, binder);
 
     renderPassState->Unbind(hgiCapabilities);
 }
@@ -1091,13 +1118,27 @@ _BindTextureResources(
     HdStDrawItem const * drawItem,
     HdSt_ResourceBinder const & binder,
     HdStGLSLProgramSharedPtr const & glslProgram,
-    TextureResourceID * currentTextureResourceID)
+    TextureResourceID * currentGeometricTextureID,
+    TextureResourceID * currentMaterialTextureID)
 {
-    // Bind texture resources via the drawItem's materialNetworkShader
-    // when the currentTextureResourceID changes between draw items.
-    TextureResourceID textureResourceID = _GetTextureResourceID(drawItem);
-    if (*currentTextureResourceID != textureResourceID) {
-        *currentTextureResourceID = textureResourceID;
+    // Bind texture resources via the drawItem's geometricShader 
+    // and materialNetworkShader when the currentTextureResourceID 
+    // changes between draw items.
+    TextureResourceID geometricTextureID = _GetTextureResourceID(drawItem->GetGeometricShader());
+    if (*currentGeometricTextureID != geometricTextureID)
+    {
+        *currentGeometricTextureID = geometricTextureID;
+        if (HdSt_GeometricShaderSharedPtr const &geometricShader =
+                drawItem->GetGeometricShader()) {
+            geometricShader->BindResources(
+                glslProgram->GetProgram()->GetRawResource(),
+                binder);
+        }
+    }
+    TextureResourceID materialTextureID = _GetTextureResourceID(drawItem->GetMaterialNetworkShader());
+    if (*currentMaterialTextureID != materialTextureID)
+    {
+        *currentMaterialTextureID = materialTextureID;
         if (HdSt_MaterialNetworkShaderSharedPtr const &materialNetworkShader =
                 drawItem->GetMaterialNetworkShader()) {
             materialNetworkShader->BindResources(
@@ -1266,15 +1307,20 @@ HdSt_IndirectDrawBatch::_ExecuteDrawImmediate(
     uint32_t const drawCount = dispatchBuffer->GetCount();
 
     // We'll rebind texture resources while drawing only if the drawing
-    // program's material network shader uses texture resources.
+    // program's geometric shader or material network shader uses texture
+    // resources.
     bool const programUsesTextureResources =
-        program.GetMaterialNetworkShader()->ComputeTextureSourceHash() != 0;
+        (program.GetGeometricShader()->ComputeTextureSourceHash() != 0) ||
+        (program.GetMaterialNetworkShader()->ComputeTextureSourceHash() != 0);
 
     bool const rebindTextureResources =
         _needsTextureResourceRebinding && programUsesTextureResources;
 
-    TextureResourceID currentTextureResourceID =
-        _GetTextureResourceID(_drawItemInstances[0]->GetDrawItem());
+    HdStDrawItem const* drawItem = _drawItemInstances[0]->GetDrawItem();
+    TextureResourceID currentGeometricID =
+        _GetTextureResourceID(drawItem->GetGeometricShader());
+    TextureResourceID currentMaterialNetworkID =
+        _GetTextureResourceID(drawItem->GetMaterialNetworkShader());
 
     if (!_useDrawIndexed) {
         TF_DEBUG(HDST_DRAW).Msg("Drawing Arrays:\n"
@@ -1295,7 +1341,8 @@ HdSt_IndirectDrawBatch::_ExecuteDrawImmediate(
                     _drawItemInstances[i]->GetDrawItem(),
                     program.GetBinder(),
                     program.GetGLSLProgram(),
-                    &currentTextureResourceID);
+                    &currentGeometricID,
+                    &currentMaterialNetworkID);
             }
 
             glDrawArraysInstancedBaseInstance(
@@ -1325,7 +1372,8 @@ HdSt_IndirectDrawBatch::_ExecuteDrawImmediate(
                     _drawItemInstances[i]->GetDrawItem(),
                     program.GetBinder(),
                     program.GetGLSLProgram(),
-                    &currentTextureResourceID);
+                    &currentGeometricID,
+                    &currentMaterialNetworkID);
             }
 
             uint32_t const indexBufferByteOffset =
@@ -1668,7 +1716,7 @@ HdSt_IndirectDrawBatch::_GetCullingProgram(
 
         // sharing the culling geometric shader for the same configuration.
         HdSt_GeometricShaderSharedPtr cullShader =
-            HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
+            HdSt_GeometricShader::Create(shaderKey, {}, {}, resourceRegistry);
         _cullingProgram.SetGeometricShader(cullShader);
 
         _cullingProgram.CompileShader(_drawItemInstances.front()->GetDrawItem(),

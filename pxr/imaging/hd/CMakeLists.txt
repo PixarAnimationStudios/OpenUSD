@@ -48,6 +48,10 @@ pxr_library(hd
         coordSysBindingSchema
         cubeSchema
         cylinderSchema
+        dashDotLines
+        dashDotLinesSchema
+        dashDotLinesTopology
+        dashDotLinesTopologySchema
         dataSource
         dataSourceHash
         dataSourceLegacyPrim

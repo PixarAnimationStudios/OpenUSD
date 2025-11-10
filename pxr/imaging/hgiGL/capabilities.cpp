@@ -199,6 +199,10 @@ HgiGLCapabilities::_LoadCapabilities()
         true);
     _SetFlag(HgiDeviceCapabilitiesBitsRoundPoints,
         nativeRoundPointsEnabled);
+    _SetFlag(HgiDeviceCapabilitiesBitsWideLines,
+        true);
+
+    glGetFloatv(GL_ALIASED_LINE_WIDTH_RANGE, _wideLineWidthRange);
 
     if (TfDebug::IsEnabled(HGI_DEBUG_DEVICE_CAPABILITIES)) {
         std::cout

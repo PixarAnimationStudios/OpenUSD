@@ -45,6 +45,8 @@ using HioGlslfxSharedPtr = std::shared_ptr<class HioGlslfx>;
 
 using HdSt_BasisCurvesTopologySharedPtr =
     std::shared_ptr<class HdSt_BasisCurvesTopology>;
+using HdSt_DashDotLinesTopologySharedPtr =
+    std::shared_ptr<class HdSt_DashDotLinesTopology>;
 
 using HdStShaderCodePtr =
     std::weak_ptr<class HdStShaderCode>;
@@ -372,6 +374,11 @@ public:
         HdInstance<HdSt_BasisCurvesTopologySharedPtr>::ID id);
 
     HDST_API
+    HdInstance<HdSt_DashDotLinesTopologySharedPtr>
+    RegisterDashDotLinesTopology(
+        HdInstance<HdSt_DashDotLinesTopologySharedPtr>::ID id);
+
+    HDST_API
     HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>
     RegisterVertexAdjacencyBuilder(
         HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>::ID id);
@@ -388,6 +395,11 @@ public:
     HDST_API
     HdInstance<HdBufferArrayRangeSharedPtr>
     RegisterBasisCurvesIndexRange(
+       HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name);
+
+    HDST_API
+    HdInstance<HdBufferArrayRangeSharedPtr>
+    RegisterDashDotLinesIndexRange(
        HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name);
 
     /// Primvar array range instancing
@@ -657,6 +669,10 @@ private:
     HdInstanceRegistry<HdSt_BasisCurvesTopologySharedPtr>
         _basisCurvesTopologyRegistry;
 
+    // Register dashDotLines topology.
+    HdInstanceRegistry<HdSt_DashDotLinesTopologySharedPtr>
+        _dashDotLinesTopologyRegistry;
+
     // Register vertex adjacency.
     HdInstanceRegistry<HdSt_VertexAdjacencyBuilderSharedPtr>
         _vertexAdjacencyBuilderRegistry;
@@ -671,6 +687,7 @@ private:
 
     _TopologyIndexRangeInstanceRegMap _meshTopologyIndexRangeRegistry;
     _TopologyIndexRangeInstanceRegMap _basisCurvesTopologyIndexRangeRegistry;
+    _TopologyIndexRangeInstanceRegMap _dashDotLinesTopologyIndexRangeRegistry;
 
     // Register shared primvar buffers.
     HdInstanceRegistry<HdBufferArrayRangeSharedPtr>

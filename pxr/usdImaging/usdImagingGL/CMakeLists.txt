@@ -166,21 +166,145 @@ if (${PXR_HEADLESS_TEST_MODE})
     return()
 endif()
 
-if (APPLE)
-    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
-    return()
-endif()
-
-if (WIN32)
-    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
-    return()
-endif()
-
 # usdImagingGL tests require plugin mechanism to find different renderer
 # plugins, which we do not support for static build configurations due to
 # potential conflict in client applications linking against static build USD
 if (NOT BUILD_SHARED_LIBS)
     message(STATUS "Skipping ${PXR_PACKAGE} tests on static build configuration")
+    return()
+endif()
+
+if (APPLE)
+    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
+    return()
+endif()
+
+pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLDashDotLines
+    DEST testUsdImagingGLDashDotLines
+)
+
+pxr_register_test(testUsdImagingGLDashDotLines_ScreenSpace
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexities 3.0 -offscreen -stage dashDotLines_ScreenSpace.usda -translate -100 0.0 -300.0 -write testUsdImagingGLDashDotLines_ScreenSpace.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLDashDotLines_ScreenSpace_3.png
+    FAIL .01
+    FAIL_PERCENT .03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLDashDotLines
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_TASK_SCENE_INDEX=false
+)
+
+pxr_register_test(testUsdImagingGLDashDotLines_ScreenSpace_Segment
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexities 3.0 -offscreen -frameAll -stage dashDotLines_ScreenSpace_Segment.usda -write testUsdImagingGLDashDotLines_ScreenSpace_Segment.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLDashDotLines_ScreenSpace_Segment_3.png
+    FAIL .01
+    FAIL_PERCENT .03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLDashDotLines
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_TASK_SCENE_INDEX=false
+)
+
+pxr_register_test(testUsdImagingGLDashDotLines_ScreenSpace_Segment_VertexColor
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexities 3.0 -offscreen -frameAll -stage dashDotLines_ScreenSpace_Segment_VertexColor.usda -write testUsdImagingGLDashDotLines_ScreenSpace_Segment_VertexColor.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLDashDotLines_ScreenSpace_Segment_VertexColor_3.png
+    FAIL .01
+    FAIL_PERCENT .03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLDashDotLines
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_TASK_SCENE_INDEX=false
+)
+
+pxr_register_test(testUsdImagingGLDashDotLines_NoScreenSpace_Segment
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexities 3.0 -offscreen -frameAll -stage dashDotLines_NoScreenSpace_Segment.usda -write testUsdImagingGLDashDotLines_NoScreenSpace_Segment.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLDashDotLines_NoScreenSpace_Segment_3.png
+    FAIL .01
+    FAIL_PERCENT .03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLDashDotLines
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_TASK_SCENE_INDEX=false
+)
+
+if (APPLE)
+pxr_register_test(testUsdImagingGLDashDotLines_ScreenSpace_Segment_Simple
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexities 3.0 -offscreen -frameAll -stage dashDotLines_ScreenSpace_Segment_Simple.usda -write testUsdImagingGLDashDotLines_ScreenSpace_Segment_Simple_Mac.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLDashDotLines_ScreenSpace_Segment_Simple_Mac_3.png
+    FAIL .01
+    FAIL_PERCENT .35
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLDashDotLines
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_TASK_SCENE_INDEX=false
+)
+
+pxr_register_test(testUsdImagingGLDashDotLines_NoScreenSpace_Segment_Simple
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexities 3.0 -offscreen -frameAll -stage dashDotLines_NoScreenSpace_Segment_Simple.usda -write testUsdImagingGLDashDotLines_NoScreenSpace_Segment_Simple_Mac.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLDashDotLines_NoScreenSpace_Segment_Simple_Mac_3.png
+    FAIL .01
+    FAIL_PERCENT .2
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLDashDotLines
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_TASK_SCENE_INDEX=false
+)
+else()
+pxr_register_test(testUsdImagingGLDashDotLines_ScreenSpace_Segment_Simple
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexities 3.0 -offscreen -frameAll -stage dashDotLines_ScreenSpace_Segment_Simple.usda -write testUsdImagingGLDashDotLines_ScreenSpace_Segment_Simple.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLDashDotLines_ScreenSpace_Segment_Simple_3.png
+    FAIL .01
+    FAIL_PERCENT .35
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLDashDotLines
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_TASK_SCENE_INDEX=false
+)
+
+pxr_register_test(testUsdImagingGLDashDotLines_NoScreenSpace_Segment_Simple
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexities 3.0 -offscreen -frameAll -stage dashDotLines_NoScreenSpace_Segment_Simple.usda -write testUsdImagingGLDashDotLines_NoScreenSpace_Segment_Simple.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLDashDotLines_NoScreenSpace_Segment_Simple_3.png
+    FAIL .01
+    FAIL_PERCENT .2
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLDashDotLines
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_TASK_SCENE_INDEX=false
+)
+endif()
+
+pxr_register_test(testUsdImagingGLDashDotLines_SurfaceOverride
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexities 3.0 -offscreen -frameAll -stage dashDotLines_SurfaceOverride.usda -write testUsdImagingGLDashDotLines_SurfaceOverride.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLDashDotLines_SurfaceOverride_3.png
+    FAIL .01
+    FAIL_PERCENT .03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLDashDotLines
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_TASK_SCENE_INDEX=false
+)
+
+if (WIN32)
+    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
     return()
 endif()
 

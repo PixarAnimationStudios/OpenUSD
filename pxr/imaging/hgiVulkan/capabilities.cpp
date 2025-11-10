@@ -325,6 +325,14 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         shaderDrawParametersEnabled);
      _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect,
         multiDrawIndirectEnabled);
+     _SetFlag(HgiDeviceCapabilitiesBitsWideLines,
+         vkDeviceFeatures2.features.wideLines);
+
+     if (vkDeviceFeatures2.features.wideLines)
+     {
+         _wideLineWidthRange[0] = vkDeviceProperties2.properties.limits.lineWidthRange[0];
+         _wideLineWidthRange[1] = vkDeviceProperties2.properties.limits.lineWidthRange[1];
+     }
 }
 
 HgiVulkanCapabilities::~HgiVulkanCapabilities() = default;

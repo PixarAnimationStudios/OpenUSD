@@ -10,6 +10,7 @@
 #include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/imaging/hd/dashDotLinesTopology.h"
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceLegacyPrim.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
@@ -48,6 +49,8 @@
 #include "pxr/imaging/hd/coordSysSchema.h"
 #include "pxr/imaging/hd/cubeSchema.h"
 #include "pxr/imaging/hd/cylinderSchema.h"
+#include "pxr/imaging/hd/dashDotLinesSchema.h"
+#include "pxr/imaging/hd/dashDotLinesTopologySchema.h"
 #include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/extComputationInputComputationSchema.h"
 #include "pxr/imaging/hd/extComputationOutputSchema.h"
@@ -629,6 +632,16 @@ _GatherGeomSubsets(
                     topo->SetInvisiblePoints(
                         _Union(topo->GetInvisiblePoints(), indices));
                 }
+            } else if (auto* topo =
+                dynamic_cast<HdDashDotLinesTopology*>(topology)) {
+                if (type == HdGeomSubsetSchemaTokens->typeCurveSet) {
+                    topo->SetInvisibleCurves(
+                        _Union(topo->GetInvisibleCurves(), indices));
+                }
+                else if (type == HdGeomSubsetSchemaTokens->typePointSet) {
+                    topo->SetInvisiblePoints(
+                        _Union(topo->GetInvisiblePoints(), indices));
+                }
             }
             continue;
         }
@@ -725,11 +738,13 @@ HdSceneIndexAdapterSceneDelegate::GetDoubleSided(SdfPath const &id)
         if (doubleSidedDs) {
             return doubleSidedDs->GetTypedValue(0.0f);
         }
-    } else if (prim.primType == HdPrimTypeTokens->basisCurves) {
-        // TODO: We assume all basis curves are double-sided in Hydra. This is
-        //       inconsistent with the USD schema, which allows sidedness to be
-        //       declared on the USD gprim. Note however that sidedness only
-        //       affects basis curves with authored normals (i.e., ribbons).
+    } else if (prim.primType == HdPrimTypeTokens->basisCurves ||
+        prim.primType == HdPrimTypeTokens->dashDotLines) {
+        // TODO: We assume all basis curves and dashDot lines are double-sided 
+        //       in Hydra. This is inconsistent with the USD schema, which 
+        //       allows sidedness to be declared on the USD gprim. Note however 
+        //       that sidedness only affects basis curves with authored normals
+        //       (i.e., ribbons).
         return true;
     }
     return false;
@@ -943,6 +958,64 @@ HdSceneIndexAdapterSceneDelegate::GetBasisCurvesTopology(SdfPath const &id)
 
     HdBasisCurvesTopology result(
         type, basis, wrap,
+        curveVertexCountsDataSource->GetTypedValue(0.0f),
+        curveIndices);
+
+    if (_geomSubsetParents.find(id) != _geomSubsetParents.end()) {
+        const TfToken purpose =
+            GetRenderIndex().GetRenderDelegate()->GetMaterialBindingPurpose();
+        _GatherGeomSubsets(id, _inputSceneIndex, purpose, &result);
+    }
+
+    return result;
+}
+
+HdDashDotLinesTopology
+HdSceneIndexAdapterSceneDelegate::GetDashDotLinesTopology(SdfPath const& id)
+{
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+    HdSceneIndexPrim prim = _GetInputPrim(id);
+
+    HdDashDotLinesSchema dashDotLinesSchema =
+        HdDashDotLinesSchema::GetFromParent(prim.dataSource);
+
+    HdDashDotLinesTopologySchema ddlTopologySchema =
+        dashDotLinesSchema.GetTopology();
+
+    if (!ddlTopologySchema.IsDefined()) {
+        return HdDashDotLinesTopology();
+    }
+
+    HdIntArrayDataSourceHandle curveVertexCountsDataSource =
+        ddlTopologySchema.GetCurveVertexCounts();
+
+    if (!curveVertexCountsDataSource) {
+        return HdDashDotLinesTopology();
+    }
+
+    VtIntArray curveIndices;
+    HdIntArrayDataSourceHandle curveIndicesDataSource =
+        ddlTopologySchema.GetCurveIndices();
+    if (curveIndicesDataSource) {
+        curveIndices = curveIndicesDataSource->GetTypedValue(0.0f);
+    }
+
+    TfToken shapeDetail = HdTokens->allDetails;
+    HdTokenDataSourceHandle shapeDetailDataSource = ddlTopologySchema.GetShapeDetail();
+    if (shapeDetailDataSource) {
+        shapeDetail = shapeDetailDataSource->GetTypedValue(0.0f);
+    }
+
+    bool screenSpacePattern = false;
+    HdBoolDataSourceHandle screenSpacePatternDataSource = ddlTopologySchema.GetScreenSpacePattern();
+    if (screenSpacePatternDataSource) {
+        screenSpacePattern = screenSpacePatternDataSource->GetTypedValue(0.0f);
+    }
+
+    HdDashDotLinesTopology result(
+        shapeDetail,
+        screenSpacePattern,
         curveVertexCountsDataSource->GetTypedValue(0.0f),
         curveIndices);
 

@@ -8,6 +8,8 @@
 
 #include "pxr/imaging/hd/basisCurvesTopology.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
+#include "pxr/imaging/hd/dashDotLinesTopology.h"
+#include "pxr/imaging/hd/dashDotLinesTopologySchema.h"
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceLegacyPrim.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
@@ -229,6 +231,17 @@ _HdDataSourceLegacyGeomSubset::_FindSubset() const
             return { HdGeomSubsetSchemaTokens->typePointSet,
                 topo.GetInvisiblePoints() };
         }
+    } else if (_parentType == HdPrimTypeTokens->dashDotLines) {
+        const HdDashDotLinesTopology& topo =
+            _sceneDelegate->GetDashDotLinesTopology(_parentId);
+        if (name == _tokens->invisibleCurves) {
+            return { HdGeomSubsetSchemaTokens->typeCurveSet,
+                topo.GetInvisibleCurves() };
+        }
+        if (name == _tokens->invisiblePoints) {
+            return { HdGeomSubsetSchemaTokens->typePointSet,
+                topo.GetInvisiblePoints() };
+        }
     } else if (_parentType == HdPrimTypeTokens->mesh) {
         const HdMeshTopology& topo = _sceneDelegate->GetMeshTopology(_parentId);
         if (name == _tokens->invisibleFaces) {
@@ -372,6 +385,7 @@ HdLegacyGeomSubsetSceneIndex::_PrimsDirtied(
     // efficiently than a destroyed and recreated one.
     static const HdDataSourceLocatorSet topologyLocators {
         HdBasisCurvesTopologySchema::GetDefaultLocator(),
+        HdDashDotLinesTopologySchema::GetDefaultLocator(),
         HdMeshTopologySchema::GetDefaultLocator() };
     static const HdDataSourceLocatorSet emptyLocatorSet {
         HdDataSourceLocator::EmptyLocator() };
@@ -383,7 +397,7 @@ HdLegacyGeomSubsetSceneIndex::_PrimsDirtied(
     for (const HdSceneIndexObserver::DirtiedPrimEntry& entry : entries) {
         if (!entry.dirtyLocators.Intersects(topologyLocators)) {
             // If the change didn't affect topology, we can continue. This is
-            // either not a mesh/basisCurves or the subsets didn't change.
+            // either not a mesh/basisCurves/dashDotLines or the subsets didn't change.
             continue;
         }
         const HdSceneIndexPrim& prim =
@@ -392,13 +406,13 @@ HdLegacyGeomSubsetSceneIndex::_PrimsDirtied(
         SdfPathVector after  = _ListDelegateSubsets(entry.primPath, prim);
         auto it = _parentPrims.find(entry.primPath);
         if (it == _parentPrims.end()) {
-            // This mesh/basisCurves did not previously have subsets
-            // but some may have been added. If none have been added,
-            // we can continue.
+            // This mesh/basisCurves/dashDotLines did not previously 
+            // have subsets but some may have been added. If none have 
+            // been added, we can continue.
             if (after.empty()) {
                 continue;
             }
-            // There are new subsets for this mesh/basisCurves;
+            // There are new subsets for this mesh/basisCurves/dashDotLines;
             // add an entry to _parentPrims.
             it = _parentPrims.insert({entry.primPath, {}}).first;
         }
@@ -461,6 +475,17 @@ HdLegacyGeomSubsetSceneIndex::_ListDelegateSubsets(
         if (parentPrim.primType == HdPrimTypeTokens->basisCurves) {
             const HdBasisCurvesTopology& topo =
                 delegate->GetBasisCurvesTopology(parentPath);
+            if (!topo.GetInvisibleCurves().empty()) {
+                paths.push_back(parentPath.AppendChild(
+                    _tokens->invisibleCurves));
+            }
+            if (!topo.GetInvisiblePoints().empty()) {
+                paths.push_back(parentPath.AppendChild(
+                    _tokens->invisiblePoints));
+            }
+        } else if (parentPrim.primType == HdPrimTypeTokens->dashDotLines) {
+            const HdDashDotLinesTopology& topo =
+                delegate->GetDashDotLinesTopology(parentPath);
             if (!topo.GetInvisibleCurves().empty()) {
                 paths.push_back(parentPath.AppendChild(
                     _tokens->invisibleCurves));

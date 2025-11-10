@@ -57,6 +57,10 @@ HdUnitTestDelegate::SetRefineLevel(int level)
         GetRenderIndex().GetChangeTracker().MarkRprimDirty(
             it->first, HdChangeTracker::DirtyDisplayStyle);
     }
+    TF_FOR_ALL (it, _dashDotLines) {
+        GetRenderIndex().GetChangeTracker().MarkRprimDirty(
+            it->first, HdChangeTracker::DirtyDisplayStyle);
+    }
     TF_FOR_ALL (it, _refineLevels) {
         it->second = level;
     }
@@ -280,6 +284,75 @@ HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
                      HdInterpolationVertex,
                      HdPrimvarRoleTokens->normal) );
     }
+
+    if (!instancerId.IsEmpty()) {
+        _instancerBindings[id] = instancerId;
+        _instancers[instancerId].prototypes.push_back(id);
+    }
+}
+
+void
+HdUnitTestDelegate::AddDashDotLines(SdfPath const& id,
+    VtVec3fArray const& points,
+    VtIntArray const& curveVertexCounts,
+    VtIntArray const& curveIndices,
+    TfToken const& shapeDetail,
+    bool const& screenSpacePattern,
+    VtValue const& color,
+    HdInterpolation colorInterpolation,
+    VtValue const& opacity,
+    HdInterpolation opacityInterpolation,
+    VtValue const& width,
+    HdInterpolation widthInterpolation,
+    VtValue const& pattern,
+    VtValue const& patternPeriod,
+    VtValue const& patternScale,
+    VtValue const& startCapType,
+    VtValue const& endCapType,
+    SdfPath const& instancerId)
+{
+    HD_TRACE_FUNCTION();
+
+    HdRenderIndex& index = GetRenderIndex();
+    index.InsertRprim(HdPrimTypeTokens->dashDotLines, this, id);
+
+    _dashDotLines[id] = _DashDotLines(points, curveVertexCounts, curveIndices,
+        shapeDetail,
+        screenSpacePattern);
+
+    _primvars[id] = {
+        _Primvar(HdTokens->displayColor,
+                 color,
+                 colorInterpolation,
+                 HdPrimvarRoleTokens->color),
+        _Primvar(HdTokens->displayOpacity,
+                 opacity,
+                 opacityInterpolation,
+                 HdPrimvarRoleTokens->color),
+        _Primvar(HdTokens->widths,
+                 width,
+                 widthInterpolation,
+                 HdPrimvarRoleTokens->none) ,
+        _Primvar(HdTokens->pattern,
+                 pattern,
+                 HdInterpolationConstant,
+                 HdPrimvarRoleTokens->none) ,
+        _Primvar(HdTokens->patternPeriod,
+                 patternPeriod,
+                 HdInterpolationConstant,
+                 HdPrimvarRoleTokens->none) ,
+        _Primvar(HdTokens->patternScale,
+                 patternScale,
+                 HdInterpolationConstant,
+                 HdPrimvarRoleTokens->none) ,
+        _Primvar(HdTokens->startCapType,
+                 startCapType,
+                 HdInterpolationConstant,
+                 HdPrimvarRoleTokens->none) ,
+        _Primvar(HdTokens->endCapType,
+                 endCapType,
+                 HdInterpolationConstant,
+                 HdPrimvarRoleTokens->none) };
 
     if (!instancerId.IsEmpty()) {
         _instancerBindings[id] = instancerId;
@@ -588,6 +661,9 @@ HdUnitTestDelegate::UpdatePositions(SdfPath const &id, float time)
    else if(_curves.find(id) != _curves.end()) {
        _curves[id].points = _AnimatePositions(_curves[id].points, time);
    }
+   else if(_dashDotLines.find(id) != _dashDotLines.end()) {
+       _dashDotLines[id].points = _AnimatePositions(_dashDotLines[id].points, time);
+   }
    else if(_points.find(id) != _points.end()) {
        _points[id].points = _AnimatePositions(_points[id].points, time);
    } else {
@@ -734,7 +810,7 @@ HdUnitTestDelegate::GetRenderTag(SdfPath const& id)
         } else {
             return HdRenderTagTokens->geometry;
         }
-    } else if (_curves.count(id) > 0) {
+    } else if (_curves.count(id) > 0 || _dashDotLines.count(id) > 0) {
         return HdRenderTagTokens->geometry;
     } else if (_points.count(id) > 0) {
         return HdRenderTagTokens->geometry;
@@ -788,6 +864,20 @@ HdUnitTestDelegate::GetBasisCurvesTopology(SdfPath const& id)
 }
 
 /*virtual*/
+HdDashDotLinesTopology
+HdUnitTestDelegate::GetDashDotLinesTopology(SdfPath const& id)
+{
+    HD_TRACE_FUNCTION();
+    const _DashDotLines& dashDotLines = _dashDotLines [id] ;
+
+    // Need to implement testing support for basis curves
+    return HdDashDotLinesTopology(dashDotLines.shapeDetail,
+        dashDotLines.screenSpacePattern,
+        dashDotLines.curveVertexCounts,
+        dashDotLines.curveIndices);
+}
+
+/*virtual*/
 PxOsdSubdivTags
 HdUnitTestDelegate::GetSubdivTags(SdfPath const& id)
 {
@@ -811,6 +901,9 @@ HdUnitTestDelegate::GetExtent(SdfPath const& id)
     }
     else if(_curves.find(id) != _curves.end()) {
         points = _curves[id].points; 
+    }
+    else if(_dashDotLines.find(id) != _dashDotLines.end()) {
+        points = _dashDotLines[id].points;
     }
     else if(_points.find(id) != _points.end()) {
         points = _points[id].points; 
@@ -1075,6 +1168,9 @@ HdUnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
         else if(_curves.find(id) != _curves.end()) {
             return VtValue(_curves[id].points);
         }
+        else if(_dashDotLines.find(id) != _dashDotLines.end()) {
+            return VtValue(_dashDotLines[id].points);
+        }
         else if(_points.find(id) != _points.end()) {
             return VtValue(_points[id].points);
         }
@@ -1120,6 +1216,9 @@ HdUnitTestDelegate::GetIndexedPrimvar(SdfPath const& id, TfToken const& key,
         }
         else if(_curves.find(id) != _curves.end()) {
             return VtValue(_curves[id].points);
+        }
+        else if(_dashDotLines.find(id) != _dashDotLines.end()) {
+            return VtValue(_dashDotLines[id].points);
         }
         else if(_points.find(id) != _points.end()) {
             return VtValue(_points[id].points);
@@ -1752,6 +1851,80 @@ HdUnitTestDelegate::AddCurves(
 }
 
 void
+HdUnitTestDelegate::AddDashDotLines(
+    SdfPath const& id, 
+    TfToken const& shapeDetail,
+    bool const& screenSpacePattern, 
+    VtVec2fArray const& pattern,
+    float const& patternPeriod,
+    float const& patternScale, 
+    TfToken const& startCapType,
+    TfToken const& endCapType,
+    GfMatrix4f const& transform,
+    HdInterpolation colorInterp,
+    HdInterpolation widthInterp,
+    SdfPath const& instancerId)
+{
+    int curveVertexCounts[] = { 4, 4 };
+
+    GfVec3f points[] = {
+        GfVec3f(1.0f, 1.0f, 1.0f),
+        GfVec3f(-1.0f, 1.0f, 1.0f),
+        GfVec3f(-1.0f,-1.0f, 1.0f),
+        GfVec3f(1.0f,-1.0f, 1.0f),
+
+        GfVec3f(-1.0f,-1.0f,-1.0f),
+        GfVec3f(-1.0f, 1.0f,-1.0f),
+        GfVec3f(1.0f, 1.0f,-1.0f),
+        GfVec3f(1.0f,-1.0f,-1.0f),
+    };
+
+    for (size_t i = 0; i < sizeof(points) / sizeof(points[0]); ++i) {
+        GfVec4f tmpPoint = GfVec4f(points[i][0], points[i][1], points[i][2], 1.0f);
+        tmpPoint = tmpPoint * transform;
+        points[i] = GfVec3f(tmpPoint[0], tmpPoint[1], tmpPoint[2]);
+    }
+
+    VtValue color;
+    if (colorInterp == HdInterpolationConstant) {
+        color = VtValue(GfVec3f(1));
+    }
+    else if (colorInterp == HdInterpolationUniform) {
+        GfVec3f colors[] = { GfVec3f(1, 0, 0), GfVec3f(0, 0, 1) };
+        color = VtValue(_BuildArray(&colors[0], sizeof(colors) / sizeof(colors[0])));
+    }
+    else if (colorInterp == HdInterpolationVertex) {
+        GfVec3f colors[] = { GfVec3f(0, 0, 1),
+                             GfVec3f(0, 1, 0),
+                             GfVec3f(0, 1, 1),
+                             GfVec3f(1, 0, 0),
+                             GfVec3f(1, 0, 1),
+                             GfVec3f(1, 1, 0),
+                             GfVec3f(1, 1, 1),
+                             GfVec3f(0.5, 0.5, 1) };
+        color = VtValue(_BuildArray(&colors[0], sizeof(colors) / sizeof(colors[0])));
+    }
+
+    AddDashDotLines(
+        id,
+        _BuildArray(points, sizeof(points) / sizeof(points[0])),
+        _BuildArray(curveVertexCounts,
+            sizeof(curveVertexCounts) / sizeof(curveVertexCounts[0])),
+        /*curveIndices=*/VtIntArray(),
+        shapeDetail,
+        screenSpacePattern,
+        color, colorInterp,
+        VtValue(1.0f), HdInterpolationConstant,
+        VtValue(2.0f), HdInterpolationConstant,
+        VtValue(pattern),
+        VtValue(patternPeriod),
+        VtValue(patternScale),
+        VtValue(startCapType),
+        VtValue(endCapType),
+        instancerId);
+}
+
+void
 HdUnitTestDelegate::SetCurveWrapMode(
     SdfPath const &id, TfToken const &wrap)
 {
@@ -2089,6 +2262,47 @@ HdUnitTestDelegate::PopulateBasicTestSet()
         xPos += 3.0;
     }
 
+    // dashDotLines
+    {
+        VtVec2fArray pattern1 = { {0.0, 10.0}, {8.0, 0.0} };
+        VtVec2fArray pattern2 = { {0, 10.0} };
+        dmat.SetTranslate(GfVec3d(xPos, -6.0, 0.0));
+        AddDashDotLines(SdfPath("/dashDotLines1"), HdTokens->allDetails, false,
+            pattern1, 26.0, 0.03, HdTokens->round, HdTokens->triangle,
+            GfMatrix4f(dmat), HdInterpolationVertex, HdInterpolationVertex);
+
+        dmat.SetTranslate(GfVec3d(xPos, -3.0, 0.0));
+        AddDashDotLines(SdfPath("/dashDotLines2"), HdTokens->allDetails, true,
+            pattern1, 26.0, 0.9, HdTokens->square, HdTokens->triangle,
+            GfMatrix4f(dmat), HdInterpolationConstant, HdInterpolationVertex);
+
+        dmat.SetTranslate(GfVec3d(xPos, 0.0, 0.0));
+        AddDashDotLines(SdfPath("/dashDotLines3"), HdTokens->allDetails, false,
+            pattern2, 20.0, 0.03, HdTokens->round, HdTokens->square,
+            GfMatrix4f(dmat), HdInterpolationConstant, HdInterpolationConstant);
+
+        dmat.SetTranslate(GfVec3d(xPos, 3.0, 0.0));
+        AddDashDotLines(SdfPath("/dashDotLines4"), HdTokens->allDetails, true,
+            pattern2, 20.0, 0.9, HdTokens->round, HdTokens->triangle,
+            GfMatrix4f(dmat), HdInterpolationVertex, HdInterpolationConstant);
+
+        dmat.SetTranslate(GfVec3d(xPos, 6.0, 0.0));
+        AddDashDotLines(SdfPath("/dashDotLines5"), HdTokens->noCapJoint, false,
+            pattern1, 26.0, 0.04, HdTokens->round, HdTokens->triangle,
+            GfMatrix4f(dmat), HdInterpolationConstant, HdInterpolationConstant);
+
+        dmat.SetTranslate(GfVec3d(xPos, 9.0, 0.0));
+        AddDashDotLines(SdfPath("/dashDotLines6"), HdTokens->noCapJoint, true,
+            pattern1, 26.0, 1.0, HdTokens->square, HdTokens->triangle,
+            GfMatrix4f(dmat), HdInterpolationVertex, HdInterpolationVertex);
+
+        dmat.SetTranslate(GfVec3d(xPos, 12.0, 0.0));
+        AddDashDotLines(SdfPath("/dashDotLines7"), HdTokens->noCapJoint, false,
+            pattern2, 20.0, 0.03, HdTokens->round, HdTokens->square,
+            GfMatrix4f(dmat), HdInterpolationVertex, HdInterpolationConstant);
+        xPos += 3.0;
+    }
+
     // points
     {
         dmat.SetTranslate(GfVec3d(xPos, -3.0, 0.0));
@@ -2124,6 +2338,22 @@ HdUnitTestDelegate::PopulateInvalidPrimsSet()
                             VtValue(GfVec3f(1)), HdInterpolationConstant,
                             VtValue(1.0f), HdInterpolationConstant,
                             VtValue(1.0f), HdInterpolationConstant);
+
+    // empty dashDotLines
+    AddDashDotLines(SdfPath("/empty_dashDotLines"),
+                            VtVec3fArray(),
+                            VtIntArray(),
+                            VtIntArray(),
+                            TfToken(),
+                            false,
+                            VtValue(GfVec3f(1)), HdInterpolationConstant,
+                            VtValue(1.0f), HdInterpolationConstant,
+                            VtValue(1.0f), HdInterpolationConstant,
+                            VtValue(VtVec2fArray()),
+                            VtValue(1.0f),
+                            VtValue(1.0f),
+                            VtValue(TfToken()),
+                            VtValue(TfToken()));
 
     // empty point
     AddPoints(SdfPath("/empty_points"),

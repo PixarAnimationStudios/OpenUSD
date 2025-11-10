@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -53,6 +53,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomMesh::GetFaceVaryingLinearInterpolationAttr()
     const TfToken all;
+    /// \brief "allDetails"
+    /// 
+    /// Fallback value for UsdGeomDashDotLines::GetShapeDetailAttr()
+    const TfToken allDetails;
     /// \brief "angularVelocities"
     /// 
     /// UsdGeomPointInstancer
@@ -189,6 +193,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomSubset
     const TfToken elementType;
+    /// \brief "endCapType"
+    /// 
+    /// UsdGeomDashDotLines
+    const TfToken endCapType;
     /// \brief "exposure"
     /// 
     /// UsdGeomCamera
@@ -317,6 +325,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomPointInstancer
     const TfToken invisibleIds;
+    /// \brief "jointType"
+    /// 
+    /// UsdGeomDashDotLines
+    const TfToken jointType;
     /// \brief "knots"
     /// 
     /// UsdGeomNurbsCurves
@@ -401,6 +413,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomMotionAPI
     const TfToken motionVelocityScale;
+    /// \brief "noCapJoint"
+    /// 
+    /// Possible value for UsdGeomDashDotLines::GetShapeDetailAttr()
+    const TfToken noCapJoint;
     /// \brief "none"
     /// 
     /// Possible value for UsdGeomMesh::GetFaceVaryingLinearInterpolationAttr(), Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr(), Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
@@ -449,6 +465,18 @@ struct UsdGeomTokensType {
     /// 
     /// A type of family of GeomSubsets. It implies  that every element appears exacly once in only one of the  subsets in the family.
     const TfToken partition;
+    /// \brief "pattern"
+    /// 
+    /// UsdGeomDashDotPatternAPI
+    const TfToken pattern;
+    /// \brief "patternPeriod"
+    /// 
+    /// UsdGeomDashDotPatternAPI
+    const TfToken patternPeriod;
+    /// \brief "patternScale"
+    /// 
+    /// UsdGeomDashDotLines
+    const TfToken patternScale;
     /// \brief "periodic"
     /// 
     /// Possible value for UsdGeomNurbsPatch::GetUFormAttr(), Possible value for UsdGeomNurbsPatch::GetVFormAttr(), Possible value for UsdGeomBasisCurves::GetWrapAttr()
@@ -553,14 +581,26 @@ struct UsdGeomTokensType {
     /// 
     /// Fallback value for UsdGeomGprim::GetOrientationAttr()
     const TfToken rightHanded;
+    /// \brief "round"
+    /// 
+    /// Fallback value for UsdGeomDashDotLines::GetEndCapTypeAttr(), Fallback value for UsdGeomDashDotLines::GetJointTypeAttr(), Fallback value for UsdGeomDashDotLines::GetStartCapTypeAttr()
+    const TfToken round;
     /// \brief "scales"
     /// 
     /// UsdGeomPointInstancer
     const TfToken scales;
+    /// \brief "screenSpacePattern"
+    /// 
+    /// UsdGeomDashDotLines
+    const TfToken screenSpacePattern;
     /// \brief "segment"
     /// 
     /// Possible value for UsdGeomSubset::GetElementTypeAttr()
     const TfToken segment;
+    /// \brief "shapeDetail"
+    /// 
+    /// UsdGeomDashDotLines
+    const TfToken shapeDetail;
     /// \brief "shutter:close"
     /// 
     /// UsdGeomCamera
@@ -577,6 +617,14 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomMesh::GetTriangleSubdivisionRuleAttr()
     const TfToken smooth;
+    /// \brief "square"
+    /// 
+    /// Possible value for UsdGeomDashDotLines::GetEndCapTypeAttr(), Possible value for UsdGeomDashDotLines::GetStartCapTypeAttr()
+    const TfToken square;
+    /// \brief "startCapType"
+    /// 
+    /// UsdGeomDashDotLines
+    const TfToken startCapType;
     /// \brief "stereoRole"
     /// 
     /// UsdGeomCamera
@@ -601,6 +649,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomTetMesh
     const TfToken tetVertexIndices;
+    /// \brief "triangle"
+    /// 
+    /// Possible value for UsdGeomDashDotLines::GetEndCapTypeAttr(), Possible value for UsdGeomDashDotLines::GetStartCapTypeAttr()
+    const TfToken triangle;
     /// \brief "triangleSubdivisionRule"
     /// 
     /// UsdGeomMesh
@@ -785,6 +837,14 @@ struct UsdGeomTokensType {
     /// 
     /// Schema identifer for UsdGeomCylinder_1
     const TfToken Cylinder_1;
+    /// \brief "DashDotLines"
+    /// 
+    /// Schema identifer and family for UsdGeomDashDotLines
+    const TfToken DashDotLines;
+    /// \brief "DashDotPatternAPI"
+    /// 
+    /// Schema identifer and family for UsdGeomDashDotPatternAPI
+    const TfToken DashDotPatternAPI;
     /// \brief "GeomModelAPI"
     /// 
     /// Schema identifer and family for UsdGeomModelAPI

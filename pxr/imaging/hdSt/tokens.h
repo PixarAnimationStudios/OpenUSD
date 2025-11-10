@@ -34,6 +34,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     (quadrangulateDouble)
 
 #define HDST_TOKENS                             \
+    (accumulatedLength)                         \
+    (adjPoints1)                                \
+    (adjPoints2)                                \
+    (adjPoints3)                                \
+    (extrude)                                   \
     (constantLighting)                          \
     (packedSmoothNormals)                       \
     (smoothNormals)                             \
@@ -59,7 +64,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (screenSpaceWidths)                         \
     (minScreenSpaceWidths)                      \
     (shadowCompareTextures)                     \
-    (storm)
+    (storm)                                     \
+    (dashDotTexturePattern)
 
 #define HDST_TEXTURE_TOKENS                     \
     (wrapS)                                     \

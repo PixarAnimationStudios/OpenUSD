@@ -60,6 +60,11 @@ public:
         return _pageSizeAlignment;
     }
 
+    /// Get a pair of float which indicate the supported widths for lines.
+    HGI_API
+    const float* GetWideLineWidthRange() const {
+        return _wideLineWidthRange;
+    }
 protected:
     HgiCapabilities()
         : _maxUniformBlockSize(0)
@@ -68,6 +73,7 @@ protected:
         , _maxClipDistances(0)
         , _pageSizeAlignment(1)
         , _flags(0)
+        , _wideLineWidthRange{0.0, 0.0}
     {}
 
     void _SetFlag(HgiDeviceCapabilities mask, bool value) {
@@ -83,6 +89,7 @@ protected:
     size_t _uniformBufferOffsetAlignment;
     size_t _maxClipDistances;
     size_t _pageSizeAlignment;
+    float  _wideLineWidthRange[2];
 
 private:
     HgiCapabilities & operator=(const HgiCapabilities&) = delete;

@@ -1,0 +1,44 @@
+#usda 1.0
+
+(
+    upAxis = "Y"
+    doc = """This layer represents the various geometric forms that curves
+             may be used to represent."""
+)
+
+def DashDotLines "StyledPolyline1" (
+    inherits = [</Pattern>]
+){
+    uniform token implType = "simpleDashDot"
+    uniform bool screenspacePattern = true
+    uniform token startCapType = "round"
+    uniform token endCapType = "round"
+    uniform token jointType = "round"
+    float patternScale = 5
+    int[] curveVertexCounts = [3, 4]
+    point3f[] points = [(0, 0, 0), (10, 10, 0), (10, 20, 0), (0, 30, 0), (-10, 40, 0), (-10, 50, 0), (0, 60, 0)]
+    float[] widths = [1] (interpolation = "constant")
+    color3f[] primvars:displayColor = [(1, 0, 0)]
+}
+def DashDotLines "StyledPolyline2" (
+    inherits = [</Pattern>]
+){
+    uniform token implType = "simpleDashDot"
+    uniform bool screenspacePattern = true
+    uniform token startCapType = "triangle"
+    uniform token endCapType = "triangle"
+    uniform token jointType = "round"
+    uniform float patternScale = 11
+    int[] curveVertexCounts = [3, 4]
+    point3f[] points = [(20, 0, 0), (30, 10, 0), (30, 20, 0), (20, 30, 0), (10, 40, 0), (10, 50, 0), (20, 60, 0)]
+    float[] widths = [10] (interpolation = "constant")
+    color3f[] primvars:displayColor = [(0, 0, 1)]
+}
+
+def "Pattern" (
+    prepend apiSchemas = ["DashDotPatternAPI"]
+)
+{
+    uniform float patternPeriod = 10
+    uniform float2[] pattern    = [(0, 5), (2.5, 0)]
+}

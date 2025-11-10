@@ -831,6 +831,7 @@ _PrimTypeSupportsSelection(const TfToken &primType)
             // Most frequent ones on top
             HdPrimTypeTokens->mesh,
             HdPrimTypeTokens->basisCurves,
+            HdPrimTypeTokens->dashDotLines,
             HdPrimTypeTokens->points,
             HdPrimTypeTokens->nurbsPatch,
             HdPrimTypeTokens->nurbsCurves,

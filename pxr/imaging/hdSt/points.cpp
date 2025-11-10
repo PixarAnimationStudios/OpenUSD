@@ -181,7 +181,7 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     HdSt_PointsShaderKey shaderKey{nativeRoundPoints};
     drawItem->SetGeometricShader(
-        HdSt_GeometricShader::Create(shaderKey, resourceRegistry));
+        HdSt_GeometricShader::Create(shaderKey, {}, {}, resourceRegistry));
 
     /* PRIMVAR */
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {

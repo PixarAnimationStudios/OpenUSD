@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2025 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -87,7 +87,7 @@ public:
             const TfTokenVector &properties,
             const Mappings &mappings);
 
-private:
+protected:
     UsdImagingDataSourceCustomPrimvars(
             const SdfPath &sceneIndexPath,
             UsdPrim const &usdPrim,

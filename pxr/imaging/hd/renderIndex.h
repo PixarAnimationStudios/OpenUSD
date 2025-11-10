@@ -26,6 +26,8 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
+#include "pxr/imaging/cameraUtil/framing.h"
+
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/gf/vec4i.h"
@@ -36,6 +38,7 @@
 #include <vector>
 #include <unordered_map>
 #include <memory>
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -476,6 +479,57 @@ public:
     HD_API
     std::string GetInstanceName() const;
 
+    /// Determines how the filmback of the camera is mapped into
+    /// the pixels of the render buffer and what pixels of the render
+    /// buffer will be rendered into.
+    HD_API
+    void SetFraming(const CameraUtilFraming& framing);
+
+    /// Specifies whether to force a window policy when conforming
+    /// the frustum of the camera to match the display window of
+    /// the camera framing.
+    ///
+    /// If set to {false, ...}, the window policy of the specified camera
+    /// will be used.
+    ///
+    /// Note: std::pair<bool, ...> is used instead of std::optional<...>
+    /// because the latter is only available in C++17 or later.
+    HD_API
+    void SetOverrideWindowPolicy(
+        const std::optional<CameraUtilConformWindowPolicy>& policy);
+
+    /// Set the viewport param on tasks.
+    ///
+    /// \deprecated Use SetFraming and SetRenderBufferSize instead.
+    HD_API
+    void SetRenderViewport(GfVec4d const& viewport);
+
+    /// -- Scene camera --
+    /// Set the camera param on tasks to a USD camera path.
+    HD_API
+    void SetCameraPath(SdfPath const& id);
+
+    /// Set the camera matrix and viewport.
+    HD_API
+    void SetCameraFramingState(GfMatrix4d const& worldToViewMatrix,
+                               GfMatrix4d const& projectionMatrix,
+                               GfVec4d const& viewport);
+
+    HD_API
+    const GfMatrix4d& GetCurrentWVPMatrix() const
+    {
+        return _currentWVPMatrix;
+    }
+
+    HD_API
+    const GfVec4f& GetCurrentViewport() const
+    {
+        return _currentViewport;
+    }
+
+    HD_API
+    void UpdateScreenSpaceDashDotLines(bool ifNeedUpdateEachFrame, HdRprim* rprim);
+
 private:
     // The render index constructor is private so we can check
     // renderDelegate before construction: see HdRenderIndex::New(...).
@@ -563,6 +617,9 @@ private:
     void _RemoveTask(SdfPath const &id);
     void _Clear();
 
+    void _SyncScreenSpaceStyledCurves();
+    void _UpdateMatrices();
+
     // ---------------------------------------------------------------------- //
     // Index State
     // ---------------------------------------------------------------------- //
@@ -598,6 +655,9 @@ private:
     _RprimMap _rprimMap;
     Hd_SortedIds _rprimIds;
 
+    std::vector<HdRprim*> _screenSpacedStyleCurvesList;
+    std::mutex styledCurveMutex;
+
     _RprimPrimIDVector _rprimPrimIdMap;
 
     _TaskMap _taskMap;
@@ -616,6 +676,18 @@ private:
     HdSceneIndexBaseRefPtr _finalEmulationSceneIndex;
 
     std::string _instanceName;
+
+    CameraUtilFraming _framing;
+    std::optional<CameraUtilConformWindowPolicy> _overrideWindowPolicy;
+    GfVec4d _viewport;
+    // Current active camera
+    SdfPath _activeCameraId;
+
+    GfMatrix4d _worldToViewMatrix;
+    GfMatrix4d _projectionMatrix;
+
+    GfMatrix4d _currentWVPMatrix;
+    GfVec4f    _currentViewport;
 
     // ---------------------------------------------------------------------- //
     // Sync State

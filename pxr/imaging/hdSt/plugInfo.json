@@ -74,6 +74,11 @@
                         "loadWithRenderer": "GL",
                         "priority": 0,
                         "displayName": "Scene index to resolve velocity-based motion."
+                    },
+                    "HioDashDotPattern_Image": {
+                        "bases": [ "HioImage" ],
+                        "imageTypes": [ "dashdot" ],
+                        "precedence": 30
                     }
                 },
                 "ShaderResources": "shaders"

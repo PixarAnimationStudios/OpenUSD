@@ -9,6 +9,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/enums.h"
@@ -48,6 +49,7 @@ public:
         PRIM_BASIS_CURVES_LINES,     // when linear (or) non-refined cubic
         PRIM_BASIS_CURVES_LINEAR_PATCHES,  // refined linear curves
         PRIM_BASIS_CURVES_CUBIC_PATCHES,   // refined cubic curves
+        PRIM_DASH_DOT_LINES,
         PRIM_MESH_COARSE_TRIANGLES,
         PRIM_MESH_REFINED_TRIANGLES, // e.g: loop subdiv
         PRIM_MESH_COARSE_QUADS,      // e.g: quadrangulation for ptex
@@ -68,7 +70,8 @@ public:
     static inline bool IsPrimTypeBasisCurves(PrimitiveType primType) {
         return (primType == PrimitiveType::PRIM_BASIS_CURVES_LINES ||
                 primType == PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES ||
-                primType == PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES);
+                primType == PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES ||
+                primType == PrimitiveType::PRIM_DASH_DOT_LINES);
     }
 
     static inline bool IsPrimTypeMesh(PrimitiveType primType) {
@@ -245,13 +248,45 @@ public:
     HDST_API
     HgiCullMode ResolveCullMode(HdCullStyle const renderStateCullStyle) const;
 
+    /// Called after textures have been committed.
+    ///
+    /// Shader can return buffer sources for different BARs (most
+    /// likely, the shader bar) that require texture metadata such as
+    /// the bindless texture handle which is only available after the
+    /// commit.
+    ///
+    HDST_API
+    void AddResourcesFromTextures(ResourceContext& ctx) const override;
+
+    HDST_API
+    NamedTextureHandleVector const& GetNamedTextureHandles() const override;
+
+    HDST_API
+    HdSt_MaterialParamVector const& GetParams() const override;
+
+    HDST_API
+    ID ComputeTextureSourceHash() const override;
+
     // Factory for convenience.
     HDST_API
     static HdSt_GeometricShaderSharedPtr Create(
-            HdSt_ShaderKey const &shaderKey, 
+            HdSt_ShaderKey const &shaderKey,
+            NamedTextureHandleVector const& namedTextureHandles,
+            HdSt_MaterialParamVector const& params,
             HdStResourceRegistrySharedPtr const &resourceRegistry);
 
+protected:
+    void _SetNamedTextureHandles(const NamedTextureHandleVector&);
+
+    void _SetParams(const HdSt_MaterialParamVector& params);
+
 private:
+    HDST_API
+    ID _ComputeTextureSourceHash() const;
+
+    HDST_API
+    ID _ComputeHash() const;
+
     PrimitiveType _primType;
     HdCullStyle _cullStyle;
     bool _useHardwareFaceCulling;
@@ -264,7 +299,16 @@ private:
     std::unique_ptr<HioGlslfx> _glslfx;
     bool _frustumCullingPass;
     FvarPatchType _fvarPatchType;
-    ID _hash;
+    mutable ID _hash;
+
+    HdSt_MaterialParamVector   _params;
+
+    mutable bool               _isValidComputedHash;
+
+    mutable size_t             _computedTextureSourceHash;
+    mutable bool               _isValidComputedTextureSourceHash;
+
+    NamedTextureHandleVector _namedTextureHandles;
 
     // No copying
     HdSt_GeometricShader(const HdSt_GeometricShader &) = delete;

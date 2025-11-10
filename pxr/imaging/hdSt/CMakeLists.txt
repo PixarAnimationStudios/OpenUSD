@@ -63,6 +63,7 @@ pxr_library(hdSt
         commandBuffer
         computation
         copyComputation
+        dashDotLines
         debugCodes
         dependencyForwardingSceneIndexPlugin
         dependencySceneIndexPlugin
@@ -153,6 +154,9 @@ pxr_library(hdSt
         basisCurvesTopology
         codeGen
         cullingShaderKey
+        dashDotLinesComputations
+        dashDotLinesShaderKey
+        dashDotLinesTopology
         drawBatch
         drawItemsCache
         extCompComputeShader
@@ -189,6 +193,8 @@ pxr_library(hdSt
         plugInfo.json
         shaders/basisCurves.glslfx
         shaders/compute.glslfx
+        shaders/dashDotFallbackMaterialNetwork.glslfx
+        shaders/dashDotLines.glslfx
         shaders/domeLight.glslfx
         shaders/edgeId.glslfx
         shaders/fallbackLighting.glslfx
@@ -216,6 +222,9 @@ pxr_library(hdSt
         shaders/visibility.glslfx
         shaders/volume.glslfx
         textures/fallbackBlackDomeLight.png
+        
+    CPPFILES
+        dashDotPatternImage.cpp
 
     DOXYGEN_FILES
         overview.dox
@@ -242,6 +251,33 @@ pxr_build_test(testHdStBasicDrawing
         testenv/testHdStBasicDrawing.cpp
 )
 endif()
+
+pxr_install_test_dir(
+    SRC testenv/testHdStRPrimsAddRemove
+    DEST testHdStRPrimsAddRemove
+)
+
+pxr_build_test(testHdStRPrimsAddRemove
+   LIBRARIES
+        hdSt
+        hd
+        garch
+        glf
+
+   CPPFILES
+       testenv/testHdStRPrimsAddRemove.cpp
+)
+
+pxr_register_test(testHdStRPrimsAddRemove
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStRPrimsAddRemove --offscreen --addRemoveBasisCurves --write testHdStRPrimsAddRemove_BasisCurves.png"
+    IMAGE_DIFF_COMPARE
+        testHdStRPrimsAddRemove_BasisCurves.png
+    FAIL .05
+    FAIL_PERCENT .03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStRPrimsAddRemove
+)
 
 if (X11_FOUND)
 pxr_build_test(testHdStBarAllocationLimit
@@ -588,6 +624,19 @@ pxr_build_test(testHdStSubResourceRegistry
     CPPFILES
         testenv/testHdStSubResourceRegistry.cpp
 )
+
+pxr_build_test(testHdStGeometricShader
+    LIBRARIES
+        gf
+        hdSt
+        hd
+        hgi
+        tf
+        vt
+    CPPFILES
+        testenv/testHdStGeometricShader.cpp
+)
+
 endif()
 
 if (X11_FOUND)
@@ -2350,7 +2399,7 @@ pxr_register_test(testHdStBufferSourceDependency
         TF_DEBUG=HD_SAFE_MODE
 )
 pxr_register_test(testHdStClipPlanes1
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --clipPlane -1 0 0 -1.5 --write testHdStClipPlanes1.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --clipPlane -5 0 0 -1.5 --write testHdStClipPlanes1.png"
     IMAGE_DIFF_COMPARE
         testHdStClipPlanes1.png
     FAIL 1
@@ -3087,7 +3136,7 @@ pxr_register_test(testHdStTransition1
         TF_DEBUG=HD_SAFE_MODE
 )
 pxr_register_test(testHdStTransition2
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStTransition --offscreen --outputFilePrefix testHdStTransition2 --repr smoothHull -c draw,clipPlane=1:0:0:1,draw,clipPlane=-1:0:0:1,draw"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStTransition --offscreen --outputFilePrefix testHdStTransition2 --repr smoothHull -c draw,clipPlane=5:0:0:1,draw,clipPlane=-5:0:0:1,draw"
     EXPECTED_RETURN_CODE 0
     IMAGE_DIFF_COMPARE
         testHdStTransition2_0.png
@@ -3119,6 +3168,14 @@ pxr_register_test(testHdStSubResourceRegistry
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStSubResourceRegistry"
     EXPECTED_RETURN_CODE 0
     TESTENV testHdStSubResourceRegistry
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStGeometricShader
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGeometricShader --offscreen"
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStGeometricShader
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )

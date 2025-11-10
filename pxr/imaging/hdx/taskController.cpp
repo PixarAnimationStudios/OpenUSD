@@ -227,6 +227,12 @@ HdxTaskController::~HdxTaskController()
     }
 }
 
+SdfPath 
+HdxTaskController::GetFreeCameraID() const
+{
+    return _freeCameraSceneDelegate->GetCameraId();
+}
+
 void
 HdxTaskController::_CreateRenderGraph()
 {
@@ -1863,6 +1869,7 @@ HdxTaskController::SetRenderViewport(GfVec4d const& viewport)
     
     // Update all of the render buffer sizes as well.
     _UpdateAovDimensions(_ViewportToAovDimensions(viewport));
+    GetRenderIndex()->SetRenderViewport(viewport);
 }
 
 void
@@ -1882,6 +1889,7 @@ HdxTaskController::SetFraming(const CameraUtilFraming &framing)
 {
     _framing = framing;
     _SetCameraFramingForTasks();
+    GetRenderIndex()->SetFraming(framing);
 }
 
 void
@@ -1890,12 +1898,14 @@ HdxTaskController::SetOverrideWindowPolicy(
 {
     _overrideWindowPolicy = policy;
     _SetCameraFramingForTasks();
+    GetRenderIndex()->SetOverrideWindowPolicy(policy);
 }
 
 void
 HdxTaskController::SetCameraPath(SdfPath const& id)
 {
     _SetCameraParamForTasks(id);
+    GetRenderIndex()->SetCameraPath(id);
 }
 
 void
@@ -1904,6 +1914,7 @@ HdxTaskController::SetFreeCameraMatrices(GfMatrix4d const& viewMatrix,
 {
     _freeCameraSceneDelegate->SetMatrices(viewMatrix, projMatrix);
     _SetCameraParamForTasks(_freeCameraSceneDelegate->GetCameraId());
+    GetRenderIndex()->SetCameraPath(_freeCameraSceneDelegate->GetCameraId());
 }
 
 void

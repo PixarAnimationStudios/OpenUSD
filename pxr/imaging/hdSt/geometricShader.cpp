@@ -10,8 +10,12 @@
 #include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/shaderKey.h"
+#include "pxr/imaging/hdSt/textureBinder.h"
+#include "pxr/imaging/hdSt/textureHandle.h"
 
 #include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/imaging/hgi/capabilities.h"
 
 #include "pxr/imaging/hio/glslfx.h"
 
@@ -47,6 +51,8 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
     , _frustumCullingPass(cullingPass)
     , _fvarPatchType(fvarPatchType)
     , _hash(0)
+    , _isValidComputedTextureSourceHash(false)
+    , _isValidComputedHash(false)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -63,15 +69,6 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
 
     std::stringstream ss(glslfxString);
     _glslfx.reset(new HioGlslfx(ss));
-    _hash = TfHash::Combine(
-        _hash,
-        _glslfx->GetHash(),
-        cullingPass,
-        primType,
-        cullStyle,
-        useMetalTessellation,
-        fvarPatchType
-    );
     //
     // note: Don't include polygonMode into the hash.
     //       It is independent from the GLSL program.
@@ -151,7 +148,30 @@ HdSt_GeometricShader::ResolveCullMode(
 HdStShaderCode::ID
 HdSt_GeometricShader::ComputeHash() const
 {
+    // All mutator methods that might affect the hash must reset this (fragile).
+    if (!_isValidComputedHash) {
+        _hash = _ComputeHash();
+        _isValidComputedHash = true;
+    }
     return _hash;
+}
+
+HdStShaderCode::ID
+HdSt_GeometricShader::_ComputeHash() const
+{
+    size_t hash = HdSt_MaterialParam::ComputeHash(_params);
+
+    hash = TfHash::Combine(
+        hash,
+        _glslfx->GetHash(),
+        _frustumCullingPass,
+        _primType,
+        _cullStyle,
+        _useMetalTessellation,
+        _fvarPatchType
+    );
+
+    return hash;
 }
 
 /* virtual */
@@ -161,18 +181,34 @@ HdSt_GeometricShader::GetSource(TfToken const &shaderStageKey) const
     return _glslfx->GetSource(shaderStageKey);
 }
 
+/*virtual*/
+HdSt_MaterialParamVector const&
+HdSt_GeometricShader::GetParams() const
+{
+    return _params;
+}
+
+/*virtual*/
+HdStShaderCode::NamedTextureHandleVector const&
+HdSt_GeometricShader::GetNamedTextureHandles() const
+{
+    return _namedTextureHandles;
+}
+
+/*virtual*/
 void
 HdSt_GeometricShader::BindResources(const int program,
                                     HdSt_ResourceBinder const &binder)
 {
-    // no-op
+    HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
 }
 
+/*virtual*/
 void
 HdSt_GeometricShader::UnbindResources(const int program,
                                       HdSt_ResourceBinder const &binder)
 {
-    // no-op
+    HdSt_TextureBinder::UnbindResources(binder, _namedTextureHandles);
 }
 
 /*virtual*/
@@ -199,6 +235,7 @@ HdSt_GeometricShader::GetPrimitiveIndexSize() const
         case PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
         case PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
         case PrimitiveType::PRIM_VOLUME:
+        case PrimitiveType::PRIM_DASH_DOT_LINES:
             primIndexSize = 3;
             break;
         case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
@@ -270,6 +307,7 @@ HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
         case PrimitiveType::PRIM_MESH_REFINED_TRIQUADS:
         case PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES:
         case PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES:
+        case PrimitiveType::PRIM_DASH_DOT_LINES:
         case PrimitiveType::PRIM_MESH_BSPLINE:
         case PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
         // for patches with tesselation, input to GS is still a series of tris
@@ -301,6 +339,7 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
         case PrimitiveType::PRIM_BASIS_CURVES_LINES:
             primitiveType = HgiPrimitiveTypeLineList;
             break;
+        case PrimitiveType::PRIM_DASH_DOT_LINES:
         case PrimitiveType::PRIM_MESH_COARSE_TRIANGLES:
         case PrimitiveType::PRIM_MESH_REFINED_TRIANGLES:
         case PrimitiveType::PRIM_MESH_COARSE_TRIQUADS:
@@ -336,15 +375,112 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
     return primitiveType;
 }
 
+/*virtual*/
+HdStShaderCode::ID
+HdSt_GeometricShader::ComputeTextureSourceHash() const
+{
+    if (!_isValidComputedTextureSourceHash) {
+        _computedTextureSourceHash = _ComputeTextureSourceHash();
+        _isValidComputedTextureSourceHash = true;
+    }
+    return _computedTextureSourceHash;
+}
+
+HdStShaderCode::ID
+HdSt_GeometricShader::_ComputeTextureSourceHash() const
+{
+    TRACE_FUNCTION();
+
+    // To avoid excessive plumbing and checking of HgiCapabilities in order to
+    // determine if bindless textures are enabled, we make things a little
+    // easier for ourselves by having this function check and return 0 if
+    // using bindless textures.
+    const bool useBindlessHandles = _namedTextureHandles.empty() ? false :
+        _namedTextureHandles[0].handles[0]->UseBindlessHandles();
+
+    if (useBindlessHandles) {
+        return 0;
+    }
+
+    size_t hash = 0;
+
+    for (const HdStShaderCode::NamedTextureHandle& namedHandle :
+        _namedTextureHandles) {
+
+        // Use name, texture object and sampling parameters.
+        hash = TfHash::Combine(hash, namedHandle.name, namedHandle.hash);
+    }
+
+    return hash;
+}
+
+void
+HdSt_GeometricShader::_SetNamedTextureHandles(
+    const NamedTextureHandleVector& namedTextureHandles)
+{
+    _namedTextureHandles = namedTextureHandles;
+    _isValidComputedTextureSourceHash = false;
+}
+
+void
+HdSt_GeometricShader::_SetParams(const HdSt_MaterialParamVector& params)
+{
+    _params = params;
+    _isValidComputedHash = false;
+}
+
+/*virtual*/
+void
+HdSt_GeometricShader::AddResourcesFromTextures(ResourceContext& ctx) const
+{
+    const bool doublesSupported = ctx.GetResourceRegistry()->GetHgi()->
+        GetCapabilities()->IsSet(
+            HgiDeviceCapabilitiesBitsShaderDoublePrecision);
+
+    // Add buffer sources for bindless texture handles (and
+    // other texture metadata such as the sampling transform for
+    // a field texture).
+    HdBufferSourceSharedPtrVector result;
+    HdSt_TextureBinder::ComputeBufferSources(
+        GetNamedTextureHandles(), &result, doublesSupported);
+
+    if (!result.empty()) {
+        ctx.AddSources(GetShaderData(), std::move(result));
+    }
+}
+
+namespace {
+    size_t
+    _GetGeometricShaderHash(
+        HdSt_ShaderKey const& shaderKey,
+        HdStShaderCode::NamedTextureHandleVector const& namedTextureHandles,
+        HdSt_MaterialParamVector const& params)
+    {
+        size_t hash = shaderKey.ComputeHash();
+        for (const HdStShaderCode::NamedTextureHandle& namedHandle :
+            namedTextureHandles) {
+
+            // Use name, texture object and sampling parameters.
+            hash = TfHash::Combine(hash, namedHandle.name, namedHandle.hash);
+        }
+        if (!params.empty())
+            hash = TfHash::Combine(hash, HdSt_MaterialParam::ComputeHash(params));
+
+        return hash;
+    }
+}
 /*static*/
- HdSt_GeometricShaderSharedPtr
- HdSt_GeometricShader::Create(
+HdSt_GeometricShaderSharedPtr
+HdSt_GeometricShader::Create(
     HdSt_ShaderKey const &shaderKey, 
+    NamedTextureHandleVector const& namedTextureHandles,
+    HdSt_MaterialParamVector const& params,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     // Use the shaderKey hash to deduplicate geometric shaders.
     HdInstance<HdSt_GeometricShaderSharedPtr> geometricShaderInstance =
-        resourceRegistry->RegisterGeometricShader(shaderKey.ComputeHash());
+        resourceRegistry->RegisterGeometricShader(
+            _GetGeometricShaderHash(shaderKey, namedTextureHandles, params));
 
     if (geometricShaderInstance.IsFirstInstance()) {
         geometricShaderInstance.SetValue(
@@ -361,6 +497,10 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
                 shaderKey.GetFvarPatchType(),
                 /*debugId=*/SdfPath(),
                 shaderKey.GetLineWidth()));
+        if(!namedTextureHandles.empty())
+            geometricShaderInstance.GetValue()->_SetNamedTextureHandles(namedTextureHandles);
+        if (!params.empty())
+            geometricShaderInstance.GetValue()->_SetParams(params);
     }
     return geometricShaderInstance.GetValue();
 }

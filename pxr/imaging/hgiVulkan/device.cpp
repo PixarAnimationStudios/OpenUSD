@@ -314,6 +314,9 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     // Needed for gl_primtiveID
     features2.features.geometryShader =
         _capabilities->vkDeviceFeatures2.features.geometryShader;
+    // Needed for DashDotLines when shapeDetail is "noCapJoint"
+    features2.features.wideLines =
+        _capabilities->vkDeviceFeatures2.features.wideLines;
 
     VkPhysicalDeviceVulkan11Features vulkan11Features =
         {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2024 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -19,6 +19,7 @@ void wrapUsdGeomTokens()
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, accelerations);
     _ADD_TOKEN(cls, all);
+    _ADD_TOKEN(cls, allDetails);
     _ADD_TOKEN(cls, angularVelocities);
     _ADD_TOKEN(cls, axis);
     _ADD_TOKEN(cls, basis);
@@ -53,6 +54,7 @@ void wrapUsdGeomTokens()
     _ADD_TOKEN(cls, edgeOnly);
     _ADD_TOKEN(cls, elementSize);
     _ADD_TOKEN(cls, elementType);
+    _ADD_TOKEN(cls, endCapType);
     _ADD_TOKEN(cls, exposure);
     _ADD_TOKEN(cls, exposureFStop);
     _ADD_TOKEN(cls, exposureIso);
@@ -85,6 +87,7 @@ void wrapUsdGeomTokens()
     _ADD_TOKEN(cls, interpolation);
     _ADD_TOKEN(cls, invisible);
     _ADD_TOKEN(cls, invisibleIds);
+    _ADD_TOKEN(cls, jointType);
     _ADD_TOKEN(cls, knots);
     _ADD_TOKEN(cls, left);
     _ADD_TOKEN(cls, leftHanded);
@@ -106,6 +109,7 @@ void wrapUsdGeomTokens()
     _ADD_TOKEN(cls, motionBlurScale);
     _ADD_TOKEN(cls, motionNonlinearSampleCount);
     _ADD_TOKEN(cls, motionVelocityScale);
+    _ADD_TOKEN(cls, noCapJoint);
     _ADD_TOKEN(cls, none);
     _ADD_TOKEN(cls, nonOverlapping);
     _ADD_TOKEN(cls, nonperiodic);
@@ -118,6 +122,9 @@ void wrapUsdGeomTokens()
     _ADD_TOKEN(cls, origin);
     _ADD_TOKEN(cls, orthographic);
     _ADD_TOKEN(cls, partition);
+    _ADD_TOKEN(cls, pattern);
+    _ADD_TOKEN(cls, patternPeriod);
+    _ADD_TOKEN(cls, patternScale);
     _ADD_TOKEN(cls, periodic);
     _ADD_TOKEN(cls, perspective);
     _ADD_TOKEN(cls, pinned);
@@ -144,18 +151,24 @@ void wrapUsdGeomTokens()
     _ADD_TOKEN(cls, renderVisibility);
     _ADD_TOKEN(cls, right);
     _ADD_TOKEN(cls, rightHanded);
+    _ADD_TOKEN(cls, round);
     _ADD_TOKEN(cls, scales);
+    _ADD_TOKEN(cls, screenSpacePattern);
     _ADD_TOKEN(cls, segment);
+    _ADD_TOKEN(cls, shapeDetail);
     _ADD_TOKEN(cls, shutterClose);
     _ADD_TOKEN(cls, shutterOpen);
     _ADD_TOKEN(cls, size);
     _ADD_TOKEN(cls, smooth);
+    _ADD_TOKEN(cls, square);
+    _ADD_TOKEN(cls, startCapType);
     _ADD_TOKEN(cls, stereoRole);
     _ADD_TOKEN(cls, subdivisionScheme);
     _ADD_TOKEN(cls, surfaceFaceVertexIndices);
     _ADD_TOKEN(cls, tangents);
     _ADD_TOKEN(cls, tetrahedron);
     _ADD_TOKEN(cls, tetVertexIndices);
+    _ADD_TOKEN(cls, triangle);
     _ADD_TOKEN(cls, triangleSubdivisionRule);
     _ADD_TOKEN(cls, trimCurveCounts);
     _ADD_TOKEN(cls, trimCurveKnots);
@@ -202,6 +215,8 @@ void wrapUsdGeomTokens()
     _ADD_TOKEN(cls, Curves);
     _ADD_TOKEN(cls, Cylinder);
     _ADD_TOKEN(cls, Cylinder_1);
+    _ADD_TOKEN(cls, DashDotLines);
+    _ADD_TOKEN(cls, DashDotPatternAPI);
     _ADD_TOKEN(cls, GeomModelAPI);
     _ADD_TOKEN(cls, GeomSubset);
     _ADD_TOKEN(cls, Gprim);

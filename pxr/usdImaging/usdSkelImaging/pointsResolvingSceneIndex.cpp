@@ -31,6 +31,7 @@ _IsPointBasedPrim(const TfToken &primType)
     return
         primType == HdPrimTypeTokens->mesh ||
         primType == HdPrimTypeTokens->basisCurves ||
+        primType == HdPrimTypeTokens->dashDotLines ||
         primType == HdPrimTypeTokens->points;
 }
 

@@ -1,0 +1,19 @@
+#usda 1.0
+
+(
+    upAxis = "Y"
+    doc = """This layer represents the various geometric forms that curves
+             may be used to represent."""
+)
+
+def DashDotLines "StyledPolyline" (
+){
+    uniform token implType = "shaderBasedDashDot"
+    uniform token startCapType = "round"
+    uniform token endCapType = "round"
+    uniform token jointType = "round"
+    int[] curveVertexCounts = [3]
+    point3f[] points = [(0, 0, 0), (10, 10, 0), (10, 20, 0)]
+    float[] widths = [5] (interpolation = "constant")
+    color3f[] primvars:displayColor = [(1, 0, 0)]
+}

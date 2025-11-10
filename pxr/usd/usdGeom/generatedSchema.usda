@@ -2073,6 +2073,178 @@ class NurbsCurves "NurbsCurves" (
     )
 }
 
+class DashDotLines "DashDotLines" (
+    customData = {
+        string userDocBrief = "This schema is for a line primitive whose width in screen space will not change."
+    }
+)
+{
+    vector3f[] accelerations (
+        customData = {
+            string userDocBrief = """If provided, 'accelerations' should be used with
+        velocities to compute positions between samples for the 'points'
+        attribute rather than interpolating between neighboring 'points'
+        samples."""
+        }
+    )
+    int[] curveVertexCounts (
+        customData = {
+            string userDocBrief = """Curves-derived primitives can represent multiple distinct,
+        potentially disconnected curves."""
+        }
+    )
+    uniform bool doubleSided = 0 (
+        customData = {
+            string userDocBrief = """Although some renderers treat all parametric or polygonal
+        surfaces as if they were effectively laminae with outward-facing
+        normals on both sides, some renderers derive significant optimizations
+        by considering these surfaces to have only a single outward side,
+        typically determined by control-point winding order and/or 
+        orientation."""
+        }
+    )
+    uniform token endCapType = "round" (
+        allowedTokens = ["round", "square", "triangle"]
+        customData = {
+            string userDocBrief = "The shape of the line cap at the end of the line."
+        }
+    )
+    float3[] extent (
+        customData = {
+            string userDocBrief = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e."""
+        }
+    )
+    uniform token jointType = "round" (
+        allowedTokens = ["round"]
+        customData = {
+            string userDocBrief = "The shape of the joint for a polyline."
+        }
+    )
+    normal3f[] normals (
+        customData = {
+            string userDocBrief = """Provide an object-space orientation for individual points, 
+        which, depending on subclass, may define a surface, curve, or free 
+        points."""
+        }
+    )
+    uniform token orientation = "rightHanded" (
+        allowedTokens = ["rightHanded", "leftHanded"]
+        customData = {
+            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
+        should be computed using the right hand rule, or the left hand rule."""
+        }
+    )
+    uniform float patternScale = 1 (
+        customData = {
+            string userDocBrief = "This property is a scale value to lengthen or shorten a dash-dot pattern."
+        }
+    )
+    point3f[] points (
+        customData = {
+            string userDocBrief = """The primary geometry attribute for all PointBased
+        primitives, describes points in (local) space."""
+        }
+    )
+    color3f[] primvars:displayColor (
+        customData = {
+            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
+        as a display or modeling color, even in the absence of any specified
+        shader for a gprim.'''
+        }
+    )
+    float[] primvars:displayOpacity (
+        customData = {
+            string userDocBrief = """Companion to displayColor that specifies opacity, broken
+        out as an independent attribute rather than an rgba color, both so that
+        each can be independently overridden, and because shaders rarely consume
+        rgba parameters."""
+        }
+    )
+    rel proxyPrim (
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.'''
+        }
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
+    )
+    uniform bool screenSpacePattern = 1 (
+        customData = {
+            string userDocBrief = "Whether the dash-dot pattern length can be varied."
+        }
+    )
+    uniform token shapeDetail = "allDetails" (
+        allowedTokens = ["allDetails", "noCapJoint"]
+        customData = {
+            string userDocBrief = "The detail of the shape."
+        }
+    )
+    uniform token startCapType = "round" (
+        allowedTokens = ["round", "square", "triangle"]
+        customData = {
+            string userDocBrief = "The shape of the line cap at the start of the line."
+        }
+    )
+    vector3f[] velocities (
+        customData = {
+            string userDocBrief = """If provided, 'velocities' should be used by renderers to 
+
+        compute positions between samples for the 'points' attribute, rather
+        than interpolating between neighboring 'points' samples."""
+        }
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
+    )
+    float[] widths (
+        customData = {
+            string userDocBrief = '''Provides width specification for the curves, whose application
+        will depend on whether the curve is oriented (normals are defined for
+        it), in which case widths are "ribbon width", or unoriented, in which
+        case widths are cylinder width.'''
+        }
+    )
+    uniform token[] xformOpOrder (
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
+        order in which they should be pushed onto a transform stack while
+        visiting a UsdStage's prims in a graph traversal that will effect
+        the desired positioning for this prim and its descendant prims."""
+        }
+    )
+}
+
+class "DashDotPatternAPI" (
+    customData = {
+        string userDocBrief = """UsdGeomDashDotPatternAPI is an API schema that provides an interface for the dash-dot patterns of the
+    DashDotLines primitive."""
+    }
+)
+{
+    uniform float2[] pattern (
+        customData = {
+            string userDocBrief = "An array of float2 which saves the dash-dot pattern."
+        }
+    )
+    uniform float patternPeriod = 0 (
+        customData = {
+            string userDocBrief = "The length of a pattern."
+        }
+    )
+}
+
 class Points "Points" (
     customData = {
         string userDocBrief = 'Points are analogous to the <A HREF="https://renderman.pixar.com/resources/RenderMan_20/appnote.18.html">RiPoints spec</A>.'

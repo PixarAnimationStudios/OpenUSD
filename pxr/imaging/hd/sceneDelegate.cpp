@@ -80,6 +80,13 @@ HdSceneDelegate::GetBasisCurvesTopology(SdfPath const& id)
 }
 
 /*virtual*/
+HdDashDotLinesTopology
+HdSceneDelegate::GetDashDotLinesTopology(SdfPath const& id)
+{
+    return HdDashDotLinesTopology();
+}
+
+/*virtual*/
 PxOsdSubdivTags
 HdSceneDelegate::GetSubdivTags(SdfPath const& id)
 {

@@ -8,6 +8,8 @@
 
 #include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/cachingSceneIndex.h"
+#include "pxr/imaging/hd/camera.h"
+#include "pxr/imaging/hd/dashDotLines.h"
 #include "pxr/imaging/hd/dataSourceLegacyPrim.h"
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/dirtyList.h"
@@ -23,6 +25,7 @@
 #include "pxr/imaging/hd/prefixingSceneIndex.h"
 #include "pxr/imaging/hd/primGather.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/rprim.h"
@@ -48,6 +51,8 @@
 
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_vector.h>
+#include <tbb/parallel_for.h>
+#include <tbb/blocked_range.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -534,6 +539,21 @@ void HdRenderIndex::_RemoveRprim(SdfPath const &id)
 
     _tracker.RprimRemoved(id);
 
+    // If the rprim is a dashDotLines, and it is in _screenSpacedStyleCurvesList,
+    // remove it from _screenSpacedStyleCurvesList.
+    HdDashDotLines* dashDotLines = dynamic_cast<HdDashDotLines*>(rprimInfo.rprim);
+    if (dashDotLines)
+    {
+        for (auto it = _screenSpacedStyleCurvesList.begin(); it != _screenSpacedStyleCurvesList.end(); ++it)
+        {
+            if (*it == rprimInfo.rprim)
+            {
+                _screenSpacedStyleCurvesList.erase(it);
+                break;
+            }
+        }
+    }
+
     // Ask delegate to actually delete the rprim
     rprimInfo.rprim->Finalize(_renderDelegate->GetRenderParam());
     _renderDelegate->DestroyRprim(rprimInfo.rprim);
@@ -593,7 +613,22 @@ HdRenderIndex::_RemoveRprimSubtree(const SdfPath &root,
                     _tracker.RemoveInstancerRprimDependency(instancerId, id);
                 }
 
-                _tracker.RprimRemoved(id);
+                _tracker.RprimRemoved(id);    
+                
+                // If the rprim is a dashDotLines, and it is in _screenSpacedStyleCurvesList,
+                // remove it from _screenSpacedStyleCurvesList.
+                HdDashDotLines* dashDotLines = dynamic_cast<HdDashDotLines*>(rprimInfo.rprim);
+                if (dashDotLines)
+                {
+                    for (auto it = _screenSpacedStyleCurvesList.begin(); it != _screenSpacedStyleCurvesList.end(); ++it)
+                    {
+                        if (*it == rprimInfo.rprim)
+                        {
+                            _screenSpacedStyleCurvesList.erase(it);
+                            break;
+                        }
+                    }
+                }
 
                 // Ask delegate to actually delete the rprim
                 rprimInfo.rprim->Finalize(_renderDelegate->GetRenderParam());
@@ -670,6 +705,9 @@ HdRenderIndex::_Clear()
     _rprimMap.clear();
     _rprimIds.Clear();
     _rprimPrimIdMap.clear();
+
+    // Clear the _screenSpacedStyleCurvesList.
+    _screenSpacedStyleCurvesList.clear();
 
     // Clear S & B prims
     _sprimIndex.Clear(_tracker, _renderDelegate);
@@ -1575,6 +1613,139 @@ HdRenderIndex::EnqueueCollectionToSync(HdRprimCollection const &col)
     _collectionsToSync.push_back(col);
 }
 
+void 
+HdRenderIndex::UpdateScreenSpaceDashDotLines(bool ifNeedUpdateEachFrame, HdRprim* rprim)
+{
+    const std::lock_guard<std::mutex> lock(styledCurveMutex);
+    if (ifNeedUpdateEachFrame)
+    {
+        // If this is the first curve added to _screenSpacedStyleCurvesList, we should update the _currentWVPMatrix 
+        // and _currentViewport.
+        if (_screenSpacedStyleCurvesList.empty())
+            _UpdateMatrices();
+#if defined(_DEBUG) || defined(DEBUG)
+        for (auto it = _screenSpacedStyleCurvesList.begin(); it != _screenSpacedStyleCurvesList.end(); ++it)
+        {
+            if (*it == rprim)
+            {
+                TF_CODING_ERROR("The same styled curve is added to _screenSpacedStyleCurvesList twice.");
+                return;
+            }
+        }
+#endif
+        // Add the curve into _screenSpacedStyleCurvesList.
+        _screenSpacedStyleCurvesList.push_back(rprim);
+    }
+    else
+    {
+        // Remove the curve from _screenSpacedStyleCurvesList.
+        for (auto it = _screenSpacedStyleCurvesList.begin(); it != _screenSpacedStyleCurvesList.end(); ++it)
+        {
+            if (*it == rprim)
+            {
+                _screenSpacedStyleCurvesList.erase(it);
+                break;
+            }
+        }
+    }
+}
+
+void
+HdRenderIndex::_SyncScreenSpaceStyledCurves()
+{
+    if (!_screenSpacedStyleCurvesList.empty())
+    {
+        // For each screen spaced styled curve, mark the camera is dirty.
+        tbb::parallel_for(tbb::blocked_range<std::size_t>(0, _screenSpacedStyleCurvesList.size()),
+            [&](const tbb::blocked_range<size_t>& r) {
+                for (std::size_t i = r.begin(); i != r.end(); ++i) {
+                    // Mark the curve as DirtyCamera.
+                    auto const& rprim = _screenSpacedStyleCurvesList[i];
+                    _tracker.MarkRprimDirty(rprim->GetId(), HdDashDotLines::DirtyCamera);
+                }
+            });
+        // Update the _currentWVPMatrix and _currentViewport.
+        _UpdateMatrices();
+    }
+}
+
+void 
+HdRenderIndex::_UpdateMatrices()
+{
+    // Get the WVP matrix and the viewport.
+    GfMatrix4d projectionMatrix;
+    GfMatrix4d worldViewMatrix;
+    HdCamera* camera = nullptr;
+    if (IsSprimTypeSupported(HdTokens->camera)) {
+        camera = static_cast<HdCamera*>(GetSprim(HdPrimTypeTokens->camera, _activeCameraId));
+    }
+    // If there is camera, get the matrix and viewport from the camera.
+    if (camera) {
+        // Initialize the cached render pass state.
+        // NOTE: Constructing and destroying HdRenderPassState will resulting processing glslfx
+        // redundantly, which is time-consuming.
+        static HdRenderPassStateSharedPtr renderPassState;
+        if (!renderPassState)
+        {
+            renderPassState = _renderDelegate->CreateRenderPassState();
+        }
+        else
+        {
+            // Reset the renderPassState.
+            renderPassState->SetCamera(nullptr);
+            renderPassState->SetFraming({});
+            renderPassState->SetOverrideWindowPolicy({});
+            static const GfVec4d& initialViewport = { 0, 0, 1, 1 };
+            renderPassState->SetViewport(initialViewport);
+        }
+
+        if (renderPassState)
+        {
+            // Set the camera and viewport for render pass state.
+            if (_framing.IsValid()) {
+                renderPassState->SetCamera(camera);
+                renderPassState->SetFraming(_framing);
+                renderPassState->SetOverrideWindowPolicy(_overrideWindowPolicy);
+            }
+            else {
+                renderPassState->SetCamera(camera);
+                renderPassState->SetViewport(_viewport);
+            }
+            projectionMatrix = renderPassState->GetProjectionMatrix();
+            worldViewMatrix = renderPassState->GetWorldToViewMatrix();
+            const CameraUtilFraming& framing = renderPassState->GetFraming();
+            _currentViewport = renderPassState->GetViewport();
+            if (framing.IsValid()) {
+                const GfRect2i& dataWindow = framing.dataWindow;
+                _currentViewport = GfVec4f(
+                    dataWindow.GetMinX(),
+                    dataWindow.GetMinY(),
+                    dataWindow.GetWidth(),
+                    dataWindow.GetHeight());
+            }
+        }
+    }
+    else
+    {
+        // If there is no camera, use the matrix and viewport which is set to the renderIndex.
+        projectionMatrix = _projectionMatrix;
+        worldViewMatrix = _worldToViewMatrix;
+        _currentViewport = GfVec4f(_viewport.data()[0],
+            _viewport.data()[1],
+            _viewport.data()[2],
+            _viewport.data()[3]);
+        if (_framing.IsValid()) {
+            const GfRect2i& dataWindow = _framing.dataWindow;
+            _currentViewport = GfVec4f(
+                dataWindow.GetMinX(),
+                dataWindow.GetMinY(),
+                dataWindow.GetWidth(),
+                dataWindow.GetHeight());
+        }
+    }
+    _currentWVPMatrix = worldViewMatrix * projectionMatrix;
+}
+
 void
 HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
                        HdTaskContext *taskContext)
@@ -1679,6 +1850,10 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
     // and get dirty rprim ids
     _rprimDirtyList.UpdateRenderTagsAndReprSelectors(taskRenderTags,
                                                      reprSelectors);
+
+    // If the dashDotLines has screenspaced style, we need to update the screenspaced accumulated
+    // length per frame. 
+    _SyncScreenSpaceStyledCurves();
 
     // NOTE: GetDirtyRprims relies on up-to-date render tags; if render tags
     // are dirty, this call will sync render tags before compiling the dirty
@@ -2183,6 +2358,47 @@ HdRenderIndex::IsBprimTypeSupported(TfToken const& typeId) const
 {
     TfTokenVector const& supported = _renderDelegate->GetSupportedBprimTypes();
     return (std::find(supported.begin(), supported.end(), typeId) != supported.end());
+}
+
+void
+HdRenderIndex::SetFraming(const CameraUtilFraming& framing)
+{
+    _framing = framing;
+}
+
+void
+HdRenderIndex::SetOverrideWindowPolicy(
+    const std::optional<CameraUtilConformWindowPolicy>& policy)
+{
+    _overrideWindowPolicy = policy;
+}
+
+void
+HdRenderIndex::SetRenderViewport(GfVec4d const& viewport)
+{
+    _viewport = viewport;
+}
+
+void
+HdRenderIndex::SetCameraPath(SdfPath const& id)
+{
+    _activeCameraId = id;
+}
+
+void
+HdRenderIndex::SetCameraFramingState(GfMatrix4d const& worldToViewMatrix,
+    GfMatrix4d const& projectionMatrix,
+    GfVec4d const& viewport)
+{
+    if (!_activeCameraId.IsEmpty()) {
+        // If a camera handle was set, reset it.
+        _activeCameraId = SdfPath();
+    }
+
+    _worldToViewMatrix = worldToViewMatrix;
+    _projectionMatrix = projectionMatrix;
+    _viewport = viewport;
+
 }
 
 void

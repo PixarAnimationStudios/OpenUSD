@@ -591,6 +591,14 @@ HdStResourceRegistry::RegisterBasisCurvesTopology(
                      HdPerfTokens->instBasisCurvesTopology);
 }
 
+HdInstance<HdSt_DashDotLinesTopologySharedPtr>
+HdStResourceRegistry::RegisterDashDotLinesTopology(
+        HdInstance<HdSt_DashDotLinesTopologySharedPtr>::ID id)
+{
+    return _Register(id, _dashDotLinesTopologyRegistry,
+                     HdPerfTokens->instDashDotLinesTopology);
+}
+
 HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>
 HdStResourceRegistry::RegisterVertexAdjacencyBuilder(
         HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>::ID id)
@@ -613,6 +621,14 @@ HdStResourceRegistry::RegisterBasisCurvesIndexRange(
 {
     return _Register(id, _basisCurvesTopologyIndexRangeRegistry[name],
                      HdPerfTokens->instBasisCurvesTopologyRange);
+}
+
+HdInstance<HdBufferArrayRangeSharedPtr>
+HdStResourceRegistry::RegisterDashDotLinesIndexRange(
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name)
+{
+    return _Register(id, _dashDotLinesTopologyIndexRangeRegistry[name],
+                     HdPerfTokens->instDashDotLinesTopologyRange);
 }
 
 HdInstance<HdBufferArrayRangeSharedPtr>
@@ -1082,6 +1098,11 @@ HdStResourceRegistry::_GarbageCollect()
     }
 
     {
+        size_t count = _dashDotLinesTopologyRegistry.GarbageCollect();
+        HD_PERF_COUNTER_SET(HdPerfTokens->instDashDotLinesTopology, count);
+    }
+
+    {
         size_t count = _vertexAdjacencyBuilderRegistry.GarbageCollect();
         HD_PERF_COUNTER_SET(HdPerfTokens->instVertexAdjacency, count);
     }
@@ -1100,6 +1121,14 @@ HdStResourceRegistry::_GarbageCollect()
             count += it.second.GarbageCollect();
         }
         HD_PERF_COUNTER_SET(HdPerfTokens->instBasisCurvesTopologyRange, count);
+    }
+
+    {
+        size_t count = 0;
+        for (auto & it: _dashDotLinesTopologyIndexRangeRegistry) {
+            count += it.second.GarbageCollect();
+        }
+        HD_PERF_COUNTER_SET(HdPerfTokens->instDashDotLinesTopologyRange, count);
     }
 
     {

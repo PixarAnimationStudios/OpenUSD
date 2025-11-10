@@ -212,6 +212,10 @@ HdSt_TestDriverBase<SceneDelegate>::_Init(HdReprSelector const &reprSelector)
     _collection.SetReprSelector(reprSelector);
     HdChangeTracker &tracker = _renderIndex->GetChangeTracker();
     tracker.AddCollection(_collection.GetName());
+
+    _renderIndex->SetCameraPath(_cameraId);
+    _renderIndex->SetFraming(CameraUtilFraming(
+        GfRect2i(GfVec2i(0, 0), 512, 512)));
 }
 
 static inline
@@ -288,6 +292,9 @@ HdSt_TestDriverBase<SceneDelegate>::SetCamera(
                 HdPrimTypeTokens->camera,
                 _cameraId));
     TF_VERIFY(camera);
+
+    _renderIndex->SetCameraPath(_cameraId);
+    _renderIndex->SetFraming(framing);
 
     for (const HdStRenderPassStateSharedPtr &renderPassState: _renderPassStates) {
         renderPassState->SetCamera(camera);

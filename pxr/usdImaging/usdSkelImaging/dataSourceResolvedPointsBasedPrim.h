@@ -27,7 +27,7 @@ TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 /// \class UsdSkelImagingDataSourceResolvedPointsBasedPrim
 ///
 /// A prim data source providing resolved data for a points based prim (mesh,
-/// basisCurves, points) deformed by a skeleton.
+/// basisCurves, dashDotLines, points) deformed by a skeleton.
 /// As a data source, it populates the HdExtComputationPrimvarsSchema for points
 /// and removes points from the HdPrimvarsSchema.
 ///

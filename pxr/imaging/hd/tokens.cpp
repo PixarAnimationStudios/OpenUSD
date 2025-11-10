@@ -69,6 +69,7 @@ bool HdPrimTypeIsGprim(TfToken const& primType)
 {
     return (primType == HdPrimTypeTokens->mesh ||
             primType == HdPrimTypeTokens->basisCurves ||
+            primType == HdPrimTypeTokens->dashDotLines ||
             primType == HdPrimTypeTokens->points ||
             primType == HdPrimTypeTokens->volume);
 }
@@ -89,6 +90,7 @@ bool HdPrimTypeSupportsGeomSubsets(const TfToken& primType) {
     static const TfTokenVector types = {
         HdPrimTypeTokens->mesh,
         HdPrimTypeTokens->basisCurves,
+        HdPrimTypeTokens->dashDotLines,
         // XXX: tetMesh not yet supported
     };
     return std::find(types.begin(), types.end(), primType) != types.end();

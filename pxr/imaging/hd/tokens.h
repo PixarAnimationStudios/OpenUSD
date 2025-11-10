@@ -18,6 +18,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_TOKENS                               \
     (accelerations)                             \
     (adjacency)                                 \
+    (allDetails)                                \
     (angularVelocities)                         \
     (bboxLocalMin)                              \
     (bboxLocalMax)                              \
@@ -48,6 +49,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (edgeIndices)                               \
     (elementCount)                              \
     (elementsVisibility)                        \
+    (endCapType)                                \
     (extent)                                    \
     (faceColors)                                \
     (filters)                                   \
@@ -68,11 +70,17 @@ PXR_NAMESPACE_OPEN_SCOPE
     (meshLight)                                 \
     (materialParams)                            \
     (materialSyncMode)                          \
+    (noCapJoint)                                \
+    (none)                                      \
     (nonlinearSampleCount)                      \
     (nonperiodic)                               \
     (normals)                                   \
     (params)                                    \
     (patchParam)                                \
+    (pattern)                                   \
+    (patternPartCount)                          \
+    (patternPeriod)                             \
+    (patternScale)                              \
     (periodic)                                  \
     (pinned)                                    \
     (points)                                    \
@@ -86,10 +94,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     (primitiveParam)                            \
     (tessFactors)                               \
     (quadInfo)                                  \
+    (renderPassState)                           \
     (renderTags)                                \
     (rightHanded)                               \
+    (round)                                     \
+    (screenSpacePattern)                        \
     (segmented)                                 \
     (shadowLink)                                \
+    (square)                                    \
+    (startCapType)                              \
+    (style)                                     \
     (subdivTags)                                \
     (taskState)                                 \
     (taskParams)                                \
@@ -98,6 +112,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (totalItemCount)                            \
     (transform)                                 \
     (transformInverse)                          \
+    (triangle)                                  \
+    (type)                                      \
     (velocities)                                \
     (visibility)                                \
     (widths)                                    \
@@ -164,6 +180,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bufferArrayRangeMigrated)                  \
     (bufferArrayRangeContainerResized)          \
     (computationsCommited)                      \
+    (dashDotLinesTopology)                      \
     (drawBatches)                               \
     (drawCalls)                                 \
     (dirtyLists)                                \
@@ -175,6 +192,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (gpuMemoryUsed)                             \
     (instBasisCurvesTopology)                   \
     (instBasisCurvesTopologyRange)              \
+    (instDashDotLinesTopology)                  \
+    (instDashDotLinesTopologyRange)             \
     (instExtComputationDataRange)               \
     (instMeshTopology)                          \
     (instMeshTopologyRange)                     \
@@ -275,6 +294,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (tetMesh)                                   \
     (nurbsPatch)                                \
     (basisCurves)                               \
+    (dashDotLines)                              \
     (nurbsCurves)                               \
     (plane)                                     \
     (points)                                    \

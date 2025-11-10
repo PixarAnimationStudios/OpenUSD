@@ -19,9 +19,10 @@ TF_DECLARE_REF_PTRS(UsdSkelImagingPointsResolvingSceneIndex);
 
 /// \class UsdSkelImagingPointsResolvingSceneIndex
 ///
-/// Adds ext computations to skin to points of a mesh, point, basisCurves prims.
-/// It uses the prim from the input scene, the targeted skelBlendShape's as well
-/// as the resolved skeleton schema from the targeted skeleton.
+/// Adds ext computations to skin to points of a mesh, point, basisCurves, 
+/// dashDotLines prims. It uses the prim from the input scene, the targeted 
+/// skelBlendShape's as well as the resolved skeleton schema from the targeted 
+/// skeleton.
 ///
 /// Thus, this scene index has to run after the
 /// UsdSkelImagingSkeletonResolvingSceneIndex.

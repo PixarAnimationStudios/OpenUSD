@@ -11,6 +11,8 @@ cube
 curves
 cylinder
 cylinder_1
+dashDotLines
+dashDotPatternAPI
 gprim
 hermiteCurves
 imageable
@@ -46,6 +48,8 @@ wrapCube.cpp
 wrapCurves.cpp
 wrapCylinder.cpp
 wrapCylinder_1.cpp
+wrapDashDotLines.cpp
+wrapDashDotPatternAPI.cpp
 wrapGprim.cpp
 wrapHermiteCurves.cpp
 wrapImageable.cpp

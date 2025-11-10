@@ -119,7 +119,7 @@ HdSt_ImageShaderRenderPass::SetupFullscreenTriangleDrawItem()
 
         HdSt_ImageShaderShaderKey shaderKey;
         HdSt_GeometricShaderSharedPtr geometricShader =
-            HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
+            HdSt_GeometricShader::Create(shaderKey, {}, {}, resourceRegistry);
 
         _drawItem.SetGeometricShader(geometricShader);
     }

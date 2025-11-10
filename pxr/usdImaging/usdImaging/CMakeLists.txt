@@ -33,6 +33,7 @@ pxr_library(usdImaging
         dataSourceAttributeColorSpace
         dataSourceAttributeTypeName
         dataSourceBasisCurves
+        dataSourceDashDotLines
         dataSourceCamera
         dataSourceGprim
         dataSourceMapped
@@ -80,6 +81,7 @@ pxr_library(usdImaging
         cubeAdapter
         cylinderAdapter
         cylinderLightAdapter
+        dashDotLinesAdapter
         diskLightAdapter
         distantLightAdapter
         domeLightAdapter

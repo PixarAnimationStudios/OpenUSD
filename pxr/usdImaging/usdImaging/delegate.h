@@ -269,8 +269,9 @@ public:
     USDIMAGING_API
     virtual HdMeshTopology GetMeshTopology(SdfPath const& id) override;
     USDIMAGING_API
-    virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id) 
-        override;
+    virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id) override;
+    USDIMAGING_API
+    virtual HdDashDotLinesTopology GetDashDotLinesTopology(SdfPath const& id) override;
     typedef PxOsdSubdivTags SubdivTags;
 
     // XXX: animated subdiv tags are not currently supported

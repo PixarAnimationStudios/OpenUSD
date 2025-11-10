@@ -390,7 +390,7 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
                 GetId().GetText(), HdSt_PrimTypeToString(shaderKey.primType));
 
     HdSt_GeometricShaderSharedPtr geomShader =
-        HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
+        HdSt_GeometricShader::Create(shaderKey, {}, {}, resourceRegistry);
 
     TF_VERIFY(geomShader);
 

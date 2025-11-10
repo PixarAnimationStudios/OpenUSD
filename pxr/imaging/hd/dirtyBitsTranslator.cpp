@@ -30,6 +30,8 @@
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
 #include "pxr/imaging/hd/cubeSchema.h"
 #include "pxr/imaging/hd/cylinderSchema.h"
+#include "pxr/imaging/hd/dashDotLinesSchema.h"
+#include "pxr/imaging/hd/dashDotLinesTopologySchema.h"
 #include "pxr/imaging/hd/extComputationInputComputationSchema.h"
 #include "pxr/imaging/hd/extComputationOutputSchema.h"
 #include "pxr/imaging/hd/extComputationPrimvarSchema.h"
@@ -120,6 +122,12 @@ HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(TfToken const& primType,
     if (primType == HdPrimTypeTokens->basisCurves) {
         if (bits & HdChangeTracker::DirtyTopology) {
             set->append(HdBasisCurvesTopologySchema::GetDefaultLocator());
+        }
+    }
+
+    if (primType == HdPrimTypeTokens->dashDotLines) {
+        if (bits & HdChangeTracker::DirtyTopology) {
+            set->append(HdDashDotLinesTopologySchema::GetDefaultLocator());
         }
     }
 
@@ -620,6 +628,15 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
         // Locator (*): basisCurves > topology
         if (_FindLocator(HdBasisCurvesTopologySchema::GetDefaultLocator(),
                          end, &it)) {
+            bits |= HdChangeTracker::DirtyTopology;
+        }
+    }
+
+    if (primType == HdPrimTypeTokens->dashDotLines) {
+
+        // Locator (*): dashDotLines > topology
+        if (_FindLocator(HdDashDotLinesTopologySchema::GetDefaultLocator(),
+            end, &it)) {
             bits |= HdChangeTracker::DirtyTopology;
         }
     }

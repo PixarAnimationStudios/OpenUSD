@@ -23,6 +23,21 @@ TF_DEFINE_PRIVATE_TOKENS(
     (textureBindings)
 );
 
+
+// Convert the qualifiers to the interpolation string in MSL.
+std::string _GetInterpolationString(std::string const & qualifiers)
+{
+    if (qualifiers == "flat") {
+        return qualifiers;
+    }
+    else if(qualifiers == "noperspective") {
+        return "center_no_perspective";
+    }
+    else {
+        return "";
+    }
+}
+
 template<typename SectionType, typename ...T>
 SectionType *
 HgiMetalShaderGenerator::CreateShaderSection(T && ...t)

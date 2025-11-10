@@ -1,0 +1,28 @@
+#usda 1.0
+
+(
+    upAxis = "Y"
+)
+
+
+def DashDotLines "curve" (
+    inherits = [</MyPattern>]
+){
+    float3[] extent = [(-10, 0, 0),(10, 100, 0)]
+    uniform bool screenSpacePattern = false
+    uniform token startCapType = "round"
+    uniform token endCapType = "round"
+
+    int[] curveVertexCounts = [3, 4, 4]
+    point3f[] points = [(0, 0, 0), (10, 10, 0), (10, 20, 0), (0, 30, 0), (-10, 40, 0), (-10, 50, 0), (0, 60, 0), (10, 70, 0), (10, 80, 0), (0, 90, 0), (-10, 100, 0)]
+    float[] widths = [5] (interpolation = "constant")
+    color3f[] primvars:displayColor = [(1, 0, 0)]
+}
+
+def "MyPattern" (
+    prepend apiSchemas = ["DashDotPatternAPI"]
+)
+{
+    uniform float patternPeriod = 15
+    uniform float2[] pattern = [(0, 10)]
+}

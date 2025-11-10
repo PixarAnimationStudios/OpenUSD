@@ -8,6 +8,7 @@
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
 #include "pxr/imaging/hdSt/basisCurves.h"
+#include "pxr/imaging/hdSt/dashDotLines.h"
 #include "pxr/imaging/hdSt/drawItemsCache.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/extComputation.h"
@@ -62,6 +63,7 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
     HdPrimTypeTokens->mesh,
     HdPrimTypeTokens->basisCurves,
+    HdPrimTypeTokens->dashDotLines,
     HdPrimTypeTokens->points,
     HdPrimTypeTokens->volume
 };
@@ -398,6 +400,8 @@ HdStRenderDelegate::CreateRprim(TfToken const& typeId,
         return new HdStMesh(rprimId);
     } else if (typeId == HdPrimTypeTokens->basisCurves) {
         return new HdStBasisCurves(rprimId);
+    } else if (typeId == HdPrimTypeTokens->dashDotLines) {
+        return new HdStDashDotLines(rprimId);
     } else  if (typeId == HdPrimTypeTokens->points) {
         return new HdStPoints(rprimId);
     } else  if (typeId == HdPrimTypeTokens->volume) {

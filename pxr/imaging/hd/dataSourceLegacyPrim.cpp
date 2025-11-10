@@ -25,6 +25,8 @@
 #include "pxr/imaging/hd/collectionSchema.h"
 #include "pxr/imaging/hd/collectionsSchema.h"
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
+#include "pxr/imaging/hd/dashDotLinesSchema.h"
+#include "pxr/imaging/hd/dashDotLinesTopologySchema.h"
 #include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/dependencySchema.h"
 #include "pxr/imaging/hd/displayFilterSchema.h"
@@ -903,6 +905,198 @@ private:
     SdfPath _id;
     HdSceneDelegate *_sceneDelegate;
     Hd_BasisCurvesTopologyStoreSharedPtr _basisCurvesTopologyStore;
+
+};
+
+// ----------------------------------------------------------------------------
+
+using Hd_DashDotLinesTopologyStoreSharedPtr =
+std::shared_ptr<class Hd_DashDotLinesTopologyStore>;
+using HdDashDotLinesTopologySharedPtr = std::shared_ptr<HdDashDotLinesTopology>;
+
+class Hd_DashDotLinesTopologyStore
+{
+public:
+    Hd_DashDotLinesTopologyStore(
+        const SdfPath& id, HdSceneDelegate* sceneDelegate)
+        : _id(id)
+        , _sceneDelegate(sceneDelegate)
+    {
+    }
+
+    HdDashDotLinesTopologySharedPtr Get()
+    {
+        HdDashDotLinesTopologySharedPtr bct = std::atomic_load(
+            &_dashDotLinesTopology);
+        if (bct) {
+            return bct;
+        }
+
+        bct = std::make_shared<HdDashDotLinesTopology>(
+            _sceneDelegate->GetDashDotLinesTopology(_id));
+        std::atomic_store(&_dashDotLinesTopology, bct);
+        return bct;
+    }
+
+    void Invalidate()
+    {
+        HdDashDotLinesTopologySharedPtr nullbct;
+        std::atomic_store(&_dashDotLinesTopology, nullbct);
+    }
+
+    template <typename T>
+    class MemberDataSource : public HdTypedSampledDataSource<T>
+    {
+    public:
+        HD_DECLARE_DATASOURCE_ABSTRACT(MemberDataSource<T>);
+
+        T GetTypedValue(HdSampledDataSource::Time shutterOffset) override = 0;
+
+        VtValue GetValue(HdSampledDataSource::Time shutterOffset) override
+        {
+            return VtValue(GetTypedValue(shutterOffset));
+        }
+
+        bool GetContributingSampleTimesForInterval(
+            HdSampledDataSource::Time startTime,
+            HdSampledDataSource::Time endTime,
+            std::vector<HdSampledDataSource::Time>* outSampleTimes)
+            override
+        {
+            return false;
+        }
+
+        MemberDataSource(const Hd_DashDotLinesTopologyStoreSharedPtr& bcts)
+            : _bcts(bcts)
+        {
+        }
+
+    protected:
+        Hd_DashDotLinesTopologyStoreSharedPtr _bcts;
+    };
+
+#define DEFINE_DASHDOTLINES_TOPOLOGY_ACCESSOR_DATASOURCE(N, T, A) \
+    class N : public MemberDataSource<T> \
+    {                                                                         \
+    public:                                                                   \
+        HD_DECLARE_DATASOURCE(N);                                             \
+                                                                              \
+        N(const Hd_DashDotLinesTopologyStoreSharedPtr &bcts)                   \
+        : MemberDataSource(bcts) {}                                           \
+                                                                              \
+        T GetTypedValue(HdSampledDataSource::Time shutterOffset) override     \
+        {                                                                     \
+            return _bcts->Get()->A();                                         \
+        }                                                                     \
+    };
+
+    DEFINE_DASHDOTLINES_TOPOLOGY_ACCESSOR_DATASOURCE(
+        ShapeDetailDataSource, TfToken, GetShapeDetail);
+    DEFINE_DASHDOTLINES_TOPOLOGY_ACCESSOR_DATASOURCE(
+        ScreenSpacePatternDataSource, bool, GetScreenSpacePattern);
+    DEFINE_DASHDOTLINES_TOPOLOGY_ACCESSOR_DATASOURCE(
+        CurveVertexCountsDataSource, VtArray<int>, GetCurveVertexCounts);
+    DEFINE_DASHDOTLINES_TOPOLOGY_ACCESSOR_DATASOURCE(
+        CurveIndicesDataSource, VtArray<int>, GetCurveIndices);
+
+private:
+    SdfPath _id;
+    HdSceneDelegate* _sceneDelegate;
+    HdDashDotLinesTopologySharedPtr _dashDotLinesTopology;
+};
+
+
+
+class Hd_DataSourceDashDotLinesTopology : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_DataSourceDashDotLinesTopology);
+    Hd_DataSourceDashDotLinesTopology(const Hd_DashDotLinesTopologyStoreSharedPtr& bcts)
+        : _bcts(bcts)
+    {
+    }
+
+    TfTokenVector GetNames() override
+    {
+        return {
+            HdDashDotLinesTopologySchemaTokens->curveVertexCounts,
+            HdDashDotLinesTopologySchemaTokens->curveIndices,
+            HdDashDotLinesTopologySchemaTokens->shapeDetail,
+            HdDashDotLinesTopologySchemaTokens->screenSpacePattern,
+        };
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken& name) override
+    {
+        if (name == HdDashDotLinesTopologySchemaTokens->curveVertexCounts) {
+            return Hd_DashDotLinesTopologyStore::
+                CurveVertexCountsDataSource::New(_bcts);
+        }
+        if (name == HdDashDotLinesTopologySchemaTokens->curveIndices) {
+            return Hd_DashDotLinesTopologyStore::
+                CurveIndicesDataSource::New(_bcts);
+        }
+        if (name == HdDashDotLinesTopologySchemaTokens->shapeDetail) {
+            return Hd_DashDotLinesTopologyStore::
+                ShapeDetailDataSource::New(_bcts);
+        }
+        if (name == HdDashDotLinesTopologySchemaTokens->screenSpacePattern) {
+            return Hd_DashDotLinesTopologyStore::
+                ScreenSpacePatternDataSource::New(_bcts);
+        }
+        return nullptr;
+    }
+
+private:
+    Hd_DashDotLinesTopologyStoreSharedPtr _bcts;
+};
+
+class Hd_DataSourceDashDotLines : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_DataSourceDashDotLines);
+
+    Hd_DataSourceDashDotLines(const SdfPath& id, HdSceneDelegate* sceneDelegate)
+        : _id(id)
+        , _sceneDelegate(sceneDelegate)
+    {
+    }
+
+    TfTokenVector GetNames() override
+    {
+        return {
+            HdDashDotLinesSchemaTokens->topology,
+        };
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken& name) override
+    {
+        if (name == HdDashDotLinesSchemaTokens->topology) {
+            return Hd_DataSourceDashDotLinesTopology::New(
+                _GetDashDotLinesTopologyStore());
+        }
+
+        return nullptr;
+    }
+private:
+    Hd_DashDotLinesTopologyStoreSharedPtr _GetDashDotLinesTopologyStore()
+    {
+        Hd_DashDotLinesTopologyStoreSharedPtr bcts =
+            std::atomic_load(&_dashDotLinesTopologyStore);
+        if (bcts) {
+            return bcts;
+        }
+
+        bcts =
+            std::make_shared<Hd_DashDotLinesTopologyStore>(_id, _sceneDelegate);
+        std::atomic_store(&_dashDotLinesTopologyStore, bcts);
+
+        return bcts;
+    }
+
+    SdfPath _id;
+    HdSceneDelegate* _sceneDelegate;
+    Hd_DashDotLinesTopologyStoreSharedPtr _dashDotLinesTopologyStore;
 
 };
 
@@ -2456,6 +2650,10 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdBasisCurvesSchemaTokens->basisCurves);
     }
 
+    if (_type == HdPrimTypeTokens->dashDotLines) {
+        result.push_back(HdDashDotLinesSchemaTokens->dashDotLines);
+    }
+
     // Allow all legacy prims to provide primvars as that's the only interface
     // for advertising what names/values are there.
     // Abstract prims which may need to be expressed via legacy scene delegate
@@ -2938,6 +3136,10 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
     } else if (name == HdBasisCurvesSchemaTokens->basisCurves) {
         if (_type == HdPrimTypeTokens->basisCurves) {
             return Hd_DataSourceBasisCurves::New(_id, _sceneDelegate);
+        }
+    } else if (name == HdDashDotLinesSchemaTokens->dashDotLines) {
+        if (_type == HdPrimTypeTokens->dashDotLines) {
+            return Hd_DataSourceDashDotLines::New(_id, _sceneDelegate);
         }
     } else if (name == HdPrimvarsSchemaTokens->primvars) {
         return _GetPrimvarsDataSource();
