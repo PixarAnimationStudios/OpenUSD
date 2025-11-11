@@ -1,0 +1,28 @@
+{
+  "Plugins": [
+    {
+      "Info": {
+        "Types": {
+          "UsdImaging_3DGaussianSplatAdapter": {
+            "bases": [
+              "UsdImagingGprimAdapter"
+            ],
+            "primTypeName": "ParticleField_3DGaussianSplat"
+          },
+          "HdParticleFieldRendererPlugin": {
+            "bases": [
+              "HdRendererPlugin"
+            ],
+            "displayName": "hdParticleField",
+            "priority": 99
+          }
+        }
+      },
+      "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+      "Name": "HdParticleField",
+      "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+      "Root": "@PLUG_INFO_ROOT@",
+      "Type": "library"
+    }
+  ]
+}
