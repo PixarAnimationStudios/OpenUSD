@@ -263,8 +263,6 @@ namespace
         size_t _firstInnerProtoIndex = 0;
         bool _havePreExtrapLoops = false;
         bool _havePostExtrapLoops = false;
-        double _extrapTimeDelta = 0.0;
-        double _extrapValueDelta = 0.0;
         TsTime _firstTime = 0;
         TsTime _lastTime = 0;
         TsTime _firstInnerLoop = 0;
@@ -273,10 +271,6 @@ namespace
         TsTime _lastInnerProto = 0;
         bool _firstTimeLooped = false;
         bool _lastTimeLooped = false;
-        bool _betweenPreUnloopedAndLooped = false;
-        bool _betweenLoopedAndPostUnlooped = false;
-        Ts_DoubleKnotData _extrapKnot1;
-        Ts_DoubleKnotData _extrapKnot2;
 
         std::vector<_SourceInterval> _sourceIntervals;
 

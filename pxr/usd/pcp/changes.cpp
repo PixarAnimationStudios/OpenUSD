@@ -2379,7 +2379,7 @@ PcpChanges::_DidAddOrRemoveSublayer(
         layer ? layer->GetIdentifier().c_str() : "invalid");
 
     const auto& processChanges = 
-        [this, &cache, &sublayerPath, &debugSummary, &layer, &cacheChanges](
+        [this, &cache, &sublayerPath, &debugSummary, &cacheChanges](
             const SdfLayerRefPtr sublayer,
             const PcpLayerStackPtrVector& layerStacks,
             _SublayerChangeType sublayerChange)
