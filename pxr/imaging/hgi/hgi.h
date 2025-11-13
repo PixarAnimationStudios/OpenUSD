@@ -29,6 +29,7 @@
 
 #include <atomic>
 #include <memory>
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -332,6 +333,15 @@ public:
     /// well (e.g. EndFrame).
     HGI_API
     virtual void GarbageCollect() = 0;
+
+    /// Attempt to get the amount of available memory on the GPU. On systems
+    /// with dedicated GPUs, this should be the amount of free VRAM available.
+    /// For integrated GPUs or software rasterizers, this should be the amount
+    /// of free RAM available. This is only a rough estimate to help guide
+    /// memory usage strategies. This information might not be available on all
+    /// platforms, hence the optional return value.
+    HGI_API
+    virtual std::optional<size_t> GetAvailableGpuMemory() const = 0;
 
 protected:
     // Returns a unique id for handle creation.

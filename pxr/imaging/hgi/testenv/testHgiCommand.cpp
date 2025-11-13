@@ -22,10 +22,21 @@ HgiBasicTest()
 {
     HgiInitializationTestDriver driver;
 
-    if (driver.GetHgi() == nullptr) {
+    Hgi* hgi = driver.GetHgi();
+    if (!hgi) {
         return false;
     }
-    
+
+    std::cout << "Hgi API: " << hgi->GetAPIName() << "\n";
+
+    std::cout << "Hgi GPU memory: ";
+    if (const std::optional<size_t> memory = hgi->GetAvailableGpuMemory()) {
+        std::cout << *memory;
+    } else {
+        std::cout << "<unavailable>";
+    }
+    std::cout << "\n";
+
     return true;
 }
 

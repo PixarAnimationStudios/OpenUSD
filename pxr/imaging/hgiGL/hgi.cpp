@@ -307,6 +307,19 @@ HgiGL::GarbageCollect()
     #endif
 }
 
+std::optional<size_t>
+HgiGL::GetAvailableGpuMemory() const
+{
+    if (!GARCH_GLAPI_HAS(NVX_gpu_memory_info)) {
+        return std::nullopt;
+    }
+
+    GLint availableMemoryKib = 0;
+    glGetIntegerv(GL_GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX,
+        &availableMemoryKib);
+    return static_cast<size_t>(availableMemoryKib) * 1024;
+}
+
 HgiGLContextArenaHandle
 HgiGL::CreateContextArena()
 {

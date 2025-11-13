@@ -117,6 +117,18 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     _maxClipDistances             = 8;
     _pageSizeAlignment            = 4096;
 
+    uint32_t max1dAnd2dDimension = 16384;
+#if defined(ARCH_OS_IPHONE)
+    if (![device supportsFeatureSet:MTLFeatureSet_iOS_GPUFamily3_v1]) {
+        max1dAnd2dDimension = 8192;
+    }
+#endif
+    _maxTextureDimension = {
+        max1dAnd2dDimension,
+        max1dAnd2dDimension,
+        2048
+    };
+
     // Apple Silicon only support memory barriers between vertex stages after
     // macOS 12.3.
     hasVertexMemoryBarrier = !hasAppleSilicon;

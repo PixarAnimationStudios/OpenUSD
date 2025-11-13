@@ -382,6 +382,22 @@ HgiMetal::GarbageCollect()
 {
 }
 
+std::optional<size_t>
+HgiMetal::GetAvailableGpuMemory() const
+{
+    // recommendedMaxWorkingSetSize is supported in iOS 16+,
+    // but is only marked available starting in iOS SDK 17+.
+#if !defined(ARCH_OS_IPHONE) || (defined(__IPHONE_17_0) && \
+    __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_17_0)
+    if (@available(macOS 10.13, ios 16.0, *)) {
+        return _device.recommendedMaxWorkingSetSize -
+        _device.currentAllocatedSize;
+    }
+#endif
+
+    return std::nullopt;
+}
+
 id<MTLCommandQueue>
 HgiMetal::GetQueue() const
 {

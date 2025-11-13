@@ -140,6 +140,9 @@ public:
     HGIMETAL_API
     void GarbageCollect() override;
 
+    HGIMETAL_API
+    std::optional<size_t> GetAvailableGpuMemory() const override;
+
     //
     // HgiMetal specific
     //

@@ -216,9 +216,9 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
 #endif
 
     // Memory budget query extension
-    bool supportsMemExtension = false;
+    bool supportsMemoryBudget = false;
     if (IsSupportedExtension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME)) {
-        supportsMemExtension = true;
+        supportsMemoryBudget = true;
         extensions.push_back(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
     }
 
@@ -411,7 +411,7 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         allocatorInfo.flags |=VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT;
     }
 
-    if (supportsMemExtension) {
+    if (supportsMemoryBudget) {
         allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
     }
 

@@ -30,6 +30,8 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
 
+#include <array>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -329,6 +331,27 @@ HgiVulkan::GarbageCollect()
 
     // Perform garbage collection for each device.
     _garbageCollector->PerformGarbageCollection(device);
+}
+
+std::optional<size_t>
+HgiVulkan::GetAvailableGpuMemory() const
+{
+    std::array<VmaBudget, VK_MAX_MEMORY_HEAPS> budgets{};
+    vmaGetHeapBudgets(GetPrimaryDevice()->GetVulkanMemoryAllocator(),
+        budgets.data());
+
+    const auto& memoryProperties = GetCapabilities()->vkMemoryProperties;
+    for (uint32_t heapIndex = 0;
+        heapIndex < memoryProperties.memoryHeapCount; heapIndex++) {
+        const auto& heap = memoryProperties.memoryHeaps[heapIndex];
+
+        if ((heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) ==
+            VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) {
+            return budgets[heapIndex].budget - budgets[heapIndex].usage;
+        }
+    }
+
+    return std::nullopt;
 }
 
 /* Multi threaded */

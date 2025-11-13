@@ -159,6 +159,9 @@ public:
     HGIGL_API
     void GarbageCollect() override;
 
+    HGIGL_API
+    std::optional<size_t> GetAvailableGpuMemory() const override;
+
     /// ------------------------------------------------------------------------
     // HgiGL specific API
     /// ------------------------------------------------------------------------

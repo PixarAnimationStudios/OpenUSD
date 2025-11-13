@@ -138,8 +138,8 @@ _SupportsHostAccessibleDeviceMemory(
 }
 
 HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
-    : supportsTimeStamps(false),
-    supportsNativeInterop(false)
+    : supportsTimeStamps(false)
+    , supportsNativeInterop(false)
 {
     VkPhysicalDevice physicalDevice = device->GetVulkanPhysicalDevice();
 
@@ -288,6 +288,11 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     }
 
     _maxClipDistances = vkDeviceProperties2.properties.limits.maxClipDistances;
+    _maxTextureDimension = {
+        vkDeviceProperties2.properties.limits.maxImageDimension1D,
+        vkDeviceProperties2.properties.limits.maxImageDimension2D,
+        vkDeviceProperties2.properties.limits.maxImageDimension3D,
+    };
     _maxUniformBlockSize =
         vkDeviceProperties2.properties.limits.maxUniformBufferRange;
     _maxShaderStorageBlockSize =

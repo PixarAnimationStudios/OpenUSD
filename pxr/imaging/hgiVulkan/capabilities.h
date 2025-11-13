@@ -36,10 +36,6 @@ public:
     HGIVULKAN_API
     int GetShaderVersion() const override;
 
-    bool supportsTimeStamps;
-
-    bool supportsNativeInterop;
-
     VkPhysicalDeviceProperties2 vkDeviceProperties2 {};
     VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT
         vkVertexAttributeDivisorProperties {};
@@ -56,6 +52,9 @@ public:
     VkPhysicalDeviceLineRasterizationFeaturesKHR vkLineRasterizationFeatures {};
 
     VkPhysicalDeviceIDProperties vkPhysicalDeviceIdProperties {};
+
+    bool supportsTimeStamps;
+    bool supportsNativeInterop;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

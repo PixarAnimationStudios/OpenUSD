@@ -139,6 +139,9 @@ public:
     HGIVULKAN_API
     void GarbageCollect() override;
 
+    HGIVULKAN_API
+    std::optional<size_t> GetAvailableGpuMemory() const override;
+
     //
     // HgiVulkan specific
     //

@@ -64,6 +64,7 @@ HgiGLCapabilities::_LoadCapabilities()
     bool builtinBarycentricsEnabled   = false;
     bool shaderDrawParametersEnabled  = false;
     bool conservativeRasterEnabled    = false;
+    bool gpuMemoryInfoEnabled         = false;
     bool nativeRoundPointsEnabled     = true;
 
     const char *glVendorStr = (const char*)glGetString(GL_VENDOR);
@@ -104,6 +105,16 @@ HgiGLCapabilities::_LoadCapabilities()
     GLint maxClipDistances = 0;
     glGetIntegerv(GL_MAX_CLIP_PLANES, &maxClipDistances);
     _maxClipDistances = maxClipDistances;
+
+    // 1D and 2D
+    GLint maxTextureSize = 0;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+    _maxTextureDimension[0] = _maxTextureDimension[1] =
+        static_cast<uint32_t>(maxTextureSize);
+    // 3D
+    GLint max3dTextureSize = 0;
+    glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &max3dTextureSize);
+    _maxTextureDimension[2] = static_cast<uint32_t>(max3dTextureSize);
 
     // initialize by Core versions
     if (_glVersion >= 310) {
@@ -148,6 +159,9 @@ HgiGLCapabilities::_LoadCapabilities()
     }
     if (GARCH_GLAPI_HAS(NV_conservative_raster)) {
         conservativeRasterEnabled = true;
+    }
+    if (GARCH_GLAPI_HAS(NVX_gpu_memory_info)) {
+        gpuMemoryInfoEnabled = true;
     }
 
     // Environment variable overrides (only downgrading is possible)
@@ -234,6 +248,8 @@ HgiGLCapabilities::_LoadCapabilities()
             <<    bindlessBufferEnabled << "\n"
             << "  NV_conservative_raster             = "
             <<    conservativeRasterEnabled << "\n"
+            << "  NVX_gpu_memory_info                = "
+            <<    gpuMemoryInfoEnabled << "\n"
             ;
     }
 }

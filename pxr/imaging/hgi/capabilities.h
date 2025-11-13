@@ -8,9 +8,11 @@
 #define PXR_IMAGING_HGI_CAPABILITIES_H
 
 #include "pxr/pxr.h"
+
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/enums.h"
 
+#include <array>
 #include <cstddef>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -60,6 +62,14 @@ public:
         return _pageSizeAlignment;
     }
 
+    /// The max texture dimension for 1D, 2D and 3D, in their respective
+    /// element. In other words, when checking *all* dimensions for a N-D
+    /// texture, use the N'th element as the allowed maximum.
+    HGI_API
+    const std::array<uint32_t, 3>& GetMaxTextureDimension() const {
+        return _maxTextureDimension;
+    }
+
 protected:
     HgiCapabilities()
         : _maxUniformBlockSize(0)
@@ -67,6 +77,7 @@ protected:
         , _uniformBufferOffsetAlignment(0)
         , _maxClipDistances(0)
         , _pageSizeAlignment(1)
+        , _maxTextureDimension{}
         , _flags(0)
     {}
 
@@ -83,6 +94,7 @@ protected:
     size_t _uniformBufferOffsetAlignment;
     size_t _maxClipDistances;
     size_t _pageSizeAlignment;
+    std::array<uint32_t, 3> _maxTextureDimension;
 
 private:
     HgiCapabilities & operator=(const HgiCapabilities&) = delete;
