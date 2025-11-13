@@ -30,43 +30,71 @@ public:
             HdPrimTypeTokens->mesh,
             HdRetainedContainerDataSource::New(
                 HdMeshSchemaTokens->mesh,
-                    HdMeshSchema::BuildRetained(
-                        /* topology = */ HdMeshTopologySchema::BuildRetained(
-                            /* faceVertexCounts = */ HdIntArrayDataSource::New({4}),
-                            /* faceVertexIndices = */ HdIntArrayDataSource::New({0,1,2,3}),
-                            /* holeIndices = */ nullptr,
-                            /* orientation = */
-                                HdTokenDataSource::New(HdTokens->rightHanded)),
-                        /* subdivisionScheme = */ HdTokenDataSource::New(HdTokens->none),
-                        /* subdivisionTags = */ nullptr,
-                        /* geomSubsets = */ nullptr,
-                        /* doubleSided = */ HdBoolDataSource::New(true)),
+                    HdMeshSchema::Builder()
+                        .SetTopology(
+                            HdMeshTopologySchema::Builder()
+                                .SetFaceVertexCounts(
+                                    HdRetainedTypedSampledDataSource<
+                                        VtIntArray>::New({4}))
+                                .SetFaceVertexIndices(
+                                    HdRetainedTypedSampledDataSource<
+                                        VtIntArray>::New({0, 1, 2, 3}))
+                                .SetOrientation(
+                                    HdMeshTopologySchema::
+                                        BuildOrientationDataSource(
+                                            HdMeshTopologySchemaTokens
+                                                ->rightHanded))
+                                .SetHoleIndices(nullptr)
+                                .Build())
+                        .SetSubdivisionScheme(
+                            HdRetainedTypedSampledDataSource<TfToken>::New(
+                                PxOsdOpenSubdivTokens->none))
+                        .SetSubdivisionTags(nullptr)
+                        .SetGeomSubsets(nullptr)
+                        .SetDoubleSided(
+                            HdRetainedTypedSampledDataSource<bool>::New(true))
+                        .Build(),
                 HdPrimvarsSchemaTokens->primvars,
                     HdRetainedContainerDataSource::New(
-                        HdTokens->points,
-                        HdPrimvarSchema::BuildRetained(
-                            /* primvarValue = */ HdVec3fArrayDataSource::New(
-                                {{-1,-1,0},{1,-1,0},{1,1,0},{-1,1,0}}),
-                            /* indexedPrimvarValue = */ nullptr,
-                            /* indices = */ nullptr,
-                            /* interpolation = */ HdTokenDataSource::New(HdTokens->vertex),
-                            /* role = */
-                                HdTokenDataSource::New(HdPrimvarSchemaTokens->point))),
+                        HdPrimvarsSchemaTokens->points,
+                        HdPrimvarSchema::Builder()
+                            .SetPrimvarValue(
+                                HdRetainedTypedSampledDataSource<VtVec3fArray>::New(
+                                    {{-1, -1, 0},{1, -1, 0},{1, 1, 0},{-1, 1, 0}}))
+                            .SetIndexedPrimvarValue(nullptr)
+                            .SetIndices(nullptr)
+                            .SetInterpolation(
+                                HdPrimvarSchema::BuildInterpolationDataSource(
+                                    HdPrimvarSchemaTokens->vertex))
+                            .SetRole(HdPrimvarSchema::BuildRoleDataSource(
+                                HdPrimvarSchemaTokens->point))
+                            .Build()),
                 HdPurposeSchemaTokens->purpose,
-                    HdPurposeSchema::BuildRetained(
-                        /* purpose = */
-                            HdTokenDataSource::New(HdRenderTagTokens->geometry)),
+                    HdPurposeSchema::Builder()
+                        .SetPurpose(
+                            HdRetainedTypedSampledDataSource<TfToken>::New(
+                                HdRenderTagTokens->geometry))
+                        .Build(),
                 HdVisibilitySchemaTokens->visibility,
-                    HdVisibilitySchema::BuildRetained(
-                        /* visibility = */ HdBoolDataSource::New(true)),
+                    HdVisibilitySchema::Builder()
+                        .SetVisibility(
+                            HdRetainedTypedSampledDataSource<bool>::New(true))
+                        .Build(),
                 HdXformSchemaTokens->xform,
-                    HdXformSchema::BuildRetained(
-                        /* xform = */ HdMatrixDataSource::New(GfMatrix4d(1)),
-                        /* resetXformStack = */ HdBoolDataSource::New(false)),
+                    HdXformSchema::Builder()
+                        .SetMatrix(
+                            HdRetainedTypedSampledDataSource<GfMatrix4d>::New(
+                                GfMatrix4d(1)))
+                        .SetResetXformStack(
+                            HdRetainedTypedSampledDataSource<bool>::New(false))
+                        .Build(),
                 HdExtentSchemaTokens->extent,
-                    HdExtentSchema::BuildRetained(
-                        /* min = */ HdVec3dDataSource::New(GfVec3d(-1,-1,0)),
-                        /* max = */ HdVec3dDataSource::New(GfVec3d(1,1,0)))
+                    HdExtentSchema::Builder()
+                        .SetMin(HdRetainedTypedSampledDataSource<GfVec3d>::New(
+                            GfVec3d(-1, -1, 0)))
+                        .SetMax(HdRetainedTypedSampledDataSource<GfVec3d>::New(
+                            GfVec3d(1, 1, 0)))
+                        .Build()
             )
         };
         if (primPath == SdfPath("/Quad")) {
@@ -76,9 +104,9 @@ public:
         }
     }
 
-    virtual SdfPathVector GetChildPrimPaths(const SdfPath &primPath) {
+    virtual SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const {
         if (primPath == SdfPath::AbsoluteRootPath()) {
-            return { SdfPath("/Quad"); }
+            return { SdfPath("/Quad") };
         } else {
             return {};
         }
