@@ -89,6 +89,13 @@ TsExtrapolation::TsExtrapolation(TsExtrapMode modeIn)
 {
 }
 
+TsExtrapolation::TsExtrapolation(TsExtrapMode modeIn,
+                                 double slopeIn)
+    : mode(modeIn)
+    , slope(slopeIn)
+{
+}
+
 bool TsExtrapolation::operator==(const TsExtrapolation &other) const
 {
     return

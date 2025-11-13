@@ -216,7 +216,6 @@ pxr_build_test(testUsdImagingMaterialBinding
         usdShade
         usd
         hd
-        glf
         garch
         tf
         gf
@@ -278,32 +277,6 @@ pxr_build_test(testUsdImagingStageSceneIndexContents
         testenv/testUsdImagingStageSceneIndexContents.cpp
 )
 
-# Install (copy test assets and baselines)
-pxr_install_test_dir(
-    SRC testenv/testUsdImagingDelegate
-    DEST testUsdImagingDelegate
-)
-pxr_install_test_dir(
-    SRC testenv/testUsdImagingDelegateChanges
-    DEST testUsdImagingDelegateChanges
-)
-pxr_install_test_dir(
-    SRC testenv/testUsdImagingMaterialBinding
-    DEST testUsdImagingMaterialBinding
-)
-pxr_install_test_dir(
-    SRC testenv/testUsdImagingNestedInstancingCategories
-    DEST testUsdImagingNestedInstancingCategories
-)
-pxr_install_test_dir(
-    SRC testenv/testUsdImagingStageSceneIndex
-    DEST testUsdImagingStageSceneIndex
-)
-pxr_install_test_dir(
-    SRC testenv/testUsdImagingStageSceneIndexContents
-    DEST testUsdImagingStageSceneIndexContents
-)
-
 # Register tests to be run
 pxr_register_test(testUsdImagingDataSourceAttribute
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingDataSourceAttribute"
@@ -311,10 +284,12 @@ pxr_register_test(testUsdImagingDataSourceAttribute
 )
 pxr_register_test(testUsdImagingDelegate
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingDelegate"
+    TESTENV testenv/testUsdImagingDelegate
     EXPECTED_RETURN_CODE 0
 )
 pxr_register_test(testUsdImagingDelegateChanges
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingDelegateChanges"
+    TESTENV testenv/testUsdImagingDelegateChanges
     EXPECTED_RETURN_CODE 0
 )
 pxr_register_test(testUsdImagingExcluded
@@ -325,6 +300,7 @@ pxr_register_test(testUsdImagingExcluded
 if (BUILD_SHARED_LIBS)
     pxr_register_test(testUsdImagingMaterialBinding
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingMaterialBinding"
+        TESTENV testenv/testUsdImagingMaterialBinding
         EXPECTED_RETURN_CODE 0
         ENV
             USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
@@ -332,6 +308,7 @@ if (BUILD_SHARED_LIBS)
 endif()
 pxr_register_test(testUsdImagingNestedInstancingCategories
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingNestedInstancingCategories"
+    TESTENV testenv/testUsdImagingNestedInstancingCategories
     EXPECTED_RETURN_CODE 0
     ENV
         USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
@@ -350,10 +327,12 @@ pxr_register_test(testUsdImagingRootPrim
 )
 pxr_register_test(testUsdImagingStageSceneIndex
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingStageSceneIndex"
+    TESTENV testenv/testUsdImagingStageSceneIndex
     EXPECTED_RETURN_CODE 0
 )
 pxr_register_test(testUsdImagingStageSceneIndexContents
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingStageSceneIndexContents basic.usda basic.txt"
+    TESTENV testenv/testUsdImagingStageSceneIndexContents
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE 
         basic.txt
@@ -373,44 +352,40 @@ pxr_build_test(testUsdImagingHdMtlx
     CPPFILES
         testenv/testUsdImagingHdMtlx.cpp
 )
-pxr_install_test_dir(
-    SRC testenv/testUsdImagingHdMtlx
-    DEST testUsdImagingHdMtlx
-)
 pxr_register_test(testUsdImagingHdMtlx_withMtlxVersion
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingHdMtlx --filename withMtlxVersion.usda"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE
         withMtlxVersion.mtlx
-    TESTENV testUsdImagingHdMtlx
+    TESTENV testenv/testUsdImagingHdMtlx
 )
 pxr_register_test(testUsdImagingHdMtlx_withoutMtlxVersion
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingHdMtlx --filename withoutMtlxVersion.usda"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE
         withoutMtlxVersion.mtlx
-    TESTENV testUsdImagingHdMtlx
+    TESTENV testenv/testUsdImagingHdMtlx
 )
 pxr_register_test(testUsdImagingHdMtlx_atan2Node
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingHdMtlx --filename atan2Node.usda"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE
         atan2Node.mtlx
-    TESTENV testUsdImagingHdMtlx
+    TESTENV testenv/testUsdImagingHdMtlx
 )
 pxr_register_test(testUsdImagingHdMtlx_switchNode
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingHdMtlx --filename switchNode.usda"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE
         switchNode.mtlx
-    TESTENV testUsdImagingHdMtlx
+    TESTENV testenv/testUsdImagingHdMtlx
 )
 pxr_register_test(testUsdImagingHdMtlx_swizzleNode
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingHdMtlx --filename swizzleNode.usda"
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE
         swizzleNode.mtlx
-    TESTENV testUsdImagingHdMtlx
+    TESTENV testenv/testUsdImagingHdMtlx
 )
 
 endif() # BUILD_SHARED_LIBS AND PXR_ENABLE_MATERIALX_SUPPORT

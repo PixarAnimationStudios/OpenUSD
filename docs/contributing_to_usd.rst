@@ -69,9 +69,9 @@ Pull Request Guidelines
       clean as possible.
 
     * Please make sure all tests are passing with your change prior to
-      submitting a pull request. Keep in mind the current GitHub CI pipeline 
-      does not run any tests, however tests will be run when reviewing your
-      submitted change for consideration.
+      submitting a pull request. The current GitHub CI pipeline only runs build 
+      tests; additional tests will be run when reviewing your submitted change 
+      for consideration.
 
     * Please search through 
       `existing open GitHub issues <https://github.com/PixarAnimationStudios/OpenUSD/issues>`__

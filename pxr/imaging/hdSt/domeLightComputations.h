@@ -22,6 +22,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using HdStSimpleLightingShaderPtr =
     std::weak_ptr<class HdStSimpleLightingShader>;
+struct HgiTextureDesc;
 
 ////
 //// \class HdSt_DomeLightComputationGPU
@@ -46,6 +47,9 @@ public:
         bool useCubemapAsSourceTexture,
         // Lighting shader for accessing any referenced textures.
         HdStSimpleLightingShaderPtr const &lightingShader,
+        // Dimension of the dome light cubemap texture. NOTE: this is only used  
+        // when the latlong texture is input for the compuation.  
+        unsigned int computedCubeMapDim,
         // Number of mip levels.
         unsigned int numLevels = 1,
         // Level to be filled (0 means also to allocate texture).
@@ -69,6 +73,7 @@ private:
     const TfToken _shaderToken;
     const bool _useCubemapAsSourceTexture;
     const HdStSimpleLightingShaderPtr _lightingShader;
+    const unsigned int _computedCubeMapDim;
     const unsigned int _numLevels;
     const unsigned int _level;
     const float _roughness;
@@ -100,11 +105,13 @@ private:
     const HdStSimpleLightingShaderPtr _lightingShader;
 };
 
-/// Given the dimensions of a 2D dome light texture, compute the resulting
-/// dimensions of the cubemap.
+// For the given 2D dome light texture, compute the resulting dimensions of 
+// the cubemap.
 HDST_API
-GfVec3i HdSt_ComputeDomeLightCubemapDimensions(
-    const GfVec3i& srcDim);
+int HdSt_ComputeDomeLightCubemapWidth(
+    const std::string& domeLightFilePath,
+    const HgiTextureDesc& domelightTextureDesc,
+    const unsigned int cubemapTargetMemoryMB);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

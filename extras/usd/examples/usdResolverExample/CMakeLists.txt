@@ -36,14 +36,10 @@ pxr_test_scripts(
     testenv/testUsdResolverExample.py
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdResolverExample
-    DEST testUsdResolverExample
-)
-
 pxr_register_test(testUsdResolverExample
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdResolverExample"
+    TESTENV testenv/testUsdResolverExample
     EXPECTED_RETURN_CODE 0
     ENV
         ${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/usdResolverExample/resources

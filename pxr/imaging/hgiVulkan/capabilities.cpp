@@ -193,7 +193,14 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     // Vulkan 1.1 features
     vkVulkan11Features.sType =
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+    vkVulkan11Features.pNext = vkDeviceFeatures2.pNext;
     vkDeviceFeatures2.pNext = &vkVulkan11Features;
+
+    // Vulkan 1.3 features
+    vkVulkan13Features.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+    vkVulkan13Features.pNext = vkDeviceFeatures2.pNext;
+    vkDeviceFeatures2.pNext = &vkVulkan13Features;
 
     // Interop features
 #if defined(VK_USE_PLATFORM_WIN32_KHR)

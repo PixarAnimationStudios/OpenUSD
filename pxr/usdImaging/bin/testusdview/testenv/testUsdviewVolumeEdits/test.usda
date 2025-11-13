@@ -1,0 +1,175 @@
+#usda 1.0
+(
+    defaultPrim = "Volume"
+    upAxis = "Y"
+    startFrame = 1
+    endFrame = 100
+    renderSettingsPrimPath = "/Render/Settings"
+    doc = """A test scene for a Vdb volume. Swiped from testUsdImagingGLVdbVolume/vdbVolume.usda"""
+)
+
+def Scope "Render"
+{
+    # Barebones without camera or render products since the latter isn't yet
+    # supported for interactive workflows.
+
+    def RenderSettings "Settings"
+    {
+        bool ri:hider:jitter = 0
+        float ri:Ri:PixelVariance = 0.0
+        int ri:hider:minsamples = 4
+        int ri:hider:maxsamples = 4
+    }
+}
+
+def Scope "Materials"
+{
+    def Material "Preview" (
+        doc = "A material reading density from a field and albedo from a constant primvar"
+    )
+    {
+        token outputs:volume.connect = </Materials/Preview/Volume.outputs:volume>
+                
+        def Shader "Volume"
+        {
+            uniform token info:implementationSource = "sourceAsset"
+            uniform asset info:glslfx:sourceAsset = @volumeShaderDensity.glslfx@
+
+            float inputs:density.connect = </Materials/Preview/DensityReader.outputs:result>
+            float inputs:albedo.connect = </Materials/Preview/AlbedoReader.outputs:result>
+            float inputs:densityScale.connect = </Materials/Preview/DensityScaleReader.outputs:result>
+            float3 inputs:fallbackReader.connect = </Materials/Preview/FallbackFieldReader.outputs:result>
+            token outputs:volume
+        }
+
+        def Shader "DensityReader"
+        {
+            uniform token info:id = "HwFieldReader_float"
+            token inputs:fieldname = "density"
+            float outputs:result
+        }
+
+        def Shader "DensityScaleReader" (
+            doc = "A primvar reader connected to an input with the same name as the primvar. Note that the primvar is not authored on the Volume. This is testing for HYD-1800."
+        )
+        {
+            uniform token info:id = "UsdPrimvarReader_float"
+            string inputs:varname = "densityScale"
+            float inputs:fallback = 1.0
+            float outputs:result
+        }
+
+        def Shader "AlbedoReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float"
+            string inputs:varname = "albedo"
+            float outputs:result
+        }
+
+        def Shader "FallbackFieldReader" (
+            doc = """A field reader reading a field that does not exist on the volume prim.
+                    This is to test that the fallback value is picked up.
+                    The volume shader used here is coded such that it only works if it gets
+                    (1,4,9)"""
+        )
+        {
+            uniform token info:id = "HwFieldReader_float3"
+            float3 inputs:fallback = (1,4,9)
+            float3 outputs:result
+        }
+    }
+
+    def Material "Full"
+    {
+        token outputs:volume.connect = </Materials/Full/Volume.outputs:volume>
+        def Shader "Volume"
+        {
+            config token info:id = "PxrVolume"
+            token inputs:densityFloatPrimVar = "density"
+            color3f inputs:diffuseColor.connect = </Materials/Full/PrimvarColor.outputs:result>
+            token outputs:volume
+        }
+
+        def Shader "PrimvarColor"
+        {
+            uniform token info:id = "UsdPrimvarReader_float3"
+            string inputs:varname = "displayColor"
+            float3 inputs:fallback = (1.0, 1.0, 0)
+            float3 outputs:result
+        }
+    }
+}
+
+def Scope "Geom" (
+)
+{
+    def Mesh "Background" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        point3f[] points = [(-10, -10, 0), (-10, 10, 0), (10, 10, 0), (10, -10, 0)]
+        double3 xformOp:translate = (-1, -1, -5)
+        token[] xformOpOrder = [ "xformOp:translate" ]
+    }
+}
+
+def Camera "main_cam"
+{
+    float focalLength = 150.0
+    float focusDistance = 200.0
+    float fStop = 100.0
+
+    double3 xformOp:translate = (0, 0, 110)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "Lights"
+{
+    def DistantLight "Left"
+    {
+        color3f inputs:color = (1.0, 1.0, 1.0)
+        float inputs:exposure = 4
+        float xformOp:rotateY = -90
+        uniform token[] xformOpOrder = ["xformOp:rotateY"]
+    }
+}
+
+def Volume "Volume" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding:preview = </Materials/Preview>
+    rel material:binding:full = </Materials/Full>
+
+    float primvars:albedo = 0.1 (
+        interpolation = "constant"
+    )
+
+    color3f[] primvars:displayColor = [(0.0, 0.8, 0.8)] (
+        interpolation = "constant"
+    )
+    # color3f primvars:displayColor1 = (0.0, 0.8, 0.8) (
+    #     interpolation = "constant"
+    # )
+
+    rel field:density = </Volume/Smoke_1>
+
+    def OpenVDBAsset "Smoke_1"
+    {
+        token fieldName = "density"
+        token fieldDataType = "float"
+        asset filePath = @smoke_1.vdb@
+    }
+    def OpenVDBAsset "Smoke_2"
+    {
+        token fieldName = "density"
+        token fieldDataType = "float"
+        asset filePath = @smoke_2.vdb@
+    }
+
+    token[] xformOpOrder = [ "xformOp:translate", "xformOp:rotateX" ]
+    double3 xformOp:translate = (0, -4, 0)
+    double xformOp:rotateX = -90
+}

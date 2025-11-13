@@ -14,7 +14,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDMTLX_TOKENS                           \
-    ((surfaceshaderName, "Surface"))
+    ((surfaceshaderName, "Surface"))            \
+    ((displacementshaderName, "Displacement"))
 
 TF_DECLARE_PUBLIC_TOKENS(HdMtlxTokens, HDMTLX_API, HDMTLX_TOKENS);
 

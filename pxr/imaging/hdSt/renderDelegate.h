@@ -118,7 +118,15 @@ public:
     HDST_API
     HdAovDescriptor
         GetDefaultAovDescriptor(TfToken const& name) const override;
-    
+
+    /// Flag for the HdxTaskControllerSceneIndex.
+    ///
+    /// The HdxTaskControllerSceneIndex requires a different configuration
+    /// for Storm than any other render delegate.
+    ///
+    HDST_API
+    bool RequiresStormTasks() const override;
+
     // ---------------------------------------------------------------------- //
     /// \name Misc public API
     // ---------------------------------------------------------------------- //

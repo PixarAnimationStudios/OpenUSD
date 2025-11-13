@@ -47,7 +47,7 @@ std::unique_ptr<TraceCollection>
 TraceSerialization::Read(std::istream& istr, std::string* errorStr)
 {
     JsParseError error;
-    JsValue value = JsParseStream(istr, &error);
+    JsValue value = JsParseStream(istr, errorStr ? &error : nullptr);
     if (value.IsNull()) {
         if (errorStr) {
             *errorStr = TfStringPrintf("Error parsing JSON\n"
@@ -57,7 +57,8 @@ TraceSerialization::Read(std::istream& istr, std::string* errorStr)
         }
         return nullptr;
     }
-    return Trace_JSONSerialization::CollectionFromJSON(value);
+
+    return Trace_JSONSerialization::CollectionFromJSON(std::move(value));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

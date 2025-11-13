@@ -49,12 +49,8 @@ pxr_build_test(testMeshGenerators
         testenv/testMeshGenerators.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testMeshGenerators
-    DEST testMeshGenerators
-)
-
 pxr_register_test(testMeshGenerators
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testMeshGenerators"
+    TESTENV testenv/testMeshGenerators
     DIFF_COMPARE generatedMeshes_closed.txt generatedMeshes_open.txt
 )

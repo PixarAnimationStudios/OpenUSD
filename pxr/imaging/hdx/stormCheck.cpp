@@ -4,15 +4,13 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/imaging/hdx/stormCheck.h"
-
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-bool HdxIsStorm(const HdRenderDelegate* delegate)
+bool HdxIsStorm(const HdRenderDelegate * const delegate)
 {
-    return dynamic_cast<const HdStRenderDelegate*>(delegate);
+    return delegate && delegate->RequiresStormTasks();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

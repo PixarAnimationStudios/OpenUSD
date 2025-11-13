@@ -17,6 +17,9 @@ class HdRenderDelegate;
 // This function should only be used to check for storm when creating a
 // HdxTaskControllerSceneIndex. It is intended to be temporary since we don't
 // want scene indices to configure themselves based on render delegate.
+//
+// \deprecated Use HdRenderDelegate::RequiresStormTasks().
+//
 HDX_API
 bool HdxIsStorm(const HdRenderDelegate* delegate);
 

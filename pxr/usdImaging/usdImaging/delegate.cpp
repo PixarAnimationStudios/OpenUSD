@@ -2703,6 +2703,8 @@ UsdImagingDelegate::_Get(SdfPath const& id, TfToken const& key,
 HdIdVectorSharedPtr
 UsdImagingDelegate::GetCoordSysBindings(SdfPath const& id)
 {
+    TRACE_FUNCTION();
+
     if (!_coordSysEnabled) {
         return nullptr;
     }

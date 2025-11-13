@@ -54,10 +54,14 @@ class HgiGLOps
 {
 public:
     HGIGL_API
-    static HgiGLOpsFn PushDebugGroup(const char* label);
+    static HgiGLOpsFn PushDebugGroup(const char* label,
+        const GfVec4f& color = GfVec4f(0.0));
 
     HGIGL_API
     static HgiGLOpsFn PopDebugGroup();
+
+    HGIGL_API
+    static HgiGLOpsFn InsertDebugMarker(const char* label);
 
     HGIGL_API
     static HgiGLOpsFn CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp);

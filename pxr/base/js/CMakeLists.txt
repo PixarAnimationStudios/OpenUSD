@@ -94,22 +94,6 @@ pxr_build_test(testJsDouble
     CPPFILES
         testenv/testJsDouble.cpp
 )  
-pxr_install_test_dir(
-    SRC testenv/testJsIO
-    DEST testJsIO
-)
-pxr_install_test_dir(
-    SRC testenv/testJsIO_Errors
-    DEST testJsIO_Errors
-)
-pxr_install_test_dir(
-    SRC testenv/testJsConverter
-    DEST testJsConverter
-)
-pxr_install_test_dir(
-    SRC testenv/testJsWriter
-    DEST testJsWriter
-)
 # These tests are disabled when compiling for emscripten due to the fact that
 # they depend on baselines that are not included as part of the emscripten
 # virtual filesystem. There is no platform specific functionality here that
@@ -118,36 +102,38 @@ if (NOT EMSCRIPTEN)
     pxr_register_test(testJsIO_Errors_BadCommaPlacement
         COMMAND 
             "${CMAKE_INSTALL_PREFIX}/tests/testJsIO bad-commaPlacement.json -"
-        TESTENV
-            testJsIO_Errors
         EXPECTED_RETURN_CODE 
             2
         STDERR_REDIRECT
             testJsIO_Errors-Run1-stderr.txt
         DIFF_COMPARE 
             testJsIO_Errors-Run1-stderr.txt
+        TESTENV
+            testenv/testJsIO_Errors
     )
     pxr_register_test(testJsIO_Errors_MismatchedBraces
         COMMAND 
             "${CMAKE_INSTALL_PREFIX}/tests/testJsIO bad-mismatchedBraces.json -"
-        TESTENV
-            testJsIO_Errors
         EXPECTED_RETURN_CODE 
             2
         STDERR_REDIRECT
             testJsIO_Errors-Run2-stderr.txt
         DIFF_COMPARE 
             testJsIO_Errors-Run2-stderr.txt
+        TESTENV
+            testenv/testJsIO_Errors
     )
     pxr_register_test(testJsConverter
         COMMAND 
             "${CMAKE_INSTALL_PREFIX}/tests/testJsConverter"
+        TESTENV
+            testenv/testJsConverter
     )
     pxr_register_test(testJsWriter
         COMMAND 
             "${CMAKE_INSTALL_PREFIX}/tests/testJsWriter test.json compact"
         TESTENV
-            testJsWriter
+            testenv/testJsWriter
         DIFF_COMPARE 
             test.json
     )
@@ -155,7 +141,7 @@ if (NOT EMSCRIPTEN)
         COMMAND 
             "${CMAKE_INSTALL_PREFIX}/tests/testJsWriter test-pretty.json pretty"
         TESTENV
-            testJsWriter
+            testenv/testJsWriter
         DIFF_COMPARE 
             test-pretty.json
     )
@@ -163,7 +149,7 @@ if (NOT EMSCRIPTEN)
         COMMAND 
             "${CMAKE_INSTALL_PREFIX}/tests/testJsIO plugInfo.json.in plugInfo.json"
         TESTENV
-            testJsIO
+            testenv/testJsIO
         DIFF_COMPARE 
             plugInfo.json
     )
@@ -171,7 +157,7 @@ if (NOT EMSCRIPTEN)
         COMMAND 
             "${CMAKE_INSTALL_PREFIX}/tests/testJsIO values.json.in values.json"
         TESTENV
-            testJsIO
+            testenv/testJsIO
         DIFF_COMPARE 
             values.json
     )

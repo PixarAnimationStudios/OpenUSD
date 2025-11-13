@@ -728,15 +728,8 @@ function(pxr_test_scripts)
 endfunction() # pxr_test_scripts
 
 function(pxr_install_test_dir)
-    if (NOT PXR_BUILD_TESTS)
-        return()
-    endif()
-
-    # If the package for this test does not have a target it must not be
-    # getting built, in which case we can skip building associated tests.
-    if (NOT TARGET ${PXR_PACKAGE})
-        return()
-    endif()
+    message(DEPRECATION "Please use the TESTENV parameter of pxr_register_test "
+                        "to specify test asset directories.")
 
     cmake_parse_arguments(bt
         "" 
@@ -745,10 +738,9 @@ function(pxr_install_test_dir)
         ${ARGN}
     )
 
-    # XXX -- We shouldn't have to install to run tests.
-    install(
-        DIRECTORY ${bt_SRC}/
-        DESTINATION tests/ctest/${bt_DEST}
+    _pxr_install_test_dir(
+        SRC ${bt_SRC}
+        DEST ${bt_DEST}
     )
 endfunction() # pxr_install_test_dir
 
@@ -773,7 +765,7 @@ function(pxr_register_test TEST_NAME)
             FILES_EXIST FILES_DONT_EXIST
             CLEAN_OUTPUT
             EXPECTED_RETURN_CODE
-            TESTENV
+            TESTENV TESTENV_DEST
             WARN WARN_PERCENT HARD_WARN FAIL FAIL_PERCENT HARD_FAIL)
     set(MULTI_VALUE_ARGS DIFF_COMPARE IMAGE_DIFF_COMPARE ENV PRE_PATH POST_PATH)
 
@@ -842,13 +834,34 @@ function(pxr_register_test TEST_NAME)
         set(testWrapperCmd ${testWrapperCmd} --post-command-stderr-redirect=${bt_POST_COMMAND_STDERR_REDIRECT})
     endif()
 
-    # Not all tests will have testenvs, but if they do let the wrapper know so
-    # it can copy the testenv contents into the run directory. By default,
-    # assume the testenv has the same name as the test but allow it to be
-    # overridden by specifying TESTENV.
+    # Determine test environment directory and set up any necessary
+    # directory copying during the install step. testenvDir is passed to the
+    # test wrapper so it can copy the testenv contents into the run directory.
     if (bt_TESTENV)
-        set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${bt_TESTENV})
-    else()
+        if (bt_TESTENV_DEST)
+            # if a dest directory is specified, then we will assume that it
+            # will contain a folder with ${TEST_NAME} in its path which will
+            # be set as the testenvDir below. This is currently only used
+            # for a few specific tests and in general we prefer to use the
+            # automatic method below.
+            _pxr_install_test_dir(SRC ${bt_TESTENV} DEST ${bt_TESTENV_DEST})
+        else()
+            # when using the testenv without a specific destination set, we
+            # want to set the testenvDir to the folder name of the testenv dir
+            # we copied. This allows multiple tests to reference the same set
+            # of test files even though their test name will be different.
+            cmake_path(GET bt_TESTENV FILENAME testNameDir)
+            _pxr_install_test_dir(SRC ${bt_TESTENV} DEST ${testNameDir})
+            set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${testNameDir})
+        endif()
+    endif()
+
+    # By default we will simply use the test name for the testenvDir. In
+    # the case that  no testenv is specified, this will point to a non
+    # existant folder and no copy will be executed. In the case where a
+    # destination was explicitly specified, the directory which matches
+    # the test name and its contents will be recursively copied.
+    if (NOT DEFINED testenvDir)
         set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${TEST_NAME})
     endif()
 
@@ -1202,6 +1215,26 @@ function(pxr_toplevel_epilogue)
             )
         endif()
 
+        # When building a monolithic library (static or shared) we want all
+        # API functions to be exported. So add FOO_EXPORTS=1 for every
+        # library in PXR_OBJECT_LIBS, where FOO is the uppercase version
+        # of the library name, to every library in PXR_OBJECT_LIBS.
+        set(exports "")
+        foreach(lib ${PXR_OBJECT_LIBS})
+            string(TOUPPER ${lib} uppercaseName)
+            list(APPEND exports "${uppercaseName}_EXPORTS=1")
+        endforeach()
+
+        if (TARGET python)
+            # The boost python target uses a different export macro so
+            # add that as well.
+            list(APPEND exports "PXR_BOOST_PYTHON_SOURCE=1")
+        endif()
+
+        foreach(lib ${PXR_OBJECT_LIBS})
+            target_compile_definitions(${lib} PRIVATE ${exports})
+        endforeach()
+
         if(BUILD_SHARED_LIBS)
             target_link_libraries(usd_m
                 PUBLIC
@@ -1215,13 +1248,7 @@ function(pxr_toplevel_epilogue)
             _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
             _pxr_install_rpath(rpath usd_m)
         else()
-            # When building a static monolithic library we want all API functions to be
-            # exported. So add FOO_EXPORTS=1 for every library in PXR_OBJECT_LIBS,
-            # where FOO is the uppercase version of the library name, to every
-            # library in PXR_OBJECT_LIBS.
             foreach(lib ${PXR_OBJECT_LIBS})
-                string(TOUPPER ${lib} uppercaseName)
-                target_compile_definitions(${lib} PRIVATE "${uppercaseName}_EXPORTS=1")
                 target_link_libraries(usd_m
                     PUBLIC
                         ${lib}

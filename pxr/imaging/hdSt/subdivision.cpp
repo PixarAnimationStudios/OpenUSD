@@ -272,6 +272,10 @@ HdSt_OsdStencilTableBufferSource::Resolve()
 
     HdSt_Subdivision::StencilTable const * stencilTable =
         _subdivision->GetStencilTable(_interpolation, _fvarChannel);
+    if (!stencilTable) {
+        _SetResolveError();
+        return true;
+    }
 
     _gpuStencilTable->numCoarsePoints = stencilTable->GetNumControlVertices();
     _gpuStencilTable->numRefinedPoints = stencilTable->GetNumStencils();
@@ -1015,6 +1019,10 @@ HdSt_OsdTopologyComputation::Resolve()
         refiner = PxOsdRefinerFactory::Create(_topology->GetPxOsdMeshTopology(),
                                               _topology->GetFvarTopologies(),
                                               TfToken(_id.GetText()));
+        if (!refiner) {
+            _SetResolveError();
+            return true;
+        }
         numFvarChannels = refiner->GetNumFVarChannels();
     }
 

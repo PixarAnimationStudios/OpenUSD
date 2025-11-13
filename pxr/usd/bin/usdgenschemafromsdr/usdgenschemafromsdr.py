@@ -59,7 +59,7 @@ def _ConfigureSchemaLayer(schemaLayer, schemaSubLayers, skipCodeGeneration,
     subLayers = schemaLayer.subLayerPaths
     subLayersList = list(subLayers)
     subLayersList.extend(schemaSubLayers)
-    schemaLayer.subLayerPaths = list(set(subLayersList))
+    schemaLayer.subLayerPaths = sorted(set(subLayersList))
 
     globalPrim = schemaLayer.GetPrimAtPath(
             SchemaLayerConstants.GLOBAL_PRIM_PATH)

@@ -14,6 +14,7 @@
 #include <QFileDialog>
 #include <QMenu>
 #include <QTimer>
+#include <QHeaderView>
 
 #include <cstdio>
 #include <iostream>
@@ -24,6 +25,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
+
+// Helper function to sort and uniquie-ify container data source names.
+static std::set<TfToken, TfDictionaryLessThan>
+Hdui_GetSortedNames(HdContainerDataSourceHandle const& container)
+{
+    const auto names = container->GetNames();
+    return std::set<TfToken, TfDictionaryLessThan>(names.begin(), names.end());
+}
 
 class Hdui_DataSourceTreeWidgetItem : public QTreeWidgetItem
 {
@@ -39,6 +48,15 @@ public:
     {
         if (!locator.IsEmpty()) {
             setText(/*column = */ 0, _ComputeUIDisplayName(locator));
+
+            // add the type name in the 2nd column in case of Sampled
+            // data source
+            if (HdSampledDataSourceHandle sampledDataSource =
+                HdSampledDataSource::Cast(dataSource)) {
+                std::string typeText = sampledDataSource->GetValue(0.0f)
+                    .GetTypeName();
+            ;    setText(/* column = */ 1, typeText.c_str());
+            }
         }
 
         if (HdContainerDataSource::Cast(dataSource)
@@ -118,7 +136,7 @@ public:
 
                 // add any new items
                 for (const TfToken &childName :
-                        containerDataSource->GetNames()) {
+                     Hdui_GetSortedNames(containerDataSource)) {
                     if (usedNames.find(childName) == usedNames.end()) {
                         
                         if (HdDataSourceBaseHandle childDs =
@@ -218,7 +236,7 @@ private:
                 HdContainerDataSource::Cast(_dataSource)) {
             TfDenseHashSet<TfToken, TfHash> usedNames;
 
-            for (const TfToken &childName : container->GetNames()) {
+            for (const TfToken &childName : Hdui_GetSortedNames(container)) {
                 if (usedNames.find(childName) != usedNames.end()) {
                     continue;
                 }
@@ -271,8 +289,12 @@ private:
 HduiDataSourceTreeWidget::HduiDataSourceTreeWidget(QWidget *parent)
 : QTreeWidget(parent)
 {
-    setHeaderLabels({"Name"});
+    setHeaderLabels({"Property", "Type"});
     setAllColumnsShowFocus(true);
+
+    header()->setSectionResizeMode(0, QHeaderView::Stretch);
+    header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    header()->setStretchLastSection(true);
 
     connect(this,  &QTreeWidget::itemExpanded, [](
             QTreeWidgetItem * item) {
@@ -312,14 +334,33 @@ HduiDataSourceTreeWidget::SetPrimDataSource(const SdfPath &primPath,
         HdContainerDataSourceHandle const &dataSource)
 {
     clear();
-    if (dataSource) {
-        Hdui_DataSourceTreeWidgetItem *item =
-            new Hdui_DataSourceTreeWidgetItem(
-                HdDataSourceLocator(),
-                invisibleRootItem(),
-                dataSource);
 
-        item->setText(0, primPath.GetName().c_str());
+    if (dataSource) {
+        if (HdContainerDataSourceHandle container =
+            HdContainerDataSource::Cast(dataSource)) {
+            // add all container children as roots
+            TfDenseHashSet<TfToken, TfHash> usedNames;
+            for (TfToken const& childName: Hdui_GetSortedNames(container)) {
+                if (usedNames.find(childName) != usedNames.end()) {
+                    continue;
+                }
+                usedNames.insert(childName);
+                if (HdDataSourceBaseHandle childDataSource =
+                    container->Get(childName)) {
+                    new Hdui_DataSourceTreeWidgetItem(
+                        HdDataSourceLocator().Append(childName),
+                        invisibleRootItem(),
+                        childDataSource);
+                }
+            }
+        } else  {
+            Hdui_DataSourceTreeWidgetItem *item =
+                new Hdui_DataSourceTreeWidgetItem(
+                    HdDataSourceLocator(),
+                    invisibleRootItem(),
+                    dataSource);
+            item->setText(0, primPath.GetName().c_str());
+        }
     }
 }
 
@@ -332,7 +373,7 @@ HduiDataSourceTreeWidget::PrimDirtied(
     // loop over existing items to determine which require data source updates
 
     std::vector<QTreeWidgetItem *> taskQueue = {
-        topLevelItem(0),
+        invisibleRootItem(),
     };
 
     while (!taskQueue.empty()) {
@@ -348,26 +389,24 @@ HduiDataSourceTreeWidget::PrimDirtied(
 
             HdDataSourceLocator loc = dsItem->GetLocator();
             
-            bool addChildren = false;
             if (!loc.IsEmpty()) {
                 if (locators.Contains(loc)) {
                     // dirty here, we'll need a new data source
                     // no need to add children as SetDirty will handle that
                     dsItem->SetDirty(
                         HdContainerDataSource::Get(primDataSource, loc));
-                } else if (locators.Intersects(loc)) {
-                    addChildren = true;
+                    continue;
                 }
-            } else {
-                addChildren = true;
+                if (!locators.Intersects(loc)) {
+                    // Nothing under this item is dirty.
+                    continue;
+                }
             }
+        }
 
-            if (addChildren) {
-                // add children for possible dirtying
-                for (int i = 0, e = dsItem->childCount(); i < e; ++i) {
-                    taskQueue.push_back(dsItem->child(i));
-                }
-            }
+        // add children for possible dirtying
+        for (int i = 0, e = item->childCount(); i < e; ++i) {
+            taskQueue.push_back(item->child(i));
         }
     }
 

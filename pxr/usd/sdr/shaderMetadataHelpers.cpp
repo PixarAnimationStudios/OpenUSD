@@ -334,11 +334,10 @@ namespace ShaderMetadataHelpers
         (*operators)["lessThanOrEqualTo"] = BinaryOperator::LessThanOrEqualTo;
     }
 
-    // Finds a property from a Katana-style path, relative to fromProperty.
+    // Finds a property from a Katana-style path, relative to basePath.
     // Given:
     //   path = '../../Advanced/traceLightPaths'
-    //   fromProperty->GetPage() = 'Shadows'
-    //   fromProperty->GetImplementationName() = 'enableShadows'
+    //   basePath = 'Shadows/enableShadows'
     // A full path will be constructed and normalized:
     //   full path = 'Shadows/enableShadows/../../Advanced/traceLightPaths'
     //   normalized = 'Advanced/traceLightPaths'
@@ -350,24 +349,12 @@ namespace ShaderMetadataHelpers
     // but a property matches just the implementation name, it will be returned.
     // If no such property is found, returns nullptr.
     SdrShaderPropertyConstPtr
-    _FindSiblingProperty(const std::string& path,
-        SdrShaderPropertyConstPtr fromProperty,
+    _FindProperty(const std::string& path,
+        const std::string& basePath,
         const SdrShaderPropertyUniquePtrVec& allProperties)
     {
         // Construct a full path starting from the given property.
-        std::string fullPath;
-        if (!fromProperty->GetPage().IsEmpty()) {
-            // Convert the property's page from a namedspaced identifier into
-            // a path.
-            const std::vector<std::string> pageParts =
-                SdfPath::TokenizeIdentifier(fromProperty->GetPage());
-            fullPath = TfStringJoin(pageParts, "/");
-            fullPath += '/';
-        }
-
-        // Append the property's implementation name to the path and concatenate
-        // the provided path.
-        fullPath += fromProperty->GetImplementationName();
+        std::string fullPath{basePath};
         fullPath += '/';
         fullPath += path;
 
@@ -406,9 +393,9 @@ namespace ShaderMetadataHelpers
     SdfBooleanExpression
     _ExtractExpression(const SdrTokenMap& metadata,
         const std::string& prefix,
-        SdrShaderPropertyConstPtr property,
+        const std::string& basePath,
         const SdrShaderPropertyUniquePtrVec& allProperties,
-        SdrShaderNodeConstPtr shader)
+        const std::string& shaderUri)
     {
         TRACE_FUNCTION();
 
@@ -444,9 +431,9 @@ namespace ShaderMetadataHelpers
 
             // Recurse on the left and right halves
             const SdfBooleanExpression lhs = _ExtractExpression(metadata,
-                lhsIt->second, property, allProperties, shader);
+                lhsIt->second, basePath, allProperties, shaderUri);
             const SdfBooleanExpression rhs = _ExtractExpression(metadata,
-                rhsIt->second, property, allProperties, shader);
+                rhsIt->second, basePath, allProperties, shaderUri);
             if (lhs.IsEmpty() || rhs.IsEmpty()) {
                 return {};
             }
@@ -466,13 +453,12 @@ namespace ShaderMetadataHelpers
         }
 
         // Try to find the property referenced by the path.
-        SdrShaderPropertyConstPtr otherProperty = _FindSiblingProperty(
-            path->second, property, allProperties);
+        SdrShaderPropertyConstPtr otherProperty = _FindProperty(
+            path->second, basePath, allProperties);
         if (!otherProperty) {
             TF_WARN("Unable to find referenced property '%s' "
-                "(from property '%s' in %s)",
-                path->second.c_str(), property->GetName().GetText(),
-                shader->GetResolvedDefinitionURI().c_str());
+                "(from '%s' in %s)",
+                path->second.c_str(), basePath.c_str(), shaderUri.c_str());
             return {};
         }
 
@@ -492,10 +478,10 @@ namespace ShaderMetadataHelpers
 
             if (parsedValue.IsEmpty()) {
                 TF_WARN("Unable to parse '%s' as %s: %s "
-                    "(from property '%s' in %s)", value->second.c_str(),
+                    "(from '%s' in %s)", value->second.c_str(),
                     type.GetAsToken().GetText(), error.c_str(),
-                    property->GetName().GetText(),
-                    shader->GetResolvedDefinitionURI().c_str());
+                    basePath.c_str(),
+                    shaderUri.c_str());
                 return {};
             }
         }
@@ -512,10 +498,39 @@ namespace ShaderMetadataHelpers
         const SdrShaderPropertyUniquePtrVec& allProperties,
         SdrShaderNodeConstPtr shader)
     {
+        // Construct a base path from the given property.
+        std::string basePath;
+        if (!property->GetPage().IsEmpty()) {
+            // Convert the property's page from a namespaced identifier into
+            // a path.
+            const std::vector<std::string> pageParts =
+                SdfPath::TokenizeIdentifier(property->GetPage());
+            basePath = TfStringJoin(pageParts, "/");
+            basePath += '/';
+        }
+
+        // Append the property's implementation name to the path and concatenate
+        // the provided path.
+        basePath += property->GetImplementationName();
+
         const std::string initialPrefix{"conditionalVis"};
         const SdfBooleanExpression expr = _ExtractExpression(
-            property->GetMetadata(), initialPrefix, property, allProperties,
-            shader);
+            property->GetMetadata(), initialPrefix, basePath, allProperties,
+            shader->GetResolvedDefinitionURI());
+        return expr.GetText();
+    }
+
+    std::string
+    ComputeShownIfFromMetadata(const SdrTokenMap& metadata,
+        const std::string& pageName,
+        const SdrShaderPropertyUniquePtrVec& properties,
+        const std::string& shaderUri)
+    {
+        const std::string basePath = TfStringReplace(pageName, ":", "/");
+        const std::string initialPrefix{"conditionalVis"};
+        const SdfBooleanExpression expr = _ExtractExpression(
+            metadata, initialPrefix, basePath, properties,
+            shaderUri);
         return expr.GetText();
     }
 }

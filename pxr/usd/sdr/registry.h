@@ -17,6 +17,7 @@
 #include "pxr/usd/sdr/discoveryPlugin.h"
 #include "pxr/usd/sdr/parserPlugin.h"
 #include "pxr/usd/sdr/shaderNode.h"
+#include "pxr/usd/sdr/shaderNodeQuery.h"
 #include "pxr/usd/sdr/shaderNodeDiscoveryResult.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include <map>
@@ -285,6 +286,14 @@ public:
     SDR_API
     SdrTokenVec GetAllShaderNodeSourceTypes() const;
 
+    /// Run an SdrShaderNodeQuery.
+    ///
+    /// Note that SdrRegistry::RunQuery will cause all nodes in the registry
+    /// to be parsed in order to examine data on these nodes in their
+    /// final form.
+    SDR_API
+    SdrShaderNodeQueryResult RunQuery(const SdrShaderNodeQuery& query);
+
 protected:
     // Allow TF to construct the class
     friend class TfSingleton<SdrRegistry>;
@@ -332,7 +341,8 @@ private:
     mutable std::mutex _discoveryResultMutex;
 
     // The node map is not a concurrent data structure, thus it needs some
-    // locking infrastructure.
+    // locking infrastructure. Ensure that _discoveryResultMutex is not
+    // acquired after _nodeMapMutex is acquired, to avoid deadlock.
     mutable std::mutex _nodeMapMutex;
 
     // Runs each discovery plugin provided and adds the results to the

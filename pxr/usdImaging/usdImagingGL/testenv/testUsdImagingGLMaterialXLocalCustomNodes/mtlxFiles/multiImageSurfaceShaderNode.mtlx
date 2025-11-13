@@ -3,7 +3,7 @@
 
     <!-- custom SurfaceShader node using multiple textures -->
     <nodedef name="ND_multiImageSurf" node="multiImageSurf" version="1.0.0" isdefaultversion="true">
-        <input name="color_file" type="filename" value=""/>
+        <input name="_color_file" type="filename" value=""/>
         <input name="roughness_file" type="filename" value=""/>
         <output name="out" type="surfaceshader" />
     </nodedef>
@@ -14,7 +14,7 @@
             <input name="default" type="vector2" value="0.5,0.5" />
         </geompropvalue>
         <tiledimage name="color_image" type="color3" colorspace="srgb_texture">
-            <input name="file" type="filename" interfacename="color_file" />
+            <input name="file" type="filename" interfacename="_color_file" />
             <input name="uvtiling" type="vector2" value="1.0, 1.0"/>
             <input name="filtertype" type="string" value="linear"/>
             <input name="texcoord" type="vector2" nodename="stcoords" />

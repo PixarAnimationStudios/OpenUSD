@@ -102,6 +102,65 @@ BuildTestNetwork(VdfTestUtils::Network &graph, VdfSchedule *schedule)
     return graph["tn3"];
 }
 
+// Build a linear chain of 64 nodes with an exponential number of paths
+// to ensure we don't time out when graphing a large neighborhood.
+static
+VdfNode *
+BuildLinearNetwork(VdfTestUtils::Network &graph, VdfSchedule *schedule) 
+{
+    VdfMask bigMask = VdfMask::AllOnes(100);
+
+    // We're going to build a network like this:
+    //
+    //          GN1
+    //          | |
+    //          MO0
+    //          | |
+    //          MO1
+    //          | |
+    //          MO2
+    //          | |
+    //          ...
+    //          MO63
+    //
+    // There are 2^64 paths from GN1 to MO63.
+    // 
+
+    constexpr int depth = 64;
+
+    VdfTestUtils::CallbackNodeType generatorType(&CallbackFunction);
+    generatorType
+        .Out<int>(_tokens->out)
+        ;
+
+    VdfTestUtils::CallbackNodeType multipleOutputType(&CallbackFunction);
+    multipleOutputType
+        .Read<int>(_tokens->axis)
+        .Read<int>(_tokens->moves)
+        .Out<int>(_tokens->out1)
+        .Out<int>(_tokens->out2)
+        ;
+
+    graph.Add("gn", generatorType);
+
+    for (int i=0; i<depth; ++i) {
+        graph.Add(TfStringPrintf("mo%d", i), multipleOutputType);
+    }
+
+    graph["gn"] >> graph["mo0"].In(_tokens->axis, bigMask);
+    graph["gn"] >> graph["mo0"].In(_tokens->moves, bigMask);
+
+    for (int i=0; i<(depth-1); ++i) {
+        graph[TfStringPrintf("mo%d", i)].Output(_tokens->out1) >> 
+            graph[TfStringPrintf("mo%d", i+1)].In(_tokens->axis, bigMask);
+        graph[TfStringPrintf("mo%d", i)].Output(_tokens->out2) >> 
+            graph[TfStringPrintf("mo%d", i+1)].In(_tokens->moves, bigMask);
+    }
+
+    return graph[TfStringPrintf("mo%d", depth-1)];
+    
+}
+
 static bool
 WriteToFile(const VdfNode &node, std::ostream *os)
 {
@@ -109,6 +168,21 @@ WriteToFile(const VdfNode &node, std::ostream *os)
 
     // Keep traversing.
     return true;
+}
+
+// Test that graphing a large neighborhood doesn't take exponential time.
+static void
+TestRuntime() 
+{
+    VdfTestUtils::Network graph;
+    VdfSchedule schedule;
+    VdfNode *source = BuildLinearNetwork(graph, &schedule);
+    VdfNetwork &net = graph.GetNetwork();
+
+    VdfGrapherOptions opts;
+    opts.SetUniqueIds(false);
+    opts.AddNodeToGraph(*source, /*maxInDepth*/64, /*maxOutDepth*/64);
+    VdfGrapher::GraphToFile(net, "linear_chain.dot", opts);
 }
 
 int 
@@ -187,6 +261,8 @@ main(int argc, char **argv)
     std::string dotCommand = 
         VdfGrapher::GetDotCommand("test.dot");
 
+    // Check for exponential runtime for a large neighborhood.
+    TestRuntime();
 
     return 0;
 }

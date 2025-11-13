@@ -640,7 +640,7 @@ ARCH_PRAGMA_POP
             // Detach to empty.
             _DecRef();
         }
-        _shapeData.totalSize = 0;
+        _shapeData.clear();
     }
 
     /// Insert a copy of a single element at \p pos into the array.  Return an

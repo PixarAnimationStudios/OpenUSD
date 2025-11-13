@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/js/json.h"
 #include "pxr/base/js/utils.h"
+#include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include "pxr/base/trace/eventData.h"
@@ -539,7 +540,7 @@ _ImportChromeEvents(
 
 // Creates a TraceEventList from EventListConstructionData.
 static std::unique_ptr<TraceEventList>
-_ConstructEventList(EventListConstructionData& data)
+_ConstructEventList(EventListConstructionData&& data)
 {
     TF_AXIOM(data.eventList.IsEmpty());
     // TraceEventLists are sorted by timestamp.
@@ -556,22 +557,22 @@ _ConstructEventList(EventListConstructionData& data)
     for (TraceEvent& e : data.unorderedEvents) {
         data.eventList.EmplaceBack(std::move(e));
     }
-    data.unorderedEvents.clear();
+    TfReset(data.unorderedEvents);
     return std::unique_ptr<TraceEventList>(
         new TraceEventList(std::move(data.eventList)));
 }
 
-std::unique_ptr<TraceCollection> 
-Trace_JSONSerialization::CollectionFromJSON(const JsValue& jsValue) {
-    const JsObject* traceObj = _JsGet<JsObject>(jsValue);
-    const JsArray* chromeEvents = 0;
-    if (traceObj) {
+static ChromeConstructionMap
+_ConvertJSONToChromeMap(JsValue&& jsValue)
+{
+    const JsArray* chromeEvents = nullptr;
+    const JsObject* traceDataObj = nullptr;
+    if (const JsObject* traceObj = _JsGet<JsObject>(jsValue)) {
         chromeEvents = _JsGetValue<JsArray>(*traceObj, "traceEvents");
+        traceDataObj = _JsGetValue<JsObject>(*traceObj, "libTraceData");
     } else {
         chromeEvents = _JsGet<JsArray>(jsValue);
     }
-    const JsObject* traceDataObj =
-        traceObj ? _JsGetValue<JsObject>(*traceObj, "libTraceData") : nullptr;
 
     ChromeConstructionMap constMap;
     // Add events from the chrome trace format.
@@ -600,17 +601,30 @@ Trace_JSONSerialization::CollectionFromJSON(const JsValue& jsValue) {
         }
     }
 
-    // Create the event lists and collection.
-    if (!constMap.empty()) {
-        std::unique_ptr<TraceCollection> collection(new TraceCollection());
-        for (ChromeConstructionMap::value_type& c : constMap) {
-            collection->AddToCollection(
-                    TraceThreadId(c.first),
-                    _ConstructEventList(c.second));
-        }
-        return collection;
+    // Drop the in-memory json values to reduce the peak memory use as before
+    // the TraceCollection is built.
+    jsValue = JsValue();
+
+    return constMap;
+}
+
+std::unique_ptr<TraceCollection> 
+Trace_JSONSerialization::CollectionFromJSON(JsValue&& jsValue)
+{
+    ChromeConstructionMap constMap =
+        _ConvertJSONToChromeMap(std::move(jsValue));
+    if (constMap.empty()) {
+        return nullptr;
     }
-    return nullptr;
+
+    // Create the event lists and collection.
+    std::unique_ptr<TraceCollection> collection(new TraceCollection());
+    for (ChromeConstructionMap::value_type& c : constMap) {
+        collection->AddToCollection(
+            TraceThreadId(c.first),
+            _ConstructEventList(std::move(c.second)));
+    }
+    return collection;
 }
 
 

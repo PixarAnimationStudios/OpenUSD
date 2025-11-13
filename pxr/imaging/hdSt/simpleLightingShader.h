@@ -129,6 +129,9 @@ public:
         return _shadowAovBindings;
     }
 
+    HDST_API
+    void SetDomeLightCubemapTargetMemory(unsigned int targetMemoryMB);
+
 private:
     void _AllocateShadowTextures(
         HdStResourceRegistry* const resourceRegistry,
@@ -152,6 +155,10 @@ private:
     NamedTextureHandleVector _namedTextureHandles;
 
     NamedTextureHandleVector _domeLightTextureHandles;
+
+    // Maximum target memory of computed dome light cubemap texture (in MB)
+    unsigned int _domeLightCubemapTargetMemoryMB;
+    
     NamedTextureHandle _shadowTextureHandle;
     
     HdSt_MaterialParamVector _lightTextureParams;

@@ -101,11 +101,6 @@ pxr_test_scripts(
     testenv/testUsdviewqViewSettingsDataModel.py
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdviewqRootDataModel
-    DEST testUsdviewqRootDataModel
-)
-
 pxr_register_test(testUsdviewqSettings
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqSettings"
@@ -115,6 +110,7 @@ pxr_register_test(testUsdviewqSettings
 pxr_register_test(testUsdviewqRootDataModel
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqRootDataModel"
+    TESTENV testenv/testUsdviewqRootDataModel
     EXPECTED_RETURN_CODE 0
 )
 

@@ -28,13 +28,9 @@ pxr_test_scripts(
     testenv/testKindRegistry.py
 )
 
-pxr_install_test_dir(
-    SRC testenv/testKindRegistry
-    DEST testKindRegistry
-)
-
 pxr_register_test(testKindRegistry
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testKindRegistry"
+    TESTENV testenv/testKindRegistry
     EXPECTED_RETURN_CODE 0
 )

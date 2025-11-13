@@ -10,4 +10,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdRenderer::~HdRenderer() = default;
 
+HdLegacyRenderControlInterface *
+HdRenderer::GetLegacyRenderControl()
+{
+    return nullptr;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

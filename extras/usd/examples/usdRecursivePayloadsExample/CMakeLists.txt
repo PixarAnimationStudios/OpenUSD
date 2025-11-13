@@ -26,11 +26,6 @@ pxr_test_scripts(
      testenv/testUsdRecursivePayloadsExample.py
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdRecursivePayloadsExample
-    DEST testUsdRecursivePayloadsExample
-)
-
 # XXX:
 # Baselines for this test were generated on a build on Linux
 # using GCC. The results may differ on other platforms and compilers
@@ -43,6 +38,7 @@ if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux" AND
     pxr_register_test(testUsdRecursivePayloadsExample
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRecursivePayloadsExample"
+        TESTENV testenv/testUsdRecursivePayloadsExample
         DIFF_COMPARE flattenedContents.usda newFlattenedContents.usda
         EXPECTED_RETURN_CODE 0
         ENV
@@ -52,6 +48,7 @@ else()
     pxr_register_test(testUsdRecursivePayloadsExample
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdRecursivePayloadsExample"
+        TESTENV testenv/testUsdRecursivePayloadsExample
         EXPECTED_RETURN_CODE 0
         ENV
             ${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/usdRecursivePayloadsExample/resources

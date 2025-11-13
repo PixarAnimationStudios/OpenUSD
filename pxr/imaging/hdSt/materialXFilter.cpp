@@ -119,7 +119,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (constant)
     
     // Atan2 Nodes are Not topological but their inputs change between v1.38 
-    // and v1.39 so we need to include them in the the annonymize network
+    // and v1.39 so we need to include them in the the anonymize network
     // otherwise the generated shader will not have the correct values. 
     (atan2)
 );
@@ -131,9 +131,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     (vaddressmode)
 );
 
+namespace
+{
 // To store the mapping between the node paths in the HdMaterialNetwork to  
-// the corresponding anonymized node paths - <hdNodePath, annonNodePath> 
-using HdAnnonNodePathMap = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
+// the corresponding anonymized node paths - <hdNodePath, anonNodePath> 
+using _AnonNodePathMap = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shader Gen Functions
@@ -265,6 +268,24 @@ HdSt_GenMaterialXShader(
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helper Functions to convert MX texture node parameters to Hd parameters
+
+// Strip any leading underscores from the parameter name before joinging with 
+// the nodeName, as Mx does the same
+static 
+std::string
+_CreateNodeParamName(std::string const& nodeName, std::string const& paramName)
+{
+    // if nodeName is empty then we do not need to concatenate anything
+    if (nodeName.empty()) {
+        return paramName;
+    }
+    if (TfStringStartsWith(paramName, "_")) {
+        return nodeName + paramName;
+    }
+    else {
+        return nodeName + "_" + paramName;
+    }
+}
 
 // Get the Hydra VtValue for the given MaterialX input value
 static VtValue
@@ -429,9 +450,8 @@ _UpdateMxHdTextureNames(
                 // Note these connections were made in _UpdateTextureNode()
                 // and use the mtlx paramName which follows the pattern:
                 // 'nodeName_paramName'
-                const std::string newConnName =
-                    texturePath.GetName() + "_" + fileInputName;
-                mxHdTextureNames->push_back(newConnName);
+                mxHdTextureNames->push_back(
+                    _CreateNodeParamName(texturePath.GetName(), fileInputName));
             }
         }
     }
@@ -718,9 +738,9 @@ _AddStrippedSurfaceNode(
     }
 
     // Add inputs to the hdNode for each parameter
-    for (auto const& paramIt: hdNode.parameters) {
+    for (auto const& [paramName, paramValue]: hdNode.parameters) {
         const mx::InputPtr mxInputDef =
-            mxNodeDef->getActiveInput(paramIt.first.GetString());
+            mxNodeDef->getActiveInput(paramName.GetString());
         if (!mxInputDef) {
             continue;
         }
@@ -734,7 +754,7 @@ _AddStrippedSurfaceNode(
             // Add the parameter as an input to the mxNode in the mx Document
             mx::InputPtr mxInput =
                 mxNode->addInputFromNodeDef(mxInputDef->getName());
-            mxInput->setValueString(HdMtlxConvertToString(paramIt.second));
+            mxInput->setValueString(HdMtlxConvertToString(paramValue));
         }
     }
     return mxNode;
@@ -875,8 +895,8 @@ _ConnectPrimvarNodesToTerminalNode(
                 mxNodeDefName, _tokens->mtlx);
 
         if (!mtlxSdrNode) {
-            TF_DEBUG(HDST_MTLX).Msg("Unable to find Sdr node of type '%s' for "
-                "node at <%s>. May lose primvar connection.\n",
+            TF_DEBUG(HDST_MTLX).Msg("HdSt - Unable to find Sdr node of type "
+                "'%s' for node at <%s>. May lose primvar connection.\n",
                 mxNodeDefName.GetText(), nodePath.GetAsString().c_str());
                 continue;
         }
@@ -896,9 +916,9 @@ _ConnectPrimvarNodesToTerminalNode(
             .inputConnections[primvarConn.upstreamOutputName] = {primvarConn};
 
         TF_DEBUG(HDST_MTLX).Msg(
-            "Connecting primvar node <%s> to terminal node <%s>.\n",
-            nodePath.GetAsString().c_str(),
-            terminalNodePath.GetAsString().c_str());
+            "HdSt - Connecting primvar node <%s> to terminal node <%s> through "
+            "'%s'.\n", nodePath.GetAsString().c_str(),
+            terminalNodePath.GetAsString().c_str(), newConnName.c_str());
     }
 }
 
@@ -939,16 +959,16 @@ _UpdateTextureNode(
         &hdParameters);
 
     // Gather the authored Texture Parameters
-    for (auto const& param : hdTextureNode.parameters) {
+    for (auto const& [paramName, paramValue] : hdTextureNode.parameters) {
         // Get the Hydra equivalents for the Mx Texture node parameters
-        std::string const& mxInputName = param.first.GetString();
-        std::string const mxInputValue = HdMtlxConvertToString(param.second);
+        std::string const& mxInputName = paramName.GetString();
+        std::string const mxInputValue = HdMtlxConvertToString(paramValue);
         _GetMxInputAsHdTextureParam(mxInputName, mxInputValue, &hdParameters);
     }
 
     // Add the Hydra Texture Parameters to the Texture Node
-    for (auto const& param : hdParameters) {
-        hdTextureNode.parameters[param.first] = param.second;
+    for (auto const& [paramName, paramValue] : hdParameters) {
+        hdTextureNode.parameters[paramName] = paramValue;
     }
 
     // Make and add a new connection to the terminal node
@@ -959,9 +979,17 @@ _UpdateTextureNode(
         inputConnections[mtlxParamName] = {textureConn};
 
     TF_DEBUG(HDST_MTLX).Msg(
-        "Connecting texture node <%s> to terminal node <%s>.\n",
-        textureNodePath.GetAsString().c_str(),
-        terminalNodePath.GetAsString().c_str());
+        "HdSt - Connecting texture node <%s> to terminal node <%s> through '%s'"
+        ".\n", textureNodePath.GetAsString().c_str(),
+        terminalNodePath.GetAsString().c_str(), mtlxParamName.GetText());
+
+    if (hdTextureNode.inputConnections.find(_tokens->defaultInput)
+        != hdTextureNode.inputConnections.end()) {
+        TF_WARN("Texture node <%s> has the default value provided through"
+            " a connection. This is not supported in Storm. Only default values"
+            " directly authored are supported.",
+            textureNodePath.GetText());
+    }
 }
 
 static void
@@ -1037,10 +1065,10 @@ _ReplaceFilenameInput(
         }
     }
     // Gather the Hydra Texture Parameters on the terminal node.
-    for (auto const& param : hdTerminalNode.parameters) {
+    for (auto const& [paramName, paramValue] : hdTerminalNode.parameters) {
         // Get the Hydra equivalents for the Mx Texture node parameters
-        std::string const& mxInputName = param.first.GetString();
-        std::string const mxInputValue = HdMtlxConvertToString(param.second);
+        std::string const& mxInputName = paramName.GetString();
+        std::string const mxInputValue = HdMtlxConvertToString(paramValue);
         _GetMxInputAsHdTextureParam(
             mxInputName, mxInputValue, &terminalTextureParams);
     }
@@ -1061,8 +1089,8 @@ _ReplaceFilenameInput(
     terminalTextureNode.parameters[TfToken(mxTextureNodefilenameInputName)] =
         filenameParamIt->second;
     terminalTextureNode.parameters[_tokens->st] = _tokens->st;
-    for (auto const& param : terminalTextureParams) {
-        terminalTextureNode.parameters[param.first] = param.second;
+    for (auto const& [paramName, paramValue] : terminalTextureParams) {
+        terminalTextureNode.parameters[paramName] = paramValue;
     }
 
     // Add the Texture Node to the hdNetwork
@@ -1082,8 +1110,8 @@ _ReplaceFilenameInput(
             {terminalTextureConn};
 
     TF_DEBUG(HDST_MTLX).Msg(
-        "Creating texture node <%s> and connecting it to terminal node <%s>, "
-        "for the filename input '%s' on the '%s' typed node.\n",
+        "HdSt - Creating texture node <%s> and connecting it to terminal node "
+        "<%s>, for the filename input '%s' on the '%s' typed node.\n",
         terminalTexturePath.GetAsString().c_str(), 
         terminalNodePath.GetAsString().c_str(),
         mxFilenameInputName.c_str(), mxNodeDef->getName().c_str());
@@ -1095,7 +1123,7 @@ _AddMaterialXParams(
     mx::ShaderPtr const& glslfxShader,
     HdMaterialNetwork2* hdNetwork,
     SdfPath const& terminalNodePath,
-    HdAnnonNodePathMap const& hdToAnnonNodePathMap,
+    _AnonNodePathMap const& hdToAnonNodePathMap,
     HdSt_MaterialParamVector* materialParams)
 {
     TRACE_FUNCTION_SCOPE("Collect Mtlx params from glslfx shader.")
@@ -1108,35 +1136,35 @@ _AddMaterialXParams(
 
     // Store all the parameter values, mapped by the anonymized names used 
     // for MaterialXShaderGen
-    // <annonNodeName_paramName, hdParamVtValue>
+    // <anonNodeName_paramName, hdParamVtValue>
     std::map<std::string, VtValue> mxParamNameToValue;
-    for (auto const& node: hdNetwork->nodes) {
+    for (auto const& [nodePath, hdNode]: hdNetwork->nodes) {
         // Terminal Node parameters are not prefixed.
-        std::string annonNodeNamePrefix;
-        if (node.first != terminalNodePath) {
-            const auto annonNodePathIt = hdToAnnonNodePathMap.find(node.first);
-            if (annonNodePathIt != hdToAnnonNodePathMap.end()) {
-                annonNodeNamePrefix = annonNodePathIt->second.GetName() + "_";
+        std::string anonNodeNamePrefix;
+        if (nodePath != terminalNodePath) {
+            const auto anonNodePathIt = hdToAnonNodePathMap.find(nodePath);
+            if (anonNodePathIt != hdToAnonNodePathMap.end()) {
+                anonNodeNamePrefix = anonNodePathIt->second.GetName();
             }
         }
-        for (auto const& param: node.second.parameters) {
-            if (param.second.IsHolding<std::string>() ||
-                param.second.IsHolding<TfToken>()) {
+        for (auto const& [paramName, paramValue] : hdNode.parameters) {
+            if (paramValue.IsHolding<std::string>() ||
+                paramValue.IsHolding<TfToken>()) {
                 continue;
             }
             mxParamNameToValue.emplace(
-                annonNodeNamePrefix + param.first.GetString(), param.second);
+                _CreateNodeParamName(
+                    anonNodeNamePrefix, paramName.GetString()), paramValue);
         }
     }
 
     // Build a mapping from the anonymized node name to the original Hydra
     // SdfPath. This is to help find texture nodes associated with filename 
     // inputs found in the uniform block below.
-    std::map<std::string, SdfPath> annonToHdNodePathMap;
-    for (auto const& pathPair: hdToAnnonNodePathMap) {
-        if (pathPair.first != terminalNodePath) {
-            annonToHdNodePathMap.emplace(
-                pathPair.second.GetName(), pathPair.first);
+    std::map<std::string, SdfPath> anonToHdNodePathMap;
+    for (auto const& [hdPath, anonPath] : hdToAnonNodePathMap) {
+        if (hdPath != terminalNodePath) {
+            anonToHdNodePathMap.emplace(anonPath.GetName(), hdPath);
         }
     }
 
@@ -1155,8 +1183,10 @@ _AddMaterialXParams(
         param.name = TfToken(mxParamName);
 
         // Get the parameter value from the map created above
+        std::stringstream debugSS;
         const auto paramValueIt = mxParamNameToValue.find(mxParamName);
         if (paramValueIt != mxParamNameToValue.end()) {
+            debugSS << " - authored value: ";
             if (varType.getBaseType() == mx::TypeDesc::BASETYPE_BOOLEAN ||
                 varType.getBaseType() == mx::TypeDesc::BASETYPE_FLOAT ||
                 varType.getBaseType() == mx::TypeDesc::BASETYPE_INTEGER) {
@@ -1170,6 +1200,7 @@ _AddMaterialXParams(
         // mapping and instead need to be found from the variables in the 
         // MaterialX glslfxShader. 
         else {
+            debugSS << " - default  value: ";
             std::string separator;
             const auto varValue = variable->getValue();
             std::istringstream valueStream(varValue
@@ -1229,22 +1260,24 @@ _AddMaterialXParams(
         }
 
         if (!param.fallbackValue.IsEmpty()) {
+            debugSS << mxParamName << " = " << param.fallbackValue;
+            TF_DEBUG(HDST_MTLX_VALUES).Msg("%s\n", debugSS.str().c_str());
             materialParams->push_back(std::move(param));
         }
 
         // For filename inputs, manage the associated texture node
         if (varType.getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {
-            // Get the anonymized MaterialX node name from the param name
-            // annonNodeName_paramName -> annonNodeName
-            std::string mxNodeName = mxParamName;
-            const auto underscorePos = mxNodeName.find('_');
+            // Get the anonymized (or sanitized) MaterialX node name from the 
+            // mxParamName which is of the form anonNodeName_paramName
+            std::string anonNodeName = mxParamName;
+            const auto underscorePos = anonNodeName.find('_');
             if (underscorePos != std::string_view::npos) {
-                mxNodeName = mxNodeName.substr(0, underscorePos);
+                anonNodeName = anonNodeName.substr(0, underscorePos);
             }
 
             // Get the original hdNodeName from the MaterialX node name
-            const auto hdNodePathIt = annonToHdNodePathMap.find(mxNodeName);
-            if (hdNodePathIt != annonToHdNodePathMap.end()) {
+            const auto hdNodePathIt = anonToHdNodePathMap.find(anonNodeName);
+            if (hdNodePathIt != anonToHdNodePathMap.end()) {
                 _UpdateTextureNode(
                     param.name, hdNetwork, 
                     terminalNodePath, hdNodePathIt->second);
@@ -1268,8 +1301,9 @@ _GenerateMaterialXShader(
     TfToken const& apiName,
     bool const bindlessTexturesEnabled)
 {
-    TF_DEBUG(HDST_MTLX).Msg("Generate MaterialX Shader for <%s> material.\n"
-        " - bindless textures %s enabled\n - '%s' api\n - '%s' materialTag.\n", 
+    TF_DEBUG(HDST_MTLX).Msg("\nGenerate MaterialX Shader for:\n"
+        " - <%s> material\n - bindless textures %s enabled\n"
+        " - '%s' api\n - '%s' materialTag.\n\n", 
         materialPath.GetAsString().c_str(),
         (bindlessTexturesEnabled ? "" : "not"), apiName.GetText(),
         materialTagToken.GetText());
@@ -1329,24 +1363,39 @@ _IsTopologicalShader(TfToken const& nodeId)
     return TfStringStartsWith(nodeId.GetString(), "ND_swizzle_");
 }
 
+static
+std::string
+_SanitizeName(std::string const& name)
+{
+    if (!SdfPath::IsValidIdentifier(name)) {
+        return "";
+    }
+    // Remove underscores from the given name
+    std::string sanitizedName = name;
+    sanitizedName.erase(
+        std::remove(sanitizedName.begin(), sanitizedName.end(), '_'),
+        sanitizedName.end());
+    return sanitizedName;
+}
+
 // Build the topoNetwork, equivalent to the given hdNetwork but anonymized and 
 // stripped of non-topological parameters to better re-use the generated shader.  
 static size_t
 _BuildEquivalentMaterialNetwork(
     HdMaterialNetwork2 const& hdNetwork,
     HdMaterialNetwork2* topoNetwork,
-    HdAnnonNodePathMap* annonNodePathMap)
+    _AnonNodePathMap* anonNodePathMap)
 {
     // The goal here is to strip all local names in the network paths in order 
     // to produce MaterialX data that does not have uniform parameter names 
     // that vary based on USD node names.
     // We also want to strip all non-topological parameters in order to get a 
     // shader that has default values for all parameters and can be re-used.
-    annonNodePathMap->clear();
+    anonNodePathMap->clear();
 
-    // Annonymized paths will be of the form:
+    // Anonymized paths will be of the form:
     //   /NG_Anonymized/N0, /NG_Anonymized/N1, /NG_Anonymized/N2...
-    SdfPath annonBaseName(_tokens->NG_Anonymized);
+    SdfPath anonBaseName(_tokens->NG_Anonymized);
 
     // Create anonymized names for each of the nodes in the material network. 
     // To do this we process the network in a depth-first traversal starting
@@ -1354,23 +1403,57 @@ _BuildEquivalentMaterialNetwork(
     // anonymized renaming that will not be affected by the ordering of the 
     // SdfPaths in the hdNetwork. 
     size_t nodeCounter = 0;
-    std::vector<const SdfPath*> pathsToTraverse;
+    std::vector<std::pair<const SdfPath*, const TfToken>> pathsToTraverse;
     for (const auto& terminal : hdNetwork.terminals) {
         const auto& connection = terminal.second;
-        pathsToTraverse.push_back(&(connection.upstreamNode));
+        pathsToTraverse.push_back({(&connection.upstreamNode), terminal.first});
     }
     while (!pathsToTraverse.empty()) {
-        const SdfPath *path = pathsToTraverse.back();
+        const auto [path, input] = pathsToTraverse.back();
         pathsToTraverse.pop_back();
 
-        if (!annonNodePathMap->count(*path)) {
+        if (TfDebug::IsEnabled(HDST_MTLX_DISABLE_ANONYMIZE)) {
+            // If Anonymization is disabled we instead sanitize the node name 
+            // and remove any underscores this is to help with texture nodes 
+            // later in _AddMaterialXParams()
+            const std::string sanitizedName = _SanitizeName(path->GetName());
+            if (!anonNodePathMap->count(SdfPath(sanitizedName))) {
+                (*anonNodePathMap)[*path] = SdfPath(sanitizedName);
+                TF_DEBUG(HDST_MTLX).Msg(
+                    " - Map node named '%s' (sanitized to %s) to <%s> "
+                    "(full path)\n",
+                    path->GetName().c_str(), sanitizedName.c_str(), path->GetText());
+            }
+
             const HdMaterialNode2& node = hdNetwork.nodes.find(*path)->second;
-            (*annonNodePathMap)[*path] = annonBaseName.AppendChild(
-                TfToken("N" + std::to_string(nodeCounter++)));
+            for (const auto& input : node.inputConnections) {
+                for (const auto& connection : input.second) {
+                    pathsToTraverse.push_back(
+                        {(&connection.upstreamNode), input.first});
+                }
+            }
+
+        } else {
+            // When using anonymized networks we map the full path name to the 
+            // new anonymized path. 
+            const HdMaterialNode2& node = hdNetwork.nodes.find(*path)->second;
+            if (!anonNodePathMap->count(*path)) {
+                const std::string anonNodeName = 
+                    "N" + std::to_string(nodeCounter++) 
+                    + _SanitizeName(node.nodeTypeId.GetString())
+                    + _SanitizeName(input.GetString());
+                const SdfPath anonPath =
+                    anonBaseName.AppendChild(TfToken(anonNodeName));
+                (*anonNodePathMap)[*path] = anonPath;
+                TF_DEBUG(HDST_MTLX).Msg(
+                    " - Map node <%s> to <%s> (anonymized path)\n",
+                    path->GetText(), anonPath.GetText());
+            }
 
             for (const auto& input : node.inputConnections) {
                 for (const auto& connection : input.second) {
-                    pathsToTraverse.push_back(&(connection.upstreamNode));
+                    pathsToTraverse.push_back(
+                        {(&connection.upstreamNode), input.first});
                 }
             }
         }
@@ -1380,16 +1463,14 @@ _BuildEquivalentMaterialNetwork(
     // anonymized names
     topoNetwork->primvars = hdNetwork.primvars;
     topoNetwork->config = hdNetwork.config;
-    for (const auto& terminal : hdNetwork.terminals) {
+    for (const auto& [terminalName, terminalConn] : hdNetwork.terminals) {
         topoNetwork->terminals.emplace(
-            terminal.first,
+            terminalName,
             HdMaterialConnection2 { 
-                (*annonNodePathMap)[terminal.second.upstreamNode],
-                terminal.second.upstreamOutputName });
+                (*anonNodePathMap)[terminalConn.upstreamNode],
+                terminalConn.upstreamOutputName });
     }
-    for (const auto& nodePair : hdNetwork.nodes) {
-        const HdMaterialNode2& inNode = nodePair.second;
-
+    for (const auto& [inNodePath, inNode] : hdNetwork.nodes) {
         HdMaterialNode2 outNode;
         outNode.nodeTypeId = inNode.nodeTypeId;
         if (_IsTopologicalShader(inNode.nodeTypeId)) {
@@ -1444,13 +1525,13 @@ _BuildEquivalentMaterialNetwork(
             for (const auto& inConn : connPair.second) {
                 outConn.emplace_back(
                     HdMaterialConnection2 { 
-                        (*annonNodePathMap)[inConn.upstreamNode], 
+                        (*anonNodePathMap)[inConn.upstreamNode], 
                         inConn.upstreamOutputName });
             }
             outNode.inputConnections.emplace(connPair.first, std::move(outConn));
         }
         topoNetwork->nodes.emplace(
-            (*annonNodePathMap)[nodePair.first], std::move(outNode));
+            (*anonNodePathMap)[inNodePath], std::move(outNode));
     }
 
     // Build the topo hash from the topo network
@@ -1503,11 +1584,11 @@ HdSt_ApplyMaterialXFilter(
     // on node names
     TF_DEBUG(HDST_MTLX).Msg("Build Anonymous Material Network for <%s>.\n",
         terminalNodePath.GetAsString().c_str());
-    HdAnnonNodePathMap annonNodePathMap;
-    HdMaterialNetwork2 annonNetwork;
+    _AnonNodePathMap anonNodePathMap;
+    HdMaterialNetwork2 anonNetwork;
     size_t topoHash = _BuildEquivalentMaterialNetwork(
-        *hdNetwork, &annonNetwork, &annonNodePathMap);
-    SdfPath anonTerminalNodePath = annonNodePathMap[terminalNodePath];
+        *hdNetwork, &anonNetwork, &anonNodePathMap);
+    SdfPath anonTerminalNodePath = anonNodePathMap[terminalNodePath];
 
     mx::ShaderPtr glslfxShader;
     const TfToken materialTag(_GetMaterialTag(*hdNetwork, terminalNode));
@@ -1527,7 +1608,7 @@ HdSt_ApplyMaterialXFilter(
     if (glslfxInstance.IsFirstInstance()) {
         try {
             glslfxShader = _GenerateMaterialXShader(
-                annonNetwork, materialPath, terminalNode, 
+                anonNetwork, materialPath, terminalNode, 
                 anonTerminalNodePath, materialTag, apiName, 
                 bindlessTexturesEnabled);
         } catch (mx::Exception& exception) {
@@ -1551,7 +1632,7 @@ HdSt_ApplyMaterialXFilter(
     // Add material parameters from the original network
     _AddMaterialXParams(
         glslfxShader, hdNetwork, terminalNodePath,
-        annonNodePathMap, materialParams);
+        anonNodePathMap, materialParams);
 
     // Create a new terminal node with the glslfxShader
     if (glslfxShader) {

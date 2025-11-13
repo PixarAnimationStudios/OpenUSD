@@ -166,12 +166,12 @@ pxr_build_test(testArchVsnprintf
 # executable, where it also looks for the pdb, doesn't work)
 
 if (PXR_BUILD_TESTS AND WIN32)
-    # This effectively creates a test-env dir (similar to pxr_install_test_dir),
-    # and adds a single file, testArchStackTrace.pdb, to it.  The test-env dir
-    # ensures that the .pdb is copied into the temporary test dir, which is
-    # the PWD when the tests are run.  The PWD (and some subdirs) is the only
-    # place that .pdbs will be searched for, other than the baked-in absolute
-    # path in the windows binary
+    # This effectively creates a test-env dir and adds a single file,
+    # testArchStackTrace.pdb, to it.  The test-env dir ensures that the .pdb
+    # is copied into the temporary test dir, which is the PWD when the tests
+    # are run.  The PWD (and some subdirs) is the only place that .pdbs will
+    # be searched for, other than the baked-in absolute path in the windows
+    # binary
     install(
         FILES $<TARGET_PDB_FILE:testArchStackTrace>
         DESTINATION tests/ctest/testArchStackTrace

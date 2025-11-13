@@ -7,6 +7,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdRi/rmanUtilities.h"
 
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -118,6 +119,37 @@ UsdRiConvertFromRManTriangleSubdivisionRule(int i)
     }
 }
 
+SdfStringListOp
+UsdRiConvertRManSetSpecificationToListOp(std::string const& repr)
+{
+    static const char* delimeters = " \t\n,";
+    SdfStringListOp result;
+    if (!repr.empty()) {
+        std::vector<std::string> elements;
+        if (repr[0] == '+') {
+            elements = TfStringTokenize(repr.substr(1), delimeters);
+            result.SetAppendedItems(elements);
+        } else if (repr[0] == '-') {
+            elements = TfStringTokenize(repr.substr(1), delimeters);
+            result.SetDeletedItems(elements);
+        } else {
+            elements = TfStringTokenize(repr, delimeters);
+            result.SetExplicitItems(elements);
+        }
+    }
+    return result;
+}
+
+bool
+UsdRiDoesAttributeUseSetSpecification(TfToken const& attrName)
+{
+    // Use endswidth to be robust with regard to various namespacing,
+    // e.g. primvars:ri:attributes, ri:attributes, or none at all.
+    return TfStringEndsWith(attrName, "grouping:membership")
+        || TfStringEndsWith(attrName, "lighting:excludesubset")
+        || TfStringEndsWith(attrName, "lighting:subset")
+        || TfStringEndsWith(attrName, "lightfilter:subset");
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

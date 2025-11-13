@@ -228,8 +228,13 @@ void HdStPopulateConstantPrimvars(
     HdRenderParam *renderParam,
     HdStDrawItem *drawItem,
     HdDirtyBits *dirtyBits,
-    HdPrimvarDescriptorVector const& constantPrimvars,
-    bool *hasMirroredTransform = nullptr);
+    HdReprSharedPtr const &repr,
+    HdMeshGeomStyle descGeomStyle,
+    int geomSubsetDescIndex,
+    size_t numGeomSubsets,
+    bool *hasMirroredTransform = nullptr,
+    bool *hasDisplayOpacity = nullptr,
+    bool *hasNormals = nullptr);
 
 // -----------------------------------------------------------------------------
 // Instancer processing utilities
@@ -243,7 +248,9 @@ void HdStUpdateInstancerData(
     HdRprim *prim,
     HdStDrawItem *drawItem,
     HdRprimSharedData *sharedData,
-    HdDirtyBits rprimDirtyBits);
+    HdDirtyBits rprimDirtyBits,
+    bool *hasDisplayOpacity = nullptr,
+    bool *hasNormals = nullptr);
 
 // Returns true if primvar with primvarName exists among instance primvar
 // descriptors.

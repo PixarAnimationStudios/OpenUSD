@@ -37,4 +37,9 @@ void wrapUsdRiRmanUtilities()
         (const TfToken & (*)(int))
         UsdRiConvertFromRManFaceVaryingLinearInterpolation,
         return_value_policy<return_by_value>());
+
+    def("ConvertRManSetSpecificationToListOp",
+        &UsdRiConvertRManSetSpecificationToListOp);
+    def("DoesAttributeUseSetSpecification",
+        &UsdRiDoesAttributeUseSetSpecification);
 }

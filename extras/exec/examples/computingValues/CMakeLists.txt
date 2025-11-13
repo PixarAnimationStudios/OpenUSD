@@ -13,12 +13,8 @@ pxr_build_test(computingValues
         computingValues.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testComputingValuesExample
-    DEST testComputingValuesExample
-)
-
 pxr_register_test(testComputingValuesExample
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/computingValues"
+    TESTENV testenv/testComputingValuesExample
     EXPECTED_RETURN_CODE 0
 )

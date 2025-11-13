@@ -230,6 +230,9 @@ public:
     TsExtrapolation(TsExtrapMode mode);
 
     TS_API
+    TsExtrapolation(TsExtrapMode mode, double slope);
+
+    TS_API
     bool operator==(const TsExtrapolation &other) const;
 
     TS_API

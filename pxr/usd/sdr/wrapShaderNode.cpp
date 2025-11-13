@@ -21,17 +21,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 using namespace pxr_boost::python;
 
-// Boost treats a const ptr differently than a non-const ptr, so a custom
-// converter is needed to deal with the const-ness
-struct SdrShaderNodeConstPtrToPythonConverter
-{
-    static PyObject* convert(SdrShaderNodeConstPtr shaderNode) {
-        object shaderNodeObject(ptr(shaderNode));
-
-        return incref(shaderNodeObject.ptr());
-    }
-};
-
 void wrapShaderNode()
 {
     typedef SdrShaderNode This;
@@ -48,9 +37,12 @@ void wrapShaderNode()
         "NodeRole", SdrNodeRole, SDR_NODE_ROLE_TOKENS
     );
 
+    TF_PY_WRAP_PUBLIC_TOKENS(
+        "NodeFieldKey", SdrNodeFieldKey, SDR_NODE_FIELD_KEY_TOKENS
+    );
+
     return_value_policy<copy_const_reference> copyRefPolicy;
-    to_python_converter<SdrShaderNodeConstPtr,
-                        SdrShaderNodeConstPtrToPythonConverter>();
+    register_ptr_to_python<SdrShaderNodeConstPtr>();
 
     class_<This, ThisPtr, noncopyable>("ShaderNode", no_init)
         .def("__repr__", &This::GetInfoString)
@@ -89,6 +81,7 @@ void wrapShaderNode()
         .def("GetDepartments", &This::GetDepartments, copyRefPolicy)
         .def("GetPages", &This::GetPages, copyRefPolicy)
         .def("GetOpenPages", &This::GetOpenPages, copyRefPolicy)
+        .def("GetPagesShownIf", &This::GetPagesShownIf, copyRefPolicy)
         .def("GetPrimvars", &This::GetPrimvars, copyRefPolicy)
         .def("GetAdditionalPrimvarProperties",
             &This::GetAdditionalPrimvarProperties, copyRefPolicy)
@@ -96,5 +89,6 @@ void wrapShaderNode()
         .def("GetRole", &This::GetRole)
         .def("GetPropertyNamesForPage", &This::GetPropertyNamesForPage)
         .def("GetAllVstructNames", &This::GetAllVstructNames)
+        .def("GetDataForKey", &This::GetDataForKey)
         ;
 }

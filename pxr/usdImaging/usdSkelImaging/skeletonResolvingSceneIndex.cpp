@@ -252,9 +252,11 @@ UsdSkelImagingSkeletonResolvingSceneIndex::_PrimsDirtied(
 
             if (hasAnimDependencies && entry.dirtyLocators.Intersects(
                     UsdSkelImagingAnimationSchema::GetDefaultLocator())) {
-                for (const SdfPath &skelPath :
-                         _Lookup(
-                             _skelAnimPathToSkeletonPaths, entry.primPath)) {
+                // Make a copy since _ProcessDirtyLocators can modify
+                // _skelAnimPathToSkeletonPaths.
+                const SdfPathSet skelPaths =
+                    _Lookup(_skelAnimPathToSkeletonPaths, entry.primPath);
+                for (const SdfPath &skelPath : skelPaths) {
                     _ProcessDirtyLocators(
                         skelPath,
                         UsdSkelImagingPrimTypeTokens->skelAnimation,
@@ -270,9 +272,11 @@ UsdSkelImagingSkeletonResolvingSceneIndex::_PrimsDirtied(
             
             if (hasInstancerDependencies &&
                     entry.dirtyLocators.Intersects(instancerLocators)) {
-                for (const SdfPath &skelPath :
-                         _Lookup(
-                             _instancerPathToSkeletonPaths, entry.primPath)) {
+                // Make a copy since _ProcessDirtyLocators can modify
+                // _instancerPathToSkeletonPaths.
+                const SdfPathSet skelPaths =
+                    _Lookup(_instancerPathToSkeletonPaths, entry.primPath);
+                for (const SdfPath &skelPath : skelPaths) {
                     _ProcessDirtyLocators(
                         skelPath,
                         HdPrimTypeTokens->instancer,

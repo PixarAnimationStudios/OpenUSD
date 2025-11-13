@@ -154,15 +154,22 @@ public:
     HD_API
     TfTokenVector GetRenderContexts() const;
 
+    /// Return the material network schema for the universalRenderContext.
     HD_API
-    HdMaterialNetworkSchema GetMaterialNetwork();
+    HdMaterialNetworkSchema GetMaterialNetwork() const;
 
+    /// Return the material network schema for the given render context.
+    /// \note This does not fall back to the universalRenderContext.
     HD_API
-    HdMaterialNetworkSchema GetMaterialNetwork(TfToken const &renderContext);
+    HdMaterialNetworkSchema
+    GetMaterialNetwork(TfToken const &renderContext) const;
 
+    /// Return the first material network schema found among the given
+    /// list of render contexts, falling back to the universal context
+    /// if none of the provided contexts are found.
     HD_API
     HdMaterialNetworkSchema GetMaterialNetwork(
-        TfTokenVector const &renderContexts);
+        TfTokenVector const &renderContexts) const;
 
     // Find the terminal (surface/volume/displcement) from a given data source locator.
     HD_API

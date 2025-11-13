@@ -328,10 +328,12 @@ private:
     bool _flatShadingEnabled : 1;
     bool _displacementEnabled : 1;
     bool _limitNormals : 1;
-    bool _sceneNormals : 1;
+    bool _sceneNormalsFromPrimvars : 1;
+    bool _sceneNormalsFromInstancer : 1;
     bool _hasVaryingTopology : 1;  // The prim's topology has changed since
                                    // the prim was created
-    bool _displayOpacity : 1;
+    bool _displayOpacityFromPrimvars : 1;
+    bool _displayOpacityFromInstancer : 1;
     bool _displayInOverlay : 1;
     bool _occludedSelectionShowsThrough : 1;
     bool _pointsShadingEnabled : 1;

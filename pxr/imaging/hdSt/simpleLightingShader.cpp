@@ -47,6 +47,7 @@ HdStSimpleLightingShader::HdStSimpleLightingShader()
     : _lightingContext(GlfSimpleLightingContext::New())
     , _useLighting(true)
     , _glslfx(std::make_unique<HioGlslfx>(HdStPackageSimpleLightingShader()))
+    , _domeLightCubemapTargetMemoryMB(0)
     , _shadowTextureHandle(
         NamedTextureHandle{ 
             HdStTokens->shadowCompareTextures,
@@ -596,8 +597,12 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
             srcTextureObject->GetTextureIdentifier().GetFilePath().GetText());
         return;
     }
-    const GfVec3i srcDim = srcTexture->GetDescriptor().dimensions;
-    const int cubemapDim = HdSt_ComputeDomeLightCubemapDimensions(srcDim)[0];
+
+    const int cubemapDim =
+        HdSt_ComputeDomeLightCubemapWidth(
+            srcTextureObject->GetTextureIdentifier().GetFilePath().GetString(),
+            srcTextureObject->GetTexture()->GetDescriptor(),
+            _domeLightCubemapTargetMemoryMB);
     const auto numCubemapLevels = (unsigned int)(std::log2(cubemapDim) + 1);
 
     // Cubemap generation from latlong texture.
@@ -607,6 +612,7 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
             _tokens->domeLightCubemap,
             /*useCubemapAsSourceTexture =*/false,
             thisShader,
+            cubemapDim,
             numCubemapLevels),
         HdStComputeQueueZero
     );
@@ -617,7 +623,8 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
         std::make_shared<HdSt_DomeLightComputationGPU>(
             _tokens->domeLightBRDF,
             /*useCubemapAsSourceTexture =*/false,
-            thisShader),
+            thisShader,
+            cubemapDim),
         HdStComputeQueueZero
     );
 
@@ -635,7 +642,8 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
         std::make_shared<HdSt_DomeLightComputationGPU>(
             _tokens->domeLightIrradiance,
             /*useCubemapAsSourceTexture =*/true,
-            thisShader),
+            thisShader,
+            cubemapDim),
         HdStComputeQueueTwo
     );
 
@@ -654,6 +662,7 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
                 _tokens->domeLightPrefilter,
                 /*useCubemapAsSourceTexture =*/true,
                 thisShader,
+                cubemapDim,
                 numPrefilterLevels,
                 mipLevel,
                 roughness),
@@ -666,6 +675,17 @@ HdStShaderCode::NamedTextureHandleVector const &
 HdStSimpleLightingShader::GetNamedTextureHandles() const
 {
     return _namedTextureHandles;
+}
+
+void 
+HdStSimpleLightingShader::SetDomeLightCubemapTargetMemory(
+    unsigned int targetMemoryMB)
+{
+    if (_domeLightCubemapTargetMemoryMB != targetMemoryMB) {
+        _domeLightCubemapTargetMemoryMB = targetMemoryMB;
+        _domeLightEnvironmentTextureHandle = nullptr;
+        _domeLightTextureHandles.clear();
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

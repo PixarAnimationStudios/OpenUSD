@@ -47,10 +47,16 @@ public:
     void Dispatch(int dimX, int dimY) override;
 
     HGIMETAL_API
-    void PushDebugGroup(const char* label) override;
+    void PushDebugGroup(const char* label,
+        const GfVec4f& color = s_computeDebugColor) override;
 
     HGIMETAL_API
     void PopDebugGroup() override;
+
+    HGIMETAL_API
+    void InsertDebugMarker(
+        const char* label,
+        const GfVec4f& color = s_markerDebugColor) override;
 
     HGIMETAL_API
     void InsertMemoryBarrier(HgiMemoryBarrier barrier) override;

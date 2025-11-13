@@ -57,7 +57,7 @@ public:
         if (name == HdTokens->materialSyncMode) {
             if (UsdAttribute attr = _lightApi.GetMaterialSyncModeAttr()) {
                 TfToken v;
-                if (attr.Get(&v)) {
+                if (_syncModeQuery.Get(&v, _stageGlobals.GetTime())) {
                     return HdRetainedTypedSampledDataSource<TfToken>::New(v);
                 }
             }
@@ -99,13 +99,22 @@ private:
     }
 
     _LightDataSource(
-        const UsdLuxLightAPI &lightApi,
+        const UsdPrim& prim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
-    : _lightApi(lightApi)
-    , _stageGlobals(stageGlobals)
-    {}
+      : _lightApi(prim)
+      , _syncModeQuery(_lightApi.GetMaterialSyncModeAttr())
+      , _stageGlobals(stageGlobals)
+    {
+        if (_syncModeQuery.ValueMightBeTimeVarying()) {
+            _stageGlobals.FlagAsTimeVarying(
+                prim.GetPath(),
+                HdLightSchema::GetDefaultLocator()
+                    .Append(HdTokens->materialSyncMode));
+        }
+    }
 
     UsdLuxLightAPI _lightApi;
+    UsdAttributeQuery _syncModeQuery;
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
 };
 
@@ -151,7 +160,7 @@ UsdImagingLightAPIAdapter::GetImagingSubprimData(
                 stageGlobals,
                 HdMaterialTerminalTokens->light),
             HdLightSchemaTokens->light,
-            _LightDataSource::New(UsdLuxLightAPI(prim), stageGlobals));
+            _LightDataSource::New(prim, stageGlobals));
     }
 
     return nullptr;

@@ -71,8 +71,9 @@ protected:
 private:
     HdReprSharedPtr _smoothHullRepr;
 
-    bool _displayOpacity;
-    bool _displayInOverlay;
+    bool _displayOpacityFromInstancer : 1;
+    bool _displayOpacityFromPrimvars : 1;
+    bool _displayInOverlay : 1;
 
     enum DrawingCoord {
         InstancePrimvar = HdDrawingCoord::CustomSlotsBegin

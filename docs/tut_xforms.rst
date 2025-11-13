@@ -741,13 +741,13 @@ times with different layer offsets.
 
         stage.Save()
 
-If you open :filename:`Stage7.usda` in :program:`usdview` and play back the 
+If you open :filename:`Step7.usda` in :program:`usdview` and play back the 
 animation, the tops will all continue spinning until the end timeCode for the 
-stage. You can compare this with the animation in :filename:`Stage6.usda` to
+stage. You can compare this with the animation in :filename:`Step6.usda` to
 see where the extrapolation takes place. For example, if you examine the 
 :mono:`xformOp:rotateZ:spin` attribute spline for :sdfpath:`/Right/Top`, you'll 
-notice in :filename:`Stage7.usda` that the spline now repeats continuously after
-timeCode 48, whereas in :filename:`Stage6.usda` the spline does not repeat.
+notice in :filename:`Step7.usda` that the spline now repeats continuously after
+timeCode 48, whereas in :filename:`Step6.usda` the spline does not repeat.
 
 .. image:: http://openusd.org/images/tut_xforms_step7_usdview.png
 

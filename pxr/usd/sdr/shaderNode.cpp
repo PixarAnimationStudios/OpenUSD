@@ -25,8 +25,10 @@ using ShaderMetadataHelpers::TokenVecVal;
 using ShaderMetadataHelpers::IntVal;
 
 TF_DEFINE_PUBLIC_TOKENS(SdrNodeMetadata, SDR_NODE_METADATA_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(SdrNodeMetadataPrefix, SDR_NODE_METADATA_PREFIX_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(SdrNodeContext, SDR_NODE_CONTEXT_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(SdrNodeRole, SDR_NODE_ROLE_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(SdrNodeFieldKey, SDR_NODE_FIELD_KEY_TOKENS);
 
 SdrShaderNode::SdrShaderNode(
     const SdrIdentifier& identifier,
@@ -81,6 +83,22 @@ SdrShaderNode::SdrShaderNode(
     _departments = TokenVecVal(SdrNodeMetadata->Departments, _metadata);
     _pages = _ComputePages();
     _openPages = TokenVecVal(SdrNodeMetadata->OpenPages, _metadata);
+
+    // Check for keys that start with the "pageShownIf|" prefix, which are used
+    // to represent page-level shownIf expressions.
+    const std::string pageShownIfPrefix
+        = SdrNodeMetadataPrefix->PageShownIf.GetString() + "|";
+    for (std::pair<TfToken, std::string> pair : _metadata) {
+        const std::string& key = pair.first.GetString();
+        if (!TfStringStartsWith(key, pageShownIfPrefix)) {
+            continue;
+        }
+
+        // The rest of the key after the prefix is the page name; the value is
+        // the shownIf expression.
+        const TfToken pageName{key.substr(pageShownIfPrefix.size())};
+        _pagesShownIf[pageName] = pair.second;
+    }
 }
 
 void
@@ -386,6 +404,27 @@ SdrShaderNode::_ComputePages() const
     }
 
     return pages;
+}
+
+VtValue
+SdrShaderNode::GetDataForKey(const TfToken& key) const
+{
+    if (key == SdrNodeFieldKey->Identifier) {
+        return VtValue(GetIdentifier());
+    } else if (key == SdrNodeFieldKey->Name) {
+        return VtValue(GetName());
+    } else if (key == SdrNodeFieldKey->Family) {
+        return VtValue(GetFamily());
+    } else if (key == SdrNodeFieldKey->SourceType) {
+        return VtValue(GetSourceType());
+    } else {
+        const SdrTokenMap& md = GetMetadata();
+        const auto& it = md.find(key);
+        if (it != md.end()) {
+            return VtValue(it->second);
+        }
+    }
+    return VtValue();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

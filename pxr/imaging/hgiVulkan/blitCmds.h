@@ -28,10 +28,16 @@ public:
     ~HgiVulkanBlitCmds() override;
 
     HGIVULKAN_API
-    void PushDebugGroup(const char* label) override;
+    void PushDebugGroup(const char* label,
+        const GfVec4f& color = s_blitDebugColor) override;
 
     HGIVULKAN_API
     void PopDebugGroup() override;
+
+    HGIVULKAN_API
+    void InsertDebugMarker(
+        const char* label,
+        const GfVec4f& color = s_markerDebugColor) override;
 
     HGIVULKAN_API
     void CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp) override;

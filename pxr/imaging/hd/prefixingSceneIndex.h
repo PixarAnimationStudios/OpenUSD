@@ -40,6 +40,11 @@ public:
     HD_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
+    HD_API
+    SdfPath AddPrefix(const SdfPath &primPath) const;
+    HD_API
+    SdfPath RemovePrefix(const SdfPath &primPath) const;
+
 protected:
 
     HD_API
@@ -61,11 +66,10 @@ protected:
 
 private:
 
-    SdfPath _AddPathPrefix(const SdfPath &primPath) const;
-
-    SdfPath _RemovePathPrefix(const SdfPath &primPath) const;
-
     const SdfPath _prefix;
+    typedef std::unordered_map<SdfPath, SdfPath, SdfPath::Hash> SdfPathMap;
+    SdfPathMap _addPrefixMap;
+    SdfPathMap _removePrefixMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

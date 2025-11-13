@@ -65,6 +65,7 @@ public:
         }
 
         _queryOnExpansion = false;
+        const HdSceneIndexBaseRefPtr &sceneIndex = treeWidget->_inputSceneIndex;
 
         int count = childCount();
         if (count) {
@@ -80,8 +81,12 @@ public:
             return;
         }
 
-        for (const SdfPath &childPath :
-                treeWidget->_inputSceneIndex->GetChildPrimPaths(_primPath)) {
+        // Put child prim paths into a set to put them in order and ensure uniqueness.
+        const auto childPathVec =
+            treeWidget->_inputSceneIndex->GetChildPrimPaths(_primPath);
+        const SdfPathSet sortedChildPaths(childPathVec.begin(), childPathVec.end());
+
+        for (const SdfPath &childPath : sortedChildPaths) {
 
             HdSceneIndexPrim prim =
                 treeWidget->_inputSceneIndex->GetPrim(childPath);
@@ -91,6 +96,12 @@ public:
 
             treeWidget->_AddPrimItem(childPath, childItem);
             childItem->setText(1, prim.primType.data());
+
+            // if current item has no children, we can hide the expand indicator
+            if (!sceneIndex->GetChildPrimPaths(childPath).size()) {
+                childItem->setChildIndicatorPolicy(
+                    QTreeWidgetItem::DontShowIndicator);
+            }
         }
 
         if (!childCount()) {
@@ -137,11 +148,11 @@ private:
 HduiSceneIndexTreeWidget::HduiSceneIndexTreeWidget(QWidget *parent)
 : QTreeWidget(parent)
 {
-    setHeaderLabels({"Name", "Type"});
+    setHeaderLabels({"Prim", "Type"});
     setAllColumnsShowFocus(true);
 
     header()->setSectionResizeMode(0, QHeaderView::Stretch);
-    header()->setSectionResizeMode(1, QHeaderView::Fixed);
+    header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     header()->resizeSection(1,fontMetrics().averageCharWidth() * 10);
     header()->setStretchLastSection(false);
 
@@ -301,20 +312,47 @@ HduiSceneIndexTreeWidget::SetSceneIndex(HdSceneIndexBaseRefPtr inputSceneIndex)
 void
 HduiSceneIndexTreeWidget::Requery(bool lazy)
 {
-    //_primItems.clear();
-    //clear();
-
-    _primItems[SdfPath::AbsoluteRootPath()] = new Hdui_SceneIndexPrimTreeWidgetItem(
+    Hdui_SceneIndexPrimTreeWidgetItem *item  =
+        new Hdui_SceneIndexPrimTreeWidgetItem(
             invisibleRootItem(), SdfPath::AbsoluteRootPath(), true);
+    _primItems[SdfPath::AbsoluteRootPath()] = item;
 
+    // expand the root by default
+    item->setExpanded(true);
+    item->WasExpanded(this);
 }
 
+void
+HduiSceneIndexTreeWidget::SetSelectedPrimPath(const SdfPath &primPath)
+{
+    // Validate that a prim exists at the given path.
+    if (!_inputSceneIndex->GetPrim(primPath)) {
+        return;
+    }
 
+    Hdui_SceneIndexPrimTreeWidgetItem *item =
+        _GetPrimItem(primPath, /* createIfNecessary*/ true);
+
+    if (item) {
+        // Parents must be expanded for the item to be visible.
+        QTreeWidgetItem * parent = item->parent();
+        while (parent) {
+            parent->setExpanded(true);
+            parent = parent->parent();
+        }
+
+        // XXX For some reason, this doesn't show the item as selected if
+        // it isn't already visible. Using a timer to defer it doesn't seem
+        // to help either.
+        setCurrentItem(item, 0, QItemSelectionModel::ClearAndSelect);
+        scrollToItem(item);
+    }
+}
 
 Hdui_SceneIndexPrimTreeWidgetItem *
 HduiSceneIndexTreeWidget::_GetPrimItem(
         const SdfPath &primPath,
-        bool createIfNecessary)
+        bool createIfNecessary/* = true */)
 {
     auto it = _primItems.find(primPath);
     if (it != _primItems.end()) {
@@ -341,7 +379,7 @@ HduiSceneIndexTreeWidget::_GetPrimItem(
         new Hdui_SceneIndexPrimTreeWidgetItem(parentItem, primPath);
     _primItems[primPath] = item;
 
-    return  item;
+    return item;
 }
 
 

@@ -8,19 +8,6 @@ def Xform "World" (
     kind = "group"
 )
 {
-    def Xform "Lights" (
-        kind = "lightpivot"
-    )
-    {
-        def DiskLight "DiskLight"
-        {
-            float inputs:exposure = 5
-            float inputs:radius = 1
-            double3 xformOp:translate = (2.574339921486688, 2.472, 5.285239027561428)
-            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:rotateZ:spin", "xformOp:scale"]
-        }
-    }
-
     def Xform "Geom"
     {
         float3 xformOp:rotateXYZ = (90, 0, 0)
@@ -232,7 +219,7 @@ def Scope "Render"
         def RenderPass "onlyspheres"
         {
             uniform bool collection:renderVisibility:includeRoot = 0
-            uniform pathExpression collection:renderVisibility:membershipExpression = "~/World/Geom/C*"
+            uniform pathExpression collection:renderVisibility:membershipExpression = "/World/Geom/*Sphere"
             uniform token passType = "render"
             rel renderSource = </Render/Settings/onlyspheres>
         }

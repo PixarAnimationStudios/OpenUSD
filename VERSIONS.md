@@ -27,7 +27,7 @@ Our test machines have the following software versions installed.
 | Qt for Python | PySide2 5.15.2.1     | PySide6 6.3.1                | PySide2 5.15.2.1               |
 | PyOpenGL      | 3.1.5                | 3.1.5                        | 3.1.5                          |
 | Embree        | 4.3.3                | 4.3.3                        | 4.3.3                          |
-| RenderMan     | 25.3                 | 25.3                         | 25.3                           |
+| RenderMan     | 26.3, 27.0           | 26.3, 27.0                   | 26.3, 27.0                     |
 | Alembic       | 1.8.5                | 1.8.5                        | 1.8.5                          |
 | OpenEXR       | 3.1.13               | 3.1.13                       | 3.1.13                         |
 | MaterialX     | 1.39.3               | 1.39.3                       | 1.39.3                         |

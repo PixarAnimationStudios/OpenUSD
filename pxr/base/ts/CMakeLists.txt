@@ -12,6 +12,7 @@ set(include
 )
 
 set(privateClasses
+    iterator
     sample
 )
 
@@ -161,6 +162,16 @@ pxr_build_test(
 )
 
 pxr_build_test(
+    testTsSegmentIterator
+    CPPFILES
+        testenv/testTsSegmentIterator.cpp
+    LIBRARIES
+        gf
+        tf
+        ts
+)
+
+pxr_build_test(
     testTsSplineAPI
     CPPFILES
         testenv/testTsSplineAPI.cpp
@@ -222,21 +233,6 @@ pxr_test_scripts(
     testenv/tsTest_TsVsBezier.py
 )
 
-pxr_install_test_dir(
-    SRC testenv/tsTest_TsFramework.testenv
-    DEST tsTest_TsFramework
-)
-
-pxr_install_test_dir(
-    SRC testenv/testTsRegressionPreventer.testenv
-    DEST testTsRegressionPreventer
-)
-
-pxr_install_test_dir(
-    SRC testenv/testTsSplineSampling.testenv
-    DEST testTsSplineSampling
-)
-
 # This test is disabled for emscripten due to requiring resources from
 # the virtual filesystem which is not currently implemented for emscripten
 # tests
@@ -244,6 +240,7 @@ if (NOT EMSCRIPTEN)
     pxr_register_test(
         testTsSplineSampling
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsSplineSampling"
+        TESTENV testenv/testTsSplineSampling.testenv
         DIFF_COMPARE testTsSplineSampling.txt
     )
 endif()
@@ -264,6 +261,7 @@ pxr_register_test(
     testTsRegressionPreventer
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsRegressionPreventer"
+    TESTENV testenv/testTsRegressionPreventer.testenv
 )
 
 pxr_register_test(
@@ -296,6 +294,11 @@ pxr_register_test(
 )
 
 pxr_register_test(
+    testTsSegmentIterator
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsSegmentIterator"
+)
+
+pxr_register_test(
     testTsSplineAPI
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsSplineAPI"
 )
@@ -319,6 +322,7 @@ pxr_register_test(
     tsTest_TsFramework
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/tsTest_TsFramework"
+    TESTENV testenv/tsTest_TsFramework.testenv
 )
 
 pxr_register_test(
@@ -333,11 +337,6 @@ if (${PXR_BUILD_MAYAPY_TESTS})
         testenv/tsTest_TsVsMayapy.py
     )
 
-    pxr_install_test_dir(
-        SRC testenv/tsTest_MayapyFramework.testenv
-        DEST tsTest_MayapyFramework
-    )
-
     set(mayapyBin "${MAYAPY_LOCATION}/mayapy")
 
     set(cmd "${CMAKE_INSTALL_PREFIX}/tests/tsTest_MayapyFramework")
@@ -345,6 +344,7 @@ if (${PXR_BUILD_MAYAPY_TESTS})
         tsTest_MayapyFramework
         PYTHON
         COMMAND "${cmd} ${mayapyBin}"
+        TESTENV testenv/tsTest_MayapyFramework.testenv
     )
 
     set(cmd "${CMAKE_INSTALL_PREFIX}/tests/tsTest_TsVsMayapy")
@@ -358,15 +358,11 @@ endif()
 if (${PXR_BUILD_ANIMX_TESTS})
     pxr_test_scripts(testenv/tsTest_AnimXFramework.py)
 
-    pxr_install_test_dir(
-        SRC testenv/tsTest_AnimXFramework.testenv
-        DEST tsTest_AnimXFramework
-    )
-
     pxr_register_test(
         tsTest_AnimXFramework
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/tsTest_AnimXFramework"
+        TESTENV testenv/tsTest_AnimXFramework.testenv
     )
 endif()
 

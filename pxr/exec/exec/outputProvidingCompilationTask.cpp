@@ -109,7 +109,7 @@ Exec_OutputProvidingCompilationTask::_Compile(
 
         // Then indicate that the task identified by _outputKey is done. This
         // notifies all other tasks with a dependency on this _outputKey.
-        _MarkDone(_outputKey.MakeIdentity());
+        deps.MarkDoneOutputProvidingTask(_outputKey.MakeIdentity());
     }
     );
 }

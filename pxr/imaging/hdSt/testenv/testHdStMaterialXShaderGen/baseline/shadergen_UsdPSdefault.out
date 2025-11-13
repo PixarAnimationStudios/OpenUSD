@@ -98,6 +98,12 @@ bool u_refractionTwoSided = false;
 vec3 u_viewPosition;
 int u_numActiveLightSources = 0;
 
+
+vec3 mx_latlong_map_lookup(vec3 dir, mat4 transform, float lod, samplerCube envSampler)
+{
+    vec3 envDir = normalize((transform * vec4(dir,0.0)).xyz);
+    return textureLod(envSampler, envDir, lod).rgb;
+}
 #ifdef HD_HAS_domeLightIrradiance
 #define u_envRadiance HdGetSampler_domeLightPrefilter() 
 #define u_envIrradiance HdGetSampler_domeLightIrradiance() 
@@ -130,13 +136,6 @@ struct mxVertexData
 };
 mxVertexData vd;
 
-
-
-vec3 mx_latlong_map_lookup(vec3 dir, mat4 transform, float lod, samplerCube envSampler)
-{
-    vec3 envDir = normalize((transform * vec4(dir,0.0)).xyz);
-    return textureLod(envSampler, envDir, lod).rgb;
-}
 
 void mxInit(vec4 Peye, vec3 Neye)
 {

@@ -12,8 +12,7 @@
 #include "pxr/base/trace/api.h"
 #include "pxr/base/trace/collection.h"
 
-#include <istream>
-#include <ostream>
+#include <iosfwd>
 #include <memory>
 #include <vector>
 

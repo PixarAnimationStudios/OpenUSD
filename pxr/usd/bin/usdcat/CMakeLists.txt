@@ -9,44 +9,28 @@ pxr_cpp_bin(usdcat
         usdUtils
         )
 
-pxr_install_test_dir(
-    SRC testenv/testCatToFile
-    DEST testUsdCatOutToFile
-)
-
 pxr_register_test(testUsdCatOutToFile
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat input.usda --out output.usda"
+    TESTENV testenv/testCatToFile
     DIFF_COMPARE output.usda
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_install_test_dir(
-    SRC testenv/testVariadicCatting
-    DEST testUsdCatVariadicCatting
-)
-
 pxr_register_test(testUsdCatVariadicCatting
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat a.usd b.usd c.usd"
+    TESTENV testenv/testVariadicCatting
     EXPECTED_RETURN_CODE 0
-)
-
-pxr_install_test_dir(
-    SRC testenv/testMissingOrInvalidFiles
-    DEST testUsdCatMissingOrInvalidFiles1
 )
 
 pxr_register_test(testUsdCatMissingOrInvalidFiles1
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat hello.txt"
+    TESTENV testenv/testMissingOrInvalidFiles
     EXPECTED_RETURN_CODE 1 
-)
-
-pxr_install_test_dir(
-    SRC testenv/testMissingOrInvalidFiles
-    DEST testUsdCatMissingOrInvalidFiles2
 )
 
 pxr_register_test(testUsdCatMissingOrInvalidFiles2
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat foo.usda"
+    TESTENV testenv/testMissingOrInvalidFiles
     EXPECTED_RETURN_CODE 1 
 )
 
@@ -55,13 +39,9 @@ pxr_register_test(testUsdCatMissingOrInvalidFiles3
     EXPECTED_RETURN_CODE 1
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdCatMask
-    DEST testUsdCatMask
-)
-
 pxr_register_test(testUsdCatMask
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --mask /InsideMask --flatten --skipSourceFileComment input.usda -o output.usda"
+    TESTENV testenv/testUsdCatMask
     DIFF_COMPARE output.usda
     EXPECTED_RETURN_CODE 0
 )
@@ -71,34 +51,22 @@ pxr_register_test(testUsdCatMask2
     EXPECTED_RETURN_CODE 1
 )
 
-pxr_install_test_dir(
-    SRC testenv/testLoadOnly
-    DEST testUsdCatLoadOnly
-)
-
 pxr_register_test(testUsdCatLoadOnly
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --loadOnly input.usda"
+    TESTENV testenv/testLoadOnly
     EXPECTED_RETURN_CODE 0
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdCatLayerMetadata
-    DEST testUsdCatLayerMetadata
 )
 
 pxr_register_test(testUsdCatLayerMetadata
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --layerMetadata input.usda -o output.usda"
+    TESTENV testenv/testUsdCatLayerMetadata
     DIFF_COMPARE output.usda
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdCatFlattenLayerStack
-    DEST testUsdCatFlattenLayerStack
-)
-
 pxr_register_test(testUsdCatFlattenLayerStack
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat --flattenLayerStack input.usda --out output.usda"
+    TESTENV testenv/testUsdCatFlattenLayerStack
     DIFF_COMPARE output.usda
     EXPECTED_RETURN_CODE 0
 )

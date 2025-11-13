@@ -95,17 +95,12 @@ function(add_py_dll_link_test)
         RUNTIME DESTINATION "tests/ctest/TfPyDllLinkTestEnv/testTfPyDllLinkModule"
     )
 
-    # install the testenv dir, which has the testTfPyDllLinkModule.py python module
-    pxr_install_test_dir(
-        SRC testenv/TfPyDllLinkTestEnv
-        DEST TfPyDllLinkTestEnv
-    )
-
     # finally register the test itself
     pxr_register_test(testTfPyDllLink
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfPyDllLink"
-        TESTENV TfPyDllLinkTestEnv
+        # install the testenv dir, which has the testTfPyDllLinkModule.py python module
+        TESTENV testenv/TfPyDllLinkTestEnv
     )
 
 endfunction()
@@ -500,36 +495,6 @@ pxr_test_scripts(
     testenv/testTf_PyContainerConversions.py
 )
 
-# These tests will depend on downstream libraries when built monolithic.
-# We don't want changes to those libraries to affect test results so we
-# simply disable these tests in that case.
-if(NOT PXR_BUILD_MONOLITHIC)
-pxr_install_test_dir(
-    SRC testenv/baseline/TfDebugTestEnv
-    DEST TfDebugTestEnv/baseline
-)
-endif()
-pxr_install_test_dir(
-    SRC testenv/baseline/TfDelegate
-    DEST TfDelegate/baseline
-)
-pxr_install_test_dir(
-    SRC testenv/baseline/TfEnum
-    DEST TfEnum/baseline
-)
-pxr_install_test_dir(
-    SRC testenv/baseline/TfEnvSetting
-    DEST TfEnvSetting/baseline
-)
-pxr_install_test_dir(
-    SRC testenv/baseline/TfNotice
-    DEST TfNotice/baseline
-)
-pxr_install_test_dir(
-    SRC testenv/baseline/testTfScriptModuleLoader
-    DEST testTfScriptModuleLoader/baseline
-)
-
 # These tests are disabled for emscripten due to filesystem related operations,
 # dynamic library, or environment related requirements.
 if (NOT EMSCRIPTEN)
@@ -548,6 +513,8 @@ if (NOT EMSCRIPTEN)
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfEnvSetting"
         STDERR_REDIRECT debugTfEnvSettingStderr.txt
         DIFF_COMPARE debugTfEnvSettingStderr.txt
+        TESTENV testenv/baseline/TfEnvSetting
+        TESTENV_DEST TfEnvSetting/baseline
     )
     pxr_register_test(TfException
         ENV TF_FATAL_THROW=0
@@ -599,6 +566,8 @@ pxr_register_test(TfDebugTestEnv
     ENV TF_DEBUG="FOO* FLAM_* FLAM -FOOFLIMFLAM TF_DISCOVERY_D*"
     STDOUT_REDIRECT debugTestEnv.out
     DIFF_COMPARE debugTestEnv.out
+    TESTENV testenv/baseline/TfDebugTestEnv
+    TESTENV_DEST TfDebugTestEnv/baseline
 )
 endif()
 pxr_register_test(TfDebugTestEnvHelp
@@ -612,6 +581,8 @@ pxr_register_test(TfDelegate
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDelegateAddRemove"
     STDOUT_REDIRECT output.txt 
     DIFF_COMPARE output.txt 
+    TESTENV testenv/baseline/TfDelegate
+    TESTENV_DEST TfDelegate/baseline
 )
 pxr_register_test(TfError
     ENV TF_FATAL_VERIFY=0
@@ -653,6 +624,8 @@ pxr_register_test(TfEnum
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfEnum"
     STDOUT_REDIRECT enum.out
     DIFF_COMPARE enum.out
+    TESTENV testenv/baseline/TfEnum
+    TESTENV_DEST TfEnum/baseline
 )
 pxr_register_test(TfMallocTagReport
     PYTHON
@@ -662,6 +635,8 @@ pxr_register_test(TfNotice
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfNotice"
     STDOUT_REDIRECT notice.out
     DIFF_COMPARE notice.out
+    TESTENV testenv/baseline/TfNotice
+    TESTENV_DEST TfNotice/baseline
 )
 pxr_register_test(TfNamedTemporaryFile
     PYTHON
@@ -798,6 +773,8 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfScriptModuleLoader"
         STDOUT_REDIRECT scriptModuleLoader.out
         DIFF_COMPARE scriptModuleLoader.out
+        TESTENV testenv/baseline/testTfScriptModuleLoader
+        TESTENV_DEST testTfScriptModuleLoader/baseline
     )
 endif()
 

@@ -485,17 +485,24 @@ _AddNodeInput(
     // currNode needs to set the output type and the output name. 
     if (mxNextNode->isMultiOutputType()) {
         TfToken hdNextType = netInterface->GetNodeType(conn.upstreamNodeName);
-        mx::NodeDefPtr mxNextNodeDef = mxDoc->getNodeDef(hdNextType.GetString());
+        mx::NodeDefPtr mxNextNodeDef = HdMtlxGetNodeDef(hdNextType, mxDoc);
         if (!mxNextNodeDef) {
+            TF_WARN("Could not find nodedef for node of type '%s'\n", 
+                hdNextType.GetText());
             return mxInput;
         }
         // Add input with the connected ouptut type and set the output name 
         const mx::OutputPtr mxConnOutput = mxNextNodeDef->getOutput(
-                conn.upstreamOutputName.GetString());
+            conn.upstreamOutputName.GetString());
+        TF_DEBUG(HDMTLX_DOCUMENT).Msg(
+            "Adding input '%s' of type '%s' from multi output node <%s>\n", 
+            inputName.GetText(), mxConnOutput->getType().c_str(),
+            conn.upstreamNodeName.GetText());
         mxInput = mxCurrNode->addInput(inputName, mxConnOutput->getType());
         mxInput->setConnectedOutput(mxConnOutput);
     }
     else {
+        TF_DEBUG(HDMTLX_DOCUMENT).Msg("Adding input '%s'\n", inputName.GetText());
         mxInput = mxCurrNode->addInput(inputName, mxNextNode->getType());
     }
 
@@ -520,8 +527,10 @@ _AddNodeGraphOutput(
     // connected node and indicate the output name.
     if (mxNextNode->isMultiOutputType()) {
         TfToken hdNextType = netInterface->GetNodeType(conn.upstreamNodeName);
-        mx::NodeDefPtr mxNextNodeDef = mxDoc->getNodeDef(hdNextType.GetString());
+        mx::NodeDefPtr mxNextNodeDef = HdMtlxGetNodeDef(hdNextType, mxDoc);
         if (!mxNextNodeDef) {
+            TF_WARN("Could not find nodedef for node of type '%s'\n", 
+                hdNextType.GetText());
             return mxOutput;
         }
         // Add output with the connected Ouptut type and set the output name 
@@ -571,6 +580,11 @@ _GatherUpstreamNodes(
         return;
     }
 
+    TF_DEBUG(HDMTLX_DOCUMENT).Msg(
+        "Adding node <%s> of type '%s' to the nodegraph <%s>\n",
+        hdNodeName.GetText(), mxCurrNode->getNodeDefString().c_str(),
+        (*mxNodeGraph)->getName().c_str());
+
     // Continue traversing the upsteam connections to create the mxNodeGraph
     TfTokenVector hdConnectionNames =
         netInterface->GetNodeInputConnectionNames(hdNodeName);
@@ -592,6 +606,9 @@ _GatherUpstreamNodes(
             mx::InputPtr mxInput =
                 _AddNodeInput(netInterface, currConn, connName, mxDoc, 
                     mxCurrNode, mxNextNode);
+            TF_DEBUG(HDMTLX_DOCUMENT).Msg(
+                "Connecting node '%s' to input '%s'\n",
+                mxNextNode->getName().c_str(), mxInput->getName().c_str());
             mxInput->setConnectedNode(mxNextNode);
         }
     }
@@ -634,9 +651,37 @@ _CreateNodeGraphFromTerminalNodeConnections(
             mx::InputPtr mxInput =
                 _AddNodeInput(netInterface, currConn, connName, mxDoc, 
                     mxShaderNode, mxUpstreamNode);
+            TF_DEBUG(HDMTLX_DOCUMENT).Msg(
+                "Connecting NodeGraph output '%s' to input '%s'\n",
+                mxOutput->getName().c_str(), mxInput->getName().c_str());
             mxInput->setConnectedOutput(mxOutput);
         }
     }
+}
+
+std::string
+HdMtlxGetMxTerminalName(
+    HdMaterialNetworkInterface *netInterface,
+    TfToken const& hdTerminalNodeName)
+{
+    const mx::NodeDefPtr terminalNodeDef =
+        HdMtlxGetNodeDef(netInterface->GetNodeType(hdTerminalNodeName));
+    if (!terminalNodeDef) {
+        return HdMtlxTokens->surfaceshaderName;
+    }
+    return HdMtlxGetMxTerminalName(terminalNodeDef->getType());
+}
+
+std::string
+HdMtlxGetMxTerminalName(std::string const& terminalType)
+{
+    if (terminalType == mx::SURFACE_SHADER_TYPE_STRING) {
+        return HdMtlxTokens->surfaceshaderName;
+    } else if (terminalType == mx::DISPLACEMENT_SHADER_TYPE_STRING) {
+        return HdMtlxTokens->displacementshaderName;
+    }
+    // default to Surface
+    return HdMtlxTokens->surfaceshaderName;
 }
 
 // Create a MaterialX Document from the given HdMaterialNetwork2
@@ -676,6 +721,9 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
     if (!netInterface) {
         return nullptr;
     }
+    
+    TF_DEBUG(HDMTLX_DOCUMENT).Msg("Create Mtlx Document for terminal <%s>\n", 
+        terminalNodeName.GetText());
 
     // Initialize a MaterialX Document
     mx::DocumentPtr mxDoc = mx::createDocument();
@@ -707,16 +755,23 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
         TF_WARN("Unsupported terminal node type '%s' cannot find the "
                 "associated NodeDef.", hdTerminalType.GetText());
     }
-    const std::string mxTerminalType = 
+
+    const std::string mxTerminalCategory = 
         (terminalNodeDef) ? _GetMxNodeString(terminalNodeDef) : "";
-    mx::NodePtr mxShaderNode = mxDoc->addNode(
-        mxTerminalType,
-        HdMtlxTokens->surfaceshaderName, mx::SURFACE_SHADER_TYPE_STRING);
+    const std::string mxTerminalType = (terminalNodeDef) 
+        ? terminalNodeDef->getType() : mx::SURFACE_SHADER_TYPE_STRING;
+    const std::string mxTerminalName = HdMtlxGetMxTerminalName(mxTerminalType);
+    const mx::NodePtr mxShaderNode = mxDoc->addNode(
+        mxTerminalCategory, mxTerminalName, mxTerminalType);
 
     const std::string &materialName =
         netInterface->GetMaterialPrimPath().GetName();
     mx::NodePtr mxMaterial = mxDoc->addMaterialNode(
         mxDoc->createValidChildName(materialName), mxShaderNode);
+
+    TF_DEBUG(HDMTLX_DOCUMENT).Msg("Create MaterialX Material '%s' with terminal "
+        "'%s' of type '%s'\n", materialName.c_str(), 
+        mxTerminalName.c_str(), mxTerminalType.c_str());
 
     // Create the NodeGraph
     _CreateNodeGraphFromTerminalNodeConnections(
@@ -728,7 +783,8 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
         netInterface, terminalNodeName, terminalNodeDef, mxShaderNode);
 
     if (TfDebug::IsEnabled(HDMTLX_VERSION_UPGRADE)) {
-        const std::string filename = mxMaterial->getName() + "_before.mtlx";
+        const std::string filename =
+            mxMaterial->getName() + "_" + mxTerminalName + "_before.mtlx";
         TF_DEBUG(HDMTLX_VERSION_UPGRADE).Msg(
             "[%s] : MaterialX document before upgrade: '%s'\n",
             TF_FUNC_NAME().c_str(), filename.c_str());
@@ -740,18 +796,33 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
     mxDoc->upgradeVersion();
 
     if (TfDebug::IsEnabled(HDMTLX_VERSION_UPGRADE)) {
-        const std::string filename = mxMaterial->getName() + "_after.mtlx";
+        const std::string filename =
+            mxMaterial->getName() + "_" + mxTerminalName + "_after.mtlx";
         TF_DEBUG(HDMTLX_VERSION_UPGRADE).Msg(
-            "[%s] : MaterialX document after upgrade: '%s'\n",
+            "[%s] : MaterialX document after upgrade: '%s'\n\n",
             TF_FUNC_NAME().c_str(), filename.c_str());
         mx::writeToXmlFile(mxDoc, mx::FilePath(filename));
     } 
-    else if (TfDebug::IsEnabled(HDMTLX_WRITE_DOCUMENT)) {
-        const std::string filename = mxMaterial->getName() + ".mtlx";
+    else if (TfDebug::IsEnabled(HDMTLX_WRITE_DOCUMENT) ||
+        TfDebug::IsEnabled(HDMTLX_WRITE_DOCUMENT_WITHOUT_INCLUDES)) {
+        const std::string filename =
+            mxMaterial->getName() + "_" + mxTerminalName + ".mtlx";
         TF_DEBUG(HDMTLX_WRITE_DOCUMENT).Msg(
-            "[%s] : MaterialX document: '%s'\n",
+            "[%s] : MaterialX document: '%s'\n\n",
             TF_FUNC_NAME().c_str(), filename.c_str());
-        mx::writeToXmlFile(mxDoc, mx::FilePath(filename));
+        TF_DEBUG(HDMTLX_WRITE_DOCUMENT_WITHOUT_INCLUDES).Msg(
+            "[%s] : MaterialX document: '%s'\n\n",
+            TF_FUNC_NAME().c_str(), filename.c_str());
+
+        mx::XmlWriteOptions mxWriteOptions;
+        if (TfDebug::IsEnabled(HDMTLX_WRITE_DOCUMENT_WITHOUT_INCLUDES)) {
+            mxWriteOptions.elementPredicate =
+                [](mx::ConstElementPtr elem) -> bool {
+                // skip writing all includes for brevity
+                return !elem->hasSourceUri();
+            };
+        }
+        mx::writeToXmlFile(mxDoc, mx::FilePath(filename), &mxWriteOptions);
     }
 
     // Validate the MaterialX Document.
@@ -761,6 +832,9 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
         if (!mxDoc->validate(&message)) {
             TF_WARN("Validation warnings for generated MaterialX file.\n%s\n", 
                 message.c_str());
+        } else {
+            TF_DEBUG(HDMTLX_DOCUMENT).Msg("Mtlx Document for terminal <%s> "
+                "validated by MaterialX.\n\n", terminalNodeName.GetText());
         }
     }
     return mxDoc;

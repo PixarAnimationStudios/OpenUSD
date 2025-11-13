@@ -40,6 +40,8 @@ public:
         : _dispatcher(dispatcher)
         , _stage(stage)
         , _outputTasks(dispatcher)
+        , _inputRecompilationTasks(dispatcher)
+        , _cycleDetectingTasks(dispatcher)
         , _program(program) {
         TF_VERIFY(_program);
     }
@@ -72,6 +74,16 @@ public:
         _GetOutputProvidingTaskSync(Exec_CompilationState *state) {
             return state->_outputTasks;
         }
+
+        static Exec_InputRecompilationTaskSync &
+        _GetInputRecompilationTaskSync(Exec_CompilationState *state) {
+            return state->_inputRecompilationTasks;
+        }
+
+        static Exec_CycleDetectingTaskSync &
+        _GetCycleDetectingTaskSync(Exec_CompilationState *state) {
+            return state->_cycleDetectingTasks;
+        }
     };
 
     /// Constructs and runs a new top-level compilation task.
@@ -83,6 +95,8 @@ private:
     const EsfStage &_stage;
     Exec_TaskCycleDetector _taskCycleDetector;
     Exec_OutputProvidingTaskSync _outputTasks;
+    Exec_InputRecompilationTaskSync _inputRecompilationTasks;
+    Exec_CycleDetectingTaskSync _cycleDetectingTasks;
     Exec_Program *_program;
 };
 

@@ -152,7 +152,7 @@ def measureTestusdviewPerf(assetPath,
     return metrics
 
 
-def export(metricsList, outputPath, aggregations, traceDir):
+def export(metricsList, outputPath, aggregations, traceDir, keepAllTraces):
     """
     Write `metrics` to the given `outputPath`. If zero aggregations,
     the reported yaml has form { name : list of times }. If one aggregation,
@@ -181,12 +181,17 @@ def export(metricsList, outputPath, aggregations, traceDir):
     # traceDir is not None
     pendingCopies = {}
 
+    # Collect raw data into a separate dictionary for output
+    dataDict = {
+        name: [t[0] for t in timeTuples] \
+        for name, timeTuples in metricsDict.items()
+    }
+
     # Dict to output to metrics.yaml
     resultDict = {}
 
     if len(aggregations) == 0:
-        for name, timeTuples in metricsDict.items():
-            resultDict[name] = [t[0] for t in timeTuples]
+        resultDict = dataDict
     else:
         for name, timeTuples in metricsDict.items():
             resultDict[name] = {}
@@ -224,6 +229,15 @@ def export(metricsList, outputPath, aggregations, traceDir):
         raise ValueError("Internal error -- output path must be validated "
                          "at argument parse time.")
 
+    # If we did not write the raw data to the output file, write it
+    # to a sidecar file with a ".raw.yaml" extension so that users
+    # always have that data available.
+    if resultDict != dataDict:
+        outputFileName, ext = os.path.splitext(outputPath)
+        rawOutputPath = outputFileName + ".raw" + ext
+        with open(rawOutputPath, "w") as f:
+            yaml.dump(dataDict, f)
+
     print(f"Performance metrics have been output to {outputPath}")
 
     # If traces are requested, any min/max metric's associated trace file
@@ -235,9 +249,9 @@ def export(metricsList, outputPath, aggregations, traceDir):
             shutil.copyfile(src, dest)
 
     # Delete original per-iteration trace files
-    for trace in pendingDeletes:
-        os.remove(trace)
-
+    if not keepAllTraces:
+        for trace in pendingDeletes:
+            os.remove(trace)
 
 def run(assetPath, testusdviewMetrics, traceDir, iteration):
     """
@@ -361,6 +375,8 @@ def parseArgs():
                              "from which the aggregated value of each metric "
                              "was observed will be output in the form "
                              "<metric name>_<aggregation>.trace")
+    parser.add_argument("--keepAllTraces", action="store_true",
+                        help="Keep trace files for all iterations. Requires -t")
 
     args = parser.parse_args()
 
@@ -380,8 +396,12 @@ def parseArgs():
         print(f"WARNING: aggregation {args.aggregation} is set but "
               "iterations is 1")
     
+    if args.keepAllTraces and not args.tracedir:
+        raise ValueError("--keepAllTraces requires --tracedir to specify "
+                         "trace directory")
+
     aggs = args.aggregation
-    if args.tracedir and ("min" in aggs or "max" in aggs):
+    if args.tracedir and ("min" in aggs or "max" in aggs or args.keepAllTraces):
         if not os.path.exists(args.tracedir):
             os.makedirs(args.tracedir, exist_ok=True)
             print(f"Created trace output directory {args.tracedir}")
@@ -404,7 +424,8 @@ def main():
         metrics = run(args.asset, customMetrics, args.tracedir, i)
         metricsList.append(metrics)
 
-    export(metricsList, args.output, args.aggregation, args.tracedir)
+    export(metricsList, args.output, args.aggregation, args.tracedir, 
+           args.keepAllTraces)
 
 
 if __name__ == "__main__":

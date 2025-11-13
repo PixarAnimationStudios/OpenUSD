@@ -252,6 +252,11 @@ bool HdRenderDelegate::IsParallelSyncEnabled(
     return false;
 }
 
+bool HdRenderDelegate::RequiresStormTasks() const
+{
+    return false;
+}
+
 bool
 HdRenderDelegate::Resume()
 {

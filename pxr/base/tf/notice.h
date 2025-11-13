@@ -15,6 +15,7 @@
 #include "pxr/base/tf/anyWeakPtr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/scoped.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/arch/demangle.h"
@@ -22,6 +23,7 @@
 
 #include <atomic>
 #include <list>
+#include <optional>
 #include <typeinfo>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -549,10 +551,16 @@ private:
                 _busy.fetch_add(-1, std::memory_order_release);
                 return false;
             }
+
+            // Ensure we decrement the count even if the delivery throws.
+            TfScoped cleanup([this]() {
+                // Decrement the number of sends in progress.
+                _busy.fetch_add(-1, std::memory_order_release);
+            });
+            
             const auto result =
                 _SendToListenerImpl(n, type,
                                     s, senderUniqueId, senderType, probes);
-            _busy.fetch_add(-1, std::memory_order_release);
             return result;
         }
 
@@ -655,6 +663,8 @@ private:
             ListenerType *listener = get_pointer(derived->_listener);
 
             if (listener && !derived->_sender.IsInvalid()) {
+
+                std::optional<TfScoped<>> endDeliveryScope;
                 if (ARCH_UNLIKELY(!probes.empty())) {
                     TfWeakBase const *senderWeakBase = GetSenderWeakBase(),
                         *listenerWeakBase = derived->_listener.GetWeakBase();
@@ -663,6 +673,12 @@ private:
                                    senderType : typeid(void),
                                    listenerWeakBase,
                                    typeid(ListenerType), probes);
+
+                    // Ensure _EndDelivery is called even if the listener
+                    // throws.
+                    endDeliveryScope.emplace([this, &probes]() {
+                        _EndDelivery(probes);
+                    });
                 }
 
                 derived->
@@ -670,9 +686,6 @@ private:
                                           *_CastNotice<NoticeType>(&notice),
                                           noticeType, sender,
                                           senderUniqueId, senderType);
-                
-                if (ARCH_UNLIKELY(!probes.empty()))
-                    _EndDelivery(probes);
 
                 return true;
             }

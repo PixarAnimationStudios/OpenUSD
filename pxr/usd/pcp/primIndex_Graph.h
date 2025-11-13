@@ -57,6 +57,10 @@ public:
     void SetHasPayloads(bool hasPayloads);
     bool HasPayloads() const;
 
+    /// Get/set whether new nodes were introduced in the prim index.
+    void SetHasNewNodes(bool hasNewNodes);
+    bool HasNewNodes() const;
+
     /// Get/set whether this prim index is instanceable.
     void SetIsInstanceable(bool isInstanceable);
     bool IsInstanceable() const;
@@ -424,6 +428,10 @@ private:
 
     // Whether or not this graph reached any specs with authored payloads.
     bool _hasPayloads:1;
+
+    // Whether or not this graph had new nodes added at its current level
+    // of namespace.
+    bool _hasNewNodes:1;
 
     // Whether or not this graph is considered 'instanceable'.
     bool _instanceable:1;

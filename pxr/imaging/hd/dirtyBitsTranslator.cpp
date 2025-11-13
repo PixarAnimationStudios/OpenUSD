@@ -83,6 +83,21 @@ static TfStaticData<_BToSMap> Hd_SPrimBToSFncs;
 static TfStaticData<_SToBMap> Hd_RPrimSToBFncs;
 static TfStaticData<_BToSMap> Hd_RPrimBToSFncs;
 
+static
+const HdDataSourceLocator &
+_GetCustomBitsLocator()
+{
+    static const HdDataSourceLocator locator(TfToken("__customBits"));
+    return locator;
+}
+
+static
+HdDataSourceLocator
+_GetCustomBitLocator(const size_t i)
+{
+    return _GetCustomBitsLocator().Append(TfToken(TfStringPrintf("%zu", i)));
+}
+
 /*static*/
 void
 HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(TfToken const& primType,
@@ -219,6 +234,16 @@ HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(TfToken const& primType,
 
     if (bits & HdChangeTracker::DirtyTransform) {
         set->append(HdXformSchema::GetDefaultLocator());
+    }
+
+    if (bits & HdChangeTracker::CustomBitsMask) {
+        for (size_t i = 0, bit = HdChangeTracker::CustomBitsBegin;
+             bit <= HdChangeTracker::CustomBitsEnd;
+             bit <<= 1, i++) {
+            if (bits & bit) {
+                set->append(_GetCustomBitLocator(i));
+            }
+        }
     }
 
     if (!Hd_RPrimBToSFncs->empty()) {
@@ -568,6 +593,28 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
     // or parent (such as "" or "basisCurvesTopology/curveType") is present,
     // mark DirtyToplogy.  it points to the next element after
     // "basisCurvesTopology", setting us up to check for displayStyle.
+
+    
+    // Locator (*): __customBits
+    if (_FindLocator(_GetCustomBitsLocator(), end, &it, false)) {
+        if (_GetCustomBitsLocator() == *it) {
+            bits |= HdChangeTracker::CustomBitsMask;
+        } else {
+            for (size_t i = 0, bit = HdChangeTracker::CustomBitsBegin;
+                 bit <= HdChangeTracker::CustomBitsEnd;
+                 bit <<= 1, i++) {
+                // Locator (*): __customBits > 0
+                //
+                // Locator (*): __customBits > 6
+                //
+                // where 0 <= i < 7, so lexicographic order of tokens is correct.
+                if (_FindLocator(_GetCustomBitLocator(i), end, &it)) {
+                    bits |= bit;
+                }
+            }
+        }
+    }
+
     if (primType == HdPrimTypeTokens->basisCurves) {
 
         // Locator (*): basisCurves > topology

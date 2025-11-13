@@ -114,7 +114,7 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
             continue;
         }
 
-        if (props.apiVersion < VK_API_VERSION_1_0) continue;
+        if (props.apiVersion < VK_API_VERSION_1_3) continue;
 
         // Try to find a preferred device type. Until we find one, store the
         // first non-preferred device as fallback in case we never find a
@@ -321,6 +321,13 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         _capabilities->vkVulkan11Features.shaderDrawParameters;
     vulkan11Features.pNext = features2.pNext;
     features2.pNext = &vulkan11Features;
+
+    VkPhysicalDeviceVulkan13Features vulkan13Features =
+        {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
+    vulkan13Features.shaderDemoteToHelperInvocation =
+        _capabilities->vkVulkan13Features.shaderDemoteToHelperInvocation;
+    vulkan13Features.pNext = features2.pNext;
+    features2.pNext = &vulkan13Features;
 
     // Vertex attribute divisor features ext
     VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT vertexAttributeDivisorFeatures

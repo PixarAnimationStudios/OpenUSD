@@ -28,11 +28,6 @@ pxr_test_scripts(
      testenv/testUsdDancingCubesExample.py
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdDancingCubesExample
-    DEST testUsdDancingCubesExample
-)
-
 # XXX:
 # Baselines for this test were generated on a build on Linux x86_64
 # using GCC. The results may differ on other platforms and compilers
@@ -46,6 +41,7 @@ if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux" AND
     pxr_register_test(testUsdDancingCubesExample
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdDancingCubesExample"
+        TESTENV testenv/testUsdDancingCubesExample
         DIFF_COMPARE dynamicContents.usda newDynamicContents.usda dynamicContentsFromAttrs.usda
         EXPECTED_RETURN_CODE 0
         ENV
@@ -55,6 +51,7 @@ else()
     pxr_register_test(testUsdDancingCubesExample
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdDancingCubesExample"
+        TESTENV testenv/testUsdDancingCubesExample
         EXPECTED_RETURN_CODE 0
         ENV
             ${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/usdDancingCubesExample/resources

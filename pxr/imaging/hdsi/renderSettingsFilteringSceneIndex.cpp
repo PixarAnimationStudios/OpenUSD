@@ -554,7 +554,6 @@ HdsiRenderSettingsFilteringSceneIndex::HdsiRenderSettingsFilteringSceneIndex(
 : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
 , _namespacePrefixes(_GetNamespacePrefixes(inputArgs))
 , _fallbackPrimDs(_GetFallbackPrimDataSource(inputArgs))
-, _addedFallbackPrim(false)
 {
 }
 
@@ -569,7 +568,7 @@ HdsiRenderSettingsFilteringSceneIndex::GetPrim(const SdfPath &primPath) const
             prim.dataSource, _GetInputSceneIndex(), primPath,
             _namespacePrefixes);
 
-    } else if (_addedFallbackPrim  && primPath == GetFallbackPrimPath()) {
+    } else if (primPath == GetFallbackPrimPath()) {
 
         prim.primType = HdPrimTypeTokens->renderSettings;
         prim.dataSource = _fallbackPrimDs;
@@ -584,7 +583,7 @@ HdsiRenderSettingsFilteringSceneIndex::GetChildPrimPaths(
 { 
     // Avoid a copy if possible in the generic case.
     if (ARCH_UNLIKELY(
-            primPath.IsAbsoluteRootPath() && _addedFallbackPrim)) {
+            primPath.IsAbsoluteRootPath())) {
         
         SdfPathVector paths =
             _GetInputSceneIndex()->GetChildPrimPaths(primPath);
@@ -595,7 +594,7 @@ HdsiRenderSettingsFilteringSceneIndex::GetChildPrimPaths(
     }
 
     if (ARCH_UNLIKELY(
-            primPath == GetRenderScope() && _addedFallbackPrim)) {
+            primPath == GetRenderScope())) {
         
         SdfPathVector paths =
             _GetInputSceneIndex()->GetChildPrimPaths(primPath);
@@ -625,19 +624,7 @@ HdsiRenderSettingsFilteringSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
-    if (ARCH_UNLIKELY(_fallbackPrimDs && !_addedFallbackPrim)) {
-        
-        HdSceneIndexObserver::AddedPrimEntries addedEntries = entries;
-
-        addedEntries.emplace_back(
-            GetFallbackPrimPath(), HdPrimTypeTokens->renderSettings);
-
-        _addedFallbackPrim = true;
-        _SendPrimsAdded(addedEntries);
-
-    } else {
-        _SendPrimsAdded(entries);
-    }
+    _SendPrimsAdded(entries);
 }
 
 void

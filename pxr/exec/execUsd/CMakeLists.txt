@@ -48,15 +48,29 @@ pxr_build_test(testExecUsdAttributeComputations
         testenv/testExecUsdAttributeComputations.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testExecUsdAttributeComputations
-    DEST testExecUsdAttributeComputations
-)
-
 pxr_register_test(testExecUsdAttributeComputations
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdAttributeComputations"
+    TESTENV testenv/testExecUsdAttributeComputations
     EXPECTED_RETURN_CODE 0
-    TESTENV testExecUsdAttributeComputations
+)
+
+pxr_build_test(testExecUsdAttributeValueInput
+    LIBRARIES
+        tf
+        exec
+        execUsd
+        plug
+        sdf
+        vdf
+        usd
+    CPPFILES
+        testenv/testExecUsdAttributeValueInput.cpp
+)
+
+pxr_register_test(testExecUsdAttributeValueInput
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdAttributeValueInput"
+    EXPECTED_RETURN_CODE 0
+    TESTENV testenv/testExecUsdAttributeValueInput
 )
 
 pxr_build_test(testExecUsdBasicCompilation
@@ -72,17 +86,12 @@ pxr_build_test(testExecUsdBasicCompilation
         testenv/testExecUsdBasicCompilation.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testExecUsdBasicCompilation
-    DEST testExecUsdBasicCompilation
-)
-
 pxr_register_test(testExecUsdBasicCompilation
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdBasicCompilation"
+    TESTENV testenv/testExecUsdBasicCompilation
     EXPECTED_RETURN_CODE 0
     POST_COMMAND "${PYTHON_EXECUTABLE} normalizeDotFiles.py testCompiler.dot"
     DIFF_COMPARE testCompiler.out
-    TESTENV testExecUsdBasicCompilation
 )
 
 pxr_build_test(testExecUsdCallbacks
@@ -97,15 +106,10 @@ pxr_build_test(testExecUsdCallbacks
         testenv/testExecUsdCallbacks.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testExecUsdCallbacks
-    DEST testExecUsdCallbacks
-)
-
 pxr_register_test(testExecUsdCallbacks
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdCallbacks"
+    TESTENV testenv/testExecUsdCallbacks
     EXPECTED_RETURN_CODE 0
-    TESTENV testExecUsdCallbacks
 )
 
 pxr_build_test(testExecUsdConnectionTargetedObjects
@@ -120,15 +124,10 @@ pxr_build_test(testExecUsdConnectionTargetedObjects
         testenv/testExecUsdConnectionTargetedObjects.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testExecUsdConnectionTargetedObjects
-    DEST testExecUsdConnectionTargetedObjects
-)
-
 pxr_register_test(testExecUsdConnectionTargetedObjects
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdConnectionTargetedObjects"
+    TESTENV testenv/testExecUsdConnectionTargetedObjects
     EXPECTED_RETURN_CODE 0
-    TESTENV testExecUsdConnectionTargetedObjects
 )
 
 pxr_build_test(testExecUsdConstantInput
@@ -145,17 +144,12 @@ pxr_build_test(testExecUsdConstantInput
         testenv/testExecUsdConstantInput.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testExecUsdConstantInput
-    DEST testExecUsdConstantInput
-)
-
 pxr_register_test(testExecUsdConstantInput
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdConstantInput"
+    TESTENV testenv/testExecUsdConstantInput
     EXPECTED_RETURN_CODE 0
     POST_COMMAND "${PYTHON_EXECUTABLE} normalizeDotFiles.py testConstantInput.dot"
     DIFF_COMPARE testConstantInput.out
-    TESTENV testExecUsdConstantInput
 )
 
 pxr_build_test(testExecUsdDispatchedComputations
@@ -170,15 +164,10 @@ pxr_build_test(testExecUsdDispatchedComputations
         testenv/testExecUsdDispatchedComputations.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testExecUsdDispatchedComputations
-    DEST testExecUsdDispatchedComputations
-)
-
 pxr_register_test(testExecUsdDispatchedComputations
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdDispatchedComputations"
+    TESTENV testenv/testExecUsdDispatchedComputations
     EXPECTED_RETURN_CODE 0
-    TESTENV testExecUsdDispatchedComputations
 )
 
 pxr_build_test(testExecUsdMetadataInput
@@ -193,15 +182,10 @@ pxr_build_test(testExecUsdMetadataInput
         testenv/testExecUsdMetadataInput.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testExecUsdMetadataInput
-    DEST testExecUsdMetadataInput
-)
-
 pxr_register_test(testExecUsdMetadataInput
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdMetadataInput"
+    TESTENV testenv/testExecUsdMetadataInput
     EXPECTED_RETURN_CODE 0
-    TESTENV testExecUsdMetadataInput
 )
 
 pxr_build_test(testExecUsdCycleDetection
@@ -217,16 +201,11 @@ pxr_build_test(testExecUsdCycleDetection
         testenv/testExecUsdCycleDetection.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testExecUsdCycleDetection
-    DEST testExecUsdCycleDetection
-)
-
 function(pxr_register_test_ExecUsdCycleDetection TESTNAME)
     pxr_register_test(testExecUsdCycleDetection_${TESTNAME}
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdCycleDetection ${TESTNAME}"
         EXPECTED_RETURN_CODE 134
-        TESTENV testExecUsdCycleDetection
+        TESTENV testenv/testExecUsdCycleDetection
         ENV TF_FATAL_VERIFY=0
     )
 endfunction()
@@ -250,13 +229,9 @@ pxr_build_test(testExecUsdRecompilation
         testenv/testExecUsdRecompilation.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testExecUsdRecompilation
-    DEST testExecUsdRecompilation
-)
-
 pxr_register_test(testExecUsdRecompilation
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdRecompilation"
+    TESTENV testenv/testExecUsdRecompilation
     EXPECTED_RETURN_CODE 0
     POST_COMMAND "${PYTHON_EXECUTABLE} normalizeDotFiles.py                    \
         TestRecompileDisconnectedAttributeInput-1.dot                          \
@@ -324,13 +299,9 @@ pxr_build_test(testExecUsdRequest
         testenv/testExecUsdRequest.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testExecUsdRequest
-    DEST testExecUsdRequest
-)
-
 pxr_register_test(testExecUsdRequest
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdRequest"
+    TESTENV testenv/testExecUsdRequest
     EXPECTED_RETURN_CODE 0
 )
 
@@ -365,13 +336,9 @@ pxr_build_test(testExecUsdRequestInvalidation
         testenv/testExecUsdRequestInvalidation.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testExecUsdRequestInvalidation
-    DEST testExecUsdRequestInvalidation
-)
-
 pxr_register_test(testExecUsdRequestInvalidation
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdRequestInvalidation"
+    TESTENV testenv/testExecUsdRequestInvalidation
     EXPECTED_RETURN_CODE 0
 )
 
@@ -387,13 +354,9 @@ pxr_build_test(testExecUsdUncompilation
         testenv/testExecUsdUncompilation.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testExecUsdUncompilation
-    DEST testExecUsdUncompilation
-)
-
 pxr_register_test(testExecUsdUncompilation
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdUncompilation"
+    TESTENV testenv/testExecUsdUncompilation
     EXPECTED_RETURN_CODE 0
     POST_COMMAND "${PYTHON_EXECUTABLE} normalizeDotFiles.py                    \
         TestUncompileAttributeInput-compiled.dot                               \

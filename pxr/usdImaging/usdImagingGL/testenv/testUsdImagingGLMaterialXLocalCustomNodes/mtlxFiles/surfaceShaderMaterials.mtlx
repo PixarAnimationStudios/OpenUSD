@@ -7,7 +7,7 @@
 
     <!-- custom SurfaceShader node using texture coordinates and no textures -->
     <checkerSurf name="texcoordSurface" type="surfaceshader">
-        <input name="scale" type="vector2" value="6,6"/>
+        <input name="_scale" type="vector2" value="6,6"/>
     </checkerSurf>
 
     <surfacematerial name="TexcoordMaterial" type="material">
@@ -21,7 +21,7 @@
 
     <!-- custom SurfaceShader node using multiple textures -->
     <multiImageSurf name="texturedSurface" type="surfaceshader">
-        <input name="color_file" type="filename" value="images/testSquare.png"/>
+        <input name="_color_file" type="filename" value="images/testSquare.png"/>
         <input name="roughness_file" type="filename" value="images/grid.png"/>
     </multiImageSurf>
 

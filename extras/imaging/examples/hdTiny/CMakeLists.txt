@@ -26,11 +26,6 @@ pxr_build_test(testHdTiny
         testenv/testHdTiny.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testHdTiny
-    DEST testHdTiny
-)
-
 # This test only runs on MacOS and Linux for now.
 if (APPLE)
     pxr_register_test(testHdTiny
@@ -38,6 +33,7 @@ if (APPLE)
             DYLD_INSERT_LIBRARIES=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny.dylib
             ${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny/resources
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTiny" 
+        TESTENV testenv/testHdTiny
         STDOUT_REDIRECT output.txt
         DIFF_COMPARE output.txt
     )
@@ -47,6 +43,7 @@ elseif (UNIX)
             LD_PRELOAD=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny.so
             ${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny/resources
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTiny" 
+        TESTENV testenv/testHdTiny
         STDOUT_REDIRECT output.txt
         DIFF_COMPARE output.txt
     )
@@ -57,6 +54,7 @@ elseif (WIN32)
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTiny" 
+        TESTENV testenv/testHdTiny
         STDOUT_REDIRECT output.txt
         DIFF_COMPARE output.txt
     )

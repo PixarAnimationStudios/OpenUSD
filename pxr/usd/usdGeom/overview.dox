@@ -248,7 +248,7 @@ views the scene in a right-handed coordinate system where
 __up is +Y, right is +X, and the forward viewing direction  is -Z__ - this
 is explained and diagrammed in \ref UsdRender_Camera "UsdRenderCamera".  If you 
 find yourself needing to import USD into a system that operates in a left-handed
-coordinate system, you may find [this article](https://towardsdatascience.com/change-of-basis-3909ef4bed43) useful. 
+coordinate system, you may find [this article](https://medium.com/data-science/change-of-basis-3909ef4bed43) useful. 
 
 UsdGeom also, by default, applies the right hand rule to compute the
 "intrinsic", _surface normal_ (also sometimes referred to as the 

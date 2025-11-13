@@ -9,6 +9,7 @@
 #include "pxr/imaging/hd/invalidatableContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/work/loops.h"
 #include "pxr/base/work/utils.h"
 
 #include <optional>
@@ -393,18 +394,21 @@ HdFlatteningSceneIndex::_PrimsAdded(
 
     _ConsolidateRecentPrims();
 
-    HdSceneIndexObserver::DirtiedPrimEntries dirtyEntries;
+    _AdditionalDirtiedVector dirtyEntries;
     // Check the hierarchy for cached prims to dirty
     {
         TRACE_SCOPE("Dirty hierarchy");
 
-        for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
+        WorkParallelForN(entries.size(),
+        [&](size_t begin, size_t end) {
+        for (size_t i = begin; i < end; ++i) {
+            const HdSceneIndexObserver::AddedPrimEntry &entry = entries[i];
             _DirtyHierarchy(
                 entry.primPath,
                 _relativeDataSourceLocators,
                 _dataSourceLocatorSet,
                 &dirtyEntries);
-        }
+        }});
     }
 
     // Clear out any cached dataSources for prims that have been re-added.
@@ -421,7 +425,9 @@ HdFlatteningSceneIndex::_PrimsAdded(
 
     _SendPrimsAdded(entries);
     if (!dirtyEntries.empty()) {
-        _SendPrimsDirtied(dirtyEntries);
+        HdSceneIndexObserver::DirtiedPrimEntries flattened(
+            dirtyEntries.begin(), dirtyEntries.end());
+        _SendPrimsDirtied(flattened);
     }
 }
 
@@ -456,7 +462,7 @@ HdFlatteningSceneIndex::_PrimsRemoved(
 void
 HdFlatteningSceneIndex::_PrimDirtied(
     const HdSceneIndexObserver::DirtiedPrimEntry &entry,
-    HdSceneIndexObserver::DirtiedPrimEntries * const dirtyEntries)
+    _AdditionalDirtiedVector *additionalDirty) const
 {
     // Used to invalidate the data sources stored in the
     // _PrimLevelWrappingDataSource.
@@ -508,8 +514,8 @@ HdFlatteningSceneIndex::_PrimDirtied(
     }
 
     if (!dirtyLocators.IsEmpty()) {
-        _DirtyHierarchy(
-            entry.primPath, relativeDirtyLocators, dirtyLocators, dirtyEntries);
+        _DirtyHierarchy(entry.primPath, relativeDirtyLocators,
+            dirtyLocators, additionalDirty);
     }
 
     // Mark _PrimLevelWrappingDataSource to refetch input data source again
@@ -517,7 +523,7 @@ HdFlatteningSceneIndex::_PrimDirtied(
     static const HdDataSourceLocator primLevelContainer(
         HdDataSourceLocatorSentinelTokens->container);
     if (entry.dirtyLocators.Contains(primLevelContainer)) {
-        const _PrimTable::iterator it = _prims.find(entry.primPath);
+        const _PrimTable::const_iterator it = _prims.find(entry.primPath);
         if (it != _prims.end() && it->second.dataSource) {
             if (auto const ds = _PrimLevelWrappingDataSource::Cast(
                     it->second.dataSource)) {
@@ -536,18 +542,26 @@ HdFlatteningSceneIndex::_PrimsDirtied(
 
     _ConsolidateRecentPrims();
 
-    HdSceneIndexObserver::DirtiedPrimEntries dirtyEntries;
+    _AdditionalDirtiedVector dirtyEntries;
     {
         TRACE_SCOPE("Dirty hierarchy");
 
-        for (const HdSceneIndexObserver::DirtiedPrimEntry &entry : entries) {
+        WorkParallelForN(entries.size(),
+        [&](size_t begin, size_t end) {
+        for (size_t i = begin; i < end; ++i) {
+            const HdSceneIndexObserver::DirtiedPrimEntry &entry = entries[i];
             _PrimDirtied(entry, &dirtyEntries);
-        }
+        }});
     }
 
-    _SendPrimsDirtied(entries);
-    if (!dirtyEntries.empty()) {
-        _SendPrimsDirtied(dirtyEntries);
+    if (dirtyEntries.empty()) {
+        _SendPrimsDirtied(entries);
+    } else {
+        HdSceneIndexObserver::DirtiedPrimEntries flattened(
+            entries.begin(), entries.end());
+        flattened.insert(flattened.end(), dirtyEntries.begin(),
+            dirtyEntries.end());
+        _SendPrimsDirtied(flattened);
     }
 }
 
@@ -567,14 +581,14 @@ HdFlatteningSceneIndex::_DirtyHierarchy(
     const SdfPath &primPath,
     const _DataSourceLocatorSetVector &relativeDirtyLocators,
     const HdDataSourceLocatorSet &dirtyLocators,
-    HdSceneIndexObserver::DirtiedPrimEntries * const dirtyEntries)
+    _AdditionalDirtiedVector *dirtyEntries) const
 {
     // XXX: here and elsewhere, if a parent xform is dirtied and the child has
     // resetXformStack, we could skip dirtying the child...
 
     auto startEndIt = _prims.FindSubtreeRange(primPath);
     for (auto it = startEndIt.first; it != startEndIt.second; ) {
-        HdSceneIndexPrim &prim = it->second;
+        const HdSceneIndexPrim &prim = it->second;
 
         if (_PrimLevelWrappingDataSourceHandle dataSource =
                 _PrimLevelWrappingDataSource::Cast(prim.dataSource)) {

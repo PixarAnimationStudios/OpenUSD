@@ -62,10 +62,10 @@ protected:
         const HdSceneIndexBase&,
         const HdSceneIndexObserver::RemovedPrimEntries &entries) override;
 
-private:
     UsdImagingRootOverridesSceneIndex(
         HdSceneIndexBaseRefPtr const &inputSceneIndex);
 
+private:
     UsdImagingRootOverridesSceneIndex_Impl::
     _RootOverlayInfoSharedPtr const _rootOverlayInfo;
 

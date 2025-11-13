@@ -28,14 +28,40 @@ TF_DECLARE_REF_PTRS(HdsiMaterialPrimvarTransferSceneIndex);
 /// HdDependencyForwardingSceneIndex is present downstream. (Because those
 /// dependencies are computed on demand, no meaningful additional work is done
 /// otherwise.)
+///
+/// Some renderers have special syntax and semantics for how attributes
+/// may be combined.  To accommmodate this, an optional ComposeFn may be
+/// provided to implement this behavior.
 /// 
 class HdsiMaterialPrimvarTransferSceneIndex final
     : public HdSingleInputFilteringSceneIndexBase
 {
 public:
+    // Type signature for function used to compose a single primvar
+    // using the primvars from geometry and a bound material.
+    // The first argument is the container data source for the
+    // geometry primvars, the second is the container data source
+    // for the material primvars, and the third is the primvar name.
+    // Note that this composes just the single named primvar,
+    // returning a data source for that primvar.
+    using ComposeFn = std::function<
+        HdDataSourceBaseHandle(
+            HdContainerDataSourceHandle const&,
+            HdContainerDataSourceHandle const&,
+            TfToken const&)>;
+
+    // The default compose function used if none is provided.
+    HDSI_API
+    static HdDataSourceBaseHandle
+    DefaultComposeFn(
+        HdContainerDataSourceHandle const& dsStrong,
+        HdContainerDataSourceHandle const& dsWeak,
+        const TfToken& name);
+
     HDSI_API
     static HdsiMaterialPrimvarTransferSceneIndexRefPtr
-    New(const HdSceneIndexBaseRefPtr& inputSceneIndex);
+    New(const HdSceneIndexBaseRefPtr& inputSceneIndex,
+        const ComposeFn& composeFn = ComposeFn());
 
 public: // HdSceneIndex overrides
     HDSI_API
@@ -57,8 +83,11 @@ protected: // HdSingleInputFilteringSceneIndexBase overrides
 
 private:
     HdsiMaterialPrimvarTransferSceneIndex(
-        const HdSceneIndexBaseRefPtr& inputSceneIndex);
+        const HdSceneIndexBaseRefPtr& inputSceneIndex,
+        const ComposeFn& composeFn);
     ~HdsiMaterialPrimvarTransferSceneIndex() override;
+
+    const ComposeFn _composeFn;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

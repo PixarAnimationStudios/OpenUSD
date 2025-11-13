@@ -6,7 +6,10 @@
 //
 #include "pxr/imaging/hd/rendererPlugin.h"
 
+#include "pxr/imaging/hd/driver.h"
+#include "pxr/imaging/hd/renderDelegateAdapterRenderer.h"
 #include "pxr/imaging/hd/renderer.h"
+#include "pxr/imaging/hd/rendererCreateArgsSchema.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 #include "pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h"
 #include "pxr/imaging/hd/pluginRendererUniqueHandle.h"
@@ -79,7 +82,7 @@ HdRendererPlugin::CreateDelegate(HdRenderSettingsMap const& settingsMap)
 HdPluginRendererUniqueHandle
 HdRendererPlugin::CreateRenderer(
     HdSceneIndexBaseRefPtr const &sceneIndex,
-    const HdRendererCreateArgs &rendererCreateArgs)
+    HdContainerDataSourceHandle const &rendererCreateArgs)
 {
     if (!IsSupported(rendererCreateArgs)) {
         return nullptr;
@@ -126,16 +129,51 @@ HdRendererPlugin::IsSupported(bool gpuEnabled) const
     return IsSupported(rendererCreateArgs);
 }
 
+bool
+HdRendererPlugin::IsSupported(
+    HdContainerDataSourceHandle const &rendererCreateArgs,
+    std::string *reasonWhyNot) const
+{
+    const HdRendererCreateArgsSchema argsSchema(rendererCreateArgs);
+
+    HdRendererCreateArgs legacyRendererCreateArgs;
+    if (HdBoolDataSourceHandle const ds = argsSchema.GetGpuEnabled()) {
+        legacyRendererCreateArgs.gpuEnabled = ds->GetTypedValue(0.0f);
+    }
+
+    if (auto const ds =
+            HdTypedSampledDataSource<Hgi*>::Cast(
+                argsSchema
+                    .GetDrivers()
+                    .Get(HdRendererCreateArgsSchemaTokens->hgi))) {
+        legacyRendererCreateArgs.hgi = ds->GetTypedValue(0.0f);
+    }
+
+    return IsSupported(legacyRendererCreateArgs, reasonWhyNot);
+}
+
 std::unique_ptr<HdRenderer>
 HdRendererPlugin::_CreateRenderer(
     HdSceneIndexBaseRefPtr const &sceneIndex,
-    const HdRendererCreateArgs &rendererCreateArgs)
+    HdContainerDataSourceHandle const &rendererCreateArgs)
 {
-    TF_CODING_ERROR(
-        "Hydra 2.0 HdRendererPlugin::_CreateRenderer not implemented.");
+    return _CreateRendererFromRenderDelegate(sceneIndex, rendererCreateArgs);
+}
 
-    return nullptr;
+std::unique_ptr<HdRenderer>
+HdRendererPlugin::_CreateRendererFromRenderDelegate(
+    HdSceneIndexBaseRefPtr const &sceneIndex,
+    HdContainerDataSourceHandle const &rendererCreateArgs)
+{
+    HdPluginRenderDelegateUniqueHandle renderDelegate =
+        CreateDelegate();
+    if (!renderDelegate) {
+        return nullptr;
+    }
+
+    return
+        std::make_unique<HdRenderDelegateAdapterRenderer>(
+            std::move(renderDelegate), sceneIndex, rendererCreateArgs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

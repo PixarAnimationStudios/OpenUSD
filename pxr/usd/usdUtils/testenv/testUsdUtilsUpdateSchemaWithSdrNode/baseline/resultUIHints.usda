@@ -10,10 +10,13 @@ class "TestUIHintsAPI" (
             bool OpenGroup = 1
             bool "OpenGroup:Nested" = 1
         }
+        dictionary displayGroupsShownIf = {
+            string "ShownIf Group" = "inputs:hidden >= 1"
+        }
     }
 )
 {
-    reorder properties = ["inputs:allowedTokens", "inputs:allowedTokensAndValueLabels", "inputs:arrayDynamic", "inputs:arraySizeAndTuples", "inputs:arraySizeTuplesMismatch", "inputs:arrayStatic", "inputs:arrayTuples", "inputs:convertedShownIf", "inputs:displayGroup", "inputs:displayName", "inputs:floatArrayTupleConversion2", "inputs:floatArrayTupleConversion3", "inputs:floatArrayTupleConversion4", "inputs:hardAndSoftLimits", "inputs:hardClobberSoftLimits", "inputs:hardDemoteToSoftLimits", "inputs:hardLimitsBasic", "inputs:help", "inputs:hidden", "inputs:inClosedGroup", "inputs:inOpenGroup", "inputs:inOpenNestedGroup", "inputs:intArrayTupleConversion2", "inputs:intArrayTupleConversion3", "inputs:intArrayTupleConversion4", "inputs:shownIf", "inputs:softCantClobberHardLimits", "inputs:softLimitsBasic", "inputs:softPromoteToHardLimits", "inputs:sparseSpecificationLimits", "inputs:valueLabels"]
+    reorder properties = ["inputs:allowedTokens", "inputs:allowedTokensAndValueLabels", "inputs:arrayDynamic", "inputs:arraySizeAndTuples", "inputs:arraySizeTuplesMismatch", "inputs:arrayStatic", "inputs:arrayTuples", "inputs:convertedShownIf", "inputs:displayGroup", "inputs:displayName", "inputs:floatArrayTupleConversion2", "inputs:floatArrayTupleConversion3", "inputs:floatArrayTupleConversion4", "inputs:hardAndSoftLimits", "inputs:hardClobberSoftLimits", "inputs:hardDemoteToSoftLimits", "inputs:hardLimitsBasic", "inputs:help", "inputs:hidden", "inputs:inClosedGroup", "inputs:inOpenGroup", "inputs:inOpenNestedGroup", "inputs:inShownIfGroup", "inputs:intArrayTupleConversion2", "inputs:intArrayTupleConversion3", "inputs:intArrayTupleConversion4", "inputs:shownIf", "inputs:shownIfParamNameSubStrings", "inputs:softCantClobberHardLimits", "inputs:softLimitsBasic", "inputs:softPromoteToHardLimits", "inputs:some_param", "inputs:some_param_also", "inputs:sparseSpecificationLimits", "inputs:valueLabels"]
     token inputs:allowedTokens = "foo" (
         allowedTokens = ["foo", "bar", "baz"]
     )
@@ -131,12 +134,23 @@ class "TestUIHintsAPI" (
             string displayGroup = "OpenGroup:Nested"
         }
     )
+    int inputs:inShownIfGroup = 1 (
+        displayGroup = "ShownIf Group"
+        uiHints = {
+            string displayGroup = "ShownIf Group"
+        }
+    )
     int2 inputs:intArrayTupleConversion2 = (1, 2)
     int3 inputs:intArrayTupleConversion3 = (1, 2, 3)
     int4 inputs:intArrayTupleConversion4 = (1, 2, 3, 4)
     int inputs:shownIf = 1 (
         uiHints = {
             string shownIf = "inputs:hidden >= 1"
+        }
+    )
+    int inputs:shownIfParamNameSubStrings = 1 (
+        uiHints = {
+            string shownIf = "inputs:some_param >= inputs:some_param_also"
         }
     )
     int inputs:softCantClobberHardLimits = 1 (
@@ -167,6 +181,8 @@ class "TestUIHintsAPI" (
             }
         }
     )
+    int inputs:some_param = 1
+    int inputs:some_param_also = 1
     int inputs:sparseSpecificationLimits = 1 (
         limits = {
             dictionary hard = {

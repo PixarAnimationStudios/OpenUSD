@@ -3,7 +3,7 @@
 
     <!-- custom SurfaceShader node using multiple textures -->
     <nodedef name="ND_ssMultiImage" node="ssMultiImage" version="1.0.0" isdefaultversion="true">
-        <input name="color_file" type="filename" value=""/>
+        <input name="_color_file" type="filename" value=""/>
         <input name="roughness_file" type="filename" value=""/>
         <output name="out" type="surfaceshader" />
     </nodedef>
@@ -14,7 +14,7 @@
             <input name="default" type="vector2" value="0.5,0.5" />
         </geompropvalue>
         <tiledimage name="color_image" type="color3" colorspace="srgb_texture">
-            <input name="file" type="filename" interfacename="color_file" />
+            <input name="file" type="filename" interfacename="_color_file" />
             <input name="uvtiling" type="vector2" value="1.0, 1.0"/>
             <input name="filtertype" type="string" value="linear"/>
             <input name="texcoord" type="vector2" nodename="stcoords" />
@@ -39,7 +39,7 @@
 
 	<!-- custom SurfaceShader node using texture coordinates and no textures -->
     <nodedef name="ND_checker_surface" node="checkerSurf">
-        <input name="scale" type="vector2" value="8.0, 8.0" />
+        <input name="_scale" type="vector2" value="8.0, 8.0" />
         <output name="out" type="surfaceshader" />
     </nodedef>
     <nodegraph name="NG_checker_surface" nodedef="ND_checker_surface">
@@ -48,7 +48,7 @@
         </texcoord>
         <multiply name="mult1" type="vector2">
             <input name="in1" type="vector2" nodename="texcoord1" />
-            <input name="in2" type="vector2" interfacename="scale" />
+            <input name="in2" type="vector2" interfacename="_scale" />
         </multiply>
         <swizzle name="swizz_x" type="float">
             <input name="in" type="vector2" nodename="mult1" />

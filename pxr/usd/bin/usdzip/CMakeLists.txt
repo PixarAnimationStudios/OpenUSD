@@ -6,59 +6,33 @@ pxr_python_bin(usdzip
         usd
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdZipInputFiles
-    DEST testUsdZipInputFiles
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdZipAsset
-    DEST testUsdZipAsset
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdZipAsset
-    DEST testUsdZipARKitAsset
-)
-
 pxr_register_test(testUsdZipInputFiles
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip flat.usdz src -l flat.txt"
+    TESTENV testenv/testUsdZipInputFiles
     DIFF_COMPARE flat.txt
     EXPECTED_RETURN_CODE 0
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdZipInputFiles
-    DEST testUsdZipInputFiles2
 )
 
 pxr_register_test(testUsdZipInputFiles2
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip -r recursive.usdz src -l recursive.txt"
+    TESTENV testenv/testUsdZipInputFiles
     DIFF_COMPARE recursive.txt
     EXPECTED_RETURN_CODE 0
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdZipInputFiles
-    DEST testUsdZipInputFiles3
 )
 
 pxr_register_test(testUsdZipInputFiles3
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip flat_inputs.usdz src/a.txt src/b.png"
+    TESTENV testenv/testUsdZipInputFiles
     EXPECTED_RETURN_CODE 0
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdZipInputFiles
-    DEST testUsdZipInputFiles4
 )
 
 pxr_register_test(testUsdZipInputFiles4
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip recursive_inputs.usdz src/a.txt src/b.png src/sub"
+    TESTENV testenv/testUsdZipInputFiles
     EXPECTED_RETURN_CODE 0
 )
 
@@ -71,6 +45,7 @@ pxr_register_test(testUsdZipMissingInput
 pxr_register_test(testUsdZipAsset
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip -a root.usd package.usdz -l contents.txt"
+    TESTENV testenv/testUsdZipAsset
     DIFF_COMPARE contents.txt
     EXPECTED_RETURN_CODE 0
 )
@@ -78,6 +53,7 @@ pxr_register_test(testUsdZipAsset
 pxr_register_test(testUsdZipARKitAsset
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdzip --arkitAsset root.usd package.usdz -l contents_arkit.txt"
+    TESTENV testenv/testUsdZipAsset
     DIFF_COMPARE contents_arkit.txt
     EXPECTED_RETURN_CODE 0
 )

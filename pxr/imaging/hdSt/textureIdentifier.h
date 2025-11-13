@@ -11,6 +11,7 @@
 #include "pxr/imaging/hdSt/api.h"
 
 #include "pxr/base/tf/token.h"
+#include "pxr/base/vt/value.h"
 
 #include <memory>
 
@@ -38,7 +39,10 @@ public:
     /// C'tor for files that can contain only one texture.
     ///
     HDST_API
-    explicit HdStTextureIdentifier(const TfToken &filePath);
+    explicit HdStTextureIdentifier(
+        const TfToken &filePath,
+        const VtValue &fallback = VtValue(),
+        bool defaultToFallback = false);
 
     /// C'tor for files that can contain more than one texture (e.g.,
     /// frames in a movie, grids in a VDB file).
@@ -46,7 +50,9 @@ public:
     HDST_API
     HdStTextureIdentifier(
         const TfToken &filePath,
-        std::unique_ptr<const HdStSubtextureIdentifier> &&subtextureId);
+        std::unique_ptr<const HdStSubtextureIdentifier> &&subtextureId,
+        const VtValue &fallback = VtValue(),
+        bool defaultToFallback = false);
 
     HDST_API
     HdStTextureIdentifier(const HdStTextureIdentifier &textureId);
@@ -64,6 +70,18 @@ public:
     ///
     const TfToken &GetFilePath() const {
         return _filePath;
+    }
+
+    /// Get fallback value that's used if loading from _filePath fails
+    ///
+    const VtValue &GetFallback() const {
+        return _fallback;
+    }
+
+    /// Get if reading from _filePath should be skipped
+    ///
+    bool ShouldDefaultToFallback() const {
+        return _defaultToFallback;
     }
     
     /// Get additional information identifying a texture in a file that
@@ -83,6 +101,8 @@ public:
 
 private:
     TfToken _filePath;
+    VtValue _fallback;
+    bool _defaultToFallback = false;
     std::unique_ptr<const HdStSubtextureIdentifier> _subtextureId;
 };
 

@@ -806,6 +806,7 @@ UsdStage::_InstantiateStage(const SdfLayerRefPtr &rootLayer,
 
     TfAutoMallocTag tag(
         "Usd", _StageMallocTagString(rootLayer->GetIdentifier()));
+    TRACE_FUNCTION();
 
     // Debug timing info
     TfStopwatch stopwatch;
@@ -5271,6 +5272,8 @@ UsdStage::_ComposePrimIndexesInParallel(
     const std::string& context,
     Usd_InstanceChanges* instanceChanges)
 {
+    TRACE_FUNCTION();
+
     if (TfDebug::IsEnabled(USD_COMPOSITION)) {
         // Ensure not too much spew if primIndexPaths is big.
         constexpr size_t maxPaths = 16;

@@ -281,8 +281,7 @@ private:
     friend struct Pcp_PrimIndexer;
     friend void Pcp_RescanForSpecs(
                     PcpPrimIndex*, bool usd,
-                    bool updateHasSpecs,
-                    const PcpCacheChanges *cacheChanges);
+                    bool updateHasSpecs);
 
     // The node graph representing the compositional structure of this prim.
     PcpPrimIndex_GraphRefPtr _graph;

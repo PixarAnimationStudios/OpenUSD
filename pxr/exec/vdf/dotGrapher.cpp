@@ -315,8 +315,16 @@ Vdf_DotGrapher::Graph(const VdfNetwork &network)
 
         // Otherwise we want to graph a subset of the network.
         TF_FOR_ALL(iter, _options.GetNodesToGraph()) {
+
+            // Use a separate visited set for each traversal so we don't
+            // constrain a traversal based on previous traversals.
+            VdfNodePtrSet visitedThisTraversal;
             _GetLimitedNodes(*iter->node, iter->maxInDepth, iter->maxOutDepth,
-                             &nodesToGraph);
+                             &visitedThisTraversal, &nodesToGraph);
+
+            // Merge the visited nodes from this traversal into the global set.
+            _visitedNodes.insert(visitedThisTraversal.begin(),
+                                 visitedThisTraversal.end());
         }
     }
 
@@ -546,9 +554,11 @@ Vdf_DotGrapher::_PrintNode(const VdfNode &node)
 }
 
 void 
-Vdf_DotGrapher::_GetLimitedNodes(const VdfNode &node, 
-                                 int maxInDepth, int maxOutDepth,
-                                 std::vector<const VdfNode *> *nodesToGraph)
+Vdf_DotGrapher::_GetLimitedNodes(
+    const VdfNode &node, 
+    int maxInDepth, int maxOutDepth,
+    VdfNodePtrSet *visitedThisTraversal,
+    std::vector<const VdfNode *> *nodesToGraph) const
 {
     TF_AXIOM(maxInDepth >= 0 && maxOutDepth >= 0);
 
@@ -560,11 +570,13 @@ Vdf_DotGrapher::_GetLimitedNodes(const VdfNode &node,
         return;
     }
 
-    // Only add visited nodes to the list once but we need to traverse them
-    // multiple times.  If this node was visited by the traversal of previous
-    // node's neighborhood, bailing out early could cause us to fail to fully
-    // expand the desired neighborhood around this node.
-    if (_visitedNodes.insert(&node).second) {
+    // If we've already visited this node in *this traversal*, don't do it again.
+    if (!visitedThisTraversal->insert(&node).second) {
+        return;
+    }
+
+    // If the node hasn't been visited in *any traversal*, add it to the list.
+    if (!_visitedNodes.count(&node)) {
         nodesToGraph->push_back(&node);
     }
 
@@ -578,7 +590,7 @@ Vdf_DotGrapher::_GetLimitedNodes(const VdfNode &node,
                 // and none of its outputs.  Another possibly good choice
                 // for outputDepth here is 1.
                 _GetLimitedNodes((*iter)->GetSourceNode(), maxInDepth - 1, 0,
-                                  nodesToGraph);
+                                  visitedThisTraversal, nodesToGraph);
             }
         }
 
@@ -602,7 +614,8 @@ Vdf_DotGrapher::_GetLimitedNodes(const VdfNode &node,
                 // good option is 1.
 
                 _GetLimitedNodes(
-                    (*iter)->GetTargetNode(), 0, maxOutDepth - 1, nodesToGraph);
+                    (*iter)->GetTargetNode(), 0, maxOutDepth - 1,
+                    visitedThisTraversal, nodesToGraph);
             }
         }
     }

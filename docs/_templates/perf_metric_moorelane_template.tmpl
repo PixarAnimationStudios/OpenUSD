@@ -1,20 +1,17 @@
-{% set moorelane_metrics_linux_24_11 = load('performance/24.11_linux_moorelane.yaml', data_format='yaml') %}
 {% set moorelane_metrics_linux_25_02 = load('performance/25.02_linux_moorelane.yaml', data_format='yaml') %}
 {% set moorelane_metrics_linux_25_05 = load('performance/25.05_linux_moorelane.yaml', data_format='yaml') %}
 {% set moorelane_metrics_linux_25_08 = load('performance/25.08_linux_moorelane.yaml', data_format='yaml') %}
+{% set moorelane_metrics_linux_25_11 = load('performance/25.11_linux_moorelane.yaml', data_format='yaml') %}
 
 .. list-table:: Linux Metrics (min/max/mean in seconds)
    :header-rows: 1
 
    * - Metric
-     - 24.11
      - 25.02
      - 25.05
      - 25.08
+     - 25.11
    * - Open stage
-     - | min: {{ moorelane_metrics_linux_24_11['open_stage']['min'] }}
-       | max: {{ moorelane_metrics_linux_24_11['open_stage']['max'] }}
-       | mean: {{ moorelane_metrics_linux_24_11['open_stage']['mean']}}
      - | min: {{ moorelane_metrics_linux_25_02['open_stage']['min'] }}
        | max: {{ moorelane_metrics_linux_25_02['open_stage']['max'] }}
        | mean: {{ moorelane_metrics_linux_25_02['open_stage']['mean']}}
@@ -24,10 +21,10 @@
      - | min: {{ moorelane_metrics_linux_25_08['open_stage']['min'] }}
        | max: {{ moorelane_metrics_linux_25_08['open_stage']['max'] }}
        | mean: {{ moorelane_metrics_linux_25_08['open_stage']['mean']}}
+     - | min: {{ moorelane_metrics_linux_25_11['open_stage']['min'] }}
+       | max: {{ moorelane_metrics_linux_25_11['open_stage']['max'] }}
+       | mean: {{ moorelane_metrics_linux_25_11['open_stage']['mean']}}
    * - Render first image
-     - | min: {{ moorelane_metrics_linux_24_11['create_first_image']['min'] }}
-       | max: {{ moorelane_metrics_linux_24_11['create_first_image']['max'] }}
-       | mean: {{ moorelane_metrics_linux_24_11['create_first_image']['mean']}}
      - | min: {{ moorelane_metrics_linux_25_02['create_first_image']['min'] }}
        | max: {{ moorelane_metrics_linux_25_02['create_first_image']['max'] }}
        | mean: {{ moorelane_metrics_linux_25_02['create_first_image']['mean']}}
@@ -37,10 +34,10 @@
      - | min: {{ moorelane_metrics_linux_25_08['create_first_image']['min'] }}
        | max: {{ moorelane_metrics_linux_25_08['create_first_image']['max'] }}
        | mean: {{ moorelane_metrics_linux_25_08['create_first_image']['mean']}}
+     - | min: {{ moorelane_metrics_linux_25_11['create_first_image']['min'] }}
+       | max: {{ moorelane_metrics_linux_25_11['create_first_image']['max'] }}
+       | mean: {{ moorelane_metrics_linux_25_11['create_first_image']['mean']}}
    * - Close stage
-     - | min: {{ moorelane_metrics_linux_24_11['close_stage']['min'] }}
-       | max: {{ moorelane_metrics_linux_24_11['close_stage']['max'] }}
-       | mean: {{ moorelane_metrics_linux_24_11['close_stage']['mean']}}
      - | min: {{ moorelane_metrics_linux_25_02['close_stage']['min'] }}
        | max: {{ moorelane_metrics_linux_25_02['close_stage']['max'] }}
        | mean: {{ moorelane_metrics_linux_25_02['close_stage']['mean']}}
@@ -50,10 +47,10 @@
      - | min: {{ moorelane_metrics_linux_25_08['close_stage']['min'] }}
        | max: {{ moorelane_metrics_linux_25_08['close_stage']['max'] }}
        | mean: {{ moorelane_metrics_linux_25_08['close_stage']['mean']}}
+     - | min: {{ moorelane_metrics_linux_25_11['close_stage']['min'] }}
+       | max: {{ moorelane_metrics_linux_25_11['close_stage']['max'] }}
+       | mean: {{ moorelane_metrics_linux_25_11['close_stage']['mean']}}
    * - Shut down Hydra
-     - | min: {{ moorelane_metrics_linux_24_11['shut_down_hydra']['min'] }}
-       | max: {{ moorelane_metrics_linux_24_11['shut_down_hydra']['max'] }}
-       | mean: {{ moorelane_metrics_linux_24_11['shut_down_hydra']['mean']}}
      - | min: {{ moorelane_metrics_linux_25_02['shut_down_hydra']['min'] }}
        | max: {{ moorelane_metrics_linux_25_02['shut_down_hydra']['max'] }}
        | mean: {{ moorelane_metrics_linux_25_02['shut_down_hydra']['mean']}}
@@ -63,24 +60,24 @@
      - | min: {{ moorelane_metrics_linux_25_08['shut_down_hydra']['min'] }}
        | max: {{ moorelane_metrics_linux_25_08['shut_down_hydra']['max'] }}
        | mean: {{ moorelane_metrics_linux_25_08['shut_down_hydra']['mean']}}
+     - | min: {{ moorelane_metrics_linux_25_11['shut_down_hydra']['min'] }}
+       | max: {{ moorelane_metrics_linux_25_11['shut_down_hydra']['max'] }}
+       | mean: {{ moorelane_metrics_linux_25_11['shut_down_hydra']['mean']}}
 
-{% set moorelane_metrics_macos_24_11 = load('performance/24.11_macos_moorelane.yaml', data_format='yaml') %}
 {% set moorelane_metrics_macos_25_02 = load('performance/25.02_macos_moorelane.yaml', data_format='yaml') %}
 {% set moorelane_metrics_macos_25_05 = load('performance/25.05_macos_moorelane.yaml', data_format='yaml') %}
 {% set moorelane_metrics_macos_25_08 = load('performance/25.08_macos_moorelane.yaml', data_format='yaml') %}
+{% set moorelane_metrics_macos_25_11 = load('performance/25.11_macos_moorelane.yaml', data_format='yaml') %}
 
 .. list-table:: macOS Metrics (min/max/mean in seconds)
    :header-rows: 1
 
    * - Metric
-     - 24.11
      - 25.02
      - 25.05
      - 25.08
+     - 25.11
    * - Open stage
-     - | min: {{ moorelane_metrics_macos_24_11['open_stage']['min'] }}
-       | max: {{ moorelane_metrics_macos_24_11['open_stage']['max'] }}
-       | mean: {{ moorelane_metrics_macos_24_11['open_stage']['mean']}}
      - | min: {{ moorelane_metrics_macos_25_02['open_stage']['min'] }}
        | max: {{ moorelane_metrics_macos_25_02['open_stage']['max'] }}
        | mean: {{ moorelane_metrics_macos_25_02['open_stage']['mean']}}
@@ -90,10 +87,10 @@
      - | min: {{ moorelane_metrics_macos_25_08['open_stage']['min'] }}
        | max: {{ moorelane_metrics_macos_25_08['open_stage']['max'] }}
        | mean: {{ moorelane_metrics_macos_25_08['open_stage']['mean']}}
+     - | min: {{ moorelane_metrics_macos_25_11['open_stage']['min'] }}
+       | max: {{ moorelane_metrics_macos_25_11['open_stage']['max'] }}
+       | mean: {{ moorelane_metrics_macos_25_11['open_stage']['mean']}}
    * - Render first image
-     - | min: {{ moorelane_metrics_macos_24_11['create_first_image']['min'] }}
-       | max: {{ moorelane_metrics_macos_24_11['create_first_image']['max'] }}
-       | mean: {{ moorelane_metrics_macos_24_11['create_first_image']['mean']}}
      - | min: {{ moorelane_metrics_macos_25_02['create_first_image']['min'] }}
        | max: {{ moorelane_metrics_macos_25_02['create_first_image']['max'] }}
        | mean: {{ moorelane_metrics_macos_25_02['create_first_image']['mean']}}
@@ -103,10 +100,10 @@
      - | min: {{ moorelane_metrics_macos_25_08['create_first_image']['min'] }}
        | max: {{ moorelane_metrics_macos_25_08['create_first_image']['max'] }}
        | mean: {{ moorelane_metrics_macos_25_08['create_first_image']['mean']}}
+     - | min: {{ moorelane_metrics_macos_25_11['create_first_image']['min'] }}
+       | max: {{ moorelane_metrics_macos_25_11['create_first_image']['max'] }}
+       | mean: {{ moorelane_metrics_macos_25_11['create_first_image']['mean']}}
    * - Close stage
-     - | min: {{ moorelane_metrics_macos_24_11['close_stage']['min'] }}
-       | max: {{ moorelane_metrics_macos_24_11['close_stage']['max'] }}
-       | mean: {{ moorelane_metrics_macos_24_11['close_stage']['mean']}}
      - | min: {{ moorelane_metrics_macos_25_02['close_stage']['min'] }}
        | max: {{ moorelane_metrics_macos_25_02['close_stage']['max'] }}
        | mean: {{ moorelane_metrics_macos_25_02['close_stage']['mean']}}
@@ -116,10 +113,10 @@
      - | min: {{ moorelane_metrics_macos_25_08['close_stage']['min'] }}
        | max: {{ moorelane_metrics_macos_25_08['close_stage']['max'] }}
        | mean: {{ moorelane_metrics_macos_25_08['close_stage']['mean']}}
+     - | min: {{ moorelane_metrics_macos_25_11['close_stage']['min'] }}
+       | max: {{ moorelane_metrics_macos_25_11['close_stage']['max'] }}
+       | mean: {{ moorelane_metrics_macos_25_11['close_stage']['mean']}}
    * - Shut down Hydra
-     - | min: {{ moorelane_metrics_macos_24_11['shut_down_hydra']['min'] }}
-       | max: {{ moorelane_metrics_macos_24_11['shut_down_hydra']['max'] }}
-       | mean: {{ moorelane_metrics_macos_24_11['shut_down_hydra']['mean']}}
      - | min: {{ moorelane_metrics_macos_25_02['shut_down_hydra']['min'] }}
        | max: {{ moorelane_metrics_macos_25_02['shut_down_hydra']['max'] }}
        | mean: {{ moorelane_metrics_macos_25_02['shut_down_hydra']['mean']}}
@@ -129,24 +126,24 @@
      - | min: {{ moorelane_metrics_macos_25_08['shut_down_hydra']['min'] }}
        | max: {{ moorelane_metrics_macos_25_08['shut_down_hydra']['max'] }}
        | mean: {{ moorelane_metrics_macos_25_08['shut_down_hydra']['mean']}}
+     - | min: {{ moorelane_metrics_macos_25_11['shut_down_hydra']['min'] }}
+       | max: {{ moorelane_metrics_macos_25_11['shut_down_hydra']['max'] }}
+       | mean: {{ moorelane_metrics_macos_25_11['shut_down_hydra']['mean']}}
 
-{% set moorelane_metrics_win_24_11 = load('performance/24.11_windows_moorelane.yaml', data_format='yaml') %}
 {% set moorelane_metrics_win_25_02 = load('performance/25.02_windows_moorelane.yaml', data_format='yaml') %}
 {% set moorelane_metrics_win_25_05 = load('performance/25.05_windows_moorelane.yaml', data_format='yaml') %}
 {% set moorelane_metrics_win_25_08 = load('performance/25.08_windows_moorelane.yaml', data_format='yaml') %}
+{% set moorelane_metrics_win_25_11 = load('performance/25.11_windows_moorelane.yaml', data_format='yaml') %}
 
 .. list-table:: Windows Metrics (min/max/mean in seconds)
    :header-rows: 1
 
    * - Metric
-     - 24.11
      - 25.02
      - 25.05
      - 25.08
+     - 25.11
    * - Open stage
-     - | min: {{ moorelane_metrics_win_24_11['open_stage']['min'] }}
-       | max: {{ moorelane_metrics_win_24_11['open_stage']['max'] }}
-       | mean: {{ moorelane_metrics_win_24_11['open_stage']['mean']}}
      - | min: {{ moorelane_metrics_win_25_02['open_stage']['min'] }}
        | max: {{ moorelane_metrics_win_25_02['open_stage']['max'] }}
        | mean: {{ moorelane_metrics_win_25_02['open_stage']['mean']}}
@@ -156,10 +153,10 @@
      - | min: {{ moorelane_metrics_win_25_08['open_stage']['min'] }}
        | max: {{ moorelane_metrics_win_25_08['open_stage']['max'] }}
        | mean: {{ moorelane_metrics_win_25_08['open_stage']['mean']}}
+     - | min: {{ moorelane_metrics_win_25_11['open_stage']['min'] }}
+       | max: {{ moorelane_metrics_win_25_11['open_stage']['max'] }}
+       | mean: {{ moorelane_metrics_win_25_11['open_stage']['mean']}}
    * - Render first image
-     - | min: {{ moorelane_metrics_win_24_11['create_first_image']['min'] }}
-       | max: {{ moorelane_metrics_win_24_11['create_first_image']['max'] }}
-       | mean: {{ moorelane_metrics_win_24_11['create_first_image']['mean']}}
      - | min: {{ moorelane_metrics_win_25_02['create_first_image']['min'] }}
        | max: {{ moorelane_metrics_win_25_02['create_first_image']['max'] }}
        | mean: {{ moorelane_metrics_win_25_02['create_first_image']['mean']}}
@@ -169,10 +166,10 @@
      - | min: {{ moorelane_metrics_win_25_08['create_first_image']['min'] }}
        | max: {{ moorelane_metrics_win_25_08['create_first_image']['max'] }}
        | mean: {{ moorelane_metrics_win_25_08['create_first_image']['mean']}}
+     - | min: {{ moorelane_metrics_win_25_11['create_first_image']['min'] }}
+       | max: {{ moorelane_metrics_win_25_11['create_first_image']['max'] }}
+       | mean: {{ moorelane_metrics_win_25_11['create_first_image']['mean']}}
    * - Close stage
-     - | min: {{ moorelane_metrics_win_24_11['close_stage']['min'] }}
-       | max: {{ moorelane_metrics_win_24_11['close_stage']['max'] }}
-       | mean: {{ moorelane_metrics_win_24_11['close_stage']['mean']}}
      - | min: {{ moorelane_metrics_win_25_02['close_stage']['min'] }}
        | max: {{ moorelane_metrics_win_25_02['close_stage']['max'] }}
        | mean: {{ moorelane_metrics_win_25_02['close_stage']['mean']}}
@@ -182,10 +179,10 @@
      - | min: {{ moorelane_metrics_win_25_08['close_stage']['min'] }}
        | max: {{ moorelane_metrics_win_25_08['close_stage']['max'] }}
        | mean: {{ moorelane_metrics_win_25_08['close_stage']['mean']}}
+     - | min: {{ moorelane_metrics_win_25_11['close_stage']['min'] }}
+       | max: {{ moorelane_metrics_win_25_11['close_stage']['max'] }}
+       | mean: {{ moorelane_metrics_win_25_11['close_stage']['mean']}}
    * - Shut down Hydra
-     - | min: {{ moorelane_metrics_win_24_11['shut_down_hydra']['min'] }}
-       | max: {{ moorelane_metrics_win_24_11['shut_down_hydra']['max'] }}
-       | mean: {{ moorelane_metrics_win_24_11['shut_down_hydra']['mean']}}
      - | min: {{ moorelane_metrics_win_25_02['shut_down_hydra']['min'] }}
        | max: {{ moorelane_metrics_win_25_02['shut_down_hydra']['max'] }}
        | mean: {{ moorelane_metrics_win_25_02['shut_down_hydra']['mean']}}
@@ -195,3 +192,6 @@
      - | min: {{ moorelane_metrics_win_25_08['shut_down_hydra']['min'] }}
        | max: {{ moorelane_metrics_win_25_08['shut_down_hydra']['max'] }}
        | mean: {{ moorelane_metrics_win_25_08['shut_down_hydra']['mean']}}
+     - | min: {{ moorelane_metrics_win_25_11['shut_down_hydra']['min'] }}
+       | max: {{ moorelane_metrics_win_25_11['shut_down_hydra']['max'] }}
+       | mean: {{ moorelane_metrics_win_25_11['shut_down_hydra']['mean']}}

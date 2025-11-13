@@ -59,6 +59,10 @@ public:
     HDST_API
     void SetTargetMemory(size_t);
 
+    /// Returns the actual amount of memory committed to the GPU.
+    HDST_API
+    virtual size_t GetCommittedSize() const = 0;
+
     /// Is texture valid? Only correct after commit phase.
     ///
     /// E.g., no file at given file path. Consulted by clients to
@@ -158,6 +162,9 @@ public:
 
     HDST_API
     HdStTextureType GetTextureType() const override final;
+
+    HDST_API
+    size_t GetCommittedSize() const override;
 
 protected:
     HDST_API
@@ -259,6 +266,9 @@ public:
     HDST_API
     HdStTextureType GetTextureType() const override;
 
+    HDST_API
+    size_t GetCommittedSize() const override;
+
 protected:
     HDST_API
     void _Load() override;
@@ -294,6 +304,9 @@ public:
 
     HDST_API
     HdStTextureType GetTextureType() const final;
+
+    HDST_API
+    size_t GetCommittedSize() const override;
 
 protected:
     HDST_API

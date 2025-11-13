@@ -40,13 +40,20 @@ public:
     HGI_API
     ~HgiBlitCmds() override;
 
-    /// Push a debug marker.
+    /// Push a debug scope.
     HGI_API
-    virtual void PushDebugGroup(const char* label) = 0;
+    virtual void PushDebugGroup(const char* label,
+        const GfVec4f& color = s_blitDebugColor) = 0;
 
-    /// Pop the lastest debug.
+    /// Pop the lastest scope.
     HGI_API
     virtual void PopDebugGroup() = 0;
+
+    /// Insert a debug marker
+    HGI_API
+    virtual void InsertDebugMarker(
+        const char* label,
+        const GfVec4f& color = s_markerDebugColor) = 0;
 
     /// Copy a texture resource from GPU to CPU.
     /// Synchronization between GPU writes and CPU reads must be managed by

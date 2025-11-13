@@ -29,7 +29,7 @@ public:
         const std::vector<std::shared_ptr<TraceCollection>>& collections);
 
     /// Creates a TraceCollection from a JSON value if possible.
-    static std::unique_ptr<TraceCollection> CollectionFromJSON(const JsValue&);
+    static std::unique_ptr<TraceCollection> CollectionFromJSON(JsValue&&);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

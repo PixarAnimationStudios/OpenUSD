@@ -442,12 +442,12 @@ Pcp_ForEachDependentNode( const SdfPath &sitePath,
             );
 }
 
-/// Record a PcpCulledDependency for \p node in \p culledDeps if that
-/// node would be recorded by Pcp_Dependencies if it remained in the
-/// prim index.
+/// Record a PcpCulledDependency for each node in \p primIndex in
+/// \p culledDeps if that node would be recorded by Pcp_Dependencies 
+/// if it remained in the prim index after finalization.
 void
-Pcp_AddCulledDependency(
-    const PcpNodeRef& node,
+Pcp_AddCulledDependencies(
+    const PcpPrimIndex& primIndex,
     PcpCulledDependencyVector* culledDeps);
 
 PXR_NAMESPACE_CLOSE_SCOPE

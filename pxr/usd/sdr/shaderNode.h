@@ -14,6 +14,7 @@
 #include "pxr/usd/sdr/api.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/vt/value.h"
 #include "pxr/usd/sdr/declare.h"
 #include "pxr/usd/sdr/shaderNodeDiscoveryResult.h"
 
@@ -38,6 +39,12 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((SdrUsdEncodingVersion, "sdrUsdEncodingVersion")) \
     ((SdrDefinitionNameFallbackPrefix, "sdrDefinitionNameFallbackPrefix"))
 
+/// \deprecated These prefixes are used to encode nested structures in shader
+/// metadata. The prefix and remaining portion of the key are joined with the
+/// pipe '|' character.
+#define SDR_NODE_METADATA_PREFIX_TOKENS   \
+    ((PageShownIf, "pageShownIf"))
+
 // Note: The concept of context can be queried with the GetContext() method.
 // Sdr categorizes shaders by the context in which they are used inside of a
 // renderer. For instance during 'pattern' evaluation to feed into a surface
@@ -60,9 +67,18 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((Field, "field"))               \
     ((Math, "math"))                 \
 
+#define SDR_NODE_FIELD_KEY_TOKENS  \
+    ((Identifier, "_identifier"))     \
+    ((Name, "_name"))                 \
+    ((Family, "_family"))             \
+    ((SourceType, "_sourceType"))
+
 TF_DECLARE_PUBLIC_TOKENS(SdrNodeMetadata, SDR_API, SDR_NODE_METADATA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(SdrNodeMetadataPrefix, SDR_API,
+    SDR_NODE_METADATA_PREFIX_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(SdrNodeContext, SDR_API, SDR_NODE_CONTEXT_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(SdrNodeRole, SDR_API, SDR_NODE_ROLE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(SdrNodeFieldKey, SDR_API, SDR_NODE_FIELD_KEY_TOKENS);
 
 /// \class SdrShaderNode
 ///
@@ -270,6 +286,10 @@ public:
     SDR_API
     const SdrTokenVec& GetOpenPages() const { return _openPages; };
 
+    /// Gets the `shownIf` expressions associated with each page.
+    SDR_API
+    const SdrTokenMap& GetPagesShownIf() const { return _pagesShownIf; }
+
     /// The list of primvars this node knows it requires / uses.
     /// For example, a shader node may require the 'normals' primvar to function
     /// correctly. Additional, user specified primvars may have been authored on
@@ -349,6 +369,28 @@ public:
 
     /// \endcond
 
+    /// Gets an item of data from this shader node according to the
+    /// requested key.
+    
+    /// Special keys indicate class fields and are identified by the
+    /// SdrNodeFieldKey enum. The return type of GetDataForKey for these
+    /// special keys is the return type of their getters.
+    /// GetDataForKey(SdrNodeFieldKey->Identifier) results in VtValue
+    /// holding a TfToken because GetIdentifier returns TfToken. The
+    /// return types for these special keys is as follows:
+    /// - SdrNodeFieldKey->Identifier -> VtValue holding TfToken
+    /// - SdrNodeFieldKey->Name -> VtValue holding std::string
+    /// - SdrNodeFieldKey->Family -> VtValue holding TfToken
+    /// - SdrNodeFieldKey->SourceType -> VtValue holding TfToken
+    ///
+    /// Any requested data item that isn't a SdrNodeFieldKey will be looked
+    /// for in this shader node's metadata.
+    ///
+    /// Returns an empty VtValue if no data is found to be associated with the
+    /// requested key.
+    SDR_API
+    VtValue GetDataForKey(const TfToken& key) const;
+
 protected:
     SdrShaderNode& operator=(const SdrShaderNode&) = delete;
 
@@ -383,6 +425,7 @@ protected:
     SdrTokenVec _departments;
     SdrTokenVec _pages;
     SdrTokenVec _openPages;
+    SdrTokenMap _pagesShownIf;
 
 private:
     // Initializes `_primvars` and `_primvarNamingProperties`

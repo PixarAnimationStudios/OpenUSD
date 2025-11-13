@@ -326,7 +326,9 @@ std::string TfStringGetSuffix(const std::string& name, char delimiter = '.');
 TF_API
 std::string TfStringGetBeforeSuffix(const std::string& name, char delimiter = '.');
 
-/// Returns the base name of a file (final component of the path).
+/// Returns the base name of a file (final component of the path, after
+/// stripping all trailing slashes - forward only on Linux / MacOS, forward
+/// and backward on Windows).
 TF_API
 std::string TfGetBaseName(const std::string& fileName);
 
@@ -335,8 +337,12 @@ std::string TfGetBaseName(const std::string& fileName);
 /// The returned string ends in a '/' (or possibly a '\' on Windows), unless
 /// none was found in \c fileName, in which case the empty string is returned.
 /// In particular, \c TfGetPathName(s)+TfGetBaseName(s) == \c s for any string
-/// \c s (as long as \c s doesn't end with multiple adjacent slashes, which is
-/// illegal).
+/// \c s which doesn't end with a trailing slash.  If \c s does end with a
+/// trailing slash (forward only on Linux / MacOS, foward and backward on
+/// Windows), then \c TfGetPathName(s) == \c s, but \c TfGetBaseName(s) will
+/// only be \c "" if and only if \c s is an empty string or consists of nothing
+/// but slashes.
+
 TF_API
 std::string TfGetPathName(const std::string& fileName);
 

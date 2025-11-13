@@ -252,6 +252,33 @@ main(int argc, char *argv[])
                      static_cast<float>(
                          std::numeric_limits<int16_t>::lowest()) - 1.0f,
                      &failType) && failType == GfNumericCastNegOverflow);
+
+        // bool -> int
+        TF_AXIOM(GfNumericCast<int>(true).value() == 1);
+        TF_AXIOM(GfNumericCast<int>(false).value() == 0);
+
+        // int -> bool
+        TF_AXIOM(GfNumericCast<bool>(0).value() == false);
+        TF_AXIOM(GfNumericCast<bool>(1).value() == true);
+
+        TF_AXIOM(!GfNumericCast<bool>(-1, &failType) &&
+                 failType == GfNumericCastNegOverflow);
+
+        TF_AXIOM(!GfNumericCast<bool>(2, &failType) &&
+                 failType == GfNumericCastPosOverflow);
+
+        TF_AXIOM(GfNumericCast<bool>(
+                    static_cast<unsigned>(0)).value() == false);
+        TF_AXIOM(GfNumericCast<bool>(
+                    static_cast<unsigned>(1)).value() == true);
+
+        TF_AXIOM(!GfNumericCast<bool>(
+                    static_cast<unsigned>(2), &failType) &&
+                 failType == GfNumericCastPosOverflow);
+
+        TF_AXIOM(!GfNumericCast<bool>(
+                     std::numeric_limits<unsigned>::max(), &failType) &&
+                 failType == GfNumericCastPosOverflow);
         
         // unsigned
         TF_AXIOM(GfNumericCast<uint16_t>(

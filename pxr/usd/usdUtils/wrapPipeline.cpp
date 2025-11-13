@@ -10,14 +10,38 @@
 
 #include "pxr/usd/usdUtils/pipeline.h"
 
+#include "pxr/usd/sdf/booleanExpression.h"
 #include "pxr/usd/usd/prim.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/vt/dictionary.h"
+#include "pxr/base/vt/value.h"
 #include "pxr/external/boost/python/return_by_value.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 using namespace pxr_boost::python;
+
+// XXX: Temporary workaround for use by UpdateSchemaWithSdrNode(). Once
+// SdfBooleanExpression is wrapped to Python we can do away with this.
+static std::string
+_BooleanExpressionRenameVariables(
+    const std::string& expr,
+    const VtDictionary& renames)
+{
+    auto transform = [&](const TfToken& name) {
+        const auto it = renames.find(name);
+        if (it == renames.end() || !it->second.IsHolding<std::string>()) {
+            return name;
+        }
+        else {
+            return TfToken(it->second.UncheckedGet<std::string>());
+        }
+    };
+
+    const SdfBooleanExpression expression(expr);
+    return expression.RenameVariables(transform).GetText();
+}
 
 void wrapPipeline()
 {
@@ -42,4 +66,7 @@ void wrapPipeline()
         "GetPrimaryCameraName",
         UsdUtilsGetPrimaryCameraName,
         arg("forceDefault")=false);
+
+    def("_BooleanExpressionRenameVariables",
+        &_BooleanExpressionRenameVariables);
 }

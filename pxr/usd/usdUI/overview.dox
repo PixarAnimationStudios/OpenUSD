@@ -26,6 +26,23 @@ UsdProperty's \c uiHints metadata dictionary.
 \li UsdUIAttributeHints - Provides API for reading and writing fields in
 UsdAttribute's \c uiHints metadata dictionary.
 
+UsdUI additionally has schemas that describe accessibility information used
+in assistive UI, and UI hints that provide hints on how prims and properties
+should be presented in a UI.
+
+\section usdUI_accessibility Accessibility Information
+
+The AccessibilityAPI schema describes accessibility information on a prim that 
+may be surfaced to a given runtime's accessibility frameworks. This information 
+may be used by assistive features in tools, such as voice controls or screen 
+readers.
+
+Accessibility information is provided as a standard triplet of label, 
+description, and priority. This is a multiple-apply schema, and so may have 
+multiple namespaced accessibility triplets, where an instance name may reflect a 
+given purpose for that triplet. For example, you may desire to express different
+information for different aspects of the prim, such as size or color. 
+
 \section usdUI_hintsOverview UI Hints
 
 UI hints are, broadly speaking, metadata fields that pertain to presentation of

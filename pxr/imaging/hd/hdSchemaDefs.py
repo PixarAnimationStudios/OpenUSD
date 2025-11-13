@@ -1537,6 +1537,30 @@
         ADD_DEFAULT_LOCATOR = True,
     ),
 
+
+    #--------------------------------------------------------------------------
+    # rendererCreateArgs
+    dict(
+        SCHEMA_NAME = 'RendererCreateArgs',
+        DOC = '''Arguments to HdRendererPlugin::IsSupported and
+                 CreateRenderer.''',
+        SCHEMA_TOKEN = 'rendererCreateArgs',
+        ADD_DEFAULT_LOCATOR = True,
+        SCHEMA_INCLUDES = [
+            '{{LIBRARY_PATH}}/schemaTypeDefs',
+        ],
+        MEMBERS = [
+            ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
+            ('gpuEnabled', T_BOOL,
+             dict(DOC = '''Is a GPU available.''')),
+            ('drivers', 'HdSampledDataSourceContainerSchema',
+             dict(DOC = '''Drivers such as Hgi that renderer can use.''')),
+        ],
+        EXTRA_TOKENS = [
+            'hgi',
+        ],
+    ),
+    
     #--------------------------------------------------------------------------
     # legacyTask
     dict(
@@ -1557,4 +1581,6 @@
             ('renderTags', 'HdTokenVectorDataSource', {}),
         ],
     ),
+
+    
 ]

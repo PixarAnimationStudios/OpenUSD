@@ -8,6 +8,7 @@
 #define PXR_IMAGING_HGI_CMDS_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/enums.h"
 #include <memory>
@@ -50,6 +51,14 @@ protected:
     HGI_API
     void _SetSubmitted();
 
+    static constexpr GfVec4f s_computeDebugColor
+        = { 0.855, 0.161, 0.11, 1.0 };
+    static constexpr GfVec4f s_graphicsDebugColor
+        = { 0, 0.639, 0.878, 1.0 };
+    static constexpr GfVec4f s_blitDebugColor
+        = { 0.99607843137, 0.87450980392, 0.0, 1.0 };
+    static constexpr GfVec4f s_markerDebugColor
+        = { 0.0, 0.0, 0.0, 0.0 };
 private:
     HgiCmds & operator=(const HgiCmds&) = delete;
     HgiCmds(const HgiCmds&) = delete;

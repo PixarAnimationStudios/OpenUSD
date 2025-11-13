@@ -25,9 +25,9 @@ public:
     HD_DECLARE_DATASOURCE(Hd_PrefixingSceneIndexPathDataSource)
 
     Hd_PrefixingSceneIndexPathDataSource(
-            const SdfPath &prefix,
+            const HdPrefixingSceneIndex &si,
             HdPathDataSourceHandle inputDataSource)
-        : _prefix(prefix)
+        : _si(si)
         , _inputDataSource(inputDataSource)
     {
     }
@@ -57,17 +57,12 @@ public:
 
         SdfPath result = _inputDataSource->GetTypedValue(shutterOffset);
 
-        if (result.IsAbsolutePath()) {
-            return result.ReplacePrefix(SdfPath::AbsoluteRootPath(), _prefix,
-                /* fixTargetPaths = */false);
-        }
-
-        return result;
+        return _si.AddPrefix(result);
     }
 
 private:
 
-    const SdfPath _prefix;
+    const HdPrefixingSceneIndex &_si;
     const HdPathDataSourceHandle _inputDataSource;
 };
 
@@ -80,9 +75,9 @@ public:
     HD_DECLARE_DATASOURCE(Hd_PrefixingSceneIndexPathArrayDataSource)
 
     Hd_PrefixingSceneIndexPathArrayDataSource(
-            const SdfPath &prefix,
+            const HdPrefixingSceneIndex &si,
             HdPathArrayDataSourceHandle inputDataSource)
-        : _prefix(prefix)
+        : _si(si)
         , _inputDataSource(inputDataSource)
     {
     }
@@ -116,10 +111,7 @@ public:
         // cases in which this will not require altering the result are less
         // common so we acknowledge that this will trigger copy-on-write.
         for (SdfPath &path : result) {
-            if (path.IsAbsolutePath()) {
-                path = path.ReplacePrefix(SdfPath::AbsoluteRootPath(), _prefix,
-                    /* fixTargetPaths = */false);
-            }
+            path = _si.AddPrefix(path);
         }
 
         return result;
@@ -127,7 +119,7 @@ public:
 
 private:
 
-    const SdfPath _prefix;
+    const HdPrefixingSceneIndex &_si;
     const HdPathArrayDataSourceHandle _inputDataSource;
 };
 
@@ -135,7 +127,7 @@ private:
 
 HdDataSourceBaseHandle
 Hd_PrefixingSceneIndexCreateDataSource(
-    const SdfPath &prefix,
+    const HdPrefixingSceneIndex &si,
     HdDataSourceBaseHandle const &inputDataSource);
 
 class Hd_PrefixingSceneIndexVectorDataSource : public HdVectorDataSource
@@ -149,20 +141,20 @@ public:
 
     HdDataSourceBaseHandle GetElement(const size_t element) {
         return Hd_PrefixingSceneIndexCreateDataSource(
-            _prefix,
+            _si,
             _inputDataSource->GetElement(element));
     }
 
 private:
     Hd_PrefixingSceneIndexVectorDataSource(
-            const SdfPath &prefix,
+            const HdPrefixingSceneIndex &si,
             HdVectorDataSourceHandle inputDataSource)
-        : _prefix(prefix)
+        : _si(si)
         , _inputDataSource(std::move(inputDataSource))
     {
     }
 
-    const SdfPath _prefix;
+    const HdPrefixingSceneIndex &_si;
     const HdVectorDataSourceHandle _inputDataSource;
 };
 
@@ -187,27 +179,27 @@ public:
 
         // wrap child containers so that we can wrap their children
         return Hd_PrefixingSceneIndexCreateDataSource(
-            _prefix,
+            _si,
             _inputDataSource->Get(name));
     }
 
 protected:
     Hd_PrefixingSceneIndexContainerDataSource(
-            const SdfPath &prefix,
+            const HdPrefixingSceneIndex &si,
             HdContainerDataSourceHandle inputDataSource)
-        : _prefix(prefix)
+        : _si(si)
         , _inputDataSource(std::move(inputDataSource))
     {
     }
 
 private:
-    const SdfPath _prefix;
+    const HdPrefixingSceneIndex &_si;
     const HdContainerDataSourceHandle _inputDataSource;
 };
 
 HdDataSourceBaseHandle
 Hd_PrefixingSceneIndexCreateDataSource(
-    const SdfPath &prefix,
+    const HdPrefixingSceneIndex &si,
     HdDataSourceBaseHandle const &inputDataSource)
 {
     if (!inputDataSource) {
@@ -216,24 +208,24 @@ Hd_PrefixingSceneIndexCreateDataSource(
 
     if (auto containerDs = HdContainerDataSource::Cast(inputDataSource)) {
         return Hd_PrefixingSceneIndexContainerDataSource::New(
-            prefix, std::move(containerDs));
+            si, std::move(containerDs));
     }
 
     if (auto vectorDs = HdVectorDataSource::Cast(inputDataSource)) {
         return Hd_PrefixingSceneIndexVectorDataSource::New(
-            prefix, std::move(vectorDs));
+            si, std::move(vectorDs));
     }
 
     if (auto pathDataSource =
             HdTypedSampledDataSource<SdfPath>::Cast(inputDataSource)) {
         return Hd_PrefixingSceneIndexPathDataSource::New(
-            prefix, pathDataSource);
+            si, pathDataSource);
     }
 
     if (auto pathArrayDataSource =
             HdTypedSampledDataSource<VtArray<SdfPath>>::Cast(inputDataSource)) {
         return Hd_PrefixingSceneIndexPathArrayDataSource::New(
-            prefix, pathArrayDataSource);
+            si, pathArrayDataSource);
     }
 
     return inputDataSource;
@@ -252,8 +244,9 @@ public:
     using Parent = Hd_PrefixingSceneIndexContainerDataSource;
 
     Hd_PrefixingSceneIndexAbsoluteRootPrimContainerDataSource(
-        const SdfPath& prefix, HdContainerDataSourceHandle inputDataSource)
-        : Parent(prefix, inputDataSource)
+        const HdPrefixingSceneIndex &si,
+        HdContainerDataSourceHandle inputDataSource)
+        : Parent(si, inputDataSource)
     {
     }
 
@@ -298,7 +291,7 @@ HdPrefixingSceneIndex::GetPrim(const SdfPath &primPath) const
         }
     }
 
-    const SdfPath inputScenePath = _RemovePathPrefix(primPath);
+    const SdfPath inputScenePath = RemovePrefix(primPath);
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(inputScenePath);
 
     // We'll need to take care of the HdSystemSchema.
@@ -326,12 +319,12 @@ HdPrefixingSceneIndex::GetPrim(const SdfPath &primPath) const
             // This takes care of the HdSystemSchema case 1.
             prim.dataSource
                 = Hd_PrefixingSceneIndexAbsoluteRootPrimContainerDataSource::
-                    New(_prefix, prim.dataSource);
+                    New(*this, prim.dataSource);
         }
         else {
             // Create a container data source to handle prefixing SdfPath values
             prim.dataSource = Hd_PrefixingSceneIndexContainerDataSource::New(
-                _prefix, prim.dataSource);
+                *this, prim.dataSource);
 
             const bool isRootPrimPath = inputScenePath.IsRootPrimPath();
             if (isRootPrimPath) {
@@ -354,11 +347,10 @@ HdPrefixingSceneIndex::GetChildPrimPaths(const SdfPath &primPath) const
     // prefix and let the input scene index handle it.
     if (primPath.HasPrefix(_prefix)) {
         SdfPathVector result = _GetInputSceneIndex()->GetChildPrimPaths(
-            _RemovePathPrefix(primPath));
+            RemovePrefix(primPath));
 
         for (SdfPath &path : result) {
-            path = _prefix.AppendPath(
-                path.MakeRelativePath(SdfPath::AbsoluteRootPath()));
+            path = AddPrefix(path);
         }
 
         return result;
@@ -386,8 +378,15 @@ HdPrefixingSceneIndex::_PrimsAdded(
     prefixedEntries.reserve(entries.size());
 
     for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
-        prefixedEntries.emplace_back(
-            _AddPathPrefix(entry.primPath), entry.primType);
+        // We take PrimsAdded as an opportunity to populate our
+        // ReplacePrefix cache.
+        const SdfPath& path = entry.primPath;
+        const SdfPath& prefixed = path.ReplacePrefix(
+            SdfPath::AbsoluteRootPath(), _prefix, /* fixTargetPaths = */false);
+        _addPrefixMap[path] = prefixed;
+        _removePrefixMap[prefixed] = path;
+
+        prefixedEntries.emplace_back(prefixed, entry.primType);
     }
 
     _SendPrimsAdded(prefixedEntries);
@@ -404,7 +403,7 @@ HdPrefixingSceneIndex::_PrimsRemoved(
     prefixedEntries.reserve(entries.size());
 
     for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
-        prefixedEntries.push_back(_AddPathPrefix(entry.primPath));
+        prefixedEntries.push_back(AddPrefix(entry.primPath));
     }
 
     _SendPrimsRemoved(prefixedEntries);
@@ -422,25 +421,35 @@ HdPrefixingSceneIndex::_PrimsDirtied(
 
     for (const HdSceneIndexObserver::DirtiedPrimEntry &entry : entries) {
         prefixedEntries.emplace_back(
-                _AddPathPrefix(entry.primPath), entry.dirtyLocators);
+                AddPrefix(entry.primPath), entry.dirtyLocators);
     }
 
     _SendPrimsDirtied(prefixedEntries);
 }
 
 inline SdfPath 
-HdPrefixingSceneIndex::_AddPathPrefix(const SdfPath &primPath) const 
+HdPrefixingSceneIndex::AddPrefix(const SdfPath &primPath) const 
 {
-    // We don't expect target paths, like `/a.foo[/target]`.
-    // primPath may contain a property, like `/a.foo`.
+    // Hopefully we hit the cached version of this!
+    auto it = _addPrefixMap.find(primPath);
+    if (it != _addPrefixMap.end()) {
+        return it->second;
+    }
+
+    // If not, for some reason, just do the prefix replacement.
     return primPath.ReplacePrefix(
         SdfPath::AbsoluteRootPath(), _prefix, /* fixTargetPaths = */false);
 }
 
 inline SdfPath 
-HdPrefixingSceneIndex::_RemovePathPrefix(const SdfPath &primPath) const 
+HdPrefixingSceneIndex::RemovePrefix(const SdfPath &primPath) const 
 {
     // See above.
+    auto it = _removePrefixMap.find(primPath);
+    if (it != _removePrefixMap.end()) {
+        return it->second;
+    }
+
     return primPath.ReplacePrefix(
         _prefix, SdfPath::AbsoluteRootPath(), /* fixTargetPaths = */false);
 }

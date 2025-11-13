@@ -63,6 +63,9 @@ public:
     HDST_API
     HdStTextureType GetTextureType() const override;
 
+    HDST_API
+    size_t GetCommittedSize() const override;
+
 protected:
     HDST_API
     void _Load() override;
@@ -73,6 +76,8 @@ protected:
 private:
     std::vector<uint8_t> _textureData;
     std::vector<float> _layoutData;
+    size_t _textureDataSize;
+    size_t _layoutDataSize;
 
     GfVec3i _dimensions;
     size_t _tileCount;

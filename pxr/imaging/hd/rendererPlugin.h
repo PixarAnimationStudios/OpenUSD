@@ -39,15 +39,39 @@ public:
     /// @{
 
     ///
+    /// Returns \c true if this renderer plugin is supported in the running 
+    /// process and \c false if not.
+    /// 
+    /// This gives the plugin a chance to perform some runtime checks to make
+    /// sure that the system meets minimum requirements.  The 
+    /// \p rendererCreateArgs parameter should conform to
+    /// HdRendererCreateArgsSchema to indicate the resources available when 
+    /// making this determination.
+    /// 
+    /// The \p reasonWhyNot param, when provided, can be filled with the reason
+    /// why the renderer plugin is not supported.
+    HD_API
+    virtual bool IsSupported(
+        HdContainerDataSourceHandle const &rendererCreateArgs,
+        std::string *reasonWhyNot = nullptr) const;
+
+    ///
     /// Create renderer through the plugin and wrap it in a handle that
     /// keeps this plugin alive until the renderer is destroyed.
     ///
     /// The renderer is populated from the given scene index.
+    /// rendererCreateArgs should conform to HdRendererCreateArgsSchema.
+    ///
+    /// Note that for a seamless transition, this  Hydra 2.0 method
+    /// falls back to creating a Hydra 1.0 render delegate and the 
+    /// necessary "back-end" emulation for render
+    /// plugins that do not implement the Hydra 2.0
+    /// _CreateRenderer.
     ///
     HD_API
     HdPluginRendererUniqueHandle CreateRenderer(
         HdSceneIndexBaseRefPtr const &sceneIndex,
-        const HdRendererCreateArgs &rendererCreateArgs);
+        HdContainerDataSourceHandle const &rendererCreateArgs);
 
     /// @}
 
@@ -63,6 +87,9 @@ public:
     HD_API
     std::string GetDisplayName() const;
 
+    /// \name Hydra 1.0 API
+    /// @{
+
     ///
     /// Returns \c true if this renderer plugin is supported in the running 
     /// process and \c false if not.
@@ -77,9 +104,6 @@ public:
     virtual bool IsSupported(
         HdRendererCreateArgs const &rendererCreateArgs,
         std::string *reasonWhyNot = nullptr) const = 0;
-
-    /// \name Hydra 1.0 API
-    /// @{
 
     ///
     /// Create a render delegate through the plugin and wrap it in a
@@ -143,7 +167,13 @@ protected:
     HD_API
     virtual std::unique_ptr<HdRenderer> _CreateRenderer(
         HdSceneIndexBaseRefPtr const &sceneIndex,
-        const HdRendererCreateArgs &rendererCreateArgs);
+        HdContainerDataSourceHandle const &rendererCreateArgs);
+
+    // Instantiates render delegate and uses "back-end" emulation.
+    HD_API
+    std::unique_ptr<HdRenderer> _CreateRendererFromRenderDelegate(
+        HdSceneIndexBaseRefPtr const &sceneIndex,
+        HdContainerDataSourceHandle const &rendererCreateArgs);
 
 private:
     // This class doesn't require copy support.

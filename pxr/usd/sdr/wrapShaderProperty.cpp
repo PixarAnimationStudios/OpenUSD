@@ -17,21 +17,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 using namespace pxr_boost::python;
 
-namespace {
-
-// Boost treats a const ptr differently than a non-const ptr, so a custom
-// converter is needed to deal with the const-ness
-struct SdrShaderPropertyConstPtrToPythonConverter
-{
-    static PyObject* convert(SdrShaderPropertyConstPtr shaderProperty) {
-        object shaderPropertyObject(ptr(shaderProperty));
-
-        return incref(shaderPropertyObject.ptr());
-    }
-};
-
-} // anonymous namespace
-
 void wrapShaderProperty()
 {
     typedef SdrShaderProperty This;
@@ -53,8 +38,7 @@ void wrapShaderProperty()
 
     return_value_policy<copy_const_reference> copyRefPolicy;
 
-    to_python_converter<SdrShaderPropertyConstPtr,
-                        SdrShaderPropertyConstPtrToPythonConverter>();
+    register_ptr_to_python<SdrShaderPropertyConstPtr>();
 
     class_<This, ThisPtr, noncopyable>("ShaderProperty", no_init)
         .def("__repr__", &This::GetInfoString)

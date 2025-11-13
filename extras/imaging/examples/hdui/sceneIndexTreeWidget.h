@@ -50,6 +50,8 @@ public:
 
     void Requery(bool lazy=true);
 
+    void SetSelectedPrimPath(const SdfPath &primPath);
+
 Q_SIGNALS:
     void PrimSelected(const SdfPath &primPath,
             HdContainerDataSourceHandle dataSource);
@@ -74,7 +76,7 @@ private:
 
     Hdui_SceneIndexPrimTreeWidgetItem * _GetPrimItem(
         const SdfPath &primPath,
-        bool createIfNecessary=true);
+        bool createIfNecessary = true);
 
     using _ItemMap = std::unordered_map<SdfPath,
         Hdui_SceneIndexPrimTreeWidgetItem *, SdfPath::Hash>;

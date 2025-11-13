@@ -75,12 +75,6 @@ protected:
     /// 
     virtual void _Compile(Exec_CompilationState &, TaskPhases &) = 0;
 
-    /// Called from the _Compile method in the derived class to indicate that
-    /// the task identified by \c key has been completed. This must be called
-    /// *after* the task published its results.
-    /// 
-    void _MarkDone(const Exec_OutputKey::Identity &key);
-
 private:
     // The parent task, if this is a sub-task. nullptr for top-level tasks.
     Exec_CompilationTask *_parent;
@@ -106,14 +100,62 @@ public:
     template<class TaskType, class ... Args>
     void NewSubtask(Exec_CompilationState &state, Args&&... args);
 
-    /// Claims a subtask identified by the provided \p key as a dependency. If
-    /// the claimed subtask has already been claimed by another task, the
-    /// calling task will establish a dependency on the subtask and the _Compile
-    /// method will automatically be re-executed once all dependencies have been
-    /// fulfilled.
-    /// 
-    Exec_CompilerTaskSyncBase::ClaimResult ClaimSubtask(
-        const Exec_OutputKey::Identity &key);
+    /// \name Claiming subtasks
+    ///
+    /// These methods attempt to claim responsibility for a subtask uniquely
+    /// identified by a key.
+    ///
+    /// If the caller is first to claim the key, these methods return `true` and
+    /// the caller is responsible for spawning a task (via NewSubtask), that
+    /// will ultimately mark the key done (via one of the `MarkDoneXxx`
+    /// methods).
+    ///
+    /// If another caller claimed the key first, these methods return `false`
+    /// and the caller must not spawn a subtask to process the key. The calling
+    /// task will not enter its next phase until the key is marked done.
+    ///
+    /// @{
+
+    /// Claims the Exec_OutputProvidingCompilationTask that populates the output
+    /// for \p key in the Exec_CompiledOutputCache.
+    ///
+    bool ClaimOutputProvidingTask(const Exec_OutputKey::Identity &key);
+
+    /// Claims the Exec_CycleDetectingTask that traverses upwards from \p node
+    /// in search of inputs requiring recompilation, in order to verify that
+    /// those inputs do not depend on themselves.
+    ///
+    bool ClaimCycleDetectingTask(const VdfNode *node);
+
+    /// @}
+
+    /// Establishes a dependency on the recompilation of \p input.
+    ///
+    /// The calling task will not enter its next phase until the recompilation
+    /// of \p input has completed, as indicated by
+    /// MarkDoneInputRecompilationTask.
+    ///
+    void WaitOnInputRecompilationTask(const VdfInput *input);
+
+    /// \name Marking tasks done
+    ///
+    /// These methods indicate that a specific task in the task graph has
+    /// completed its work and published its results. This will decrement the
+    /// dependency count of any tasks waiting for those results, and run any
+    /// of those tasks whose dependency counts reach 0.
+    ///
+    /// @{
+
+    /// The Exec_OutputProvidingTask for \p key has completed.
+    void MarkDoneOutputProvidingTask(const Exec_OutputKey::Identity &key);
+
+    /// The Exec_InputRecompilationTask for \p input has completed.
+    void MarkDoneInputRecompilationTask(const VdfInput *input);
+
+    /// The Exec_CycleDetectingTask for \p node has completed.
+    void MarkDoneCycleDetectingTask(const VdfNode *node);
+
+    /// @}
 
 private:
     friend class Exec_CompilationTask::TaskPhases;

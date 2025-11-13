@@ -13,7 +13,25 @@
 #include <thread>
 #include <tbb/concurrent_unordered_map.h>
 
+#include "pxr/imaging/hd/extComputationPrimvarSchema.h"
+#include "pxr/imaging/hd/primvarSchema.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+/// Convert an ext computation primvar descriptor from Hydra 2 to Hydra 1
+/// representation...
+HD_API
+HdExtComputationPrimvarDescriptor
+HdExtComputationPrimvarDescriptorFromSchema(
+    TfToken const& name,
+    HdExtComputationPrimvarSchema primvar);
+
+/// Convert a primvar descriptor from Hydra 2 to Hydra 1 representation...
+HD_API
+HdPrimvarDescriptor
+HdPrimvarDescriptorFromSchema(
+    TfToken const& name,
+    HdPrimvarSchema primvar);
 
 /// \class HdSceneIndexAdapterSceneDelegate
 ///

@@ -12,6 +12,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdLegacyRenderControlInterface;
+
 ///
 /// \class HdRenderer
 ///
@@ -19,17 +21,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// HdRendererPlugin given a scene index. In general,
 /// a subclass of HdRenderer has a constructor taking a scene index
 /// and implements HdSceneIndexObserver behavior.
-/// 
 ///
 /// It is the Hydra 2.0 replacement of the HdRenderDelegate.
 ///
 class HdRenderer
 {
 public:
-    // Stub class.
-    //
-    // TODO: Add API to render.
+    /// Stub class.
+    /// TODO: Add API here to replace HdLegacyRenderControlInterface.
     virtual ~HdRenderer() = 0;
+
+    /// Transitory Hydra-1.0-like API.
+    virtual HdLegacyRenderControlInterface * GetLegacyRenderControl();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

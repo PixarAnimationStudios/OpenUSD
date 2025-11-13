@@ -18,6 +18,7 @@
 #include "pxr/exec/vdf/executorInterface.h"
 #include "pxr/exec/vdf/mask.h"
 #include "pxr/exec/vdf/maskedOutput.h"
+#include "pxr/exec/vdf/network.h"
 #include "pxr/exec/vdf/node.h"
 #include "pxr/exec/vdf/parallelDataManagerVector.h"
 #include "pxr/exec/vdf/parallelExecutorEngine.h"

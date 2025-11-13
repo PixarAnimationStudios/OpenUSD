@@ -373,6 +373,97 @@ class TestPcpExpressionComposition(unittest.TestCase):
             layerStack.layers, 
             [rootLayer])
 
+    def test_SublayerAuthoringWithNoEffectiveChange(self):
+        """Tests behavior when updating a sublayer variable expression
+        without actually changing the sublayers in the layer stack."""
+
+        def _test(usd):
+            subLayer = Sdf.Layer.CreateAnonymous("sub")
+            subLayer.ImportFromString('''#usda 1.0
+
+            def "Def"
+            {
+            }
+        
+            over "Over"
+            {
+            }
+            ''')
+
+            rootLayer = Sdf.Layer.CreateAnonymous()
+            rootLayer.ImportFromString(f"""#usda 1.0
+            (
+                subLayers = [
+                    @`if(contains(["foo", "bar"], ${{VAR}}), "{subLayer.identifier}")`@
+                ]
+                expressionVariables = {{
+                    string "VAR" = "foo"
+                }}
+            )
+
+            def "Def"
+            {{
+            }}
+
+            over "Over"
+            {{
+            }}
+            """)
+
+            layerStackId = Pcp.LayerStackIdentifier(rootLayer)
+            pcp = Pcp.Cache(layerStackId, usd=usd)
+
+            pi, err = pcp.ComputePrimIndex('/Def')
+            self.assertEqual(err, [])
+            self.assertTrue(pi.rootNode.hasSpecs)
+            self.assertEqual(
+                pi.primStack,
+                [rootLayer.GetPrimAtPath('/Def'), 
+                 subLayer.GetPrimAtPath('/Def')])
+
+            pi, err = pcp.ComputePrimIndex('/Over')
+            self.assertEqual(err, [])
+            self.assertTrue(pi.rootNode.hasSpecs)
+            self.assertEqual(
+                pi.primStack,
+                [rootLayer.GetPrimAtPath('/Over'),
+                 subLayer.GetPrimAtPath('/Over')])
+
+            # Change the condition in the sublayer expression such that it
+            # still passes and the sublayer remains loaded.
+            # 
+            # XXX: In the future Pcp could detect this and not issue any
+            # invalidations, in which case this test would need to be updated.
+            with Pcp._TestChangeProcessor(pcp) as cp:
+                rootLayer.subLayerPaths[0] = \
+                    f'`if(contains(["foo"], ${{VAR}}), "{subLayer.identifier}")`'
+
+                if INCREMENTAL_CHANGES:
+                    self.assertEqual(cp.GetSignificantChanges(), ['/Def'])
+                    self.assertEqual(cp.GetSpecChanges(), ['/Over'])
+                else:
+                    self.assertEqual(cp.GetSignificantChanges(), ['/'])
+                    self.assertEqual(cp.GetSpecChanges(), [])
+
+            pi, err = pcp.ComputePrimIndex('/Def')
+            self.assertEqual(err, [])
+            self.assertTrue(pi.rootNode.hasSpecs)
+            self.assertEqual(
+                pi.primStack,
+                [rootLayer.GetPrimAtPath('/Def'), 
+                 subLayer.GetPrimAtPath('/Def')])
+
+            pi, err = pcp.ComputePrimIndex('/Over')
+            self.assertEqual(err, [])
+            self.assertTrue(pi.rootNode.hasSpecs)
+            self.assertEqual(
+                pi.primStack,
+                [rootLayer.GetPrimAtPath('/Over'),
+                 subLayer.GetPrimAtPath('/Over')])
+
+        _test(usd=False)
+        _test(usd=True)
+
     def test_SublayerAuthoringAffectingMultipleLayerStacks(self):
         pcpCache = LoadPcpCache('multi_sublayer_auth/root.usda')
 

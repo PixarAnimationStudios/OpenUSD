@@ -50,6 +50,13 @@
 		[scenePath]
 			HdPrimOriginSchema::OriginPath(/CoordSys/worldSpace)
 	[primvars]
+		[xformOp:computedPivot]
+			[interpolation]
+				constant
+			[primvarValue]
+				(0, 0, 0)
+			[role]
+				
 	[purpose]
 		[fallback]
 			geometry

@@ -47,8 +47,114 @@
         <input name="diffuseColor" type="color3" nodegraph="NG_simple" output="out_color" />
     </UsdPreviewSurface>
 
-    <surfacematerial name="TestMaterial" type="material">
+    <surfacematerial name="VisTexcoords" type="material">
         <input name="surfaceshader" type="surfaceshader" nodename="PS_material" />
     </surfacematerial>
+
+
+	<nodedef name="ND_AdjustTexcoords" node="adjustTexcoords" >
+		<input name="_texcoord" type="vector2" />
+		<input name="_scale" type="vector2" />
+		<input name="_offset" type="vector2" />
+		<output name="out" type="vector2" />
+	</nodedef>
+	<nodegraph name="NG_AdjustTexcoords" type="vector2" nodedef="ND_AdjustTexcoords" >
+		<multiply name="scale" type="vector2" >
+			<input name="in1" type="vector2" interfacename="_texcoord" />
+			<input name="in2" type="vector2" interfacename="_scale" />
+		</multiply>
+		<add name="offset" type="vector2" >
+			<input name="in1" type="vector2" nodename="scale" />
+			<input name="in2" type="vector2" interfacename="_offset" />
+		</add>
+		<output name="adjustedTexcoord" type="vector2" nodename="offset" />
+	</nodegraph>
+
+    <!-- Custom Node that outputs uses textures and outputs multiple outputs -->
+    <!-- NOTE that the nodegroup is set to texture2d and the type specified when using
+        this node it multioutput -->
+	<nodedef name="ND_CustomMultiOutput" node="customMultiOutput" nodegroup="texture2d">
+		<input name="_File" type="filename" value="testSquare.png" />
+		<input name="_Offset" type="vector2" value="0.0, 0.0" />
+		<input name="_Scale" type="vector2" value="1.0, 1.0" />
+		<input name="_RadiusOffset" type="vector2" value="1.0, 1.0" />
+		<input name="_Radius" type="float" />
+
+		<output name="base_color" type="color3" />
+		<output name="metalness" type="float" value="0.0" />
+		<output name="specular_roughness" type="float" value="0.5" />
+	</nodedef>
+	<nodegraph name="NG_CustomMultiOutput" nodedef="ND_CustomMultiOutput" >
+
+		<texcoord name="uv" type="vector2" >
+			<input name="index" type="integer" value="0" />
+		</texcoord>
+		<adjustTexcoords name="adjusted_uv" type="vector2" >
+			<input name="_texcoord" type="vector2" nodename="uv" />
+			<input name="_scale" type="vector2" interfacename="_Scale" />
+			<input name="_offset" type="vector2" interfacename="_Offset" />
+		</adjustTexcoords>
+
+		<distance name="distance" type="float" >
+			<input name="in1" type="vector2" nodename="adjusted_uv" />
+			<input name="in2" type="vector2" interfacename="_RadiusOffset" />
+		</distance>
+		<ifgreater name="ifgreater" type="boolean" >
+			<input name="value1" type="float" interfacename="_Radius" />
+			<input name="value2" type="float" nodename="distance" />
+		</ifgreater>
+		<convert name="boolean_to_float" type="float" >
+			<input name="in" type="boolean" nodename="ifgreater" />
+		</convert>
+		<convert name="float_to_color3" type="color3" >
+			<input name="in" type="float" nodename="boolean_to_float" />
+		</convert>
+
+		<image name="tex_1" type="color3" >
+			<input name="file" type="filename" interfacename="_File" uniform="true" />
+			<input name="texcoord" type="vector2" nodename="uv" />
+			<input name="default" type="color3" value="1.0, 1.0, 1.0" />
+		</image>
+		<image name="tex" type="color3" >
+			<input name="file" type="filename" interfacename="_File" uniform="true" />
+			<input name="texcoord" type="vector2" nodename="adjusted_uv" />
+			<input name="default" type="color3" value="1.0, 1.0, 1.0" />
+		</image>
+		<difference name="difference" type="color3" >
+			<input name="bg" type="color3" nodename="tex_1" />
+			<input name="fg" type="color3" nodename="tex" />
+			<input name="mix" type="float" nodename="boolean_to_float" />
+		</difference>
+
+		<add name="add" type="color3" >
+			<input name="in1" type="color3" nodename="difference" />
+			<input name="in2" type="color3" nodename="float_to_color3" />
+		</add>
+		<clamp name="clamp_base_color" type="color3" >
+			<input name="in" type="color3" nodename="add" />
+		</clamp>
+
+		<output name="base_color" type="color3" nodename="clamp_base_color" />
+		<output name="metalness" type="float" value="0.0" />
+		<output name="specular_roughness" type="float" value="0.5" />
+	</nodegraph>
+
+
+	<customMultiOutput name="shaderProperties" type="multioutput" >
+		<input name="_File" type="filename" value="images/testSquare.png" />
+		<input name="_Radius" type="float" value="0.15" />
+        <input name="_RadiusOffset" type="vector2" value="0.75, 0.75" />
+	</customMultiOutput>
+
+	<standard_surface name="StdSurface" type="surfaceshader" >
+		<input name="base_color" type="color3" nodename="shaderProperties" output="base_color" />
+		<input name="metalness" type="float" nodename="shaderProperties" output="metalness" />
+		<input name="specular_roughness" type="float" nodename="shaderProperties" output="specular_roughness" />
+	</standard_surface>
+
+	<surfacematerial name="TestMaterial" type="material" >
+		<input name="surfaceshader" type="surfaceshader" nodename="StdSurface" />
+	</surfacematerial>
+
 
 </materialx>

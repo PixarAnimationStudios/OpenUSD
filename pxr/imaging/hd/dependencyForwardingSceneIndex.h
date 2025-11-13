@@ -14,6 +14,9 @@
 
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_unordered_set.h>
+#include <tbb/concurrent_vector.h>
+
+#include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -33,9 +36,18 @@ public:
     }
 
     // satisfying HdSceneIndexBase
+    HD_API
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
+
+    HD_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
+    // Provided for the sake of unit testing.
+    // By default, or if SetManualGarbageCollect(false) is called,
+    // we call RemoveDeletedEntries at the end of all of the notice
+    // handlers...
+    HD_API
+    void SetManualGarbageCollect(bool manualGarbageCollect);
 
 protected:
     HD_API
@@ -57,6 +69,25 @@ private:
 
     // -----------------------------------------------------------------------
 
+    // XXX: Note for future performance improvements: giving dependency schemas
+    // the ability to represent set->set dependencies, and compacting
+    // these locator entries into set->set, could potentially be a big perf
+    // win, since set/set intersections are vastly more efficient than
+    // pairwise locator intersections.
+    //
+    // Since multiple affected prims could be populating _dependedOn locator
+    // entries from different threads, and we use the individual dependency
+    // name for lifetime management, we'd probably need to populate these
+    // individually and then compact the next time we get a chance from
+    // a single threaded API (e.g. notice handler).
+    //
+    // We can compact as follows:
+    //  1. Construct a dictionary of "affectedDataSourceLocator" ->
+    //     vector of "dependedOnDataSourceLocator", and then flatten that into
+    //     a locator set.
+    //  2. Construct a dictionary of "dependedOnDataSourceLocatorSet" ->
+    //     vector of "affectedDataSourceLocator", and then flatten that into
+    //     a locator set.
     struct _LocatorsEntry
     {
         HdDataSourceLocator dependedOnDataSourceLocator;
@@ -76,8 +107,30 @@ private:
 
     struct _AffectedPrimDependencyEntry
     {
+        // Gotta define this stuff because the atomic_bool isn't copyable.
+        // We know we'll only be copying in single-threaded cases, so the naive
+        // implementation is fine...
+        // flaggedForDeletion is an atomic_bool so we can use parallel for in
+        // the notice handlers.
+        _AffectedPrimDependencyEntry()
+            : locatorsEntryMap(), flaggedForDeletion(false) {}
+        _AffectedPrimDependencyEntry(const _AffectedPrimDependencyEntry &rhs)
+            : locatorsEntryMap(rhs.locatorsEntryMap)
+            , flaggedForDeletion(rhs.flaggedForDeletion.load()) {}
+        _AffectedPrimDependencyEntry(_AffectedPrimDependencyEntry &&rhs)
+            : locatorsEntryMap(std::move(rhs.locatorsEntryMap))
+            , flaggedForDeletion(rhs.flaggedForDeletion.load()) {}
+        _AffectedPrimDependencyEntry& operator=(
+                const _AffectedPrimDependencyEntry& rhs) {
+            if (this != &rhs) {
+                locatorsEntryMap = rhs.locatorsEntryMap;
+                flaggedForDeletion = rhs.flaggedForDeletion.load();
+            }
+            return *this;
+        }
+
         _LocatorsEntryMap locatorsEntryMap;
-        bool flaggedForDeletion = false;
+        std::atomic_bool flaggedForDeletion;
     };
 
     // Reverse mapping from a depended on prim to its discovered-thus-far
@@ -100,6 +153,15 @@ private:
     // NOTE: This is mutable because it can be updated during calls to
     //       GetPrim -- which is defined as const within HdSceneIndexBase.
     //       This is in service of lazy population goals.
+    //
+    // XXX: This map is "dependedOn" -> "affected" -> vec (loc -> loc)
+    // ... a potential optimization we might want to make is to switch the
+    // organization to: "dependedOn" -> loc -> vec ("affected" -> loc).
+    // This would make dependency management more difficult; since dependencies
+    // may be introduced from different threads, we'd probably need to compact
+    // them into the latter representation.  But it would introduce more
+    // early-out opportunities in PrimsDirtied, which would be great especially
+    // for prims that have a high dependency fan-out (e.g. scene globals).
     mutable _DependedOnPrimsAffectedPrimsMap _dependedOnPrimToDependentsMap;
 
 
@@ -107,12 +169,32 @@ private:
 
     using _PathSet = tbb::concurrent_unordered_set<SdfPath, SdfPath::Hash>;
 
-    //using _DensePathSet = TfDenseHashSet<SdfPath, SdfPath::Hash>;
-
     struct _AffectedPrimToDependsOnPathsEntry
     {
+        // Gotta define this stuff because the atomic_bool isn't copyable.
+        // We know we'll only be copying in single-threaded cases, so the naive
+        // implementation is fine...
+        _AffectedPrimToDependsOnPathsEntry()
+            : dependsOnPaths(), flaggedForDeletion(false) {}
+        _AffectedPrimToDependsOnPathsEntry(
+                const _AffectedPrimToDependsOnPathsEntry &rhs)
+            : dependsOnPaths(rhs.dependsOnPaths)
+            , flaggedForDeletion(rhs.flaggedForDeletion.load()) {}
+        _AffectedPrimToDependsOnPathsEntry(
+                _AffectedPrimToDependsOnPathsEntry &&rhs)
+            : dependsOnPaths(std::move(rhs.dependsOnPaths))
+            , flaggedForDeletion(rhs.flaggedForDeletion.load()) {}
+        _AffectedPrimToDependsOnPathsEntry& operator=(
+                const _AffectedPrimToDependsOnPathsEntry& rhs) {
+            if (this != &rhs) {
+                dependsOnPaths = rhs.dependsOnPaths;
+                flaggedForDeletion = rhs.flaggedForDeletion.load();
+            }
+            return *this;
+        }
+
         _PathSet dependsOnPaths;
-        bool flaggedForDeletion = false;
+        std::atomic_bool flaggedForDeletion;
     };
 
 
@@ -134,6 +216,7 @@ private:
 
     void _ClearDependencies(const SdfPath &primPath);
     void _UpdateDependencies(const SdfPath &primPath) const;
+    void _ResetDependencies();
 
     // -----------------------------------------------------------------------
 
@@ -172,17 +255,21 @@ private:
         };
     };
 
-    using _VisitedNodeSet = TfDenseHashSet<
+    using _VisitedNodeSet = tbb::concurrent_unordered_set<
         _VisitedNode,
         _VisitedNode::HashFunctor>;
+
+    using _AdditionalDirtiedVector =
+        tbb::concurrent_vector<HdSceneIndexObserver::DirtiedPrimEntry>;
 
     // impl for PrimDirtied which handles propogation of PrimDirtied notices
     // for affected prims/dataSources.
     void _PrimDirtied(
         const SdfPath &primPath,
-        const HdDataSourceLocator &sourceLocator,
+        const HdDataSourceLocatorSet &sourceLocator,
         _VisitedNodeSet *visited,
-        HdSceneIndexObserver::DirtiedPrimEntries *moreDirtiedEntries);
+        _AdditionalDirtiedVector *moreDirtiedEntries,
+        _PathSet *rebuildDependencies);
 
     // -----------------------------------------------------------------------
 
@@ -201,10 +288,6 @@ private:
 
 public:
     // XXX does thread-unsafe deletion.
-    // NOTE FOR REVIEWERS: temporarily hiding this explosive public method
-    //                     down here while we discuss it. It's public because
-    //                     only the application knows when it's safe to call?
-    //
     // NOTE: optional arguments are in service of unit testing to provide
     //       insight in to what was removed.
     HD_API
@@ -212,6 +295,8 @@ public:
         SdfPathVector *removedAffectedPrimPaths = nullptr,
         SdfPathVector *removedDependedOnPrimPaths = nullptr);
 
+private:
+    bool _manualGarbageCollect;
 };
 
 

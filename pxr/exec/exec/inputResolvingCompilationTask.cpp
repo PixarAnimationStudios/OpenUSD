@@ -73,10 +73,7 @@ Exec_InputResolvingCompilationTask::_Compile(
             }
 
             // Claim the task for producing the missing output.
-            const Exec_CompilerTaskSyncBase::ClaimResult claimResult =
-                deps.ClaimSubtask(outputKeyIdentity);
-            if (claimResult ==
-                Exec_CompilerTaskSyncBase::ClaimResult::Claimed) {
+            if (deps.ClaimOutputProvidingTask(outputKeyIdentity)) {
                 // Run the task that produces the output.
                 deps.NewSubtask<Exec_OutputProvidingCompilationTask>(
                     compilationState,

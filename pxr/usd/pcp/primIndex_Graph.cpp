@@ -114,6 +114,7 @@ PcpPrimIndex_Graph::PcpPrimIndex_Graph(const PcpLayerStackSite& rootSite,
                                        bool usd)
     : _nodes(std::make_shared<_NodePool>())
     , _hasPayloads(false)
+    , _hasNewNodes(false)
     , _instanceable(false)
     , _finalized(false)
     , _usd(usd)
@@ -135,6 +136,18 @@ bool
 PcpPrimIndex_Graph::HasPayloads() const
 {
     return _hasPayloads;
+}
+
+void
+PcpPrimIndex_Graph::SetHasNewNodes(bool hasNewNodes)
+{
+    _hasNewNodes = hasNewNodes;
+}
+
+bool
+PcpPrimIndex_Graph::HasNewNodes() const
+{
+    return _hasNewNodes;
 }
 
 void 

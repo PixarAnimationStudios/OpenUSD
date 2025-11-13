@@ -48,6 +48,7 @@ public:
 
     VkPhysicalDeviceFeatures2 vkDeviceFeatures2 {};
     VkPhysicalDeviceVulkan11Features vkVulkan11Features {};
+    VkPhysicalDeviceVulkan13Features vkVulkan13Features {};
     VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT
         vkVertexAttributeDivisorFeatures {};
     VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR

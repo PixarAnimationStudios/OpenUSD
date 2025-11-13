@@ -32,11 +32,12 @@ HgiVulkanBlitCmds::HgiVulkanBlitCmds(HgiVulkan* hgi)
 HgiVulkanBlitCmds::~HgiVulkanBlitCmds() = default;
 
 void
-HgiVulkanBlitCmds::PushDebugGroup(const char* label)
+HgiVulkanBlitCmds::PushDebugGroup(
+        const char* label,
+        const GfVec4f& color)
 {
     _CreateCommandBuffer();
-    HgiVulkanBeginLabel(_hgi->GetPrimaryDevice(), _commandBuffer, label,
-        { 0.99607843137, 0.87450980392, 0.0, 1.0 });
+    HgiVulkanBeginLabel(_hgi->GetPrimaryDevice(), _commandBuffer, label, color);
 }
 
 void
@@ -44,6 +45,16 @@ HgiVulkanBlitCmds::PopDebugGroup()
 {
     _CreateCommandBuffer();
     HgiVulkanEndLabel(_hgi->GetPrimaryDevice(), _commandBuffer);
+}
+
+void
+HgiVulkanBlitCmds::InsertDebugMarker(
+        const char* label,
+        const GfVec4f& color)
+{
+    _CreateCommandBuffer();
+    HgiVulkanInsertDebugMarker(_hgi->GetPrimaryDevice(), _commandBuffer, label,
+        color);
 }
 
 static

@@ -44,12 +44,14 @@ public:
 
 private:
 
-    // Populates \p nodesToGraph with the nodes that can be reached from
-    // \p node withing \p maxInDepth and \p maxOutDepth.
-    void _GetLimitedNodes(const VdfNode &node, 
-                           int maxInDepth, int maxOutDepth,
-                           std::vector<const VdfNode *> *nodesToGraph);
-
+    // Populates \p visitedThisTraversal with the nodes that can be reached from
+    // \p node within \p maxInDepth and \p maxOutDepth. Nodes not part of the
+    // global set (_visitedNodes) are added to \p nodesToGraph.
+    void _GetLimitedNodes(
+        const VdfNode &node, 
+        int maxInDepth, int maxOutDepth,
+        VdfNodePtrSet *visitedThisTraversal,
+        std::vector<const VdfNode *> *nodesToGraph) const;
 
     // Prints the header of the .dot file.
     void _PrintHeader() const;

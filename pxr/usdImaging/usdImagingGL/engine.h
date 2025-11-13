@@ -24,6 +24,7 @@
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h"
+#include "pxr/imaging/hd/pluginRendererUniqueHandle.h"
 
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/renderSetupTask.h"
@@ -60,10 +61,12 @@ TF_DECLARE_REF_PTRS(HdNoticeBatchingSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingRootOverridesSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingSelectionSceneIndex);
+TF_DECLARE_REF_PTRS(HdCachingSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiLegacyDisplayStyleOverrideSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiPrimTypeAndPathPruningSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiSceneGlobalsSceneIndex);
 TF_DECLARE_REF_PTRS(HdSceneIndexBase);
+TF_DECLARE_REF_PTRS(HdMergingSceneIndex);
 TF_DECLARE_REF_PTRS(HdxTaskControllerSceneIndex);
 
 using UsdStageWeakPtr = TfWeakPtr<class UsdStage>;
@@ -676,6 +679,17 @@ public:
 
     /// @}
 
+
+    // ---------------------------------------------------------------------
+    /// \name Miscellaneous
+    /// @{
+    // ---------------------------------------------------------------------
+
+    /// Returns true if using the UsdImaging scene index.
+    USDIMAGINGGL_API
+    static bool UseUsdImagingSceneIndex();
+    /// @}
+
 protected:
 
     /// Open some protected methods for whitebox testing.
@@ -787,13 +801,18 @@ protected:
 protected:
     bool _displayUnloadedPrimsWithBounds;
     bool _gpuEnabled;
+
+    /* Hydra 2.0 */
+    
+    HdPluginRendererUniqueHandle _renderer;
+    HdxTaskControllerSceneIndexRefPtr _taskControllerSceneIndex;
+
+    /* Hydra 1.0 */
     HdPluginRenderDelegateUniqueHandle _renderDelegate;
     std::unique_ptr<HdRenderIndex> _renderIndex;
+    std::unique_ptr<HdxTaskController> _taskController;
 
     SdfPath const _sceneDelegateId;
-
-    std::unique_ptr<HdxTaskController> _taskController;
-    HdxTaskControllerSceneIndexRefPtr _taskControllerSceneIndex;
 
     HdxSelectionTrackerSharedPtr _selTracker;
     HdRprimCollection _renderCollection;
@@ -820,8 +839,12 @@ private:
 
     UsdImagingGLEngine_Impl::_AppSceneIndicesSharedPtr _appSceneIndices;
 
+    bool _CreateSceneIndicesAndRenderer(HdRendererPluginHandle const &plugin);
+
     void _DestroyHydraObjects();
 
+    SdfPath _GetInstancerForPrim(const SdfPath &sceneIndexPath) const;
+        
     // Note that we'll only ever use one of _sceneIndex/_sceneDelegate
     // at a time.
     UsdImagingStageSceneIndexRefPtr _stageSceneIndex;
@@ -832,16 +855,19 @@ private:
     HdsiPrimTypeAndPathPruningSceneIndexRefPtr _lightPruningSceneIndex;
     // State of the _lightPruningSceneIndex.
     bool _lightPruningSceneIndexEnableSceneLights;
-    HdSceneIndexBaseRefPtr _sceneIndex;
+    HdSceneIndexBaseRefPtr _usdImagingFinalSceneIndex;
 
+    HdMergingSceneIndexRefPtr _mergingSceneIndex;
+    HdCachingSceneIndexRefPtr _cachingSceneIndex;
+    HdSceneIndexBaseRefPtr _terminalSceneIndex;
+
+    /* Hydra 1.0 */
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
-
     std::unique_ptr<HdEngine> _engine;
 
     bool _allowAsynchronousSceneProcessing = false;
     bool _enableUsdDrawModes = true;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

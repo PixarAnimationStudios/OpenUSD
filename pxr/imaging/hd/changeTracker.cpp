@@ -100,25 +100,6 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
     }
 
     if (_emulationSceneIndex) {
-
-        // There's a set of dirty bits that are used as internal signalling
-        // in hydra, and aren't related to scene data.  These, we need to
-        // pass through directly.
-        const HdDirtyBits internalDirtyBits =
-            HdChangeTracker::InitRepr |
-            HdChangeTracker::Varying |
-            HdChangeTracker::NewRepr |
-            HdChangeTracker::CustomBitsMask;
-
-        if (bits & internalDirtyBits) {
-            _MarkRprimDirty(id, bits & internalDirtyBits);
-        }
-
-         // If we're only processing internal bits, skip calling DirtyPrims.
-        if ((bits & ~internalDirtyBits) == 0) {
-            return;
-        }
-
         // We need to dispatch based on prim type.
         HdSceneIndexPrim prim = _emulationSceneIndex->GetPrim(id);
         HdDataSourceLocatorSet locators;
@@ -658,7 +639,7 @@ HdChangeTracker::_MarkSprimDirty(SdfPath const& id, HdDirtyBits bits)
     _DependencyMap::const_accessor aIR;
     if (_sprimSprimTargetDependencies.find(aIR, id)) {
         for (SdfPath const& dep : aIR->second) {
-            MarkSprimDirty(dep, ~Clean);
+            _MarkSprimDirty(dep, ~Clean);
         }
     }
 

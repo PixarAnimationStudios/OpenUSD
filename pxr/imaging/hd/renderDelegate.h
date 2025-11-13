@@ -540,6 +540,13 @@ public:
     HD_API
     virtual bool IsParallelSyncEnabled(const TfToken &primType) const;
 
+    /// API to aid Hydra 2.0 renderer transition.
+    /// Provides a way to detect if the application task graph
+    /// should include tasks that are specific to Storm.
+    /// The base implementation returns false.
+    HD_API
+    virtual bool RequiresStormTasks() const;
+
 protected:
     /// This class must be derived from.
     HD_API

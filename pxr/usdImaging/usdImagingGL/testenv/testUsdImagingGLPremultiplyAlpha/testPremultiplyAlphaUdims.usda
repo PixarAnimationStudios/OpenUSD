@@ -176,7 +176,7 @@ def Scope "Scene" (
         {
             rel material:binding = </Scene/Looks/Mat1>
             uniform bool doubleSided = 1
-            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
+            float2[] primvars:st = [(0.01, 0.01), (0.99, 0.01), (0.99, 0.99), (0.01, 0.99)] (interpolation = "vertex")
             color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
             Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
             int[] faceVertexCounts = [4]
@@ -193,7 +193,7 @@ def Scope "Scene" (
         {
             rel material:binding = </Scene/Looks/Mat2>
             uniform bool doubleSided = 1
-            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
+            float2[] primvars:st = [(0.01, 0.01), (0.99, 0.01), (0.99, 0.99), (0.01, 0.99)] (interpolation = "vertex")
             color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
             Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
             int[] faceVertexCounts = [4]
@@ -210,7 +210,7 @@ def Scope "Scene" (
         {
             rel material:binding = </Scene/Looks/Mat3>
             uniform bool doubleSided = 1
-            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
+            float2[] primvars:st = [(0.01, 0.01), (0.99, 0.01), (0.99, 0.99), (0.01, 0.99)] (interpolation = "vertex")
             color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
             Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
             int[] faceVertexCounts = [4]
@@ -227,7 +227,7 @@ def Scope "Scene" (
         {
             rel material:binding = </Scene/Looks/Mat4>
             uniform bool doubleSided = 1
-            float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")
+            float2[] primvars:st = [(0.01, 0.01), (0.99, 0.01), (0.99, 0.99), (0.01, 0.99)] (interpolation = "vertex")
             color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
             Vec3f[] extent = [(-1, -1, -1), (1, 1, 1)]
             int[] faceVertexCounts = [4]

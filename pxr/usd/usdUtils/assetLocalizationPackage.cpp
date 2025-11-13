@@ -419,9 +419,10 @@ UsdUtils_AssetLocalizationPackage::_AddLayerToPackage(
                         *get_pointer(layer));
         }
         
-        const std::string tmpDirPath = ArchGetTmpDir();
-        std::string tmpLayerExportPath = TfStringCatPaths(tmpDirPath, 
-                TfGetBaseName(destPath));
+        const std::string baseName = TfGetBaseName(destPath);
+        const std::string tmpLayerExportPath = 
+            ArchMakeTmpFileName(TfStringGetBeforeSuffix(baseName), 
+                                "." + TfStringGetSuffix(baseName));
         layer->Export(tmpLayerExportPath, /*comment*/ "", args);
 
         if (!_WriteToPackage(tmpLayerExportPath, destPath)) {

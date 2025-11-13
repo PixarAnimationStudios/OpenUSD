@@ -114,23 +114,13 @@ data from the four most recent releases is reported on a rolling basis.
 
 .. note::
 
-    Linux and Windows machine configurations changed as of 25.08; historical
-    numbers have been rerun for consistency.
+    A full historical rerun of all metrics on this page was performed for the
+    25.11 release because of a change in "create first image" timing methodology.
 
-    For 25.08, the "render first image" metric on macOS is reported. This
-    reported metric does not include platform-specific imaging initialization
-    time, which is included in the corresponding Linux and Windows metrics.
-    For the 25.11 release, historical performance re-evaluations will
-    be performed on all platforms to exclude imaging initialization time from
-    all "render first image" datapoints. The initialization time is roughly
-    constant across all assets, around 0.3-0.4 seconds.
-
-    A small increase or decrease in performance metrics over different releases
-    may not necessarily indicate an overall performance improvement or
-    regression in USD. Best-case minimum measurements are taken over multiple
-    iterations, but these measurements may still be subject to some variation,
-    so use the below results with caution. We are investigating these sources
-    of variation.
+    Interpret the metrics on this page with caution. Variation may arise from
+    a variety of sources, including run-to-run inconsistency in how the GL
+    driver schedules its flushes against our requests. Investigation on these
+    is ongoing.
 
 .. image:: performance/linux.svg
     :width: 500
@@ -158,7 +148,7 @@ run; the primary intention is not necessarily to exercise specific renderers.
 
 The shader ball asset can be `downloaded here <https://github.com/usd-wg/assets/tree/main/full_assets/StandardShaderBall>`__.
 
-.. datatemplate:yaml:: performance/24.11_linux_shaderball.yaml
+.. datatemplate:yaml:: performance/25.11_linux_shaderball.yaml
    :template: perf_metric_shaderball_template.tmpl
 
 Kitchen Set
@@ -171,7 +161,7 @@ This asset provides a complex kitchen scene.
 
 The Kitchen Set asset can be `downloaded here <https://openusd.org/release/dl_kitchen_set.html>`__.
 
-.. datatemplate:yaml:: performance/24.11_linux_kitchenset.yaml
+.. datatemplate:yaml:: performance/25.11_linux_kitchenset.yaml
    :template: perf_metric_kitchenset_template.tmpl
 
 ALab
@@ -191,7 +181,7 @@ The metrics have been measured with the base asset merged with the additional
 
 The ALab asset can be `downloaded here <https://animallogic.com/alab/>`__.
 
-.. datatemplate:yaml:: performance/24.11_linux_alab.yaml
+.. datatemplate:yaml:: performance/25.11_linux_alab.yaml
    :template: perf_metric_alab_template.tmpl
 
 Moore Lane
@@ -215,7 +205,7 @@ The metrics have been measured using the contained
 
 The Moore Lane asset can be `downloaded here <https://dpel.aswf.io/4004-moore-lane/>`__.
 
-.. datatemplate:yaml:: performance/24.11_linux_moorelane.yaml
+.. datatemplate:yaml:: performance/25.11_linux_moorelane.yaml
    :template: perf_metric_moorelane_template.tmpl
 
 ***********************************

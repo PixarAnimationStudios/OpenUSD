@@ -132,6 +132,19 @@ namespace ShaderMetadataHelpers
     ComputeShownIfFromMetadata(SdrShaderPropertyConstPtr property,
         const SdrShaderPropertyUniquePtrVec& allProperties,
         SdrShaderNodeConstPtr shader);
+
+    /// Synthesizes a "shownIf" expression from conditional visibility metadata
+    /// associated with \p pageName, expressed according to Katana's "args"
+    /// format. The node's properties should be provided in \p properties and
+    /// will be referenced when resolving relative paths (`../../some/property`)
+    /// and when parsing embedded property values. Uses \p shaderUri when when
+    /// reporting errors.
+    SDR_API
+    std::string
+    ComputeShownIfFromMetadata(const SdrTokenMap& metadata,
+        const std::string& pageName,
+        const SdrShaderPropertyUniquePtrVec& properties,
+        const std::string& shaderUri);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

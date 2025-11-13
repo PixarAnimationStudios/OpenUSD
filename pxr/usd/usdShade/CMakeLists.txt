@@ -72,62 +72,6 @@ pxr_test_scripts(
     testenv/testUsdShadeUdimUtils.py
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdShadeConnectableAPIBehavior
-    DEST testUsdShadeConnectableAPIBehavior
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdShadeCoordSysAPI
-    DEST testUsdShadeCoordSysAPI
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdShadeCoordSysAPIDeprecated
-    DEST testUsdShadeCoordSysAPIDeprecated
-    ENV
-        USD_SHADE_COORD_SYS_IS_MULTI_APPLY="False"
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdShadeGetValueProducingAttribute
-    DEST testUsdShadeGetValueProducingAttribute
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdShadeMaterialBinding
-    DEST testUsdShadeMaterialBinding
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdShadeMaterialBindFaceSubset
-    DEST testUsdShadeMaterialBindFaceSubset
-)
-pxr_install_test_dir(
-    SRC testenv/testUsdShadeMaterialAuthoring
-    DEST testUsdShadeMaterialAuthoring
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdShadeMaterialBaseMaterial
-    DEST testUsdShadeMaterialBaseMaterial
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdShadeMaterialSpecializesBaseComposition
-    DEST testUsdShadeMaterialSpecializesBaseComposition
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdShadeShaderDef
-    DEST testUsdShadeShaderDef
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdShadeUdimUtils
-    DEST testUsdShadeUdimUtils
-)
-
 pxr_register_test(testUsdShadeBinding
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeBinding"
@@ -137,24 +81,28 @@ pxr_register_test(testUsdShadeBinding
 pxr_register_test(testUsdShadeConnectableAPIBehavior
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeConnectableAPIBehavior"
+    TESTENV testenv/testUsdShadeConnectableAPIBehavior
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdShadeCoordSysAPI
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeCoordSysAPI"
+    TESTENV testenv/testUsdShadeCoordSysAPI
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdShadeGetValueProducingAttribute
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeGetValueProducingAttribute"
+    TESTENV testenv/testUsdShadeGetValueProducingAttribute
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdShadeMaterialAuthoring
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeMaterialAuthoring"
+    TESTENV testenv/testUsdShadeMaterialAuthoring
     DIFF_COMPARE char_shading.usda char_shading_compact.usda
     EXPECTED_RETURN_CODE 0
 )
@@ -162,6 +110,7 @@ pxr_register_test(testUsdShadeMaterialAuthoring
 pxr_register_test(testUsdShadeMaterialBinding
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeMaterialBinding"
+    TESTENV testenv/testUsdShadeMaterialBinding
     EXPECTED_RETURN_CODE 0
 )
 
@@ -174,6 +123,7 @@ pxr_register_test(testUsdShadeMaterialOutputs
 pxr_register_test(testUsdShadeMaterialBindFaceSubset
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeMaterialBindFaceSubset"
+    TESTENV testenv/testUsdShadeMaterialBindFaceSubset
     DIFF_COMPARE SphereWithMaterialBind.usda
     EXPECTED_RETURN_CODE 0
 )
@@ -187,6 +137,7 @@ pxr_register_test(testUsdShadeShaders
 pxr_register_test(testUsdShadeShaderDef
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeShaderDef"
+    TESTENV testenv/testUsdShadeShaderDef
     EXPECTED_RETURN_CODE 0
 )
 
@@ -199,6 +150,7 @@ pxr_register_test(testUsdShadeNodeGraphs
 pxr_register_test(testUsdShadeMaterialBaseMaterial
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeMaterialBaseMaterial"
+    TESTENV testenv/testUsdShadeMaterialBaseMaterial
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE test_base_material_specializes.usda
 )
@@ -206,6 +158,7 @@ pxr_register_test(testUsdShadeMaterialBaseMaterial
 pxr_register_test(testUsdShadeMaterialSpecializesBaseComposition
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeMaterialSpecializesBaseComposition"
+    TESTENV testenv/testUsdShadeMaterialSpecializesBaseComposition
     EXPECTED_RETURN_CODE 0
 )
 
@@ -235,5 +188,6 @@ pxr_register_test(testUsdShadeConnectability_OldEncoding
 pxr_register_test(testUsdShadeUdimUtils
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeUdimUtils"
+    TESTENV testenv/testUsdShadeUdimUtils
     EXPECTED_RETURN_CODE 0
 )

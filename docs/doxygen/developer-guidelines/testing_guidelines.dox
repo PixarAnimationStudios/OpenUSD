@@ -51,7 +51,7 @@ Option                      | Meaning
 --------------------------- | -------------
 `STDOUT_REDIRECT <file-name>` | Redirect stdout from a test to the file name specified.
 `STDERR_REDIRECT <file-name>` | Redirect stderr from a test to the file name specified.
-`DIFF_COMPARE <file-name>+`   | After the test has completed, diff file-name(s) against the corresponding file(s) in `<pxr_install_test_dir dir>/baseline/`
+`DIFF_COMPARE <file-name>+`   | After the test has completed, diff file-name(s) against the corresponding file(s) in `<testenv_dir>/baseline/`
 `ENV <key=value>+`            | A set of key-value pairs specifying environment configuration to set.
 `EXPECTED_RETURN_CODE <num>`  | An exit code to match against after running the test.
 `PYTHON`                      | Indicates that the test is Python based.
@@ -67,28 +67,18 @@ The test registration for the testUsdFlatten Python test looks as follows:
 pxr_register_test(testUsdFlatten
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdFlatten"
+    TESTENV testenv/testUsdFlatten
     EXPECTED_RETURN_CODE 0
 )
 \endcode
 
 \subsection Testing_Test_InstallationTest Installation
 
-Use `pxr_install_test_dir` to specify where test assets should get installed 
-when the test harness is run. Note that the name used for `DEST` must exactly 
-match the name used in test registration. If your test does not use any 
-additional assets, you don't need to add a `pxr_install_test_dir` call nor add 
-the "<your test name>" directory to `testenv/`. 
-
-<b>Example</b>
-
-The install for testUsdFlatten assets looks like:
-
-\code{.unparsed}
-pxr_install_test_dir(
-    SRC testenv/testUsdFlatten
-    DEST testUsdFlatten
-)
-\endcode
+Use the `TESTENV` parameter to `pxr_register_test` to specify where test assets 
+should get installed when the test harness is run. By default, test files will be 
+recursively installed into the working directory of the test application. If your 
+test does not use any additional assets, you don't need to specify a value for 
+`TESTENV` nor add the "<your test name>" directory to `testenv/`. 
 
 \subsection Testing_Python_Unit_Tests Python Unit Tests
 
@@ -202,22 +192,14 @@ if __name__ == "__main__":
 
 We create a testUsdGeomMyFeature directory in `testenv/` for any test resources, 
 such as USD files, images, etc. We configure CTest to copy test resources from 
-this directory by adding the following to `pxr/usd/usdGeom/CMakeLists.txt`.
-
-\code{.unparsed}
-pxr_install_test_dir(
-    SRC testenv/testUsdGeomMyFeature
-    DEST testUsdGeomMyFeature
-)
-\endcode
-
-In CMakeLists.txt we register our new test by adding the following registration 
-steps:
+this directory and register our new test by adding the following to 
+`pxr/usd/usdGeom/CMakeLists.txt`:
 
 \code{.unparsed}
 pxr_register_test(testUsdGeomMyFeature
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomMyFeature"
+    TESTENV testenv/testUsdGeomMyFeature
     EXPECTED_RETURN_CODE 0
 )
 \endcode
@@ -315,21 +297,13 @@ int main()
 
 We create a testUsdGeomMyFeature directory in `testenv/` for any test resources, 
 such as USD files, images, etc. We configure CTest to copy test resources from 
-this directory by adding the following to `pxr/usd/usdGeom/CMakeLists.txt`.
-
-\code{.unparsed}
-pxr_install_test_dir(
-    SRC testenv/testUsdGeomMyFeature
-    DEST testUsdGeomMyFeature
-)
-\endcode
-
-In CMakeLists.txt we register our new test by adding the following registration 
-steps:
+this directory and register our new test by adding the following to 
+`pxr/usd/usdGeom/CMakeLists.txt`:
 
 \code{.unparsed}
 pxr_register_test(testUsdGeomMyFeature
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomMyFeature"
+    TESTENV testenv/testUsdGeomMyFeature
     EXPECTED_RETURN_CODE 0
 )
 \endcode

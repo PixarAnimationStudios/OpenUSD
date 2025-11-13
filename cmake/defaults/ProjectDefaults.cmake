@@ -28,7 +28,7 @@ if(APPLE)
 endif()
 
 if(EMSCRIPTEN)
-    set(EMSCRIPTEN_COMPILE_FLAGS "-sMAXIMUM_MEMORY=4GB -fexceptions")
+    set(EMSCRIPTEN_COMPILE_FLAGS "-fexceptions")
     add_compile_options("SHELL:${EMSCRIPTEN_COMPILE_FLAGS}")
     add_link_options("SHELL:${EMSCRIPTEN_COMPILE_FLAGS} -sALLOW_MEMORY_GROWTH=1")
 endif()

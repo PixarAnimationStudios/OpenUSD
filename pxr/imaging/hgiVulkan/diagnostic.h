@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/imaging/hgiVulkan/api.h"
+#include "pxr/imaging/hgiVulkan/vulkan.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -57,6 +58,14 @@ HGIVULKAN_API
 void HgiVulkanEndLabel(
     HgiVulkanDevice* device,
     HgiVulkanCommandBuffer* cb);
+
+/// Insert a debug marker in a vulkan command buffer
+HGIVULKAN_API
+void HgiVulkanInsertDebugMarker(
+    HgiVulkanDevice* device,
+    HgiVulkanCommandBuffer* cb,
+    const char* label,
+    const GfVec4f& color);
 
 /// Begin a label in the vulkan device gfx queue
 HGIVULKAN_API

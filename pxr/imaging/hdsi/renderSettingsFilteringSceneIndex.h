@@ -84,7 +84,6 @@ protected:
 private:
     const VtArray<TfToken> _namespacePrefixes;
     HdContainerDataSourceHandle _fallbackPrimDs;
-    bool _addedFallbackPrim;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

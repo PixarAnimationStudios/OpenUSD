@@ -11,9 +11,14 @@
 #include "pxr/base/js/json.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/pxrTslRobinMap/robin_set.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <iostream>
+#include <istream>
+#include <ostream>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 #if PXR_USE_NAMESPACES
@@ -30,6 +35,7 @@
 #include "rapidjson/allocators.h"
 #include "rapidjson/document.h"
 #include "rapidjson/reader.h"
+#include "rapidjson/istreamwrapper.h"
 #include "rapidjson/ostreamwrapper.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/error/error.h"
@@ -71,10 +77,19 @@ struct _InputHandler : public rj::BaseReaderHandler<rj::UTF8<>, _InputHandler>
         return true;
     }
     bool String(const char* str, rj::SizeType length, bool /* copy */) {
-        values.emplace_back(std::string(str, length));
+        // Deduplicate strings in the input.
+        //
+        // JsValue holds reference-counted immutable strings so we store
+        // copies of a single JsValue holding the relevant string rather than
+        // independently allocated strings.  This greatly reduces memory
+        // overhead for JSON-serialized libTrace data.
+        auto it = _internedStrings.emplace(std::string(str, length)).first;
+        values.push_back(*it);
         return true;
     }
     bool Key(const char* str, rj::SizeType length, bool /* copy */) {
+        // Note that, while duplicate keys are very common, the structure of
+        // JsObject does not allow us to share common keys between JsObjects.
         keys.emplace_back(str, length);
         return true;
     }
@@ -113,6 +128,19 @@ struct _InputHandler : public rj::BaseReaderHandler<rj::UTF8<>, _InputHandler>
 public:
     std::vector<JsObject::key_type> keys;
     std::vector<JsObject::mapped_type> values;
+
+private:
+    struct _StrHash
+    {
+        size_t operator()(const JsValue &v) const {
+            // This assumes that the held values contain strings because
+            // _internedStrings is only used for strings.
+            return TfHash()(v.GetString());
+        }
+    };
+
+    // Table for deduplicating parsed strings (but not keys.)
+    pxr_tsl::robin_set<JsValue, _StrHash> _internedStrings;
 };
 
 // This class is needed to override writing out doubles. There is a bug in 
@@ -134,6 +162,41 @@ public:
         
         return Base::RawValue(buffer, strlen(buffer), rj::kNumberType);
      }
+};
+
+// Wrapper type for rapidjson streams that records the byte offsets of newline
+// characters so that error offsets can be converted to line and column
+// indices.
+template <typename Stream>
+class _LineTracker : public Stream
+{
+public:
+    using Stream::Stream;
+    using Ch = typename Stream::Ch;
+
+    Ch Take() {
+        Ch ch = Stream::Take();
+        if (ch == '\n') {
+            _newlines.push_back(Stream::Tell()-1);
+        }
+        return ch;
+    }
+
+    // Convert a byte offset into line and column indices.
+    std::pair<unsigned int, unsigned int>
+    ConvertOffsetToLineAndColumn(size_t off) const {
+        const auto it = std::lower_bound(
+            _newlines.begin(), _newlines.end(), off);
+        const unsigned int line = std::distance(_newlines.begin(), it);
+        const unsigned int col = (it == _newlines.begin())
+            ? 1
+            : off - *std::prev(it);
+        return {line+1, col};
+    }
+
+private:
+    // Records the positions of newline characters seen during parsing.
+    std::vector<size_t> _newlines;
 };
 
 }
@@ -215,13 +278,43 @@ JsParseStream(
         return JsValue();
     }
 
-    // Parse streams by reading into a string first. This makes it easier to
-    // yield good error messages that include line and column numbers, rather
-    // than the character offset that rapidjson currently provides.
-    return JsParseString(std::string(
-        (std::istreambuf_iterator<char>(istr)),
-         std::istreambuf_iterator<char>()),
-        error);
+    _InputHandler handler;
+    rj::Reader reader;
+    // The read buffer size selected here is somewhat arbitrary.  While the
+    // input stream may have its own buffering, profiling the parser shows a
+    // significant benefit from providing a buffer to IStreamWrapper.
+    constexpr size_t bufLen = 8192;
+    std::unique_ptr<char[]> buf(new char[bufLen]);
+    _LineTracker<rj::IStreamWrapper> isw(istr, buf.get(), bufLen);
+    // Need Full precision flag to round trip double values correctly.
+    constexpr auto parseFlags =
+        rj::kParseFullPrecisionFlag | rj::kParseStopWhenDoneFlag;
+    rj::ParseResult result;
+    if (error) {
+        result = reader.Parse<parseFlags>(isw, handler);
+    }
+    else {
+        // When not reporting errors, intentionally shear off the derived
+        // class to avoid the overhead of recording line offsets.
+        result = reader.Parse<parseFlags>(
+            static_cast<rj::IStreamWrapper&>(isw), handler);
+    }
+
+    if (!result) {
+        if (error) {
+            std::tie(error->line, error->column) =
+                isw.ConvertOffsetToLineAndColumn(result.Offset());
+            error->reason = rj::GetParseError_En(result.Code());
+        }
+        return JsValue();
+    }
+
+    if (!TF_VERIFY(handler.values.size() == 1,
+                   "Unexpected value count: %zu", handler.values.size())) {
+        return JsValue();
+    }
+
+    return std::move(handler.values.front());
 }
 
 JsValue

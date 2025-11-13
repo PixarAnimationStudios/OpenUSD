@@ -735,6 +735,34 @@ function(_pxr_install_rpath rpathRef NAME)
     )
 endfunction()
 
+# Sets up an install rule to copy assets from the source tree into the
+# ctest folder in the install location. These files are copied at runtime into
+# a temporary directory by the test runner before each test is run.
+function(_pxr_install_test_dir)
+    if (NOT PXR_BUILD_TESTS)
+        return()
+    endif()
+
+    # If the package for this test does not have a target it must not be
+    # getting built, in which case we can skip building associated tests.
+    if (NOT TARGET ${PXR_PACKAGE})
+        return()
+    endif()
+
+    cmake_parse_arguments(bt
+        "" 
+        "SRC;DEST"
+        ""
+        ${ARGN}
+    )
+
+    # XXX -- We shouldn't have to install to run tests.
+    install(
+        DIRECTORY ${bt_SRC}/
+        DESTINATION tests/ctest/${bt_DEST}
+    )
+endfunction() # _pxr_install_test_dir
+
 # Split the library (target) names in libs into internal-to-the-monolithic-
 # library and external-of-it lists.
 function(_pxr_split_libraries libs internal_result external_result)

@@ -3924,6 +3924,147 @@ properties, but creating a property in the :usda:`userProperties:` namespace
 using :cpp:`UsdPrim::CreateAttribute()` (not all importers may handle custom
 relationships properly) is sufficient.
 
+.. _usdglossary-validation:
+
+Validation
+**********
+
+OpenUSD provides the flexibility to set up assets in many different ways, 
+however schema domains and core USD define rules on how schemas and features 
+should be used, such as requiring the MaterialBindingAPI schema be applied to 
+Gprims that need to be bound to Materials, or requiring a default prim be 
+defined in a layer. To make sure these rules are adhered to, OpenUSD provides 
+validation features via an extendable set of validator tests that check for 
+errors and can optionally provide the means of applying fixes for errors. 
+Validation features are designed with flexibility and customization 
+in mind to make it easy to use validation in a wide variety of workflows, 
+including testing rules that are specific to a show, project, or developer
+ecosystem.
+
+A **validator** represents a single validation test, for example a test for 
+invalid :ref:`references <usdglossary-references>`, or a schema-specific test 
+that ensures the correct API schema is being applied when required. Validators
+have **validator metadata** that provide information such as the validator name,
+validator schema types if any, and a set of keywords.
+
+Validators can be obtained and used individually, but a more common use-case is 
+to assemble and use a specific set of validators, represented by a 
+**validation context**. For example, a validation context might contain a 
+filtered set of validators that are all associated with the "UsdShadeShader" 
+schema, used to validate only shader-related tests on assets. Contexts can be
+created to include validators for ancestor schema types (see examples below).
+
+Validators are made available through the **validator registry**. The registry
+lets you query for validators by various metadata filters (name, schema types,
+keywords). Validators can be registered and retrieved dynamically via the 
+OpenUSD plugin infrastructure, supporting complex validation scenarios across 
+different modules or plugins.
+
+The registry also provides access to **validator suites** which are predefined 
+sets of validators that can be used to create validator contexts (suites cannot 
+be used directly to run validation tests). For example, a plugin might want to
+register a suite of validators that collectively validate if an asset will 
+render properly with a specific renderer.
+
+The following Python example demonstrates different ways to obtain validator
+instances and validation contexts.
+
+.. code-block:: python
+
+    registry = UsdValidation.ValidationRegistry()
+
+    # Get a single validator instance by name
+    singleValidator = registry.GetOrLoadValidatorByName(
+        "usdValidation:CompositionErrorTest")
+
+    # Create validation context with all currently registered validators
+    allValidators = registry.GetOrLoadAllValidators()
+    allValidationContext = UsdValidation.ValidationContext(allValidators)
+
+    # Create validation context from a validator suite
+    suite = registry.GetOrLoadValidatorSuiteByName("GeomSchemaTestSuite")
+    suiteValidationContext = UsdValidation.ValidationContext([suite])
+
+    # Create validation context with validators that have at least one of the 
+    # following keywords in their keywords metadata. Include validators for
+    # ancestor types for schema type validators.
+    keyWords = [ "UsdUtilsValidators", "UsdGeomValidators" ]
+    keywordsValidationContext = UsdValidation.ValidationContext(keyWords, True)
+
+    # Create validation context with validators that have one of the associated
+    # schema types in their metadata
+    schemaTypes = [ Tf.Type.FindByName("UsdGeomImageable"), 
+                    Tf.Type.FindByName("UsdShadeShader") ]
+    schemaTypesValidationContext = UsdValidation.ValidationContext(schemaTypes)
+
+Note that in the previous example, clients can optionally provide a 
+:mono:`includeAllAncestors` argument (which defaults to true) when creating 
+contexts by keywords, plugins, or metadata. This allows for including all 
+validators for ancestor schema types for any schema type validators found.
+For more details and examples of ancestor schema types, see 
+:ref:`usdglossary-isaschema`. 
+
+Once you have a validator or validator context, you can then validate a layer, 
+a stage, or one or more prims, using the various overloaded :mono:`Validate()`
+methods. 
+
+Validation tests that test :ref:`animated values <usdglossary-animatedvalue>` 
+will by default be run against the "full" (-infinity to infinity) time interval. 
+There are :mono:`Validate()` methods that can take a specific time interval to 
+run against, and tests will be run on all 
+:ref:`timeCodes <usdglossary-timecode>` in that time interval.
+
+When running multiple validators in a validator context, validators are run in
+parallel. It's the responsibility of the caller to maintain the lifetime of the 
+stage/layer/prims that are being validated during the lifetime of the validation 
+context.
+
+When validation tests have finished running, any **validation errors** will be 
+returned. Validation errors will contain information about the error, such as
+the error name, description, severity, and the sites (stage, layer, prims, 
+properties, etc.) where the error occurred. Errors also provide access to the
+validator that created the error, and through the validator, access to any
+**validation fixers** that can be used to fix the error. Fixers can be 
+associated with a specific error name, or can be generic to any error associated 
+with a given validator, and must be applied by the client. Validation tests
+will not automatically apply any fixers.
+
+The following simple Python example creates a validation context with all
+registered validators, uses this context to validate an opened stage, and 
+prints any errors and also applies any applicable fixes.
+
+.. code-block:: python
+
+    allValidators = UsdValidation.ValidationRegistry().GetOrLoadAllValidators()
+    allValidationContext = UsdValidation.ValidationContext(allValidators)
+    errors = allValidationContext.Validate(stage)
+    for error in errors:
+        print(" Error name: ", error.GetName())
+        print(" Error msg: ", error.GetMessage())
+        for fixer in error.GetFixers():
+            if fixer.CanApplyFix(error, stage.GetEditTarget(), Usd.TimeCode.Default()):
+                fixer.ApplyFix(error, stage.GetEditTarget(), Usd.TimeCode.Default())
+
+Note that the code for :ref:`usdchecker <toolset:usdchecker>` has been updated 
+to use validators and provides additional examples for using the validation
+framework. 
+
+:ref:`usdview <toolset:usdview>` has also been updated to use validators.
+Use **Window** -> **USD Validation** (or press "V") to bring up a view that lets 
+you select validators and suites, run validation tests using contexts created 
+from the selected validators/suites (with an optional time range), and view any 
+validation errors that occur. The following screenshot shows the USD Validation
+view after running the selected validators on the current stage, with the
+resulting errors shown.
+
+.. image:: glossary_usdviewValidation.png
+    :width: 800
+
+You can create and register custom validators, either explicitly or by using 
+OpenUSD's plugin infrastructure. For more information on developing custom 
+validators and fixers, see the 
+`Validation API docs <api/md_pxr_usd_validation_usd_validation__r_e_a_d_m_e.html>`__
+
 .. _usdglossary-valueclips:
 
 Value Clips

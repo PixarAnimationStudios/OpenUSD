@@ -40,6 +40,7 @@ pxr_library(usdPhysics
         examples/usdPhysicsDistanceJoint.usda
         examples/usdPhysicsGroupFiltering.usda
         examples/usdPhysicsJoints.usda
+        examples/usdPhysicsNestedArticulation.usda
         examples/usdPhysicsPairFiltering.usda
         examples/usdPhysicsSpheresWithMaterial.usda
 )

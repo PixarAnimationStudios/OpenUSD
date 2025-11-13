@@ -9,7 +9,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#ifndef ARCH_OS_WASM_VM
+#ifdef ARCH_BITS_64
 static_assert(
     sizeof(TfSmallVector<int, 1>) == 16,
     "Expecting sizeof(TfSmallVector<int, N = 1>) to be 16 bytes.");
@@ -31,7 +31,7 @@ static_assert(
     sizeof(TfSmallVector<double, 2>) == 24,
     "Expecting sizeof(TfSmallVector<double, N = 2>) to be 24 bytes.");
 
-#ifndef ARCH_OS_WASM_VM
+#ifdef ARCH_BITS_64
 static_assert(
     TfSmallVectorBase::ComputeSerendipitousLocalCapacity<char>() == 8,
     "Expecting 8 bytes of local capacity.");

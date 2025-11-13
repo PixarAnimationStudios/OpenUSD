@@ -929,6 +929,7 @@ bool TestDependencyForwardingSceneIndex()
     HdRetainedSceneIndex &retainedScene = *retainedScene_;
     HdDependencyForwardingSceneIndexRefPtr dependencyForwardingScene_ =
         HdDependencyForwardingSceneIndex::New(retainedScene_);
+    dependencyForwardingScene_->SetManualGarbageCollect(true);
     HdDependencyForwardingSceneIndex &dependencyForwardingScene =
         *dependencyForwardingScene_;
 
@@ -1196,6 +1197,7 @@ void TestDependencyForwardingSceneIndexEviction_InitScenes(
 
     HdDependencyForwardingSceneIndexRefPtr dependencyForwardingScene =
             HdDependencyForwardingSceneIndex::New(retainedScene);
+    dependencyForwardingScene->SetManualGarbageCollect(true);
 
 
     // pull on all prims to seed the cache
@@ -1307,11 +1309,11 @@ bool TestDependencyForwardingSceneIndexEviction()
 
         // Validate bookkeeping.
         {
-            // NOTE: this should be removing /A from affected paths also!
-            //       (since we pulled on it, it should have checked for
-            //        dependencies and dirtied a group)
-            SdfPathVector baselineAffected = {SdfPath("/B")};
-            SdfPathVector baselineDependedOn = {SdfPath("/A")};
+            // Since /A didn't register dependencies and we didn't remove /B,
+            // we shouldn't get any affected paths.  The depended on path for
+            // /A remains despite the removal because it's owned by /B.
+            SdfPathVector baselineAffected = {};
+            SdfPathVector baselineDependedOn = {};
             SdfPathVector removedAffectedPrimPaths;
             SdfPathVector removedDependedOnPrimPaths;
             dependencyForwardingScene->RemoveDeletedEntries(
@@ -1425,6 +1427,7 @@ void TestDependencyForwardingSceneIndexForDependentDependencies_InitScenes(
 
     HdDependencyForwardingSceneIndexRefPtr dependencyForwardingScene =
             HdDependencyForwardingSceneIndex::New(retainedScene);
+    dependencyForwardingScene->SetManualGarbageCollect(true);
 
     // pull on all prims to seed the cache
     PrintSceneIndexPrim(*dependencyForwardingScene, SdfPath("/"), true);

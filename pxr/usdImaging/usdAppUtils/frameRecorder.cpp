@@ -9,8 +9,6 @@
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
-#include "pxr/imaging/glf/simpleLight.h"
-#include "pxr/imaging/glf/simpleMaterial.h"
 #include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hdSt/hioConversions.h"

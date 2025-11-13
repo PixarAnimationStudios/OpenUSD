@@ -204,12 +204,14 @@ HdSt_DomeLightComputationGPU::HdSt_DomeLightComputationGPU(
     const TfToken & shaderToken,
     const bool useCubemapAsSourceTexture,
     HdStSimpleLightingShaderPtr const &lightingShader,
+    const unsigned int computedCubeMapDim,
     const unsigned int numLevels,
     const unsigned int level,
     const float roughness)
   : _shaderToken(shaderToken),
     _useCubemapAsSourceTexture(useCubemapAsSourceTexture),
     _lightingShader(lightingShader),
+    _computedCubeMapDim(computedCubeMapDim),
     _numLevels(numLevels),
     _level(level),
     _roughness(roughness)
@@ -328,7 +330,7 @@ HdSt_DomeLightComputationGPU::Execute(
         // We are either generating a cubemap with 6 equal-sized faces from the
         // latlong texture, or a single 2D lookup texture that will
         // be the size of one face of the cubemap.
-        width = HdSt_ComputeDomeLightCubemapDimensions(srcDim)[0];
+        width = _computedCubeMapDim;
         height = width;
     }
 
@@ -475,11 +477,29 @@ void HdSt_DomeLightMipmapComputationGPU::Execute(
     srcTextureObject->GenerateMipmaps();
 }
 
-GfVec3i HdSt_ComputeDomeLightCubemapDimensions(
-    const GfVec3i& srcDim)
+int HdSt_ComputeDomeLightCubemapWidth(
+    const std::string& domeLightFilePath,
+    const HgiTextureDesc& domelightTextureDesc,
+    const unsigned int cubemapTargetMemoryMB)
 {
-    const int width = std::max(srcDim[0] / 4, 1);
-    return { width, width, 1 };
+    // Standard cubemap width calculation
+    const int cubemapWidth = std::max(domelightTextureDesc.dimensions[0] / 4, 1);
+ 
+    if (cubemapTargetMemoryMB == 0) {
+        return cubemapWidth;
+    }
+    
+    // Cubemap width calculation based on the target memory
+    const size_t MB = 1048576;
+    size_t blockWidth, blockHeight;
+    const size_t bytesPerTexel = HgiGetDataSizeOfFormat(
+        domelightTextureDesc.format, &blockWidth, &blockHeight);
+    const size_t bytesPerPixel = bytesPerTexel / (blockHeight * blockWidth);
+    // The 0.75 factor is to account for all lower mipmaps
+    const int targetMemoryWidth =
+        sqrt((0.75 * cubemapTargetMemoryMB * MB) / (6 * bytesPerPixel));
+
+    return std::min(targetMemoryWidth, cubemapWidth);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

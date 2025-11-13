@@ -182,6 +182,11 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     rasterState.frontFace = HgiVulkanConversions::GetWinding(ras.winding);
     rasterState.rasterizerDiscardEnable = !ras.rasterizerEnabled;
     rasterState.depthClampEnable = ras.depthClampEnabled;
+    rasterState.depthBiasEnable = desc.depthState.depthBiasEnabled;
+    rasterState.depthBiasConstantFactor =
+        desc.depthState.depthBiasConstantFactor;
+    rasterState.depthBiasClamp = 0; // 0 or NaN disable bias clamp
+    rasterState.depthBiasSlopeFactor = desc.depthState.depthBiasSlopeFactor;
 
     VkPipelineRasterizationConservativeStateCreateInfoEXT 
         conservativeRasterState = {};

@@ -30,6 +30,7 @@ pxr_library(hdsi
         materialBindingResolvingSceneIndex
         materialOverrideResolvingSceneIndex
         materialPrimvarTransferSceneIndex
+        materialRenderContextFilteringSceneIndex
         nodeIdentifierResolvingSceneIndex
         nurbsApproximatingSceneIndex
         prefixPathPruningSceneIndex

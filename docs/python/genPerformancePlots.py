@@ -74,7 +74,7 @@ def exportCharts(data, outputDir: str):
         plt.title(f"{platform} time to open and close usdview",
                   fontweight="bold")
         plt.xlabel("OpenUSD release")
-        plt.ylabel("Minimum duration of 10 iterations (seconds)")
+        plt.ylabel("Minimum duration of 100 iterations (seconds)")
         plt.legend()
         plt.savefig(os.path.join(outputDir, f"{platform}.svg"))
 

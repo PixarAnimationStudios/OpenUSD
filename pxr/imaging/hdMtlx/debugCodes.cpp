@@ -13,11 +13,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDMTLX_DOCUMENT,
+        "Debug messages while the document is being generated.");
+
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDMTLX_VERSION_UPGRADE,
         "Write the MaterialX documents to disk, before and after the version upgrade");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDMTLX_WRITE_DOCUMENT,
         "Write the MaterialX document to disk after reconstruction in Hydra");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDMTLX_WRITE_DOCUMENT_WITHOUT_INCLUDES,
+        "Write the MaterialX document to disk after reconstruction in Hydra, "
+        "omitting the included files.");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -56,6 +56,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (in)
 
     (mtlx)
+
+    ((defaultInput, "default"))
+    (fallback)
 );
 
 static TfToken
@@ -581,6 +584,37 @@ _GetSubtextureIdentifier(
     return nullptr;
 }
 
+static
+VtValue
+_GetFallbackForNode(
+    HdMaterialNode2 const& node,
+    const SdrShaderNodeConstPtr sdrNode,
+    TfToken const& outputName)
+{
+    auto it = node.parameters.find(_tokens->defaultInput);
+    if (it != node.parameters.end()) {
+        return it->second;
+    } else {
+        it = node.parameters.find(_tokens->fallback);
+        if (it != node.parameters.end()) {
+            return it->second;
+        }
+    }
+
+    if (const SdrShaderPropertyConstPtr sdrProperty = 
+            sdrNode->GetShaderOutput(outputName)) {
+        return sdrProperty->GetDefaultValue();
+    } else {
+        for (const auto& name : sdrNode->GetShaderOutputNames()) {
+            if (const SdrShaderPropertyConstPtr sdrProperty =
+                    sdrNode->GetShaderOutput(name)) {
+                return sdrProperty->GetDefaultValue();
+            }
+        }
+    }
+    return VtValue();
+}
+
 static void
 _MakeMaterialParamsForTexture(
     HdMaterialNetwork2 const& network,
@@ -720,12 +754,32 @@ _MakeMaterialParamsForTexture(
                         texParam.textureType, 
                         node.nodeTypeId, 
                         premultiplyTexture,
-                        sourceColorSpace));
+                        sourceColorSpace),
+                        _GetFallbackForNode(node, sdrNode, outputName));
             // If the file attribute is an SdfPath, interpret it as path
             // to a prim holding the texture resource (e.g., a render buffer).
             } else if (v.IsHolding<SdfPath>()) {
                 texturePrimPathForSceneDelegate = v.UncheckedGet<SdfPath>();
+            } else {
+                TF_WARN("Value type unsupported! %s, for texture %s on node %s",
+                    v.GetTypeName().c_str(),
+                    outputName.GetText(),
+                    nodePath.GetText());
+                useTexturePrimToFindTexture = false;
+                textureId = HdStTextureIdentifier(
+                    nodePath.GetToken(),
+                    VtValue(GfVec4f(0.0)),
+                    /*defaultToFallback=*/ true);
             }
+        } else {
+            TF_WARN("Could not find texture %s for node %s",
+                outputName.GetText(), nodePath.GetText());
+            VtValue fallback = _GetFallbackForNode(node, sdrNode, outputName);
+            useTexturePrimToFindTexture = false;
+            textureId = HdStTextureIdentifier(
+                nodePath.GetToken(),
+                fallback,
+                /*defaultToFallback=*/ true);
         }
     } else {
         TF_WARN("Invalid number of asset identifier input names: %s", 

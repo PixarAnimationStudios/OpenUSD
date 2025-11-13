@@ -51,15 +51,10 @@ if (BUILD_SHARED_LIBS)
 
     pxr_register_test(testExecGeomXformable
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecGeomXformable"
+        TESTENV testenv/testExecGeomXformable
         EXPECTED_RETURN_CODE 0
         POST_COMMAND "${PYTHON_EXECUTABLE} normalizeDotFiles.py testCompiler.dot"
         DIFF_COMPARE testCompiler.out
-        TESTENV testExecGeomXformable
-    )
-
-    pxr_install_test_dir(
-        SRC testenv/testExecGeomXformable
-        DEST testExecGeomXformable
     )
 
     pxr_build_test(testExecGeomXformable_Perf

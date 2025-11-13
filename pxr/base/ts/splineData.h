@@ -88,6 +88,7 @@ public:
     virtual Ts_TypedKnotData<double>
         GetKnotDataAsDouble(size_t index) const = 0;
     virtual double GetKnotValueAsDouble(size_t index) const = 0;
+    virtual double GetKnotPreValueAsDouble(size_t index) const = 0;
 
     virtual void ClearKnots() = 0;
     virtual void RemoveKnotAtTime(TsTime time) = 0;
@@ -186,6 +187,7 @@ public:
     Ts_TypedKnotData<double>
         GetKnotDataAsDouble(size_t index) const override;
     double GetKnotValueAsDouble(size_t index) const override;
+    double GetKnotPreValueAsDouble(size_t index) const override;
 
     void ClearKnots() override;
     void RemoveKnotAtTime(TsTime time) override;
@@ -524,6 +526,16 @@ Ts_TypedSplineData<T>::GetKnotValueAsDouble(
 {
     const Ts_TypedKnotData<T> &typedData = knots[index];
     return typedData.value;
+}
+
+// Depending on T, this is either a verbatim copy or an increase in precision.
+template <typename T>
+double
+Ts_TypedSplineData<T>::GetKnotPreValueAsDouble(
+    const size_t index) const
+{
+    const Ts_TypedKnotData<T> &typedData = knots[index];
+    return typedData.GetPreValue();
 }
 
 template <typename T>

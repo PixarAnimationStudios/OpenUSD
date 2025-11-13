@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Scope "World"
+{
+    def "TestMaterial" (
+        references = @texturedSphere.usda@
+    )
+    {
+        rel material:binding = </MaterialX/Materials/AuthoredDefaultTextureTest>
+        double3 xformOp:translate = (9.0, 0.0, 0.0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "TestMaterial2" (
+        references = @texturedSphere.usda@
+    )
+    {
+        rel material:binding = </MaterialX/Materials/NoAuthoredDefaultTextureTest>
+        double3 xformOp:translate = (-9.0, 0.0, 0.0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+
+def Scope "MaterialX" (
+    references = [
+        @./mtlxFiles/textureTest.mtlx@</MaterialX>,
+    ]
+)
+{
+}
+
+def Xform "lights" 
+{
+    def DomeLight "DomeLight"
+    {
+        asset inputs:texture:file = @./StinsonBeach.hdr@
+        float inputs:intensity = 2
+        float xformOp:rotateX:Zup = 90
+        uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
+    }
+    def SphereLight "Light"
+    {
+        float inputs:radius = 5
+        float inputs:intensity = 2
+        Vec3f xformOp:translate = (0, -20, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
