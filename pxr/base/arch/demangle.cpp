@@ -17,7 +17,8 @@
 using std::string;
 
 #if (ARCH_COMPILER_GCC_MAJOR == 3 && ARCH_COMPILER_GCC_MINOR >= 1) || \
-    ARCH_COMPILER_GCC_MAJOR > 3 || defined(ARCH_COMPILER_CLANG)
+    ARCH_COMPILER_GCC_MAJOR > 3 || (defined(ARCH_COMPILER_CLANG) && \
+    !defined(ARCH_COMPILER_MSVC))
 #define _AT_LEAST_GCC_THREE_ONE_OR_CLANG
 #endif
 

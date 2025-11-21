@@ -119,7 +119,8 @@ inline void ArchSinCos(double v, double *s, double *c) {
 inline int
 ArchCountTrailingZeros(uint64_t x)
 {
-#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG) && \
+#if defined(ARCH_COMPILER_GCC) || \
+    (defined(ARCH_COMPILER_CLANG) && !defined(ARCH_COMPILER_MSVC)) && \
     !defined(ARCH_OS_WASM_VM)
     return __builtin_ctzl(x);
 #elif defined(ARCH_COMPILER_MSVC)

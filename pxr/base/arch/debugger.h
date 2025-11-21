@@ -83,7 +83,7 @@ void ArchAbort(bool logging = true);
 /// possible, code to prevent optimization so the caller appears in the
 /// debugger's stack trace.  The calling functions should also use the
 /// \c ARCH_NOINLINE function attribute.
-#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+#if defined(ARCH_COMPILER_GCC) || (defined(ARCH_COMPILER_CLANG) && !defined(ARCH_COMPILER_MSVC))
 #define ARCH_DEBUGGER_TRAP do { ArchDebuggerTrap(); asm(""); } while (0)
 #else
 #define ARCH_DEBUGGER_TRAP do { ArchDebuggerTrap(); } while (0)

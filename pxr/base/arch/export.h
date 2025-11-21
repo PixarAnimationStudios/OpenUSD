@@ -140,7 +140,8 @@
 #include "pxr/base/arch/defines.h" 
 
 #if defined(ARCH_OS_WINDOWS)
-#   if defined(ARCH_COMPILER_GCC) && ARCH_COMPILER_GCC_MAJOR >= 4 || defined(ARCH_COMPILER_CLANG)
+#   if defined(ARCH_COMPILER_GCC) && ARCH_COMPILER_GCC_MAJOR >= 4 || \
+       (defined(ARCH_COMPILER_CLANG) && !defined(ARCH_COMPILER_MSVC))
 #       define ARCH_EXPORT __attribute__((dllexport))
 #       define ARCH_IMPORT __attribute__((dllimport))
 #       define ARCH_HIDDEN

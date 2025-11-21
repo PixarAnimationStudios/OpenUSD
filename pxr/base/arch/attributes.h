@@ -144,7 +144,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// [[no_unique_address]] tag.
 #   define ARCH_EMPTY_BASES
 
-#elif defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+#elif defined(ARCH_COMPILER_GCC) || (defined(ARCH_COMPILER_CLANG) && !defined(ARCH_COMPILER_MSVC))
 
 #   define ARCH_PRINTF_FUNCTION(_fmt, _firstArg) \
         __attribute__((format(printf, _fmt, _firstArg)))
@@ -241,7 +241,7 @@ struct Arch_ConstructorEntry {
     };                                                                         \
     static void _name()
 
-#elif defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+#elif defined(ARCH_COMPILER_GCC) || (defined(ARCH_COMPILER_CLANG) && !defined(ARCH_COMPILER_MSVC))
 
 // The used attribute is required to prevent these apparently unused functions
 // from being removed by the linker.

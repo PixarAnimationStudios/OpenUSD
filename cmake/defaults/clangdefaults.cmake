@@ -5,9 +5,12 @@
 # https://openusd.org/license.
 #
 
-include(gccclangshareddefaults)
-
-set(_PXR_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS}")
+if (MSVC)
+    include(msvcdefaults)
+else()
+    include(gccclangshareddefaults)
+    set(_PXR_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS}")
+endif()
 
 # Prevent floating point result discrepancies on Apple platforms
 # due to multiplication+additions being converted to FMA

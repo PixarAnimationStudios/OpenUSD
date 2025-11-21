@@ -51,7 +51,7 @@
     #define ARCH_PRAGMA_STRINGOP_OVERFLOW \
         _Pragma("GCC diagnostic ignored \"-Wstringop-overflow=\"")
 
-#elif defined(ARCH_COMPILER_CLANG)
+#elif (defined(ARCH_COMPILER_CLANG) && !defined(ARCH_COMPILER_MSVC))
 
     #define ARCH_PRAGMA_PUSH \
         _Pragma("clang diagnostic push")
