@@ -278,6 +278,15 @@ void GaussianSplatsRenderer::Impl::addGaussianSplats(
             splatVec[i].setCov3D(newSplats->scales[i], Quatf());
         }
 
+        // extract the scale/rotation component from the transform matrix
+        // and use it to modify the cov3D matrix to account for the transformation
+        Imath::M33f xform_SR = Imath::M33f(
+            newSplats->xform[0][0], newSplats->xform[0][1], newSplats->xform[0][2],
+            newSplats->xform[1][0], newSplats->xform[1][1], newSplats->xform[1][2],
+            newSplats->xform[2][0], newSplats->xform[2][1], newSplats->xform[2][2]);
+        splatVec[i].cov3D = xform_SR * splatVec[i].cov3D * xform_SR.transpose();
+
+        // TODO - I think we need to figure out how to account for the xform in the SH data too.
         if (!newSplats->sphericalHarmonics.empty()) {
             // unpack this splats list of SH weights
             auto sh_it = newSplats->sphericalHarmonics.begin() +
