@@ -86,12 +86,44 @@ public:
 
     ///
     /// Register a scene index to be instantiated for a specified 
-    /// renderer (or all renderers if rendererDisplayName is empty).
-    /// 
-    /// Insertion phase is a broad ordering value with lower values indicating
+    /// renderer (or all renderers if \p rendererDisplayName is empty).
+    ///
+    /// \p sceneIndexPluginId identifies the associated scene index plugin.
+    /// This should match the name used in the plugInfo.json entry and is
+    /// typically the class name (i.e. CPP type name).
+    /// \p inputArgs is a container data source of arguments that is provided as
+    /// a parameter to the scene index plugin's _AppendSceneIndex method.
+    /// \p insertionPhase is a broad ordering value with lower values indicating
     /// earlier instantiation (possibly given render plugin-specific meaning
-    /// via enum values). Insertion order indicates whether this entry
-    /// should go at the start or end of the specified phase.
+    /// via enum values).
+    /// \p insertionOrder indicates whether this entry should go at the start 
+    /// or end of the specified phase.
+    ///
+    /// \note
+    /// The plugInfo entry for a scene index plugin may have a
+    /// "loadWithRenderer" key that specifies a list of renderer display names 
+    /// for which the plugin library should be *loaded*. This is separate from
+    /// the registration of the scene index plugin for a renderer here, which
+    /// is still necessary to have it be instantiated and be a part of the
+    /// scene index graph that is built for that renderer.
+    ///
+    /// \note
+    /// This method is typically invoked via the TF_REGISTRY_FUNCTION macro at
+    /// module load time, like:
+    /// \code
+    /// TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
+    /// {
+    ///     HdSceneIndexPluginRegistry::GetInstance()
+    ///     .RegisterSceneIndexForRenderer(...);
+    /// }
+    /// \endcode
+    ///
+    /// \note 
+    /// This function may be invoked multiple times for the same
+    /// \p sceneIndexPluginId to have multiple instances of the same
+    /// set of scene indices inserted in _AppendSceneIndex at different points
+    /// in the scene index graph.
+    ///
     HD_API
     void RegisterSceneIndexForRenderer(
         const std::string &rendererDisplayName,
@@ -109,21 +141,36 @@ public:
                 const HdContainerDataSourceHandle &inputArgs)>;
 
     ///
-    /// Register a scene index to be instantiated via a callback for a
-    /// specified renderer (or all renderers if rendererDisplayName is empty).
+    /// Register a scene index to be instantiated via a \p callback for a
+    /// specified renderer (or all renderers if \p rendererDisplayName is
+    /// empty).
     ///
     /// This is most useful for application-specific behavior which wants to
     /// append and manage scene index instances associated with a specific
     /// render. To aid in that association, the callback is provided a
     /// renderInstanceId value typically defined by the application itself.
     ///
-    /// Insertion phase is a broad ordering value with lower values indicating
+    /// \p inputArgs is a container data source of arguments that is provided as
+    /// a parameter to the scene index plugin's _AppendSceneIndex method.
+    /// \p insertionPhase is a broad ordering value with lower values indicating
     /// earlier instantiation (possibly given render plugin-specific meaning
-    /// via enum values). Insertion order indicates whether this entry
-    /// should go at the start or end of the specified phase.
+    /// via enum values).
+    /// \p insertionOrder indicates whether this entry should go at the start 
+    /// or end of the specified phase.
     ///
     /// \note This method should be invoked *before* render index construction
     ///       when Hydra scene index emulation is enabled.
+    ///
+    /// \note
+    /// This method is typically invoked via the TF_REGISTRY_FUNCTION macro at
+    /// module load time, like:
+    /// \code
+    /// TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
+    /// {
+    ///     HdSceneIndexPluginRegistry::GetInstance()
+    ///     .RegisterSceneIndexForRenderer(...);
+    /// }
+    /// \endcode
     ///
     HD_API
     void RegisterSceneIndexForRenderer(
@@ -132,8 +179,6 @@ public:
         const HdContainerDataSourceHandle &inputArgs,
         InsertionPhase insertionPhase,
         InsertionOrder insertionOrder);
-
-
 
 protected:
 

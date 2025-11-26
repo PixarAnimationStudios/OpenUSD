@@ -4,7 +4,7 @@ set(PXR_PACKAGE extras_imaging_docs)
 pxr_docs_only_dir(${PXR_PACKAGE}
     DOXYGEN_FILES
         hydra_getting_started_guide.dox
-        hydra_scene_browser.dox
+        hydra_scene_debugger.dox
         hydra_prim_schemas.dox
         examples_hydra_getting_started.cpp
         app_renderer_filters.png
@@ -17,7 +17,7 @@ pxr_docs_only_dir(${PXR_PACKAGE}
         scene_index_adapters.png
         scene_index_filter.png
         usdimagingstagesceneindex_filters.png
-        hydra_scene_browser_usdview.png
-        hydra_scene_browser_columns.png
-        hydra_scene_browser_filters.png        
+        hydra_scene_debugger_usdview.png
+        hydra_scene_debugger_columns.png
+        hydra_scene_debugger_filters.png        
 )

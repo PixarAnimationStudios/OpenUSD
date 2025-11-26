@@ -14,7 +14,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// The open-source version of the Hydra Scene Browser cannot descend into
+/// The open-source version of the Hydra Scene Debugger cannot descend into
 /// HdEncapsulatingSceneIndexBase. Thus, we have an environment variable to
 /// disable the use HdEncapsulatingSceneIndexBase.
 ///

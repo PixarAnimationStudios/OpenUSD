@@ -78,7 +78,7 @@ HdsiUtilsIsPruned(
     const SdfPath &primPath,
     const HdCollectionExpressionEvaluator &eval)
 {
-    if (eval.IsEmpty()) {
+    if (eval.IsEmpty() || primPath.IsEmpty()) {
         return false;
     }
 

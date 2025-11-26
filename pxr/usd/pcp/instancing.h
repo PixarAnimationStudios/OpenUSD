@@ -85,11 +85,12 @@ Pcp_ChildNodeIsInstanceable(
     *hasAnyDirectArcsInNodeChain = 
         *hasAnyDirectArcsInNodeChain || !node.IsDueToAncestor();
 
-    // If a node has no specs, we do not consider it instanceable since 
-    // it has no opinions to contribute to the prim index. In particular,
+    // If a node has no specs or cannot contribute specs, it is not instanceable
+    // since it has no opinions to contribute to the prim index. In particular,
     // this allows prim indexes with implied arcs in different layer stacks
     // that have no overrides to still be considered equivalent for sharing.
-    return *hasAnyDirectArcsInNodeChain && node.HasSpecs();
+    return *hasAnyDirectArcsInNodeChain && 
+        node.CanContributeSpecs() && node.HasSpecs();
 }
 
 inline bool 
@@ -114,7 +115,7 @@ Pcp_ChildNodeInstanceableChanged(
     const PcpNodeRef& node)
 {
     return Pcp_ChildNodeIsDirectOrInDirectArcSubtree(node) &&
-        (PcpComposeSiteHasPrimSpecs(node) != node.HasSpecs());
+        (PcpComposeSiteHasSpecs(node) != node.HasSpecs());
 }
 
 template <class Visitor>

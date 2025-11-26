@@ -171,6 +171,43 @@ class TestPcpInstanceKey(unittest.TestCase):
         # only, so it is ignored for determining instanceable.
         self.assertEqual(notAnInstanceKey, Pcp.InstanceKey())
 
+    def test_InternalReferencesAndImpliedArcs(self):
+        """Test instance keys with implied arcs across internal references."""
+        cache = self._LoadPcpCache('internal_ref.usda')
+
+        # /Parent/Child and /ParentRef/Child should have the same instance
+        # key since they have the same direct composition arcs, even
+        # though /ParentRef/Child comes in via an ancestral reference.
+        # 
+        # One wrinkle for /ParentRef/Child is that the inherit arc to
+        # /Class authored on /Parent/Child will be implied across the
+        # ancestral reference arc from /ParentRef to /Parent. The implied
+        # inherit node will be marked as inert because it duplicates the
+        # original inherit node, i.e., it has the same layer stack and
+        # path. That implied inherit node _should not_ contribute to
+        # the instance key because it's inert.
+        
+        # Verify expected composition structure for /ParentRef/Child.
+        expected = [
+            (Pcp.ArcTypeRoot, "/ParentRef/Child"), [
+                (Pcp.ArcTypeInherit, "/Class", True), [],
+                (Pcp.ArcTypeReference, "/Parent/Child"), [
+                    (Pcp.ArcTypeInherit, "/Class"), []
+                ]
+            ]
+        ]
+
+        pi, err = cache.ComputePrimIndex('/ParentRef/Child')
+        for node, entry in Pcp._TestPrimIndex(pi, expected):
+            arc, path, inert = (*entry, False) if len(entry) == 2 else entry
+            self.assertEqual(node.arcType, arc)
+            self.assertEqual(node.path, path)
+            self.assertEqual(node.isInert, inert)
+
+        # Verify instance keys match.
+        key1 = self._GetInstanceKey(cache, '/Parent/Child')
+        key2 = self._GetInstanceKey(cache, '/ParentRef/Child')
+        self.assertEqual(key1, key2)
 
 if __name__ == "__main__":
     unittest.main()

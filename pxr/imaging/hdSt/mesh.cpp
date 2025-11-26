@@ -1504,11 +1504,10 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
     // Points fastpath; it's possible points was updated above, but if
     // points is dirty and we skipped the above loops let's handle it here.
-    // Note: if the logic here becomes more complex, the more correct thing to
-    // do here is check whether primvars or compPrimvars contains a "points"
-    // entry...
     if (*dirtyBits & HdChangeTracker::DirtyPoints &&
-        primvars.size() == 0 && compPrimvars.size() == 0) {
+        !(*dirtyBits & HdChangeTracker::DirtyNormals ||
+          *dirtyBits & HdChangeTracker::DirtyWidths ||
+          *dirtyBits & HdChangeTracker::DirtyPrimvar)) {
 
         // We can't use the scene delegate to check whether points is
         // provided/computed/has the correct interpolation without pulling the
@@ -1744,6 +1743,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     HdStGetBufferSpecsFromCompuations(computations, &bufferSpecs);
 
     HdBufferSourceSharedPtrVector allSources(sources);
+    allSources.reserve(allSources.size() + reserveOnlySources.size());
     for (HdBufferSourceSharedPtr& src : reserveOnlySources) {
         allSources.emplace_back(src);
     }

@@ -4,11 +4,9 @@ set(DIRS
     usddumpcrate
     usdgenschemafromsdr
     usdedit
-    usdfixbrokenpixarschemas
     usdresolve
     usdstitch
     usdstitchclips
-    usdzip
     sdfdump
     sdffilter
     usdtree

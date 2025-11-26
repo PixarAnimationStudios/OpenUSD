@@ -363,7 +363,7 @@ class AppController(QtCore.QObject):
             self._debugFlagsWindow = None
             self._interpreter = None
             self._usdValidationWidget = None
-            self._hydraSceneBrowser = None
+            self._hydraSceneDebugger = None
             self._parserData = parserData
             self._noRender = parserData.noRender
             self._noPlugins = parserData.noPlugins
@@ -824,8 +824,8 @@ class AppController(QtCore.QObject):
 
             self._ui.showDebugFlags.triggered.connect(self._showDebugFlags)
 
-            self._ui.showHydraSceneBrowser.triggered.connect(
-                self._showHydraSceneBrowser)
+            self._ui.showHydraSceneDebugger.triggered.connect(
+                self._showHydraSceneDebugger)
 
             self._ui.redrawOnScrub.toggled.connect(self._redrawOptionToggled)
 
@@ -2731,12 +2731,12 @@ class AppController(QtCore.QObject):
 
         self._debugFlagsWindow.show()
 
-    def _showHydraSceneBrowser(self):
-        if self._hydraSceneBrowser is None:
-            from .hydraSceneBrowser import HydraSceneBrowser
-            self._hydraSceneBrowser = HydraSceneBrowser()
+    def _showHydraSceneDebugger(self):
+        if self._hydraSceneDebugger is None:
+            from .hydraSceneDebugger import HydraSceneDebugger
+            self._hydraSceneDebugger = HydraSceneDebugger()
 
-        self._hydraSceneBrowser.show()
+        self._hydraSceneDebugger.show()
 
     # Screen capture functionality ===========================================
 

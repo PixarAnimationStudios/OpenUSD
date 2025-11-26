@@ -959,6 +959,15 @@ function(pxr_register_test TEST_NAME)
     # TF_FATAL_VERIFY where desired.
     set(testWrapperCmd ${testWrapperCmd} --env-var=TF_FATAL_VERIFY=1)
 
+    # Allow env vars to be set via a global variable to make it easier
+    # to affect a set of tests (e.g., all tests in a library). Set
+    # this first to allow tests to override these env vars.
+    if (PXR_TEST_ENV_VARS)
+        foreach(env ${PXR_TEST_ENV_VARS})
+            set(testWrapperCmd ${testWrapperCmd} --env-var=${env})
+        endforeach()
+    endif()
+
     if (bt_ENV)
         foreach(env ${bt_ENV})
             set(testWrapperCmd ${testWrapperCmd} --env-var=${env})

@@ -276,6 +276,18 @@ ARCH_CONSTRUCTOR(Vt_CastRegistryInit, 255)
     Vt_CastRegistry::GetInstance();
 }
 
+VtValue::VtValue(VtValueRef ref)
+{
+    *this = ref.operator VtValue();
+}
+
+VtValue &
+VtValue::operator=(VtValueRef ref)
+{
+    *this = ref.operator VtValue();
+    return *this;
+}
+
 bool
 VtValue::IsArrayValued() const
 {
@@ -345,6 +357,38 @@ VtValue::GetTypeName() const
         return ArchGetDemangled(GetTypeid());
 }
 
+VtValueRef
+VtValue::Ref() const &
+{
+    return _info.GetLiteral()
+        ? _info.Get()->GetValueRef(_storage, /*rvalue=*/false)
+        : VtValueRef {};
+}
+
+VtValueRef
+VtValue::Ref() &&
+{
+    if (IsEmpty()) {
+        return {};
+    }
+    if (_IsProxy()) {
+        // If this is a proxy, collapse it out so we have our own copy to
+        // mutate.
+        *this = _info->GetProxiedAsVtValue(_storage);
+    }
+    return _info.Get()->GetValueRef(_storage, /*rvalue=*/true);
+}
+
+VtValue::operator VtValueRef() &&
+{
+    return Ref();
+}
+
+VtValue::operator VtValueRef() const &
+{
+    return Ref();
+}
+
 bool
 VtValue::CanHash() const
 {
@@ -364,6 +408,18 @@ VtValue::GetHash() const {
     }
     size_t h = _info->Hash(_storage);
     return h;
+}
+
+bool
+VtValue::CanComposeOver() const
+{
+    return _info.GetLiteral() && _info->canComposeOver;
+}
+
+bool
+VtValue::CanTransform() const
+{
+    return _info.GetLiteral() && _info->canTransform;
 }
 
 /* static */ VtValue
@@ -446,50 +502,6 @@ VtValue::_GetPythonObject() const
         _info.Get()->GetPyObj(_storage) : TfPyObjWrapper();
 }
 
-static void const *
-_FindOrCreateDefaultValue(std::type_info const &type,
-                          Vt_DefaultValueHolder (*factory)())
-{
-    // This function returns a default value for \a type.  It stores a global
-    // map from type name to value.  If we have an entry for the requested type
-    // in the map already, return that.  Otherwise use \a factory to create a
-    // new entry to store in the map, asserting that it produced a value of the
-    // correct type.
-
-    TfAutoMallocTag2 tag("Vt", "VtValue _FindOrCreateDefaultValue");
-    
-    typedef map<string, Vt_DefaultValueHolder> DefaultValuesMap;
-    
-    static DefaultValuesMap defaultValues;
-    static tbb::spin_mutex defaultValuesMutex;
-
-    string key = ArchGetDemangled(type);
-
-    {
-        // If there's already an entry for this type we can return it directly.
-        tbb::spin_mutex::scoped_lock lock(defaultValuesMutex);
-        DefaultValuesMap::iterator i = defaultValues.find(key);
-        if (i != defaultValues.end())
-            return i->second.GetPointer();
-    }
-
-    // We need to make a new entry.  Call the factory function while the mutex
-    // is unlocked.  We do this because the factory is unknown code which could
-    // plausibly call back into here, causing deadlock.  Assert that the factory
-    // produced a value of the correct type.
-    Vt_DefaultValueHolder newValue = factory();
-    TF_AXIOM(TfSafeTypeCompare(newValue.GetType(), type));
-
-    // We now lock the mutex and attempt to insert the new value.  This may fail
-    // if another thread beat us to it while we were creating the new value and
-    // weren't holding the lock.  If this happens, we leak the default value we
-    // created that isn't used.
-    tbb::spin_mutex::scoped_lock lock(defaultValuesMutex);
-    DefaultValuesMap::iterator i =
-        defaultValues.emplace(std::move(key), std::move(newValue)).first;
-    return i->second.GetPointer();
-}
-
 bool
 VtValue::_TypeIsImpl(std::type_info const &qt) const
 {
@@ -515,7 +527,7 @@ VtValue::_FailGet(Vt_DefaultValueHolder (*factory)(),
     }
 
     // Get a default value for query type, and use that.
-    return _FindOrCreateDefaultValue(queryType, factory);
+    return Vt_FindOrCreateDefaultValue(queryType, factory);
 }
 
 std::ostream &
@@ -532,20 +544,5 @@ VtStreamOut(vector<VtValue> const &val, std::ostream &stream) {
     stream << ']';
     return stream;
 }    
-
-#define _VT_IMPLEMENT_ZERO_VALUE_FACTORY(unused, elem)                   \
-template <>                                                              \
-Vt_DefaultValueHolder Vt_DefaultValueFactory<VT_TYPE(elem)>::Invoke()    \
-{                                                                        \
-    return Vt_DefaultValueHolder::Create(VtZero<VT_TYPE(elem)>());       \
-}                                                                        \
-template struct Vt_DefaultValueFactory<VT_TYPE(elem)>;
-
-TF_PP_SEQ_FOR_EACH(_VT_IMPLEMENT_ZERO_VALUE_FACTORY,
-                   ~,
-                   VT_VEC_VALUE_TYPES
-                   VT_MATRIX_VALUE_TYPES
-                   VT_QUATERNION_VALUE_TYPES
-                   VT_DUALQUATERNION_VALUE_TYPES)
 
 PXR_NAMESPACE_CLOSE_SCOPE

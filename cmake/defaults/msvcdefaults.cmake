@@ -9,7 +9,7 @@
 set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /EHsc")
 
 # Standards compliant.
-set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:rvalueCast /Zc:strictStrings")
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /permissive-")
 
 # Visual Studio sets the value of __cplusplus to 199711L regardless of
 # the C++ standard actually being used, unless /Zc:__cplusplus is enabled.

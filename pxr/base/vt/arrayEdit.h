@@ -20,6 +20,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/functionRef.h"
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/span.h"
 #include "pxr/base/trace/trace.h"
 
 #include <iosfwd>
@@ -73,6 +74,18 @@ public:
     /// that edit unmodified.
     bool IsIdentity() const {
         return _ops.IsEmpty();
+    }
+
+    /// Return a view of the literal elements that this edit makes use of.
+    TfSpan<const ElementType> GetLiterals() const {
+        return _literals;
+    }
+
+    /// Return a mutable view of the literal elements that this edit makes use
+    /// of.  This can be useful in case elements need to be transformed or
+    /// translated.
+    TfSpan<ElementType> GetMutableLiterals() {
+        return _literals;
     }
 
     /// Compose this edit over \p weaker and return a new result representing
@@ -390,6 +403,15 @@ VtArrayEdit<ELEM>::_ComposeEdits(VtArrayEdit &&weaker) &&
 // Specialize traits for VtArrayEdit.
 template <typename T>
 struct VtIsArrayEdit<VtArrayEdit<T>> : public std::true_type {};
+
+// VtArrayEdit can transform if the underlying element type can.
+template <class ELEM>
+struct VtValueTypeCanTransform<VtArrayEdit<ELEM>> :
+    VtValueTypeCanTransform<ELEM> {};
+
+// VtArrayEdit can compose over itself, VtArray, and the VtBackground.
+template <class T>
+struct VtValueTypeCanCompose<VtArrayEdit<T>> : std::true_type {};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

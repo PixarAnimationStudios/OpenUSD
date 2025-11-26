@@ -1091,6 +1091,11 @@ ARCH_PRAGMA_POP
     value_type *_data;
 };
 
+// VtArray can transform if the underlying element type can.
+template <class ELEM>
+struct VtValueTypeCanTransform<VtArray<ELEM>> :
+    VtValueTypeCanTransform<ELEM> {};
+
 // Declare basic array instantiations as extern templates.  They are explicitly
 // instantiated in array.cpp.
 #define VT_ARRAY_EXTERN_TMPL(unused, elem) \

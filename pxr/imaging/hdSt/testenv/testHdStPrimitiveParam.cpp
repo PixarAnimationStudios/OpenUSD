@@ -222,7 +222,7 @@ PrimitiveIDMapTest(HdStResourceRegistrySharedPtr const &registry)
 
     perfLog.ResetCounters();
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 0);
-    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
 
     {
         // triangle
@@ -323,7 +323,7 @@ PtexFaceIndexTest(HdStResourceRegistrySharedPtr const &registry)
 
     perfLog.ResetCounters();
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 0);
-    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
 
     {
         /*

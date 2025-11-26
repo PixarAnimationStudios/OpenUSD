@@ -10,6 +10,7 @@
 #include "pxr/usdImaging/usdImaging/dataSourceUsdPrimInfo.h"
 #include "pxr/usdImaging/usdImaging/extentsHintSchema.h"
 #include "pxr/usdImaging/usdImaging/geomModelSchema.h"
+#include "pxr/usdImaging/usdImaging/geomXformVectorsSchema.h"
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
@@ -26,6 +27,8 @@
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
+#include "pxr/usd/usdGeom/xformable.h"
+#include "pxr/usd/usdGeom/xformCommonAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -623,6 +626,21 @@ UsdImagingDataSourcePrim_ModelAPI::Get(const TfToken &name)
 
 // ----------------------------------------------------------------------------
 
+// Check if the given USD prim has any authored UsdGeomXformable attrs.
+static bool
+_HasAuthoredXform(UsdPrim const& usdPrim)
+{
+    for (TfToken const& attrName:
+        UsdGeomXformable::GetSchemaAttributeNames(/* inherited */ false)) {
+        if (UsdProperty prop = usdPrim.GetProperty(attrName)) {
+            if (prop.IsAuthored()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 UsdImagingDataSourcePrim::UsdImagingDataSourcePrim(
         const SdfPath &sceneIndexPath,
         UsdPrim usdPrim,
@@ -636,38 +654,42 @@ UsdImagingDataSourcePrim::UsdImagingDataSourcePrim(
 TfTokenVector
 UsdImagingDataSourcePrim::GetNames()
 {
-    TfTokenVector vec;
-
     if (!_sceneIndexPath.IsPrimPath()) {
-        return vec;
+        return TfTokenVector();
     }
+
+    const UsdPrim usdPrim = _GetUsdPrim();
+
+    TfTokenVector vec {
+        UsdImagingUsdPrimInfoSchema::GetSchemaToken(),
+        HdPrimOriginSchema::GetSchemaToken(),
+        HdPrimvarsSchema::GetSchemaToken()
+    };
     
-    if (_GetUsdPrim().IsA<UsdGeomImageable>()) {
+    if (usdPrim.IsA<UsdGeomImageable>()) {
         vec.push_back(HdVisibilitySchema::GetSchemaToken());
         vec.push_back(HdPurposeSchema::GetSchemaToken());
     }
 
-    if (_GetUsdPrim().IsA<UsdGeomXformable>()) {
+    if (usdPrim.IsA<UsdGeomXformable>()) {
         vec.push_back(HdXformSchema::GetSchemaToken());
+        if (_HasAuthoredXform(usdPrim)) {
+            vec.push_back(UsdImagingGeomXformVectorsSchema::GetSchemaToken());
+        }
     }
 
-    if (_GetUsdPrim().IsA<UsdGeomBoundable>()) {
+    if (usdPrim.IsA<UsdGeomBoundable>()) {
         vec.push_back(HdExtentSchema::GetSchemaToken());
     }
 
-    if (_GetUsdPrim().IsModel()) {
+    if (usdPrim.IsModel()) {
         vec.push_back(UsdImagingModelSchema::GetSchemaToken());
     }
     
-    if (UsdAttributeQuery(UsdGeomModelAPI(_GetUsdPrim()).GetExtentsHintAttr())
+    if (UsdAttributeQuery(UsdGeomModelAPI(usdPrim).GetExtentsHintAttr())
                         .HasAuthoredValue()) {
         vec.push_back(UsdImagingExtentsHintSchema::GetSchemaToken());
     }
-
-
-    vec.push_back(UsdImagingUsdPrimInfoSchema::GetSchemaToken());
-    vec.push_back(HdPrimOriginSchema::GetSchemaToken());
-    vec.push_back(HdPrimvarsSchema::GetSchemaToken());
 
     return vec;
 }
@@ -762,6 +784,31 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
     } else if (name == HdPrimOriginSchema::GetSchemaToken()) {
         return UsdImagingDataSourcePrimOrigin::New(
             _GetUsdPrim());
+    } else if (name == UsdImagingGeomXformVectorsSchema::GetSchemaToken()) {
+        // XXX Note that this data source does not currently support
+        // returning multi-sampled data.
+        const UsdPrim usdPrim = _GetUsdPrim();
+        if (_HasAuthoredXform(usdPrim)) {
+            GfVec3d translation{0};
+            GfVec3f rotation{0}, scale{0}, pivot{0};
+            UsdGeomXformCommonAPI::RotationOrder rotOrder;
+            UsdGeomXformCommonAPI(usdPrim).GetXformVectorsByAccumulation(
+                &translation, &rotation, &scale, &pivot, &rotOrder,
+                _stageGlobals.GetTime());
+            return UsdImagingGeomXformVectorsSchema::Builder()
+                .SetTranslation(
+                    HdRetainedTypedSampledDataSource<GfVec3d>::New(translation))
+                .SetRotation(
+                    HdRetainedTypedSampledDataSource<GfVec3f>::New(rotation))
+                .SetScale(
+                    HdRetainedTypedSampledDataSource<GfVec3f>::New(scale))
+                .SetPivot(
+                    HdRetainedTypedSampledDataSource<GfVec3f>::New(pivot))
+                .SetRotationOrder(
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        TfToken(TfEnum::GetName(rotOrder))))
+                .Build();
+        }
     }
     return nullptr;
 }

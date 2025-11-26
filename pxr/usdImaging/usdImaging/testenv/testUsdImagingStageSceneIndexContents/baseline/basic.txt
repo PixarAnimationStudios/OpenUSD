@@ -46,17 +46,21 @@
 			def
 		[typeName]
 			Xform
+	[geomXformVectors]
+		[pivot]
+			(0, 0, 0)
+		[rotation]
+			(0, 0, 0)
+		[rotationOrder]
+			RotationOrderXYZ
+		[scale]
+			(1, 1, 1)
+		[translation]
+			(4, 5, 6)
 	[primOrigin]
 		[scenePath]
 			HdPrimOriginSchema::OriginPath(/CoordSys/worldSpace)
 	[primvars]
-		[xformOp:computedPivot]
-			[interpolation]
-				constant
-			[primvarValue]
-				(0, 0, 0)
-			[role]
-				
 	[purpose]
 		[fallback]
 			geometry
@@ -167,6 +171,37 @@
 						weakerThanDescendants
 					[materialPath]
 						/Materials/MyMaterial
+</Geom/XformWithPivot> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+		[typeName]
+			Xform
+	[geomXformVectors]
+		[pivot]
+			(123, 456, 789)
+		[rotation]
+			(0, 0, 0)
+		[rotationOrder]
+			RotationOrderXYZ
+		[scale]
+			(1, 1, 1)
+		[translation]
+			(0, 0, 0)
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/Geom/XformWithPivot)
+	[primvars]
+	[purpose]
+		[fallback]
+			geometry
+	[xform]
+		[matrix]
+			( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+		[resetXformStack]
+			0
 </Materials> type = 
 	[__usdPrimInfo]
 		[isLoaded]

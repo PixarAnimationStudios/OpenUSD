@@ -6,7 +6,7 @@
 #
 
 '''
-Module that implements python version of HydraSceneBrowser.
+Module that implements python version of HydraSceneDebugger.
 
 NOTE: Source code for a C++ version of this widget is available (without open
       source build support) in pxr/imaging/hdui.
@@ -28,10 +28,10 @@ from ._usdviewq import (
 
 # -----------------------------------------------------------------------------
 
-class HydraSceneBrowser(QtWidgets.QWidget):
+class HydraSceneDebugger(QtWidgets.QWidget):
     def __init__(self, parent=None):
         QtWidgets.QWidget.__init__(self, parent)
-        self.setWindowTitle("Hydra Scene Browser")
+        self.setWindowTitle("Hydra Scene Debugger")
 
         self.__mainLayout = QtWidgets.QVBoxLayout(self)
         self.__toolbarLayout = QtWidgets.QHBoxLayout()

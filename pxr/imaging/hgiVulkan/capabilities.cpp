@@ -9,6 +9,7 @@
 
 #include "pxr/imaging/hgiVulkan/capabilities.h"
 
+#include "pxr/imaging/hgiVulkan/conversions.h"
 #include "pxr/imaging/hgiVulkan/device.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
 #include "pxr/imaging/hgiVulkan/debugCodes.h"
@@ -27,6 +28,12 @@ TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_UMA, true,
                       "Use Vulkan with UMA (if device supports)");
 TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_REBAR, false,
                       "Use Vulkan with ReBAR (if device supports)");
+TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_HOST_IMAGE_COPY, true,
+                      "Use Vulkan direct image copy from host");
+
+static HgiVulkanFormatInfo
+_CreateFormatInfo(HgiVulkanDevice* hgi, HgiTextureType type, HgiFormat format,
+    HgiTextureUsage usage, bool optimalTiling, bool hostImageCopyDesired);
 
 static void _DumpDeviceDeviceMemoryProperties(
     const VkPhysicalDeviceMemoryProperties& vkMemoryProperties)
@@ -139,7 +146,8 @@ _SupportsHostAccessibleDeviceMemory(
 
 HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     : supportsTimeStamps(false),
-    supportsNativeInterop(false)
+    supportsNativeInterop(false),
+    supportsHostImageCopy(false)
 {
     VkPhysicalDevice physicalDevice = device->GetVulkanPhysicalDevice();
 
@@ -180,6 +188,37 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHR;
     vkPhysicalDeviceIdProperties.pNext = vkDeviceProperties2.pNext;
     vkDeviceProperties2.pNext =  &vkPhysicalDeviceIdProperties;
+
+    // Host image copy feature
+    const bool hostImageCopyExtAvailable =
+        TfGetEnvSetting(HGIVULKAN_ENABLE_HOST_IMAGE_COPY) &&
+        device->IsSupportedExtension(VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME);
+    VkPhysicalDeviceHostImageCopyPropertiesEXT vkHostImageCopyProperties {};
+    std::vector<VkImageLayout> hostImageCopySrcLayoutsVec;
+    std::vector<VkImageLayout> hostImageCopyDstLayoutsVec;
+    if (hostImageCopyExtAvailable) {
+        vkHostImageCopyProperties.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES_EXT;
+        vkHostImageCopyProperties.pNext = vkDeviceProperties2.pNext;
+        vkHostImageCopyProperties.pCopySrcLayouts = nullptr;
+        vkHostImageCopyProperties.copySrcLayoutCount = 0;
+        vkHostImageCopyProperties.pCopyDstLayouts = nullptr;
+        vkHostImageCopyProperties.copyDstLayoutCount = 0;
+        vkDeviceProperties2.pNext =  &vkHostImageCopyProperties;
+
+        // Have to call first to get size required.
+        vkGetPhysicalDeviceProperties2(physicalDevice, &vkDeviceProperties2);
+        
+        hostImageCopySrcLayoutsVec.resize(
+            vkHostImageCopyProperties.copySrcLayoutCount);
+        hostImageCopyDstLayoutsVec.resize(
+            vkHostImageCopyProperties.copyDstLayoutCount);
+
+        vkHostImageCopyProperties.pCopySrcLayouts =
+            hostImageCopySrcLayoutsVec.data();
+        vkHostImageCopyProperties.pCopyDstLayouts =
+            hostImageCopyDstLayoutsVec.data();
+    }
 
     // Query device properties
     vkGetPhysicalDeviceProperties2(physicalDevice, &vkDeviceProperties2);
@@ -230,7 +269,7 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     vkVertexAttributeDivisorFeatures.pNext = vkDeviceFeatures2.pNext;
     vkDeviceFeatures2.pNext = &vkVertexAttributeDivisorFeatures;
 
-    // Barycentric features
+    // Barycentric feature
     const bool barycentricExtSupported = device->IsSupportedExtension(
         VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
     if (barycentricExtSupported) {
@@ -239,8 +278,8 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         vkBarycentricFeatures.pNext = vkDeviceFeatures2.pNext;
         vkDeviceFeatures2.pNext =  &vkBarycentricFeatures;
     }
-    
-    // Line rasterization features
+
+    // Line rasterization feature
     const bool lineRasterizationExtSupported = device->IsSupportedExtension(
         VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME);
     if (lineRasterizationExtSupported) {
@@ -248,6 +287,22 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_KHR;
         vkLineRasterizationFeatures.pNext = vkDeviceFeatures2.pNext;
         vkDeviceFeatures2.pNext =  &vkLineRasterizationFeatures;
+    }
+
+    // Host image copy feature
+    VkPhysicalDeviceHostImageCopyFeaturesEXT vkHostImageCopyFeatures {};
+    if (hostImageCopyExtAvailable) {
+        vkHostImageCopyFeatures.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES_EXT;
+        vkHostImageCopyFeatures.pNext = vkDeviceFeatures2.pNext;
+        vkDeviceFeatures2.pNext =  &vkHostImageCopyFeatures;
+
+        _vkHostImageCopySrcLayouts = std::set<VkImageLayout>(
+            hostImageCopySrcLayoutsVec.begin(),
+            hostImageCopySrcLayoutsVec.end());
+        _vkHostImageCopyDstLayouts = std::set<VkImageLayout>(
+            hostImageCopyDstLayoutsVec.begin(),
+            hostImageCopyDstLayoutsVec.end());
     }
 
     // Query device features
@@ -312,6 +367,11 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         builtinBarycentricsEnabled = false;
     }
 
+    supportsHostImageCopy = hostImageCopyExtAvailable 
+        && vkHostImageCopyFeatures.hostImageCopy
+        && (vkHostImageCopyProperties.identicalMemoryTypeRequirements
+            || unifiedMemory);
+
     _SetFlag(HgiDeviceCapabilitiesBitsUnifiedMemory, unifiedMemory);
     _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne, false);
     _SetFlag(HgiDeviceCapabilitiesBitsStencilReadback, true);
@@ -341,6 +401,157 @@ HgiVulkanCapabilities::GetShaderVersion() const
     // Note: This is not the Vulkan Shader Language version. It is provided for
     // compatibility with code that is asking for the GLSL version.
     return 450;
+}
+
+bool
+HgiVulkanCapabilities::SupportsMemoryToTextureCopy(
+    VkImageLayout layout) const
+{
+    return _vkHostImageCopyDstLayouts.find(layout)
+        != _vkHostImageCopyDstLayouts.end();
+}
+
+HgiVulkanFormatInfo HgiVulkanCapabilities::GetFormatInfo(
+    HgiVulkanDevice* device,
+    HgiTextureType type,
+    HgiFormat format,
+    HgiTextureUsage usage,
+    bool optimalTiling,
+    bool hostImageCopyDesired) const
+{
+    _HgiFormatInfo hgiInfo = 
+        { type, format, usage, optimalTiling, hostImageCopyDesired };
+    // Check cache first
+    {
+        _HgiFormatInfoToHgiVulkanFormatInfo::const_accessor a;
+        _infoLookup.find(a,
+            hgiInfo);
+        if (!a.empty()) {
+            return a->second;
+        }
+    }
+    // If not in cache, must create data then fill cache
+    HgiVulkanFormatInfo vkInfo = _CreateFormatInfo(device, type, format,
+        usage, optimalTiling, hostImageCopyDesired);
+    _infoLookup.insert({ hgiInfo, vkInfo });
+    // Recur to repeat lookup
+    return GetFormatInfo(device, type, format,
+        usage, optimalTiling, hostImageCopyDesired);
+}
+
+bool
+HgiVulkanCapabilities::_HgiFormatHashCompare::equal(
+    const _HgiFormatInfo &a,
+    const _HgiFormatInfo &b)
+{
+    return 
+        a.type == b.type &&
+        a.format == b.format &&
+        a.usage == b.usage &&
+        a.optimalTiling == b.optimalTiling &&
+        a.hostImageCopyDesired == b.hostImageCopyDesired;
+}
+
+size_t
+HgiVulkanCapabilities::_HgiFormatHashCompare::hash(const _HgiFormatInfo &a)
+{
+    return TfHash::Combine(a.type, a.format, a.usage,
+        a.optimalTiling, a.hostImageCopyDesired);
+}
+
+static bool
+_CheckFormatSupport(
+    VkPhysicalDevice device,
+    VkFormat format,
+    bool optimalTiling,
+    VkFormatFeatureFlags2 requiredFlags,
+    VkFormatFeatureFlags2* optionalFlags)
+{
+    VkFormatProperties2 props2{VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2};
+    VkFormatProperties3 props3{VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3};
+    props2.pNext = &props3;
+    vkGetPhysicalDeviceFormatProperties2(device, format, &props2);
+    const VkFormatFeatureFlags2 featureFlags = optimalTiling ?
+        props3.optimalTilingFeatures : props3.linearTilingFeatures;
+    *optionalFlags &= featureFlags;
+    return (featureFlags & requiredFlags) == requiredFlags;
+}
+
+static bool
+_HasOptimalHostImageCopy(
+    VkPhysicalDevice device,
+    VkFormat format,
+    VkImageType type,
+    VkImageTiling tiling,
+    VkImageUsageFlags usage,
+    VkImageCreateFlags flags)
+{
+    VkPhysicalDeviceImageFormatInfo2 imageFormatInfo{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2};
+    imageFormatInfo.format = format;
+    imageFormatInfo.type = type;
+    imageFormatInfo.tiling = tiling;
+    imageFormatInfo.usage = usage | VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
+    imageFormatInfo.flags = flags;
+    VkImageFormatProperties2 imageFormatProperties{
+        VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2};
+    VkHostImageCopyDevicePerformanceQueryEXT hostImageCopyPerformance{
+        VK_STRUCTURE_TYPE_HOST_IMAGE_COPY_DEVICE_PERFORMANCE_QUERY_EXT};
+    imageFormatProperties.pNext = &hostImageCopyPerformance;
+
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vkGetPhysicalDeviceImageFormatProperties2(
+            device, &imageFormatInfo, &imageFormatProperties));
+    return hostImageCopyPerformance.identicalMemoryLayout
+        || hostImageCopyPerformance.optimalDeviceAccess;
+}
+
+static HgiVulkanFormatInfo
+_CreateFormatInfo(
+    HgiVulkanDevice* hgi,
+    HgiTextureType type,
+    HgiFormat format,
+    HgiTextureUsage usage,
+    bool optimalTiling,
+    bool hostImageCopyDesired)
+{
+    const HgiVulkanDevice* device = hgi;
+    const HgiVulkanCapabilities& capabilities = hgi->GetDeviceCapabilities();
+    const bool isDepthBuffer = usage & HgiTextureUsageBitsDepthTarget;
+
+    HgiVulkanFormatInfo info;
+    info.format = HgiVulkanConversions::GetFormat(format, isDepthBuffer);
+    info.usage = HgiVulkanConversions::GetTextureUsage(usage);
+    info.type = HgiVulkanConversions::GetTextureType(type);
+    info.createFlags = type == HgiTextureTypeCubemap ?
+        VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
+
+    VkFormatFeatureFlags2 optionalFormatFeatures =
+        (capabilities.supportsHostImageCopy & hostImageCopyDesired) ? 
+            VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT : 0;
+
+    const auto physicalDevice = device->GetVulkanPhysicalDevice();
+    if (!_CheckFormatSupport(
+            physicalDevice,
+            info.format,
+            optimalTiling,
+            HgiVulkanConversions::GetFormatFeature2(usage),
+            &optionalFormatFeatures)) {
+        TF_CODING_ERROR("Image format / usage combo not supported on device");
+    }
+
+    info.hostImageCopyOptimal = false;
+    if (optionalFormatFeatures
+        & VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT) {
+        VkImageTiling tiling = optimalTiling
+                    ? VK_IMAGE_TILING_OPTIMAL : VK_IMAGE_TILING_LINEAR;
+
+        info.hostImageCopyOptimal = _HasOptimalHostImageCopy(physicalDevice,
+                info.format, info.type, tiling, info.usage, info.createFlags);
+        info.usage |= info.hostImageCopyOptimal
+            ? VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT : 0;
+    }
+    return info;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

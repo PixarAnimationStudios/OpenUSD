@@ -923,11 +923,10 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
     // Points fastpath; it's possible points was updated above, but if
     // points is dirty and we skipped the above loops let's handle it here.
-    // Note: if the logic here becomes more complex, the more correct thing to
-    // do here is check whether primvars or compPrimvars contains a "points"
-    // entry...
     if (*dirtyBits & HdChangeTracker::DirtyPoints &&
-        primvars.size() == 0 && compPrimvars.size() == 0) {
+        !(*dirtyBits & HdChangeTracker::DirtyNormals ||
+          *dirtyBits & HdChangeTracker::DirtyWidths ||
+          *dirtyBits & HdChangeTracker::DirtyPrimvar)) {
 
         if (!_topology) {
             TF_CODING_ERROR("No topology set for BasisCurve %s",

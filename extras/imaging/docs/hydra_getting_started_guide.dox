@@ -50,7 +50,7 @@ querying the USD prim hierarchy. Finally, it implements \ref HdSceneIndexBase::G
 by returning the appropriate data for the prim in question (transform, geometric 
 data, etc. as appropriate).
 
-Consumers (such as renderers, the Hydra scene browser, etc) that want to receive 
+Consumers (such as renderers, the Hydra Scene Debugger, etc) that want to receive 
 notifications from a scene index can subclass the HdSceneIndexObserver interface.
 
 \snippet examples_hydra_getting_started.cpp HdSceneIndexObserverExcerpt
@@ -215,7 +215,7 @@ See \ref Hydra_Getting_Started_App_With_Filters for additional illustrative
 examples of scene index filters.
 
 Hydra provides a way to visualize scene data and filters using the 
-\ref Page_Hydra_Scene_Browser, available in tools like usdview. You can also 
+\ref Page_Hydra_Scene_Debugger, available in tools like usdview. You can also 
 add this to your Hydra-enabled application.
 
 \section Hydra_Getting_Started_Scene_Data Transporting Scene Data with Scene Indexes
@@ -512,7 +512,7 @@ settings) into different threading models if needed.
 Although there are benefits to using the scene index API from 
 end-to-end (for performance, flexibility, configurability), it's not required if
 you just want to get started with the 
-\ref Page_Hydra_Scene_Browser "Hydra Scene Browser" or the Application or 
+\ref Page_Hydra_Scene_Debugger "Hydra Scene Debugger" or the Application or 
 Renderer Scene Index Filters. Internally, Hydra is using the Scene Index 
 API, but to minimize impact we designed adapters to invisibly support existing 
 scene delegate implementations and existing render delegate implementations that 

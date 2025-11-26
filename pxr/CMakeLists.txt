@@ -21,6 +21,12 @@ if (${PXR_BUILD_IMAGING})
     endif()
 endif()
 
+if (PXR_BUILD_USD_TOOLS)
+    add_subdirectory(bin)
+else()
+    message(STATUS "Skipping commandline tools because PXR_BUILD_USD_TOOLS=OFF")
+endif()
+
 pxr_core_epilogue()
 
 export(PACKAGE pxr)

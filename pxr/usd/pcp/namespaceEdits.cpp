@@ -884,7 +884,7 @@ PcpComputeNamespaceEdits(
                     // with recurseOnIndex, which may not actually
                     // have depended on this site (and exist for other
                     // reasons).
-                    if (PcpComposeSiteHasPrimSpecs(layerStack, dep.sitePath)) {
+                    if (PcpComposeSiteHasSpecs(layerStack, dep.sitePath)) {
                         Pcp_ForEachDependentNode(dep.sitePath, layerStack,
                                                  dep.indexPath,
                                                  *cache, visitNodeFn);

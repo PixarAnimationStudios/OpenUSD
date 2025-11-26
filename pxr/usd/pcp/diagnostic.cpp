@@ -257,7 +257,7 @@ _WriteGraph(
 
     bool hasSpecs = false;
     if (node.CanContributeSpecs()) {
-        hasSpecs = PcpComposeSiteHasPrimSpecs(node);
+        hasSpecs = PcpComposeSiteHasSpecs(node);
     }
 
     std::vector<std::string> status;
@@ -913,6 +913,35 @@ Pcp_IndexingMsg(PcpPrimIndex const *index,
 
     Pcp_NodeSet nodes { a1, a2 };
     _outputManager->Msg(index, std::move(msg), nodes);
+}
+
+void
+Pcp_CheckConsistency(const PcpPrimIndex& primIndex)
+{
+#define _VERIFY_NODE(node, cond, msg)                      \
+    TF_VERIFY(                                             \
+        cond, msg " (node %s in <%s>)",                    \
+        TfStringify(node.GetSite()).c_str(),               \
+        primIndex.GetPath().GetText());
+
+    // Verify that all descendants of a culled node in the prim index
+    // are also marked as culled.
+    for (PcpNodeRange r = primIndex.GetNodeRange();
+         r.first != r.second; /* nothing */) {
+
+        PcpNodeRef n = *r.first;
+        if (n.IsCulled()) {
+            for (PcpNodeRef n2 : primIndex.GetNodeSubtreeRange(n)) {
+                _VERIFY_NODE(
+                    n2, n2.IsCulled(),
+                    "Descendant of culled node must also be culled");
+            }
+            r.first.MoveToNextSubtree();
+        }
+        else {
+            ++r.first;
+        }
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

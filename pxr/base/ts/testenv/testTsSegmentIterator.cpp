@@ -320,13 +320,13 @@ void InitTestCases()
     testSplineNames.insert(simpleInnerLoop.name);
 
     // ================ simpleSpline ================
-    // Living up to its name, all the knots have integral values.
+    // Living up to its name, all the knots have simple, easy to hand compute values.
     simpleSpline.name = "SimpleSpline";
     simpleSpline.spline.SetKnots(
         {  //  t      v     pre-tan     post-tan       interp
             K(0.0,  0.0,  0.0,   0.0,  0.0,   0.0,  TsInterpHeld),
             K(1.0,  1.0,  0.0,   0.0,  0.0,   0.0,  TsInterpLinear),
-            K(2.0,  3.0,  0.0,   0.0,  0.0,   0.0,  TsInterpLinear),
+            K(2.0,  2.5,  0.0,   0.0,  0.0,   0.0,  TsInterpLinear),
             K(3.0,  2.0,  0.0,   0.0,  0.0,   0.0,  TsInterpLinear),
             K(4.0,  4.0,  0.0,   0.0,  0.0,   0.0,  TsInterpHeld)
         });
@@ -345,11 +345,11 @@ void InitTestCases()
              Ts_SegmentInterp::Held},
             {{1.0, 1.0},
              {1.0, 1.0},
-             {2.0, 3.0},
-             {2.0, 3.0},
+             {2.0, 2.5},
+             {2.0, 2.5},
              Ts_SegmentInterp::Linear},
-            {{2.0, 3.0},
-             {2.0, 3.0},
+            {{2.0, 2.5},
+             {2.0, 2.5},
              {3.0, 2.0},
              {3.0, 2.0},
              Ts_SegmentInterp::Linear},
@@ -383,51 +383,51 @@ void InitTestCases()
              Ts_SegmentInterp::PreExtrap},  //
             {{-3.0, -3.0},                  /////////////////
              {-3.0, -3.0},                  //
-             {-2.0, -1.0},                  //  1: iter -2
-             {-2.0, -1.0},                  //
+             {-2.0, -1.5},                  //  1: iter -2
+             {-2.0, -1.5},                  //
              Ts_SegmentInterp::Linear},     //
-            {{-2.0, -1.0},                  //
-             {-2.0, -1.0},                  //  2:
+            {{-2.0, -1.5},                  //
+             {-2.0, -1.5},                  //  2:
              {-1.0, -1.0},                  //
              {-1.0, -1.0},                  //
              Ts_SegmentInterp::Linear},     //
             {{-1.0, -1.0},                  ////////////////
              {-1.0, -1.0},                  //
-             {0.0, 1.0},                    //  3: iter -1
-             {0.0, 1.0},                    //
+             {0.0, 0.5},                    //  3: iter -1
+             {0.0, 0.5},                    //
              Ts_SegmentInterp::Linear},     //
-            {{0.0, 1.0},                    //
-             {0.0, 1.0},                    //  4:
+            {{0.0, 0.5},                    //
+             {0.0, 0.5},                    //  4:
              {1.0, 1.0},                    //
              {1.0, 1.0},                    //
              Ts_SegmentInterp::Linear},     //
             {{1.0, 1.0},                    ////////////////
              {1.0, 1.0},                    //
-             {2.0, 3.0},                    //  5: prototype
-             {2.0, 3.0},                    //
+             {2.0, 2.5},                    //  5: prototype
+             {2.0, 2.5},                    //
              Ts_SegmentInterp::Linear},     //
-            {{2.0, 3.0},                    //
-             {2.0, 3.0},                    //  6:
+            {{2.0, 2.5},                    //
+             {2.0, 2.5},                    //  6:
              {3.0, 3.0},                    //
              {3.0, 3.0},                    //
              Ts_SegmentInterp::Linear},     //
             {{3.0, 3.0},                    ////////////////
              {3.0, 3.0},                    //
-             {4.0, 5.0},                    //  7: iter 1
-             {4.0, 5.0},                    //
+             {4.0, 4.5},                    //  7: iter 1
+             {4.0, 4.5},                    //
              Ts_SegmentInterp::Linear},     //
-            {{4.0, 5.0},                    //
-             {4.0, 5.0},                    //  8:
+            {{4.0, 4.5},                    //
+             {4.0, 4.5},                    //  8:
              {5.0, 5.0},                    //
              {5.0, 5.0},                    //
              Ts_SegmentInterp::Linear},     //
             {{5.0, 5.0},                    ////////////////
              {5.0, 5.0},                    //
-             {6.0, 7.0},                    //  9: iter 2
-             {6.0, 7.0},                    //
+             {6.0, 6.5},                    //  9: iter 2
+             {6.0, 6.5},                    //
              Ts_SegmentInterp::Linear},     //
-            {{6.0, 7.0},                    //
-             {6.0, 7.0},                    // 10:
+            {{6.0, 6.5},                    //
+             {6.0, 6.5},                    // 10:
              {7.0, 7.0},                    //
              {7.0, 7.0},                    //
              Ts_SegmentInterp::Linear},     //
@@ -466,8 +466,8 @@ void InitTestCases()
     // Clone longLoop but add linear extrapolation
     extrapLinear = longLoop;
     extrapLinear.name = "ExtrapLinear";
-    extrapLinear.segments.front().p0[1] = 2.0;  // pre-extrap slope
-    extrapLinear.segments.back().p1[1] = 0.0;  // post-extrap slope
+    extrapLinear.segments.front().p0[1] = 1.5;  // pre-extrap slope
+    extrapLinear.segments.back().p1[1] = 0.5;  // post-extrap slope
 
     extrapLinear.spline.SetPreExtrapolation(TsExtrapLinear);
     extrapLinear.spline.SetPostExtrapolation(TsExtrapLinear);

@@ -50,7 +50,7 @@ pxr_library(usdviewq
         preferences.py
         primViewItem.py
         common.py
-        hydraSceneBrowser.py
+        hydraSceneDebugger.py
         legendUtil.py
         primLegend.py
         primTreeWidget.py

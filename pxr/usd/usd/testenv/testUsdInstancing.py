@@ -742,12 +742,21 @@ class TestUsdInstancing(unittest.TestCase):
         ValidateExpectedInstances(s, { '/__Prototype_1' : [expectedInstance] })
         ValidateExpectedChanges(nl, [primPathToDeactivate, '/__Prototype_1'])
 
-        # Now author a significant change to the prim referenced by both
-        # instances. This should cause a new prototype to be created and the
-        # old prototype to be removed.
+        # Author a new composition arc on the prim referenced by both
+        # instances. Since the new composition arc is behind a reference
+        # arc, it is not considered part of the instancing key and does
+        # not cause a new prototype to be created.
         s.GetPrimAtPath('/Reference').GetInherits().AddInherit('/Class')
-        ValidateExpectedInstances(s, { '/__Prototype_2' : [expectedInstance] })
+        ValidateExpectedInstances(s, { '/__Prototype_1' : [expectedInstance] })
         ValidateExpectedChanges(nl, ['/Reference', expectedInstance, 
+                                     '/__Prototype_1'])
+
+        # Author a new composition arc on the remaining active instance.
+        # This should cause a new prototype to be created and the old
+        # prototype to be removed.
+        s.GetPrimAtPath(expectedInstance).GetInherits().AddInherit('/Class_2')
+        ValidateExpectedInstances(s, { '/__Prototype_2' : [expectedInstance] })
+        ValidateExpectedChanges(nl, [expectedInstance, 
                                      '/__Prototype_1', '/__Prototype_2'])
 
     def test_VariantSelections(self):
@@ -928,9 +937,9 @@ class TestUsdInstancing(unittest.TestCase):
                                  '/SubrootRef_2', 
                                  '/SubrootRef_3'] })
 
-        # Now add an over for /RootRef/Ref1_Child. This now gets included in 
-        # the instance key for SubrootRef_3 so it uses a different prototype
-        # SubrootRef 1 and 2.
+        # Add an over for /RootRef/Ref1_Child in the root layer. This has no
+        # effect on the prototype for /SubrootRef_3 because this is a prohibited
+        # override on an instance child that is ignored by the instancing key.
         rootLayer = s.GetRootLayer()
         Sdf.PrimSpec(rootLayer.GetPrimAtPath('/RootRef'), 'Ref1_Child', 
                      Sdf.SpecifierOver)
@@ -938,9 +947,34 @@ class TestUsdInstancing(unittest.TestCase):
             { '/__Prototype_1': ['/RootRef'],
               '/__Prototype_2': ['/__Prototype_1/Ref1_Child'],
               '/__Prototype_3': ['/SubrootRef_1', 
+                                 '/SubrootRef_2', 
+                                 '/SubrootRef_3'] })
+
+        # Remove the instanceable flag from /RootRef. /__Prototype_1 goes
+        # away since there are no more instances. Because the over on
+        # /RootRef/Ref1_Child in the root layer is no longer prohibited, 
+        # /SubrootRef_3's instance key now includes the internal reference
+        # to that prim, so it now uses a different prototype from
+        # /SubrootRef_1 and 2.
+        rootLayer.GetPrimAtPath('/RootRef').instanceable = False
+        ValidateExpectedInstances(s,
+            { '/__Prototype_2': ['/RootRef/Ref1_Child'],
+              '/__Prototype_3': ['/SubrootRef_1',
                                  '/SubrootRef_2'],
               '/__Prototype_4': ['/SubrootRef_3'] })
 
+    def test_InternalReferencesAndImpliedArcs(self):
+        """Test instancing behavior with internal references and implied
+        arcs."""
+
+        s = OpenStage('internal_refs/root.usda')
+
+        # Both /Parent/Child and /ParentRef/Child should share the same
+        # prototype even though /ParentRef/Child has an additional
+        # ancestral arc, since ancestral arcs are not considered in the
+        # instancing key.
+        ValidateExpectedInstances(s,
+            { '/__Prototype_1': ['/Parent/Child', '/ParentRef/Child'] })
 
     def test_PropertyChanges(self):
         """Test that changes to properties that affect prototypes cause the

@@ -426,9 +426,8 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
                 vkImageSubRange.layerCount =
                     texture->GetDescriptor().layerCount;
                 
-                HgiVulkanTexture::TransitionImageBarrier(
+                texture->LayoutBarrier(
                     _commandBuffer,
-                    texture,
                     /*oldLayout*/oldVkLayout,
                     /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     /*producerAccess*/VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -444,9 +443,8 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
                     1,
                     &vkImageSubRange);
 
-                HgiVulkanTexture::TransitionImageBarrier(
+                texture->LayoutBarrier(
                     _commandBuffer,
-                    texture,
                     /*oldLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     /*newLayout*/oldVkLayout,
                     /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -473,9 +471,8 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
                 vkImageSubRange.layerCount =
                     texture->GetDescriptor().layerCount;
                     
-                HgiVulkanTexture::TransitionImageBarrier(
+                texture->LayoutBarrier(
                     _commandBuffer,
-                    texture,
                     /*oldLayout*/oldVkLayout,
                     /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     /*producerAccess*/VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -491,9 +488,8 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
                     1,
                     &vkImageSubRange);
                 
-                HgiVulkanTexture::TransitionImageBarrier(
+                texture->LayoutBarrier(
                     _commandBuffer,
-                    texture,
                     /*oldLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     /*newLayout*/oldVkLayout,
                     /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -528,9 +524,8 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
             vkImageSubRange.layerCount =
                 texture->GetDescriptor().layerCount;
                 
-            HgiVulkanTexture::TransitionImageBarrier(
+            texture->LayoutBarrier(
                 _commandBuffer,
-                texture,
                 /*oldLayout*/oldVkLayout,
                 /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 /*producerAccess*/VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
@@ -546,9 +541,8 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
                 1,
                 &vkImageSubRange);
                 
-            HgiVulkanTexture::TransitionImageBarrier(
+            texture->LayoutBarrier(
                 _commandBuffer,
-                texture,
                 /*oldLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 /*newLayout*/oldVkLayout,
                 /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -573,9 +567,8 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
             vkImageSubRange.layerCount =
                 texture->GetDescriptor().layerCount;
             
-            HgiVulkanTexture::TransitionImageBarrier(
+            texture->LayoutBarrier(
                 _commandBuffer,
-                texture,
                 /*oldLayout*/oldVkLayout,
                 /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 /*producerAccess*/VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
@@ -591,9 +584,8 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
                 1,
                 &vkImageSubRange);
             
-            HgiVulkanTexture::TransitionImageBarrier(
+            texture->LayoutBarrier(
                 _commandBuffer,
-                texture,
                 /*oldLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 /*newLayout*/oldVkLayout,
                 /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,

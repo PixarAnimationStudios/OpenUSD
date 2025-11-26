@@ -1254,9 +1254,8 @@ private:
                 if (extension.empty()) {
                     continue;
                 }
-
                 _packageResolvers.push_back(std::make_shared<_PackageResolver>(
-                    extension, plugin, packageResolverType));
+                    TfStringToLowerAscii(extension), plugin, packageResolverType));
 
                 TF_DEBUG(AR_RESOLVER_INIT).Msg(
                     "ArGetResolver(): Using package resolver %s for %s "
@@ -1444,7 +1443,7 @@ private:
 
         bool HandlesFormat(const std::string& extension) const
         {
-            return _packageFormat == extension;
+            return _packageFormat == TfStringToLowerAscii(extension);
         }
 
     private:

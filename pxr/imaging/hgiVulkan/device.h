@@ -84,21 +84,23 @@ public:
     bool IsSupportedExtension(const char* extensionName) const;
 
     /// Device extension function pointers
-    PFN_vkCreateRenderPass2KHR vkCreateRenderPass2KHR = 0;
+    PFN_vkCreateRenderPass2KHR vkCreateRenderPass2KHR = nullptr;
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
-    PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR = 0;
-    PFN_vkGetSemaphoreWin32HandleKHR vkGetSemaphoreWin32HandleKHR = 0;
+    PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR = nullptr;
+    PFN_vkGetSemaphoreWin32HandleKHR vkGetSemaphoreWin32HandleKHR = nullptr;
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
-    PFN_vkGetMemoryFdKHR vkGetMemoryFdKHR = 0;
-    PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR = 0;
+    PFN_vkGetMemoryFdKHR vkGetMemoryFdKHR = nullptr;
+    PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR = nullptr;
 #elif defined(VK_USE_PLATFORM_METAL_EXT)
 #endif
-    PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT = 0;
-    PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabelEXT = 0;
-    PFN_vkCmdInsertDebugUtilsLabelEXT vkCmdInsertDebugUtilsLabelEXT = 0;
-    PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = 0;
-    PFN_vkQueueBeginDebugUtilsLabelEXT vkQueueBeginDebugUtilsLabelEXT = 0;
-    PFN_vkQueueEndDebugUtilsLabelEXT vkQueueEndDebugUtilsLabelEXT = 0;
+    PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT = nullptr;
+    PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabelEXT = nullptr;
+    PFN_vkCmdInsertDebugUtilsLabelEXT vkCmdInsertDebugUtilsLabelEXT = nullptr;
+    PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = nullptr;
+    PFN_vkQueueBeginDebugUtilsLabelEXT vkQueueBeginDebugUtilsLabelEXT = nullptr;
+    PFN_vkQueueEndDebugUtilsLabelEXT vkQueueEndDebugUtilsLabelEXT = nullptr;
+    PFN_vkTransitionImageLayoutEXT vkTransitionImageLayoutEXT = nullptr;
+    PFN_vkCopyMemoryToImageEXT vkCopyMemoryToImageEXT = nullptr;
 
 private:
     HgiVulkanDevice() = delete;

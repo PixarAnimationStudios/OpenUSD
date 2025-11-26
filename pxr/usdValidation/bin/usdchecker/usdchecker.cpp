@@ -28,17 +28,9 @@
 #include <vector>
 #include <cstdio>
 
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
-#include "pxr/base/tf/pyInvoke.h"
-#endif
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 using namespace pxr_CLI;
-
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
-using namespace pxr_boost::python;
-#endif
 
 static const char *_ErrorColor = "\033[91m";
 static const char *_WarningColor = "\033[93m";
@@ -62,7 +54,6 @@ struct Args {
     bool dumpRules = false;
     bool verbose = false;
     bool strict = false;
-    bool useOldComplianceCheckerInterface = false;
 };
 
 static
@@ -108,14 +99,6 @@ _Configure(CLI::App* app, Args& args) {
         "-t, --strict", args.strict, 
         "Return failure code even if only warnings are issued, for stricter\n"
         "compliance.");
-    app->add_flag(
-        "--useNewValidationFramework",
-        "Default behavior, this option is IGNORED but retained to avoid client "
-        "code breakage.")->group("");
-    app->add_flag(
-        "--useOldComplianceCheckerInterface", 
-        args.useOldComplianceCheckerInterface, 
-        "Use the old and now deprecated Compliance Checker interface.");
     app->add_option(
         "--variantSets", args.variantSets,
         "List of variantSets to validate. All variants for the given\n"
@@ -155,19 +138,6 @@ _ValidateArgs(const Args& args) {
     if (!args.dumpRules && args.inputFile.empty()) {
         std::cerr<<"Error: Either an inputFile or the --dumpRules option "
             "must be specified.\n";
-        return false;
-    }
-
-    // variants option is only valid when using new validation framework.
-    if (!args.variants.empty() && args.useOldComplianceCheckerInterface) {
-        std::cerr<<"Error: The --variants option is only valid when using the "
-            "new ValidationFramework."<<"\n";
-        return false;
-    }
-
-    if (!args.variantSets.empty() && args.useOldComplianceCheckerInterface) {
-        std::cerr<<"Error: The --variantSets option is only valid when using "
-            "the new ValidationFramework."<<"\n";
         return false;
     }
 
@@ -565,254 +535,138 @@ _UsdChecker(const Args& args)
         return 1;
     }
 
-    if (!args.useOldComplianceCheckerInterface) {
-        UsdValidationRegistry &validationReg = 
-            UsdValidationRegistry::GetInstance();
-        UsdValidationValidatorMetadataVector metadata = 
-            validationReg.GetAllValidatorMetadata();
-        if (!args.arkit) {
-            // Remove metadata which have the UsdzValidators keyword, in its
-            // keyword vector.
-            metadata.erase(
-                std::remove_if(
-                    metadata.begin(), metadata.end(), 
-                    [](const UsdValidationValidatorMetadata &meta) {
-                        return std::find(
-                            meta.keywords.begin(), meta.keywords.end(), 
-                            UsdUtilsValidatorKeywordTokens->UsdzValidators) != 
-                            meta.keywords.end();
-                    }), metadata.end());
-        }
-        if (args.noAssetChecks) {
-            // Remove metadata which have the stageMetadataChecker validator
-            // name.
-            metadata.erase(
-                std::remove_if(
-                    metadata.begin(), metadata.end(), 
-                    [](const UsdValidationValidatorMetadata &meta) {
-                        return meta.name == 
-                            UsdValidatorNameTokens->stageMetadataChecker;
-                    }), metadata.end());
-        }
-        if (args.rootPackageOnly) {
-            // Remove UsdUtilsValidators:UsdzPackageValidator
-            metadata.erase(
-                std::remove_if(
-                    metadata.begin(), metadata.end(), 
-                    [](const UsdValidationValidatorMetadata &meta) {
-                        return meta.name == 
-                            UsdUtilsValidatorNameTokens->usdzPackageValidator;
-                    }), metadata.end());
-        } else {
-            // Remove UsdUtilsValidators:RootPackageValidator
-            metadata.erase(
-                std::remove_if(
-                    metadata.begin(), metadata.end(), 
-                    [](const UsdValidationValidatorMetadata &meta) {
-                        return meta.name == 
-                            UsdUtilsValidatorNameTokens->rootPackageValidator;
-                    }), metadata.end());
-        }
-        // TODO rootPackageOnly
-        //   - This can be handled via a keyword. Have a UsdzPackageValidator
-        //   and a UsdzRootPackageValidator, and appropriately select the
-        //   validator metadata given the --rootPackageOnly flag.
-        
-        // Sort metadata based on the name of the validator. Helps with
-        // deterministic dumping of validation rules.
-        std::sort(
-            metadata.begin(), metadata.end(), 
-            [](const UsdValidationValidatorMetadata &a, 
-               const UsdValidationValidatorMetadata &b) {
-                return a.name < b.name;
-            });
-        
-        if (args.dumpRules) {
-            for (const UsdValidationValidatorMetadata &meta : metadata) {
-                std::cout<<"["<<meta.name<<"]:\n";
-                std::cout<<"\t"<<"Doc: "<<meta.doc<<'\n';
-                if (!meta.keywords.empty()) {
-                    std::cout<<"\t"<<"Keywords: "<<
-                        TfStringJoin(meta.keywords.begin(),
-                                     meta.keywords.end(), ", ")<<'\n';
-                }
-                if (!meta.schemaTypes.empty()) {
-                    std::cout<<"\t"<<"SchemaTypes: "<<
-                        TfStringJoin(meta.schemaTypes.begin(),
-                                     meta.schemaTypes.end(), ", ")<<'\n';
-                }
-                std::string suiteDoc = meta.isSuite ? "True" : "False";
-                std::cout<<"\t"<<"isSuite: "<<suiteDoc<<'\n';
+    UsdValidationRegistry &validationReg = 
+        UsdValidationRegistry::GetInstance();
+    UsdValidationValidatorMetadataVector metadata = 
+        validationReg.GetAllValidatorMetadata();
+    if (!args.arkit) {
+        // Remove metadata which have the UsdzValidators keyword, in its
+        // keyword vector.
+        metadata.erase(
+            std::remove_if(
+                metadata.begin(), metadata.end(), 
+                [](const UsdValidationValidatorMetadata &meta) {
+                    return std::find(
+                        meta.keywords.begin(), meta.keywords.end(), 
+                        UsdUtilsValidatorKeywordTokens->UsdzValidators) != 
+                        meta.keywords.end();
+                }), metadata.end());
+    }
+    if (args.noAssetChecks) {
+        // Remove metadata which have the stageMetadataChecker validator
+        // name.
+        metadata.erase(
+            std::remove_if(
+                metadata.begin(), metadata.end(), 
+                [](const UsdValidationValidatorMetadata &meta) {
+                    return meta.name == 
+                        UsdValidatorNameTokens->stageMetadataChecker;
+                }), metadata.end());
+    }
+    if (args.rootPackageOnly) {
+        // Remove UsdUtilsValidators:UsdzPackageValidator
+        metadata.erase(
+            std::remove_if(
+                metadata.begin(), metadata.end(), 
+                [](const UsdValidationValidatorMetadata &meta) {
+                    return meta.name == 
+                        UsdUtilsValidatorNameTokens->usdzPackageValidator;
+                }), metadata.end());
+    } else {
+        // Remove UsdUtilsValidators:RootPackageValidator
+        metadata.erase(
+            std::remove_if(
+                metadata.begin(), metadata.end(), 
+                [](const UsdValidationValidatorMetadata &meta) {
+                    return meta.name == 
+                        UsdUtilsValidatorNameTokens->rootPackageValidator;
+                }), metadata.end());
+    }
+    
+    // Sort metadata based on the name of the validator. Helps with
+    // deterministic dumping of validation rules.
+    std::sort(
+        metadata.begin(), metadata.end(), 
+        [](const UsdValidationValidatorMetadata &a, 
+           const UsdValidationValidatorMetadata &b) {
+            return a.name < b.name;
+        });
+    
+    if (args.dumpRules) {
+        for (const UsdValidationValidatorMetadata &meta : metadata) {
+            std::cout<<"["<<meta.name<<"]:\n";
+            std::cout<<"\t"<<"Doc: "<<meta.doc<<'\n';
+            if (!meta.keywords.empty()) {
+                std::cout<<"\t"<<"Keywords: "<<
+                    TfStringJoin(meta.keywords.begin(),
+                                 meta.keywords.end(), ", ")<<'\n';
             }
-        }
-
-        if (args.inputFile.empty()) {
-            return 0;
-        }
-        
-        UsdStageRefPtr stage = UsdStage::Open(args.inputFile);
-        if (!stage) {
-            std::cerr<<"Error: Failed to open stage.\n";
-            return 1;
-        }
-        UsdValidationContext ctx(metadata);
-
-        // Do a validation run without any variants set, to get default stage
-        // validation errors.
-        UsdValidationErrorVector errors = ctx.Validate(stage);
-
-        std::ofstream outFileStream;
-        std::ostream &output = [&]() -> std::ostream & {
-            if (args.outFile == "stderr") {
-                return std::cerr;
+            if (!meta.schemaTypes.empty()) {
+                std::cout<<"\t"<<"SchemaTypes: "<<
+                    TfStringJoin(meta.schemaTypes.begin(),
+                                 meta.schemaTypes.end(), ", ")<<'\n';
             }
-            if (args.outFile == "stdout") {
-                return std::cout;
-            }
-            outFileStream.open(args.outFile);
-            if (!outFileStream) {
-                std::cerr<<"Error: Failed to open output file "<<args.outFile
-                    <<" for writing.\n";
-            }
-            return outFileStream;
-        }();
-
-        if (!output) {
-            return 1;
+            std::string suiteDoc = meta.isSuite ? "True" : "False";
+            std::cout<<"\t"<<"isSuite: "<<suiteDoc<<'\n';
         }
-
-        bool success = _ReportValidationErrors(errors, output, args.strict);
-
-        // If skipVariants is not set, validate the given variants.
-        if (!args.skipVariants) {
-            success &= _ValidateVariants(
-                stage, ctx, output, args.variants, args.variantSets, 
-                args.strict, args.disableVariantValidationLimit);
-        }
-        return success ? 0 : 1;
     }
 
-    #ifndef PXR_PYTHON_SUPPORT_ENABLED
-
-    std::cerr<<"usdchecker using UsdUtilsComplianceChecker requires Python "
-        "support to be enabled in the build of USD. Its recommended to use "
-        "the new ValidationFramework which doesn't require any python "
-        "support.\n";
-    return 1;
-
-    #else
-
-    try {
-        TfPyInitialize();
-        TfPyLock gil;
-        TfPyKwArg arkitArg("arkit", args.arkit);
-        TfPyKwArg skipARKitRootLayerCheck("skipARKitRootLayerCheck", false);
-        TfPyKwArg rootPackageOnlyArg("rootPackageOnly", args.rootPackageOnly);
-        TfPyKwArg skipVariantsArg("skipVariants", args.skipVariants);
-        TfPyKwArg verboseArg("verbose", args.verbose);
-        TfPyKwArg assetLevelChecks("assetLevelChecks", !args.noAssetChecks);
-
-        object checker;
-        if (!TfPyInvokeAndReturn(
-            "pxr.UsdUtils", "ComplianceChecker", &checker, arkitArg, 
-            skipARKitRootLayerCheck, rootPackageOnlyArg, skipVariantsArg, 
-            verboseArg, assetLevelChecks)) {
-            std::cerr<<"Error: Failed to initialize ComplianceChecker.\n"; 
-            return 1;
-        }
-
-        if (!checker) {
-            std::cerr<<"Error: Failed to initialize ComplianceChecker.\n"; 
-            return 1;
-        }
-
-        if (args.dumpRules) {
-            checker.attr("DumpRules")();
-            // If there's no input file to check, exit after dumping the rules.
-            if (args.inputFile.empty()) {
-                return 0;
-            }
-        }
-
-        // We must have an input file to check, based on the validation above
-        checker.attr("CheckCompliance")(args.inputFile);
-
-        // Extract warnings, errors, and failed checks from 
-        // ComplianceChecker.
-        StringVector warnings = extract<StringVector>(
-            checker.attr("GetWarnings")());
-        StringVector errors = extract<StringVector>(
-            checker.attr("GetErrors")());
-        StringVector failedChecks = extract<StringVector>(
-            checker.attr("GetFailedChecks")());
-
-        std::ofstream outFileStream;
-        std::ostream &output = [&]() -> std::ostream & {
-            if (args.outFile == "stderr") {
-                return std::cerr;
-            }
-            if (args.outFile == "stdout") {
-                return std::cout;
-            }
-            outFileStream.open(args.outFile);
-            if (!outFileStream) {
-                std::cerr<<"Error: Failed to open output file "<<args.outFile
-                    <<" for writing.\n";
-            }
-            return outFileStream;
-        }();
-
-        if (!output) {
-            return 1;
-        }
-
-        for (const auto& warning : warnings) {
-            _PrintMessage(output, warning, _WarningColor);
-        }
-        for (const auto& error : errors) {
-            _PrintMessage(output, error, _ErrorColor);
-        }
-        for (const auto& failedCheck : failedChecks) {
-            _PrintMessage(output, failedCheck, _ErrorColor);
-        }
-
-        if (args.strict && (!warnings.empty() || !errors.empty() || 
-                !failedChecks.empty())) {
-            _PrintMessage(output, "Failed!\n", _ErrorColor);
-            return 1;
-        }
-
-        if (!errors.empty() || !failedChecks.empty()) {
-            _PrintMessage(output, "Failed!\n", _ErrorColor);
-            return 1;
-        }
-
-        if (!warnings.empty()) {
-            _PrintMessage(output, "Success with warnings...", "\033[93m");
-        } else {
-            _PrintMessage(output, "Success!", _SuccessColor);
-        }
-    } catch (error_already_set const&) {
-        PyErr_Print();
-        std::cerr<<"Error: An exception occurred while running the compliance "
-            "checker.\n";
+    if (args.inputFile.empty()) {
+        return 0;
+    }
+    
+    UsdStageRefPtr stage = UsdStage::Open(args.inputFile);
+    if (!stage) {
+        std::cerr<<"Error: Failed to open stage.\n";
         return 1;
     }
-    return 0;
+    UsdValidationContext ctx(metadata);
 
-    #endif
+    // Do a validation run without any variants set, to get default stage
+    // validation errors.
+    UsdValidationErrorVector errors = ctx.Validate(stage);
+
+    std::ofstream outFileStream;
+    std::ostream &output = [&]() -> std::ostream & {
+        if (args.outFile == "stderr") {
+            return std::cerr;
+        }
+        if (args.outFile == "stdout") {
+            return std::cout;
+        }
+        outFileStream.open(args.outFile);
+        if (!outFileStream) {
+            std::cerr<<"Error: Failed to open output file "<<args.outFile
+                <<" for writing.\n";
+        }
+        return outFileStream;
+    }();
+
+    if (!output) {
+        return 1;
+    }
+
+    bool success = _ReportValidationErrors(errors, output, args.strict);
+
+    // If skipVariants is not set, validate the given variants.
+    if (!args.skipVariants) {
+        success &= _ValidateVariants(
+            stage, ctx, output, args.variants, args.variantSets, 
+            args.strict, args.disableVariantValidationLimit);
+    }
+    return success ? 0 : 1;
 }
 
 int 
 main(int argc, char const *argv[]) {
+    const std::string progName = TfGetBaseName(argv[0]);
     CLI::App app(
         "Utility for checking the compliance of a given USD stage or a USDZ "
         "package.  Only the first sample of any relevant time-sampled "
         "attribute is checked, currently.  General USD checks are always "
         "performed, and more restrictive checks targeted at distributable "
         "consumer content are also applied when the \"--arkit\" option is "
-        "specified. In order to use the old compliance checker (deprecated) "
-        "provide the '--useOldComplianceCheckerInterface' option.");
+        "specified.", progName);
 
     Args args;
     _Configure(&app, args);

@@ -53,6 +53,12 @@ HdsiRenderPassPruneSceneIndex::GetPrim(
     // Note that we also apply pruning in GetChildPrimPaths(), but
     // this ensures that even if a downstream scene index asks
     // for a pruned path, it will remain pruned.
+    if (primPath.IsEmpty()) {
+        // Avoid triggering a runtime warning when passing an empty
+        // path to the collection expression evaluator, since it
+        // can generate a lot of spew.
+        return HdSceneIndexPrim();
+    }
     if (_activeRenderPass.DoesPrune(primPath)) {
         return HdSceneIndexPrim();
     } else {

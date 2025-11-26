@@ -19,43 +19,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static bool
-_CheckFormatSupport(
-    VkPhysicalDevice pDevice,
-    VkFormat format,
-    VkFormatFeatureFlags flags )
-{
-    VkFormatProperties props;
-    vkGetPhysicalDeviceFormatProperties(pDevice, format, &props);
-    return (props.optimalTilingFeatures & flags) == flags;
-}
-
 static HgiTextureUsage
-_VkImageLayoutToHgiTextureUsage(VkImageLayout usage)
-{
-    switch (usage) {
-    case VK_IMAGE_LAYOUT_GENERAL:
-        return HgiTextureUsageBitsShaderWrite;
-    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-        return HgiTextureUsageBitsColorTarget;
-    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL:
-        return HgiTextureUsageBitsDepthTarget;
-    case VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL:
-        return HgiTextureUsageBitsStencilTarget;
-    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-        return HgiTextureUsageBitsDepthTarget |
-            HgiTextureUsageBitsStencilTarget;
-    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-        return HgiTextureUsageBitsShaderRead;
-    default:
-        TF_CODING_ERROR("Unsupported VkImageLayout %d", usage);
-        return 0;
-    }
-}
+_VkImageLayoutToHgiTextureUsage(VkImageLayout usage);
 
 HgiVulkanTexture::HgiVulkanTexture(
     HgiVulkan* hgi,
-    HgiVulkanDevice* device,
     HgiTextureDesc const & desc,
     bool optimalTiling,
     bool interop)
@@ -64,54 +32,37 @@ HgiVulkanTexture::HgiVulkanTexture(
     , _vkImageView(nullptr)
     , _vkImageLayout(VK_IMAGE_LAYOUT_UNDEFINED)
     , _vmaImageAllocation(nullptr)
-    , _device(device)
+    , _hgi(hgi)
     , _inflightBits(0)
     , _stagingBuffer(nullptr)
     , _cpuStagingAddress(nullptr)
+    , _hasHostImageCopy(false)
     , _isTextureView(false)
 {
-    GfVec3i const& dimensions = desc.dimensions;
-    bool const isDepthBuffer = desc.usage & HgiTextureUsageBitsDepthTarget;
-    bool const isStencilBuffer = desc.usage & HgiTextureUsageBitsStencilTarget;
+    HgiVulkanDevice* device = hgi->GetPrimaryDevice();
+    const bool hostImageCopyDesired = !interop;
+    HgiVulkanFormatInfo formatInfo = hgi->GetCapabilities()->GetFormatInfo(
+        device, desc.type, desc.format, desc.usage,
+            optimalTiling, hostImageCopyDesired);
 
-    //
-    // Gather image create info
-    //
+    _hasHostImageCopy = formatInfo.hostImageCopyOptimal;
 
     VkImageCreateInfo imageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
-
-    imageCreateInfo.imageType = HgiVulkanConversions::GetTextureType(desc.type);
-    imageCreateInfo.format = HgiVulkanConversions::GetFormat(
-        desc.format, isDepthBuffer);
+    imageCreateInfo.imageType = formatInfo.type;
+    imageCreateInfo.format = formatInfo.format;
     imageCreateInfo.mipLevels = desc.mipLevels;
     imageCreateInfo.arrayLayers = desc.layerCount;
+    imageCreateInfo.flags = formatInfo.createFlags;
+    imageCreateInfo.usage = formatInfo.usage;
     imageCreateInfo.samples = 
         HgiVulkanConversions::GetSampleCount(desc.sampleCount);
     imageCreateInfo.tiling = optimalTiling ?
         VK_IMAGE_TILING_OPTIMAL : VK_IMAGE_TILING_LINEAR;
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageCreateInfo.extent = { (uint32_t) dimensions[0],
-                               (uint32_t) dimensions[1],
-                               (uint32_t) dimensions[2] };
-
-    if (desc.type == HgiTextureTypeCubemap) {
-        imageCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-    }
-
-    imageCreateInfo.usage = HgiVulkanConversions::GetTextureUsage(desc.usage);
-    if (imageCreateInfo.usage == 0) {
-        TF_CODING_ERROR("Texture usage missing in descriptor");
-        imageCreateInfo.usage = 
-            HgiTextureUsageBitsColorTarget | 
-            HgiTextureUsageBitsShaderRead |
-            HgiTextureUsageBitsShaderWrite;
-    }
-
-    // XXX VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT could be a useful
-    // optimization, but Hgi doesn'tell us if a resource is transient.
-    imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | 
-                             VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    imageCreateInfo.extent = { static_cast<uint32_t>(desc.dimensions[0]),
+                               static_cast<uint32_t>(desc.dimensions[1]),
+                               static_cast<uint32_t>(desc.dimensions[2]) };
 
     VkExternalMemoryImageCreateInfo exportInfo =
         { VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO };
@@ -120,24 +71,6 @@ HgiVulkanTexture::HgiVulkanTexture(
     if (interop) {
         exportInfo.pNext = imageCreateInfo.pNext;
         imageCreateInfo.pNext = &exportInfo;
-    }
-
-    // XXX STORAGE_IMAGE requires VK_IMAGE_USAGE_STORAGE_BIT, but Hgi
-    // doesn't tell us if a texture will be used as image load/store.
-
-    VkFormatFeatureFlags formatValidationFlags =
-        HgiVulkanConversions::GetFormatFeature(desc.usage);
-
-    if (!_CheckFormatSupport(
-            device->GetVulkanPhysicalDevice(),
-            imageCreateInfo.format,
-            formatValidationFlags)) {
-        TF_CODING_ERROR("Image format / usage combo not supported on device");
-        return;
-    };
-
-    if (imageCreateInfo.tiling != VK_IMAGE_TILING_OPTIMAL && desc.mipLevels>1) {
-        TF_WARN("Linear tiled images usually do not support mips");
     }
 
     //
@@ -162,11 +95,11 @@ HgiVulkanTexture::HgiVulkanTexture(
     TF_VERIFY(_vkImage, "Failed to create image");
 
     // Debug label
-    if (!_descriptor.debugName.empty()) {
-        std::string debugLabel = "Image " + _descriptor.debugName;
+    if (!desc.debugName.empty()) {
+        std::string debugLabel = "Image " + desc.debugName;
         HgiVulkanSetDebugName(
             device,
-            (uint64_t)_vkImage,
+            static_cast<uint64_t>(reinterpret_cast<uintptr_t>(_vkImage)),
             VK_OBJECT_TYPE_IMAGE,
             debugLabel.c_str());
     }
@@ -194,9 +127,9 @@ HgiVulkanTexture::HgiVulkanTexture(
     // that can be accessed through this image view.
     // It's possible to create multiple image views for a single image
     // referring to different (and/or overlapping) ranges of the image.
-    if (isDepthBuffer) {
+    if (desc.usage & HgiTextureUsageBitsDepthTarget) {
         view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-        if (isStencilBuffer) {
+        if (desc.usage & HgiTextureUsageBitsStencilTarget) {
             view.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
         }
     } else {
@@ -218,62 +151,83 @@ HgiVulkanTexture::HgiVulkanTexture(
     );
 
     // Debug label
-    if (!_descriptor.debugName.empty()) {
-        std::string debugLabel = "ImageView " + _descriptor.debugName;
+    if (!desc.debugName.empty()) {
+        std::string debugLabel = "ImageView " + desc.debugName;
         HgiVulkanSetDebugName(
             device,
-            (uint64_t)_vkImageView,
+            static_cast<uint64_t>(
+                reinterpret_cast<uintptr_t>(_vkImageView)),
             VK_OBJECT_TYPE_IMAGE_VIEW,
             debugLabel.c_str());
     }
 
     //
-    // Upload data
+    // Upload data & transition image
     //
-    if (desc.initialData && desc.pixelsByteSize > 0) {
-        HgiBufferDesc stageDesc;
-        stageDesc.byteSize = 
-            std::min(GetByteSizeOfResource(), desc.pixelsByteSize);
-        stageDesc.initialData = desc.initialData;
-        std::unique_ptr<HgiVulkanBuffer> stagingBuffer =
-            HgiVulkanBuffer::CreateStagingBuffer(_device, stageDesc);
+    const VkImageLayout newLayout = GetDefaultImageLayout(desc.usage);
+    if (_hasHostImageCopy
+        && hgi->GetCapabilities()->SupportsMemoryToTextureCopy(newLayout)) {
 
-        // Schedule transfer from staging buffer to device-local texture
+        VkImageSubresourceRange subresourceRange{};
+        subresourceRange.aspectMask =
+            HgiVulkanConversions::GetImageAspectFlag(desc.usage);
+        subresourceRange.baseMipLevel = 0;
+        subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+        subresourceRange.baseArrayLayer = 0;
+        subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+        VkHostImageLayoutTransitionInfoEXT hostImageLayoutTransitionInfo{
+            VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT};
+        hostImageLayoutTransitionInfo.image = _vkImage;
+        hostImageLayoutTransitionInfo.oldLayout = _vkImageLayout;
+        hostImageLayoutTransitionInfo.newLayout = newLayout;
+        hostImageLayoutTransitionInfo.subresourceRange = subresourceRange;
+
+        // With VK_EXT_host_image_copy we transition to the final desired layout
+        // first, then we do the copy. No need to go through a transfer layout.
+        HGIVULKAN_VERIFY_VK_RESULT(device->vkTransitionImageLayoutEXT(
+            device->GetVulkanDevice(), 1, &hostImageLayoutTransitionInfo));
+        _vkImageLayout = newLayout;
+
+        if (desc.initialData && desc.pixelsByteSize > 0) {
+            CopyMemoryToTexture(
+                { static_cast<const std::byte*>(desc.initialData),
+                    desc.pixelsByteSize });
+        }
+    } else {
         HgiVulkanCommandQueue* queue = device->GetCommandQueue();
         HgiVulkanCommandBuffer* cb = queue->AcquireResourceCommandBuffer();
-        CopyBufferToTexture(cb, stagingBuffer.get());
+        if (desc.initialData && desc.pixelsByteSize > 0) {
+            HgiBufferDesc stageDesc;
+            stageDesc.usage = HgiBufferUsageUpload;
+            stageDesc.byteSize =
+                std::min(GetByteSizeOfResource(), desc.pixelsByteSize);
+            stageDesc.initialData = desc.initialData;
+            std::unique_ptr<HgiVulkanBuffer> stagingBuffer =
+                HgiVulkanBuffer::CreateStagingBuffer(hgi, stageDesc);
 
-        // We don't know if this texture is a static (immutable) or
-        // dynamic (animated) texture. We assume that most textures are
-        // static and schedule garbage collection of staging resource.
-        HgiBufferHandle stagingHandle(stagingBuffer.release(), 0);
-        hgi->TrashObject(
-            &stagingHandle,
-            hgi->GetGarbageCollector()->GetBufferList());
-    }
+            // Schedule transfer from staging buffer to device-local texture.
+            // This will also do the necessary final desired layout transitions.
+            CopyBufferToTexture(cb, stagingBuffer.get());
 
-    //
-    // Transition image
-    //
-
-    // Transition image to default image layout and access,flags.
-    // XXX We lack information about how this texture will be used so
-    // we have none-optimal assumptions for imageLayout, access and stageFlags.
-    VkImageLayout layout = GetDefaultImageLayout(desc.usage);
-
-    if (_vkImageLayout != layout) {
-        HgiVulkanCommandQueue* queue = device->GetCommandQueue();
-        HgiVulkanCommandBuffer* cb = queue->AcquireResourceCommandBuffer();
-
-        TransitionImageBarrier(
-            cb,
-            this,
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            layout,
-            NO_PENDING_WRITES,
-            GetDefaultAccessFlags(desc.usage),
-            VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+            // We don't know if this texture is a static (immutable) or
+            // dynamic (animated) texture. We assume that most textures are
+            // static and schedule garbage collection of staging resource.
+            HgiBufferHandle stagingHandle(stagingBuffer.release(), 0);
+            hgi->TrashObject(
+                &stagingHandle,
+                hgi->GetGarbageCollector()->GetBufferList());
+        } else {
+            // Just transition to the final desired layout.
+            LayoutBarrier(
+                cb,
+                _vkImageLayout,
+                newLayout,
+                NO_PENDING_WRITES,
+                GetDefaultAccessFlags(desc.usage),
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+        }
     }
 
     _descriptor.initialData = nullptr;
@@ -281,19 +235,20 @@ HgiVulkanTexture::HgiVulkanTexture(
 
 HgiVulkanTexture::HgiVulkanTexture(
     HgiVulkan* hgi,
-    HgiVulkanDevice* device,
     HgiTextureViewDesc const & desc)
     : HgiTexture(desc.sourceTexture->GetDescriptor())
     , _vkImage(nullptr)
     , _vkImageView(nullptr)
     , _vkImageLayout(VK_IMAGE_LAYOUT_UNDEFINED)
     , _vmaImageAllocation(nullptr)
-    , _device(device)
+    , _hgi(hgi)
     , _inflightBits(0)
     , _stagingBuffer(nullptr)
     , _cpuStagingAddress(nullptr)
+    , _hasHostImageCopy(false)
     , _isTextureView(true)
 {
+    HgiVulkanDevice* device = hgi->GetPrimaryDevice();
     // Update the texture descriptor to reflect the view desc
     _descriptor.debugName = desc.debugName;
     _descriptor.format = desc.format;
@@ -344,7 +299,7 @@ HgiVulkanTexture::HgiVulkanTexture(
         std::string debugLabel = "ImageView " + _descriptor.debugName;
         HgiVulkanSetDebugName(
             device,
-            (uint64_t)_vkImageView,
+            static_cast<uint64_t>(reinterpret_cast<uintptr_t>(_vkImageView)),
             VK_OBJECT_TYPE_IMAGE_VIEW,
             debugLabel.c_str());
     }
@@ -352,9 +307,10 @@ HgiVulkanTexture::HgiVulkanTexture(
 
 HgiVulkanTexture::~HgiVulkanTexture()
 {
+    HgiVulkanDevice* device = _hgi->GetPrimaryDevice();
     if (_cpuStagingAddress && _stagingBuffer) {
         vmaUnmapMemory(
-            _device->GetVulkanMemoryAllocator(),
+            device->GetVulkanMemoryAllocator(),
             _stagingBuffer->GetVulkanMemoryAllocation());
         _cpuStagingAddress = nullptr;
     }
@@ -363,7 +319,7 @@ HgiVulkanTexture::~HgiVulkanTexture()
 
     if (_vkImageView) {
         vkDestroyImageView(
-            _device->GetVulkanDevice(),
+            device->GetVulkanDevice(),
             _vkImageView,
             HgiVulkanAllocator());
     }
@@ -372,7 +328,7 @@ HgiVulkanTexture::~HgiVulkanTexture()
     // In that case we do not own the image.
     if (!_isTextureView && _vkImage) {
         vmaDestroyImage(
-            _device->GetVulkanMemoryAllocator(),
+            device->GetVulkanMemoryAllocator(),
             _vkImage,
             _vmaImageAllocation);
     }
@@ -394,17 +350,18 @@ void*
 HgiVulkanTexture::GetCPUStagingAddress()
 {
     if (!_stagingBuffer) {
-
         HgiBufferDesc desc;
+        desc.usage = HgiBufferUsageUpload;
         desc.byteSize = GetByteSizeOfResource();
         desc.initialData = nullptr;
-        _stagingBuffer = HgiVulkanBuffer::CreateStagingBuffer(_device, desc);
+        desc.debugName = "Staging Buffer for " + _descriptor.debugName;
+        _stagingBuffer = HgiVulkanBuffer::CreateStagingBuffer(_hgi, desc);
     }
 
     if (!_cpuStagingAddress) {
         HGIVULKAN_VERIFY_VK_RESULT(
             vmaMapMemory(
-                _device->GetVulkanMemoryAllocator(), 
+                _hgi->GetPrimaryDevice()->GetVulkanMemoryAllocator(), 
                 _stagingBuffer->GetVulkanMemoryAllocation(), 
                 &_cpuStagingAddress)
         );
@@ -451,7 +408,7 @@ HgiVulkanTexture::GetAllocationInfo() const
 {
     VmaAllocationInfo2 info;
     vmaGetAllocationInfo2(
-        _device->GetVulkanMemoryAllocator(),
+        _hgi->GetPrimaryDevice()->GetVulkanMemoryAllocator(),
         _vmaImageAllocation,
         &info);
     return info;
@@ -460,7 +417,7 @@ HgiVulkanTexture::GetAllocationInfo() const
 HgiVulkanDevice*
 HgiVulkanTexture::GetDevice() const
 {
-    return _device;
+    return _hgi->GetPrimaryDevice();
 }
 
 uint64_t &
@@ -477,9 +434,6 @@ HgiVulkanTexture::CopyBufferToTexture(
     int mipLevel)
 {
     // Setup buffer copy regions for each mip level
-
-    std::vector<VkBufferImageCopy> bufferCopyRegions;
-
     const std::vector<HgiMipInfo> mipInfos =
         HgiGetMipInfos(
             _descriptor.format,
@@ -487,20 +441,19 @@ HgiVulkanTexture::CopyBufferToTexture(
             _descriptor.layerCount,
             srcBuffer->GetDescriptor().byteSize);
 
-    const int mipLevels = std::min(static_cast<int>(mipInfos.size()),
-        static_cast<int>(_descriptor.mipLevels));
+    const uint32_t baseMip = mipLevel > -1 ? mipLevel : 0;
+    const uint32_t mipLevels = mipLevel > -1 ?
+        1 : std::min(static_cast<int>(mipInfos.size()),
+            static_cast<int>(_descriptor.mipLevels));
 
-    for (int mip = 0; mip < mipLevels; mip++) {
-        // Skip this mip if it isn't a mipLevel we want to copy
-        if (mipLevel > -1 && mip != mipLevel) {
-            continue;
-        }
-
+    std::vector<VkBufferImageCopy> bufferCopyRegions;
+    bufferCopyRegions.reserve(mipLevels);
+    for (uint32_t mip = baseMip; mip < (baseMip + mipLevels); mip++) {
         const HgiMipInfo &mipInfo = mipInfos[mip];
         VkBufferImageCopy bufferCopyRegion = {};
         bufferCopyRegion.imageSubresource.aspectMask =
             HgiVulkanConversions::GetImageAspectFlag(_descriptor.usage);
-        bufferCopyRegion.imageSubresource.mipLevel = static_cast<uint32_t>(mip);
+        bufferCopyRegion.imageSubresource.mipLevel = mip;
         bufferCopyRegion.imageSubresource.baseArrayLayer = 0;
         bufferCopyRegion.imageSubresource.layerCount = _descriptor.layerCount;
         bufferCopyRegion.imageExtent.width = mipInfo.dimensions[0];
@@ -514,17 +467,16 @@ HgiVulkanTexture::CopyBufferToTexture(
     }
 
     // Transition image so we can copy into it
-    TransitionImageBarrier(
+    LayoutBarrier(
         cb,
-        this,
         GetImageLayout(),
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // Transition tex to this layout
-        NO_PENDING_WRITES,                    // No pending writes
-        VK_ACCESS_TRANSFER_WRITE_BIT,         // Write access to image
-        VK_PIPELINE_STAGE_HOST_BIT,           // Producer stage
-        VK_PIPELINE_STAGE_TRANSFER_BIT);      // Consumer stage
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        NO_PENDING_WRITES,
+        VK_ACCESS_TRANSFER_WRITE_BIT,
+        VK_PIPELINE_STAGE_HOST_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-    // Copy pixels (all mip levels) from staging buffer to gpu image
+    // Copy pixels from staging buffer to gpu image
     vkCmdCopyBufferToImage(
         cb->GetVulkanCommandBuffer(),
         srcBuffer->GetVulkanBuffer(),
@@ -537,15 +489,68 @@ HgiVulkanTexture::CopyBufferToTexture(
     VkImageLayout layout = GetDefaultImageLayout(_descriptor.usage);
     VkAccessFlags access = GetDefaultAccessFlags(_descriptor.usage);
 
-    TransitionImageBarrier(
+    LayoutBarrier(
         cb,
-        this,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        layout,                              // Transition tex to this
-        VK_ACCESS_TRANSFER_WRITE_BIT,        // Pending vkCmdCopyBufferToImage
-        access,                              // Shader read access
-        VK_PIPELINE_STAGE_TRANSFER_BIT,      // Producer stage
-        VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT); // Consumer stage
+        layout,
+        VK_ACCESS_TRANSFER_WRITE_BIT,
+        access,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+}
+
+void
+HgiVulkanTexture::CopyMemoryToTexture(
+    TfSpan<const std::byte> srcBuffer,
+    GfVec3i const& dstTexelOffset,
+    int mipLevel)
+{
+    // Setup buffer copy regions for each mip level
+    const std::vector<HgiMipInfo> mipInfos =
+        HgiGetMipInfos(
+            _descriptor.format,
+            _descriptor.dimensions,
+            _descriptor.layerCount,
+            srcBuffer.size());
+
+    const uint32_t baseMip = mipLevel > -1 ? mipLevel : 0;
+    const uint32_t mipLevels = mipLevel > -1 ?
+        1 : std::min(static_cast<int>(mipInfos.size()),
+            static_cast<int>(_descriptor.mipLevels));
+
+    std::vector<VkMemoryToImageCopyEXT> bufferCopyRegions;
+    for (uint32_t mip = baseMip; mip < (baseMip + mipLevels); mip++) {
+        const HgiMipInfo &mipInfo = mipInfos[mip];
+        VkMemoryToImageCopyEXT bufferCopyRegion{
+            VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY_EXT};
+        bufferCopyRegion.imageSubresource.aspectMask =
+            HgiVulkanConversions::GetImageAspectFlag(_descriptor.usage);
+        bufferCopyRegion.imageSubresource.mipLevel = mip;
+        bufferCopyRegion.imageSubresource.baseArrayLayer = 0;
+        bufferCopyRegion.imageSubresource.layerCount = _descriptor.layerCount;
+        bufferCopyRegion.imageExtent.width = mipInfo.dimensions[0];
+        bufferCopyRegion.imageExtent.height = mipInfo.dimensions[1];
+        bufferCopyRegion.imageExtent.depth = mipInfo.dimensions[2];
+        bufferCopyRegion.pHostPointer = srcBuffer.data() + mipInfo.byteOffset;
+        bufferCopyRegion.imageOffset.x = dstTexelOffset[0];
+        bufferCopyRegion.imageOffset.y = dstTexelOffset[1];
+        bufferCopyRegion.imageOffset.z = dstTexelOffset[2];
+        bufferCopyRegions.push_back(bufferCopyRegion);
+    }
+
+    VkCopyMemoryToImageInfoEXT copyMemoryToImageInfo{
+        VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO_EXT};
+    copyMemoryToImageInfo.dstImage = _vkImage;
+    copyMemoryToImageInfo.dstImageLayout = _vkImageLayout;
+    copyMemoryToImageInfo.regionCount =
+        static_cast<uint32_t>(bufferCopyRegions.size());
+    copyMemoryToImageInfo.pRegions = bufferCopyRegions.data();
+
+    // Immediately copy pixels from memory directly to gpu image
+    HgiVulkanDevice* device = _hgi->GetPrimaryDevice();
+    HGIVULKAN_VERIFY_VK_RESULT(
+        device->vkCopyMemoryToImageEXT(
+            device->GetVulkanDevice(), &copyMemoryToImageInfo));
 }
 
 HgiTextureUsage
@@ -559,7 +564,7 @@ HgiVulkanTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
         return _VkImageLayoutToHgiTextureUsage(oldVkLayout);
     }
 
-    HgiVulkanCommandQueue* queue = _device->GetCommandQueue();
+    HgiVulkanCommandQueue* queue = _hgi->GetPrimaryDevice()->GetCommandQueue();
     HgiVulkanCommandBuffer* cb = queue->AcquireResourceCommandBuffer();
 
     // The following cases are based on few initial assumptions to provide
@@ -613,12 +618,11 @@ HgiVulkanTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
         break;
     }
 
-    TransitionImageBarrier(
+    LayoutBarrier(
         cb,
-        this,
         oldVkLayout,
         newVkLayout,
-        srcAccessMask, 
+        srcAccessMask,
         dstAccessMask,
         srcStageMask,
         dstStageMask);
@@ -627,9 +631,8 @@ HgiVulkanTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
 }
 
 void
-HgiVulkanTexture::TransitionImageBarrier(
+HgiVulkanTexture::LayoutBarrier(
     HgiVulkanCommandBuffer* cb,
-    HgiVulkanTexture* tex,
     VkImageLayout oldLayout,
     VkImageLayout newLayout,
     VkAccessFlags producerAccess,
@@ -638,25 +641,25 @@ HgiVulkanTexture::TransitionImageBarrier(
     VkPipelineStageFlags consumerStage,
     int32_t mipLevel)
 {
-    HgiTextureDesc const& desc = tex->GetDescriptor();
+    HgiTextureDesc const& desc = GetDescriptor();
 
-    uint32_t firstMip = mipLevel < 0 ? 0 : (uint32_t)mipLevel;
-    uint32_t mipCnt = mipLevel < 0 ? desc.mipLevels : 1;
+    const uint32_t firstMip = mipLevel < 0 ? 0 : mipLevel;
+    const uint32_t mipCount = mipLevel < 0 ? VK_REMAINING_MIP_LEVELS : 1u;
 
-    VkImageMemoryBarrier barrier[1] = {};
-    barrier[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier[0].srcAccessMask = producerAccess; // what producer does / changes.
-    barrier[0].dstAccessMask = consumerAccess; // what consumer does / changes.
-    barrier[0].oldLayout = oldLayout;
-    barrier[0].newLayout = newLayout;
-    barrier[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier[0].image = tex->GetImage();
-    barrier[0].subresourceRange.aspectMask = 
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.srcAccessMask = producerAccess;
+    barrier.dstAccessMask = consumerAccess;
+    barrier.oldLayout = oldLayout;
+    barrier.newLayout = newLayout;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = GetImage();
+    barrier.subresourceRange.aspectMask =
         HgiVulkanConversions::GetImageAspectFlag(desc.usage);
-    barrier[0].subresourceRange.baseMipLevel = firstMip;
-    barrier[0].subresourceRange.levelCount = mipCnt;
-    barrier[0].subresourceRange.layerCount = desc.layerCount;
+    barrier.subresourceRange.baseMipLevel = firstMip;
+    barrier.subresourceRange.levelCount = mipCount;
+    barrier.subresourceRange.layerCount = desc.layerCount;
 
     // Insert a memory dependency at the proper pipeline stages that will
     // execute the image layout transition.
@@ -665,10 +668,12 @@ HgiVulkanTexture::TransitionImageBarrier(
         cb->GetVulkanCommandBuffer(),
         producerStage,
         consumerStage,
-        0, 0, NULL, 0, NULL, 1,
-        barrier);
+        0,
+        0, NULL,
+        0, NULL,
+        1, &barrier);
 
-    tex->_vkImageLayout = newLayout;
+    _vkImageLayout = newLayout;
 }
 
 VkImageLayout
@@ -713,6 +718,29 @@ HgiVulkanTexture::GetDefaultAccessFlags(HgiTextureUsage usage)
     }
    
     return flags;
+}
+
+static HgiTextureUsage
+_VkImageLayoutToHgiTextureUsage(VkImageLayout usage)
+{
+    switch (usage) {
+    case VK_IMAGE_LAYOUT_GENERAL:
+        return HgiTextureUsageBitsShaderWrite;
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        return HgiTextureUsageBitsColorTarget;
+    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL:
+        return HgiTextureUsageBitsDepthTarget;
+    case VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL:
+        return HgiTextureUsageBitsStencilTarget;
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        return HgiTextureUsageBitsDepthTarget |
+            HgiTextureUsageBitsStencilTarget;
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        return HgiTextureUsageBitsShaderRead;
+    default:
+        TF_CODING_ERROR("Unsupported VkImageLayout %d", usage);
+        return 0;
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

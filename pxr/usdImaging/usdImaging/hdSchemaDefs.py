@@ -82,6 +82,29 @@
     ),
 
     #--------------------------------------------------------------------------
+    # usdImaging/geomXformVectors - corresponds to the transform decomposition
+    # returned by UsdGeomXformCommonAPI::GetXformVectorsByAccumulation().
+    dict(
+        SCHEMA_NAME = 'GeomXformVectors',
+        SCHEMA_TOKEN = 'geomXformVectors',
+        DOC = '''The {{ SCHEMA_CLASS_NAME }} exposes the result of
+        UsdGeomXformCommonAPI::GetXformVectorsByAccumulation().
+        This is a decomposition of the USD transformation operations that
+        includes more information than is available in the xform matrix
+        value, such as the pivot offset.  This schema is intended for
+        read-only access to data stored in USD; it is otherwise inert and
+        does not participate in or imply any subsequent computations.''',
+        ADD_DEFAULT_LOCATOR = True,
+        MEMBERS = [
+            ('translation', T_VEC3D, {}),
+            ('rotation', T_VEC3F, {}),
+            ('rotationOrder', T_TOKEN, {}),
+            ('scale', T_VEC3F, {}),
+            ('pivot', T_VEC3F, {}),
+        ],
+    ),
+
+    #--------------------------------------------------------------------------
     # usdImaging/directMaterialBinding - corresponds to UsdShadeMaterialBindingAPI::DirectBinding
     dict(
         SCHEMA_NAME = 'DirectMaterialBinding',

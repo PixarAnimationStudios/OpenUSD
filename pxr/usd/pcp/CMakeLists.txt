@@ -192,6 +192,9 @@ pxr_build_test(testPcpPathTranslation_HardToReach
         testenv/testPcpPathTranslation_HardToReach.cpp
 )
 
+# Enable self-consistency checks for all tests in this library.
+set(PXR_TEST_ENV_VARS PCP_ENABLE_CONSISTENCY_CHECKS=1)
+
 pxr_register_test(testPcpMuseum_BasicInstancing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd BasicInstancing/root.usda"

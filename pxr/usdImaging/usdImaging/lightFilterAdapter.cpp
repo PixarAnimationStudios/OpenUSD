@@ -101,6 +101,12 @@ UsdImagingLightFilterAdapter::TrackVariability(UsdPrim const& prim,
         UsdImaging_CollectionCache &collectionCache = _GetCollectionCache();
         collectionCache.UpdateCollection(
                                 lightFilter.GetFilterLinkCollectionAPI());
+        // Not all light filters have a shadow link collection.
+        if (const auto shadowLinkCollectionAPI =
+                UsdCollectionAPI(prim, UsdLuxTokens->shadowLink)) {
+            collectionCache.UpdateCollection(shadowLinkCollectionAPI);
+        }
+                
         // TODO: When collections change we need to invalidate affected
         // prims with the DirtyCollections flag.
     }

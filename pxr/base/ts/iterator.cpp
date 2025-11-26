@@ -787,6 +787,8 @@ Ts_SegmentIterator::Ts_SegmentIterator(
         if (loopedInterval.GetMax() >= _lastKnotTime) {
             // The end of the knots is looped.
             _lastKnotTime = loopedInterval.GetMax();
+            _lastKnotPreValue = _data->GetKnotPreValueAsDouble(firstProtoIndex);
+            _lastKnotPreValue += lp.valueOffset * (lp.numPostLoops + 1);
             _lastKnotValue = _data->GetKnotValueAsDouble(firstProtoIndex);
             _lastKnotValue += lp.valueOffset * (lp.numPostLoops + 1);
         }

@@ -315,6 +315,21 @@ _PopulateLightFilterNodes(
                         filterPath.GetText(), lightFilterLink.GetText());
         }
 
+        // Light filter shadow linking
+        val = sceneDelegate->GetLightParamValue(filterPath,
+                                        HdTokens->shadowLink);
+        TfToken lightFilterShadowLink = TfToken();
+        if (val.IsHolding<TfToken>()) {
+            lightFilterShadowLink = val.UncheckedGet<TfToken>();
+        }
+        if (!lightFilterShadowLink.IsEmpty()) {
+            filter->params.SetString(RtUString("shadowSubset"),
+                                RtUString(lightFilterShadowLink.GetText()));
+            TF_DEBUG(HDPRMAN_LIGHT_LINKING)
+                .Msg("HdPrman: Light filter <%s> shadowSubset \"%s\"\n",
+                        filterPath.GetText(), lightFilterShadowLink.GetText());
+        }
+
         // Look up light filter ID
         if (HdSprim *sprim = sceneDelegate->GetRenderIndex().GetSprim(
             HdPrimTypeTokens->lightFilter, filterPath)) {

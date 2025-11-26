@@ -8,7 +8,10 @@
 #include "pxr/pxr.h"
 #include "pxr/base/vt/arrayEdit.h"
 #include "pxr/base/vt/typeHeaders.h"
+#include "pxr/base/vt/value.h"
+#include "pxr/base/vt/valueComposeOver.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
+#include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <iostream>
@@ -90,5 +93,27 @@ Vt_ArrayEditStreamImpl(
     template class VT_API VtArrayEdit< VT_TYPE(elem) >;
 TF_PP_SEQ_FOR_EACH(VT_ARRAY_EDIT_EXPLICIT_INST, ~, VT_SCALAR_VALUE_TYPES)
 #undef VT_ARRAY_EDIT_EXPLICIT_INST
-    
+
+TF_REGISTRY_FUNCTION(VtValue)
+{
+#define VT_ARRAY_EDIT_REGISTER_OVER(unused, elem)                              \
+    VtRegisterComposeOver(                                                     \
+        +[](VtArrayEdit< VT_TYPE(elem) > const &strong,                        \
+            VtArrayEdit< VT_TYPE(elem) > const &weak) {                        \
+            return strong.ComposeOver(weak);                                   \
+        });                                                                    \
+    VtRegisterComposeOver(                                                     \
+        +[](VtArrayEdit< VT_TYPE(elem) > const &strong,                        \
+            VtArray< VT_TYPE(elem) > const &weak) {                            \
+            return strong.ComposeOver(weak);                                   \
+        });                                                                    \
+    VtRegisterComposeOver(                                                     \
+        +[](VtArrayEdit< VT_TYPE(elem) > const &strong,                        \
+            VtBackgroundType const &) {                                        \
+            return strong.ComposeOver(VtArray< VT_TYPE(elem) > {});            \
+        });
+    TF_PP_SEQ_FOR_EACH(VT_ARRAY_EDIT_REGISTER_OVER, ~, VT_SCALAR_VALUE_TYPES)
+#undef VT_ARRAY_EDIT_REGISTER_OVER
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

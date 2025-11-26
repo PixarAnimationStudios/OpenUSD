@@ -93,11 +93,11 @@ namespace {
 // A bindless GL sampler buffer.
 // This identifies a texture as a 64-bit handle, passed to GLSL as "uvec2".
 // See https://www.khronos.org/opengl/wiki/Bindless_Texture
-class HdSt_BindlessSamplerBufferSource : public HdBufferSource {
+class HdSt_BindlessSamplerBufferSource : public HdResolvedBufferSource {
 public:
     HdSt_BindlessSamplerBufferSource(TfToken const &name,
                                      const VtArray<uint64_t>& value)
-    : HdBufferSource()
+    : HdResolvedBufferSource()
     , _name(name)
     , _value(value)
     {
@@ -119,11 +119,6 @@ public:
     }
     void GetBufferSpecs(HdBufferSpecVector *specs) const override {
         specs->emplace_back(_name, GetTupleType());
-    }
-    bool Resolve() override {
-        if (!_TryLock()) return false;
-        _SetResolved();
-        return true;
     }
 
 protected:

@@ -368,7 +368,7 @@ UsdImagingNiPrototypePropagatingSceneIndex::
     // deleting it anyway.
     _instancersToPropagatedPrototypeSceneIndex.clear();
     _instanceAggregationSceneIndex = nullptr;
-    // Note that the Hydra Scene Browser could potentially delay the
+    // Note that the Hydra Scene Debugger could potentially delay the
     // deletion of the merging scene index.
     {
         TRACE_SCOPE("Deleting merging scene index");

@@ -1205,7 +1205,9 @@ HdsiLightLinkingSceneIndex::_PrimsAdded(
             _lightAndFilterPrimPaths.insert(entry.primPath);
 
             _ProcessAddedLightOrFilter(
-                entry, {HdTokens->filterLink}, &dirtiedEntries);
+                entry,
+                {HdTokens->filterLink, HdTokens->shadowLink},
+                &dirtiedEntries);
 
         } else if (auto it =_lightAndFilterPrimPaths.find(entry.primPath);
             it != _lightAndFilterPrimPaths.end()) {

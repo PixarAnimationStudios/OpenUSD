@@ -80,11 +80,11 @@ private:
     virtual void _Run(
         const VdfSchedule &schedule,
         const VdfRequest &computeRequest,
-        VdfExecutorErrorLogger *errorLogger);
+        VdfExecutorErrorLogger *errorLogger) override;
 
     // Causes the DataManager to clear its temporary execution buffers.
     //
-    void _ClearData();
+    virtual void _ClearData() override;
 
 private:
 

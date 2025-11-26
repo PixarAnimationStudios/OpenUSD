@@ -505,9 +505,11 @@ public:
 
     /// Return a range for iterating over the ancestors of this path.
     ///
-    /// The range provides iteration over the prefixes of a path, ordered
-    /// from longest to shortest (the opposite of the order of the prefixes
-    /// returned by GetPrefixes).
+    /// The range provides iteration over the path and all of its prefixes, 
+    /// ordered from longest to shortest (the opposite of the order of the 
+    /// prefixes returned by GetPrefixes(). For example, given a path like 
+    /// `/a/b.prop`, the range would contain `/a/b.prop`, `/a/b` and `/a`, in 
+    /// that order.
     SDF_API SdfPathAncestorsRange GetAncestorsRange() const;
 
     /// Returns the name of the prim, property or relational
@@ -1068,7 +1070,7 @@ private:
 /// For example, given a path like `/a/b.prop`, the range represents paths
 /// `/a/b.prop`, `/a/b` and `/a`, in that order.
 /// A range accepts relative paths as well: For path `a/b.prop`, the range
-/// represents paths 'a/b.prop`, `a/b` and `a`.
+/// represents paths `a/b.prop`, `a/b` and `a`.
 /// If a path contains parent path elements, (`..`), those elements are treated
 /// as elements of the range. For instance, given path `../a/b`, the range
 /// represents paths `../a/b`, `../a` and `..`.

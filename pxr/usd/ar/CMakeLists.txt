@@ -78,6 +78,7 @@ pxr_test_scripts(
     testenv/testArDefaultResolver.py
     testenv/testArOpenAsset.py
     testenv/testArPackageUtils.py
+    testenv/testArPackageResolver.py
     testenv/testArResolvedPath.py
     testenv/testArResolverContext.py
     testenv/testArTimestamp.py
@@ -252,6 +253,11 @@ pxr_register_test(testArDefaultResolver_CPP
 pxr_register_test(testArOpenAsset
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOpenAsset"
+)
+
+pxr_register_test(testArPackageResolver
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArPackageResolver"
 )
 
 pxr_register_test(testArPackageUtils

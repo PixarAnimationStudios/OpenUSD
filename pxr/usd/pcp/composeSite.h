@@ -201,23 +201,48 @@ PcpComposeSiteRelocates(PcpNodeRef const &node, SdfRelocatesMap *result)
         node.GetLayerStack(), node.GetPath(), result);
 }
 
-/// Has prim specs.
+/// Has prim or property specs.
 PCP_API
 bool
-PcpComposeSiteHasPrimSpecs(PcpLayerStackRefPtr const &layerStack,
-                           SdfPath const &path,
-                           const std::unordered_set<SdfLayerHandle, TfHash>& 
-                               layersToIgnore);
+PcpComposeSiteHasSpecs(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    const std::unordered_set<SdfLayerHandle, TfHash>& layersToIgnore);
 
 PCP_API
 bool
-PcpComposeSiteHasPrimSpecs(PcpLayerStackRefPtr const &layerStack,
-                           SdfPath const &path);
+PcpComposeSiteHasSpecs(PcpLayerStackRefPtr const &layerStack,
+                       SdfPath const &path);
 
+inline bool
+PcpComposeSiteHasSpecs(PcpNodeRef const &node)
+{
+    return PcpComposeSiteHasSpecs(node.GetLayerStack(), node.GetPath());
+}
+
+/// \deprecated. Use PcpComposeSiteHasSpecs instead.
+inline bool
+PcpComposeSiteHasPrimSpecs(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    const std::unordered_set<SdfLayerHandle, TfHash>& layersToIgnore)
+{
+    return PcpComposeSiteHasSpecs(layerStack, path, layersToIgnore);
+}
+
+/// \deprecated. Use PcpComposeSiteHasSpecs instead.
+inline bool
+PcpComposeSiteHasPrimSpecs(PcpLayerStackRefPtr const &layerStack,
+                           SdfPath const &path)
+{
+    return PcpComposeSiteHasSpecs(layerStack, path);
+}
+
+/// \deprecated. Use PcpComposeSiteHasSpecs instead.
 inline bool
 PcpComposeSiteHasPrimSpecs(PcpNodeRef const &node)
 {
-    return PcpComposeSiteHasPrimSpecs(node.GetLayerStack(), node.GetPath());
+    return PcpComposeSiteHasSpecs(node.GetLayerStack(), node.GetPath());
 }
 
 /// Symmetry

@@ -118,9 +118,9 @@ bool TsExtrapolation::IsLooping() const
 
 // Instantiate the supported samples classes
 #define TS_SAMPLE_EXPLICIT_INST(unused, tuple)                          \
-    template class TS_API                                               \
+    template class                                                      \
         TsSplineSamples< TS_SPLINE_VALUE_CPP_TYPE(tuple) >;             \
-    template class TS_API                                               \
+    template class                                                      \
         TsSplineSamplesWithSources< TS_SPLINE_VALUE_CPP_TYPE(tuple) >;
 
 TF_PP_SEQ_FOR_EACH(TS_SAMPLE_EXPLICIT_INST, ~, TS_SPLINE_SAMPLE_VERTEX_TYPES)

@@ -4,6 +4,10 @@ def "Class"
 {
 }
 
+def "Class_2"
+{
+}
+
 def "Reference"
 {
     def "Geom"

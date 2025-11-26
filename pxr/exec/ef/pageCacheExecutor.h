@@ -74,7 +74,7 @@ private:
 
     // Clear all data in the local data manager.
     //
-    virtual void _ClearData();
+    virtual void _ClearData() override;
 
     // The factory shared amongst executors of this type.
     //

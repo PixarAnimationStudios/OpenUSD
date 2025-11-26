@@ -88,6 +88,7 @@ HdStStagingBuffer::StageCopy(HgiBufferCpuToGpuOp const &copyOp)
         HgiBufferDesc bufferDesc;
         bufferDesc.debugName = "HdStStagingBuffer";
         bufferDesc.byteSize = _capacity;
+        bufferDesc.usage = HgiBufferUsageUpload;
 
         Hgi* hgi = _resourceRegistry->GetHgi();
 

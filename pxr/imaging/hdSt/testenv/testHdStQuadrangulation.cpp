@@ -247,7 +247,7 @@ QuadrangulationTest(
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateGPU) == 0);
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulatedVerts) == 0);
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 0);
-    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
 
     {
         // 0            2
@@ -290,9 +290,9 @@ QuadrangulationTest(
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateCPU) == 1);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateGPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulatedVerts) == 4);
-        // quadinfo, quadindex, points, quadrangulated points.
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+        // quadinfo, quadindex, quadrangulated points (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
         perfLog.ResetCounters();
 
         if (!COMPARE_GPU_QUAD_POINTS(registry, "triangle", _tokens->rightHanded,
@@ -303,9 +303,9 @@ QuadrangulationTest(
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateCPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateGPU) == 1);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulatedVerts) == 4);
-        // quadinfo, quadindex, points, quad tables.
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 1);
+        // quadinfo, quadindex, quad tables (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 1);
         perfLog.ResetCounters();
 
     }
@@ -350,9 +350,9 @@ QuadrangulationTest(
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateCPU) == 1);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateGPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulatedVerts) == 4);
-        // quadinfo, quadindex, points, quadrangulated points.
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+        // quadinfo, quadindex, quadrangulated points (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
         perfLog.ResetCounters();
 
         if (!COMPARE_GPU_QUAD_POINTS(registry, "triangle", _tokens->leftHanded,
@@ -363,9 +363,9 @@ QuadrangulationTest(
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateCPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateGPU) == 1);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulatedVerts) == 4);
-        // quadinfo, quadindex, points, quad tables.
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 1);
+        // quadinfo, quadindex, quad tables (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 1);
         perfLog.ResetCounters();
 
     }
@@ -395,9 +395,9 @@ QuadrangulationTest(
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateCPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateGPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulatedVerts) == 0);
-        // quadinfo, quadindex, points
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+        // quadinfo, quadindex (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 2);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
         perfLog.ResetCounters();
 
         if (!COMPARE_GPU_QUAD_POINTS(registry, "quad", _tokens->rightHanded,
@@ -407,10 +407,10 @@ QuadrangulationTest(
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateCPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateGPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulatedVerts) == 0);
-        // quadinfo, quadindex, points, quad tables
+        // quadinfo, quadindex, quad tables (points is pre-resolved).
         // (quad table will be empty but still the buffer source has to resolved.)
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
         perfLog.ResetCounters();
 
     }
@@ -478,9 +478,9 @@ QuadrangulationTest(
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateCPU) == 1);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateGPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulatedVerts) == 10);
-        // quadinfo, quadindex, points, quadrangulated points.
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+        // quadinfo, quadindex, quadrangulated points (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
         perfLog.ResetCounters();
 
         if (!COMPARE_GPU_QUAD_POINTS(registry, "quad", _tokens->rightHanded,
@@ -490,9 +490,9 @@ QuadrangulationTest(
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateCPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateGPU) == 1);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulatedVerts) == 10);
-        // quadinfo, quadindex, points, quad tables.
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 1);
+        // quadinfo, quadindex, quad tables (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 1);
         perfLog.ResetCounters();
 
     }
@@ -562,9 +562,9 @@ QuadrangulationTest(
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateCPU) == 1);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateGPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulatedVerts) == 10);
-        // quadinfo, quadindex, points, quadrangulated points.
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+        // quadinfo, quadindex, quadrangulated points (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
         perfLog.ResetCounters();
 
         if (!COMPARE_GPU_QUAD_POINTS_HOLE(registry, "quad", _tokens->rightHanded,
@@ -574,9 +574,9 @@ QuadrangulationTest(
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateCPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateGPU) == 1);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulatedVerts) == 10);
-        // quadinfo, quadindex, points, quad tables.
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 1);
+        // quadinfo, quadindex, quad tables (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 1);
         perfLog.ResetCounters();
 
     }
@@ -595,7 +595,7 @@ QuadrangulationInvalidTopologyTest(
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateGPU) == 0);
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulatedVerts) == 0);
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 0);
-    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
 
     {
         /*       0--------4---16--7
@@ -662,9 +662,9 @@ QuadrangulationInvalidTopologyTest(
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateCPU) == 1);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateGPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulatedVerts) == 10);
-        // quadinfo, quadindex, points, quadrangulated points.
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+        // quadinfo, quadindex, quadrangulated points (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
         perfLog.ResetCounters();
 
         if (!COMPARE_GPU_QUAD_POINTS(registry, "quad", _tokens->rightHanded,
@@ -674,9 +674,9 @@ QuadrangulationInvalidTopologyTest(
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateCPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulateGPU) == 1);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->quadrangulatedVerts) == 10);
-        // quadinfo, quadindex, points, quad tables.
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 1);
+        // quadinfo, quadindex, quad tables (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 1);
         perfLog.ResetCounters();
     }
     return true;

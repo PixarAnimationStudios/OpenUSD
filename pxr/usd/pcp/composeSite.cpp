@@ -185,10 +185,10 @@ PcpComposeSitePermission(PcpLayerStackRefPtr const &layerStack,
 }
 
 bool
-PcpComposeSiteHasPrimSpecs(PcpLayerStackRefPtr const &layerStack,
-                           SdfPath const &path,
-                           const std::unordered_set<SdfLayerHandle, TfHash>& 
-                               layersToIgnore)
+PcpComposeSiteHasSpecs(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    const std::unordered_set<SdfLayerHandle, TfHash>& layersToIgnore)
 {
     for (auto const &layer: layerStack->GetLayers()) {
         // if a spec was found in this layer, ensure that it is currently not
@@ -201,8 +201,8 @@ PcpComposeSiteHasPrimSpecs(PcpLayerStackRefPtr const &layerStack,
 }
 
 bool
-PcpComposeSiteHasPrimSpecs(PcpLayerStackRefPtr const &layerStack,
-                           SdfPath const &path)
+PcpComposeSiteHasSpecs(PcpLayerStackRefPtr const &layerStack,
+                       SdfPath const &path)
 {
     for (auto const &layer: layerStack->GetLayers()) {
         if (layer->HasSpec(path)) {

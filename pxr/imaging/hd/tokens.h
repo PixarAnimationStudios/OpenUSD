@@ -163,7 +163,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bufferSourcesResolved)                     \
     (bufferArrayRangeMigrated)                  \
     (bufferArrayRangeContainerResized)          \
-    (computationsCommited)                      \
+    (committed)                                 \
+    (computationsCommitted)                     \
     (drawBatches)                               \
     (drawCalls)                                 \
     (dirtyLists)                                \
@@ -191,6 +192,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (singleBufferSize)                          \
     (ssboSize)                                  \
     (skipInvisibleRprimSync)                    \
+    (sourcesCommitted)                          \
     (subdivisionRefineCPU)                      \
     (subdivisionRefineGPU)                      \
     (textureMemory)                             \

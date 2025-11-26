@@ -29,11 +29,14 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
         HgiGLObjectLabel(GL_BUFFER, _bufferId,  _descriptor.debugName);
     }
 
+    GLenum usage = (desc.usage & HgiBufferUsageUpload)
+        ? GL_DYNAMIC_COPY : GL_STATIC_DRAW;
+
     glNamedBufferData(
         _bufferId,
         _descriptor.byteSize,
         _descriptor.initialData,
-        GL_STATIC_DRAW);
+        usage);
 
     // glBindVertexBuffer (graphics cmds) needs to know the stride of each
     // vertex buffer. Make sure user provides it.

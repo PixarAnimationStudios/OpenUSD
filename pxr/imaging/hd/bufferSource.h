@@ -176,16 +176,29 @@ protected:
     /// registry.  AddBufferSpec and Resolve will not be called
     virtual bool _CheckValid() const = 0;
 
+protected:
+    enum State { UNRESOLVED=0, BEING_RESOLVED, RESOLVED,  RESOLVE_ERROR};
+    HdBufferSource(State state) : _state(state) { }
+
 private:
     // Don't allow copies
     HdBufferSource(const HdBufferSource &) = delete;
     HdBufferSource &operator=(const HdBufferSource &) = delete;
 
-    enum State { UNRESOLVED=0, BEING_RESOLVED, RESOLVED,  RESOLVE_ERROR};
     std::atomic<State> _state;
 };
 
-/// A abstract base class for cpu computation followed by buffer
+/// An abstract base class for a plain old data buffer source that doesn't
+/// need to be resolved.
+class HdResolvedBufferSource : public HdBufferSource {
+public:
+    HdResolvedBufferSource() : HdBufferSource(RESOLVED) {}
+
+    HD_API
+    bool Resolve() override { return true; }
+};
+
+/// An abstract base class for cpu computation followed by buffer
 /// transfer to the GPU.
 ///
 /// concrete class needs to implement
@@ -215,7 +228,7 @@ private:
     HdBufferSourceSharedPtr _result;
 };
 
-/// A abstract base class for pure cpu computation.
+/// An abstract base class for pure cpu computation.
 /// the result won't be scheduled for GPU transfer.
 ///
 class HdNullBufferSource : public HdBufferSource {

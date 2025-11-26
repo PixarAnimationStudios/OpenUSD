@@ -77,7 +77,7 @@ public:
     EF_API
     virtual void DuplicateOutputData(
         const VdfOutput &sourceOutput,
-        const VdfOutput &destOutput);
+        const VdfOutput &destOutput) override;
 
     /// Indicates whether this executor contains data.
     ///
@@ -87,7 +87,7 @@ public:
     /// through the entire network and record the invalidation state, without
     /// regard for what state the parent executor is in.
     ///
-    virtual bool IsEmpty() const {
+    virtual bool IsEmpty() const override {
         return false;
     }
 
@@ -100,7 +100,7 @@ public:
     /// 
     virtual bool HasInvalidationTimestampMismatch(
         const VdfOutput &source, 
-        const VdfOutput &dest) const {
+        const VdfOutput &dest) const override {
         const VdfExecutorInterface *parentExecutor = GetParentExecutor();
         return
             parentExecutor &&
@@ -114,12 +114,12 @@ protected:
     //
     virtual bool _InvalidateOutput(
         const VdfOutput &output,
-        const VdfMask &invalidationMask);
+        const VdfMask &invalidationMask) override;
 
     // This executor does not store temporary data caches, instead the locally
     // stored invalidation state will be cleared out.
     //
-    virtual void _ClearData();
+    virtual void _ClearData() override;
 
 private:
 
@@ -128,7 +128,7 @@ private:
     virtual void _Run(
         const VdfSchedule &schedule,
         const VdfRequest &computeRequest,
-        VdfExecutorErrorLogger *errorLogger);
+        VdfExecutorErrorLogger *errorLogger) override;
 
     // Returns an output value for reading.
     //

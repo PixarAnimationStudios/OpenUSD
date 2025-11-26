@@ -911,7 +911,7 @@ _PrimIndexDependentNodeEditProcessor::_HasConflictingChildSpecsInUneditedNodes(
             // If the node has specs we then have to compose whether the node
             // has specs for the child path and if it does, then we we found an
             // unedited spec conflict.
-            if (subtreeNode.HasSpecs() && PcpComposeSiteHasPrimSpecs(
+            if (subtreeNode.HasSpecs() && PcpComposeSiteHasSpecs(
                     layerStack, subtreeNodeChildPath)) {
                 *firstConflictingNode = subtreeNode;
                 return true;

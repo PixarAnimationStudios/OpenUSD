@@ -61,7 +61,7 @@ public:
     virtual void SetOutputValue(
         const VdfOutput &output,
         const VdfVector &value,
-        const VdfMask &mask) {
+        const VdfMask &mask) override {
         _dataManager.SetOutputValue(output, value, mask);
     }
 
@@ -70,7 +70,7 @@ public:
     virtual bool TakeOutputValue(
         const VdfOutput &output,
         VdfVector *value,
-        const VdfMask &mask) {
+        const VdfMask &mask) override {
         return _dataManager.TakeOutputValue(output, value, mask);
     }
 
@@ -79,13 +79,13 @@ public:
     ///
     virtual void DuplicateOutputData(
         const VdfOutput &sourceOutput,
-        const VdfOutput &destOutput) {
+        const VdfOutput &destOutput) override {
         _dataManager.DuplicateOutputData(sourceOutput, destOutput);
     }
 
     /// Returns \c true of the data manager is empty.
     ///
-    virtual bool IsEmpty() const {
+    virtual bool IsEmpty() const override {
         return _dataManager.IsEmpty();
     }
 
@@ -94,7 +94,7 @@ public:
     /// mung buffer locked.
     virtual bool HasInvalidationTimestampMismatch(
         const VdfOutput &source, 
-        const VdfOutput &dest) const {
+        const VdfOutput &dest) const override {
         return _dataManager.HasInvalidationTimestampMismatch(
             _dataManager.GetDataHandle(source.GetId()),
             _dataManager.GetDataHandle(dest.GetId()));
@@ -155,7 +155,7 @@ protected:
     ///
     virtual bool _InvalidateOutput(
         const VdfOutput &output,
-        const VdfMask &invalidationMask)
+        const VdfMask &invalidationMask) override
     {
         return _dataManager.InvalidateOutput(output, invalidationMask);
     }
@@ -164,7 +164,7 @@ protected:
     /// written for every VdfOutput visited during invalidation.  This timestamp
     /// is later used to identify outputs for mung buffer locking.
     ///
-    virtual void _UpdateInvalidationTimestamp()
+    virtual void _UpdateInvalidationTimestamp() override
     {
         _dataManager.UpdateInvalidationTimestamp(
             BaseClass::GetExecutorInvalidationTimestamp());
@@ -176,7 +176,7 @@ protected:
     virtual void _SetReferenceOutputValue(
         const VdfOutput &destOutput,
         const VdfOutput &sourceOutput,
-        const VdfMask &sourceMask) const {
+        const VdfMask &sourceMask) const override {
         // XXX: We are getting the cached output value from the executor, which
         //      may give us a pointer into the parent executor data manager. We
         //      cannot take ownership of values stored outside of this

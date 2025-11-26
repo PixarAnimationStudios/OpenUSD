@@ -608,9 +608,19 @@ private:
 
     Hgi* _hgi;
 
-    typedef tbb::concurrent_vector<_PendingSource> _PendingSourceList;
+    using _PendingSourceList =
+        tbb::concurrent_vector<_PendingSource>;
+    // Contains (vector of sources we need to commit, BAR we need to commit them to).
     _PendingSourceList    _pendingSources;
-    std::atomic_size_t    _numBufferSourcesToResolve;
+
+    using _PendingResolveList =
+        tbb::concurrent_vector<std::pair<HdBufferSourceSharedPtr,bool>>;
+    // Contains (unresolved source, whether said source requires staging).
+    _PendingResolveList _pendingSourcesToResolve;
+
+    // Size of the staging buffer we'll need for _pendingSources. Updated as sources
+    // are resolved.
+    std::atomic_size_t _pendingStagingSize;
     
     struct _PendingComputation{
         _PendingComputation(HdBufferArrayRangeSharedPtr const &range,

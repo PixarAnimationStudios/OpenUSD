@@ -2427,7 +2427,7 @@ HdDataSourceLegacyPrim::_IsLight()
     //       part of GetNames and Has for the prim-level data source.
     //       
     //       This specific method will not be invoked by rendering directly.
-    //       Hydra Scene Browser is the only caller of GetNames for
+    //       Hydra Scene Debugger is the only caller of GetNames for
     //       a prim-level container data source -- and only for the selected
     //       prim.
     const VtValue v = _sceneDelegate->GetLightParamValue(

@@ -119,7 +119,7 @@ HgiTextureHandle
 HgiVulkan::CreateTexture(HgiTextureDesc const & desc)
 {
     return HgiTextureHandle(
-        new HgiVulkanTexture(this, GetPrimaryDevice(), desc,
+        new HgiVulkanTexture(this, desc,
             /*optimalTiling=*/ true, /*interop=*/false), GetUniqueId());
 }
 
@@ -130,7 +130,7 @@ HgiVulkan::CreateTextureForInterop(
     bool optimalTiling)
 {
     return HgiTextureHandle(
-        new HgiVulkanTexture(this, GetPrimaryDevice(), desc,
+        new HgiVulkanTexture(this, desc,
             optimalTiling, /*interop=*/true), GetUniqueId());
 }
 
@@ -150,7 +150,7 @@ HgiVulkan::CreateTextureView(HgiTextureViewDesc const & desc)
     }
 
     HgiTextureHandle src = HgiTextureHandle(
-        new HgiVulkanTexture(this, GetPrimaryDevice(),desc), GetUniqueId());
+        new HgiVulkanTexture(this, desc), GetUniqueId());
     HgiTextureView* view = new HgiTextureView(desc);
     view->SetViewTexture(src);
     return HgiTextureViewHandle(view, GetUniqueId());
@@ -188,7 +188,7 @@ HgiBufferHandle
 HgiVulkan::CreateBuffer(HgiBufferDesc const & desc)
 {
     return HgiBufferHandle(
-        new HgiVulkanBuffer(this, GetPrimaryDevice(), desc),
+        new HgiVulkanBuffer(this, desc),
         GetUniqueId());
 }
 

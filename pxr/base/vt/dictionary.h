@@ -11,9 +11,11 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/vt/api.h"
+#include "pxr/base/vt/traits.h"
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/functionRef.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 
@@ -21,8 +23,15 @@
 #include <iosfwd>
 #include <map>
 #include <memory>
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// VtDictionary can compose over itself and must support value transforms in
+// general, since it can contain values that support transforms.
+class VtDictionary;
+VT_VALUE_TYPE_CAN_COMPOSE(VtDictionary);
+VT_VALUE_TYPE_CAN_TRANSFORM(VtDictionary);
 
 /// \defgroup group_vtdict_functions VtDictionary Functions
 /// Functions for manipulating VtDictionary objects.
@@ -611,13 +620,12 @@ VtDictionaryOverRecursive(VtDictionary *strong, const VtDictionary &weak);
 /// weak's subdictionary is recursively overlayed by \a strong's
 /// subdictionary.
 ///
-/// The result is that no key/value pairs of \a will be lost in nested
+/// The result is that no key/value pairs of \a weak will be lost in nested
 /// dictionaries. Rather, only non-dictionary values will be overwritten
 ///
 /// \ingroup group_vtdict_functions
 VT_API void
 VtDictionaryOverRecursive(const VtDictionary &strong, VtDictionary *weak);
-
 
 struct VtDictionaryHash {
     inline size_t operator()(VtDictionary const &dict) const {

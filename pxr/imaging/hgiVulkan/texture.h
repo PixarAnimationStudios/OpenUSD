@@ -8,6 +8,7 @@
 #define PXR_IMAGING_HGI_VULKAN_TEXTURE_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/span.h"
 #include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/hgiVulkan/api.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
@@ -86,7 +87,7 @@ public:
         HgiVulkanCommandBuffer* cb,
         HgiVulkanBuffer* srcBuffer,
         GfVec3i const& dstTexelOffset = GfVec3i(0),
-        int mipLevel=-1);
+        int mipLevel = -1);
 
     /// This function issues a layout change barrier. However, the layout 
     /// transition isn't immediately executed. The command buffer simply 
@@ -101,16 +102,15 @@ public:
     ///    Multiple passes can go back to back which all read the resource.
     /// If mipLevel is > -1 only that mips level will be transitioned.
     HGIVULKAN_API
-    static void TransitionImageBarrier(
+    void LayoutBarrier(
         HgiVulkanCommandBuffer* cb,
-        HgiVulkanTexture* tex,
         VkImageLayout oldLayout,
         VkImageLayout newLayout,
         VkAccessFlags producerAccess,
         VkAccessFlags consumerAccess,
         VkPipelineStageFlags producerStage,
         VkPipelineStageFlags consumerStage,
-        int32_t mipLevel=-1);
+        int32_t mipLevel = -1);
 
     /// Returns the layout for a texture based on its usage flags.
     HGIVULKAN_API
@@ -126,7 +126,6 @@ protected:
     HGIVULKAN_API
     HgiVulkanTexture(
         HgiVulkan* hgi,
-        HgiVulkanDevice* device,
         HgiTextureDesc const & desc,
         bool optimalTiling,
         bool interop);
@@ -135,7 +134,6 @@ protected:
     HGIVULKAN_API
     HgiVulkanTexture(
         HgiVulkan* hgi,
-        HgiVulkanDevice* device,
         HgiTextureViewDesc const & desc);
 
 private:
@@ -143,14 +141,20 @@ private:
     HgiVulkanTexture & operator=(const HgiVulkanTexture&) = delete;
     HgiVulkanTexture(const HgiVulkanTexture&) = delete;
 
+    void CopyMemoryToTexture(
+        TfSpan<const std::byte> srcBuffer,
+        GfVec3i const& dstTexelOffset = GfVec3i(0),
+        int mipLevel = -1);
+
     VkImage _vkImage;
     VkImageView _vkImageView;
     VkImageLayout _vkImageLayout;
     VmaAllocation _vmaImageAllocation;
-    HgiVulkanDevice* _device;
+    HgiVulkan* _hgi;
     uint64_t _inflightBits;
     std::unique_ptr<HgiVulkanBuffer> _stagingBuffer;
     void* _cpuStagingAddress;
+    bool _hasHostImageCopy;
     bool _isTextureView;
 };
 
