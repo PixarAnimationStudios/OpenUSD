@@ -2082,7 +2082,8 @@ if MacOS():
                        default=codesignDefault, action="store_true",
                        help=("Enable code signing for macOS builds "
                              "(defaults to enabled on Apple Silicon)"))
-    group.add_argument("--codesign-id", dest="macos_codesign_id", type=str)
+    group.add_argument("--codesign-id", dest="macos_codesign_id", type=str,
+                       help="A specific code-sign ID to use. If not provided, the build will try and find one or use '-'")
 
 if Linux():
     group.add_argument("--use-cxx11-abi", type=int, choices=[0, 1],

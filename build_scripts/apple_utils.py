@@ -215,7 +215,7 @@ def GetCodeSignID() -> str:
 
 
 def GetDevelopmentTeamID(identifier=None):
-    if os.environ.get("DEVELOPMENT_TEAM"):
+    if "DEVELOPMENT_TEAM" in os.environ:
         return os.environ.get("DEVELOPMENT_TEAM")
 
     if not identifier:
@@ -243,19 +243,21 @@ def GetDevelopmentTeamID(identifier=None):
     return team
 
 
-def CodesignPath(path, identifier, team_identifier, force=False) -> bool:
+def CodesignPath(path, identifier, team_identifier, force=False, is_framework=False) -> bool:
     resign = force
     if not force:
         codesigning_info = GetCommandOutput(["codesign", "-vd", path])
         if not codesigning_info:
             resign = True
         else:
+            # The output has multiple lines here
             for line in codesigning_info.splitlines():
                 if line.startswith("TeamIdentifier="):
                     current_team_identifier = line.split("=")[-1]
-                    if not team_identifier and "not set" in team_identifier:
+                    if not current_team_identifier or "not set" in current_team_identifier:
+                        resign = True
                         break
-                    elif team_identifier == current_team_identifier:
+                    elif current_team_identifier == team_identifier:
                         break
             else:
                 resign = True
@@ -264,8 +266,8 @@ def CodesignPath(path, identifier, team_identifier, force=False) -> bool:
         return False
 
     # Frameworks need to be signed with different parameters than loose binaries
-    if path.endswith(".framework"):
-        subprocess.check_output(
+    if is_framework:
+        subprocess.check_call(
             ["codesign", "--force", "--sign", identifier, "--generate-entitlement-der", "--verbose", path])
     else:
         subprocess.check_call(["codesign", "--force", "--sign", identifier, path], stdout=devout, stderr=devout)
@@ -294,7 +296,7 @@ def Codesign(install_path, identifier=None, force=False, verbose_output=False) -
             _, ext = os.path.splitext(f)
             if ext in (".dylib", ".so"):
                 path = os.path.join(root, f)
-                result = CodesignPath(path, identifier, team_identifier=team_identifier, force=force)
+                result = CodesignPath(path, identifier, team_identifier=team_identifier, force=force, is_framework=False)
                 if verbose_output:
                     if result:
                         print(f"Code-signed binary: {path}")
@@ -307,7 +309,7 @@ def Codesign(install_path, identifier=None, force=False, verbose_output=False) -
 
         for framework in frameworks:
             path = os.path.join(root, framework)
-            result = CodesignPath(path, identifier, team_identifier=team_identifier, force=force)
+            result = CodesignPath(path, identifier, team_identifier=team_identifier, force=force, is_framework=True)
             if verbose_output:
                 if result:
                     print(f"Code-signed framework: {path}")
@@ -361,9 +363,6 @@ def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
     system_name = None
     if TargetEmbeddedOS(context):
         system_name = context.buildTarget
-
-    if context.macOSCodesign:
-        args.append(f"-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY={context.macOSCodesign}")
 
     if system_name:
         args.append(f"-DCMAKE_SYSTEM_NAME={system_name}")
