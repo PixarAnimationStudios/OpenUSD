@@ -156,18 +156,23 @@ public:
     /// values pull light towards the center and narrow the spread.
     /// 
     /// This is implemented as a multiplication with the absolute value of the
-    /// dot product between the light's surface normal and the emission
+    /// dot product between the light's primary axis and the emission
     /// direction, raised to the power `focus`.  See `inputs:shaping:focusTint`
     /// for the complete formula, but if we assume a default `focusTint` of
     /// pure black, then that formula simplifies to:
     /// 
     /// <center><b>
-    /// focusFactor = ｜emissionDirection • lightNormal｜<sup>focus</sup>
+    /// focusFactor = ｜emissionDirection • lightAxis｜<sup>focus</sup>
     /// 
     /// L<sub>Color</sub> = focusFactor ⋅ L<sub>Color</sub>
     /// </b></center>
     /// 
     /// Values < 0 are ignored.
+    /// 
+    /// Note that the absolute value in the formula above means that sphere and 
+    /// cylinder lights will emit "behind" the light as well as in front. If it 
+    /// is desired that the light emits forward only, this can be achieved by setting
+    /// the `inputs:shaping:coneAngle` to 90 degrees or less.
     /// 
     ///
     /// | ||
@@ -197,7 +202,7 @@ public:
     /// white, by the factor computed from the focus attribute, in other words:
     /// 
     /// <center><b>
-    /// focusFactor = ｜emissionDirection • lightNormal｜<sup>focus</sup>
+    /// focusFactor = ｜emissionDirection • lightAxis｜<sup>focus</sup>
     /// 
     /// focusColor = lerp(focusFactor, focusTint, [1, 1, 1])
     /// 
@@ -207,6 +212,11 @@ public:
     /// 
     /// Note that this implies that a focusTint of pure white will disable
     /// focus.
+    /// 
+    /// Note that the absolute value in the formula above means that sphere and 
+    /// cylinder lights will emit "behind" the light as well as in front. If it 
+    /// is desired that the light emits forward only, this can be achieved by setting
+    /// the `inputs:shaping:coneAngle` to 90 degrees or less.
     /// 
     ///
     /// | ||
