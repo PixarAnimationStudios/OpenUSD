@@ -531,17 +531,22 @@ A higher focus value pulls light towards the center, effectively narrowing the
 spread. Values < 0 are ignored.
 
 This is implemented as a multiplication with the absolute value of the dot 
-product between the light's surface normal and the emission direction, raised to 
+product between the light's primary axis and the emission direction, raised to 
 the power `focus`. See {ref}`inputs:shaping:focusTint <ShapingAPI_inputs:shaping:focusTint>`
 for the complete formula, but if we assume a default `focusTint` of pure black, 
 then that formula simplifies to:
 
 ```{math}
 \\begin{aligned} 
-&focusFactor = ｜emissionDirection • lightNormal｜^{focus} \\\\
+&focusFactor = ｜emissionDirection • lightAxis｜^{focus} \\\\
 &L_{Color} = focusFactor ⋅ L_{Color}
 \\end{aligned} 
 ```
+
+Note that the absolute value in the formula above means that sphere and 
+cylinder lights will emit "behind" the light as well as in front. If it 
+is desired that the light emits forward only, this can be achieved by setting
+the `inputs:shaping:coneAngle` to 90 degrees or less.
 """
         }
     )
@@ -560,7 +565,7 @@ white, by the factor computed from the focus attribute, in other words:
 
 ```{math}
 \\begin{aligned} 
-&focusFactor = ｜emissionDirection • lightNormal｜^{focus} \\\\
+&focusFactor = ｜emissionDirection • lightAxis｜^{focus} \\\\
 &focusColor = lerp(focusFactor, focusTint, [1, 1, 1]) \\\\
 &L_{Color} = componentwiseMultiply(focusColor, L_{Color}) 
 \\end{aligned}
@@ -568,6 +573,11 @@ white, by the factor computed from the focus attribute, in other words:
 
 Note that this implies that a focusTint of pure white will disable
 focus.
+
+Note that the absolute value in the formula above means that sphere and 
+cylinder lights will emit "behind" the light as well as in front. If it 
+is desired that the light emits forward only, this can be achieved by setting
+the `inputs:shaping:coneAngle` to 90 degrees or less.
 """
         }
     )
