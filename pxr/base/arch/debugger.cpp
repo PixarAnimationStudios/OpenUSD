@@ -34,6 +34,7 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <utility>
 #endif
 #if defined(ARCH_OS_DARWIN)
 #include <sys/sysctl.h>
@@ -238,7 +239,11 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
     // leader.  In addition, the process has no controlling terminal.
     if (setsid() == -1) {
         int result = errno;
-        write(ready[1], &result, sizeof(result));
+        // Suppress warn_unused_result by explicitly ignoring the return value
+        // as the the process is exited immediately after.
+        //
+        // void casting here is not enough on GCC and the result must be ignored
+        std::ignore = write(ready[1], &result, sizeof(result));
         _exit(1);
     }
 
@@ -264,7 +269,11 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
     if (pid == -1) {
         // fork failed!
         int result = errno;
-        write(ready[1], &result, sizeof(result));
+        // Suppress warn_unused_result by explicitly ignoring the return value
+        // as the the process is exited immediately after.
+        //
+        // void casting here is not enough on GCC and the result must be ignored
+        std::ignore = write(ready[1], &result, sizeof(result));
         _exit(2);
     }
     if (pid > 0) {
@@ -278,7 +287,11 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
     // Close all open file descriptors
     int result = ArchCloseAllFiles(1, &ready[1]);
     if (result == -1) {
-        write(ready[1], &result, sizeof(result));
+        // Suppress warn_unused_result by explicitly ignoring the return value
+        // as the the process is exited immediately after.
+        //
+        // void casting here is not enough on GCC and the result must be ignored
+        std::ignore = write(ready[1], &result, sizeof(result));
         _exit(3);
     }
 
@@ -288,7 +301,11 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
     //
     result = chdir("/");
     if (result == -1) {
-        write(ready[1], &result, sizeof(result));
+        // Suppress warn_unused_result by explicitly ignoring the return value
+        // as the the process is exited immediately after.
+        //
+        // void casting here is not enough on GCC and the result must be ignored
+        std::ignore = write(ready[1], &result, sizeof(result));
         _exit(4);
     }
 
@@ -305,7 +322,11 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
     if (fcntl(ready[1], F_SETFD, arg) == -1) {
         // We can't close on exec so we can't indicate success of exec.
         int result = errno;
-        write(ready[1], &result, sizeof(result));
+        // Suppress warn_unused_result by explicitly ignoring the return value
+        // as the the process is exited immediately after.
+        //
+        // void casting here is not enough on GCC and the result must be ignored
+        std::ignore = write(ready[1], &result, sizeof(result));
         _exit(5);
     }
 
@@ -313,7 +334,11 @@ Arch_DebuggerRunUnrelatedProcessPosix(bool (*cb)(void*), void* data)
     // automatically without us writing to it, indicating success.
     if (!cb(data)) {
         result = errno;
-        write(ready[1], &result, sizeof(result));
+        // Suppress warn_unused_result by explicitly ignoring the return value
+        // as the the process is exited immediately after.
+        //
+        // void casting here is not enough on GCC and the result must be ignored
+        std::ignore = write(ready[1], &result, sizeof(result));
         _exit(6);
     }
 
