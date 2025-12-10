@@ -231,6 +231,7 @@ pxr_test_scripts(
     testenv/testUsdNamespaceEditorDependentEditsBasicRelocates.py
     testenv/testUsdNamespaceEditorDependentEditsBasicSublayers.py
     testenv/testUsdNamespaceEditorDependentEditsBasicVariants.py
+    testenv/testUsdNamespaceEditorDependentEditsProperties.py
     testenv/testUsdNamespaceEditorDependentEditsSiblingNodeSpecConflicts.py
     testenv/testUsdNamespaceEditorProperties.py
     testenv/testUsdNamespaceEditorTargetPathFixup.py
@@ -1025,6 +1026,12 @@ pxr_register_test(testUsdNamespaceEditorDependentEditsBasicVariants
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdNamespaceEditorDependentEditsProperties
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNamespaceEditorDependentEditsProperties"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdNamespaceEditorDependentEditsSiblingNodeSpecConflicts
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNamespaceEditorDependentEditsSiblingNodeSpecConflicts"
@@ -1144,11 +1151,17 @@ pxr_register_test(testUsdOpaqueAttributes
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdUsdzBugGHSA01
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUsdzBugGHSA01"
-    TESTENV testenv/testUsdUsdzBugGHSA01.testenv
-    EXPECTED_RETURN_CODE 0
-)
+# This test is commented out for emscripten due to the fact that it expects
+# a runtime error to be thrown. This particular error manifests in wasm as an
+# unreachable exception and crashes the module.  This exception would need to be
+# caught in javascript.
+if (NOT EMSCRIPTEN)
+    pxr_register_test(testUsdUsdzBugGHSA01
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUsdzBugGHSA01"
+        TESTENV testenv/testUsdUsdzBugGHSA01.testenv
+        EXPECTED_RETURN_CODE 0
+    )
+endif()
 
 pxr_register_test(testUsdUsdcBugGHSA02
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUsdcBugGHSA02"

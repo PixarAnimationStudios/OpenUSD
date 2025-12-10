@@ -34,12 +34,14 @@ _GetPropertyMappings()
     // Pick up from UsdGeomGprim
     result.push_back(
         UsdImagingDataSourceMapped::AttributeMapping{
-            UsdGeomTokens->doubleSided,
-            HdDataSourceLocator(HdNurbsPatchSchemaTokens->doubleSided)});
+            { UsdGeomTokens->doubleSided,
+              HdDataSourceLocator(HdNurbsPatchSchemaTokens->doubleSided) }
+        });
     result.push_back(
         UsdImagingDataSourceMapped::AttributeMapping{
-            UsdGeomTokens->orientation,
-            HdDataSourceLocator(HdNurbsPatchSchemaTokens->orientation)});
+            { UsdGeomTokens->orientation,
+              HdDataSourceLocator(HdNurbsPatchSchemaTokens->orientation) }
+        });
     
     for (const TfToken &usdName :
              UsdGeomNurbsPatch::GetSchemaAttributeNames(
@@ -52,7 +54,8 @@ _GetPropertyMappings()
 
         result.push_back(
             UsdImagingDataSourceMapped::AttributeMapping{
-                usdName, _ToLocator(usdName)});
+                { usdName, _ToLocator(usdName) }
+            });
     }
 
     return result;

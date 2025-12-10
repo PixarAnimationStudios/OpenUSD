@@ -30,7 +30,6 @@ pxr_build_test(testHdTiny
 if (APPLE)
     pxr_register_test(testHdTiny
         ENV
-            DYLD_INSERT_LIBRARIES=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny.dylib
             ${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny/resources
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTiny" 
         TESTENV testenv/testHdTiny
@@ -40,7 +39,6 @@ if (APPLE)
 elseif (UNIX)
     pxr_register_test(testHdTiny
         ENV
-            LD_PRELOAD=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny.so
             ${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin/hdTiny/resources
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTiny" 
         TESTENV testenv/testHdTiny

@@ -19,22 +19,42 @@
 /// \addtogroup group_arch_SystemFunctions
 ///@{
 
-#if defined(ARCH_OS_LINUX) && defined(ARCH_CPU_INTEL)
-#include <x86intrin.h>
-#elif defined(ARCH_OS_WASM_VM)
-#include <emscripten.h>
-#elif defined(ARCH_OS_DARWIN)
-#include <mach/mach_time.h>
-#elif defined(ARCH_OS_WINDOWS)
-#include <intrin.h>
+// See if we should use the x86 TSC register for timing.
+#if defined(PXR_ARCH_PREFER_TSC_TIMING) &&                              \
+    defined(ARCH_OS_LINUX) &&                                           \
+    defined(ARCH_CPU_INTEL) &&                                          \
+    (defined(ARCH_COMPILER_CLANG) || defined(ARCH_COMPILER_GCC))
+#define ARCH_USE_TSC_TIMING 1
+#else
+#define ARCH_USE_TSC_TIMING 0
 #endif
 
-#include <algorithm>
+#if ARCH_USE_TSC_TIMING
+#include <x86intrin.h>
+#endif
+
 #include <atomic>
+#include <chrono>
+#include <cmath>
+
+// XXX: None of <algorithm>, <iterator>, nor <numeric> are used by the timing
+// routines, but the includes have been here forever and removing them causes
+// other code that is not including all the headers it needs to fail to compile.
+// These should be deprecated and removed.
+#include <algorithm>
 #include <iterator>
 #include <numeric>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// Use a std::chrono clock if we're not using the Intel RDTSC instruction
+#if !ARCH_USE_TSC_TIMING
+/// The std::chrono clock to use to measure time.
+///
+/// std::chrono::steady_clock appears to be fast and accurate on all of our
+/// supported systems.
+using Arch_TimingClock = std::chrono::steady_clock;
+#endif
 
 /// Return the current time in system-dependent units.
 ///
@@ -46,26 +66,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 inline uint64_t
 ArchGetTickTime()
 {
-#if defined(ARCH_OS_DARWIN)
-    // On Darwin we'll use mach_absolute_time().
-    return mach_absolute_time();
-#elif defined(ARCH_CPU_INTEL)
-    // On Intel we'll use the rdtsc instruction.
+#if ARCH_USE_TSC_TIMING
     return __rdtsc();
-#elif defined (ARCH_CPU_ARM)
-    uint64_t result;
-    #if defined(ARCH_COMPILER_MSVC)
-    // MSVC does not support inline assembly on ARM64 platforms
-    // 0x5F02 == ARM64_CNTVCT - manually calculated value avoids <windows.h>
-    result = _ReadStatusReg(0x5F02);
-    #else
-    __asm __volatile("mrs	%0, CNTVCT_EL0" : "=&r" (result));
-    #endif
-    return result;
-#elif defined(ARCH_OS_WASM_VM)
-    return static_cast<int64_t>(emscripten_get_now() * 1e+6);
 #else
-#error Unknown architecture.
+    return Arch_TimingClock::now().time_since_epoch().count();
 #endif
 }
 
@@ -78,21 +82,9 @@ inline uint64_t
 ArchGetStartTickTime()
 {
     uint64_t t;
-#if defined (ARCH_OS_DARWIN) || defined(ARCH_OS_WASM_VM) || \
-    (defined (ARCH_CPU_ARM) && defined (ARCH_COMPILER_MSVC))
-    return ArchGetTickTime();
-#elif defined (ARCH_CPU_ARM)
-    std::atomic_signal_fence(std::memory_order_seq_cst);
-    asm volatile("mrs %0, cntvct_el0" : "=r"(t));
-    std::atomic_signal_fence(std::memory_order_seq_cst);
-#elif defined (ARCH_COMPILER_MSVC)
-    _mm_lfence();
-    std::atomic_signal_fence(std::memory_order_seq_cst);
-    t = __rdtsc();
-    _mm_lfence();
-    std::atomic_signal_fence(std::memory_order_seq_cst);
-#elif defined(ARCH_CPU_INTEL) && \
-    (defined(ARCH_COMPILER_CLANG) || defined(ARCH_COMPILER_GCC))
+
+#if ARCH_USE_TSC_TIMING
+
     // Prevent reorders by the compiler.
     std::atomic_signal_fence(std::memory_order_seq_cst);
     asm volatile(
@@ -106,10 +98,16 @@ ArchGetStartTickTime()
         // rdtsc writes rdx
         // shl modifies cc flags
         : "rdx", "cc");
+
 #else
-#error "Unsupported architecture."
+
+    std::atomic_signal_fence(std::memory_order_seq_cst);
+    t = ArchGetTickTime();
+    std::atomic_signal_fence(std::memory_order_seq_cst);
+
 #endif
-  return t;
+
+    return t;
 }
 
 /// Get a "stop" tick time for measuring an interval of time.  See
@@ -120,21 +118,10 @@ inline uint64_t
 ArchGetStopTickTime()
 {
     uint64_t t;
-#if defined (ARCH_OS_DARWIN) || defined(ARCH_OS_WASM_VM) || \
-    (defined (ARCH_CPU_ARM) && defined (ARCH_COMPILER_MSVC))
-    return ArchGetTickTime();
-#elif defined (ARCH_CPU_ARM)
-    std::atomic_signal_fence(std::memory_order_seq_cst);
-    asm volatile("mrs %0, cntvct_el0" : "=r"(t));
-    std::atomic_signal_fence(std::memory_order_seq_cst);
-#elif defined (ARCH_COMPILER_MSVC)
-    std::atomic_signal_fence(std::memory_order_seq_cst);
-    unsigned aux;
-    t = __rdtscp(&aux);
-    _mm_lfence();
-    std::atomic_signal_fence(std::memory_order_seq_cst);
-#elif defined(ARCH_CPU_INTEL) && \
-    (defined(ARCH_COMPILER_CLANG) || defined(ARCH_COMPILER_GCC))
+
+#if ARCH_USE_TSC_TIMING
+
+    // Prevent reorders by the compiler.
     std::atomic_signal_fence(std::memory_order_seq_cst);
     asm volatile(
         "rdtscp\n\t"
@@ -146,79 +133,20 @@ ArchGetStopTickTime()
         // rdtscp writes rcx & rdx
         // shl modifies cc flags
         : "rcx", "rdx", "cc");
-#else
-#error "Unsupported architecture."
-#endif
-  return t;
-}
 
-#if defined (doxygen) ||                                                       \
-    (!defined(ARCH_OS_DARWIN) && defined(ARCH_CPU_INTEL) &&                    \
-     (defined(ARCH_COMPILER_CLANG) || defined(ARCH_COMPILER_GCC)))
+#else
+
+    std::atomic_signal_fence(std::memory_order_seq_cst);
+    t = ArchGetTickTime();
+    std::atomic_signal_fence(std::memory_order_seq_cst);
+
+#endif
+
+    return t;
+}
 
 /// A simple timer class for measuring an interval of time using the
 /// ArchTickTimer facilities.
-struct ArchIntervalTimer
-{
-    /// Construct a timer and start timing if \p start is true.
-    explicit ArchIntervalTimer(bool start=true)
-        : _started(start) {
-        if (_started) {
-            Start();
-        }
-    }
-
-    /// Start the timer, or reset the start time if it has already been started.
-    void Start() {
-        _started = true;
-        std::atomic_signal_fence(std::memory_order_seq_cst);
-        asm volatile(
-            "lfence\n\t"
-            "rdtsc\n\t"
-            "lfence"
-            : "=a"(_startLow), "=d"(_startHigh) :: );
-    }
-
-    /// Return true if this timer is started.
-    bool IsStarted() const {
-        return _started;
-    }
-
-    /// Return this timer's start time, or 0 if it hasn't been started.
-    uint64_t GetStartTicks() const {
-        return (uint64_t(_startHigh) << 32) + _startLow;
-    }
- 
-    /// Read and return the current time.
-    uint64_t GetCurrentTicks() {
-        return ArchGetStopTickTime();
-    }
-
-    /// Read the current time and return the difference between it and the start
-    /// time.  If the timer was not started, return 0.
-    uint64_t GetElapsedTicks() {
-        if (!_started) {
-            return 0;
-        }
-        uint32_t stopLow, stopHigh;
-        std::atomic_signal_fence(std::memory_order_seq_cst);
-        asm volatile(
-            "rdtscp\n\t"
-            "lfence"
-            : "=a"(stopLow), "=d"(stopHigh)
-            :
-            // rdtscp writes rcx
-            : "rcx");
-        return ((uint64_t(stopHigh) << 32) + stopLow) -
-            ((uint64_t(_startHigh) << 32) + _startLow);
-    }
-private:
-    bool _started = false;
-    uint32_t _startLow = 0, _startHigh = 0;
-};
-
-#else
-
 struct ArchIntervalTimer
 {
     explicit ArchIntervalTimer(bool start=true)
@@ -256,8 +184,6 @@ private:
     uint64_t _startTicks;
 };
 
-#endif
-
 /// Return the tick time resolution.  Although the number of ticks per second
 /// may be very large, on many current systems the tick timers do not update at
 /// that rate.  Rather, sequential calls to ArchGetTickTime() may report
@@ -276,7 +202,18 @@ uint64_t ArchGetTickQuantum();
 ARCH_API
 uint64_t ArchGetIntervalTimerTickOverhead();
 
-
+    
+/// Get nanoseconds per tick. Useful when converting ticks obtained from
+/// \c ArchTickTime()
+#if defined(doxygen) || ARCH_USE_TSC_TIMING
+ARCH_API
+double ArchGetNanosecondsPerTick();
+#else
+inline double ArchGetNanosecondsPerTick()
+{
+    return 1e+9 * Arch_TimingClock::period::num / Arch_TimingClock::period::den;
+}
+#endif
 /// Convert a duration measured in "ticks", as returned by
 /// \c ArchGetTickTime(), to nanoseconds.
 ///
@@ -285,27 +222,44 @@ uint64_t ArchGetIntervalTimerTickOverhead();
 ///     ArchIntervalTimer iTimer;
 ///     sleep(10);
 ///
-///     // duration should be approximately 10/// 1e9 = 1e10 nanoseconds.
+///     // duration should be approximately 10 * 1e9 = 1e10 nanoseconds.
 ///     int64_t duration = ArchTicksToNanoseconds(iTimer.GetElapsedTicks());
 /// \endcode
 ///
+#if defined(doxygen) || ARCH_USE_TSC_TIMING
 ARCH_API
 int64_t ArchTicksToNanoseconds(uint64_t nTicks);
+#else
+inline int64_t ArchTicksToNanoseconds(uint64_t nTicks)
+{
+    return static_cast<int64_t>(
+        std::llround(nTicks * ArchGetNanosecondsPerTick()));
+}
+#endif
 
 /// Convert a duration measured in "ticks", as returned by
 /// \c ArchGetTickTime(), to seconds.
+#if defined(doxygen) || ARCH_USE_TSC_TIMING
 ARCH_API
 double ArchTicksToSeconds(uint64_t nTicks);
+#else
+inline double ArchTicksToSeconds(uint64_t nTicks)
+{
+    return nTicks * ArchGetNanosecondsPerTick() / 1e+9;
+}
+#endif
 
 /// Convert a duration in seconds to "ticks", as returned by
 /// \c ArchGetTickTime().
+#if defined(doxygen) || ARCH_USE_TSC_TIMING
 ARCH_API
 uint64_t ArchSecondsToTicks(double seconds);
-    
-/// Get nanoseconds per tick. Useful when converting ticks obtained from
-/// \c ArchTickTime()
-ARCH_API
-double ArchGetNanosecondsPerTick();
+#else
+inline uint64_t ArchSecondsToTicks(double seconds)
+{
+    return seconds * 1e+9 / ArchGetNanosecondsPerTick();
+}
+#endif
 
 ARCH_API
 uint64_t

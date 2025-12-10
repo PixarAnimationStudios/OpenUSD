@@ -342,7 +342,8 @@ UsdImagingDataSourceMapped::PropertyMappings::PropertyMappings(
             _Add(
                 attrMapping->hdLocator,
                 AttributeMapping{
-                    attrMapping->usdName, locator, attrMapping->factory },
+                    { attrMapping->usdName, locator }, attrMapping->factory
+                },
                 _containerMappings);
         } else if (auto const &relMapping =
                                 std::get_if<RelationshipMapping>(&mapping)) {
@@ -354,7 +355,8 @@ UsdImagingDataSourceMapped::PropertyMappings::PropertyMappings(
             _Add(
                 relMapping->hdLocator,
                 RelationshipMapping{
-                    relMapping->usdName, locator, relMapping->factory },
+                    { relMapping->usdName, locator }, relMapping->factory
+                },
                 _containerMappings);
         }
     }

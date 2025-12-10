@@ -94,74 +94,68 @@ pxr_build_test(testJsDouble
     CPPFILES
         testenv/testJsDouble.cpp
 )  
-# These tests are disabled when compiling for emscripten due to the fact that
-# they depend on baselines that are not included as part of the emscripten
-# virtual filesystem. There is no platform specific functionality here that
-# would lead us to belive native testing would be insufficient.
-if (NOT EMSCRIPTEN)
-    pxr_register_test(testJsIO_Errors_BadCommaPlacement
-        COMMAND 
-            "${CMAKE_INSTALL_PREFIX}/tests/testJsIO bad-commaPlacement.json -"
-        EXPECTED_RETURN_CODE 
-            2
-        STDERR_REDIRECT
-            testJsIO_Errors-Run1-stderr.txt
-        DIFF_COMPARE 
-            testJsIO_Errors-Run1-stderr.txt
-        TESTENV
-            testenv/testJsIO_Errors
-    )
-    pxr_register_test(testJsIO_Errors_MismatchedBraces
-        COMMAND 
-            "${CMAKE_INSTALL_PREFIX}/tests/testJsIO bad-mismatchedBraces.json -"
-        EXPECTED_RETURN_CODE 
-            2
-        STDERR_REDIRECT
-            testJsIO_Errors-Run2-stderr.txt
-        DIFF_COMPARE 
-            testJsIO_Errors-Run2-stderr.txt
-        TESTENV
-            testenv/testJsIO_Errors
-    )
-    pxr_register_test(testJsConverter
-        COMMAND 
-            "${CMAKE_INSTALL_PREFIX}/tests/testJsConverter"
-        TESTENV
-            testenv/testJsConverter
-    )
-    pxr_register_test(testJsWriter
-        COMMAND 
-            "${CMAKE_INSTALL_PREFIX}/tests/testJsWriter test.json compact"
-        TESTENV
-            testenv/testJsWriter
-        DIFF_COMPARE 
-            test.json
-    )
-    pxr_register_test(testJsWriter_Pretty
-        COMMAND 
-            "${CMAKE_INSTALL_PREFIX}/tests/testJsWriter test-pretty.json pretty"
-        TESTENV
-            testenv/testJsWriter
-        DIFF_COMPARE 
-            test-pretty.json
-    )
-    pxr_register_test(testJsIO_PlugInfo
-        COMMAND 
-            "${CMAKE_INSTALL_PREFIX}/tests/testJsIO plugInfo.json.in plugInfo.json"
-        TESTENV
-            testenv/testJsIO
-        DIFF_COMPARE 
-            plugInfo.json
-    )
-    pxr_register_test(testJsIO_Values
-        COMMAND 
-            "${CMAKE_INSTALL_PREFIX}/tests/testJsIO values.json.in values.json"
-        TESTENV
-            testenv/testJsIO
-        DIFF_COMPARE 
-            values.json
-    )
-endif()
+pxr_register_test(testJsIO_Errors_BadCommaPlacement
+    COMMAND 
+        "${CMAKE_INSTALL_PREFIX}/tests/testJsIO bad-commaPlacement.json -"
+    EXPECTED_RETURN_CODE 
+        2
+    STDERR_REDIRECT
+        testJsIO_Errors-Run1-stderr.txt
+    DIFF_COMPARE 
+        testJsIO_Errors-Run1-stderr.txt
+    TESTENV
+        testenv/testJsIO_Errors
+)
+pxr_register_test(testJsIO_Errors_MismatchedBraces
+    COMMAND 
+        "${CMAKE_INSTALL_PREFIX}/tests/testJsIO bad-mismatchedBraces.json -"
+    EXPECTED_RETURN_CODE 
+        2
+    STDERR_REDIRECT
+        testJsIO_Errors-Run2-stderr.txt
+    DIFF_COMPARE 
+        testJsIO_Errors-Run2-stderr.txt
+    TESTENV
+        testenv/testJsIO_Errors
+)
+pxr_register_test(testJsConverter
+    COMMAND 
+        "${CMAKE_INSTALL_PREFIX}/tests/testJsConverter"
+    TESTENV
+        testenv/testJsConverter
+)
+pxr_register_test(testJsWriter
+    COMMAND 
+        "${CMAKE_INSTALL_PREFIX}/tests/testJsWriter test.json compact"
+    TESTENV
+        testenv/testJsWriter
+    DIFF_COMPARE 
+        test.json
+)
+pxr_register_test(testJsWriter_Pretty
+    COMMAND 
+        "${CMAKE_INSTALL_PREFIX}/tests/testJsWriter test-pretty.json pretty"
+    TESTENV
+        testenv/testJsWriter
+    DIFF_COMPARE 
+        test-pretty.json
+)
+pxr_register_test(testJsIO_PlugInfo
+    COMMAND 
+        "${CMAKE_INSTALL_PREFIX}/tests/testJsIO plugInfo.json.in plugInfo.json"
+    TESTENV
+        testenv/testJsIO
+    DIFF_COMPARE 
+        plugInfo.json
+)
+pxr_register_test(testJsIO_Values
+    COMMAND 
+        "${CMAKE_INSTALL_PREFIX}/tests/testJsIO values.json.in values.json"
+    TESTENV
+        testenv/testJsIO
+    DIFF_COMPARE 
+        values.json
+)
 pxr_register_test(testJsUtils
     COMMAND 
         "${CMAKE_INSTALL_PREFIX}/tests/testJsUtils"

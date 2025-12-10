@@ -46,21 +46,21 @@ pxr_register_test(testUsdChecker4
 )
 
 pxr_register_test(testUsdChecker5
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit clean/clean_arkit.usdz"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker clean/clean_arkit.usdz"
     TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 0
 )
 
 # "rootPackageOnly" won't report validation errors within the subpackages, so it should pass
 pxr_register_test(testUsdChecker6
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit --rootPackageOnly bad/sceneWithInvalidPackage.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --rootPackageOnly bad/sceneWithInvalidPackage.usda"
     TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 0
 )
 
 # Removing rootPackageOnly, should fail as the subpackage has invalid content
 pxr_register_test(testUsdChecker7
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit bad/sceneWithInvalidPackage.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/sceneWithInvalidPackage.usda"
     TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
 )
@@ -74,7 +74,7 @@ pxr_register_test(testUsdChecker8
 # Simple variant file, showing all combination of variants being validated and
 # failing
 pxr_register_test(testUsdChecker9
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit --dumpRules bad/badVariants.usdc"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --dumpRules bad/badVariants.usdc"
     TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
 )
@@ -165,7 +165,7 @@ pxr_register_test(testUsdChecker21
 )
 
 pxr_register_test(testUsdChecker22
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit bad/badShaderUnsupportedTexture.usdc"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badShaderUnsupportedTexture.usdc"
     TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
 )

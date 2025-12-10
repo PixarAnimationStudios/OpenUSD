@@ -28,6 +28,7 @@ pxr_library(sdr
         shaderMetadataHelpers
         shaderNode
         shaderNodeQuery
+        shaderNodeQueryUtils
         shaderProperty
 
     PYMODULE_CPPFILES
@@ -42,6 +43,7 @@ pxr_library(sdr
         wrapShaderNode.cpp
         wrapShaderNodeDiscoveryResult.cpp
         wrapShaderNodeQuery.cpp
+        wrapShaderNodeQueryUtils.cpp
         wrapShaderProperty.cpp
 
     PYMODULE_FILES

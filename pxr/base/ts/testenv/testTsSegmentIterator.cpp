@@ -29,6 +29,10 @@ enum Dir {Fwd, Rev};
 // Get a convenient infinite value.
 constexpr double inf = std::numeric_limits<double>::infinity();
 
+// Constants for constructing GfInterval objects
+constexpr bool OPEN = false;
+constexpr bool CLOSED = true;
+
 // Global test state
 static bool verbose = false;
 static std::string testSplineName;
@@ -154,7 +158,7 @@ std::vector<Ts_Segment> GenSegments(const TestCase& testCase,
 
             const double t1 = -(interval.GetMin() - shift1[0]) + timeShift2;
             const double t0 = -(interval.GetMax() - shift1[0]) + timeShift2;
-            GfInterval iterInterval = GfInterval(t0, t1, true, false);
+            GfInterval iterInterval = GfInterval(t0, t1, CLOSED, OPEN);
 
             for (auto segIt = testCase.segments.rbegin();
                  segIt != testCase.segments.rend();
@@ -173,7 +177,7 @@ std::vector<Ts_Segment> GenSegments(const TestCase& testCase,
                 // If this segment is in the iteration interval, include it in
                 // the result.
                 if (iterInterval.Intersects(
-                        GfInterval(seg.p0[0], seg.p1[0], true, false)))
+                        GfInterval(seg.p0[0], seg.p1[0], CLOSED, OPEN)))
                 {
                     result.push_back(-(seg - timeShift2) + shift1);
                 }
@@ -198,7 +202,7 @@ std::vector<Ts_Segment> GenSegments(const TestCase& testCase,
                 // If this segment is in the iteration interval, include it in
                 // the result.
                 if (iterInterval.Intersects(
-                        GfInterval(seg.p0[0], seg.p1[0], true, false)))
+                        GfInterval(seg.p0[0], seg.p1[0], CLOSED, OPEN)))
                 {
                     result.push_back(seg + shift1);
                 }
@@ -645,7 +649,7 @@ bool ProtoTest(const TestCase& testCase,
                Dir dir)
 {
     const GfInterval iterInterval(minTime, maxTime,
-                                  true, false);
+                                  CLOSED, OPEN);
 
     // The domain is the inner loop prototype.
     const TsLoopParams lp = testCase.spline.GetInnerLoopParams();
@@ -663,7 +667,7 @@ bool LoopTest(const TestCase& testCase,
               Dir dir)
 {
     const GfInterval iterInterval(minTime, maxTime,
-                                  true, false);
+                                  CLOSED, OPEN);
 
     // The domain is limited to the inner looped interval.
     const TsLoopParams lp = testCase.spline.GetInnerLoopParams();
@@ -671,7 +675,7 @@ bool LoopTest(const TestCase& testCase,
 
     // GetLoopedInterval() returns a closed interval, but we
     // need it to be open.
-    domainInterval.SetMax(domainInterval.GetMax(), false);
+    domainInterval.SetMax(domainInterval.GetMax(), OPEN);
 
     return DoOneTest<Ts_SegmentLoopIterator>(
         testCase, iterInterval, domainInterval, dir);
@@ -685,7 +689,7 @@ bool KnotTest(const TestCase& testCase,
               Dir dir)
 {
     const GfInterval iterInterval(minTime, maxTime,
-                                  true, false);
+                                  CLOSED, OPEN);
 
     // The domain is the region defined by knots. I.e., without any
     // extrapolation. Looping may generate knots before and/or after the
@@ -695,11 +699,11 @@ bool KnotTest(const TestCase& testCase,
     // intervals, but we need them to be open.
     const TsLoopParams lp = testCase.spline.GetInnerLoopParams();
     GfInterval domainInterval = lp.GetLoopedInterval();
-    domainInterval.SetMax(domainInterval.GetMax(), false);
+    domainInterval.SetMax(domainInterval.GetMax(), OPEN);
 
     TsKnotMap knots = testCase.spline.GetKnots();
     GfInterval knotInterval = knots.GetTimeSpan();
-    knotInterval.SetMax(knotInterval.GetMax(), false);
+    knotInterval.SetMax(knotInterval.GetMax(), OPEN);
 
     // Union the intervals to expand them as needed.
     domainInterval |= knotInterval;
@@ -716,7 +720,7 @@ bool FullTest(const TestCase& testCase,
               Dir dir)
 {
     const GfInterval iterInterval(minTime, maxTime,
-                                  true, false);
+                                  CLOSED, OPEN);
 
     // The domain for a full test is all time.
     GfInterval domainInterval(-inf, inf);

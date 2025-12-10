@@ -37,7 +37,7 @@ USD Home
 
     .. grid-item-card:: 
       :class-card: m-1
-      :class-header: text-secondary font-weight-bold
+      :class-header: text-secondary font-weight-bold usd-index-card-header-color
       :shadow: md
 
       :fa:`power-off` Get Started
@@ -50,7 +50,7 @@ USD Home
 
     .. grid-item-card:: 
       :class-card: m-1
-      :class-header: text-secondary font-weight-bold
+      :class-header: text-secondary font-weight-bold usd-index-card-header-color
       :shadow: md
 
       :fa:`download` Download
@@ -62,7 +62,7 @@ USD Home
 
     .. grid-item-card:: 
       :class-card: m-1
-      :class-header: text-secondary font-weight-bold
+      :class-header: text-secondary font-weight-bold usd-index-card-header-color
       :shadow: md
 
       :fa:`book` Learn

@@ -2,9 +2,7 @@ pxr_core_prologue()
 
 add_subdirectory(external)
 add_subdirectory(base)
-if (NOT EMSCRIPTEN)
-    add_subdirectory(usd)
-endif()
+add_subdirectory(usd)
 
 if (${PXR_BUILD_EXEC})
     add_subdirectory(exec)

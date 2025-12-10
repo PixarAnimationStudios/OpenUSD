@@ -16,7 +16,13 @@ using std::string;
 //most of these tests are just for code coverage
 int main(int /*argc*/, char const** /*argv*/)
 {
+#ifdef ARCH_OS_WASM_VM
+    // note: for wasm, we use a hardcoded patch since there is not an
+    // inherent way to retrieve this path.
+    ARCH_AXIOM(ArchGetExecutablePath().find("/wasm", 0) != string::npos);
+#else
     ARCH_AXIOM(ArchGetExecutablePath().find("testArch", 0) != string::npos);
+#endif
     return 0;
 }
 

@@ -206,6 +206,7 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
                         HdMaterialNodeParameterSchemaTokens->colorSpace);
                 if (csRes.second) {
                     paramsInfo[csRes.first].colorSpace = p.second.Get<TfToken>();
+                    continue;
                 }
 
                 // TypeName metadata - strip "typeName" prefix 
@@ -214,12 +215,11 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
                         HdMaterialNodeParameterSchemaTokens->typeName);
                 if (vtRes.second) {
                     paramsInfo[vtRes.first].typeName = p.second.Get<TfToken>();
+                    continue;
                 }
 
                 // Value 
-                else {
-                    paramsInfo[p.first].value = p.second.Get<VtValue>();
-                }
+                paramsInfo[p.first].value = p.second.Get<VtValue>();
             }
 
             // Create and store the HdMaterialNodeParameter DataSource

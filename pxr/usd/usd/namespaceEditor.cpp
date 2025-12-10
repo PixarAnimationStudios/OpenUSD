@@ -442,10 +442,10 @@ UsdNamespaceEditor::ApplyEdits()
     std::vector<UsdStage::_NamespaceEditsChangeBlock> namespaceEditChangeBlocks;
     namespaceEditChangeBlocks.reserve(_dependentStages.size() + 1);
 
-    auto addPrimChangesForStage = [&](const UsdStageRefPtr &stage) {
-        // The expected namespace changes to prim index paths are stored per
-        // PcpCache in the dependent namespace edits so we look up the expected
-        // changes for this stage's cache.
+    auto addChangesForStage = [&](const UsdStageRefPtr &stage) {
+        // The expected namespace changes to prim index or property paths are 
+        // stored per PcpCache in the dependent namespace edits so we look up 
+        // the expected changes for this stage's cache.
         const auto *pathChangesForStage = TfMapLookupPtr(
             _processedEdit->dependentStageNamespaceEdits.dependentCachePathChanges, 
             stage->_GetPcpCache());
@@ -454,49 +454,43 @@ UsdNamespaceEditor::ApplyEdits()
         }
 
         // Convert the expected namespace changes to what's needed for the
-        // change block by removing old paths that don't exist as prims on the
-        // stage and computing the current prim stack for the old prim before
-        // edits are applied (to be compared with the prim stack after the
-        // edits are applied.)
+        // change block by removing old paths that don't exist on the stage. 
         UsdStage::_NamespaceEditsChangeBlock::ExpectedNamespaceEditChangeVector
             changeBlockExpectedChanges;
         changeBlockExpectedChanges.reserve(pathChangesForStage->size());
         for (const auto &change : *pathChangesForStage) {
-            UsdPrim oldPrim = stage->GetPrimAtPath(change.oldPath);
-            if (!oldPrim) {
-                continue;
+            if (change.oldPath.IsPropertyPath()) {
+                UsdProperty oldProp= stage->GetPropertyAtPath(change.oldPath);
+                if (!oldProp) {
+                    continue;
+                }
+                // Note that we don't need to compute and add a prim stack for 
+                // properties (as we do below for prims) as the change handling 
+                // in UsdStage doesn't need it.
+                changeBlockExpectedChanges.push_back({
+                    change.oldPath, change.newPath});
+            } else {
+                    UsdPrim oldPrim = stage->GetPrimAtPath(change.oldPath);
+                if (!oldPrim) {
+                    continue;
+                }
+                // We compute the current prim stack for the old prim before
+                // edits are applied to be compared with the prim stack after 
+                // the edits are applied.
+                changeBlockExpectedChanges.push_back({
+                    change.oldPath, change.newPath, oldPrim.GetPrimStack()});
             }
-            changeBlockExpectedChanges.push_back({
-                change.oldPath, change.newPath, oldPrim.GetPrimStack()});
         }
 
-        // Create the change block for this stage's expected namespace changes.
+        // Create the change block for this stage's expected prim/property 
+        // namespace changes.
         namespaceEditChangeBlocks.emplace_back(
             stage, std::move(changeBlockExpectedChanges));
     };
 
-    if (_processedEdit->editDescription.IsPropertyEdit()) {
-        // For property edits we only edit the primary stage's root layer stack
-        // so we only have to log the expected property path change in a change
-        // block for that stage. Note that we don't need to compute and add
-        // a prim stack for properties as the change handling in UsdStage 
-        // doesn't need it.
-        // 
-        // XXX: WE don't currently look for downstream dependencies in dependent
-        // stages for property edits. This is something that will likely be
-        // needed so and we'll accordingly need to change block property changes
-        // for the affected dependent stages as well.
-        UsdStage::_NamespaceEditsChangeBlock::ExpectedNamespaceEditChangeVector
-            changeBlockExpectedChanges({
-                {_processedEdit->editDescription.oldPath, 
-                 _processedEdit->editDescription.newPath}});
-        namespaceEditChangeBlocks.emplace_back(
-            _stage, std::move(changeBlockExpectedChanges));
-    } else {
-        addPrimChangesForStage(_stage);
-        for (const auto &stage : _dependentStages) {
-            addPrimChangesForStage(stage);
-        }
+    addChangesForStage(_stage);
+    for (const auto &stage : _dependentStages) {
+        addChangesForStage(stage);
     }
 
     const bool success = _processedEdit->Apply();
@@ -1419,20 +1413,20 @@ UsdNamespaceEditor::_ProcessedEdit::Apply()
         return false;
     }
 
+    // For both prim and property edits, the dependent stage edits are always 
+    // computed for at least the primary stage so all necessary edits will be 
+    // contained in the dependent stage computed edits. 
     SdfChangeBlock changeBlock;
-
     if (editDescription.IsPropertyEdit()) {
-        // For a property edit, we just have to move the specs in the layers to
-        // edit.
-        for (const auto &layer : layersToEdit) {
-            _ApplyLayerSpecMove(layer, 
-                editDescription.oldPath, editDescription.newPath);
+        // For property edits, we just apply the actual spec moves.
+        for (const auto &[layer, editVec] :
+                dependentStageNamespaceEdits.layerSpecMoves) {
+            for (const auto &edit : editVec) {
+                _ApplyLayerSpecMove(layer, edit.oldPath, edit.newPath);
+            }
         }
     } else {
-        // For prim edits, the dependent stage edits are always computed for 
-        // at least the primary stage so all necessary edits will be contained
-        // in those computed edits.
-        
+        // For prim edits, there are a couple steps:
         // First, we handle any composition arcs that need to be fixed up.
         for (const auto &edit : 
                 dependentStageNamespaceEdits.compositionFieldEdits) {
@@ -1484,11 +1478,6 @@ void
 UsdNamespaceEditor::_EditProcessor::_GatherDependentStageEdits()
 {
     TRACE_FUNCTION();
-
-    // Composition dependencies are only relevant for prim namespace edits.
-    if (_editDesc.IsPropertyEdit()) {
-        return;
-    }
 
     // Get the PcpCaches for each dependent stage. The primary stage is always
     // a dependent so put its cache at the front. Note that _dependentStages 

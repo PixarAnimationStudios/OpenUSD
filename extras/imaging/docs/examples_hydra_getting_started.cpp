@@ -16,16 +16,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 //! [QuadSceneIndex_Example]
 class QuadSceneIndex : public HdSceneIndexBase {
 public:
-    void Populate(bool populate) {
-        if (populate && !_isPopulated) {
-            _SendPrimsAdded({{SdfPath("/Quad"), HdPrimTypeTokens->mesh}});
-        } else if (!populate && _isPopulated) {
-            _SendPrimsRemoved({{SdfPath("/Quad")}});
-        }
-        _isPopulated = populate;
-    }
-
-    virtual HdSceneIndexPrim GetPrim(const SdfPath &primPath) const {
+    HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override {
         static HdSceneIndexPrim prim = {
             HdPrimTypeTokens->mesh,
             HdRetainedContainerDataSource::New(
@@ -76,16 +67,13 @@ public:
         }
     }
 
-    virtual SdfPathVector GetChildPrimPaths(const SdfPath &primPath) {
+    SdfPathVector GetChildPrimPaths(const SdfPath &primPath) override {
         if (primPath == SdfPath::AbsoluteRootPath()) {
             return { SdfPath("/Quad"); }
         } else {
             return {};
         }
     }
-
-private:
-    bool _isPopulated;
 };
 //! [QuadSceneIndex_Example]
 
@@ -94,23 +82,25 @@ class UnboxingSceneIndexFilter : public HdSingleInputFilteringSceneIndexBase {
 public:
     HdSceneIndexBaseRefPtr New(const HdSceneIndexBaseReftPtr &inputSceneIndex) {...}
 
-    virtual HdSceneIndexPrim GetPrim(const SdfPath &primPath) const {
+    HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override {
         HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
         if (prim.primType == HdPrimTypeTokens->cube) {
-            return { TfToken(), nullptr };
+            // We still return this prim in GetChildPrimPaths() so we
+            // need to have a non-null data source.
+            return { TfToken(), HdRetainedContainerDataSource::New() };
         }
         return prim;
     }
 
-    virtual SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const {
+    SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override {
         return _GetInputSceneIndex->GetChildPrimPaths(primPath);
     }
 
 protected:
     HdSingleInputFilteringSceneIndexBase(const HdSceneIndexBaseRefPtr &inputSceneIndex) {...}
 
-    virtual void _PrimsAdded(const HdSceneIndexBase &sender,
-            const HdSceneIndexObserver::AddedPrimEntries &entries) {
+    void _PrimsAdded(const HdSceneIndexBase &sender,
+            const HdSceneIndexObserver::AddedPrimEntries &entries) override {
         HdSceneIndexObserver::AddedPrimEntries filtered;
         std::copy_if(entries.begin(), entries.end(), std::back_inserter(filtered),
             [](const HdSceneIndexObserver::AddedPrimEntry &entry) {
@@ -118,12 +108,12 @@ protected:
         _SendPrimsAdded(filtered);
     }
 
-    virtual void _PrimsRemoved(const HdSceneIndexBase &sender,
-            const HdSceneIndexObserver::RemovedPrimEntries &entries) {
+    void _PrimsRemoved(const HdSceneIndexBase &sender,
+            const HdSceneIndexObserver::RemovedPrimEntries &entries) override {
         _SendPrimsRemoved(entries);
     }
-    virtual void _PrimsDirtied(const HdSceneIndexBase &sender,
-        const HdSceneIndexObserver::DirtiedPrimEntries &entries) {
+    void _PrimsDirtied(const HdSceneIndexBase &sender,
+        const HdSceneIndexObserver::DirtiedPrimEntries &entries) override {
         _SendPrimsDirtied(entries);
     }
 };
@@ -134,7 +124,7 @@ class GreeningSceneIndexFilter : public HdSingleInputFilteringSceneIndexBase {
 public:
     HdSceneIndexBaseRefPtr New(const HdSceneIndexBaseReftPtr &inputSceneIndex) {...}
 
-    virtual HdSceneIndexPrim GetPrim(const SdfPath &primPath) const {
+    HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override {
         HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
         if (HdPrimTypeIsGprim(prim.primType)) {
             HdContainerDataSourceEditor e(prim.dataSource);
@@ -161,24 +151,24 @@ public:
         return prim;
     }
 
-    virtual SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const {
+    SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override {
         return _GetInputSceneIndex->GetChildPrimPaths(primPath);
     }
 
 protected:
     HdSingleInputFilteringSceneIndexBase(const HdSceneIndexBaseRefPtr &inputSceneIndex) {...}
 
-    virtual void _PrimsAdded(const HdSceneIndexBase &sender,
-            const HdSceneIndexObserver::AddedPrimEntries &entries) {
+    void _PrimsAdded(const HdSceneIndexBase &sender,
+            const HdSceneIndexObserver::AddedPrimEntries &entries) override {
         _SendPrimsAdded(entries);
     }
 
-    virtual void _PrimsRemoved(const HdSceneIndexBase &sender,
-            const HdSceneIndexObserver::RemovedPrimEntries &entries) {
+    void _PrimsRemoved(const HdSceneIndexBase &sender,
+            const HdSceneIndexObserver::RemovedPrimEntries &entries) override {
         _SendPrimsRemoved(entries);
     }
-    virtual void _PrimsDirtied(const HdSceneIndexBase &sender,
-        const HdSceneIndexObserver::DirtiedPrimEntries &entries) {
+    void _PrimsDirtied(const HdSceneIndexBase &sender,
+        const HdSceneIndexObserver::DirtiedPrimEntries &entries) override {
         _SendPrimsDirtied(entries);
     }
 };
@@ -320,7 +310,7 @@ public:
 //! [MyUSDAPIAdapter]
 
 //! [SyncWithSceneIndexAPI]
-void MyPrimSync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam,
+void MyPrim::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam,
     HdDirtyBits* dirtyBits, TfToken const& reprToken)
 {
     HdSceneIndexPrim siPrim =

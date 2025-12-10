@@ -35,7 +35,8 @@ _GetPropertyMappings()
         }
         result.push_back(
             UsdImagingDataSourceMapped::AttributeMapping{
-                usdName, HdDataSourceLocator(usdName) });
+                { usdName, HdDataSourceLocator(usdName) }
+            });
     }
 
     for (const TfToken &usdName :
@@ -48,7 +49,8 @@ _GetPropertyMappings()
         }
         result.push_back(
             UsdImagingDataSourceMapped::AttributeMapping{
-                usdName, HdDataSourceLocator(usdName) });
+                { usdName, HdDataSourceLocator(usdName) }
+            });
     }
 
     return result;

@@ -4052,10 +4052,14 @@ framework.
 :ref:`usdview <toolset:usdview>` has also been updated to use validators.
 Use **Window** -> **USD Validation** (or press "V") to bring up a view that lets 
 you select validators and suites, run validation tests using contexts created 
-from the selected validators/suites (with an optional time range), and view any 
-validation errors that occur. The following screenshot shows the USD Validation
-view after running the selected validators on the current stage, with the
-resulting errors shown.
+from the selected validators/suites (with an optional time range), and view or
+select any validation errors that occur. Double clicking an error will select 
+the error site prim in the prim tree view. UsdviewAPI includes 
+`selectedValidationErrors` and `validationErrors` properties to query validation
+errors after a validation run. These properties can then be used from the Python
+interpreter to examine errors or apply fixes. The following screenshot shows
+the USD Validation view after running the selected validators on the current
+stage, with the resulting errors shown.
 
 .. image:: glossary_usdviewValidation.png
     :width: 800

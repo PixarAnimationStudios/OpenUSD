@@ -85,7 +85,7 @@ shader UsdPreviewSurfaceParameters
     
     int isDoubleSided = 0;
     getattribute("user:hydra:doubleSided", isDoubleSided);
-    int isFrontSide = !backfacing();
+    int isFrontSide = (dot(Ng, I) < 0.0);
 
     if (isDoubleSided || isFrontSide) {
 

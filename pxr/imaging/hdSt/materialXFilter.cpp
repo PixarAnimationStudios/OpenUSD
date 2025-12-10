@@ -77,9 +77,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (ND_image_color3)
     (file)
 
-    // Colorspace Tokens
-    (sourceColorSpace)
-
     // Anonymization constants
     (NG_Anonymized)
 
@@ -347,6 +344,7 @@ _GetMxInputAsHdTextureParam(
 static void
 _AddDefaultMtlxTextureValues(
     mx::NodeDefPtr const& nodeDef,
+    TfToken const& fileParamName,
     std::map<TfToken, VtValue>* hdTextureParams)
 {    
     // Add the stdlib texture node default values 
@@ -361,8 +359,10 @@ _AddDefaultMtlxTextureValues(
 
         // Set the default colorSpace to be 'raw'. This allows MaterialX to 
         // handle colorspace transforms.
-        (*hdTextureParams) [_tokens->sourceColorSpace] =
-            VtValue(HdStTokens->raw);
+        TfToken fileColorSpaceParamName(SdfPath::JoinIdentifier(
+            SdfFieldKeys->ColorSpace, fileParamName));
+        (*hdTextureParams) [fileColorSpaceParamName] = VtValue(HdStTokens->raw);
+
     }
 
     // Add custom texture node default values
@@ -942,7 +942,7 @@ _GetDefaultTexcoordName()
 // texture node to the terminal node
 static void
 _UpdateTextureNode(
-    TfToken mtlxParamName,
+    TfToken mtlxFileParamName,
     HdMaterialNetwork2* hdNetwork,
     SdfPath const& terminalNodePath,
     SdfPath const& textureNodePath)
@@ -953,9 +953,20 @@ _UpdateTextureNode(
     hdTextureNode.parameters[_tokens->st] = TfToken(_GetDefaultTexcoordName());
 
     // Gather the default Texture Parameters
+
+    // Get the name of the file parameter from the mtlxFileParamName which is
+    // of the form nodeName_fileParamName.
+    const std::string mtlxFileParamNameStr(mtlxFileParamName);
+    const auto underscorePos = mtlxFileParamNameStr.find('_');
+    const std::string fileParamName = 
+        underscorePos != std::string_view::npos
+            ? mtlxFileParamNameStr.substr(underscorePos+1)
+            : _tokens->file; 
+
     std::map<TfToken, VtValue> hdParameters;
     _AddDefaultMtlxTextureValues(
         HdMtlxGetNodeDef(hdTextureNode.nodeTypeId),
+        TfToken(fileParamName),
         &hdParameters);
 
     // Gather the authored Texture Parameters
@@ -973,15 +984,15 @@ _UpdateTextureNode(
 
     // Make and add a new connection to the terminal node
     HdMaterialConnection2 textureConn;
-    textureConn.upstreamOutputName = mtlxParamName;
+    textureConn.upstreamOutputName = mtlxFileParamName;
     textureConn.upstreamNode = textureNodePath;
     hdNetwork->nodes[terminalNodePath].
-        inputConnections[mtlxParamName] = {textureConn};
+        inputConnections[mtlxFileParamName] = {textureConn};
 
     TF_DEBUG(HDST_MTLX).Msg(
         "HdSt - Connecting texture node <%s> to terminal node <%s> through '%s'"
         ".\n", textureNodePath.GetAsString().c_str(),
-        terminalNodePath.GetAsString().c_str(), mtlxParamName.GetText());
+        terminalNodePath.GetAsString().c_str(), mtlxFileParamName.GetText());
 
     if (hdTextureNode.inputConnections.find(_tokens->defaultInput)
         != hdTextureNode.inputConnections.end()) {
@@ -1055,7 +1066,9 @@ _ReplaceFilenameInput(
 
     // Gather texture parameters on the found mxTextureNode
     std::map<TfToken, VtValue> terminalTextureParams;
-    _AddDefaultMtlxTextureValues(mxTextureNodeDef, &terminalTextureParams);
+    _AddDefaultMtlxTextureValues(
+        mxTextureNodeDef, TfToken(mxTextureNodefilenameInputName),
+        &terminalTextureParams);
     for (TfToken const& mxInputName: _mxTextureParamTokens->allTokens) {
         const mx::InputPtr mxInput = mxTextureNode->getInput(mxInputName);
         // Get the Hydra equivalents for the Mx Texture node parameters

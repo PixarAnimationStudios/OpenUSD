@@ -298,6 +298,7 @@ private:
     bool _HasConflictingChildSpecsInUneditedNodes(
         const PcpNodeRef &siteEditNode,
         const TfToken &childName,
+        const bool isProperty, 
         PcpNodeRef *firstConflictingNode);
 
     const PcpCache *_cache;
@@ -786,7 +787,8 @@ _PrimIndexDependentNodeEditProcessor::_HasUneditedUpstreamSpecConflicts(
         // Specifically look for conflicts in the subtree for the namespace 
         // child of the node's path.
         if (!_HasConflictingChildSpecsInUneditedNodes(
-            siteEditNode, siteEditPath.GetNameToken(), &firstConflictingNode)) {
+                siteEditNode, siteEditPath.GetNameToken(), 
+                siteEditPath.IsPrimPropertyPath(), &firstConflictingNode)) {
             return false;
         }
     // Otherwise, we just need to look for conflicts with the node path.
@@ -865,6 +867,7 @@ bool
 _PrimIndexDependentNodeEditProcessor::_HasConflictingChildSpecsInUneditedNodes(
     const PcpNodeRef &siteEditNode,
     const TfToken &childName,
+    const bool isProperty,
     PcpNodeRef *firstConflictingNode)
 {
     TRACE_FUNCTION();
@@ -904,8 +907,9 @@ _PrimIndexDependentNodeEditProcessor::_HasConflictingChildSpecsInUneditedNodes(
             const PcpLayerStackRefPtr &layerStack = 
                 subtreeNode.GetLayerStack();
             
-            // Map the child path into the subtree node.
-            const SdfPath subtreeNodeChildPath = 
+            // Map the property or child path into the subtree node.
+            const SdfPath subtreeNodeChildPath = isProperty ? 
+                subtreeNode.GetPath().AppendProperty(childName) :
                 subtreeNode.GetPath().AppendChild(childName);
 
             // If the node has specs we then have to compose whether the node
@@ -1504,6 +1508,16 @@ void _PrimIndexDependentNodeEditProcessor::_ProcessNextImpliedClass(
         /*isImpliedClassTask*/ true});
 }
 
+// Compare function for sorting spec move edit descriptions by old path
+// first and then by new path.
+static bool _MoveEditDescLessThan (
+    const PcpDependentNamespaceEdits::MoveEditDescription &lhs, 
+    const PcpDependentNamespaceEdits::MoveEditDescription &rhs) 
+{
+    return std::tie(lhs.oldPath, lhs.newPath) < 
+            std::tie(rhs.oldPath, rhs.newPath);
+}
+
 // Finalizes the spec move edits into a single list of edits that can all be
 // performed in order with no errors.
 static void 
@@ -1511,16 +1525,6 @@ _FinalizeSpecMoveEdits(PcpDependentNamespaceEdits *edits,
     _LayerSpecMovesScratch &&layerSpecMovesScratch)
 {
     TRACE_FUNCTION();
-
-    // Compare function for sorting spec move edit descriptions by old path
-    // first and then by new path.
-    auto specMoveDescLessThan = [](
-        const PcpDependentNamespaceEdits::MoveEditDescription &lhs, 
-        const PcpDependentNamespaceEdits::MoveEditDescription &rhs) 
-    {
-        return std::tie(lhs.oldPath, lhs.newPath) < 
-                std::tie(rhs.oldPath, rhs.newPath);
-    };
 
     // For each layer, we're going to want to perform each prim spec move in
     // order, so we need to make sure we don't have any redundant edits as the
@@ -1532,7 +1536,7 @@ _FinalizeSpecMoveEdits(PcpDependentNamespaceEdits *edits,
 
         if (specMoves.size() > 1) {
             // Sort the spec edits, by oldPath and then new path.
-            std::sort(specMoves.begin(), specMoves.end(), specMoveDescLessThan);
+            std::sort(specMoves.begin(), specMoves.end(), _MoveEditDescLessThan);
 
             // Remove any duplicate edits which will be adjacent because of 
             // sorting.
@@ -1576,7 +1580,7 @@ _FinalizeSpecMoveEdits(PcpDependentNamespaceEdits *edits,
                 impliedClassSpecMove.oldPath, SdfPath()};
             auto insertIt = std::lower_bound(
                 specMoves.begin(), specMoves.end(), specDelete, 
-                specMoveDescLessThan);
+                _MoveEditDescLessThan);
             if (insertIt == specMoves.end() || 
                     insertIt->oldPath != specDelete.oldPath) {
                 // Insert to maintain sort order 
@@ -1617,12 +1621,45 @@ _FinalizeSpecMoveEdits(PcpDependentNamespaceEdits *edits,
     }  
 }
 
+// Finalizes the dependent cache path changes by removing duplicates.
+static void _FinalizeDependentCachePathChanges(PcpDependentNamespaceEdits *edits,
+    const std::vector<const PcpCache *> &dependentCaches) 
+{
+    // Compare function for checking equality between  move edit descriptions by 
+    // checking if both old path and new path are equal.
+    auto moveEditDescEqualTo = [](
+        const PcpDependentNamespaceEdits::MoveEditDescription &lhs, 
+        const PcpDependentNamespaceEdits::MoveEditDescription &rhs) 
+    {
+        return std::tie(lhs.oldPath, lhs.newPath) == 
+                std::tie(rhs.oldPath, rhs.newPath);
+    };
+
+    // Remove any duplicate edits which will be adjacent because of 
+    // sorting. If two edits are moving the same path, they are either
+    // redundant or an error. If an error, the actual spec move will
+    // report it but leave both edits in, so we leave both in here as well.
+    for (const auto &depCache : dependentCaches) {
+        auto &dependentCachePathChanges = 
+            edits->dependentCachePathChanges[depCache];
+        if (dependentCachePathChanges.size() <= 1) {
+            return;
+        }
+
+        std::sort(dependentCachePathChanges.begin(), 
+            dependentCachePathChanges.end(), _MoveEditDescLessThan);
+        auto last = std::unique(dependentCachePathChanges.begin(), 
+            dependentCachePathChanges.end(), moveEditDescEqualTo);
+        dependentCachePathChanges.erase(last, dependentCachePathChanges.end());
+    }
+}
+
 }; // End anonymous namespace
 
 PcpDependentNamespaceEdits
 PcpGatherDependentNamespaceEdits(
-    const SdfPath &oldPrimPath,
-    const SdfPath &newPrimPath,
+    const SdfPath &oldPath,
+    const SdfPath &newPath,
     const SdfLayerHandleVector &affectedLayers,
     const PcpLayerStackRefPtr &affectedRelocatesLayerStack,
     const SdfLayerHandle &addRelocatesToLayerStackEditLayer,
@@ -1672,7 +1709,7 @@ PcpGatherDependentNamespaceEdits(
         PcpLayerRelocatesEditBuilder builder(
             affectedRelocatesLayerStack, addRelocatesToLayerStackEditLayer);
         std::string error;
-        if (!builder.Relocate(oldPrimPath, newPrimPath, &error)) {
+        if (!builder.Relocate(oldPath, newPath, &error)) {
             TF_CODING_ERROR("Cannot get relocates edits because: %s", 
                 error.c_str());                       
         }
@@ -1719,18 +1756,24 @@ PcpGatherDependentNamespaceEdits(
             const SdfLayerHandle &layer = entry.first;
             const bool hasRelocatesEdits = entry.second;
 
-            // Find all prim indexes which depend on the old prim path in this
-            // layer. We recurse on site because moving or deleting a prim spec
-            // moves also moves all descendant specs and we need to fix up 
+            
+            // Find all prim index or property paths which depend on the old 
+            // path in this layer. Note that oldPath can be a prim or property
+            // path, and FindSiteDependencies will return prim paths or property 
+            // paths, respectively.
+            // We recurse on site because moving or deleting a prim spec
+            // also moves all descendant specs and we need to fix up 
             // direct dependencies on those paths as well. We do not recurse
             // on the found prim indexes since the edits affecting the directly
             // dependent prim index automatically affect namespace descendant
             // prim indexes. We also filter on existing computed prim indexes
             // as we will not be force computing prim indexes that have not
-            // been computed yet to process edit dependencies.
+            // been computed yet to process edit dependencies. If oldPath is a 
+            // property, this filters on whether its parent prim's index has
+            // been computed.
             PcpDependencyVector deps =
                 cache->FindSiteDependencies(
-                    layer, oldPrimPath,
+                    layer, oldPath,
                     PcpDependencyTypeAnyNonVirtual,
                     /* recurseOnSite */ true,
                     /* recurseOnIndex */ false,
@@ -1740,7 +1783,7 @@ PcpGatherDependentNamespaceEdits(
                 "Found %lu dependencies for spec edit at site @%s@<%s>.", 
                 deps.size(),
                 layer->GetIdentifier().c_str(),
-                oldPrimPath.GetText());
+                oldPath.GetText());
 
             using _DependencySet =
                 std::unordered_set<std::pair<SdfPath, SdfPath>, TfHash>; 
@@ -1760,14 +1803,15 @@ PcpGatherDependentNamespaceEdits(
                 }
 
                 _PRINT_DEBUG_SCOPE(
-                    "Processing dependency for prim index <%s> which depends "
-                    "on site path <%s>", 
+                    "Processing dependency on prim index <%s> from site path <%s>", 
                     dep.indexPath.GetText(), dep.sitePath.GetText());
 
                 // We filtered on existing prim indexes so the dependent prim
-                // index must be in the cache.
+                // index must be in the cache. dep.indexPath can be a property
+                // path, so we extract a prim path from it first.
+                const SdfPath& primIndexPath = dep.indexPath.GetPrimPath();
                 const PcpPrimIndex *primIndex = 
-                    cache->FindPrimIndex(dep.indexPath);
+                    cache->FindPrimIndex(primIndexPath);
                 if (!TF_VERIFY(primIndex)) {
                     continue;
                 }
@@ -1789,7 +1833,7 @@ PcpGatherDependentNamespaceEdits(
                         // XXX: This is the part that is a little oversimplified
                         // as was mentioned earlier in this function.
                         dependentNodeProcessor.AddProcessEditsAtNodeTask(
-                            node, oldPrimPath, newPrimPath, 
+                            node, oldPath, newPath, 
                             /*willBeRelocated = */ hasRelocatesEdits);
                     });
                 dependentNodeProcessor.ProcessTasks();               
@@ -1846,6 +1890,7 @@ PcpGatherDependentNamespaceEdits(
     // when multiple dependent caches are involved. The finalize step ensures
     // we return a fully executable set of edits with no redundancies and/or
     // inconsistencies.
+    _FinalizeDependentCachePathChanges(&edits, dependentCaches);
     _FinalizeSpecMoveEdits(&edits, std::move(layerSpecMovesScratch));
     return edits;
 }

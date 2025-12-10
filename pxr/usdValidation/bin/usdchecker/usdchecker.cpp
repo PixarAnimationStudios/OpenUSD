@@ -141,6 +141,11 @@ _ValidateArgs(const Args& args) {
         return false;
     }
 
+    // Warn if deprecated --arkit flag is used
+    if (args.arkit) {
+        std::cerr<<"Warning: --arkit is deprecated.\n";
+    }
+
     return true;
 }
 
@@ -539,19 +544,6 @@ _UsdChecker(const Args& args)
         UsdValidationRegistry::GetInstance();
     UsdValidationValidatorMetadataVector metadata = 
         validationReg.GetAllValidatorMetadata();
-    if (!args.arkit) {
-        // Remove metadata which have the UsdzValidators keyword, in its
-        // keyword vector.
-        metadata.erase(
-            std::remove_if(
-                metadata.begin(), metadata.end(), 
-                [](const UsdValidationValidatorMetadata &meta) {
-                    return std::find(
-                        meta.keywords.begin(), meta.keywords.end(), 
-                        UsdUtilsValidatorKeywordTokens->UsdzValidators) != 
-                        meta.keywords.end();
-                }), metadata.end());
-    }
     if (args.noAssetChecks) {
         // Remove metadata which have the stageMetadataChecker validator
         // name.
@@ -663,13 +655,12 @@ main(int argc, char const *argv[]) {
     CLI::App app(
         "Utility for checking the compliance of a given USD stage or a USDZ "
         "package.  Only the first sample of any relevant time-sampled "
-        "attribute is checked, currently.  General USD checks are always "
-        "performed, and more restrictive checks targeted at distributable "
-        "consumer content are also applied when the \"--arkit\" option is "
-        "specified.", progName);
+        "attribute is checked, currently.", progName);
 
     Args args;
     _Configure(&app, args);
+    deprecate_option(&app, "--arkit");
+
     CLI11_PARSE(app, argc, argv);
     return _UsdChecker(args);
 }

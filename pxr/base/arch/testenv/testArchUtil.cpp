@@ -4,10 +4,9 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#define _CRT_SECURE_NO_WARNINGS
-
 #include "pxr/pxr.h"
 #include "pxr/base/arch/testArchUtil.h"
+#include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/debugger.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/error.h"
@@ -47,6 +46,7 @@ namespace {
  *     is true, it spawns a thread which is alive during the crash.  If the
  *     program fails to crash, this aborts.
  */
+ARCH_NO_SANITIZE_ADDRESS_FUNCTION
 void
 Arch_ReadInvalidAddresses(bool spawnthread)
 {

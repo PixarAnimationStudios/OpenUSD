@@ -3,7 +3,12 @@ set(PXR_PACKAGE usd)
 
 pxr_python_bin(usdzip
     DEPENDENCIES
+        tf
+        sdf
         usd
+        ar
+        usdUtils
+        usdValidation
 )
 
 pxr_register_test(testUsdZipInputFiles

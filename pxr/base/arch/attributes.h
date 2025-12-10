@@ -144,6 +144,29 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// [[no_unique_address]] tag.
 #   define ARCH_EMPTY_BASES
 
+/// Macro used to indicate that a function should not be instrumented
+/// with address santizers.
+///
+/// In general, this attribute should be used sparingly. Its purpose
+/// is mostly for tests that when built with address sanitizer will trigger
+/// a false-positive, meaning the test is checking something that address
+/// sanitizer is trying to catch.
+///
+/// Its important to understand that this attribute will only disable
+/// address sanitizer instrumentation for the function it's applied to.
+/// Any sanitized functions called from the target function
+/// will still be instrumented.
+///
+/// This attribute is used as follows:
+/// \code
+///    ARCH_NO_SANITIZE_ADDRESS_FUNCTION void Func() {
+///        ...
+///    }
+/// \endcode
+///
+/// \hideinitializer
+#   define ARCH_NO_SANITIZE_ADDRESS_FUNCTION
+
 #elif defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
 
 #   define ARCH_PRINTF_FUNCTION(_fmt, _firstArg) \
@@ -157,6 +180,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 #   define ARCH_USED_FUNCTION __attribute__((used))
 #   define ARCH_EMPTY_BASES
 
+#if defined(ARCH_SANITIZE_ADDRESS)
+#   define ARCH_NO_SANITIZE_ADDRESS_FUNCTION \
+        __attribute__((no_sanitize_address))
+#else
+#   define ARCH_NO_SANITIZE_ADDRESS_FUNCTION
+#endif
+
+// Function attributes for other sanitizers (thread, undefined behavior, etc.)
+// intentionally omitted until support is added
+
 #elif defined(ARCH_COMPILER_MSVC)
 
 #   define ARCH_PRINTF_FUNCTION(_fmt, _firstArg)
@@ -167,6 +200,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 #   define ARCH_UNUSED_FUNCTION
 #   define ARCH_USED_FUNCTION
 #   define ARCH_EMPTY_BASES __declspec(empty_bases)
+
+#if defined(ARCH_SANITIZE_ADDRESS)
+#   define ARCH_NO_SANITIZE_ADDRESS_FUNCTION \
+        __declspec(no_sanitize_address)
+#else
+#   define ARCH_NO_SANITIZE_ADDRESS_FUNCTION
+#endif
+
+// Function attributes for other sanitizers (thread, undefined behavior, etc.)
+// intentionally omitted until support is added
 
 #else
 

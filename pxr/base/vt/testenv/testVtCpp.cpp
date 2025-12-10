@@ -57,6 +57,7 @@
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/span.h"
 
+#include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/pragmas.h"
@@ -572,33 +573,6 @@ static void testArray() {
         TF_AXIOM(array.cback() == "aloha");
         TF_AXIOM(aloha == "aloha");
     }
-
-// Note: These specific test cases below are disabled when compiling
-// for wasm. The way the resize is handled does not trigger a
-// std::bad_alloc exception but instead triggers a native exception
-// from the host that bubbles up to the JS runtime environment.
-#if !defined(ARCH_OS_WASM_VM)
-    {
-        // Test that attempts to create overly large arrays throw
-        // std::bad_alloc.
-        VtIntArray ia;
-        try {
-            ia.resize(ia.max_size());
-            TF_FATAL_ERROR("Did not throw std::bad_alloc");
-        }
-        catch (std::bad_alloc const &) {
-            // pass
-        }
-
-        try {
-            da.resize(da.max_size());
-            TF_FATAL_ERROR("Did not throw std::bad_alloc");
-        }
-        catch (std::bad_alloc const &) {
-            // pass
-        }
-    }
-#endif
     {
         // Test that checks that MakeUnique creates a unique copy of the data 
         // if necessary.
@@ -620,6 +594,42 @@ static void testArray() {
         }
     }
 }
+
+// When compiling with address sanitizer, disable `testArrayBadAlloc`.
+// With an address sanitized build the following test won't throw the
+// expected std::bad_alloc, so only run the test for non-sanitized builds.
+// Note that annotating the test function with ARCH_NO_SANITIZE_ADDRESS
+// won't work since the assertion occurs within VtArray and not the test.
+//
+// When compiling for wasm, disable `testArrayBadAlloc`. The way the resize
+// is handled does not trigger a std::bad_alloc exception but instead
+// triggers a native exception from the host that bubbles up to the JS
+// runtime environment.
+#if !defined(ARCH_SANITIZE_ADDRESS) && !defined(ARCH_OS_WASM_VM)
+static void testArrayBadAlloc()
+{
+    // Test that attempts to create overly large arrays throw
+    // std::bad_alloc
+
+    VtIntArray ia;
+    try {
+        ia.resize(ia.max_size());
+        TF_FATAL_ERROR("Did not throw std::bad_alloc");
+    }
+    catch (std::bad_alloc const &) {
+        // pass
+    }
+
+    VtDoubleArray da;
+    try {
+        da.resize(da.max_size());
+        TF_FATAL_ERROR("Did not throw std::bad_alloc");
+    }
+    catch (std::bad_alloc const &) {
+        // pass
+    }
+}
+#endif
 
 static void testRecursiveDictionaries()
 {
@@ -2275,6 +2285,10 @@ testVtValueTransform()
 int main(int argc, char *argv[])
 {
     testArray();
+
+#if !defined(ARCH_SANITIZE_ADDRESS) && !defined(ARCH_OS_WASM_VM)
+    testArrayBadAlloc();
+#endif
 
     testDictionary();
     testDictionaryKeyPathAPI();

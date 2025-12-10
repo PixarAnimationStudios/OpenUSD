@@ -28,6 +28,7 @@
 #include "pxr/usd/sdr/registry.h"
 
 #include "pxr/usd/sdf/types.h"
+#include "pxr/usd/sdf/schema.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/hash.h"
@@ -615,6 +616,36 @@ _GetFallbackForNode(
     return VtValue();
 }
 
+TfToken
+_GetFilePropName(
+    SdrShaderNodeConstPtr const& sdrNode,
+    SdfPath const& nodePath,
+    TfToken const& outputName)
+{
+    SdrTokenVec const& assetIdentifierPropertyNames =
+        sdrNode->GetAssetIdentifierInputNames();
+
+    if (assetIdentifierPropertyNames.empty()) {
+        TF_WARN("Invalid number of asset identifier input names: %s", 
+                nodePath.GetText());
+        return TfToken();
+    }
+    
+    TfToken fileProp = assetIdentifierPropertyNames[0];
+    // Some MaterialX nodes can have multiple file inputs. Take the first
+    // one that matches the param name. If we lookup a <trilinear> texture
+    // against an output named "N42_fileY", we will find the right one.
+    if (assetIdentifierPropertyNames.size() > 1) {
+        for (auto const& propName: assetIdentifierPropertyNames) {
+            if (TfStringEndsWith(outputName.GetString(), propName)) {
+                fileProp = propName;
+                break;
+            }
+        }
+    }
+    return fileProp;
+}
+
 static void
 _MakeMaterialParamsForTexture(
     HdMaterialNetwork2 const& network,
@@ -672,18 +703,6 @@ _MakeMaterialParamsForTexture(
     }
     texParam.isPremultiplied = premultiplyTexture;
 
-    // Get texture's sourceColorSpace hint 
-    // XXX: This is a workaround for Presto. If there's no colorspace token, 
-    // check if there's a colorspace string.
-    TfToken sourceColorSpace = _ResolveParameter(
-        node, sdrNode, _tokens->sourceColorSpace, TfToken());
-    if (sourceColorSpace.IsEmpty()) {
-        const std::string sourceColorSpaceStr = _ResolveParameter(
-            node, sdrNode, _tokens->sourceColorSpace, 
-            HdStTokens->colorSpaceAuto.GetString());
-        sourceColorSpace = TfToken(sourceColorSpaceStr);
-    }
-
     // Extract texture file path
     bool useTexturePrimToFindTexture = true;
     
@@ -691,23 +710,12 @@ _MakeMaterialParamsForTexture(
 
     HdStTextureIdentifier textureId;
 
-    SdrTokenVec const& assetIdentifierPropertyNames = 
-        sdrNode->GetAssetIdentifierInputNames();
-
-    if (!assetIdentifierPropertyNames.empty()) {
-        TfToken fileProp = assetIdentifierPropertyNames[0];
-
-        // Some MaterialX nodes can have multiple file inputs. Take the first
-        // one that matches the param name. If we lookup a <trilinear> texture
-        // against an output named "N42_fileY", we will find the right one.
-        if (assetIdentifierPropertyNames.size() > 1) {
-            for (auto const& propName: assetIdentifierPropertyNames) {
-                if (TfStringEndsWith(outputName.GetString(), propName)) {
-                    fileProp = propName;
-                    break;
-                }
-            }
-        }
+    const TfToken fileProp = _GetFilePropName(sdrNode, nodePath, outputName);
+    if (!fileProp.IsEmpty()) {
+        TfToken colorSpaceParamName(SdfPath::JoinIdentifier(
+            SdfFieldKeys->ColorSpace, fileProp));
+        TfToken sourceColorSpace = _ResolveParameter(
+            node, sdrNode, colorSpaceParamName, HdStTokens->colorSpaceAuto);
 
         auto const& it = node.parameters.find(fileProp);
         if (it != node.parameters.end()){
@@ -781,9 +789,7 @@ _MakeMaterialParamsForTexture(
                 fallback,
                 /*defaultToFallback=*/ true);
         }
-    } else {
-        TF_WARN("Invalid number of asset identifier input names: %s", 
-                nodePath.GetText());
+
     }
 
     // Check to see if a primvar or transform2d node is connected to 'st' or 
@@ -1052,7 +1058,7 @@ _MakeParamsForInputParameter(
                 }
             }
         }
-    } 
+    }
 
     // Nothing (supported) was connected, output a fallback material param    
     _MakeMaterialParamsForUnconnectedParam(paramName, params);

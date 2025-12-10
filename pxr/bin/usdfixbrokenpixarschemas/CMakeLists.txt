@@ -5,6 +5,8 @@ pxr_python_bin(usdfixbrokenpixarschemas
     DEPENDENCIES
         sdf
         usd
+        usdUtils
+        usdValidation
 )
 
 # XXX:

@@ -9,9 +9,9 @@ function(prman_osl SHADER_NAME SHADER_DIR)
     set(infile ${SHADER_DIR}/${SHADER_NAME}.osl)
     set(outfile ${CMAKE_CURRENT_BINARY_DIR}/${SHADER_NAME}.oso)
     add_custom_command(
-        OUTPUT ${outfile}
-        COMMAND ${RENDERMAN_BINARY_DIR}/oslc -o ${outfile} ${infile}
-        MAIN_DEPENDENCY ${infile}
+        OUTPUT "${outfile}"
+        COMMAND "${RENDERMAN_BINARY_DIR}/oslc" "-I${RENDERMAN_OSL_INCLUDE_DIR}" -o "${outfile}" "${infile}"
+        MAIN_DEPENDENCY "${infile}"
         VERBATIM
     )
     add_custom_target(${SHADER_NAME}_target DEPENDS ${outfile})

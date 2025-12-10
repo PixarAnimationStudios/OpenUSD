@@ -43,6 +43,9 @@ and supported on macOS and Windows.
 It is also possible to build USD libraries that can be embedded
 in iOS and visionOS apps.
 
+Additionally, USD can be built to run in a WebAssembly virtual machine for use
+on the web or in other runtime environments such as Node.js.
+
 Please see [VERSIONS.md](VERSIONS.md) for explicitly tested versions. 
 
 Dependencies
@@ -190,6 +193,28 @@ then build and install USD into `C:\path\to\my_usd_install_dir`.
 
 ```
 C:\> python OpenUSD\build_scripts\build_usd.py "C:\path\to\my_usd_install_dir"
+```
+
+##### WebAssembly:
+
+A WebAssembly (Wasm) build can be produced using the Emscripten Compiler Toolchain on
+Linux, macOS or Windows. Before building, follow the instructions for 
+[downloading and installing](https://emscripten.org/docs/getting_started/downloads.html)
+the toolchain.
+
+The WebAssembly build will produce static libraries built in monolithic mode.
+Command line tools are not built for this target.
+
+The following will download dependencies and produce a 32 bit Wasm build.
+
+```
+> python OpenUSD/build_scripts/build_usd.py --build-target wasm /path/to/my_usd_wasm_build_dir
+```
+
+Or for a 64 bit Wasm build:
+
+```
+> python OpenUSD/build_scripts/build_usd.py --build-target wasm64 /path/to/my_usd_wasm64_build_dir
 ```
 
 #### 4. Try it out

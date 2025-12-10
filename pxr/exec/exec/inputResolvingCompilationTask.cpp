@@ -64,11 +64,6 @@ Exec_InputResolvingCompilationTask::_Compile(
                     outputKeyIdentity);
             if (cacheHit) {
                 *resultOutput = cacheHit->output;
-
-                // TODO: If we found an output is already compiled for the key,
-                // *but* it was added during a prior round of compilation, then
-                // we need to spawn a traversal task to verify that adding the
-                // connection will not introduce a cycle.
                 continue;
             }
 

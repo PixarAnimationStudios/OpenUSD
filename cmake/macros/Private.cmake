@@ -328,7 +328,7 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
         if (EMSCRIPTEN)
             string(REGEX REPLACE "^lib\\/" "/" emscriptenLocalPath "${resourcesPath}")
 
-            list(APPEND emscriptenResourceFiles "--preload-file ${emscriptenResourceFile}@${emscriptenLocalPath}/${dirPath}/${destFileName}")
+            target_link_options(${NAME} PUBLIC "SHELL:--embed-file ${emscriptenResourceFile}@${emscriptenLocalPath}/${dirPath}/${destFileName}")
         endif()
         install(
             FILES ${resourceFile}
@@ -337,9 +337,6 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
         )
     endforeach()
 
-    if (EMSCRIPTEN)
-        target_link_options(${NAME} PUBLIC ${emscriptenResourceFiles})
-    endif()
 endfunction() # _install_resource_files
 
 function(_install_pyside_ui_files LIBRARY_NAME)

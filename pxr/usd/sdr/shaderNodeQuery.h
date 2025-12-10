@@ -268,16 +268,25 @@ public:
     /// represented by the "nth" row of the returned structure of GetValues.
     /// S is not constant, and may vary from row to row.
     ///
+    /// Each SdrShaderNodePtrVec is sorted alphabetically by identifier,
+    /// then sourceType.
+    ///
     /// If the query had no calls to SelectDistinct, returns an empty vector.
     SDR_API
     std::vector<SdrShaderNodePtrVec> GetShaderNodesByValues() const;
 
     /// Returns all shader nodes that match the constraints of the query.
+    ///
+    /// The resulting SdrShaderNodePtrVec is sorted alphabetically by identifier,
+    /// then sourceType.
     SDR_API
     SdrShaderNodePtrVec GetAllShaderNodes() const;
 
 private:
     friend class SdrRegistry;
+
+    /// Returns true if the contents of this result are well-formed.
+    bool _IsValid() const;
 
     std::vector<TfToken> _keys;
     std::vector<std::vector<VtValue>> _values;

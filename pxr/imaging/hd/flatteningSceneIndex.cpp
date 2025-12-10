@@ -244,7 +244,9 @@ HdDataSourceBaseHandle
 _PrimLevelWrappingDataSource::Get(
         const TfToken &name)
 {
-    TRACE_FUNCTION();
+    // Tracing disabled by default due to the high call count
+    // and small runtime (< 1 microsecond).
+    //TRACE_FUNCTION();
 
     const TfTokenVector &dataSourceNames =
         _flatteningSceneIndex.GetFlattenedDataSourceNames();
@@ -279,7 +281,9 @@ _PrimLevelWrappingDataSource::Get(
 HdContainerDataSourceHandle
 _PrimLevelWrappingDataSource::_GetPrimSource()
 {
-    TRACE_FUNCTION();
+    // Tracing disabled by default due to the high call count
+    // and small runtime (< 1 microsecond).
+    //TRACE_FUNCTION();
 
     if (std::optional<HdContainerDataSourceHandle> const primSource =
             _primSourceCache.Get()) {

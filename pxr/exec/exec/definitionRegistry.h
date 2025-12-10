@@ -371,29 +371,23 @@ private:
     mutable tbb::concurrent_unordered_map<TfType, bool, TfHash>
     _computationsRegisteredForSchema;
 
+    using _BuiltinComputationMap =
+        std::unordered_map<
+            TfToken,
+            std::unique_ptr<Exec_ComputationDefinition>,
+            TfHash>;
+
     // Map from computationName to builtin stage computation
     // definition.
-    std::unordered_map<
-        TfToken,
-        std::unique_ptr<Exec_ComputationDefinition>,
-        TfHash>
-    _builtinStageComputationDefinitions;
+    _BuiltinComputationMap _builtinStageComputationDefinitions;
 
     // Map from computationName to builtin prim computation
     // definition.
-    std::unordered_map<
-        TfToken,
-        std::unique_ptr<Exec_ComputationDefinition>,
-        TfHash>
-    _builtinPrimComputationDefinitions;
+    _BuiltinComputationMap _builtinPrimComputationDefinitions;
 
     // Map from computationName to builtin attribute computation
     // definition.
-    std::unordered_map<
-        TfToken,
-        std::unique_ptr<Exec_ComputationDefinition>,
-        TfHash>
-    _builtinAttributeComputationDefinitions;
+    _BuiltinComputationMap _builtinAttributeComputationDefinitions;
 
     // Map from constant value to the unique key used to identify it.
     pxr_tsl::robin_map<VtValue, TfToken, TfHash> _constantValueToToken;

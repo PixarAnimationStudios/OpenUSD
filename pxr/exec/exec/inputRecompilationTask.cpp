@@ -7,6 +7,7 @@
 #include "pxr/exec/exec/inputRecompilationTask.h"
 
 #include "pxr/exec/exec/compilationState.h"
+#include "pxr/exec/exec/cycleDetectingTask.h"
 #include "pxr/exec/exec/inputKey.h"
 #include "pxr/exec/exec/inputResolvingCompilationTask.h"
 #include "pxr/exec/exec/nodeRecompilationInfo.h"
@@ -23,7 +24,7 @@ Exec_InputRecompilationTask::_Compile(
     TaskPhases &taskPhases)
 {
     taskPhases.Invoke(
-    [this, &compilationState](TaskDependencies &taskDeps) {
+    [this, &compilationState](TaskDependencies &deps) {
         TRACE_FUNCTION_SCOPE("recompile input");
 
         // Fetch recompilation info for the input's node.
@@ -57,7 +58,7 @@ Exec_InputRecompilationTask::_Compile(
 
         // Re-resolve and recompile the input's dependencies.
         for (size_t i = 0; i < numInputKeys; ++i) {
-            taskDeps.NewSubtask<Exec_InputResolvingCompilationTask>(
+            deps.NewSubtask<Exec_InputResolvingCompilationTask>(
                 compilationState,
                 *inputKeys[i],
                 originObject,
@@ -67,7 +68,27 @@ Exec_InputRecompilationTask::_Compile(
         }
     },
 
-    [this, &compilationState](TaskDependencies &taskDeps) {
+    [this, &compilationState](TaskDependencies &deps) {
+        TRACE_FUNCTION_SCOPE("spawn cycle detecting tasks");
+
+        // Spawn Exec_CycleDetectingTasks for each new node upstream of the
+        // recompiled input. If any of these nodes are also downstream of this
+        // input, then one of the Exec_CycleDetectingTasks spawned here will
+        // ultimately be blocked by the current Input_RecompilationTask, which
+        // introduces a task cycle to be caught by the Exec_TaskCycleDetector.
+        for (const auto &resultOutputs : _resultOutputsPerInputKey) {
+            for (const VdfMaskedOutput &maskedOutput : resultOutputs) {
+                const VdfNode *const sourceNode =
+                    &maskedOutput.GetOutput()->GetNode();
+                if (deps.ClaimCycleDetectingTask(sourceNode)) {
+                    deps.NewSubtask<Exec_CycleDetectingTask>(
+                        compilationState, sourceNode);
+                }
+            }
+        }
+    },
+
+    [this, &compilationState](TaskDependencies &deps) {
         TRACE_FUNCTION_SCOPE("reconnect input");
 
         size_t totalOutputs = 0;
@@ -86,6 +107,10 @@ Exec_InputRecompilationTask::_Compile(
             _input->GetDebugName().c_str(),
             totalOutputs,
             _resultOutputsPerInputKey.size())) {
+
+            // It is ok to return here without marking the input done, because
+            // this only applies to leaf nodes. It's impossible for a cycle
+            // detecting task to wait on a leaf node input.
             return;
         }
 
@@ -98,6 +123,9 @@ Exec_InputRecompilationTask::_Compile(
                 &_input->GetNode(),
                 _input->GetName());
         }
+
+        // Recompilation of this input is now done!
+        deps.MarkDoneInputRecompilationTask(_input);
     }
     );
 }

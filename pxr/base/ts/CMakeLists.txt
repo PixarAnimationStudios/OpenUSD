@@ -12,6 +12,7 @@ set(include
 )
 
 set(privateClasses
+    diff
     iterator
     sample
 )
@@ -189,6 +190,16 @@ pxr_build_test(
         gf
         ts
         tf
+)
+
+pxr_build_test(
+    testTsSplineDiff
+    CPPFILES
+        testenv/testTsSplineDiff.cpp
+    LIBRARIES
+        gf
+        tf
+        ts
 )
 
 pxr_build_test(

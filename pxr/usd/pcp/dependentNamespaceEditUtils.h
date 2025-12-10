@@ -86,7 +86,7 @@ public:
         dependentCachePathChanges;
 };
 
-/// Given a prim spec move edit from \p oldPrimPath to \p newPrimPath and the 
+/// Given a prim or property spec move edit from \p oldPath to \p newPath and the 
 /// \p affectedLayers on which this spec move will be performed, this function
 /// finds all prim indexes already cached in each PcpCache in \p dependentCaches
 /// that would be affected by these edits and computes a full set of edits that
@@ -101,8 +101,8 @@ public:
 PCP_API
 PcpDependentNamespaceEdits
 PcpGatherDependentNamespaceEdits(
-    const SdfPath &oldPrimPath,
-    const SdfPath &newPrimPath,
+    const SdfPath &oldPath,
+    const SdfPath &newPath,
     const SdfLayerHandleVector &affectedLayers,
     const PcpLayerStackRefPtr &addRelocatesToLayerStack,
     const SdfLayerHandle &addRelocatesToLayerStackEditLayer,

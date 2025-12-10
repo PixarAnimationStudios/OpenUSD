@@ -194,8 +194,7 @@ Exec_Program::InvalidateDisconnectedInputs()
         invalidationRequest, /* updateIncrementally = */ false);
 
     return Exec_DisconnectedInputsInvalidationResult{
-        std::move(invalidationRequest),
-        leafNodes,
+        { std::move(invalidationRequest), leafNodes },
         std::move(disconnectedLeafNodes)};
 }
 
@@ -280,8 +279,7 @@ Exec_Program::InvalidateAttributeAuthoredValues(
         leafInvalidationRequest, /* updateIncrementally */ false);
 
     return Exec_AttributeValueInvalidationResult{
-        std::move(leafInvalidationRequest),
-        leafNodes,
+        { std::move(leafInvalidationRequest), leafNodes },
         invalidAttributes,
         std::move(compiledProperties),
         totalInvalidInterval,

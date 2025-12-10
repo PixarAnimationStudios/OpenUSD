@@ -90,25 +90,8 @@ PcpClassifyNodeDependency(const PcpNodeRef &node)
     // Classify as ancestral or direct: if there is any non-ancestral
     // arc in the path to the root node, the node is considered a
     // direct dependency.
-    bool anyDirect = false;
-    bool anyAncestral = false;
-    for (PcpNodeRef p = node; p.GetParentNode(); p = p.GetParentNode()) {
-        // For propagated specializes nodes, we want to continue the
-        // traversal from its origin to pick up dependency information
-        // from the site where the arc was introduced.
-        if (Pcp_IsPropagatedSpecializesNode(p)) {
-            p = p.GetOriginNode();
-        }
-
-        if (p.IsDueToAncestor()) {
-            anyAncestral = true;
-        } else {
-            anyDirect = true;
-        }
-        if (anyAncestral && anyDirect) {
-            break;
-        }
-    }
+    const bool anyDirect = node.HasTransitiveDirectDependency();
+    const bool anyAncestral = node.HasTransitiveAncestralDependency();
     if (anyDirect) {
         if (anyAncestral) {
             flags |= PcpDependencyTypePartlyDirect;

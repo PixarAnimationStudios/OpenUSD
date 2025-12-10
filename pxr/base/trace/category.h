@@ -66,8 +66,6 @@ private:
     std::multimap<TraceCategoryId, std::string> _idToNames;
 };
 
-TRACE_API_TEMPLATE_CLASS(TfSingleton<TraceCategory>);
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_BASE_TRACE_CATEGORY_H

@@ -10,6 +10,7 @@
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/dependenciesSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/materialInterfaceMappingSchema.h"
 #include "pxr/imaging/hd/materialInterfaceParameterSchema.h"
@@ -19,6 +20,7 @@
 #include "pxr/imaging/hd/materialNodeSchema.h"
 #include "pxr/imaging/hd/materialOverrideSchema.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/primOriginSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexObserver.h" 
 #include "pxr/imaging/hd/tokens.h" 
@@ -29,9 +31,10 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/usd/usdShade/tokens.h"
 
+#include <array>
 #include <memory>
-#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -524,12 +527,12 @@ private:
     HdContainerDataSourceHandle _materialDsContainer;
 };
 
-class _PrimContainerDataSource : public HdContainerDataSource
+class _MaterialPrimContainerDataSource : public HdContainerDataSource
 {
 public:
-    HD_DECLARE_DATASOURCE(_PrimContainerDataSource);
+    HD_DECLARE_DATASOURCE(_MaterialPrimContainerDataSource);
 
-    _PrimContainerDataSource(
+    _MaterialPrimContainerDataSource(
         const HdContainerDataSourceHandle& inputDsContainer,
         const SdfPath& primPath)
     : _inputDsContainer(inputDsContainer),
@@ -564,8 +567,7 @@ public:
             // Do work if we find 'material'
             return _MaterialContainerDataSource::New(
                 _inputDsContainer, resultContainer); 
-        } 
-        else if (name == HdDependenciesSchema::GetSchemaToken()) {
+        } else if (name == HdDependenciesSchema::GetSchemaToken()) {
             // Instead of implementing
             // HdsiMaterialOverrideResolvingSceneIndex::_PrimsDirtied(), we use 
             // the dependencies schema. The 'material' data source should depend
@@ -623,6 +625,105 @@ private:
     SdfPath _primPath;
 };
 
+class _MaterialBindingsContainerDataSource : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_MaterialBindingsContainerDataSource);
+
+    _MaterialBindingsContainerDataSource(
+        const HdContainerDataSourceHandle& inputDsContainer,
+        const SdfPath& newBinding)
+    : _inputDsContainer(inputDsContainer),
+      _newBinding(newBinding)
+    {   
+    }
+
+    // HdContainerDataSource overrides
+    TfTokenVector GetNames() override
+    {
+        return _inputDsContainer->GetNames();
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        const HdDataSourceBaseHandle result = _inputDsContainer->Get(name);
+
+        const HdContainerDataSourceHandle resultContainer = 
+            HdContainerDataSource::Cast(result);
+        if (!resultContainer) {
+            return result;
+        }
+
+        static const TfTokenSet purposes = 
+        {
+            UsdShadeTokens->full,
+            HdMaterialBindingsSchemaTokens->_allPurposeToken,
+            HdMaterialBindingsSchemaTokens->allPurpose,
+        };
+
+        // If the locator name matches one of the purposes listed above,
+        // replace the materialBinding data source with one that uses 
+        // _newBinding for its path.
+        if (purposes.count(name) > 0) {
+            const HdContainerDataSourceHandle overrideDs = 
+                HdRetainedContainerDataSource::New(
+                    HdMaterialBindingSchemaTokens->path, 
+                    HdRetainedTypedSampledDataSource<SdfPath>::New(_newBinding));
+            return HdOverlayContainerDataSource::OverlayedContainerDataSources(
+                overrideDs, HdContainerDataSource::Cast(result));
+        }
+
+        return result;
+    }
+
+private:
+    HdContainerDataSourceHandle _inputDsContainer;
+
+    // Path to the material to use as a new binding
+    SdfPath _newBinding;
+};
+
+class _BindablePrimContainerDataSource : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_BindablePrimContainerDataSource);
+
+    _BindablePrimContainerDataSource(
+        const HdContainerDataSourceHandle& inputDsContainer,
+        const SdfPath& newBinding)
+    : _inputDsContainer(inputDsContainer),
+      _newBinding(newBinding)
+    {
+    }
+
+    // HdContainerDataSource overrides
+    TfTokenVector GetNames() override
+    {
+        return _inputDsContainer->GetNames();
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        const HdDataSourceBaseHandle result = _inputDsContainer->Get(name);
+
+        const HdContainerDataSourceHandle resultContainer = 
+            HdContainerDataSource::Cast(result);
+        if (!resultContainer) {
+            return result;
+        }
+
+        if (name == HdMaterialBindingsSchema::GetSchemaToken()) {
+            return _MaterialBindingsContainerDataSource::New(
+                resultContainer, _newBinding); 
+        }
+
+        return result;
+    }
+
+private:
+    HdContainerDataSourceHandle _inputDsContainer;
+    SdfPath _newBinding;
+};
 } // end anonymous namespace
 
 HdsiMaterialOverrideResolvingSceneIndex::
@@ -638,19 +739,39 @@ HdsiMaterialOverrideResolvingSceneIndex::GetPrim(const SdfPath &primPath) const
     TRACE_FUNCTION();
 
     const HdSceneIndexBaseRefPtr inputScene = _GetInputSceneIndex();
-
     HdSceneIndexPrim prim = inputScene->GetPrim(primPath);
 
-    if (prim.primType != HdPrimTypeTokens->material) {
+    // Cannot early return based on prim.dataSource until after this block since
+    // generated materials won't have a data source until after
+    // _CreateGeneratedMaterialDataSource is called.
+    if (_IsGeneratedMaterial(primPath)) {
+        // If processing a generated material, create its data source as a copy 
+        // of the material it was generated from
+        _CreateGeneratedMaterialDataSource(prim, primPath);
+    }
+
+    if (!prim.dataSource) {
         return prim;
     }
 
-    // Only do work if we've found a "material" scene index prim.  Replace the 
-    // data source with a wrapped data source, which will do the actual work of 
-    // applying the override values to the correct material node parameters.
-    if (prim.dataSource) {
+    if (prim.primType == HdPrimTypeTokens->material) {
+        // When processing a material, replace its data source with a wrapped 
+        // data source, which will do the actual work of applying the override 
+        // values to the correct material node parameters.
         prim.dataSource = 
-            _PrimContainerDataSource::New(prim.dataSource, primPath);
+            _MaterialPrimContainerDataSource::New(prim.dataSource, primPath);
+    } else {
+        auto it = _primToNewBindingMap.find(primPath);
+        if (it == _primToNewBindingMap.end()) {
+            return prim;
+        }
+
+        // When processing a geom with a materialOverride data source, replace 
+        // its data source with a wrapped data source which will change its 
+        // materialBindings to point to the generated material which contains 
+        // the desired overrides
+        prim.dataSource = 
+            _BindablePrimContainerDataSource::New(prim.dataSource, it->second);
     }
 
     return prim;
@@ -660,7 +781,18 @@ SdfPathVector
 HdsiMaterialOverrideResolvingSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
-    return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+    SdfPathVector childPrimPaths = 
+        _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+    
+    // Add any generated materials
+    const PathSet generatedChildPrimPaths = 
+        _GetGeneratedMaterials(primPath);
+    childPrimPaths.insert(
+        childPrimPaths.end(), 
+        generatedChildPrimPaths.begin(), 
+        generatedChildPrimPaths.end());
+
+    return childPrimPaths;
 }
 
 void
@@ -668,7 +800,7 @@ HdsiMaterialOverrideResolvingSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
-    _SendPrimsAdded(entries);
+    _SendPrimsAdded(_AddGeneratedMaterials(entries));
 }
 
 void
@@ -676,9 +808,7 @@ HdsiMaterialOverrideResolvingSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
-    // We implement the dependencies schema instead of implementing 
-    // _PrimsDirtied()
-    _SendPrimsDirtied(entries);
+    _SendPrimsDirtied(_DirtyGeneratedMaterials(entries));
 }
 
 void
@@ -687,6 +817,255 @@ HdsiMaterialOverrideResolvingSceneIndex::_PrimsRemoved(
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
     _SendPrimsRemoved(entries);
+}
+
+bool 
+HdsiMaterialOverrideResolvingSceneIndex::_DoesPrimHaveMaterialOverrides(
+    const SdfPath& primPath) const
+{
+    const HdSceneIndexBaseRefPtr inputScene = _GetInputSceneIndex();
+    const HdSceneIndexPrim prim = inputScene->GetPrim(primPath);
+    if (!prim.dataSource) {
+        return false;
+    }
+
+    return HdMaterialOverrideSchema::GetFromParent(prim.dataSource).IsDefined();
+}
+
+std::optional<HdMaterialBindingSchema>
+HdsiMaterialOverrideResolvingSceneIndex::_GetMaterialBindings(
+    const SdfPath& primPath) const
+{
+    const HdSceneIndexBaseRefPtr inputScene = _GetInputSceneIndex();
+    const HdSceneIndexPrim prim = inputScene->GetPrim(primPath);
+    if (!prim.dataSource) {
+        return {};
+    }
+
+    // Does this prim have a material binding data source ?
+    HdMaterialBindingsSchema matBindingsSchema = 
+        HdMaterialBindingsSchema::GetFromParent(prim.dataSource);
+    if (!matBindingsSchema.IsDefined()) {
+        return {};
+    }
+
+    // Find a material bound for a purpose of rendering the final frame
+    // We will check these purposes in order, and take the first one that is
+    // specified: 'full', 'allPurpose' and ''
+    // These are the binding purposes expected to be used in a RenderMan
+    // context. Material Overrides are not currently supported for 
+    // preview materials.
+    static const std::array<TfToken, 3> purposes = {
+        UsdShadeTokens->full,
+        HdMaterialBindingsSchemaTokens->_allPurposeToken,
+        HdMaterialBindingsSchemaTokens->allPurpose
+    };
+
+    std::optional<HdMaterialBindingSchema> matBindingSchemaOpt;
+    for (const TfToken& purpose : purposes) {
+        matBindingSchemaOpt = matBindingsSchema.GetMaterialBinding(purpose);
+        if (matBindingSchemaOpt.has_value() && 
+            matBindingSchemaOpt.value().IsDefined()) {
+            break;
+        }
+    }
+
+    return matBindingSchemaOpt;
+}
+
+SdfPath
+HdsiMaterialOverrideResolvingSceneIndex::_AddGeneratedMaterial(
+    const TfToken& primType,
+    const SdfPath& primPath)
+{
+    // If this prim is a material, no special processing is required
+    if (primType == HdPrimTypeTokens->material) {
+        return {};
+    }
+
+    // If this geom prim does not have material overrides, 
+    // no further processing is required
+    if (!_DoesPrimHaveMaterialOverrides(primPath)) {
+        return {};
+    }
+
+    // If this geom with material overrides does not have
+    // any materials bound to it, no further processing is required
+    const std::optional<HdMaterialBindingSchema> matBindingSchemaOpt =
+        _GetMaterialBindings(primPath);
+    if (!matBindingSchemaOpt.has_value() 
+        || !matBindingSchemaOpt.value().IsDefined()) {
+        return {};
+    }
+
+    // Working with a geom, with material overrides, and a 
+    // material bound to it.
+    // A new material will need to be generated from the bound material.
+    // This new generated material will need to be bound to this prim.
+    // This is done so that overrides applied to the generated material do 
+    // not spill to other prims bound to the original material.
+    //
+    // Example:
+    // Given a prim with a material /World/.../Asset/Looks/Material bound 
+    // to it, the following values will be generated below:
+    // - materialPath /World/.../Asset/Looks/Material
+    // - materialScopePath: /World/.../Asset/Looks
+    // - newMaterialPath: /World/.../Asset/Looks/__MOR_Material_primName
+    const HdPathDataSourceHandle materialPathDs = 
+        matBindingSchemaOpt.value().GetPath();
+    const SdfPath materialPath = materialPathDs->GetTypedValue(0.0f);
+    const std::string newMaterialName = "__MOR_" + materialPath.GetName() 
+        + "_" + primPath.GetName();
+    const SdfPath materialScopePath = materialPath.GetParentPath();
+    const SdfPath newMaterialPath = 
+        materialScopePath.AppendChild(TfToken(newMaterialName));
+
+    _scopeToNewMaterialPaths[materialScopePath].insert(newMaterialPath);
+    _oldToNewMaterialPaths[materialPath].insert(newMaterialPath);
+    _newMaterialData[newMaterialPath] = {materialPath, primPath};
+    _primToNewBindingMap[primPath] = newMaterialPath;
+    return newMaterialPath;
+}
+
+HdSceneIndexObserver::AddedPrimEntries 
+HdsiMaterialOverrideResolvingSceneIndex::_AddGeneratedMaterials(
+    const HdSceneIndexObserver::AddedPrimEntries& entries)
+{
+    HdSceneIndexObserver::AddedPrimEntries newEntries(entries);
+    for (const HdSceneIndexObserver::AddedPrimEntry& entry : entries) {
+        const SdfPath newMaterialPath = 
+            _AddGeneratedMaterial(entry.primType, entry.primPath);
+        if (newMaterialPath.IsEmpty()) {
+            continue;
+        }
+
+        newEntries.push_back({newMaterialPath, HdPrimTypeTokens->material});
+    }
+    return newEntries;
+}
+
+HdSceneIndexObserver::DirtiedPrimEntries
+HdsiMaterialOverrideResolvingSceneIndex::_DirtyGeneratedMaterials(
+    const HdSceneIndexObserver::DirtiedPrimEntries& entries)
+{
+    static const HdDataSourceLocator containerLocator(
+        HdDataSourceLocatorSentinelTokens->container);
+    HdSceneIndexObserver::DirtiedPrimEntries newEntries(entries);
+
+    for (const HdSceneIndexObserver::DirtiedPrimEntry& entry : entries) {
+
+        auto materialIt = _oldToNewMaterialPaths.find(entry.primPath);
+        auto primIt = _primToNewBindingMap.find(entry.primPath);
+
+        if (materialIt != _oldToNewMaterialPaths.end()) {
+            // From a user standpoint, generated materials should be transparent.
+            // If the material they were generated from changes, the changes
+            // should be reflected in them.
+            // Therefore, If a material used to generate other materials is dirtied, 
+            // add the generated materials to the list of dirtied prims.
+            for (const SdfPath& newMaterialPath : materialIt->second) {
+                newEntries.push_back({newMaterialPath, 
+                    {containerLocator,
+                    HdMaterialSchema::GetDefaultLocator()}});    
+            }
+        } else if (primIt != _primToNewBindingMap.end()) {
+            // If the set of material overrides on a prim changes also dirty
+            // the generated material bound to it.
+            if (primIt == _primToNewBindingMap.end()) {
+                continue;
+            }
+
+            if (!entry.dirtyLocators.Intersects(
+                HdMaterialOverrideSchema::GetDefaultLocator())) {
+                continue;
+            }
+            
+            newEntries.push_back({primIt->second, 
+                {containerLocator,
+                HdMaterialSchema::GetDefaultLocator()}});
+        } else if (entry.dirtyLocators.Intersects(
+            HdMaterialOverrideSchema::GetDefaultLocator())) {
+            // A prim which did not use to have a material override now 
+            // received one. Add a generated material to account for this 
+            // override if necessary
+            const HdSceneIndexBaseRefPtr inputScene = _GetInputSceneIndex();
+            const HdSceneIndexPrim prim = inputScene->GetPrim(entry.primPath);
+            if (!prim) {
+                continue;
+            }
+            _AddGeneratedMaterial(prim.primType, entry.primPath);
+        }
+    }
+    return newEntries;
+}
+
+PathSet
+HdsiMaterialOverrideResolvingSceneIndex::_GetGeneratedMaterials(
+    const SdfPath& primPath) const
+{
+    auto it = _scopeToNewMaterialPaths.find(primPath);
+    if (it != _scopeToNewMaterialPaths.end()) {
+        return it->second;
+    }
+    return {};
+}
+
+bool
+HdsiMaterialOverrideResolvingSceneIndex::_IsGeneratedMaterial(
+    const SdfPath& primPath) const
+{
+    auto materialIt = _newMaterialData.find(primPath);
+    return materialIt != _newMaterialData.end();
+}
+
+void
+HdsiMaterialOverrideResolvingSceneIndex::_CreateGeneratedMaterialDataSource(
+    HdSceneIndexPrim& prim,
+    const SdfPath& primPath) const
+{
+    static const HdContainerDataSourceHandle emptyHandle;
+    auto materialIt = _newMaterialData.find(primPath);
+    if (materialIt == _newMaterialData.end()) {
+        return;
+    }
+
+    // Make a copy of the original material
+    const HdSceneIndexBaseRefPtr& inputScene = _GetInputSceneIndex();
+    const HdSceneIndexPrim originalMaterialPrim = 
+        inputScene->GetPrim(materialIt->second.originalMaterialPath);
+    prim.dataSource = HdMakeStaticCopy(originalMaterialPrim.dataSource);
+
+    // Get the materialOverride data source from the geom that caused this
+    // material to be generated
+    const HdSceneIndexPrim materialOverrideSourcePrim =
+        inputScene->GetPrim(materialIt->second.materialOverridePrimPath);       
+    const HdContainerDataSourceHandle materialOver = 
+        materialOverrideSourcePrim.dataSource ?
+            HdContainerDataSource::Cast(
+                materialOverrideSourcePrim.dataSource->Get(
+                    HdMaterialOverrideSchema::GetSchemaToken())) :
+            emptyHandle;
+
+    // Get the materialOverride data source from the original material, if any.
+    // Overlay materialOverride data source from the geom on top of the 
+    // materialOverrides from the original material
+    const HdDataSourceBaseHandle originalMaterialOverrides = 
+        prim.dataSource->Get(HdMaterialOverrideSchema::GetSchemaToken());
+    const HdContainerDataSourceHandle overlayedMaterialOverrides = 
+        HdOverlayContainerDataSource::OverlayedContainerDataSources(
+            materialOver, 
+            HdContainerDataSource::Cast(originalMaterialOverrides));
+
+    // Overlay the fully resolved materialOverride data source on top of the
+    // data source for the generated material
+    prim.dataSource = 
+        HdOverlayContainerDataSource::OverlayedContainerDataSources(
+            HdRetainedContainerDataSource::New(
+                HdMaterialOverrideSchema::GetSchemaToken(),
+                overlayedMaterialOverrides),
+            prim.dataSource);
+
+    prim.primType = HdPrimTypeTokens->material;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

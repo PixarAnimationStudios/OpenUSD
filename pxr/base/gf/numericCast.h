@@ -30,17 +30,8 @@ template <class T, class U>
 constexpr bool
 GfIntegerCompareLess(T t, U u) noexcept
 {
-    // XXX: 
-    // On Visual Studio warnings C4018 (signed/unsigned mismatch) and
-    // C4804 (unsafe use of bool in operation) are emitted when this
-    // function is used with boolean values. Just disable this for now.
-#if defined(ARCH_COMPILER_MSVC)
-    ARCH_PRAGMA_PUSH
-    ARCH_PRAGMA(warning(disable:4018))
-    ARCH_PRAGMA(warning(disable:4804))
-#endif    
-
-    static_assert(std::is_integral_v<T> && std::is_integral_v<U>);
+    static_assert(std::is_integral_v<T> && !std::is_same_v<T, bool> &&
+                  std::is_integral_v<U> && !std::is_same_v<U, bool>);
 
     if constexpr (std::is_signed_v<T> == std::is_signed_v<U>) {
         return t < u;
@@ -51,10 +42,6 @@ GfIntegerCompareLess(T t, U u) noexcept
     else {
         return u >= 0 && t < std::make_unsigned_t<U>(u);
     }
-
-#if defined(ARCH_COMPILER_MSVC)
-    ARCH_PRAGMA_POP
-#endif
 }
 
 enum GfNumericCastFailureType {
@@ -71,14 +58,21 @@ enum GfNumericCastFailureType {
 /// failed if desired.
 ///
 /// What "safely" means depends on the types From and To.  If From and To are
-/// both integral types, then \p from can safely convert to To if \p from is in
-/// To's range.  For example if \p from is an int32_t and To is uint16_t, then
-/// \p from can successfully convert if it is in the range [0, 65535].
+/// both integral types other than bool, then \p from can safely convert to To
+/// if \p from is in To's range.  For example if \p from is an int32_t and To
+/// is uint16_t, then \p from can successfully convert if it is in the range
+/// [0, 65535].
 ///
-/// If To is an integral type and From is a floating-point type (including
-/// GfHalf), then \p from can safely convert to To if it is neither a NaN nor an
-/// infinity, and after truncation to integer its value is in To's range, as
-/// above.
+/// If To is an integral type other than bool and From is a floating-point type
+/// (including GfHalf), then \p from can safely convert to To if it is neither
+/// a NaN nor an infinity, and after truncation to integer its value is in To's
+/// range, as above.
+///
+/// If To is a bool, the converted value will be \c false if \p from is 0, and
+/// \c true for all other values. If From is a bool, then the converted value
+/// will be 0 if \p from is \c false or 1 if it is \c true. These conversions
+/// are always safe and will always succeed. This matches C++ behavior for
+/// bool conversions.
 ///
 /// Following boost::numeric_cast's behavior, no range checking is performed
 /// converting from integral to floating-point or from floating-point to other
@@ -89,6 +83,16 @@ template <class To, class From>
 std::optional<To>
 GfNumericCast(From from, GfNumericCastFailureType *failType = nullptr)
 {
+    // Visual Studio emits warning C4756 (overflow in constant arithmetic)
+    // in certain cases. This appears to be a compiler bug, see:
+    // https://developercommunity.visualstudio.com/t/Warning-4756-when-casting-constant-doubl/10845906
+    // 
+    // For now, just disable this warning.
+#if defined(ARCH_COMPILER_MSVC)
+    ARCH_PRAGMA_PUSH;
+    ARCH_PRAGMA(warning(disable:4756))
+#endif
+
     static_assert(GfIsArithmetic<From>::value &&
                   GfIsArithmetic<To>::value);
 
@@ -101,9 +105,18 @@ GfNumericCast(From from, GfNumericCastFailureType *failType = nullptr)
         };
     };
 
+    // bool <-> int/float.
+    if constexpr (std::is_same_v<From, bool> ||
+                  std::is_same_v<To, bool>) {
+        (void)setFail; // hush compiler.
+
+        // static_cast is sufficient since this function follows the
+        // same bool conversion rules as C++ itself.
+        return static_cast<To>(from);
+    }
     // int -> int.
-    if constexpr (std::is_integral_v<From> &&
-                  std::is_integral_v<To>) {
+    else if constexpr (std::is_integral_v<From> &&
+                       std::is_integral_v<To>) {
         // Range check integer to integer.
         if (GfIntegerCompareLess(from, ToLimits::min())) {
             setFail(GfNumericCastNegOverflow);
@@ -159,6 +172,10 @@ GfNumericCast(From from, GfNumericCastFailureType *failType = nullptr)
         // No range checking, following boost::numeric_cast.
         return static_cast<To>(from);
     }
+
+#if defined(ARCH_COMPILER_MSVC)
+    ARCH_PRAGMA_POP;
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

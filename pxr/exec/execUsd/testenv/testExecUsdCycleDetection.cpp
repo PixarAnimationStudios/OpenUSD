@@ -23,6 +23,7 @@
 #include "pxr/exec/vdf/readIterator.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/stage.h"
 
 #include <sstream>
@@ -130,6 +131,10 @@ public:
         std::vector<ExecUsdValueKey> &&valueKeys) {
         return _system->BuildRequest(
             std::move(valueKeys));
+    }
+
+    UsdRelationship GetRelationshipAtPath(const char *const pathStr) const {
+        return _stage->GetRelationshipAtPath(SdfPath(pathStr));
     }
 
     UsdPrim GetPrimAtPath(const char *const pathStr) const {
@@ -282,11 +287,107 @@ Test_CyclicAncestorComputation()
     return false;
 }
 
+// Test that we detect a cycle when a previously cycle-free scene introduces
+// a cycle by authoring a new relationship target.
+//
+static bool
+Test_CyclicRelationshipComputationAfterRecompile()
+{
+    Fixture fixture;
+    ExecUsdSystem &system = fixture.NewSystemFromLayer(R"usd(#usda 1.0
+        def CustomSchema "A" {
+            add rel customRel = [</B>]
+        }
+        def CustomSchema "B" {
+            add rel customRel = [</C>]
+        }
+        def CustomSchema "C" {
+            rel customRel
+        }
+    )usd");
+
+    ExecUsdRequest request = fixture.BuildRequest({
+        {fixture.GetPrimAtPath("/A"), _tokens->cyclicRelComputation}
+    });
+
+    // There are no cycles in the network. This should compile successfully.
+    system.PrepareRequest(request);
+
+    // Make a change such that </C> [cyclicRelComputation] now depends on
+    // </A> [cyclicRelComputaiton]. This would introduce a cycle.
+    fixture.GetRelationshipAtPath("/C.customRel").AddTarget(SdfPath("/A"));
+
+    system.PrepareRequest(request);
+
+    // Cycle detection should abort the process before reaching the end.
+    return false;
+}
+
+// Test that we detect a cycle when a previously cycle-free scene recompiles
+// two separate inputs that end up depending on each other, creating a
+// "figure 8" cycle.
+//
+static bool
+Test_CyclicRelationshipComputationFigure8()
+{
+    Fixture fixture;
+    ExecUsdSystem &system = fixture.NewSystemFromLayer(R"usd(#usda 1.0
+        def CustomSchema "A1" {
+            add rel customRel = [</A2>]
+        }
+        def CustomSchema "A2" {
+            rel customRel
+        }
+        def CustomSchema "B1" {
+            add rel customRel = [</B2>]
+        }
+        def CustomSchema "B2" {
+            rel customRel
+        }
+    )usd");
+
+    ExecUsdRequest request = fixture.BuildRequest({
+        {fixture.GetPrimAtPath("/A1"), _tokens->cyclicRelComputation},
+        {fixture.GetPrimAtPath("/B1"), _tokens->cyclicRelComputation}
+    });
+
+    // This should compile the following cycle-free network:
+    //
+    //      [ A2 cyclicRelComputation ]         [ B2 cyclicRelComputation ]
+    //                   V                                  V              
+    //      [ A1 cyclicRelComputaiton ]         [ B1 cyclicRelComputation ]
+    //                   V                                  V              
+    //             [ Leaf Node ]                      [ Leaf Node ]        
+    //
+    system.PrepareRequest(request);
+
+    // Make scene changes that would introduce a cycle in a "figure 8" pattern:
+    //
+    //                   +----------------+  +---------------+               
+    //                   V                |   |              V              
+    //      [ A2 cyclicRelComputation ]   |   |  [ B2 cyclicRelComputation ]
+    //                   V                |   |              V              
+    //      [ A1 cyclicRelComputaiton ]   |   |  [ B1 cyclicRelComputation ]
+    //                   V         |      |   |     |        V              
+    //             [ Leaf Node ]   +----- | --+     |  [ Leaf Node ]        
+    //                                    +---------+                       
+    //
+    fixture.GetRelationshipAtPath("/A2.customRel").AddTarget(SdfPath("/B1"));
+    fixture.GetRelationshipAtPath("/B2.customRel").AddTarget(SdfPath("/A1"));
+
+    system.PrepareRequest(request);
+
+    // Cycle detection should abort the process before reaching the end.
+    return false;
+}
+
 TF_ADD_REGTEST(CyclicComputation);
 TF_ADD_REGTEST(CyclicComputationPair);
 TF_ADD_REGTEST(CyclicRelationshipComputation);
 TF_ADD_REGTEST(LargeCyclicRelationshipComputation);
 TF_ADD_REGTEST(CyclicAncestorComputation);
+TF_ADD_REGTEST(CyclicRelationshipComputationAfterRecompile);
+TF_ADD_REGTEST(CyclicRelationshipComputationFigure8);
 
 int main(int argc, char **argv)
 {

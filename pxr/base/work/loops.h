@@ -10,6 +10,7 @@
 /// \file work/loops.h
 #include "pxr/pxr.h"
 #include "pxr/base/work/api.h"
+#include "pxr/base/tf/errorTransport.h"
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/impl.h"
 #include "pxr/base/work/threadLimits.h"
@@ -17,6 +18,59 @@
 #include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+using Work_ErrorTransports = tbb::concurrent_vector<TfErrorTransport>;
+
+template <class Fn>
+class Work_ErrorTransportTaskWrapper
+{
+public:
+    Work_ErrorTransportTaskWrapper(
+        Fn &&callback,
+        Work_ErrorTransports *errors)
+    : _callback(callback)
+    , _errors(errors) {}
+
+    template <typename ... Args>
+    void operator()(Args&&... args) const {
+        TfErrorMark m;
+        _callback(std::forward<Args>(args)...);
+        if (!m.IsClean()) {
+            TfErrorTransport transport = m.Transport();
+            _errors->grow_by(1)->swap(transport);
+        }
+    }
+
+private:
+    Fn & _callback;
+    Work_ErrorTransports *_errors;
+};
+
+template <class Fn>
+class Work_ErrorTransportForEachTaskWrapper
+{
+public:
+    Work_ErrorTransportForEachTaskWrapper(
+        Fn &&callback,
+        Work_ErrorTransports *errors)
+    : _callback(callback)
+    , _errors(errors) {}
+
+    template <typename Arg>
+    void operator()( Arg&& arg) const {
+        TfErrorMark m;
+        _callback(std::forward<Arg>(arg));
+        if (!m.IsClean()) {
+            TfErrorTransport transport = m.Transport();
+            _errors->grow_by(1)->swap(transport);
+        }
+    }
+
+private:
+    Fn & _callback;
+    Work_ErrorTransports *_errors;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 ///
@@ -62,7 +116,13 @@ WorkParallelForN(size_t n, Fn &&callback, size_t grainSize)
     // Don't bother with parallel_for, if concurrency is limited to 1.
     if (WorkHasConcurrency()) {
         PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
-        WorkImpl_ParallelForN(n, std::forward<Fn>(callback), grainSize);
+        Work_ErrorTransports errorTransports;
+        Work_ErrorTransportTaskWrapper<Fn> task(std::forward<Fn>(callback), 
+            &errorTransports);
+        WorkImpl_ParallelForN(n, task, grainSize);
+        for (auto &et: errorTransports) {
+            et.Post();
+        }
     } else {
         // If concurrency is limited to 1, execute serially.
         WorkSerialForN(n, std::forward<Fn>(callback));
@@ -111,7 +171,13 @@ WorkParallelForTBBRange(const RangeType &range, Fn &&callback)
         // otherwise use the default implementation below that builds off of the 
         // dispatcher.
 #if defined WORK_IMPL_HAS_PARALLEL_FOR_TBB_RANGE
-        WorkImpl_ParallelForTBBRange(range, std::forward<Fn>(callback));
+        Work_ErrorTransports errorTransports;
+        Work_ErrorTransportTaskWrapper<Fn> task(std::forward<Fn>(callback), 
+            &errorTransports);
+        WorkImpl_ParallelForTBBRange(range, task);
+        for (auto &et: errorTransports) {
+            et.Post();
+        }
 #else
         // The parallel task responsible for recursively sub-dividing the range
         // and invoking the callback on the sub-ranges.
@@ -179,7 +245,13 @@ WorkParallelForEach(
 {
     if (WorkHasConcurrency()) {
         PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
-        WorkImpl_ParallelForEach(first, last, std::forward<Fn>(fn));
+        Work_ErrorTransports errorTransports;
+        Work_ErrorTransportForEachTaskWrapper<Fn>
+            task(std::forward<Fn>(fn), &errorTransports);
+        WorkImpl_ParallelForEach(first, last, task);
+        for (auto &et: errorTransports) {
+            et.Post();
+        }
     } else {
         std::for_each(first, last, std::forward<Fn>(fn));
     }

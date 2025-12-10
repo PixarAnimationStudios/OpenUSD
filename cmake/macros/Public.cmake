@@ -668,6 +668,16 @@ function(pxr_build_test TEST_NAME)
     # XXX -- We shouldn't have to install to run tests.
     if(EMSCRIPTEN)
         target_compile_options(${TEST_NAME} PRIVATE "SHELL:-s MAIN_MODULE=1")
+
+        # Note: Using NODEFS allows us to mount the temp test directory set 
+        # up by the test runner into the virtual filesystem.  This allows us
+        # to access test assets as well as persist any files created during
+        # test execution.  This is setup as a pre-run step by test.pre.js.
+        target_link_options(${TEST_NAME} PRIVATE 
+            "SHELL:-lnodefs.js"
+            "SHELL:-sFORCE_FILESYSTEM=1"
+            "SHELL:--pre-js '${PROJECT_SOURCE_DIR}/cmake/macros/test.pre.js'"
+        )
         install(
             FILES
             ${CMAKE_CURRENT_BINARY_DIR}/${TEST_NAME}.wasm
@@ -1070,6 +1080,15 @@ function(pxr_setup_plugins)
         DESTINATION plugin/usd
         RENAME "plugInfo.json"
     )
+
+    # For emscripten builds, we need to ensure that the top level plugInfo.json
+    # file is included in the resulting application bundle.
+    if (EMSCRIPTEN)
+        foreach(lib ${PXR_CORE_LIBS})
+            target_link_options(${lib} PUBLIC 
+                "SHELL:--embed-file ${CMAKE_CURRENT_BINARY_DIR}/plugins_plugInfo.json@/usd/plugInfo.json")
+        endforeach()
+    endif()
 endfunction() # pxr_setup_plugins
 
 function(pxr_add_extra_plugins PLUGIN_AREAS)

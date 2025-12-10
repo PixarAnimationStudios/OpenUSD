@@ -128,8 +128,6 @@ private:
     _KindMap _kindMap;
 };
 
-KIND_API_TEMPLATE_CLASS(TfSingleton<KindRegistry>);
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_KIND_REGISTRY_H

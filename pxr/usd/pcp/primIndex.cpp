@@ -1712,6 +1712,11 @@ public:
     // index.
     bool skipDuplicateNodes = false;
 
+    // If set to true, the new node will copy the isDueToAncestor flag
+    // along with flags tracking direct or ancestral dependencies from
+    // the origin node.
+    bool copyAncestorFlagFromOrigin = false;
+
     // Indexing tasks to enqueue for the new node being added.
     Task::Tasks tasks = Task::AllTasks;
 };
@@ -1966,6 +1971,38 @@ _AddArc(
         TF_VERIFY(newNodeError, "Failed to create a node, but did not "
                   "specify the error.");
         return PcpNodeRef();
+    }
+
+    if (opts.copyAncestorFlagFromOrigin) {
+        newNode.SetIsDueToAncestor(origin.IsDueToAncestor());
+        newNode.SetHasTransitiveDirectDependency(
+            origin.HasTransitiveDirectDependency());
+        newNode.SetHasTransitiveAncestralDependency(
+            origin.HasTransitiveAncestralDependency());
+    }
+    else {
+        // By default, new nodes are always direct dependencies,
+        // i.e. newNode.IsDueToAncestor() == false.
+        newNode.SetHasTransitiveDirectDependency(true);
+        newNode.SetHasTransitiveAncestralDependency(
+            parent.HasTransitiveAncestralDependency());
+    }
+
+    // If we've included ancestral opinions then we need to propagate the
+    // transitive dependency flags to the subtree of nodes (if any) beneath
+    // newNode. We only do this if we're not in a recursive prim indexing
+    // call, otherwise we'll unnecessarily revisit this subtree after we
+    // finish each recursive call.
+    if (opts.includeAncestralOpinions && !indexer->previousFrame) {
+        for (PcpNodeRef n : Pcp_GetSubtreeRange(newNode)) {
+            n.SetHasTransitiveDirectDependency(
+                newNode.HasTransitiveDirectDependency() ||
+                n.HasTransitiveDirectDependency());
+            
+            n.SetHasTransitiveAncestralDependency(
+                newNode.HasTransitiveAncestralDependency() ||
+                n.HasTransitiveAncestralDependency());
+        }
     }
 
     Task::Tasks tasks = opts.tasks;
@@ -3809,6 +3846,7 @@ _PropagateNodeToRoot(
         _ArcOptions opts;
         opts.skipDuplicateNodes = true;
         opts.includeAncestralOpinions = !srcNode.GetPath().IsRootPrimPath();
+        opts.copyAncestorFlagFromOrigin = true;
 
         newNode = _AddArc(
             indexer,
@@ -3819,10 +3857,6 @@ _PropagateNodeToRoot(
             mapToParent,
             srcNode.GetSiblingNumAtOrigin(),
             opts);
-
-        if (newNode) {
-            newNode.SetIsDueToAncestor(srcNode.IsDueToAncestor());
-        }
     }
 
     return newNode;
@@ -4771,6 +4805,8 @@ _ConvertNodeForChild(
     // Initial child nodes are always due to their parent, except the root node.
     if (!isRoot) {
         node.SetIsDueToAncestor(true);
+        node.SetHasTransitiveDirectDependency(false);
+        node.SetHasTransitiveAncestralDependency(true);
     }
 
 }

@@ -47,40 +47,67 @@ def _ListContents(listLocation, zipFile):
         for fileName in zipFile.GetFileNames():
             _Print(ofp, fileName)
 
-# Runs UsdUtils.ComplianceChecker on the given layer
-def _CheckUsdzCompliance(rootLayer, arkit=False):
+# Runs Validation on the given layer
+def _ValidateUsdz(rootLayer, arkit=False):
     """
-    Runs UsdUtils.ComplianceChecker on the given layer and reports errors.
+    Runs UsdValidation on the given layer and reports errors.
     Returns True if no errors or failed checks were reported, False otherwise.
     """
 
-    checker = UsdUtils.ComplianceChecker(arkit=arkit,
-        skipARKitRootLayerCheck=True)
-    checker.CheckCompliance(rootLayer)
-    errors = checker.GetErrors()
-    failedChecks = checker.GetFailedChecks()
-    warnings = checker.GetWarnings()
-    for msg in errors + failedChecks:
-        _Err(msg)
-    if len(warnings) > 0:
-        _Err("*********************************************\n"
-             "Possible correctness problems to investigate:\n"
-             "*********************************************\n")
-        for msg in warnings:
+    if not arkit:
+        # Create a UsdValidationContext with all validators and run it on the
+        # rootLayer.
+        from pxr import Usd, UsdValidation
+        validators = UsdValidation.ValidationRegistry().GetOrLoadAllValidators()
+        validationContext = UsdValidation.ValidationContext(validators)
+        stage = Usd.Stage.Open(rootLayer)
+        validationErrors = validationContext.Validate(stage)
+        errorsFound = False
+        for error in validationErrors:
+            if error.GetType() == UsdValidation.ValidationErrorType.Error:
+                errorsFound = True
+                _Err("Error: %s" % error.GetMessage())
+        warningsReported = False
+        for error in validationErrors:
+            if error.GetType() == UsdValidation.ValidationErrorType.Warn:
+                if not warningsReported:
+                    _Err("*********************************************\n"
+                         "Possible correctness problems to investigate:\n"
+                         "*********************************************\n")
+                    warningsReported = True
+                _Err("Warning: %s" % error.GetMessage())
+        return not errorsFound
+    else:
+        # Following is deprecated, and is only being used here for arkit option
+        # with UsdUtils.ComplianceChecker. Subsequent changes will remove this
+        # path along with arkit option and UsdUtils.ComplianceChecker.
+        checker = UsdUtils.ComplianceChecker(arkit=True)
+        checker.CheckCompliance(rootLayer)
+        errors = checker.GetErrors()
+        failedChecks = checker.GetFailedChecks()
+        warnings = checker.GetWarnings()
+        for msg in errors + failedChecks:
             _Err(msg)
-    return len(errors) == 0 and len(failedChecks) == 0
+        if len(warnings) > 0:
+            _Err("*********************************************\n"
+                 "Possible correctness problems to investigate:\n"
+                 "*********************************************\n")
+            for msg in warnings:
+                _Err(msg)
+        return len(errors) == 0 and len(failedChecks) == 0
 
 # Creates a usdz package under usdzFile
-def _CreateUsdzPackage(usdzFile, filesToAdd, recurse, ensureCompliance, verbose):
+def _CreateUsdzPackage(usdzFile, filesToAdd, recurse, validateOnCreate, 
+                       verbose):
     """
     Creates a usdz package with the files provided in filesToAdd and saves as
     the usdzFile.
     If filesToAdd contains nested subdirectories, recurse flag can be specified,
     which will make sure to recurse through the directory structure and include
     the files in the usdz archive.
-    Specifying ensureCompliance, will additionally run 
-    UsdUtils.ComplianceChecker on the rootLayer of the usdz package being 
-    created. Failing compliance, will result in a Runtime exception being raised
+    Specifying validateOnCreate, will additionally run 
+    UsdValidation on the rootLayer of the usdz package being created. Failing 
+    validation, will result in a Runtime exception being raised
     Returns True on successful creation of the usdz package.
     Note that any encountered exception will cause the usdzFile to be discarded, 
     and the exception re-raised for clients to handle.
@@ -115,9 +142,9 @@ def _CreateUsdzPackage(usdzFile, filesToAdd, recurse, ensureCompliance, verbose)
                 else:
                     _Err("Skipping empty file '%s'." % f)
 
-        if ensureCompliance and len(fileList) > 0:
+        if validateOnCreate and len(fileList) > 0:
             rootLayer = fileList[0]
-            if not _CheckUsdzCompliance(rootLayer):
+            if not _ValidateUsdz(rootLayer):
                 # Fails compliance when it was requested, raise an exception as
                 # it was requested by the client
                 raise RuntimeError("Root layer (%s) of the usdz package " \
@@ -151,16 +178,17 @@ def main():
                         help='Resolvable asset path pointing to the root layer '
                         'of the asset to be isolated and copied into the '
                         'package.')
+
     parser.add_argument("--arkitAsset", dest="arkitAsset", type=str,
-                        help="Similar to the --asset option, the --arkitAsset "
-                        "option packages all of the dependencies of the named "
-                        "scene file.  Assets targeted at the initial usdz "
-                        "implementation in ARKit operate under greater "
-                        "constraints than usdz files for more general 'in "
-                        "house' uses, and this option attempts to ensure that "
-                        "these constraints are honored; this may involve more "
-                        "transformations to the data, which may cause loss of "
-                        "features such as VariantSets.")
+                        help="[DEPRECATED] Similar to the --asset option, the "
+                        "--arkitAsset option packages all of the dependencies "
+                        "of the named scene file.  Assets targeted at the "
+                        "initial usdz implementation in ARKit operate under "
+                        "greater constraints than usdz files for more general "
+                        "'in house' uses, and this option attempts to ensure "
+                        "that these constraints are honored; this may involve "
+                        "more transformations to the data, which may cause "
+                        "loss of features such as VariantSets.")
 
     parser.add_argument('-c', '--checkCompliance', dest='checkCompliance', 
                         action='store_true', help='Perform compliance checking '
@@ -260,7 +288,7 @@ def main():
         r = Ar.GetResolver()
         resolvedAsset = r.Resolve(args.asset)
         if args.checkCompliance:
-            success = _CheckUsdzCompliance(resolvedAsset, 
+            success = _ValidateUsdz(resolvedAsset, 
                     arkit=False) and success
 
         context = r.CreateDefaultContextForAsset(resolvedAsset) 
@@ -270,10 +298,13 @@ def main():
                 Sdf.AssetPath(args.asset), usdzFile, editLayersInPlace=True)
 
     elif args.arkitAsset:
+        _Print(
+            sys.stderr, 
+            "Warning: --arkitAsset is deprecated; use --asset instead.")
         r = Ar.GetResolver()
         resolvedAsset = r.Resolve(args.arkitAsset)
         if args.checkCompliance:
-            success = _CheckUsdzCompliance(resolvedAsset, 
+            success = _ValidateUsdz(resolvedAsset, 
                     arkit=True) and success
 
         context = r.CreateDefaultContextForAsset(resolvedAsset)

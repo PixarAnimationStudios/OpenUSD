@@ -6,7 +6,7 @@
   };
 
   function build_version_select(release, all_versions) {
-    var buf = ['<select id="version_select">'];
+    var buf = ['<select aria-label="Select doc version" id="version_select">'];
     var major_minor = release.split(".").slice(0, 2).join(".");
 
     $.each(all_versions, function(index, version_obj) {

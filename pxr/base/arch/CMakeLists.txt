@@ -180,8 +180,7 @@ if (PXR_BUILD_TESTS AND WIN32)
 endif()
 
 # Note the following tests are disabled when building for emscripten for
-# dependence on files being present in the filesystem and dynamic
-# library specific functionality.
+# dependence on dynamic library specific functionality and process forking.
 if (NOT EMSCRIPTEN)
     pxr_register_test(testArchAbi
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchAbi"
@@ -189,20 +188,19 @@ if (NOT EMSCRIPTEN)
     pxr_register_test(testArchError
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchError"
     )
-    pxr_register_test(testArchFileSystem
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchFileSystem"
-    )
     pxr_register_test(testArchStackTrace
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchStackTrace"
     )
     pxr_register_test(testArchSymbols
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchSymbols"
     )
-    pxr_register_test(testArchSystemInfo
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchSystemInfo"
-    )
 endif()
-
+pxr_register_test(testArchSystemInfo
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchSystemInfo"
+)
+pxr_register_test(testArchFileSystem
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchFileSystem"
+)
 pxr_register_test(testArchAttributes
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchAttributes"
 )

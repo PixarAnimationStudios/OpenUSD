@@ -671,7 +671,13 @@ PcpCache::FindSiteDependencies(
             } else if (indexPath.IsAbsoluteRootOrPrimPath()) {
                 return bool(FindPrimIndex(indexPath));
             } else if (indexPath.IsPropertyPath()) {
-                return bool(FindPropertyIndex(indexPath));
+                if (_usd) {
+                    // In usd mode, the cache does not store property indexes, 
+                    // so return whether the parent prim is in the cache.
+                    return bool(FindPrimIndex(indexPath.GetParentPath()));
+                } else {
+                    return bool(FindPropertyIndex(indexPath));
+                }                               
             } else {
                 return false;
             }

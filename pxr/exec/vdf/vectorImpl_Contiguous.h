@@ -161,11 +161,11 @@ public:
             Vdf_VectorImplCompressed<TYPE> *destCompressed = 
                 dynamic_cast<Vdf_VectorImplCompressed<TYPE> *>(destData->Get());
             if (destCompressed) {
-                destCompressed->Assign(&(_data[-_first]), mask);
+                destCompressed->Assign(_data - _first, mask);
             } else {
                 destData->Destroy();
                 destData->New< Vdf_VectorImplCompressed<TYPE> >(
-                    &(_data[-_first]), mask.GetBits() );
+                    _data - _first, mask.GetBits() );
             }
 
         } else {

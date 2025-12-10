@@ -261,24 +261,31 @@ main(int argc, char *argv[])
         TF_AXIOM(GfNumericCast<bool>(0).value() == false);
         TF_AXIOM(GfNumericCast<bool>(1).value() == true);
 
-        TF_AXIOM(!GfNumericCast<bool>(-1, &failType) &&
-                 failType == GfNumericCastNegOverflow);
-
-        TF_AXIOM(!GfNumericCast<bool>(2, &failType) &&
-                 failType == GfNumericCastPosOverflow);
+        TF_AXIOM(GfNumericCast<bool>(-1).value() == true);
+        TF_AXIOM(GfNumericCast<bool>(2).value() == true);
 
         TF_AXIOM(GfNumericCast<bool>(
                     static_cast<unsigned>(0)).value() == false);
         TF_AXIOM(GfNumericCast<bool>(
                     static_cast<unsigned>(1)).value() == true);
 
-        TF_AXIOM(!GfNumericCast<bool>(
-                    static_cast<unsigned>(2), &failType) &&
-                 failType == GfNumericCastPosOverflow);
+        TF_AXIOM(GfNumericCast<bool>(
+                    static_cast<unsigned>(2)).value() == true);
+        TF_AXIOM(GfNumericCast<bool>(
+                     std::numeric_limits<unsigned>::max()).value() == true);
 
-        TF_AXIOM(!GfNumericCast<bool>(
-                     std::numeric_limits<unsigned>::max(), &failType) &&
-                 failType == GfNumericCastPosOverflow);
+        // bool -> float
+        TF_AXIOM(GfNumericCast<float>(true) == 1.0f);
+        TF_AXIOM(GfNumericCast<float>(false) == 0.0f);
+        
+        // float -> bool
+        TF_AXIOM(GfNumericCast<bool>(0.0f).value() == false);
+        TF_AXIOM(GfNumericCast<bool>(-0.0f).value() == false);
+        TF_AXIOM(GfNumericCast<bool>(1.0f).value() == true);
+
+        TF_AXIOM(GfNumericCast<bool>(-1.0f).value() == true);
+        TF_AXIOM(GfNumericCast<bool>(0.5f).value() == true);
+        TF_AXIOM(GfNumericCast<bool>(2.0f).value() == true);
         
         // unsigned
         TF_AXIOM(GfNumericCast<uint16_t>(

@@ -109,6 +109,30 @@ public:
     bool HasInnerLoops(
         size_t *firstProtoIndexOut = nullptr) const;
 
+    // Return the time at which pre-extrapolation ends and knot interpolation
+    // begins. Returns 0.0 if there are no knots. It is the caller's
+    // responsibility to ensure that there are knots before relying on the
+    // answer.
+    TsTime GetPreExtrapTime() const;
+    
+    // Return the time at which knot interpolation ends and post-extrapolation
+    // begins. Returns 0.0 if there are no knots. It is the caller's
+    // responsibility to ensure that there are knots before relying on the
+    // answer.
+    TsTime GetPostExtrapTime() const;
+
+    // Return the value from which pre-extrapolation extrapolates (as a double).
+    // This accounts for dual valued knots and inner looping. Returns 0.0 if
+    // there are no knots. It is the caller's responsibility to ensure that
+    // there are knots before relying on the answer.
+    double GetPreExtrapValue() const;
+
+    // Return the value from which post-extrapolation extrapolates (as a
+    // double).  This accounts for inner looping. Returns 0.0 if there are no
+    // knots. It is the caller's responsibility to ensure that there are knots
+    // before relying on the answer.
+    double GetPostExtrapValue() const;
+
 public:
     // BITFIELDS - note: for enum-typed bitfields, we declare one bit more than
     // is minimally needed to represent all declared enum values.  For example,

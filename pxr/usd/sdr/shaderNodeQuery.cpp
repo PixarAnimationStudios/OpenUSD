@@ -8,6 +8,8 @@
 #include "pxr/usd/sdr/shaderNodeQuery.h"
 #include "pxr/usd/sdr/registry.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 SdrShaderNodeQuery&
@@ -123,7 +125,26 @@ SdrShaderNodeQueryResult::GetAllShaderNodes() const
     for (const SdrShaderNodePtrVec& inner : _nodes) {
         result.insert(result.end(), inner.begin(), inner.end());
     }
+
+    std::sort(result.begin(), result.end(),
+        [](SdrShaderNodeConstPtr a, SdrShaderNodeConstPtr b) {
+                return a->GetIdentifier() < b->GetIdentifier() ||
+                       a->GetSourceType() < b->GetSourceType();
+        });
     return result;
+}
+
+bool
+SdrShaderNodeQueryResult::_IsValid() const
+{
+    const size_t num_keys = _keys.size();
+    for (const std::vector<VtValue>& valueRow : _values) {
+        if (num_keys != valueRow.size()) {
+            return false;
+        }
+    }
+
+    return GetShaderNodesByValues().size() == _values.size();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

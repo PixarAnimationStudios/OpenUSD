@@ -36,8 +36,9 @@ _GetPropertyMappings()
         if (nameAndMatch.second) {
             result.push_back(
                 UsdImagingDataSourceMapped::AttributeMapping{
-                    usdName,
-                    HdDataSourceLocator(TfToken(nameAndMatch.first)) });
+                    { usdName,
+                      HdDataSourceLocator(TfToken(nameAndMatch.first)) }
+                });
         }
     }
 

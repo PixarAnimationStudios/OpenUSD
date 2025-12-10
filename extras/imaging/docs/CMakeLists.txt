@@ -10,6 +10,7 @@ pxr_docs_only_dir(${PXR_PACKAGE}
         app_renderer_filters.png
         HdSceneIndexPrimMaterialDiagram.drawio.svg
         hdschema.png
+        hydra_app.drawio.svg
         legacy_scene_delegate_emulation.png
         nested_datasources.png
         scene_index_1.png

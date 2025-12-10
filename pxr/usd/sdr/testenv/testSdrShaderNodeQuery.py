@@ -142,7 +142,7 @@ class TestSdrShaderNodeQuery(unittest.TestCase):
         self.assertEqual(len(nodes), 1)
         self.assertEqual(nodes[0].GetIdentifier(), "SimpleNodeA")
 
-    def test_SdrQueryCustomFilter(self):
+    def test_QueryCustomFilter(self):
         # Test query with a simple custom filter
         def filterFn(node):
             return "SimpleNode" in node.GetIdentifier()
@@ -201,6 +201,76 @@ class TestSdrShaderNodeQuery(unittest.TestCase):
         with self.assertRaises(TypeError):
             query.Run()
 
+    def test_QueryUtils(self):
+        # Test a grouped query result from a query that gets all nodes but
+        # requests no keys from SelectDistinct
+        query = Sdr.ShaderNodeQuery()
+        result = query.Run()
+        grouped = Sdr.ShaderNodeQueryUtils.GroupQueryResults(result)
+        self.assertEqual(grouped, {})
+
+        # Test grouping correctness for one level of nesting.
+        query = Sdr.ShaderNodeQuery() \
+                   .SelectDistinct("testMetadata")
+        result = query.Run()
+        grouped = Sdr.ShaderNodeQueryUtils.GroupQueryResults(result)
+        self.assertEqual(len(grouped), 2)
+        self.assertIn("bar", grouped)
+        self.assertIn("", grouped)
+    
+        # Check that the expected structure is the following:
+        #     {"bar": [nodeA, nodeB],
+        #         "": [nodeC]}
+        # We can't use assertEqual on the whole dict because the
+        # node ptrs in `grouped` aren't "equal" to the node
+        # ptrs returned by SdrRegistry::GetShaderNodeByIdentifier
+        ids = [node.GetIdentifier() for node in grouped["bar"]]
+        self.assertListEqual(["SimpleNodeA", "SimpleNodeB"], ids)
+        self.assertEqual(len(grouped[""]), 1)
+        self.assertEqual(grouped[""][0].GetIdentifier(), "OtherNodeC")
+
+        # Test grouping correctness for multiple levels of nesting.
+        query = Sdr.ShaderNodeQuery() \
+                   .SelectDistinct("testMetadata") \
+                   .SelectDistinct("testMetadataDifferent")
+        result = query.Run()
+        grouped = Sdr.ShaderNodeQueryUtils.GroupQueryResults(result)
+        self.assertEqual(len(grouped), 2)
+
+        # Check that the expected structure is the following:
+        #     {"bar": {"barA" : [nodeA], "barB": [nodeB]},
+        #         "": {"barC": [nodeC]}}
+        self.assertIn("bar", grouped)
+        self.assertEqual(len(grouped["bar"]), 2)
+        self.assertIn("barA", grouped["bar"])
+        self.assertIn("barB", grouped["bar"])
+        self.assertEqual(len(grouped["bar"]["barA"]), 1)
+        self.assertEqual(grouped["bar"]["barA"][0].GetIdentifier(),
+                         "SimpleNodeA")
+        self.assertEqual(len(grouped["bar"]["barB"]), 1)
+        self.assertEqual(grouped["bar"]["barB"][0].GetIdentifier(),
+                         "SimpleNodeB")
+    
+        self.assertIn("", grouped)
+        self.assertEqual(len(grouped[""]), 1)
+        self.assertIn("barC", grouped[""])
+        self.assertEqual(len(grouped[""]["barC"]), 1)
+        self.assertEqual(grouped[""]["barC"][0].GetIdentifier(),
+                         "OtherNodeC")
+
+        # Test empty grouping correctness results.
+        def block(node):
+            return False
+
+        query = Sdr.ShaderNodeQuery() \
+                   .SelectDistinct(Sdr.NodeFieldKey.Identifier) \
+                   .CustomFilter(block)
+        result = query.Run()
+        self.assertEqual(len(result.GetKeys()), 1)
+        self.assertEqual(len(result.GetValues()), 0)
+        self.assertEqual(len(result.GetAllShaderNodes()), 0)
+        grouped = Sdr.ShaderNodeQueryUtils.GroupQueryResults(result)
+        self.assertEqual(grouped, {})
 
 if __name__ == '__main__':
     unittest.main()

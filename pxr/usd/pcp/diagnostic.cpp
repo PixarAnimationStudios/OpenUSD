@@ -942,6 +942,44 @@ Pcp_CheckConsistency(const PcpPrimIndex& primIndex)
             ++r.first;
         }
     }
+
+    // Verify that the transitive dependency flags on each node are
+    // correct by walking each node's ancestor chain. This code was
+    // previously used in PcpClassifyNodeDependency but was replaced with
+    // the per-node cached dependency flags.
+    auto classifyDependency = [](const PcpNodeRef& node) {
+        bool anyDirect = false;
+        bool anyAncestral = false;
+        for (PcpNodeRef p = node; p.GetParentNode(); p = p.GetParentNode()) {
+            // For propagated specializes nodes, we want to continue the
+            // traversal from its origin to pick up dependency information
+            // from the site where the arc was introduced.
+            if (Pcp_IsPropagatedSpecializesNode(p)) {
+                p = p.GetOriginNode();
+            }
+
+            if (p.IsDueToAncestor()) {
+                anyAncestral = true;
+            } else {
+                anyDirect = true;
+            }
+            if (anyAncestral && anyDirect) {
+                break;
+            }
+        }
+        return std::make_pair(anyDirect, anyAncestral);
+    };
+    
+    for (PcpNodeRef n : primIndex.GetNodeRange()) {
+        auto [anyDirect, anyAncestral] = classifyDependency(n);
+        _VERIFY_NODE(
+            n, anyDirect == n.HasTransitiveDirectDependency(),
+            "Incorrect transitive direct dep flag");
+
+        _VERIFY_NODE(
+            n, anyAncestral == n.HasTransitiveAncestralDependency(),
+            "Incorrect transitive ancestral dep flag");
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1411,6 +1411,14 @@ def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
             for schema in requestedReflectedSchemas:
                 reflectedClsInfo = classInfos[schema]
 
+                # Verify that all reflected schemas are single-apply API 
+                # schemas, warn and skip if not.
+                if reflectedClsInfo.schemaKind != "singleApplyAPI":
+                    Print.Err("ERROR: reflectedAPISchemas can only be single-apply "
+                              "API schemas.", reflectedClsInfo.className, 
+                              "is not single-apply.")
+                    continue
+
                 # Ensure there are no repeated attribute names among the reflected schemas.
                 duplicates = []
                 for attrName in reflectedClsInfo.attrs:

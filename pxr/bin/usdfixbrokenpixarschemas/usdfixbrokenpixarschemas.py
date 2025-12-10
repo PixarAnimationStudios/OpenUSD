@@ -58,26 +58,31 @@ def _ValidateFileNames(inputFile, backupFile, isUsdzFile):
             return False
     return True
 
-def _CheckUsdzCompliance(rootLayer):
+def _ValidateUsdz(rootLayer):
     """
-    Runs UsdUtils.ComplianceChecker on the given layer and reports errors.
+    Runs UsdValidation on the given layer and reports errors.
     Returns True if no errors or failed checks were reported, False otherwise.
     """
-
-    checker = UsdUtils.ComplianceChecker(skipARKitRootLayerCheck=True)
-    checker.CheckCompliance(rootLayer)
-    errors = checker.GetErrors()
-    failedChecks = checker.GetFailedChecks()
-    warnings = checker.GetWarnings()
-    for msg in errors + failedChecks:
-        _Err(msg)
-    if len(warnings) > 0:
-        _Err("*********************************************\n"
-             "Possible correctness problems to investigate:\n"
-             "*********************************************\n")
-        for msg in warnings:
-            _Err(msg)
-    return len(errors) == 0 and len(failedChecks) == 0
+    from pxr import Usd, UsdValidation
+    validators = UsdValidation.ValidationRegistry().GetOrLoadAllValidators()
+    validationContext = UsdValidation.ValidationContext(validators)
+    stage = Usd.Stage.Open(rootLayer)
+    errors = validationContext.Validate(stage)
+    errorsFound = False
+    for error in errors:
+        if error.GetType() == UsdValidation.ValidationErrorType.Error:
+            errorsFound = True
+            _Err("Error: %s" % error.GetMessage())
+    warningsReported = False
+    for error in errors:
+        if error.GetType() == UsdValidation.ValidationErrorType.Warn:
+            if not warningsReported:
+                _Err("*********************************************\n"
+                     "Possible correctness problems to investigate:\n"
+                     "*********************************************\n")
+                warningsReported = True
+            _Err("Warning: %s" % error.GetMessage())
+    return not errorsFound
 
 def main():
     parser = argparse.ArgumentParser(description="""Fixes usd / usdz layer
@@ -136,7 +141,7 @@ def main():
         success = _FixUsdAsset(inputFile)
 
     if success:
-        _CheckUsdzCompliance(inputFile)
+        _ValidateUsdz(inputFile)
     else:
         _Err("Unable to fix or no fixes required for input layer '%s'." \
                 %inputFile)

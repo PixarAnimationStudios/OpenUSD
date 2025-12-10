@@ -59,6 +59,10 @@ h4 {
     content: url("https://openusd.org/images/USDLogo24.svg");
 }
 
+.usd-tos-footer-style {
+    color: #113955
+}
+
 #usd-home > h1 {
     display: none;
 }
@@ -74,6 +78,19 @@ img.usd-logo-image {
 
 .usd-index-brief > p {
     margin-bottom: 1em;
+}
+
+.usd-index-card-header-color {
+    color: #666f76;
+}
+
+/* Override link text color (in RST body content only) to meet
+Accessibility contrast requirements. */
+.rst-content a.reference.external,
+.rst-content a.reference.internal,
+.rst-content a .doc,
+.rst-content .doc {
+    color: #2679af !important;
 }
 
 .usd-title-image-outer {

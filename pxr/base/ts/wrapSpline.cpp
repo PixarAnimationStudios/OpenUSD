@@ -173,6 +173,14 @@ static object _WrapSample(
     return object();
 }
 
+static GfInterval _WrapDiff(
+    const TsSpline& self,
+    const TsSpline& other,
+    const GfInterval& compareInterval)
+{
+    return self.Diff(other, compareInterval);
+}
+
 void wrapSpline()
 {
     using This = TsSpline;
@@ -238,6 +246,10 @@ void wrapSpline()
               arg("valueScale"),
               arg("tolerance"),
               arg("withSources") = false))
+
+        .def("Diff", &_WrapDiff,
+             (arg("other"),
+              arg("compareInterval") = GfInterval::GetFullInterval()))
 
         .def("BakeInnerLoops", &This::BakeInnerLoops)
         .def("GetKnotsWithInnerLoopsBaked", &This::GetKnotsWithInnerLoopsBaked)

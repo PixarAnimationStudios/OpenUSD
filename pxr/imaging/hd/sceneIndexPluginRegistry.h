@@ -27,6 +27,9 @@ TF_DECLARE_PUBLIC_TOKENS(HdSceneIndexPluginRegistryTokens, HD_API,
 
 class HdSceneIndexPlugin;
 
+///
+/// A registry for renderer- and application-specific scene indices.
+///
 class HdSceneIndexPluginRegistry final  : public HfPluginRegistry
 {
 public:

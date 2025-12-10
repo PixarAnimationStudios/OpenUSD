@@ -471,12 +471,16 @@ struct UsdContrivedTokensType {
     const TfToken temp;
     /// \brief "test"
     /// 
-    /// Property namespace prefix for the UsdContrivedMultipleApplyAPI schema.
+    /// Property namespace prefix for the UsdContrivedTestReflectedMultipleAPI schema., Property namespace prefix for the UsdContrivedMultipleApplyAPI schema.
     const TfToken test;
     /// \brief "test:__INSTANCE_NAME__"
     /// 
     /// UsdContrivedMultipleApplyAPI
     const TfToken test_MultipleApplyTemplate_;
+    /// \brief "test:__INSTANCE_NAME__:testAttrMultiple"
+    /// 
+    /// UsdContrivedTestReflectedMultipleAPI
+    const TfToken test_MultipleApplyTemplate_TestAttrMultiple;
     /// \brief "test:__INSTANCE_NAME__:testAttrOne"
     /// 
     /// UsdContrivedMultipleApplyAPI
@@ -485,6 +489,10 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedMultipleApplyAPI
     const TfToken test_MultipleApplyTemplate_TestAttrTwo;
+    /// \brief "test:__INSTANCE_NAME__:testRelInternalMultiple"
+    /// 
+    /// UsdContrivedTestReflectedMultipleAPI
+    const TfToken test_MultipleApplyTemplate_TestRelInternalMultiple;
     /// \brief "testAttrDuplicate"
     /// 
     /// UsdTestReflectedExternalAPI, UsdContrivedTestReflectedInternalAPI
@@ -713,6 +721,10 @@ struct UsdContrivedTokensType {
     /// 
     /// Schema identifer and family for UsdContrivedTestReflectedInternalAPI
     const TfToken TestReflectedInternalAPI;
+    /// \brief "TestReflectedMultipleAPI"
+    /// 
+    /// Schema identifer and family for UsdContrivedTestReflectedMultipleAPI
+    const TfToken TestReflectedMultipleAPI;
     /// \brief "UsdContrivedNoAlias"
     /// 
     /// Schema identifer and family for UsdContrivedNoAlias

@@ -11,6 +11,7 @@
 #include "pxr/base/ts/raii.h"
 #include "pxr/base/ts/regressionPreventer.h"
 #include "pxr/base/ts/sample.h"
+#include "pxr/base/ts/diff.h"
 
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -501,6 +502,22 @@ TF_PP_SEQ_FOR_EACH(_INSTANTIATE_SAMPLE_METHOD,
 
 #undef _INSTANTIATE_SAMPLE_METHOD
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Comparison
+
+GfInterval
+TsSpline::Diff(const TsSpline& other) const
+{
+    return Diff(other, GfInterval::GetFullInterval());
+}
+
+GfInterval
+TsSpline::Diff(const TsSpline& other,
+               const GfInterval& compareInterval) const
+{
+    return Ts_Diff(_GetData(), other._GetData(), compareInterval);
+}    
 
 ////////////////////////////////////////////////////////////////////////////////
 // Whole-Spline Queries

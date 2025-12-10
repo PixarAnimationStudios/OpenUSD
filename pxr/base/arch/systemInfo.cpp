@@ -169,7 +169,10 @@ ArchGetExecutablePath()
                 }
             });
 #elif defined(ARCH_OS_WASM_VM)
-    return "";
+    // We use a placeholder name here so that methods which query this
+    // value receive a string that looks like a valid executable path.
+    // There is no inherent way to access an actual path from the wasm vm.
+    return "/wasm";
 #endif
 }
 

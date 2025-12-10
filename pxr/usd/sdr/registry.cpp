@@ -974,6 +974,24 @@ SdrRegistry::RunQuery(const SdrShaderNodeQuery& query)
             }
         }
     }
+
+    // Sort each SdrShaderNodePtrVec alphabetically by identifier,
+    // then sourceType to provide a stable order for the query result.
+    for (SdrShaderNodePtrVec& innerNodes : result._nodes) {
+        std::sort(innerNodes.begin(), innerNodes.end(),
+            [](SdrShaderNodeConstPtr a, SdrShaderNodeConstPtr b) {
+                return a->GetIdentifier() < b->GetIdentifier() ||
+                       a->GetSourceType() < b->GetSourceType();
+            });
+    }
+
+    // Sanity check the computed query result structure
+    if (!TF_VERIFY(result._IsValid(),
+                   "SdrRegistry::RunQuery produced a malformed "
+                   "SdrShaderNodeQueryResult.")) {
+        return {};
+    }
+
     return result;
 }
 

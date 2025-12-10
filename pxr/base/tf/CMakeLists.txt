@@ -495,12 +495,9 @@ pxr_test_scripts(
     testenv/testTf_PyContainerConversions.py
 )
 
-# These tests are disabled for emscripten due to filesystem related operations,
-# dynamic library, or environment related requirements.
+# These tests are disabled for emscripten due to dynamic library, or environment 
+# related requirements.
 if (NOT EMSCRIPTEN)
-    pxr_register_test(TfAtomicOfstreamWrapper
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfAtomicOfstreamWrapper"
-    )
     pxr_register_test(TfDl
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDl"
     )
@@ -526,10 +523,13 @@ if (NOT EMSCRIPTEN)
     pxr_register_test(TfPathUtils
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPathUtils"
     )
-    pxr_register_test(TfSafeOutputFile
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfSafeOutputFile"
-    )
 endif()
+pxr_register_test(TfAtomicOfstreamWrapper
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfAtomicOfstreamWrapper"
+)
+pxr_register_test(TfSafeOutputFile
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfSafeOutputFile"
+)
 pxr_register_test(TfAnyUniquePtr
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfAnyUniquePtr"
 )
