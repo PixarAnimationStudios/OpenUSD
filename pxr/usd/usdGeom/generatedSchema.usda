@@ -2350,7 +2350,7 @@ class Camera "Camera" (
     )
     float focalLength = 50 (
         customData = {
-            string userDocBrief = """Perspective focal length in tenths of a scene unit; see 
+            string userDocBrief = """Perspective focal length in units according to the units attribute; see 
                  ."""
         }
     )
@@ -2367,7 +2367,7 @@ class Camera "Camera" (
     )
     float horizontalAperture = 20.955 (
         customData = {
-            string userDocBrief = """Horizontal aperture in tenths of a scene unit; see 
+            string userDocBrief = """Horizontal aperture in units according to the units attribute; see 
                  \\ref UsdGeom_CameraUnits."""
         }
     )
@@ -2415,9 +2415,16 @@ class Camera "Camera" (
                  or right camera of a stereo setup."""
         }
     )
+    token units = "sceneTenths" (
+        allowedTokens = ["sceneTenths", "millimeters"]
+        customData = {
+            string userDocBrief = """Sets the units for horizontalAperture, verticalAperture, 
+                 horizontalApertureOffset, verticalApertureOffset, and focalLength."""
+        }
+    )
     float verticalAperture = 15.2908 (
         customData = {
-            string userDocBrief = """Vertical aperture in tenths of a scene unit; see 
+            string userDocBrief = """Vertical aperture in units according to the units attribute; see 
                  \\ref UsdGeom_CameraUnits."""
         }
     )

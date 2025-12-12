@@ -92,6 +92,7 @@ void wrapUsdGeomTokens()
     _ADD_TOKEN(cls, linear);
     _ADD_TOKEN(cls, loop);
     _ADD_TOKEN(cls, metersPerUnit);
+    _ADD_TOKEN(cls, millimeters);
     _ADD_TOKEN(cls, modelApplyDrawMode);
     _ADD_TOKEN(cls, modelCardGeometry);
     _ADD_TOKEN(cls, modelCardTextureXNeg);
@@ -145,6 +146,7 @@ void wrapUsdGeomTokens()
     _ADD_TOKEN(cls, right);
     _ADD_TOKEN(cls, rightHanded);
     _ADD_TOKEN(cls, scales);
+    _ADD_TOKEN(cls, sceneTenths);
     _ADD_TOKEN(cls, segment);
     _ADD_TOKEN(cls, shutterClose);
     _ADD_TOKEN(cls, shutterOpen);
@@ -168,6 +170,7 @@ void wrapUsdGeomTokens()
     _ADD_TOKEN(cls, uKnots);
     _ADD_TOKEN(cls, unauthoredValuesIndex);
     _ADD_TOKEN(cls, uniform);
+    _ADD_TOKEN(cls, units);
     _ADD_TOKEN(cls, unrestricted);
     _ADD_TOKEN(cls, uOrder);
     _ADD_TOKEN(cls, upAxis);

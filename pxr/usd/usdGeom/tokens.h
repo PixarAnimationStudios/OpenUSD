@@ -345,6 +345,10 @@ struct UsdGeomTokensType {
     /// 
     /// Stage-level metadata that encodes a scene's linear unit of measure as meters per encoded unit.
     const TfToken metersPerUnit;
+    /// \brief "millimeters"
+    /// 
+    /// Possible value for UsdGeomCamera::GetUnitsAttr()
+    const TfToken millimeters;
     /// \brief "model:applyDrawMode"
     /// 
     /// UsdGeomModelAPI
@@ -557,6 +561,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomPointInstancer
     const TfToken scales;
+    /// \brief "sceneTenths"
+    /// 
+    /// Fallback value for UsdGeomCamera::GetUnitsAttr()
+    const TfToken sceneTenths;
     /// \brief "segment"
     /// 
     /// Possible value for UsdGeomSubset::GetElementTypeAttr()
@@ -649,6 +657,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomPrimvar::SetInterpolation. One value remains constant for each uv patch segment of the surface primitive (which is a \em face for meshes).
     const TfToken uniform;
+    /// \brief "units"
+    /// 
+    /// UsdGeomCamera
+    const TfToken units;
     /// \brief "unrestricted"
     /// 
     /// A type of family of GeomSubsets. It implies that there are no restrictions w.r.t. the membership of elements in  the subsets. There could be overlapping members in subsets  belonging to the family and the union of all subsets in the  family may not contain all the elements.
