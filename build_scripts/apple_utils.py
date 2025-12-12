@@ -308,6 +308,9 @@ def Codesign(install_path, identifier=None, force=False, verbose_output=False) -
         dirs[:] = [d for d in dirs if not d.endswith(".framework")]
 
         for framework in frameworks:
+            framework_name = os.path.splitext(framework)[0]
+            if framework_name.lower() not in ["openusd", "opensubdiv", "materialx"]:
+                continue
             path = os.path.join(root, framework)
             result = CodesignPath(path, identifier, team_identifier=team_identifier, force=force, is_framework=True)
             if verbose_output:
