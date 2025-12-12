@@ -72,7 +72,6 @@
 
 #if defined(ARCH_OS_WINDOWS)
 #define getpid() _getpid()
-#define write(fd_, data_, size_) _write(fd_, data_, size_)
 #define strdup(str_) _strdup(str_)
 #endif
 
@@ -491,7 +490,23 @@ char* asitoa(char* s, long x)
 void aswrite(int fd, const char* msg)
 {
     int saved = errno;
-    write(fd, msg, asstrlen(msg));
+    size_t len = asstrlen(msg);
+    size_t written = 0;
+    while (written < len) {
+    #if defined(ARCH_OS_WINDOWS)
+        int n = _write(fd, msg + written, len - written);
+    #else
+        ssize_t n = write(fd, msg + written, len - written);
+    #endif
+        if (n < 0) {
+            // retry if the write is interrupted by a signal.
+            if (errno == EINTR)
+                continue;
+            // Fail on any other error.
+            break;
+        }
+        written += n;
+    }
     errno = saved;
 }
 
