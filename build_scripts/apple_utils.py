@@ -4,7 +4,6 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 #
-
 # Utilities for managing Apple OS build concerns.
 #
 # NOTE: This file and its contents may change significantly as we continue
@@ -19,6 +18,7 @@ import re
 import platform
 import shlex
 import subprocess
+import glob
 from typing import Optional, List, Dict
 
 TARGET_NATIVE = "native"
@@ -278,7 +278,7 @@ def Codesign(install_path, identifier=None, force=False, verbose_output=False) -
     if not MacOS():
         return False
 
-    codeSignID = identifier or GetCodeSignID()
+    identifier = identifier or GetCodeSignID()
 
     if verbose_output:
         global devout
@@ -286,22 +286,35 @@ def Codesign(install_path, identifier=None, force=False, verbose_output=False) -
         print(f"Code-signing files in {install_path} with {identifier}", file=devout)
 
     try:
-        team_identifier = GetDevelopmentTeamID(codeSignID)
+        team_identifier = GetDevelopmentTeamID(identifier)
     except:
+        if verbose_output:
+            print("Could not get team_identifier")
         team_identifier = None
 
-    for root, dirs, files in os.walk(install_path, topdown=True):
-        for f in files:
+    codesignPaths = [
+        os.path.join(install_path, 'lib'),
+        os.path.join(install_path, 'plugin'),
+        os.path.join(install_path, 'share/usd'),
+        os.path.join(install_path, "frameworks")
+    ]
+        
+    for basePath in codesignPaths:
+        if not os.path.exists(basePath):
+            continue
 
-            _, ext = os.path.splitext(f)
-            if ext in (".dylib", ".so"):
-                path = os.path.join(root, f)
-                result = CodesignPath(path, identifier, team_identifier=team_identifier, force=force, is_framework=False)
-                if verbose_output:
-                    if result:
-                        print(f"Code-signed binary: {path}")
-                    else:
-                        print(f"Did not code-sign binary: {path}")
+        for root, dirs, files in os.walk(basePath, topdown=True):
+            for f in files:
+
+                _, ext = os.path.splitext(f)
+                if ext in (".dylib", ".so"):
+                    path = os.path.join(root, f)
+                    result = CodesignPath(path, identifier, team_identifier=team_identifier, force=force, is_framework=False)
+                    if verbose_output:
+                        if result:
+                            print(f"Code-signed binary: {path}")
+                        else:
+                            print(f"Did not code-sign binary: {path}")
 
         # Bit annoying to have to do this twice, but seems the fastest way to skip traversing frameworks
         frameworks = [d for d in dirs if d.endswith(".framework")]
