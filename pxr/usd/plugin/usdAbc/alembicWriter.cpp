@@ -2037,6 +2037,15 @@ _GetPropertyMetadata(
         metadata.set("interpretation", interpretation);
     }
 
+    // The "arrayExtent" metadata is equivalent to USD's elementSize.
+    value = context.GetPropertyField(usdName, UsdGeomTokens->elementSize);
+    if (value.IsHolding<int>()) {
+        const int elementSize = value.UncheckedGet<int>();
+        if (elementSize > 1) {
+            metadata.set("arrayExtent", TfIntToString(elementSize));
+        }
+    }
+
     // Other Sdf metadata.
     _SetStringMetadata(&metadata, context, SdfFieldKeys->DisplayGroup, usdName);
     _SetStringMetadata(&metadata, context, SdfFieldKeys->Documentation,usdName);

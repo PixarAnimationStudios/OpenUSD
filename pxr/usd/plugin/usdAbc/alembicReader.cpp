@@ -2283,6 +2283,16 @@ _PrimReaderContext::_GetPropertyMetadata(
         }
     }
 
+    // The "arrayExtent" metadata is equivalent to USD's elementSize.
+    std::string arrayExtentValue = alembicMetadata.get("arrayExtent");
+    if (!arrayExtentValue.empty()) {
+        size_t end;
+        const int arrayExtent = std::stoi(arrayExtentValue, &end);
+        if (end == arrayExtentValue.size() && arrayExtent > 1) {
+            usdMetadata[UsdGeomTokens->elementSize] = arrayExtent;
+        }
+    }
+
     // Other Sdf metadata.
     _GetStringMetadata(alembicMetadata, usdMetadata, SdfFieldKeys->DisplayGroup);
     _GetStringMetadata(alembicMetadata, usdMetadata, SdfFieldKeys->Documentation);
