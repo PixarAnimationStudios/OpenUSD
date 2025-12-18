@@ -76,8 +76,7 @@ class HdParticleFieldRenderBuffer : public HdRenderBuffer {
     ///   \return True if the buffer is converged (not currently being
     ///           rendered to).
     bool IsConverged() const override {
-
-        auto c = _converged.load();
+        bool c = _converged.load();
         TF_DEBUG(HDPARTICLEFIELD_GENERAL).Msg("[%s] _converged = %d\n", TF_FUNC_NAME().c_str(), c);
 
         return c;

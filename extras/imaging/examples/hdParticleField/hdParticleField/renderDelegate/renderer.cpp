@@ -1,7 +1,6 @@
 #include "renderer.h"
 #include "../debugCodes.h"
 #include "renderBuffer.h"
-#include <Imath/ImathVec.h>
 #include <OpenImageIO/imagebuf.h>
 #include <OpenImageIO/imageio.h>
 #include <pxr/base/gf/vec2f.h>
@@ -12,11 +11,6 @@ using namespace Imath;
 using namespace OIIO;
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-Imath::M44f convMtx(const GfMatrix4f& m) {
-    return M44f(m[0][0], m[0][1], m[0][2], m[0][3], m[1][0], m[1][1], m[1][2], m[1][3], m[2][0], m[2][1], m[2][2],
-                m[2][3], m[3][0], m[3][1], m[3][2], m[3][3]);
-}
 
 HdParticleFieldRenderer::HdParticleFieldRenderer()
     : _aovBindings(), _aovNames(), _aovBindingsNeedValidation(false), _aovBindingsValid(false), _width(0), _height(0),
@@ -31,41 +25,25 @@ void HdParticleFieldRenderer::addGaussianSplats(const Hd3DGaussianSplat& splatPr
 
     GaussianSplats::Ptr splats = GaussianSplats::create();
 
-    splats->positions.reserve(numSplats);
-    for (const auto& v : splatPrim.GetPositions()) {
-        splats->positions.emplace_back(V3f(v[0], v[1], v[2]));
-    }
+    splats->positions = splatPrim.GetPositions();
 
     if (!splatPrim.GetOrientations().empty()) {
-        splats->rotations.reserve(numSplats);
-        for (const auto& v : splatPrim.GetOrientations()) {
-            const auto& v_imag = v.GetImaginary();
-            splats->rotations.emplace_back(Imath::Quatf(v.GetReal(), v_imag[0], v_imag[1], v_imag[2]));
-        }
+        splats->rotations = splatPrim.GetOrientations();
     }
 
     if (!splatPrim.GetScales().empty()) {
-        splats->scales.reserve(numSplats);
-        for (const auto& v : splatPrim.GetScales()) {
-            splats->scales.emplace_back(V3f(v[0], v[1], v[2]));
-        }
+        splats->scales = splatPrim.GetScales();
     }
 
     if (!splatPrim.GetOpacities().empty()) {
-        splats->opacities.reserve(numSplats);
-        for (const auto& v : splatPrim.GetOpacities()) {
-            splats->opacities.emplace_back(v);
-        }
+        splats->opacities = splatPrim.GetOpacities();
     }
 
     if (!splatPrim.GetSphericalHarmonics().empty()) {
-        splats->sphericalHarmonics.reserve(splatPrim.GetSphericalHarmonics().size());
-        for (const auto& v : splatPrim.GetSphericalHarmonics()) {
-            splats->sphericalHarmonics.emplace_back(v);
-        }
+        splats->sphericalHarmonics = splatPrim.GetSphericalHarmonics();
     }
 
-    splats->xform  = convMtx(splatPrim.GetTransform());
+    splats->xform  = splatPrim.GetTransform();
     splats->primID = splatPrim.GetPrimId();
 
     _gsRenderer.addGaussianSplats(splatName, splats);
@@ -88,8 +66,8 @@ void HdParticleFieldRenderer::SetDataWindow(const GfRect2i& dataWindow) {
 }
 
 void HdParticleFieldRenderer::SetCamera(const GfMatrix4d& viewMatrix, const GfMatrix4d& projMatrix) {
-    _gsRenderer.setWorldToViewMatrix(convMtx(GfMatrix4f(viewMatrix)));
-    _gsRenderer.setProjMatrix(convMtx(GfMatrix4f(projMatrix)));
+    _gsRenderer.setWorldToViewMatrix(GfMatrix4f(viewMatrix));
+    _gsRenderer.setProjMatrix(GfMatrix4f(projMatrix));
 }
 
 void HdParticleFieldRenderer::SetAovBindings(HdRenderPassAovBindingVector const& aovBindings) {

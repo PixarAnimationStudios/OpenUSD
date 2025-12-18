@@ -3,14 +3,16 @@
 //
 
 #include "gsRenderer.h"
-#include <Imath/ImathMatrix.h>
-#include <Imath/ImathQuat.h>
-#include <Imath/ImathVec.h>
 #include <OpenImageIO/imagebuf.h>
 #include <OpenImageIO/imageio.h>
 #include <algorithm>
 #include <memory>
 #include <vector>
+
+#include "pxr/base/gf/matrix2f.h"
+#include "pxr/base/gf/matrix3f.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec4f.h"
 
 // Spherical harmonic coefficients.
 constexpr float SH_C0   = 0.28209479177387814;
@@ -30,6 +32,8 @@ constexpr float SH_C3_6 = -0.5900435899266435;
 
 using namespace OIIO;
 using namespace Imath;
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 class ImageBufCollection {
   public:
@@ -78,7 +82,7 @@ class ImageBufCollection {
     int width() const { return _spec.width; }
     int height() const { return _spec.height; }
 
-    void setColor(V3f color, float alpha) {
+    void setColor(GfVec3f color, float alpha) {
         if (_colorPIt) {
             auto& p        = *_colorPIt;
 
@@ -116,21 +120,19 @@ class ImageBufCollection {
 
 float clamp01(float v) { return std::min(1.0f, std::max(0.0f, v)); }
 
-V3f clamp01(V3f v) { return {clamp01(v[0]), clamp01(v[1]), clamp01(v[2])}; }
+GfVec3f clamp01(GfVec3f v) { return {clamp01(v[0]), clamp01(v[1]), clamp01(v[2])}; }
 
 struct Splat {
     // currently using camera z depth - but could use distance from camera -
     // different sorting metrics in different files?
-    float getDepth(const M44f& worldToViewMtx) const {
-        auto pos4   = V4f(position);
-        auto camPos = pos4 * worldToViewMtx;
-        return camPos.z;
+    float getDepth(const GfMatrix4f& worldToViewMtx) const {
+        return worldToViewMtx.Transform(position)[2];
     }
 
-    V3f getColor(const V3f& camDir) const {
+    GfVec3f getColor(const GfVec3f& camDir) const {
         unsigned int sh_size = sh_weights.size();
 
-        V3f color            = sh_weights[0];
+        GfVec3f color            = sh_weights[0];
 
         // clang-format off
         if (sh_size > 1) {
@@ -172,25 +174,50 @@ struct Splat {
         }
         // clang-format on
 
-        return clamp01(color + V3f(0.5));
+        return clamp01(color + GfVec3f(0.5));
     }
 
-    void setCov3D(V3f scale, Quatf quat) {
-        auto rot          = quat.toMatrix33();
+    // lifted from Imath : (https://github.com/AcademySoftwareFoundation/Imath/blob/4de9a1dabdf517a7df9bc350b7395bc8db2f681d/src/Imath/ImathQuat.h#L856C1-L856C20)
+    static GfMatrix3f toMatrix3f(const GfQuatf& quat) {
 
-        auto scaleSquared = scale * scale;
-        auto scaleMtx = M33f(scaleSquared[0], 0.0, 0.0, 0.0, scaleSquared[1],
-                             0.0, 0.0, 0.0, scaleSquared[2]);
+        float x = quat.GetImaginary()[0];
+        float y = quat.GetImaginary()[1];
+        float z = quat.GetImaginary()[2];
+        float r = quat.GetReal();
+
+        return GfMatrix3f(
+            1 - 2 * (y * y + z * z),
+            2 * (x * y + z * r),
+            2 * (z * x - y * r),
+
+            2 * (x * y - z * r),
+            1 - 2 * (z * z + x * x),
+            2 * (y * z + x * r),
+
+            2 * (z * x + y * r),
+            2 * (y * z - x * r),
+            1 - 2 * (y * y + x * x));
+    }
+
+    void setCov3D(GfVec3f scale, GfQuatf quat) {
+        GfMatrix3f rot = toMatrix3f(quat);
+
+        GfMatrix3f scaleMtx = GfMatrix3f(
+            scale[0] * scale[0], 0.0, 0.0,
+            0.0, scale[1] * scale[1], 0.0,
+            0.0, 0.0, scale[2] * scale[2]);
+
+        GfMatrix3f rotT = rot.GetTranspose();
 
         // create the covariance matrix by rotating the splat back to its local
         // space, scaling along local x/y/z axes and then rotating back.
-        cov3D = rot.transposed() * scaleMtx * rot;
+        cov3D = rotT * scaleMtx * rot;
     }
 
-    V3f position;
-    M33f cov3D;
+    GfVec3f position;
+    GfMatrix3f cov3D;
     float opacity;
-    std::vector<V3f> sh_weights;
+    VtVec3fArray sh_weights;
 };
 
 class GaussianSplatsRenderer::Impl {
@@ -198,11 +225,11 @@ class GaussianSplatsRenderer::Impl {
     Impl()  = default;
     ~Impl() = default;
 
-    void setWorldToViewMatrix(const M44f& m) {
+    void setWorldToViewMatrix(const GfMatrix4f& m) {
         _worldToViewMtx     = m;
         _needsIndicesSorted = true;
     }
-    void setProjMatrix(const M44f& m) { _projMatrix = m; }
+    void setProjMatrix(const GfMatrix4f& m) { _projMatrix = m; }
     void addGaussianSplats(const std::string& splatName,
                            GaussianSplats::Ptr newSplats);
     void removeGaussianSplats(const std::string& splatName);
@@ -241,8 +268,8 @@ class GaussianSplatsRenderer::Impl {
     mutable std::vector<Index> _sortedIndices;
     mutable bool _needsIndicesSorted{true};
 
-    M44f _worldToViewMtx;
-    M44f _projMatrix;
+    GfMatrix4f _worldToViewMtx;
+    GfMatrix4f _projMatrix;
 };
 
 void GaussianSplatsRenderer::Impl::addGaussianSplats(
@@ -264,7 +291,7 @@ void GaussianSplatsRenderer::Impl::addGaussianSplats(
     splatVec.resize(numNewSplats);
 
     for (unsigned int i = 0, n = numNewSplats; i < n; ++i) {
-        splatVec[i].position = newSplats->positions[i] * newSplats->xform;
+        splatVec[i].position = newSplats->xform.Transform(newSplats->positions[i]);
 
         if (hasValidOpacity) {
             splatVec[i].opacity = newSplats->opacities[i];
@@ -273,18 +300,18 @@ void GaussianSplatsRenderer::Impl::addGaussianSplats(
         if (hasValidScale && hasValidRotation) {
             splatVec[i].setCov3D(newSplats->scales[i], newSplats->rotations[i]);
         } else if (hasValidRotation && !hasValidScale) {
-            splatVec[i].setCov3D(V3f(1.0, 1.0, 1.0), newSplats->rotations[i]);
+            splatVec[i].setCov3D(GfVec3f(1.0, 1.0, 1.0), newSplats->rotations[i]);
         } else if (!hasValidRotation && hasValidScale) {
-            splatVec[i].setCov3D(newSplats->scales[i], Quatf());
+            splatVec[i].setCov3D(newSplats->scales[i], GfQuatf());
         }
 
         // extract the scale/rotation component from the transform matrix
         // and use it to modify the cov3D matrix to account for the transformation
-        Imath::M33f xform_SR = Imath::M33f(
+        GfMatrix3f xform_SR = GfMatrix3f(
             newSplats->xform[0][0], newSplats->xform[0][1], newSplats->xform[0][2],
             newSplats->xform[1][0], newSplats->xform[1][1], newSplats->xform[1][2],
             newSplats->xform[2][0], newSplats->xform[2][1], newSplats->xform[2][2]);
-        splatVec[i].cov3D = xform_SR * splatVec[i].cov3D * xform_SR.transpose();
+        splatVec[i].cov3D = xform_SR * splatVec[i].cov3D * xform_SR.GetTranspose();
 
         // TODO - I think we need to figure out how to account for the xform in the SH data too.
         if (!newSplats->sphericalHarmonics.empty()) {
@@ -292,7 +319,7 @@ void GaussianSplatsRenderer::Impl::addGaussianSplats(
             auto sh_it = newSplats->sphericalHarmonics.begin() +
                          sphericalHarmonics_stride * i;
 
-            auto& sh_weights = splatVec[i].sh_weights;
+            VtVec3fArray &sh_weights = splatVec[i].sh_weights;
             sh_weights.resize(sphericalHarmonics_stride);
             for (unsigned int j = 0; j < sphericalHarmonics_stride; j += 1) {
                 sh_weights[j] = (sh_it[j]);
@@ -361,7 +388,7 @@ void GaussianSplatsRenderer::Impl::removeGaussianSplats(
 
     size_t offset   = nameIt - _splatNames.begin();
 
-    auto oldIndices = _sortedIndices;
+    std::vector<Index> oldIndices = _sortedIndices;
 
     _sortedIndices.clear();
     for (const auto& it : oldIndices) {
@@ -387,26 +414,24 @@ bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(
     ImageBuf* primIDBuf) const {
     ImageBufCollection imageBufs(colorBuf, depthBuf, primIDBuf);
 
-    constexpr V2f oneVec(1.0, 1.0);
-
     if (_needsIndicesSorted) {
         updateSortedIndices();
     }
 
     const int w = imageBufs.width();
     const int h = imageBufs.height();
-    const V2f wh(w, h);
+    const GfVec2f wh(w, h);
 
     const float halfWidth  = w / 2.0f;
     const float halfHeight = h / 2.0f;
-    const V2f half_wh(halfWidth, halfHeight);
+    const GfVec2f half_wh(halfWidth, halfHeight);
 
-    const auto imageROI = ROI(0, w, 0, h);
+    const ROI imageROI = ROI(0, w, 0, h);
 
     // calculate the camera location in order to later determine the view
     // direction to the splat.
-    auto viewToWorldMtx = _worldToViewMtx.inverse();
-    V3f cam_loc(viewToWorldMtx[3][0], viewToWorldMtx[3][1],
+    GfMatrix4f viewToWorldMtx = _worldToViewMtx.GetInverse();
+    GfVec3f cam_loc(viewToWorldMtx[3][0], viewToWorldMtx[3][1],
                 viewToWorldMtx[3][2]);
 
     float aspect    = (float)h / (float)w;
@@ -418,62 +443,63 @@ bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(
     float limy      = htan_fovy;
 
     // rotational and scale portion of the world to view matrix
-    M33f W(_worldToViewMtx[0][0], _worldToViewMtx[1][0], _worldToViewMtx[2][0],
+    GfMatrix3f W(_worldToViewMtx[0][0], _worldToViewMtx[1][0], _worldToViewMtx[2][0],
            _worldToViewMtx[0][1], _worldToViewMtx[1][1], _worldToViewMtx[2][1],
            _worldToViewMtx[0][2], _worldToViewMtx[1][2], _worldToViewMtx[2][2]);
 
     // loop over the sorted splat indices and render the splats from back to
     // front - overing the splats as we go.
-    for (const auto splat_index : _sortedIndices) {
-        const auto& splat = _splats[splat_index.first][splat_index.second];
+    for (const Index splat_index: _sortedIndices) {
+        const Splat &splat = _splats[splat_index.first][splat_index.second];
 
         // skip any splats that are completely transparent
         if (splat.opacity <= 0.0) {
             continue;
         }
 
-        V4f cameraPos = V4f(splat.position) * _worldToViewMtx;
-        auto ndcPos   = cameraPos * _projMatrix;
+        GfVec4f cameraPos = GfVec4f(splat.position[0], splat.position[1], splat.position[2], 1) * _worldToViewMtx;
+        GfVec4f ndcPos   = cameraPos * _projMatrix;
         if (ndcPos[3] < 0) {
             continue;
         }
 
-        V2f pos_ndc_2d = V2f(ndcPos[0] / ndcPos[3], ndcPos[1] / ndcPos[3]);
+        GfVec2f pos_ndc_2d = GfVec2f(ndcPos[0] / ndcPos[3], ndcPos[1] / ndcPos[3]);
 
-        float txtz     = cameraPos.x / cameraPos.z;
-        float tytz     = cameraPos.y / cameraPos.z;
+        float txtz     = cameraPos[0] / cameraPos[2];
+        float tytz     = cameraPos[1] / cameraPos[2];
 
-        float tx       = std::min(limx, std::max(-limx, txtz)) * cameraPos.z;
-        float ty       = std::min(limy, std::max(-limy, tytz)) * cameraPos.z;
-        float tz       = cameraPos.z;
+        float tx       = std::min(limx, std::max(-limx, txtz)) * cameraPos[2];
+        float ty       = std::min(limy, std::max(-limy, tytz)) * cameraPos[2];
+        float tz       = cameraPos[2];
 
-        M33f J(focal / tz, 0.0, -(focal * tx) / (tz * tz), 0.0, focal / tz,
+        GfMatrix3f J(focal / tz, 0.0, -(focal * tx) / (tz * tz), 0.0, focal / tz,
                -(focal * ty) / (tz * tz), 0.0, 0.0, 0.0);
-        auto T     = J * W;
-        auto cov   = T * splat.cov3D * T.transposed();
+        GfMatrix3f T     = J * W;
+        GfMatrix3f cov   = T * splat.cov3D * T.GetTranspose();
 
-        auto cov2d = M22f(cov[0][0], cov[0][1], cov[1][0], cov[1][1]);
+        GfMatrix2f cov2d = GfMatrix2f(cov[0][0], cov[0][1], cov[1][0], cov[1][1]);
 
-        auto det   = cov2d.determinant();
+        double det   = cov2d.GetDeterminant();
         if (det == 0.0)
             continue;
 
-        V2f bboxsize_cam(3.0 * std::sqrt(cov2d[0][0]),
-                         3.0 * std::sqrt(cov2d[1][1]));
+        GfVec2f bboxsize_cam(3.0f * std::sqrt(cov2d[0][0]),
+                             3.0f * std::sqrt(cov2d[1][1]));
 
-        V2f bboxsize_ndc     = (bboxsize_cam / wh) * 2.0;
+        GfVec2f bboxsize_ndc     = GfVec2f(bboxsize_cam[0] / wh[0],
+                                           bboxsize_cam[1] / wh[1]) * 2.0f;
 
-        auto bbox_ndc_min    = -bboxsize_ndc + pos_ndc_2d;
-        auto bbox_ndc_max    = bboxsize_ndc + pos_ndc_2d;
+        GfVec2f bbox_ndc_min    = -bboxsize_ndc + pos_ndc_2d;
+        GfVec2f bbox_ndc_max    =  bboxsize_ndc + pos_ndc_2d;
 
-        auto bbox_screen_min = (bbox_ndc_min + oneVec) * half_wh;
-        auto bbox_screen_max = (bbox_ndc_max + oneVec) * half_wh;
+        GfVec2f bbox_screen_min = GfVec2f((bbox_ndc_min[0] + 1.0f) * half_wh[0], (bbox_ndc_min[1] + 1.0f) * half_wh[1]);
+        GfVec2f bbox_screen_max = GfVec2f((bbox_ndc_max[0] + 1.0f) * half_wh[0], (bbox_ndc_max[1] + 1.0f) * half_wh[1]);
 
-        auto x1              = int(floor(bbox_screen_min[0]));
-        auto y1              = int(floor(bbox_screen_min[1]));
+        int x1 = static_cast<int>(floor(bbox_screen_min[0]));
+        int y1 = static_cast<int>(floor(bbox_screen_min[1]));
 
-        auto x2              = int(ceil(bbox_screen_max[0]));
-        auto y2              = int(ceil(bbox_screen_max[1]));
+        int x2 = static_cast<int>(ceil(bbox_screen_max[0]));
+        int y2 = static_cast<int>(ceil(bbox_screen_max[1]));
 
         if (x1 > w || x2 < 0 || y1 > h || y2 < 0) {
             // if the entire splat bound is outside the image then we can skip
@@ -481,46 +507,45 @@ bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(
             continue;
         }
 
-        V2f splatPixelSize = V2f(x2 - x1, y2 - y1);
+        GfVec2i splatPixelSize = GfVec2i(x2 - x1, y2 - y1);
 
         // calculate the conic for the gaussian falloff.
-        auto det_inv   = 1.0 / det;
-        auto conic     = V3f(cov2d[1][1] * det_inv, -cov2d[0][1] * det_inv,
-                             cov2d[0][0] * det_inv);
+        double det_inv = 1.0 / det;
+        GfVec3f conic = GfVec3f(cov2d[1][1] * det_inv, -cov2d[0][1] * det_inv,
+                        cov2d[0][0] * det_inv);
 
-        V3f camera_dir = splat.position - cam_loc;
-        camera_dir.normalize();
+        GfVec3f camera_dir = splat.position - cam_loc;
+        GfNormalize(&camera_dir);
 
-        auto splat_color = splat.getColor(camera_dir);
-        auto splat_depth = ndcPos[2];
+        GfVec3f splat_color = splat.getColor(camera_dir);
+        float splat_depth = ndcPos[2];
         int splat_primID = _splatPrimIDs[splat_index.first];
 
         // step in camera space of the splat for each pixel.
-        auto bbox_cam_step_per_pixel = (bboxsize_cam * 2.0f) / splatPixelSize;
+        GfVec2f bbox_cam_step_per_pixel = GfVec2f( (bboxsize_cam[0] * 2.0f) / splatPixelSize[0], (bboxsize_cam[1] * 2.0f) / splatPixelSize[1]);
 
         // calculate an OIIO ROI for the region covered by the splat.
-        auto splatROI = ROI(x1, x2, y1, y2, 0, 1, 0, 4);
+        ROI splatROI = ROI(x1, x2, y1, y2, 0, 1, 0, 4);
 
         // clip the splatROI to the image
-        auto clippedSplatROI = roi_intersection(splatROI, imageROI);
+        ROI clippedSplatROI = roi_intersection(splatROI, imageROI);
 
         for (imageBufs.initIterators(clippedSplatROI); !imageBufs.done();
              imageBufs.incrementIterators()) {
             // note pixel coord WRT to the splat BB needs to be taken from the
             // un-clipped ROI.
-            V2f splatPixelIndex(imageBufs.x() - splatROI.xbegin,
+            GfVec2i splatPixelIndex(imageBufs.x() - splatROI.xbegin,
                                 imageBufs.y() - splatROI.ybegin);
 
             // calculate the corresponding point in camera space.
-            V2f pixel_cam =
-                -bboxsize_cam + splatPixelIndex * bbox_cam_step_per_pixel;
+            GfVec2f pixel_cam = GfVec2f( -bboxsize_cam[0] + splatPixelIndex[0] * bbox_cam_step_per_pixel[0], -bboxsize_cam[1] + splatPixelIndex[1] * bbox_cam_step_per_pixel[1]);
 
             // calculate the gaussian falloff in the space of the splat. (note
             // we defer the outer exp() call to after the early exit)
-            auto power = -(conic.x * pow(pixel_cam[0], 2) +
-                           conic.z * pow(pixel_cam[1], 2)) /
+            double power = -(conic[0] * pow(pixel_cam[0], 2) +
+                           conic[2] * pow(pixel_cam[1], 2)) /
                              2.0 -
-                         (conic.y * pixel_cam[0] * pixel_cam[1]);
+                         (conic[1] * pixel_cam[0] * pixel_cam[1]);
             if (power > 0)
                 continue;
 
@@ -545,11 +570,11 @@ GaussianSplatsRenderer::GaussianSplatsRenderer()
 
 GaussianSplatsRenderer::~GaussianSplatsRenderer() = default;
 
-void GaussianSplatsRenderer::setWorldToViewMatrix(const M44f& m) {
+void GaussianSplatsRenderer::setWorldToViewMatrix(const GfMatrix4f& m) {
     pImpl->setWorldToViewMatrix(m);
 }
 
-void GaussianSplatsRenderer::setProjMatrix(const M44f& m) {
+void GaussianSplatsRenderer::setProjMatrix(const GfMatrix4f& m) {
     pImpl->setProjMatrix(m);
 }
 
@@ -568,3 +593,5 @@ bool GaussianSplatsRenderer::renderGaussianSplatScene(
     ImageBuf* primIDBuf) const {
     return pImpl->renderGaussianSplatScene(colorBuf, depthBuf, primIDBuf);
 }
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -75,15 +75,17 @@ bool HdParticleFieldRenderBuffer::Allocate(GfVec3i const& dimensions, HdFormat f
     _format = format;
     _buffer.resize(_GetBufferSize(GfVec2i(_width, _height), format));
 
-    auto nchans = HdGetComponentCount(format);
+    size_t nchans = HdGetComponentCount(format);
 
     {
         // create the OIIO ImageBuf wrapper around the hydra buffer allocated
         // memory.
-        auto spec      = OIIO::ImageSpec(_width, _height, nchans, _GetOIIOTypeDescBaseType(format));
-        auto xStride   = HdDataSizeOfFormat(format);
-        auto yStride   = xStride * _width;
-        auto zStride   = yStride * _height;
+        OIIO::ImageSpec spec = OIIO::ImageSpec(_width, _height, nchans,
+                                               _GetOIIOTypeDescBaseType(
+                                                   format));
+        size_t xStride = HdDataSizeOfFormat(format);
+        unsigned long yStride = xStride * _width;
+        unsigned long zStride = yStride * _height;
 
         _buffer_imgbuf = OIIO::ImageBuf(spec, (void*)_buffer.data(), xStride, yStride, zStride);
     }

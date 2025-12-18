@@ -50,7 +50,7 @@ void Hd3DGaussianSplat::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
         } else {
             value = sceneDelegate->Get(id, UsdLightFieldTokens->positionsh);
             if (!value.IsEmpty()) {
-                auto halfData = value.Get<VtVec3hArray>();
+                VtArray<GfVec3h> halfData = value.Get<VtVec3hArray>();
                 _positions    = VtVec3fArray(halfData.begin(), halfData.end());
             } else {
                 _positions.clear();
@@ -66,7 +66,7 @@ void Hd3DGaussianSplat::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
         } else {
             value = sceneDelegate->Get(id, UsdLightFieldTokens->orientationsh);
             if (!value.IsEmpty()) {
-                auto halfData = value.Get<VtQuathArray>();
+                VtArray<GfQuath> halfData = value.Get<VtQuathArray>();
                 _orientations = VtQuatfArray(halfData.begin(), halfData.end());
             } else {
                 _orientations.clear();
@@ -82,7 +82,7 @@ void Hd3DGaussianSplat::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
         } else {
             value = sceneDelegate->Get(id, UsdLightFieldTokens->scalesh);
             if (!value.IsEmpty()) {
-                auto halfData = value.Get<VtVec3hArray>();
+                VtArray<GfVec3h> halfData = value.Get<VtVec3hArray>();
                 _scales       = VtVec3fArray(halfData.begin(), halfData.end());
             } else {
                 _scales.clear();
@@ -98,7 +98,7 @@ void Hd3DGaussianSplat::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
         } else {
             value = sceneDelegate->Get(id, UsdLightFieldTokens->opacitiesh);
             if (!value.IsEmpty()) {
-                auto halfData = value.Get<VtHalfArray>();
+                VtArray<pxr_half::half> halfData = value.Get<VtHalfArray>();
                 _opacities    = VtFloatArray(halfData.begin(), halfData.end());
             } else {
                 _opacities.clear();
@@ -116,7 +116,7 @@ void Hd3DGaussianSplat::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
         } else {
             value = sceneDelegate->Get(id, UsdLightFieldTokens->radianceSphericalHarmonicsCoefficientsh);
             if (!value.IsEmpty()) {
-                auto halfData       = value.Get<VtVec3hArray>();
+                VtArray<GfVec3h> halfData = value.Get<VtVec3hArray>();
                 _sphericalHarmonics = VtVec3fArray(halfData.begin(), halfData.end());
             } else {
                 _sphericalHarmonics.clear();
@@ -131,7 +131,7 @@ void Hd3DGaussianSplat::Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* rend
     // Pull top-level state out of the render param.
     HdParticleFieldRenderParam* gsRenderParam = static_cast<HdParticleFieldRenderParam*>(renderParam);
 
-    auto renderer                             = gsRenderParam->AcquireRendererForEdit();
+    HdParticleFieldRenderer *renderer = gsRenderParam->AcquireRendererForEdit();
 
     renderer->removeGaussianSplats(id.GetText());
     renderer->addGaussianSplats(*this, id.GetText());
