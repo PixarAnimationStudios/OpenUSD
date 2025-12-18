@@ -35,7 +35,9 @@ class SdfAssetPath;
 /// \class UsdLightFieldKernelBaseAPI
 ///
 /// Defines a base-class type applied schema that all applied schema
-/// that provides the a ParticleField kernel will automatically apply.
+/// that provide a ParticleField kernel will automatically apply.
+/// The ParticleField kernel defines the spatial basis function for each
+/// particle.
 /// The purpose of this base class is to allow validation to enforce
 /// that a kernel definition is present for a ParticleField
 ///

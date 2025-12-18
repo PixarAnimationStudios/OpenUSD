@@ -48,5 +48,5 @@ void wrapUsdLightFieldTokens()
     _ADD_TOKEN(cls, LightFieldSphericalBetaAttributeAPI);
     _ADD_TOKEN(cls, LightFieldSphericalHarmonicsAttributeAPI);
     _ADD_TOKEN(cls, ParticleField);
-    _ADD_TOKEN(cls, ParticleField_3DGaussianSplat);
+    _ADD_TOKEN(cls, ParticleField3DGaussianSplat);
 }

@@ -8,7 +8,7 @@ kernelGaussianSurfletAPI
 opacityAttributeAPI
 orientationAttributeAPI
 particleField
-particleField_3DGaussianSplat
+particleField3DGaussianSplat
 positionAttributeAPI
 positionBaseAPI
 radianceBaseAPI
@@ -26,7 +26,7 @@ wrapKernelGaussianSurfletAPI.cpp
 wrapOpacityAttributeAPI.cpp
 wrapOrientationAttributeAPI.cpp
 wrapParticleField.cpp
-wrapParticleField_3DGaussianSplat.cpp
+wrapParticleField3DGaussianSplat.cpp
 wrapPositionAttributeAPI.cpp
 wrapPositionBaseAPI.cpp
 wrapRadianceBaseAPI.cpp

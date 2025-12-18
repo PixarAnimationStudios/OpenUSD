@@ -84,7 +84,7 @@ class ParticleField "ParticleField" (
 class "LightFieldPositionBaseAPI" (
     customData = {
         string userDocBrief = """Defines a base-class type applied schema that all applied schema
-            that provides the a ParticleField kernel will automatically apply."""
+            that provide the ParticleField position data will automatically apply."""
     }
 )
 {
@@ -113,7 +113,7 @@ class "LightFieldPositionAttributeAPI" (
 class "LightFieldOrientationAttributeAPI" (
     customData = {
         string userDocBrief = """A ParticleField related applied schema that provides an
-             orientation attribute to define the orientation of the particles."""
+             orientations attribute to define the orientation of the particles."""
     }
 )
 {
@@ -132,28 +132,29 @@ class "LightFieldOrientationAttributeAPI" (
 class "LightFieldScaleAttributeAPI" (
     customData = {
         string userDocBrief = """A ParticleField related applied schema that provides a
-             scale attribute to define the scale of the particles."""
+             scales attribute to define the linear scale factor applied to the
+             particles."""
     }
 )
 {
     float3[] scales (
         customData = {
-            string userDocBrief = """Affine scale factor applied to the base shape defined in the
-                'shape' attribute."""
+            string userDocBrief = """Affine linear scale factor applied to the kernel that is
+                instantiated at each particle."""
         }
     )
     half3[] scalesh (
         customData = {
-            string userDocBrief = """Affine scale factor applied to the base shape defined in the
-                'shape' attribute."""
+            string userDocBrief = """Affine linear scale factor applied to the kernel that is
+                instantiated at each particle."""
         }
     )
 }
 
 class "LightFieldOpacityAttributeAPI" (
     customData = {
-        string userDocBrief = """A ParticleField related applied schema that provides a
-             opacity attribute to define the opacity of the particles."""
+        string userDocBrief = """A ParticleField related applied schema that provides an
+             opacities attribute to define the opacity of the particles."""
     }
 )
 {
@@ -172,7 +173,7 @@ class "LightFieldOpacityAttributeAPI" (
 class "LightFieldKernelBaseAPI" (
     customData = {
         string userDocBrief = """Defines a base-class type applied schema that all applied schema
-            that provides the a ParticleField kernel will automatically apply."""
+            that provide a ParticleField kernel will automatically apply."""
     }
 )
 {
@@ -208,7 +209,8 @@ class "LightFieldKernelConstantSurfletAPI" (
 class "LightFieldRadianceBaseAPI" (
     customData = {
         string userDocBrief = """Defines a base-class type applied schema that all applied schema
-            that provides the a ParticleField kernel will automatically apply."""
+            that provides a ParticleField radiance definition will automatically
+            apply."""
     }
 )
 {
@@ -234,7 +236,7 @@ class "LightFieldSphericalHarmonicsAttributeAPI" (
     )
     uniform int radiance:sphericalHarmonicsDegree = 3 (
         customData = {
-            string userDocBrief = "The maximum degree of the spherical harmonics."
+            string userDocBrief = "The highest degree of the spherical harmonics."
         }
     )
 }
@@ -254,7 +256,7 @@ class "LightFieldSphericalBetaAttributeAPI" (
     )
 }
 
-class ParticleField_3DGaussianSplat "ParticleField_3DGaussianSplat" (
+class ParticleField3DGaussianSplat "ParticleField3DGaussianSplat" (
     apiSchemas = ["LightFieldPositionAttributeAPI", "LightFieldOrientationAttributeAPI", "LightFieldScaleAttributeAPI", "LightFieldOpacityAttributeAPI", "LightFieldKernelGaussianEllipsoidAPI", "LightFieldSphericalHarmonicsAttributeAPI"]
     customData = {
         string userDocBrief = """This is a concrete ParticleField representing the original 3D

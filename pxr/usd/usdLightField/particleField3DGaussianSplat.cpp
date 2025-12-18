@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/particleField_3DGaussianSplat.h"
+#include "pxr/usd/usdLightField/particleField3DGaussianSplat.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -16,64 +16,64 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdLightFieldParticleField_3DGaussianSplat,
+    TfType::Define<UsdLightFieldParticleField3DGaussianSplat,
         TfType::Bases< UsdLightFieldParticleField > >();
     
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
-    // TfType::Find<UsdSchemaBase>().FindDerivedByName("ParticleField_3DGaussianSplat")
-    // to find TfType<UsdLightFieldParticleField_3DGaussianSplat>, which is how IsA queries are
+    // TfType::Find<UsdSchemaBase>().FindDerivedByName("ParticleField3DGaussianSplat")
+    // to find TfType<UsdLightFieldParticleField3DGaussianSplat>, which is how IsA queries are
     // answered.
-    TfType::AddAlias<UsdSchemaBase, UsdLightFieldParticleField_3DGaussianSplat>("ParticleField_3DGaussianSplat");
+    TfType::AddAlias<UsdSchemaBase, UsdLightFieldParticleField3DGaussianSplat>("ParticleField3DGaussianSplat");
 }
 
 /* virtual */
-UsdLightFieldParticleField_3DGaussianSplat::~UsdLightFieldParticleField_3DGaussianSplat()
+UsdLightFieldParticleField3DGaussianSplat::~UsdLightFieldParticleField3DGaussianSplat()
 {
 }
 
 /* static */
-UsdLightFieldParticleField_3DGaussianSplat
-UsdLightFieldParticleField_3DGaussianSplat::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdLightFieldParticleField3DGaussianSplat
+UsdLightFieldParticleField3DGaussianSplat::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdLightFieldParticleField_3DGaussianSplat();
+        return UsdLightFieldParticleField3DGaussianSplat();
     }
-    return UsdLightFieldParticleField_3DGaussianSplat(stage->GetPrimAtPath(path));
+    return UsdLightFieldParticleField3DGaussianSplat(stage->GetPrimAtPath(path));
 }
 
 /* static */
-UsdLightFieldParticleField_3DGaussianSplat
-UsdLightFieldParticleField_3DGaussianSplat::Define(
+UsdLightFieldParticleField3DGaussianSplat
+UsdLightFieldParticleField3DGaussianSplat::Define(
     const UsdStagePtr &stage, const SdfPath &path)
 {
-    static TfToken usdPrimTypeName("ParticleField_3DGaussianSplat");
+    static TfToken usdPrimTypeName("ParticleField3DGaussianSplat");
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdLightFieldParticleField_3DGaussianSplat();
+        return UsdLightFieldParticleField3DGaussianSplat();
     }
-    return UsdLightFieldParticleField_3DGaussianSplat(
+    return UsdLightFieldParticleField3DGaussianSplat(
         stage->DefinePrim(path, usdPrimTypeName));
 }
 
 /* virtual */
-UsdSchemaKind UsdLightFieldParticleField_3DGaussianSplat::_GetSchemaKind() const
+UsdSchemaKind UsdLightFieldParticleField3DGaussianSplat::_GetSchemaKind() const
 {
-    return UsdLightFieldParticleField_3DGaussianSplat::schemaKind;
+    return UsdLightFieldParticleField3DGaussianSplat::schemaKind;
 }
 
 /* static */
 const TfType &
-UsdLightFieldParticleField_3DGaussianSplat::_GetStaticTfType()
+UsdLightFieldParticleField3DGaussianSplat::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdLightFieldParticleField_3DGaussianSplat>();
+    static TfType tfType = TfType::Find<UsdLightFieldParticleField3DGaussianSplat>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdLightFieldParticleField_3DGaussianSplat::_IsTypedSchema()
+UsdLightFieldParticleField3DGaussianSplat::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -81,19 +81,19 @@ UsdLightFieldParticleField_3DGaussianSplat::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdLightFieldParticleField_3DGaussianSplat::_GetTfType() const
+UsdLightFieldParticleField3DGaussianSplat::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::GetProjectionModeHintAttr() const
+UsdLightFieldParticleField3DGaussianSplat::GetProjectionModeHintAttr() const
 {
     return GetPrim().GetAttribute(UsdLightFieldTokens->projectionModeHint);
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::CreateProjectionModeHintAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdLightFieldParticleField3DGaussianSplat::CreateProjectionModeHintAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdLightFieldTokens->projectionModeHint,
                        SdfValueTypeNames->Token,
@@ -104,13 +104,13 @@ UsdLightFieldParticleField_3DGaussianSplat::CreateProjectionModeHintAttr(VtValue
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::GetSortingModeHintAttr() const
+UsdLightFieldParticleField3DGaussianSplat::GetSortingModeHintAttr() const
 {
     return GetPrim().GetAttribute(UsdLightFieldTokens->sortingModeHint);
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::CreateSortingModeHintAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdLightFieldParticleField3DGaussianSplat::CreateSortingModeHintAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(UsdLightFieldTokens->sortingModeHint,
                        SdfValueTypeNames->Token,
@@ -134,7 +134,7 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
 
 /*static*/
 const TfTokenVector&
-UsdLightFieldParticleField_3DGaussianSplat::GetSchemaAttributeNames(bool includeInherited)
+UsdLightFieldParticleField3DGaussianSplat::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         UsdLightFieldTokens->projectionModeHint,
@@ -152,19 +152,19 @@ UsdLightFieldParticleField_3DGaussianSplat::GetSchemaAttributeNames(bool include
 }
 
 UsdLightFieldPositionAttributeAPI
-UsdLightFieldParticleField_3DGaussianSplat::LightFieldPositionAttributeAPI() const
+UsdLightFieldParticleField3DGaussianSplat::LightFieldPositionAttributeAPI() const
 {
     return UsdLightFieldPositionAttributeAPI(GetPrim());
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::GetPositionsAttr() const
+UsdLightFieldParticleField3DGaussianSplat::GetPositionsAttr() const
 {
     return LightFieldPositionAttributeAPI().GetPositionsAttr();
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::CreatePositionsAttr(
+UsdLightFieldParticleField3DGaussianSplat::CreatePositionsAttr(
     VtValue const &defaultValue, bool writeSparsely) const
 {
     return LightFieldPositionAttributeAPI().CreatePositionsAttr(
@@ -172,13 +172,13 @@ UsdLightFieldParticleField_3DGaussianSplat::CreatePositionsAttr(
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::GetPositionshAttr() const
+UsdLightFieldParticleField3DGaussianSplat::GetPositionshAttr() const
 {
     return LightFieldPositionAttributeAPI().GetPositionshAttr();
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::CreatePositionshAttr(
+UsdLightFieldParticleField3DGaussianSplat::CreatePositionshAttr(
     VtValue const &defaultValue, bool writeSparsely) const
 {
     return LightFieldPositionAttributeAPI().CreatePositionshAttr(
@@ -186,19 +186,19 @@ UsdLightFieldParticleField_3DGaussianSplat::CreatePositionshAttr(
 }
 
 UsdLightFieldOrientationAttributeAPI
-UsdLightFieldParticleField_3DGaussianSplat::LightFieldOrientationAttributeAPI() const
+UsdLightFieldParticleField3DGaussianSplat::LightFieldOrientationAttributeAPI() const
 {
     return UsdLightFieldOrientationAttributeAPI(GetPrim());
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::GetOrientationsAttr() const
+UsdLightFieldParticleField3DGaussianSplat::GetOrientationsAttr() const
 {
     return LightFieldOrientationAttributeAPI().GetOrientationsAttr();
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::CreateOrientationsAttr(
+UsdLightFieldParticleField3DGaussianSplat::CreateOrientationsAttr(
     VtValue const &defaultValue, bool writeSparsely) const
 {
     return LightFieldOrientationAttributeAPI().CreateOrientationsAttr(
@@ -206,13 +206,13 @@ UsdLightFieldParticleField_3DGaussianSplat::CreateOrientationsAttr(
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::GetOrientationshAttr() const
+UsdLightFieldParticleField3DGaussianSplat::GetOrientationshAttr() const
 {
     return LightFieldOrientationAttributeAPI().GetOrientationshAttr();
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::CreateOrientationshAttr(
+UsdLightFieldParticleField3DGaussianSplat::CreateOrientationshAttr(
     VtValue const &defaultValue, bool writeSparsely) const
 {
     return LightFieldOrientationAttributeAPI().CreateOrientationshAttr(
@@ -220,19 +220,19 @@ UsdLightFieldParticleField_3DGaussianSplat::CreateOrientationshAttr(
 }
 
 UsdLightFieldScaleAttributeAPI
-UsdLightFieldParticleField_3DGaussianSplat::LightFieldScaleAttributeAPI() const
+UsdLightFieldParticleField3DGaussianSplat::LightFieldScaleAttributeAPI() const
 {
     return UsdLightFieldScaleAttributeAPI(GetPrim());
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::GetScalesAttr() const
+UsdLightFieldParticleField3DGaussianSplat::GetScalesAttr() const
 {
     return LightFieldScaleAttributeAPI().GetScalesAttr();
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::CreateScalesAttr(
+UsdLightFieldParticleField3DGaussianSplat::CreateScalesAttr(
     VtValue const &defaultValue, bool writeSparsely) const
 {
     return LightFieldScaleAttributeAPI().CreateScalesAttr(
@@ -240,13 +240,13 @@ UsdLightFieldParticleField_3DGaussianSplat::CreateScalesAttr(
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::GetScaleshAttr() const
+UsdLightFieldParticleField3DGaussianSplat::GetScaleshAttr() const
 {
     return LightFieldScaleAttributeAPI().GetScaleshAttr();
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::CreateScaleshAttr(
+UsdLightFieldParticleField3DGaussianSplat::CreateScaleshAttr(
     VtValue const &defaultValue, bool writeSparsely) const
 {
     return LightFieldScaleAttributeAPI().CreateScaleshAttr(
@@ -254,19 +254,19 @@ UsdLightFieldParticleField_3DGaussianSplat::CreateScaleshAttr(
 }
 
 UsdLightFieldOpacityAttributeAPI
-UsdLightFieldParticleField_3DGaussianSplat::LightFieldOpacityAttributeAPI() const
+UsdLightFieldParticleField3DGaussianSplat::LightFieldOpacityAttributeAPI() const
 {
     return UsdLightFieldOpacityAttributeAPI(GetPrim());
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::GetOpacitiesAttr() const
+UsdLightFieldParticleField3DGaussianSplat::GetOpacitiesAttr() const
 {
     return LightFieldOpacityAttributeAPI().GetOpacitiesAttr();
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::CreateOpacitiesAttr(
+UsdLightFieldParticleField3DGaussianSplat::CreateOpacitiesAttr(
     VtValue const &defaultValue, bool writeSparsely) const
 {
     return LightFieldOpacityAttributeAPI().CreateOpacitiesAttr(
@@ -274,13 +274,13 @@ UsdLightFieldParticleField_3DGaussianSplat::CreateOpacitiesAttr(
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::GetOpacitieshAttr() const
+UsdLightFieldParticleField3DGaussianSplat::GetOpacitieshAttr() const
 {
     return LightFieldOpacityAttributeAPI().GetOpacitieshAttr();
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::CreateOpacitieshAttr(
+UsdLightFieldParticleField3DGaussianSplat::CreateOpacitieshAttr(
     VtValue const &defaultValue, bool writeSparsely) const
 {
     return LightFieldOpacityAttributeAPI().CreateOpacitieshAttr(
@@ -288,25 +288,25 @@ UsdLightFieldParticleField_3DGaussianSplat::CreateOpacitieshAttr(
 }
 
 UsdLightFieldKernelGaussianEllipsoidAPI
-UsdLightFieldParticleField_3DGaussianSplat::LightFieldKernelGaussianEllipsoidAPI() const
+UsdLightFieldParticleField3DGaussianSplat::LightFieldKernelGaussianEllipsoidAPI() const
 {
     return UsdLightFieldKernelGaussianEllipsoidAPI(GetPrim());
 }
 
 UsdLightFieldSphericalHarmonicsAttributeAPI
-UsdLightFieldParticleField_3DGaussianSplat::LightFieldSphericalHarmonicsAttributeAPI() const
+UsdLightFieldParticleField3DGaussianSplat::LightFieldSphericalHarmonicsAttributeAPI() const
 {
     return UsdLightFieldSphericalHarmonicsAttributeAPI(GetPrim());
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::GetRadianceSphericalHarmonicsDegreeAttr() const
+UsdLightFieldParticleField3DGaussianSplat::GetRadianceSphericalHarmonicsDegreeAttr() const
 {
     return LightFieldSphericalHarmonicsAttributeAPI().GetRadianceSphericalHarmonicsDegreeAttr();
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::CreateRadianceSphericalHarmonicsDegreeAttr(
+UsdLightFieldParticleField3DGaussianSplat::CreateRadianceSphericalHarmonicsDegreeAttr(
     VtValue const &defaultValue, bool writeSparsely) const
 {
     return LightFieldSphericalHarmonicsAttributeAPI().CreateRadianceSphericalHarmonicsDegreeAttr(
@@ -314,13 +314,13 @@ UsdLightFieldParticleField_3DGaussianSplat::CreateRadianceSphericalHarmonicsDegr
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::GetRadianceSphericalHarmonicsCoefficientsAttr() const
+UsdLightFieldParticleField3DGaussianSplat::GetRadianceSphericalHarmonicsCoefficientsAttr() const
 {
     return LightFieldSphericalHarmonicsAttributeAPI().GetRadianceSphericalHarmonicsCoefficientsAttr();
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::CreateRadianceSphericalHarmonicsCoefficientsAttr(
+UsdLightFieldParticleField3DGaussianSplat::CreateRadianceSphericalHarmonicsCoefficientsAttr(
     VtValue const &defaultValue, bool writeSparsely) const
 {
     return LightFieldSphericalHarmonicsAttributeAPI().CreateRadianceSphericalHarmonicsCoefficientsAttr(
@@ -328,13 +328,13 @@ UsdLightFieldParticleField_3DGaussianSplat::CreateRadianceSphericalHarmonicsCoef
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::GetRadianceSphericalHarmonicsCoefficientshAttr() const
+UsdLightFieldParticleField3DGaussianSplat::GetRadianceSphericalHarmonicsCoefficientshAttr() const
 {
     return LightFieldSphericalHarmonicsAttributeAPI().GetRadianceSphericalHarmonicsCoefficientshAttr();
 }
 
 UsdAttribute
-UsdLightFieldParticleField_3DGaussianSplat::CreateRadianceSphericalHarmonicsCoefficientshAttr(
+UsdLightFieldParticleField3DGaussianSplat::CreateRadianceSphericalHarmonicsCoefficientshAttr(
     VtValue const &defaultValue, bool writeSparsely) const
 {
     return LightFieldSphericalHarmonicsAttributeAPI().CreateRadianceSphericalHarmonicsCoefficientshAttr(

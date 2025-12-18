@@ -42,9 +42,13 @@ class SdfAssetPath;
 /// ParticleField related applied schemas applied to it, to
 /// specialize its definition.
 /// 
-/// The ParticleField applied schemas represent the different
+/// The related ParticleField applied schemas represent the different
 /// features of a ParticleField, such as positions, orientations,
-/// scales, kernel shape, kernel fall-off functions and radiance.
+/// scales, kernel (shape and fall-off) and radiance. Any of these
+/// applied schema that are required to define a valid ParticleField
+/// also have a base applied schema that they auto apply. This base
+/// applied schema allows for valiation rules to be written that
+/// ensure the necessary components are present.
 /// 
 /// Without at least some of these applied schemas the ParticleField
 /// is just an empty abstract container, but adding different

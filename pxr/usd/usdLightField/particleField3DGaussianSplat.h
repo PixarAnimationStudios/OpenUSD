@@ -4,10 +4,10 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef USDLIGHTFIELD_GENERATED_PARTICLEFIELD_3DGAUSSIANSPLAT_H
-#define USDLIGHTFIELD_GENERATED_PARTICLEFIELD_3DGAUSSIANSPLAT_H
+#ifndef USDLIGHTFIELD_GENERATED_PARTICLEFIELD3DGAUSSIANSPLAT_H
+#define USDLIGHTFIELD_GENERATED_PARTICLEFIELD3DGAUSSIANSPLAT_H
 
-/// \file usdLightField/particleField_3DGaussianSplat.h
+/// \file usdLightField/particleField3DGaussianSplat.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLightField/api.h"
@@ -16,12 +16,12 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLightField/tokens.h"
 
-            #include "pxr/usd/usdLightField/positionAttributeAPI.h"
-            #include "pxr/usd/usdLightField/orientationAttributeAPI.h"
-            #include "pxr/usd/usdLightField/scaleAttributeAPI.h"
-            #include "pxr/usd/usdLightField/opacityAttributeAPI.h"
-            #include "pxr/usd/usdLightField/kernelGaussianEllipsoidAPI.h"
-            #include "pxr/usd/usdLightField/sphericalHarmonicsAttributeAPI.h"
+#include "pxr/usd/usdLightField/positionAttributeAPI.h"
+#include "pxr/usd/usdLightField/orientationAttributeAPI.h"
+#include "pxr/usd/usdLightField/scaleAttributeAPI.h"
+#include "pxr/usd/usdLightField/opacityAttributeAPI.h"
+#include "pxr/usd/usdLightField/kernelGaussianEllipsoidAPI.h"
+#include "pxr/usd/usdLightField/sphericalHarmonicsAttributeAPI.h"
         
 
 #include "pxr/base/vt/value.h"
@@ -38,27 +38,28 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// PARTICLEFIELD_3DGAUSSIANSPLAT                                              //
+// PARTICLEFIELD3DGAUSSIANSPLAT                                               //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdLightFieldParticleField_3DGaussianSplat
+/// \class UsdLightFieldParticleField3DGaussianSplat
 ///
 /// This is a concrete ParticleField representing the original 3D
 /// Gaussian Splats technique (https://arxiv.org/abs/2308.04079).
 /// 
 /// It inherits from the ParticleField base prim, and has a set of
 /// applied schema automatically applied to provide the required
-/// attributes for original 3DGS.
+/// attributes to define the necessary data from the original 3DGS paper.
 /// 
 /// Also contains some rendering hints that can optionally inform
-/// how the splats should be rendered.
+/// how the splats should be rendered. These hints typically
+/// corrolate with choices that were made when the data was trained.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdLightFieldTokens.
 /// So to set an attribute to the value "rightHanded", use UsdLightFieldTokens->rightHanded
 /// as the value.
 ///
-class UsdLightFieldParticleField_3DGaussianSplat : public UsdLightFieldParticleField
+class UsdLightFieldParticleField3DGaussianSplat : public UsdLightFieldParticleField
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -66,26 +67,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
 
-    /// Construct a UsdLightFieldParticleField_3DGaussianSplat on UsdPrim \p prim .
-    /// Equivalent to UsdLightFieldParticleField_3DGaussianSplat::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdLightFieldParticleField3DGaussianSplat on UsdPrim \p prim .
+    /// Equivalent to UsdLightFieldParticleField3DGaussianSplat::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdLightFieldParticleField_3DGaussianSplat(const UsdPrim& prim=UsdPrim())
+    explicit UsdLightFieldParticleField3DGaussianSplat(const UsdPrim& prim=UsdPrim())
         : UsdLightFieldParticleField(prim)
     {
     }
 
-    /// Construct a UsdLightFieldParticleField_3DGaussianSplat on the prim held by \p schemaObj .
-    /// Should be preferred over UsdLightFieldParticleField_3DGaussianSplat(schemaObj.GetPrim()),
+    /// Construct a UsdLightFieldParticleField3DGaussianSplat on the prim held by \p schemaObj .
+    /// Should be preferred over UsdLightFieldParticleField3DGaussianSplat(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdLightFieldParticleField_3DGaussianSplat(const UsdSchemaBase& schemaObj)
+    explicit UsdLightFieldParticleField3DGaussianSplat(const UsdSchemaBase& schemaObj)
         : UsdLightFieldParticleField(schemaObj)
     {
     }
 
     /// Destructor.
     USDLIGHTFIELD_API
-    virtual ~UsdLightFieldParticleField_3DGaussianSplat();
+    virtual ~UsdLightFieldParticleField3DGaussianSplat();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -94,17 +95,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdLightFieldParticleField_3DGaussianSplat holding the prim adhering to this
+    /// Return a UsdLightFieldParticleField3DGaussianSplat holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdLightFieldParticleField_3DGaussianSplat(stage->GetPrimAtPath(path));
+    /// UsdLightFieldParticleField3DGaussianSplat(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDLIGHTFIELD_API
-    static UsdLightFieldParticleField_3DGaussianSplat
+    static UsdLightFieldParticleField3DGaussianSplat
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -130,7 +131,7 @@ public:
     /// the opinion at the current EditTarget.
     ///
     USDLIGHTFIELD_API
-    static UsdLightFieldParticleField_3DGaussianSplat
+    static UsdLightFieldParticleField3DGaussianSplat
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 protected:
@@ -159,7 +160,8 @@ public:
     /// A hint for the renderer on how to project the gaussian to
     /// achieve a perspective correct view. Renderers are free to
     /// ignore this, but the hint is often valuable to tune the
-    /// rendering of the scene.
+    /// rendering of the scene. It often corresponds to a choice made
+    /// when training the data.
     /// 
     /// 'Perspective' projection is similar to standard object rendering
     /// from a camera view. Gaussians are projected with scaling and
@@ -194,7 +196,8 @@ public:
     // --------------------------------------------------------------------- //
     /// A hint for the renderer on how to sort the gaussians while
     /// drawing. Renderers are free to ignore this, but the hint is often
-    /// valuable to tune the rendering of the scene.
+    /// valuable to tune the rendering of the scene. It often corresponds to a
+    /// choice made when training the data.
     /// 
     /// Rasterizers usually sort gaussians from back to front. This attribute
     /// is a hint for the metric used to sort the gaussians with respect to the

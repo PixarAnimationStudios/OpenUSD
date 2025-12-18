@@ -16,7 +16,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLightField/tokens.h"
 
-            #include "pxr/usd/usdLightField/radianceBaseAPI.h"
+#include "pxr/usd/usdLightField/radianceBaseAPI.h"
         
 
 #include "pxr/base/vt/value.h"

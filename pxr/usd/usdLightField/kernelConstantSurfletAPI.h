@@ -15,7 +15,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
-            #include "pxr/usd/usdLightField/kernelBaseAPI.h"
+#include "pxr/usd/usdLightField/kernelBaseAPI.h"
         
 
 #include "pxr/base/vt/value.h"
@@ -39,8 +39,8 @@ class SdfAssetPath;
 ///
 /// Defines the constant surflet kernel for a given ParticleField.
 /// 
-/// The kernal shape is a circular disk centered at the origin, with the normal
-/// of the plane being oriented along the positive z-axis.
+/// The kernal shape is a circular disk, of radius one, centered at the origin,
+/// with the normal of the plane being oriented along the positive z-axis.
 /// 
 /// The falloff function for this kernel is constant and the value is directly
 /// defined by the opacity data source.

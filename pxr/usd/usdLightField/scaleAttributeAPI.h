@@ -36,12 +36,20 @@ class SdfAssetPath;
 /// \class UsdLightFieldScaleAttributeAPI
 ///
 /// A ParticleField related applied schema that provides a
-/// scale attribute to define the scale of the particles.
+/// scales attribute to define the linear scale factor applied to the
+/// particles.
 /// 
 /// Attributes are provided in both `float` and `half` types for some
 /// easy data footprint affordance, data consumers should prefer
 /// `float` version if available.
 /// 
+/// The length of this attribute is expected to match the length of
+/// the provided position data. If it is too long it will be truncated
+/// to the number of particles define by the position data. If it ss
+/// too short it will be ignored.
+/// 
+/// If the attribute is ignored or not provided, then a default unit
+/// scale should be applied to the kernel.
 ///
 class UsdLightFieldScaleAttributeAPI : public UsdAPISchemaBase
 {
@@ -155,8 +163,8 @@ public:
     // --------------------------------------------------------------------- //
     // SCALES 
     // --------------------------------------------------------------------- //
-    /// Affine scale factor applied to the base shape defined in the
-    /// 'shape' attribute.
+    /// Affine linear scale factor applied to the kernel that is
+    /// instantiated at each particle.
     ///
     /// | ||
     /// | -- | -- |
@@ -178,9 +186,9 @@ public:
     // --------------------------------------------------------------------- //
     // SCALESH 
     // --------------------------------------------------------------------- //
-    /// Affine scale factor applied to the base shape defined in the
-    /// 'shape' attribute. If the float precision version is available
-    /// it should be preferred.
+    /// Affine linear scale factor applied to the kernel that is
+    /// instantiated at each particle. If the float precision version is
+    /// defined it should be preferred.
     ///
     /// | ||
     /// | -- | -- |

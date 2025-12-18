@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdLightField/particleField_3DGaussianSplat.h"
+#include "pxr/usd/usdLightField/particleField3DGaussianSplat.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -33,113 +33,113 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
-_CreateProjectionModeHintAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
+_CreateProjectionModeHintAttr(UsdLightFieldParticleField3DGaussianSplat &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateProjectionModeHintAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
         
 static UsdAttribute
-_CreateSortingModeHintAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
+_CreateSortingModeHintAttr(UsdLightFieldParticleField3DGaussianSplat &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateSortingModeHintAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
 
 static std::string
-_Repr(const UsdLightFieldParticleField_3DGaussianSplat &self)
+_Repr(const UsdLightFieldParticleField3DGaussianSplat &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdLightField.ParticleField_3DGaussianSplat(%s)",
+        "UsdLightField.ParticleField3DGaussianSplat(%s)",
         primRepr.c_str());
 }
 
         
 static UsdAttribute
-_CreatePositionsAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
+_CreatePositionsAttr(UsdLightFieldParticleField3DGaussianSplat &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreatePositionsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Point3fArray), writeSparsely);
 }
         
 static UsdAttribute
-_CreatePositionshAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
+_CreatePositionshAttr(UsdLightFieldParticleField3DGaussianSplat &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreatePositionshAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Point3hArray), writeSparsely);
 }
         
 static UsdAttribute
-_CreateOrientationsAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
+_CreateOrientationsAttr(UsdLightFieldParticleField3DGaussianSplat &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateOrientationsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->QuatfArray), writeSparsely);
 }
         
 static UsdAttribute
-_CreateOrientationshAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
+_CreateOrientationshAttr(UsdLightFieldParticleField3DGaussianSplat &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateOrientationshAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->QuathArray), writeSparsely);
 }
         
 static UsdAttribute
-_CreateScalesAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
+_CreateScalesAttr(UsdLightFieldParticleField3DGaussianSplat &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateScalesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
 }
         
 static UsdAttribute
-_CreateScaleshAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
+_CreateScaleshAttr(UsdLightFieldParticleField3DGaussianSplat &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateScaleshAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Half3Array), writeSparsely);
 }
         
 static UsdAttribute
-_CreateOpacitiesAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
+_CreateOpacitiesAttr(UsdLightFieldParticleField3DGaussianSplat &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateOpacitiesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->FloatArray), writeSparsely);
 }
         
 static UsdAttribute
-_CreateOpacitieshAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
+_CreateOpacitieshAttr(UsdLightFieldParticleField3DGaussianSplat &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateOpacitieshAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->HalfArray), writeSparsely);
 }
         
 static UsdAttribute
-_CreateRadianceSphericalHarmonicsDegreeAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
+_CreateRadianceSphericalHarmonicsDegreeAttr(UsdLightFieldParticleField3DGaussianSplat &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRadianceSphericalHarmonicsDegreeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
 }
         
 static UsdAttribute
-_CreateRadianceSphericalHarmonicsCoefficientsAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
+_CreateRadianceSphericalHarmonicsCoefficientsAttr(UsdLightFieldParticleField3DGaussianSplat &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRadianceSphericalHarmonicsCoefficientsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3Array), writeSparsely);
 }
         
 static UsdAttribute
-_CreateRadianceSphericalHarmonicsCoefficientshAttr(UsdLightFieldParticleField_3DGaussianSplat &self,
+_CreateRadianceSphericalHarmonicsCoefficientshAttr(UsdLightFieldParticleField3DGaussianSplat &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateRadianceSphericalHarmonicsCoefficientshAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Half3Array), writeSparsely);
 }
 } // anonymous namespace
 
-void wrapUsdLightFieldParticleField_3DGaussianSplat()
+void wrapUsdLightFieldParticleField3DGaussianSplat()
 {
-    typedef UsdLightFieldParticleField_3DGaussianSplat This;
+    typedef UsdLightFieldParticleField3DGaussianSplat This;
 
     class_<This, bases<UsdLightFieldParticleField> >
-        cls("ParticleField_3DGaussianSplat");
+        cls("ParticleField3DGaussianSplat");
 
     cls
         .def(init<UsdPrim>(arg("prim")))

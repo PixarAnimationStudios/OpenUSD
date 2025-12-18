@@ -35,9 +35,10 @@ class SdfAssetPath;
 /// \class UsdLightFieldRadianceBaseAPI
 ///
 /// Defines a base-class type applied schema that all applied schema
-/// that provides the a ParticleField kernel will automatically apply.
+/// that provides a ParticleField radiance definition will automatically
+/// apply.
 /// The purpose of this base class is to allow validation to enforce
-/// that a kernel definition is present for a ParticleField
+/// that a radiance definition is present for a ParticleField
 ///
 class UsdLightFieldRadianceBaseAPI : public UsdAPISchemaBase
 {

@@ -40,7 +40,7 @@ UsdLightFieldTokensType::UsdLightFieldTokensType() :
     LightFieldSphericalBetaAttributeAPI("LightFieldSphericalBetaAttributeAPI", TfToken::Immortal),
     LightFieldSphericalHarmonicsAttributeAPI("LightFieldSphericalHarmonicsAttributeAPI", TfToken::Immortal),
     ParticleField("ParticleField", TfToken::Immortal),
-    ParticleField_3DGaussianSplat("ParticleField_3DGaussianSplat", TfToken::Immortal),
+    ParticleField3DGaussianSplat("ParticleField3DGaussianSplat", TfToken::Immortal),
     allTokens({
         cameraDistance,
         opacities,
@@ -73,7 +73,7 @@ UsdLightFieldTokensType::UsdLightFieldTokensType() :
         LightFieldSphericalBetaAttributeAPI,
         LightFieldSphericalHarmonicsAttributeAPI,
         ParticleField,
-        ParticleField_3DGaussianSplat
+        ParticleField3DGaussianSplat
     })
 {
 }

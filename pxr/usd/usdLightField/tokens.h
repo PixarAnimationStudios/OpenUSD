@@ -47,7 +47,7 @@ struct UsdLightFieldTokensType {
     USDLIGHTFIELD_API UsdLightFieldTokensType();
     /// \brief "cameraDistance"
     /// 
-    /// Possible value for UsdLightFieldParticleField_3DGaussianSplat::GetSortingModeHintAttr()
+    /// Possible value for UsdLightFieldParticleField3DGaussianSplat::GetSortingModeHintAttr()
     const TfToken cameraDistance;
     /// \brief "opacities"
     /// 
@@ -67,7 +67,7 @@ struct UsdLightFieldTokensType {
     const TfToken orientationsh;
     /// \brief "perspective"
     /// 
-    /// Fallback value for UsdLightFieldParticleField_3DGaussianSplat::GetProjectionModeHintAttr()
+    /// Fallback value for UsdLightFieldParticleField3DGaussianSplat::GetProjectionModeHintAttr()
     const TfToken perspective;
     /// \brief "positions"
     /// 
@@ -79,7 +79,7 @@ struct UsdLightFieldTokensType {
     const TfToken positionsh;
     /// \brief "projectionModeHint"
     /// 
-    /// UsdLightFieldParticleField_3DGaussianSplat
+    /// UsdLightFieldParticleField3DGaussianSplat
     const TfToken projectionModeHint;
     /// \brief "radiance:sphericalHarmonicsCoefficients"
     /// 
@@ -103,7 +103,7 @@ struct UsdLightFieldTokensType {
     const TfToken scalesh;
     /// \brief "sortingModeHint"
     /// 
-    /// UsdLightFieldParticleField_3DGaussianSplat
+    /// UsdLightFieldParticleField3DGaussianSplat
     const TfToken sortingModeHint;
     /// \brief "sphericalBeta:beta"
     /// 
@@ -111,11 +111,11 @@ struct UsdLightFieldTokensType {
     const TfToken sphericalBetaBeta;
     /// \brief "tangential"
     /// 
-    /// Possible value for UsdLightFieldParticleField_3DGaussianSplat::GetProjectionModeHintAttr()
+    /// Possible value for UsdLightFieldParticleField3DGaussianSplat::GetProjectionModeHintAttr()
     const TfToken tangential;
     /// \brief "zDepth"
     /// 
-    /// Fallback value for UsdLightFieldParticleField_3DGaussianSplat::GetSortingModeHintAttr()
+    /// Fallback value for UsdLightFieldParticleField3DGaussianSplat::GetSortingModeHintAttr()
     const TfToken zDepth;
     /// \brief "LightFieldKernelBaseAPI"
     /// 
@@ -169,10 +169,10 @@ struct UsdLightFieldTokensType {
     /// 
     /// Schema identifer and family for UsdLightFieldParticleField
     const TfToken ParticleField;
-    /// \brief "ParticleField_3DGaussianSplat"
+    /// \brief "ParticleField3DGaussianSplat"
     /// 
-    /// Schema identifer and family for UsdLightFieldParticleField_3DGaussianSplat
-    const TfToken ParticleField_3DGaussianSplat;
+    /// Schema identifer and family for UsdLightFieldParticleField3DGaussianSplat
+    const TfToken ParticleField3DGaussianSplat;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

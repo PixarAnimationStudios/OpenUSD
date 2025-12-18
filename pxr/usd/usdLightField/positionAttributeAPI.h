@@ -44,6 +44,10 @@ class SdfAssetPath;
 /// Attributes are provided in both `float` and `half` types for some
 /// easy data footprint affordance, data consumers should prefer
 /// `float` version if available.
+/// 
+/// The size of the positions attribute that is being used defines the
+/// number of particles in the field. If no positions attribute is
+/// provided then the ParticleField has no particles.
 ///
 class UsdLightFieldPositionAttributeAPI : public UsdAPISchemaBase
 {
@@ -180,7 +184,7 @@ public:
     // POSITIONSH 
     // --------------------------------------------------------------------- //
     /// Defines the position for each particle in local space. If the
-    /// float precision version is available it should be preferred.
+    /// float precision attribute is defined it should be preferred.
     ///
     /// | ||
     /// | -- | -- |

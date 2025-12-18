@@ -35,8 +35,8 @@ class SdfAssetPath;
 
 /// \class UsdLightFieldOpacityAttributeAPI
 ///
-/// A ParticleField related applied schema that provides a
-/// opacity attribute to define the opacity of the particles.
+/// A ParticleField related applied schema that provides an
+/// opacities attribute to define the opacity of the particles.
 /// 
 /// The opacity here should be in the range [0, 1], and inline with the
 /// traditional sense of computer graphics opacity, not the
@@ -47,6 +47,14 @@ class SdfAssetPath;
 /// Attributes are provided in both `float` and `half` types for some
 /// easy data footprint affordance, data consumers should prefer
 /// `float` version if available.
+/// 
+/// The length of this attribute is expected to match the length of
+/// the provided position data. If it is too long it will be truncated
+/// to the number of particles define by the position data. If it ss
+/// too short it will be ignored.
+/// 
+/// If it is ignored or not populated, then the default value of fully
+/// opaque (1.0) should be used..
 /// 
 ///
 class UsdLightFieldOpacityAttributeAPI : public UsdAPISchemaBase

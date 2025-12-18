@@ -16,7 +16,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdLightField/tokens.h"
 
-            #include "pxr/usd/usdLightField/radianceBaseAPI.h"
+#include "pxr/usd/usdLightField/radianceBaseAPI.h"
         
 
 #include "pxr/base/vt/value.h"
@@ -40,6 +40,9 @@ class SdfAssetPath;
 ///
 /// A ParticleField related applied schema that provides spherical
 /// harmonics attributes to define the radiance of the particles.
+/// 
+/// The spherical harmonics degree is constant across all the particels
+/// in the ParticleField.
 /// 
 /// Attributes are provided in both `float` and `half` types for some
 /// easy data footprint affordance, data consumers should prefer
@@ -157,7 +160,8 @@ public:
     // --------------------------------------------------------------------- //
     // RADIANCESPHERICALHARMONICSDEGREE 
     // --------------------------------------------------------------------- //
-    /// The maximum degree of the spherical harmonics.
+    /// The highest degree of the spherical harmonics. The spherical
+    /// harmonics degree is the same for all particles in the ParticleField.
     ///
     /// | ||
     /// | -- | -- |
@@ -181,12 +185,11 @@ public:
     // RADIANCESPHERICALHARMONICSCOEFFICIENTS 
     // --------------------------------------------------------------------- //
     /// Flattened array of SH coefficients.
-    /// The each of the different SH coefficients are not interleaved. The SH
-    /// coefficents for a given particle are encoded in the array sequentially,
-    /// with the all of the SH coefficients for the first particle being defined
-    /// first, followed by all the SH coefficients for the second particle and
-    /// so on. This means the elementSize metadata can be authored, but is
-    /// dependent on the degree of the spherical harmonic data being applied.
+    /// The SH coefficients are grouped in the array by particle, meaning each
+    /// particle has N contiguous coefficients, Y(m,l) sorted first by order (m)
+    /// and then within the order by index (l). A renderer can compute an
+    /// element size per particle based on the SH degree, and use that to stripe
+    /// the array by particle.
     ///
     /// | ||
     /// | -- | -- |
@@ -209,12 +212,11 @@ public:
     // RADIANCESPHERICALHARMONICSCOEFFICIENTSH 
     // --------------------------------------------------------------------- //
     /// Flattened array of SH coefficients.
-    /// The each of the different SH coefficients are not interleaved. The SH
-    /// coefficents for a given particle are encoded in the array sequentially,
-    /// with the all of the SH coefficients for the first particle being defined
-    /// first, followed by all the SH coefficients for the second particle and
-    /// so on. This means the elementSize metadata can be authored, but is
-    /// dependent on the degree of the spherical harmonic data being applied.
+    /// The SH coefficients are grouped in the array by particle, meaning each
+    /// particle has N contiguous coefficients, Y(m,l) sorted first by order (m)
+    /// and then within the order by index (l). A renderer can compute an
+    /// element size per particle based on the SH degree, and use that to stripe
+    /// the array by particle.
     /// 
     /// If the float precision version is available it should be preferred.
     ///

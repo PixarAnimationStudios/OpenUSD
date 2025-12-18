@@ -15,7 +15,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
-            #include "pxr/usd/usdLightField/kernelBaseAPI.h"
+#include "pxr/usd/usdLightField/kernelBaseAPI.h"
         
 
 #include "pxr/base/vt/value.h"
@@ -39,8 +39,8 @@ class SdfAssetPath;
 ///
 /// Defines the gaussian ellipsoid kernel for a given ParticleField.
 /// 
-/// The kernel shape is a spherical region that is reshaped by the associated
-/// scale data source, and rotated by the orientation data source.
+/// The kernel shape is a spherical region, of radius one, that is reshaped by
+/// the associated scale data source, and rotated by the orientation data source.
 /// 
 /// The falloff function for this kernel is the gaussian falloff function,
 /// where the peak of the falloff function is defined by the opacity data
