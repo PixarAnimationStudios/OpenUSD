@@ -8,7 +8,7 @@
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/rect2i.h>
 
-#include "../../libGSRenderer/gsRenderer.h"
+#include "../gsRenderer.h"
 #include "hd3DGaussianSplat.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

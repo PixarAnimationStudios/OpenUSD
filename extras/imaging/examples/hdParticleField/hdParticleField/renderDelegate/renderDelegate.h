@@ -8,7 +8,7 @@
 
 #include "renderer.h"
 
-#include "../../libGSRenderer/gsRenderer.h"
+#include "../gsRenderer.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

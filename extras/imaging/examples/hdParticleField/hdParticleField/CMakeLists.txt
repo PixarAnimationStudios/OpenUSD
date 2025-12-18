@@ -9,6 +9,8 @@ SET(CPPFILES
         renderDelegate/renderer.cpp
         renderDelegate/rendererPlugin.cpp
         renderDelegate/renderPass.cpp
+
+        gsRenderer.cpp
 )
 
 set(PXR_PACKAGE hdParticleField)
@@ -32,9 +34,16 @@ pxr_plugin(hdParticleField
         usdLightField
         usdImaging
 
-        GSRenderer
+        Imath::Imath
+        ${OIIO_LIBRARIES}
 
         RESOURCE_FILES
         plugInfo.json
 )
 
+
+target_include_directories(hdParticleField
+        PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>
+        ${OIIO_INCLUDE_DIRS}
+)
