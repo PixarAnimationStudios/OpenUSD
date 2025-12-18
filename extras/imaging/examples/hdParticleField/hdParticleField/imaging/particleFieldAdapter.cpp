@@ -18,7 +18,7 @@
 #include <pxr/usd/usdGeom/points.h>
 #include <pxr/usd/usdGeom/primvarsAPI.h>
 
-#include <pxr/usd/usdLightField/particleField_3DGaussianSplat.h>
+#include <pxr/usd/usdLightField/particleField3DGaussianSplat.h>
 
 #include <pxr/base/tf/type.h>
 
@@ -38,7 +38,7 @@ TfTokenVector UsdImaging_3DGaussianSplatAdapter::GetImagingSubprims(UsdPrim cons
 
 TfToken UsdImaging_3DGaussianSplatAdapter::GetImagingSubprimType(UsdPrim const& prim, TfToken const& subprim) {
     if (subprim.IsEmpty()) {
-        return HdParticleFieldTokens->ParticleField_3DGaussianSplat;
+        return HdParticleFieldTokens->ParticleField3DGaussianSplat;
     }
     return TfToken();
 }
@@ -64,12 +64,12 @@ UsdImaging_3DGaussianSplatAdapter::InvalidateImagingSubprim(UsdPrim const& prim,
 }
 
 bool UsdImaging_3DGaussianSplatAdapter::IsSupported(UsdImagingIndexProxy const* index) const {
-    return index->IsRprimTypeSupported(HdParticleFieldTokens->ParticleField_3DGaussianSplat);
+    return index->IsRprimTypeSupported(HdParticleFieldTokens->ParticleField3DGaussianSplat);
 }
 
 SdfPath UsdImaging_3DGaussianSplatAdapter::Populate(UsdPrim const& prim, UsdImagingIndexProxy* index,
                                                     UsdImagingInstancerContext const* instancerContext) {
-    return _AddRprim(HdParticleFieldTokens->ParticleField_3DGaussianSplat, prim, index, GetMaterialUsdPath(prim),
+    return _AddRprim(HdParticleFieldTokens->ParticleField3DGaussianSplat, prim, index, GetMaterialUsdPath(prim),
                      instancerContext);
 }
 

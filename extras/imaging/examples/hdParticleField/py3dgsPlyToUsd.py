@@ -269,12 +269,12 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
         f"Source file: {input_file}"
     )
 
-    # Create 3D Gaussian Splat prim (like C++ line 117-120)
+    # Create 3D Gaussian Splat prim
     prim_path = f"/{prim_name}"
-    gs_prim = UsdLightField.ParticleField_3DGaussianSplat.Define(stage, prim_path)
+    gs_prim = UsdLightField.ParticleField3DGaussianSplat.Define(stage, prim_path)
     stage.SetDefaultPrim(gs_prim.GetPrim())
 
-    # Extract and set positions (C++ lines 143-186)
+    # Extract and set positions
     if all(prop in vertex_data for prop in ['x', 'y', 'z']):
         print("\nProcessing positions...")
         # Combine x, y, z into list of tuples
@@ -296,7 +296,7 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
         max_y = max(vertex_data['y'])
         max_z = max(vertex_data['z'])
 
-        # Apply extent limit of 50000 (C++ line 170)
+        # Apply extent limit of 50000
         extent_limit = 50000.0
         extent_min = Gf.Vec3f(
             float(max(-extent_limit, min_x)),
@@ -318,10 +318,10 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
         print("ERROR: PLY file missing x, y, z position data")
         return
 
-    # Extract and set scales (C++ lines 188-214)
+    # Extract and set scales
     if all(prop in vertex_data for prop in ['scale_0', 'scale_1', 'scale_2']):
         print("\nProcessing scales...")
-        # Combine scales and apply exp() transformation (C++ lines 198-200)
+        # Combine scales and apply exp() transformation
         scales = [
             (math.exp(s0), math.exp(s1), math.exp(s2))
             for s0, s1, s2 in zip(
@@ -338,7 +338,7 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
     else:
         print("  Warning: PLY file missing scale_0, scale_1, scale_2 data")
 
-    # Extract and set orientations/quaternions (C++ lines 216-247)
+    # Extract and set orientations/quaternions
     # Note: PLY quaternion layout is (rot_0=real, rot_1/2/3=imaginary)
     # GfQuatf layout is (imaginary, real), so we extract in order: rot_1, rot_2, rot_3, rot_0
     if all(prop in vertex_data for prop in ['rot_0', 'rot_1', 'rot_2', 'rot_3']):
@@ -351,7 +351,7 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
             vertex_data['rot_0']   # real
         ))
 
-        # Convert to VtQuatfArray and normalize (C++ lines 233-235)
+        # Convert to VtQuatfArray and normalize
         orientations_list = []
         for q in orientations:
             quat = Gf.Quatf(float(q[3]), float(q[0]), float(q[1]), float(q[2]))  # real, imag_x, imag_y, imag_z
@@ -364,10 +364,10 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
     else:
         print("  Warning: PLY file missing rot_0, rot_1, rot_2, rot_3 data")
 
-    # Extract and set opacities (C++ lines 249-258)
+    # Extract and set opacities
     if 'opacity' in vertex_data:
         print("\nProcessing opacities...")
-        # Apply sigmoid transformation (C++ lines 254-256): 1.0 / (1.0 + exp(-v))
+        # Apply sigmoid transformation: 1.0 / (1.0 + exp(-v))
         opacities = [1.0 / (1.0 + math.exp(-v)) for v in vertex_data['opacity']]
 
         # Convert to VtFloatArray
@@ -377,7 +377,7 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
     else:
         print("  Warning: PLY file missing opacity data")
 
-    # Extract and set spherical harmonics (C++ lines 260-375)
+    # Extract and set spherical harmonics
     if all(prop in vertex_data for prop in ['f_dc_0', 'f_dc_1', 'f_dc_2']):
         print("\nProcessing spherical harmonics...")
 
@@ -388,16 +388,16 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
             vertex_data['f_dc_2']
         ))
 
-        # Find the maximum contiguous f_rest_X index (C++ lines 268-279)
+        # Find the maximum contiguous f_rest_X index
         max_sh_index = -1
-        for i in range(45):  # max 44 according to C++ line 268
+        for i in range(45):
             prop_name = f'f_rest_{i}'
             if prop_name in vertex_data:
                 max_sh_index = i
             else:
                 break
 
-        # Determine SH degree based on max_sh_index (C++ lines 296-309)
+        # Determine SH degree based on max_sh_index
         # degree 0: no f_rest (max_sh_index=-1)
         # degree 1: f_rest_0 to f_rest_8 (max_sh_index=8)
         # degree 2: f_rest_0 to f_rest_23 (max_sh_index=23)
@@ -418,7 +418,7 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
         gs_prim.CreateRadianceSphericalHarmonicsDegreeAttr(sh_degree)
 
         if max_sh_index >= 0:
-            # Extract f_rest data (C++ lines 315-322)
+            # Extract f_rest data
             stride = max_sh_index + 1
             f_rest_data = []
             for i in range(stride):
@@ -428,7 +428,7 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
             # Transpose f_rest_data to get it by vertex
             f_rest = list(zip(*f_rest_data))
 
-            # Shuffle data into correct order (C++ lines 324-351)
+            # Shuffle data into correct order
             # The PLY file stores SH coefficients in a different order than USD expects
             num_sh_vec3 = stride // 3
             sh_vec_stride = num_sh_vec3 + 1  # +1 for f_dc
@@ -451,10 +451,10 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
             # Convert to VtVec3fArray
             sh_vt = Vt.Vec3fArray([Gf.Vec3f(float(v[0]), float(v[1]), float(v[2])) for v in sh_data])
 
-            # Create SH attribute (C++ lines 353-369)
+            # Create SH attribute
             sh_attr = gs_prim.CreateRadianceSphericalHarmonicsCoefficientsAttr(sh_vt)
 
-            # Set element size and interpolation (C++ lines 371-373)
+            # Set element size and interpolation
             sh_primvar = UsdGeom.Primvar(sh_attr)
             sh_primvar.SetElementSize(sh_vec_stride)
             sh_primvar.SetInterpolation(UsdGeom.Tokens.vertex)

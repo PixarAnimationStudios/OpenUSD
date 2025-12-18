@@ -21,7 +21,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// Supported Hydra prim types.
 const TfTokenVector HdParticleFieldRenderDelegate::SUPPORTED_RPRIM_TYPES = {
-    HdParticleFieldTokens->ParticleField_3DGaussianSplat};
+    HdParticleFieldTokens->ParticleField3DGaussianSplat};
 const TfTokenVector HdParticleFieldRenderDelegate::SUPPORTED_SPRIM_TYPES = {HdPrimTypeTokens->camera};
 const TfTokenVector HdParticleFieldRenderDelegate::SUPPORTED_BPRIM_TYPES = {HdPrimTypeTokens->renderBuffer};
 
@@ -83,7 +83,7 @@ HdRenderPassSharedPtr HdParticleFieldRenderDelegate::CreateRenderPass(HdRenderIn
 void HdParticleFieldRenderDelegate::CommitResources(HdChangeTracker* tracker) {}
 
 HdRprim* HdParticleFieldRenderDelegate::CreateRprim(const TfToken& typeId, const SdfPath& rprimId) {
-    if (typeId == HdParticleFieldTokens->ParticleField_3DGaussianSplat) {
+    if (typeId == HdParticleFieldTokens->ParticleField3DGaussianSplat) {
         TF_DEBUG(HDPARTICLEFIELD_GENERAL)
             .Msg("[%s] Create HdGaussianSplats Rprim type %s id %s\n", TF_FUNC_NAME().c_str(), typeId.GetText(),
                  rprimId.GetText());

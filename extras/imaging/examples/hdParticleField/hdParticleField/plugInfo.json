@@ -7,7 +7,7 @@
             "bases": [
               "UsdImagingGprimAdapter"
             ],
-            "primTypeName": "ParticleField_3DGaussianSplat"
+            "primTypeName": "ParticleField3DGaussianSplat"
           },
           "HdParticleFieldRendererPlugin": {
             "bases": [
