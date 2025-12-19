@@ -46,17 +46,6 @@ class HdParticleFieldRenderer final {
     ///                               before the image is considered finished.
     void SetSamplesToConvergence(int samplesToConvergence);
 
-    //    /// Set how many samples to use for ambient occlusion.
-    //    ///   \param ambientOcclusionSamples How many samples are needed for
-    //    ///                                  ambient occlusion? 0 = disable.
-    //    void SetAmbientOcclusionSamples(int ambientOcclusionSamples);
-    //
-    //    /// Sets whether to use scene colors while rendering.
-    //    ///   \param enableSceneColors Whether drawing should sample color, or
-    //    draw
-    //    ///                            everything as white.
-    //    void SetEnableSceneColors(bool enableSceneColors);
-
     void addGaussianSplats(const Hd3DGaussianSplat& splatPrim, const std::string& splatName);
     void removeGaussianSplats(const std::string& splatName);
 

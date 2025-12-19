@@ -5,9 +5,10 @@
 #include "renderBuffer.h"
 #include "renderer.h"
 #include <pxr/imaging/hd/renderPass.h>
-#include <pxr/imaging/hd/renderThread.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class HdRenderThread;
 
 /// \class HdGaussianSplatsRenderPass
 ///

@@ -110,7 +110,6 @@ void HdParticleFieldRenderBuffer::OverColor(const GfVec2i& pixel, GfVec3f color,
     _WriteOutput(_format, dst, 4, p);
 }
 
-
 void HdParticleFieldRenderBuffer::Clear(size_t numComponents, float const* value) {
     size_t formatSize = HdDataSizeOfFormat(_format);
     for (size_t i = 0; i < _width * _height; ++i) {

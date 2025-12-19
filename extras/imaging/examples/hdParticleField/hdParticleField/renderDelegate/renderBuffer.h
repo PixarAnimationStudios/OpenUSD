@@ -111,6 +111,7 @@ class HdParticleFieldRenderBuffer : public HdRenderBuffer {
     ///   \param value         An int-valued vector to write.
     void Write(GfVec2i const& pixel, size_t numComponents, int const* value);
 
+    /// Write a vec3f and alpha, overing on top the prior color.
     void OverColor(const GfVec2i& pixel, GfVec3f color, float alpha);
 
     /// Clear the renderbuffer with a float, vec2f, vec3f, or vec4f.

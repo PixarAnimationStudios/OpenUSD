@@ -37,10 +37,3 @@ pxr_plugin(hdParticleField
         RESOURCE_FILES
         plugInfo.json
 )
-
-
-target_include_directories(hdParticleField
-        PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>
-        ${OIIO_INCLUDE_DIRS}
-)

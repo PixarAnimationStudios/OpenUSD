@@ -7,7 +7,7 @@
 #include <memory>
 #include <vector>
 
-#include "../../../../../pxr/base/gf/rect2i.h"
+#include "pxr/base/gf/rect2i.h"
 #include "pxr/base/gf/matrix2f.h"
 #include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/vec2f.h"
@@ -32,7 +32,6 @@ constexpr float SH_C3_6 = -0.5900435899266435;
 PXR_NAMESPACE_OPEN_SCOPE
 
 float clamp01(float v) { return std::min(1.0f, std::max(0.0f, v)); }
-
 GfVec3f clamp01(GfVec3f v) { return {clamp01(v[0]), clamp01(v[1]), clamp01(v[2])}; }
 
 struct Splat {
@@ -49,9 +48,7 @@ struct Splat {
 
         // clang-format off
         if (sh_size > 1) {
-            float x = camDir[0];
-            float y = camDir[1];
-            float z = camDir[2];
+            float x = camDir[0], y = camDir[1], z = camDir[2];
 
             color = color -
                     ( sh_weights[1] * y ) +
@@ -59,12 +56,8 @@ struct Splat {
                     ( sh_weights[3] * x );
 
             if (sh_size > 4) {
-                float xx = x * x;
-                float yy = y * y;
-                float zz = z * z;
-                float xy = x * y;
-                float yz = y * z;
-                float xz = x * z;
+                float xx = x * x, yy = y * y, zz = z * z;
+                float xy = x * y, yz = y * z, xz = x * z;
 
                 color = color +
                         ( sh_weights[4] * xy                    ) +
@@ -76,7 +69,7 @@ struct Splat {
                 if (sh_size > 9) {
                     color = color +
                             ( sh_weights[9]  * (y * (3.0f * xx - yy))                       ) +
-                            ( sh_weights[10]  * (xy * z)                                     ) +
+                            ( sh_weights[10] * (xy * z)                                     ) +
                             ( sh_weights[11] * (y * (4.0f * zz - xx - yy))                  ) +
                             ( sh_weights[12] * (z * (2.0f * zz - 3.0f * xx - 3.0f * yy))    ) +
                             ( sh_weights[13] * (x * (4.0f * zz - xx - yy))                  ) +
@@ -87,12 +80,13 @@ struct Splat {
         }
         // clang-format on
 
-        return clamp01(color + GfVec3f(0.5));
+        color = clamp01(color + GfVec3f(0.5));
+
+        return color;
     }
 
     // lifted from Imath : (https://github.com/AcademySoftwareFoundation/Imath/blob/4de9a1dabdf517a7df9bc350b7395bc8db2f681d/src/Imath/ImathQuat.h#L856C1-L856C20)
     static GfMatrix3f toMatrix3f(const GfQuatf& quat) {
-
         float x = quat.GetImaginary()[0];
         float y = quat.GetImaginary()[1];
         float z = quat.GetImaginary()[2];
@@ -114,17 +108,14 @@ struct Splat {
 
     void setCov3D(GfVec3f scale, GfQuatf quat) {
         GfMatrix3f rot = toMatrix3f(quat);
-
         GfMatrix3f scaleMtx = GfMatrix3f(
             scale[0] * scale[0], 0.0, 0.0,
             0.0, scale[1] * scale[1], 0.0,
             0.0, 0.0, scale[2] * scale[2]);
 
-        GfMatrix3f rotT = rot.GetTranspose();
-
         // create the covariance matrix by rotating the splat back to its local
         // space, scaling along local x/y/z axes and then rotating back.
-        cov3D = rotT * scaleMtx * rot;
+        cov3D = rot.GetTranspose() * scaleMtx * rot;
     }
 
     GfVec3f position;
@@ -332,13 +323,16 @@ bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(HdParticleFieldRende
     if (!colorRenderBuffer)
         return false;
 
+    constexpr GfVec2f oneVec(1.0, 1.0);
+
+
     const int w = colorRenderBuffer->GetWidth();
     const int h = colorRenderBuffer->GetHeight();
     const GfVec2f wh(w, h);
 
-    const float halfWidth  = w / 2.0f;
-    const float halfHeight = h / 2.0f;
-    const GfVec2f half_wh(halfWidth, halfHeight);
+    const float half_w  = w / 2.0f;
+    const float half_h = h / 2.0f;
+    const GfVec2f half_wh(half_w, half_h);
 
     const GfRect2i imageROI = GfRect2i({0,0}, w, h);
 
@@ -372,7 +366,7 @@ bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(HdParticleFieldRende
         }
 
         GfVec4f cameraPos = GfVec4f(splat.position[0], splat.position[1], splat.position[2], 1) * _worldToViewMtx;
-        GfVec4f ndcPos   = cameraPos * _projMatrix;
+        GfVec4f ndcPos    = cameraPos * _projMatrix;
         if (ndcPos[3] < 0) {
             continue;
         }
@@ -400,14 +394,13 @@ bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(HdParticleFieldRende
         GfVec2f bboxsize_cam(3.0f * std::sqrt(cov2d[0][0]),
                              3.0f * std::sqrt(cov2d[1][1]));
 
-        GfVec2f bboxsize_ndc     = GfVec2f(bboxsize_cam[0] / wh[0],
-                                           bboxsize_cam[1] / wh[1]) * 2.0f;
+        GfVec2f bboxsize_ndc = GfCompDiv(bboxsize_cam, wh) * 2.0f;
 
         GfVec2f bbox_ndc_min    = -bboxsize_ndc + pos_ndc_2d;
         GfVec2f bbox_ndc_max    =  bboxsize_ndc + pos_ndc_2d;
 
-        GfVec2f bbox_screen_min = GfVec2f((bbox_ndc_min[0] + 1.0f) * half_wh[0], (bbox_ndc_min[1] + 1.0f) * half_wh[1]);
-        GfVec2f bbox_screen_max = GfVec2f((bbox_ndc_max[0] + 1.0f) * half_wh[0], (bbox_ndc_max[1] + 1.0f) * half_wh[1]);
+        GfVec2f bbox_screen_min = GfCompMult(bbox_ndc_min + oneVec, half_wh);
+        GfVec2f bbox_screen_max = GfCompMult(bbox_ndc_max + oneVec, half_wh);
 
         int x1 = static_cast<int>(floor(bbox_screen_min[0]));
         int y1 = static_cast<int>(floor(bbox_screen_min[1]));
@@ -436,7 +429,7 @@ bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(HdParticleFieldRende
         int splat_primID = _splatPrimIDs[splat_index.first];
 
         // step in camera space of the splat for each pixel.
-        GfVec2f bbox_cam_step_per_pixel = GfVec2f( (bboxsize_cam[0] * 2.0f) / splatPixelSize[0], (bboxsize_cam[1] * 2.0f) / splatPixelSize[1]);
+        GfVec2f bbox_cam_step_per_pixel = GfCompDiv(bboxsize_cam * 2.0f, splatPixelSize);
 
         // calculate an OIIO ROI for the region covered by the splat.
         GfRect2i splatROI = GfRect2i({x1, y1}, {x2, y2});
@@ -468,17 +461,14 @@ bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(HdParticleFieldRende
                 alpha = std::min(0.99f, alpha);
 
                 if (alpha > 0.1) {
-                    // imageBufs.setPrimID(splat_primID);
                     if (primIDRenderBuffer) {
                         primIDRenderBuffer->Write(imagePixelIndex, 1, &splat_primID);
                     }
-                    // imageBufs.setDepth(splat_depth);
                     if (depthRenderBuffer) {
                         depthRenderBuffer->Write(imagePixelIndex, 1, &splat_depth);
                     }
                 }
 
-                // imageBufs.setColor(splat_color, alpha);
                 if (colorRenderBuffer) {
                     colorRenderBuffer->OverColor(imagePixelIndex, splat_color, alpha);
                 }
