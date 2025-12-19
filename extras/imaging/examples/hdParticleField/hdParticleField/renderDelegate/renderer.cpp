@@ -1,14 +1,9 @@
 #include "renderer.h"
 #include "../debugCodes.h"
 #include "renderBuffer.h"
-#include <OpenImageIO/imagebuf.h>
-#include <OpenImageIO/imageio.h>
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/work/loops.h>
 #include <random>
-
-using namespace Imath;
-using namespace OIIO;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -279,9 +274,9 @@ void HdParticleFieldRenderer::Render(HdRenderThread* renderThread) {
         }
 
         {
-            ImageBuf* colorImgBuf = nullptr;
-            ImageBuf* depthImgBuf = nullptr;
-            ImageBuf* primImgBuf  = nullptr;
+            HdParticleFieldRenderBuffer* colorRenderBuffer;
+            HdParticleFieldRenderBuffer* depthRenderBuffer;
+            HdParticleFieldRenderBuffer* primIDRenderBuffer;
 
             // Write AOVs to attachments that aren't converged.
             for (size_t i = 0; i < _aovBindings.size(); ++i) {
@@ -294,23 +289,23 @@ void HdParticleFieldRenderer::Render(HdRenderThread* renderThread) {
 
                 if (_aovNames[i].name == HdAovTokens->color) {
                     if (renderBuffer) {
-                        colorImgBuf = &(renderBuffer->imgBuf_buffer());
+                        colorRenderBuffer = renderBuffer;
                     }
                 } else if ((_aovNames[i].name == HdAovTokens->cameraDepth || _aovNames[i].name == HdAovTokens->depth) &&
                            renderBuffer->GetFormat() == HdFormatFloat32) {
                     if (renderBuffer) {
-                        depthImgBuf = &(renderBuffer->imgBuf_buffer());
+                        depthRenderBuffer = renderBuffer;
                     }
                 } else if ((_aovNames[i].name == HdAovTokens->primId || _aovNames[i].name == HdAovTokens->elementId ||
                             _aovNames[i].name == HdAovTokens->instanceId) &&
                            renderBuffer->GetFormat() == HdFormatInt32) {
                     if (renderBuffer) {
-                        primImgBuf = &(renderBuffer->imgBuf_buffer());
+                        primIDRenderBuffer = renderBuffer;
                     }
                 }
             }
 
-            if (!_gsRenderer.renderGaussianSplatScene(colorImgBuf, depthImgBuf, primImgBuf)) {
+            if (!_gsRenderer.renderGaussianSplatScene(colorRenderBuffer, depthRenderBuffer, primIDRenderBuffer)) {
                 printf("error occurred while rendering\n");
             }
         }

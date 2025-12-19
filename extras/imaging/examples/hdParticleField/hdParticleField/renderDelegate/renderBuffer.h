@@ -3,9 +3,9 @@
 #define HDPARTICLEFIELD_HDPARTICLEFIELDRENDERBUFFER_H
 
 #include <pxr/base/gf/vec3i.h>
+#include <pxr/base/gf/vec2i.h>
+#include <pxr/base/gf/vec3f.h>
 #include <pxr/imaging/hd/renderBuffer.h>
-
-#include <OpenImageIO/imagebuf.h>
 
 #include "../debugCodes.h"
 
@@ -100,7 +100,7 @@ class HdParticleFieldRenderBuffer : public HdRenderBuffer {
     ///   \param pixel         What index to write
     ///   \param numComponents The arity of the value to write.
     ///   \param value         A float-valued vector to write.
-    void Write(GfVec3i const& pixel, size_t numComponents, float const* value);
+    void Write(GfVec2i const& pixel, size_t numComponents, float const* value);
 
     /// Write an int, vec2i, vec3i, or vec4i to the renderbuffer.
     /// This should only be called on a mapped buffer. Extra components will
@@ -109,7 +109,9 @@ class HdParticleFieldRenderBuffer : public HdRenderBuffer {
     ///   \param pixel         What index to write
     ///   \param numComponents The arity of the value to write.
     ///   \param value         An int-valued vector to write.
-    void Write(GfVec3i const& pixel, size_t numComponents, int const* value);
+    void Write(GfVec2i const& pixel, size_t numComponents, int const* value);
+
+    void OverColor(const GfVec2i& pixel, GfVec3f color, float alpha);
 
     /// Clear the renderbuffer with a float, vec2f, vec3f, or vec4f.
     /// This should only be called on a mapped buffer. Extra components will
@@ -127,8 +129,6 @@ class HdParticleFieldRenderBuffer : public HdRenderBuffer {
     ///   \param value         An int-valued vector to write.
     void Clear(size_t numComponents, int const* value);
 
-    OIIO::ImageBuf& imgBuf_buffer() { return _buffer_imgbuf; }
-
   private:
     // Calculate the needed buffer size, given the allocation parameters.
     static size_t _GetBufferSize(GfVec2i const& dims, HdFormat format);
@@ -145,7 +145,6 @@ class HdParticleFieldRenderBuffer : public HdRenderBuffer {
 
     // The actual buffer of bytes.
     std::vector<uint8_t> _buffer;
-    OIIO::ImageBuf _buffer_imgbuf;
 
     // The number of callers mapping this buffer.
     std::atomic<int> _mappers{0};

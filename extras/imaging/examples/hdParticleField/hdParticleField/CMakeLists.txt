@@ -34,9 +34,6 @@ pxr_plugin(hdParticleField
         usdLightField
         usdImaging
 
-        Imath::Imath
-        ${OIIO_LIBRARIES}
-
         RESOURCE_FILES
         plugInfo.json
 )

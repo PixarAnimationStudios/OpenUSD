@@ -1,14 +1,14 @@
 #ifndef LIBGAUSSIANSPLATSRENDERER_GAUSSIANSPLATSRENDERER_H
 #define LIBGAUSSIANSPLATSRENDERER_GAUSSIANSPLATSRENDERER_H
 
-#include <OpenImageIO/imagebuf.h>
 #include <memory>
-#include <vector>
 
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/gf/matrix4f.h"
+
+#include "renderDelegate/renderBuffer.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,9 +35,9 @@ class GaussianSplatsRenderer {
     void addGaussianSplats(const std::string& splatName,
                            GaussianSplats::Ptr newSplats);
     void removeGaussianSplats(const std::string& splatName);
-    bool renderGaussianSplatScene(OIIO::ImageBuf* colorBuf,
-                                  OIIO::ImageBuf* depthBuf,
-                                  OIIO::ImageBuf* primIDBuf) const;
+    bool renderGaussianSplatScene(HdParticleFieldRenderBuffer* colorRenderBuffer,
+                                  HdParticleFieldRenderBuffer* depthRenderBuffer,
+                                  HdParticleFieldRenderBuffer* primIDRenderBuffer) const;
 
   private:
     class Impl;

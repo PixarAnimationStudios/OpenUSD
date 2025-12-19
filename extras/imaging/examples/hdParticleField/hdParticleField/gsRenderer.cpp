@@ -3,12 +3,11 @@
 //
 
 #include "gsRenderer.h"
-#include <OpenImageIO/imagebuf.h>
-#include <OpenImageIO/imageio.h>
 #include <algorithm>
 #include <memory>
 #include <vector>
 
+#include "../../../../../pxr/base/gf/rect2i.h"
 #include "pxr/base/gf/matrix2f.h"
 #include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/vec2f.h"
@@ -30,93 +29,7 @@ constexpr float SH_C3_4 = -0.4570457994644658;
 constexpr float SH_C3_5 = 1.445305721320277;
 constexpr float SH_C3_6 = -0.5900435899266435;
 
-using namespace OIIO;
-using namespace Imath;
-
 PXR_NAMESPACE_OPEN_SCOPE
-
-class ImageBufCollection {
-  public:
-    ImageBufCollection(ImageBuf* colorBuf, ImageBuf* depthBuf,
-                       ImageBuf* primIDBuf)
-        : _colorBuf(colorBuf), _depthBuf(depthBuf), _primIDBuf(primIDBuf) {
-        if (colorBuf)
-            _spec = colorBuf->spec();
-        else if (depthBuf)
-            _spec = depthBuf->spec();
-        else if (primIDBuf)
-            _spec = primIDBuf->spec();
-    }
-
-    void initIterators(ROI region) {
-        if (_colorBuf) {
-            _colorPIt = std::make_unique<ImageBuf::Iterator<u_char>>(
-                *_colorBuf, region);
-            _validPIt = _colorPIt.get();
-        }
-        if (_depthBuf) {
-            _depthPIt = std::make_unique<ImageBuf::Iterator<float>>(
-                *_depthBuf, region);
-            _validPIt = _depthPIt.get();
-        }
-        if (_primIDBuf) {
-            _primIDPIt = std::make_unique<ImageBuf::Iterator<int>>(
-                *_primIDBuf, region);
-            _validPIt = _primIDPIt.get();
-        }
-    }
-
-    void incrementIterators() {
-        if (_colorPIt)
-            ++(*_colorPIt);
-        if (_depthPIt)
-            ++(*_depthPIt);
-        if (_primIDPIt)
-            ++(*_primIDPIt);
-    }
-
-    bool done() { return _validPIt->done(); }
-    int x() { return _validPIt->x(); }
-    int y() { return _validPIt->y(); }
-
-    int width() const { return _spec.width; }
-    int height() const { return _spec.height; }
-
-    void setColor(GfVec3f color, float alpha) {
-        if (_colorPIt) {
-            auto& p        = *_colorPIt;
-
-            float invAlpha = (1.0f - alpha);
-            p[0]           = color[0] * alpha + p[0] * invAlpha;
-            p[1]           = color[1] * alpha + p[1] * invAlpha;
-            p[2]           = color[2] * alpha + p[2] * invAlpha;
-            p[3]           = alpha + p[3] * invAlpha;
-        }
-    }
-
-    void setDepth(float depth) {
-        if (_depthPIt) {
-            (*_depthPIt)[0] = depth;
-        }
-    }
-
-    void setPrimID(int id) {
-        if (_primIDPIt) {
-            (*_primIDPIt)[0] = id;
-        }
-    }
-
-  private:
-    ImageSpec _spec;
-    ImageBuf* _colorBuf{nullptr};
-    ImageBuf* _depthBuf{nullptr};
-    ImageBuf* _primIDBuf{nullptr};
-
-    ImageBuf::IteratorBase* _validPIt{nullptr};
-    std::unique_ptr<ImageBuf::Iterator<u_char>> _colorPIt{nullptr};
-    std::unique_ptr<ImageBuf::Iterator<float>> _depthPIt{nullptr};
-    std::unique_ptr<ImageBuf::Iterator<int>> _primIDPIt{nullptr};
-};
 
 float clamp01(float v) { return std::min(1.0f, std::max(0.0f, v)); }
 
@@ -233,9 +146,9 @@ class GaussianSplatsRenderer::Impl {
     void addGaussianSplats(const std::string& splatName,
                            GaussianSplats::Ptr newSplats);
     void removeGaussianSplats(const std::string& splatName);
-    bool renderGaussianSplatScene(ImageBuf* colorBuf,
-                                  ImageBuf* depthBuf,
-                                  ImageBuf* primIDBuf) const;
+    bool renderGaussianSplatScene(HdParticleFieldRenderBuffer* colorRenderBuffer,
+                                  HdParticleFieldRenderBuffer* depthRenderBuffer,
+                                  HdParticleFieldRenderBuffer* primIDRenderBuffer) const;
 
   private:
     void updateSortedIndices() const {
@@ -409,24 +322,25 @@ void GaussianSplatsRenderer::Impl::removeGaussianSplats(
     _needsIndicesSorted = false;
 }
 
-bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(
-    ImageBuf* colorBuf, ImageBuf* depthBuf,
-    ImageBuf* primIDBuf) const {
-    ImageBufCollection imageBufs(colorBuf, depthBuf, primIDBuf);
-
+bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(HdParticleFieldRenderBuffer* colorRenderBuffer,
+                                  HdParticleFieldRenderBuffer* depthRenderBuffer,
+                                  HdParticleFieldRenderBuffer* primIDRenderBuffer) const {
     if (_needsIndicesSorted) {
         updateSortedIndices();
     }
 
-    const int w = imageBufs.width();
-    const int h = imageBufs.height();
+    if (!colorRenderBuffer)
+        return false;
+
+    const int w = colorRenderBuffer->GetWidth();
+    const int h = colorRenderBuffer->GetHeight();
     const GfVec2f wh(w, h);
 
     const float halfWidth  = w / 2.0f;
     const float halfHeight = h / 2.0f;
     const GfVec2f half_wh(halfWidth, halfHeight);
 
-    const ROI imageROI = ROI(0, w, 0, h);
+    const GfRect2i imageROI = GfRect2i({0,0}, w, h);
 
     // calculate the camera location in order to later determine the view
     // direction to the splat.
@@ -525,40 +439,50 @@ bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(
         GfVec2f bbox_cam_step_per_pixel = GfVec2f( (bboxsize_cam[0] * 2.0f) / splatPixelSize[0], (bboxsize_cam[1] * 2.0f) / splatPixelSize[1]);
 
         // calculate an OIIO ROI for the region covered by the splat.
-        ROI splatROI = ROI(x1, x2, y1, y2, 0, 1, 0, 4);
+        GfRect2i splatROI = GfRect2i({x1, y1}, {x2, y2});
 
         // clip the splatROI to the image
-        ROI clippedSplatROI = roi_intersection(splatROI, imageROI);
+        GfRect2i clippedSplatROI = splatROI.GetIntersection(imageROI);
 
-        for (imageBufs.initIterators(clippedSplatROI); !imageBufs.done();
-             imageBufs.incrementIterators()) {
-            // note pixel coord WRT to the splat BB needs to be taken from the
-            // un-clipped ROI.
-            GfVec2i splatPixelIndex(imageBufs.x() - splatROI.xbegin,
-                                imageBufs.y() - splatROI.ybegin);
+        for (unsigned int y = clippedSplatROI.GetMin()[1]; y < clippedSplatROI.GetMax()[1]; ++y) {
+            for (unsigned int x = clippedSplatROI.GetMin()[0]; x < clippedSplatROI.GetMax()[0]; ++x) {
+                GfVec2i imagePixelIndex(x, y);
+                GfVec2i splatPixelIndex = imagePixelIndex - splatROI.GetMin();
 
-            // calculate the corresponding point in camera space.
-            GfVec2f pixel_cam = GfVec2f( -bboxsize_cam[0] + splatPixelIndex[0] * bbox_cam_step_per_pixel[0], -bboxsize_cam[1] + splatPixelIndex[1] * bbox_cam_step_per_pixel[1]);
+                // calculate the corresponding point in camera space.
+                GfVec2f pixel_cam = GfVec2f(-bboxsize_cam[0] + splatPixelIndex[0] * bbox_cam_step_per_pixel[0],
+                                            -bboxsize_cam[1] + splatPixelIndex[1] * bbox_cam_step_per_pixel[1]);
 
-            // calculate the gaussian falloff in the space of the splat. (note
-            // we defer the outer exp() call to after the early exit)
-            double power = -(conic[0] * pow(pixel_cam[0], 2) +
-                           conic[2] * pow(pixel_cam[1], 2)) /
-                             2.0 -
-                         (conic[1] * pixel_cam[0] * pixel_cam[1]);
-            if (power > 0)
-                continue;
+                // calculate the gaussian falloff in the space of the splat. (note
+                // we defer the outer exp() call to after the early exit)
+                double power = -(conic[0] * pow(pixel_cam[0], 2) +
+                               conic[2] * pow(pixel_cam[1], 2)) /
+                                 2.0 -
+                             (conic[1] * pixel_cam[0] * pixel_cam[1]);
+                if (power > 0)
+                    continue;
 
-            float alpha = splat.opacity * exp(power);
-            if (alpha <= 0)
-                continue;
-            alpha = std::min(0.99f, alpha);
+                float alpha = splat.opacity * exp(power);
+                if (alpha <= 0)
+                    continue;
+                alpha = std::min(0.99f, alpha);
 
-            if (alpha > 0.1) {
-                imageBufs.setPrimID(splat_primID);
-                imageBufs.setDepth(splat_depth);
+                if (alpha > 0.1) {
+                    // imageBufs.setPrimID(splat_primID);
+                    if (primIDRenderBuffer) {
+                        primIDRenderBuffer->Write(imagePixelIndex, 1, &splat_primID);
+                    }
+                    // imageBufs.setDepth(splat_depth);
+                    if (depthRenderBuffer) {
+                        depthRenderBuffer->Write(imagePixelIndex, 1, &splat_depth);
+                    }
+                }
+
+                // imageBufs.setColor(splat_color, alpha);
+                if (colorRenderBuffer) {
+                    colorRenderBuffer->OverColor(imagePixelIndex, splat_color, alpha);
+                }
             }
-            imageBufs.setColor(splat_color, alpha);
         }
     }
 
@@ -589,9 +513,10 @@ void GaussianSplatsRenderer::removeGaussianSplats(
 }
 
 bool GaussianSplatsRenderer::renderGaussianSplatScene(
-    ImageBuf* colorBuf, ImageBuf* depthBuf,
-    ImageBuf* primIDBuf) const {
-    return pImpl->renderGaussianSplatScene(colorBuf, depthBuf, primIDBuf);
+    HdParticleFieldRenderBuffer* colorRenderBuffer,
+    HdParticleFieldRenderBuffer* depthRenderBuffer,
+    HdParticleFieldRenderBuffer* primIDRenderBuffer) const {
+    return pImpl->renderGaussianSplatScene(colorRenderBuffer, depthRenderBuffer, primIDRenderBuffer);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

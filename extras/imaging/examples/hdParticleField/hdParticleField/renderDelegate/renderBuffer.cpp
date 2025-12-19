@@ -44,22 +44,6 @@ size_t HdParticleFieldRenderBuffer::_GetBufferSize(GfVec2i const& dims, HdFormat
     return dims[0] * dims[1] * HdDataSizeOfFormat(format);
 }
 
-OIIO::TypeDesc::BASETYPE _GetOIIOTypeDescBaseType(HdFormat format) {
-    HdFormat component = HdGetComponentFormat(format);
-
-    if (component == HdFormatFloat32) {
-        return OIIO::TypeDesc::FLOAT;
-    } else if (component == HdFormatInt32) {
-        return OIIO::TypeDesc::INT32;
-    } else if (component == HdFormatUNorm8) {
-        return OIIO::TypeDesc::UINT8;
-    }
-
-    std::cerr << "Unhandled type conversion" << std::endl;
-
-    return OIIO::TypeDesc::UNKNOWN;
-}
-
 bool HdParticleFieldRenderBuffer::Allocate(GfVec3i const& dimensions, HdFormat format, bool multiSampled) {
     _Deallocate();
 
@@ -74,21 +58,6 @@ bool HdParticleFieldRenderBuffer::Allocate(GfVec3i const& dimensions, HdFormat f
     _height = dimensions[1];
     _format = format;
     _buffer.resize(_GetBufferSize(GfVec2i(_width, _height), format));
-
-    size_t nchans = HdGetComponentCount(format);
-
-    {
-        // create the OIIO ImageBuf wrapper around the hydra buffer allocated
-        // memory.
-        OIIO::ImageSpec spec = OIIO::ImageSpec(_width, _height, nchans,
-                                               _GetOIIOTypeDescBaseType(
-                                                   format));
-        size_t xStride = HdDataSizeOfFormat(format);
-        unsigned long yStride = xStride * _width;
-        unsigned long zStride = yStride * _height;
-
-        _buffer_imgbuf = OIIO::ImageBuf(spec, (void*)_buffer.data(), xStride, yStride, zStride);
-    }
 
     return true;
 }
@@ -112,19 +81,35 @@ template <typename T> static void _WriteOutput(HdFormat format, uint8_t* dst, si
     }
 }
 
-void HdParticleFieldRenderBuffer::Write(GfVec3i const& pixel, size_t numComponents, float const* value) {
+void HdParticleFieldRenderBuffer::Write(GfVec2i const& pixel, size_t numComponents, float const* value) {
     size_t idx        = pixel[1] * _width + pixel[0];
     size_t formatSize = HdDataSizeOfFormat(_format);
     uint8_t* dst      = &_buffer[idx * formatSize];
     _WriteOutput(_format, dst, numComponents, value);
 }
 
-void HdParticleFieldRenderBuffer::Write(GfVec3i const& pixel, size_t numComponents, int const* value) {
+void HdParticleFieldRenderBuffer::Write(GfVec2i const& pixel, size_t numComponents, int const* value) {
     size_t idx        = pixel[1] * _width + pixel[0];
     size_t formatSize = HdDataSizeOfFormat(_format);
     uint8_t* dst      = &_buffer[idx * formatSize];
     _WriteOutput(_format, dst, numComponents, value);
 }
+
+void HdParticleFieldRenderBuffer::OverColor(const GfVec2i& pixel, GfVec3f color, float alpha) {
+    size_t idx        = pixel[1] * _width + pixel[0];
+    size_t formatSize = HdDataSizeOfFormat(_format);
+    uint8_t* dst      = &_buffer[idx * formatSize];
+
+    float invAlpha = (1.0f - alpha);
+    float p[4];
+    p[0]           = color[0] * alpha + ((float)dst[0] / 255.0f) * invAlpha;
+    p[1]           = color[1] * alpha + ((float)dst[1] / 255.0f) * invAlpha;
+    p[2]           = color[2] * alpha + ((float)dst[2] / 255.0f) * invAlpha;
+    p[3]           =            alpha + ((float)dst[3] / 255.0f) * invAlpha;
+
+    _WriteOutput(_format, dst, 4, p);
+}
+
 
 void HdParticleFieldRenderBuffer::Clear(size_t numComponents, float const* value) {
     size_t formatSize = HdDataSizeOfFormat(_format);
