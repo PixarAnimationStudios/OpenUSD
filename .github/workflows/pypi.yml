@@ -140,6 +140,10 @@ jobs:
           run: |
             docker build -t manylinuxwithcmake -f build_scripts/pypi/docker/Dockerfile.aarch64 build_scripts/pypi/docker
             docker run --name usdmanylinux --rm -id -v ./:/opt/USD -v /home/vsts/dist:/opt/USD-dist manylinuxwithcmake
+        - name: Install Dependencies
+          run: |
+            docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} -m pip install setuptools
+            docker exec usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} -m pip install wheel
         - name: Building USD
           run: |
             # Terrible, terrible hack. The manylinux Docker image used to build the
