@@ -57,9 +57,6 @@ enum _MatfiltOrder
 // Plugin registrations
 ////////////////////////////////////////////////////////////////////////////////
 
-// XXX: Hardcoded for now to match the legacy matfilt logic.
-static const bool _resolveVstructsWithConditionals = true;
-
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdSceneIndexPluginRegistry::Define<
@@ -79,6 +76,10 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
+    // XXX Do we expect other plugins to want to insert themselves between
+    //     these matfilt plugins? If not, we could use a single plugin that
+    //     strings them together in the correct order.
+    //
     for( auto const& rendererDisplayName : HdPrman_GetPluginDisplayNames() ) {
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
             rendererDisplayName,
@@ -94,23 +95,17 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
             _MatfiltOrder::NodeTranslation,
             HdSceneIndexPluginRegistry::InsertionOrderAtStart);
 
-        HdContainerDataSourceHandle const inputArgs =
-            HdRetainedContainerDataSource::New(
-                _tokens->applyConditionals,
-                HdRetainedTypedSampledDataSource<bool>::New(
-                    _resolveVstructsWithConditionals));
-
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
             rendererDisplayName,
             _tokens->vstructPluginName,
-            inputArgs,
+            /* inputArgs = */ nullptr,
             _MatfiltOrder::ConnectionResolve,
             HdSceneIndexPluginRegistry::InsertionOrderAtStart);
 
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
             rendererDisplayName,
             _tokens->nodeIdPluginName,
-            inputArgs,
+            /* inputArgs = */ nullptr,
             _MatfiltOrder::NodeIdResolution,
             HdSceneIndexPluginRegistry::InsertionOrderAtStart);
     }
@@ -263,16 +258,12 @@ HdPrman_VirtualStructResolvingSceneIndexPlugin::_AppendSceneIndex(
         const HdSceneIndexBaseRefPtr &inputScene,
         const HdContainerDataSourceHandle &inputArgs)
 {
-    bool applyConditionals = false;
-    if (HdBoolDataSourceHandle val = HdBoolDataSource::Cast(
-            inputArgs->Get(_tokens->applyConditionals))) {
-        applyConditionals = val->GetTypedValue(0.0f);
-    } else {
-        TF_CODING_ERROR("Missing argument to plugin %s",
-                        _tokens->vstructPluginName.GetText());
-    }
+    TF_UNUSED(inputArgs);
+    // XXX: Hardcoded for now to match the legacy matfilt logic.
+    static const bool _resolveVstructsWithConditionals = true;
+
     return HdPrman_VirtualStructResolvingSceneIndex::New(
-                inputScene, applyConditionals);
+                inputScene, _resolveVstructsWithConditionals);
 }
 
 /// ----------------------------------------------------------------------------

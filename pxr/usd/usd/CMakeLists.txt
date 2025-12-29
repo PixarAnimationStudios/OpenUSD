@@ -294,6 +294,15 @@ pxr_build_test_shared_lib(TestUsdResolverChangedResolver
         testenv/TestUsdResolverChangedResolver.cpp
 )
 
+pxr_build_test(testUsdAttributeArrayEditsCpp
+    LIBRARIES
+        tf
+        usd
+        vt
+    CPPFILES
+        testenv/testUsdAttributeArrayEdits.cpp
+)
+
 pxr_build_test(testUsdAttributeBlockingCpp
     LIBRARIES
         tf
@@ -508,6 +517,11 @@ pxr_register_test(testUsdAppliedAPISchemas_AutoApplyDisabled
     EXPECTED_RETURN_CODE 0
     ENV
         USD_DISABLE_AUTO_APPLY_API_SCHEMAS=1
+)
+
+pxr_register_test(testUsdAttributeArrayEditsCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeArrayEditsCpp"
+    EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdAttributeBlocking

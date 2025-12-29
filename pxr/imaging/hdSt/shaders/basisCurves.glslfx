@@ -11,6 +11,7 @@
 --- #import $TOOLS/hdSt/shaders/basisCurves.glslfx
 
 #import $TOOLS/hdSt/shaders/instancing.glslfx
+#import $TOOLS/hdSt/shaders/skinning.glslfx
 #import $TOOLS/hdSt/shaders/terminals.glslfx
 #import $TOOLS/hdSt/shaders/pointId.glslfx
 #import $TOOLS/hdSt/shaders/pointDisk.glslfx
@@ -175,7 +176,7 @@ void main(void)
     MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
 
     outData.Peye = vec4(GetWorldToViewMatrix() * transform *
-                        vec4(HdGet_points(), 1));
+                        vec4(ApplySkinning(HdGet_points()), 1));
     outData.Neye = getNormal(transpose(transformInv *
                                   GetWorldToViewInverseMatrix()));
 
@@ -255,7 +256,7 @@ void main(void)
     MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
 
     outData.Peye = vec4(GetWorldToViewMatrix() * transform *
-                        vec4(HdGet_points(), 1));
+                        vec4(ApplySkinning(HdGet_points()), 1));
 
     ProcessPrimvarsIn();
 

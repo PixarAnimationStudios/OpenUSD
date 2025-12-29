@@ -478,12 +478,53 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
    filterLink.
 */
 #define HD_COLLECTION_EMULATION_TOKENS                \
-    ((lightLinkCollection, "lightLink"))              \
+    ((lightLinkCollection,  "lightLink"))             \
     ((shadowLinkCollection, "shadowLink"))            \
     ((filterLinkCollection, "filterLink"))            \
     (lightLinkCollectionMembershipExpression)         \
     (shadowLinkCollectionMembershipExpression)        \
     (filterLinkCollectionMembershipExpression)
+
+/* Inputs required for UsdSkel skinning. */
+#define HD_SKINNING_INPUT_TOKENS                                        \
+    ((skinningXforms,            "hydra:skinningXforms"))               \
+    ((skinningDualQuats,         "hydra:skinningDualQuats"))            \
+    ((skinningScaleXforms,       "hydra:skinningScaleXforms"))          \
+    ((blendShapeWeights,         "hydra:blendShapeWeights"))            \
+    ((skelLocalToCommonSpace,    "hydra:skelLocalToWorld"))             \
+    ((commonSpaceToPrimLocal,    "hydra:primWorldToLocal"))             \
+    ((blendShapeOffsets,         "hydra:blendShapeOffsets"))            \
+    ((blendShapeOffsetRanges,    "hydra:blendShapeOffsetRanges"))       \
+    ((numBlendShapeOffsetRanges, "hydra:numBlendShapeOffsetRanges"))    \
+                                                                        \
+    ((hasConstantInfluences,     "hydra:hasConstantInfluences"))        \
+    ((numInfluencesPerComponent, "hydra:numInfluencesPerComponent"))    \
+    ((influences,                "hydra:influences"))                   \
+    /* skinningMethod primvar on the skel schema is a token, we provide a 
+     * numeric alternative to pass to storm's vertex shader.
+     */                                                                 \
+    ((numSkinningMethod,         "hydra:numSkinningMethod"))            \
+    /* Extra primvars for computing instance/vertex offsets to index into 
+     * concatenated skinningXForms/blendShapeWeights constant primvars.
+     */                                                                 \
+    ((numJoints,                 "hydra:numJoints"))                    \
+    ((numBlendShapeWeights,      "hydra:numBlendShapeWeights"))
+
+/* Skinning inputs that already exist on skel binding. */
+#define HD_SKINNING_SKEL_INPUT_TOKENS                                   \
+    /* HYD-3510 
+     * these two already exist and they are the source of influences and
+     * numInfluencesPerComponent above. but currently hydra doesn't handle
+     * tensor valued vertex primvar correctly. once that's addressed, we 
+     * can access these two in the vertex shader directly and remove the
+     * two above. see imaging/hdSt/mesh.cpp _PopulateVertexPrimvars()#1417
+     * buffer source array size is currently hardcoded to 1.
+     *
+     *((jointIndices,            "skel:jointIndices"))                  
+     *((jointWeights,            "skel:jointWeights"))
+     */                                                                 \
+    ((geomBindTransform,         "skel:geomBindTransform"))
+
 
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdInstancerTokens, HD_API, HD_INSTANCER_TOKENS);
@@ -501,7 +542,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdRenderContextTokens, HD_API, HD_RENDER_CONTEXT_TOKENS
 TF_DECLARE_PUBLIC_TOKENS(HdOptionTokens, HD_API, HD_OPTION_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdLightTypeTokens, HD_API, HD_LIGHT_TYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdLightFilterTypeTokens, HD_API,
-    HD_LIGHT_FILTER_TYPE_TOKENS);
+                         HD_LIGHT_FILTER_TYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRprimTypeTokens, HD_API, HD_RPRIMTYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdSprimTypeTokens, HD_API, HD_SPRIMTYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdBprimTypeTokens, HD_API, HD_BPRIMTYPE_TOKENS);
@@ -518,6 +559,10 @@ TF_DECLARE_PUBLIC_TOKENS(HdSceneIndexEmulationTokens, HD_API,
                          HD_SCENE_INDEX_EMULATION_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdCollectionEmulationTokens, HD_API, 
                          HD_COLLECTION_EMULATION_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdSkinningInputTokens, HD_API, 
+                         HD_SKINNING_INPUT_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdSkinningSkelInputTokens, HD_API, 
+                         HD_SKINNING_SKEL_INPUT_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -13,6 +13,7 @@
 #include "pxr/base/ts/types.h"
 #include "pxr/base/ts/knot.h"
 #include "pxr/base/ts/knotData.h"
+#include "pxr/base/ts/segment.h"
 
 #include <optional>
 #include <string>
@@ -267,9 +268,14 @@ private:
         _SegmentSolver(
             WhichSegment whichSegment,
             _Mode mode,
-            _WorkingKnotState *activeKnotState,
-            _WorkingKnotState *oppositeKnotState,
-            SetResult *result);
+            _WorkingKnotState* activeKnotState,
+            _WorkingKnotState* oppositeKnotState,
+            SetResult* result);
+
+        _SegmentSolver(
+            _Mode mode,
+            Ts_Segment* segment,
+            SetResult* result);
 
         // If adjustments are needed, update activeKnotState->working,
         // oppositeKnotState->working, and *result.  Does not immediately write
@@ -305,6 +311,7 @@ private:
     private:
         const WhichSegment _whichSegment;
         const _Mode _mode;
+        Ts_Segment* const _segment;
         _WorkingKnotState* const _activeKnotState;
         _WorkingKnotState* const _oppositeKnotState;
         SetResult* const _result;
@@ -338,22 +345,35 @@ private:
     std::optional<_KnotState> _overwrittenKnotState;
 };
 
-
 struct Ts_RegressionPreventerBatchAccess
 {
     // Batch operation for one segment of a spline.  In Contain mode, this
     // method returns true for "bold" tangents that are non-regressive but
     // exceed the segment interval.
+    TS_API
     static bool IsSegmentRegressive(
         const Ts_KnotData *startKnot,
         const Ts_KnotData *endKnot,
         TsAntiRegressionMode mode);
 
+    // Overload of the above function that operates on a Ts_Segment
+    TS_API
+    static bool IsSegmentRegressive(
+        const Ts_Segment* segment,
+        TsAntiRegressionMode mode);
+
     // Batch operation for one segment of a spline.  Returns whether anything
     // was changed.
+    TS_API
     static bool ProcessSegment(
         Ts_KnotData *startKnot,
         Ts_KnotData *endKnot,
+        TsAntiRegressionMode mode);
+
+    // Overload of the above function that operates on a Ts_Segment
+    TS_API
+    static bool ProcessSegment(
+        Ts_Segment* segment,
         TsAntiRegressionMode mode);
 };
 

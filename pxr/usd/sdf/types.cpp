@@ -56,6 +56,54 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<SdfAnimationBlock>();
 }
 
+static std::optional<SdfTimeSampleMap>
+_TimeSampleMapTryTransform(
+    SdfTimeSampleMap const &src,
+    TfFunctionRef<VtValue (VtValueRef)> xform)
+{
+    if (src.empty()) {
+        return std::nullopt;
+    }
+
+    // Just count leading elements that didn't transform in hopes that we never
+    // have to populate dst.  If we discover an element that does transform,
+    // then we transform & copy any remaining elements from there, and tack on
+    // any leading elements after.
+    size_t numLeadingNotXformed = 0;
+    SdfTimeSampleMap dst;
+    for (auto const &[key, val]: src) {
+        VtValue xVal = xform(val);
+        if (!xVal.IsEmpty()) {
+            dst[key] = xVal;
+        }
+        else if (!dst.empty()) {
+            dst[key] = val;
+        }
+        else {
+            ++numLeadingNotXformed;
+        }
+    }
+    if (dst.empty()) {
+        return std::nullopt;
+    }
+    // We actually transformed elements, and the first numLeadingNotXformed from
+    // src that we skipped before we were certain must be copied over.
+    if (numLeadingNotXformed) {
+        for (auto const &[key, val]: src) {
+            dst[key] = val;
+            if (--numLeadingNotXformed == 0) {
+                break;
+            }
+        }
+    }
+    return dst;
+}
+
+TF_REGISTRY_FUNCTION(VtValue)
+{
+    VtRegisterErasedTransform(_TimeSampleMapTryTransform);
+}
+
 // Max units is computed by running `TF_PP_SEQ_SIZE`
 // on every sequence in the varaidic args to populate an
 // initializer list for `std::max`.

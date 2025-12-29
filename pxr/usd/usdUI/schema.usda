@@ -268,15 +268,13 @@ class "AccessibilityAPI" (
         """
     )
 
-    uniform token priority = "standard" (
+    token priority = "standard" (
         doc = """A hint to the accessibility runtime of how to prioritize this
         instance's label and description, relative to others.
 
         This attribute is optional and is considered a hint that runtimes may
         ignore, if they feel there are other necessities that take precedence
         over the prioritization values.
-
-        Priority may not be time varying.
         """
         allowedTokens = ["low", "standard", "high"]
     )

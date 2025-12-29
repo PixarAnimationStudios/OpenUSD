@@ -6,6 +6,7 @@
 //
 #include "dataSourceValueTreeView.h"
 
+#include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/primOriginSchema.h"
@@ -282,6 +283,10 @@ Hdui_GetModelFromValue(VtValue value, QObject *parent = nullptr)
         return new Hdui_TypedArrayValueItemModel<GfVec3d>(value, parent);
     }
 
+    if (value.IsHolding<VtArray<GfVec4f>>()) {
+        return new Hdui_TypedArrayValueItemModel<GfVec4f>(value, parent);
+    }
+
     if (value.IsHolding<VtArray<GfMatrix4d>>()) {
         return new Hdui_TypedArrayValueItemModel<GfMatrix4d>(value, parent);
     }
@@ -290,8 +295,16 @@ Hdui_GetModelFromValue(VtValue value, QObject *parent = nullptr)
         return new Hdui_TypedArrayValueItemModel<GfMatrix4f>(value, parent);
     }
 
+    if (value.IsHolding<VtArray<GfMatrix3f>>()) {
+        return new Hdui_TypedArrayValueItemModel<GfMatrix3f>(value, parent);
+    }
+
     if (value.IsHolding<VtArray<GfVec2f>>()) {
         return new Hdui_TypedArrayValueItemModel<GfVec2f>(value, parent);
+    }
+
+    if (value.IsHolding<VtArray<GfVec2i>>()) {
+        return new Hdui_TypedArrayValueItemModel<GfVec2i>(value, parent);
     }
 
     return new Hdui_UnsupportedTypeValueItemModel(value, parent);

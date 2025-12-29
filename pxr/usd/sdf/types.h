@@ -48,8 +48,11 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/arrayEdit.h"
 #include "pxr/base/vt/dictionary.h"
+#include "pxr/base/vt/traits.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/base/vt/valueTransform.h"
 
 #include <iosfwd>
 #include <list>
@@ -275,6 +278,7 @@ typedef std::vector<SdfRelocate> SdfRelocates;
 
 /// A map from sample times to sample values.
 typedef std::map<double, VtValue> SdfTimeSampleMap;
+VT_VALUE_TYPE_CAN_TRANSFORM(SdfTimeSampleMap);
 
 /// Gets the show default unit for the given /a typeName.
 SDF_API TfEnum SdfDefaultUnit( TfToken const &typeName );
@@ -364,6 +368,7 @@ SDF_API TfToken SdfGetRoleNameForValueTypeName(TfToken const &typeName);
 // Accessors for individual elements in the value types tuples.
 #define SDF_VALUE_CPP_TYPE(tup) TF_PP_TUPLE_ELEM(2, tup)
 #define SDF_VALUE_CPP_ARRAY_TYPE(tup) VtArray<TF_PP_TUPLE_ELEM(2, tup)>
+#define SDF_VALUE_CPP_ARRAY_EDIT_TYPE(tup) VtArrayEdit<TF_PP_TUPLE_ELEM(2, tup)>
 
 template <class T>
 struct SdfValueTypeTraits {
@@ -384,6 +389,10 @@ struct SdfValueTypeTraits<SDF_VALUE_CPP_TYPE(elem)> {                       \
 };                                                                          \
 template <>                                                                 \
 struct SdfValueTypeTraits<SDF_VALUE_CPP_ARRAY_TYPE(elem)> {                 \
+    static const bool IsValueType = true;                                   \
+};                                                                          \
+template <>                                                                 \
+struct SdfValueTypeTraits<SDF_VALUE_CPP_ARRAY_EDIT_TYPE(elem)> {            \
     static const bool IsValueType = true;                                   \
 };
 

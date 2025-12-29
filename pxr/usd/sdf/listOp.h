@@ -11,6 +11,7 @@
 #include "pxr/usd/sdf/api.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/vt/traits.h"
 
 #include <functional>
 #include <iosfwd>
@@ -341,6 +342,10 @@ private:
     ItemVector _deletedItems;
     ItemVector _orderedItems;
 };
+
+// SdfListOps can VtValue-compose.
+template <class T>
+struct VtValueTypeCanCompose<SdfListOp<T>> : std::true_type {};
 
 // ADL swap.
 template <class T>

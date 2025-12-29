@@ -269,6 +269,7 @@
             ('indices', T_INTARRAY, {}),
             ('interpolation', T_TOKEN, {}),
             ('role', T_TOKEN, {}),
+            ('colorSpace', T_TOKEN, {}),
             ('elementSize', T_INT,
              dict(DOC = '''
                  The number of values in the value array that must be aggregated

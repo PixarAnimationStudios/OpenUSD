@@ -85,31 +85,11 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 1;
 
-    // Configure the scene index to:
-    // 1. Filter in settings that have either the ri: or outputs:ri namespaces.
-    // 2. Insert a fallback render settings prim.
-    //
-    // (2) is a workaround to address Riley's requirements around scene options.
-    // See HdPrman_RenderParam::SetRileyOptions and
-    //     HdPrman_RenderSettings::_Sync for further info.
-    //
-    const HdContainerDataSourceHandle inputArgs =
-        HdRetainedContainerDataSource::New(
-            HdsiRenderSettingsFilteringSceneIndexTokens->namespacePrefixes,
-            HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
-#if PXR_VERSION >= 2311
-                {_namespaceTokens->ri, _namespaceTokens->outputsRi}),
-            HdsiRenderSettingsFilteringSceneIndexTokens->fallbackPrimDs,
-            _BuildFallbackRenderSettingsPrimDataSource() );
-#else
-                {_namespaceTokens->ri, _namespaceTokens->outputsRi}));
-#endif
-
     for( auto const& pluginDisplayName : HdPrman_GetPluginDisplayNames()) {
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
             pluginDisplayName,
             _tokens->sceneIndexPluginName,
-            inputArgs,
+            /* inputArgs =*/ nullptr,
             insertionPhase,
             HdSceneIndexPluginRegistry::InsertionOrderAtStart);
     }
@@ -127,7 +107,34 @@ HdPrman_RenderSettingsFilteringSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {
-    return HdsiRenderSettingsFilteringSceneIndex::New(inputScene, inputArgs);
+    TF_UNUSED(inputArgs);
+    // Define inputArgs here instead of in the TF_REGISTRY_FUNCTION block.
+    // In the future, we may consider renaming the inputArgs parameter to
+    // something like "sceneIndexGraphCreateArgs" to allow the app and renderer
+    // plugin to provide arguments for scene indices instantiated via the
+    // scene index plugin system.
+    //
+    // Configure the scene index to:
+    // 1. Filter in settings that have either the ri: or outputs:ri namespaces.
+    // 2. Insert a fallback render settings prim.
+    //
+    // (2) is a workaround to address Riley's requirements around scene options.
+    // See HdPrman_RenderParam::SetRileyOptions and
+    //     HdPrman_RenderSettings::_Sync for further info.
+    //
+    const HdContainerDataSourceHandle localInputArgs =
+        HdRetainedContainerDataSource::New(
+            HdsiRenderSettingsFilteringSceneIndexTokens->namespacePrefixes,
+            HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
+#if PXR_VERSION >= 2311
+                {_namespaceTokens->ri, _namespaceTokens->outputsRi}),
+            HdsiRenderSettingsFilteringSceneIndexTokens->fallbackPrimDs,
+            _BuildFallbackRenderSettingsPrimDataSource() );
+#else
+                {_namespaceTokens->ri, _namespaceTokens->outputsRi}));
+#endif
+    return HdsiRenderSettingsFilteringSceneIndex::New(
+        inputScene, localInputArgs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

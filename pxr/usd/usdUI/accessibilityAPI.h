@@ -310,15 +310,12 @@ public:
     /// ignore, if they feel there are other necessities that take precedence
     /// over the prioritization values.
     /// 
-    /// Priority may not be time varying.
-    /// 
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `uniform token priority = "standard"` |
+    /// | Declaration | `token priority = "standard"` |
     /// | C++ Type | TfToken |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
-    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     /// | \ref UsdUITokens "Allowed Values" | low, standard, high |
     USDUI_API
     UsdAttribute GetPriorityAttr() const;

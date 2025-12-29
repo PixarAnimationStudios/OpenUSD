@@ -93,16 +93,6 @@ public:
     HGIVULKAN_API
     VkCommandPool GetVulkanCommandPool() const;
 
-    /// Returns the fence for this command buffer that is used to track when
-    /// the command buffer has been consumed by the gpu.
-    HGIVULKAN_API
-    VkFence GetVulkanFence() const;
-
-    /// Returns the semaphore that will be signaled when this command buffer
-    /// has been completed in the queue.
-    HGIVULKAN_API
-    VkSemaphore GetVulkanSemaphore() const;
-
     /// Update the command buffer in-flight status. If the status was 
     /// StillInFlight on the last update, the result will be FinishedFlight if 
     /// the device has finished consuming the buffer. Otherwise if not 
@@ -125,6 +115,11 @@ public:
     /// the barrier is available to commands after the barrier.
     HGIVULKAN_API
     void InsertMemoryBarrier(HgiMemoryBarrier barrier);
+
+    /// Sets the value that the queue will reach whenever this command buffer
+    /// has completed 
+    HGIVULKAN_API
+    void SetCompletedTimelineValue(uint64_t value);
 
     /// Returns the id that uniquely identifies this command buffer amongst
     /// all in-flight command buffers.
@@ -155,8 +150,6 @@ private:
     HgiVulkanDevice* _device;
     VkCommandPool _vkCommandPool;
     VkCommandBuffer _vkCommandBuffer;
-    VkFence _vkFence;
-    VkSemaphore _vkSemaphore;
 
     HgiVulkanCompletedHandlerVector _completedHandlers;
 
@@ -164,6 +157,7 @@ private:
     bool _isInFlight;
     bool _isSubmitted;
     uint8_t _inflightId;
+    uint64_t _completedTimelineValue;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

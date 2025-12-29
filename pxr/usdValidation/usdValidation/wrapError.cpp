@@ -100,9 +100,9 @@ void wrapUsdValidationError()
         .def("GetErrorAsString", &UsdValidationError::GetErrorAsString)
         .def("GetValidator", &UsdValidationError::GetValidator, return_value_policy<reference_existing_object>())
         .def("HasNoError", &UsdValidationError::HasNoError)
-        .def("GetMetadata", 
+        .def("GetData", 
              +[](const UsdValidationError &validationError) {
-                 return validationError.GetMetadata();
+                 return validationError.GetData();
              }, 
              return_value_policy<return_by_value>())
         .def("GetFixers", _GetFixers)

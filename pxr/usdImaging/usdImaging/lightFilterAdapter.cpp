@@ -270,4 +270,31 @@ UsdImagingLightFilterAdapter::InvalidateImagingSubprim(
     return result;
 }
 
+UsdImagingPrimAdapter::PopulationMode
+UsdImagingLightFilterAdapter::GetPopulationMode()
+{
+    return RepresentsSelfAndDescendents;
+}
+
+HdDataSourceLocatorSet
+UsdImagingLightFilterAdapter::InvalidateImagingSubprimFromDescendent(
+        UsdPrim const& prim,
+        UsdPrim const& descendentPrim,
+        TfToken const& subprim,
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
+{
+    HdDataSourceLocatorSet result;
+
+    UsdLuxLightFilter filter(prim);
+    if (!filter) {
+        return result;
+    }
+
+    // TODO: perhaps enable more selective dirtying, as is done in UsdImagingMaterialAdapter
+    result.insert(HdMaterialSchema::GetDefaultLocator());
+
+    return result;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

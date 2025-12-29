@@ -323,6 +323,10 @@ PlugPlugin::_LoadWithDependents(_SeenPlugins *seenPlugins)
 bool
 PlugPlugin::Load()
 {
+    if (_isLoaded) {
+        return true;
+    }
+
     static std::recursive_mutex loadMutex;
 
     bool result = false;

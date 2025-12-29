@@ -19,6 +19,7 @@
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/vt/valueRef.h"
 
 #include <type_traits>
 
@@ -289,11 +290,8 @@ public:
     /// for \p key.
     ///
     /// \sa \ref Usd_OM_Metadata
-    template<typename T>
-    bool SetMetadata(const TfToken& key, const T& value) const;
-    /// \overload
     USD_API
-    bool SetMetadata(const TfToken& key, const VtValue& value) const;
+    bool SetMetadata(const TfToken& key, VtValueRef value) const;
 
     /// Clears the authored \a key's value at the current EditTarget,
     /// returning false on error.
@@ -349,13 +347,9 @@ public:
     /// otherwise.
     ///
     /// \sa \ref Usd_Dictionary_Type
-    template<typename T>
-    bool SetMetadataByDictKey(
-        const TfToken& key, const TfToken &keyPath, const T& value) const;
-    /// \overload
     USD_API
     bool SetMetadataByDictKey(
-        const TfToken& key, const TfToken &keyPath, const VtValue& value) const;
+        const TfToken& key, const TfToken &keyPath, VtValueRef value) const;
 
     /// Clear any authored value identified by \p key and \p keyPath
     /// at the current EditTarget.  The \p keyPath is a ':'-separated path
@@ -672,13 +666,7 @@ private:
                           VtValue* value,
                           const TfToken &keyPath=TfToken()) const;
 
-    template <class T>
-    bool _SetMetadataImpl(const TfToken& key,
-                          const T& value,
-                          const TfToken &keyPath=TfToken()) const;
-
-    bool _SetMetadataImpl(const TfToken& key,
-                          const VtValue& value,
+    bool _SetMetadataImpl(const TfToken& key, VtValueRef value,
                           const TfToken &keyPath=TfToken()) const;
 
 protected:
@@ -753,14 +741,6 @@ UsdObject::GetMetadata(const TfToken& key, T* value) const
     return _GetMetadataImpl(key, value);
 }
 
-template<typename T>
-inline
-bool 
-UsdObject::SetMetadata(const TfToken& key, const T& value) const
-{
-    return _SetMetadataImpl(key, value);
-}
-
 template <typename T>
 inline
 bool
@@ -771,16 +751,6 @@ UsdObject::GetMetadataByDictKey(const TfToken& key,
     return _GetMetadataImpl(key, value, keyPath);
 }
 
-template <typename T>
-inline
-bool
-UsdObject::SetMetadataByDictKey(const TfToken& key, 
-                                const TfToken &keyPath, 
-                                const T& value) const
-{
-    return _SetMetadataImpl(key, value, keyPath);
-}
-
 template <class T>
 bool 
 UsdObject::_GetMetadataImpl(const TfToken& key,
@@ -789,15 +759,6 @@ UsdObject::_GetMetadataImpl(const TfToken& key,
 {
     return _GetStage()->_GetMetadata(
         *this, key, keyPath, /*useFallbacks=*/true, value);
-}
-
-template <class T>
-bool 
-UsdObject::_SetMetadataImpl(const TfToken& key,
-                            const T& value,
-                            const TfToken &keyPath) const
-{
-    return _GetStage()->_SetMetadata(*this, key, keyPath, value);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

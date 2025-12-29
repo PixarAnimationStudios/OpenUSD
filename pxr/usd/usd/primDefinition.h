@@ -33,7 +33,8 @@ class UsdPrimDefinition
 public:
     ~UsdPrimDefinition() = default;
 
-    /// Return the list of names of builtin properties for this prim definition.
+    /// Return the list of names of builtin properties for this prim definition,
+    /// ordered by this prim definition's propertyOrder.
     const TfTokenVector &GetPropertyNames() const { return _properties; }
 
     /// Return the list of names of the API schemas that have been applied to
@@ -530,6 +531,8 @@ private:
 
     UsdPrimDefinition() = default;
     UsdPrimDefinition(const UsdPrimDefinition &) = default;
+
+    void _ApplyPropertyOrder();
 
     USD_API
     void _IntializeForTypedSchema(

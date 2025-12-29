@@ -138,6 +138,7 @@ private:
             UsdAttributeQuery indicesQuery,
             HdTokenDataSourceHandle interpolation,
             HdTokenDataSourceHandle role,
+            HdTokenDataSourceHandle colorSpace = nullptr,
             HdIntDataSourceHandle elementSize = nullptr);
 
 private:
@@ -146,6 +147,7 @@ private:
     UsdAttributeQuery _indicesQuery;
     HdTokenDataSourceHandle _interpolation;
     HdTokenDataSourceHandle _role;
+    HdTokenDataSourceHandle _colorSpace;
     HdIntDataSourceHandle _elementSize;
 };
 

@@ -286,6 +286,51 @@ UsdAttribute::GetSpline() const
 bool
 UsdAttribute::SetSpline(const TsSpline &spline)
 {
+    static const TfType doubleType = TfType::Find<double>();
+    static const TfType timecodeType = TfType::Find<SdfTimeCode>();
+
+    // Find the attribute's value type.
+    const TfType attrType = _GetStage()->_GetAttributeValueType(*this);
+    if (!attrType) {
+        TF_CODING_ERROR("Spline on attr <%s> not compatible: attribute has no "
+                        "value type", GetPath().GetText());
+        return false;
+    }
+    const bool attrIsTimeValued = (attrType == timecodeType);
+
+    // Verify splines are supported for this value type.
+    if (!TsSpline::IsSupportedValueType(attrType)
+        && attrType != timecodeType) {
+        TF_CODING_ERROR("Can't set spline on <%s>: splines are only "
+                        "supported on scalar floating-point attributes",
+                        GetPath().GetText());
+        return false;
+    }
+
+    // Verify a spline of the correct value type has been provided.
+    const TfType expectedSplineValueType =
+        (attrIsTimeValued ? doubleType : attrType);
+    if (spline.GetValueType() != expectedSplineValueType) {
+        TF_CODING_ERROR("Can't set spline of type '%s' on <%s>, "
+                        "which requires splines of type '%s'",
+                        spline.GetValueType().GetTypeName().c_str(),
+                        GetPath().GetText(),
+                        expectedSplineValueType.GetTypeName().c_str());
+        return false;
+    }
+
+    // Verify we don't have a mismatch in time-valued-ness.
+    if (attrIsTimeValued && !spline.IsTimeValued()) {
+        TF_CODING_ERROR("Can't set non-time-valued spline on <%s>, "
+                        "which is time-valued", GetPath().GetText());
+        return false;
+    }
+    if (!attrIsTimeValued && spline.IsTimeValued()) {
+        TF_CODING_ERROR("Can't non-time-valued spline on <%s>, "
+                        "which is not time-valued", GetPath().GetText());
+        return false;
+    }
+    
     return _GetStage()->_SetMetadata(
         *this,                 // write a field in our attribute spec
         SdfFieldKeys->Spline,  // write the Spline field
@@ -492,7 +537,9 @@ ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION
     template USD_API bool UsdAttribute::_Set(                           \
         const SDF_VALUE_CPP_TYPE(elem)&, UsdTimeCode) const;            \
     template USD_API bool UsdAttribute::_Set(                           \
-        const SDF_VALUE_CPP_ARRAY_TYPE(elem)&, UsdTimeCode) const;
+        const SDF_VALUE_CPP_ARRAY_TYPE(elem)&, UsdTimeCode) const;      \
+    template USD_API bool UsdAttribute::_Set(                           \
+        const SDF_VALUE_CPP_ARRAY_EDIT_TYPE(elem)&, UsdTimeCode) const;
 
 TF_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET

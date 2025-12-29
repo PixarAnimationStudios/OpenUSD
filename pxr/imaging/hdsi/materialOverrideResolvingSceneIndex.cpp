@@ -27,10 +27,13 @@
 #include "pxr/imaging/hd/vectorSchema.h"
 #include "pxr/imaging/hd/vectorSchemaTypeDefs.h"
 
+#include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/vt/typeHeaders.h"
+#include "pxr/base/vt/visitValue.h"
 #include "pxr/usd/usdShade/tokens.h"
 
 #include <array>
@@ -44,6 +47,40 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 namespace { // begin anonymous namespace
+
+// Struct used alongside VtVisitValue to create a hash of the interface
+// and parameter values used as material overrides
+struct VtHasher
+{
+    uint64_t* _hash;
+
+    VtHasher(uint64_t* hash)
+    : _hash(hash)
+    {}
+
+    template <class T>
+    bool operator()(const VtArray<T>& array) const {
+        if (!_hash) {
+            return false;
+        }
+
+        for (const T& value : array) {
+            *_hash = ArchHash64((const char*)&value, sizeof(T), *_hash);
+        }
+        return true;
+    }
+
+    template <class T>
+    bool operator()(const T& value) const {
+        if (!_hash) {
+            return false;
+        }
+
+        *_hash = 
+            ArchHash64((const char*)&value, sizeof(T), *_hash);
+        return true;
+    }
+};
 
 using TfTokenSet = std::unordered_set<TfToken, TfToken::HashFunctor>;
 using TfTokenMap = std::unordered_map<TfToken, TfToken, TfToken::HashFunctor>;
@@ -1066,6 +1103,53 @@ HdsiMaterialOverrideResolvingSceneIndex::_CreateGeneratedMaterialDataSource(
             prim.dataSource);
 
     prim.primType = HdPrimTypeTokens->material;
+}
+
+uint64_t
+HdsiMaterialOverrideResolvingSceneIndex::_GetHash(
+    const HdMaterialOverrideSchema& materialOverrides) const
+{
+    uint64_t hash = 0;
+    static const std::string interfaceValuesStr = 
+        HdMaterialOverrideSchemaTokens->interfaceValues.GetString();
+    static const std::string parameterValuesStr = 
+        HdMaterialOverrideSchemaTokens->parameterValues.GetString();
+
+    auto hashNodeParameterContainer = 
+        [&hash](
+            const HdMaterialNodeParameterContainerSchema& schema,
+            const std::string& prefix) 
+    {
+        for (const TfToken& overrideValue : schema.GetNames()) {
+            // Hash interface name
+            const std::string name = prefix + overrideValue.GetString();
+            hash = ArchHash64((const char *)name.c_str(), name.size(), hash);
+
+            // Hash the interface value
+            const HdMaterialNodeParameterSchema nodeParamSchema = 
+                schema.Get(overrideValue);
+            const VtValue value = nodeParamSchema.GetValue()->GetValue(0.0);
+            VtVisitValue(value, VtHasher(&hash));
+        }
+    };
+
+    // Hash interfaceValues
+    const HdMaterialNodeParameterContainerSchema interfaceValuesSchema = 
+        materialOverrides.GetInterfaceValues();
+    hashNodeParameterContainer(interfaceValuesSchema, interfaceValuesStr);
+
+    // Hash parameterValues
+    const HdNodeToInputToMaterialNodeParameterSchema paramValuesSchema = 
+        materialOverrides.GetParameterValues();
+    for (const TfToken& nodeName : paramValuesSchema.GetNames()) {
+        const HdMaterialNodeParameterContainerSchema paramValueNodeSchema =
+            paramValuesSchema.Get(nodeName);
+        hashNodeParameterContainer(paramValueNodeSchema, 
+            parameterValuesStr + nodeName.GetString());
+    }
+
+
+    return hash;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

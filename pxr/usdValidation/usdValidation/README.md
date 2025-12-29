@@ -79,10 +79,10 @@ UsdValidationError::GetValidator().
 * Convenience access to any [UsdValidationFixers](@ref UsdValidationFixer) 
 associated with the validator for this error, via 
 UsdValidationError::GetFixers() methods.
-* Error metadata: A VtValue set by the UsdValidationValidator issuing this 
-error, that represents additional metadata passed to the client, or used by an 
+* Error Data: A VtValue set by the UsdValidationValidator issuing this 
+error, that represents additional data passed to the client, or used by an 
 associated UsdValidationFixer. For example, a validator test might test if an
-attribute value meets a certain criteria, and the error metadata can be used to
+attribute value meets a certain criteria, and the error data can be used to
 pass along a value that meets requirements to a fixer, which will update the 
 value accordingly.
 
@@ -164,7 +164,7 @@ suite, might look something like the following.
                             "UsdGeomImageable",
                             "keyword1"
                         ]                        
-                    }
+                    },
                     "ValidatorSuite1": {
                         "doc": "Suite of validators",
                         "keywords": ["suite"],

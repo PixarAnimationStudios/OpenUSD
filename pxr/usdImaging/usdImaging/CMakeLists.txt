@@ -310,8 +310,6 @@ if (BUILD_SHARED_LIBS)
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingMaterialBinding"
         TESTENV testenv/testUsdImagingMaterialBinding
         EXPECTED_RETURN_CODE 0
-        ENV
-            USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
     )
     pxr_register_test(testUsdImagingColorSpace
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingColorSpace"

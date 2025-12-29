@@ -124,6 +124,17 @@ public:
             TfTokenVector const& properties,
             UsdImagingPropertyInvalidationType invalidationType) override;
 
+    USDIMAGING_API
+    PopulationMode GetPopulationMode() override;
+
+    USDIMAGING_API
+    HdDataSourceLocatorSet InvalidateImagingSubprimFromDescendent(
+            UsdPrim const& prim,
+            UsdPrim const& descendentPrim,
+            TfToken const& subprim,
+            TfTokenVector const& properties,
+            UsdImagingPropertyInvalidationType invalidationType) override;
+
 protected:
     USDIMAGING_API
     void _RemovePrim(SdfPath const& cachePath,

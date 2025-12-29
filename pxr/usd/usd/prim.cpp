@@ -1186,40 +1186,6 @@ UsdPrim::_MakeProperties(const TfTokenVector &names) const
     return props;
 }
 
-// Change the order of items in 'names' so that all the things in 'order' that
-// are also in 'names' are at the beginning in the order that they appear in
-// 'order', followed by any remaining items in 'names' in their existing order.
-static void
-_ApplyOrdering(const TfTokenVector &order, TfTokenVector *names)
-{
-    // If order is empty or names is empty, nothing to do.
-    if (order.empty() || names->empty())
-        return;
-
-    // Perf note: this walks 'order' and linear searches 'names' to find each
-    // element, for O(M*N) operations, where M and N are the lengths of 'order'
-    // and 'names'.  We hope 1) that propertyOrder stmts are relatively rare and
-    // 2) that property lists are relatively short.  If those assumptions fail,
-    // this may need revisiting.  In some quick microbenchmarking, this linear
-    // search seems to outperform binary search up to about 5000 names.  We
-    // suspect this is because linear search does TfToken pointer comparisons,
-    // while binary search has to dereference and do string comparisons.
-
-    typedef TfTokenVector::iterator Iter;
-
-    Iter namesRest = names->begin(), namesEnd = names->end();
-    for (const TfToken &oName: order) {
-        // Look for this name from 'order' in the rest of 'names'.
-        Iter i = std::find(namesRest, namesEnd, oName);
-        if (i != namesEnd) {
-            // Found.  Move to the front by rotating the sub-range.  Using
-            // std::rotate invokes swap(), which avoids TfToken refcounting.
-            // Also advance 'namesRest' to the next element.
-            std::rotate(namesRest++, i, i+1);
-        }
-    }
-}
-
 bool 
 UsdPrim::RemoveProperty(const TfToken &propName) 
 {
@@ -1275,6 +1241,38 @@ UsdPrim::GetPropertyOrder() const
     TfTokenVector order;
     GetMetadata(SdfFieldKeys->PropertyOrder, &order);
     return order;
+}
+
+void
+UsdPrim::ApplyPropertyOrder(const TfTokenVector &order, TfTokenVector *names)
+{
+    // If order is empty or names is empty, nothing to do.
+    if (order.empty() || names->empty()) {
+        return;
+    }
+
+    // Perf note: this walks 'order' and linear searches 'names' to find each
+    // element, for O(M*N) operations, where M and N are the lengths of 'order'
+    // and 'names'.  We hope 1) that propertyOrder stmts are relatively rare and
+    // 2) that property lists are relatively short.  If those assumptions fail,
+    // this may need revisiting.  In some quick microbenchmarking, this linear
+    // search seems to outperform binary search up to about 5000 names.  We
+    // suspect this is because linear search does TfToken pointer comparisons,
+    // while binary search has to dereference and do string comparisons.
+
+    typedef TfTokenVector::iterator Iter;
+
+    Iter namesRest = names->begin(), namesEnd = names->end();
+    for (const TfToken &oName: order) {
+        // Look for this name from 'order' in the rest of 'names'.
+        Iter i = std::find(namesRest, namesEnd, oName);
+        if (i != namesEnd) {
+            // Found.  Move to the front by rotating the sub-range.  Using
+            // std::rotate invokes swap(), which avoids TfToken refcounting.
+            // Also advance 'namesRest' to the next element.
+            std::rotate(namesRest++, i, i+1);
+        }
+    }
 }
 
 using TokenRobinSet = pxr_tsl::robin_set<TfToken, TfToken::HashFunctor>;
@@ -1354,7 +1352,7 @@ UsdPrim::_GetPropertyNames(
         std::copy(names.begin(), names.end(), namesVec.begin());
         sort(namesVec.begin(), namesVec.end(), TfDictionaryLessThan());
         if (applyOrder) {
-            _ApplyOrdering(GetPropertyOrder(), &namesVec);
+            ApplyPropertyOrder(GetPropertyOrder(), &namesVec);
         }
     }
 

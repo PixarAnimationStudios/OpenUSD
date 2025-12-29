@@ -183,6 +183,15 @@ public:
         InsertionPhase insertionPhase,
         InsertionOrder insertionOrder);
 
+    /// Loads plugins for \p rendererDisplayName and \p appName.
+    /// Returns the sceneIndexPluginId's in the order they'll be run.
+    ///
+    /// This is primarily in service of tests.
+    HD_API
+    std::vector<TfToken> LoadAndGetSceneIndexPluginIds(
+        const std::string& rendererDisplayName,
+        const std::string& appName);
+
 protected:
 
      void _CollectAdditionalMetadata(
@@ -221,12 +230,24 @@ private:
     };
 
     using _EntryList = std::vector<_Entry>;
-    using _PhasesMap = std::map<InsertionPhase, _EntryList>;
-    using _RenderersMap = std::map<std::string, _PhasesMap>;
+    using _EntriesByPhasesMap = std::map<InsertionPhase, _EntryList>;
+    using _RendererEntries
+        = std::map<std::pair<InsertionPhase, InsertionOrder>, _EntryList>;
+
+    using _RenderersMap = std::map<std::string, _RendererEntries>;
+
+    static _EntriesByPhasesMap
+    _RendererEntriesToPhaseMap(const _RendererEntries& rendererEntries);
+
+    /// Computes entries per-phases map for \p rendererDisplayName
+    ///
+    /// Caller is expected to have loaded plugins.
+    _EntriesByPhasesMap
+    _ComputeEntriesByPhasesMap(const std::string& rendererDisplayName) const;
 
     HdSceneIndexBaseRefPtr _AppendForPhases(
         const HdSceneIndexBaseRefPtr &inputScene,
-        const _PhasesMap &phasesMap,
+        const _EntriesByPhasesMap &entriesByPhases,
         const HdContainerDataSourceHandle &argsUnderlay,
         const std::string &renderInstanceId);
 

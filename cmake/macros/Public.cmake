@@ -1202,7 +1202,7 @@ function(pxr_toplevel_prologue)
                 ARCHIVE DESTINATION ${libInstallPrefix}
                 RUNTIME DESTINATION ${libInstallPrefix}
             )
-            if(WIN32)
+            if(WIN32 AND BUILD_SHARED_LIBS)
                 install(
                     FILES $<TARGET_PDB_FILE:usd_m>
                     DESTINATION ${libInstallPrefix}

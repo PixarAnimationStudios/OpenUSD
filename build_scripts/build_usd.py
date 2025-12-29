@@ -2082,6 +2082,9 @@ if MacOS():
                        default=codesignDefault, action="store_true",
                        help=("Enable code signing for macOS builds "
                              "(defaults to enabled on Apple Silicon)"))
+    group.add_argument("--codesign-id", dest="macos_codesign_id", type=str,
+                       help=("A specific code-sign ID to use. If not provided, "
+                             "the build will try and find one or use '-'"))
 
 if Linux():
     group.add_argument("--use-cxx11-abi", type=int, choices=[0, 1],
@@ -2392,9 +2395,10 @@ class InstallContext:
         if MacOS():
             apple_utils.SetTarget(self, self.buildTarget)
 
-            self.macOSCodesign = \
-                (args.macos_codesign if hasattr(args, "macos_codesign")
-                 else False)
+            self.macOSCodesign = False
+            if args.macos_codesign:
+                self.macOSCodesign = (args.macos_codesign_id or 
+                                      apple_utils.GetCodeSignID())
             if apple_utils.IsHostArm() and args.ignore_homebrew:
                 self.ignorePaths.append("/opt/homebrew")
         else:
@@ -2977,7 +2981,9 @@ if Windows():
 
 if MacOS():
     if context.macOSCodesign:
-        apple_utils.Codesign(context.usdInstDir, verbosity > 1)
+        apple_utils.Codesign(context.usdInstDir,
+                             identifier=context.macOSCodesign,
+                             verbose_output=verbosity > 1)
 
 additionalInstructions = any([context.buildPython, context.buildTools, context.buildPrman])
 if additionalInstructions:

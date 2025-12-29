@@ -16,6 +16,7 @@
 #include "pxr/base/ts/types.h"
 #include "pxr/base/ts/typeHelpers.h"
 #include "pxr/base/ts/eval.h"
+#include "pxr/base/vt/traits.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/gf/interval.h"
 #include "pxr/base/tf/type.h"
@@ -623,6 +624,9 @@ private:
     // _PrepareForWrite before writing.
     std::shared_ptr<Ts_SplineData> _data;
 };
+
+// TsSpline supports value transforms.
+VT_VALUE_TYPE_CAN_TRANSFORM(TsSpline);
 
 /// Output a text representation of a spline to a stream.
 TS_API

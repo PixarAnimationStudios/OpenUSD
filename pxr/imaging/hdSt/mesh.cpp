@@ -1454,6 +1454,9 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 }
 
             } else if ((int)source->GetNumElements() > numPoints) {
+                // HYD-3510
+                // we need to support tensor valued vertex primvars properly
+                // (with elementSize > 1)
                 HF_VALIDATION_WARN(id,
                     "Vertex primvar %s has %d elements, while"
                     " its topology references only up to element index %d.",
@@ -2562,19 +2565,25 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     /* INSTANCE PRIMVARS */
     _UpdateInstancer(sceneDelegate, dirtyBits);
-    bool displayOpacityFromInstancer;
-    bool sceneNormalsFromInstancer;
-    HdStUpdateInstancerData(sceneDelegate->GetRenderIndex(),
-                            renderParam,
-                            this,
-                            drawItem,
-                            &_sharedData,
-                            *dirtyBits,
-                            &displayOpacityFromInstancer,
-                            &sceneNormalsFromInstancer);
-    _displayOpacityFromInstancer = displayOpacityFromInstancer;
-    _sceneNormalsFromInstancer = sceneNormalsFromInstancer;
-    
+    {
+        // The data members are part of a bitfield, so we can't pass pointers
+        // to them directly. HdStUpdateInstancerData doesn't write to output
+        // params if DirtyInstancer is not set, so we initialize the locals
+        // to current member values to preserve existing state in that case.
+        bool displayOpacityFromInstancer = _displayOpacityFromInstancer;
+        bool sceneNormalsFromInstancer = _sceneNormalsFromInstancer;
+        HdStUpdateInstancerData(sceneDelegate->GetRenderIndex(),
+                                renderParam,
+                                this,
+                                drawItem,
+                                &_sharedData,
+                                *dirtyBits,
+                                &displayOpacityFromInstancer,
+                                &sceneNormalsFromInstancer);
+        _displayOpacityFromInstancer = displayOpacityFromInstancer;
+        _sceneNormalsFromInstancer = sceneNormalsFromInstancer;
+    }
+
     /* CONSTANT PRIMVARS, TRANSFORM, EXTENT AND PRIMID */
     if (HdStShouldPopulateConstantPrimvars(dirtyBits, id)) {
         

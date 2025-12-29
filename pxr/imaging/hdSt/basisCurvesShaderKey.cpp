@@ -120,6 +120,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     // instancing related mixins
     ((instancing,                      "Instancing.Transform"))
 
+    // skinning
+    ((skinning,                        "Vertex.SkinPoints"))
+
     // terminals
     ((commonFS,                        "Fragment.CommonTerminals"))
     ((hullColorFS,                     "Fragment.HullColor"))
@@ -197,6 +200,7 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     uint8_t vsIndex = 0;
 
     VS[vsIndex++]  = _tokens->instancing;
+    VS[vsIndex++]  = _tokens->skinning;
     VS[vsIndex++]  = drawThick ? _tokens->curvesVertexPatch 
                        : _tokens->curvesVertexWire;
     VS[vsIndex++]  = oriented ? _tokens->curvesVertexNormalOriented 

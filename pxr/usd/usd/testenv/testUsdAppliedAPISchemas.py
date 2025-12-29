@@ -86,7 +86,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
             "TestTypedSchema")
         self.assertTrue(primDef)
-        self.assertEqual(primDef.GetPropertyNames(), ["testAttr", "testRel"])
+        self.assertEqual(primDef.GetPropertyNames(), ["testRel", "testAttr"])
         self.assertEqual(primDef.GetAppliedAPISchemas(), [])
         self.assertEqual(primDef.GetDocumentation(), "Testing typed schema.")
 
@@ -116,7 +116,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(singleApplyAPIDef.GetAppliedAPISchemas(), 
                          ["TestSingleApplyAPI"])
         self.assertEqual(singleApplyAPIDef.GetPropertyNames(), [
-            "single:bool_attr", "single:relationship", "single:token_attr"])
+            "single:relationship", "single:token_attr", "single:bool_attr"])
         self.assertEqual(singleApplyAPIDef.GetDocumentation(),
             "Test single apply API schema.")
 
@@ -143,17 +143,20 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertTrue(primDef)
         self.assertEqual(primDef.GetAppliedAPISchemas(), [
             "TestSingleApplyAPI", "TestMultiApplyAPI:builtin", "TestComposeMetadataAPI"])
-        self.assertEqual(sorted(primDef.GetPropertyNames()), [
-            "compose:bool_attr", 
-            "compose:relationship", 
-            "compose:token_attr", 
-            "multi:builtin:bool_attr", 
-            "multi:builtin:relationship",
-            "multi:builtin:token_attr", 
-            "single:bool_attr",
+
+        # Verify that the list of property names from the prim definition 
+        # respects property order.
+        self.assertEqual(primDef.GetPropertyNames(), [
             "single:relationship", 
             "single:token_attr", 
-            "testAttr", 
+            "single:bool_attr",
+            "compose:relationship", 
+            "compose:token_attr",
+            "compose:bool_attr", 
+            "multi:builtin:bool_attr", 
+            "multi:builtin:relationship",
+            "multi:builtin:token_attr",
+            "testAttr",
             "testRel"])
         # Note that prim def documentation does not come from the built-in API
         # schemas.

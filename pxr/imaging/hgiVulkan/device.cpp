@@ -327,6 +327,13 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     vulkan11Features.pNext = features2.pNext;
     features2.pNext = &vulkan11Features;
 
+    VkPhysicalDeviceVulkan12Features vulkan12Features =
+        {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
+    vulkan12Features.timelineSemaphore =
+        _capabilities->vkVulkan12Features.timelineSemaphore;
+    vulkan12Features.pNext = features2.pNext;
+    features2.pNext = &vulkan12Features;
+
     VkPhysicalDeviceVulkan13Features vulkan13Features =
         {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
     vulkan13Features.shaderDemoteToHelperInvocation =

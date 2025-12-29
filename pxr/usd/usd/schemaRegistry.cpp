@@ -19,6 +19,7 @@
 #include "pxr/base/plug/registry.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/changeBlock.h"
+#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
@@ -1098,6 +1099,12 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
     // those types. We'll need this for building the final prim definitions.
     _typeToAutoAppliedAPISchemaNames = _GetTypeToAutoAppliedAPISchemaNames();
 
+    // Make sure the SdfFileFormat plugin is loaded in this thread explicitly,
+    // so that opening generatedSchema.usda files in parallel doesn't try to
+    // load the plugin in spawned threads.
+    PlugRegistry::GetInstance().GetPluginForType(
+        TfType::Find<SdfFileFormat>())->Load();
+    
     // Get all the plugins that provide the types and initialize prim 
     // definitions for the found schema types.
     std::vector<std::pair<PlugPluginPtr, size_t>> plugins;

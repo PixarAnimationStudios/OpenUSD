@@ -12,6 +12,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/vt/traits.h"
 #include "pxr/usd/sdf/declareHandles.h"
 
 #include <iosfwd>
@@ -265,6 +266,9 @@ private:
     /// Fully evaluated and resolved path
     std::string _resolvedPath;
 };
+
+// SdfAssetPath supports value transforms.
+VT_VALUE_TYPE_CAN_TRANSFORM(SdfAssetPath);
 
 /// \name Related
 /// @{

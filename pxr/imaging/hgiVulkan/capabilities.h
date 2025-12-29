@@ -74,6 +74,7 @@ public:
 
     VkPhysicalDeviceFeatures2 vkDeviceFeatures2 {};
     VkPhysicalDeviceVulkan11Features vkVulkan11Features {};
+    VkPhysicalDeviceVulkan12Features vkVulkan12Features {};
     VkPhysicalDeviceVulkan13Features vkVulkan13Features {};
     VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT
         vkVertexAttributeDivisorFeatures {};

@@ -224,6 +224,13 @@ HdPrimvarSchema::GetRole() const
         HdPrimvarSchemaTokens->role);
 }
 
+HdTokenDataSourceHandle
+HdPrimvarSchema::GetColorSpace() const
+{
+    return _GetTypedDataSource<HdTokenDataSource>(
+        HdPrimvarSchemaTokens->colorSpace);
+}
+
 HdIntDataSourceHandle
 HdPrimvarSchema::GetElementSize() const
 {
@@ -239,11 +246,12 @@ HdPrimvarSchema::BuildRetained(
         const HdIntArrayDataSourceHandle &indices,
         const HdTokenDataSourceHandle &interpolation,
         const HdTokenDataSourceHandle &role,
+        const HdTokenDataSourceHandle &colorSpace,
         const HdIntDataSourceHandle &elementSize
 )
 {
-    TfToken _names[6];
-    HdDataSourceBaseHandle _values[6];
+    TfToken _names[7];
+    HdDataSourceBaseHandle _values[7];
 
     size_t _count = 0;
 
@@ -270,6 +278,11 @@ HdPrimvarSchema::BuildRetained(
     if (role) {
         _names[_count] = HdPrimvarSchemaTokens->role;
         _values[_count++] = role;
+    }
+
+    if (colorSpace) {
+        _names[_count] = HdPrimvarSchemaTokens->colorSpace;
+        _values[_count++] = colorSpace;
     }
 
     if (elementSize) {
@@ -320,6 +333,14 @@ HdPrimvarSchema::Builder::SetRole(
 }
 
 HdPrimvarSchema::Builder &
+HdPrimvarSchema::Builder::SetColorSpace(
+    const HdTokenDataSourceHandle &colorSpace)
+{
+    _colorSpace = colorSpace;
+    return *this;
+}
+
+HdPrimvarSchema::Builder &
 HdPrimvarSchema::Builder::SetElementSize(
     const HdIntDataSourceHandle &elementSize)
 {
@@ -336,6 +357,7 @@ HdPrimvarSchema::Builder::Build()
         _indices,
         _interpolation,
         _role,
+        _colorSpace,
         _elementSize
     );
 }

@@ -47,21 +47,20 @@ UsdObject::_GetMetadataImpl(
 }
 
 bool 
-UsdObject::SetMetadata(const TfToken& key, const VtValue& value) const
+UsdObject::SetMetadata(const TfToken& key, VtValueRef value) const
 {
     return _SetMetadataImpl(key, value);
 }
 
 bool
 UsdObject::SetMetadataByDictKey(
-        const TfToken& key, const TfToken &keyPath, const VtValue& value) const
+        const TfToken& key, const TfToken &keyPath, VtValueRef value) const
 {
     return _SetMetadataImpl(key, value, keyPath);
 }
 
 bool 
-UsdObject::_SetMetadataImpl(const TfToken& key,
-                            const VtValue& value,
+UsdObject::_SetMetadataImpl(const TfToken& key, VtValueRef value,
                             const TfToken &keyPath) const
 {
     return _GetStage()->_SetMetadata(*this, key, keyPath, value);

@@ -4,7 +4,6 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 #
-
 # Utilities for managing Apple OS build concerns.
 #
 # NOTE: This file and its contents may change significantly as we continue
@@ -15,10 +14,12 @@
 import sys
 import locale
 import os
+import re
 import platform
 import shlex
 import subprocess
-from typing import Optional, List
+import glob
+from typing import Optional, List, Dict
 
 TARGET_NATIVE = "native"
 TARGET_X86 = "x86_64"
@@ -115,10 +116,8 @@ def GetTargetArchPair(context):
 def SupportsMacOSUniversalBinaries():
     if not MacOS():
         return False
-    XcodeOutput = GetCommandOutput(["/usr/bin/xcodebuild", "-version"])
-    XcodeFind = XcodeOutput.rfind('Xcode ', 0, len(XcodeOutput))
-    XcodeVersion = XcodeOutput[XcodeFind:].split(' ')[1]
-    return (XcodeVersion > '11.0')
+    XcodeVersion = GetXcodeVersion()[0]
+    return (XcodeVersion > 11)
 
 def GetSDKRoot(context) -> Optional[str]:
     sdk = "macosx"
@@ -163,36 +162,195 @@ def ExtractFilesRecursive(path, cond):
                 files.append(os.path.join(r, file))
     return files
 
-def CodesignFiles(files):
-    SDKVersion  = subprocess.check_output(
-        ['xcodebuild', '-version']).strip()[6:10]
-    codeSignIDs = subprocess.check_output(
+def _GetCodeSignStringFromTerminal():
+    """Return the output from the string codesigning variables"""
+    codeSignIDs = GetCommandOutput(
         ['security', 'find-identity', '-vp', 'codesigning'])
+    return codeSignIDs
 
-    codeSignID = "-"
-    if os.environ.get('CODE_SIGN_ID'):
-        codeSignID = os.environ.get('CODE_SIGN_ID')
-    elif float(SDKVersion) >= 11.0 and \
-                codeSignIDs.find(b'Apple Development') != -1:
-        codeSignID = "Apple Development"
-    elif codeSignIDs.find(b'Mac Developer') != -1:
-        codeSignID = "Mac Developer"
 
-    for f in files:
-        subprocess.call(['codesign', '-f', '-s', '{codesignid}'
-                              .format(codesignid=codeSignID), f],
-                        stdout=devout, stderr=devout)
+def GetXcodeVersion():
+    output = GetCommandOutput(['xcodebuild', '-version']).split()
+    version = float(output[1])
+    build = output[-1]
 
-def Codesign(install_path, verbose_output=False):
+    return version, build
+
+
+def GetCodeSigningIdentifiers() -> Dict[str, str]:
+    """Returns a dictionary of codesigning identifiers and their hashes"""
+    XcodeVersion = GetXcodeVersion()[0]
+    codeSignIDs = _GetCodeSignStringFromTerminal()
+
+    identifiers = {}
+    for codeSignID in (codeSignIDs or "").splitlines():
+        if "CSSMERR_TP_CERT_REVOKED" in codeSignID:
+            continue
+        if ")" not in codeSignID:
+            continue
+        if ((XcodeVersion >= 11 and "Apple Development" in codeSignID)
+            or "Mac Developer" in codeSignID):
+            identifier = codeSignID.split()[1]
+            identifier_hash = re.search(r'\(.*?\)', codeSignID)
+            if identifier_hash:
+                identifier_hash = identifier_hash[0][1:-1]
+            else:
+                identifier_hash = None
+
+            identifiers[identifier] = identifier_hash
+
+    identifiers["-"] = None
+    return identifiers
+
+
+def GetCodeSignID() -> str:
+    """Return the first code signing identifier"""
+    identifiers = GetCodeSigningIdentifiers()
+    env_signing_id = os.environ.get('CODE_SIGN_ID')
+    if env_signing_id:
+        if env_signing_id in identifiers:
+            return env_signing_id
+        raise RuntimeError(
+            f"Could not find environment specified identifier "
+            f"{env_signing_id} in registered code signing identifiers")
+
+    return list(GetCodeSigningIdentifiers().keys())[0]
+
+
+def GetDevelopmentTeamID(identifier=None):
+    if "DEVELOPMENT_TEAM" in os.environ:
+        return os.environ.get("DEVELOPMENT_TEAM")
+
+    if not identifier:
+        identifier = GetCodeSignID()
+    if identifier == "-":
+        return None
+
+    identifier_hash = GetCodeSigningIdentifiers().get(identifier)
+    if not identifier_hash:
+        raise RuntimeError("Could not get identifiers hash")
+
+    certs = subprocess.check_output(
+        ["security", "find-certificate", "-c", identifier_hash, "-p"])
+    subject = GetCommandOutput(["openssl", "x509", "-subject"], input=certs)
+    subject = subject.splitlines()[0]
+    match = re.search("OU\s*=\s*(?P<team>([A-Za-z0-9_])+)", subject)
+    if not match:
+        raise RuntimeError("Could not parse the output "
+                           "certificate to find the team ID")
+
+    groups = match.groupdict()
+    team = groups.get("team")
+
+    if not team:
+        raise RuntimeError("Could not extract team id from certificate")
+
+    return team
+
+
+def CodesignPath(path, identifier, team_identifier,
+                 force=False, is_framework=False) -> bool:
+    resign = force
+    if not force:
+        codesigning_info = GetCommandOutput(["codesign", "-vd", path])
+        if not codesigning_info:
+            resign = True
+        else:
+            # The output has multiple lines here
+            for line in codesigning_info.splitlines():
+                if line.startswith("TeamIdentifier="):
+                    current_team_identifier = line.split("=")[-1]
+                    if (not current_team_identifier 
+                        or "not set" in current_team_identifier):
+                        resign = True
+                        break
+                    elif current_team_identifier == team_identifier:
+                        break
+            else:
+                resign = True
+
+    if not resign:
+        return False
+
+    # Frameworks need to be signed with different parameters than loose binaries
+    if is_framework:
+        subprocess.check_call(
+            ["codesign", "--force", "--sign", identifier,
+             "--generate-entitlement-der", "--verbose", path])
+    else:
+        subprocess.check_call(
+            ["codesign", "--force", "--sign", identifier, path],
+            stdout=devout, stderr=devout)
+    return True
+
+
+def Codesign(install_path, identifier=None, force=False,
+             verbose_output=False) -> bool:
     if not MacOS():
         return False
+
+    identifier = identifier or GetCodeSignID()
+
     if verbose_output:
         global devout
         devout = sys.stdout
+        print(f"Code-signing files in {install_path} "
+              f"with {identifier}", file=devout)
 
-    files = ExtractFilesRecursive(install_path,
-                 (lambda file: '.so' in file or '.dylib' in file))
-    CodesignFiles(files)
+    try:
+        team_identifier = GetDevelopmentTeamID(identifier)
+    except:
+        if verbose_output:
+            print("Could not get team_identifier")
+        team_identifier = None
+
+    codesignPaths = [
+        os.path.join(install_path, 'lib'),
+        os.path.join(install_path, 'plugin'),
+        os.path.join(install_path, 'share/usd'),
+        os.path.join(install_path, "frameworks")
+    ]
+        
+    for basePath in codesignPaths:
+        if not os.path.exists(basePath):
+            continue
+
+        for root, dirs, files in os.walk(basePath, topdown=True):
+            for f in files:
+
+                _, ext = os.path.splitext(f)
+                if ext in (".dylib", ".so"):
+                    path = os.path.join(root, f)
+                    result = CodesignPath(path, identifier, 
+                                          team_identifier=team_identifier, 
+                                          force=force, is_framework=False)
+                    if verbose_output:
+                        if result:
+                            print(f"Code-signed binary: {path}")
+                        else:
+                            print(f"Did not code-sign binary: {path}")
+
+        # Bit annoying to have to do this twice, but seems the fastest way
+        # to skip traversing frameworks
+        frameworks = [d for d in dirs if d.endswith(".framework")]
+        dirs[:] = [d for d in dirs if not d.endswith(".framework")]
+
+        for framework in frameworks:
+            framework_name = os.path.splitext(framework)[0]
+            if (framework_name.lower() not in 
+                ["openusd", "opensubdiv", "materialx"]):
+                continue
+            path = os.path.join(root, framework)
+            result = CodesignPath(path, identifier, 
+                                  team_identifier=team_identifier,
+                                  force=force, is_framework=True)
+            if verbose_output:
+                if result:
+                    print(f"Code-signed framework: {path}")
+                else:
+                    print(f"Did not code-sign framework: {path}")
+
+    return True
 
 def CreateUniversalBinaries(context, libNames, x86Dir, armDir):
     if not MacOS():

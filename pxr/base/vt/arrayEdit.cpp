@@ -88,12 +88,6 @@ Vt_ArrayEditStreamImpl(
     return out << ']';
 }
 
-// Instantiate basic ArrayEdit templates.
-#define VT_ARRAY_EDIT_EXPLICIT_INST(unused, elem) \
-    template class VT_API VtArrayEdit< VT_TYPE(elem) >;
-TF_PP_SEQ_FOR_EACH(VT_ARRAY_EDIT_EXPLICIT_INST, ~, VT_SCALAR_VALUE_TYPES)
-#undef VT_ARRAY_EDIT_EXPLICIT_INST
-
 TF_REGISTRY_FUNCTION(VtValue)
 {
 #define VT_ARRAY_EDIT_REGISTER_OVER(unused, elem)                              \

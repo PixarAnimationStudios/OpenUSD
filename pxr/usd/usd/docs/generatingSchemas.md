@@ -264,6 +264,35 @@ from one of its built-in API schemas by declaring the property itself. This
 should be done carefully to avoid breaking conformance with the built-in schema
 itself (like changing the property's type) and is typically used for changing
 the default value for the property.
+
+Schemas can also indicate that the interfaces for any built-in API schemas 
+should automatically be "reflected" (made available) in the schema's API 
+interface. This will be done by the ```usdGenSchema``` 
+\ref Usd_SchemaCodeGeneration "codegen process" when the schema lists the 
+built-in schemas to be reflected in the \em reflectedAPISchemas field in the 
+schema definition's customData. For example, if "Schema1API" wanted to make the 
+properties from built-in "Schema2API" automatically available in the Schema1API 
+interface, the schema definition would look something like the following.
+
+\code
+# Example of a single-apply "Schema1API" API schema that has "Schema2API"
+# (not shown in this example) as a built-in schema, and has the interface of
+# Schema2API automatically reflected in the Schema1API interface via codegen
+class "Schema1API" (
+    inherits = </APISchemaBase>
+    customData = {        
+        token[] reflectedAPISchemas = ["Schema2API"]        
+    }
+    prepend apiSchemas = ["Schema2API"]
+)
+{
+    # ...Schema1API properties, etc. defined here...
+}
+\endcode
+
+Note that you can only reflect single-apply API schemas, not multiple-apply
+schemas.
+
 \sa \ref Usd_APISchemaStrengthOrdering
 
 ### Auto applied API schemas {#Usd_AutoAppliedAPISchemas}
@@ -788,6 +817,15 @@ Here's a short description of each datum in the per-class customData dictionary:
     the \ref Usd_OM_FallbackPrimTypes "fallback prim types" metadata that USD 
     versions which lack this schema will use to choose a suitable alternative 
     schema type.
+
+  - \b reflectedAPISchemas - An optional token array value that lists the 
+    built-in API schemas that should be "reflected" (automatically made 
+    available) in the schema's interface. The array should only include schemas 
+    that have also been specified as built-ins via \em apiSchemas. Only 
+    single-apply API schemas can be included. This array is used by the 
+    ```usdGenSchema```  \ref Usd_SchemaCodeGeneration "codegen process" to 
+    generate the reflected schema interface (property APIs, etc.) in the 
+    generated code.
 
 ## Customizing Per-Property  {#Usd_CustomizingPerProperty}
 

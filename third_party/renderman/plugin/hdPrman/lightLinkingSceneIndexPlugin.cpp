@@ -62,9 +62,7 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
             HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
                 rendererDisplayName,
                 _tokens->sceneIndexPluginName,
-                // XXX Update inputArgs to provide the list of geometry types
-                //     supported by hdPrman.
-                nullptr, 
+                /* inputArgs = */ nullptr,
                 insertionPhase,
                 HdSceneIndexPluginRegistry::InsertionOrderAtStart);
         }
@@ -86,7 +84,12 @@ protected:
         const HdSceneIndexBaseRefPtr &inputScene,
         const HdContainerDataSourceHandle &inputArgs) override
     {
-        return HdsiLightLinkingSceneIndex::New(inputScene, inputArgs);
+        TF_UNUSED(inputArgs);
+        // XXX Update inputArgs to provide the list of geometry and light types
+        //     supported by hdPrman instead of using the fallback behavior in
+        //     HdsiLightLinkingSceneIndex that uses the hardcoded tokens in hd.
+        static const HdContainerDataSourceHandle localInputArgs = nullptr;
+        return HdsiLightLinkingSceneIndex::New(inputScene, localInputArgs);
     }
 };
 

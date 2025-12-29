@@ -12,6 +12,7 @@
 #include "pxr/usd/sdf/pathExpressionEval.h"
 #include "pxr/usd/sdf/pathPattern.h"
 #include "pxr/usd/sdf/predicateLibrary.h"
+#include "pxr/base/vt/valueComposeOver.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -255,6 +256,40 @@ TestBasics()
         TF_AXIOM(nothing.ComposeOver(a) == nothing);
         TF_AXIOM(nothing.ComposeOver(b) == nothing);
         TF_AXIOM(nothing.ComposeOver(c) == nothing);
+
+        // Test VtValueComposeOver with PathExpressions.
+        {
+            TF_AXIOM(VtValueCanComposeOver(b, a));
+            TF_AXIOM(VtValueCanComposeOver(c, b));
+            
+            VtValue composedVal =
+                VtValueComposeOver(c, VtValueComposeOver(b, a));
+
+            TF_AXIOM(composedVal.IsHolding<SdfPathExpression>());
+
+            SdfPathExpression composed = composedVal.Get<SdfPathExpression>();
+
+            TF_AXIOM(!composed.ContainsExpressionReferences());
+            TF_AXIOM(!composed.ContainsWeakerExpressionReference());
+            TF_AXIOM(composed.IsComplete());
+            TF_AXIOM(composed == SdfPathExpression { "/a /b /c" });
+
+            // Composing over the VtBackground should resolve out `%_`.
+            {
+                VtValue composedBCVal = VtValueComposeOver(
+                    VtValueComposeOver(c, b), VtBackground);
+                
+                TF_AXIOM(composedBCVal.IsHolding<SdfPathExpression>());
+
+                SdfPathExpression composed =
+                    composedBCVal.Get<SdfPathExpression>();
+                
+                TF_AXIOM(!composed.ContainsExpressionReferences());
+                TF_AXIOM(!composed.ContainsWeakerExpressionReference());
+                TF_AXIOM(composed.IsComplete());
+                TF_AXIOM(composed == SdfPathExpression { "/b /c" });
+            }
+        }
     }
 
     {

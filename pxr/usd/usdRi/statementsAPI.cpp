@@ -211,9 +211,17 @@ UsdRiStatementsAPI::GetRiAttributes(
                 continue;
             }
             // If we encounter the same Ri attribute name encoded as both
-            // a new and old style attribute, return only the new-style one.
+            // a new and old style attribute, return only the new-style one,
+            // unless the old style attribute is authored and the new-style
+            // one is not (e.g. it exists due to applied schema).
             bool foundAsPrimvar = false;
+            bool oldStylePropAuthored = prop.IsAuthored();
             for (size_t i=0; i < numNewStylePrimvars; ++i) {
+                if (oldStylePropAuthored && !validProps[i].IsAuthored()) {
+                    // Old-style attribute wins if it is authored
+                    // but the new-style primvar is not.
+                    continue;
+                }
                 const std::string &primvarName =
                     validProps[i].GetName().GetString();
                 std::size_t nsOffset = primvarName.find(":");

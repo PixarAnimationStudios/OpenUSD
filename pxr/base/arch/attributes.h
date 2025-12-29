@@ -16,6 +16,8 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/export.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 #if defined(doxygen)
@@ -320,20 +322,24 @@ struct Arch_ConstructorInit {
     ARCH_API ~Arch_ConstructorInit();
 };
 
-// Emit a Arch_ConstructorEntry in the .pxrctor section.  The namespace and
-// extern are to convince the compiler and linker to leave the object in the
-// final library/executable instead of stripping it out.  In clang/gcc we use
+// Emit an Arch_ConstructorEntry in the .pxrctor section.  The
+// arch_{c,d}tor_unused assignment is a workaround to ensure arch_{c,d}tor
+// isn't removed when /Zc:inline is enabled. In clang/gcc we use
 // __attribute__((used)) to do that.
 #   define ARCH_CONSTRUCTOR(_name, _priority)                                  \
     static void _name();                                                       \
     namespace {                                                                \
     __declspec(allocate(".pxrctor"))                                           \
-    extern const Arch_ConstructorEntry                                         \
+    static const Arch_ConstructorEntry                                         \
     _ARCH_CAT_NOEXPAND(arch_ctor_, _name) = {                                  \
         reinterpret_cast<Arch_ConstructorEntry::Type>(&_name),                 \
         static_cast<unsigned>(PXR_VERSION),                                    \
         _priority                                                              \
     };                                                                         \
+    void _ARCH_CAT_NOEXPAND(arch_ctor_unused, _name)() {                       \
+        static const auto unused =                                             \
+             std::addressof(_ARCH_CAT_NOEXPAND(arch_ctor_, _name));            \
+    }                                                                          \
     }                                                                          \
     _ARCH_ENSURE_PER_LIB_INIT(Arch_ConstructorInit, _archCtorInit);            \
     static void _name()
@@ -343,12 +349,16 @@ struct Arch_ConstructorInit {
     static void _name();                                                       \
     namespace {                                                                \
     __declspec(allocate(".pxrdtor"))                                           \
-    extern const Arch_ConstructorEntry                                         \
+    static const Arch_ConstructorEntry                                         \
     _ARCH_CAT_NOEXPAND(arch_dtor_, _name) = {                                  \
         reinterpret_cast<Arch_ConstructorEntry::Type>(&_name),                 \
         static_cast<unsigned>(PXR_VERSION),                                    \
         _priority                                                              \
     };                                                                         \
+    void _ARCH_CAT_NOEXPAND(arch_dtor_unused, _name)() {                       \
+        static const auto unused =                                             \
+             std::addressof(_ARCH_CAT_NOEXPAND(arch_dtor_, _name));            \
+    }                                                                          \
     }                                                                          \
     _ARCH_ENSURE_PER_LIB_INIT(Arch_ConstructorInit, _archCtorInit);            \
     static void _name()

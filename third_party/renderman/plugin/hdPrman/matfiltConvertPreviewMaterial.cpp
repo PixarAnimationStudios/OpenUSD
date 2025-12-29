@@ -253,7 +253,13 @@ _ProcessPreviewSurfaceNode(
         if (_GetParameter(
                 netInterface, nodeName, _tokens->opacityMode, &vtOpMode)) {
 
-            if (vtOpMode.Get<TfToken>() == _tokens->transparent) {
+            TfToken opModeToken;
+            if (vtOpMode.IsHolding<std::string>()) {
+                opModeToken = TfToken(vtOpMode.Get<std::string>());
+            } else if (vtOpMode.IsHolding<TfToken>()) {
+                opModeToken = vtOpMode.Get<TfToken>();
+            }
+            if (opModeToken == _tokens->transparent) {
                 netInterface->SetNodeInputConnection(
                     pxrSurfaceNodeName, _tokens->refractionGain,
                     {{nodeName, _tokens->refractionGainOut}});

@@ -1138,12 +1138,6 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    const HdContainerDataSourceHandle inputArgs =
-        HdRetainedContainerDataSource::New(
-            // TODO: Get the real framerate!
-            _tokens->fps,
-            HdRetainedTypedSampledDataSource<float>::New(_fallbackFps));
-
     // This plugin must come after extcomp but before motion blur
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 2;
 
@@ -1151,7 +1145,7 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
             rendererDisplayName,
             HdPrmanPluginTokens->velocityMotion,
-            inputArgs,
+            /* inputArgs = */ nullptr,
             insertionPhase,
             HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
     }
@@ -1165,7 +1159,21 @@ HdPrman_VelocityMotionResolvingSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr& inputScene,
     const HdContainerDataSourceHandle& inputArgs)
 {
-    return HdsiVelocityMotionResolvingSceneIndex::New(inputScene, inputArgs);
+    TF_UNUSED(inputArgs);
+    // Define inputArgs here instead of in the TF_REGISTRY_FUNCTION block.
+    // In the future, we may consider renaming the inputArgs parameter to
+    // something like "sceneIndexGraphCreateArgs" to allow the app and renderer
+    // plugin to provide arguments for scene indices instantiated via the
+    // scene index plugin system.
+    const HdContainerDataSourceHandle localInputArgs =
+        HdRetainedContainerDataSource::New(
+            // TODO: Get the real framerate!
+            _tokens->fps,
+            HdRetainedTypedSampledDataSource<float>::New(
+                _fallbackFps));
+
+    return HdsiVelocityMotionResolvingSceneIndex::New(
+        inputScene, localInputArgs);
 }
 
 void

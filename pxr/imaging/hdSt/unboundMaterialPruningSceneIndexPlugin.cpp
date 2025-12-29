@@ -48,22 +48,10 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
     // scnee index.
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 900;
 
-    const HdTokenArrayDataSourceHandle bindingPurposesDs =
-        HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
-            VtArray<TfToken>({
-                HdTokens->preview,
-                HdMaterialBindingsSchemaTokens->allPurpose,
-            }));
-    
-    const HdContainerDataSourceHandle inputArgs =
-        HdRetainedContainerDataSource::New(
-            HdsiUnboundMaterialPruningSceneIndexTokens->materialBindingPurposes,
-            bindingPurposesDs);
-
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
         _pluginDisplayName,
         _tokens->sceneIndexPluginName,
-        inputArgs,
+        /* inputArgs = */ nullptr,
         insertionPhase,
         HdSceneIndexPluginRegistry::InsertionOrderAtStart);
 }
@@ -76,10 +64,29 @@ HdSt_UnboundMaterialPruningSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {
-    if (_IsEnabled()) {
-        return HdsiUnboundMaterialPruningSceneIndex::New(inputScene, inputArgs);
+    if (!_IsEnabled()) {
+        return inputScene;
     }
-    return inputScene;
+    
+    // Define inputArgs here instead of in the TF_REGISTRY_FUNCTION block.
+    // In the future, we may consider renaming the inputArgs parameter to
+    // something like "sceneIndexGraphCreateArgs" to allow the app and renderer
+    // plugin to provide arguments for scene indices instantiated via the
+    // scene index plugin system.
+    static const HdTokenArrayDataSourceHandle bindingPurposesDs =
+        HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
+            VtArray<TfToken>({
+                HdTokens->preview,
+                HdMaterialBindingsSchemaTokens->allPurpose,
+            }));
+
+    static const HdContainerDataSourceHandle localInputArgs =
+        HdRetainedContainerDataSource::New(
+            HdsiUnboundMaterialPruningSceneIndexTokens->materialBindingPurposes,
+            bindingPurposesDs);
+    
+    return HdsiUnboundMaterialPruningSceneIndex::New(
+        inputScene, localInputArgs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

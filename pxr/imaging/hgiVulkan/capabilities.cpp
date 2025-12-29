@@ -235,6 +235,12 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     vkVulkan11Features.pNext = vkDeviceFeatures2.pNext;
     vkDeviceFeatures2.pNext = &vkVulkan11Features;
 
+    // Vulkan 1.2 features
+    vkVulkan12Features.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    vkVulkan12Features.pNext = vkDeviceFeatures2.pNext;
+    vkDeviceFeatures2.pNext = &vkVulkan12Features;
+
     // Vulkan 1.3 features
     vkVulkan13Features.sType =
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
@@ -313,6 +319,10 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     // Storm with HgiVulkan needs gl_BaseInstance/gl_BaseInstanceARB in shader.
     TF_VERIFY(
         vkVulkan11Features.shaderDrawParameters);
+
+    // Timeline semaphores are used in command buffer reset management.
+    TF_VERIFY(
+        vkVulkan12Features.timelineSemaphore);
 
     TF_VERIFY(
         vkVertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor);

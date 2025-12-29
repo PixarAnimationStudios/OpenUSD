@@ -1,0 +1,21 @@
+#usda 1.0
+(
+    endTimeCode = 3
+    startTimeCode = 1
+    subLayers = [
+        @skeleton.usda@
+    ]
+    upAxis = "Z"
+    """This file exercises a SkelAnimation with no rotations, scales, or translations."""
+)
+
+over "SkelChar"
+{
+    over "SkelAnim"
+    {
+        quatf[] rotations = None
+        half3[] scales = None
+        float3[] translations = None
+    }
+}
+

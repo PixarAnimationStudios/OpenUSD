@@ -228,13 +228,6 @@ std::ostream &Vt_ArrayEditStreamImpl(
     TfFunctionRef<std::ostream &(int64_t index)> streamElem,
     std::ostream &out);
 
-// Declare basic arrayEdit instantiations as extern templates.  They are
-// explicitly instantiated in arrayEdit.cpp.
-#define VT_ARRAY_EDIT_EXTERN_TMPL(unused, elem) \
-    VT_API_TEMPLATE_CLASS(VtArrayEdit< VT_TYPE(elem) >);
-TF_PP_SEQ_FOR_EACH(VT_ARRAY_EDIT_EXTERN_TMPL, ~, VT_SCALAR_VALUE_TYPES)
-#undef VT_ARRAY_EDIT_EXTERN_TMPL
-
 struct Vt_ArrayEditHashAccess
 {
     template <class HashState, class Edit>

@@ -17,6 +17,7 @@
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/textParserUtils.h"
+#include "pxr/base/vt/valueComposeOver.h"
 
 #include <map>
 #include <sstream>
@@ -933,6 +934,60 @@ _TestSdfFileIOQuote()
                    /*allowTriple=*/false) == "'hello\\n\"world\"'");
 }
 
+static void
+_TestSdfListOpVtValueComposeOver()
+{
+    using IntVec = std::vector<int>;
+    
+    SdfIntListOp exp123;
+    exp123.SetExplicitItems({ 1, 2, 3 });
+
+    SdfIntListOp append9;
+    append9.SetAppendedItems({ 9 });
+
+    SdfIntListOp prepend0;
+    prepend0.SetPrependedItems({ 0 });
+
+    SdfIntListOp delete2;
+    delete2.SetDeletedItems({ 2 });
+
+    VtValue composedVal = VtValueComposeOver(
+        delete2, VtValueComposeOver(prepend0, append9));
+
+    TF_AXIOM(composedVal.IsHolding<SdfIntListOp>());
+
+    // Should contain the incremental edits.
+    TF_AXIOM(!composedVal.Get<SdfIntListOp>().IsExplicit());
+
+    // Composing over the background should apply the edits to an empty list.
+    {
+        VtValue overBG = VtValueComposeOver(composedVal, VtBackground);
+        SdfIntListOp overBGop = overBG.Get<SdfIntListOp>();
+        TF_AXIOM(overBGop.IsExplicit());
+        TF_AXIOM((overBGop.GetExplicitItems() == IntVec { 0, 9 }));
+    }    
+
+    // Composing over an explicit list produces an explicit result.
+    {
+        VtValue overExp = VtValueComposeOver(composedVal, exp123);
+        TF_AXIOM(overExp.IsHolding<SdfIntListOp>());
+        SdfIntListOp overExpOp = overExp.Get<SdfIntListOp>();
+        TF_AXIOM(overExpOp.IsExplicit());
+        TF_AXIOM((overExpOp.GetExplicitItems() == IntVec { 0, 1, 3, 9 }));
+    }
+
+    // Composing a deprecated 'added' over another listop just returns the
+    // 'added' since 'added' is not composible.
+    {
+        SdfIntListOp added7;
+        added7.SetAddedItems({ 7 });
+        VtValue added7Over123 = VtValueComposeOver(added7, exp123);
+        TF_AXIOM(added7Over123.IsHolding<SdfIntListOp>());
+        TF_AXIOM(added7Over123
+                 .Get<SdfIntListOp>().GetAddedItems() == IntVec { 7 });
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -954,6 +1009,7 @@ main(int argc, char **argv)
     _TestSdfAbstractDataValue();
     _TestSdfQuoteUtilities();
     _TestSdfFileIOQuote();
+    _TestSdfListOpVtValueComposeOver();
 
     return 0;
 }

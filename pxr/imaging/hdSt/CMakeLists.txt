@@ -211,6 +211,7 @@ pxr_library(hdSt
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
         shaders/simpleLightingShader.glslfx
+        shaders/skinning.glslfx
         shaders/surfaceHelpers.glslfx
         shaders/terminals.glslfx
         shaders/visibility.glslfx

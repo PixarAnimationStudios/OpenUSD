@@ -188,6 +188,7 @@ pxr_library(hd
         selection
         selectionSchema
         selectionsSchema
+        skinningSettings
         smoothNormals
         sortedIds
         sphereSchema

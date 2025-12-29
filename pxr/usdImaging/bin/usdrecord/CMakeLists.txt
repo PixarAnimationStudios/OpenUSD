@@ -159,8 +159,6 @@ pxr_register_test(testUsdRecordSingleFrame_SceneIndex
     WARN_PERCENT 0.0075
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/RecordTest
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdRecordMultipleFrames_SceneIndex
@@ -176,8 +174,6 @@ pxr_register_test(testUsdRecordMultipleFrames_SceneIndex
     WARN_PERCENT 0.0075
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/RecordTest
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
     
 if (PXR_BUILD_PRMAN_PLUGIN OR PXR_BUILD_EMBREE_PLUGIN)
@@ -193,7 +189,6 @@ if (PXR_BUILD_PRMAN_PLUGIN OR PXR_BUILD_EMBREE_PLUGIN)
         EXPECTED_RETURN_CODE 0
         TESTENV testenv/RecordTest
         ENV
-            USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
             RMANTREE=${RENDERMAN_LOCATION}
     )
     pxr_register_test(testUsdRecordMultipleFrames_SceneIndex_NoGpu
@@ -210,7 +205,6 @@ if (PXR_BUILD_PRMAN_PLUGIN OR PXR_BUILD_EMBREE_PLUGIN)
         EXPECTED_RETURN_CODE 0
         TESTENV testenv/RecordTest
         ENV
-            USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
             RMANTREE=${RENDERMAN_LOCATION}
     )
 endif()
@@ -226,8 +220,6 @@ pxr_register_test(testUsdRecordSessionLayer_SceneIndex
     WARN_PERCENT 0.0075
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/RecordTest
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdRecordSmallObject_SceneIndex
@@ -241,8 +233,6 @@ pxr_register_test(testUsdRecordSmallObject_SceneIndex
     WARN_PERCENT 0.0075
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/SmallObjectTest
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 # XXX: Temporarily disable test due to intermittent failures
@@ -259,7 +249,6 @@ pxr_register_test(testUsdRecordSmallObject_SceneIndex
 #         EXPECTED_RETURN_CODE 0
 #         TESTENV testenv/MotionBlurTest
 #         ENV
-#             USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 #             RMANTREE=${RENDERMAN_LOCATION}
 #     )
 # endif()

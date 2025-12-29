@@ -827,8 +827,6 @@ pxr_register_test(testUsdImagingGLTetMesh_SceneIndex
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLTetMesh
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPrimitiveDrawing
@@ -860,8 +858,6 @@ pxr_register_test(testUsdImagingGLShadeMaterial
     FAIL_PERCENT 0.9
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLShadeMaterial
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLShadeMaterial_Delegate
@@ -1061,8 +1057,6 @@ pxr_register_test(testUsdImagingGLInstancing_SceneIndex_instancedCubes
     WARN_PERCENT 0.0025
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLInstancing
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLInstancing_SceneIndex_instancedCubes2
@@ -1075,8 +1069,6 @@ pxr_register_test(testUsdImagingGLInstancing_SceneIndex_instancedCubes2
     WARN_PERCENT 0.0025
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLInstancing
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLInstancing_SceneIndex_instancedCubes2NoInstancing
@@ -1089,8 +1081,6 @@ pxr_register_test(testUsdImagingGLInstancing_SceneIndex_instancedCubes2NoInstanc
     WARN_PERCENT 0.0025
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLInstancing
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLInstancing_SceneIndex_nestedInstancedCubes
@@ -1103,8 +1093,6 @@ pxr_register_test(testUsdImagingGLInstancing_SceneIndex_nestedInstancedCubes
     WARN_PERCENT 0.0025
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLInstancing
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLInstancing_SceneIndex_ni_pi
@@ -1117,8 +1105,6 @@ pxr_register_test(testUsdImagingGLInstancing_SceneIndex_ni_pi
     WARN_PERCENT 0.0025
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLInstancing
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLInstancing_SceneIndex_internal_ni
@@ -1131,8 +1117,6 @@ pxr_register_test(testUsdImagingGLInstancing_SceneIndex_internal_ni
     WARN_PERCENT 0.0025
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLInstancing
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLInstancing_SceneIndex_pi_ni_xform
@@ -1145,8 +1129,6 @@ pxr_register_test(testUsdImagingGLInstancing_SceneIndex_pi_ni_xform
     WARN_PERCENT 0.0025
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLInstancing
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPickAndHighlight
@@ -1181,7 +1163,6 @@ pxr_register_test(testUsdImagingGLPickAndHighlight_SceneIndex
     TESTENV testenv/testUsdImagingGLPickAndHighlight
     ENV
         USD_IMAGING_GL_PICK_TEST_SKIP_INSTANCER_DETAILS=true
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 # XXX 
@@ -1583,8 +1564,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_basic
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi
@@ -1596,8 +1575,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi
@@ -1609,8 +1586,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi_which_rot
@@ -1622,8 +1597,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi_which_rot
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi2
@@ -1635,8 +1608,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi2
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_ni_pi
@@ -1648,8 +1619,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_ni_pi
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_ni
@@ -1661,8 +1630,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_ni
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_ni2
@@ -1674,8 +1641,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_ni2
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_ni_pi
@@ -1687,8 +1652,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_ni_pi
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_root_prototype
@@ -1700,8 +1663,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_root_prototype
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_sibling_prototype
@@ -1713,8 +1674,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_sibling_prototype
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_sibling_pi
@@ -1726,8 +1685,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_sibling_pi
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_sibling_pi_over
@@ -1739,8 +1696,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_sibling_pi_over
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 # UsdImagingPiPrototypePropagtingSceneIndex does not support yet some visibility aspects.
@@ -1779,8 +1734,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_sibling_pi_over
 #    PERCEPTUAL
 #    EXPECTED_RETURN_CODE 0
 #    TESTENV testenv/testUsdImagingGLPointInstancer
-#    ENV
-#        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 #)
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi_varying
@@ -1809,8 +1762,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi_varying
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_pi_pi_varyingf
@@ -1850,8 +1801,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi_time
     FAIL_PERCENT .03
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_masking
@@ -1867,8 +1816,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_masking
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 # UsdImagingPiPrototypePropagatingSceneIndex does not yet implement
@@ -1882,8 +1829,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_masking
 #    PERCEPTUAL
 #    EXPECTED_RETURN_CODE 0
 #    TESTENV testenv/testUsdImagingGLPointInstancer
-#    ENV
-#        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 #)
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_ni_material
@@ -1895,8 +1840,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_ni_material
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_ni_material2
@@ -1908,8 +1851,6 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_ni_material2
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLPointInstancer
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLResync
@@ -2128,8 +2069,6 @@ pxr_register_test(testUsdImagingGLCards_basic
 #     WARN_PERCENT 0.05
 #     EXPECTED_RETURN_CODE 0
 #     TESTENV testenv/testUsdImagingGLCards
-#     ENV
-#         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 # )
 
 pxr_register_test(testUsdImagingGLCards_SceneIndex_anim
@@ -2143,8 +2082,6 @@ pxr_register_test(testUsdImagingGLCards_SceneIndex_anim
     WARN_PERCENT 0.05
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLCards
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLCards_SceneIndex_bounds
@@ -2157,8 +2094,6 @@ pxr_register_test(testUsdImagingGLCards_SceneIndex_bounds
     WARN_PERCENT 0.05
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLCards
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLCards_SceneIndex_basic
@@ -2171,8 +2106,6 @@ pxr_register_test(testUsdImagingGLCards_SceneIndex_basic
     WARN_PERCENT 0.05
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLCards
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLMeshQuadrangulation
@@ -3030,8 +2963,6 @@ pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_2instanc
     WARN_PERCENT 0.0025
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLInstancingWithMaterials
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 
@@ -3045,8 +2976,6 @@ pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_2instanc
     WARN_PERCENT 0.0025
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLInstancingWithMaterials
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 
@@ -3060,8 +2989,6 @@ pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_2instanc
     WARN_PERCENT 0.0025
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLInstancingWithMaterials
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 
@@ -3075,8 +3002,6 @@ pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_2instanc
     WARN_PERCENT 0.0025
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLInstancingWithMaterials
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_ni_material_outside_prototype
@@ -3089,8 +3014,6 @@ pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_ni_mater
     WARN_PERCENT 0.0025
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLInstancingWithMaterials
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_ni_material_binding_resolution
@@ -3103,8 +3026,6 @@ pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_ni_mater
     WARN_PERCENT 0.0025
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLInstancingWithMaterials
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLFaceVarying_Uniform_Low
@@ -3670,8 +3591,6 @@ pxr_register_test(testUsdImagingGLMaterialStrengthOrder
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLMaterialStrengthOrder
     # The UsdImagingDelegate did not apply the material override to native instances.
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLInstancePrimvars
@@ -3976,8 +3895,6 @@ pxr_register_test(testUsdImagingGLInvalidUniversalSurface_SceneIndex
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLInvalidUniversalSurface
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLNoFallbacks
@@ -4369,8 +4286,6 @@ pxr_register_test(testUsdImagingGLGeomSubsets_Low_SceneIndex
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLGeomSubsets
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
 )
 
 
@@ -4383,8 +4298,6 @@ pxr_register_test(testUsdImagingGLGeomSubsets_Medium_SceneIndex
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLGeomSubsets
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
 )
 
 pxr_register_test(testUsdImagingGLGeomSubsets_Points_SceneIndex
@@ -4396,8 +4309,6 @@ pxr_register_test(testUsdImagingGLGeomSubsets_Points_SceneIndex
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLGeomSubsets
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
 )
 
 pxr_register_test(testUsdImagingGLGeomSubsets_Quadrangulated_SceneIndex
@@ -4411,7 +4322,6 @@ pxr_register_test(testUsdImagingGLGeomSubsets_Quadrangulated_SceneIndex
     TESTENV testenv/testUsdImagingGLGeomSubsets
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
 )
 
 
@@ -4426,7 +4336,6 @@ pxr_register_test(testUsdImagingGLGeomSubsets_QuadrangulatedPoints_SceneIndex
     TESTENV testenv/testUsdImagingGLGeomSubsets
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
 )
 
 pxr_register_test(testUsdImagingGLAovVisualization_Storm_depth
@@ -4512,9 +4421,7 @@ pxr_register_test(testUsdImagingGLVelocityMotion_SceneIndex
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testenv/testUsdImagingGLVelocityMotion
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1)
+    TESTENV testenv/testUsdImagingGLVelocityMotion)
 
 pxr_register_test(testUsdImagingGLMaterialPrimvars
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -camera /main_cam -stage materialPrimvars.usda -write testUsdImagingGLMaterialPrimvars.png"
@@ -4524,9 +4431,7 @@ pxr_register_test(testUsdImagingGLMaterialPrimvars
     WARN 0.02
     FAIL_PERCENT 0.02
     WARN_PERCENT 0.01
-    TESTENV testenv/testUsdImagingGLMaterialPrimvars
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true)
+    TESTENV testenv/testUsdImagingGLMaterialPrimvars)
 
 pxr_register_test(testUsdImagingGLMaterialsAndInstancers_materialAsPiDescendant
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -sceneLights -shading smooth -frameAll -renderSetting domeLightCameraVisibility bool false -stage materialAsPiDescendant.usda -write materialAsPiDescendant.png"
@@ -4534,9 +4439,7 @@ pxr_register_test(testUsdImagingGLMaterialsAndInstancers_materialAsPiDescendant
         materialAsPiDescendant.png
         FAIL 0.008
         FAIL_PERCENT 0.001
-    TESTENV testenv/testUsdImagingGLMaterialsAndInstancers
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true)
+    TESTENV testenv/testUsdImagingGLMaterialsAndInstancers)
 
 #
 # # Disabled pending Hydra 2 support
@@ -4547,9 +4450,7 @@ pxr_register_test(testUsdImagingGLMaterialsAndInstancers_materialAsPiDescendant
 #         materialInNiPrototype.png
 #         FAIL 0.008
 #         FAIL_PERCENT 0.001
-#     TESTENV testenv/testUsdImagingGLMaterialsAndInstancers
-#     ENV
-#         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true)
+#     TESTENV testenv/testUsdImagingGLMaterialsAndInstancers)
 
 pxr_register_test(testUsdImagingGLMaterialsAndInstancers_materialAsNiInstance
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -sceneLights -shading smooth -frameAll -renderSetting domeLightCameraVisibility bool false -stage materialAsNiInstance.usda -write materialAsNiInstance.png"
@@ -4557,9 +4458,7 @@ pxr_register_test(testUsdImagingGLMaterialsAndInstancers_materialAsNiInstance
         materialAsNiInstance.png
         FAIL 0.008
         FAIL_PERCENT 0.001
-    TESTENV testenv/testUsdImagingGLMaterialsAndInstancers
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true)
+    TESTENV testenv/testUsdImagingGLMaterialsAndInstancers)
 
 pxr_register_test(testUsdImagingGLUsdRenderPass_prune
     PYTHON
@@ -4570,9 +4469,7 @@ pxr_register_test(testUsdImagingGLUsdRenderPass_prune
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testenv/testUsdImagingGLUsdRenderPass
-    ENV
-       USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true)
+    TESTENV testenv/testUsdImagingGLUsdRenderPass)
 
 pxr_register_test(testUsdImagingGLUsdRenderPass_visibility
     PYTHON
@@ -4583,9 +4480,7 @@ pxr_register_test(testUsdImagingGLUsdRenderPass_visibility
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testenv/testUsdImagingGLUsdRenderPass
-    ENV
-       USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true)
+    TESTENV testenv/testUsdImagingGLUsdRenderPass)
 
 pxr_register_test(testUsdImagingGLTextureResync
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLTextureResync --stage testUsdImagingGLTextureResync.usda --deactivate /Scene/Looks/Material1/Texture --deactivate /Scene/Looks/Material2/Texture --write testUsdImagingGLTextureResync.png"
@@ -4594,9 +4489,7 @@ pxr_register_test(testUsdImagingGLTextureResync
     FAIL .001
     FAIL_PERCENT .001
     EXPECTED_RETURN_CODE 0
-    TESTENV testenv/testUsdImagingGLTextureResync
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true)
+    TESTENV testenv/testUsdImagingGLTextureResync)
 
 #
 # Conditionally install and register MaterialX tests
@@ -5120,8 +5013,6 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         PERCEPTUAL
         EXPECTED_RETURN_CODE 0
         TESTENV testenv/testUsdImagingGLGeomSubsets
-        ENV
-            USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
     )
 
 endif() # MaterialX tests
@@ -5523,8 +5414,6 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testenv/testUsdImagingGLInstancing
-        ENV
-            USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
     )
 
     pxr_register_test(testUsdImagingGLBasicDrawingNonBindless_shaders

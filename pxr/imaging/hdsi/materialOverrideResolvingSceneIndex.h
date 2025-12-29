@@ -10,6 +10,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialOverrideSchema.h"
 #include "pxr/imaging/hdsi/api.h"
 
 #include <optional>
@@ -259,6 +260,9 @@ private:
     void _CreateGeneratedMaterialDataSource(
         HdSceneIndexPrim& prim,
         const SdfPath& primPath) const;
+
+    /// Returns a hashed value for the \p materialOverrides schema
+    uint64_t _GetHash(const HdMaterialOverrideSchema& materialOverrides) const;
 
     /// Struct describing data for materials generated in the process of
     /// resolving overrides set on non-material locations

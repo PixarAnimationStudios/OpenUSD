@@ -239,8 +239,6 @@
 						HwPrimvar_1
 					[parameters]
 						[varname]
-							[colorSpace]
-								
 							[typeName]
 								token
 							[value]
@@ -300,8 +298,6 @@
 						AbsFloat_1
 					[parameters]
 						[input]
-							[colorSpace]
-								
 							[typeName]
 								float
 							[value]
@@ -312,8 +308,6 @@
 						HwPrimvar_1
 					[parameters]
 						[varname]
-							[colorSpace]
-								
 							[typeName]
 								token
 							[value]

@@ -26,6 +26,7 @@ set(classes
     knotMap
     raii
     regressionPreventer
+    segment
     spline
     splineData
     tangentConversions
@@ -160,6 +161,16 @@ pxr_build_test(
     LIBRARIES
         ts
         tf
+)
+
+pxr_build_test(
+    testTsRegressionPreventerCpp
+    CPPFILES
+        testenv/testTsRegressionPreventerCpp.cpp
+    LIBRARIES
+        gf
+        tf
+        ts
 )
 
 pxr_build_test(
@@ -302,6 +313,11 @@ pxr_register_test(
 pxr_register_test(
     testTsThreadedCOW
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsThreadedCOW"
+)
+
+pxr_register_test(
+    testTsRegressionPreventerCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTsRegressionPreventerCpp"
 )
 
 pxr_register_test(

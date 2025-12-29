@@ -236,7 +236,10 @@ public:
                             _sceneIndexPath,
                             _locatorPrefix.Append(paramValueLocator)))
                     .SetColorSpace(
-                        UsdImagingDataSourceAttributeColorSpace::New(attr))
+                        (attr.GetRoleName() == SdfValueRoleNames->Color ||
+                         attr.GetTypeName() == SdfValueTypeNames->Asset)
+                            ? UsdImagingDataSourceAttributeColorSpace::New(attr)
+                            : nullptr)
                     .SetTypeName(
                         UsdImagingDataSourceAttributeTypeName::New(attr))
                     .Build();

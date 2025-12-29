@@ -1560,10 +1560,10 @@ HdPrman_RenderParam::SetBatchCommandLineArgs(
                 const int n = stoi(*i);
                 options->SetInteger(RixStr.k_limits_threads, n);
             }
-            catch (const std::invalid_argument &e) {
+            catch (const std::invalid_argument&) {
                 TF_WARN("Invalid argument to --threads\n");
             }
-            catch (const std::out_of_range &e) {
+            catch (const std::out_of_range&) {
                 TF_WARN("Invalid argument to --threads\n");
             }
         } else if (*i == "--timelimit") {
@@ -1583,7 +1583,7 @@ HdPrman_RenderParam::SetBatchCommandLineArgs(
                                     RtUString(i->c_str()));
                     }
                 }
-                catch (const std::invalid_argument &e) {
+                catch (const std::invalid_argument&) {
                     TF_WARN("Invalid argument to --timelimit\n");
                 }
             }
@@ -1604,9 +1604,9 @@ HdPrman_RenderParam::SetBatchCommandLineArgs(
             }
             try {
                 _huskFrameStart = stoi(*i);
-            } catch (const std::invalid_argument& e) {
+            } catch (const std::invalid_argument&) {
                 TF_WARN("Invalid argument to --frame\n");
-            } catch (const std::out_of_range& e) {
+            } catch (const std::out_of_range&) {
                 TF_WARN("Invalid argument to --frame\n");
             }
         }
@@ -1618,9 +1618,9 @@ HdPrman_RenderParam::SetBatchCommandLineArgs(
             }
             try {
                 _huskFrameIncrement = stoi(*i);
-            } catch (const std::invalid_argument& e) {
+            } catch (const std::invalid_argument&) {
                 TF_WARN("Invalid argument to --frame-inc\n");
-            } catch (const std::out_of_range& e) {
+            } catch (const std::out_of_range&) {
                 TF_WARN("Invalid argument to --frame-inc\n");
             }
         }
@@ -1632,9 +1632,9 @@ HdPrman_RenderParam::SetBatchCommandLineArgs(
             }
             try {
                 huskTileIndex = stoi(*i);
-            } catch (const std::invalid_argument& e) {
+            } catch (const std::invalid_argument&) {
                 TF_WARN("Invalid argument to --tile-index\n");
-            } catch (const std::out_of_range& e) {
+            } catch (const std::out_of_range&) {
                 TF_WARN("Invalid argument to --tile-index\n");
             }
         }
@@ -1850,7 +1850,7 @@ HdPrman_RenderParam::SetFiltersFromRenderSettings(
                     if (toks.size() == 3 && !toks[0].empty()) {
                         try {
                             idx = std::stoi(toks[0]);
-                        } catch (const std::logic_error& e) {
+                        } catch (const std::logic_error&) {
                             TF_WARN("Malformed sample/display filter param "
                                 "name in render settings: '%s'",
                                 entry.first.GetText());

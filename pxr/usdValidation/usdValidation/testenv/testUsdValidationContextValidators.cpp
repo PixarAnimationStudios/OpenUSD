@@ -52,7 +52,7 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
             [](const UsdValidationError &error,
                const UsdEditTarget &/*editTarget*/,
                const UsdTimeCode &/*timeCode*/) {
-                TF_AXIOM(error.GetMetadata() == VtValue("ErrorMetadata"));
+                TF_AXIOM(error.GetData() == VtValue("ErrorMetadata"));
                 return true;
             } /*fixerCanApplyFixFn*/,
             TfTokenVector{},
@@ -68,7 +68,7 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
             [](const UsdValidationError &error,
                const UsdEditTarget &/*editTarget*/,
                const UsdTimeCode &/*timeCode*/) {
-                TF_AXIOM(error.GetMetadata() == VtValue("ErrorMetadata"));
+                TF_AXIOM(error.GetData() == VtValue("ErrorMetadata"));
                 return true;
             } /*fixerCanApplyFixFn*/,
             TfTokenVector{},
@@ -84,7 +84,7 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
             [](const UsdValidationError &error,
                const UsdEditTarget &/*editTarget*/,
                const UsdTimeCode &/*timeCode*/) {
-                TF_AXIOM(error.GetMetadata() == VtValue("ErrorMetadata"));
+                TF_AXIOM(error.GetData() == VtValue("ErrorMetadata"));
                 return true;
             } /*fixerCanApplyFixFn*/,
             TfTokenVector{},

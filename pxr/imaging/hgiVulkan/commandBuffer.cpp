@@ -5,6 +5,7 @@
 // https://openusd.org/license.
 //
 #include "pxr/imaging/hgiVulkan/commandBuffer.h"
+#include "pxr/imaging/hgiVulkan/commandQueue.h"
 #include "pxr/imaging/hgiVulkan/device.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
@@ -20,12 +21,11 @@ HgiVulkanCommandBuffer::HgiVulkanCommandBuffer(
     : _device(device)
     , _vkCommandPool(pool)
     , _vkCommandBuffer(nullptr)
-    , _vkFence(nullptr)
-    , _vkSemaphore(nullptr)
     , _isReset(true)
     , _isInFlight(false)
     , _isSubmitted(false)
     , _inflightId(0)
+    , _completedTimelineValue(0)
 {
     VkDevice vkDevice = _device->GetVulkanDevice();
 
@@ -53,44 +53,11 @@ HgiVulkanCommandBuffer::HgiVulkanCommandBuffer(
         cmdBufHandle,
         VK_OBJECT_TYPE_COMMAND_BUFFER,
         cmdBufLbl.c_str());
-
-    // CPU synchronization fence. So we known when the cmd buffer can be reused.
-    VkFenceCreateInfo fenceInfo = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
-    fenceInfo.flags = 0; // Unsignaled starting state
-
-    HGIVULKAN_VERIFY_VK_RESULT(
-        vkCreateFence(
-            vkDevice,
-            &fenceInfo,
-            HgiVulkanAllocator(),
-            &_vkFence)
-    );
-
-    // Create semaphore for GPU-GPU synchronization
-    VkSemaphoreCreateInfo semaCreateInfo =
-        {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-    HGIVULKAN_VERIFY_VK_RESULT(
-        vkCreateSemaphore(
-            vkDevice,
-            &semaCreateInfo,
-            HgiVulkanAllocator(),
-            &_vkSemaphore)
-    );
-
-    // Assign a debug label to fence.
-    std::string fenceLbl = "HgiVulkan Fence for Command Buffer: " + handleStr;
-    HgiVulkanSetDebugName(
-        _device,
-        (uint64_t)_vkFence,
-        VK_OBJECT_TYPE_FENCE,
-        fenceLbl.c_str());
 }
 
 HgiVulkanCommandBuffer::~HgiVulkanCommandBuffer()
 {
     VkDevice vkDevice = _device->GetVulkanDevice();
-    vkDestroySemaphore(vkDevice, _vkSemaphore, HgiVulkanAllocator());
-    vkDestroyFence(vkDevice, _vkFence, HgiVulkanAllocator());
     vkFreeCommandBuffers(vkDevice, _vkCommandPool, 1, &_vkCommandBuffer);
 }
 
@@ -153,19 +120,15 @@ HgiVulkanCommandBuffer::UpdateInFlightStatus(HgiSubmitWaitType wait)
         return InFlightUpdateResultStillInFlight;
     }
 
-    VkDevice vkDevice = _device->GetVulkanDevice();
-
     // Check the fence to see if the GPU has consumed the command buffer.
     // We cannnot reuse a command buffer until the GPU is finished with it.
-    if (vkGetFenceStatus(vkDevice, _vkFence) == VK_NOT_READY){
+    HgiVulkanCommandQueue* gfxQueue = _device->GetCommandQueue();
+    if (!gfxQueue->IsTimelinePastValue(_completedTimelineValue)){
         if (wait != HgiSubmitWaitTypeWaitUntilCompleted) {
             return InFlightUpdateResultStillInFlight;
         }
 
-        static const uint64_t timeOut = 100000000000;
-        HGIVULKAN_VERIFY_VK_RESULT(
-            vkWaitForFences(vkDevice, 1, &_vkFence, VK_TRUE, timeOut)
-        );
+        gfxQueue->IsTimelinePastValue(_completedTimelineValue, /*wait=*/ true);
     }
 
     _isInFlight = false;
@@ -188,13 +151,6 @@ HgiVulkanCommandBuffer::ResetIfConsumedByGPU(HgiSubmitWaitType wait)
     // GPU is done with command buffer, execute the custom fns the client wants
     // to see executed when cmd buf is consumed.
     RunAndClearCompletedHandlers();
-
-    VkDevice vkDevice = _device->GetVulkanDevice();
-
-    // GPU is done with command buffer, reset fence and command buffer.
-    HGIVULKAN_VERIFY_VK_RESULT(
-        vkResetFences(vkDevice, 1, &_vkFence)
-    );
 
     // It might be more efficient to reset the cmd pool instead of individual
     // command buffers. But we may not have a clear 'StartFrame' / 'EndFrame'
@@ -223,18 +179,6 @@ VkCommandPool
 HgiVulkanCommandBuffer::GetVulkanCommandPool() const
 {
     return _vkCommandPool;
-}
-
-VkFence
-HgiVulkanCommandBuffer::GetVulkanFence() const
-{
-    return _vkFence;
-}
-
-VkSemaphore
-HgiVulkanCommandBuffer::GetVulkanSemaphore() const
-{
-    return _vkSemaphore;
 }
 
 uint8_t
@@ -282,6 +226,12 @@ HgiVulkanCommandBuffer::InsertMemoryBarrier(HgiMemoryBarrier barrier)
         &memoryBarrier,                     // memory barriers
         0, nullptr,                         // buffer barriers
         0, nullptr);                        // image barriers
+}
+
+void
+HgiVulkanCommandBuffer::SetCompletedTimelineValue(uint64_t value)
+{
+    _completedTimelineValue = value;
 }
 
 void

@@ -69,6 +69,8 @@ HgiVulkanCommandQueue::HgiVulkanCommandQueue(HgiVulkanDevice* device)
     , _inflightCounter(0)
     , _threadId(std::this_thread::get_id())
     , _resourceCommandBuffer(nullptr)
+    , _timelineNextVal(1)
+    , _timelineCachedVal(0)
 {
     // Acquire the graphics queue
     const uint32_t firstQueueInFamily = 0;
@@ -77,6 +79,24 @@ HgiVulkanCommandQueue::HgiVulkanCommandQueue(HgiVulkanDevice* device)
         device->GetGfxQueueFamilyIndex(),
         firstQueueInFamily,
         &_vkGfxQueue);
+
+    VkSemaphoreTypeCreateInfo timelineCreateInfo;
+    timelineCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO;
+    timelineCreateInfo.pNext = NULL;
+    timelineCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+    timelineCreateInfo.initialValue = 0;
+
+    VkSemaphoreCreateInfo createInfo;
+    createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    createInfo.pNext = &timelineCreateInfo;
+    createInfo.flags = 0;
+
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vkCreateSemaphore(
+            device->GetVulkanDevice(),
+            &createInfo, 
+            HgiVulkanAllocator(),
+            &_timelineSemaphore));
 }
 
 HgiVulkanCommandQueue::~HgiVulkanCommandQueue()
@@ -85,6 +105,11 @@ HgiVulkanCommandQueue::~HgiVulkanCommandQueue()
         _DestroyCommandPool(_device, it.second);
     }
     _commandPools.clear();
+
+    vkDestroySemaphore(
+        _device->GetVulkanDevice(),
+        _timelineSemaphore,
+        HgiVulkanAllocator());
 }
 
 /* Externally synchronized */
@@ -93,27 +118,12 @@ HgiVulkanCommandQueue::SubmitToQueue(
     HgiVulkanCommandBuffer* cb,
     HgiSubmitWaitType wait)
 {
-    VkSemaphore semaphore = nullptr;
-
-    // If we have resource commands submit those before work commands.
-    // It would be more performant to submit both command buffers to the queue
-    // at the same time, but we have to signal the fence for each since we use
-    // the fence to determine when a command buffer can be reused.
+    // If we have resource commands buffer those before work commands.
     if (_resourceCommandBuffer) {
         _resourceCommandBuffer->EndCommandBuffer();
-        VkCommandBuffer rcb = _resourceCommandBuffer->GetVulkanCommandBuffer();
-        semaphore = _resourceCommandBuffer->GetVulkanSemaphore();
-        VkFence rFence = _resourceCommandBuffer->GetVulkanFence();
-
-        VkSubmitInfo resourceInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
-        resourceInfo.commandBufferCount = 1;
-        resourceInfo.pCommandBuffers = &rcb;
-        resourceInfo.signalSemaphoreCount = 1;
-        resourceInfo.pSignalSemaphores = &semaphore;
-
-        HGIVULKAN_VERIFY_VK_RESULT(
-            vkQueueSubmit(_vkGfxQueue, 1, &resourceInfo, rFence)
-        );
+        _resourceCommandBuffer->SetCompletedTimelineValue(
+            _timelineNextVal);
+        _queuedBuffers.push_back(_resourceCommandBuffer);
 
         _resourceCommandBuffer = nullptr;
     }
@@ -122,39 +132,12 @@ HgiVulkanCommandQueue::SubmitToQueue(
     // this can be a heavy operation. However, currently Hgi does not provide
     // a 'EndRecording' function on its Hgi*Cmds that clients must call.
     cb->EndCommandBuffer();
-    VkCommandBuffer wcb = cb->GetVulkanCommandBuffer();
-    VkFence wFence = cb->GetVulkanFence();
+    cb->SetCompletedTimelineValue(_timelineNextVal);
+    _queuedBuffers.push_back(cb);
 
-    VkSubmitInfo workInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
-    workInfo.commandBufferCount = 1;
-    workInfo.pCommandBuffers = &wcb;
-    VkPipelineStageFlags waitMask;
-    if (semaphore) {
-        workInfo.waitSemaphoreCount = 1;
-        workInfo.pWaitSemaphores = &semaphore;
-        waitMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        workInfo.pWaitDstStageMask = &waitMask;
-    }
-
-    // Submit provided command buffers to GPU queue.
-    // Record and submission order does not guarantee execution order.
-    // VK docs: "Execution Model" & "Implicit Synchronization Guarantees".
-    // The vulkan queue must be externally synchronized.
-    HGIVULKAN_VERIFY_VK_RESULT(
-        vkQueueSubmit(_vkGfxQueue, 1, &workInfo, wFence)
-    );
-
-    // Optional blocking wait
+    // Optional blocking flush and wait.
     if (wait == HgiSubmitWaitTypeWaitUntilCompleted) {
-        static const uint64_t timeOut = 100000000000;
-        VkDevice vkDevice = _device->GetVulkanDevice();
-        HGIVULKAN_VERIFY_VK_RESULT(
-            vkWaitForFences(vkDevice, 1, &wFence, VK_TRUE, timeOut)
-        );
-        // When the client waits for the cmd buf to finish on GPU they will
-        // expect to have the CompletedHandlers run. For example when the
-        // client wants to do a GPU->CPU read back (memcpy)
-        cb->RunAndClearCompletedHandlers();
+        Flush(wait);
     }
 }
 
@@ -259,6 +242,108 @@ HgiVulkanCommandQueue::ResetConsumedCommandBuffers(HgiSubmitWaitType wait)
             }
         }
     }
+}
+
+/* Single threaded */
+void
+HgiVulkanCommandQueue::Flush(
+    HgiSubmitWaitType wait,
+    VkSemaphore signalSemaphore)
+{
+    std::vector<VkCommandBuffer> commandBuffers;
+    commandBuffers.reserve(_queuedBuffers.size());
+    for (auto& buffer : _queuedBuffers) {
+        commandBuffers.push_back(buffer->GetVulkanCommandBuffer());
+    }
+
+    const VkSemaphore semaphoreSignal[2] =
+        { _timelineSemaphore, signalSemaphore };
+    const uint64_t semaphoreSignalValues[2] =
+        { _timelineNextVal, 0 };
+    const uint32_t semaphoreSignalCount = signalSemaphore ? 2 : 1;
+
+    VkTimelineSemaphoreSubmitInfo timelineInfo;
+    timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
+    timelineInfo.pNext = NULL;
+    timelineInfo.waitSemaphoreValueCount = 0;
+    timelineInfo.pWaitSemaphoreValues = nullptr;
+    timelineInfo.signalSemaphoreValueCount = semaphoreSignalCount;
+    timelineInfo.pSignalSemaphoreValues = semaphoreSignalValues;
+
+    VkSubmitInfo workInfo;
+    workInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    workInfo.pNext = &timelineInfo;
+    workInfo.pWaitDstStageMask = 0;
+    workInfo.waitSemaphoreCount = 0;
+    workInfo.pWaitSemaphores = nullptr;
+    workInfo.commandBufferCount = commandBuffers.size();
+    workInfo.pCommandBuffers = commandBuffers.data();
+    workInfo.signalSemaphoreCount = semaphoreSignalCount;
+    workInfo.pSignalSemaphores = semaphoreSignal;
+
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vkQueueSubmit(_vkGfxQueue, 1, &workInfo, VK_NULL_HANDLE));
+    
+    if (wait == HgiSubmitWaitTypeWaitUntilCompleted) {
+        VkSemaphoreWaitInfo waitInfo;
+        waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+        waitInfo.pNext = nullptr;
+        waitInfo.flags = 0;
+        waitInfo.semaphoreCount = 1;
+        waitInfo.pSemaphores = &_timelineSemaphore;
+        waitInfo.pValues = &_timelineNextVal;
+        HGIVULKAN_VERIFY_VK_RESULT(
+            vkWaitSemaphores(_device->GetVulkanDevice(),
+                &waitInfo, UINT64_MAX));
+
+        for (auto& buffer : _queuedBuffers) {
+            // When the client waits for the cmd buf to finish on GPU they will
+            // expect to have the CompletedHandlers run. For example when the
+            // client wants to do a GPU->CPU read back (memcpy)
+            buffer->RunAndClearCompletedHandlers();
+        }
+
+        _timelineCachedVal = _timelineNextVal;
+    }
+    _queuedBuffers.clear();
+
+    _timelineNextVal++;
+}
+
+/* Single threaded */
+bool
+HgiVulkanCommandQueue::IsTimelinePastValue(uint64_t desiredValue, bool wait)
+{
+    if (_timelineCachedVal >= desiredValue) {
+        return true;
+    }
+    if (_timelineNextVal == desiredValue) {
+        Flush(HgiSubmitWaitTypeNoWait);
+    }
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vkGetSemaphoreCounterValue(
+            _device->GetVulkanDevice(),
+            _timelineSemaphore,
+            &_timelineCachedVal));
+    if (_timelineCachedVal >= desiredValue) {
+        return true;
+    }
+    if (wait) {
+        VkSemaphoreWaitInfo waitInfo;
+        waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+        waitInfo.pNext = nullptr;
+        waitInfo.semaphoreCount = 1;
+        waitInfo.pSemaphores = &_timelineSemaphore;
+        waitInfo.pValues = &desiredValue;
+        HGIVULKAN_VERIFY_VK_RESULT(
+            vkWaitSemaphores(
+                _device->GetVulkanDevice(),
+                &waitInfo,
+                UINT64_MAX));
+        _timelineCachedVal = desiredValue;
+        return true;
+    }
+    return false;
 }
 
 /* Multi threaded */

@@ -219,6 +219,9 @@ using UsdValidationErrorSites = std::vector<UsdValidationErrorSite>;
 ///           Such a message is provided by the validator writer, when providing
 ///           implementation for the validation task function.
 ///
+/// - Data - Additional data associated with the error, which can be used by
+///        the fixer(s) associated with the validator that generated the error.
+///
 /// UsdValidationError instances are typically created by the validation task
 /// functions, and returned as part of the vector of errors from a call to
 /// UsdValidationValidator::Validate() function.
@@ -241,13 +244,14 @@ public:
     UsdValidationError();
 
     /// Instantiate a ValidationError by providing its \p name, \p errorType,
-    /// \p errorSites and an \p errorMsg.
+    /// \p errorSites an \p errorMsg and optional \p data.
+    ///
     USDVALIDATION_API
     UsdValidationError(const TfToken &name,
                        const UsdValidationErrorType &errorType,
                        const UsdValidationErrorSites &errorSites,
                        const std::string &errorMsg,
-                       const VtValue &metadata = VtValue());
+                       const VtValue &data = VtValue());
 
     bool operator==(const UsdValidationError &other) const
     {
@@ -311,14 +315,14 @@ public:
         return _errorMsg;
     }
 
-    /// Returns the metadata associated with this UsdValidationError
+    /// Returns the data associated with this UsdValidationError
     ///
-    /// Validator writers can provide additional metadata when creating a
+    /// Validator writers can provide additional data when creating a
     /// UsdValidationError instance, which can then be retrieved using this
     /// method, and may be used by the fixer associated with the validator.
-    const VtValue &GetMetadata() const
+    const VtValue &GetData() const
     {
-        return _metadata;
+        return _data;
     }
 
     /// An identifier for the error constructed from the validator name this
@@ -406,7 +410,7 @@ private:
     UsdValidationErrorType _errorType;
     UsdValidationErrorSites _errorSites;
     std::string _errorMsg;
-    VtValue _metadata;
+    VtValue _data;
 
 }; // UsdValidationError
 

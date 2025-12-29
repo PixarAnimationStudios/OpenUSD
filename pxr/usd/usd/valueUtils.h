@@ -16,6 +16,8 @@
 
 #include "pxr/base/ts/spline.h"
 #include "pxr/base/gf/interval.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/base/vt/arrayEdit.h"
 #include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -102,38 +104,31 @@ Usd_ClearValueIfBlocked(VtValue* value)
 
     return false;
 }
-/// Helper function for setting a value into an SdfAbstractDataValue
-/// for generic programming.
-template <class T>
-inline bool
-Usd_SetValue(SdfAbstractDataValue *dv, T const &val)
-{ 
-    return dv->StoreValue(val); 
-}
 
-/// \overload
-/// Helper function for setting a value into a VtValue
-/// for generic programming.
-template <class T>
+/// Helper function for setting a value into an SdfAbstractDataValue, a VtValue
+/// or a T* for generic programming.  The `src` value can be a VtValue or a
+/// specific value type.  Return true if the value is stored successfully, false
+/// otherwise.
+template <class Dst, class Src>
 inline bool
-Usd_SetValue(VtValue *value, T const &val)
-{ 
-    *value = val; 
-    return true;
-}
-
-/// \overload
-/// Helper function for setting a value into a T* from a VtValue
-/// for generic programming.
-template <class T,
-          typename = std::enable_if_t<
-              !std::is_same<T, SdfAbstractDataValue>::value &&
-              !std::is_same<T, VtValue>::value>>
-inline bool
-Usd_SetValue(T* value, VtValue const &val)
+Usd_SetValue(Dst *dst, Src const &src)
 {
-    if (val.IsHolding<T>()) {
-        *value = val.UncheckedGet<T>();
+    if constexpr (std::is_same_v<Dst, VtValue>) {
+        *dst = src;
+        return true;
+    }
+    else if constexpr (std::is_base_of_v<SdfAbstractDataValue, Dst>) {
+        return dst->StoreValue(src);
+    }
+    else if constexpr (std::is_same_v<Src, VtValue>) {
+        if (src.template IsHolding<Dst>()) {
+            *dst = src.template UncheckedGet<Dst>();
+            return true;
+        }
+        return false;
+    }
+    else if constexpr (std::is_same_v<Dst, Src>) {
+        *dst = src;
         return true;
     }
     return false;
@@ -322,6 +317,16 @@ Usd_ApplyLayerOffsetToValue(VtArray<SdfTimeCode> *value,
                             const SdfLayerOffset &offset)
 {
     for (SdfTimeCode &timeCode : *value) {
+        timeCode = offset * timeCode;
+    }
+}
+
+/// \overload
+inline void
+Usd_ApplyLayerOffsetToValue(VtArrayEdit<SdfTimeCode> *value, 
+                            const SdfLayerOffset &offset)
+{
+    for (SdfTimeCode &timeCode : value->GetMutableLiterals()) {
         timeCode = offset * timeCode;
     }
 }

@@ -2952,6 +2952,16 @@ UsdImagingGLEngine::UseUsdImagingSceneIndex()
         HdRenderIndex::IsSceneIndexEmulationEnabled() &&
         TfGetEnvSetting(USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX);
 
+    // Provide a single-shot deprecation notice.
+    if (!result) {
+        static std::once_flag once;
+        std::call_once(once, []() {
+            TF_WARN("*** Warning: USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX is "
+            "overridden to 0.  This code path is deprecated, and will be "
+            "removed in a future release of USD. ***");
+        });
+    }
+
     return result;
 }
 

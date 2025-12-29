@@ -142,15 +142,21 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     /* INSTANCE PRIMVARS */
     _UpdateInstancer(sceneDelegate, dirtyBits);
-    bool displayOpacityFromInstancer;
-    HdStUpdateInstancerData(sceneDelegate->GetRenderIndex(),
-                            renderParam,
-                            this,
-                            drawItem,
-                            &_sharedData,
-                            *dirtyBits,
-                            &displayOpacityFromInstancer);
-    _displayOpacityFromInstancer = displayOpacityFromInstancer;
+    {
+        // The data members are part of a bitfield, so we can't pass pointers
+        // to them directly. HdStUpdateInstancerData doesn't write to output
+        // params if DirtyInstancer is not set, so we initialize the locals
+        // to current member values to preserve existing state in that case.
+        bool displayOpacityFromInstancer = _displayOpacityFromInstancer;
+        HdStUpdateInstancerData(sceneDelegate->GetRenderIndex(),
+                                renderParam,
+                                this,
+                                drawItem,
+                                &_sharedData,
+                                *dirtyBits,
+                                &displayOpacityFromInstancer);
+        _displayOpacityFromInstancer = displayOpacityFromInstancer;
+    }
 
     /* CONSTANT PRIMVARS, TRANSFORM, EXTENT AND PRIMID */
     if (HdStShouldPopulateConstantPrimvars(dirtyBits, id)) {

@@ -6,7 +6,7 @@ for understanding or debugging your Hydra scene data. Usdview now has a window
 called the **Hydra Scene Debugger** that can be used for this purpose, and
 can also be integrated into your Hydra-enabled application.
 
-\image html hydra_scene_debugger_usdview.png
+\image html hydra_scene_debugger_usdview.png width=800px
 
 The Hydra Scene Debugger is a parallel to usdview's builtin browser, but shows 
 Hydra prims instead of USD prims. This lets users or developers inspect the data 

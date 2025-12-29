@@ -454,6 +454,14 @@ public:
         SetMetadata(SdfFieldKeys->PropertyOrder, order);
     }
 
+    /// Change the order of items in 'names' so that all the things in 'order' 
+    /// that are also in 'names' are at the beginning in the order that they 
+    /// appear in 'order', followed by any remaining items in 'names' in their 
+    /// existing order.
+    USD_API
+    static void
+    ApplyPropertyOrder(const TfTokenVector &order, TfTokenVector *names);
+
     /// Remove the opinion for propertyOrder metadata on this prim at the current
     /// EditTarget.
     void ClearPropertyOrder() const {

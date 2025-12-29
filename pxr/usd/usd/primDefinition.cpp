@@ -14,6 +14,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 void 
+UsdPrimDefinition::_ApplyPropertyOrder()
+{
+    TfTokenVector propOrder;
+    GetMetadata(SdfFieldKeys->PropertyOrder, &propOrder);
+    UsdPrim::ApplyPropertyOrder(propOrder, &_properties);
+}
+
+void 
 UsdPrimDefinition::_IntializeForTypedSchema(
     const SdfLayerHandle &schematicsLayer,
     const SdfPath &schematicsPrimPath, 
@@ -30,6 +38,9 @@ UsdPrimDefinition::_IntializeForTypedSchema(
         // code path without extra conditionals.
         _propLayerAndPathMap.emplace(TfToken(), _primLayerAndPath);
     }
+
+    // Store _properties according to the propertyOrder metadata
+    _ApplyPropertyOrder();
 }
 
 void 
@@ -53,6 +64,9 @@ UsdPrimDefinition::_IntializeForAPISchema(
         identifierAndInstance.second == TfToken()) {
         _propLayerAndPathMap.emplace(TfToken(), _primLayerAndPath);
     }
+    
+    // Store _properties according to the propertyOrder metadata
+    _ApplyPropertyOrder();
 }
 
 SdfPropertySpecHandle 
@@ -319,6 +333,10 @@ UsdPrimDefinition::_ComposePropertiesFromPrimDef(
     for (const auto &it : weakerPrimDef._propLayerAndPathMap) {
         _AddOrComposeProperty(it.first, it.second);
     }
+
+    // Ensure _properties is still sorted according to the propertyOrder metadata
+    sort(_properties.begin(), _properties.end(), TfDictionaryLessThan());
+    _ApplyPropertyOrder();
 }
 
 void 
@@ -337,6 +355,10 @@ UsdPrimDefinition::_ComposePropertiesFromPrimDefInstance(
                 it.first, instanceName);
         _AddOrComposeProperty(instancedPropName, it.second);
     }
+    
+    // Ensure _properties is still sorted according to the propertyOrder metadata
+    sort(_properties.begin(), _properties.end(), TfDictionaryLessThan());
+    _ApplyPropertyOrder();
 }
 
 void UsdPrimDefinition::_AddOrComposeProperty(
