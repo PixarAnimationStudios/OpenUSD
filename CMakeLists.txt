@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.26)
 
-project(usd)
+project(usd LANGUAGES CXX)
 
 if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8 AND NOT EMSCRIPTEN)
     if (WIN32)
