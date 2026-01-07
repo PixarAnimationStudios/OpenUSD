@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdVol/fieldAsset.h"
+#include "pxr/usd/usdVol/volumeFieldBase.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -33,22 +33,22 @@ WRAP_CUSTOM;
 
 
 static std::string
-_Repr(const UsdVolFieldAsset &self)
+_Repr(const UsdVolVolumeFieldBase &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdVol.FieldAsset(%s)",
+        "UsdVol.VolumeFieldBase(%s)",
         primRepr.c_str());
 }
 
 } // anonymous namespace
 
-void wrapUsdVolFieldAsset()
+void wrapUsdVolVolumeFieldBase()
 {
-    typedef UsdVolFieldAsset This;
+    typedef UsdVolVolumeFieldBase This;
 
-    class_<This, bases<UsdVolVolumeFieldAsset> >
-        cls("FieldAsset");
+    class_<This, bases<UsdGeomXformable> >
+        cls("VolumeFieldBase");
 
     cls
         .def(init<UsdPrim>(arg("prim")))

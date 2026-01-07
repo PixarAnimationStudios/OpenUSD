@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdVol/fieldAsset.h"
+#include "pxr/usd/usdVol/particleField.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
@@ -33,22 +33,22 @@ WRAP_CUSTOM;
 
 
 static std::string
-_Repr(const UsdVolFieldAsset &self)
+_Repr(const UsdVolParticleField &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdVol.FieldAsset(%s)",
+        "UsdVol.ParticleField(%s)",
         primRepr.c_str());
 }
 
 } // anonymous namespace
 
-void wrapUsdVolFieldAsset()
+void wrapUsdVolParticleField()
 {
-    typedef UsdVolFieldAsset This;
+    typedef UsdVolParticleField This;
 
-    class_<This, bases<UsdVolVolumeFieldAsset> >
-        cls("FieldAsset");
+    class_<This, bases<UsdGeomGprim> >
+        cls("ParticleField");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -57,6 +57,9 @@ void wrapUsdVolFieldAsset()
 
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
+
+        .def("Define", &This::Define, (arg("stage"), arg("path")))
+        .staticmethod("Define")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,

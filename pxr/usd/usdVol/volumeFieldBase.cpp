@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdVol/fieldBase.h"
+#include "pxr/usd/usdVol/volumeFieldBase.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -16,45 +16,45 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<UsdVolFieldBase,
-        TfType::Bases< UsdVolVolumeFieldBase > >();
+    TfType::Define<UsdVolVolumeFieldBase,
+        TfType::Bases< UsdGeomXformable > >();
     
 }
 
 /* virtual */
-UsdVolFieldBase::~UsdVolFieldBase()
+UsdVolVolumeFieldBase::~UsdVolVolumeFieldBase()
 {
 }
 
 /* static */
-UsdVolFieldBase
-UsdVolFieldBase::Get(const UsdStagePtr &stage, const SdfPath &path)
+UsdVolVolumeFieldBase
+UsdVolVolumeFieldBase::Get(const UsdStagePtr &stage, const SdfPath &path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return UsdVolFieldBase();
+        return UsdVolVolumeFieldBase();
     }
-    return UsdVolFieldBase(stage->GetPrimAtPath(path));
+    return UsdVolVolumeFieldBase(stage->GetPrimAtPath(path));
 }
 
 
 /* virtual */
-UsdSchemaKind UsdVolFieldBase::_GetSchemaKind() const
+UsdSchemaKind UsdVolVolumeFieldBase::_GetSchemaKind() const
 {
-    return UsdVolFieldBase::schemaKind;
+    return UsdVolVolumeFieldBase::schemaKind;
 }
 
 /* static */
 const TfType &
-UsdVolFieldBase::_GetStaticTfType()
+UsdVolVolumeFieldBase::_GetStaticTfType()
 {
-    static TfType tfType = TfType::Find<UsdVolFieldBase>();
+    static TfType tfType = TfType::Find<UsdVolVolumeFieldBase>();
     return tfType;
 }
 
 /* static */
 bool 
-UsdVolFieldBase::_IsTypedSchema()
+UsdVolVolumeFieldBase::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
@@ -62,18 +62,18 @@ UsdVolFieldBase::_IsTypedSchema()
 
 /* virtual */
 const TfType &
-UsdVolFieldBase::_GetTfType() const
+UsdVolVolumeFieldBase::_GetTfType() const
 {
     return _GetStaticTfType();
 }
 
 /*static*/
 const TfTokenVector&
-UsdVolFieldBase::GetSchemaAttributeNames(bool includeInherited)
+UsdVolVolumeFieldBase::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
     static TfTokenVector allNames =
-        UsdVolVolumeFieldBase::GetSchemaAttributeNames(true);
+        UsdGeomXformable::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;

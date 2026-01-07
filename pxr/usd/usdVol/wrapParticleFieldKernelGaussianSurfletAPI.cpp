@@ -4,12 +4,13 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdVol/fieldAsset.h"
+#include "pxr/usd/usdVol/particleFieldKernelGaussianSurfletAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
 
 #include "pxr/usd/usd/pyConversions.h"
+#include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -33,22 +34,40 @@ WRAP_CUSTOM;
 
 
 static std::string
-_Repr(const UsdVolFieldAsset &self)
+_Repr(const UsdVolParticleFieldKernelGaussianSurfletAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdVol.FieldAsset(%s)",
+        "UsdVol.ParticleFieldKernelGaussianSurfletAPI(%s)",
         primRepr.c_str());
+}
+
+struct UsdVolParticleFieldKernelGaussianSurfletAPI_CanApplyResult : 
+    public TfPyAnnotatedBoolResult<std::string>
+{
+    UsdVolParticleFieldKernelGaussianSurfletAPI_CanApplyResult(bool val, std::string const &msg) :
+        TfPyAnnotatedBoolResult<std::string>(val, msg) {}
+};
+
+static UsdVolParticleFieldKernelGaussianSurfletAPI_CanApplyResult
+_WrapCanApply(const UsdPrim& prim)
+{
+    std::string whyNot;
+    bool result = UsdVolParticleFieldKernelGaussianSurfletAPI::CanApply(prim, &whyNot);
+    return UsdVolParticleFieldKernelGaussianSurfletAPI_CanApplyResult(result, whyNot);
 }
 
 } // anonymous namespace
 
-void wrapUsdVolFieldAsset()
+void wrapUsdVolParticleFieldKernelGaussianSurfletAPI()
 {
-    typedef UsdVolFieldAsset This;
+    typedef UsdVolParticleFieldKernelGaussianSurfletAPI This;
 
-    class_<This, bases<UsdVolVolumeFieldAsset> >
-        cls("FieldAsset");
+    UsdVolParticleFieldKernelGaussianSurfletAPI_CanApplyResult::Wrap<UsdVolParticleFieldKernelGaussianSurfletAPI_CanApplyResult>(
+        "_CanApplyResult", "whyNot");
+
+    class_<This, bases<UsdAPISchemaBase> >
+        cls("ParticleFieldKernelGaussianSurfletAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -57,6 +76,12 @@ void wrapUsdVolFieldAsset()
 
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
+
+        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .staticmethod("CanApply")
+
+        .def("Apply", &This::Apply, (arg("prim")))
+        .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,
@@ -71,6 +96,8 @@ void wrapUsdVolFieldAsset()
         .def(!self)
 
 
+
+        .def("ParticleFieldKernelBaseAPI", &This::ParticleFieldKernelBaseAPI)
         .def("__repr__", ::_Repr)
     ;
 

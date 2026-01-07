@@ -4,14 +4,14 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef USDVOL_GENERATED_FIELDBASE_H
-#define USDVOL_GENERATED_FIELDBASE_H
+#ifndef USDVOL_GENERATED_VOLUMEFIELDBASE_H
+#define USDVOL_GENERATED_VOLUMEFIELDBASE_H
 
-/// \file usdVol/fieldBase.h
+/// \file usdVol/volumeFieldBase.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdVol/api.h"
-#include "pxr/usd/usdVol/volumeFieldBase.h"
+#include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -29,14 +29,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// FIELDBASE                                                                  //
+// VOLUMEFIELDBASE                                                            //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdVolFieldBase
+/// \class UsdVolVolumeFieldBase
 ///
-/// DEPRECATED: Base class for volume field primitives. Will be removed in favor of VolumeFieldBase.
+/// Base class for volume field primitives.
 ///
-class UsdVolFieldBase : public UsdVolVolumeFieldBase
+class UsdVolVolumeFieldBase : public UsdGeomXformable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -44,26 +44,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::AbstractTyped;
 
-    /// Construct a UsdVolFieldBase on UsdPrim \p prim .
-    /// Equivalent to UsdVolFieldBase::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdVolVolumeFieldBase on UsdPrim \p prim .
+    /// Equivalent to UsdVolVolumeFieldBase::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdVolFieldBase(const UsdPrim& prim=UsdPrim())
-        : UsdVolVolumeFieldBase(prim)
+    explicit UsdVolVolumeFieldBase(const UsdPrim& prim=UsdPrim())
+        : UsdGeomXformable(prim)
     {
     }
 
-    /// Construct a UsdVolFieldBase on the prim held by \p schemaObj .
-    /// Should be preferred over UsdVolFieldBase(schemaObj.GetPrim()),
+    /// Construct a UsdVolVolumeFieldBase on the prim held by \p schemaObj .
+    /// Should be preferred over UsdVolVolumeFieldBase(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdVolFieldBase(const UsdSchemaBase& schemaObj)
-        : UsdVolVolumeFieldBase(schemaObj)
+    explicit UsdVolVolumeFieldBase(const UsdSchemaBase& schemaObj)
+        : UsdGeomXformable(schemaObj)
     {
     }
 
     /// Destructor.
     USDVOL_API
-    virtual ~UsdVolFieldBase();
+    virtual ~UsdVolVolumeFieldBase();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -72,17 +72,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdVolFieldBase holding the prim adhering to this
+    /// Return a UsdVolVolumeFieldBase holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdVolFieldBase(stage->GetPrimAtPath(path));
+    /// UsdVolVolumeFieldBase(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDVOL_API
-    static UsdVolFieldBase
+    static UsdVolVolumeFieldBase
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
 

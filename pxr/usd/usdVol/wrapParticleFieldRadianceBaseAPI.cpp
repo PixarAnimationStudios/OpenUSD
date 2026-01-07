@@ -4,12 +4,13 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/usd/usdVol/fieldAsset.h"
+#include "pxr/usd/usdVol/particleFieldRadianceBaseAPI.h"
 #include "pxr/usd/usd/schemaBase.h"
 
 #include "pxr/usd/sdf/primSpec.h"
 
 #include "pxr/usd/usd/pyConversions.h"
+#include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -33,22 +34,40 @@ WRAP_CUSTOM;
 
 
 static std::string
-_Repr(const UsdVolFieldAsset &self)
+_Repr(const UsdVolParticleFieldRadianceBaseAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
     return TfStringPrintf(
-        "UsdVol.FieldAsset(%s)",
+        "UsdVol.ParticleFieldRadianceBaseAPI(%s)",
         primRepr.c_str());
+}
+
+struct UsdVolParticleFieldRadianceBaseAPI_CanApplyResult : 
+    public TfPyAnnotatedBoolResult<std::string>
+{
+    UsdVolParticleFieldRadianceBaseAPI_CanApplyResult(bool val, std::string const &msg) :
+        TfPyAnnotatedBoolResult<std::string>(val, msg) {}
+};
+
+static UsdVolParticleFieldRadianceBaseAPI_CanApplyResult
+_WrapCanApply(const UsdPrim& prim)
+{
+    std::string whyNot;
+    bool result = UsdVolParticleFieldRadianceBaseAPI::CanApply(prim, &whyNot);
+    return UsdVolParticleFieldRadianceBaseAPI_CanApplyResult(result, whyNot);
 }
 
 } // anonymous namespace
 
-void wrapUsdVolFieldAsset()
+void wrapUsdVolParticleFieldRadianceBaseAPI()
 {
-    typedef UsdVolFieldAsset This;
+    typedef UsdVolParticleFieldRadianceBaseAPI This;
 
-    class_<This, bases<UsdVolVolumeFieldAsset> >
-        cls("FieldAsset");
+    UsdVolParticleFieldRadianceBaseAPI_CanApplyResult::Wrap<UsdVolParticleFieldRadianceBaseAPI_CanApplyResult>(
+        "_CanApplyResult", "whyNot");
+
+    class_<This, bases<UsdAPISchemaBase> >
+        cls("ParticleFieldRadianceBaseAPI");
 
     cls
         .def(init<UsdPrim>(arg("prim")))
@@ -57,6 +76,12 @@ void wrapUsdVolFieldAsset()
 
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
+
+        .def("CanApply", &_WrapCanApply, (arg("prim")))
+        .staticmethod("CanApply")
+
+        .def("Apply", &This::Apply, (arg("prim")))
+        .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",
              &This::GetSchemaAttributeNames,

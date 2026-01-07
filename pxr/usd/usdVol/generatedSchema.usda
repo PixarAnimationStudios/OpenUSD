@@ -80,6 +80,44 @@ volumetric data fields, used to represent a volume effect such as smoke or fire.
     )
 }
 
+class "VolumeFieldBase" (
+    customData = {
+        string userDocBrief = "Base class for volume field primitives."
+    }
+)
+{
+    rel proxyPrim (
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.'''
+        }
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
+    )
+    uniform token[] xformOpOrder (
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
+        order in which they should be pushed onto a transform stack while
+        visiting a UsdStage's prims in a graph traversal that will effect
+        the desired positioning for this prim and its descendant prims."""
+        }
+    )
+}
+
 class "FieldBase" (
     customData = {
         string userDocBrief = "The base schema class for volume field primitives."
@@ -99,6 +137,74 @@ class "FieldBase" (
             string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
         on a stage, such as rendering or bounding-box computation traversals."""
+        }
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
+    )
+    uniform token[] xformOpOrder (
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
+        order in which they should be pushed onto a transform stack while
+        visiting a UsdStage's prims in a graph traversal that will effect
+        the desired positioning for this prim and its descendant prims."""
+        }
+    )
+}
+
+class "VolumeFieldAsset" (
+    customData = {
+        string userDocBrief = "The base schema class for volume field primitives."
+    }
+)
+{
+    token fieldDataType (
+        customData = {
+            string userDocBrief = """Token which is used to indicate the data type of an
+                 individual field."""
+        }
+    )
+    int fieldIndex (
+        customData = {
+            string userDocBrief = """A file can contain multiple fields with the same
+                 name."""
+        }
+    )
+    token fieldName (
+        customData = {
+            string userDocBrief = """Name of an individual field within the file specified by
+                 the filePath attribute."""
+        }
+    )
+    asset filePath (
+        customData = {
+            string userDocBrief = "An asset path attribute that points to a file on disk."
+        }
+    )
+    rel proxyPrim (
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.'''
+        }
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
+    )
+    token vectorDataRoleHint = "None" (
+        allowedTokens = ["None", "Point", "Normal", "Vector", "Color"]
+        customData = {
+            string userDocBrief = """Optional token which is used to indicate the role of a vector
+                 valued field."""
         }
     )
     token visibility = "inherited" (
@@ -319,6 +425,336 @@ specified by the filePath attribute."""
         customData = {
             string userDocBrief = """Optional token used to indicate the role of 
 a vector valued field."""
+        }
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
+    )
+    uniform token[] xformOpOrder (
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
+        order in which they should be pushed onto a transform stack while
+        visiting a UsdStage's prims in a graph traversal that will effect
+        the desired positioning for this prim and its descendant prims."""
+        }
+    )
+}
+
+class ParticleField "ParticleField" (
+    customData = {
+        string userDocBrief = """A ParticleField prim is used as a base to describe different types
+            of concrete ParticleField implementations, such as, but not limited
+            to, 3D Gaussian Splats."""
+    }
+)
+{
+    uniform bool doubleSided = 0 (
+        customData = {
+            string userDocBrief = """Although some renderers treat all parametric or polygonal
+        surfaces as if they were effectively laminae with outward-facing
+        normals on both sides, some renderers derive significant optimizations
+        by considering these surfaces to have only a single outward side,
+        typically determined by control-point winding order and/or 
+        orientation."""
+        }
+    )
+    float3[] extent (
+        customData = {
+            string userDocBrief = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e."""
+        }
+    )
+    uniform token orientation = "rightHanded" (
+        allowedTokens = ["rightHanded", "leftHanded"]
+        customData = {
+            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
+        should be computed using the right hand rule, or the left hand rule."""
+        }
+    )
+    color3f[] primvars:displayColor (
+        customData = {
+            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
+        as a display or modeling color, even in the absence of any specified
+        shader for a gprim.'''
+        }
+    )
+    float[] primvars:displayOpacity (
+        customData = {
+            string userDocBrief = """Companion to displayColor that specifies opacity, broken
+        out as an independent attribute rather than an rgba color, both so that
+        each can be independently overridden, and because shaders rarely consume
+        rgba parameters."""
+        }
+    )
+    rel proxyPrim (
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.'''
+        }
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
+    )
+    token visibility = "inherited" (
+        allowedTokens = ["inherited", "invisible"]
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
+    )
+    uniform token[] xformOpOrder (
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
+        order in which they should be pushed onto a transform stack while
+        visiting a UsdStage's prims in a graph traversal that will effect
+        the desired positioning for this prim and its descendant prims."""
+        }
+    )
+}
+
+class "ParticleFieldPositionBaseAPI" (
+    customData = {
+        string userDocBrief = """Defines a base-class type applied schema that all applied schema
+            that provide the ParticleField position data will automatically apply."""
+    }
+)
+{
+}
+
+class "ParticleFieldPositionAttributeAPI" (
+    apiSchemas = ["ParticleFieldPositionBaseAPI"]
+    customData = {
+        string userDocBrief = """A ParticleField related applied schema that provides a position
+             attribute to define the locations of the particles."""
+    }
+)
+{
+    point3f[] positions (
+        customData = {
+            string userDocBrief = "Defines the position for each particle in local space."
+        }
+    )
+    point3h[] positionsh (
+        customData = {
+            string userDocBrief = "Defines the position for each particle in local space."
+        }
+    )
+}
+
+class "ParticleFieldOrientationAttributeAPI" (
+    customData = {
+        string userDocBrief = """A ParticleField related applied schema that provides an
+             orientations attribute to define the orientation of the particles."""
+    }
+)
+{
+    quatf[] orientations (
+        customData = {
+            string userDocBrief = "Quaternion orientation for each particle."
+        }
+    )
+    quath[] orientationsh (
+        customData = {
+            string userDocBrief = "Quaternion orientation for each particle."
+        }
+    )
+}
+
+class "ParticleFieldScaleAttributeAPI" (
+    customData = {
+        string userDocBrief = """A ParticleField related applied schema that provides a
+             scales attribute to define the linear scale factor applied to the
+             particles."""
+    }
+)
+{
+    float3[] scales (
+        customData = {
+            string userDocBrief = """Affine linear scale factor applied to the kernel that is
+                instantiated at each particle."""
+        }
+    )
+    half3[] scalesh (
+        customData = {
+            string userDocBrief = """Affine linear scale factor applied to the kernel that is
+                instantiated at each particle."""
+        }
+    )
+}
+
+class "ParticleFieldOpacityAttributeAPI" (
+    customData = {
+        string userDocBrief = """A ParticleField related applied schema that provides an
+             opacities attribute to define the opacity of the particles."""
+    }
+)
+{
+    float[] opacities (
+        customData = {
+            string userDocBrief = "Opacity for each particle."
+        }
+    )
+    half[] opacitiesh (
+        customData = {
+            string userDocBrief = "Opacity for each particle."
+        }
+    )
+}
+
+class "ParticleFieldKernelBaseAPI" (
+    customData = {
+        string userDocBrief = """Defines a base-class type applied schema that all applied schema
+            that provide a ParticleField kernel will automatically apply."""
+    }
+)
+{
+}
+
+class "ParticleFieldKernelGaussianEllipsoidAPI" (
+    apiSchemas = ["ParticleFieldKernelBaseAPI"]
+    customData = {
+        string userDocBrief = "Defines the gaussian ellipsoid kernel for a given ParticleField."
+    }
+)
+{
+}
+
+class "ParticleFieldKernelGaussianSurfletAPI" (
+    apiSchemas = ["ParticleFieldKernelBaseAPI"]
+    customData = {
+        string userDocBrief = "Defines the gaussian surflet kernel for a given ParticleField."
+    }
+)
+{
+}
+
+class "ParticleFieldKernelConstantSurfletAPI" (
+    apiSchemas = ["ParticleFieldKernelBaseAPI"]
+    customData = {
+        string userDocBrief = "Defines the constant surflet kernel for a given ParticleField."
+    }
+)
+{
+}
+
+class "ParticleFieldRadianceBaseAPI" (
+    customData = {
+        string userDocBrief = """Defines a base-class type applied schema that all applied schema
+            that provides a ParticleField radiance definition will automatically
+            apply."""
+    }
+)
+{
+}
+
+class "ParticleFieldSphericalHarmonicsAttributeAPI" (
+    apiSchemas = ["ParticleFieldRadianceBaseAPI"]
+    customData = {
+        string userDocBrief = """A ParticleField related applied schema that provides spherical
+            harmonics attributes to define the radiance of the particles."""
+    }
+)
+{
+    float3[] radiance:sphericalHarmonicsCoefficients (
+        customData = {
+            string userDocBrief = "Flattened array of SH coefficients."
+        }
+    )
+    half3[] radiance:sphericalHarmonicsCoefficientsh (
+        customData = {
+            string userDocBrief = "Flattened array of SH coefficients."
+        }
+    )
+    uniform int radiance:sphericalHarmonicsDegree = 3 (
+        customData = {
+            string userDocBrief = "The highest degree of the spherical harmonics."
+        }
+    )
+}
+
+class ParticleField3DGaussianSplat "ParticleField3DGaussianSplat" (
+    apiSchemas = ["ParticleFieldPositionAttributeAPI", "ParticleFieldOrientationAttributeAPI", "ParticleFieldScaleAttributeAPI", "ParticleFieldOpacityAttributeAPI", "ParticleFieldKernelGaussianEllipsoidAPI", "ParticleFieldSphericalHarmonicsAttributeAPI"]
+    customData = {
+        string userDocBrief = """This is a concrete ParticleField representing the original 3D
+            Gaussian Splats technique (https://arxiv.org/abs/2308.04079)."""
+    }
+)
+{
+    uniform bool doubleSided = 0 (
+        customData = {
+            string userDocBrief = """Although some renderers treat all parametric or polygonal
+        surfaces as if they were effectively laminae with outward-facing
+        normals on both sides, some renderers derive significant optimizations
+        by considering these surfaces to have only a single outward side,
+        typically determined by control-point winding order and/or 
+        orientation."""
+        }
+    )
+    float3[] extent (
+        customData = {
+            string userDocBrief = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e."""
+        }
+    )
+    uniform token orientation = "rightHanded" (
+        allowedTokens = ["rightHanded", "leftHanded"]
+        customData = {
+            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
+        should be computed using the right hand rule, or the left hand rule."""
+        }
+    )
+    color3f[] primvars:displayColor (
+        customData = {
+            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
+        as a display or modeling color, even in the absence of any specified
+        shader for a gprim.'''
+        }
+    )
+    float[] primvars:displayOpacity (
+        customData = {
+            string userDocBrief = """Companion to displayColor that specifies opacity, broken
+        out as an independent attribute rather than an rgba color, both so that
+        each can be independently overridden, and because shaders rarely consume
+        rgba parameters."""
+        }
+    )
+    uniform token projectionModeHint = "perspective" (
+        allowedTokens = ["perspective", "tangential"]
+        customData = {
+            string userDocBrief = """A hint for the renderer on how to project the gaussian to
+                achieve a perspective correct view."""
+        }
+    )
+    rel proxyPrim (
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
+        prim whose purpose is "render" to its (single target)
+        purpose="proxy" prim.'''
+        }
+    )
+    uniform token purpose = "default" (
+        allowedTokens = ["default", "render", "proxy", "guide"]
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
+        can each be independently included or excluded from traversals of prims 
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
+    )
+    uniform token sortingModeHint = "zDepth" (
+        allowedTokens = ["zDepth", "cameraDistance"]
+        customData = {
+            string userDocBrief = """A hint for the renderer on how to sort the gaussians while
+        drawing."""
         }
     )
     token visibility = "inherited" (

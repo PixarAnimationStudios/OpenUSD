@@ -47,7 +47,7 @@ void wrapUsdVolFieldBase()
 {
     typedef UsdVolFieldBase This;
 
-    class_<This, bases<UsdGeomXformable> >
+    class_<This, bases<UsdVolVolumeFieldBase> >
         cls("FieldBase");
 
     cls
