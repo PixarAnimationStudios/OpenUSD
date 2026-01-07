@@ -182,7 +182,7 @@ class ParticleField "ParticleField" (
 {
 }
 
-class "LightFieldPositionBaseAPI" (
+class "ParticleFieldPositionBaseAPI" (
     doc = """Defines a base-class type applied schema that all applied schema
             that provide the ParticleField position data will automatically apply.
             The purpose of this base class is to allow validation to enforce
@@ -199,7 +199,6 @@ class "LightFieldPositionBaseAPI" (
             """
     inherits = </APISchemaBase>
     customData = {
-        string className = "PositionBaseAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
     }
@@ -207,7 +206,7 @@ class "LightFieldPositionBaseAPI" (
 {
 }
 
-class "LightFieldPositionAttributeAPI" (
+class "ParticleFieldPositionAttributeAPI" (
     doc = """A ParticleField related applied schema that provides a position
              attribute to define the locations of the particles.
 
@@ -220,18 +219,17 @@ class "LightFieldPositionAttributeAPI" (
              provided then the ParticleField has no particles."""
     inherits = </APISchemaBase>
     customData = {
-        string className = "PositionAttributeAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
         string extraIncludes = """
-            #include "pxr/usd/usdVol/positionBaseAPI.h"
+            #include "pxr/usd/usdVol/particleFieldPositionBaseAPI.h"
         """
         token[] reflectedAPISchemas = [
-            "LightFieldPositionBaseAPI"
+            "ParticleFieldPositionBaseAPI"
         ]
     }
     prepend apiSchemas = [
-        "LightFieldPositionBaseAPI"
+        "ParticleFieldPositionBaseAPI"
     ]
 )
 {
@@ -244,7 +242,7 @@ class "LightFieldPositionAttributeAPI" (
     )
 }
 
-class "LightFieldOrientationAttributeAPI" (
+class "ParticleFieldOrientationAttributeAPI" (
     doc = """A ParticleField related applied schema that provides an
              orientations attribute to define the orientation of the particles.
 
@@ -262,7 +260,6 @@ class "LightFieldOrientationAttributeAPI" (
              particle."""
     inherits = </APISchemaBase>
     customData = {
-        string className = "OrientationAttributeAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
     }
@@ -277,7 +274,7 @@ class "LightFieldOrientationAttributeAPI" (
     )
 }
 
-class "LightFieldScaleAttributeAPI" (
+class "ParticleFieldScaleAttributeAPI" (
     doc = """A ParticleField related applied schema that provides a
              scales attribute to define the linear scale factor applied to the
              particles.
@@ -295,7 +292,6 @@ class "LightFieldScaleAttributeAPI" (
              scale should be applied to the kernel."""
     inherits = </APISchemaBase>
     customData = {
-        string className = "ScaleAttributeAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
     }
@@ -312,7 +308,7 @@ class "LightFieldScaleAttributeAPI" (
     )
 }
 
-class "LightFieldOpacityAttributeAPI" (
+class "ParticleFieldOpacityAttributeAPI" (
     doc = """A ParticleField related applied schema that provides an
              opacities attribute to define the opacity of the particles.
 
@@ -336,7 +332,6 @@ class "LightFieldOpacityAttributeAPI" (
              """
     inherits = </APISchemaBase>
     customData = {
-        string className = "OpacityAttributeAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
     }
@@ -351,7 +346,7 @@ class "LightFieldOpacityAttributeAPI" (
     )
 }
 
-class "LightFieldKernelBaseAPI" (
+class "ParticleFieldKernelBaseAPI" (
     doc = """Defines a base-class type applied schema that all applied schema
             that provide a ParticleField kernel will automatically apply.
             The ParticleField kernel defines the spatial basis function for each
@@ -360,7 +355,6 @@ class "LightFieldKernelBaseAPI" (
             that a kernel definition is present for a ParticleField"""
     inherits = </APISchemaBase>
     customData = {
-        string className = "KernelBaseAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
     }
@@ -368,7 +362,7 @@ class "LightFieldKernelBaseAPI" (
 {
 }
 
-class "LightFieldKernelGaussianEllipsoidAPI" (
+class "ParticleFieldKernelGaussianEllipsoidAPI" (
     doc = """Defines the gaussian ellipsoid kernel for a given ParticleField.
 
     The kernel shape is a spherical region, of radius one, that is reshaped by
@@ -380,24 +374,23 @@ class "LightFieldKernelGaussianEllipsoidAPI" (
     """
     inherits = </APISchemaBase>
     customData = {
-        string className = "KernelGaussianEllipsoidAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
         string extraIncludes = '''
-#include "pxr/usd/usdVol/kernelBaseAPI.h"
+#include "pxr/usd/usdVol/particleFieldKernelBaseAPI.h"
         '''
         token[] reflectedAPISchemas = [
-            "LightFieldKernelBaseAPI"
+            "ParticleFieldKernelBaseAPI"
         ]
     }
     prepend apiSchemas = [
-        "LightFieldKernelBaseAPI"
+        "ParticleFieldKernelBaseAPI"
     ]
 )
 {
 }
 
-class "LightFieldKernelGaussianSurfletAPI" (
+class "ParticleFieldKernelGaussianSurfletAPI" (
     doc = """Defines the gaussian surflet kernel for a given ParticleField.
 
     The kernal shape is a circular disk, of radius one, centered at the origin,
@@ -409,24 +402,23 @@ class "LightFieldKernelGaussianSurfletAPI" (
     """
     inherits = </APISchemaBase>
     customData = {
-        string className = "KernelGaussianSurfletAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
         string extraIncludes = '''
-#include "pxr/usd/usdVol/kernelBaseAPI.h"
+#include "pxr/usd/usdVol/particleFieldKernelBaseAPI.h"
         '''
         token[] reflectedAPISchemas = [
-            "LightFieldKernelBaseAPI"
+            "ParticleFieldKernelBaseAPI"
         ]
     }
     prepend apiSchemas = [
-        "LightFieldKernelBaseAPI"
+        "ParticleFieldKernelBaseAPI"
     ]
 )
 {
 }
 
-class "LightFieldKernelConstantSurfletAPI" (
+class "ParticleFieldKernelConstantSurfletAPI" (
     doc = """Defines the constant surflet kernel for a given ParticleField.
 
     The kernal shape is a circular disk, of radius one, centered at the origin,
@@ -436,24 +428,23 @@ class "LightFieldKernelConstantSurfletAPI" (
     defined by the opacity data source."""
     inherits = </APISchemaBase>
     customData = {
-        string className = "KernelConstantSurfletAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
         string extraIncludes = '''
-#include "pxr/usd/usdVol/kernelBaseAPI.h"
+#include "pxr/usd/usdVol/particleFieldKernelBaseAPI.h"
         '''
         token[] reflectedAPISchemas = [
-            "LightFieldKernelBaseAPI"
+            "ParticleFieldKernelBaseAPI"
         ]
     }
     prepend apiSchemas = [
-        "LightFieldKernelBaseAPI"
+        "ParticleFieldKernelBaseAPI"
     ]
 )
 {
 }
 
-class "LightFieldRadianceBaseAPI" (
+class "ParticleFieldRadianceBaseAPI" (
     doc = """Defines a base-class type applied schema that all applied schema
             that provides a ParticleField radiance definition will automatically
             apply.
@@ -461,7 +452,6 @@ class "LightFieldRadianceBaseAPI" (
             that a radiance definition is present for a ParticleField"""
     inherits = </APISchemaBase>
     customData = {
-        string className = "RadianceBaseAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
     }
@@ -469,7 +459,7 @@ class "LightFieldRadianceBaseAPI" (
 {
 }
 
-class "LightFieldSphericalHarmonicsAttributeAPI" (
+class "ParticleFieldSphericalHarmonicsAttributeAPI" (
     doc = """A ParticleField related applied schema that provides spherical
             harmonics attributes to define the radiance of the particles.
 
@@ -481,18 +471,17 @@ class "LightFieldSphericalHarmonicsAttributeAPI" (
             `float` version if available."""
     inherits = </APISchemaBase>
     customData = {
-        string className = "SphericalHarmonicsAttributeAPI"
         token apiSchemaType = "singleApply"
         token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
         string extraIncludes = '''
-#include "pxr/usd/usdVol/radianceBaseAPI.h"
+#include "pxr/usd/usdVol/particleFieldRadianceBaseAPI.h"
         '''
         token[] reflectedAPISchemas = [
-            "LightFieldRadianceBaseAPI"
+            "ParticleFieldRadianceBaseAPI"
         ]
     }
     prepend apiSchemas = [
-        "LightFieldRadianceBaseAPI"
+        "ParticleFieldRadianceBaseAPI"
     ]
 )
 {
@@ -520,35 +509,6 @@ class "LightFieldSphericalHarmonicsAttributeAPI" (
     )
 }
 
-# TODO : this is just placeholder - I haven't fully digested the DBS paper yet.
-# I'm not proposing we merge this initially - its just here to demonstrate
-# other possible radiance contributions
-
-class "LightFieldSphericalBetaAttributeAPI" (
-    doc = """A ParticleField related applied schema that provides spherical
-            beta attributes to define the radiance of the particles."""
-    inherits = </APISchemaBase>
-    customData = {
-        string className = "SphericalBetaAttributeAPI"
-        token apiSchemaType = "singleApply"
-        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
-        string extraIncludes = '''
-#include "pxr/usd/usdVol/radianceBaseAPI.h"
-        '''
-        token[] reflectedAPISchemas = [
-            "LightFieldRadianceBaseAPI"
-        ]
-    }
-    prepend apiSchemas = [
-        "LightFieldRadianceBaseAPI"
-    ]
-)
-{
-    float[] sphericalBeta:beta (
-        doc = "Beta parameter per-particle."
-    )
-}
-
 class ParticleField3DGaussianSplat "ParticleField3DGaussianSplat" (
     doc = """This is a concrete ParticleField representing the original 3D
             Gaussian Splats technique (https://arxiv.org/abs/2308.04079).
@@ -564,29 +524,29 @@ class ParticleField3DGaussianSplat "ParticleField3DGaussianSplat" (
 
     customData = {
         string extraIncludes = '''
-#include "pxr/usd/usdVol/positionAttributeAPI.h"
-#include "pxr/usd/usdVol/orientationAttributeAPI.h"
-#include "pxr/usd/usdVol/scaleAttributeAPI.h"
-#include "pxr/usd/usdVol/opacityAttributeAPI.h"
-#include "pxr/usd/usdVol/kernelGaussianEllipsoidAPI.h"
-#include "pxr/usd/usdVol/sphericalHarmonicsAttributeAPI.h"
+#include "pxr/usd/usdVol/particleFieldPositionAttributeAPI.h"
+#include "pxr/usd/usdVol/particleFieldOrientationAttributeAPI.h"
+#include "pxr/usd/usdVol/particleFieldScaleAttributeAPI.h"
+#include "pxr/usd/usdVol/particleFieldOpacityAttributeAPI.h"
+#include "pxr/usd/usdVol/particleFieldKernelGaussianEllipsoidAPI.h"
+#include "pxr/usd/usdVol/particleFieldSphericalHarmonicsAttributeAPI.h"
         '''
         token[] reflectedAPISchemas = [
-            "LightFieldPositionAttributeAPI",
-            "LightFieldOrientationAttributeAPI",
-            "LightFieldScaleAttributeAPI",
-            "LightFieldOpacityAttributeAPI",
-            "LightFieldKernelGaussianEllipsoidAPI",
-            "LightFieldSphericalHarmonicsAttributeAPI"
+            "ParticleFieldPositionAttributeAPI",
+            "ParticleFieldOrientationAttributeAPI",
+            "ParticleFieldScaleAttributeAPI",
+            "ParticleFieldOpacityAttributeAPI",
+            "ParticleFieldKernelGaussianEllipsoidAPI",
+            "ParticleFieldSphericalHarmonicsAttributeAPI"
         ]
     }
     prepend apiSchemas = [
-        "LightFieldPositionAttributeAPI",
-        "LightFieldOrientationAttributeAPI",
-        "LightFieldScaleAttributeAPI",
-        "LightFieldOpacityAttributeAPI",
-        "LightFieldKernelGaussianEllipsoidAPI",
-        "LightFieldSphericalHarmonicsAttributeAPI"
+        "ParticleFieldPositionAttributeAPI",
+        "ParticleFieldOrientationAttributeAPI",
+        "ParticleFieldScaleAttributeAPI",
+        "ParticleFieldOpacityAttributeAPI",
+        "ParticleFieldKernelGaussianEllipsoidAPI",
+        "ParticleFieldSphericalHarmonicsAttributeAPI"
     ]
 )
 {
