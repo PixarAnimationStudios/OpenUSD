@@ -946,28 +946,26 @@ ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset)
     if (ReadFile(hFile, buffer, static_cast<DWORD>(count),
                  &numRead, &overlapped)) {
         return numRead;
-    }
+                 }
     return -1;
 #else // assume POSIX
     // Read and check if all got read (most common case).
     int fd = fileno(file);
-    // Convert to signed so we can compare the result of pread with count
-    // without the compiler complaining.  This conversion is implementation
-    // defined if count is larger than what's representable by int64_t, and
-    // POSIX pread also specifies that this case is implementation defined.  We
-    // follow suit.
-    int64_t signedCount = static_cast<int64_t>(count);
+    int64_t signedCount = count > INT_MAX ? INT_MAX : count;
     int64_t nread = pread(fd, buffer, signedCount, offset);
-    if (ARCH_LIKELY(nread == signedCount || nread == 0))
+
+    if (ARCH_LIKELY(nread == count || nread == 0))
         return nread;
 
     // Track a total and retry until we read everything or hit EOF or an error.
     int64_t total = 0;
+
     while (nread != -1 || (nread == -1 && errno == EINTR)) {
         // Update bookkeeping and retry.
         if (nread > 0) {
             total += nread;
-            signedCount -= nread;
+            count -= nread;
+            signedCount = count > INT_MAX ? INT_MAX : count;
             offset += nread;
             buffer = static_cast<char *>(buffer) + nread;
         }
