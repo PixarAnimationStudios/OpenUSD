@@ -45,15 +45,22 @@ class Volume "Volume" (
 {
 }
 
-class "FieldBase" (
-    inherits = </Xformable>
-    doc = """Base class for field primitives."""
+class "VolumeFieldBase" (
+		inherits = </Xformable>
+		doc = """Base class for volume field primitives."""
 )
 {
 }
 
-class "FieldAsset" (
-    doc = "Base class for field primitives defined by an external file."
+class "FieldBase" (
+    inherits = </VolumeFieldBase>
+    doc = """DEPRECATED: Base class for volume field primitives. Will be removed in favor of VolumeFieldBase."""
+)
+{
+}
+
+class "VolumeFieldAsset" (
+    doc = "Base class for volume field primitives defined by an external file."
     inherits = </FieldBase>
 )
 {
@@ -91,6 +98,13 @@ class "FieldAsset" (
                  are made available in a renderer or whether the vector values 
                  are to be transformed."""
     )
+}
+
+class "FieldAsset" (
+	  doc = """DEPRECATED: Base class for volume field primitives defined by an external file. Will be removed in favor of VolumeFieldAsset."""
+		inherits = </VolumeFieldAsset>
+)
+{
 }
  
 class Field3DAsset "Field3DAsset" (
