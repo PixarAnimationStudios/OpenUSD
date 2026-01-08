@@ -5,10 +5,12 @@
 # https://openusd.org/license.
 #
 
+from numbers import Real
 from pxr import Usd, UsdGeom, UsdShade, UsdSemantics
 from .qt import QtCore
 from .common import IncludedPurposes, Timer
 from pxr.UsdUtils.constantsGroup import ConstantsGroup
+
 
 class ChangeNotice(ConstantsGroup):
     NONE = 0
@@ -113,8 +115,9 @@ class RootDataModel(QtCore.QObject):
         """Set the start of the current frame range"""
         if value is None:
             value = 0.0
-        if not isinstance(value, float):
-            raise ValueError("Expected float, got: {}".format(value))
+        if isinstance(value, bool) or not isinstance(value, Real):
+            raise ValueError("Expected real number, got: {}".format(value))
+        value = float(value)
 
         if value != self._frameRangeBegin:
             self._frameRangeBegin = value
@@ -131,8 +134,10 @@ class RootDataModel(QtCore.QObject):
         """Set the end of the current frame range"""
         if value is None:
             value = 0.0
-        if not isinstance(value, float):
-            raise ValueError("Expected float, got: {}".format(value))
+        if isinstance(value, bool) or not isinstance(value, Real):
+            raise ValueError("Expected real number, got: {}".format(value))
+        value = float(value)
+
         if value != self._frameRangeEnd:
             self._frameRangeEnd = value
             self.frameRangeChanged.emit(
