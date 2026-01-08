@@ -26,7 +26,7 @@ class SignalCounter(object):
         self._numSignals = 0
 
     def _stageReplaced(self):
-        """Fired when a signal is recieved. Simply increment the count."""
+        """Fired when a signal is received. Simply increment the count."""
 
         self._numSignals += 1
 
@@ -208,6 +208,30 @@ class TestRootDataModel(unittest.TestCase):
                         0, 1, 0, 0,
                         0, 0, 1, 0,
                         2, 2, 2, 1))
+        
+    def test_FrameRangeBeginEndAcceptInts(self):
+
+        rootDataModel = RootDataModel()
+
+        # frame range values initialized when a stage is set.
+        rootDataModel.stage = Usd.Stage.CreateInMemory()
+
+        # model should accept int inputs and normalize them to float.
+        rootDataModel.frameRangeBegin = 1
+        self.assertEqual(rootDataModel.frameRangeBegin, 1.0)
+
+        rootDataModel.frameRangeEnd = 10
+        self.assertEqual(rootDataModel.frameRangeEnd, 10.0)
+
+        # floats should still work.
+        rootDataModel.frameRangeBegin = 2.5
+        self.assertEqual(rootDataModel.frameRangeBegin, 2.5)
+
+        # bool should still be rejected.
+        with self.assertRaises(ValueError):
+            rootDataModel.frameRangeBegin = True
+
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
