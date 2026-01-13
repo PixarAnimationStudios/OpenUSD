@@ -1,41 +1,88 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2025 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
 #include "dataSourceParticleField.h"
 
-#include <pxr/usdImaging/usdImaging/dataSourcePrimvars.h>
+#include "pxr/usdImaging/usdImaging/dataSourcePrimvars.h"
 
-#include <pxr/usd/usdLightField/particleField_3DGaussianSplat.h>
+#include "pxr/usd/usdVol/particleField3DGaussianSplat.h"
 
-#include <pxr/imaging/hd/overlayContainerDataSource.h>
-#include <pxr/imaging/hd/primvarsSchema.h>
-#include <pxr/imaging/hd/tokens.h>
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/primvarsSchema.h"
+#include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdImagingDataSource_3DGaussianSplatPrim::UsdImagingDataSource_3DGaussianSplatPrim(
-    const SdfPath& sceneIndexPath, UsdPrim usdPrim, const UsdImagingDataSourceStageGlobals& stageGlobals)
+UsdImagingDataSourceParticleFieldPrim::UsdImagingDataSourceParticleFieldPrim(
+    const SdfPath& sceneIndexPath, UsdPrim usdPrim,
+    const UsdImagingDataSourceStageGlobals& stageGlobals)
     : UsdImagingDataSourceGprim(sceneIndexPath, usdPrim, stageGlobals) {}
 
-static const UsdImagingDataSourceCustomPrimvars::Mappings& _GetCustomPrimvarMappings(const UsdPrim& usdPrim) {
-    static const UsdImagingDataSourceCustomPrimvars::Mappings mappings = {
-        {UsdLightFieldTokens->positions, UsdLightFieldTokens->positions}
+static const UsdImagingDataSourceCustomPrimvars::Mappings
+_GetCustomPrimvarMappings(const UsdPrim& usdPrim) {
+    UsdImagingDataSourceCustomPrimvars::Mappings mappings = {
+        {
+            UsdVolTokens->radianceSphericalHarmonicsDegree,
+            UsdVolTokens->radianceSphericalHarmonicsDegree,
+            HdPrimvarSchemaTokens->constant
+        }
     };
+
+    UsdVolParticleField3DGaussianSplat gs(usdPrim);
+    TfToken usdName;
+
+    gs.UsesFloatPositions(&usdName);
+    mappings.push_back(
+        {
+            UsdVolTokens->positions,
+            usdName,
+            HdPrimvarSchemaTokens->vertex
+        });
+    gs.UsesFloatOrientations(&usdName);
+    mappings.push_back(
+        {
+            UsdVolTokens->orientations,
+            usdName,
+            HdPrimvarSchemaTokens->vertex
+        });
+    gs.UsesFloatScales(&usdName);
+    mappings.push_back(
+        {
+            UsdVolTokens->scales,
+            usdName,
+            HdPrimvarSchemaTokens->vertex
+        });
+    gs.UsesFloatOpacities(&usdName);
+    mappings.push_back(
+        {
+            UsdVolTokens->opacities,
+            usdName,
+            HdPrimvarSchemaTokens->vertex
+        });
+    gs.UsesFloatRadianceCoefficients(&usdName);
+    mappings.push_back(
+        {
+            UsdVolTokens->radianceSphericalHarmonicsCoefficients,
+            usdName,
+            HdPrimvarSchemaTokens->vertex
+        });
 
     return mappings;
 }
 
-HdDataSourceBaseHandle UsdImagingDataSource_3DGaussianSplatPrim::Get(const TfToken& name) {
+HdDataSourceBaseHandle
+UsdImagingDataSourceParticleFieldPrim::Get(const TfToken& name) {
     HdDataSourceBaseHandle const result = UsdImagingDataSourceGprim::Get(name);
 
     if (name == HdPrimvarsSchema::GetSchemaToken()) {
         return HdOverlayContainerDataSource::New(
             HdContainerDataSource::Cast(result),
-            UsdImagingDataSourceCustomPrimvars::New(_GetSceneIndexPath(), _GetUsdPrim(),
-                                                    _GetCustomPrimvarMappings(_GetUsdPrim()), _GetStageGlobals()));
+            UsdImagingDataSourceCustomPrimvars::New(
+                _GetSceneIndexPath(), _GetUsdPrim(),
+                _GetCustomPrimvarMappings(_GetUsdPrim()), _GetStageGlobals()));
     }
 
     return result;
@@ -43,13 +90,48 @@ HdDataSourceBaseHandle UsdImagingDataSource_3DGaussianSplatPrim::Get(const TfTok
 
 /*static*/
 HdDataSourceLocatorSet
-UsdImagingDataSource_3DGaussianSplatPrim::Invalidate(UsdPrim const& prim, const TfToken& subprim,
-                                                     const TfTokenVector& properties,
-                                                     const UsdImagingPropertyInvalidationType invalidationType) {
-    HdDataSourceLocatorSet result = UsdImagingDataSourceGprim::Invalidate(prim, subprim, properties, invalidationType);
+UsdImagingDataSourceParticleFieldPrim::Invalidate(
+    UsdPrim const& prim, const TfToken& subprim,
+    const TfTokenVector& properties,
+    const UsdImagingPropertyInvalidationType invalidationType) {
+    HdDataSourceLocatorSet result =
+        UsdImagingDataSourceGprim::Invalidate(
+            prim, subprim, properties, invalidationType);
 
     if (subprim.IsEmpty()) {
-        result.insert(UsdImagingDataSourceCustomPrimvars::Invalidate(properties, _GetCustomPrimvarMappings(prim)));
+        // Unfortunately can't use CustomPrimvars::Invalidate here, since we
+        // need to check for both float/half names.
+        for (const TfToken &propertyName : properties) {
+            if (propertyName == UsdVolTokens->positions ||
+                propertyName == UsdVolTokens->positionsh) {
+                result.insert(HdPrimvarsSchema::GetDefaultLocator().Append(
+                    UsdVolTokens->positions));
+            }
+            if (propertyName == UsdVolTokens->orientations ||
+                propertyName == UsdVolTokens->orientationsh) {
+                result.insert(HdPrimvarsSchema::GetDefaultLocator().Append(
+                    UsdVolTokens->orientations));
+            }
+            if (propertyName == UsdVolTokens->scales ||
+                propertyName == UsdVolTokens->scalesh) {
+                result.insert(HdPrimvarsSchema::GetDefaultLocator().Append(
+                    UsdVolTokens->scales));
+            }
+            if (propertyName == UsdVolTokens->opacities ||
+                propertyName == UsdVolTokens->opacitiesh) {
+                result.insert(HdPrimvarsSchema::GetDefaultLocator().Append(
+                    UsdVolTokens->opacities));
+            }
+            if (propertyName == UsdVolTokens->radianceSphericalHarmonicsCoefficients ||
+                propertyName == UsdVolTokens->radianceSphericalHarmonicsCoefficientsh) {
+                result.insert(HdPrimvarsSchema::GetDefaultLocator().Append(
+                    UsdVolTokens->radianceSphericalHarmonicsCoefficients));
+            }
+            if (propertyName == UsdVolTokens->radianceSphericalHarmonicsDegree) {
+                result.insert(HdPrimvarsSchema::GetDefaultLocator().Append(
+                    UsdVolTokens->radianceSphericalHarmonicsDegree));
+            }
+        }
     }
 
     return result;
