@@ -276,6 +276,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (nurbsPatch)                                \
     (basisCurves)                               \
     (nurbsCurves)                               \
+    (particleField)                             \
     (plane)                                     \
     (points)                                    \
     (sphere)                                    \
