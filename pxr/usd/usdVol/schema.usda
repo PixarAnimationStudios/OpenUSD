@@ -10,12 +10,12 @@ over "GLOBAL" (
     customData = {
         string libraryName = "usdVol"
         string libraryPath = "pxr/usd/usdVol"
-	dictionary libraryTokens = {
+        dictionary libraryTokens = {
             dictionary field = {
                 string doc = """This is the namespace prefix used to 
                 specify the fields that make up a volume primitive."""
             }
-	}
+        }
     }
 )
 {
@@ -46,15 +46,16 @@ class Volume "Volume" (
 }
 
 class "VolumeFieldBase" (
-		inherits = </Xformable>
-		doc = """Base class for volume field primitives."""
+    inherits = </Xformable>
+    doc = """Base class for volume field primitives."""
 )
 {
 }
 
 class "FieldBase" (
     inherits = </VolumeFieldBase>
-    doc = """DEPRECATED: Base class for volume field primitives. Will be removed in favor of VolumeFieldBase."""
+    doc = """DEPRECATED: Base class for volume field primitives. Will be
+             removed in favor of VolumeFieldBase."""
 )
 {
 }
@@ -101,8 +102,9 @@ class "VolumeFieldAsset" (
 }
 
 class "FieldAsset" (
-	  doc = """DEPRECATED: Base class for volume field primitives defined by an external file. Will be removed in favor of VolumeFieldAsset."""
-		inherits = </VolumeFieldAsset>
+    doc = """DEPRECATED: Base class for volume field primitives defined by an
+             external file. Will be removed in favor of VolumeFieldAsset."""
+    inherits = </VolumeFieldAsset>
 )
 {
 }
@@ -252,7 +254,7 @@ class "ParticleFieldOrientationAttributeAPI" (
 
              The length of this attribute is expected to match the length of
              the provided position data. If it is too long it will be truncated
-             to the number of particles define by the position data. If it ss
+             to the number of particles define by the position data. If it is
              too short it will be ignored.
 
              If the attribute is ignored or not populated, then a default value
@@ -285,7 +287,7 @@ class "ParticleFieldScaleAttributeAPI" (
 
              The length of this attribute is expected to match the length of
              the provided position data. If it is too long it will be truncated
-             to the number of particles define by the position data. If it ss
+             to the number of particles define by the position data. If it is
              too short it will be ignored.
 
              If the attribute is ignored or not provided, then a default unit
@@ -313,7 +315,7 @@ class "ParticleFieldOpacityAttributeAPI" (
              opacities attribute to define the opacity of the particles.
 
              The opacity here should be in the range [0, 1], and inline with the
-             traditional sense of computer graphics opacity, not the
+             traditional (linear) sense of computer graphics opacity, not the
              transformed data sometimes seen in PLY files associated with
              gaussian splats, where the values need to be processed with a
              sigmoid activation function.
@@ -324,11 +326,11 @@ class "ParticleFieldOpacityAttributeAPI" (
 
              The length of this attribute is expected to match the length of
              the provided position data. If it is too long it will be truncated
-             to the number of particles define by the position data. If it ss
+             to the number of particles define by the position data. If it is
              too short it will be ignored.
 
              If it is ignored or not populated, then the default value of fully
-             opaque (1.0) should be used..
+             opaque (1.0) should be used.
              """
     inherits = </APISchemaBase>
     customData = {
@@ -365,12 +367,14 @@ class "ParticleFieldKernelBaseAPI" (
 class "ParticleFieldKernelGaussianEllipsoidAPI" (
     doc = """Defines the gaussian ellipsoid kernel for a given ParticleField.
 
-    The kernel shape is a spherical region, of radius one, that is reshaped by
-    the associated scale data source, and rotated by the orientation data source.
+    An untransformed kernel (i.e. identity position, scale, rotation, opacity)
+    will define opacity at point 'p' by g(u=0;o=1/3;x = p.length()).  Note that
+    since the standard deviation is 1/3, the 3-sigma point is 1.0 and 99.7% of
+    the splat support is within a spherical region of radius 1.
 
-    The falloff function for this kernel is the gaussian falloff function,
-    where the peak of the falloff function is defined by the opacity data
-    source.
+    Per-splat opacity is multiplicative with the gaussian falloff; rotation
+    and scale will transform the gaussian sphere kernel into an ellipsoid;
+    and position moves the per-splat peak falloff from the origin. 
     """
     inherits = </APISchemaBase>
     customData = {
@@ -393,12 +397,16 @@ class "ParticleFieldKernelGaussianEllipsoidAPI" (
 class "ParticleFieldKernelGaussianSurfletAPI" (
     doc = """Defines the gaussian surflet kernel for a given ParticleField.
 
-    The kernal shape is a circular disk, of radius one, centered at the origin,
-    with the normal of the plane being oriented along the positive z-axis.
+    An untransformed kernel (i.e. identity position, scale, rotation, opacity)
+    will define opacity at point 'p' on the XY plane by
+    g(u=0;o=1/3;x = p.length()), with opacity off the XY-plane defined as 0.
+    Note that since the standard deviation is 1/3, the 3-sigma point is 1.0
+    and 99.7% of the splat support is within a circular disk on the XY plane
+    of radius 1.
 
-    The falloff function for this kernel is the gaussian falloff function,
-    where the peak of the falloff function is defined by the opacity data
-    source.
+    Per-splat opacity is multiplicative with the gaussian falloff; rotation
+    and scale will transform the gaussian disk kernel into a planar ellipse,
+    and position moves the per-splat peak falloff from the origin. 
     """
     inherits = </APISchemaBase>
     customData = {
@@ -421,11 +429,15 @@ class "ParticleFieldKernelGaussianSurfletAPI" (
 class "ParticleFieldKernelConstantSurfletAPI" (
     doc = """Defines the constant surflet kernel for a given ParticleField.
 
-    The kernal shape is a circular disk, of radius one, centered at the origin,
-    with the normal of the plane being oriented along the positive z-axis.
+    An untransformed kernel (i.e. identity position, scale, rotation, opacity)
+    will define opacity at point 'p' on the XY plane as 1.0 if p.length <= 1,
+    and 0.0 otherwise. The splat support for this kernel is a bounded circular
+    disk on the XY plane of radius 1.
 
-    The falloff function for this kernel is constant and the value is directly
-    defined by the opacity data source."""
+    Per-splat opacity is multiplicative with the step-function falloff; rotation
+    and scale will transform the disk kernel into a planar ellipse,
+    and position moves the splat center the origin. 
+    """
     inherits = </APISchemaBase>
     customData = {
         token apiSchemaType = "singleApply"
@@ -463,12 +475,24 @@ class "ParticleFieldSphericalHarmonicsAttributeAPI" (
     doc = """A ParticleField related applied schema that provides spherical
             harmonics attributes to define the radiance of the particles.
 
-            The spherical harmonics degree is constant across all the particels
+            The spherical harmonics degree is constant across all the particles
             in the ParticleField.
 
             Attributes are provided in both `float` and `half` types for some
             easy data footprint affordance, data consumers should prefer
-            `float` version if available."""
+            `float` version if available.
+
+            The length of this attribute is expected to match the length of
+            the provided position data times the per-particle elementSize
+            derived from the SH degree (specifically elementSize =
+            (degree+1)*(degree+1)). If it is too long it will be truncated
+            to the number of particles define by the position data. If it is
+            too short it will be ignored.
+
+            If it is ignored or not populated, the particle should use a SH
+            coefficient corresponding to a DC signal of (0.17, 0.17, 0.17),
+            with degree 0.
+            """
     inherits = </APISchemaBase>
     customData = {
         token apiSchemaType = "singleApply"
@@ -486,8 +510,10 @@ class "ParticleFieldSphericalHarmonicsAttributeAPI" (
 )
 {
     uniform int radiance:sphericalHarmonicsDegree = 3 (
-        doc = """The highest degree of the spherical harmonics. The spherical
-        harmonics degree is the same for all particles in the ParticleField."""
+        doc = """The highest degree of the spherical harmonics. A degree of N
+        implies a coefficient element size (per particle) of (N+1)*(N+1) values.
+        The spherical harmonics degree is the same for all particles in the
+        ParticleField."""
     )
     float3[] radiance:sphericalHarmonicsCoefficients (
         doc = """Flattened array of SH coefficients.

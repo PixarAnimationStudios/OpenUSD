@@ -41,12 +41,24 @@ class SdfAssetPath;
 /// A ParticleField related applied schema that provides spherical
 /// harmonics attributes to define the radiance of the particles.
 /// 
-/// The spherical harmonics degree is constant across all the particels
+/// The spherical harmonics degree is constant across all the particles
 /// in the ParticleField.
 /// 
 /// Attributes are provided in both `float` and `half` types for some
 /// easy data footprint affordance, data consumers should prefer
 /// `float` version if available.
+/// 
+/// The length of this attribute is expected to match the length of
+/// the provided position data times the per-particle elementSize
+/// derived from the SH degree (specifically elementSize =
+/// (degree+1)*(degree+1)). If it is too long it will be truncated
+/// to the number of particles define by the position data. If it is
+/// too short it will be ignored.
+/// 
+/// If it is ignored or not populated, the particle should use a SH
+/// coefficient corresponding to a DC signal of (0.17, 0.17, 0.17),
+/// with degree 0.
+/// 
 ///
 class UsdVolParticleFieldSphericalHarmonicsAttributeAPI : public UsdAPISchemaBase
 {
@@ -160,8 +172,10 @@ public:
     // --------------------------------------------------------------------- //
     // RADIANCESPHERICALHARMONICSDEGREE 
     // --------------------------------------------------------------------- //
-    /// The highest degree of the spherical harmonics. The spherical
-    /// harmonics degree is the same for all particles in the ParticleField.
+    /// The highest degree of the spherical harmonics. A degree of N
+    /// implies a coefficient element size (per particle) of (N+1)*(N+1) values.
+    /// The spherical harmonics degree is the same for all particles in the
+    /// ParticleField.
     ///
     /// | ||
     /// | -- | -- |

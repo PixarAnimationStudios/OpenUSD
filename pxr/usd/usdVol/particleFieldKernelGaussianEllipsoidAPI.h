@@ -39,12 +39,14 @@ class SdfAssetPath;
 ///
 /// Defines the gaussian ellipsoid kernel for a given ParticleField.
 /// 
-/// The kernel shape is a spherical region, of radius one, that is reshaped by
-/// the associated scale data source, and rotated by the orientation data source.
+/// An untransformed kernel (i.e. identity position, scale, rotation, opacity)
+/// will define opacity at point 'p' by g(u=0;o=1/3;x = p.length()).  Note that
+/// since the standard deviation is 1/3, the 3-sigma point is 1.0 and 99.7% of
+/// the splat support is within a spherical region of radius 1.
 /// 
-/// The falloff function for this kernel is the gaussian falloff function,
-/// where the peak of the falloff function is defined by the opacity data
-/// source.
+/// Per-splat opacity is multiplicative with the gaussian falloff; rotation
+/// and scale will transform the gaussian sphere kernel into an ellipsoid;
+/// and position moves the per-splat peak falloff from the origin. 
 /// 
 ///
 class UsdVolParticleFieldKernelGaussianEllipsoidAPI : public UsdAPISchemaBase

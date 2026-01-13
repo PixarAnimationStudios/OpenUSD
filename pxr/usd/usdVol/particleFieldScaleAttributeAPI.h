@@ -45,7 +45,7 @@ class SdfAssetPath;
 /// 
 /// The length of this attribute is expected to match the length of
 /// the provided position data. If it is too long it will be truncated
-/// to the number of particles define by the position data. If it ss
+/// to the number of particles define by the position data. If it is
 /// too short it will be ignored.
 /// 
 /// If the attribute is ignored or not provided, then a default unit

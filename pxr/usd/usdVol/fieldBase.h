@@ -34,7 +34,8 @@ class SdfAssetPath;
 
 /// \class UsdVolFieldBase
 ///
-/// DEPRECATED: Base class for volume field primitives. Will be removed in favor of VolumeFieldBase.
+/// DEPRECATED: Base class for volume field primitives. Will be
+/// removed in favor of VolumeFieldBase.
 ///
 class UsdVolFieldBase : public UsdVolVolumeFieldBase
 {

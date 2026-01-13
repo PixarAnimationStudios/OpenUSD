@@ -39,12 +39,16 @@ class SdfAssetPath;
 ///
 /// Defines the gaussian surflet kernel for a given ParticleField.
 /// 
-/// The kernal shape is a circular disk, of radius one, centered at the origin,
-/// with the normal of the plane being oriented along the positive z-axis.
+/// An untransformed kernel (i.e. identity position, scale, rotation, opacity)
+/// will define opacity at point 'p' on the XY plane by
+/// g(u=0;o=1/3;x = p.length()), with opacity off the XY-plane defined as 0.
+/// Note that since the standard deviation is 1/3, the 3-sigma point is 1.0
+/// and 99.7% of the splat support is within a circular disk on the XY plane
+/// of radius 1.
 /// 
-/// The falloff function for this kernel is the gaussian falloff function,
-/// where the peak of the falloff function is defined by the opacity data
-/// source.
+/// Per-splat opacity is multiplicative with the gaussian falloff; rotation
+/// and scale will transform the gaussian disk kernel into a planar ellipse,
+/// and position moves the per-splat peak falloff from the origin. 
 /// 
 ///
 class UsdVolParticleFieldKernelGaussianSurfletAPI : public UsdAPISchemaBase
