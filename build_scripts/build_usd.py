@@ -307,13 +307,20 @@ def Run(cmd, logCommandOutput = True, env = None):
             p.wait()
 
     if p.returncode != 0:
+        with codecs.open("log.txt", "a", "utf-8") as logfile:
+            logfile.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
+            logfile.write("\n")
+            logfile.write("{cmd} exited with returncode {returncode}"
+                          .format(cmd=cmd, returncode=p.returncode))
+            logfile.write("\n")
+            
         # If verbosity >= 3, we'll have already been printing out command output
         # so no reason to print the log file again.
         if verbosity < 3:
             with open("log.txt", "r") as logfile:
                 Print(logfile.read())
-        raise RuntimeError("Failed to run '{cmd}' in {path}.\nSee {log} for more details."
-                           .format(cmd=cmd, path=os.getcwd(), log=os.path.abspath("log.txt")))
+        raise RuntimeError("Failed to run '{cmd}' in {path} (exited with returncode {returncode}).\nSee {log} for more details."
+                           .format(cmd=cmd, path=os.getcwd(), returncode=p.returncode, log=os.path.abspath("log.txt")))
 
 @contextlib.contextmanager
 def CurrentWorkingDirectory(dir):
