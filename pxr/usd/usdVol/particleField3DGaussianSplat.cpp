@@ -351,3 +351,126 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+bool
+UsdVolParticleField3DGaussianSplat::UsesFloatPositions(
+    UsdAttribute *positionsAttr) const
+{
+    return _UsesFloatAttr(
+        UsdVolTokens->positions, UsdVolTokens->positionsh, positionsAttr);
+}
+
+bool
+UsdVolParticleField3DGaussianSplat::UsesFloatPositions(
+    TfToken *positionsToken) const
+{
+    return _UsesFloatAttr(
+        UsdVolTokens->positions, UsdVolTokens->positionsh, positionsToken);
+}
+
+bool
+UsdVolParticleField3DGaussianSplat::UsesFloatOrientations(
+    UsdAttribute *orientationsAttr) const
+{
+    return _UsesFloatAttr(
+        UsdVolTokens->orientations, UsdVolTokens->orientationsh,
+        orientationsAttr);
+}
+
+bool
+UsdVolParticleField3DGaussianSplat::UsesFloatOrientations(
+    TfToken *orientationsToken) const
+{
+    return _UsesFloatAttr(
+        UsdVolTokens->orientations, UsdVolTokens->orientationsh,
+        orientationsToken);
+}
+
+bool
+UsdVolParticleField3DGaussianSplat::UsesFloatScales(
+    UsdAttribute *scalesAttr) const
+{
+    return _UsesFloatAttr(
+        UsdVolTokens->scales, UsdVolTokens->scalesh, scalesAttr);
+}
+
+bool
+UsdVolParticleField3DGaussianSplat::UsesFloatScales(TfToken *scalesToken) const
+{
+    return _UsesFloatAttr(
+        UsdVolTokens->scales, UsdVolTokens->scalesh, scalesToken);
+}
+
+bool
+UsdVolParticleField3DGaussianSplat::UsesFloatOpacities(
+    UsdAttribute *opacitiesAttr) const
+{
+    return _UsesFloatAttr(
+        UsdVolTokens->opacities, UsdVolTokens->opacitiesh, opacitiesAttr);
+}
+
+bool
+UsdVolParticleField3DGaussianSplat::UsesFloatOpacities(
+    TfToken *opacitiesToken) const
+{
+    return _UsesFloatAttr(
+        UsdVolTokens->opacities, UsdVolTokens->opacitiesh, opacitiesToken);
+}
+
+bool
+UsdVolParticleField3DGaussianSplat::UsesFloatRadianceCoefficients(
+    UsdAttribute *radianceCoefficientsAttr) const
+{
+    return _UsesFloatAttr(
+        UsdVolTokens->radianceSphericalHarmonicsCoefficients,
+        UsdVolTokens->radianceSphericalHarmonicsCoefficientsh,
+        radianceCoefficientsAttr);
+}
+
+bool
+UsdVolParticleField3DGaussianSplat::UsesFloatRadianceCoefficients(
+    TfToken *radianceCoefficientsToken) const
+{
+    return _UsesFloatAttr(
+        UsdVolTokens->radianceSphericalHarmonicsCoefficients,
+        UsdVolTokens->radianceSphericalHarmonicsCoefficientsh,
+        radianceCoefficientsToken);
+}
+
+bool
+UsdVolParticleField3DGaussianSplat::_UsesFloatAttr(
+    TfToken const& floatName, TfToken const& halfName,
+    UsdAttribute *outAttr) const
+{
+    *outAttr = GetPrim().GetAttribute(floatName);
+    VtValue floatTimeSamples;
+    outAttr->Get(&floatTimeSamples, UsdTimeCode::EarliestTime());
+    if (floatTimeSamples.GetArraySize() > 0) {
+        return true;
+    }
+    *outAttr = GetPrim().GetAttribute(halfName);
+    return false;
+}
+
+bool
+UsdVolParticleField3DGaussianSplat::_UsesFloatAttr(
+    TfToken const& floatName, TfToken const& halfName, TfToken *outToken) const
+{
+    VtValue floatTimeSamples;
+    GetPrim().GetAttribute(floatName).Get(
+        &floatTimeSamples, UsdTimeCode::EarliestTime());
+    if (floatTimeSamples.GetArraySize() > 0) {
+        if (outToken) {
+            *outToken = floatName;
+        }
+        return true;
+    }
+    if (outToken) {
+        *outToken = halfName;
+    }
+    return false;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -426,6 +426,106 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Determines if we should prefer positions over positionsh based on
+    /// whether positions has been authored to a non empty array. Assumes that
+    /// positions is empty if the earliest time sample or default value if
+    /// there are no time samples are empty.
+    /// \param positionsAttr the outparam for the corresponding attribute,
+    ///        either positions or positionsh.
+    USDVOL_API
+    bool UsesFloatPositions(UsdAttribute *positionsAttr) const;
+
+    /// \overload same functionality as UsesFloatPositions but populates a
+    /// TfToken instead.
+    /// \param positionsToken (optional) the outparam for the corresponding
+    ///        attribute name, either positions or positionsh.
+    USDVOL_API
+    bool UsesFloatPositions(TfToken *positionsToken = nullptr) const;
+
+    /// Determines if we should prefer orientations over orientationsh based on
+    /// whether orientations has been authored to a non empty array. Assumes
+    /// that orientations is empty if the earliest time sample or default value
+    /// if there are no time samples are empty.
+    /// \param orientationsAttr the outparam for the corresponding attribute,
+    ///        either orientations or orientationsh.
+    USDVOL_API
+    bool UsesFloatOrientations(UsdAttribute *orientationsAttr) const;
+
+    /// \overload same functionality as UsesFloatOrientations but populates a
+    /// TfToken instead.
+    /// \param orientationsToken (optional) the outparam for the corresponding
+    ///        attribute name, either orientations or orientationsh.
+    USDVOL_API
+    bool UsesFloatOrientations(TfToken *orientationsToken = nullptr) const;
+
+    /// Determines if we should prefer scales over scalesh based on whether
+    /// scales has been authored to a non empty array. Assumes that scales is
+    /// empty if the earliest time sample or default value if there are no time
+    /// samples are empty.
+    /// \param scalesAttr the outparam for the corresponding attribute, either
+    ///	       scales or scalesh.
+    USDVOL_API
+    bool UsesFloatScales(UsdAttribute *scalesAttr) const;
+
+    /// \overload same functionality as UsesFloatScales but populates a TfToken
+    /// instead.
+    /// \param scalesToken (optional) the outparam for the corresponding
+    ///        attribute name, either scales or scalesh.
+    USDVOL_API
+    bool UsesFloatScales(TfToken *scalesToken = nullptr) const;
+
+    /// Determines if we should prefer opacities over opacitiesh based on
+    /// whether opacities has been authored to a non empty array. Assumes that
+    /// opacities is empty if the earliest time sample or default value if
+    /// there are no time samples are empty.
+    /// \param opacitiesAttr the outparam for the corresponding attribute,
+    ///        either opacities or opacitiesh.
+    USDVOL_API
+    bool UsesFloatOpacities(UsdAttribute *opacitiesAttr) const;
+
+    /// \overload same functionality as UsesFloatOpacities but populates a
+    /// TfToken instead.
+    /// \param opacitiesToken (optional) the outparam for the corresponding
+    ///        attribute name, either opacities or opacitiesh.
+    USDVOL_API
+    bool UsesFloatOpacities(TfToken *opacitiesToken = nullptr) const;
+
+    /// Determines if we should prefer radiance:sphericalHarmonicsCoefficients
+    /// over radiance:sphericalHarmonicsCoefficientsh based on whether
+    /// radiance:sphericalHarmonicsCoefficients has been authored to a non
+    /// empty array. Assumes that radiance:sphericalHarmonicsCoefficients is
+    /// empty if the earliest time sample or default value if there are no time
+    /// samples are empty.
+    /// \param radianceCoefficientsAttr the outparam for the corresponding
+    ///        attribute, either radiance:sphericalHarmonicsCoefficients or
+    ///        radiance:sphericalHarmonicsCoefficientsh.
+    USDVOL_API
+    bool UsesFloatRadianceCoefficients(
+        UsdAttribute *radianceCoefficientsAttr) const;
+
+    /// \overload same functionality as UsesFloatRadianceCoefficients but
+    /// populates a TfToken instead.
+    /// \param radianceCoefficientsToken (optional) the outparam for the
+    ///        corresponding attribute name, either
+    ///        radiance:sphericalHarmonicsCoefficients or
+    ///        radiance:sphericalHarmonicsCoefficientsh.
+    USDVOL_API
+    bool UsesFloatRadianceCoefficients(
+        TfToken *radianceCoefficientsToken = nullptr) const;
+
+private:
+    /// Helper function for UsesFloatFoo
+    bool _UsesFloatAttr(
+        TfToken const& floatName,
+        TfToken const& halfName,
+        UsdAttribute *outAttr) const;
+
+    /// Helper function for UsesFloatFoo
+    bool _UsesFloatAttr(
+        TfToken const& floatName,
+        TfToken const& halfName,
+        TfToken *outToken) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
