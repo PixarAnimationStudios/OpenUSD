@@ -1,9 +1,15 @@
+//
+// Copyright 2025 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
 
 #ifndef HDPARTICLEFIELD_HDPARTICLEFIELDRENDERPARAM_H
 #define HDPARTICLEFIELD_HDPARTICLEFIELDRENDERPARAM_H
 
-#include <pxr/imaging/hd/renderDelegate.h>
-#include <pxr/pxr.h>
+#include "pxr/pxr.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 
 #include "renderer.h"
 
@@ -15,9 +21,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// to each prim during Sync().
 class HdParticleFieldRenderParam final : public HdRenderParam {
   public:
-    HdParticleFieldRenderParam(HdParticleFieldRenderer* renderer, HdRenderThread* renderThread,
-                               std::atomic<int>* sceneVersion)
-        : HdRenderParam(), _renderer(renderer), _renderThread(renderThread), _sceneVersion(sceneVersion) {}
+    HdParticleFieldRenderParam(
+        HdParticleFieldRenderer* renderer,
+        HdRenderThread* renderThread,
+        std::atomic<int>* sceneVersion)
+        : HdRenderParam(), _renderer(renderer)
+        , _renderThread(renderThread), _sceneVersion(sceneVersion) {}
 
     /// Accessor for the renderer
     HdParticleFieldRenderer* AcquireRendererForEdit() {
@@ -38,8 +47,10 @@ class HdParticleFieldRenderParam final : public HdRenderParam {
     std::atomic<int>* _sceneVersion;
 
     /// Cannot copy.
-    HdParticleFieldRenderParam(const HdParticleFieldRenderParam&)            = delete;
-    HdParticleFieldRenderParam& operator=(const HdParticleFieldRenderParam&) = delete;
+    HdParticleFieldRenderParam(
+        const HdParticleFieldRenderParam&) = delete;
+    HdParticleFieldRenderParam& operator=(
+        const HdParticleFieldRenderParam&) = delete;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
