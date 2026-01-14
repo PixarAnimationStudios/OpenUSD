@@ -1,14 +1,21 @@
+//
+// Copyright 2025 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
 
 #ifndef HDPARTICLEFIELD_HDPARTICLEFIELDRENDERER_H
 #define HDPARTICLEFIELD_HDPARTICLEFIELDRENDERER_H
 
-#include <pxr/imaging/hd/renderPassState.h>
-#include <pxr/imaging/hd/renderThread.h>
+#include "pxr/pxr.h"
+#include "pxr/imaging/hd/renderPassState.h"
+#include "pxr/imaging/hd/renderThread.h"
 
-#include <pxr/base/gf/matrix4d.h>
-#include <pxr/base/gf/rect2i.h>
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/rect2i.h"
 
-#include "../gsRenderer.h"
+#include "gsRenderer.h"
 #include "hd3DGaussianSplat.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -16,7 +23,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Forward declarations.
 class HdParticleFieldRenderBuffer;
 
-/// \class HdGaussianSplatsRenderer
+/// \class HdParticleFieldRenderer
 ///
 /// A gaussian splats renderer.
 class HdParticleFieldRenderer final {
@@ -39,14 +46,17 @@ class HdParticleFieldRenderer final {
 
     /// Get the aov bindings being used for rendering.
     ///   \return the current aov bindings.
-    HdRenderPassAovBindingVector const& GetAovBindings() const { return _aovBindings; }
+    HdRenderPassAovBindingVector const& GetAovBindings() const {
+        return _aovBindings;
+    }
 
     /// Set how many samples to render before considering an image converged.
     ///   \param samplesToConvergence How many samples are needed, per-pixel,
     ///                               before the image is considered finished.
     void SetSamplesToConvergence(int samplesToConvergence);
 
-    void addGaussianSplats(const Hd3DGaussianSplat& splatPrim, const std::string& splatName);
+    void addGaussianSplats(const Hd3DGaussianSplat& splatPrim,
+        const std::string& splatName);
     void removeGaussianSplats(const std::string& splatName);
 
     /// Rendering entrypoint: add one sample per pixel to the whole sample

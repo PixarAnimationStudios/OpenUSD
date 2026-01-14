@@ -1,19 +1,32 @@
+//
+// Copyright 2025 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
 #include "renderer.h"
-#include "../debugCodes.h"
+#include "debugCodes.h"
 #include "renderBuffer.h"
-#include <pxr/base/gf/vec2f.h>
-#include <pxr/base/work/loops.h>
+
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/work/loops.h"
+
 #include <random>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdParticleFieldRenderer::HdParticleFieldRenderer()
-    : _aovBindings(), _aovNames(), _aovBindingsNeedValidation(false), _aovBindingsValid(false), _width(0), _height(0),
-      _viewMatrix(1.0f), _projMatrix(1.0f), _samplesToConvergence(0), _completedSamples(0) {}
+    : _aovBindings(), _aovNames(), _aovBindingsNeedValidation(false)
+    , _aovBindingsValid(false), _width(0), _height(0)
+    , _viewMatrix(1.0f), _projMatrix(1.0f), _samplesToConvergence(0)
+    , _completedSamples(0) {}
 
 HdParticleFieldRenderer::~HdParticleFieldRenderer() = default;
 
-void HdParticleFieldRenderer::addGaussianSplats(const Hd3DGaussianSplat& splatPrim, const std::string& splatName) {
+void HdParticleFieldRenderer::addGaussianSplats(
+    const Hd3DGaussianSplat& splatPrim, const std::string& splatName) {
+
     size_t numSplats = splatPrim.GetPositions().size();
     if (numSplats == 0)
         return;
@@ -44,11 +57,13 @@ void HdParticleFieldRenderer::addGaussianSplats(const Hd3DGaussianSplat& splatPr
     _gsRenderer.addGaussianSplats(splatName, splats);
 }
 
-void HdParticleFieldRenderer::removeGaussianSplats(const std::string& splatName) {
+void HdParticleFieldRenderer::removeGaussianSplats(
+    const std::string& splatName) {
     _gsRenderer.removeGaussianSplats(splatName);
 }
 
-void HdParticleFieldRenderer::SetSamplesToConvergence(int samplesToConvergence) {
+void HdParticleFieldRenderer::SetSamplesToConvergence(
+    int samplesToConvergence) {
     _samplesToConvergence = samplesToConvergence;
 }
 
@@ -60,12 +75,14 @@ void HdParticleFieldRenderer::SetDataWindow(const GfRect2i& dataWindow) {
     _aovBindingsNeedValidation = true;
 }
 
-void HdParticleFieldRenderer::SetCamera(const GfMatrix4d& viewMatrix, const GfMatrix4d& projMatrix) {
+void HdParticleFieldRenderer::SetCamera(const GfMatrix4d& viewMatrix,
+        const GfMatrix4d& projMatrix) {
     _gsRenderer.setWorldToViewMatrix(GfMatrix4f(viewMatrix));
     _gsRenderer.setProjMatrix(GfMatrix4f(projMatrix));
 }
 
-void HdParticleFieldRenderer::SetAovBindings(HdRenderPassAovBindingVector const& aovBindings) {
+void HdParticleFieldRenderer::SetAovBindings(
+        HdRenderPassAovBindingVector const& aovBindings) {
     _aovBindings = aovBindings;
     _aovNames.resize(_aovBindings.size());
     for (size_t i = 0; i < _aovBindings.size(); ++i) {
@@ -88,50 +105,36 @@ bool HdParticleFieldRenderer::_ValidateAovBindings() {
         // By the time the attachment gets here, there should be a bound
         // output buffer.
         if (_aovBindings[i].renderBuffer == nullptr) {
-            TF_WARN("Aov '%s' doesn't have any renderbuffer bound", _aovNames[i].name.GetText());
+            TF_WARN("Aov '%s' doesn't have any renderbuffer bound",
+                    _aovNames[i].name.GetText());
             _aovBindingsValid = false;
             continue;
         }
 
-        if (_aovNames[i].name != HdAovTokens->color && _aovNames[i].name != HdAovTokens->cameraDepth &&
-            _aovNames[i].name != HdAovTokens->depth && _aovNames[i].name != HdAovTokens->primId &&
-            _aovNames[i].name != HdAovTokens->instanceId && _aovNames[i].name != HdAovTokens->elementId &&
-            _aovNames[i].name != HdAovTokens->Neye && _aovNames[i].name != HdAovTokens->normal &&
-            !_aovNames[i].isPrimvar) {
-            TF_WARN("Unsupported attachment with Aov '%s' won't be rendered to", _aovNames[i].name.GetText());
+        if (_aovNames[i].name != HdAovTokens->color &&
+            _aovNames[i].name != HdAovTokens->depth &&
+            _aovNames[i].name != HdAovTokens->primId) {
+            TF_WARN("Unsupported attachment with Aov '%s' won't be rendered to",
+                _aovNames[i].name.GetText());
         }
 
         HdFormat format = _aovBindings[i].renderBuffer->GetFormat();
 
         // depth is only supported for float32 attachments
-        if ((_aovNames[i].name == HdAovTokens->cameraDepth || _aovNames[i].name == HdAovTokens->depth) &&
+        if (_aovNames[i].name == HdAovTokens->depth &&
             format != HdFormatFloat32) {
-            TF_WARN("Aov '%s' has unsupported format '%s'", _aovNames[i].name.GetText(),
-                    TfEnum::GetName(format).c_str());
+            TF_WARN("Aov '%s' has unsupported format '%s'",
+                _aovNames[i].name.GetText(),
+                TfEnum::GetName(format).c_str());
             _aovBindingsValid = false;
         }
 
         // ids are only supported for int32 attachments
-        if ((_aovNames[i].name == HdAovTokens->primId || _aovNames[i].name == HdAovTokens->instanceId ||
-             _aovNames[i].name == HdAovTokens->elementId) &&
+        if (_aovNames[i].name == HdAovTokens->primId &&
             format != HdFormatInt32) {
-            TF_WARN("Aov '%s' has unsupported format '%s'", _aovNames[i].name.GetText(),
-                    TfEnum::GetName(format).c_str());
-            _aovBindingsValid = false;
-        }
-
-        // Normal is only supported for vec3 attachments of float.
-        if ((_aovNames[i].name == HdAovTokens->Neye || _aovNames[i].name == HdAovTokens->normal) &&
-            format != HdFormatFloat32Vec3) {
-            TF_WARN("Aov '%s' has unsupported format '%s'", _aovNames[i].name.GetText(),
-                    TfEnum::GetName(format).c_str());
-            _aovBindingsValid = false;
-        }
-
-        // Primvars support vec3 output (though some channels may not be used).
-        if (_aovNames[i].isPrimvar && format != HdFormatFloat32Vec3) {
-            TF_WARN("Aov 'primvars:%s' has unsupported format '%s'", _aovNames[i].name.GetText(),
-                    TfEnum::GetName(format).c_str());
+            TF_WARN("Aov '%s' has unsupported format '%s'",
+                _aovNames[i].name.GetText(),
+                TfEnum::GetName(format).c_str());
             _aovBindingsValid = false;
         }
 
@@ -147,8 +150,9 @@ bool HdParticleFieldRenderer::_ValidateAovBindings() {
             case HdFormatFloat32Vec3:
                 break;
             default:
-                TF_WARN("Aov '%s' has unsupported format '%s'", _aovNames[i].name.GetText(),
-                        TfEnum::GetName(format).c_str());
+                TF_WARN("Aov '%s' has unsupported format '%s'",
+                    _aovNames[i].name.GetText(),
+                    TfEnum::GetName(format).c_str());
                 _aovBindingsValid = false;
                 break;
             }
@@ -157,32 +161,36 @@ bool HdParticleFieldRenderer::_ValidateAovBindings() {
         // make sure the clear value is reasonable for the format of the
         // attached buffer.
         if (!_aovBindings[i].clearValue.IsEmpty()) {
-            HdTupleType clearType = HdGetValueTupleType(_aovBindings[i].clearValue);
+            HdTupleType clearType =
+                HdGetValueTupleType(_aovBindings[i].clearValue);
 
             // array-valued clear types aren't supported.
             if (clearType.count != 1) {
-                TF_WARN("Aov '%s' clear value type '%s' is an array", _aovNames[i].name.GetText(),
-                        _aovBindings[i].clearValue.GetTypeName().c_str());
+                TF_WARN("Aov '%s' clear value type '%s' is an array",
+                    _aovNames[i].name.GetText(),
+                    _aovBindings[i].clearValue.GetTypeName().c_str());
                 _aovBindingsValid = false;
             }
 
             // color only supports float/double vec3/4
-            if (_aovNames[i].name == HdAovTokens->color && clearType.type != HdTypeFloatVec3 &&
-                clearType.type != HdTypeFloatVec4 && clearType.type != HdTypeDoubleVec3 &&
+            if (_aovNames[i].name == HdAovTokens->color &&
+                clearType.type != HdTypeFloatVec3 &&
+                clearType.type != HdTypeFloatVec4 &&
+                clearType.type != HdTypeDoubleVec3 &&
                 clearType.type != HdTypeDoubleVec4) {
-                TF_WARN("Aov '%s' clear value type '%s' isn't compatible", _aovNames[i].name.GetText(),
-                        _aovBindings[i].clearValue.GetTypeName().c_str());
+                TF_WARN("Aov '%s' clear value type '%s' isn't compatible",
+                    _aovNames[i].name.GetText(),
+                    _aovBindings[i].clearValue.GetTypeName().c_str());
                 _aovBindingsValid = false;
             }
 
-            // only clear float formats with float, int with int, float3 with
-            // float3.
+            // only clear float formats with float, int with int.
             if ((format == HdFormatFloat32 && clearType.type != HdTypeFloat) ||
-                (format == HdFormatInt32 && clearType.type != HdTypeInt32) ||
-                (format == HdFormatFloat32Vec3 && clearType.type != HdTypeFloatVec3)) {
+                (format == HdFormatInt32 && clearType.type != HdTypeInt32)) {
                 TF_WARN("Aov '%s' clear value type '%s' isn't compatible with"
                         " format %s",
-                        _aovNames[i].name.GetText(), _aovBindings[i].clearValue.GetTypeName().c_str(),
+                        _aovNames[i].name.GetText(),
+                        _aovBindings[i].clearValue.GetTypeName().c_str(),
                         TfEnum::GetName(format).c_str());
                 _aovBindingsValid = false;
             }
@@ -194,13 +202,16 @@ bool HdParticleFieldRenderer::_ValidateAovBindings() {
 
 void HdParticleFieldRenderer::MarkAovBuffersUnconverged() {
     for (size_t i = 0; i < _aovBindings.size(); ++i) {
-        HdParticleFieldRenderBuffer* rb = static_cast<HdParticleFieldRenderBuffer*>(_aovBindings[i].renderBuffer);
+        HdParticleFieldRenderBuffer* rb =
+            static_cast<HdParticleFieldRenderBuffer*>(
+                _aovBindings[i].renderBuffer);
         rb->SetConverged(false);
     }
 }
 
 static bool _IsContained(const GfRect2i& rect, int width, int height) {
-    return rect.GetMinX() >= 0 && rect.GetMaxX() < width && rect.GetMinY() >= 0 && rect.GetMaxY() < height;
+    return rect.GetMinX() >= 0 && rect.GetMaxX() < width &&
+           rect.GetMinY() >= 0 && rect.GetMaxY() < height;
 }
 
 /// Rendering entrypoint: add one sample per pixel to the whole sample
@@ -209,7 +220,8 @@ static bool _IsContained(const GfRect2i& rect, int width, int height) {
 ///   \param renderThread A handle to the render thread, used for checking
 ///                       for cancellation and locking the color buffer.
 void HdParticleFieldRenderer::Render(HdRenderThread* renderThread) {
-    TF_DEBUG(HDPARTICLEFIELD_GENERAL).Msg("[%s] Starting Render\n", TF_FUNC_NAME().c_str());
+    TF_DEBUG(HDPARTICLEFIELD_GENERAL).Msg(
+        "[%s] Starting Render\n", TF_FUNC_NAME().c_str());
 
     _completedSamples.store(0);
 
@@ -217,7 +229,9 @@ void HdParticleFieldRenderer::Render(HdRenderThread* renderThread) {
         // We aren't going to render anything. Just mark all AOVs as converged
         // so that we will stop rendering.
         for (size_t i = 0; i < _aovBindings.size(); ++i) {
-            HdParticleFieldRenderBuffer* rb = static_cast<HdParticleFieldRenderBuffer*>(_aovBindings[i].renderBuffer);
+            HdParticleFieldRenderBuffer* rb =
+                static_cast<HdParticleFieldRenderBuffer*>(
+                    _aovBindings[i].renderBuffer);
             rb->SetConverged(true);
         }
         // XXX:validation
@@ -230,7 +244,8 @@ void HdParticleFieldRenderer::Render(HdRenderThread* renderThread) {
 
     // Map all of the attachments.
     for (size_t i = 0; i < _aovBindings.size(); ++i) {
-        static_cast<HdParticleFieldRenderBuffer*>(_aovBindings[i].renderBuffer)->Map();
+        static_cast<HdParticleFieldRenderBuffer*>(
+            _aovBindings[i].renderBuffer)->Map();
 
         if (i == 0) {
             _width  = _aovBindings[i].renderBuffer->GetWidth();
@@ -238,7 +253,8 @@ void HdParticleFieldRenderer::Render(HdRenderThread* renderThread) {
         } else {
             if (_width != _aovBindings[i].renderBuffer->GetWidth() ||
                 _height != _aovBindings[i].renderBuffer->GetHeight()) {
-                TF_CODING_ERROR("HDGaussianSplats render buffers have inconsistent sizes");
+                TF_CODING_ERROR(
+                    "HDGaussianSplats render buffers have inconsistent sizes");
             }
         }
     }
@@ -281,7 +297,8 @@ void HdParticleFieldRenderer::Render(HdRenderThread* renderThread) {
             // Write AOVs to attachments that aren't converged.
             for (size_t i = 0; i < _aovBindings.size(); ++i) {
                 HdParticleFieldRenderBuffer* renderBuffer =
-                    static_cast<HdParticleFieldRenderBuffer*>(_aovBindings[i].renderBuffer);
+                    static_cast<HdParticleFieldRenderBuffer*>(
+                        _aovBindings[i].renderBuffer);
 
                 if (renderBuffer->IsConverged()) {
                     continue;
@@ -291,13 +308,12 @@ void HdParticleFieldRenderer::Render(HdRenderThread* renderThread) {
                     if (renderBuffer) {
                         colorRenderBuffer = renderBuffer;
                     }
-                } else if ((_aovNames[i].name == HdAovTokens->cameraDepth || _aovNames[i].name == HdAovTokens->depth) &&
+                } else if (_aovNames[i].name == HdAovTokens->depth &&
                            renderBuffer->GetFormat() == HdFormatFloat32) {
                     if (renderBuffer) {
                         depthRenderBuffer = renderBuffer;
                     }
-                } else if ((_aovNames[i].name == HdAovTokens->primId || _aovNames[i].name == HdAovTokens->elementId ||
-                            _aovNames[i].name == HdAovTokens->instanceId) &&
+                } else if (_aovNames[i].name == HdAovTokens->primId &&
                            renderBuffer->GetFormat() == HdFormatInt32) {
                     if (renderBuffer) {
                         primIDRenderBuffer = renderBuffer;
@@ -305,7 +321,8 @@ void HdParticleFieldRenderer::Render(HdRenderThread* renderThread) {
                 }
             }
 
-            if (!_gsRenderer.renderGaussianSplatScene(colorRenderBuffer, depthRenderBuffer, primIDRenderBuffer)) {
+            if (!_gsRenderer.renderGaussianSplatScene(
+                    colorRenderBuffer, depthRenderBuffer, primIDRenderBuffer)) {
                 printf("error occurred while rendering\n");
             }
         }
@@ -317,7 +334,8 @@ void HdParticleFieldRenderer::Render(HdRenderThread* renderThread) {
             bool moreWork = false;
             for (size_t i = 0; i < _aovBindings.size(); ++i) {
                 HdParticleFieldRenderBuffer* rb =
-                    static_cast<HdParticleFieldRenderBuffer*>(_aovBindings[i].renderBuffer);
+                    static_cast<HdParticleFieldRenderBuffer*>(
+                        _aovBindings[i].renderBuffer);
                 if (rb->IsMultiSampled()) {
                     moreWork = true;
                 }
@@ -339,7 +357,9 @@ void HdParticleFieldRenderer::Render(HdRenderThread* renderThread) {
 
     // Mark the multisampled attachments as converged and unmap all buffers.
     for (size_t i = 0; i < _aovBindings.size(); ++i) {
-        HdParticleFieldRenderBuffer* rb = static_cast<HdParticleFieldRenderBuffer*>(_aovBindings[i].renderBuffer);
+        HdParticleFieldRenderBuffer* rb =
+            static_cast<HdParticleFieldRenderBuffer*>(
+                _aovBindings[i].renderBuffer);
         rb->Unmap();
         rb->SetConverged(true);
     }
@@ -356,7 +376,9 @@ void HdParticleFieldRenderer::Clear() {
             continue;
         }
 
-        HdParticleFieldRenderBuffer* rb = static_cast<HdParticleFieldRenderBuffer*>(_aovBindings[i].renderBuffer);
+        HdParticleFieldRenderBuffer* rb =
+            static_cast<HdParticleFieldRenderBuffer*>(
+                _aovBindings[i].renderBuffer);
 
         rb->Map();
         if (_aovNames[i].name == HdAovTokens->color) {
