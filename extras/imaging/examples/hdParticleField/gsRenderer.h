@@ -25,12 +25,13 @@ struct GaussianSplats {
     static Ptr create() { return std::make_shared<GaussianSplats>(); }
 
     GfMatrix4f xform;
-    int primID;
     VtVec3fArray positions;
     VtQuatfArray rotations;
     VtVec3fArray scales;
     VtFloatArray opacities;
     VtVec3fArray sphericalHarmonics;
+    int primID;
+    int sphericalHarmonicsDegree;
 };
 
 class GaussianSplatsRenderer {

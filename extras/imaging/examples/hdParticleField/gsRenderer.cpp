@@ -196,8 +196,17 @@ void GaussianSplatsRenderer::Impl::addGaussianSplats(
     SplatVector splatVec;
     size_t numNewSplats = newSplats->positions.size();
 
-    size_t sphericalHarmonics_stride =
-        newSplats->sphericalHarmonics.size() / numNewSplats;
+    bool hasValidSphericalHarmonics = false;
+    size_t sphericalHarmonics_stride = 0;
+    if (!newSplats->sphericalHarmonics.empty()) {
+        sphericalHarmonics_stride =
+            (newSplats->sphericalHarmonicsDegree + 1) *
+            (newSplats->sphericalHarmonicsDegree + 1);
+        if (sphericalHarmonics_stride ==
+            (newSplats->sphericalHarmonics.size() / numNewSplats)) {
+            hasValidSphericalHarmonics = true;
+        }
+    }
 
     bool hasValidOpacity  = newSplats->opacities.size() == numNewSplats;
     bool hasValidScale    = newSplats->scales.size() == numNewSplats;
@@ -211,6 +220,8 @@ void GaussianSplatsRenderer::Impl::addGaussianSplats(
 
         if (hasValidOpacity) {
             splatVec[i].opacity = newSplats->opacities[i];
+        } else {
+            splatVec[i].opacity = 1.0f;
         }
 
         if (hasValidScale && hasValidRotation) {
@@ -220,7 +231,9 @@ void GaussianSplatsRenderer::Impl::addGaussianSplats(
             splatVec[i].setCov3D(GfVec3f(1.0, 1.0, 1.0),
                 newSplats->rotations[i]);
         } else if (!hasValidRotation && hasValidScale) {
-            splatVec[i].setCov3D(newSplats->scales[i], GfQuatf());
+            splatVec[i].setCov3D(newSplats->scales[i], GfQuatf(1.0));
+        } else {
+            splatVec[i].setCov3D(GfVec3f(1.0, 1.0, 1.0), GfQuatf(1.0));
         }
 
         // extract the scale/rotation component from the transform matrix
@@ -238,7 +251,7 @@ void GaussianSplatsRenderer::Impl::addGaussianSplats(
 
         // TODO - I think we need to figure out how to account for the xform in
         // the SH data too.
-        if (!newSplats->sphericalHarmonics.empty()) {
+        if (hasValidSphericalHarmonics) {
             // unpack this splats list of SH weights
             auto sh_it = newSplats->sphericalHarmonics.begin() +
                          sphericalHarmonics_stride * i;
@@ -251,32 +264,39 @@ void GaussianSplatsRenderer::Impl::addGaussianSplats(
 
             // we pre-weight the SH weights by their respective SH coefficients
             // once on load.
-            sh_weights[0] *= SH_C0;
-
             size_t sh_size = sh_weights.size();
+
+            if (sh_size > 0) {
+                sh_weights[0] *= SH_C0;
+            }
+
             if (sh_size > 1) {
                 sh_weights[1] *= SH_C1;
                 sh_weights[2] *= SH_C1;
                 sh_weights[3] *= SH_C1;
-
-                if (sh_size > 4) {
-                    sh_weights[4] *= SH_C2_0;
-                    sh_weights[5] *= SH_C2_1;
-                    sh_weights[6] *= SH_C2_2;
-                    sh_weights[7] *= SH_C2_3;
-                    sh_weights[8] *= SH_C2_4;
-
-                    if (sh_size > 9) {
-                        sh_weights[9] *= SH_C3_0;
-                        sh_weights[10] *= SH_C3_1;
-                        sh_weights[11] *= SH_C3_2;
-                        sh_weights[12] *= SH_C3_3;
-                        sh_weights[13] *= SH_C3_4;
-                        sh_weights[14] *= SH_C3_5;
-                        sh_weights[15] *= SH_C3_6;
-                    }
-                }
             }
+
+            if (sh_size > 4) {
+                sh_weights[4] *= SH_C2_0;
+                sh_weights[5] *= SH_C2_1;
+                sh_weights[6] *= SH_C2_2;
+                sh_weights[7] *= SH_C2_3;
+                sh_weights[8] *= SH_C2_4;
+            }
+
+            if (sh_size > 9) {
+                sh_weights[9] *= SH_C3_0;
+                sh_weights[10] *= SH_C3_1;
+                sh_weights[11] *= SH_C3_2;
+                sh_weights[12] *= SH_C3_3;
+                sh_weights[13] *= SH_C3_4;
+                sh_weights[14] *= SH_C3_5;
+                sh_weights[15] *= SH_C3_6;
+            }
+        } else {
+            // Add DC weights for (0.17, 0.17, 0.17) ? Note these are supposed
+            // to be premultiplied by SH_C0, which makes things easier.
+            splatVec[i].sh_weights.push_back(GfVec3f(-0.33, -0.33, -0.33));
         }
     }
     {

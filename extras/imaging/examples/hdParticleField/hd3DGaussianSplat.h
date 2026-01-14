@@ -42,6 +42,8 @@ class Hd3DGaussianSplat : public HdRprim {
     const VtFloatArray& GetOpacities() const { return _opacities; }
     const VtVec3fArray& GetSphericalHarmonics() const {
         return _sphericalHarmonics; }
+    const int GetSphericalHarmonicsDegree() const {
+        return _sphericalHarmonicsDegree; }
     const GfMatrix4f& GetTransform() const { return _transform; }
 
   protected:

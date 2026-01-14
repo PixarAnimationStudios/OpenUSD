@@ -48,6 +48,8 @@ void HdParticleFieldRenderer::addGaussianSplats(
     }
 
     if (!splatPrim.GetSphericalHarmonics().empty()) {
+        splats->sphericalHarmonicsDegree =
+            splatPrim.GetSphericalHarmonicsDegree();
         splats->sphericalHarmonics = splatPrim.GetSphericalHarmonics();
     }
 
