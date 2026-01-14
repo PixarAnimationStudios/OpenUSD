@@ -1,24 +1,38 @@
+//
+// Copyright 2025 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
 #include "renderPass.h"
-#include "../debugCodes.h"
+#include "debugCodes.h"
 #include "renderBuffer.h"
 #include "renderDelegate.h"
 #include "renderer.h"
 
-#include <pxr/imaging/hd/aov.h>
-#include <pxr/imaging/hd/renderPassState.h>
+#include "pxr/imaging/hd/aov.h"
+#include "pxr/imaging/hd/renderPassState.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdParticleFieldRenderPass::HdParticleFieldRenderPass(HdRenderIndex* index, const HdRprimCollection& collection,
-                                                     HdParticleFieldRenderer* renderer, HdRenderThread* renderThread,
-                                                     std::atomic<int>* sceneVersion)
-    : HdRenderPass(index, collection), _renderer(renderer), _renderThread(renderThread), _lastSettingsVersion(0),
-      _sceneVersion(sceneVersion), _lastSceneVersion(0), _viewMatrix(1.0f), _projMatrix(1.0f), _aovBindings(),
-      _colorBuffer(SdfPath::EmptyPath()), _depthBuffer(SdfPath::EmptyPath()), _converged(false) {}
+HdParticleFieldRenderPass::HdParticleFieldRenderPass(
+    HdRenderIndex* index, const HdRprimCollection& collection,
+    HdParticleFieldRenderer* renderer, HdRenderThread* renderThread,
+    std::atomic<int>* sceneVersion)
+    : HdRenderPass(index, collection), _renderer(renderer)
+    , _renderThread(renderThread), _lastSettingsVersion(0)
+    , _sceneVersion(sceneVersion), _lastSceneVersion(0)
+    , _viewMatrix(1.0f), _projMatrix(1.0f), _aovBindings()
+    , _colorBuffer(SdfPath::EmptyPath())
+    , _depthBuffer(SdfPath::EmptyPath()), _converged(false) {}
 
-HdParticleFieldRenderPass::~HdParticleFieldRenderPass() { _renderThread->StopRender(); }
+HdParticleFieldRenderPass::~HdParticleFieldRenderPass() {
+    _renderThread->StopRender();
+}
 
-static GfRect2i _GetDataWindow(HdRenderPassStateSharedPtr const& renderPassState) {
+static GfRect2i _GetDataWindow(
+    HdRenderPassStateSharedPtr const& renderPassState)
+{
     const CameraUtilFraming& framing = renderPassState->GetFraming();
     if (framing.IsValid()) {
         return framing.dataWindow;
@@ -40,18 +54,21 @@ bool HdParticleFieldRenderPass::IsConverged() const {
 
     // Otherwise, check the convergence of all attachments.
     for (size_t i = 0; i < _aovBindings.size(); ++i) {
-        if (_aovBindings[i].renderBuffer && !_aovBindings[i].renderBuffer->IsConverged()) {
+        if (_aovBindings[i].renderBuffer &&
+            !_aovBindings[i].renderBuffer->IsConverged()) {
             return false;
         }
     }
     return true;
 }
 
-void HdParticleFieldRenderPass::_Execute(const HdRenderPassStateSharedPtr& renderPassState,
-                                         const TfTokenVector& renderTags) {
-    TF_DEBUG(HDPARTICLEFIELD_GENERAL).Msg("[%s] Executing render pass\n", TF_FUNC_NAME().c_str());
+void HdParticleFieldRenderPass::_Execute(
+    const HdRenderPassStateSharedPtr& renderPassState,
+    const TfTokenVector& renderTags)
+{
+    TF_DEBUG(HDPARTICLEFIELD_GENERAL).Msg(
+        "[%s] Executing render pass\n", TF_FUNC_NAME().c_str());
 
-    // Determine whether the scene has changed since the last time we rendered.
     bool needStartRender = false;
 
     // Determine whether the scene has changed since the last time we rendered.
@@ -63,13 +80,14 @@ void HdParticleFieldRenderPass::_Execute(const HdRenderPassStateSharedPtr& rende
 
     // Likewise the render settings.
     HdRenderDelegate* renderDelegate = GetRenderIndex()->GetRenderDelegate();
-    int currentSettingsVersion       = renderDelegate->GetRenderSettingsVersion();
+    int currentSettingsVersion = renderDelegate->GetRenderSettingsVersion();
     if (_lastSettingsVersion != currentSettingsVersion) {
         _renderThread->StopRender();
         _lastSettingsVersion = currentSettingsVersion;
 
         _renderer->SetSamplesToConvergence(
-            renderDelegate->GetRenderSetting<int>(HdRenderSettingsTokens->convergedSamplesPerPixel, 1));
+            renderDelegate->GetRenderSetting<int>(
+                HdRenderSettingsTokens->convergedSamplesPerPixel, 1));
 
         needStartRender = true;
     }
@@ -101,7 +119,8 @@ void HdParticleFieldRenderPass::_Execute(const HdRenderPassStateSharedPtr& rende
             // Note that we do not support the case of using the
             // new camera framing API without using AOVs.
             //
-            const GfVec3i dimensions(_dataWindow.GetWidth(), _dataWindow.GetHeight(), 1);
+            const GfVec3i dimensions(
+                _dataWindow.GetWidth(), _dataWindow.GetHeight(), 1);
 
             _colorBuffer.Allocate(dimensions, HdFormatUNorm8Vec4,
                                   /*multiSampled=*/true);
@@ -121,7 +140,8 @@ void HdParticleFieldRenderPass::_Execute(const HdRenderPassStateSharedPtr& rende
     //
     // If the renderer AOV bindings are empty, force a bindings update so that
     // we always get a chance to add color/depth on the first time through.
-    HdRenderPassAovBindingVector aovBindings = renderPassState->GetAovBindings();
+    HdRenderPassAovBindingVector aovBindings =
+        renderPassState->GetAovBindings();
     if (_aovBindings != aovBindings || _renderer->GetAovBindings().empty()) {
         _aovBindings = aovBindings;
 
@@ -130,7 +150,8 @@ void HdParticleFieldRenderPass::_Execute(const HdRenderPassStateSharedPtr& rende
             HdRenderPassAovBinding colorAov;
             colorAov.aovName      = HdAovTokens->color;
             colorAov.renderBuffer = &_colorBuffer;
-            colorAov.clearValue   = VtValue(GfVec4f(0.0707f, 0.0707f, 0.0707f, 1.0f));
+            colorAov.clearValue   = VtValue(
+                GfVec4f(0.0707f, 0.0707f, 0.0707f, 1.0f));
             aovBindings.push_back(colorAov);
             HdRenderPassAovBinding depthAov;
             depthAov.aovName      = HdAovTokens->depth;

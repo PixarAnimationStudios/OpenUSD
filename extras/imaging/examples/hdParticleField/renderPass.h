@@ -1,10 +1,19 @@
+//
+// Copyright 2025 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
 
 #ifndef HDPARTICLEFIELD_HDPARTICLEFIELDRENDERPASS_H
 #define HDPARTICLEFIELD_HDPARTICLEFIELDRENDERPASS_H
 
+#include "pxr/pxr.h"
+
+#include "pxr/imaging/hd/renderPass.h"
+
 #include "renderBuffer.h"
 #include "renderer.h"
-#include <pxr/imaging/hd/renderPass.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -15,9 +24,10 @@ class HdRenderThread;
 /// Represents a single iteration of a render.
 class HdParticleFieldRenderPass final : public HdRenderPass {
   public:
-    HdParticleFieldRenderPass(HdRenderIndex* index, const HdRprimCollection& collection,
-                              HdParticleFieldRenderer* renderer, HdRenderThread* renderThread,
-                              std::atomic<int>* sceneVersion);
+    HdParticleFieldRenderPass(
+        HdRenderIndex* index, const HdRprimCollection& collection,
+        HdParticleFieldRenderer* renderer, HdRenderThread* renderThread,
+        std::atomic<int>* sceneVersion);
     virtual ~HdParticleFieldRenderPass();
 
   protected:
@@ -26,7 +36,9 @@ class HdParticleFieldRenderPass final : public HdRenderPass {
     /// \param renderPassState Input parameters (including viewer parameters)
     /// for this renderpass. \param renderTags Which rendertags should be drawn
     /// this pass.
-    void _Execute(const HdRenderPassStateSharedPtr& renderPassState, const TfTokenVector& renderTags) override;
+    void _Execute(
+        const HdRenderPassStateSharedPtr& renderPassState,
+        const TfTokenVector& renderTags) override;
 
     /// Determine whether the sample buffer has enough samples, to be considered
     /// final.
