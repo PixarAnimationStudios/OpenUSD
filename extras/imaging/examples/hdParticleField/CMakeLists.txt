@@ -1,37 +1,27 @@
-SET(CPPFILES
-        debugCodes.cpp
-        tokens.cpp
-        hd3DGaussianSplat.cpp
-        renderBuffer.cpp
-        renderDelegate.cpp
-        renderer.cpp
-        rendererPlugin.cpp
-        renderPass.cpp
-
-        gsRenderer.cpp
-)
-
+set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hdParticleField)
 
-pxr_plugin(hdParticleField
-
-        CPPFILES
-        ${CPPFILES}
-
-        LIBRARIES
-        arch
-        js
-        plug
-        tf
-        sdf
-        vt
-        gf
+pxr_plugin(${PXR_PACKAGE}
+    LIBRARIES
         hd
-        hf
-        usdGeom
-        usdLightField
-        usdImaging
+        tf
+        usdVol
 
-        RESOURCE_FILES
+    PUBLIC_CLASSES
+        debugCodes
+        hd3DGaussianSplat
+        renderBuffer
+        renderDelegate
+        renderer
+        rendererPlugin
+        renderPass
+        gsRenderer
+
+    PUBLIC_HEADERS
+        renderParam.h
+
+    RESOURCE_FILES
         plugInfo.json
+
+    DISABLE_PRECOMPILED_HEADERS
 )
