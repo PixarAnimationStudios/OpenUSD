@@ -1,17 +1,25 @@
 //
-// Created by Lee Kerley on 3/18/24.
+// Copyright 2025 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
+// Original implementation by Lee Kerley on 3/18/24.
+
 #include "gsRenderer.h"
-#include <algorithm>
-#include <memory>
-#include <vector>
 
 #include "pxr/base/gf/rect2i.h"
 #include "pxr/base/gf/matrix2f.h"
 #include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec4f.h"
+
+#include <algorithm>
+#include <memory>
+#include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Spherical harmonic coefficients.
 constexpr float SH_C0   = 0.28209479177387814;
@@ -29,10 +37,10 @@ constexpr float SH_C3_4 = -0.4570457994644658;
 constexpr float SH_C3_5 = 1.445305721320277;
 constexpr float SH_C3_6 = -0.5900435899266435;
 
-PXR_NAMESPACE_OPEN_SCOPE
-
 float clamp01(float v) { return std::min(1.0f, std::max(0.0f, v)); }
-GfVec3f clamp01(GfVec3f v) { return {clamp01(v[0]), clamp01(v[1]), clamp01(v[2])}; }
+GfVec3f clamp01(GfVec3f v) {
+    return {clamp01(v[0]), clamp01(v[1]), clamp01(v[2])};
+}
 
 struct Splat {
     // currently using camera z depth - but could use distance from camera -
@@ -51,30 +59,31 @@ struct Splat {
             float x = camDir[0], y = camDir[1], z = camDir[2];
 
             color = color -
-                    ( sh_weights[1] * y ) +
-                    ( sh_weights[2] * z ) -
-                    ( sh_weights[3] * x );
+                ( sh_weights[1] * y ) +
+                ( sh_weights[2] * z ) -
+                ( sh_weights[3] * x );
 
             if (sh_size > 4) {
                 float xx = x * x, yy = y * y, zz = z * z;
                 float xy = x * y, yz = y * z, xz = x * z;
 
                 color = color +
-                        ( sh_weights[4] * xy                    ) +
-                        ( sh_weights[5] * yz                    ) +
-                        ( sh_weights[6] * (2.0f * zz - xx - yy) ) +
-                        ( sh_weights[7] * xz                    ) +
-                        ( sh_weights[8] * (xx - yy)             );
+                    ( sh_weights[4] * xy                    ) +
+                    ( sh_weights[5] * yz                    ) +
+                    ( sh_weights[6] * (2.0f * zz - xx - yy) ) +
+                    ( sh_weights[7] * xz                    ) +
+                    ( sh_weights[8] * (xx - yy)             );
 
                 if (sh_size > 9) {
                     color = color +
-                            ( sh_weights[9]  * (y * (3.0f * xx - yy))                       ) +
-                            ( sh_weights[10] * (xy * z)                                     ) +
-                            ( sh_weights[11] * (y * (4.0f * zz - xx - yy))                  ) +
-                            ( sh_weights[12] * (z * (2.0f * zz - 3.0f * xx - 3.0f * yy))    ) +
-                            ( sh_weights[13] * (x * (4.0f * zz - xx - yy))                  ) +
-                            ( sh_weights[14] * (z * (xx - yy))                              ) +
-                            ( sh_weights[15] * (x * (xx - 3.0f * yy))                       );
+                        ( sh_weights[9]  * (y * (3.0f * xx - yy))      ) +
+                        ( sh_weights[10] * (xy * z)                    ) +
+                        ( sh_weights[11] * (y * (4.0f * zz - xx - yy)) ) +
+                        ( sh_weights[12] * (z *
+                            (2.0f * zz - 3.0f * xx - 3.0f * yy))       ) +
+                        ( sh_weights[13] * (x * (4.0f * zz - xx - yy)) ) +
+                        ( sh_weights[14] * (z * (xx - yy))             ) +
+                        ( sh_weights[15] * (x * (xx - 3.0f * yy))      );
                 }
             }
         }
@@ -85,7 +94,8 @@ struct Splat {
         return color;
     }
 
-    // lifted from Imath : (https://github.com/AcademySoftwareFoundation/Imath/blob/4de9a1dabdf517a7df9bc350b7395bc8db2f681d/src/Imath/ImathQuat.h#L856C1-L856C20)
+    // lifted from Imath:
+    // https://github.com/AcademySoftwareFoundation/Imath/blob/4de9a1dabdf517a7df9bc350b7395bc8db2f681d/src/Imath/ImathQuat.h#L856C1-L856C20
     static GfMatrix3f toMatrix3f(const GfQuatf& quat) {
         float x = quat.GetImaginary()[0];
         float y = quat.GetImaginary()[1];
@@ -137,9 +147,10 @@ class GaussianSplatsRenderer::Impl {
     void addGaussianSplats(const std::string& splatName,
                            GaussianSplats::Ptr newSplats);
     void removeGaussianSplats(const std::string& splatName);
-    bool renderGaussianSplatScene(HdParticleFieldRenderBuffer* colorRenderBuffer,
-                                  HdParticleFieldRenderBuffer* depthRenderBuffer,
-                                  HdParticleFieldRenderBuffer* primIDRenderBuffer) const;
+    bool renderGaussianSplatScene(
+        HdParticleFieldRenderBuffer* colorRenderBuffer,
+        HdParticleFieldRenderBuffer* depthRenderBuffer,
+        HdParticleFieldRenderBuffer* primIDRenderBuffer) const;
 
   private:
     void updateSortedIndices() const {
@@ -195,29 +206,38 @@ void GaussianSplatsRenderer::Impl::addGaussianSplats(
     splatVec.resize(numNewSplats);
 
     for (unsigned int i = 0, n = numNewSplats; i < n; ++i) {
-        splatVec[i].position = newSplats->xform.Transform(newSplats->positions[i]);
+        splatVec[i].position =
+            newSplats->xform.Transform(newSplats->positions[i]);
 
         if (hasValidOpacity) {
             splatVec[i].opacity = newSplats->opacities[i];
         }
 
         if (hasValidScale && hasValidRotation) {
-            splatVec[i].setCov3D(newSplats->scales[i], newSplats->rotations[i]);
+            splatVec[i].setCov3D(newSplats->scales[i],
+                newSplats->rotations[i]);
         } else if (hasValidRotation && !hasValidScale) {
-            splatVec[i].setCov3D(GfVec3f(1.0, 1.0, 1.0), newSplats->rotations[i]);
+            splatVec[i].setCov3D(GfVec3f(1.0, 1.0, 1.0),
+                newSplats->rotations[i]);
         } else if (!hasValidRotation && hasValidScale) {
             splatVec[i].setCov3D(newSplats->scales[i], GfQuatf());
         }
 
         // extract the scale/rotation component from the transform matrix
-        // and use it to modify the cov3D matrix to account for the transformation
+        // and use it to modify the cov3D matrix to account
+        // for the transformation
         GfMatrix3f xform_SR = GfMatrix3f(
-            newSplats->xform[0][0], newSplats->xform[0][1], newSplats->xform[0][2],
-            newSplats->xform[1][0], newSplats->xform[1][1], newSplats->xform[1][2],
-            newSplats->xform[2][0], newSplats->xform[2][1], newSplats->xform[2][2]);
-        splatVec[i].cov3D = xform_SR * splatVec[i].cov3D * xform_SR.GetTranspose();
+            newSplats->xform[0][0], newSplats->xform[0][1],
+                newSplats->xform[0][2],
+            newSplats->xform[1][0], newSplats->xform[1][1],
+                newSplats->xform[1][2],
+            newSplats->xform[2][0], newSplats->xform[2][1],
+                newSplats->xform[2][2]);
+        splatVec[i].cov3D =
+            xform_SR * splatVec[i].cov3D * xform_SR.GetTranspose();
 
-        // TODO - I think we need to figure out how to account for the xform in the SH data too.
+        // TODO - I think we need to figure out how to account for the xform in
+        // the SH data too.
         if (!newSplats->sphericalHarmonics.empty()) {
             // unpack this splats list of SH weights
             auto sh_it = newSplats->sphericalHarmonics.begin() +
@@ -313,9 +333,11 @@ void GaussianSplatsRenderer::Impl::removeGaussianSplats(
     _needsIndicesSorted = false;
 }
 
-bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(HdParticleFieldRenderBuffer* colorRenderBuffer,
-                                  HdParticleFieldRenderBuffer* depthRenderBuffer,
-                                  HdParticleFieldRenderBuffer* primIDRenderBuffer) const {
+bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(
+    HdParticleFieldRenderBuffer* colorRenderBuffer,
+    HdParticleFieldRenderBuffer* depthRenderBuffer,
+    HdParticleFieldRenderBuffer* primIDRenderBuffer) const
+{
     if (_needsIndicesSorted) {
         updateSortedIndices();
     }
@@ -351,7 +373,8 @@ bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(HdParticleFieldRende
     float limy      = htan_fovy;
 
     // rotational and scale portion of the world to view matrix
-    GfMatrix3f W(_worldToViewMtx[0][0], _worldToViewMtx[1][0], _worldToViewMtx[2][0],
+    GfMatrix3f W(
+           _worldToViewMtx[0][0], _worldToViewMtx[1][0], _worldToViewMtx[2][0],
            _worldToViewMtx[0][1], _worldToViewMtx[1][1], _worldToViewMtx[2][1],
            _worldToViewMtx[0][2], _worldToViewMtx[1][2], _worldToViewMtx[2][2]);
 
@@ -365,13 +388,16 @@ bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(HdParticleFieldRende
             continue;
         }
 
-        GfVec4f cameraPos = GfVec4f(splat.position[0], splat.position[1], splat.position[2], 1) * _worldToViewMtx;
+        GfVec4f cameraPos =
+            GfVec4f(splat.position[0], splat.position[1], splat.position[2], 1)
+            * _worldToViewMtx;
         GfVec4f ndcPos    = cameraPos * _projMatrix;
         if (ndcPos[3] < 0) {
             continue;
         }
 
-        GfVec2f pos_ndc_2d = GfVec2f(ndcPos[0] / ndcPos[3], ndcPos[1] / ndcPos[3]);
+        GfVec2f pos_ndc_2d =
+            GfVec2f(ndcPos[0] / ndcPos[3], ndcPos[1] / ndcPos[3]);
 
         float txtz     = cameraPos[0] / cameraPos[2];
         float tytz     = cameraPos[1] / cameraPos[2];
@@ -380,12 +406,15 @@ bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(HdParticleFieldRende
         float ty       = std::min(limy, std::max(-limy, tytz)) * cameraPos[2];
         float tz       = cameraPos[2];
 
-        GfMatrix3f J(focal / tz, 0.0, -(focal * tx) / (tz * tz), 0.0, focal / tz,
-               -(focal * ty) / (tz * tz), 0.0, 0.0, 0.0);
+        GfMatrix3f J(
+                focal / tz, 0.0, -(focal * tx) / (tz * tz),
+                0.0, focal / tz, -(focal * ty) / (tz * tz),
+                0.0, 0.0, 0.0);
         GfMatrix3f T     = J * W;
         GfMatrix3f cov   = T * splat.cov3D * T.GetTranspose();
 
-        GfMatrix2f cov2d = GfMatrix2f(cov[0][0], cov[0][1], cov[1][0], cov[1][1]);
+        GfMatrix2f cov2d =
+            GfMatrix2f(cov[0][0], cov[0][1], cov[1][0], cov[1][1]);
 
         double det   = cov2d.GetDeterminant();
         if (det == 0.0)
@@ -429,7 +458,8 @@ bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(HdParticleFieldRende
         int splat_primID = _splatPrimIDs[splat_index.first];
 
         // step in camera space of the splat for each pixel.
-        GfVec2f bbox_cam_step_per_pixel = GfCompDiv(bboxsize_cam * 2.0f, splatPixelSize);
+        GfVec2f bbox_cam_step_per_pixel =
+            GfCompDiv(bboxsize_cam * 2.0f, splatPixelSize);
 
         // calculate an OIIO ROI for the region covered by the splat.
         GfRect2i splatROI = GfRect2i({x1, y1}, {x2, y2});
@@ -437,21 +467,27 @@ bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(HdParticleFieldRende
         // clip the splatROI to the image
         GfRect2i clippedSplatROI = splatROI.GetIntersection(imageROI);
 
-        for (unsigned int y = clippedSplatROI.GetMin()[1]; y < clippedSplatROI.GetMax()[1]; ++y) {
-            for (unsigned int x = clippedSplatROI.GetMin()[0]; x < clippedSplatROI.GetMax()[0]; ++x) {
+        for (unsigned int y = clippedSplatROI.GetMin()[1];
+             y < clippedSplatROI.GetMax()[1]; ++y)
+        {
+            for (unsigned int x = clippedSplatROI.GetMin()[0];
+                 x < clippedSplatROI.GetMax()[0]; ++x)
+            {
                 GfVec2i imagePixelIndex(x, y);
                 GfVec2i splatPixelIndex = imagePixelIndex - splatROI.GetMin();
 
                 // calculate the corresponding point in camera space.
-                GfVec2f pixel_cam = GfVec2f(-bboxsize_cam[0] + splatPixelIndex[0] * bbox_cam_step_per_pixel[0],
-                                            -bboxsize_cam[1] + splatPixelIndex[1] * bbox_cam_step_per_pixel[1]);
+                GfVec2f pixel_cam = GfVec2f(
+                    -bboxsize_cam[0] +
+                        splatPixelIndex[0] * bbox_cam_step_per_pixel[0],
+                    -bboxsize_cam[1] +
+                        splatPixelIndex[1] * bbox_cam_step_per_pixel[1]);
 
-                // calculate the gaussian falloff in the space of the splat. (note
-                // we defer the outer exp() call to after the early exit)
+                // calculate the gaussian falloff in the space of the splat.
+                // (note we defer the outer exp() call to after the early exit)
                 double power = -(conic[0] * pow(pixel_cam[0], 2) +
-                               conic[2] * pow(pixel_cam[1], 2)) /
-                                 2.0 -
-                             (conic[1] * pixel_cam[0] * pixel_cam[1]);
+                                 conic[2] * pow(pixel_cam[1], 2)) / 2.0 -
+                    (conic[1] * pixel_cam[0] * pixel_cam[1]);
                 if (power > 0)
                     continue;
 
@@ -462,15 +498,18 @@ bool GaussianSplatsRenderer::Impl::renderGaussianSplatScene(HdParticleFieldRende
 
                 if (alpha > 0.1) {
                     if (primIDRenderBuffer) {
-                        primIDRenderBuffer->Write(imagePixelIndex, 1, &splat_primID);
+                        primIDRenderBuffer->Write(
+                            imagePixelIndex, 1, &splat_primID);
                     }
                     if (depthRenderBuffer) {
-                        depthRenderBuffer->Write(imagePixelIndex, 1, &splat_depth);
+                        depthRenderBuffer->Write(
+                            imagePixelIndex, 1, &splat_depth);
                     }
                 }
 
                 if (colorRenderBuffer) {
-                    colorRenderBuffer->OverColor(imagePixelIndex, splat_color, alpha);
+                    colorRenderBuffer->OverColor(
+                        imagePixelIndex, splat_color, alpha);
                 }
             }
         }
@@ -506,7 +545,8 @@ bool GaussianSplatsRenderer::renderGaussianSplatScene(
     HdParticleFieldRenderBuffer* colorRenderBuffer,
     HdParticleFieldRenderBuffer* depthRenderBuffer,
     HdParticleFieldRenderBuffer* primIDRenderBuffer) const {
-    return pImpl->renderGaussianSplatScene(colorRenderBuffer, depthRenderBuffer, primIDRenderBuffer);
+    return pImpl->renderGaussianSplatScene(
+        colorRenderBuffer, depthRenderBuffer, primIDRenderBuffer);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,14 +1,22 @@
+//
+// Copyright 2025 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
 #ifndef LIBGAUSSIANSPLATSRENDERER_GAUSSIANSPLATSRENDERER_H
 #define LIBGAUSSIANSPLATSRENDERER_GAUSSIANSPLATSRENDERER_H
 
-#include <memory>
-
+#include "pxr/pxr.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/gf/matrix4f.h"
 
-#include "renderDelegate/renderBuffer.h"
+#include "renderBuffer.h"
+
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,9 +43,10 @@ class GaussianSplatsRenderer {
     void addGaussianSplats(const std::string& splatName,
                            GaussianSplats::Ptr newSplats);
     void removeGaussianSplats(const std::string& splatName);
-    bool renderGaussianSplatScene(HdParticleFieldRenderBuffer* colorRenderBuffer,
-                                  HdParticleFieldRenderBuffer* depthRenderBuffer,
-                                  HdParticleFieldRenderBuffer* primIDRenderBuffer) const;
+    bool renderGaussianSplatScene(
+        HdParticleFieldRenderBuffer* colorRenderBuffer,
+        HdParticleFieldRenderBuffer* depthRenderBuffer,
+        HdParticleFieldRenderBuffer* primIDRenderBuffer) const;
 
   private:
     class Impl;
@@ -50,4 +59,4 @@ class GaussianSplatsRenderer {
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDSPLATS_SIMPLEGSRENDERERCPU_H
+#endif // LIBGAUSSIANSPLATSRENDERER_GAUSSIANSPLATSRENDERER_H
