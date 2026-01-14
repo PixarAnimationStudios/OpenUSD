@@ -1,17 +1,24 @@
+//
+// Copyright 2025 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
 
 #ifndef HDPARTICLEFIELD_HDPARTICLEFIELDRENDERBUFFER_H
 #define HDPARTICLEFIELD_HDPARTICLEFIELDRENDERBUFFER_H
 
-#include <pxr/base/gf/vec3i.h>
-#include <pxr/base/gf/vec2i.h>
-#include <pxr/base/gf/vec3f.h>
-#include <pxr/imaging/hd/renderBuffer.h>
+#include "pxr/pxr.h"
+#include "pxr/base/gf/vec3i.h"
+#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/imaging/hd/renderBuffer.h"
 
-#include "../debugCodes.h"
+#include "debugCodes.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class HdGaussianSplatsRenderBuffer
+/// \class HdParticleFieldRenderBuffer
 ///
 /// A block of memory which we are rendering into.
 class HdParticleFieldRenderBuffer : public HdRenderBuffer {
@@ -25,7 +32,10 @@ class HdParticleFieldRenderBuffer : public HdRenderBuffer {
     ///   \param sceneDelegate The scene delegate backing this render buffer.
     ///   \param renderParam   The renderer-global render param.
     ///   \param dirtyBits     The invalidation state for this render buffer.
-    void Sync(HdSceneDelegate* sceneDelegate, HdRenderParam* renderParam, HdDirtyBits* dirtyBits) override;
+    void Sync(
+        HdSceneDelegate* sceneDelegate,
+        HdRenderParam* renderParam,
+        HdDirtyBits* dirtyBits) override;
 
     /// Deallocate before deletion.
     ///   \param renderParam   The renderer-global render param.
@@ -34,7 +44,8 @@ class HdParticleFieldRenderBuffer : public HdRenderBuffer {
     void Finalize(HdRenderParam* renderParam) override;
 
     /// Allocate a new buffer with the given dimensions and format.
-    bool Allocate(const GfVec3i& dimensions, HdFormat format, bool multiSampled) override;
+    bool Allocate(
+        const GfVec3i& dimensions, HdFormat format, bool multiSampled) override;
 
     /// Accessor for buffer width.
     ///   \return The width of the currently allocated buffer.
@@ -77,16 +88,16 @@ class HdParticleFieldRenderBuffer : public HdRenderBuffer {
     ///           rendered to).
     bool IsConverged() const override {
         bool c = _converged.load();
-        TF_DEBUG(HDPARTICLEFIELD_GENERAL).Msg("[%s] _converged = %d\n", TF_FUNC_NAME().c_str(), c);
-
+        TF_DEBUG(HDPARTICLEFIELD_GENERAL).Msg(
+            "[%s] _converged = %d\n", TF_FUNC_NAME().c_str(), c);
         return c;
     }
 
     /// Set the convergence.
     ///   \param cv Whether the buffer should be marked converged or not.
     void SetConverged(bool cv) {
-        TF_DEBUG(HDPARTICLEFIELD_GENERAL).Msg("[%s] _converged \n", TF_FUNC_NAME().c_str());
-
+        TF_DEBUG(HDPARTICLEFIELD_GENERAL).Msg(
+            "[%s] _converged \n", TF_FUNC_NAME().c_str());
         _converged.store(cv);
     }
 
