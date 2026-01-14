@@ -3,12 +3,6 @@
     {
       "Info": {
         "Types": {
-          "UsdImaging_3DGaussianSplatAdapter": {
-            "bases": [
-              "UsdImagingGprimAdapter"
-            ],
-            "primTypeName": "ParticleField3DGaussianSplat"
-          },
           "HdParticleFieldRendererPlugin": {
             "bases": [
               "HdRendererPlugin"
