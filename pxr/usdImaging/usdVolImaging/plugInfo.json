@@ -16,6 +16,14 @@
                         ],
                         "isInternal": true,
                         "primTypeName": "Field3DAsset"
+                    },
+                    "UsdImagingParticleFieldAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "ParticleField",
+                        "includeDerivedPrimTypes" : true
                     }
                 }
             },

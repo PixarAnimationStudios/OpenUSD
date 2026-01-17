@@ -31,41 +31,6 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
-        
-static UsdAttribute
-_CreateFilePathAttr(UsdVolFieldAsset &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateFilePathAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateFieldNameAttr(UsdVolFieldAsset &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateFieldNameAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateFieldIndexAttr(UsdVolFieldAsset &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateFieldIndexAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateFieldDataTypeAttr(UsdVolFieldAsset &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateFieldDataTypeAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateVectorDataRoleHintAttr(UsdVolFieldAsset &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateVectorDataRoleHintAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
-}
 
 static std::string
 _Repr(const UsdVolFieldAsset &self)
@@ -82,7 +47,7 @@ void wrapUsdVolFieldAsset()
 {
     typedef UsdVolFieldAsset This;
 
-    class_<This, bases<UsdVolFieldBase> >
+    class_<This, bases<UsdVolVolumeFieldAsset> >
         cls("FieldAsset");
 
     cls
@@ -105,41 +70,6 @@ void wrapUsdVolFieldAsset()
 
         .def(!self)
 
-        
-        .def("GetFilePathAttr",
-             &This::GetFilePathAttr)
-        .def("CreateFilePathAttr",
-             &_CreateFilePathAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetFieldNameAttr",
-             &This::GetFieldNameAttr)
-        .def("CreateFieldNameAttr",
-             &_CreateFieldNameAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetFieldIndexAttr",
-             &This::GetFieldIndexAttr)
-        .def("CreateFieldIndexAttr",
-             &_CreateFieldIndexAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetFieldDataTypeAttr",
-             &This::GetFieldDataTypeAttr)
-        .def("CreateFieldDataTypeAttr",
-             &_CreateFieldDataTypeAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetVectorDataRoleHintAttr",
-             &This::GetVectorDataRoleHintAttr)
-        .def("CreateVectorDataRoleHintAttr",
-             &_CreateVectorDataRoleHintAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;

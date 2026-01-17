@@ -9,7 +9,6 @@ set(DIRS
     usdVol
     usdMedia
     usdShade
-    usdLightField
     usdLux
     usdProc
     usdRender

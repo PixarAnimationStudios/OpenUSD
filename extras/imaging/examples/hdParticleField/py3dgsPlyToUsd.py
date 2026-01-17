@@ -5,7 +5,7 @@ import math
 import os
 import struct
 from typing import Dict, Tuple, List, Any
-from pxr import Usd, UsdGeom, Vt, Gf, UsdLightField
+from pxr import Usd, UsdGeom, Vt, Gf, UsdVol
 
 
 # ============================================================================
@@ -235,10 +235,20 @@ def parse_args():
         default=None,
         help='Name of the Gaussian Splat USD prim (default: input filename without extension)'
     )
+    parser.add_argument(
+        '--generateSh',
+        action='store_true',
+        help='Generate DC spherical harmonics from RGB data, if spherical harmonics are not provided'
+    )
+    parser.add_argument(
+        '--generateScales',
+        action='store_true',
+        help='Generate scales based on local neighborhood spacing, if scales are not provided (requires scipy)'
+    )
     return parser.parse_args()
 
 
-def convertPlyUSD(input_file, output_file, prim_name=None):
+def convertPlyUSD(input_file, output_file, prim_name=None, generateSh=False, generateScales=False):
     # If no prim name provided, use input filename without extension
     if prim_name is None:
         prim_name = os.path.splitext(os.path.basename(input_file))[0]
@@ -271,7 +281,7 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
 
     # Create 3D Gaussian Splat prim
     prim_path = f"/{prim_name}"
-    gs_prim = UsdLightField.ParticleField3DGaussianSplat.Define(stage, prim_path)
+    gs_prim = UsdVol.ParticleField3DGaussianSplat.Define(stage, prim_path)
     stage.SetDefaultPrim(gs_prim.GetPrim())
 
     # Extract and set positions
@@ -335,8 +345,20 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
         scales_vt = Vt.Vec3fArray([Gf.Vec3f(float(s[0]), float(s[1]), float(s[2])) for s in scales])
         gs_prim.CreateScalesAttr(scales_vt)
         print(f"  Set scales for {vertex_count} vertices")
+    elif generateScales:
+        from scipy.spatial import KDTree
+        import numpy as np
+        points = np.array(positions)
+        tree = KDTree(points)
+        distances, _ = tree.query(points, k=3, workers=-1)
+        # For scale, take the average distance to nearby particles, and halve
+        # that since we're using it to scale a radius
+        scales = (distances[:, 0] + distances[:, 1] + distances[:, 2]) / (3.0 * 2.0)
+        scales_vt = Vt.Vec3fArray([Gf.Vec3f(float(s), float(s), float(s)) for s in scales])
+        gs_prim.CreateScalesAttr(scales_vt)
+        print(f"  Set scales for {vertex_count} vertices, generated from local neighborhood spacing")
     else:
-        print("  Warning: PLY file missing scale_0, scale_1, scale_2 data")
+        print("  Warning: PLY file missing scale_0, scale_1, scale_2 data. Consider re-running with --generateScales")
 
     # Extract and set orientations/quaternions
     # Note: PLY quaternion layout is (rot_0=real, rot_1/2/3=imaginary)
@@ -462,6 +484,8 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
             print(f"  Set spherical harmonics with {sh_vec_stride} coefficients per vertex")
         else:
             # Only DC coefficients, degree 0
+            gs_prim.CreateRadianceSphericalHarmonicsDegreeAttr(0)
+
             sh_vt = Vt.Vec3fArray([Gf.Vec3f(float(v[0]), float(v[1]), float(v[2])) for v in f_dc])
             sh_attr = gs_prim.CreateRadianceSphericalHarmonicsCoefficientsAttr(sh_vt)
 
@@ -470,8 +494,28 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
             sh_primvar.SetInterpolation(UsdGeom.Tokens.vertex)
 
             print(f"  Set spherical harmonics with degree 0 (DC only)")
+    elif all(prop in vertex_data for prop in ['red', 'green', 'blue']):
+        if generateSh:
+            f_rgb = list(zip(
+                vertex_data['red'],
+                vertex_data['green'],
+                vertex_data['blue']
+            ))
+            rgb = Vt.Vec3fArray([Gf.Vec3f(float(v[0]), float(v[1]), float(v[2])) for v in f_rgb])
+            SH_C0 = 0.28209479177387814
+            sh_dc = Vt.Vec3fArray([(((v / 255.0) - Gf.Vec3f(0.5)) / SH_C0) for v in rgb])
+
+            gs_prim.CreateRadianceSphericalHarmonicsDegreeAttr(0)
+            sh_attr = gs_prim.CreateRadianceSphericalHarmonicsCoefficientsAttr(sh_dc)
+
+            sh_primvar = UsdGeom.Primvar(sh_attr)
+            sh_primvar.SetElementSize(1)
+            sh_primvar.SetInterpolation(UsdGeom.Tokens.vertex)
+            print("  Set spherical harmonics with degree 0 (DC only) generated from (red/green/blue)")
+        else:
+            print("  Warning: PLY file missing spherical harmonics data (f_dc_0/1/2). PLY file contains (red/green/blue); consider re-running with --generateSh")
     else:
-        print("  Warning: PLY file missing spherical harmonics data (f_dc_0/1/2)")
+        print("  Warning: PLY file missing spherical harmonics data (f_dc_0/1/2).")
 
     # Save the stage
     stage.Save()
@@ -480,4 +524,4 @@ def convertPlyUSD(input_file, output_file, prim_name=None):
 
 if __name__ == "__main__":
     args = parse_args()
-    convertPlyUSD(args.input, args.output, args.name)
+    convertPlyUSD(args.input, args.output, args.name, args.generateSh, args.generateScales)

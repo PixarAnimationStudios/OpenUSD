@@ -5,8 +5,23 @@ field3DAsset
 fieldAsset
 fieldBase
 openVDBAsset
+particleField
+particleField3DGaussianSplat
+particleFieldKernelBaseAPI
+particleFieldKernelConstantSurfletAPI
+particleFieldKernelGaussianEllipsoidAPI
+particleFieldKernelGaussianSurfletAPI
+particleFieldOpacityAttributeAPI
+particleFieldOrientationAttributeAPI
+particleFieldPositionAttributeAPI
+particleFieldPositionBaseAPI
+particleFieldRadianceBaseAPI
+particleFieldScaleAttributeAPI
+particleFieldSphericalHarmonicsAttributeAPI
 tokens
 volume
+volumeFieldAsset
+volumeFieldBase
 
 # Python Module Files
 module.cpp
@@ -14,8 +29,23 @@ wrapField3DAsset.cpp
 wrapFieldAsset.cpp
 wrapFieldBase.cpp
 wrapOpenVDBAsset.cpp
+wrapParticleField.cpp
+wrapParticleField3DGaussianSplat.cpp
+wrapParticleFieldKernelBaseAPI.cpp
+wrapParticleFieldKernelConstantSurfletAPI.cpp
+wrapParticleFieldKernelGaussianEllipsoidAPI.cpp
+wrapParticleFieldKernelGaussianSurfletAPI.cpp
+wrapParticleFieldOpacityAttributeAPI.cpp
+wrapParticleFieldOrientationAttributeAPI.cpp
+wrapParticleFieldPositionAttributeAPI.cpp
+wrapParticleFieldPositionBaseAPI.cpp
+wrapParticleFieldRadianceBaseAPI.cpp
+wrapParticleFieldScaleAttributeAPI.cpp
+wrapParticleFieldSphericalHarmonicsAttributeAPI.cpp
 wrapTokens.cpp
 wrapVolume.cpp
+wrapVolumeFieldAsset.cpp
+wrapVolumeFieldBase.cpp
 
 # Resource Files
 generatedSchema.usda
