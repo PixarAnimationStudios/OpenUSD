@@ -93,6 +93,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -7262,7 +7263,7 @@ _HasTimeSamples(const SdfLayerRefPtr& source,
                 const double* time = nullptr, 
                 double* lower = nullptr, double* upper = nullptr)
 {
-    if (time) {
+    if (time && std::isfinite(*time)) {
         // If caller wants bracketing time samples as well, we can just use
         // GetBracketingTimeSamplesForPath. If no samples exist, this should
         // return false.
@@ -8612,6 +8613,12 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
                 // Map the interval (expressed in stage time) to layer time.
                 const SdfLayerOffset stageToLayer =
                     info._layerToStageOffset.GetInverse();
+                // If we encounter an invalid offset, we issue a warning but don't stop processing.
+                // This effectively makes the stage static on failure but still allows it to process.
+                if (!stageToLayer.IsValid()) {
+                    TF_WARN("SdfLayerOffset has unsupported values. Stage will be treated as static.");
+                    return true;
+                }
                 const GfInterval layerInterval =
                     interval * stageToLayer.GetScale()
                     + stageToLayer.GetOffset();

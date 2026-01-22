@@ -241,6 +241,8 @@ private:
         SdfLayerHandleSet *seenLayers,
         PcpErrorVector *errors);
 
+    double _validatedTimeCodesPerSecond(const SdfLayerHandle & layer, double tcps, PcpErrorVector *errors);
+
 private:
     /// The identifier that uniquely identifies this layer stack.
     const PcpLayerStackIdentifier _identifier;

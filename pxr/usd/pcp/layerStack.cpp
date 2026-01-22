@@ -30,7 +30,7 @@
 
 using std::string;
 using std::vector;
-
+#include <iostream>
 PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////////////////
@@ -1551,7 +1551,7 @@ PcpLayerStack::_Compute(const std::string &fileFormatTarget,
 
     // The layer stack's time codes per second initially comes from the root 
     // layer. An opinion in the session layer may override it below.
-    _timeCodesPerSecond = rootTcps;
+    _timeCodesPerSecond = _validatedTimeCodesPerSecond(_identifier.rootLayer, rootTcps, &errors);
 
     // Add the layer stack due to the session layer.  We *don't* apply
     // the sessionOwner to this stack.  We also skip this if the session
@@ -1583,7 +1583,7 @@ PcpLayerStack::_Compute(const std::string &fileFormatTarget,
             // layer stack TCPS to the layer.
             if (_ShouldUseSessionTcps(_identifier.sessionLayer, 
                                       _identifier.rootLayer)) {
-                _timeCodesPerSecond = sessionTcps;
+                _timeCodesPerSecond = _validatedTimeCodesPerSecond(_identifier.sessionLayer, sessionTcps, &errors);
                 rootLayerOffset.SetScale(_timeCodesPerSecond / rootTcps);
             } else {
                 sessionLayerOffset.SetScale(_timeCodesPerSecond / sessionTcps);
@@ -1805,7 +1805,8 @@ PcpLayerStack::_BuildLayerStack(
 
         // Apply the scale from computed layer TCPS to sublayer TCPS to sublayer
         // layer offset.
-        const double sublayerTcps = sublayerRefPtrs[i]->GetTimeCodesPerSecond();
+        double sublayerTcps = sublayerRefPtrs[i]->GetTimeCodesPerSecond();
+        sublayerTcps = _validatedTimeCodesPerSecond(sublayerRefPtrs[i], sublayerTcps, errors);
         if (layerTcps != sublayerTcps) {
             sublayerOffset.SetScale(sublayerOffset.GetScale() * 
                                     layerTcps / sublayerTcps);
@@ -1859,6 +1860,21 @@ PcpLayerStack::_BuildLayerStack(
     seenLayers->erase(layer);
 
     return SdfLayerTree::New(layer, subtrees, offset);
+}
+
+double PcpLayerStack::_validatedTimeCodesPerSecond(const SdfLayerHandle & layer, double tcps, PcpErrorVector *errors) {
+    if (tcps <= 0) {
+        // Report error, but continue with the default timeCodesPerSecond value
+        PcpErrorInvalidSublayerTimeCodesPerSecondPtr err =
+            PcpErrorInvalidSublayerTimeCodesPerSecond::New();
+        err->rootSite = PcpSite(_identifier, SdfPath::AbsoluteRootPath());
+        err->layer       = layer;
+        err->timeCodesPerSecond    = tcps;
+        errors->push_back(err);
+        return 24.0;
+    }
+
+    return tcps;
 }
 
 std::ostream&

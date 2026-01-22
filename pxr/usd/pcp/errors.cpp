@@ -640,6 +640,31 @@ PcpErrorInvalidSublayerOffset::ToString() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
+PcpErrorInvalidSublayerTimeCodesPerSecondPtr
+PcpErrorInvalidSublayerTimeCodesPerSecond::New()
+{
+    return PcpErrorInvalidSublayerTimeCodesPerSecondPtr(new PcpErrorInvalidSublayerTimeCodesPerSecond);
+}
+
+PcpErrorInvalidSublayerTimeCodesPerSecond::PcpErrorInvalidSublayerTimeCodesPerSecond() :
+    PcpErrorBase(PcpErrorType_InvalidSublayerTimeCodesPerSecond)
+{
+}
+
+PcpErrorInvalidSublayerTimeCodesPerSecond::~PcpErrorInvalidSublayerTimeCodesPerSecond()
+{
+}
+
+// virtual
+std::string
+PcpErrorInvalidSublayerTimeCodesPerSecond::ToString() const
+{
+    return TfStringPrintf("Invalid timeCodesPerScond %f in layer @%s . Using default of 24.0.",
+        timeCodesPerSecond , layer->GetIdentifier().c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 PcpErrorInvalidReferenceOffsetPtr
 PcpErrorInvalidReferenceOffset::New()
 {

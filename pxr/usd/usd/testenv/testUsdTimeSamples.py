@@ -656,5 +656,9 @@ def "Foo" {
         self.assertEqual(x.Get(Usd.TimeCode.PreTime(17)), 
                          Vt.DoubleArray(2, (6, 7)))
 
+    def testUsdNanTimesamples(self):
+        stage = Usd.Stage.Open("testUsdNanTimesamples/entry_point.usda")
+        self.assertTrue(stage.GetPrimAtPath("/Mesh").IsValid())
+
 if __name__ == "__main__":
     unittest.main()
