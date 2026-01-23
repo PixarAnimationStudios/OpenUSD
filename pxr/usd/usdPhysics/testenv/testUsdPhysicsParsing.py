@@ -6,7 +6,7 @@
 # https://openusd.org/license.
 
 import os, unittest
-from pxr import Usd, UsdPhysics, Gf, UsdGeom, Sdf, UsdShade
+from pxr import Usd, UsdPhysics, Gf, UsdGeom, Sdf, UsdShade, Plug, Tf
 
 
 toleranceEpsilon = 0.01
@@ -1647,6 +1647,47 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         self.assertTrue(joint_found)
         self.assertTrue(articulation_found)
 
+
+class TestUsdAppliedAPISchemas(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        pr = Plug.Registry()
+        testPlugins = pr.RegisterPlugins(os.path.abspath("resources"))
+        assert len(testPlugins) == 1, \
+            "Failed to load expected test plugin"
+        assert testPlugins[0].name == "testUsdPhysicsParsing", \
+            "Failed to load expected test plugin"
+        cls.SingleApplyAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestNestedPhysicsCollisionAPI")
+ 
+    def test_SimpleTypedSchemaPrimDefinition(self):
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        scene = UsdPhysics.Scene.Define(stage, '/physicsScene')
+        self.assertTrue(scene)
+
+        cube = UsdGeom.Cube.Define(stage, "/cube")
+
+        cube.GetPrim().ApplyAPI("TestNestedPhysicsCollisionAPI")
+
+        self.assertTrue(cube.GetPrim().HasAPI("TestNestedPhysicsCollisionAPI"))
+        self.assertTrue(cube.GetPrim().HasAPI("PhysicsCollisionAPI"))
+
+        ret_dict = UsdPhysics.LoadUsdPhysicsFromRange(stage, ["/"])
+
+        num_shape_found = 0
+
+        for key, value in ret_dict.items():
+            prim_paths, descs = value
+            if key == UsdPhysics.ObjectType.Scene:
+                scene_found = True
+            elif key == UsdPhysics.ObjectType.CubeShape:
+                for prim_path, desc in zip(prim_paths, descs):
+                    # cube shape
+                    num_shape_found = num_shape_found + 1
+
+        self.assertTrue(num_shape_found == 1)
 
 if __name__ == "__main__":
     unittest.main()

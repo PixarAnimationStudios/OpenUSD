@@ -73,5 +73,6 @@ pxr_register_test(testUsdPhysicsCollisionGroupAPI
 pxr_register_test(testUsdPhysicsParsing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPhysicsParsing"
+    TESTENV testenv/testUsdPhysicsParsing
     EXPECTED_RETURN_CODE 0
 )
