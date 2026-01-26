@@ -23,26 +23,26 @@ class TestUsdSkelBindingAPI(unittest.TestCase):
         indices = binding.CreateJointIndicesPrimvar(constant=False,
                                                     elementSize=3)
         assert indices
-        assert indices.GetInterpolation() == UsdGeom.Tokens.vertex
-        assert indices.GetElementSize() == 3
+        self.assertEqual(indices.GetInterpolation(), UsdGeom.Tokens.vertex)
+        self.assertEqual(indices.GetElementSize(), 3)
 
         weights = binding.CreateJointWeightsPrimvar(constant=True)
         assert weights
-        assert weights.GetInterpolation() == UsdGeom.Tokens.constant
+        self.assertEqual(weights.GetInterpolation(), UsdGeom.Tokens.constant)
 
         # Should be able to re-create bindings with an alternate
         # interpolation and/or element size.
         weights = binding.CreateJointWeightsPrimvar(constant=False,
                                                     elementSize=3)
         assert weights
-        assert weights.GetInterpolation() == UsdGeom.Tokens.vertex
-        assert weights.GetElementSize() == 3
+        self.assertEqual(weights.GetInterpolation(), UsdGeom.Tokens.vertex)
+        self.assertEqual(weights.GetElementSize(), 3)
 
         assert binding.SetRigidJointInfluence(10, 0.5)
         indices = binding.GetJointIndicesPrimvar()
         weights = binding.GetJointWeightsPrimvar()
-        assert indices.Get() == Vt.IntArray([10])
-        assert weights.Get() == Vt.FloatArray([0.5])
+        self.assertEqual(indices.Get(), Vt.IntArray([10]))
+        self.assertEqual(weights.Get(), Vt.FloatArray([0.5]))
 
 
 if __name__ == "__main__":

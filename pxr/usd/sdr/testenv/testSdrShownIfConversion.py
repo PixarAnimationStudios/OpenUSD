@@ -49,7 +49,7 @@ class TestSdrShownIfConversion(unittest.TestCase):
                 print(f'  {inputName}')
                 input = node.GetShaderInput(inputName)
                 assert input is not None
-                assert input.GetShownIf() == expected
+                self.assertEqual(input.GetShownIf(), expected)
 
 if __name__ == '__main__':
     unittest.main()

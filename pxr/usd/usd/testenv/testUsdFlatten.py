@@ -67,8 +67,8 @@ class TestUsdFlatten(unittest.TestCase):
         flatLayer = composed.Flatten()
         flat = Usd.Stage.Open(flatLayer)
 
-        assert composed.GetPrimAtPath("/Foo").GetAttribute("size").Get(3.0) == 1.0
-        assert flat.GetPrimAtPath("/Foo").GetAttribute("size").Get(3.0) == 1.0
+        self.assertEqual(composed.GetPrimAtPath("/Foo").GetAttribute("size").Get(3.0), 1.0)
+        self.assertEqual(flat.GetPrimAtPath("/Foo").GetAttribute("size").Get(3.0), 1.0)
 
         for pc in composed.Traverse():
             print(pc.GetPath())
@@ -187,7 +187,7 @@ class TestUsdFlatten(unittest.TestCase):
         prim = stage.GetPrimAtPath('/main')
         attr = prim.GetAttribute('myAttr')
         # Ensure we are actually trying to flatten an unknown type
-        assert attr.GetTypeName().type == Tf.Type.Unknown
+        self.assertEqual(attr.GetTypeName().type, Tf.Type.Unknown)
 
         # Ensure flatten completes
         flattened = stage.Flatten()

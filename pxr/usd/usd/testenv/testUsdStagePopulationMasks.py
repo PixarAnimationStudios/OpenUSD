@@ -13,36 +13,36 @@ class TestUsdStagePopulationMask(unittest.TestCase):
         pm = Usd.StagePopulationMask.All()
         assert not pm.IsEmpty()
         assert pm.Includes('/any/path')
-        assert pm.GetIncludedChildNames('/') == (True, [])
+        self.assertEqual(pm.GetIncludedChildNames('/'), (True, []))
 
         pm = Usd.StagePopulationMask()
         assert pm.IsEmpty()
         assert not pm.Includes('/any/path')
-        assert pm.GetIncludedChildNames('/') == (False, [])
+        self.assertEqual(pm.GetIncludedChildNames('/'), (False, []))
 
         pm2 = Usd.StagePopulationMask().Add('/foo').Add('/bar')
         assert not pm.Includes(pm2)
         assert pm2.Includes(pm)
-        assert pm.GetUnion(pm2) == pm2
-        assert Usd.StagePopulationMask.Union(pm, pm2) == pm2
+        self.assertEqual(pm.GetUnion(pm2), pm2)
+        self.assertEqual(Usd.StagePopulationMask.Union(pm, pm2), pm2)
         
-        assert pm2.GetIncludedChildNames('/') == (True, ['bar', 'foo'])
-        assert pm2.GetIncludedChildNames('/foo') == (True, [])
-        assert pm2.GetIncludedChildNames('/bar') == (True, [])
-        assert pm2.GetIncludedChildNames('/baz') == (False, [])
+        self.assertEqual(pm2.GetIncludedChildNames('/'), (True, ['bar', 'foo']))
+        self.assertEqual(pm2.GetIncludedChildNames('/foo'), (True, []))
+        self.assertEqual(pm2.GetIncludedChildNames('/bar'), (True, []))
+        self.assertEqual(pm2.GetIncludedChildNames('/baz'), (False, []))
 
         pm.Add('/World/anim/chars/CharGroup')
-        assert pm.GetPaths() == ['/World/anim/chars/CharGroup']
+        self.assertEqual(pm.GetPaths(), ['/World/anim/chars/CharGroup'])
         assert not pm.IsEmpty()
         pm.Add('/World/anim/chars/CharGroup/child')
-        assert pm.GetPaths() == ['/World/anim/chars/CharGroup']
+        self.assertEqual(pm.GetPaths(), ['/World/anim/chars/CharGroup'])
         pm.Add('/World/anim/chars/OtherCharGroup')
-        assert pm.GetPaths() == ['/World/anim/chars/CharGroup',
-                                 '/World/anim/chars/OtherCharGroup']
+        self.assertEqual(pm.GetPaths(), ['/World/anim/chars/CharGroup',
+                                 '/World/anim/chars/OtherCharGroup'])
         pm.Add('/World/sets/arch/Building')
-        assert pm.GetPaths() == ['/World/anim/chars/CharGroup',
+        self.assertEqual(pm.GetPaths(), ['/World/anim/chars/CharGroup',
                                  '/World/anim/chars/OtherCharGroup',
-                                 '/World/sets/arch/Building']
+                                 '/World/sets/arch/Building'])
 
         pm2 = Usd.StagePopulationMask()
         assert pm2 != pm
@@ -51,13 +51,13 @@ class TestUsdStagePopulationMask(unittest.TestCase):
         pm2.Add('/World/sets/arch/Building')
         pm2.Add('/World/anim/chars/OtherCharGroup')
         pm2.Add('/World/anim/chars/CharGroup/child')
-        assert pm2 == pm
+        self.assertEqual(pm2, pm)
 
-        assert pm2.GetUnion(pm) == pm
-        assert pm2.GetUnion(pm) == pm2
+        self.assertEqual(pm2.GetUnion(pm), pm)
+        self.assertEqual(pm2.GetUnion(pm), pm2)
 
         pm2 = Usd.StagePopulationMask()
-        assert Usd.StagePopulationMask.Union(pm, pm2) == pm
+        self.assertEqual(Usd.StagePopulationMask.Union(pm, pm2), pm)
         assert Usd.StagePopulationMask.Union(pm, pm2) != pm2
 
         assert pm.Includes('/World')
@@ -71,25 +71,25 @@ class TestUsdStagePopulationMask(unittest.TestCase):
 
         pm = Usd.StagePopulationMask().Add('/world/anim')
         pm2 = pm.GetUnion('/world')
-        assert pm2.GetPaths() == ['/world']
+        self.assertEqual(pm2.GetPaths(), ['/world'])
 
         pm = Usd.StagePopulationMask(['/A', '/AA', '/B/C', '/U'])
         pm2 = Usd.StagePopulationMask(['/A/X', '/B', '/Q'])
-        assert (Usd.StagePopulationMask.Union(pm, pm2) ==
+        self.assertEqual(Usd.StagePopulationMask.Union(pm, pm2),
                 Usd.StagePopulationMask(['/A', '/AA', '/B', '/Q', '/U']))
-        assert (Usd.StagePopulationMask.Intersection(pm, pm2) ==
+        self.assertEqual(Usd.StagePopulationMask.Intersection(pm, pm2),
                 Usd.StagePopulationMask(['/A/X', '/B/C']))
 
         pm = Usd.StagePopulationMask(['/A/B', '/A/C', '/A/D/E', '/A/D/F', '/B'])
-        assert pm.GetIncludedChildNames('/') == (True, ['A', 'B'])
-        assert pm.GetIncludedChildNames('/A') == (True, ['B', 'C', 'D'])
-        assert pm.GetIncludedChildNames('/A/B') == (True, [])
-        assert pm.GetIncludedChildNames('/A/C') == (True, [])
-        assert pm.GetIncludedChildNames('/A/D') == (True, ['E', 'F'])
-        assert pm.GetIncludedChildNames('/A/D/E') == (True, [])
-        assert pm.GetIncludedChildNames('/A/D/F') == (True, [])
-        assert pm.GetIncludedChildNames('/B') == (True, [])
-        assert pm.GetIncludedChildNames('/C') == (False, [])
+        self.assertEqual(pm.GetIncludedChildNames('/'), (True, ['A', 'B']))
+        self.assertEqual(pm.GetIncludedChildNames('/A'), (True, ['B', 'C', 'D']))
+        self.assertEqual(pm.GetIncludedChildNames('/A/B'), (True, []))
+        self.assertEqual(pm.GetIncludedChildNames('/A/C'), (True, []))
+        self.assertEqual(pm.GetIncludedChildNames('/A/D'), (True, ['E', 'F']))
+        self.assertEqual(pm.GetIncludedChildNames('/A/D/E'), (True, []))
+        self.assertEqual(pm.GetIncludedChildNames('/A/D/F'), (True, []))
+        self.assertEqual(pm.GetIncludedChildNames('/B'), (True, []))
+        self.assertEqual(pm.GetIncludedChildNames('/C'), (False, []))
 
         # Errors.
         with self.assertRaises(Tf.ErrorException):
@@ -114,7 +114,7 @@ class TestUsdStagePopulationMask(unittest.TestCase):
 
         doryMask = Usd.StagePopulationMask().Add('/World/anim/chars/DoryGroup')
         doryStage = Usd.Stage.OpenMasked(unmasked.GetRootLayer(), doryMask)
-        assert doryStage.GetPopulationMask() == doryMask
+        self.assertEqual(doryStage.GetPopulationMask(), doryMask)
 
         assert doryStage.GetPrimAtPath('/World')
         assert doryStage.GetPrimAtPath('/World/anim')
@@ -162,7 +162,7 @@ class TestUsdStagePopulationMask(unittest.TestCase):
         
         doryAndNemoStage = Usd.Stage.OpenMasked(
             unmasked.GetRootLayer(), doryAndNemoMask)
-        assert doryAndNemoStage.GetPopulationMask() == doryAndNemoMask
+        self.assertEqual(doryAndNemoStage.GetPopulationMask(), doryAndNemoMask)
 
         assert doryAndNemoStage.GetPrimAtPath('/World')
         assert doryAndNemoStage.GetPrimAtPath('/World/anim')
@@ -412,7 +412,7 @@ class TestUsdStagePopulationMask(unittest.TestCase):
 
         # Only the 'geom' prim in the prototype will be composed, since
         # it's the only one in the population mask.
-        assert instance_1.GetPrototype() == instance_2.GetPrototype()
+        self.assertEqual(instance_1.GetPrototype(), instance_2.GetPrototype())
         prototype = instance_1.GetPrototype()
 
         assert prototype.GetChild('geom')

@@ -27,8 +27,8 @@ class TestUsdUINodeGraphNode(unittest.TestCase):
        assert posAttr
        posAttr = nodeGraphNode.CreatePosAttr()
        assert posAttr, "Failed creating pos attribute"
-       assert posAttr.GetTypeName() == 'float2', \
-           "Type of position attribute should be 'float2', not %s" % posAttr.GetTypeName()
+       self.assertEqual(posAttr.GetTypeName(), 'float2',
+           "Type of position attribute should be 'float2', not %s" % posAttr.GetTypeName())
        posAttr.Set(Gf.Vec2f(3, 2))
        
        # Test Stacking Order
@@ -36,9 +36,9 @@ class TestUsdUINodeGraphNode(unittest.TestCase):
        assert stackingOrderAttr
        stackingOrderAttr = nodeGraphNode.CreateStackingOrderAttr()
        assert stackingOrderAttr, "Failed creating stacking order attribute"
-       assert stackingOrderAttr.GetTypeName() == 'int', \
+       self.assertEqual(stackingOrderAttr.GetTypeName(), 'int',
            "Type of position attribute should be 'int', not %s" % \
-           stackingOrderAttr.GetTypeName()
+           stackingOrderAttr.GetTypeName())
        stackingOrderAttr.Set(100)
        
        # Test Display Color
@@ -46,9 +46,9 @@ class TestUsdUINodeGraphNode(unittest.TestCase):
        assert displayColorAttr
        displayColorAttr = nodeGraphNode.CreateDisplayColorAttr()
        assert displayColorAttr, "Failed creating display color attribute"
-       assert displayColorAttr.GetTypeName() == 'color3f', \
+       self.assertEqual(displayColorAttr.GetTypeName(), 'color3f',
            "Type of position attribute should be 'color3f', not %s" % \
-           displayColorAttr.GetTypeName()
+           displayColorAttr.GetTypeName())
        displayColorAttr.Set(Gf.Vec3f(1, 0, 0))
 
        # Test Size
@@ -56,8 +56,8 @@ class TestUsdUINodeGraphNode(unittest.TestCase):
        assert sizeAttr
        sizeAttr = nodeGraphNode.CreateSizeAttr()
        assert sizeAttr, "Failed creating size attribute"
-       assert sizeAttr.GetTypeName() == 'float2', \
-           "Type of size attribute should be 'float2', not %s" % sizeAttr.GetTypeName()
+       self.assertEqual(sizeAttr.GetTypeName(), 'float2',
+           "Type of size attribute should be 'float2', not %s" % sizeAttr.GetTypeName())
        sizeAttr.Set(Gf.Vec2f(300, 400))
        
        stage.GetRootLayer().Save()

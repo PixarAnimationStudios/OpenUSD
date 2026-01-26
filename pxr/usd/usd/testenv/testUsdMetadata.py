@@ -926,7 +926,7 @@ class TestUsdMetadata(unittest.TestCase):
                 b = f.read()
             if a != b:
                 print('\n'.join(difflib.unified_diff(a.split('\n'), b.split('\n'))))
-            assert a == b
+            self.assertEqual(a, b)
 
     def test_AssetPathMetadata(self):
         '''Test path resolution for asset path-valued metadata'''

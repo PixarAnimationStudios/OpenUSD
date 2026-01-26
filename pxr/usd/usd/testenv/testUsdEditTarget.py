@@ -216,19 +216,19 @@ class TestUsdEditTarget(unittest.TestCase):
         assert stage, 'failed to create stage for @%s@' % usdFile
 
         sessionLayer = stage.GetSessionLayer()
-        assert len(sessionLayer.subLayerPaths) == 0
+        self.assertEqual(len(sessionLayer.subLayerPaths), 0)
 
         # Create a new anonymous layer and make it a sublayer of the sessionLayer.
         sessionSublayer = Sdf.Layer.CreateAnonymous()
         sessionLayer.subLayerPaths.append(sessionSublayer.identifier)
-        assert len(sessionLayer.subLayerPaths) == 1
+        self.assertEqual(len(sessionLayer.subLayerPaths), 1)
 
         def _CreateAndTestPrimAttribute(stage, primPath, attrName):
             prim = stage.GetPrimAtPath(primPath)
             attr = prim.CreateAttribute(attrName, Sdf.ValueTypeNames.String)
             assert attr
             attr.Set('foo')
-            assert attr.Get() == 'foo'
+            self.assertEqual(attr.Get(), 'foo')
 
         # Test creating attributes with the sessionSublayer as the edit target.
         with Usd.EditContext(stage, sessionSublayer):

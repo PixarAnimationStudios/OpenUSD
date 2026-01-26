@@ -41,14 +41,14 @@ class TestUsdStage(unittest.TestCase):
         for fmt in allFormats:
             sMain = Usd.Stage.CreateInMemory('testUsedLayers.'+fmt)
             # includes a session layer...
-            assert len(sMain.GetUsedLayers()) == 2
+            self.assertEqual(len(sMain.GetUsedLayers()), 2)
 
             lMain = sMain.GetRootLayer()
             lSub = Sdf.Layer.CreateAnonymous()
             lMain.subLayerPaths.append(lSub.identifier)
             # Picks up newly added sublayer
             usedLayers = sMain.GetUsedLayers()
-            assert len(usedLayers) == 3
+            self.assertEqual(len(usedLayers), 3)
             assert lSub in usedLayers
 
             # Now make a layer that is only referenced in one
@@ -66,12 +66,12 @@ class TestUsdStage(unittest.TestCase):
                 refs = p.GetReferences()
                 refs.AddReference(lVar.identifier)
             usedLayers = sMain.GetUsedLayers()
-            assert len(usedLayers) == 4
+            self.assertEqual(len(usedLayers), 4)
             assert lVar in usedLayers
 
             fooSet.SetVariantSelection('default')    
             usedLayers = sMain.GetUsedLayers()
-            assert len(usedLayers) == 3
+            self.assertEqual(len(usedLayers), 3)
             assert not (lVar in usedLayers)
 
     def test_MutedLocalLayers(self):
@@ -110,29 +110,29 @@ class TestUsdStage(unittest.TestCase):
             with self.assertRaises(Tf.ErrorException):
                 stage.MuteLayer(rootLayer.identifier)
 
-            assert attr.Get() == 'from_session'
-            assert (set(stage.GetUsedLayers()) ==
+            self.assertEqual(attr.Get(), 'from_session')
+            self.assertEqual(set(stage.GetUsedLayers()),
                     set([sublayer_1, sublayer_2, sessionLayer, rootLayer]))
-            assert set(stage.GetMutedLayers()) == set([])
+            self.assertEqual(set(stage.GetMutedLayers()), set([]))
             assert not stage.IsLayerMuted(sublayer_1.identifier)
             assert not stage.IsLayerMuted(sublayer_2.identifier)
             assert not stage.IsLayerMuted(sessionLayer.identifier)
             assert not stage.IsLayerMuted(rootLayer.identifier)
 
             stage.MuteLayer(sessionLayer.identifier)
-            assert attr.Get() == 'from_sublayer_1'
-            assert (set(stage.GetUsedLayers()) ==
+            self.assertEqual(attr.Get(), 'from_sublayer_1')
+            self.assertEqual(set(stage.GetUsedLayers()),
                     set([sublayer_1, sublayer_2, rootLayer]))
-            assert set(stage.GetMutedLayers()) == set([sessionLayer.identifier])
+            self.assertEqual(set(stage.GetMutedLayers()), set([sessionLayer.identifier]))
             assert not stage.IsLayerMuted(sublayer_1.identifier)
             assert not stage.IsLayerMuted(sublayer_2.identifier)
             assert stage.IsLayerMuted(sessionLayer.identifier)
             assert not stage.IsLayerMuted(rootLayer.identifier)
 
             stage.MuteLayer(sublayer_1.identifier)
-            assert attr.Get() == 'from_sublayer_2'
-            assert set(stage.GetUsedLayers()) == set([sublayer_2, rootLayer])
-            assert (set(stage.GetMutedLayers()) ==
+            self.assertEqual(attr.Get(), 'from_sublayer_2')
+            self.assertEqual(set(stage.GetUsedLayers()), set([sublayer_2, rootLayer]))
+            self.assertEqual(set(stage.GetMutedLayers()),
                     set([sessionLayer.identifier, sublayer_1.identifier]))
             assert stage.IsLayerMuted(sublayer_1.identifier)
             assert not stage.IsLayerMuted(sublayer_2.identifier)
@@ -140,10 +140,10 @@ class TestUsdStage(unittest.TestCase):
             assert not stage.IsLayerMuted(rootLayer.identifier)
             
             stage.UnmuteLayer(sessionLayer.identifier)
-            assert attr.Get() == 'from_session'
-            assert (set(stage.GetUsedLayers()) == 
+            self.assertEqual(attr.Get(), 'from_session')
+            self.assertEqual(set(stage.GetUsedLayers()), 
                     set([sublayer_2, sessionLayer, rootLayer]))
-            assert set(stage.GetMutedLayers()) == set([sublayer_1.identifier])
+            self.assertEqual(set(stage.GetMutedLayers()), set([sublayer_1.identifier]))
             assert stage.IsLayerMuted(sublayer_1.identifier)
             assert not stage.IsLayerMuted(sublayer_2.identifier)
             assert not stage.IsLayerMuted(sessionLayer.identifier)
@@ -152,9 +152,9 @@ class TestUsdStage(unittest.TestCase):
             stage.MuteAndUnmuteLayers([sessionLayer.identifier, 
                                        sublayer_2.identifier],
                                       [sublayer_1.identifier])
-            assert attr.Get() == 'from_sublayer_1'
-            assert set(stage.GetUsedLayers()) == set([sublayer_1, rootLayer])
-            assert (set(stage.GetMutedLayers()) ==
+            self.assertEqual(attr.Get(), 'from_sublayer_1')
+            self.assertEqual(set(stage.GetUsedLayers()), set([sublayer_1, rootLayer]))
+            self.assertEqual(set(stage.GetMutedLayers()),
                     set([sublayer_2.identifier, sessionLayer.identifier]))
             assert not stage.IsLayerMuted(sublayer_1.identifier)
             assert stage.IsLayerMuted(sublayer_2.identifier)
@@ -184,44 +184,44 @@ class TestUsdStage(unittest.TestCase):
             attr = prim.GetAttribute('attr')
             assert attr
 
-            assert attr.Get() == 'from_sublayer_1'
-            assert (set(stage.GetUsedLayers()) == 
+            self.assertEqual(attr.Get(), 'from_sublayer_1')
+            self.assertEqual(set(stage.GetUsedLayers()), 
                     set([sublayer_1, refLayer, rootLayer]))
-            assert set(stage.GetMutedLayers()) == set([])
+            self.assertEqual(set(stage.GetMutedLayers()), set([]))
             assert not stage.IsLayerMuted(sublayer_1.identifier)
             assert not stage.IsLayerMuted(refLayer.identifier)
             assert not stage.IsLayerMuted(rootLayer.identifier)
 
             stage.MuteLayer(sublayer_1.identifier)
-            assert attr.Get() == None
-            assert set(stage.GetUsedLayers()) == set([refLayer, rootLayer])
-            assert set(stage.GetMutedLayers()) == set([sublayer_1.identifier])
+            self.assertEqual(attr.Get(), None)
+            self.assertEqual(set(stage.GetUsedLayers()), set([refLayer, rootLayer]))
+            self.assertEqual(set(stage.GetMutedLayers()), set([sublayer_1.identifier]))
             assert stage.IsLayerMuted(sublayer_1.identifier)
             assert not stage.IsLayerMuted(refLayer.identifier)
             assert not stage.IsLayerMuted(rootLayer.identifier)
 
             stage.UnmuteLayer(sublayer_1.identifier)
-            assert attr.Get() == 'from_sublayer_1'
-            assert (set(stage.GetUsedLayers()) == 
+            self.assertEqual(attr.Get(), 'from_sublayer_1')
+            self.assertEqual(set(stage.GetUsedLayers()), 
                     set([sublayer_1, refLayer, rootLayer]))
-            assert set(stage.GetMutedLayers()) == set([])
+            self.assertEqual(set(stage.GetMutedLayers()), set([]))
             assert not stage.IsLayerMuted(sublayer_1.identifier)
             assert not stage.IsLayerMuted(refLayer.identifier)
             assert not stage.IsLayerMuted(rootLayer.identifier)
 
             stage.MuteLayer(refLayer.identifier)
             assert not attr
-            assert set(stage.GetUsedLayers()) == set([rootLayer])
-            assert set(stage.GetMutedLayers()) == set([refLayer.identifier])
+            self.assertEqual(set(stage.GetUsedLayers()), set([rootLayer]))
+            self.assertEqual(set(stage.GetMutedLayers()), set([refLayer.identifier]))
             assert not stage.IsLayerMuted(sublayer_1.identifier)
             assert stage.IsLayerMuted(refLayer.identifier)
             assert not stage.IsLayerMuted(rootLayer.identifier)
 
             stage.MuteAndUnmuteLayers([sublayer_1.identifier],
                                       [refLayer.identifier])
-            assert attr.Get() == None
-            assert set(stage.GetUsedLayers()) == set([refLayer, rootLayer])
-            assert set(stage.GetMutedLayers()) == set([sublayer_1.identifier])
+            self.assertEqual(attr.Get(), None)
+            self.assertEqual(set(stage.GetUsedLayers()), set([refLayer, rootLayer]))
+            self.assertEqual(set(stage.GetMutedLayers()), set([sublayer_1.identifier]))
             assert stage.IsLayerMuted(sublayer_1.identifier)
             assert not stage.IsLayerMuted(refLayer.identifier)
             assert not stage.IsLayerMuted(rootLayer.identifier)
@@ -240,7 +240,7 @@ class TestUsdStage(unittest.TestCase):
             stage = Usd.Stage.Open(rootLayer)
             
             colorConfigFallbacks = Usd.Stage.GetColorConfigFallbacks()
-            assert len(colorConfigFallbacks) == 2
+            self.assertEqual(len(colorConfigFallbacks), 2)
             fallbackColorConfiguration = colorConfigFallbacks[0]
             fallbackColorManagementSystem = colorConfigFallbacks[1]
 
@@ -306,29 +306,29 @@ class TestUsdStage(unittest.TestCase):
             # should be removed.
             stage.SetMetadata("startFrame", 10.0)
             stage.SetMetadata("endFrame", 20.0)
-            assert(stage.GetStartTimeCode() == 10.0)
-            assert(stage.GetEndTimeCode() == 20.0)
+            self.assertEqual(stage.GetStartTimeCode(), 10.0)
+            self.assertEqual(stage.GetEndTimeCode(), 20.0)
             assert (stage.HasAuthoredTimeCodeRange())
 
             # Test (startFrame,endFrame) in sessionLayer
             with Usd.EditContext(stage, sessionLayer):
                 stage.SetMetadata('startFrame', 30.0)
                 stage.SetMetadata('endFrame', 40.0)
-            assert(stage.GetStartTimeCode() == 30.0)
-            assert(stage.GetEndTimeCode() == 40.0)
+            self.assertEqual(stage.GetStartTimeCode(), 30.0)
+            self.assertEqual(stage.GetEndTimeCode(), 40.0)
             assert (stage.HasAuthoredTimeCodeRange())
 
             # Test (startTimeCode,endTimeCode) in rootLayer with (startFrame,
             # endFrame) in session layer This should author to the root layer.
             stage.SetStartTimeCode(50.0)
             stage.SetEndTimeCode(60.0)
-            assert(rootLayer.startTimeCode == 50.0)
-            assert(rootLayer.endTimeCode == 60.0)
+            self.assertEqual(rootLayer.startTimeCode, 50.0)
+            self.assertEqual(rootLayer.endTimeCode, 60.0)
 
             # (startFrame, endFrame) in the session layer is stronger than 
             # (startTimeCode, endTimeCode) in the rootLayer.
-            assert(stage.GetStartTimeCode() == 30.0)
-            assert(stage.GetEndTimeCode() == 40.0)
+            self.assertEqual(stage.GetStartTimeCode(), 30.0)
+            self.assertEqual(stage.GetEndTimeCode(), 40.0)
             assert (stage.HasAuthoredTimeCodeRange())
 
             # Clear the (startFrame, endFrame) opinions in the session layer and
@@ -338,8 +338,8 @@ class TestUsdStage(unittest.TestCase):
                 stage.ClearMetadata('startFrame')
                 stage.ClearMetadata('endFrame')
 
-            assert(stage.GetStartTimeCode() == 50.0)
-            assert(stage.GetEndTimeCode() == 60.0)
+            self.assertEqual(stage.GetStartTimeCode(), 50.0)
+            self.assertEqual(stage.GetEndTimeCode(), 60.0)
             assert (stage.HasAuthoredTimeCodeRange())
 
             # Test (startTimeCode,endTimeCode) in sessionLayer with
@@ -349,11 +349,11 @@ class TestUsdStage(unittest.TestCase):
                 stage.SetStartTimeCode(70.0)
                 stage.SetEndTimeCode(80.0)
 
-            assert(sessionLayer.startTimeCode == 70.0)
-            assert(sessionLayer.endTimeCode == 80.0)
+            self.assertEqual(sessionLayer.startTimeCode, 70.0)
+            self.assertEqual(sessionLayer.endTimeCode, 80.0)
 
-            assert(stage.GetStartTimeCode() == 70.0)
-            assert(stage.GetEndTimeCode() == 80.0)
+            self.assertEqual(stage.GetStartTimeCode(), 70.0)
+            self.assertEqual(stage.GetEndTimeCode(), 80.0)
             assert (stage.HasAuthoredTimeCodeRange())
 
             # Test that setting start/endTimeCode in a layer that's not the root
@@ -364,8 +364,8 @@ class TestUsdStage(unittest.TestCase):
                     stage.SetStartTimeCode(90.0)
                 with self.assertRaises(Tf.ErrorException):
                     stage.SetEndTimeCode(100.0)
-            assert(stage.GetStartTimeCode() == 70.0)
-            assert(stage.GetEndTimeCode() == 80.0)
+            self.assertEqual(stage.GetStartTimeCode(), 70.0)
+            self.assertEqual(stage.GetEndTimeCode(), 80.0)
             assert (stage.HasAuthoredTimeCodeRange())
 
             # Now ensure that we have fallbacks for the 'perSecond' metadata, using
@@ -374,25 +374,25 @@ class TestUsdStage(unittest.TestCase):
             schemaSpec = rootLayer.pseudoRoot
             fallbackFps = schemaSpec.GetFallbackForInfo("framesPerSecond")
             fallbackTps = schemaSpec.GetFallbackForInfo("timeCodesPerSecond")
-            assert(stage.GetFramesPerSecond() == fallbackFps)
+            self.assertEqual(stage.GetFramesPerSecond(), fallbackFps)
             assert(stage.HasMetadata("framesPerSecond") and 
                    not stage.HasAuthoredMetadata("framesPerSecond"))
             with Usd.EditContext(stage, sessionLayer):
                 stage.SetFramesPerSecond(48.0)
-            assert(stage.GetMetadata("framesPerSecond") == 48.0)
+            self.assertEqual(stage.GetMetadata("framesPerSecond"), 48.0)
             assert(stage.HasAuthoredMetadata("framesPerSecond"))
-            assert(schemaSpec.GetInfo("framesPerSecond") == fallbackFps)
+            self.assertEqual(schemaSpec.GetInfo("framesPerSecond"), fallbackFps)
             with Usd.EditContext(stage, sessionLayer):
                 stage.ClearMetadata("framesPerSecond")
 
-            assert(stage.GetTimeCodesPerSecond() == fallbackTps)
+            self.assertEqual(stage.GetTimeCodesPerSecond(), fallbackTps)
             assert(stage.HasMetadata("timeCodesPerSecond") and 
                    not stage.HasAuthoredMetadata("timeCodesPerSecond"))
             with Usd.EditContext(stage, sessionLayer):
                 stage.SetTimeCodesPerSecond(48.0)
-            assert(stage.GetMetadata("timeCodesPerSecond") == 48.0)
+            self.assertEqual(stage.GetMetadata("timeCodesPerSecond"), 48.0)
             assert(stage.HasAuthoredMetadata("timeCodesPerSecond"))
-            assert(schemaSpec.GetInfo("timeCodesPerSecond") == fallbackTps)
+            self.assertEqual(schemaSpec.GetInfo("timeCodesPerSecond"), fallbackTps)
 
             # Test the interaction between TCPS and FPS.  See the implementation
             # of UsdStage::GetTimeCodesPerSecond for details.
@@ -401,17 +401,17 @@ class TestUsdStage(unittest.TestCase):
                 stage.SetFramesPerSecond(2)
             stage.SetTimeCodesPerSecond(3)
             stage.SetFramesPerSecond(1)
-            assert(stage.GetTimeCodesPerSecond() == 4)
+            self.assertEqual(stage.GetTimeCodesPerSecond(), 4)
             with Usd.EditContext(stage, sessionLayer):
                 stage.ClearMetadata("timeCodesPerSecond")
-            assert(stage.GetTimeCodesPerSecond() == 3)
+            self.assertEqual(stage.GetTimeCodesPerSecond(), 3)
             stage.ClearMetadata("timeCodesPerSecond")
-            assert(stage.GetTimeCodesPerSecond() == 2)
+            self.assertEqual(stage.GetTimeCodesPerSecond(), 2)
             with Usd.EditContext(stage, sessionLayer):
                 stage.ClearMetadata("framesPerSecond")
-            assert(stage.GetTimeCodesPerSecond() == 1)
+            self.assertEqual(stage.GetTimeCodesPerSecond(), 1)
             stage.ClearMetadata("framesPerSecond")
-            assert(stage.GetTimeCodesPerSecond() == fallbackTps)
+            self.assertEqual(stage.GetTimeCodesPerSecond(), fallbackTps)
 
     def test_BadGetPrimAtPath(self):
         for fmt in allFormats:

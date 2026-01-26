@@ -222,7 +222,7 @@ class TestUsdCreateProperties(unittest.TestCase):
             assert p.GetAttribute("attr1") and p.GetAttribute("attr1").IsDefined()
             assert p.HasProperty("attr1")
             assert p.GetProperty("attr1") and p.GetProperty("attr1").IsDefined()
-            assert p.GetProperty("attr1") == p.GetAttribute("attr1")
+            self.assertEqual(p.GetProperty("attr1"), p.GetAttribute("attr1"))
 
             stage = Usd.Stage.Open(strongLayer.identifier)
             p = stage.OverridePrim("/Parent")
@@ -300,7 +300,7 @@ class TestUsdCreateProperties(unittest.TestCase):
 
             extent = prim.GetAttribute('extent')
             assert extent.IsDefined()
-            assert extent.GetTypeName() == 'float3[]'
+            self.assertEqual(extent.GetTypeName(), 'float3[]')
             # Make a VtArray, then convert to numpy.
             a = Vt.Vec3fArray(3, [(1,2,3), (2,3,4)])
             n = numpy.array(a)
@@ -309,7 +309,7 @@ class TestUsdCreateProperties(unittest.TestCase):
             # Now pull the value back out.
             gn = extent.Get()
             # Assert it matches our original array.
-            assert Vt.Vec3fArray.FromNumpy(gn) == a
+            self.assertEqual(Vt.Vec3fArray.FromNumpy(gn), a)
 
     def test_SetArraysWithLists(self):
         from pxr import Vt, Sdf
@@ -324,11 +324,11 @@ class TestUsdCreateProperties(unittest.TestCase):
             assert asst.IsDefined()
             # Set with python list.
             strs.Set(['hello']*3)
-            assert strs.Get() == Vt.StringArray(3, ['hello'])
+            self.assertEqual(strs.Get(), Vt.StringArray(3, ['hello']))
             toks.Set(['bye']*3)
-            assert toks.Get() == Vt.TokenArray(3, ['bye'])
+            self.assertEqual(toks.Get(), Vt.TokenArray(3, ['bye']))
             asst.Set([Sdf.AssetPath('/path')]*3)
-            assert asst.Get() == Sdf.AssetPathArray(3, [Sdf.AssetPath('/path')])
+            self.assertEqual(asst.Get(), Sdf.AssetPathArray(3, [Sdf.AssetPath('/path')]))
             # Should fail with incompatible types.
             with self.assertRaises(Tf.ErrorException):
                 strs.Set([1234]*3)

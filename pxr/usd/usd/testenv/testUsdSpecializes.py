@@ -81,7 +81,7 @@ class TestUsdSpecializes(unittest.TestCase):
                         concrete.GetPath().AppendChild("Child"))
 
             assert concrete.GetSpecializes().RemoveSpecialize(specA.GetPath())
-            assert len(concrete.GetChildren()) == 0
+            self.assertEqual(len(concrete.GetChildren()), 0)
 
     def test_SpecializesPathMapping(self):
         for fmt in allFormats:
