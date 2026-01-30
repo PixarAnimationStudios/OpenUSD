@@ -21,3 +21,6 @@ if (PXR_BUILD_DRACO_PLUGIN)
     add_subdirectory(usdcompress)
 endif()
 
+if (PXR_BUILD_PMC_PLUGIN)
+    add_subdirectory(usdcrush)
+endif()

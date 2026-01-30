@@ -1769,6 +1769,24 @@ EMBREE = Dependency("Embree", InstallEmbree,
                     "include/embree4/rtcore.h")
 
 ############################################################
+############################################################
+# PMC
+
+PMC_URL = "https://gitlab.com/AOMediaVVM/reference-software/aomedia-pmc/-/archive/v15.1/aomedia-pmc-v15.1.zip"
+
+def InstallPmc(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(PMC_URL, context, force)):
+        cmakeOptions = [
+            '-DPMC_LIB_ONLY=TRUE',
+            '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
+        ]
+        cmakeOptions += buildArgs
+        RunCMake(context, force, cmakeOptions)
+
+PMC = Dependency("Pmc", InstallPmc, "include/pmc/pmDecoder.hpp")
+
+
+############################################################
 # USD
 
 def InstallUSD(context, force, buildArgs):
@@ -1950,6 +1968,14 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=ON')
         else:
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
+
+        if context.buildPmc:
+            extraArgs.append('-DPXR_BUILD_PMC_PLUGIN=ON')
+            pmc_root = (context.pmcLocation
+                          if context.pmcLocation else context.instDir)
+            extraArgs.append('-DPMC_ROOT="{}"'.format(pmc_root))
+        else:
+            extraArgs.append('-DPXR_BUILD_PMC_PLUGIN=OFF')
 
         if Windows() and not context.targetWasm:
             # Increase the precompiled header buffer limit.
@@ -2391,6 +2417,16 @@ subgroup.add_argument("--onetbb", dest="build_onetbb", action="store_true",
 subgroup.add_argument("--no-onetbb", dest="build_onetbb", action="store_false",
                       help="Build using TBB (default)")
 
+group = parser.add_argument_group(title="PMC Plugin Options")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--pmc", dest="build_pmc", action="store_true",
+                      default=True,
+                      help="Build PMC plugin for USD")
+subgroup.add_argument("--no-pmc", dest="build_pmc", action="store_false",
+                      help="Do not build PMC plugin for USD (default)")
+group.add_argument("--pmc-location", type=str,
+                   help="Directory where PMC is installed.")
+
 args = parser.parse_args()
 
 class InstallContext:
@@ -2583,6 +2619,11 @@ class InstallContext:
         # Note: wasm build requires requires building oneTBB
         self.buildOneTBB = args.build_onetbb or self.targetWasm
 
+        # - PMC Plugin (AOMedia)
+        self.buildPmc = args.build_pmc
+        self.pmcLocation = (os.path.abspath(args.pmc_location)
+                             if args.pmc_location else None)
+
     def GetBuildArguments(self, dep):
         return self.buildArgs.get(dep.name.lower(), [])
        
@@ -2656,7 +2697,10 @@ if context.buildImaging:
 if context.buildUsdview:
     requiredDependencies += [PYOPENGL, PYSIDE]
 
-# Wasm, Linux and MacOS provide zlib. Skipping it here avoids issues where a host 
+if context.buildPmc:
+    requiredDependencies += [PMC]
+
+# Wasm, Linux and MacOS provide zlib. Skipping it here avoids issues where a host
 # application loads a different version of zlib than the one we build against.
 # Building zlib is the default when a dependency requires it, although OpenUSD
 # itself does not require it. The --no-zlib flag can be passed to the build
@@ -2908,6 +2952,7 @@ summaryMsg += """\
     Tools                       {buildTools}
     Alembic Plugin              {buildAlembic}
     Draco Plugin                {buildDraco}
+    PMC Plugin                  {buildPmc}
 
   Dependencies                  {dependencies}"""
 
@@ -2988,6 +3033,7 @@ summaryMsg = summaryMsg.format(
     buildUsdValidation=("On" if context.buildUsdValidation else "Off"),
     buildAlembic=("On" if context.buildAlembic else "Off"),
     buildDraco=("On" if context.buildDraco else "Off"),
+    buildPmc=("On" if context.buildPmc else "Off"),
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
     omittedSchemaGenScripts=(", ".join(omittedSchemaGenScripts)))
 

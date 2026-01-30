@@ -509,3 +509,16 @@ and Obsolete USD Assets?" in the :doc:`usdfaq` for examples using
    :language: none
    :start-after: ==== usdupdatecrate start ====
    :end-before: ==== usdupdatecrate end ====
+
+********
+usdcrush
+********
+
+:program:`usdcrush` is a command-line utility for reducing the size of USDZ
+files by applying AOMedia PMC compression to meshes.
+
+
+.. literalinclude:: toolset.help
+   :language: none
+   :start-after: ==== usdcrush start ====
+   :end-before: ==== usdcrush end ====

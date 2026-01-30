@@ -325,6 +325,11 @@ if(PXR_ENABLE_OSL_SUPPORT)
     add_definitions(-DPXR_OSL_SUPPORT_ENABLED)
 endif()
 
+if ( PXR_BUILD_PMC_PLUGIN)
+    cmake_policy(SET CMP0144 NEW)
+    find_package(Pmc REQUIRED)
+endif()
+
 # ----------------------------------------------
 
 # Try and find Imath or fallback to OpenEXR

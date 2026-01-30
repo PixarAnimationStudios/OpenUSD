@@ -1,0 +1,110 @@
+//
+// Copyright 2025 Apple
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+#include "pxr/pxr.h"
+
+#include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/pathUtils.h"
+#include "pxr/base/tf/pxrCLI11/CLI11.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/usd/plugin/usdPmc/usdPmcEncoder.hpp"
+
+#include <iomanip>
+#include <iostream>
+#include <vector>
+#include <string>
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_CLI;
+
+// Command line arguments structure
+struct Args {
+    std::string inputFile;   // Input USD file path
+    std::string outputFile;  // Output compressed USD file path
+    bool meshes = true;
+};
+
+// Configure command line interface options
+static void Configure(CLI::App *app, Args &args) {
+    app->add_option(
+        "inputFile", args.inputFile, "The input USDZ file to process.")
+        ->required(true);
+
+    app->add_option(
+        "-o,--out", args.outputFile,
+        "The output USDZ file to write to.")
+        ->required(true);
+
+    app->add_option(
+        "--meshes", args.meshes, 
+        "Controls whether meshes are processed for optimization.")
+        ->default_val(true);
+}
+
+// Quarantine a potentially corrupt file by renaming it
+static void Quarantine(const std::string &filepath) {
+    if (!TfPathExists(filepath)) {
+        return;
+    }
+
+    const std::string newName = filepath + ".quarantine";
+    if (std::rename(filepath.c_str(), newName.c_str()) != 0) {
+        std::cerr << "Failed to rename possibly corrupt output file from "
+                  << filepath << " to " << newName << " : "
+                  << strerror(errno) << "\n";
+        return;
+    }
+
+    std::cerr << "Possibly corrupt output file renamed to " << newName
+              << "\n";
+}
+
+// Encode USD stage using PMC compression
+static int UsdCrush(const Args &args) {
+    if (!args.meshes) {
+        std::cerr << "error: No compression options are enabled, no processing will occur." << std::endl;
+        return 1;
+    }
+
+    // Check that input file has .usdz extension
+    const std::string inputExt = TfStringToLower(TfGetExtension(args.inputFile));
+    if (inputExt != "usdz") {
+        std::cerr << "error: Input file must have .usdz extension, got ."
+                  << inputExt << std::endl;
+        return 1;
+    }
+
+    // Check that output file has .usdz extension
+    const std::string outputExt = TfStringToLower(TfGetExtension(args.outputFile));
+    if (outputExt != "usdz") {
+        std::cerr << "error: Output file must have .usdz extension, got ."
+                  << outputExt << std::endl;
+        return 1;
+    }
+
+    UsdPmcMeshEncoder pmcEncoder;
+    int exitCode = 0;
+
+    if (!pmcEncoder.EncodeStage(args.inputFile, args.outputFile)) {
+        exitCode = 1;
+    }
+    return exitCode;
+}
+
+// Main entry point for usdcrush command line tool
+int
+main(int argc, char const *argv[]) {
+    CLI::App app(
+        "Reduce the size of the source USD", "usdcrush");
+
+    Args args;
+    Configure(&app, args);
+    CLI11_PARSE(app, argc, argv);
+
+    return UsdCrush(args);
+}

@@ -1024,3 +1024,25 @@ optional arguments:
                         the file recorded as an ERROR_CRASH.
 
 ==== usdupdatecrate end ====
+
+==== usdcrush start ====
+Usage: usdcrush [OPTIONS] input.usdz -o output.usdz
+
+Positionals:
+  inputFile TEXT REQUIRED     The input USDZ file to process.
+
+Options:
+  -h,--help                   Print this help message and exit
+  -o,--out TEXT REQUIRED      The output USDZ file to write to.
+  --meshes BOOLEAN            Controls whether meshes are processed for compression.
+                              (default: true)
+
+Description:
+  usdcrush applies AOMedia PMC compression to USD mesh data, significantly
+  reducing file size while maintaining data integrity. 
+
+Examples:
+  Compress a USD file:
+    usdcrush input.usda -o output.usdz
+
+==== usdcrush end ====
