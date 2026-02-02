@@ -35,7 +35,11 @@
     #define VK_EXTERNAL_MEMORY_HANDLE_AUTO 0
 #endif
 
-#include "pxr/imaging/hgiVulkan/vk_mem_alloc.h"
+#define VMA_STATIC_VULKAN_FUNCTIONS 1
+// Allow dynamic fetching too. This is a fallback for anything that doesn't
+// have a prototype.
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
+#include <vk_mem_alloc.h>
 
 // Use the default allocator (nullptr)
 inline VkAllocationCallbacks*

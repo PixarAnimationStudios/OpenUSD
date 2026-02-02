@@ -11,9 +11,11 @@
 #include "pxr/imaging/hgiVulkan/hgi.h"
 #include "pxr/imaging/hgiVulkan/instance.h"
 #include "pxr/imaging/hgiVulkan/pipelineCache.h"
-#include "pxr/imaging/hgiVulkan/vk_mem_alloc.h"
 
 #include "pxr/base/tf/diagnostic.h"
+
+#define VMA_IMPLEMENTATION
+#include <vk_mem_alloc.h>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -179,11 +181,9 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
 
     // Allow certain buffers/images to have dedicated memory allocations to
     // improve performance on some GPUs.
-    bool dedicatedAllocations = false;
     if (IsSupportedExtension(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME)
         && IsSupportedExtension(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME))
     {
-        dedicatedAllocations = true;
         extensions.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
         extensions.push_back(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
     }
@@ -436,9 +436,16 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     allocatorInfo.instance = instance->GetVulkanInstance();
     allocatorInfo.physicalDevice = _vkPhysicalDevice;
     allocatorInfo.device = _vkDevice;
-    if (dedicatedAllocations) {
-        allocatorInfo.flags |=VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT;
-    }
+
+    // Enable to use Vulkan 1.3 at runtime
+    // With Vulkan 1.3, VMA would be able to apply more optimizations.
+    allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+
+    // VMA will fill the other pointers itself.
+    VmaVulkanFunctions vmaVulkanFunctions{};
+    vmaVulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
+    vmaVulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+    allocatorInfo.pVulkanFunctions = &vmaVulkanFunctions;
 
     if (supportsMemExtension) {
         allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;

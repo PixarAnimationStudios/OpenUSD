@@ -98,8 +98,8 @@ HgiVulkanResourceBindings::HgiVulkanResourceBindings(
     uint32_t textureBindIndexStart = 0;
     
     // XXX We need to overspecify the stage usage here so we can match the 
-    // VkDescriptorSetLayout that is created with spirv-reflect for the 
-    // graphics and compute pipelines.
+    // VkDescriptorSetLayout that is created for the graphics and compute
+    // pipelines.
     VkShaderStageFlags const bufferShaderStageFlags =
         HgiVulkanConversions::GetShaderStages(
             HgiShaderStageVertex | HgiShaderStageTessellationControl |

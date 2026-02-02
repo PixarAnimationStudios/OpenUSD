@@ -12,7 +12,8 @@
 #include "pxr/imaging/hgiVulkan/sampler.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
 
-#include <float.h>
+#include <algorithm>
+#include <cfloat>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

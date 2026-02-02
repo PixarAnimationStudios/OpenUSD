@@ -199,22 +199,56 @@ if (PXR_BUILD_IMAGING)
     endif()
     if (PXR_ENABLE_VULKAN_SUPPORT)
         message(STATUS "Enabling experimental feature Vulkan support")
-        if (EXISTS $ENV{VULKAN_SDK})
-            find_package(Vulkan REQUIRED COMPONENTS shaderc_combined)
-            list(APPEND VULKAN_LIBS Vulkan::Vulkan Vulkan::shaderc_combined)
 
-            # Find the OS specific libs we need
-            if (UNIX AND NOT APPLE)
-                find_package(X11 REQUIRED)
-                list(APPEND VULKAN_LIBS ${X11_LIBRARIES})
-            elseif (WIN32)
-                # No extra libs required
-            endif()
+        # We use BUILD_LOCAL_INTERFACE so that the Vulkan dependencies remain
+        # internal only. Except for the headers, which are publicly accessible
+        # from hgiVulkan.
+        if (DEFINED ENV{VULKAN_SDK})
+            message(STATUS "Using Vulkan components from: \"$ENV{VULKAN_SDK}\"")
+            set(PXR_USING_VULKAN_SDK ON) # for pxrConfig.cmake
 
-            add_definitions(-DPXR_VULKAN_SUPPORT_ENABLED)
+            # Not using usd_build.py: find from the Vulkan SDK
+            find_package(Vulkan MODULE REQUIRED COMPONENTS shaderc_combined)
+
+            list(APPEND VULKAN_LIBS Vulkan::Headers)
+            # The SDK uniquely places the "vk_mem_alloc.h" header inside a "vma"
+            # subdirectory. This means we would need to use "#include <vma/vk_mem_alloc.h>"
+            # only for the SDK build. Instead of forcing non-SDK users to create
+            # this path, we'll add a another include directory for the SDK build.
+            # That way "#include <vk_mem_alloc.h>" should work for everyone.
+            target_include_directories(Vulkan::Headers INTERFACE
+                "${Vulkan_INCLUDE_DIR}/vma")
+
+            list(APPEND VULKAN_LIBS $<BUILD_LOCAL_INTERFACE:Vulkan::Vulkan>)
+            list(APPEND VULKAN_LIBS $<BUILD_LOCAL_INTERFACE:Vulkan::shaderc_combined>)
         else()
-            message(FATAL_ERROR "VULKAN_SDK not valid")
+            message(STATUS "Using locally built Vulkan components")
+            set(PXR_USING_VULKAN_SDK OFF) # for pxrConfig.cmake
+
+            # Using usd_build.py: find individual components
+            find_package(VulkanHeaders CONFIG REQUIRED)
+            list(APPEND VULKAN_LIBS Vulkan::Headers)
+
+            find_package(VulkanUtilityLibraries CONFIG REQUIRED)
+            list(APPEND VULKAN_LIBS Vulkan::UtilityHeaders)
+
+            find_package(VulkanLoader CONFIG REQUIRED)
+            list(APPEND VULKAN_LIBS $<BUILD_LOCAL_INTERFACE:Vulkan::Loader>)
+
+            find_package(VulkanMemoryAllocator CONFIG REQUIRED)
+            list(APPEND VULKAN_LIBS GPUOpen::VulkanMemoryAllocator)
+
+            find_package(ShaderC MODULE REQUIRED)
+            list(APPEND VULKAN_LIBS $<BUILD_LOCAL_INTERFACE:shaderc_combined>)
         endif()
+
+        # Find the OS specific libs we need
+        if (UNIX AND NOT APPLE)
+            find_package(X11 REQUIRED)
+            list(APPEND VULKAN_LIBS $<BUILD_LOCAL_INTERFACE:X11::X11>)
+        endif()
+
+        add_definitions(-DPXR_VULKAN_SUPPORT_ENABLED)
     endif()
     # --Opensubdiv
     set(OPENSUBDIV_USE_GPU ${PXR_BUILD_GPU_SUPPORT})

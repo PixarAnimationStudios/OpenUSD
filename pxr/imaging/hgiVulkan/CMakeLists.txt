@@ -41,7 +41,6 @@ pxr_library(hgiVulkan
         shaderProgram
         shaderSection
         texture
-        vk_mem_alloc
 
     PUBLIC_HEADERS
         api.h

@@ -1695,6 +1695,86 @@ def InstallAnimX(context, force, buildArgs):
 
 ANIMX = Dependency("AnimX", InstallAnimX, "include/animx.h")
 
+############################################################
+# Vulkan SDK components
+VULKAN_SDK_VERSION = "1.3.296.0"
+
+VULKAN_HEADERS_URL = f"https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/vulkan-sdk-{VULKAN_SDK_VERSION}.zip"
+def InstallVulkanHeaders(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(VULKAN_HEADERS_URL, context, force, destFileName=f'Vulkan-Headers-{VULKAN_SDK_VERSION}.zip')):
+        extraArgs = buildArgs + [
+            '-DVULKAN_HEADERS_ENABLE_INSTALL=ON',
+            '-DVULKAN_HEADERS_ENABLE_MODULE=OFF',
+            '-DVULKAN_HEADERS_ENABLE_TESTS=OFF',
+        ]
+        RunCMake(context, force, extraArgs)
+
+VULKAN_HEADERS = Dependency("Vulkan-Headers", InstallVulkanHeaders, "include/vulkan/vulkan.h")
+
+VULKAN_UTILITY_LIBRARIES_URL = f"https://github.com/KhronosGroup/Vulkan-Utility-Libraries/archive/refs/tags/vulkan-sdk-{VULKAN_SDK_VERSION}.zip"
+def InstallVulkanUtilityLibraries(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(VULKAN_UTILITY_LIBRARIES_URL, context, force, destFileName=f'Vulkan-Utility-Libraries-{VULKAN_SDK_VERSION}.zip')):
+        extraArgs = buildArgs + [
+            '-DBUILD_TESTS=OFF',
+        ]
+        RunCMake(context, force, extraArgs)
+
+VULKAN_UTILITY_LIBRARIES = Dependency("Vulkan-Utility-Libraries", InstallVulkanUtilityLibraries, "include/vulkan/vk_enum_string_helper.h")
+
+VULKAN_LOADER_URL = f"https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/vulkan-sdk-{VULKAN_SDK_VERSION}.zip"
+def InstallLoaderVulkan(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(VULKAN_LOADER_URL, context, force, destFileName=f'Vulkan-Loader-{VULKAN_SDK_VERSION}.zip')):
+        extraArgs = buildArgs + [
+            f'-DVULKAN_HEADERS_INSTALL_DIR={context.instDir}',
+            '-DBUILD_TESTS=OFF',
+            '-UPDATE_DEPS=ON',
+        ]
+        RunCMake(context, force, extraArgs)
+
+VULKAN_LOADER = Dependency("Vulkan-Loader", InstallLoaderVulkan, "lib/cmake/VulkanLoader/VulkanLoaderConfig.cmake")
+
+# The VulkanMemoryAllocator version should match the one used by VULKAN_SDK_VERSION
+VULKAN_MEMORY_ALLOCATOR_VERSION = "3.2.1"
+VULKAN_MEMORY_ALLOCATOR_URL = f"https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator/archive/refs/tags/v{VULKAN_MEMORY_ALLOCATOR_VERSION}.zip"
+def InstallVulkanMemoryAllocator(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(VULKAN_MEMORY_ALLOCATOR_URL, context, force, destFileName=f'VulkanMemoryAllocator-{VULKAN_MEMORY_ALLOCATOR_VERSION}.zip')):
+        extraArgs = buildArgs + [
+            '-DVMA_ENABLE_INSTALL=ON',
+            '-DVMA_BUILD_SAMPLES=OFF',
+            '-DVMA_BUILD_DOCUMENTATION=OFF',
+        ]
+        RunCMake(context, force, extraArgs)
+
+VULKAN_MEMORY_ALLOCATOR = Dependency("VulkanMemoryAllocator", InstallVulkanMemoryAllocator, "include/vk_mem_alloc.h")
+
+# The shaderc version should match the one used by VULKAN_SDK_VERSION
+SHADERC_VERSION = "2024.3"
+SHADERC_URL = f"https://github.com/google/shaderc/archive/refs/tags/v{SHADERC_VERSION}.zip"
+def InstallShaderC(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(SHADERC_URL, context, force, destFileName=f'shaderc-{SHADERC_VERSION}.zip')):
+        Run(f'"{sys.executable}" utils/git-sync-deps')
+        PatchFile("third_party/CMakeLists.txt", [
+            ('set( SKIP_GLSLANG_INSTALL ${SHADERC_SKIP_INSTALL} )\n',
+            'set( SKIP_GLSLANG_INSTALL ON )\n'),
+            ('set( SKIP_SPIRV_TOOLS_INSTALL ${SHADERC_SKIP_INSTALL} )\n',
+            'set( SKIP_SPIRV_TOOLS_INSTALL ON )\n'),
+            ('set( SKIP_GOOGLETEST_INSTALL ${SHADERC_SKIP_INSTALL} )\n',
+            'set( SKIP_GOOGLETEST_INSTALL ON} )\n'),
+            ('    set(GLSLANG_ENABLE_INSTALL $<NOT:${SKIP_GLSLANG_INSTALL}>)\n',
+            '    set(GLSLANG_ENABLE_INSTALL OFF)\n'),
+        ])
+        extraArgs = buildArgs + [
+            '-DSHADERC_SKIP_INSTALL=OFF',
+            '-DSHADERC_SKIP_TESTS=ON',
+            '-DSHADERC_SKIP_EXAMPLES=ON',
+            '-DSHADERC_SKIP_COPYRIGHT_CHECK=ON',
+            '-DSHADERC_ENABLE_SHARED_CRT=ON',
+            '-DSHADERC_ENABLE_WGSL_OUTPUT=OFF',
+        ]
+        RunCMake(context, force, extraArgs)
+
+SHADERC = Dependency("shaderc", InstallShaderC, "include/shaderc/shaderc.h")
+
 
 ############################################################
 # USD
@@ -2220,6 +2300,14 @@ subgroup.add_argument("--vulkan", dest="enable_vulkan", action="store_true",
                       default=False, help="Enable Vulkan support")
 subgroup.add_argument("--no-vulkan", dest="enable_vulkan", action="store_false",
                       help="Disable Vulkan support (default)")
+group.add_argument("--use-vulkan-sdk", dest="use_vulkan_sdk", type=str,
+                   nargs='?', default=None, const='',
+                   help="Use the Vulkan SDK to build HgiVulkan, "
+                        "otherwise the necessary components will be "
+                        "installed automactically be the script. "
+                        "The argument optionally takes a path to the "
+                        "SDK root, otherwise the VULKAN_SDK environment "
+                        "variable is required to be set.")
 
 group = parser.add_argument_group(title="Imaging Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
@@ -2448,6 +2536,7 @@ class InstallContext:
         self.enableVulkan = (self.buildImaging
                               and args.enable_vulkan
                               and not embedded)
+        self.useVuklanSDK = args.use_vulkan_sdk
 
         # - USD Imaging
         self.buildUsdImaging = (args.build_imaging == USD_IMAGING and 
@@ -2564,6 +2653,24 @@ if context.buildImaging:
 if context.buildUsdview:
     requiredDependencies += [PYOPENGL, PYSIDE]
 
+if context.enableVulkan:
+    if context.useVuklanSDK is None:
+        # We don't want to use the Vulkan SDK, we build our own components.
+        os.environ.pop('VULKAN_SDK', None)
+        requiredDependencies += [VULKAN_HEADERS, VULKAN_UTILITY_LIBRARIES,
+                                 VULKAN_LOADER, VULKAN_MEMORY_ALLOCATOR,
+                                 SHADERC]
+    elif context.useVuklanSDK == '':
+        # We use the Vulkan SDK from the environment
+        if not 'VULKAN_SDK' in os.environ:
+            PrintError("Vulkan support cannot be enabled when VULKAN_SDK "
+                       "environment variable is not set")
+            sys.exit(1)
+        context.useVuklanSDK = os.environ['VULKAN_SDK']
+    else:
+        # We use the Vulkan SDK from the command line
+        os.environ['VULKAN_SDK'] = context.useVuklanSDK
+
 if context.buildAnimXTests:
     requiredDependencies += [ANIMX]
 
@@ -2588,12 +2695,6 @@ if context.buildDraco and context.buildMonolithic and Windows():
 # to oneTBB for them.
 if Windows() and GetWindowsHostArch() == "ARM64" and not context.buildOneTBB:
     PrintError("Windows ARM64 builds require oneTBB. Enable via the --onetbb argument")
-    sys.exit(1)
-
-# Error out if user enables Vulkan support but env var VULKAN_SDK is not set.
-if context.enableVulkan and not 'VULKAN_SDK' in os.environ:
-    PrintError("Vulkan support cannot be enabled when VULKAN_SDK environment "
-               "variable is not set")
     sys.exit(1)
 
 if context.targetWasm:
@@ -2817,6 +2918,14 @@ summaryMsg += """\
       Embree support:           {buildEmbree}
       PRMan support:            {buildPrman}
       Vulkan support:           {enableVulkan}
+"""
+
+if context.enableVulkan and context.useVuklanSDK:
+    summaryMsg += """\
+        Vulkan SDK:             {useVuklanSDK}
+"""
+
+summaryMsg += """\
     UsdImaging                  {buildUsdImaging}
       usdview:                  {buildUsdview}
     MaterialX support           {buildMaterialX}
@@ -2907,6 +3016,7 @@ summaryMsg = summaryMsg.format(
     buildExamples=("On" if context.buildExamples else "Off"),
     buildTutorials=("On" if context.buildTutorials else "Off"),
     enableVulkan=("On" if context.enableVulkan else "Off"),
+    useVuklanSDK = context.useVuklanSDK,
     buildTools=("On" if context.buildTools else "Off"),
     buildUsdValidation=("On" if context.buildUsdValidation else "Off"),
     buildAlembic=("On" if context.buildAlembic else "Off"),
