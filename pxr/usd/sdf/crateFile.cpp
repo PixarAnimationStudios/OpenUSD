@@ -1145,6 +1145,13 @@ public:
             // separate because the two modifications to 'src' must be correctly
             // sequenced.
             auto key = Read<typename Map::key_type>();
+            if constexpr (SafetyOverSpeed) {
+                if map.find(key) != map.end() {
+                    TF_RUNTIME_ERROR("Corrupt asset <%s>: Duplicate map key %s",
+                                     crate->GetAssetPath().c_str(),
+                                     key.GetText().c_str());
+                }
+            }
             map[key] = Read<typename Map::mapped_type>();
         }
         return map;
