@@ -106,6 +106,7 @@ pxr_library(usdImaging
         materialBindingsSchema
         materialBindingsResolvingSceneIndex
         meshAdapter
+        motionAPIAdapter
         niPrototypePropagatingSceneIndex
         nurbsCurvesAdapter
         nurbsPatchAdapter
