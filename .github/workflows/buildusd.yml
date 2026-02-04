@@ -220,7 +220,10 @@ jobs:
       - name: Build USD
         run: |
           source ${{ github.workspace }}/emsdk/emsdk_env.sh
-          python3 build_scripts/build_usd.py --build-target wasm64 --build USDgen/build --src USDgen/src USDinst -v
+          python3 build_scripts/build_usd.py -v --build-target wasm64 \
+            --build USDgen/build --src USDgen/src \
+            --tests \
+            USDinst
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -233,3 +236,7 @@ jobs:
         with:
           name: usd-wasm64
           path: USDinst
+      - name: Test USD
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          ctest --output-on-failure -j4 -C Release
