@@ -220,10 +220,9 @@ jobs:
       - name: Build USD
         run: |
           source ${{ github.workspace }}/emsdk/emsdk_env.sh
-          python3 build_scripts/build_usd.py -v --build-target wasm64 \
+          python3 build_scripts/build_usd.py -v --build-target wasm64 USDinst \
             --build USDgen/build --src USDgen/src \
-            --build-args USD,"-DPXR_HEADLESS_TEST_MODE=ON -DPXR_BUILD_TESTS=ON" \
-            USDinst
+            --build-args USD,"-DPXR_HEADLESS_TEST_MODE=ON -DPXR_BUILD_TESTS=ON"
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
