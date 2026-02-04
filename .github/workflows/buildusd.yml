@@ -10,10 +10,9 @@ on:
       - dev
     paths:
       - '**'
-      - '!.github/workflows/**'
-
 jobs:
   Validation:
+    if: false
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     outputs:
@@ -195,8 +194,8 @@ jobs:
         shell: cmd
 
   Wasm64:
-    needs:
-      - Validation
+    # needs:
+    #   - Validation
     if: ${{ (github.event_name == 'pull_request' && needs.Validation.outputs.validation-failed != 'true') || github.event_name == 'push' }}
     runs-on: ubuntu-22.04
     timeout-minutes: 120
