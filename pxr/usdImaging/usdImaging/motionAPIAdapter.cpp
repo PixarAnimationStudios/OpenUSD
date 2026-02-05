@@ -29,8 +29,12 @@ const UsdImagingDataSourceCustomPrimvars::Mappings &
 _GetMotionPrimvarMappings()
 {
     static const UsdImagingDataSourceCustomPrimvars::Mappings mappings = {
-        {HdTokens->blurScale, UsdGeomTokens->motionBlurScale},
-        {HdTokens->nonlinearSampleCount, UsdGeomTokens->motionNonlinearSampleCount},
+        { HdTokens->blurScale,
+          UsdGeomTokens->motionBlurScale,
+          HdPrimvarSchemaTokens->constant },
+        { HdTokens->nonlinearSampleCount,
+          UsdGeomTokens->motionNonlinearSampleCount,
+          HdPrimvarSchemaTokens->constant },
     };
     return mappings;
 }
