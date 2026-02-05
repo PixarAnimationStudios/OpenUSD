@@ -155,7 +155,7 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
         // Get specifier.
         const SdfSpecifier specifier = GetSpecifier();
 
-        bool isClassSpecifier = specifier == SdfSpecifierClass;
+        bool isClassSpecifier = SdfIsAbstractSpecifier(specifier);
         // This prim is abstract if its parent is or if it's a class.
         _flags[Usd_PrimAbstractFlag] =
             parent->IsAbstract() || isClassSpecifier;

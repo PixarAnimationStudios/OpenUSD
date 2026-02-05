@@ -112,6 +112,14 @@ SdfIsDefiningSpecifier(SdfSpecifier spec)
     return (spec != SdfSpecifierOver);
 }
 
+/// Returns true if the specifier is an abstract specifier.
+inline
+bool
+SdfIsAbstractSpecifier(SdfSpecifier spec)
+{
+    return (spec == SdfSpecifierClass);
+}
+
 /// An enum that defines permission levels.
 ///
 /// Permissions control which layers may refer to or express
