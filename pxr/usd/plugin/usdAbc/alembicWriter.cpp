@@ -1996,6 +1996,40 @@ _SetDoubleMetadata(
     }
 }
 
+/// Return the array extent, using either the USD 'arraySizeConstraint'
+/// metadata (the preferred choice) or the 'elementSize' metadata for primvars.
+static
+bool
+_GetArrayExtent(
+    const _PrimWriterContext& context,
+    const TfToken& usdName,
+    int *outArrayExtent)
+{
+    VtValue value = context.GetPropertyField(
+        usdName, SdfFieldKeys->ArraySizeConstraint);
+    if (value.IsHolding<int64_t>()) {
+        // A value less than 0 indicates the array has a tuple size.
+        const int64_t sizeConstraint = value.UncheckedGet<int64_t>();
+        if (sizeConstraint < 0) {
+            *outArrayExtent = -sizeConstraint;
+            return true;
+        }
+
+        return false;
+    }
+
+    value = context.GetPropertyField(usdName, UsdGeomTokens->elementSize);
+    if (value.IsHolding<int>()) {
+        const int elementSize = value.UncheckedGet<int>();
+        if (elementSize > 1) {
+            *outArrayExtent = elementSize;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static
 MetaData
 _GetPropertyMetadata(
@@ -2037,13 +2071,9 @@ _GetPropertyMetadata(
         metadata.set("interpretation", interpretation);
     }
 
-    // The "arrayExtent" metadata is equivalent to USD's elementSize.
-    value = context.GetPropertyField(usdName, UsdGeomTokens->elementSize);
-    if (value.IsHolding<int>()) {
-        const int elementSize = value.UncheckedGet<int>();
-        if (elementSize > 1) {
-            metadata.set("arrayExtent", TfIntToString(elementSize));
-        }
+    int arrayExtent = 0;
+    if (_GetArrayExtent(context, usdName, &arrayExtent)) {
+        metadata.set("arrayExtent", TfIntToString(arrayExtent));
     }
 
     // Other Sdf metadata.

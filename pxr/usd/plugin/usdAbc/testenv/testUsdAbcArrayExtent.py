@@ -33,10 +33,15 @@ class TestUsdAbcArrayExtent(unittest.TestCase):
         ]
 
         pvApi = UsdGeom.PrimvarsAPI(prim)
-        for name, authored, size in primvarsToTest:
+        for name, authored, tupleSize in primvarsToTest:
             pv = pvApi.GetPrimvar(name)
             self.assertEqual(pv.HasAuthoredElementSize(), authored)
-            self.assertEqual(pv.GetElementSize(), size)
+            self.assertEqual(pv.GetElementSize(), tupleSize)
+
+            attr = pv.GetAttr()
+            sizeConstraint = -tupleSize if authored else 0
+            self.assertEqual(attr.HasAuthoredArraySizeConstraint(), authored)
+            self.assertEqual(attr.GetArraySizeConstraint(), sizeConstraint)
 
 
 if __name__ == "__main__":

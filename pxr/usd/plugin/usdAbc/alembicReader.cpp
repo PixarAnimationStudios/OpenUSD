@@ -2283,13 +2283,18 @@ _PrimReaderContext::_GetPropertyMetadata(
         }
     }
 
-    // The "arrayExtent" metadata is equivalent to USD's elementSize.
+    // The "arrayExtent" metadata is equivalent to USD's 'arraySizeConstraint'
+    // (the preferred choice), or 'elementSize' for primvars.
     std::string arrayExtentValue = alembicMetadata.get("arrayExtent");
     if (!arrayExtentValue.empty()) {
         size_t end;
         const int arrayExtent = std::stoi(arrayExtentValue, &end);
         if (end == arrayExtentValue.size() && arrayExtent > 1) {
             usdMetadata[UsdGeomTokens->elementSize] = arrayExtent;
+
+            // A value less than 0 indicates the array's tuple length.
+            int64_t sizeConstraint = -arrayExtent;
+            usdMetadata[SdfFieldKeys->ArraySizeConstraint] = sizeConstraint;
         }
     }
 
@@ -4338,4 +4343,3 @@ UsdAbc_AlembicDataReader::ListTimeSamplesForPath(
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
