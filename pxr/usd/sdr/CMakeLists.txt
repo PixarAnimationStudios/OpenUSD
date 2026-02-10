@@ -11,6 +11,7 @@ pxr_library(sdr
         work
         ar
         sdf
+        usd
 
     PUBLIC_HEADERS
         api.h
