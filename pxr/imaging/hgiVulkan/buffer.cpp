@@ -19,21 +19,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiVulkanBuffer::HgiVulkanBuffer(
     HgiVulkan* hgi,
-    HgiVulkanDevice* device,
     HgiBufferDesc const& desc)
     : HgiBuffer(desc)
-    , _device(device)
+    , _hgi(hgi)
     , _vkBuffer(nullptr)
     , _vmaAllocation(nullptr)
     , _inflightBits(0)
     , _cpuStagingAddress(nullptr)
-    , _isUma(false)
+    , _mappable(false)
 {
     if (_descriptor.byteSize == 0) {
         TF_CODING_ERROR("The size of buffer [%p] is zero.", this);
         return;
     }
-
+    HgiVulkanDevice* device = hgi->GetPrimaryDevice();
     VmaAllocator vma = device->GetVulkanMemoryAllocator();
 
     VkBufferCreateInfo bi = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
@@ -45,47 +44,63 @@ HgiVulkanBuffer::HgiVulkanBuffer(
 
     // Create buffer with memory allocated and bound.
     // Equivalent to: vkCreateBuffer, vkAllocateMemory, vkBindBufferMemory
+    const bool isUploadBuffer = _descriptor.usage & HgiBufferUsageUpload;
     VmaAllocationCreateInfo ai = {};
-    ai.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT; // GPU efficient
+    if (isUploadBuffer) {
+        ai.usage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST;
+        ai.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+        ai.preferredFlags = VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    } else {
+        ai.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+        if (_descriptor.initialData) {
+            // This flag combination allows us to avoid staging copies on device
+            // memory if the driver signals that this wouldn't hurt performance.
+            ai.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT
+                | VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT;
+        }
+    }
 
-    if (hgi->GetCapabilities()->
-        IsSet(HgiDeviceCapabilitiesBitsUnifiedMemory)) {
-        _isUma = true;
+    const bool isUMA = hgi->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsUnifiedMemory);
+    if (isUMA) {
+        ai.flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
         ai.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     }
+
+    _mappable = isUploadBuffer | isUMA;
 
     HGIVULKAN_VERIFY_VK_RESULT(
         vmaCreateBuffer(vma, &bi, &ai, &_vkBuffer, &_vmaAllocation, 0));
 
     // Debug label
     if (!_descriptor.debugName.empty()) {
-        std::string debugLabel = "Buffer " + _descriptor.debugName;
         HgiVulkanSetDebugName(
             device,
             (uint64_t)_vkBuffer,
             VK_OBJECT_TYPE_BUFFER,
-            debugLabel.c_str());
+            _descriptor.debugName.c_str());
     }
 
     if (_descriptor.initialData) {
-        if (_isUma) {
-            const HgiVulkanMappedBufferUniquePointer umaPointer =
-                GetUmaPointer();
-            memcpy(umaPointer.get(), _descriptor.initialData,
-                _descriptor.byteSize);
+        VkMemoryPropertyFlags allocatedFlags;
+        vmaGetAllocationMemoryProperties(vma, _vmaAllocation, &allocatedFlags);
+        if (allocatedFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
+            HGIVULKAN_VERIFY_VK_RESULT(
+                vmaCopyMemoryToAllocation(vma, _descriptor.initialData,
+                    _vmaAllocation, 0, _descriptor.byteSize));
         } else {
             // Use a 'staging buffer' to schedule uploading the 'initialData' to
             // the device-local GPU buffer.
             HgiBufferDesc stagingDesc = _descriptor;
+            stagingDesc.usage = HgiBufferUsageUpload;
             if (!stagingDesc.debugName.empty()) {
                 stagingDesc.debugName =
                     "Staging Buffer for " + stagingDesc.debugName;
             }
 
-            std::unique_ptr<HgiVulkanBuffer> stagingBuffer =
-                CreateStagingBuffer(_device, stagingDesc);
+            auto stagingBuffer =  CreateStagingBuffer(_hgi, stagingDesc);
             VkBuffer vkStagingBuf = stagingBuffer->GetVulkanBuffer();
 
             HgiVulkanCommandQueue* queue = device->GetCommandQueue();
@@ -129,29 +144,13 @@ HgiVulkanBuffer::HgiVulkanBuffer(
     _descriptor.initialData = nullptr;
 }
 
-HgiVulkanBuffer::HgiVulkanBuffer(
-    HgiVulkanDevice* device,
-    VkBuffer vkBuffer,
-    VmaAllocation vmaAllocation,
-    HgiBufferDesc const& desc)
-    : HgiBuffer(desc)
-    , _device(device)
-    , _vkBuffer(vkBuffer)
-    , _vmaAllocation(vmaAllocation)
-    , _inflightBits(0)
-    , _stagingBuffer(nullptr)
-    , _cpuStagingAddress(nullptr)
-    , _isUma(false)
-{
-}
-
 HgiVulkanBuffer::~HgiVulkanBuffer()
 {
     _cpuStagingAddress = nullptr;
     _stagingBuffer = nullptr;
 
     vmaDestroyBuffer(
-        _device->GetVulkanMemoryAllocator(),
+        _hgi->GetPrimaryDevice()->GetVulkanMemoryAllocator(),
         _vkBuffer,
         _vmaAllocation);
 }
@@ -172,26 +171,18 @@ void*
 HgiVulkanBuffer::GetCPUStagingAddress()
 {
     if (!_cpuStagingAddress) {
-        if (_isUma) {
-        _cpuStagingAddress = GetUmaPointer();
+        if (_mappable) {
+            _cpuStagingAddress = Map();
         } else {
             HgiBufferDesc stagingDesc = _descriptor;
+            stagingDesc.usage = HgiBufferUsageUpload;
+            stagingDesc.debugName = "Staging Buffer for: " + 
+                (stagingDesc.debugName.empty() ?
+                    "Unknown" : stagingDesc.debugName);
             stagingDesc.initialData = nullptr;
-            if (!stagingDesc.debugName.empty()) {
-                stagingDesc.debugName =
-                    "Staging Buffer for " + stagingDesc.debugName;
-            }
-
-            _stagingBuffer = CreateStagingBuffer(_device, stagingDesc);
-
-            VmaAllocator vma = _device->GetVulkanMemoryAllocator();
-            VmaAllocation allocation =
-                _stagingBuffer->GetVulkanMemoryAllocation();
-            void* memory = nullptr;
-            HGIVULKAN_VERIFY_VK_RESULT(vmaMapMemory(vma, allocation, &memory));
-
-            _cpuStagingAddress = HgiVulkanMappedBufferUniquePointer{memory,
-                {vma, allocation}};
+            
+            _stagingBuffer = CreateStagingBuffer(_hgi, stagingDesc);
+            _cpuStagingAddress = _stagingBuffer->Map();
         }
     }
     return _cpuStagingAddress.get();
@@ -224,7 +215,7 @@ HgiVulkanBuffer::GetStagingBuffer() const
 HgiVulkanDevice*
 HgiVulkanBuffer::GetDevice() const
 {
-    return _device;
+    return _hgi->GetPrimaryDevice();
 }
 
 uint64_t &
@@ -234,10 +225,10 @@ HgiVulkanBuffer::GetInflightBits()
 }
 
 HgiVulkanMappedBufferUniquePointer
-HgiVulkanBuffer::GetUmaPointer() const
+HgiVulkanBuffer::Map() const
 {
-    TF_VERIFY(_isUma);
-    VmaAllocator vma = _device->GetVulkanMemoryAllocator();
+    TF_VERIFY(_mappable);
+    VmaAllocator vma = _hgi->GetPrimaryDevice()->GetVulkanMemoryAllocator();
     void* memory = nullptr;
     HGIVULKAN_VERIFY_VK_RESULT(vmaMapMemory(vma, _vmaAllocation, &memory));
     return HgiVulkanMappedBufferUniquePointer(memory, {vma, _vmaAllocation});
@@ -245,41 +236,12 @@ HgiVulkanBuffer::GetUmaPointer() const
 
 std::unique_ptr<HgiVulkanBuffer>
 HgiVulkanBuffer::CreateStagingBuffer(
-    HgiVulkanDevice* device,
+    HgiVulkan* hgi,
     HgiBufferDesc const& desc)
 {
-    VmaAllocator vma = device->GetVulkanMemoryAllocator();
-
-    VkBufferCreateInfo bi = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-    bi.size = desc.byteSize;
-    bi.usage = HgiVulkanConversions::GetBufferUsage(desc.usage);
-    bi.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    bi.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // gfx queue only
-
-    VmaAllocationCreateInfo ai = {};
-    ai.requiredFlags =
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | // CPU access (mem map)
-        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT; // Dont have to manually flush
-
-    VkBuffer buffer = 0;
-    VmaAllocation alloc = 0;
-    HGIVULKAN_VERIFY_VK_RESULT(
-        vmaCreateBuffer(vma, &bi, &ai, &buffer, &alloc, 0)
-    );
-
-    // Map the (HOST_VISIBLE) buffer and upload data
-    if (desc.initialData) {
-        void* map;
-        HGIVULKAN_VERIFY_VK_RESULT(
-            vmaMapMemory(vma, alloc, &map)
-        );
-        memcpy(map, desc.initialData, desc.byteSize);
-        vmaUnmapMemory(vma, alloc);
-    }
-
+    TF_VERIFY(desc.usage & HgiBufferUsageUpload);
     return std::unique_ptr<HgiVulkanBuffer>(
-        new HgiVulkanBuffer{device, buffer, alloc, desc});
+        new HgiVulkanBuffer(hgi, desc));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

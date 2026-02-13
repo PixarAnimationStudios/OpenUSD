@@ -100,6 +100,12 @@ public:
     ///                                  ambient occlusion? 0 = disable.
     void SetAmbientOcclusionSamples(int ambientOcclusionSamples);
 
+    /// Sets whether dome light direct camera visibility should be enabled.
+    ///   \param domeLightCameraVisibility Whether dome lights should be
+    ///                                    directly visible; i.e. contribute
+    ///                                    color to camera ray misses.
+    void SetDomeLightCameraVisibility(bool domeLightCameraVisibility);
+
     /// Sets whether to use scene colors while rendering.
     ///   \param enableSceneColors Whether drawing should sample color, or draw
     ///                            everything as white.
@@ -237,6 +243,8 @@ private:
     int _ambientOcclusionSamples;
     // Should we enable scene colors?
     bool _enableSceneColors;
+    // Should we sample dome lights on ray miss?
+    bool _domeLightCameraVisibility;
     // If other than -1, use this to seed the random number generator with.
     int _randomNumberSeed;
     // Should we enable direct lighting from the scene?
@@ -248,6 +256,7 @@ private:
     // Lights
     mutable WriteMutex _lightsWriteMutex; // protects the 2 below
     std::map<SdfPath, HdEmbree_Light*> _lightMap;
+    std::vector<HdEmbree_Light*> _domes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

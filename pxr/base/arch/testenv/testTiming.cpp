@@ -8,7 +8,9 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/timing.h"
 #include "pxr/base/arch/error.h"
+
 #include <chrono>
+#include <iostream>
 #include <thread>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -20,7 +22,7 @@ int main()
     ARCH_AXIOM(ArchGetNanosecondsPerTick() < 1e9);
     // Verify conversions for many tick counts.
     for (size_t ticks = 0ul; ticks != 1ul << 24u; ++ticks) {
-        ARCH_AXIOM( (uint64_t) ArchTicksToNanoseconds(ticks) == 
+        ARCH_AXIOM( (uint64_t) ArchTicksToNanoseconds(ticks) ==
             uint64_t(static_cast<double>(ticks)*ArchGetNanosecondsPerTick() + .5));
 
         double nanos = double(ArchTicksToNanoseconds(ticks)) / 1e9;
@@ -29,11 +31,27 @@ int main()
         ARCH_AXIOM( (nanos - epsilon <= secs) && (nanos + epsilon >= secs) );
     }
 
+    // Print some useful info for human verification if anything seems strange
+    std::cout << "Nanoseconds per tick = "
+              << ArchGetNanosecondsPerTick()
+              << " ns\n"
+              << "Quantum (min measurable delta) = "
+              << ArchTicksToNanoseconds(ArchGetTickQuantum())
+              << " ns\n"
+              << "Interval timer overhead = "
+              << ArchTicksToNanoseconds(ArchGetIntervalTimerTickOverhead())
+              << " ns\n"
+              << std::endl;   // Yes, extra blank line
+
     // Compute some time delta.
     const auto t1 = ArchGetTickTime();
     std::this_thread::sleep_for(std::chrono::milliseconds(1500));
     const auto t2 = ArchGetTickTime();
     const auto delta = t2 - t1;
+    std::cout << "Sleep for 1500ms took "
+              << ArchTicksToSeconds(delta)
+              << " s"
+              << std::endl;
 
     // Verify the delta is reasonable.  We allow a lot of leeway on the top
     // end in case of heavy machine load.

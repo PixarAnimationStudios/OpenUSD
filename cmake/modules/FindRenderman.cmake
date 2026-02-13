@@ -11,6 +11,7 @@
 #   RENDERMAN_LIBRARY     - path to renderman library files
 #   RENDERMAN_EXECUTABLE  - path the prman executable
 #   RENDERMAN_BINARY_DIR  - path to the renderman binary directory
+#   RENDERMAN_OSL_INCLUDE_DIR - path to the renderman OSL header directory
 #       RENDERMAN_FOUND   - true if renderman was found
 #   RENDERMAN_VERSION_MAJOR - major version of renderman found
 #   RENDERMAN_VERSION_MINOR - minor version of renderman found
@@ -103,6 +104,16 @@ find_path(RENDERMAN_INCLUDE_DIR
         "Renderman headers path"
 )
 
+find_path(RENDERMAN_OSL_INCLUDE_DIR
+    stdosl.h
+    HINTS
+        "${RENDERMAN_LOCATION}/lib/osl/include"
+        "$ENV{RENDERMAN_LOCATION}/lib/osl/include"
+        "$ENV{RMANTREE}/lib/osl/include"
+    DOC
+        "Renderman OSL headers path"
+)
+
 find_program(RENDERMAN_EXECUTABLE
     prman
     HINTS
@@ -142,6 +153,7 @@ list(APPEND required_vars "RENDERMAN_VERSION")
 list(APPEND required_vars "PRMAN_LIBRARY")
 list(APPEND required_vars "PRMAN_STATS_LIBRARY")
 list(APPEND required_vars "PXRCORE_LIBRARY")
+list(APPEND required_vars "RENDERMAN_OSL_INCLUDE_DIR")
 
 find_package_handle_standard_args(Renderman
   REQUIRED_VARS

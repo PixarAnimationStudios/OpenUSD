@@ -125,8 +125,10 @@
 //           requires a second parameter for the parameterValues data source.
 // 88 -> 89: HdRenderSettingsSchema namespacedSettings is a
 //           HdSampledDataSourceContainerSchema.
+// 89 -> 90: Added HdRendererPlugin::GetSceneIndexInputArgs and
+//           HdSceneIndexInputArgsSchema.
 
-#define HD_API_VERSION 89
+#define HD_API_VERSION 90
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

@@ -24,7 +24,9 @@ public:
         const std::string& resolvedPackagePath,
         const std::string& packagedPath) override
     {
-        TF_AXIOM(TfStringEndsWith(resolvedPackagePath, ".package"));
+        TF_AXIOM(
+            TfStringToLowerAscii(TfStringGetSuffix(resolvedPackagePath)) ==
+            "package");
         return packagedPath;
     }
 

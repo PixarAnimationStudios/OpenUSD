@@ -11,6 +11,19 @@
     ),        
 
     #--------------------------------------------------------------------------
+    dict(
+        SCHEMA_NAME = 'UsdSceneIndexInputArgs',
+        SCHEMA_TOKEN = 'usdSceneIndex',
+        ADD_DEFAULT_LOCATOR = True,
+        MEMBERS = [
+            ('stage', 'UsdStageRefPtrDataSource', {}),
+            ('includeUnloadedPrims', T_BOOL, {}),
+            ('displayUnloadedPrimsWithBounds', T_BOOL, {}),
+            ('addDrawModeSceneIndex', T_BOOL, {}),
+        ],
+    ),
+    
+    #--------------------------------------------------------------------------
     # usdImaging/usdPrimInfo
     dict(
         SCHEMA_NAME = 'UsdPrimInfo',
@@ -28,7 +41,6 @@
             ('niPrototypePath', T_PATH, dict(ADD_LOCATOR=True)),
             ('isNiPrototype', T_BOOL, {}),
             ('piPropagatedPrototypes', T_CONTAINER, {}),
-
         ],
         STATIC_TOKEN_DATASOURCE_BUILDERS = [
             ('specifier', ['def', 'over', '(class_, "class")']),
@@ -78,6 +90,29 @@
                 'cross',
                 'box',
                 'fromTexture']),
+        ],
+    ),
+
+    #--------------------------------------------------------------------------
+    # usdImaging/geomXformVectors - corresponds to the transform decomposition
+    # returned by UsdGeomXformCommonAPI::GetXformVectorsByAccumulation().
+    dict(
+        SCHEMA_NAME = 'GeomXformVectors',
+        SCHEMA_TOKEN = 'geomXformVectors',
+        DOC = '''The {{ SCHEMA_CLASS_NAME }} exposes the result of
+        UsdGeomXformCommonAPI::GetXformVectorsByAccumulation().
+        This is a decomposition of the USD transformation operations that
+        includes more information than is available in the xform matrix
+        value, such as the pivot offset.  This schema is intended for
+        read-only access to data stored in USD; it is otherwise inert and
+        does not participate in or imply any subsequent computations.''',
+        ADD_DEFAULT_LOCATOR = True,
+        MEMBERS = [
+            ('translation', T_VEC3D, {}),
+            ('rotation', T_VEC3F, {}),
+            ('rotationOrder', T_TOKEN, {}),
+            ('scale', T_VEC3F, {}),
+            ('pivot', T_VEC3F, {}),
         ],
     ),
 

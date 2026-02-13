@@ -39,6 +39,9 @@ pxr_library(usdSkelImaging
         tokens
         utils
         xformResolver
+    
+    PRIVATE_CLASSES
+        dataSourcePrimvar
 
     PUBLIC_HEADERS
         api.h
@@ -63,10 +66,20 @@ pxr_build_test(testUsdSkelImagingChanges
         testenv/testUsdSkelImagingChanges.cpp
 )
 
-# Install (copy test assets and baselines)
-pxr_install_test_dir(
-    SRC testenv/testUsdSkelImagingChanges
-    DEST testUsdSkelImagingChanges
+pxr_build_test(testUsdSkelImagingComputations
+    LIBRARIES
+        usdImaging
+        usdShade
+        usdGeom
+        usdSkel
+        usd
+        sdf
+        hd
+        tf
+        gf
+        arch
+    CPPFILES
+        testenv/testUsdSkelImagingComputations.cpp
 )
 
 # Register tests only when they are supported.
@@ -74,7 +87,17 @@ if (BUILD_SHARED_LIBS)
     pxr_register_test(testUsdSkelImagingChanges
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelImagingChanges"
         EXPECTED_RETURN_CODE 0
+        TESTENV testenv/testUsdSkelImagingChanges
         ENV
-        TF_FATAL_VERIFY=0
+            TF_FATAL_VERIFY=0
+    )
+
+    pxr_register_test(testUsdSkelImagingComputations
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelImagingComputations"
+        EXPECTED_RETURN_CODE 0
+        TESTENV testenv/testUsdSkelImagingComputations
+        ENV
+            TF_FATAL_VERIFY=0
+            USDSKELIMAGING_ENABLE_NORMAL_COMPUTATIONS=1
     )
 endif()

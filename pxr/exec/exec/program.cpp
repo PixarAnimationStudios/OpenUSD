@@ -6,6 +6,8 @@
 //
 #include "pxr/exec/exec/program.h"
 
+#include "pxr/exec/exec/compilationState.h"
+#include "pxr/exec/exec/interruptState.h"
 #include "pxr/exec/exec/invalidationResult.h"
 #include "pxr/exec/exec/timeChangeInvalidationResult.h"
 
@@ -118,6 +120,35 @@ Exec_Program::~Exec_Program()
 }
 
 void
+Exec_Program::EndCompilation(Exec_CompilationState &compilationState)
+{
+    TRACE_FUNCTION();
+
+    Exec_InterruptState &interruptState = compilationState.GetInterruptState();
+    if (!interruptState.WasInterrupted()) {
+        // All inputs requiring recompilation have completed.
+        _inputsRequiringRecompilation.clear();
+        return;
+    }
+
+    // The latest round of compilation was interrupted. This will be cleared
+    // in the next call to BeginCompilation.
+    _wasInterrupted = true;
+
+    // The old set of inputs requiring recompilation is out of date. The
+    // interrupt state holds all inputs that never completed recompilation.
+    // These will be recompiled in the next round.
+    _inputsRequiringRecompilation.clear();
+    interruptState.GetInputsRequiringRecompilation(
+        &_inputsRequiringRecompilation);
+
+    // In addition to nodes potentially isolated by uncompilation, we also have
+    // nodes left potentially isolated because their downstream nodes were never
+    // compiled.
+    interruptState.GetPotentiallyIsolatedNodes(&_potentiallyIsolatedNodes);
+}
+
+void
 Exec_Program::Connect(
     const EsfJournal &journal,
     const TfSpan<const VdfMaskedOutput> outputs,
@@ -194,8 +225,7 @@ Exec_Program::InvalidateDisconnectedInputs()
         invalidationRequest, /* updateIncrementally = */ false);
 
     return Exec_DisconnectedInputsInvalidationResult{
-        std::move(invalidationRequest),
-        leafNodes,
+        { std::move(invalidationRequest), leafNodes },
         std::move(disconnectedLeafNodes)};
 }
 
@@ -280,8 +310,7 @@ Exec_Program::InvalidateAttributeAuthoredValues(
         leafInvalidationRequest, /* updateIncrementally */ false);
 
     return Exec_AttributeValueInvalidationResult{
-        std::move(leafInvalidationRequest),
-        leafNodes,
+        { std::move(leafInvalidationRequest), leafNodes },
         invalidAttributes,
         std::move(compiledProperties),
         totalInvalidInterval,

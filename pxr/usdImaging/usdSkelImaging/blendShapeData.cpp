@@ -417,13 +417,13 @@ UsdSkelImagingComputeBlendShapeData(
 }
 
 // Re-implements UsdSkelBlendShapeQuery::ComputeSubShapeWeights.
-VtArray<float>
+VtFloatArray
 UsdSkelImagingComputeBlendShapeWeights(
     const UsdSkelImagingBlendShapeData &data,
-    const VtArray<TfToken> &blendShapeNames,
-    const VtArray<float> &blendShapeWeights)
+    const TfSpan<const TfToken> &blendShapeNames,
+    const TfSpan<const float> &blendShapeWeights)
 {
-    VtArray<float> result(data.numSubShapes, 0.0f);
+    VtFloatArray result(data.numSubShapes, 0.0f);
 
     if (blendShapeNames.size() != blendShapeWeights.size()) {
         TF_WARN(

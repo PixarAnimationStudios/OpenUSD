@@ -125,8 +125,10 @@ void wrapUsdContrivedTokens()
     _ADD_TOKEN(cls, temp);
     _ADD_TOKEN(cls, test);
     _ADD_TOKEN(cls, test_MultipleApplyTemplate_);
+    _ADD_TOKEN(cls, test_MultipleApplyTemplate_TestAttrMultiple);
     _ADD_TOKEN(cls, test_MultipleApplyTemplate_TestAttrOne);
     _ADD_TOKEN(cls, test_MultipleApplyTemplate_TestAttrTwo);
+    _ADD_TOKEN(cls, test_MultipleApplyTemplate_TestRelInternalMultiple);
     _ADD_TOKEN(cls, testAttrDuplicate);
     _ADD_TOKEN(cls, testAttrExternal);
     _ADD_TOKEN(cls, testAttrInternal);
@@ -184,5 +186,6 @@ void wrapUsdContrivedTokens()
     _ADD_TOKEN(cls, TestReflectedAPIBase);
     _ADD_TOKEN(cls, TestReflectedExternalAPI);
     _ADD_TOKEN(cls, TestReflectedInternalAPI);
+    _ADD_TOKEN(cls, TestReflectedMultipleAPI);
     _ADD_TOKEN(cls, UsdContrivedNoAlias);
 }

@@ -78,6 +78,43 @@ For other versions of Visual Studio, use the following cmake arguments:
 For more information on Visual Studio generators for cmake, see 
 [Visual Studio Generators](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#visual-studio-generators).
 
+
+#### WebAssembly
+
+To produce a Wasm build, you will first need to
+[download and install the Emscripten Compiler Toolchain](https://emscripten.org/docs/getting_started/downloads.html).
+
+USD requires oneTBB, which can be built for 32 and 64 bit wasm out of the box.
+Begin by [Downloading](https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.12.0.zip),
+building for Wasm, and installing the library.
+
+Next build USD:
+```bash
+emcmake cmake \
+    -DCMAKE_INSTALL_PREFIX="/path/to/build/openusd_wasm" \
+    -DCMAKE_PREFIX_PATH="/path/to/build/openusd_wasm" \
+    -DPXR_BUILD_TESTS=ON \
+    -DPXR_BUILD_EXAMPLES=OFF \
+    -DPXR_BUILD_IMAGING=OFF \
+    -DCMAKE_FIND_ROOT_PATH="/path/to/build/tbb_wasm" \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DCMAKE_CXX_FLAGS="-pthread --use-port=zlib" \
+    -DCMAKE_C_FLAGS="-pthread --use-port=zlib" \
+    -DCMAKE_EXE_LINKER_FLAGS="-pthread" \
+    "/path/to/src/OpenUSD"
+
+emmake cmake --build . --config Release --target install -j 8
+```
+
+By default, 32 bit Wasm is built.  To produce 64 bit output, ensure that
+`-sMEMORY64=1` is appended to `CMAKE_C_FLAGS` above. Additionally, ensure that
+you have built a Wasm64 version of oneTBB as well.
+
+When performing a Wasm build, resource files will be embedded in the resulting
+binary as part of the linking process.  These files, which consist of the
+`plugInfo.json` files required for the usd library to correctly load types
+and schemas are placed under `/usd` in the virtual file system.
+
 ## Optional Components
 
 USD contains several optional components that are enabled by default
@@ -465,6 +502,26 @@ Will generate pxrusdGeom.so on Linux, pxrusdGeom.dll on Windows and
 pxrusdGeom.dylib on Mac for the usdGeom component.
 
 > Note: This prefix does not apply to shared objects used for Python bindings.
+
+##### Address Sanitizer
+
+Address Sanitizer's memory leak detection will trigger many assertions that
+are more the responsibility of Leak Sanitizer than Address Sanitizer. To get an
+address sanitized build of OpenUSD without leak detection, build with 
+the flag `-fsanitize=address` and set the following option:
+
+```bash
+export ASAN_OPTIONS=detect_leaks=0
+```
+
+This can also be defaulted within code by defining the following function
+(see [ASAN runtime flags](https://github.com/google/sanitizers/wiki/AddressSanitizerFlags#run-time-flags))
+
+```cpp
+const char *__asan_default_options() {
+  return "detect_leaks=0";
+}
+```
 
 ## USD Developer Options
 

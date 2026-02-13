@@ -15,13 +15,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/scopeDescription.h"
 
-// copyUtils.h pulls in boost/any.hpp via tf/diagnostic, and this winds up
-// generating an erroneous maybe-uninitialized warning on certain gcc & boost
-// versions, so we disable that diagnostic around this include.
-ARCH_PRAGMA_PUSH
-ARCH_PRAGMA_MAYBE_UNINITIALIZED
 #include "pxr/usd/sdf/copyUtils.h"
-ARCH_PRAGMA_POP
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"

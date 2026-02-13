@@ -35,4 +35,5 @@ TF_WRAP_MODULE
 
     TF_WRAP(Dictionary);
     TF_WRAP(Value);
+    TF_WRAP(ValueRef);
 }

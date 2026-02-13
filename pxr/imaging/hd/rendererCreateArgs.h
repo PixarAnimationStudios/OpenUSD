@@ -23,6 +23,16 @@ struct HdRendererCreateArgs
     bool gpuEnabled { true };
     // An Hgi instance to check backend support against.
     Hgi* hgi { nullptr };
+
+    bool operator==(const HdRendererCreateArgs& other) const
+    {
+        return gpuEnabled == other.gpuEnabled && hgi == other.hgi;
+    }
+
+    bool operator!=(const HdRendererCreateArgs& other) const
+    {
+        return !(*this == other);
+    }
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

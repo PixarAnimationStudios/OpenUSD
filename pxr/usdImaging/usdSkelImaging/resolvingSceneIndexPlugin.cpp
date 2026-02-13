@@ -12,6 +12,8 @@
 
 #include "pxr/imaging/hd/flattenedDataSourceProviders.h"
 #include "pxr/imaging/hd/flattenedOverlayDataSourceProvider.h"
+#include "pxr/imaging/hd/primvarsSchema.h"
+#include "pxr/imaging/hd/skinningSettings.h"
 
 #include "pxr/imaging/hd/retainedDataSource.h"
 
@@ -59,10 +61,23 @@ UsdSkelImagingResolvingSceneIndexPlugin::InstanceDataSourceNames()
 TfTokenVector
 UsdSkelImagingResolvingSceneIndexPlugin::ProxyPathTranslationDataSourceNames()
 {
-    return {
+    static const TfTokenVector bindingSchemaToken{
         UsdSkelImagingBindingSchema::GetSchemaToken()
     };
-}
+    if (!HdSkinningSettings::IsSkinningDeferred()) {
+        return bindingSchemaToken;
+    }
 
+    // skelBinding:animationSource is relocated and aggregated as an instance
+    // primvar on the instancer when skinning is deferred so we will need to
+    // translate that. We should revisit if scanning through all the primvars
+    // becomes a performance bottleneck. We can then maybe add a new
+    // ProxyPathTranslationPrimvarNames() method.
+    static const TfTokenVector bindingPrimvarsSchemaToken{
+        UsdSkelImagingBindingSchema::GetSchemaToken(),
+        HdPrimvarsSchema::GetSchemaToken()
+    };
+    return bindingPrimvarsSchemaToken;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

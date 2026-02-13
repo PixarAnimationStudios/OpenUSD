@@ -47,7 +47,8 @@ public:
     typedef int ScalarType;
     static const size_t dimension = 4;
 
-    /// Default constructor does no initialization.
+    /// GfVec4i value-initializes to zero and performs no default
+    /// initialization, like float or double.
     GfVec4i() = default;
 
     /// Initialize all elements to a single value.

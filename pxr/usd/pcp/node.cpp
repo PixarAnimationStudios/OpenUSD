@@ -224,6 +224,34 @@ PcpNodeRef::SetIsDueToAncestor(bool isDueToAncestor)
     _graph->_unshared[_nodeIdx].isDueToAncestor = isDueToAncestor;
 }
 
+void
+PcpNodeRef::SetHasTransitiveDirectDependency(bool hasArc)
+{
+    TF_DEV_AXIOM(_nodeIdx < _graph->_unshared.size());
+    _graph->_unshared[_nodeIdx].hasTransitiveDirectArc = hasArc;
+}
+
+bool
+PcpNodeRef::HasTransitiveDirectDependency() const
+{
+    TF_DEV_AXIOM(_nodeIdx < _graph->_unshared.size());
+    return _graph->_unshared[_nodeIdx].hasTransitiveDirectArc;
+}
+
+void
+PcpNodeRef::SetHasTransitiveAncestralDependency(bool hasArc)
+{
+    TF_DEV_AXIOM(_nodeIdx < _graph->_unshared.size());
+    _graph->_unshared[_nodeIdx].hasTransitiveAncestralArc = hasArc;
+}
+
+bool
+PcpNodeRef::HasTransitiveAncestralDependency() const
+{
+    TF_DEV_AXIOM(_nodeIdx < _graph->_unshared.size());
+    return _graph->_unshared[_nodeIdx].hasTransitiveAncestralArc;
+}
+
 bool
 PcpNodeRef::HasSpecs() const
 {

@@ -11,6 +11,7 @@
 #include "pxr/base/tf/diagnostic.h"
 
 #include <cmath>
+#include <iostream>
 #include <sstream>
 #include <iomanip>
 
@@ -292,7 +293,7 @@ void TsRegressionPreventer::_InitSetResult(
 
     resultOut->havePreSegment = bool(_preKnotState);
     resultOut->havePostSegment = bool(_postKnotState);
-    
+
     resultOut->preActiveAdjustedWidth =
         proposedActiveKnot.GetPreTanWidth();
     resultOut->postActiveAdjustedWidth =
@@ -548,6 +549,35 @@ bool Ts_RegressionPreventerBatchAccess::IsSegmentRegressive(
 }
 
 // static
+bool Ts_RegressionPreventerBatchAccess::IsSegmentRegressive(
+    const Ts_Segment* const segment,
+    const TsAntiRegressionMode modeIn)
+{
+    using RP = TsRegressionPreventer;
+
+    // Determine whether this is a Bezier segment.
+    if (segment->interp != Ts_SegmentInterp::Bezier)
+    {
+        return false;
+    }
+
+    // Find normalized tangent widths.
+    const TsTime interval = segment->p1[0] - segment->p0[0];
+    const TsTime startWidth = (segment->t0[0] - segment->p0[0]) / interval;
+    const TsTime endWidth = (segment->p1[0] - segment->t1[0]) / interval;
+
+    // In Contain mode, check simple max.
+    const RP::_Mode mode = RP::_Mode(modeIn);
+    if (mode == RP::_ModeContain)
+    {
+        return startWidth > kContainedMax || endWidth > kContainedMax;
+    }
+
+    // Call math helper.
+    return _AreTanWidthsRegressive(startWidth, endWidth);
+}
+
+// static
 bool Ts_RegressionPreventerBatchAccess::ProcessSegment(
     Ts_KnotData* const startKnot,
     Ts_KnotData* const endKnot,
@@ -590,6 +620,37 @@ bool Ts_RegressionPreventerBatchAccess::ProcessSegment(
     {
         endKnot->preTanWidth = endWorking.workingParams.preTanWidth;
     }
+
+    // Return whether anything was changed.
+    return setResult.adjusted;
+}
+
+// static
+bool Ts_RegressionPreventerBatchAccess::ProcessSegment(
+    Ts_Segment* const segment,
+    const TsAntiRegressionMode modeIn)
+{
+    using RP = TsRegressionPreventer;
+
+    // If anti-regression is disabled, nothing to do.
+    const RP::_Mode mode = RP::_Mode(modeIn);
+    if (mode == RP::_ModeNone)
+    {
+        return false;
+    }
+
+    // Determine whether this is a Bezier segment.
+    if (segment->interp != Ts_SegmentInterp::Bezier)
+    {
+        return false;
+    }
+
+    // Create a solver for the segment.
+    RP::SetResult setResult;
+    RP::_SegmentSolver solver(mode, segment, &setResult);
+
+    // Find adjustments. Note that segment is modified in-place.
+    solver.Adjust();
 
     // Return whether anything was changed.
     return setResult.adjusted;
@@ -800,6 +861,18 @@ TsTime _ComputeOtherWidthForVert(
 ////////////////////////////////////////////////////////////////////////////////
 // SEGMENT SOLVER PLUMBING
 
+// _SegmentSolver is designed to support interactive as well as batch workflows.
+// Interactively, there is an "active" knot and an "opposite" knot. There is also
+// the whichSegment value which indicates if the segment we're operating on
+// is the segment before the active knot or the segment after the active knot.
+//
+// When operating on a Ts_Segment (rather than a pair of knots), whichSegment is
+// unnecessary, we're operating on the segment in the Ts_Segment. For
+// purposes of integrating with the existing code, however, we explicitly set
+// whichSegment to PostSegment and declare the left side of the segment to be
+// the "active" side and the right side to be the "opposite" side. So
+// _SetActiveWidth will change _segment.t0 and _SetOppositeWidth will change
+// _segment.t1.
 TsRegressionPreventer::_SegmentSolver::_SegmentSolver(
     const WhichSegment whichSegment,
     const _Mode mode,
@@ -808,8 +881,22 @@ TsRegressionPreventer::_SegmentSolver::_SegmentSolver(
     SetResult* const result)
     : _whichSegment(whichSegment),
       _mode(mode),
+      _segment(nullptr),
       _activeKnotState(activeKnotState),
       _oppositeKnotState(oppositeKnotState),
+      _result(result)
+{
+}
+
+TsRegressionPreventer::_SegmentSolver::_SegmentSolver(
+    const _Mode mode,
+    Ts_Segment* const segment,
+    SetResult* const result)
+    : _whichSegment(PostSegment),  // A Ts_Segment implies PostSegment
+      _mode(mode),
+      _segment(segment),
+      _activeKnotState(nullptr),
+      _oppositeKnotState(nullptr),
       _result(result)
 {
 }
@@ -817,18 +904,22 @@ TsRegressionPreventer::_SegmentSolver::_SegmentSolver(
 TsTime TsRegressionPreventer::_SegmentSolver::_GetProposedActiveWidth() const
 {
     const TsTime width = (
-        _whichSegment == PreSegment ?
-        _activeKnotState->proposedParams.preTanWidth :
-        _activeKnotState->proposedParams.postTanWidth);
+        _segment
+        ? (_segment->t0[0] - _segment->p0[0])
+        : (_whichSegment == PreSegment
+           ? _activeKnotState->proposedParams.preTanWidth
+           : _activeKnotState->proposedParams.postTanWidth));
     return width / _GetSegmentWidth();
 }
 
 TsTime TsRegressionPreventer::_SegmentSolver::_GetProposedOppositeWidth() const
 {
     const TsTime width = (
-        _whichSegment == PreSegment ?
-        _oppositeKnotState->proposedParams.postTanWidth :
-        _oppositeKnotState->proposedParams.preTanWidth);
+        _segment
+        ? (_segment->p1[0] - _segment->t1[0])
+        : (_whichSegment == PreSegment ?
+           _oppositeKnotState->proposedParams.postTanWidth :
+           _oppositeKnotState->proposedParams.preTanWidth));
     return width / _GetSegmentWidth();
 }
 
@@ -838,19 +929,31 @@ void TsRegressionPreventer::_SegmentSolver::_SetActiveWidth(
     const bool adjusted = (width != _GetProposedActiveWidth());
     const TsTime rawWidth = width * _GetSegmentWidth();
 
-    if (_whichSegment == PreSegment)
-    {
-        _activeKnotState->workingParams.SetPreTanWidth(rawWidth);
+    if (_segment) {
+        // Always PostSegment when working with a Ts_Segment value
+        const GfVec2d tangent = _segment->t0 - _segment->p0;
+        const double scale =
+            (ARCH_UNLIKELY(tangent[0] == 0)
+             ? 1.0
+             : rawWidth / tangent[0]);
+
+        _segment->t0 = _segment->p0 + tangent * scale;
 
         if (_result)
         {
             _result->adjusted |= adjusted;
+            _result->postActiveAdjusted |= adjusted;
+            _result->postActiveAdjustedWidth = rawWidth;
+        }
+    } else if (_whichSegment == PreSegment) {
+        _activeKnotState->workingParams.SetPreTanWidth(rawWidth);
+
+        if (_result) {
+            _result->adjusted |= adjusted;
             _result->preActiveAdjusted |= adjusted;
             _result->preActiveAdjustedWidth = rawWidth;
         }
-    }
-    else
-    {
+    } else {
         _activeKnotState->workingParams.SetPostTanWidth(rawWidth);
 
         if (_result)
@@ -868,19 +971,33 @@ void TsRegressionPreventer::_SegmentSolver::_SetOppositeWidth(
     const bool adjusted = (width != _GetProposedOppositeWidth());
     const TsTime rawWidth = width * _GetSegmentWidth();
 
-    if (_whichSegment == PreSegment)
-    {
-        _oppositeKnotState->workingParams.SetPostTanWidth(rawWidth);
+    if (_segment) {
+        // The opposite width is always the right side of the segment.  Note
+        // that tangent has a negative width so negate rawWidth to get the
+        // correct scale factor.
+        const GfVec2d tangent = _segment->t1 - _segment->p1;
+        const double scale =
+            (ARCH_UNLIKELY(tangent[0] == 0)
+             ? 1.0
+             : -rawWidth / tangent[0]);
+
+        _segment->t1 = _segment->p1 + tangent * scale;
 
         if (_result)
         {
             _result->adjusted |= adjusted;
+            _result->postOppositeAdjusted |= adjusted;
+            _result->postOppositeAdjustedWidth = rawWidth;
+        }
+    } else if (_whichSegment == PreSegment) {
+        _oppositeKnotState->workingParams.SetPostTanWidth(rawWidth);
+
+        if (_result) {
+            _result->adjusted |= adjusted;
             _result->preOppositeAdjusted |= adjusted;
             _result->preOppositeAdjustedWidth = rawWidth;
         }
-    }
-    else
-    {
+    } else {
         _oppositeKnotState->workingParams.SetPreTanWidth(rawWidth);
 
         if (_result)
@@ -936,6 +1053,10 @@ void TsRegressionPreventer::_SegmentSolver::_SetEndWidth(
 
 TsTime TsRegressionPreventer::_SegmentSolver::_GetSegmentWidth() const
 {
+    if (_segment) {
+        return _segment->p1[0] - _segment->p0[0];
+    }
+
     TsTime width =
         _activeKnotState->proposedParams.time -
         _oppositeKnotState->proposedParams.time;

@@ -231,7 +231,7 @@ UsdUIAccessibilityAPI::CreatePriorityAttr(VtValue const &defaultValue, bool writ
                            UsdUITokens->accessibility_MultipleApplyTemplate_Priority),
                        SdfValueTypeNames->Token,
                        /* custom = */ false,
-                       SdfVariabilityUniform,
+                       SdfVariabilityVarying,
                        defaultValue,
                        writeSparsely);
 }

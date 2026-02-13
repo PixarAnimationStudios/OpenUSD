@@ -36,15 +36,11 @@ pxr_build_test(testUsdShadeValidators
         testenv/testUsdShadeValidators.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdShadeValidators
-    DEST testUsdShadeValidators
-)
-
 # Tests that rely on plugins aren't currently supported in static builds.
 if (BUILD_SHARED_LIBS)
     pxr_register_test(testUsdShadeValidators
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeValidators"
+        TESTENV testenv/testUsdShadeValidators
         EXPECTED_RETURN_CODE 0
     )
 endif()

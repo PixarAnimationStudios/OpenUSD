@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
+#include "pxr/usd/usd/resolveInfo.h"
 
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/iterator.h"
@@ -30,26 +31,33 @@ class UsdResolveTarget;
 class Usd_Resolver {
 public:
 
-    /// Constructs a resolver with the given \p index. The index is 
-    /// held for the duration of the resolver's lifetime. If \p skipEmptyNodes
-    /// is \c true, the resolver will skip over nodes that provide no opinions
-    /// about the prim represented by \p index. Otherwise, the resolver will
-    /// visit all non-inert nodes in the index.
+    /// Constructs a resolver with the given \p index. The index is held for the
+    /// duration of the resolver's lifetime. If \p skipEmptyNodes is \c true,
+    /// the resolver will skip over nodes that provide no opinions about the
+    /// prim represented by \p index. Otherwise, the resolver will visit all
+    /// non-inert nodes in the index.  If \p resolveInfo is not null, the
+    /// resolver will attempt to start from its node & layer.  It must not have
+    /// been obtained with a resolve target.  In that case use the other
+    /// constructor.
     USD_API
     explicit Usd_Resolver(
         const PcpPrimIndex* index, 
-        bool skipEmptyNodes = true);
+        bool skipEmptyNodes = true,
+        const UsdResolveInfo *resolveInfo = nullptr);
 
     /// Constructs a resolver with the given \p resolveTarget. The resolve 
     /// target provides the prim index as well as the range of nodes and layers
     /// this resolver will iterate over. If \p skipEmptyNodes is \c true, the
     /// resolver will skip over nodes that provide no opinions about the prim
     /// represented by \p index. Otherwise, the resolver will visit all
-    /// non-inert nodes in the index.
+    /// non-inert nodes in the index.  If \p resolveInfo is not null, the
+    /// resolver will attempt to start from its node & layer.  It must have
+    /// been obtained with \p resolveTarget.
     USD_API
     explicit Usd_Resolver(
         const UsdResolveTarget *resolveTarget, 
-        bool skipEmptyNodes = true);
+        bool skipEmptyNodes = true,
+        const UsdResolveInfo *resolveInfo = nullptr);
 
     /// Returns true when there is a current Node and Layer.
     /// 

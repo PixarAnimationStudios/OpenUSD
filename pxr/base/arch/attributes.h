@@ -16,6 +16,8 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/export.h"
 
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 #if defined(doxygen)
@@ -144,6 +146,29 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// [[no_unique_address]] tag.
 #   define ARCH_EMPTY_BASES
 
+/// Macro used to indicate that a function should not be instrumented
+/// with address santizers.
+///
+/// In general, this attribute should be used sparingly. Its purpose
+/// is mostly for tests that when built with address sanitizer will trigger
+/// a false-positive, meaning the test is checking something that address
+/// sanitizer is trying to catch.
+///
+/// Its important to understand that this attribute will only disable
+/// address sanitizer instrumentation for the function it's applied to.
+/// Any sanitized functions called from the target function
+/// will still be instrumented.
+///
+/// This attribute is used as follows:
+/// \code
+///    ARCH_NO_SANITIZE_ADDRESS_FUNCTION void Func() {
+///        ...
+///    }
+/// \endcode
+///
+/// \hideinitializer
+#   define ARCH_NO_SANITIZE_ADDRESS_FUNCTION
+
 #elif defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
 
 #   define ARCH_PRINTF_FUNCTION(_fmt, _firstArg) \
@@ -157,6 +182,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 #   define ARCH_USED_FUNCTION __attribute__((used))
 #   define ARCH_EMPTY_BASES
 
+#if defined(ARCH_SANITIZE_ADDRESS)
+#   define ARCH_NO_SANITIZE_ADDRESS_FUNCTION \
+        __attribute__((no_sanitize_address))
+#else
+#   define ARCH_NO_SANITIZE_ADDRESS_FUNCTION
+#endif
+
+// Function attributes for other sanitizers (thread, undefined behavior, etc.)
+// intentionally omitted until support is added
+
 #elif defined(ARCH_COMPILER_MSVC)
 
 #   define ARCH_PRINTF_FUNCTION(_fmt, _firstArg)
@@ -167,6 +202,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 #   define ARCH_UNUSED_FUNCTION
 #   define ARCH_USED_FUNCTION
 #   define ARCH_EMPTY_BASES __declspec(empty_bases)
+
+#if defined(ARCH_SANITIZE_ADDRESS)
+#   define ARCH_NO_SANITIZE_ADDRESS_FUNCTION \
+        __declspec(no_sanitize_address)
+#else
+#   define ARCH_NO_SANITIZE_ADDRESS_FUNCTION
+#endif
+
+// Function attributes for other sanitizers (thread, undefined behavior, etc.)
+// intentionally omitted until support is added
 
 #else
 
@@ -277,20 +322,24 @@ struct Arch_ConstructorInit {
     ARCH_API ~Arch_ConstructorInit();
 };
 
-// Emit a Arch_ConstructorEntry in the .pxrctor section.  The namespace and
-// extern are to convince the compiler and linker to leave the object in the
-// final library/executable instead of stripping it out.  In clang/gcc we use
+// Emit an Arch_ConstructorEntry in the .pxrctor section.  The
+// arch_{c,d}tor_unused assignment is a workaround to ensure arch_{c,d}tor
+// isn't removed when /Zc:inline is enabled. In clang/gcc we use
 // __attribute__((used)) to do that.
 #   define ARCH_CONSTRUCTOR(_name, _priority)                                  \
     static void _name();                                                       \
     namespace {                                                                \
     __declspec(allocate(".pxrctor"))                                           \
-    extern const Arch_ConstructorEntry                                         \
+    static const Arch_ConstructorEntry                                         \
     _ARCH_CAT_NOEXPAND(arch_ctor_, _name) = {                                  \
         reinterpret_cast<Arch_ConstructorEntry::Type>(&_name),                 \
         static_cast<unsigned>(PXR_VERSION),                                    \
         _priority                                                              \
     };                                                                         \
+    void _ARCH_CAT_NOEXPAND(arch_ctor_unused, _name)() {                       \
+        static const auto unused =                                             \
+             std::addressof(_ARCH_CAT_NOEXPAND(arch_ctor_, _name));            \
+    }                                                                          \
     }                                                                          \
     _ARCH_ENSURE_PER_LIB_INIT(Arch_ConstructorInit, _archCtorInit);            \
     static void _name()
@@ -300,12 +349,16 @@ struct Arch_ConstructorInit {
     static void _name();                                                       \
     namespace {                                                                \
     __declspec(allocate(".pxrdtor"))                                           \
-    extern const Arch_ConstructorEntry                                         \
+    static const Arch_ConstructorEntry                                         \
     _ARCH_CAT_NOEXPAND(arch_dtor_, _name) = {                                  \
         reinterpret_cast<Arch_ConstructorEntry::Type>(&_name),                 \
         static_cast<unsigned>(PXR_VERSION),                                    \
         _priority                                                              \
     };                                                                         \
+    void _ARCH_CAT_NOEXPAND(arch_dtor_unused, _name)() {                       \
+        static const auto unused =                                             \
+             std::addressof(_ARCH_CAT_NOEXPAND(arch_dtor_, _name));            \
+    }                                                                          \
     }                                                                          \
     _ARCH_ENSURE_PER_LIB_INIT(Arch_ConstructorInit, _archCtorInit);            \
     static void _name()

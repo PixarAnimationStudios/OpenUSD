@@ -114,14 +114,13 @@ R"(#if NUM_LIGHTS > 0
 #endif
 )";
 
-static const std::string MxHdLatLongLookupCubemap = 
+static const std::string MxHdLatLongLookupCubemapGlsl = 
 R"(
 vec3 mx_latlong_map_lookup(vec3 dir, mat4 transform, float lod, samplerCube envSampler)
 {
     vec3 envDir = normalize((transform * vec4(dir,0.0)).xyz);
     return textureLod(envSampler, envDir, lod).rgb;
 }
-
 )";
 
 static bool 
@@ -141,6 +140,17 @@ _IsHardcodedPublicUniform(const mx::TypeDesc& varType)
     }
 
     return false;
+}
+
+static std::string
+_GetSamplerName(std::string const& textureName)
+{
+    // Make sure we don't have double '_' in the HdGet call.
+    std::string samplerName = textureName;
+    if (TfStringStartsWith(samplerName, "_")) {
+        samplerName.erase(0,1);
+    }
+    return samplerName;
 }
 
 
@@ -392,10 +402,6 @@ HdStMaterialXShaderGen<Base>::_EmitMxInitFunction(
     mx::VariableBlock const& vertexData,
     mx::ShaderStage& mxStage) const
 {
-    // Emit an overload of mx_latlong_map_lookup that is able to query the
-    // cubemaps generated for the dome light.
-    Base::emitString(MxHdLatLongLookupCubemap, mxStage);
-
     Base::setFunctionName("mxInit", mxStage);
     emitLine("void mxInit(vec4 Peye, vec3 Neye)", mxStage, false);
     Base::emitScopeBegin(mxStage);
@@ -434,8 +440,13 @@ HdStMaterialXShaderGen<Base>::_EmitMxInitFunction(
         const mx::TypeDesc variableType =
             HdStMaterialXHelpers::GetMxTypeDesc(variable);
         if (!_IsHardcodedPublicUniform(variableType)) {
+            // Make sure we don't have double '_' in the HdGet call.
+            std::string variableName = variable->getVariable();
+            if (TfStringStartsWith(variableName, "_")) {
+                variableName.erase(0,1);
+            }
             emitLine(variable->getVariable() + " = HdGet_" +
-                variable->getVariable() + "()", mxStage);
+                variableName + "()", mxStage);
         }
     }
     Base::emitLineBreak(mxStage);
@@ -465,7 +476,7 @@ HdStMaterialXShaderGen<Base>::_EmitMxInitFunction(
                 continue;
             }
             emitLine(TfStringPrintf("%s = HdGetSampler_%s()",
-                        textureName.c_str(), textureName.c_str()),
+                    textureName.c_str(), _GetSamplerName(textureName).c_str()),
                 mxStage);
         }
         Base::emitLineBreak(mxStage);
@@ -955,6 +966,10 @@ HdStMaterialXShaderGenGlsl::_EmitMxFunctions(
     _EmitConstantsUniformsAndTypeDefs(
         mxContext, mxStage, _syntax->getConstantQualifier());
 
+    // Emit an overload of mx_latlong_map_lookup that is able to query the
+    // cubemaps generated for the dome light.
+    emitString(MxHdLatLongLookupCubemapGlsl, mxStage);
+
     // If bindlessTextures are not enabled, the above for loop skips
     // initializing textures. Initialize them here by defining mappings
     // to the appropriate HdGetSampler function.
@@ -982,7 +997,7 @@ HdStMaterialXShaderGenGlsl::_EmitMxFunctions(
                     continue;
                 }
                 emitLine(TfStringPrintf("#define %s HdGetSampler_%s()",
-                        textureName.c_str(), textureName.c_str()),
+                    textureName.c_str(), _GetSamplerName(textureName).c_str()),
                     mxStage, false);
             }
             emitLineBreak(mxStage);
@@ -1109,6 +1124,10 @@ HdStMaterialXShaderGenVkGlsl::_EmitMxFunctions(
     _EmitConstantsUniformsAndTypeDefs(
         mxContext, mxStage, _syntax->getConstantQualifier());
 
+    // Emit an overload of mx_latlong_map_lookup that is able to query the
+    // cubemaps generated for the dome light.
+    emitString(MxHdLatLongLookupCubemapGlsl, mxStage);
+
     // If bindlessTextures are not enabled, the above for loop skips
     // initializing textures. Initialize them here by defining mappings
     // to the appropriate HdGetSampler function.
@@ -1136,7 +1155,7 @@ HdStMaterialXShaderGenVkGlsl::_EmitMxFunctions(
                     continue;
                 }
                 emitLine(TfStringPrintf("#define %s HdGetSampler_%s()",
-                        textureName.c_str(), textureName.c_str()),
+                        textureName.c_str(), _GetSamplerName(textureName).c_str()),
                     mxStage, false);
             }
             emitLineBreak(mxStage);
@@ -1150,6 +1169,47 @@ HdStMaterialXShaderGenVkGlsl::_EmitMxFunctions(
 // ----------------------------------------------------------------------------
 //                          HdSt MaterialX ShaderGen Metal
 // ----------------------------------------------------------------------------
+
+static const std::string MxHdLatLongLookupCubemapMsl = R"(
+#if !defined(HDST_MTLX_METAL_TEXURE_CUBE)
+struct MetalTextureCube
+{
+    texturecube<float> tex;
+    sampler s;
+
+    // needed for Storm
+    int get_width() { return tex.get_width(); }
+    int get_height() { return tex.get_height(); }
+    int get_num_mip_levels() { return tex.get_num_mip_levels(); }
+};
+
+float4 texture(MetalTextureCube mtlTex, float3 dir)
+{
+    return mtlTex.tex.sample(mtlTex.s, dir);
+}
+
+float4 textureLod(MetalTextureCube mtlTex, float3 dir, float lod)
+{
+    return mtlTex.tex.sample(mtlTex.s, dir, level(lod));
+}
+
+float4 textureGrad(MetalTextureCube mtlTex, float3 dir, float3 dx, float3 dy)
+{
+    return mtlTex.tex.sample(mtlTex.s, dir, gradientcube(dx, dy));
+}
+
+int2 textureSize(MetalTextureCube mtlTex, int mipLevel)
+{
+    return int2(mtlTex.tex.get_width(), mtlTex.tex.get_height());
+}
+#endif
+
+vec3 mx_latlong_map_lookup(vec3 dir, mat4 transform, float lod, MetalTextureCube envSampler)
+{
+    vec3 envDir = normalize((transform * vec4(dir,0.0)).xyz);
+    return textureLod(envSampler, envDir, lod).rgb;
+}
+)";
 
 namespace {
     // Create a customized version of the class mx::SurfaceNodeMsl
@@ -1319,6 +1379,10 @@ HdStMaterialXShaderGenMsl::_EmitMxFunctions(
     _EmitConstantsUniformsAndTypeDefs(
         mxContext, mxStage,_syntax->getConstantQualifier());
 
+    // Emit an overload of mx_latlong_map_lookup that is able to query the
+    // cubemaps generated for the dome light.
+    emitString(MxHdLatLongLookupCubemapMsl, mxStage);
+
     // If bindlessTextures are not enabled, the above for loop skips
     // initializing textures. Initialize them here by defining mappings
     // to the appropriate HdGetSampler function.
@@ -1327,10 +1391,10 @@ HdStMaterialXShaderGenMsl::_EmitMxFunctions(
         // Define mappings for the DomeLight Textures
         emitLine("#ifdef HD_HAS_domeLightIrradiance", mxStage, false);
         emitLine("#define u_envRadiance "
-                "MetalTexture{HdGetSampler_domeLightPrefilter(), "
+                "MetalTextureCube{HdGetSampler_domeLightPrefilter(), "
                 "samplerBind_domeLightPrefilter} ", mxStage, false);
         emitLine("#define u_envIrradiance "
-                "MetalTexture{HdGetSampler_domeLightIrradiance(), "
+                "MetalTextureCube{HdGetSampler_domeLightIrradiance(), "
                 "samplerBind_domeLightIrradiance} ", mxStage, false);
         emitLine("#else", mxStage, false);
         emitLine("#define u_envRadiance "
@@ -1352,7 +1416,7 @@ HdStMaterialXShaderGenMsl::_EmitMxFunctions(
                 emitLine(TfStringPrintf(
                     "#define %s MetalTexture{HdGetSampler_%s(), samplerBind_%s}",
                         textureName.c_str(),
-                        textureName.c_str(),
+                        _GetSamplerName(textureName).c_str(),
                         textureName.c_str()),
                     mxStage, false);
             }

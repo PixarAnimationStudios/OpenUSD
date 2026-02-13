@@ -110,6 +110,8 @@ HdStUdimTextureObject::HdStUdimTextureObject(
     const HdStTextureIdentifier &textureId,
     HdSt_TextureObjectRegistry * const textureObjectRegistry)
   : HdStTextureObject(textureId, textureObjectRegistry)
+  , _textureDataSize(0)
+  , _layoutDataSize(0)
   , _dimensions(0)
   , _mipCount(0)
   , _hgiFormat(HgiFormatInvalid)
@@ -189,8 +191,8 @@ HdStUdimTextureObject::_Load()
             firstImageMips, _hgiFormat, _tileCount, GetTargetMemory());
 
     // Texture array queries will use a float as the array specifier.
-    const unsigned int maxTileId = std::get<0>(tiles.back()) + 1;
-    _layoutData.resize(maxTileId, 0);
+    _layoutDataSize = std::get<0>(tiles.back()) + 1;
+    _layoutData.resize(_layoutDataSize, 0);
 
     // Use Hgi to compute the mip sizes from the dimensions
     const std::vector<HgiMipInfo> mipInfos =
@@ -200,8 +202,10 @@ HdStUdimTextureObject::_Load()
     const HgiMipInfo &lastMipInfo = mipInfos.back();
 
     // Allocate memory for the mipData, ready for upload to GPU
-    _textureData.resize(
-        lastMipInfo.byteOffset + _tileCount * lastMipInfo.byteSizePerLayer);
+    _textureDataSize = lastMipInfo.byteOffset +
+        _tileCount * lastMipInfo.byteSizePerLayer;
+
+    _textureData.resize(_textureDataSize);
 
     WorkParallelForN(tiles.size(), [&](size_t begin, size_t end) {
         for (size_t tileId = begin; tileId < end; ++tileId) {
@@ -282,7 +286,7 @@ HdStUdimTextureObject::_Commit()
         texDesc.format = _hgiFormat;
         texDesc.mipLevels = _mipCount;
         texDesc.initialData = _textureData.data();
-        texDesc.pixelsByteSize = _textureData.size();
+        texDesc.pixelsByteSize = _textureDataSize;
         _texelTexture = hgi->CreateTexture(texDesc);
     }
 
@@ -292,10 +296,10 @@ HdStUdimTextureObject::_Commit()
         texDesc.debugName = _GetDebugName(GetTextureIdentifier());
         texDesc.usage = HgiTextureUsageBitsShaderRead;
         texDesc.type = HgiTextureType1D;
-        texDesc.dimensions = GfVec3i(_layoutData.size(), 1, 1);
+        texDesc.dimensions = GfVec3i(_layoutDataSize, 1, 1);
         texDesc.format = HgiFormatFloat32;
         texDesc.initialData = _layoutData.data();
-        texDesc.pixelsByteSize = _layoutData.size() * sizeof(float);
+        texDesc.pixelsByteSize = _layoutDataSize * sizeof(float);
         _layoutTexture = hgi->CreateTexture(texDesc);
     }
 
@@ -314,6 +318,15 @@ HdStTextureType
 HdStUdimTextureObject::GetTextureType() const
 {
     return HdStTextureType::Udim;
+}
+
+size_t
+HdStUdimTextureObject::GetCommittedSize() const
+{
+    if (_hgiFormat == HgiFormatInvalid) {
+        return 4 * sizeof(unsigned char) + sizeof(float);
+    }
+    return _textureDataSize + _layoutDataSize * sizeof(float);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

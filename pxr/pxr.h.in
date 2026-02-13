@@ -52,6 +52,10 @@ namespace PXR_NS {
 #define PXR_PREFER_SAFETY_OVER_SPEED
 #endif
 
+#if @PXR_ARCH_PREFER_TSC_TIMING@
+#define PXR_ARCH_PREFER_TSC_TIMING
+#endif
+
 #define PXR_USE_INTERNAL_BOOST_PYTHON
 
 #endif //PXR_H

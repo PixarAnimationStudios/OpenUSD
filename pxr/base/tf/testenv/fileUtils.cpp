@@ -34,8 +34,6 @@
 typedef int mode_t;
 #endif
 
-ARCH_PRAGMA_DEPRECATED_POSIX_NAME
-
 using std::string;
 using std::cerr;
 using std::cout;

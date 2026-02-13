@@ -88,6 +88,7 @@ public:
     virtual Ts_TypedKnotData<double>
         GetKnotDataAsDouble(size_t index) const = 0;
     virtual double GetKnotValueAsDouble(size_t index) const = 0;
+    virtual double GetKnotPreValueAsDouble(size_t index) const = 0;
 
     virtual void ClearKnots() = 0;
     virtual void RemoveKnotAtTime(TsTime time) = 0;
@@ -107,6 +108,30 @@ public:
     // in the prototype.
     bool HasInnerLoops(
         size_t *firstProtoIndexOut = nullptr) const;
+
+    // Return the time at which pre-extrapolation ends and knot interpolation
+    // begins. Returns 0.0 if there are no knots. It is the caller's
+    // responsibility to ensure that there are knots before relying on the
+    // answer.
+    TsTime GetPreExtrapTime() const;
+    
+    // Return the time at which knot interpolation ends and post-extrapolation
+    // begins. Returns 0.0 if there are no knots. It is the caller's
+    // responsibility to ensure that there are knots before relying on the
+    // answer.
+    TsTime GetPostExtrapTime() const;
+
+    // Return the value from which pre-extrapolation extrapolates (as a double).
+    // This accounts for dual valued knots and inner looping. Returns 0.0 if
+    // there are no knots. It is the caller's responsibility to ensure that
+    // there are knots before relying on the answer.
+    double GetPreExtrapValue() const;
+
+    // Return the value from which post-extrapolation extrapolates (as a
+    // double).  This accounts for inner looping. Returns 0.0 if there are no
+    // knots. It is the caller's responsibility to ensure that there are knots
+    // before relying on the answer.
+    double GetPostExtrapValue() const;
 
 public:
     // BITFIELDS - note: for enum-typed bitfields, we declare one bit more than
@@ -186,6 +211,7 @@ public:
     Ts_TypedKnotData<double>
         GetKnotDataAsDouble(size_t index) const override;
     double GetKnotValueAsDouble(size_t index) const override;
+    double GetKnotPreValueAsDouble(size_t index) const override;
 
     void ClearKnots() override;
     void RemoveKnotAtTime(TsTime time) override;
@@ -524,6 +550,16 @@ Ts_TypedSplineData<T>::GetKnotValueAsDouble(
 {
     const Ts_TypedKnotData<T> &typedData = knots[index];
     return typedData.value;
+}
+
+// Depending on T, this is either a verbatim copy or an increase in precision.
+template <typename T>
+double
+Ts_TypedSplineData<T>::GetKnotPreValueAsDouble(
+    const size_t index) const
+{
+    const Ts_TypedKnotData<T> &typedData = knots[index];
+    return typedData.GetPreValue();
 }
 
 template <typename T>

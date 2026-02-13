@@ -73,19 +73,20 @@ Exec_CompilerTaskSyncBase::~Exec_CompilerTaskSyncBase() = default;
 
 Exec_CompilerTaskSyncBase::ClaimResult
 Exec_CompilerTaskSyncBase::_Claim(
-    _Entry *const entry,
+    _Waitlist *const waitlist,
     Exec_CompilationTask *task)
 {
-    // If the task associated with this entry is already done, return here.
-    uint8_t state = entry->state.load(std::memory_order_acquire);
+    // If the task associated with this waitlist is already done, return here.
+    uint8_t state = waitlist->state.load(std::memory_order_acquire);
     if (state == _TaskStateDone) {
         return ClaimResult::Done;
     }
 
     // If the task has not been claimed yet, attempt to claim it by CAS and
-    // return the result.
+    // return the result. Note if the caller claims this key, then the provided
+    // task is *not* added to the waitlist.
     if (state == _TaskStateUnclaimed &&
-        entry->state.compare_exchange_strong(state, _TaskStateClaimed)) {
+        waitlist->state.compare_exchange_strong(state, _TaskStateClaimed)) {
         return ClaimResult::Claimed;
     }
 
@@ -93,27 +94,43 @@ Exec_CompilerTaskSyncBase::_Claim(
     // another task got to claim it just before we did. In this case, wait on
     // the task completion. If we fail to wait on the task, it completed just
     // as we were about to wait and we can consider it done!
-    const ClaimResult claimResult = _WaitOn(&entry->waiting, task)
+    return _WaitOn(&waitlist->waiting, task)
         ? ClaimResult::Wait
         : ClaimResult::Done;
-    return claimResult;
 }
 
-void
-Exec_CompilerTaskSyncBase::_MarkDone(_Entry *const entry)
+Exec_CompilerTaskSyncBase::WaitResult
+Exec_CompilerTaskSyncBase::_WaitOn(
+    _Waitlist *const waitlist,
+    Exec_CompilationTask *task)
 {
-    // Note, some of these TF_VERIFYs can be safely relaxed if we later
-    // want to mark tasks done from tasks that aren't the original claimaints.
+    // If the task associated with this waitlist is already done, return here.
+    const uint8_t state = waitlist->state.load(std::memory_order_acquire);
+    if (state == _TaskStateDone) {
+        return WaitResult::Done;
+    }
 
-    // Set the state to done. We expect this to transition from the claimed
-    // state.
-    const uint8_t previousState = entry->state.exchange(_TaskStateDone);
-    TF_VERIFY(previousState == _TaskStateClaimed);
+    // Atomically add task to the waitlist, or return Done if the waitlist has
+    // been closed.
+    return _WaitOn(&waitlist->waiting, task)
+        ? WaitResult::Wait
+        : WaitResult::Done;
+}
+
+bool
+Exec_CompilerTaskSyncBase::_MarkDone(_Waitlist *const waitlist)
+{
+    // Set the state to done.
+    const uint8_t previousState = waitlist->state.exchange(_TaskStateDone);
+    if (previousState == _TaskStateDone) {
+        return false;
+    }
 
     // Close the waiting queue and notify all waiting tasks. We expect to be
     // the first to close the queue.
-    const bool closed = _CloseAndNotify(&entry->waiting);
-    TF_VERIFY(closed);   
+    const bool closed = _CloseAndNotify(&waitlist->waiting);
+    TF_VERIFY(closed);
+    return true;
 }
 
 bool
@@ -140,7 +157,7 @@ Exec_CompilerTaskSyncBase::_WaitOn(
     _WaitlistNode *newHead = _AllocateNode(task, headNode);
 
     // Atomically set the new waiting task as the head of the queue. If the CAS
-    // fails, fix up the pointer to the next entry and retry.
+    // fails, fix up the pointer to the next node and retry.
     while (!headPtr->compare_exchange_weak(headNode, newHead)) {
         // If in the meantime the dependency has been satisfied, we can no
         // longer queue up the waiting task, because there is no guarantee that
@@ -151,8 +168,8 @@ Exec_CompilerTaskSyncBase::_WaitOn(
             return false;
         }
 
-        // Fix up the pointer to the next entry, with the up-to-date head of
-        // the queue.
+        // Fix up the pointer to the next node, with the up-to-date head of the
+        // queue.
         newHead->next = headNode;
 
         // Backoff on the atomic under high contention.
@@ -185,7 +202,7 @@ Exec_CompilerTaskSyncBase::_CloseAndNotify(std::atomic<_WaitlistNode*> *headPtr)
             _dispatcher.Run(std::ref(*headNode->task));
         }
 
-        // Move on to the next entry in the queue.
+        // Move on to the next node in the waitlist.
         headNode = headNode->next;
     };
 

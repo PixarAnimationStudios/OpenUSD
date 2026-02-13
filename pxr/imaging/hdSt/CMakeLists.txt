@@ -211,6 +211,7 @@ pxr_library(hdSt
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
         shaders/simpleLightingShader.glslfx
+        shaders/skinning.glslfx
         shaders/surfaceHelpers.glslfx
         shaders/terminals.glslfx
         shaders/visibility.glslfx
@@ -332,6 +333,15 @@ pxr_build_test(testHdStCurvesPrimvars
         gf
     CPPFILES
         testenv/testHdStCurvesPrimvars.cpp
+)
+pxr_build_test(testHdStDepthBias
+    LIBRARIES
+        hdSt
+        hd
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStDepthBias.cpp
 )
 pxr_build_test(testHdStDisplayStyle
     LIBRARIES
@@ -596,7 +606,6 @@ if (X11_FOUND)
 pxr_register_test(testHdStBufferSource
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBufferSource"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBufferSource
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -608,15 +617,10 @@ if (${PXR_HEADLESS_TEST_MODE})
 endif()
 
 # Unlike most hdSt tests currently, testHdStQualifiers can run on all platforms.
-pxr_install_test_dir(
-    SRC testenv/testHdStQualifiers
-    DEST testHdStQualifiers
-)
-
 pxr_register_test(testHdStQualifiers
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStQualifiers --offscreen --flatQF FlatMember --nopersQF NoPerspectiveMember --centroidQF CentroidMember --sampleQF SampleMember"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStQualifiers
+    TESTENV testenv/testHdStQualifiers
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -632,136 +636,6 @@ if (WIN32)
 endif()
 
 #
-# Install tests
-#
-pxr_install_test_dir(
-    SRC testenv/testHdStBarAllocationLimit
-    DEST testHdStBarAllocationLimit
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStBasicDrawing_Adaptive
-    DEST testHdStBasicDrawing_Adaptive
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStBasicDrawing
-    DEST testHdStBasicDrawing
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStBasicDrawing_Quadrangulate
-    DEST testHdStBasicDrawing_Quadrangulate
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStBufferArray
-    DEST testHdStBufferArray
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStBufferArrayInstancingDisabled
-    DEST testHdStBufferArrayInstancingDisabled
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStClipPlanes
-    DEST testHdStClipPlanes
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStCodeGen_GL
-    DEST testHdStCodeGen_GL
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStCodeGen_Vulkan
-    DEST testHdStCodeGen_Vulkan
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStCurveDrawing
-    DEST testHdStCurveDrawing
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStCurvePrimvarInterpolation
-    DEST testHdStCurvePrimvarInterpolation
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStDisplayStyle
-    DEST testHdStDisplayStyle
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStDrawBatching
-    DEST testHdStDrawBatching
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStDynamicUvTexture
-    DEST testHdStDynamicUvTexture
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStFaceCulling
-    DEST testHdStFaceCulling
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStGLSL
-    DEST testHdStGLSL
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStHWFaceCulling
-    DEST testHdStHWFaceCulling
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStInitRepr
-    DEST testHdStInitRepr
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStInstancing
-    DEST testHdStInstancing
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStInstancingUnbalanced
-    DEST testHdStInstancingUnbalanced
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStInstancingUnbalancedNoBindless
-    DEST testHdStInstancingUnbalancedNoBindless
-)
-if (${PXR_ENABLE_MATERIALX_SUPPORT})
-pxr_install_test_dir(
-    SRC testenv/testHdStMaterialXShaderGen
-    DEST testHdStMaterialXShaderGen
-)
-endif()
-pxr_install_test_dir(
-    SRC testenv/testHdStMultipleFvarTopologies
-    DEST testHdStMultipleFvarTopologies
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStPrimGather
-    DEST testHdStPrimGather
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStPrimvars
-    DEST testHdStPrimvars
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStSamplerObjectRegistry
-    DEST testHdStSamplerObjectRegistry
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStSubdivisionOsd3
-    DEST testHdStSubdivisionOsd3
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStTextureHandleRegistry
-    DEST testHdStTextureHandleRegistry
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStTextureObjectRegistry
-    DEST testHdStTextureObjectRegistry
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStTransition
-    DEST testHdStTransition
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStTransitionRefinedCurves
-    DEST testHdStTransitionRefinedCurves
-)
-
-#
 # Register tests
 #
 pxr_register_test(testHdStBarAllocationLimit
@@ -772,7 +646,7 @@ pxr_register_test(testHdStBarAllocationLimit
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStBarAllocationLimit
+    TESTENV testenv/testHdStBarAllocationLimit
     ENV
         TF_DEBUG=HD_SAFE_MODE
         HD_MAX_VBO_SIZE=268435456 # 2^28
@@ -785,7 +659,7 @@ pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv1_hull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Adaptive
+    TESTENV testenv/testHdStBasicDrawing_Adaptive
     ENV
         HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -798,7 +672,7 @@ pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv1_smoothHull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Adaptive
+    TESTENV testenv/testHdStBasicDrawing_Adaptive
     ENV
         HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -811,7 +685,7 @@ pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv1_wire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Adaptive
+    TESTENV testenv/testHdStBasicDrawing_Adaptive
     ENV
         HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -824,7 +698,7 @@ pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv1_wireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Adaptive
+    TESTENV testenv/testHdStBasicDrawing_Adaptive
     ENV
         HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -837,7 +711,7 @@ pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv1_refined
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Adaptive
+    TESTENV testenv/testHdStBasicDrawing_Adaptive
     ENV
         HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -850,7 +724,7 @@ pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv1_refinedWire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Adaptive
+    TESTENV testenv/testHdStBasicDrawing_Adaptive
     ENV
         HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -863,7 +737,7 @@ pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv1_refinedWireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Adaptive
+    TESTENV testenv/testHdStBasicDrawing_Adaptive
     ENV
         HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -876,7 +750,7 @@ pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv2_hull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Adaptive
+    TESTENV testenv/testHdStBasicDrawing_Adaptive
     ENV
         HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -889,7 +763,7 @@ pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv2_smoothHull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Adaptive
+    TESTENV testenv/testHdStBasicDrawing_Adaptive
     ENV
         HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -902,7 +776,7 @@ pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv2_wire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Adaptive
+    TESTENV testenv/testHdStBasicDrawing_Adaptive
     ENV
         HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -915,7 +789,7 @@ pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv2_wireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Adaptive
+    TESTENV testenv/testHdStBasicDrawing_Adaptive
     ENV
         HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -928,7 +802,7 @@ pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv2_refined
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Adaptive
+    TESTENV testenv/testHdStBasicDrawing_Adaptive
     ENV
         HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -941,7 +815,7 @@ pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv2_refinedWire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Adaptive
+    TESTENV testenv/testHdStBasicDrawing_Adaptive
     ENV
         HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -954,7 +828,7 @@ pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv2_refinedWireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Adaptive
+    TESTENV testenv/testHdStBasicDrawing_Adaptive
     ENV
         HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -967,7 +841,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv0_points
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -981,7 +855,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv0_hull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -995,7 +869,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv0_smoothHull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1009,7 +883,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv0_wire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1023,7 +897,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv0_wireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1037,7 +911,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv0_hull_cullback
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1051,7 +925,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv0_smoothHull_cullback
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1065,7 +939,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv0_wire_cullback
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1079,7 +953,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv0_wireOnSurf_cullback
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1093,7 +967,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv0_hull_cullfront
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1107,7 +981,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv0_smoothHull_cullfront
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1121,7 +995,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv0_wire_cullfront
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1135,7 +1009,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv0_wireOnSurf_cullfront
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1149,7 +1023,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv1_points
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1163,7 +1037,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv1_hull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1177,7 +1051,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv1_smoothHull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1191,7 +1065,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv1_wire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1205,7 +1079,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv1_wireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1219,7 +1093,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv1_refined
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1233,7 +1107,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv1_refinedWire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1247,7 +1121,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv1_refinedWireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1261,7 +1135,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv2_hull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1275,7 +1149,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv2_smoothHull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1289,7 +1163,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv2_wire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1303,7 +1177,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv2_wireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1317,7 +1191,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv2_refined
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1331,7 +1205,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv2_refinedWire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1345,7 +1219,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lv2_refinedWireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1359,7 +1233,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv0_hull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1373,7 +1247,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv0_smoothHull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1387,7 +1261,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv0_wire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1401,7 +1275,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv0_wireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1415,7 +1289,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv1_hull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1429,7 +1303,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv1_smoothHull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1443,7 +1317,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv1_wire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1457,7 +1331,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv1_wireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1471,7 +1345,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv1_refined
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1485,7 +1359,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv1_refinedWire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1499,7 +1373,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv1_refinedWireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1513,7 +1387,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv2_hull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1527,7 +1401,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv2_smoothHull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1541,7 +1415,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv2_wire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1555,7 +1429,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv2_wireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1569,7 +1443,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv2_refined
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1583,7 +1457,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv2_refinedWire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1597,7 +1471,7 @@ pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv2_refinedWireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
         HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
@@ -1611,7 +1485,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv0_points
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1623,7 +1497,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv0_hull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1635,7 +1509,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv0_smoothHull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1647,7 +1521,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv0_wire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1659,7 +1533,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv0_wireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1671,7 +1545,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv0_hull_cullback
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1683,7 +1557,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv0_smoothHull_cullback
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1695,7 +1569,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv0_wire_cullback
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1707,7 +1581,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv0_wireOnSurf_cullback
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1719,7 +1593,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv0_hull_cullfront
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1731,7 +1605,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv0_smoothHull_cullfront
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1743,7 +1617,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv0_wire_cullfront
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1755,7 +1629,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv0_wireOnSurf_cullfront
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1767,7 +1641,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv1_points
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1779,7 +1653,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv1_hull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1791,7 +1665,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv1_smoothHull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1803,7 +1677,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv1_wire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1815,7 +1689,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv1_wireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1827,7 +1701,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv1_refined
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1839,7 +1713,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv1_refinedWire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1851,7 +1725,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv1_refinedWireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1863,7 +1737,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv2_hull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1875,7 +1749,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv2_smoothHull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1887,7 +1761,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv2_wire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1899,7 +1773,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv2_wireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1911,7 +1785,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv2_refined
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1923,7 +1797,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv2_refinedWire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1935,7 +1809,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lv2_refinedWireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1947,7 +1821,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv0_hull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1959,7 +1833,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv0_smoothHull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1971,7 +1845,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv0_wire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1983,7 +1857,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv0_wireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -1995,7 +1869,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv1_hull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2007,7 +1881,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv1_smoothHull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2019,7 +1893,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv1_wire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2031,7 +1905,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv1_wireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2043,7 +1917,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv1_refined
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2055,7 +1929,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv1_refinedWire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2067,7 +1941,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv1_refinedWireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2079,7 +1953,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv2_hull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2091,7 +1965,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv2_smoothHull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2103,7 +1977,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv2_wire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2115,7 +1989,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv2_wireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2127,7 +2001,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv2_refined
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2139,7 +2013,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv2_refinedWire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2151,7 +2025,7 @@ pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv2_refinedWireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing
+    TESTENV testenv/testHdStBasicDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2163,7 +2037,7 @@ pxr_register_test(testHdStBasicDrawing_Quadrangulate_hull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Quadrangulate
+    TESTENV testenv/testHdStBasicDrawing_Quadrangulate
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2176,7 +2050,7 @@ pxr_register_test(testHdStBasicDrawing_Quadrangulate_smoothHull
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Quadrangulate
+    TESTENV testenv/testHdStBasicDrawing_Quadrangulate
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2189,7 +2063,7 @@ pxr_register_test(testHdStBasicDrawing_Quadrangulate_wire
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Quadrangulate
+    TESTENV testenv/testHdStBasicDrawing_Quadrangulate
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2202,7 +2076,7 @@ pxr_register_test(testHdStBasicDrawing_Quadrangulate_wireOnSurf
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Quadrangulate
+    TESTENV testenv/testHdStBasicDrawing_Quadrangulate
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2215,7 +2089,7 @@ pxr_register_test(testHdStBasicDrawing_Quadrangulate_hull_cullback
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Quadrangulate
+    TESTENV testenv/testHdStBasicDrawing_Quadrangulate
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2228,7 +2102,7 @@ pxr_register_test(testHdStBasicDrawing_Quadrangulate_smoothHull_cullback
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Quadrangulate
+    TESTENV testenv/testHdStBasicDrawing_Quadrangulate
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2241,7 +2115,7 @@ pxr_register_test(testHdStBasicDrawing_Quadrangulate_wire_cullback
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Quadrangulate
+    TESTENV testenv/testHdStBasicDrawing_Quadrangulate
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2254,7 +2128,7 @@ pxr_register_test(testHdStBasicDrawing_Quadrangulate_wireOnSurf_cullback
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Quadrangulate
+    TESTENV testenv/testHdStBasicDrawing_Quadrangulate
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2267,7 +2141,7 @@ pxr_register_test(testHdStBasicDrawing_Quadrangulate_hull_cullfront
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Quadrangulate
+    TESTENV testenv/testHdStBasicDrawing_Quadrangulate
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2280,7 +2154,7 @@ pxr_register_test(testHdStBasicDrawing_Quadrangulate_smoothHull_cullfront
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Quadrangulate
+    TESTENV testenv/testHdStBasicDrawing_Quadrangulate
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2293,7 +2167,7 @@ pxr_register_test(testHdStBasicDrawing_Quadrangulate_wire_cullfront
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Quadrangulate
+    TESTENV testenv/testHdStBasicDrawing_Quadrangulate
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2306,7 +2180,7 @@ pxr_register_test(testHdStBasicDrawing_Quadrangulate_wireOnSurf_cullfront
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBasicDrawing_Quadrangulate
+    TESTENV testenv/testHdStBasicDrawing_Quadrangulate
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2314,7 +2188,6 @@ pxr_register_test(testHdStBasicDrawing_Quadrangulate_wireOnSurf_cullfront
 pxr_register_test(testHdStBufferAggregation
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBufferAggregation"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBufferAggregation
     ENV
         TF_DEBUG=HD_SAFE_MODE
         HD_MAX_VBO_SIZE=268435456 # 2^28
@@ -2324,7 +2197,7 @@ pxr_register_test(testHdStBufferArray
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT testHdStBufferArray-Run1-stdout.txt
     DIFF_COMPARE testHdStBufferArray-Run1-stdout.txt
-    TESTENV testHdStBufferArray
+    TESTENV testenv/testHdStBufferArray
     ENV
         TF_DEBUG=HD_SAFE_MODE
         HD_ENABLE_DOUBLE_MATRIX=1
@@ -2335,7 +2208,7 @@ pxr_register_test(testHdStBufferArrayInstancingDisabled
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT testHdStBufferArrayInstancingDisabled-Run1-stdout.txt
     DIFF_COMPARE testHdStBufferArrayInstancingDisabled-Run1-stdout.txt
-    TESTENV testHdStBufferArrayInstancingDisabled
+    TESTENV testenv/testHdStBufferArrayInstancingDisabled
     ENV
         HDST_ENABLE_RESOURCE_INSTANCING=0
         HD_ENABLE_DOUBLE_MATRIX=1
@@ -2345,7 +2218,6 @@ pxr_register_test(testHdStBufferArrayInstancingDisabled
 pxr_register_test(testHdStBufferSourceDependency
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBufferSourceDependency"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStBufferSourceDependency
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2357,7 +2229,7 @@ pxr_register_test(testHdStClipPlanes1
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStClipPlanes
+    TESTENV testenv/testHdStClipPlanes
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2369,7 +2241,7 @@ pxr_register_test(testHdStClipPlanes2
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStClipPlanes
+    TESTENV testenv/testHdStClipPlanes
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2380,7 +2252,7 @@ function(register_codegen_tests suffix hgi_env)
         EXPECTED_RETURN_CODE 0
         STDOUT_REDIRECT codegen_mesh_indirect.out
         DIFF_COMPARE codegen_mesh_indirect.out
-        TESTENV testHdStCodeGen${suffix}
+        TESTENV testenv/testHdStCodeGen${suffix}
         ENV
             TF_DEBUG=HD_SAFE_MODE
             ${hgi_env}
@@ -2390,7 +2262,7 @@ function(register_codegen_tests suffix hgi_env)
         EXPECTED_RETURN_CODE 0
         STDOUT_REDIRECT codegen_mesh_indirect_smoothNormals.out
         DIFF_COMPARE codegen_mesh_indirect_smoothNormals.out
-        TESTENV testHdStCodeGen${suffix}
+        TESTENV testenv/testHdStCodeGen${suffix}
         ENV
             TF_DEBUG=HD_SAFE_MODE
             ${hgi_env}
@@ -2400,7 +2272,7 @@ function(register_codegen_tests suffix hgi_env)
         EXPECTED_RETURN_CODE 0
         STDOUT_REDIRECT codegen_mesh_indirect_doubleSided.out
         DIFF_COMPARE codegen_mesh_indirect_doubleSided.out
-        TESTENV testHdStCodeGen${suffix}
+        TESTENV testenv/testHdStCodeGen${suffix}
         ENV
             TF_DEBUG=HD_SAFE_MODE
             ${hgi_env}
@@ -2410,7 +2282,7 @@ function(register_codegen_tests suffix hgi_env)
         EXPECTED_RETURN_CODE 0
         STDOUT_REDIRECT codegen_mesh_indirect_faceVarying.out
         DIFF_COMPARE codegen_mesh_indirect_faceVarying.out
-        TESTENV testHdStCodeGen${suffix}
+        TESTENV testenv/testHdStCodeGen${suffix}
         ENV
             TF_DEBUG=HD_SAFE_MODE
             ${hgi_env}
@@ -2420,7 +2292,7 @@ function(register_codegen_tests suffix hgi_env)
         EXPECTED_RETURN_CODE 0
         STDOUT_REDIRECT codegen_mesh_indirect_instance.out
         DIFF_COMPARE codegen_mesh_indirect_instance.out
-        TESTENV testHdStCodeGen${suffix}
+        TESTENV testenv/testHdStCodeGen${suffix}
         ENV
             TF_DEBUG=HD_SAFE_MODE
             ${hgi_env}
@@ -2430,7 +2302,7 @@ function(register_codegen_tests suffix hgi_env)
         EXPECTED_RETURN_CODE 0
         STDOUT_REDIRECT codegen_mesh_edgeonly.out
         DIFF_COMPARE codegen_mesh_edgeonly.out
-        TESTENV testHdStCodeGen${suffix}
+        TESTENV testenv/testHdStCodeGen${suffix}
         ENV
             TF_DEBUG=HD_SAFE_MODE
             ${hgi_env}
@@ -2440,7 +2312,7 @@ function(register_codegen_tests suffix hgi_env)
         EXPECTED_RETURN_CODE 0
         STDOUT_REDIRECT codegen_mesh_edgeonly_blendwireframe.out
         DIFF_COMPARE codegen_mesh_edgeonly_blendwireframe.out
-        TESTENV testHdStCodeGen${suffix}
+        TESTENV testenv/testHdStCodeGen${suffix}
         ENV
             TF_DEBUG=HD_SAFE_MODE
             ${hgi_env}
@@ -2450,7 +2322,7 @@ function(register_codegen_tests suffix hgi_env)
         EXPECTED_RETURN_CODE 0
         STDOUT_REDIRECT codegen_curves_indirect.out
         DIFF_COMPARE codegen_curves_indirect.out
-        TESTENV testHdStCodeGen${suffix}
+        TESTENV testenv/testHdStCodeGen${suffix}
         ENV
             TF_DEBUG=HD_SAFE_MODE
             ${hgi_env}
@@ -2460,7 +2332,7 @@ function(register_codegen_tests suffix hgi_env)
         EXPECTED_RETURN_CODE 0
         STDOUT_REDIRECT codegen_points_indirect.out
         DIFF_COMPARE codegen_points_indirect.out
-        TESTENV testHdStCodeGen${suffix}
+        TESTENV testenv/testHdStCodeGen${suffix}
         ENV
             TF_DEBUG=HD_SAFE_MODE
             ${hgi_env}
@@ -2482,7 +2354,7 @@ pxr_register_test(testHdStCurveDrawing_lv0_refined
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStCurveDrawing
+    TESTENV testenv/testHdStCurveDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2494,7 +2366,7 @@ pxr_register_test(testHdStCurveDrawing_lv1_refined
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStCurveDrawing
+    TESTENV testenv/testHdStCurveDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2506,7 +2378,7 @@ pxr_register_test(testHdStCurvePrimvarInterpolation_lv0_refined
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStCurvePrimvarInterpolation
+    TESTENV testenv/testHdStCurvePrimvarInterpolation
     ENV
         TF_DEBUG=HD_DISABLE_MULTITHREADED_RPRIM_SYNC
 )
@@ -2518,7 +2390,7 @@ pxr_register_test(testHdStCurvePrimvarInterpolation_lv1_refined
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStCurvePrimvarInterpolation
+    TESTENV testenv/testHdStCurvePrimvarInterpolation
     ENV
         TF_DEBUG=HD_DISABLE_MULTITHREADED_RPRIM_SYNC
 )
@@ -2530,14 +2402,13 @@ pxr_register_test(testHdStCurvePrimvarInterpolation_lv3_refined
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStCurvePrimvarInterpolation
+    TESTENV testenv/testHdStCurvePrimvarInterpolation
     ENV
         TF_DEBUG=HD_DISABLE_MULTITHREADED_RPRIM_SYNC
 )
 pxr_register_test(testHdStCurvesPrimvars
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCurvesPrimvars"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStCurvesPrimvars
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2549,7 +2420,7 @@ pxr_register_test(testHdStDisplayStyle
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStDisplayStyle
+    TESTENV testenv/testHdStDisplayStyle
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2561,7 +2432,19 @@ pxr_register_test(testHdStDisplayStyle_refined
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStDisplayStyle
+    TESTENV testenv/testHdStDisplayStyle
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+pxr_register_test(testHdStDepthBias
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStDepthBias --offscreen"
+    EXPECTED_RETURN_CODE 0
+    IMAGE_DIFF_COMPARE
+        testHdStDepthBias_disabled.png
+        testHdStDepthBias_enabled.png
+    FAIL 1
+    FAIL_PERCENT 1
+    TESTENV testenv/testHdStDepthBias
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2570,7 +2453,7 @@ pxr_register_test(testHdStDrawBatching
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT testHdStDrawBatching-Run1-stdout.txt
     DIFF_COMPARE testHdStDrawBatching-Run1-stdout.txt
-    TESTENV testHdStDrawBatching
+    TESTENV testenv/testHdStDrawBatching
     ENV
         TF_DEBUG=HD_SAFE_MODE
         HD_ENABLE_DOUBLE_MATRIX=1
@@ -2581,12 +2464,10 @@ pxr_register_test(testHdStDrawBatching
 pxr_register_test(testHdStDrawItemIntegrity
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStDrawItemIntegrity --offscreen"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStDrawItemIntegrity
 )
 pxr_register_test(testHdStDrawItemsCache
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStDrawItemsCache --offscreen"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStDrawItemsCache
     ENV
         HDST_ENABLE_DRAW_ITEMS_CACHE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2600,7 +2481,7 @@ pxr_register_test(testHdStDynamicUvTexture
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStDynamicUvTexture
+    TESTENV testenv/testHdStDynamicUvTexture
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2611,7 +2492,7 @@ pxr_register_test(testHdStFaceCulling_None
         testHdStFaceCulling_cull_none.png
     FAIL 1
     FAIL_PERCENT 1
-    TESTENV testHdStFaceCulling
+    TESTENV testenv/testHdStFaceCulling
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2622,7 +2503,7 @@ pxr_register_test(testHdStFaceCulling_Back
         testHdStFaceCulling_cull_back.png
     FAIL 1
     FAIL_PERCENT 1
-    TESTENV testHdStFaceCulling
+    TESTENV testenv/testHdStFaceCulling
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2633,7 +2514,7 @@ pxr_register_test(testHdStFaceCulling_Front
         testHdStFaceCulling_cull_front.png
     FAIL 1
     FAIL_PERCENT 1
-    TESTENV testHdStFaceCulling
+    TESTENV testenv/testHdStFaceCulling
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2644,7 +2525,7 @@ pxr_register_test(testHdStFaceCulling_BackUnlessDoubleSided
         testHdStFaceCulling_cull_backUnlessDS.png
     FAIL 1
     FAIL_PERCENT 1
-    TESTENV testHdStFaceCulling
+    TESTENV testenv/testHdStFaceCulling
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2655,21 +2536,19 @@ pxr_register_test(testHdStFaceCulling_FrontUnlessDoubleSided
         testHdStFaceCulling_cull_frontUnlessDS.png
     FAIL 1
     FAIL_PERCENT 1
-    TESTENV testHdStFaceCulling
+    TESTENV testenv/testHdStFaceCulling
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
 pxr_register_test(testHdStFrustumCullingCPU
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStFrustumCulling --offscreen"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStFrustumCulling
     ENV
         HD_ENABLE_GPU_FRUSTUM_CULLING=0
 )
 pxr_register_test(testHdStFrustumCullingGPU
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStFrustumCulling --offscreen"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStFrustumCulling
     ENV
         HD_ENABLE_GPU_FRUSTUM_CULLING=1
         HD_ENABLE_GPU_COUNT_VISIBLE_INSTANCES=1
@@ -2698,35 +2577,35 @@ pxr_register_test(testHdStGL
 pxr_register_test(testHdStGLSL_instanceTransform0
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform0"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStGLSL
+    TESTENV testenv/testHdStGLSL
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
 pxr_register_test(testHdStGLSL_instanceTransform1
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform1"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStGLSL
+    TESTENV testenv/testHdStGLSL
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
 pxr_register_test(testHdStGLSL_instanceTransform2
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform2"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStGLSL
+    TESTENV testenv/testHdStGLSL
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
 pxr_register_test(testHdStGLSL_instanceTransform3
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform3"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStGLSL
+    TESTENV testenv/testHdStGLSL
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
 pxr_register_test(testHdStGLSL_determinant
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx determinant"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStGLSL
+    TESTENV testenv/testHdStGLSL
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2735,7 +2614,7 @@ pxr_register_test(testHdStHWFaceCulling
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT testHdStHWFaceCulling-Run1-stdout.txt
     DIFF_COMPARE testHdStHWFaceCulling-Run1-stdout.txt
-    TESTENV testHdStHWFaceCulling
+    TESTENV testenv/testHdStHWFaceCulling
 )
 pxr_register_test(testHdStIndirectDrawBatchCulling
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStIndirectDrawBatchCulling"
@@ -2754,7 +2633,7 @@ pxr_register_test(testHdStInitRepr
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStInitRepr
+    TESTENV testenv/testHdStInitRepr
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2766,7 +2645,7 @@ pxr_register_test(testHdStInstancing
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStInstancing
+    TESTENV testenv/testHdStInstancing
     ENV
         HGIGL_ENABLE_BINDLESS_BUFFER=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2779,7 +2658,7 @@ pxr_register_test(testHdStInstancing_Refined
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStInstancing
+    TESTENV testenv/testHdStInstancing
     ENV
         HGIGL_ENABLE_BINDLESS_BUFFER=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2792,7 +2671,7 @@ pxr_register_test(testHdStInstancing_Wire
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStInstancing
+    TESTENV testenv/testHdStInstancing
     ENV
         HGIGL_ENABLE_BINDLESS_BUFFER=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2800,7 +2679,7 @@ pxr_register_test(testHdStInstancing_Wire
 pxr_register_test(testHdStInstancing_NoPrimvars
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStInstancing --offscreen --noprimvars"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStInstancing
+    TESTENV testenv/testHdStInstancing
     ENV
         HGIGL_ENABLE_BINDLESS_BUFFER=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2812,7 +2691,7 @@ pxr_register_test(testHdStInstancing_Div4_Level4
         testHdStInstancing_div5_level2.png
     FAIL 1
     FAIL_PERCENT 1
-    TESTENV testHdStInstancing
+    TESTENV testenv/testHdStInstancing
     ENV
         HGIGL_ENABLE_BINDLESS_BUFFER=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2825,7 +2704,7 @@ pxr_register_test(testHdStInstancing_Div5_Level2
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStInstancing
+    TESTENV testenv/testHdStInstancing
     ENV
         HGIGL_ENABLE_BINDLESS_BUFFER=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2838,7 +2717,7 @@ pxr_register_test(testHdStInstancing_Div3_Level3
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStInstancing
+    TESTENV testenv/testHdStInstancing
     ENV
         HGIGL_ENABLE_BINDLESS_BUFFER=1
         TF_DEBUG=HD_SAFE_MODE
@@ -2851,7 +2730,7 @@ pxr_register_test(testHdStInstancingUnbalanced
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStInstancingUnbalanced
+    TESTENV testenv/testHdStInstancingUnbalanced
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2863,7 +2742,7 @@ pxr_register_test(testHdStInstancingUnbalancedNoBindless
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStInstancingUnbalancedNoBindless
+    TESTENV testenv/testHdStInstancingUnbalancedNoBindless
     ENV
         HGIGL_ENABLE_BINDLESS_BUFFER=0
         TF_DEBUG=HD_SAFE_MODE
@@ -2874,63 +2753,63 @@ pxr_register_test(testHdStMaterialXShaderGen_UsdPSdefault
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT shadergen_UsdPSdefault.out
     DIFF_COMPARE shadergen_UsdPSdefault.out
-    TESTENV testHdStMaterialXShaderGen
+    TESTENV testenv/testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_SSmarble
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_marble_solid.mtlx"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT shadergen_SSmarble.out
     DIFF_COMPARE shadergen_SSmarble.out
-    TESTENV testHdStMaterialXShaderGen
+    TESTENV testenv/testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_SScopper
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_copper.mtlx"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT shadergen_SScopper.out
     DIFF_COMPARE shadergen_SScopper.out
-    TESTENV testHdStMaterialXShaderGen
+    TESTENV testenv/testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_SSdefault
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_default.mtlx --config materialTag:customTag"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT shadergen_SSdefault.out
     DIFF_COMPARE shadergen_SSdefault.out
-    TESTENV testHdStMaterialXShaderGen
+    TESTENV testenv/testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_UsdPStextured
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename usd_preview_surface_brass_tiled.mtlx --textureName image_color_file --textureName image_roughness_file"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT shadergen_UsdPStextured.out
     DIFF_COMPARE shadergen_UsdPStextured.out
-    TESTENV testHdStMaterialXShaderGen
+    TESTENV testenv/testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_SStextured
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_brass_tiled.mtlx --textureName image_color_file --textureName image_roughness_file --primvarMap uv:vector2"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT shadergen_SStextured.out
     DIFF_COMPARE shadergen_SStextured.out
-    TESTENV testHdStMaterialXShaderGen
+    TESTENV testenv/testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_UsdPSglass
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename usd_preview_surface_glass.mtlx"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT shadergen_UsdPSglass.out
     DIFF_COMPARE shadergen_UsdPSglass.out
-    TESTENV testHdStMaterialXShaderGen
+    TESTENV testenv/testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_SStextured_bindless
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_brass_tiled.mtlx --textureName image_color_file --textureName image_roughness_file --primvarMap uv:vector2 --bindless"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT shadergen_SStextured_bindless.out
     DIFF_COMPARE shadergen_SStextured_bindless.out
-    TESTENV testHdStMaterialXShaderGen
+    TESTENV testenv/testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_texcoord
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename texcoord.mtlx --primvarMap st:vector2"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT shadergen_texcoord.out
     DIFF_COMPARE shadergen_texcoord.out
-    TESTENV testHdStMaterialXShaderGen
+    TESTENV testenv/testHdStMaterialXShaderGen
 )
 endif()
 pxr_register_test(testHdStMeshTopology
@@ -2951,7 +2830,7 @@ pxr_register_test(testHdStMultipleFvarTopologies
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStMultipleFvarTopologies
+    TESTENV testenv/testHdStMultipleFvarTopologies
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -2975,7 +2854,7 @@ pxr_register_test(testHdStPrimGather
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStPrimGather
+    TESTENV testenv/testHdStPrimGather
 )
 pxr_register_test(testHdStPrimitiveParam
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStPrimitiveParam"
@@ -2988,7 +2867,7 @@ pxr_register_test(testHdStPrimvars
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT testHdStPrimvars-Run1-stdout.txt
     DIFF_COMPARE testHdStPrimvars-Run1-stdout.txt
-    TESTENV testHdStPrimvars
+    TESTENV testenv/testHdStPrimvars
     ENV
         HDST_ENABLE_MATERIAL_PRIMVAR_FILTERING=0
         TF_DEBUG=HD_SAFE_MODE
@@ -3015,13 +2894,14 @@ pxr_register_test(testHdStSamplerObjectRegistry
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
+    TESTENV testenv/testHdStSamplerObjectRegistry
 )
 pxr_register_test(testHdStSubdivisionOsd3
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStSubdivision"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT testHdStSubdivisionOsd3-Run1-stdout.txt
     DIFF_COMPARE testHdStSubdivisionOsd3-Run1-stdout.txt
-    TESTENV testHdStSubdivisionOsd3
+    TESTENV testenv/testHdStSubdivisionOsd3
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -3038,6 +2918,7 @@ pxr_register_test(testHdStTextureHandleRegistry
         outTextureAfterReload.png
         outTextureWithLowGlobalMemoryRequest.png
         outTextureWithHighGlobalMemoryRequest.png
+    TESTENV testenv/testHdStTextureHandleRegistry
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
@@ -3054,6 +2935,7 @@ pxr_register_test(testHdStTextureObjectRegistry
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
+    TESTENV testenv/testHdStTextureObjectRegistry
 )
 pxr_register_test(testHdStTransition0
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStTransition --offscreen --outputFilePrefix testHdStTransition0 --repr hull -c draw,animate=/cube1,repr=smoothHull,draw,repr=hull,draw,refineLevel=1,repr=refined,draw,refineLevel=2,draw"
@@ -3067,7 +2949,7 @@ pxr_register_test(testHdStTransition0
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStTransition
+    TESTENV testenv/testHdStTransition
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -3081,7 +2963,7 @@ pxr_register_test(testHdStTransition1
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStTransition
+    TESTENV testenv/testHdStTransition
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -3096,7 +2978,7 @@ pxr_register_test(testHdStTransition2
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStTransition
+    TESTENV testenv/testHdStTransition
     ENV
         HD_ENABLE_FORCE_QUADRANGULATE=1
         TF_DEBUG=HD_SAFE_MODE
@@ -3110,7 +2992,7 @@ pxr_register_test(testHdStTransitionRefinedCurves
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStTransitionRefinedCurves
+    TESTENV testenv/testHdStTransitionRefinedCurves
     ENV
         HD_ENABLE_REFINED_CURVES=1
         TF_DEBUG=HD_SAFE_MODE
@@ -3118,7 +3000,6 @@ pxr_register_test(testHdStTransitionRefinedCurves
 pxr_register_test(testHdStSubResourceRegistry
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStSubResourceRegistry"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStSubResourceRegistry
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -3137,14 +3018,6 @@ pxr_build_test(testHdStPtex
     CPPFILES
         testenv/testHdStPtex.cpp
 )
-pxr_install_test_dir(
-    SRC testenv/testHdStPtex
-    DEST testHdStPtex
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStPtexTetrahedron
-    DEST testHdStPtexTetrahedron
-)
 pxr_register_test(testHdStPtex
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStPtex --ptex test.ptx --offscreen --write testHdStPtex.png"
     EXPECTED_RETURN_CODE 0
@@ -3153,7 +3026,7 @@ pxr_register_test(testHdStPtex
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStPtex
+    TESTENV testenv/testHdStPtex
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -3165,7 +3038,7 @@ pxr_register_test(testHdStPtex_Refined
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStPtex
+    TESTENV testenv/testHdStPtex
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -3177,7 +3050,7 @@ pxr_register_test(testHdStPtexBindless
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStPtex
+    TESTENV testenv/testHdStPtex
     ENV
         HGIGL_ENABLE_BINDLESS_BUFFER=true
         TF_DEBUG=HD_SAFE_MODE
@@ -3190,7 +3063,7 @@ pxr_register_test(testHdStPtexBindless_Refined
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStPtex
+    TESTENV testenv/testHdStPtex
     ENV
         HGIGL_ENABLE_BINDLESS_BUFFER=true
         TF_DEBUG=HD_SAFE_MODE
@@ -3203,7 +3076,7 @@ pxr_register_test(testHdStPtexTetrahedron
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStPtexTetrahedron
+    TESTENV testenv/testHdStPtexTetrahedron
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -3215,7 +3088,7 @@ pxr_register_test(testHdStPtexTetrahedron_Loop
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStPtexTetrahedron
+    TESTENV testenv/testHdStPtexTetrahedron
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -3227,7 +3100,7 @@ pxr_register_test(testHdStPtexTetrahedron_ForceQuads
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStPtexTetrahedron
+    TESTENV testenv/testHdStPtexTetrahedron
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -3239,7 +3112,7 @@ pxr_register_test(testHdStPtexTetrahedron_Quads
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStPtexTetrahedron
+    TESTENV testenv/testHdStPtexTetrahedron
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -3251,7 +3124,7 @@ pxr_register_test(testHdStPtexTetrahedron_Quads_ForceTris
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStPtexTetrahedron
+    TESTENV testenv/testHdStPtexTetrahedron
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -3263,7 +3136,7 @@ pxr_register_test(testHdStPtexTetrahedron_Refined
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStPtexTetrahedron
+    TESTENV testenv/testHdStPtexTetrahedron
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -3275,7 +3148,7 @@ pxr_register_test(testHdStPtexTetrahedron_Refined_Loop
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStPtexTetrahedron
+    TESTENV testenv/testHdStPtexTetrahedron
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -3287,7 +3160,7 @@ pxr_register_test(testHdStPtexTetrahedron_Refined_ForceQuads
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStPtexTetrahedron
+    TESTENV testenv/testHdStPtexTetrahedron
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -3299,7 +3172,7 @@ pxr_register_test(testHdStPtexTetrahedron_Refined_Quads
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStPtexTetrahedron
+    TESTENV testenv/testHdStPtexTetrahedron
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -3311,7 +3184,7 @@ pxr_register_test(testHdStPtexTetrahedron_Refined_Quads_ForceTris
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStPtexTetrahedron
+    TESTENV testenv/testHdStPtexTetrahedron
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
@@ -3326,10 +3199,6 @@ pxr_build_test(testHdStShaders
         gf
     CPPFILES
         testenv/testHdStShaders.cpp
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStShaders
-    DEST testHdStShaders
 )
 pxr_register_test(testHdStShaders
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStShaders --offscreen --outputFilePrefix testHdStShaders"
@@ -3349,7 +3218,7 @@ pxr_register_test(testHdStShaders
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
-    TESTENV testHdStShaders
+    TESTENV testenv/testHdStShaders
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )

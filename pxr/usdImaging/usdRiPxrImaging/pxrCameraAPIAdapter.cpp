@@ -88,9 +88,9 @@ _GetNamespacedPropertyMappingsForAppliedSchema(
 
         result.push_back(
             UsdImagingDataSourceMapped::AttributeMapping{
-                usdName,
-                HdDataSourceLocator(namespaceAndName.first,
-                                    namespaceAndName.second),
+                { usdName,
+                  HdDataSourceLocator(namespaceAndName.first,
+                                      namespaceAndName.second) },
                 _DataSourceAuthoredAttributeNew});
     }
 

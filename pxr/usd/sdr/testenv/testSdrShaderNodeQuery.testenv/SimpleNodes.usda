@@ -1,0 +1,39 @@
+#usda 1.0
+
+def Shader "SimpleNodeA" (
+    sdrMetadata = {
+        token context = "foo"
+        token testMetadata = "bar"
+        token testMetadataDifferent = "barA"
+    }
+)
+{
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @testDummy.glslfx@
+    float inputs:inputA = 0.0
+}
+
+def Shader "SimpleNodeB"
+(
+    sdrMetadata = {
+	token context = "foo"
+	token testMetadata = "bar"
+	token testMetadataDifferent = "barB"
+    }
+) {
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @testDummy.glslfx@
+    float inputs:inputB = 0.0
+}
+
+def Shader "OtherNodeC"
+(
+    sdrMetadata = {
+        token context = "foo"
+        token testMetadataDifferent = "barC" 
+    }
+) {
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @testDummy.glslfx@
+    float inputs:inputC = 0.0
+}

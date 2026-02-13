@@ -28,5 +28,17 @@ TF_REGISTRY_FUNCTION(TfEnum)
                      "Spline value");
 }
 
+UsdResolveInfo *
+UsdResolveInfo::_AddNextWeakerInfo()
+{
+    if (!TF_VERIFY(!_nextWeaker,
+                   "Cannot add weaker info to a UsdResolveInfo that already "
+                   "has it.")) {
+        return this;
+    }
+    _nextWeaker = std::make_shared<UsdResolveInfo>();
+    return _nextWeaker.get();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

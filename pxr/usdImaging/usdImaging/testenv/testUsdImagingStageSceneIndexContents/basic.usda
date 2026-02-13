@@ -60,6 +60,12 @@ def Xform "Geom"
             interpolation = "vertex"
         )
     }
+
+    def Xform "XformWithPivot"
+    {
+        float3 xformOp:translate:pivot = (123, 456, 789)
+        uniform token[] xformOpOrder = ["xformOp:translate:pivot", "!invert!xformOp:translate:pivot"]
+    }
 }
 
 def Xform "CoordSys"
@@ -74,4 +80,3 @@ def Xform "CoordSys"
     {
     }
 }
-

@@ -11,6 +11,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
+#include "pxr/base/vt/traits.h"
 
 #include <algorithm>
 #include <functional>
@@ -100,6 +101,9 @@ private:
 
     double _time;
 };
+
+// SdfTimeCode supports value transformations.
+VT_VALUE_TYPE_CAN_TRANSFORM(SdfTimeCode);
 
 /// \name Related
 /// Binary arithmetic and comparison operators with double valued lefthand side.

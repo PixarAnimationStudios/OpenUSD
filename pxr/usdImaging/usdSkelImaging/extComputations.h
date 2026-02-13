@@ -18,6 +18,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdExtComputationContext;
 
 extern TfEnvSetting<bool> USDSKELIMAGING_FORCE_CPU_COMPUTE;
+extern TfEnvSetting<bool> USDSKELIMAGING_ENABLE_NORMAL_COMPUTATIONS;
 
 /// Invoke the skinning ext computation.
 USDSKELIMAGING_API
@@ -34,7 +35,9 @@ UsdSkelImagingExtComputationCpuCallback(const TfToken &skinningMethod);
 /// Data source for skinning GPU computation.
 USDSKELIMAGING_API
 HdStringDataSourceHandle
-UsdSkelImagingExtComputationGlslKernel(const TfToken &skinningMethod);
+UsdSkelImagingExtComputationGlslKernel(
+    const TfToken &skinningMethod,
+    const TfToken &computationType);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

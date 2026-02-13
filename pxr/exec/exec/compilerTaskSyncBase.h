@@ -27,13 +27,25 @@ class Exec_CompilerTaskSyncBase
 public:
     /// The different results for claiming a key.
     enum class ClaimResult {
-        Done,       ///< The task is already done.
+        /// The task is already done.
+        Done,
 
-        Wait,       ///< Another task is currently processing the key and
-                    ///  the claimant will be notified once it is done.
+        /// Another task is currently processing the key and the claimant will
+        /// be notified once it is done.
+        Wait,
 
-        Claimed     ///< The key has been successfully claimed, and the claimant
-                    ///  is on the hook for completing the work.
+        /// The key has been successfully claimed, and the claimant is on the
+        /// hook for completing the work.
+        Claimed,
+    };
+
+    /// The different results for waiting on a key.
+    enum class WaitResult {
+        /// The task is already done.
+        Done,
+
+        /// The task is not yet marked done.
+        Wait,
     };
 
 protected:
@@ -54,32 +66,46 @@ protected:
     /// nodes on their waitlist.
     ///
     /// Derived classes should not concern themselves with the contents of the
-    /// _Entry structure, but its contents must be known to be stored in a map.
+    /// _Waitlist structure, but its contents must be known to be stored in a
+    /// map.
     ///
-    struct _Entry {
-        _Entry() : state(_TaskStateUnclaimed), waiting(nullptr) {}
+    struct _Waitlist {
+        _Waitlist() : state(_TaskStateUnclaimed), waiting(nullptr) {}
         std::atomic<uint8_t> state;
         std::atomic<_WaitlistNode*> waiting;
     };
 
-    /// Attempts to claim the \p entry, and returns whether the attempt was
+    /// Attempts to claim the \p waitlist, and returns whether the attempt was
     /// successful.
     ///
     /// This method will increment the dependency count of the \p task, if the
-    /// entry has already been claimed and \p task needs to wait for the
+    /// waitlist has already been claimed and \p task needs to wait for the
     /// results. Once the dependency is fulfilled, the \p task will be notified
     /// by decrementing its dependency count, and if it reaches zero the \p task
     /// will automatically be spawned.
     ///
-    ClaimResult _Claim(_Entry *entry, Exec_CompilationTask *task);
+    ClaimResult _Claim(_Waitlist *waitlist, Exec_CompilationTask *task);
 
-    /// Marks the task associated with \p entry as done.
+    /// Marks the task associated with \p waitlist as done.
     /// 
-    /// This method will notify any tasks depending on \p entry by decrementing
-    /// their dependency counts, and spawning them if their dependency count
-    /// reaches 0.
+    /// This method will notify any tasks depending on \p waitlist by
+    /// decrementing their dependency counts, and spawning them if their
+    /// dependency count reaches 0. The waitlist need not already be claimed.
     ///
-    void _MarkDone(_Entry *entry);
+    /// Returns true if this call marked the waitlist done; false if the
+    /// waitlist was already marked done.
+    ///
+    bool _MarkDone(_Waitlist *waitlist);
+
+    /// Establishes that \p task depends on the task associated with
+    /// \p waitlist.
+    ///
+    /// Unlike Claim, if the task for \p waitlist has not been claimed, the
+    /// caller is *not* responsible for creating that task. In that case, a new
+    /// waitlist is created for \p waitlist if necessary, and the \p task is
+    /// added to it.
+    ///
+    WaitResult _WaitOn(_Waitlist *waitlist, Exec_CompilationTask *task);
 
 private:
     // Registers \p task as waiting on the list denoted by \p headPtr. The
@@ -98,7 +124,9 @@ private:
     bool _CloseAndNotify(std::atomic<_WaitlistNode*> *headPtr);
 
     // Allocate a new node for a waiting queue.
-    _WaitlistNode *_AllocateNode(Exec_CompilationTask *task, _WaitlistNode *next);
+    _WaitlistNode *_AllocateNode(
+        Exec_CompilationTask *task,
+        _WaitlistNode *next);
 
 private:
     // The various states a task can be in.

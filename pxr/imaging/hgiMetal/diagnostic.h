@@ -33,6 +33,9 @@ bool HgiMetalDebugEnabled();
 #define HGIMETAL_DEBUG_POP_GROUP(_obj) \
     if (HgiMetalDebugEnabled()) { [_obj popDebugGroup]; }
 
+#define HGIMETAL_DEBUG_INSERT_DEBUG_MARKER(_obj, label) \
+    if (HgiMetalDebugEnabled()) { [_obj insertDebugSignpost:@(label)]; }
+
 /// Posts diagnostic errors for all Metal errors in the current context.
 HGIMETAL_API
 void HgiMetalPostPendingErrors(std::string const & where = std::string());

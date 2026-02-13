@@ -180,7 +180,7 @@ VdfSpeculationExecutorEngine<DataManagerType>::RunSchedule(
     // Make sure the executor data manager is appropriately sized.
     Base::_GetDataManager()->Resize(*schedule.GetNetwork());
 
-    const size_t numNodes = schedule.GetNetwork()->GetNodeCapacity();
+    const size_t numNodes = schedule.GetScheduleNodeVector().size();
 
     // Has a bit set for any node that has already been run.
     TfBits executedNodes(numNodes);
@@ -258,6 +258,7 @@ VdfSpeculationExecutorEngine<DataManagerType>::_ExecuteOutputForSpeculation(
     while (!outputsStack.empty() && !hasBeenInterrupted) {
 
         const VdfSchedule::OutputId &outputId = outputsStack.back().outputId;
+        const int scheduleNodeIndex = schedule.GetScheduleNodeIndex(outputId);
         const VdfNode &node = *schedule.GetNode(outputId);
         typename Base::_ExecutionStage stage = outputsStack.back().stage;
         const size_t outputIndex = outputsStack.size() - 1;
@@ -301,9 +302,9 @@ VdfSpeculationExecutorEngine<DataManagerType>::_ExecuteOutputForSpeculation(
             // time. However, make sure to push the right value onto the
             // speculated stack, based on whether the node had inputs we
             // speculated about, the last time it was run.
-            if (executedNodes->IsSet(VdfNode::GetIndexFromId(node.GetId()))) {
-                speculated.push_back(speculatedNodes->IsSet(
-                    VdfNode::GetIndexFromId(node.GetId())));
+            if (executedNodes->IsSet(scheduleNodeIndex)) {
+                speculated.push_back(
+                    speculatedNodes->IsSet(scheduleNodeIndex));
                 outputsStack.pop_back();
 
                 TF_DEBUG(VDF_SEE_TRACE)
@@ -448,7 +449,7 @@ VdfSpeculationExecutorEngine<DataManagerType>::_ExecuteOutputForSpeculation(
             outputsStack.back().inputsSpeculate |= previousStageSpeculated;
         
             // Set a bit indicating that this node has been executed.
-            executedNodes->Set(VdfNode::GetIndexFromId(node.GetId()));
+            executedNodes->Set(scheduleNodeIndex);
 
             // If any of our inputs speculated, there is nothing we can do.
             // Skip this node, but make sure to still touch its outputs.
@@ -459,7 +460,7 @@ VdfSpeculationExecutorEngine<DataManagerType>::_ExecuteOutputForSpeculation(
                          node.GetDebugName().c_str());
 
                 // This node has speculated inputs
-                speculatedNodes->Set(VdfNode::GetIndexFromId(node.GetId()));
+                speculatedNodes->Set(scheduleNodeIndex);
                 speculated.push_back(true);
 
             // Compute this node, if it is affective, or pass-through if any

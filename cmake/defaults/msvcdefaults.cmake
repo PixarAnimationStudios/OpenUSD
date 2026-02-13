@@ -9,7 +9,7 @@
 set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /EHsc")
 
 # Standards compliant.
-set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:rvalueCast /Zc:strictStrings")
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /permissive- /Zc:inline")
 
 # Visual Studio sets the value of __cplusplus to 199711L regardless of
 # the C++ standard actually being used, unless /Zc:__cplusplus is enabled.
@@ -17,19 +17,6 @@ set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:rvalueCast /Zc:strictStrings")
 # For more details, see:
 # https://learn.microsoft.com/en-us/cpp/build/reference/zc-cplusplus
 set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:__cplusplus")
-
-# The /Zc:inline option strips out the "arch_ctor_<name>" symbols used for
-# library initialization by ARCH_CONSTRUCTOR starting in Visual Studio 2019, 
-# causing release builds to fail. Disable the option for this and later 
-# versions.
-# 
-# For more details, see:
-# https://developercommunity.visualstudio.com/content/problem/914943/zcinline-removes-extern-symbols-inside-anonymous-n.html
-if (MSVC_VERSION GREATER_EQUAL 1920)
-    set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:inline-")
-else()
-    set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:inline")
-endif()
 
 # Turn on all but informational warnings.
 # Note /W3 also includes Mismatch-tags warnings (C4099)
@@ -87,9 +74,19 @@ _disable_warning("4334")
 # Disable warning C4996 regarding fopen(), strcpy(), etc.
 _add_define("_CRT_SECURE_NO_WARNINGS")
 
+# Disable warning C4996 regarding deprecated POSIX function names and
+# recommending non-standard Microsoft names instead (e.g. use _strdup 
+# instead of strdup). Per docs, these warnings can be disabled if the
+# original names are needed for portability reasons.
+_add_define("_CRT_NONSTDC_NO_WARNINGS")
+
 # Disable warning C4996 regarding unchecked iterators for std::transform,
 # std::copy, std::equal, et al.
 _add_define("_SCL_SECURE_NO_WARNINGS")
+
+# Disable warning C4996 regarding use of std::iterator as a base class.
+# This warning is emitted from legacy TBB's containers/iterators.
+_add_define("_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING")
 
 # Make sure WinDef.h does not define min and max macros which
 # will conflict with std::min() and std::max().

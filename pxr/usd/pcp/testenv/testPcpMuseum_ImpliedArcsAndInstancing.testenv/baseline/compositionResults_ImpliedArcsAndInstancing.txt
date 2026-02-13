@@ -1,0 +1,124 @@
+Loading @ImpliedArcsAndInstancing/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Inherits>
+
+Prim Stack:
+    root.usda            /Inherits
+    ref.usda             /Ref_Inherits
+
+Child names:
+     ['class_widget', 'widget']
+
+------------------------------------------------------------------------
+Results for composing </Inherits/class_widget>
+
+Prim Stack:
+    ref.usda             /Ref_Inherits/class_widget
+
+Property names:
+     ['radius']
+
+Property stacks:
+/Inherits/class_widget.radius:
+    ref.usda             /Ref_Inherits/class_widget.radius
+
+------------------------------------------------------------------------
+Results for composing </Inherits/widget>
+
+Prim Stack:
+    root.usda            /Inherits/class_widget
+    ref.usda             /Ref_Inherits/widget
+    ref.usda             /Ref_Inherits/class_widget
+
+Property names:
+     ['radius']
+
+Property stacks:
+/Inherits/widget.radius:
+    root.usda            /Inherits/class_widget.radius
+    ref.usda             /Ref_Inherits/widget.radius
+    ref.usda             /Ref_Inherits/class_widget.radius
+
+------------------------------------------------------------------------
+Results for composing </Specializes>
+
+Prim Stack:
+    root.usda            /Specializes
+    ref.usda             /Ref_Specializes
+
+Child names:
+     ['class_widget', 'widget']
+
+------------------------------------------------------------------------
+Results for composing </Specializes/class_widget>
+
+Prim Stack:
+    ref.usda             /Ref_Specializes/class_widget
+
+Property names:
+     ['radius']
+
+Property stacks:
+/Specializes/class_widget.radius:
+    ref.usda             /Ref_Specializes/class_widget.radius
+
+------------------------------------------------------------------------
+Results for composing </Specializes/widget>
+
+Prim Stack:
+    ref.usda             /Ref_Specializes/widget
+    root.usda            /Specializes/class_widget
+    ref.usda             /Ref_Specializes/class_widget
+
+Property names:
+     ['radius']
+
+Property stacks:
+/Specializes/widget.radius:
+    ref.usda             /Ref_Specializes/widget.radius
+    root.usda            /Specializes/class_widget.radius
+    ref.usda             /Ref_Specializes/class_widget.radius
+
+------------------------------------------------------------------------
+Results for composing </References>
+
+Prim Stack:
+    root.usda            /References
+    ref.usda             /Ref_References
+
+Child names:
+     ['class_widget', 'widget']
+
+------------------------------------------------------------------------
+Results for composing </References/class_widget>
+
+Prim Stack:
+    ref.usda             /Ref_References/class_widget
+
+Property names:
+     ['radius']
+
+Property stacks:
+/References/class_widget.radius:
+    ref.usda             /Ref_References/class_widget.radius
+
+------------------------------------------------------------------------
+Results for composing </References/widget>
+
+Prim Stack:
+    ref.usda             /Ref_References/widget
+    ref.usda             /Ref_References/class_widget
+
+Property names:
+     ['radius']
+
+Property stacks:
+/References/widget.radius:
+    ref.usda             /Ref_References/widget.radius
+    ref.usda             /Ref_References/class_widget.radius
+

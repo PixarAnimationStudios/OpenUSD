@@ -55,6 +55,21 @@ def "Top" (
     def "Default_Spline_Samples" {
         double attr = 1.0
     }
+
+    def "edit_Samples_Default" {
+        double[] attr.timeSamples = {
+            0: [0.0, 1.0, 2.0],
+            2: edit [
+                write 9.0 to [1]
+            ]
+        }
+    }
+
+    def "edit_Default_Samples" {
+        double[] attr = edit [
+            write 9.0 to [1]
+        ]
+    }
 }
 
 def "Middle" (
@@ -94,6 +109,17 @@ def "Middle" (
         double attr.spline = {
             1: 1; pre (0, 0); post held,
             4: 4; post held,
+        }
+    }
+
+    def "edit_Samples_Default" {
+        double[] attr = [0.0, 1.0, 2.0]
+    }
+
+    def "edit_Default_Samples" {
+        double[] attr.timeSamples = {
+            0: [0.0, 1.0, 2.0],
+            2: [0.0, 2.0, 4.0]
         }
     }
 }

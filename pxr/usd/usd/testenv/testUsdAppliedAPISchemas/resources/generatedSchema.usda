@@ -53,6 +53,7 @@ class "TestSingleApplyAPI" (
             }
         }
     )
+    uniform bool single:no_fallback
     rel single:relationship (
         customData = {
             string userDocBrief = "Relationship."
@@ -982,7 +983,7 @@ class "TestPropertyOversMultiOneAPI" (
         # must be manually added back in after any regeneration of this file for
         # changes to the schema.usda used to generate this test. We do plan to
         # add support for this in usdGenSchema in the future.
-        token[] apiSchemaOverridePropertyNames = ["multi:__INSTANCE_NAME__:defined_in_m2", "multi:__INSTANCE_NAME__:multiOne:defined_in_m2", "otherMulti:__INSTANCE_NAME__:multiOne:defined_in_m3", "multi:__INSTANCE_NAME__:overrides_nothing"]
+        token[] apiSchemaOverridePropertyNames = ["multi:__INSTANCE_NAME__:defined_in_m2", "multi:__INSTANCE_NAME__:multiOne:defined_in_m2", "multi:__INSTANCE_NAME__:overrides_nothing"]
     }
 )
 {

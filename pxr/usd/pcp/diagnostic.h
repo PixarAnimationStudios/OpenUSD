@@ -181,6 +181,9 @@ std::string Pcp_FormatSite(const PcpLayerStackRefPtr& layerStack,
     return Pcp_FormatSite(PcpLayerStackSite(layerStack, sitePath));
 }
 
+PCP_API
+void Pcp_CheckConsistency(const PcpPrimIndex& primIndex);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_PCP_DIAGNOSTIC_H

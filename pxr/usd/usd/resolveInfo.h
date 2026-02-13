@@ -20,10 +20,10 @@
 #include "pxr/base/tf/declarePtrs.h"
 
 #include <limits>
+#include <memory>
 #include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DECLARE_WEAK_PTRS(PcpLayerStack);
 
@@ -57,10 +57,26 @@ public:
     UsdResolveInfo()
         : _source(UsdResolveInfoSourceNone)
         , _valueIsBlocked(false)
+        , _defaultCanCompose(false)
+        , _defaultCanComposeOverWeakerTimeVaryingSources(false)
     {
     }
 
-    /// Return the source of the associated attribute's value.
+    /// Return some information about the source of the associated attribute's
+    /// value.  Note that if the attribute's value composes over other values,
+    /// there may be more than a single source that varies over time.  For
+    /// example, a VtArray-valued attribute may have a resolved value composed
+    /// of a stronger VtArrayEdit over a weaker VtArray.
+    ///
+    /// A call to UsdAttribute::GetResolveInfo() with no arguments produces a
+    /// UsdResolveInfo that only contains the proximal potential value source.
+    /// In many cases this is the only source, but for more complex scenarios,
+    /// call the overload of UsdAttribute::GetResolveInfo() that takes a time.
+    /// Then if there is more than one source, the weaker sources can by
+    /// accessed by calling HasWeakerInfo() and GetNextWeakerInfo().
+    ///
+    /// Spline value types (scalar floating point values) can never compose, so
+    /// UsdResolveInfoSourceSpline instances never have weaker resolve info.
     UsdResolveInfoSource GetSource() const {
         return _source;
     }
@@ -103,19 +119,56 @@ public:
         return _valueIsBlocked;
     }
 
-    /// Returns true if the resolve info source might be time-varying; false
-    /// otherwise.
+    /// Return true if the resolve info value source might be time-varying;
+    /// false otherwise.  A return of true means that the value may or may not
+    /// actually be time-varying.  A return of false means the the value is
+    /// definitely not time-varying.  This is meant to enable optimizations for
+    /// scene-data consumers like renderers, when they can handle non-varying
+    /// values more efficiently.
     ///
     /// Note that this is different from UsdAttribute::ValueMightBeTimeVarying()
     /// which provides more granular answer since it has additional context from
     /// the attribute itself.
     bool ValueSourceMightBeTimeVarying() const {
-        return _source == UsdResolveInfoSourceTimeSamples ||
+        if (_source == UsdResolveInfoSourceTimeSamples ||
             _source == UsdResolveInfoSourceSpline ||
-            _source == UsdResolveInfoSourceValueClips;
+            _source == UsdResolveInfoSourceValueClips) {
+            return true;
+        }
+        if (HasNextWeakerInfo()) {
+            return GetNextWeakerInfo()->ValueSourceMightBeTimeVarying();
+        }
+        return _source == UsdResolveInfoSourceDefault &&
+            _defaultCanComposeOverWeakerTimeVaryingSources;
+    }
+
+    /// If this object was returned by a call to the UsdAttribute::GetResolve()
+    /// overload that takes a `time`, then this function returns true if the
+    /// attribute's value comes from more than a single source.  For example, a
+    /// VtIntArray-valued attribute that has a default authored in a weaker
+    /// layer, and a VtIntArrayEdit default authored in a stronger layer will
+    /// return true.  This object's value source will indicate the stronger
+    /// array edit source, and calling GetNextWeakerInfo() will return a pointer
+    /// to a resolve info indicating the weaker VtArray source.
+    bool HasNextWeakerInfo() const {
+        return static_cast<bool>(_nextWeaker);
+    }
+
+    /// If this object was returned by a call to the UsdAttribute::GetResolve()
+    /// overload that takes a `time` and the attribute's value comes from more
+    /// than a single source, return a pointer to a UsdResolveInfo indicating
+    /// the next weaker source.  If many sources are involved, the chain will
+    /// continue to indicate all the value sources.
+    UsdResolveInfo const *GetNextWeakerInfo() const {
+        return _nextWeaker.get();
     }
 
 private:
+
+    // Helper to chain an additional weaker info onto this one.
+    USD_API
+    UsdResolveInfo *_AddNextWeakerInfo();
+    
     /// The LayerStack that provides the strongest value opinion. 
     /// 
     /// If \p source is either \p UsdResolveInfoSourceDefault
@@ -159,22 +212,36 @@ private:
     /// values.
     SdfPath _primPathInLayerStack;
 
-    /// The source of the associated attribute's value.
-    UsdResolveInfoSource _source;
-
     /// If the source is UsdResolveInfoSourceSpline, then _spline represents the
     /// underlying spline data. If not, this will be nullopt.
     std::optional<TsSpline> _spline;
+
+    /// If the resolved value is possibly composed from several authored values,
+    /// this points to the next weaker source of values.
+    std::shared_ptr<UsdResolveInfo> _nextWeaker;
+    
+    /// The source of the associated attribute's value.
+    UsdResolveInfoSource _source;
 
     /// If \p source is \p UsdResolveInfoSourceNone or 
     /// \p UsdResolveInfoSourceFallback, this indicates whether or not
     /// this due to the value being blocked.
     bool _valueIsBlocked;
 
+    /// Set to true if \p source is \p UsdResolveInfoSourceDefault and the
+    /// default value can compose.
+    bool _defaultCanCompose;
+    
+    /// Set to true if \p source is \p UsdResolveInfoSourceDefault and the
+    /// default value can compose, and there were weaker time varying sources
+    /// (clips or samples).
+    bool _defaultCanComposeOverWeakerTimeVaryingSources;
+
     friend class UsdAttribute;
+    friend class UsdAttributeQuery;
     friend class UsdStage;
     friend class UsdStage_ResolveInfoAccess;
-    friend class UsdAttributeQuery;
+    friend class Usd_Resolver;
 };
 
 

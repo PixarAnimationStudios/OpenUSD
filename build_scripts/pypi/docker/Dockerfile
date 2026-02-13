@@ -1,4 +1,4 @@
-FROM quay.io/pypa/manylinux2014_x86_64:2024-10-07-1887322
+FROM quay.io/pypa/manylinux_2_28_x86_64:2025.12.07-1
 
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en

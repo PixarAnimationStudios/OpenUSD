@@ -17,16 +17,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(SdrPropertyTypes, SDR_PROPERTY_TYPE_TOKENS);
-TF_DEFINE_PUBLIC_TOKENS(SdrPropertyMetadata, SDR_PROPERTY_METADATA_TOKENS);
-TF_DEFINE_PUBLIC_TOKENS(SdrPropertyRole, SDR_PROPERTY_ROLE_TOKENS);
-TF_DEFINE_PUBLIC_TOKENS(SdrPropertyTokens, SDR_PROPERTY_TOKENS);
 
 using ShaderMetadataHelpers::GetRoleFromMetadata;
-using ShaderMetadataHelpers::IntVal;
-using ShaderMetadataHelpers::IsTruthy;
-using ShaderMetadataHelpers::StringVal;
-using ShaderMetadataHelpers::TokenVal;
-using ShaderMetadataHelpers::TokenVecVal;
 
 typedef std::unordered_map<TfToken, SdfValueTypeName, TfToken::HashFunctor>
         TokenToSdfTypeMap;
@@ -142,11 +134,9 @@ namespace {
     // -------------------------------------------------------------------------
 
     SdfValueTypeName
-    _GetSdrUsdDefinitionType(const SdrTokenMap &metadata)
+    _GetSdrUsdDefinitionType(const SdrShaderPropertyMetadata &metadata)
     {
-        const TfToken &sdrUsdDefinitionType = 
-            TfToken(StringVal(
-                        SdrPropertyMetadata->SdrUsdDefinitionType, metadata));
+        const TfToken &sdrUsdDefinitionType = metadata.GetSdrUsdDefinitionType();
 
         if (sdrUsdDefinitionType.IsEmpty()) {
             return SdfValueTypeName();
@@ -169,26 +159,9 @@ namespace {
     // Returns true if the arraySize or the metadata indicate that the property
     // has an array type
     bool
-    _IsArray(size_t arraySize, const SdrTokenMap &metadata)
+    _IsArray(size_t arraySize, const SdrShaderPropertyMetadata &metadata)
     {
-        bool isDynamicArray =
-            IsTruthy(SdrPropertyMetadata->IsDynamicArray, metadata);
-        return arraySize > 0 || isDynamicArray;
-    }
-
-    // Determines if the metadata contains a key identifying the property as an
-    // asset identifier
-    bool
-    _IsAssetIdentifier(const SdrTokenMap& metadata)
-    {
-        return metadata.count(SdrPropertyMetadata->IsAssetIdentifier);
-    }
-
-    // Returns true is this property is a default input on the shader node
-    bool
-    _IsDefaultInput(const SdrTokenMap &metadata)
-    {
-        return metadata.count(SdrPropertyMetadata->DefaultInput);
+        return arraySize > 0 || metadata.GetIsDynamicArray();
     }
 
     // Returns the type indicator based on the type mappings defined in
@@ -217,13 +190,15 @@ namespace {
     namespace _Encoding_0 {
         SdrSdfTypeIndicator
         GetTypeAsSdfType(
-            const TfToken& type, size_t arraySize, const SdrTokenMap& metadata)
+            const TfToken& type,
+            size_t arraySize,
+            const SdrShaderPropertyMetadata& metadata)
         {
             bool isArray = _IsArray(arraySize, metadata);
 
             // There is one Sdf type (Asset) that is not included in the type
             // mapping because it is determined dynamically
-            if (_IsAssetIdentifier(metadata)) {
+            if (metadata.GetIsAssetIdentifier()) {
                 auto sdfType = isArray ? SdfValueTypeNames->StringArray
                                        : SdfValueTypeNames->String;
                 return SdrSdfTypeIndicator(sdfType, type);
@@ -254,7 +229,8 @@ namespace {
     namespace _Encoding_1 {
         SdrSdfTypeIndicator
         GetTypeAsSdfType(
-            const TfToken& type, size_t arraySize, const SdrTokenMap& metadata)
+            const TfToken& type, size_t arraySize,
+            const SdrShaderPropertyMetadata& metadata)
         {
             const SdfValueTypeName& sdfValueTypeName = 
                 _GetSdrUsdDefinitionType(metadata);
@@ -266,7 +242,7 @@ namespace {
 
             // There is one Sdf type (Asset) that is not included in the type
             // mapping because it is determined dynamically
-            if (_IsAssetIdentifier(metadata)) {
+            if (metadata.GetIsAssetIdentifier()) {
                 auto sdfType = isArray ? SdfValueTypeNames->AssetArray
                                        : SdfValueTypeNames->Asset;
                 return SdrSdfTypeIndicator(sdfType, type);
@@ -324,7 +300,8 @@ namespace {
     // Helper to convert the type to an Sdf type
     SdrSdfTypeIndicator
     _GetTypeAsSdfType(
-        const TfToken& type, size_t arraySize, const SdrTokenMap& metadata,
+        const TfToken& type, size_t arraySize,
+        const SdrShaderPropertyMetadata& metadata,
         int usdEncodingVersion)
     {
         switch (usdEncodingVersion) {
@@ -351,7 +328,7 @@ namespace {
     _ConvertSdrPropertyTypeAndArraySize(
         const TfToken& type,
         const size_t& arraySize,
-        const SdrTokenMap& metadata)
+        const SdrShaderPropertyMetadata& metadata)
     {
         TfToken role = GetRoleFromMetadata(metadata);
 
@@ -397,7 +374,7 @@ namespace {
             const VtValue &sdrDefaultValue,
             const TfToken &sdrType,
             size_t arraySize,
-            const SdrTokenMap &metadata,
+            const SdrShaderPropertyMetadata &metadata,
             const TfToken &name)
     {
         bool isSdrValueConformed = true;
@@ -518,7 +495,7 @@ namespace {
         const VtValue& sdrDefaultValue,
         const TfToken& sdrType,
         size_t arraySize,
-        const SdrTokenMap& metadata,
+        const SdrShaderPropertyMetadata& metadata,
         int usdEncodingVersion)
     {
         // Return early if there is no value to conform
@@ -542,8 +519,7 @@ namespace {
         // shader provides an explicit SdfValueTypeName by specifying a
         // SdrUsdDefinitionType metadata, if not its possible the type and value
         // could mismatch.
-        if (metadata.find(SdrPropertyMetadata->SdrUsdDefinitionType) !=
-                metadata.end()) {
+        if (metadata.HasSdrUsdDefinitionType()) {
             // Make sure the types match, or try to extract the correct typed
             // vtvalue from the default
             VtValue sdfTypeValue = VtValue::CastToTypeid(sdrDefaultValue,
@@ -558,7 +534,7 @@ namespace {
         // ASSET and ASSET ARRAY
         // ---------------------------------------------------------------------
         if (sdrType == SdrPropertyTypes->String &&
-            _IsAssetIdentifier(metadata)) {
+            metadata.GetIsAssetIdentifier()) {
             if (isArray) {
                 VtStringArray arrayVal;
                 _GetValue(sdrDefaultValue, &arrayVal);
@@ -666,7 +642,7 @@ SdrShaderProperty::SdrShaderProperty(
     const VtValue& defaultValue,
     bool isOutput,
     size_t arraySize,
-    const SdrTokenMap& metadata,
+    const SdrShaderPropertyMetadata& metadata,
     const SdrTokenMap& hints,
     const SdrOptionVec& options)
     : _name(name),
@@ -676,41 +652,43 @@ SdrShaderProperty::SdrShaderProperty(
       _isOutput(isOutput),
       _arraySize(_ConvertSdrPropertyTypeAndArraySize(
                 type, arraySize, metadata).second),
-      _tupleSize(
-          IntVal(SdrPropertyMetadata->TupleSize, metadata, 0)),
+      _tupleSize(metadata.GetTupleSize()),
       _metadata(metadata),
       _hints(hints),
       _options(options),
       _usdEncodingVersion(_UsdEncodingVersionsCurrent)
 {
-    _isDynamicArray =
-        IsTruthy(SdrPropertyMetadata->IsDynamicArray, _metadata);
+    // Get legacy metadata to support deprecated function GetMetadata
+    _legacyMetadata = metadata._EncodeLegacyMetadata();
+
+    _isDynamicArray = metadata.GetIsDynamicArray();
 
     // Note that outputs are always connectable. If "connectable" metadata is
     // found on outputs, ignore it.
     if (isOutput) {
         _isConnectable = true;
     } else {
-        _isConnectable = _metadata.count(SdrPropertyMetadata->Connectable)
-            ? IsTruthy(SdrPropertyMetadata->Connectable, _metadata)
-            : true;
+        _isConnectable = metadata.HasConnectable() ? metadata.GetConnectable()
+                                                   : true;
     }
 
     // Indicate a "default" widget if one was not assigned
-    _metadata.insert({SdrPropertyMetadata->Widget, "default"});
+    if (!_metadata.HasWidget()) {
+        _metadata.SetWidget(TfToken("default"));
+    }
 
-    // Tokenize metadata
-    _label = TokenVal(SdrPropertyMetadata->Label, _metadata);
-    _page = TokenVal(SdrPropertyMetadata->Page, _metadata);
-    _widget = TokenVal(SdrPropertyMetadata->Widget, _metadata);
-    _vstructMemberOf = TokenVal(
-        SdrPropertyMetadata->VstructMemberOf, _metadata);
-    _vstructMemberName = TokenVal(
-        SdrPropertyMetadata->VstructMemberName, _metadata);
-    _vstructConditionalExpr = TokenVal(
-        SdrPropertyMetadata->VstructConditionalExpr, _metadata);
-    _validConnectionTypes = TokenVecVal(
-        SdrPropertyMetadata->ValidConnectionTypes, _metadata);
+    // Store named metadata. These can be inlined to their corresponding
+    // getters on SdrShaderProperty once legacy metadata is removed.
+    _label = _metadata.GetLabel();
+    _page = _metadata.GetPage();
+    _widget = _metadata.GetWidget();
+    _vstructMemberOf = _metadata.GetItemValueAs<TfToken>(
+        SdrPropertyMetadata->VstructMemberOf);
+    _vstructMemberName = _metadata.GetItemValueAs<TfToken>(
+        SdrPropertyMetadata->VstructMemberName);
+    _vstructConditionalExpr = _metadata.GetItemValueAs<TfToken>(
+        SdrPropertyMetadata->VstructConditionalExpr);
+    _validConnectionTypes = _metadata.GetValidConnectionTypes();
 }
 
 SdrShaderProperty::~SdrShaderProperty()
@@ -731,20 +709,20 @@ SdrShaderProperty::GetInfoString() const
 std::string
 SdrShaderProperty::GetHelp() const
 {
-    return StringVal(SdrPropertyMetadata->Help, _metadata);
+    return _metadata.GetHelp();
 }
 
 std::string
 SdrShaderProperty::GetImplementationName() const
 {
-    return StringVal(SdrPropertyMetadata->ImplementationName, _metadata,
-                     GetName().GetString());
+    return _metadata.HasImplementationName() ? _metadata.GetImplementationName()
+                                             : GetName().GetString();
 }
 
 std::string
 SdrShaderProperty::GetShownIf() const
 {
-    return StringVal(SdrPropertyMetadata->ShownIf, _metadata);
+    return _metadata.GetShownIf();
 }
 
 bool
@@ -760,11 +738,11 @@ SdrShaderProperty::CanConnectTo(const SdrShaderProperty& other) const
 
     const TfToken & inputType = input->GetType();
     size_t inputArraySize = input->GetArraySize();
-    const SdrTokenMap& inputMetadata = input->GetMetadata();
+    const SdrShaderPropertyMetadata& inputMetadata = input->GetMetadataObject();
 
     const TfToken& outputType = output->GetType();
     size_t outputArraySize = output->GetArraySize();
-    const SdrTokenMap& outputMetadata = output->GetMetadata();
+    const SdrShaderPropertyMetadata& outputMetadata = output->GetMetadataObject();
 
     // Connections are always possible if the types match exactly and the
     // array size matches
@@ -835,7 +813,8 @@ SdrShaderProperty::CanConnectTo(const SdrShaderProperty& other) const
 bool
 SdrShaderProperty::IsVStructMember() const
 {
-    return _metadata.count(SdrPropertyMetadata->VstructMemberName);
+    return _metadata.HasItem(
+        SdrPropertyMetadata->VstructMemberName);
 }
 
 bool
@@ -854,13 +833,13 @@ SdrShaderProperty::GetTypeAsSdfType() const
 bool
 SdrShaderProperty::IsAssetIdentifier() const
 {
-    return _IsAssetIdentifier(_metadata);
+    return _metadata.GetIsAssetIdentifier();
 }
 
 bool
 SdrShaderProperty::IsDefaultInput() const
 {
-    return _IsDefaultInput(_metadata);
+    return _metadata.GetDefaultInput();
 }
 
 void
@@ -885,12 +864,11 @@ SdrShaderProperty::_ConvertExpressions(
     const SdrShaderPropertyUniquePtrVec& properties,
     SdrShaderNodeConstPtr shader)
 {
-    const TfToken& shownIf = SdrPropertyMetadata->ShownIf;
-    if (_metadata.count(shownIf) == 0) {
+    if (!_metadata.HasShownIf()) {
         std::string expr = ShaderMetadataHelpers::ComputeShownIfFromMetadata(
             this, properties, shader);
         if (!expr.empty()) {
-            _metadata[shownIf] = expr;
+            _metadata.SetShownIf(expr);
         }
     }
 }

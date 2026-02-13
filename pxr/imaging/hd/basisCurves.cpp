@@ -6,6 +6,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/basisCurves.h"
+#include "pxr/imaging/hd/skinningSettings.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/tf/envSetting.h"
 
@@ -34,7 +35,13 @@ HdBasisCurves::GetBuiltinPrimvarNames() const
         HdTokens->normals,
         HdTokens->widths
     };
-    return primvarNames;
+    if (!HdSkinningSettings::IsSkinningDeferred()) {
+        return primvarNames;    
+    }
+
+    static const TfTokenVector skinningPrimvarNames = 
+        HdSkinningSettings::GetSkinningInputNames(primvarNames);
+    return skinningPrimvarNames;
 }
 
 // static repr configuration

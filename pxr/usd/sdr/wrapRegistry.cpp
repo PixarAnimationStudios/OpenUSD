@@ -72,13 +72,6 @@ _SetExtraDiscoveryPlugins(SdrRegistry& self, const list& pylist)
     self.SetExtraDiscoveryPlugins(types);
 }
 
-struct ConstNodePtrToPython {
-    static PyObject* convert(SdrShaderNodeConstPtr node)
-    {
-        return incref(object(ptr(node)).ptr());
-    } 
-};
-
 void wrapRegistry()
 {
     typedef SdrRegistry This;
@@ -141,6 +134,9 @@ void wrapRegistry()
             (args("family") = TfToken(),
              args("filter") = SdrVersionFilterDefaultOnly))
         .def("GetAllShaderNodeSourceTypes", &This::GetAllShaderNodeSourceTypes)
+        .def("RunQuery", &This::RunQuery)
+        .def("ParseAll", &This::ParseAll)
+        .def("GetAllShaderNodes", &This::GetAllShaderNodes)
         ;
 
     // We wrap this directly under Sdr rather than under the Registry class

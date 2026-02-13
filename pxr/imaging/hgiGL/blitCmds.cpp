@@ -28,7 +28,9 @@ HgiGLBlitCmds::HgiGLBlitCmds()
 HgiGLBlitCmds::~HgiGLBlitCmds() = default;
 
 void
-HgiGLBlitCmds::PushDebugGroup(const char* label)
+HgiGLBlitCmds::PushDebugGroup(
+        const char* label,
+        const GfVec4f& color)
 {
     if (HgiGLDebugEnabled()) {
         _pushStack++;
@@ -41,7 +43,18 @@ HgiGLBlitCmds::PopDebugGroup()
 {
     if (HgiGLDebugEnabled()) {
         _pushStack--;
+        TF_VERIFY(_pushStack >= 0, "Push and PopDebugGroup do not even out");
         _ops.push_back( HgiGLOps::PopDebugGroup() );
+    }
+}
+
+void
+HgiGLBlitCmds::InsertDebugMarker(
+        const char* label,
+        const GfVec4f& color)
+{
+    if (HgiGLDebugEnabled()) {
+        _ops.push_back( HgiGLOps::InsertDebugMarker(label) );
     }
 }
 

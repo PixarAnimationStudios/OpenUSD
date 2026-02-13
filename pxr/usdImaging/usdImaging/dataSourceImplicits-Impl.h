@@ -79,7 +79,8 @@ private:
             }
             result.push_back(
                 UsdImagingDataSourceMapped::AttributeMapping{
-                    usdName, HdDataSourceLocator(usdName)});
+                    { usdName, HdDataSourceLocator(usdName) }
+                });
         }
         return result;
     }

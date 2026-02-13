@@ -15,11 +15,6 @@
 #include "pxr/base/arch/functionLite.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/trace/trace.h"
-#include "pxr/exec/esf/attribute.h"
-#include "pxr/exec/esf/journal.h"
-#include "pxr/exec/esf/object.h"
-#include "pxr/exec/esf/prim.h"
-#include "pxr/exec/esf/stage.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -64,19 +59,11 @@ Exec_InputResolvingCompilationTask::_Compile(
                     outputKeyIdentity);
             if (cacheHit) {
                 *resultOutput = cacheHit->output;
-
-                // TODO: If we found an output is already compiled for the key,
-                // *but* it was added during a prior round of compilation, then
-                // we need to spawn a traversal task to verify that adding the
-                // connection will not introduce a cycle.
                 continue;
             }
 
             // Claim the task for producing the missing output.
-            const Exec_CompilerTaskSyncBase::ClaimResult claimResult =
-                deps.ClaimSubtask(outputKeyIdentity);
-            if (claimResult ==
-                Exec_CompilerTaskSyncBase::ClaimResult::Claimed) {
+            if (deps.ClaimOutputProvidingTask(outputKeyIdentity)) {
                 // Run the task that produces the output.
                 deps.NewSubtask<Exec_OutputProvidingCompilationTask>(
                     compilationState,
@@ -114,6 +101,14 @@ Exec_InputResolvingCompilationTask::_Compile(
         }
     }
     );
+}
+
+void
+Exec_InputResolvingCompilationTask::_Interrupt(Exec_CompilationState &)
+{
+    // Input resolving tasks have nothing to contribute to the interrupt state.
+    // An empty implementation must be provided because _Interrupt is a
+    // pure-virtual method.
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

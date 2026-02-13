@@ -11,12 +11,14 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/notice.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/textParserUtils.h"
+#include "pxr/base/vt/valueComposeOver.h"
 
 #include <map>
 #include <sstream>
@@ -933,6 +935,139 @@ _TestSdfFileIOQuote()
                    /*allowTriple=*/false) == "'hello\\n\"world\"'");
 }
 
+static void
+_TestSdfListOpVtValueComposeOver()
+{
+    using IntVec = std::vector<int>;
+    
+    SdfIntListOp exp123;
+    exp123.SetExplicitItems({ 1, 2, 3 });
+
+    SdfIntListOp append9;
+    append9.SetAppendedItems({ 9 });
+
+    SdfIntListOp prepend0;
+    prepend0.SetPrependedItems({ 0 });
+
+    SdfIntListOp delete2;
+    delete2.SetDeletedItems({ 2 });
+
+    VtValue composedVal = VtValueComposeOver(
+        delete2, VtValueComposeOver(prepend0, append9));
+
+    TF_AXIOM(composedVal.IsHolding<SdfIntListOp>());
+
+    // Should contain the incremental edits.
+    TF_AXIOM(!composedVal.Get<SdfIntListOp>().IsExplicit());
+
+    // Composing over the background should apply the edits to an empty list.
+    {
+        VtValue overBG = VtValueComposeOver(composedVal, VtBackground);
+        SdfIntListOp overBGop = overBG.Get<SdfIntListOp>();
+        TF_AXIOM(overBGop.IsExplicit());
+        TF_AXIOM((overBGop.GetExplicitItems() == IntVec { 0, 9 }));
+    }    
+
+    // Composing over an explicit list produces an explicit result.
+    {
+        VtValue overExp = VtValueComposeOver(composedVal, exp123);
+        TF_AXIOM(overExp.IsHolding<SdfIntListOp>());
+        SdfIntListOp overExpOp = overExp.Get<SdfIntListOp>();
+        TF_AXIOM(overExpOp.IsExplicit());
+        TF_AXIOM((overExpOp.GetExplicitItems() == IntVec { 0, 1, 3, 9 }));
+    }
+
+    // Composing a deprecated 'added' over another listop just returns the
+    // 'added' since 'added' is not composible.
+    {
+        SdfIntListOp added7;
+        added7.SetAddedItems({ 7 });
+        VtValue added7Over123 = VtValueComposeOver(added7, exp123);
+        TF_AXIOM(added7Over123.IsHolding<SdfIntListOp>());
+        TF_AXIOM(added7Over123
+                 .Get<SdfIntListOp>().GetAddedItems() == IntVec { 7 });
+    }
+}
+
+static void
+_TestSdfComposeTimeSampleMaps()
+{
+    // This didactic test uses SdfPathExpression values in SdfTimeSampleMaps
+    // because they are composing types that are easy to write and reason about.
+    // We don't expect real world use-cases to use them as time-varying values.
+    {
+        // One composing sample over a non-composing sample at the same time.
+        SdfTimeSampleMap strong {{2, VtValue(SdfPathExpression("a %_"))}};
+        SdfTimeSampleMap weak {{2, VtValue(SdfPathExpression("X"))}};
+
+        SdfTimeSampleMap composed = SdfComposeTimeSampleMaps(strong, weak);
+        TF_AXIOM(composed.size() == 1);
+        TF_AXIOM(composed.find(2) != composed.end());
+        TF_AXIOM(composed[2] == SdfPathExpression("a X"));
+    }
+    {
+        // Earlier composing sample over a non-composing sample.
+        SdfTimeSampleMap strong {{1, VtValue(SdfPathExpression("a %_"))}};
+        SdfTimeSampleMap weak {{2, VtValue(SdfPathExpression("X"))}};
+
+        SdfTimeSampleMap composed = SdfComposeTimeSampleMaps(strong, weak);
+        TF_AXIOM(composed.size() == 2);
+        TF_AXIOM(composed.count(1) && composed.count(2));
+        TF_AXIOM(composed[1] == SdfPathExpression("a X"));
+        TF_AXIOM(composed[2] == SdfPathExpression("a X"));
+    }
+    {
+        // One composing sample over two non-composing samples.
+        SdfTimeSampleMap strong {{2, VtValue(SdfPathExpression("a %_"))}};
+        SdfTimeSampleMap weak {
+            {1, VtValue(SdfPathExpression("X"))},
+            {3, VtValue(SdfPathExpression("Y"))}
+        };
+
+        SdfTimeSampleMap composed = SdfComposeTimeSampleMaps(strong, weak);
+        TF_AXIOM(composed.size() == 3);
+        TF_AXIOM(composed.count(1) && composed.count(2) && composed.count(3));
+        TF_AXIOM(composed[1] == SdfPathExpression("a X"));
+        TF_AXIOM(composed[2] == SdfPathExpression("a X"));
+        TF_AXIOM(composed[3] == SdfPathExpression("a Y"));
+    }
+    {
+        // Two composing samples over one non-composing sample.
+        SdfTimeSampleMap strong {
+            {1, VtValue(SdfPathExpression("a %_"))},
+            {3, VtValue(SdfPathExpression("b %_"))}
+        };
+        SdfTimeSampleMap weak {
+            {2, VtValue(SdfPathExpression("X"))}
+        };
+
+        SdfTimeSampleMap composed = SdfComposeTimeSampleMaps(strong, weak);
+        TF_AXIOM(composed.size() == 3);
+        TF_AXIOM(composed.count(1) && composed.count(2) && composed.count(3));
+        TF_AXIOM(composed[1] == SdfPathExpression("a X"));
+        TF_AXIOM(composed[2] == SdfPathExpression("a X"));
+        TF_AXIOM(composed[3] == SdfPathExpression("b X"));
+    }
+    {
+        // Non-composing followed by a composing sample over a composing sample.
+        SdfTimeSampleMap strong {
+            {1, VtValue(SdfPathExpression("X"))},
+            {3, VtValue(SdfPathExpression("a %_"))}
+        };
+        SdfTimeSampleMap weak {
+            {2, VtValue(SdfPathExpression("b %_"))},
+            {3, VtValue(SdfPathExpression("c %_"))}
+        };
+
+        SdfTimeSampleMap composed = SdfComposeTimeSampleMaps(strong, weak);
+        TF_AXIOM(composed.size() == 3);
+        TF_AXIOM(composed.count(1) && composed.count(2) && composed.count(3));
+        TF_AXIOM(composed[1] == SdfPathExpression("X"));
+        TF_AXIOM(composed[2] == SdfPathExpression("X"));
+        TF_AXIOM(composed[3] == SdfPathExpression("a (c %_)"));
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -954,6 +1089,9 @@ main(int argc, char **argv)
     _TestSdfAbstractDataValue();
     _TestSdfQuoteUtilities();
     _TestSdfFileIOQuote();
+    _TestSdfListOpVtValueComposeOver();
+    _TestSdfComposeTimeSampleMaps();
 
+    printf("SUCCESS\n");
     return 0;
 }

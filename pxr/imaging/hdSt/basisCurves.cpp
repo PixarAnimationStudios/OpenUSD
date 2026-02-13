@@ -182,15 +182,21 @@ HdStBasisCurves::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     /* INSTANCE PRIMVARS */
     _UpdateInstancer(sceneDelegate, dirtyBits);
-    bool displayOpacityFromInstancer = false;
-    HdStUpdateInstancerData(sceneDelegate->GetRenderIndex(),
-                            renderParam,
-                            this,
-                            drawItem,
-                            &_sharedData,
-                            *dirtyBits,
-                            &displayOpacityFromInstancer);
-    _displayOpacityFromInstancer = displayOpacityFromInstancer;
+    {
+        // The data members are part of a bitfield, so we can't pass pointers
+        // to them directly. HdStUpdateInstancerData doesn't write to output
+        // params if DirtyInstancer is not set, so we initialize the locals
+        // to current member values to preserve existing state in that case.
+        bool displayOpacityFromInstancer = _displayOpacityFromInstancer;
+        HdStUpdateInstancerData(sceneDelegate->GetRenderIndex(),
+                                renderParam,
+                                this,
+                                drawItem,
+                                &_sharedData,
+                                *dirtyBits,
+                                &displayOpacityFromInstancer);
+        _displayOpacityFromInstancer = displayOpacityFromInstancer;
+    }
 
     /* CONSTANT PRIMVARS, TRANSFORM, EXTENT AND PRIMID */
     if (HdStShouldPopulateConstantPrimvars(dirtyBits, id)) {
@@ -923,11 +929,10 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
     // Points fastpath; it's possible points was updated above, but if
     // points is dirty and we skipped the above loops let's handle it here.
-    // Note: if the logic here becomes more complex, the more correct thing to
-    // do here is check whether primvars or compPrimvars contains a "points"
-    // entry...
     if (*dirtyBits & HdChangeTracker::DirtyPoints &&
-        primvars.size() == 0 && compPrimvars.size() == 0) {
+        !(*dirtyBits & HdChangeTracker::DirtyNormals ||
+          *dirtyBits & HdChangeTracker::DirtyWidths ||
+          *dirtyBits & HdChangeTracker::DirtyPrimvar)) {
 
         if (!_topology) {
             TF_CODING_ERROR("No topology set for BasisCurve %s",

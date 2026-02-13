@@ -78,11 +78,11 @@ BUILTIN_COMPLEX_DTYPE(128);
 template <> struct builtin_float_dtype< NPY_BITSOF_LONGDOUBLE > {
     static dtype get() { return DTYPE_FROM_CODE(NPY_LONGDOUBLE); }
 };
-template dtype get_float_dtype< NPY_BITSOF_LONGDOUBLE >();
+template PXR_BOOST_NUMPY_DECL dtype get_float_dtype< NPY_BITSOF_LONGDOUBLE >();
 template <> struct builtin_complex_dtype< 2 * NPY_BITSOF_LONGDOUBLE > {
     static dtype get() { return DTYPE_FROM_CODE(NPY_CLONGDOUBLE); }
 };
-template dtype get_complex_dtype< 2 * NPY_BITSOF_LONGDOUBLE >();
+template PXR_BOOST_NUMPY_DECL dtype get_complex_dtype< 2 * NPY_BITSOF_LONGDOUBLE >();
 #endif
 
 } // namespace detail

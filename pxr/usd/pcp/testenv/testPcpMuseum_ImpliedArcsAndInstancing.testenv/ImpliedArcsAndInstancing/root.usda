@@ -1,0 +1,70 @@
+#usda 1.0
+(
+    """
+    This museum case exercises the interaction between instancing and
+    subroot implied arcs in the root layer stack.
+    """
+)
+
+def "Inherits" (
+    # The "widget" prim inherits "class_widget" across the reference arc,
+    # so there is an implied inherit arc between those two prims in
+    # this layer stack. However, the opinions here should be ignored
+    # since they are local overrides of child prims beneath an instance.
+    instanceable = true
+    references = @./ref.usda@</Ref_Inherits>
+)
+{
+    over "class_widget"
+    {
+        double radius = 100
+    }
+
+    over "widget"
+    {
+        double radius = 10
+    }
+}
+
+def "Specializes" (
+    # The "widget" prim specializes "class_widget" across the reference arc,
+    # so there is an implied specializes arc between those two prims in
+    # this layer stack. However, the opinions here should be ignored
+    # since they are local overrides of child prims beneath an instance.
+    instanceable = true
+    references = @./ref.usda@</Ref_Specializes>
+)
+{
+    over "class_widget"
+    {
+        double radius = 100
+    }
+
+    over "widget"
+    {
+        double radius = 10
+    }
+}
+
+def "References" (
+    # This prim uses internal subroot references to mimic the implied arcs
+    # in /Inherits and /Specializes. For consistency, the opinions that are
+    # ignored on the "widget" prim beneath those two prims should also be
+    # ignored on the "widget" prim here.
+    instanceable = true
+    references = @./ref.usda@</Ref_References>
+)
+{
+    over "class_widget"
+    {
+        double radius = 100
+    }
+
+    over "widget" (
+        append references = </References/class_widget>
+    )
+    {
+        double radius = 10
+    }
+}
+

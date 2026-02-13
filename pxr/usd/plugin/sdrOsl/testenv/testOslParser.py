@@ -5,15 +5,22 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 
+# Disable automatic parser plugin discovery. We'll install our own parser
+# plugin later to ensure its the only one used during the test.
 import os
+os.environ['PXR_SDR_SKIP_PARSER_PLUGIN_DISCOVERY'] = "1"
+
 import unittest
-from pxr import Sdr
-from pxr import SdrOsl
+from pxr import Plug, Sdr
 from pxr.Sdr import shaderParserTestUtils as utils
 
 class TestShaderNode(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        parser = Plug.Registry().FindTypeByName("SdrOslParserPlugin")
+        assert parser
+        Sdr.Registry().SetExtraParserPlugins([parser])
+
         cls.uri = "TestNodeOSL.oso"
         cls.resolvedUri = os.path.abspath(cls.uri)
 
@@ -37,7 +44,8 @@ class TestShaderNode(unittest.TestCase):
             subIdentifier=""
         )
 
-        cls.node = SdrOsl.OslParser().ParseShaderNode(discoveryResult)
+        Sdr.Registry().AddDiscoveryResult(discoveryResult)
+        cls.node = Sdr.Registry().GetShaderNodeByIdentifier('TestNodeOSL')
         assert cls.node is not None
 
     def test_Basic(self):
@@ -95,7 +103,10 @@ class TestShaderNode(unittest.TestCase):
             blindData,                      # blindData
             subIdentifier                   # subIdentifier
         )
-        node = SdrOsl.OslParser().ParseShaderNode(discoveryResult)
+
+        Sdr.Registry().AddDiscoveryResult(discoveryResult)
+        node = Sdr.Registry().GetShaderNodeByIdentifier(
+            'TestShaderPropertiesNodeOSL')
         assert node is not None
 
         utils.TestShaderPropertiesNode(node)

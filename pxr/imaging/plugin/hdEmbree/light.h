@@ -47,6 +47,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// - CylinderLight
 ///   - inputs:radius
 ///   - inputs:length
+/// - DomeLight
+///   - inputs:texture:file
 /// - ShapingAPI
 ///   - inputs:shaping:focus
 ///   - inputs:shaping:focusTint
@@ -63,7 +65,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   - VolumeLightAPI
 ///   - DistantLight
 ///   - GeometryLight
-///   - DomeLight
 ///   - PortalLight
 ///   - PluginLight
 /// - Unsupported UsdLux APIS:
@@ -83,6 +84,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     - treatAsPoint
 ///   - CylinderLight:
 ///     - inputs:treatAsLine
+///   - DomeLight:
+///     - inputs:texture:format (always assumed to be "latlong")
 /// - ShapingAPI
 ///   - inputs:shaping:ies:file
 ///   - inputs:shaping:ies:angleScale
@@ -107,6 +110,10 @@ struct HdEmbree_Disk
     float radius;
 };
 
+// Needed for HdEmbree_LightVariant
+struct HdEmbree_Dome
+{};
+
 struct HdEmbree_Rect
 {
     float width;
@@ -122,6 +129,7 @@ using HdEmbree_LightVariant = std::variant<
     HdEmbree_UnknownLight,
     HdEmbree_Cylinder,
     HdEmbree_Disk,
+    HdEmbree_Dome,
     HdEmbree_Rect,
     HdEmbree_Sphere>;
 
@@ -178,6 +186,10 @@ public:
 
     HdEmbree_LightData const& LightData() const {
         return _lightData;
+    }
+
+    bool IsDome() const {
+        return std::holds_alternative<HdEmbree_Dome>(_lightData.lightVariant);
     }
 
 private:

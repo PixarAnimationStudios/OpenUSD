@@ -55,6 +55,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Use env var 'HDST_DEBUG_SHADER_PROGRAM_FOR_PRIM' to limit logging to "
         "a subset of prims.");
 
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_LOG_TEXTURE_FALLBACKS,
+        "Log the fallback value used whenever a texture isn't present.");
+
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_LOG_SKIPPED_PRIMVAR,
         "Output a message whenever a primvar reaches hydra but is skipped");
 

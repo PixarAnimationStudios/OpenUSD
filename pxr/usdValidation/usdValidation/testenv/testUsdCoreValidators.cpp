@@ -28,7 +28,7 @@ TestUsdValidators()
     // this keyword this unit test will have to be updated.
     const UsdValidationValidatorMetadataVector coreValidatorMetadata
         = registry.GetValidatorMetadataForPlugin(_tokens->usdValidationPlugin);
-    TF_AXIOM(coreValidatorMetadata.size() == 2);
+    TF_AXIOM(coreValidatorMetadata.size() == 3);
 
     std::set<TfToken> validatorMetadataNameSet;
     for (const UsdValidationValidatorMetadata &metadata :
@@ -38,7 +38,8 @@ TestUsdValidators()
 
     const std::set<TfToken> expectedValidatorNames
         = { UsdValidatorNameTokens->compositionErrorTest,
-            UsdValidatorNameTokens->stageMetadataChecker };
+            UsdValidatorNameTokens->stageMetadataChecker,
+            UsdValidatorNameTokens->attributeTypeMismatch };
 
     TF_AXIOM(validatorMetadataNameSet == expectedValidatorNames);
 }
@@ -63,8 +64,9 @@ TestCoreUsdStageMetadata()
 
     // Verify the correct error is returned
     TF_AXIOM(errors.size() == 1);
-    const TfToken expectedErrorIdentifier(
-        "usdValidation:StageMetadataChecker.MissingDefaultPrim");
+    const TfToken expectedErrorIdentifier = TfToken(
+            UsdValidatorNameTokens->stageMetadataChecker.GetString() + "." +
+            UsdValidationErrorNameTokens->missingDefaultPrim.GetString());
     TF_AXIOM(errors[0].GetValidator() == validator);
     TF_AXIOM(errors[0].GetIdentifier() == expectedErrorIdentifier);
     TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
@@ -149,8 +151,9 @@ TestUsdCompositionErrorTest()
     TF_AXIOM(errors.size() == 5);
 
     // Lets make sure pcpErrors and validationErrors match
-    const TfToken expectedErrorIdentifier
-        = TfToken("usdValidation:CompositionErrorTest.CompositionError");
+    const TfToken expectedErrorIdentifier = TfToken(
+            UsdValidatorNameTokens->compositionErrorTest.GetString() + "." +
+            UsdValidationErrorNameTokens->compositionError.GetString());
     for (size_t index = 0; index < errors.size(); ++index) {
         TF_AXIOM(errors[index].GetValidator() == compositionErrorValidator);
         TF_AXIOM(errors[index].GetIdentifier() == expectedErrorIdentifier);
@@ -165,12 +168,83 @@ TestUsdCompositionErrorTest()
     }
 }
 
+static void
+TestUsdAttributeTypeMismatch()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidationValidator *const attributeTypeMismatchValidator
+        = registry.GetOrLoadValidatorByName(
+            UsdValidatorNameTokens->attributeTypeMismatch);
+    TF_AXIOM(attributeTypeMismatchValidator);
+
+    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
+    layer->ImportFromString(R"usda(#usda 1.0
+        def Sphere "Sphere" {
+            int radius = 1
+        }
+    )usda");
+
+    SdfLayerRefPtr mainLayer = SdfLayer::CreateAnonymous(".usda");
+    mainLayer->ImportFromString(
+        TfStringPrintf(R"usda(#usda 1.0
+            def Sphere "Sphere" (
+                append references = @%s@</Sphere>
+            )
+            {
+                float radius = 2.0
+            }
+        )usda" , layer->GetIdentifier().c_str()));
+
+    const UsdStageRefPtr usdStage = UsdStage::Open(mainLayer);
+    const UsdPrim spherePrim = usdStage->GetPrimAtPath(SdfPath("/Sphere"));
+    TF_AXIOM(spherePrim);
+
+    const UsdValidationErrorVector errors
+        = attributeTypeMismatchValidator->Validate(spherePrim);
+    TF_AXIOM(errors.size() == 2);
+    const TfToken expectedErrorIdentifier = TfToken(
+        UsdValidatorNameTokens->attributeTypeMismatch.GetString() + "." +
+        UsdValidationErrorNameTokens->attributeTypeMismatch.GetString());
+    const std::vector<std::string> expectedMessages = {
+        TfStringPrintf("Type mismatch for attribute </Sphere.radius>. "
+                       "Expected attribute type is 'double' but defined as "
+                       "'int' in layer <%s>.",
+                       layer->GetIdentifier().c_str()),
+        TfStringPrintf("Type mismatch for attribute </Sphere.radius>. "
+                       "Expected attribute type is 'double' but defined as "
+                       "'float' in layer <%s>.",
+                       mainLayer->GetIdentifier().c_str())
+    };
+    const std::vector<std::string> expectedLayerIdentifiers = {
+        layer->GetIdentifier(),
+        mainLayer->GetIdentifier()
+    };
+    for (const UsdValidationError &error : errors) {
+        TF_AXIOM(error.GetValidator() == attributeTypeMismatchValidator);
+        TF_AXIOM(error.GetIdentifier() == expectedErrorIdentifier);
+        TF_AXIOM(error.GetType() == UsdValidationErrorType::Error);
+        TF_AXIOM(error.GetSites().size() == 1);
+        TF_AXIOM(error.GetSites()[0].IsValid());
+        TF_AXIOM(error.GetSites()[0].IsValidSpecInLayer());
+        const std::string layerIdentifier
+            = error.GetSites()[0].GetLayer()->GetIdentifier();
+        TF_AXIOM(std::find(expectedLayerIdentifiers.begin(),
+                            expectedLayerIdentifiers.end(),
+                            layerIdentifier) != expectedLayerIdentifiers.end());
+        const std::string errorMessage = error.GetMessage();
+        TF_AXIOM(std::find(expectedMessages.begin(),
+                            expectedMessages.end(),
+                            errorMessage) != expectedMessages.end());
+    }
+}   
+
 int
 main()
 {
     TestUsdValidators();
     TestCoreUsdStageMetadata();
     TestUsdCompositionErrorTest();
+    TestUsdAttributeTypeMismatch();
 
     std::cout << "OK\n";
 }

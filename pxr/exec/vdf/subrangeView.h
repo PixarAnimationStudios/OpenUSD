@@ -99,7 +99,12 @@ public:
 
         /// Returns \c true if this iterator and \p rhs compare equal.
         ///
-        bool operator==(const const_iterator &rhs) const;
+        bool operator==(const const_iterator &rhs) const {
+            return
+                _view->_inputName == rhs._view->_inputName &&
+                _connectionIndex == rhs._connectionIndex &&
+                _rangeIndex == rhs._rangeIndex;
+        }
 
         /// Returns \c true if this iterator and \p rhs do not compare equal.
         ///
@@ -209,17 +214,6 @@ VdfSubrangeView<VdfReadIteratorRange<T>>::const_iterator::const_iterator(
     if (connectionIndex >= 0) {
         _AdvanceSubrange(0);
     }
-}
-
-template<typename T>
-bool
-VdfSubrangeView<VdfReadIteratorRange<T>>::const_iterator::operator==(
-    const const_iterator &rhs) const
-{
-    return
-        _view->_inputName == rhs._view->_inputName &&
-        _connectionIndex == rhs._connectionIndex &&
-        _rangeIndex == rhs._rangeIndex;
 }
 
 template<typename T>

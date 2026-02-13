@@ -12,6 +12,7 @@
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/rootOverridesSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/sceneIndices.h"
+#include "pxr/usdImaging/usdImaging/usdSceneIndexInputArgsSchema.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/camera.h"
@@ -24,6 +25,7 @@
 #include "pxr/imaging/hd/legacyRenderControlInterface.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/noticeBatchingSceneIndex.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/prefixingSceneIndex.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderDelegateInfo.h"
@@ -69,20 +71,30 @@ TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_DEBUG_SCENE_DELEGATE_ID, "/",
 TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX, true,
                       "Use Scene Index API for imaging scene input");
 
+TF_DEFINE_ENV_SETTING(
+    USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX_DEPRECATION_WARNING, true,
+    "Issue a deprecation warning when USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX "
+    "is overriden to false.");
+
 /// \deprecated. Will always use task controller scene index in the future.
 TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_ENABLE_TASK_SCENE_INDEX, true,
                       "Use Scene Index API for task controller");
 
+/// \deprecated. Will always use HdRenderer in the future.
 TF_DEFINE_ENV_SETTING(
     USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX_OBSERVER_RENDERER, true,
-    "Use API to instantiate the renderer as a scene index observer "
-    "(also requires USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX and "
-    "USDIMAGINGGL_ENGINE_ENABLE_TASK_SCENE_INDEX).");
+    "Use API to instantiate the Hydra 2.0 HdRenderer instead of the "
+    "Hydra 1.0 HdRenderDelegate.");
 
 TF_DEFINE_ENV_SETTING(
     USDIMAGINGGL_ENGINE_ENABLE_CACHING_SCENE_INDEX, false,
     "Use caching scene index (also requires "
     "USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX_OBSERVER_RENDERER)");
+
+TF_DEFINE_ENV_SETTING(
+    USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX_INPUT_ARGS, false,
+    "Use HdRendererPlugin::GetSceneIndexInputArgs to configure scene indices. "
+    "Requires a renderer such as Storm to implement the new API.");
 
 namespace UsdImagingGLEngine_Impl
 {
@@ -235,16 +247,6 @@ _GetUsdImagingDelegateId()
 }
 
 bool
-_GetUseSceneIndices()
-{
-    static bool result =
-        HdRenderIndex::IsSceneIndexEmulationEnabled() &&
-        TfGetEnvSetting(USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX);
-
-    return result;
-}
-
-bool
 _GetSceneIndexObserverRenderer()
 {
     static bool result =
@@ -269,6 +271,15 @@ _IsEnabledTerminalCachingSceneIndex()
 {
     static bool result =
         TfGetEnvSetting(USDIMAGINGGL_ENGINE_ENABLE_CACHING_SCENE_INDEX);
+
+    return result;
+}
+
+bool
+_IsEnabledSceneIndexInputArgs()
+{
+    static bool result =
+        TfGetEnvSetting(USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX_INPUT_ARGS);
 
     return result;
 }
@@ -497,6 +508,7 @@ UsdImagingGLEngine::~UsdImagingGLEngine()
     _DestroyHydraObjects();
 }
 
+
 //----------------------------------------------------------------------------
 // Rendering
 //----------------------------------------------------------------------------
@@ -521,7 +533,7 @@ UsdImagingGLEngine::PrepareBatch(
     {
         _PreSetTime(params);
         // SetTime will only react if time actually changes.
-        if (_GetUseSceneIndices()) {
+        if (UseUsdImagingSceneIndex()) {
             _stageSceneIndex->SetTime(params.frame);
         } else {
             _sceneDelegate->SetTime(params.frame);
@@ -531,7 +543,7 @@ UsdImagingGLEngine::PrepareBatch(
     }
 
     // Miscellaneous scene render configuration parameters.
-    if (_GetUseSceneIndices()) {
+    if (UseUsdImagingSceneIndex()) {
         if (_appSceneIndices) {
             if (HdsiSceneMaterialPruningSceneIndexRefPtr const &si =
                     _appSceneIndices->sceneMaterialPruningSceneIndex) {
@@ -566,7 +578,7 @@ UsdImagingGLEngine::PrepareBatch(
     // to avoid extra unforced rounds of invalidation after population.
     if (!_isPopulated) {
         auto stage = root.GetStage();
-        if (_GetUseSceneIndices()) {
+        if (UseUsdImagingSceneIndex()) {
             _ScopedHydraNoticeBatch noticeBatch(
                 _postInstancingNoticeBatchingSceneIndex);
 
@@ -900,7 +912,7 @@ UsdImagingGLEngine::SetRootTransform(GfMatrix4d const& xf)
 
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
-    if (_GetUseSceneIndices()) {
+    if (UseUsdImagingSceneIndex()) {
         _rootOverridesSceneIndex->SetRootTransform(xf);
     } else {
         _sceneDelegate->SetRootTransform(xf);
@@ -916,7 +928,7 @@ UsdImagingGLEngine::SetRootVisibility(const bool isVisible)
 
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
-    if (_GetUseSceneIndices()) {
+    if (UseUsdImagingSceneIndex()) {
         _rootOverridesSceneIndex->SetRootVisibility(isVisible);
     } else {
         _sceneDelegate->SetRootVisibility(isVisible);
@@ -1012,7 +1024,7 @@ UsdImagingGLEngine::SetWindowPolicy(CameraUtilConformWindowPolicy policy)
     // Note: Free cam uses SetCameraState, which expects the frustum to be
     // pre-adjusted for the viewport size.
 
-    if (_GetUseSceneIndices()) {
+    if (UseUsdImagingSceneIndex()) {
         // XXX(USD-7115): window policy
     } else {
         // The usdImagingDelegate manages the window policy for scene cameras.
@@ -1040,7 +1052,7 @@ UsdImagingGLEngine::SetCameraPath(SdfPath const& id)
     // The camera that is set for viewing will also be used for
     // time sampling.
     // XXX(HYD-2304): motion blur shutter window.
-    if (_GetUseSceneIndices()) {
+    if (UseUsdImagingSceneIndex()) {
         // Set camera path on HdsiSceneGlobalsSceneIndex.
         if (_appSceneIndices) {
             if (auto &sgsi = _appSceneIndices->sceneGlobalsSceneIndex) {
@@ -1135,7 +1147,7 @@ UsdImagingGLEngine::SetSelected(SdfPathVector const& paths)
 
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
-    if (_GetUseSceneIndices()) {
+    if (UseUsdImagingSceneIndex()) {
         _selectionSceneIndex->ClearSelection();
 
         for (const SdfPath &path : paths) {
@@ -1172,7 +1184,7 @@ UsdImagingGLEngine::ClearSelected()
 
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
-    if (_GetUseSceneIndices()) {
+    if (UseUsdImagingSceneIndex()) {
         _selectionSceneIndex->ClearSelection();
         return;
     }
@@ -1201,7 +1213,7 @@ UsdImagingGLEngine::AddSelected(SdfPath const &path, int instanceIndex)
 
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
-    if (_GetUseSceneIndices()) {
+    if (UseUsdImagingSceneIndex()) {
         _selectionSceneIndex->AddSelection(path);
         return;
     }
@@ -1613,6 +1625,20 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
         return false;
     }
 
+    HdContainerDataSourceHandle const sceneIndexInputArgs =
+        HdOverlayContainerDataSource::OverlayedContainerDataSources(
+            plugin->GetSceneIndexInputArgs(),
+            HdRetainedContainerDataSource::New(
+                UsdImagingUsdSceneIndexInputArgsSchema::GetSchemaToken(),
+                UsdImagingUsdSceneIndexInputArgsSchema::Builder()
+                    .SetAddDrawModeSceneIndex(
+                        HdRetainedTypedSampledDataSource<bool>::New(
+                            _enableUsdDrawModes))
+                    .SetDisplayUnloadedPrimsWithBounds(
+                        HdRetainedTypedSampledDataSource<bool>::New(
+                            _displayUnloadedPrimsWithBounds))
+                    .Build()));
+    
     if (_GetSceneIndexObserverRenderer()) {
         if (_renderer && _renderer.GetPluginId() == resolvedId) {
             return true;
@@ -1620,7 +1646,7 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
 
         TF_PY_ALLOW_THREADS_IN_SCOPE();
 
-        return _CreateSceneIndicesAndRenderer(plugin);
+        return _CreateSceneIndicesAndRenderer(plugin, sceneIndexInputArgs);
     } else {
         if (_renderDelegate && _renderDelegate.GetPluginId() == resolvedId) {
             return true;
@@ -1633,19 +1659,22 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
         if (!renderDelegate) {
             return false;
         }
-        _SetRenderDelegateAndRestoreState(std::move(renderDelegate));
+        _SetRenderDelegateAndRestoreState(
+            std::move(renderDelegate), sceneIndexInputArgs);
     }
 
     return true;
 }
 
 bool
-UsdImagingGLEngine::_CreateSceneIndicesAndRenderer(HdRendererPluginHandle const &plugin)
+UsdImagingGLEngine::_CreateSceneIndicesAndRenderer(
+    HdRendererPluginHandle const &plugin,
+    HdContainerDataSourceHandle const &sceneIndexInputArgs)
 {
     TRACE_FUNCTION();
 
     const _RootOverrides rootOverrides =
-        _GetUseSceneIndices()
+        UseUsdImagingSceneIndex()
             ? _GetRootOverrides(_rootOverridesSceneIndex)
             : _GetRootOverrides(_sceneDelegate);
 
@@ -1707,12 +1736,12 @@ UsdImagingGLEngine::_CreateSceneIndicesAndRenderer(HdRendererPluginHandle const 
         return false;
     }
 
-    if (_GetUseSceneIndices()) {
+    if (UseUsdImagingSceneIndex()) {
         TRACE_SCOPE("UsdImaging scene indices");
         
         // Setup Usd imaging scene indices.
 
-        _CreateUsdImagingSceneIndices();
+        _CreateUsdImagingSceneIndices(sceneIndexInputArgs);
         _SetRootOverrides(rootOverrides, _rootOverridesSceneIndex);
 
         if (!_sceneDelegateId.IsAbsoluteRootPath()) {
@@ -1724,15 +1753,19 @@ UsdImagingGLEngine::_CreateSceneIndicesAndRenderer(HdRendererPluginHandle const 
     } else {
         TRACE_SCOPE("UsdImaging scene delegate");
 
-        HdRenderDelegateInfo info;
+        HdRenderIndexAdapterSceneIndexRefPtr adapter;
 
-        if (HdLegacyRenderControlInterface * const renderControl =
-                _renderer->GetLegacyRenderControl()) {
-            info = renderControl->GetRenderDelegateInfo();
+        if (_IsEnabledSceneIndexInputArgs()) {
+            adapter = HdRenderIndexAdapterSceneIndex::New(
+                sceneIndexInputArgs);
+        } else {
+            HdRenderDelegateInfo info;
+            if (HdLegacyRenderControlInterface * const renderControl =
+                    _renderer->GetLegacyRenderControl()) {
+                info = renderControl->GetRenderDelegateInfo();
+            }
+            adapter = HdRenderIndexAdapterSceneIndex::New(info);
         }
-
-        auto const adapter =
-            HdRenderIndexAdapterSceneIndex::New(info);
 
         _mergingSceneIndex->InsertInputScenes(
             {{adapter, SdfPath::AbsoluteRootPath()}});
@@ -1781,23 +1814,24 @@ UsdImagingGLEngine::_CreateSceneIndicesAndRenderer(HdRendererPluginHandle const 
 
 void
 UsdImagingGLEngine::_SetRenderDelegateAndRestoreState(
-    HdPluginRenderDelegateUniqueHandle &&renderDelegate)
+    HdPluginRenderDelegateUniqueHandle &&renderDelegate,
+    HdContainerDataSourceHandle const &sceneIndexInputArgs)
 {
     // Pull old scene/task controller state. Note that the scene index/delegate
     // may not have been created, if this is the first time through this
     // function, so we guard for null and use default values for xform/vis.
     const _RootOverrides rootOverrides =
-        _GetUseSceneIndices()
+        UseUsdImagingSceneIndex()
             ? _GetRootOverrides(_rootOverridesSceneIndex)
             : _GetRootOverrides(_sceneDelegate);
 
     HdSelectionSharedPtr const selection = _GetSelection();
 
     // Rebuild the imaging stack
-    _SetRenderDelegate(std::move(renderDelegate));
+    _SetRenderDelegate(std::move(renderDelegate), sceneIndexInputArgs);
 
     // Reload saved state.
-    if (_GetUseSceneIndices()) {
+    if (UseUsdImagingSceneIndex()) {
         _SetRootOverrides(rootOverrides, _rootOverridesSceneIndex);
     } else {
         _SetRootOverrides(rootOverrides, _sceneDelegate);
@@ -1867,18 +1901,15 @@ UsdImagingGLEngine::_AppendOverridesSceneIndices(
 }
 
 void
-UsdImagingGLEngine::_CreateUsdImagingSceneIndices()
+UsdImagingGLEngine::_CreateUsdImagingSceneIndices(
+    HdContainerDataSourceHandle const &sceneIndexInputArgs)
 {
-    UsdImagingCreateSceneIndicesInfo info;
-    info.addDrawModeSceneIndex = _enableUsdDrawModes;
-    info.displayUnloadedPrimsWithBounds = _displayUnloadedPrimsWithBounds;
-    info.overridesSceneIndexCallback =
-        std::bind(
-            &UsdImagingGLEngine::_AppendOverridesSceneIndices,
-            this, std::placeholders::_1);
-
     const UsdImagingSceneIndices sceneIndices =
-        UsdImagingCreateSceneIndices(info);
+        UsdImagingCreateSceneIndices(
+            sceneIndexInputArgs,
+            std::bind(
+                &UsdImagingGLEngine::_AppendOverridesSceneIndices,
+                this, std::placeholders::_1));
 
     _stageSceneIndex =
         sceneIndices.stageSceneIndex;
@@ -1897,7 +1928,8 @@ UsdImagingGLEngine::_CreateUsdImagingSceneIndices()
 
 void
 UsdImagingGLEngine::_SetRenderDelegate(
-    HdPluginRenderDelegateUniqueHandle &&renderDelegate)
+    HdPluginRenderDelegateUniqueHandle &&renderDelegate,
+    HdContainerDataSourceHandle const &sceneIndexInputArgs)
 {
     // This relies on SetRendererPlugin to release the GIL...
 
@@ -1928,8 +1960,8 @@ UsdImagingGLEngine::_SetRenderDelegate(
                 _renderDelegate.Get(), {&_hgiDriver}, renderInstanceId));
     }
 
-    if (_GetUseSceneIndices()) {
-        _CreateUsdImagingSceneIndices();
+    if (UseUsdImagingSceneIndex()) {
+        _CreateUsdImagingSceneIndices(sceneIndexInputArgs);
         _renderIndex->InsertSceneIndex(
             _usdImagingFinalSceneIndex, _sceneDelegateId);
     } else {
@@ -2653,7 +2685,7 @@ UsdImagingGLEngine::_PreSetTime(const UsdImagingGLRenderParams& params)
 
     const int refineLevel = _GetRefineLevel(params.complexity);
 
-    if (_GetUseSceneIndices()) {
+    if (UseUsdImagingSceneIndex()) {
         // The UsdImagingStageSceneIndex has no complexity opinion.
         // We force the value here upon all prims.
         _displayStyleSceneIndex->SetRefineLevel({true, refineLevel});
@@ -2858,7 +2890,7 @@ UsdImagingGLEngine::_GetDefaultRendererPluginId()
 UsdImagingDelegate *
 UsdImagingGLEngine::_GetSceneDelegate() const
 {
-    if (_GetUseSceneIndices()) {
+    if (UseUsdImagingSceneIndex()) {
         // XXX(USD-7118): this API needs to be removed for full
         // scene index support.
         TF_CODING_ERROR("_GetSceneDelegate API is unsupported");
@@ -2952,6 +2984,32 @@ UsdImagingGLEngine::PollForAsynchronousUpdates() const
     }
 
     return false;
+}
+
+bool
+UsdImagingGLEngine::UseUsdImagingSceneIndex()
+{
+    static bool result =
+        HdRenderIndex::IsSceneIndexEmulationEnabled() &&
+        TfGetEnvSetting(USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX);
+
+    // Provide a single-shot deprecation notice.
+    if (!result) {
+        static std::once_flag once;
+        std::call_once(once, []() {
+            if (TfGetEnvSetting(
+                USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX_DEPRECATION_WARNING)) {
+                TF_WARN("*** Warning: USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX "
+                    "is overridden to 0.  This code path is deprecated, "
+                    "and will be removed in a future release of USD.  This "
+                    "deprecation notice can be suppressed by setting "
+                   "USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX_DEPRECATION_WARNING"
+                    "to '0'. ***");
+            }
+        });
+    }
+
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

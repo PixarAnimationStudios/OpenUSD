@@ -33,7 +33,7 @@ ARCH_PRAGMA_POP
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-OIIO_NAMESPACE_USING
+using namespace OIIO;
 
 // _ioProxySupportedExtensions is a list of hardcoded file extensions that
 // support ioProxy. Although OIIO has an api call for checking whether or
@@ -699,14 +699,16 @@ HioOIIO_Image::ReadCropped(int const cropTop,
     // may overflow INT_MAX, which can be less than SIZE_MAX.
     size_t strideLength = imageInput->spec().width *
                           imageInput->spec().pixel_bytes();
-    size_t readStride = (storage.flipped) ?
-                        (-strideLength) : (strideLength);
     size_t size = imageInput->spec().height * strideLength;
 
     std::unique_ptr<uint8_t[]>pixelData(new uint8_t[size]);
     unsigned char *pixels = pixelData.get();
     void *start = (storage.flipped)?
                   (pixels + size - strideLength) : (pixels);
+    stride_t ystride = strideLength;
+    if (storage.flipped) {
+        ystride = -ystride;
+    }
 
     // Read Image into pixels, flipping upon load so that
     // origin is at lower left corner
@@ -724,7 +726,7 @@ HioOIIO_Image::ReadCropped(int const cropTop,
         format,
         start,
         AutoStride,
-        readStride,
+        ystride,
         AutoStride);
     if (!res)
     {

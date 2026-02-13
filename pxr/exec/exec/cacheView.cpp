@@ -44,7 +44,10 @@ Exec_CacheView::Get(int index) const
     }
 
     const VdfMaskedOutput &mo = _outputs[index];
-    if (!TF_VERIFY(mo)) {
+
+    // It is allowed for computed values to be empty. This can happen if a leaf
+    // node could not be created, because it depends on a cycle.
+    if (!mo) {
         return VtValue();
     }
 

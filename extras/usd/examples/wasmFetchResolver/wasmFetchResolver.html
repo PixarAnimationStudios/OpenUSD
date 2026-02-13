@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<!--
+Copyright 2026 Pixar
+
+Licensed under the terms set forth in the LICENSE.txt file available at
+https://openusd.org/license.
+-->
+<html>
+<head>
+  <meta name="copyright" content="Pixar, 2026">
+  <meta name="license" content="https://openusd.org/license">
+  <meta charset="utf-8">
+  <title>USD Wasm Fetch Resolver Example</title>
+</head>
+<body>
+  <div>USD Wasm Fetch Resolver Example</div>
+  <div>
+    <label for="input">Root layer path:</label>
+    <select id="input" style="width:256px;"></select>
+    <button id="refresh">Refresh</button>
+  </div>
+  <div>
+    <button id="usdTree">Show Tree</button>
+    <button id="computeAllDependencies">Compute All Dependencies</button>
+    <button id="createNewUsdzPackage">Create USDZ Package</button>
+  </div>
+  <div><pre id="output"></pre></div>
+
+  <script>
+    var Module = {
+        onRuntimeInitialized: function () {
+            Module.InitWorkerThread();
+        }
+    };
+
+    const output = document.getElementById('output');
+    const input = document.getElementById('input');
+
+    document.getElementById("usdTree").onclick = async () => {
+      output.textContent = "Generating...";
+      const data = await Module.ShowTree(input.value);
+      document.getElementById('output').textContent = data;
+    };
+
+    document.getElementById("computeAllDependencies").onclick = async () => {
+      output.textContent = "Computing Dependencies...";
+      output.textContent = await Module.ComputeAllDependencies(input.value);
+    };
+    document.getElementById("createNewUsdzPackage").onclick = async () => {
+      output.textContent = "Creating usdz...";
+      const usdzPath = await Module.CreateNewUsdzPackage(input.value);
+
+      if (usdzPath === "" ) {
+        output.textContent = `Failed to open url: ${input.value}`
+        return;
+      }
+
+      const data = FS.readFile(usdzPath);
+      const blob = new Blob([data], { type: "application/octet-stream" });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "stage.usdz";
+
+      document.body.appendChild(a);
+      a.click();
+
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      FS.unlink(usdzPath);
+      output.textContent = "Usdz creation complete."
+    };
+
+    async function loadStages() {
+        try {
+            const response = await fetch('/stages');
+            if (!response.ok) return;
+            const stages = await response.json();
+            const select = document.getElementById('input');
+            select.innerHTML = '';
+            stages.forEach(stage => {
+                const option = document.createElement('option');
+                option.value = stage.path;
+                option.textContent = stage.name;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Failed to load stages:', error);
+        }
+    }
+
+    document.getElementById("refresh").onclick = async () => {
+      loadStages();
+    }
+
+    loadStages();
+  </script>
+
+  <script src="wasmFetchResolver.js"></script>
+</body>
+</html>

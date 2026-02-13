@@ -12,6 +12,8 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/pathPattern.h"
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/vt/value.h"
+#include "pxr/base/vt/traits.h"
 
 #include <iosfwd>
 #include <string>
@@ -323,8 +325,7 @@ public:
     /// expression" (i.e. "%_") in this expression with \p weaker.  This is a
     /// restricted form of ResolveReferences() that only resolves "weaker"
     /// references, replacing them by \p weaker, leaving other references
-    /// unmodified.  As a special case, if this expression IsEmpty(), return \p
-    /// weaker.
+    /// unmodified.
     SdfPathExpression
     ComposeOver(SdfPathExpression const &weaker) const & {
         return SdfPathExpression(*this).ComposeOver(weaker);
@@ -407,6 +408,9 @@ private:
     std::string _parseError;
 };
 
+// Path expressions support composing-over and value transforms.
+VT_VALUE_TYPE_CAN_COMPOSE(SdfPathExpression);
+VT_VALUE_TYPE_CAN_TRANSFORM(SdfPathExpression);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

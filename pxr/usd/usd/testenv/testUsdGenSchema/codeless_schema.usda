@@ -563,11 +563,13 @@ class UsdContrivedNoAlias "UsdContrivedNoAlias" (
 {
 }
 
+# Reflected API schemas can only be single-apply, so we do not expect 
+# TestReflectedMultipleAPI to be reflected into the generated code for this class.
 class "TestReflectedAPIBase" (
     inherits = </Typed>
-    prepend apiSchemas = ["TestReflectedInternalAPI", "TestReflectedExternalAPI"]
+    prepend apiSchemas = ["TestReflectedInternalAPI", "TestReflectedExternalAPI", "TestReflectedMultipleAPI:foo"]
     customData = {
-        string[] reflectedAPISchemas = ["TestReflectedInternalAPI", "TestReflectedExternalAPI"]
+        token[] reflectedAPISchemas = ["TestReflectedInternalAPI", "TestReflectedExternalAPI", "TestReflectedMultipleAPI"]
     }
 )
 {
@@ -588,6 +590,19 @@ class "TestReflectedInternalAPI" (
     rel testRelInternal
     int testAttrDuplicate 
     rel testRelDuplicate
+}
+
+class "TestReflectedMultipleAPI" (
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["BuiltinAPI"]
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "test"
+    }
+)
+{
+    int testAttrMultiple
+    rel testRelInternalMultiple
 }
 
 class "TestPropertyOrderTyped" (

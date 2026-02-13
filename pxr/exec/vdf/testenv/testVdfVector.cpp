@@ -2237,9 +2237,7 @@ static Tests tests[] =
     { TestVectorResize,          "TestVectorResize"          },
     { TestVectorMerge,           "TestVectorMerge"           },
     { TestDebugPrint,            "TestDebugPrint"            },
-    { TestConstructWithSize,     "TestConstructWithSize"     },
-
-    NULL
+    { TestConstructWithSize,     "TestConstructWithSize"     }
 };
 
 
@@ -2258,11 +2256,11 @@ main(int argc, char **argv)
         // Run through all the registered tests, and if any of them fail
         // fail the whole test.
 
-        for(int i = 0; tests[i].func; ++i)
+        for (const auto& [func, name] : tests)
         {
-            printf("*** %s\n", tests[i].name);
+            printf("*** %s\n", name);
 
-            if (!tests[i].func())
+            if (!func())
                 printf("> failed...\n"),
                 res = -1;
             else

@@ -32,6 +32,7 @@ pxr_library(exec
         systemChangeProcessor
         systemDiagnostics
         typeRegistry
+        validationError
         valueKey
 
     PRIVATE_HEADERS
@@ -54,10 +55,12 @@ pxr_library(exec
         compilerTaskSyncBase
         computationDefinition
         constantValueNode
+        cycleDetectingTask
         definitionRegistry
         inputRecompilationTask
         inputResolver
         inputResolvingCompilationTask
+        interruptState
         leafCompilationTask
         metadataInputNode
         nodeRecompilationInfo
@@ -141,13 +144,9 @@ pxr_build_test(testExecComputationRegistration
 
 # Tests that rely on plugins aren't currently supported in static builds.
 if (BUILD_SHARED_LIBS)
-    pxr_install_test_dir(
-        SRC testenv/testExecComputationRegistration
-        DEST testExecComputationRegistration
-    )
-
     pxr_register_test(testExecComputationRegistration
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecComputationRegistration"
+        TESTENV testenv/testExecComputationRegistration
         EXPECTED_RETURN_CODE 0
     )
 endif()
@@ -166,13 +165,9 @@ pxr_build_test(testExecInputResolver
         testenv/testExecInputResolver.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testExecInputResolver
-    DEST testExecInputResolver
-)
-
 pxr_register_test(testExecInputResolver
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecInputResolver"
+    TESTENV testenv/testExecInputResolver
     EXPECTED_RETURN_CODE 0
 )
 

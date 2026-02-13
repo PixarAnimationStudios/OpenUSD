@@ -159,36 +159,6 @@ pxr_library(vdf
         README.md
 )
 
-pxr_install_test_dir(
-    SRC testenv/testVdfEdit
-    DEST testVdfEdit
-)
-
-pxr_install_test_dir(
-    SRC testenv/testVdfGrapher
-    DEST testVdfGrapher
-)
-
-pxr_install_test_dir(
-    SRC testenv/testVdfIndexedWeights
-    DEST testVdfIndexedWeights
-)
-
-pxr_install_test_dir(
-    SRC testenv/testVdfIndexedWeights_Perf
-    DEST testVdfIndexedWeights_Perf
-)
-
-pxr_install_test_dir(
-    SRC testenv/testVdfSparseInputPathFinder
-    DEST testVdfSparseInputPathFinder
-)
-
-pxr_install_test_dir(
-    SRC testenv/testVdfTraversal
-    DEST testVdfTraversal
-)
-
 pxr_build_test(testVdfBasic
     LIBRARIES
         vdf
@@ -484,6 +454,7 @@ pxr_register_test(testVdfVector
 pxr_register_test(testVdfGrapher
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVdfGrapher"
     EXPECTED_RETURN_CODE 0
+    TESTENV testenv/testVdfGrapher
     POST_COMMAND "${PYTHON_EXECUTABLE} normalizeDotFiles.py test.dot"
     DIFF_COMPARE test.out
     DIFF_COMPARE traverse.out
@@ -494,7 +465,6 @@ pxr_register_test(testVdfGrapher
     DIFF_COMPARE displayNoLabels.dot
     DIFF_COMPARE displaySummary.dot
     DIFF_COMPARE linear_chain.dot
-    TESTENV testVdfGrapher
 )
 
 pxr_register_test(testVdfHardToReach
@@ -504,6 +474,7 @@ pxr_register_test(testVdfHardToReach
 
 pxr_register_test(testVdfIndexedWeights
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVdfIndexedWeights -c"
+    TESTENV testenv/testVdfIndexedWeights
     STDOUT_REDIRECT test.out
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE test.out
@@ -541,20 +512,21 @@ pxr_register_test(testVdfSpeculation
 
 pxr_register_test(testVdfTraversal
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVdfTraversal"
+    TESTENV testenv/testVdfTraversal
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT testVdfTraversal-Run1-stdout.txt
     DIFF_COMPARE testVdfTraversal-Run1-stdout.txt
-    TESTENV testVdfTraversal
 )
 
 pxr_register_test(testVdfSparseInputPathFinder
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVdfSparseInputPathFinder"
+    TESTENV testenv/testVdfSparseInputPathFinder
     EXPECTED_RETURN_CODE 0
-    TESTENV testVdfSparseInputPathFinder
 )
 
 pxr_register_test(testVdfEdit
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVdfEdit"
+    TESTENV testenv/testVdfEdit
     EXPECTED_RETURN_CODE 0
     POST_COMMAND
         "${PYTHON_EXECUTABLE} sortDotFiles.py \
@@ -582,7 +554,6 @@ pxr_register_test(testVdfEdit
     DIFF_COMPARE removed_edge_3.dot.out
     DIFF_COMPARE removed_edge_4.dot.out
     DIFF_COMPARE removed_edge_5.dot.out
-    TESTENV testVdfEdit
 )
 
 pxr_register_test(testVdfExecutionTypeRegistry
@@ -600,9 +571,9 @@ pxr_register_test(testVdfIsolatedSubnetwork
 # pxr_register_test(testVdfIndexedWeights_Perf
 #     COMMAND testVdfIndexedWeights -p
 #     EXPECTED_RETURN_CODE 0
+#     TESTENV testenv/testVdfIndexedWeights_Perf
 #     POST_COMMAND "perfgen perfstats.raw testVdfIndexedWeights_Perf.yaml"
 #     <logmetrics file="testVdfIndexedWeights_Perf.yaml"/>
-#     TESTENV testVdfIndexedWeights_Perf
 # )
 
 pxr_register_test(testVdfDynamicTopologicalSorter

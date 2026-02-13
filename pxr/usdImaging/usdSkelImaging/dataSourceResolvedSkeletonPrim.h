@@ -50,6 +50,10 @@ public:
         return _animationSource;
     }
 
+    const VtArray<SdfPath> &GetInstanceAnimationSources() const {
+        return _instanceAnimationSources;
+    }
+
     /// Paths to instancers instancing this prim - not including ones
     /// outside the skel root.
     ///
@@ -64,12 +68,47 @@ public:
         return _animationSchema;
     }
 
+    const VtArray<UsdSkelImagingAnimationSchema> 
+        &GetInstanceAnimationSchemas() const {
+        return _instanceAnimationSchemas;
+    }
+
+    /// Get the resolved animationSchema(s)/animationSource(s) bound to this 
+    /// skeleton. If UsdImagingIsUsdSkelGLInstancingEnabled() is false, 
+    /// always return GetAnimationSchema()/GetAnimationSource(), otherwise 
+    /// return GetInstanceAnimationSchemas()/GetInstanceAnimationSources() 
+    /// when there's no bound animationSource.
+    // TODO:
+    // Maybe consider removing or making the direct access APIs (
+    // GetAnimationXXX()/GetInstanceAnimationXXX()) private?
+    const VtArray<SdfPath> GetResolvedAnimationSources() const;
+    const VtArray<UsdSkelImagingAnimationSchema>
+        GetResolvedAnimationSchemas() const;
+
     /// Transfrom to go from local space of skeleton prim to common
     /// space (as defined by UsdSkelImagingDataSourceXformResolver).
     HdMatrixDataSourceHandle GetSkelLocalToCommonSpace() const;
 
     /// Skinning transforms.
+    /// If UsdImagingIsUsdSkelGLInstancingEnabled() is true, this will 
+    /// concatinate all the instanceAnimationSource if there is no bound
+    /// AnimationSource.
     HdMatrix4fArrayDataSourceHandle GetSkinningTransforms();
+
+    /// BlendShapes.
+    /// Same logic as skinning transforms
+    HdTokenArrayDataSourceHandle GetBlendShapes() const;
+
+    /// BlendShape weights.
+    /// Same logic as skinning transforms
+    HdFloatArrayDataSourceHandle GetBlendShapeWeights() const;
+
+    /// BlendShape ranges.
+    /// If UsdImagingIsUsdSkelGLInstancingEnabled() is true, 
+    /// We will concatenate all the blendShapes and blendShapeWeights from
+    /// instance animation sources and they might be of different sizes so we
+    /// need to provide ranges in order to restore them downstream.
+    HdVec2iArrayDataSourceHandle GetBlendShapeRanges() const;
 
     /// (Non-animated) skel data computed from this skeleton and the parts of
     /// skelAnimation relating to the topology/remapping.
@@ -114,6 +153,8 @@ private:
         const SdfPath &primPath,
         HdContainerDataSourceHandle const &primSource);
 
+    bool _ShouldResolveInstanceAnimation() const;
+
     bool _ProcessSkeletonDirtyLocators(
         const HdDataSourceLocatorSet &dirtyLocators,
         HdDataSourceLocatorSet * newDirtyLocators);
@@ -132,7 +173,7 @@ private:
     HdContainerDataSourceHandle const _primSource;
     // Path of skel animation prim.
     const SdfPath _animationSource;
-    // Animation schema from skel animation prim.
+    // Animation schema from the above skel animation prim.
     const UsdSkelImagingAnimationSchema _animationSchema;
 
     class _SkelDataCache
@@ -173,6 +214,12 @@ private:
 
     // Serves GetSkelLocalToWorld - taking instancing into account.
     UsdSkelImagingDataSourceXformResolver _xformResolver;
+
+    // Paths of skel animation prims bound to the instancer.
+    // They came in as skel:animationSource primvar on the instancer.
+    const VtArray<SdfPath> _instanceAnimationSources;
+    // Animation schema from the above skel animation prims.
+    const VtArray<UsdSkelImagingAnimationSchema> _instanceAnimationSchemas;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdSkelImagingDataSourceResolvedSkeletonPrim);

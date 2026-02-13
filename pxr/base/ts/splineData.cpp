@@ -99,6 +99,86 @@ bool Ts_SplineData::HasInnerLoops(
     return true;
 }
 
+TsTime Ts_SplineData::GetPreExtrapTime() const
+{
+    if (times.empty()) {
+        TF_CODING_ERROR("GetPreExtrapTime called on spline with no knots.");
+        return 0.0;
+    }
+
+    TsTime result = times.front();
+
+    if (HasInnerLoops()) {
+        const double loopSpan = loopParams.protoEnd - loopParams.protoStart;
+        const TsTime loopBegin = loopParams.protoStart -
+                                 loopParams.numPreLoops * loopSpan;
+        result = std::min(result, loopBegin);
+    }
+
+    return result;
+}
+
+TsTime Ts_SplineData::GetPostExtrapTime() const
+{
+    if (times.empty()) {
+        TF_CODING_ERROR("GetPostExtrapTime called on spline with no knots.");
+        return 0.0;
+    }
+
+    TsTime result = times.back();
+
+    if (HasInnerLoops()) {
+        const double loopSpan = loopParams.protoEnd - loopParams.protoStart;
+        const TsTime loopBegin = loopParams.protoEnd +
+                                 loopParams.numPostLoops * loopSpan;
+        result = std::max(result, loopBegin);
+    }
+
+    return result;
+}
+
+double Ts_SplineData::GetPreExtrapValue() const
+{
+    if (times.empty()) {
+        TF_CODING_ERROR("GetPreExtrapValue called on spline with no knots.");
+        return 0.0;
+    }
+
+    size_t firstProtoIndex;
+    if (HasInnerLoops(&firstProtoIndex)) {
+        const double loopSpan = loopParams.protoEnd - loopParams.protoStart;
+        const TsTime loopBegin = loopParams.protoStart -
+                                 loopParams.numPreLoops * loopSpan;
+        if (loopBegin <= times.front()) {
+            return (GetKnotPreValueAsDouble(firstProtoIndex) -
+                    loopParams.numPreLoops * loopParams.valueOffset);
+        }
+    }
+
+    return GetKnotPreValueAsDouble(0);
+}
+
+double Ts_SplineData::GetPostExtrapValue() const
+{
+    if (times.empty()) {
+        TF_CODING_ERROR("GetPostExtrapValue called on spline with no knots.");
+        return 0.0;
+    }
+
+    size_t firstProtoIndex;
+    if (HasInnerLoops(&firstProtoIndex)) {
+        const double loopSpan = loopParams.protoEnd - loopParams.protoStart;
+        const TsTime loopEnd = loopParams.protoEnd +
+                               loopParams.numPostLoops * loopSpan;
+        if (loopEnd >= times.back()) {
+            return (GetKnotValueAsDouble(firstProtoIndex) +
+                    (loopParams.numPostLoops + 1) * loopParams.valueOffset);
+        }
+    }
+
+    return GetKnotValueAsDouble(times.size() - 1);
+}
+    
 Ts_SplineData*
 Ts_GetSplineData(TsSpline &spline)
 {

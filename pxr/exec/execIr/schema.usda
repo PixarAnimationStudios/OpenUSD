@@ -1,0 +1,85 @@
+#usda 1.0
+(
+    "Invertible rigging schemas"
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName = "execIr"
+        string libraryPath = "pxr/exec/execIr"
+        bool skipCodeGeneration = true
+    }
+)
+{
+}
+
+class IrFkController "IrFkController" (
+    doc = """
+    A simple invertible FK controller.
+
+    The forward computation takes inputs from scalar translate and rotate
+    FK attributes, and a parent space, and produces a posed space. The inverse
+    computation takes a desired posed space and the parent space as input and
+    produces the FK attribute values that produce the desired space.
+    """
+    inherits = </Typed>
+    customData = {
+        string className = "FkController"
+    }
+)
+{
+    matrix4d ParentIn:Space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "InputAttribute"
+        irIsInvertible = False
+    )
+
+    matrix4d Out:Space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "OutputAttribute"
+        irIsInvertible = True
+    )
+
+    matrix4d In:DefaultSpace = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "PassthroughAttribute"
+    )
+    double In:Tx = 0 (
+        irRole = "InputAttribute"
+        irIsInvertible = True
+    )
+    double In:Ty = 0 (
+        irRole = "InputAttribute"
+        irIsInvertible = True
+    )
+    double In:Tz = 0 (
+        irRole = "InputAttribute"
+        irIsInvertible = True
+    )
+
+    double In:Rx = 0 (
+        irRole = "InputAttribute"
+        irIsInvertible = True
+    )
+    double In:Ry = 0 (
+        irRole = "InputAttribute"
+        irIsInvertible = True
+    )
+    double In:Rz = 0 (
+        irRole = "InputAttribute"
+        irIsInvertible = True
+    )
+    double In:Rspin = 0 (
+        irRole = "InputAttribute"
+        irIsInvertible = True
+    )
+
+    token In:RotationOrder = "XYZ" (
+        irRole = "SwitchAttribute"
+        irIsInvertible = True
+        allowedTokens = ["XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX"]
+    )
+}

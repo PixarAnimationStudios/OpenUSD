@@ -13,12 +13,8 @@ pxr_build_test(definingComputations
         definingComputations.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testDefiningComputationsExample
-    DEST testDefiningComputationsExample
-)
-
 pxr_register_test(testDefiningComputationsExample
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/definingComputations"
+    TESTENV testenv/testDefiningComputationsExample
     EXPECTED_RETURN_CODE 0
 )

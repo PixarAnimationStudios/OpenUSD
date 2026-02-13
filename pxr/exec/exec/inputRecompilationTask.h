@@ -41,6 +41,8 @@ private:
         Exec_CompilationState &compilationState,
         TaskPhases &taskPhases) override;
 
+    void _Interrupt(Exec_CompilationState &compilationState) override;
+
 private:
     // The input to be recompiled.
     VdfInput *const _input;

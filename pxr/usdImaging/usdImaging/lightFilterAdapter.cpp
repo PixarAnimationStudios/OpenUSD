@@ -101,6 +101,12 @@ UsdImagingLightFilterAdapter::TrackVariability(UsdPrim const& prim,
         UsdImaging_CollectionCache &collectionCache = _GetCollectionCache();
         collectionCache.UpdateCollection(
                                 lightFilter.GetFilterLinkCollectionAPI());
+        // Not all light filters have a shadow link collection.
+        if (const auto shadowLinkCollectionAPI =
+                UsdCollectionAPI(prim, UsdLuxTokens->shadowLink)) {
+            collectionCache.UpdateCollection(shadowLinkCollectionAPI);
+        }
+                
         // TODO: When collections change we need to invalidate affected
         // prims with the DirtyCollections flag.
     }
@@ -260,6 +266,33 @@ UsdImagingLightFilterAdapter::InvalidateImagingSubprim(
             break;
         }
     }
+
+    return result;
+}
+
+UsdImagingPrimAdapter::PopulationMode
+UsdImagingLightFilterAdapter::GetPopulationMode()
+{
+    return RepresentsSelfAndDescendents;
+}
+
+HdDataSourceLocatorSet
+UsdImagingLightFilterAdapter::InvalidateImagingSubprimFromDescendent(
+        UsdPrim const& prim,
+        UsdPrim const& descendentPrim,
+        TfToken const& subprim,
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
+{
+    HdDataSourceLocatorSet result;
+
+    UsdLuxLightFilter filter(prim);
+    if (!filter) {
+        return result;
+    }
+
+    // TODO: perhaps enable more selective dirtying, as is done in UsdImagingMaterialAdapter
+    result.insert(HdMaterialSchema::GetDefaultLocator());
 
     return result;
 }

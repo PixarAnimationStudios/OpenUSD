@@ -94,13 +94,13 @@ UsdSkelImagingComputeBlendShapeData(
 /// One weight for each sub shape.
 ///
 USDSKELIMAGING_API
-VtArray<float>
+VtFloatArray
 UsdSkelImagingComputeBlendShapeWeights(
     const UsdSkelImagingBlendShapeData &data,
     // from skel animation
-    const VtArray<TfToken> &blendShapeNames,
+    const TfSpan<const TfToken> &blendShapeNames,
     // from skel animation
-    const VtArray<float> &blendShapeWeights);
+    const TfSpan<const float> &blendShapeWeights);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

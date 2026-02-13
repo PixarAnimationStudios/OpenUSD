@@ -131,6 +131,7 @@ HdEmbreeRenderer::HdEmbreeRenderer()
     , _samplesToConvergence(0)
     , _ambientOcclusionSamples(0)
     , _enableSceneColors(false)
+    , _domeLightCameraVisibility(true)
     , _enableLighting(false)
     , _completedSamples(0)
 {
@@ -160,6 +161,12 @@ void
 HdEmbreeRenderer::SetEnableSceneColors(bool enableSceneColors)
 {
     _enableSceneColors = enableSceneColors;
+}
+
+void
+HdEmbreeRenderer::SetDomeLightCameraVisibility(bool domeLightCameraVisibility)
+{
+    _domeLightCameraVisibility = domeLightCameraVisibility;
 }
 
 void
@@ -218,6 +225,10 @@ HdEmbreeRenderer::AddLight(SdfPath const& lightPath,
 {
     ScopedLock lightsWriteLock(_lightsWriteMutex);
     _lightMap[lightPath] = light;
+
+    if (light->IsDome()) {
+        _domes.push_back(light);
+    }
 }
 
 void
@@ -225,6 +236,9 @@ HdEmbreeRenderer::RemoveLight(SdfPath const& lightPath, HdEmbree_Light* light)
 {
     ScopedLock lightsWriteLock(_lightsWriteMutex);
     _lightMap.erase(lightPath);
+    _domes.erase(std::remove_if(_domes.begin(), _domes.end(),
+                                [&light](auto& l){ return l == light; }),
+                 _domes.end());
 }
 
 bool
@@ -1000,7 +1014,27 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
                                 GfVec4f const& clearColor)
 {
     if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID) {
-        return clearColor;
+        if (_domes.empty() || !_enableLighting || !_domeLightCameraVisibility) {
+            return clearColor;
+        }
+
+        // if we missed all geometry in the scene, evaluate the infinite lights
+        // directly
+        GfVec4f domeColor(0.0f, 0.0f, 0.0f, 1.0f);
+        for (auto* dome : _domes) {
+            // Direct visibility: sample the dome lights. Since we know
+            // we're only sampling domes, we don't care about the position, and
+            // the sample direction is the camera ray direction.
+            // Passing in (1.0, 0.0) ensures we don't jitter off the normal
+            // while sampling.
+            HdEmbreeLightSampler::LightSample ls =
+                HdEmbreeLightSampler::GetLightSample(
+                    dome->LightData(), GfVec3f(0),
+                    GfVec3f(rayHit.ray.dir_x, rayHit.ray.dir_y, rayHit.ray.dir_z),
+                    1.0f, 0.0f);
+            domeColor += GfVec4f(ls.Li[0], ls.Li[1], ls.Li[2], 0);
+        }
+        return domeColor;
     }
 
     // Get the instance and prototype context structures for the hit prim.

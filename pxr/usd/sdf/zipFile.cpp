@@ -29,6 +29,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace
 {
 
+TF_DEFINE_ENV_SETTING(SDF_MAX_ZIPFILE_ENTRY_SIZE, -1,
+"When writing SdfZipFiles, ensure that the length of a single entry does not "
+"exceed this size.  If a file to be added exceeds this size, an error will "
+"be generated. A negative value indicates that the maximum allowable size, "
+"which is UINT32_MAX, should be used. "
+"This setting is usually only modified for testing purposes. "
+"The default value is -1");
+
 TF_DEFINE_ENV_SETTING(SDF_MAX_ZIPFILE_SIZE, -1,
 "When writing SdfZipFiles, ensure that the length of the archive does not "
 "exceed this size.  If adding a file or saving the archive would push the size "
@@ -36,6 +44,11 @@ TF_DEFINE_ENV_SETTING(SDF_MAX_ZIPFILE_SIZE, -1,
 "the maximum allowable size, which is UINT32_MAX, should be used. "
 "This setting is usually only modified for testing purposes. "
 "The default value is -1");
+
+static inline size_t Sdf_GetMaxZipFileEntrySize() {
+    const int envVal = TfGetEnvSetting(SDF_MAX_ZIPFILE_ENTRY_SIZE);
+    return envVal < 0 ? std::numeric_limits<uint32_t>::max() : envVal;
+}
 
 static inline int64_t Sdf_GetMaxZipFileSize() {
     const int envVal = TfGetEnvSetting(SDF_MAX_ZIPFILE_SIZE);
@@ -1008,6 +1021,18 @@ SdfZipFileWriter::AddFile(
     if (!mapping) {
         TF_RUNTIME_ERROR(
             "Failed to map '%s': %s", filePath.c_str(), err.c_str());
+        return std::string();
+    }
+
+    // Trigger an error early if the file size is larger then the max
+    // entry size. This avoids overflow when writing the size into the
+    // entry's LocalFileHeader which can result in expected values that
+    // trip up _OutputStream's archive size validation. 
+    if (ArchGetFileMappingLength(mapping) > Sdf_GetMaxZipFileEntrySize()) {
+        TF_RUNTIME_ERROR(
+            "'%s' exceeds maximum allowable single file size (%zu > %zu)", 
+                filePath.c_str(), ArchGetFileMappingLength(mapping),
+                Sdf_GetMaxZipFileEntrySize());
         return std::string();
     }
 

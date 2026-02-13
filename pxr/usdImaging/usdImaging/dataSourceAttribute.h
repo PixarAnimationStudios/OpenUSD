@@ -49,7 +49,19 @@ public:
         if (time.IsNumeric()) {
             time = UsdTimeCode(time.GetValue() + shutterOffset);
         }
-        _usdAttrQuery.Get<T>(&result, time);
+
+        bool valueRetrieved = _usdAttrQuery.Get<T>(&result, time); 
+        if (valueRetrieved) {
+            return result;
+        }
+
+        // No value of expected type T could be retrieved. Try schema default
+        // and if that fails return zero-initialized result.
+        valueRetrieved = _usdAttrQuery.GetFallbackValue<T>(&result);
+        if (valueRetrieved) {
+            return result;
+        }
+
         return result;
     }
 

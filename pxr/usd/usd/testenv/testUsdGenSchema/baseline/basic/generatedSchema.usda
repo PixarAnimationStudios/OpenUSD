@@ -436,7 +436,7 @@ class UsdContrivedNoAlias "UsdContrivedNoAlias"
 }
 
 class "TestReflectedAPIBase" (
-    apiSchemas = ["TestReflectedInternalAPI", "TestReflectedExternalAPI"]
+    apiSchemas = ["TestReflectedInternalAPI", "TestReflectedExternalAPI", "TestReflectedMultipleAPI:foo"]
 )
 {
 }
@@ -449,6 +449,14 @@ class "TestReflectedInternalAPI" (
     int testAttrInternal
     rel testRelDuplicate
     rel testRelInternal
+}
+
+class "TestReflectedMultipleAPI" (
+    apiSchemas = ["BuiltinAPI:__INSTANCE_NAME__"]
+)
+{
+    int test:__INSTANCE_NAME__:testAttrMultiple
+    rel test:__INSTANCE_NAME__:testRelInternalMultiple
 }
 
 class "TestPropertyOrderTyped"

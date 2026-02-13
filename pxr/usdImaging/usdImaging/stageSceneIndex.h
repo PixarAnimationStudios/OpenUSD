@@ -35,6 +35,14 @@ class UsdImaging_AdapterManager;
 
 TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
 
+///
+/// A scene index consuming a UsdStage.
+///
+/// This scene index does not perform any transformations such as
+/// flattening visibility or transforms or aggregate native
+/// instances. Use UsdImagingCreateSceneIndices to get a chain
+/// of scene indices to resolve those.
+///
 class UsdImagingStageSceneIndex : public HdSceneIndexBase
 {
 public:

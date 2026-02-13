@@ -1,0 +1,27 @@
+{
+  "name": "wasmfetchresolver",
+  "version": "1.0.0",
+  "description": "Demonstrates using Emscripten's Fetch API to load USD stages in the browser",
+  "keywords": [
+    "USD",
+    "Emscripten",
+    "Wasm"
+  ],
+  "homepage": "https://openusd.org/release/index.html",
+  "bugs": {
+    "url": "https://github.com/PixarAnimationStudios/OpenUSD/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PixarAnimationStudios/OpenUSD.git"
+  },
+  "author": "Pixar Animation Studios",
+  "scripts": {
+    "server": "node server.js --port 8080 --directory public"
+  },
+  "dependencies": {
+    "commander": "^14.0.2",
+    "cors": "^2.8.5",
+    "express": "^5.2.1"
+  }
+}

@@ -121,8 +121,6 @@ private:
     _HashWithArgs _functionTableWithArgs;
 };
 
-TF_API_TEMPLATE_CLASS(TfSingleton<TfRegTest>);
-
 /// Adds the function Test_\p name, under name \p name, as a runnable
 /// regression test. Test_\p name must be of type \c RegFunc or
 /// \c RegFuncWithArgs.

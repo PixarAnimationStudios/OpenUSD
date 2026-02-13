@@ -1082,31 +1082,24 @@ def InstallTBB_MacOS(context, force, buildArgs):
                  ("ifeq ($(arch),$(filter $(arch),armv7 armv7s arm64))",
                   "ifeq ($(arch),$(filter $(arch),armv7 armv7s {0}))"
                         .format(apple_utils.GetTargetArmArch()))])
+        target_config_patches, clang_config_patches = \
+                apple_utils.GetTBBPatches(context)
+        if target_config_patches:
+            # Create config from iOS config
+            shutil.copy(src="build/ios.macos.inc",
+                        dst=f"build/{context.buildTarget.lower()}.macos.inc")
 
-        if context.buildTarget == apple_utils.TARGET_VISIONOS:
-            # Create visionOS config from iOS config
-            shutil.copy(
-                src="build/ios.macos.inc",
-                dst="build/visionos.macos.inc")
+            PatchFile(f"build/{context.buildTarget.lower()}.macos.inc", 
+                      target_config_patches)
 
-            PatchFile("build/visionos.macos.inc",
-                      [("ios","visionos"),
-                       ("iOS", "visionOS"),
-                       ("iPhone", "XR"),
-                       ("IPHONEOS","XROS"),
-                       ("?= 8.0", "?= 1.0")])
-
+        if clang_config_patches:
             # iOS clang just reuses the macOS one,
             # so it's easier to copy it directly.
             shutil.copy(src="build/macos.clang.inc",
-                        dst="build/visionos.clang.inc")
+                        dst=f"build/{context.buildTarget.lower()}.clang.inc")
 
-            PatchFile("build/visionos.clang.inc",
-                      [("ios","visionos"),
-                       ("-miphoneos-version-min=", "-target arm64-apple-xros"),
-                       ("iOS", "visionOS"),
-                       ("iPhone", "XR"),
-                       ("IPHONEOS","XROS")])
+            PatchFile(f"build/{context.buildTarget.lower()}.clang.inc", 
+                        clang_config_patches)
 
         (primaryArch, secondaryArch) = apple_utils.GetTargetArchPair(context)
 
@@ -2082,6 +2075,9 @@ if MacOS():
                        default=codesignDefault, action="store_true",
                        help=("Enable code signing for macOS builds "
                              "(defaults to enabled on Apple Silicon)"))
+    group.add_argument("--codesign-id", dest="macos_codesign_id", type=str,
+                       help=("A specific code-sign ID to use. If not provided, "
+                             "the build will try and find one or use '-'"))
 
 if Linux():
     group.add_argument("--use-cxx11-abi", type=int, choices=[0, 1],
@@ -2392,9 +2388,10 @@ class InstallContext:
         if MacOS():
             apple_utils.SetTarget(self, self.buildTarget)
 
-            self.macOSCodesign = \
-                (args.macos_codesign if hasattr(args, "macos_codesign")
-                 else False)
+            self.macOSCodesign = False
+            if args.macos_codesign:
+                self.macOSCodesign = (args.macos_codesign_id or 
+                                      apple_utils.GetCodeSignID())
             if apple_utils.IsHostArm() and args.ignore_homebrew:
                 self.ignorePaths.append("/opt/homebrew")
         else:
@@ -2417,8 +2414,7 @@ class InstallContext:
                             not embedded and 
                             not self.targetWasm)
         self.buildExamples = (args.build_examples and 
-                              not embedded and 
-                              not self.targetWasm)
+                              not embedded)
         self.buildTutorials = (args.build_tutorials and 
                                not embedded and 
                                not self.targetWasm)
@@ -2599,9 +2595,6 @@ if context.targetWasm:
         sys.exit(1)
     if "--python" in sys.argv:
         PrintError("Cannot build python components for wasm build targets")
-        sys.exit(1)
-    if "--examples" in sys.argv:
-        PrintError("Cannot build examples for wasm build targets")
         sys.exit(1)
     if "--tutorials" in sys.argv:
         PrintError("Cannot build tutorials for wasm build targets")
@@ -2977,7 +2970,9 @@ if Windows():
 
 if MacOS():
     if context.macOSCodesign:
-        apple_utils.Codesign(context.usdInstDir, verbosity > 1)
+        apple_utils.Codesign(context.usdInstDir,
+                             identifier=context.macOSCodesign,
+                             verbose_output=verbosity > 1)
 
 additionalInstructions = any([context.buildPython, context.buildTools, context.buildPrman])
 if additionalInstructions:

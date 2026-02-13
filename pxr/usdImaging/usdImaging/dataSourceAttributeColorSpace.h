@@ -11,6 +11,7 @@
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
+#include "pxr/usd/usd/colorSpaceAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -31,8 +32,8 @@ public:
         return VtValue(GetTypedValue(shutterOffset));
     }
 
-    /// Returns the extracted TfToken value of the color space metadata 
-    /// on the attribute.
+    /// Returns the extracted TfToken value of the color space for 
+    /// the attribute.
     ///
     TfToken GetTypedValue(HdSampledDataSource::Time shutterOffset) override
     {
@@ -41,7 +42,18 @@ public:
         }
 
         TF_UNUSED(shutterOffset);
-        return _usdAttr.GetColorSpace();
+
+        // Special Case handling of UsdUVTexture Nodes which has an
+        // 'inputs:sourceColorSpace' that we want to consolidate on the 
+        // 'inputs:file' parameter
+        TfToken sourceColorSpaceInput = _GetSourceColorSpaceInput();
+        if (!sourceColorSpaceInput.IsEmpty()) {
+            return sourceColorSpaceInput;
+        }
+
+        // If there is no inputs:sourceColorSpace value authored, use the
+        // ColorspaceAPI to find the resolved color space for the attribute.
+        return UsdColorSpaceAPI::ComputeColorSpaceName(_usdAttr);
     }
 
     /// Returns false since we do not expect the color space value to vary
@@ -63,6 +75,29 @@ private:
     /// \p usdAttr
     ///
     UsdImagingDataSourceAttributeColorSpace(const UsdAttribute &usdAttr);
+
+
+    // Helper to get the TfToken authored to the 'inputs:sourceColorSpace' 
+    // for the 'inputs:file' attribute
+    TfToken _GetSourceColorSpaceInput() {
+        static TfToken inputSourceColorSpace("inputs:sourceColorSpace");
+
+        // Only add add the source color space to the file attribute
+        if (_usdAttr.GetName() != "inputs:file") {
+            return TfToken();
+        }
+
+        TfToken sourceColorSpace;
+        UsdPrim prim = _usdAttr.GetPrim();
+        if (prim.HasAttribute(inputSourceColorSpace)) {
+            VtValue sourceCSValue;
+            prim.GetAttribute(inputSourceColorSpace).Get(&sourceCSValue);
+            if (sourceCSValue.IsHolding<TfToken>()) {
+                sourceColorSpace = sourceCSValue.UncheckedGet<TfToken>();
+            }
+        }
+        return sourceColorSpace;
+    }
 
 private:
     UsdAttribute _usdAttr;

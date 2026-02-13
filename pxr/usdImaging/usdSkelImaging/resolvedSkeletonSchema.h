@@ -38,6 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (skinningTransforms) \
     (blendShapes) \
     (blendShapeWeights) \
+    (blendShapeRanges) \
 
 TF_DECLARE_PUBLIC_TOKENS(UsdSkelImagingResolvedSkeletonSchemaTokens, USDSKELIMAGING_API,
     USD_SKEL_IMAGING_RESOLVED_SKELETON_SCHEMA_TOKENS);
@@ -94,7 +95,11 @@ public:
 
     /// Just forwarded from the skelAnim's blendShapeWeights.
     USDSKELIMAGING_API
-    HdFloatArrayDataSourceHandle GetBlendShapeWeights() const; 
+    HdFloatArrayDataSourceHandle GetBlendShapeWeights() const;
+
+    /// Ranges for concatenated blendShapes/Weights.
+    USDSKELIMAGING_API
+    HdVec2iArrayDataSourceHandle GetBlendShapeRanges() const; 
 
     /// @}
 
@@ -137,6 +142,10 @@ public:
     /// Prim-level relative data source locator to locate blendShapeWeights.
     USDSKELIMAGING_API
     static const HdDataSourceLocator &GetBlendShapeWeightsLocator();
+
+    /// Prim-level relative data source locator to locate blendShapeRanges.
+    USDSKELIMAGING_API
+    static const HdDataSourceLocator &GetBlendShapeRangesLocator();
     /// @} 
 
     /// \name Schema construction
@@ -155,7 +164,8 @@ public:
         const HdMatrixDataSourceHandle &skelLocalToCommonSpace,
         const HdMatrix4fArrayDataSourceHandle &skinningTransforms,
         const HdTokenArrayDataSourceHandle &blendShapes,
-        const HdFloatArrayDataSourceHandle &blendShapeWeights
+        const HdFloatArrayDataSourceHandle &blendShapeWeights,
+        const HdVec2iArrayDataSourceHandle &blendShapeRanges
     );
 
     /// \class UsdSkelImagingResolvedSkeletonSchema::Builder
@@ -179,6 +189,9 @@ public:
         USDSKELIMAGING_API
         Builder &SetBlendShapeWeights(
             const HdFloatArrayDataSourceHandle &blendShapeWeights);
+        USDSKELIMAGING_API
+        Builder &SetBlendShapeRanges(
+            const HdVec2iArrayDataSourceHandle &blendShapeRanges);
 
         /// Returns a container data source containing the members set thus far.
         USDSKELIMAGING_API
@@ -189,6 +202,7 @@ public:
         HdMatrix4fArrayDataSourceHandle _skinningTransforms;
         HdTokenArrayDataSourceHandle _blendShapes;
         HdFloatArrayDataSourceHandle _blendShapeWeights;
+        HdVec2iArrayDataSourceHandle _blendShapeRanges;
 
     };
 

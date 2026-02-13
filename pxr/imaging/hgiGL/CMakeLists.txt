@@ -76,12 +76,9 @@ pxr_build_test(testHgiGL
     CPPFILES
         testenv/testHgiGL.cpp
 )
-pxr_install_test_dir(
-    SRC testenv/testHgiGL
-    DEST testHgiGL
-)
 pxr_register_test(testHgiGL
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHgiGL"
+    TESTENV testenv/testHgiGL
     DIFF_COMPARE
         graphicsCmdsDescCache.txt
     IMAGE_DIFF_COMPARE
@@ -99,12 +96,9 @@ pxr_register_test(testHgiGL
 # testHgiCommand, which is not linked in the static hgiGL library. 
 if (BUILD_SHARED_LIBS)
 
-pxr_install_test_dir(
-    SRC testenv/testHgiGLCommand
-    DEST testHgiGLCommand
-)
 pxr_register_test(testHgiGLCommand
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHgiCommand --write testHgiGLCommand_triangle.png"
+    TESTENV testenv/testHgiGLCommand
     IMAGE_DIFF_COMPARE
         testHgiGLCommand_triangle.png
     FAIL 1

@@ -23,7 +23,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 HgiGLOpsFn
-HgiGLOps::PushDebugGroup(const char* label)
+HgiGLOps::PushDebugGroup(
+        const char* label,
+        const GfVec4f& color)
 {
     // Make copy of string string since the lamda will execute later.
     std::string lbl = label;
@@ -44,6 +46,27 @@ HgiGLOps::PopDebugGroup()
         #if defined(GL_KHR_debug)
         if (GARCH_GLAPI_HAS(KHR_debug)) {
             glPopDebugGroup();
+        }
+        #endif
+    };
+}
+
+HgiGLOpsFn
+HgiGLOps::InsertDebugMarker(const char* label)
+{
+    // Make copy of string string since the lamda will execute later.
+    std::string lbl = label;
+
+    return [lbl] {
+        #if defined(GL_KHR_debug)
+        if (GARCH_GLAPI_HAS(KHR_debug)) {
+            glDebugMessageInsert(
+                GL_DEBUG_SOURCE_THIRD_PARTY, 
+                GL_DEBUG_TYPE_MARKER,
+                0, // id: unused by GL, only for application filtering
+                GL_DEBUG_SEVERITY_NOTIFICATION,
+                -1,
+                lbl.c_str());
         }
         #endif
     };

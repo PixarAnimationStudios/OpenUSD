@@ -16,11 +16,13 @@
 
 #include "pxr/base/ts/spline.h"
 #include "pxr/base/gf/interval.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/base/vt/arrayEdit.h"
 #include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class Usd_InterpolatorBase;
+class Usd_Interpolator;
 
 /// Returns true if \p value contains BlockType (SdfValueBlock or
 /// SdfAnimationBlock), false otherwise.
@@ -102,38 +104,37 @@ Usd_ClearValueIfBlocked(VtValue* value)
 
     return false;
 }
-/// Helper function for setting a value into an SdfAbstractDataValue
-/// for generic programming.
-template <class T>
-inline bool
-Usd_SetValue(SdfAbstractDataValue *dv, T const &val)
-{ 
-    return dv->StoreValue(val); 
-}
 
-/// \overload
-/// Helper function for setting a value into a VtValue
-/// for generic programming.
-template <class T>
+/// Helper function for setting a value into an SdfAbstractDataValue, a VtValue
+/// or a T* for generic programming.  The `src` value can be a VtValue or a
+/// specific value type.  Return true if the value is stored successfully, false
+/// otherwise.
+template <class Dst, class Src>
 inline bool
-Usd_SetValue(VtValue *value, T const &val)
-{ 
-    *value = val; 
-    return true;
-}
-
-/// \overload
-/// Helper function for setting a value into a T* from a VtValue
-/// for generic programming.
-template <class T,
-          typename = std::enable_if_t<
-              !std::is_same<T, SdfAbstractDataValue>::value &&
-              !std::is_same<T, VtValue>::value>>
-inline bool
-Usd_SetValue(T* value, VtValue const &val)
+Usd_SetValue(Dst *dst, Src &&src)
 {
-    if (val.IsHolding<T>()) {
-        *value = val.UncheckedGet<T>();
+    using SrcType = std::decay_t<Src>;
+    if constexpr (std::is_same_v<Dst, VtValue>) {
+        *dst = std::forward<Src>(src);
+        return true;
+    }
+    else if constexpr (std::is_base_of_v<SdfAbstractDataValue, Dst>) {
+        return dst->StoreValue(std::forward<Src>(src));
+    }
+    else if constexpr (std::is_same_v<SrcType, VtValue>) {
+        if (src.template IsHolding<Dst>()) {
+            if constexpr (std::is_reference_v<Src>) {
+                *dst = src.template UncheckedGet<Dst>();
+            }
+            else {
+                *dst = src.template UncheckedRemove<Dst>();
+            }
+            return true;
+        }
+        return false;
+    }
+    else if constexpr (std::is_same_v<Dst, SrcType>) {
+        *dst = src;
         return true;
     }
     return false;
@@ -149,7 +150,8 @@ enum class Usd_DefaultValueResult
 
 template <class T, class Source>
 Usd_DefaultValueResult 
-Usd_HasDefault(const Source& source, const SdfPath& specPath, T* value)
+Usd_HasDefault(const Source& source, const SdfPath& specPath, T* value,
+               const std::type_info **valueTypeId=nullptr)
 {
 
     if (!value) {
@@ -166,6 +168,9 @@ Usd_HasDefault(const Source& source, const SdfPath& specPath, T* value)
             return Usd_DefaultValueResult::BlockedAnimation;
         }
         else {
+            if (valueTypeId) {
+                *valueTypeId = &ti;
+            }
             return Usd_DefaultValueResult::Found;
         }
     }
@@ -178,6 +183,17 @@ Usd_HasDefault(const Source& source, const SdfPath& specPath, T* value)
             if (Usd_ClearValueIfBlocked<SdfAnimationBlock>(value)) {
                 return Usd_DefaultValueResult::BlockedAnimation;
             }
+            if (valueTypeId) {
+                if constexpr (std::is_same_v<T, VtValue>) {
+                    *valueTypeId = &value->GetTypeid();
+                }
+                else if constexpr (std::is_same_v<T, SdfAbstractDataValue>) {
+                    *valueTypeId = &value->valueType;
+                }
+                else {
+                    *valueTypeId = &typeid(T);
+                }
+            }
             return Usd_DefaultValueResult::Found;
         }
         // fall-through
@@ -189,7 +205,7 @@ template <class T>
 inline bool
 Usd_QueryTimeSample(
     const SdfLayerRefPtr& layer, const SdfPath& path,
-    double time, Usd_InterpolatorBase* interpolator, T* result)
+    double time, Usd_Interpolator const &interpolator, T* result)
 {
     return layer->QueryTimeSample(path, time, result);
 }
@@ -322,6 +338,16 @@ Usd_ApplyLayerOffsetToValue(VtArray<SdfTimeCode> *value,
                             const SdfLayerOffset &offset)
 {
     for (SdfTimeCode &timeCode : *value) {
+        timeCode = offset * timeCode;
+    }
+}
+
+/// \overload
+inline void
+Usd_ApplyLayerOffsetToValue(VtArrayEdit<SdfTimeCode> *value, 
+                            const SdfLayerOffset &offset)
+{
+    for (SdfTimeCode &timeCode : value->GetMutableLiterals()) {
         timeCode = offset * timeCode;
     }
 }

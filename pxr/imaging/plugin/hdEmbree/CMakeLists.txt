@@ -32,6 +32,7 @@ pxr_plugin(hdEmbree
         lightSamplers
         mesh
         meshSamplers
+        pxrIES/ies
         renderBuffer
         renderer
         rendererPlugin
@@ -42,6 +43,7 @@ pxr_plugin(hdEmbree
     PUBLIC_HEADERS
         context.h
         renderParam.h
+        pxrPbrt/pbrtUtils.h
 
     PRIVATE_CLASSES
         debugCodes

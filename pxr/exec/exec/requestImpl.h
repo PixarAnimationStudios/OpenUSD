@@ -11,7 +11,6 @@
 
 #include "pxr/exec/exec/api.h"
 #include "pxr/exec/exec/request.h"
-#include "pxr/exec/exec/types.h"
 
 #include "pxr/base/tf/bits.h"
 #include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
@@ -63,6 +62,11 @@ public:
     /// 
     void DidInvalidateComputedValues(
         const Exec_DisconnectedInputsInvalidationResult &invalidationResult);
+
+    /// Notify the request to invalidate value keys that don't have a compiled
+    /// leaf node.
+    ///
+    void DidInvalidateUnknownValues();
 
     /// Notify the request of time having changed.
     void DidChangeTime(

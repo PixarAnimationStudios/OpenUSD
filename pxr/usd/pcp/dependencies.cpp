@@ -91,18 +91,9 @@ _ShouldStoreDependency(PcpDependencyFlags depFlags)
 inline static bool
 _ShouldCheckSubtreeForDependencies(const PcpNodeRef& node)
 {
-    // If this is a propagated specializes node, then we to check whether
-    // its origin is or is under a direct dependency since the origin
-    // represents where the specializes arc was actually introduced in
-    // the prim's composition structure. This is handled by
-    // PcpClassifyNodeDependency.
-    if (Pcp_IsPropagatedSpecializesNode(node)) {
-        return _ShouldStoreDependency(PcpClassifyNodeDependency(node));
-    }
-
     return node.GetArcType() != PcpArcTypeRoot
         && PcpNodeIntroducesDependency(node)
-        && !node.IsDueToAncestor();
+        && node.HasTransitiveDirectDependency();
 }
 
 void

@@ -15,6 +15,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/arrayEdit.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/base/vt/valueComposeOver.h"
 
 #include "predicateExpressionParser.h"
 
@@ -39,6 +40,20 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<SdfPathExpression>();
     TfType::Define<VtArray<SdfPathExpression>>();
     TfType::Define<VtArrayEdit<SdfPathExpression>>();
+}
+
+TF_REGISTRY_FUNCTION(VtValue)
+{
+    VtRegisterComposeOver(
+        +[](SdfPathExpression const &strong, SdfPathExpression const &weak) {
+            return strong.ComposeOver(weak);
+        });
+    // Finalizing a path expression composes over Nothing() to remove any
+    // remaining `%_` references.
+    VtRegisterComposeOver(
+        +[](SdfPathExpression const &strong, VtBackgroundType const &) {
+            return strong.ComposeOver(SdfPathExpression::Nothing());
+        });
 }
 
 SdfPathExpression::ExpressionReference const &

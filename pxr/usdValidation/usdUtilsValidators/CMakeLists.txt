@@ -39,13 +39,9 @@ pxr_build_test(testUsdUtilsValidators
         testenv/testUsdUtilsValidators.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdUtilsValidators
-    DEST testUsdUtilsValidators
-)
-
 pxr_register_test(testUsdUtilsValidators
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsValidators"
+    TESTENV testenv/testUsdUtilsValidators
     EXPECTED_RETURN_CODE 0
 )
 

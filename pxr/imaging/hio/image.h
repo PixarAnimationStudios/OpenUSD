@@ -184,7 +184,7 @@ HioImage::GetMetadata(TfToken const & key, T * value) const
     return true;
 }
 
-class HIO_API HioImageFactoryBase : public TfType::FactoryBase {
+class HioImageFactoryBase : public TfType::FactoryBase {
 public:
     virtual HioImageSharedPtr New() const = 0;
 };

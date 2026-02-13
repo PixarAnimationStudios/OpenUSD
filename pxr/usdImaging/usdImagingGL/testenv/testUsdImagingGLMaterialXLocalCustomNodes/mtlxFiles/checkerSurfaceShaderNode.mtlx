@@ -3,7 +3,7 @@
 
 	<!-- custom Surface Shader node using texture coordinates and no textures -->
     <nodedef name="ND_checker_surface" node="checkerSurf">
-        <input name="scale" type="vector2" value="8.0, 8.0" />
+        <input name="_scale" type="vector2" value="8.0, 8.0" />
         <output name="out" type="surfaceshader" />
     </nodedef>
 
@@ -13,7 +13,7 @@
         </texcoord>
         <multiply name="mult1" type="vector2">
             <input name="in1" type="vector2" nodename="texcoord1" />
-            <input name="in2" type="vector2" interfacename="scale" />
+            <input name="in2" type="vector2" interfacename="_scale" />
         </multiply>
         <swizzle name="swizz_x" type="float">
             <input name="in" type="vector2" nodename="mult1" />

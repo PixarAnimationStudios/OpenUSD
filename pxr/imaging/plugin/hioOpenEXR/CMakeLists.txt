@@ -29,11 +29,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     endif()
 endif()
 
-pxr_install_test_dir(
-    SRC testenv/testHioOpenEXR
-    DEST testHioOpenEXR
-)
-
 pxr_build_test(testHioOpenEXR
     LIBRARIES
         hio
@@ -45,6 +40,7 @@ pxr_build_test(testHioOpenEXR
 if (BUILD_SHARED_LIBS)
     pxr_register_test(testHioOpenEXR
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHioOpenEXR"
+        TESTENV testenv/testHioOpenEXR
         EXPECTED_RETURN_CODE 0
     )
 endif()

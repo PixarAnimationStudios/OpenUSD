@@ -38,31 +38,20 @@ pxr_test_scripts(
     testenv/testUsdUISceneGraphPrim.py
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdUIHints
-    DEST testUsdUIHints
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdUINodeGraphNode
-    DEST testUsdUINodeGraphNode
-)
-pxr_install_test_dir(
-    SRC testenv/testUsdUISceneGraphPrim
-    DEST testUsdUISceneGraphPrim
-)
-
 pxr_register_test(testUsdUIHints
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUIHints"
+    TESTENV testenv/testUsdUIHints
 )
 pxr_register_test(testUsdUINodeGraphNode
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUINodeGraphNode"
+    TESTENV testenv/testUsdUINodeGraphNode
 )
 pxr_register_test(testUsdUISceneGraphPrim
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUISceneGraphPrim"
+    TESTENV testenv/testUsdUISceneGraphPrim
 )
 
 pxr_build_test(testUsdUIAccessibilityAPI

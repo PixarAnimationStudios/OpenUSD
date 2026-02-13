@@ -18,16 +18,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using ShaderMetadataHelpers::StringVal;
-using ShaderMetadataHelpers::StringVecVal;
-using ShaderMetadataHelpers::TokenVal;
-using ShaderMetadataHelpers::TokenVecVal;
-using ShaderMetadataHelpers::IntVal;
-
-TF_DEFINE_PUBLIC_TOKENS(SdrNodeMetadata, SDR_NODE_METADATA_TOKENS);
-TF_DEFINE_PUBLIC_TOKENS(SdrNodeMetadataPrefix, SDR_NODE_METADATA_PREFIX_TOKENS);
-TF_DEFINE_PUBLIC_TOKENS(SdrNodeContext, SDR_NODE_CONTEXT_TOKENS);
-TF_DEFINE_PUBLIC_TOKENS(SdrNodeRole, SDR_NODE_ROLE_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(SdrNodeFieldKey, SDR_NODE_FIELD_KEY_TOKENS);
 
 SdrShaderNode::SdrShaderNode(
     const SdrIdentifier& identifier,
@@ -39,7 +30,7 @@ SdrShaderNode::SdrShaderNode(
     const std::string& definitionURI,
     const std::string& implementationURI,
     SdrShaderPropertyUniquePtrVec&& properties,
-    const SdrTokenMap& metadata,
+    const SdrShaderNodeMetadata& metadata,
     const std::string &sourceCode)
     : _identifier(identifier),
       _version(version),
@@ -73,31 +64,22 @@ SdrShaderNode::SdrShaderNode(
         }
     }
 
+    // Get legacy metadata to support deprecated function GetMetadata
+    _legacyMetadata = metadata._EncodeLegacyMetadata();
+
+    // Store named metadata. These can be inlined to their corresponding
+    // getters on SdrShaderNode once legacy metadata is removed.
+    _label = _metadata.GetLabel();
+    _category = _metadata.GetCategory();
+    _departments = _metadata.GetDepartments();
+    _openPages = _metadata.GetOpenPages();
+    _pagesShownIf = _metadata.GetPagesShownIf();
+
+    // Compute information from property metadata
     _InitializePrimvars();
-    _PostProcessProperties();
-
-    // Tokenize metadata
-    _label = TokenVal(SdrNodeMetadata->Label, _metadata);
-    _category = TokenVal(SdrNodeMetadata->Category, _metadata);
-    _departments = TokenVecVal(SdrNodeMetadata->Departments, _metadata);
     _pages = _ComputePages();
-    _openPages = TokenVecVal(SdrNodeMetadata->OpenPages, _metadata);
 
-    // Check for keys that start with the "pageShownIf|" prefix, which are used
-    // to represent page-level shownIf expressions.
-    const std::string pageShownIfPrefix
-        = SdrNodeMetadataPrefix->PageShownIf.GetString() + "|";
-    for (std::pair<TfToken, std::string> pair : _metadata) {
-        const std::string& key = pair.first.GetString();
-        if (!TfStringStartsWith(key, pageShownIfPrefix)) {
-            continue;
-        }
-
-        // The rest of the key after the prefix is the page name; the value is
-        // the shownIf expression.
-        const TfToken pageName{key.substr(pageShownIfPrefix.size())};
-        _pagesShownIf[pageName] = pair.second;
-    }
+    _PostProcessProperties();
 }
 
 void
@@ -108,9 +90,8 @@ SdrShaderNode::_PostProcessProperties()
     // this metadatum to the individual properties, since the encoding is
     // controlled there in the GetTypeAsSdfType method.
     static const int DEFAULT_ENCODING = -1;
-    int usdEncodingVersion =
-        IntVal(SdrNodeMetadata->SdrUsdEncodingVersion, _metadata,
-               DEFAULT_ENCODING);
+    int usdEncodingVersion = _metadata.HasSdrUsdEncodingVersion() ?
+        _metadata.GetSdrUsdEncodingVersion() : DEFAULT_ENCODING;
 
     const SdrTokenVec vsNames = GetAllVstructNames();
 
@@ -222,25 +203,32 @@ SdrShaderNode::GetDefaultInput() const
 const SdrTokenMap&
 SdrShaderNode::GetMetadata() const
 {
+    return _legacyMetadata;
+}
+
+const SdrShaderNodeMetadata&
+SdrShaderNode::GetMetadataObject() const
+{
     return _metadata;
 }
 
 std::string
 SdrShaderNode::GetHelp() const
 {
-    return StringVal(SdrNodeMetadata->Help, _metadata);
+    return _metadata.GetHelp();
 }
 
 std::string
 SdrShaderNode::GetImplementationName() const
 {
-    return StringVal(SdrNodeMetadata->ImplementationName, _metadata, GetName());
+    return _metadata.HasImplementationName() ?
+        _metadata.GetImplementationName() : GetName();
 }
 
-std::string
+TfToken
 SdrShaderNode::GetRole() const
 {
-    return StringVal(SdrNodeMetadata->Role, _metadata, GetName());
+    return _metadata.HasRole() ? _metadata.GetRole() : TfToken(GetName());
 }
 
 SdrTokenVec
@@ -357,8 +345,7 @@ SdrShaderNode::_InitializePrimvars()
 
     // The "raw" list of primvars contains both ordinary primvars, and the names
     // of properties whose values contain additional primvar names
-    const SdrStringVec rawPrimvars =
-        StringVecVal(SdrNodeMetadata->Primvars, _metadata);
+    const SdrStringVec rawPrimvars = _metadata.GetPrimvars();
 
     for (const std::string& primvar : rawPrimvars) {
         if (TfStringStartsWith(primvar, "$")) {
@@ -403,6 +390,21 @@ SdrShaderNode::_ComputePages() const
     }
 
     return pages;
+}
+
+VtValue
+SdrShaderNode::GetDataForKey(const TfToken& key) const
+{
+    if (key == SdrNodeFieldKey->Identifier) {
+        return VtValue(GetIdentifier());
+    } else if (key == SdrNodeFieldKey->Name) {
+        return VtValue(GetName());
+    } else if (key == SdrNodeFieldKey->Family) {
+        return VtValue(GetFamily());
+    } else if (key == SdrNodeFieldKey->SourceType) {
+        return VtValue(GetSourceType());
+    }
+    return _metadata.GetItemValue(key);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

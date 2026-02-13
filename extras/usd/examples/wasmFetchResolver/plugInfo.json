@@ -1,0 +1,18 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "FetchResolver": {
+                        "bases": ["ArResolver"]
+                    }
+                }
+            },
+            "LibraryPath": "",
+            "Name": "wasmFetchResolver",
+            "ResourcePath": "resources",
+            "Root": "..",
+            "Type": "library"
+        }
+    ]
+}

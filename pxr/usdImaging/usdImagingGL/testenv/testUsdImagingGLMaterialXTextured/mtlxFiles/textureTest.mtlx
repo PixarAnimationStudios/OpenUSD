@@ -38,4 +38,39 @@
   <surfacematerial name="DefaultValTest" type="material">
     <input name="surfaceshader" type="surfaceshader" nodename="SR_test2" />
   </surfacematerial>
+
+  <nodegraph name="NG_imagetex3">
+    <texcoord name="texcoord0" type="vector2" />
+    <image name="image0_color" type="color3" nodedef="ND_image_color3">
+      <input name="file" type="filename" uniform="true" value="./missingAsset.png" colorspace="srgb_texture"/>
+        <input name="default" type="color3" value="1.0, 0.0, 1.0" />
+      <input name="texcoord" type="vector2" nodename="texcoord0" />
+    </image>
+    <output name="out_color_0" type="color3" nodename="image0_color" />
+  </nodegraph>
+  <standard_surface name="SR_test3" type="surfaceshader">
+    <input name="base" type="float" value="1" />
+    <input name="base_color" type="color3" nodegraph="NG_imagetex3" output="out_color_0" />
+    <input name="metalness" type="float" value="0" />
+  </standard_surface>
+  <surfacematerial name="AuthoredDefaultTextureTest" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_test3" />
+  </surfacematerial>
+
+  <nodegraph name="NG_imagetex4">
+    <texcoord name="texcoord0" type="vector2" />
+    <image name="image0_color" type="color3" nodedef="ND_image_color3">
+      <input name="file" type="filename" uniform="true" value="./missingAsset.png" colorspace="srgb_texture"/>
+      <input name="texcoord" type="vector2" nodename="texcoord0" />
+    </image>
+    <output name="out_color_0" type="color3" nodename="image0_color" />
+  </nodegraph>
+  <standard_surface name="SR_test4" type="surfaceshader">
+    <input name="base" type="float" value="1" />
+    <input name="base_color" type="color3" nodegraph="NG_imagetex4" output="out_color_0" />
+    <input name="metalness" type="float" value="0" />
+  </standard_surface>
+  <surfacematerial name="NoAuthoredDefaultTextureTest" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_test4" />
+  </surfacematerial>
 </materialx>

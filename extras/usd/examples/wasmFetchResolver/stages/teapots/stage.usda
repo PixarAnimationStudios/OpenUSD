@@ -1,0 +1,26 @@
+#usda 1.0
+
+class Xform "teapot"(
+    references = [@meshes/teapot.usdc@]
+)
+{
+
+}
+
+def Xform "Teapot1" (
+    inherits = </teapot>
+    instanceable = true
+)
+{
+    double3 xformOp:translate = (-3.0, 0.0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "Teapot2" (
+    inherits = </teapot>
+    instanceable = true
+)
+{
+    double3 xformOp:translate = (3.0, 0.0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}

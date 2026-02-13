@@ -74,23 +74,23 @@ public:
     // instructions with out-of-bounds indexes are skipped.
     template <class Fn>
     void ForEachValid(size_t numLiterals, size_t initialSize, Fn &&fn) const {
-        return _ForEachImpl(numLiterals, initialSize, _ins,
-                            std::forward<Fn>(fn));
+        return _ForEachImpl(numLiterals, initialSize, std::forward<Fn>(fn));
     }
 
     // Invoke fn(Op, arg1, arg2) for each instruction as-is, with no index
     // normalization or range checking.
     template <class Fn>
     void ForEach(Fn &&fn) const {
-        return _ForEachImpl(-1, -1, _ins, std::forward<Fn>(fn));
+        return _ForEachImpl(-1, -1, std::forward<Fn>(fn));
     }
         
     // Invoke fn(Op, arg1, arg2) for each instruction as-is, with no index
     // normalization or range checking, and passing mutable references for arg1
-    // and arg2 to fn().  This lets fn() modify indexes if desired.
+    // and arg2 to fn().  This lets fn() modify indexes if desired.  Note that
+    // for single-argument Ops, modifications to arg2 are ignored.
     template <class Fn>
     void ModifyEach(Fn &&fn) {
-        return _ForEachImpl(-1, -1, _ins, std::forward<Fn>(fn));
+        return _ModifyImpl(std::forward<Fn>(fn));
     }
 
     // Return true if there are no ops, else false.
@@ -202,14 +202,13 @@ private:
         workingSize = newSize;
     }
     
-    template <class Ins, class Fn>
-    void _ForEachImpl(size_t numLiterals, size_t initialSize,
-                      Ins &&ins, Fn &&fn) const {
+    template <class Fn>
+    void _ForEachImpl(size_t numLiterals, size_t initialSize, Fn &&fn) const {
 
         // Walk and call fn with each.
-        const auto begin = std::begin(std::forward<Ins>(ins));
-        auto iter = std::begin(std::forward<Ins>(ins));
-        const auto end = std::end(std::forward<Ins>(ins));
+        const auto begin = std::begin(_ins);
+        auto iter = std::begin(_ins);
+        const auto end = std::end(_ins);
 
         while (iter != end) {
             OpAndCount oc = _ToOpAndCount(*iter);
@@ -305,6 +304,43 @@ private:
                     break;
                     
                 };
+
+                // Invoke caller.
+                std::forward<Fn>(fn)(oc.op, a1, a2);
+            }
+        }
+    }
+
+    template <class Fn>
+    void _ModifyImpl(Fn &&fn) {
+
+        // Walk and call fn with each.
+        const auto begin = std::begin(_ins);
+        auto iter = std::begin(_ins);
+        const auto end = std::end(_ins);
+
+        while (iter != end) {
+            OpAndCount oc = _ToOpAndCount(*iter);
+
+            if (!IsValidOp(oc.op)) {
+                _IssueInvalidOpError(oc, std::distance(begin, iter));
+                return;
+            }
+
+            const int arity = GetArity(oc.op);
+
+            // Check sufficient args.
+            if (std::distance(++iter, end) < oc.count * arity) {
+                _IssueInvalidInsError(
+                    oc, std::distance(begin, iter),
+                    oc.count * arity, std::distance(iter, end));
+            }
+
+            // Do each set of args.
+            for (; oc.count--; iter += arity) {
+                int64_t invalid = -1;
+                int64_t &a1 = iter[0];
+                int64_t &a2 = arity > 1 ? iter[1] : invalid;
 
                 // Invoke caller.
                 std::forward<Fn>(fn)(oc.op, a1, a2);

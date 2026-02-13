@@ -21,36 +21,17 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 using namespace pxr_boost::python;
 
-// Boost treats a const ptr differently than a non-const ptr, so a custom
-// converter is needed to deal with the const-ness
-struct SdrShaderNodeConstPtrToPythonConverter
-{
-    static PyObject* convert(SdrShaderNodeConstPtr shaderNode) {
-        object shaderNodeObject(ptr(shaderNode));
-
-        return incref(shaderNodeObject.ptr());
-    }
-};
-
 void wrapShaderNode()
 {
     typedef SdrShaderNode This;
     typedef SdrShaderNodePtr ThisPtr;
 
     TF_PY_WRAP_PUBLIC_TOKENS(
-        "NodeMetadata", SdrNodeMetadata, SDR_NODE_METADATA_TOKENS
-    );
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "NodeContext", SdrNodeContext, SDR_NODE_CONTEXT_TOKENS
-    );
-
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "NodeRole", SdrNodeRole, SDR_NODE_ROLE_TOKENS
+        "NodeFieldKey", SdrNodeFieldKey, SDR_NODE_FIELD_KEY_TOKENS
     );
 
     return_value_policy<copy_const_reference> copyRefPolicy;
-    to_python_converter<SdrShaderNodeConstPtr,
-                        SdrShaderNodeConstPtrToPythonConverter>();
+    register_ptr_to_python<SdrShaderNodeConstPtr>();
 
     class_<This, ThisPtr, noncopyable>("ShaderNode", no_init)
         .def("__repr__", &This::GetInfoString)
@@ -70,6 +51,7 @@ void wrapShaderNode()
         .def("GetSourceCode", &This::GetSourceCode, copyRefPolicy)
         .def("GetMetadata", &This::GetMetadata,
             return_value_policy<TfPyMapToDictionary>())
+        .def("GetMetadataObject", &This::GetMetadataObject, copyRefPolicy)
         .def("GetShaderInput", &This::GetShaderInput,
             return_internal_reference<>())
         .def("GetShaderOutput", &This::GetShaderOutput,
@@ -97,5 +79,6 @@ void wrapShaderNode()
         .def("GetRole", &This::GetRole)
         .def("GetPropertyNamesForPage", &This::GetPropertyNamesForPage)
         .def("GetAllVstructNames", &This::GetAllVstructNames)
+        .def("GetDataForKey", &This::GetDataForKey)
         ;
 }

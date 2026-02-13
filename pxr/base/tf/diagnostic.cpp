@@ -21,6 +21,10 @@
 #include <stdexcept>
 #include <csignal>
 
+#if defined(ARCH_OS_WASM_VM)
+#include <emscripten.h>
+#endif
+
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE

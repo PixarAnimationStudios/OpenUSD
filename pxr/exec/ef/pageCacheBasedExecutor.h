@@ -72,7 +72,7 @@ public:
     virtual void SetOutputValue(
         const VdfOutput &output,
         const VdfVector &value,
-        const VdfMask &mask);
+        const VdfMask &mask) override;
 
     /// Removes any internal references to \p node upon deleting the
     /// node from the VdfNetwork.
@@ -91,14 +91,14 @@ protected:
         const VdfMask &mask) const override;
     
     // Clear all data in the local data manager.
-    virtual void _ClearData();
+    virtual void _ClearData() override;
 
 private:
     // Run the specified schedule.
     virtual void _Run(
         const VdfSchedule &schedule,
         const VdfRequest &computeRequest,
-        VdfExecutorErrorLogger *errorLogger);
+        VdfExecutorErrorLogger *errorLogger) override;
 
     // Returns \c true if the values resulting from evaluation should be stored
     // away in the page cache.
@@ -118,7 +118,7 @@ private:
     // request to also invalidate any lofted outputs.
     virtual bool _PreProcessInvalidation(
         const VdfMaskedOutputVector &invalidationRequest,
-        VdfMaskedOutputVector *processedRequest);
+        VdfMaskedOutputVector *processedRequest) override;
 
     // Clear data at a specified output.
     void _ClearDataForOutput(

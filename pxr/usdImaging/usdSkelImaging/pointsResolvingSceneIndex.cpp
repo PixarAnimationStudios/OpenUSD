@@ -155,8 +155,9 @@ UsdSkelImagingPointsResolvingSceneIndex::GetChildPrimPaths(
         return result;
     }
 
-    for (const TfToken &name :
-             UsdSkelImagingExtComputationNameTokens->allTokens) {
+    const TfTokenVector &computationTokens =
+        _GetResolvedPrimComputations(primPath);
+    for (const TfToken &name : computationTokens) {
         result.push_back(primPath.AppendChild(name));
     }
 
@@ -173,18 +174,21 @@ _ProcessPrimsNeedingRefreshAndSendNotices(
 {
     for (const auto &[primPath, hasAddedEntry] :
              primsNeedingRefreshToHasAddedEntry) {
-        bool hadExtComputations = false;
-        const bool removed = _RemoveResolvedPrim(primPath, &hadExtComputations);
-        bool hasExtComputations = false;
-        const bool added = _AddResolvedPrim(primPath, &hasExtComputations);
+        const TfTokenVector &oldComputationTokens =
+            _GetResolvedPrimComputations(primPath);
+        const bool hadExtComputations = !oldComputationTokens.empty();
+        const bool removed = _RemoveResolvedPrim(primPath);
+        const bool added = _AddResolvedPrim(primPath);
+        const TfTokenVector &newComputationTokens =
+            _GetResolvedPrimComputations(primPath);
+        const bool hasExtComputations = !newComputationTokens.empty();
 
         if (dirtiedEntries) {
             if (!hasAddedEntry && (removed || added)) {
                 dirtiedEntries->push_back(
                     { primPath, HdDataSourceLocatorSet::UniversalSet() });
                 if (hasExtComputations) {
-                    for (const TfToken &name :
-                            UsdSkelImagingExtComputationNameTokens->allTokens) {
+                    for (const TfToken &name : newComputationTokens) {
                         dirtiedEntries->push_back(
                             { primPath.AppendChild(name),
                               HdDataSourceLocatorSet::UniversalSet() });
@@ -194,8 +198,7 @@ _ProcessPrimsNeedingRefreshAndSendNotices(
         }
         if (removedEntries) {
             if (hadExtComputations && !hasExtComputations) {
-                for (const TfToken &name :
-                         UsdSkelImagingExtComputationNameTokens->allTokens) {
+                for (const TfToken &name : oldComputationTokens) {
                     removedEntries->push_back(
                         { primPath.AppendChild(name) });
                 }
@@ -203,14 +206,44 @@ _ProcessPrimsNeedingRefreshAndSendNotices(
         }
         if (addedEntries) {
             if (hasExtComputations && !hadExtComputations) {
-                for (const TfToken &name :
-                         UsdSkelImagingExtComputationNameTokens->allTokens) {
+                for (const TfToken &name : newComputationTokens) {
                     addedEntries->push_back(
                         { primPath.AppendChild(name),
                           HdPrimTypeTokens->extComputation });
                 }
             }
         }
+    }
+}
+
+const TfTokenVector &
+UsdSkelImagingPointsResolvingSceneIndex::_GetResolvedPrimComputations(
+    const SdfPath &primPath) const
+{
+    static const TfTokenVector emptyComputationTokens;
+
+    const auto it = _pathToResolvedPrim.find(primPath);
+    if (it == _pathToResolvedPrim.end()) {
+        return emptyComputationTokens;
+    }
+    if (!it->second->HasExtComputations()) {
+        return emptyComputationTokens;
+    }
+
+    if (it->second->HasNormalsExtComputations()) {
+        static const TfTokenVector pointsAndNormalsComputationTokens = {
+            UsdSkelImagingExtComputationNameTokens->pointsAggregatorComputation,
+            UsdSkelImagingExtComputationNameTokens->pointsComputation,
+            UsdSkelImagingExtComputationNameTokens->normalsAggregatorComputation,
+            UsdSkelImagingExtComputationNameTokens->normalsComputation
+        };
+        return pointsAndNormalsComputationTokens;
+    } else {
+        static const TfTokenVector pointsComputationTokens = {
+            UsdSkelImagingExtComputationNameTokens->pointsAggregatorComputation,
+            UsdSkelImagingExtComputationNameTokens->pointsComputation
+        };
+        return pointsComputationTokens;
     }
 }
 
@@ -576,8 +609,7 @@ UsdSkelImagingPointsResolvingSceneIndex::_PrimsRemoved(
 
 bool
 UsdSkelImagingPointsResolvingSceneIndex::_AddResolvedPrim(
-    const SdfPath &path,
-    bool * const hasExtComputations)
+    const SdfPath &path)
 {
     TRACE_FUNCTION();
 
@@ -591,10 +623,6 @@ UsdSkelImagingPointsResolvingSceneIndex::_AddResolvedPrim(
             _GetInputSceneIndex(), path, prim.dataSource);
     if (!ds) {
         return false;
-    }
-
-    if (hasExtComputations) {
-        *hasExtComputations = bool(ds->HasExtComputations());
     }
 
     _AddDependenciesForResolvedPrim(path, ds);
@@ -631,18 +659,13 @@ UsdSkelImagingPointsResolvingSceneIndex::_AddDependenciesForResolvedPrim(
 
 bool
 UsdSkelImagingPointsResolvingSceneIndex::_RemoveResolvedPrim(
-    const SdfPath &primPath,
-    bool * const hasExtComputations)
+    const SdfPath &primPath)
 {
     TRACE_FUNCTION();
 
     auto it = _pathToResolvedPrim.find(primPath);
     if (it == _pathToResolvedPrim.end()) {
         return false;
-    }
-
-    if (hasExtComputations) {
-        *hasExtComputations = it->second->HasExtComputations();
     }
 
     _RemoveDependenciesForResolvedPrim(primPath, it->second);

@@ -1425,7 +1425,8 @@ public:
     /// The layer's root prims are namespace children of the pseudo-root.
     /// The pseudo-root exists to make the namespace hierarchy a tree
     /// instead of a forest.  This simplifies the implementation of
-    /// some algorithms.
+    /// some algorithms.  Note that the layer's metadata is considered owned
+    /// by the pseudo root spec.
     ///
     /// A layer always has a pseudo-root prim.
     SDF_API
@@ -1611,6 +1612,12 @@ public:
 
         return hasValue && (!outValue.isValueBlock);
     }
+
+    /// If there is a time sample authored at \p time, return its value's
+    /// typeid(), otherwise return typeid(void).
+    SDF_API
+    const std::type_info &
+    QueryTimeSampleTypeid(const SdfPath &path, double time) const;
 
     SDF_API
     void SetTimeSample(const SdfPath& path, double time, 

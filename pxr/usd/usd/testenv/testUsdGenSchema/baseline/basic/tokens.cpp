@@ -117,8 +117,10 @@ UsdContrivedTokensType::UsdContrivedTokensType() :
     temp("temp", TfToken::Immortal),
     test("test", TfToken::Immortal),
     test_MultipleApplyTemplate_("test:__INSTANCE_NAME__", TfToken::Immortal),
+    test_MultipleApplyTemplate_TestAttrMultiple("test:__INSTANCE_NAME__:testAttrMultiple", TfToken::Immortal),
     test_MultipleApplyTemplate_TestAttrOne("test:__INSTANCE_NAME__:testAttrOne", TfToken::Immortal),
     test_MultipleApplyTemplate_TestAttrTwo("test:__INSTANCE_NAME__:testAttrTwo", TfToken::Immortal),
+    test_MultipleApplyTemplate_TestRelInternalMultiple("test:__INSTANCE_NAME__:testRelInternalMultiple", TfToken::Immortal),
     testAttrDuplicate("testAttrDuplicate", TfToken::Immortal),
     testAttrExternal("testAttrExternal", TfToken::Immortal),
     testAttrInternal("testAttrInternal", TfToken::Immortal),
@@ -176,6 +178,7 @@ UsdContrivedTokensType::UsdContrivedTokensType() :
     TestReflectedAPIBase("TestReflectedAPIBase", TfToken::Immortal),
     TestReflectedExternalAPI("TestReflectedExternalAPI", TfToken::Immortal),
     TestReflectedInternalAPI("TestReflectedInternalAPI", TfToken::Immortal),
+    TestReflectedMultipleAPI("TestReflectedMultipleAPI", TfToken::Immortal),
     UsdContrivedNoAlias("UsdContrivedNoAlias", TfToken::Immortal),
     allTokens({
         asset,
@@ -286,8 +289,10 @@ UsdContrivedTokensType::UsdContrivedTokensType() :
         temp,
         test,
         test_MultipleApplyTemplate_,
+        test_MultipleApplyTemplate_TestAttrMultiple,
         test_MultipleApplyTemplate_TestAttrOne,
         test_MultipleApplyTemplate_TestAttrTwo,
+        test_MultipleApplyTemplate_TestRelInternalMultiple,
         testAttrDuplicate,
         testAttrExternal,
         testAttrInternal,
@@ -345,6 +350,7 @@ UsdContrivedTokensType::UsdContrivedTokensType() :
         TestReflectedAPIBase,
         TestReflectedExternalAPI,
         TestReflectedInternalAPI,
+        TestReflectedMultipleAPI,
         UsdContrivedNoAlias
     })
 {

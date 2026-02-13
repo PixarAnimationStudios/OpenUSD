@@ -86,3 +86,11 @@ if (PXR_PREFER_SAFETY_OVER_SPEED)
 else()
    set(PXR_PREFER_SAFETY_OVER_SPEED "0")
 endif()
+
+# Set TSC timing configuration - use non-portable x86 TSC register for timing
+# (only affects x86 linux with gcc or clang compilers)
+if (PXR_ARCH_PREFER_TSC_TIMING)
+   set(PXR_ARCH_PREFER_TSC_TIMING "1")
+else()
+   set(PXR_ARCH_PREFER_TSC_TIMING "0")
+endif()

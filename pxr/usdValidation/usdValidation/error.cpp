@@ -48,12 +48,12 @@ UsdValidationError::UsdValidationError()
 UsdValidationError::UsdValidationError(
     const TfToken &name, const UsdValidationErrorType &type,
     const UsdValidationErrorSites &errorSites, const std::string &errorMsg,
-    const VtValue &metadata)
+    const VtValue &data)
     : _name(name)
     , _errorType(type)
     , _errorSites(errorSites)
     , _errorMsg(errorMsg)
-    , _metadata(metadata)
+    , _data(data)
 {
     _validator = nullptr;
 }

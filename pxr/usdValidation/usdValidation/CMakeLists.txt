@@ -39,6 +39,9 @@ pxr_library(usdValidation
 
     RESOURCE_FILES
         plugInfo.json
+
+    DOXYGEN_FILES
+        README.md        
 )
 
 pxr_test_scripts(
@@ -109,21 +112,6 @@ pxr_build_test(testUsdValidationRegistry
         testenv/testUsdValidationRegistry.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdValidationContext
-    DEST testUsdValidationContext
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdValidationContext
-    DEST testUsdValidationContextPy
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdValidationRegistry
-    DEST testUsdValidationRegistry
-)
-
 pxr_register_test(testUsdCoreValidators
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCoreValidators"
         EXPECTED_RETURN_CODE 0
@@ -136,6 +124,7 @@ pxr_register_test(testUsdValidator
 
 pxr_register_test(testUsdValidationRegistry
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidationRegistry"
+    TESTENV testenv/testUsdValidationRegistry
     EXPECTED_RETURN_CODE 0
 )
 
@@ -146,6 +135,7 @@ pxr_register_test(testUsdValidationRegistry
 if (BUILD_SHARED_LIBS)
     pxr_register_test(testUsdValidationContext
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidationContext"
+        TESTENV testenv/testUsdValidationContext
         EXPECTED_RETURN_CODE 0
     )
 endif()
@@ -165,6 +155,7 @@ pxr_register_test(testUsdValidationError
 pxr_register_test(testUsdValidationContextPy
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidationContextPy"
+    TESTENV testenv/testUsdValidationContext
     EXPECTED_RETURN_CODE 0
 )
 

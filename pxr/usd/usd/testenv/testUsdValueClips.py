@@ -131,6 +131,28 @@ class TestUsdValueClips(unittest.TestCase):
             if query:
                 self.assertEqual(Usd.AttributeQuery(attr).Get(), expected)
 
+    def test_ArrayEdits(self):
+        """Checks that array edits in defaults, samples, and clips compose."""
+        stage = Usd.Stage.Open('arrayEdits/root.usda')
+        root = stage.GetPrimAtPath('/Root')
+        attr = root.GetAttribute('attr')
+        self.assertTrue(attr)
+
+        self.assertTrue(attr.ValueMightBeTimeVarying())
+
+        # At default time we see the weakest default plus the actions of the
+        # append & prepend.
+        self.CheckValue(attr, expected=[3, 3, 3, -999])
+
+        # At sample times we expect to see the values as edited by the strongest
+        # default, the next weaker samples, and the next weaker two clips.
+        self.CheckValue(attr, time=1, expected=[8, -1, -1, 555, -999])
+        self.CheckValue(attr, time=2, expected=[-1, 9, -1, 555, -999])
+        self.CheckValue(attr, time=3, expected=[10, -7, 11, 555, -999])
+        self.CheckValue(attr, time=4, expected=[10, -7, 11, 666, -999])
+
+        self.CheckTimeSamples(attr)
+
     def test_BasicClipBehavior(self):
         """Exercises basic clip behavior."""
         stage = Usd.Stage.Open('basic/root.usda')
@@ -179,14 +201,15 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertTrue(payloadAttr.ValueMightBeTimeVarying())
         self.assertTrue(varAttr.ValueMightBeTimeVarying())
 
-        # Model_1 has active clips authored starting at time 10. However, the first
-        # active clip is "held active" to -inf, and for any given time t, the prior
-        # active clip at time t is still considered active.  So even when querying
-        # a timeSample prior to the first "active time", we expect the first clip
-        # to be loaded and consulted, with a linear time-mapping from stage time
-        # to time-within-clip-earlier-than-first-clipTimes-knot.  In our test case,
-        # this means all attrs except localAttr (which has local timeSamples in the
-        # clip-anchoring layer) should get their values from the first clip.
+        # Model_1 has active clips authored starting at time 10. However, the
+        # first active clip is "held active" to -inf, and for any given time t,
+        # the prior active clip at time t is still considered active.  So even
+        # when querying a timeSample prior to the first "active time", we expect
+        # the first clip to be loaded and consulted, with a linear time-mapping
+        # from stage time to time-within-clip-earlier-than-first-clipTimes-knot.
+        # In our test case, this means all attrs except localAttr (which has
+        # local timeSamples in the clip-anchoring layer) should get their values
+        # from the first clip.
         self.CheckValue(localAttr, time=5, expected=5.0)
         self.CheckValue(refAttr, time=5, expected=-5.0)
         self.CheckValue(clsAttr, time=5, expected=-5.0)
@@ -199,12 +222,13 @@ class TestUsdValueClips(unittest.TestCase):
 
         # Starting at time 10, clips should be consulted for values.
         #
-        # The strength order using during time sample resolution is 
-        # L1(ocal)C(lip)L2(ocal)I(nherit)V(ariant)R(eference)P(ayload), so
-        # local opinions in layers stronger than the layer that anchors the clip
-        # metadata (L1 above, which *includes* the anchoring subLayer) should win
-        # over the clip, but the clip should win over all other opinions, including
-        # those from loal subLayers weaker than the anchoring layer (L2).
+        # The strength order using during time sample resolution is
+        # L1(ocal)C(lip)L2(ocal)I(nherit)V(ariant)R(eference)P(ayload), so local
+        # opinions in layers stronger than the layer that anchors the clip
+        # metadata (L1 above, which *includes* the anchoring subLayer) should
+        # win over the clip, but the clip should win over all other opinions,
+        # including those from loal subLayers weaker than the anchoring layer
+        # (L2).
         self.CheckValue(localAttr, time=10, expected=10.0)
         self.CheckValue(refAttr, time=10, expected=-10.0)
         self.CheckValue(clsAttr, time=10, expected=-10.0)
@@ -1540,7 +1564,11 @@ class TestUsdValueClips(unittest.TestCase):
             attrNotInAnyClip.GetTimeSamplesInInterval(
                 Gf.Interval(0.0, 1.0)),
             [0.0])
-        self.assertFalse(
+        # XXX: The clips code always reports that there exists a time sample at
+        # the first time, and since we need to fetch the value type of the
+        # samples in the interval the first clip does get opened, but the other
+        # clips do not.
+        self.assertTrue(
             Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
         self.assertFalse(
             Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))

@@ -109,9 +109,25 @@ Exec_OutputProvidingCompilationTask::_Compile(
 
         // Then indicate that the task identified by _outputKey is done. This
         // notifies all other tasks with a dependency on this _outputKey.
-        _MarkDone(_outputKey.MakeIdentity());
+        deps.MarkDoneOutputProvidingTask(_outputKey.MakeIdentity());
     }
     );
+}
+
+void
+Exec_OutputProvidingCompilationTask::_Interrupt(
+    Exec_CompilationState &compilationState)
+{
+    // The upstream nodes that would have connected to this node are now
+    // potentially isolated.
+    for (const auto &sourceOutputs : _inputSources) {
+        for (const auto &maskedOutput : sourceOutputs) {
+            if (VdfOutput *const output = maskedOutput.GetOutput()) {
+                compilationState.GetInterruptState()
+                    .AddPotentiallyIsolatedNode(&output->GetNode());
+            }
+        }
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -147,41 +147,6 @@ pxr_test_scripts(
     testenv/testTraceReporterLoadTrace.py
 )
 
-pxr_install_test_dir(
-    SRC testenv/testTraceRecursion.testenv
-    DEST testTraceRecursion1
-)
-
-pxr_install_test_dir(
-    SRC testenv/testTraceRecursion.testenv
-    DEST testTraceRecursion2
-)
-
-pxr_install_test_dir(
-    SRC testenv/testTraceRecursion.testenv
-    DEST testTraceRecursion3
-)
-
-pxr_install_test_dir(
-    SRC testenv/testTraceRecursion.testenv
-    DEST testTraceRecursion4
-)
-
-pxr_install_test_dir(
-    SRC testenv/testTraceRecursion.testenv
-    DEST testTraceRecursion5
-)
-
-pxr_install_test_dir(
-    SRC testenv/testTraceRecursion.testenv
-    DEST testTraceRecursion6
-)
-
-pxr_install_test_dir(
-    SRC testenv/testTraceRecursion.testenv
-    DEST testTraceRecursion7
-)
-
 pxr_register_test(testTraceCategory
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceCategory"
 )
@@ -210,42 +175,49 @@ pxr_register_test(testTrace
 pxr_register_test(testTraceRecursion1
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion"
+    TESTENV testenv/testTraceRecursion.testenv
     DIFF_COMPARE recursion_5begins.out
 )
 
 pxr_register_test(testTraceRecursion2
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion"
+    TESTENV testenv/testTraceRecursion.testenv
     DIFF_COMPARE recursion_typical.out
 )
 
 pxr_register_test(testTraceRecursion3
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion"
+    TESTENV testenv/testTraceRecursion.testenv
     DIFF_COMPARE recursion_newnode.out
 )
 
 pxr_register_test(testTraceRecursion4
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion"
+    TESTENV testenv/testTraceRecursion.testenv
     DIFF_COMPARE recursion_inner.out
 )
 
 pxr_register_test(testTraceRecursion5
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion"
+    TESTENV testenv/testTraceRecursion.testenv
     DIFF_COMPARE recursion_1817.out
 )
 
 pxr_register_test(testTraceRecursion6
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion"
+    TESTENV testenv/testTraceRecursion.testenv
     DIFF_COMPARE recursion_branch.out
 )
 
 pxr_register_test(testTraceRecursion7
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceRecursion"
+    TESTENV testenv/testTraceRecursion.testenv
     DIFF_COMPARE recursion_marker_merge.out
 )
 

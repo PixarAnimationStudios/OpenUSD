@@ -55,6 +55,30 @@ public:
         HdContainerDataSourceHandle const &rendererCreateArgs,
         std::string *reasonWhyNot = nullptr) const;
 
+    /// 
+
+    ///
+    /// Arguments that an application should pass as input arguments to
+    /// scene indices so that they can be configured for the needs of the
+    /// renderer.
+    ///
+    /// Follows the HdSceneIndexInputArgsSchema but can have data sources
+    /// at additional data sources.
+    ///
+    /// Example: Some scene indices are computing samples for motion blur
+    /// non-lazy and need to know whether the renderer supports motion blur
+    /// in advance.
+    ///
+    /// Example: the configuration of the HdRenderIndexAdapterSceneIndex
+    /// used by the legacy UsdImagingDelegate which needs the preference
+    /// order of the material render contexts since it is resolving
+    /// which material network to use rather than leaving it to a renderer-
+    /// specific plugin scene index.
+    ///
+    HD_API
+    virtual
+    HdContainerDataSourceHandle GetSceneIndexInputArgs() const;
+
     ///
     /// Create renderer through the plugin and wrap it in a handle that
     /// keeps this plugin alive until the renderer is destroyed.

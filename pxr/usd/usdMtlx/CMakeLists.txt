@@ -93,30 +93,17 @@ pxr_test_scripts(
     testenv/testUsdMtlxParser.py
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdMtlxDiscovery.testenv
-    DEST testUsdMtlxDiscovery
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdMtlxFileFormat.testenv
-    DEST testUsdMtlxFileFormat
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdMtlxParser.testenv
-    DEST testUsdMtlxParser
-)
-
 pxr_register_test(testUsdMtlxDiscovery
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMtlxDiscovery"
+    TESTENV testenv/testUsdMtlxDiscovery.testenv
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdMtlxFileFormat
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMtlxFileFormat"
+    TESTENV testenv/testUsdMtlxFileFormat.testenv
     DIFF_COMPARE Looks.usda NodeGraphs.usda GraphlessNodes.usda usd_preview_surface_gold.usda Include.usda Include_From_Usdz.usda LocalCustomNodes.usda NestedLocalCustomNodes.usda
     EXPECTED_RETURN_CODE 0
 )
@@ -124,5 +111,6 @@ pxr_register_test(testUsdMtlxFileFormat
 pxr_register_test(testUsdMtlxParser
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMtlxParser"
+    TESTENV testenv/testUsdMtlxParser.testenv
     EXPECTED_RETURN_CODE 0
 )

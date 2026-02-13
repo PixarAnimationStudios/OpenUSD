@@ -5,6 +5,11 @@
     --monospace: ui-monospace, -apple-system-ui-serif, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", Courier, 'Andale Mono', 'Ubuntu Mono', monospace;
 }
 
+.document {
+  container-type: inline-size;
+  container-name: document;
+}
+
 body, .rst-content {
     font-family: var(--san-serif);
 }
@@ -37,6 +42,10 @@ h4 {
   text-decoration: underline;
 }
 
+.mono {
+  overflow-wrap: break-word;
+}
+
 .mono, .rst-content .linenodiv pre, .rst-content div[class^=highlight] pre, .rst-content pre.literal-block {
   font-family: var(--monospace)
 }
@@ -48,6 +57,10 @@ h4 {
 .icon-home:before {
     vertical-align: middle;
     content: url("https://openusd.org/images/USDLogo24.svg");
+}
+
+.usd-tos-footer-style {
+    color: #113955
 }
 
 #usd-home > h1 {
@@ -65,6 +78,19 @@ img.usd-logo-image {
 
 .usd-index-brief > p {
     margin-bottom: 1em;
+}
+
+.usd-index-card-header-color {
+    color: #666f76;
+}
+
+/* Override link text color (in RST body content only) to meet
+Accessibility contrast requirements. */
+.rst-content a.reference.external,
+.rst-content a.reference.internal,
+.rst-content a .doc,
+.rst-content .doc {
+    color: #2679af !important;
 }
 
 .usd-title-image-outer {
@@ -153,3 +179,24 @@ div.usd-tutorial-admonition > p {
   color: #6A0E0E;
 } 
 
+@container document (max-width: 72rem) {
+  .fourcolumn {
+    -webkit-column-count: 3; /* Chrome, Safari, Opera */
+    -moz-column-count: 3; /* Firefox */
+    column-count: 3;
+  }
+}
+
+@container document (max-width: 48rem) {
+  .fourcolumn {
+    -webkit-column-count: 2; /* Chrome, Safari, Opera */
+    -moz-column-count: 2; /* Firefox */
+    column-count: 2;
+  }
+
+  .threecolumn {
+    -webkit-column-count: 2; /* Chrome, Safari, Opera */
+    -moz-column-count: 2; /* Firefox */
+    column-count: 2;
+  }
+}

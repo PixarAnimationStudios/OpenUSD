@@ -71,12 +71,12 @@ HdSceneIndexPluginRegistry::AppendSceneIndex(
 HdSceneIndexBaseRefPtr
 HdSceneIndexPluginRegistry::_AppendForPhases(
     const HdSceneIndexBaseRefPtr &inputScene,
-    const _PhasesMap &phasesMap,
+    const _EntriesByPhasesMap &entriesByPhases,
     const HdContainerDataSourceHandle &argsUnderlay,
     const std::string &renderInstanceId)
 {
     HdSceneIndexBaseRefPtr result = inputScene;
-    for (const auto &phasesPair : phasesMap) {
+    for (const auto &phasesPair : entriesByPhases) {
         for (const _Entry &entry : phasesPair.second) {
             
             HdContainerDataSourceHandle args = entry.args;
@@ -195,6 +195,63 @@ HdSceneIndexPluginRegistry::_LoadPluginsForRenderer(
     }
 }
 
+// static
+HdSceneIndexPluginRegistry::_EntriesByPhasesMap
+HdSceneIndexPluginRegistry::_RendererEntriesToPhaseMap(
+        const _RendererEntries& rendererEntries)
+{
+    // Assert that we will visit "start" before "end".
+    static_assert(
+        HdSceneIndexPluginRegistry::InsertionOrderAtStart
+        < HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
+
+    std::map<InsertionPhase, _EntryList> ret;
+    for (const auto& phaseOrderAndEntries : rendererEntries) {
+        const auto& [phaseAndOrder, entryList] = phaseOrderAndEntries;
+        const InsertionPhase& insertionPhase = phaseAndOrder.first;
+        _EntryList& entries = ret[insertionPhase];
+        entries.insert(entries.end(), entryList.begin(), entryList.end());
+        // sort the entries from this phase so that we get a stable order that
+        // does not depend on the order in which the plugins are loaded.
+        std::sort(
+            entries.end() - entryList.size(), entries.end(),
+            [](const _Entry& a, const _Entry& b) {
+                return a.sceneIndexPluginId < b.sceneIndexPluginId;
+            });
+    }
+    return ret;
+}
+
+HdSceneIndexPluginRegistry::_EntriesByPhasesMap
+HdSceneIndexPluginRegistry::_ComputeEntriesByPhasesMap(
+    const std::string& rendererDisplayName) const
+{
+    _EntriesByPhasesMap mergedPhasesMap;
+    // append scene indices registered to run for all renderers first
+    // Note, this means a plugin registered to run "at end" of a phase, will
+    // run before a renderer specific plugin registered to run "at start" of a
+    // phase.
+    _RenderersMap::const_iterator it = _sceneIndicesForRenderers.find("");
+    if (it != _sceneIndicesForRenderers.end()) {
+        mergedPhasesMap = _RendererEntriesToPhaseMap(it->second);
+    }
+
+    // append scene indices registered to run for specified renderer
+    if (!rendererDisplayName.empty()) {
+        it = _sceneIndicesForRenderers.find(rendererDisplayName);
+        if (it != _sceneIndicesForRenderers.end()) {
+            for (auto const& phaseEntry : _RendererEntriesToPhaseMap(it->second)) {
+                InsertionPhase phase = phaseEntry.first;
+                _EntryList& mergedEntries = mergedPhasesMap[phase];
+                mergedEntries.insert(
+                    mergedEntries.end(), phaseEntry.second.begin(),
+                    phaseEntry.second.end());
+            }
+        }
+    }
+    return mergedPhasesMap;
+}
+
 HdSceneIndexBaseRefPtr
 HdSceneIndexPluginRegistry::AppendSceneIndicesForRenderer(
     const std::string &rendererDisplayName,
@@ -210,31 +267,9 @@ HdSceneIndexPluginRegistry::AppendSceneIndicesForRenderer(
             HdRetainedTypedSampledDataSource<std::string>::New(
                 rendererDisplayName));
 
-    _PhasesMap mergedPhasesMap;
-
-    // append scene indices registered to run for all renderers first
-    _RenderersMap::const_iterator it = _sceneIndicesForRenderers.find("");
-    if (it != _sceneIndicesForRenderers.end()) {
-        mergedPhasesMap = it->second;
-    }
-    // append scene indices registered to run for specified renderer
-    if (!rendererDisplayName.empty()) {
-        it = _sceneIndicesForRenderers.find(rendererDisplayName);
-        if (it != _sceneIndicesForRenderers.end()) {
-            for (auto const &phaseEntry: it->second) {
-                InsertionPhase phase = phaseEntry.first;
-                _EntryList &mergedEntries = mergedPhasesMap[phase];
-                mergedEntries.insert(
-                    mergedEntries.end(),
-                    phaseEntry.second.begin(),
-                    phaseEntry.second.end());
-            }
-        }
-    }
-
-    HdSceneIndexBaseRefPtr scene =
-        _AppendForPhases(inputScene, mergedPhasesMap,
-                         underlayArgs, renderInstanceId);
+    HdSceneIndexBaseRefPtr scene = _AppendForPhases(
+        inputScene, _ComputeEntriesByPhasesMap(rendererDisplayName),
+        underlayArgs, renderInstanceId);
     if (TfGetEnvSetting<bool>(HD_USE_ENCAPSULATING_SCENE_INDICES)) {
         scene = HdMakeEncapsulatingSceneIndex(
             { inputScene }, scene);
@@ -251,14 +286,9 @@ HdSceneIndexPluginRegistry::RegisterSceneIndexForRenderer(
     InsertionPhase insertionPhase,
     InsertionOrder insertionOrder)
 {
-    _EntryList &entryList =
-        _sceneIndicesForRenderers[rendererDisplayName][insertionPhase];
-
-    if (insertionOrder == InsertionOrderAtStart) {
-        entryList.insert(entryList.begin(), _Entry{sceneIndexPluginId, inputArgs});
-    } else {
-        entryList.emplace_back(sceneIndexPluginId, inputArgs);
-    }
+    _sceneIndicesForRenderers[rendererDisplayName]
+                             [{ insertionPhase, insertionOrder }]
+                                 .emplace_back(sceneIndexPluginId, inputArgs);
 }
 
 void
@@ -269,14 +299,25 @@ HdSceneIndexPluginRegistry::RegisterSceneIndexForRenderer(
     InsertionPhase insertionPhase,
     InsertionOrder insertionOrder)
 {
-    _EntryList &entryList =
-        _sceneIndicesForRenderers[rendererDisplayName][insertionPhase];
+    _sceneIndicesForRenderers[rendererDisplayName]
+                             [{ insertionPhase, insertionOrder }]
+                                 .emplace_back(callback, inputArgs);
+}
 
-    if (insertionOrder == InsertionOrderAtStart) {
-        entryList.insert(entryList.begin(), _Entry{callback, inputArgs});
-    } else {
-        entryList.emplace_back(callback, inputArgs);
+std::vector<TfToken>
+HdSceneIndexPluginRegistry::LoadAndGetSceneIndexPluginIds(
+    const std::string& rendererDisplayName, const std::string& appName)
+{
+    std::vector<TfToken> ret;
+    _LoadPluginsForRenderer(rendererDisplayName, appName);
+    for (const auto& phaseAndEntryList :
+         _ComputeEntriesByPhasesMap(rendererDisplayName)) {
+        const _EntryList& entryList = phaseAndEntryList.second;
+        for (const _Entry& entry: entryList) {
+            ret.push_back(entry.sceneIndexPluginId);
+        }
     }
+    return ret;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,0 +1,215 @@
+#usda 1.0
+(
+    defaultPrim = "Root"
+)
+
+class SkelRoot "_common" (
+    prepend apiSchemas = ["SkelBindingAPI"]
+)
+{
+    def Xform "Skinning"
+    {
+        def Mesh "Box" (
+            prepend apiSchemas = ["SkelBindingAPI"]
+        )
+        {
+            int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+            int[] faceVertexIndices = [0, 1, 3, 2, 4, 5, 6, 7, 1, 2, 5, 6, 0, 4, 7, 3, 0, 1, 5, 4, 3, 7, 6, 2]
+            token orientation = "rightHanded"
+            point3f[] points = [(-0.6, -0.6, 0), (-0.6, 0.6, 0), (0.6, 0.6, 0), (0.6, -0.6, 0), (-0.6, -0.6, 0.14), (-0.6, 0.6, 0.14), (0.6, 0.6, 0.14), (0.6, -0.6, 0.14)]
+
+            int[] primvars:skel:jointIndices = [0] (
+                interpolation = "constant"
+                elementSize = 1 
+            )
+            float[] primvars:skel:jointWeights = [1.] (
+                interpolation = "constant"
+                elementSize = 1
+            )
+        }
+    }
+
+    def Skeleton "Skeleton" (
+        prepend apiSchemas = ["SkelBindingAPI"]
+    )
+    {
+        uniform token[] joints = ["Root"]
+        uniform matrix4d[] bindTransforms = [
+            ((1., 0., 0., 0.), (0., 1., 0., 0.), (0., 0., 1., 0.), (0.0, 0.0, 0.0, 1.)),    # Root
+        ]
+        uniform matrix4d[] restTransforms = [
+            ((1., 0., 0., 0.), (0., 1., 0., 0.), (0., 0., 1., 0.), (0., 0., 0., 1.)),    # Root
+        ]
+    }
+}
+
+def Xform "Root" (
+)
+{
+    def "SkinningWithoutNormals" (
+        inherits = </_common>
+    )
+    {
+        rel skel:skeleton = </Root/SkinningWithoutNormals/Skeleton>
+    }
+
+    def "SkinningWithVertexVaryingNormals" (
+        inherits = </_common>
+    )
+    {
+        rel skel:skeleton = </Root/SkinningWithVertexVaryingNormals/Skeleton>
+        over "Skinning"
+        {
+            over "Box"
+            {
+                float3[] normals =  [(-0.6, -0.6, 0), (-0.6, 0.6, 0), (0.6, 0.6, 0), (0.6, -0.6, 0), (-0.6, -0.6, 0.14), (-0.6, 0.6, 0.14), (0.6, 0.6, 0.14), (0.6, -0.6, 0.14)] (
+                    interpolation = "vertex"
+                )
+            }
+        }
+    }
+
+    def "SkinningWithVaryingNormals" (
+        inherits = </_common>
+    )
+    {
+        rel skel:skeleton = </Root/SkinningWithVaryingNormals/Skeleton>
+        over "Skinning"
+        {
+            over "Box"
+            {
+                float3[] normals =  [(-0.6, -0.6, 0), (-0.6, 0.6, 0), (0.6, 0.6, 0), (0.6, -0.6, 0), (-0.6, -0.6, 0.14), (-0.6, 0.6, 0.14), (0.6, 0.6, 0.14), (0.6, -0.6, 0.14)] (
+                    interpolation = "varying"
+                )
+            }
+        }
+    } 
+
+    def "SkinningWithConstantNormals" (
+        inherits = </_common>
+    )
+    {
+        rel skel:skeleton = </Root/SkinningWithConstantNormals/Skeleton>
+        over "Skinning"
+        {
+            over "Box"
+            {
+                float3[] normals =  [(1.0, 0, 0)] (
+                    interpolation = "constant"
+                )
+            }
+        }
+    } 
+
+    def "SkinningWithUniformNormals" (
+        inherits = </_common>
+    )
+    {
+        rel skel:skeleton = </Root/SkinningWithUniformNormals/Skeleton>
+        over "Skinning"
+        {
+            over "Box"
+            {
+                float3[] normals =  [(1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0)] (
+                    interpolation = "uniform"
+                )
+            }
+        }
+    } 
+
+    def "SkinningWithFaceVaryingNormals" (
+        inherits = </_common>
+    )
+    {
+        rel skel:skeleton = </Root/SkinningWithFaceVaryingNormals/Skeleton>
+        over "Skinning"
+        {
+            over "Box"
+            {
+                float3[] normals =  [(1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0)] (
+                    interpolation = "faceVarying"
+                )
+            }
+        }
+    } 
+
+    def "SkinningWithVertexVaryingPrimvarNormals" (
+        inherits = </_common>
+    )
+    {
+        rel skel:skeleton = </Root/SkinningWithVertexVaryingPrimvarNormals/Skeleton>
+        over "Skinning"
+        {
+            over "Box"
+            {
+                float3[] primvars:normals =  [(-0.6, -0.6, 0), (-0.6, 0.6, 0), (0.6, 0.6, 0), (0.6, -0.6, 0), (-0.6, -0.6, 0.14), (-0.6, 0.6, 0.14), (0.6, 0.6, 0.14), (0.6, -0.6, 0.14)] (
+                    interpolation = "vertex"
+                )
+            }
+        }
+    }
+
+    def "SkinningWithVaryingPrimvarNormals" (
+        inherits = </_common>
+    )
+    {
+        rel skel:skeleton = </Root/SkinningWithVaryingPrimvarNormals/Skeleton>
+        over "Skinning"
+        {
+            over "Box"
+            {
+                float3[] primvars:normals =  [(-0.6, -0.6, 0), (-0.6, 0.6, 0), (0.6, 0.6, 0), (0.6, -0.6, 0), (-0.6, -0.6, 0.14), (-0.6, 0.6, 0.14), (0.6, 0.6, 0.14), (0.6, -0.6, 0.14)] (
+                    interpolation = "varying"
+                )
+            }
+        }
+    } 
+
+    def "SkinningWithConstantPrimvarNormals" (
+        inherits = </_common>
+    )
+    {
+        rel skel:skeleton = </Root/SkinningWithConstantPrimvarNormals/Skeleton>
+        over "Skinning"
+        {
+            over "Box"
+            {
+                float3[] primvars:normals =  [(1.0, 0, 0)] (
+                    interpolation = "constant"
+                )
+            }
+        }
+    } 
+
+    def "SkinningWithUniformPrimvarNormals" (
+        inherits = </_common>
+    )
+    {
+        rel skel:skeleton = </Root/SkinningWithUniformPrimvarNormals/Skeleton>
+        over "Skinning"
+        {
+            over "Box"
+            {
+                float3[] primvars:normals =  [(1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0)] (
+                    interpolation = "uniform"
+                )
+            }
+        }
+    } 
+
+    def "SkinningWithFaceVaryingPrimvarNormals" (
+        inherits = </_common>
+    )
+    {
+        rel skel:skeleton = </Root/SkinningWithFaceVaryingPrimvarNormals/Skeleton>
+        over "Skinning"
+        {
+            over "Box"
+            {
+                float3[] primvars:normals =  [(1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0), (1.0, 0, 0)] (
+                    interpolation = "faceVarying"
+                )
+            }
+        }
+    } 
+}

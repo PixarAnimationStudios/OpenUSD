@@ -54,8 +54,9 @@ class {{ DUALQUAT }} final
   public:
     typedef {{ SCL }} ScalarType;
 
-    /// The default constructor leaves the dual quaternion undefined.
-    {{ DUALQUAT }}() {}
+    /// {{ DUALQUAT }} value-initializes to zero and performs no default
+    /// initialization, like float or double.
+    {{ DUALQUAT }}() = default;
 
     /// Initialize the real part to \p realVal and the imaginary part
     /// to zero quaternion.

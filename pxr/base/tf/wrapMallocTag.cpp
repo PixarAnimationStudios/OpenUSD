@@ -53,10 +53,10 @@ _Initialize2(const std::string& captureTag)
 }
 
 static TfMallocTag::CallTree
-_GetCallTree()
+_GetCallTree(const bool skipRepeated)
 {
     TfMallocTag::CallTree ret;
-    TfMallocTag::GetCallTree(&ret);
+    TfMallocTag::GetCallTree(&ret, skipRepeated);
     return ret;
 }
 
@@ -184,7 +184,8 @@ void wrapMallocTag()
         .def("IsInitialized", This::IsInitialized).staticmethod("IsInitialized")
         .def("GetTotalBytes", This::GetTotalBytes).staticmethod("GetTotalBytes")
         .def("GetMaxTotalBytes", This::GetMaxTotalBytes).staticmethod("GetMaxTotalBytes")
-        .def("GetCallTree", _GetCallTree).staticmethod("GetCallTree")
+        .def("GetCallTree", _GetCallTree, (arg("skipRepeated")=true))
+            .staticmethod("GetCallTree")
 
         .def("SetCapturedMallocStacksMatchList",
              This::SetCapturedMallocStacksMatchList)

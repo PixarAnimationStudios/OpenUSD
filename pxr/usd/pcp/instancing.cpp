@@ -8,7 +8,6 @@
 #include "pxr/usd/pcp/instancing.h"
 
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/smallVector.h"
 #include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -73,15 +72,11 @@ Pcp_PrimIndexIsInstanceable(
     // Compose the value of the 'instanceable' metadata to see if this
     // prim has been tagged as instanceable.
     bool isInstance = false;
-    static const TfToken instanceField = SdfFieldKeys->Instanceable;
-    // Stack of nodes left to visit, in strong-to-weak order.
-    // Strongest open node is top of the stack.
-    TfSmallVector<PcpNodeRef, 64> nodesToVisit;
-    nodesToVisit.push_back(primIndex.GetRootNode());
     bool opinionFound = false;
-    while (!nodesToVisit.empty()) {
-        PcpNodeRef node = nodesToVisit.back();
-        nodesToVisit.pop_back();
+    static const TfToken instanceField = SdfFieldKeys->Instanceable;
+    for (const PcpNodeRef& node : 
+             Pcp_GetSubtreeRange(primIndex.GetRootNode())) {
+
         if (node.CanContributeSpecs()) {
             const PcpLayerStackSite& site = node.GetSite();
             for (SdfLayerRefPtr const& layer: site.layerStack->GetLayers()) {
@@ -93,9 +88,6 @@ Pcp_PrimIndexIsInstanceable(
             if (opinionFound) {
                 break;
             }
-        }
-        TF_REVERSE_FOR_ALL(childIt, Pcp_GetChildrenRange(node)) {
-            nodesToVisit.push_back(*childIt);
         }
     }
     return isInstance;

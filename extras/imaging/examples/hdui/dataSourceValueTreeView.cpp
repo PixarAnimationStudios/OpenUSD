@@ -5,13 +5,22 @@
 // https://openusd.org/license.
 //
 #include "dataSourceValueTreeView.h"
-#include "pxr/imaging/hd/dataSourceTypeDefs.h"
+
+#include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/matrix4f.h"
+#include "pxr/imaging/hd/dataSourceTypeDefs.h"
+#include "pxr/imaging/hd/primOriginSchema.h"
+#include "pxr/usd/sdf/path.h"
 
 #include <QAbstractItemModel>
+#include <QAction>
+#include <QApplication>
+#include <QClipboard>
 #include <QHeaderView>
+#include <QMenu>
 #include <QString>
 
+#include <optional>
 #include <sstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -33,6 +42,14 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
             override {
 
+        if (!(role == Qt::DisplayRole || role == Qt::ToolTipRole)) {
+            return QVariant();
+        }
+
+        if (role == Qt::ToolTipRole) {
+            return GetToolTipText(index);
+        }
+
         if (role != Qt::DisplayRole) {
             return QVariant();
         }
@@ -51,6 +68,12 @@ public:
                     for (SdfPath const& path: paths) {
                         buffer << path << "\n";
                     }
+                } else if (_value.IsHolding<HdPrimOriginSchema::OriginPath>()) {
+                    // Get the wrapped path.
+                    buffer <<
+                        _value.UncheckedGet<HdPrimOriginSchema::OriginPath>()
+                            .GetPath();
+
                 } else {
                     buffer << _value;
                 }
@@ -101,6 +124,24 @@ public:
     }
 
 protected:
+    QVariant GetToolTipText(const QModelIndex &index) const {
+        // XXX Probably better to define a custom view delegate to drive this.
+        constexpr int tooltipMinChars = 24;
+        QVariant displayValue = this->data(index, Qt::DisplayRole);
+        QString str = displayValue.toString();
+        if (str.length() <= tooltipMinChars) {
+            return QVariant();
+        }
+
+        // Show only the last 24 characters, with ... before if longer
+        constexpr int tooltipMaxTrailingChars = 24;
+        if (str.length() > tooltipMaxTrailingChars) {
+            str = "..." + str.right(tooltipMaxTrailingChars);
+        }
+        return str;
+    }
+
+protected:
     VtValue _value;
 };
 
@@ -128,6 +169,10 @@ public:
         if (role == Qt::ForegroundRole && index.column() == 1) {
             return QVariant(QPalette().brush(
                 QPalette::Disabled, QPalette::WindowText));
+        }
+
+        if (role == Qt::ToolTipRole) {
+            return GetToolTipText(index);
         }
 
         if (role != Qt::DisplayRole) {
@@ -238,6 +283,10 @@ Hdui_GetModelFromValue(VtValue value, QObject *parent = nullptr)
         return new Hdui_TypedArrayValueItemModel<GfVec3d>(value, parent);
     }
 
+    if (value.IsHolding<VtArray<GfVec4f>>()) {
+        return new Hdui_TypedArrayValueItemModel<GfVec4f>(value, parent);
+    }
+
     if (value.IsHolding<VtArray<GfMatrix4d>>()) {
         return new Hdui_TypedArrayValueItemModel<GfMatrix4d>(value, parent);
     }
@@ -246,8 +295,16 @@ Hdui_GetModelFromValue(VtValue value, QObject *parent = nullptr)
         return new Hdui_TypedArrayValueItemModel<GfMatrix4f>(value, parent);
     }
 
+    if (value.IsHolding<VtArray<GfMatrix3f>>()) {
+        return new Hdui_TypedArrayValueItemModel<GfMatrix3f>(value, parent);
+    }
+
     if (value.IsHolding<VtArray<GfVec2f>>()) {
         return new Hdui_TypedArrayValueItemModel<GfVec2f>(value, parent);
+    }
+
+    if (value.IsHolding<VtArray<GfVec2i>>()) {
+        return new Hdui_TypedArrayValueItemModel<GfVec2i>(value, parent);
     }
 
     return new Hdui_UnsupportedTypeValueItemModel(value, parent);
@@ -260,6 +317,73 @@ HduiDataSourceValueTreeView::HduiDataSourceValueTreeView(QWidget *parent)
 {
     setUniformRowHeights(true);
     setItemsExpandable(false);
+
+    using _OptPath = std::optional<SdfPath>;
+    auto getPathValue = [](const QModelIndex &index) -> _OptPath {
+        if (!index.isValid()) {
+            return std::nullopt;
+        }
+
+        QVariant value = index.model()->data(index, Qt::DisplayRole);
+        if (value.canConvert<QString>()) {
+            const auto str = value.toString().toStdString();
+            if (SdfPath::IsValidPathString(str)) {
+                return SdfPath(str);
+            }
+        }
+        return std::nullopt;
+    };
+
+    
+    // Create a jump to prim action that can be triggered via Ctrl+J without
+    // opening a context menu. The item needs to be selected for this to work.
+    {
+        QAction *jumpToPrimAction = new QAction("Jump to Prim", this);
+        jumpToPrimAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_J));
+        jumpToPrimAction->setShortcutContext(Qt::WidgetShortcut);
+        addAction(jumpToPrimAction);
+    
+        connect(jumpToPrimAction, &QAction::triggered, this,
+            [this, getPathValue]() {
+                if (auto optPath = getPathValue(currentIndex())) {
+                    Q_EMIT JumpToPrim(*optPath);
+                }
+            });
+    }
+
+    setContextMenuPolicy(Qt::CustomContextMenu);
+
+    connect(this, &QTreeView::customContextMenuRequested, this,
+        [this, getPathValue](const QPoint &pos) {
+            QModelIndex index = indexAt(pos);
+            if (!index.isValid())
+                return;
+            QMenu menu(this);
+
+            // "Copy Value" action. Note that Ctrl+C (or Cmd+C on Mac) already
+            // copies the selected item's value by default. It may not be
+            // obvious to users, so we add an explicit action here.
+            //
+            QAction *copyAction = menu.addAction("Copy Value");
+            connect(copyAction, &QAction::triggered, this, [this, index]() {
+                QVariant value = model()->data(index, Qt::DisplayRole);
+                QApplication::clipboard()->setText(value.toString());
+            });
+
+            // "Jump to Prim" action, if the value at the index is a valid path.
+            // Note that we already have a Ctrl+J shortcut for this action
+            // (above) so users can trigger it without opening the context menu.
+            //
+            if (auto optPath = getPathValue(index)) {
+                QAction *jumpToPrimAction = menu.addAction("Jump to Prim");
+                connect(jumpToPrimAction, &QAction::triggered, this,
+                    [this, optPath]() {
+                        Q_EMIT JumpToPrim(*optPath);
+                    });
+            }
+
+            menu.exec(viewport()->mapToGlobal(pos));
+        });
 }
 
 void

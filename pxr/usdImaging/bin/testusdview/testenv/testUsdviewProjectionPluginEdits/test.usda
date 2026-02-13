@@ -75,18 +75,16 @@ def Camera "main_cam"
     double3 xformOp:rotateXYZ = (-18.9, 17.76, 0)
     double3 xformOp:translate = (-1, 0, 21)
     token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
-    token outputs:ri:projection.connect = </main_cam/CylCamera.outputs:result>
+    rel ri:projection = </main_cam/CylCamera>
 
     def PxrCylinderCamera "CylCamera"
     {
         float inputs:ri:hsweep = 30
-        token outputs:result
     }
 
     def PxrPanini "PaniniCam"
     {
         float inputs:ri:fov = 70
-        token outputs:result
     }
 }
 

@@ -2168,6 +2168,41 @@ _SkinFaceVaryingNormals(const TfToken& skinningMethod,
 }
 
 
+template <typename Matrix3>
+bool
+_SkinFaceVaryingNormals(const TfToken& skinningMethod,
+                        const Matrix3& geomBindTransform,
+                        TfSpan<const Matrix3> jointXforms,
+                        TfSpan<const GfVec2f> influences,
+                        const int numInfluencesPerPoint,
+                        TfSpan<const int> faceVertexIndices,
+                        TfSpan<GfVec3f> normals,
+                        const bool inSerial)
+{
+    if (faceVertexIndices.size() != normals.size()) {
+        TF_WARN("Size of faceVertexIndices [%zu] != size of normals [%zu]",
+                faceVertexIndices.size(), normals.size());
+        return false;
+    }
+
+    const _InterleavedInfluencesFn influenceFn{influences};
+
+    const int numPoints = int(influences.size()) / numInfluencesPerPoint;
+    const _FaceVaryingPointIndexFn indexFn{faceVertexIndices, numPoints};
+
+    if (skinningMethod == UsdSkelTokens->classicLinear) {
+        return _SkinNormalsLBS(geomBindTransform, jointXforms, influenceFn, indexFn,
+                               numInfluencesPerPoint, normals, inSerial);
+    } else if (skinningMethod == UsdSkelTokens->dualQuaternion) {
+        return _SkinNormalsDQS(geomBindTransform, jointXforms, influenceFn, indexFn,
+                               numInfluencesPerPoint, normals, inSerial);
+    } else {
+        TF_WARN("Unknown skinning method: '%s' ", skinningMethod.GetText());
+        return false;
+    }
+}
+
+
 } // namespace
 
 
@@ -2211,12 +2246,12 @@ UsdSkelSkinNormals(const TfToken& skinningMethod,
                    TfSpan<const GfMatrix3d> jointXforms,
                    TfSpan<const GfVec2f> influences,
                    const int numInfluencesPerPoint,
-                   TfSpan<GfVec3f> points,
+                   TfSpan<GfVec3f> normals,
                    const bool inSerial)
 {
     return _InterleavedSkinNormals(skinningMethod, geomBindTransform, jointXforms,
                                    influences, numInfluencesPerPoint,
-                                   points, inSerial);
+                                   normals, inSerial);
 }
 
 
@@ -2226,12 +2261,12 @@ UsdSkelSkinNormals(const TfToken& skinningMethod,
                    TfSpan<const GfMatrix3f> jointXforms,
                    TfSpan<const GfVec2f> influences,
                    const int numInfluencesPerPoint,
-                   TfSpan<GfVec3f> points,
+                   TfSpan<GfVec3f> normals,
                    const bool inSerial)
 {
     return _InterleavedSkinNormals(skinningMethod, geomBindTransform, jointXforms,
                                    influences, numInfluencesPerPoint,
-                                   points, inSerial);
+                                   normals, inSerial);
 }
 
 
@@ -2265,6 +2300,38 @@ UsdSkelSkinFaceVaryingNormals(const TfToken& skinningMethod,
 {
     return _SkinFaceVaryingNormals(
         skinningMethod, geomBindTransform, jointXforms, jointIndices, jointWeights,
+        numInfluencesPerPoint, faceVertexIndices, normals, inSerial);
+}
+
+
+bool
+UsdSkelSkinFaceVaryingNormals(const TfToken& skinningMethod,
+                              const GfMatrix3d& geomBindTransform,
+                              TfSpan<const GfMatrix3d> jointXforms,
+                              TfSpan<const GfVec2f> influences,
+                              const int numInfluencesPerPoint,
+                              TfSpan<const int> faceVertexIndices,
+                              TfSpan<GfVec3f> normals,
+                              const bool inSerial)
+{
+    return _SkinFaceVaryingNormals(
+        skinningMethod, geomBindTransform, jointXforms, influences,
+        numInfluencesPerPoint, faceVertexIndices, normals, inSerial);
+}
+
+
+bool
+UsdSkelSkinFaceVaryingNormals(const TfToken& skinningMethod,
+                              const GfMatrix3f& geomBindTransform,
+                              TfSpan<const GfMatrix3f> jointXforms,
+                              TfSpan<const GfVec2f> influences,
+                              const int numInfluencesPerPoint,
+                              TfSpan<const int> faceVertexIndices,
+                              TfSpan<GfVec3f> normals,
+                              const bool inSerial)
+{
+    return _SkinFaceVaryingNormals(
+        skinningMethod, geomBindTransform, jointXforms, influences,
         numInfluencesPerPoint, faceVertexIndices, normals, inSerial);
 }
 

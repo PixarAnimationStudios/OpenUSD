@@ -475,19 +475,39 @@ public:
     USD_API
     bool Get(VtValue* value, UsdTimeCode time = UsdTimeCode::Default()) const;
 
+    /// If this attribute is a builtin attribute with a fallback value provided
+    /// by a schema, fetch that value and return true. Otherwise return false.
+    template <typename T>
+    bool GetFallbackValue(T* value) const {
+        static_assert(!std::is_const<T>::value);
+        static_assert(SdfValueTypeTraits<T>::IsValueType);
+        UsdPrimDefinition::Attribute attrDef =
+            _GetStage()->_GetSchemaAttribute(*this);
+        return attrDef && attrDef.GetFallbackValue<T>(value);
+    }
+
+    /// \overload 
+    /// Type-erased accessor for getting the fallback value.
+    USD_API
+    bool GetFallbackValue(VtValue* value) const;
+
     /// Perform value resolution to determine the source of the resolved
     /// value of this attribute at the requested UsdTimeCode \p time.
     USD_API
     UsdResolveInfo
     GetResolveInfo(UsdTimeCode time) const;
 
-    /// Perform value resolution to determine the source of the resolved
-    /// value of this attribute at any non-default time. 
+    /// Perform value resolution to determine the proximal source of the
+    /// resolved value of this attribute at any non-default time.
     ///
-    /// Often (i.e. unless the attribute is affected by 
-    /// \ref Usd_Page_ValueClips "Value Clips") the source of the resolved value
+    /// Often (i.e. unless the attribute is affected by \ref Usd_Page_ValueClips
+    /// "Value Clips" or the authored values are composing value types like
+    /// VtArrayEdits or SdfPathExpressions) the source of the resolved value
     /// does not vary over time. See UsdAttributeQuery as an example that takes
-    /// advantage of this quality of value resolution.
+    /// advantage of this quality of value resolution.  Call the
+    /// GetResolveInfo() overload that takes a `time` to get a more complete
+    /// picture, and see UsdResolveInfo::GetSource() for more information.
+    /// 
     USD_API
     UsdResolveInfo
     GetResolveInfo() const;

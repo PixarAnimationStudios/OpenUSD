@@ -767,7 +767,7 @@ SdrRegistry::GetShaderNodesByFamily(
 {
     // Locking the discovery results for the entire duration of the parse is a
     // bit heavy-handed, but it needs to be 100% guaranteed that the results
-    // atr not modified while they are being iterated over.
+    // are not modified while they are being iterated over.
     std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
 
     // The node map needs to be locked too while we generate a vector from its
@@ -821,6 +821,18 @@ SdrRegistry::GetShaderNodesByFamily(
     return nodeVec;
 }
 
+SdrShaderNodePtrVec
+SdrRegistry::GetAllShaderNodes()
+{
+    SdrShaderNodePtrVec nodes;
+
+    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+    for (auto& it : _discoveryResultsByIdentifier) {
+        nodes.push_back(_FindOrParseNodeInCache(it.second));
+    }
+    return nodes;
+}
+
 SdrTokenVec
 SdrRegistry::GetAllShaderNodeSourceTypes() const
 {
@@ -836,6 +848,170 @@ SdrRegistry::GetAllShaderNodeSourceTypes() const
     return SdrTokenVec(_allSourceTypes.begin(), _allSourceTypes.end());
 }
 
+SdrShaderNodeQueryResult
+SdrRegistry::RunQuery(const SdrShaderNodeQuery& query)
+{
+    {
+        std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+
+        // Parse all discovery results to nodes
+        for (auto& it : _discoveryResultsByIdentifier) {
+            _FindOrParseNodeInCache(it.second);
+        }
+    }
+
+    SdrShaderNodeQueryResult result;
+    if (query._selectKeys.empty()) {
+        // Initialize nodes vector for queries with no other data requested
+        result._nodes.push_back({});
+    } else {
+        // Otherwise initialize result keys
+        for (auto& key: query._selectKeys) {
+            result._keys.push_back(key);
+        }
+    }
+
+    auto nodeMatchesFn = [](SdrShaderNodeConstPtr node, const TfToken& key,
+                            const VtValue& value) {
+        // Values match if they are both empty
+        const VtValue nodeValue = node->GetDataForKey(key);
+        if (nodeValue.IsEmpty() && value.IsEmpty()) {
+            return true;
+        }
+
+        const VtValue castValue = VtValue::CastToTypeOf(nodeValue, value);
+        if (castValue.IsEmpty()) {
+            // Cast failed, indicating the types don't match
+            return false;
+        }
+        return castValue == value;
+    };
+
+    // The node map needs to be locked while we generate a vector from its
+    // contents.
+    std::lock_guard<std::mutex> nmLock(_nodeMapMutex);
+
+    for (const auto& kv : _nodeMap) {
+        SdrShaderNodeConstPtr node = kv.second.get();
+
+        // Only keep nodes with values that match each value
+        bool keep = std::all_of(
+            query._hasValues.begin(),
+            query._hasValues.end(),
+            [node, nodeMatchesFn](const std::pair<TfToken, VtValue>& it) {
+                return nodeMatchesFn(node, it.first, it.second);
+            });
+        if (!keep) {
+            continue;
+        }
+
+        // Only keep nodes with values that match one of the values
+        // for each key-values pair.
+        keep = std::all_of(
+            query._hasOneOfValues.begin(),
+            query._hasOneOfValues.end(),
+            [node, nodeMatchesFn](const std::pair<TfToken, std::vector<VtValue>>& it) {
+                const TfToken& key = it.first;
+                return std::any_of(it.second.begin(), it.second.end(),
+                    [node, key, nodeMatchesFn](const VtValue& value) {
+                        return nodeMatchesFn(node, key, value);
+                    });
+            });
+        if (!keep) {
+            continue;
+        }
+
+        // Discard nodes with values that match an excluded value
+        keep = std::none_of(
+            query._lacksValues.begin(),
+            query._lacksValues.end(),
+            [node, nodeMatchesFn](const std::pair<TfToken, VtValue>& it) {
+                return nodeMatchesFn(node, it.first, it.second);
+            });
+        if (!keep) {
+            continue;
+        }
+
+        // Discard nodes with values that match one of the values
+        // for any key-values pair.
+        keep = std::all_of(
+            query._lacksAllOfValues.begin(),
+            query._lacksAllOfValues.end(),
+            [node, nodeMatchesFn](const std::pair<TfToken, std::vector<VtValue>>& it) {
+                const TfToken& key = it.first;
+                return std::none_of(it.second.begin(), it.second.end(),
+                    [node, key, nodeMatchesFn](const VtValue& value) {
+                        return nodeMatchesFn(node, key, value);
+                    }); 
+            });
+        if (!keep) {
+            continue;
+        }
+
+        // Only keep nodes that pass all custom filters.
+        keep = std::all_of(
+            query._customFilters.begin(),
+            query._customFilters.end(),
+            [node](SdrShaderNodeQuery::FilterFn fn) {
+                return fn(node);
+            }
+        );
+        if (!keep) {
+            continue;
+        }
+
+        if (query._selectKeys.empty()) {
+            result._nodes.front().push_back(node);
+        } else {
+            // Aggregate the information requested from this node into the result
+            std::vector<VtValue> nodeValues;
+            nodeValues.reserve(query._selectKeys.size());
+            for (const auto& key: query._selectKeys) {
+                nodeValues.push_back(node->GetDataForKey(key));
+            }
+
+            // "Select distinct" behavior dictates that duplicate node values
+            // shouldn't be added.
+            bool found = false;
+            for (size_t i = 0; i < result._values.size(); ++i) {
+                if (result._values[i] == nodeValues) {
+                    result._nodes[i].push_back(node);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                result._values.push_back(std::move(nodeValues));
+                result._nodes.push_back({ node });
+            }
+        }
+    }
+
+    // Sort each SdrShaderNodePtrVec alphabetically by identifier,
+    // then sourceType to provide a stable order for the query result.
+    for (SdrShaderNodePtrVec& innerNodes : result._nodes) {
+        std::sort(innerNodes.begin(), innerNodes.end(),
+            [](SdrShaderNodeConstPtr a, SdrShaderNodeConstPtr b) {
+                return a->GetIdentifier() < b->GetIdentifier() ||
+                       a->GetSourceType() < b->GetSourceType();
+            });
+    }
+
+    // Sanity check the computed query result structure
+    if (!TF_VERIFY(result._IsValid(),
+                   "SdrRegistry::RunQuery produced a malformed "
+                   "SdrShaderNodeQueryResult.")) {
+        return {};
+    }
+
+    return result;
+}
+
+void
+SdrRegistry::ParseAll()
+{
+    GetAllShaderNodes();
+}
 
 void
 SdrRegistry::_FindAndInstantiateDiscoveryPlugins()

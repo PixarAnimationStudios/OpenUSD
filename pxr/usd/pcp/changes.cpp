@@ -1528,7 +1528,7 @@ PcpChanges::_MarkReferencingSitesAsSignificantlyChanged(
             // If this layer stack no longer has any opinions at dep.sitePath,
             // composed prims that reference this site must be recomputed to
             // detect the broken reference.
-            if (PcpComposeSiteHasPrimSpecs(
+            if (PcpComposeSiteHasSpecs(
                 layerStack, dep.sitePath, 
                 cacheChanges.layersAffectedByMutingOrRemoval)) {
                 continue;
@@ -1850,7 +1850,7 @@ static bool
 _NoLongerHasAnySpecs(const PcpCacheChanges& changes, const PcpPrimIndex& primIndex)
 {
     for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
-        if (PcpComposeSiteHasPrimSpecs(
+        if (PcpComposeSiteHasSpecs(
                 node.GetLayerStack(), node.GetPath(), 
                 changes.layersAffectedByMutingOrRemoval)) {
             return false;

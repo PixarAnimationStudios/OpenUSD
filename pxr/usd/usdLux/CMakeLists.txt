@@ -42,25 +42,17 @@ pxr_register_test(testUsdLuxLight
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_install_test_dir(
-    DEST testUsdLuxLinkingAPI
-    SRC testenv/testUsdLuxLinkingAPI
-)
-
 pxr_register_test(testUsdLuxLinkingAPI
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdLuxLinkingAPI"
+    TESTENV testenv/testUsdLuxLinkingAPI
     EXPECTED_RETURN_CODE 0
-)
-
-pxr_install_test_dir(
-    DEST testUsdLuxLightListAPI
-    SRC testenv/testUsdLuxLightListAPI
 )
 
 pxr_register_test(testUsdLuxLightListAPI
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdLuxLightListAPI"
+    TESTENV testenv/testUsdLuxLightListAPI
     EXPECTED_RETURN_CODE 0
 )
 

@@ -132,9 +132,12 @@ public:
     /// graph within the layer in which the composition opinion is authored. 
     /// This path combined with the layer returned from  GetIntroducingLayer
     /// can be used to find the prim spec which owns the field that ultimately 
-    /// causes this arc to exist. If this arc is the 
-    /// \ref UsdQueryRootArc "root arc" of the composition graph, it is not an 
-    /// authored composition arc and this returns an empty path.
+    /// causes this arc to exist. 
+    /// Note that relocate arcs are authored at the layer metadata and not at
+    /// the prim spec level, so this function will return the path to the
+    /// pseudoroot prim (see SdfLayer::GetPseudoRoot for more details). If this 
+    /// arc is the \ref UsdQueryRootArc "root arc" of the composition graph, it 
+    /// is not an authored composition arc and this returns an empty path.
     USD_API
     SdfPath GetIntroducingPrimPath() const;
 
@@ -271,6 +274,7 @@ public:
         Inherit,
         Specialize,
         Variant,
+        Relocate,
 
         // Related arc types
         ReferenceOrPayload,
@@ -279,7 +283,8 @@ public:
         // Inverse of related arc types
         NotReferenceOrPayload,
         NotInheritOrSpecialize,
-        NotVariant
+        NotVariant,
+        NotRelocate
     };
 
     /// Choices for filtering composition arcs on dependency type. This can

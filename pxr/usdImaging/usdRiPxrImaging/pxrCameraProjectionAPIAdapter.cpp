@@ -17,9 +17,12 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/relationship.h"
+#include "pxr/usd/usdRi/tokens.h"
 #include "pxr/usd/usdShade/connectableAPIBehavior.h"
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
+#include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usdImaging/usdImaging/apiSchemaAdapter.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
 #include "pxr/usdImaging/usdImaging/types.h"
@@ -37,53 +40,112 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(
+    LEGACY_PXR_CAMERA_PROJECTION_TERMINAL_ALLOWED_AND_WARN, true,
+    "By default, we warn and allow specification of connections for the camera "
+    "projection to propagate to the camera prim. We require relationships to "
+    "specify the projection propagation to the camera instead. If set to true, "
+    "warnings will be emitted when connections are used, otherwise connections "
+    "will be disallowed.");
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (PxrCameraProjectionAPI)
     (projection)
-    (outputs)
-    (ri)
     ((primDepProjectionPrim, "prim_dep_projection_prim")));
 
 namespace
 {
 
-std::pair<TfToken, TfToken>
-_SplitNamespace(const TfToken &name)
+TfToken
+_RelName()
 {
-    static const char namespaceDelimiter =
-        SdfPathTokens->namespaceDelimiter.GetText()[0];
-    
-    const std::string &str = name.GetString();
-    const size_t i = str.find(namespaceDelimiter);
-    if (i == std::string::npos) {
-        return { TfToken(), TfToken() };
-    }
-
-    return { TfToken(str.substr(0, i)),
-             TfToken(str.substr(i + 1)) };
+    static const TfToken relName = TfToken(SdfPath::JoinIdentifier(
+        UsdRiTokens->renderContext, _tokens->projection));
+    return relName;
 }
 
-class _ConnectedPathDataSource final : public HdTypedSampledDataSource<SdfPath>
+TfToken
+_AttrName()
+{
+    static const TfToken attrName = TfToken(SdfPath::JoinIdentifier(
+        TfToken(UsdShadeTokens->outputs.GetString() + 
+                UsdRiTokens->renderContext.GetString()),
+        _tokens->projection));
+    return attrName;
+}
+
+bool 
+_RelInSchema()
+{
+    using UsdPropertyDefinition = UsdPrimDefinition::Property;
+    const UsdPrimDefinition * const camProjAPIDef =
+        UsdSchemaRegistry::GetInstance().FindAppliedAPIPrimDefinition(
+            _tokens->PxrCameraProjectionAPI);
+    if (!camProjAPIDef) {
+        return false;
+    }
+    if (camProjAPIDef->GetPropertyDefinition(_RelName())) {
+        return true;
+    }
+    return false;
+}
+
+// A unified data source to get the projection path from either a ri:projection
+// relationship or the now deprecated outputs:ri:projection attribute
+// connection.
+// We only fallback to the attribute connection if:
+// - LEGACY_PXR_CAMERA_PROJECTION_TERMINAL_ALLOWED_AND_WARN is true 
+//   the relationship spec is not found on the prim, or if relationship spec is
+//   found, but relationship is not authored on the prim, in which case we warn 
+//   and use the attribute connection.
+//
+class _ProjectionPathDataSource final : public HdTypedSampledDataSource<SdfPath>
 {
 public:
     using Time = HdSampledDataSource::Time;
-    HD_DECLARE_DATASOURCE(_ConnectedPathDataSource);
+    HD_DECLARE_DATASOURCE(_ProjectionPathDataSource);
 
-    _ConnectedPathDataSource(
-        const UsdShadeOutput &output)
-        : _output(output) {}
+    _ProjectionPathDataSource(const UsdPrim &prim) : _prim(prim)
+    {
+    }
 
     VtValue GetValue(HdSampledDataSource::Time shutterOffset) override {
         return VtValue(GetTypedValue(shutterOffset));
     }
 
-    SdfPath GetTypedValue(
-            HdSampledDataSource::Time shutterOffset) override {
-        SdfPathVector paths;
-        _output.GetRawConnectedSourcePaths(&paths);
-        if (paths.size() > 0) {
-            return  paths[0].GetPrimPath();
+    SdfPath GetTypedValue(HdSampledDataSource::Time shutterOffset) override {
+
+        // Try to use the relationship first.
+        if (_RelInSchema()) {
+            if (const UsdRelationship rel = _prim.GetRelationship(_RelName())) {
+                if (rel.HasAuthoredTargets()) {
+                    std::vector<SdfPath> targets;
+                    rel.GetTargets(&targets);
+                    if (targets.size() > 0) {
+                        return targets[0];
+                    }
+                }
+            }
+        }
+
+        // Fallback to the attribute connection for legacy support.
+        if (TfGetEnvSetting(
+                LEGACY_PXR_CAMERA_PROJECTION_TERMINAL_ALLOWED_AND_WARN)) {
+            if (UsdAttribute attr = _prim.GetAttribute(_AttrName())) {
+                if (attr.HasAuthoredConnections()) {
+                    UsdShadeOutput output(attr);
+                    SdfPathVector paths;
+                    output.GetRawConnectedSourcePaths(&paths);
+                    if (paths.size() > 0) {
+                        TF_WARN("%s on PxrCameraProjectionAPI is deprecated in "
+                                "favor of %s relationship. Please update your "
+                                "USD assets accordingly.",
+                                _AttrName().GetText(), _RelName().GetText());
+                        return paths[0].GetPrimPath();
+                    }
+                }
+            }
         }
         return SdfPath();
     }
@@ -94,72 +156,11 @@ public:
             std::vector<HdSampledDataSource::Time> *outSampleTimes) override {
         return false;
     }
-
 private:
-    const UsdShadeOutput _output;
+    const UsdPrim _prim;
 };
 
-HD_DECLARE_DATASOURCE_HANDLES(_ConnectedPathDataSource);
-
-HdSampledDataSourceHandle
-_ConnectedPathDataSourceNew(
-    const UsdAttribute &usdAttr,
-    const UsdImagingDataSourceStageGlobals &stageGlobals,
-    const SdfPath &sceneIndexPath,
-    const HdDataSourceLocator &timeVaryingFlagLocator)
-{
-    UsdShadeOutput output(usdAttr);
-    return _ConnectedPathDataSource::New(output);
-}
-
-//
-// This method or a generalization of this method might be useful for other
-// adapters. Consider moving it to a more central place such as UsdImaging.
-//
-std::vector<UsdImagingDataSourceMapped::PropertyMapping>
-_GetNamespacedPropertyMappingsForAppliedSchema(
-    const TfToken &appliedSchemaName)
-{
-    std::vector<UsdImagingDataSourceMapped::PropertyMapping> result;
-
-    const UsdPrimDefinition * const primDef =
-        UsdSchemaRegistry::GetInstance().FindAppliedAPIPrimDefinition(
-            appliedSchemaName);
-    if (!primDef) {
-        return result;
-    }
-
-    for (const TfToken &usdName : primDef->GetPropertyNames()) {
-        std::pair<TfToken, TfToken> namespaceAndName =
-            _SplitNamespace(usdName);
-        if (namespaceAndName.first == _tokens->outputs) {
-            namespaceAndName = 
-            _SplitNamespace(namespaceAndName.second);
-        }
-
-        if (namespaceAndName.second.IsEmpty()) {
-            continue;
-        }
-
-        result.push_back(
-            UsdImagingDataSourceMapped::AttributeMapping{
-                usdName,
-                HdDataSourceLocator(namespaceAndName.first,
-                                    namespaceAndName.second),
-                _ConnectedPathDataSourceNew});
-    }
-
-    return result;
-}
-
-const UsdImagingDataSourceMapped::PropertyMappings &
-_GetMappings() {
-    static const UsdImagingDataSourceMapped::PropertyMappings result(
-        _GetNamespacedPropertyMappingsForAppliedSchema(
-            _tokens->PxrCameraProjectionAPI),
-        HdCameraSchema::GetNamespacedPropertiesLocator());
-    return result;
-}
+HD_DECLARE_DATASOURCE_HANDLES(_ProjectionPathDataSource);
 
 }
 
@@ -181,34 +182,33 @@ UsdRiPxrImagingCameraProjectionAPIAdapter::GetImagingSubprimData(
         return nullptr;
     }
 
-    static const HdDataSourceLocator projectionLocator = 
-        HdDataSourceLocator(HdCameraSchemaTokens->namespacedProperties)
-            .Append(_tokens->ri)
-            .Append(_tokens->projection);
-
-    static const HdDataSourceLocator fullProjectionLocator = 
-    HdCameraSchema::GetDefaultLocator()
-        .Append(projectionLocator);
-
     static const auto emptyLocatorDs =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdDataSourceLocator::EmptyLocator());
 
-    HdContainerDataSourceHandle apiSource = HdCameraSchema::Builder()
-        .SetNamespacedProperties(
-            UsdImagingDataSourceMapped::New(
-                prim, prim.GetPath(), _GetMappings(), stageGlobals))
-        .Build();
+    HdDataSourceBaseHandle projectionDs = _ProjectionPathDataSource::New(prim);
+
+    HdContainerDataSourceHandle namespacedPropertiesDs =
+        HdRetainedContainerDataSource::New(
+            UsdRiTokens->renderContext,
+            HdRetainedContainerDataSource::New(
+                _tokens->projection,
+                projectionDs));
+
+    HdContainerDataSourceHandle apiSource =
+        HdCameraSchema::Builder()
+            .SetNamespacedProperties(namespacedPropertiesDs)
+            .Build();
 
     TfTokenVector names;
     std::vector<HdDataSourceBaseHandle> sources;
 
-    if (auto projectionDs = HdPathDataSource::Cast(
-        HdContainerDataSource::Get(apiSource, projectionLocator))) {
-        const SdfPath projectionPath = projectionDs->GetTypedValue(0.f);
+    if (projectionDs) {
+        const SdfPath projectionPath = 
+            HdPathDataSource::Cast(projectionDs)->GetTypedValue(0.f);
         if (!projectionPath.IsEmpty()) {
             auto pathDs = HdRetainedTypedSampledDataSource<SdfPath>::New(
-                projectionDs->GetTypedValue(0.f));
+                projectionPath);
             names.push_back(_tokens->primDepProjectionPrim);
             sources.push_back(
                 HdDependencySchema::Builder()
@@ -225,7 +225,7 @@ UsdRiPxrImagingCameraProjectionAPIAdapter::GetImagingSubprimData(
             names.size(),
             names.data(),
             sources.data());
-    
+
     return
         HdRetainedContainerDataSource::New(
             HdCameraSchema::GetSchemaToken(),
@@ -246,17 +246,34 @@ UsdRiPxrImagingCameraProjectionAPIAdapter::InvalidateImagingSubprim(
         return HdDataSourceLocatorSet();
     }
 
-    HdDataSourceLocatorSet inval = UsdImagingDataSourceMapped::Invalidate(
-        properties, _GetMappings());
-    static const HdDataSourceLocator projectionLocator = 
-        HdDataSourceLocator(HdCameraSchemaTokens->namespacedProperties)
-            .Append(_tokens->ri)
-            .Append(_tokens->projection);
-    if (inval.Contains(HdCameraSchema::GetDefaultLocator()
-        .Append(projectionLocator))) {
+    bool projectionChanged = false;
+
+    if (_RelInSchema()) {
+        for (const TfToken &prop : properties) {
+            if (prop == _RelName()) {
+                projectionChanged = true;
+                break;
+            }
+        }
+    }
+
+    // Deprecated attribute connection support.
+    if (!projectionChanged &&
+        TfGetEnvSetting(
+            LEGACY_PXR_CAMERA_PROJECTION_TERMINAL_ALLOWED_AND_WARN)) {
+        for (const TfToken &prop : properties) {
+            if (prop == _AttrName()) {
+                projectionChanged = true;
+                break;
+            }
+        }
+    }
+
+    if (projectionChanged) {
         return { HdDataSourceLocator::EmptyLocator() };
     }
-    return inval;
+
+    return HdDataSourceLocatorSet();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

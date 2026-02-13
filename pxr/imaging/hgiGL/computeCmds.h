@@ -29,10 +29,16 @@ public:
     ~HgiGLComputeCmds() override;
 
     HGIGL_API
-    void PushDebugGroup(const char* label) override;
+    void PushDebugGroup(const char* label,
+        const GfVec4f& color = s_computeDebugColor) override;
 
     HGIGL_API
     void PopDebugGroup() override;
+
+    HGIGL_API
+    void InsertDebugMarker(
+        const char* label,
+        const GfVec4f& color = s_markerDebugColor) override;
 
     HGIGL_API
     void BindPipeline(HgiComputePipelineHandle pipeline) override;

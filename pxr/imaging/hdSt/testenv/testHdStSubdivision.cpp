@@ -207,7 +207,7 @@ SubdivisionTest(HdStResourceRegistrySharedPtr const &registry,
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineCPU) == 0);
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineGPU) == 0);
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 0);
-    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
 
     {
         // 7(0)        9(2)
@@ -237,9 +237,9 @@ SubdivisionTest(HdStResourceRegistrySharedPtr const &registry,
 
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineCPU) == 1);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineGPU) == 0);
-        // subdivision, quadindex, points, refined points.
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+        // subdivision, quadindex, refined points (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
         perfLog.ResetCounters();
 
         if (!DUMP_GPU_REFINED_POINTS(
@@ -250,10 +250,10 @@ SubdivisionTest(HdStResourceRegistrySharedPtr const &registry,
 
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineCPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineGPU) == 1);
-        // subdivision, quadindex, points, sizes, counts, indices, weights
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 7);
+        // subdivision, quadindex, sizes, counts, indices, weights (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 6);
         // refined points
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 1);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 1);
         perfLog.ResetCounters();
 
     }
@@ -285,9 +285,9 @@ SubdivisionTest(HdStResourceRegistrySharedPtr const &registry,
 
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineCPU) == 1);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineGPU) == 0);
-        // subdivision, quadindex, points, refined points.
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+        // subdivision, quadindex, refined points (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
         perfLog.ResetCounters();
 
         if (!DUMP_GPU_REFINED_POINTS(
@@ -298,10 +298,10 @@ SubdivisionTest(HdStResourceRegistrySharedPtr const &registry,
 
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineCPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineGPU) == 1);
-        // subdivision, quadindex, points, sizes, counts, indices, weights
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 7);
+        // subdivision, quadindex, sizes, counts, indices, weights (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 6);
         // refined points
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 1);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 1);
         perfLog.ResetCounters();
 
     }
@@ -333,8 +333,8 @@ SubdivisionTest(HdStResourceRegistrySharedPtr const &registry,
         }
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineCPU) == 1);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineGPU) == 0);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
         perfLog.ResetCounters();
 
         if (!DUMP_GPU_REFINED_POINTS(
@@ -344,8 +344,8 @@ SubdivisionTest(HdStResourceRegistrySharedPtr const &registry,
         }
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineCPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineGPU) == 1);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 7);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 1);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 6);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 1);
         perfLog.ResetCounters();
 
     }
@@ -385,8 +385,8 @@ SubdivisionTest(HdStResourceRegistrySharedPtr const &registry,
         }
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineCPU) == 1);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineGPU) == 0);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
         perfLog.ResetCounters();
 
         if (!DUMP_GPU_REFINED_POINTS(
@@ -396,8 +396,8 @@ SubdivisionTest(HdStResourceRegistrySharedPtr const &registry,
         }
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineCPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineGPU) == 1);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 7);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 1);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 6);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 1);
         perfLog.ResetCounters();
 
     }
@@ -416,7 +416,7 @@ LoopSubdivisionTest(HdStResourceRegistrySharedPtr const &registry)
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineCPU) == 0);
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineGPU) == 0);
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 0);
-    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
 
     {
         // 6(0)        8(2)
@@ -447,9 +447,9 @@ LoopSubdivisionTest(HdStResourceRegistrySharedPtr const &registry)
 
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineCPU) == 1);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineGPU) == 0);
-        // subdivision, quadindex, points, refined points.
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 4);
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 0);
+        // subdivision, quadindex, refined points (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 3);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 0);
         perfLog.ResetCounters();
 
         if (!DUMP_GPU_REFINED_POINTS(
@@ -461,10 +461,10 @@ LoopSubdivisionTest(HdStResourceRegistrySharedPtr const &registry)
 
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineCPU) == 0);
         TF_VERIFY(perfLog.GetCounter(HdPerfTokens->subdivisionRefineGPU) == 1);
-        // subdivision, quadindex, points, sizes, counts, indices, weights
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 7);
+        // subdivision, quadindex, sizes, counts, indices, weights (points is pre-resolved).
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 6);
         // refined points
-        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommited) == 1);
+        TF_VERIFY(perfLog.GetCounter(HdPerfTokens->computationsCommitted) == 1);
         perfLog.ResetCounters();
     }
     return true;

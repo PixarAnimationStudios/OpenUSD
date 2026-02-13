@@ -46,7 +46,7 @@ public:
     virtual void SetOutputValue(
         const VdfOutput &output,
         const VdfVector &value,
-        const VdfMask &mask);
+        const VdfMask &mask) override;
 
     /// Transfers ownership of \p value to the given \p output.
     /// 
@@ -56,14 +56,14 @@ public:
     virtual bool TakeOutputValue(
         const VdfOutput &output,
         VdfVector *value,
-        const VdfMask &mask);
+        const VdfMask &mask) override;
 
     /// Returns \c true of the data manager is empty.
     ///
     /// This type of executor is always considered empty, since it does not
     /// hold any data.
     ///
-    virtual bool IsEmpty() const {
+    virtual bool IsEmpty() const override {
         return true;
     }
 
@@ -108,7 +108,7 @@ protected:
     ///
     /// This has no effect on this type of executor.
     ///
-    virtual void _ClearData() {}
+    virtual void _ClearData() override {}
 
     /// Called before invalidation begins to update the timestamp that will be
     /// written for every VdfOutput visited during invalidation.  This timestamp
@@ -116,7 +116,7 @@ protected:
     ///
     /// This has no effect on this type of executor.
     ///
-    virtual void _UpdateInvalidationTimestamp() {}
+    virtual void _UpdateInvalidationTimestamp() override {}
 
     /// Called to set destOutput's buffer output to be a reference to the 
     /// buffer output of sourceOutput.
@@ -127,7 +127,7 @@ protected:
     virtual void _SetReferenceOutputValue(
         const VdfOutput &destOutput,
         const VdfOutput &sourceOutput,
-        const VdfMask &sourceMask) const;
+        const VdfMask &sourceMask) const override;
 
     /// Mark the output as having been visited.  This is only to be used by
     /// the speculation engine to tell its parent executor that an output 
@@ -135,7 +135,7 @@ protected:
     ///
     /// This has no effect on this type of executor.
     ///
-    virtual void _TouchOutput(const VdfOutput &output) const {}
+    virtual void _TouchOutput(const VdfOutput &output) const override {}
 
 };
 

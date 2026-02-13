@@ -21,7 +21,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((proceduralType, "hdGp:proceduralType"))                             \
     ((anyProceduralType, "*"))
 
-TF_DECLARE_PUBLIC_TOKENS(HdGpGenerativeProceduralTokens,
+TF_DECLARE_PUBLIC_TOKENS(HdGpGenerativeProceduralTokens, HDGP_API,
     HDGPGENERATIVEPROCEDURAL_TOKENS);
 
 /// \class HdGpGenerativeProcedural

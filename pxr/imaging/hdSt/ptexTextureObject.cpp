@@ -330,4 +330,13 @@ HdStPtexTextureObject::GetTextureType() const
     return HdStTextureType::Ptex;
 }
 
+size_t
+HdStPtexTextureObject::GetCommittedSize() const
+{
+    if (_format == HgiFormatInvalid) {
+        return 4 * sizeof(unsigned char) + 2 * sizeof(uint16_t);
+    }
+    return _texelDataSize + _layoutDataSize;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

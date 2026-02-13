@@ -49,10 +49,9 @@ private:
     std::optional<TfToken> _FindWinningContext(
         const TfTokenVector& renderContextPriorityOrder) const
     {
-        // XXX Cannot use HdMaterialSchema:GetMaterialNetwork(context) here
-        // becuase it falls back to the universal render context.
+        const HdMaterialSchema materialSchema(_materialContainer);
         for (const TfToken& context : renderContextPriorityOrder) {
-            if (_materialContainer->Get(context)) {
+            if (materialSchema.GetMaterialNetwork(context)) {
                 return context;
             }
         }

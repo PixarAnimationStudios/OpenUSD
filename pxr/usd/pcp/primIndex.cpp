@@ -54,6 +54,11 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(
+    PCP_ENABLE_CONSISTENCY_CHECKS, false,
+    "Enable self-consistency checks when composing prim indexes. "
+    "This is for testing and debugging only.");
+
 static inline PcpPrimIndex const *
 _GetOriginatingIndex(PcpPrimIndex_StackFrame *previousFrame,
                      PcpPrimIndexOutputs *outputs) {
@@ -1707,6 +1712,11 @@ public:
     // index.
     bool skipDuplicateNodes = false;
 
+    // If set to true, the new node will copy the isDueToAncestor flag
+    // along with flags tracking direct or ancestral dependencies from
+    // the origin node.
+    bool copyAncestorFlagFromOrigin = false;
+
     // Indexing tasks to enqueue for the new node being added.
     Task::Tasks tasks = Task::AllTasks;
 };
@@ -1854,7 +1864,7 @@ _AddArc(
 
             // Compose the existence of primSpecs and update the HasSpecs field 
             // accordingly.
-            newNode.SetHasSpecs(PcpComposeSiteHasPrimSpecs(newNode));
+            newNode.SetHasSpecs(PcpComposeSiteHasSpecs(newNode));
 
             if (!newNode.IsInert() && newNode.HasSpecs()) {
                 if (indexer->inputs.usd) {
@@ -1961,6 +1971,38 @@ _AddArc(
         TF_VERIFY(newNodeError, "Failed to create a node, but did not "
                   "specify the error.");
         return PcpNodeRef();
+    }
+
+    if (opts.copyAncestorFlagFromOrigin) {
+        newNode.SetIsDueToAncestor(origin.IsDueToAncestor());
+        newNode.SetHasTransitiveDirectDependency(
+            origin.HasTransitiveDirectDependency());
+        newNode.SetHasTransitiveAncestralDependency(
+            origin.HasTransitiveAncestralDependency());
+    }
+    else {
+        // By default, new nodes are always direct dependencies,
+        // i.e. newNode.IsDueToAncestor() == false.
+        newNode.SetHasTransitiveDirectDependency(true);
+        newNode.SetHasTransitiveAncestralDependency(
+            parent.HasTransitiveAncestralDependency());
+    }
+
+    // If we've included ancestral opinions then we need to propagate the
+    // transitive dependency flags to the subtree of nodes (if any) beneath
+    // newNode. We only do this if we're not in a recursive prim indexing
+    // call, otherwise we'll unnecessarily revisit this subtree after we
+    // finish each recursive call.
+    if (opts.includeAncestralOpinions && !indexer->previousFrame) {
+        for (PcpNodeRef n : Pcp_GetSubtreeRange(newNode)) {
+            n.SetHasTransitiveDirectDependency(
+                newNode.HasTransitiveDirectDependency() ||
+                n.HasTransitiveDirectDependency());
+            
+            n.SetHasTransitiveAncestralDependency(
+                newNode.HasTransitiveAncestralDependency() ||
+                n.HasTransitiveAncestralDependency());
+        }
     }
 
     Task::Tasks tasks = opts.tasks;
@@ -2658,7 +2700,7 @@ _PrimSpecExistsUnderNodeAtIntroduction(
             [](const PcpNodeRef& node) { return node.HasSpecs(); }) :
         _PrimSpecExistsUnderNode(node,
             [](const PcpNodeRef& node) { 
-                return PcpComposeSiteHasPrimSpecs(
+                return PcpComposeSiteHasSpecs(
                     node.GetLayerStack(), node.GetPathAtIntroduction());
             });
 }
@@ -3604,9 +3646,7 @@ _EvalImpliedClassTree(
         // the implied class for srcChild, so we don't don't need to redo 
         // the work to process it.
         TF_FOR_ALL(destChildIt, Pcp_GetChildrenRange(destNode)) {
-            if (destChildIt->GetOriginNode() != srcChild ||
-                destChildIt->GetMapToParent().Evaluate() 
-                    != destClassFunc.Evaluate()) {
+            if (destChildIt->GetOriginNode() != srcChild) {
                 continue;
             }
 
@@ -3804,6 +3844,7 @@ _PropagateNodeToRoot(
         _ArcOptions opts;
         opts.skipDuplicateNodes = true;
         opts.includeAncestralOpinions = !srcNode.GetPath().IsRootPrimPath();
+        opts.copyAncestorFlagFromOrigin = true;
 
         newNode = _AddArc(
             indexer,
@@ -3814,10 +3855,6 @@ _PropagateNodeToRoot(
             mapToParent,
             srcNode.GetSiblingNumAtOrigin(),
             opts);
-
-        if (newNode) {
-            newNode.SetIsDueToAncestor(srcNode.IsDueToAncestor());
-        }
     }
 
     return newNode;
@@ -4543,7 +4580,7 @@ Pcp_RescanForSpecs(
         if (updateHasSpecs) {
             TF_FOR_ALL(nodeIt, index->GetNodeRange()) {
                 auto node = *nodeIt;
-                nodeIt->SetHasSpecs(PcpComposeSiteHasPrimSpecs(
+                nodeIt->SetHasSpecs(PcpComposeSiteHasSpecs(
                     node.GetLayerStack(), node.GetPath()));
             }
         }
@@ -4729,7 +4766,7 @@ _ConvertNodeForChild(
     // Because the child site is at a deeper level of namespace than
     // the parent, there may no longer be any specs.
     if (node.HasSpecs()) {
-        node.SetHasSpecs(PcpComposeSiteHasPrimSpecs(node));
+        node.SetHasSpecs(PcpComposeSiteHasSpecs(node));
     }
 
     // Inert nodes are just placeholders, so we can skip computing these
@@ -4766,6 +4803,8 @@ _ConvertNodeForChild(
     // Initial child nodes are always due to their parent, except the root node.
     if (!isRoot) {
         node.SetIsDueToAncestor(true);
+        node.SetHasTransitiveDirectDependency(false);
+        node.SetHasTransitiveAncestralDependency(true);
     }
 
 }
@@ -5151,7 +5190,7 @@ Pcp_BuildPrimIndex(
         // Even though the pseudo root spec exists implicitly, don't
         // assume that here.
         PcpNodeRef node = outputs->primIndex.GetGraph()->GetRootNode();
-        node.SetHasSpecs(PcpComposeSiteHasPrimSpecs(node));
+        node.SetHasSpecs(PcpComposeSiteHasSpecs(node));
         // Optimization: Since no composition arcs can live on the
         // pseudo-root, we can return early.
         return;
@@ -5170,7 +5209,7 @@ Pcp_BuildPrimIndex(
         outputs->primIndex.SetGraph(PcpPrimIndex_Graph::New(site, inputs.usd));
 
         PcpNodeRef node = outputs->primIndex.GetGraph()->GetRootNode();
-        node.SetHasSpecs(PcpComposeSiteHasPrimSpecs(node));
+        node.SetHasSpecs(PcpComposeSiteHasSpecs(node));
         node.SetInert(!rootNodeShouldContributeSpecs);
     } else {
         // Start by building and cloning the namespace parent's index.
@@ -5360,6 +5399,11 @@ PcpComputePrimIndex(
     // finalization will cause outstanding PcpNodeRefs to be invalidated.
     Pcp_RescanForSpecs(&outputs->primIndex, inputs.usd,
                        /* updateHasSpecs */false );
+
+    // Run final self-consistency checks if specified.
+    if (ARCH_UNLIKELY(TfGetEnvSetting(PCP_ENABLE_CONSISTENCY_CHECKS))) {
+        Pcp_CheckConsistency(outputs->primIndex);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////

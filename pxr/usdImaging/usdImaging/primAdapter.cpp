@@ -740,6 +740,12 @@ UsdImagingPrimAdapter::GetLightParamValue(
             return VtValue(collectionCache.GetIdForCollection(
                 lightFilterLink));
         }
+        if (paramName == HdTokens->shadowLink) {
+            UsdLuxLightFilter lightFilter = UsdLuxLightFilter(prim);
+            UsdCollectionAPI shadowLink =
+                UsdCollectionAPI(lightFilter, UsdLuxTokens->shadowLink);
+            return VtValue(collectionCache.GetIdForCollection(shadowLink));
+        }
         // fallback to usd attributes
         return _GetUsdPrimAttribute(prim, paramName, time);
     }

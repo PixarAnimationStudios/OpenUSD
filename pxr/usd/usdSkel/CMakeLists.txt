@@ -84,26 +84,6 @@ pxr_test_scripts(
     testenv/testUsdSkelUtils.py
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdSkelBakeSkinning
-    DEST testUsdSkelBakeSkinning
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdSkelCache
-    DEST testUsdSkelCache
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdSkelRoot
-    DEST testUsdSkelRoot
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdSkelSkinningQuery
-    DEST testUsdSkelSkinningQuery
-)
-
 pxr_register_test(testUsdSkelAnimMapper
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelAnimMapper"
@@ -119,6 +99,7 @@ pxr_register_test(testUsdSkelAnimQuery
 pxr_register_test(testUsdSkelBakeSkinning
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelBakeSkinning"
+    TESTENV testenv/testUsdSkelBakeSkinning
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE blendshapes.baked.usda blendshapesWithNormals.baked.usda lbs.baked.usda lbs.bakedInterval.usda
 )
@@ -132,12 +113,14 @@ pxr_register_test(testUsdSkelBindingAPI
 pxr_register_test(testUsdSkelCache
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelCache"
+    TESTENV testenv/testUsdSkelCache
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdSkelRoot
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelRoot"
+    TESTENV testenv/testUsdSkelRoot
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE root.computedExtents.usda
 )
@@ -151,6 +134,7 @@ pxr_register_test(testUsdSkelSkeletonQuery
 pxr_register_test(testUsdSkelSkinningQuery
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelSkinningQuery"
+    TESTENV testenv/testUsdSkelSkinningQuery
     EXPECTED_RETURN_CODE 0
 )
 

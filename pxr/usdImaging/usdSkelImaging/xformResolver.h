@@ -4,7 +4,6 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-
 #ifndef PXR_USD_IMAGING_USD_SKEL_IMAGING_XFORM_RESOLVER_H
 #define PXR_USD_IMAGING_USD_SKEL_IMAGING_XFORM_RESOLVER_H
 
@@ -50,6 +49,10 @@ public:
     /// Data source for the transform.
     HdMatrixDataSourceHandle GetPrimLocalToCommonSpace() const;
 
+    /// Get skel:animationSource instance primvar value from the immediate
+    /// instancer.
+    VtArray<SdfPath> GetInstanceAnimationSource() const;
+
     /// Paths of instancer contributing to the transform. They
     /// need to be observed for invalidation.
     const VtArray<SdfPath> &GetInstancerPaths() const {
@@ -66,6 +69,9 @@ public:
     /// If a dirty message for any instancer includes this locator,
     /// we need to refetch the transform data source.
     static const HdDataSourceLocator &GetInstanceXformLocator();
+    /// If a dirty message for any instancer includes this locator,
+    /// we need to refresh XXXXX
+    static const HdDataSourceLocator &GetInstanceAnimationSourceLocator();
 
 private:
     HdSceneIndexBaseRefPtr const _sceneIndex;

@@ -7,7 +7,6 @@
 #
 
 import unittest
-import sys
 
 from pxr.Usdviewq import Launcher, InvalidUsdviewOption
 
@@ -25,15 +24,13 @@ class ValidationOnlyLauncher(Launcher):
         """Run the launcher, and optionally provide a list of command line
         arguments. By default, no arguments are used.
         """
-        args = args or []
-        self._args = [sys.argv[0]] + args
+        self._args = args or []
         super(ValidationOnlyLauncher, self).Run()
 
     def ParseOptions(self, parser):
         """Parse the given command line arguments rather than the test's command
         line arguments.
         """
-
         return parser.parse_args(self._args)
 
     def LaunchPreamble(self, arg_parse_result):
@@ -53,6 +50,11 @@ class TestLauncher(unittest.TestCase):
         """Test the launcher with no arguments."""
 
         ValidationOnlyLauncher().Run()
+
+    def test_usdFileOnly(self):
+        """Test the launcher with no arguments except for a usd file."""
+
+        ValidationOnlyLauncher().Run(["foo.usda"])
 
     def test_cameraFlag(self):
         """Only a valid non-root prim path or a camera name should be

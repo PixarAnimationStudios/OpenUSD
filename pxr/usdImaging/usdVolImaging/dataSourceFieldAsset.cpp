@@ -41,14 +41,14 @@ static
 const TfTokenVector &
 _GetStaticUsdAttributeNames()
 {
-    // Get names from the subclass of UsdVolFieldAsset and
-    // names inherited from FieldAsset schema but stop there
+    // Get names from the subclass of UsdVolVolumeFieldAsset and
+    // names inherited from VolumeFieldAsset schema but stop there
     // and do not pick up, e.g., the xform attributes which are
     // handled elsewhere and under a different data source
     // locator.
     //
     static TfTokenVector result = _ConcatenateAttributeNames(
-        UsdVolFieldAsset::GetSchemaAttributeNames(
+        UsdVolVolumeFieldAsset::GetSchemaAttributeNames(
             /* includeInherited = */ false),
         FieldSubclass::GetSchemaAttributeNames(
             /* includeInherited = */ false));

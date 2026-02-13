@@ -16,13 +16,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-Usd_Resolver::Usd_Resolver(const PcpPrimIndex* index, bool skipEmptyNodes) 
-     :_index(index)
-     , _skipEmptyNodes(skipEmptyNodes)
-     , _resolveTarget(nullptr)
+Usd_Resolver::Usd_Resolver(const PcpPrimIndex* index,
+                           bool skipEmptyNodes,
+                           const UsdResolveInfo *resolveInfo)
+    : _index(index)
+    , _skipEmptyNodes(skipEmptyNodes)
+    , _resolveTarget(nullptr)
 {
     PcpNodeRange range = _index->GetNodeRange();
-    _curNode = range.first;
+    _curNode = resolveInfo && resolveInfo->_node
+        ? std::find(range.first, range.second, resolveInfo->_node)
+        : range.first;
     _endNode = range.second;
 
     _SkipEmptyNodes();
@@ -31,13 +35,16 @@ Usd_Resolver::Usd_Resolver(const PcpPrimIndex* index, bool skipEmptyNodes)
     if (IsValid()) {
         const SdfLayerRefPtrVector& layers = 
             _curNode->GetLayerStack()->GetLayers();
-        _curLayer = layers.begin();
+        _curLayer = resolveInfo && resolveInfo->_layer
+            ? std::find(layers.begin(), layers.end(), resolveInfo->_layer)
+            : layers.begin();
         _endLayer = layers.end();
     }
 }
 
-Usd_Resolver::Usd_Resolver(
-    const UsdResolveTarget *resolveTarget, bool skipEmptyNodes) 
+Usd_Resolver::Usd_Resolver(const UsdResolveTarget *resolveTarget,
+                           bool skipEmptyNodes,
+                           const UsdResolveInfo *resolveInfo)
     : _skipEmptyNodes(skipEmptyNodes)
     , _resolveTarget(resolveTarget)
 {
@@ -47,7 +54,10 @@ Usd_Resolver::Usd_Resolver(
     }
 
     _index = _resolveTarget->GetPrimIndex();
-    _curNode = _resolveTarget->_startNodeIt;
+    _curNode = resolveInfo && resolveInfo->_node
+        ? std::find(_resolveTarget->_startNodeIt,
+                    _index->GetNodeRange().second, resolveInfo->_node)
+        : _resolveTarget->_startNodeIt;
     _endNode = _index->GetNodeRange().second;
 
     // If the resolve target provided a node to stop at before the end of the
@@ -74,12 +84,19 @@ Usd_Resolver::Usd_Resolver(
         const SdfLayerRefPtrVector& layers = 
             _curNode->GetLayerStack()->GetLayers();
 
-        // If we haven't skipped past the resolve target's start node, start
+        // If we were given a resolveInfo with a layer, start there.  Otherwise
+        // if we haven't skipped past the resolve target's start node, start
         // with the resolve target's start layer.
-        if (_curNode == _resolveTarget->_startNodeIt) {
-            _curLayer = _resolveTarget->_startLayerIt;
-        } else {
-            _curLayer = layers.begin();
+        if (resolveInfo && resolveInfo->_layer) {
+            _curLayer = std::find(layers.begin(), layers.end(),
+                                  resolveInfo->_layer);
+        }
+        else {
+            if (_curNode == _resolveTarget->_startNodeIt) {
+                _curLayer = _resolveTarget->_startLayerIt;
+            } else {
+                _curLayer = layers.begin();
+            }
         }
 
         // If we reached the "stop at node" (and the resolver is still valid),

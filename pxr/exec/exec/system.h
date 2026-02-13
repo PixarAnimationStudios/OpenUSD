@@ -115,6 +115,12 @@ private:
     void _InvalidateMetadataValues(
         TfSpan<const std::pair<SdfPath, TfToken>> invalidObjects);
 
+    // Notifies the system to invalidate value keys that don't have a compiled
+    // leaf node.
+    //
+    EXEC_API
+    void _InvalidateUnknownValues();
+
 private:
     EsfStage _stage;
 

@@ -16,7 +16,6 @@
 #include "pxr/exec/exec/system.h"
 #include "pxr/exec/exec/timeChangeInvalidationResult.h"
 #include "pxr/exec/exec/typeRegistry.h"
-#include "pxr/exec/exec/types.h"
 #include "pxr/exec/exec/valueExtractor.h"
 #include "pxr/exec/exec/valueKey.h"
 
@@ -220,6 +219,35 @@ Exec_RequestImpl::DidInvalidateComputedValues(
     // Only invoke the invalidation callback if there are any invalid indices
     // from this request.
     if (!invalidIndices.empty()) {
+        if (ARCH_UNLIKELY(TfDebug::IsEnabled(EXEC_REQUEST_INVALIDATION))) {
+            _OutputInvalidationResultDebugMsg(
+                TF_FUNC_NAME(), invalidIndices, invalidInterval);
+        }
+        TRACE_FUNCTION_SCOPE("value invalidation callback");
+        _valueCallback(invalidIndices, invalidInterval);
+    }
+}
+
+void
+Exec_RequestImpl::DidInvalidateUnknownValues()
+{
+    TRACE_FUNCTION();
+
+    // Gather all indices that don't have a compiled leaf output.
+    ExecRequestIndexSet invalidIndices;
+    for (size_t index = 0; index < _leafOutputs.size(); ++index) {
+        if (!_leafOutputs[index] &&
+            !_lastInvalidatedIndices.IsSet(index)) {
+            invalidIndices.insert(static_cast<int>(index));
+            _lastInvalidatedIndices.Set(index);
+        }
+    }
+
+    // Only invoke the invalidation callback if there are any invalid indices
+    // from this request.
+    if (!invalidIndices.empty()) {
+        static const EfTimeInterval invalidInterval =
+            EfTimeInterval::GetFullInterval();
         if (ARCH_UNLIKELY(TfDebug::IsEnabled(EXEC_REQUEST_INVALIDATION))) {
             _OutputInvalidationResultDebugMsg(
                 TF_FUNC_NAME(), invalidIndices, invalidInterval);

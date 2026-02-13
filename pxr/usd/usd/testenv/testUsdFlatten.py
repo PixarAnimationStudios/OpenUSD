@@ -159,11 +159,11 @@ class TestUsdFlatten(unittest.TestCase):
         #    is not authored at all.
 
         # verify that flattening a valid clip range works
-        assert _CompareFlattened("clips/root.usd", 
+        assert _CompareFlattened("clips/root.usda", 
                                  "/World/fx/Particles_Splash/points",
                                  range(101, 105))
 
-        assert _CompareFlattened("hole_clips/root.usd", 
+        assert _CompareFlattened("hole_clips/root.usda", 
                                 "/World/fx/Particles_Splash/points",
                                 range(101, 105))
 

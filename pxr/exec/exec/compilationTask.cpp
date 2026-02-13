@@ -10,6 +10,7 @@
 
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/exec/exec/compilerTaskSyncBase.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -66,19 +67,6 @@ Exec_CompilationTask::RemoveDependency()
     return numDependents;
 }
 
-Exec_CompilerTaskSyncBase::ClaimResult
-Exec_CompilationTask::TaskDependencies::ClaimSubtask(
-    const Exec_OutputKey::Identity &key)
-{
-    const Exec_CompilerTaskSyncBase::ClaimResult result =
-        Exec_CompilationState::TaskSyncAccess::_GetOutputProvidingTaskSync(
-            &_compilationState).Claim(key, _task);
-    if (result == Exec_CompilerTaskSyncBase::ClaimResult::Wait) {
-        _hasDependencies = true;
-    }
-    return result;
-}
-
 void
 Exec_CompilationTask::operator()(const int depth) const
 {
@@ -98,9 +86,20 @@ Exec_CompilationTask::operator()(const int depth) const
     // calling RemoveDependency().
     thisTask->AddDependency();
 
-    // Call the _Compile() method, which is the main entry point into
-    // compilation tasks, and record the task we are told to run next.
+    // Execute the task, either by invoking its _Compile method, or its
+    // _Interrupt method, and record the task we are told to run next.
     Exec_CompilationTask *const nextTask = [thisTask]{
+        
+        // If compilation was interrupted, run the _Interrupt callback for the
+        // task. There is no next task.
+        if (ARCH_UNLIKELY(
+            thisTask->_compilationState.GetInterruptState().WasInterrupted())) {
+            thisTask->_Interrupt(thisTask->_compilationState);
+            return static_cast<Exec_CompilationTask *>(nullptr);
+        }
+
+        // Otherwise, compilation is not interrupted. Run the _Compile callback,
+        // which may spawn a subtask to be run as the next task.
         TaskPhases taskPhases(
             thisTask, thisTask->_compilationState, thisTask->_taskPhase);
         thisTask->_Compile(thisTask->_compilationState, taskPhases);
@@ -165,11 +164,66 @@ Exec_CompilationTask::operator()(const int depth) const
     delete thisTask;
 }
 
+bool
+Exec_CompilationTask::TaskDependencies::ClaimOutputProvidingTask(
+    const Exec_OutputKey::Identity &key)
+{
+    const Exec_CompilerTaskSyncBase::ClaimResult result =
+        Exec_CompilationState::TaskSyncAccess::_GetOutputProvidingTaskSync(
+            &_compilationState).Claim(key, _task);
+    if (result == Exec_CompilerTaskSyncBase::ClaimResult::Wait) {
+        _hasDependencies = true;
+    }
+    return result == Exec_CompilerTaskSyncBase::ClaimResult::Claimed;
+}
+
+bool
+Exec_CompilationTask::TaskDependencies::ClaimCycleDetectingTask(
+    const VdfNode *const node)
+{
+    const Exec_CompilerTaskSyncBase::ClaimResult result =
+        Exec_CompilationState::TaskSyncAccess::_GetCycleDetectingTaskSync(
+            &_compilationState).Claim(node, _task);
+    if (result == Exec_CompilerTaskSyncBase::ClaimResult::Wait) {
+        _hasDependencies = true;
+    }
+    return result == Exec_CompilerTaskSyncBase::ClaimResult::Claimed;
+}
+
 void
-Exec_CompilationTask::_MarkDone(const Exec_OutputKey::Identity &key)
+Exec_CompilationTask::TaskDependencies::WaitOnInputRecompilationTask(
+    const VdfInput *const input)
+{
+    const Exec_CompilerTaskSyncBase::WaitResult result =
+        Exec_CompilationState::TaskSyncAccess::_GetInputRecompilationTaskSync(
+            &_compilationState).WaitOn(input, _task);
+    if (result == Exec_CompilerTaskSyncBase::WaitResult::Wait) {
+        _hasDependencies = true;
+    }
+}
+
+void
+Exec_CompilationTask::TaskDependencies::MarkDoneOutputProvidingTask(
+    const Exec_OutputKey::Identity &key)
 {
     Exec_CompilationState::TaskSyncAccess::_GetOutputProvidingTaskSync(
         &_compilationState).MarkDone(key);
+}
+
+void
+Exec_CompilationTask::TaskDependencies::MarkDoneInputRecompilationTask(
+    const VdfInput *const input)
+{
+    Exec_CompilationState::TaskSyncAccess::_GetInputRecompilationTaskSync(
+        &_compilationState).MarkDone(input);
+}
+
+void
+Exec_CompilationTask::TaskDependencies::MarkDoneCycleDetectingTask(
+    const VdfNode *const node)
+{
+    Exec_CompilationState::TaskSyncAccess::_GetCycleDetectingTaskSync(
+        &_compilationState).MarkDone(node);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

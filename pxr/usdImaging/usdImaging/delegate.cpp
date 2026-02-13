@@ -88,7 +88,7 @@ UsdImagingDelegate::UsdImagingDelegate(
     , _primvarDescCache()
     , _rootXf(1.0)
     , _rootIsVisible(true)
-    , _time(std::numeric_limits<double>::infinity())
+    , _time(std::numeric_limits<double>::max())
     , _cameraPathForSampling()
     , _refineLevelFallback(0)
     , _reprFallback()

@@ -13,6 +13,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#define USD_SKEL_IMAGING_EXT_COMPUTATION_TYPE_TOKENS \
+    (points) \
+    (normals)
+
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdSkelImagingExtComputationTypeTokens, USDSKELIMAGING_API,
+    USD_SKEL_IMAGING_EXT_COMPUTATION_TYPE_TOKENS);
+
 #define USD_SKEL_IMAGING_PRIM_TYPE_TOKENS \
     (skeleton)                            \
     (skelAnimation)                       \
@@ -23,8 +31,10 @@ TF_DECLARE_PUBLIC_TOKENS(
     USDSKELIMAGING_API, USD_SKEL_IMAGING_PRIM_TYPE_TOKENS);
 
 #define USD_SKEL_IMAGING_EXT_COMPUTATION_NAME_TOKENS                \
-    ((aggregatorComputation, "skinningInputAggregatorComputation")) \
-    ((computation,           "skinningComputation"))
+    ((pointsAggregatorComputation, "skinningPointsInputAggregatorComputation")) \
+    ((pointsComputation,           "skinningPointsComputation")) \
+    ((normalsAggregatorComputation, "skinningNormalsInputAggregatorComputation")) \
+    ((normalsComputation,           "skinningNormalsComputation"))
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdSkelImagingExtComputationNameTokens, USDSKELIMAGING_API,
@@ -38,7 +48,10 @@ TF_DECLARE_PUBLIC_TOKENS(
     (hasConstantInfluences)                                           \
     (blendShapeOffsets)                                               \
     (blendShapeOffsetRanges)                                          \
-    (numBlendShapeOffsetRanges)
+    (numBlendShapeOffsetRanges)                                       \
+    (restNormals)                                                     \
+    (faceVertexIndices)                                               \
+    (hasFaceVaryingNormals)
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdSkelImagingExtAggregatorComputationInputNameTokens, USDSKELIMAGING_API,
@@ -89,7 +102,8 @@ TF_DECLARE_PUBLIC_TOKENS(
 
 
 #define USD_SKEL_IMAGING_EXT_COMPUTATION_OUTPUT_NAME_TOKENS \
-    (skinnedPoints)                                    
+    (skinnedPoints)                                         \
+    (skinnedNormals)
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdSkelImagingExtComputationOutputNameTokens, USDSKELIMAGING_API,

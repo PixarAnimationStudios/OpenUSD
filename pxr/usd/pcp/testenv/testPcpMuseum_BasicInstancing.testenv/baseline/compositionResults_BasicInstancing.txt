@@ -188,3 +188,52 @@ Results for composing </NotAnInstance/Child>
 Prim Stack:
     root.usda            /NotAnInstance/Child
 
+------------------------------------------------------------------------
+Results for composing </SubrootReferences>
+
+Prim Stack:
+    root.usda            /SubrootReferences
+
+Child names:
+     ['Instanced', 'Uninstanced']
+
+------------------------------------------------------------------------
+Results for composing </SubrootReferences/Instanced>
+
+Prim Stack:
+    root.usda            /SubrootReferences/Instanced
+    root.usda            /_class_Prop/geom
+    set.usda             /_class_Prop/geom
+    prop.usda            /Prop/geom
+
+Property names:
+     ['x']
+
+Property stacks:
+/SubrootReferences/Instanced.x:
+    root.usda            /_class_Prop/geom.x
+    set.usda             /_class_Prop/geom.x
+    prop.usda            /Prop/geom.x
+
+------------------------------------------------------------------------
+Results for composing </SubrootReferences/Uninstanced>
+
+Prim Stack:
+    root.usda            /SubrootReferences/Uninstanced
+    root.usda            /Set_1/UninstancedProp/geom
+    root.usda            /_class_Prop/geom
+    set.usda             /Set/UninstancedProp/geom
+    set.usda             /_class_Prop/geom
+    prop.usda            /Prop/geom
+
+Property names:
+     ['x']
+
+Property stacks:
+/SubrootReferences/Uninstanced.x:
+    root.usda            /Set_1/UninstancedProp/geom.x
+    root.usda            /_class_Prop/geom.x
+    set.usda             /Set/UninstancedProp/geom.x
+    set.usda             /_class_Prop/geom.x
+    prop.usda            /Prop/geom.x
+

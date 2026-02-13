@@ -671,7 +671,13 @@ PcpCache::FindSiteDependencies(
             } else if (indexPath.IsAbsoluteRootOrPrimPath()) {
                 return bool(FindPrimIndex(indexPath));
             } else if (indexPath.IsPropertyPath()) {
-                return bool(FindPropertyIndex(indexPath));
+                if (_usd) {
+                    // In usd mode, the cache does not store property indexes, 
+                    // so return whether the parent prim is in the cache.
+                    return bool(FindPrimIndex(indexPath.GetParentPath()));
+                } else {
+                    return bool(FindPropertyIndex(indexPath));
+                }                               
             } else {
                 return false;
             }
@@ -1374,17 +1380,13 @@ struct PcpCache::_ParallelIndexer
     void Prepare(_UntypedIndexingChildrenPredicate childrenPred,
                  PcpPrimIndexInputs baseInputs,
                  PcpErrorVector *allErrors,
-                 const ArResolverScopedCache* parentCache,
-                 const char *mallocTag1,
-                 const char *mallocTag2) {
+                 const ArResolverScopedCache* parentCache) {
         _childrenPredicate = childrenPred;
         _baseInputs = baseInputs;
         // Set the includedPayloadsMutex in _baseInputs.
         _baseInputs.IncludedPayloadsMutex(&_includedPayloadsMutex);
         _allErrors = allErrors;
         _parentCache = parentCache;
-        _mallocTag1 = mallocTag1;
-        _mallocTag2 = mallocTag2;
 
         // Clear the roots to compute.
         _toCompute.clear();
@@ -1433,7 +1435,6 @@ struct PcpCache::_ParallelIndexer
     // indexes and publishes them to the cache.
     void _ComputeIndex(const PcpPrimIndex *parentIndex,
                        SdfPath path, bool checkCache) {
-        TfAutoMallocTag2  tag(_mallocTag1, _mallocTag2);
         ArResolverScopedCache taskCache(_parentCache);
 
         // Check to see if we already have an index for this guy.  If we do,
@@ -1622,8 +1623,6 @@ struct PcpCache::_ParallelIndexer
     PcpErrorVector *_allErrors;
     tbb::spin_mutex _allErrorsMutex;
     const ArResolverScopedCache* _parentCache;
-    char const *_mallocTag1;
-    char const *_mallocTag2;
     vector<pair<const PcpPrimIndex *, SdfPath> > _toCompute;
     tbb::concurrent_queue<
         std::pair<_PrimIndexCache::NodeHandle, PcpPrimIndexOutputs>
@@ -1636,17 +1635,13 @@ PcpCache::_ComputePrimIndexesInParallel(
     const SdfPathVector &roots,
     PcpErrorVector *allErrors,
     _UntypedIndexingChildrenPredicate childrenPred,
-    _UntypedIndexingPayloadPredicate payloadPred,
-    const char *mallocTag1,
-    const char *mallocTag2)
+    _UntypedIndexingPayloadPredicate payloadPred)
 {
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
     TRACE_FUNCTION();
 
     ArResolverScopedCache parentCache;
-    TfAutoMallocTag2 tag(mallocTag1, mallocTag2);
-
     if (!_layerStack)
         ComputeLayerStack(GetLayerStackIdentifier(), allErrors);
 
@@ -1667,8 +1662,8 @@ PcpCache::_ComputePrimIndexesInParallel(
     PcpPrimIndexInputs inputs = GetPrimIndexInputs();
     inputs.IncludePayloadPredicate(payloadPred);
 
-    indexer->Prepare(childrenPred, inputs, allErrors, &parentCache,
-                     mallocTag1, mallocTag2);
+    indexer->Prepare(childrenPred, inputs, allErrors, &parentCache);
+                     
     
     for (const auto& rootPath : roots) {
         // Obtain the parent index, if this is not the absolute root.  Note that

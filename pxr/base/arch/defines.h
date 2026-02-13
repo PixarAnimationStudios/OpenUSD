@@ -101,4 +101,61 @@
     #endif
 #endif
 
+//
+// Sanitizers
+//
+
+// For most compilers sanitizers are enabled with something similar to
+// -fsanitize={address,thread,undefined}.
+// But detecting if the compiler is currently trying to make a sanitized build
+// can vary depending on the compiler (or between versions of the compiler).
+// The following checks will determine if the compiler is making a sanitized
+// build and set a definition if so.
+//
+// These definitions can be used to conditionally compile code where
+// instrumentation from the sanitizer needs augmentation; for instance
+// building a test for bad memory allocations when using address
+// sanitizers. Such a test would produce a false-positive from
+// address sanitizer at run-time resulting in a failed test.
+//
+// The definitions will only be defined if the compiler is actually
+// building with a specific sanitizer. The absence of a definition
+// means the compiler is not building with that sanitizer.
+#if defined(ARCH_COMPILER_CLANG)
+    #if defined(__has_feature)
+        #if __has_feature(address_sanitizer)
+            #define ARCH_SANITIZE_ADDRESS
+        #endif
+
+        // Definitions for other sanitizers intentionally
+        // omitted here
+
+    #endif
+#elif defined(ARCH_COMPILER_GCC)
+    #if defined(__has_feature)
+        #if __has_feature(address_sanitizer)
+            #define ARCH_SANITIZE_ADDRESS
+        #endif
+
+        // Definitions for other sanitizers intentionally
+        // omitted here
+
+    #else
+        #if defined(__SANITIZE_ADDRESS__)
+            #define ARCH_SANITIZE_ADDRESS
+        #endif
+
+        // Definitions for other sanitizers intentionally
+        // omitted here
+
+    #endif
+#elif defined(ARCH_COMPILER_MSVC)
+    #if defined(__SANITIZE_ADDRESS__)
+        #define ARCH_SANITIZE_ADDRESS
+    #endif
+
+    // Definitions for other sanitizers intentionally
+    // omitted here
+#endif
+
 #endif // PXR_BASE_ARCH_DEFINES_H 

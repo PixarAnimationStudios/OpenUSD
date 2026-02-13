@@ -668,6 +668,16 @@ function(pxr_build_test TEST_NAME)
     # XXX -- We shouldn't have to install to run tests.
     if(EMSCRIPTEN)
         target_compile_options(${TEST_NAME} PRIVATE "SHELL:-s MAIN_MODULE=1")
+
+        # Note: Using NODEFS allows us to mount the temp test directory set 
+        # up by the test runner into the virtual filesystem.  This allows us
+        # to access test assets as well as persist any files created during
+        # test execution.  This is setup as a pre-run step by test.pre.js.
+        target_link_options(${TEST_NAME} PRIVATE 
+            "SHELL:-lnodefs.js"
+            "SHELL:-sFORCE_FILESYSTEM=1"
+            "SHELL:--pre-js '${PROJECT_SOURCE_DIR}/cmake/macros/test.pre.js'"
+        )
         install(
             FILES
             ${CMAKE_CURRENT_BINARY_DIR}/${TEST_NAME}.wasm
@@ -728,15 +738,8 @@ function(pxr_test_scripts)
 endfunction() # pxr_test_scripts
 
 function(pxr_install_test_dir)
-    if (NOT PXR_BUILD_TESTS)
-        return()
-    endif()
-
-    # If the package for this test does not have a target it must not be
-    # getting built, in which case we can skip building associated tests.
-    if (NOT TARGET ${PXR_PACKAGE})
-        return()
-    endif()
+    message(DEPRECATION "Please use the TESTENV parameter of pxr_register_test "
+                        "to specify test asset directories.")
 
     cmake_parse_arguments(bt
         "" 
@@ -745,10 +748,9 @@ function(pxr_install_test_dir)
         ${ARGN}
     )
 
-    # XXX -- We shouldn't have to install to run tests.
-    install(
-        DIRECTORY ${bt_SRC}/
-        DESTINATION tests/ctest/${bt_DEST}
+    _pxr_install_test_dir(
+        SRC ${bt_SRC}
+        DEST ${bt_DEST}
     )
 endfunction() # pxr_install_test_dir
 
@@ -773,7 +775,7 @@ function(pxr_register_test TEST_NAME)
             FILES_EXIST FILES_DONT_EXIST
             CLEAN_OUTPUT
             EXPECTED_RETURN_CODE
-            TESTENV
+            TESTENV TESTENV_DEST
             WARN WARN_PERCENT HARD_WARN FAIL FAIL_PERCENT HARD_FAIL)
     set(MULTI_VALUE_ARGS DIFF_COMPARE IMAGE_DIFF_COMPARE ENV PRE_PATH POST_PATH)
 
@@ -842,13 +844,34 @@ function(pxr_register_test TEST_NAME)
         set(testWrapperCmd ${testWrapperCmd} --post-command-stderr-redirect=${bt_POST_COMMAND_STDERR_REDIRECT})
     endif()
 
-    # Not all tests will have testenvs, but if they do let the wrapper know so
-    # it can copy the testenv contents into the run directory. By default,
-    # assume the testenv has the same name as the test but allow it to be
-    # overridden by specifying TESTENV.
+    # Determine test environment directory and set up any necessary
+    # directory copying during the install step. testenvDir is passed to the
+    # test wrapper so it can copy the testenv contents into the run directory.
     if (bt_TESTENV)
-        set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${bt_TESTENV})
-    else()
+        if (bt_TESTENV_DEST)
+            # if a dest directory is specified, then we will assume that it
+            # will contain a folder with ${TEST_NAME} in its path which will
+            # be set as the testenvDir below. This is currently only used
+            # for a few specific tests and in general we prefer to use the
+            # automatic method below.
+            _pxr_install_test_dir(SRC ${bt_TESTENV} DEST ${bt_TESTENV_DEST})
+        else()
+            # when using the testenv without a specific destination set, we
+            # want to set the testenvDir to the folder name of the testenv dir
+            # we copied. This allows multiple tests to reference the same set
+            # of test files even though their test name will be different.
+            cmake_path(GET bt_TESTENV FILENAME testNameDir)
+            _pxr_install_test_dir(SRC ${bt_TESTENV} DEST ${testNameDir})
+            set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${testNameDir})
+        endif()
+    endif()
+
+    # By default we will simply use the test name for the testenvDir. In
+    # the case that  no testenv is specified, this will point to a non
+    # existant folder and no copy will be executed. In the case where a
+    # destination was explicitly specified, the directory which matches
+    # the test name and its contents will be recursively copied.
+    if (NOT DEFINED testenvDir)
         set(testenvDir ${CMAKE_INSTALL_PREFIX}/tests/ctest/${TEST_NAME})
     endif()
 
@@ -945,6 +968,15 @@ function(pxr_register_test TEST_NAME)
     # Set this first, so that env vars passed to pxr_register_test can turn off
     # TF_FATAL_VERIFY where desired.
     set(testWrapperCmd ${testWrapperCmd} --env-var=TF_FATAL_VERIFY=1)
+
+    # Allow env vars to be set via a global variable to make it easier
+    # to affect a set of tests (e.g., all tests in a library). Set
+    # this first to allow tests to override these env vars.
+    if (PXR_TEST_ENV_VARS)
+        foreach(env ${PXR_TEST_ENV_VARS})
+            set(testWrapperCmd ${testWrapperCmd} --env-var=${env})
+        endforeach()
+    endif()
 
     if (bt_ENV)
         foreach(env ${bt_ENV})
@@ -1048,6 +1080,17 @@ function(pxr_setup_plugins)
         DESTINATION plugin/usd
         RENAME "plugInfo.json"
     )
+
+    # For emscripten builds, we need to ensure that the top level plugInfo.json
+    # file is included in the resulting application bundle.  When installing,
+    # we are sure to reference the installed location of this file.
+    if (EMSCRIPTEN)
+        foreach(lib ${PXR_CORE_LIBS})
+          target_link_options(${lib} PUBLIC
+              "$<BUILD_INTERFACE:SHELL:--embed-file ${CMAKE_CURRENT_BINARY_DIR}/plugins_plugInfo.json@/usd/plugInfo.json>"
+              "$<INSTALL_INTERFACE:SHELL:--embed-file $<INSTALL_PREFIX>/lib/usd/plugInfo.json@/usd/plugInfo.json>")
+        endforeach()
+    endif()
 endfunction() # pxr_setup_plugins
 
 function(pxr_add_extra_plugins PLUGIN_AREAS)
@@ -1161,7 +1204,7 @@ function(pxr_toplevel_prologue)
                 ARCHIVE DESTINATION ${libInstallPrefix}
                 RUNTIME DESTINATION ${libInstallPrefix}
             )
-            if(WIN32)
+            if(WIN32 AND BUILD_SHARED_LIBS)
                 install(
                     FILES $<TARGET_PDB_FILE:usd_m>
                     DESTINATION ${libInstallPrefix}

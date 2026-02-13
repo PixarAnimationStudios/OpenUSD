@@ -20,7 +20,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (hdxOitDepthBuffer)         \
     (hdxOitIndexBuffer)         \
     (hdxSelectionBuffer)        \
-    (imagerVersion)             \
+    (imagerVersion) /* \deprecated */ \
     (lightingContext)           \
     (lightingShader)            \
     (occludedSelectionOpacity)  \

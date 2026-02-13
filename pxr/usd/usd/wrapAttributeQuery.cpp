@@ -83,6 +83,14 @@ _Get(const UsdAttributeQuery& self, UsdTimeCode time)
     return UsdVtValueToPython(val);
 }
 
+static TfPyObjWrapper
+_GetFallbackValue(const UsdAttributeQuery &self)
+{
+    VtValue val;
+    self.GetFallbackValue(&val);
+    return UsdVtValueToPython(val);
+}
+
 } // anonymous namespace 
 
 void wrapUsdAttributeQuery()
@@ -138,6 +146,7 @@ void wrapUsdAttributeQuery()
                 &UsdAttributeQuery::HasAuthoredValueOpinion)
         .def("HasAuthoredValue", &UsdAttributeQuery::HasAuthoredValue)
         .def("HasFallbackValue", &UsdAttributeQuery::HasFallbackValue)
+        .def("GetFallbackValue", _GetFallbackValue)
 
         .def("ValueMightBeTimeVarying", 
              &UsdAttributeQuery::ValueMightBeTimeVarying)

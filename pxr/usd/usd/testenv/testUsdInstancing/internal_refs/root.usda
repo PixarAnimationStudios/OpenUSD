@@ -1,0 +1,21 @@
+#usda 1.0
+
+def "Class"
+{
+}
+
+def "Parent"
+{
+    def "Child" (
+        instanceable = true
+        inherits = </Class>
+    )
+    {
+    }
+}
+
+def "ParentRef" (
+    references = </Parent>
+)
+{
+}

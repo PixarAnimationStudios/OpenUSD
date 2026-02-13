@@ -94,17 +94,12 @@ SdfPrimSpec::_New(const SdfPrimSpecHandle &parentPrim,
     // Group all the edits in a single change block.
     SdfChangeBlock block;
 
-    // Use the special "pass" token if the caller tried to
-    // create a typeless def
-    TfToken type = (typeName.IsEmpty() && spec == SdfSpecifierDef) 
-                   ? SdfTokens->AnyTypeToken : typeName;
-
     SdfLayerHandle layer = parentPrimPtr->GetLayer();
     SdfPath childPath = parentPrimPtr->GetPath().AppendChild(name);
 
     // PrimSpecs are considered inert if their specifier is
-    // "over" and the type is not specified.
-    bool inert = (spec == SdfSpecifierOver) && type.IsEmpty();
+    // "over" and the typeName is not specified.
+    bool inert = (spec == SdfSpecifierOver) && typeName.IsEmpty();
 
     if (!Sdf_ChildrenUtils<Sdf_PrimChildPolicy>::CreateSpec(
                 layer, childPath, SdfSpecTypePrim, inert)) {
@@ -112,8 +107,8 @@ SdfPrimSpec::_New(const SdfPrimSpecHandle &parentPrim,
     }
 
     layer->SetField(childPath, SdfFieldKeys->Specifier, spec);
-    if (!type.IsEmpty()) {
-        layer->SetField(childPath, SdfFieldKeys->TypeName, type);
+    if (!typeName.IsEmpty()) {
+        layer->SetField(childPath, SdfFieldKeys->TypeName, typeName);
     }
     
     return layer->GetPrimAtPath(childPath);

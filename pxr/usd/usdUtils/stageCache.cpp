@@ -48,14 +48,25 @@ UsdUtilsStageCache::GetSessionLayerForVariantSelections(
         const TfToken& modelName,
         const std::vector<std::pair<std::string, std::string> >&variantSelections)
 {
+    return GetSessionLayerForVariantSelections(
+        SdfPath::AbsoluteRootPath().AppendChild(modelName), variantSelections);
+}
+
+SdfLayerRefPtr 
+UsdUtilsStageCache::GetSessionLayerForVariantSelections(
+        const SdfPath& primPath,
+        const std::vector<std::pair<std::string, std::string> >&variantSelections)
+{
     // Sort so that the key is deterministic.
     std::vector<std::pair<std::string, std::string> > variantSelectionsSorted(
         variantSelections.begin(), variantSelections.end());
     std::sort(variantSelectionsSorted.begin(), variantSelectionsSorted.end());
 
-    std::string sessionKey = modelName;
-    TF_FOR_ALL(itr, variantSelectionsSorted) {
-        sessionKey += ":" + itr->first + "=" + itr->second;
+    std::string sessionKey = primPath.GetAsString();
+    for (const auto& varSetAndSel : variantSelectionsSorted) {
+        const std::string& varSet = varSetAndSel.first;
+        const std::string& varSel = varSetAndSel.second;
+        sessionKey += ":" + varSet + "=" + varSel;
     }
 
     SdfLayerRefPtr ret;
@@ -68,14 +79,12 @@ UsdUtilsStageCache::GetSessionLayerForVariantSelections(
         if (itr == sessionLayerMap.end()) {
             SdfLayerRefPtr layer = SdfLayer::CreateAnonymous();
             if (!variantSelections.empty()) {
-                SdfPrimSpecHandle over = SdfPrimSpec::New(
-                    layer,
-                    modelName,
-                    SdfSpecifierOver);
-                TF_FOR_ALL(varSelItr, variantSelections) {
+                SdfPrimSpecHandle over = SdfCreatePrimInLayer(layer, primPath);
+                for (const auto& varSetAndSel : variantSelections) {
+                    const std::string& varSet = varSetAndSel.first;
+                    const std::string& varSel = varSetAndSel.second;
                     // Construct the variant opinion for the session layer.
-                    over->GetVariantSelections()[varSelItr->first] =
-                        varSelItr->second;
+                    over->GetVariantSelections()[varSet] = varSel;
                 }
             }
             sessionLayerMap[sessionKey] = layer;
@@ -89,4 +98,3 @@ UsdUtilsStageCache::GetSessionLayerForVariantSelections(
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

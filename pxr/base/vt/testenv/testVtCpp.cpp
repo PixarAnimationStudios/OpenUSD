@@ -8,8 +8,12 @@
 #include "pxr/pxr.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/arrayEdit.h"
+#include "pxr/base/vt/arrayEditBuilder.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/base/vt/valueComposeOver.h"
+#include "pxr/base/vt/valueRef.h"
+#include "pxr/base/vt/valueTransform.h"
 #include "pxr/base/vt/streamOut.h"
 #include "pxr/base/vt/traits.h"
 #include "pxr/base/vt/types.h"
@@ -53,6 +57,7 @@
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/span.h"
 
+#include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/pragmas.h"
@@ -568,33 +573,6 @@ static void testArray() {
         TF_AXIOM(array.cback() == "aloha");
         TF_AXIOM(aloha == "aloha");
     }
-
-// Note: These specific test cases below are disabled when compiling
-// for wasm. The way the resize is handled does not trigger a
-// std::bad_alloc exception but instead triggers a native exception
-// from the host that bubbles up to the JS runtime environment.
-#if !defined(ARCH_OS_WASM_VM)
-    {
-        // Test that attempts to create overly large arrays throw
-        // std::bad_alloc.
-        VtIntArray ia;
-        try {
-            ia.resize(ia.max_size());
-            TF_FATAL_ERROR("Did not throw std::bad_alloc");
-        }
-        catch (std::bad_alloc const &) {
-            // pass
-        }
-
-        try {
-            da.resize(da.max_size());
-            TF_FATAL_ERROR("Did not throw std::bad_alloc");
-        }
-        catch (std::bad_alloc const &) {
-            // pass
-        }
-    }
-#endif
     {
         // Test that checks that MakeUnique creates a unique copy of the data 
         // if necessary.
@@ -616,6 +594,42 @@ static void testArray() {
         }
     }
 }
+
+// When compiling with address sanitizer, disable `testArrayBadAlloc`.
+// With an address sanitized build the following test won't throw the
+// expected std::bad_alloc, so only run the test for non-sanitized builds.
+// Note that annotating the test function with ARCH_NO_SANITIZE_ADDRESS
+// won't work since the assertion occurs within VtArray and not the test.
+//
+// When compiling for wasm, disable `testArrayBadAlloc`. The way the resize
+// is handled does not trigger a std::bad_alloc exception but instead
+// triggers a native exception from the host that bubbles up to the JS
+// runtime environment.
+#if !defined(ARCH_SANITIZE_ADDRESS) && !defined(ARCH_OS_WASM_VM)
+static void testArrayBadAlloc()
+{
+    // Test that attempts to create overly large arrays throw
+    // std::bad_alloc
+
+    VtIntArray ia;
+    try {
+        ia.resize(ia.max_size());
+        TF_FATAL_ERROR("Did not throw std::bad_alloc");
+    }
+    catch (std::bad_alloc const &) {
+        // pass
+    }
+
+    VtDoubleArray da;
+    try {
+        da.resize(da.max_size());
+        TF_FATAL_ERROR("Did not throw std::bad_alloc");
+    }
+    catch (std::bad_alloc const &) {
+        // pass
+    }
+}
+#endif
 
 static void testRecursiveDictionaries()
 {
@@ -856,6 +870,8 @@ static void testDictionaryOverRecursive() {
     if ( VtDictionaryOver(dictionaryA, dictionaryB) != aOverBResult ) {
         die("VtDictionaryOver - two ref version");
     }
+    static_assert(VtValueTypeCanCompose<VtDictionary>::value);
+    TF_AXIOM(VtValueRef { dictionaryA }.CanComposeOver());
     if ( VtDictionaryOverRecursive(dictionaryA, dictionaryB) 
         != aOverBResultRecursive ) {
         die("VtDictionaryOverRecursive - two ref version recursive");
@@ -1956,9 +1972,323 @@ static void testVtCheapToCopy() {
     static_assert(!VtValueTypeHasCheapCopy<VtArray<TfToken>>::value, "");
 }
 
+static void testVtValueRef()
+{
+    VtValueRef ref;
+    TF_AXIOM(ref.IsEmpty());
+
+    {
+        int i = 123;
+        ref = VtValueRef(i);
+        TF_AXIOM(!ref.IsEmpty() && ref.IsHolding<int>());
+        TF_AXIOM(ref.Get<int>() == 123);
+    }
+
+    {
+        float f = 2.34;
+        ref = VtValueRef(f);
+        TF_AXIOM(!ref.IsEmpty() && ref.IsHolding<float>());
+        TF_AXIOM(ref.Get<float>() == 2.34f);
+    }
+
+    {
+        std::string s = "hello world";
+        ref = VtValueRef(s);
+        TF_AXIOM(ref.IsHolding<std::string>());
+        TF_AXIOM(ref.Get<std::string>() == "hello world");
+    }
+
+    {
+        // Test that string literals, which pass thru VtValueRef as const char
+        // *, will properly convert to VtValues holding std::strings.
+        std::string fromLiteral = [](VtValueRef literal) {
+            return VtValue { literal }.Get<std::string>();
+        }("hello literal");
+        TF_AXIOM(fromLiteral == "hello literal");
+    }
+
+    {
+        // There are some exotic cases where we put function pointers into
+        // VtValues -- check that VtValueRef can handle this.
+        auto fnPtr = +[](int x) { return x + x; };
+
+        VtValueRef fRef { fnPtr };
+
+        TF_AXIOM(!fRef.IsEmpty());
+        TF_AXIOM(fRef.IsHolding<int (*)(int)>());
+        TF_AXIOM(fRef.Get<int (*)(int)>()(123) == 246);
+    }
+
+    {
+        VtIntArray ia = {1, 2, 3, 4};
+        ref = VtValueRef(ia);
+        TF_AXIOM(ref.IsHolding<VtIntArray>());
+        TF_AXIOM(ref.IsArrayValued());
+        TF_AXIOM(ref.GetArraySize() == 4);
+        TF_AXIOM(ref.GetElementTypeid() == typeid(int));
+    }
+
+    {
+        VtValue intVal { 321 };
+        
+        ref = intVal.Ref();
+        TF_AXIOM(!ref.IsEmpty() && ref.IsHolding<int>());
+        TF_AXIOM(ref.Get<int>() == 321);
+
+        VtValue fromRef = ref;
+        TF_AXIOM(!fromRef.IsEmpty() && fromRef.IsHolding<int>());
+        TF_AXIOM(fromRef.Get<int>() == 321);
+
+        VtValue explicitRef(ref);
+        TF_AXIOM(!explicitRef.IsEmpty() && explicitRef.IsHolding<int>());
+        TF_AXIOM(explicitRef.Get<int>() == 321);
+    }
+
+    {
+        int counter = 0;
+
+        VtMutableValueRef ref { counter };
+
+        TF_AXIOM(ref.IsHolding<int>());
+        TF_AXIOM(ref.Get<int>() == 0);
+
+        ref = 1;
+        
+        TF_AXIOM(ref.Get<int>() == 1);
+        TF_AXIOM(counter == 1);
+
+        ref.UncheckedAssign(2);
+
+        TF_AXIOM(ref.Get<int>() == 2);
+        TF_AXIOM(counter == 2);
+
+        TF_AXIOM(ref.Mutate<int>([](int &c) { c *= 10; }));
+        TF_AXIOM(ref.Get<int>() == 20);
+        TF_AXIOM(counter == 20);
+
+        int tmp = 999;
+        ref.Swap(tmp);
+        TF_AXIOM(tmp == 20);
+        TF_AXIOM(counter == 999);
+        TF_AXIOM(ref.Get<int>() == 999);
+    }
+}
+
+static void
+testVtValueComposeOver()
+{
+    VtValue val { 123 };
+    TF_AXIOM(!val.CanComposeOver());
+    TF_AXIOM(!VtValueRef { 123 }.CanComposeOver());
+
+    VtIntArrayEdit iae;
+    VtValue iaev { iae };
+    TF_AXIOM(iaev.CanComposeOver());
+    TF_AXIOM(VtValueRef { iae }.CanComposeOver());
+
+    VtIntArrayEditBuilder builder;
+    VtIntArrayEdit zeroNine = builder
+        .Prepend(0)
+        .Append(9)
+        .FinalizeAndReset();
+
+    VtValue zeroNineVal { zeroNine };
+    VtValue emptyArrayVal { VtIntArray {} };
+
+    VtValue znVal = VtValueComposeOver(zeroNineVal, emptyArrayVal);
+    TF_AXIOM(znVal.IsHolding<VtIntArray>());
+    TF_AXIOM((znVal.Get<VtIntArray>() == VtIntArray {0,9}));
+
+    znVal = VtValueComposeOver(zeroNineVal, znVal);
+    TF_AXIOM(znVal.IsHolding<VtIntArray>());
+    TF_AXIOM((znVal.Get<VtIntArray>() == VtIntArray {0,0,9,9}));
+
+    {
+        // Check dictionaries with composing types.
+        const VtDictionary strong = {
+            { "zn", zeroNineVal },
+            { "ea", emptyArrayVal },
+            { "sub", VtValue {
+                    VtDictionary {
+                        { "zn", zeroNineVal },
+                        { "ea", emptyArrayVal }
+                    }
+                }
+            }
+        };
+                    
+        const VtDictionary weak = {
+            { "zn", VtValue { VtIntArray { 7,7,7 } } },
+            { "ea", VtValue { VtIntArray { 8,8,8 } } },
+            { "sub", VtValue {
+                    VtDictionary {
+                        { "zn", VtValue { VtIntArray { 7,7,7 } } },
+                        { "ea", VtValue { VtIntArray { 8,8,8 } } }
+                    }
+                }
+            }
+        };
+
+        VtValue comp = VtValueComposeOver(strong, weak);
+        TF_AXIOM(comp.IsHolding<VtDictionary>());
+
+        const VtDictionary expectedComp = {
+            { "zn", VtValue { VtIntArray { 0,7,7,7,9 } } },
+            { "ea", emptyArrayVal },
+            { "sub", VtValue {
+                    VtDictionary {
+                        { "zn", VtValue { VtIntArray { 0,7,7,7,9 } } },
+                        { "ea", emptyArrayVal }
+                    }
+                }
+            }
+        };
+        TF_AXIOM(comp == expectedComp);
+
+        VtValue compBG = VtValueComposeOver(strong, VtBackground);
+        TF_AXIOM(compBG.IsHolding<VtDictionary>());
+        const VtDictionary expectedCompBG = {
+            { "zn", VtValue { VtIntArray { 0,9 } } },
+            { "ea", emptyArrayVal },
+            { "sub", VtValue {
+                    VtDictionary {
+                        { "zn", VtValue { VtIntArray { 0,9 } } },
+                        { "ea", emptyArrayVal }
+                    }
+                }
+            }
+        };
+        TF_AXIOM(compBG == expectedCompBG);
+    }
+}
+
+enum XFormTestSwitch
+{
+    SwitchOff,
+    SwitchOn
+};
+
+struct XFormTestToggle {};
+
+PXR_NAMESPACE_OPEN_SCOPE
+VT_VALUE_TYPE_CAN_TRANSFORM(XFormTestSwitch);
+PXR_NAMESPACE_CLOSE_SCOPE
+
+static void
+testVtValueTransform()
+{
+    VtRegisterTransform(
+        +[](XFormTestSwitch const &sw, XFormTestToggle const &) {
+            return sw == SwitchOff ? SwitchOn : SwitchOff;
+        });
+    
+    XFormTestSwitch off = SwitchOff;
+    XFormTestSwitch on = SwitchOn;
+    XFormTestToggle toggle;
+
+    VtValueRef offRef = off;
+    VtValueRef onRef = on;
+
+    using SwitchArray = VtArray<XFormTestSwitch>;
+    using SwitchArrayEdit = VtArrayEdit<XFormTestSwitch>;
+
+    SwitchArray swa { off, on, off, on };
+
+    SwitchArrayEdit swae = VtArrayEditBuilder<XFormTestSwitch>()
+        .Append(off)
+        .Append(on)
+        .Append(off)
+        .Append(on)
+        .FinalizeAndReset();
+
+    VtDictionary dict {
+        { "off", VtValue { off } },
+        { "on", VtValue { on } },
+        { "swa", VtValue { swa } },
+        { "swae", VtValue { swae } },
+        { "untransformed", VtValue { "string" } }
+    };
+
+    VtDictionary recursiveDict = dict;
+    recursiveDict["subdict"] = dict;
+
+    {
+        TF_AXIOM(offRef.CanTransform());
+        TF_AXIOM(VtValueCanTransform(offRef, toggle));
+        TF_AXIOM(onRef.CanTransform());
+        TF_AXIOM(VtValueCanTransform(onRef, toggle));
+        
+        VtValue offXf = VtValueTryTransform(offRef, toggle);
+        TF_AXIOM(!offXf.IsEmpty());
+        TF_AXIOM(offXf.IsHolding<XFormTestSwitch>());
+        TF_AXIOM(offXf.Get<XFormTestSwitch>() == on);
+        
+        VtValue onXf = VtValueTryTransform(onRef, toggle);
+        TF_AXIOM(!onXf.IsEmpty());
+        TF_AXIOM(onXf.IsHolding<XFormTestSwitch>());
+        TF_AXIOM(onXf.Get<XFormTestSwitch>() == off);
+    }
+
+    // Check that VtArray can transform.
+    {
+        VtValue xf = VtValueTryTransform(swa, toggle);
+        TF_AXIOM(!xf.IsEmpty());
+        TF_AXIOM(xf.IsHolding<SwitchArray>());
+        TF_AXIOM((xf.Get<SwitchArray>() == SwitchArray { on, off, on, off }));
+    }
+
+    // Check that a VtDictionary holding both scalar, array, and arrayEdit
+    // elements can transform.
+    {
+        VtValue oxfd = VtValueTryTransform(dict, toggle);
+        TF_AXIOM(oxfd.IsHolding<VtDictionary>());
+        VtDictionary xfd = oxfd.Remove<VtDictionary>();
+
+        TF_AXIOM(xfd["off"].Get<XFormTestSwitch>() == on);
+        TF_AXIOM(xfd["on"].Get<XFormTestSwitch>() == off);
+        TF_AXIOM((xfd["swa"].Get<SwitchArray>() ==
+                  SwitchArray { on, off, on, off }));
+
+        SwitchArrayEdit ae = VtArrayEditBuilder<XFormTestSwitch>()
+            .Append(on).Append(off).Append(on).Append(off).FinalizeAndReset();
+        
+        TF_AXIOM(xfd["swae"].Get<SwitchArrayEdit>() == ae);
+        TF_AXIOM(xfd["untransformed"].Get<std::string>() == "string");
+    }
+
+    // Check that a VtDictionary holding both scalar, array, and arrayEdit
+    // elements can transform recursively.
+    {
+        VtValue oxfd = VtValueTryTransform(recursiveDict, toggle);
+        TF_AXIOM(oxfd.IsHolding<VtDictionary>());
+        VtDictionary xfd = oxfd.Remove<VtDictionary>();
+
+        auto check = [&](VtDictionary d) {
+            TF_AXIOM(xfd["off"].Get<XFormTestSwitch>() == on);
+            TF_AXIOM(xfd["on"].Get<XFormTestSwitch>() == off);
+            TF_AXIOM((xfd["swa"].Get<SwitchArray>() ==
+                      SwitchArray { on, off, on, off }));
+
+            SwitchArrayEdit ae = VtArrayEditBuilder<XFormTestSwitch>()
+                .Append(on).Append(off).Append(on).Append(off)
+                .FinalizeAndReset();
+
+            TF_AXIOM(xfd["swae"].Get<SwitchArrayEdit>() == ae);
+            TF_AXIOM(xfd["untransformed"].Get<std::string>() == "string");
+        };
+
+        check(xfd);
+        check(xfd["subdict"].Get<VtDictionary>());
+    }
+}
+
 int main(int argc, char *argv[])
 {
     testArray();
+
+#if !defined(ARCH_SANITIZE_ADDRESS) && !defined(ARCH_OS_WASM_VM)
+    testArrayBadAlloc();
+#endif
 
     testDictionary();
     testDictionaryKeyPathAPI();
@@ -1976,6 +2306,9 @@ int main(int argc, char *argv[])
     testVisitValue();
     testKnownValueTypeIndex();
     testVtCheapToCopy();
+    testVtValueRef();
+    testVtValueComposeOver();
+    testVtValueTransform();
 
     printf("Test SUCCEEDED\n");
 

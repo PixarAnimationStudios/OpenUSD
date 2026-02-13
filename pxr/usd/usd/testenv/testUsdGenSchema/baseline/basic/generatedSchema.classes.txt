@@ -19,6 +19,7 @@ testPropertyOrderSingleApplyAPI
 testPropertyOrderTyped
 testReflectedAPIBase
 testReflectedInternalAPI
+testReflectedMultipleAPI
 tokens
 
 # Python Module Files
@@ -41,6 +42,7 @@ wrapTestPropertyOrderSingleApplyAPI.cpp
 wrapTestPropertyOrderTyped.cpp
 wrapTestReflectedAPIBase.cpp
 wrapTestReflectedInternalAPI.cpp
+wrapTestReflectedMultipleAPI.cpp
 wrapTokens.cpp
 
 # Resource Files

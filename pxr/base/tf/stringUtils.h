@@ -326,7 +326,9 @@ std::string TfStringGetSuffix(const std::string& name, char delimiter = '.');
 TF_API
 std::string TfStringGetBeforeSuffix(const std::string& name, char delimiter = '.');
 
-/// Returns the base name of a file (final component of the path).
+/// Returns the base name of a file (final component of the path, after
+/// stripping all trailing slashes - forward only on Linux / MacOS, forward
+/// and backward on Windows).
 TF_API
 std::string TfGetBaseName(const std::string& fileName);
 
@@ -335,8 +337,12 @@ std::string TfGetBaseName(const std::string& fileName);
 /// The returned string ends in a '/' (or possibly a '\' on Windows), unless
 /// none was found in \c fileName, in which case the empty string is returned.
 /// In particular, \c TfGetPathName(s)+TfGetBaseName(s) == \c s for any string
-/// \c s (as long as \c s doesn't end with multiple adjacent slashes, which is
-/// illegal).
+/// \c s which doesn't end with a trailing slash.  If \c s does end with a
+/// trailing slash (forward only on Linux / MacOS, foward and backward on
+/// Windows), then \c TfGetPathName(s) == \c s, but \c TfGetBaseName(s) will
+/// only be \c "" if and only if \c s is an empty string or consists of nothing
+/// but slashes.
+
 TF_API
 std::string TfGetPathName(const std::string& fileName);
 
@@ -675,18 +681,21 @@ TF_API std::string TfEscapeString(const std::string &in);
 TF_API void TfEscapeStringReplaceChar(const char** in, char** out);
 
 /// Concatenate two strings containing '/' and '..' tokens like a file path or
-/// scope name.
+/// scope name. The result is a normalized path string.
 ///
-/// Tokenize the input strings using a '/' delimiter. Look for '..' tokens in
-/// the suffix and construct the appropriate result.
+/// Tokenize the input strings using a '/' delimiter. Look for '..' and '.' 
+/// tokens in the input strings and construct the appropriate result.
 ///
 /// A trailing '/' character will be stripped from the result if the input
-/// contained one.
+/// contained one. If the prefix string is empty, a leading '/' will be 
+/// prepended to the result.
 ///
 /// Examples:
 /// 
 /// \li TfStringCatPaths( "foo/bar", "jive" ) => "foo/bar/jive"
-/// \li TfStringCatPaths( "foo/bar", "../jive" ) => "foo/jive"
+/// \li TfStringCatPaths( "foo/bar/.", "../jive" ) => "foo/jive"
+/// \li TfStringCatPaths( "foo", "bar/" ) => "foo/bar"
+/// \li TfStringCatPaths( "", "bar" ) => "/bar"
 TF_API
 std::string TfStringCatPaths( const std::string &prefix, 
                               const std::string &suffix );

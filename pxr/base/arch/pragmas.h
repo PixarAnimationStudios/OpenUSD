@@ -140,7 +140,7 @@
     #define ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE \
         __pragma(warning(disable:4624))
 
-    #define ARCH_PRAGMA_DEPRECATED_POSIX_NAME \
+    #define ARCH_PRAGMA_DEPRECATED \
         __pragma(warning(disable:4996)) 
 
     #define ARCH_PRAGMA_FORCING_TO_BOOL \
@@ -233,8 +233,8 @@
     #define ARCH_PRAGMA_DESTRUCTOR_IMPLICIT_DEFINE
 #endif
 
-#if !defined ARCH_PRAGMA_DEPRECATED_POSIX_NAME
-    #define ARCH_PRAGMA_DEPRECATED_POSIX_NAME
+#if !defined ARCH_PRAGMA_DEPRECATED
+    #define ARCH_PRAGMA_DEPRECATED
 #endif
 
 #if !defined ARCH_PRAGMA_FORCING_TO_BOOL

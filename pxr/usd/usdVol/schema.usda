@@ -10,12 +10,12 @@ over "GLOBAL" (
     customData = {
         string libraryName = "usdVol"
         string libraryPath = "pxr/usd/usdVol"
-	dictionary libraryTokens = {
+        dictionary libraryTokens = {
             dictionary field = {
                 string doc = """This is the namespace prefix used to 
                 specify the fields that make up a volume primitive."""
             }
-	}
+        }
     }
 )
 {
@@ -45,15 +45,25 @@ class Volume "Volume" (
 {
 }
 
-class "FieldBase" (
+class "VolumeFieldBase" (
     inherits = </Xformable>
-    doc = """Base class for field primitives."""
+    doc = """Base class for volume field primitives."""
 )
 {
 }
 
-class "FieldAsset" (
-    doc = "Base class for field primitives defined by an external file."
+class "FieldBase" (
+    inherits = </VolumeFieldBase>
+    doc = """
+        \\deprecated This schema will be removed in a future release.
+        References to this schema should be updated to refer to VolumeFieldBase.
+        """
+)
+{
+}
+
+class "VolumeFieldAsset" (
+    doc = "Base class for volume field primitives defined by an external file."
     inherits = </FieldBase>
 )
 {
@@ -91,6 +101,16 @@ class "FieldAsset" (
                  are made available in a renderer or whether the vector values 
                  are to be transformed."""
     )
+}
+
+class "FieldAsset" (
+    doc = """
+        \\deprecated This schema will be removed in a future release.
+        References to this schema should be updated to refer to VolumeFieldAsset.
+        """
+    inherits = </VolumeFieldAsset>
+)
+{
 }
  
 class Field3DAsset "Field3DAsset" (
@@ -142,3 +162,471 @@ class OpenVDBAsset "OpenVDBAsset" (
     )
 }
 
+class ParticleField "ParticleField" (
+    doc = """A ParticleField prim is used as a base to describe different types
+            of concrete ParticleField implementations, such as, but not limited
+            to, 3D Gaussian Splats.
+
+            It is a concrete prim type that can have different
+            ParticleField related applied schemas applied to it, to
+            specialize its definition.
+
+            The related ParticleField applied schemas represent the different
+            features of a ParticleField, such as positions, orientations,
+            scales, kernel (shape and fall-off) and radiance. Any of these
+            applied schema that are required to define a valid ParticleField
+            also have a base applied schema that they auto apply. This base
+            applied schema allows for valiation rules to be written that
+            ensure the necessary components are present.
+
+            Without at least some of these applied schemas the ParticleField
+            is just an empty abstract container, but adding different
+            combinations of these applied schemas allows us to describe a
+            varying family of types of ParticleFields."""
+    inherits = </Gprim>
+)
+{
+}
+
+class "ParticleFieldPositionBaseAPI" (
+    doc = """Defines a base-class type applied schema that all applied schema
+            that provide the ParticleField position data will automatically apply.
+            The purpose of this base class is to allow validation to enforce
+            that an applied schema that defines position is always present for a
+            ParticleField.
+
+            The number of positions provided is also used to determine the
+            number of particle in the ParticleField. If no position data is
+            present, then the ParticleField contains no particles. Any other
+            per-particle data provided, such as scale or orientation, is
+            truncated if too long, or if too short the entire data set will be
+            discarded. For these other per-particle data fields, if no data is
+            provided, or it is discarded then its default value will be used.
+            """
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        #token[] apiSchemaCanOnlyApplyTo = [
+        #    "ParticleField",
+        #    "PositionAttributeAPI"]
+    }
+)
+{
+}
+
+class "ParticleFieldPositionAttributeAPI" (
+    doc = """A ParticleField related applied schema that provides a position
+             attribute to define the locations of the particles.
+
+             Attributes are provided in both `float` and `half` types for some
+             easy data footprint affordance, data consumers should prefer
+             `float` version if available.
+
+             The size of the positions attribute that is being used defines the
+             number of particles in the field. If no positions attribute is
+             provided then the ParticleField has no particles."""
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+        string extraIncludes = """
+            #include "pxr/usd/usdVol/particleFieldPositionBaseAPI.h"
+        """
+        token[] reflectedAPISchemas = [
+            "ParticleFieldPositionBaseAPI"
+        ]
+    }
+    prepend apiSchemas = [
+        "ParticleFieldPositionBaseAPI"
+    ]
+)
+{
+    point3f[] positions (
+        doc = "Defines the position for each particle in local space."
+    )
+    point3h[] positionsh (
+        doc = """Defines the position for each particle in local space. If the
+                float precision attribute is defined it should be preferred."""
+    )
+}
+
+class "ParticleFieldOrientationAttributeAPI" (
+    doc = """A ParticleField related applied schema that provides an
+             orientations attribute to define the orientation of the particles.
+
+             Attributes are provided in both `float` and `half` types for some
+             easy data footprint affordance, data consumers should prefer
+             `float` version if available.
+
+             The length of this attribute is expected to match the length of
+             the provided position data. If it is too long it will be truncated
+             to the number of particles define by the position data. If it is
+             too short it will be ignored.
+
+             If the attribute is ignored or not populated, then a default value
+             of no rotation should be applied to the kernel instantiated at each
+             particle."""
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+    }
+)
+{
+    quatf[] orientations (
+        doc = "Quaternion orientation for each particle."
+    )
+    quath[] orientationsh (
+        doc = """Quaternion orientation for each particle. If the float
+                precision version is defined it should be preferred."""
+    )
+}
+
+class "ParticleFieldScaleAttributeAPI" (
+    doc = """A ParticleField related applied schema that provides a
+             scales attribute to define the linear scale factor applied to the
+             particles.
+
+             The scales here are linear scales, in line with scales provided
+             elsewhere in USD, and not specified in log-format as is sometimes
+             seen in PLY files associated with gaussian splats.
+
+             Attributes are provided in both `float` and `half` types for some
+             easy data footprint affordance, data consumers should prefer
+             `float` version if available.
+
+             The length of this attribute is expected to match the length of
+             the provided position data. If it is too long it will be truncated
+             to the number of particles define by the position data. If it is
+             too short it will be ignored.
+
+             If the attribute is ignored or not provided, then a default unit
+             scale should be applied to the kernel."""
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+    }
+)
+{
+    float3[] scales (
+        doc = """Affine linear scale factor applied to the kernel that is
+                instantiated at each particle."""
+    )
+    half3[] scalesh (
+        doc = """Affine linear scale factor applied to the kernel that is
+                instantiated at each particle. If the float precision version is
+                defined it should be preferred."""
+    )
+}
+
+class "ParticleFieldOpacityAttributeAPI" (
+    doc = """A ParticleField related applied schema that provides an
+             opacities attribute to define the opacity of the particles.
+
+             The opacity here should be in the range [0, 1], and inline with the
+             traditional (linear) sense of computer graphics opacity, not the
+             transformed data sometimes seen in PLY files associated with
+             gaussian splats, where the values need to be processed with a
+             sigmoid activation function.
+
+             Attributes are provided in both `float` and `half` types for some
+             easy data footprint affordance, data consumers should prefer
+             `float` version if available.
+
+             The length of this attribute is expected to match the length of
+             the provided position data. If it is too long it will be truncated
+             to the number of particles define by the position data. If it is
+             too short it will be ignored.
+
+             If it is ignored or not populated, then the default value of fully
+             opaque (1.0) should be used.
+             """
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+    }
+)
+{
+    float[] opacities (
+        doc = "Opacity for each particle."
+    )
+    half[] opacitiesh (
+        doc = """Opacity for each particle. If the float precision version is
+                available it should be preferred."""
+    )
+}
+
+class "ParticleFieldKernelBaseAPI" (
+    doc = """Defines a base-class type applied schema that all applied schema
+            that provide a ParticleField kernel will automatically apply.
+            The ParticleField kernel defines the spatial basis function for each
+            particle.
+            The purpose of this base class is to allow validation to enforce
+            that a kernel definition is present for a ParticleField"""
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        #token[] apiSchemaCanOnlyApplyTo = [
+        #    "ParticleField",
+        #    "ParticleFieldKernelGaussianEllipsoidAPI",
+        #    "ParticleFieldKernelGaussianSurfletAPI",
+        #    "ParticleFieldKernelConstantSurfletAPI"]
+    }
+)
+{
+}
+
+class "ParticleFieldKernelGaussianEllipsoidAPI" (
+    doc = """Defines the gaussian ellipsoid kernel for a given ParticleField.
+
+    An untransformed kernel (i.e. identity position, scale, rotation, opacity)
+    will define opacity at point 'p' by g(u=0;o=1;x = p.length()).  Note that
+    since the standard deviation is 1, the 3-sigma point is 3.0 and 99.7% of
+    the splat support is within a spherical region of radius 3.
+
+    Per-splat opacity is multiplicative with the gaussian falloff; rotation
+    and scale will transform the gaussian sphere kernel into an ellipsoid;
+    and position moves the per-splat peak falloff from the origin. 
+    """
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+        string extraIncludes = '''
+#include "pxr/usd/usdVol/particleFieldKernelBaseAPI.h"
+        '''
+        token[] reflectedAPISchemas = [
+            "ParticleFieldKernelBaseAPI"
+        ]
+    }
+    prepend apiSchemas = [
+        "ParticleFieldKernelBaseAPI"
+    ]
+)
+{
+}
+
+class "ParticleFieldKernelGaussianSurfletAPI" (
+    doc = """Defines the gaussian surflet kernel for a given ParticleField.
+
+    An untransformed kernel (i.e. identity position, scale, rotation, opacity)
+    will define opacity at point 'p' on the XY plane by
+    g(u=0;o=1;x = p.length()), with opacity off the XY-plane defined as 0.
+    Note that since the standard deviation is 1, the 3-sigma point is 3.0
+    and 99.7% of the splat support is within a circular disk on the XY plane
+    of radius 3.
+
+    Per-splat opacity is multiplicative with the gaussian falloff; rotation
+    and scale will transform the gaussian disk kernel into a planar ellipse,
+    and position moves the per-splat peak falloff from the origin. 
+    """
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+        string extraIncludes = '''
+#include "pxr/usd/usdVol/particleFieldKernelBaseAPI.h"
+        '''
+        token[] reflectedAPISchemas = [
+            "ParticleFieldKernelBaseAPI"
+        ]
+    }
+    prepend apiSchemas = [
+        "ParticleFieldKernelBaseAPI"
+    ]
+)
+{
+}
+
+class "ParticleFieldKernelConstantSurfletAPI" (
+    doc = """Defines the constant surflet kernel for a given ParticleField.
+
+    An untransformed kernel (i.e. identity position, scale, rotation, opacity)
+    will define opacity at point 'p' on the XY plane as 1.0 if p.length <= 1,
+    and 0.0 otherwise. The splat support for this kernel is a bounded circular
+    disk on the XY plane of radius 1.
+
+    Per-splat opacity is multiplicative with the step-function falloff; rotation
+    and scale will transform the disk kernel into a planar ellipse,
+    and position moves the splat center the origin. 
+    """
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+        string extraIncludes = '''
+#include "pxr/usd/usdVol/particleFieldKernelBaseAPI.h"
+        '''
+        token[] reflectedAPISchemas = [
+            "ParticleFieldKernelBaseAPI"
+        ]
+    }
+    prepend apiSchemas = [
+        "ParticleFieldKernelBaseAPI"
+    ]
+)
+{
+}
+
+class "ParticleFieldRadianceBaseAPI" (
+    doc = """Defines a base-class type applied schema that all applied schema
+            that provides a ParticleField radiance definition will automatically
+            apply.
+            The purpose of this base class is to allow validation to enforce
+            that a radiance definition is present for a ParticleField"""
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        #token[] apiSchemaCanOnlyApplyTo = [
+        #    "ParticleField",
+        #    "ParticleFieldSphericalHarmonicsAttributeAPI"]
+    }
+)
+{
+}
+
+class "ParticleFieldSphericalHarmonicsAttributeAPI" (
+    doc = """A ParticleField related applied schema that provides spherical
+            harmonics attributes to define the radiance of the particles.
+
+            The spherical harmonics degree is constant across all the particles
+            in the ParticleField.
+
+            Attributes are provided in both `float` and `half` types for some
+            easy data footprint affordance, data consumers should prefer
+            `float` version if available.
+
+            The length of this attribute is expected to match the length of
+            the provided position data times the per-particle elementSize
+            derived from the SH degree (specifically elementSize =
+            (degree+1)*(degree+1)). If it is too long it will be truncated
+            to the number of particles define by the position data. If it is
+            too short it will be ignored.
+
+            If it is ignored or not populated, the particle should use a SH
+            coefficient corresponding to a DC signal of (0.5, 0.5, 0.5),
+            with degree 0.
+            """
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["ParticleField"]
+        string extraIncludes = '''
+#include "pxr/usd/usdVol/particleFieldRadianceBaseAPI.h"
+        '''
+        token[] reflectedAPISchemas = [
+            "ParticleFieldRadianceBaseAPI"
+        ]
+    }
+    prepend apiSchemas = [
+        "ParticleFieldRadianceBaseAPI"
+    ]
+)
+{
+    uniform int radiance:sphericalHarmonicsDegree = 3 (
+        doc = """The highest degree of the spherical harmonics. A degree of N
+        implies a coefficient element size (per particle) of (N+1)*(N+1) values.
+        The spherical harmonics degree is the same for all particles in the
+        ParticleField."""
+    )
+    float3[] radiance:sphericalHarmonicsCoefficients (
+        doc = """Flattened array of SH coefficients.
+        The SH coefficients are grouped in the array by particle, meaning each
+        particle has N contiguous coefficients, Y(m,l) sorted first by order (m)
+        and then within the order by index (l). A renderer can compute an
+        element size per particle based on the SH degree, and use that to stripe
+        the array by particle."""
+    )
+    half3[] radiance:sphericalHarmonicsCoefficientsh (
+        doc = """Flattened array of SH coefficients.
+        The SH coefficients are grouped in the array by particle, meaning each
+        particle has N contiguous coefficients, Y(m,l) sorted first by order (m)
+        and then within the order by index (l). A renderer can compute an
+        element size per particle based on the SH degree, and use that to stripe
+        the array by particle.
+
+        If the float precision version is available it should be preferred."""
+    )
+}
+
+class ParticleField3DGaussianSplat "ParticleField3DGaussianSplat" (
+    doc = """This is a concrete ParticleField representing the original 3D
+            Gaussian Splats technique (https://arxiv.org/abs/2308.04079).
+
+            It inherits from the ParticleField base prim, and has a set of
+            applied schema automatically applied to provide the required
+            attributes to define the necessary data from the original 3DGS paper.
+
+            It also contains some rendering hints that can optionally inform
+            how the splats should be rendered. These hints typically
+            corrolate with choices that were made when the data was trained."""
+    inherits = </ParticleField>
+
+    customData = {
+        string extraIncludes = '''
+#include "pxr/usd/usdVol/particleFieldPositionAttributeAPI.h"
+#include "pxr/usd/usdVol/particleFieldOrientationAttributeAPI.h"
+#include "pxr/usd/usdVol/particleFieldScaleAttributeAPI.h"
+#include "pxr/usd/usdVol/particleFieldOpacityAttributeAPI.h"
+#include "pxr/usd/usdVol/particleFieldKernelGaussianEllipsoidAPI.h"
+#include "pxr/usd/usdVol/particleFieldSphericalHarmonicsAttributeAPI.h"
+        '''
+        token[] reflectedAPISchemas = [
+            "ParticleFieldPositionAttributeAPI",
+            "ParticleFieldOrientationAttributeAPI",
+            "ParticleFieldScaleAttributeAPI",
+            "ParticleFieldOpacityAttributeAPI",
+            "ParticleFieldKernelGaussianEllipsoidAPI",
+            "ParticleFieldSphericalHarmonicsAttributeAPI"
+        ]
+    }
+    prepend apiSchemas = [
+        "ParticleFieldPositionAttributeAPI",
+        "ParticleFieldOrientationAttributeAPI",
+        "ParticleFieldScaleAttributeAPI",
+        "ParticleFieldOpacityAttributeAPI",
+        "ParticleFieldKernelGaussianEllipsoidAPI",
+        "ParticleFieldSphericalHarmonicsAttributeAPI"
+    ]
+)
+{
+    uniform token projectionModeHint = "perspective" (
+        allowedTokens = ["perspective", "tangential"]
+        customData = { string group = "Metadata" }
+        doc = """A hint for the renderer on how to project the gaussian to
+                achieve a perspective correct view. Renderers are free to
+                ignore this, but the hint is often valuable to tune the
+                rendering of the scene. It often corresponds to a choice made
+                when training the data.
+
+               'Perspective' projection is similar to standard object rendering
+               from a camera view. Gaussians are projected with scaling and
+               distortion based on depth.
+
+               'Tangential' projection treats the image plane as a tangent to
+               the viewing sphere. Gaussians are projected orthogonally,
+               preserving shape and scale better, which helps reduce distortion
+               for certain rendering applications like novel view synthesis."""
+    )
+
+    uniform token sortingModeHint = "zDepth" (
+        allowedTokens = ["zDepth", "cameraDistance"]
+        customData = { string group = "Metadata" }
+        doc = """A hint for the renderer on how to sort the gaussians while
+        drawing. Renderers are free to ignore this, but the hint is often
+        valuable to tune the rendering of the scene. It often corresponds to a
+        choice made when training the data.
+
+        Rasterizers usually sort gaussians from back to front. This attribute
+        is a hint for the metric used to sort the gaussians with respect to the
+        camera.
+
+        'zDepth': The particles are sorted based on the z component of the
+        particle position when transformed in to the cameras local space.
+
+        'cameraDistance': The particles are sorted based on the euclidian
+        distance from the particle to the camera."""
+    )
+}

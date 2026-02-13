@@ -222,6 +222,12 @@ public:
             UsdShadeAttributeType attrType =
                 UsdShadeUtils::GetType(attr.GetName());
             if (attrType == UsdShadeAttributeType::Input) {
+                // Skip UsdUVTextureNode's inputs:sourceColorSpace as this will
+                // be consolidated as the color space on the node's input:file 
+                // parameter
+                if (attr.GetName() == "inputs:sourceColorSpace") {
+                    continue;
+                }
                 const HdDataSourceLocator paramValueLocator(
                     name, HdMaterialNodeParameterSchemaTokens->value);
                 return HdMaterialNodeParameterSchema::Builder()
@@ -230,7 +236,10 @@ public:
                             _sceneIndexPath,
                             _locatorPrefix.Append(paramValueLocator)))
                     .SetColorSpace(
-                        UsdImagingDataSourceAttributeColorSpace::New(attr))
+                        (attr.GetRoleName() == SdfValueRoleNames->Color ||
+                         attr.GetTypeName() == SdfValueTypeNames->Asset)
+                            ? UsdImagingDataSourceAttributeColorSpace::New(attr)
+                            : nullptr)
                     .SetTypeName(
                         UsdImagingDataSourceAttributeTypeName::New(attr))
                     .Build();

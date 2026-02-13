@@ -106,6 +106,39 @@ _GetIntroducingComposeInfo(const UsdPrimCompositionQueryArc &arc,
     return true;
 }
 
+static
+bool
+_GetIntroducingRelocatesLayer(const UsdPrimCompositionQueryArc &arc,
+                              PcpArcInfo *arcInfo)
+{
+    const PcpLayerStackRefPtr &layerStack = 
+        arc.GetIntroducingNode().GetLayerStack();
+    // We ask the introduced node for its GetIntroPath which gets its parent's
+    // path when it introduced this node.
+    const SdfPath &path = arc.GetTargetNode().GetIntroPath();
+    static const TfToken field = SdfFieldKeys->Relocates;
+
+    TF_FOR_ALL(layer, layerStack->GetLayers()) {
+        SdfRelocates relocates = (*layer)->GetRelocates();
+        auto relocateIter = std::find_if(
+            relocates.begin(),
+            relocates.end(),
+            [&path](const SdfRelocate& relocate) {
+                return relocate.second == path;
+            }
+        );
+        if (relocateIter != relocates.end()) {
+            if (arcInfo) {
+                arcInfo->sourceLayer = *layer;
+                // There should only be one relocate per target path
+                arcInfo->arcNum = 0;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
 SdfLayerHandle
 UsdPrimCompositionQueryArc::GetTargetLayer() const
 {
@@ -183,6 +216,10 @@ UsdPrimCompositionQueryArc::GetIntroducingLayer() const
         foundInfo = _GetIntroducingComposeInfo<std::string>(
             *this, &PcpComposeSiteVariantSets, &info, nullptr);
         break;
+    case PcpArcTypeRelocate:
+        foundInfo = _GetIntroducingRelocatesLayer(
+            *this, &info);
+        break;
     default:
         break;
     }
@@ -199,6 +236,11 @@ UsdPrimCompositionQueryArc::GetIntroducingPrimPath() const
     // Special case for the root node. It doesn't have an introducing prim path.
     if (_node.IsRootNode()) {
         return SdfPath();
+    }
+
+    // Special case for relocate arcs. They are authored within layer metadata.
+    if (_node.GetArcType() == PcpArcTypeRelocate) {
+        return SdfPath("/");
     }
     // We ask the introduced node for its GetIntroPath which gets its parent's
     // path when it introduced this node. Note that cannot use the introducing
@@ -394,11 +436,11 @@ UsdPrimCompositionQuery::UsdPrimCompositionQuery(const UsdPrim & prim,
     _prim.ComputeExpandedPrimIndex().Swap(*_expandedPrimIndex);
 
     // Compute the unfiltered list of composition arcs from all non-inert nodes.
-    // We still skip inert nodes in the unfiltered query so we don't pick up
-    // things like the original copies of specialize nodes that have been
-    // moved for strength ordering purposes. 
+    // We still skip inert nodes in the unfiltered query, with the exception
+    // of relocates, to avoid picking up things like the original copies of
+    // specialize nodes that have been moved for strength ordering purposes.
     for(const PcpNodeRef &node: _expandedPrimIndex->GetNodeRange()) { 
-        if (!node.IsInert()) {
+        if (!node.IsInert() || node.GetArcType() == PcpArcTypeRelocate) {
             _unfilteredArcs.push_back(UsdPrimCompositionQueryArc(node));
         }
     }
@@ -470,6 +512,9 @@ _TestArcType(const UsdPrimCompositionQueryArc &compArc,
     case ArcTypeFilter::Variant:
         arcMask = 1 << PcpArcTypeVariant;
         break;
+    case ArcTypeFilter::Relocate:
+        arcMask = 1 << PcpArcTypeRelocate;
+        break;
     case ArcTypeFilter::ReferenceOrPayload:
         arcMask = (1 << PcpArcTypeReference) | (1 << PcpArcTypePayload);
         break;
@@ -484,6 +529,9 @@ _TestArcType(const UsdPrimCompositionQueryArc &compArc,
         break;
     case ArcTypeFilter::NotVariant:
         arcMask = ~(1 << PcpArcTypeVariant);
+        break;
+    case ArcTypeFilter::NotRelocate:
+        arcMask = ~(1 << PcpArcTypeRelocate);
         break;
     }
 

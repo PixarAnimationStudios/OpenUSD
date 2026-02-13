@@ -18,7 +18,8 @@ class TestUsdNamespaceEditor(unittest.TestCase):
     # succeed. If expectedResyncNotices is provided, this also verifies that 
     # listening the ObjectsChanged notice will hold the expected resyncs of the
     # expected resync types specified.
-    def _ApplyEditWithVerification(self, editor, expectedResyncNotices = None):
+    def _ApplyEditWithVerification(self, editor, expectedResyncNotices = None, 
+        expectedLayersToEdit = None):
 
         # receivedObjectsChanged is used for sanity checking that the notice
         # handler was indeed called as expected.
@@ -46,8 +47,12 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         )
 
         try:
-            # Verify CanApply and Apply
+            # Verify CanApply, GetLayersToEdit, and Apply
             self.assertTrue(editor.CanApplyEdits())
+            if expectedLayersToEdit:
+                layersToEdit = [layer.GetDisplayName() for layer in 
+                    editor.GetLayersToEdit()]
+                self.assertEqual(layersToEdit, expectedLayersToEdit)
             self.assertTrue(editor.ApplyEdits())
             # Sanity check on the notice listener being called.
             self.assertTrue(receivedObjectsChanged)
@@ -172,10 +177,10 @@ class TestUsdNamespaceEditor(unittest.TestCase):
             else:
                 self.assertTrue(editor.DeletePrim(primA))
             self.assertTrue(primA)
-
             self._ApplyEditWithVerification(editor, 
                 expectedResyncNotices = {
-                    '/C/B/A' : (self.PrimResyncType.Delete, Sdf.Path())})
+                    '/C/B/A' : (self.PrimResyncType.Delete, Sdf.Path())}, 
+                expectedLayersToEdit = ['root.usda'])
             self.assertFalse(primA)
             self.assertFalse(stage.GetPrimAtPath("/C/B/A"))
             
@@ -187,7 +192,8 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                 self.assertTrue(editor.DeletePrim(primB))
             self._ApplyEditWithVerification(editor, 
                 expectedResyncNotices = {
-                    '/C/B' : (self.PrimResyncType.Delete, Sdf.Path())})
+                    '/C/B' : (self.PrimResyncType.Delete, Sdf.Path())},
+                expectedLayersToEdit = ['root.usda', 'sub_1.usda'])
             self.assertFalse(primB)
             self.assertFalse(stage.GetPrimAtPath("/C/B"))
             
@@ -199,7 +205,8 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                 self.assertTrue(editor.DeletePrim(primC))
             self._ApplyEditWithVerification(editor, 
                 expectedResyncNotices = {
-                    '/C' : (self.PrimResyncType.Delete, Sdf.Path())})
+                    '/C' : (self.PrimResyncType.Delete, Sdf.Path())},
+                expectedLayersToEdit = ['root.usda', 'sub_1.usda', 'sub_2.usda'])
             self.assertFalse(primC)
             self.assertFalse(stage.GetPrimAtPath("/C"))
 
@@ -219,7 +226,8 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                 self.assertTrue(editor.DeletePrim(primC))
             self._ApplyEditWithVerification(editor, 
                 expectedResyncNotices = {
-                    '/C' : (self.PrimResyncType.Delete, Sdf.Path())})
+                    '/C' : (self.PrimResyncType.Delete, Sdf.Path())},
+                expectedLayersToEdit = ['root.usda', 'sub_1.usda', 'sub_2.usda'])
             self.assertFalse(primC)
             self.assertFalse(primB)
             self.assertFalse(primA)
@@ -263,7 +271,8 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                     '/C/B/A' : (self.PrimResyncType.RenameSource, 
                                 Sdf.Path('/C/B/NewA')),
                     '/C/B/NewA' : (self.PrimResyncType.RenameDestination, 
-                                   Sdf.Path('/C/B/A'))})
+                                   Sdf.Path('/C/B/A'))},
+                expectedLayersToEdit = ['root.usda'])
             self.assertFalse(primA)
             primA = stage.GetPrimAtPath("/C/B/NewA")
             self._VerifyBasicStagePrimAValues(primA)
@@ -284,7 +293,8 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                     '/C/B' : (self.PrimResyncType.RenameSource, 
                               Sdf.Path('/C/NewB')),
                     '/C/NewB' : (self.PrimResyncType.RenameDestination, 
-                                 Sdf.Path('/C/B'))})
+                                 Sdf.Path('/C/B'))},
+                expectedLayersToEdit = ['root.usda', 'sub_1.usda'])
             self.assertFalse(primB)
             primB = stage.GetPrimAtPath("/C/NewB")
             self._VerifyBasicStagePrimBValues(primB)
@@ -314,7 +324,8 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                     '/C' : (self.PrimResyncType.RenameSource, 
                             Sdf.Path('/NewC')),
                     '/NewC' : (self.PrimResyncType.RenameDestination, 
-                               Sdf.Path('/C'))})
+                               Sdf.Path('/C'))},
+                expectedLayersToEdit = ['root.usda', 'sub_1.usda', 'sub_2.usda'])
             self.assertFalse(primC)
             primC = stage.GetPrimAtPath("/NewC")
             self._VerifyBasicStagePrimCValues(primC)
@@ -380,7 +391,8 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                     '/C/B/A' : (self.PrimResyncType.ReparentSource, 
                                 Sdf.Path('/A')),
                     '/A' : (self.PrimResyncType.ReparentDestination, 
-                            Sdf.Path('/C/B/A'))})
+                            Sdf.Path('/C/B/A'))},
+                expectedLayersToEdit = ['root.usda'])
             self.assertFalse(primA)
             primA = stage.GetPrimAtPath("/A")
             self._VerifyBasicStagePrimAValues(primA)
@@ -414,7 +426,8 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                     '/C/B' : (self.PrimResyncType.ReparentSource, 
                               Sdf.Path('/A/B')),
                     '/A/B' : (self.PrimResyncType.ReparentDestination, 
-                              Sdf.Path('/C/B'))})
+                              Sdf.Path('/C/B'))},
+                expectedLayersToEdit = ['root.usda', 'sub_1.usda'])
             self.assertFalse(primB)
             primB = stage.GetPrimAtPath("/A/B")
             self._VerifyBasicStagePrimBValues(primB)
@@ -450,7 +463,8 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                     '/C' : (self.PrimResyncType.ReparentSource, 
                             Sdf.Path('/A/B/C')),
                     '/A/B/C' : (self.PrimResyncType.ReparentDestination, 
-                                Sdf.Path('/C'))})
+                                Sdf.Path('/C'))},
+                expectedLayersToEdit = ['root.usda', 'sub_1.usda', 'sub_2.usda'])
             self.assertFalse(primC)
             primC = stage.GetPrimAtPath("/A/B/C")
             self._VerifyBasicStagePrimCValues(primC)
@@ -495,7 +509,8 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                     '/A/B/C' : (self.PrimResyncType.ReparentSource, 
                                 Sdf.Path('/C')),
                     '/C' : (self.PrimResyncType.ReparentDestination, 
-                            Sdf.Path('/A/B/C'))})
+                            Sdf.Path('/A/B/C'))},
+                expectedLayersToEdit = ['root.usda', 'sub_1.usda', 'sub_2.usda'])
             self.assertFalse(primC)
             primC = stage.GetPrimAtPath("/C")
             self._VerifyBasicStagePrimCValues(primC)
@@ -533,7 +548,8 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                     '/A/B' : (self.PrimResyncType.ReparentSource, 
                               Sdf.Path('/C/B')),
                     '/C/B' : (self.PrimResyncType.ReparentDestination, 
-                              Sdf.Path('/A/B'))})
+                              Sdf.Path('/A/B'))},
+                expectedLayersToEdit = ['root.usda', 'sub_1.usda'])
             self.assertFalse(primB)
             primB = stage.GetPrimAtPath("/C/B")
             self._VerifyBasicStagePrimBValues(primB)
@@ -568,7 +584,8 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                     '/A' : (self.PrimResyncType.ReparentSource, 
                             Sdf.Path('/C/B/A')),
                     '/C/B/A' : (self.PrimResyncType.ReparentDestination, 
-                                Sdf.Path('/A'))})
+                                Sdf.Path('/A'))},
+                expectedLayersToEdit = ['root.usda'])
             self.assertFalse(primA)
             primA = stage.GetPrimAtPath("/C/B/A")
             self._VerifyBasicStagePrimAValues(primA)
@@ -761,6 +778,8 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         # message and that ApplyEdits fails and doesn't edit any layers.
         def _VerifyCannotApplyEdits(expectedMessage):
             self._VerifyFalseResult(editor.CanApplyEdits(), expectedMessage)
+            with self.assertRaises(Tf.ErrorException):
+                editor.GetLayersToEdit()
             with self.assertRaises(Tf.ErrorException):
                 editor.ApplyEdits()
             _VerifyNoLayersHaveChanged()

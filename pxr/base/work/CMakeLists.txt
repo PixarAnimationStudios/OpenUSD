@@ -173,10 +173,9 @@ if (use_tbb)
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkThreadLimitsTBB"
     )
 
-    # Note: These tests are disabled for emscripten because we are not able to 
-    # easily forward the command line option to the test at run time.  This
-    # would likely require additional test infrastructure utilizing
-    # Module.arguments in the generated JS file. 
+    # Note: These tests are disabled for emscripten due to TBB worker
+    # utilization issues in NodeJS.
+    # https://github.com/uxlfoundation/oneTBB/issues/1287
     if (NOT EMSCRIPTEN)
         pxr_register_test(testWorkThreadLimitsRawTBBMax
             RUN_SERIAL

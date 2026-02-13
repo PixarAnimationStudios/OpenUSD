@@ -10,6 +10,7 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderDelegateInfo.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/sceneIndexInputArgsSchema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -123,6 +124,25 @@ private:
     const HdRenderDelegateInfo _info;
 };
 
+HdRenderDelegateInfo
+_GetRenderDelegateInfo(
+    HdContainerDataSourceHandle const &inputArgs)
+{
+    const HdSceneIndexInputArgsSchema schema(inputArgs);
+    if (HdRenderDelegateInfoDataSourceHandle const ds =
+            schema.GetLegacyRenderDelegateInfo()) {
+        return ds->GetTypedValue(0.0f);
+    }
+   
+    return {};
+}
+
+}
+
+HdRenderIndexAdapterSceneIndex::HdRenderIndexAdapterSceneIndex(
+    HdContainerDataSourceHandle const &inputArgs)
+ : HdRenderIndexAdapterSceneIndex(_GetRenderDelegateInfo(inputArgs))
+{
 }
 
 HdRenderIndexAdapterSceneIndex::HdRenderIndexAdapterSceneIndex(

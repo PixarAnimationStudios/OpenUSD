@@ -300,6 +300,8 @@ enum HgiAttachmentStoreOp
 ///   Vertex attributes.</li>
 /// <li>HgiBufferUsageStorage:
 ///   Shader storage buffer / Argument buffer.</li>
+/// <li>HgiBufferUsageUpload:
+///   Buffer will be used to upload data.</li>
 ///
 /// <li>HgiBufferUsageCustomBitsBegin:
 ///   This bit (and any bit after) can be used to attached custom, backend
@@ -313,8 +315,9 @@ enum HgiBufferUsageBits : HgiBits
     HgiBufferUsageVertex   = 1 << 2,
     HgiBufferUsageStorage  = 1 << 3,
     HgiBufferUsageIndirect = 1 << 4,
+    HgiBufferUsageUpload   = 1 << 5,
 
-    HgiBufferUsageCustomBitsBegin = 1 << 5,
+    HgiBufferUsageCustomBitsBegin = 1 << 6,
 };
 using HgiBufferUsage = HgiBits;
 

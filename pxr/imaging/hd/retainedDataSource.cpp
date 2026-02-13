@@ -12,6 +12,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/visitValue.h"
+#include "pxr/imaging/hd/primOriginSchema.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/assetPath.h"
 
@@ -373,6 +374,13 @@ struct Hd_CreateTypedRetainedDataSourceVisitor
         } else if (v.IsHolding<SdfPathExpression>()) {
             return HdRetainedTypedSampledDataSource<SdfPathExpression>::New(
                 v.UncheckedGet<SdfPathExpression>());
+        } else if (v.IsHolding<HdDataSourceLocator>()) {
+            return HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+                v.UncheckedGet<HdDataSourceLocator>());
+        } else if (v.IsHolding<HdPrimOriginSchema::OriginPath>()) {
+            return HdRetainedTypedSampledDataSource<
+                HdPrimOriginSchema::OriginPath>::New(
+                    v.UncheckedGet<HdPrimOriginSchema::OriginPath>());
         } else if (v.IsEmpty()) {
             return HdSampledDataSourceHandle(nullptr);
         } else {

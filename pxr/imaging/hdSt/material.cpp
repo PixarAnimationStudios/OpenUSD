@@ -46,6 +46,7 @@ HdStMaterial::HdStMaterial(SdfPath const &id)
  , _hasPtex(false)
  , _hasLimitSurfaceEvaluation(false)
  , _hasDisplacement(false)
+ , _isUsingFallbackShader(false)
  , _materialTag(HdStMaterialTagTokens->defaultMaterialTag)
  , _textureHash(0)
 {
@@ -224,6 +225,10 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         _InitFallbackShader();
         fragmentSource = _fallbackGlslfx->GetSurfaceSource();
         materialMetadata = _fallbackGlslfx->GetMetadata();
+
+        _isUsingFallbackShader = true;
+    } else {
+        _isUsingFallbackShader = false;
     }
 
     // Update volume material data.

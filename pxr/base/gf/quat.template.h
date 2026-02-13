@@ -48,8 +48,9 @@ class {{ QUAT }}
     typedef {{ SCL }} ScalarType;
     typedef GfVec3{{ SUFFIX }} ImaginaryType;
 
-    /// Default constructor leaves the quaternion undefined.
-    {{ QUAT }}() {}
+    /// {{ QUAT }} value-initializes to zero and performs no default
+    /// initialization, like float or double.
+    {{ QUAT }}() = default;
 
     /// Initialize the real coefficient to \p realVal and the imaginary
     /// coefficients to zero.

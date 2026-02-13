@@ -88,13 +88,13 @@ protected:
     virtual void _Run(
         const VdfSchedule &schedule,
         const VdfRequest &computeRequest,
-        VdfExecutorErrorLogger *errorLogger);
+        VdfExecutorErrorLogger *errorLogger) override;
 
 private:
     
     /// Clears the data in the data manager.
     ///
-    void _ClearData();
+    virtual void _ClearData() override;
 
     // The factory shared amongst executors of this type.
     //

@@ -638,15 +638,8 @@ HgiInteropVulkan::CompositeToInterop(
     HgiVulkanCommandQueue* commandQueue =
         _hgiVulkan->GetPrimaryDevice()->GetCommandQueue();
     if (_vkComplete) {
-        // Manually submit before to signal the semaphore
-        VkSubmitInfo submitInfoBefore = {};
-        submitInfoBefore.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfoBefore.pSignalSemaphores = &_vkComplete->_vkSemaphore;
-        submitInfoBefore.signalSemaphoreCount = 1;
-
-        HGIVULKAN_VERIFY_VK_RESULT(
-            vkQueueSubmit(commandQueue->GetVulkanGraphicsQueue(),
-                1, &submitInfoBefore, VK_NULL_HANDLE));
+        // Manually submit/flush before to signal the semaphore
+        commandQueue->Flush(HgiSubmitWaitTypeNoWait, _vkComplete->_vkSemaphore);
 
         glWaitSemaphoreEXT(_vkComplete->_glSemaphore, 0, nullptr,
             2, glTexs, glLayouts);
@@ -816,6 +809,9 @@ HgiInteropVulkan::CompositeToInterop(
         submitInfoAfter.waitSemaphoreCount = 1;
         submitInfoAfter.pWaitDstStageMask = &waitMask;
 
+        // XXX This should use a mechanism in HgiVulkanCommandQueue to add the
+        // dependent semaphore, but for now we don't since this could change
+        // with multi buffering.
         HGIVULKAN_VERIFY_VK_RESULT(
             vkQueueSubmit(commandQueue->GetVulkanGraphicsQueue(),
                 1, &submitInfoAfter, _interopComplete));

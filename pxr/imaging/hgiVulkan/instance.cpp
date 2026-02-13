@@ -42,7 +42,7 @@ _RemoveUnsupportedInstanceLayers(
             [name = lay](const VkLayerProperties& p) 
             { return strcmp(p.layerName, name) == 0; })) {
             layers.push_back(lay);
-        } else if (HgiVulkanIsDebugEnabled() &&
+        } else if (HgiVulkanIsValidationEnabled() &&
                    strcmp(lay, "VK_LAYER_KHRONOS_validation") == 0) {
             // Special handling for the validation layer, which we always want
             // to be available.
@@ -142,8 +142,11 @@ HgiVulkanInstance::HgiVulkanInstance()
     };
 
     if (HgiVulkanIsDebugEnabled()) {
-        layers.push_back("VK_LAYER_KHRONOS_validation");
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+
+    if (HgiVulkanIsValidationEnabled()) {
+        layers.push_back("VK_LAYER_KHRONOS_validation");
         createInfo.pNext = &layerSettingsCreateInfo;
     }
 

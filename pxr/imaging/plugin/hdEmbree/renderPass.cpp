@@ -120,6 +120,10 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             }
         }
 
+        _renderer->SetDomeLightCameraVisibility(
+            renderDelegate->GetRenderSetting<bool>(
+                HdRenderSettingsTokens->domeLightCameraVisibility, true));
+
         _renderer->SetEnableSceneColors(
             renderDelegate->GetRenderSetting<bool>(
                 HdEmbreeRenderSettingsTokens->enableSceneColors, true));

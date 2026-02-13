@@ -611,6 +611,24 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             refineLevel = 0;
         }
 
+        // If the topology is loop, and subdivision has been requested, validate
+        // that all the faces are triangular. If not, force the refinement level
+        // back to 0 (since asking PxOsd to loop-subdivide a non-triangular mesh
+        // is unsupported and may crash).
+        if (meshTopology.GetScheme() == PxOsdOpenSubdivTokens->loop &&
+            refineLevel > 0) {
+            TRACE_SCOPE("Loop topology validation");
+            const int numFaces = meshTopology.GetFaceVertexCounts().size();
+            int const *numVertsPtr = meshTopology.GetFaceVertexCounts().cdata();
+            if (std::find_if(numVertsPtr, numVertsPtr + numFaces,
+                [](int x) { return x != 3; })
+                != numVertsPtr + numFaces) {
+                HF_VALIDATION_WARN(id, "Cannot apply loop subdivision due to "
+                    "non-triangular faces");
+                refineLevel = 0;
+            }
+        }
+
         // If the topology supports adaptive refinement and that's what this
         // prim wants, note that and also that our normals will be generated
         // in the shader.
@@ -1336,59 +1354,96 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         // Add varying primvars so we can process them all together, below.
         HdPrimvarDescriptorVector varyingPvs =
             HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
-                    HdInterpolationVarying, repr, desc.geomStyle,
-                    geomSubsetDescIndex, _topology->GetGeomSubsets().size());
+                HdInterpolationVarying, repr, desc.geomStyle,
+                geomSubsetDescIndex, _topology->GetGeomSubsets().size());
         primvars.insert(primvars.end(), varyingPvs.begin(), varyingPvs.end());
 
-        // Get the list of computed vertex primvars as well...
-        compPrimvars = sceneDelegate->GetExtComputationPrimvarDescriptors(id,
-                HdInterpolationVertex);
+        bool isPointsComputedPrimvar = false;
+        bool isNormalsComputedPrimvar = false;
+        for (const HdInterpolation interpolation :
+                {HdInterpolationVertex, HdInterpolationVarying}) {
+            HdBufferSourceSharedPtrVector localSources;
+            HdBufferSourceSharedPtrVector localReserveOnlySources;
+            HdBufferSourceSharedPtrVector localSeparateComputationSources;
+            HdStComputationComputeQueuePairVector localComputations;
 
-        sources.reserve(primvars.size());
+            HdExtComputationPrimvarDescriptorVector localCompPrimvars =
+                sceneDelegate->GetExtComputationPrimvarDescriptors(
+                    id,
+                    interpolation);
 
-        // Process computed primvars...
-        HdSt_GetExtComputationPrimvarsComputations(
+            // Process computed primvars...
+            HdSt_GetExtComputationPrimvarsComputations(
                 id,
                 sceneDelegate,
-                compPrimvars,
+                localCompPrimvars,
                 *dirtyBits,
-                &sources,
-                &reserveOnlySources,
-                &separateComputationSources,
-                &computations);
+                &localSources,
+                &localReserveOnlySources,
+                &localSeparateComputationSources,
+                &localComputations);
 
-        // Update tracked state for points and normals that are computed.
-        bool isPointsComputedPrimvar = false;
-        if (*dirtyBits & HdChangeTracker::DirtyNormals ||
-            *dirtyBits & HdChangeTracker::DirtyPoints) {
-            for (HdBufferSourceSharedPtrVector const& computedSources :
-                 {reserveOnlySources, sources}) {
-                for (HdBufferSourceSharedPtr const& source: computedSources) {
-                    if (source->GetName() == HdTokens->points) {
-                        isPointsComputedPrimvar = true;
-                        _pointsDataType = source->GetTupleType().type;
-                    }
-                    if (source->GetName() == HdTokens->normals) {
-                        _sceneNormalsInterpolation = HdInterpolationVertex;
-                        _sceneNormalsFromPrimvars = true;
+            // Update tracked state for points and normals that are computed.
+            if (*dirtyBits & HdChangeTracker::DirtyNormals ||
+                *dirtyBits & HdChangeTracker::DirtyPoints) {
+                for (HdBufferSourceSharedPtrVector const& computedSources :
+                        {localReserveOnlySources, localSources}) {
+                    for (HdBufferSourceSharedPtr const& source :
+                            computedSources) {
+                        if (source->GetName() == HdTokens->points) {
+                            isPointsComputedPrimvar = true;
+                            _pointsDataType = source->GetTupleType().type;
+                        }
+                        if (source->GetName() == HdTokens->normals) {
+                            isNormalsComputedPrimvar = true;
+                            _sceneNormalsInterpolation = interpolation;
+                            _sceneNormalsFromPrimvars = true;
+                        }
                     }
                 }
             }
-        }
- 
-        // Schedule quadrangulation/refinement for computed primvars if needed.   
-        for (HdBufferSourceSharedPtr const & source : reserveOnlySources) {
-            _RefineOrQuadrangulateVertexAndVaryingPrimvar(
-                source, _topology, id,  doRefine, doQuadrangulate,
-                resourceRegistry,
-                &computations, HdSt_MeshTopology::INTERPOLATE_VERTEX);
-        }
 
-        for (HdBufferSourceSharedPtr const & source : sources) {
-            _RefineOrQuadrangulateVertexAndVaryingPrimvar(
-                source, _topology, id,  doRefine, doQuadrangulate,
-                resourceRegistry,
-                &computations, HdSt_MeshTopology::INTERPOLATE_VERTEX);
+            // Schedule quadrangulation/refinement for computed primvars if
+            // needed.
+            const HdSt_MeshTopology::Interpolation hdStInterpolation =
+                interpolation == HdInterpolationVertex ?
+                    HdSt_MeshTopology::INTERPOLATE_VERTEX :
+                    HdSt_MeshTopology::INTERPOLATE_VARYING;
+            for (HdBufferSourceSharedPtr const & source :
+                    localReserveOnlySources) {
+                _RefineOrQuadrangulateVertexAndVaryingPrimvar(
+                    source, _topology, id,  doRefine, doQuadrangulate,
+                    resourceRegistry,
+                    &localComputations, hdStInterpolation);
+            }
+
+            for (HdBufferSourceSharedPtr const & source : localSources) {
+                _RefineOrQuadrangulateVertexAndVaryingPrimvar(
+                    source, _topology, id,  doRefine, doQuadrangulate,
+                    resourceRegistry,
+                    &localComputations, hdStInterpolation);
+            }
+
+            sources.insert(
+                sources.end(),
+                localSources.begin(),
+                localSources.end());
+            reserveOnlySources.insert(
+                reserveOnlySources.end(),
+                localReserveOnlySources.begin(),
+                localReserveOnlySources.end());
+            separateComputationSources.insert(
+                separateComputationSources.end(),
+                localSeparateComputationSources.begin(),
+                localSeparateComputationSources.end());
+            computations.insert(
+                computations.end(),
+                localComputations.begin(),
+                localComputations.end());
+            compPrimvars.insert(
+                compPrimvars.end(),
+                localCompPrimvars.begin(),
+                localCompPrimvars.end());
         }
 
         // Track primvars that are skipped because they have zero elements
@@ -1440,8 +1495,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                         (int)source->GetNumElements(), numPoints);
 
                     _sharedData.barContainer.Set(
-                            drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(),
-                            HdBufferArrayRangeSharedPtr());
+                        drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(),
+                        HdBufferArrayRangeSharedPtr());
                     return;
                 } else {
                     HF_VALIDATION_WARN(id, 
@@ -1454,6 +1509,9 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 }
 
             } else if ((int)source->GetNumElements() > numPoints) {
+                // HYD-3510
+                // we need to support tensor valued vertex primvars properly
+                // (with elementSize > 1)
                 HF_VALIDATION_WARN(id,
                     "Vertex primvar %s has %d elements, while"
                     " its topology references only up to element index %d.",
@@ -1468,6 +1526,12 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             }
 
             if (primvar.name == HdTokens->normals) {
+                if (isNormalsComputedPrimvar) {
+                    HF_VALIDATION_WARN(id, 
+                        "'normals' specified as both computed and authored "
+                        "primvar. Skipping authored value.");
+                    continue;
+                }
                 _sceneNormalsInterpolation =
                     isVarying ? HdInterpolationVarying : HdInterpolationVertex;
                 _sceneNormalsFromPrimvars = true;
@@ -1484,9 +1548,9 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             }
 
             _RefineOrQuadrangulateVertexAndVaryingPrimvar(
-                    source, _topology, id,  doRefine, doQuadrangulate,
-                    resourceRegistry,
-                    &computations, isVarying ? 
+                source, _topology, id,  doRefine, doQuadrangulate,
+                resourceRegistry,
+                &computations, isVarying ? 
                     HdSt_MeshTopology::INTERPOLATE_VARYING : 
                     HdSt_MeshTopology::INTERPOLATE_VERTEX);
 
@@ -1504,11 +1568,10 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
     // Points fastpath; it's possible points was updated above, but if
     // points is dirty and we skipped the above loops let's handle it here.
-    // Note: if the logic here becomes more complex, the more correct thing to
-    // do here is check whether primvars or compPrimvars contains a "points"
-    // entry...
     if (*dirtyBits & HdChangeTracker::DirtyPoints &&
-        primvars.size() == 0 && compPrimvars.size() == 0) {
+        !(*dirtyBits & HdChangeTracker::DirtyNormals ||
+          *dirtyBits & HdChangeTracker::DirtyWidths ||
+          *dirtyBits & HdChangeTracker::DirtyPrimvar)) {
 
         // We can't use the scene delegate to check whether points is
         // provided/computed/has the correct interpolation without pulling the
@@ -1744,6 +1807,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     HdStGetBufferSpecsFromCompuations(computations, &bufferSpecs);
 
     HdBufferSourceSharedPtrVector allSources(sources);
+    allSources.reserve(allSources.size() + reserveOnlySources.size());
     for (HdBufferSourceSharedPtr& src : reserveOnlySources) {
         allSources.emplace_back(src);
     }
@@ -1940,11 +2004,10 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
         HdStGetPrimvarDescriptors(this, drawItem, sceneDelegate,
             HdInterpolationFaceVarying, repr, desc.geomStyle,
                 geomSubsetDescIndex, _topology->GetGeomSubsets().size());
-    if (primvars.empty() &&
-        !drawItem->GetFaceVaryingPrimvarRange())
-    {
-        return;
-    }
+
+    HdExtComputationPrimvarDescriptorVector compPrimvars =
+        sceneDelegate->GetExtComputationPrimvarDescriptors(id,
+            HdInterpolationFaceVarying);
 
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
         std::static_pointer_cast<HdStResourceRegistry>(
@@ -1967,8 +2030,8 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
     // At higher levels of refinement that do not require full OSD primvar 
     // refinement, we might want to quadrangulate instead
     const bool doQuadrangulate =
-       _UseQuadIndices(sceneDelegate->GetRenderIndex(), _topology) ||
-       (refineLevel > 0 && !_topology->RefinesToTriangles());
+        _UseQuadIndices(sceneDelegate->GetRenderIndex(), _topology) ||
+        (refineLevel > 0 && !_topology->RefinesToTriangles());
 
     // Track primvars that are skipped because they have zero elements
     HdPrimvarDescriptorVector zeroElementPrimvars;
@@ -1976,6 +2039,37 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
     // If any primvars use doubles, we need to know if the Hgi backend supports
     // these, or if they need to be converted to floats.
     const bool doublesSupported = _GetDoubleSupport(resourceRegistry);
+
+    HdBufferSourceSharedPtrVector reserveOnlySources;
+    HdBufferSourceSharedPtrVector separateComputationSources;
+    bool isNormalsComputedPrimvar = false;
+
+    if (_topology->GetScheme() == PxOsdOpenSubdivTokens->none) {
+        // Only need to check for normal computations if they could be used,
+        // i.e., no subdivision is happening and there are authored normals
+        // that could be deformed.
+        HdSt_GetExtComputationPrimvarsComputations(
+            id,
+            sceneDelegate,
+            compPrimvars,
+            *dirtyBits,
+            &sources,
+            &reserveOnlySources,
+            &separateComputationSources,
+            &computations);
+
+        // Update tracked state for normals that are computed.
+        for (HdBufferSourceSharedPtrVector const & computedSources :
+                {reserveOnlySources, sources}) {
+            for (HdBufferSourceSharedPtr const & source: computedSources) {
+                if (source->GetName() == HdTokens->normals) {
+                    isNormalsComputedPrimvar = true;
+                    _sceneNormalsInterpolation = HdInterpolationFaceVarying;
+                    _sceneNormalsFromPrimvars = true;
+                }
+            }
+        }
+    }
 
     for (HdPrimvarDescriptor const& primvar: primvars) {
         if (primvar.name == HdTokens->points) {
@@ -2025,6 +2119,12 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
         }
 
         if (source->GetName() == HdTokens->normals) {
+            if (!TF_VERIFY(!isNormalsComputedPrimvar)) {
+                HF_VALIDATION_WARN(id, 
+                    "'normals' specified as both computed and authored "
+                    "primvar. Skipping authored value.");
+                continue;
+            }
             _sceneNormalsInterpolation = HdInterpolationFaceVarying;
             _sceneNormalsFromPrimvars = true;
         } else if (source->GetName() == HdTokens->displayOpacity) {
@@ -2083,6 +2183,7 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
 
     HdBufferSpecVector bufferSpecs;
     HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
+    HdBufferSpec::GetBufferSpecs(reserveOnlySources, &bufferSpecs);
     HdStGetBufferSpecsFromCompuations(computations, &bufferSpecs);
 
     HdBufferArrayRangeSharedPtr range =
@@ -2116,6 +2217,12 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
         HdStComputeQueue queue = compQueuePair.second;
         resourceRegistry->AddComputation(
             drawItem->GetFaceVaryingPrimvarRange(), comp, queue);
+    }
+
+    if (!separateComputationSources.empty()) {
+        for (auto const & src : separateComputationSources) {
+            resourceRegistry->AddSource(src);
+        }
     }
 }
 
@@ -2562,19 +2669,25 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     /* INSTANCE PRIMVARS */
     _UpdateInstancer(sceneDelegate, dirtyBits);
-    bool displayOpacityFromInstancer;
-    bool sceneNormalsFromInstancer;
-    HdStUpdateInstancerData(sceneDelegate->GetRenderIndex(),
-                            renderParam,
-                            this,
-                            drawItem,
-                            &_sharedData,
-                            *dirtyBits,
-                            &displayOpacityFromInstancer,
-                            &sceneNormalsFromInstancer);
-    _displayOpacityFromInstancer = displayOpacityFromInstancer;
-    _sceneNormalsFromInstancer = sceneNormalsFromInstancer;
-    
+    {
+        // The data members are part of a bitfield, so we can't pass pointers
+        // to them directly. HdStUpdateInstancerData doesn't write to output
+        // params if DirtyInstancer is not set, so we initialize the locals
+        // to current member values to preserve existing state in that case.
+        bool displayOpacityFromInstancer = _displayOpacityFromInstancer;
+        bool sceneNormalsFromInstancer = _sceneNormalsFromInstancer;
+        HdStUpdateInstancerData(sceneDelegate->GetRenderIndex(),
+                                renderParam,
+                                this,
+                                drawItem,
+                                &_sharedData,
+                                *dirtyBits,
+                                &displayOpacityFromInstancer,
+                                &sceneNormalsFromInstancer);
+        _displayOpacityFromInstancer = displayOpacityFromInstancer;
+        _sceneNormalsFromInstancer = sceneNormalsFromInstancer;
+    }
+
     /* CONSTANT PRIMVARS, TRANSFORM, EXTENT AND PRIMID */
     if (HdStShouldPopulateConstantPrimvars(dirtyBits, id)) {
         

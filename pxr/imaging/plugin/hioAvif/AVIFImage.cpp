@@ -32,18 +32,6 @@ ARCH_PRAGMA_UNUSED_FUNCTION
 
 #include "pxr/imaging/plugin/hioAvif/AVIF/src/avif/avif.h"
 
-#if defined(PXR_STATIC)
-#   define HIOAVIF_API
-#   define HIOAVIF_API_TEMPLATE_CLASS(...)
-#   define HIOAVIF_API_TEMPLATE_STRUCT(...)
-#   define HIOAVIF_LOCAL
-#else
-#   define HIOAVIF_API ARCH_EXPORT
-#   define HIOAVIF_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
-#   define HIOAVIF_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
-#   define HIOAVIF_LOCAL ARCH_HIDDEN
-#endif
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -406,8 +394,7 @@ namespace {
 } // anon
 
 
-// It's necessary to export the class so it's typeinfo is visible for registration
-class HIOAVIF_API Hio_AVIFImage final : public HioImage
+class Hio_AVIFImage final : public HioImage
 {
     std::shared_ptr<ArAsset> _asset;
     std::string              _filename;

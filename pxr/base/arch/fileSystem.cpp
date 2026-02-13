@@ -41,6 +41,10 @@
 #include <unistd.h>
 #endif
 
+#if defined(ARCH_OS_DARWIN)
+#include "pxr/base/arch/darwin.h"
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::pair;
@@ -727,6 +731,9 @@ Arch_InitTmpDir()
     // Strip the trailing slash
     tmpPath[sizeOfPath-1] = 0;
     _TmpDir = _strdup(ArchWindowsUtf16ToUtf8(tmpPath).c_str());
+#elif defined(ARCH_OS_DARWIN)
+    // On Apple platforms, we use the system APIs to get the designated temp directory
+    _TmpDir = strdup(Arch_DarwinGetTemporaryDirectory());
 #else
     const std::string tmpdir = ArchGetEnv("TMPDIR");
     if (!tmpdir.empty()) {
@@ -735,12 +742,10 @@ Arch_InitTmpDir()
         // set, the following call will leak a string.
         _TmpDir = strdup(tmpdir.c_str());
     } else {
-#if defined(ARCH_OS_DARWIN)
+#if defined(ARCH_OS_WASM_VM)
+        // Note: WASM will always create /tmp as part of its in memory
+        // filesystem. All data will be lost when the VM is shut down.
         _TmpDir = "/tmp";
-#elif defined(ARCH_OS_WASM_VM)
-        // Note: WASM will always mount the in memory filesystem to this path.
-        // All data will be lost when the VM is shut down.
-        _TmpDir = "/";
 #else
         _TmpDir = "/var/tmp";
 #endif
@@ -951,13 +956,15 @@ ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset)
 #else // assume POSIX
     // Read and check if all got read (most common case).
     int fd = fileno(file);
-    // Convert to signed so we can compare the result of pread with count
-    // without the compiler complaining.  This conversion is implementation
-    // defined if count is larger than what's representable by int64_t, and
-    // POSIX pread also specifies that this case is implementation defined.  We
-    // follow suit.
+    // POSIX pread() has implementation-defined behavior when count exceeds
+    // INT_MAX. To ensure portability across platforms (particularly macOS),
+    // we cap read operations at this limit. Linux already does this
+    // internally.
+    constexpr int64_t maxChunkSize = INT_MAX;
+
     int64_t signedCount = static_cast<int64_t>(count);
-    int64_t nread = pread(fd, buffer, signedCount, offset);
+    int64_t chunkSize = std::min(signedCount, maxChunkSize);
+    int64_t nread = pread(fd, buffer, chunkSize, offset);
     if (ARCH_LIKELY(nread == signedCount || nread == 0))
         return nread;
 
@@ -968,10 +975,11 @@ ArchPRead(FILE *file, void *buffer, size_t count, int64_t offset)
         if (nread > 0) {
             total += nread;
             signedCount -= nread;
+            chunkSize = std::min(signedCount, maxChunkSize);
             offset += nread;
             buffer = static_cast<char *>(buffer) + nread;
         }
-        nread = pread(fd, buffer, signedCount, offset);
+        nread = pread(fd, buffer, chunkSize, offset);
         if (ARCH_LIKELY(nread == signedCount || nread == 0))
             return total + nread;
     }
@@ -1010,13 +1018,15 @@ ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset)
 
     // Write and check if all got written (most common case).
     int fd = fileno(file);
-    // Convert to signed so we can compare the result of pwrite with count
-    // without the compiler complaining.  This conversion is implementation
-    // defined if count is larger than what's representable by int64_t, and
-    // POSIX pwrite also specifies that this case is implementation defined.  We
-    // follow suit.
+    // POSIX pwrite() has implementation-defined behavior when count exceeds
+    // INT_MAX. To ensure portability across platforms (particularly macOS),
+    // we cap write operations at this limit. Linux already does this
+    // internally.
+    constexpr int64_t maxChunkSize = INT_MAX;
+    
     int64_t signedCount = static_cast<int64_t>(count);
-    int64_t nwritten = pwrite(fd, bytes, signedCount, offset);
+    int64_t chunkSize = std::min(signedCount, maxChunkSize);
+    int64_t nwritten = pwrite(fd, bytes, chunkSize, offset);
     if (ARCH_LIKELY(nwritten == signedCount))
         return nwritten;
 
@@ -1026,9 +1036,10 @@ ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset)
         // Update bookkeeping and retry.
         total += nwritten;
         signedCount -= nwritten;
+        chunkSize = std::min(signedCount, maxChunkSize);
         offset += nwritten;
         bytes = static_cast<char const *>(bytes) + nwritten;
-        nwritten = pwrite(fd, bytes, signedCount, offset);
+        nwritten = pwrite(fd, bytes, chunkSize, offset);
         if (ARCH_LIKELY(nwritten == signedCount))
             return total + nwritten;
     }

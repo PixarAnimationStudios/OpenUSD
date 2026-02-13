@@ -18,7 +18,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class TfToken;
 class VtValue;
 
-OIIO_NAMESPACE_USING
+using namespace OIIO;
 
 bool
 HioOIIO_ExtractCustomMetadata(

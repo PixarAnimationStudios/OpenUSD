@@ -23,12 +23,21 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_ENV_SETTING(HGIVULKAN_DEBUG, 0, "Enable debugging for HgiVulkan");
+TF_DEFINE_ENV_SETTING(HGIVULKAN_DEBUG, 0, "Enable debugging for HgiVulkan. "
+    "1: Enable Validation Layer. "
+    ">1: Only enable debug logging/tagging (for other tools)");
 TF_DEFINE_ENV_SETTING(HGIVULKAN_DEBUG_VERBOSE, 0,
     "Enable verbose debugging for HgiVulkan");
 
 bool
 HgiVulkanIsDebugEnabled()
+{
+    static bool _v = TfGetEnvSetting(HGIVULKAN_DEBUG) >= 1;
+    return _v;
+}
+
+bool
+HgiVulkanIsValidationEnabled()
 {
     static bool _v = TfGetEnvSetting(HGIVULKAN_DEBUG) == 1;
     return _v;
@@ -258,6 +267,31 @@ HgiVulkanEndLabel(
 
     VkCommandBuffer vkCmbuf = cb->GetVulkanCommandBuffer();
     device->vkCmdEndDebugUtilsLabelEXT(vkCmbuf);
+}
+
+void
+HgiVulkanInsertDebugMarker(
+    HgiVulkanDevice* device,
+    HgiVulkanCommandBuffer* cb,
+    const char* label,
+    const GfVec4f& color)
+{
+    if (!HgiVulkanIsDebugEnabled() || !label) {
+        return;
+    }
+
+    if (!TF_VERIFY(device && device->vkCmdInsertDebugUtilsLabelEXT)) {
+        return;
+    }
+
+    VkCommandBuffer vkCmbuf = cb->GetVulkanCommandBuffer();
+    VkDebugUtilsLabelEXT labelInfo = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
+    labelInfo.pLabelName = label;
+    labelInfo.color[0] = color[0];
+    labelInfo.color[1] = color[1];
+    labelInfo.color[2] = color[2];
+    labelInfo.color[3] = color[3];
+    device->vkCmdInsertDebugUtilsLabelEXT(vkCmbuf, &labelInfo);
 }
 
 void

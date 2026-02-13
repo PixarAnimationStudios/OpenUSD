@@ -12,418 +12,174 @@ pxr_cpp_bin(usdchecker
         usdUtilsValidators
 )
 
-# Run usdchecker tests which use the old UsdUtilsComplianceChecker python
-# module, which is not available on non-python builds or in static builds.
-# Hence these tests only run when python support is enabled or when building
-# shared library.
-if (PXR_ENABLE_PYTHON_SUPPORT AND BUILD_SHARED_LIBS)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker1
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker2
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker3
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker4
-)
-
-pxr_register_test(testUsdChecker1
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useOldComplianceCheckerInterface clean/clean.usd"
-    EXPECTED_RETURN_CODE 0
-)
-
-pxr_register_test(testUsdChecker2
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useOldComplianceCheckerInterface clean/clean_flat.usdc"
-    EXPECTED_RETURN_CODE 0
-)
-
-pxr_register_test(testUsdChecker3
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useOldComplianceCheckerInterface clean/clean.usdz"
-    EXPECTED_RETURN_CODE 0
-)
-
-pxr_register_test(testUsdChecker4
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useOldComplianceCheckerInterface clean/clean_flat.usdz"
-    EXPECTED_RETURN_CODE 0
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker5
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker6
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker7
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker8
-)
-
-pxr_register_test(testUsdChecker5
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useOldComplianceCheckerInterface --arkit clean/clean_arkit.usdz"
-    EXPECTED_RETURN_CODE 0
-)
-
-pxr_register_test(testUsdChecker6
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useOldComplianceCheckerInterface --arkit clean/clean_flat.usdc"
-    EXPECTED_RETURN_CODE 1
-)
-
-# Adding a "rootPackageOnly" option to the command line will make the clean files
-pxr_register_test(testUsdChecker7
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useOldComplianceCheckerInterface --arkit --rootPackageOnly clean/clean_flat.usdz"
-    EXPECTED_RETURN_CODE 0
-)
-
-pxr_register_test(testUsdChecker8
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useOldComplianceCheckerInterface --arkit clean/clean_flat.usdz"
-    EXPECTED_RETURN_CODE 1
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker9
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker10
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker11
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker12
-)
-
-pxr_register_test(testUsdChecker9
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useOldComplianceCheckerInterface bad/badUsdz.usdz"
-    EXPECTED_RETURN_CODE 1
-)
-
-pxr_register_test(testUsdChecker10
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useOldComplianceCheckerInterface --arkit --dumpRules bad/variants.usdc -o variants_failedChecks.txt"
-    DIFF_COMPARE variants_failedChecks.txt
-    EXPECTED_RETURN_CODE 1
-)
-
-pxr_register_test(testUsdChecker11
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useOldComplianceCheckerInterface bad/brokenRef.usd"
-    EXPECTED_RETURN_CODE 1
-)
-
-pxr_register_test(testUsdChecker12
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useOldComplianceCheckerInterface --arkit bad/badShaderUnsupportedTexture.usdc"
-    EXPECTED_RETURN_CODE 1
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker13
-)
-
-pxr_register_test(testUsdChecker13
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useOldComplianceCheckerInterface clean/cleanNormalMapReader.usda"
-    EXPECTED_RETURN_CODE 0
-)
-
-endif()
-
 # Some of the tests trigger various plugin mechanism, including ndr, so
 # disabling tests for static builds.
 if (NOT BUILD_SHARED_LIBS) 
     return()
 endif()
 
+pxr_register_test(testUsdCheckerListValidators
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --includeKeywords UsdCoreValidators,UsdGeomValidators,UsdPhysicsValidators,UsdShadeValidators,UsdSkelValidators,UsdUtilsValidators -d"
+    TESTENV testenv/testUsdChecker
+    STDOUT_REDIRECT baseRules_validationFramework.txt
+    DIFF_COMPARE baseRules_validationFramework.txt
+    EXPECTED_RETURN_CODE 0
+)
+
 # Following are all usdchecker tests using the new Validation Framework.
 # These tests are expected to pass with the new validation framework.
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker14
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker15
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker16
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker17
-)
-
-pxr_register_test(testUsdChecker14
+pxr_register_test(testUsdChecker1
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker clean/clean.usd"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 0
 )
 
 
-pxr_register_test(testUsdChecker15
+pxr_register_test(testUsdChecker2
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker clean/clean_flat.usdc"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdChecker16
+pxr_register_test(testUsdChecker3
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker clean/clean.usdz"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdChecker17
+pxr_register_test(testUsdChecker4
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker clean/clean_flat.usdz"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 0
 )
 
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker18
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker19
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker20
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker21
-)
-
-pxr_register_test(testUsdChecker18
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit clean/clean_arkit.usdz"
+pxr_register_test(testUsdChecker5
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker clean/clean_arkit.usdz"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 0
 )
-
-#Adding the arkit option makes the clean files fail some checks, test for that.
-#But validation rules are not yet ported for arkit / usdz validator, hence
-#following are disabled.
-
-#pxr_register_test(testUsdChecker19
-#    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit clean/clean_flat.usdc"
-#    EXPECTED_RETURN_CODE 1
-#)
 
 # "rootPackageOnly" won't report validation errors within the subpackages, so it should pass
-pxr_register_test(testUsdChecker20
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit --rootPackageOnly bad/sceneWithInvalidPackage.usda"
+pxr_register_test(testUsdChecker6
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --rootPackageOnly bad/sceneWithInvalidPackage.usda"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 0
 )
 
 # Removing rootPackageOnly, should fail as the subpackage has invalid content
-pxr_register_test(testUsdChecker21
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit bad/sceneWithInvalidPackage.usda"
+pxr_register_test(testUsdChecker7
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/sceneWithInvalidPackage.usda"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker22
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker23
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker24
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker25
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker26
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker27
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker28
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker29
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker30
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker31
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker32
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker33
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker34
-)
-
-pxr_register_test(testUsdChecker22
+pxr_register_test(testUsdChecker8
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badUsdz.usdz"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
 )
-
-#The bad/variants.usdc file uses Point instancer and no point instance validator
-#is not ported to new validation framework yet, hence using a different variant
-#asset.
 
 # Simple variant file, showing all combination of variants being validated and
 # failing
-pxr_register_test(testUsdChecker23
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit --dumpRules bad/badVariants.usdc"
+pxr_register_test(testUsdChecker9
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --dumpRules bad/badVariants.usdc"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
 )
 
 # Complex variants, with default variant being clean but still one of the
 # combination of variant failing.
-pxr_register_test(testUsdChecker24
+pxr_register_test(testUsdChecker10
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badVariants2.usda"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
 )
 
 # Explicitly set broken variant combination, should fail
-pxr_register_test(testUsdChecker25
+pxr_register_test(testUsdChecker11
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badVariants2.usda --variants testSet:test2,testSet2:test2C"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
 )
 
 # Explicitly set clean variant combination, should pass
-pxr_register_test(testUsdChecker26
+pxr_register_test(testUsdChecker12
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badVariants2.usda --variants testSet:test1,testSet2:test2A"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 0
 )
 
 # Explicitly set variant combination which doesn't exist (test2C doesn't exist
 # in testSet:test1 variant, should pass
-pxr_register_test(testUsdChecker27
+pxr_register_test(testUsdChecker13
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badVariants2.usda --variants testSet:test1,testSet2:test2C"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 0
 )
 
 # Explicitly set variantSets, one combination of testSet variantSet will fail
-pxr_register_test(testUsdChecker28
+pxr_register_test(testUsdChecker14
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badVariants2.usda --variantSets testSet"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
 )
 
-
 # Complex variant example with variant on a prim changing its variantSet
 # This test should fail as the variantSet set1 has a variant ref2, which brings in more variantSets set2 and set3, and one of these defaults set3:D fails validation
-pxr_register_test(testUsdChecker29
+pxr_register_test(testUsdChecker15
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badVariants3.usda"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
 )
 
 # When running variantSets set1 explicitly, it traverses the set1:ref2 which again brings in a default set3:D which fails validation
-pxr_register_test(testUsdChecker30
+pxr_register_test(testUsdChecker16
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badVariants3.usda --variantSets set1"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
 )
 
 # variantSets set2, set3 do not exist by default, as set1:ref1 default on the /World prim, doesn't bring in any new variant set via a reference and hence doesn't fail validation.
-pxr_register_test(testUsdChecker31
+pxr_register_test(testUsdChecker17
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badVariants3.usda --variantSets set2"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdChecker32
+pxr_register_test(testUsdChecker18
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badVariants3.usda --variantSets set3"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 0
 )
 
 # Running a specific variant combination which fails validation
-pxr_register_test(testUsdChecker33
+pxr_register_test(testUsdChecker19
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badVariants3.usda --variants set1:ref2,set2:A,set3:D"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
 )
 
 # Running a specific variant with variants from a specific variantSet (one of this combination fails validation, set1:ref2 set3:D)
-pxr_register_test(testUsdChecker34
+pxr_register_test(testUsdChecker20
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badVariants3.usda --variants set1:ref2 --variantSets set3"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker35
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker36
-)
-
-pxr_register_test(testUsdChecker35
+pxr_register_test(testUsdChecker21
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/brokenRef.usd"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
 )
 
-pxr_register_test(testUsdChecker36
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --arkit bad/badShaderUnsupportedTexture.usdc"
+pxr_register_test(testUsdChecker22
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badShaderUnsupportedTexture.usdc"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
 )
 
-pxr_install_test_dir(
-    SRC testenv/testUsdChecker
-    DEST testUsdChecker37
-)
-
-pxr_register_test(testUsdChecker37
+pxr_register_test(testUsdChecker23
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker clean/cleanNormalMapReader.usda"
+    TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 0
 )

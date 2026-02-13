@@ -230,6 +230,9 @@ public:
     TsExtrapolation(TsExtrapMode mode);
 
     TS_API
+    TsExtrapolation(TsExtrapMode mode, double slope);
+
+    TS_API
     bool operator==(const TsExtrapolation &other) const;
 
     TS_API
@@ -283,16 +286,6 @@ public:
     std::vector<Polyline> polylines;
     std::vector<TsSplineSampleSource> sources;
 };
-
-// Declare sampling classes as extern templates. They are explicitly
-// instantiated in types.cpp
-#define TS_SAMPLE_EXTERN_IMPL(unused, tuple)                            \
-    TS_API_TEMPLATE_CLASS(                                              \
-        TsSplineSamples< TS_SPLINE_VALUE_CPP_TYPE(tuple) >);            \
-    TS_API_TEMPLATE_CLASS(                                              \
-        TsSplineSamplesWithSources< TS_SPLINE_VALUE_CPP_TYPE(tuple) >);
-TF_PP_SEQ_FOR_EACH(TS_SAMPLE_EXTERN_IMPL, ~, TS_SPLINE_SAMPLE_VERTEX_TYPES)
-#undef TS_SAMPLE_EXTERN_IMPL
 
 /// Modes for enforcing non-regression in splines.
 ///

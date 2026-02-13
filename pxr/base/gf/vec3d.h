@@ -49,7 +49,8 @@ public:
     typedef double ScalarType;
     static const size_t dimension = 3;
 
-    /// Default constructor does no initialization.
+    /// GfVec3d value-initializes to zero and performs no default
+    /// initialization, like float or double.
     GfVec3d() = default;
 
     /// Initialize all elements to a single value.

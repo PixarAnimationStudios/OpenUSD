@@ -325,21 +325,35 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
             set(emscriptenResourceFile "${CMAKE_CURRENT_SOURCE_DIR}/${resourceFile}")
         endif()
 
+        set(installDestination ${resourcesPath})
+        if(NOT "${dirPath}" STREQUAL "")
+            set(installDestination ${installDestination}/${dirPath})
+        endif()
+
         if (EMSCRIPTEN)
             string(REGEX REPLACE "^lib\\/" "/" emscriptenLocalPath "${resourcesPath}")
 
-            list(APPEND emscriptenResourceFiles "--preload-file ${emscriptenResourceFile}@${emscriptenLocalPath}/${dirPath}/${destFileName}")
+            set(resourceDestDir "${emscriptenLocalPath}")
+            if(NOT "${dirPath}" STREQUAL "")
+                set(resourceDestDir "${resourceDestDir}/${dirPath}")
+            endif()
+
+            # Resources that are required for this library will be embedded in
+            # the final Wasm output. For building internal binaries, we can use
+            # the files from their location in the source tree. In order for
+            # the build to be reloatable, we want to reference the installed
+            # files in the pxrTargets.cmake file.
+            target_link_options(${NAME} PUBLIC              
+                "$<BUILD_INTERFACE:SHELL:--embed-file ${emscriptenResourceFile}@${resourceDestDir}/${destFileName}>"
+                "$<INSTALL_INTERFACE:SHELL:--embed-file $<INSTALL_PREFIX>/${installDestination}/${destFileName}@${resourceDestDir}/${destFileName}>")
         endif()
         install(
             FILES ${resourceFile}
-            DESTINATION ${resourcesPath}/${dirPath}
+            DESTINATION ${installDestination}
             RENAME ${destFileName}
         )
     endforeach()
 
-    if (EMSCRIPTEN)
-        target_link_options(${NAME} PUBLIC ${emscriptenResourceFiles})
-    endif()
 endfunction() # _install_resource_files
 
 function(_install_pyside_ui_files LIBRARY_NAME)
@@ -734,6 +748,34 @@ function(_pxr_install_rpath rpathRef NAME)
             INSTALL_RPATH "${final}"
     )
 endfunction()
+
+# Sets up an install rule to copy assets from the source tree into the
+# ctest folder in the install location. These files are copied at runtime into
+# a temporary directory by the test runner before each test is run.
+function(_pxr_install_test_dir)
+    if (NOT PXR_BUILD_TESTS)
+        return()
+    endif()
+
+    # If the package for this test does not have a target it must not be
+    # getting built, in which case we can skip building associated tests.
+    if (NOT TARGET ${PXR_PACKAGE})
+        return()
+    endif()
+
+    cmake_parse_arguments(bt
+        "" 
+        "SRC;DEST"
+        ""
+        ${ARGN}
+    )
+
+    # XXX -- We shouldn't have to install to run tests.
+    install(
+        DIRECTORY ${bt_SRC}/
+        DESTINATION tests/ctest/${bt_DEST}
+    )
+endfunction() # _pxr_install_test_dir
 
 # Split the library (target) names in libs into internal-to-the-monolithic-
 # library and external-of-it lists.

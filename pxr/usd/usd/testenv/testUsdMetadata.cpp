@@ -34,7 +34,7 @@ _VerifyMetadata(const UsdObject& obj,
                 const TfToken& field)
 {
     TF_VERIFY(!obj.HasMetadata(field));
-    TF_VERIFY(obj.SetMetadata<T>(field, expected)); 
+    TF_VERIFY(obj.SetMetadata(field, expected));
     TF_VERIFY(obj.HasMetadata(field));
     VtValue tmp;
     TF_VERIFY(obj.GetMetadata(field, &tmp));
@@ -42,11 +42,11 @@ _VerifyMetadata(const UsdObject& obj,
     TF_VERIFY(tmp.Get<T>() == expected);
 
     T typed;
-    TF_VERIFY(obj.GetMetadata<T>(field, &typed));
+    TF_VERIFY(obj.GetMetadata(field, &typed));
     TF_VERIFY(typed == expected);
 
     TF_VERIFY(obj.ClearMetadata(field));
-    TF_VERIFY(!obj.GetMetadata<T>(field, &typed));
+    TF_VERIFY(!obj.GetMetadata(field, &typed));
 }
 
 template <typename T>
@@ -57,7 +57,7 @@ _VerifyMetadataByDictKey(const UsdObject& obj,
                          const TfToken& keyPath)
 {
     TF_VERIFY(!obj.HasMetadataDictKey(field, keyPath));
-    TF_VERIFY(obj.SetMetadataByDictKey<T>(field, keyPath, expected));
+    TF_VERIFY(obj.SetMetadataByDictKey(field, keyPath, expected));
     TF_VERIFY(obj.HasMetadataDictKey(field, keyPath));
 
     T typed;
@@ -69,7 +69,7 @@ _VerifyMetadataByDictKey(const UsdObject& obj,
 
     TF_VERIFY(obj.ClearMetadataByDictKey(field, keyPath));
     TF_VERIFY(!obj.GetMetadataByDictKey(field, keyPath, &untyped));
-    TF_VERIFY(!obj.GetMetadataByDictKey<T>(field, keyPath, &typed));
+    TF_VERIFY(!obj.GetMetadataByDictKey(field, keyPath, &typed));
 }
 } // end anonymous namespace
 

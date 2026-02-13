@@ -61,9 +61,9 @@ _GetPropertyMappings()
 {
     return {
         UsdImagingDataSourceMapped::RelationshipMapping{
-            UsdSkelTokens->skelAnimationSource,
-            HdDataSourceLocator(
-                UsdSkelImagingBindingSchemaTokens->animationSource),
+            { UsdSkelTokens->skelAnimationSource,
+              HdDataSourceLocator(
+                  UsdSkelImagingBindingSchemaTokens->animationSource) },
             // Inherited.
             //
             // If not authored, this returns a nullptr and thus
@@ -74,18 +74,18 @@ _GetPropertyMappings()
             _PathFromRelationshipDataSourceFactory},
 
         UsdImagingDataSourceMapped::RelationshipMapping{
-            UsdSkelTokens->skelSkeleton,
-            HdDataSourceLocator(
-                UsdSkelImagingBindingSchemaTokens->skeleton),
+            { UsdSkelTokens->skelSkeleton,
+              HdDataSourceLocator(
+                  UsdSkelImagingBindingSchemaTokens->skeleton) },
             // Inherited.
             //
             // Same as for skelAnimationSource applied.
             _PathFromRelationshipDataSourceFactory},
 
         UsdImagingDataSourceMapped::AttributeMapping{
-            UsdSkelTokens->skelJoints,
-            HdDataSourceLocator(
-                UsdSkelImagingBindingSchemaTokens->joints),
+            { UsdSkelTokens->skelJoints,
+              HdDataSourceLocator(
+                  UsdSkelImagingBindingSchemaTokens->joints) },
             // Inherited.
             //
             // If not authored, this returns a nullptr and thus the
@@ -93,18 +93,18 @@ _GetPropertyMappings()
             _AuthoredAttributeDataSourceFactory},
 
         UsdImagingDataSourceMapped::AttributeMapping{
-            UsdSkelTokens->skelBlendShapes,
-            HdDataSourceLocator(
-                UsdSkelImagingBindingSchemaTokens->blendShapes)
+            { UsdSkelTokens->skelBlendShapes,
+              HdDataSourceLocator(
+                  UsdSkelImagingBindingSchemaTokens->blendShapes) }
             // Not inherited
             //
             // The default factory always produces a data source.
             },
 
         UsdImagingDataSourceMapped::RelationshipMapping{
-            UsdSkelTokens->skelBlendShapeTargets,
-            HdDataSourceLocator(
-                UsdSkelImagingBindingSchemaTokens->blendShapeTargets),
+            { UsdSkelTokens->skelBlendShapeTargets,
+              HdDataSourceLocator(
+                  UsdSkelImagingBindingSchemaTokens->blendShapeTargets) },
             // Not inherited.
             //
             // The factory always produces a data source.

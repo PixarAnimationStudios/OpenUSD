@@ -185,10 +185,10 @@ PcpComposeSitePermission(PcpLayerStackRefPtr const &layerStack,
 }
 
 bool
-PcpComposeSiteHasPrimSpecs(PcpLayerStackRefPtr const &layerStack,
-                           SdfPath const &path,
-                           const std::unordered_set<SdfLayerHandle, TfHash>& 
-                               layersToIgnore)
+PcpComposeSiteHasSpecs(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    const std::unordered_set<SdfLayerHandle, TfHash>& layersToIgnore)
 {
     for (auto const &layer: layerStack->GetLayers()) {
         // if a spec was found in this layer, ensure that it is currently not
@@ -201,8 +201,8 @@ PcpComposeSiteHasPrimSpecs(PcpLayerStackRefPtr const &layerStack,
 }
 
 bool
-PcpComposeSiteHasPrimSpecs(PcpLayerStackRefPtr const &layerStack,
-                           SdfPath const &path)
+PcpComposeSiteHasSpecs(PcpLayerStackRefPtr const &layerStack,
+                       SdfPath const &path)
 {
     for (auto const &layer: layerStack->GetLayers()) {
         if (layer->HasSpec(path)) {
@@ -245,25 +245,6 @@ PcpComposeSitePrimSites(PcpLayerStackRefPtr const &layerStack,
     for (auto const &layer: layerStack->GetLayers()) {
         if (layer->HasSpec(path))
             result->push_back(SdfSite(layer, path));
-    }
-}
-
-void
-PcpComposeSiteRelocates(PcpLayerStackRefPtr const &layerStack,
-                        SdfPath const &path,
-                        SdfRelocatesMap *result)
-{
-    static const TfToken field = SdfFieldKeys->Relocates;
-
-    SdfRelocatesMap relocMap;
-    TF_REVERSE_FOR_ALL(layer, layerStack->GetLayers()) {
-        if ((*layer)->HasField(path, field, &relocMap)) {
-            TF_FOR_ALL(reloc, relocMap) {
-                SdfPath source = reloc->first .MakeAbsolutePath(path);
-                SdfPath target = reloc->second.MakeAbsolutePath(path);
-                (*result)[source] = target;
-            }
-        }
     }
 }
 

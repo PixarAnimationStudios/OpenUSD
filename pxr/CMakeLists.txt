@@ -2,9 +2,7 @@ pxr_core_prologue()
 
 add_subdirectory(external)
 add_subdirectory(base)
-if (NOT EMSCRIPTEN)
-    add_subdirectory(usd)
-endif()
+add_subdirectory(usd)
 
 if (${PXR_BUILD_EXEC})
     add_subdirectory(exec)
@@ -19,6 +17,12 @@ if (${PXR_BUILD_IMAGING})
     if (${PXR_BUILD_USD_IMAGING})
         add_subdirectory(usdImaging)
     endif()
+endif()
+
+if (PXR_BUILD_USD_TOOLS)
+    add_subdirectory(bin)
+else()
+    message(STATUS "Skipping commandline tools because PXR_BUILD_USD_TOOLS=OFF")
 endif()
 
 pxr_core_epilogue()

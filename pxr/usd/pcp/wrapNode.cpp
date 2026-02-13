@@ -119,6 +119,10 @@ wrapNode()
 
         .def("IsRootNode", &This::IsRootNode)
         .def("IsDueToAncestor", &This::IsDueToAncestor)
+        .def("HasTransitiveDirectDependency",
+            &This::HasTransitiveDirectDependency)
+        .def("HasTransitiveAncestralDependency",
+            &This::HasTransitiveAncestralDependency)
         .def("GetDepthBelowIntroduction", &This::GetDepthBelowIntroduction)
         .def("GetIntroPath", &This::GetIntroPath)
         .def("GetPathAtIntroduction", &This::GetPathAtIntroduction)

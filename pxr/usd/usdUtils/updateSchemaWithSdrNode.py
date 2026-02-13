@@ -788,16 +788,17 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
     for attr in attrsWithShownIf:
         attrHints = UsdUI.AttributeHints(attr)
         if attrHints:
-            expr = attrHints.GetShownIf()
-            for sourceName, finalName in attrRenames.items():
-                expr = expr.replace(sourceName, finalName)
-            attrHints.SetShownIf(expr)
+            # XXX: Should be using Sdf.BooleanExpression.RenameVariables()
+            # directly here, but it hasn't been wrapped yet
+            attrHints.SetShownIf(
+                UsdUtils._BooleanExpressionRenameVariables(
+                    attrHints.GetShownIf(), attrRenames))
 
     pagesShownIf = sdrNode.GetPagesShownIf()
     for page, expr in pagesShownIf.items():
-        for sourceName, finalName in attrRenames.items():
-            expr = expr.replace(sourceName, finalName)
-        pagesShownIf[page] = expr
+        # XXX: Ditto above
+        pagesShownIf[page] = \
+            UsdUtils._BooleanExpressionRenameVariables(expr, attrRenames)
 
     if pagesShownIf:
         primHints.SetDisplayGroupsShownIf(pagesShownIf)

@@ -17,6 +17,7 @@
 #include "pxr/usd/sdr/discoveryPlugin.h"
 #include "pxr/usd/sdr/parserPlugin.h"
 #include "pxr/usd/sdr/shaderNode.h"
+#include "pxr/usd/sdr/shaderNodeQuery.h"
 #include "pxr/usd/sdr/shaderNodeDiscoveryResult.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include <map>
@@ -271,6 +272,17 @@ public:
         const TfToken& family = TfToken(),
         SdrVersionFilter filter = SdrVersionFilterDefaultOnly);
 
+    /// Parses all unparsed shader nodes and returns all shader nodes in the
+    /// registry.
+    ///
+    /// `GetAllShaderNodes`'s first invocation is potentially expensive depending
+    /// on parser plugins and number of nodes in the system.
+    ///
+    /// Results are in no particular order. If ordering is desired, nodes
+    /// ordered by identifier are retrievable via the SdrShaderNodeQuery API.
+    SDR_API
+    SdrShaderNodePtrVec GetAllShaderNodes();
+
     /// Get a sorted list of all shader node source types that may be present
     /// on the nodes in the registry.
     ///
@@ -284,6 +296,23 @@ public:
     /// `SdrShaderNode::GetSourceType()` for more information.
     SDR_API
     SdrTokenVec GetAllShaderNodeSourceTypes() const;
+
+    /// Run an SdrShaderNodeQuery.
+    ///
+    /// Note that SdrRegistry::RunQuery will cause all nodes in the registry
+    /// to be parsed in order to examine data on these nodes in their
+    /// final form.
+    SDR_API
+    SdrShaderNodeQueryResult RunQuery(const SdrShaderNodeQuery& query);
+
+    /// Parses all unparsed shader nodes.
+    ///
+    /// `ParseAll` front-loads node parsing so that subsequent calls to node
+    /// getters don't incur the cost of parsing. `ParseAll`'s first invocation
+    /// is potentially expensive depending on parser plugins and number of nodes
+    /// in the system.
+    SDR_API
+    void ParseAll();
 
 protected:
     // Allow TF to construct the class
@@ -332,7 +361,8 @@ private:
     mutable std::mutex _discoveryResultMutex;
 
     // The node map is not a concurrent data structure, thus it needs some
-    // locking infrastructure.
+    // locking infrastructure. Ensure that _discoveryResultMutex is not
+    // acquired after _nodeMapMutex is acquired, to avoid deadlock.
     mutable std::mutex _nodeMapMutex;
 
     // Runs each discovery plugin provided and adds the results to the

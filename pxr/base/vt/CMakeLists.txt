@@ -20,6 +20,10 @@ pxr_library(vt
         streamOut
         types
         value
+        valueCommon
+        valueComposeOver
+        valueRef
+        valueTransform
 
     PYTHON_PUBLIC_CLASSES
         arrayPyBuffer
@@ -50,6 +54,7 @@ pxr_library(vt
         wrapArrayVec.cpp
         wrapDictionary.cpp
         wrapValue.cpp
+        wrapValueRef.cpp
 
     PYMODULE_FILES
         __init__.py

@@ -76,8 +76,6 @@ private:
     friend class TfSingleton<GlfContextCaps>;
 };
 
-GLF_API_TEMPLATE_CLASS(TfSingleton<GlfContextCaps>);
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_IMAGING_GLF_CONTEXT_CAPS_H

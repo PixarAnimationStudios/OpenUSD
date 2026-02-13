@@ -1246,6 +1246,12 @@ SdfLayer::QueryTimeSample(const SdfPath& path, double time,
     return _data->QueryTimeSample(path, time, value);
 }
 
+const std::type_info &
+SdfLayer::QueryTimeSampleTypeid(const SdfPath &path, double time) const
+{
+    return _data->QueryTimeSampleTypeid(path, time);
+}
+
 static SdfValueTypeName
 _GetExpectedTimeSampleValueTypeName(
     const SdfLayer& layer, const SdfPath& path)
@@ -3536,6 +3542,38 @@ SdfLayer::GetSpecType(const SdfPath& path) const
     return _data->GetSpecType(path);
 }
 
+// XXX:
+// This helper function is roughly equivalent to data.GetSpecType(path).
+// However, for target paths (e.g., /foo.rel[/bar]) it avoids calling that
+// function and derives the spec type based on the owning property's spec
+// type. 
+// 
+// This avoids a known performance issue in Sdf_CrateData's synthesis of
+// relationship target/attribute connection specs. We can remove this function
+// in the future if/when we reexamine that handling.
+//
+// NOTE: Unlike the regular GetSpecType function, this helper will not return
+// SdfSpecTypeUnknown if given a target path that points to a spec that does
+// not exist.
+static SdfSpecType
+_GetSpecType_Workaround(const SdfAbstractData& data, const SdfPath& path)
+{
+    if (path.IsTargetPath()) {
+        switch (data.GetSpecType(path.GetParentPath())) {
+        case SdfSpecTypeAttribute:
+            return SdfSpecTypeConnection;
+        case SdfSpecTypeRelationship:
+            return SdfSpecTypeRelationshipTarget;
+        case SdfSpecTypeUnknown:
+            return SdfSpecTypeUnknown;
+        default:
+            TF_VERIFY("Unexpected spec type for parent");
+            return SdfSpecTypeUnknown;
+        }
+    }
+    return data.GetSpecType(path);
+}
+
 vector<TfToken>
 SdfLayer::ListFields(const SdfPath& path) const
 {
@@ -3553,7 +3591,7 @@ SdfLayer::_ListFields(SdfSchemaBase const &schema,
     vector<TfToken> dataList = data.List(path);
 
     // Determine spec type.  If unknown, return early.
-    SdfSpecType specType = data.GetSpecType(path);
+    SdfSpecType specType = _GetSpecType_Workaround(data, path);
     if (ARCH_UNLIKELY(specType == SdfSpecTypeUnknown)) {
         return dataList;
     }
@@ -4184,13 +4222,14 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
         // Collect specs to delete, ordered by namespace.
         struct _SpecsToDelete : public SdfAbstractDataSpecVisitor {
             _SpecsToDelete(const SdfAbstractDataPtr& newData_)
-                : newData(newData_) { }
+                : newData(*newData_) { }
 
             virtual bool VisitSpec(
                 const SdfAbstractData& oldData, const SdfPath& path)
             {
-                if (!newData->HasSpec(path) ||
-                    (newData->GetSpecType(path) != oldData.GetSpecType(path))) {
+                if (!newData.HasSpec(path) ||
+                    _GetSpecType_Workaround(newData, path) 
+                        != _GetSpecType_Workaround(oldData, path)) {
                     paths.insert(path);
                 }
                 return true;
@@ -4201,7 +4240,7 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
                 // Do nothing
             }
 
-            const SdfAbstractDataRefPtr newData;
+            const SdfAbstractData& newData;
             std::set<SdfPath> paths;
         };
 
@@ -4221,7 +4260,7 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
 
             std::vector<TfToken> fields = ListFields(path);
 
-            SdfSpecType specType = _data->GetSpecType(path);
+            SdfSpecType specType = _GetSpecType_Workaround(*_data, path);
             const SdfSchema::SpecDefinition* specDefinition = 
                 GetSchema().GetSpecDefinition(specType);
 
@@ -4305,7 +4344,7 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
                 }
             }
 
-            SdfSpecType specType = newData->GetSpecType(path);
+            SdfSpecType specType = _GetSpecType_Workaround(*newData, path);
 
             // If this is a cross-schema _SetData call, check to see if the spec
             // type is known to this layer's schema.  If not, skip creating it

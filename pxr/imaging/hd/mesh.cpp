@@ -6,6 +6,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/mesh.h"
+#include "pxr/imaging/hd/skinningSettings.h"
 #include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -28,7 +29,13 @@ HdMesh::GetBuiltinPrimvarNames() const
         HdTokens->points,
         HdTokens->normals,
     };
-    return primvarNames;
+    if (!HdSkinningSettings::IsSkinningDeferred()) {
+        return primvarNames;    
+    }
+
+    static const TfTokenVector skinningPrimvarNames = 
+        HdSkinningSettings::GetSkinningInputNames(primvarNames);
+    return skinningPrimvarNames;
 }
 
 // static repr configuration

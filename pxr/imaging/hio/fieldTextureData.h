@@ -86,7 +86,7 @@ private:
 ///
 /// A base class to make HioFieldTextureData objects, implemented by plugins.
 ///
-class HIO_API HioFieldTextureDataFactoryBase : public TfType::FactoryBase
+class HioFieldTextureDataFactoryBase : public TfType::FactoryBase
 {
 protected:
     friend class HioFieldTextureData;

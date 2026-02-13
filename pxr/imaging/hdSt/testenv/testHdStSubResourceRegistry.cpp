@@ -100,7 +100,7 @@ _GetSubResourceRegistry(
     TF_VERIFY(myResourceRegistry != nullptr);
     TF_VERIFY(myResourceRegistry->GetCommitCount() == 0);
     TF_VERIFY(myResourceRegistry->GetGarbageCollectCount() == 0);
-    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 0);
+    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->committed) == 0);
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->garbageCollected) == 0);
 
     // If we give the same identifier to FindOrCreateSubResourceRegistry a 2nd
@@ -134,7 +134,7 @@ _CommitTest(
     TF_VERIFY(myResourceRegistry->GetGarbageCollectCount() == 0);
     // HdStResourceRegistry::_Commit should get invoked, so a buffer source
     // resolve should happen.
-    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 1);
+    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->committed) == 1);
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->garbageCollected) == 0);
 
     // Invoking Commit on the sub resource registry won't invoke Commit on the
@@ -144,7 +144,7 @@ _CommitTest(
     TF_VERIFY(myResourceRegistry->GetGarbageCollectCount() == 0);
     // HdStResourceRegistry::_Commit should not get invoked, so no additional
     // buffer source resolve should happen.
-    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 1);
+    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->committed) == 1);
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->garbageCollected) == 0);
 }
 
@@ -164,7 +164,7 @@ _GarbageCollectTest(
     hdStResourceRegistry->GarbageCollect();
     TF_VERIFY(myResourceRegistry->GetCommitCount() == 0);
     TF_VERIFY(myResourceRegistry->GetGarbageCollectCount() == 1);
-    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 0);
+    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->committed) == 0);
     // GarbageCollect should get invoked on HdStResourceRegistry and
     // My_ResourceRegistry -> 2 calls
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->garbageCollected) == 2);
@@ -175,7 +175,7 @@ _GarbageCollectTest(
     myResourceRegistry->GarbageCollect();
     TF_VERIFY(myResourceRegistry->GetCommitCount() == 0);
     TF_VERIFY(myResourceRegistry->GetGarbageCollectCount() == 2);
-    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->bufferSourcesResolved) == 0);
+    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->committed) == 0);
     // GarbageCollect should only get invoked on My_ResourceRegistry -> 1 call
     TF_VERIFY(perfLog.GetCounter(HdPerfTokens->garbageCollected) == 3);
 }

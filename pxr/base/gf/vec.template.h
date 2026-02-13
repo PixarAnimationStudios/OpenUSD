@@ -56,7 +56,8 @@ public:
     typedef {{ SCL }} ScalarType;
     static const size_t dimension = {{ DIM }};
 
-    /// Default constructor does no initialization.
+    /// {{ VEC }} value-initializes to zero and performs no default
+    /// initialization, like float or double.
     {{ VEC }}() = default;
 
     /// Initialize all elements to a single value.

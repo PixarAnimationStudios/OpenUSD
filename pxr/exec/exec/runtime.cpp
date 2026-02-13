@@ -162,6 +162,13 @@ Exec_Runtime::ComputeValues(
     const VdfSchedule &schedule,
     const VdfRequest &computeRequest)
 {
+    // If the schedule does not have a network, then we cannot compute anything.
+    // This happens when we compute an ExecRequest that only contains empty
+    // leaf outputs.
+    if (!schedule.GetNetwork()) {
+        return;
+    }
+
     // Make sure that the cache storage is large enough to hold all possible
     // computed values in the network.
     _cacheStorage->Resize(*schedule.GetNetwork());

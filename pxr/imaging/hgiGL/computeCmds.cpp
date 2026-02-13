@@ -103,7 +103,9 @@ HgiGLComputeCmds::Dispatch(int dimX, int dimY)
 }
 
 void
-HgiGLComputeCmds::PushDebugGroup(const char* label)
+HgiGLComputeCmds::PushDebugGroup(
+        const char* label,
+        const GfVec4f& color)
 {
     if (HgiGLDebugEnabled()) {
         _pushStack++;
@@ -117,6 +119,16 @@ HgiGLComputeCmds::PopDebugGroup()
     if (HgiGLDebugEnabled()) {
         _pushStack--;
         _ops.push_back( HgiGLOps::PopDebugGroup() );
+    }
+}
+
+void
+HgiGLComputeCmds::InsertDebugMarker(
+        const char* label,
+        const GfVec4f& color)
+{
+    if (HgiGLDebugEnabled()) {
+        _ops.push_back( HgiGLOps::InsertDebugMarker(label) );
     }
 }
 

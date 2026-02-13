@@ -17,6 +17,7 @@
 #include <mutex>
 #include <thread>
 #include <unordered_map>
+#include <deque>
 #include <vector>
 #include <optional>
 
@@ -96,6 +97,19 @@ public:
     void ResetConsumedCommandBuffers(
         HgiSubmitWaitType wait = HgiSubmitWaitTypeNoWait);
 
+    /// Flushes the buffered commands in the queue. Ideally this wouldn't be
+    /// necessary, but Hgi's current structure makes this necessary.
+    /// Additionally we must support passing a semaphore for interop signaling
+    HGIVULKAN_API
+    void Flush(
+        HgiSubmitWaitType wait,
+        VkSemaphore signalSemaphore = VK_NULL_HANDLE);
+
+    /// Checks if the timeline semaphore has passed the desiredValue,
+    /// and can optionally force a wait on this. This may cause a flush.
+    HGIVULKAN_API
+    bool IsTimelinePastValue(uint64_t desiredValue, bool wait = false);
+
 private:
     HgiVulkanCommandQueue() = delete;
     HgiVulkanCommandQueue & operator=(const HgiVulkanCommandQueue&) = delete;
@@ -127,6 +141,12 @@ private:
 
     std::thread::id _threadId;
     HgiVulkanCommandBuffer* _resourceCommandBuffer;
+
+    std::deque<HgiVulkanCommandBuffer*> _queuedBuffers;
+
+    VkSemaphore _timelineSemaphore;
+    uint64_t _timelineNextVal;
+    uint64_t _timelineCachedVal;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1710,7 +1710,7 @@
     <addaction name="actionPreferences"/>
     <addaction name="showUsdValidation"/>
     <addaction name="showDebugFlags"/>
-    <addaction name="showHydraSceneBrowser"/>
+    <addaction name="showHydraSceneDebugger"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -2995,9 +2995,9 @@
     <string>F</string>
    </property>
   </action>
-  <action name="showHydraSceneBrowser">
+  <action name="showHydraSceneDebugger">
    <property name="text">
-    <string>Hydra Scene Browser</string>
+    <string>Hydra Scene Debugger</string>
    </property>
   </action>
   <actiongroup name="actionGroupCameraMask">

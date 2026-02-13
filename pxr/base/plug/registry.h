@@ -474,8 +474,6 @@ private:
     std::mutex _mutex;
 };
 
-PLUG_API_TEMPLATE_CLASS(TfSingleton<PlugRegistry>);
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_BASE_PLUG_REGISTRY_H

@@ -33,13 +33,20 @@ public:
     HGI_API
     ~HgiGraphicsCmds() override;
 
-    /// Push a debug marker.
+    /// Push a debug scope.
     HGI_API
-    virtual void PushDebugGroup(const char* label) = 0;
+    virtual void PushDebugGroup(const char* label,
+        const GfVec4f& color = s_graphicsDebugColor) = 0;
 
-    /// Pop the last debug marker.
+    /// Pop the last debug scope.
     HGI_API
     virtual void PopDebugGroup() = 0;
+
+    /// Insert a debug marker
+    HGI_API
+    virtual void InsertDebugMarker(
+        const char* label,
+        const GfVec4f& color = s_markerDebugColor) = 0;
 
     /// Set viewport [left, BOTTOM, width, height] - OpenGL coords
     HGI_API

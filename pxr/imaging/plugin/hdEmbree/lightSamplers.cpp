@@ -365,6 +365,46 @@ _EvalAreaLight(HdEmbree_LightData const& light, _ShapeSample const& ss,
     };
 }
 
+HdEmbreeLightSampler::LightSample
+_SampleDomeLight(HdEmbree_LightData const& light, GfVec3f const& direction)
+{
+    GfVec3f localDirection = light.xformWorldToLight.TransformDir(direction).GetNormalized();
+    float t = acosf(localDirection[1]) / _pi<float>;
+    float s = atan2f(localDirection[0], localDirection[2]) / (2.0f * _pi<float>);
+    s = 1.0 - fmodf(s+0.5f, 1.0f);
+
+    GfVec3f Li = light.texture.pixels.empty() ?
+        GfVec3f(1.0f)
+        : _SampleLightTexture(light.texture, s, t);
+
+    return HdEmbreeLightSampler::LightSample {
+        Li,
+        direction,
+        std::numeric_limits<float>::max(),
+        4.0f * _pi<float>
+    };
+}
+
+HdEmbreeLightSampler::LightSample
+_EvalDomeLight(HdEmbree_LightData const& light, GfVec3f const& W,
+               float u1, float u2)
+{
+    GfVec3f U, V;
+    GfBuildOrthonormalFrame(W, &U, &V);
+
+    float z = u1;
+    float r = sqrtf(std::max(0.0f, 1.0f - _Sqr(z)));
+    float phi = 2.0f * _pi<float> * u2;
+
+    const GfVec3f wI =
+        (W * z + r * cosf(phi) * U + r * sinf(phi) * V).GetNormalized();
+
+    HdEmbreeLightSampler::LightSample ls = _SampleDomeLight(light, wI);
+    ls.invPdfW = 2.0f * _pi<float>; // We only picked from the hemisphere
+
+    return ls;
+}
+
 } // namespace ""
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -437,6 +477,11 @@ HdEmbreeLightSampler::LightSample HdEmbreeLightSampler::operator()(
             _u1,
             _u2);
     return _EvalAreaLight(_lightData, shapeSample, _hitPosition);
+}
+
+HdEmbreeLightSampler::LightSample HdEmbreeLightSampler::operator()(
+        HdEmbree_Dome const& dome) {
+    return _EvalDomeLight(_lightData, _normal, _u1, _u2);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

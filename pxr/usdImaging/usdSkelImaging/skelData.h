@@ -9,6 +9,10 @@
 
 #include "pxr/usdImaging/usdSkelImaging/api.h"
 
+#include "pxr/usdImaging/usdSkelImaging/animationSchema.h"
+#include "pxr/usdImaging/usdSkelImaging/skeletonSchema.h"
+
+#include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -30,18 +34,17 @@ struct UsdSkelImagingSkelData
     /// Path of deformable prim. Used only for warnings/error messages.
     SdfPath primPath;
 
-    /// Path of animation prim.
-    SdfPath animationSource;
+    UsdSkelImagingSkeletonSchema skeletonSchema;
 
     /// From skeleton's joints.
     UsdSkelTopology topology;
 
-    /// Remapping of skelAnimation's data to skeleton's hierarchy.
-    UsdSkelAnimMapper animMapper;
-
     /// From skeleton.
     VtArray<GfMatrix4f> bindTransforms;
     VtArray<GfMatrix4f> inverseBindTransforms;
+
+    UsdSkelImagingSkelData(const SdfPath& path, 
+        const UsdSkelImagingSkeletonSchema& schema);
 };
 
 /// Compute data for prim in scene index.
@@ -58,10 +61,9 @@ UsdSkelImagingComputeSkinningTransforms(
     const UsdSkelImagingSkelData &data,
     /// From skeleton (might not be needed).
     HdMatrix4fArrayDataSourceHandle const &restTransforms,
-    /// From skelAnimation.
-    const VtArray<GfVec3f> &translations,
-    const VtArray<GfQuatf> &rotations,
-    const VtArray<GfVec3h> &scales);
+    const VtArray<UsdSkelImagingAnimationSchema>& animationSchemas,
+    const VtArray<SdfPath>& animationSources,
+    const HdSampledDataSource::Time& shutterOffset);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

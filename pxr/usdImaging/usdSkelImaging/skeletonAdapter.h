@@ -273,6 +273,11 @@ protected:
                      UsdImagingIndexProxy* index) override;
 
 private:
+    enum class _ComputationType : uint8_t {
+        Points,
+        Normals
+    };
+
     // ---------------------------------------------------------------------- //
     /// Handlers for the Bone Mesh
     // ---------------------------------------------------------------------- //
@@ -314,10 +319,18 @@ private:
     // ---------------------------------------------------------------------- //
     /// Handlers for the skinning computations
     // ---------------------------------------------------------------------- //
-    bool _IsSkinningComputationPath(const SdfPath& cachePath) const;
-    
-    bool
-    _IsSkinningInputAggregatorComputationPath(const SdfPath& cachePath)const;
+    bool _IsSkinningPointsComputationPath(const SdfPath& cachePath) const;
+
+    bool _IsSkinningNormalsComputationPath(const SdfPath& cachePath) const;
+
+    _ComputationType _GetSkinningComputationType(
+        const SdfPath& cachePath) const;
+
+    bool _IsSkinningPointsInputAggregatorComputationPath(
+        const SdfPath& cachePath) const;
+
+    bool _IsSkinningNormalsInputAggregatorComputationPath(
+        const SdfPath& cachePath) const;
 
     void _TrackSkinningComputationVariability(
             const UsdPrim& skinnedPrim,
@@ -330,21 +343,34 @@ private:
                                        const SdfPath& skinnedPrimCachePath,
                                        UsdTimeCode time) const;
     
-    SdfPath _GetSkinningComputationPath(const SdfPath& skinnedPrimPath) const;
+    VtVec3fArray _GetSkinnedPrimNormals(const UsdPrim& skinnedPrim,
+                                       const SdfPath& skinnedPrimCachePath,
+                                       UsdTimeCode time) const;
+
+    VtIntArray _GetSkinnedPrimFaceVertexIndices(const UsdPrim& skinnedPrim,
+                                       const SdfPath& skinnedPrimCachePath,
+                                       UsdTimeCode time) const;
+
+    SdfPath _GetSkinningComputationPath(
+        const SdfPath& skinnedPrimPath,
+        _ComputationType computationType) const;
 
     SdfPath _GetSkinningInputAggregatorComputationPath(
-        const SdfPath& skinnedPrimPath) const;
+        const SdfPath& skinnedPrimPath,
+        _ComputationType computationType) const;
 
     // Static helper methods
     static
     std::string _LoadSkinningComputeKernel(const TfToken& kernelKey);
 
     static
-    const std::string& _GetLBSSkinningComputeKernel();
+    const std::string& _GetLBSSkinningComputeKernel(
+        _ComputationType computationType);
 
     static
-    const std::string& _GetDQSSkinningComputeKernel();
-
+    const std::string& _GetDQSSkinningComputeKernel(
+        _ComputationType computationType);
+    
     // ---------------------------------------------------------------------- //
     /// Handlers for the skinned prim
     // ---------------------------------------------------------------------- //
@@ -410,6 +436,22 @@ private:
     /// inputs which are not time-varying.
     double _GetDefaultSampleTime(UsdTimeCode time);
 
+    // ---------------------------------------------------------------------- //
+    /// Matrix helpers
+    // ---------------------------------------------------------------------- //
+    static
+    bool
+    _ExtractSkinningScaleXforms(
+        const VtMatrix4fArray& skinningXforms,
+        _ComputationType computationType,
+        VtMatrix3fArray* skinningScaleXforms);
+
+    static
+    bool
+    _ExtractSkinningDualQuats(
+        const VtMatrix4fArray& skinningXforms,
+        _ComputationType computationType,
+        VtVec4fArray* skinningDualQuats);
 
     // ---------------------------------------------------------------------- //
     /// Populated skeleton state
@@ -456,13 +498,15 @@ private:
         _SkinnedPrimData(const SdfPath& skelPath,
                          const UsdSkelSkeletonQuery& skelQuery,
                          const UsdSkelSkinningQuery& skinningQuery,
-                         const SdfPath& skelRootPath);
+                         const SdfPath& skelRootPath,
+                         const UsdSkelImagingSkeletonAdapter* adapter);
 
         std::shared_ptr<UsdSkelBlendShapeQuery> blendShapeQuery;
         UsdSkelSkinningQuery skinningQuery;
         UsdSkelAnimQuery animQuery;
         SdfPath skelPath, skelRootPath;
         bool hasJointInfluences = false;
+        TfToken normalsInterpolation;
     };
 
     const _SkinnedPrimData* _GetSkinnedPrimData(const SdfPath& cachePath) const;

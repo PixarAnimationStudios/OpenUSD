@@ -119,7 +119,7 @@ private:
 /// introducing Usd as a dependency.
 ///
 class EsfAttributeQuery
-    : public EsfFixedSizePolymorphicHolder<EsfAttributeQueryInterface, 160>
+    : public EsfFixedSizePolymorphicHolder<EsfAttributeQueryInterface, 168>
 {
 public:
     using EsfFixedSizePolymorphicHolder::EsfFixedSizePolymorphicHolder;

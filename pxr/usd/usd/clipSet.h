@@ -135,7 +135,12 @@ public:
     template <class T>
     bool QueryTimeSample(
         const SdfPath& path, UsdTimeCode time, 
-        Usd_InterpolatorBase* interpolator, T* value) const;
+        Usd_Interpolator const &interpolator, T* value) const;
+
+    /// If there is a time sample for \p path at \p time, return its value's
+    /// typeid(), otherwise return typeid(void).
+    const std::type_info &QueryTimeSampleTypeid(
+        const SdfPath& path, UsdTimeCode time) const;
 
     /// Query time samples for an attribute at \p path at pre-time \p time if
     /// samples represent a jump discontinuity.
@@ -146,7 +151,7 @@ public:
     template <class T>
     bool QueryPreTimeSampleWithJumpDiscontinuity(
         const SdfPath& path, UsdTimeCode time, 
-        Usd_InterpolatorBase* interpolator, T* value) const;
+        Usd_Interpolator const &interpolator, T* value) const;
 
     std::string name;
     PcpLayerStackPtr sourceLayerStack;
@@ -186,7 +191,7 @@ template <class T>
 inline bool
 Usd_ClipSet::QueryTimeSample(
     const SdfPath& path, UsdTimeCode time, 
-    Usd_InterpolatorBase* interpolator, T* value) const
+    Usd_Interpolator const &interpolator, T* value) const
 {
     const Usd_ClipRefPtr& clip = 
         GetActiveClip(time, false /*timeHasJumpDiscontinuity*/);
@@ -207,7 +212,7 @@ template <class T>
 inline bool
 Usd_ClipSet::QueryPreTimeSampleWithJumpDiscontinuity(
     const SdfPath& path, UsdTimeCode time,
-    Usd_InterpolatorBase* interpolator, T* value) const
+    Usd_Interpolator const &interpolator, T* value) const
 {
     if (!time.IsPreTime()) {
         return false;
@@ -234,7 +239,7 @@ template <class T>
 inline bool
 Usd_QueryTimeSample(
     const Usd_ClipSetRefPtr& clipSet, const SdfPath& path,
-    double time, Usd_InterpolatorBase* interpolator, T* result)
+    double time, Usd_Interpolator const &interpolator, T* result)
 {
     return clipSet->QueryTimeSample(path, time, interpolator, result);
 }

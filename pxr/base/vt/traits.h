@@ -131,6 +131,26 @@ struct VtIsValueProxy :
     std::integral_constant<
     bool, VtIsTypedValueProxy<T>::value || VtIsErasedValueProxy<T>::value> {};
 
+/// A trait indicating whether VtValue compose-over functionality can be
+/// registered for a type.
+template <class T>
+struct VtValueTypeCanCompose : std::false_type {};
+
+/// A helper for specializing the above trait.
+#define VT_VALUE_TYPE_CAN_COMPOSE(T)                              \
+    template <> struct VtValueTypeCanCompose<TF_PP_EAT_PARENS(T)> \
+        : std::true_type {};
+
+/// A trait indicating whether VtValue transform functionality can be registered
+/// for a type.
+template <class T>
+struct VtValueTypeCanTransform : std::false_type {};
+
+/// A helper for specializing the above trait.
+#define VT_VALUE_TYPE_CAN_TRANSFORM(T)                              \
+    template <> struct VtValueTypeCanTransform<TF_PP_EAT_PARENS(T)> \
+        : std::true_type {};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_BASE_VT_TRAITS_H

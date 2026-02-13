@@ -12,6 +12,7 @@
 #include "pxr/imaging/hgiVulkan/sampler.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
 
+#include <algorithm>
 #include <float.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -70,6 +71,12 @@ HgiVulkanSampler::HgiVulkanSampler(
             HgiVulkanAllocator(),
             &_vkSampler)
     );
+
+    if (_descriptor.debugName.empty()) {
+        _descriptor.debugName = "UNNAMED";
+    }
+    HgiVulkanSetDebugName(device, (uint64_t)_vkSampler,
+        VK_OBJECT_TYPE_SAMPLER, _descriptor.debugName.c_str());
 }
 
 HgiVulkanSampler::~HgiVulkanSampler()

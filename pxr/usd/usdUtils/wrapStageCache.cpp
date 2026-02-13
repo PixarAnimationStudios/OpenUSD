@@ -23,8 +23,19 @@ void wrapStageCache()
              return_value_policy<reference_existing_object>())
         .staticmethod("Get")
 
-        .def("GetSessionLayerForVariantSelections",
-             &UsdUtilsStageCache::GetSessionLayerForVariantSelections)
+        .def<SdfLayerRefPtr (*)(
+            const TfToken& name,
+            const std::vector<std::pair<std::string, std::string>>&)>(
+            "GetSessionLayerForVariantSelections",
+            &UsdUtilsStageCache::GetSessionLayerForVariantSelections,
+            (arg("modelName"), arg("variantSelections"))
+            )
+        .def<SdfLayerRefPtr (*)(
+            const SdfPath& primPath,
+            const std::vector<std::pair<std::string, std::string>>&)>(
+            "GetSessionLayerForVariantSelections",
+            &UsdUtilsStageCache::GetSessionLayerForVariantSelections,
+            (arg("primPath"), arg("variantSelections")))
         .staticmethod("GetSessionLayerForVariantSelections")
         ;
 }

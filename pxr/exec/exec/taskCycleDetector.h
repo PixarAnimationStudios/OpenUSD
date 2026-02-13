@@ -21,6 +21,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class Exec_CompilationState;
+
 /// Detects when Exec_CompilationTasks are blocked by a task cycle.
 ///
 /// Task cycles are formed when tasks directly or indirectly wait on themselves
@@ -45,7 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Exec_TaskCycleDetector
 {
 public:
-    Exec_TaskCycleDetector();
+    explicit Exec_TaskCycleDetector(Exec_CompilationState *compilationState);
     
     ~Exec_TaskCycleDetector();
 
@@ -191,6 +193,14 @@ private:
     };
 
 private:
+    // The cycle detector needs a back-pointer to the compilation state, so that
+    // it can interrupt compilation when a cycle is detected.
+    Exec_CompilationState *const _compilationState;
+
+    // This flag is set to true once a cycle has been detected. It ensures that
+    // we never detect a cycle more than once in the same round of compilation.
+    std::atomic<bool> _isCycleDetected = false;
+
     // Thread-local counters.
     tbb::enumerable_thread_specific<_ThreadData> _threadData;
 

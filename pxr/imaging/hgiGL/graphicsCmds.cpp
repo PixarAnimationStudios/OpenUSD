@@ -197,7 +197,8 @@ HgiGLGraphicsCmds::DrawIndexedIndirect(
 }
 
 void
-HgiGLGraphicsCmds::PushDebugGroup(const char* label)
+HgiGLGraphicsCmds::PushDebugGroup(const char* label,
+        const GfVec4f& color)
 {
     if (HgiGLDebugEnabled()) {
         _pushStack++;
@@ -213,6 +214,17 @@ HgiGLGraphicsCmds::PopDebugGroup()
         _ops.push_back( HgiGLOps::PopDebugGroup() );
     }
 }
+
+void
+HgiGLGraphicsCmds::InsertDebugMarker(
+        const char* label,
+        const GfVec4f& color)
+{
+    if (HgiGLDebugEnabled()) {
+        _ops.push_back( HgiGLOps::InsertDebugMarker(label) );
+    }
+}
+
 
 void
 HgiGLGraphicsCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)

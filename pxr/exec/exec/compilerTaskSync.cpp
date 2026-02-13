@@ -29,35 +29,70 @@ Exec_CompilerTaskSync<KeyType>::Claim(
     Exec_CompilationTask *task)
 {
     // Add the key to the map. If another task got to claiming it first, it's
-    // expected and safe for the key to already have an entry.
-    const auto &[iterator, inserted] = _claimedTasks.emplace(
+    // expected and safe for the key to already have an waitlist.
+    const auto &[iterator, inserted] = _waitlists.emplace(
         std::piecewise_construct, 
             std::forward_as_tuple(key),
             std::forward_as_tuple());
-    _Entry *const entry = &iterator->second;
+    _Waitlist *const waitlist = &iterator->second;
 
-    return _Claim(entry, task);
+    return _Claim(waitlist, task);
+}
+
+template <class KeyType>
+Exec_CompilerTaskSyncBase::WaitResult
+Exec_CompilerTaskSync<KeyType>::WaitOn(
+    const KeyType &key,
+    Exec_CompilationTask *task)
+{
+    // Add the key to the map. If another task got to claiming it first, it's
+    // expected and safe for the key to already have an waitlist.
+    const auto &[iterator, inserted] = _waitlists.emplace(
+        std::piecewise_construct, 
+            std::forward_as_tuple(key),
+            std::forward_as_tuple());
+    _Waitlist *const waitlist = &iterator->second;
+
+    return _WaitOn(waitlist, task);
 }
 
 template <class KeyType>
 void
 Exec_CompilerTaskSync<KeyType>::MarkDone(const KeyType &key)
 {
-    // Note, some of these TF_VERIFYs can be safely relaxed if we later
-    // want to mark tasks done from tasks that aren't the original claimaints.
+    // Get the waitlist for the key. If previously claimed or waited on, the
+    // waitlist will exist. If not, we create a new waitlist in case a future
+    // caller attempts to wait on this key.
+    const auto &[iterator, inserted] = _waitlists.emplace(
+        std::piecewise_construct, 
+            std::forward_as_tuple(key),
+            std::forward_as_tuple());
+    _Waitlist *const waitlist = &iterator->second;
+ 
+    // We expect the waitlist to not already be marked done.
+    const bool wasNotDone = _MarkDone(waitlist);
+    TF_VERIFY(wasNotDone);
+}
 
-    // We expect the publishing task to have previously claimed this key, so
-    // there should already be an entry in the map.
-    const auto iterator = _claimedTasks.find(key);
-    if (!TF_VERIFY(iterator != _claimedTasks.end())) {
-        return;
+template <class KeyType>
+void
+Exec_CompilerTaskSync<KeyType>::MarkAllDone()
+{
+    // TODO: We may later add a separate atomic flag that "closes" the task
+    // sync, so that all keys added in the future are automatically marked
+    // done. Currently, there is no need for this flag, because we only
+    // interrupt the compilation process (and therefore only call this method)
+    // when all tasks are blocked in a cycle, meaning no task should attempt to
+    // Claim or WaitOn any key after this method is called.
+
+    for (auto &[key, waitlist] : _waitlists) {
+        _MarkDone(&waitlist);
     }
-    _Entry *const entry = &iterator->second;
-
-    _MarkDone(entry);
 }
 
 // Explicit template instantiations.
 template class Exec_CompilerTaskSync<Exec_OutputKey::Identity>;
+template class Exec_CompilerTaskSync<const VdfInput *>;
+template class Exec_CompilerTaskSync<const VdfNode *>;
 
 PXR_NAMESPACE_CLOSE_SCOPE

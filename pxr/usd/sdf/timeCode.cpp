@@ -6,6 +6,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/timeCode.h"
+#include "pxr/usd/sdf/layerOffset.h"
 
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
@@ -13,6 +14,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/arrayEdit.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/base/vt/valueTransform.h"
 
 #include <ostream>
 
@@ -30,6 +32,10 @@ TF_REGISTRY_FUNCTION(TfType)
 TF_REGISTRY_FUNCTION(VtValue)
 {
     VtValue::RegisterSimpleBidirectionalCast<double, SdfTimeCode>();
+    VtRegisterTransform(
+        +[](SdfTimeCode const &timeCode, SdfLayerOffset const &offset) {
+            return offset * timeCode;
+        });
 }
 
 std::ostream& 

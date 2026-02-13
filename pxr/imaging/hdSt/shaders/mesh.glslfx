@@ -11,6 +11,7 @@
 --- #import $TOOLS/hdSt/shaders/mesh.glslfx
 
 #import $TOOLS/hdSt/shaders/instancing.glslfx
+#import $TOOLS/hdSt/shaders/skinning.glslfx
 #import $TOOLS/hdSt/shaders/meshFaceCull.glslfx
 #import $TOOLS/hdSt/shaders/meshNormal.glslfx
 #import $TOOLS/hdSt/shaders/meshWire.glslfx
@@ -43,7 +44,7 @@ void main(void)
     ProcessPrimvarsIn();
 
     MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
-    vec4 point        = vec4(HdGet_points().xyz, 1);
+    vec4 point        = vec4(ApplySkinning(HdGet_points().xyz), 1);
     outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
 
     outData.Neye = GetNormal(vec3(0), 0); // normalized

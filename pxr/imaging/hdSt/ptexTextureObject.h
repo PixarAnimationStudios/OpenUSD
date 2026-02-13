@@ -68,6 +68,9 @@ public:
     HDST_API
     HdStTextureType GetTextureType() const override;
 
+    HDST_API
+    size_t GetCommittedSize() const override;
+
 protected:
     HDST_API
     void _Load() override;

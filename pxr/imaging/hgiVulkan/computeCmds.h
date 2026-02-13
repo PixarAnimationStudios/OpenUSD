@@ -31,10 +31,16 @@ public:
     ~HgiVulkanComputeCmds() override;
 
     HGIVULKAN_API
-    void PushDebugGroup(const char* label) override;
+    void PushDebugGroup(const char* label,
+        const GfVec4f& color = s_computeDebugColor) override;
 
     HGIVULKAN_API
     void PopDebugGroup() override;
+
+    HGIVULKAN_API
+    void InsertDebugMarker(
+        const char* label,
+        const GfVec4f& color = s_markerDebugColor) override;
 
     HGIVULKAN_API
     void BindPipeline(HgiComputePipelineHandle pipeline) override;

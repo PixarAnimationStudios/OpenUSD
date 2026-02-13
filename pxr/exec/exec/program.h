@@ -45,6 +45,7 @@ class EfTime;
 class EfTimeInputNode;
 class EsfJournal;
 struct Exec_AttributeValueInvalidationResult;
+class Exec_CompilationState;
 struct Exec_DisconnectedInputsInvalidationResult;
 struct Exec_MetadataInvalidationResult;
 class Exec_TimeChangeInvalidationResult;
@@ -100,11 +101,15 @@ public:
     }
 
     /// Declares that the program is about to begin a new round of compilation.
-    void InitializeCompilation() {
+    void BeginCompilation() {
         // Increments the program's compilation version. We expect the version
         // to never wrap-around.
         TF_VERIFY(++_compilationVersion != 0);
+        _wasInterrupted = false;
     }
+
+    /// Called after completing a round of compilation.
+    void EndCompilation(Exec_CompilationState &compilationState);
 
     /// Adds a new node in the VdfNetwork.
     ///
@@ -321,6 +326,11 @@ public:
         return _nodeRecompilationInfoTable.GetNodeRecompilationInfo(node);
     }
 
+    /// Returns true if the most recent round of compilation was interrupted.
+    bool WasInterrupted() const {
+        return _wasInterrupted;
+    }
+
     /// Starting from the set of potentially isolated nodes, creates a
     /// subnetwork containing all isolated nodes and connections.
     ///
@@ -430,6 +440,9 @@ private:
 
     // Stores recompilation info for every node.
     Exec_NodeRecompilationInfoTable _nodeRecompilationInfoTable;
+
+    // True if the most recent round of compilation was interrupted.
+    bool _wasInterrupted;
 };
 
 

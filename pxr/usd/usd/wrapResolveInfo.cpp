@@ -9,6 +9,7 @@
 #include "pxr/base/tf/pyEnum.h"
 
 #include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/return_internal_reference.hpp"
 
 using std::string;
 
@@ -20,8 +21,19 @@ void wrapUsdResolveInfo()
 {
     class_<UsdResolveInfo>("ResolveInfo")
         .def("GetSource", &UsdResolveInfo::GetSource)
+        .def("HasAuthoredValueOpinion",
+             &UsdResolveInfo::HasAuthoredValueOpinion)
+        .def("HasAuthoredValue",
+             &UsdResolveInfo::HasAuthoredValue)
         .def("GetNode", &UsdResolveInfo::GetNode)
         .def("ValueIsBlocked", &UsdResolveInfo::ValueIsBlocked)
+        .def("ValueSourceMightBeTimeVarying",
+             &UsdResolveInfo::ValueSourceMightBeTimeVarying)
+        .def("HasNextWeakerInfo",
+             &UsdResolveInfo::HasNextWeakerInfo)
+        .def("GetNextWeakerInfo",
+             &UsdResolveInfo::GetNextWeakerInfo,
+             return_internal_reference<>())
         ;
 
     TfPyWrapEnum<UsdResolveInfoSource>();

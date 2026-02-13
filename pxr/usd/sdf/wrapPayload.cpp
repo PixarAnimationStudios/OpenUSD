@@ -74,18 +74,15 @@ void wrapPayload()
 
         .add_property("assetPath",
             make_function(
-                &This::GetAssetPath, return_value_policy<return_by_value>()),
-            &This::SetAssetPath)
+                &This::GetAssetPath, return_value_policy<return_by_value>()))
 
         .add_property("primPath",
             make_function(
-                &This::GetPrimPath, return_value_policy<return_by_value>()),
-            &This::SetPrimPath)
+                &This::GetPrimPath, return_value_policy<return_by_value>()))
 
         .add_property("layerOffset",
             make_function(
-                &This::GetLayerOffset, return_value_policy<return_by_value>()),
-            &This::SetLayerOffset)
+                &This::GetLayerOffset, return_value_policy<return_by_value>()))
 
         .def(self == self)
         .def(self != self)

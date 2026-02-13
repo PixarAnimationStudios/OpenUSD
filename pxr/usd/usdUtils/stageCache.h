@@ -13,6 +13,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/usd/stageCache.h"
+#include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/token.h"
@@ -45,7 +46,18 @@ public:
     USDUTILS_API
     static SdfLayerRefPtr GetSessionLayerForVariantSelections(
         const TfToken& modelName,
-        const std::vector<std::pair<std::string, std::string> > &variantSelections);
+        const std::vector<std::pair<std::string, std::string>>&
+            variantSelections);
+
+    /// Given variant selections as a vector of pairs (vector in case order
+    /// matters to the client), constructs a session layer with overs on \p
+    /// primPath with the variant selections or returns a cached session layer
+    /// with those opinions. 
+    USDUTILS_API
+    static SdfLayerRefPtr GetSessionLayerForVariantSelections(
+        const SdfPath& primPath,
+        const std::vector<std::pair<std::string, std::string>>&
+            variantSelections);
 };
 
 

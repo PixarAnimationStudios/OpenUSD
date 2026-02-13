@@ -272,8 +272,7 @@ public:
 
     /// Find all stages in this cache with \p rootLayer, \p sessionLayer, and
     /// \p pathResolverContext.  If there is no matching stage in this cache,
-    /// return an empty vector.  If there is more than one matching stage in
-    /// this cache, return an arbitrary matching one. 
+    /// return an empty vector. 
     USD_API
     std::vector<UsdStageRefPtr>
     FindAllMatching(const SdfLayerHandle &rootLayer,

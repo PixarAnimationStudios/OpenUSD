@@ -397,7 +397,10 @@ private:
             , restrictionDepth(0)
             , hasSpecs(false)
             , culled(false)
-            , isDueToAncestor(false) {}
+            , isDueToAncestor(false)
+            , hasTransitiveDirectArc(false)
+            , hasTransitiveAncestralArc(false)
+            {}
 
         // The site path for a particular node.
         SdfPath sitePath;
@@ -419,6 +422,13 @@ private:
         // Whether this node is copied from the namespace ancestor prim
         // index (true) or introduced here due to a direct arc (false)
         bool isDueToAncestor:1;
+
+        // Whether this node was transitively introduced by a direct arc.
+        bool hasTransitiveDirectArc:1;
+
+        // Whether this node was transitively introduced by an ancestral
+        // arc.
+        bool hasTransitiveAncestralArc:1;
     };
     
     // Elements in this vector correspond to nodes in the shared node

@@ -8,8 +8,9 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/identity.h"
 #include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
+#include "pxr/base/tf/spinMutex.h"
 
-#include <tbb/spin_mutex.h>
+#include <cstdint>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -17,7 +18,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Sdf_IdRegistryImpl
 //
 
-static const size_t _MinDeadThreshold = 64;
+static constexpr int64_t _MinDeadThreshold = 64;
 
 class Sdf_IdRegistryImpl
 {
@@ -28,8 +29,7 @@ public:
         , _deadThreshold(_MinDeadThreshold) {}
     
     ~Sdf_IdRegistryImpl() {
-        tbb::spin_mutex::scoped_lock lock(_idsMutex);
-
+        TfSpinMutex::ScopedLock lock(_idsMutex);
         for (auto &id: _ids) {
             id.second->_Forget();
         }
@@ -42,13 +42,15 @@ public:
     Sdf_IdentityRefPtr
     Identify(const SdfPath &path) {
         
-        tbb::spin_mutex::scoped_lock lock(_idsMutex);
+        TfSpinMutex::ScopedLock lock(_idsMutex);
 
         Sdf_Identity *rawId;
         _IdMap::iterator iter = _ids.find(path);
         if (iter != _ids.end()) {
             rawId = iter->second;
-            ++rawId->_refCount;
+            if (++rawId->_refCount == 1) {
+                --_deadCount; // resurrection.
+            }
             return Sdf_IdentityRefPtr(
                 TfDelegatedCountDoNotIncrementTag, rawId);
         }
@@ -56,17 +58,21 @@ public:
         TfAutoMallocTag2 tag("Sdf", "Sdf_IdentityRegistry::Identify");
         rawId = new Sdf_Identity(this, path);
         _ids[path] = rawId;
-        _deadThreshold = std::max(_MinDeadThreshold, _ids.size() / 8);
+        _ResetDeadThresholdNoLock();
         return Sdf_IdentityRefPtr(TfDelegatedCountIncrementTag, rawId);
     }
 
     void UnregisterOrDelete() {
-        if (++_deadCount >= _deadThreshold) {
-            // Clean house!
-            _deadCount = 0;
-            tbb::spin_mutex::scoped_lock lock(_idsMutex);
+        // If we see a dead count over the threshold, try to take it to zero.
+        // If we do, then garbage collect.  Otherwise someone else will.  Note
+        // that this can be racy, and _deadCount can go negative.  That's okay
+        // since we're just trying to make sure we clean up occasionally without
+        // constantly thrashing.
+        int64_t newDeadCount = ++_deadCount;
+        if (newDeadCount >= _deadThreshold &&
+            _deadCount.compare_exchange_strong(newDeadCount, 0)) {
+            TfSpinMutex::ScopedLock lock(_idsMutex);
             for (auto iter = _ids.begin(); iter != _ids.end();) {
-
                 if (iter->second->_refCount == 0) {
                     delete iter->second;
                     iter = _ids.erase(iter);
@@ -75,7 +81,7 @@ public:
                     ++iter;
                 }
             }
-            _deadThreshold = std::max(_MinDeadThreshold, _ids.size() / 8);
+            _ResetDeadThresholdNoLock();
         }
     }
 
@@ -84,7 +90,7 @@ public:
         // We hold the mutex, but note that per our Sdf thread-safety rules, no
         // other thread is allowed to be reading or writing this layer at the
         // same time that the layer is being mutated.
-        tbb::spin_mutex::scoped_lock lock(_idsMutex);
+        TfSpinMutex::ScopedLock lock(_idsMutex);
         
         // Make sure an identity actually exists at the old path, otherwise
         // there's nothing to do.
@@ -113,6 +119,21 @@ public:
     }
 
 private:
+
+    void _ResetDeadThresholdNoLock() {
+        // Set the threshold to the smallest multiple of _MinDeadThreshold
+        // greater than 1/8th the _ids.size().  Avoid an atomic write if
+        // unchanged.
+        const int64_t curThreshold =
+            _deadThreshold.load(std::memory_order_relaxed);
+        const int64_t newThreshold =
+            (static_cast<int64_t>(_ids.size()) / (8 * _MinDeadThreshold) + 1) *
+            _MinDeadThreshold;
+        if (newThreshold != curThreshold) {
+            _deadThreshold = newThreshold;
+        }
+    }
+    
     /// The identities being managed by this registry
     using _IdMap = pxr_tsl::robin_map<SdfPath, Sdf_Identity *, SdfPath::Hash>;
     _IdMap _ids;
@@ -121,11 +142,11 @@ private:
 
     /// A count of the number of dead identity objects in _ids, so we can clean
     /// it when it gets large.
-    std::atomic<size_t> _deadCount;
-    size_t _deadThreshold;
+    std::atomic<int64_t> _deadCount;
+    std::atomic<int64_t> _deadThreshold;
 
     // This mutex synchronizes access to _ids.
-    tbb::spin_mutex _idsMutex;
+    TfSpinMutex _idsMutex;
 };
 
 //

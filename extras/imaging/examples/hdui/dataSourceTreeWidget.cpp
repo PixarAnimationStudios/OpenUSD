@@ -26,6 +26,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace
 {
 
+// Helper function to sort and uniquie-ify container data source names.
+static std::set<TfToken, TfDictionaryLessThan>
+Hdui_GetSortedNames(HdContainerDataSourceHandle const& container)
+{
+    const auto names = container->GetNames();
+    return std::set<TfToken, TfDictionaryLessThan>(names.begin(), names.end());
+}
+
 class Hdui_DataSourceTreeWidgetItem : public QTreeWidgetItem
 {
 public:
@@ -128,7 +136,7 @@ public:
 
                 // add any new items
                 for (const TfToken &childName :
-                        containerDataSource->GetNames()) {
+                     Hdui_GetSortedNames(containerDataSource)) {
                     if (usedNames.find(childName) == usedNames.end()) {
                         
                         if (HdDataSourceBaseHandle childDs =
@@ -228,7 +236,7 @@ private:
                 HdContainerDataSource::Cast(_dataSource)) {
             TfDenseHashSet<TfToken, TfHash> usedNames;
 
-            for (const TfToken &childName : container->GetNames()) {
+            for (const TfToken &childName : Hdui_GetSortedNames(container)) {
                 if (usedNames.find(childName) != usedNames.end()) {
                     continue;
                 }
@@ -332,7 +340,7 @@ HduiDataSourceTreeWidget::SetPrimDataSource(const SdfPath &primPath,
             HdContainerDataSource::Cast(dataSource)) {
             // add all container children as roots
             TfDenseHashSet<TfToken, TfHash> usedNames;
-            for (TfToken const& childName: container->GetNames()) {
+            for (TfToken const& childName: Hdui_GetSortedNames(container)) {
                 if (usedNames.find(childName) != usedNames.end()) {
                     continue;
                 }
@@ -365,7 +373,7 @@ HduiDataSourceTreeWidget::PrimDirtied(
     // loop over existing items to determine which require data source updates
 
     std::vector<QTreeWidgetItem *> taskQueue = {
-        topLevelItem(0),
+        invisibleRootItem(),
     };
 
     while (!taskQueue.empty()) {
@@ -381,26 +389,24 @@ HduiDataSourceTreeWidget::PrimDirtied(
 
             HdDataSourceLocator loc = dsItem->GetLocator();
             
-            bool addChildren = false;
             if (!loc.IsEmpty()) {
                 if (locators.Contains(loc)) {
                     // dirty here, we'll need a new data source
                     // no need to add children as SetDirty will handle that
                     dsItem->SetDirty(
                         HdContainerDataSource::Get(primDataSource, loc));
-                } else if (locators.Intersects(loc)) {
-                    addChildren = true;
+                    continue;
                 }
-            } else {
-                addChildren = true;
+                if (!locators.Intersects(loc)) {
+                    // Nothing under this item is dirty.
+                    continue;
+                }
             }
+        }
 
-            if (addChildren) {
-                // add children for possible dirtying
-                for (int i = 0, e = dsItem->childCount(); i < e; ++i) {
-                    taskQueue.push_back(dsItem->child(i));
-                }
-            }
+        // add children for possible dirtying
+        for (int i = 0, e = item->childCount(); i < e; ++i) {
+            taskQueue.push_back(item->child(i));
         }
     }
 

@@ -110,7 +110,12 @@ ExecSystem::_Compile(TfSpan<const ExecValueKey> valueKeys)
 bool
 ExecSystem::_HasPendingRecompilation() const
 {
-    return !_program->GetInputsRequiringRecompilation().empty();
+    // If there exist any inputs marked for recompilation, then the network
+    // needs to be recompiled. If not, there may still be leaf nodes requiring
+    // recompilation if the previous round of compilation was interrupted by
+    // cycle detection.
+    return !_program->GetInputsRequiringRecompilation().empty() ||
+        _program->WasInterrupted();
 }
 
 void
@@ -237,6 +242,12 @@ ExecSystem::_InvalidateMetadataValues(
         // impls are responsible for filtering the provided information.
         requestTracker->DidInvalidateComputedValues(invalidationResult);
     });
+}
+
+void
+ExecSystem::_InvalidateUnknownValues()
+{
+    _requestTracker->DidInvalidateUnknownValues();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

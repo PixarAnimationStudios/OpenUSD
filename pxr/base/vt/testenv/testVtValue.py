@@ -138,5 +138,11 @@ class TestVtValue(unittest.TestCase):
         self.assertEqual(f1, f2)
         self.assertNotEqual(f1, d1)
 
+    def test_ValueRef(self):
+        '''Check that wrapped functions taking VtValueRef work'''
+        self.assertEqual(Vt._test_ValueRefFromPython(123), 123)
+        self.assertEqual(Vt._test_ValueRefFromPython('hello'), 'hello')
+        self.assertIs(Vt._test_ValueRefFromPython(Vt.Bool(True)), True)
+
 if __name__ == '__main__':
     unittest.main()

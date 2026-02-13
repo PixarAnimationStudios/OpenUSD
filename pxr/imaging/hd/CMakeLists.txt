@@ -152,6 +152,7 @@ pxr_library(hd
         renderCapabilitiesSchema
         renderDelegate
         renderDelegateAdapterRenderer
+        renderDelegateInfo
         renderer
         rendererCreateArgsSchema
         rendererPlugin
@@ -179,6 +180,7 @@ pxr_library(hd
         sceneGlobalsSchema
         sceneIndex
         sceneIndexAdapterSceneDelegate
+        sceneIndexInputArgsSchema
         sceneIndexObserver
         sceneIndexPlugin
         sceneIndexPluginRegistry
@@ -188,6 +190,7 @@ pxr_library(hd
         selection
         selectionSchema
         selectionsSchema
+        skinningSettings
         smoothNormals
         sortedIds
         sphereSchema
@@ -223,7 +226,6 @@ pxr_library(hd
         driver.h
         invalidatableContainerDataSource.h
         materialNetworkInterface.h
-        renderDelegateInfo.h
         rendererCreateArgs.h
         schemaTypeDefs.h
         vectorSchemaTypeDefs.h
@@ -411,12 +413,6 @@ pxr_build_test(testHdCollectionExpressionEvaluator
         testenv/testHdCollectionExpressionEvaluator.cpp
 )
 
-pxr_install_test_dir(
-    SRC testenv/testHdSortedIds
-    DEST testHdSortedIds
-)
-
-
 pxr_register_test(testHdBufferSourceEmptyVal
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdBufferSourceEmptyVal"
 )
@@ -467,6 +463,7 @@ pxr_register_test(testHdSceneIndex
 
 pxr_register_test(testHdSortedIds
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdSortedIds"
+    TESTENV testenv/testHdSortedIds
     # XXX Disabling compare for now. testHdSortedId_removeTest.txt differs on Mac and Windows.
     # DIFF_COMPARE testHdSortedId_populateTest.txt testHdSortedId_singleInsertTest.txt testHdSortedId_multiInsertTest.txt testHdSortedId_removeOnlyElementTest.txt testHdSortedId_removeRangeTest.txt testHdSortedId_removeBatchTest.txt testHdSortedId_removeSortedTest.txt testHdSortedId_removeUnsortedTest.txt testHdSortedId_removeAfterInsertNoSyncTest.txt
 )

@@ -65,7 +65,7 @@ struct Exec_BuiltinComputations
     /// \hideinitializer
     const TfToken computeTime;
 
-    /// @}
+    /// @} // Stage computations
 
 
     /// \defgroup group_Exec_Attribute_Comptuations Attribute Computations
@@ -98,7 +98,7 @@ struct Exec_BuiltinComputations
     /// \hideinitializer
     const TfToken computeValue;
 
-    /// @}
+    /// @} // Attribute computations
 
 
     /// Returns all builtin computation tokens.

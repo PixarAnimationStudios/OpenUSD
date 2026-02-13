@@ -14,11 +14,15 @@ over "World"
         over "Particles_Splash"
         {
             over "points" (
-                clipActive = [(101, 0), (102, 1), (103, 2), (104, 3), (105, 4)]
-                clipAssetPaths = [@./Particles_Splash.101.usd@, @./Particles_Splash.102.usd@, @./Particles_Splash.103.usd@, @./Particles_Splash.104.usd@, @./Particles_Splash.105.usd@]
-                clipManifestAssetPath = @./root.topology.usda@
-                clipPrimPath = "/World/fx/Particles_Splash/points"
-                clipTimes = [(101, 101), (102, 102), (103, 103), (104, 104), (105, 105)]
+                clips = {
+                    dictionary default = {
+                        double2[] active = [(101, 0), (102, 1), (103, 2), (104, 3), (105, 4)]
+                        asset[] assetPaths = [@./Particles_Splash.101.usd@, @./Particles_Splash.102.usd@, @./Particles_Splash.103.usd@, @./Particles_Splash.104.usd@, @./Particles_Splash.105.usd@]
+                        asset manifestAssetPath = @./root.topology.usda@
+                        string primPath = "/World/fx/Particles_Splash/points"
+                        double2[] times = [(101, 101), (102, 102), (103, 103), (104, 104), (105, 105)]
+                    }
+                }
             )
             {
             }

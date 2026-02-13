@@ -7,6 +7,7 @@
 #include "pxr/usdImaging/usdSkelImaging/xformResolver.h"
 
 #include "pxr/usdImaging/usdSkelImaging/bindingSchema.h"
+#include "pxr/usdImaging/usdSkelImaging/dataSourceUtils.h"
 
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -14,6 +15,8 @@
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
+
+#include "pxr/usd/usdSkel/tokens.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -188,6 +191,15 @@ UsdSkelImagingDataSourceXformResolver::GetInstanceXformLocator()
     return locator;
 }
 
+const HdDataSourceLocator &
+UsdSkelImagingDataSourceXformResolver::GetInstanceAnimationSourceLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdPrimvarsSchema::GetDefaultLocator()
+            .Append(UsdSkelTokens->skelAnimationSource));
+    return locator;
+}
+
 UsdSkelImagingDataSourceXformResolver::UsdSkelImagingDataSourceXformResolver(
     HdSceneIndexBaseRefPtr const &sceneIndex,
     HdContainerDataSourceHandle const &primSource)
@@ -239,6 +251,25 @@ UsdSkelImagingDataSourceXformResolver::GetPrimLocalToCommonSpace() const
     case 1: return xformSrcs[0];
     default: return _MatrixProductDataSource::New(std::move(xformSrcs));
     };
+}
+
+VtArray<SdfPath>
+UsdSkelImagingDataSourceXformResolver::GetInstanceAnimationSource() const
+{
+    // For nested instances we traverse the chain up and return the first 
+    // aggregated animation source instance primvar.
+    for (const SdfPath& instancerPath: _instancerPaths) {
+        const HdPrimvarsSchema& primvars = HdPrimvarsSchema::GetFromParent(
+            _sceneIndex->GetPrim(instancerPath).dataSource);
+        const VtArray<SdfPath>& instanceAnimSource = 
+            UsdSkelImagingGetTypedValue(HdPathArrayDataSource::Cast(
+                primvars.GetPrimvar(UsdSkelTokens->skelAnimationSource)
+                    .GetPrimvarValue()));
+        if (!instanceAnimSource.empty()) {
+            return instanceAnimSource;
+        }
+    }
+    return {};
 }
 
 

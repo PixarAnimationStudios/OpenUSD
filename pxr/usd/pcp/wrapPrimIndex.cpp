@@ -8,6 +8,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/primIndex.h"
 #include "pxr/usd/pcp/layerStack.h"
+#include "pxr/usd/pcp/diagnostic.h"
 #include "pxr/usd/sdf/siteUtils.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/external/boost/python.hpp"
@@ -86,4 +87,6 @@ void wrapPrimIndex()
               args("includeInheritOriginInfo") = true,
               args("includeMaps") = false))
         ;
+
+    def("_CheckConsistency", &Pcp_CheckConsistency);
 }

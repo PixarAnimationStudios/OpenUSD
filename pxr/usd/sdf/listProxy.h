@@ -43,7 +43,7 @@ public:
 
     /// Returned from \ref Find when a value could not be located in the
     /// list of operations. 
-    static const size_t invalidIndex = -1;
+    static const size_t invalidIndex = size_t(-1);
 
 private:
     // Proxies an item in a list editor list.

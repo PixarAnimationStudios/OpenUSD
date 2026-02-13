@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<materialx version="1.39" colorspace="lin_rec709">
+
+    <!-- Material using the <visTexcoords> custom node (which uses the 
+		<addColor> node) -->
+    <nodegraph name="NG_simple">
+        <visTexcoords name="texcoords" type="color3" >
+            <input name="blueColor" type="color3" value="0,0,1" />
+        </visTexcoords>
+        <output name="out_color" type="color3" nodename="texcoords" />
+    </nodegraph>
+
+    <UsdPreviewSurface name="PS_material" type="surfaceshader">
+        <input name="diffuseColor" type="color3" nodegraph="NG_simple" output="out_color" />
+    </UsdPreviewSurface>
+
+    <surfacematerial name="VisTexcoords" type="material">
+        <input name="surfaceshader" type="surfaceshader" nodename="PS_material" />
+    </surfacematerial>
+
+
+    <!-- Material using the <customMultiOutput> custom nodes (which uses the
+		<adjustTexcoords> node) -->
+	<customMultiOutput name="shaderProperties" type="multioutput" >
+		<input name="_File" type="filename" value="images/testSquare.png" />
+		<input name="_Radius" type="float" value="0.15" />
+        <input name="_RadiusOffset" type="vector2" value="0.75, 0.75" />
+	</customMultiOutput>
+
+	<standard_surface name="StdSurface" type="surfaceshader" >
+		<input name="base_color" type="color3" nodename="shaderProperties" output="base_color" />
+		<input name="metalness" type="float" nodename="shaderProperties" output="metalness" />
+		<input name="specular_roughness" type="float" nodename="shaderProperties" output="specular_roughness" />
+	</standard_surface>
+
+	<surfacematerial name="TestMaterial" type="material" >
+		<input name="surfaceshader" type="surfaceshader" nodename="StdSurface" />
+	</surfacematerial>
+
+
+</materialx>
