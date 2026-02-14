@@ -339,7 +339,23 @@ class AppController(QtCore.QObject):
         app = QtWidgets.QApplication.instance()
         app.setStyleSheet(sheetString)
 
-        
+        # Update the application icon based on the appIconMode preference.
+        iconMode = self._dataModel.viewSettings.appIconMode
+        iconDir = os.path.join(resourceDir, 'icons')
+        if iconMode == "Light":
+            iconFile = "usdview-light.svg"
+        elif iconMode == "Dark":
+            iconFile = "usdview-dark.svg"
+        elif iconMode == "Blue":
+            iconFile = "usdview-blue.svg"
+        else:
+            # Automatic: detect system theme via palette lightness
+            palette = QtGui.QPalette()
+            is_dark = palette.color(QtGui.QPalette.Window).lightness() < 128
+            iconFile = "usdview-dark.svg" if is_dark else "usdview-light.svg"
+        iconPath = os.path.join(iconDir, iconFile)
+        app.setWindowIcon(QtGui.QIcon(iconPath))
+
     def __del__(self):
         # This is needed to free Qt items before exit; Qt hits failed GTK
         # assertions without it.
@@ -2832,7 +2848,8 @@ class AppController(QtCore.QObject):
         (filename, _) = QtWidgets.QFileDialog.getOpenFileName(
             self._mainWindow,
             caption="Select file",
-            dir=".",
+            dir=os.path.dirname(self._parserData.usdFile)
+                if self._parserData.usdFile else ".",
             filter=fileFilter,
             selectedFilter=fileFilter)
 

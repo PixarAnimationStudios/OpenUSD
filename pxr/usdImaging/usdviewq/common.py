@@ -113,13 +113,13 @@ def _DeferredIconLoad(path):
     return icon
 
 class PropertyViewIcons(ConstantsGroup):
-    ATTRIBUTE                  = lambda: _DeferredIconLoad('usd-attr-plain-icon.png')
-    ATTRIBUTE_WITH_CONNECTIONS = lambda: _DeferredIconLoad('usd-attr-with-conn-icon.png')
-    RELATIONSHIP               = lambda: _DeferredIconLoad('usd-rel-plain-icon.png')
-    RELATIONSHIP_WITH_TARGETS  = lambda: _DeferredIconLoad('usd-rel-with-target-icon.png')
-    TARGET                     = lambda: _DeferredIconLoad('usd-target-icon.png')
-    CONNECTION                 = lambda: _DeferredIconLoad('usd-conn-icon.png')
-    COMPOSED                   = lambda: _DeferredIconLoad('usd-cmp-icon.png')
+    ATTRIBUTE                  = lambda: _DeferredIconLoad('usd-attr-plain-icon.svg')
+    ATTRIBUTE_WITH_CONNECTIONS = lambda: _DeferredIconLoad('usd-attr-with-conn-icon.svg')
+    RELATIONSHIP               = lambda: _DeferredIconLoad('usd-rel-plain-icon.svg')
+    RELATIONSHIP_WITH_TARGETS  = lambda: _DeferredIconLoad('usd-rel-with-target-icon.svg')
+    TARGET                     = lambda: _DeferredIconLoad('usd-target-icon.svg')
+    CONNECTION                 = lambda: _DeferredIconLoad('usd-conn-icon.svg')
+    COMPOSED                   = lambda: _DeferredIconLoad('usd-cmp-icon.svg')
 
 class PropertyViewDataRoles(ConstantsGroup):
     ATTRIBUTE = "Attr"
