@@ -55,6 +55,9 @@
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/loops.h"
 
+#include <algorithm>
+#include <tbb/concurrent_vector.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -1984,13 +1987,19 @@ void _FinalizeCollision(UsdStageWeakPtr stage,
 // Finalize the collision desc, run in parallel
 template <typename DescType>
 void _FinalizeCollisionDescs(
-    UsdGeomXformCache& xfCache, const std::vector<UsdPrim>& physicsPrims, 
+    UsdGeomXformCache& xfCache, const std::vector<UsdPrim>& physicsPrims,
     std::vector<DescType>& physicsDesc, const RigidBodyMap& bodyMap,
-    const std::map<SdfPath, std::unordered_set<SdfPath, 
+    const std::map<SdfPath, std::unordered_set<SdfPath,
     SdfPath::Hash>>& collisionGroups)
 {
-    const auto workLambda = [physicsPrims, &physicsDesc, bodyMap, 
-        collisionGroups]
+    // Collect (body, collision path) pairs in a thread-safe container so we
+    // avoid concurrent push_back on bodyDesc->collisions (not thread-safe).
+    using BodyCollisionPair =
+        std::pair<UsdPhysicsRigidBodyDesc*, SdfPath>;
+    tbb::concurrent_vector<BodyCollisionPair> bodyCollisionPairs;
+
+    const auto workLambda = [physicsPrims, &physicsDesc, bodyMap,
+        collisionGroups, &bodyCollisionPairs]
     (const size_t beginIdx, const size_t endIdx)
     {
         for (size_t i = beginIdx; i < endIdx; i++)
@@ -2001,23 +2010,23 @@ void _FinalizeCollisionDescs(
                 const UsdPrim prim = physicsPrims[i];
                 // get the body
                 SdfPath bodyPath = _GetRigidBody(prim, bodyMap);
-                // body was found, add collision to the body
                 UsdPhysicsRigidBodyDesc* bodyDesc = nullptr;
                 if (bodyPath != SdfPath())
                 {
-                    RigidBodyMap::const_iterator bodyIt = 
+                    RigidBodyMap::const_iterator bodyIt =
                             bodyMap.find(bodyPath);
                     if (bodyIt != bodyMap.end())
                     {
                         bodyDesc = bodyIt->second;
-                        bodyDesc->collisions.push_back(colDesc.primPath);
+                        bodyCollisionPairs.push_back(
+                            BodyCollisionPair(bodyDesc, colDesc.primPath));
                     }
                 }
 
                 // check if collision belongs to collision groups
-                for (std::map<SdfPath, 
-                    std::unordered_set<SdfPath, 
-                        SdfPath::Hash>>::const_iterator it = 
+                for (std::map<SdfPath,
+                    std::unordered_set<SdfPath,
+                        SdfPath::Hash>>::const_iterator it =
                             collisionGroups.begin();
                     it != collisionGroups.end(); ++it)
                 {
@@ -2035,6 +2044,22 @@ void _FinalizeCollisionDescs(
 
     const size_t numPrimPerBatch = 10;
     WorkParallelForN(physicsPrims.size(), workLambda, numPrimPerBatch);
+
+    // Merge into bodyDesc->collisions single-threaded. Sort by body pointer
+    // so all collisions for the same body are consecutive (better locality).
+    if (!bodyCollisionPairs.empty())
+    {
+        std::vector<BodyCollisionPair> sorted(
+            bodyCollisionPairs.begin(), bodyCollisionPairs.end());
+        std::sort(sorted.begin(), sorted.end(),
+            [](const BodyCollisionPair& a, const BodyCollisionPair& b) {
+                return a.first < b.first;
+            });
+        for (const BodyCollisionPair& pair : sorted)
+        {
+            pair.first->collisions.push_back(pair.second);
+        }
+    }
 }
 
 struct ArticulationLink
