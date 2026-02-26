@@ -1,0 +1,6 @@
+#usda 1.0
+
+def "Root"
+{
+    asset myAsset = @./material.sbsar:SDF_FORMAT_ARGS:param=1@
+}

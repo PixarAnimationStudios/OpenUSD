@@ -14,6 +14,7 @@
 #include "pxr/usd/usdUtils/dependencies.h"
 #include "pxr/usd/usdUtils/debugCodes.h"
 #include "pxr/usd/sdf/assetPath.h"
+#include "pxr/usd/sdf/assetPathResolver.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layerUtils.h"
 
@@ -119,7 +120,16 @@ struct UsdUtils_ComputeAllDependenciesClient
     {
         const std::string anchoredPath = 
             SdfComputeAssetPathRelativeToLayer(layer, dependency);
-        const std::string resolvedPath = ArGetResolver().Resolve(anchoredPath);
+        std::string pathToResolve;
+        std::string stripped;
+        if (Sdf_StripIdentifierArgumentsIfPresent(anchoredPath, &stripped)) {
+            pathToResolve = stripped;
+        }
+        else {
+            pathToResolve = anchoredPath;
+        }
+
+        const std::string resolvedPath = ArGetResolver().Resolve(pathToResolve);
 
         if (resolvedPath.empty()) {
             if (PathShouldResolve(layer, resolvedPath, dependencyType)) {

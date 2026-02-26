@@ -113,6 +113,23 @@ class TestUsdUtilsDependencies(unittest.TestCase):
                     for f in ["image_d.<UDIM>.exr",
                             "image_e.<UDIM>.exr"]]))
 
+    def test_ComputeAllDependenciesSdfFormatArgs(self):
+        """Test that SDF_FORMAT_ARGS are stripped before resolving assets."""
+
+        rootLayer = "computeAllDependenciesFormatArgs/root.usda"
+        layers, assets, unresolved = \
+            UsdUtils.ComputeAllDependencies(rootLayer)
+
+        self.assertEqual(set(layers), set([Sdf.Layer.Find(rootLayer)]))
+
+        expectedAsset = os.path.abspath(
+            "computeAllDependenciesFormatArgs/material.sbsar")
+        self.assertEqual(
+            set([os.path.normcase(f) for f in assets]),
+            set([os.path.normcase(expectedAsset)]))
+
+        self.assertEqual(unresolved, [])
+
     def test_ComputeAllDependenciesAnonymousLayer(self):
         """Test for resolving dependencies of anonymous layers"""
         layer = Sdf.Layer.CreateAnonymous(".usda")

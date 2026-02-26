@@ -10,6 +10,7 @@
 /// \file sdf/assetPathResolver.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/layer.h"
 
@@ -111,7 +112,7 @@ std::string Sdf_GetAnonLayerIdentifierTemplate(
 /// If \p identifier contains file format arguments
 /// (e.g. foo.sdf:SDF_FORMAT_ARGS:a=b), strip them, assign the resulting string
 /// to *strippedIdentifier and return true.  Otherwise just return false.
-bool Sdf_StripIdentifierArgumentsIfPresent(
+SDF_API bool Sdf_StripIdentifierArgumentsIfPresent(
     const std::string &identifier,
     std::string *strippedIdentifier);
 

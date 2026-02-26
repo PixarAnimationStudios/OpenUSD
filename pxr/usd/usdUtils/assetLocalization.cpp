@@ -13,6 +13,7 @@
 #include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/assetPath.h"
+#include "pxr/usd/sdf/assetPathResolver.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -94,7 +95,16 @@ UsdUtils_LocalizationContext::_EnqueueDependency(
         return;
     }
 
-    ArResolvedPath resolvedPath = ArGetResolver().Resolve(anchoredPath);
+    std::string pathToResolve;
+    std::string stripped;
+    if (Sdf_StripIdentifierArgumentsIfPresent(anchoredPath, &stripped)) {
+        pathToResolve = stripped;
+    }
+    else {
+        pathToResolve = anchoredPath;
+    }
+
+    ArResolvedPath resolvedPath = ArGetResolver().Resolve(pathToResolve);
     if (resolvedPath.empty()) {
         TF_WARN("Failed to resolve reference @%s@ with computed asset path "
             "@%s@ found in layer @%s@.",
