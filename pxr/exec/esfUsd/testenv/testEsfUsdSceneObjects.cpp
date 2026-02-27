@@ -52,14 +52,21 @@ namespace
 
 struct Fixture
 {
-    SdfLayerRefPtr layer;
-    UsdStageConstRefPtr stage;
+    SdfLayerRefPtr payloadLayer;
+    UsdStageRefPtr stage;
     EsfJournal * const journal = nullptr;
 
     Fixture()
     {
-        layer = SdfLayer::CreateAnonymous(".usda");
-        const bool importedLayer = layer->ImportFromString(R"usd(
+        payloadLayer = SdfLayer::CreateAnonymous(".usda");
+        const bool payloadLayerImported = payloadLayer->ImportFromString(R"usd(
+            #usda 1.0
+            def Scope "Prim" {
+            })usd");
+        TF_AXIOM(payloadLayerImported);
+
+        SdfLayerRefPtr rootLayer = SdfLayer::CreateAnonymous(".usda");
+        const bool rootLayerImported = rootLayer->ImportFromString(R"usd(
             #usda 1.0
             def Scope "Prim1" (
                 prepend apiSchemas = ["CollectionAPI:collection1"]
@@ -86,10 +93,18 @@ struct Fixture
                 prepend apiSchemas = ["CollectionAPI:collection2"]
             ) {
             }
+            over "LoadablePrim" (
+                payload = @)usd" + payloadLayer->GetIdentifier() + R"usd(@</Prim>
+            ) {
+            }
+            over "UndefinedPrim" {
+            }
+            class "AbstractPrim" {
+            }
             )usd");
-        TF_AXIOM(importedLayer);
+        TF_AXIOM(rootLayerImported);
 
-        stage = UsdStage::Open(layer);
+        stage = UsdStage::Open(rootLayer);
         TF_AXIOM(stage);
     }
 };
@@ -156,6 +171,29 @@ TestObject(Fixture &fixture)
     const EsfObject invalidObject = EsfUsdSceneAdapter::AdaptObject(
         fixture.stage->GetObjectAtPath(SdfPath("/Does/Not/Exist")));
     TF_AXIOM(!invalidObject->IsValid(fixture.journal));
+
+    // Deactivate the prim and ensure it and its properties become invalid.
+    fixture.stage->GetPrimAtPath(SdfPath("/Prim1")).SetActive(false);
+    TF_AXIOM(!primObject->IsValid(fixture.journal));
+    TF_AXIOM(!attrObject->IsValid(fixture.journal));
+    TF_AXIOM(!relObject->IsValid(fixture.journal));
+
+    // Ensure unloaded objects are invalid.
+    const EsfObject loadablePrimObject = EsfUsdSceneAdapter::AdaptObject(
+        fixture.stage->GetObjectAtPath(SdfPath("/LoadablePrim")));
+    TF_AXIOM(loadablePrimObject->IsValid(fixture.journal));
+    fixture.stage->Unload(SdfPath("/LoadablePrim"));
+    TF_AXIOM(!loadablePrimObject->IsValid(fixture.journal));
+
+    // Ensure undefined objects are invalid.
+    const EsfObject undefinedPrimObject = EsfUsdSceneAdapter::AdaptObject(
+        fixture.stage->GetObjectAtPath(SdfPath("/UndefinedPrim")));
+    TF_AXIOM(!undefinedPrimObject->IsValid(fixture.journal));
+
+    // Ensure abstract objects are invalid.
+    const EsfObject abstractPrimObject = EsfUsdSceneAdapter::AdaptObject(
+        fixture.stage->GetObjectAtPath(SdfPath("/AbstractPrim")));
+    TF_AXIOM(!abstractPrimObject->IsValid(fixture.journal));
 }
 
 // Tests that EsfUsd_Prims behave as UsdPrims.

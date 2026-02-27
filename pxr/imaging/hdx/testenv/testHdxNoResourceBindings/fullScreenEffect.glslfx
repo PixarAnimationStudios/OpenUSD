@@ -1,0 +1,30 @@
+-- glslfx version 0.1
+
+//
+//
+// Copyright 2026 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "FullScreenEffect": {
+                "source": [ "FullScreenEffect.Fragment" ]
+            }
+        }
+    }
+}
+
+-- glsl FullScreenEffect.Fragment
+
+void main(void)
+{
+    // draw something interesting
+    vec3 color = vec3(uvOut, uvOut.x + (1 - uvOut.y));
+    float intensity = pow(sin(length(60 * uvOut)) / 2 + 1, 2);
+    hd_FragColor = vec4(intensity * color, 1);
+}

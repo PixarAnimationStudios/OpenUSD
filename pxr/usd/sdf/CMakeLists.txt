@@ -101,6 +101,7 @@ pxr_library(sdf
     PUBLIC_HEADERS
         api.h
         accessorHelpers.h
+        composeTimeSampleSeries.h
         layerHints.h
         pathPatternParser.h
         predicateExpressionParser.h
@@ -682,7 +683,7 @@ pxr_register_test(testSdfTextFile
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTextFile"
     EXPECTED_RETURN_CODE 0
 )
-pxr_register_test(testSdfTextFile_1.1
+pxr_register_test(testSdfTextFile_1_1
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTextFile"
     EXPECTED_RETURN_CODE 0
     ENV
@@ -708,6 +709,7 @@ pxr_register_test(testSdfZipFileLimits
     EXPECTED_RETURN_CODE 0
     ENV 
         SDF_MAX_ZIPFILE_SIZE=195
+        SDF_MAX_ZIPFILE_ENTRY_SIZE=64
 )
 pxr_register_test(testSdfZipFile_CPP
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfZipFile_CPP"

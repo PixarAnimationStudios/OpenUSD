@@ -53,6 +53,59 @@ class TestSdfPathExpression(unittest.TestCase):
         self.assertEqual(
             Sdf.PathExpression('~(// - ~a)'), Sdf.PathExpression('~a'))
 
+        # PredicateFunctionResult
+        constFalse = Sdf.PredicateFunctionResult(False,
+            constancy=Sdf.PredicateFunctionResult.ConstantOverDescendants)
+        constTrue = Sdf.PredicateFunctionResult(True,
+            constancy=Sdf.PredicateFunctionResult.ConstantOverDescendants)
+        varyingFalse = Sdf.PredicateFunctionResult(False,
+            constancy=Sdf.PredicateFunctionResult.MayVaryOverDescendants)
+        varyingTrue = Sdf.PredicateFunctionResult(True,
+            constancy=Sdf.PredicateFunctionResult.MayVaryOverDescendants)
+
+        And = Sdf.PredicateFunctionResult.And
+        Or = Sdf.PredicateFunctionResult.Or
+        
+        self.assertEqual(And(constFalse, constFalse), constFalse)
+        self.assertEqual(And(constFalse, constTrue), constFalse)
+        self.assertEqual(And(constTrue, constFalse), constFalse)
+        self.assertEqual(And(constTrue, constTrue), constTrue)
+
+        self.assertEqual(And(varyingFalse, varyingFalse), varyingFalse)
+        self.assertEqual(And(varyingFalse, varyingTrue), varyingFalse)
+        self.assertEqual(And(varyingTrue, varyingFalse), varyingFalse)
+        self.assertEqual(And(varyingTrue, varyingTrue), varyingTrue)
+
+        self.assertEqual(And(constFalse, varyingFalse), constFalse)
+        self.assertEqual(And(constFalse, varyingTrue), constFalse)
+        self.assertEqual(And(constTrue, varyingFalse), varyingFalse)
+        self.assertEqual(And(constTrue, varyingTrue), varyingTrue)
+
+        self.assertEqual(And(varyingFalse, constFalse), constFalse)
+        self.assertEqual(And(varyingFalse, constTrue), varyingFalse)
+        self.assertEqual(And(varyingTrue, constFalse), constFalse)
+        self.assertEqual(And(varyingTrue, constTrue), varyingTrue)
+
+        self.assertEqual(Or(constFalse, constFalse), constFalse)
+        self.assertEqual(Or(constFalse, constTrue), constTrue)
+        self.assertEqual(Or(constTrue, constFalse), constTrue)
+        self.assertEqual(Or(constTrue, constTrue), constTrue)
+
+        self.assertEqual(Or(varyingFalse, varyingFalse), varyingFalse)
+        self.assertEqual(Or(varyingFalse, varyingTrue), varyingTrue)
+        self.assertEqual(Or(varyingTrue, varyingFalse), varyingTrue)
+        self.assertEqual(Or(varyingTrue, varyingTrue), varyingTrue)
+
+        self.assertEqual(Or(constFalse, varyingFalse), varyingFalse)
+        self.assertEqual(Or(constFalse, varyingTrue), varyingTrue)
+        self.assertEqual(Or(constTrue, varyingFalse), constTrue)
+        self.assertEqual(Or(constTrue, varyingTrue), constTrue)
+
+        self.assertEqual(Or(varyingFalse, constFalse), varyingFalse)
+        self.assertEqual(Or(varyingFalse, constTrue), constTrue)
+        self.assertEqual(Or(varyingTrue, constFalse), varyingTrue)
+        self.assertEqual(Or(varyingTrue, constTrue), constTrue)
+
     def test_Matching(self):
 
         evl = MatchEval('/foo/bar/*') 

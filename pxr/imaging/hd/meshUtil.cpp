@@ -270,7 +270,8 @@ _TriangulateFaceVarying(
     const int numFaces = static_cast<int>(faceVertexCounts.size());
     const int numHoleFaces = static_cast<int>(holeIndices.size());
 
-    VtArray<T> results(numTris * 3);
+    VtArray<T> resultsArray(numTris * 3);
+    T *results = resultsArray.data();
     bool invalidTopology = false;
     for (int i = 0, v = 0, holeIndex = 0, dstIndex = 0; i < numFaces; ++i) {
         const int nVerts = faceVertexCounts[i];
@@ -309,7 +310,7 @@ _TriangulateFaceVarying(
         TF_WARN("numVerts and verts are incosistent [%s]", id.GetText());
     }
 
-    *triangulated = results;
+    *triangulated = resultsArray;
     return HdMeshComputationResult::Success;
 }
 

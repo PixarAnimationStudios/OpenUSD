@@ -1130,60 +1130,6 @@ HdsiVelocityMotionResolvingSceneIndex::_PrimsDirtied(
 
 // -----------------------------------------------------------------------------
 
-TF_REGISTRY_FUNCTION(TfType)
-{
-    HdSceneIndexPluginRegistry
-        ::Define<HdPrman_VelocityMotionResolvingSceneIndexPlugin>();
-}
-
-TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
-{
-    // This plugin must come after extcomp but before motion blur
-    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 2;
-
-    for (const auto& rendererDisplayName : HdPrman_GetPluginDisplayNames()) {
-        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-            rendererDisplayName,
-            HdPrmanPluginTokens->velocityMotion,
-            /* inputArgs = */ nullptr,
-            insertionPhase,
-            HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
-    }
-}
-
-HdPrman_VelocityMotionResolvingSceneIndexPlugin::
-HdPrman_VelocityMotionResolvingSceneIndexPlugin() = default;
-
-HdSceneIndexBaseRefPtr
-HdPrman_VelocityMotionResolvingSceneIndexPlugin::_AppendSceneIndex(
-    const HdSceneIndexBaseRefPtr& inputScene,
-    const HdContainerDataSourceHandle& inputArgs)
-{
-    TF_UNUSED(inputArgs);
-    // Define inputArgs here instead of in the TF_REGISTRY_FUNCTION block.
-    // In the future, we may consider renaming the inputArgs parameter to
-    // something like "sceneIndexGraphCreateArgs" to allow the app and renderer
-    // plugin to provide arguments for scene indices instantiated via the
-    // scene index plugin system.
-    const HdContainerDataSourceHandle localInputArgs =
-        HdRetainedContainerDataSource::New(
-            // TODO: Get the real framerate!
-            _tokens->fps,
-            HdRetainedTypedSampledDataSource<float>::New(
-                _fallbackFps));
-
-    return HdsiVelocityMotionResolvingSceneIndex::New(
-        inputScene, localInputArgs);
-}
-
-void
-HdPrman_VelocityMotionResolvingSceneIndexPlugin::SetFPS(float fps)
-{
-    _fallbackFps = fps;
-}
-
-// -----------------------------------------------------------------------------
-
 namespace {
 
 class _VelocityMotionModeDataSource final
@@ -1340,36 +1286,63 @@ protected:
 
 } // anonymous namespace
 
+// -----------------------------------------------------------------------------
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdSceneIndexPluginRegistry
-        ::Define<HdPrman_VblurInterpretingSceneIndexPlugin>();
+        ::Define<HdPrman_VelocityMotionResolvingSceneIndexPlugin>();
 }
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    // Must come before velocity motion resolving plug-in
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 2;
 
     for (const auto& rendererDisplayName : HdPrman_GetPluginDisplayNames()) {
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
             rendererDisplayName,
-            HdPrmanPluginTokens->vblurInterpreting,
-            nullptr, // inputArgs
+            HdPrmanPluginTokens->velocityMotion,
+            /* inputArgs = */ nullptr,
             insertionPhase,
-            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+            HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
     }
 }
 
-HdPrman_VblurInterpretingSceneIndexPlugin::
-HdPrman_VblurInterpretingSceneIndexPlugin() = default;
+/* static */
+void
+HdPrman_VelocityMotionResolvingSceneIndexPlugin::SetFPS(float fps)
+{
+    _fallbackFps = fps;
+}
+
+HdPrman_VelocityMotionResolvingSceneIndexPlugin::
+HdPrman_VelocityMotionResolvingSceneIndexPlugin() = default;
 
 HdSceneIndexBaseRefPtr
-HdPrman_VblurInterpretingSceneIndexPlugin::_AppendSceneIndex(
+HdPrman_VelocityMotionResolvingSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr& inputScene,
-    const HdContainerDataSourceHandle& /* inputArgs */)
+    const HdContainerDataSourceHandle& inputArgs)
 {
-    return _VblurInterpretingSceneIndex::New(inputScene);
+    TF_UNUSED(inputArgs);
+
+    HdSceneIndexBaseRefPtr si = inputScene;
+    si = _VblurInterpretingSceneIndex::New(si);
+
+    // Define inputArgs here instead of in the TF_REGISTRY_FUNCTION block.
+    // In the future, we may consider renaming the inputArgs parameter to
+    // something like "sceneIndexGraphCreateArgs" to allow the app and renderer
+    // plugin to provide arguments for scene indices instantiated via the
+    // scene index plugin system.
+    const HdContainerDataSourceHandle localInputArgs =
+        HdRetainedContainerDataSource::New(
+            // TODO: Get the real framerate!
+            _tokens->fps,
+            HdRetainedTypedSampledDataSource<float>::New(
+                _fallbackFps));
+
+    si = HdsiVelocityMotionResolvingSceneIndex::New(si, localInputArgs);
+
+    return si;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

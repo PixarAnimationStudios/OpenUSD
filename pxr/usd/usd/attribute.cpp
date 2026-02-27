@@ -102,8 +102,7 @@ UsdAttribute::GetBracketingTimeSamples(double desiredTime,
                                        bool* hasTimeSamples) const
 {
     return _GetStage()->_GetBracketingTimeSamples(
-        *this, desiredTime, /*requireAuthored*/ false,
-        lower, upper, hasTimeSamples);
+        *this, desiredTime, lower, upper, hasTimeSamples);
 }
 
 bool
@@ -190,9 +189,15 @@ UsdAttribute::HasValue() const
 bool
 UsdAttribute::HasFallbackValue() const
 {
+    return GetFallbackValue(nullptr);
+}
+
+bool
+UsdAttribute::GetFallbackValue(VtValue* value) const
+{
     UsdPrimDefinition::Attribute attrDef =
         _GetStage()->_GetSchemaAttribute(*this);
-    return attrDef && attrDef.GetFallbackValue<VtValue>(nullptr);
+    return attrDef && attrDef.GetFallbackValue<VtValue>(value);
 }
 
 bool 
@@ -205,7 +210,8 @@ template <typename T>
 bool 
 UsdAttribute::_Get(T* value, UsdTimeCode time) const 
 {
-    return _GetStage()->_GetValue(time, *this, value);
+    SdfAbstractDataTypedValue<T> av(value);
+    return _GetStage()->_GetValue(time, *this, &av);
 }
 
 bool 

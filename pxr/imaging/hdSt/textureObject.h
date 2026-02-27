@@ -137,7 +137,7 @@ private:
 
 /// \class HdStUvTextureObject
 ///
-/// A base class for uv textures.
+/// A base class for uv textures (including cubemaps).
 ///
 class HdStUvTextureObject : public HdStTextureObject
 {
@@ -192,6 +192,7 @@ private:
     std::pair<HdWrap, HdWrap> _wrapParameters;
     std::unique_ptr<HdStTextureCpuData> _cpuData;
     HgiTextureHandle _gpuTexture;
+    HdStTextureType _textureType;
 };
 
 /// \class HdAssetStUvTextureObject
@@ -284,53 +285,6 @@ private:
     bool _valid;
 };
 
-/// \class HdStCubemapTextureObject
-///
-/// A base class for cubemap textures.
-///
-class HdStCubemapTextureObject : public HdStTextureObject
-{
-public:
-    HDST_API
-    ~HdStCubemapTextureObject() override;
-
-    /// Get the handle to the actual GPU resource.
-    ///
-    /// Only valid after commit phase.
-    ///
-    HgiTextureHandle const &GetTexture() const {
-        return _gpuTexture;
-    }
-
-    HDST_API
-    HdStTextureType GetTextureType() const final;
-
-    HDST_API
-    size_t GetCommittedSize() const override;
-
-protected:
-    HDST_API
-    HdStCubemapTextureObject(
-        const HdStTextureIdentifier &textureId,
-        HdSt_TextureObjectRegistry * textureObjectRegistry);
-
-    HDST_API
-    void _SetCpuData(std::unique_ptr<HdStTextureCpuData> &&);
-    HDST_API
-    HdStTextureCpuData * _GetCpuData() const;
-
-    HDST_API
-    void _CreateTexture(const HgiTextureDesc &desc);
-    HDST_API
-    void _GenerateMipmaps();
-    HDST_API
-    void _DestroyTexture();
-
-private:
-    std::unique_ptr<HdStTextureCpuData> _cpuData;
-    HgiTextureHandle _gpuTexture;
-};
-
 template<HdStTextureType textureType>
 struct HdSt_TypedTextureObjectHelper;
 
@@ -355,7 +309,7 @@ struct HdSt_TypedTextureObjectHelper<HdStTextureType::Field> {
 
 template<>
 struct HdSt_TypedTextureObjectHelper<HdStTextureType::Cubemap> {
-    using type = HdStCubemapTextureObject;
+    using type = HdStUvTextureObject;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

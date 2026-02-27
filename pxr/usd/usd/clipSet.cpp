@@ -478,7 +478,7 @@ Usd_ClipSet::_ClipContributesValue(
     }
 
     // Use the clip if a default value specified in the manifest.
-    if (Usd_HasDefault<int>(manifestClip, path, nullptr) 
+    if (Usd_HasDefault<VtValue>(manifestClip, path, nullptr) 
             != Usd_DefaultValueResult::None) {
         return true;
     }
@@ -705,6 +705,24 @@ Usd_ClipSet::GetTimeSamplesInInterval(
     }
 
     return timeSamples;
+}
+
+const std::type_info &
+Usd_ClipSet::QueryTimeSampleTypeid(const SdfPath &path, UsdTimeCode time) const
+{
+    const Usd_ClipRefPtr& clip = 
+        GetActiveClip(time, false /*timeHasJumpDiscontinuity*/);
+
+    // First query the clip for time sample typeid at the specified time.
+    const std::type_info &type = clip->QueryTimeSampleTypeid(path, time);
+    if (type != typeid(void)) {
+        return type;
+    }
+
+    // If no value exists in the clip, get the default value from the manifest.
+    const std::type_info *typePtr = &typeid(void);
+    Usd_HasDefault<VtValue>(manifestClip, path, nullptr, &typePtr);
+    return *typePtr;
 }
 
 size_t

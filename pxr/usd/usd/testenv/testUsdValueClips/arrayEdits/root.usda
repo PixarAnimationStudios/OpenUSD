@@ -1,0 +1,52 @@
+#usda 1.0
+
+def "Root" (
+    references = </RootSamples>
+)
+{
+    # Default here composes over samples & clips & weakest default.
+    int[] attr = edit [ append -999 ]
+}
+
+def "RootSamples" (
+    references = </RootClips>
+)
+{
+    # Samples here compose over clips.
+    int[] attr.timeSamples = {
+        0: edit [ append 555 ],
+        4: edit [ append 666 ]
+    }
+}
+
+def "RootClips" (
+    clips = {
+        dictionary root = {
+            asset[] assetPaths = [@./clip.usda@]
+            string primPath = "/Model"
+            double2[] active = [(1.0, 0)]
+        }
+    }
+    references = </WeakerClips>
+)
+{
+}
+
+def "WeakerClips" (
+    clips = {
+        dictionary weaker = {
+            asset[] assetPaths = [@./clip.usda@]
+            string primPath = "/Weaker"
+            double2[] active = [(1.0, 0)]
+        }
+    }
+    references = </Weakest>
+)
+{
+}
+
+def "Weakest"
+{
+    # Weakest default opinion.
+    int[] attr = [3, 3, 3]
+}

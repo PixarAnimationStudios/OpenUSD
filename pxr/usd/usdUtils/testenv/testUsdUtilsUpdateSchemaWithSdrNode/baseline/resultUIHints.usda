@@ -10,9 +10,6 @@ class "TestUIHintsAPI" (
             bool OpenGroup = 1
             bool "OpenGroup:Nested" = 1
         }
-        dictionary displayGroupsShownIf = {
-            string "ShownIf Group" = "inputs:hidden >= 1"
-        }
     }
 )
 {

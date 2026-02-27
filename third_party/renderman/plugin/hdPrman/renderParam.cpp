@@ -2170,9 +2170,19 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
     rix_xcpt->Register(&_xcpt);
 
     // Populate RixStr struct
+#if PXR_VERSION >= 2602
+    // XXX:
+    // Disable deprecation warnings for RixSymbolResolver to enable
+    // strict builds on Windows.
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_DEPRECATED
+#endif // PXR_VERSION >= 2602
     RixSymbolResolver* sym = (RixSymbolResolver*)_rix->GetRixInterface(
         k_RixSymbolResolver);
     sym->ResolvePredefinedStrings(RixStr);
+#if PXR_VERSION >= 2602
+ARCH_PRAGMA_POP
+#endif // PXR_VERSION >= 2602
 
     // Sanity check symbol resolution with a canary symbol, shutterTime.
     // This can catch accidental linking with incompatible versions.

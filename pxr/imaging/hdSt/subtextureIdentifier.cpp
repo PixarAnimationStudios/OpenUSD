@@ -186,7 +186,7 @@ HdStDynamicCubemapSubtextureIdentifier::_Hash() const
     return typeHash;
 }
 
-HdStDynamicCubemapTextureImplementation *
+HdStDynamicUvTextureImplementation *
 HdStDynamicCubemapSubtextureIdentifier::GetTextureImplementation() const
 {
     return nullptr;

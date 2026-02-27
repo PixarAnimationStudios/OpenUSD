@@ -116,7 +116,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(singleApplyAPIDef.GetAppliedAPISchemas(), 
                          ["TestSingleApplyAPI"])
         self.assertEqual(singleApplyAPIDef.GetPropertyNames(), [
-            "single:relationship", "single:token_attr", "single:bool_attr"])
+            "single:relationship", "single:token_attr", "single:bool_attr",
+            "single:no_fallback"])
         self.assertEqual(singleApplyAPIDef.GetDocumentation(),
             "Test single apply API schema.")
 
@@ -156,6 +157,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "multi:builtin:bool_attr", 
             "multi:builtin:relationship",
             "multi:builtin:token_attr",
+            "single:no_fallback",
             "testAttr",
             "testRel"])
         # Note that prim def documentation does not come from the built-in API
@@ -292,7 +294,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         # come with a property order, which is why they are not in alphabetical order.
         self.assertEqual(untypedPrim.GetPropertyNames(), [
             "single:relationship", "single:token_attr", "single:bool_attr", 
-            "compose:relationship", "compose:token_attr", "compose:bool_attr"])
+            "compose:relationship", "compose:token_attr", "compose:bool_attr",
+            "single:no_fallback"])
         self.assertEqual(untypedPrim.GetAttribute("single:token_attr").Get(), 
                          "bar")
 
@@ -382,23 +385,34 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "compose:bool_attr", 
             "multi:garply:bool_attr", 
             "multi:garply:relationship", 
-            "multi:garply:token_attr"]) 
+            "multi:garply:token_attr",
+            "single:no_fallback"])
 
         # Property fallback comes from TestSingleApplyAPI
         attr = typedPrim.GetAttribute("single:token_attr")
         self.assertEqual(attr.Get(), "bar")
+        self.assertEqual(attr.GetFallbackValue(), "bar")
         self.assertEqual(attr.GetResolveInfo().GetSource(), 
                          Usd.ResolveInfoSourceFallback)
         # Property fallback comes from TestMultiApplyAPI
         attr = typedPrim.GetAttribute("multi:garply:bool_attr")
+        self.assertEqual(attr.GetFallbackValue(), True)
         self.assertEqual(attr.Get(), True)
         self.assertEqual(attr.GetResolveInfo().GetSource(), 
                          Usd.ResolveInfoSourceFallback)
         # Property fallback comes from TestTypedSchema
         attr = typedPrim.GetAttribute("testAttr")
         self.assertEqual(attr.Get(), "foo")
+        self.assertEqual(attr.GetFallbackValue(), "foo")
         self.assertEqual(attr.GetResolveInfo().GetSource(), 
                          Usd.ResolveInfoSourceFallback)
+
+        # No fallback for this property
+        attr = typedPrim.GetAttribute("single:no_fallback")
+        self.assertIsNone(attr.GetFallbackValue())
+        self.assertIsNone(attr.Get())
+        self.assertEqual(attr.GetResolveInfo().GetSource(),
+                         Usd.ResolveInfoSourceNone)
 
         # Metadata "hidden" has a fallback value defined in TestTypedSchema. It
         # will be returned by GetMetadata and GetAllMetadata but will return 
@@ -446,6 +460,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "multi:builtin:bool_attr", 
             "multi:builtin:relationship",
             "multi:builtin:token_attr", 
+            "single:no_fallback",
             "testAttr", 
             "testRel"])
 
@@ -491,28 +506,41 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
                 "multi:garply:bool_attr", 
                 "multi:garply:relationship", 
                 "multi:garply:token_attr", 
+                "single:no_fallback",
                 "testAttr", 
                 "testRel"])
 
             # Property fallback comes from TestSingleApplyAPI
             attr = prim.GetAttribute("single:token_attr")
             self.assertEqual(attr.Get(), "bar")
+            attrQuery = Usd.AttributeQuery(attr)
+            self.assertEqual(attr.GetFallbackValue(), "bar")
+            self.assertEqual(attrQuery.GetFallbackValue(), "bar")
             self.assertEqual(attr.GetResolveInfo().GetSource(), 
                             Usd.ResolveInfoSourceFallback)
             # Property fallback comes from TestMultiApplyAPI
             attr = prim.GetAttribute("multi:garply:bool_attr")
             self.assertEqual(attr.Get(), True)
+            attrQuery = Usd.AttributeQuery(attr)
+            self.assertEqual(attr.GetFallbackValue(), True)
+            self.assertEqual(attrQuery.GetFallbackValue(), True)
             self.assertEqual(attr.GetResolveInfo().GetSource(), 
                             Usd.ResolveInfoSourceFallback)
             # Property fallback actually comes from TestWithBuiltinAppliedSchema as
             # the typed schema overrides this property from its built-in API schema.
             attr = prim.GetAttribute("multi:builtin:bool_attr")
             self.assertEqual(attr.Get(), False)
+            attrQuery = Usd.AttributeQuery(attr)
+            self.assertEqual(attr.GetFallbackValue(), False)
+            self.assertEqual(attrQuery.GetFallbackValue(), False)
             self.assertEqual(attr.GetResolveInfo().GetSource(), 
                             Usd.ResolveInfoSourceFallback)
             # Property fallback comes from TestWithBuiltinAppliedSchema
             attr = prim.GetAttribute("testAttr")
             self.assertEqual(attr.Get(), "foo")
+            attrQuery = Usd.AttributeQuery(attr)
+            self.assertEqual(attr.GetFallbackValue(), "foo")
+            self.assertEqual(attrQuery.GetFallbackValue(), "foo")
             self.assertEqual(attr.GetResolveInfo().GetSource(), 
                             Usd.ResolveInfoSourceFallback)
 
@@ -606,6 +634,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "multi:builtin:bool_attr", 
             "multi:builtin:relationship",
             "multi:builtin:token_attr", 
+            "single:no_fallback", 
             "testAttr", 
             "testRel"])
 
@@ -633,6 +662,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "compose:relationship", 
             "compose:token_attr", 
             "compose:bool_attr", 
+            "single:no_fallback", 
             "testAttr", 
             "testRel"])
 
@@ -662,6 +692,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "compose:relationship", 
             "compose:token_attr", 
             "compose:bool_attr", 
+            "single:no_fallback", 
             "testAttr", 
             "testRel"])
         
@@ -706,6 +737,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "compose:relationship", 
             "compose:token_attr", 
             "compose:bool_attr", 
+            "single:no_fallback",
             "testAttr", 
             "testRel"])
 
@@ -1309,7 +1341,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             # Properties from TestMultiApplyAPI:bar
             "multi:bar:bool_attr", 
             "multi:bar:relationship", 
-            "multi:bar:token_attr"]
+            "multi:bar:token_attr",
+            "single:no_fallback"]
         self.assertEqual(innerSinglePrim.GetPropertyNames(), expectedPropNames)
 
         # Verify that the attribute fallback values come from the API schemas
@@ -1387,7 +1420,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             # Properties from TestNestedOuterSingleApplyAPI
             "outerSingle:int_attr",
             "outerSingle:relationship",
-            "outerSingle:token_attr"]
+            "outerSingle:token_attr",
+            "single:no_fallback"]
         self.assertEqual(outerSinglePrim.GetPropertyNames(), expectedPropNames)
 
         # Verify that the attribute fallback values come from the API schemas
@@ -2225,6 +2259,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "outerSingle:int_attr",
             "outerSingle:relationship",
             "outerSingle:token_attr",
+            "single:no_fallback",
             # Properties from the prim type TestWithBuiltinNestedAppliedSchema
             "testAttr",
             "testRel"]
@@ -2299,6 +2334,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "multi:builtin:bool_attr",
             "multi:builtin:relationship",
             "multi:builtin:token_attr",
+            "single:no_fallback",
             "testAttr",
             "testRel"])
 
@@ -2360,6 +2396,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "multi:foo:bool_attr",
             "multi:foo:relationship",
             "multi:foo:token_attr",
+            "single:no_fallback",
             "testAttr",
             "testRel"])
 
@@ -2421,6 +2458,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "multi:foo:bool_attr",
             "multi:foo:relationship",
             "multi:foo:token_attr",
+            "single:no_fallback",
             "testAttr",
             "testRel"])
 

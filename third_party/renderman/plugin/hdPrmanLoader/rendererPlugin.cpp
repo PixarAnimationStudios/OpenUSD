@@ -215,7 +215,7 @@ std::vector<int> HdPrmanLoaderRendererPlugin::_GetGpuConfig(
                 try {
                     xpuGpuConfig.push_back(std::stoi(gpu));
                 }
-                catch (const std::invalid_argument& ex) {
+                catch (const std::invalid_argument&) {
                     TF_WARN("Invalid gpu device in RMAN_XPU_GPUCONFIG environment"
                         " variable. Must be a comma seperated list of integers.");
                 }

@@ -23,13 +23,12 @@ Trace_EventTreeBuilder::Trace_EventTreeBuilder()
 void
 Trace_EventTreeBuilder::OnBeginCollection()
 {
-
 }
 
 void
 Trace_EventTreeBuilder::OnEndCollection()
 {
-    _threadStacks.clear();
+    _curStack.clear();
 
     // for each key, sort the corresponding timestamps 
     for (TraceEventTree::MarkerValuesMap::value_type& item : _markersMap) {
@@ -49,44 +48,39 @@ Trace_EventTreeBuilder::OnBeginThread(const TraceThreadId& threadId)
     // Note, that TraceGetThreadId() returns the id of the current thread,
     // i.e. the reporting thread. Since we always report from the main
     // thread, we label the current thread "Main Thread" in the trace.
-    _threadStacks[threadId] = _PendingNodeStack();
-    {
-        _threadStacks[threadId].emplace_back(
-            TfToken(threadId.ToString()), 
-            TraceCategory::Default, 0, 0, false, true);
-    }
+    //
+    // The TraceCollection::Visitor interface always sends events between
+    // Begin/EndThread, so just clear the stack and emplace a new root.
+    _curStack.clear();
+    _curStack.emplace_back(TfToken(threadId.ToString()), 
+                           TraceCategory::Default, 0, 0,
+                           /*separateEvents=*/false, /*isComplete=*/true);
 }
 
 void
 Trace_EventTreeBuilder::OnEndThread(const TraceThreadId& threadId)
 {
-    _ThreadStackMap::iterator it = _threadStacks.find(threadId);
-    if (it != _threadStacks.end()) {
-        _PendingNodeStack& stack = it->second;
-
-        // Close any incomplete nodes, attach any unattached children nodes
-        TraceEventNodeRefPtr firstNode;
-        while (!stack.empty()) {
-
-            // close any timespan events left on the stack
-            _PendingEventNode* backNode = &stack.back();
-            firstNode = backNode->Close();
-
-            // if this was incomplete event, get Begin/End times from children
-            if (!backNode->isComplete) {
-                firstNode->SetBeginAndEndTimesFromChildren();
-            }
-
-            stack.pop_back();
-            if (!stack.empty()) {
-                stack.back().children.push_back(firstNode);
-            }
+    // Close any incomplete nodes, attach any unattached children nodes
+    TraceEventNodeRefPtr firstNode;
+    while (!_curStack.empty()) {
+        
+        // close any timespan events left on the stack
+        _PendingEventNode* backNode = &_curStack.back();
+        firstNode = backNode->Close();
+        
+        // if this was incomplete event, get Begin/End times from children
+        if (!backNode->isComplete) {
+            firstNode->SetBeginAndEndTimesFromChildren();
         }
-        // firstNode is now the thread root
-        firstNode->SetBeginAndEndTimesFromChildren();
-        _root->Append(firstNode);
-        _threadStacks.erase(it);
+        
+        _curStack.pop_back();
+        if (!_curStack.empty()) {
+            _curStack.back().node->_children.push_back(firstNode);
+        }
     }
+    // firstNode is now the thread root
+    firstNode->SetBeginAndEndTimesFromChildren();
+    _root->Append(std::move(firstNode));
 }
 
 void
@@ -122,32 +116,29 @@ void
 Trace_EventTreeBuilder::_OnBegin(
     const TraceThreadId& threadId, const TfToken& key, const TraceEvent& e)
 {
-
     // For a begin event, find and modify the matching end event
     // First, search the stack for a matching End
-    _PendingNodeStack& stack = _threadStacks[threadId];
-    _PendingEventNode* prevNode = &stack.back();
-    int index = stack.size()-1;
+    _PendingEventNode* prev = &_curStack.back();
+    int index = _curStack.size()-1;
 
-    while ((prevNode->isComplete || prevNode->key != key) && stack.size() > 1) {
+    while ((prev->isComplete ||
+            prev->node->GetKey() != key) && _curStack.size() > 1) {
 
-        if (prevNode->isComplete) {
-            _PopAndClose(stack);
-            prevNode = &stack.back();
-            --index;
+        --index;
+        if (prev->isComplete) {
+            _PopAndClose();
+            prev = &_curStack.back();
         } else {
-            --index;
-            prevNode = &stack[index];
+            prev = &_curStack[index];
         }
-
     }
 
     // Successfully found the matching End!
-    if (stack.size() >= 1 && prevNode->key == key) {
-        prevNode->start = e.GetTimeStamp();  
-        prevNode->separateEvents = true;
-        prevNode->isComplete = true;
-
+    if (_curStack.size() >= 1 && prev->node->GetKey() == key) {
+        prev->node->_beginTime = e.GetTimeStamp();
+        prev->node->_SetIsSeparateEvents(true);
+        prev->isComplete = true;
+        
     // Couldn't find the matching End, so treat as incomplete
     } else {
         // If we encounter a begin event that does not match an end 
@@ -157,12 +148,12 @@ Trace_EventTreeBuilder::_OnBegin(
         
         // Incomplete events set their duration to match their children.
         _PendingEventNode pending(key, e.GetCategory(), 0, 0, true, false);
-        swap(pending.children, stack.back().children);
-        swap(pending.attributes, stack.back().attributes);
-        TraceEventNodeRefPtr node =
-            pending.Close();
+        swap(pending.node->_children, _curStack.back().node->_children);
+        swap(pending.node->_attributesAndSeparateEvents,
+             _curStack.back().node->_attributesAndSeparateEvents);
+        TraceEventNodeRefPtr node = pending.Close();
         node->SetBeginAndEndTimesFromChildren();
-        stack.back().children.push_back(node);
+        _curStack.back().node->_children.push_back(std::move(node));
     }
 }
 
@@ -170,43 +161,43 @@ void
 Trace_EventTreeBuilder::_OnEnd(
     const TraceThreadId& threadId, const TfToken& key, const TraceEvent& e)
 {
-    _PendingNodeStack& stack = _threadStacks[threadId];
-    _PendingEventNode* prevNode = &stack.back();
+    _PendingEventNode* prev = &_curStack.back();
 
     // While this End can't be child of prevNode, pop and close prevNode
-    while(prevNode->isComplete && !(e.GetTimeStamp() > prevNode->start) 
-        && stack.size() > 1) {
-        _PopAndClose(stack);
-        prevNode = &stack.back();
+    while (prev->isComplete && !(e.GetTimeStamp() > prev->node->GetBeginTime()) 
+           && _curStack.size() > 1) {
+        _PopAndClose();
+        prev = &_curStack.back();
     }
 
     // For end events, push a node with a temporary start time
-    stack.emplace_back(
-        key, e.GetCategory(), 0, e.GetTimeStamp(), true, false);
+    _curStack.emplace_back(
+        key, e.GetCategory(), 0, e.GetTimeStamp(),
+        /*separateEvents=*/true, /*isComplete=*/false);
 }
 
 void 
 Trace_EventTreeBuilder::_OnTimespan(
     const TraceThreadId& threadId, const TfToken& key, const TraceEvent& e)
 {
+    const auto [start, end] = e.GetTimeSpanStamps();
 
-    const TraceEvent::TimeStamp start = e.GetStartTimeStamp();
-    const TraceEvent::TimeStamp end = e.GetEndTimeStamp();
+    if (!TF_VERIFY(!_curStack.empty())) {
+        return;
+    }
+    
+    _PendingEventNode* prev = &_curStack.back();
 
-    _PendingEventNode thisNode(key, e.GetCategory(), start, end, false, true);
-
-    _PendingNodeStack& stack = _threadStacks[threadId];
-    _PendingEventNode* prevNode = &stack.back();
-
-    // while thisNode is not a child of prevNode
-    while ((thisNode.start < prevNode->start || thisNode.end > prevNode->end) 
-        && stack.size() > 1) {
-        _PopAndClose(stack);
-        prevNode = &stack.back();
+    // while this new node is not a child of prevNode
+    while ((start < prev->node->GetBeginTime() ||
+            end > prev->node->GetEndTime()) && _curStack.size() > 1) {
+        _PopAndClose();
+        prev = &_curStack.back();
     }
         
-    // In all cases, add thisNode to the stack
-    stack.push_back(std::move(thisNode));
+    // In all cases, add this new node to the stack
+    _curStack.emplace_back(key, e.GetCategory(), start, end,
+                           /*separateEvents=*/false, /*isComplete=*/true);
 }
 
 void
@@ -220,42 +211,37 @@ void
 Trace_EventTreeBuilder::_OnData(
     const TraceThreadId& threadId, const TfToken& key, const TraceEvent& e)
 {
-    _PendingNodeStack& stack = _threadStacks[threadId];
-    if (!stack.empty()) {
-
-        _PendingEventNode* prevNode = &stack.back(); 
-
-        // if that data doesn't fall in this node's timespan, look to prevNode
-        while ((e.GetTimeStamp() < prevNode->start || 
-            e.GetTimeStamp() > prevNode->end) && stack.size() > 1) {
-            _PopAndClose(stack);
-            prevNode = &stack.back();
-        }
-
-        // Add data to the real node in the stack
-        prevNode->attributes.push_back(
-            _PendingEventNode::AttributeData{
-            e.GetTimeStamp(), key, e.GetData()});
+    if (_curStack.empty()) {
+        return;
     }
+
+    const TraceEvent::TimeStamp eventTime = e.GetTimeStamp();
+    
+    _PendingEventNode* prev = &_curStack.back(); 
+
+    // if that data doesn't fall in this node's timespan, look to prevNode
+    while ((eventTime < prev->node->GetBeginTime() || 
+            eventTime > prev->node->GetEndTime()) && _curStack.size() > 1) {
+        _PopAndClose();
+        prev = &_curStack.back();
+    }
+    
+    // Add data to the real node in the stack
+    prev->node->AddAttribute(key, e.GetData());
 }
 
 void
-Trace_EventTreeBuilder::_PopAndClose(_PendingNodeStack& stack) 
+Trace_EventTreeBuilder::_PopAndClose()
 {
-    _PendingEventNode* prevNode = &stack.back();
-    TraceEventNodeRefPtr closedOldPrev = prevNode->Close();
-    stack.pop_back();
-    // _PendingEventNode* newPrev = &stack.back();
-    stack.back().children.push_back(closedOldPrev);
+    TraceEventNodeRefPtr closed = _curStack.back().Close();
+    _curStack.pop_back();
+    _curStack.back().node->_children.push_back(std::move(closed));
 }
+
 Trace_EventTreeBuilder::_PendingEventNode::_PendingEventNode(
     const TfToken& key, TraceCategoryId category, TimeStamp start, 
     TimeStamp end, bool separateEvents, bool isComplete)
-    : key(key)
-    , category(category)
-    , start(start)
-    , end(end)
-    , separateEvents(separateEvents)
+    : node(TraceEventNode::New(key, category, start, end, separateEvents))
     , isComplete(isComplete)
 {
 }
@@ -263,18 +249,15 @@ Trace_EventTreeBuilder::_PendingEventNode::_PendingEventNode(
 TraceEventNodeRefPtr 
 Trace_EventTreeBuilder::_PendingEventNode::Close() 
 {
-    // We are now iterating backwards to build the tree,
-    // So children and attributes were encountered in reverse order
-    std::reverse(children.begin(), children.end());
-    std::reverse(attributes.begin(), attributes.end());
-
-    TraceEventNodeRefPtr node = 
-        TraceEventNode::New(key, category, start, end, 
-            std::move(children), separateEvents);
-    for (AttributeData& it : attributes) {
-        node->AddAttribute(TfToken(it.key), std::move(it.data));
+    // We iterate backwards to build the tree so children and attributes were
+    // encountered in reverse order.  TraceEventNode::AddAttribute handles
+    // reversal by prepending added attributes, but we have to handle child
+    // nodes here.
+    auto &nodeChildren = node->_children;
+    if (ARCH_UNLIKELY(nodeChildren.size() > 1)) {
+        std::reverse(nodeChildren.begin(), nodeChildren.end());
     }
-    return node;
+    return std::move(node);
 }
 
 void

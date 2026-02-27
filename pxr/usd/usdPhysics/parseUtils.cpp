@@ -2595,8 +2595,11 @@ bool LoadUsdPhysicsFromRange(const UsdStageWeakPtr stage,
             const UsdPrimTypeInfo& typeInfo = prim.GetPrimTypeInfo();
 
             uint32_t apiFlags = 0;
-            const TfTokenVector& apis =
-                prim.GetPrimTypeInfo().GetAppliedAPISchemas();
+
+            // Here we need to get the applied schemas to get schemas
+            // that are also inherited.
+            const TfTokenVector& apis = prim.GetAppliedSchemas();
+
             for (const TfToken& token : apis)
             {
                 if (token == gArticulationRootAPIToken)

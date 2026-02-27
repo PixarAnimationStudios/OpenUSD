@@ -53,7 +53,8 @@ public:
     static const size_t numRows = {{ DIM }};
     static const size_t numColumns = {{ DIM }};
 
-    /// Default constructor. Leaves the matrix component values undefined.
+    /// {{ MAT }} value-initializes to zero and performs no default
+    /// initialization, like float or double.
     {{ MAT }}() = default;
 
     /// Constructor. Initializes the matrix from {{ DIM*DIM }} independent

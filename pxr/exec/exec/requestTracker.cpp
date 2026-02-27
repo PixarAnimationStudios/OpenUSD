@@ -77,6 +77,14 @@ Exec_RequestTracker::DidInvalidateComputedValues(
 }
 
 void
+Exec_RequestTracker::DidInvalidateUnknownValues()
+{
+    ParallelForEachRequest([](Exec_RequestImpl &impl) {
+        impl.DidInvalidateUnknownValues();
+    });
+}
+
+void
 Exec_RequestTracker::DidChangeTime(
     const Exec_TimeChangeInvalidationResult &invalidationResult) const
 {

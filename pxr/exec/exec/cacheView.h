@@ -14,11 +14,13 @@
 #include "pxr/base/tf/span.h"
 #include "pxr/exec/vdf/dataManagerFacade.h"
 
+#include <memory>
 #include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class Exec_ValueExtractor;
+class VdfExecutorInterface;
 class VdfMaskedOutput;
 class VtValue;
 
@@ -34,6 +36,19 @@ public:
     /// Constructs an invalid cache view.
     Exec_CacheView() = default;
 
+    /// Exec_CacheView is move-only.
+    Exec_CacheView(const Exec_CacheView &) = delete;
+
+    /// Constructs a cache view from another.
+    ///
+    /// The other cache view becomes invalid.
+    ///
+    EXEC_API
+    Exec_CacheView(Exec_CacheView &&other);
+
+    EXEC_API
+    ~Exec_CacheView();
+
     /// Returns the computed value for the provided extraction \p index.
     /// 
     /// Emits an error and returns an empty value if the \p index is not
@@ -44,15 +59,26 @@ public:
 
 private:
     friend class Exec_RequestImpl;
+
+    // Constructs a cache view that extracts computed values from
+    // \p dataManager. The data manager must outlive the cache view.
     Exec_CacheView(
         const VdfDataManagerFacade dataManager,
         TfSpan<const VdfMaskedOutput> outputs,
         TfSpan<const Exec_ValueExtractor> extractors);
 
+    // Constructs a cache view that assumes ownership of an \p executor, so that
+    // it remains valid while computed values are extracted from it.
+    Exec_CacheView(
+        std::unique_ptr<VdfExecutorInterface> &&executor,
+        TfSpan<const VdfMaskedOutput> outputs,
+        TfSpan<const Exec_ValueExtractor> extractors);
+
 private:
     std::optional<const VdfDataManagerFacade> _dataManager;
-    const TfSpan<const VdfMaskedOutput> _outputs{};
-    const TfSpan<const Exec_ValueExtractor> _extractors{};
+    const TfSpan<const VdfMaskedOutput> _outputs;
+    const TfSpan<const Exec_ValueExtractor> _extractors;
+    std::unique_ptr<VdfExecutorInterface> _executor;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

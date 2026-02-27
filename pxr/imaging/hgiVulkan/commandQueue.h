@@ -120,6 +120,11 @@ private:
     HgiVulkan_CommandPool* _AcquireThreadCommandPool(
         std::thread::id const& threadId);
 
+    // Adds the _resourceCommandBuffer to _queuedBuffers, ensuring that
+    // resource commands not encapsulated by HgiCmds are submitted before
+    // HgiCmds and are included in calls to 'Flush'.
+    void _FlushResourceCommandBuffer();
+
     // Returns an id-bit that uniquely identifies the cmd buffer amongst all
     // in-flight cmd buffers. Returns an empty result if all bits have been
     // acquired, in which case the existing buffers must have their bit released

@@ -44,7 +44,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 
 
 // //////// Codegen Defines //////// 
-#define HD_SHADER_API 2
+#define HD_SHADER_API 3
 #define MAT4 mat4
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
@@ -1179,7 +1179,7 @@ uint hd_SampleMaskIn = gl_SampleMaskIn[0];
 
 
 // //////// Codegen Defines //////// 
-#define HD_SHADER_API 2
+#define HD_SHADER_API 3
 #define MAT4 mat4
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3

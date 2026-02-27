@@ -83,7 +83,9 @@ UsdImagingDataSourceVisibility::Get(const TfToken &name)
         TfToken vis;
         _visibilityQuery.Get(&vis, _stageGlobals.GetTime());
         if (vis == UsdGeomTokens->invisible) {
-            return HdRetainedTypedSampledDataSource<bool>::New(false);
+            static HdDataSourceBaseHandle const boolFalseDs =
+                HdRetainedTypedSampledDataSource<bool>::New(false);
+            return boolFalseDs;
         }
     }
 
@@ -113,11 +115,27 @@ UsdImagingDataSourcePurpose::GetNames()
 static HdDataSourceBaseHandle
 _PurposeTokenToDataSource(const TfToken &purpose)
 {
+    // Provide static const data sources for common values.
     if (purpose == UsdGeomTokens->default_) {
         // Hydra's default purpose is 'geometry'.
         static HdDataSourceBaseHandle const ds =
             HdRetainedTypedSampledDataSource<TfToken>::New(
                 HdRenderTagTokens->geometry);
+        return ds;
+    }
+    if (purpose == UsdGeomTokens->render) {
+        static HdDataSourceBaseHandle const ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(purpose);
+        return ds;
+    }
+    if (purpose == UsdGeomTokens->proxy) {
+        static HdDataSourceBaseHandle const ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(purpose);
+        return ds;
+    }
+    if (purpose == UsdGeomTokens->guide) {
+        static HdDataSourceBaseHandle const ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(purpose);
         return ds;
     }
     return HdRetainedTypedSampledDataSource<TfToken>::New(purpose);
@@ -257,6 +275,26 @@ UsdImagingDataSourceExtent::Get(const TfToken &name)
 }
 
 // ----------------------------------------------------------------------------
+
+// Check if there is an authored or non-default fallback purpose.
+static
+bool _HasNonDefaultPurpose(UsdGeomImageable const& imageable)
+{
+    if (!imageable) {
+        return false;
+    }
+    auto purposeAttr = imageable.GetPurposeAttr();
+    if (!purposeAttr) {
+        return false;
+    }
+    if (purposeAttr.HasAuthoredValue()) {
+        return true;
+    }
+    TfToken fallbackPurpose;
+    return purposeAttr.GetFallbackValue(&fallbackPurpose)
+        && !fallbackPurpose.IsEmpty()
+        && fallbackPurpose != UsdGeomTokens->default_;
+}
 
 static
 TfTokenVector _UsdToHdPurposes(const TfTokenVector &v)
@@ -663,12 +701,18 @@ UsdImagingDataSourcePrim::GetNames()
     TfTokenVector vec {
         UsdImagingUsdPrimInfoSchema::GetSchemaToken(),
         HdPrimOriginSchema::GetSchemaToken(),
-        HdPrimvarsSchema::GetSchemaToken()
     };
+    
+    if (!UsdGeomPrimvarsAPI(usdPrim).GetAuthoredPrimvars().empty()) {
+        vec.push_back(HdPrimvarsSchema::GetSchemaToken());
+    }
     
     if (usdPrim.IsA<UsdGeomImageable>()) {
         vec.push_back(HdVisibilitySchema::GetSchemaToken());
-        vec.push_back(HdPurposeSchema::GetSchemaToken());
+        UsdGeomImageable imageable(usdPrim);
+        if (_HasNonDefaultPurpose(imageable)) {
+            vec.push_back(HdPurposeSchema::GetSchemaToken());
+        }
     }
 
     if (usdPrim.IsA<UsdGeomXformable>()) {
@@ -710,14 +754,17 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         }
 
         UsdGeomXformable::XformQuery xformQuery(xformable);
-        if (xformQuery.HasNonEmptyXformOpOrder() ||
-            xformQuery.GetResetXformStack()) {
+        if (xformQuery.TransformMightHaveEffect()) {
             return UsdImagingDataSourceXform::New(
                     xformQuery, _sceneIndexPath, _GetStageGlobals());
         } else {
             return nullptr;
         }
     } else if (name == HdPrimvarsSchema::GetSchemaToken()) {
+        // Return null data source if no primvars exist.
+        if (UsdGeomPrimvarsAPI(_GetUsdPrim()).GetAuthoredPrimvars().empty()) {
+            return nullptr;
+        }
         return UsdImagingDataSourcePrimvars::New(
                 _GetSceneIndexPath(),
                 _GetUsdPrim(),
@@ -737,12 +784,12 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         }
     } else if (name == HdPurposeSchema::GetSchemaToken()) {
         UsdGeomImageable imageable(_GetUsdPrim());
-        if (!imageable) {
-            return nullptr;
+        if (_HasNonDefaultPurpose(imageable)) {
+            return UsdImagingDataSourcePurpose::New(
+                UsdAttributeQuery(imageable.GetPurposeAttr()),
+                _GetStageGlobals());
         }
-        return UsdImagingDataSourcePurpose::New(
-            UsdAttributeQuery(imageable.GetPurposeAttr()),
-            _GetStageGlobals());
+        return nullptr;
     } else if (name == HdExtentSchema::GetSchemaToken()) {
         UsdGeomBoundable boundable(_GetUsdPrim());
         if (!boundable) {

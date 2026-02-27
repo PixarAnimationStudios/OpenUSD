@@ -27,6 +27,7 @@
 #include "pxr/usd/usd/relationship.h"
 
 #include <utility>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,7 +42,12 @@ template <class InterfaceType, class UsdObjectType>
 bool
 EsfUsd_ObjectImpl<InterfaceType, UsdObjectType>::_IsValid() const
 {
-    return _GetWrapped().IsValid();
+    const UsdObjectType &object = _GetWrapped();
+    if constexpr (std::is_same_v<UsdObjectType, UsdPrim>) {
+        return object.IsValid() && UsdPrimDefaultPredicate(object);
+    } else {
+        return object.IsValid() && UsdPrimDefaultPredicate(object.GetPrim());
+    }
 }
 
 template <class InterfaceType, class UsdObjectType>

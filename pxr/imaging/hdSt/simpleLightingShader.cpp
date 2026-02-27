@@ -45,7 +45,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 HdStSimpleLightingShader::HdStSimpleLightingShader() 
     : _lightingContext(GlfSimpleLightingContext::New())
-    , _useLighting(true)
     , _glslfx(std::make_unique<HioGlslfx>(HdStPackageSimpleLightingShader()))
     , _domeLightCubemapTargetMemoryMB(0)
     , _shadowTextureHandle(
@@ -70,19 +69,15 @@ HdStSimpleLightingShader::ComputeHash() const
     HD_TRACE_FUNCTION();
 
     const TfToken glslfxFile = HdStPackageSimpleLightingShader();
-    const size_t numLights =
-        _useLighting ? _lightingContext->GetNumLightsUsed() : 0;
-    const bool useShadows =
-        _useLighting ? _lightingContext->GetUseShadows() : false;
-    const size_t numShadows =
-        useShadows ? _lightingContext->ComputeNumShadowsUsed() : 0;
+    const bool useShadows = _lightingContext->GetUseShadows();
+    const bool useLighting = _lightingContext->GetUseLighting();
 
     size_t hash = glslfxFile.Hash();
     hash = TfHash::Combine(
         hash,
-        numLights,
+        useLighting,
+        _maxLights,
         useShadows,
-        numShadows,
         _lightingContext->ComputeShaderSourceHash()
     );
 
@@ -113,13 +108,12 @@ HdStSimpleLightingShader::GetSource(TfToken const &shaderStageKey) const
     if (source.empty()) return source;
 
     std::stringstream defineStream;
-    const size_t numLights =
-        _useLighting ? _lightingContext->GetNumLightsUsed() : 0;
-    const bool useShadows =
-        _useLighting ? _lightingContext->GetUseShadows() : false;
+    const size_t maxLights =
+        _lightingContext->GetUseLighting() ? _maxLights : 0;
+    const bool useShadows = _lightingContext->GetUseShadows();
     const size_t numShadows =
-        useShadows ? _lightingContext->ComputeNumShadowsUsed() : 0;
-    defineStream << "#define NUM_LIGHTS " << numLights<< "\n";
+        useShadows ? GetMaxShadows() : 0;
+    defineStream << "#define NUM_LIGHTS " << maxLights<< "\n";
     defineStream << "#define USE_SHADOWS " << (int)(useShadows) << "\n";
     defineStream << "#define NUM_SHADOWS " << numShadows << "\n";
 
@@ -243,12 +237,7 @@ HdStSimpleLightingShader::AddBindings(HdStBindingRequestVector *customBindings)
                 HdStTextureType::Uv));
     }
 
-    const bool useShadows =
-        _useLighting ? _lightingContext->GetUseShadows() : false;
-    if (useShadows) {
-        size_t const numShadowPasses = 
-            _lightingContext->GetShadows()->GetNumShadowMapPasses();
-
+    if (_lightingContext->GetUseShadows()) {
         // Create one param for all shadow passes as shadow compare textures 
         // will be bound to shader as an array of samplers.
         _lightTextureParams.push_back(
@@ -260,7 +249,7 @@ HdStSimpleLightingShader::AddBindings(HdStBindingRequestVector *customBindings)
                 HdStTextureType::Uv,
                 /*swizzle*/std::string(),
                 /*isPremultiplied*/false,
-                /*arrayOfTexturesSize*/numShadowPasses));
+                /*arrayOfTexturesSize*/GetMaxShadows()));
     }
 }
 
@@ -396,8 +385,7 @@ HdStSimpleLightingShader::AllocateTextureHandles(
 {
     const std::string &resolvedPath =
         _GetResolvedDomeLightEnvironmentFilePath(_lightingContext);
-    const bool useShadows =
-        _useLighting ? _lightingContext->GetUseShadows() : false;
+    const bool useShadows = _lightingContext->GetUseShadows();
     if (resolvedPath.empty()) {
         _domeLightEnvironmentTextureHandle = nullptr;
         _domeLightTextureHandles.clear();
@@ -516,7 +504,7 @@ HdStSimpleLightingShader::_AllocateShadowTextures(
         _lightingContext->GetShadows();
     size_t const numShadowPasses = shadows->GetNumShadowMapPasses();
     _shadowAovBindings.resize(numShadowPasses);
-    _shadowTextureHandle.handles.resize(numShadowPasses);
+    _shadowTextureHandle.handles.resize(GetMaxShadows());
     _shadowBuffers.resize(numShadowPasses);
 
     for (uint32_t i = 0; i < numShadowPasses; i++) {
@@ -566,6 +554,28 @@ HdStSimpleLightingShader::_AllocateShadowTextures(
                 shadowSamplerParameters,
                 /* memoryRequest = */ 0,
                 shared_from_this());
+    }
+    if (!_shadowBufferFallback) {
+        _shadowBufferFallback = resourceRegistry->AllocateTempRenderBuffer(
+                graphPath,
+                HdFormatFloat32,
+                GfVec2i(1,1),
+                /*multiSampled=*/false,
+                /*depth=*/true);
+    }
+    HdSamplerParameters const fallbackParams{
+            HdWrapClamp, HdWrapClamp, HdWrapClamp,
+            HdMinFilterLinear, HdMagFilterLinear,
+            HdBorderColorOpaqueWhite, /*enableCompare*/true, 
+            HdCmpFuncLEqual, /*maxAnisotropy*/16};
+    for (uint32_t i = numShadowPasses; i < GetMaxShadows(); i++) {
+        _shadowTextureHandle.handles[i] =
+            resourceRegistry->AllocateTextureHandle(
+                _shadowBufferFallback->GetBuffer()->GetTextureIdentifier(false),
+                HdStTextureType::Uv,
+                fallbackParams,
+                /* memoryRequest = */ 0,
+                shared_from_this());    
     }
 }
 
@@ -686,6 +696,13 @@ HdStSimpleLightingShader::SetDomeLightCubemapTargetMemory(
         _domeLightEnvironmentTextureHandle = nullptr;
         _domeLightTextureHandles.clear();
     }
+}
+
+void 
+HdStSimpleLightingShader::SetMaxLights(
+    uint32_t maxLights)
+{
+    _maxLights = maxLights;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

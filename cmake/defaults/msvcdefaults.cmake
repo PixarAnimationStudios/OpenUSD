@@ -74,6 +74,12 @@ _disable_warning("4334")
 # Disable warning C4996 regarding fopen(), strcpy(), etc.
 _add_define("_CRT_SECURE_NO_WARNINGS")
 
+# Disable warning C4996 regarding deprecated POSIX function names and
+# recommending non-standard Microsoft names instead (e.g. use _strdup 
+# instead of strdup). Per docs, these warnings can be disabled if the
+# original names are needed for portability reasons.
+_add_define("_CRT_NONSTDC_NO_WARNINGS")
+
 # Disable warning C4996 regarding unchecked iterators for std::transform,
 # std::copy, std::equal, et al.
 _add_define("_SCL_SECURE_NO_WARNINGS")

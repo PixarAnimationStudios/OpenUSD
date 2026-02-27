@@ -40,12 +40,14 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    // Should be chained *after* the extComputationPrimvarPruningSceneIndex and
-    // procedural expansion.
-    // Avoiding an additional dependency on hdGp in hdPrman and hardcoding it
-    // for now.
-    const HdSceneIndexPluginRegistry::InsertionPhase
-        insertionPhase = 3; // HdGpSceneIndexPlugin()::GetInsertionPhase() + 1;
+    // Should be chained *after* the extComputationPrimvarPruningSceneIndex,
+    // procedural expansion, and all Matfilt ops (since they may modify
+    // the material, adding attributes to transfer).
+    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase =
+        std::max(
+            2+1, // HdGpSceneIndexPlugin()::GetInsertionPhase() + 1
+            200 // _MatfiltOrder::End
+        );
 
     for( auto const& rendererDisplayName : HdPrman_GetPluginDisplayNames()) {
         // Register the plugins conditionally.
@@ -54,7 +56,7 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
             _tokens->sceneIndexPluginName,
             nullptr, // no argument data necessary
             insertionPhase,
-            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+            HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
     }
 }
 

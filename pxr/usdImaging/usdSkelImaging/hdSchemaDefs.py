@@ -166,7 +166,10 @@
                 Just forwarded from the skelAnim's blendShapes.''')),
             ('blendShapeWeights', T_FLOATARRAY,
              dict(DOC='''
-                Just forwarded from the skelAnim's blendShapeWeights.'''))
+                Just forwarded from the skelAnim's blendShapeWeights.''')),
+            ('blendShapeRanges', T_VEC2IARRAY,
+             dict(DOC='''
+                Ranges for concatenated blendShapes/Weights.'''))
         ],
     ),
 ]

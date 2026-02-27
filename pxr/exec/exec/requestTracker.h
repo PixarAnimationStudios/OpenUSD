@@ -69,6 +69,11 @@ public:
     void DidInvalidateComputedValues(
         const Exec_DisconnectedInputsInvalidationResult &invalidationResult);
 
+    /// Notify all requests to invalidate value keys that don't have a compiled
+    /// leaf node.
+    ///
+    void DidInvalidateUnknownValues();
+
     /// Notify all requests of time having changed.
     void DidChangeTime(
         const Exec_TimeChangeInvalidationResult &invalidationResult) const;

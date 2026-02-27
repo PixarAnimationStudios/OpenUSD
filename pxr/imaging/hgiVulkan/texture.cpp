@@ -95,13 +95,15 @@ HgiVulkanTexture::HgiVulkanTexture(
     TF_VERIFY(_vkImage, "Failed to create image");
 
     // Debug label
-    if (!desc.debugName.empty()) {
+    if (!desc.debugName.empty() && HgiVulkanIsDebugEnabled()) {
         std::string debugLabel = "Image " + desc.debugName;
         HgiVulkanSetDebugName(
             device,
             static_cast<uint64_t>(reinterpret_cast<uintptr_t>(_vkImage)),
             VK_OBJECT_TYPE_IMAGE,
             debugLabel.c_str());
+        vmaSetAllocationName(device->GetVulkanMemoryAllocator(),
+            _vmaImageAllocation, debugLabel.c_str());
     }
 
     //

@@ -427,8 +427,8 @@ UsdPrimDefinition::_FindOrCreateSpecForComposition(
     // we create a new layer for this prim definition to write its composed
     // properties and metadata.
     if (_composedPropertyLayer) {
-        if (destSpec = _composedPropertyLayer->GetObjectAtPath(
-                primPath.AppendProperty(propName))) {
+        if ((destSpec = _composedPropertyLayer->GetObjectAtPath(
+                primPath.AppendProperty(propName)))) {
             return destSpec;
         }
     } else {

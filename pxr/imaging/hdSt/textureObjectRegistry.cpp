@@ -11,7 +11,6 @@
 #include "pxr/imaging/hdSt/ptexTextureObject.h"
 #include "pxr/imaging/hdSt/textureObject.h"
 #include "pxr/imaging/hdSt/udimTextureObject.h"
-#include "pxr/imaging/hdSt/dynamicCubemapTextureObject.h"
 #include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
 #include "pxr/imaging/hdSt/textureIdentifier.h"
@@ -69,7 +68,7 @@ HdSt_TextureObjectRegistry::_MakeTextureObject(
         if (_IsSubTexIdType<HdStDynamicCubemapSubtextureIdentifier>(
                 textureId)) {
             return
-                std::make_shared<HdStDynamicCubemapTextureObject>(
+                std::make_shared<HdStDynamicUvTextureObject>(
                     textureId,
                     this);
         }

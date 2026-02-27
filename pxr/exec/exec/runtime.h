@@ -9,6 +9,7 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/exec/ef/maskedSubExecutor.h"
 #include "pxr/exec/vdf/dataManagerFacade.h"
 #include "pxr/exec/vdf/maskedOutputVector.h"
 
@@ -97,6 +98,27 @@ public:
         const VdfSchedule &schedule,
         const VdfRequest &computeRequest);
 
+    /// Performs evaluation with the provided \p schedule and \p computeRequest
+    /// using a temporary subexecutor that is initialized with the provided
+    /// overrides.
+    ///
+    /// The overrides are specified by \p overriddenOutputs and
+    /// \p overriddenValues. These vectors must be equal in length, because the
+    /// output at index i in \p overriddenOutputs will assume an override value
+    /// from index i in \p overriddenValues.
+    ///
+    /// It is the caller's responsibility to ensure that the override value
+    /// has the same type as the output being overridden.
+    ///
+    /// This returns a unique pointer to the subexecutor used for evaluation
+    /// which stores the results of the computation.
+    ///
+    std::unique_ptr<VdfExecutorInterface> ComputeWithOverrides(
+        const VdfSchedule &schedule,
+        const VdfRequest &computeRequest,
+        const VdfMaskedOutputVector &overriddenOutputs,
+        const std::vector<VtValue> &overriddenValues);
+
 private:
     // Reports any executor errors raised during evaluation.
     void _ReportExecutorErrors(const VdfExecutorErrorLogger &errorLogger) const;
@@ -104,8 +126,8 @@ private:
 private:
     std::unique_ptr<VdfExecutorInterface> _executor;
     size_t _executorTopologicalStateVersion;
-
     std::unique_ptr<EfPageCacheStorage> _cacheStorage;
+    std::unique_ptr<EfMaskedSubExecutor> _overridesExecutor;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -246,11 +246,11 @@ private:
 /// \class HdStDynamicCubemapSubtextureIdentifier
 ///
 /// Used as a tag that the Storm texture system returns a
-/// HdStDynamicCubemapTextureObject that is populated by a client rather
+/// HdStDynamicUvTextureObject that is populated by a client rather
 /// than by the Storm texture system.
 ///
 /// Clients can subclass this class and provide their own
-/// HdStDynamicCubemapTextureImplementation to create cubemap texture with
+/// HdStDynamicUvTextureImplementation to create cubemap texture with
 /// custom load and commit behavior.
 ///
 class HdStDynamicCubemapSubtextureIdentifier : public HdStSubtextureIdentifier
@@ -268,7 +268,7 @@ public:
     /// Textures can return their own HdStDynamicUvTextureImplementation
     /// to customize the load and commit behavior.
     HDST_API
-    virtual HdStDynamicCubemapTextureImplementation*
+    virtual HdStDynamicUvTextureImplementation*
         GetTextureImplementation() const;
 
 protected:

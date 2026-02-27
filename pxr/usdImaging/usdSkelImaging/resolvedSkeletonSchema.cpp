@@ -60,17 +60,25 @@ UsdSkelImagingResolvedSkeletonSchema::GetBlendShapeWeights() const
         UsdSkelImagingResolvedSkeletonSchemaTokens->blendShapeWeights);
 }
 
+HdVec2iArrayDataSourceHandle
+UsdSkelImagingResolvedSkeletonSchema::GetBlendShapeRanges() const
+{
+    return _GetTypedDataSource<HdVec2iArrayDataSource>(
+        UsdSkelImagingResolvedSkeletonSchemaTokens->blendShapeRanges);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 UsdSkelImagingResolvedSkeletonSchema::BuildRetained(
         const HdMatrixDataSourceHandle &skelLocalToCommonSpace,
         const HdMatrix4fArrayDataSourceHandle &skinningTransforms,
         const HdTokenArrayDataSourceHandle &blendShapes,
-        const HdFloatArrayDataSourceHandle &blendShapeWeights
+        const HdFloatArrayDataSourceHandle &blendShapeWeights,
+        const HdVec2iArrayDataSourceHandle &blendShapeRanges
 )
 {
-    TfToken _names[4];
-    HdDataSourceBaseHandle _values[4];
+    TfToken _names[5];
+    HdDataSourceBaseHandle _values[5];
 
     size_t _count = 0;
 
@@ -92,6 +100,11 @@ UsdSkelImagingResolvedSkeletonSchema::BuildRetained(
     if (blendShapeWeights) {
         _names[_count] = UsdSkelImagingResolvedSkeletonSchemaTokens->blendShapeWeights;
         _values[_count++] = blendShapeWeights;
+    }
+
+    if (blendShapeRanges) {
+        _names[_count] = UsdSkelImagingResolvedSkeletonSchemaTokens->blendShapeRanges;
+        _values[_count++] = blendShapeRanges;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -128,6 +141,14 @@ UsdSkelImagingResolvedSkeletonSchema::Builder::SetBlendShapeWeights(
     return *this;
 }
 
+UsdSkelImagingResolvedSkeletonSchema::Builder &
+UsdSkelImagingResolvedSkeletonSchema::Builder::SetBlendShapeRanges(
+    const HdVec2iArrayDataSourceHandle &blendShapeRanges)
+{
+    _blendShapeRanges = blendShapeRanges;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 UsdSkelImagingResolvedSkeletonSchema::Builder::Build()
 {
@@ -135,7 +156,8 @@ UsdSkelImagingResolvedSkeletonSchema::Builder::Build()
         _skelLocalToCommonSpace,
         _skinningTransforms,
         _blendShapes,
-        _blendShapeWeights
+        _blendShapeWeights,
+        _blendShapeRanges
     );
 }
 
@@ -203,6 +225,16 @@ UsdSkelImagingResolvedSkeletonSchema::GetBlendShapeWeightsLocator()
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
             UsdSkelImagingResolvedSkeletonSchemaTokens->blendShapeWeights);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+UsdSkelImagingResolvedSkeletonSchema::GetBlendShapeRangesLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            UsdSkelImagingResolvedSkeletonSchemaTokens->blendShapeRanges);
     return locator;
 } 
 

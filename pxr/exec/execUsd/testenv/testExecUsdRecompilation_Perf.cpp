@@ -150,6 +150,8 @@ public:
         , _treeDepth(treeDepth)
     {}
 
+    virtual ~Test() = default;
+
     // Runs the test. Each stage of the test can be customized by overriding
     // the protected virtual methods.
     void Run() {
@@ -667,6 +669,7 @@ main(int argc, char **argv)
     }
 
     _ConfigureTestPlugin();
+    WorkSetConcurrencyLimit(numThreads);
     std::cout << "Running with " << numThreads << " threads.\n";
     {
         _PerformanceTracker performanceTracker(outputAsSpy, outputAsTrace);

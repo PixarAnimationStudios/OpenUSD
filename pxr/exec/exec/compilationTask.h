@@ -75,6 +75,18 @@ protected:
     /// 
     virtual void _Compile(Exec_CompilationState &, TaskPhases &) = 0;
 
+    /// Compilation tasks implement this method to define their behavior when
+    /// the compilation process is interrupted.
+    ///
+    /// The implementation of _Compile typically defines one or more task phases
+    /// by calling TaskPhases::Invoke. So long as compilation is not
+    /// interrupted, tasks are resumed on their next phase when all dependencies
+    /// established by the prior phase have completed. However, when compilation
+    /// is interrupted, the task is resumed by calling _Interrupt, and future
+    /// phases will never run.
+    ///
+    virtual void _Interrupt(Exec_CompilationState &) = 0;
+
 private:
     // The parent task, if this is a sub-task. nullptr for top-level tasks.
     Exec_CompilationTask *_parent;

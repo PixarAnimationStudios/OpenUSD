@@ -17,12 +17,74 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-// For pruning collections that use a path expression without a trailing '//',
-// an ancestral match counts.
-// e.g. The path /World/Foo/Bar should be matched by the expression
-//      /World/Foo (or //Foo) because pruning /World/Foo also prunes all of its
-//      descendants.
-//
+/*
+
+Pruning via path expressions has some subtlety that deserves explanation.
+
+1. If the path expression is built from patterns that end with '//', then
+descendant matching is already built into the expression evaluation. For
+example, the expression '/World/Foo// + /World/Bar/Baz//' would prune
+</World/Foo> and all its descendants, as well as </World/Bar/Baz> and all its   
+descendants.
+
+2. However, if the path expression is built from patterns that do not end with
+'//', descendants of matched prims are still pruned.
+So the expression '/World/Foo + /World/Bar/Baz' would prune
+</World/Foo> and all its descendants, as well as </World/Bar/Baz> and all its   
+descendants, even though </World/Foo/Child> and </World/Bar/Baz/Child> do not
+explicitly match the expression.
+
+3. Now, consider an expression that attempts to exclude some descendants, like
+'/World/Foo - /World/Foo/Child'.
+As in the above scenario, </World/Foo/Child> does not match the expression.
+It is being explicitly excluded. Yet, because its parent </World/Foo> is
+matched, we choose to prune </World/Foo/Child> as well.
+This behavior is intentional to keep the behavior consistent with (2) and also
+for performance reasons. Pruning is often used to remove entire branches of the
+namespace.
+To exclude some descendants of a subtree, the recommendation is to use
+inclusion operators ('+') to explicitly specify the sibling trees to be pruned.
+E.g. '/World/Foo/A// + /World/Foo/B//' ensures that </World/Foo/Child> is not
+pruned.
+
+4. Finally, consider an expression that has a predicate, like
+'/World/Foo//{hdPurpose:"guide"}'. We want to prune all guide prims at/under
+</World/Foo>.
+If a prim path matches the path pattern '/World/Foo//', the predicate is then
+evaluated. This requires querying the scene index for the prim at that path.
+Because scene index queries can be expensive, we want to be judicious about it.
+
+And we want to be consistent with the ancestral pruning behavior above, which
+requires us to evaluate the predicate not just at the prim path itself, but also
+at its ancestor paths. 
+
+For example, consider the prim at </World/Foo/A/B/C>. If we were to
+evaluate from the absolute root path down to the prim path, we would evaluate
+the predicate at each of the path matches: </World/Foo>, </World/Foo/A>,
+</World/Foo/A/B>, and </World/Foo/A/B/C>.
+If only </World/Foo/A/B/C> is a guide (reasonable expectation since guides are
+usually leaf prims), we can instead evaluate from the prim path upwards. This
+can reduce the number of scene index queries in deep hierarchies when the leaf
+prim matches. Note that for non-matches, we still need to evaluate all the way 
+up to the root, which is unfortunate, but necessary for correctness.
+
+Evaluating from the prim path upwards loses out on short-circuiting
+opportunities in the absence of predicates wherein the result of an ancestor
+path match is constant over descendants.
+
+Future work:
+Given these considerations and to aid performance, it may help to "sanitize"
+the pruning path expression by
+a) removing any exclusion operators (i.e. '-' and '~') since they have no effect
+   on pruning, and
+b) converting patterns that do not end with '//' to ones that do
+
+This ensures that descendant matching is built into the expression evaluation,
+and it would thus suffice to evaluate only at the prim path itself.
+
+*/
+
+// Implements the ancestal pruning semantics described in (2) above.
 SdfPredicateFunctionResult
 _GetPruneMatchResult(
     const SdfPath &primPath,
@@ -43,6 +105,9 @@ _GetPruneMatchResult(
         }
 
         // 2. Path doesn't match, nor does any of its descendants.
+        //    Note that expressions with predicates currently always return
+        //    varying over descendants.
+        //    (because e.g. /A being a guide doesn't imply /A/B is a guide)
         if (result.IsConstant()) {
             return result;
         }

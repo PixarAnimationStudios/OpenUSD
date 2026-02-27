@@ -18,6 +18,7 @@
 #include "pxr/usdImaging/usdImaging/selectionSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/unloadedDrawModeSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/usdSceneIndexInputArgsSchema.h"
 
 #include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
@@ -307,6 +308,36 @@ UsdImagingCreateSceneIndices(
     }
 
     return result;
+}
+
+UsdImagingSceneIndices
+UsdImagingCreateSceneIndices(
+    HdContainerDataSourceHandle const &inputArgs,
+    const UsdImagingSceneIndexAppendCallback &overridesSceneIndexCallback)
+{
+    const UsdImagingUsdSceneIndexInputArgsSchema schema =
+        UsdImagingUsdSceneIndexInputArgsSchema::GetFromParent(inputArgs);
+    
+    UsdImagingCreateSceneIndicesInfo info;
+
+    if (UsdStageRefPtrDataSourceHandle const ds = schema.GetStage()) {
+        info.stage = ds->GetTypedValue(0.0f);
+    }
+
+    info.stageSceneIndexInputArgs = schema.GetContainer();
+
+    if (HdBoolDataSourceHandle const ds = schema.GetAddDrawModeSceneIndex()) {
+        info.addDrawModeSceneIndex = ds->GetTypedValue(0.0f);
+    }
+
+    if (HdBoolDataSourceHandle const ds =
+            schema.GetDisplayUnloadedPrimsWithBounds()) {
+        info.displayUnloadedPrimsWithBounds = ds->GetTypedValue(0.0f);
+    }
+
+    info.overridesSceneIndexCallback = overridesSceneIndexCallback;
+
+    return UsdImagingCreateSceneIndices(info);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

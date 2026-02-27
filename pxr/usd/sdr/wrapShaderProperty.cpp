@@ -26,16 +26,6 @@ void wrapShaderProperty()
         "PropertyTypes", SdrPropertyTypes, SDR_PROPERTY_TYPE_TOKENS
     );
 
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "PropertyMetadata", SdrPropertyMetadata, SDR_PROPERTY_METADATA_TOKENS
-    );
-
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "PropertyRole",
-        SdrPropertyRole,
-        SDR_PROPERTY_ROLE_TOKENS
-    );
-
     return_value_policy<copy_const_reference> copyRefPolicy;
 
     register_ptr_to_python<SdrShaderPropertyConstPtr>();
@@ -53,6 +43,7 @@ void wrapShaderProperty()
         .def("GetInfoString", &This::GetInfoString)
         .def("GetMetadata", &This::GetMetadata,
             return_value_policy<TfPyMapToDictionary>())
+        .def("GetMetadataObject", &This::GetMetadataObject, copyRefPolicy)
         .def("IsConnectable", &This::IsConnectable)
         .def("CanConnectTo", &This::CanConnectTo)
         .def("GetTypeAsSdfType", &This::GetTypeAsSdfType)

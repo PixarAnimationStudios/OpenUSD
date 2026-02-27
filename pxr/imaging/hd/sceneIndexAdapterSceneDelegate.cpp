@@ -309,7 +309,7 @@ HdSceneIndexAdapterSceneDelegate::_PrimAdded(
                 _MarkRprimDirty(indexPath, allDirtyRprim);
         } else if (GetRenderIndex().IsSprimTypeSupported(primType)) {
             const TfTokenVector renderContexts =
-                GetRenderIndex().GetRenderDelegate()->GetMaterialRenderContexts();    
+                GetRenderIndex().GetRenderDelegate()->GetMaterialRenderContexts();
             HdDirtyBits allDirtySprim =
                 HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
                     primType, allDirty, renderContexts);
@@ -460,7 +460,7 @@ HdSceneIndexAdapterSceneDelegate::PrimsDirtied(
             }
         } else if (GetRenderIndex().IsSprimTypeSupported(primType)) {
             const TfTokenVector renderContexts =
-                GetRenderIndex().GetRenderDelegate()->GetMaterialRenderContexts();    
+                GetRenderIndex().GetRenderDelegate()->GetMaterialRenderContexts();
             HdDirtyBits dirtyBits =
                 HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
                         primType, entry.dirtyLocators, renderContexts);
@@ -762,7 +762,7 @@ HdSceneIndexAdapterSceneDelegate::GetExtent(SdfPath const &id)
 static
 bool
 _IsLegacyInstancer(const HdSceneIndexPrim &prim)
-{    
+{
     if (prim.primType != HdPrimTypeTokens->instancer) {
         return false;
     }
@@ -796,7 +796,7 @@ HdSceneIndexAdapterSceneDelegate::GetVisible(SdfPath const &id)
         // instancer by deleting all the prototype prims.
         return true;
     }
-    
+
     HdVisibilitySchema visibilitySchema =
         HdVisibilitySchema::GetFromParent(prim.dataSource);
     if (!visibilitySchema.IsDefined()) {
@@ -1664,7 +1664,7 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
 
     if (key == HdRenderSettingsPrimTokens->shutterInterval) {
         if (HdVec2dDataSourceHandle shutterIntervalDS =
-                rsSchema.GetShutterInterval()) {
+                rsSchema.GetUnionedSamplingInterval()) {
 
             return VtValue(shutterIntervalDS->GetTypedValue(0));
         }
@@ -2204,10 +2204,10 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
                     if (nodeTypeDS) {
                         hdNode2.nodeTypeId = nodeTypeDS->GetTypedValue(0);
                     }
-                
+
                     hdNode2.parameters = _GetHdParamsFromDataSource(
                         resource.GetParameters());
-                
+
                     return VtValue(hdNode2);
                 }
             }
@@ -2930,7 +2930,7 @@ HdSceneIndexAdapterSceneDelegate::GetTaskRenderTags(SdfPath const &taskId)
     return ds->GetTypedValue(0.0f);
 }
 
-void 
+void
 HdSceneIndexAdapterSceneDelegate::Sync(HdSyncRequestVector* request)
 {
     TRACE_FUNCTION();

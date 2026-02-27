@@ -553,6 +553,21 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
+============================================================
+PBRT (Sampling functions)
+============================================================
+USD includes code derived from the pbrt-v4 library, retrieved from 
+https://github.com/mmp/pbrt-v4/tree/8c19f304558fd7681e2fef2c395a689d0106fb05, which was
+provided subject to the unmodified Apache 2.0 license. For details, see
+https://github.com/mmp/pbrt-v4/blob/8c19f304558fd7681e2fef2c395a689d0106fb05/LICENSE.txt
+
+============================================================
+Cycles (IES reader)
+============================================================
+USD includes classes from the Blender Foundation's Cycles project, retrieved from
+https://projects.blender.org/blender/cycles/src/commit/0be21d452506ec90259b9063c28b5a6fc1cac6a1,
+which was provided subject to the unmodified Apache 2.0 license. For details, see
+https://projects.blender.org/blender/cycles/src/commit/0be21d452506ec90259b9063c28b5a6fc1cac6a1/LICENSE
 
 ============================================================
 Spirv Reflect

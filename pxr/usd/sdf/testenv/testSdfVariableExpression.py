@@ -523,19 +523,34 @@ class TestSdfVariableExpression(unittest.TestCase):
                 self.assertEvaluates(
                     _MakeExpression(*testCase), {}, comparator(testCase))
 
-            # Verify that invalid combinations return the expected errors.
-            testCases = [
-                (True, 1, 
-                 "{}: Invalid type int for argument 1".format(fnName)),
-                (True, "'foo'", 
-                 "{}: Invalid type string for argument 1".format(fnName)),
-                (True, "None",
-                 "{}: Invalid type None for argument 1".format(fnName))
-            ]
+            # Verify that passing in types other than bool result in the
+            # expected errors.
+            expr = _MakeExpression(1, "'foo'", "None")
+            self.assertEvaluationErrors(
+                expr, {}, 
+                ["{}: Invalid type int for argument 0".format(fnName),
+                 "{}: Invalid type string for argument 1".format(fnName),
+                 "{}: Invalid type None for argument 2".format(fnName)
+            ])
+            
+            # Evaluating the above expression returns no value since none
+            # of the operands were valid.
+            expr = Sdf.VariableExpression(expr)
+            self.assertEqual(expr.Evaluate({}).value, None)
 
-            for testCase in testCases:
-                self.assertEvaluationErrors(
-                    _MakeExpression(*testCase[0:2]), {}, [testCase[2]])
+            # Verify that short-circuiting works. Evaluation should stop
+            # before the invalid argument is reached, avoiding the "invalid
+            # type" error.
+            if fnName == "and":
+                self.assertEvaluates(
+                    _MakeExpression(False, "1"), {}, False)
+                self.assertEvaluates(
+                    _MakeExpression(True, False, "1"), {}, False)
+            elif fnName == "or":
+                self.assertEvaluates(
+                    _MakeExpression(True, "1"), {}, True)
+                self.assertEvaluates(
+                    _MakeExpression(False, True, "1"), {}, True)
 
         _Test("and", lambda l: all(l))
         _Test("or", lambda l: any(l))

@@ -246,13 +246,13 @@ HdxSkydomeTask::_GetSkydomeTexture(HdTaskContext* ctx)
         return false;
     }
     const auto * const domeLightTextureObject =
-        dynamic_cast<const HdStCubemapTextureObject*>(
+        dynamic_cast<const HdStUvTextureObject*>(
             domeLightCubemapHandle->GetTextureObject().get());
     if (!domeLightTextureObject->IsValid()) {
         return false;
     }
     const auto * const domeLightSamplerObject =
-        dynamic_cast<const HdStCubemapSamplerObject*>(
+        dynamic_cast<const HdStUvSamplerObject*>(
             domeLightCubemapHandle->GetSamplerObject().get());
     if (!domeLightSamplerObject) {
         return false;

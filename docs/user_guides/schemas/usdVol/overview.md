@@ -3,7 +3,10 @@
 The UsdVol schema domain contains schemas for working with volumes and
 volumetric data. Volumes encapsulate fields of discretized volumetric data, 
 where the data can potentially be sparse or time-varying. Volumes can be used 
-to represent effects like smoke or fire. 
+to represent effects like smoke or fire. UsdVol also includes support for
+particle fields that can be used for various spatial computations and 
+techniques, including features that use lightfield techniques, such as 3D 
+Gaussian splats.
 
 The volumetric data referenced by Volumes can be contained in OpenVDB or Field3D
 assets. UsdVol can also be extended to support other volume formats or sources.
@@ -18,11 +21,11 @@ OpenVDB assets.
 
 A Volume prim represents a renderable volume, such as a fog or fire effect.
 
-Volumes contain volumetric data represented as relationships to prims that
-have a FieldBase-derived schema applied. Each field relationship is specified 
-as a relationship with a namespace prefix of "field". The relationship names,
-such as "density", are used by the renderer to associate individual fields with 
-the named input parameters on a volume shader.
+Volumes contain volumetric data represented as relationships to prims whose type 
+derives from the VolumeFieldBase schema. Each field relationship is 
+specified as a relationship with a namespace prefix of "field". The relationship 
+names, such as "density", are used by the renderer to associate individual 
+fields with the named input parameters on a volume shader.
 
 For example, the following Volume defines a field relationship to an OpenVDB
 asset. The field relationship name specifies that the OpenVDB asset contains
@@ -74,11 +77,11 @@ used for simulations, depending on your workflow.
 ## Working With Fields
 
 UsdVol provides a several abstract schemas that other field schemas inherit 
-from, including FieldBase (the base schema class for all field schemas) and 
-FieldAsset (the base schema class for schemas that represent a field asset with 
-volumetric data stored outside the layer, e.g. in a file asset). In practice, 
-you'll use FieldAsset-derived schemas, such as OpenVDBAsset or Field3DAsset, 
-to work with volumetric data of a specific format.
+from, including VolumeFieldBase (the base schema class for all field schemas) 
+and VolumeFieldAsset (the base schema class for schemas that represent a field 
+asset with volumetric data stored outside the layer, e.g. in a file asset). In 
+practice, you'll use VolumeFieldAsset-derived schemas, such as OpenVDBAsset or 
+Field3DAsset, to work with volumetric data of a specific format.
 
 ### Making Fields Child Prims of Volumes
 
@@ -103,10 +106,10 @@ Field prim as a child of any Volume prim.
 (usdVol_using_animated_field_data)=
 ### Using Animated Field Data
 
-Volumetric data is often animated. For Volumes with FieldAsset-derived Fields, 
-animation is represented by setting time samples on the filePath attribute.
-The following example sets time samples in a OpenVDBAsset field to different
-VDB assets:
+Volumetric data is often animated. For Volumes with VolumeFieldAsset-derived 
+Fields, animation is represented by setting time samples on the filePath 
+attribute. The following example sets time samples in a OpenVDBAsset field to 
+different VDB assets:
 
 ```{code}
 def Volume "wisp"
@@ -131,7 +134,7 @@ def Volume "wisp"
 (usdVol_understanding_fieldname)=
 ### Understanding `fieldName` and the Field's Relationship Name 
 
-FieldAsset-derived fields provide a `fieldName` attribute that is used to 
+VolumeFieldAsset-derived fields provide a `fieldName` attribute that is used to 
 identify the name of a field in the Field's asset. In an OpenVDB asset, this 
 might be the name of a grid in a VDB file. A Volume also provides a way to
 specify the "name" for a field, via the 
@@ -146,3 +149,80 @@ field for the purposes of shader parameters, but you have an OpenVDB asset with
 a grid named "vel". You would specify a `field:velocity` relationship in your
 Volume prim to the OpenVDBAsset that references the desired VDB data with a
 "vel" fieldName.
+
+(usdVol_working_with_particlefields)=
+## Working With Particle Fields
+
+The ParticleField schema represents a family of related spatial techniques
+that define their spatial presence through a set of 3D particles. This schema
+was introduced to support lightfield techniques, such as 3D Gaussian splats, but 
+is designed to be extensible and support things like NeRFs as well as future 
+evolutions of this field of technology.
+
+ParticleField is provided as a common base schema, and in practice workflows 
+will create prims using a schema derived from ParticleField, such as 
+ParticleField3DGaussianSplat. UsdVol provides various applied schemas
+that represent characteristics of the particle field, such as positions and
+orientations of the particles. Derived ParticleField schemas typically will
+have these schemas as builtin applied schemas.
+
+All ParticleFields are required to provide the following attributes, but are 
+free to provide them in any form.
+
+- Position: the local space position of each particle in the field.
+- Kernel: the kernel that is instantiated at each particle.
+- Radiance: the visual appearance of the particle field. Note that if a 
+material is bound to a ParticleField location, a renderer may opt to use
+the material description instead of the locally defined radiance.
+
+Other optional attributes that may control the kernel instance are, but are not
+limited to:
+
+- Orientation: the orientation for the kernel attached to the particle,
+necessary if the kernel isn't rotationally symmetric.
+- Scale: the size of the kernel attached to the particle, in three
+dimensions.
+- Opacity: the opacity, or weight, of the kernel attached to the
+particle.
+
+ParticleFields additionally may have optional renderer hints specific to the 
+lightfield technique. For example ParticleField3DGaussianSplat has
+renderer hints on how to project and sort the Gaussian contributions at draw 
+time.
+
+The following simple example shows a ParticleField3DGaussianSplat prim.
+ParticleField3DGaussianSplat automatically applies a 
+ParticleFieldKernelGaussianEllipsoidAPI schema for the field kernel, and a
+ParticleFieldSphericalHarmonicsAttributeAPI schema for the field radiance.
+Note that attributes like orientations, scales, opacities, and 
+radiance:sphericalHarmonicsCoefficients must correspond in array size to
+the positions array (with radiance:sphericalHarmonicsCoefficients 
+requiring an array size that matches the positions array size * the 
+per-particle element size, see 
+{ref}`ParticleFieldSphericalHarmonicsAttributeAPI` for more details). 
+
+```{code}
+
+def ParticleField3DGaussianSplat "GSplat"
+{
+    # Particle positions (and count)
+    point3f[] positions = [(0, 0, 0), ... (0, 1, 1)]
+
+    # Some optional attributes that control the kernel instance
+    quatf[] orientations = [(1, 0, 0, 0), ... (0, 0, 1, 0)]
+    float3[] scales = [(1, 1, 1), ... (1, 0.5, 0.7)]
+    float[] opacities = [1, ... 0.8]
+
+    # Radiance attributes (from ParticleFieldSphericalHarmonicsAttributeAPI)
+    uniform int radiance:sphericalHarmonicsDegree = 2
+    float3[] radiance:sphericalHarmonicsCoefficients = [
+      (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1),
+      ...
+      (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
+
+    # Render hints specific to ParticleField3DGaussianSplat
+    uniform token projectionModeHint = "perspective"
+    uniform token sortingModeHint = "zDepth"
+}
+
+```

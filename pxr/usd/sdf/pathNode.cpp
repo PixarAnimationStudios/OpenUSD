@@ -23,6 +23,7 @@
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/spin_mutex.h>
 
+#include <algorithm>
 #include <atomic>
 #include <memory>
 #include <utility>
@@ -33,18 +34,24 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SDF_INSTANTIATE_POOL(Sdf_PathPrimTag, Sdf_SizeofPrimPathNode, /*regionBits=*/8);
-SDF_INSTANTIATE_POOL(Sdf_PathPropTag, Sdf_SizeofPropPathNode, /*regionBits=*/8);
+SDF_INSTANTIATE_POOL(
+    Sdf_PathPrimTag, Sdf_MaxSizeofPrimPathNode, /*regionBits=*/8);
+SDF_INSTANTIATE_POOL(
+    Sdf_PathPropTag, Sdf_MaxSizeofPropPathNode, /*regionBits=*/8);
 
 // Size of path nodes is important, so we want the compiler to tell us if it
 // changes.
-#ifdef ARCH_BITS_32
-static_assert(sizeof(Sdf_PrimPathNode) == 16, "");
-static_assert(sizeof(Sdf_PrimPropertyPathNode) == 16, "");
-#else
-static_assert(sizeof(Sdf_PrimPathNode) == 24, "");
-static_assert(sizeof(Sdf_PrimPropertyPathNode) == 24, "");
-#endif
+static_assert(Sdf_MaxSizeofPrimPathNode == std::max({
+    sizeof(Sdf_PrimPathNode),
+    sizeof(Sdf_PrimVariantSelectionNode)}), "");
+
+static_assert(Sdf_MaxSizeofPropPathNode == std::max({
+    sizeof(Sdf_PrimPropertyPathNode),
+    sizeof(Sdf_TargetPathNode),
+    sizeof(Sdf_RelationalAttributePathNode),
+    sizeof(Sdf_MapperPathNode),
+    sizeof(Sdf_MapperArgPathNode),
+    sizeof(Sdf_ExpressionPathNode)}), "");
 
 struct Sdf_PathNodePrivateAccess
 {

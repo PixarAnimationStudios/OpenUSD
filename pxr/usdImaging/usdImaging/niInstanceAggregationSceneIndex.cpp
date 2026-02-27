@@ -220,6 +220,13 @@ public:
         if (v.IsHolding<SdfAssetPath>()) {
             return _MakeDataSource<SdfAssetPath>();
         }
+        // we make an exception for SdfPath primvars for skel:animationSource.
+        // Not sure if there's a better way to allow SdfPath to flow through
+        // primvar aggregation. Otherwise we'll have to convert it to TfToken
+        // and then convert it back downstream.
+        else if (v.IsHolding<SdfPath>()) {
+            return _MakeDataSource<SdfPath>();
+        }
         return nullptr;
     }
 

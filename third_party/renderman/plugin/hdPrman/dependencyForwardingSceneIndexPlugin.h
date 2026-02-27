@@ -11,6 +11,7 @@
 #if PXR_VERSION >= 2208
 
 #include "pxr/imaging/hd/sceneIndexPlugin.h"
+#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "hdPrman/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -23,7 +24,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdPrman_DependencyForwardingSceneIndexPlugin : public HdSceneIndexPlugin
 {
 public:
-    HdPrman_DependencyForwardingSceneIndexPlugin();    
+    HdPrman_DependencyForwardingSceneIndexPlugin();
+
+    static
+    HdSceneIndexPluginRegistry::InsertionPhase
+    GetInsertionPhase()
+    {
+        // Arbitrary "large" number. This plugin should go at the end of
+        // the scene index graph to ensure that any dependencies declared
+        // earlier are honored.
+        return 1000;
+    }
 
 protected:
     HdSceneIndexBaseRefPtr _AppendSceneIndex(

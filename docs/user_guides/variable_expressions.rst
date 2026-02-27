@@ -330,28 +330,42 @@ Examples:
 
 Returns the result of the logical :usda:`and` operation of all arguments. If all 
 arguments evaluate to :usda:`true`, this will return :usda:`true`, otherwise 
-this returns :usda:`false`. An error results if any argument does not evaluate 
-to a boolean value. 
+this returns :usda:`false`.
+
+Arguments are evaluated in left-to-right order; if an argument evaluates to
+:usda:`false`, the function will return :usda:`false` and no other arguments
+will be evaluated.
+
+An error results if an evaluated argument does not yield a boolean value.
 
 Examples:
 
 .. code-block:: 
 
     and( ${BOOL_VAR}, True )  # if BOOL_VAR evaluates to true, this will return true, otherwise false
+    and( "str", ${BOOL_VAR} ) # results in "invalid type" error
+    and( False, "str" )  # returns false; no "invalid type" error since "str" argument is not evaluated
 
 :usda:`or(<x>, <y>, ...)`
 =========================
 
 Returns the result of the logical or operation of all arguments. If any argument 
 evaluates to :usda:`true`, this will return :usda:`true`. If all arguments 
-evaluate to :usda:`false`, this will return :usda:`false`. An error results if 
-any argument does not evaluate to a boolean value.
+evaluate to :usda:`false`, this will return :usda:`false`.
+
+Arguments are evaluated in left-to-right order; if an argument evaluates to
+:usda:`true`, the function will return :usda:`true` and no other arguments
+will be evaluated.
+
+An error results if an evaluated argument does not yield a boolean value.
 
 Examples:
 
 .. code-block:: usda
 
-    or( false, true, false )  # returns true
+    or( False, True, False )  # returns true
+    or( "str", ${BOOL_VAR} ) # results in "invalid type" error
+    or( True, "str" )  # returns true; no "invalid type" error since "str" argument is not evaluated
 
 :usda:`not(<x>)`
 ================

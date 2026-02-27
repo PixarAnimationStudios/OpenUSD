@@ -1,0 +1,40 @@
+#usda 1.0
+
+def "LocalRef"
+{
+}
+
+def "Root"
+{
+    def "Inherits_1" (
+        instanceable = true
+        references = @./ref.usda@</Ref_Inherits>
+    )
+    {
+        over "class_widget"
+        {
+            double radius = 100
+        }
+
+        over "widget"
+        {
+            double radius = 10
+        }
+    }
+
+    def "Inherits_2" (
+        instanceable = true
+        references = @./ref.usda@</Ref_Inherits>
+    )
+    {
+        over "class_widget"
+        {
+            double radius = 200
+        }
+
+        over "widget"
+        {
+            double radius = 20
+        }
+    }
+}

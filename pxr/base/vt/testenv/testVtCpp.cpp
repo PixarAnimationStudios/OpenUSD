@@ -17,33 +17,8 @@
 #include "pxr/base/vt/streamOut.h"
 #include "pxr/base/vt/traits.h"
 #include "pxr/base/vt/types.h"
+#include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/visitValue.h"
-
-#include "pxr/base/gf/matrix2f.h"
-#include "pxr/base/gf/matrix2d.h"
-#include "pxr/base/gf/matrix3f.h"
-#include "pxr/base/gf/matrix3d.h"
-#include "pxr/base/gf/matrix4f.h"
-#include "pxr/base/gf/matrix4d.h"
-
-#include "pxr/base/gf/vec2i.h"
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/vec2d.h"
-#include "pxr/base/gf/vec3i.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/gf/vec4i.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/gf/vec4d.h"
-
-#include "pxr/base/gf/dualQuath.h"
-#include "pxr/base/gf/dualQuatf.h"
-#include "pxr/base/gf/dualQuatd.h"
-
-#include "pxr/base/gf/quaternion.h"
-#include "pxr/base/gf/quath.h"
-#include "pxr/base/gf/quatf.h"
-#include "pxr/base/gf/quatd.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/errorMark.h"
@@ -56,6 +31,7 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/span.h"
+#include "pxr/base/tf/stl.h"
 
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/defines.h"
@@ -1880,6 +1856,73 @@ struct GetArraySize
     }
 };
 
+template <class T, class U>
+struct IsSameOrArrayOfVisitor
+{
+    static std::string Visit() {
+        return std::is_same_v<T, U> ? "same" : "different";
+    }
+};
+
+template <class T, class U>
+struct IsSameOrArrayOfVisitor<VtArray<T>, U>
+{
+    static std::string Visit() {
+        return std::is_same_v<T, U> ? "same" : "different";
+    }
+};
+
+template <class U>
+struct IsSameOrArrayOfVisitor<VtValue, U>
+{
+    static std::string Visit() {
+        return "unknown";
+    }
+};
+
+// The following: MakeNew, WrapperBase, SingleWrapper, and ArrayWrapper demo how
+// to use VtVisitValueType that takes a template-template argument to invoke
+// things like factory Type<T>::New() functions where T is the held-type of a
+// VtValue.
+
+template <class T, template <class ...> class Template>
+struct MakeNew {
+    template <class ...Args>
+    static auto Visit(Args&&...args) {
+        return Template<T>::New(std::forward<Args>(args)...);
+    }
+};
+
+class WrapperBase {
+public:
+    virtual ~WrapperBase() = default;
+};
+
+template <class T>
+class SingleWrapper : public WrapperBase
+{
+public:
+    T obj;
+    static std::unique_ptr<WrapperBase> New() {
+        return std::make_unique<SingleWrapper>();
+    }
+    virtual ~SingleWrapper() = default;
+};
+
+template <class T>
+class ArrayWrapper : public WrapperBase
+{
+public:
+    std::unique_ptr<T []> array;
+    static std::unique_ptr<WrapperBase> New(size_t sz) {
+        return std::unique_ptr<ArrayWrapper>(new ArrayWrapper(sz));
+    }
+    virtual ~ArrayWrapper() = default;
+private:
+    explicit ArrayWrapper(size_t sz)
+        : array(std::make_unique<T []>(sz)) {}
+};
+
 static void
 testVisitValue()
 {
@@ -1920,6 +1963,57 @@ testVisitValue()
     TF_AXIOM(VtVisitValue(evf, GetArraySize()) == 0xED17);
     TF_AXIOM(VtVisitValue(evi, GetArraySize()) == 0xED17);
 
+    // Test that passing extra arguments and TfOverloads works.
+    auto multiply = TfOverloads {
+        [](int val, int scl=2) { return val * scl; },
+        [](double val, int scl=2) { return static_cast<int>(rint(val * scl)); },
+        [](VtValue const &val, int scl=2) { return -1; }
+    };
+
+    TF_AXIOM(VtVisitValue(iv, multiply) == 246);
+    TF_AXIOM(VtVisitValue(dv, multiply) == 2);
+    TF_AXIOM(VtVisitValue(fv, multiply) == 5);
+    TF_AXIOM(VtVisitValue(sv, multiply) == -1.0);
+
+    TF_AXIOM(VtVisitValue(iv, multiply, 3) == 369);
+    TF_AXIOM(VtVisitValue(dv, multiply, 3) == 4);
+    TF_AXIOM(VtVisitValue(fv, multiply, 3) == 7);
+    TF_AXIOM(VtVisitValue(sv, multiply, 3) == -1.0);
+
+    // VtVisitValueType with just type arguments.
+    TF_AXIOM((VtVisitValueType<
+              IsSameOrArrayOfVisitor, int>(iv) == "same"));
+    TF_AXIOM((VtVisitValueType<
+              IsSameOrArrayOfVisitor, int>(fv) == "different"));
+    TF_AXIOM((VtVisitValueType<
+              IsSameOrArrayOfVisitor, float>(fv) == "same"));
+    TF_AXIOM((VtVisitValueType<
+              IsSameOrArrayOfVisitor, std::string>(sv) == "same"));
+    TF_AXIOM((VtVisitValueType<
+              IsSameOrArrayOfVisitor, float>(av) == "same"));
+    TF_AXIOM((VtVisitValueType<
+              IsSameOrArrayOfVisitor, VtArray<float>>(av) == "different"));
+    TF_AXIOM((VtVisitValueType<
+              IsSameOrArrayOfVisitor, std::vector<float>>(ov) == "unknown"));
+
+    {
+        // VtVisitValueType with a template-template argument.
+        std::unique_ptr<WrapperBase> iwrap =
+            VtVisitValueType<MakeNew, SingleWrapper>(iv);
+        TF_AXIOM(dynamic_cast<SingleWrapper<int> *>(iwrap.get()));
+
+        std::unique_ptr<WrapperBase> iawrap =
+            VtVisitValueType<MakeNew, ArrayWrapper>(iv, 123);
+        TF_AXIOM(dynamic_cast<ArrayWrapper<int> *>(iawrap.get()));
+
+        std::unique_ptr<WrapperBase> swrap =
+            VtVisitValueType<MakeNew, SingleWrapper>(sv);
+        TF_AXIOM(dynamic_cast<SingleWrapper<std::string> *>(swrap.get()));
+        
+        std::unique_ptr<WrapperBase> sawrap =
+            VtVisitValueType<MakeNew, ArrayWrapper>(sv, 123);
+        TF_AXIOM(dynamic_cast<ArrayWrapper<std::string> *>(sawrap.get()));
+    }
 }
 
 template <typename T>

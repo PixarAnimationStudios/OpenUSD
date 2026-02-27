@@ -1082,31 +1082,24 @@ def InstallTBB_MacOS(context, force, buildArgs):
                  ("ifeq ($(arch),$(filter $(arch),armv7 armv7s arm64))",
                   "ifeq ($(arch),$(filter $(arch),armv7 armv7s {0}))"
                         .format(apple_utils.GetTargetArmArch()))])
+        target_config_patches, clang_config_patches = \
+                apple_utils.GetTBBPatches(context)
+        if target_config_patches:
+            # Create config from iOS config
+            shutil.copy(src="build/ios.macos.inc",
+                        dst=f"build/{context.buildTarget.lower()}.macos.inc")
 
-        if context.buildTarget == apple_utils.TARGET_VISIONOS:
-            # Create visionOS config from iOS config
-            shutil.copy(
-                src="build/ios.macos.inc",
-                dst="build/visionos.macos.inc")
+            PatchFile(f"build/{context.buildTarget.lower()}.macos.inc", 
+                      target_config_patches)
 
-            PatchFile("build/visionos.macos.inc",
-                      [("ios","visionos"),
-                       ("iOS", "visionOS"),
-                       ("iPhone", "XR"),
-                       ("IPHONEOS","XROS"),
-                       ("?= 8.0", "?= 1.0")])
-
+        if clang_config_patches:
             # iOS clang just reuses the macOS one,
             # so it's easier to copy it directly.
             shutil.copy(src="build/macos.clang.inc",
-                        dst="build/visionos.clang.inc")
+                        dst=f"build/{context.buildTarget.lower()}.clang.inc")
 
-            PatchFile("build/visionos.clang.inc",
-                      [("ios","visionos"),
-                       ("-miphoneos-version-min=", "-target arm64-apple-xros"),
-                       ("iOS", "visionOS"),
-                       ("iPhone", "XR"),
-                       ("IPHONEOS","XROS")])
+            PatchFile(f"build/{context.buildTarget.lower()}.clang.inc", 
+                        clang_config_patches)
 
         (primaryArch, secondaryArch) = apple_utils.GetTargetArchPair(context)
 
@@ -1507,9 +1500,18 @@ def InstallOpenSubdiv(context, force, buildArgs):
             extraArgs.append('-DCMAKE_C_FLAGS="{}"'.format(compileFlags))
             extraArgs.append('-DNO_METAL=ON')
 
-        # Use Metal for macOS and all Apple embedded systems.
+        # Enable GLSL shader source so it is available for Vulkan, etc
+        # even when OpenGL is disabled.
+        extraArgs.append(
+            '-DOSD_PATCH_SHADER_SOURCE_GLSL=ON'
+        )
+
+        # Enable MSL shader source for Apple systems and disable OpenGL.
         if MacOS():
-            extraArgs.append('-DNO_OPENGL=ON')
+            extraArgs.extend([
+                '-DNO_OPENGL=ON',
+                '-DOSD_PATCH_SHADER_SOURCE_MSL=ON',
+            ])
 
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
@@ -1605,7 +1607,7 @@ DRACO = Dependency("Draco", InstallDraco, "include/draco/compression/decode.h")
 ############################################################
 # MaterialX
 
-MATERIALX_URL = "https://github.com/AcademySoftwareFoundation/MaterialX/archive/v1.39.3.zip"
+MATERIALX_URL = "https://github.com/AcademySoftwareFoundation/MaterialX/archive/v1.39.4.zip"
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
@@ -1705,6 +1707,7 @@ def InstallUSD(context, force, buildArgs):
 
         extraArgs.append('-DPXR_PREFER_SAFETY_OVER_SPEED={}'
                          .format('ON' if context.safetyFirst else 'OFF'))
+        extraArgs.append(f"-DPXR_ENABLE_COMPILER_CACHE={'ON' if context.useCompilerCache else 'OFF'}")
 
         if context.buildOneTBB:
             extraArgs.append('-DPXR_FIND_TBB_IN_CONFIG=ON')
@@ -2042,6 +2045,7 @@ group.add_argument("--ignore-paths", type=str, nargs="*", default=[],
 group.add_argument("--build-target",
                     default=GetBuildTargetDefault(),
                     choices=GetBuildTargets(),
+                    type=str.lower,
                     help=("Build target for cross compilation. "
                             "(default: {})".format(
                             GetBuildTargetDefault())))
@@ -2076,6 +2080,12 @@ group.add_argument("--generator", type=str,
 group.add_argument("--toolset", type=str,
                    help=("CMake toolset to use when building libraries with "
                          "cmake"))
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--compiler-cache", dest="use_compiler_cache", action="store_true",
+                      default=not Windows(),
+                      help="Use ccache to enable faster iterative builds. (default on macOS and Linux)")
+subgroup.add_argument("--no-compiler-cache", dest="use_compiler_cache", action="store_false",
+                      help="Do not use ccache. (default on Windows)")
 if MacOS():
     codesignDefault = True if apple_utils.IsHostArm() else False
     group.add_argument("--codesign", dest="macos_codesign",
@@ -2350,6 +2360,7 @@ class InstallContext:
         self.cmakeGenerator = args.generator
         self.cmakeToolset = args.toolset
         self.cmakeBuildArgs = args.cmake_build_args
+        self.useCompilerCache = args.use_compiler_cache
 
         # Number of jobs
         self.numJobs = args.jobs
@@ -2421,8 +2432,7 @@ class InstallContext:
                             not embedded and 
                             not self.targetWasm)
         self.buildExamples = (args.build_examples and 
-                              not embedded and 
-                              not self.targetWasm)
+                              not embedded)
         self.buildTutorials = (args.build_tutorials and 
                                not embedded and 
                                not self.targetWasm)
@@ -2603,9 +2613,6 @@ if context.targetWasm:
         sys.exit(1)
     if "--python" in sys.argv:
         PrintError("Cannot build python components for wasm build targets")
-        sys.exit(1)
-    if "--examples" in sys.argv:
-        PrintError("Cannot build examples for wasm build targets")
         sys.exit(1)
     if "--tutorials" in sys.argv:
         PrintError("Cannot build tutorials for wasm build targets")

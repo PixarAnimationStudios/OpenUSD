@@ -135,6 +135,8 @@ void wrapRegistry()
              args("filter") = SdrVersionFilterDefaultOnly))
         .def("GetAllShaderNodeSourceTypes", &This::GetAllShaderNodeSourceTypes)
         .def("RunQuery", &This::RunQuery)
+        .def("ParseAll", &This::ParseAll)
+        .def("GetAllShaderNodes", &This::GetAllShaderNodes)
         ;
 
     // We wrap this directly under Sdr rather than under the Registry class

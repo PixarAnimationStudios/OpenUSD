@@ -10,6 +10,7 @@
 #include "pxr/exec/exec/inputKey.h"
 #include "pxr/exec/exec/inputResolvingCompilationTask.h"
 #include "pxr/exec/exec/program.h"
+#include "pxr/exec/exec/providerResolution.h"
 
 #include "pxr/base/tf/delegatedCountPtr.h"
 #include "pxr/base/trace/trace.h"
@@ -18,7 +19,7 @@
 #include "pxr/exec/esf/journal.h"
 #include "pxr/exec/esf/object.h"
 #include "pxr/exec/esf/schemaConfigKey.h"
-#include "pxr/exec/exec/providerResolution.h"
+#include "pxr/exec/vdf/maskedOutput.h"
 
 #include <initializer_list>
 #include <utility>
@@ -117,6 +118,15 @@ Exec_LeafCompilationTask::_Compile(
             EfLeafTokens->in);
     }
     );
+}
+
+void
+Exec_LeafCompilationTask::_Interrupt(Exec_CompilationState &)
+{
+    // We were not able to resolve the leaf output. By setting the leaf output
+    // to an empty output, clients will extract an empty VtValue for the
+    // corresponding value key.
+    *_leafOutput = VdfMaskedOutput();
 }
 
 static Exec_InputKeyVectorConstRefPtr

@@ -432,22 +432,69 @@ TestSearch()
             SdfPathExpression(exprStr), predLib);
         auto search = eval.MakeIncrementalSearcher(PathIdentity {});
 
-        std::vector<std::string> searchMatches;
-        for (SdfPath const &p: paths) {
-            if (search.Next(p)) {
-                searchMatches.push_back(p.GetAsString());
+        auto getSearchMatches = [&](bool skipConstantSubtrees) {
+            std::vector<std::string> searchMatches;
+            SdfPath constantMatchPrefix;
+            SdfPath constantNoMatchPrefix;
+            for (SdfPath const &p: paths) {
+                if (!constantMatchPrefix.IsEmpty() &&
+                    p.HasPrefix(constantMatchPrefix)) {
+                    searchMatches.push_back(p.GetAsString());
+                    if (!skipConstantSubtrees) {
+                        auto result = search.Next(p);
+                        TF_AXIOM(result && result.IsConstant());
+                    }
+                }
+                else if (!constantNoMatchPrefix.IsEmpty() &&
+                    p.HasPrefix(constantNoMatchPrefix)) {
+                    if (!skipConstantSubtrees) {
+                        auto result = search.Next(p);
+                        TF_AXIOM(!result && result.IsConstant());
+                    }
+                }
+                else {
+                    auto result = search.Next(p);
+                    if (result) {
+                        searchMatches.push_back(p.GetAsString());
+                        if (result.IsConstant()) {
+                            constantMatchPrefix = p;
+                        }
+                    }
+                    else {
+                        if (result.IsConstant()) {
+                            constantNoMatchPrefix = p;
+                        }
+                    }
+                }
             }
-        }
-        if (searchMatches != expected) {
-            TF_FATAL_ERROR("Incremental search for '%s' yielded unexpected "
-                           "results.\n"
+            return searchMatches;
+        };
+
+        auto searchMatchesNoSkip = getSearchMatches(false);
+        auto searchMatchesSkip = getSearchMatches(true);
+        
+        if (searchMatchesNoSkip != expected) {
+            TF_FATAL_ERROR("No-skip incremental search for '%s' yielded "
+                           "unexpected results.\n"
                            "Expected:\n"
                            "  %s\n"
                            "Actual:\n"
                            "  %s\n",
                            exprStr.c_str(),
                            TfStringJoin(expected, "\n  ").c_str(),
-                           TfStringJoin(searchMatches, "\n  ").c_str());
+                           TfStringJoin(searchMatchesNoSkip, "\n  ").c_str());
+        }
+
+        if (searchMatchesSkip != expected) {
+            TF_FATAL_ERROR("Skip incremental search for '%s' yielded "
+                           "unexpected results.\n"
+                           "Expected:\n"
+                           "  %s\n"
+                           "Actual:\n"
+                           "  %s\n",
+                           exprStr.c_str(),
+                           TfStringJoin(expected, "\n  ").c_str(),
+                           TfStringJoin(searchMatchesSkip, "\n  ").c_str());
         }
 
         std::vector<std::string> matchMatches;
@@ -456,7 +503,7 @@ TestSearch()
                 matchMatches.push_back(p.GetAsString());
             }
         }
-        if (matchMatches != searchMatches) {
+        if (matchMatches != searchMatchesNoSkip) {
             TF_FATAL_ERROR("Incremental search for '%s' inconsistent with "
                            "individual Match()es.\n"
                            "Search Results:\n"
@@ -464,7 +511,7 @@ TestSearch()
                            "Match Results:\n"
                            "  %s\n",
                            exprStr.c_str(),
-                           TfStringJoin(searchMatches, "\n  ").c_str(),
+                           TfStringJoin(searchMatchesNoSkip, "\n  ").c_str(),
                            TfStringJoin(matchMatches, "\n  ").c_str());
         }
     };
@@ -474,7 +521,7 @@ TestSearch()
         std::vector<std::string> const &expected) {
         return testSearchWithPaths(paths, exprStr, expected);
     };
-
+    
     testSearch("/World",
                { "/World" });
 
@@ -548,6 +595,16 @@ TestSearch()
                { "/World/anim/chars/Mike",
                  "/World/anim/sets/Bedroom/Furniture" });
 
+    // Prims named 'geom' that aren't descendant to a 'Sully'
+    testSearch("//geom - //Sully//",
+               { "/World/anim/chars/Mike/geom",
+                 "/Foo/geom" });
+
+    // Prims named 'geom' under a 'chars' or under a 'Foo'
+    testSearch("//chars//geom //Foo//geom",
+               { "/World/anim/chars/Mike/geom",
+                 "/World/anim/chars/Sully/geom",
+                 "/Foo/geom" });
     
     testSearch("//",
                { "/",

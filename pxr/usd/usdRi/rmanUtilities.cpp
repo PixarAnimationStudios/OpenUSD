@@ -148,7 +148,8 @@ UsdRiDoesAttributeUseSetSpecification(TfToken const& attrName)
     return TfStringEndsWith(attrName, "grouping:membership")
         || TfStringEndsWith(attrName, "lighting:excludesubset")
         || TfStringEndsWith(attrName, "lighting:subset")
-        || TfStringEndsWith(attrName, "lightfilter:subset");
+        || TfStringEndsWith(attrName, "lightfilter:subset")
+        || TfStringEndsWith(attrName, "identifier:lpegroup");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

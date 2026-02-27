@@ -267,6 +267,22 @@ public:
     USD_API
     bool HasFallbackValue() const;
 
+    /// If this attribute is a builtin attribute with a fallback value provided
+    /// by a schema, fetch that value and return true. Otherwise return false.
+    ///
+    /// \sa UsdAttribute::GetFallbackValue
+    template <typename T>
+    bool GetFallbackValue(T* value) const {
+        return _attr.GetFallbackValue<T>(value);
+    }
+
+    /// \overload
+    /// Type-erased accessor for getting the fallback value.
+    ///
+    /// \sa UsdAttribute::GetFallbackValue
+    USD_API
+    bool GetFallbackValue(VtValue* value) const;
+
     /// Return true if it is possible, but not certain, that this attribute's
     /// value changes over time, false otherwise. 
     ///

@@ -155,18 +155,20 @@ TestFreeThreadWithTag()
 static void
 TestRegularTask()
 {
-    // XXX: Picking up tags from the thread that spawned another thread has
-    // never worked, since we don't have a way to "copy" this thread's tag stack
-    // to the thread we create.  We would have to add a new feature for that, so
-    // disabling this test for now.
+    // Test that we can capture the current tag stack state and use it to bridge
+    // allocations from a different thread.
     {
         TfAutoMallocTag noname("name");
-        std::thread t(RegularTask, false, 100000);
+        TfMallocTag::StackState curState = TfMallocTag::GetCurrentStackState();
+        std::thread t([&curState]() {
+            TfMallocTag::StackOverride tso(curState);
+            RegularTask(false, 100000);
+        });
         t.join();
     }
 
     printf("bytesForSite[%s] = %d\n", "name", GetBytesForCallSite("name"));
-    // TF_AXIOM(CloseEnough(GetBytesForCallSite("name"), 100000));
+    TF_AXIOM(CloseEnough(GetBytesForCallSite("name"), 100000));
     FreeAll();
 
     printf("bytesForSite[%s] = %d\n", "name", GetBytesForCallSite("name"));

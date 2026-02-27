@@ -11,6 +11,7 @@
 #if PXR_VERSION >= 2402
 
 #include "pxr/imaging/hd/sceneIndexPlugin.h"
+#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "hdPrman/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -24,6 +25,15 @@ class HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin :
     public HdSceneIndexPlugin
 {
 public:
+    static constexpr
+    HdSceneIndexPluginRegistry::InsertionPhase
+    GetInsertionPhase()
+    {
+        // Insert earlier to allow plugins that follow to transform primvar data
+        // without having to concern themselves about computed primvars.
+        return 0;
+    }
+
     HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin();
 
 protected:

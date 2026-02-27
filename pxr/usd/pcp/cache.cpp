@@ -36,6 +36,7 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/registryManager.h"
 
+#include <tbb/concurrent_unordered_set.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/spin_rw_mutex.h>
 
@@ -1373,27 +1374,23 @@ struct PcpCache::_ParallelIndexer
                               const PcpLayerStackPtr &layerStack)
         : _cache(cache)
         , _layerStack(layerStack)
-        , _resolver(ArGetResolver()) {
-        _isPublishing = false;
+        , _resolver(ArGetResolver())
+        , _isPublishing(false)
+    {
     }
 
     void Prepare(_UntypedIndexingChildrenPredicate childrenPred,
                  PcpPrimIndexInputs baseInputs,
                  PcpErrorVector *allErrors,
-                 const ArResolverScopedCache* parentCache,
-                 const char *mallocTag1,
-                 const char *mallocTag2) {
+                 const ArResolverScopedCache* parentCache) {
         _childrenPredicate = childrenPred;
         _baseInputs = baseInputs;
-        // Set the includedPayloadsMutex in _baseInputs.
         _baseInputs.IncludedPayloadsMutex(&_includedPayloadsMutex);
         _allErrors = allErrors;
         _parentCache = parentCache;
-        _mallocTag1 = mallocTag1;
-        _mallocTag2 = mallocTag2;
 
-        // Clear the roots to compute.
         _toCompute.clear();
+        _indexIsInstanceable.clear();
     }
 
     // Run the added work and wait for it to complete.
@@ -1439,7 +1436,6 @@ struct PcpCache::_ParallelIndexer
     // indexes and publishes them to the cache.
     void _ComputeIndex(const PcpPrimIndex *parentIndex,
                        SdfPath path, bool checkCache) {
-        TfAutoMallocTag2  tag(_mallocTag1, _mallocTag2);
         ArResolverScopedCache taskCache(_parentCache);
 
         // Check to see if we already have an index for this guy.  If we do,
@@ -1484,6 +1480,11 @@ struct PcpCache::_ParallelIndexer
             // Establish inputs.
             PcpPrimIndexInputs inputs = _baseInputs;
             inputs.parentIndex = parentIndex;
+            inputs.AncestorIsInstanceablePredicate(
+                [this, path](const SdfPath& ancestorIndexPath) {
+                    return _IsAncestorIndexInstanceable(
+                        path, ancestorIndexPath);
+                });
 
             TF_VERIFY(parentIndex || path == SdfPath::AbsoluteRootPath());
         
@@ -1555,6 +1556,13 @@ struct PcpCache::_ParallelIndexer
             }
         }   
 
+        // Record whether this prim index was instanceable. We do this here
+        // instead of the publish step to ensure this record is populated
+        // before any descendant prim indexes are computed.
+        if (index->IsInstanceable()) {
+            _indexIsInstanceable.insert(index->GetPath());
+        }
+
         // Invoke the client's predicate to see if we should do children.
         TfTokenVector namesToCompose;
         if (_childrenPredicate(*index, &namesToCompose)) {
@@ -1601,7 +1609,6 @@ struct PcpCache::_ParallelIndexer
             std::move(outputItem.second.expressionVariablesDependency));
         return mutableIndex;
     }
-                     
 
     void _PublishOutputs() {
         TRACE_FUNCTION();
@@ -1611,14 +1618,54 @@ struct PcpCache::_ParallelIndexer
             _PublishOneOutput(std::move(outputItem), /*allowInvalid=*/false);
         }
     }
-    
+
+    bool _IsAncestorIndexInstanceable(
+        const SdfPath& primIndexBeingComputed,
+        const SdfPath& ancestorIndexPath) const {
+
+        TF_VERIFY(primIndexBeingComputed.HasPrefix(ancestorIndexPath));
+
+        // If ancestorIndexPath is descendant to any of the roots in
+        // _toCompute, the corresponding index must have already been
+        // computed during the current parallel indexing invocation.
+        const bool ancestorIndexWasComputed = [&]() {
+            for (auto const& [_, rootPath] : _toCompute) {
+                if (ancestorIndexPath.HasPrefix(rootPath)) {
+                    return true;
+                }
+            }
+            return false;
+        }();
+
+        // If ancestorIndexPath was computed during this parallel indexing
+        // invocation, then _indexIsInstanceable will will contain an entry
+        // if that index is instanceable.
+        //
+        // Otherwise, ancestorIndexPath must already be computed and cached,
+        // since it is an ancestor to a prim index currently being computed.
+        // So we can find the index in the cache and check if its instanceable.
+        if (ancestorIndexWasComputed) {
+            return _indexIsInstanceable.count(ancestorIndexPath);
+        }
+        else {
+            const PcpPrimIndex* pi = [&]() {
+                tbb::spin_rw_mutex::scoped_lock
+                    lock(_primIndexCacheMutex, /*write=*/false);
+                return TfMapLookupPtr(
+                    _cache->_primIndexCache, ancestorIndexPath);
+            }();
+                
+            return TF_VERIFY(pi) && pi->IsInstanceable();
+        }
+    }
+
     // Fixed inputs.
     PcpCache * const _cache;
     const PcpLayerStackPtr _layerStack;
     ArResolver& _resolver;
 
     // Utils.
-    tbb::spin_rw_mutex _primIndexCacheMutex;
+    mutable tbb::spin_rw_mutex _primIndexCacheMutex;
     tbb::spin_rw_mutex _includedPayloadsMutex;
     WorkDispatcher _dispatcher;
 
@@ -1628,13 +1675,12 @@ struct PcpCache::_ParallelIndexer
     PcpErrorVector *_allErrors;
     tbb::spin_mutex _allErrorsMutex;
     const ArResolverScopedCache* _parentCache;
-    char const *_mallocTag1;
-    char const *_mallocTag2;
     vector<pair<const PcpPrimIndex *, SdfPath> > _toCompute;
     tbb::concurrent_queue<
         std::pair<_PrimIndexCache::NodeHandle, PcpPrimIndexOutputs>
         > _toPublish;
     std::atomic<bool> _isPublishing;
+    tbb::concurrent_unordered_set<SdfPath, TfHash> _indexIsInstanceable;
 };
 
 void
@@ -1642,17 +1688,13 @@ PcpCache::_ComputePrimIndexesInParallel(
     const SdfPathVector &roots,
     PcpErrorVector *allErrors,
     _UntypedIndexingChildrenPredicate childrenPred,
-    _UntypedIndexingPayloadPredicate payloadPred,
-    const char *mallocTag1,
-    const char *mallocTag2)
+    _UntypedIndexingPayloadPredicate payloadPred)
 {
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 
     TRACE_FUNCTION();
 
     ArResolverScopedCache parentCache;
-    TfAutoMallocTag2 tag(mallocTag1, mallocTag2);
-
     if (!_layerStack)
         ComputeLayerStack(GetLayerStackIdentifier(), allErrors);
 
@@ -1673,8 +1715,8 @@ PcpCache::_ComputePrimIndexesInParallel(
     PcpPrimIndexInputs inputs = GetPrimIndexInputs();
     inputs.IncludePayloadPredicate(payloadPred);
 
-    indexer->Prepare(childrenPred, inputs, allErrors, &parentCache,
-                     mallocTag1, mallocTag2);
+    indexer->Prepare(childrenPred, inputs, allErrors, &parentCache);
+                     
     
     for (const auto& rootPath : roots) {
         // Obtain the parent index, if this is not the absolute root.  Note that

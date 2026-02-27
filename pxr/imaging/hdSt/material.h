@@ -80,6 +80,8 @@ public:
     // Returns true if the material has a displacement terminal.
     inline bool HasDisplacement() const;
 
+    inline bool IsUsingFallbackShader() const;
+
     // Returns the material's render pass tag.
     inline const TfToken& GetMaterialTag() const;
 
@@ -119,6 +121,7 @@ private:
     bool _hasPtex : 1;
     bool _hasLimitSurfaceEvaluation : 1;
     bool _hasDisplacement : 1;
+    bool _isUsingFallbackShader : 1;
 
     TfToken _materialTag;
     size_t _textureHash;
@@ -144,6 +147,11 @@ inline bool HdStMaterial::HasDisplacement() const
 inline const TfToken& HdStMaterial::GetMaterialTag() const
 {
     return _materialTag;
+}
+
+inline bool HdStMaterial::IsUsingFallbackShader() const
+{
+    return _isUsingFallbackShader;
 }
 
 inline const HdStMaterial::VolumeMaterialData &

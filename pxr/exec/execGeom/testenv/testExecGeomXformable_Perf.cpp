@@ -313,7 +313,7 @@ public:
             return;
         }
 
-        const size_t memInBytes = TfMallocTag::GetMaxTotalBytes();
+        const size_t memInBytes = TfMallocTag::GetTotalBytes();
 
         TfMallocTag::CallTree tree;
         const bool success = TfMallocTag::GetCallTree(&tree);

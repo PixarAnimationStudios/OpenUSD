@@ -407,7 +407,7 @@ evaluateLights(
     vec3 indirectLight = vec3(0.0);
 
 #if NUM_LIGHTS > 0
-    for (int i = 0; i < NUM_LIGHTS; ++i) {
+    for (int i = 0; i < GetLightCount(); ++i) {
         LightSource light = GetLightSource(i);
 
         // Calculate necessary vector information for lighting

@@ -279,6 +279,16 @@ typedef std::vector<SdfRelocate> SdfRelocates;
 /// A map from sample times to sample values.
 typedef std::map<double, VtValue> SdfTimeSampleMap;
 VT_VALUE_TYPE_CAN_TRANSFORM(SdfTimeSampleMap);
+VT_VALUE_TYPE_CAN_COMPOSE(SdfTimeSampleMap);
+
+/// Compose a stronger SdfTimeSampleMap over a weaker one.  This produces a
+/// result different from `strong` when it contains values that
+/// VtValueCanComposeOver() values in weaker.  See SdfComposeTimeSampleSeries()
+/// for details.
+SDF_API
+SdfTimeSampleMap
+SdfComposeTimeSampleMaps(SdfTimeSampleMap const &strong,
+                         SdfTimeSampleMap const &weak);
 
 /// Gets the show default unit for the given /a typeName.
 SDF_API TfEnum SdfDefaultUnit( TfToken const &typeName );

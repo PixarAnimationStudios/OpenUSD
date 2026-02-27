@@ -130,4 +130,23 @@ Exec_InputRecompilationTask::_Compile(
     );
 }
 
+void
+Exec_InputRecompilationTask::_Interrupt(Exec_CompilationState &compilationState)
+{
+    // Any outputs that we would have connected to the recompiled input
+    // are now potentially isolated.
+    for (const auto &sourceOutputs : _resultOutputsPerInputKey) {
+        for (const auto &maskedOutput : sourceOutputs) {
+            if (VdfOutput *const output = maskedOutput.GetOutput()) {
+                compilationState.GetInterruptState()
+                    .AddPotentiallyIsolatedNode(&output->GetNode());
+            }
+        }
+    }
+
+    // Since this input never finished recompilation, it should be recompiled
+    // in the next round of compilation.
+    compilationState.GetInterruptState().AddInputRequiringRecompilation(_input);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

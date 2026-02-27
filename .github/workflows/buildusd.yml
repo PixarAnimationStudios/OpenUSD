@@ -244,3 +244,53 @@ jobs:
           # Internal ticket USD-8035
           ctest --output-on-failure -j4 -C Release --exclude-regex "TfPathUtils|testExecGeomXformable_Perf_Large"
         shell: cmd
+
+  Wasm:
+    needs:
+      - Validation
+    if: ${{ (github.event_name == 'pull_request' && needs.Validation.outputs.validation-failed != 'true') || github.event_name == 'push' }}
+    strategy:
+      matrix:
+        target: [Wasm, Wasm64]
+      fail-fast: false
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Install Emscripten SDK
+        run: |
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
+      - name: Restore cached artifacts
+        id: cache-usd-build-dependency
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            USDgen/build
+          key: ${{ runner.os }}-BuildUSD-${{ matrix.target }}-${{ hashFiles('build_scripts/**/*') }}
+      - name: Build USD
+        run: |
+          source ${{ github.workspace }}/emsdk/emsdk_env.sh
+          python3 build_scripts/build_usd.py -v --build-target ${{ matrix.target }} USDinst \
+            --build USDgen/build --src USDgen/src \
+            --build-args USD,"-DPXR_HEADLESS_TEST_MODE=ON -DPXR_BUILD_TESTS=ON"
+      - name: Save build artifacts to cache
+        if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            USDgen/build
+          key: ${{ steps.cache-usd-build-dependency.outputs.cache-primary-key }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: usd-${{ matrix.target }}
+          path: USDinst
+      - name: Test USD
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          ctest --output-on-failure -j4 -C Release

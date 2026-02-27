@@ -88,6 +88,7 @@ public:
             const Mappings &mappings);
 
 private:
+    USDIMAGING_API
     UsdImagingDataSourceCustomPrimvars(
             const SdfPath &sceneIndexPath,
             UsdPrim const &usdPrim,

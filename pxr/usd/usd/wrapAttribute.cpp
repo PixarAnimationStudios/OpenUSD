@@ -79,6 +79,14 @@ _Get(const UsdAttribute &self, UsdTimeCode time) {
     return UsdVtValueToPython(val);
 }
 
+static TfPyObjWrapper
+_GetFallbackValue(const UsdAttribute &self)
+{
+    VtValue val;
+    self.GetFallbackValue(&val);
+    return UsdVtValueToPython(val);
+}
+
 static bool
 _Set(const UsdAttribute &self, object val, const UsdTimeCode &time) {
     return self.Set(UsdPythonToSdfType(val, self.GetTypeName()), time);
@@ -172,6 +180,7 @@ void wrapUsdAttribute()
         .def("HasAuthoredValueOpinion", &UsdAttribute::HasAuthoredValueOpinion)
         .def("HasAuthoredValue", &UsdAttribute::HasAuthoredValue)
         .def("HasFallbackValue", &UsdAttribute::HasFallbackValue)
+        .def("GetFallbackValue", _GetFallbackValue)
 
         .def("ValueMightBeTimeVarying", &UsdAttribute::ValueMightBeTimeVarying)
 

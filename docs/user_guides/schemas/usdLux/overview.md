@@ -131,8 +131,8 @@ def DiskLight "Light1"
     float inputs:intensity = 100
     float inputs:radius = 1    
     append rel light:filters = [
-         </Filters/BarnDoorEffectFilter>,
-         </Filters/YellowGelFilter>,
+         </World/Filters/BarnDoorEffectFilter>,
+         </World/Filters/YellowGelFilter>,
     ]
 }
 ```

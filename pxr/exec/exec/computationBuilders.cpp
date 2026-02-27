@@ -6,6 +6,7 @@
 //
 #include "pxr/exec/exec/computationBuilders.h"
 
+#include "pxr/exec/exec/builtinComputationRegistry.h"
 #include "pxr/exec/exec/definitionRegistry.h"
 #include "pxr/exec/exec/inputKey.h"
 #include "pxr/exec/exec/privateBuiltinComputations.h"
@@ -136,6 +137,22 @@ void
 Exec_ComputationBuilderValueSpecifierBase::_GetInputKey(
     Exec_InputKey *const inputKey) const
 {
+    // Some built-in computations are not allowed to be consumed by user-
+    // defined computations.
+    if (Exec_BuiltinComputationRegistry::IsReservedName(
+        _data->inputKey.computationName)) {
+        const auto *traits = Exec_BuiltinComputationRegistry::GetInstance()
+            .GetTraits(_data->inputKey.computationName);
+        if (!traits || !traits->IsInputConsumable()) {
+            TF_CODING_ERROR(
+                "The builtin computation '%s' cannot be consumed by inputs to "
+                "user-defined computations.",
+                _data->inputKey.computationName.GetText());
+
+            _data->inputKey.computationName = TfToken();
+        }
+    }
+
     *inputKey = _data->inputKey;
 }
 

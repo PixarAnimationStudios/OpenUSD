@@ -8,7 +8,6 @@ def Shader "TestUIHintsAPI" (
         token schemaKind = "singleApply"
         token schemaBase = "APISchemaBase"
         string openPages = "OpenGroup|OpenGroup:Nested"
-        string "pageShownIf|ShownIf Group" = "hidden >= 1"
     }
 )
 {

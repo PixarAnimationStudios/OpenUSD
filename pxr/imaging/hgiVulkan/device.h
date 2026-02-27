@@ -83,6 +83,11 @@ public:
     /// Returns true if the provided extension is supported by the device
     bool IsSupportedExtension(const char* extensionName) const;
 
+    // Dumps detailed stats from VMA to VmaStatsOut.json in the working dir.
+    // Can be processed with GpuMemDumpVis.py for easier readability.
+    // https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator/tree/master/tools/GpuMemDumpVis
+    void DumpMemoryStats() const;
+
     /// Device extension function pointers
     PFN_vkCreateRenderPass2KHR vkCreateRenderPass2KHR = nullptr;
 #if defined(VK_USE_PLATFORM_WIN32_KHR)

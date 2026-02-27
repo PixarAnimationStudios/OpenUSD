@@ -407,7 +407,11 @@ HdTokenDataSourceHandle
 HdPrimvarSchema::BuildRoleDataSource(
     const TfToken &role)
 {
-
+    if (role.IsEmpty()) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(role);
+        return ds;
+    }
     if (role == HdPrimvarSchemaTokens->point) {
         static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
             HdRetainedTypedSampledDataSource<TfToken>::New(role);

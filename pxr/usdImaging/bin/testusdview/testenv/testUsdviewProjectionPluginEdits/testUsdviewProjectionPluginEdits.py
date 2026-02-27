@@ -20,8 +20,10 @@ def _updateProjectionPlugin(pluginPaths, appController):
     stage.SetEditTarget(layer)
 
     camera = stage.GetPrimAtPath('/main_cam')
-    projectionConnection = camera.GetProperty('outputs:ri:projection')
-    projectionConnection.SetConnections(pluginPaths)
+    projectionRel = camera.GetRelationship('ri:projection')
+    if (projectionRel):
+        projectionRel.SetTargets(pluginPaths)
+
 
 def _updateProjectionPluginParam(projectionPluginPath,
                                  attrName, attrValue, appController):
@@ -39,10 +41,8 @@ def testUsdviewInputFunction(appController):
     print('******CPU COUNT: {}'.format(cpu_count()))
     _modifySettings(appController)
 
-    cylPath = '/main_cam/CylCamera.outputs:result'
-    cylOutput = '/main_cam/CylCamera.outputs:result'
     paniniPath = '/main_cam/PaniniCam'
-    paniniOutput = '/main_cam/PaniniCam.outputs:result'
+    paniniOutput = '/main_cam/PaniniCam'
 
     paniniFov = "inputs:ri:fov"
 

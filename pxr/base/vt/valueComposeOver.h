@@ -20,13 +20,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Return true if the result of `VtValueComposeOver(val, x)` is \p val for all
-/// \p x, false otherwise.  The empty value can always compose-over.  This is a
-/// much faster check than the two-argument form of `VtValueCanComposeOver()`.
+/// Return true if the result of `VtValueCanComposeOver(val, x)` could be true
+/// for some \p x, false otherwise.  The empty value can always compose-over.
+/// This is a faster check than the two-argument form of
+/// `VtValueCanComposeOver()`.
 inline bool
 VtValueCanComposeOver(VtValueRef val) {
     return val.CanComposeOver();
 }
+
+/// Return true if VtRegisterComposeOver() has been called with \p strongType as
+/// the stronger type.
+VT_API bool
+VtValueTypeCanComposeOver(std::type_info const &strongType);
 
 /// Return true if `stronger` composes non-trivially over `weaker`.
 /// Specifically, if `stronger` can never compose-over (see the single-argument
@@ -37,18 +43,18 @@ VtValueCanComposeOver(VtValueRef val) {
 VT_API bool
 VtValueCanComposeOver(VtValueRef stronger, VtValueRef weaker);
 
-/// If `VtValueCanComposeOver(a, b)`, then return `VtValueComposeOver(a, b)`.
-/// Otherwise return an empty optional.
+/// If `VtValueCanComposeOver(stronger, weaker)`, then return
+/// `VtValueComposeOver(stronger, weaker)`.  Otherwise return an empty optional.
 VT_API std::optional<VtValue>
-VtValueTryComposeOver(VtValueRef a, VtValueRef b);
+VtValueTryComposeOver(VtValueRef stronger, VtValueRef weaker);
 
-/// Return the result of composing `stronger` over `weaker`.  If `stronger` is
+/// Return the result of composing `stronger` over `weaker`.  If `stronger`
 /// never composes-over, or if no compose-over functionality has been defined
 /// for values of `stronger`'s type over `weaker`'s type, return `stronger`.
 /// Otherwise invoke the compose-over function and return the result.  If
 /// `stronger` is empty, return `weaker`.
 VT_API VtValue
-VtValueComposeOver(VtValueRef a, VtValueRef b);
+VtValueComposeOver(VtValueRef stronger, VtValueRef weaker);
 
 /// A special sentinel type and singular value that can be used to "finalize" a
 /// composing type.  For example, `VtArrayEdit<T>` can compose over
@@ -84,7 +90,7 @@ VtRegisterComposeOver(Ret (*fn)(Strong const &, Weak const &))
                   "known value types");
     
     static_assert(VtValueTypeCanCompose<Strong>::value,
-                  "Use VT_VALUE_TYPE_COMPOSES or specialize "
+                  "Use VT_VALUE_TYPE_CAN_COMPOSE or specialize "
                   "VtValueTypeCanCompose<> before registering compose-over "
                   "functionality");
 

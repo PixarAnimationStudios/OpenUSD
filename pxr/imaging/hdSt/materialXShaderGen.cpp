@@ -47,7 +47,7 @@ R"(
 
 static const std::string MxHdLightString = 
 R"(#if NUM_LIGHTS > 0
-    for (int i = 0; i < NUM_LIGHTS; ++i) {
+    for (int i = 0; i < GetLightCount(); ++i) {
         LightSource light = GetLightSource(i);
 
         // Save the indirect light transformation

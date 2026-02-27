@@ -55,7 +55,7 @@ public:
         std::function<HdAovDescriptor(const TfToken &name)>;
 
     /// All prims in this scene index are under prefix.
-    /// The client needs to wrap 
+    /// The client needs to wrap
     /// HdRenderDelegate::GetDefaultAovDescriptor in aovDescriptorCallback
     /// (the API on HdRenderDelegate might change).
     /// gpuEnabled decides whether the present task is run for
@@ -207,6 +207,10 @@ public:
     /// (Note: Scene cameras use clipping planes authored on the camera prim)
     HDX_API
     void SetFreeCameraClipPlanes(const std::vector<GfVec4d> &clipPlanes);
+
+    /// Get the free camera's Hydra prim path
+    HDX_API
+    SdfPath GetFreeCameraPath();
 
     /// -------------------------------------------------------
     /// Selection API

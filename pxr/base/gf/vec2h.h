@@ -50,7 +50,8 @@ public:
     typedef GfHalf ScalarType;
     static const size_t dimension = 2;
 
-    /// Default constructor does no initialization.
+    /// GfVec2h value-initializes to zero and performs no default
+    /// initialization, like float or double.
     GfVec2h() = default;
 
     /// Initialize all elements to a single value.

@@ -69,7 +69,25 @@ Exec_CompilerTaskSync<KeyType>::MarkDone(const KeyType &key)
             std::forward_as_tuple());
     _Waitlist *const waitlist = &iterator->second;
  
-    _MarkDone(waitlist);
+    // We expect the waitlist to not already be marked done.
+    const bool wasNotDone = _MarkDone(waitlist);
+    TF_VERIFY(wasNotDone);
+}
+
+template <class KeyType>
+void
+Exec_CompilerTaskSync<KeyType>::MarkAllDone()
+{
+    // TODO: We may later add a separate atomic flag that "closes" the task
+    // sync, so that all keys added in the future are automatically marked
+    // done. Currently, there is no need for this flag, because we only
+    // interrupt the compilation process (and therefore only call this method)
+    // when all tasks are blocked in a cycle, meaning no task should attempt to
+    // Claim or WaitOn any key after this method is called.
+
+    for (auto &[key, waitlist] : _waitlists) {
+        _MarkDone(&waitlist);
+    }
 }
 
 // Explicit template instantiations.

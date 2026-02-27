@@ -19,9 +19,13 @@ class HgiVulkanDevice;
 class HgiVulkanInstance;
 
 
-/// Returns true if debugging is enabled (HGIVULKAN_DEBUG=1)
+/// Returns true if debugging is enabled (HGIVULKAN_DEBUG>=1)
 HGIVULKAN_API
 bool HgiVulkanIsDebugEnabled();
+
+/// Returns true if validation is enabled (HGIVULKAN_DEBUG==1)
+HGIVULKAN_API
+bool HgiVulkanIsValidationEnabled();
 
 /// Setup vulkan debug callbacks
 HGIVULKAN_API

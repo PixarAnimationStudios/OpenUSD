@@ -87,6 +87,8 @@ void wrapUsdNamespaceEditor()
 
         .def("ApplyEdits", &This::ApplyEdits)
         .def("CanApplyEdits", &_CanApplyEdits)
+        .def("GetLayersToEdit", &This::GetLayersToEdit,
+            return_value_policy<TfPySequenceToList>())
     ;
 
     class_<This::EditOptions>("EditOptions")

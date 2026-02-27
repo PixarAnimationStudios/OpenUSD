@@ -3760,6 +3760,16 @@ CrateFile::_ReadPathsImpl(Reader reader,
             parentPath = SdfPath::AbsoluteRootPath();
             _paths[h.index.value] = parentPath;
         } else {
+            // Bounds-check token index values in safety-over-speed mode.
+            if constexpr (SafetyOverSpeed) {
+                if (h.elementTokenIndex.value >= _tokens.size()) {
+                    TF_RUNTIME_ERROR("Corrupt element token index in crate "
+                        "file (%u > %zu)",
+                        h.elementTokenIndex.value, _tokens.size());
+                    return;
+                }
+            } // SafetyOverSpeed
+
             auto const &elemToken = _tokens[h.elementTokenIndex.value];
             _paths[h.index.value] =
                 h.bits & _PathItemHeader::IsPrimPropertyPathBit ?
@@ -3782,10 +3792,6 @@ CrateFile::_ReadPathsImpl(Reader reader,
                 dispatcher.Run(
                     [this, reader,
                      siblingOffset, &dispatcher, parentPath]() {
-                        // XXX Remove these tags when bug #132031 is addressed
-                        TfAutoMallocTag tag(
-                            "Sdf", "Sdf_CrateDataImpl::Open",
-                            "Sdf_CrateFile::CrateFile::Open", "_ReadPaths");
                         auto readerCopy = reader;
                         readerCopy.Seek(siblingOffset);
                         _ReadPathsImpl<Header>(readerCopy, dispatcher, parentPath);
@@ -3934,10 +3940,6 @@ CrateFile::_BuildDecompressedPathsImpl(
                 dispatcher.Run(
                     [this, &pathIndexes, &elementTokenIndexes, &jumps,
                      siblingIndex, &dispatcher, parentPath]()  {
-                        // XXX Remove these tags when bug #132031 is addressed
-                        TfAutoMallocTag tag(
-                            "Sdf", "Sdf_CrateDataImpl::Open",
-                            "Sdf_CrateFile::CrateFile::Open", "_ReadPaths");
                         _BuildDecompressedPathsImpl(
                             pathIndexes, elementTokenIndexes, jumps,
                             siblingIndex, parentPath, dispatcher);
@@ -4226,7 +4228,13 @@ CrateFile::GetTypeid(ValueRep rep) const
 #define xx(ENUMNAME, _unused, T, SUPPORTSARRAY)                                \
         case TypeEnum::ENUMNAME:                                               \
             if constexpr (SUPPORTSARRAY) {                                     \
-                return rep.IsArray() ? typeid(VtArray<T>) : typeid(T);         \
+                if (rep.IsArray()) {                                           \
+                    return typeid(VtArray<T>);                                 \
+                }                                                              \
+                if (rep.IsArrayEdit()) {                                       \
+                    return typeid(VtArrayEdit<T>);                             \
+                }                                                              \
+                return typeid(T);                                              \
             }                                                                  \
             else {                                                             \
                 return typeid(T);                                              \

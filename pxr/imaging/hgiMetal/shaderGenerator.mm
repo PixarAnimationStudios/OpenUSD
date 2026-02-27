@@ -1435,11 +1435,12 @@ HgiMetalShaderGenerator::HgiMetalShaderGenerator(
         << "\n";
     }
 
-    if (_hgi->GetCapabilities()->requiresReturnAfterDiscard) {
-        macroSection << "#define discard discard_fragment(); "
-                        "discarded_fragment = true;\n";
-    } else {
-        macroSection << "#define discard discard_fragment();\n";
+    if (_GetShaderStage() == HgiShaderStageFragment) {
+        if (_hgi->GetCapabilities()->requiresReturnAfterDiscard) {
+            macroSection << "#define discard set_flag_and_discard_fragment()\n";
+        } else {
+            macroSection << "#define discard discard_fragment()\n";
+        }
     }
     
     CreateShaderSection<HgiMetalMacroShaderSection>(
@@ -1490,6 +1491,14 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
         section->VisitScopeMemberDeclarations(ss);
     }
     ss << "\n// //////// Scope Function Definitions ////////\n";
+    if (_hgi->GetCapabilities()->requiresReturnAfterDiscard) {
+        if (this->_GetShaderStage() == HgiShaderStageFragment) {
+            ss << "void set_flag_and_discard_fragment() {\n"
+                  "    discarded_fragment = true;\n"
+                  "    discard_fragment();\n"
+                  "}\n";
+        }
+    }
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         section->VisitScopeFunctionDefinitions(ss);
     }

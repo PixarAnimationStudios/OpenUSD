@@ -821,6 +821,18 @@ SdrRegistry::GetShaderNodesByFamily(
     return nodeVec;
 }
 
+SdrShaderNodePtrVec
+SdrRegistry::GetAllShaderNodes()
+{
+    SdrShaderNodePtrVec nodes;
+
+    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+    for (auto& it : _discoveryResultsByIdentifier) {
+        nodes.push_back(_FindOrParseNodeInCache(it.second));
+    }
+    return nodes;
+}
+
 SdrTokenVec
 SdrRegistry::GetAllShaderNodeSourceTypes() const
 {
@@ -993,6 +1005,12 @@ SdrRegistry::RunQuery(const SdrShaderNodeQuery& query)
     }
 
     return result;
+}
+
+void
+SdrRegistry::ParseAll()
+{
+    GetAllShaderNodes();
 }
 
 void

@@ -29,19 +29,21 @@ developers.
 * isTimeDependent: If the validator is testing rules which are time dependent. 
 * isSuite: If the validator represents a suite of validators.
 
-Validation instances can be used to run validation tests, but more commonly a
+Validator instances can be used to run validation tests, but more commonly a
 set of validators will be used, represented by a UsdValidationContext. 
 A UsdValidationContext can be created from a vector of UsdValidators, which 
 can be created manually, or obtained via metadata query methods on 
 UsdValidationRegistry. UsdValidationContext also provides convenience 
 constructors that determine which validators to use based on metadata filters, 
-such as a list of keywords. Some constructors allow for including validators
-for ancestor schema types for any found validators associated with schema
-types. For example, when using a constructor that includes validators that have
-certain keywords, validators for the UsdGeomSphere context get included. If the
-constructor was called with `includeAllAncestors` set to true (the default),
-the context would additionally include validators for schemas that UsdGeomSphere
-inherits from, such as UsdGeomBoundable and UsdGeomImageable.
+such as a list of keywords. 
+
+Some constructors allow for including validators for ancestor schema types, for
+any found validators associated with schema types. For example, when using a
+UsdValidationContext constructor with the keywords parameter, if
+`includeAllAncestors` is set to true (the default), and a validator is found 
+for, say, the UsdGeomSphere schema type, any validators associated with ancestor 
+schema types of UsdGeomSphere (such as UsdGeomGprim, UsdGeomImageable, etc.) 
+will also be included in the context.
 
 UsdValidationRegistry is the central registry that manages all registered
 validators. The registry is used to obtain validator instances via validator 

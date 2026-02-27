@@ -135,6 +135,9 @@
     // rather than relative to the page path, because pages can now be in 
     // various subdirs
     var jsFileLocation = $('script[src*=versions]').attr('src');
+    // strip URI parameters (e.g. "versions.js?v=blah") from location if any
+    jsFileLocation = jsFileLocation.split('?')[0]; 
+    // remove this script from path and append location to versions.json
     jsFileLocation = jsFileLocation.replace('versions.js', '');    
     $.getJSON(jsFileLocation + "../../../versions.json", function(data) {
       var dev_version, release_version

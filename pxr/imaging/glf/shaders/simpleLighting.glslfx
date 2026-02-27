@@ -147,6 +147,10 @@ bool GetUseLighting() {
     return HdGet_useLighting();
 }
 
+uint GetLightCount() {
+    return HdGet_lightCount();
+}
+
 bool GetUseColorMaterialDiffuse() {
     return HdGet_useColorMaterialDiffuse();
 }
@@ -389,7 +393,7 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 
     float shininess = props.shininess;
 
-    for (int i = 0; i < NUM_LIGHTS; ++i) {
+    for (int i = 0; i < GetLightCount(); ++i) {
         LightSource light = GetLightSource(i);
 
         vec4 Plight = (light.isIndirectLight)

@@ -325,14 +325,31 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
             set(emscriptenResourceFile "${CMAKE_CURRENT_SOURCE_DIR}/${resourceFile}")
         endif()
 
+        set(installDestination ${resourcesPath})
+        if(NOT "${dirPath}" STREQUAL "")
+            set(installDestination ${installDestination}/${dirPath})
+        endif()
+
         if (EMSCRIPTEN)
             string(REGEX REPLACE "^lib\\/" "/" emscriptenLocalPath "${resourcesPath}")
 
-            target_link_options(${NAME} PUBLIC "SHELL:--embed-file ${emscriptenResourceFile}@${emscriptenLocalPath}/${dirPath}/${destFileName}")
+            set(resourceDestDir "${emscriptenLocalPath}")
+            if(NOT "${dirPath}" STREQUAL "")
+                set(resourceDestDir "${resourceDestDir}/${dirPath}")
+            endif()
+
+            # Resources that are required for this library will be embedded in
+            # the final Wasm output. For building internal binaries, we can use
+            # the files from their location in the source tree. In order for
+            # the build to be reloatable, we want to reference the installed
+            # files in the pxrTargets.cmake file.
+            target_link_options(${NAME} PUBLIC              
+                "$<BUILD_INTERFACE:SHELL:--embed-file ${emscriptenResourceFile}@${resourceDestDir}/${destFileName}>"
+                "$<INSTALL_INTERFACE:SHELL:--embed-file $<INSTALL_PREFIX>/${installDestination}/${destFileName}@${resourceDestDir}/${destFileName}>")
         endif()
         install(
             FILES ${resourceFile}
-            DESTINATION ${resourcesPath}/${dirPath}
+            DESTINATION ${installDestination}
             RENAME ${destFileName}
         )
     endforeach()

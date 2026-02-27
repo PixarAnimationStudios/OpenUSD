@@ -14,6 +14,7 @@
 
 #include <tuple>
 #include <utility>
+#include <variant>
 #include <vector>
 
 using std::map;
@@ -193,12 +194,27 @@ static void testGetTuple()
     }
 }
 
+static void testOverloads()
+{
+    std::variant<int, std::string> varInt { 123 };
+    std::variant<int, std::string> varStr { "hello" };
+
+    auto visitor = TfOverloads {
+        [](int i) { return size_t(i * 2); },
+        [](std::string const &s) { return s.size(); }
+    };
+    
+    TF_AXIOM(std::visit(visitor, varInt) == 246);
+    TF_AXIOM(std::visit(visitor, varStr) == 5);
+}
+
 static bool
 Test_TfStl()
 {
     testSetDifferences();
     testGetPair();
     testGetTuple();
+    testOverloads();
     
     TfHashMap<string, int, TfHash> hm;
     map<string, int> m;

@@ -11,6 +11,19 @@
     ),        
 
     #--------------------------------------------------------------------------
+    dict(
+        SCHEMA_NAME = 'UsdSceneIndexInputArgs',
+        SCHEMA_TOKEN = 'usdSceneIndex',
+        ADD_DEFAULT_LOCATOR = True,
+        MEMBERS = [
+            ('stage', 'UsdStageRefPtrDataSource', {}),
+            ('includeUnloadedPrims', T_BOOL, {}),
+            ('displayUnloadedPrimsWithBounds', T_BOOL, {}),
+            ('addDrawModeSceneIndex', T_BOOL, {}),
+        ],
+    ),
+    
+    #--------------------------------------------------------------------------
     # usdImaging/usdPrimInfo
     dict(
         SCHEMA_NAME = 'UsdPrimInfo',
@@ -28,7 +41,6 @@
             ('niPrototypePath', T_PATH, dict(ADD_LOCATOR=True)),
             ('isNiPrototype', T_BOOL, {}),
             ('piPropagatedPrototypes', T_CONTAINER, {}),
-
         ],
         STATIC_TOKEN_DATASOURCE_BUILDERS = [
             ('specifier', ['def', 'over', '(class_, "class")']),

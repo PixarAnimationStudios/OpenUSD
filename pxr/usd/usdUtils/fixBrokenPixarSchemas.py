@@ -179,7 +179,8 @@ class FixBrokenPixarSchemas(object):
 
 
     def FixupRenderSettingsTerminalsAPI(self):
-        """Makes sure that RenderSettings terminals targeting display filters,
+        """
+        Makes sure that RenderSettings terminals targeting display filters,
         integrators, and sample filters are relationships instead of output
         connections. Marks the layer as updated if fixes are applied.
         """
@@ -217,3 +218,47 @@ class FixBrokenPixarSchemas(object):
                         primSpec.RemoveProperty(attr)
 
         self._usdLayer.Traverse("/", _RenderSettingsTerminalAPIUsesRelationships)
+
+
+    def FixupCameraProjectionAPI(self):
+        """
+        Makes sure that PxrCameraProjectionAPI supplies a relationship for
+        the ri:projection to be used with a projection plugin target, instead of
+        an output connection. Marks the layer as updated if fixes are applied.
+        """
+        replaceAttr = "outputs:ri:projection"
+
+        def _CameraProjectionAPIUsesRelationship(path):
+            if not path.IsPrimPath():
+                return
+
+            from pxr import Usd, Sdf
+            primSpec = self._usdLayer.GetPrimAtPath(path)
+            # Since PxrCameraProjectionAPI is only applied to Camera prims,
+            # early out if not a Camera prim.
+            if primSpec.typeName != "Camera":
+                return
+
+            registry = Usd.SchemaRegistry()
+            primDef = registry.FindConcretePrimDefinition(primSpec.typeName)
+            if "PxrCameraProjectionAPI" not in primDef.GetAppliedAPISchemas():
+                return
+
+            if replaceAttr not in [attr.name for attr in primSpec.attributes]:
+                return
+
+            attr = primSpec.GetAttribute(replaceAttr)
+            conns = attr.connectionPathList.GetAppliedItems()
+            if not conns:
+                return
+
+            self._layerUpdated = True
+            relName = replaceAttr.replace("outputs:", "")
+            relPath = primSpec.path.AppendProperty(relName)
+            rel = Sdf.CreateRelationshipInLayer(self._usdLayer,
+                relPath, Sdf.VariabilityUniform, attr.custom)
+            rel.targetPathList.ClearEditsAndMakeExplicit()
+            primPaths = [p.GetPrimPath() for p in conns]
+            rel.targetPathList.explicitItems = primPaths
+            primSpec.RemoveProperty(attr)
+

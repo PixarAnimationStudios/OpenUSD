@@ -210,10 +210,10 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
     HdCamera::Sync(sceneDelegate, renderParam, dirtyBits);
 
     if (bits & DirtyParams) {
-        const SdfPath riProjectionPath = 
-            sceneDelegate->GetCameraParamValue(id, _tokens->projection)
-            .GetWithDefault<SdfPath>(SdfPath::EmptyPath());
-
+        const VtValue riProjectionValue =
+            sceneDelegate->GetCameraParamValue(id, _tokens->projection);
+        const SdfPath riProjectionPath =
+            HdPrman_Utils::GetPathFromVtValue(riProjectionValue);
         if (!riProjectionPath.IsEmpty()) {
             _projectionNode = _CreateNode(sceneDelegate, riProjectionPath);
         } else {

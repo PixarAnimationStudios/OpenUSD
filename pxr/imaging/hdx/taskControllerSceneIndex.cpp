@@ -71,7 +71,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (lightShader)
 
-    (PxrDistantLight) 
+    (PxrDistantLight)
     (PxrDomeLight)
 );
 
@@ -1421,9 +1421,9 @@ _ResolvedRenderOutputs(const TfTokenVector &aovNames,
     TfTokenVector result;
 
     if (isForStorm) {
-        // For Storm, we rearrange AOVs to be a certain order to match how we 
-        // order outputs in the fragment shader. This order is specified via 
-        // HdSt_RenderPassShaderKey and the render pass shader snippets it 
+        // For Storm, we rearrange AOVs to be a certain order to match how we
+        // order outputs in the fragment shader. This order is specified via
+        // HdSt_RenderPassShaderKey and the render pass shader snippets it
         // gathers.
         if (hasColor) {
             result.push_back(HdAovTokens->color);
@@ -2208,10 +2208,10 @@ void
 HdxTaskControllerSceneIndex::_SetLights(const GlfSimpleLightVector &lights)
 {
     // HdxTaskController inserts a set of light prims to represent the lights
-    // passed in through the simple lighting context (lights vector). These are 
+    // passed in through the simple lighting context (lights vector). These are
     // managed by the task controller scene index, and not by scene description;
     // they represent the application state.
-    
+
     size_t i = 0;
 
     HdRetainedSceneIndex::AddedPrimEntries addedPrimEntries;
@@ -2407,6 +2407,13 @@ SetFreeCameraClipPlanes(const std::vector<GfVec4d> &clippingPlanes)
 
     _retainedSceneIndex->DirtyPrims(
         { { primPath, std::move(locators) } });
+}
+
+SdfPath
+HdxTaskControllerSceneIndex::
+GetFreeCameraPath()
+{
+    return _CameraPath(_params.prefix);
 }
 
 void

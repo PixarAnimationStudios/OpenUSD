@@ -206,8 +206,8 @@ ComputeFraming(const HydraSetupCameraInfo &cameraInfo)
 
 void
 PopulateFallbackRenderSpec(
-    std::string const& outputFilename, UsdRenderSpec *renderSpec) 
-{   
+    std::string const& outputFilename, UsdRenderSpec *renderSpec)
+{
     *renderSpec = {
         /* products */
         {
@@ -220,7 +220,7 @@ PopulateFallbackRenderSpec(
                 false,                                  // disableDepthOfField
                 s_fallbackResolution,                   // resolution
                 1.0f,                                   // PixelAspectRatio
-                s_fallbackConformPolicy,                // aspectRatioConformPolicy 
+                s_fallbackConformPolicy,                // aspectRatioConformPolicy
                 GfVec2f(2.0, 2.0),                      // aperture size
                 GfRange2f(GfVec2f(0.0f), GfVec2f(1.0f)),// data window
                 { 0, 1 },                               // renderVarIndices
@@ -291,7 +291,7 @@ PopulateFallbackRenderSettings(
     // If no renderSettings prim was found create a fallback prim.
     if (settings->GetPath().IsEmpty()) {
         const SdfPath fallbackRenderSettingsPath("/Render/Settings/Fallback");
-        *settings = 
+        *settings =
             UsdRenderSettings::Define(stage, fallbackRenderSettingsPath);
 
         fprintf(stdout, "Populate fallback RenderSettings Prim %s ."
@@ -300,7 +300,7 @@ PopulateFallbackRenderSettings(
         fprintf(stdout, "Populate RenderSettings Prim %s with fallback values."
                         "\n", settings->GetPath().GetText());
     }
-    
+
     // Set the fallback Resolution and Aspect Ratio Conform Policy. These are
     // schema attributes.
     {
@@ -328,12 +328,12 @@ PopulateFallbackRenderSettings(
 
     // Set the Camera
     {
-        SdfPathVector cameraTargets; 
+        SdfPathVector cameraTargets;
         settings->GetCameraRel().GetForwardedTargets(&cameraTargets);
         if (cameraTargets.empty()) {
             if (sceneCamPath.IsEmpty()) {
                 SdfPath fallbackCameraPath("/Fallback/Camera");
-                UsdGeomCamera fallbackCamera = 
+                UsdGeomCamera fallbackCamera =
                     CreateFallbackCamera(stage, fallbackCameraPath);
                 settings->GetCameraRel().AddTarget(fallbackCameraPath);
             }
@@ -373,7 +373,7 @@ PopulateFallbackRenderSettings(
     }
 
     // Check if there are any authored Render Products connected
-    SdfPathVector renderProductTargets; 
+    SdfPathVector renderProductTargets;
     settings->GetProductsRel().GetForwardedTargets(&renderProductTargets);
     if (!renderProductTargets.empty()) {
         return;
@@ -437,7 +437,7 @@ CreateRenderSpecDict(
 
             renderVarDicts.push_back(VtValue(renderVarDict));
         }
-        
+
         renderSpecDict[HdPrmanExperimentalRenderSpecTokens->renderVars] =
             renderVarDicts;
     }
@@ -468,7 +468,7 @@ CreateRenderSpecDict(
     return renderSpecDict;
 }
 
-// Add the integratorName and any associated values to the settingsMap based 
+// Add the integratorName and any associated values to the settingsMap based
 // on the VisualizerStyle
 void
 AddVisualizerStyle(
@@ -477,16 +477,16 @@ AddVisualizerStyle(
     if (!visualizerStyle.empty()) {
         const std::string integratorName("PxrVisualizer");
 
-        // Note that this can now be represented as an integrator prim that 
-        // is connected to the RenderSettings prim through the 
-        // 'ri:integrator' terminal 
+        // Note that this can now be represented as an integrator prim that
+        // is connected to the RenderSettings prim through the
+        // 'ri:integrator' terminal
         (*settingsMap)[HdPrmanRenderSettingsTokens->integratorName] =
             integratorName;
 
         // This prefix is used in HdPrman_RenderParam to get these
         // parameters. The Integrator prim just has the 'ri' namespace.
         const std::string prefix = "ri:integrator:" + integratorName + ":";
-        
+
         (*settingsMap)[TfToken(prefix + "wireframe")] = 1;
         (*settingsMap)[TfToken(prefix + "style")] = visualizerStyle;
     } else {
@@ -496,13 +496,13 @@ AddVisualizerStyle(
     }
 }
 
-// Add the Namespaced Settings to the settingsMap making sure to add the 
+// Add the Namespaced Settings to the settingsMap making sure to add the
 // fallback settings specific to testHdPrman
-void 
+void
 AddNamespacedSettings(
     VtDictionary const &namespacedSettings, HdRenderSettingsMap *settingsMap)
 {
-    // Add fallback settings specific to testHdPrman 
+    // Add fallback settings specific to testHdPrman
     (*settingsMap)[_tokens->jitter] = false;
     (*settingsMap)[_tokens->minSamples] = 4;
     (*settingsMap)[_tokens->maxSamples] = 4;
@@ -510,13 +510,13 @@ AddNamespacedSettings(
     (*settingsMap)[_tokens->pixelFilterName] = TfToken("box");
     (*settingsMap)[_tokens->pixelFilterWidth] = GfVec2f(1.0f, 1.0f);
 
-    // Set namespaced settings 
+    // Set namespaced settings
     for (const auto &item : namespacedSettings) {
         (*settingsMap)[TfToken(item.first)] = item.second;
     }
 }
 
-// Apply Command line overrides to the RenderSpec's product since it will 
+// Apply Command line overrides to the RenderSpec's product since it will
 // be used to create the Riley RenderView in HdPrman_RenderPass.
 HydraSetupCameraInfo
 ApplyCommandLineArgsToProduct(
@@ -524,7 +524,7 @@ ApplyCommandLineArgsToProduct(
     float const sceneCamAspect,
     UsdRenderSpec::Product *product)
 {
-    // Apply Command line overrides to the product since it will be used to 
+    // Apply Command line overrides to the product since it will be used to
     // create the RenderSpecDict that HdPrman_RenderPass will use.
     if (!sceneCamPath.IsEmpty()) {
         product->cameraPath = sceneCamPath;
@@ -544,7 +544,7 @@ ApplyCommandLineArgsToProduct(
     return camInfo;
 }
 
-// Apply Command line overrides to the RenderProduct since it will be used to 
+// Apply Command line overrides to the RenderProduct since it will be used to
 // create the Riley RenderView in HdPrman_RenderPass.
 SdfPath
 ApplyCommandLineArgsToProduct(
@@ -555,7 +555,7 @@ ApplyCommandLineArgsToProduct(
 {
     SdfPath cameraPath;
 
-    // Override the values on the first RenderProduct 
+    // Override the values on the first RenderProduct
     // Note that at this point there should always be at least one RenderProduct
     SdfPathVector productPaths;
     settings.GetProductsRel().GetForwardedTargets(&productPaths);
@@ -597,7 +597,7 @@ _AppendSceneGlobalsSceneIndexCallback(
 {
     _AppSceneIndicesSharedPtr appSceneIndices =
         s_renderInstanceTracker->GetInstance(renderInstanceId);
-    
+
     if (appSceneIndices) {
         auto &sgsi = appSceneIndices->sceneGlobalsSceneIndex;
         sgsi = HdsiSceneGlobalsSceneIndex::New(inputScene);
@@ -635,20 +635,66 @@ _RegisterApplicationSceneIndices()
     }
 }
 
+bool
+_LoaderIsRegistered(const TfToken& loader)
+{
+    auto& registry = HdRendererPluginRegistry::GetInstance();
+    HdRendererPlugin* plugin = registry.GetRendererPlugin(loader);
+    return plugin != nullptr;
+}
+
+std::unordered_map<std::string, TfToken>
+_DetectLoaders()
+{
+    static const std::unordered_map<std::string, TfToken> variantLoaders {
+        { "ris", TfToken("HdPrmanLoaderRendererPlugin") },
+        { "xpu", TfToken("HdPrmanXpuLoaderRendererPlugin") },
+        { "xpucpu", TfToken("HdPrmanXpuCpuLoaderRendererPlugin") },
+        { "xpugpu", TfToken("HdPrmanXpuGpuLoaderRendererPlugin") } };
+    std::unordered_map<std::string, TfToken> detectedLoaders;
+    std::copy_if(variantLoaders.begin(), variantLoaders.end(),
+        std::inserter(detectedLoaders, detectedLoaders.end()),
+        [](const std::pair<std::string, TfToken>& entry) {
+            return _LoaderIsRegistered(entry.second);
+        });
+    return detectedLoaders;
+}
+
+TfToken
+_ResolveLoaderFromVariant(const std::string& variant)
+{
+    static const std::string fallbackVariant("ris");
+    static const auto loaders = _DetectLoaders();
+
+    // NB: variant should already be lowercase
+    auto it = loaders.find(variant);
+    if (it == loaders.end()) {
+        TF_WARN("Unrecognized renderer variant '%s'; will use '%s'.",
+            variant.c_str(), fallbackVariant.c_str());
+        it = loaders.find(fallbackVariant);
+    }
+    if (it == loaders.end()) {
+        TF_CODING_ERROR("Default loader `HdPrmanLoaderRendererPlugin` for ris "
+            "variant not found; did you build it?");
+    }
+    return it->second;
+}
+
 void
 HydraSetupAndRender(
+    const std::string& variant,
     HdRenderSettingsMap const &settingsMap,
     SdfPath const &renderSettingsPrimPath,
     const HydraSetupCameraInfo * const cameraInfo,
     SdfPath const &cameraPath,
     const std::string &cullStyle,
     UsdStageRefPtr const &stage,
-    const int frameNum, 
+    const int frameNum,
     TfStopwatch *timer_hydra)
 {
     // Hydra setup
     //
-    // Assemble a Hydra pipeline to feed USD data to Riley. 
+    // Assemble a Hydra pipeline to feed USD data to Riley.
     // Scene data flows left-to-right:
     //
     //     => UsdStage
@@ -665,10 +711,12 @@ HydraSetupAndRender(
     // Create the RenderDelegate, passing in the HdRenderSettingsMap
     // In order to pick up the plugin scene indices, we need to instantiate
     // the HdPrmanRenderDelegate through the renderer plugin registry.
+
+    const TfToken loader = _ResolveLoaderFromVariant(variant);
+
     HdPluginRenderDelegateUniqueHandle const renderDelegate =
         HdRendererPluginRegistry::GetInstance().CreateRenderDelegate(
-            TfToken("HdPrmanLoaderRendererPlugin"),
-            settingsMap);
+            loader, settingsMap);
 
     const std::string renderInstanceId =
         TfStringPrintf("testHdPrman_%s_%p",
@@ -715,7 +763,7 @@ HydraSetupAndRender(
             sceneIndex = displayStyleSceneIndex;
             displayStyleSceneIndex->SetCullStyleFallback(TfToken(cullStyle));
         }
-            
+
         hdRenderIndex->InsertSceneIndex(
             sceneIndex, SdfPath::AbsoluteRootPath());
     } else {
@@ -766,11 +814,11 @@ HydraSetupAndRender(
     HdRenderPassStateSharedPtr const hdRenderPassState =
         renderDelegate->CreateRenderPassState();
 
-    // The camera/framing information only needs to be set for the RenderSpec 
-    // pathway, when using RenderSettings, HdPrman_RenderPass will get the 
+    // The camera/framing information only needs to be set for the RenderSpec
+    // pathway, when using RenderSettings, HdPrman_RenderPass will get the
     // camera information directly from the RenderProducts.
     if (cameraInfo) {
-        const HdCamera * const camera = 
+        const HdCamera * const camera =
             dynamic_cast<const HdCamera*>(
                 hdRenderIndex->GetSprim(
                     HdTokens->camera, cameraInfo->cameraPath));
@@ -786,7 +834,7 @@ HydraSetupAndRender(
                                     cameraInfo->aspectRatioConformPolicy) });
 #endif
     }
-    
+
     TfTokenVector renderTags;
     if (!renderSettingsPrimPath.IsEmpty()) {
         const UsdRenderSettings& settings = UsdRenderSettings(
@@ -839,12 +887,23 @@ PrintUsage(const char* cmd, const char *err=nullptr)
     if (err) {
         fprintf(stderr, "%s\n", err);
     }
+    const std::unordered_map<std::string, TfToken> loaders = _DetectLoaders();
+    std::string variants;
+    for (const auto& entry : loaders) {
+        if (!variants.empty()) {
+            variants += "|";
+        }
+        variants += entry.first;
+    }
+
     fprintf(stderr, "Usage: %s INPUT.usd "
+            "[--variant|-v VARIANT] "
             "[--out|-o OUTPUT] [--frame|-f FRAME] [--env|-e NAME=VALUE]"
             "[--sceneCamPath|-c CAM_PATH] [--settings|-s RENDERSETTINGS_PATH] "
             "[--sceneCamAspect|-a aspectRatio] [--cullStyle|-k CULL_STYLE] "
             "[--visualize|-z STYLE] [--perf|-p PERF] [--trace|-t TRACE]\n"
             "Single-hyphen options still need a space before the value!\n"
+            "VARIANT defaults to ris and may be: %s.\n"
             "OUTPUT defaults to UsdRenderSettings if not specified.\n"
             "FRAME defaults to 0 if not specified.\n"
             "NAME & VALUE are an environment variable and value to set with "
@@ -857,7 +916,7 @@ PrintUsage(const char* cmd, const char *err=nullptr)
             "TRACE indicates a text file to record trace measurements\n"
             "CULL_STYLE selects the fallback cull style and may be one of: "
             "none|back|front|backUnlessDoubleSided|frontUnlessDoubleSided\n",
-            cmd);
+            cmd, variants.c_str());
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -868,7 +927,7 @@ int main(int argc, char *argv[])
     ArchSetProgramNameForErrors("testHdPrman");
     ArchSetFatalStackLogging(true);
 
-    //////////////////////////////////////////////////////////////////////// 
+    ////////////////////////////////////////////////////////////////////////
     //
     // Parse args
     //
@@ -881,6 +940,7 @@ int main(int argc, char *argv[])
     std::string outputFilename;
     std::string perfOutput, traceOutput;
     std::string cullStyle;
+    std::string variant("ris");
 
     int frameNum = 0;
     SdfPath sceneCamPath, renderSettingsPath;
@@ -911,6 +971,8 @@ int main(int argc, char *argv[])
         } else if (arg == "--env" || arg == "-e") {
             std::vector<std::string> parts = TfStringSplit(argv[++i], "=");
             env.push_back({parts[0], parts[1]});
+        } else if (arg == "--variant" || arg == "-v") {
+            variant = TfStringToLower(argv[++i]);
         }
     }
 
@@ -924,7 +986,7 @@ int main(int argc, char *argv[])
         TraceCollector::GetInstance().SetEnabled(true);
     }
 
-    //////////////////////////////////////////////////////////////////////// 
+    ////////////////////////////////////////////////////////////////////////
     //
     // USD setup
     //
@@ -939,7 +1001,7 @@ int main(int argc, char *argv[])
     }
     timer_usdOpen.Stop();
 
-    //////////////////////////////////////////////////////////////////////// 
+    ////////////////////////////////////////////////////////////////////////
     // Render settings
     //
 
@@ -955,7 +1017,7 @@ int main(int argc, char *argv[])
         settings = UsdRenderSettings(stage->GetPrimAtPath(renderSettingsPath));
     }
     if (settings) {
-        fprintf(stdout, "Found the Render Settings Prim <%s>.\n", 
+        fprintf(stdout, "Found the Render Settings Prim <%s>.\n",
                 settings.GetPath().GetText());
     }
 
@@ -968,7 +1030,7 @@ int main(int argc, char *argv[])
     UsdRenderSpec renderSpec;
     if (!UseRenderSettingsPrim()) {
         if (settings) {
-            // Create the RenderSpec from the Render Settings Prim 
+            // Create the RenderSpec from the Render Settings Prim
             fprintf(stdout, "Create a UsdRenderSpec from the Render Settings "
                     "Prim <%s>.\n", settings.GetPath().GetText());
             renderSpec =
@@ -980,7 +1042,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    //////////////////////////////////////////////////////////////////////// 
+    ////////////////////////////////////////////////////////////////////////
     //
     // Diagnostic aids
     //
@@ -991,7 +1053,7 @@ int main(int argc, char *argv[])
     printf("Physical concurrency limit: %u\n",
         WorkGetPhysicalConcurrencyLimit());
 
-    //////////////////////////////////////////////////////////////////////// 
+    ////////////////////////////////////////////////////////////////////////
     //
     // Render
     //
@@ -1011,17 +1073,18 @@ int main(int argc, char *argv[])
         settingsMap[HdRenderSettingsTokens->enableInteractive] = false;
 
         HydraSetupAndRender(
+            variant,
             settingsMap, settings.GetPath(),
-            nullptr /* camInfo */, cameraPath, cullStyle, stage, 
+            nullptr /* camInfo */, cameraPath, cullStyle, stage,
             frameNum, &timer_hydra);
 
         printf("Rendered <%s>\n", settings.GetPath().GetText());
     }
     else {
         // When using the Render Spec dictionary in the legacy render settings
-        // map to plumb settings, we specify the settings per product. For 
-        // simplicity, we recreate the riley and hydra setup for each product. 
-        // Eventually, this path will be deprecated and removed to leverage 
+        // map to plumb settings, we specify the settings per product. For
+        // simplicity, we recreate the riley and hydra setup for each product.
+        // Eventually, this path will be deprecated and removed to leverage
         // hydra's first-class support for render settings scene description.
         fprintf(stdout, "Rendering using the experimentalRenderSpec dictionary...\n");
         for (auto product: renderSpec.products) {
@@ -1031,7 +1094,7 @@ int main(int argc, char *argv[])
                     "Skipping product %s because product type %s is not"
                     "supported in the renderSpec path.",
                     product.name.GetText(), product.type.GetText());
-                
+
                 continue;
             }
             printf("Rendering product %s...\n", product.name.GetText());
@@ -1051,8 +1114,9 @@ int main(int argc, char *argv[])
             settingsMap[HdRenderSettingsTokens->enableInteractive] = false;
 
             HydraSetupAndRender(
-                settingsMap, /* renderSettingsPrimPath */ SdfPath::EmptyPath(),
-                &camInfo, camInfo.cameraPath, cullStyle, stage, 
+                variant, settingsMap,
+                /* renderSettingsPrimPath */ SdfPath::EmptyPath(),
+                &camInfo, camInfo.cameraPath, cullStyle, stage,
                 frameNum, &timer_hydra);
 
             printf("Rendered %s\n", product.name.GetText());

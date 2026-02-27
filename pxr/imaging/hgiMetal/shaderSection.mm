@@ -378,9 +378,7 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
         ss << "\n";
     }
 
-    const uint32_t sizeDim =
-        (_textureType == HgiShaderTextureTypeArrayTexture) ?
-        (_dimensionsVar + 1) : _dimensionsVar;
+    const uint32_t sizeDim = _dimensionsVar;
 
     const uint32_t coordDim =
         (_textureType == HgiShaderTextureTypeShadowTexture ||

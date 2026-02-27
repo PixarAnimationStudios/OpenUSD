@@ -70,6 +70,14 @@ public:
     ///
     void MarkDone(const KeyType &key);
 
+    /// Marks every known key as done.
+    ///
+    /// This method will notify every task in every waitlist by decrementing
+    /// their dependency counts and spawning all tasks whose dependency counts
+    /// reach 0.
+    ///
+    void MarkAllDone();
+
 private:
     // A unique waitlist is maintained for each key.
     using _Waitlists =

@@ -693,6 +693,31 @@ UsdSkelSkinFaceVaryingNormals(const TfToken& skinningMethod,
                               bool inSerial=false);
 
 
+/// \overload
+USDSKEL_API
+bool
+UsdSkelSkinFaceVaryingNormals(const TfToken& skinningMethod,
+                              const GfMatrix3d& geomBindTransform,
+                              TfSpan<const GfMatrix3d> jointXforms,
+                              TfSpan<const GfVec2f> influences,
+                              int numInfluencesPerPoint,
+                              TfSpan<const int> faceVertexIndices,
+                              TfSpan<GfVec3f> normals,
+                              bool inSerial=false);
+
+/// \overload
+USDSKEL_API
+bool
+UsdSkelSkinFaceVaryingNormals(const TfToken& skinningMethod,
+                              const GfMatrix3f& geomBindTransform,
+                              TfSpan<const GfMatrix3f> jointXforms,
+                              TfSpan<const GfVec2f> influences,
+                              int numInfluencesPerPoint,
+                              TfSpan<const int> faceVertexIndices,
+                              TfSpan<GfVec3f> normals,
+                              bool inSerial=false);
+
+
 USDSKEL_API
 bool
 UsdSkelSkinNormalsLBS(const GfMatrix3d& geomBindTransform,

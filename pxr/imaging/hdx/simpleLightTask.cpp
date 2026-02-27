@@ -151,10 +151,13 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     }
 
     // Update _maxLights if necessary.
+    bool maxLightsUpdated = false;
     if (renderDelegate->GetRenderSettingsVersion() != _settingsVersion) {
+        maxLightsUpdated = true;
         _maxLights = size_t(
             renderIndex.GetRenderDelegate()->GetRenderSetting<int>(
                 HdStRenderSettingsTokens->maxLights, 16));
+        _lightingShader->SetMaxLights(_maxLights);
 
         // Update dome light textures max resolution.
         _lightingShader->SetDomeLightCubemapTargetMemory(
@@ -222,6 +225,8 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
 
     std::vector<GfVec2i> shadowMapResolutions;
     shadowMapResolutions.reserve(targetCapacity);
+
+    const size_t previousLightCount = _glfSimpleLights.size();
 
     // Loop over the lightTypes vector so we always add the built-in light  
     // types (dome and simple lights) first. This way if the scene has more  
@@ -325,11 +330,14 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     TF_VERIFY(_glfSimpleLights.size() <= _maxLights);
 
     const bool useLighting = !_glfSimpleLights.empty();
-    if (useLighting != lightingContext->GetUseLighting()) {
+    const bool lightCountChanged = _glfSimpleLights.size()
+        != previousLightCount;
+    if (useLighting != lightingContext->GetUseLighting()
+        || lightCountChanged) {
         _rebuildLightingBufferSources = true;
     }
 
-    if (_glfSimpleLights != lightingContext->GetLights()) {
+    if (_glfSimpleLights != lightingContext->GetLights() || maxLightsUpdated) {
         _rebuildLightAndShadowBufferSources = true;
     }
 
@@ -411,6 +419,9 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
             HdxSimpleLightTaskTokens->useLighting,
             HdTupleType{HdTypeBool, 1});
         bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->lightCount,
+            HdTupleType{HdTypeUInt32, 1});
+        bufferSpecs.emplace_back(
             HdxSimpleLightTaskTokens->useColorMaterialDiffuse,
             HdTupleType{HdTypeBool, 1});
 
@@ -431,6 +442,9 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
             std::make_shared<HdVtBufferSource>(
                 HdxSimpleLightTaskTokens->useLighting,
                 VtValue(lightingContext->GetUseLighting())),
+            std::make_shared<HdVtBufferSource>(
+                HdxSimpleLightTaskTokens->lightCount,
+                VtValue((uint32_t)lightingContext->GetNumLightsUsed())),
             std::make_shared<HdVtBufferSource>(
                 HdxSimpleLightTaskTokens->useColorMaterialDiffuse,
                 VtValue(lightingContext->GetUseColorMaterialDiffuse()))
@@ -497,7 +511,7 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
 
     _lightingShader->RemoveBufferBinding(HdxSimpleLightTaskTokens->lightSource);
 
-    if (numLights != 0) {
+    if (lightingContext->GetUseLighting()) {
         _lightingShader->AddBufferBinding(
             HdStBindingRequest(HdStBinding::UBO, 
                                HdxSimpleLightTaskTokens->lightSource,
@@ -532,7 +546,7 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
     
     _lightingShader->RemoveBufferBinding(HdxSimpleLightTaskTokens->shadow);
     
-    if (numShadows != 0) {
+    if (lightingContext->GetUseShadows()) {
         _lightingShader->AddBufferBinding(
             HdStBindingRequest(HdStBinding::UBO, HdxSimpleLightTaskTokens->shadow,
                                _shadowsBar, /*interleaved=*/true, 
@@ -543,25 +557,29 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
     // Add light and shadow buffer sources
     if (_rebuildLightAndShadowBufferSources) {
         // Light sources
-        VtVec4fArray position(numLights);
-        VtVec4fArray ambient(numLights);
-        VtVec4fArray diffuse(numLights);
-        VtVec4fArray specular(numLights);
-        VtVec3fArray spotDirection(numLights);
-        VtFloatArray spotCutoff(numLights);
-        VtFloatArray spotFalloff(numLights);
-        VtVec3fArray attenuation(numLights);
-        VtMatrix4fArray worldToLightTransform(numLights);
-        VtIntArray shadowIndexStart(numLights);
-        VtIntArray shadowIndexEnd(numLights);
-        VtBoolArray hasShadow(numLights);
-        VtBoolArray isIndirectLight(numLights);
+        VtVec4fArray position(_maxLights, GfVec4f(0, 0, 0, 1));
+        VtVec4fArray ambient(_maxLights, GfVec4f(0));
+        VtVec4fArray diffuse(_maxLights, GfVec4f(0));
+        VtVec4fArray specular(_maxLights, GfVec4f(0));
+        VtVec3fArray spotDirection(_maxLights, GfVec3f(0, 0, 1));
+        VtFloatArray spotCutoff(_maxLights, 0.0);
+        VtFloatArray spotFalloff(_maxLights, 0.0);
+        VtVec3fArray attenuation(_maxLights, GfVec3f(0));
+        VtMatrix4fArray worldToLightTransform(_maxLights, GfMatrix4f(1));
+        VtIntArray shadowIndexStart(_maxLights, 0);
+        VtIntArray shadowIndexEnd(_maxLights, 0);
+        VtBoolArray hasShadow(_maxLights, false);
+        VtBoolArray isIndirectLight(_maxLights, false);
 
         // Shadows
-        VtMatrix4fArray worldToShadowMatrix(numShadows);
-        VtMatrix4fArray shadowToWorldMatrix(numShadows);
-        VtFloatArray blur(numShadows);
-        VtFloatArray bias(numShadows);
+        VtMatrix4fArray worldToShadowMatrix(
+            HdStSimpleLightingShader::GetMaxShadows(), GfMatrix4f());
+        VtMatrix4fArray shadowToWorldMatrix(
+            HdStSimpleLightingShader::GetMaxShadows(), GfMatrix4f());
+        VtFloatArray blur(
+            HdStSimpleLightingShader::GetMaxShadows(), 0.0);
+        VtFloatArray bias(
+            HdStSimpleLightingShader::GetMaxShadows(), 0.0);
         
         GlfSimpleLightVector const & lights = lightingContext->GetLights();
         GlfSimpleShadowArrayRefPtr const & shadows = 

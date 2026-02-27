@@ -45,8 +45,9 @@ class GfQuatd
     typedef double ScalarType;
     typedef GfVec3d ImaginaryType;
 
-    /// Default constructor leaves the quaternion undefined.
-    GfQuatd() {}
+    /// GfQuatd value-initializes to zero and performs no default
+    /// initialization, like float or double.
+    GfQuatd() = default;
 
     /// Initialize the real coefficient to \p realVal and the imaginary
     /// coefficients to zero.

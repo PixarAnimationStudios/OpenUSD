@@ -278,6 +278,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (nurbsPatch)                                \
     (basisCurves)                               \
     (nurbsCurves)                               \
+    (particleField)                             \
     (plane)                                     \
     (points)                                    \
     (sphere)                                    \
@@ -446,7 +447,9 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     /* thread limit settings */                       \
     (threadLimit)                                     \
     /* interactive vs offline */                      \
-    (enableInteractive)
+    (enableInteractive)                               \
+    /* To pass HdRendererCreateArgs to HdRendererPlugin::CreateDelegate */ \
+    (rendererCreateArgs)
 
 #define HD_RENDER_SETTINGS_PRIM_TOKENS                \
     (active)                                          \

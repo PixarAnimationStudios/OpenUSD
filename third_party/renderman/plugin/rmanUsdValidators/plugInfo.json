@@ -4,9 +4,15 @@
             "Info": {
                 "Validators": {
                     "PxrRenderTerminalsAPIRelationships": {
-                        "doc": "Ensures that RenderSettings prims with PxrRenderTerminalsAPI do not define connection attributes for terminal displayFilters, sampleFilters, and integrators. Relationships should be used instead.",
+                        "doc": "Ensures that RenderSettings prims with PxrRenderTerminalsAPI do not define outputs connection attributes for terminal displayFilters, sampleFilters, and integrators. Relationships should be used instead.",
                         "schemaTypes": [
                              "UsdRiPxrRenderTerminalsAPI"
+                         ]
+                    },
+                    "PxrCameraProjectionAPIRelationships": {
+                        "doc": "Ensures that Camera prims with PxrCameraProjectionAPI do not define outputs connection attributes for projection. Relationships should be used instead.",
+                        "schemaTypes": [
+                             "UsdRiPxrCameraProjectionAPI"
                          ]
                     },
                     "keywords": [

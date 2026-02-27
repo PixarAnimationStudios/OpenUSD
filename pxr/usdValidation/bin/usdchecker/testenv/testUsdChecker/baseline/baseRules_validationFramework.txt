@@ -1,8 +1,3 @@
-[rmanUsdValidators:PxrRenderTerminalsAPIRelationships]:
-	Doc: Ensures that RenderSettings prims with PxrRenderTerminalsAPI do not define connection attributes for terminal displayFilters, sampleFilters, and integrators. Relationships should be used instead.
-	Keywords: RmanUsdValidators
-	SchemaTypes: UsdRiPxrRenderTerminalsAPI
-	isSuite: False
 [usdGeomValidators:EncapsulationChecker]:
 	Doc: Validates there are no nested Gprims.
 	Keywords: UsdGeomValidators
@@ -104,6 +99,10 @@
 	Doc: Files within all usdz packages within a stage should not be compressed or encrypted, and should be aligned to 64 bytes.
 	Keywords: UsdUtilsValidators, UsdzValidators
 	isSuite: False
+[usdValidation:AttributeTypeMismatch]:
+	Doc: Validator that checks for attribute type mismatch with the schema definition.
+	Keywords: UsdCoreValidators
+	isSuite: False
 [usdValidation:CompositionErrorTest]:
 	Doc: Validator aims at providing all composition errors, which were generated while composing the stage.
 	Keywords: UsdCoreValidators
@@ -112,6 +111,3 @@
 	Doc: Stages that can be consumed as referenceable assets must have a valid 'defaultPrim' specified.
 	Keywords: UsdCoreValidators
 	isSuite: False
-
-Validation Result with no explicit variants set
-Success!

@@ -240,6 +240,12 @@ public:
     USD_API
     bool CanApplyEdits(std::string *whyNot = nullptr) const;
 
+    /// Returns the list of layers that will be edited if ApplyEdits() is called.
+    /// This function can only be called if CanApplyEdits() returns true and 
+    /// will throw a coding error if not.
+    USD_API
+    SdfLayerHandleVector GetLayersToEdit();
+
 private:
 
     // The type of edit that an edit description is describing.

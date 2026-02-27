@@ -11,6 +11,7 @@ import zipfile
 
 from pxr import Sdf, Tf
 
+MAX_ZIPFILE_ENTRY_SIZE = Tf.GetEnvSetting('SDF_MAX_ZIPFILE_ENTRY_SIZE')
 MAX_ZIPFILE_SIZE = Tf.GetEnvSetting('SDF_MAX_ZIPFILE_SIZE')
 
 class TestSdfZipFileLimits(unittest.TestCase):
@@ -24,7 +25,7 @@ class TestSdfZipFileLimits(unittest.TestCase):
             f.write(layer.ExportToString())
 
 
-    def test_addFile(self):
+    def test_maxArchiveSize(self):
         # create test files and verify their sizes are below / above
         # the max archive size as we would expect
         self.createFileWithPrims("0.usda", 0)
@@ -47,18 +48,32 @@ class TestSdfZipFileLimits(unittest.TestCase):
         with Sdf.ZipFileWriter.CreateNew("TooManyFiles.usdz") as zfw:
             zfw.AddFile("1.usda")
 
-        with self.assertRaises(RuntimeError):
-            zfw.AddFile("11.usda")
+            with self.assertRaises(RuntimeError):
+                zfw.AddFile("11.usda")
 
             # prevent context from calling Save and triggering other exceptions
             zfw.Discard()
-
 
         # Failure Case 2: Zipfile exceeds limit when writing central directory
         with self.assertRaises(RuntimeError):
             with Sdf.ZipFileWriter.CreateNew("archiveTooBig.usdz") as zfw:
                 zfw.AddFile("0.usda")
                 zfw.AddFile("1.usda")
+
+    def test_maxEntrySize(self):
+        # Create a test file that is bigger than the maximum entry size
+        self.createFileWithPrims("5.usda", 5)
+        self.assertGreater(os.path.getsize("5.usda"), MAX_ZIPFILE_ENTRY_SIZE)
+
+        # Failure Case: Adding a file whose size will not fit into the entry
+        # header's size field.  Note this value is artificially
+        # limited for this test but normally would be UINT32_MAX
+        with Sdf.ZipFileWriter.CreateNew("FileTooBig.usdz") as zfw:
+            with self.assertRaises(RuntimeError):
+                zfw.AddFile("5.usda")
+
+            # prevent context from calling Save and triggering other exceptions
+            zfw.Discard()
 
 
 if __name__ == "__main__":

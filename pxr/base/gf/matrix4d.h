@@ -75,7 +75,8 @@ public:
     static const size_t numRows = 4;
     static const size_t numColumns = 4;
 
-    /// Default constructor. Leaves the matrix component values undefined.
+    /// GfMatrix4d value-initializes to zero and performs no default
+    /// initialization, like float or double.
     GfMatrix4d() = default;
 
     /// Constructor. Initializes the matrix from 16 independent

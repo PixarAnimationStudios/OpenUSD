@@ -74,4 +74,12 @@ Exec_CycleDetectingTask::_Compile(
     );
 }
 
+void
+Exec_CycleDetectingTask::_Interrupt(Exec_CompilationState &)
+{
+    // Cycle detecting tasks have nothing to contribute to the interrupt state.
+    // An empty implementation must be provided because _Interrupt is a
+    // pure-virtual method.
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

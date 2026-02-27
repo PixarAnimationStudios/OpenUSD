@@ -375,6 +375,17 @@ public:
     QueryTimeSample(const SdfPath& path, double time,
                     SdfAbstractDataValue *optionalValue) const = 0;
 
+    /// If there is a time sample authored at \p time, return its value's
+    /// typeid(), otherwise return typeid(void).
+    ///
+    /// \note The base class provides an implementation in terms of
+    /// QueryTimeSample(path, time, VtValue *), returning VtValue::GetTypeid().
+    /// Consider overriding this member function if not fetching the VtValue
+    /// would be more performant.
+    SDF_API
+    virtual const std::type_info &
+    QueryTimeSampleTypeid(const SdfPath &path, double time) const;
+
     SDF_API
     virtual void
     SetTimeSample(const SdfPath& path, double time, 

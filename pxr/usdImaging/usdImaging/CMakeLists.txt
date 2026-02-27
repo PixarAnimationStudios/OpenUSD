@@ -20,6 +20,7 @@ pxr_library(usdImaging
         usdLux
         usdRender
         usdShade
+        usdSkel
         usdVol
         ar
         TBB::tbb
@@ -61,6 +62,7 @@ pxr_library(usdImaging
         geomXformVectorsSchema
         geomSubsetAdapter
         indexProxy
+        legacyRenderSettingsSceneIndex
         materialParamUtils
         modelSchema
         primvarUtils
@@ -123,6 +125,7 @@ pxr_library(usdImaging
         usdRenderProductSchema
         usdRenderSettingsSchema
         usdRenderVarSchema
+        usdSceneIndexInputArgsSchema
         rectLightAdapter
         renderPassAdapter
         renderProductAdapter
@@ -143,6 +146,7 @@ pxr_library(usdImaging
 
     PRIVATE_CLASSES
         adapterManager
+        dataSourceRelocatingSceneIndex
         drawModeStandin
         instanceProxyPathTranslationSceneIndex
         niInstanceAggregationSceneIndex

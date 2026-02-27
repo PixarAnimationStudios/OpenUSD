@@ -46,8 +46,9 @@ class GfQuath
     typedef GfHalf ScalarType;
     typedef GfVec3h ImaginaryType;
 
-    /// Default constructor leaves the quaternion undefined.
-    GfQuath() {}
+    /// GfQuath value-initializes to zero and performs no default
+    /// initialization, like float or double.
+    GfQuath() = default;
 
     /// Initialize the real coefficient to \p realVal and the imaginary
     /// coefficients to zero.

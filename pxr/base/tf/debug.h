@@ -208,9 +208,25 @@ public:
     }
 
 #if !defined(doxygen)
+    struct _Helper {
+        _Helper() = default;
+        template <class Enum>
+        explicit _Helper(Enum val) : _enumName(Tf_DebugGetEnumName(val)) {}
+        TF_API void Msg(const std::string& msg) const;
+        TF_API void Msg(const char* msg, ...) const ARCH_PRINTF_FUNCTION(2,3);
+    private:
+        char const * const _enumName = "<< no debug code >>";
+    };
+    
     struct Helper {
-        static TF_API void Msg(const std::string& msg);
-        static TF_API void Msg(const char* msg, ...) ARCH_PRINTF_FUNCTION(1,2);
+        template <class A1, class ...Args>
+        static void Msg(char const *fmt, A1 &&a1, Args && ...args) {
+            return _Helper().Msg(
+                fmt, std::forward<A1>(a1), std::forward<Args>(args)...);
+        }
+        static void Msg(const std::string &msg) {
+            return _Helper().Msg(msg);
+        }
     };
 #endif
 
@@ -446,8 +462,9 @@ struct TfDebug::TimedScopeHelper<false> {
 /// \endcode
 ///
 /// \hideinitializer
-#define TF_DEBUG_MSG(enumVal, ...)                                                \
-    if (!TfDebug::IsEnabled(enumVal)) /* empty */ ; else TfDebug::Helper().Msg(__VA_ARGS__)
+#define TF_DEBUG_MSG(enumVal, ...)                                             \
+    if (!TfDebug::IsEnabled(enumVal)) /* empty */ ;                            \
+    else TfDebug::_Helper(enumVal).Msg(__VA_ARGS__)
 
 /// Evaluate and print debugging message \c msg if \c enumVal is enabled for
 /// debugging.
@@ -481,8 +498,9 @@ struct TfDebug::TimedScopeHelper<false> {
 /// \sa TF_DEBUG_MSG()
 ///
 /// \hideinitializer
-#define TF_DEBUG(enumVal)                                               \
-    if (!TfDebug::IsEnabled(enumVal)) /* empty */ ; else TfDebug::Helper()
+#define TF_DEBUG(enumVal)                                                      \
+    if (!TfDebug::IsEnabled(enumVal)) /* empty */ ;                            \
+    else TfDebug::_Helper(enumVal)
 
 /// Evaluate and print diagnostic messages intended for end-users.
 ///

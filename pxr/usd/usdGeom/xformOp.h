@@ -235,7 +235,7 @@ public:
 
     /// Returns the opName as it appears in the xformOpOrder attribute.
     /// 
-    /// This will begin with "!invert!:xformOp:" if it is an inverse xform 
+    /// This will begin with "!invert!xformOp:" if it is an inverse xform 
     /// operation. If it is not an inverse xformOp, it will begin with 
     /// 'xformOp:'.
     /// 

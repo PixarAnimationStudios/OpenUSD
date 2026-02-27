@@ -16,6 +16,7 @@
 
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/errorTransport.h"
+#include "pxr/base/tf/mallocTag.h"
 
 #include <functional>
 #include <type_traits>
@@ -60,9 +61,17 @@ public:
 
     template <class Callable>
     inline void Run(Callable &&c) {
-        _dispatcher.Run(
-            _InvokerTask<typename std::remove_reference<Callable>::type>(
-                std::forward<Callable>(c), &_errors));
+        if (TfMallocTag::IsInitialized()) {
+            _dispatcher.Run(
+                _MallocTagsInvokerTask<
+                typename std::remove_reference<Callable>::type>(
+                    std::forward<Callable>(c), &_errors));
+        }
+        else {
+            _dispatcher.Run(
+                _InvokerTask<typename std::remove_reference<Callable>::type>(
+                    std::forward<Callable>(c), &_errors));
+        }
     }
 
     template <class Callable, class A0, class ... Args>
@@ -102,10 +111,12 @@ private:
     template <class Fn>
     struct _InvokerTask {
         explicit _InvokerTask(Fn &&fn, _ErrorTransports *err) 
-            : _fn(std::move(fn)), _errors(err) {}
+            : _fn(std::move(fn))
+            , _errors(err) {}
 
         explicit _InvokerTask(Fn const &fn, _ErrorTransports *err) 
-            : _fn(fn), _errors(err) {}
+            : _fn(fn)
+            , _errors(err) {}
 
         // Ensure only moves happen, no copies.
         _InvokerTask(_InvokerTask &&other) = default;
@@ -121,6 +132,42 @@ private:
     private:
         Fn _fn;
         _ErrorTransports *_errors;
+    };
+
+    // Function invoker helper that wraps the invocation with an ErrorMark so we
+    // can transmit errors that occur back to the thread that Wait() s for tasks
+    // to complete.  This version also duplicates the caller's malloc tag stack
+    // to the callee's thread.
+    template <class Fn>
+    struct _MallocTagsInvokerTask {
+        explicit _MallocTagsInvokerTask(Fn &&fn, _ErrorTransports *err) 
+            : _fn(std::move(fn))
+            , _errors(err)
+            , _mallocTagStack(TfMallocTag::GetCurrentStackState())
+            {}
+
+        explicit _MallocTagsInvokerTask(Fn const &fn, _ErrorTransports *err) 
+            : _fn(fn)
+            , _errors(err)
+            , _mallocTagStack(TfMallocTag::GetCurrentStackState()) {}
+
+        // Ensure only moves happen, no copies.
+        _MallocTagsInvokerTask(_MallocTagsInvokerTask &&other) = default;
+        _MallocTagsInvokerTask(const _MallocTagsInvokerTask &other) = delete;
+        _MallocTagsInvokerTask &
+        operator=(const _MallocTagsInvokerTask &other) = delete;
+
+        void operator()() const {
+            TfErrorMark m;
+            TfMallocTag::StackOverride ovr(_mallocTagStack);
+            _fn();
+            if (!m.IsClean())
+                Work_Dispatcher::_TransportErrors(m, _errors);
+        }
+    private:
+        Fn _fn;
+        _ErrorTransports *_errors;
+        TfMallocTag::StackState _mallocTagStack;
     };
 
     // Helper function that removes errors from \p m and stores them in a new

@@ -7,6 +7,8 @@
 #ifndef PXR_IMAGING_HD_RENDER_DELEGATE_INFO_H
 #define PXR_IMAGING_HD_RENDER_DELEGATE_INFO_H
 
+#include "pxr/imaging/hd/api.h"
+
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -22,6 +24,12 @@ struct HdRenderDelegateInfo
     TfTokenVector shaderSourceTypes;
     bool isCoordSysSupported;
 };
+
+HD_API
+bool operator==(const HdRenderDelegateInfo &, const HdRenderDelegateInfo &);
+
+HD_API
+bool operator!=(const HdRenderDelegateInfo &, const HdRenderDelegateInfo &);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 #endif

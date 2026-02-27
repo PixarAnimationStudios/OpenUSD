@@ -8,7 +8,10 @@
 #include "pxr/imaging/plugin/hdStorm/rendererPlugin.h"
 
 #include "pxr/imaging/hdSt/renderDelegate.h"
+#include "pxr/imaging/hd/renderDelegateInfo.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/sceneIndexInputArgsSchema.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -57,5 +60,21 @@ HdStormRendererPlugin::IsSupported(
     return support;
 }
 
+HdContainerDataSourceHandle
+HdStormRendererPlugin::GetSceneIndexInputArgs() const
+{
+    static HdContainerDataSourceHandle const result =
+        HdSceneIndexInputArgsSchema::Builder()
+            .SetMotionBlurSupport(
+                HdRetainedTypedSampledDataSource<bool>::New(false))
+            .SetCameraMotionBlurSupport(
+                HdRetainedTypedSampledDataSource<bool>::New(true))
+            .SetLegacyRenderDelegateInfo(
+                HdRetainedTypedSampledDataSource<HdRenderDelegateInfo>::New(
+                    HdStRenderDelegate::GetRenderDelegateInfo()))      
+            .Build();
+
+    return result;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

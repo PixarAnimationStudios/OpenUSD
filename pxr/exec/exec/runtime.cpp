@@ -6,13 +6,18 @@
 //
 #include "pxr/exec/exec/runtime.h"
 
+#include "pxr/exec/exec/typeRegistry.h"
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/exec/ef/maskedSubExecutor.h"
 #include "pxr/exec/ef/pageCacheExecutor.h"
 #include "pxr/exec/ef/pageCacheStorage.h"
+#include "pxr/exec/ef/subExecutor.h"
 #include "pxr/exec/ef/time.h"
 #include "pxr/exec/ef/timeInterval.h"
 #include "pxr/exec/ef/timeInputNode.h"
+#include "pxr/exec/vdf/dataManagerHashTable.h"
 #include "pxr/exec/vdf/dataManagerVector.h"
 #include "pxr/exec/vdf/executorErrorLogger.h"
 #include "pxr/exec/vdf/executorInterface.h"
@@ -27,6 +32,8 @@
 #include "pxr/exec/vdf/schedule.h"
 #include "pxr/exec/vdf/typedVector.h"
 #include "pxr/exec/vdf/types.h"
+
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -162,6 +169,13 @@ Exec_Runtime::ComputeValues(
     const VdfSchedule &schedule,
     const VdfRequest &computeRequest)
 {
+    // If the schedule does not have a network, then we cannot compute anything.
+    // This happens when we compute an ExecRequest that only contains empty
+    // leaf outputs.
+    if (!schedule.GetNetwork()) {
+        return;
+    }
+
     // Make sure that the cache storage is large enough to hold all possible
     // computed values in the network.
     _cacheStorage->Resize(*schedule.GetNetwork());
@@ -181,6 +195,91 @@ Exec_Runtime::ComputeValues(
 
     // Report any errors or warnings surfaced during this executor run.
     _ReportExecutorErrors(errorLogger);
+}
+
+std::unique_ptr<VdfExecutorInterface>
+Exec_Runtime::ComputeWithOverrides(
+    const VdfSchedule &schedule,
+    const VdfRequest &computeRequest,
+    const VdfMaskedOutputVector &overriddenOutputs,
+    const std::vector<VtValue> &overriddenValues)
+{
+    TRACE_FUNCTION();
+
+    // This function requires that each overridden output has a corresponding
+    // override value.
+    if (!TF_VERIFY(overriddenOutputs.size() == overriddenValues.size())) {
+        return nullptr;
+    }
+
+    // Create a masked subexecutor that will be used for every call to
+    // ComputeWithOverrides. This dataless executor maintains a mask of outputs
+    // that are invalid (due to the overrides) without affecting the main
+    // executor. This is a parent of the temporary executor created for only
+    // this call to ComputeWithOverrides, and since that executor is returned to
+    // the caller, we persist the parent executor so that its lifetime extends
+    // beyond this function call.
+    if (!_overridesExecutor) {
+        _overridesExecutor =
+            std::make_unique<EfMaskedSubExecutor>(_executor.get());
+    }
+    else {
+        _overridesExecutor->ClearData();
+    }
+
+    // Create a temporary executor only used for this call to
+    // ComputeWithOverrides. Overridden values, and computation results that
+    // depend on overridden values are stored in this subexecutor, as to avoid
+    // overwriting values in the main executor. This subexecutor will be
+    // returned to the caller, so that computed values can be extracted. Use a
+    // parallel executor engine if paralellism is enabled, but only if the
+    // schedule is sufficiently large. Small schedules are evaluated more
+    // efficiently on a single-threaded executor engine.
+    std::unique_ptr<VdfExecutorInterface> subExecutor;
+    if (VdfIsParallelEvaluationEnabled() && !schedule.IsSmallSchedule()) {
+        using ExecutorType = EfSubExecutor<
+            VdfParallelExecutorEngine, VdfParallelDataManagerVector>;
+        subExecutor = std::make_unique<ExecutorType>(_overridesExecutor.get());
+    }
+    else {
+        using ExecutorType = EfSubExecutor<
+            VdfPullBasedExecutorEngine, VdfDataManagerHashTable>;
+        subExecutor = std::make_unique<ExecutorType>(_overridesExecutor.get());
+    }
+
+    // Apply the overridden values.
+    for (size_t i = 0; i < overriddenOutputs.size(); ++i) {
+        const VdfMaskedOutput &maskedOutput = overriddenOutputs[i];
+        if (!TF_VERIFY(maskedOutput)) {
+            continue;
+        }
+
+        // Set the override value in the subexecutor.
+        subExecutor->SetOutputValue(
+            *maskedOutput.GetOutput(),
+            ExecTypeRegistry::GetInstance().CreateVector(overriddenValues[i]),
+            maskedOutput.GetMask());
+    }
+
+    // Invalidate all overridden outputs, and outputs dependent on overridden
+    // outputs. Note that invalidation is handled by the masked overrides
+    // executor, not the subexecutor.
+    //
+    // TODO: Currently, this may invalidate outputs that are not present in the
+    // schedule that we are about to compute. For example, some of the overrides
+    // may have no bearing on the request; or an overridden output may feed into
+    // a large subnetwork of nodes that the request does not care about. In the
+    // future, we can use a different executor type that knows to only
+    // invalidate outputs belonging to a specific schedule, so that we avoid
+    // the cost of invalidating outputs that are irrelevant to the request.
+    _overridesExecutor->InvalidateValues(overriddenOutputs);
+
+    // Compute the requested values on the subexecutor.
+    VdfExecutorErrorLogger errorLogger;
+    subExecutor->Run(schedule, computeRequest, &errorLogger);
+    _ReportExecutorErrors(errorLogger);
+
+    return subExecutor;
 }
 
 void

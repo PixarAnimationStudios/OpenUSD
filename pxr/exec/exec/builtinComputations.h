@@ -14,9 +14,9 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/token.h"
 
-#include <vector>
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+class Exec_BuiltinComputationRegistry;
 
 /// Tokens representing the built-in computations available on various provider
 /// types.
@@ -31,10 +31,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// These computation tokens are publicly accessible by dereferencing the
 /// `ExecBuiltinComputationTokens` static data.
 ///
-struct Exec_BuiltinComputations
+class Exec_BuiltinComputationTokens
 {
+public:
     EXEC_API
-    Exec_BuiltinComputations();
+    Exec_BuiltinComputationTokens();
 
     /// \defgroup group_Mf_ExecBuiltinComputations_Stage Stage Computations
     /// 
@@ -100,17 +101,13 @@ struct Exec_BuiltinComputations
 
     /// @} // Attribute computations
 
-
-    /// Returns all builtin computation tokens.
-    const std::vector<TfToken> &GetComputationTokens();
-
-    /// The prefix that begins all builtin computation names.
-    static constexpr char builtinComputationNamePrefix[] = "__";
+private:
+    Exec_BuiltinComputationTokens(Exec_BuiltinComputationRegistry &registry);
 };
 
 // Used to publicly access builtin computation tokens.
 EXEC_API
-extern TfStaticData<Exec_BuiltinComputations> ExecBuiltinComputations;
+extern TfStaticData<Exec_BuiltinComputationTokens> ExecBuiltinComputations;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

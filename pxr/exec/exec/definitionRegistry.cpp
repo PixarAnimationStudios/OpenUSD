@@ -7,12 +7,12 @@
 #include "pxr/exec/exec/definitionRegistry.h"
 
 #include "pxr/exec/exec/builtinAttributeComputations.h"
+#include "pxr/exec/exec/builtinComputationRegistry.h"
 #include "pxr/exec/exec/builtinComputations.h"
 #include "pxr/exec/exec/builtinObjectComputations.h"
 #include "pxr/exec/exec/builtinStageComputations.h"
 #include "pxr/exec/exec/pluginData.h"
 #include "pxr/exec/exec/privateBuiltinComputations.h"
-#include "pxr/exec/exec/registrationBarrier.h"
 #include "pxr/exec/exec/typeRegistry.h"
 #include "pxr/exec/exec/types.h"
 
@@ -51,7 +51,6 @@ std::vector<TfType> _GetFullyExpandedSchemaTypeVector(
 TF_INSTANTIATE_SINGLETON(Exec_DefinitionRegistry);
 
 Exec_DefinitionRegistry::Exec_DefinitionRegistry()
-    : _registrationBarrier(std::make_unique<Exec_RegistrationBarrier>())
 {
     TRACE_FUNCTION();
 
@@ -80,10 +79,6 @@ Exec_DefinitionRegistry::Exec_DefinitionRegistry()
     // than the definition registry type, so Exec_DefinitionRegistry can remain
     // private.
     TfRegistryManager::GetInstance().SubscribeTo<ExecDefinitionRegistryTag>();
-
-    // Callers of Exec_DefinitionRegistry::GetInstance() can now safely return
-    // a fully-constructed registry.
-    _registrationBarrier->SetFullyConstructed();
 }
 
 // This must be defined in the cpp file, or we get undefined symbols when
@@ -92,10 +87,7 @@ Exec_DefinitionRegistry::Exec_DefinitionRegistry()
 const Exec_DefinitionRegistry&
 Exec_DefinitionRegistry::GetInstance()
 {
-    Exec_DefinitionRegistry &instance =
-        TfSingleton<Exec_DefinitionRegistry>::GetInstance();
-    instance._registrationBarrier->WaitUntilFullyConstructed();
-    return instance;
+    return TfSingleton<Exec_DefinitionRegistry>::GetInstance();
 }
 
 Exec_DefinitionRegistry&
@@ -113,14 +105,12 @@ Exec_DefinitionRegistry::GetComputationDefinition(
 {
     TRACE_FUNCTION();
 
-    const bool hasBuiltinPrefix =
-        TfStringStartsWith(
-            computationName.GetString(),
-            Exec_BuiltinComputations::builtinComputationNamePrefix);
+    const bool isBuiltinReservedName =
+        Exec_BuiltinComputationRegistry::IsReservedName(computationName);
 
     // If the provider is the stage, we only support builtin computations.
     if (providerPrim.IsPseudoRoot()) {
-        if (!hasBuiltinPrefix) {
+        if (!isBuiltinReservedName) {
             return nullptr;
         }
 
@@ -133,7 +123,7 @@ Exec_DefinitionRegistry::GetComputationDefinition(
         return nullptr;
     }
 
-    if (hasBuiltinPrefix) {
+    if (isBuiltinReservedName) {
         // Look for a builtin computation.
         const auto builtinIt =
             _builtinPrimComputationDefinitions.find(computationName);
@@ -290,12 +280,10 @@ Exec_DefinitionRegistry::GetComputationDefinition(
 {
     TRACE_FUNCTION();
 
-    const bool hasBuiltinPrefix =
-        TfStringStartsWith(
-            computationName.GetString(),
-            Exec_BuiltinComputations::builtinComputationNamePrefix);
+    const bool isBuiltinReservedName =
+        Exec_BuiltinComputationRegistry::IsReservedName(computationName);
 
-    if (hasBuiltinPrefix) {
+    if (isBuiltinReservedName) {
         // Look for a builtin computation.
         const auto builtinIt =
             _builtinAttributeComputationDefinitions.find(computationName);
@@ -512,15 +500,17 @@ Exec_DefinitionRegistry::_ValidateComputationRegistration(
         return false;
     }
 
-    if (TfStringStartsWith(
-            computationName.GetString(),
-            Exec_BuiltinComputations::builtinComputationNamePrefix)) {
-        TF_CODING_ERROR(
-            "Attempt to register computation '%s' with a name that uses the "
-            "prefix '%s', which is reserved for builtin computations.",
-            computationName.GetText(),
-            Exec_BuiltinComputations::builtinComputationNamePrefix);
-        return false;
+    if (Exec_BuiltinComputationRegistry::IsReservedName(computationName)) {
+        const auto *traits = Exec_BuiltinComputationRegistry::GetInstance()
+            .GetTraits(computationName);
+        if (!traits || !traits->IsUserDefinable()) {
+            TF_CODING_ERROR(
+                "Attempt to register computation '%s' with a name that uses "
+                "the prefix '%s', which is reserved for builtin computations.",
+                computationName.GetText(),
+                Exec_BuiltinComputationRegistry::GetReservedNamePrefix());
+            return false;
+        }
     }
 
     return true;
@@ -656,9 +646,7 @@ Exec_DefinitionRegistry::_RegisterBuiltinStageComputation(
     std::unique_ptr<Exec_ComputationDefinition> &&definition)
 {
     if (!TF_VERIFY(
-            TfStringStartsWith(
-                computationName.GetString(),
-                Exec_BuiltinComputations::builtinComputationNamePrefix))) {
+            Exec_BuiltinComputationRegistry::IsReservedName(computationName))) {
         return;
     }
 
@@ -681,9 +669,7 @@ Exec_DefinitionRegistry::_RegisterBuiltinPrimComputation(
     std::unique_ptr<Exec_ComputationDefinition> &&definition)
 {
     if (!TF_VERIFY(
-            TfStringStartsWith(
-                computationName.GetString(),
-                Exec_BuiltinComputations::builtinComputationNamePrefix))) {
+            Exec_BuiltinComputationRegistry::IsReservedName(computationName))) {
         return;
     }
 
@@ -706,9 +692,7 @@ Exec_DefinitionRegistry::_RegisterBuiltinAttributeComputation(
     std::unique_ptr<Exec_ComputationDefinition> &&definition)
 {
     if (!TF_VERIFY(
-            TfStringStartsWith(
-                computationName.GetString(),
-                Exec_BuiltinComputations::builtinComputationNamePrefix))) {
+            Exec_BuiltinComputationRegistry::IsReservedName(computationName))) {
         return;
     }
 
@@ -764,8 +748,8 @@ Exec_DefinitionRegistry::_RegisterBuiltinComputations()
               _builtinPrimComputationDefinitions.size() +
               _builtinAttributeComputationDefinitions.size() -
               numObjectComputations ==
-              ExecBuiltinComputations->GetComputationTokens().size() +
-              Exec_PrivateBuiltinComputations->GetComputationTokens().size());
+              Exec_BuiltinComputationRegistry::GetInstance()
+                .GetNumComputationsWithDefinitions());
 }
 
 void
@@ -843,7 +827,11 @@ std::vector<TfType> _GetFullyExpandedSchemaTypeVector(
     const TfTokenVector &appliedSchemas)
 {
     std::vector<TfType> schemaTypes;
-    typedSchema.GetAllAncestorTypes(&schemaTypes);
+
+    // The typed schema may be unknown if the prim was declared without a type.
+    if (!typedSchema.IsUnknown()) {
+        typedSchema.GetAllAncestorTypes(&schemaTypes);
+    }
 
     schemaTypes.reserve(schemaTypes.size() + appliedSchemas.size());
     for (const TfToken &schema : appliedSchemas) {

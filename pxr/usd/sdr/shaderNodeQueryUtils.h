@@ -8,6 +8,8 @@
 #ifndef PXR_USD_SDR_SHADER_NODE_QUERY_UTILS_H
 #define PXR_USD_SDR_SHADER_NODE_QUERY_UTILS_H
 
+/// \file sdr/shaderNodeQueryUtils.h
+
 #include "pxr/pxr.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/usd/sdr/api.h"
@@ -21,17 +23,21 @@ namespace SdrShaderNodeQueryUtils {
 ///
 /// For example, if a query result contains:
 /// - values
-///     ["context1", "id1"]
-///     ["context1", "id2"]
+///     `["context1", "id1"]`
+///     `["context1", "id2"]`
 /// - one shader node corresponding to the first value row
 /// - two shader nodes corresponding to the second value row
-/// the grouped result will be a VtDictionary of the form
+///
+/// The grouped result will be a VtDictionary of the form
+/// \code
 ///     {
 ///       "context1": {
 ///           "id1": [<SdrShaderNodeConstPtr>]
 ///           "id2": [<SdrShaderNodeConstPtr>, <SdrShaderNodeConstPtr>]
 ///        }
 ///     }
+/// \endcode
+///
 /// where the SdrShaderNodeConstPtr container is a VtValue holding
 /// std::vector<SdrShaderNodeConstPtr> and is sorted alphabetically by
 /// node identifier, then sourceType.
@@ -41,9 +47,16 @@ namespace SdrShaderNodeQueryUtils {
 /// Note that this utility doesn't help collapse empty values, but will
 /// rather preserve empty values as keys. For example, a query result
 /// containing values from a single node might have values:
+///
+/// \code
 ///     [["a", "", "b"]]
+/// \endcode
+///
 /// For this above example, this function would return
+///
+/// \code
 ///     {"a": {"": {"b": [<SdrShaderNodeConstPtr>] }}}
+/// \endcode
 ///
 /// Note that innermost nodes are always contained in a list structure.
 ///

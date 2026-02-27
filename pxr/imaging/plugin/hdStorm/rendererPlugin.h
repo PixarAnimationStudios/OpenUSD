@@ -12,7 +12,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdStormRendererPlugin final : public HdRendererPlugin {
+class HdStormRendererPlugin final : public HdRendererPlugin
+{
 public:
     HdStormRendererPlugin()          = default;
     virtual ~HdStormRendererPlugin() = default;
@@ -28,6 +29,8 @@ public:
         HdRendererCreateArgs const &rendererCreateArgs,
         std::string *reasonWhyNot = nullptr) const override;
 
+    HdContainerDataSourceHandle GetSceneIndexInputArgs() const override;
+    
 private:
     HdStormRendererPlugin(const HdStormRendererPlugin &)             = delete;
     HdStormRendererPlugin &operator =(const HdStormRendererPlugin &) = delete;

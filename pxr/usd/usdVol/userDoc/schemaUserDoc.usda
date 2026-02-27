@@ -30,7 +30,7 @@ Volume inherits from GPrim and inherits GPrim and Imageable schema properties,
 so volumes are transformable, renderable, can have a material binding, etc.
 
 Volume also contains any number of volumetric fields, specified via 
-relationships to FieldBase-derived primitives using a namespace prefix of 
+relationships to VolumeFieldBase-derived primitives using a namespace prefix of 
 "field". The relationship names, such as "density", are used by the renderer to 
 associate individual fields with the named input parameters on a volume shader.
 
@@ -64,46 +64,50 @@ Volumes.
 {
 }
 
-over "FieldBase" (
+over "VolumeFieldBase" (
     customData = {
         string userDocBrief = """The base schema class for volume field primitives."""
-        string userDoc = """FieldBase is an abstract schema that acts as the
+        string userDoc = """VolumeFieldBase is an abstract schema that acts as the
 base class for all UsdVol field schemas. If you need to extend UsdVol with your
 own custom Field schemas, your Field schemas should directly or indirectly
-inherit from FieldBase.
-
-```{admonition} Don't Create FieldBase Prims Directly
-:class: note
-
-As FieldBase is an abstract schema, in practice you will most likely use one
-of the various derived field schemas when creating new field prims, such as 
-OpenVDBAsset or Field3DAsset.
-```
+inherit from VolumeFieldBase.
 """
     }    
 )
 {
 }
 
-over "FieldAsset" (
+over "FieldBase" (
+    customData = {
+        string userDocBrief = """This schema is deprecated and VolumeFieldBase 
+should be used instead.""" 
+        string userDoc = """This schema is deprecated, and VolumeFieldBase 
+should be used instead. See {ref}`VolumeFieldBase` for more details.
+"""
+    }
+)
+{
+}
+
+over "VolumeFieldAsset" (
     customData = {
         string userDocBrief = """The base schema class for volume field 
 primitives defined by an external file."""
-        string userDoc = """FieldAsset is an abstract schema (that inherits
-from {ref}`FieldBase`) that represents a volumetric field
+        string userDoc = """VolumeFieldAsset is an abstract schema (that 
+inherits from {ref}`VolumeFieldBase`) that represents a volumetric field
 where the volumetric data is stored outside the layer, e.g. in a file asset.
 It is used as a base class for schemas that reference specific volume data
 asset types, such as OpenVDB data. 
 
 If you need to extend UsdVol with your own custom file-based field schemas, 
-your custom schemas should inherit from FieldAsset.
+your custom schemas should inherit from VolumeFieldAsset.
 
-```{admonition} Create Prims Using FieldAsset-derived Schemas
+```{admonition} Create Prims Using VolumeFieldAsset-derived Schemas
 :class: note
 
-Like FieldBase, FieldAsset is an abstract schema. In practice you will most
-likely create prims using one of the field schemas that inherit from FieldAsset,
-such as OpenVDBAsset or Field3DAsset.
+Like VolumeFieldBase, VolumeFieldAsset is an abstract schema. In practice you 
+will most likely create prims using one of the field schemas that inherit from 
+VolumeFieldAsset, such as OpenVDBAsset or Field3DAsset.
 ```
 """
     }
@@ -114,10 +118,10 @@ such as OpenVDBAsset or Field3DAsset.
             string userDocBrief = """An asset path attribute that points to a file on disk."""
             string userDoc = """An asset path attribute that points to a file on disk.
 
-The asset pointed to by filePath must be a file type that the FieldAsset-derived
-schema supports. For example, for OpenVDBAsset, the file type must be an 
-OpenVDB (.vdb) file. For Field3DAsset, the file type must be a Field3D (.f3d)
-file.
+The asset pointed to by filePath must be a file type that the 
+VolumeFieldAsset-derived schema supports. For example, for OpenVDBAsset, the 
+file type must be an OpenVDB (.vdb) file. For Field3DAsset, the file type must 
+be a Field3D (.f3d) file.
 
 This attribute's value can be animated over time, as most
 volume asset formats represent just a single timeSample of
@@ -134,13 +138,13 @@ to refer to animated volumetric data.
             string userDocBrief = """Name of an individual field within the file 
 specified by the filePath attribute."""
             string userDoc = """Represents the name of an individual field within
-a FieldAsset asset file. 
+a VolumeFieldAsset asset file. 
 
-A FieldAsset file asset may contain multiple fields in a single asset file. This 
-attribute specifies the name of field **within** the asset file. For example, an 
-OpenVDB file asset might have multiple named Grids, such as "density", 
-"temperature", etc. `fieldName` would specify one of the named Grids in the 
-OpenVDB file asset.
+A VolumeFieldAsset file asset may contain multiple fields in a single asset 
+file. This attribute specifies the name of field **within** the asset file. For 
+example, an OpenVDB file asset might have multiple named Grids, such as 
+"density", "temperature", etc. `fieldName` would specify one of the named Grids 
+in the OpenVDB file asset.
 
 Note that a Volume also provides a way to specify the "name" for a field, via 
 the field relationship. This name is not associated with asset data and is used 
@@ -154,8 +158,8 @@ relationship name differs from `fieldName`.
         customData = {
             string userDocBrief = """Optional attribute that stores an index used 
 to disambiguate between fields with the same name."""
-            string userDoc = """The index of a field within a FieldAsset asset
-file. This attribute is optional.
+            string userDoc = """The index of a field within a VolumeFieldAsset 
+asset file. This attribute is optional.
 
 An asset file can contain multiple fields with the same name. This optional 
 attribute is an index used to disambiguate between multiple fields with the same 
@@ -193,6 +197,18 @@ include `None`, `Point`, `Normal`, `Vector`, and `Color`.
     )
 }
  
+over FieldAsset "FieldAsset" (
+    customData = {
+        string userDocBrief = """This schema is deprecated and VolumeFieldAsset 
+should be used instead.""" 
+        string userDoc = """This schema is deprecated, and VolumeFieldAsset 
+should be used instead. See {ref}`VolumeFieldAsset` for more details.
+"""
+    }
+)
+{
+}    
+
 over Field3DAsset "Field3DAsset" (
     customData = {
         string userDocBrief = """Field3D field primitive."""
@@ -268,8 +284,8 @@ def OpenVDBAsset "densityVDB"
 
 ```
 
-The FieldAsset `filePath` attribute must specify a file in the OpenVDB (.vdb) 
-format on disk.
+The `filePath` attribute must specify a file in the OpenVDB (.vdb) format on 
+disk.
 """
     }
 )
@@ -300,3 +316,513 @@ This is a mapping to OpenVDB's openvdb::GridClass where the values are
     )
 }
 
+over ParticleField "ParticleField" (
+    customData = {
+        string userDocBrief = """The base schema to describe different types
+of concrete ParticleField implementations, such as 3D Gaussian Splats.""" 
+        string userDoc = """ParticleField is the base schema for describing 
+different types of concrete ParticleField implementations, such as, but 
+not limited to, 3D Gaussian Splats. 
+
+If you need to extend UsdVol with your own particle field schemas, your custom 
+schemas should inherit from ParticleField.
+
+ParticleField is a concrete base schema. You can create ParticleField prims for 
+prototyping, manually applying necessary schemas to it as needed, but in 
+practice you'll want to instantiate derived types, such as 
+ParticleField3DGaussianSplat, which provide for easier validation and 
+renderer-adoption.
+
+All ParticleField-derived schemas are required to provide the following 
+attributes, but are free to provide them in any form.
+
+- Position: the local space position of each particle in the field.
+- Kernel: the kernel that is instantiated at each particle.
+- Radiance: the visual appearance of the particle field.
+
+Other optional attributes that may control the kernel instance are, but are not
+limited to:
+
+- Orientation: the orientation for the kernel attached to the particle,
+necessary if the kernel isn't rotationally symmetric.
+- Scale: the size of the kernel attached to the particle, in three
+dimensions.
+- Opacity: the opacity, or weight, of the kernel attached to the
+particle.
+
+UsdVol provides base applied schemas (and derived schemas) that represent these 
+attributes. The base applied schemas, such as ParticleFieldPositionBaseAPI 
+are provided to allow for robust validation of ParticleFields.
+
+See {ref}`usdVol_working_with_particlefields` for additional best practices when 
+working with ParticleFields.
+"""
+    }
+)
+{
+}
+
+over "ParticleFieldPositionBaseAPI" (
+    customData = {
+        string userDocBrief = """A base schema for ParticleField position data.""" 
+        string userDoc = """Defines a base applied schema for ParticleField
+position data. 
+
+The number of positions provided is also used to determine the number of  
+particles in a ParticleField. If no position data is present, then the 
+ParticleField contains no particles. Any other per-particle data, such as 
+scale or orientation, is adjusted to match the number of positions -- 
+truncated if more per-particle data is provided, or discarded if the 
+per-particle data has fewer entries than the number of positions.
+For other per-particle data fields, if no data is provided, or it is discarded 
+then its default value will be used.
+
+This is a base schema that ParticleField characteristics schemas typically will
+have as a built-in applied schema. This allows validation to verify that an 
+applied schema that defines position is always present for a ParticleField.
+"""
+    }
+)
+{
+}
+
+over "ParticleFieldPositionAttributeAPI" (
+    customData = {
+        string userDocBrief = """A ParticleField related applied schema that 
+provides attributes to define the positions of particles.""" 
+        string userDoc = """Defines an applied schema for ParticleField
+position data. 
+
+Attributes are provided in both `float` and `half` types for 
+easy data footprint affordance. Data consumers should prefer the
+`float` version if available.
+
+The size of the positions attribute that is being used defines the
+number of particles in the field. If the positions attribute is unauthored or 
+resolves to an an empty array, then the ParticleField has no particles.
+
+This applied schema reflects {ref}`ParticleFieldPositionBaseAPI`
+so validation can verify position data is present for a ParticleField.
+"""
+    }
+)
+{
+    point3f[] positions (
+        customData = {
+            string userDocBrief = """Defines the position for each particle in
+local space."""
+            string userDoc = """Defines the position for each particle in
+local space, in `float` precision. This attribute also determines the number of 
+particles in the ParticleField.
+"""
+        }
+    )
+    point3h[] positionsh (
+        customData = {
+            string userDocBrief = """Defines the position for each particle in
+local space."""
+            string userDoc = """Defines the position for each particle in
+local space, in `half` precision. If the `float` version (positions) is defined,
+that version should be preferred. This attribute also 
+determines the number of particles in the ParticleField.
+"""
+        }
+    )
+}
+
+over "ParticleFieldOrientationAttributeAPI" (
+    customData = {
+        string userDocBrief = """A ParticleField related applied schema that 
+provides attributes to define the orientation of particles.""" 
+        string userDoc = """Defines an applied schema for ParticleField
+orientation data. 
+
+Attributes are provided in both `float` and `half` types for 
+easy data footprint affordance. Data consumers should prefer the
+`float` version if available.
+
+The length of this attribute is expected to match the length of
+any provided position data (via any ParticleFieldPositionBaseAPI derived
+schema). If it is too long it will be truncated to the number of particles 
+defined by the position data. If it is too short it will be ignored.
+"""
+    }
+)
+{
+    quatf[] orientations (
+        customData = {
+            string userDocBrief = """Defines the quaternion orientation for each 
+particle."""
+            string userDoc = """Defines the quaternion orientation for each 
+particle, in `float` precision. The length of this attribute is expected to 
+match the length of any provided position data for the ParticleField. If it is 
+too long it will be truncated to the number of particles defined by the position 
+data. If it is too short it will be ignored.
+"""
+        }
+    )
+    quath[] orientationsh (
+        customData = {
+            string userDocBrief = """Defines the quaternion orientation for each 
+particle."""
+            string userDoc = """Defines the quaternion orientation for each 
+particle, in `half` precision. If the `float` version (orientations) is defined,
+that version should be preferred. The length of this attribute 
+is expected to match the length of any provided position data for the 
+ParticleField. If it is too long it will be truncated to the number of particles 
+defined by the position data. If it is too short it will be ignored.
+"""
+        }
+    )
+}
+
+over "ParticleFieldScaleAttributeAPI" (
+    customData = {
+        string userDocBrief = """A ParticleField related applied schema that 
+provides attributes to define the linear scale factor applied to particles.""" 
+        string userDoc = """Defines an applied schema for ParticleField
+scale factor data. 
+
+Scale values are linear scales, in line with scales provided elsewhere in 
+OpenUSD, and not specified in log-format sometimes seen in PLY files associated 
+with Gaussian splats.
+
+Attributes are provided in both `float` and `half` types for 
+easy data footprint affordance. Data consumers should prefer the
+`float` version if available.
+
+The length of this attribute is expected to match the length of
+any provided position data (via any ParticleFieldPositionBaseAPI derived
+schema). If it is too long it will be truncated to the number of particles 
+defined by the position data. If it is too short it will be ignored.
+"""
+    }    
+)
+{
+    float3[] scales (
+        customData = {
+            string userDocBrief = """Affine linear scale factor applied to the 
+kernel that is instantiated at each particle."""
+            string userDoc = """Defines the affine linear scale factor applied 
+to the kernel that is instantiated at each particle, in `float` precision.
+The length of this attribute is expected to match the length of any provided 
+position data for the ParticleField. If it is too long it will be truncated to 
+the number of particles defined by the position data. If it is too short it will 
+be ignored.
+"""
+        }        
+    )
+    half3[] scalesh (
+        customData = {
+            string userDocBrief = """Affine linear scale factor applied to the 
+kernel that is instantiated at each particle."""
+            string userDoc = """Defines the affine linear scale factor applied 
+to the kernel that is instantiated at each particle, in `half` precision. If 
+the `float` version (scales) is defined, that version should be preferred.
+The length of this attribute is expected to match the length of any provided 
+position data for the ParticleField. If it is too long it will be truncated to 
+the number of particles defined by the position data. If it is too short it will 
+be ignored.
+"""
+        }        
+    )
+}
+
+over "ParticleFieldOpacityAttributeAPI" (
+    customData = {
+        string userDocBrief = """A ParticleField related applied schema that 
+provides attributes to define the opacity of the particles.""" 
+        string userDoc = """Defines an applied schema for ParticleField
+opacity data. 
+
+The opacity should be in the range [0, 1], and treated as 
+traditional (linear) computer graphics opacity, not as
+transformed data sometimes seen in PLY files associated with
+Gaussian splats, where the values need to be processed with a
+sigmoid activation function.
+
+Attributes are provided in both `float` and `half` types for 
+easy data footprint affordance. Data consumers should prefer the
+`float` version if available.
+
+The length of this attribute is expected to match the length of
+any provided position data (via any ParticleFieldPositionBaseAPI derived
+schema). If it is too long it will be truncated to the number of particles 
+defined by the position data. If it is too short it will be ignored.
+If it is ignored or not populated, then the default value of fully
+opaque (1.0) is used.
+"""
+    } 
+)
+{
+    float[] opacities (
+        customData = {
+            string userDocBrief = """Defines the opacity for each particle."""
+            string userDoc = """Defines the linear [0,1] opacity for each 
+particle, in `float` precision. The length of this attribute is expected to 
+match the length of any provided position data for the ParticleField. If it is 
+too long it will be truncated to the number of particles defined by the position 
+data. If it is too short it will be ignored.
+"""
+        }        
+    )
+    half[] opacitiesh (
+        customData = {
+            string userDocBrief = """Defines the opacity for each particle."""
+            string userDoc = """Defines the linear [0,1] opacity for each 
+particle, in `half` precision. If the `float` version (opacities) is defined, 
+that version should be preferred. The length of this attribute is expected to 
+match the length of any provided position data for the ParticleField. If it is 
+too long it will be truncated to the number of particles defined by the position 
+data. If it is too short it will be ignored.
+"""
+        }        
+    )
+}
+
+over "ParticleFieldKernelBaseAPI" (
+    customData = {
+        string userDocBrief = """A base schema for ParticleField kernel spatial
+basis function data.""" 
+        string userDoc = """Defines a base applied schema for ParticleField
+kernel data. The ParticleField kernel defines the spatial basis function for 
+every particle.
+
+This is a base schema that ParticleField characteristics schemas typically will
+have as a built-in applied schema. This allows validation to verify that an 
+applied schema that defines kernel data is always present for a ParticleField.
+"""
+    }
+)
+{
+}
+
+over "ParticleFieldKernelGaussianEllipsoidAPI" (
+    customData = {
+        string userDocBrief = """Defines the Gaussian ellipsoid kernel for a 
+ParticleField.""" 
+        string userDoc = """Defines the Gaussian ellipsoid kernel for a 
+ParticleField.
+
+An un-transformed kernel (i.e. identity position, scale, rotation, opacity)
+will define opacity at point 'p' by `g(u=0;o=1;x = p.length())`. Note that
+since the standard deviation is 1, the 3-sigma point is 3.0 and 99.7% of
+the splat support is within a spherical region of radius 3.
+
+Per-splat opacity is multiplicative with the Gaussian falloff; rotation
+and scale will transform the Gaussian sphere kernel into an ellipsoid;
+and position moves the per-splat peak falloff from the origin. 
+"""
+    }
+)
+{
+}
+
+over "ParticleFieldKernelGaussianSurfletAPI" (
+    customData = {
+        string userDocBrief = """Defines the Gaussian surflet kernel for a 
+ParticleField.""" 
+        string userDoc = """Defines the Gaussian surflet kernel for a 
+ParticleField.
+
+An un-transformed kernel (i.e. identity position, scale, rotation, opacity)
+will define opacity at point 'p' on the XY plane by
+`g(u=0;o=1;x = p.length())`, with opacity off the XY-plane defined as 0.
+Note that since the standard deviation is 1, the 3-sigma point is 3.0
+and 99.7% of the splat support is within a circular disk on the XY plane
+of radius 3.
+
+Per-splat opacity is multiplicative with the Gaussian falloff; rotation
+and scale will transform the Gaussian disk kernel into a planar ellipse,
+and position moves the per-splat peak falloff from the origin. 
+"""
+    }
+)
+{
+}
+
+over "ParticleFieldKernelConstantSurfletAPI" (
+    customData = {
+        string userDocBrief = """Defines the constant surflet kernel for a 
+ParticleField.""" 
+        string userDoc = """Defines the constant surflet kernel for a 
+ParticleField.
+
+An un-transformed kernel (i.e. identity position, scale, rotation, opacity)
+will define opacity at point 'p' on the XY plane as 1.0 if `p.length <= 1`,
+and 0.0 otherwise. The splat support for this kernel is a bounded circular
+disk on the XY plane of radius 1.
+
+Per-splat opacity is multiplicative with the step-function falloff. Rotation
+and scale will transform the disk kernel into a planar ellipse,
+and position moves the splat center from the origin. 
+"""
+    }
+)
+{
+}
+
+over "ParticleFieldRadianceBaseAPI" (
+    customData = {
+        string userDocBrief = """A base schema for ParticleField radiance 
+definition data.""" 
+        string userDoc = """Defines a base applied schema for ParticleField
+radiance definition data.
+
+This is a base schema that ParticleField characteristics schemas typically will
+have as a built-in applied schema. This allows validation to verify that an 
+applied schema that provides radiance definitions is always present for a 
+ParticleField.
+"""
+    }
+)
+{
+}
+
+over "ParticleFieldSphericalHarmonicsAttributeAPI" (
+    customData = {
+        string userDocBrief = """Defines the spherical harmonics attributes for 
+a ParticleField.""" 
+        string userDoc = """Defines the spherical harmonics attributes for 
+a ParticleField, such as the spherical harmonics degree and coefficients.
+
+The degree is constant across all particles in the ParticleField.
+
+The coefficients are provided in both `float` and `half` types for 
+easy data footprint affordance. Data consumers should prefer the
+`float` version if available.
+
+The length of the coefficients attribute is expected to match the 
+length of any provided position data times the per-particle element size
+derived from the SH degree, specifically `element size = (degree+1)*(degree+1)).`
+If it is too long it will be truncated to be compatible with the number of 
+particles defined by the position data. If it is too short it will be ignored.
+If it is ignored or not populated, the particle should use a SH
+coefficient corresponding to a DC signal of (0.5, 0.5, 0.5),
+with degree 0.
+"""
+    }
+)
+{
+    uniform int radiance:sphericalHarmonicsDegree (
+        customData = {
+            string userDocBrief = """The highest degree of the spherical 
+harmonics."""
+            string userDoc = """Defines the highest degree of the spherical 
+harmonics. A degree of N implies a coefficient element size (per particle) of 
+`(N+1)*(N+1)` values. The spherical harmonics degree is the same for all 
+particles in the ParticleField.
+"""
+        } 
+    )
+    float3[] radiance:sphericalHarmonicsCoefficients (
+        customData = {
+            string userDocBrief = """An array of spherical harmonics 
+coefficients."""
+            string userDoc = """An array of spherical harmonics 
+coefficients, in `float` precision. The coefficients are grouped in the array by 
+particle, meaning each particle has N contiguous coefficients, `Y(m,l)` sorted 
+first by order (m) and then within the order by index (l). A renderer can compute 
+an element size per particle based on the SH degree, and use that to stripe
+the array by particle.
+
+The length of this attribute is expected to 
+match the length of any provided position data for the ParticleField times the 
+per-particle element size derived from the SH degree, specifically 
+`element size = (degree+1)*(degree+1)).` If it is 
+too long it will be truncated to the number of particles defined by the position 
+data. If it is too short it will be ignored.
+"""
+        } 
+    )
+    half3[] radiance:sphericalHarmonicsCoefficientsh (
+        customData = {
+            string userDocBrief = """An array of spherical harmonics 
+coefficients."""
+            string userDoc = """An array of spherical harmonics 
+coefficients, in `half` precision. If the `float` version 
+(sphericalHarmonicsCoefficients) is defined, that version should be preferred.
+The coefficients are grouped in the array by 
+particle, meaning each particle has N contiguous coefficients, `Y(m,l)` sorted 
+first by order (m) and then within the order by index (l). A renderer can compute 
+an element size per particle based on the SH degree, and use that to stripe
+the array by particle.
+
+The length of this attribute is expected to 
+match the length of any provided position data for the ParticleField times the 
+per-particle element size derived from the SH degree, specifically 
+`element size = (degree+1)*(degree+1)).` If it is 
+too long it will be truncated to the number of particles defined by the position 
+data. If it is too short it will be ignored.
+"""
+        } 
+    )
+}
+
+over ParticleField3DGaussianSplat "ParticleField3DGaussianSplat" (
+    customData = {
+        string userDocBrief = """A ParticleField that represents a 3D 
+Gaussian splat.""" 
+        string userDoc = """A ParticleField that represents the original 3D
+[Gaussian Splats technique](https://arxiv.org/abs/2308.04079).
+
+It inherits from the ParticleField base prim, and has a set of
+built-in schema to provide the required attributes to define the necessary 
+data from the original 3DGS paper.
+
+It also contains rendering hints that can optionally inform
+how the splats should be rendered. These hints typically
+correlate with choices that were made when the data was trained.
+"""
+    }
+)
+{
+    uniform token projectionModeHint (
+        customData = {
+            string userDocBrief = """A renderer hint on how to project 
+the Gaussian to achieve a perspective correct view."""
+            string userDoc = """A renderer hint on how to project 
+the Gaussian to achieve a perspective correct view. Renderers are free to
+ignore this, but the hint is often valuable to tune the
+rendering of the scene. It often corresponds to a choice made
+when training the data.
+
+The hint can be one of the following:
+
+- `perspective`: Perspective projection is similar to standard object rendering
+from a camera view. Gaussians are projected with scaling and distortion based on 
+depth.
+
+- `tangential`: Tangential projection treats the image plane as a tangent to
+the viewing sphere. Gaussians are projected orthogonally,
+preserving shape and scale better, which helps reduce distortion
+for certain rendering applications like novel view synthesis.
+""" 
+        }
+    )
+
+    uniform token sortingModeHint = "zDepth" (
+        customData = {
+            string userDocBrief = """A renderer hint on how to sort 
+the Gaussian while drawing."""
+            string userDoc = """A renderer hint on how to sort 
+the Gaussian while drawing. Renderers are free to
+ignore this, but the hint is often valuable to tune the
+rendering of the scene. It often corresponds to a choice made
+when training the data.
+
+Rasterizers usually sort Gaussians from back to front. This attribute
+is a hint for the metric used to sort the Gaussians with respect to the
+camera.
+
+The hint can be one of the following:
+
+- `zDepth`: The particles are sorted based on the Z component of the
+particle position when transformed into the camera's local space.
+
+- `cameraDistance`: The particles are sorted based on the Euclidian
+distance from the particle to the camera.
+""" 
+        }
+    )
+}

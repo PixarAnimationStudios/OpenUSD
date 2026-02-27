@@ -16,6 +16,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
 {
      TF_DEBUG_ENVIRONMENT_SYMBOL(HGIVULKAN_DUMP_DEVICE_MEMORY_PROPERTIES,
         "Dump the output of vkGetPhysicalDeviceMemoryProperties");
+     TF_DEBUG_ENVIRONMENT_SYMBOL(HGIVULKAN_DUMP_VMA_STATS,
+        "Dump the output of vmaBuildStatsString");
+        
 }
 
 

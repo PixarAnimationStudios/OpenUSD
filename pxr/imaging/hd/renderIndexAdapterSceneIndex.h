@@ -28,6 +28,12 @@ class HdRenderIndexAdapterSceneIndex : public HdSceneIndexBase
 {
 public:
     static HdRenderIndexAdapterSceneIndexRefPtr New(
+        HdContainerDataSourceHandle const &inputArgs)
+    {
+        return TfCreateRefPtr(new HdRenderIndexAdapterSceneIndex(inputArgs));
+    }
+        
+    static HdRenderIndexAdapterSceneIndexRefPtr New(
         const HdRenderDelegateInfo &info)
     {
         return TfCreateRefPtr(new HdRenderIndexAdapterSceneIndex(info));
@@ -45,6 +51,10 @@ public:
     ~HdRenderIndexAdapterSceneIndex() override;
 
 private:
+    HD_API
+    HdRenderIndexAdapterSceneIndex(
+        HdContainerDataSourceHandle const &inputArgs);
+
     HD_API
     HdRenderIndexAdapterSceneIndex(const HdRenderDelegateInfo &info);
 

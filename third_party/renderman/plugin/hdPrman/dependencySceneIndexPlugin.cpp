@@ -7,8 +7,10 @@
 #include "hdPrman/dependencySceneIndexPlugin.h"
 
 #include "hdPrman/tokens.h"
+#include "hdPrman/utils.h"
 
 #include "pxr/imaging/hd/containerDataSourceEditor.h"
+#include "pxr/imaging/hd/cameraSchema.h"
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
@@ -50,6 +52,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((sceneIndexPluginName, "HdPrman_DependencySceneIndexPlugin"))
     (__dependenciesToFilters)
+    (__dependenciesToProjection)
 );
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -147,6 +150,18 @@ _ComputeVolumeFieldBindingDependencies(
         _ComputeVolumeFieldBindingDependency(primPath));
 }
 
+// Register a dependency on each filter targeted by the light such that
+// the invalidation of *any* locator on the filter invalidates the 'light'
+// locator of the light prim.
+// This matches the legacy dependency declaration in HdPrman_Light using
+// HdChangeTracker::{Add,Remove}SprimSprimDependency.
+// Note that this is conservative in a catch-all sense and we could instead
+// register individual dependency entries for collection, visibility, light
+// and material locators.
+//
+// Additionally, declare that the dependencies depends on the targeted 
+// filters.
+// 
 HdContainerDataSourceHandle
 _BuildLightFilterDependenciesDs(const SdfPathVector &filterPaths)
 {
@@ -154,27 +169,15 @@ _BuildLightFilterDependenciesDs(const SdfPathVector &filterPaths)
     std::vector<HdDataSourceBaseHandle> deps;
     const size_t numFilters = filterPaths.size();
 
-    // Register a dependency on each filter targeted by the light such that
-    // the invalidation of *any* locator on the filter invalidates the 'light'
-    // locator of the light prim.
-    // This matches the legacy dependency declaration in HdPrman_Light using
-    // HdChangeTracker::{Add,Remove}SprimSprimDependency.
-    // Note that this is conservative in a catch-all sense and we could instead
-    // register individual dependency entries for collection, visibility, light
-    // and material locators.
-    //
-    // Additionally, declare that the dependencies depends on the targeted 
-    // filters.
-    // 
     const size_t numDeps = 1 /* __dependencies -> filters */ +  numFilters;
     names.reserve(numDeps);
     deps.reserve(numDeps);
 
-    static HdLocatorDataSourceHandle filtersLocDs =
+    static const HdLocatorDataSourceHandle filtersLocDs =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdLightSchema::GetDefaultLocator().Append(HdTokens->filters));
     
-    static HdLocatorDataSourceHandle dependenciesLocDs =
+    static const HdLocatorDataSourceHandle dependenciesLocDs =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdDependenciesSchema::GetDefaultLocator());
 
@@ -186,11 +189,11 @@ _BuildLightFilterDependenciesDs(const SdfPathVector &filterPaths)
             .SetAffectedDataSourceLocator(dependenciesLocDs)
             .Build());
     
-    static HdLocatorDataSourceHandle emptyLocDs =
+    static const HdLocatorDataSourceHandle emptyLocDs =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdDataSourceLocator::EmptyLocator());
 
-    static HdLocatorDataSourceHandle affectedLocatorDs = 
+    static const HdLocatorDataSourceHandle affectedLocatorDs = 
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdLightSchema::GetDefaultLocator());
 
@@ -241,6 +244,101 @@ _ComputeLightFilterDependencies(
 
     return nullptr;
 }
+
+// Note: the code below uses GetSchemaToken (23.06)
+// and OverlayedContainerDataSources (23.07).
+#if PXR_VERSION >= 2307
+
+// Register a dependency on the projection plugin such that 
+// the invalidation of *any* locator on the projection invalidates
+// the 'camera' locator of the camera prim.
+HdContainerDataSourceHandle
+_BuildCameraDependenciesDs(const SdfPath &projectionPath)
+{
+    TfTokenVector names;
+    std::vector<HdDataSourceBaseHandle> deps;
+
+    static const HdLocatorDataSourceHandle projectionLocDs =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdCameraSchema::GetNamespacedPropertiesLocator()
+            .Append(TfToken("ri"))
+            .Append(TfToken("projection")));
+    
+    static const HdLocatorDataSourceHandle dependenciesLocDs =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdDependenciesSchema::GetDefaultLocator());
+
+    names.push_back(_tokens->__dependenciesToProjection);
+    deps.push_back(
+        HdDependencySchema::Builder()
+            .SetDependedOnPrimPath(/* self */ nullptr)
+            .SetDependedOnDataSourceLocator(projectionLocDs)
+            .SetAffectedDataSourceLocator(dependenciesLocDs)
+            .Build());
+    
+    static const HdLocatorDataSourceHandle emptyLocDs =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdDataSourceLocator::EmptyLocator());
+
+    static const HdLocatorDataSourceHandle affectedLocatorDs = 
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdCameraSchema::GetDefaultLocator());
+
+    if (!projectionPath.IsEmpty()) {
+        const std::string projectionPathStr = projectionPath.GetAsString();
+        names.emplace_back(projectionPathStr);
+        deps.push_back(
+            HdDependencySchema::Builder()
+            .SetDependedOnPrimPath(
+                HdRetainedTypedSampledDataSource<SdfPath>::New(projectionPath))
+            .SetDependedOnDataSourceLocator(emptyLocDs)
+            .SetAffectedDataSourceLocator(affectedLocatorDs)
+            .Build());
+    }
+
+    return HdRetainedContainerDataSource::New(
+        names.size(), names.data(), deps.data());
+}
+
+HdContainerDataSourceHandle
+_ComputeCameraDependencies(
+    const HdContainerDataSourceHandle &cameraPrimSource)
+{
+#if PXR_VERSION >= 2405
+    const
+#endif
+    HdCameraSchema cameraSchema =
+        HdCameraSchema::GetFromParent(cameraPrimSource);
+    if (!cameraSchema) {
+        return nullptr;
+    }
+
+    // Check for camera.namespacedProperties.ri.projection
+    static const HdDataSourceLocator riProjectionLoc =
+        HdDataSourceLocator(TfToken("ri"), TfToken("projection"));
+    VtValue value;
+    if (HdSampledDataSourceHandle const projectionDs =
+        HdSampledDataSource::Cast(
+            HdContainerDataSource::Get(
+                cameraSchema.GetNamespacedProperties().GetContainer(),
+                riProjectionLoc))) {
+        value = projectionDs->GetValue(0.0f);
+    }
+    const SdfPath riProjectionPath = HdPrman_Utils::GetPathFromVtValue(value);
+
+    return _BuildCameraDependenciesDs(riProjectionPath);
+}
+
+#else
+
+HdContainerDataSourceHandle
+_ComputeCameraDependencies(const HdContainerDataSourceHandle &)
+{
+    // Not implemented prior to PXR_VERSION 2307
+    return nullptr;
+}
+
+#endif // PXR_VERSION >= 2307
 
 class _VolumePrimContainerDataSource final : public HdContainerDataSource
 {
@@ -326,6 +424,46 @@ private:
 };
 
 
+class _CameraPrimContainerDataSource final : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_CameraPrimContainerDataSource);
+
+    _CameraPrimContainerDataSource(
+        const HdContainerDataSourceHandle &primContainer)
+      : _primContainer(primContainer)
+    {
+        TF_VERIFY(primContainer);
+    }
+
+    TfTokenVector GetNames() override
+    {
+        TfTokenVector names = _primContainer->GetNames();
+        if (std::find(names.begin(), names.end(),
+                HdDependenciesSchema::GetSchemaToken()) == names.end()) {
+            names.push_back(HdDependenciesSchema::GetSchemaToken());
+        }
+        return names;
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        HdDataSourceBaseHandle result = _primContainer->Get(name);
+
+        if (name == HdDependenciesSchema::GetSchemaToken()) {
+            return HdOverlayContainerDataSource::OverlayedContainerDataSources(
+                _ComputeCameraDependencies(_primContainer),
+                HdContainerDataSource::Cast(result));
+        }
+
+        return result;
+    }
+
+private:
+    const HdContainerDataSourceHandle _primContainer;
+};
+
+
 TF_DECLARE_REF_PTRS(_SceneIndex);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -379,6 +517,11 @@ public:
             // Override prim data source in a lazy manner.
             prim.dataSource =
                 _LightPrimContainerDataSource::New(prim.dataSource);
+        }
+
+        if (prim.primType == HdPrimTypeTokens->camera && prim.dataSource) {
+            prim.dataSource =
+                _CameraPrimContainerDataSource::New(prim.dataSource);
         }
 
         return prim;

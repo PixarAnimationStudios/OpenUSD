@@ -251,18 +251,16 @@ namespace ShaderMetadataHelpers
     // -------------------------------------------------------------------------
 
     TfToken
-    GetRoleFromMetadata(const SdrTokenMap& metadata)
+    GetRoleFromMetadata(const SdrShaderPropertyMetadata& metadata)
     {
-        const SdrTokenMap::const_iterator roleSearch =
-            metadata.find(SdrPropertyMetadata->Role);
-
-        if (roleSearch != metadata.end()) {
-            // If the value found is an allowed value, then we can return it
-            const TfToken role = TfToken(roleSearch->second);
+        if (metadata.HasRole()) {
+            const std::string& role = metadata.GetRole();
             if (std::find(SdrPropertyRole->allTokens.begin(),
                           SdrPropertyRole->allTokens.end(),
                           role) != SdrPropertyRole->allTokens.end()) {
-                return role;
+                // Return an empty token if no "role" metadata or acceptable
+                // value found
+                return TfToken(role);
             }
         }
         // Return an empty token if no "role" metadata or acceptable value found

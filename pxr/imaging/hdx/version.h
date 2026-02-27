@@ -15,15 +15,16 @@
 // 6  -> 7  : make HdxShadowMatrixComputationSharedPtr std::shared_ptr instead of boost::shared_ptr
 // 7  -> 8  : added another HdxShadowMatrixComputation signature.
 // 8  -> 9  : added render index as argument to HdxSelectionTracker::GetSelectedPointColors.
-// 9  -> 10 : replaced enableSelection with enableSelectionHighlight and 
+// 9  -> 10 : replaced enableSelection with enableSelectionHighlight and
 //            enableLocateHighlight on HdxSelectionTask and HdxColorizeSelectionTask params.
 // 10 -> 11 : New signature for HdxFullscreenShader::BindTextures.
 // 11 -> 12 : change HdxPickHit::worldSpaceHitPoint from GfVec3f to GfVec3d.
 // 12 -> 13 : Add HdxPickTask "resolveDeep" mode.
 // 13 -> 14 : Changed HdxTaskControllerSceneIndex contruction to use a struct
-// 14 -> 15 : Remove enableSceneMaterial param from HdxRenderTaskParams, 
+// 14 -> 15 : Remove enableSceneMaterial param from HdxRenderTaskParams,
 //            HdxShadowTaskParams, and HdxPickTaskParams.
+// 15 -> 16 : GetFreeCameraPath() added to HdxTaskController & scene index
 //
-#define HDX_API_VERSION 15
+#define HDX_API_VERSION 16
 
 #endif // PXR_IMAGING_HDX_VERSION_H

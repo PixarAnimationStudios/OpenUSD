@@ -395,6 +395,12 @@ public:
     PcpPrimIndexInputs &IncludePayloadPredicate(
         std::function<bool (const SdfPath &)> predicate)
     { includePayloadPredicate = predicate; return *this; }
+
+    /// Predicate for determining whether the prim index for an ancestor of
+    /// the index being computed is instanceable.
+    PcpPrimIndexInputs &AncestorIsInstanceablePredicate(
+        std::function<bool (const SdfPath &)> predicate)
+    { ancestorIsInstanceablePredicate = predicate; return *this; }
     
     /// Whether subtrees that contribute no opinions should be culled
     /// from the index.
@@ -418,6 +424,7 @@ public:
     const PayloadSet* includedPayloads;
     tbb::spin_rw_mutex *includedPayloadsMutex;
     std::function<bool (const SdfPath &)> includePayloadPredicate;
+    std::function<bool (const SdfPath &)> ancestorIsInstanceablePredicate;
     const PcpPrimIndex *parentIndex;
     std::string fileFormatTarget;
     bool cull;

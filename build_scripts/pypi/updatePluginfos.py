@@ -52,13 +52,13 @@ def process_plugin_dict(plugin_dict, libname, newname):
 
 
 def update_pluginfo(contents, new_lib_names, new_pluginfo_hashes):
-    # some USD json files begin with python style comments, and those aren't
+    # some USD json files include python style comments, and those aren't
     # legal json. For our purposes we'll strip them.
-    while contents[0] == ord('#'):
-        line_end = contents.find(ord('\n'))
-        contents = contents[line_end+1:]
+    lines = contents.decode('utf-8').split('\n')
+    lines = [l for l in lines if not l.strip().startswith('#')]
+    stripped = '\n'.join(lines)
 
-    json_doc = json.loads(contents.decode('utf-8'))
+    json_doc = json.loads(stripped)
     changed = False
     for p in json_doc.get("Plugins", []):
         if "LibraryPath" in p:

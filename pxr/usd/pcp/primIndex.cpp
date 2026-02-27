@@ -3646,9 +3646,7 @@ _EvalImpliedClassTree(
         // the implied class for srcChild, so we don't don't need to redo 
         // the work to process it.
         TF_FOR_ALL(destChildIt, Pcp_GetChildrenRange(destNode)) {
-            if (destChildIt->GetOriginNode() != srcChild ||
-                destChildIt->GetMapToParent().Evaluate() 
-                    != destClassFunc.Evaluate()) {
+            if (destChildIt->GetOriginNode() != srcChild) {
                 continue;
             }
 
@@ -4006,6 +4004,8 @@ _FindPriorVariantSelection(
     PcpNodeRef *nodeWithVsel,
     Pcp_PrimIndexer *indexer)
 {
+    TRACE_FUNCTION();
+
     auto& traverser = 
         indexer->GetVariantTraversalCache(startNode, pathInStartNode);
 
@@ -4062,6 +4062,8 @@ _ComposeVariantSelectionAcrossNodes(
     PcpNodeRef *nodeWithVsel,
     Pcp_PrimIndexer *indexer)
 {
+    TRACE_FUNCTION();
+
     // Compose variant selection in strong-to-weak order.
     auto& traverser = 
         indexer->GetVariantTraversalCache(startNode, pathInStartNode);
@@ -5027,15 +5029,67 @@ _BuildInitialPrimIndexFromAncestor(
         const PcpLayerStackSite parentSite(site.layerStack,
                                            site.path.GetParentPath());
 
-        Pcp_BuildPrimIndex(parentSite, parentSite,
+        Pcp_BuildPrimIndex(parentSite, rootSite,
                            ancestorRecursionDepth+1,
                            evaluateImpliedSpecializes,
                            evaluateVariantsAndDynamicPayloads,
                            /* rootNodeShouldContributeSpecs = */ true,
                            previousFrame, inputs, outputs);
 
-        ancestorIsInstanceable = 
-            Pcp_PrimIndexIsInstanceable(outputs->primIndex);
+        // When recursively computing a prim index for ancestral opinions,
+        // there are cases where the ancestorIsInstanceable flag cannot be
+        // computed correctly from the prim index computed above. One example
+        // is captured in the ImpliedArcsAndInstancing museum test. 
+        //
+        // In that case, we have (names altered for brevity) prim /A in the root
+        // layer stack referencing /B, and /B/C inheriting from /B/D. This means
+        // there's an implied inherit arc from /A/C to /A/D in the root layer
+        // stack as well. Prim /A is marked as instanceable.
+        // 
+        // When we compute /A/C, we recursively compute /A/D when evaluating
+        // the implied inherit arc, which means we wind up in here to recompute
+        // /A to include its ancestral opinions. However, the recomputed index
+        // for /A elides the reference arc to /B because it duplicates the
+        // ancestral reference arc in /A/C. That causes the recomputed index
+        // for /A to be non-instanceable, which is incorrect.
+        //
+        // To avoid that issue, we check if the index we're computing for
+        // ancestral opinions is an ancestor of the originating prim index.
+        // If so, we retrieve the instanceable bit from the cached prim
+        // index instead of the one we just computed. We expect to find
+        // this prim index in the cache because ancestors must be computed
+        // before any children.
+        //
+        // In the above example, that means we'll try to retrieve the prim
+        // index for /A from the cache and use its instanceable bit. We know
+        // that /A must be in the cache, because we're in the middle of
+        // computing /A/C and /A is an ancestor that must've already been
+        // computed.
+        //
+        // XXX: This (clearly) seems overly tricky and there may be other
+        // cases outside the root layer stack this doesn't cover. This may
+        // (hopefully?) be subsumed by whatever fix we come up with for
+        // USD-9919.
+        ancestorIsInstanceable = [&]() {
+            if (!Pcp_InstancingIsEnabled(outputs->primIndex)) {
+                return false;
+            }
+
+            if (inputs.cache->GetLayerStack() == parentSite.layerStack &&
+                rootSite.path.HasPrefix(parentSite.path)) {
+
+                if (inputs.ancestorIsInstanceablePredicate) {
+                    return inputs.ancestorIsInstanceablePredicate(
+                        parentSite.path);
+                }
+
+                if (const PcpPrimIndex* cachedParentPrimIndex =
+                        inputs.cache->FindPrimIndex(parentSite.path)) {
+                    return cachedParentPrimIndex->IsInstanceable();
+                }
+            }
+            return Pcp_PrimIndexIsInstanceable(outputs->primIndex);
+        }();
     }
 
     // If the ancestor graph is an instance, mark every node that cannot

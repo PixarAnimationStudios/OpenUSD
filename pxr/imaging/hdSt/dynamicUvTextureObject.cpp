@@ -28,17 +28,32 @@ HdStDynamicUvTextureObject::~HdStDynamicUvTextureObject()
     _DestroyTexture();
 }
 
-HdStDynamicUvTextureImplementation *
-HdStDynamicUvTextureObject::_GetImpl() const
+namespace
 {
-    const HdStDynamicUvSubtextureIdentifier * const subId =
-        dynamic_cast<const HdStDynamicUvSubtextureIdentifier *>(
-            GetTextureIdentifier().GetSubtextureIdentifier());
+
+template <typename SubIdType>
+HdStDynamicUvTextureImplementation *
+_GetImplFromSubId(const HdStSubtextureIdentifier * baseSubId) {
+    const auto * const subId = dynamic_cast<const SubIdType *>(baseSubId);
     if (!TF_VERIFY(subId)) {
         return nullptr;
     }
 
     return subId->GetTextureImplementation();
+}
+
+}
+
+HdStDynamicUvTextureImplementation *
+HdStDynamicUvTextureObject::_GetImpl() const
+{
+    const HdStSubtextureIdentifier * subId =
+        GetTextureIdentifier().GetSubtextureIdentifier();
+    if (GetTextureType() == HdStTextureType::Uv) {
+        return _GetImplFromSubId<HdStDynamicUvSubtextureIdentifier>(subId);
+    } else {
+        return _GetImplFromSubId<HdStDynamicCubemapSubtextureIdentifier>(subId);
+    }
 }
 
 bool

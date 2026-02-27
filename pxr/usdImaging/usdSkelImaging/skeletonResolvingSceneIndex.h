@@ -64,7 +64,7 @@ private:
 
     // See whether prim at path is a skeleton. If yes, add the resolved
     // skeleton data source to internal data structures including its
-    /// dependencies - and return true.
+    // dependencies - and return true.
     bool _AddResolvedSkeleton(
         const SdfPath &path);
     // Add dependencies for skeleton at given path with given data source.

@@ -309,10 +309,10 @@ _EmitOpenVDBVolumeField(HdSceneDelegate *sceneDelegate,
                         const HdVolumeFieldDescriptor& field,
                         RtPrimVarList* primvars,
                         std::unordered_map<
-                            TfToken, 
-                            std::vector<int>, 
+                            TfToken,
+                            std::vector<int>,
                             TfToken::HashFunctor
-                        >& fieldIndices, 
+                        >& fieldIndices,
                         TfToken& densityField,
                         TfToken& velocityField)
 {
@@ -367,12 +367,12 @@ _EmitOpenVDBVolume(HdSceneDelegate *sceneDelegate,
         volumeAssetPath = fileAssetPath.GetAssetPath();
     }
 
-    // This will be the first of the string args supplied to the blobbydso. 
+    // This will be the first of the string args supplied to the blobbydso.
     std::string vdbSource;
 
 #ifndef PXR_OPENVDB_SUPPORT_ENABLED
     vdbSource = volumeAssetPath;
-#else
+#else // PXR_OPENVDB_SUPPORT_ENABLED
     // If volumeAssetPath is an actual file path, copy it into the vdbSource
     // string, prepended with a "file:" tag.
     if (TfIsFile(volumeAssetPath)) {
@@ -392,10 +392,17 @@ _EmitOpenVDBVolume(HdSceneDelegate *sceneDelegate,
         // are copied from gridVecPtr. (This copy should be fairly cheap since
         // the elements are just shared pointers).
         openvdb::GridPtrVec* grids = new openvdb::GridPtrVec(*gridVecPtr);
- 
+
         // Ownership of this new vector is given to RixStorage, which
         // will take care of clean-up when rendering is complete.
         RixContext* context = RixGetContext();
+#if PXR_VERSION >= 2602
+        // XXX:
+        // Disable deprecation warnings for RixStorage to enable
+        // strict builds on Windows.
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_DEPRECATED
+#endif // PXR_VERSION >= 2602
         RixStorage* storage =
             static_cast<RixStorage*>(context->GetRixInterface(k_RixGlobalData));
         if (!storage) {
@@ -425,16 +432,19 @@ _EmitOpenVDBVolume(HdSceneDelegate *sceneDelegate,
         // Copy key into the vdbSource string, prepended with a "key:" tag.
         vdbSource = "key:" + key;
     }
-#endif
+#if PXR_VERSION >= 2602
+ARCH_PRAGMA_POP
+#endif // PXR_VERSION >= 2602
+#endif // PXR_OPENVDB_SUPPORT_ENABLED
 
     primvars->SetString(RixStr.k_Ri_type, blobbydsoImplOpenVDB);
 
     // Look for a density field, otherwise default to the first field
     TfToken densityField = _tokens->density;
     _GetPrimvarValue<TfToken>(sceneDelegate, id, _tokens->densityGrid, &densityField);
-    if (std::find_if(fields.begin(), fields.end(), 
-        [&](const auto& field) { 
-            return _GetFieldName(sceneDelegate, field) == densityField; 
+    if (std::find_if(fields.begin(), fields.end(),
+        [&](const auto& field) {
+            return _GetFieldName(sceneDelegate, field) == densityField;
         }) == fields.end()
     )
         densityField = _GetFieldName(sceneDelegate, fields[0]);
@@ -620,7 +630,7 @@ HdPrman_Volume::_ConvertGeometry(
     // Dimensions
     int32_t const dims[] = { 0, 0, 0 };
     uint64_t const dim = dims[0] * dims[1] * dims[2];
-    
+
     *primvars = RtPrimVarList(1, dim, dim, dim);
     primvars->SetIntegerArray(RixStr.k_Ri_dimensions, dims, 3);
 

@@ -9,6 +9,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
+#include "pxr/base/arch/hints.h"
 
 #include <atomic>
 #include <cstdlib>
@@ -61,12 +62,12 @@ public:
         /// node (\c siteName) corresponds to the tag name of the final tag in
         /// the path.
         struct PathNode {
-            size_t nBytes,          ///< Allocated bytes by this or descendant nodes.
-                   nBytesDirect;    ///< Allocated bytes (only for this node).
-            size_t nAllocations;    ///< The number of allocations for this node.
-            std::string siteName;   ///< Tag name.
+            size_t nBytes,        ///< Mem allocated including descendant nodes.
+                   nBytesDirect;  ///< Mem allocated excluding descendant nodes.
+            size_t nAllocations;  ///< The number of allocations for this node.
+            std::string siteName; ///< Tag name.
             std::vector<PathNode>
-                        children;   ///< Children nodes.
+                        children; ///< Children nodes.
         };
 
         /// \struct CallSite
@@ -318,10 +319,81 @@ public:
         friend class TfMallocTag;
     };
 
-    // A historical compatibility: before Auto could accept only one argument,
+    // An historical compatibility: before Auto could accept only one argument,
     // so Auto2 existed to handle two arguments.  Now Auto can accept any number
     // of arguments, so Auto2 is just an alias for Auto.
     using Auto2 = Auto;
+
+    // fwd for friendship.
+    class StackOverride;
+
+    /// \class StackState
+    /// \ingroup group_tf_MallocTag
+    ///
+    /// An object that represents a snapshot of a thread's TfMallocTag stack
+    /// state.  See TfMallocTag::GetCurrentStackState()
+    ///
+    class StackState {
+    public:
+        StackState() = default;
+
+    private:
+        explicit StackState(Tf_MallocPathNode *top) : _top(top) {}
+
+        Tf_MallocPathNode *_top = nullptr;
+
+        friend class TfMallocTag;
+        friend class StackOverride;
+    };
+
+    /// \class StackOverride
+    /// \ingroup group_tf_MallocTag
+    ///
+    /// Scoped (i.e. local) object for temporarily replacing the current
+    /// thread's tag stack with a different StackState.
+    ///
+    /// This is typically used to bridge tag stacks in parallelism contexts.
+    /// For example, a call site that spawns parallel tasks may capture its own
+    /// tag stack state and pass it to the parallel tasks, that then use a
+    /// StackOverride to ensure that memory allocations are billed to the same
+    /// tags as the spawning thread.  When StackOverride object is destroyed,
+    /// the thread's previous tag stack is restored.
+    class StackOverride {
+    public:
+        explicit StackOverride(StackState state)
+            : _state(state)
+            , _tls(state._top ? _Push() : nullptr) {}
+
+        // Noncopyable, nonmovable.
+        StackOverride(const StackOverride &) = delete;
+        StackOverride &operator=(const StackOverride &) = delete;
+
+        ~StackOverride() {
+            if (ARCH_UNLIKELY(_tls)) {
+                _Pop();
+            }
+        }
+        
+    private:
+        TF_API _ThreadData *_Push() const;
+        TF_API void _Pop() const;
+    
+        const StackState _state;
+        _ThreadData *_tls;
+    
+        friend class TfMallocTag;
+    };
+
+    /// Capture the current thread's TfMallocTag stack state and return it.
+    /// Later, construct a TfMallocTag::StackOverride with a
+    /// TfMallocTag::StackState to temporarily override the current thread's tag
+    /// stack with the captured stack state.  This is especially useful to
+    /// bridge allocations in scoped parallel tasks (that may be executed by
+    /// worker threads) back to the initiating context.
+    static StackState GetCurrentStackState() {
+        return ARCH_UNLIKELY(TfMallocTag::_isInitialized)
+            ? _GetCurrentStackState() : StackState {};
+    }
 
     /// Manually push a tag onto the stack.
     ///
@@ -392,7 +464,8 @@ public:
     /// with 'Csd' but nothing starting with 'CsdScene::_Populate' except
     /// 'CsdScene::_PopulatePrimCacheLocal'.  Use the empty string to disable
     /// stack capturing.
-    TF_API static void SetCapturedMallocStacksMatchList(const std::string& matchList);
+    TF_API static void
+    SetCapturedMallocStacksMatchList(const std::string& matchList);
 
     /// Returns the captured malloc stack traces for allocations billed to the
     /// malloc tags passed to SetCapturedMallocStacksMatchList().
@@ -419,6 +492,8 @@ private:
                                       _ThreadData *threadData = nullptr);
     TF_API static void _End(int nTags = 1, _ThreadData *threadData = nullptr);
 
+    TF_API static StackState _GetCurrentStackState();
+    
     static void* _MallocWrapper(size_t, const void*);
     static void* _ReallocWrapper(void*, size_t, const void*);
     static void* _MemalignWrapper(size_t, size_t, const void*);

@@ -6,6 +6,7 @@
 //
 #include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourceRelocatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
 #include "pxr/usdImaging/usdImaging/niInstanceAggregationSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/niPrototypePruningSceneIndex.h"
@@ -16,8 +17,12 @@
 #include "pxr/imaging/hd/dataSourceHash.h"
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/mergingSceneIndex.h"
+#include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
+#include "pxr/imaging/hd/skinningSettings.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+
+#include "pxr/usd/usdSkel/tokens.h"
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/envSetting.h"
@@ -216,6 +221,30 @@ private:
         HdSceneIndexBaseRefPtr const &prototypeSceneIndex,
         const bool forPrototype)
     {
+        if (HdSkinningSettings::IsSkinningDeferred() && !forPrototype) {
+            // Relocate skelBinding:animationSource to 
+            // primvars:skel:animationSource so the skel instances
+            // with different animationSource can be aggregated.
+            // This also allows it to be aggregated to the instancer as an
+            // instance primvar.
+            //
+            // We hardcode the skelBinding tokens here so we don't have to 
+            // introduce dependency to usdSkelImaging.
+            static const HdDataSourceLocator srcSkelAnimLocator(
+                TfToken("skelBinding"), TfToken("animationSource"));
+            // This instance primvar will later be picked up by 
+            // UsdSkelImagingDataSourceXformResolver::GetInstanceAnimationSource()
+            static const HdDataSourceLocator dstPrimvarLocator(
+                HdPrimvarsSchema::GetSchemaToken(), 
+                UsdSkelTokens->skelAnimationSource);
+
+            return UsdImaging_NiInstanceAggregationSceneIndex::New(
+                UsdImaging_DataSourceRelocatingSceneIndex::New(
+                    prototypeSceneIndex,
+                    srcSkelAnimLocator, dstPrimvarLocator,
+                    /* forNativeInstance */ true),
+                forPrototype, _instanceDataSourceNames);
+        }
         return
             UsdImaging_NiInstanceAggregationSceneIndex::New(
                 prototypeSceneIndex,

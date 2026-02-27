@@ -117,21 +117,27 @@ def SupportsMacOSUniversalBinaries():
     if not MacOS():
         return False
     XcodeVersion = GetXcodeVersion()[0]
-    return (XcodeVersion > 11)
+    return XcodeVersion > (11, 0)
 
-def GetSDKRoot(context) -> Optional[str]:
+def GetSDKName(context) -> str:
     sdk = "macosx"
     if context.buildTarget == TARGET_IOS:
-        sdk = "iphoneos"
+        sdk = "iPhoneOS"
     elif context.buildTarget == TARGET_VISIONOS:
-        sdk = "xros"
+        sdk = "xrOS"
+    return sdk
 
+def GetSDKRoot(context) -> Optional[str]:
+    sdk = GetSDKName(context).lower()
     for arg in (context.cmakeBuildArgs or '').split():
         if "CMAKE_OSX_SYSROOT" in arg:
             override = arg.split('=')[1].strip('"').strip()
             if override:
                 sdk = override
-    return GetCommandOutput(["xcrun", "--sdk", sdk, "--show-sdk-path"])
+    sdkroot = GetCommandOutput(["xcrun", "--sdk", sdk, "--show-sdk-path"])
+    if not sdkroot:
+        raise RuntimeError(f"Could not find an sdk path. Make sure you have the {sdk} sdk installed.")
+    return sdkroot
 
 def SetTarget(context, targetName):
     context.targetNative = (targetName == TARGET_NATIVE)
@@ -171,7 +177,7 @@ def _GetCodeSignStringFromTerminal():
 
 def GetXcodeVersion():
     output = GetCommandOutput(['xcodebuild', '-version']).split()
-    version = float(output[1])
+    version = tuple(int(f) for f in output[1].split("."))
     build = output[-1]
 
     return version, build
@@ -188,7 +194,7 @@ def GetCodeSigningIdentifiers() -> Dict[str, str]:
             continue
         if ")" not in codeSignID:
             continue
-        if ((XcodeVersion >= 11 and "Apple Development" in codeSignID)
+        if ((XcodeVersion >= (11, 0) and "Apple Development" in codeSignID)
             or "Mac Developer" in codeSignID):
             identifier = codeSignID.split()[1]
             identifier_hash = re.search(r'\(.*?\)', codeSignID)
@@ -408,3 +414,30 @@ def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
         args.append(f"-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH")
 
     return args
+
+def GetTBBPatches(context):
+    if context.buildTarget not in EMBEDDED_PLATFORMS or context.buildTarget == TARGET_IOS:
+        # TBB already handles these so we don't patch them out
+        return [], []
+
+    sdk_name = GetSDKName(context)
+
+    # Standard Target based names
+    target_config_patches = [("ios", context.buildTarget.lower()),
+                             ("iOS", context.buildTarget),
+                             ("IPHONEOS", sdk_name.upper())]
+
+    clang_config_patches = [("ios",context.buildTarget.lower()),
+                            ("iOS", context.buildTarget),
+                            ("IPHONEOS",sdk_name.upper())]
+
+    if context.buildTarget == TARGET_VISIONOS:
+        target_config_patches.extend([("iPhone", "XR"),
+                                      ("?= 8.0", "?= 1.0")])
+
+        clang_config_patches.append(("iPhone", "XR"),)
+
+    if context.buildTarget == TARGET_VISIONOS:
+        clang_config_patches.append(("-miphoneos-version-min=", "-target arm64-apple-xros"))
+
+    return target_config_patches, clang_config_patches

@@ -13,6 +13,7 @@ pxr_library(execUsd
         
     PUBLIC_HEADERS
         api.h
+        valueOverride.h
 
     PUBLIC_CLASSES
         cacheView
@@ -130,6 +131,26 @@ pxr_register_test(testExecUsdConnectionTargetedObjects
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_build_test(testExecUsdComputeWithOverrides
+    LIBRARIES
+        tf
+        esf
+        exec
+        execUsd
+        plug
+        sdf
+        vdf
+        usd
+    CPPFILES
+        testenv/testExecUsdComputeWithOverrides.cpp
+)
+
+pxr_register_test(testExecUsdComputeWithOverrides
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdComputeWithOverrides"
+    TESTENV testenv/testExecUsdComputeWithOverrides
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_build_test(testExecUsdConstantInput
     LIBRARIES
         tf
@@ -190,33 +211,23 @@ pxr_register_test(testExecUsdMetadataInput
 
 pxr_build_test(testExecUsdCycleDetection
     LIBRARIES
-        tf
-        plug
+        ef
         exec
         execUsd
-        vdf
+        plug
         sdf
+        tf
         usd
+        vdf
     CPPFILES
         testenv/testExecUsdCycleDetection.cpp
 )
 
-function(pxr_register_test_ExecUsdCycleDetection TESTNAME)
-    pxr_register_test(testExecUsdCycleDetection_${TESTNAME}
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdCycleDetection ${TESTNAME}"
-        EXPECTED_RETURN_CODE 134
-        TESTENV testenv/testExecUsdCycleDetection
-        ENV TF_FATAL_VERIFY=0
-    )
-endfunction()
-
-pxr_register_test_ExecUsdCycleDetection(CyclicComputation)
-pxr_register_test_ExecUsdCycleDetection(CyclicComputationPair)
-pxr_register_test_ExecUsdCycleDetection(CyclicRelationshipComputation)
-pxr_register_test_ExecUsdCycleDetection(LargeCyclicRelationshipComputation)
-pxr_register_test_ExecUsdCycleDetection(CyclicAncestorComputation)
-pxr_register_test_ExecUsdCycleDetection(CyclicRelationshipComputationAfterRecompile)
-pxr_register_test_ExecUsdCycleDetection(CyclicRelationshipComputationFigure8)
+pxr_register_test(testExecUsdCycleDetection
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdCycleDetection"
+    EXPECTED_RETURN_CODE 0
+    TESTENV testenv/testExecUsdCycleDetection
+)
 
 pxr_build_test(testExecUsdRecompilation
     LIBRARIES

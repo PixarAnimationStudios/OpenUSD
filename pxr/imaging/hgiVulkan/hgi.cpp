@@ -29,6 +29,7 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/imaging/hgiVulkan/debugCodes.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -403,6 +404,11 @@ HgiVulkan::_EndFrameSync()
 
     // Perform garbage collection for each device.
     _garbageCollector->PerformGarbageCollection(device);
+
+    if (TfDebug::IsEnabled(HGIVULKAN_DUMP_VMA_STATS)) {
+        TfDebug::Disable(HGIVULKAN_DUMP_VMA_STATS);
+        device->DumpMemoryStats();
+    }
 }
 
 

@@ -388,6 +388,12 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
                 self.assertEqual(arc.GetTargetNode(), arc.GetIntroducingNode())
                 self.assertFalse(arc.GetIntroducingLayer())
                 self.assertFalse(arc.GetIntroducingPrimPath())
+            elif arc.GetArcType() == Pcp.ArcTypeRelocate:
+                # Confirm that the introducing layer contains the entry for the relocates arc
+                intro_layer = arc.GetIntroducingLayer()
+                entry = (arc.GetTargetPrimPath(), arc.GetTargetNode().GetIntroPath())
+                listEntries = intro_layer.relocates
+                self.assertIn(entry, listEntries)
             else:
                 # The introducing prim spec is obtained from the introducing layer
                 # and prim path.
@@ -484,7 +490,6 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
 
         filteredExpectedValues = [d for d in expectedValues
                                     if d['arcType'] == Pcp.ArcTypeVariant]
-        print(filteredExpectedValues)
         self.assertEqual(len(filteredExpectedValues), 5) 
         CheckWithFilter(
             filteredExpectedValues,
@@ -676,6 +681,48 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
         _VerifyExpectedArcs(arcs, expectedValues)
         for arc in arcs:
             _VerifyArcIntroducingInfo(arc)
+
+        # Test relocates on a child prim that came through a reference
+        query = Usd.PrimCompositionQuery(prim.GetPrimAtPath("Child_Moved"))
+        # Expect to find relocates arcs from an unfiltered query
+        arcs = query.GetCompositionArcs()
+        # 26 arcs total with only 1 being ArcTypeRelocate
+        self.assertEqual(len(arcs), 26)
+
+        relocateArcs = [arc for arc in arcs
+                            if arc.GetArcType() == Pcp.ArcTypeRelocate]
+        self.assertEqual(len(relocateArcs), 1)
+
+        filteredExpectedValues = [
+            {'nodeLayerStack': Sdf.Find('test.usda'),
+             'nodePath': Sdf.Path('/Sarah/Child_Will_Be_Moved'),
+             'arcType': Pcp.ArcTypeRelocate,
+             'hasSpecs': False,
+             'introLayerStack': Sdf.Find('test.usda'),
+             'introLayer': Sdf.Find('test.usda'),
+             'introPath': Sdf.Path('/'),
+             'introInListEdit': None,
+             'isImplicit': False,
+             'isAncestral': False,
+             'isIntroRootLayer': True,
+             'isIntroRootLayerPrim': True},
+        ]
+
+        CheckWithFilter(
+            filteredExpectedValues,
+            arcTypeFilter=Usd.PrimCompositionQuery.ArcTypeFilter.Relocate)
+
+        notRelocateArcs = [arc for arc in arcs
+                               if arc.GetArcType() != Pcp.ArcTypeRelocate]
+        self.assertEqual(len(notRelocateArcs), 25)
+
+        # Apply the NotRelocate filter and confirm we get the same result as the manual filtering above
+        qFilter = Usd.PrimCompositionQuery.Filter()
+        qFilter.arcTypeFilter = Usd.PrimCompositionQuery.ArcTypeFilter.NotRelocate
+        query.filter = qFilter
+        filteredNotRelocateArcs = query.GetCompositionArcs()
+        self.assertEqual(len(filteredNotRelocateArcs), 25)
+        self.assertFalse(any([arc for arc in filteredNotRelocateArcs if arc.GetArcType() == Pcp.ArcTypeRelocate]))
 
         # test to make sure c++ objects are propertly destroyed when
         # PrimCollectionQuery instance is garbage collection

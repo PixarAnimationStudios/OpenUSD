@@ -28,14 +28,12 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 1000;
-
     for( auto const& pluginDisplayName : HdPrman_GetPluginDisplayNames() ) {
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
             pluginDisplayName,
             _tokens->sceneIndexPluginName,
             nullptr,
-            insertionPhase,
+            HdPrman_DependencyForwardingSceneIndexPlugin::GetInsertionPhase(),
             HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
     }
 }

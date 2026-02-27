@@ -1246,6 +1246,12 @@ SdfLayer::QueryTimeSample(const SdfPath& path, double time,
     return _data->QueryTimeSample(path, time, value);
 }
 
+const std::type_info &
+SdfLayer::QueryTimeSampleTypeid(const SdfPath &path, double time) const
+{
+    return _data->QueryTimeSampleTypeid(path, time);
+}
+
 static SdfValueTypeName
 _GetExpectedTimeSampleValueTypeName(
     const SdfLayer& layer, const SdfPath& path)

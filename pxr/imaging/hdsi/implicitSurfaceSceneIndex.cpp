@@ -1558,8 +1558,6 @@ HdsiImplicitSurfaceSceneIndex::HdsiImplicitSurfaceSceneIndex(
 HdSceneIndexPrim
 HdsiImplicitSurfaceSceneIndex::GetPrim(const SdfPath &primPath) const
 {
-    TRACE_FUNCTION();
-
     const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
     if (prim.primType == HdPrimTypeTokens->cube) {
         if (_cubeMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) {

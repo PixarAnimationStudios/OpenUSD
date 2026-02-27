@@ -35,13 +35,6 @@ pxr_plugin(sdrOsl
     PRIVATE_HEADERS
         api.h
 
-    PYMODULE_CPPFILES
-        module.cpp
-        wrapOslParser.cpp
-
-    PYMODULE_FILES
-        __init__.py
-
     RESOURCE_FILES
         plugInfo.json
 )

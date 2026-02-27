@@ -144,7 +144,7 @@ class TestMallocTagReporterLoadMallocTag(unittest.TestCase):
             print(f"Saved report for {self.id().split('.')[-1]}:")
             print(file.read())
 
-        newParsed = Tf.MallocTag.GetCallTree()
+        newParsed = Tf.MallocTag.CallTree()
         self.assertTrue(newParsed.LoadReport(filepath))
 
         self.AssertNodeTreesEqual(

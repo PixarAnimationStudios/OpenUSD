@@ -36,11 +36,6 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    // Needs to be inserted earlier to allow plugins that follow to transform
-    // primvar data without having to concern themselves about computed
-    // primvars.
-    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
-
     // Register the plugins conditionally.
     for(const auto& rendererDisplayName : HdPrman_GetPluginDisplayNames()) {
         // Register the plugins conditionally.
@@ -48,7 +43,8 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
             rendererDisplayName,
             _tokens->sceneIndexPluginName,
             nullptr, // no argument data necessary
-            insertionPhase,
+            HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin::
+                GetInsertionPhase(),
             HdSceneIndexPluginRegistry::InsertionOrderAtStart);
     }
 }

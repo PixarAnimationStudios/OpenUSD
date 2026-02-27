@@ -28,11 +28,9 @@
 #include <tbb/concurrent_unordered_map.h>
 
 #include <algorithm>
-#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class Exec_RegistrationBarrier;
 class Exec_ValueExtractor;
 class VdfMask;
 
@@ -152,7 +150,6 @@ private:
         Exec_ValueExtractorFunction &extractor);
 
 private:
-    std::unique_ptr<Exec_RegistrationBarrier> _registrationBarrier;
 
     VdfTypeDispatchTable<_CreateVector> _createVector;
 

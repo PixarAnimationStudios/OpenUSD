@@ -14,7 +14,6 @@
 #include "pxr/base/work/loops.h"
 
 #include <tbb/combinable.h>
-#include <tbb/concurrent_unordered_set.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

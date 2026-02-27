@@ -318,7 +318,7 @@ PcpMapFunction
 PcpMapFunction::Create(const PathMap &sourceToTarget,
                        const SdfLayerOffset &offset)
 {
-    TfAutoMallocTag2 tag("Pcp", "PcpMapFunction");
+    TfAutoMallocTag tag("Pcp", "PcpMapFunction::Create");
     TRACE_FUNCTION();
 
     // If we're creating the identity map function, just return it directly.
@@ -664,7 +664,7 @@ PcpMapFunction::_MapPathExpressionImpl(
 PcpMapFunction
 PcpMapFunction::Compose(const PcpMapFunction &inner) const
 {
-    TfAutoMallocTag2 tag("Pcp", "PcpMapFunction");
+    TfAutoMallocTag tag("Pcp", "PcpMapFunction::Compose");
     TRACE_FUNCTION();
 
     // Fast path identities.  These do occur in practice and are
@@ -766,7 +766,8 @@ PcpMapFunction::ComposeOffset(const SdfLayerOffset &offset) const
 PcpMapFunction
 PcpMapFunction::GetInverse() const
 {
-    TfAutoMallocTag2 tag("Pcp", "PcpMapFunction");
+    TfAutoMallocTag tag("Pcp", "PcpMapFunction::GetInverse");
+    TRACE_FUNCTION();
 
     PathPairVector targetToSource;
     targetToSource.reserve(_data.numPairs);

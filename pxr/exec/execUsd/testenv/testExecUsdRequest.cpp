@@ -156,7 +156,7 @@ TestValueExtraction()
     // Extract values concurrently and repeatedly from the same index.
     WorkParallelForN(
         12345,
-        [view](int i, int n) {
+        [&view](int i, int n) {
             for (; i!=n; ++i) {
                 VtValue v = view.Get(i%4);
                 TF_AXIOM(!v.IsEmpty());

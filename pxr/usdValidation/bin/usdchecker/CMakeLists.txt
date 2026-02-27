@@ -18,6 +18,14 @@ if (NOT BUILD_SHARED_LIBS)
     return()
 endif()
 
+pxr_register_test(testUsdCheckerListValidators
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --includeKeywords UsdCoreValidators,UsdGeomValidators,UsdPhysicsValidators,UsdShadeValidators,UsdSkelValidators,UsdUtilsValidators -d"
+    TESTENV testenv/testUsdChecker
+    STDOUT_REDIRECT baseRules_validationFramework.txt
+    DIFF_COMPARE baseRules_validationFramework.txt
+    EXPECTED_RETURN_CODE 0
+)
+
 # Following are all usdchecker tests using the new Validation Framework.
 # These tests are expected to pass with the new validation framework.
 pxr_register_test(testUsdChecker1

@@ -94,6 +94,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct Tf_SingletonInitState;
+
 /// \class TfSingleton
 /// \ingroup group_tf_ObjectCreation
 ///
@@ -125,7 +127,7 @@ public:
         ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
         T *p = _instance.load();
         if (!p) {
-            p = _CreateInstance(_instance);
+            p = _CreateOrWaitForInstance(_instance);
         }
         ARCH_PRAGMA_POP
         return *p;
@@ -147,24 +149,29 @@ public:
 
     /// Indicate that the sole instance object has already been created.
     ///
-    /// This function is public, but can only be called usefully from within
-    /// the class T itself. This function is used to allow the constructor of
-    /// T to indicate that the sole instance of T has been created, and that
-    /// future calls to \c GetInstance() can immediately return \p instance.
+    /// This function is public, but should only be called by \c T 's
+    /// constructor. It makes the instance available to the calling thread for
+    /// initialization purposes during the remainder of \c T 's construction.
+    /// In contrast, concurrent threads that call GetInstance() will continue to
+    /// wait until construction is fully complete before returning the instance.
     ///
-    /// The need for this function occurs when the constructor of \c T
-    /// generates a call chain that leads to calling \c
-    /// TfSingleton<T>::GetInstance(). Until the constructor for \c T has
-    /// finished, however, \c TfSingleton<T>::GetInstance() is unable to
-    /// return a value. Calling \c SetInstanceConstructed() allows future
-    /// calls to \c TfSingleton<T>::GetInstance() to return before \c T's
-    /// constructor has finished.
+    /// The need for this function occurs when \c T's constructor generates a
+    /// call chain that calls back to \c TfSingleton<T>::GetInstance(). Normally
+    /// calls to \c TfSingleton<T>::GetInstance() during \c T's construction
+    /// will wait for construction to complete.  Calling \c
+    /// SetInstanceConstructed() lets future calls to \c
+    /// TfSingleton<T>::GetInstance() *by the same thread* that called
+    /// SetInstanceConstructed() to access the instance before \c T's
+    /// constructor has finished.  This is useful when the singleton's
+    /// constuctor calls TfRegistryManager::SubscribeTo(), for example.  The
+    /// invoked TF_REGISTRY_FUNCTION()s can successfully call GetInstance() to
+    /// access the singleton.
     ///
     /// Be sure that \c T has been constructed (enough) before calling this
-    /// function. Calling this function anyplace but within the call chain of
-    /// \c T's constructor will generate a fatal coding error.
+    /// function. Calling this function anywhere but within the call chain of \c
+    /// T's constructor will generate a fatal coding error.
     inline static void SetInstanceConstructed(T& instance);
-     
+
     /// Destroy the sole instance object of type \c T, if it exists.
     ///
     /// A singleton can be destroyed by a call to \c DeleteInstance. This call
@@ -176,9 +183,10 @@ public:
     inline static void DeleteInstance();
     
 private:
-    static T *_CreateInstance(std::atomic<T *> &instance);
+    static T *_CreateOrWaitForInstance(std::atomic<T *> &instance);
     
     static std::atomic<T *> _instance;
+    static std::atomic<Tf_SingletonInitState *> _initState;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -18,13 +18,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class Exec_BuiltinComputationRegistry;
+
 /// Tokens representing built-in computations that are used internally by the
 /// execution system.
 ///
-struct Exec_PrivateBuiltinComputationsStruct
+class Exec_PrivateBuiltinComputationTokens
 {
+public:
     EXEC_API
-    Exec_PrivateBuiltinComputationsStruct();
+    Exec_PrivateBuiltinComputationTokens();
 
     // Computes a constant value.
     //
@@ -39,16 +42,14 @@ struct Exec_PrivateBuiltinComputationsStruct
     // 
     const TfToken computeMetadata;
 
-    /// Returns all builtin computation tokens.
-    const std::vector<TfToken> &GetComputationTokens();
-
-    /// The prefix that begins all builtin computation names.
-    static constexpr char builtinComputationNamePrefix[] = "__";
+private:
+    Exec_PrivateBuiltinComputationTokens(
+        Exec_BuiltinComputationRegistry &registry);
 };
 
 // Used to publicly access builtin computation tokens.
 EXEC_API
-extern TfStaticData<Exec_PrivateBuiltinComputationsStruct>
+extern TfStaticData<Exec_PrivateBuiltinComputationTokens>
 Exec_PrivateBuiltinComputations;
 
 PXR_NAMESPACE_CLOSE_SCOPE

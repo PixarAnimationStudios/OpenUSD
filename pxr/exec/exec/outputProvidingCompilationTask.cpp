@@ -114,4 +114,20 @@ Exec_OutputProvidingCompilationTask::_Compile(
     );
 }
 
+void
+Exec_OutputProvidingCompilationTask::_Interrupt(
+    Exec_CompilationState &compilationState)
+{
+    // The upstream nodes that would have connected to this node are now
+    // potentially isolated.
+    for (const auto &sourceOutputs : _inputSources) {
+        for (const auto &maskedOutput : sourceOutputs) {
+            if (VdfOutput *const output = maskedOutput.GetOutput()) {
+                compilationState.GetInterruptState()
+                    .AddPotentiallyIsolatedNode(&output->GetNode());
+            }
+        }
+    }
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

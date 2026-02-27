@@ -34,7 +34,8 @@ class SdrShaderNodeQueryResult;
 /// \endcode
 ///
 /// For this query, SdrRegistry::RunQuery(query) returns a result containing
-/// all the nodes associated with the given constraints.
+/// all the nodes with `customMetadataItem=stage2` and with identifiers that
+/// aren't "notthisone".
 ///
 /// Queries may additionally specify `SelectDistinct` to get aggregated data
 /// from the nodes satisfying given constraints. For example:

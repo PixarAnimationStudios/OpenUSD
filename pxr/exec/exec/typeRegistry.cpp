@@ -6,7 +6,6 @@
 //
 #include "pxr/exec/exec/typeRegistry.h"
 
-#include "pxr/exec/exec/registrationBarrier.h"
 #include "pxr/exec/exec/valueExtractor.h"
 
 #include "pxr/exec/ef/time.h"
@@ -35,9 +34,7 @@ TF_INSTANTIATE_SINGLETON(ExecTypeRegistry);
 const ExecTypeRegistry&
 ExecTypeRegistry::GetInstance()
 {
-    ExecTypeRegistry& instance = TfSingleton<ExecTypeRegistry>::GetInstance();
-    instance._registrationBarrier->WaitUntilFullyConstructed();
-    return instance;
+    return TfSingleton<ExecTypeRegistry>::GetInstance();
 }
 
 ExecTypeRegistry&
@@ -48,7 +45,6 @@ ExecTypeRegistry::_GetInstanceForRegistration()
 
 inline
 ExecTypeRegistry::ExecTypeRegistry()
-    : _registrationBarrier(std::make_unique<Exec_RegistrationBarrier>())
 {
     TRACE_FUNCTION();
 
@@ -80,7 +76,6 @@ ExecTypeRegistry::ExecTypeRegistry()
 
     TfSingleton<ExecTypeRegistry>::SetInstanceConstructed(*this);
     TfRegistryManager::GetInstance().SubscribeTo<ExecTypeRegistry>();
-    _registrationBarrier->SetFullyConstructed();
 }
 
 ExecTypeRegistry::~ExecTypeRegistry() = default;

@@ -152,6 +152,7 @@ pxr_library(hd
         renderCapabilitiesSchema
         renderDelegate
         renderDelegateAdapterRenderer
+        renderDelegateInfo
         renderer
         rendererCreateArgsSchema
         rendererPlugin
@@ -179,6 +180,7 @@ pxr_library(hd
         sceneGlobalsSchema
         sceneIndex
         sceneIndexAdapterSceneDelegate
+        sceneIndexInputArgsSchema
         sceneIndexObserver
         sceneIndexPlugin
         sceneIndexPluginRegistry
@@ -224,7 +226,6 @@ pxr_library(hd
         driver.h
         invalidatableContainerDataSource.h
         materialNetworkInterface.h
-        renderDelegateInfo.h
         rendererCreateArgs.h
         schemaTypeDefs.h
         vectorSchemaTypeDefs.h

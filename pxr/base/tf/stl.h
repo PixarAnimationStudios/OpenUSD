@@ -362,27 +362,29 @@ class TfGet
 {
 public:
     template <class PairOrTuple>
-    using return_type = typename std::tuple_element<N, PairOrTuple>::type;
-
-    template <class PairOrTuple>
-    constexpr return_type<PairOrTuple>& operator()(PairOrTuple& p) const 
-    {
-        return std::get<N>(p);
-    }
-
-    template <class PairOrTuple>
-    constexpr const return_type<PairOrTuple>& operator()(
-        const PairOrTuple& p) const 
-    {
-        return std::get<N>(p);
-    }
-
-    template <class PairOrTuple>
-    constexpr return_type<PairOrTuple>&& operator()(PairOrTuple&& p) const 
-    {
-        return std::get<N>(std::move(p));
+    constexpr decltype(auto) operator()(PairOrTuple &&p) const {
+        return std::get<N>(std::forward<PairOrTuple>(p));
     }
 };
+
+/// A utility to combine multiple callable objects into a single overloaded
+/// callable object.  This is convenient to create "visitors" for things like
+/// std::variant and other types.  It's often used with lambdas but its use is
+/// not restricted to lambdas.  Example usage:
+///
+/// \code
+/// std::variant<int, std::string> var { 123 };
+/// std::visit(TfOverloads {
+///     [](int ival) { /* handle int */ },
+///     [](std::string const &) { /* handle string */ }
+/// }, var);
+/// \endcode
+template <class... Ts>
+struct TfOverloads : Ts... {
+    using Ts::operator()...;
+};
+template <class... Ts> // deduction guide needed pre-C++20
+TfOverloads(Ts...) -> TfOverloads<Ts...>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

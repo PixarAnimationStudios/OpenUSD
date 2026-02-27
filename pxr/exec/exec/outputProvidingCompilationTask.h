@@ -49,6 +49,8 @@ private:
         Exec_CompilationState &compilationState,
         TaskPhases &taskStages) override;
 
+    void _Interrupt(Exec_CompilationState &compilationState) override;
+
     // The output key indicating which output and node must be compiled.
     const Exec_OutputKey _outputKey;
 

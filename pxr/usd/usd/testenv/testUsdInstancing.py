@@ -976,6 +976,82 @@ class TestUsdInstancing(unittest.TestCase):
         ValidateExpectedInstances(s,
             { '/__Prototype_1': ['/Parent/Child', '/ParentRef/Child'] })
 
+    def test_LocalOverridesAndImpliedArcs(self):
+        """Test that local overrides on prims beneath an instance that are
+        composed into another prim via an implied arc are ignored."""
+        s = OpenStage('implied_arcs/root.usda')
+        nl = NoticeListener()
+        
+        ValidateExpectedInstances(s,
+            { '/__Prototype_1': ['/Root/Inherits_1', '/Root/Inherits_2'] })
+
+        # The local overrides on the "class_widget" and "widget" prims beneath
+        # /Inherits_1 and /Inherits_2 should be ignored, so the opinions for
+        # the radius attribute come from across the shared reference.
+        self.assertEqual(
+            s.GetAttributeAtPath('/__Prototype_1/widget.radius').Get(), 5)
+        self.assertEqual(
+            s.GetAttributeAtPath('/__Prototype_1/class_widget.radius').Get(), 1)
+
+        # Force the ancestor "Root" prim of the instances to resync by adding
+        # a reference arc. Since this is a significant resync, "Inherits_1" and
+        # "Inherits_2" should also be resynced, but the local overrides should
+        # still be ignored and the attribute values in the prototype should be
+        # unchanged.
+        print("-" * 60)
+        print("Adding composition arc to ancestor of instances")
+        rootLayer = Sdf.Layer.Find('implied_arcs/root.usda')
+        rootLayer.GetPrimAtPath('/Root').referenceList.explicitItems.append(
+            Sdf.Reference(primPath='/LocalRef'))
+
+        ValidateExpectedChanges(nl, ['/Root', '/__Prototype_1'])
+
+        self.assertEqual(
+            s.GetAttributeAtPath('/__Prototype_1/widget.radius').Get(), 5)
+        self.assertEqual(
+            s.GetAttributeAtPath('/__Prototype_1/class_widget.radius').Get(), 1)
+
+        # Force the "Inherits_1" and "Inherits_2" instances to resync by adding 
+        # a reference arc. This will cause the instances to be assigned to a new
+        # prototype, but the local overrides should still be ignored and the
+        # attribute values in the new prototype should be unchanged.
+        print("-" * 60)
+        print("Adding composition arc to instances")
+        with Sdf.ChangeBlock():
+            for p in ['/Root/Inherits_1', '/Root/Inherits_2']:
+                rootLayer.GetPrimAtPath(p).referenceList.explicitItems.append(
+                    Sdf.Reference(primPath='/LocalRef'))
+
+        ValidateExpectedChanges(nl, 
+            ['/Root/Inherits_1', '/Root/Inherits_2',
+             '/__Prototype_1', '/__Prototype_2'])
+
+        ValidateExpectedInstances(s,
+            { '/__Prototype_2': ['/Root/Inherits_1', '/Root/Inherits_2'] })
+
+        self.assertEqual(
+            s.GetAttributeAtPath('/__Prototype_2/widget.radius').Get(), 5)
+        self.assertEqual(
+            s.GetAttributeAtPath('/__Prototype_2/class_widget.radius').Get(), 1)
+
+        # Force the child "widget" prim of the instances to resync by adding
+        # a reference arc. The local overrides on the "widget" prim should
+        # still be ignored and the attribute values in the prototype should be
+        # unchanged.
+        print("-" * 60)
+        print("Adding composition arc to child of instance")
+        refLayer = Sdf.Layer.Find('implied_arcs/ref.usda')
+        refChildPrim = refLayer.GetPrimAtPath('/Ref_Inherits/widget')
+        refChildPrim.referenceList.explicitItems.append(
+            Sdf.Reference(primPath='/LocalRef'))
+        
+        ValidateExpectedChanges(nl, ['/__Prototype_2/widget'])
+
+        self.assertEqual(
+            s.GetAttributeAtPath('/__Prototype_2/widget.radius').Get(), 5)
+        self.assertEqual(
+            s.GetAttributeAtPath('/__Prototype_2/class_widget.radius').Get(), 1)
+
     def test_PropertyChanges(self):
         """Test that changes to properties that affect prototypes cause the
         correct notifications to be sent."""

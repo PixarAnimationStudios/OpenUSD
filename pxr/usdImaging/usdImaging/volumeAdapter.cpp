@@ -18,7 +18,7 @@
 
 #include "pxr/usd/usdVol/tokens.h"
 #include "pxr/usd/usdVol/volume.h"
-#include "pxr/usd/usdVol/fieldBase.h"
+#include "pxr/usd/usdVol/volumeFieldBase.h"
 
 #include "pxr/base/tf/type.h"
 
@@ -156,7 +156,7 @@ UsdImagingVolumeAdapter::GetVolumeFieldDescriptors(UsdPrim const& usdPrim,
     if (_GatherVolumeData(usdPrim, &fieldMap)) {
         for (auto it = fieldMap.begin(); it != fieldMap.end(); ++it) {
             UsdPrim fieldUsdPrim(_GetPrim(it->second));
-            UsdVolFieldBase fieldPrim(fieldUsdPrim);
+            UsdVolVolumeFieldBase fieldPrim(fieldUsdPrim);
 
             if (fieldPrim) {
                 TfToken fieldPrimType;

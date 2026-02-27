@@ -76,6 +76,15 @@ TraceEvent::GetEndTimeStamp() const
     return _type != _InternalEventType::Timespan ? 0 :  _time;
 }
 
+std::pair<TraceEvent::TimeStamp, TraceEvent::TimeStamp>
+TraceEvent::GetTimeSpanStamps() const
+{
+    if (_type == _InternalEventType::Timespan) {
+        return { *reinterpret_cast<const TimeStamp*>(&_payload), _time };
+    }
+    return { 0, 0 };
+}
+
 TraceEvent::EventType
 TraceEvent::GetType() const {
     switch (_type) {

@@ -298,6 +298,14 @@ SdfAbstractData::GetPreviousTimeSampleForPath(
     return result;
 }
 
+const std::type_info &
+SdfAbstractData::QueryTimeSampleTypeid(const SdfPath &path, double time) const
+{
+    VtValue val;
+    QueryTimeSample(path, time, &val);
+    return val.GetTypeid();
+}
+
 bool
 SdfAbstractData::HasDictKey(const SdfPath &path,
                             const TfToken &fieldName,

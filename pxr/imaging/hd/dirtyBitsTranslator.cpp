@@ -485,7 +485,7 @@ HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(TfToken const& primType,
             set->append(HdRenderSettingsSchema::GetRenderingColorSpaceLocator());
         }
         if (bits & HdRenderSettings::DirtyShutterInterval) {
-            set->append(HdRenderSettingsSchema::GetShutterIntervalLocator());
+            set->append(HdRenderSettingsSchema::GetUnionedSamplingIntervalLocator());
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (bits & HdField::DirtyParams) {
@@ -594,7 +594,7 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
     // mark DirtyToplogy.  it points to the next element after
     // "basisCurvesTopology", setting us up to check for displayStyle.
 
-    
+
     // Locator (*): __customBits
     if (_FindLocator(_GetCustomBitsLocator(), end, &it, false)) {
         if (_GetCustomBitsLocator() == *it) {
@@ -857,7 +857,7 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
     if (_FindLocator(HdXformSchema::GetDefaultLocator(), end, &it)) {
         bits |= HdChangeTracker::DirtyTransform;
     }
-    
+
     if (!Hd_RPrimSToBFncs->empty())
     {
         const auto fncIt = Hd_RPrimSToBFncs->find(primType);
@@ -1242,7 +1242,7 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
                 end, &it)) {
             bits |= HdRenderSettings::DirtyNamespacedSettings;
         }
-        // In lexicographic ordering of camel case strings, uppercase comes 
+        // In lexicographic ordering of camel case strings, uppercase comes
         // before lowercase, so renderProducts < renderingColorSpace
         if (_FindLocator(HdRenderSettingsSchema::GetRenderProductsLocator(),
                 end, &it)) {
@@ -1254,7 +1254,7 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
             bits |= HdRenderSettings::DirtyRenderingColorSpace;
         }
         if (_FindLocator(
-                HdRenderSettingsSchema::GetShutterIntervalLocator(),
+                HdRenderSettingsSchema::GetUnionedSamplingIntervalLocator(),
                 end, &it)) {
             bits |= HdRenderSettings::DirtyShutterInterval;
         }

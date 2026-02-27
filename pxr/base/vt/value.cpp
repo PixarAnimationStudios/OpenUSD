@@ -413,7 +413,7 @@ VtValue::GetHash() const {
 bool
 VtValue::CanComposeOver() const
 {
-    return _info.GetLiteral() && _info->canComposeOver;
+    return !_info.GetLiteral() || _info->canComposeOver;
 }
 
 bool

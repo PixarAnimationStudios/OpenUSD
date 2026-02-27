@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/exec/exec/api.h"
+#include "pxr/exec/exec/valueOverride.h"
 
 #include "pxr/exec/esf/stage.h"
 
@@ -29,6 +30,7 @@ class SdfPath;
 class TfToken;
 template <typename> class TfFunctionRef;
 template <typename> class TfSpan;
+class VdfExecutorInterface;
 class VdfMaskedOutput;
 class VdfRequest;
 class VdfSchedule;
@@ -74,6 +76,15 @@ protected:
         const VdfSchedule &schedule,
         const VdfRequest &computeRequest);
 
+    /// Computes the values in the \p computeRequest using the provided
+    /// \p schedule in the presence of \p valueOverrides.
+    ///
+    EXEC_API
+    std::unique_ptr<VdfExecutorInterface> _ComputeWithOverrides(
+        const VdfSchedule &schedule,
+        const VdfRequest &computeRequest,
+        ExecValueOverrideVector &&valueOverrides);
+
     /// Invoke \p f on each outstanding exec request.
     ///
     /// \p f is executed with the request tracker mutex held so it must not
@@ -114,6 +125,12 @@ private:
     EXEC_API
     void _InvalidateMetadataValues(
         TfSpan<const std::pair<SdfPath, TfToken>> invalidObjects);
+
+    // Notifies the system to invalidate value keys that don't have a compiled
+    // leaf node.
+    //
+    EXEC_API
+    void _InvalidateUnknownValues();
 
 private:
     EsfStage _stage;

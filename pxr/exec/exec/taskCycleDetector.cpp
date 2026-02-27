@@ -6,10 +6,13 @@
 //
 #include "pxr/exec/exec/taskCycleDetector.h"
 
+#include "pxr/exec/exec/compilationState.h"
+#include "pxr/exec/exec/validationError.h"
+
 #include "pxr/base/tf/diagnostic.h"
 
+#include <atomic>
 #include <cstdint>
-#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -26,8 +29,10 @@ _PackIncrementAmount(int32_t busyThreads, int32_t unblockedTasks);
 static std::pair<int32_t, int32_t>
 _Unpack(uint64_t packed);
 
-Exec_TaskCycleDetector::Exec_TaskCycleDetector()
-    : _blockedTasks(0)
+Exec_TaskCycleDetector::Exec_TaskCycleDetector(
+    Exec_CompilationState *const compilationState)
+    : _compilationState(compilationState)
+    , _blockedTasks(0)
 {}
 
 Exec_TaskCycleDetector::~Exec_TaskCycleDetector()
@@ -96,25 +101,31 @@ Exec_TaskCycleDetector::EndThreadBusy()
     }
 
     // The task graph is incapable of making further progress. Only the last
-    // busy thread will encounter this. Either all work has completed, or all
-    // remaining work is blocked. If there remain any blocked tasks, then there
-    // is a task cycle.
-
-    const int32_t blockedTasks =
-        _blockedTasks.load(std::memory_order_acquire);
-
-    if (!TF_VERIFY(blockedTasks == 0,
-        "Task cycle detected in exec compilation: %d tasks are blocked.",
-        blockedTasks)) {
-
-        std::cerr
-            << "Task cycle detected in exec compilation: "
-            << blockedTasks << " tasks are blocked. "
-            << "The process will now abort.\n";
-
-        // Exit status 134 is returned for failed TF_VERIFYs.
-        std::exit(134);
+    // busy thread will encounter this. If no tasks are blocked, then all work
+    // has completed.
+    const int32_t blockedTasks = _blockedTasks.load(std::memory_order_acquire);
+    if (blockedTasks == 0) {
+        return;
     }
+
+    // There remains at least one blocked task, so there must be a task cycle.
+
+    // TODO: Currently, when we detect a task cycle, we interrupt compilation,
+    // which should break all task cycles and prevent new cycles from being
+    // created. Therefore, a single round of compilation should not detect
+    // task cycles more than once. In the future, we may allow compilation to
+    // continue after breaking the task cycles, which may establish additional
+    // task cycles in the same round of compilation. When that happens, we can
+    // remove this verify.
+    const bool wasCycleAlreadyDetected =
+        _isCycleDetected.exchange(true, std::memory_order_relaxed);
+    TF_VERIFY(!wasCycleAlreadyDetected);
+
+    TF_ERROR(ExecValidationErrorType::DataDependencyCycle,
+        "Interrupting exec compilation due to one or more data depencency "
+        "cycles. Computed values may not be accurate until the cycles are "
+        "resolved.");
+    _compilationState->GetInterruptState().Interrupt();
 }
 
 void

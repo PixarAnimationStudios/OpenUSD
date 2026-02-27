@@ -573,14 +573,18 @@ _ConvertNodes(
                 ok = true;
             }
         } else if (param.second.IsHolding<VtArray<int>>()) {
+            const VtArray<int>& v =
+                param.second.UncheckedGet<VtArray<int>>();
             if (propType == SdrPropertyTypes->Float) {
-                const VtArray<float>& v =
-                    param.second.UncheckedGet<VtArray<float>>();
-                sn.params.SetFloatArray(name, v.cdata(), v.size());
+                // Convert int array to float array.
+                VtArray<float> vf;
+                vf.resize(v.size());
+                for (size_t i=0,n=v.size(); i<n; ++i) {
+                    vf[i] = float(v[i]);
+                }
+                sn.params.SetFloatArray(name, vf.cdata(), vf.size());
                 ok = true;
             } else if (propType == SdrPropertyTypes->Int) {
-                const VtArray<int>& v =
-                    param.second.UncheckedGet<VtArray<int>>();
                 sn.params.SetIntegerArray(name, v.cdata(), v.size());
                 ok = true;
             }

@@ -61,13 +61,16 @@ If the same input parameter is overridden both by an edit to the material
 interface and by a direct parameter edit, the interface override will take 
 precedence.
 
-If a non-material location contains materialOverride data sources, a copy of
+If a geometry prim contains materialOverride data sources, a copy of
 the material bound to that location will be generated, and the overrides will
 only be applied to the generated material.
 Any changes to the original material will be reflected in the generated material.
-Non-material locations that contain materialOverride data sources are only
+Geometry prims that contain materialOverride data sources are only
 processed by this Scene Index if they contain a materialBindings data source
 with material binds for one of the following purposes: full, allPurpose.
+A minimum set of materials will be generated to satisfy material overrides: two
+geometry prims bound to the same material and containing the same set of
+material overrides will share the same generated material.
 
 Below is a diagram of the expected attributes needed for material interface
 and parameter edits on a scene index prim of type 'material':
@@ -173,10 +176,17 @@ MaterialPrim
 class HdsiMaterialOverrideResolvingSceneIndex final : 
     public HdSingleInputFilteringSceneIndexBase
 {
+    // Forward Declarations
     struct MaterialData;
-    using PathMap = std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>;
+    struct PrimData;
+
+    // Type Definitions
+    using PrimDataMap = std::unordered_map<SdfPath, PrimData, SdfPath::Hash>;
     using MaterialPathsMap = std::unordered_map<SdfPath, PathSet, SdfPath::Hash>;
     using MaterialDataMap = std::unordered_map<SdfPath, MaterialData, 
+        SdfPath::Hash>;
+    using HashToMaterialPathMap = std::unordered_map<uint64_t, SdfPath>;
+    using MaterialHashMap = std::unordered_map<SdfPath, HashToMaterialPathMap, 
         SdfPath::Hash>;
 
 public:
@@ -214,15 +224,17 @@ protected:
         const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
 
 private:
-    /// Returns true if the prim at location \p primPath has a materialOverrides
-    /// data source. Returns false otherwise.
-    bool _DoesPrimHaveMaterialOverrides(const SdfPath& primPath) const;
-
-    /// Returns the MaterialBindings Schema for the prim at location \p primPath.
-    /// The returned optional object will not have a value if the prim at 
-    /// \p primPath does not have a materialBindings data source.
-    std::optional<HdMaterialBindingSchema> _GetMaterialBindings(
+    /// Returns the Material Override Schema for the prim at \p primPath
+    /// The returned schema can be invalid. 
+    HdMaterialOverrideSchema _GetMaterialOverrides(
         const SdfPath& primPath) const;
+
+    /// Returns the path of the material bound to the prim at location 
+    /// \p primPath for the 'full' or 'allPurpose' purposes (whichever is found 
+    /// first).
+    /// If no material is bound to this prim for either of those purposes, an
+    /// empty path is returned.
+    SdfPath _GetBoundMaterial(const SdfPath& primPath) const;
 
     /// Given a vector of AddedPrimEntry \p entries, decide whether new 
     /// materials need be generated to resolve material overrides.
@@ -247,6 +259,54 @@ private:
     HdSceneIndexObserver::DirtiedPrimEntries _DirtyGeneratedMaterials(
         const HdSceneIndexObserver::DirtiedPrimEntries& entries);
 
+    /// Process dirty notices for materials used to generated override
+    /// materials in this scene index.
+    /// This function is responsible for propagating changes from base materials
+    /// to the materials generated from them.
+    /// \p primPath is the path of the dirty material prim
+    /// \p generatedMaterials is a list of materials generated from \p primPath
+    /// \p dirtiedPaths which is returned to the caller, will contain a set
+    /// of paths dirtied by this call. New elements are appended to any 
+    /// already there.
+    void _DirtyBaseMaterial(
+        const SdfPath& primPath,
+        const PathSet& generatedMaterials,
+        PathSet* dirtiedPaths) const;
+
+    /// Process dirty notices for geometry that has received material overrides.
+    /// \p entry is the dirty entry to operate on
+    /// \p inputScene is a pointer to this Scene Index's input Scene Index
+    /// \p primData contains material override data for the dirtied prim
+    /// \p processedPrimsSet which is returned to the caller, will contain a set
+    /// of paths for prims that have been processed by this function in addition
+    /// to the prim described by \p entry. New elements are appended to any 
+    /// already there.
+    /// \p addedPaths \p dirtiedPaths and \p removedPaths which are all returned
+    /// to the caller will contain sets of paths that have been added, dirtied
+    /// or removed by this call. New elements are appended to any 
+    /// already there.
+    void _DirtyGeometry(
+        const HdSceneIndexObserver::DirtiedPrimEntry& entry,
+        const HdSceneIndexBaseRefPtr inputScene,
+        const PrimData& primData,
+        PathSet* processedPrimsSet,
+        PathSet* addedPaths,
+        PathSet* dirtiedPaths,
+        PathSet* removedPaths);
+
+    /// Process dirty notices to the materialOverride locator for prims which
+    /// are receiving a material override for the first time.
+    /// \p primPath is the dirty prim
+    /// \p inputScene is a pointer to this Scene Index's input Scene Index
+    /// \p addedPaths and \p dirtiedPaths which are all returned
+    /// to the caller will contain sets of paths that have been added or dirtied
+    /// by this call. New elements are appended to any already there.
+    void _DirtyMaterialOverrideLocator(
+        const SdfPath& primPath,
+        const HdSceneIndexBaseRefPtr inputScene,
+        PathSet* addedPaths,
+        PathSet* dirtiedPaths);
+
     /// Given a path \p primPath to a material scope, return a set of 
     /// generated materials that are located under it 
     PathSet _GetGeneratedMaterials(const SdfPath& primPath) const;
@@ -264,6 +324,10 @@ private:
     /// Returns a hashed value for the \p materialOverrides schema
     uint64_t _GetHash(const HdMaterialOverrideSchema& materialOverrides) const;
 
+    /// Invalidate the portion of the bookkeeping maps of this scene index
+    /// that contain data about the prim located at \p primPath
+    void _InvalidateMaps(const SdfPath& primPath);
+
     /// Struct describing data for materials generated in the process of
     /// resolving overrides set on non-material locations
     struct MaterialData
@@ -272,8 +336,19 @@ private:
         // before any changes are made by this scene index
         SdfPath originalMaterialPath;
 
-        // Path to the non-material location that contains material overrides
-        SdfPath materialOverridePrimPath;
+        // Set of geometry prims using this generated material
+        PathSet boundPrims;
+    };
+
+    /// Struct describing data for geometry prims using generated materials to
+    /// express material overrides
+    struct PrimData
+    {
+        // Path to the generated material bound to this geometry prim
+        SdfPath generatedMaterialPath;
+
+        // Hash of the material overrides found on this prim
+        uint64_t materialOverrideHash;
     };
 
     // Map linking a path of a material scope to a set of materials that are 
@@ -284,15 +359,27 @@ private:
     // Map linking a material to a set of materials generated from it.
     MaterialPathsMap _oldToNewMaterialPaths;
 
-    // Map linking non-material prims to the path of the generated material that
-    // will be bound to them to to resolve material overrides.
-    // The keys in this map represent non-material prims that have
+    // Map linking geometry prims to the path of the generated material that
+    // will be bound to them and to the hash for their material overrides.
+    // The keys in this map represent geometry prims that have
     // a material binding and a material override data source.
-    PathMap _primToNewBindingMap;
+    PrimDataMap _primData;
 
     // Map linking materials generated in the process of resolving material
     // overrides to their data.
-    MaterialDataMap _newMaterialData;
+    MaterialDataMap _materialData;
+
+    // Map relating a geometry prim's bound material (before this scene index
+    // executes) and the hash of its material override data source to the path
+    // of a generated material.
+    // Used to allow multiple geometry prims that share the same starting 
+    // material and material overrides to use the same generated material.
+    // For example:
+    // PlasticMaterial --> ..0123 --> __MOR_PlasticMaterial_Mesh
+    //                 --> ..4567 --> __MOR_PlasticMaterial_AnotherMesh
+    // WoodMaterial    --> ..0123 --> __MOR_WoodMaterial_Mesh
+    // MetalMaterial   --> ..4567 --> __MOR_MetalMaterial_Point
+    MaterialHashMap _materialHashMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

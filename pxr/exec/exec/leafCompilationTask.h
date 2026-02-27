@@ -48,6 +48,8 @@ private:
         Exec_CompilationState &compilationState,
         TaskPhases &taskPhases) override;
 
+    void _Interrupt(Exec_CompilationState &compilationState) override;
+
     // The value key for the requested output.
     const ExecValueKey _valueKey;
 

@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/exec/exec/compilerTaskSync.h"
+#include "pxr/exec/exec/interruptState.h"
 #include "pxr/exec/exec/taskCycleDetector.h"
 
 #include "pxr/base/work/dispatcher.h"
@@ -39,6 +40,8 @@ public:
         Exec_Program *program)
         : _dispatcher(dispatcher)
         , _stage(stage)
+        , _taskCycleDetector(this)
+        , _interruptState(this)
         , _outputTasks(dispatcher)
         , _inputRecompilationTasks(dispatcher)
         , _cycleDetectingTasks(dispatcher)
@@ -66,9 +69,15 @@ public:
         return _taskCycleDetector;
     }
 
+    /// Gets the object for interrupting compilation.
+    Exec_InterruptState &GetInterruptState() {
+        return _interruptState;
+    }
+
     /// Extends access to the various Exec_CompilerTaskSync<T> members.
     class TaskSyncAccess {
         friend class Exec_CompilationTask;
+        friend class Exec_InterruptState;
 
         static Exec_OutputProvidingTaskSync &
         _GetOutputProvidingTaskSync(Exec_CompilationState *state) {
@@ -94,6 +103,7 @@ private:
     WorkDispatcher &_dispatcher;
     const EsfStage &_stage;
     Exec_TaskCycleDetector _taskCycleDetector;
+    Exec_InterruptState _interruptState;
     Exec_OutputProvidingTaskSync _outputTasks;
     Exec_InputRecompilationTaskSync _inputRecompilationTasks;
     Exec_CycleDetectingTaskSync _cycleDetectingTasks;

@@ -45,21 +45,22 @@ void TfDelegatedCountDecrement(Sdf_PathNode const *) noexcept;
 struct Sdf_PathPrimTag;
 struct Sdf_PathPropTag;
 
-// These are validated below.
 
+// The sizes below represent the largest sizes of the prim and property
+// Sdf_PathNode subclasses.
 #ifdef ARCH_BITS_32
-static constexpr size_t Sdf_SizeofPrimPathNode = 16;
-static constexpr size_t Sdf_SizeofPropPathNode = 16;
+static constexpr size_t Sdf_MaxSizeofPrimPathNode = 16;
+static constexpr size_t Sdf_MaxSizeofPropPathNode = 20;
 #else
-static constexpr size_t Sdf_SizeofPrimPathNode = 24;
-static constexpr size_t Sdf_SizeofPropPathNode = 24;
+static constexpr size_t Sdf_MaxSizeofPrimPathNode = 24;
+static constexpr size_t Sdf_MaxSizeofPropPathNode = 24;
 #endif
 
 using Sdf_PathPrimPartPool = Sdf_Pool<
-    Sdf_PathPrimTag, Sdf_SizeofPrimPathNode, /*regionBits=*/8>;
+    Sdf_PathPrimTag, Sdf_MaxSizeofPrimPathNode, /*regionBits=*/8>;
 
 using Sdf_PathPropPartPool = Sdf_Pool<
-    Sdf_PathPropTag, Sdf_SizeofPropPathNode, /*regionBits=*/8>;
+    Sdf_PathPropTag, Sdf_MaxSizeofPropPathNode, /*regionBits=*/8>;
 
 using Sdf_PathPrimHandle = Sdf_PathPrimPartPool::Handle;
 using Sdf_PathPropHandle = Sdf_PathPropPartPool::Handle;
@@ -1428,12 +1429,5 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // so we can inline the ref-counting operations, which must manipulate
 // its internal _refCount member.
 #include "pxr/usd/sdf/pathNode.h"
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-static_assert(Sdf_SizeofPrimPathNode == sizeof(Sdf_PrimPathNode), "");
-static_assert(Sdf_SizeofPropPathNode == sizeof(Sdf_PrimPropertyPathNode), "");
-
-PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_SDF_PATH_H

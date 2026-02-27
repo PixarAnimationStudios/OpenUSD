@@ -297,6 +297,105 @@ _GetSdrContextFromShaderType(const TfToken &shaderType)
     return it == contextMapping.end() ? shaderType : it->second;
 }
 
+#if PXR_VERSION >= 2602
+static SdrShaderNodeMetadata
+_CollectMetadata(
+    const SdrShaderRepresentation& shaderRepresentation,
+    const SdrShaderNodeDiscoveryResult& discoveryResult
+) {
+    SdrTokenMap legacyMetadata = discoveryResult.metadata;
+    legacyMetadata.insert(shaderRepresentation.metadata.begin(),
+                          shaderRepresentation.metadata.end());
+    SdrShaderNodeMetadata metadataObject = legacyMetadata;
+
+    if (!shaderRepresentation.departments.empty()) {
+        metadataObject.SetDepartments(SdrTokenVec(
+            shaderRepresentation.departments.begin(),
+            shaderRepresentation.departments.end()));
+    }
+
+    if (!shaderRepresentation.pages.empty()) {
+        metadataObject.SetPages(SdrTokenVec(
+            shaderRepresentation.pages.begin(),
+            shaderRepresentation.pages.end()));
+    }
+
+    if (!shaderRepresentation.openPages.empty()) {
+        metadataObject.SetOpenPages(SdrTokenVec(
+            shaderRepresentation.openPages.begin(),
+            shaderRepresentation.openPages.end()));
+    }
+
+    // Compute shownIf expressions for pages that have conditional vis metadata.
+    SdrTokenMap pagesShownIf;
+    for (std::pair<std::string, SdrTokenMap> it : shaderRepresentation.pageMetadata) {
+        const std::string& page = it.first;
+        const SdrTokenMap& conditionalVisExprs = it.second;
+
+        const std::string shownIf =
+            ShaderMetadataHelpers::ComputeShownIfFromMetadata(
+                conditionalVisExprs,
+                page, shaderRepresentation.properties,
+                discoveryResult.resolvedUri);
+        if (!shownIf.empty()) {
+            pagesShownIf[TfToken(page)] = shownIf;
+        }
+    }
+    if (!pagesShownIf.empty()) {
+        metadataObject.SetPagesShownIf(pagesShownIf);
+    }
+
+    if (!shaderRepresentation.primvars.empty()) {
+        metadataObject.SetPrimvars(shaderRepresentation.primvars);
+    }
+
+    if (!shaderRepresentation.helpText.empty()) {
+        metadataObject.SetHelp(shaderRepresentation.helpText);
+    }
+
+    return metadataObject;
+}
+
+#else
+static SdrTokenMap
+_CollectMetadata(
+    const SdrShaderRepresentation& shaderRepresentation,
+    const SdrShaderNodeDiscoveryResult& discoveryResult
+) {
+    SdrTokenMap metadata = discoveryResult.metadata;
+    metadata.insert(shaderRepresentation.metadata.begin(), 
+            shaderRepresentation.metadata.end());
+
+    if (!shaderRepresentation.departments.empty()) {
+        metadata[SdrNodeMetadata->Departments] = 
+            CreateStringFromStringVec(shaderRepresentation.departments);
+    }
+
+    if (!shaderRepresentation.pages.empty()) {
+        metadata[SdrNodeMetadata->Pages] = 
+            CreateStringFromStringVec(shaderRepresentation.pages);
+    }
+
+#if PXR_VERSION >= 2511
+    if (!shaderRepresentation.openPages.empty()) {
+        metadata[SdrNodeMetadata->OpenPages] =
+            CreateStringFromStringVec(shaderRepresentation.openPages);
+    }
+#endif
+
+    if (!shaderRepresentation.primvars.empty()) {
+        metadata[SdrNodeMetadata->Primvars] = 
+            CreateStringFromStringVec(shaderRepresentation.primvars);
+    }
+
+    if (!shaderRepresentation.helpText.empty()) {
+        metadata[SdrNodeMetadata->Help] = shaderRepresentation.helpText;
+    }
+
+    return metadata;
+}
+#endif
+
 #if PXR_VERSION >= 2505
 SdrShaderNodeUniquePtr
 RmanArgsParserPlugin::ParseShaderNode(
@@ -324,57 +423,8 @@ RmanArgsParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
     //
     _Parse(shaderRepresentation, rootElem, /* page = */ "");
 
-    SdrTokenMap metadata = discoveryResult.metadata;
-    metadata.insert(shaderRepresentation.metadata.begin(), 
-            shaderRepresentation.metadata.end());
-
-    if (!shaderRepresentation.departments.empty()) {
-        metadata[SdrNodeMetadata->Departments] = 
-            CreateStringFromStringVec(shaderRepresentation.departments);
-    }
-
-    if (!shaderRepresentation.pages.empty()) {
-        metadata[SdrNodeMetadata->Pages] = 
-            CreateStringFromStringVec(shaderRepresentation.pages);
-    }
-
-#if PXR_VERSION >= 2511
-    if (!shaderRepresentation.openPages.empty()) {
-        metadata[SdrNodeMetadata->OpenPages] =
-            CreateStringFromStringVec(shaderRepresentation.openPages);
-    }
-#endif
-
-#if PXR_VERSION >= 2602
-    // Compute shownIf expressions for pages that have conditional vis metadata.
-    for (std::pair<std::string, SdrTokenMap> it : shaderRepresentation.pageMetadata) {
-        const std::string& page = it.first;
-        const SdrTokenMap& pageMetadata = it.second;
-
-        const std::string shownIf =
-            ShaderMetadataHelpers::ComputeShownIfFromMetadata(pageMetadata,
-                page, shaderRepresentation.properties,
-                discoveryResult.resolvedUri);
-        if (!shownIf.empty()) {
-            // Encode the page name with a prefix that SdrShaderNode will
-            // recognize as representing a page-level shownIf epxression.
-            const std::string& prefix
-                = SdrNodeMetadataPrefix->PageShownIf.GetString();
-            const std::vector<std::string> parts{prefix, page};
-            const TfToken key{TfStringJoin(parts, "|")};
-            metadata[key] = shownIf;
-        }
-    }
-#endif
-
-    if (!shaderRepresentation.primvars.empty()) {
-        metadata[SdrNodeMetadata->Primvars] = 
-            CreateStringFromStringVec(shaderRepresentation.primvars);
-    }
-
-    if (!shaderRepresentation.helpText.empty()) {
-        metadata[SdrNodeMetadata->Help] = shaderRepresentation.helpText;
-    }
+    const auto metadata = _CollectMetadata(
+        shaderRepresentation, discoveryResult);
 
     return SdrShaderNodeUniquePtr(
         new SdrShaderNode(

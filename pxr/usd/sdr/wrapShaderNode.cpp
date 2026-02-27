@@ -27,17 +27,6 @@ void wrapShaderNode()
     typedef SdrShaderNodePtr ThisPtr;
 
     TF_PY_WRAP_PUBLIC_TOKENS(
-        "NodeMetadata", SdrNodeMetadata, SDR_NODE_METADATA_TOKENS
-    );
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "NodeContext", SdrNodeContext, SDR_NODE_CONTEXT_TOKENS
-    );
-
-    TF_PY_WRAP_PUBLIC_TOKENS(
-        "NodeRole", SdrNodeRole, SDR_NODE_ROLE_TOKENS
-    );
-
-    TF_PY_WRAP_PUBLIC_TOKENS(
         "NodeFieldKey", SdrNodeFieldKey, SDR_NODE_FIELD_KEY_TOKENS
     );
 
@@ -62,6 +51,7 @@ void wrapShaderNode()
         .def("GetSourceCode", &This::GetSourceCode, copyRefPolicy)
         .def("GetMetadata", &This::GetMetadata,
             return_value_policy<TfPyMapToDictionary>())
+        .def("GetMetadataObject", &This::GetMetadataObject, copyRefPolicy)
         .def("GetShaderInput", &This::GetShaderInput,
             return_internal_reference<>())
         .def("GetShaderOutput", &This::GetShaderOutput,

@@ -92,7 +92,10 @@ protected:
     /// decrementing their dependency counts, and spawning them if their
     /// dependency count reaches 0. The waitlist need not already be claimed.
     ///
-    void _MarkDone(_Waitlist *waitlist);
+    /// Returns true if this call marked the waitlist done; false if the
+    /// waitlist was already marked done.
+    ///
+    bool _MarkDone(_Waitlist *waitlist);
 
     /// Establishes that \p task depends on the task associated with
     /// \p waitlist.

@@ -776,6 +776,28 @@ def "geo" ( append payload = @%s@ )
         self.assertFalse(s.GetPrimAtPath('/N3/M1/scope1'))
         self.assertTrue(s.GetPrimAtPath('/N3/M1/scope2'))
         self.assertFalse(s.GetPrimAtPath('/N3/M1/scope3'))
+
+    def test_USD_11430(self):
+        # We used to potentially access nonexistent prims if callers created
+        # collections on one stage and then tried to use them to match objects
+        # on other stages.  Now we check this case and raise an error.
+        from pxr import Usd, Sdf, Tf
+        stage1 = Usd.Stage.CreateInMemory()
+        scope = stage1.DefinePrim('/Scope')
+        targetColl = Usd.CollectionAPI.Apply(scope.GetPrim(), 'target')
+        targetColl.GetMembershipExpressionAttr().Set(
+            Sdf.PathExpression('//{abstract}'))
+
+        stage2 = Usd.Stage.CreateInMemory()
+        classPrim = stage2.DefinePrim('/Class')
+        classPrim.SetSpecifier(Sdf.SpecifierClass)
+        stage2.DefinePrim('/World')
+        stage2.DefinePrim('/World/anim')
+        stage2.DefinePrim('/World/sets')
+
+        query = targetColl.ComputeMembershipQuery()
+        with self.assertRaises(Tf.ErrorException):
+            paths = Usd.ComputeIncludedPathsFromCollection(query, stage2)
         
 if __name__ == '__main__':
     unittest.main()

@@ -17,13 +17,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define RMAN_USD_VALIDATORS_NAME_TOKENS                                        \
     ((PxrRenderTerminalsAPIRelationships,                                      \
-      "rmanUsdValidators:PxrRenderTerminalsAPIRelationships"))
+      "rmanUsdValidators:PxrRenderTerminalsAPIRelationships"))                 \
+    ((PxrCameraProjectionAPIRelationships,                                     \
+      "rmanUsdValidators:PxrCameraProjectionAPIRelationships"))
 
 #define RMAN_USD_VALIDATORS_KEYWORD_TOKENS (UsdValidators)                     \
     (RmanUsdValidators)
 
 #define RMAN_USD_VALIDATORS_ERROR_NAME_TOKENS                                  \
-    (invalidRenderTerminalsAttr)
+    (invalidRenderTerminalsAttr)                                               \
+    (invalidCameraProjectionAttr)
 
 /// \def RMAN_USD_VALIDATORS_NAME_TOKENS
 /// Tokens representing validator names. Note that for plugin provided

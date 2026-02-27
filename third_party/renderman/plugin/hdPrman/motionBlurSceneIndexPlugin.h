@@ -9,6 +9,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/sceneIndexPlugin.h"
+#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -37,9 +38,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdPrman_MotionBlurSceneIndexPlugin : public HdSceneIndexPlugin
 {
 public:
-    HdPrman_MotionBlurSceneIndexPlugin();
+    static constexpr
+    HdSceneIndexPluginRegistry::InsertionPhase
+    GetInsertionPhase()
+    {
+        // This plug-in should be inserted *after* the extComp plug-in,
+        // so that disabling of blur, etc. will also affect points from extComp.
+        // It must also be *after* velocity motion resolving plug-in.
+        return 3;
+    }
 
-    static void SetShutterInterval(float shutterOpen, float shutterClose);
+    static void
+    SetShutterInterval(float shutterOpen, float shutterClose);
+
+    HdPrman_MotionBlurSceneIndexPlugin();
 
 protected:
     HdSceneIndexBaseRefPtr _AppendSceneIndex(

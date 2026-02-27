@@ -26,8 +26,9 @@ class UsdImagingDataSourceGprim : public UsdImagingDataSourcePrim
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceGprim);
 
-    /// Returns the data source representing \p name, if valid.
-    ///
+    USDIMAGING_API
+    TfTokenVector GetNames() override;
+
     USDIMAGING_API
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 

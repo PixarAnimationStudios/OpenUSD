@@ -6,34 +6,22 @@
 //
 #include "pxr/exec/exec/privateBuiltinComputations.h"
 
+#include "pxr/exec/exec/builtinComputationRegistry.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-TfStaticData<Exec_PrivateBuiltinComputationsStruct>
+TfStaticData<Exec_PrivateBuiltinComputationTokens>
 Exec_PrivateBuiltinComputations;
 
-// A vector of all registered builtin computation tokens.
-static TfStaticData<std::vector<TfToken>> _builtinComputationNames;
+Exec_PrivateBuiltinComputationTokens::Exec_PrivateBuiltinComputationTokens()
+    : Exec_PrivateBuiltinComputationTokens(
+        Exec_BuiltinComputationRegistry::_GetInstanceForRegistration())
+{}
 
-static TfToken
-_RegisterBuiltin(const std::string &name)
-{
-    const TfToken computationNameToken(
-        Exec_PrivateBuiltinComputationsStruct::builtinComputationNamePrefix +
-        name);
-    _builtinComputationNames->push_back(computationNameToken);
-    return computationNameToken;
-}
-
-Exec_PrivateBuiltinComputationsStruct::Exec_PrivateBuiltinComputationsStruct()
-    : computeConstant(_RegisterBuiltin("computeConstant"))
-    , computeMetadata(_RegisterBuiltin("computeMetadata"))
-{
-}
-
-const std::vector<TfToken> &
-Exec_PrivateBuiltinComputationsStruct::GetComputationTokens()
-{
-    return *_builtinComputationNames;
-}
+Exec_PrivateBuiltinComputationTokens::Exec_PrivateBuiltinComputationTokens(
+    Exec_BuiltinComputationRegistry &registry)
+    : computeConstant(registry._RegisterBuiltinComputation("computeConstant"))
+    , computeMetadata(registry._RegisterBuiltinComputation("computeMetadata"))
+{}
 
 PXR_NAMESPACE_CLOSE_SCOPE

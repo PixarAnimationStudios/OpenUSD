@@ -33,9 +33,9 @@ class GfQuaternion
 {
   public:
 
-    /// The default constructor leaves the quaternion undefined.
-    GfQuaternion() {
-    }
+    /// GfQuaternion value-initializes to zero and performs no default
+    /// initialization, like float or double.
+    GfQuaternion() = default;
 
     /// This constructor initializes the real part to the argument and
     /// the imaginary parts to zero.

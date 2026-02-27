@@ -139,6 +139,10 @@ int main(int argc, char** argv)
         const std::vector<int> expectedSubspan4({4,5});
         TF_AXIOM(std::equal(subspan4.begin(), subspan4.end(),
                             expectedSubspan4.begin()));
+
+        // Test that we can take a subspan to empty.
+        TfSpan<const int> subspan5 = span.subspan(5);
+        TF_AXIOM(subspan5.empty());
     }
 
     // Test span edits.

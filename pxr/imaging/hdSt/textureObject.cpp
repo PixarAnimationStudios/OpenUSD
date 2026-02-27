@@ -300,13 +300,20 @@ HdStUvTextureObject::HdStUvTextureObject(
   : HdStTextureObject(textureId, textureObjectRegistry)
   , _wrapParameters{HdWrapNoOpinion, HdWrapNoOpinion}
 {
+    const HdStSubtextureIdentifier * const subId =
+        textureId.GetSubtextureIdentifier();
+    if (dynamic_cast<const HdStDynamicCubemapSubtextureIdentifier *>(subId)) {
+        _textureType = HdStTextureType::Cubemap;
+    } else {
+        _textureType = HdStTextureType::Uv;
+    }
 }
 
 
 HdStTextureType
 HdStUvTextureObject::GetTextureType() const
 {
-    return HdStTextureType::Uv;
+    return _textureType;
 }
 
 size_t
@@ -677,88 +684,6 @@ HdStFieldTextureObject::GetCommittedSize() const
         return 0;
     }
     return _cpuData->GetTextureDesc().pixelsByteSize;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Cubemap texture
-
-HdStCubemapTextureObject::HdStCubemapTextureObject(
-    const HdStTextureIdentifier &textureId,
-    HdSt_TextureObjectRegistry * textureObjectRegistry)
-  : HdStTextureObject(textureId, textureObjectRegistry)
-{
-}
-
-HdStTextureType
-HdStCubemapTextureObject::GetTextureType() const
-{
-    return HdStTextureType::Cubemap;
-}
-
-size_t
-HdStCubemapTextureObject::GetCommittedSize() const
-{
-    if (!_cpuData) {
-        return 0;
-    }
-    return _cpuData->GetTextureDesc().pixelsByteSize;
-}
-
-HdStCubemapTextureObject::~HdStCubemapTextureObject()
-{
-    _DestroyTexture();
-}
-
-void
-HdStCubemapTextureObject::_SetCpuData(
-    std::unique_ptr<HdStTextureCpuData> &&cpuData)
-{
-    _cpuData = std::move(cpuData);
-}
-
-HdStTextureCpuData *
-HdStCubemapTextureObject::_GetCpuData() const
-{
-    return _cpuData.get();
-}
-
-void
-HdStCubemapTextureObject::_CreateTexture(const HgiTextureDesc &desc)
-{
-    Hgi * const hgi = _GetHgi();
-    if (!TF_VERIFY(hgi)) {
-        return;
-    }
-
-    _DestroyTexture();
-
-    _gpuTexture = hgi->CreateTexture(desc);
-    _AddToTotalTextureMemory(_gpuTexture);
-}
-
-void
-HdStCubemapTextureObject::_GenerateMipmaps()
-{
-    HdStResourceRegistry * const registry = _GetResourceRegistry();
-    if (!TF_VERIFY(registry)) {
-        return;
-    }
-
-    if (!_gpuTexture) {
-        return;
-    }
-
-    HgiBlitCmds* const blitCmds = registry->GetGlobalBlitCmds();
-    blitCmds->GenerateMipMaps(_gpuTexture);
-}
-
-void
-HdStCubemapTextureObject::_DestroyTexture()
-{
-    if (Hgi * hgi = _GetHgi()) {
-        _SubtractFromTotalTextureMemory(_gpuTexture);
-        hgi->DestroyTexture(&_gpuTexture);
-    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

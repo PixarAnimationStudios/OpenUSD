@@ -284,6 +284,11 @@ HdContainerDataSourceHandle
 HdFlattenedPrimvarsDataSourceProvider::GetFlattenedDataSource(
     const Context &ctx) const
 {
+    // Unlike other flattened data source providers, we cannot use
+    // the parent's flattened data source in the case where this
+    // prim provides no additional input data source.  The reason
+    // is that only interpolation=constant primvars inherit, and
+    // _PrimvarsDataSource() is what provides this filtering.
     return 
         _PrimvarsDataSource::New(
             ctx.GetInputDataSource(),

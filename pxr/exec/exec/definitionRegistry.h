@@ -45,7 +45,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class Exec_RegistrationBarrier;
 class EsfAttributeInterface;
 class EsfJournal;
 class EsfObjectInterface;
@@ -303,12 +302,6 @@ private:
     void _DidRegisterPlugins(const PlugNotice::DidRegisterPlugins &notice);
 
 private:
-
-    // This barrier ensures singleton access returns a fully-constructed
-    // instance. This is the case for GetInstance(), but not required for
-    // _GetInstanceForRegistration() which is called by exec definition registry
-    // functions.
-    std::unique_ptr<Exec_RegistrationBarrier> _registrationBarrier;
 
     // Comparator for ordering plugin computation definitions in a set.
     struct _PluginComputationDefinitionComparator {

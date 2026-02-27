@@ -117,20 +117,20 @@ Exec_CompilerTaskSyncBase::_WaitOn(
         : WaitResult::Done;
 }
 
-void
+bool
 Exec_CompilerTaskSyncBase::_MarkDone(_Waitlist *const waitlist)
 {
-    // Set the state to done. We expect the waitlist to not already be marked
-    // done.
+    // Set the state to done.
     const uint8_t previousState = waitlist->state.exchange(_TaskStateDone);
-    if (!TF_VERIFY(previousState != _TaskStateDone)) {
-        return;
+    if (previousState == _TaskStateDone) {
+        return false;
     }
 
     // Close the waiting queue and notify all waiting tasks. We expect to be
     // the first to close the queue.
     const bool closed = _CloseAndNotify(&waitlist->waiting);
     TF_VERIFY(closed);
+    return true;
 }
 
 bool

@@ -270,7 +270,7 @@ vec3
 lightingComputation(vec3 rayPointEye, vec3 rayDirectionEye)
 {
     vec3 result = vec3(0.0);
-    for (int i = 0; i < NUM_LIGHTS; ++i) {
+    for (int i = 0; i < GetLightCount(); ++i) {
         LightSource light = GetLightSource(i);
 
         const vec4 Plight = light.position;

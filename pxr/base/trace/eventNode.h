@@ -48,31 +48,23 @@ public:
     /// Creates a new node with \p key, \p category, \p beginTime and 
     /// \p endTime.
     static TraceEventNodeRefPtr New(const TfToken &key,
-                          const TraceCategoryId category,
-                          const TimeStamp beginTime,
-                          const TimeStamp endTime,
-                          TraceEventNodeRefPtrVector&& children,
-                          const bool separateEvents) {
+                                    const TraceCategoryId category,
+                                    const TimeStamp beginTime,
+                                    const TimeStamp endTime,
+                                    const bool separateEvents) {
         return TfCreateRefPtr(
             new TraceEventNode(
-                key,
-                category,
-                beginTime,
-                endTime,
-                std::move(children),
-                separateEvents));
+                key, category, beginTime, endTime, separateEvents)
+            );
     }
 
-    /// Appends a new child node with \p key, \p category, \p beginTime and 
-    /// \p endTime.
-    TRACE_API TraceEventNodeRefPtr Append(const TfToken &key, 
-                                          TraceCategoryId category,
-                                          TimeStamp beginTime,
-                                          TimeStamp endTime,
-                                          bool separateEvents);
-    
     /// Appends \p node as a child node.
-    TRACE_API void Append(TraceEventNodeRefPtr node);
+    TRACE_API void Append(TraceEventNodeRefPtr &&node);
+
+    /// Appends \p node as a child node.
+    void Append(const TraceEventNodeRefPtr &node) {
+        Append(TraceEventNodeRefPtr { node });
+    }
     
     /// Returns the name of this node.
     const TfToken &GetKey() const { return _key; }
@@ -93,6 +85,9 @@ public:
     /// Returns the time that this scope ended.
     TimeStamp GetEndTime() const { return _endTime; }
 
+    /// Returns the time duration of this scope as GetEndTime() - GetBeginTime()
+    TimeStamp GetTimeDuration() const { return _endTime - _beginTime; }
+
     /// @}
 
     /// \name Children Accessors
@@ -108,7 +103,8 @@ public:
     /// Return the data associated with this node.
     TRACE_API const AttributeMap& GetAttributes() const;
 
-    /// Add data to this node.
+    /// Add data to this node.  If attribute data already exists for `key`,
+    /// `attr` is prepended to the values associated with `key`.
     TRACE_API void AddAttribute(const TfToken& key, AttributeData&& attr);
 
     /// Returns whether this node was created from a Begin-End pair or a single
@@ -117,34 +113,27 @@ public:
         return _attributesAndSeparateEvents.BitsAs<bool>();
     }
 
-    ~TraceEventNode() {
-        if (AttributeMap *attrMap = _attributesAndSeparateEvents.Get()) {
-            _DeleteAttrMap(attrMap);
-        }
-    }
+    ~TraceEventNode() override;
 
 private:
+    friend class Trace_EventTreeBuilder;
 
-    TraceEventNode(
-        const TfToken &key,
-        TraceCategoryId category,
-        TimeStamp beginTime, 
-        TimeStamp endTime,
-        TraceEventNodeRefPtrVector&& children,
-        bool separateEvents)
+    void _SetIsSeparateEvents(bool isSeparate) {
+        _attributesAndSeparateEvents.SetBits(isSeparate);
+    }
 
+    TraceEventNode(const TfToken &key,
+                   TraceCategoryId category,
+                   TimeStamp beginTime, 
+                   TimeStamp endTime,
+                   bool separateEvents)
         : _category(category)
         , _key(key)
         , _beginTime(beginTime)
         , _endTime(endTime)
-        , _children(std::make_move_iterator(children.begin()),
-                    std::make_move_iterator(children.end()))
         , _attributesAndSeparateEvents(nullptr, separateEvents)
     {
     }
-
-    // Out-of-line to avoid inlining the multimap dtor code.
-    TRACE_API void _DeleteAttrMap(AttributeMap *attrMap);
 
     // _category (4 bytes) is first so it packs with TfRefBase's 4-byte count.
     const TraceCategoryId _category;

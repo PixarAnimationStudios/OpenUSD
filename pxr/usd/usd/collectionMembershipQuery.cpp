@@ -192,6 +192,17 @@ _ComputeIncludedImpl(
              expansionRule == UsdTokens->expandPrims ||
              expansionRule == UsdTokens->expandPrimsAndProperties)) {
 
+            // Check that we're matching objects on the same stage.
+            if (query.GetExpressionEvaluator().GetStage() != stage) {
+                TF_CODING_ERROR(
+                    "Stage mismatch - collection from stage '%s' "
+                    "cannot match objects on stage '%s'",
+                    UsdDescribe(
+                        query.GetExpressionEvaluator().GetStage()).c_str(),
+                    UsdDescribe(stage).c_str());
+                return;
+            }
+
             bool searchProperties =
                 (expansionRule == UsdTokens->expandPrimsAndProperties);
 

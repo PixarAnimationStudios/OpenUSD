@@ -315,7 +315,7 @@ _ComputeMaterialTag(HdSceneDelegate * const delegate,
         static_cast<const HdStMaterial *>(
             delegate->GetRenderIndex().GetSprim(
                 HdPrimTypeTokens->material, materialId));
-    if (material) {
+    if (material && !material->IsUsingFallbackShader()) {
         return material->GetMaterialTag();
     }
 

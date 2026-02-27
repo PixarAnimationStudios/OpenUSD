@@ -660,11 +660,12 @@ TestVulkanTexture(HgiVulkan& hgiVulkan)
     desc.type = HgiTextureType2D;
     desc.usage = HgiTextureUsageBitsColorTarget | HgiTextureUsageBitsShaderRead;
 
-    size_t numTexels = 
+    const size_t numTexels = 
         desc.dimensions[0] * desc.dimensions[1] * desc.dimensions[2];
+    const size_t numComponents = 4; // i.e. Float32Vec4
     desc.pixelsByteSize = HgiGetDataSizeOfFormat(desc.format) * numTexels;
 
-    std::vector<float> pixels(numTexels, 0.123f);
+    const std::vector<float> pixels(numTexels * numComponents, 0.123f);
     desc.initialData = pixels.data();
 
     HgiTextureHandle texture = hgiVulkan.CreateTexture(desc);
@@ -686,7 +687,7 @@ TestVulkanTexture(HgiVulkan& hgiVulkan)
     }
 
     // Read back the initial pixels by using the TextureView
-    std::vector<float> readBack(numTexels, 0);
+    std::vector<float> readBack(numTexels * numComponents, 0);
     HgiTextureGpuToCpuOp readBackOp;
     readBackOp.cpuDestinationBuffer = &readBack[0];
     readBackOp.destinationBufferByteSize= readBack.size() * sizeof(readBack[0]);
@@ -706,7 +707,7 @@ TestVulkanTexture(HgiVulkan& hgiVulkan)
 
     // Upload some new pixels to the texture using the TextureView followed
     // by reading back the results.
-    std::vector<float> upload(numTexels, 0.456f);
+    std::vector<float> upload(numTexels * numComponents, 0.456f);
     HgiTextureCpuToGpuOp uploadOp;
     uploadOp.bufferByteSize = upload.size() * sizeof(upload[0]);
     uploadOp.cpuSourceBuffer = upload.data();

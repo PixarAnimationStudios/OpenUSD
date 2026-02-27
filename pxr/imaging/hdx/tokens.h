@@ -129,6 +129,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdxAovTokens, HDX_API,
     (lightingContext)              \
     (useLighting)                  \
     (useColorMaterialDiffuse)      \
+    (lightCount)                   \
     (lightSource)                  \
     (position)                     \
     (ambient)                      \

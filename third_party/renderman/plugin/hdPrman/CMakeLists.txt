@@ -108,6 +108,7 @@ pxr_plugin(${PXR_PACKAGE}
         material
         matfiltConvertPreviewMaterial
         matfiltResolveVstructs
+        matfiltSceneIndexPlugins
         mesh
         meshLightResolvingSceneIndex
         meshLightResolvingSceneIndexPlugin
@@ -118,15 +119,12 @@ pxr_plugin(${PXR_PACKAGE}
         renderTerminalOutputInvalidatingSceneIndexPlugin
         rileyCameraSchema
         rileyClippingPlaneSchema
-        rileyConversionSceneIndexPlugin
         rileyCoordinateSystemSchema
         rileyDisplacementSchema
         rileyDisplayFilterSchema
         rileyDisplaySchema
-        rileyFallbackMaterialSceneIndexPlugin
         rileyGeometryInstanceSchema
         rileyGeometryPrototypeSchema
-        rileyGlobalsSceneIndexPlugin
         rileyGlobalsSchema
         rileyIntegratorSchema
         rileyLightInstanceSchema
@@ -157,7 +155,6 @@ pxr_plugin(${PXR_PACKAGE}
         framebuffer
         implicitSurfaceSceneIndexPlugin
         materialPrimvarTransferSceneIndexPlugin
-        matfiltSceneIndexPlugins
         motionBlurSceneIndexPlugin
         pinnedCurveExpandingSceneIndexPlugin
         previewSurfacePrimvarsSceneIndexPlugin
@@ -170,11 +167,13 @@ pxr_plugin(${PXR_PACKAGE}
         renderViewContext
         resourceRegistry
         rileyCameraPrim
+        rileyConversionSceneIndex
         rileyCoordinateSystemPrim
         rileyClippingPlanePrim
         rileyDisplacementPrim
         rileyDisplayFilterPrim
         rileyDisplayPrim
+        rileyFallbackMaterial
         rileyGeometryInstancePrim
         rileyGeometryPrototypePrim
         rileyGlobalsSceneIndex
@@ -212,7 +211,9 @@ pxr_plugin(${PXR_PACKAGE}
 
     CPPFILES
         lightLinkingSceneIndexPlugin.cpp
+        renderer2SceneIndexPlugin.cpp
         rendererPlugin.cpp
+        sceneIndexPluginOrdering.cpp
         virtualStructConditionalGrammar.lex.cpp
         virtualStructConditionalGrammar.tab.cpp
 

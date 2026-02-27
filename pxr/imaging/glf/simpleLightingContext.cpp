@@ -697,9 +697,12 @@ _ComputeHash(GlfSimpleLightVector const & lights)
     for (GlfSimpleLight const & light: lights) {
         TfToken const & identifier = light.GetPostSurfaceIdentifier();
         std::string const & shaderSource = light.GetPostSurfaceShaderSource();
-
-        hash = ArchHash64(identifier.GetText(), identifier.size(), hash);
-        hash = ArchHash64(shaderSource.c_str(), shaderSource.size(), hash);
+        // hash skips lights that won't generate shader code so light count
+        // change doesn't trigger shader recompile
+        if (!identifier.IsEmpty() || !shaderSource.empty()) {
+            hash = ArchHash64(identifier.GetText(), identifier.size(), hash);
+            hash = ArchHash64(shaderSource.c_str(), shaderSource.size(), hash);
+        }
     }
 
     return hash;

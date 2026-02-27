@@ -12,6 +12,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/exec/execUsd/api.h"
+#include "pxr/exec/execUsd/valueOverride.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/exec/exec/request.h"
@@ -127,6 +128,30 @@ public:
     ///
     EXECUSD_API
     ExecUsdCacheView Compute(const ExecUsdRequest &request);
+
+    /// Executes the given \p request in the presence of \p valueOverrides, and
+    /// returns a cache view for extracting the computed values.
+    ///
+    /// If a value in \p request depends on a computed value contained in
+    /// \p valueOverrides, then \p valueOverrides provides the result of that
+    /// computation. The overrides only apply for a single invocation of
+    /// ComputeWithOverrides, and do not affect subsequent calls to Compute or
+    /// ComputeWithOverrides.
+    ///
+    /// \warning
+    /// If an override value is provided, it must have the same type as the
+    /// computed value. For example, if a computation would normally produce
+    /// an int, then the overridden value must also be an int. Otherwise, a
+    /// coding error is emitted.
+    /// 
+    /// This implicitly calls PrepareRequest(), though clients may choose to
+    /// call PrepareRequest() ahead of time and front-load the associated
+    /// compilation and scheduling cost.
+    ///
+    EXECUSD_API
+    ExecUsdCacheView ComputeWithOverrides(
+        const ExecUsdRequest &request,
+        ExecUsdValueOverrideVector &&valueOverrides);
 
 private:
     // This object to subscribes to scene changes on the UsdStage and delivers

@@ -8,7 +8,10 @@
                     }, 
                     "StageMetadataChecker": {
                         "doc": "Stages that can be consumed as referenceable assets must have a valid 'defaultPrim' specified."
-                    }, 
+                    },
+                    "AttributeTypeMismatch": {
+                        "doc": "Validator that checks for attribute type mismatch with the schema definition."
+                    },
                     "keywords": [
                         "UsdCoreValidators"
                     ]

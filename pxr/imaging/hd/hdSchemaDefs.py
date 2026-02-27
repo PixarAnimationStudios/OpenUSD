@@ -1038,11 +1038,14 @@
             ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
             ('namespacedSettings', 'HdSampledDataSourceContainerSchema', {}),
             ('active', T_BOOL, {}),
+            ('camera', T_PATH, {}),
+            ('disableMotionBlur', T_BOOL, {}),
+            ('disableDepthOfField', T_BOOL, {}),
             ('renderProducts', 'HdRenderProductVectorSchema', {}),
             ('includedPurposes', T_TOKENARRAY, {}),
             ('materialBindingPurposes', T_TOKENARRAY, {}),
             ('renderingColorSpace', T_TOKEN, {}),
-            ('shutterInterval', T_VEC2D,
+            ('unionedSamplingInterval', T_VEC2D,
              dict(DOC = '''
                 Frame-relative time interval representing the sampling window for 
                 data relevant to motion blur. Renderers can use this interval when
@@ -1561,7 +1564,44 @@
             'hgi',
         ],
     ),
-    
+
+    #--------------------------------------------------------------------------
+    # sceneIndexInputArgsSchema
+    dict(
+        SCHEMA_NAME = 'SceneIndexInputArgs',
+        DOC = '''Schema for the container data source returned by
+        HdRendererPlugin::GetSceneIndexInputArgs. The application forwards it (possibly
+        overlayed with its own container data source) to the scene index constructors
+        or scene index plugins. In other words, HdRendererPlugin::GetSceneIndexInputArgs
+        gives a renderer the opportunity to configure scene indices.
+
+        Examples are: A scene index might use execution which is non-lazy and needs to
+        cache values or even samples for motion blur in advance. The renderer can
+        advertise whether it actually supports motion blur and we need to cache these
+        samples. This similarly applies to the material networks for different
+        render contexts such as glslflx which is understood by Storm but not Prman,
+        for example.
+        ''',
+        MEMBERS = [
+            ('motionBlurSupport', T_BOOL,
+             dict(DOC = '''Does consumer (most likely HdRenderer) of scene indices need
+                           samples for motion blur? This is relevant, for example, for
+                           scene indices using execution which is non-lazy and needs to
+                           know for what times to cache samples.''')),
+            ('cameraMotionBlurSupport', T_BOOL,
+             dict(DOC = '''Does consumer (most likely HdRenderer) of scene indices need
+                           samples for motion blur for cameras? This is a variation
+                           of motionBlurSupport. It is here, for example, for renderers
+                           that use an image shader for camera motion blur.''')),
+            ('legacyRenderDelegateInfo', 'HdRenderDelegateInfoDataSource',
+             dict(DOC = '''Used for HdRenderIndexAdapterSceneIndex. In particular,
+                           this is used when USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX is
+                           false: the UsdImagingDelegate is querying an emulation
+                           render delegate for information to resolve, for example,
+                           the material render contexts correctly.''')),
+        ],
+    ),
+
     #--------------------------------------------------------------------------
     # legacyTask
     dict(

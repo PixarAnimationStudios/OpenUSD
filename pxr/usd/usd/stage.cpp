@@ -40,6 +40,7 @@
 
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/attributeSpec.h"
+#include "pxr/usd/sdf/composeTimeSampleSeries.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/primSpec.h"
@@ -67,6 +68,7 @@
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/functionRef.h"
 #include "pxr/base/tf/hashset.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
@@ -88,6 +90,7 @@
 #include "pxr/base/work/utils.h"
 #include "pxr/base/work/withScopedParallelism.h"
 
+#include <tbb/concurrent_vector.h>
 #include <tbb/spin_rw_mutex.h>
 #include <tbb/spin_mutex.h>
 
@@ -450,47 +453,95 @@ namespace {
 // This class encapsulates the state required to transform field values from
 // layers to a stage's time & name-space, including path translation, time
 // transformation by layer offset, asset path resolution, etc.
-struct _FieldValueToStageXf
+class _FieldValueToStageXf
 {
-    // Note that members are stored by REFERENCE for performance -- the passed
+    const UsdStage *_stage;
+    const UsdObject *_object;
+    const PcpNodeRef *_node;
+    mutable const SdfLayerRefPtr *_layer;
+    const SdfPath *_specPath;
+    const bool _forFlattening;
+    
+    std::optional<TfFunctionRef<SdfLayerRefPtr ()>> _getLayer;
+    
+    // Lazily computed.
+    mutable std::optional<SdfLayerOffset> _layerOffset;
+    mutable SdfLayerRefPtr _lazyLayer;
+
+public:
+
+    // Note that members are stored by pointer for performance -- the passed
     // arguments must outlive the _FieldValueToStageXf object.
-    _FieldValueToStageXf(const UsdStage &stage,
-                         const UsdObject &object,
-                         const PcpNodeRef &node,
-                         const SdfLayerRefPtr &layer,
-                         const SdfPath &specPath,
+    _FieldValueToStageXf(const UsdStage *stage,
+                         const UsdObject *object,
+                         const PcpNodeRef *node,
+                         const SdfLayerRefPtr *layer,
+                         const SdfPath *specPath,
                          bool forFlattening)
-        : stage(stage)
-        , object(object)
-        , node(node)
-        , layer(layer)
-        , specPath(specPath)
-        , forFlattening(forFlattening)
+        : _stage(stage)
+        , _object(object)
+        , _node(node)
+        , _layer(layer)
+        , _specPath(specPath)
+        , _forFlattening(forFlattening)
         {}
+
+    // This ctor is used for clips, which have more work to do to come up with
+    // the node, layer, and specPath in case they're needed.
+    _FieldValueToStageXf(const UsdStage *stage,
+                         const UsdObject *object,
+                         const PcpNodeRef *node,
+                         TfFunctionRef<SdfLayerRefPtr ()> getLayer,
+                         const SdfPath *specPath,
+                         bool forFlattening)
+        : _stage(stage)
+        , _object(object)
+        , _node(node)
+        , _layer(nullptr)
+        , _specPath(specPath)
+        , _forFlattening(forFlattening)
+        , _getLayer(getLayer)
+        {}
+
+    UsdStage const &GetStage() const {
+        return *_stage;
+    }
+
+    UsdObject const &GetObject() const {
+        return *_object;
+    }
+
+    PcpNodeRef const &GetNode() const {
+        return *_node;
+    }
+
+    SdfLayerRefPtr const &GetLayer() const {
+        if (!_layer) {
+            _lazyLayer = (*_getLayer)();
+            _layer = &_lazyLayer;
+        }
+        return *_layer;
+    }
+
+    SdfPath const &GetSpecPath() const {
+        return *_specPath;
+    }
+
+    bool IsForFlattening() const {
+        return _forFlattening;
+    }
 
     SdfLayerOffset const &GetLayerOffset() const {
         // Only compute the layer offset if requested.
         if (!_layerOffset) {
-            _layerOffset = _GetLayerToStageOffset(node, layer);
+            _layerOffset = _GetLayerToStageOffset(GetNode(), GetLayer());
         }
         return *_layerOffset;
     }
 
     ArResolverContext const &GetResolverContext() const {
-        return node.GetLayerStack()->GetIdentifier().pathResolverContext;
+        return GetNode().GetLayerStack()->GetIdentifier().pathResolverContext;
     }
-    
-    // Note that members are stored by REFERENCE for performance.
-    const UsdStage &stage;
-    const UsdObject &object;
-    const PcpNodeRef &node;
-    const SdfLayerRefPtr &layer;
-    const SdfPath &specPath;
-    const bool forFlattening;
-
-private:
-    // Lazily computed.
-    mutable std::optional<SdfLayerOffset> _layerOffset;
 };
 
 ////////////////////////////////////////////////////////////////////////
@@ -534,21 +585,21 @@ _AssetPathToStage(SdfAssetPath const &assetPath,
     SdfAssetPath mutAssetPath = assetPath;
     
     const PcpExpressionVariables& exprVars =
-        xf.node.GetLayerStack()->GetExpressionVariables();
+        xf.GetNode().GetLayerStack()->GetExpressionVariables();
     std::vector<std::string> errors;
-    if (xf.forFlattening) {
+    if (xf.IsForFlattening()) {
         SdfAnchorAssetPaths(
-            xf.layer, exprVars.GetVariables(), 
+            xf.GetLayer(), exprVars.GetVariables(), 
             TfSpan<SdfAssetPath>(&mutAssetPath, 1), &errors);
     } else {
         SdfResolveAssetPaths(
-            xf.layer, exprVars.GetVariables(), 
+            xf.GetLayer(), exprVars.GetVariables(), 
             TfSpan<SdfAssetPath>(&mutAssetPath, 1), &errors);
     }
     
     if (!errors.empty()) {
         Usd_AssetPathContext::ReportErrors(
-            xf.stage, xf.layer, xf.specPath, errors);
+            xf.GetStage(), xf.GetLayer(), xf.GetSpecPath(), errors);
     }
 
     return mutAssetPath;
@@ -561,9 +612,9 @@ _PathExprToStage(
     SdfPathExpression const &pathExpr, _FieldValueToStageXf const &xf)
 {
     return _MapPathExpressionToPrim(
-        pathExpr, xf.node.GetMapToRoot().Evaluate(),
+        pathExpr, xf.GetNode().GetMapToRoot().Evaluate(),
         Usd_StageImplAccess
-        ::GetPrimProtoToInstancePathMap(xf.object.GetPrim()));
+        ::GetPrimProtoToInstancePathMap(xf.GetObject().GetPrim()));
 }
 
 SdfPathExpression
@@ -803,78 +854,6 @@ UsdStage::_MakeResolvedAssetPathsValue(UsdTimeCode time,
             time, attr, assetPaths.data(), assetPaths.size(), 
             forFlattening);
         value->UncheckedSwap(assetPaths);
-    }
-}
-
-void 
-UsdStage::_MakeResolvedTimeCodes(UsdTimeCode time, const UsdAttribute &attr,
-                                 SdfTimeCode *timeCodes,
-                                 size_t numTimeCodes) const
-{
-    UsdResolveInfo info;
-    _GetResolveInfo(attr, &info, &time);
-    if (!info._layerToStageOffset.IsIdentity()) {
-        for (size_t i = 0; i != numTimeCodes; ++i) {
-            Usd_ApplyLayerOffsetToValue(&timeCodes[i], info._layerToStageOffset);
-        }
-    }
-}
-
-void 
-UsdStage::_MakeResolvedPathExpressions(
-    UsdTimeCode time, const UsdAttribute &attr,
-    SdfPathExpression *pathExprs,
-    size_t numPathExprs) const
-{
-    UsdResolveInfo info;
-    _GetResolveInfo(attr, &info, &time);
-
-    // Use the info's node & make a map function.  We hit this for anim values,
-    // requests at non-default, or thru AttributeQuery, which we don't "deeply"
-    // compose.  Known bug.
-
-    PcpMapFunction const &mapFn = info.GetNode().GetMapToRoot().Evaluate();
-    UsdPrim::_ProtoToInstancePathMap ptoiMap =
-        attr.GetPrim()._GetProtoToInstancePathMap();
-    
-    for (SdfPathExpression *pexpr = pathExprs;
-         pexpr != pathExprs + numPathExprs; ++pexpr) {
-        *pexpr = _MapPathExpressionToPrim(*pexpr, mapFn, ptoiMap);
-    }
-}
-
-void 
-UsdStage::_MakeResolvedAttributeValue(
-    UsdTimeCode time, const UsdAttribute &attr, VtValue *value) const
-{
-    if (value->IsHolding<SdfTimeCode>()) {
-        SdfTimeCode timeCode;
-        value->UncheckedSwap(timeCode);
-        _MakeResolvedTimeCodes(time, attr, &timeCode, 1);
-        value->UncheckedSwap(timeCode);
-    }
-    else if (value->IsHolding<VtArray<SdfTimeCode>>()) {
-        VtArray<SdfTimeCode> timeCodes;
-        value->UncheckedSwap(timeCodes);
-        _MakeResolvedTimeCodes(
-            time, attr, timeCodes.data(), timeCodes.size());
-        value->UncheckedSwap(timeCodes);
-    }
-    else if (value->IsHolding<SdfPathExpression>()) {
-        SdfPathExpression pathExpr;
-        value->UncheckedSwap(pathExpr);
-        _MakeResolvedPathExpressions(time, attr, &pathExpr, 1);
-        value->UncheckedSwap(pathExpr);
-    }
-    else if (value->IsHolding<VtArray<SdfPathExpression>>()) {
-        VtArray<SdfPathExpression> pathExprs;
-        value->UncheckedSwap(pathExprs);
-        _MakeResolvedPathExpressions(
-            time, attr, pathExprs.data(), pathExprs.size());
-        value->UncheckedSwap(pathExprs);
-    }
-    else {
-        _MakeResolvedAssetPathsValue(time, attr, value);
     }
 }
 
@@ -2265,7 +2244,7 @@ _IsPrivateFieldKey(const TfToken& fieldKey)
         return true;
 
     // Implicitly excluded fields (child containers & readonly metadata).
-    SdfSchema const & schema = SdfSchema::GetInstance();
+    SdfSchema const &schema = SdfSchema::GetInstance();
     SdfSchema::FieldDefinition const* field =
                                 schema.GetFieldDefinition(fieldKey);
     if (field && (field->IsReadOnly() || field->HoldsChildren()))
@@ -3465,8 +3444,6 @@ UsdStage::_ComposeSubtreeImpl(
     UsdStagePopulationMask const *mask,
     const SdfPath& inPrimIndexPath)
 {
-    TfAutoMallocTag tag("Usd", _GetMallocTagId());
-
     const SdfPath primIndexPath = 
         (inPrimIndexPath.IsEmpty() ? prim->GetPath() : inPrimIndexPath);
 
@@ -5044,6 +5021,7 @@ UsdStage::_Recompose(const PcpChanges &changes,
                      T *pathsToRecompose)
 {
     TRACE_FUNCTION();
+    TfAutoMallocTag tag("Usd", _GetMallocTagId());
 
     // Note: Calling changes.Apply() will result in recomputation of  
     // pcpPrimIndexes for changed prims, these get updated on the respective  
@@ -5386,8 +5364,7 @@ UsdStage::_ComposePrimIndexesInParallel(
     _cache->ComputePrimIndexesInParallel(
         primIndexPaths, &errs, 
         _NameChildrenPred(mask, &_loadRules, _instanceCache.get()),
-        _IncludePayloadsPredicate(this),
-        "Usd", _GetMallocTagId());
+        _IncludePayloadsPredicate(this));
 
     if (!errs.empty()) {
         _ReportPcpErrors(errs, context);
@@ -5572,24 +5549,16 @@ public:
         const UsdAttribute &attr, const SdfLayerOffset& offset, 
         SdfTimeSampleMap *out)
     {
-        UsdAttributeQuery attrQuery(attr);
-
-        std::vector<double> timeSamples;
-        if (attrQuery.GetTimeSamples(&timeSamples)) {
-            for (const auto& timeSample : timeSamples) {
-                VtValue value;
-                if (attrQuery.Get(&value, timeSample)) {
-                    Usd_FlattenAccess::ResolveValueForFlatten(
-                        timeSample, attr, offset, &value);
-                    (*out)[offset * timeSample].Swap(value);
-                }
-                else {
-                    (*out)[offset * timeSample] = VtValue(SdfValueBlock());
-                }
+        attr.GetStage()->_GetTimeSampleMap(attr, out, /*forFlattening=*/true);
+        // Transform the map by the offset.
+        if (!offset.IsIdentity()) {
+            VtValue xformed = VtValueTryTransform(*out, offset);
+            if (!xformed.IsEmpty()) {
+                TF_VERIFY(xformed.IsHolding<SdfTimeSampleMap>());
+                *out = xformed.Remove<SdfTimeSampleMap>();
             }
-            return true;
         }
-        return false;
+        return true;
     }
 
 };
@@ -5740,17 +5709,8 @@ _CopyProperty(const UsdProperty &prop,
 
         UsdResolveInfo resolveInfo = attr.GetResolveInfo();
 
-        if (resolveInfo.GetSource() == UsdResolveInfoSourceTimeSamples ||
-            resolveInfo.GetSource() == UsdResolveInfoSourceValueClips) {
-            SdfTimeSampleMap ts;
-            if (Usd_FlattenAccess::MakeTimeSampleMapForFlatten(
-                    attr, timeOffset, &ts)) {
-                sdfAttr->SetInfo(SdfFieldKeys->TimeSamples, VtValue::Take(ts));
-            }
-        }
-        else if (resolveInfo.GetSource() == UsdResolveInfoSourceSpline) {
+        if (resolveInfo.GetSource() == UsdResolveInfoSourceSpline) {
             TsSpline spline = attr.GetSpline();
-
             if (!timeOffset.IsIdentity()) {
                 TsSpline mappedSpline = spline;
                 // Apply layer offset.
@@ -5758,6 +5718,13 @@ _CopyProperty(const UsdProperty &prop,
                 spline = std::move(mappedSpline);
             }
             sdfAttr->SetInfo(SdfFieldKeys->Spline, VtValue::Take(spline));
+        }
+        else if (resolveInfo.ValueSourceMightBeTimeVarying()) {
+            SdfTimeSampleMap ts;
+            if (Usd_FlattenAccess::MakeTimeSampleMapForFlatten(
+                    attr, timeOffset, &ts)) {
+                sdfAttr->SetInfo(SdfFieldKeys->TimeSamples, VtValue::Take(ts));
+            }
         }
 
         // Always write default if we have one.
@@ -6200,7 +6167,7 @@ public:
         // layer offset mapping, etc.)
         VtValue transformed = VtValueTryTransform(
             value, _FieldValueToStageXf {
-                stage, _object, node, layer, specPath, _forFlattening
+                &stage, &_object, &node, &layer, &specPath, _forFlattening
             });
         if (!transformed.IsEmpty()) {
             value = std::move(transformed);
@@ -6600,28 +6567,6 @@ UsdStage
 // --------------------------------------------------------------------- //
 // Metadata Resolution
 // --------------------------------------------------------------------- //
-
-// Populates the time sample map with the resolved values for the given 
-// attribute and returns true if time samples exist, false otherwise.
-static bool 
-_GetTimeSampleMap(const UsdAttribute &attr, SdfTimeSampleMap *out)
-{
-    UsdAttributeQuery attrQuery(attr);
-
-    std::vector<double> timeSamples;
-    if (attrQuery.GetTimeSamples(&timeSamples)) {
-        for (const auto& timeSample : timeSamples) {
-            VtValue value;
-            if (attrQuery.Get(&value, timeSample)) {
-                (*out)[timeSample].Swap(value);
-            } else {
-                (*out)[timeSample] = VtValue(SdfValueBlock());
-            }
-        }
-        return true;
-    }
-    return false;
-}
 
 bool
 UsdStage::_GetMetadata(const UsdObject &obj, const TfToken &fieldName,
@@ -7300,6 +7245,9 @@ _HasTimeSamples(const Usd_ClipSetRefPtr& sourceClips,
 template <class T>
 struct Usd_AttrGetValueHelper {
 
+    static_assert(std::is_same_v<T, VtValue> ||
+                  std::is_same_v<T, SdfAbstractDataValue>);
+    
 public:
     // Get the value at time for the attribute.
     static bool GetValue(
@@ -7312,259 +7260,59 @@ public:
         // metadata. This value will be fully resolved already and can be
         // returned without further value resolution.
         if (time.IsDefault()) {
-            SdfAbstractDataTypedValue<T> out(result);
-            MetadataValueComposer composer(&out, attr);
+            MetadataValueComposer composer(result, attr);
             bool valueFound = stage._GetMetadataImpl(
                 attr, SdfFieldKeys->Default, TfToken(), 
                 /*useFallbacks=*/true, &composer);
 
-            if (!out.isAnimationBlock) {
+            if (!Usd_ValueContainsBlock<SdfAnimationBlock>(result)) {
                 // We can only stop here if the value is not an animation block,
                 // as if the strongest value is an animation block, we must walk
                 // the node graph to get the next stronger non-animation block
                 // value.
-                return valueFound && 
-                    (!Usd_ClearValueIfBlocked<
-                        SdfValueBlock, SdfAbstractDataValue>(&out));
-            }
-            // Clear the animation block and continue walking to find next
-            // stronger non-animation block default.
-            Usd_ClearValueIfBlocked<
-                SdfAnimationBlock, SdfAbstractDataValue>(&out);
-        }
-
-        // Otherwise we have numeric time and need to get the value with
-        // the appropriate interpolation.
-        auto getValueImpl = [&](Usd_InterpolatorBase* interpolator,
-                                SdfAbstractDataValue* value) {
-            return stage._GetValueImpl(time, attr, interpolator, value);
-        };
-
-        if (_GetValueWithInterpolationImpl(stage, result, getValueImpl)) {
-            // Do the the type specific value resolution on the result. For 
-            // most types _ResolveValue does nothing. 
-            _ResolveValue(stage, time, attr, result);
-            return true;
-        }
-        return false;
-    }
-
-    // Get the value at time for the attribute using the given the already 
-    // computed resolve info.
-    static bool GetValueFromResolveInfo(
-        const UsdStage &stage, 
-        UsdTimeCode time, 
-        const UsdAttribute &attr, 
-        const UsdResolveInfo &info,
-        T* result)
-    {
-        if (time.IsDefault()) {
-            // For default time do default value resolution. The the resolved
-            // value will NOT have type specific value resolution applied yet.
-            SdfAbstractDataTypedValue<T> out(result);
-            if (!stage._GetDefaultValueFromResolveInfoImpl<SdfAbstractDataValue>(
-                    info, attr, &out)) {
-                return false;
-            }
-        } else {
-            // Otherwise we have numeric time and need to get the value with
-            // the appropriate interpolation.
-            auto getValueImpl = [&](Usd_InterpolatorBase* interpolator,
-                                    SdfAbstractDataValue* value) {
-                return stage._GetValueFromResolveInfoImpl(
-                    info, time, attr, interpolator, value);
-            };
-
-            if (!_GetValueWithInterpolationImpl(stage, result, getValueImpl)) {
-                return false;
-            }
-        }
-
-        // Do the the type specific value resolution on the result. For 
-        // most types _ResolveValue does nothing. 
-        _ResolveValue(stage, time, attr, result);
-        return true;
-    }
-
-private:
-    // Metafunction for selecting the appropriate interpolation object if the
-    // given value type supports linear interpolation.
-    struct _SelectInterpolator 
-        : public std::conditional<
-              UsdLinearInterpolationTraits<T>::isSupported,
-              Usd_LinearInterpolator<T>,
-              Usd_HeldInterpolator<T> > { };
-
-    // Gets the attribute value from the implementation with appropriate
-    // interpolation. In the case of value types that have type specific value
-    // resolution (like SdfAssetPath, SdfTimeCode, and SdfPathExpression), the
-    // value returned from from this is NOT fully resolved yet.
-    template <class Fn>
-    static bool _GetValueWithInterpolationImpl(
-        const UsdStage &stage, T* result, const Fn &getValueImpl)
-    {
-        SdfAbstractDataTypedValue<T> out(result);
-
-        if (stage._interpolationType == UsdInterpolationTypeLinear) {
-            typedef typename _SelectInterpolator::type _Interpolator;
-            _Interpolator interpolator(result);
-            return getValueImpl(&interpolator, &out);
-        };
-
-        Usd_HeldInterpolator<T> interpolator(result);
-        return getValueImpl(&interpolator, &out);
-    }
-
-    // Performs type specific value resolution.
-    static void _ResolveValue(
-        const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
-        T* result)
-    {
-        // Do nothing for types without type specific value resolution.
-        static_assert(!UsdStage::_HasTypeSpecificResolution<T>::value, 
-                      "Value types with type specific value resolution must "
-                      "specialize Usd_AttrGetValueHelper::_ResolveValue");
-    }
-};
-
-// Specializations implementing _ResolveValue for types with type specific
-// value resolution.
-template <>
-void Usd_AttrGetValueHelper<SdfAssetPath>::_ResolveValue(
-    const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
-    SdfAssetPath* result)
-{
-    stage._MakeResolvedAssetPaths(time, attr, result, 1);
-}
-
-template <>
-void Usd_AttrGetValueHelper<VtArray<SdfAssetPath>>::_ResolveValue(
-    const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
-    VtArray<SdfAssetPath>* result)
-{
-    stage._MakeResolvedAssetPaths(time, attr, result->data(), result->size());
-}
-
-template <>
-void Usd_AttrGetValueHelper<SdfTimeCode>::_ResolveValue(
-    const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
-    SdfTimeCode* result)
-{
-    stage._MakeResolvedTimeCodes(time, attr, result, 1);
-}
-
-template <>
-void Usd_AttrGetValueHelper<VtArray<SdfTimeCode>>::_ResolveValue(
-    const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
-    VtArray<SdfTimeCode>* result)
-{
-    stage._MakeResolvedTimeCodes(time, attr, result->data(), result->size());
-}
-
-template <>
-void Usd_AttrGetValueHelper<SdfPathExpression>::_ResolveValue(
-    const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
-    SdfPathExpression* result)
-{
-    stage._MakeResolvedPathExpressions(time, attr, result, 1);
-}
-
-template <>
-void Usd_AttrGetValueHelper<VtArray<SdfPathExpression>>::_ResolveValue(
-    const UsdStage &stage, UsdTimeCode time, const UsdAttribute &attr,
-    VtArray<SdfPathExpression>* result)
-{
-    stage._MakeResolvedPathExpressions(
-        time, attr, result->data(), result->size());
-}
-
-// Attribute value getter for type erased VtValue.
-struct Usd_AttrGetUntypedValueHelper {
-
-    // Get the value at time for the attribute.
-    static bool GetValue(
-        const UsdStage &stage, 
-        UsdTimeCode time, 
-        const UsdAttribute &attr, 
-        VtValue* result)
-    {
-        // Special case if time is default: we can grab the value from the
-        // metadata. This value will be fully resolved already because 
-        // _GetMetadata returns fully resolved values.
-        if (time.IsDefault()) {
-            bool valueFound = stage._GetMetadata(
-                attr, SdfFieldKeys->Default, TfToken(), 
-                /*useFallbacks=*/true, result);
-            if (!result->IsHolding<SdfAnimationBlock>()) {
-                // We can only stop here if the value is not an animation block,
-                // as if the strongest value is an animation block, we must walk
-                // the node graph to get the next stronger non-animation block
-                // value.
-                return valueFound && 
-                    (!Usd_ClearValueIfBlocked<SdfValueBlock>(result));
+                return valueFound &&
+                    !Usd_ClearValueIfBlocked<SdfValueBlock>(result);
             }
             // Clear the animation block and continue walking to find next
             // stronger non-animation block default.
             Usd_ClearValueIfBlocked<SdfAnimationBlock>(result);
         }
 
-        Usd_UntypedInterpolator interpolator(attr, result);
-        if (stage._GetValueImpl(time, attr, &interpolator, result)) {
-            if (result) {
-                // Always run the resolve functions for value types that need 
-                // it.
-                stage._MakeResolvedAttributeValue(time, attr, result);
-            }
-            return true;
-        }
-        return false;
+        // Otherwise we have numeric time and need to get the value with
+        // the appropriate interpolation.
+        return stage._GetValueImpl(
+            time, attr, Usd_Interpolator { stage._interpolationType }, result);
     }
 
     // Get the value at time for the attribute using the given the already 
     // computed resolve info.
     static bool GetValueFromResolveInfo(
         const UsdStage &stage, 
-        UsdTimeCode time,
+        UsdTimeCode time, 
         const UsdAttribute &attr, 
         const UsdResolveInfo &info,
-        VtValue* result)
+        const UsdResolveTarget *resolveTarget,
+        T* result)
     {
-        if (time.IsDefault()) {
-            if (!stage._GetDefaultValueFromResolveInfoImpl(
-                    info, attr, result)) {
-                return false;
-            }
-        } else {
-            Usd_UntypedInterpolator interpolator(attr, result);
-            if (!stage._GetValueFromResolveInfoImpl(
-                info, time, attr, &interpolator, result)) {
-                return false;
-            }
-        }
-
-        if (result) {
-            // Always run the resolve functions for value types that need 
-            // it.
-            stage._MakeResolvedAttributeValue(time, attr, result);
-        }
-        return true;
-    }    
+        return stage._GetValueFromResolveInfoImpl<T>(
+            time, attr, Usd_Interpolator { stage._interpolationType },
+            info, resolveTarget, /*extraInfo=*/nullptr, result);
+    }
 };
 
 bool
 UsdStage::_GetValue(UsdTimeCode time, const UsdAttribute &attr,
                     VtValue* result) const
 {
-    return Usd_AttrGetUntypedValueHelper::GetValue(
+    return Usd_AttrGetValueHelper<VtValue>::GetValue(
         *this, time, attr, result);
 }
 
-template <class T>
 bool
 UsdStage::_GetValue(UsdTimeCode time, const UsdAttribute &attr,
-                    T* result) const
+                    SdfAbstractDataValue* result) const
 {
-    return Usd_AttrGetValueHelper<T>::GetValue(
+    return Usd_AttrGetValueHelper<SdfAbstractDataValue>::GetValue(
         *this, time, attr, result);
 }
 
@@ -7600,13 +7348,12 @@ struct _EvalSplineFunctor
 class UsdStage_ResolveInfoAccess
 {
 public:
-    template <class T>
-    static bool _GetTimeSampleValue(
+    static bool _GetInterpolatingTimeSamples(
         UsdTimeCode time, const UsdAttribute& attr,
         const UsdResolveInfo &info,
         const double *lowerHint, const double *upperHint,
-        Usd_InterpolatorBase *interpolator,
-        T *result)
+        Usd_Interpolator const &interpolator,
+        Usd_InterpolationSampleSeries *result)
     {
         const SdfPath specPath =
             info._primPathInLayerStack.AppendProperty(attr.GetName());
@@ -7656,8 +7403,15 @@ public:
             }
         }
 
-        return Usd_GetOrInterpolateValue(
-            layer, specPath, localTime, lower, upper, interpolator, result);
+        if (interpolator.GetInterpolatingSamples(
+                layer, specPath, localTime, lower, upper, result)) {
+            // Map sample times back to the stage.
+            for (Usd_ValueTimeSample &sample: *result) {
+                sample.time = info._layerToStageOffset * sample.time;
+            }
+            return true;
+        }
+        return false;
     }
 
     template <class T>
@@ -7694,14 +7448,13 @@ public:
         return success;
     }
 
-    template <class T>
-    static bool _GetClipValue(
+    static bool _GetInterpolatingClipSamples(
         UsdTimeCode time, const UsdAttribute& attr,
         const UsdResolveInfo &info,
         const Usd_ClipSetRefPtr &clipSet, 
         const double *lowerHint, const double *upperHint,
-        Usd_InterpolatorBase *interpolator,
-        T *result)
+        Usd_Interpolator const &interpolator,
+        Usd_InterpolationSampleSeries *result)
     {
         const SdfPath specPath =
             info._primPathInLayerStack.AppendProperty(attr.GetName());
@@ -7735,12 +7488,14 @@ public:
 
         if (time.IsPreTime() && lower == upper) {
 
+            result->resize(1);
             if (clipSet->QueryPreTimeSampleWithJumpDiscontinuity(
                     specPath, UsdTimeCode::PreTime(lower), interpolator, 
-                    result)) {
+                    &result->back().value)) {
                 // If we have a jump discontinuity at this time, we query the 
                 // appropriate time sample from the jump discontinuity and we
                 // return the result.
+                result->back().time = lower;
                 return true;
             }
             
@@ -7753,40 +7508,87 @@ public:
             }
         }
 
-        return Usd_GetOrInterpolateValue(
-            clipSet, specPath, localTime, lower, upper, interpolator, result);
+        return interpolator.GetInterpolatingSamples(
+            clipSet, specPath, localTime, lower, upper, result);
     }
 };
 
 // Helper structure populated by _GetResolveInfo and _ResolveInfoResolver
 // with extra information accumulated in the process. This allows clients to
 // avoid redoing work.
-template <class T>
 struct UsdStage::_ExtraResolveInfo
 {
+    // Create an _ExtraResolveInfo but with space for the _ResolveInfoResolver
+    // to populate default or fallback values into.  This is used as an
+    // optimization when we're getting resolve info for the purposes of serving
+    // UsdAttribute::Get(), when we know we're going to fetch the value
+    // eventually.
+    static _ExtraResolveInfo WithDefaultOrFallbackValueStorage() {
+        _ExtraResolveInfo ret;
+        ret._defaultOrFallback.emplace();
+        return ret;
+    }
+    
+    _ExtraResolveInfo *_AddNextWeakerInfo() {
+        if (!TF_VERIFY(!nextWeaker, "Cannot add weaker info to an "
+                       "_ExtraResolveInfo that already has it.")) {
+            return this;
+        }
+        nextWeaker = std::make_shared<_ExtraResolveInfo>();
+        // Propagate _defaultOrFallback's existence.
+        if (_defaultOrFallback) {
+            nextWeaker->_defaultOrFallback.emplace();
+        }
+        return nextWeaker.get();
+    }
+
+    // If this object was created by WithDefaultOrFallbackValueStorage(), return
+    // a pointer to a VtValue to store a default or fallback value into.  This
+    // is a value resolution optimization that avoids a double fetch in case
+    // there's just one strongest default or fallback.
+    VtValue *GetDefaultOrFallbackStorage() {
+        return _defaultOrFallback
+            ? std::addressof(_defaultOrFallback.value())
+            : nullptr;
+    }
+
+    // If this object was created by WithDefaultOrFallbackValueStorage() and a
+    // non-empty VtValue was stored to it move the stored value to `val`, delete
+    // this object's storage for a default or fallback value, and return true.
+    // Otherwise do nothing and return false.  After a call to this function,
+    // subsequent calls to GetDefaultOrFallbackStorage() return nullptr and this
+    // function always returns false.
+    bool MoveDefaultOrFallbackValueTo(VtValue *val) const {
+        if (_defaultOrFallback && !_defaultOrFallback.value().IsEmpty()) {
+            *val = std::move(_defaultOrFallback.value());
+            _defaultOrFallback.reset();
+            return true;
+        }
+        return false;
+    }
+    
+    // If we're chaining together _ExtraResolveInfos to represent composing
+    // value types, this points to the next weaker extra resolve info.
+    std::shared_ptr<_ExtraResolveInfo> nextWeaker;
+
     // If the resolve info source is UsdResolveInfoSourceTimeSamples or
     // UsdResolveInfoSourceValueClips and an explicit time is given to
-    // _GetResolveInfo, this will be the lower and upper bracketing time
-    // samples for that time.
+    // _GetResolveInfo, this will be the lower and upper bracketing time samples
+    // for that time in either the Layer's local time or the stage's time in the
+    // case of clips.
     double lowerSample = 0;
     double upperSample = 0;
-
-    // If the resolve info source is UsdResolveInfoSourceDefault or
-    // UsdResolveInfoSourceFallback and this is non-null, the default
-    // or fallback value will be copied to the object this pointer refers to.
-    T* defaultOrFallbackValue = nullptr;
 
     // If the resolve info source is UsdResolveInfoSourceValueClips this will 
     // be the Usd_ClipSet containing values for the attribute.
     Usd_ClipSetRefPtr clipSet;
 
-    // If we found a default value of animation block as the strongest value
-    // source, we need to keep walking the pcp node graph, until we have found a 
-    // non-animation block default value and ignoring any animation via spline 
-    // or time samples in weaker layer. processingAnimationBlock helps us keep
-    // track of this strongest animation block value source, to ignore any
-    // spline / time sample value sources in the weaker layers.
-    bool processingAnimationBlock = false;
+private:
+    // If not empty, then GetDefaultOrFallbackStorage() returns the address of
+    // _defaultOrFallback, so the _ResolveInfoResolver can store one there.
+    // It's the raw value from the layer, not transformed to the stage's
+    // name/time-space, normally _GetValueFromResolveInfoImpl does that.
+    mutable std::optional<VtValue> _defaultOrFallback;
 };
 
 Usd_AssetPathContext
@@ -7796,7 +7598,7 @@ UsdStage::_GetAssetPathContext(UsdTimeCode time, const UsdAttribute &attr) const
     SdfPath resultSpecPath;
 
     UsdResolveInfo resolveInfo;
-    _ExtraResolveInfo<SdfAbstractDataValue> extraResolveInfo;
+    _ExtraResolveInfo extraResolveInfo;
         
     _GetResolveInfo(attr, &resolveInfo, &time, &extraResolveInfo);
         
@@ -7844,43 +7646,457 @@ UsdStage::_GetAssetPathContext(UsdTimeCode time, const UsdAttribute &attr) const
     return {};
 }
 
+// A helper function to "complete" a resolve info for `attr` at `time` given a
+// possibly incomplete resolve info, like one computed by a call to
+// GetResolveInfo() with no time.  ResolveInfo can be highly time-varying with
+// the advent of composing attribute value types (e.g. array edits, path
+// expressions).
+//
+// If `resolveTarget` is not null, then `info` is required to have been obtained
+// with it (see _GetResolveInfoWithResolveTarget).
+//
+// If `infoIn` is sufficient to resolve `attr`'s value at `time` (i.e. if its
+// value can come from only a single default value, a single time-sample query,
+// a spline, etc) then leave `infoOut` alone, fill `extraInfoOut` with the
+// relevant `extraInfo` that `GetResolveInfo()` would have computed, and return
+// false.
+//
+// Otherwise compute the full resolve info at `time`, and fill both `infoOut`
+// and `extraInfoOut` and return true.
+bool
+UsdStage::_GetCompletedResolveInfo(const UsdAttribute &attr,
+                                   UsdTimeCode time,
+                                   const UsdResolveTarget *resolveTarget,
+                                   const UsdResolveInfo &infoIn,
+                                   UsdResolveInfo *infoOut,
+                                   _ExtraResolveInfo *extraInfoOut) const
+{
+    if (infoIn._source == UsdResolveInfoSourceNone ||
+        infoIn._source == UsdResolveInfoSourceFallback) {
+        return false;
+    }
+    else if (infoIn._source == UsdResolveInfoSourceDefault &&
+             !infoIn._defaultCanCompose) {
+        return false;
+    }
+    else if (infoIn._source == UsdResolveInfoSourceSpline &&
+             !time.IsDefault()) {
+        // Float-valued splines never compose, so they are always single-source.
+        return false;
+    }
+    else if (infoIn._source == UsdResolveInfoSourceTimeSamples &&
+             !time.IsDefault()) {
+        // Fetch bracketing samples -- if both don't compose, fill extraInfoOut
+        // and we're done.
+        SdfPath specPath =
+            infoIn._primPathInLayerStack.AppendProperty(attr.GetName());
+        double localTime =
+            infoIn._layerToStageOffset.GetInverse() * time.GetValue();
+        double lowerTime, upperTime;
+        if (_HasTimeSamples(infoIn._layer, specPath, &localTime,
+                            &lowerTime, &upperTime)) {
+            if (!VtValueTypeCanComposeOver(
+                    infoIn._layer->QueryTimeSampleTypeid(
+                        specPath, lowerTime)) &&
+                !VtValueTypeCanComposeOver(
+                    infoIn._layer->QueryTimeSampleTypeid(
+                        specPath, upperTime))) {
+                // Non-composing samples.
+                extraInfoOut->lowerSample = lowerTime;
+                extraInfoOut->upperSample = upperTime;
+                return false;
+            }
+        }
+    }
+    else if (infoIn._source == UsdResolveInfoSourceValueClips &&
+             !time.IsDefault()) {
+        // To do this we would have to fetch the clips affecting the prim and
+        // walk thru looking for those that apply.  In the case where we're not
+        // composing values (that is, where this optimization is most useful),
+        // there's not a ton to reuse from `infoIn` so for now just bail and
+        // recompute the full resolve info.
+    }
+
+    // Fallthrough -- compute the full resolve info.
+    if (resolveTarget) {
+        _GetResolveInfoWithResolveTarget(
+            attr, *resolveTarget, infoOut, &time, extraInfoOut);
+    }
+    else {
+        _GetResolveInfo(attr, infoOut, &time, extraInfoOut);
+    }
+    return true;
+}
+
+static SdfLayerRefPtr
+_GetClipLayer(Usd_ClipSetRefPtr const &clipSet,
+              UsdTimeCode time,
+              SdfPath const &specPath,
+              // These are only required if `time` could have `IsPreTime`.
+              const double *lowerSample = nullptr,
+              const double *upperSample = nullptr)
+{
+    // Get the active clip assuming no jump discontinuity or time not at any
+    // clip boundary.
+    Usd_ClipRefPtr activeClip = clipSet->GetActiveClip(time, false);
+
+    // If we are querying for a pre-time, and land on a time sample, and the
+    // active clip we retrieved has it start time same as the time, that means
+    // we are on a clip boundary, and we should use the previous clip as the
+    // active clip. This will automatically also cover jump discontinuity
+    // scenarios.
+    if (time.IsPreTime() &&
+        TF_VERIFY(lowerSample && upperSample) &&
+        *lowerSample == *upperSample &&
+        activeClip->startTime == time.GetValue()) {
+        activeClip = clipSet->GetPreviousClip(activeClip);
+    }
+    // If the active clip has authored time samples, the value will come from it
+    // (or at least be interpolated from it) so use that clip's layer. Otherwise
+    // the value will come from the manifest.
+    return activeClip->HasAuthoredTimeSamples(specPath)
+        ? activeClip->GetLayer() : clipSet->manifestClip->GetLayer();
+};
+
+// If `resolveTarget` is not null, then `info` must have been obtained with it
+// (see _GetResolveInfoWithResolveTarget).
+//
+// If `extraInfo` is not null, then `info` must be a complete resolve info
+// obtained for the specific `time`.
+template <class T>
+bool
+UsdStage::_GetValueFromResolveInfoImpl(
+    UsdTimeCode time, const UsdAttribute &attr,
+    Usd_Interpolator const &interpolator,
+    const UsdResolveInfo &infoIn, const UsdResolveTarget *resolveTarget,
+    const _ExtraResolveInfo *extraInfo, T *result) const
+{
+    static_assert(std::is_same_v<T, VtValue> ||
+                  std::is_same_v<T, SdfAbstractDataValue>);
+
+    constexpr double inf = std::numeric_limits<double>::infinity();
+    
+    // If `extraInfo` is null, then `info` may be an incomplete "at any
+    // non-default-time" resolveInfo (like those obtained by UsdAttributeQuery
+    // or a nullary call to UsdAttribute::GetResolveInfo().  In this case we
+    // need to "complete" the resolveInfo for `time` and fill in an `extraInfo`.
+    UsdResolveInfo completedInfo_;
+    _ExtraResolveInfo completedExtraInfo_ =
+        _ExtraResolveInfo::WithDefaultOrFallbackValueStorage();
+    const auto &[resolveInfo, extraResolveInfo] =
+        [&]() -> std::tuple<const UsdResolveInfo &,
+                            const _ExtraResolveInfo &> {
+        if (!extraInfo) {
+            if (_GetCompletedResolveInfo(
+                    attr, time, resolveTarget, infoIn,
+                    &completedInfo_, &completedExtraInfo_)) {
+                return std::tie(completedInfo_, completedExtraInfo_);
+            }
+            return std::tie(infoIn, completedExtraInfo_);
+        }
+        return std::tie(infoIn, *extraInfo);
+    }();
+
+    // Now `resolveInfo` and `extraResolveInfo` are ready to go.
+    
+    const UsdObject attrAsObj = attr;
+    TfErrorMark m;
+
+    // The general approach is: for each entry in the chain of resolveInfo &
+    // extraResolveInfo, we fetch defaults or samples, transform them to the
+    // stage's name and time space, and compose them together.  Once we find
+    // values that no longer compose or we run out of opinions, we finalize any
+    // still-composing values by composing over the VtBackground, then
+    // interpolate the final samples.
+
+    UsdResolveInfo const *curResolveInfo = &resolveInfo;
+    _ExtraResolveInfo const *curExtraResolveInfo = &extraResolveInfo;
+
+    Usd_InterpolationSampleSeries composedSamples;
+    Usd_InterpolationSampleSeries workingSamples;
+    // We always write into `curSamples`.  It initially points to
+    // `composedSamples` as an optimization since the common case is no
+    // composing values.  If we do find composing values, then `curSamples` is
+    // repointed to `workingSamples` for the remainder of the function, and we
+    // continually compose the weaker `workingSamples` into `composedSamples`.
+    Usd_InterpolationSampleSeries *curSamples = &composedSamples;
+    bool anyFinalSamplesMightCompose = true;
+    
+    ////////////////////////////////////////////////////////////////////////
+    // Helper that mutates `val` by transforming it by the _FieldValueToStageXf,
+    // if it transforms.  Otherwise leave `val` unmodified.  Callers can pass
+    // `optSpecPath` for potential reuse.
+    auto xfValueToStage = [this, &attrAsObj, &curResolveInfo](
+        VtValue &val,
+        SdfPath *optSpecPath=nullptr,
+        std::optional<
+            TfFunctionRef<SdfLayerRefPtr ()>> makeLayer = std::nullopt) {
+        if (!val.CanTransform()) {
+            return;
+        }
+        SdfPath localSpecPath;
+        SdfPath &specPath = optSpecPath ? *optSpecPath : localSpecPath;
+        if (specPath.IsEmpty()) {
+            specPath = curResolveInfo->
+                _primPathInLayerStack.AppendProperty(attrAsObj.GetName());
+        }
+        // Need lvalue references, since _FieldValueToStageXf holds
+        // by-pointer.
+        SdfLayerRefPtr layerRefPtr = curResolveInfo->_layer;
+
+        VtValue xformed =
+            makeLayer
+            ? VtValueTryTransform(val, _FieldValueToStageXf {
+                    this, &attrAsObj, &curResolveInfo->_node, *makeLayer,
+                    &specPath, /*forFlattening=*/false })
+            : VtValueTryTransform(val, _FieldValueToStageXf {
+                    this, &attrAsObj, &curResolveInfo->_node, &layerRefPtr,
+                    &specPath, /*forFlattening=*/false });
+        
+        if (!xformed.IsEmpty()) {
+            val = std::move(xformed);
+        }
+    };
+
+    // Helper that returns true if `samples` contains any values that could
+    // compose over others.
+    auto canAnyCompose = [&composedSamples]() {
+        for (Usd_ValueTimeSample const &sample: composedSamples) {
+            if (sample.value.CanComposeOver()) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    // Helper to compose two sets of samples
+    auto composeSamples = [&composedSamples](
+        Usd_InterpolationSampleSeries &&weaker, double time) {
+
+        // If weaker is composedSamples, then this is the first time through and
+        // we can do nothing.
+        if (&weaker == &composedSamples) {
+            return;
+        }
+        
+        if (weaker.empty()) {
+            return;
+        }
+        if (composedSamples.empty()) {
+            composedSamples = std::move(weaker);
+            return;
+        }
+
+        // 4 because we have up to 2 stronger and 2 weaker samples.
+        TfSmallVector<Usd_ValueTimeSample, 4> merged;
+
+        SdfComposeTimeSampleSeries(
+            composedSamples.cbegin(), composedSamples.cend(),
+            weaker.cbegin(), weaker.cend(),
+            [](auto iter) { return iter->time; },
+            [](auto iter) { return iter->value; },
+            [](auto strong, auto weak) {
+                return VtValueTryComposeOver(strong, weak);
+            },
+            [&merged](auto &&val, double time) {
+                merged.push_back({ std::forward<decltype(val)>(val), time });
+            });
+
+        // Now trim the merged samples to the (up to) closest two for time and
+        // leave the result in `composedSamples`.
+        composedSamples.clear();
+        if (merged.empty()) {
+            return;
+        }
+        if (merged.size() == 1 || time <= merged.front().time) {
+            composedSamples.push_back(std::move(merged.front()));
+        }
+        else if (time >= merged.back().time) {
+            composedSamples.push_back(std::move(merged.back()));
+        }
+        else {
+            auto iter = std::lower_bound(
+                merged.begin(), merged.end(), time,
+                [](Usd_ValueTimeSample const &sample, double t) {
+                    return sample.time < t;
+                });
+            if (iter->time == time) {
+                composedSamples.push_back(std::move(*iter));
+            }
+            else {
+                composedSamples.push_back(std::move(*std::prev(iter)));
+                composedSamples.push_back(std::move(*iter));
+            }
+        }
+    };
+    
+    // Walk the resolveInfo chain.
+    for (; curResolveInfo && curExtraResolveInfo;
+           curResolveInfo = curResolveInfo->GetNextWeakerInfo(),
+           curExtraResolveInfo = curExtraResolveInfo->nextWeaker.get(),
+             // After the first iteration, curSamples moves from composedSamples
+             // to workingSamples.
+             curSamples = &workingSamples) {
+
+        curSamples->clear();
+
+        if (curResolveInfo->_source == UsdResolveInfoSourceSpline) {
+            // Spline evaluation maps time-valued splines to the stage's time
+            // automatically.  Splines never participate in composing value
+            // types (they are single float-values).
+            return UsdStage_ResolveInfoAccess::_GetSplineValue(
+                time, attr, *curResolveInfo, result);
+        }
+        
+        if (curResolveInfo->_source == UsdResolveInfoSourceTimeSamples ||
+            curResolveInfo->_source == UsdResolveInfoSourceValueClips) {
+            // Fetch the sample values from either time samples or clips.
+            if (curResolveInfo->_source == UsdResolveInfoSourceTimeSamples) {
+                UsdStage_ResolveInfoAccess::_GetInterpolatingTimeSamples(
+                    time, attr, *curResolveInfo,
+                    &curExtraResolveInfo->lowerSample,
+                    &curExtraResolveInfo->upperSample,
+                    interpolator, curSamples);
+                // Translate the values to the stage's namespace and timespace.
+                SdfPath specPath;
+                for (Usd_ValueTimeSample &sample: *curSamples) {
+                    xfValueToStage(sample.value, &specPath);
+                }
+            }
+            else { // _source == UsdResolveInfoSourceValueClips
+                UsdStage_ResolveInfoAccess::_GetInterpolatingClipSamples(
+                    time, attr, *curResolveInfo, curExtraResolveInfo->clipSet,
+                    &curExtraResolveInfo->lowerSample,
+                    &curExtraResolveInfo->upperSample,
+                    interpolator, curSamples);
+
+                // For clips, there's more work to do to fetch the layer needed
+                // to do asset path resolution.  We only need it, though, if
+                // we're in fact doing asset path resolutions.  So we pass a
+                // function along to do the work in case it's needed.
+                auto getClipLayer = [&]() {
+                    return _GetClipLayer(
+                        curExtraResolveInfo->clipSet,
+                        time, curResolveInfo->_primPathInLayerStack
+                        .AppendProperty(attrAsObj.GetName()),
+                        &curExtraResolveInfo->lowerSample,
+                        &curExtraResolveInfo->upperSample);
+                };
+                
+                SdfPath specPath;
+                for (Usd_ValueTimeSample &sample: *curSamples) {
+                    // XXX Clips automatically transform time values to the
+                    // stage's time, so skip transforming time-valued values.
+                    // WBN to refactor to avoid this hacky bit.
+                    std::type_info const &timeCodeType = typeid(SdfTimeCode);
+                    const bool isTimeValued =
+                        sample.value.GetTypeid() == timeCodeType ||
+                        sample.value.GetElementTypeid() == timeCodeType;
+                    if (!isTimeValued) {
+                        xfValueToStage(sample.value, &specPath, getClipLayer);
+                    }
+                }
+            }
+
+            // Compose the samples, updating composedSamples.
+            composeSamples(std::move(*curSamples), time.GetValue());
+            // If the samples cannot compose anymore, break out.
+            if (!canAnyCompose()) {
+                anyFinalSamplesMightCompose = false;
+                break;
+            }
+        }
+        else if (curResolveInfo->_source == UsdResolveInfoSourceDefault) {
+            SdfPath specPath = curResolveInfo->
+                _primPathInLayerStack.AppendProperty(attr.GetName());
+            curSamples->resize(1);
+            // Fetch a value from curExtraResolveInfo if we have one, otherwise
+            // call Usd_HasDefault().
+            if (!curExtraResolveInfo->
+                MoveDefaultOrFallbackValueTo(&curSamples->front().value)) {
+                Usd_DefaultValueResult defValue = Usd_HasDefault(
+                    curResolveInfo->_layer, specPath,
+                    &curSamples->front().value);
+                TF_VERIFY(defValue == Usd_DefaultValueResult::Found,
+                          "Resolve info source default has no default value");
+            }
+            // Translate to the stage.
+            xfValueToStage(curSamples->front().value, &specPath);
+            // Compose samples over.
+            curSamples->front().time = -inf;
+            composeSamples(std::move(*curSamples),
+                           time.IsNumeric() ? time.GetValue(): -inf);
+            // If the samples cannot compose anymore, break out.
+            if (!canAnyCompose()) {
+                anyFinalSamplesMightCompose = false;
+                break;
+            }
+        }
+        else if (curResolveInfo->_source == UsdResolveInfoSourceFallback) {
+            VtValue fallbackValue;
+            curSamples->resize(1);
+            if (!curExtraResolveInfo->
+                MoveDefaultOrFallbackValueTo(&curSamples->front().value)) {
+                const bool hasFallback = attr._Prim()->GetPrimDefinition()
+                    .GetAttributeFallbackValue(
+                        attr.GetName(), &curSamples->front().value);
+                TF_VERIFY(hasFallback,
+                          "Resolve info source fallback has no fallback value");
+            }
+            // Fallback values require no transformation to the stage space, but
+            // they can be composed-over.  Fallbacks are always weakest, so we
+            // can always break out here.
+            
+            // Compose samples over the fallback.
+            curSamples->front().time = -inf;
+            composeSamples(std::move(*curSamples),
+                           time.IsNumeric() ? time.GetValue() : -inf);
+            break;
+        }
+    }
+
+    // Try to compose over the background to finalize the samples, then
+    // interpolate.
+    if (anyFinalSamplesMightCompose) {
+        for (Usd_ValueTimeSample &sample: composedSamples) {
+            if (std::optional<VtValue> composed =
+                VtValueTryComposeOver(sample.value, VtBackground)) {
+                sample.value = std::move(*composed);
+            }
+        }
+    }
+    
+    if (!composedSamples.empty()) {
+        if (time.IsNumeric()) {
+            Usd_Interpolate(&composedSamples, time.GetValue());
+        }
+        return
+            Usd_SetValue(result, std::move(composedSamples[0].value)) &&
+            !Usd_ClearValueIfBlocked<SdfValueBlock>(result) &&
+            m.IsClean();
+    }
+    
+    return false;
+}
+
 template <class T>
 bool
 UsdStage::_GetValueImpl(UsdTimeCode time, const UsdAttribute &attr, 
-                        Usd_InterpolatorBase* interpolator, T *result) const
+                        Usd_Interpolator const &interpolator, T *result) const
 {
+    static_assert(std::is_same_v<T, VtValue> ||
+                  std::is_same_v<T, SdfAbstractDataValue>);
+    
     UsdResolveInfo resolveInfo;
-    _ExtraResolveInfo<T> extraResolveInfo;
-    extraResolveInfo.defaultOrFallbackValue = result;
+    _ExtraResolveInfo extraResolveInfo =
+        _ExtraResolveInfo::WithDefaultOrFallbackValueStorage();
 
     TfErrorMark m;
     _GetResolveInfo(attr, &resolveInfo, &time, &extraResolveInfo);
 
-    if (resolveInfo._source == UsdResolveInfoSourceTimeSamples) {
-        return UsdStage_ResolveInfoAccess::_GetTimeSampleValue(
-            time, attr, resolveInfo, 
-            &extraResolveInfo.lowerSample, &extraResolveInfo.upperSample,
-            interpolator, result);
-    }
-    else if (resolveInfo._source == UsdResolveInfoSourceValueClips) {
-        return UsdStage_ResolveInfoAccess::_GetClipValue(
-            time, attr, resolveInfo, 
-            extraResolveInfo.clipSet,
-            &extraResolveInfo.lowerSample, &extraResolveInfo.upperSample,
-            interpolator, result);
-    }
-    else if (resolveInfo._source == UsdResolveInfoSourceSpline) {
-        return UsdStage_ResolveInfoAccess::_GetSplineValue(
-            time, attr, resolveInfo, result);
-    }
-    else if (resolveInfo._source == UsdResolveInfoSourceDefault ||
-             resolveInfo._source == UsdResolveInfoSourceFallback) {
-        // Nothing to do here -- the call to _GetResolveInfo will have
-        // filled in the result with the default value.
-        return m.IsClean();
-    }
-
-    return false;
+    return _GetValueFromResolveInfoImpl(
+        time, attr, interpolator, resolveInfo, /*resolveTarget=*/nullptr,
+        &extraResolveInfo, result) && m.IsClean();
 }
 
 // Our property stack resolver never indicates for resolution to stop
@@ -7899,7 +8115,8 @@ struct UsdStage::_PropertyStackResolver {
     ProcessLayerAtTime(const SdfLayerRefPtr &layer,
                        const SdfPath& specPath,
                        const PcpNodeRef& node,
-                       const UsdTimeCode *) 
+                       const UsdTimeCode *,
+                       bool */*foundOpinion*/)
     {
         // Processing layers for the property stack does not depend on time.
         return ProcessLayerAtDefault(layer, specPath, node);
@@ -7908,7 +8125,7 @@ struct UsdStage::_PropertyStackResolver {
     bool
     ProcessLayerAtDefault(const SdfLayerRefPtr &layer,
                           const SdfPath& specPath,
-                          const PcpNodeRef& node) 
+                          const PcpNodeRef& node)
     {
         const auto propertySpec = layer->GetPropertyAtPath(specPath);
         if (propertySpec) {
@@ -8064,31 +8281,689 @@ UsdStage::_GetPrimStackWithLayerOffsets(const UsdPrim &prim)
     return primStack;
 }
 
+template <class LayerOrClip>
+static bool
+_GetSampleComposability(LayerOrClip const &layerOrClip,
+                        SdfPath const &specPath, double time)
+{
+    return VtValueTypeCanComposeOver(
+        layerOrClip->QueryTimeSampleTypeid(specPath, time));
+}
+
+template <class LayerOrClip>
+std::pair<bool, bool>
+_GetSamplesComposability(LayerOrClip const &layerOrClip,
+                         SdfPath const &specPath,
+                         double lowerTime, double upperTime) {
+    return {
+        _GetSampleComposability(layerOrClip, specPath, lowerTime),
+        _GetSampleComposability(layerOrClip, specPath, upperTime)
+    };
+}
+
+struct UsdStage::_BracketingSamplesResolver
+{
+    // Update bounds and return true if _lower was updated.
+    bool _UpdateBounds(double lower, double upper, double stageTime) {
+        bool updatedLower = false;
+        if (!_lower ||
+            (_lower > stageTime && lower < _lower) ||
+            (lower <= stageTime && lower > _lower)) {
+            _lower = lower;
+            updatedLower = true;
+        }
+
+        if (!_upper ||
+            (_upper < stageTime && upper > _upper) ||
+            (upper >= stageTime && upper < _upper)) {
+            _upper = upper;
+        }
+        return updatedLower;
+    }
+    
+    bool ProcessFallback() {
+        _hasAnyValue = true;
+        return true;
+    }
+
+    bool ProcessLayerAtDefault(
+        const SdfLayerRefPtr&, const SdfPath&, const PcpNodeRef&) {
+        TF_CODING_ERROR("Bracketing time samples query at default time");
+        return true;
+    }
+    
+    bool
+    ProcessLayerAtTime(const SdfLayerRefPtr& layer, const SdfPath& specPath,
+                       const PcpNodeRef& node, const UsdTimeCode *time,
+                       bool *foundOpinion) {
+        // Time must be a numeric time.
+        if (!TF_VERIFY(time && time->IsNumeric(),
+                       "Bracketing sample query must be at numeric time")) {
+            return true;
+        }
+        
+        const SdfLayerOffset layerToStageOffset =
+            _GetLayerToStageOffset(node, layer);
+
+        const double stageTime = time->GetValue();
+        double layerTime = layerToStageOffset.GetInverse() * stageTime;
+
+        double lower, upper;
+        if (_HasTimeSamples(layer, specPath, &layerTime, &lower, &upper)) {
+            _hasAnyValue = *foundOpinion = true;
+
+            // Translate back to stage time.
+            lower = layerToStageOffset * lower;
+            upper = layerToStageOffset * upper;
+
+            const bool lowerUpdated = _UpdateBounds(lower, upper, stageTime);
+            
+            // Stop (return true) if we updated lower and new lower doesn't
+            // compose.  We don't need to consider upper's composability since
+            // if we find a non-composing lower then the upper sample must be at
+            // time _upper.
+            return lowerUpdated &&
+                !_GetSampleComposability(layer, specPath, lower);
+        }
+        else if (layer->HasField(specPath, SdfFieldKeys->Spline)) {
+            // If we hit a spline, stop looking.
+            return true;
+        }
+        else {
+            const std::type_info *valueType = &typeid(void);
+
+            Usd_DefaultValueResult defValue =
+                Usd_HasDefault<VtValue>(layer, specPath, nullptr, &valueType);
+            
+            if (defValue == Usd_DefaultValueResult::Found) {
+                _hasAnyValue = *foundOpinion = true;
+                // If we found a non-composing default, then we're done.
+                if (!VtValueTypeCanComposeOver(*valueType)) {
+                    return true;
+                }
+            }
+            else if (defValue == Usd_DefaultValueResult::Blocked ||
+                     defValue == Usd_DefaultValueResult::BlockedAnimation) {
+                // If we found a block we're done.
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool
+    ProcessClips(const Usd_ClipSetRefPtr& clipSet, const SdfPath& specPath,
+                 const PcpNodeRef& node, const UsdTimeCode* time) {
+        // Time must be a numeric time.
+        if (!TF_VERIFY(time && time->IsNumeric(),
+                       "Bracketing sample query must be at numeric time")) {
+            return true;
+        }
+
+        // Clips operate in stage time.
+        const double stageTime = time->GetValue();
+        const double clipTime = stageTime;
+        double lower, upper;
+        if (!_HasTimeSamples(clipSet, specPath, &clipTime, &lower, &upper)) {
+            return false;
+        }
+        _hasAnyValue = true;
+
+        const bool lowerUpdated = _UpdateBounds(lower, upper, stageTime);
+            
+        // Stop (return true) if we updated lower and new lower doesn't
+        // compose.  We don't need to consider upper's composability since
+        // if we find a non-composing lower then the upper sample must be at
+        // time _upper.
+        return lowerUpdated &&
+            !_GetSampleComposability(clipSet, specPath, lower);
+    }
+    
+    // Output.
+    std::optional<double> _lower;
+    std::optional<double> _upper;
+    bool _hasAnyValue = false;
+};
+
+
+struct UsdStage::_SamplesInIntervalResolver
+{
+    struct _Sample {
+        double time = 0.0;
+        bool canCompose = false;
+    };
+
+    explicit _SamplesInIntervalResolver(
+        GfInterval const &interval) : _interval(interval) {}
+
+    // Helper to compose _partial over weaker samples, used for both timeSamples
+    // and clips.
+    void _ComposePartialOver(std::vector<_Sample> const &weaker) {
+        if (_partial.empty()) {
+            _partial = std::move(weaker);
+        }
+        else if (!weaker.empty()) {
+            std::vector<_Sample> output;
+            SdfComposeTimeSampleSeries( 
+                _partial.cbegin(), _partial.cend(),
+                weaker.cbegin(), weaker.cend(),
+                [](auto iter) { return iter->time; },                 
+                [](auto iter) { return iter->canCompose; },
+                [](auto strongCanCompose, auto weakCanCompose) {
+                    return strongCanCompose
+                        ? std::optional<bool>(weakCanCompose)
+                        : std::optional<bool>();
+                },
+                [&output](bool canCompose, double time) {
+                    output.push_back( { time, canCompose } );
+                });
+               
+            _partial = std::move(output);
+        }
+    }
+    
+    bool ProcessFallback() {
+        /* do nothing */
+        return true;
+    }
+
+    bool ProcessLayerAtDefault(
+        const SdfLayerRefPtr&, const SdfPath&, const PcpNodeRef&) {
+        TF_CODING_ERROR("Attempt to query time samples in interval at "
+                        "default time");
+        return true;
+    }
+    
+    bool
+    ProcessLayerAtTime(const SdfLayerRefPtr& layer, const SdfPath& specPath,
+                       const PcpNodeRef& node, const UsdTimeCode *time,
+                       bool *foundOpinion) {
+        // We should have no given time.
+        if (!TF_VERIFY(!time,
+                       "Samples in interval query cannot be at a time")) {
+            return true;
+        }
+        
+        const SdfLayerOffset layerToStage = _GetLayerToStageOffset(node, layer);
+
+        // Fetch the sample times from the layer, transform them to stage-time
+        // and compose them under the samples so-far.  For every weaker sample
+        // that makes it to the output, find its composability.
+        //
+        // If the first sample in the result is within the interval and it is
+        // composing, call GetPreviousTimeSampleForPath() and if it exists and
+        // it cannot compose, adjust the interval's min to the time of the first
+        // sample, since the previous non-composing sample masks any weaker
+        // samples.  For example, if 'X' is a non-composing sample and 'O' is a
+        // composing sample, and [] denotes the interval, we adjust the interval
+        // after composing since the leftmost 'X' masks weaker composing samples
+        // from the start of the interval to the first sample in the interval.
+        // 
+        //       Strong:  -------[--O-----X--------]-
+        //         Weak:  -X-----[-----O-----X-----]-
+        //     Composed:  -X-----[--O--O--X--------]-
+        // New Interval:  ----------[--O--X--------]-
+
+        std::set<double> sampleSet = layer->ListTimeSamplesForPath(specPath);
+
+        if (!sampleSet.empty()) {
+            *foundOpinion = true;
+            std::vector<double> layerTimes;
+            const SdfLayerOffset stageToLayer = layerToStage.GetInverse();
+            const GfInterval layerInterval =
+                _interval * stageToLayer.GetScale() + stageToLayer.GetOffset();
+            Usd_CopyTimeSamplesInInterval(
+                sampleSet, layerInterval, &layerTimes);
+
+            // If there are no samples in the interval, call
+            // GetBracketingTimeSamples on the interval min.  If the lower
+            // time's value (which could be beyond the interval) can
+            // compose, then we must continue.  Otherwise, we are done.
+            if (layerTimes.empty()) {
+                double low, up;
+                if (!TF_VERIFY(layer->GetBracketingTimeSamplesForPath(
+                    specPath, layerInterval.GetMin(), &low, &up))) {
+                    return true; // error - no bracketing samples despite having
+                                 // samples.
+                }
+                // Continue (return false) if the low sample can compose, to
+                // pick up weaker samples.
+                return !VtValueTypeCanComposeOver(
+                    layer->QueryTimeSampleTypeid(specPath, low));
+            }
+            
+            // Map each sample back to stage time, and fetch composability.
+            std::vector<_Sample> weaker;
+            weaker.reserve(layerTimes.size());
+            for (double time: layerTimes) {
+                weaker.push_back(
+                    { layerToStage * time,
+                      VtValueTypeCanComposeOver(
+                          layer->QueryTimeSampleTypeid(specPath, time)) });
+            }
+
+            // Now weaker has the sample times in the interval.  Compose
+            // _partial over weaker.
+            _ComposePartialOver(weaker);
+
+            // If _partial is not empty and its first element is within the
+            // interval and it can compose, see if the layer has a preceding
+            // sample that doesn't compose.  If so adjust the interval's min to
+            // the time of the first sample since the previous sample will mask
+            // all weaker up to that time.
+            if (!_overrodeInterval &&
+                !_partial.empty() &&
+                _partial.front().canCompose &&
+                _interval.GetMin() != _partial.front().time) {
+                double layerTime = stageToLayer * _partial.front().time;
+                double prevLayerTime;
+                if (layer->GetPreviousTimeSampleForPath(
+                        specPath, layerTime, &prevLayerTime) &&
+                    !VtValueTypeCanComposeOver(
+                        layer->QueryTimeSampleTypeid(
+                            specPath, prevLayerTime))) {
+                    _interval.SetMin(layerToStage * prevLayerTime);
+                    _overrodeInterval = true;
+                }
+            }            
+        }
+        else if (layer->HasField(specPath, SdfFieldKeys->Spline)) {
+            // If we encounter a spline, stop looking.
+            return true;
+        }
+        else {
+            const std::type_info *valueType = &typeid(void);
+            Usd_DefaultValueResult defValue =
+                Usd_HasDefault<VtValue>(layer, specPath, nullptr, &valueType);
+            if (defValue == Usd_DefaultValueResult::Found) {
+                *foundOpinion = true;
+                // If we found a non-composing default, then we're done.
+                if (!VtValueTypeCanComposeOver(*valueType)) {
+                    return true;
+                }
+            }
+            else if (defValue == Usd_DefaultValueResult::Blocked ||
+                     defValue == Usd_DefaultValueResult::BlockedAnimation) {
+                // If we found a block we're done.
+                return true;
+            }
+        }
+        // If any in _partial can still compose, continue (return false).
+        for (_Sample const &s: _partial) {
+            if (s.canCompose) {
+                return false;
+            }
+        }
+        return !_partial.empty();
+    }
+
+    bool
+    ProcessClips(const Usd_ClipSetRefPtr& clipSet, const SdfPath& specPath,
+                 const PcpNodeRef& node, const UsdTimeCode* time) {
+        // We should have no given time.
+        if (!TF_VERIFY(!time,
+                       "Samples in interval query cannot be at a time")) {
+            return true;
+        }
+
+        if (!_ClipsContainValueForAttribute(clipSet, specPath)) {
+            return false;
+        }
+
+        // Clips operate in stage time.
+        std::vector<double> clipTimes =
+            clipSet->GetTimeSamplesInInterval(specPath, _interval);
+
+        // If there are no samples in the interval, call
+        // GetBracketingTimeSamples on the interval min.  If the lower time's
+        // value (which could be greater than the interval) can compose, then
+        // we must continue.  Otherwise, we are done.
+        if (clipTimes.empty()) {
+            double low, up;
+            if (!TF_VERIFY(clipSet->GetBracketingTimeSamplesForPath(
+                               specPath, _interval.GetMin(), &low, &up))) {
+                return true; // error - no bracketing samples despite having
+                             // samples.
+            }
+            // Continue (return false) if the low sample can compose, to
+            // pick up weaker samples.
+            return !VtValueTypeCanComposeOver(
+                clipSet->QueryTimeSampleTypeid(specPath, low));
+        }
+        
+        // Fetch composability for each.
+        std::vector<_Sample> weaker;
+        weaker.reserve(clipTimes.size());
+        for (double time: clipTimes) {
+            weaker.push_back(
+                { time, VtValueTypeCanComposeOver(
+                        clipSet->QueryTimeSampleTypeid(specPath, time)) });
+        }
+
+        // Now weaker has the sample times in the interval.  Compose
+        // _partial over weaker.
+        _ComposePartialOver(weaker);
+
+        // If _partial is not empty and its first element is within the interval
+        // and it can compose, see if the layer has a preceding sample that
+        // doesn't compose.  If so adjust the interval's min to the time of the
+        // first sample since the previous sample will mask all weaker up to
+        // that time.  See comments in ProcessLayerAtTime() for more info.
+        if (!_overrodeInterval &&
+            !_partial.empty() &&
+            _partial.front().canCompose &&
+            _interval.GetMin() != _partial.front().time) {
+            double clipTime = _partial.front().time;
+            double prevClipTime;
+            if (clipSet->GetPreviousTimeSampleForPath(
+                    specPath, clipTime, &prevClipTime) &&
+                !VtValueTypeCanComposeOver(
+                    clipSet->QueryTimeSampleTypeid(specPath, prevClipTime))) {
+                _interval.SetMin(prevClipTime);
+                _overrodeInterval = true;
+            }
+        }            
+        // If any in _partial can still compose, continue (return false).
+        for (_Sample const &s: _partial) {
+            if (s.canCompose) {
+                return false;
+            }
+        }
+        return !_partial.empty();
+    }
+
+    // Input.
+    GfInterval _interval;
+
+    // Working space.
+    std::vector<_Sample> _partial;
+    bool _overrodeInterval = false;
+    
+    // Output.
+    std::vector<double> _sampleTimes;
+};
+
+struct UsdStage::_TimeSampleMapResolver
+{
+    explicit _TimeSampleMapResolver(const UsdStage *stage,
+                                    const UsdAttribute *attr,
+                                    bool forFlattening)
+        : _stage(stage)
+        , _attr(attr)
+        , _forFlattening(forFlattening)
+        , _processingAnimationBlock(false) {}
+
+    // Helper to compose _partial over weaker samples, used for both timeSamples
+    // and clips.
+    void _ComposePartialOver(SdfTimeSampleMap const &weaker) {
+        if (_partialDefault.IsEmpty()) {
+            if (_partial.empty()) {
+                _partial = std::move(weaker);
+            }
+            else if (!weaker.empty()) {
+                _partial = SdfComposeTimeSampleMaps(_partial, weaker);
+            }
+        }
+        else {
+            for (auto &sample: weaker) {
+                _partial.emplace_hint(
+                    _partial.end(), sample.first,
+                    VtValueComposeOver(_partialDefault, sample.second));
+            }
+            if (!_partial.empty()) {
+                _partialDefault = VtValue {};
+            }
+        }
+    }
+    // Helper to compose _partial over a default or fallback.
+    void _ComposePartialOver(VtValue const &defaultOrFallback) {
+        if (!_partial.empty()) {
+            for (auto &sample: _partial) {
+                if (std::optional<VtValue> composed = VtValueTryComposeOver(
+                        sample.second, defaultOrFallback)) {
+                    sample.second = std::move(*composed);
+                }
+            }
+        }
+        else {
+            _partialDefault =
+                VtValueComposeOver(_partialDefault, defaultOrFallback);
+        }
+    }
+
+    // Return true if _partial contains any values that can compose.
+    bool _PartialCanCompose() {
+        if (!_partial.empty()) {
+            for (auto const &p: _partial) {
+                if (VtValueCanComposeOver(p.second)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return VtValueCanComposeOver(_partialDefault);
+    }
+
+    bool ProcessFallback() {
+        VtValue fallbackVal;
+        if (_attr->_Prim()->GetPrimDefinition()
+            .GetAttributeFallbackValue<VtValue>(_attr->GetName(),
+                                                &fallbackVal)) {
+            _ComposePartialOver(fallbackVal);
+        }
+        return true;
+    }
+
+    bool ProcessLayerAtDefault(
+        const SdfLayerRefPtr&, const SdfPath&, const PcpNodeRef&) {
+        TF_CODING_ERROR("Attempt to resolve time sample map at "
+                        "default time");
+        return true;
+    }
+    
+    bool
+    ProcessLayerAtTime(const SdfLayerRefPtr& layer, const SdfPath& specPath,
+                       const PcpNodeRef& node, const UsdTimeCode *time,
+                       bool *foundOpinion) {
+        // We should have no given time.
+        if (!TF_VERIFY(!time, "Time sample map query cannot be at a time")) {
+            return true;
+        }
+
+        _FieldValueToStageXf fieldToStageXf {
+            _stage, _attr, &node, &layer, &specPath, _forFlattening
+        };
+        
+        // Fetch either time samples or default.  Bail early if there's a spline
+        // or a block.  Keep going but ignore samples & clips if we see an
+        // animation block.
+        if (!_processingAnimationBlock) {
+            VtValue tsmValue;
+            layer->HasField(specPath, SdfFieldKeys->TimeSamples, &tsmValue);
+            if (tsmValue.IsHolding<SdfTimeSampleMap>() &&
+                !tsmValue.UncheckedGet<SdfTimeSampleMap>().empty()) {
+                *foundOpinion = true;
+                VtValue xformed = VtValueTryTransform(tsmValue, fieldToStageXf);
+                if (!xformed.IsEmpty()) {
+                    tsmValue = std::move(xformed);
+                }
+                _ComposePartialOver(tsmValue.UncheckedGet<SdfTimeSampleMap>());
+
+                // Continue (return false) if _partial could compose over more.
+                return !_PartialCanCompose();
+            }
+            else if (layer->HasField(specPath, SdfFieldKeys->Spline)) {
+                // If we encounter a spline, stop looking.
+                return true;
+            }
+        }
+        // Defaults can compose with sample values.
+        VtValue defaultValue;
+        Usd_DefaultValueResult defValueRes =
+            Usd_HasDefault<VtValue>(layer, specPath, &defaultValue);
+        if (defValueRes == Usd_DefaultValueResult::Found) {
+            *foundOpinion = true;
+            VtValue xformed = VtValueTryTransform(defaultValue, fieldToStageXf);
+            if (!xformed.IsEmpty()) {
+                defaultValue = std::move(xformed);
+            }
+            _ComposePartialOver(defaultValue);
+            return !_PartialCanCompose();
+        }
+        else if (defValueRes == Usd_DefaultValueResult::Blocked) {
+            return ProcessFallback();
+        }
+        else if (defValueRes == Usd_DefaultValueResult::BlockedAnimation) {
+            _processingAnimationBlock = true;
+            return false; // keep looking for defaults to compose over.
+        }
+        return false;
+    }
+
+    bool
+    ProcessClips(const Usd_ClipSetRefPtr& clipSet, const SdfPath& specPath,
+                 const PcpNodeRef& node, const UsdTimeCode* time) {
+        // We should have no given time.
+        if (!TF_VERIFY(!time, "Time sample map query cannot be at a time")) {
+            return true;
+        }
+
+        if (_processingAnimationBlock ||
+            !_ClipsContainValueForAttribute(clipSet, specPath)) {
+            return false;
+        }
+
+        // Clips operate in stage time.
+        const std::set<double>
+            clipTimes = clipSet->ListTimeSamplesForPath(specPath);
+
+        // Get all values and transform to stage name & time space.
+        SdfTimeSampleMap sampleMap;
+        for (double clipTime: clipTimes) {
+            // XXX Clips automatically transform time values to the
+            // stage's time, so skip transforming time-valued values.
+            // WBN to refactor to avoid this hacky bit.
+            std::type_info const &timeCodeType = typeid(SdfTimeCode);
+            VtValue clipValue;
+            if (!clipSet->QueryTimeSample(
+                    specPath, clipTime,
+                    Usd_Interpolator { _stage->GetInterpolationType() },
+                    &clipValue)) {
+                clipValue = SdfValueBlock {};
+            }
+            const bool isTimeValued =
+                clipValue.GetTypeid() == timeCodeType ||
+                clipValue.GetElementTypeid() == timeCodeType;
+            VtValue xformed;
+            if (!isTimeValued) {
+                auto getClipLayer = [&]() {
+                    return _GetClipLayer(clipSet, clipTime, specPath);
+                };
+                _FieldValueToStageXf fieldToStageXf {
+                    _stage, _attr, &node,
+                    getClipLayer, &specPath, _forFlattening
+                };
+                xformed = VtValueTryTransform(clipValue, fieldToStageXf);
+            }
+            sampleMap.emplace_hint(sampleMap.end(), clipTime, xformed.IsEmpty()
+                                   ? std::move(clipValue)
+                                   : std::move(xformed));
+        }
+        _ComposePartialOver(sampleMap);
+        // Continue (return false) if _partial could compose over more.
+        return !_PartialCanCompose();
+    }
+
+    // Input.
+    const UsdStage *_stage;
+    const UsdAttribute *_attr;
+    bool _forFlattening;
+
+    // Working space / output.  We collect any leading composing defaults in
+    // _partialDefault until we hit samples or clips, in which case they compose
+    // over the samples/clips.  If we never find samples or clips then _partial
+    // is left (correctly) empty.
+    SdfTimeSampleMap _partial;
+    VtValue _partialDefault;
+    bool _processingAnimationBlock;
+};
+
+// Populates the time sample map with the resolved values for the given 
+// attribute and returns true if time samples exist, false otherwise.
+bool
+UsdStage::_GetTimeSampleMap(const UsdAttribute &attr,
+                            SdfTimeSampleMap *out,
+                            bool forFlattening) const
+{
+    _TimeSampleMapResolver tsmr {
+        get_pointer(attr.GetStage()), &attr, forFlattening
+    };
+
+    _GetResolvedValueAtTimeImpl(
+        attr, &tsmr, /*time=*/nullptr,
+        [&attr](bool skipEmptyNodes) {
+            return Usd_Resolver(&attr._Prim()->GetPrimIndex(), skipEmptyNodes);
+        });
+
+    // Finalize by composing over the background.
+    if (std::optional<VtValue> val =
+        VtValueTryComposeOver(tsmr._partial, VtBackground)) {
+        *out = val->Remove<SdfTimeSampleMap>();
+    }
+    else {
+        *out = std::move(tsmr._partial);
+    }
+    return true;
+}
+
 // A 'Resolver' for filling UsdResolveInfo.
-template <typename T>
 struct UsdStage::_ResolveInfoResolver 
 {
+    // Helper to set the value source.  Normally this just sets the source from
+    // None to `source`, but in the case where we're getting resolve info at no
+    // specific time and we encounter a composing default, we continue looking
+    // for subsequent time-varying sources so we can answer
+    // 'ValueMightBeTimeVarying' more accurately.  In this case we do not set
+    // the source but instead set
+    // _defaultCanComposeOverWeakerTimeVaryingSources.  Return true if _source
+    // was set, false otherwise.
+    bool _SetSource(UsdResolveInfo *resolveInfo,
+                    UsdResolveInfoSource source) const {
+        // If there's no existing source, just set it.  Otherwise we expect it
+        // to be a composing default and we're continuing looking for weaker
+        // time-varying sources.
+        if (resolveInfo->_source == UsdResolveInfoSourceNone) {
+            resolveInfo->_source = source;
+            return true;
+        }
+        if (resolveInfo->_source == UsdResolveInfoSourceDefault &&
+            (source == UsdResolveInfoSourceTimeSamples ||
+             source == UsdResolveInfoSourceValueClips ||
+             source == UsdResolveInfoSourceSpline)) {
+            resolveInfo->_defaultCanComposeOverWeakerTimeVaryingSources = true;
+        }
+        return false;
+    }
+
     explicit _ResolveInfoResolver(const UsdAttribute& attr,
-                                 UsdResolveInfo* resolveInfo,
-                                 UsdStage::_ExtraResolveInfo<T>* extraInfo)
-    :   _attr(attr), 
-        _resolveInfo(resolveInfo),
-        _extraInfo(extraInfo)
+                                  UsdResolveInfo* resolveInfo,
+                                  UsdStage::_ExtraResolveInfo* extraInfo)
+        : _attr(attr)
+        , _resolveInfo(resolveInfo)
+        , _extraInfo(extraInfo)
     {
     }
 
     bool
     ProcessFallback()
     {
-        if (const bool hasFallback = 
-                _attr._Prim()->GetPrimDefinition().GetAttributeFallbackValue(
-                    _attr.GetName(), _extraInfo->defaultOrFallbackValue)) {
-            _resolveInfo->_source = UsdResolveInfoSourceFallback;
+        if (_attr._Prim()->GetPrimDefinition().GetAttributeFallbackValue(
+                _attr.GetName(), _extraInfo->GetDefaultOrFallbackStorage())) {
+            _SetSource(_resolveInfo, UsdResolveInfoSourceFallback);
             return true;
         }
 
         // No values at all.
-        _resolveInfo->_source = UsdResolveInfoSourceNone;
         return true;
     }
 
@@ -8096,40 +8971,129 @@ struct UsdStage::_ResolveInfoResolver
     ProcessLayerAtTime(const SdfLayerRefPtr& layer,
                        const SdfPath& specPath,
                        const PcpNodeRef& node,
-                       const UsdTimeCode *time) 
+                       const UsdTimeCode *time,
+                       bool *foundOpinion) 
     {
         const SdfLayerOffset layerToStageOffset =
             _GetLayerToStageOffset(node, layer);
+
+        // Time is either null (meaning "at no specific time") or a numeric
+        // time.  This function is never called with default time.
+        if (!TF_VERIFY(!time || time->IsNumeric(), "Unhandled time value")) {
+            time = nullptr;
+        }
+        
         std::optional<double> localTime;
         if (time) {
-            localTime = layerToStageOffset.GetInverse() * time->GetValue();
+            // If we have an overrideTime, use that time instead. See below.
+            localTime = layerToStageOffset.GetInverse() *
+                (_overrideTime ? *_overrideTime : time->GetValue());
         }
 
-        if (!_extraInfo->processingAnimationBlock &&
+        UsdResolveInfo *nextWeaker = nullptr;
+        UsdStage::_ExtraResolveInfo *nextWeakerExtra = nullptr;
+
+        UsdResolveInfoSource thisSource = UsdResolveInfoSourceNone;
+        bool didSetSource = false;
+        bool defaultCanCompose = false;
+
+        double lowerSample, upperSample;
+        
+        if (!_processingAnimationBlock &&
             _HasTimeSamples(layer, specPath,
                             localTime ? std::addressof(*localTime) : nullptr,
-                            &_extraInfo->lowerSample, 
-                            &_extraInfo->upperSample)) {
-            _resolveInfo->_source = UsdResolveInfoSourceTimeSamples;
-        } else if (!_extraInfo->processingAnimationBlock &&
-                layer->HasField(specPath, SdfFieldKeys->Spline)) {
-            _resolveInfo->_source = UsdResolveInfoSourceSpline;
+                            &lowerSample, &upperSample)) {
+            *foundOpinion = true;
+
+            thisSource = UsdResolveInfoSourceTimeSamples;
+            didSetSource = _SetSource(_resolveInfo, thisSource);
+
+            if (didSetSource) {
+                _extraInfo->lowerSample = lowerSample;
+                _extraInfo->upperSample = upperSample;
+            }
+
+            // If we're working at a time, check if the samples are composing
+            // types, and if either are, add a next weaker resolve info to the
+            // chain and continue.
+            if (time) {
+                const auto [lowerComposes, upperComposes] =
+                    _GetSamplesComposability(
+                        layer, specPath,
+                        _extraInfo->lowerSample, _extraInfo->upperSample);
+                if (lowerComposes || upperComposes) {
+                    // If lower doesn't compose but upper does, we need to
+                    // modify the query time to be upper's time (mapped back to
+                    // the stage).  This is because a non-composing lower masks
+                    // any weaker opinions up to upper's time.
+                    if (!lowerComposes && !_overrideTime) {
+                        _overrideTime =
+                            layerToStageOffset * _extraInfo->upperSample;
+                    }
+                    // We can stop if we're looking for an upper and we found
+                    // one that doesn't compose.
+                    if (!_overrideTime || upperComposes) {
+                        nextWeaker = _resolveInfo->_AddNextWeakerInfo();
+                        nextWeakerExtra = _extraInfo->_AddNextWeakerInfo();
+                    }
+                }
+            }
+        } else if (!_processingAnimationBlock &&
+                   layer->HasField(specPath, SdfFieldKeys->Spline)) {
+            *foundOpinion = true;
+            
+            thisSource = UsdResolveInfoSourceSpline;
+            didSetSource = _SetSource(_resolveInfo, thisSource);
+
             // In order to optimize read only / playback workflow, we save the
             // spline in the resolve info. Do note that with every resync /
             // info change (which could potentially have modified this spline), 
             // resolve info should be invalidated, which in directly means the 
             // attribute query should be invalidated, since it holds the 
             // resolveInfo).
-            _resolveInfo->_spline = layer->GetFieldAs<TsSpline>(
-                specPath, SdfFieldKeys->Spline);
-        } else { 
+            if (didSetSource) {
+                _resolveInfo->_spline = layer->GetFieldAs<TsSpline>(
+                    specPath, SdfFieldKeys->Spline);
+            }
+
+            // Splines have scalar floating-point types that never compose, so
+            // we don't have to worry about chaining next-weaker resolve infos
+            // here.
+        } else {
+            const std::type_info *valueType = &typeid(void);
+
+            // Grab a pointer to the _extraInfo's default or fallback storage,
+            // if it has one.  This will be null if there isn't one.
+            VtValue *defaultValueStore =
+                _extraInfo->GetDefaultOrFallbackStorage();
             Usd_DefaultValueResult defValue = Usd_HasDefault(
-                layer, specPath, _extraInfo->defaultOrFallbackValue);
+                layer, specPath, defaultValueStore, &valueType);
+            
             if (defValue == Usd_DefaultValueResult::Found) {
-                _resolveInfo->_source = UsdResolveInfoSourceDefault;
+                *foundOpinion = true;
+                
+                thisSource = UsdResolveInfoSourceDefault;
+                didSetSource = _SetSource(_resolveInfo, thisSource);
+
+                // If we're working at a time and we found a value that could
+                // compose, add a next weaker resolve info to the chain and
+                // continue.  Otherwise just mark that the default can compose
+                // in the resolveInfo.
+                if ((defaultValueStore &&
+                     defaultValueStore->CanComposeOver()) ||
+                    (!defaultValueStore &&
+                     VtValueTypeCanComposeOver(*valueType))) {
+                    if (time) {
+                        nextWeaker = _resolveInfo->_AddNextWeakerInfo();
+                        nextWeakerExtra = _extraInfo->_AddNextWeakerInfo();
+                    }
+                    defaultCanCompose = true;
+                }
             }
             else if (defValue == Usd_DefaultValueResult::Blocked) {
-                _resolveInfo->_valueIsBlocked = true;
+                // Value is blocked if this is the first source.
+                _resolveInfo->_valueIsBlocked =
+                    _resolveInfo->_source == UsdResolveInfoSourceNone;
                 return ProcessFallback();
             }
             else if (defValue == Usd_DefaultValueResult::BlockedAnimation) {
@@ -8140,30 +9104,54 @@ struct UsdStage::_ResolveInfoResolver
                 // Note that since AnimationBlock is itself a default, we keep
                 // on walking up the node graph until a non-animation block
                 // default is found.
-                _extraInfo->processingAnimationBlock = true;
+                *foundOpinion = true;
+                _processingAnimationBlock = true;
                 return false;
             }
         }
 
-        if (_resolveInfo->_source != UsdResolveInfoSourceNone) {
+        if (didSetSource) {
             _resolveInfo->_layerStack = node.GetLayerStack();
             _resolveInfo->_layer = layer;
             _resolveInfo->_primPathInLayerStack = node.GetPath();
             _resolveInfo->_layerToStageOffset = layerToStageOffset;
             _resolveInfo->_node = node;
-            return true;
-        }
+            _resolveInfo->_defaultCanCompose = defaultCanCompose;
 
-        return false;
+            // If we're working at a time and found value types that may
+            // compose, we continue filling in the chain of resolve infos.
+            if (nextWeaker || nextWeakerExtra) {
+                TF_AXIOM(nextWeaker && nextWeakerExtra);
+                _resolveInfo = nextWeaker;
+                _extraInfo = nextWeakerExtra;
+                return false;
+            }
+            // Otherwise continue (return false) if we found a composing default
+            // to see if there are potentially time-varying weaker sources.
+            return !defaultCanCompose;
+        }
+        // Stop (return true) if we found a weaker time-varying source following
+        // a default.  Otherwise continue looking for sources.
+        return thisSource != UsdResolveInfoSourceNone &&
+            (_resolveInfo->_defaultCanComposeOverWeakerTimeVaryingSources ||
+             !defaultCanCompose);
     }
 
     bool
     ProcessLayerAtDefault(const SdfLayerRefPtr& layer,
                           const SdfPath& specPath,
-                          const PcpNodeRef& node) 
+                          const PcpNodeRef& node)
     {
+        // This function is only called if we're getting resolve info strictly
+        // at the default time.  We never get here when resolving a value a
+        // numeric time.
+        const std::type_info *valueType = &typeid(void);
+        // Grab a pointer to the _extraInfo's default or fallback storage,
+        // if it has one.  This will be null if there isn't one.
+        VtValue *defaultValueStore = _extraInfo->GetDefaultOrFallbackStorage();
         Usd_DefaultValueResult defValue = Usd_HasDefault(
-            layer, specPath, _extraInfo->defaultOrFallbackValue);
+            layer, specPath, defaultValueStore, &valueType);
+
         if (defValue == Usd_DefaultValueResult::Found) {
             _resolveInfo->_source = UsdResolveInfoSourceDefault;
             _resolveInfo->_layerStack = node.GetLayerStack();
@@ -8172,6 +9160,16 @@ struct UsdStage::_ResolveInfoResolver
             _resolveInfo->_layerToStageOffset = 
                 _GetLayerToStageOffset(node, layer);
             _resolveInfo->_node = node;
+
+            // If the default value's type could compose, add to the resolve
+            // info chain and continue.
+            if ((defaultValueStore && defaultValueStore->CanComposeOver()) ||
+                (!defaultValueStore && VtValueTypeCanComposeOver(*valueType))) {
+                _resolveInfo->_defaultCanCompose = true;
+                _resolveInfo = _resolveInfo->_AddNextWeakerInfo();
+                _extraInfo = _extraInfo->_AddNextWeakerInfo();
+                return false;
+            }
             return true;
         }
         else if (defValue == Usd_DefaultValueResult::Blocked) {
@@ -8193,55 +9191,107 @@ struct UsdStage::_ResolveInfoResolver
                  const PcpNodeRef& node,
                  const UsdTimeCode* time)
     {
+        // Time is either null (meaning "at no specific time") or a numeric
+        // time.  This function is never called with default time.
+        if (!TF_VERIFY(!time || time->IsNumeric(), "Unhandled time value")) {
+            time = nullptr;
+        }
+
+        if (_processingAnimationBlock) {
+            return false;
+        }
+
         std::optional<double> localTime;
         if (time) {
             localTime = time->GetValue();
         }
-        if (!_HasTimeSamples(
-                clipSet, specPath, 
-                localTime ? std::addressof(*localTime) : nullptr,
-                &_extraInfo->lowerSample, &_extraInfo->upperSample)) {
+        double lowerSample, upperSample;
+        if (!_HasTimeSamples(clipSet, specPath, 
+                             localTime ? std::addressof(*localTime) : nullptr,
+                             &lowerSample, &upperSample)) {
             return false;
         }
 
-        _extraInfo->clipSet = clipSet;
+        if (_SetSource(_resolveInfo, UsdResolveInfoSourceValueClips)) {
+            _extraInfo->clipSet = clipSet;
+            _extraInfo->lowerSample = lowerSample;
+            _extraInfo->upperSample = upperSample;
+            _resolveInfo->_source = UsdResolveInfoSourceValueClips;
+            _resolveInfo->_layerStack = node.GetLayerStack();
+            _resolveInfo->_primPathInLayerStack = node.GetPath();
+            _resolveInfo->_node = node;
+        }
 
-        _resolveInfo->_source = UsdResolveInfoSourceValueClips;
-        _resolveInfo->_layerStack = node.GetLayerStack();
-        _resolveInfo->_primPathInLayerStack = node.GetPath();
-        _resolveInfo->_node = node;
-        
+        // If we're working at a time, check if the samples are composing types,
+        // and if either are, add a next weaker resolve info to the chain and
+        // continue.
+        if (time) {
+            const auto [lowerComposes, upperComposes] =
+                _GetSamplesComposability(
+                    clipSet, specPath,
+                    _extraInfo->lowerSample, _extraInfo->upperSample);
+            if (lowerComposes || upperComposes) {
+                // If lower doesn't compose but upper does, we need to modify
+                // the query time to be upper's time.  This is because a
+                // non-composing lower masks any weaker opinions up to upper's
+                // time.
+                if (!lowerComposes && !_overrideTime) {
+                    _overrideTime = _extraInfo->upperSample;
+                }
+                // We can stop if we're looking for an upper and we found
+                // one that doesn't compose.
+                if (!_overrideTime || upperComposes) {
+                    _resolveInfo = _resolveInfo->_AddNextWeakerInfo();
+                    _extraInfo = _extraInfo->_AddNextWeakerInfo();
+                    return false;
+                }
+            }
+        }
         return true;
     }
 
 private:
-    const UsdAttribute& _attr;
-    UsdResolveInfo* _resolveInfo;
-    UsdStage::_ExtraResolveInfo<T>* _extraInfo;
+    const UsdAttribute &_attr;
+    UsdResolveInfo *_resolveInfo;
+    UsdStage::_ExtraResolveInfo *_extraInfo;
+
+    // For composing value types, when we find a lower-time sample value that
+    // doesn't compose and an upper-time sample value that does, that
+    // non-composing lower value masks any weaker values until the time of the
+    // upper sample.  That means we need to adjust the time we query samples at
+    // to the time of the upper sample, since we're only looking for a value
+    // that could complete the opinion _there_.  This member tracks that
+    // adjusted time in the stage's time.
+    std::optional<double> _overrideTime;
+    
+    // If we found a default value of animation block as the strongest value
+    // source, we need to keep walking the pcp node graph, until we have found a 
+    // non-animation block default value and ignoring any animation via spline 
+    // or time samples in weaker layer. processingAnimationBlock helps us keep
+    // track of this strongest animation block value source, to ignore any
+    // spline / time sample value sources in the weaker layers.
+    bool _processingAnimationBlock = false;
 };
 
-template <class T>
 void
 UsdStage::_GetResolveInfo(const UsdAttribute &attr, 
                           UsdResolveInfo *resolveInfo,
                           const UsdTimeCode *time, 
-                          _ExtraResolveInfo<T> *extraInfo) const
+                          _ExtraResolveInfo *extraInfo) const
 {
     auto makeUsdResolverFn = [&attr](bool skipEmptyNodes) {
         return Usd_Resolver(&attr._Prim()->GetPrimIndex(), skipEmptyNodes);
     };
     _GetResolveInfoImpl(attr, resolveInfo, time, extraInfo, makeUsdResolverFn);
-
 }
 
-template <class T>
 void
 UsdStage::_GetResolveInfoWithResolveTarget(
     const UsdAttribute &attr, 
     const UsdResolveTarget &resolveTarget,
     UsdResolveInfo *resolveInfo,
     const UsdTimeCode *time, 
-    _ExtraResolveInfo<T> *extraInfo) const
+    _ExtraResolveInfo *extraInfo) const
 {
     auto makeUsdResolverFn = [&resolveTarget](bool skipEmptyNodes) {
         return Usd_Resolver(&resolveTarget, skipEmptyNodes);
@@ -8249,21 +9299,21 @@ UsdStage::_GetResolveInfoWithResolveTarget(
     _GetResolveInfoImpl(attr, resolveInfo, time, extraInfo, makeUsdResolverFn);
 }
 
-template <class T, class MakeUsdResolverFn>
+template <class MakeUsdResolverFn>
 void 
 UsdStage::_GetResolveInfoImpl(
     const UsdAttribute &attr, 
     UsdResolveInfo *resolveInfo,
     const UsdTimeCode *time,
-    _ExtraResolveInfo<T> *extraInfo,
+    _ExtraResolveInfo *extraInfo,
     const MakeUsdResolverFn &makeUsdResolverFn) const
 {
-    _ExtraResolveInfo<T> localExtraInfo;
+    _ExtraResolveInfo localExtraInfo;
     if (!extraInfo) {
         extraInfo = &localExtraInfo;
     }
 
-    _ResolveInfoResolver<T> resolver(attr, resolveInfo, extraInfo);
+    _ResolveInfoResolver resolver(attr, resolveInfo, extraInfo);
     if (!time) {
         _GetResolvedValueAtTimeImpl(
             attr, &resolver, nullptr, makeUsdResolverFn);
@@ -8332,8 +9382,10 @@ _GetResolvedValueAtTimeNoClipsImpl(
         if (isNewNode) {
             specPath = res->GetLocalPath(propName);
         }
+        bool foundOpinionUnused = false;
         if (resolver->ProcessLayerAtTime(
-                res->GetLayer(), specPath, res->GetNode(), localTime)) {
+                res->GetLayer(), specPath, res->GetNode(), localTime,
+                &foundOpinionUnused)) {
             return;
         }
     }
@@ -8363,9 +9415,11 @@ _GetResolvedValueAtTimeWithClipsImpl(
             nodeHasSpecs = res->GetNode().HasSpecs();
         }
 
+        bool foundOpinion = false;
         if (nodeHasSpecs) { 
             if (resolver->ProcessLayerAtTime(
-                    res->GetLayer(), specPath, res->GetNode(), localTime)) {
+                    res->GetLayer(), specPath, res->GetNode(), localTime,
+                    &foundOpinion)) {
                 return;
             }
         }
@@ -8383,20 +9437,24 @@ _GetResolvedValueAtTimeWithClipsImpl(
             }
         }
 
-        for (const Usd_ClipSetRefPtr& clipSet : clips) {
-            // We only care about clips that were introduced at this
-            // position within the LayerStack.
-            if (clipSet->sourceLayer == res->GetLayer()) {
-                // Look through clips to see if they have a time sample for
-                // this attribute. If a time is given, examine just the clips
-                // that are active at that time.
-                if (resolver->ProcessClips(
-                        clipSet, specPath, res->GetNode(), localTime)) {
-                    return;
+        // If we already found an opinion in the layer (default, spline,
+        // samples) then we do not consult clips here.  A single site only gets
+        // to supply one value opinion.
+        if (!foundOpinion) {
+            for (const Usd_ClipSetRefPtr& clipSet : clips) {
+                // We only care about clips that were introduced at this
+                // position within the LayerStack.
+                if (clipSet->sourceLayer == res->GetLayer()) {
+                    // Look through clips to see if they have a time sample for
+                    // this attribute. If a time is given, examine just the
+                    // clips that are active at that time.
+                    if (resolver->ProcessClips(
+                            clipSet, specPath, res->GetNode(), localTime)) {
+                        return;
+                    }
                 }
             }
         }
-
         isNewNode = res->NextLayer();
     }
 
@@ -8433,136 +9491,26 @@ UsdStage::_GetResolvedValueAtTimeImpl(
     }
 }
 
-void
-UsdStage::_GetResolveInfo(const UsdAttribute &attr, 
-                          UsdResolveInfo *resolveInfo,
-                          const UsdTimeCode *time) const
-{
-    _GetResolveInfo<SdfAbstractDataValue>(attr, resolveInfo, time);
-}
-
-void 
-UsdStage::_GetResolveInfoWithResolveTarget(
-    const UsdAttribute &attr, 
-    const UsdResolveTarget &resolveTarget,
-    UsdResolveInfo *resolveInfo,
-    const UsdTimeCode *time) const
-{
-    _GetResolveInfoWithResolveTarget<SdfAbstractDataValue>(
-        attr, resolveTarget, resolveInfo, time);
-}
-
-template <class T>
-bool 
-UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
-                                       UsdTimeCode time, const UsdAttribute &attr,
-                                       Usd_InterpolatorBase* interpolator,
-                                       T* result) const
-{
-    if (info._source == UsdResolveInfoSourceTimeSamples) {
-        return UsdStage_ResolveInfoAccess::_GetTimeSampleValue(
-            time, attr, info, nullptr, nullptr, interpolator, result);
-    }
-    else if (info._source == UsdResolveInfoSourceSpline) {
-        return UsdStage_ResolveInfoAccess::_GetSplineValue(
-            time, attr, info, result);
-    }
-    else if (info._source == UsdResolveInfoSourceDefault) {
-        const SdfPath specPath =
-            info._primPathInLayerStack.AppendProperty(attr.GetName());
-        const SdfLayerHandle& layer = info._layer;
-
-        TF_DEBUG(USD_VALUE_RESOLUTION).Msg(
-            "RESOLVE: reading field %s:%s from @%s@, with t = %.3f"
-            " as default\n",
-            specPath.GetText(),
-            SdfFieldKeys->TimeSamples.GetText(),
-            layer->GetIdentifier().c_str(),
-            time.GetValue());
-
-        return layer->HasField(specPath, SdfFieldKeys->Default, result);
-    }
-    else if (info._source == UsdResolveInfoSourceValueClips) {
-        const SdfPath specPath =
-            info._primPathInLayerStack.AppendProperty(attr.GetName());
-
-        const UsdPrim prim = attr.GetPrim();
-        const std::vector<Usd_ClipSetRefPtr>& clipsAffectingPrim =
-            _clipCache->GetClipsForPrim(prim.GetPath());
-
-        for (const auto& clipSet : clipsAffectingPrim) {
-            if (!_ClipsApplyToLayerStackSite(
-                    clipSet, info._layerStack, info._primPathInLayerStack)
-                || !_ClipsContainValueForAttribute(clipSet, specPath)) {
-                continue;
-            }
-
-            return UsdStage_ResolveInfoAccess::_GetClipValue(
-                time, attr, info, clipSet, nullptr, nullptr,
-                interpolator, result);
-        }
-    }
-    else if (info._source == UsdResolveInfoSourceFallback) {
-        // Get the fallback value.
-        return attr._Prim()->GetPrimDefinition().GetAttributeFallbackValue(
-                attr.GetName(), result);
-    }
-
-    return false;
-}
-
-template <class T>
-bool 
-UsdStage::_GetDefaultValueFromResolveInfoImpl(const UsdResolveInfo &info,
-                                              const UsdAttribute &attr,
-                                              T* result) const
-{
-    if (info._source == UsdResolveInfoSourceDefault) {
-        const SdfPath specPath =
-            info._primPathInLayerStack.AppendProperty(attr.GetName());
-        const SdfLayerHandle& layer = info._layer;
-
-        TF_DEBUG(USD_VALUE_RESOLUTION).Msg(
-            "RESOLVE: reading field %s:%s from @%s@\n",
-            specPath.GetText(),
-            SdfFieldKeys->Default.GetText(),
-            layer->GetIdentifier().c_str());
-
-        return layer->HasField(specPath, SdfFieldKeys->Default, result);
-    } else if (info._source == UsdResolveInfoSourceFallback) {
-        // Get the fallback value.
-        return attr._Prim()->GetPrimDefinition().GetAttributeFallbackValue(
-                attr.GetName(), result);
-    } else if (info._source != UsdResolveInfoSourceNone) {
-        TF_CODING_ERROR("Invalid resolve info used for getting the value at "
-            "default time for attr '%s'. Resolve info source must be Default, "
-            "Fallback, or None. Got %s",
-            attr.GetPath().GetText(),
-            TfStringify(info._source).c_str());
-    }
-
-    return false;
-
-}
-
-
 bool
 UsdStage::_GetValueFromResolveInfo(const UsdResolveInfo &info,
                                    UsdTimeCode time, const UsdAttribute &attr,
-                                   VtValue* result) const
+                                   VtValue* result,
+                                   const UsdResolveTarget *resolveTarget) const
 {
-    return Usd_AttrGetUntypedValueHelper::GetValueFromResolveInfo(
-        *this, time, attr, info, result);
+    return Usd_AttrGetValueHelper<VtValue>
+        ::GetValueFromResolveInfo(*this, time, attr, info,
+                                  resolveTarget, result);
 }
 
-template <class T>
 bool 
 UsdStage::_GetValueFromResolveInfo(const UsdResolveInfo &info,
                                    UsdTimeCode time, const UsdAttribute &attr,
-                                   T* result) const
+                                   SdfAbstractDataValue* result,
+                                   const UsdResolveTarget *resolveTarget) const
 {
-    return Usd_AttrGetValueHelper<T>::GetValueFromResolveInfo(
-        *this, time, attr, info, result);
+    return Usd_AttrGetValueHelper<SdfAbstractDataValue>
+        ::GetValueFromResolveInfo(*this, time, attr, info,
+                                  resolveTarget, result);
 }
 
 // --------------------------------------------------------------------- //
@@ -8570,246 +9518,94 @@ UsdStage::_GetValueFromResolveInfo(const UsdResolveInfo &info,
 // --------------------------------------------------------------------- //
 
 bool
-UsdStage::_GetTimeSamplesInInterval(const UsdAttribute& attr,
-                                    const GfInterval& interval,
-                                    std::vector<double>* times) const
-{
-    UsdResolveInfo info;
-    _GetResolveInfo(attr, &info);
-    return _GetTimeSamplesInIntervalFromResolveInfo(info, attr, interval, times);
-}
-
-bool 
-UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
-    const UsdResolveInfo &info,
-    const UsdAttribute &attr,
+UsdStage::_GetTimeSamplesInInterval(
+    const UsdAttribute& attr,
     const GfInterval& interval,
-    std::vector<double>* times) const
+    std::vector<double>* times,
+    const UsdResolveInfo *resolveInfo,
+    const UsdResolveTarget *resolveTarget) const
 {
-    // An empty requested interval would result in in empty times
+    // An empty requested interval would result in an empty times
     // vector so avoid computing any of the contained samples
     if (interval.IsEmpty()) {
         return true;
     }
+    
+    _SamplesInIntervalResolver sir { interval };
+
+    _GetResolvedValueAtTimeImpl(
+        attr, &sir, /*time=*/nullptr,
+        [&attr, resolveTarget, resolveInfo](bool skipEmptyNodes) {
+            return resolveTarget
+                ? Usd_Resolver(resolveTarget, skipEmptyNodes, resolveInfo)
+                : Usd_Resolver(
+                    &attr._Prim()->GetPrimIndex(), skipEmptyNodes, resolveInfo);
+        });
 
     // This is the lowest-level site for guaranteeing that all GetTimeSample
     // queries clear out the return vector
     times->clear();
-
-    if (info._source == UsdResolveInfoSourceTimeSamples) {
-        const SdfPath specPath =
-            info._primPathInLayerStack.AppendProperty(attr.GetName());
-        const SdfLayerHandle& layer = info._layer;
-
-        const std::set<double> samples =
-            layer->ListTimeSamplesForPath(specPath);
-        if (!samples.empty()) {
-            if (info._layerToStageOffset.IsIdentity()) {
-                // The layer offset is identity, so we can use the interval
-                // directly, and do not need to remap the sample times.
-                Usd_CopyTimeSamplesInInterval(samples, interval, times);
-            } else {
-                // Map the interval (expressed in stage time) to layer time.
-                const SdfLayerOffset stageToLayer =
-                    info._layerToStageOffset.GetInverse();
-                const GfInterval layerInterval =
-                    interval * stageToLayer.GetScale()
-                    + stageToLayer.GetOffset();
-                Usd_CopyTimeSamplesInInterval(samples, layerInterval, times);
-                // Map the layer sample times to stage times.
-                for (auto &time : *times) {
-                    time = info._layerToStageOffset * time;
-                }
-            }
-        }
-
-        return true;
+    times->reserve(sir._partial.size());
+    for (_SamplesInIntervalResolver::_Sample const &s: sir._partial) {
+        times->push_back(s.time);
     }
-    else if (info._source == UsdResolveInfoSourceValueClips) {
-        const UsdPrim prim = attr.GetPrim();
-
-        // See comments in _GetValueImpl regarding clips.
-        const std::vector<Usd_ClipSetRefPtr>& clipsAffectingPrim =
-            _clipCache->GetClipsForPrim(prim.GetPath());
-
-        const SdfPath specPath =
-            info._primPathInLayerStack.AppendProperty(attr.GetName());
-
-        // Loop through all the clips that apply to this node and
-        // combine all the time samples that are provided.
-        for (const auto& clipSet : clipsAffectingPrim) {
-            if (!_ClipsApplyToLayerStackSite(
-                    clipSet, info._layerStack, info._primPathInLayerStack)
-                || !_ClipsContainValueForAttribute(clipSet, specPath)) {
-                continue;
-            }
-
-            // See comments in _GetValueImpl regarding layer
-            // offsets and why they're not applied here.
-            *times = clipSet->GetTimeSamplesInInterval(specPath, interval);
-            return true;
-        }
-    }
-
     return true;
 }
 
 size_t
-UsdStage::_GetNumTimeSamples(const UsdAttribute &attr) const
+UsdStage::_GetNumTimeSamples(const UsdAttribute &attr,
+                             const UsdResolveInfo *resolveInfo,
+                             const UsdResolveTarget *resolveTarget) const
 {
-    UsdResolveInfo info;
-    _GetResolveInfo(attr, &info);
-    return _GetNumTimeSamplesFromResolveInfo(info, attr);
-   
-}
+    // We don't have an efficient way of getting the number of time samples from
+    // all the samples & clips involved now that we have possibly composing
+    // samples. To avoid code duplication, simply get all the time samples and
+    // return the size here.
 
-size_t 
-UsdStage::_GetNumTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
-                                            const UsdAttribute &attr) const
-{
-    if (info._source == UsdResolveInfoSourceTimeSamples) {
-        const SdfPath specPath =
-            info._primPathInLayerStack.AppendProperty(attr.GetName());
-        const SdfLayerHandle& layer = info._layer;
-
-        return layer->GetNumTimeSamplesForPath(specPath);
-    } 
-    else if (info._source == UsdResolveInfoSourceValueClips) {
-        // XXX: optimization
-        // 
-        // We don't have an efficient way of getting the number of time
-        // samples from all the clips involved. To avoid code duplication, 
-        // simply get all the time samples and return the size here. 
-        // 
-        // This is good motivation for why we really need the ability to 
-        // ask the question of whether there is more than one sample directly.
-        // 
-        std::vector<double> timesFromAllClips;
-        _GetTimeSamplesInIntervalFromResolveInfo(info, attr, 
-            GfInterval::GetFullInterval(), &timesFromAllClips);
-        return timesFromAllClips.size();
-    }
-
-    return 0;
+    std::vector<double> times;
+    _GetTimeSamplesInInterval(attr, GfInterval::GetFullInterval(), &times,
+                              resolveInfo, resolveTarget);
+    return times.size();
 }
 
 bool
-UsdStage::_GetBracketingTimeSamples(const UsdAttribute &attr,
-                                    double desiredTime,
-                                    bool requireAuthored, 
-                                    double* lower,
-                                    double* upper,
-                                    bool* hasSamples) const
+UsdStage::_GetBracketingTimeSamples(
+    const UsdAttribute &attr,
+    double desiredTime,
+    double* lower,
+    double* upper,
+    bool* hasSamples,
+    const UsdResolveInfo *resolveInfo,
+    const UsdResolveTarget *resolveTarget) const
 {
-    const UsdTimeCode time(desiredTime);
+    _BracketingSamplesResolver bsr;
+    const UsdTimeCode time { desiredTime };
 
-    UsdResolveInfo resolveInfo;
-    _ExtraResolveInfo<SdfAbstractDataValue> extraInfo;
-
-    _GetResolveInfo<SdfAbstractDataValue>(
-        attr, &resolveInfo, &time, &extraInfo);
-
-    if (resolveInfo._source == UsdResolveInfoSourceTimeSamples) {
-        // In the time samples case, we bail out early to avoid another
-        // call to SdfLayer::GetBracketingTimeSamples. _GetResolveInfo will 
-        // already have filled in the lower and upper samples with the
-        // results of that function at the desired time.
-        *lower = extraInfo.lowerSample;
-        *upper = extraInfo.upperSample;
-
-        const SdfLayerOffset offset = resolveInfo._layerToStageOffset;
-        if (!offset.IsIdentity()) {
-            *lower = offset * (*lower);
-            *upper = offset * (*upper);
-        }
-
-        *hasSamples = true;
-        return true;
-    }
-    else if (resolveInfo._source == UsdResolveInfoSourceValueClips) {
-        *lower = extraInfo.lowerSample;
-        *upper = extraInfo.upperSample;
-        *hasSamples = true;
-        return true;
+    if (time.IsDefault()) {
+        TF_CODING_ERROR("Requested bracketing time samples at time=default");
+        return false;
     }
     
-    return _GetBracketingTimeSamplesFromResolveInfo(
-        resolveInfo, attr, desiredTime, requireAuthored, lower, upper, 
-        hasSamples);
-}
+    _GetResolvedValueAtTimeImpl(
+        attr, &bsr, &time,
+        [&attr, resolveTarget, resolveInfo](bool skipEmptyNodes) {
+            return resolveTarget
+                ? Usd_Resolver(resolveTarget, skipEmptyNodes, resolveInfo)
+                : Usd_Resolver(
+                    &attr._Prim()->GetPrimIndex(), skipEmptyNodes, resolveInfo);
+        });
 
-bool 
-UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
-                                                   const UsdAttribute &attr,
-                                                   double desiredTime,
-                                                   bool requireAuthored,
-                                                   double* lower,
-                                                   double* upper,
-                                                   bool* hasSamples) const
-{
-    if (info._source == UsdResolveInfoSourceTimeSamples) {
-        const SdfPath specPath =
-            info._primPathInLayerStack.AppendProperty(attr.GetName());
-        const SdfLayerHandle& layer = info._layer;
-        const double layerTime =
-            info._layerToStageOffset.GetInverse() * desiredTime;
-        
-        if (layer->GetBracketingTimeSamplesForPath(
-                specPath, layerTime, lower, upper)) {
-
-            if (!info._layerToStageOffset.IsIdentity()) {
-                *lower = info._layerToStageOffset * (*lower);
-                *upper = info._layerToStageOffset * (*upper);
-            }
-
+    if (bsr._lower || bsr._upper) {
+        if (TF_VERIFY(bsr._lower && bsr._upper)) {
+            *lower = *bsr._lower;
+            *upper = *bsr._upper;
             *hasSamples = true;
             return true;
         }
     }
-    else if (info._source == UsdResolveInfoSourceDefault) {
-        *hasSamples = false;
-        return true;
-    }
-    else if (info._source == UsdResolveInfoSourceValueClips) {
-        const SdfPath specPath =
-            info._primPathInLayerStack.AppendProperty(attr.GetName());
 
-        const UsdPrim prim = attr.GetPrim();
-
-        // See comments in _GetValueImpl regarding clips.
-        const std::vector<Usd_ClipSetRefPtr>& clipsAffectingPrim =
-            _clipCache->GetClipsForPrim(prim.GetPath());
-
-        for (const auto& clipSet : clipsAffectingPrim) {
-            if (!_ClipsApplyToLayerStackSite(
-                    clipSet, info._layerStack, info._primPathInLayerStack)
-                || !_ClipsContainValueForAttribute(clipSet, specPath)) {
-                continue;
-            }
-
-            if (clipSet->GetBracketingTimeSamplesForPath(
-                    specPath, desiredTime, lower, upper)) {
-                *hasSamples = true;
-                return true;
-            }
-        }
-    }
-    else if (info._source == UsdResolveInfoSourceFallback) {
-        // At this point, no authored value was found, so if the client only 
-        // wants authored values, we can exit.
-        *hasSamples = false;
-        if (requireAuthored)
-            return false;
-
-        // Check for a registered fallback.
-        if (attr.HasFallbackValue()) {
-            *hasSamples = false;
-            return true;
-        }
-    }
-
-    // No authored value, no fallback.
-    return false;
+    *hasSamples = false;
+    return bsr._hasAnyValue;
 }
 
 static bool
@@ -8836,23 +9632,27 @@ bool
 UsdStage::_ValueMightBeTimeVarying(const UsdAttribute &attr) const
 {
     UsdResolveInfo info;
-    _ExtraResolveInfo<SdfAbstractDataValue> extraInfo;
+    _ExtraResolveInfo extraInfo;
     _GetResolveInfo(attr, &info, nullptr, &extraInfo);
-
-    if (info._source == UsdResolveInfoSourceValueClips) {
-        // See comment in _ValueMightBeTimeVaryingFromResolveInfo.
-        const SdfPath specPath = 
-            info._primPathInLayerStack.AppendProperty(attr.GetName());
-        return _ValueFromClipsMightBeTimeVarying(extraInfo.clipSet, specPath);
-    }
-
     return _ValueMightBeTimeVaryingFromResolveInfo(info, attr);
 }
 
 bool 
-UsdStage::_ValueMightBeTimeVaryingFromResolveInfo(const UsdResolveInfo &info,
-                                                  const UsdAttribute &attr) const
+UsdStage::_ValueMightBeTimeVaryingFromResolveInfo(
+    const UsdResolveInfo &info,
+    const UsdAttribute &attr) const
 {
+    if (info._source == UsdResolveInfoSourceNone ||
+        info._source == UsdResolveInfoSourceFallback) {
+        // Fallbacks (and no value) are never time-varying.
+        return false;
+    }
+
+    if (info._source == UsdResolveInfoSourceDefault) {
+        // Defer to any information we may have captured in `info`.
+        return info.ValueSourceMightBeTimeVarying();
+    }
+    
     if (info._source == UsdResolveInfoSourceSpline) {
         // Although a spline could represent a constant function, determining
         // this would require analyzing the spline, which is potentially 
@@ -8864,6 +9664,11 @@ UsdStage::_ValueMightBeTimeVaryingFromResolveInfo(const UsdResolveInfo &info,
         // Do a specialized check for value clips instead of falling through
         // to calling _GetNumTimeSamplesFromResolveInfo, which requires opening
         // every clip to get the total time sample count.
+
+        // XXX: I think this is flawed in the case where `info` was obtained
+        // with a resolve target that could skip some or all clips.  In that
+        // case we might return true here when we could have returned false - a
+        // possible missed optimization.
         const SdfPath specPath =
             info._primPathInLayerStack.AppendProperty(attr.GetName());
 
@@ -8882,8 +9687,33 @@ UsdStage::_ValueMightBeTimeVaryingFromResolveInfo(const UsdResolveInfo &info,
         
         return false;
     }
+    
+    if (info._source == UsdResolveInfoSourceTimeSamples) {
+        // If there's more than one sample, or if there's only one sample and
+        // it's a type that can compose, then we might be time-varying.
+        const SdfPath specPath =
+            info._primPathInLayerStack.AppendProperty(attr.GetName());
+        const SdfLayerHandle& layer = info._layer;
+        size_t numSamples = layer->GetNumTimeSamplesForPath(specPath);
+        if (numSamples > 1) {
+            return true;
+        }
+        if (numSamples == 1) {
+            double lower, upper;
+            TF_VERIFY(layer->GetBracketingTimeSamplesForPath(
+                          specPath, 0.0, &lower, &upper));
+            TF_VERIFY(lower == upper);
+            return VtValueTypeCanComposeOver(
+                layer->QueryTimeSampleTypeid(specPath, lower));
+        }
+        // 0 samples ?
+        return false;
+    }
 
-    return _GetNumTimeSamplesFromResolveInfo(info, attr) > 1;
+    TF_CODING_ERROR("Unrecognized UsdResolveInfoSource %d : '%s'",
+                    info._source, TfStringify(info._source).c_str());
+
+    return true; // fail safe.
 }
 
 bool
@@ -9420,25 +10250,4 @@ std::string UsdDescribe(const UsdStageRefPtr &stage) {
     return UsdDescribe(get_pointer(stage));
 }
 
-// Explicitly instantiate templated getters and setters for all Sdf value
-// types.
-#define _INSTANTIATE_GET(unused, elem)                                  \
-    template bool UsdStage::_GetValue(                                  \
-        UsdTimeCode, const UsdAttribute&,                               \
-        SDF_VALUE_CPP_TYPE(elem)*) const;                               \
-    template bool UsdStage::_GetValue(                                  \
-        UsdTimeCode, const UsdAttribute&,                               \
-        SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;                         \
-                                                                        \
-    template bool UsdStage::_GetValueFromResolveInfo(                   \
-        const UsdResolveInfo&, UsdTimeCode, const UsdAttribute&,        \
-        SDF_VALUE_CPP_TYPE(elem)*) const;                               \
-    template bool UsdStage::_GetValueFromResolveInfo(                   \
-        const UsdResolveInfo&, UsdTimeCode, const UsdAttribute&,        \
-        SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;
-
-TF_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
-#undef _INSTANTIATE_GET
-
 PXR_NAMESPACE_CLOSE_SCOPE
-

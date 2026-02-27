@@ -1742,7 +1742,6 @@ HdPrmanInstancer::_AcquireGroupId(
     const _FlattenData& flattenGroup,
     riley::GeometryPrototypeId& groupId)
 {
-    HD_TRACE_FUNCTION();
     // Bail before locking if there's no parent instancer
     if (_Depth() == 0) {
         groupId = riley::GeometryPrototypeId::InvalidId();
@@ -1769,6 +1768,7 @@ HdPrmanInstancer::_AcquireGroupId(
 
     groupId = _groupMap.get(flattenGroup);
     if (groupId == riley::GeometryPrototypeId::InvalidId()) {
+        HD_TRACE_FUNCTION();
 
         bool found = false;
         if (!lock.upgrade_to_writer()) {

@@ -6,7 +6,7 @@
 //
 #include "pxr/exec/exec/systemChangeProcessor.h"
 
-#include "pxr/exec/exec/types.h"
+#include "pxr/exec/exec/program.h"
 #include "pxr/exec/exec/uncompiler.h"
 
 #include "pxr/base/tf/diagnostic.h"
@@ -105,7 +105,8 @@ ExecSystem::_ChangeProcessor::DidChangeInfoOnly(
 void
 ExecSystem::_ChangeProcessor::_PostProcessChanges()
 {
-    if (_state->uncompiler.DidUncompile()) {
+    if (_state->uncompiler.DidUncompile() ||
+        _system->_program->WasInterrupted()) {
         _system->_InvalidateDisconnectedInputs();
     }
 
@@ -117,6 +118,10 @@ ExecSystem::_ChangeProcessor::_PostProcessChanges()
     if (!_state->objectsWithInvalidMetadataValues.empty()) {
         _system->_InvalidateMetadataValues(
             _state->objectsWithInvalidMetadataValues);
+    }
+
+    if (_system->_program->WasInterrupted()) {
+        _system->_InvalidateUnknownValues();
     }
 }
 

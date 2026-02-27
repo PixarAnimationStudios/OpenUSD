@@ -1,0 +1,46 @@
+#usda 1.0
+
+def "Ref_Inherits"
+{
+    class "class_widget"
+    {
+        double radius = 1
+    }
+
+    def "widget" (
+        inherits = </Ref_Inherits/class_widget>
+    )
+    {
+        double radius = 5
+    }
+}
+
+def "Ref_Specializes"
+{
+    class "class_widget"
+    {
+        double radius = 1
+    }
+
+    def "widget" (
+        specializes = </Ref_Specializes/class_widget>
+    )
+    {
+        double radius = 5
+    }
+}
+
+def "Ref_References"
+{
+    class "class_widget"
+    {
+        double radius = 1
+    }
+
+    def "widget" (
+        references = </Ref_References/class_widget>
+    )
+    {
+        double radius = 5
+    }
+}

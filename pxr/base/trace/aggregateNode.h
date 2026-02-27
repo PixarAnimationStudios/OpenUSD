@@ -58,8 +58,11 @@ public:
     }
 
     TRACE_API TraceAggregateNodeRefPtr 
-    Append(const TfToken &key, TimeStamp ts,
-           int c = 1, int xc = 1);
+    Append(const TfToken &key, TimeStamp ts,int c = 1, int xc = 1);
+
+    // Same as Append() but return nothing.
+    TRACE_API void
+    AppendBlind(const TfToken &key, TimeStamp ts, int c = 1, int xc = 1);
 
     TRACE_API void Append(TraceAggregateNodeRefPtr child);
 
@@ -189,6 +192,8 @@ private:
 
     void _SetAsRecursionMarker(TraceAggregateNodePtr parent);
 
+    TraceAggregateNode *_GetChildRaw(const TfToken &key);
+    
     const TfToken _key;
     TimeStamp _ts;  
     TimeStamp _exclusiveTs;

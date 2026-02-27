@@ -10,22 +10,51 @@
 
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/ostreamMethods.h"
+#include "pxr/base/tf/smallVector.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// Set to 'true' to compile-in debug output support.
+#define DEBUG_PATH_EXPRESSION_EVAL false
+
+TF_CONDITIONALLY_COMPILE_TIME_ENABLED_DEBUG_CODES(
+    DEBUG_PATH_EXPRESSION_EVAL,
+    SDF_PATH_EXPRESSION_EVAL
+    );
+
+#if DEBUG_PATH_EXPRESSION_EVAL
 static char const *
 Stringify(SdfPredicateFunctionResult r) {
     if (r) { return r.IsConstant() ? "constant true" : "varying true"; }
     else { return r.IsConstant() ? "constant false" : "varying false"; }
 }
 
-TF_CONDITIONALLY_COMPILE_TIME_ENABLED_DEBUG_CODES(
-    false, // Set to 'true' to compile-in debug output support.
-    SDF_PATH_EXPRESSION_EVAL
-    );
+static thread_local int debugIndent = 0;
+static inline void _DebugIndent(int amt=1) {
+    debugIndent += amt;
+}
+static inline void _DebugDedent(int amt=1) {
+    _DebugIndent(-amt);
+}
+struct _AutoDebugIndent {
+    _AutoDebugIndent() {
+        _DebugIndent();
+    }
+    ~_AutoDebugIndent() {
+        _DebugDedent();
+    }
+};
+#define DEBUG_MSG(...)                                                         \
+    TF_DEBUG_MSG(SDF_PATH_EXPRESSION_EVAL, "%s%s",                             \
+                 std::string(debugIndent*4, ' ').c_str(),                      \
+                 TfStringPrintf(__VA_ARGS__).c_str())
+#else
+static inline void _DebugIndent(int=0) {}
+static inline void _DebugDedent(int=0) {}
+struct _AutoDebugIndent { _AutoDebugIndent() {} };
+#define DEBUG_MSG(...)
+#endif // DEBUG_PATH_EXPRESSION_EVAL
 
-#define DEBUG_MSG(...) \
-    TF_DEBUG_MSG(SDF_PATH_EXPRESSION_EVAL, __VA_ARGS__)
 
 void
 Sdf_PathExpressionEvalBase::_PatternIncrSearchState::Pop(int newDepth)
@@ -44,44 +73,57 @@ Sdf_PathExpressionEvalBase::_EvalExpr(
     TfFunctionRef<
     SdfPredicateFunctionResult (bool /*skip*/)> evalPattern) const
 {
-    SdfPredicateFunctionResult result =
-        SdfPredicateFunctionResult::MakeConstant(false);
-    int nest = 0;
     auto opIter = _ops.cbegin(), opEnd = _ops.cend();
 
-    // The current implementation favors short-circuiting over constance
-    // propagation.  It might be beneficial to avoid short-circuiting when
-    // constancy isn't known, in hopes of establishing constancy.  See similar
-    // comments in predicateProgram.h, for SdfPredicateProgram::operator() for
-    // more detail.
+    // The current implementation favors constance propagation over
+    // short-circuiting.
 
+    struct _OpAndResult {
+        _Op op;
+        SdfPredicateFunctionResult result;
+    };
+
+    // A small stack to let us evaluate and propagate constancy back up for
+    // incremental searches.  Local capacity of 8 since we don't expect typical
+    // human-authored expressions to nest very deeply.
+    TfSmallVector<_OpAndResult, 8> _opAndResultStack;
+    _opAndResultStack.push_back({
+            EvalPattern, // ignored
+            SdfPredicateFunctionResult::MakeConstant(false)
+        });
+    
     // Helper for short-circuiting.  Advance, ignoring everything until we
     // reach the next Close that brings us to the starting nest level.
-    auto shortCircuit = [&]() {
-        const int origNest = nest;
+    auto shortCircuit = [&opIter, &opEnd, &evalPattern]() {
+        int nest = 0;
         for (; opIter != opEnd; ++opIter) {
             switch(*opIter) {
             case EvalPattern:
-                evalPattern(/*skip=*/true); break; // Skip matches.
-            case Not: case And: case Or: break; // Skip operations.
+                evalPattern(/*skip=*/true); break; // Skip patterns.
+            case Not: case And: case Or: break; // Skip logic ops.
             case Open: ++nest; break;
             case Close:
-                if (--nest == origNest) {
+                if (--nest == 0) {
                     return;
                 }
                 break;
             };
         }
     };
-    
-    // Evaluate the predicate expression by processing operations and invoking
-    // predicate functions.
-    DEBUG_MSG("_EvalExpr\n");
+
+    // Evaluate the path expression by processing operations and invoking
+    // evalPattern().
+    DEBUG_MSG("_EvalExpr(\n");
+    _AutoDebugIndent indent;
     for (; opIter != opEnd; ++opIter) {
+        SdfPredicateFunctionResult &result = _opAndResultStack.back().result;
         switch (*opIter) {
         case EvalPattern:
-            DEBUG_MSG("- EvalPattern\n");
-            result.SetAndPropagateConstancy(evalPattern(/*skip=*/false));
+            DEBUG_MSG("- EvalPattern(\n");
+            { _AutoDebugIndent indent;
+                result = evalPattern(/*skip=*/false);
+            }
+            DEBUG_MSG(")\n");
             break;
         case Not:
             DEBUG_MSG("- Not %s -> %s\n",
@@ -90,24 +132,61 @@ Sdf_PathExpressionEvalBase::_EvalExpr(
             break;
         case And:
         case Or: {
-            DEBUG_MSG("- %s (lhs = %s)\n",
-                      *opIter == And ? "And" : "Or", result ? "true" : "false");
-            const bool decidingValue = *opIter != And;
-            // If the And/Or result is already the deciding value,
-            // short-circuit.  Otherwise the result is the rhs, so continue.
-            if (result == decidingValue) {
-                DEBUG_MSG("- Short-circuiting '%s', with %s\n",
-                          *opIter == And ? "And" : "Or",
-                          Stringify(result));
+            // If we have a deciding result that is constant, short-circuit.
+            // Otherwise push and evaluate the rhs, so we can accurately resolve
+            // constancy.
+            const bool decidingValue = *opIter != And; // And: false, Or: true.
+            if (result == decidingValue && result.IsConstant()) {
+                DEBUG_MSG("- %s %s <short-circuit rhs>\n",
+                          Stringify(result), *opIter == And ? "And" : "Or");
                 shortCircuit();
             }
+            // Otherwise push a new result on the stack, so we can resolve
+            // constancy with whatever the right-hand-side turns out to be.
+            else {
+                DEBUG_MSG("- %s %s <Eval rhs>\n",
+                          Stringify(result), *opIter == And ? "And" : "Or");
+                _opAndResultStack.push_back({ *opIter, {} });
+                // !!! NOTE !!! `result` is now invalid!
+            }
+        }
+            // The next op after an And or Or is always an Open.
+            break;
+        case Open:
+            DEBUG_MSG("{\n");
+            _DebugIndent();
+            break;
+        case Close: {
+            _DebugDedent();
+            DEBUG_MSG("}\n");
+            // Closes for short-circuits are consumed in shortCircuit(), so this
+            // is always for an And/Or push.  We need to reconcile `result`
+            // (which is _opAndResultStack.back()) with the entry prior, under
+            // the operation at _opAndResultStack.back().
+            const _Op op = _opAndResultStack.back().op;
+            const SdfPredicateFunctionResult rhs = result;
+            _opAndResultStack.pop_back();
+
+            TF_AXIOM(!_opAndResultStack.empty());
+            SdfPredicateFunctionResult &newResult =
+                _opAndResultStack.back().result;
+            const SdfPredicateFunctionResult lhs = newResult;
+            newResult = (op == And)
+                ? SdfPredicateFunctionResult::And(lhs, rhs)
+                : SdfPredicateFunctionResult::Or(lhs, rhs);
+
+            DEBUG_MSG("- Eval result: %s %s %s -> %s\n",
+                      Stringify(lhs), op == And ? "And" : "Or", Stringify(rhs),
+                      Stringify(newResult));
         }
             break;
-        case Open: DEBUG_MSG("- Open\n"); ++nest; break;
-        case Close: DEBUG_MSG("- Close\n"); --nest; break;
         };
     }
-    return result;
+
+    if (TF_VERIFY(!_opAndResultStack.empty())) {
+        return _opAndResultStack.back().result;
+    }
+    return SdfPredicateFunctionResult::MakeConstant(false);
 }
 
 void
@@ -256,7 +335,7 @@ _PatternImplBase::_CheckExactMatch(
     auto iter = _components.cbegin() + seg.begin;
 
     if (std::distance(iter, end) > std::distance(pathIter, pathIterEnd)) {
-        DEBUG_MSG("Insufficient path elements remaining at '%s' to match: "
+        DEBUG_MSG("insufficient path elements remaining at '%s' to match: "
                   "have %zu, need %zu -> varying false\n",
                   pathIter->GetName().c_str(),
                   std::distance(pathIter, pathIterEnd), seg.GetSize());
@@ -271,21 +350,22 @@ _PatternImplBase::_CheckExactMatch(
             // names.
             std::string const &name = _explicitNames[iter->patternIndex];
             if (!name.empty() && name != pathIter->GetName()) {
-                DEBUG_MSG("Name '%s' != '%s' -> varying false\n",
+                DEBUG_MSG("pattern name '%s' != path name '%s' -> "
+                          "varying false\n",
                           name.c_str(), pathIter->GetName().c_str());
                 return Result::MakeVarying(false);
             }
-            DEBUG_MSG("Name '%s' == '%s' -> continuing\n",
+            DEBUG_MSG("pattern name '%s' == path name '%s' -> continuing\n",
                       name.c_str(), pathIter->GetName().c_str());
         }
             break;
         case Regex:
             if (!_regexes[iter->patternIndex].Match(pathIter->GetName())) {
-                DEBUG_MSG("Regex does not match '%s' -> varying false\n",
+                DEBUG_MSG("regex does not match '%s' -> varying false\n",
                           pathIter->GetName().c_str());
                 return Result::MakeVarying(false);
             }
-            DEBUG_MSG("Regex matches '%s' -> continuing\n",
+            DEBUG_MSG("regex matches '%s' -> continuing\n",
                       pathIter->GetName().c_str());
             break;
         };
@@ -296,7 +376,7 @@ _PatternImplBase::_CheckExactMatch(
             if (!predResult) {
                 // The predicate's result's constancy is valid to
                 // propagate here.
-                DEBUG_MSG("Predicate fails '%s' -> %s\n",
+                DEBUG_MSG("predicate fails '%s' -> %s\n",
                           pathIter->GetAsString().c_str(),
                           Stringify(predResult));
                 return predResult;
@@ -340,6 +420,7 @@ _PatternImplBase::_Match(
     _RunNthPredFn runNthPredicate) const
 {
     DEBUG_MSG("_Match(<%s>)\n", path.GetAsString().c_str());
+    _AutoDebugIndent indent;
     
     using ComponentIter = typename std::vector<_Component>::const_iterator;
     using Result = SdfPredicateFunctionResult;
@@ -422,7 +503,7 @@ _PatternImplBase::_Match(
         return Result::MakeVarying(false);
     }
 
-    DEBUG_MSG("Examining paths not covered by pattern prefix <%s>:\n    %s\n",
+    DEBUG_MSG("examining paths not covered by pattern prefix <%s>: %s\n",
               _prefix.GetAsString().c_str(),
               TfStringify(prefixes).c_str());
 
@@ -549,15 +630,17 @@ Sdf_PathExpressionEvalBase
     TfFunctionRef<
     SdfPredicateFunctionResult (int, SdfPath const &)> runNthPredicate) const
 {
+    DEBUG_MSG("_Next(<%s>)\n", path.GetAsString().c_str());
+    _AutoDebugIndent indent;
+
     using Segment = _PatternImplBase::_Segment;
     using Result = SdfPredicateFunctionResult;
     
     // If we're constant, return the constant value.
     if (search._constantDepth != -1) {
         Result res = Result::MakeConstant(search._constantValue);
-        DEBUG_MSG("_Next(<%s>) has constant value at depth %d -> %s\n",
-                  path.GetAsString().c_str(), search._constantDepth,
-                  Stringify(res));
+        DEBUG_MSG("constant value at depth %d -> %s\n",
+                  search._constantDepth, Stringify(res));
         return res;
     }
     
@@ -579,16 +662,14 @@ Sdf_PathExpressionEvalBase
     if (search._segmentMatchDepths.empty() && !path.HasPrefix(_prefix)) {
         // If this path is not a prefix of _prefix, then we can never match.
         if (!_prefix.HasPrefix(path)) {
-            DEBUG_MSG("_Next(<%s>) outside of prefix <%s> -> constant false\n",
-                      path.GetAsString().c_str(),
+            DEBUG_MSG("outside of prefix <%s> -> constant false\n",
                       _prefix.GetAsString().c_str());
             search._constantDepth = prefixElemCount;
             search._constantValue = false;
             return Result::MakeConstant(false);
         }
         // Otherwise we might match once we traverse to _prefix.
-        DEBUG_MSG("_Next(<%s>) not yet within prefix <%s> -> varying false\n",
-                  path.GetAsString().c_str(),
+        DEBUG_MSG("not yet within prefix <%s> -> varying false\n",
                   _prefix.GetAsString().c_str());
         return Result::MakeVarying(false);
     }
@@ -597,13 +678,11 @@ Sdf_PathExpressionEvalBase
     // early-out if the path in question is not the required type.
     const bool isPrimPropertyPath = path.IsPrimPropertyPath();
     if (_matchObjType == _MatchPropOnly && !isPrimPropertyPath) {
-        DEBUG_MSG("_Next(<%s>) isn't a property path -> varying false\n",
-                  path.GetAsString().c_str());
+        DEBUG_MSG("isn't a property path -> varying false\n");
         return Result::MakeVarying(false);
     }
     if (_matchObjType == _MatchPrimOnly && isPrimPropertyPath) {
-        DEBUG_MSG("_Next(<%s>) isn't a prim path -> constant false\n",
-                  path.GetAsString().c_str());
+        DEBUG_MSG("isn't a prim path -> constant false\n");
         return Result::MakeConstant(false);
     }
 
@@ -613,8 +692,7 @@ Sdf_PathExpressionEvalBase
     if (_components.empty()) {
         if (_stretchBegin || _stretchEnd) {
             // The pattern allows arbitrary elements following the prefix. 
-            DEBUG_MSG("_Next(<%s>) covered by stretch -> constant true\n",
-                      path.GetAsString().c_str());
+            DEBUG_MSG("covered by stretch -> constant true\n");
             search._constantDepth = prefixElemCount;
             search._constantValue = true;
             return Result::MakeConstant(search._constantValue);
@@ -622,17 +700,14 @@ Sdf_PathExpressionEvalBase
         else if (pathElemCount > prefixElemCount) {
             // The given path is descendant to the prefix, but the pattern
             // requires an exact match.
-            DEBUG_MSG("_Next(<%s>) must match prefix <%s> exactly -> "
-                      "constant false\n",
-                      path.GetAsString().c_str(),
+            DEBUG_MSG("must match prefix <%s> exactly -> constant false\n",
                       _prefix.GetAsString().c_str());
             search._constantDepth = prefixElemCount;
             search._constantValue = false;
             return Result::MakeConstant(search._constantValue);
         }
         // The path is exactly _prefix.
-        DEBUG_MSG("_Next(<%s>) matches prefix <%s> -> varying true\n",
-                  path.GetAsString().c_str(),
+        DEBUG_MSG("matches prefix <%s> -> varying true\n",
                   _prefix.GetAsString().c_str());
         return Result::MakeVarying(true);
     }
@@ -675,9 +750,8 @@ Sdf_PathExpressionEvalBase
         if (numMatchComponents < _SegmentMinMatchElts(curSeg)) {
             // Not enough path components yet, but we could match once we
             // descend to a long enough path.
-            DEBUG_MSG("_Next(<%s>) lacks enough matching components (%zu) for "
-                      "current segment (%zu) -> varying false\n",
-                      path.GetAsString().c_str(),
+            DEBUG_MSG("lacks enough matching components (%zu) for current "
+                      "segment (%zu) -> varying false\n",
                       numMatchComponents, curSeg.GetSize());
             return Result::MakeVarying(false);
         }
@@ -690,9 +764,8 @@ Sdf_PathExpressionEvalBase
             // Too many components; we cannot match this or any descendant path.
             search._constantDepth = pathElemCount;
             search._constantValue = false;
-            DEBUG_MSG("_Next(<%s>) matching components (%zu) exceeds "
-                      "required number (%zu) -> constant false\n",
-                      path.GetAsString().c_str(), numMatchComponents,
+            DEBUG_MSG("matching components (%zu) exceeds required number "
+                      "(%zu) -> constant false\n", numMatchComponents,
                       curSeg.GetSize());
             return Result::MakeConstant(false);
         }
@@ -712,8 +785,7 @@ Sdf_PathExpressionEvalBase
         }();
 
         if (prefixes.empty()) {
-            DEBUG_MSG("_Next(<%s>) no prefixes -> varying false\n",
-                      path.GetAsString().c_str());
+            DEBUG_MSG("no prefixes -> varying false\n");
             return Result::MakeVarying(false);
         }
 
@@ -743,30 +815,26 @@ Sdf_PathExpressionEvalBase
         if (_stretchEnd) {
             search._constantDepth = search._segmentMatchDepths.back();
             search._constantValue = true;
-            DEBUG_MSG("_Next(<%s>) matches with trailing stretch -> "
-                      "constant true\n", path.GetAsString().c_str());
+            DEBUG_MSG("matches with trailing stretch -> constant true\n");
             return Result::MakeConstant(true);
         }
         // Otherwise if the last match depth is the path elem count, we match
         // varying true.
         if (static_cast<size_t>(
                 search._segmentMatchDepths.back()) == pathElemCount) {
-            DEBUG_MSG("_Next(<%s>) matches -> varying true\n",
-                      path.GetAsString().c_str());
+            DEBUG_MSG("matches -> varying true\n");
             return Result::MakeVarying(true);
         }
         // Otherwise there are excess components, and we cannot match.
         search._constantDepth = search._segmentMatchDepths.back();
         search._constantValue = false;
-        DEBUG_MSG("_Next(<%s>) has excess components -> constant false\n",
-                  path.GetAsString().c_str());
+        DEBUG_MSG("has excess components -> constant false\n");
         return Result::MakeConstant(false);
     }
     
     // We have taken the next step, but we have more matching to do.
-    DEBUG_MSG("_Next(<%s>) partial yet incomplete match "
-              "(%zd of %zd segments) -> varying false\n",
-              path.GetAsString().c_str(),
+    DEBUG_MSG("partial yet incomplete match (%zd of %zd segments) "
+              "-> varying false\n",
               search._segmentMatchDepths.size(), _segments.size());
     
     return Result::MakeVarying(false);

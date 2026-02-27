@@ -97,7 +97,7 @@ private:
 class SdfPredicateFunctionResult
 {
 public:
-    enum Constancy { ConstantOverDescendants, MayVaryOverDescendants };
+    enum Constancy : char { ConstantOverDescendants, MayVaryOverDescendants };
 
     /// Default construction produces a 'false' result that
     /// 'MayVaryOverDescendants'.
@@ -120,6 +120,36 @@ public:
     /// Create with \p value and 'MayVaryOverDescendants'
     static SdfPredicateFunctionResult MakeVarying(bool value) {
         return { value, MayVaryOverDescendants };
+    }
+
+    /// Return the logical and of `lhs` and `rhs` with constancy propagation.
+    /// If either value is `false` and `ConstantOverDescendants`, the result is
+    /// `false` and `ConstantOverDescendants`.  If both values are `true` and
+    /// `ConstantOverDescendants` the result is `true` and
+    /// `ConstantOverDescendants`.  Otherwise the result is the logical and of
+    /// the truth values and `MayVaryOverDescendants`.
+    static SdfPredicateFunctionResult
+    And(SdfPredicateFunctionResult lhs, SdfPredicateFunctionResult rhs) {
+        const bool lv = lhs.GetValue(), rv = rhs.GetValue();
+        const bool lc = lhs.IsConstant(), rc = rhs.IsConstant();
+        return (lc && rc) || (!lv && lc) || (!rv && rc)
+            ? MakeConstant(lv && rv)
+            : MakeVarying(lv && rv);
+    }
+
+    /// Return the logical or of `lhs` and `rhs` with constancy propagation.
+    /// If either value is `true` and `ConstantOverDescendants`, the result is
+    /// `true` and `ConstantOverDescendants`.  If both values are `false` and
+    /// `ConstantOverDescendants` the result is `false` and
+    /// `ConstantOverDescendants`.  Otherwise the result is the logical or of
+    /// the truth values and `MayVaryOverDescendants`.
+    static SdfPredicateFunctionResult
+    Or(SdfPredicateFunctionResult lhs, SdfPredicateFunctionResult rhs) {
+        const bool lv = lhs.GetValue(), rv = rhs.GetValue();
+        const bool lc = lhs.IsConstant(), rc = rhs.IsConstant();
+        return (lc && rc) || (lv && lc) || (rv && rc)
+            ? MakeConstant(lv || rv)
+            : MakeVarying(lv || rv);
     }
 
     /// Return the result value.

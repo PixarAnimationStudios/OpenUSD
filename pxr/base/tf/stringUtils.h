@@ -681,18 +681,21 @@ TF_API std::string TfEscapeString(const std::string &in);
 TF_API void TfEscapeStringReplaceChar(const char** in, char** out);
 
 /// Concatenate two strings containing '/' and '..' tokens like a file path or
-/// scope name.
+/// scope name. The result is a normalized path string.
 ///
-/// Tokenize the input strings using a '/' delimiter. Look for '..' tokens in
-/// the suffix and construct the appropriate result.
+/// Tokenize the input strings using a '/' delimiter. Look for '..' and '.' 
+/// tokens in the input strings and construct the appropriate result.
 ///
 /// A trailing '/' character will be stripped from the result if the input
-/// contained one.
+/// contained one. If the prefix string is empty, a leading '/' will be 
+/// prepended to the result.
 ///
 /// Examples:
 /// 
 /// \li TfStringCatPaths( "foo/bar", "jive" ) => "foo/bar/jive"
-/// \li TfStringCatPaths( "foo/bar", "../jive" ) => "foo/jive"
+/// \li TfStringCatPaths( "foo/bar/.", "../jive" ) => "foo/jive"
+/// \li TfStringCatPaths( "foo", "bar/" ) => "foo/bar"
+/// \li TfStringCatPaths( "", "bar" ) => "/bar"
 TF_API
 std::string TfStringCatPaths( const std::string &prefix, 
                               const std::string &suffix );

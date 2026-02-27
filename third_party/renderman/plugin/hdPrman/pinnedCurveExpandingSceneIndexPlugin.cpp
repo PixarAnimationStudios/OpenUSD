@@ -45,7 +45,7 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
             _tokens->sceneIndexPluginName,
             nullptr, // no argument data necessary
             insertionPhase,
-            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+            HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
     }
 }
 

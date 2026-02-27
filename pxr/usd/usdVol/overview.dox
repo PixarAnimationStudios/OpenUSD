@@ -8,9 +8,18 @@
 
 \section usdVol_overview Overview
 
-UsdVol provides schemas for representing volumes (smoke, fire, etc). UsdVol
-can be used directly for representing OpenVDB and Field3d assets, or extended
-to support other volume formats.
+UsdVol provides schemas for representing volumetric geometry.
+
+UsdVolVolume can be used to represent continuous volumes (smoke, fire, etc),
+and can load spatial field definitions directly from OpenVDB and Field3d assets;
+it can also be extended to support other volume formats. The fields comprising
+a volume prim are represented as distinct prims whose schema types derive from
+UsdVolVolumeFieldBase, to distinguish them from particle fields.
+
+UsdVolParticleField can be used to represent a family of related lightfield techniques
+that define their spatial presence through a set of 3d particles.  This schema
+was introduced to support 3d Gaussian splats, but is designed to be extensible and support
+things like Nerfs as well as future evolutions of this field of technology.
 
 \section usdVol_schemas Volume Schemas
 
@@ -137,5 +146,103 @@ data structures to represent image data.  In both cases, It can be argued
 that USD *should not* do this. A VDB can be thought of as a 3D texture for
 this purpose, so the OpenVDBAsset schema describes an asset path where it can
 be discovered for someone else (Hydra, your renderer, etc) to interpret.
+
+\section usdVol_particleFieldSchemas Particle Field Schemas
+
+\subsection usdVol_particleFieldSchemas_composableSchema Composable Schema
+
+Particle fields are an area of rapidly evolving research, and so here we opt for
+a structured, but dynamic system to define their data model in USD. All particle
+fields are built on top of a common concrete base type ParticleField. Applied
+schema are used to define how all the necessary data used to define the
+specific particle field are delivered.
+
+There are certain categories of data required to describe the particle fields,
+these are discussed in more detail below, but the applied schema that define each
+category of data automatically apply a base applied schema. This behavior
+is similar in concept to an abstract base class in C++, and is intended to allow
+for robust validation of the conceptual structure of a particle field.
+
+As commonly used, particle field configurations evolve across the industry,
+we will create concrete schema types to specify these combinations of applied
+schema (See ParticleField3DGaussianSplat below). This provides the more typical,
+fully specified data layout we see in other USD schema, and it intended to deliver
+practical schema that can be used in production environments.
+
+\subsection usdVol_particleFieldSchemas_particleFieldBaseSchema ParticleField Base Schema
+
+The ParticleField concrete schema type is the base type of all particle fields.
+Various applied schema are appended to this base type to define the various
+characteristics of the particle field.
+
+All ParticleField are required to provide the following attributes, but are free to
+provide them in any form.
+ - Position, defining the local space position of each particle in the field.
+ - Kernel, defining the kernel that is instantiated at each particle.
+ - Radiance, defining the visual appearance of the particle field.
+
+Other optional attributes that may control the kernal instance are, but are not
+limited to:
+ - Orientation, defining the orientation for the kernel attached to the particle,
+ necessary if the kernel isn't rotationally symmetric.
+ - Scale, defining the size of the kernel attached to the particle, in three
+ dimensions.
+ - Opacity, defining the opacity, or weight, of the kernel attached to the
+ particle.
+
+\subsection usdVol_particleFieldSchemas_baseAppliedSchema Base Applied Schema
+
+As outlined above the schema that provide data in each category of required
+attributes above all automatically apply a base applied schema to aid with
+validation of a fully constructed ParticleField.
+
+ - ParticleFieldPositionBaseAPI, base applied schema for all schema that provide
+ position information.
+ - ParticleFieldKernelBaseAPI, base applied schema for all schema that provide the
+ kernel for each particle in the ParticleField.
+ - ParticleFieldRadianceBaseAPI, base applied schema for all schema that provide
+ radiance information.
+
+\subsection usdVol_particleFieldSchemas_attributeProvidingSchema Attribute Providing Schema
+
+The following list of schema all provide their respective data to the
+ParticleField directly in the form of plain attributes. They all use the suffix
+AttributeAPI to differentiate them from future alternate representations of
+the same underlying data. We believe there may be future schemata that provide
+the same data with a different representation, e.g. as a Multi-Layer
+Perceptron (MLP).
+
+ - ParticleFieldPositionAttributeAPI
+ - ParticleFieldOrientationAttributeAPI
+ - ParticleFieldScaleAttributeAPI
+ - ParticleFieldOpacityAttributeAPI
+ - ParticleFieldSphericalHarmonicsAttributeAPI
+
+\subsection usdVol_particleFieldSchemas_KernelSchema Kernel Schema
+
+The kernel schema for a ParticleField is responsible for defining both the
+shape and the falloff function of the kernel that is instantiated at each particle
+in the ParticleField.
+
+The shape should be fully defined in the description of the schema, potentially
+using locally defined attributes if the shape needs to be configured. This
+description should include the default scale and orientation of the shape.
+
+The falloff function is used during rendering to determine the local region of
+influence of the kernel, with respect to the local space of the shape.
+
+\subsection usdVol_particleFieldSchemas_RadianceSchema Radiance Schema
+
+The radiance schema for a ParticleField is responsible for defining the appearance
+of the particles. Initially we provide ParticleFieldSphericalHarmonicsAttributeAPI
+to define the spherical harmonic coefficients use in traditional 3D gaussian splats.
+This is an active area of research and we expect additional schema to be defined
+that describe the particle field radiance.
+
+We expect there will be future research in the area of particle field appearance.
+Their appearance may be described using an external material description. We
+consider the local definition of radiance to be analogous to `displayColor` in
+`UsdGeom`. Meaning, if a material is bound to a ParticleField location, then the
+material description should be used instead of the locally defined radiance.
 
 */

@@ -44,6 +44,11 @@ void wrapPredicateFunctionResult()
         .def("MakeVarying", &FunctionResult::MakeVarying, arg("value"))
         .staticmethod("MakeVarying")
 
+        .def("And", &FunctionResult::And, (arg("lhs"), arg("rhs")))
+        .staticmethod("And")
+        .def("Or", &FunctionResult::Or, (arg("lhs"), arg("rhs")))
+        .staticmethod("Or")
+        
         .def("GetValue", &FunctionResult::GetValue)
         .def("GetConstancy", &FunctionResult::GetConstancy)
         .def("IsConstant", &FunctionResult::IsConstant)

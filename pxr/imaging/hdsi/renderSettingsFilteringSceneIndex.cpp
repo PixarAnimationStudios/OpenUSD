@@ -55,7 +55,7 @@ _BuildDependencyForActiveLocator()
                     HdRenderSettingsSchema::GetActiveLocator()))
             .Build()
         );
-    
+
     return renderSettingsDepDS;
 }
 
@@ -84,16 +84,16 @@ _BuildDependencyForFrameLocator()
 }
 
 // Builds and returns a data source to:
-// (a) invalidate the renderSettings.shutterInterval locator when a targeted 
-//     camera's shutterOpen or shutterClose locator is dirtied.
-// (b) invalidate the renderSettings.shutterInterval locator when the
+// (a) invalidate the renderSettings.unionedSamplingInterval locator when a
+//     targeted camera's shutterOpen or shutterClose locator is dirtied.
+// (b) invalidate the renderSettings.unionedSamplingInterval locator when the
 //     renderProducts locator is dirtied. Due to flattening, we can't limit
 //     this to just the cameraPrim
 // (c) invalidate the prim's dependencies when the render products locator
 //     is dirtied.
 //
 HdContainerDataSourceHandle
-_BuildDependenciesForShutterInterval(
+_BuildDependenciesForSamplingInterval(
     const SdfPathVector &cameraPaths)
 {
     const size_t numCameras = cameraPaths.size();
@@ -116,9 +116,9 @@ _BuildDependenciesForShutterInterval(
     static const HdLocatorDataSourceHandle& shutterCloseLocatorDs =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             shutterCloseLocator);
-    static const HdLocatorDataSourceHandle& shutterIntervalLocatorDs =
+    static const HdLocatorDataSourceHandle& unionedSamplingIntervalLocatorDs =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
-            HdRenderSettingsSchema::GetShutterIntervalLocator());
+            HdRenderSettingsSchema::GetUnionedSamplingIntervalLocator());
     static const HdLocatorDataSourceHandle& productsLocatorDs =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdRenderSettingsSchema::GetRenderProductsLocator());
@@ -138,7 +138,7 @@ _BuildDependenciesForShutterInterval(
                 HdRetainedTypedSampledDataSource<SdfPath>::New(
                     cameraPaths[ii]))
             .SetDependedOnDataSourceLocator(shutterOpenLocatorDs)
-            .SetAffectedDataSourceLocator(shutterIntervalLocatorDs)
+            .SetAffectedDataSourceLocator(unionedSamplingIntervalLocatorDs)
             .Build()
         );
 
@@ -150,20 +150,20 @@ _BuildDependenciesForShutterInterval(
                 HdRetainedTypedSampledDataSource<SdfPath>::New(
                     cameraPaths[ii]))
             .SetDependedOnDataSourceLocator(shutterCloseLocatorDs)
-            .SetAffectedDataSourceLocator(shutterIntervalLocatorDs)
+            .SetAffectedDataSourceLocator(unionedSamplingIntervalLocatorDs)
             .Build()
         );
     }
 
     // (b)
-    names.push_back(TfToken("shutterInterval_depOn_renderProducts"));
+    names.push_back(TfToken("unionedSamplingInterval_depOn_renderProducts"));
     values.push_back(
         HdDependencySchema::Builder()
         .SetDependedOnPrimPath(
             HdRetainedTypedSampledDataSource<SdfPath>::New(
                 SdfPath::EmptyPath()))
         .SetDependedOnDataSourceLocator(productsLocatorDs)
-        .SetAffectedDataSourceLocator(shutterIntervalLocatorDs)
+        .SetAffectedDataSourceLocator(unionedSamplingIntervalLocatorDs)
         .Build()
     );
 
@@ -260,9 +260,9 @@ _GetCameraShutterOpenAndClose(
     const SdfPath cameraPath,
     GfVec2d *shutter)
 {
-    HdCameraSchema camSchema = 
+    HdCameraSchema camSchema =
         HdCameraSchema::GetFromParent(si->GetPrim(cameraPath).dataSource);
-    
+
     if (!camSchema) {
         return false;
     }
@@ -320,7 +320,7 @@ _GetShutterInfoFromProducts(
 }
 
 HdVec2dDataSourceHandle
-_ComputeUnionedCameraShutterInterval(
+_ComputeUnionedSamplingInterval(
     const HdSceneIndexBaseRefPtr &si,
     const _ProductShutterInfoVec &shutterInfoVec)
 {
@@ -365,13 +365,13 @@ _BuildOverlayContainerDataSource(
         HdOverlayContainerDataSource::OverlayedContainerDataSources(
             src1,
             HdOverlayContainerDataSource::OverlayedContainerDataSources(
-                src2, 
+                src2,
                 HdOverlayContainerDataSource::OverlayedContainerDataSources(
                     src3, src4)));
 }
 
 // Data source override for the 'renderSettings' locator.
-// Adds support for the 'active' and 'shutterInterval' fields and filtered
+// Adds support for the 'active' and 'unionedSamplingInterval' fields and filtered
 // entries in the 'namespacedSettings' container.
 //
 class _RenderSettingsDataSource final : public HdContainerDataSource
@@ -396,7 +396,7 @@ public:
     {
         TfTokenVector names = _input->GetNames();
         names.push_back(HdRenderSettingsSchemaTokens->active);
-        names.push_back(HdRenderSettingsSchemaTokens->shutterInterval);
+        names.push_back(HdRenderSettingsSchemaTokens->unionedSamplingInterval);
         return names;
     }
 
@@ -412,12 +412,12 @@ public:
             return HdRetainedTypedSampledDataSource<bool>::New(isActive);
         }
 
-        if (name == HdRenderSettingsSchemaTokens->shutterInterval) {
+        if (name == HdRenderSettingsSchemaTokens->unionedSamplingInterval) {
             const _ProductShutterInfoVec shutterInfoVec =
                 _GetShutterInfoFromProducts(
                     HdRenderSettingsSchema(_input).GetRenderProducts());
 
-            return _ComputeUnionedCameraShutterInterval(_si, shutterInfoVec);
+            return _ComputeUnionedSamplingInterval(_si, shutterInfoVec);
         }
 
         HdDataSourceBaseHandle result = _input->Get(name);
@@ -489,7 +489,7 @@ public:
             return
                 _BuildOverlayContainerDataSource(
                     _BuildDependencyForActiveLocator(),
-                    _BuildDependenciesForShutterInterval(cameraPaths),
+                    _BuildDependenciesForSamplingInterval(cameraPaths),
                     _BuildDependencyForFrameLocator(),
                     HdContainerDataSource::Cast(result));
         }
@@ -580,11 +580,11 @@ HdsiRenderSettingsFilteringSceneIndex::GetPrim(const SdfPath &primPath) const
 SdfPathVector
 HdsiRenderSettingsFilteringSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
-{ 
+{
     // Avoid a copy if possible in the generic case.
     if (ARCH_UNLIKELY(
             primPath.IsAbsoluteRootPath())) {
-        
+
         SdfPathVector paths =
             _GetInputSceneIndex()->GetChildPrimPaths(primPath);
         if (!_Contains(paths, GetRenderScope())) {
@@ -595,7 +595,7 @@ HdsiRenderSettingsFilteringSceneIndex::GetChildPrimPaths(
 
     if (ARCH_UNLIKELY(
             primPath == GetRenderScope())) {
-        
+
         SdfPathVector paths =
             _GetInputSceneIndex()->GetChildPrimPaths(primPath);
         paths.push_back(GetFallbackPrimPath());

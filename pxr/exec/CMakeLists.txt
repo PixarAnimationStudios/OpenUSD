@@ -6,6 +6,7 @@ set(DIRS
     exec
     execUsd
     execGeom
+    execIr
 )
 
 # OpenExec currently supports hidden symbol visibility on Linux, but not on

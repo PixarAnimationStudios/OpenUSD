@@ -12,6 +12,8 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/diagnosticLite.h"
 
+#include <exception>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TfPyLock::TfPyLock()
@@ -110,7 +112,19 @@ TfPyLock::EndAllowThreads()
         return;
     }
 
-    PyEval_RestoreThread(_savedState);
+    // In case of an exception, it's possible that some non-exception-safe GIL
+    // code has failed to restore it to the unlocked state.  If we see that it's
+    // locked just complain and continue.
+    if (ARCH_UNLIKELY(PyGILState_Check())) {
+        char const * const exceptionMsg = std::uncaught_exceptions()
+            ? "during exception unwinding " : "";
+        TF_WARN("GIL corruption detected %s- this thread holds the GIL in "
+                "EndAllowThreads despite releasing it in an earlier call "
+                "to BeginAllowThreads.", exceptionMsg);
+    }
+    else {
+        PyEval_RestoreThread(_savedState);
+    }
     _allowingThreads = false;
 }
 

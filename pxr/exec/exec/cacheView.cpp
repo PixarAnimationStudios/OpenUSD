@@ -8,12 +8,23 @@
 
 #include "pxr/exec/exec/valueExtractor.h"
 
+#include "pxr/exec/vdf/dataManagerFacade.h"
+#include "pxr/exec/vdf/executorInterface.h"
 #include "pxr/exec/vdf/maskedOutput.h"
 #include "pxr/exec/vdf/vector.h"
 
 #include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+Exec_CacheView::Exec_CacheView(Exec_CacheView &&other)
+    : _dataManager(std::move(other._dataManager))
+    , _outputs(other._outputs)
+    , _extractors(other._extractors)
+    , _executor(std::move(other._executor))
+{
+    other._dataManager.reset();
+}
 
 Exec_CacheView::Exec_CacheView(
     const VdfDataManagerFacade dataManager,
@@ -30,6 +41,17 @@ Exec_CacheView::Exec_CacheView(
 {
 }
 
+Exec_CacheView::Exec_CacheView(
+    std::unique_ptr<VdfExecutorInterface> &&executor,
+    TfSpan<const VdfMaskedOutput> outputs,
+    TfSpan<const Exec_ValueExtractor> extractors)
+    : Exec_CacheView(VdfDataManagerFacade(*executor), outputs, extractors)
+{
+    _executor = std::move(executor);
+}
+
+Exec_CacheView::~Exec_CacheView() = default;
+
 VtValue
 Exec_CacheView::Get(int index) const
 {
@@ -44,7 +66,10 @@ Exec_CacheView::Get(int index) const
     }
 
     const VdfMaskedOutput &mo = _outputs[index];
-    if (!TF_VERIFY(mo)) {
+
+    // It is allowed for computed values to be empty. This can happen if a leaf
+    // node could not be created, because it depends on a cycle.
+    if (!mo) {
         return VtValue();
     }
 

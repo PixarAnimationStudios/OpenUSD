@@ -75,6 +75,7 @@ class "TestSingleApplyAPI"
             }
         }
     )
+    uniform bool single:no_fallback
     rel single:relationship (
         doc = """Relationship"""
     )

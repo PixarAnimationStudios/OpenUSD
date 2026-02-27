@@ -10,6 +10,7 @@
 #include "pxr/exec/execUsd/request.h"
 #include "pxr/exec/execUsd/requestImpl.h"
 #include "pxr/exec/execUsd/valueKey.h"
+#include "pxr/exec/execUsd/valueOverride.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/functionRef.h"
@@ -108,6 +109,27 @@ ExecUsdSystem::Compute(const ExecUsdRequest &request)
     requestImpl.Schedule();
 
     return requestImpl.Compute();
+}
+
+ExecUsdCacheView
+ExecUsdSystem::ComputeWithOverrides(
+    const ExecUsdRequest &request,
+    ExecUsdValueOverrideVector &&valueOverrides)
+{
+    TRACE_FUNCTION();
+
+    if (!request.IsValid()) {
+        TF_CODING_ERROR("Cannot compute an expired request");
+        return ExecUsdCacheView();
+    }
+
+    ExecUsd_RequestImpl &requestImpl = request._GetImpl();
+
+    // Before computing values, make sure that the request has been prepared.
+    requestImpl.Compile();
+    requestImpl.Schedule();
+
+    return requestImpl.ComputeWithOverrides(std::move(valueOverrides));
 }
 
 ExecUsdSystem::_NoticeListener::_NoticeListener(

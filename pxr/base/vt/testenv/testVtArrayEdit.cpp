@@ -222,6 +222,34 @@ static void testBuilderAndComposition()
             check({}); // identity.
         }
     }
+
+    // Formerly buggy case.
+    {
+        VtIntArrayEditBuilder builder;
+        VtIntArrayEdit zeroNine = builder
+            .Prepend(0)
+            .Append(9)
+            .FinalizeAndReset();
+
+        VtIntArrayEdit oneEight = builder
+            .Prepend(1)
+            .Append(8)
+            .FinalizeAndReset();
+
+        VtIntArrayEdit twoSeven = builder
+            .Prepend(2)
+            .Append(7)
+            .FinalizeAndReset();
+
+        VtIntArrayEdit composed =
+            zeroNine.ComposeOver(
+                oneEight.ComposeOver(
+                    twoSeven));
+
+        VtIntArray a = composed.ComposeOver(empty);
+
+        CHECK_EQUAL(a, (VtIntArray { 0, 1, 2, 7, 8, 9 }));
+    }
 }
 
 int main(int argc, char *argv[])

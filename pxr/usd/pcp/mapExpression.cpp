@@ -214,7 +214,7 @@ PcpMapExpression::_Node::New( _Op op_,
                               const _NodeRefPtr & arg2_,
                               const Value & valueForConstant_ )
 {
-    TfAutoMallocTag2 tag("Pcp", "PcpMapExpresion");
+    TfAutoMallocTag tag("Pcp", "PcpMapExpresion::_Node::New");
     const Key key(op_, arg1_, arg2_, valueForConstant_);
 
     if (key.op != _OpVariable) {
@@ -294,6 +294,8 @@ PcpMapExpression::_Node::EvaluateAndCache() const
 PcpMapExpression::Value
 PcpMapExpression::_Node::_EvaluateUncached() const
 {
+    TfAutoMallocTag tag("Pcp", "PcpMapExpression::_Node::_EvaluateUncached");
+
     switch(key.op) {
     case _OpConstant:
         return key.valueForConstant;

@@ -210,21 +210,6 @@ public:
     }
 
     RWMutex &GetMutex() const { return _mutex; }
-
-    inline void WaitForInitializingThread() const {
-        // If we are the initializing thread or if the registry is initialized,
-        // we don't have to wait.
-        std::thread::id initId = _initializingThread;
-        if (initId == std::thread::id() ||
-            initId == std::this_thread::get_id()) {
-            return;
-        }
-
-        // Otherwise spin until initialization is complete.
-        while (_initializingThread != std::thread::id()) {
-            std::this_thread::yield();
-        }
-    }
     
     // Note, callers must hold the registry lock for writing, and base's lock
     // for writing, but need not hold derived's lock.
@@ -334,10 +319,6 @@ private:
 
     mutable RWMutex _mutex;
 
-    // The thread that is currently performing initialization.  This is set to a
-    // default-constructed thread::id when initialization is complete.
-    mutable std::atomic<std::thread::id> _initializingThread;
-
     // Map of typeName to _TypeInfo*.
     // This holds all declared types, by unique typename.
     TfType::_TypeInfo::NameToTypeMap _typeNameToTypeMap;
@@ -397,7 +378,6 @@ Tf_TypeRegistry::Tf_TypeRegistry() :
     // SetInstanceConstructed) will wait until initial type registrations are
     // completed.  Note that we only allow *this* thread to query the registry
     // until initialization is finished.  Others will wait.
-    _initializingThread = std::this_thread::get_id();
     TfSingleton<Tf_TypeRegistry>::SetInstanceConstructed(*this);
 
     // We send TfTypeWasDeclaredNotice() when a type is first declared with
@@ -411,14 +391,7 @@ Tf_TypeRegistry::Tf_TypeRegistry() :
     // From this point on, we'll send notices as new types are discovered.
     _sendDeclaredNotification = true;
 
-    try {
-        TfRegistryManager::GetInstance().SubscribeTo<TfType>();
-        _initializingThread = std::thread::id();
-    } catch (...) {
-        // Ensure we mark initialization completed in the face of an exception.
-        _initializingThread = std::thread::id();
-        throw;
-    }
+    TfRegistryManager::GetInstance().SubscribeTo<TfType>();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -474,7 +447,6 @@ TfType::FindDerivedByName(const string &name) const
 
     // If we didn't find an alias we now look in the registry.
     if (!result) {
-        r.WaitForInitializingThread();
         ScopedLock regLock(r.GetMutex(), /*write=*/false);
         TfType::_TypeInfo *foundInfo = r.FindByName(name);
         regLock.Release();
@@ -512,7 +484,6 @@ TfType const&
 TfType::_FindByTypeid(const std::type_info &typeInfo)
 {
     auto &r = Tf_TypeRegistry::GetInstance();
-    r.WaitForInitializingThread();
 
     ScopedLock lock(r.GetMutex(), /*write=*/false);
     TfType::_TypeInfo *info = r.FindByTypeid(
@@ -537,7 +508,6 @@ TfType const&
 TfType::FindByPythonClass(const TfPyObjWrapper & classObj)
 {
     const auto &r = Tf_TypeRegistry::GetInstance();
-    r.WaitForInitializingThread();
 
     ScopedLock readLock(r.GetMutex(), /*write=*/false);
     TfType::_TypeInfo *info = r.FindByPythonClass(classObj.Get());

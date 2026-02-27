@@ -132,6 +132,16 @@ public:
     HDST_API
     void SetDomeLightCubemapTargetMemory(unsigned int targetMemoryMB);
 
+    HDST_API
+    void SetMaxLights(uint32_t maxLights);
+
+    HDST_API
+    static constexpr uint32_t GetMaxShadows() {
+        // Could only be higher with a texture atlas/array, since GL limits
+        // the number of bound samplers per shader stage.
+        return 16;
+    }
+
 private:
     void _AllocateShadowTextures(
         HdStResourceRegistry* const resourceRegistry,
@@ -139,7 +149,6 @@ private:
     void _CleanupAovBindings();
 
     GlfSimpleLightingContextRefPtr _lightingContext; 
-    bool _useLighting;
     std::unique_ptr<class HioGlslfx> _glslfx;
 
     // Lexicographic ordering for stable output between runs.
@@ -168,6 +177,10 @@ private:
     HdRenderPassAovBindingVector _shadowAovBindings;
 
     std::vector<HdStPooledRenderBufferUniquePtr> _shadowBuffers;
+
+    HdStPooledRenderBufferUniquePtr _shadowBufferFallback;
+
+    uint32_t _maxLights;
 };
 
 

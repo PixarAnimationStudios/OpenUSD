@@ -99,11 +99,13 @@ static bool _enableParallelPrimSync =
 // HD_PRMAN_EXPERIMENTAL_RILEY_SCENE_INDEX_OBSERVER is true).
 //
 // Overall, the scene indices are as follows:
+// XXX HdPrman_RileyGlobalsSceneIndex is not mentioned here ...
 //
-// 1. HdPrman_RileyFallbackMaterialSceneIndexPlugin
-//    Adds a hard-coded riley material at GetFallbackMaterialPath().
+// 1. HdPrman_RileyFallbackMaterial::AppendSceneIndex
+//    Adds a hard-coded riley material at
+//    HdPrman_RileyFallbackMaterial::GetPrimPath().
 //
-// 2. HdPrman_RileyConversionSceneIndexPlugin
+// 2. HdPrman_RileyConversionSceneIndex
 //
 //    Converts some hydra prims to riley prims (following, e.g.,
 //    HdPrmanRileyGeometryPrototypeSchema).

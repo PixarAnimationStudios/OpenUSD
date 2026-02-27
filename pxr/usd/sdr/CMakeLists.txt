@@ -27,9 +27,11 @@ pxr_library(sdr
         sdfTypeIndicator
         shaderMetadataHelpers
         shaderNode
+        shaderNodeMetadata
         shaderNodeQuery
         shaderNodeQueryUtils
         shaderProperty
+        shaderPropertyMetadata
 
     PYMODULE_CPPFILES
         module.cpp
@@ -42,9 +44,11 @@ pxr_library(sdr
         wrapShaderMetadataHelpers.cpp
         wrapShaderNode.cpp
         wrapShaderNodeDiscoveryResult.cpp
+        wrapShaderNodeMetadata.cpp
         wrapShaderNodeQuery.cpp
         wrapShaderNodeQueryUtils.cpp
         wrapShaderProperty.cpp
+        wrapShaderPropertyMetadata.cpp
 
     PYMODULE_FILES
         __init__.py
@@ -54,7 +58,10 @@ pxr_library(sdr
         plugInfo.json
 
     DOXYGEN_FILES
-        overview.dox
+        docs/front.md
+        docs/registry.md
+        docs/shaderNode.md
+        docs/shaderProperty.md
 )
 
 pxr_test_scripts(
@@ -94,6 +101,17 @@ pxr_build_test_shared_lib(TestSdrRegistry
         testenv/TestSdrRegistry_oslParserPlugin.cpp
 )
 
+pxr_build_test(testSdrShaderMetadata
+    LIBRARIES
+        gf
+        sdf
+        sdr
+        tf
+        vt
+    CPPFILES
+        testenv/testSdrShaderMetadata.cpp
+)
+
 pxr_build_test(testSdrParseValue
     LIBRARIES
         gf
@@ -103,6 +121,11 @@ pxr_build_test(testSdrParseValue
         vt
     CPPFILES
         testenv/testSdrParseValue.cpp
+)
+
+pxr_register_test(testSdrShaderMetadata
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdrShaderMetadata"
+    EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testSdrParseValue

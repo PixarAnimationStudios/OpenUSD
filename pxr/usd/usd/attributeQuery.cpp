@@ -131,6 +131,35 @@ USD_API
 bool 
 UsdAttributeQuery::_Get(T* value, UsdTimeCode time) const
 {
+    SdfAbstractDataTypedValue<T> result(value);
+    
+    // If the requested time is default but the resolved value source is time
+    // varying, then the stored resolve info won't give us the correct value 
+    // for default time. In this case we have to get the resolve info at default
+    // time and query the value from that.
+    if (time.IsDefault() && 
+            _resolveInfo.ValueSourceMightBeTimeVarying()) {
+
+        static const UsdTimeCode defaultTime = UsdTimeCode::Default();
+        UsdResolveInfo defaultResolveInfo;
+        if (_resolveTarget && TF_VERIFY(!_resolveTarget->IsNull())) {
+            _attr._GetStage()->_GetResolveInfoWithResolveTarget(
+                _attr, *_resolveTarget, &defaultResolveInfo, &defaultTime);
+        } else {
+            _attr._GetStage()->_GetResolveInfo(
+                _attr, &defaultResolveInfo, &defaultTime);
+        }
+        return _attr._GetStage()->_GetValueFromResolveInfo(
+            defaultResolveInfo, defaultTime, _attr, &result);
+    }
+
+    return _attr._GetStage()->_GetValueFromResolveInfo(
+        _resolveInfo, time, _attr, &result, _resolveTarget.get());
+}
+
+bool 
+UsdAttributeQuery::Get(VtValue* value, UsdTimeCode time) const
+{
     // If the requested time is default but the resolved value source is time
     // varying, then the stored resolve info won't give us the correct value 
     // for default time. In this case we have to get the resolve info at default
@@ -152,20 +181,15 @@ UsdAttributeQuery::_Get(T* value, UsdTimeCode time) const
     }
 
     return _attr._GetStage()->_GetValueFromResolveInfo(
-        _resolveInfo, time, _attr, value);
-}
-
-bool 
-UsdAttributeQuery::Get(VtValue* value, UsdTimeCode time) const
-{
-    return _Get(value, time);
+        _resolveInfo, time, _attr, value, _resolveTarget.get());
 }
 
 bool 
 UsdAttributeQuery::GetTimeSamples(std::vector<double>* times) const
 {
-    return _attr._GetStage()->_GetTimeSamplesInIntervalFromResolveInfo(
-        _resolveInfo, _attr, GfInterval::GetFullInterval(), times);
+    return _attr._GetStage()->_GetTimeSamplesInInterval(
+        _attr, GfInterval::GetFullInterval(), times,
+        &_resolveInfo, _resolveTarget.get());
 }
 
 TsSpline
@@ -194,8 +218,9 @@ bool
 UsdAttributeQuery::GetTimeSamplesInInterval(const GfInterval& interval,
                                             std::vector<double>* times) const
 {
-    return _attr._GetStage()->_GetTimeSamplesInIntervalFromResolveInfo(
-        _resolveInfo, _attr, interval, times);
+    return _attr._GetStage()->
+        _GetTimeSamplesInInterval(_attr, interval, times,
+                                  &_resolveInfo, _resolveTarget.get());
 }
 
 /* static */
@@ -237,9 +262,9 @@ UsdAttributeQuery::GetUnionedTimeSamplesInInterval(
 
         // This will work even if the attributes belong to different 
         // USD stages.
-        success = attr.GetStage()->_GetTimeSamplesInIntervalFromResolveInfo(
-                attrQuery._resolveInfo, attr, interval, &attrSampleTimes) 
-                && success;
+        success = attr.GetStage()->_GetTimeSamplesInInterval(
+            attr, interval, &attrSampleTimes, &attrQuery._resolveInfo,
+            attrQuery._resolveTarget.get()) && success;
 
         // Merge attrSamplesTimes into the times vector.
         Usd_MergeTimeSamples(times, attrSampleTimes, &tempUnionSampleTimes);
@@ -251,8 +276,8 @@ UsdAttributeQuery::GetUnionedTimeSamplesInInterval(
 size_t
 UsdAttributeQuery::GetNumTimeSamples() const
 {
-    return _attr._GetStage()->_GetNumTimeSamplesFromResolveInfo(
-        _resolveInfo, _attr);
+    return _attr._GetStage()->_GetNumTimeSamples(
+        _attr, &_resolveInfo, _resolveTarget.get());
 }
 
 bool 
@@ -261,9 +286,9 @@ UsdAttributeQuery::GetBracketingTimeSamples(double desiredTime,
                                             double* upper, 
                                             bool* hasTimeSamples) const
 {
-    return _attr._GetStage()->_GetBracketingTimeSamplesFromResolveInfo(
-        _resolveInfo, _attr, desiredTime, /* authoredOnly */ false,
-        lower, upper, hasTimeSamples);
+    return _attr._GetStage()->_GetBracketingTimeSamples(
+        _attr, desiredTime, lower, upper, hasTimeSamples,
+        &_resolveInfo, _resolveTarget.get());
 }
 
 bool 
@@ -296,11 +321,17 @@ UsdAttributeQuery::HasFallbackValue() const
     return _attr.HasFallbackValue();
 }
 
+bool
+UsdAttributeQuery::GetFallbackValue(VtValue* value) const
+{
+    return _attr.GetFallbackValue(value);
+}
+
 bool 
 UsdAttributeQuery::ValueMightBeTimeVarying() const
 {
-    return _attr._GetStage()->_ValueMightBeTimeVaryingFromResolveInfo(
-        _resolveInfo, _attr);
+    return _attr._GetStage()->
+        _ValueMightBeTimeVaryingFromResolveInfo(_resolveInfo, _attr);
 }
 
 ARCH_PRAGMA_PUSH

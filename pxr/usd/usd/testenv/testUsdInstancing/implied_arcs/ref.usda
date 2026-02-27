@@ -1,0 +1,20 @@
+#usda 1.0
+
+def "LocalRef"
+{
+}
+
+def "Ref_Inherits"
+{
+    class "class_widget"
+    {
+        double radius = 1
+    }
+
+    def "widget" (
+        inherits = </Ref_Inherits/class_widget>
+    )
+    {
+        double radius = 5
+    }
+}

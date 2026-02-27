@@ -149,18 +149,19 @@ UsdImagingDataSourcePrimvars::Get(const TfToken & name)
         }
 
         return UsdImagingDataSourcePrimvar::New(
-                _sceneIndexPath, name, _stageGlobals,
-                /* value = */ std::move(valueQuery),
-                /* indices = */ UsdAttributeQuery(usdPrimvar.GetIndicesAttr()),
-                HdPrimvarSchema::BuildInterpolationDataSource(
-                    UsdImagingUsdToHdInterpolationToken(
-                        usdPrimvar.GetInterpolation())),
-                HdPrimvarSchema::BuildRoleDataSource(primvarRole),
-                colorSpace.IsEmpty() 
-                    ? nullptr
-                    : HdRetainedTypedSampledDataSource<TfToken>::New(colorSpace),
-                _ElementSizeToDataSource(usdPrimvar.GetElementSize()));
-                
+            _sceneIndexPath, name, _stageGlobals,
+            /* value = */ std::move(valueQuery),
+            /* indices = */ UsdAttributeQuery(usdPrimvar.GetIndicesAttr()),
+            HdPrimvarSchema::BuildInterpolationDataSource(
+                UsdImagingUsdToHdInterpolationToken(
+                    usdPrimvar.GetInterpolation())),
+            primvarRole.IsEmpty()
+                ? nullptr
+                : HdPrimvarSchema::BuildRoleDataSource(primvarRole),
+            colorSpace.IsEmpty() 
+                ? nullptr
+                : HdRetainedTypedSampledDataSource<TfToken>::New(colorSpace),
+            _ElementSizeToDataSource(usdPrimvar.GetElementSize()));
     }
 
     if (UsdRelationship rel = _usdPrim.GetRelationship(propName)) {

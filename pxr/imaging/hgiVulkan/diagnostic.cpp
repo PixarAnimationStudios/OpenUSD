@@ -23,12 +23,21 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_ENV_SETTING(HGIVULKAN_DEBUG, 0, "Enable debugging for HgiVulkan");
+TF_DEFINE_ENV_SETTING(HGIVULKAN_DEBUG, 0, "Enable debugging for HgiVulkan. "
+    "1: Enable Validation Layer. "
+    ">1: Only enable debug logging/tagging (for other tools)");
 TF_DEFINE_ENV_SETTING(HGIVULKAN_DEBUG_VERBOSE, 0,
     "Enable verbose debugging for HgiVulkan");
 
 bool
 HgiVulkanIsDebugEnabled()
+{
+    static bool _v = TfGetEnvSetting(HGIVULKAN_DEBUG) >= 1;
+    return _v;
+}
+
+bool
+HgiVulkanIsValidationEnabled()
 {
     static bool _v = TfGetEnvSetting(HGIVULKAN_DEBUG) == 1;
     return _v;

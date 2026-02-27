@@ -86,9 +86,20 @@ Exec_CompilationTask::operator()(const int depth) const
     // calling RemoveDependency().
     thisTask->AddDependency();
 
-    // Call the _Compile() method, which is the main entry point into
-    // compilation tasks, and record the task we are told to run next.
+    // Execute the task, either by invoking its _Compile method, or its
+    // _Interrupt method, and record the task we are told to run next.
     Exec_CompilationTask *const nextTask = [thisTask]{
+        
+        // If compilation was interrupted, run the _Interrupt callback for the
+        // task. There is no next task.
+        if (ARCH_UNLIKELY(
+            thisTask->_compilationState.GetInterruptState().WasInterrupted())) {
+            thisTask->_Interrupt(thisTask->_compilationState);
+            return static_cast<Exec_CompilationTask *>(nullptr);
+        }
+
+        // Otherwise, compilation is not interrupted. Run the _Compile callback,
+        // which may spawn a subtask to be run as the next task.
         TaskPhases taskPhases(
             thisTask, thisTask->_compilationState, thisTask->_taskPhase);
         thisTask->_Compile(thisTask->_compilationState, taskPhases);

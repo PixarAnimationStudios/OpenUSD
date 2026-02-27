@@ -42,21 +42,8 @@ _GetBitmaskForSpecType(SdfSpecType specType)
 
 struct Sdf_SpecTypeInfo
 {
-    // GetInstance() waits until initial registration has completed to support
-    // query operations.  Call GetInstanceForRegistration() to do registrations.
     static Sdf_SpecTypeInfo& GetInstance() {
-        Sdf_SpecTypeInfo &instance =
-            TfSingleton<Sdf_SpecTypeInfo>::GetInstance();
-        while (!instance.initialRegistrationCompleted) {
-            std::this_thread::yield();
-        }
-        return instance;
-    }
-
-    // Return the instance directly, without waiting for initial registrations.
-    // Use this form for doing registrations, and GetInstance() for queries.
-    static Sdf_SpecTypeInfo& GetInstanceForRegistration() { 
-        return TfSingleton<Sdf_SpecTypeInfo>::GetInstance(); 
+        return TfSingleton<Sdf_SpecTypeInfo>::GetInstance();
     }
 
     // Mapping from C++ spec type to bitmask indicating the possible source
@@ -81,7 +68,6 @@ struct Sdf_SpecTypeInfo
     typedef TfHashMap<TfType, SchemaTypes, TfHash> SpecTypeToSchemaTypes;
     SpecTypeToSchemaTypes specTypeToSchemaTypes;
 
-    std::atomic<bool> initialRegistrationCompleted;
     mutable TfBigRWMutex mutex;
 
 private:
@@ -89,15 +75,12 @@ private:
 
     Sdf_SpecTypeInfo()
         : specTypeToBitmask(0)
-        , initialRegistrationCompleted(false)
-    { 
+    {
         TfSingleton<Sdf_SpecTypeInfo>::SetInstanceConstructed(*this);
-        
         TfRegistryManager::GetInstance().SubscribeTo<SdfSpecTypeRegistration>();
         // Basic registration is complete.  Note, however that this does not
         // account for registrations from downstream libraries like Sd.  See bug
         // 111728.
-        initialRegistrationCompleted = true;
     }
 };
 
@@ -111,8 +94,7 @@ SdfSpecTypeRegistration::_RegisterSpecType(
     const std::type_info& schemaType)
 {
     const bool isConcrete = specEnumType != SdfSpecTypeUnknown;
-    Sdf_SpecTypeInfo& specTypeInfo =
-        Sdf_SpecTypeInfo::GetInstanceForRegistration();
+    Sdf_SpecTypeInfo& specTypeInfo = Sdf_SpecTypeInfo::GetInstance();
     
     const TfType& schemaTfType = TfType::Find(schemaType);
     if (schemaTfType.IsUnknown()) {

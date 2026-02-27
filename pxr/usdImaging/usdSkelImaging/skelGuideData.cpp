@@ -191,7 +191,11 @@ UsdSkelImagingComputeSkelGuidePoints(
         return result;
     }
 
-    if (skelGuideData.numJoints != skinningTransforms.size()) {
+    // TODO:
+    // Ignore size mismatch in the case of multiple instances for now, we will 
+    // see if we can deform guide points in the vertex shader as well.
+    if (skelGuideData.numJoints > skinningTransforms.size() ||
+        skinningTransforms.size() % skelGuideData.numJoints != 0) {
         TF_WARN(
             "Number of skinning transforms did not match number of joints for "
             "skeleton %s.", skelGuideData.primPath.GetText());

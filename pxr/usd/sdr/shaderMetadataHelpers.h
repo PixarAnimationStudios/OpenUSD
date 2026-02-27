@@ -31,7 +31,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace ShaderMetadataHelpers
 {
     /// Determines if the given metadatum in the metadata dictionary has a
-    /// truthy value. All values are considered to be true except the following
+    /// truthy value.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of SdrShaderNodeMetadata::Get*
+    /// and SdrShaderPropertyMetadata::Get* methods on bool metadata
+    ///
+    /// All values are considered to be true except the following
     /// (case-insensitive): '0', 'false', and 'f'. The absence of `key`
     /// in the metadata also evaluates to false.
     SDR_API
@@ -40,6 +46,10 @@ namespace ShaderMetadataHelpers
 
     /// Extracts the string value from the given metadatum if it exists,
     /// otherwise returns \p defaultValue.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of SdrShaderNodeMetadata::Get*
+    /// and SdrShaderPropertyMetadata::Get* methods on string metadata
     SDR_API
     std::string
     StringVal(const TfToken& key, const SdrTokenMap& metadata,
@@ -47,6 +57,11 @@ namespace ShaderMetadataHelpers
 
     /// Extracts the tokenized value from the given metadatum if it exists,
     /// otherwise returns \p defaultValue.
+    ///
+    /// \deprecated
+    /// \deprecated
+    /// Deprecated in favor of SdrShaderNodeMetadata::Get*
+    /// and SdrShaderPropertyMetadata::Get* methods on TfToken metadata
     SDR_API
     TfToken
     TokenVal(const TfToken& key, const SdrTokenMap& metadata,
@@ -54,6 +69,11 @@ namespace ShaderMetadataHelpers
 
     /// Extracts the int value from the given metadatum if it exists and is a
     /// valid integer value, otherwise returns \p default value.
+    ///
+    /// \deprecated
+    /// \deprecated
+    /// Deprecated in favor of SdrShaderNodeMetadata::Get*
+    /// and SdrShaderPropertyMetadata::Get* methods on int metadata
     SDR_API
     int
     IntVal(const TfToken& key, const SdrTokenMap& metadata,
@@ -61,12 +81,20 @@ namespace ShaderMetadataHelpers
 
     /// Extracts a vector of strings from the given metadatum. An empty vector
     /// is returned if the metadatum does not exist.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of SdrShaderNodeMetadata::Get*
+    /// and SdrShaderPropertyMetadata::Get* methods on SdrStringVec metadata
     SDR_API
     SdrStringVec
     StringVecVal(const TfToken& key, const SdrTokenMap& metadata);
 
     /// Extracts a vector of tokenized values from the given metadatum. An empty
     /// vector is returned if the metadatum does not exist.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of SdrShaderNodeMetadata::Get*
+    /// and SdrShaderPropertyMetadata::Get* methods on SdrTokenVec metadata
     SDR_API
     SdrTokenVec
     TokenVecVal(const TfToken& key, const SdrTokenMap& metadata);
@@ -78,12 +106,20 @@ namespace ShaderMetadataHelpers
 
     /// Serializes a vector of strings into a string using the pipe character
     /// as the delimiter.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of SdrShaderNodeMetadata::Set*
+    /// and SdrShaderPropertyMetadata::Set* methods on SdrStringVec metadata
     SDR_API
     std::string
     CreateStringFromStringVec(const SdrStringVec& stringVec);
 
     /// Determines if the specified property metadata has a widget that
     /// indicates the property is an asset identifier.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of
+    /// SdrShaderPropertyMetadata::GetIsAssetIdentifier.
     SDR_API
     bool
     IsPropertyAnAssetIdentifier(const SdrTokenMap& metadata);
@@ -98,7 +134,7 @@ namespace ShaderMetadataHelpers
     /// if it's a valid role as defined by SdrPropertyRole tokens.
     SDR_API
     TfToken
-    GetRoleFromMetadata(const SdrTokenMap& metadata);
+    GetRoleFromMetadata(const SdrShaderPropertyMetadata& metadata);
 
     /// Parses the VtValue from the given valueStr according to the sdf type
     /// expressed by the given property via two steps.

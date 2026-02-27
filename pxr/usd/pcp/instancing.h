@@ -19,6 +19,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// Helper function to determine whether the given prim index should
+/// be considered for instancing. If this returns false, then
+/// Pcp_PrimIndexIsInstanceable will return false for the same prim index.
+bool
+Pcp_InstancingIsEnabled(
+    const PcpPrimIndex& primIndex);
+
 /// Helper function to determine whether the given prim index is
 /// instanceable. An instanceable prim index must have instanceable
 /// nodes and must have been tagged so that the composed value of
@@ -70,8 +77,7 @@ Pcp_TraverseInstanceableWeakToStrong(
 
 inline bool
 Pcp_ChildNodeIsInstanceable(
-    const PcpNodeRef& node,
-    bool *hasAnyDirectArcsInNodeChain)
+    const PcpNodeRef& node)
 {
     // Non-ancestral nodes are instanceable: they represent a direct
     // composition arc to a portion of scenegraph that could be shared
@@ -80,16 +86,14 @@ Pcp_ChildNodeIsInstanceable(
     // exist in the graph because they were composed in a subtree of direct 
     // arc to a subroot path. These nodes are also instanceable as they are 
     // considered part of the direct arc that brought them in. This is why we 
-    // keep track of and check whether there are any direct arcs in the node's 
-    // chain up to the root node when determining if a node is instanceable.
-    *hasAnyDirectArcsInNodeChain = 
-        *hasAnyDirectArcsInNodeChain || !node.IsDueToAncestor();
-
+    // check whether there are any direct arcs in the node's chain up to the
+    // root node when determining if a node is instanceable.
+    //
     // If a node has no specs or cannot contribute specs, it is not instanceable
     // since it has no opinions to contribute to the prim index. In particular,
     // this allows prim indexes with implied arcs in different layer stacks
     // that have no overrides to still be considered equivalent for sharing.
-    return *hasAnyDirectArcsInNodeChain && 
+    return node.HasTransitiveDirectDependency() && 
         node.CanContributeSpecs() && node.HasSpecs();
 }
 
@@ -97,17 +101,7 @@ inline bool
 Pcp_ChildNodeIsDirectOrInDirectArcSubtree(
     const PcpNodeRef& node)
 {
-    if (node.IsRootNode() || !node.IsDueToAncestor()) {
-        return true;
-    }
-    for (PcpNodeRef parent = node.GetParentNode(); 
-         !parent.IsRootNode(); 
-         parent = parent.GetParentNode()) {
-        if (!parent.IsDueToAncestor()) {
-            return true;
-        }
-    }
-    return false;
+    return node.IsRootNode() || node.HasTransitiveDirectDependency();
 }
 
 inline bool
@@ -122,8 +116,7 @@ template <class Visitor>
 inline void
 Pcp_TraverseInstanceableStrongToWeakHelper(
     const PcpNodeRef& node,
-    Visitor* visitor,
-    bool hasAnyDirectArcsInNodeChain)
+    Visitor* visitor)
 {
     // If the node is culled, the entire subtree rooted at this node
     // does not contribute to the prim index, so we can prune the 
@@ -132,16 +125,14 @@ Pcp_TraverseInstanceableStrongToWeakHelper(
         return;
     }
 
-    const bool isInstanceable = 
-        Pcp_ChildNodeIsInstanceable(node, &hasAnyDirectArcsInNodeChain);
+    const bool isInstanceable = Pcp_ChildNodeIsInstanceable(node);
     if (!visitor->Visit(node, isInstanceable)) {
         return;
     }
 
     TF_FOR_ALL(childIt, Pcp_GetChildrenRange(node)) {
         const PcpNodeRef& childNode = *childIt;
-        Pcp_TraverseInstanceableStrongToWeakHelper(
-            childNode, visitor, hasAnyDirectArcsInNodeChain);
+        Pcp_TraverseInstanceableStrongToWeakHelper(childNode, visitor);
     }
 }
 
@@ -158,8 +149,7 @@ Pcp_TraverseInstanceableStrongToWeak(
 
     TF_FOR_ALL(childIt, Pcp_GetChildrenRange(rootNode)) {
         const PcpNodeRef& childNode = *childIt;
-        Pcp_TraverseInstanceableStrongToWeakHelper(
-            childNode, visitor, /* hasAnyDirectArcsInNodeChain = */ false);
+        Pcp_TraverseInstanceableStrongToWeakHelper(childNode, visitor);
     }
 }
 
@@ -167,8 +157,7 @@ template <class Visitor>
 inline void
 Pcp_TraverseInstanceableWeakToStrongHelper(
     const PcpNodeRef& node,
-    Visitor* visitor,
-    bool hasAnyDirectArcsInNodeChain)
+    Visitor* visitor)
 {
     // If the node is culled, the entire subtree rooted at this node
     // does not contribute to the prim index, so we can prune the 
@@ -177,13 +166,11 @@ Pcp_TraverseInstanceableWeakToStrongHelper(
         return;
     }
 
-    const bool isInstanceable = 
-        Pcp_ChildNodeIsInstanceable(node, &hasAnyDirectArcsInNodeChain);
+    const bool isInstanceable = Pcp_ChildNodeIsInstanceable(node);
 
     TF_REVERSE_FOR_ALL(childIt, Pcp_GetChildrenRange(node)) {
         const PcpNodeRef& childNode = *childIt;
-        Pcp_TraverseInstanceableWeakToStrongHelper(
-            childNode, visitor, hasAnyDirectArcsInNodeChain);
+        Pcp_TraverseInstanceableWeakToStrongHelper(childNode, visitor);
     }
 
     visitor->Visit(node, isInstanceable);
@@ -198,20 +185,12 @@ Pcp_TraverseInstanceableWeakToStrong(
     if (subtreeRootNode.IsRootNode()) {
         TF_REVERSE_FOR_ALL(childIt, Pcp_GetChildrenRange(subtreeRootNode)) {
             const PcpNodeRef& childNode = *childIt;
-            Pcp_TraverseInstanceableWeakToStrongHelper(
-                childNode, visitor, /* hasAnyDirectArcsInNodeChain = */ false);
+            Pcp_TraverseInstanceableWeakToStrongHelper(childNode, visitor);
         }
 
         visitor->Visit(subtreeRootNode, /* nodeIsInstanceable = */ false);
     } else {
-        // Because we're starting below the root node, we need to find out if
-        // there are any direct arcs between the subtree parent and the true
-        // root node so that we can correctly determine in there are any direct
-        // nodes in whole node chain for each subtree node.
-        const bool hasAnyDirectArcsInNodeChain = 
-            Pcp_ChildNodeIsDirectOrInDirectArcSubtree(subtreeRootNode);
-        Pcp_TraverseInstanceableWeakToStrongHelper(
-            subtreeRootNode, visitor, hasAnyDirectArcsInNodeChain);
+        Pcp_TraverseInstanceableWeakToStrongHelper(subtreeRootNode, visitor);
     }
 }
 

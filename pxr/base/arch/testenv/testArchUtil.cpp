@@ -65,8 +65,7 @@ Arch_ReadInvalidAddresses(bool spawnthread)
     // take a lot of work.  If we ever care to do that, we'll need to revisit
     // this.
     raise(SIGSEGV);
-#endif
-
+#else
     for (size_t i = 0; i != ~0ull; ++i) {
         // This will eventually give us NULL in a way that the compiler probably
         // cannot prove at compile-time.
@@ -76,6 +75,7 @@ Arch_ReadInvalidAddresses(bool spawnthread)
 
     fprintf(stderr, "FAILED to crash! Aborting.\n");
     ArchAbort();
+#endif
 }
 
 void

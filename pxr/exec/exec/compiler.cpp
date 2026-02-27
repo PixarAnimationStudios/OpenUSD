@@ -44,7 +44,7 @@ Exec_Compiler::Compile(TfSpan<const ExecValueKey> valueKeys)
     TfAutoMallocTag tag("Exec", __ARCH_PRETTY_FUNCTION__);
 
     // This begins a new round of compilation.
-    _program->InitializeCompilation();
+    _program->BeginCompilation();
 
     // Note that the returned vector should always have the same size as
     // valueKeys.  Any key that failed to compile should yield a null masked
@@ -101,12 +101,14 @@ Exec_Compiler::Compile(TfSpan<const ExecValueKey> valueKeys)
             TRACE_FUNCTION_SCOPE("waiting for tasks");
             dispatcher.Wait();
         }
+
+        program->EndCompilation(state);
     });
 
-    // All inputs requiring recompilation have been recompiled.
-    _program->ClearInputsRequiringRecompilation();
-
-    {
+    // If compilation was interrupted, we do not clean up any isolated
+    // subnetworks, because they may no longer be isolated after the next round
+    // of compilation.
+    if (!_program->WasInterrupted()) {
         TRACE_FUNCTION_SCOPE("uncompiling isolated subnetwork");
 
         // We hold onto the isolated subnetwork object until we are done

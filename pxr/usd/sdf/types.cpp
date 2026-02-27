@@ -8,6 +8,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/usd/sdf/composeTimeSampleSeries.h"
+#include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/valueTypeName.h"
@@ -19,6 +21,8 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/ts/spline.h"
+#include "pxr/base/vt/valueComposeOver.h"
 
 #include <array>
 #include <unordered_map>
@@ -99,9 +103,81 @@ _TimeSampleMapTryTransform(
     return dst;
 }
 
+static
+SdfTimeSampleMap
+_LayerOffsetTimeSampleMap(SdfTimeSampleMap const &tsm,
+                          SdfLayerOffset const &offset)
+{
+    SdfTimeSampleMap dst;
+    for (auto const &[key, val]: tsm) {
+        VtValue xVal = VtValueTryTransform(val, offset);
+        if (!xVal.IsEmpty()) {
+            dst[offset * key] = std::move(xVal);
+        }
+        else {
+            dst[offset * key] = val;
+        }
+    }
+    return dst;
+}
+
+SdfTimeSampleMap
+SdfComposeTimeSampleMaps(SdfTimeSampleMap const &strong,
+                         SdfTimeSampleMap const &weak)
+{
+    SdfTimeSampleMap result;
+    SdfComposeTimeSampleSeries(
+        strong.begin(), strong.end(),
+        weak.begin(), weak.end(),
+        [](SdfTimeSampleMap::const_iterator iter) { // getTime
+            return iter->first;
+        },
+        [](SdfTimeSampleMap::const_iterator iter) { // getValue
+            return iter->second;
+        },
+        [](VtValue const &strong, VtValue const &weak) { // compose
+            return VtValueTryComposeOver(strong, weak);
+        },
+        [&result](VtValue const &val, double time) { // output
+            result.emplace_hint(result.end(), time, val);
+        });
+    return result;
+}
+
 TF_REGISTRY_FUNCTION(VtValue)
 {
     VtRegisterErasedTransform(_TimeSampleMapTryTransform);
+    VtRegisterTransform(_LayerOffsetTimeSampleMap);
+
+    VtRegisterTransform(+[](TsSpline const &spline,
+                            SdfLayerOffset const &offset) {
+        if (!offset.IsIdentity()) {
+            TsSpline copy = spline;
+            Ts_SplineOffsetAccess::ApplyOffsetAndScale(
+                &copy, offset.GetOffset(), offset.GetScale());
+            return copy;
+        }
+        return spline;
+    });
+    
+    VtRegisterComposeOver(+[](SdfTimeSampleMap const &strong,
+                              SdfTimeSampleMap const &weak) {
+        return SdfComposeTimeSampleMaps(strong, weak);
+    });
+
+    VtRegisterComposeOver(+[](SdfTimeSampleMap const &map,
+                              VtBackgroundType const &) {
+        SdfTimeSampleMap result;
+        for (auto const &[time, val]: map) {
+            if (auto compVal = VtValueTryComposeOver(val, VtBackground)) {
+                result.emplace_hint(result.end(), time, std::move(*compVal));
+            }
+            else{
+                result.emplace_hint(result.end(), time, val);
+            }
+        }
+        return result;
+    });
 }
 
 // Max units is computed by running `TF_PP_SEQ_SIZE`

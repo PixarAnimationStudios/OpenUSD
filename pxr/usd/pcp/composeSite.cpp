@@ -248,25 +248,6 @@ PcpComposeSitePrimSites(PcpLayerStackRefPtr const &layerStack,
     }
 }
 
-void
-PcpComposeSiteRelocates(PcpLayerStackRefPtr const &layerStack,
-                        SdfPath const &path,
-                        SdfRelocatesMap *result)
-{
-    static const TfToken field = SdfFieldKeys->Relocates;
-
-    SdfRelocatesMap relocMap;
-    TF_REVERSE_FOR_ALL(layer, layerStack->GetLayers()) {
-        if ((*layer)->HasField(path, field, &relocMap)) {
-            TF_FOR_ALL(reloc, relocMap) {
-                SdfPath source = reloc->first .MakeAbsolutePath(path);
-                SdfPath target = reloc->second.MakeAbsolutePath(path);
-                (*result)[source] = target;
-            }
-        }
-    }
-}
-
 // Helper for PcpComposeSiteInherits/Specializes/ overloads
 // that want to provide source arc info with the layer that adds each result.
 template <typename ResultType>

@@ -11,6 +11,7 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/notice.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/reference.h"
@@ -988,6 +989,85 @@ _TestSdfListOpVtValueComposeOver()
     }
 }
 
+static void
+_TestSdfComposeTimeSampleMaps()
+{
+    // This didactic test uses SdfPathExpression values in SdfTimeSampleMaps
+    // because they are composing types that are easy to write and reason about.
+    // We don't expect real world use-cases to use them as time-varying values.
+    {
+        // One composing sample over a non-composing sample at the same time.
+        SdfTimeSampleMap strong {{2, VtValue(SdfPathExpression("a %_"))}};
+        SdfTimeSampleMap weak {{2, VtValue(SdfPathExpression("X"))}};
+
+        SdfTimeSampleMap composed = SdfComposeTimeSampleMaps(strong, weak);
+        TF_AXIOM(composed.size() == 1);
+        TF_AXIOM(composed.find(2) != composed.end());
+        TF_AXIOM(composed[2] == SdfPathExpression("a X"));
+    }
+    {
+        // Earlier composing sample over a non-composing sample.
+        SdfTimeSampleMap strong {{1, VtValue(SdfPathExpression("a %_"))}};
+        SdfTimeSampleMap weak {{2, VtValue(SdfPathExpression("X"))}};
+
+        SdfTimeSampleMap composed = SdfComposeTimeSampleMaps(strong, weak);
+        TF_AXIOM(composed.size() == 2);
+        TF_AXIOM(composed.count(1) && composed.count(2));
+        TF_AXIOM(composed[1] == SdfPathExpression("a X"));
+        TF_AXIOM(composed[2] == SdfPathExpression("a X"));
+    }
+    {
+        // One composing sample over two non-composing samples.
+        SdfTimeSampleMap strong {{2, VtValue(SdfPathExpression("a %_"))}};
+        SdfTimeSampleMap weak {
+            {1, VtValue(SdfPathExpression("X"))},
+            {3, VtValue(SdfPathExpression("Y"))}
+        };
+
+        SdfTimeSampleMap composed = SdfComposeTimeSampleMaps(strong, weak);
+        TF_AXIOM(composed.size() == 3);
+        TF_AXIOM(composed.count(1) && composed.count(2) && composed.count(3));
+        TF_AXIOM(composed[1] == SdfPathExpression("a X"));
+        TF_AXIOM(composed[2] == SdfPathExpression("a X"));
+        TF_AXIOM(composed[3] == SdfPathExpression("a Y"));
+    }
+    {
+        // Two composing samples over one non-composing sample.
+        SdfTimeSampleMap strong {
+            {1, VtValue(SdfPathExpression("a %_"))},
+            {3, VtValue(SdfPathExpression("b %_"))}
+        };
+        SdfTimeSampleMap weak {
+            {2, VtValue(SdfPathExpression("X"))}
+        };
+
+        SdfTimeSampleMap composed = SdfComposeTimeSampleMaps(strong, weak);
+        TF_AXIOM(composed.size() == 3);
+        TF_AXIOM(composed.count(1) && composed.count(2) && composed.count(3));
+        TF_AXIOM(composed[1] == SdfPathExpression("a X"));
+        TF_AXIOM(composed[2] == SdfPathExpression("a X"));
+        TF_AXIOM(composed[3] == SdfPathExpression("b X"));
+    }
+    {
+        // Non-composing followed by a composing sample over a composing sample.
+        SdfTimeSampleMap strong {
+            {1, VtValue(SdfPathExpression("X"))},
+            {3, VtValue(SdfPathExpression("a %_"))}
+        };
+        SdfTimeSampleMap weak {
+            {2, VtValue(SdfPathExpression("b %_"))},
+            {3, VtValue(SdfPathExpression("c %_"))}
+        };
+
+        SdfTimeSampleMap composed = SdfComposeTimeSampleMaps(strong, weak);
+        TF_AXIOM(composed.size() == 3);
+        TF_AXIOM(composed.count(1) && composed.count(2) && composed.count(3));
+        TF_AXIOM(composed[1] == SdfPathExpression("X"));
+        TF_AXIOM(composed[2] == SdfPathExpression("X"));
+        TF_AXIOM(composed[3] == SdfPathExpression("a (c %_)"));
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -1010,6 +1090,8 @@ main(int argc, char **argv)
     _TestSdfQuoteUtilities();
     _TestSdfFileIOQuote();
     _TestSdfListOpVtValueComposeOver();
+    _TestSdfComposeTimeSampleMaps();
 
+    printf("SUCCESS\n");
     return 0;
 }

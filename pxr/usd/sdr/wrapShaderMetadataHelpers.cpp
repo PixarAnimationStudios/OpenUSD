@@ -7,7 +7,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdr/shaderMetadataHelpers.h"
-#include "pxr/usd/usd/pyConversions.h"
 
 #include "pxr/external/boost/python.hpp"
 PXR_NAMESPACE_USING_DIRECTIVE

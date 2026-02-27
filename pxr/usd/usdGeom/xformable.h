@@ -392,6 +392,19 @@ public:
             USDGEOM_API
             bool TransformMightBeTimeVarying() const;
 
+            /// Returns true if the xform ops might have an effect.
+            ///
+            /// If the xform op list is empty, or holds an operation
+            /// followed by its inverse, such as
+            ///   [         "xformOp:translate:pivot",
+            ///    "!invert!:xformOp:translate:pivot"]
+            /// then this returns false; otherwise it returns true.
+            /// Note that this only recognizes certain forms;
+            /// it does not analyze the matrix representation.
+            /// It should be considered an advisory optimization.
+            USDGEOM_API
+            bool TransformMightHaveEffect() const;
+
             /// Returns whether xformOpOrder is non-empty.
             USDGEOM_API
             bool HasNonEmptyXformOpOrder() const;

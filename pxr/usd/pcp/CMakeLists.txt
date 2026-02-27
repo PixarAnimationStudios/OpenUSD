@@ -485,6 +485,14 @@ pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits_graph
     DIFF_COMPARE compositionResults_ImpliedAndAncestralInherits_graph.txt 
 )
 
+pxr_register_test(testPcpMuseum_ImpliedArcsAndInstancing
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd ImpliedArcsAndInstancing/root.usda" 
+    TESTENV testenv/testPcpMuseum_ImpliedArcsAndInstancing.testenv
+    STDOUT_REDIRECT compositionResults_ImpliedArcsAndInstancing.txt
+    DIFF_COMPARE compositionResults_ImpliedArcsAndInstancing.txt
+)
+
 pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits_ComplexEvaluation
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd ImpliedAndAncestralInherits_ComplexEvaluation/root.usda" 

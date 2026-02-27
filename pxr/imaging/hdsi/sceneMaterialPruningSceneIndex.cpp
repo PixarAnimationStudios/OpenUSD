@@ -115,12 +115,12 @@ HdsiSceneMaterialPruningSceneIndex::GetEnabled() const
 
 void
 HdsiSceneMaterialPruningSceneIndex::SetEnabled(const bool enabled)
-{
-    TRACE_FUNCTION();
-    
+{    
     if (_info->enabled == enabled) {
         return;
     }
+
+    TRACE_FUNCTION();
 
     _info->enabled = enabled;
 
@@ -162,8 +162,6 @@ HdsiSceneMaterialPruningSceneIndex::SetEnabled(const bool enabled)
 HdSceneIndexPrim
 HdsiSceneMaterialPruningSceneIndex::GetPrim(const SdfPath &primPath) const
 {
-    TRACE_FUNCTION();
-
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
 
     if (!prim.dataSource) {
@@ -194,17 +192,17 @@ HdsiSceneMaterialPruningSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
-    TRACE_FUNCTION();
-
     if (!_IsObserved()) {
         return;
     }
-
+    
     if (!_info->enabled) {
         _SendPrimsAdded(entries);
         return;
     }
     
+    TRACE_FUNCTION();
+
     size_t i = 0;
 
     while (i < entries.size()) {
@@ -281,8 +279,6 @@ HdsiSceneMaterialPruningSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
-    TRACE_FUNCTION();
-
     if (!_IsObserved()) {
         return;
     }
@@ -291,6 +287,8 @@ HdsiSceneMaterialPruningSceneIndex::_PrimsDirtied(
         _SendPrimsDirtied(entries);
         return;
     }
+
+    TRACE_FUNCTION();
 
     static const HdDataSourceLocator materialIsFinalLocator =
         HdLegacyDisplayStyleSchema::GetDefaultLocator()

@@ -524,7 +524,10 @@ HdxEffectsShader::_CreateResourceBindings()
         return;
     }
 
-    _resourceBindings = _hgi->CreateResourceBindings(_resourceBindingsDesc);
+    if (!_resourceBindingsDesc.buffers.empty() ||
+        !_resourceBindingsDesc.textures.empty()) {
+        _resourceBindings = _hgi->CreateResourceBindings(_resourceBindingsDesc);
+    }
 }
 
 void

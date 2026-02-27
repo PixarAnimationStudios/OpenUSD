@@ -673,6 +673,21 @@ LogicalNode<Operator>::LogicalNode(
 {
 }
 
+namespace
+{
+
+bool _ShortCircuit(std::logical_and<bool>, bool value)
+{
+    return !value;
+}
+
+bool _ShortCircuit(std::logical_or<bool>, bool value)
+{
+    return value;
+}
+
+} // end anonymous namespace
+
 template <template <typename> class Operator>
 EvalResult
 LogicalNode<Operator>::Evaluate(EvalContext* ctx) const
@@ -693,16 +708,17 @@ LogicalNode<Operator>::Evaluate(EvalContext* ctx) const
                         GetValueTypeName(condition.value).c_str(), i)));
         }
         else {
-            if (result.IsEmpty()) {
-                result = condition.value.UncheckedGet<bool>();
+            const Operator<bool> op;
+            const bool value = condition.value.UncheckedGet<bool>();
+            if (_ShortCircuit(op, value)) {
+                result = value;
+                break;
             }
-            else {
-                result = Operator<bool>()(
-                    result.UncheckedGet<bool>(),
-                    condition.value.UncheckedGet<bool>());
-            }
+
+            result = result.IsEmpty() ?
+                value : op(result.UncheckedGet<bool>(), value);
         }
-    };
+    }
 
     return errors.empty() ?
         EvalResult::Value(std::move(result)) : 

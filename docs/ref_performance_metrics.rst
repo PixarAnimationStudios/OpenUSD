@@ -65,11 +65,11 @@ currently used.
 Linux
 =====
 
-* **OS**: CentOS Linux 7
-* **CPU**: AMD EPYC 7763 64-Core Processor, 2450 Mhz
-* **CPU Utilization**: 31 Core(s), 31 Logical Processor(s) (no hyperthreading)
-* **RAM**: 117GB
-* **GPU**: NVIDIA RTXA6000-24Q
+* **OS**: AlmaLinux 9
+* **CPU**: AMD EPYC 9654 96-Core Processor
+* **CPU Utilization**: 47 Core(s), 47 Logical Processor(s) (no hyperthreading)
+* **RAM**: 145GB
+* **GPU**: NVIDIA L40S-24Q
 
 macOS
 =====
@@ -113,9 +113,8 @@ Windows platforms (as described in :ref:`perf_environments`). Performance
 data from the four most recent releases is reported on a rolling basis.
 
 .. note::
-
-    A full historical rerun of all metrics on this page was performed for the
-    25.11 release because of a change in "create first image" timing methodology.
+    A full historical rerun on linux was performed for the 26.03 release due
+    to changes in machine configuration.
 
     Interpret the metrics on this page with caution. Variation may arise from
     a variety of sources, including run-to-run inconsistency in how the GL

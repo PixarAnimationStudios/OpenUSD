@@ -426,10 +426,7 @@ UsdNamespaceEditor::ApplyEdits()
     TRACE_FUNCTION();
 
     _ProcessEditsIfNeeded();
-    if (!_processedEdit) {
-        TF_CODING_ERROR("Failed to process edits");
-        return false;
-    }
+    TF_VERIFY(_processedEdit);
 
     // We create a namespace edit change block for each stage that is edited
     // by this editor. This is so the stage can appropriately parse the layer 
@@ -506,12 +503,25 @@ UsdNamespaceEditor::CanApplyEdits(std::string *whyNot) const
     TRACE_FUNCTION();
 
     _ProcessEditsIfNeeded();
-    if (!_processedEdit) {
-        TF_CODING_ERROR("Failed to process edits");
-        return false;
-    }
+    TF_VERIFY(_processedEdit);
 
     return _processedEdit->CanApply(whyNot);
+}
+
+SdfLayerHandleVector
+UsdNamespaceEditor::GetLayersToEdit() {
+    TRACE_FUNCTION();
+
+    // Ensure the edit can be applied. Note that CanApplyEdits will process the 
+    // edit if needed, which is why we don't have to process it here.
+    std::string errorMsg;
+    if (!CanApplyEdits(&errorMsg)) {
+        TF_CODING_ERROR(TfStringPrintf("Cannot get layers to edit because edit "
+            "cannot be applied due to the following errors: %s", errorMsg.c_str()));
+        return SdfLayerHandleVector();
+    }
+    
+    return _processedEdit->layersToEdit;
 }
 
 static bool 

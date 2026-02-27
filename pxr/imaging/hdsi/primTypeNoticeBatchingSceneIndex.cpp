@@ -238,7 +238,12 @@ _GetPriority(const SdfPath &primPath) const
 void
 HdsiPrimTypeNoticeBatchingSceneIndex::Flush()
 {
-    TRACE_FUNCTION();
+    const size_t totalNoticeCount =
+        _addedOrDirtiedPrims.size() + _removedPrims.size();
+    const std::string traceSuffix =
+        std::to_string(totalNoticeCount) + " notices";
+
+    TRACE_FUNCTION_DYNAMIC(traceSuffix.c_str());
 
     // Filtering scene index is empty until first call to Flush.
     _populated = true;

@@ -1082,11 +1082,13 @@ function(pxr_setup_plugins)
     )
 
     # For emscripten builds, we need to ensure that the top level plugInfo.json
-    # file is included in the resulting application bundle.
+    # file is included in the resulting application bundle.  When installing,
+    # we are sure to reference the installed location of this file.
     if (EMSCRIPTEN)
         foreach(lib ${PXR_CORE_LIBS})
-            target_link_options(${lib} PUBLIC 
-                "SHELL:--embed-file ${CMAKE_CURRENT_BINARY_DIR}/plugins_plugInfo.json@/usd/plugInfo.json")
+          target_link_options(${lib} PUBLIC
+              "$<BUILD_INTERFACE:SHELL:--embed-file ${CMAKE_CURRENT_BINARY_DIR}/plugins_plugInfo.json@/usd/plugInfo.json>"
+              "$<INSTALL_INTERFACE:SHELL:--embed-file $<INSTALL_PREFIX>/lib/usd/plugInfo.json@/usd/plugInfo.json>")
         endforeach()
     endif()
 endfunction() # pxr_setup_plugins

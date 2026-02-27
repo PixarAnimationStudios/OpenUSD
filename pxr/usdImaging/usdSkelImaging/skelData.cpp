@@ -14,6 +14,7 @@
 #include "pxr/usd/usdSkel/utils.h"
 
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/work/loops.h"
 
 #include "pxr/imaging/hd/sceneIndex.h"
 
@@ -70,6 +71,13 @@ _Invert(const VtArray<GfMatrix4f> &matrices,
             }});
 }
 
+UsdSkelImagingSkelData::UsdSkelImagingSkelData(const SdfPath& path, 
+    const UsdSkelImagingSkeletonSchema& schema):
+    primPath(path), skeletonSchema(schema), 
+    topology(UsdSkelTopology(UsdSkelImagingGetTypedValue(schema.GetJoints()))) 
+{
+}
+
 UsdSkelImagingSkelData
 UsdSkelImagingComputeSkelData(
     HdSceneIndexBaseRefPtr const &sceneIndex,
@@ -77,45 +85,14 @@ UsdSkelImagingComputeSkelData(
 {
     TRACE_FUNCTION();
 
-    UsdSkelImagingSkelData data;
-
-    data.primPath = primPath;
-
     const HdSceneIndexPrim prim = _GetPrim(sceneIndex, primPath);
+    UsdSkelImagingSkelData data(primPath, 
+        UsdSkelImagingSkeletonSchema::GetFromParent(prim.dataSource));
 
-    const UsdSkelImagingSkeletonSchema skeletonSchema =
-        UsdSkelImagingSkeletonSchema::GetFromParent(prim.dataSource);
+    _Convert(UsdSkelImagingGetTypedValue(
+        data.skeletonSchema.GetBindTransforms()), &data.bindTransforms);
 
-    data.topology =
-        UsdSkelTopology(
-            UsdSkelImagingGetTypedValue(skeletonSchema.GetJoints()));
-
-    _Convert(
-        UsdSkelImagingGetTypedValue(skeletonSchema.GetBindTransforms()),
-        &data.bindTransforms);
-
-    _Invert(
-        data.bindTransforms,
-        &data.inverseBindTransforms);
-
-    const UsdSkelImagingBindingSchema bindingSchema =
-        UsdSkelImagingBindingSchema::GetFromParent(prim.dataSource);
-
-    data.animationSource =
-        UsdSkelImagingGetTypedValue(bindingSchema.GetAnimationSource());
-
-    if (!data.animationSource.IsEmpty()) {
-        const HdSceneIndexPrim animPrim =
-            _GetPrim(sceneIndex, data.animationSource);
-        const UsdSkelImagingAnimationSchema animSchema =
-            UsdSkelImagingAnimationSchema::GetFromParent(animPrim.dataSource);
-        if (animSchema) {
-            data.animMapper =
-                UsdSkelAnimMapper(
-                    UsdSkelImagingGetTypedValue(animSchema.GetJoints()),
-                    UsdSkelImagingGetTypedValue(skeletonSchema.GetJoints()));
-        }
-    }
+    _Invert(data.bindTransforms, &data.inverseBindTransforms);
 
     return data;
 }
@@ -145,24 +122,35 @@ _MultiplyInPlace(const VtArray<GfMatrix4f> &matrices,
 static
 VtArray<GfMatrix4f>
 _ComputeJointLocalTransforms(
-    const UsdSkelImagingSkelData &data,
-    HdMatrix4fArrayDataSourceHandle const &restTransforms,
-    const VtArray<GfVec3f> &translations,
-    const VtArray<GfQuatf> &rotations,
-    const VtArray<GfVec3h> &scales)
+    const UsdSkelImagingSkelData& data,
+    const UsdSkelImagingAnimationSchema& animationSchema,
+    const SdfPath& animationSource,
+    HdMatrix4fArrayDataSourceHandle const& restTransforms,
+    const HdSampledDataSource::Time& shutterOffset)
 {
-    if (data.animMapper.IsNull()) {
+    // Remapping of skelAnimation's data to skeleton's hierarchy.
+    UsdSkelAnimMapper animMapper = UsdSkelAnimMapper(
+        UsdSkelImagingGetTypedValue(animationSchema.GetJoints()),
+        UsdSkelImagingGetTypedValue(data.skeletonSchema.GetJoints()));
+    if (animMapper.IsNull()) {
         // No skelAnimation, simply return the restTransforms.
-        return UsdSkelImagingGetTypedValue(restTransforms);
+        return UsdSkelImagingGetTypedValue(restTransforms, shutterOffset);
     }
+
+    const VtArray<GfVec3f>& translations = UsdSkelImagingGetTypedValue(
+        animationSchema.GetTranslations(), shutterOffset);
+    const VtArray<GfQuatf>& rotations = UsdSkelImagingGetTypedValue(
+        animationSchema.GetRotations(), shutterOffset);
+    const VtArray<GfVec3h>& scales = UsdSkelImagingGetTypedValue(
+        animationSchema.GetScales(), shutterOffset);
 
     VtArray<GfMatrix4f> animTransforms(translations.size());
 
     if (!UsdSkelMakeTransforms(translations, rotations, scales,
                                animTransforms)) {
         TF_WARN("Could not compute transforms for skelAnimation %s.\n",
-                data.animationSource.GetText());
-        return UsdSkelImagingGetTypedValue(restTransforms);
+                animationSource.GetText());
+        return UsdSkelImagingGetTypedValue(restTransforms, shutterOffset);
     }
 
     // If all transform components were empty, that could mean:
@@ -175,24 +163,24 @@ _ComputeJointLocalTransforms(
         return UsdSkelImagingGetTypedValue(restTransforms);
     }
 
-    if (data.animMapper.IsIdentity()) {
+    if (animMapper.IsIdentity()) {
         return animTransforms;
     }
 
     VtArray<GfMatrix4f> result;
 
-    if (data.animMapper.IsSparse()) {
-        result = UsdSkelImagingGetTypedValue(restTransforms);
+    if (animMapper.IsSparse()) {
+        result = UsdSkelImagingGetTypedValue(restTransforms, shutterOffset);
     } else {
         result.resize(data.topology.GetNumJoints());
     }
 
-    if (!data.animMapper.RemapTransforms(animTransforms, &result)) {
+    if (!animMapper.RemapTransforms(animTransforms, &result)) {
         TF_WARN("Could not remap transforms from skelAnimation %s for "
                 "skeleton %s.\n",
-                data.animationSource.GetText(),
+                animationSource.GetText(),
                 data.primPath.GetText());
-        return UsdSkelImagingGetTypedValue(restTransforms);
+        return UsdSkelImagingGetTypedValue(restTransforms, shutterOffset);
     }
     return result;
 }
@@ -216,26 +204,55 @@ VtArray<GfMatrix4f>
 UsdSkelImagingComputeSkinningTransforms(
     const UsdSkelImagingSkelData &data,
     HdMatrix4fArrayDataSourceHandle const &restTransforms,
-    const VtArray<GfVec3f> &translations,
-    const VtArray<GfQuatf> &rotations,
-    const VtArray<GfVec3h> &scales)
+    const VtArray<UsdSkelImagingAnimationSchema>& animationSchemas,
+    const VtArray<SdfPath>& animationSources,
+    const HdSampledDataSource::Time& shutterOffset)
 {
+    TRACE_FUNCTION();
 
-    VtArray<GfMatrix4f> result =
-        _ConcatJointTransforms(
-            data.topology,
-            _ComputeJointLocalTransforms(
-                data,
-                restTransforms,
-                translations, rotations, scales),
-            data.primPath);
+    // Compute and fill the concatenated skinning transforms in parallel.
+    // Since all the animationSources/Schemas share the same resolved skeleton
+    // that calls this method, they should all have the same size which is the 
+    // number of joints in the topology.
+    const size_t numJoints = data.topology.size();
+    VtArray<GfMatrix4f> result;
+    result.resize(
+        animationSchemas.size() * numJoints,
+        [&] (GfMatrix4f* start, GfMatrix4f* end)
+        {
+            WorkParallelForN(
+                animationSchemas.size(),
+                [&] (size_t animStart, size_t animEnd)
+                {
+                    TRACE_FUNCTION_SCOPE(
+                        "ComputeSkinningTransforms inner loop");
 
-    if (!_MultiplyInPlace(data.inverseBindTransforms, &result)) {
-        TF_WARN(
-            "Length (%zu) of bind transforms does not match number (%zu) of "
-            "joints.\n",
-            data.inverseBindTransforms.size(), result.size());
-    }
+                    for (size_t i = animStart; i < animEnd; ++i) {
+                        VtArray<GfMatrix4f> xforms = _ConcatJointTransforms(
+                            data.topology,
+                            _ComputeJointLocalTransforms(
+                                data, animationSchemas[i], animationSources[i],
+                                restTransforms, shutterOffset),
+                            data.primPath);
+
+                        if (!_MultiplyInPlace(
+                            data.inverseBindTransforms, &xforms)) {
+                            TF_WARN("Length (%zu) of bind transforms does not "
+                                "match number (%zu) of joints for "
+                                "skelAnimation %s.\n",
+                                data.inverseBindTransforms.size(), numJoints, 
+                                animationSources[i].GetText());
+                        }
+                        // XXX
+                        // xforms.size() should equal to numJoints
+                        // do we need a TF_VERIFY here?
+                        for (size_t j = 0; j < numJoints; ++j) {
+                            new (start + i * numJoints + j) 
+                                GfMatrix4f(xforms[j]);
+                        }
+                    }
+                });
+        });
 
     return result;
 }

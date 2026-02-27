@@ -16,6 +16,7 @@
 
 #include <typeindex>
 #include <unordered_map>
+#include <unordered_set>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -73,6 +74,14 @@ struct Vt_ValueComposeRegistry
         return iter == _composeFns.end() ? nullptr : &iter->second;
     }
 
+    // Return true if \p strong has been registered to compose over any other
+    // type.
+    bool
+    HasStrongType(std::type_index const &strong) const {
+        TfSpinRWMutex::ScopedLock lock(_rwMutex, /*write=*/false);
+        return _allStrongTypes.find(strong) != _allStrongTypes.end();
+    }
+
     // Attempt to register a compose function for strong over weak.  If a
     // registration already exists, ignore this registration and return false.
     bool
@@ -80,6 +89,7 @@ struct Vt_ValueComposeRegistry
              std::type_index const &weak,
              VoidFn vfn, CompFn cfn) {
         TfSpinRWMutex::ScopedLock lock(_rwMutex);
+        _allStrongTypes.insert(strong);
         auto [iter, inserted] =
             _composeFns.emplace(Types { strong, weak },
                                 ComposeFunc { vfn, cfn });
@@ -87,6 +97,7 @@ struct Vt_ValueComposeRegistry
     }
 
     mutable TfSpinRWMutex _rwMutex;
+    std::unordered_set<std::type_index> _allStrongTypes;
     std::unordered_map<Types, ComposeFunc, TfHash> _composeFns;
 };
 
@@ -118,6 +129,12 @@ VtValueCanComposeOver(VtValueRef stronger, VtValueRef weaker)
 {
     return stronger.IsEmpty() ||
         _GetComposeRegistry().Find(stronger.GetTypeid(), weaker.GetTypeid());
+}
+
+bool
+VtValueTypeCanComposeOver(std::type_info const &type)
+{
+    return _GetComposeRegistry().HasStrongType(type);
 }
 
 /// If `VtValueCanComposeOver(a, b)`, then return `VtValueComposeOver(a, b)`.

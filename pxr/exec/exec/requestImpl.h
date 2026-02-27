@@ -11,7 +11,7 @@
 
 #include "pxr/exec/exec/api.h"
 #include "pxr/exec/exec/request.h"
-#include "pxr/exec/exec/types.h"
+#include "pxr/exec/exec/valueOverride.h"
 
 #include "pxr/base/tf/bits.h"
 #include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
@@ -64,6 +64,11 @@ public:
     void DidInvalidateComputedValues(
         const Exec_DisconnectedInputsInvalidationResult &invalidationResult);
 
+    /// Notify the request to invalidate value keys that don't have a compiled
+    /// leaf node.
+    ///
+    void DidInvalidateUnknownValues();
+
     /// Notify the request of time having changed.
     void DidChangeTime(
         const Exec_TimeChangeInvalidationResult &invalidationResult);
@@ -99,6 +104,13 @@ protected:
     /// Computes the value keys in the request.
     EXEC_API
     Exec_CacheView _Compute();
+
+    /// Computes the value keys in the request in the presence of the provided
+    /// \p valueOverrides.
+    ///
+    EXEC_API
+    Exec_CacheView _ComputeWithOverrides(
+        ExecValueOverrideVector &&valueOverrides);
 
     /// Returns true if the request needs to be compiled.
     ///

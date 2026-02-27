@@ -35,7 +35,7 @@
 //           HdResourceRegistry.
 //           Added HdSceneDelegate::GetInstancerPrototypes.
 // 39 -> 40: Removed Bind and Unbind API from HdRenderPassState.
-// 40 -> 41: Renamed HdDelegate::GetMaterialNeworkselector() to 
+// 40 -> 41: Renamed HdDelegate::GetMaterialNeworkselector() to
 //           GetMaterialRenderContexts(). It now returns a TfTokenVector.
 // 41 -> 42: Removed GetMaterialTag() from HdRenderIndex.
 // 42 -> 43: Removed HdCamera pulling on view and projection matrix.
@@ -45,7 +45,7 @@
 // 45 -> 46: New signatures for HdRendererPlugin::IsSupported and
 //           HdRendererPluginRegistry::GetDefaultPluginId
 // 46 -> 47: Adding HdRenderDelegate::GetRenderSettingsNamespaces()
-// 47 -> 48: New signature for HdRenderIndex::InsertSceneIndex: added optional 
+// 47 -> 48: New signature for HdRenderIndex::InsertSceneIndex: added optional
 //           argument needsPrefixing
 // 48 -> 49: Moved HdExtCompCpuComputation, Hd_ExtCompInputSource,
 //           Hd_CompExtCompInputSource, and Hd_SceneExtCompInputSource to hdSt.
@@ -78,7 +78,7 @@
 //           return Hydra schemas instead of just container data sources.
 //           schemaTypeDefs.h replaces vectorSchemaTypeDefs.h.
 // 63 -> 64: Adding disableDepthOfField to HdRenderSettings::RenderProduct
-// 64 -> 65: Introduce HdCollectionPredicateLibrary and 
+// 64 -> 65: Introduce HdCollectionPredicateLibrary and
 //           HdCollectionExpressionEvaluator for path expression evaluation on
 //           scene index prims.
 // 65 -> 66: Make HdSchema::_GetTypedDataSource and getters in generated
@@ -119,16 +119,24 @@
 // 85 -> 86: Rename Hd[Typed|SchemaBased][Container|Vector]Schema to
 //           Hd[Container|Vector]Of[Schemas|TypedSampledDataSources]Schema.
 // 86 -> 87: Added HdContainerDataSourceEditor::ComputeDirtyLocators.
-// 87 -> 88: Added support for parameterValues data source in 
+// 87 -> 88: Added support for parameterValues data source in
 //           HdMaterialOverrideSchema and related functions (GetParameterValues,
-//           SetParameterValues). The deprecated method BuildRetained now 
+//           SetParameterValues). The deprecated method BuildRetained now
 //           requires a second parameter for the parameterValues data source.
 // 88 -> 89: HdRenderSettingsSchema namespacedSettings is a
 //           HdSampledDataSourceContainerSchema.
+// 89 -> 90: Added HdRendererPlugin::GetSceneIndexInputArgs and
+//           HdSceneIndexInputArgsSchema.
+// 90 -> 91: Add camera, disableMotionBlur, and disableDepthOfField to
+//           HdRenderSettingsSchema and rename shutterInterval to
+//           unionedSamplingInterval
 
-#define HD_API_VERSION 89
+#define HD_API_VERSION 91
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
-#define HD_SHADER_API 2
+// 2  ->  3: Use GetLightCount() instead of NUM_LIGHTS to get light count.
+//           NUM_LIGHTS still exists for shader code requiring a compile time
+//           max count constant. Ex: MAX_LIGHT_SOURCES in MaterialX
+#define HD_SHADER_API 3
 
 #endif // PXR_IMAGING_HD_VERSION_H

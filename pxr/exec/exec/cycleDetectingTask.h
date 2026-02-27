@@ -48,6 +48,8 @@ private:
         Exec_CompilationState &compilationState,
         TaskPhases &taskPhases) override;
 
+    void _Interrupt(Exec_CompilationState &compilationState) override;
+
 private:
     // The task begins its search from this node.
     const VdfNode *const _node;

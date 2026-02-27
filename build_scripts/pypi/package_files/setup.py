@@ -51,7 +51,20 @@ shutil.copytree(os.path.join(USD_BUILD_OUTPUT, 'lib'), os.path.join(BUILD_DIR, '
 # distribution. This breaks the relative paths in the pluginfos, but we'll need
 # to update them later anyway after running "auditwheel repair", which will
 # move the libraries to a new directory
-shutil.move(os.path.join(BUILD_DIR, 'lib/usd'), os.path.join(BUILD_DIR, 'lib/python/pxr/pluginfo'))
+plugInfoDir = os.path.join(BUILD_DIR, 'lib/python/pxr/pluginfo')
+
+shutil.move(os.path.join(BUILD_DIR, 'lib/usd'), plugInfoDir)
+
+# Move the pluginfos for plugins that are distributed with the package
+# to the same directory as above.
+#
+# XXX:
+# Currently all plugins are built into the monolithic shared library, so
+# we just need to move the pluginfos over. If we ever ship plugins that
+# are kept separate, we'll need to copy those over too.
+for p in glob.glob(os.path.join(USD_BUILD_OUTPUT, 'plugin/usd/*')):
+    if os.path.isdir(p):
+        shutil.move(p, plugInfoDir)
 
 if windows():
     # On windows we also need dlls from the bin directory
@@ -130,7 +143,8 @@ setuptools.setup(
     package_dir={"": os.path.join(BUILD_DIR, 'lib/python')},
     package_data={
         "": ["*.so", "*.dll", "*.pyd"],
-        "pxr": ["pluginfo/*", "pluginfo/*/*", "pluginfo/*/*/*"],
+        "pxr": ["pluginfo/*", "pluginfo/*/*", "pluginfo/*/*/*",
+                "pluginfo/*/*/shaders/*"],
     },
     classifiers=[
         "Programming Language :: Python :: 3",

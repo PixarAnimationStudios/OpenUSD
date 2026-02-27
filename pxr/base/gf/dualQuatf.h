@@ -51,8 +51,9 @@ class GfDualQuatf final
   public:
     typedef float ScalarType;
 
-    /// The default constructor leaves the dual quaternion undefined.
-    GfDualQuatf() {}
+    /// GfDualQuatf value-initializes to zero and performs no default
+    /// initialization, like float or double.
+    GfDualQuatf() = default;
 
     /// Initialize the real part to \p realVal and the imaginary part
     /// to zero quaternion.

@@ -16,6 +16,8 @@
 
 #include "pxr/base/arch/timing.h"
 
+#include <utility>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class TraceEventData;
@@ -84,6 +86,10 @@ public:
 
     /// Returns the end time of a timespan event.
     TRACE_API TimeStamp GetEndTimeStamp() const;
+
+    /// Return both the start and end time of a timespan event by
+    /// GetStartTimeStamp() and GetEndTimeStamp().
+    TRACE_API std::pair<TimeStamp, TimeStamp> GetTimeSpanStamps() const;
 
     /// Returns the data stored in a data event.
     TRACE_API TraceEventData GetData() const;

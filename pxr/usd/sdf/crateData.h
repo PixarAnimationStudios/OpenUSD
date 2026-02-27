@@ -110,6 +110,9 @@ public:
     QueryTimeSample(const SdfPath& path, double time, 
                     VtValue *value) const;
 
+    virtual const std::type_info &
+    QueryTimeSampleTypeid(const SdfPath &path, double time) const;
+
     virtual void
     SetTimeSample(const SdfPath& path, double time, 
                   const VtValue & value);

@@ -10,6 +10,7 @@
 #include "hdPrman/api.h"
 
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/usd/sdf/path.h"
 
 #include "pxr/pxr.h"
 
@@ -49,6 +50,14 @@ SetPrimVarFromVtValue(
     RtDetailType const& detail,
     TfToken const& role,
     RtPrimVarList *params);
+
+/// Attempt to extract or cast the given VtValue to an SdfPath value.
+/// This accepts VtValues holding SdfPath, std::string, or TfToken.
+/// An empty string or token value does not emit an error.
+/// If a path cannot be extracted, an empty SdfPath is returned.
+HDPRMAN_API
+SdfPath
+GetPathFromVtValue(VtValue const& val);
 
 /// Helper to convert matrix types, handling double->float conversion.
 inline RtMatrix4x4

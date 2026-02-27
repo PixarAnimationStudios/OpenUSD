@@ -8,6 +8,7 @@
 #define PXR_USD_IMAGING_USD_RI_PXR_IMAGING_PXR_CAMERA_PROJECTION_API_ADAPTER_H
 
 #include "pxr/base/tf/token.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/imaging/hd/dataSource.h"
 
 #include "pxr/imaging/hd/dataSourceLocator.h"
@@ -44,6 +45,16 @@ public:
         const TfTokenVector& properties,
         UsdImagingPropertyInvalidationType invalidationType) override;
 };
+
+// For PxrCameraProjectionAPI schema applied on UsdGeomCamera that
+// allow specification of projection, if the schema expects relationships, 
+// perform the following actions for each value of the environment variable.
+// true : Produce a warning message if connections are used.
+// false : Disallow the use of attribute connections for the purposes of
+//         connecting projection.
+USDIMAGING_API
+extern TfEnvSetting<bool>
+        LEGACY_PXR_CAMERA_PROJECTION_TERMINAL_ALLOWED_AND_WARN;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

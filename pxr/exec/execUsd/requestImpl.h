@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/exec/execUsd/api.h"
+#include "pxr/exec/execUsd/valueOverride.h"
 
 #include "pxr/base/tf/bits.h"
 #include "pxr/exec/exec/request.h"
@@ -52,6 +53,12 @@ public:
 
     /// Computes the value keys in the request.
     ExecUsdCacheView Compute();
+
+    /// Computes the value keys in the request in the presence of the provided
+    /// \p valueOverrides.
+    ///
+    ExecUsdCacheView ComputeWithOverrides(
+        ExecUsdValueOverrideVector &&valueOverrides);
 
     /// Expires the request based on providers that have become invalid.
     void ExpireInvalidIndices();

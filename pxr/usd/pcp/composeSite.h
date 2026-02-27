@@ -187,20 +187,6 @@ PcpComposeSitePrimSites(PcpNodeRef const &node, SdfSiteVector *result)
         node.GetLayerStack(), node.GetPath(), result);
 }
 
-/// Relocates
-PCP_API
-void
-PcpComposeSiteRelocates(PcpLayerStackRefPtr const &layerStack,
-                        SdfPath const &path,
-                        SdfRelocatesMap *result);
-
-inline void
-PcpComposeSiteRelocates(PcpNodeRef const &node, SdfRelocatesMap *result)
-{
-    return PcpComposeSiteRelocates(
-        node.GetLayerStack(), node.GetPath(), result);
-}
-
 /// Has prim or property specs.
 PCP_API
 bool

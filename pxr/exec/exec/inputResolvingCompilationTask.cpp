@@ -15,11 +15,6 @@
 #include "pxr/base/arch/functionLite.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/trace/trace.h"
-#include "pxr/exec/esf/attribute.h"
-#include "pxr/exec/esf/journal.h"
-#include "pxr/exec/esf/object.h"
-#include "pxr/exec/esf/prim.h"
-#include "pxr/exec/esf/stage.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -106,6 +101,14 @@ Exec_InputResolvingCompilationTask::_Compile(
         }
     }
     );
+}
+
+void
+Exec_InputResolvingCompilationTask::_Interrupt(Exec_CompilationState &)
+{
+    // Input resolving tasks have nothing to contribute to the interrupt state.
+    // An empty implementation must be provided because _Interrupt is a
+    // pure-virtual method.
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

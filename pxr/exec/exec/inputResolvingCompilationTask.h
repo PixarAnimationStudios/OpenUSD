@@ -65,6 +65,8 @@ private:
         Exec_CompilationState &compilationState,
         TaskPhases &taskPhases) override;
 
+    void _Interrupt(Exec_CompilationState &compilationState) override;
+
     // The input key to resolve to output keys providing said input value.
     const Exec_InputKey &_inputKey;
 

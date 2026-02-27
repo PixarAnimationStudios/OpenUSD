@@ -22,7 +22,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class Usd_InterpolatorBase;
+class Usd_Interpolator;
 
 /// Returns true if \p value contains BlockType (SdfValueBlock or
 /// SdfAnimationBlock), false otherwise.
@@ -111,23 +111,29 @@ Usd_ClearValueIfBlocked(VtValue* value)
 /// otherwise.
 template <class Dst, class Src>
 inline bool
-Usd_SetValue(Dst *dst, Src const &src)
+Usd_SetValue(Dst *dst, Src &&src)
 {
+    using SrcType = std::decay_t<Src>;
     if constexpr (std::is_same_v<Dst, VtValue>) {
-        *dst = src;
+        *dst = std::forward<Src>(src);
         return true;
     }
     else if constexpr (std::is_base_of_v<SdfAbstractDataValue, Dst>) {
-        return dst->StoreValue(src);
+        return dst->StoreValue(std::forward<Src>(src));
     }
-    else if constexpr (std::is_same_v<Src, VtValue>) {
+    else if constexpr (std::is_same_v<SrcType, VtValue>) {
         if (src.template IsHolding<Dst>()) {
-            *dst = src.template UncheckedGet<Dst>();
+            if constexpr (std::is_reference_v<Src>) {
+                *dst = src.template UncheckedGet<Dst>();
+            }
+            else {
+                *dst = src.template UncheckedRemove<Dst>();
+            }
             return true;
         }
         return false;
     }
-    else if constexpr (std::is_same_v<Dst, Src>) {
+    else if constexpr (std::is_same_v<Dst, SrcType>) {
         *dst = src;
         return true;
     }
@@ -144,7 +150,8 @@ enum class Usd_DefaultValueResult
 
 template <class T, class Source>
 Usd_DefaultValueResult 
-Usd_HasDefault(const Source& source, const SdfPath& specPath, T* value)
+Usd_HasDefault(const Source& source, const SdfPath& specPath, T* value,
+               const std::type_info **valueTypeId=nullptr)
 {
 
     if (!value) {
@@ -161,6 +168,9 @@ Usd_HasDefault(const Source& source, const SdfPath& specPath, T* value)
             return Usd_DefaultValueResult::BlockedAnimation;
         }
         else {
+            if (valueTypeId) {
+                *valueTypeId = &ti;
+            }
             return Usd_DefaultValueResult::Found;
         }
     }
@@ -173,6 +183,17 @@ Usd_HasDefault(const Source& source, const SdfPath& specPath, T* value)
             if (Usd_ClearValueIfBlocked<SdfAnimationBlock>(value)) {
                 return Usd_DefaultValueResult::BlockedAnimation;
             }
+            if (valueTypeId) {
+                if constexpr (std::is_same_v<T, VtValue>) {
+                    *valueTypeId = &value->GetTypeid();
+                }
+                else if constexpr (std::is_same_v<T, SdfAbstractDataValue>) {
+                    *valueTypeId = &value->valueType;
+                }
+                else {
+                    *valueTypeId = &typeid(T);
+                }
+            }
             return Usd_DefaultValueResult::Found;
         }
         // fall-through
@@ -184,7 +205,7 @@ template <class T>
 inline bool
 Usd_QueryTimeSample(
     const SdfLayerRefPtr& layer, const SdfPath& path,
-    double time, Usd_InterpolatorBase* interpolator, T* result)
+    double time, Usd_Interpolator const &interpolator, T* result)
 {
     return layer->QueryTimeSample(path, time, result);
 }

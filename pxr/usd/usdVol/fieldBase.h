@@ -11,7 +11,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdVol/api.h"
-#include "pxr/usd/usdGeom/xformable.h"
+#include "pxr/usd/usdVol/volumeFieldBase.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -34,9 +34,12 @@ class SdfAssetPath;
 
 /// \class UsdVolFieldBase
 ///
-/// Base class for field primitives.
+/// 
+/// \deprecated This schema will be removed in a future release.
+/// References to this schema should be updated to refer to VolumeFieldBase.
+/// 
 ///
-class UsdVolFieldBase : public UsdGeomXformable
+class UsdVolFieldBase : public UsdVolVolumeFieldBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -49,7 +52,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdVolFieldBase(const UsdPrim& prim=UsdPrim())
-        : UsdGeomXformable(prim)
+        : UsdVolVolumeFieldBase(prim)
     {
     }
 
@@ -57,7 +60,7 @@ public:
     /// Should be preferred over UsdVolFieldBase(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
     explicit UsdVolFieldBase(const UsdSchemaBase& schemaObj)
-        : UsdGeomXformable(schemaObj)
+        : UsdVolVolumeFieldBase(schemaObj)
     {
     }
 

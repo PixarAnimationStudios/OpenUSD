@@ -27,7 +27,7 @@ int main(int argc, char** argv)
     try {
         bytesFromEnd = std::strtoul(argv[2], NULL, 10);
     }
-    catch (const std::exception& e) {
+    catch (const std::exception&) {
         printf("ERROR: Invalid number of bytes specified\n");
         return 1;
     }

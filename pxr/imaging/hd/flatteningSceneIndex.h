@@ -24,7 +24,15 @@ using HdFlattenedDataSourceProviderSharedPtrVector =
 
 namespace HdFlatteningSceneIndex_Impl
 {
-constexpr uint32_t _smallVectorSize = 8;
+// The value 9 was chosen to accommodate the following flattened data
+// source providers without spilling to heap allocation:
+//
+// hd:             coordSysBindings, primvars, purpose, visibility, xform
+// usdImaging:     geomModel, model, usdMaterialBindings
+// usdSkelImaging: skelBindings
+//
+constexpr uint32_t _smallVectorSize = 9;
+
 using _DataSourceLocatorSetVector =
     TfSmallVector<HdDataSourceLocatorSet, _smallVectorSize>;
 class _PrimLevelWrappingDataSource;

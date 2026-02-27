@@ -14,8 +14,7 @@ HdPrman_GprimBase::~HdPrman_GprimBase() = default;
 std::vector<riley::GeometryPrototypeId> 
 HdPrman_GprimBase::GetPrototypeIds() const
 {
-    const std::vector<riley::GeometryPrototypeId> ret(_prototypeIds);
-    return ret;
+    return _prototypeIds;
 }
 
 

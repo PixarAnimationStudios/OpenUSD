@@ -20,8 +20,10 @@ TF_WRAP_MODULE
     TF_WRAP( ShaderMetadataHelpers );
     TF_WRAP( ShaderNode );
     TF_WRAP( ShaderNodeDiscoveryResult );
+    TF_WRAP( ShaderNodeMetadata );
     TF_WRAP( ShaderNodeQuery );
     TF_WRAP( ShaderNodeQueryUtils );
     TF_WRAP( ShaderProperty );
+    TF_WRAP( ShaderPropertyMetadata );
     TF_WRAP( Registry );
 }

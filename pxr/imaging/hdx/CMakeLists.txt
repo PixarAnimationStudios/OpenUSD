@@ -136,6 +136,19 @@ pxr_build_test(testHdxLightAndShadow
     CPPFILES
         testenv/testHdxLightAndShadow.cpp
 )
+pxr_build_test(testHdxNoResourceBindings
+    LIBRARIES
+        hdx
+        hd
+        hdSt
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        testenv/testHdxNoResourceBindings.cpp
+)
 endif()
 
 if (X11_FOUND)
@@ -365,7 +378,15 @@ pxr_register_test(testHdxUnpickablesAsOccluders
     FAIL_PERCENT 1
     PERCEPTUAL
 )
-
+pxr_register_test(testHdxNoResourceBindings
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxNoResourceBindings"
+    TESTENV testenv/testHdxNoResourceBindings
+    EXPECTED_RETURN_CODE 0
+    IMAGE_DIFF_COMPARE
+        color.png
+    FAIL 0.01
+    FAIL_PERCENT 0.01
+)
 # Certain tests use plugins that require shared libraries.
 if (TARGET shared_libs)
 

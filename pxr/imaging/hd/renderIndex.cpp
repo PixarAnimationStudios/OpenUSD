@@ -1328,6 +1328,7 @@ namespace {
 
         void Sync(size_t begin, size_t end)
         {
+            TRACE_FUNCTION_SCOPE("RPrimSync Worker");
             for (size_t i = begin; i < end; ++i)
             {
                 HdRprim &rprim = *_r.rprims[i];
@@ -2041,26 +2042,20 @@ HdRenderIndex::_RemoveInstancerSubtree(const SdfPath &root,
 HdInstancer *
 HdRenderIndex::GetInstancer(SdfPath const &id) const
 {
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    HdInstancer *instancer = nullptr;
-    TfMapLookup(_instancerMap, id, &instancer);
-
-    return instancer;
+    _InstancerMap::const_iterator it = _instancerMap.find(id);
+    if (it != _instancerMap.end()) {
+        return it->second;
+    }
+    return nullptr;
 }
 
 HdRprim const *
 HdRenderIndex::GetRprim(SdfPath const &id) const
 {
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
     _RprimMap::const_iterator it = _rprimMap.find(id);
     if (it != _rprimMap.end()) {
         return it->second.rprim;
     }
-
     return nullptr;
 }
 

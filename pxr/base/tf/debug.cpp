@@ -156,6 +156,10 @@ public:
                 enabled ? TfDebug::_NodeEnabled : TfDebug::_NodeDisabled;
             n->state.store(nodeState);
         }
+        lock.Release();
+        TF_DEBUG(TF_DEBUG_REGISTRY).Msg(
+            "%s: set %s %s\n", TF_FUNC_NAME().c_str(),
+            name, enabled ? "true" : "false");
     }
 
     bool _GetEnabledStateNoLock(char const *name) const {
@@ -394,20 +398,29 @@ TfDebug::_InitializeNode(_Node &node, char const *name)
 }    
 
 void
-TfDebug::Helper::Msg(const std::string& msg)
+TfDebug::_Helper::Msg(const std::string& msg) const
 {
     static TfSpinMutex outMutex;
     FILE *outputFile = _GetOutputFile().load();
+
+    static const bool emitCodeNames =
+        TfGetenvBool("TF_DEBUG_EMIT_CODE_NAMES_WITH_MESSAGES", false);
+    
     // This mutex only protects message integrity wrt concurrent TF_DEBUG
     // outputs.  Other concurrent writes to the same output stream can still
     // interrupt/interleave.
     TfSpinMutex::ScopedLock lock(outMutex);
-    fprintf(outputFile, "%s", msg.c_str());
+    if (emitCodeNames) {
+        fprintf(outputFile, "%s: %s", _enumName, msg.c_str());
+    }
+    else {
+        fprintf(outputFile, "%s", msg.c_str());
+    }
     fflush(outputFile);
 }
 
 void
-TfDebug::Helper::Msg(const char* fmt, ...)
+TfDebug::_Helper::Msg(const char* fmt, ...) const
 {
     va_list ap;
     va_start(ap, fmt);

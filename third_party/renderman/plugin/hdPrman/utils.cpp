@@ -681,6 +681,27 @@ SetPrimVarFromVtValue(
         name, detail, role, params));
 }
 
+SdfPath
+GetPathFromVtValue(VtValue const& value)
+{
+    if (value.IsHolding<SdfPath>()) {
+        return value.UncheckedGet<SdfPath>();
+    } else if (value.IsHolding<std::string>()) {
+        const std::string& str = value.UncheckedGet<std::string>();
+        // Avoid SdfPath runtime error constructing from empty string.
+        if (!str.empty()) {
+            return SdfPath(str);
+        }
+    } else if (value.IsHolding<TfToken>()) {
+        const TfToken& token = value.UncheckedGet<TfToken>();
+        // Avoid SdfPath runtime error constructing from empty token.
+        if (!token.IsEmpty()) {
+            return SdfPath(token);
+        }
+    }
+    return SdfPath();
+}
+
 RtUString
 ResolveAssetToRtUString(
     SdfAssetPath const &asset,

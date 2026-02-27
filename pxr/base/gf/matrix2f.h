@@ -49,7 +49,8 @@ public:
     static const size_t numRows = 2;
     static const size_t numColumns = 2;
 
-    /// Default constructor. Leaves the matrix component values undefined.
+    /// GfMatrix2f value-initializes to zero and performs no default
+    /// initialization, like float or double.
     GfMatrix2f() = default;
 
     /// Constructor. Initializes the matrix from 4 independent

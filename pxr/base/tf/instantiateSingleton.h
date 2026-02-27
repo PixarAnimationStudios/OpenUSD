@@ -30,6 +30,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct Tf_SingletonInitState
+{
+    const std::thread::id initThreadId;
+    void * const initInstance;
+};
+
 // This GIL-releasing helper is implemented in singleton.cpp.  We do it this way
 // to avoid including the Python headers here.
 struct Tf_SingletonPyGILDropper
@@ -44,28 +50,51 @@ private:
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 };
 
-template <class T> std::atomic<T *> TfSingleton<T>::_instance;
+template <class T>
+std::atomic<T *> TfSingleton<T>::_instance;
+
+template <class T>
+std::atomic<Tf_SingletonInitState *> TfSingleton<T>::_initState;
 
 template <class T>
 void
 TfSingleton<T>::SetInstanceConstructed(T &instance)
 {
-    if (_instance.exchange(&instance) != nullptr) {
+    // Capture the initializing thread id so that it can call GetInstance()
+    // successfully while other threads wait for full construction to complete.
+    std::unique_ptr<Tf_SingletonInitState> initState(
+        new Tf_SingletonInitState {
+            std::this_thread::get_id(), static_cast<void *>(&instance)
+        });
+    
+    if (_instance.load() || _initState.exchange(initState.get()) != nullptr) {
         TF_FATAL_ERROR("this function may not be called after "
                        "GetInstance() or another SetInstanceConstructed() "
                        "has completed");
     }
+    initState.release();
 }
 
 template <class T>
 T *
-TfSingleton<T>::_CreateInstance(std::atomic<T *> &instance)
+TfSingleton<T>::_CreateOrWaitForInstance(std::atomic<T *> &instance)
 {
     static std::atomic<bool> isInitializing;
     
-    TfAutoMallocTag2 tag("Tf", "TfSingleton::_CreateInstance",
-                         "Create Singleton " + ArchGetDemangled<T>());
+    TfAutoMallocTag tag("Tf", "TfSingleton::_CreateOrWaitForInstance",
+                        "Create Singleton " + ArchGetDemangled<T>());
 
+    // Check to see if we're the thread that's currently initializing the
+    // singleton. If so, return the initializing instance. Other threads will
+    // wait for initialization to complete.
+    if (Tf_SingletonInitState *initState = _initState.load()) {
+        if (initState->initThreadId == std::this_thread::get_id()) {
+            TF_AXIOM(initState->initInstance);
+            return static_cast<T *>(initState->initInstance);
+        }
+        // Otherwise fall through and wait for the instance to appear.
+    }
+    
     // Drop the GIL if we have it, before possibly locking to create the
     // singleton instance.
     Tf_SingletonPyGILDropper dropGIL;
@@ -76,19 +105,26 @@ TfSingleton<T>::_CreateInstance(std::atomic<T *> &instance)
     if (isInitializing.exchange(true) == false) {
         // Do we not yet have an instance?
         if (!instance) {
-            // Create it.  The constructor may set instance via
-            // SetInstanceConstructed(), so check for that.
-            T *newInst = new T;
-            
-            T *curInst = instance.load();
-            if (curInst) {
-                if (curInst != newInst) {
-                    TF_FATAL_ERROR("race detected setting singleton instance");
-                }
+            // Try to create the instance.
+            T *newInst;
+            try {
+                newInst = new T;
             }
-            else {
-                TF_AXIOM(instance.exchange(newInst) == nullptr);
-            }                
+            catch (...) {
+                // Ensure we clean up the _initState if it was set by a call to
+                // SetInstanceConstructed() in T's ctor.
+                delete _initState.exchange(nullptr);
+                throw;
+            }
+            T *curInst = nullptr;
+            if (Tf_SingletonInitState *initState = _initState.load()) {
+                TF_AXIOM(initState->initInstance);
+                curInst = static_cast<T *>(initState->initInstance);
+            }
+            if (curInst && (curInst != newInst)) {
+                TF_FATAL_ERROR("race detected setting singleton instance");
+            }
+            TF_AXIOM(instance.exchange(newInst) == nullptr);
         }
         isInitializing = false;
     }
@@ -108,10 +144,10 @@ TfSingleton<T>::DeleteInstance()
     // Try to swap out a non-null instance for nullptr -- if we do it, we delete
     // it.
     T *instance = _instance.load();
-    while (instance && !_instance.compare_exchange_weak(instance, nullptr)) {
-        std::this_thread::yield();
+    if (instance && !_instance.compare_exchange_strong(instance, nullptr)) {
+        delete instance;
+        delete _initState.exchange(nullptr);
     }
-    delete instance;
 }
 
 /// Source file definition that a type is being used as a singleton.

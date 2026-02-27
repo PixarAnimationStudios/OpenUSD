@@ -10,6 +10,7 @@
 #include "pxr/exec/execUsd/request.h"
 #include "pxr/exec/execUsd/system.h"
 #include "pxr/exec/execUsd/valueKey.h"
+#include "pxr/exec/execUsd/valueOverride.h"
 #include "pxr/exec/execUsd/visitValueKey.h"
 
 #include "pxr/base/work/loops.h"
@@ -18,6 +19,7 @@
 #include "pxr/exec/exec/builtinComputations.h"
 #include "pxr/exec/exec/debugCodes.h"
 #include "pxr/exec/exec/valueKey.h"
+#include "pxr/exec/exec/valueOverride.h"
 
 #include <tbb/concurrent_vector.h>
 
@@ -153,6 +155,24 @@ ExecUsdCacheView
 ExecUsd_RequestImpl::Compute()
 {
     return ExecUsdCacheView(_Compute());
+}
+
+ExecUsdCacheView
+ExecUsd_RequestImpl::ComputeWithOverrides(
+    ExecUsdValueOverrideVector &&valueOverrides)
+{
+    // Transform ExecUsdValueOverrides into ExecValueOverrides.
+    ExecValueOverrideVector execValueOverrides;
+    execValueOverrides.reserve(valueOverrides.size());
+    for (ExecUsdValueOverride &valueOverride : valueOverrides) {
+        execValueOverrides.push_back({
+            ExecUsd_VisitValueKey(_ValueKeyVisitor{}, valueOverride.valueKey),
+            std::move(valueOverride.overrideValue)
+        });
+    }
+
+    return ExecUsdCacheView(
+        _ComputeWithOverrides(std::move(execValueOverrides)));
 }
 
 void

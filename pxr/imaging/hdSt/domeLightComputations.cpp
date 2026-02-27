@@ -14,7 +14,6 @@
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/textureObject.h"
 #include "pxr/imaging/hdSt/textureHandle.h"
-#include "pxr/imaging/hdSt/dynamicCubemapTextureObject.h"
 #include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
 
 #include "pxr/imaging/hgi/computeCmds.h"
@@ -47,7 +46,6 @@ _FillPixelsByteSize(HgiTextureDesc * const desc)
         s * desc->dimensions[0] * desc->dimensions[1] * desc->dimensions[2];
 }
 
-template<typename Texture, typename Sampler>
 bool
 _GetSrcDimensionsTextureAndSampler(
     HdStTextureHandleSharedPtr const &srcTextureHandle,
@@ -60,14 +58,14 @@ _GetSrcDimensionsTextureAndSampler(
     }
 
     const auto * const srcTextureObject =
-        dynamic_cast<Texture*>(
+        dynamic_cast<HdStUvTextureObject*>(
             srcTextureHandle->GetTextureObject().get());
     if (!TF_VERIFY(srcTextureObject)) {
         return false;
     }
 
     const auto * const srcSamplerObject =
-        dynamic_cast<Sampler*>(
+        dynamic_cast<HdStUvSamplerObject*>(
             srcTextureHandle->GetSamplerObject().get());
     if (!TF_VERIFY(srcSamplerObject)) {
         return false;
@@ -92,37 +90,32 @@ _GetSrcDimensionsTextureAndSampler(
     return true;
 }
 
-bool
-_ValidTextureObject(
-    const HdStTextureObjectSharedPtr& textureObject)
-{
-    if (dynamic_cast<HdStDynamicCubemapTextureObject*>(textureObject.get())) {
-        return true;
-    }
-
-    if (dynamic_cast<HdStDynamicUvTextureObject*>(textureObject.get())) {
-        return true;
-    }
-
-    return false;
-}
-
 HgiShaderTextureType
 _GetHgiShaderTextureType(
-    const HdStTextureObjectSharedPtr& textureObject)
+    const HdStDynamicUvTextureObject* const textureObject)
 {
-    if (dynamic_cast<HdStDynamicCubemapTextureObject*>(textureObject.get())) {
-        return HgiShaderTextureTypeCubemapTexture;
+    const HdStTextureType textureType = textureObject->GetTextureType();
+    switch (textureType) {
+        case HdStTextureType::Cubemap: {
+            return HgiShaderTextureTypeCubemapTexture;
+        }
+        case HdStTextureType::Uv: {
+            return HgiShaderTextureTypeTexture;
+        }
+        default: {
+            TF_CODING_ERROR(
+                "Unhandled HdStTextureType value %d",
+                int(textureType));
+            return HgiShaderTextureTypeTexture;
+        }
     }
-
-    return HgiShaderTextureTypeTexture;
 }
 
 int
 _GetLayerCount(
-    const HdStTextureObjectSharedPtr& textureObject)
+    const HdStDynamicUvTextureObject* const textureObject)
 {
-    if (dynamic_cast<HdStDynamicCubemapTextureObject*>(textureObject.get())) {
+    if (textureObject->GetTextureType() == HdStTextureType::Cubemap) {
         return 6;
     }
 
@@ -131,69 +124,23 @@ _GetLayerCount(
 
 HgiTextureType
 _GetHgiTextureType(
-    const HdStTextureObjectSharedPtr& textureObject)
+    const HdStDynamicUvTextureObject* const textureObject)
 {
-    if (dynamic_cast<HdStDynamicCubemapTextureObject*>(textureObject.get())) {
-        return HgiTextureTypeCubemap;
+    const HdStTextureType textureType = textureObject->GetTextureType();
+    switch (textureType) {
+        case HdStTextureType::Cubemap: {
+            return HgiTextureTypeCubemap;
+        }
+        case HdStTextureType::Uv: {
+            return HgiTextureType2D;
+        }
+        default: {
+            TF_CODING_ERROR(
+                "Unhandled HdStTextureType value %d",
+                int(textureType));
+            return HgiTextureType2D;
+        }
     }
-
-    return HgiTextureType2D;
-}
-
-void
-_CreateTexture(
-    HdStTextureObjectSharedPtr& textureObject,
-    const HgiTextureDesc& desc)
-{
-    if (auto * const cubemapTextureObject =
-            dynamic_cast<HdStDynamicCubemapTextureObject*>(
-                textureObject.get())) {
-        cubemapTextureObject->CreateTexture(desc);
-    }
-
-    if (auto * const uvTextureObject =
-            dynamic_cast<HdStDynamicUvTextureObject*>(
-                textureObject.get())) {
-        uvTextureObject->CreateTexture(desc);
-    }
-}
-
-HgiTextureHandle
-_GetTextureHandle(
-    const HdStTextureObjectSharedPtr& textureObject)
-{
-    if (const auto * const cubemapTextureObject =
-            dynamic_cast<HdStDynamicCubemapTextureObject*>(
-                textureObject.get())) {
-        return cubemapTextureObject->GetTexture();
-    }
-
-    if (const auto * const uvTextureObject =
-            dynamic_cast<HdStDynamicUvTextureObject*>(
-                textureObject.get())) {
-        return uvTextureObject->GetTexture();
-    }
-
-    return {};
-}
-
-HgiSamplerHandle
-_GetSampler(
-    const HdStSamplerObjectSharedPtr& samplerObject)
-{
-    if (const auto * const cubemapSamplerObject =
-            dynamic_cast<HdStCubemapSamplerObject*>(
-                samplerObject.get())) {
-        return cubemapSamplerObject->GetSampler();
-    }
-    
-    if (const auto * const uvSamplerObject =
-            dynamic_cast<HdStUvSamplerObject*>(
-                samplerObject.get())) {
-        return uvSamplerObject->GetSampler();
-    }
-
-    return {};
 }
 
 }
@@ -241,8 +188,10 @@ HdSt_DomeLightComputationGPU::Execute(
 
     // Depending on the shader, we are either creating a cubemap texture or
     // a 2D UV texture.
-    auto dstTextureObject = dstTextureHandle->GetTextureObject();
-    if (!TF_VERIFY(_ValidTextureObject(dstTextureObject))) {
+    auto * dstTextureObject =
+        dynamic_cast<HdStDynamicUvTextureObject *>(
+            dstTextureHandle->GetTextureObject().get());
+    if (!TF_VERIFY(dstTextureObject)) {
         return;
     }
 
@@ -301,9 +250,7 @@ HdSt_DomeLightComputationGPU::Execute(
         // Source texture is the cubemap texture generated from the
         // latlong dome light texture.
 
-        if (!_GetSrcDimensionsTextureAndSampler<
-                HdStDynamicCubemapTextureObject,
-                HdStCubemapSamplerObject>(
+        if (!_GetSrcDimensionsTextureAndSampler(
                     shader->GetDomeLightEnvironmentCubemapTextureHandle(),
                     &srcDim,
                     &srcTexture,
@@ -317,9 +264,7 @@ HdSt_DomeLightComputationGPU::Execute(
     } else {
         // Source texture is the latlong dome light texture.
 
-        if (!_GetSrcDimensionsTextureAndSampler<
-                HdStAssetUvTextureObject,
-                HdStUvSamplerObject>(
+        if (!_GetSrcDimensionsTextureAndSampler(
                     shader->GetDomeLightEnvironmentTextureHandle(),
                     &srcDim,
                     &srcTexture,
@@ -352,7 +297,7 @@ HdSt_DomeLightComputationGPU::Execute(
         desc.usage =
             HgiTextureUsageBitsShaderRead | HgiTextureUsageBitsShaderWrite;
         _FillPixelsByteSize(&desc);
-        _CreateTexture(dstTextureObject, desc);
+        dstTextureObject->CreateTexture(desc);
     }
 
     // Create a texture view for the layer we want to write to
@@ -362,7 +307,7 @@ HdSt_DomeLightComputationGPU::Execute(
     texViewDesc.format = HgiFormatFloat16Vec4;
     texViewDesc.sourceFirstLayer = 0;
     texViewDesc.sourceFirstMip = _level;
-    texViewDesc.sourceTexture = _GetTextureHandle(dstTextureObject);
+    texViewDesc.sourceTexture = dstTextureObject->GetTexture();
 
     auto* hdStResourceRegistry =
         static_cast<HdStResourceRegistry*>(resourceRegistry);
@@ -381,8 +326,12 @@ HdSt_DomeLightComputationGPU::Execute(
     texBind0.resourceType = HgiBindResourceTypeCombinedSamplerImage;
     resourceDesc.textures.push_back(std::move(texBind0));
 
-    HgiSamplerHandle dstSampler =
-        _GetSampler(dstTextureHandle->GetSamplerObject());
+    HgiSamplerHandle dstSampler;
+    if (const auto * const dstSamplerObject =
+            dynamic_cast<HdStUvSamplerObject*>(
+                dstTextureHandle->GetSamplerObject().get())) {
+        dstSampler = dstSamplerObject->GetSampler();
+    }
 
     HgiTextureBindDesc texBind1;
     texBind1.bindingIndex = 1;
@@ -463,7 +412,7 @@ void HdSt_DomeLightMipmapComputationGPU::Execute(
     }
 
     auto * const srcTextureObject =
-        dynamic_cast<HdStDynamicCubemapTextureObject*>(
+        dynamic_cast<HdStDynamicUvTextureObject*>(
             srcTextureHandle->GetTextureObject().get());
     if (!TF_VERIFY(srcTextureObject)) {
         return;

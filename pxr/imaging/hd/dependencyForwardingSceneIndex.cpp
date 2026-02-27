@@ -102,10 +102,13 @@ HdDependencyForwardingSceneIndex::_PrimsAdded(
         }
     }});
 
-    for (SdfPath const& rebuildPath : rebuildDependencies) {
+    WorkParallelForTBBRange(rebuildDependencies.range(),
+    [&](const _PathSet::range_type& range) {
+    for (auto it = range.begin(); it != range.end(); ++it) {
+        SdfPath const& rebuildPath = *it;
         _ClearDependencies(rebuildPath);
         _UpdateDependencies(rebuildPath);
-    }
+    }});
 
     if (!_manualGarbageCollect) {
         RemoveDeletedEntries(nullptr, nullptr);
@@ -262,10 +265,13 @@ HdDependencyForwardingSceneIndex::_PrimsRemoved(
 
     // Dependency rebuild done after _PrimDirtied for consistent semantics,
     // and so that we don't invalidate iterators everywhere...
-    for (SdfPath const& rebuildPath : rebuildDependencies) {
+    WorkParallelForTBBRange(rebuildDependencies.range(),
+    [&](const _PathSet::range_type& range) {
+    for (auto it = range.begin(); it != range.end(); ++it) {
+        SdfPath const& rebuildPath = *it;
         _ClearDependencies(rebuildPath);
         _UpdateDependencies(rebuildPath);
-    }
+    }});
 
     if (!_manualGarbageCollect) {
         RemoveDeletedEntries(nullptr, nullptr);
@@ -312,10 +318,13 @@ HdDependencyForwardingSceneIndex::_PrimsDirtied(
 
     // Dependency rebuild done after _PrimDirtied for consistent semantics,
     // and so that we don't invalidate iterators everywhere...
-    for (SdfPath const& rebuildPath : rebuildDependencies) {
+    WorkParallelForTBBRange(rebuildDependencies.range(),
+    [&](const _PathSet::range_type& range) {
+    for (auto it = range.begin(); it != range.end(); ++it) {
+        SdfPath const& rebuildPath = *it;
         _ClearDependencies(rebuildPath);
         _UpdateDependencies(rebuildPath);
-    }
+    }});
 
     if (!_manualGarbageCollect) {
         RemoveDeletedEntries(nullptr, nullptr);

@@ -61,18 +61,18 @@ private:
         using TimeStamp = TraceEvent::TimeStamp;
 
         struct AttributeData {
-            TimeStamp time;
             TfToken key;
             TraceEventNode::AttributeData data;
         };
 
-        _PendingEventNode( const TfToken& key, 
+        inline _PendingEventNode(const TfToken& key, 
                                  TraceCategoryId category,
                                  TimeStamp start,
                                  TimeStamp end,
                                  bool separateEvents,
                                  bool isComplete);
-        TraceEventNodeRefPtr Close();
+        
+        inline TraceEventNodeRefPtr Close();
 
         // Can move this, but not copy it
         _PendingEventNode(const _PendingEventNode&) = delete;
@@ -81,29 +81,28 @@ private:
         _PendingEventNode(_PendingEventNode&&) = default;
         _PendingEventNode& operator= (_PendingEventNode&&) = default;
 
-        TfToken key;
-        TraceCategoryId category;
-        TimeStamp start;
-        TimeStamp end;
-        bool separateEvents;
+        TraceEventNodeRefPtr node;
         bool isComplete;
-        std::vector<TraceEventNodeRefPtr> children;
-        std::vector<AttributeData> attributes;
     };
 
-    void _OnBegin(const TraceThreadId&, const TfToken&, const TraceEvent&);
-    void _OnEnd(const TraceThreadId&, const TfToken&, const TraceEvent&);
-    void _OnData(const TraceThreadId&, const TfToken&, const TraceEvent&);
-    void _OnTimespan(const TraceThreadId&, const TfToken&, const TraceEvent&);
-    void _OnMarker(const TraceThreadId&, const TfToken&, const TraceEvent&);
+    inline void _OnBegin(
+        const TraceThreadId&, const TfToken&, const TraceEvent&);
+    inline void _OnEnd(
+        const TraceThreadId&, const TfToken&, const TraceEvent&);
+    inline void _OnData(
+        const TraceThreadId&, const TfToken&, const TraceEvent&);
+    inline void _OnTimespan(
+        const TraceThreadId&, const TfToken&, const TraceEvent&);
+    inline void _OnMarker(
+        const TraceThreadId&, const TfToken&, const TraceEvent&);
 
     using _PendingNodeStack = std::vector<_PendingEventNode>;
     using _ThreadStackMap = std::map<TraceThreadId, _PendingNodeStack>;
 
-    void _PopAndClose(_PendingNodeStack& stack); 
+    inline void _PopAndClose();
 
     TraceEventNodeRefPtr _root;
-    _ThreadStackMap _threadStacks;
+    _PendingNodeStack _curStack;
     TraceEventTreeRefPtr _tree;
 
     class _CounterAccumulator : public TraceCounterAccumulator {
