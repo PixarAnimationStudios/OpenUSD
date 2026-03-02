@@ -425,6 +425,25 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         self.assertTrue(rigidbody_found)
         self.assertTrue(cube_found)
 
+    def test_rigidbody_collision_multihreading_parse(self):
+        """Check that if a single rigid body has many collision objects, the
+        multithreaded parsing works correctly.
+        """
+        # somewhat arbitrary number - enough to reliably reproduce the
+        # multithreded multiple-colliders-under-one-rigidbody bug, but still
+        # finish in < .5s on my test machine.
+        NUM_COLLIDERS = 1000
+
+        stage = Usd.Stage.CreateInMemory()
+        body = UsdGeom.Xform.Define(stage, "/Body")
+        UsdPhysics.RigidBodyAPI.Apply(body.GetPrim())
+
+        for k in range(NUM_COLLIDERS):
+            sphere = UsdGeom.Sphere.Define(stage, f"/Body/SphereCollider_{k}")
+            UsdPhysics.CollisionAPI.Apply(sphere.GetPrim())
+
+        UsdPhysics.LoadUsdPhysicsFromRange(stage, [Sdf.Path.absoluteRootPath])
+
     def test_filtering_pairs_parse(self):
         stage = Usd.Stage.CreateInMemory()
         self.assertTrue(stage)
