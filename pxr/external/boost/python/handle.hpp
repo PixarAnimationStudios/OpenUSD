@@ -180,7 +180,13 @@ inline handle<T>::handle()
 template <class T>
 inline handle<T>::~handle()
 {
-    python::xdecref(m_p);
+    // This may leak memory (i.e., if the decref isn't called), 
+    // but that should only happen in the context of program termination 
+    // (where the OS will clean up the memory anyway).
+    if (Py_IsInitialized())
+    {
+        python::xdecref(m_p);
+    }
 }
 
 template <class T>

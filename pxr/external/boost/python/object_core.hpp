@@ -426,8 +426,14 @@ inline api::object_base& api::object_base::operator=(api::object_base const& rhs
 
 inline api::object_base::~object_base()
 {
-    assert( Py_REFCNT(m_ptr) > 0 );
-    Py_DECREF(m_ptr);
+    // This may leak memory (i.e., if the decref isn't called), 
+    // but that should only happen in the context of program termination 
+    // (where the OS will clean up the memory anyway).
+    if (Py_IsInitialized())
+    {
+        assert( Py_REFCNT(m_ptr) > 0 );
+        Py_DECREF(m_ptr);
+    }
 }
 
 inline object::object(detail::borrowed_reference p)
