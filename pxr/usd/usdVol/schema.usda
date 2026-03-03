@@ -612,7 +612,7 @@ class ParticleField3DGaussianSplat "ParticleField3DGaussianSplat" (
     )
 
     uniform token sortingModeHint = "zDepth" (
-        allowedTokens = ["zDepth", "cameraDistance"]
+        allowedTokens = ["zDepth", "cameraDistance", "rayHitDistance"]
         customData = { string group = "Metadata" }
         doc = """A hint for the renderer on how to sort the gaussians while
         drawing. Renderers are free to ignore this, but the hint is often
@@ -627,6 +627,11 @@ class ParticleField3DGaussianSplat "ParticleField3DGaussianSplat" (
         particle position when transformed in to the cameras local space.
 
         'cameraDistance': The particles are sorted based on the euclidian
-        distance from the particle to the camera."""
+        distance from the particle to the camera.
+
+        'rayHitDistance': The particles are sorted based on the distance from
+        the camera to where the ray hits the particle (used in ray tracing).
+        Rasterizers that do not support ray tracing may treat this as
+        'cameraDistance'."""
     )
 }

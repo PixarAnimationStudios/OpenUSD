@@ -217,6 +217,10 @@ struct UsdVolTokensType {
     /// 
     /// UsdVolParticleFieldSphericalHarmonicsAttributeAPI
     const TfToken radianceSphericalHarmonicsDegree;
+    /// \brief "rayHitDistance"
+    /// 
+    /// Possible value for UsdVolParticleField3DGaussianSplat::GetSortingModeHintAttr()
+    const TfToken rayHitDistance;
     /// \brief "scales"
     /// 
     /// UsdVolParticleFieldScaleAttributeAPI

@@ -759,7 +759,7 @@ the Gaussian to achieve a perspective correct view."""
         }
     )
     uniform token sortingModeHint = "zDepth" (
-        allowedTokens = ["zDepth", "cameraDistance"]
+        allowedTokens = ["zDepth", "cameraDistance", "rayHitDistance"]
         customData = {
             string userDocBrief = """A renderer hint on how to sort 
 the Gaussian while drawing."""

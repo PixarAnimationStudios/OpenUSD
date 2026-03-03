@@ -60,6 +60,7 @@ void wrapUsdVolTokens()
     _ADD_TOKEN(cls, radianceSphericalHarmonicsCoefficients);
     _ADD_TOKEN(cls, radianceSphericalHarmonicsCoefficientsh);
     _ADD_TOKEN(cls, radianceSphericalHarmonicsDegree);
+    _ADD_TOKEN(cls, rayHitDistance);
     _ADD_TOKEN(cls, scales);
     _ADD_TOKEN(cls, scalesh);
     _ADD_TOKEN(cls, sortingModeHint);

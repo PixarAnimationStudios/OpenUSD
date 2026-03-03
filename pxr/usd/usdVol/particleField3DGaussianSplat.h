@@ -208,6 +208,11 @@ public:
     /// 
     /// 'cameraDistance': The particles are sorted based on the euclidian
     /// distance from the particle to the camera.
+    /// 
+    /// 'rayHitDistance': The particles are sorted based on the distance from
+    /// the camera to where the ray hits the particle (used in ray tracing).
+    /// Rasterizers that do not support ray tracing may treat this as
+    /// 'cameraDistance'.
     ///
     /// | ||
     /// | -- | -- |
@@ -215,7 +220,7 @@ public:
     /// | C++ Type | TfToken |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    /// | \ref UsdVolTokens "Allowed Values" | zDepth, cameraDistance |
+    /// | \ref UsdVolTokens "Allowed Values" | zDepth, cameraDistance, rayHitDistance |
     USDVOL_API
     UsdAttribute GetSortingModeHintAttr() const;
 
