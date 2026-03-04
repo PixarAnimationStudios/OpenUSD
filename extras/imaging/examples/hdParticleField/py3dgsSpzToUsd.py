@@ -298,34 +298,11 @@ def read_spz(filename: str) -> GaussianCloud:
     """
     Read an SPZ file and return Gaussian cloud data.
 
-    Preferred path uses Niantic's official `spz` Python bindings when
-    available.
-    Falls back to local parser only if bindings are not installed.
+    TODO: We have an `spzlib`-based implementation, but keep this converter on
+    the pure-Python parser path until `spzlib` is available on pip as a wheel.
     """
-    try:
-        import spz as spzlib  # type: ignore
-
-        cloud = spzlib.load_spz(filename)
-
-        # Convert arrays to plain Python lists so downstream code is unchanged.
-        # The official bindings expose:
-        # - positions/scales/colors/sh as float arrays
-        # - rotations as quaternion x,y,z,w float arrays
-        # - alphas as pre-sigmoid float array
-        return GaussianCloud(
-            num_points=int(cloud.num_points),
-            sh_degree=int(cloud.sh_degree),
-            antialiased=bool(cloud.antialiased),
-            positions=[float(v) for v in cloud.positions],
-            scales=[float(v) for v in cloud.scales],
-            rotations=[float(v) for v in cloud.rotations],
-            alphas=[float(v) for v in cloud.alphas],
-            colors=[float(v) for v in cloud.colors],
-            sh=[float(v) for v in cloud.sh],
-        )
-    except ImportError:
-        reader = SPZReader(filename)
-        return reader.read()
+    reader = SPZReader(filename)
+    return reader.read()
 
 
 def parse_args() -> argparse.Namespace:
