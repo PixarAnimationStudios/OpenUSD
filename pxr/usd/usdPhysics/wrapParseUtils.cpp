@@ -456,11 +456,17 @@ _PlaneShapeDesc_Repr(const UsdPhysicsPlaneShapeDesc& self)
 }
 
 static std::string
+_CustomShapeDesc_GetCustomGeometryToken(const UsdPhysicsCustomShapeDesc& self)
+{
+    return self.customGeometryToken.GetString();
+}
+
+static std::string
 _CustomShapeDesc_Repr(const UsdPhysicsCustomShapeDesc& self)
 {
     return TfStringPrintf("%sCustomShapeDesc(customGeometryToken=%s), parent %s",
         TF_PY_REPR_PREFIX.c_str(),
-        TfPyRepr(self.customGeometryToken).c_str(),
+        TfPyRepr(self.customGeometryToken.GetString()).c_str(),
         _ShapeDesc_Repr(self).c_str());
 }
 
@@ -855,8 +861,8 @@ void wrapParseUtils()
         bases<UsdPhysicsShapeDesc>>
             cuscls("CustomShapeDesc", no_init);
     cuscls
-        .def_readonly("customGeometryToken", 
-                      &UsdPhysicsCustomShapeDesc::customGeometryToken)
+        .add_property("customGeometryToken",
+                      _CustomShapeDesc_GetCustomGeometryToken)
         .def("__repr__", _CustomShapeDesc_Repr);
 
     class_<UsdPhysicsCubeShapeDesc, 

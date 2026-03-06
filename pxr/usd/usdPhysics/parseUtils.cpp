@@ -2957,7 +2957,8 @@ bool LoadUsdPhysicsFromRange(const UsdStageWeakPtr stage,
     // first get the type
     std::vector<UsdPhysicsObjectType> collisionTypes;
     collisionTypes.resize(collisionPrims.size());
-    std::vector<TfToken> customTokens;
+    std::vector<TfToken> customGeomTokens;
+    customGeomTokens.resize(collisionPrims.size());
     {
         const auto workLambda = [&](const size_t beginIdx, const size_t endIdx)
         {
@@ -2967,18 +2968,18 @@ bool LoadUsdPhysicsFromRange(const UsdStageWeakPtr stage,
                 {
                     TfToken shapeToken;
                     const UsdPhysicsObjectType shapeType =
-                        _GetCollisionType(collisionPrims[i], 
-                                         &customPhysicsTokens->shapeTokens, 
+                        _GetCollisionType(collisionPrims[i],
+                                         &customPhysicsTokens->shapeTokens,
                                          &shapeToken);
                     collisionTypes[i] = shapeType;
                     if (shapeType == UsdPhysicsObjectType::CustomShape)
                     {
-                        customTokens.push_back(shapeToken);
+                        customGeomTokens[i] = shapeToken;
                     }
                 }
                 else
                 {
-                    collisionTypes[i] = _GetCollisionType(collisionPrims[i], 
+                    collisionTypes[i] = _GetCollisionType(collisionPrims[i],
                                                          nullptr, nullptr);
                 }
             }
@@ -2999,6 +3000,7 @@ bool LoadUsdPhysicsFromRange(const UsdStageWeakPtr stage,
     std::vector<UsdPrim> meshShapePrims;
     std::vector<UsdPrim> spherePointsShapePrims;
     std::vector<UsdPrim> customShapePrims;
+    std::vector<TfToken> customTokens;
     for (size_t i = 0; i < collisionTypes.size(); i++)
     {
         UsdPhysicsObjectType type = collisionTypes[i];
@@ -3052,6 +3054,7 @@ bool LoadUsdPhysicsFromRange(const UsdStageWeakPtr stage,
         case UsdPhysicsObjectType::CustomShape:
         {
             customShapePrims.push_back(collisionPrims[i]);
+            customTokens.push_back(customGeomTokens[i]);
         }
         break;
         case UsdPhysicsObjectType::SpherePointsShape:

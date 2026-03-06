@@ -1309,6 +1309,66 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         self.assertTrue(scene_found)
         self.assertTrue(custom_geometry_found)
 
+    def test_custom_geometry_multithreading_parse(self):
+        """Check that many custom-shape colliders parsed in parallel produce
+        the correct customGeometryToken for every descriptor, and that the
+        token-to-descriptor ordering is deterministic.
+        """
+        NUM_CUSTOM_COLLIDERS = 500
+
+        stage = Usd.Stage.CreateInMemory()
+        scene = UsdPhysics.Scene.Define(stage, '/physicsScene')
+
+        body = UsdGeom.Xform.Define(stage, "/Body")
+        UsdPhysics.RigidBodyAPI.Apply(body.GetPrim())
+
+        layer = stage.GetEditTarget().GetLayer()
+
+        # Use two distinct custom API tokens so we can verify that the
+        # right token ends up on the right descriptor.
+        token_a = "CustomGeomA_API"
+        token_b = "CustomGeomB_API"
+
+        expected = []
+        for k in range(NUM_CUSTOM_COLLIDERS):
+            prim_path = f"/Body/CustomCollider_{k}"
+            UsdGeom.Cube.Define(stage, prim_path)
+
+            token = token_a if k % 2 == 0 else token_b
+            expected.append((prim_path, token))
+
+            primSpec = Sdf.CreatePrimInLayer(layer, prim_path)
+            listOp = Sdf.TokenListOp()
+            listOp.prependedItems = [token, "PhysicsCollisionAPI"]
+            primSpec.SetInfo(Usd.Tokens.apiSchemas, listOp)
+
+        custom_tokens = UsdPhysics.CustomUsdPhysicsTokens()
+        custom_tokens.shapeTokens.append(token_a)
+        custom_tokens.shapeTokens.append(token_b)
+
+        ret_dict = UsdPhysics.LoadUsdPhysicsFromRange(
+            stage, [Sdf.Path.absoluteRootPath], [], custom_tokens)
+
+        self.assertIn(UsdPhysics.ObjectType.CustomShape, ret_dict)
+        prim_paths, descs = ret_dict[UsdPhysics.ObjectType.CustomShape]
+
+        self.assertEqual(len(descs), NUM_CUSTOM_COLLIDERS)
+
+        # Build a map from prim path -> expected token for easy lookup,
+        # since the parser may return prims in arbitrary (but internally
+        # consistent) order.
+        expected_map = {p: t for p, t in expected}
+
+        for prim_path, desc in zip(prim_paths, descs):
+            path_str = str(prim_path)
+            self.assertIn(path_str, expected_map,
+                          f"Unexpected prim path {path_str}")
+            self.assertEqual(
+                desc.customGeometryToken, expected_map[path_str],
+                f"Wrong customGeometryToken for {path_str}: "
+                f"got {desc.customGeometryToken}, "
+                f"expected {expected_map[path_str]}")
+
     # simulation owner tests
     def test_rigid_body_simulation_owner_parse(self):
         stage = Usd.Stage.CreateInMemory()
