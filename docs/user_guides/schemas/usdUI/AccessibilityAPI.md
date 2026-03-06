@@ -25,6 +25,12 @@ lightbulb inside. It likes to chase inflatable balls."""
 }
 ```
 
+If needed, accessibility information can be updated across time, such as this example of a crosswalk sign changing from _Walk_ to _Don't Walk_.
+
+```{code-block} usda
+string accessibility:default:label.timeSamples = {0: "Walk", 10: "Don't Walk"}
+```
+
 This is a multiple apply schema, and so may have multiple namespaced 
 accessibility triplets, where an instance name may reflect a given purpose for 
 that triplet. For example, you may desire to express different information for 
