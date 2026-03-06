@@ -25,7 +25,8 @@ lightbulb inside. It likes to chase inflatable balls."""
 }
 ```
 
-If needed, accessibility information can be updated across time, such as this example of a crosswalk sign changing from _Walk_ to _Don't Walk_.
+If needed, accessibility information can be updated across time, such as this 
+example of a crosswalk sign changing from _Walk_ to _Don't Walk_.
 
 ```{code-block} usda
 string accessibility:default:label.timeSamples = {0: "Walk", 10: "Don't Walk"}
