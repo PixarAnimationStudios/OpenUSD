@@ -34,21 +34,21 @@ class FrameSlider(QtWidgets.QSlider):
         #
         # The correct solution is for us to create a QProxyStyle for the
         # application so we can edit the value of the
-        # QStyle.SH_Slider_AbsoluteSetButtons property (to include
+        # QStyle.StyleHint.SH_Slider_AbsoluteSetButtons property (to include
         # LeftButton). Unfortunately QProxyStyle is not yet available
         # in this version of PySide.
         #
         # Instead, we are forced to duplicate the MouseEvent as a
         # MiddleButton event. This creates the exact behavior we
         # want to see from the QSlider.
-        styleHint = QtWidgets.QStyle.SH_Slider_AbsoluteSetButtons
-        if self.style().styleHint(styleHint) == QtCore.Qt.MiddleButton:
-            if event.button() == QtCore.Qt.LeftButton:
+        styleHint = QtWidgets.QStyle.StyleHint.SH_Slider_AbsoluteSetButtons
+        if self.style().styleHint(styleHint) == QtCore.Qt.MouseButton.MiddleButton:
+            if event.button() == QtCore.Qt.MouseButton.LeftButton:
                 event = QtGui.QMouseEvent(
                     event.type(),
                     event.pos(),
-                    QtCore.Qt.MiddleButton,
-                    QtCore.Qt.MiddleButton,
+                    QtCore.Qt.MouseButton.MiddleButton,
+                    QtCore.Qt.MouseButton.MiddleButton,
                     event.modifiers()
                 )
 

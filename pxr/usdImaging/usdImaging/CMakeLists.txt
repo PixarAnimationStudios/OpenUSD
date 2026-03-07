@@ -12,6 +12,7 @@ pxr_library(usdImaging
         geomUtil
         hd
         hdar
+        hdsi
         hio
         pxOsd
         sdf

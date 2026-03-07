@@ -42,6 +42,17 @@ public:
     // 
     const TfToken computeMetadata;
 
+    // Clients register an attribute computation by this name when they define
+    // an attribute expression.
+    //
+    // While this computation can be defined by clients via the
+    // `.AttributeExpression` builder, inputs are not allowed to pull on this
+    // computation directly. Instead, clients pull on `computeValue`, which
+    // may be an alias for this computation if it has been defined for the
+    // attribute. 
+    //
+    const TfToken computeExpression;
+
 private:
     Exec_PrivateBuiltinComputationTokens(
         Exec_BuiltinComputationRegistry &registry);

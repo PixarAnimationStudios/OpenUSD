@@ -16,15 +16,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// A computation that yields the computed value of an attribute.
+/// A computation that yields the resolved value of an attribute.
 ///
-class Exec_ComputeValueComputationDefinition final
+class Exec_ComputeResolvedValueComputationDefinition final
     : public Exec_ComputationDefinition
 {
 public:
-    Exec_ComputeValueComputationDefinition();
+    Exec_ComputeResolvedValueComputationDefinition();
 
-    ~Exec_ComputeValueComputationDefinition() override;
+    ~Exec_ComputeResolvedValueComputationDefinition() override;
 
     TfType GetResultType(
         const EsfObjectInterface &providerObject,

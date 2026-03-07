@@ -5,7 +5,7 @@
 
 class "AbstractTest" (
     customData = {
-        string userDocBrief = "Testing documentation metadata."
+        string userDocBrief = "Testing documentation metadata (Abstract)."
     }
     hidden = true
 )

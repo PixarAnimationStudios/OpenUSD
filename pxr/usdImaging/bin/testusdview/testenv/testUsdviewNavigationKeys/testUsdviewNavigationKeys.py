@@ -21,9 +21,9 @@ def _popupFileMenu(appController):
     appController._processEvents()
 
 def _postAndProcessKeyEvent(key, widget, appController):
-    event = QtGui.QKeyEvent(QtCore.QEvent.KeyPress,
+    event = QtGui.QKeyEvent(QtCore.QEvent.Type.KeyPress,
                             key,
-                            QtCore.Qt.NoModifier)
+                            QtCore.Qt.KeyboardModifier.NoModifier)
     QtWidgets.QApplication.postEvent(widget, event)
     appController._processEvents()
 
@@ -33,7 +33,7 @@ class EscapeSender(QtCore.QObject):
         self._receiver = receiver
 
     def doIt(self, appController):
-        _postAndProcessKeyEvent(QtCore.Qt.Key_Escape, self._receiver, 
+        _postAndProcessKeyEvent(QtCore.Qt.Key.Key_Escape, self._receiver, 
                 appController)
 
 def _testBasic(appController):
@@ -62,7 +62,7 @@ def _testBasic(appController):
     # path hierarchy
     path = Sdf.Path("/World/sets/setModel")
     for i in range(2 * path.pathElementCount):
-        _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj, appController)
+        _postAndProcessKeyEvent(QtCore.Qt.Key.Key_Right, appObj, appController)
 
     assert len(selectionDataModel.getPrims()) == 1
     assert selectionDataModel.getFocusPrim().GetPrimPath() == path, \
@@ -72,7 +72,7 @@ def _testBasic(appController):
     for i in range(1, 2 * path.pathElementCount):
         # Send the event to mainWindow to ensure our app filter reroutes it
         # to the focusWidget.
-        _postAndProcessKeyEvent(QtCore.Qt.Key_Left, appObj, appController)
+        _postAndProcessKeyEvent(QtCore.Qt.Key.Key_Left, appObj, appController)
 
     assert len(selectionDataModel.getPrims()) == 1
     assert selectionDataModel.getFocusPrim().IsPseudoRoot()
@@ -83,10 +83,10 @@ def _testBasic(appController):
     appController._mainWindow.setFocus()
     assert appController._dataModel.currentFrame == startFrame
 
-    _postAndProcessKeyEvent(QtCore.Qt.Key_Right, appObj, appController)
+    _postAndProcessKeyEvent(QtCore.Qt.Key.Key_Right, appObj, appController)
     assert appController._dataModel.currentFrame == startFrame + 1
 
-    _postAndProcessKeyEvent(QtCore.Qt.Key_Left, appObj, appController)
+    _postAndProcessKeyEvent(QtCore.Qt.Key.Key_Left, appObj, appController)
     assert appController._dataModel.currentFrame == startFrame
 
     # Regression tests for bugs #154716, 154665: Make sure we don't try

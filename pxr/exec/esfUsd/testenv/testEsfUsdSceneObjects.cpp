@@ -7,6 +7,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/exec/esfUsd/sceneAdapter.h"
+#include "pxr/exec/esfUsd/stageData.h"
 
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
@@ -54,6 +55,7 @@ struct Fixture
 {
     SdfLayerRefPtr payloadLayer;
     UsdStageRefPtr stage;
+    std::shared_ptr<EsfUsdStageData> stageData;
     EsfJournal * const journal = nullptr;
 
     Fixture()
@@ -106,6 +108,9 @@ struct Fixture
 
         stage = UsdStage::Open(rootLayer);
         TF_AXIOM(stage);
+
+        stageData = EsfUsdStageData::RegisterStage(stage);
+        TF_AXIOM(stageData);
     }
 };
 

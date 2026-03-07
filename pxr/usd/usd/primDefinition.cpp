@@ -22,7 +22,7 @@ UsdPrimDefinition::_ApplyPropertyOrder()
 }
 
 void 
-UsdPrimDefinition::_IntializeForTypedSchema(
+UsdPrimDefinition::_InitializeForTypedSchema(
     const SdfLayerHandle &schematicsLayer,
     const SdfPath &schematicsPrimPath, 
     const VtTokenArray &propertiesToIgnore)
@@ -44,7 +44,7 @@ UsdPrimDefinition::_IntializeForTypedSchema(
 }
 
 void 
-UsdPrimDefinition::_IntializeForAPISchema(
+UsdPrimDefinition::_InitializeForAPISchema(
     const TfToken &apiSchemaName,
     const SdfLayerHandle &schematicsLayer,
     const SdfPath &schematicsPrimPath, 

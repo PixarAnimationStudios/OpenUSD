@@ -28,6 +28,7 @@
 #include "pxr/exec/esf/object.h"
 #include "pxr/exec/esf/stage.h"
 #include "pxr/exec/esfUsd/sceneAdapter.h"
+#include "pxr/exec/esfUsd/stageData.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -225,19 +226,22 @@ public:
 
 private:
 
-    static EsfStage _NewStageFromLayer(const char *layerContents)
+    EsfStage _NewStageFromLayer(const char *layerContents)
     {
         const SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
         layer->ImportFromString(layerContents);
         TF_AXIOM(layer);
         UsdStageRefPtr usdStage = UsdStage::Open(layer);
         TF_AXIOM(usdStage);
+        _stageData = EsfUsdStageData::RegisterStage(usdStage);
+        TF_AXIOM(_stageData);
         return EsfUsdSceneAdapter::AdaptStage(usdStage);
     }
 
 private:
     // Hold an EsfStage by unique_ptr because it's not default-constructible.
     std::unique_ptr<EsfStage> _stage;
+    std::shared_ptr<EsfUsdStageData> _stageData;
 };
 
 // Test that Exec_ResolveInput finds a computation on the origin prim.

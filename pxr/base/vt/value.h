@@ -1449,6 +1449,15 @@ ARCH_PRAGMA_POP
 
     VT_API TfPyObjWrapper _GetPythonObject() const;
 
+    // This grants friend access to tests.  This is necessary to test the
+    // _GetHeldObjectPtrForDebugger method, which is specifically made private
+    // in order to restrict its usage to debuggers.
+    friend struct Vt_ValueTestAccess;
+
+    // Return the address of the held object or nullptr if empty.  This function
+    // is intended for use within debuggers.
+    VT_API const void *_GetHeldObjectPtrForDebugger() const;
+
     _Storage _storage;
     TfPointerAndBits<const _TypeInfo> _info;
 };

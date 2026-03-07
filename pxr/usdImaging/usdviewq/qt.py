@@ -66,9 +66,6 @@ elif PySideModule == 'PySide6':
     from PySide6.QtGui import QSurfaceFormat as QGLFormat
     from PySide6 import QtGui as QtActionWidgets
 
-    if not hasattr(QtCore.Qt, 'MatchRegExp'):
-        QtCore.Qt.MatchRegExp = QtCore.Qt.MatchRegularExpression
-
     def isContextInitialised(self):
         return True
 

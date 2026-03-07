@@ -806,6 +806,14 @@ struct UsdShadeConnectionSourceInfo {
     bool operator!=(const UsdShadeConnectionSourceInfo &other) const {
         return !(*this == other);
     }
+
+    template <typename HashState>
+    friend void TfHashAppend(HashState& h, const UsdShadeConnectionSourceInfo& info) {
+        // Using the same criteria as operator==(...)
+        h.Append(info.sourceName);
+        h.Append(info.sourceType);
+        h.Append(info.source.GetPrim());
+    }
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,0 +1,24 @@
+#usda 1.0
+(
+    "Test schema file for testExecUsdBuiltinComputations"
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "testExecUsdBuiltinComputations"
+        string libraryPath      = "pxr/exec/exec"
+        bool skipCodeGeneration = true
+    }
+)
+{
+}
+
+class CustomSchema "CustomSchema" (
+    inherits = </Typed>
+)
+{
+    string attr
+}

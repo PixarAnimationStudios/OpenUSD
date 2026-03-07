@@ -29,15 +29,67 @@ class TestUsdPrimRange(unittest.TestCase):
             x = list(Usd.PrimRange(pseudoRoot))
             self.assertEqual(x, [pseudoRoot, foo, faz])
 
-            # Create a tree iterator and ensure that /Bar and its descendants aren't
-            # traversed by it.
+            # Create a tree iterator and ensure that /Bar and its descendants
+            # aren't traversed by it.
             x = list(Usd.PrimRange(pseudoRoot, Usd.PrimIsDefined))
             self.assertEqual(x, [pseudoRoot, foo, faz])
 
-            # When we ask for undefined prim rooted at /Bar, verify that bar and baz
-            # are returned.
+            # When we ask for undefined prim rooted at /Bar, verify that bar and
+            # baz are returned.
             x = list(Usd.PrimRange(bar, ~Usd.PrimIsDefined))
             self.assertEqual(x, [bar, baz])
+
+    def test_PrimHasClassSpecifier(self):
+        for fmt in allFormats:
+            stageFile = 'testHasClassSpecifier.' + fmt
+            stage = Usd.Stage.Open(stageFile)
+
+            root = stage.GetPrimAtPath('/a1')
+            actual = []
+            expected = [stage.GetPrimAtPath(x) for x in ['/a1/a2']]
+            for prim in Usd.PrimRange.AllPrims(root):
+                if prim.HasClassSpecifier():
+                    actual.append(prim)
+            self.assertEqual(actual, expected)
+
+            root = stage.GetPrimAtPath('/b1')
+            actual = []
+            expected = [stage.GetPrimAtPath(x) for x in 
+                        ['/b1/b2', '/b1/b2/b3/b4/b5/b6']]
+            for prim in Usd.PrimRange(root, Usd.PrimIsActive):
+                if prim.HasClassSpecifier():
+                    actual.append(prim)
+            self.assertEqual(actual, expected)
+
+            # Note that the over is not included in our traversal.
+            root = stage.GetPrimAtPath('/c1')
+            actual = list(Usd.PrimRange(root, Usd.PrimHasClassSpecifier))
+            expected = [stage.GetPrimAtPath(x) for x in 
+                        ['/c1', '/c1/c2', '/c1/c2/c3']]
+            self.assertEqual(actual, expected)
+
+            root = stage.GetPrimAtPath('/b1')
+            actual = list(Usd.PrimRange(
+                root, ~Usd.PrimIsDefined | Usd.PrimHasClassSpecifier))
+            expected = [stage.GetPrimAtPath(x) for x in
+                        ['/b1', '/b1/b2', '/b1/b2/b3', '/b1/b2/b3/b4',
+                         '/b1/b2/b3/b4/b5','/b1/b2/b3/b4/b5/b6']]
+            self.assertEqual(actual, expected)
+                          
+            root = stage.GetPrimAtPath('/b1')
+            actual = list(Usd.PrimRange(root, Usd.PrimHasClassSpecifier))
+            expected = []
+            self.assertEqual(actual, expected)
+
+            root = stage.GetPrimAtPath('/b1/b2')
+            actual = list(Usd.PrimRange(root, Usd.PrimHasClassSpecifier))
+            expected = [stage.GetPrimAtPath('/b1/b2')]
+            self.assertEqual(actual, expected)
+
+            root = stage.GetPrimAtPath('/b1/b2/b3/b4/b5/b6')
+            actual = list(Usd.PrimRange(root, Usd.PrimHasClassSpecifier))
+            expected = [stage.GetPrimAtPath('/b1/b2/b3/b4/b5/b6')]
+            self.assertEqual(actual, expected)
 
     def test_PrimHasDefiningSpecifier(self):
         for fmt in allFormats:

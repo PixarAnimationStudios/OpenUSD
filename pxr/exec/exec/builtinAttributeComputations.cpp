@@ -11,7 +11,6 @@
 #include "pxr/exec/exec/program.h"
 #include "pxr/exec/exec/providerResolution.h"
 
-#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/exec/ef/time.h"
 #include "pxr/exec/esf/attribute.h"
@@ -22,22 +21,24 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 //
-// computeValue
+// computeResolvedValue
 //
 
-Exec_ComputeValueComputationDefinition::Exec_ComputeValueComputationDefinition()
+Exec_ComputeResolvedValueComputationDefinition
+::Exec_ComputeResolvedValueComputationDefinition()
     : Exec_ComputationDefinition(
         TfType::GetUnknownType(),
-        ExecBuiltinComputations->computeValue)
+        ExecBuiltinComputations->computeResolvedValue)
     , _inputKeys(_MakeInputKeys())
 {
 }
 
-Exec_ComputeValueComputationDefinition::~Exec_ComputeValueComputationDefinition()
+Exec_ComputeResolvedValueComputationDefinition
+::~Exec_ComputeResolvedValueComputationDefinition()
     = default;
 
 TfType
-Exec_ComputeValueComputationDefinition::GetResultType(
+Exec_ComputeResolvedValueComputationDefinition::GetResultType(
     const EsfObjectInterface &providerObject,
     const TfToken &,
     EsfJournal *const journal) const
@@ -53,7 +54,7 @@ Exec_ComputeValueComputationDefinition::GetResultType(
 }
 
 TfType
-Exec_ComputeValueComputationDefinition::GetExtractionType(
+Exec_ComputeResolvedValueComputationDefinition::GetExtractionType(
     const EsfObjectInterface &providerObject) const
 {
     if (!TF_VERIFY(providerObject.IsAttribute())) {
@@ -67,15 +68,15 @@ Exec_ComputeValueComputationDefinition::GetExtractionType(
 }
 
 Exec_InputKeyVectorConstRefPtr
-Exec_ComputeValueComputationDefinition::GetInputKeys(
-    const EsfObjectInterface &providerObject,
+Exec_ComputeResolvedValueComputationDefinition::GetInputKeys(
+    const EsfObjectInterface &,
     EsfJournal *) const
 {
     return _inputKeys;
 }
 
 VdfNode *
-Exec_ComputeValueComputationDefinition::CompileNode(
+Exec_ComputeResolvedValueComputationDefinition::CompileNode(
     const EsfObjectInterface &providerObject,
     const TfToken &,
     EsfJournal *const nodeJournal,
@@ -102,7 +103,7 @@ Exec_ComputeValueComputationDefinition::CompileNode(
 }
 
 Exec_InputKeyVectorConstRefPtr
-Exec_ComputeValueComputationDefinition::_MakeInputKeys()
+Exec_ComputeResolvedValueComputationDefinition::_MakeInputKeys()
 {
     const Exec_InputKeyVectorRefPtr inputKeys =
         Exec_InputKeyVector::MakeShared(std::initializer_list<Exec_InputKey>{{

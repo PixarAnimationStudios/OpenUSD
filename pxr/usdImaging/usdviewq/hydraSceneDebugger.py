@@ -59,7 +59,7 @@ class HydraSceneDebugger(QtWidgets.QWidget):
 
         self.__observer = HydraObserver()
 
-        self.__splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        self.__splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.__mainLayout.addWidget(self.__splitter, 10)
 
         self.__siTreeWidget = _SceneIndexTreeWidget(self.__observer)
@@ -133,8 +133,8 @@ class HydraSceneDebugger(QtWidgets.QWidget):
 
         def _ItemEntered(item):
             menuTreeWidget.setCurrentItem(item, 0,
-                QtCore.QItemSelectionModel.Select |
-                    QtCore.QItemSelectionModel.Clear)
+                QtCore.QItemSelectionModel.SelectionFlag.Select |
+                    QtCore.QItemSelectionModel.SelectionFlag.Clear)
 
         menuTreeWidget.itemEntered.connect(_ItemEntered)
 
@@ -663,8 +663,8 @@ class _ValueItemModel(QtCore.QAbstractItemModel):
         self.__typeStr = typeStr
 
     # base is good for scalars we'll use str() on the held type
-    def data(self, modelIndex, role=QtCore.Qt.DisplayRole):
-        if role != QtCore.Qt.DisplayRole:
+    def data(self, modelIndex, role=QtCore.Qt.ItemDataRole.DisplayRole):
+        if role != QtCore.Qt.ItemDataRole.DisplayRole:
             return None
 
         if self.__isArray:
@@ -679,9 +679,9 @@ class _ValueItemModel(QtCore.QAbstractItemModel):
 
         return None
 
-    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
+    def headerData(self, section, orientation, role=QtCore.Qt.ItemDataRole.DisplayRole):
 
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if section == 0:
                 return self.__typeStr
             elif section == 1 and self.__isArray:
@@ -834,8 +834,8 @@ class _ObserverLoggingItemModel(QtCore.QAbstractItemModel):
         self.__entries.clear()
         self.endResetModel()
 
-    def data(self, modelIndex, role=QtCore.Qt.DisplayRole):
-        if role != QtCore.Qt.DisplayRole:
+    def data(self, modelIndex, role=QtCore.Qt.ItemDataRole.DisplayRole):
+        if role != QtCore.Qt.ItemDataRole.DisplayRole:
             return None
 
         internalPtr = modelIndex.internalPointer()
@@ -861,8 +861,8 @@ class _ObserverLoggingItemModel(QtCore.QAbstractItemModel):
 
         return None
 
-    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
-        if role == QtCore.Qt.DisplayRole:
+    def headerData(self, section, orientation, role=QtCore.Qt.ItemDataRole.DisplayRole):
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if section == 0:
                 return "Notice Type/ Prim Path"
             elif section == 1:

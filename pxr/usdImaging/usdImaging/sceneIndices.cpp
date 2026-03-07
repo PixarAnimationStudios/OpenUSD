@@ -24,12 +24,14 @@
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
 #include "pxr/usdImaging/usdImaging/materialBindingsSchema.h"
 
-#include "pxr/imaging/hd/overlayContainerDataSource.h"
-#include "pxr/imaging/hd/retainedDataSource.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/purposeSchema.h"
+#include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/noticeBatchingSceneIndex.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/purposeSchema.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexUtil.h"
+#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hdsi/locatorCachingSceneIndex.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
@@ -204,6 +206,14 @@ UsdImagingCreateSceneIndices(
         // haven't been chained yet.
         result.stageSceneIndex->SetStage(createInfo.stage);
     }
+
+    // Cache materials to avoid repeated queries back to UsdShade,
+    // ex: for traversing node connections.  Do this after the
+    // stage scene index so we don't need to rely on any extra
+    // dependency invalidation.
+    sceneIndex = HdsiLocatorCachingSceneIndex::New(
+        sceneIndex, HdMaterialSchema::GetDefaultLocator(),
+        HdPrimTypeTokens->material);
     
     if (createInfo.overridesSceneIndexCallback) {
         sceneIndex =

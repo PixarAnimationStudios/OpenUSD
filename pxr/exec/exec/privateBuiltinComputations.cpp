@@ -22,6 +22,12 @@ Exec_PrivateBuiltinComputationTokens::Exec_PrivateBuiltinComputationTokens(
     Exec_BuiltinComputationRegistry &registry)
     : computeConstant(registry._RegisterBuiltinComputation("computeConstant"))
     , computeMetadata(registry._RegisterBuiltinComputation("computeMetadata"))
+    , computeExpression(registry._RegisterBuiltinComputation(
+        "computeExpression",
+        Exec_BuiltinComputationTraits()
+            .SetHasDefinition(false)
+            .SetIsUserDefinable(true)
+            .SetIsInputConsumable(false)))
 {}
 
 PXR_NAMESPACE_CLOSE_SCOPE

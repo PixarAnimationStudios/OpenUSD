@@ -6,6 +6,8 @@
 //
 #include "pxr/imaging/hd/dependencyForwardingSceneIndex.h"
 #include "pxr/imaging/hd/dependenciesSchema.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/utils.h"
@@ -30,12 +32,29 @@ HdDependencyForwardingSceneIndex::SetManualGarbageCollect(
 HdSceneIndexPrim
 HdDependencyForwardingSceneIndex::GetPrim(const SdfPath &primPath) const
 {
+    HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
+
+    // Check incoming prim for dependencies.
     if (_affectedPrimToDependsOnPathsMap.find(primPath) == 
-            _affectedPrimToDependsOnPathsMap.end()) {
-        _UpdateDependencies(primPath);
+        _affectedPrimToDependsOnPathsMap.end()) {
+        _UpdateDependencies(primPath, prim);
     }
 
-    return _GetInputSceneIndex()->GetPrim(primPath);
+    // HdDependencyForwardingSceneIndex implements invalidation for
+    // incoming dependencies, so downstream observers need not bother.
+    // Block the dependencies from further processing.
+    if (_affectedPrimToDependsOnPathsMap.find(primPath) != 
+        _affectedPrimToDependsOnPathsMap.end()) {
+        static const auto blockDeps =
+            HdRetainedContainerDataSource::New(
+                HdDependenciesSchema::GetSchemaToken(),
+                HdBlockDataSource::New());
+        prim.dataSource =
+            HdOverlayContainerDataSource::OverlayedContainerDataSources(
+                blockDeps, prim.dataSource);
+    }
+
+    return prim;
 }
 
 SdfPathVector
@@ -461,15 +480,19 @@ void
 HdDependencyForwardingSceneIndex::_UpdateDependencies(
     const SdfPath &primPath) const
 {
-    HdContainerDataSourceHandle primDataSource =
-        _GetInputSceneIndex()->GetPrim(primPath).dataSource;
+    _UpdateDependencies(primPath, _GetInputSceneIndex()->GetPrim(primPath));
+}
 
-    if (!primDataSource) {
+void
+HdDependencyForwardingSceneIndex::_UpdateDependencies(
+    const SdfPath &primPath,
+    HdSceneIndexPrim const& prim) const
+{
+    if (!prim.dataSource) {
         return;
     }
-
     HdDependenciesSchema dependenciesSchema =
-            HdDependenciesSchema::GetFromParent(primDataSource);
+            HdDependenciesSchema::GetFromParent(prim.dataSource);
 
     // NOTE: This early exit prevents addition of an entry within
     //       _affectedPrimToDependsOnPathsMap if there isn't one already.

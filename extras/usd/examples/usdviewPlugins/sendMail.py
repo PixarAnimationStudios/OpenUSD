@@ -163,7 +163,7 @@ def _GenerateButtons(dialog, fields, allowScreenCapSel):
     if allowScreenCapSel:
         screenCapSel = QtWidgets.QComboBox()
         screenCapSel.setSizeAdjustPolicy(
-                QtWidgets.QComboBox.AdjustToContents)
+                QtWidgets.QComboBox.SizeAdjustPolicy.AdjustToContents)
         screenCapSel.addItem("Window")
         screenCapSel.addItem("Viewport")
 

@@ -58,6 +58,11 @@ public:
     /// \see UsdObject::GetPrim
     ESF_API EsfPrim GetPrim(EsfJournal *journal) const;
 
+    /// Returns the paths of all attributes that have connections that target
+    /// the object.
+    ///
+    ESF_API SdfPathVector GetIncomingConnections(EsfJournal *journal) const;
+
     /// \see UsdObject::GetStage
     EsfStage GetStage() const {
         return _GetStage();
@@ -134,6 +139,7 @@ private:
     virtual bool _IsValid() const = 0;
     virtual TfToken _GetName() const = 0;
     virtual EsfPrim _GetPrim() const = 0;
+    virtual SdfPathVector _GetIncomingConnections() const = 0;
     virtual EsfSchemaConfigKey _GetSchemaConfigKey() const = 0;
     virtual VtValue _GetMetadata(const TfToken &key) const = 0;
     virtual bool _IsValidMetadataKey(const TfToken &key) const = 0;

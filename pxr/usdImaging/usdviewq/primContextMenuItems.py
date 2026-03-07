@@ -286,8 +286,8 @@ class CopyPrimPathMenuItem(PrimContextMenuItem):
         pathStrings = '\n'.join(pathlist)
 
         cb = QtWidgets.QApplication.clipboard()
-        cb.setText(pathStrings, QtGui.QClipboard.Selection )
-        cb.setText(pathStrings, QtGui.QClipboard.Clipboard )
+        cb.setText(pathStrings, QtGui.QClipboard.Mode.Selection )
+        cb.setText(pathStrings, QtGui.QClipboard.Mode.Clipboard )
 
 #
 #  Copies the path of the first-selected prim's enclosing model
@@ -315,8 +315,8 @@ class CopyModelPathMenuItem(PrimContextMenuItem):
     def RunCommand(self):
         modelPath = str(self._modelPrim.GetPath())
         cb = QtWidgets.QApplication.clipboard()
-        cb.setText(modelPath, QtGui.QClipboard.Selection )
-        cb.setText(modelPath, QtGui.QClipboard.Clipboard )
+        cb.setText(modelPath, QtGui.QClipboard.Mode.Selection )
+        cb.setText(modelPath, QtGui.QClipboard.Mode.Clipboard )
 
 
 

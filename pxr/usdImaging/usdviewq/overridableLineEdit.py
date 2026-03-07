@@ -18,7 +18,7 @@ class OverridableLineEdit(QtWidgets.QLineEdit):
         # create the clear button.
         self._clearButton = QtWidgets.QToolButton(self)
         self._clearButton.setText('x')
-        self._clearButton.setCursor(QtCore.Qt.ArrowCursor)
+        self._clearButton.setCursor(QtCore.Qt.CursorShape.ArrowCursor)
         self._clearButton.setFixedSize(16, 16)
         self._clearButton.hide()
         self._defaultText = ''  # default value holder
@@ -29,7 +29,7 @@ class OverridableLineEdit(QtWidgets.QLineEdit):
     # properly place the button
     def resizeEvent(self, event):
         sz = QtCore.QSize(self._clearButton.size())
-        frameWidth = self.style().pixelMetric(QtWidgets.QStyle.PM_DefaultFrameWidth)
+        frameWidth = self.style().pixelMetric(QtWidgets.QStyle.PixelMetric.PM_DefaultFrameWidth)
         self._clearButton.move(self.rect().right() - frameWidth - sz.width(),
                                (self.rect().bottom() + 1 - sz.height())/2)
 

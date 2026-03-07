@@ -16,11 +16,14 @@
 #include "pxr/base/tf/functionRef.h"
 #include "pxr/base/tf/notice.h"
 #include "pxr/base/trace/trace.h"
-#include "pxr/exec/exec/systemChangeProcessor.h"
 #include "pxr/exec/esfUsd/sceneAdapter.h"
+#include "pxr/exec/esfUsd/stageData.h"
+#include "pxr/exec/exec/systemChangeProcessor.h"
 #include "pxr/usd/usd/notice.h"
 
 #include <tbb/concurrent_vector.h>
+
+#include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -44,6 +47,7 @@ private:
         const UsdNotice::ObjectsChanged &objectsChanged);
 
     ExecUsdSystem *const _system;
+    std::shared_ptr<EsfUsdStageData> _stageData;
     TfNotice::Key _objectsChangedNoticeKey;
 };
 
@@ -136,6 +140,7 @@ ExecUsdSystem::_NoticeListener::_NoticeListener(
     ExecUsdSystem *const system,
     const UsdStageConstRefPtr &stage)
     : _system(system)
+    , _stageData(EsfUsdStageData::RegisterStage(stage))
     , _objectsChangedNoticeKey(
         TfNotice::Register(
             TfCreateWeakPtr(this),
@@ -181,20 +186,40 @@ ExecUsdSystem::_NoticeListener::_DidObjectsChanged(
 
     ExecSystem::_ChangeProcessor changeProcessor(_system);
 
+    // Queue up paths of targeted objects whose incoming attribute connections
+    // have been added and/or removed.
+    EsfUsdStageData::ChangedPathSet changedTargetPaths;
+
     for (const SdfPath &path : resyncedPaths) {
         changeProcessor.DidResync(path);
+
+        _stageData->UpdateForResync(path, &changedTargetPaths);
     }
 
     for (const SdfPath &path :
         objectsChanged.GetResolvedAssetPathsResyncedPaths()) {
         changeProcessor.DidResync(path);
+
+        _stageData->UpdateForResync(path, &changedTargetPaths);
     }
 
     for (const SdfPath &path : objectsChanged.GetChangedInfoOnlyPaths()) {
-        changeProcessor.DidChangeInfoOnly(
-            path,
-            objectsChanged.GetChangedFields(path));
+        const TfTokenVector changedFields =
+            objectsChanged.GetChangedFields(path);
+
+        changeProcessor.DidChangeInfoOnly(path, changedFields);
+
+        if (std::find(changedFields.begin(), changedFields.end(),
+                      SdfFieldKeys->ConnectionPaths) != changedFields.end()) {
+            _stageData->UpdateForChangedAttributeConnections(
+                path, &changedTargetPaths);
+        }
     }
+
+// TODO:
+//     for (const SdfPath &path : changedTargetPaths) {
+//         changeProcessor.DidChangeIncomingConnections(path);
+//     };
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

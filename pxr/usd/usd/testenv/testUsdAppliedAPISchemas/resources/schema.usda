@@ -298,6 +298,18 @@ class "TestTypedSchemaForAutoApplyAbstractBase" (
     )
 }
 
+class "TestAbstractTypedWithAPIApplied" (
+    inherits = </Typed>
+    prepend apiSchemas = ["TestSingleApplyAPI"]
+    doc = "Testing abstract typed schema"
+    hidden = true
+)
+{
+    int abstractAttr = 1 (
+        doc = "Testing abstract typed schema attribute"
+    )
+}
+
 class TestDerivedTypedSchemaForAutoApplyAbstractBase "TestDerivedTypedSchemaForAutoApplyAbstractBase" (
     inherits = </TestTypedSchemaForAutoApplyAbstractBase>
     doc = "Testing typed schema"

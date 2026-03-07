@@ -417,7 +417,7 @@ public:
     /// 
     /// These are separate from the auto-apply schemas that are built in to the 
     /// applied API schema types themselves and can be defined in any plugin to 
-    /// map any applied API schema to any concrete prim type.
+    /// map any applied API schema to any typed prim type.
     ///
     /// Note that GetAutoApplyAPISchemas will already include API schemas 
     /// collected from this method; this function is provided for clients that
@@ -493,6 +493,16 @@ public:
         const std::string &nameTemplate);
 
     /// Finds the prim definition for the given \p typeName token if 
+    /// \p typeName is a registered abstract typed schema type. Returns null if
+    /// it is not.
+    const UsdPrimDefinition* FindAbstractPrimDefinition(
+        const TfToken &typeName) const {
+        const auto it = _abstractTypedPrimDefinitions.find(typeName);
+        return it != _abstractTypedPrimDefinitions.end() ?
+            it->second.get() : nullptr;
+    }
+
+    /// Finds the prim definition for the given \p typeName token if 
     /// \p typeName is a registered concrete typed schema type. Returns null if
     /// it is not.
     const UsdPrimDefinition* FindConcretePrimDefinition(
@@ -560,6 +570,9 @@ private:
     class _SchemaDefInitHelper;
 
     std::vector<SdfLayerRefPtr> _schematicsLayers;
+
+    std::unordered_map<TfToken, const std::unique_ptr<UsdPrimDefinition>,
+         TfHash> _abstractTypedPrimDefinitions;
 
     std::unordered_map<TfToken, const std::unique_ptr<UsdPrimDefinition>,
          TfHash> _concreteTypedPrimDefinitions;

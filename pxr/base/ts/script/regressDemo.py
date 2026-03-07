@@ -40,9 +40,9 @@ class KeyMonitor(QtCore.QObject):
 
     def eventFilter(self, obj, event):
 
-        if event.type() == QtCore.QEvent.KeyPress \
-                and event.modifiers() == QtCore.Qt.ControlModifier \
-                and event.key() == QtCore.Qt.Key_Q:
+        if event.type() == QtCore.QEvent.Type.KeyPress \
+                and event.modifiers() == QtCore.Qt.KeyboardModifier.ControlModifier \
+                and event.key() == QtCore.Qt.Key.Key_Q:
 
             g_app.exit()
             return True
@@ -66,7 +66,7 @@ class Controller:
         museumBoxLayout = QtWidgets.QVBoxLayout(museumBox)
         self._museumList = QtWidgets.QListWidget()
         self._museumList.setSelectionMode(
-            QtWidgets.QAbstractItemView.SingleSelection)
+            QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         museumBoxLayout.addWidget(self._museumList)
 
         self._modeRadios = []
@@ -405,7 +405,7 @@ class CanvasWidget(QtWidgets.QWidget):
         # Set up for pick rendering unless we're already dragging.
         if not self._dragging:
             self._pickImage = QtGui.QImage(
-                self.size(), QtGui.QImage.Format_Grayscale8)
+                self.size(), QtGui.QImage.Format.Format_Grayscale8)
             self._pickImage.fill(self.NoPick)
             self._pickables = []
             self._pickPainter = QtGui.QPainter(self._pickImage)

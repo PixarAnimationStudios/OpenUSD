@@ -20,11 +20,16 @@
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/materialFilteringSceneIndexBase.h"
 #include "pxr/imaging/hd/materialNetworkInterface.h"
+#include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/sceneIndexUtil.h"
+#include "pxr/imaging/hd/tokens.h"
 #if HD_API_VERSION >= 76
 #include "pxr/imaging/hdsi/nodeIdentifierResolvingSceneIndex.h"
+#endif
+#if HDSI_API_VERSION >= 19
+#include "pxr/imaging/hdsi/locatorCachingSceneIndex.h"
 #endif
 
 #include <string>
@@ -177,6 +182,8 @@ HdPrman_MatFiltSceneIndexPlugin::GetInsertionPhase()
     return 100;
 }
 
+extern TfEnvSetting<bool> USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX;
+
 HdSceneIndexBaseRefPtr
 HdPrman_MatFiltSceneIndexPlugin::_AppendSceneIndex(
         const HdSceneIndexBaseRefPtr &inputScene,
@@ -190,6 +197,22 @@ HdPrman_MatFiltSceneIndexPlugin::_AppendSceneIndex(
     // 3. Node ID Resolution
 
     HdSceneIndexBaseRefPtr si = inputScene;
+
+#if HDSI_API_VERSION >= 19
+    // XXX Avoid incompatibility between the below and Hydra1.
+    // This is a temporary measure until the Hydra1 codepath is
+    // retired from the tree, at which point this can be
+    // removed.
+    if (TfGetEnvSetting(USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX)) {
+        // Cache the material prior to Matfilt operations, to avoid
+        // repeated access to the underlying scene data (ex: USD) while
+        // they re-traverse the network to apply each filter.
+        si = HdsiLocatorCachingSceneIndex::AddDependencyForwardingAndCache(
+            si, HdMaterialSchema::GetDefaultLocator(),
+            HdPrimTypeTokens->material);
+    }
+#endif
+
      // XXX: Hardcoded for now to match the legacy matfilt logic.
     static const bool _resolveVstructsWithConditionals = true;
     si = HdPrman_VirtualStructResolvingSceneIndex::New(

@@ -56,7 +56,7 @@ public:
     /// 
     /// ```{.cpp}
     /// self.PrimComputation(_tokens->myComputation)
-    ///     .Callback<EfTime>( /* . . . */ )
+    ///     .Callback<EfTime>(&_MyCallback)
     ///     .Inputs(
     ///         Stage()
     ///             .Computation<EfTime>(ExecBuiltinComputations->computeTime)
@@ -79,7 +79,9 @@ public:
     /// Computes the provider attribute's value.
     ///
     /// \returns a value whose type is the provider attribute's scalar value
-    /// type.
+    /// type. If the attribute has registered an
+    /// [attribute expression](#Exec_ComputationBuilder::AttributeExpression),
+    /// this may produce a value of any type.
     ///
     /// \note
     /// The computation provider must be an attribute.
@@ -88,7 +90,7 @@ public:
     /// 
     /// ```{.cpp}
     /// self.PrimComputation(_tokens->myComputation)
-    ///     .Callback<double>( /* . . . */ )
+    ///     .Callback<double>(&_MyCallback)
     ///     .Inputs(
     ///         Attribute(_tokens->myAttribute)
     ///             .Computation<double>(ExecBuiltinComputations->computeValue)
@@ -98,6 +100,50 @@ public:
     ///
     /// \hideinitializer
     const TfToken computeValue;
+
+    /// Computes the provider attribute's resolved value as authored in scene
+    /// description.
+    ///
+    /// This computation always produces the resolved value of an attribute,
+    /// even if an attribute has registered an
+    /// [attribute expression](#Exec_ComputationBuilder::AttributeExpression).
+    ///
+    /// \returns a value whose type is the provider attribute's scalar value
+    /// type.
+    ///
+    /// # Example
+    ///
+    /// ```{.cpp}
+    /// self.PrimComputation(_tokens->myComputation)
+    ///     .Callback<double>(&_MyCallback)
+    ///     .Inputs(
+    ///         Attribute(_tokens->myAttribute)
+    ///             .Computation(ExecBuiltinComputations->computeResolvedValue)
+    ///     );
+    /// ```
+    ///
+    /// \hideinitializer
+    const TfToken computeResolvedValue;
+
+    /// Computes the provider's scene path.
+    ///
+    /// \returns the path of the provider object, as an SdfPath.
+    ///
+    /// # Example
+    ///
+    /// ```{.cpp}
+    /// self.PrimComputation(_tokens->pathAsString)
+    ///     .Callback<std::string>(+[](const VdfContext &ctx) {
+    ///         return ctx.GetInputValue<SdfPath>(
+    ///             ExecBuiltinComputations->computePath).GetString();
+    ///     })
+    ///     .Inputs(
+    ///         Computation(ExecBuiltinComputations->computePath)
+    ///     );
+    /// ```
+    ///
+    /// \hideinitializer
+    const TfToken computePath;
 
     /// @} // Attribute computations
 

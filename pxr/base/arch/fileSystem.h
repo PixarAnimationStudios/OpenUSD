@@ -17,6 +17,7 @@
 #include "pxr/base/arch/inttypes.h"
 #include <memory>
 #include <cstdio>
+#include <cstdint>
 #include <string>
 #include <set>
 
@@ -133,6 +134,7 @@ ArchOpenFile(char const* fileName, char const* mode);
 #endif
 
 #if defined(ARCH_OS_WINDOWS)
+    ARCH_API int ArchWindowsFileAccess(const char* path, uint32_t dwAccessMask);
     ARCH_API int ArchFileAccess(const char* path, int mode);
 #else
 #   define ArchFileAccess(path, mode)   access(path, mode)

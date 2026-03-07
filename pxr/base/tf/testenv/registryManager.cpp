@@ -60,10 +60,21 @@ public:
         return i->second;
     }
 
+    // ~RegRegistry sets *deleteFlag true when deleted.
+    void SetDeleteFlag(bool *deleteFlag) {
+        _deleteFlag = deleteFlag;
+    }
+
 private:
     RegRegistry() {
         TfSingleton<RegRegistry>::SetInstanceConstructed(*this);  
         TfRegistryManager::GetInstance().SubscribeTo<RegRegistry>();
+    }
+
+    ~RegRegistry() {
+        if (_deleteFlag) {
+            *_deleteFlag = true;
+        }
     }
 
     RegRegistry(const RegRegistry &);
@@ -72,6 +83,8 @@ private:
     friend class TfSingleton<RegRegistry>;
 
     std::map<std::string, RegBase *> _registered;
+
+    bool *_deleteFlag = nullptr;
 };
 
 TF_INSTANTIATE_SINGLETON(RegRegistry);
@@ -124,7 +137,18 @@ Test_TfRegistryManager()
     x = RegRegistry::GetInstance().Get("three");
     TF_AXIOM(!x);
 
+    TF_AXIOM(TfSingleton<RegRegistry>::CurrentlyExists());
+
+    bool deleted = false;
+    RegRegistry::GetInstance().SetDeleteFlag(&deleted);
+
     TfSingleton<RegRegistry>::DeleteInstance();
+    TF_AXIOM(deleted);
+    TF_AXIOM(!TfSingleton<RegRegistry>::CurrentlyExists());
+
+    RegRegistry::GetInstance();
+    TF_AXIOM(TfSingleton<RegRegistry>::CurrentlyExists());
+
     return true;
 }
 

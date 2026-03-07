@@ -127,6 +127,11 @@ using HdMatrixDataSourceHandle = HdMatrixDataSource::Handle;
 using HdMatrixArrayDataSource = HdTypedSampledDataSource<VtArray<GfMatrix4d>>;
 using HdMatrixArrayDataSourceHandle = HdMatrixArrayDataSource::Handle;
 
+using HdBBox3dDataSource = HdTypedSampledDataSource<GfBBox3d>;
+using HdBBox3dDataSourceHandle = HdBBox3dDataSource::Handle;
+using HdBBox3dArrayDataSource = HdTypedSampledDataSource<VtArray<GfBBox3d>>;
+using HdBBox3dArrayDataSourceHandle = HdBBox3dArrayDataSource::Handle;
+
 // Locator
 using HdLocatorDataSource = HdTypedSampledDataSource<HdDataSourceLocator>;
 using HdLocatorDataSourceHandle = HdLocatorDataSource::Handle;

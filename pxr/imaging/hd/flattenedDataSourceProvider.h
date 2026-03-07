@@ -20,7 +20,7 @@ class HdSceneIndexBase;
 using HdFlattenedDataSourceProviderSharedPtr =
     std::shared_ptr<class HdFlattenedDataSourceProvider>;
 
-/// \class HdFlattenedDataSourceProvider.
+/// \class HdFlattenedDataSourceProvider
 ///
 /// Given to HdFlatteningSceneIndex to determine how to compute the
 /// flattened data source which is in the prim container data

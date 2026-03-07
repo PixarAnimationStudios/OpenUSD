@@ -46,6 +46,27 @@ public:
         Exec_Program *program) const override;
 };
 
+/// A computation that yields the provider's scene path.
+///
+class Exec_ComputePathComputationDefinition final
+    : public Exec_ComputationDefinition
+{
+public:
+    Exec_ComputePathComputationDefinition();
+
+    ~Exec_ComputePathComputationDefinition() override;
+
+    Exec_InputKeyVectorConstRefPtr GetInputKeys(
+        const EsfObjectInterface &providerObject,
+        EsfJournal *journal) const override;
+
+    VdfNode *CompileNode(
+        const EsfObjectInterface &providerObject,
+        const TfToken &disambiguatingId,
+        EsfJournal *nodeJournal,
+        Exec_Program *program) const override;
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

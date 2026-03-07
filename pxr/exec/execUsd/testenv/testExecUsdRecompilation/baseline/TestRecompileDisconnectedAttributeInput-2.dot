@@ -23,7 +23,7 @@ digraph network {
 		"0x7fdf40038400" [label=<
 		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
 			<TR><TD PORT="0x7fdf3226c060" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">time</FONT></TD></TR>
-			<TR><TD COLSPAN="1"> Exec_AttributeInputNode /Prim.customAttr [__computeValue] </TD></TR>
+			<TR><TD COLSPAN="1"> Exec_AttributeInputNode /Prim.customAttr [__computeResolvedValue] </TD></TR>
 		</TABLE>>];
 		"0x7fdf40038400" -> "0x7fdf34a14b00":"0x7fdf34a5bf30":n;
 		"0x7fdf34a14b00" -> "0x7fdf34a41700":"0x7fdf34a5bed0":n;

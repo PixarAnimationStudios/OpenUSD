@@ -300,6 +300,21 @@ class "TestTypedSchemaForAutoApplyAbstractBase" (
     )
 }
 
+class "TestAbstractTypedWithAPIApplied" (
+    apiSchemas = ["TestSingleApplyAPI"]
+    customData = {
+        string userDocBrief = "Testing abstract typed schema."
+    }
+    hidden = true
+)
+{
+    int abstractAttr = 1 (
+        customData = {
+            string userDocBrief = "Testing abstract typed schema attribute."
+        }
+    )
+}
+
 class TestDerivedTypedSchemaForAutoApplyAbstractBase "TestDerivedTypedSchemaForAutoApplyAbstractBase" (
     customData = {
         string userDocBrief = "Testing typed schema."

@@ -28,6 +28,7 @@ pxr_library(hdsi
         implicitSurfaceSceneIndex
         legacyDisplayStyleOverrideSceneIndex
         lightLinkingSceneIndex
+        locatorCachingSceneIndex
         materialBindingResolvingSceneIndex
         materialOverrideResolvingSceneIndex
         materialPrimvarTransferSceneIndex

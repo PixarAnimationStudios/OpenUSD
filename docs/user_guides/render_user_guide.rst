@@ -870,7 +870,7 @@ Material for preview renders, and a "MaterialFinal" Material for final renders.
 
 To specify which material binding purposes to use for a render, use the 
 :usda:`materialBindingPurposes` attribute in a RenderSettings prim. See 
-{ref}`usdRender_using_materialbindingpurposes` for more details.
+:ref:`usdRender_using_materialbindingpurposes` for more details.
 
 .. _material_collection_binding:
 

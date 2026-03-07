@@ -18,11 +18,6 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
     , _cpuStaging(nullptr)
     , _bindlessGPUAddress(0)
 {
-
-    if (desc.byteSize == 0) {
-        TF_CODING_ERROR("Buffers must have a non-zero length");
-    }
-
     glCreateBuffers(1, &_bufferId);
 
     if (!_descriptor.debugName.empty()) {
@@ -37,12 +32,6 @@ HgiGLBuffer::HgiGLBuffer(HgiBufferDesc const & desc)
         _descriptor.byteSize,
         _descriptor.initialData,
         usage);
-
-    // glBindVertexBuffer (graphics cmds) needs to know the stride of each
-    // vertex buffer. Make sure user provides it.
-    if (_descriptor.usage & HgiBufferUsageVertex) {
-        TF_VERIFY(desc.vertexStride > 0);
-    }
 
     _descriptor.initialData = nullptr;
 

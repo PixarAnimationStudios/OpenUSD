@@ -32,13 +32,13 @@ class AppEventFilter(QtCore.QObject):
         
     def IsNavKey(self, key, modifiers):
         # Note that the arrow keys are considered part of the keypad on macOS.
-        return (key in (QtCore.Qt.Key_Left, QtCore.Qt.Key_Right,
-                        QtCore.Qt.Key_Up, QtCore.Qt.Key_Down,
-                        QtCore.Qt.Key_PageUp, QtCore.Qt.Key_PageDown,
-                        QtCore.Qt.Key_Home, QtCore.Qt.Key_End, 
+        return (key in (QtCore.Qt.Key.Key_Left, QtCore.Qt.Key.Key_Right,
+                        QtCore.Qt.Key.Key_Up, QtCore.Qt.Key.Key_Down,
+                        QtCore.Qt.Key.Key_PageUp, QtCore.Qt.Key.Key_PageDown,
+                        QtCore.Qt.Key.Key_Home, QtCore.Qt.Key.Key_End, 
                         KeyboardShortcuts.FramingKey)
-                and modifiers in (QtCore.Qt.NoModifier,
-                                  QtCore.Qt.KeypadModifier))
+                and modifiers in (QtCore.Qt.KeyboardModifier.NoModifier,
+                                  QtCore.Qt.KeyboardModifier.KeypadModifier))
         
     def _IsWindow(self, obj):
         if isinstance(obj, QtWidgets.QWidget):
@@ -80,8 +80,8 @@ class AppEventFilter(QtCore.QObject):
                 isinstance(w, QtWidgets.QPlainTextEdit) or
                 isinstance(w, QtWidgets.QAbstractSlider) or
                 isinstance(w, QtWidgets.QAbstractSpinBox) or
-                isinstance(w, QtWidgets.QWidget) and w.windowModality() in [QtCore.Qt.WindowModal,
-                                                                            QtCore.Qt.ApplicationModal])
+                isinstance(w, QtWidgets.QWidget) and w.windowModality() in [QtCore.Qt.WindowModality.WindowModal,
+                                                                            QtCore.Qt.WindowModality.ApplicationModal])
             
     def SetFocusFromMousePos(self, backupWidget):
         # It's possible the mouse isn't over any of our windows at the time,
@@ -104,17 +104,17 @@ class AppEventFilter(QtCore.QObject):
         # Check for ShortcutOverride events to ensure we pick up navigation keys
         # that have been set as shortcuts for QActions. We still want to 
         # dispatch those to the focus widget as needed.
-        if (event.type() == QtCore.QEvent.ShortcutOverride):
+        if (event.type() == QtCore.QEvent.Type.ShortcutOverride):
             if (self.IsNavKey(event.key(), event.modifiers()) and 
                     self.WantsNavKeys(currFocusWidget)):
                 event.setAccepted(True)
                 return True
 
-        elif (event.type() == QtCore.QEvent.KeyPress):
+        elif (event.type() == QtCore.QEvent.Type.KeyPress):
             key = event.key()
 
             isNavKey = self.IsNavKey(key, event.modifiers())
-            if key == QtCore.Qt.Key_Escape:
+            if key == QtCore.Qt.Key.Key_Escape:
                 # ESC resets focus based on mouse position, regardless of
                 # who currently holds focus
                 self.SetFocusFromMousePos(widget)
@@ -136,10 +136,10 @@ class AppEventFilter(QtCore.QObject):
                 currFocusWidget.event(event)
                 accepted = event.isAccepted()
                 if (not accepted  and 
-                    key in (QtCore.Qt.Key_Left, QtCore.Qt.Key_Right)):
-                    advance = (key == QtCore.Qt.Key_Right)
-                    altNavKey = QtCore.Qt.Key_Down if advance else QtCore.Qt.Key_Up
-                    subEvent = QtGui.QKeyEvent(QtCore.QEvent.KeyPress,
+                    key in (QtCore.Qt.Key.Key_Left, QtCore.Qt.Key.Key_Right)):
+                    advance = (key == QtCore.Qt.Key.Key_Right)
+                    altNavKey = QtCore.Qt.Key.Key_Down if advance else QtCore.Qt.Key.Key_Up
+                    subEvent = QtGui.QKeyEvent(QtCore.QEvent.Type.KeyPress,
                                                altNavKey,
                                                event.modifiers())
                     QtWidgets.QApplication.postEvent(currFocusWidget, subEvent)
@@ -149,7 +149,7 @@ class AppEventFilter(QtCore.QObject):
                 if self._appController.processNavKeyEvent(event):
                     return True
 
-        elif (event.type() == QtCore.QEvent.MouseMove and 
+        elif (event.type() == QtCore.QEvent.Type.MouseMove and 
               not self.JealousFocus(currFocusWidget)):
             self.SetFocusFromMousePos(widget)
             # Note we do not consume the event!

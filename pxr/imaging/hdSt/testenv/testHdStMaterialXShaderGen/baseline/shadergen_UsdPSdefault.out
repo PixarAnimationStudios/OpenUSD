@@ -72,6 +72,15 @@ struct lightshader { vec3 intensity; vec3 direction; };
 #endif
 #define DIRECTIONAL_ALBEDO_METHOD 0
 
+// Uniform block: PrivateUniforms
+mat4 u_envMatrix = mat4(-1.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000, 0.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000);
+float u_envLightIntensity = 1.000000;
+int u_envRadianceMips;
+int u_envRadianceSamples;
+bool u_refractionTwoSided = false;
+vec3 u_viewPosition;
+int u_numActiveLightSources = 0;
+
 // Uniform block: PublicUniforms
 vec3 diffuseColor;
 vec3 emissiveColor;
@@ -88,15 +97,6 @@ float ior;
 vec3 normal;
 float displacement;
 float occlusion;
-
-// Uniform block: PrivateUniforms
-mat4 u_envMatrix = mat4(-1.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000, 0.000000, 0.000000, -1.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000);
-float u_envLightIntensity = 1.000000;
-int u_envRadianceMips;
-int u_envRadianceSamples;
-bool u_refractionTwoSided = false;
-vec3 u_viewPosition;
-int u_numActiveLightSources = 0;
 
 
 vec3 mx_latlong_map_lookup(vec3 dir, mat4 transform, float lod, samplerCube envSampler)
@@ -437,7 +437,7 @@ float mx_ggx_smith_G2(float NdotL, float NdotV, float alpha)
     float alpha2 = mx_square(alpha);
     float lambdaL = sqrt(alpha2 + (1.0 - alpha2) * mx_square(NdotL));
     float lambdaV = sqrt(alpha2 + (1.0 - alpha2) * mx_square(NdotV));
-    return 2.0 / (lambdaL / NdotL + lambdaV / NdotV);
+    return 2.0 * NdotL * NdotV / (lambdaL * NdotV + lambdaV * NdotL);
 }
 
 // Rational quadratic fit to Monte Carlo data for GGX directional albedo.
@@ -850,11 +850,11 @@ vec2 mx_latlong_projection(vec3 dir)
     return vec2(longitude, latitude);
 }
 
-vec3 mx_latlong_map_lookup(vec3 dir, mat4 transform, float lod, sampler2D envSampler)
+vec3 mx_latlong_map_lookup(vec3 dir, mat4 transform, float lod, sampler2D tex_sampler)
 {
     vec3 envDir = normalize((transform * vec4(dir,0.0)).xyz);
     vec2 uv = mx_latlong_projection(envDir);
-    return textureLod(envSampler, uv, lod).rgb;
+    return textureLod(tex_sampler, uv, lod).rgb;
 }
 
 // Return the mip level with the appropriate coverage for a filtered importance sample.
@@ -1489,7 +1489,7 @@ void mx_mix_bsdf(ClosureData closureData, BSDF fg, BSDF bg, float mixValue, out 
 void mx_layer_bsdf(ClosureData closureData, BSDF top, BSDF base, out BSDF result)
 {
     result.response = top.response + base.response * top.throughput;
-    result.throughput = top.throughput + base.throughput;
+    result.throughput = top.throughput * base.throughput;
 }
 
 void IMP_UsdPreviewSurface_surfaceshader(vec3 diffuseColor, vec3 emissiveColor, int useSpecularWorkflow, vec3 specularColor, float metallic, float roughness, float clearcoat, float clearcoatRoughness, float opacity, int opacityMode, float opacityThreshold, float ior, vec3 normal, float displacement, float occlusion, out surfaceshader out1)

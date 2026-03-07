@@ -169,15 +169,16 @@ public:
     /// have one of the following values:
     /// <ul><li><b>face</b>: Identifies faces on a Gprim's surface. For a 
     /// UsdGeomMesh, each element of the _indices_ attribute would refer to 
-    /// an element of the Mesh's _faceCounts_ attribute. For a UsdGeomTetMesh,
-    /// each element of the _indices_ attribute would refer to an element of
-    /// the Mesh's _surfaceFaceVertexIndices_ attribute.</li>
+    /// an element of the Mesh's _faceVertexCounts_ attribute.
+    /// For a UsdGeomTetMesh, each element of the _indices_ attribute would
+    /// refer to an element of the TetMesh's _surfaceFaceVertexIndices_
+    /// attribute.</li>
     /// <li><b>point</b>: for any UsdGeomPointBased, each 
     /// element of the _indices_ attribute would refer to an element of the 
-    /// Mesh's _points_ attribute</li>
+    /// Gprim's _points_ attribute</li>
     /// <li><b>edge</b>: for any UsdGeomMesh, each pair of elements
-    /// in the _indices_ attribute would refer to a pair of points of the 
-    /// Mesh's _points_ attribute that are connected as an implicit edge on the 
+    /// in the _indices_ attribute would refer to a pair of elements of the
+    /// Mesh's _points_ attribute that are connected as an implicit edge on the
     /// Mesh. These edges are derived from the Mesh's _faceVertexIndices_ 
     /// attribute. Edges are not currently defined for a UsdGeomTetMesh, but
     /// could be derived from all tetrahedron edges or surface face edges only 
@@ -214,10 +215,11 @@ public:
     // --------------------------------------------------------------------- //
     // INDICES 
     // --------------------------------------------------------------------- //
-    /// The set of indices included in this subset. The indices need not 
-    /// be sorted, but the same index should not appear more than once. Indices 
-    /// are invalid if outside the range [0, elementCount) for the given time on 
-    /// the parent geometric prim.
+    /// The set of indices identifying elements included in this
+    /// subset. The indices need not be sorted, but the same element should not
+    /// be identfied more than once. Indices sampled at a given time are
+    /// invalid if outside the range [0, elementCount) for the elements
+    /// sampled from the parent geometric prim at the same time.
     ///
     /// | ||
     /// | -- | -- |

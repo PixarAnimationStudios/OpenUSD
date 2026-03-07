@@ -20,11 +20,6 @@ HgiMetalBuffer::HgiMetalBuffer(HgiMetal *hgi, HgiBufferDesc const & desc)
     : HgiBuffer(desc)
     , _bufferId(nil)
 {
-
-    if (desc.byteSize == 0) {
-        TF_CODING_ERROR("Buffers must have a non-zero length");
-    }
-
     MTLResourceOptions options = MTLResourceCPUCacheModeDefaultCache |
         hgi->GetCapabilities()->defaultStorageMode;
     

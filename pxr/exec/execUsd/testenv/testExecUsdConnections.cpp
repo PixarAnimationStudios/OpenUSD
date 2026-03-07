@@ -58,7 +58,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(
-    TestExecUsdConnectionTargetedObjectsCustomSchema)
+    TestExecUsdConnectionsCustomSchema)
 {
     // An attribute computation that computes the values of the string-valued
     // attributes targeted by the attribute's connections.
@@ -78,8 +78,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(
             return result.empty() ? "(no value)" : result;
         })
         .Inputs(
-            ConnectionTargetedObjects<std::string>(
-                ExecBuiltinComputations->computeValue)
+            Connections<std::string>(ExecBuiltinComputations->computeValue)
         );
 
     // An attribute computation that always returns the constant value 1.
@@ -95,7 +94,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(
             return std::accumulate(range.begin(), range.end(), 0);
         })
         .Inputs(
-            ConnectionTargetedObjects<int>(_tokens->computeConstant)
+            Connections<int>(_tokens->computeConstant)
         );
 }
 
@@ -169,11 +168,11 @@ TestAttributeConnections()
     }
 }
 
-// Tests that ConnectionTargetedObjects inputs omit input values from targeted
-// objects if those objects don't provide the requested computation.
+// Tests that Connections inputs omit input values from targeted objects if
+// those objects don't provide the requested computation.
 //
 static void
-TestConnectionTargetedObjectsComputationNotFound()
+TestConnectionsComputationNotFound()
 {
     const TfErrorMark errorMark;
 
@@ -234,10 +233,10 @@ int main()
         .RegisterPlugins(TfAbsPath("resources"));
     ASSERT_EQ(testPlugins.size(), 1);
     ASSERT_EQ(
-        testPlugins[0]->GetName(), "testExecUsdConnectionTargetedObjects");
+        testPlugins[0]->GetName(), "testExecUsdConnections");
 
     TestAttributeConnections();
-    TestConnectionTargetedObjectsComputationNotFound();
+    TestConnectionsComputationNotFound();
 
     return 0;
 }

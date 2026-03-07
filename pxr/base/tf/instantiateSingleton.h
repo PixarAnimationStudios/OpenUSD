@@ -144,7 +144,7 @@ TfSingleton<T>::DeleteInstance()
     // Try to swap out a non-null instance for nullptr -- if we do it, we delete
     // it.
     T *instance = _instance.load();
-    if (instance && !_instance.compare_exchange_strong(instance, nullptr)) {
+    if (instance && _instance.compare_exchange_strong(instance, nullptr)) {
         delete instance;
         delete _initState.exchange(nullptr);
     }

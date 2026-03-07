@@ -284,6 +284,11 @@ Exec_DefinitionRegistry::GetComputationDefinition(
         Exec_BuiltinComputationRegistry::IsReservedName(computationName);
 
     if (isBuiltinReservedName) {
+        // computeValue is a special case.
+        if (computationName == ExecBuiltinComputations->computeValue) {
+            return _GetComputeValueDefinition(providerAttribute, journal);
+        }
+
         // Look for a builtin computation.
         const auto builtinIt =
             _builtinAttributeComputationDefinitions.find(computationName);
@@ -331,6 +336,37 @@ Exec_DefinitionRegistry::_LookUpLocalAttributeComputation(
     const auto it = compDefs.find({attributeName, computationName});
     if (it != compDefs.end()) {
         return it->second;
+    }
+
+    return nullptr;
+}
+
+const Exec_ComputationDefinition *
+Exec_DefinitionRegistry::_GetComputeValueDefinition(
+    const EsfAttributeInterface &providerAttribute,
+    EsfJournal *journal) const
+{
+    // If the computation has an attribute computation named for the builtin
+    // computeExpression, then this is used as the definition of computeValue.
+    if (const Exec_ComputationDefinition *const expressionDefinition =
+        _LookUpLocalAttributeComputation(
+            providerAttribute,
+            Exec_PrivateBuiltinComputations->computeExpression,
+            journal)) {
+        return expressionDefinition;
+    }
+
+    // TODO: If the provider attribute owns exactly one attribute connection,
+    // then the definition of computeValue is a built-in computation that
+    // computes the implicit data flow.
+
+    // Otherwise, computeResolvedValue is used as the definition of
+    // computeValue.
+    const auto builtinIt =
+        _builtinAttributeComputationDefinitions.find(
+            ExecBuiltinComputations->computeResolvedValue);
+    if (TF_VERIFY(builtinIt != _builtinAttributeComputationDefinitions.end())) {
+        return builtinIt->second.get();
     }
 
     return nullptr;
@@ -503,7 +539,7 @@ Exec_DefinitionRegistry::_ValidateComputationRegistration(
     if (Exec_BuiltinComputationRegistry::IsReservedName(computationName)) {
         const auto *traits = Exec_BuiltinComputationRegistry::GetInstance()
             .GetTraits(computationName);
-        if (!traits || !traits->IsUserDefinable()) {
+        if (!traits || !traits->isUserDefinable) {
             TF_CODING_ERROR(
                 "Attempt to register computation '%s' with a name that uses "
                 "the prefix '%s', which is reserved for builtin computations.",
@@ -725,8 +761,8 @@ Exec_DefinitionRegistry::_RegisterBuiltinComputations()
     // Attribute computations
 
     _RegisterBuiltinAttributeComputation(
-        ExecBuiltinComputations->computeValue,
-        std::make_unique<Exec_ComputeValueComputationDefinition>());
+        ExecBuiltinComputations->computeResolvedValue,
+        std::make_unique<Exec_ComputeResolvedValueComputationDefinition>());
 
     // Object computations
     //
@@ -741,6 +777,14 @@ Exec_DefinitionRegistry::_RegisterBuiltinComputations()
     _RegisterBuiltinAttributeComputation(
         Exec_PrivateBuiltinComputations->computeMetadata,
         std::make_unique<Exec_ComputeMetadataComputationDefinition>());
+    ++numObjectComputations;
+
+    _RegisterBuiltinPrimComputation(
+        ExecBuiltinComputations->computePath,
+        std::make_unique<Exec_ComputePathComputationDefinition>());
+    _RegisterBuiltinAttributeComputation(
+        ExecBuiltinComputations->computePath,
+        std::make_unique<Exec_ComputePathComputationDefinition>());
     ++numObjectComputations;
 
     // Make sure we registered all builtins.

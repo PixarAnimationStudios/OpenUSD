@@ -17,7 +17,8 @@
 // 15 -> 16: Introducing HdsiDomeLightCameraVisibilitySceneIndex.
 // 16 -> 17: Introducing HdsiMaterialRenderContextFilteringSceneIndex.
 // 17 -> 18: Introducing ComposeFn in HdsiMaterialPrimvarTransferSceneIndex.
+// 18 -> 19: Introducing HdsiLocatorCachingSceneIndex
 
-#define HDSI_API_VERSION 18
+#define HDSI_API_VERSION 19
 
 #endif // PXR_IMAGING_HDSI_VERSION_H

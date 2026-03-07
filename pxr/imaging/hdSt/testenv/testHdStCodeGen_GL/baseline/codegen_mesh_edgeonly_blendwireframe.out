@@ -2668,7 +2668,9 @@ vec4 ApplyFinalEdgeOpacity(vec4 Cfill, float p)
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
     float p = GetEdgeOpacity();
-    if (p < 0.5) discard;
+    if (p < 0.5) {
+        discard;
+    }
 
     vec4 wireColor = GetWireframeColor();
 
@@ -5732,7 +5734,9 @@ vec4 ApplyFinalEdgeOpacity(vec4 Cfill, float p)
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
     float p = GetEdgeOpacity();
-    if (p < 0.5) discard;
+    if (p < 0.5) {
+        discard;
+    }
 
     vec4 wireColor = GetWireframeColor();
 

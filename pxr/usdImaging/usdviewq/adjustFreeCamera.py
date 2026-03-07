@@ -95,7 +95,7 @@ class AdjustFreeCamera(QtWidgets.QDialog):
             self._dataModel.viewSettings.freeCameraOverrideFar = value
 
     def _lockFreeCamAspectToggled(self, state):
-        lockFreeCameraAspect = state != QtCore.Qt.Unchecked
+        lockFreeCameraAspect = state != QtCore.Qt.CheckState.Unchecked
         self._ui.freeCamAspect.setEnabled(lockFreeCameraAspect)
         self._dataModel.viewSettings.lockFreeCameraAspect = \
             lockFreeCameraAspect

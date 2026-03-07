@@ -19,7 +19,7 @@ def "GLOBAL" (
 
 class "AbstractTest" (
     inherits = </Typed>
-    doc = "Testing documentation metadata"
+    doc = "Testing documentation metadata (Abstract)"
     hidden = true
 )
 {

@@ -535,13 +535,13 @@ private:
     void _ApplyPropertyOrder();
 
     USD_API
-    void _IntializeForTypedSchema(
+    void _InitializeForTypedSchema(
         const SdfLayerHandle &schematicsLayer,
         const SdfPath &schematicsPrimPath, 
         const VtTokenArray &propertiesToIgnore);
 
     USD_API
-    void _IntializeForAPISchema(
+    void _InitializeForAPISchema(
         const TfToken &apiSchemaName,
         const SdfLayerHandle &schematicsLayer,
         const SdfPath &schematicsPrimPath, 

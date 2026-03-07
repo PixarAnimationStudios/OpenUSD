@@ -117,7 +117,7 @@ HdPrmanLight::Finalize(HdRenderParam *renderParam)
         riley->DeleteLightShader(_shaderId);
         _shaderId = riley::LightShaderId::InvalidId();
     }
-    if (_lightFilterParentCoordSysId != riley::CoordinateSystemId::InvalidId()) {
+    if (riley && _lightFilterParentCoordSysId != riley::CoordinateSystemId::InvalidId()) {
         TRACE_SCOPE("riley::DeleteCoordinateSystem");
         riley->DeleteCoordinateSystem(_lightFilterParentCoordSysId);
         _lightFilterParentCoordSysId = riley::CoordinateSystemId::InvalidId();

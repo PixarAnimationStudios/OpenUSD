@@ -981,7 +981,7 @@ void Usd_SortAutoAppliedAPISchemas(TfTokenVector *autoAppliedAPISchemas) {
 
 // Helper class for initializing the schema registry by finding all generated 
 // schema types in plugin libraries and creating the static prim definitions 
-// for all concrete and applied API schema types.
+// for all typed and applied API schema types.
 class UsdSchemaRegistry::_SchemaDefInitHelper
 {
 public:
@@ -1004,9 +1004,9 @@ public:
         // schemas.
         _PopulateAppliedAPIPrimDefinitions();
 
-        // Populate all concrete API schema definitions after all API schemas
-        // they may depend on have been populated.
-        _PopulateConcretePrimDefinitions();
+        // Populate all typed (abstract or concrete) + API schema definitions 
+        // after all API schemas they may depend on have been populated.
+        _PopulateTypedPrimDefinitions();
     }
 
 private:
@@ -1069,7 +1069,7 @@ private:
         const SchemaInfo &schemaInfo) const;
 
     void _PopulateAppliedAPIPrimDefinitions();
-    void _PopulateConcretePrimDefinitions() const;
+    void _PopulateTypedPrimDefinitions() const;
 
     UsdSchemaRegistry *_registry;
 
@@ -1081,7 +1081,14 @@ private:
     // A list of concrete typed schemas that will have prim definitions built
     // for them paired with the index to the schematics layer which holds the 
     // schema's prim spec.
-    std::vector<std::pair<const SchemaInfo *, size_t>> _concreteSchemaDefsToBuild;
+    std::vector<
+        std::pair<const SchemaInfo *, size_t>> _concreteSchemaDefsToBuild;
+
+    // A list of abstract typed schemas that will have prim definitions built
+    // for them paired with the index to the schematics layer which holds the
+    // schema's prim spec.
+    std::vector<
+        std::pair<const SchemaInfo *, size_t>> _abstractSchemaDefsToBuild;
 
     _TypeToTokenVecMap _typeToAutoAppliedAPISchemaNames;
 };
@@ -1114,6 +1121,7 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
         // Skip schema kinds that don't need a prim definition (and therefore
         // don't need a schematics layer).
         const bool needsPrimDefinition = 
+            schemaInfo.kind == UsdSchemaKind::AbstractTyped ||
             schemaInfo.kind == UsdSchemaKind::ConcreteTyped ||
             schemaInfo.kind == UsdSchemaKind::MultipleApplyAPI ||
             schemaInfo.kind == UsdSchemaKind::SingleApplyAPI;
@@ -1147,7 +1155,10 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
 
         // Add the schemas that need prim definitions to the appropriate 
         // list/map of prim definitions we need to build.
-        if (schemaInfo.kind == UsdSchemaKind::ConcreteTyped) {
+        if (schemaInfo.kind == UsdSchemaKind::AbstractTyped) {
+            _abstractSchemaDefsToBuild.emplace_back(
+                &schemaInfo, generatedSchemaIndex);
+        } else if (schemaInfo.kind == UsdSchemaKind::ConcreteTyped) {
             _concreteSchemaDefsToBuild.emplace_back(
                 &schemaInfo, generatedSchemaIndex);
         } else {
@@ -1363,7 +1374,7 @@ BuildPrimDefinition(_SchemaDefInitHelper *defInitHelper)
     // Create and initialize a new UsdPrimDefinition.
     // This adds the schema's defined properties into the prim definition.
     primDef = new UsdPrimDefinition();
-    primDef->_IntializeForAPISchema(apiSchemaName, 
+    primDef->_InitializeForAPISchema(apiSchemaName, 
         schematicsLayer, schematicsPrimPath, 
         /* propertiesToIgnore = */ overridePropertyNames);
 
@@ -1538,61 +1549,78 @@ _PopulateAppliedAPIPrimDefinitions()
 
 void 
 UsdSchemaRegistry::_SchemaDefInitHelper::
-_PopulateConcretePrimDefinitions() const
+_PopulateTypedPrimDefinitions() const
 {
     TRACE_FUNCTION();
-    // Populate all concrete API schema definitions; it is expected that all 
-    // API schemas, which these may depend on, have already been populated.
+
+    auto _PopulatePrimDefinition = 
+        [this](std::pair<const SchemaInfo *, size_t> infoAndIndex) {
+            const SchemaInfo *schemaInfo = infoAndIndex.first;
+
+            // The schema identifier is also the name of the defining prim in
+            // the schematics layer.
+            const SdfLayerRefPtr &schematicsLayer =
+                _registry->_schematicsLayers[infoAndIndex.second];
+            const SdfPath schematicsPrimPath =
+                SdfPath::AbsoluteRootPath().AppendChild(schemaInfo->identifier);
+
+            const VtTokenArray overridePropertyNames = _GetOverridePropertyNames(
+                schematicsLayer, schematicsPrimPath);
+
+            // Create and initialize a new prim definition for the typed schema.
+            // This adds the defined properties from the prim spec to the prim
+            // definition first as these are stronger than the built-in API
+            // schema properties.
+            std::unique_ptr<UsdPrimDefinition> primDef(new UsdPrimDefinition());
+            primDef->_InitializeForTypedSchema(
+                schematicsLayer, schematicsPrimPath, overridePropertyNames);
+
+            // Get the directly built-in and auto applied API schema for this
+            // typed schema and compose them into the prim definition. Since all
+            // API schema prim definitions have been fully  expanded; each direct
+            // built-in API schema will automatically also include every API 
+            // schema it includes.
+            TfTokenVector apiSchemasToCompose = _GetDirectBuiltinAPISchemas(
+                schematicsLayer, schematicsPrimPath, *schemaInfo);
+            if (!apiSchemasToCompose.empty()) {
+                // Note that we check for API schema version conflicts and will
+                // skip all schemas under a directly built-in API schema if any
+                // would cause a version conflict.
+                _FamilyAndInstanceToVersionMap seenSchemaFamilyVersions;
+                _registry->_ComposeAPISchemasIntoPrimDefinition(
+                    primDef.get(), apiSchemasToCompose, 
+                    &seenSchemaFamilyVersions);
+            }
+
+            // With all the built-in API schemas applied, we can now compose any
+            // API schema property overrides declared in the typed schema over
+            // the current defined properties.
+            for (const TfToken &overridePropertyName : overridePropertyNames) {
+                primDef->_ComposeOverAndReplaceExistingProperty(
+                    overridePropertyName,
+                    schematicsLayer,
+                    schematicsPrimPath);
+            }
+
+            // Move the completed definition into the registry.
+            if (schemaInfo->kind == UsdSchemaKind::AbstractTyped) {
+                _registry->_abstractTypedPrimDefinitions.emplace(
+                    schemaInfo->identifier, std::move(primDef));
+            } else {
+                _registry->_concreteTypedPrimDefinitions.emplace(
+                    schemaInfo->identifier, std::move(primDef));
+            }
+        };
+
+    // Populate all typed + API schema (abstract and concrete) definitions; it 
+    // is expected that all API schemas, which these may depend on, have already 
+    // been populated.
+    for (const auto &infoAndIndex : _abstractSchemaDefsToBuild) {
+        _PopulatePrimDefinition(infoAndIndex);
+    }
+
     for (const auto &infoAndIndex : _concreteSchemaDefsToBuild) {
-        const SchemaInfo *schemaInfo = infoAndIndex.first;
-
-        // The schema identifier is also the name of the defining prim in the 
-        // schematics layer.
-        const SdfLayerRefPtr &schematicsLayer = 
-            _registry->_schematicsLayers[infoAndIndex.second];
-        const SdfPath schematicsPrimPath = 
-            SdfPath::AbsoluteRootPath().AppendChild(schemaInfo->identifier);
-
-        const VtTokenArray overridePropertyNames = _GetOverridePropertyNames(
-            schematicsLayer, schematicsPrimPath);
-
-        // Create and initialize a new prim definition for the concrete schema.
-        // This adds the defined properties from the prim spec to the prim 
-        // definition first as these are stronger than the built-in API schema 
-        // properties.
-        std::unique_ptr<UsdPrimDefinition> primDef(new UsdPrimDefinition());
-        primDef->_IntializeForTypedSchema(
-            schematicsLayer, schematicsPrimPath, overridePropertyNames);
-
-        // Get the directly built-in and auto applied API schema for this 
-        // concrete schema and compose them into the prim definition. Since all
-        // API schema prim definitions have been fully  expanded; each direct 
-        // built-in API schema will automatically also include every API schema
-        // it includes.
-        TfTokenVector apiSchemasToCompose = _GetDirectBuiltinAPISchemas(
-            schematicsLayer, schematicsPrimPath, *schemaInfo);
-        if (!apiSchemasToCompose.empty()) {
-            // Note that we check for API schema version conflicts and will skip
-            // all schemas under a directly built-in API schema if any would 
-            // cause a version conflict.
-            _FamilyAndInstanceToVersionMap seenSchemaFamilyVersions;
-            _registry->_ComposeAPISchemasIntoPrimDefinition(
-                primDef.get(), apiSchemasToCompose, &seenSchemaFamilyVersions);
-        }
-
-        // With all the built-in API schemas applied, we can now compose any
-        // API schema property overrides declared in the typed schema over the 
-        // current defined properties.
-        for (const TfToken &overridePropertyName : overridePropertyNames) {
-            primDef->_ComposeOverAndReplaceExistingProperty(
-                overridePropertyName,
-                schematicsLayer,
-                schematicsPrimPath);
-        }
-
-        // Move the completed definition into the registry.
-        _registry->_concreteTypedPrimDefinitions.emplace(
-            schemaInfo->identifier, std::move(primDef));
+        _PopulatePrimDefinition(infoAndIndex);
     }
 }
 
@@ -1809,8 +1837,12 @@ UsdSchemaRegistry::BuildComposedPrimDefinition(
 
    _FamilyAndInstanceToVersionMap seenSchemaFamilyVersions;
 
-    // Find the existing concrete typed prim definition for the prim's type.
-    const UsdPrimDefinition *primDef = FindConcretePrimDefinition(primType);
+    // Find the existing concrete or abstract typed prim definition for the 
+    // prim's type.
+    const UsdPrimDefinition *primDef = 
+        IsConcrete(primType) ? FindConcretePrimDefinition(primType) :
+            FindAbstractPrimDefinition(primType);
+
     // Make a copy of the typed prim definition to start.
     // Its perfectly valid for there to be no prim definition for the 
     // given prim type, in which case we compose API schemas into an empty

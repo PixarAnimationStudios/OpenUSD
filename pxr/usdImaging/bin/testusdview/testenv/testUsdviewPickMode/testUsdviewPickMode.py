@@ -53,7 +53,7 @@ def _checkInstanceSelection(appController, path, instance):
 def _testPickPrims(appController):
     _setPickModeAction(appController, appController._ui.actionPick_Prims)
     pt = (0, 0, 0)
-    appController.onPrimSelected(PROTO_PATH, 0, INSTANCER_PATH, 0, pt, QtCore.Qt.LeftButton, 0)
+    appController.onPrimSelected(PROTO_PATH, 0, INSTANCER_PATH, 0, pt, QtCore.Qt.MouseButton.LeftButton, 0)
 
     _checkPrimSelection(appController, INSTANCER_PATH)
     _checkNoInstancesSelected(appController, INSTANCER_PATH)
@@ -62,7 +62,7 @@ def _testPickPrims(appController):
 def _testPickModels(appController):
     _setPickModeAction(appController, appController._ui.actionPick_Models)
     pt = (0, 0, 0)
-    appController.onPrimSelected(PROTO_PATH, 0, INSTANCER_PATH, 0, pt, QtCore.Qt.LeftButton, 0)
+    appController.onPrimSelected(PROTO_PATH, 0, INSTANCER_PATH, 0, pt, QtCore.Qt.MouseButton.LeftButton, 0)
 
     _checkPrimSelection(appController, FOO_PATH)
     _checkNoInstancesSelected(appController, FOO_PATH)
@@ -73,13 +73,13 @@ def _testPickInstances(appController):
 
     # Pick an instance of a point instancer
     pt = (0, 0, 0)
-    appController.onPrimSelected(PROTO_PATH, 0, INSTANCER_PATH, 0, pt, QtCore.Qt.LeftButton, 0)
+    appController.onPrimSelected(PROTO_PATH, 0, INSTANCER_PATH, 0, pt, QtCore.Qt.MouseButton.LeftButton, 0)
 
     _checkPrimSelection(appController, INSTANCER_PATH)
     _checkInstanceSelection(appController, INSTANCER_PATH, 0)
 
     # Pick an instance of a native instance
-    appController.onPrimSelected(PROTO2_PATH, 0, INSTANCER2_PATH, 0, pt, QtCore.Qt.LeftButton, 0)
+    appController.onPrimSelected(PROTO2_PATH, 0, INSTANCER2_PATH, 0, pt, QtCore.Qt.MouseButton.LeftButton, 0)
 
     _checkPrimSelection(appController, NI_PATH)
     _checkNoInstancesSelected(appController, NI_PATH)
@@ -88,7 +88,7 @@ def _testPickInstances(appController):
 def _testPickPrototypes(appController):
     _setPickModeAction(appController, appController._ui.actionPick_Prototypes)
     pt = (0, 0, 0)
-    appController.onPrimSelected(PROTO_PATH, 0, INSTANCER_PATH, 0, pt, QtCore.Qt.LeftButton, 0)
+    appController.onPrimSelected(PROTO_PATH, 0, INSTANCER_PATH, 0, pt, QtCore.Qt.MouseButton.LeftButton, 0)
 
     _checkPrimSelection(appController, PROTO_PATH)
     _checkInstanceSelection(appController, PROTO_PATH, 0)

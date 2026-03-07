@@ -117,7 +117,7 @@ HgiVulkan::CreateComputeCmds(
 
 /* Multi threaded */
 HgiTextureHandle
-HgiVulkan::CreateTexture(HgiTextureDesc const & desc)
+HgiVulkan::_CreateTexture(HgiTextureDesc const & desc)
 {
     return HgiTextureHandle(
         new HgiVulkanTexture(this, desc,
@@ -144,12 +144,8 @@ HgiVulkan::DestroyTexture(HgiTextureHandle* texHandle)
 
 /* Multi threaded */
 HgiTextureViewHandle
-HgiVulkan::CreateTextureView(HgiTextureViewDesc const & desc)
+HgiVulkan::_CreateTextureView(HgiTextureViewDesc const & desc)
 {
-    if (!desc.sourceTexture) {
-        TF_CODING_ERROR("Source texture is null");
-    }
-
     HgiTextureHandle src = HgiTextureHandle(
         new HgiVulkanTexture(this, desc), GetUniqueId());
     HgiTextureView* view = new HgiTextureView(desc);
@@ -186,7 +182,7 @@ HgiVulkan::DestroySampler(HgiSamplerHandle* smpHandle)
 
 /* Multi threaded */
 HgiBufferHandle
-HgiVulkan::CreateBuffer(HgiBufferDesc const & desc)
+HgiVulkan::_CreateBuffer(HgiBufferDesc const & desc)
 {
     return HgiBufferHandle(
         new HgiVulkanBuffer(this, desc),
@@ -234,7 +230,7 @@ HgiVulkan::DestroyShaderProgram(HgiShaderProgramHandle* shaderPrgHandle)
 
 /* Multi threaded */
 HgiResourceBindingsHandle
-HgiVulkan::CreateResourceBindings(HgiResourceBindingsDesc const& desc)
+HgiVulkan::_CreateResourceBindings(HgiResourceBindingsDesc const& desc)
 {
     return HgiResourceBindingsHandle(
         new HgiVulkanResourceBindings(GetPrimaryDevice(), desc),

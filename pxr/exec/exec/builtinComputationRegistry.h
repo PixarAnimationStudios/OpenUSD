@@ -25,61 +25,54 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Exec_BuiltinComputationTraits
 {
 public:
-    /// \name IsUserDefinable
-    ///
     /// True if users can register a computation by this name.
-    ///
-    /// @{
-    bool IsUserDefinable() const & {
-        return _isUserDefinable;
-    }
+    bool isUserDefinable = false;
 
-    Exec_BuiltinComputationTraits &&SetIsUserDefinable(
-        bool isUserDefinable) && {
-        _isUserDefinable = isUserDefinable;
-        return std::move(*this);
-    }
-    /// @}
-
-    /// \name IsInputConsumable
-    ///
     /// True if computations can explicitly request this built-in computation as
     /// a computation input.
     ///
-    /// @{
-    ///
-    bool IsInputConsumable() const {
-        return _isInputConsumable;
-    }
-
-    Exec_BuiltinComputationTraits &&SetIsInputConsumable(
-        bool isInputConsumable) && {
-        _isInputConsumable = isInputConsumable;
-        return std::move(*this);
-    }
-    /// @}
-
-    /// \name HasDefinition
-    ///
+    bool isInputConsumable = true;
+    
     /// True if this built-in computation has a concrete
     /// Exec_ComputationDefinition instance in the Exec_DefinitionRegistry.
     ///
-    /// @{
-    ///
-    bool HasDefinition() const & {
-        return _hasDefinition;
-    }
+    bool hasDefinition = true;
 
-    Exec_BuiltinComputationTraits &&SetHasDefinition(bool hasDefinition) && {
-        _hasDefinition = hasDefinition;
+    /// \name Builder Interface
+    ///
+    /// These methods are used to construct Exec_BuiltinComputationTraits
+    /// objects without reliance on the member order.
+    ///
+    /// ## Example
+    ///
+    /// ```{.cpp}
+    /// const auto traits = Exec_BuiltinComputaitonTraits()
+    ///     .SetHasDefinition(false)
+    ///     .SetIsInputConsumable(false)
+    ///     .SetIsUserDefinable(true);
+    /// ```
+    ///
+    /// @{
+
+    Exec_BuiltinComputationTraits SetIsUserDefinable(
+        const bool isUserDefinable_) && {
+        isUserDefinable = isUserDefinable_;
         return std::move(*this);
     }
-    /// @}
 
-private:
-    bool _isUserDefinable = false;
-    bool _isInputConsumable = true;
-    bool _hasDefinition = true;
+    Exec_BuiltinComputationTraits SetIsInputConsumable(
+        const bool isInputConsumable_) && {
+        isInputConsumable = isInputConsumable_;
+        return std::move(*this);
+    }
+
+    Exec_BuiltinComputationTraits SetHasDefinition(
+        const bool hasDefinition_) && {
+        hasDefinition = hasDefinition_;
+        return std::move(*this);
+    }
+
+    /// @}
 };
 
 

@@ -6,6 +6,7 @@
 //
 #include "dataSourceValueTreeView.h"
 
+#include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
@@ -305,6 +306,10 @@ Hdui_GetModelFromValue(VtValue value, QObject *parent = nullptr)
 
     if (value.IsHolding<VtArray<GfVec2i>>()) {
         return new Hdui_TypedArrayValueItemModel<GfVec2i>(value, parent);
+    }
+
+    if (value.IsHolding<VtArray<GfBBox3d>>()) {
+        return new Hdui_TypedArrayValueItemModel<GfBBox3d>(value, parent);
     }
 
     return new Hdui_UnsupportedTypeValueItemModel(value, parent);

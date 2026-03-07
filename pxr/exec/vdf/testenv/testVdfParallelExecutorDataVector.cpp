@@ -77,7 +77,7 @@ int main() {
     const size_t iters = nodes * 4;
     WorkParallelForN(
         iters,
-        [&dataVector,&vectors,nodes](size_t begin, size_t end) {
+        [&dataVector,&vectors](size_t begin, size_t end) {
             for (size_t i = begin; i < end; i++) {
                 size_t idx = i;
                 while (idx >= nodes) {

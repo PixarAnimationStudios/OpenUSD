@@ -10,6 +10,7 @@
 #include "pxr/exec/esfUsd/prim.h"
 #include "pxr/exec/esfUsd/relationship.h"
 #include "pxr/exec/esfUsd/stage.h"
+#include "pxr/exec/esfUsd/stageData.h"
 
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/token.h"
@@ -69,6 +70,14 @@ EsfStage
 EsfUsd_ObjectImpl<InterfaceType, UsdObjectType>::_GetStage() const
 {
     return {std::in_place_type<EsfUsd_Stage>, _GetWrapped().GetStage()};
+}
+
+template <class InterfaceType, class UsdObjectType>
+SdfPathVector
+EsfUsd_ObjectImpl<InterfaceType, UsdObjectType>::_GetIncomingConnections() const
+{
+    return EsfUsdStageData::GetIncomingConnections(
+        _GetWrapped().GetStage(), _GetWrapped().GetPath());
 }
 
 template <class InterfaceType, class UsdObjectType>

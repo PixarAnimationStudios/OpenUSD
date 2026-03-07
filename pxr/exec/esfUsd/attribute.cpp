@@ -7,6 +7,7 @@
 #include "pxr/exec/esfUsd/attribute.h"
 
 #include "pxr/exec/esfUsd/attributeQuery.h"
+#include "pxr/exec/esfUsd/stageData.h"
 
 #include "pxr/exec/esf/attribute.h"
 #include "pxr/usd/sdf/valueTypeName.h"
@@ -38,9 +39,8 @@ EsfUsd_Attribute::_GetQuery() const
 SdfPathVector
 EsfUsd_Attribute::_GetConnections() const
 {
-    SdfPathVector targets;
-    _GetWrapped().GetConnections(&targets);
-    return targets;
+    return EsfUsdStageData::GetOutgoingConnections(
+        _GetWrapped().GetStage(), _GetWrapped().GetPath());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

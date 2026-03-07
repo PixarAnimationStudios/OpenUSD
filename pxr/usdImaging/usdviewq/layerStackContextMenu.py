@@ -142,8 +142,8 @@ class CopyLayerPathMenuItem(LayerStackContextMenuItem):
             return
 
         cb = QtWidgets.QApplication.clipboard()
-        cb.setText(layerPath, QtGui.QClipboard.Selection )
-        cb.setText(layerPath, QtGui.QClipboard.Clipboard )
+        cb.setText(layerPath, QtGui.QClipboard.Mode.Selection )
+        cb.setText(layerPath, QtGui.QClipboard.Mode.Clipboard )
 
 #
 # Copy the layer identifier to clipboard
@@ -161,8 +161,8 @@ class CopyLayerIdentifierMenuItem(LayerStackContextMenuItem):
             return
 
         cb = QtWidgets.QApplication.clipboard()
-        cb.setText(identifier, QtGui.QClipboard.Selection )
-        cb.setText(identifier, QtGui.QClipboard.Clipboard )
+        cb.setText(identifier, QtGui.QClipboard.Mode.Selection )
+        cb.setText(identifier, QtGui.QClipboard.Mode.Clipboard )
 
 #
 # Copy the prim path to clipboard, if there is one
@@ -181,8 +181,8 @@ class CopyPathMenuItem(LayerStackContextMenuItem):
 
         path = str(path)
         cb = QtWidgets.QApplication.clipboard()
-        cb.setText(path, QtGui.QClipboard.Selection )
-        cb.setText(path, QtGui.QClipboard.Clipboard )
+        cb.setText(path, QtGui.QClipboard.Mode.Selection )
+        cb.setText(path, QtGui.QClipboard.Mode.Clipboard )
 
     def IsEnabled(self):
         return hasattr(self._item, "path")

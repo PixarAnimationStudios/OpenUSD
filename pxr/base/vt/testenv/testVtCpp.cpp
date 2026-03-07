@@ -2376,6 +2376,75 @@ testVtValueTransform()
     }
 }
 
+PXR_NAMESPACE_OPEN_SCOPE
+struct Vt_ValueTestAccess
+{
+public:
+    static const void *GetHeldObjectPtrForDebugger(const VtValue &value) {
+        return value._GetHeldObjectPtrForDebugger();
+    }
+
+    template <class T>
+    static const T *GetHeldObjectPtrForDebugger(const VtValue &value) {
+        TF_AXIOM(value.IsHolding<T>());
+        return static_cast<const T *>(
+            value._GetHeldObjectPtrForDebugger());
+    }
+};
+PXR_NAMESPACE_CLOSE_SCOPE
+
+static void
+testGetHeldObjectPtrForDebugger()
+{
+    {
+        const VtValue v;
+        const void *const heldPtr =
+            Vt_ValueTestAccess::GetHeldObjectPtrForDebugger(v);
+        TF_AXIOM(heldPtr == nullptr);
+    }
+    {
+        const VtValue v(42);
+        const int *const heldPtr =
+            Vt_ValueTestAccess::GetHeldObjectPtrForDebugger<int>(v);
+        TF_AXIOM(*heldPtr == 42);
+    }
+    {
+        const std::string s = "This is a string";
+        const VtValue v(s);
+        const std::string *const heldPtr =
+            Vt_ValueTestAccess::GetHeldObjectPtrForDebugger<std::string>(v);
+        TF_AXIOM(*heldPtr == s);
+    }
+    {
+        const VtValue v(_TypedProxy<double>(2.0));
+        const double *const heldPtr =
+            Vt_ValueTestAccess::GetHeldObjectPtrForDebugger<double>(v);
+        TF_AXIOM(*heldPtr == 2.0);
+    }
+    {
+        const VtValue v(_ErasedDoubleProxy(4.0));
+        const double *const heldPtr =
+            Vt_ValueTestAccess::GetHeldObjectPtrForDebugger<double>(v);
+        TF_AXIOM(*heldPtr == 4.0);
+    }
+    {
+        VtDictionary dict;
+        dict["one"] = 1;
+        dict["two"] = 2;
+        const VtValue v(dict);
+        const VtDictionary *const heldPtr =
+            Vt_ValueTestAccess::GetHeldObjectPtrForDebugger<VtDictionary>(v);
+        TF_AXIOM(*heldPtr == dict);
+    }
+    {
+        const VtArray<int> arr{1, 2, 3, 4, 5};
+        const VtValue v(arr);
+        const VtArray<int> *const heldPtr =
+            Vt_ValueTestAccess::GetHeldObjectPtrForDebugger<VtArray<int>>(v);
+        TF_AXIOM(*heldPtr == arr);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     testArray();
@@ -2403,6 +2472,8 @@ int main(int argc, char *argv[])
     testVtValueRef();
     testVtValueComposeOver();
     testVtValueTransform();
+
+    testGetHeldObjectPtrForDebugger();
 
     printf("Test SUCCEEDED\n");
 

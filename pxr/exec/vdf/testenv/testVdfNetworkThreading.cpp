@@ -116,7 +116,7 @@ main(int, char **)
 
         WorkParallelForN(
             numNodesSecondPass,
-            [&network, numNodesFirstPass, numNodesSecondPass, numConnections]
+            [&network]
             (size_t b, size_t e) {
             std::mt19937 rng(b);
             std::uniform_int_distribution<size_t> randomNodeType(0, 1);

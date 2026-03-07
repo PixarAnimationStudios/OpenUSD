@@ -119,10 +119,15 @@ public:
     /// false otherwise. \sa SdfIsDefiningSpecifier.
     bool IsDefined() const { return _flags[Usd_PrimDefinedFlag]; }
 
-    /// Return true if this prim has a specifier of type SdfSpecifierDef
-    /// or SdfSpecifierClass.
+    /// Return true if this prim has the specifier SdfSpecifierDef or
+    /// SdfSpecifierClass.
     bool HasDefiningSpecifier() const {
         return _flags[Usd_PrimHasDefiningSpecifierFlag]; 
+    }
+
+    /// Return true if this prim has the specifier SdfSpecifierClass.
+    bool HasClassSpecifier() const {
+        return _flags[Usd_PrimHasClassSpecifierFlag];
     }
 
     /// Return true if this prim has one or more payload composition arcs.

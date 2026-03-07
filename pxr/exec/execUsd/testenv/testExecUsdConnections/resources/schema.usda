@@ -1,6 +1,6 @@
 #usda 1.0
 (
-    "Test schema file for testExecUsdConnectionTargetedObjects"
+    "Test schema file for testExecUsdConnections"
     subLayers = [
         @usd/schema.usda@
     ]
@@ -8,7 +8,7 @@
 
 def "GLOBAL" (
     customData = {
-        string libraryName      = "testExecUsdConnectionTargetedObjects"
+        string libraryName      = "testExecUsdConnections"
         string libraryPath      = "pxr/exec/execUsd"
         bool skipCodeGeneration = true
     }

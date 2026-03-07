@@ -20,9 +20,9 @@ def _GetPropertySpecInSessionLayer(usdAttribute):
 # Function for getting the background color of the item for the delegates.
 # Returns none if we only want the default paint method. 
 def _GetBackgroundColor(item, option):
-    mouseOver = option.state & QtWidgets.QStyle.State_MouseOver
-    selected = option.state & QtWidgets.QStyle.State_Selected
-    pressed = option.state & QtWidgets.QStyle.State_Sunken
+    mouseOver = option.state & QtWidgets.QStyle.StateFlag.State_MouseOver
+    selected = option.state & QtWidgets.QStyle.StateFlag.State_Selected
+    pressed = option.state & QtWidgets.QStyle.StateFlag.State_Sunken
 
     background = None
 
@@ -428,13 +428,13 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
             # We call this here before the selection data model clears
             # the selection. 
 
-            if ev.key() == QtCore.Qt.Key_Down \
-            or ev.key() == QtCore.Qt.Key_Up \
-            or ev.key() == QtCore.Qt.Key_Right \
-            or ev.key() == QtCore.Qt.Key_Left:
+            if ev.key() == QtCore.Qt.Key.Key_Down \
+            or ev.key() == QtCore.Qt.Key.Key_Up \
+            or ev.key() == QtCore.Qt.Key.Key_Right \
+            or ev.key() == QtCore.Qt.Key.Key_Left:
                 currentPrim = self._appController._dataModel.selection.getFocusPrim()
                 currentItem = self._appController._getItemAtPath(currentPrim.GetPath())
-                self.setCurrentItem(currentItem, 0, QtCore.QItemSelectionModel.NoUpdate)
+                self.setCurrentItem(currentItem, 0, QtCore.QItemSelectionModel.SelectionFlag.NoUpdate)
 
             super(PrimTreeWidget, self).keyPressEvent(ev)
 

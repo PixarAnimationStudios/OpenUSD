@@ -216,6 +216,9 @@ private:
 
     void _ClearDependencies(const SdfPath &primPath);
     void _UpdateDependencies(const SdfPath &primPath) const;
+    void _UpdateDependencies(
+        const SdfPath &primPath,
+        const HdSceneIndexPrim &prim) const;
     void _ResetDependencies();
 
     // -----------------------------------------------------------------------

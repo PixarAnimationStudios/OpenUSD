@@ -64,13 +64,13 @@ Exec_BuiltinComputationRegistry::_RegisterBuiltinComputation(
         _builtinComputationPrefix + computationName);
 
     const bool emplaced =
-        _traits.emplace(computationNameToken, computationTraits).second;
+        _traits.try_emplace(computationNameToken, computationTraits).second;
 
     if (!TF_VERIFY(emplaced)) {
         return TfToken();
     }
 
-    if (computationTraits.HasDefinition()) {
+    if (computationTraits.hasDefinition) {
         _numComputationsWithDefinitions++;
     }
 

@@ -74,7 +74,7 @@ class ValidatorPluginsWidget(QtWidgets.QWidget):
         self.tree.setAlternatingRowColors(True)
         self.tree.setItemDelegate(WordWrapDelegate(self.tree))
         self.tree.header().setSectionResizeMode(
-            QtWidgets.QHeaderView.ResizeToContents)
+            QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         self.tree.header().setStretchLastSection(False)
         self.tree.itemChanged.connect(self._onItemChanged)
 
@@ -90,23 +90,23 @@ class ValidatorPluginsWidget(QtWidgets.QWidget):
             for validatorName, isSuite, doc in validatorsByPlugin[pluginName]:
                 childItem = self.makeCheckableItem(pluginItem, validatorName)
                 if isSuite:
-                    childItem.setData(0, QtCore.Qt.UserRole, "suite")
+                    childItem.setData(0, QtCore.Qt.ItemDataRole.UserRole, "suite")
                     doc = "(Suite) " + (doc if doc else "")
                 childItem.setText(1, doc if doc else "")
                 childItem.setToolTip(1, doc if doc else "")
 
-        self.tree.sortItems(0, QtCore.Qt.AscendingOrder)
+        self.tree.sortItems(0, QtCore.Qt.SortOrder.AscendingOrder)
 
         layout.addWidget(self.tree)
 
     def makeCheckableItem(self, parent, text, role=None):
         item = QtWidgets.QTreeWidgetItem(parent, [text])
-        item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
-        item.setCheckState(0, QtCore.Qt.Unchecked)
+        item.setFlags(item.flags() | QtCore.Qt.ItemFlag.ItemIsUserCheckable)
+        item.setCheckState(0, QtCore.Qt.CheckState.Unchecked)
         if role == "plugin":
-            item.setData(0, QtCore.Qt.UserRole, "plugin")
+            item.setData(0, QtCore.Qt.ItemDataRole.UserRole, "plugin")
         elif role == "all":
-            item.setData(0, QtCore.Qt.UserRole, "all")
+            item.setData(0, QtCore.Qt.ItemDataRole.UserRole, "all")
         return item
 
     def _filterPluginsAndValidators(self, text):
@@ -134,7 +134,7 @@ class ValidatorPluginsWidget(QtWidgets.QWidget):
 
     def _onItemChanged(self, item, column):
         # Special toggling for everything
-        if item.data(0, QtCore.Qt.UserRole) == "all":
+        if item.data(0, QtCore.Qt.ItemDataRole.UserRole) == "all":
             # Everything was changed
             state = item.checkState(0)
             for i in range(item.childCount()):
@@ -145,7 +145,7 @@ class ValidatorPluginsWidget(QtWidgets.QWidget):
             return
         
         # Special toggling for a specific plugin
-        if item.data(0, QtCore.Qt.UserRole) == "plugin":
+        if item.data(0, QtCore.Qt.ItemDataRole.UserRole) == "plugin":
             state = item.checkState(0)
             for i in range(item.childCount()):
                 item.child(i).setCheckState(0, state)
@@ -157,7 +157,7 @@ class ValidatorPluginsWidget(QtWidgets.QWidget):
             return
         pluginName = parent.text(0)
         validatorName = item.text(0)
-        enabled = item.checkState(0) == QtCore.Qt.Checked
+        enabled = item.checkState(0) == QtCore.Qt.CheckState.Checked
         self.validatorToggled.emit(
             pluginName, validatorName, item.text(1), enabled)
 
@@ -185,7 +185,7 @@ class SelectedValidatorsWidget(QtWidgets.QWidget):
             item = QtWidgets.QTreeWidgetItem(pluginItem, [validatorName])
             item.setToolTip(0, description if description else "")
         self.tree.expandAll()
-        self.tree.sortItems(0, QtCore.Qt.AscendingOrder)
+        self.tree.sortItems(0, QtCore.Qt.SortOrder.AscendingOrder)
         self._filterSelectedValidators(self.search.text())
 
     def removeValidator(self, pluginName, validatorName):
@@ -198,7 +198,7 @@ class SelectedValidatorsWidget(QtWidgets.QWidget):
         if pluginItem.childCount() == 0:
             index = self.tree.indexOfTopLevelItem(pluginItem)
             self.tree.takeTopLevelItem(index)
-        self.tree.sortItems(0, QtCore.Qt.AscendingOrder)
+        self.tree.sortItems(0, QtCore.Qt.SortOrder.AscendingOrder)
         self._filterSelectedValidators(self.search.text())
 
     def getSelectedValidators(self):
@@ -234,7 +234,7 @@ class SelectedValidatorsWidget(QtWidgets.QWidget):
             pluginItem.setHidden(not pluginItemMatches)
 
     def _findPluginItem(self, pluginName):
-        items = self.tree.findItems(pluginName, QtCore.Qt.MatchExactly, 0)
+        items = self.tree.findItems(pluginName, QtCore.Qt.MatchFlag.MatchExactly, 0)
         return items[0] if items else None
 
     def _findOrCreatePluginItem(self, pluginName):
@@ -271,7 +271,7 @@ class OptionsWidget(QtWidgets.QWidget):
         layout.addWidget(self.primsSetFromSelection)
         self.primsSetFromSelection.stateChanged.connect(
             lambda state: self.includeDescendantPrims.setEnabled(
-                state == QtCore.Qt.Checked))
+                state == QtCore.Qt.CheckState.Checked))
 
         self.includeDescendantPrims = QtWidgets.QCheckBox(
             "Include descendant prims")
@@ -386,7 +386,7 @@ class ResultWidget(QtWidgets.QWidget):
             ["Validator Name", "Error Name", "Error Sites", "Message", "Type"])
         self.resultTable.horizontalHeader().setStretchLastSection(False)
         self.resultTable.horizontalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.Stretch)
+            QtWidgets.QHeaderView.ResizeMode.Stretch)
         self.resultTable.setVisible(False)
         self.resultTable.selectionModel().selectionChanged.connect(
             self._onRowsSelected)
@@ -417,11 +417,11 @@ class ResultWidget(QtWidgets.QWidget):
             nameItem = QtWidgets.QTableWidgetItem(
                 error.GetValidator().GetMetadata().name)
             nameItem.setToolTip(error.GetValidator().GetMetadata().name)
-            nameItem.setFlags(nameItem.flags() & ~QtCore.Qt.ItemIsEditable)
+            nameItem.setFlags(nameItem.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
 
             errorNameItem = QtWidgets.QTableWidgetItem(error.GetName())
             errorNameItem.setToolTip(error.GetName())
-            errorNameItem.setFlags(errorNameItem.flags() & ~QtCore.Qt.ItemIsEditable)
+            errorNameItem.setFlags(errorNameItem.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
 
             errorSites = error.GetSites()
             errorSitePaths = []
@@ -440,14 +440,14 @@ class ResultWidget(QtWidgets.QWidget):
                         errorSitePaths.append(
                             error.GetStage().GetRootLayer().identifier)
             errorSiteItem = QtWidgets.QTableWidgetItem("\n".join(errorSitePaths))
-            errorSiteItem.setFlags(errorSiteItem.flags() & ~QtCore.Qt.ItemIsEditable)
+            errorSiteItem.setFlags(errorSiteItem.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
 
             errorMsgItem = QtWidgets.QTableWidgetItem(error.GetMessage())
             errorMsgItem.setToolTip(error.GetMessage())
-            errorMsgItem.setFlags(errorMsgItem.flags() & ~QtCore.Qt.ItemIsEditable)
+            errorMsgItem.setFlags(errorMsgItem.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
 
             typeItem = QtWidgets.QTableWidgetItem(error.GetType().name)
-            typeItem.setFlags(typeItem.flags() & ~QtCore.Qt.ItemIsEditable)
+            typeItem.setFlags(typeItem.flags() & ~QtCore.Qt.ItemFlag.ItemIsEditable)
 
             self.resultTable.setItem(row, 0, nameItem)
             self.resultTable.setItem(row, 1, errorNameItem)
@@ -459,11 +459,11 @@ class ResultWidget(QtWidgets.QWidget):
             self.resultTable.setItemDelegateForColumn(4, ErrorTypeDelegate(self.resultTable))
 
         header = self.resultTable.horizontalHeader()
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.Interactive)
-        header.setSectionResizeMode(1, QtWidgets.QHeaderView.Interactive)
-        header.setSectionResizeMode(2, QtWidgets.QHeaderView.Interactive)
-        header.setSectionResizeMode(3, QtWidgets.QHeaderView.Interactive)
-        header.setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         self._filterResultRows(self.search.text())
 
     def _filterResultRows(self, text):
@@ -554,11 +554,11 @@ class ValidationWidget(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(self)
 
         # Vertical splitter to divide selectors/options and results
-        verticalSplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        verticalSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         layout.addWidget(verticalSplitter)
 
         # Horizontal splitter for plugins and selected/options
-        topSplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
+        topSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
 
         self.plugins = ValidatorPluginsWidget()
         topSplitter.addWidget(self.plugins)
@@ -567,7 +567,7 @@ class ValidationWidget(QtWidgets.QWidget):
         # Validation Content
         rightContainer = QtWidgets.QGroupBox("Validation Context")
 
-        rightSplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal, rightContainer)
+        rightSplitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal, rightContainer)
         
         self.selected = SelectedValidatorsWidget(rightContainer)
         rightSplitter.addWidget(self.selected)

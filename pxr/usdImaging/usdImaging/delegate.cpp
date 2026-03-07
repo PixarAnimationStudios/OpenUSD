@@ -288,10 +288,11 @@ UsdImagingDelegate::_GetDisplayPredicate() const
 Usd_PrimFlagsConjunction
 UsdImagingDelegate::_GetDisplayPredicateForPrototypes() const
 {
-    return _displayUnloadedPrimsWithBounds ?
-        UsdPrimIsActive && UsdPrimHasDefiningSpecifier && !UsdPrimIsAbstract :
-        UsdPrimIsActive && UsdPrimHasDefiningSpecifier && !UsdPrimIsAbstract
-            && UsdPrimIsLoaded;
+    auto predicate = UsdPrimIsActive &&
+        UsdPrimHasDefiningSpecifier && !UsdPrimHasClassSpecifier;
+    return _displayUnloadedPrimsWithBounds
+        ? predicate
+        : predicate && UsdPrimIsLoaded;
 }
 
 // -------------------------------------------------------------------------- //

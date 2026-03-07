@@ -16,8 +16,6 @@
 
 #include "pxr/usd/usdShade/connectableAPI.h"
 
-#include <tbb/concurrent_unordered_map.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // ----------------------------------------------------------------------------
@@ -39,7 +37,6 @@ public:
     ~UsdImagingDataSourceMaterial() override;
 
 private:
-
     /// If \p fixedTerminalName is specified, the provided \p usdPrim will be
     /// treated as the terminal shader node in the graph rather than as a
     /// material (with relationships to the prims serving as terminal shader
@@ -50,26 +47,17 @@ private:
         const TfToken &fixedTerminalName = TfToken()
         );
 
-
 private:
-
     const UsdPrim _usdPrim;
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
-
-    // Cache the networks by context name.
-    using _ContextMap = tbb::concurrent_unordered_map<
-        TfToken, HdDataSourceBaseHandle, TfToken::HashFunctor>;
-
-
     const TfToken _fixedTerminalName;
-    _ContextMap _networks;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceMaterial);
 
 // ----------------------------------------------------------------------------
 
-/// \class UsdImagingDataSourceMaterial
+/// \class UsdImagingDataSourceMaterialPrim
 ///
 /// A prim data source mapping for a UsdShadeMaterial prim
 ///

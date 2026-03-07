@@ -207,6 +207,11 @@ void wrapUsdSchemaRegistry()
              arg("nameTemplate"))
         .staticmethod("IsMultipleApplyNameTemplate")
 
+        .def("FindAbstractPrimDefinition", 
+             &This::FindAbstractPrimDefinition,
+             (arg("typeName")),
+             return_internal_reference<>())
+
         .def("FindConcretePrimDefinition", 
              &This::FindConcretePrimDefinition,
              (arg("typeName")),

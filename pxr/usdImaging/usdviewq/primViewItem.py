@@ -51,10 +51,10 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         # If we know we'll have children show a norgie, otherwise don't.
         if primHasChildren:
             self.setChildIndicatorPolicy(
-                    QtWidgets.QTreeWidgetItem.ShowIndicator)
+                    QtWidgets.QTreeWidgetItem.ChildIndicatorPolicy.ShowIndicator)
         else:
             self.setChildIndicatorPolicy(
-                    QtWidgets.QTreeWidgetItem.DontShowIndicator)
+                    QtWidgets.QTreeWidgetItem.ChildIndicatorPolicy.DontShowIndicator)
 
         # If this item includes a persistent drawMode widget, it is stored here.
         self.drawModeWidget = None
@@ -210,12 +210,12 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         return color.color() if self.active else color.color().darker(HALF_DARKER)
 
     def _nameData(self, role):
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if self._appController._dataModel.viewSettings.showPrimDisplayNames:
                 return self.displayName if self.displayName else self.name
             else:
                 return self.name
-        elif role == QtCore.Qt.FontRole:
+        elif role == QtCore.Qt.ItemDataRole.FontRole:
             # Abstract prims are also considered defined; since we want
             # to distinguish abstract defined prims from non-abstract
             # defined prims, we check for abstract first.
@@ -225,9 +225,9 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
                 return UIFonts.OVER_PRIM
             else:
                 return UIFonts.DEFINED_PRIM
-        elif role == QtCore.Qt.ForegroundRole:
+        elif role == QtCore.Qt.ItemDataRole.ForegroundRole:
             return self._GetForegroundColor()
-        elif role == QtCore.Qt.ToolTipRole:
+        elif role == QtCore.Qt.ItemDataRole.ToolTipRole:
             toolTip = 'Prim'
             if len(self.typeName) > 0:
                 toolTip = self.typeName + ' ' + toolTip
@@ -256,18 +256,18 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
             return None
 
     def _drawModeData(self, role):
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             return self.computedDrawMode
-        elif role == QtCore.Qt.FontRole:
+        elif role == QtCore.Qt.ItemDataRole.FontRole:
             return UIFonts.BOLD_ITALIC if self.isDrawModeInherited else \
                    UIFonts.DEFINED_PRIM
-        elif role == QtCore.Qt.ForegroundRole:
+        elif role == QtCore.Qt.ItemDataRole.ForegroundRole:
             color = self._GetForegroundColor()
             return color.darker(110) if self.isDrawModeInherited else \
                    color
 
     def _typeData(self, role):
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             return self.typeName
         else:
             return self._nameData(role)
@@ -278,21 +278,21 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
                self.computedVis == UsdGeom.Tokens.invisible
 
     def _visData(self, role):
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if self.imageable and self.active:
                 return "I" if self.vis == UsdGeom.Tokens.invisible else "V"
             else:
                 return ""
-        elif role == QtCore.Qt.TextAlignmentRole:
-            return QtCore.Qt.AlignCenter
-        elif role == QtCore.Qt.FontRole:
+        elif role == QtCore.Qt.ItemDataRole.TextAlignmentRole:
+            return QtCore.Qt.AlignmentFlag.AlignCenter
+        elif role == QtCore.Qt.ItemDataRole.FontRole:
             return UIFonts.BOLD_ITALIC if self._isVisInherited() \
                    else UIFonts.BOLD
-        elif role == QtCore.Qt.ForegroundRole:
+        elif role == QtCore.Qt.ItemDataRole.ForegroundRole:
             fgColor = self._GetForegroundColor()
             return fgColor.darker() if self._isVisInherited() \
                    else fgColor
-        elif role == QtCore.Qt.ToolTipRole:
+        elif role == QtCore.Qt.ItemDataRole.ToolTipRole:
             if self.imageable and self.active:
                 if self.vis == UsdGeom.Tokens.invisible:
                     return "Invisible Prim"
@@ -302,26 +302,26 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
             return None
 
     def _guideData(self, role):
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             if (UsdGeom.VisibilityAPI(self.prim).GetGuideVisibilityAttr().Get()
                 == UsdGeom.Tokens.visible):
                 return "V"
             else:
                 return "I"
-        elif role == QtCore.Qt.TextAlignmentRole:
-            return QtCore.Qt.AlignCenter
-        elif role == QtCore.Qt.FontRole:
+        elif role == QtCore.Qt.ItemDataRole.TextAlignmentRole:
+            return QtCore.Qt.AlignmentFlag.AlignCenter
+        elif role == QtCore.Qt.ItemDataRole.FontRole:
             if self._isVisInherited() or self.vis == UsdGeom.Tokens.invisible:
                 return UIFonts.BOLD_ITALIC
             else:
                 return UIFonts.BOLD
-        elif role == QtCore.Qt.ForegroundRole:
+        elif role == QtCore.Qt.ItemDataRole.ForegroundRole:
             fgColor = self._GetForegroundColor()
             if self._isVisInherited() or self.vis == UsdGeom.Tokens.invisible:
                 return fgColor.darker()
             else:
                 return fgColor
-        elif role == QtCore.Qt.ToolTipRole:
+        elif role == QtCore.Qt.ItemDataRole.ToolTipRole:
             if (UsdGeom.VisibilityAPI(self.prim).GetGuideVisibilityAttr().Get()
                 == UsdGeom.Tokens.visible):
                 return "Visible Guides"

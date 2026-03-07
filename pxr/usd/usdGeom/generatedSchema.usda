@@ -1459,7 +1459,8 @@ class GeomSubset "GeomSubset" (
     )
     int[] indices = [] (
         customData = {
-            string userDocBrief = "The set of indices included in this subset."
+            string userDocBrief = """The set of indices identifying elements included in this
+        subset."""
         }
     )
 }

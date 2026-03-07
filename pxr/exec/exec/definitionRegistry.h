@@ -121,6 +121,7 @@ public:
         friend class Exec_ComputationBuilder;
         friend class Exec_PrimComputationBuilder;
         friend class Exec_AttributeComputationBuilder;
+        friend class Exec_AttributeExpressionBuilder;
         friend struct Exec_ComputationBuilderConstantValueSpecifier;
 
         static Exec_DefinitionRegistry& _GetInstanceForRegistration() {
@@ -210,6 +211,16 @@ private:
     const Exec_ComputationDefinition *_LookUpLocalAttributeComputation(
         const EsfAttributeInterface &providerAttribute,
         const TfToken &computationName,
+        EsfJournal *journal) const;
+
+    // Selects a computation definition for computeValue on the provider
+    // attribute. This returns the first of:
+    //   1. A definition of a registered built-in expression.
+    //   2. TODO: A built-in expression for single-connection dataflow.
+    //   3. The definition of computeResolvedValue.
+    //
+    const Exec_ComputationDefinition *_GetComputeValueDefinition(
+        const EsfAttributeInterface &providerAttribute,
         EsfJournal *journal) const;
 
     // Returns a reference to the singleton that is suitable for registering

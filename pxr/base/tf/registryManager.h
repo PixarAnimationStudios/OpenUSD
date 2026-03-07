@@ -33,8 +33,8 @@ class TfRegistryManager {
     TfRegistryManager& operator=(const TfRegistryManager&) = delete;
 
 public:
-    // The type of a registration function.  The arguments are not used.
-    typedef void (*RegistrationFunctionType)(void*, void*);
+    // The type of a registry function.  The arguments are not used.
+    typedef void (*RegistryFunctionType)(void*, void*);
     typedef std::function<void ()> UnloadFunctionType;
 
     /// Return the singleton \c TfRegistryManager instance.
@@ -123,14 +123,14 @@ struct Tf_RegistryStaticInit {
 class Tf_RegistryInit {
 public:
     TF_API static void Add(const char* libName,
-                    TfRegistryManager::RegistrationFunctionType func,
+                    TfRegistryManager::RegistryFunctionType func,
                     const char* typeName);
     template <class T, class U>
     static void Add(const char* libName,
                     void (*func)(T*, U*),
                     const char* typeName)
     {
-        Add(libName,(TfRegistryManager::RegistrationFunctionType)func,typeName);
+        Add(libName,(TfRegistryManager::RegistryFunctionType)func,typeName);
     }
 };
 

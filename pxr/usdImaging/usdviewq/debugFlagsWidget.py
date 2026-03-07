@@ -33,7 +33,7 @@ class DebugFlagsWidget(QtWidgets.QWidget):
 
         # Configure and populate the left list view
         self._listView.setEditTriggers(
-            QtWidgets.QAbstractItemView.NoEditTriggers)
+            QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
 
         self._populateDebugFlagsListView(self._listView)
 
@@ -71,17 +71,17 @@ class DebugFlagsWidget(QtWidgets.QWidget):
         row = 0
         for f in debugFlags:
             item = QtWidgets.QTableWidgetItem()
-            item.setFlags(QtCore.Qt.ItemIsUserCheckable | 
-                          QtCore.Qt.ItemIsEnabled)
+            item.setFlags(QtCore.Qt.ItemFlag.ItemIsUserCheckable | 
+                          QtCore.Qt.ItemFlag.ItemIsEnabled)
             if Tf.Debug.IsDebugSymbolNameEnabled(f):
-                item.setCheckState(QtCore.Qt.Checked)
+                item.setCheckState(QtCore.Qt.CheckState.Checked)
             else:
-                item.setCheckState(QtCore.Qt.Unchecked)
+                item.setCheckState(QtCore.Qt.CheckState.Unchecked)
             item.setText(f)
             self._tableWidget.setItem(row, 0, item)
 
             item = QtWidgets.QTableWidgetItem()
-            item.setFlags(item.flags() ^ QtCore.Qt.ItemIsEditable)
+            item.setFlags(item.flags() ^ QtCore.Qt.ItemFlag.ItemIsEditable)
             item.setText(Tf.Debug.GetDebugSymbolDescription(f))
             self._tableWidget.setItem(row, 1, item)
 
@@ -93,5 +93,5 @@ class DebugFlagsWidget(QtWidgets.QWidget):
                 selected.indexes()[0].row()])
 
     def _onDebugFlagChecked(self, item):
-        value = (item.checkState() == QtCore.Qt.Checked)
+        value = (item.checkState() == QtCore.Qt.CheckState.Checked)
         Tf.Debug.SetDebugSymbolsByName(item.text(), value)

@@ -165,25 +165,31 @@ public:
             TF_AXIOM(stage);
         }
 
+        std::cout << "Building system.\n";
+        std::optional<ExecUsdSystem> system;
+        {
+            TRACE_SCOPE("build_system_time");
+            system.emplace(stage);
+        }
+
         std::cout << "Building request.\n";
-        ExecUsdSystem system(stage);
         std::optional<ExecUsdRequest> request;
         {
             TRACE_SCOPE("build_request_time");
-            request = _BuildRequest(system, *stage);
+            request = _BuildRequest(*system, *stage);
         }
 
         std::cout << "Preparing the request.\n";
         {
             TRACE_SCOPE("prepare_request_time");
-            system.PrepareRequest(*request);
+            system->PrepareRequest(*request);
         }
 
         std::cout << "Computing values.\n";
         std::optional<ExecUsdCacheView> cacheView;
         {
             TRACE_SCOPE("evaluate_time");
-            cacheView.emplace(system.Compute(*request));
+            cacheView.emplace(system->Compute(*request));
         }
 
         std::vector<int> computedValues;
@@ -203,19 +209,19 @@ public:
         std::cout << "Updating the request.\n";
         {
             TRACE_SCOPE("rebuild_request_time");
-            _RebuildRequest(system, &*request, *stage);
+            _RebuildRequest(*system, &*request, *stage);
         }
 
         std::cout << "Re-preparing the request.\n";
         {
             TRACE_SCOPE("reprepare_request_time");
-            system.PrepareRequest(*request);
+            system->PrepareRequest(*request);
         }
 
         std::cout << "Recomputing the values.\n";
         {
             TRACE_SCOPE("reevaluate_time");
-            cacheView.emplace(system.Compute(*request));
+            cacheView.emplace(system->Compute(*request));
         }
         computedValues.resize(_numValueKeys);
         {
@@ -512,7 +518,7 @@ private:
 
     static void _WriteStat(
         const TraceAggregateNodePtr &node,
-        std::ofstream *const statsFile = nullptr) {
+        std::ofstream *const statsFile) {
         _WriteStat(node, node->GetKey().GetText(), statsFile);
     }
 
@@ -527,8 +533,12 @@ private:
             rootNode->GetChild("Main Thread");
         TF_AXIOM(mainThreadNode);
 
-        _WriteStat(_GetTraceNode(mainThreadNode, "populate_stage_time"));
-        _WriteStat(_GetTraceNode(mainThreadNode, "build_request_time"));
+        _WriteStat(_GetTraceNode(mainThreadNode,
+                "populate_stage_time"), &statsFile);
+        _WriteStat(_GetTraceNode(mainThreadNode,
+                "build_system_time"), &statsFile);
+        _WriteStat(_GetTraceNode(mainThreadNode,
+                "build_request_time"), &statsFile);
         _WriteStat(_GetTraceNode(mainThreadNode,
                 "prepare_request_time",
                 "*ExecUsdSystem::PrepareRequest",
@@ -539,10 +549,14 @@ private:
                 "*ExecUsdSystem::PrepareRequest",
                 "*VdfScheduler::Schedule"),
             "schedule_time", &statsFile);
-        _WriteStat(_GetTraceNode(mainThreadNode, "evaluate_time"));
-        _WriteStat(_GetTraceNode(mainThreadNode, "extract_time"));
-        _WriteStat(_GetTraceNode(mainThreadNode, "scene_edit_time"));
-        _WriteStat(_GetTraceNode(mainThreadNode, "rebuild_request_time"));
+        _WriteStat(_GetTraceNode(mainThreadNode,
+                "evaluate_time"), &statsFile);
+        _WriteStat(_GetTraceNode(mainThreadNode,
+                "extract_time"), &statsFile);
+        _WriteStat(_GetTraceNode(mainThreadNode,
+                "scene_edit_time"), &statsFile);
+        _WriteStat(_GetTraceNode(mainThreadNode,
+                "rebuild_request_time"), &statsFile);
         
         // If there was no scene edit, then there is no node for
         // ExecUsd_RequestImpl::Compile.
@@ -560,8 +574,10 @@ private:
                 "*VdfScheduler::Schedule?"),
             "reschedule_time", &statsFile);
 
-        _WriteStat(_GetTraceNode(mainThreadNode, "reevaluate_time"));
-        _WriteStat(_GetTraceNode(mainThreadNode, "reextract_time"));
+        _WriteStat(_GetTraceNode(mainThreadNode,
+                "reevaluate_time"), &statsFile);
+        _WriteStat(_GetTraceNode(mainThreadNode,
+                "reextract_time"), &statsFile);
     }
 
     static void _WriteTrace(TraceReporter &reporter) {

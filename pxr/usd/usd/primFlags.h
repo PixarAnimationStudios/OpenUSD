@@ -77,6 +77,7 @@ enum Usd_PrimFlags {
     Usd_PrimComponentFlag,
     Usd_PrimAbstractFlag,
     Usd_PrimDefinedFlag,
+    Usd_PrimHasClassSpecifierFlag,
     Usd_PrimHasDefiningSpecifierFlag,
     Usd_PrimInstanceFlag,
 
@@ -487,6 +488,8 @@ extern unspecified UsdPrimIsAbstract;
 extern unspecified UsdPrimIsDefined;
 /// Tests UsdPrim::IsInstance()
 extern unspecified UsdPrimIsInstance;
+/// Tests UsdPrim::HasClassSpecifier()
+extern unspecified UsdPrimHasClassSpecifier;
 /// Tests UsdPrim::HasDefiningSpecifier()
 extern unspecified UsdPrimHasDefiningSpecifier;
 
@@ -518,6 +521,8 @@ static const Usd_PrimFlags UsdPrimIsGroup = Usd_PrimGroupFlag;
 static const Usd_PrimFlags UsdPrimIsAbstract = Usd_PrimAbstractFlag;
 static const Usd_PrimFlags UsdPrimIsDefined = Usd_PrimDefinedFlag;
 static const Usd_PrimFlags UsdPrimIsInstance = Usd_PrimInstanceFlag;
+static const Usd_PrimFlags UsdPrimHasClassSpecifier 
+    = Usd_PrimHasClassSpecifierFlag;
 static const Usd_PrimFlags UsdPrimHasDefiningSpecifier 
     = Usd_PrimHasDefiningSpecifierFlag;
 

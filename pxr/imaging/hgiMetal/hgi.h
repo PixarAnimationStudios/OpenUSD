@@ -60,14 +60,7 @@ public:
     HgiBlitCmdsUniquePtr CreateBlitCmds() override;
 
     HGIMETAL_API
-    HgiTextureHandle CreateTexture(HgiTextureDesc const & desc) override;
-
-    HGIMETAL_API
     void DestroyTexture(HgiTextureHandle* texHandle) override;
-
-    HGIMETAL_API
-    HgiTextureViewHandle CreateTextureView(
-        HgiTextureViewDesc const& desc) override;
 
     HGIMETAL_API
     void DestroyTextureView(HgiTextureViewHandle* viewHandle) override;
@@ -77,9 +70,6 @@ public:
 
     HGIMETAL_API
     void DestroySampler(HgiSamplerHandle* smpHandle) override;
-
-    HGIMETAL_API
-    HgiBufferHandle CreateBuffer(HgiBufferDesc const & desc) override;
 
     HGIMETAL_API
     void DestroyBuffer(HgiBufferHandle* texHandle) override;
@@ -99,10 +89,6 @@ public:
     HGIMETAL_API
     void DestroyShaderProgram(
         HgiShaderProgramHandle* shaderProgramHandle) override;
-
-    HGIMETAL_API
-    HgiResourceBindingsHandle CreateResourceBindings(
-        HgiResourceBindingsDesc const& desc) override;
 
     HGIMETAL_API
     void DestroyResourceBindings(HgiResourceBindingsHandle* resHandle) override;
@@ -196,6 +182,20 @@ public:
     id<MTLBuffer> GetArgBuffer();
 
 protected:
+    HGIMETAL_API
+    HgiTextureHandle _CreateTexture(HgiTextureDesc const & desc) override;
+
+    HGIMETAL_API
+    HgiTextureViewHandle _CreateTextureView(
+        HgiTextureViewDesc const& desc) override;
+
+    HGIMETAL_API
+    HgiBufferHandle _CreateBuffer(HgiBufferDesc const & desc) override;
+
+    HGIMETAL_API
+    HgiResourceBindingsHandle _CreateResourceBindings(
+        HgiResourceBindingsDesc const& desc) override;
+
     HGIMETAL_API
     bool _SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait) override;
 

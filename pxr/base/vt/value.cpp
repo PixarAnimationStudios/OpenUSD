@@ -502,6 +502,12 @@ VtValue::_GetPythonObject() const
         _info.Get()->GetPyObj(_storage) : TfPyObjWrapper();
 }
 
+const void *
+VtValue::_GetHeldObjectPtrForDebugger() const
+{
+    return IsEmpty() ? nullptr : _info->GetProxiedObjPtr(_storage);
+}
+
 bool
 VtValue::_TypeIsImpl(std::type_info const &qt) const
 {

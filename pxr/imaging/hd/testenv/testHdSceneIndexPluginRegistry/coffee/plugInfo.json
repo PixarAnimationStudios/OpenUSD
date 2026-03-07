@@ -1,0 +1,53 @@
+{
+    "Plugins": [
+        {
+            # Using type "resource" instead of "library" to avoid dynamic 
+            # library loading in the test environment.
+            # testHdSceneIndexPluginRegistry.cpp defines all of the plugins
+            # below.
+            "Type": "resource",
+            "Name": "coffeePlugins",
+            
+            "Info": {
+                "Types": {
+                    "TestHdSip_GrindBeans" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "",
+                        "loadWithApps" : "",
+
+                        # Unused but mandatory fields (see HfPluginRegistry).
+                        "priority": 0,
+                        "displayName": "Grind Coffee Beans Scene Index Plugin"
+                    },
+                    "TestHdSip_BoilWater" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "",
+                        "loadWithApps" : "",
+
+                        # Unused but mandatory fields (see HfPluginRegistry).
+                        "priority": 0,
+                        "displayName": "Boil Water Scene Index Plugin"
+                    },
+                    "TestHdSip_PourOver" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "",
+                        "loadWithApps" : "",
+
+                        # Unused but mandatory fields (see HfPluginRegistry).
+                        "priority": 0,
+                        "displayName": "Pour Over Scene Index Plugin"
+                    },
+                    "TestHdSip_DrinkCoffee" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "",
+                        "loadWithApps" : "",
+                        
+                        # Unused but mandatory fields (see HfPluginRegistry).
+                        "priority": 0,
+                        "displayName": "Drink Coffee Scene Index Plugin"
+                    }
+                }
+            }
+        }
+    ]
+}

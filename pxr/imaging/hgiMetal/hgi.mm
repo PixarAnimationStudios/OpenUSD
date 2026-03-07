@@ -198,7 +198,7 @@ HgiMetal::CreateBlitCmds()
 }
 
 HgiTextureHandle
-HgiMetal::CreateTexture(HgiTextureDesc const & desc)
+HgiMetal::_CreateTexture(HgiTextureDesc const & desc)
 {
     return HgiTextureHandle(new HgiMetalTexture(this, desc), GetUniqueId());
 }
@@ -210,12 +210,8 @@ HgiMetal::DestroyTexture(HgiTextureHandle* texHandle)
 }
 
 HgiTextureViewHandle
-HgiMetal::CreateTextureView(HgiTextureViewDesc const & desc)
+HgiMetal::_CreateTextureView(HgiTextureViewDesc const & desc)
 {
-    if (!desc.sourceTexture) {
-        TF_CODING_ERROR("Source texture is null");
-    }
-
     HgiTextureHandle src =
         HgiTextureHandle(new HgiMetalTexture(this, desc), GetUniqueId());
     HgiTextureView* view = new HgiTextureView(desc);
@@ -256,7 +252,7 @@ HgiMetal::DestroySampler(HgiSamplerHandle* smpHandle)
 }
 
 HgiBufferHandle
-HgiMetal::CreateBuffer(HgiBufferDesc const & desc)
+HgiMetal::_CreateBuffer(HgiBufferDesc const & desc)
 {
     return HgiBufferHandle(new HgiMetalBuffer(this, desc), GetUniqueId());
 }
@@ -295,7 +291,7 @@ HgiMetal::DestroyShaderProgram(HgiShaderProgramHandle* shaderProgramHandle)
 
 
 HgiResourceBindingsHandle
-HgiMetal::CreateResourceBindings(HgiResourceBindingsDesc const& desc)
+HgiMetal::_CreateResourceBindings(HgiResourceBindingsDesc const& desc)
 {
     return HgiResourceBindingsHandle(
         new HgiMetalResourceBindings(desc), GetUniqueId());

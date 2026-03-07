@@ -185,34 +185,6 @@ _GlCompressedTextureSubImageND(
     }
 }
 
-static
-bool _IsValidCompression(HgiTextureDesc const & desc)
-{
-    switch(desc.type) {
-    case HgiTextureType2D:
-        if ( desc.dimensions[0] % 4 != 0 ||
-             desc.dimensions[1] % 4 != 0) {
-            TF_CODING_ERROR("Compressed texture with width or height "
-                            "not a multiple of 4");
-            return false;
-        }
-        return true;
-    case HgiTextureType3D:
-        if ( desc.dimensions[0] % 4 != 0 ||
-             desc.dimensions[1] % 4 != 0 ||
-             desc.dimensions[2] % 4 != 0) {
-            TF_CODING_ERROR("Compressed texture with width, height or depth"
-                            "not a multiple of 4");
-            return false;
-        }
-        return true;
-    default:
-        TF_CODING_ERROR("Compression not supported for given texture "
-                        "type");
-        return false;
-    }
-}
-
 HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
     : HgiTexture(desc)
     , _textureId(0)
@@ -227,11 +199,6 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
         &glFormat,
         &glPixelType,
         &glInternalFormat);
-
-    const bool isCompressed = HgiIsCompressed(desc.format);
-    if (isCompressed && !_IsValidCompression(desc)) {
-        return;
-    }
 
     if (desc.sampleCount == HgiSampleCount1) {
         glCreateTextures(
@@ -310,7 +277,7 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
             for (size_t mip = 0; mip < mipLevels; mip++) {
                 const HgiMipInfo &mipInfo = mipInfos[mip];
 
-                if (isCompressed) {
+                if (HgiIsCompressed(desc.format)) {
                     _GlCompressedTextureSubImageND(
                         desc.type,
                         _textureId,

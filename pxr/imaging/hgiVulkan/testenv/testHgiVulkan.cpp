@@ -901,6 +901,7 @@ TestVulkanGraphicsCmds(HgiVulkan& hgiVulkan)
     HgiBufferDesc verticesDesc;
     verticesDesc.debugName = "Position Fullscreen";
     verticesDesc.byteSize = position.size() * sizeof(float);
+    verticesDesc.vertexStride = sizeof(float) * 3;
     verticesDesc.initialData = position.data();
     verticesDesc.usage = HgiBufferUsageVertex;
     HgiBufferHandle vbo = hgiVulkan.CreateBuffer(verticesDesc);

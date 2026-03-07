@@ -1322,15 +1322,16 @@ class GeomSubset "GeomSubset" (
         have one of the following values:
         <ul><li><b>face</b>: Identifies faces on a Gprim's surface. For a 
         UsdGeomMesh, each element of the _indices_ attribute would refer to 
-        an element of the Mesh's _faceCounts_ attribute. For a UsdGeomTetMesh,
-        each element of the _indices_ attribute would refer to an element of
-        the Mesh's _surfaceFaceVertexIndices_ attribute.</li>
+        an element of the Mesh's _faceVertexCounts_ attribute.
+        For a UsdGeomTetMesh, each element of the _indices_ attribute would
+        refer to an element of the TetMesh's _surfaceFaceVertexIndices_
+        attribute.</li>
         <li><b>point</b>: for any UsdGeomPointBased, each 
         element of the _indices_ attribute would refer to an element of the 
-        Mesh's _points_ attribute</li>
+        Gprim's _points_ attribute</li>
         <li><b>edge</b>: for any UsdGeomMesh, each pair of elements
-        in the _indices_ attribute would refer to a pair of points of the 
-        Mesh's _points_ attribute that are connected as an implicit edge on the 
+        in the _indices_ attribute would refer to a pair of elements of the
+        Mesh's _points_ attribute that are connected as an implicit edge on the
         Mesh. These edges are derived from the Mesh's _faceVertexIndices_ 
         attribute. Edges are not currently defined for a UsdGeomTetMesh, but
         could be derived from all tetrahedron edges or surface face edges only 
@@ -1346,10 +1347,11 @@ class GeomSubset "GeomSubset" (
         </li></ul>"""
     )
     int[] indices = [] (
-        doc = """The set of indices included in this subset. The indices need not 
-        be sorted, but the same index should not appear more than once. Indices 
-        are invalid if outside the range [0, elementCount) for the given time on 
-        the parent geometric prim."""
+        doc = """The set of indices identifying elements included in this
+        subset. The indices need not be sorted, but the same element should not
+        be identfied more than once. Indices sampled at a given time are
+        invalid if outside the range [0, elementCount) for the elements
+        sampled from the parent geometric prim at the same time."""
     )
     uniform token familyName = "" (
         doc = """The name of the family of subsets that this subset belongs to. 
@@ -2105,17 +2107,18 @@ class PointInstancer "PointInstancer" (
     traversals when they encounter a PointInstancer prim; this is what the
     UsdGeomBBoxCache and UsdImaging engines do.
     
-    There \\em is a pattern one can deploy for organizing the prototypes
-    such that they will automatically be skipped by basic UsdPrim::GetChildren()
-    or UsdPrimRange traversals.  Usd prims each have a 
-    \\ref Usd_PrimSpecifiers "specifier" of "def", "over", or "class".  The
-    default traversals skip over prims that are "pure overs" or classes.  So
-    to protect prototypes from all generic traversals and processing, place
-    them under a prim that is just an "over".  For example,
+    There \\em is a pattern one can deploy for organizing the prototypes such
+    that they will automatically be skipped by basic UsdPrim::GetChildren() or
+    UsdPrimRange traversals.  Usd prims each have a \\ref Usd_PrimSpecifiers
+    "specifier" of "def", "over", or "class".  The default traversals skip over
+    prims that are "pure overs" or classes.  So to protect prototypes from all
+    generic traversals and processing, place them under a prim that is a "class"
+    or "over". "class" is recommended , while "over" should be used when
+    backwards compatibility with older versions of USD is needed. For example,
     \\code
     01 def PointInstancer "Crowd_Mid"
     02 {
-    03     rel prototypes = [ </Crowd_Mid/Prototypes/MaleThin_Business>, </Crowd_Mid/Prototypes/MaleThin_Casual> ]
+    03     rel prototypes = [ </Crowd_Mid/Prototypes/MaleThin_Business>, </Crowd_Mid/OtherPrototypes/MaleThin_Casual> ]
     04     
     05     over "Prototypes" 
     06     {
@@ -2127,11 +2130,14 @@ class PointInstancer "PointInstancer" (
     12              }
     13          )
     14          { ... }
-    15          
-    16          def "MaleThin_Casual"
-    17          ...
-    18     }
-    19 }
+    15     }
+    16
+    17     class "OtherPrototypes"
+    18     {
+    19          def "MaleThin_Casual"
+    20          ...
+    21     }
+    22 }
     \\endcode
     """
 

@@ -573,7 +573,7 @@ scene, as shown below:
 
 #usda 1.0
 
-over "InstancedMeshSource"
+def "InstancedMeshSource"
 {
     def Mesh "Mesh"
     {
@@ -585,14 +585,14 @@ def "Model"
 {
     def "Mesh_1" (
         instanceable = true
-        references = </InstancedMesh>
+        references = </InstancedMeshSource>
     )
     {
     }
 
     def "Mesh_2" (
         instanceable = true
-        references = </InstancedMesh>
+        references = </InstancedMeshSource>
     )
     {
     }

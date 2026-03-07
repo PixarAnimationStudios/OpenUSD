@@ -11,13 +11,13 @@ digraph network {
 		"0x7f562ee30400" [label=<
 		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
 			<TR><TD PORT="0x7f5625d04900" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">time</FONT></TD></TR>
-			<TR><TD COLSPAN="1"> Exec_AttributeInputNode /Targets.a [__computeValue] </TD></TR>
+			<TR><TD COLSPAN="1"> Exec_AttributeInputNode /Targets.a [__computeResolvedValue] </TD></TR>
 		</TABLE>>];
 	node [shape=plaintext];
 		"0x7f562802fa00" [label=<
 		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
 			<TR><TD PORT="0x7f5625bb0e00" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">time</FONT></TD></TR>
-			<TR><TD COLSPAN="1"> Exec_AttributeInputNode /Targets.x [__computeValue] </TD></TR>
+			<TR><TD COLSPAN="1"> Exec_AttributeInputNode /Targets.x [__computeResolvedValue] </TD></TR>
 		</TABLE>>];
 	node [shape=plaintext];
 		"0x7f563171d470" [label=<
@@ -35,7 +35,7 @@ digraph network {
 		"0x7f562602f100" [label=<
 		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
 			<TR><TD PORT="0x7f5634cbf170" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">time</FONT></TD></TR>
-			<TR><TD COLSPAN="1"> Exec_AttributeInputNode /Targets.b [__computeValue] </TD></TR>
+			<TR><TD COLSPAN="1"> Exec_AttributeInputNode /Targets.b [__computeResolvedValue] </TD></TR>
 		</TABLE>>];
 		"0x7f562aee04e0" -> "0x7f562ee30400":"0x7f5625d04900":n;
 		"0x7f562aee04e0" -> "0x7f562802fa00":"0x7f5625bb0e00":n;

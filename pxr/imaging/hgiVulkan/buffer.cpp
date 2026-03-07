@@ -28,10 +28,6 @@ HgiVulkanBuffer::HgiVulkanBuffer(
     , _cpuStagingAddress(nullptr)
     , _mappable(false)
 {
-    if (_descriptor.byteSize == 0) {
-        TF_CODING_ERROR("The size of buffer [%p] is zero.", this);
-        return;
-    }
     HgiVulkanDevice* device = hgi->GetPrimaryDevice();
     VmaAllocator vma = device->GetVulkanMemoryAllocator();
 

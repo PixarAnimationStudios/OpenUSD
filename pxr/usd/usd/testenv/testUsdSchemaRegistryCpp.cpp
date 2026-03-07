@@ -11,6 +11,7 @@
 
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/arch/systemInfo.h"
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 static const int SCHEMA_BASE_INIT = 1971;
@@ -22,6 +23,54 @@ static const int MUTATED_VAL = 22;
 // API for prim and property data access. Instead they focus on the C++ specific
 // functionality like the templated accessors. The python testUsdSchemaRegistry
 // test handles the rest of the code coverage. 
+
+static void
+TestAbstractPrimMetadata()
+{
+    const UsdPrimDefinition *primDef = 
+        UsdSchemaRegistry::GetInstance().FindAbstractPrimDefinition(
+            TfToken("AbstractTest"));
+    TF_AXIOM(primDef);
+
+    // Get various prim metadata fields from the templated GetMetadata on the 
+    // prim definition.
+    TfToken typeName;
+    TF_AXIOM(!primDef->GetMetadata(SdfFieldKeys->TypeName, &typeName));
+    TF_AXIOM(typeName == TfToken(""));
+
+    bool hidden;
+    TF_AXIOM(primDef->GetMetadata(SdfFieldKeys->Hidden, &hidden));
+    TF_AXIOM(hidden == true);
+
+    std::string testDocs = primDef->GetDocumentation();
+    TF_AXIOM(testDocs == "Testing documentation metadata (Abstract).");
+
+    TfTokenVector metadataFields = primDef->ListMetadataFields();
+    TF_AXIOM(metadataFields.size() == 1);
+    TF_AXIOM(metadataFields[0] == SdfFieldKeys->Hidden);
+
+    // Check property definition from abstract prim definition.
+    const TfToken attrNameToken("testAttr");
+    UsdPrimDefinition::Attribute attrDef = 
+        primDef->GetAttributeDefinition(attrNameToken);
+    TF_AXIOM(attrDef);
+    TF_AXIOM(attrDef.GetTypeName() == SdfValueTypeNames->String);
+    std::string fallbackValue;
+    TF_AXIOM(attrDef.GetFallbackValue(&fallbackValue));
+    TF_AXIOM(fallbackValue == "foo");
+                
+    VtTokenArray allowTokens;
+    TF_AXIOM(attrDef.GetMetadata(SdfFieldKeys->AllowedTokens, &allowTokens));
+    TF_AXIOM(allowTokens == VtTokenArray({TfToken("bar"), TfToken("baz")}));
+
+    TF_AXIOM(attrDef.GetMetadata(SdfFieldKeys->Hidden, &hidden));
+    TF_AXIOM(hidden == true);
+
+    std::string testCustomMetadata;
+    TF_AXIOM(attrDef.GetMetadata(TfToken("testCustomMetadata"), 
+                                 &testCustomMetadata));
+    TF_AXIOM(testCustomMetadata == "garply");
+}
 
 static void
 TestPrimMetadata()
@@ -390,6 +439,7 @@ int main(int argc, char** argv)
     printf ("%s", testDir.c_str());
     TF_AXIOM(!PlugRegistry::GetInstance().RegisterPlugins(testDir).empty());
 
+    TestAbstractPrimMetadata();
     TestPrimMetadata();
     TestAttributeMetadata();
     TestRelationshipMetadata();

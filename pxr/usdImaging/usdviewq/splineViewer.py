@@ -51,7 +51,7 @@ class SplineViewer(QtWidgets.QWidget):
         self.attr = None
         if attr:
             self.setWindowTitle(f"Spline Viewer: {attr.GetPath()}")
-            self.setWindowFlags(QtCore.Qt.Window)
+            self.setWindowFlags(QtCore.Qt.WindowType.Window)
             self.SetAttribute(attr, currentFrame)
     
     def SetAttribute(self, attr, frame):
@@ -263,7 +263,7 @@ class SplineViewer(QtWidgets.QWidget):
 
     def _drawGrid(self, painter):
         gridPen = QtGui.QPen(self.GRID_COLOR)
-        gridPen.setStyle(QtCore.Qt.DotLine)
+        gridPen.setStyle(QtCore.Qt.PenStyle.DotLine)
         painter.setPen(gridPen)
 
         dx = self.dx / self.numTicks
@@ -418,7 +418,7 @@ class SplineViewer(QtWidgets.QWidget):
 
     def _drawSpline(self, painter):
         splinePen = QtGui.QPen(self.SPLINE_COLOR, 2)
-        splineBrush = QtGui.QBrush(QtCore.Qt.NoBrush)
+        splineBrush = QtGui.QBrush(QtCore.Qt.BrushStyle.NoBrush)
 
         painter.setPen(splinePen)
         painter.setBrush(splineBrush)
@@ -442,7 +442,7 @@ class SplineViewer(QtWidgets.QWidget):
             painter.drawEllipse(point, radius, radius)
             # draw a light hairline from this point to the y-axis
             dashedLinePen = QtGui.QPen(self.PLAYHEAD_COLOR, 1)
-            dashedLinePen.setStyle(QtCore.Qt.DashLine)
+            dashedLinePen.setStyle(QtCore.Qt.PenStyle.DashLine)
             painter.setPen(dashedLinePen)
             painter.drawLine(point.x(), point.y(), self.leftMargin, point.y())
             # Do I need to reset the pen for the text?
@@ -475,7 +475,7 @@ class SplineViewer(QtWidgets.QWidget):
             return
 
         painter = QtGui.QPainter(self)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
 
         # Draw background
         painter.fillRect(self.rect(), self.BACKGROUND_COLOR)

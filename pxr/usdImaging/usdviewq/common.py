@@ -70,17 +70,17 @@ class UIFonts(ConstantsGroup):
     BASE_POINT_SIZE = 10
     
     ITALIC = QtGui.QFont()
-    ITALIC.setWeight(QtGui.QFont.Light)
+    ITALIC.setWeight(QtGui.QFont.Weight.Light)
     ITALIC.setItalic(True)
 
     NORMAL = QtGui.QFont()
-    NORMAL.setWeight(QtGui.QFont.Normal)
+    NORMAL.setWeight(QtGui.QFont.Weight.Normal)
 
     BOLD = QtGui.QFont()
-    BOLD.setWeight(QtGui.QFont.Bold)
+    BOLD.setWeight(QtGui.QFont.Weight.Bold)
 
     BOLD_ITALIC = QtGui.QFont()
-    BOLD_ITALIC.setWeight(QtGui.QFont.Bold)
+    BOLD_ITALIC.setWeight(QtGui.QFont.Weight.Bold)
     BOLD_ITALIC.setItalic(True)
 
     OVER_PRIM = ITALIC
@@ -89,11 +89,11 @@ class UIFonts(ConstantsGroup):
 
     INHERITED = QtGui.QFont()
     INHERITED.setPointSizeF(BASE_POINT_SIZE * 0.8)
-    INHERITED.setWeight(QtGui.QFont.Normal)
+    INHERITED.setWeight(QtGui.QFont.Weight.Normal)
     INHERITED.setItalic(True)
 
 class KeyboardShortcuts(ConstantsGroup):
-    FramingKey = QtCore.Qt.Key_F
+    FramingKey = QtCore.Qt.Key.Key_F
 
 class PropertyViewIndex(ConstantsGroup):
     TYPE, NAME, VALUE = range(3)
@@ -129,7 +129,7 @@ class PropertyViewDataRoles(ConstantsGroup):
     TARGET = "Tgt"
     CONNECTION = "Conn"
     COMPOSED = "Cmp"
-    NORMALIZED_NAME = QtCore.Qt.UserRole + 1
+    NORMALIZED_NAME = QtCore.Qt.ItemDataRole.UserRole + 1
 
 class RenderModes(ConstantsGroup):
     # Render modes
@@ -556,7 +556,7 @@ class BusyContext(object):
     will set Qt's busy cursor upon entry and pop it on exit.
     """
     def __enter__(self):
-        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.BusyCursor)
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.BusyCursor)
 
     def __exit__(self, *args):
         QtWidgets.QApplication.restoreOverrideCursor()

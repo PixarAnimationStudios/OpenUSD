@@ -17,9 +17,9 @@ def _emitShowInterpreter(appController):
     QtWidgets.QApplication.processEvents()
 
 def _postKeyPress(key, widget):
-    event = QtGui.QKeyEvent(QtCore.QEvent.KeyPress,
+    event = QtGui.QKeyEvent(QtCore.QEvent.Type.KeyPress,
                             key,
-                            QtCore.Qt.NoModifier)
+                            QtCore.Qt.KeyboardModifier.NoModifier)
     QtWidgets.QApplication.postEvent(widget, event)
     QtWidgets.QApplication.processEvents()
 

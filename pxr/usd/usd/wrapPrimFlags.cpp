@@ -125,6 +125,7 @@ void wrapUsdPrimFlags()
     scope().attr("PrimIsAbstract") = Usd_Term(UsdPrimIsAbstract);
     scope().attr("PrimIsDefined") = Usd_Term(UsdPrimIsDefined);
     scope().attr("PrimIsInstance") = Usd_Term(UsdPrimIsInstance);
+    scope().attr("PrimHasClassSpecifier") = Usd_Term(UsdPrimHasClassSpecifier);
     scope().attr("PrimHasDefiningSpecifier") 
         = Usd_Term(UsdPrimHasDefiningSpecifier);
 

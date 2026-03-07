@@ -16,6 +16,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#define NOT_EMPTY_NAME(s) ((s).empty() ? "UNNAMED" : (s).c_str())
+
+#define HGI_TEST_CODING_ERROR(cond, ...) if (!(cond))\
+    { TF_CODING_ERROR(__VA_ARGS__); }
+
 TF_DEFINE_ENV_SETTING(HGI_ENABLE_VULKAN, 0,
                       "Enable Vulkan as platform default Hgi backend (WIP)");
 
@@ -30,6 +35,133 @@ Hgi::Hgi()
 }
 
 Hgi::~Hgi() = default;
+
+HgiTextureHandle
+Hgi::CreateTexture(HgiTextureDesc const& desc)
+{
+    HGI_TEST_CODING_ERROR(desc.dimensions[0] != 0,
+        "%s: x dimension must be non-zero",
+        NOT_EMPTY_NAME(desc.debugName));
+    HGI_TEST_CODING_ERROR(desc.dimensions[0] != 0,
+        "%s: x dimension must be non-zero",
+        NOT_EMPTY_NAME(desc.debugName));
+    HGI_TEST_CODING_ERROR(desc.usage != 0,
+        "%s: Usage must be defined",
+        NOT_EMPTY_NAME(desc.debugName));
+    HGI_TEST_CODING_ERROR(desc.sampleCount == HgiSampleCount1 || 
+            desc.type == HgiTextureType2D,
+            "%s: multisampled textures must be 2d",
+            NOT_EMPTY_NAME(desc.debugName));
+    if (HgiIsCompressed(desc.format)) {
+        if (desc.type == HgiTextureType2D) {
+            HGI_TEST_CODING_ERROR(
+                desc.dimensions[0] % 4 == 0 && desc.dimensions[1] % 4 == 0,
+                "%s: compressed textures must be block sized",
+                    NOT_EMPTY_NAME(desc.debugName));
+        } else if (desc.type == HgiTextureType3D) {
+            HGI_TEST_CODING_ERROR(desc.dimensions[0] % 4 == 0
+                && desc.dimensions[1] % 4 == 0
+                && desc.dimensions[2] % 4 == 0,
+                "%s: compressed textures must be block sized",
+                    NOT_EMPTY_NAME(desc.debugName));
+        }
+        else {
+            TF_CODING_ERROR(
+                "%s: Compressed texture must be of type "
+                "HgiTextureType2D or HgiTextureType3D",
+                    NOT_EMPTY_NAME(desc.debugName));
+        }
+    }
+    return _CreateTexture(desc);
+}
+
+HgiTextureViewHandle
+Hgi::CreateTextureView(HgiTextureViewDesc const& desc)
+{
+    HGI_TEST_CODING_ERROR(desc.sourceTexture, "%s: source texture invalid",
+        NOT_EMPTY_NAME(desc.debugName));
+    return _CreateTextureView(desc);
+}
+
+HgiBufferHandle
+Hgi::CreateBuffer(HgiBufferDesc const& desc)
+{
+    HGI_TEST_CODING_ERROR(desc.byteSize != 0,
+        "%s: buffers must be non-zero sized",
+        NOT_EMPTY_NAME(desc.debugName));
+    HGI_TEST_CODING_ERROR(
+        (desc.usage & HgiBufferUsageVertex) == 0 || desc.vertexStride != 0,
+        "%s: vertex buffers must provide stride!",
+            NOT_EMPTY_NAME(desc.debugName));
+    return _CreateBuffer(desc);
+}
+
+HgiResourceBindingsHandle
+Hgi::CreateResourceBindings(HgiResourceBindingsDesc const& desc)
+{
+    HGI_TEST_CODING_ERROR(!desc.buffers.empty() || !desc.textures.empty(),
+        "%s: buffers and textures vectors cannot be empty",
+        NOT_EMPTY_NAME(desc.debugName));
+    for (uint32_t i = 0; i < desc.buffers.size(); i++) {
+        const HgiBufferBindDesc& bufDesc = desc.buffers[i];
+        HGI_TEST_CODING_ERROR(bufDesc.buffers.size() == bufDesc.offsets.size(),
+            "%s.buffers[%u]: Buffer count (%zu) != Offset count (%zu)",
+                NOT_EMPTY_NAME(desc.debugName), i,
+                bufDesc.buffers.size(), bufDesc.offsets.size());
+        
+        if (!bufDesc.sizes.empty()) {
+            HGI_TEST_CODING_ERROR(
+                bufDesc.buffers.size() == bufDesc.sizes.size(),
+                "%s.buffers[%u]: Buffer count (%zu) != Sizes count (%zu)",
+                    NOT_EMPTY_NAME(desc.debugName), i,
+                    bufDesc.buffers.size(), bufDesc.sizes.size());
+        }
+
+        HGI_TEST_CODING_ERROR(
+            bufDesc.resourceType == HgiBindResourceTypeUniformBuffer ||
+            bufDesc.resourceType == HgiBindResourceTypeStorageBuffer,
+            "%s.buffers[%u]: Unknown buffer type to bind",
+                NOT_EMPTY_NAME(desc.debugName), i);
+        
+        uint32_t const offset = bufDesc.offsets.front();
+        uint32_t const size = bufDesc.sizes.empty() ? 0 : bufDesc.sizes.front();
+        HGI_TEST_CODING_ERROR(size != 0 || offset == 0,
+            "%s.buffers[%u]: Invalid size (%u) for buffer with offset (%u)",
+                NOT_EMPTY_NAME(desc.debugName), i, size, offset);
+
+        for (uint32_t j = 0; j < bufDesc.buffers.size(); j++) {
+            HGI_TEST_CODING_ERROR(bufDesc.buffers[j],
+                "%s.buffers[%u].buffers[%u] invalid",
+                NOT_EMPTY_NAME(desc.debugName), i, j);
+        }
+    }
+
+    for (uint32_t i = 0; i < desc.textures.size(); i++) {
+        const HgiTextureBindDesc& texDesc = desc.textures[i];
+
+        HGI_TEST_CODING_ERROR(
+            texDesc.resourceType == HgiBindResourceTypeSampledImage ||
+            texDesc.resourceType == HgiBindResourceTypeCombinedSamplerImage ||
+            texDesc.resourceType == HgiBindResourceTypeStorageImage,
+            "%s.textures[%u]: Unknown texture type to bind",
+                NOT_EMPTY_NAME(desc.debugName), i);
+
+        for (uint32_t j = 0; j < texDesc.textures.size(); j++) {
+            HGI_TEST_CODING_ERROR(texDesc.textures[j],
+                "%s.textures[%u].textures[%u] invalid",
+                    NOT_EMPTY_NAME(desc.debugName), i, j);
+        }
+        for (uint32_t j = 0; j < texDesc.samplers.size(); j++) {
+            // Don't need a sampler for StorageImage type
+            if (texDesc.resourceType != HgiBindResourceTypeStorageImage) {
+                HGI_TEST_CODING_ERROR(texDesc.samplers[j],
+                "%s.textures[%u].samplers[%u] invalid",
+                    NOT_EMPTY_NAME(desc.debugName), i, j);
+            }
+        }
+    }
+    return _CreateResourceBindings(desc);
+}
 
 void
 Hgi::SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)

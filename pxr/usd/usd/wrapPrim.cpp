@@ -270,6 +270,7 @@ void wrapUsdPrim()
         .def("IsSubComponent", &UsdPrim::IsSubComponent)
         .def("IsAbstract", &UsdPrim::IsAbstract)
         .def("IsDefined", &UsdPrim::IsDefined)
+        .def("HasClassSpecifier", &UsdPrim::HasClassSpecifier)
         .def("HasDefiningSpecifier", &UsdPrim::HasDefiningSpecifier)
 
         .def("GetPropertyNames", &_WrapGetPropertyNames,

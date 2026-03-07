@@ -1101,14 +1101,12 @@ static int Arch_FileAccessError()
     }
 }
 
-int ArchFileAccess(const char* path, int mode)
+int ArchWindowsFileAccess(const char* path, uint32_t dwAccessMask)
 {
-    // Simple existence check is handled specially.
+    // We take the arg as uint32_t to avoid including Windows.h in our .h.
+    DWORD accessMask = dwAccessMask;
+    
     std::wstring wpath{ ArchWindowsUtf8ToUtf16(path) };
-    if (mode == F_OK) {
-        return (GetFileAttributesW(wpath.c_str()) != INVALID_FILE_ATTRIBUTES)
-                ? 0 : Arch_FileAccessError();
-    }
 
     const SECURITY_INFORMATION securityInfo = OWNER_SECURITY_INFORMATION |
                                               GROUP_SECURITY_INFORMATION |
@@ -1159,7 +1157,6 @@ int ArchFileAccess(const char* path, int mode)
         mapping.GenericExecute = FILE_GENERIC_EXECUTE;
         mapping.GenericAll = FILE_ALL_ACCESS;
 
-        DWORD accessMask = ArchModeToAccess(mode);
         MapGenericMask(&accessMask, &mapping);
 
         if (AccessCheck(security,
@@ -1183,6 +1180,17 @@ int ArchFileAccess(const char* path, int mode)
     CloseHandle(token);
 
     return result ? 0 : -1;
+}
+
+int ArchFileAccess(const char* path, int mode)
+{
+    // Simple existence check is handled specially.
+    if (mode == F_OK) {
+        std::wstring wpath{ ArchWindowsUtf8ToUtf16(path) };
+        return (GetFileAttributesW(wpath.c_str()) != INVALID_FILE_ATTRIBUTES)
+                ? 0 : Arch_FileAccessError();
+    }
+    return ArchWindowsFileAccess(path, ArchModeToAccess(mode));
 }
 
 // https://msdn.microsoft.com/en-us/library/windows/hardware/ff552012.aspx

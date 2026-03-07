@@ -283,8 +283,13 @@ public:
     /// false otherwise. \sa SdfIsDefiningSpecifier.
     bool IsDefined() const { return _Prim()->IsDefined(); }
 
-    /// Return true if this prim has a specifier of type SdfSpecifierDef
-    /// or SdfSpecifierClass. \sa SdfIsDefiningSpecifier
+    /// Return true if this prim has the specifier SdfSpecifierClass.
+    bool HasClassSpecifier() const {
+        return _Prim()->HasClassSpecifier();
+    }
+    
+    /// Return true if this prim has the specifier SdfSpecifierDef or
+    /// SdfSpecifierClass. \sa SdfIsDefiningSpecifier
     bool HasDefiningSpecifier() const { 
         return _Prim()->HasDefiningSpecifier(); 
     }

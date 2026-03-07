@@ -26,7 +26,7 @@ class _ArrayAttributeModel(QtCore.QAbstractListModel):
     '''This is a data model that represents a slice into some array data.
     '''
 
-    RawDataRole = QtCore.Qt.UserRole + 0
+    RawDataRole = QtCore.Qt.ItemDataRole.UserRole + 0
 
     def __init__(self):
         super(_ArrayAttributeModel, self).__init__()
@@ -79,12 +79,12 @@ class _ArrayAttributeModel(QtCore.QAbstractListModel):
     def columnCount(self, parent=QtCore.QModelIndex()):
         return 1
 
-    def data(self, index, role=QtCore.Qt.DisplayRole):
+    def data(self, index, role=QtCore.Qt.ItemDataRole.DisplayRole):
         start, _, step = self._slice.indices(len(self._arrayData))
         idx = start + index.row() * step
         dataVal = self._arrayData[idx]
 
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.ItemDataRole.DisplayRole:
             from .scalarTypes import ToString
             return str(idx) + ": " + ToString(
                 dataVal, self._scalarTypeName)
@@ -129,8 +129,8 @@ class ArrayAttributeView(QtWidgets.QWidget):
         self._arrayAttrModel = _ArrayAttributeModel()
         self._listView = QtWidgets.QListView()
         self._listView.setUniformItemSizes(True)
-        self._listView.setViewMode(QtWidgets.QListView.ListMode)
-        self._listView.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self._listView.setViewMode(QtWidgets.QListView.ViewMode.ListMode)
+        self._listView.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
         self._listView.setModel(self._arrayAttrModel)
         layout.addWidget(self._listView)
 
@@ -155,14 +155,14 @@ class ArrayAttributeView(QtWidgets.QWidget):
     def keyPressEvent(self, e):
         # XXX note, this is extremely finicky.  it does not really
         # have keyboard focus.
-        if e.matches(QtGui.QKeySequence.Copy):
+        if e.matches(QtGui.QKeySequence.StandardKey.Copy):
             self.Copy()
         else:
             return super(ArrayAttributeView, self).keyPressEvent(e)
 
     # context menu stuff
     def _SetupContextMenu(self):
-        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._ShowContextMenu)
 
     def _ShowContextMenu(self, point):
@@ -223,9 +223,9 @@ class _SliceLineEdit(QtWidgets.QLineEdit):
             s = s.strip()
             try:
                 _GetSliceFromString(s)
-                return (QtGui.QValidator.Acceptable, s, pos)
+                return (QtGui.QValidator.State.Acceptable, s, pos)
             except:
-                return (QtGui.QValidator.Intermediate, s, pos)
+                return (QtGui.QValidator.State.Intermediate, s, pos)
 
     def setText(self, t):
         super(_SliceLineEdit, self).setText(t)
