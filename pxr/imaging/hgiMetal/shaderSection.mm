@@ -295,7 +295,7 @@ HgiMetalTextureShaderSection::WriteType(std::ostream& ss) const
         }
         ss << "<" << _baseType;
         if (_writable) {
-            ss  << ", access::write";
+            ss  << ", access::read_write";
         }
         ss << ">";
     }
@@ -410,6 +410,16 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
         }
         ss << _baseType;
         ss << "4(data));\n";
+        ss << "}\n";
+
+        // Write a function that lets you read from the texture with
+        // HgiGet_texName(uv, data).
+        ss << _returnType << "4 HgiGet_" << _samplerSharedIdentifier;
+        ss << "(" << sizeType << " uv) {\n";
+        ss << "    ";
+        ss << "return " << _returnType << "4(imageLoad(";
+        WriteIdentifier(ss);
+        ss << ", uv));\n";
         ss << "}\n";
 
         // HgiGetSize_texName()
