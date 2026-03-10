@@ -483,7 +483,7 @@ float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia,
 
         // traverse all collisions below this body and get their collision information
         // first gather all collisions
-        UsdPrimRange range(usdPrim);
+        UsdPrimRange range(usdPrim, UsdTraverseInstanceProxies());
         for (auto it = range.begin(); it != range.end(); ++it)
         {
             UsdPrim collisionPrim = *it;
