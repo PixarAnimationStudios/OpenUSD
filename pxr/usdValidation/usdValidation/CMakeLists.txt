@@ -48,6 +48,7 @@ pxr_test_scripts(
     testenv/testUsdValidationContextPy.py
     testenv/testUsdValidationError.py
     testenv/testUsdValidationRegistryPy.py
+    testenv/testUsdValidationRegistryPyRegister.py
     testenv/testUsdValidatorMetadata.py
 )
 
@@ -162,5 +163,11 @@ pxr_register_test(testUsdValidationContextPy
 pxr_register_test(testUsdValidationRegistryPy
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidationRegistryPy"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdValidationRegistryPyRegister
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidationRegistryPyRegister"
     EXPECTED_RETURN_CODE 0
 )

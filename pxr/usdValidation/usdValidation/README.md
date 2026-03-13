@@ -314,6 +314,179 @@ registry.RegisterPluginValidator(validatorName, stageTaskFn, _ValidatorFixers())
 Note that UsdValidationRegistry does not manage fixers directly, and these are 
 held by their respective UsdValidationValidator(s).
 
+## Creating Custom Validators in Python  {#python_validators}
+
+Python validators are registered explicitly at runtime using the
+`RegisterLayerValidator`, `RegisterStageValidator`, and
+`RegisterPrimValidator` methods on `ValidationRegistry`. No plugin
+infrastructure or `plugInfo.json` is required; the validator is
+available immediately after registration.
+
+### Task function signatures
+
+Each registration method accepts a Python callable with a specific
+signature, matching the corresponding C++ task function type:
+
+| Method | Callable signature |
+|---|---|
+| `RegisterLayerValidator` | `(layer: Sdf.Layer) -> list[ValidationError]` |
+| `RegisterStageValidator` | `(stage: Usd.Stage, timeRange: UsdValidation.TimeRange) -> list[ValidationError]` |
+| `RegisterPrimValidator` | `(prim: Usd.Prim, timeRange: UsdValidation.TimeRange) -> list[ValidationError]` |
+
+The callable must return a list (or any iterable) of
+`UsdValidation.ValidationError` objects. Return an empty list when the
+validation passes.
+
+### Layer validator example
+
+```python
+from pxr import Sdf, UsdValidation
+
+registry = UsdValidation.ValidationRegistry()
+
+metadata = UsdValidation.ValidatorMetadata(
+    name="myPackage:RequiresDefaultPrim",
+    doc="Warn when a layer has no default prim set.",
+    keywords=["myPackage"],
+)
+
+def _check_default_prim(layer):
+    if not layer.defaultPrim:
+        return [
+            UsdValidation.ValidationError(
+                "MissingDefaultPrim",
+                UsdValidation.ValidationErrorType.Warn,
+                [UsdValidation.ValidationErrorSite(
+                    layer, Sdf.Path.absoluteRootPath)],
+                f"Layer '{layer.identifier}' has no defaultPrim.",
+            )
+        ]
+    return []
+
+registry.RegisterLayerValidator(metadata, _check_default_prim)
+```
+
+### Stage validator example
+
+```python
+from pxr import Sdf, Usd, UsdGeom, UsdValidation
+
+registry = UsdValidation.ValidationRegistry()
+
+metadata = UsdValidation.ValidatorMetadata(
+    name="myPackage:RequiresUpAxis",
+    doc="Error when a stage has no upAxis metadata.",
+    keywords=["myPackage"],
+)
+
+def _check_up_axis(stage, timeRange):
+    if not stage.HasAuthoredMetadata(UsdGeom.Tokens.upAxis):
+        return [
+            UsdValidation.ValidationError(
+                "MissingUpAxis",
+                UsdValidation.ValidationErrorType.Error,
+                [UsdValidation.ValidationErrorSite(
+                    stage, Sdf.Path.absoluteRootPath)],
+                "Stage is missing upAxis metadata.",
+            )
+        ]
+    return []
+
+registry.RegisterStageValidator(metadata, _check_up_axis)
+```
+
+### Prim validator example
+
+The prim task is called for every prim visited during traversal,
+including the pseudo-root. Guard against it with `IsPseudoRoot()`
+if your logic only applies to real prims.
+
+```python
+from pxr import Sdf, Usd, UsdValidation
+
+registry = UsdValidation.ValidationRegistry()
+
+metadata = UsdValidation.ValidatorMetadata(
+    name="myPackage:NoPrimsMissingKind",
+    doc="Warn when a prim has no kind set.",
+    keywords=["myPackage"],
+)
+
+def _check_kind(prim, timeRange):
+    if prim.IsPseudoRoot():   # skip pseudo-root
+        return []
+    model = Usd.ModelAPI(prim)
+    if not model.GetKind():
+        return [
+            UsdValidation.ValidationError(
+                "MissingKind",
+                UsdValidation.ValidationErrorType.Warn,
+                [UsdValidation.ValidationErrorSite(
+                    prim.GetStage(), prim.GetPath())],
+                f"Prim '{prim.GetPath()}' has no kind.",
+            )
+        ]
+    return []
+
+registry.RegisterPrimValidator(metadata, _check_kind)
+```
+
+### Running a Python validator
+
+Retrieve the registered validator by name and call `Validate()`, or
+pass it to a `ValidationContext` to run it alongside other validators.
+
+```python
+# Direct invocation
+validator = registry.GetOrLoadValidatorByName(
+    "myPackage:RequiresUpAxis"
+)
+stage = Usd.Stage.Open("asset.usda")
+errors = validator.Validate(stage)
+for error in errors:
+    print(error.GetErrorAsString())
+
+# Via ValidationContext (runs all provided validators in parallel)
+context = UsdValidation.ValidationContext([validator])
+errors = context.Validate(stage)
+```
+
+### Grouping validators into a suite
+
+```python
+stage_validator = registry.GetOrLoadValidatorByName(
+    "myPackage:RequiresUpAxis"
+)
+prim_validator = registry.GetOrLoadValidatorByName(
+    "myPackage:NoPrimsMissingKind"
+)
+
+suite_metadata = UsdValidation.ValidatorMetadata(
+    name="myPackage:BaselineChecks",
+    doc="Suite of baseline asset checks.",
+    keywords=["myPackage"],
+    isSuite=True,
+)
+registry.RegisterValidatorSuite(
+    suite_metadata, [stage_validator, prim_validator]
+)
+```
+
+### Notes
+
+* The `ValidationRegistry` is a singleton; validators registered in
+  one module are visible to all other modules in the same process.
+* Validator names must be unique across the registry. Re-registering
+  an existing name will fail silently; use `HasValidator()` to check
+  before registering if needed.
+* Python exceptions raised inside a task function are converted to Tf
+  errors and the validator returns an empty error list for that
+  invocation. Add explicit error handling inside the callable if you
+  need richer diagnostics.
+* Validators registered from Python are "explicit" validators; they
+  have no associated plugin and are not lazily loaded. They must be
+  registered each session before they can be used.
+
 ## Additional Examples
 
 The code for `usdchecker` (in pxr/usdValidation/bin/usdchecker) has been 
