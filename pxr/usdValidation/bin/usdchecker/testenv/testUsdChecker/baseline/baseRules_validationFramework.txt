@@ -38,8 +38,9 @@
 	SchemaTypes: UsdPhysicsRigidBodyAPI
 	isSuite: False
 [usdShadeValidators:EncapsulationRulesValidator]:
-	Doc: Connectable prims (e.g. Shader, Material, etc) can only be nested inside other Container-like Connectable prims. Container-like prims include Material, NodeGraph, Light, LightFilter. Shader is not a Container-like prim.
+	Doc: Connectable prims (e.g. Shader, Material, etc) can only be nested inside other Container-like Connectable prims. Container-like prims include Material, NodeGraph. Shader is not a Container-like prim.
 	Keywords: UsdShadeValidators
+	SchemaTypes: UsdShadeShader, UsdShadeMaterial, UsdShadeNodeGraph
 	isSuite: False
 [usdShadeValidators:MaterialBindingApiAppliedValidator]:
 	Doc: Verify a prim has the MaterialBindingAPI applied if it has a material binding relationship.

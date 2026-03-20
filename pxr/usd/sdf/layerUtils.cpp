@@ -208,7 +208,12 @@ SdfResolveAssetPathRelativeToLayer(
         return computedAssetPath;
     }
 
-    return ArGetResolver().Resolve(computedAssetPath);
+    std::string strippedArgs = computedAssetPath;
+    std::string layerArgs;
+    Sdf_SplitIdentifier(computedAssetPath, &strippedArgs, &layerArgs);
+
+    return Sdf_CreateIdentifier(
+        ArGetResolver().Resolve(strippedArgs), layerArgs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

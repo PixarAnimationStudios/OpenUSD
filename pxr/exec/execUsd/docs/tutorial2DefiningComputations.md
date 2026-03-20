@@ -209,10 +209,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     (computeMomentum)
 );
 
-// Note: This code is slightly different from what's shown in the tutorial
-// documentation because the test infrastructure doesn't allow us to generate
-// code for a schema and include the generated tokens header here. Therefore,
-// we construct the ParamsAPI property tokens manually below.
+// Note: This code is slightly different from the published
+// `definingComputations` example code because that code has to contruct
+// ParamsAPI property tokens manually. Here, we assume the tokens have been
+// generated and made available in the UsdSchemaExamplesTokens struct, since
+// this is the pattern we expect most schema computations to follow.
 //
 EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSchemaExamplesParamsAPI)
 {
@@ -220,32 +221,32 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(UsdSchemaExamplesParamsAPI)
     // and params:velocity and computes the momentum.
     self.PrimComputation(_tokens->computeMomentum)
         .Callback<double>(+[](const VdfContext &context) {
-            const double mass =
-                context.GetInputValue<double>(TfToken("params:mass"));
-            const double velocity = 
-                context.GetInputValue<double>(TfToken("params:velocity"));
+            const double mass = context.GetInputValue<double>(
+                UsdSchemaExamplesTokens->paramsMass);
+            const double velocity = context.GetInputValue<double>(
+                UsdSchemaExamplesTokens->paramsVelocity);
 
             return mass * velocity;
         })
         .Inputs(
-            AttributeValue<double>(TfToken("params:mass")),
-            AttributeValue<double>(TfToken("params:velocity"))
+            AttributeValue<double>(UsdSchemaExamplesTokens->paramsMass),
+            AttributeValue<double>(UsdSchemaExamplesTokens->paramsVelocity)
         );
 
     // Define a computation that reads the values of the attributes params:mass
     // and params:volume and computes the density.
     self.PrimComputation(_tokens->computeDensity)
         .Callback<double>(+[](const VdfContext &context) {
-            const double mass =
-                context.GetInputValue<double>(TfToken("params:mass"));
-            const double volume =
-                context.GetInputValue<double>(TfToken("params:volume"));
+            const double mass = context.GetInputValue<double>(
+                UsdSchemaExamplesTokens->paramsMass);
+            const double volume = context.GetInputValue<double>(
+                UsdSchemaExamplesTokens->paramsVolume);
 
             return mass == 0.0 ? 0.0 : volume / mass;
         })
         .Inputs(
-            AttributeValue<double>(TfToken("params:mass")),
-            AttributeValue<double>(TfToken("params:volume"))
+            AttributeValue<double>(UsdSchemaExamplesTokens->paramsMass),
+            AttributeValue<double>(UsdSchemaExamplesTokens->paramsVolume)
         );
 }
 ```

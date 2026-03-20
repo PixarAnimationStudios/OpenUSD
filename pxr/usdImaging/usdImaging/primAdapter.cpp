@@ -660,6 +660,17 @@ _GetUsdPrimAttribute(
     return value;
 }
 
+VtValue
+UsdImagingPrimAdapter::GetVolumeParamValue(
+    const UsdPrim& prim,
+    const SdfPath& cachePath,
+    const TfToken& paramName,
+    UsdTimeCode time) const
+{
+    // Fallback to USD attributes.
+    return _GetUsdPrimAttribute(prim, paramName, time);
+}
+
 /*static*/
 UsdAttribute
 UsdImagingPrimAdapter::LookupLightParamAttribute(

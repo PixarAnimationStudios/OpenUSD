@@ -216,10 +216,9 @@ ExecUsdSystem::_NoticeListener::_DidObjectsChanged(
         }
     }
 
-// TODO:
-//     for (const SdfPath &path : changedTargetPaths) {
-//         changeProcessor.DidChangeIncomingConnections(path);
-//     };
+    for (const SdfPath &path : changedTargetPaths) {
+        changeProcessor.DidChangeIncomingConnections(path);
+    };
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

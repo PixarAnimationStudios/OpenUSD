@@ -7,9 +7,12 @@
 // Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#include "docstring_preamble.hpp"
+
 #include "pxr/external/boost/python/suite/indexing/map_indexing_suite.hpp"
 #include "pxr/external/boost/python/module.hpp"
 #include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/docstring_options.hpp"
 #include "pxr/external/boost/python/implicit.hpp"
 
 using namespace PXR_BOOST_NAMESPACE::python;
@@ -80,7 +83,6 @@ struct AFromPython
 
 void a_map_indexing_suite()
 {
-
   to_python_converter< A , AToPython >();
   AFromPython();
 

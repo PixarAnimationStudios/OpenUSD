@@ -151,7 +151,9 @@ _ValidateConnections(
         }
     }
 
-    for (const auto &[path, actual] : actualIncoming) {
+    for (const auto &entry : actualIncoming) {
+        const SdfPath &path = entry.first;
+        const std::set<SdfPath> &actual = entry.second;
         ASSERT_EQ(
             _MakePathSet(EsfUsdStageData::GetIncomingConnections(stage, path)),
             actual);

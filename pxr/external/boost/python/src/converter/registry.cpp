@@ -10,6 +10,7 @@
 #include "pxr/external/boost/python/converter/registry.hpp"
 #include "pxr/external/boost/python/converter/registrations.hpp"
 #include "pxr/external/boost/python/converter/builtin_converters.hpp"
+#include "pxr/external/boost/python/detail/pymutex.hpp"
 
 #include <set>
 #include <stdexcept>
@@ -117,9 +118,9 @@ registration::~registration()
 namespace // <unnamed>
 {
   typedef registration entry;
-  
+
   typedef std::set<entry> registry_t;
-  
+
 #ifndef PXR_BOOST_PYTHON_CONVERTER_REGISTRY_APPLE_MACH_WORKAROUND
   registry_t& entries()
   {
@@ -186,6 +187,8 @@ namespace // <unnamed>
 
   entry* get(type_info type, bool is_shared_ptr = false)
   {
+      PXR_BOOST_PYTHON_LOCK_STATE();
+
 #  ifdef PXR_BOOST_PYTHON_TRACE_REGISTRY
       registry_t::iterator p = entries().find(entry(type));
       
@@ -298,6 +301,8 @@ namespace registry
 
   registration const* query(type_info type)
   {
+      PXR_BOOST_PYTHON_LOCK_STATE();
+
       registry_t::iterator p = entries().find(entry(type));
 #  ifdef PXR_BOOST_PYTHON_TRACE_REGISTRY
       std::cout << "querying " << type

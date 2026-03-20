@@ -66,10 +66,8 @@ EsfObjectInterface::GetIncomingConnections(EsfJournal *const journal) const
     if (journal) {
         journal->Add(
             _GetPath(),
-// TODO:
-//             EsfEditReason::ResyncedObject |
-//             EsfEditReason::ChangedIncomingConnections);
-            EsfEditReason::ResyncedObject);
+            EsfEditReason::ResyncedObject |
+            EsfEditReason::ChangedIncomingConnections);
     }
     return _GetIncomingConnections();
 }

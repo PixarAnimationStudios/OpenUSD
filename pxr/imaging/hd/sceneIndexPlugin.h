@@ -23,6 +23,20 @@ public:
         const std::string &renderInstanceId,
         const HdSceneIndexBaseRefPtr &inputScene,
         const HdContainerDataSourceHandle &inputArgs);
+    
+    /// Returns true if the plugin is enabled, in the sense that it should be
+    /// consulted for its contribution to the scene index chain via
+    /// AppendSceneIndex.
+    ///
+    /// Current implementation simply delegates to _IsEnabled; this may change 
+    /// in the future to first consult inputArgs (e.g. to check a data source
+    /// that provides the plugin IDs to disable) before calling _IsEnabled.
+    ///
+    /// \sa HdSceneIndexPluginRegistry::AppendSceneIndex.
+    ///
+    HD_API
+    bool IsEnabled(
+        const HdContainerDataSourceHandle &inputArgs) const;
 
 protected:
 
@@ -51,6 +65,15 @@ protected:
         const HdSceneIndexBaseRefPtr &inputScene,
         const HdContainerDataSourceHandle &inputArgs);
 
+    /// Subclasses implement this to indicate whether the plugin is enabled.
+    /// This is preferable to using env guards to gate registration and
+    /// scene index instatiation in _AppendSceneIndex.
+    ///
+    /// Base implementation returns true.
+    HD_API
+    virtual bool _IsEnabled(
+        const HdContainerDataSourceHandle &inputArgs) const;
+    
     HdSceneIndexPlugin() = default;
     HD_API
     ~HdSceneIndexPlugin() override;

@@ -50,6 +50,12 @@ HdSceneIndexPlugin::_AppendSceneIndex(
     return inputScene;
 }
 
+bool
+HdSceneIndexPlugin::_IsEnabled(
+    const HdContainerDataSourceHandle &inputArgs) const
+{
+    return true;
+}
 
 HdSceneIndexBaseRefPtr
 HdSceneIndexPlugin::AppendSceneIndex(
@@ -57,7 +63,17 @@ HdSceneIndexPlugin::AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {
-    return _AppendSceneIndex(renderInstanceId, inputScene, inputArgs);
+    if (IsEnabled(inputArgs)) {
+        return _AppendSceneIndex(renderInstanceId, inputScene, inputArgs);
+    }
+    return inputScene;
+}
+
+bool
+HdSceneIndexPlugin::IsEnabled(
+    const HdContainerDataSourceHandle &inputArgs) const
+{
+    return _IsEnabled(inputArgs);
 }
 
 

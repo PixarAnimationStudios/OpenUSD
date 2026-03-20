@@ -39,6 +39,14 @@ public:
 
     HdPrman_Volume(SdfPath const& id, const bool isMeshLight);
 
+    /// Synchronizes state from the delegate to this object.
+    void Sync(HdSceneDelegate *sceneDelegate,
+              HdRenderParam   *renderParam,
+              HdDirtyBits     *dirtyBits,
+              TfToken const   &reprToken) override;
+
+    void Finalize(HdRenderParam *renderParam) override;
+
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     /// The types of volumes that can be emitted to Prman are extensible, since
@@ -103,6 +111,11 @@ protected:
         std::vector<HdGeomSubset> *geomSubsets,
         std::vector<RtPrimVarList> *geomSubsetPrimvars) override;
 
+    void _AddPrimvars(RtPrimVarList*) const override;
+    
+    const std::vector<riley::CoordinateSystemId>& 
+    _GetAdditionalCoordSysIds() const override;
+
     riley::MaterialId
     _GetFallbackMaterial(HdPrman_RenderParam *renderParam) override {
         return renderParam->GetFallbackVolumeMaterialId();
@@ -115,6 +128,10 @@ protected:
 
 private:
     bool _isMeshLight;
+    SdfPathVector _volumeFilterPaths;
+    std::vector<RtUString> _volumeFilterNodeNames;
+    std::vector<riley::VolumeFilterId> _volumeFilterIds;
+    std::vector<riley::CoordinateSystemId> _volumeFilterCoordSysIds;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

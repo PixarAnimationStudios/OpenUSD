@@ -54,6 +54,12 @@ public:
         const SdfPath &path,
         const TfTokenVector &changedFields);
 
+    /// Notifies the ExecSystem that the set of attribute connections that
+    /// target a scene object has changed.
+    ///
+    EXEC_API
+    void DidChangeIncomingConnections(const SdfPath &path);
+
 private:
     // Processes accumulated state from changes before the processor goes out of
     // scope.

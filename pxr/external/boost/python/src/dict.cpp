@@ -73,8 +73,16 @@ object dict_base::get(object_cref k) const
 {
     if (check_exact(this))
     {
+#ifdef Py_GIL_DISABLED
+        PyObject* result;
+        if (PyDict_GetItemRef(this->ptr(),k.ptr(),&result) < 0) {
+            throw_error_already_set();
+        }
+        return object(detail::new_reference(result ? result : Py_None));
+#else
         PyObject* result = PyDict_GetItem(this->ptr(),k.ptr());
         return object(detail::borrowed_reference(result ? result : Py_None));
+#endif
     }
     else
     {

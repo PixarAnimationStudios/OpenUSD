@@ -104,6 +104,7 @@ namespace detail
             , make_function(
                   detail::nullary_function_adaptor<void(*)()>(pure_virtual_called)
                 , default_call_policies()
+                , options.keywords()
                 , detail::error_signature<held_type>(detail::get_signature(m_pmf))
               )
           );

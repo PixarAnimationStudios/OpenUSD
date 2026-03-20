@@ -29,6 +29,7 @@
    Rendering with USD <user_guides/render_user_guide>
    Primvars <user_guides/primvars>
    Schema Domains <user_guides/schemas/index>
+   Time and Animated Values <user_guides/time_and_animated_values.rst>
    Variable Expressions <user_guides/variable_expressions>
 
 .. toctree::

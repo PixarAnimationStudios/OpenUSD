@@ -83,6 +83,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SAFE_MODE,
         "Enable additional security checks");
 
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SCENE_INDEX_PLUGIN_REGISTRY,
+        "Report debug info on scene index plugin registry");
+
     TF_DEBUG_ENVIRONMENT_SYMBOL(HD_SELECTION_UPDATE,
         "Report when selection is updated");
 

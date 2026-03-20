@@ -13,12 +13,13 @@
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/fileUtils.h"
-#include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
 
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <ostream>
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -51,7 +52,8 @@ public:
         const HdSceneIndexBaseRefPtr &inputScene,
         const HdContainerDataSourceHandle &inputArgs) override
     {
-        // Not actually 
+        // This test doesn't exercise the actual scene index creation, so just 
+        // return the input scene.
         return inputScene;
     }
 };
@@ -59,8 +61,9 @@ public:
 }
 
 // -----------------------------------------------------------------------------
-// Define and register the test scene index plugins.
-//
+// Define the test scene index plugins declared in the following files:
+// coffee/plugInfo.json, omelette/plugInfo.json, and clean/plugInfo.json.
+// 
 class TestHdSip_GrindBeans final : public _TestBaseSceneIndexPlugin { };
 class TestHdSip_BoilWater final : public _TestBaseSceneIndexPlugin { };
 class TestHdSip_PourOver final : public _TestBaseSceneIndexPlugin { };
@@ -74,6 +77,8 @@ class TestHdSip_EatOmelette final : public _TestBaseSceneIndexPlugin { };
 
 class TestHdSip_TidyUp final : public _TestBaseSceneIndexPlugin { };
 
+// Registry function that is invoked when Tf_TypeRegistry (singleton) is
+// initialized.
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdSceneIndexPluginRegistry::Define<TestHdSip_GrindBeans>();
@@ -90,6 +95,8 @@ TF_REGISTRY_FUNCTION(TfType)
     HdSceneIndexPluginRegistry::Define<TestHdSip_TidyUp>();
 }
 
+// Registry function that is invoked when HdSceneIndexPluginRegistry (singleton)
+// is initialized.
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
     constexpr HdSceneIndexPluginRegistry::InsertionPhase prepPhase = 0;
@@ -168,10 +175,10 @@ _CompareValue(
 
 static
 bool
-BasicTest()
+_TestValidOrdering(HdSceneIndexPluginRegistry::PluginOrderingPolicy policy)
 {
-   HdSceneIndexPluginRegistry &registry =
-        HdSceneIndexPluginRegistry::GetInstance();
+    auto &registry = HdSceneIndexPluginRegistry::GetInstance();
+    registry.SetPluginOrderingPolicy(policy);
     
     std::vector<TfToken> pluginIds = registry.LoadAndGetSceneIndexPluginIds(
         HdSceneIndexPluginRegistryTokens->allRenderers.GetString(),
@@ -198,14 +205,17 @@ BasicTest()
         _testTokens->TestHdSip_TidyUp
     };
 
-    return _CompareValue("ORDERED SCENE INDEX PLUGINS (phase/order based)",
-        pluginIds, expectedPluginOrder);
+    std::stringstream ss;
+    ss << "Ordered scene index plugin IDs with policy \'" 
+       << TfEnum::GetName(policy) << "\' ";
+    return _CompareValue(ss.str().c_str(), pluginIds, expectedPluginOrder);
 }
 
-int main()
+static bool
+TestValidOrdering()
 {
-    TfErrorMark mark;
-
+    // Load plugins from files with a valid ordering and verify the order is as
+    // expected.
     const std::string testDirPath = ArchGetCwd();
     // Simulate the scenario where scene index plugins are registered in
     // different libraries (directories).
@@ -218,8 +228,38 @@ int main()
         TF_AXIOM(TfPathExists(path));
         TF_AXIOM(!PlugRegistry::GetInstance().RegisterPlugins(path).empty());
     }
-    
-    bool success = BasicTest();
+
+    // Note that we used registry functions above to register the test plugin
+    // types and their ordering. It may make sense to do that explictly when
+    // we extend this test to cover more scenarios (e.g. invalid ordering,
+    // missing plugins, etc.).
+
+    const auto orderingPolicies = {
+        HdSceneIndexPluginRegistry::PluginOrderingPolicy::CppRegistrationOnly,
+        HdSceneIndexPluginRegistry::PluginOrderingPolicy::JsonMetadataOnly,
+        HdSceneIndexPluginRegistry::PluginOrderingPolicy::Hybrid
+    };
+
+    bool success = true;
+    for (const auto& policy : orderingPolicies) {
+        std::cout << "Testing plugin ordering with policy: "
+                  << TfEnum::GetName(policy) << std::endl;
+
+        const bool result = _TestValidOrdering(policy);
+
+        std::cout << "Result: " << (result ? "PASS" : "FAIL") << std::endl;
+        success &= result;
+    }
+
+    return success;
+}
+
+int main()
+{
+    TfErrorMark mark;
+
+    bool success =
+            TestValidOrdering();
 
     TF_VERIFY(mark.IsClean());
 

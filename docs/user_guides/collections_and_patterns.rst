@@ -12,7 +12,7 @@ can also identify other collections, whose entire contents will then be included
 in the collection as well.
 
 Collections are used to facilitate workflows that need a flexible representation
-of sets of objects in a scene. Example use-cases for collections in USD
+of sets of objects in a scene. Example use-cases for collections in OpenUSD
 include features such as light-linking, where you specify a collection of 
 objects that a given light illuminates, and binding materials to collections, 
 where you can bind a material to a complex collection of logical "parts" of a 
@@ -27,7 +27,8 @@ expression-based syntax to match objects to be included in the collection.
 Collections configured this way are **pattern-based collections** and the 
 collection is considered to be in **expression-mode**. Note that you cannot mix 
 collection configurations. Collections can be configured to work in 
-relationship-mode or expression-mode, but not a mix of the two.
+relationship-mode or expression-mode, but not a mix of the two. You can 
+specify which mode a collection should use via the ``mode`` attribute.
 
 Collections are defined in a prim with the CollectionAPI schema applied. The
 CollectionAPI schema is a multiple-apply schema, so it can be applied to a prim 
@@ -52,9 +53,11 @@ with "Red", and any descendants of those objects.
             </World/Clothing/Shirts>,
             </World/Clothing/Pants>,
         ]
+        uniform token collection:relCollection:mode = "relationship"
 
         # Specify collection membership using a path expression
         pathExpression collection:expCollection:membershipExpression = "/World/Clothing/Shirts/Red*//"
+        uniform token collection:expCollection:mode = "expression"
     }
 
 .. contents:: Table of Contents
@@ -89,14 +92,15 @@ To create and configure a collection, use the following steps:
 2. Configure what objects are in the collection by setting properties for
    a relationship-mode collection or a pattern-based collection, described in
    :ref:`relationship_mode_collections` and :ref:`pattern_based_collections` 
-   below.
+   below. Use the ``mode`` attribute to configure the membership mode the
+   collection will use.
 
 To query a configured collection for objects or paths from the collection, use 
 the following steps:
 
 1. Compute the fully resolved set of objects based on the collection 
    configuration by calling its ``ComputeMembershipQuery()`` method. This 
-   returns a  ``CollectionMembershipQuery`` object used for querying the 
+   returns a ``CollectionMembershipQuery`` object used for querying the 
    collection. Note that you need to call ``ComputeMembershipQuery()`` whenever 
    the collection configuration changes.
 
@@ -139,6 +143,85 @@ the following steps:
        # Check to see if /MyPath/PrimA is in myCollection
        if query.IsPathIncluded("/MyPath/PrimA"):
            # ...PrimA is in collection, process accordingly...
+
+
+.. _collections_mode:
+
+Configuring Membership Mode
+===========================
+
+In most scenarios you'll configure a collection to use a specific membership
+mode ("relationship" or "expression"), and set the appropriate relationship-mode
+or expression-mode properties. The following simple example uses ``mode`` to
+specify that "myCollection" is using relationship-mode.
+
+.. code-block:: usda
+
+    def "CollectionPrim" (
+        prepend apiSchemas = ["CollectionAPI:myCollection"]
+    )
+    {
+        # Specify myCollection is using relationship-mode
+        uniform token collection:myCollection:mode = "relationship"
+
+        # ...
+        # specify the relationship-mode properties such as
+        # includes/excludes, etc.
+        # ...
+    }
+
+You can author relationship-mode properties and pattern-based properties in the 
+same collection instance, however the collection will only use the properties 
+appropriate for the mode it's configured to work in. In the previous example,
+any authored value for the pattern-based ``membershipExpression`` property 
+would be ignored.
+
+If ``mode`` is not authored, the fallback "automatic" mode is used, and the
+membership mode of the collection is determined as follows. If the collection 
+has ``includes`` and/or ``excludes`` set to valid targets, or has its 
+``includeRoot`` attribute set to ``true``, the collection is in 
+relationship-mode and any authored pattern-based properties are ignored.
+Otherwise, the collection is in expression-mode and the authored 
+``membershipExpression`` is used. In the following example, ``mode`` is not
+authored on "myCollection", but because ``includes`` is set, the collection
+will be treated as a relationship-mode collection (and the 
+``membershipExpression`` value will be ignored).
+
+.. code-block:: usda
+
+    def "CollectionPrim"
+    (
+        prepend apiSchemas = ["CollectionAPI:myCollection"]
+    )    
+    {
+            # relationship-mode collection properties
+            rel collection:myCollection:includes = [
+                </World/Plants/Flowers>,
+                </Outside/Creatures>,
+            ]
+
+            # pattern-based collection properties
+            pathExpression collection:myCollection:membershipExpression = "/World/Plants//S*"
+
+            # membership mode _not_ set, will fallback to automatic
+    }
+
+To query what membership mode a collection is using, use the 
+``IsInRelationshipsMode()`` and ``IsInExpressionMode()`` APIs.
+
+.. code-block:: python
+
+    colPrim = stage.GetPrimAtPath("/CollectionPrim")
+    collection = Usd.CollectionAPI(colPrim, "myCollection")
+
+    if collection.IsInRelationshipsMode():
+        # inspect includes
+        includesRel = collection.GetIncludesRel()
+        # ...
+    if collection.IsInExpressionMode():
+        # inspect pattern-based expression
+        expressionAttr = collection.GetMembershipExpressionAttr()
+        # ...
 
 .. _relationship_mode_collections:
 
@@ -194,6 +277,10 @@ user-provided applied API schema instance name:
   paths. This separate attribute is required because relationships cannot 
   directly target the root. The fallback value is ``false``. 
 
+* ``uniform token collection:instanceName:mode``: Indicates the membership mode 
+  for the collection. For a relationship-mode collection this should be set to 
+  ``relationship``.
+
 The following properties provide additional configuration aspects for 
 collections: 
 
@@ -223,7 +310,7 @@ include all prims (but not properties) at
     )
     {
         # Set the collection expansion rule to specify how the paths for collection are expanded
-        uniform token collection:myCollection:expansionRule = "expandPrims"
+        uniform token collection:allProdLights:expansionRule = "expandPrims"
 
         # Set includes/excludes to include all lights except those under /World/Lights/TestLights
         rel collection:allProdLights:includes = [
@@ -233,6 +320,9 @@ include all prims (but not properties) at
         rel collection:allProdLights:excludes = [
             </World/Lights/TestLights>,
         ]
+
+        # Specify that the membership mode for allProdLights is relationship-mode
+        uniform token collection:allProdLights:mode = "relationship"
     }
 
 .. _pattern_based_collections:
@@ -267,16 +357,8 @@ expression logic, and other qualifiers, like requiring a prim have the LightAPI
 schema applied, to assemble your collection.
 
 Pattern-based collections are defined in a prim with the CollectionAPI 
-schema applied and the ``membershipExpression`` attribute set to a valid
-path expression. 
-
-.. note:: 
-    Collections cannot mix includes/excludes and expressions. You can't set both 
-    includes/excludes rules and an expression on a single collection. If a
-    collection has ``includes`` or ``excludes`` rules set, or has its 
-    ``includeRoot`` attribute set to ``true``, the collection is in 
-    relationship-mode and any expression authored on the 
-    ``membershipExpression`` attribute is ignored.
+schema applied, the ``membershipExpression`` attribute set to a valid
+path expression, and the ``mode`` attribute set to ``expression``. 
 
 .. _path_expressions:
 
@@ -312,7 +394,7 @@ The supported glob-style wildcard characters are:
   Example: ``/appl?`` can match :sdfpath:`/apple` or :sdfpath:`/apply` but not 
   :sdfpath:`/applesauce` or :sdfpath:`/appl.price`.
 * ``//``: Match any path hierarchy, used to match any arbitrary length path 
-  sequence. Example: ``/primA//leafB`` can match :sdfpath:`primA/leafB` 
+  sequence. Example: ``/primA//leafB`` can match :sdfpath:`/primA/leafB` 
   or :sdfpath:`/primA/child1/child2/leafB`.
 
 .. _predicate_functions:
@@ -331,8 +413,8 @@ match, by adding a ``hasAPI`` predicate function:
     /foo*{hasAPI:MaterialBindingAPI}
 
 Predicate functions can take arguments, including named arguments, and may have 
-default values for arguments. USD provides several built-in predicate functions 
-(listed below). 
+default values for arguments. OpenUSD provides several built-in predicate 
+functions (listed below). 
 
 To use a predicate function with your pattern, specify the predicate function 
 using the ``{predicate-name}`` format. The following example matches root-level 
@@ -481,8 +563,10 @@ something like:
     )
     {
         pathExpression collection:allFruit:membershipExpression = "/Fruit/apple /Fruit/banana /Fruit/*berry"
+        uniform token collection:allFruit:mode = "expression"
 
         pathExpression collection:allFood:membershipExpression = "%:allFruit + /Cheese* + /Meat*"
+        uniform token collection:allFood:mode = "expression"
         ...
     }
 
@@ -533,6 +617,8 @@ the following collection prim "Animals" defined in a layer:
         )
         {
             pathExpression collection:expTest:membershipExpression = "/World/Animals/Fish/Halibut"
+            uniform token collection:expTest:mode = "expression"
+
 
             def "Fish"
             {
@@ -562,6 +648,7 @@ override the expTest path expression property:
         )
         {
             pathExpression collection:expTest:membershipExpression = "/World/Animals/Fish/Goldfish"
+            uniform token collection:expTest:mode = "expression"
 
             def "Fish"
             {
@@ -586,6 +673,7 @@ referenced prim, you would use the ``%_`` syntax:
         )
         {
             pathExpression collection:expTest:membershipExpression = "/World/Animals/Fish/Goldfish + %_"
+            uniform token collection:expTest:mode = "expression"
 
             def "Fish"
             {
@@ -600,17 +688,17 @@ The expTest collection would now include matches from the weaker :sdfpath:`/Worl
 reference, and the collection would match :sdfpath:`/World/Animals/Fish/Goldfish` 
 and :sdfpath:`/World/Animals/Fish/Halibut`.
 
-If USD is unable to resolve the weaker expression from the composed scene, the
-``%_`` reference will be replaced with the empty/nothing expression.
+If OpenUSD is unable to resolve the weaker expression from the composed scene, 
+the ``%_`` reference will be replaced with the empty/nothing expression.
 
 .. _additional_considerations:
 
 Additional Expressions Considerations
 -------------------------------------
 
-USD will automatically simplify expressions when possible. Leading and trailing 
-whitespace is ignored, and expression logic is simplified. For example, an 
-expression of ``// - /foo`` gets simplified to ``~/foo``
+OpenUSD will automatically simplify expressions when possible. Leading and 
+trailing whitespace is ignored, and expression logic is simplified. For example, 
+an expression of ``// - /foo`` gets simplified to ``~/foo``
 automatically. If you need to know the simplified expression, use 
 ``PathExpression.GetText()``:
 
@@ -620,7 +708,8 @@ automatically. If you need to know the simplified expression, use
     testExpression = Sdf.PathExpression(testExpressionString)
     print("Simplified expression text: " + testExpression.GetText()) # Should return "~/foo"
 
-USD provides several convenience expressions, such as "Nothing" and "Everything"
+OpenUSD provides several convenience expressions, such as "Nothing" and 
+"Everything":
 
 .. code-block:: python
 
@@ -641,15 +730,19 @@ user-provided applied API schema instance name:
   Defines the path expression used to test objects in the collection for 
   membership.
 
+* ``uniform token collection:instanceName:mode``: Indicates the membership mode 
+  for the collection. For a pattern-based collection this should be set to 
+  ``expression``.
+
 The following properties provide additional configuration aspects for 
 collections: 
 
 * ``uniform token collection:instanceName:expansionRule``: Specifies 
-  specifies how matching scene objects against the ``membershipExpression`` 
+  how matching scene objects against the ``membershipExpression`` 
   proceeds. Possible values include:
 
-  * ``expandPrims``: The ``ComputeIncludedObjectsFromCollection()`` 
-    and ``ComputeIncludedPathsFromCollection()`` CollectionAPI APIs only test 
+  * ``expandPrims``: The ``ComputeIncludedObjects()`` 
+    and ``ComputeIncludedPaths()`` CollectionAPI APIs only test 
     prims against the ``membershipExpression`` to determine membership. This
     is the default behavior.
   * ``expandPrimsAndProperties``: Like ``expandPrims``, but all properties on 
@@ -667,21 +760,27 @@ match the "/World/Light*" path expression.
     )
     {
         # Set the collection expansion rule to specify how the paths for collection are expanded
-        token collection:myCollection:expansionRule = "expandPrims"
+        uniform token collection:myCollection:expansionRule = "expandPrims"
 
         # Set myCollection:membershipExpression with the path expression we want
         pathExpression collection:myCollection:membershipExpression = "/World/Light*{hasAPI:LightAPI}"
+
+        # Specify that the membership mode for myCollection is expression-mode
+        uniform token collection:myCollection:mode = "expression"
     }
 
-You can also use CollectionAPI methods to programmatically set the attribute:
+You can also use CollectionAPI methods to programmatically set the attributes:
 
 .. code-block:: python
 
     collectionPrim = stage.DefinePrim("/CollectionPrim")
     myCollection = Usd.CollectionAPI.Apply(collectionPrim, "myCollection")
+    # set the expression
     myCollection.CreateExpansionRuleAttr(Usd.Tokens.expandPrims)  
     pathExp = Sdf.PathExpression("/World/Light*{hasAPI:LightAPI}") 
     expressionAttr = myCollection.CreateMembershipExpressionAttr(pathExp)
+    # set the membership mode
+    myCollection.CreateModeAttr(Usd.Tokens.expression)
 
 .. _expression_for_relationship_mode_collection:
 
@@ -692,7 +791,7 @@ As mentioned earlier, collections can work in relationship-mode, using
 include/exclude rules, or expression-mode, using path expressions. A collection
 can't work in both modes. Additionally, you can't reference a relationship-mode
 collection in an expression-mode collection's path expression. However, you
-can have USD compute the equivalent expression for a relationship-mode
+can have OpenUSD compute the equivalent expression for a relationship-mode
 collection, and then reference that expression if needed. 
 
 To compute the equivalent expression, use 
@@ -719,5 +818,4 @@ Once you have the equivalent expression, you can author that expression on the
 ``membershipExpression`` of a new or existing collection. You can use the 
 equivalent expression to convert a relationship-mode collection to an equivalent 
 expression-mode collection by authoring ``membershipExpression`` with the
-equivalent expression **and** clearing out the ``includes``, ``excludes``, and 
-``includeRoot`` relationship-mode properties.
+equivalent expression **and** setting ``mode`` to "expression".

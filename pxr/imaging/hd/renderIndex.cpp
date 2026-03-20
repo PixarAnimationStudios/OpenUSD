@@ -165,6 +165,7 @@ HdRenderIndex::HdRenderIndex(
     , _drivers(drivers)
     , _instanceName(instanceName)
     , _rprimDirtyList(*this)
+    , _syncAllDepth(0)
 {
     // Note: HdRenderIndex::New(...) guarantees renderDelegate is non-null.
 
@@ -1576,11 +1577,32 @@ HdRenderIndex::EnqueueCollectionToSync(HdRprimCollection const &col)
     _collectionsToSync.push_back(col);
 }
 
+// RAII helper to manage scope depth.
+struct _AutoScopeCount {
+    std::atomic<int> *_count;
+    _AutoScopeCount(std::atomic<int> *count) : _count(count) {
+        ++(*_count);
+    }
+    ~_AutoScopeCount() {
+        --(*_count);
+    }
+};
+
+bool
+HdRenderIndex::IsSyncAllInProgress() const
+{
+    return _syncAllDepth.load() > 0;
+}
+
 void
 HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
                        HdTaskContext *taskContext)
 {
     HD_TRACE_FUNCTION();
+
+    // Track SyncAll() depth.
+    TF_VERIFY(!IsSyncAllInProgress(), "Re-entrant SyncAll() detected");
+    _AutoScopeCount syncAllScope(&_syncAllDepth);
 
     ////////////////////////////////////////////////////////////////////////////
     //

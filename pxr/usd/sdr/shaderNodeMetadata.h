@@ -51,7 +51,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((DisplayFilter, "displayFilter"))  \
     ((LightFilter, "lightFilter"))      \
     ((PixelFilter, "pixelFilter"))      \
-    ((SampleFilter, "sampleFilter"))    
+    ((SampleFilter, "sampleFilter"))    \
+    ((VolumeFilter, "volumeFilter"))
 
 #define SDR_NODE_ROLE_TOKENS         \
     ((Primvar, "primvar"))           \

@@ -3,137 +3,311 @@
         {
             "Info": {
                 "Types": {
+                    # NOTE:
+                    # 1. The tags and ordering specified below (like
+                    # hdPrman:phaseN) are based on the insertion phase/order 
+                    # specified in the CPP registration.
+                    # This a temporary transitionary approach and will be
+                    # replaced with more semantically meaningful strings when
+                    # appropriate in the future. Several of the dependencies
+                    # below seem arbitrary and will also be revisited.
+                    # 
+                    # A few of the plugins (e.g. motion blur, mat filt) define
+                    # meaningful tags in addition to the phase-based tags above.
+                    #
+                    # 2. The "priority" and "displayName" fields are required
+                    # fields for "hydra plugins"; the former isn't relevant for
+                    # scene index plugins, and the latter isn't used yet.
+                    # 
                     "HdPrman_WorldOffsetSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman World Offset Scene Index"
+                        "displayName": "Prman World Offset Scene Index",
+
+                        # phase=999, InsertionOrderAtEnd
+                        "tags": ["hdPrman:phase999"],
+                        "ordering": {
+                            "after": "hdPrman:phase900",
+                            "position": "lastBefore"
+                        }
                     },
                     "HdPrman_MotionBlurSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman Motion Blur Scene Index"
+                        "displayName": "Prman Motion Blur Scene Index",
+
+                        # phase=3, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase3", "hdPrman:motionBlur"],
+                        "ordering": {
+                            "after": "hdPrman:phase2",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdPrman_VelocityMotionResolvingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman Velocity Motion Resolving Scene Index"
+                        "displayName": "Prman Velocity Motion Resolving Scene Index",
+
+                        # phase=2, InsertionOrderAtEnd
+                        "tags": ["hdPrman:phase2"],
+                        "ordering": {
+                            "after": ["hdPrman:phase1", "hdGp:proceduralResolution", "hdPrman:extComp"],
+                            "before": ["hdPrman:phase3", "hdPrman:motionBlur"],
+                            "position": "lastBefore"
+                        }
                     },
                     "HdPrman_MatFiltSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman Material Filtering Scene Indices"
+                        "displayName": "Prman Material Filtering Scene Indices",
+
+                        # phase=100, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase100", "hdPrman:matFilt", "hdPrman:matResolve"],
+                        "ordering": {
+                            "after": "hdPrman:phase4",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdPrman_ImplicitSurfaceSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman Implicit Surfaces"
+                        "displayName": "Prman Implicit Surfaces",
+
+                        # phase=0, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase0"],
+                        "ordering": {
+                            "after": "hd:sceneAssembly",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdPrman_DependencySceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman Dependency Scene Index"
+                        "displayName": "Prman 1.0 (Render Delegate) Dependency Declaration Scene Index",
+
+                        # phase=900, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase900", "hdPrman:renderDelegateDependencies"],
+                        "ordering": {
+                            "after": ["hdPrman:phase200", "hdPrman:matPrimvarTransfer"],
+                            "position": "firstAfter"
+                        }
                     },
                     "HdPrman_DependencyForwardingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman Dependency Forwarding Scene Index"
+                        "displayName": "Prman Dependency Forwarding Scene Index",
+
+                        # phase=1000, InsertionOrderAtEnd
+                        "tags": ["hdPrman:phase1000", "hdPrman:dependencyForwarding"],
+                        "ordering": {
+                            "after": ["hdPrman:phase999", "hdPrman:renderDelegateDependencies"],
+                            "position": "lastBefore"
+                        }
                     },
                     "HdPrman_RenderTerminalOutputInvalidatingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman Render Terminal Output Invalidating Scene Index"
+                        "displayName": "Prman Render Terminal Output Invalidating Scene Index",
+
+                        # phase=1000, InsertionOrderAtEnd
+                        "tags": ["hdPrman:phase1000"],
+                        "ordering": {
+                            "after": "hdPrman:phase999",
+                            "position": "lastBefore"
+                        }
                     },
                     "HdPrman_MaterialPrimvarTransferSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman Material Primvar Transfer Scene Index"
+                        "displayName": "Prman Material Primvar Transfer Scene Index",
+
+                        # phase=200, InsertionOrderAtEnd
+                        "tags": ["hdPrman:phase200", "hdPrman:matPrimvarTransfer"],
+                        "ordering": {
+                            "after": ["hdPrman:phase115", "hdGp:proceduralResolution", "hdPrman:matFilt"],
+                            "position": "lastBefore"
+                        }
                     },
                     "HdPrman_PinnedCurveExpandingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman Pinned Curve Expanding Scene Index"
+                        "displayName": "Prman Pinned Curve Expanding Scene Index",
+
+                        # phase=3, InsertionOrderAtEnd
+                        "tags": ["hdPrman:phase3"],
+                        "ordering": {
+                            "after": ["hdPrman:phase2", "hdGp:proceduralResolution", "hdPrman:extComp"],
+                            "position": "lastBefore"
+                        }
                     },
                     "HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman ExtComputation Primvar Pruning Scene Index"
+                        "displayName": "Prman ExtComputation Primvar Pruning Scene Index",
+
+                        # phase=0, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase0", "hdPrman:extComp"],
+                        "ordering": {
+                            "after": "hd:sceneAssembly",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdPrman_RenderPassPruneSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Scene Index to resolve render pass prune rules."
+                        "displayName": "Scene Index to resolve render pass prune rules.",
+
+                        # phase=1, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase1"],
+                        "ordering": {
+                            "after": ["hdPrman:phase0", "hd:sceneAssembly", "hd:sceneGlobals"],
+                            "before": "hdGp:proceduralResolution",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdPrman_RenderPassVisibilityAndMatteSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Scene Index to resolve render pass visibility and matte rules."
+                        "displayName": "Scene Index to resolve render pass visibility and matte rules.",
+
+                        # phase=113, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase113"],
+                        "ordering": {
+                            "after": ["hdPrman:phase100", "hdPrman:matFilt"],
+                            "position": "firstAfter"
+                        }
                     },
                     "HdPrman_RenderSettingsFilteringSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman Render Settings Filtering Scene Index"
+                        "displayName": "Prman Render Settings Filtering Scene Index",
+
+                        # phase=1, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase1"],
+                        "ordering": {
+                            "after": ["hdPrman:phase0", "hd:sceneGlobals"],
+                            "position": "firstAfter"
+                        }
                     },
                     "HdPrman_CoordSysPrimSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman Coord Sys Prim Scene Index"
+                        "displayName": "Prman Coord Sys Prim Scene Index",
+
+                        # phase=900, InsertionOrderAtEnd
+                        "tags": ["hdPrman:phase900"],
+                        "ordering": {
+                            "after": ["hdPrman:phase200", "hdPrman:matPrimvarTransfer"],
+                            "position": "lastBefore"
+                        }
                     },
                     "HdPrman_UpdateObjectSettingsSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman Update Object Settings Prim Scene Index"
+                        "displayName": "Prman Update Object Settings Prim Scene Index",
+
+                        # phase=115, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase115"],
+                        "ordering": {
+                            "after": ["hdPrman:phase113", "hdPrman:matFilt"],
+                            "position": "firstAfter"
+                        }
                     },
                     "HdPrman_TetMeshConversionSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Scene Index to convert tet meshes into standard triangle based meshes."
+                        "displayName": "Scene Index to convert tet meshes into standard triangle based meshes.",
+
+                        # phase=0, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase0"],
+                        "ordering": {
+                            "after": "hd:sceneAssembly",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdPrman_Renderer2SceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Adds scene indices that are part of the HdPrman 2.0 implementation/pathway."
+                        "displayName": "Adds scene indices that are part of the HdPrman 2.0 implementation/pathway.",
+
+                        # phase=999 (DependencyForwarding-1), InsertionOrderAtEnd
+                        "tags": ["hdPrman:phase999", "hdPrman:renderer2"],
+                        "ordering": {
+                            "after": "hdPrman:phase900",
+                            "before": "hdPrman:dependencyForwarding",
+                            "position": "lastBefore"
+                        }
                     },
                     "HdPrman_LightLinkingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Scene index that implements light linking."
+                        "displayName": "Scene index that implements light linking.",
+
+                        # phase=4, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase4", "hdPrman:lightLinking"],
+                        "ordering": {
+                            "after": "hdPrman:phase3",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdPrman_PreviewSurfacePrimvarsSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Scene index that adds primvars needed for UsdPreviewSurface"
+                        "displayName": "Scene index that adds primvars needed for UsdPreviewSurface",
+
+                        # phase=2, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase2"],
+                        "ordering": {
+                            "after": ["hdPrman:phase1", "hdGp:proceduralResolution"],
+                            "before": "hdPrman:matPrimvarTransfer",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdPrman_MeshLightResolvingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman Resolve Mesh Lights Scene Index"
+                        "displayName": "Prman Resolve Mesh Lights Scene Index",
+
+                        # phase=115, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase115"],
+                        "ordering": {
+                            "after": ["hdPrman:phase113", "hdPrman:matFilt"],
+                            "position": "firstAfter"
+                        }
                     },
                     "HdPrman_PortalLightResolvingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman Resolve Portal Lights Scene Index"
+                        "displayName": "Prman Resolve Portal Lights Scene Index",
+
+                        # phase=115, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase115"],
+                        "ordering": {
+                            "after": ["hdPrman:phase113", "hdPrman:matFilt"],
+                            "position": "firstAfter"
+                        }
                     }
                 }
             },

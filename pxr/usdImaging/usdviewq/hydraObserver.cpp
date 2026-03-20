@@ -67,14 +67,8 @@ UsdviewqHydraObserver::TargetToNamedSceneIndex(const std::string &name)
 }
 
 bool
-UsdviewqHydraObserver::_Target(const HdSceneIndexBaseRefPtr &sceneIndex)
+UsdviewqHydraObserver::_Target(HdSceneIndexBaseRefPtr sceneIndex)
 {
-    // This API is provided a HdSceneIndexBaseRefPtr, but via C++
-    // reference.  Temporarily bump the refcount for the referenced
-    // object, in case the _nestedInputSceneIndices vector that is
-    // cleared in this method was the only other refcount source.
-    HdSceneIndexBaseRefPtr tempExtraSceneIndexRef(sceneIndex);
-
     _nestedInputSceneIndices.reset();
     
     if (_sceneIndex) {

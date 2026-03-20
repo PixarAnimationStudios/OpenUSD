@@ -1,3 +1,5 @@
+#include "docstring_preamble.hpp"
+
 #include "pxr/external/boost/python.hpp"
 #include "pxr/external/boost/python/slice.hpp"
 #include "pxr/external/boost/python/str.hpp"

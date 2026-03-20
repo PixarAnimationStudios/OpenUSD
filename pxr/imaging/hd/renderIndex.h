@@ -194,6 +194,9 @@ public:
     HD_API
     void SyncAll(HdTaskSharedPtrVector *tasks, HdTaskContext *taskContext);
 
+    /// Returns true while a thread is invoking SyncAll().
+    HD_API bool IsSyncAllInProgress() const;
+
     // ---------------------------------------------------------------------- //
     /// \name Execution
     // ---------------------------------------------------------------------- //
@@ -622,6 +625,9 @@ private:
     // ---------------------------------------------------------------------- //
     HdRprimCollectionVector _collectionsToSync;
     HdDirtyList _rprimDirtyList;
+
+    // Call depth to SyncAll().  Should only ever be 0 or 1.
+    std::atomic<int> _syncAllDepth;
 
     // ---------------------------------------------------------------------- //
 

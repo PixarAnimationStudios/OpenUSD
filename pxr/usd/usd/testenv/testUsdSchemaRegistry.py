@@ -449,7 +449,8 @@ class TestUsdSchemaRegistry(unittest.TestCase):
              'collection:__INSTANCE_NAME__:expansionRule', 
              'collection:__INSTANCE_NAME__:includeRoot', 
              'collection:__INSTANCE_NAME__:includes',
-             'collection:__INSTANCE_NAME__:membershipExpression'])
+             'collection:__INSTANCE_NAME__:membershipExpression',
+             'collection:__INSTANCE_NAME__:mode'])
         
         # Prim def has relationship/property spec for 'excludes'
         self.assertTrue(primDef.GetPropertyDefinition(
@@ -726,7 +727,17 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 "variability" : Sdf.VariabilityUniform,
                 "customData" : 
                 {"userDocBrief" : apiPrimDef.GetPropertyDocumentation(
-                    "collection:__INSTANCE_NAME__:membershipExpression")}                
+                    "collection:__INSTANCE_NAME__:membershipExpression")},
+            },
+            "collection:__INSTANCE_NAME__:mode" : {
+                "custom" : False,
+                "default" : "automatic",
+                "typeName" : Sdf.ValueTypeNames.Token,
+                "allowedTokens" : ["automatic", "relationship", "expression"],
+                "variability" : Sdf.VariabilityUniform,
+                "customData" : 
+                {"userDocBrief" : apiPrimDef.GetPropertyDocumentation(
+                    "collection:__INSTANCE_NAME__:mode")},
             }
         }
 

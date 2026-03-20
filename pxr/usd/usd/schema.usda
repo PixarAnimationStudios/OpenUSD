@@ -266,11 +266,15 @@ class "CollectionAPI"
     *relationship-mode* and those using the `membershipExpression` as being in
     *expression-mode*.
 
-    A collection is determined to be in *relationship-mode* when either or both
-    of its `includes` and `excludes` relationships have valid targets, or the
-    `includeRoot` attribute is set `true`.  In this case, the pattern-based
-    `membershipExpression` attribute is ignored.  Otherwise, the collection is
-    in *expression-mode* and the `membershipExpression` attribute applies.
+    The `mode` attribute controls which mode the collection uses.  When set to
+    `relationship` the collection is explicitly in *relationship-mode*, and when
+    set to `expression` it is explicitly in *expression-mode*.  Properties
+    belonging to the non-selected mode are ignored.  When `mode` is `automatic`
+    (the default), the mode is inferred from the collection's authored
+    properties: the collection is in *relationship-mode* when either or both of
+    its `includes` and `excludes` relationships have valid targets, or the
+    `includeRoot` attribute is set to `true`; otherwise it is in
+    *expression-mode* and the `membershipExpression` attribute applies.
 
     In *relationship-mode* the `includes` and `excludes` relationships specify
     the collection members as a set of paths to include and a set of paths to
@@ -444,6 +448,29 @@ class "CollectionAPI"
     uniform pathExpression membershipExpression (
         doc = """Specifies a path expression that determines membership in this
         collection."""
+    )
+    uniform token mode = "automatic" (
+        allowedTokens = ["automatic", "relationship", "expression"]
+        doc = """Specifies which mode the collection uses to determine
+        membership: `automatic`, `relationship`, or `expression`.
+        <ul>
+        <li>`automatic` - the collection's mode is inferred from its authored
+        properties.  If either or both of the `includes` and `excludes`
+        relationships have valid targets, or the `includeRoot` attribute is set
+        to `true`, the collection is in *relationship-mode* and the
+        `membershipExpression` attribute is ignored.  Otherwise, the collection
+        is in *expression-mode* and the `membershipExpression` attribute
+        applies.  This is the default behavior and is backward compatible with
+        collections that predate this attribute.</li>
+        <li>`relationship` - the collection is explicitly in
+        *relationship-mode*.  The `includes`, `excludes`, and `includeRoot`
+        attributes determine membership, and `membershipExpression` is
+        ignored.</li>
+        <li>`expression` - the collection is explicitly in *expression-mode*.
+        The `membershipExpression` attribute determines membership, and
+        `includes`, `excludes`, and `includeRoot` are ignored.</li>
+        </ul>
+        The fallback value is `automatic`."""
     )
     uniform opaque __INSTANCE_NAME__ (
         customData = {

@@ -2,14 +2,16 @@
 # Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+require-b2 5.0.1 ;
+import-search /boost/config/checks ;
+
 import python ;
 import os ;
-import ../../config/checks/config : requires ;
+import config : requires ;
 
 lib socket ;
 
-use-project /boost/python : ../build ;
-project /boost/python/test 
+project
   : requirements
     <toolset>gcc:<cxxflags>-Wextra
     <target-os>qnxnto:<library>socket

@@ -80,6 +80,7 @@ pxr_plugin(${PXR_PACKAGE}
         hio
         TBB::tbb
         usdRi
+        usdRiPxrImaging
         usdVol
         usdVolImaging
         ${optionalLibs}
@@ -145,6 +146,7 @@ pxr_plugin(${PXR_PACKAGE}
         tetMeshConversionSceneIndexPlugin
         tokens
         volume
+        volumeFilter
         xcpt
         ${optionalPublicClasses}
 
@@ -247,6 +249,7 @@ else()
             usd
             usdImaging
             usdRender
+            usdRiPxrImaging
             ${PXRCORE_LIBRARY}
             ${PRMAN_LIBRARY}
         CPPFILES

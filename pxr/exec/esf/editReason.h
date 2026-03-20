@@ -52,6 +52,10 @@ public:
     ///
     static const EsfEditReason ChangedConnectionPaths;
 
+    /// The set of connections that target an object has changed.
+    ///
+    static const EsfEditReason ChangedIncomingConnections;
+
     /// The list of target paths on a relationship has changed.
     ///
     static const EsfEditReason ChangedTargetPaths;
@@ -128,6 +132,7 @@ private:
         ResyncedObject,
         ChangedPropertyList,
         ChangedConnectionPaths,
+        ChangedIncomingConnections,
         ChangedTargetPaths,
         Max
     };
@@ -153,6 +158,9 @@ inline constexpr EsfEditReason EsfEditReason::ChangedPropertyList(
 
 inline constexpr EsfEditReason EsfEditReason::ChangedConnectionPaths(
     EsfEditReason::_BitIndex::ChangedConnectionPaths);
+
+inline constexpr EsfEditReason EsfEditReason::ChangedIncomingConnections(
+    EsfEditReason::_BitIndex::ChangedIncomingConnections);
 
 inline constexpr EsfEditReason EsfEditReason::ChangedTargetPaths(
     EsfEditReason::_BitIndex::ChangedTargetPaths);

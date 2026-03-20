@@ -8,13 +8,9 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-// If PXR_BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
-// boost::python will generate simplified docstrings that break the associated
-// test unless we undefine it before including any headers.
-#undef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
+#include "docstring_preamble.hpp"
 
 #include "pxr/external/boost/python/class.hpp"
-#include "pxr/external/boost/python/docstring_options.hpp"
 #include "pxr/external/boost/python/module.hpp"
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/has_back_reference.hpp"
@@ -99,12 +95,6 @@ bool y_equality(back_reference<Y const&> y1, Y const& y2)
 
 PXR_BOOST_PYTHON_MODULE(back_reference_ext)
 {
-    // Explicitly enable Python signatures in docstrings in case boost::python
-    // was built with PXR_BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
-    // signatures by default.
-    docstring_options doc_options;
-    doc_options.enable_py_signatures();
-
     def("copy_Y", copy_Y, return_value_policy<copy_const_reference>());
     def("copy_Z", copy_Z, return_value_policy<copy_const_reference>());
     def("x_instances", &X::count);
@@ -114,7 +104,7 @@ PXR_BOOST_PYTHON_MODULE(back_reference_ext)
         .def("set", &Y::set)
         ;
 
-    class_<Z,std::unique_ptr<Z> >("Z", init<int>())
+    class_<Z,std::shared_ptr<Z> >("Z", init<int>())
         .def("value", &Z::value)
         .def("set", &Z::set)
         ;

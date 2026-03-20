@@ -65,6 +65,60 @@ _GetRenderContextForShaderOutput(UsdShadeOutput const& output)
     return TfToken();
 }
 
+// For the fixed terminal cases, such as light and lightFilter, there are
+// no output connections to examine for authored renderContexts.  Instead,
+// we must examine the nodes for renderContextNodeIdentifiers.
+TfTokenVector
+_CollectRenderContextsFromNodeIdentifiers(UsdPrim const& usdPrim)
+{
+    TRACE_FUNCTION();
+
+    // Always offer the universal render context and the "all nodes"
+    // context.
+    TfTokenVector result = {
+        HdMaterialSchemaTokens->universalRenderContext,
+        HdMaterialSchemaTokens->all
+    };
+
+    // Determine the appropriate suffix for the shaderId property.
+    TfToken shaderIdSuffix;
+    if (UsdLuxLightAPI(usdPrim)) {
+        // Light
+        static const TfToken lightSuffix(
+            ":" + UsdLuxTokens->lightShaderId.GetString());
+        shaderIdSuffix = lightSuffix;
+    } else if (UsdLuxLightFilter(usdPrim)) {
+        // Light filter
+        static const TfToken lightFilterSuffix(
+            ":" + UsdLuxTokens->lightFilterShaderId.GetString());
+        shaderIdSuffix = lightFilterSuffix;
+    } else {
+        // Not a known case that requires special handling.  We don't warn
+        // since this isn't necessarily problematic.  Provide the default
+        // render contexts from above.
+        return result;
+    }
+
+    // Scan contained prims for renderContexts.
+    for (TfToken const& propName: usdPrim.GetPropertyNames()) {
+        if (!TfStringEndsWith(propName, shaderIdSuffix)) {
+            continue;
+        }
+        // Extract from "{renderContext}:{shaderId}"
+        TfToken renderContext(
+            propName.GetString()
+                .substr(0, propName.size() - shaderIdSuffix.size()));
+        // Accumulate unique renderContext values.
+        // (Note: we expect property names to be unique, but guard against
+        // duplicating the universal or all tokens contexts above.)
+        if (std::find(result.begin(), result.end(),
+                      renderContext) == result.end()) {
+            result.push_back(renderContext);
+        }
+    }
+    return result;
+}
+
 bool
 _Contains(const TfTokenVector &v, const TfToken &t)
 {
@@ -618,8 +672,13 @@ UsdImagingDataSourceMaterial::~UsdImagingDataSourceMaterial()
 TfTokenVector 
 UsdImagingDataSourceMaterial::GetNames()
 {
-    TfTokenVector renderContexts;
+    if (!_fixedTerminalName.IsEmpty()) {
+        // Fixed terminal materials require scanning the nodes for
+        // shaderId attributes providing a renderContext.
+        return _CollectRenderContextsFromNodeIdentifiers(_usdPrim);
+    }
 
+    TfTokenVector renderContexts;
     for (const auto& output: UsdShadeNodeGraph(_usdPrim).GetOutputs()) {
         const TfToken renderContext = _GetRenderContextForShaderOutput(output);
         // Only add a renderContext if it has not been added before so
@@ -631,6 +690,8 @@ UsdImagingDataSourceMaterial::GetNames()
     }
 
     // Always add the 'all' render context
+    // This context is provided to support tools that want to
+    // show every node, including disconnected ones.
     renderContexts.push_back(HdMaterialSchemaTokens->all);
 
     return renderContexts;

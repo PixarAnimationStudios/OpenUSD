@@ -32,11 +32,7 @@ pxr_library(esfUsd
         README.md        
 )
 
-#
 # Tests
-#
-
-# Build test plugins
 
 pxr_build_test(testEsfUsdConnectionTables
     LIBRARIES
@@ -48,6 +44,12 @@ pxr_build_test(testEsfUsdConnectionTables
         usdGeom
     CPPFILES
         testenv/testEsfUsdConnectionTables.cpp
+)
+
+pxr_register_test(testEsfUsdConnectionTables
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testEsfUsdConnectionTables"
+    EXPECTED_RETURN_CODE 0
+    ENV TF_FATAL_VERIFY=1
 )
 
 pxr_build_test(testEsfUsdConnectionTablesStochastic
@@ -63,23 +65,6 @@ pxr_build_test(testEsfUsdConnectionTablesStochastic
         work
     CPPFILES
         testenv/testEsfUsdConnectionTablesStochastic.cpp
-)
-
-pxr_build_test(testEsfUsdSceneObjects
-    LIBRARIES
-        esf
-        esfUsd
-        usdGeom
-    CPPFILES
-        testenv/testEsfUsdSceneObjects.cpp
-)
-
-# Build tests
-
-pxr_register_test(testEsfUsdConnectionTables
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testEsfUsdConnectionTables"
-    EXPECTED_RETURN_CODE 0
-    ENV TF_FATAL_VERIFY=1
 )
 
 pxr_register_test(testEsfUsdConnectionTables_Threading
@@ -109,6 +94,15 @@ pxr_register_test(testEsfUsdConnectionTables_Mem
              --numStages 10 --treeDepth 5 --branchingFactor 5 --memory
     EXPECTED_RETURN_CODE 0
     ENV TF_FATAL_VERIFY=1
+)
+
+pxr_build_test(testEsfUsdSceneObjects
+    LIBRARIES
+        esf
+        esfUsd
+        usdGeom
+    CPPFILES
+        testenv/testEsfUsdSceneObjects.cpp
 )
 
 pxr_register_test(testEsfUsdSceneObjects

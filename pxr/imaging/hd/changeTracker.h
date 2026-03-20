@@ -419,6 +419,16 @@ public:
     void RemoveSprimSprimDependency(SdfPath const& parentSprimId,
                                     SdfPath const& sprimId);
 
+    /// Insert a dependency between \p sprimId and rprim \p rprimId.
+    HD_API
+    void AddSprimRprimDependency(SdfPath const& sprimId,
+                                 SdfPath const& rprimId);
+
+    /// Remove a dependency between \p sprimId and rprim \p rprimId.
+    HD_API
+    void RemoveSprimRprimDependency(SdfPath const& sprimId,
+                                    SdfPath const& rprimId);
+
     /// Remove all dependencies involving \p sprimId as a parent or child.
     HD_API
     void RemoveSprimFromSprimSprimDependencies(SdfPath const& sprimId);
@@ -609,6 +619,8 @@ private:
     _DependencyMap _sprimSprimTargetDependencies;
     // Maps child sprim to parent sprim.
     _DependencyMap _sprimSprimSourceDependencies;
+
+    _DependencyMap _sprimRprimTargetDependencies;
     
     // Dependency map helpers
     void _AddDependency(_DependencyMap &depMap,

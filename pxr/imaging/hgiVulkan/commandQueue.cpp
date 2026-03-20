@@ -7,9 +7,10 @@
 #include "pxr/imaging/hgiVulkan/commandBuffer.h"
 #include "pxr/imaging/hgiVulkan/commandQueue.h"
 #include "pxr/imaging/hgiVulkan/device.h"
+#include "pxr/imaging/hgiVulkan/diagnostic.h"
 
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/imaging/hgiVulkan/diagnostic.h"
+#include "pxr/base/tf/smallVector.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -240,7 +241,7 @@ HgiVulkanCommandQueue::ResetConsumedCommandBuffers(HgiSubmitWaitType wait)
 void
 HgiVulkanCommandQueue::Flush(
     HgiSubmitWaitType wait,
-    VkSemaphore signalSemaphore)
+    TfSpan<const std::pair<VkSemaphore, uint64_t>> signalSemaphores)
 {
     _FlushResourceCommandBuffer();
 
@@ -250,11 +251,16 @@ HgiVulkanCommandQueue::Flush(
         commandBuffers.push_back(buffer->GetVulkanCommandBuffer());
     }
 
-    const VkSemaphore semaphoreSignal[2] =
-        { _timelineSemaphore, signalSemaphore };
-    const uint64_t semaphoreSignalValues[2] =
-        { _timelineNextVal, 0 };
-    const uint32_t semaphoreSignalCount = signalSemaphore ? 2 : 1;
+    const uint32_t semaphoreSignalCount = signalSemaphores.size() + 1;
+
+    TfSmallVector<VkSemaphore, 3> parsedSignalSemaphores;
+    TfSmallVector<uint64_t, 3> parsedSignalValues;
+    for (const std::pair<VkSemaphore, uint64_t>& signal : signalSemaphores) {
+        parsedSignalSemaphores.push_back(signal.first);
+        parsedSignalValues.push_back(signal.second);
+    }
+    parsedSignalSemaphores.push_back(_timelineSemaphore);
+    parsedSignalValues.push_back(_timelineNextVal);
 
     VkTimelineSemaphoreSubmitInfo timelineInfo;
     timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
@@ -262,7 +268,7 @@ HgiVulkanCommandQueue::Flush(
     timelineInfo.waitSemaphoreValueCount = 0;
     timelineInfo.pWaitSemaphoreValues = nullptr;
     timelineInfo.signalSemaphoreValueCount = semaphoreSignalCount;
-    timelineInfo.pSignalSemaphoreValues = semaphoreSignalValues;
+    timelineInfo.pSignalSemaphoreValues = parsedSignalValues.data();
 
     VkSubmitInfo workInfo;
     workInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -273,7 +279,7 @@ HgiVulkanCommandQueue::Flush(
     workInfo.commandBufferCount = commandBuffers.size();
     workInfo.pCommandBuffers = commandBuffers.data();
     workInfo.signalSemaphoreCount = semaphoreSignalCount;
-    workInfo.pSignalSemaphores = semaphoreSignal;
+    workInfo.pSignalSemaphores = parsedSignalSemaphores.data();
 
     HGIVULKAN_VERIFY_VK_RESULT(
         vkQueueSubmit(_vkGfxQueue, 1, &workInfo, VK_NULL_HANDLE));

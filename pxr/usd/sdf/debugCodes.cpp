@@ -16,7 +16,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         SDF_ASSET, "Sdf asset resolution diagnostics");
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        SDF_CHANGES, "Sdf layer change notifications");
+        SDF_ERROR_ON_FAILED_LISTOP_COMPOSE, "Issue a runtime error instead of a"
+        " warning if composing list ops fails");
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         SDF_FILE_FORMAT, "Sdf file format registration");
     TF_DEBUG_ENVIRONMENT_SYMBOL(

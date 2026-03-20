@@ -20,6 +20,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// XXX This approach won't work when scene index plugin ordering is driven
+// solely by JSON metadata.
+// Ssee HdSceneIndexPluginRegistry::PluginOrderingPolicy.
+// 
 TF_DEFINE_ENV_SETTING(HDSI_DEBUGGING_SCENE_INDEX_INSERTION_PHASE,
                       "",
                       "Insertion phase for the debugging scene index. "
@@ -70,7 +74,7 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
     }
 
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        /* rendererDisplayName = */ "",
+        HdSceneIndexPluginRegistryTokens->allRenderers,
         _tokens->sceneIndexPluginName,
         /* inputArgs = */ nullptr,
         *insertionPhase,
@@ -85,7 +89,19 @@ HdsiDebuggingSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr& inputScene,
     const HdContainerDataSourceHandle& inputArgs)
 {
+    // This function shouldn't be called if the plugin isn't enabled.
+    if (!TF_VERIFY(_IsEnabled(inputArgs))) {
+        return inputScene;
+    }
+
     return HdsiDebuggingSceneIndex::New(inputScene, inputArgs);
+}
+
+bool
+HdsiDebuggingSceneIndexPlugin::_IsEnabled(
+    const HdContainerDataSourceHandle& inputArgs) const
+{
+    return _InsertionPhase().has_value();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

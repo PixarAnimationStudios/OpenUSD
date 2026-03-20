@@ -50,7 +50,8 @@ TF_DECLARE_PUBLIC_TOKENS(
     USDRIPXRIMAGING_API, USDRIPXRIMAGING_TOKENS);
 
 #define USDRIPXRIMAGING_PRIM_TYPE_TOKENS \
-    (projection)
+    (projection)                         \
+    (volumeFilter)
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdRiPxrImagingPrimTypeTokens,

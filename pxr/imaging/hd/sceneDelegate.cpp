@@ -415,6 +415,14 @@ HdSceneDelegate::GetCameraParamValue(SdfPath const &cameraId,
 // -----------------------------------------------------------------------//
 
 /*virtual*/
+VtValue 
+HdSceneDelegate::GetVolumeParamValue(SdfPath const &id, 
+                                     TfToken const &paramName) 
+{
+    return VtValue();
+}
+
+/*virtual*/
 HdVolumeFieldDescriptorVector
 HdSceneDelegate::GetVolumeFieldDescriptors(SdfPath const &volumeId)
 {

@@ -39,4 +39,14 @@ slice_base::step() const
         ((PySliceObject*)this->ptr())->step));
 }
 
+static struct register_slice_pytype_ptr
+{
+    register_slice_pytype_ptr()
+    {
+        const_cast<converter::registration &>(
+            converter::registry::lookup(python::type_id<python::slice>())
+            ).m_class_object = &PySlice_Type;
+    }
+}register_slice_pytype_ptr_;
+
 } } } // !namespace PXR_BOOST_NAMESPACE::python::detail

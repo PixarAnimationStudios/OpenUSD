@@ -119,23 +119,58 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
         return res;
     }
 
-    const  char * function_doc_signature_generator::py_type_str(const python::detail::signature_element &s)
+    static str get_qualname(const PyTypeObject *py_type)
+    {
+# if PY_VERSION_HEX >= 0x03030000
+        if ( py_type->tp_flags & Py_TPFLAGS_HEAPTYPE )
+            return str(handle<>(borrowed(((PyHeapTypeObject*)(py_type))->ht_qualname)));
+# endif
+        return str(py_type->tp_name);
+    }
+
+    str function_doc_signature_generator::py_type_str(const python::detail::signature_element &s, const object &current_module_name)
     {
         if (s.basename==std::string("void")){
             static const char * none = "None";
-            return none;
+            return str(none);
         }
 
         PyTypeObject const * py_type = s.pytype_f?s.pytype_f():0;
-        if ( py_type )
-            return  py_type->tp_name;
-        else{
+        if ( py_type ) {
+            str name(get_qualname(py_type));
+            if ( py_type->tp_flags & Py_TPFLAGS_HEAPTYPE ) {
+                // Qualify the type name if it is defined in a different module.
+                PyObject *type_module_name;
+#if PY_VERSION_HEX >= 0x030D0000
+                if (PyDict_GetItemStringRef(py_type->tp_dict, "__module__", &type_module_name) < 0) {
+                    throw_error_already_set();
+                }
+#else
+                type_module_name = PyDict_GetItemString(py_type->tp_dict, "__module__");
+                Py_XINCREF(type_module_name);
+#endif
+                if (
+                    type_module_name
+                    && PyObject_RichCompareBool(
+                        type_module_name,
+                        current_module_name.ptr(),
+                        Py_NE
+                    ) != 0
+                ) {
+                    str result = str("%s.%s" % make_tuple(handle<>(type_module_name), name));
+                    return result;
+                }
+                // Clean up the strong reference if we didn't use it
+                Py_XDECREF(type_module_name);
+            }
+            return name;
+        } else {
             static const char * object = "object";
-            return object;
+            return str(object);
         }
     }
 
-    str function_doc_signature_generator::parameter_string(py_function const &f, size_t n, object arg_names, bool cpp_types)
+    str function_doc_signature_generator::parameter_string(py_function const &f, size_t n, object arg_names, const object& current_module_name, bool cpp_types)
     {
         str param;
 
@@ -161,12 +196,12 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
             {
                 object kv;
                 if ( arg_names && (kv = arg_names[n-1]) )
-                    param = str( " (%s)%s" % make_tuple(py_type_str(s[n]),kv[0]) );
+                    param = str( " (%s)%s" % make_tuple(py_type_str(s[n], current_module_name),kv[0]) );
                 else
-                    param = str(" (%s)%s%d" % make_tuple(py_type_str(s[n]),"arg", n) );
+                    param = str(" (%s)%s%d" % make_tuple(py_type_str(s[n], current_module_name),"arg", n) );
             }
             else //we are processing the return type
-                param = py_type_str(f.get_return_type());
+                param = py_type_str(f.get_return_type(), current_module_name);
         }
 
         //an argument - check for default value and append it
@@ -204,7 +239,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
             str param;
 
             formal_params.append(
-                parameter_string(impl, n, f->m_arg_names, cpp_types)
+                parameter_string(impl, n, f->m_arg_names, f->get_module(), cpp_types)
                 );
 
             // find all the arguments with default values preceeding the arity-n_overloads

@@ -43,7 +43,7 @@
 12
 >>> try: modify(p)
 ... except TypeError: pass
-... else: 'print(expected a TypeError)'
+... else: print('expected a TypeError')
 >>> look(None)
 -1
 >>> store(p)
@@ -66,7 +66,7 @@ bye
 13
 >>> try: modify(z)
 ... except TypeError: pass
-... else: 'print(expected a TypeError)'
+... else: print('expected a TypeError')
 
 >>> Z.get() # should be None
 >>> store(z)
@@ -89,7 +89,7 @@ bye
 17
 >>> try: modify(x)
 ... except TypeError: pass
-... else: 'print(expected a TypeError)'
+... else: print('expected a TypeError')
 >>> look(None)
 -1
 >>> store(x)

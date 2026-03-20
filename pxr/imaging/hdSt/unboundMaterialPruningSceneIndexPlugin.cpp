@@ -29,14 +29,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 static const char * const _pluginDisplayName = "GL";
 
-static bool
-_IsEnabled()
-{
-    static bool enabled =
-        TfGetEnvSetting(HDST_ENABLE_UNBOUND_MATERIAL_PRUNING_SCENE_INDEX);
-    return enabled;
-}
-
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdSceneIndexPluginRegistry::Define<HdSt_UnboundMaterialPruningSceneIndexPlugin>();
@@ -64,7 +56,8 @@ HdSt_UnboundMaterialPruningSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {
-    if (!_IsEnabled()) {
+    // We don't expect this to called when the plugin is disabled.
+    if (!TF_VERIFY(_IsEnabled(inputArgs))) {
         return inputScene;
     }
     
@@ -87,6 +80,15 @@ HdSt_UnboundMaterialPruningSceneIndexPlugin::_AppendSceneIndex(
     
     return HdsiUnboundMaterialPruningSceneIndex::New(
         inputScene, localInputArgs);
+}
+
+bool
+HdSt_UnboundMaterialPruningSceneIndexPlugin::_IsEnabled(
+    const HdContainerDataSourceHandle &inputArgs) const
+{
+    static bool enabled =
+        TfGetEnvSetting(HDST_ENABLE_UNBOUND_MATERIAL_PRUNING_SCENE_INDEX);
+    return enabled;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

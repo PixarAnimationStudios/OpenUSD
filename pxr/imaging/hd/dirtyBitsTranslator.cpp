@@ -466,6 +466,15 @@ HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdRenderSettings::DirtyActive) {
             set->append(HdRenderSettingsSchema::GetActiveLocator());
         }
+        if (bits & HdRenderSettings::DirtyCamera) {
+            set->append(HdRenderSettingsSchema::GetCameraLocator());
+        }
+        if (bits & HdRenderSettings::DirtyDisableDepthOfField) {
+            set->append(HdRenderSettingsSchema::GetDisableDepthOfFieldLocator());
+        }
+        if (bits & HdRenderSettings::DirtyDisableMotionBlur) {
+            set->append(HdRenderSettingsSchema::GetDisableMotionBlurLocator());
+        }
         if (bits & HdRenderSettings::DirtyFrameNumber) {
             set->append(HdRenderSettingsSchema::GetFrameLocator());
         }
@@ -484,7 +493,7 @@ HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdRenderSettings::DirtyRenderingColorSpace) {
             set->append(HdRenderSettingsSchema::GetRenderingColorSpaceLocator());
         }
-        if (bits & HdRenderSettings::DirtyShutterInterval) {
+        if (bits & HdRenderSettings::DirtyUnionedSamplingInterval) {
             set->append(HdRenderSettingsSchema::GetUnionedSamplingIntervalLocator());
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
@@ -1225,6 +1234,19 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
                 end, &it)) {
             bits |= HdRenderSettings::DirtyActive;
         }
+        if (_FindLocator(
+            HdRenderSettingsSchema::GetCameraLocator(), end, &it)) {
+            bits |= HdRenderSettings::DirtyCamera;
+        }
+        if (_FindLocator(
+            HdRenderSettingsSchema::GetDisableDepthOfFieldLocator(),
+            end, &it)) {
+            bits |= HdRenderSettings::DirtyDisableDepthOfField;
+        }
+        if (_FindLocator(
+            HdRenderSettingsSchema::GetDisableMotionBlurLocator(), end, &it)) {
+            bits |= HdRenderSettings::DirtyDisableMotionBlur;
+        }
         if (_FindLocator(HdRenderSettingsSchema::GetFrameLocator(),
                 end, &it)) {
             bits |= HdRenderSettings::DirtyFrameNumber;
@@ -1256,7 +1278,7 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
         if (_FindLocator(
                 HdRenderSettingsSchema::GetUnionedSamplingIntervalLocator(),
                 end, &it)) {
-            bits |= HdRenderSettings::DirtyShutterInterval;
+            bits |= HdRenderSettings::DirtyUnionedSamplingInterval;
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (_FindLocator(HdVolumeFieldSchema::GetDefaultLocator(), end, &it)) {

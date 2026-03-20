@@ -82,7 +82,6 @@ class IrFkController "IrFkController" (
 
     token In:RotationOrder = "XYZ" (
         irRole = "SwitchAttribute"
-        irIsInvertible = True
         allowedTokens = ["XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX"]
     )
 }

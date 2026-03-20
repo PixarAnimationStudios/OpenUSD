@@ -109,7 +109,7 @@ public:
     }
 
 private:
-    _CoordSysPrimDataSource(const HdSceneIndexBaseRefPtr &inputScene,
+    _CoordSysPrimDataSource(const HdSceneIndexBasePtr &inputScene,
                             const SdfPath &primPath,
                             const TfToken &name)
      : _inputScene(inputScene)
@@ -118,7 +118,7 @@ private:
     {
     }
 
-    HdSceneIndexBaseRefPtr const _inputScene;
+    HdSceneIndexBasePtr const _inputScene;
     const SdfPath _primPath;
     const TfToken _name;
 };

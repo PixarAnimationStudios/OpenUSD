@@ -15,6 +15,14 @@
                         "loadWithRenderer" : "",
                         "loadWithApps" : "",
 
+                        # New fields to express scene index plugin ordering
+                        # via JSON.
+                        "tags" : ["prepTag"],
+                        
+                        "ordering" : {
+                            "before" : "makeTag"
+                        },
+
                         # Unused but mandatory fields (see HfPluginRegistry).
                         "priority": 0,
                         "displayName": "Grind Coffee Beans Scene Index Plugin"
@@ -23,6 +31,15 @@
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "",
                         "loadWithApps" : "",
+
+                        # New fields to express scene index plugin ordering
+                        # via JSON.
+                        "tags" : ["prepTag"],
+
+                        # Intentionally leaving out "ordering" here. Because it
+                        # has the tag "prepTag" and below, TestHdSip_PourOver
+                        # specifies that it should come after any plugin with
+                        # the "prepTag" tag.
 
                         # Unused but mandatory fields (see HfPluginRegistry).
                         "priority": 0,
@@ -33,6 +50,13 @@
                         "loadWithRenderer" : "",
                         "loadWithApps" : "",
 
+                        # New fields to express scene index plugin ordering
+                        # via JSON.
+                        "tags" : ["makeTag"],
+                        "ordering" : {
+                            "after" : "prepTag"
+                        },
+
                         # Unused but mandatory fields (see HfPluginRegistry).
                         "priority": 0,
                         "displayName": "Pour Over Scene Index Plugin"
@@ -41,6 +65,13 @@
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "",
                         "loadWithApps" : "",
+                        
+                        # New fields to express scene index plugin ordering
+                        # via JSON.
+                        "tags" : ["enjoyTag"],
+                        "ordering" : {
+                            "after" : "makeTag"
+                        },
                         
                         # Unused but mandatory fields (see HfPluginRegistry).
                         "priority": 0,

@@ -7,11 +7,11 @@
 #include "pxr/exec/exec/builtinObjectComputations.h"
 
 #include "pxr/exec/exec/builtinComputations.h"
-#include "pxr/exec/exec/callbackNode.h"
 #include "pxr/exec/exec/metadataInputNode.h"
 #include "pxr/exec/exec/privateBuiltinComputations.h"
 #include "pxr/exec/exec/program.h"
 #include "pxr/exec/vdf/context.h"
+#include "pxr/exec/vdf/inputVector.h"
 
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/type.h"
@@ -124,15 +124,19 @@ Exec_ComputePathComputationDefinition::CompileNode(
         return nullptr;
     }
 
-    return program->CreateNode<Exec_CallbackNode>(
-        *nodeJournal,
-        VdfInputSpecs(),
-        VdfOutputSpecs().Connector(
-            TfType::Find<SdfPath>(),
-            TfToken(VdfTokens->out)),
-        [object = providerObject.AsObject()] (const VdfContext& context) {
-            context.SetOutput(object->GetPath(/* journal */ nullptr));
-        });
+    // We provide a path value by creating a VdfInputVector because each unique
+    // value corresponds to a different object, so there's no need for the kind
+    // of sharing we do for Exec_ConstantValueNode.
+
+    // Get the path before creating the node, so that we update the journal.
+    SdfPath path = providerObject.GetPath(nodeJournal);
+
+    // Create the input vector and set the data.
+    VdfInputVector<SdfPath> *const node =
+        program->CreateNode<VdfInputVector<SdfPath>>(*nodeJournal, /* size */ 1);
+    node->SetValue(0, std::move(path));
+
+    return node;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

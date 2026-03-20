@@ -331,7 +331,7 @@ Exec_DefinitionRegistry::_LookUpLocalAttributeComputation(
     const _ComposedPrimDefinition &composedPrimDef =
         _GetOrCreateComposedPrimDefinition(*providerPrim.Get(), journal);
 
-    const TfToken attributeName = providerAttribute.GetBaseName(journal);
+    const TfToken attributeName = providerAttribute.GetName(journal);
     const auto &compDefs = composedPrimDef.attributeComputationDefinitions;
     const auto it = compDefs.find({attributeName, computationName});
     if (it != compDefs.end()) {
@@ -510,7 +510,7 @@ Exec_DefinitionRegistry::_ValidateComputationRegistration(
 {
     if (schemaType.IsUnknown()) {
         TF_CODING_ERROR(
-            "Attempt to register computation '%s' using an unknown type.",
+            "Attempt to register computation '%s' using an unknown schema type.",
             computationName.GetText());
         return false;
     }

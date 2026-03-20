@@ -381,11 +381,13 @@ private:
 
     // Use prototypeName to instantiate for "scene root".
     static UsdImagingNiPrototypePropagatingSceneIndexRefPtr _New(
+        HdSceneIndexBaseRefPtr const &inputSceneIndex,
         const TfToken &prototypeName,
         HdContainerDataSourceHandle const &prototypeRootOverlayDs,
         _SceneIndexCacheSharedPtr const &cache);
 
     UsdImagingNiPrototypePropagatingSceneIndex(
+        HdSceneIndexBaseRefPtr const &inputSceneIndex,
         const TfToken &prototypeName,
         HdContainerDataSourceHandle const &prototypeRootOverlayDs,
         _SceneIndexCacheSharedPtr const &cache);
@@ -401,9 +403,12 @@ private:
     void _RemovePrim(const SdfPath &primPath,
         _MergingSceneIndexOperations * mergingSceneIndexOperations);
 
+private: // data
+
+    const HdSceneIndexBaseRefPtr _inputSceneIndex;
     const TfToken _prototypeName;
     const HdDataSourceHashType _prototypeRootOverlayDsHash;
-    _SceneIndexCacheSharedPtr const _cache;
+    const _SceneIndexCacheSharedPtr _cache;
 
     HdMergingSceneIndexRefPtr _mergingSceneIndex;
 

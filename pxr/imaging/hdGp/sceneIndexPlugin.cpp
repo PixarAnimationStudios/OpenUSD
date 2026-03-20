@@ -28,23 +28,45 @@ TF_DEFINE_ENV_SETTING(HDGP_INCLUDE_DEFAULT_RESOLVER, false,
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    // For now, do not add the procedural resolving scene index by default but
-    // allow activation of a default configured instance via envvar.
-    if (TfGetEnvSetting(HDGP_INCLUDE_DEFAULT_RESOLVER) == true) {
-
-        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-            TfToken(), // empty token means all renderers
-            TfToken("HdGpSceneIndexPlugin"),
-            nullptr,   // no argument data necessary
-            HdGpSceneIndexPlugin::GetInsertionPhase(),
-            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
-    }
+    // Safe to register the plugin always. If the env var isn't set, the plugin
+    // won't be considered when creating the scene index plugin chain.
+    //
+    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+        HdSceneIndexPluginRegistryTokens->allRenderers,
+        TfToken("HdGpSceneIndexPlugin"),
+        nullptr,   // no argument data necessary
+        HdGpSceneIndexPlugin::GetInsertionPhase(),
+        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
 }
 
 HdGpSceneIndexPlugin::HdGpSceneIndexPlugin() = default;
 
+/* virtual */
 HdSceneIndexBaseRefPtr
 HdGpSceneIndexPlugin::_AppendSceneIndex(
+    const HdSceneIndexBaseRefPtr &inputScene,
+    const HdContainerDataSourceHandle &inputArgs)
+{
+    // Comment above in the registry block applies. This function shouldn't be
+    // called if the plugin isn't enabled.
+    if (!TF_VERIFY(_IsEnabled(inputArgs))) {
+        return inputScene;
+    }
+
+    return _AppendProceduralResolvingSceneIndex(inputScene, inputArgs);
+}
+
+/* virtual */
+bool
+HdGpSceneIndexPlugin::_IsEnabled(
+    const HdContainerDataSourceHandle &inputArgs) const
+{
+    static bool isEnabled = TfGetEnvSetting(HDGP_INCLUDE_DEFAULT_RESOLVER);
+    return isEnabled;
+}
+
+HdSceneIndexBaseRefPtr
+HdGpSceneIndexPlugin::_AppendProceduralResolvingSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {

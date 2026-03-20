@@ -2569,6 +2569,15 @@ SdfLayer::SplitIdentifier(
     return Sdf_SplitIdentifier(identifier, layerPath, arguments);
 }
 
+std::pair<string, string>
+SdfLayer::SplitIdentifier(
+    const string& identifier)
+{
+    string layerPath, arguments;
+    Sdf_SplitIdentifier(identifier, &layerPath, &arguments);
+    return {layerPath, arguments};
+}
+
 std::string 
 SdfLayer::CreateIdentifier(
     const string& layerPath,

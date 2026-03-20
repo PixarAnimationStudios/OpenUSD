@@ -381,6 +381,10 @@ _ConvertNodes(
         sn.type = riley::ShadingNode::Type::k_Light;
     } else if (sdrEntry->GetContext() == SdrNodeContext->LightFilter) {
         sn.type = riley::ShadingNode::Type::k_LightFilter;
+#if HD_API_VERSION >= 93
+    } else if (sdrEntry->GetContext() == SdrNodeContext->VolumeFilter) {
+        sn.type = riley::ShadingNode::Type::k_VolumeFilter;
+#endif
     } else {
         TF_WARN("Unknown shader entry type '%s' for shader '%s' in <%s>",
                 sdrEntry->GetContext().GetText(), sdrEntry->GetName().c_str(),
@@ -395,13 +399,15 @@ _ConvertNodes(
         return false;
     }
     if (sn.type == riley::ShadingNode::Type::k_Displacement ||
-        sn.type == riley::ShadingNode::Type::k_Light || 
-        sn.type == riley::ShadingNode::Type::k_LightFilter) {
+        sn.type == riley::ShadingNode::Type::k_Light ||
+        sn.type == riley::ShadingNode::Type::k_LightFilter ||
+        sn.type == riley::ShadingNode::Type::k_VolumeFilter) {
         // Except for Displacement;
         // in that case let the renderer choose, since RIS
         // can only use a cpp Displacement shader and XPU
         // can only use osl.
-        // Lights and light filters let the renderer choose by name too.
+        // Lights, light filters, and volume filters let the renderer
+        // choose by name too.
         shaderPath = sdrEntry->GetImplementationName();
     }
 

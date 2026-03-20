@@ -43,6 +43,14 @@ protected:
     HdSceneIndexBaseRefPtr _AppendSceneIndex(
         const HdSceneIndexBaseRefPtr &inputScene,
         const HdContainerDataSourceHandle &inputArgs) override;
+    
+    bool _IsEnabled(
+        const HdContainerDataSourceHandle &inputArgs) const override;
+
+private:
+    HdSceneIndexBaseRefPtr _AppendProceduralResolvingSceneIndex(
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const HdContainerDataSourceHandle &inputArgs);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

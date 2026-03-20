@@ -26,20 +26,28 @@ namespace detail
                           this->m_self, const_cast<char*>(name))))
           )
           {
-              PyObject* borrowed_f = 0;
-            
+              PyObject* class_f = 0;
+
               if (
                   PyMethod_Check(m.get())
                   && PyMethod_GET_SELF(m.get()) == this->m_self
                   && class_object->tp_dict != 0
               )
               {
-                  borrowed_f = ::PyDict_GetItemString(
+#if PY_VERSION_HEX >= 0x030D0000
+                  if (::PyDict_GetItemStringRef(
+                      class_object->tp_dict, const_cast<char*>(name), &class_f) < 0) {
+                      throw_error_already_set();
+                  }
+#else
+                  class_f = ::PyDict_GetItemString(
                       class_object->tp_dict, const_cast<char*>(name));
-
-
+                  Py_XINCREF(class_f);
+#endif
               }
-              if (borrowed_f != PyMethod_GET_FUNCTION(m.get()))
+              bool is_override = (class_f != PyMethod_GET_FUNCTION(m.get()));
+              Py_XDECREF(class_f);
+              if (is_override)
                   return override(m);
           }
       }

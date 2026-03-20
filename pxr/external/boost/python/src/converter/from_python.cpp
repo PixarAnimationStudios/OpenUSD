@@ -16,6 +16,7 @@
 
 #include "pxr/external/boost/python/handle.hpp"
 #include "pxr/external/boost/python/detail/raw_pyobject.hpp"
+#include "pxr/external/boost/python/detail/pymutex.hpp"
 #include "pxr/external/boost/python/cast.hpp"
 
 #include <vector>
@@ -150,6 +151,8 @@ namespace
 
   inline bool visit(rvalue_from_python_chain const* chain)
   {
+      PXR_BOOST_PYTHON_LOCK_STATE();
+
       visited_t::iterator const p = std::lower_bound(visited.begin(), visited.end(), chain);
       if (p != visited.end() && *p == chain)
           return false;
@@ -162,9 +165,11 @@ namespace
   {
       unvisit(rvalue_from_python_chain const* chain)
           : chain(chain) {}
-      
+
       ~unvisit()
       {
+          PXR_BOOST_PYTHON_LOCK_STATE();
+
           visited_t::iterator const p = std::lower_bound(visited.begin(), visited.end(), chain);
           assert(p != visited.end());
           visited.erase(p);
@@ -227,7 +232,13 @@ namespace
       , char const* ref_type)
   {
       handle<> holder(source);
-      if (source->ob_refcnt <= 1)
+      if (
+#if PY_VERSION_HEX < 0x03090000
+                source->ob_refcnt
+#else
+                Py_REFCNT(source)
+#endif
+                <= 1)
       {
           handle<> msg(
 #if PY_VERSION_HEX >= 0x3000000

@@ -154,6 +154,16 @@ class TestPcpMapFunction(unittest.TestCase):
         self.assertTrue(m4.MapTargetToSource(
             Sdf.Path('/M_1/Anim/Scope/x')) == Sdf.Path('/M_1/Rig/Class/Scope/x'))
 
+    def test_ImpliedClass(self):
+        # Test ImpliedClass operation with the same mappings from the
+        # test_InheritRelocateChain test case.
+        self.assertEqual(
+            Pcp.MapFunction({'/':'/', '/M_1/Rig/Class/Scope': '/M_1/Anim/Scope'}), 
+            Pcp.MapFunction.ImpliedClass(
+                Pcp.MapFunction({'/M':'/M_1'}),
+                Pcp.MapFunction( {'/M/Rig/Inst/Scope': '/M/Anim/Scope'} ).Compose(
+                    Pcp.MapFunction( {'/M/Rig/Class': '/M/Rig/Inst'}))))
+
     def test_LayerOffsets(self):
         # Test layer offsets
         offset1 = Sdf.LayerOffset(offset=0.0, scale=2.0)

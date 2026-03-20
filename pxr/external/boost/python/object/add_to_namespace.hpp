@@ -26,6 +26,8 @@ PXR_BOOST_PYTHON_DECL void add_to_namespace(
 PXR_BOOST_PYTHON_DECL void add_to_namespace(
     object const& name_space, char const* name, object const& attribute, char const* doc);
 
+PXR_BOOST_PYTHON_DECL object const& add_doc(object const& attribute, char const* doc);
+
 }}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ADD_TO_NAMESPACE_HPP

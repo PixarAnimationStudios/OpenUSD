@@ -83,6 +83,16 @@ public:
     Create(const PathMap &sourceToTargetMap,
            const SdfLayerOffset &offset);
 
+    /// Constructs a map function that is equivalent to
+    /// \code
+    /// transferFunc.Compose(classArc.Compose(transferFunc.Inverse))
+    /// \endcode
+    /// with an additional root identity mapping.
+    PCP_API
+    static PcpMapFunction
+    ImpliedClass(const PcpMapFunction& transferFunc,
+                 const PcpMapFunction& classArc);
+
     /// Construct an identity map function.
     PCP_API
     static const PcpMapFunction &Identity();

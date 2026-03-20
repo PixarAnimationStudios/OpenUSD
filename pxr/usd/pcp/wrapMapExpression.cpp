@@ -43,6 +43,8 @@ wrapMapExpression()
         .def("Constant", &This::Constant,
              return_value_policy<return_by_value>())
         .staticmethod("Constant")
+        .def("ImpliedClass", &This::ImpliedClass)
+        .staticmethod("ImpliedClass")
         .def("Inverse", &This::Inverse,
              return_value_policy<return_by_value>())
         .def("AddRootIdentity", &This::AddRootIdentity,

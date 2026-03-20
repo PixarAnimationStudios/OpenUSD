@@ -583,7 +583,7 @@ public:
     _PrimvarsDataSource(
         const HdContainerDataSourceHandle &primvarsDs,
         const HdContainerDataSourceHandle &extCompPrimvarsDs,
-        const HdSceneIndexBaseRefPtr &si)
+        const HdSceneIndexBasePtr &si)
     : _primvarsDs(primvarsDs)
     , _extCompPrimvarsDs(extCompPrimvarsDs)
     , _si(si)
@@ -635,7 +635,7 @@ public:
 private:
     HdContainerDataSourceHandle _primvarsDs;
     HdContainerDataSourceHandle _extCompPrimvarsDs;
-    const HdSceneIndexBaseRefPtr _si;
+    const HdSceneIndexBasePtr _si;
     _ExtComputationContextSharedPtr _ctx;
 };
 
@@ -662,7 +662,7 @@ public:
 
     _PrimDataSource(
         const HdContainerDataSourceHandle &input,
-        const HdSceneIndexBaseRefPtr &si)
+        const HdSceneIndexBasePtr &si)
     : _input(input)
     , _si(si)
     {
@@ -732,7 +732,7 @@ public:
 
 private:
     HdContainerDataSourceHandle _input;
-    const HdSceneIndexBaseRefPtr _si;
+    const HdSceneIndexBasePtr _si;
 };
 
 

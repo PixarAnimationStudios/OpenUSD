@@ -155,20 +155,25 @@ and :usda:`opacity`.
 
 * **opacity - float - 1.0** 
 
-  When *opacity* is 1.0 then the gprim is fully opaque, if it is smaller than
-  1.0 then the prim is translucent, when it is 0 the gprim is fully transparent.
+  When *opacity* is 1.0 then the prim is fully opaque, if it is smaller than
+  1.0 then the prim is translucent, when it is 0 the prim is fully transparent.
   Fully transparent objects will still receive a lighting response when the
-  *opacityMode* is *transparent*, however they will not receive any lighting
-  when the *opacityMode* is set to *presence*.
+  *opacityMode* is *transparent*. When the *opacityMode* is set to *presence*
+  the lighting response will be scaled by the *opacity*.
 
 * **opacityMode - token - transparent**
 
-  This input dictates how materials with zero opacity are interpreted and 
-  takes one of two inputs: *transparent* or *presence*. When the value is 
-  *transparent* materials with zero opacity still receive a lighting response 
-  as, for example, perfectly clear glass still has a specular response.
-  However, when set to *presence* these materials will not receive any 
-  lighting and thus they always serve as cutouts.
+  This input dictates how materials with opacity less than one are interpreted
+  and accepts one of two possible values: *transparent* or *presence*. When the
+  value is *transparent*, *opacity* reduces the contribution of the non-specular
+  lighting components in favor of transparency, while the specular response
+  remains at full weight. This models materials such as glass, where even
+  perfectly clear glass still produces a specular reflection. When set to
+  *presence*, *opacity* scales the entire lighting response, including specular,
+  so the material response fades proportionally as *opacity* decreases. In this
+  mode the surface transitions toward full transparency as *opacity* approaches
+  zero, behaving as if the object itself is disappearing rather than remaining
+  optically present through specular reflection.
 
 .. _addopacitythreshold:
 
@@ -181,14 +186,15 @@ and :usda:`opacity`.
   to that value. A classic use of *opacityThreshold* is to create a leaf from an
   opacity input texture, in that case the threshold determines the parts of the
   opacity texture that will be fully transparent and not receive lighting. Note
-  that when *opacityThreshold* is greater than zero, the *opacity* values less
-  than the *opacityThreshold* will not be rendered, and the *opacity* values
-  greater than or equal to the *opacityThreshold* will be fully visible.  Thus,
-  the *opacityThreshold* serves as a switch for how the *opacity* input is
-  interpreted; this "translucent or masked" behavior is common in engines and
-  renderers, and makes the UsdPreviewSurface easier to interchange. Recreating 
-  a translucent material that also provides a zero opacity-based mask, can be 
-  achieved by setting *opacityThreshold* to zero and *opacityMode* to *presence*.
+  that when *opacityThreshold* is greater than zero, regardless of the
+  *opacityMode*, the *opacity* values less than the *opacityThreshold* will not
+  be rendered, and the *opacity* values greater than or equal to the
+  *opacityThreshold* will be fully visible.  Thus, the *opacityThreshold* serves
+  as a switch for how the *opacity* input is interpreted; this "translucent or
+  masked" behavior is common in engines and renderers, and makes the
+  UsdPreviewSurface easier to interchange. Recreating a translucent material
+  that also provides a zero opacity-based mask, can be achieved by setting
+  *opacityThreshold* to zero and *opacityMode* to *presence*.
 
 .. _updateior:
 

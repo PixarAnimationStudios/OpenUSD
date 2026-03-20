@@ -7,6 +7,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/exec/vdf/context.h"
+#include "pxr/exec/vdf/inputVector.h"
 #include "pxr/exec/vdf/rawValueAccessor.h"
 #include "pxr/exec/vdf/readIterator.h"
 #include "pxr/exec/vdf/readWriteIterator.h"
@@ -22,6 +23,7 @@
 #include "pxr/base/trace/reporter.h"
 
 #include <iostream>
+#include <utility>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -421,6 +423,54 @@ runReferenceTest()
     return true;
 }
 
+namespace {
+
+// A struct that counts the number of copies that are made of any instance.
+struct CopyCounter {
+    CopyCounter() = default;
+    CopyCounter(const CopyCounter &) {
+        ++numCopies;
+    }
+    CopyCounter(CopyCounter&&) = default;
+    CopyCounter &operator=(const CopyCounter&) {
+        ++numCopies;
+        return *this;
+    }
+    CopyCounter &operator=(CopyCounter&&) = default;
+
+    bool operator==(const CopyCounter&) const { return true; }
+    bool operator!=(const CopyCounter&) const { return false; }
+
+    static unsigned numCopies;
+};
+
+unsigned CopyCounter::numCopies = 0;
+
+} // anonymous namespace
+
+// Make sure we move data into an input vector when we expect to.
+static bool
+runInputVectorMoveDataTest()
+{
+    VdfTestUtils::Network graph;
+    VdfInputVector<CopyCounter> *const inputVector =
+        new VdfInputVector<CopyCounter>(&graph.GetNetwork(), /* size */ 1);
+
+    // We start with a zero counter initially.
+    TF_AXIOM(CopyCounter::numCopies == 0);
+
+    // Ensure no copies are made when we move the value in.
+    CopyCounter value1;
+    inputVector->SetValue(0, std::move(value1));
+    TF_AXIOM(CopyCounter::numCopies == 0);
+
+    CopyCounter value2;
+    inputVector->SetValue(0, value2);
+    TF_AXIOM(CopyCounter::numCopies == 1);
+
+    return true;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 int 
@@ -439,6 +489,11 @@ main(int argc, char **argv)
 
     if (!runReferenceTest()) {
         std::cout << "Error running runReferenceTest" << std::endl;
+        numErrors++;
+    }
+
+    if (!runInputVectorMoveDataTest()) {
+        std::cout << "Error running runInputVectorTest" << std::endl;
         numErrors++;
     }
 

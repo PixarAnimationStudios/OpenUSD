@@ -374,6 +374,10 @@ public:
     virtual HdVolumeFieldDescriptorVector
     GetVolumeFieldDescriptors(SdfPath const &volumeId) override;
 
+    USDIMAGING_API
+    virtual VtValue GetVolumeParamValue(SdfPath const &id, 
+                                        TfToken const &paramName) override;
+
     // Picking path resolution
     // Resolves a \p rprimId and \p instanceIndex back to the original USD
     // gprim and instance index.  For point-instanced prims, \p instanceContext

@@ -41,6 +41,14 @@ TF_CONDITIONALLY_COMPILE_TIME_ENABLED_DEBUG_CODES(
     VDF_SEE_TRACE
 );
 
+// Debugging symbols for traversals.
+
+// Sparse output traversal tracing debug output
+TF_CONDITIONALLY_COMPILE_TIME_ENABLED_DEBUG_CODES(
+    false,
+    VDF_SPARSE_OUTPUT_TRAVERSER_TRACING
+);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

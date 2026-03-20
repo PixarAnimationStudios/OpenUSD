@@ -6182,9 +6182,21 @@ public:
         // If the partial result so far is not empty, we must try composing it
         // over the field value.
         if (!_partial.IsEmpty()) {
+            TfErrorMark m;
             if (std::optional<VtValue> composed =
                 VtValueTryComposeOver(_partial, value)) {
                 value = std::move(*composed);
+            }
+            if (!m.IsClean()){
+                for (TfError const &err: m) { 
+                    TF_WARN("Error: '%s' while composing metadata " 
+                        "for %s on <%s> in @%s@.",
+                        err.GetCommentary().c_str(),
+                        fieldName.GetText(),
+                        specPath.GetAsString().c_str(),
+                        layer->GetIdentifier().c_str());
+                }
+                m.Clear();
             }
         }
 

@@ -10,6 +10,7 @@
 
 #include "pxr/external/boost/python/type_id.hpp"
 #include "pxr/external/boost/python/detail/decorated_type_id.hpp"
+#include "pxr/external/boost/python/detail/pymutex.hpp"
 #include <utility>
 #include <vector>
 #include <algorithm>
@@ -86,7 +87,7 @@ namespace
   {
       free_mem(char*p)
           : p(p) {}
-    
+
       ~free_mem()
       {
           std::free(p);
@@ -97,6 +98,7 @@ namespace
 
 bool cxxabi_cxa_demangle_is_broken()
 {
+    PXR_BOOST_PYTHON_LOCK_STATE();
     static bool was_tested = false;
     static bool is_broken = false;
     if (!was_tested) {
@@ -114,6 +116,8 @@ namespace detail
 {
   PXR_BOOST_PYTHON_DECL char const* gcc_demangle(char const* mangled)
   {
+      PXR_BOOST_PYTHON_LOCK_STATE();
+
       typedef std::vector<
           std::pair<char const*, char const*>
       > mangling_map;

@@ -1,5 +1,8 @@
 name: BuildUSD
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -20,7 +23,7 @@ jobs:
       validation-failed: ${{ steps.changed-workflows.outputs.any_changed }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 #v4.3.1
         with:
           ref: ${{ github.ref }}
       - name: Check workflows directory
@@ -35,23 +38,25 @@ jobs:
       - Validation
     if: ${{ (github.event_name == 'pull_request' && needs.Validation.outputs.validation-failed != 'true') || github.event_name == 'push' }}
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write # Grant write permissions in order to upload artifacts
     env:
       PYTHON_VERSION: "3.9.25"
     timeout-minutes: 120
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 #v4.3.1
         with:
           ref: ${{ github.ref }}
       - name: Restore cached artifacts
         id: cache-usd-build-dependency
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
         with:
           path: |
             USDinst
           key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 #v5.6.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           check-latest: false
@@ -76,12 +81,12 @@ jobs:
           fi
       - name: Save Build Artifacts to Cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
         with:
           path: USDinst
           key: ${{ steps.cache-usd-build-dependency.outputs.cache-primary-key }}
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: usd-linux
           path: ${{ github.workspace }}
@@ -148,13 +153,15 @@ jobs:
       - Linux
     if: ${{ github.event_name == 'push' }}
     runs-on: enterprise-linux-x64-t4gpu-4core-16vram-28ram-176ssd
+    permissions:
+      contents: write # Grant write permissions in order to upload artifacts
     env:
       AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
       PYTHON_VERSION: "3.9.25"
     timeout-minutes: 30
     steps:
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 #v5.6.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           check-latest: false
@@ -176,7 +183,7 @@ jobs:
           pip install --upgrade pip
           pip install PySide2 PyOpenGL cmake
       - name: Download USD Build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 #v4.3.0
         with:
           name: usd-linux
       - name: Restore Executable Permissions
@@ -206,7 +213,7 @@ jobs:
           fi
       - name: Upload Test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: FailedTestOutput
           path: ./USDgen/build/OpenUSD/FailedTestOutput
@@ -217,23 +224,25 @@ jobs:
       - Validation
     if: ${{ (github.event_name == 'pull_request' && needs.Validation.outputs.validation-failed != 'true') || github.event_name == 'push' }}
     runs-on: macos-15
+    permissions:
+      contents: write # Grant write permissions in order to upload artifacts
     env:
       PYTHON_VERSION: "3.11"
     timeout-minutes: 120
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 #v4.3.1
         with:
           ref: ${{ github.ref }}
       - name: Restore cached artifacts
         id: cache-usd-build-dependency
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
         with:
           path: |
             USDinst
           key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 #v5.6.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           check-latest: false
@@ -253,13 +262,13 @@ jobs:
           python3 build_scripts/build_usd.py --no-materialx --generator Xcode --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_HEADLESS_TEST_MODE=ON -DPXR_BUILD_TESTS=ON" -v
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
         with:
           path: |
             USDinst
           key: ${{ steps.cache-usd-build-dependency.outputs.cache-primary-key }}
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: usd-macOS
           path: USDinst
@@ -274,23 +283,25 @@ jobs:
       - Validation
     if: ${{ (github.event_name == 'pull_request' && needs.Validation.outputs.validation-failed != 'true') || github.event_name == 'push' }}
     runs-on: windows-2022
+    permissions:
+      contents: write # Grant write permissions in order to upload artifacts
     env:
       PYTHON_VERSION: "3.9"
     timeout-minutes: 120
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 #v4.3.1
         with:
           ref: ${{ github.ref }}
       - name: Restore cached artifacts
         id: cache-usd-build-dependency
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
         with:
           path: |
             USDinst
           key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 #v5.6.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           check-latest: false
@@ -305,13 +316,13 @@ jobs:
         shell: cmd
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
         with:
           path: |
             USDinst
           key: ${{ steps.cache-usd-build-dependency.outputs.cache-primary-key }}
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: usd-win64
           path: USDinst
@@ -333,9 +344,11 @@ jobs:
         target: [Wasm, Wasm64]
       fail-fast: false
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write # Grant write permissions in order to upload artifacts
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 #v4.3.1
         with:
           ref: ${{ github.ref }}
       - name: Install Emscripten SDK
@@ -346,7 +359,7 @@ jobs:
           ./emsdk activate latest
       - name: Restore cached artifacts
         id: cache-usd-build-dependency
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
         with:
           path: |
             USDgen/build
@@ -359,13 +372,13 @@ jobs:
             --build-args USD,"-DPXR_HEADLESS_TEST_MODE=ON -DPXR_BUILD_TESTS=ON"
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
         with:
           path: |
             USDgen/build
           key: ${{ steps.cache-usd-build-dependency.outputs.cache-primary-key }}
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
           name: usd-${{ matrix.target }}
           path: USDinst

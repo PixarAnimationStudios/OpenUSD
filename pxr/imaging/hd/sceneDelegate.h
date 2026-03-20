@@ -857,6 +857,11 @@ public:
     /// \name Volume Aspects
     // -----------------------------------------------------------------------//
 
+    // Returns a single value for a given volume and parameter.
+    HD_API
+    virtual VtValue GetVolumeParamValue(SdfPath const &id, 
+                                        TfToken const &paramName);
+
     HD_API
     virtual HdVolumeFieldDescriptorVector
     GetVolumeFieldDescriptors(SdfPath const &volumeId);

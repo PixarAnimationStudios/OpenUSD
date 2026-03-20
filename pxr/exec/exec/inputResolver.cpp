@@ -396,6 +396,49 @@ private:
         return outputKeys;
     }
 
+    // Returns the ouput keys for the attributes that own connections that
+    // target the currrent object, for the computation of the given name and
+    // result type.
+    //
+    // The current object must be valid prior to calling this method.
+    //
+    Exec_OutputKeyVector _TraverseToIncomingConnectionOwningAttributes(
+        const TfToken &computationName,
+        const TfType resultType,
+        const TfToken &disambiguatingId)
+    {
+        if (!TF_VERIFY(_currentObject->IsValid(_journal))) {
+            return {};
+        }
+
+        Exec_OutputKeyVector outputKeys;
+
+        for (const SdfPath &path :
+                 _currentObject->GetIncomingConnections(_journal)) {
+            if (!_TraverseToAbsolutePath(path)) {
+                continue;
+            }
+
+            if (const Exec_ComputationDefinition *const computationDefinition =
+                _FindComputationDefinition(
+                    computationName,
+                    resultType,
+                    disambiguatingId)) {
+                outputKeys.emplace_back(
+                    _currentObject->AsObject(),
+                    _GetDispatchingConfigKeyForOutputKey(computationDefinition),
+                    computationDefinition);
+            }
+        }
+
+        // Clear the current object since the traversal has terminated.
+        _currentObjectVariant = std::monostate{};
+        _currentObject = nullptr;
+        _currentAttribute = nullptr;
+
+        return outputKeys;
+    }
+
     // Updates the current object to the nearest namespace ancestor that 
     // a computation named \p computationName with the given \p resultType.
     //
@@ -559,6 +602,13 @@ private:
         case ExecProviderResolution::DynamicTraversal::
             ConnectionTargetedObjects:
             return _TraverseToConnectionTargetedObjects(
+                inputKey.computationName,
+                inputKey.resultType,
+                inputKey.disambiguatingId);
+            
+        case ExecProviderResolution::DynamicTraversal::
+            IncomingConnectionOwningAttributes:
+            return _TraverseToIncomingConnectionOwningAttributes(
                 inputKey.computationName,
                 inputKey.resultType,
                 inputKey.disambiguatingId);

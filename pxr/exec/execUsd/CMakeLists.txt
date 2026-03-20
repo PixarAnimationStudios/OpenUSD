@@ -170,6 +170,28 @@ pxr_register_test(testExecUsdConnections
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_build_test(testExecUsdConnectionsStochastic
+    LIBRARIES
+        tf
+        esf
+        exec
+        execUsd
+        plug
+        sdf
+        usd
+        usdGeom
+        vdf
+        work
+    CPPFILES
+        testenv/testExecUsdConnectionsStochastic.cpp
+)
+
+pxr_register_test(testExecUsdConnectionsStochastic
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdConnectionsStochastic"
+    TESTENV testenv/testExecUsdConnectionsStochastic
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_build_test(testExecUsdComputeWithOverrides
     LIBRARIES
         tf

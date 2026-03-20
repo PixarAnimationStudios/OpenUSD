@@ -68,12 +68,13 @@ public:
     /// RegisterSceneIndexForRenderer) for this renderer. Return value is the
     /// last scene index -- or inputScene if no plugins are registered or
     /// taking action. This also includes plug-ins registered for all
-    /// renderers (via an empty rendererDisplayName) to be added in advance
-    /// of any registered for the specified renderer.
+    /// renderers (via an empty renderer string for the loadWithRenderer JSON
+    /// field) to be added in advance of any registered for the specified 
+    /// renderer.
     ///
     /// Plugin libraries will only be loaded if they declare they are enabled
     /// for the provided app name. By default, plugins are auto-loaded for all
-    /// apps, but plugin authors can put an preloadInApps array in their
+    /// apps, but plugin authors can put an loadWithApps array in their
     /// plugInfo to narrow down the set of applications they are auto-loaded
     /// for. Providing an empty app name here (the default) means this will not
     /// auto-load any application-specific plugin libraries.
@@ -213,6 +214,35 @@ public:
     GetPluginInsertionMetadataForSceneIndex(
         const HdSceneIndexBaseRefPtr& sceneIndex,
         PluginInsertionMetadata& metadata);
+
+    /// Enum to specify the policy for determining the order of scene index 
+    /// plugins. This is primarily in service of testing, and to provide a
+    /// pathway to deprecating the registration API in favor of JSON
+    /// metadata-based ordering.
+    /// The default is based off the environment setting
+    /// HD_SCENE_INDEX_PLUGIN_ORDERING_POLICY_DEFAULT.
+    ///
+    enum class PluginOrderingPolicy
+    {
+        /// The order of plugins is determined solely by the insertion 
+        /// phase/order arguments of the C++ registration API.
+        CppRegistrationOnly,
+
+        /// The tags and ordering specified in the JSON metadata are used to
+        /// drive the ordering of scene index plugins.
+        JsonMetadataOnly,
+
+        /// A hybrid ordering scheme where we attempt to honor *both* the
+        /// insertion phase/order specified via the C++ registration API and the
+        /// tags and ordering specified in the JSON metadata.
+        Hybrid
+    };
+
+    /// Sets the policy for determining the order of scene index plugins.
+    /// This is primarily in service of testing.
+    HD_API
+    void
+    SetPluginOrderingPolicy(PluginOrderingPolicy policy);
 
 protected:
 

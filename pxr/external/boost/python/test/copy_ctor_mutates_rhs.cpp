@@ -11,10 +11,16 @@
 #include <memory>
 #include <string>
 
+struct foo
+{
+   operator std::shared_ptr<int>&() const;
+};
+
 int main()
 {
     using namespace PXR_BOOST_NAMESPACE::python::detail;
     static_assert(!copy_ctor_mutates_rhs<int>::value);
     static_assert(!copy_ctor_mutates_rhs<std::string>::value);
+    static_assert(!copy_ctor_mutates_rhs<foo>::value);
     return 0;
 }

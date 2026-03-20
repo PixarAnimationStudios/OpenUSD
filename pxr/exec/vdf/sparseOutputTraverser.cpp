@@ -7,14 +7,16 @@
 #include "pxr/exec/vdf/sparseOutputTraverser.h"
 
 #include "pxr/exec/vdf/connection.h"
+#include "pxr/exec/vdf/debugCodes.h"
 #include "pxr/exec/vdf/mask.h"
 #include "pxr/exec/vdf/network.h"
 #include "pxr/exec/vdf/node.h"
 #include "pxr/exec/vdf/poolChainIndexer.h"
 
 #include "pxr/base/tf/bits.h"
-
+#include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/hash.h"
+
 #include "pxr/base/trace/trace.h"
 
 #include <iostream>
@@ -22,10 +24,6 @@
 #include <tuple>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-// Compile Time Settings
-#define _TRAVERSAL_TRACING          0
-#define _DEBUG_CACHED_TRAVERSAL     0
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -146,8 +144,6 @@ class VdfSparseOutputTraverser::_TraversalHelper
         const OutputCallback &outputCallback,
         const VdfNodeCallback &nodeCallback);
 
-    ~_TraversalHelper();
-
     // Performs a cached traversal for the given \p state.
     //
     // Extends \p cache as needed.
@@ -218,10 +214,6 @@ class VdfSparseOutputTraverser::_TraversalHelper
     // Pointer to current cache line, if caching is active.
     _Cache *_currentCache;
 
-    // The cache size before doing the cached traversal (only used for
-    // debugging).
-    int _originalCacheSize;
-
     // One bit for each node in the network indicating whether or not the
     // node callback has been invoked for that node yet (to avoid redundant
     // node callback invocations).
@@ -288,13 +280,6 @@ VdfSparseOutputTraverser::InvalidateAll()
     }
 }
 
-#if _DEBUG_CACHED_TRAVERSAL
-static bool _less(const VdfMaskedOutput &a, const VdfMaskedOutput &b)
-{
-    return a.GetOutput()->GetDebugName() < b.GetOutput()->GetDebugName();
-}
-#endif
-
 void
 VdfSparseOutputTraverser::Traverse(
     const VdfMaskedOutputVector &outputs,
@@ -356,32 +341,12 @@ VdfSparseOutputTraverser::TraverseWithCaching(
 {
     TfAutoMallocTag2 tag("Vdf", TF_FUNC_NAME());
 
-    #if _DEBUG_CACHED_TRAVERSAL
-        printf("> START size: %zu %d %d\n",
-            outputs.size(),
-            outputCallback ? 1 : 0,
-            nodeCallback   ? 1 : 0);
-
-        VdfMaskedOutputVector outputsCopy = outputs;
-        std::sort(reqCopy.begin(), reqCopy.end(), _less);
-
-        for(size_t i=0; i<reqCopy.size(); i++)
-            printf("  %zu: %p %s %s\n",
-                i,
-                outputsCopy[i].GetOutput(),
-                outputsCopy[i].GetOutput()->GetDebugName().c_str(),
-                outputsCopy[i].GetMask().GetRLEString().c_str());
-    #endif
-
     TRACE_FUNCTION();
 
-    #if _TRAVERSAL_TRACING
-        std::cout << std::endl
-                  << "Starting sparse traversal with "
-                  << outputs.size()
-                  << " outputs"
-                  << std::endl;
-    #endif
+    TF_DEBUG(VDF_SPARSE_OUTPUT_TRAVERSER_TRACING).Msg(
+        "\n"
+        "Starting sparse traversal with %zu outputs\n",
+        outputs.size());
 
     // There is no point in traversing or chaching empty requests
     if (outputs.empty()) {
@@ -467,11 +432,9 @@ VdfSparseOutputTraverser::TraverseWithCaching(
 
         const _PrioritizedOutput &top = topIter->second;
 
-#if _TRAVERSAL_TRACING
-        std::cout << "  Invalidating pool output \""
-                  << top.GetOutput()->GetDebugName()
-                  << "\"" << std::endl;
-#endif
+        TF_DEBUG(VDF_SPARSE_OUTPUT_TRAVERSER_TRACING).Msg(
+            "  Invalidating pool output '%s'\n",
+            top.GetOutput()->GetDebugName().c_str());
 
         // Process the output.  Pass null as the incomingInput because
         // we don't currently track the set of inputs that were traversed
@@ -512,35 +475,9 @@ VdfSparseOutputTraverser::_TraversalHelper::_TraversalHelper(
 :   _outputCallback(outputCallback),
     _nodeCallback(nodeCallback),
     _currentCache(nullptr),
-    _originalCacheSize(0),
     _nodeCallbackInvocations(
         _GetNodeCallbackInvocationsSize(outputs, nodeCallback))
 {
-}
-
-VdfSparseOutputTraverser::_TraversalHelper::~_TraversalHelper()
-{
-    #if _DEBUG_CACHED_TRAVERSAL
-        if (_currentCache) {
-            const _Cache &cache = *_currentCache;
-            const _Cache::CacheEntries &cacheEntries = cache.cacheEntries;
-
-            for (size_t i=_originalCacheSize; i<cacheEntries.size(); i++) {
-
-                std::string children;
-                TF_FOR_ALL(j, cacheEntries[i].childIndices)
-                    children += TfStringPrintf(" %d", *j);
-                children += " ";
-
-                printf("  uncached inval: %zu cont:%d children:{%s} %s %s\n",
-                    i,
-                    cacheEntries[i].cont,
-                    children.c_str(),
-                    cacheEntries[i].output->GetDebugName().c_str(),
-                    cacheEntries[i].mask.GetRLEString().c_str());
-            }
-        }
-    #endif
 }
 
 /* static */
@@ -570,12 +507,6 @@ VdfSparseOutputTraverser::_TraversalHelper::CachedTraversal(
     if (cacheSize == 0) {
         return;
     }
-
-#if _DEBUG_CACHED_TRAVERSAL
-    // Remember the original cache size for printing out new
-    // cache entries.
-    _originalCacheSize = cacheSize;
-#endif
 
     // Wipe stack clean, to be populated with missing bits and pieces...
     state->stack.clear();
@@ -609,22 +540,6 @@ VdfSparseOutputTraverser::_TraversalHelper::CachedTraversal(
                 workingSet.Set(index);
             }
         }
-
-#if _DEBUG_CACHED_TRAVERSAL
-        std::string children;
-        TF_FOR_ALL(j, e.childIndices)
-            children += TfStringPrintf(" %d", *j);
-        children += " ";
-
-        printf("  cached inval: %zu cont:%d h:%d children:{%s}"
-               " %s %s\n",
-               i,
-               cont,
-               e.cont,
-               children.c_str(),
-               e.output->GetDebugName().c_str(),
-               e.mask.GetRLEString().c_str());
-#endif
 
         if (cont == e.cont) {
             continue;
@@ -724,13 +639,10 @@ VdfSparseOutputTraverser::_TraversalHelper::_TraverseOutputConnections(
     _CacheEntry     *cacheEntry,
     int              cacheIndex)
 {
-    #if _TRAVERSAL_TRACING
-        std::cout << "  Traversing output \""
-                  << output.GetDebugName()
-                  << "\" with mask = "
-                  << mask.GetRLEString()
-                  << std::endl;
-    #endif
+    TF_DEBUG(VDF_SPARSE_OUTPUT_TRAVERSER_TRACING).Msg(
+        "  Traversing output '%s' with mask %s\n",
+        output.GetDebugName().c_str(),
+        mask.GetRLEString().c_str());
 
     for (const VdfConnection * const connection : output.GetConnections()) {
 
@@ -800,15 +712,11 @@ VdfSparseOutputTraverser::_TraversalHelper::_TraverseNode(
         return;
     }
 
-    #if _TRAVERSAL_TRACING
-        std::cout << "  Traversing node \""
-                  << node.GetDebugName()
-                  << "\" from connection \""
-                  << connection->GetDebugName()
-                  << "\" with mask "
-                  << mask.GetRLEString()
-                  << std::endl;
-    #endif
+    TF_DEBUG(VDF_SPARSE_OUTPUT_TRAVERSER_TRACING).Msg(
+        "  Traversing node '%s' from connection '%s' with mask %s\n",
+        node.GetDebugName().c_str(),
+        connection->GetDebugName().c_str(),
+        mask.GetRLEString().c_str());
 
     VdfMaskedOutputVector dependencies;
 

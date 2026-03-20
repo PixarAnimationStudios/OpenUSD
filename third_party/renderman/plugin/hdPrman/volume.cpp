@@ -10,8 +10,11 @@
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
 #include "hdPrman/rixStrings.h"
+#include "hdPrman/volumeFilter.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/usdVol/tokens.h"
+#include "pxr/usdImaging/usdRiPxrImaging/tokens.h"
+#include "pxr/usdImaging/usdRiPxrImaging/version.h"
 #include "pxr/usdImaging/usdVolImaging/tokens.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
@@ -42,7 +45,121 @@ TF_DEFINE_PRIVATE_TOKENS(
     (filterWidth)
     (velocityGrid)
     (velocityScale)
+    (volumeFilter)
 );
+
+#if HD_API_VERSION >= 93
+// XXX -- This function is a stripped-down version of the one in
+//        hdPrman/light.cpp.
+static bool
+_PopulateNodesFromMaterialResource(HdSceneDelegate *sceneDelegate,
+                                   const SdfPath &id,
+                                   const TfToken &terminalName,
+                                   std::vector<riley::ShadingNode> *result)
+{
+    VtValue hdMatVal = sceneDelegate->GetMaterialResource(id);
+    if (!hdMatVal.IsHolding<HdMaterialNetworkMap>()) {
+        TF_WARN("Could not get HdMaterialNetworkMap for '%s'", id.GetText());
+        return false;
+    }
+
+    // Convert HdMaterial to HdMaterialNetwork2 form.
+    const HdMaterialNetwork2 matNetwork2 = HdConvertToHdMaterialNetwork2(
+            hdMatVal.UncheckedGet<HdMaterialNetworkMap>());
+
+    SdfPath nodePath;
+    for (auto const& terminal: matNetwork2.terminals) {
+        if (terminal.first == terminalName) {
+            nodePath = terminal.second.upstreamNode;
+            break;
+        }
+    }
+
+    if (nodePath.IsEmpty()) {
+        TF_WARN("Could not find terminal '%s' in HdMaterialNetworkMap for '%s'",
+                terminalName.GetText(), id.GetText());
+        return false;
+    }
+
+    result->reserve(matNetwork2.nodes.size());
+    if (!HdPrman_ConvertHdMaterialNetwork2ToRmanNodes(
+            id, matNetwork2, nodePath, result)) {
+        TF_WARN("Failed to convert HdMaterialNetwork to Renderman shading "
+                "nodes for '%s'", id.GetText());
+        return false;
+    }
+
+    return true;
+}
+
+// XXX -- This is similar to _PopulateLightFilterNodes() in hdPrman/light.cpp.
+static void
+_PopulateVolumeFilterNodes(
+    const SdfPathVector &volumeFilterPaths,
+    HdSceneDelegate *sceneDelegate,
+    HdRenderParam *renderParam,
+    riley::Riley *riley,
+    std::vector<riley::ShadingNode> *volumeFilterNodes,
+    std::vector<riley::CoordinateSystemId> *coordsysIds,
+    std::vector<riley::VolumeFilterId> *volumeFilterIds)
+{
+    if (volumeFilterPaths.empty()) {
+        return;
+    }
+
+    auto* param = static_cast<HdPrman_RenderParam*>(renderParam);
+
+    for (const auto& filterPath : volumeFilterPaths) {
+        std::vector<riley::ShadingNode> filterNetworkNodes;
+        if (!_PopulateNodesFromMaterialResource(
+                sceneDelegate, filterPath,
+                HdMaterialTerminalTokens->volumeFilter,
+                &filterNetworkNodes)) {
+            continue;
+        }
+
+        riley::ShadingNode *filter = &filterNetworkNodes.back();
+        const RtUString filterPathAsString(filterPath.GetText());
+
+        // To ensure that multiple volume filters within a volume get
+        // unique names, use the full filter path for the handle.
+        filter->handle = filterPathAsString;
+
+        static const RtUString us_coordSys("coordSys");
+        filter->params.SetString(us_coordSys, filterPathAsString);
+
+        // Look up volume filter ID
+        if (HdSprim* sprim = sceneDelegate->GetRenderIndex().GetSprim(
+#if USD_RI_PXR_IMAGING_API_VERSION >= 3
+                UsdRiPxrImagingPrimTypeTokens->volumeFilter, filterPath)) {
+#else
+                _tokens->volumeFilter, filterPath)) {
+#endif
+            if (auto* volumeFilter = dynamic_cast<HdPrman_VolumeFilter*>(sprim)) {
+                volumeFilter->SyncToRiley(sceneDelegate, param, riley);
+                coordsysIds->push_back(volumeFilter->GetCoordSysId());
+            }
+        } else {
+            TF_WARN("Did not find expected volume filter <%s>",
+                    filterPath.GetText());
+        }
+
+        filter->type = riley::ShadingNode::Type::k_VolumeFilter;
+
+        const riley::ShadingNetwork filterNetwork {
+            static_cast<uint32_t>(filterNetworkNodes.size()),
+            filterNetworkNodes.data()
+        };
+
+        const riley::VolumeFilterId filterId = riley->CreateVolumeFilter(
+            riley::UserId(stats::AddDataLocation(filterPath.GetText()).GetValue()),
+            filterNetwork,
+            RtParamList());
+        volumeFilterIds->push_back(filterId);
+        volumeFilterNodes->push_back(*filter);
+    }
+}
+#endif
 
 HdPrman_Field::HdPrman_Field(TfToken const& typeId, SdfPath const& id)
     : HdField(id), _typeId(typeId)
@@ -78,6 +195,85 @@ HdPrman_Volume::HdPrman_Volume(SdfPath const& id, const bool isMeshLight)
     : BASE(id)
     , _isMeshLight(isMeshLight)
 {
+}
+
+void
+HdPrman_Volume::Finalize(HdRenderParam *renderParam)
+{
+    if (!_volumeFilterIds.empty()) {
+        auto* param = static_cast<HdPrman_RenderParam*>(renderParam);
+        riley::Riley* riley = param->AcquireRiley();
+        for (const auto& filterId : _volumeFilterIds) {
+            riley->DeleteVolumeFilter(filterId);
+        }
+        _volumeFilterIds.clear();
+    }
+    _volumeFilterPaths.clear();
+    _volumeFilterNodeNames.clear();
+
+    BASE::Finalize(renderParam);
+}
+
+void
+HdPrman_Volume::Sync(HdSceneDelegate *sceneDelegate,
+                     HdRenderParam   *renderParam,
+                     HdDirtyBits     *dirtyBits,
+                     TfToken const   &reprToken)
+{
+#if HD_API_VERSION >= 93
+    const SdfPath& id = GetId();
+
+    auto* param = static_cast<HdPrman_RenderParam*>(renderParam);
+    riley::Riley* riley = param->AcquireRiley();
+    HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
+    HdChangeTracker& changeTracker = renderIndex.GetChangeTracker();
+
+    bool dirtyFilters = false;
+    SdfPathVector volumeFilterPaths;
+    VtValue val = sceneDelegate->GetVolumeParamValue(id, HdTokens->filters);
+    if (val.IsHolding<SdfPathVector>()) {
+        volumeFilterPaths = val.UncheckedGet<SdfPathVector>();
+        // XXX -- How do we know if the actual filters changed?
+        //        We will just assume they did for now.
+        dirtyFilters = true;
+    } else if (!_volumeFilterPaths.empty()) {
+        // Volume filter paths were not empty before, but are now.
+        dirtyFilters = true;
+    }
+
+    if (dirtyFilters) {
+        // Clear and recreate dependencies.
+        if (volumeFilterPaths != _volumeFilterPaths) {
+            for (const SdfPath& filterPath : _volumeFilterPaths) {
+                changeTracker.RemoveSprimRprimDependency(filterPath, id);
+            }
+            for (const SdfPath& filterPath : volumeFilterPaths) {
+                changeTracker.AddSprimRprimDependency(filterPath, id);
+            }
+            _volumeFilterPaths = volumeFilterPaths;
+        }
+
+        // Delete old Riley volume filters.
+        for (const auto& filterId : _volumeFilterIds) {
+            riley->DeleteVolumeFilter(filterId);
+        }
+        _volumeFilterIds.clear();
+        _volumeFilterCoordSysIds.clear();
+
+        // _PopulateVolumeFilterNodes() also gives us the coordinate systems.
+        std::vector<riley::ShadingNode> filterNodes;
+        _PopulateVolumeFilterNodes(volumeFilterPaths, sceneDelegate,
+            renderParam, riley, &filterNodes, &_volumeFilterCoordSysIds,
+            &_volumeFilterIds);
+
+        _volumeFilterNodeNames.clear();
+        for (const auto& filterNode: filterNodes) {
+            _volumeFilterNodeNames.push_back(filterNode.handle);
+        }
+    }
+#endif
+
+    BASE::Sync(sceneDelegate, renderParam, dirtyBits, reprToken);
 }
 
 bool HdPrman_Volume::_PrototypeOnly()
@@ -672,6 +868,25 @@ HdPrman_Volume::_ConvertGeometry(
         // an appropriate warning.
     }
     return true;
+}
+
+void
+HdPrman_Volume::_AddPrimvars(RtPrimVarList* primvars) const
+{
+    if (!primvars) {
+        return;
+    }
+    // Add volume filters to the primvars.
+    static const RtUString us_volumeFilters("volume:filters");
+    primvars->SetStringArray(
+        us_volumeFilters,
+        _volumeFilterNodeNames.data(), _volumeFilterNodeNames.size());
+}
+
+const std::vector<riley::CoordinateSystemId>& 
+HdPrman_Volume::_GetAdditionalCoordSysIds() const
+{
+    return _volumeFilterCoordSysIds;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -6,9 +6,10 @@
 //
 #include "pxr/pxr.h"
 
+#include "pxr/exec/execIr/utils.h"
+
 #include "pxr/exec/execIr/tokens.h"
 #include "pxr/exec/execIr/types.h"
-#include "pxr/exec/execIr/utils.h"
 
 #include "pxr/exec/vdf/context.h"
 
@@ -588,7 +589,7 @@ ExecIr_UtilsInvert(
     const VdfContext &ctx,
     const GfMatrix4d &posedSpace,
     const ExecIr_UtilsParams &params,
-    ExecIrInversionResult *const resultMap)
+    ExecIrResult *const resultMap)
 {
     const GfVec3d localTranslation = 
         _InvertTranslation(

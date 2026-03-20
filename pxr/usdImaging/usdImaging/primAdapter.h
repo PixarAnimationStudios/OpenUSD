@@ -453,6 +453,18 @@ public:
                               UsdTimeCode time) const;
 
     // ---------------------------------------------------------------------- //
+    /// \name Volume Params
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    virtual VtValue
+    GetVolumeParamValue(
+        const UsdPrim& prim,
+        const SdfPath& cachePath,
+        const TfToken& paramName,
+        UsdTimeCode time) const;
+
+    // ---------------------------------------------------------------------- //
     /// \name Light Params
     // ---------------------------------------------------------------------- //
 

@@ -337,10 +337,11 @@ class class_ : public objects::class_base
     {
         typedef typename api::is_object_operators<F>::type is_obj_or_proxy;
         
-        return this->make_fn_impl(
+        return objects::add_doc(
+            this->make_fn_impl(
             detail::unwrap_wrapper((W*)0)
           , f, is_obj_or_proxy(), (char*)0, detail::is_data_member_pointer<F>()
-        );
+        ), NULL);
     }
     
     template <class F>
@@ -348,10 +349,11 @@ class class_ : public objects::class_base
     {
         typedef typename api::is_object_operators<F>::type is_obj_or_proxy;
         
-        return this->make_fn_impl(
+        return objects::add_doc(
+            this->make_fn_impl(
             detail::unwrap_wrapper((W*)0)
           , f, is_obj_or_proxy(), (int*)0, detail::is_data_member_pointer<F>()
-        );
+        ), NULL);
     }
     
     template <class T, class F>

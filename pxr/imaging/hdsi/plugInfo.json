@@ -5,6 +5,7 @@
                 "Types": {
                     "HdsiDebuggingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "",
                         "priority": 0,
                         "displayName": "Add debugging scene index if corresponding env var is set."
                     }

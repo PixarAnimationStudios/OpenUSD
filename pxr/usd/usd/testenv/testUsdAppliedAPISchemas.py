@@ -86,6 +86,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         primDef = Usd.SchemaRegistry().FindAbstractPrimDefinition(
             "TestAbstractTypedWithAPIApplied")
         self.assertTrue(primDef)
+        self.assertEqual(primDef.GetLocallyDefinedPropertyNames(),
+                         ['abstractAttr'])
         self.assertEqual(primDef.GetPropertyNames(), 
                          ['single:relationship', 'single:token_attr',
                           'single:bool_attr', 'abstractAttr', 
@@ -103,6 +105,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         primDef = Usd.SchemaRegistry().FindAbstractPrimDefinition(
             "TestTypedSchemaForAutoApplyAbstractBase")
         self.assertTrue(primDef)
+        self.assertEqual(primDef.GetLocallyDefinedPropertyNames(),
+                         ['testAttr', 'testRel'])
         self.assertEqual(primDef.GetPropertyNames(),
                          ['single:relationship', 'single:token_attr', 
                           'single:bool_attr', 'compose:relationship', 
@@ -148,6 +152,9 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertTrue(singleApplyAPIDef)
         self.assertEqual(singleApplyAPIDef.GetAppliedAPISchemas(), 
                          ["TestSingleApplyAPI"])
+        self.assertEqual(singleApplyAPIDef.GetLocallyDefinedPropertyNames(), [
+            "single:relationship", "single:token_attr", "single:bool_attr",
+            "single:no_fallback"])
         self.assertEqual(singleApplyAPIDef.GetPropertyNames(), [
             "single:relationship", "single:token_attr", "single:bool_attr",
             "single:no_fallback"])
@@ -162,6 +169,10 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertTrue(multiApplyAPIDef)
         self.assertEqual(multiApplyAPIDef.GetAppliedAPISchemas(), 
             ["TestMultiApplyAPI:__INSTANCE_NAME__"])
+        self.assertEqual(multiApplyAPIDef.GetLocallyDefinedPropertyNames(), [
+            "multi:__INSTANCE_NAME__:bool_attr", 
+            "multi:__INSTANCE_NAME__:relationship",
+            "multi:__INSTANCE_NAME__:token_attr"])
         self.assertEqual(multiApplyAPIDef.GetPropertyNames(), [
             "multi:__INSTANCE_NAME__:bool_attr", 
             "multi:__INSTANCE_NAME__:relationship",

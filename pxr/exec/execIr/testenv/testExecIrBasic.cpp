@@ -9,6 +9,7 @@
 #include "pxr/exec/execIr/tokens.h"
 #include "pxr/exec/execIr/types.h"
 
+#include "pxr/exec/exec/builtinComputations.h"
 #include "pxr/exec/execUsd/cacheView.h"
 #include "pxr/exec/execUsd/request.h"
 #include "pxr/exec/execUsd/system.h"
@@ -16,13 +17,29 @@
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
 
+#include <iostream>
+
 PXR_NAMESPACE_USING_DIRECTIVE
+
+#define ASSERT_CLOSE(expr, expected)                                           \
+    [&] {                                                                      \
+        auto&& expr_ = expr;                                                   \
+        if (!GfIsClose(expr_, expected, 1e-6)) {                               \
+            std::cout << std::flush;                                           \
+            std::cerr << std::flush;                                           \
+            TF_FATAL_ERROR(                                                    \
+                "Expected " TF_PP_STRINGIZE(expr) " == '%s'; got '%s'",        \
+                TfStringify(expected).c_str(),                                 \
+                TfStringify(expr_).c_str());                                   \
+        }                                                                      \
+    }()
 
 static void
 Test_IrForwardCompute()
@@ -51,10 +68,12 @@ Test_IrForwardCompute()
 
     const UsdPrim prim = usdStage->GetPrimAtPath(SdfPath("/Root/FkController"));
     TF_AXIOM(prim);
+    const UsdAttribute outSpace = prim.GetAttribute(ExecIrTokens->outSpaceToken);
+    TF_AXIOM(outSpace);
 
     ExecUsdSystem execSystem(usdStage);
     const ExecUsdRequest request = execSystem.BuildRequest({
-        ExecUsdValueKey{prim, ExecIrTokens->forwardCompute}
+        ExecUsdValueKey{outSpace, ExecBuiltinComputations->computeValue}
     });
     TF_AXIOM(request.IsValid());
 
@@ -67,13 +86,13 @@ Test_IrForwardCompute()
         ExecUsdCacheView cache = execSystem.Compute(request);
         const VtValue value = cache.Get(0);
         TF_AXIOM(!value.IsEmpty());
-        TF_AXIOM(GfIsClose(
-                     value.Get<GfMatrix4d>(),
-                     GfMatrix4d(0, 0, 1, 0,
-                                0, -1, 0, 0,
-                                1, 0, 0, 0,
-                                1, 2, 3, 1),
-                     1e-6));
+
+        ASSERT_CLOSE(
+            value.Get<GfMatrix4d>(),
+            GfMatrix4d(0, 0, 1, 0,
+                       0, -1, 0, 0,
+                       1, 0, 0, 0,
+                       1, 2, 3, 1));
 
         TF_AXIOM(mark.IsClean());
     }
@@ -91,13 +110,12 @@ Test_IrForwardCompute()
         ExecUsdCacheView cache = execSystem.Compute(request);
         const VtValue value = cache.Get(0);
         TF_AXIOM(!value.IsEmpty());
-        TF_AXIOM(GfIsClose(
-                     value.Get<GfMatrix4d>(),
-                     GfMatrix4d(0, 0, 1, 0,
-                                0, -1, 0, 0,
-                                1, 0, 0, 0,
-                                2, 3, 4, 1),
-                     1e-6));
+        ASSERT_CLOSE(
+            value.Get<GfMatrix4d>(),
+            GfMatrix4d(0, 0, 1, 0,
+                       0, -1, 0, 0,
+                       1, 0, 0, 0,
+                       2, 3, 4, 1));
     }
 }
 
@@ -143,8 +161,8 @@ Test_IrInverseCompute()
         ExecUsdCacheView cache = execSystem.Compute(request);
         const VtValue value = cache.Get(0);
         TF_AXIOM(!value.IsEmpty());
-        const ExecIrInversionResult valueMap =
-            value.Get<ExecIrInversionResult>();
+        const ExecIrResult valueMap =
+            value.Get<ExecIrResult>();
 
         const std::vector<std::pair<const char *, double>> expected{{
             {"In:Rx", 90.0},
@@ -157,7 +175,7 @@ Test_IrInverseCompute()
         for (const auto &entry : expected) {
             const auto it = valueMap.find(TfToken(entry.first));
             TF_AXIOM(it != valueMap.end());
-            TF_AXIOM(GfIsClose(it->second.Get<double>(), entry.second, 1e-6));
+            ASSERT_CLOSE(it->second.Get<double>(), entry.second);
         }
 
         TF_AXIOM(mark.IsClean());
@@ -176,8 +194,8 @@ Test_IrInverseCompute()
         ExecUsdCacheView cache = execSystem.Compute(request);
         const VtValue value = cache.Get(0);
         TF_AXIOM(!value.IsEmpty());
-        const ExecIrInversionResult valueMap =
-            value.Get<ExecIrInversionResult>();
+        const ExecIrResult valueMap =
+            value.Get<ExecIrResult>();
 
         const std::vector<std::pair<const char *, double>> expected{{
             {"In:Rx", 90.0},
@@ -190,7 +208,7 @@ Test_IrInverseCompute()
         for (const auto &entry : expected) {
             const auto it = valueMap.find(TfToken(entry.first));
             TF_AXIOM(it != valueMap.end());
-            TF_AXIOM(GfIsClose(it->second.Get<double>(), entry.second, 1e-6));
+            ASSERT_CLOSE(it->second.Get<double>(), entry.second);
         }
     }
 }

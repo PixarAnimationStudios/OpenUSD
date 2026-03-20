@@ -13,5 +13,5 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_REGISTRY_FUNCTION(ExecTypeRegistry)
 {
-    ExecTypeRegistry::RegisterType(ExecIrInversionResult{});
+    ExecTypeRegistry::RegisterType(ExecIrResult{});
 }

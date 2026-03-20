@@ -1152,6 +1152,14 @@
     ),
 
     #--------------------------------------------------------------------------
+    # volume
+    dict(
+        SCHEMA_NAME = 'Volume',
+        SCHEMA_TOKEN = 'volume',
+        ADD_DEFAULT_LOCATOR = True,
+    ),
+
+    #--------------------------------------------------------------------------
     # volumeField
     dict(
         SCHEMA_NAME = 'VolumeField',

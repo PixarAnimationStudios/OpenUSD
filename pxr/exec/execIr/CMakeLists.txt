@@ -13,6 +13,7 @@ pxr_library(execIr
         api.h
 
     PUBLIC_CLASSES
+        controllerBuilder
         tokens
         types
 
@@ -26,6 +27,9 @@ pxr_library(execIr
 
     RESOURCE_FILES
         plugInfo.json
+
+    DOXYGEN_FILES
+        README.md
 )
 
 #

@@ -472,6 +472,15 @@ public:
         std::string* layerPath,
         FileFormatArguments* arguments);
 
+    /// Splits the given layer identifier and returns its constituent layer path 
+    /// and arguments as a pair of strings.
+    ///
+    /// First element of the pair is the layer path, and the second element is
+    /// the arguments string.
+    SDF_API
+    static std::pair<std::string, std::string> SplitIdentifier(
+        const std::string& identifier);
+
     /// Joins the given layer path and arguments into an identifier.
     SDF_API
     static std::string CreateIdentifier(

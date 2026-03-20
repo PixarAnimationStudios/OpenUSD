@@ -50,6 +50,10 @@ struct ExecProviderResolution {
         /// they target.
         ConnectionTargetedObjects,
 
+        /// Find providers by traversing incoming attribute connections to the
+        /// attributes that own them.
+        IncomingConnectionOwningAttributes,
+
         /// Find the provider by traversing upward in namespace
         NamespaceAncestor,
     };

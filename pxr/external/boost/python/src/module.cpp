@@ -43,10 +43,17 @@ PXR_BOOST_PYTHON_DECL void scope_setattr_doc(char const* name, object const& x, 
 
 #if PY_VERSION_HEX >= 0x03000000
 
-PXR_BOOST_PYTHON_DECL PyObject* init_module(PyModuleDef& moduledef, void(*init_function)())
+PXR_BOOST_PYTHON_DECL PyObject* init_module(PyModuleDef& moduledef,
+    void(*init_function)(), bool gil_not_used)
 {
+    PyObject *mod = PyModule_Create(&moduledef);
+#ifdef Py_GIL_DISABLED
+    if (mod != NULL && gil_not_used) {
+        PyUnstable_Module_SetGIL(mod, Py_MOD_GIL_NOT_USED);
+    }
+#endif
     return init_module_in_scope(
-        PyModule_Create(&moduledef),
+        mod,
         init_function);
 }
 

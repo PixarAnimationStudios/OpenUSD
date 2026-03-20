@@ -80,6 +80,12 @@ public:
     HDGP_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
+    /// Sets the allowed procedural types, replacing the existing set.
+    /// Sends _PrimsAdded notices for all prims in the input scene so that
+    /// observers re-evaluate the (possibly changed) prim types.
+    HDGP_API
+    void SetAllowedProceduralTypes(const TfTokenVector &allowedProceduralTypes);
+
 private:
     HdGpGenerativeProceduralFilteringSceneIndex(
         const HdSceneIndexBaseRefPtr &inputScene,
@@ -110,7 +116,13 @@ private:
     };
     _ShouldSkipResult _ShouldSkipPrim(HdSceneIndexPrim const& prim) const;
 
-    const TfTokenVector _allowedProceduralTypes;
+    // Returns the "allowed" type, "skipped" type, or `std::nullopt`.
+    std::optional<TfToken> _GetOverridePrimTypeForPrim(
+            HdSceneIndexPrim const& prim) const;
+
+    std::set<TfToken> _allowedProceduralTypes;
+    bool _allowAny = false;
+
     const TfToken _targetPrimTypeName;
 
     TfToken _allowedPrimTypeName;

@@ -55,6 +55,13 @@ _CreateMembershipExpressionAttr(UsdCollectionAPI &self,
 }
         
 static UsdAttribute
+_CreateModeAttr(UsdCollectionAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateModeAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateCollectionAttr(UsdCollectionAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateCollectionAttr(
@@ -171,6 +178,13 @@ void wrapUsdCollectionAPI()
              &This::GetMembershipExpressionAttr)
         .def("CreateMembershipExpressionAttr",
              &_CreateMembershipExpressionAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetModeAttr",
+             &This::GetModeAttr)
+        .def("CreateModeAttr",
+             &_CreateModeAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

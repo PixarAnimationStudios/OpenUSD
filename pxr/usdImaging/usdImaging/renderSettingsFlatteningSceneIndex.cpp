@@ -25,17 +25,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (renderSettings_depOn_usdRenderSettings_includedPurposes)
-    (renderSettings_depOn_usdRenderSettings_materialBindingPurposes)
-    (renderSettings_depOn_usdRenderSettings_namespacedSettings)
-    (renderSettings_depOn_usdRenderSettings_renderingColorSpace)
-    (renderSettings_depOn_usdRenderSettings_resolution)
-    (renderSettings_depOn_usdRenderSettings_pixelAspectRatio)
-    (renderSettings_depOn_usdRenderSettings_aspectRatioConformPolicy)
-    (renderSettings_depOn_usdRenderSettings_dataWindowNDC)
-    (renderSettings_depOn_usdRenderSettings_disableMotionBlur)
-    (renderSettings_depOn_usdRenderSettings_disableDepthOfField)
-    (renderSettings_depOn_usdRenderSettings_camera)
+    (renderSettings_includedPurposes_depOn_usdRenderSettings_includedPurposes)
+    (renderSettings_materialBindingPurposes_depOn_usdRenderSettings_materialBindingPurposes)
+    (renderSettings_namespacedSettings_depOn_usdRenderSettings_namespacedSettings)
+    (renderSettings_renderingColorSpace_depOn_usdRenderSettings_renderingColorSpace)
+    (renderSettings_camera_depOn_usdRenderSettings_camera)
+    (renderSettings_disableDepthOfField_depOn_usdRenderSettings_disableDepthOfField)
+    (renderSettings_disableMotionBlur_depOn_usdRenderSettings_disableMotionBlur)
+    (renderSettings_renderProducts_depOn_usdRenderSettings_resolution)
+    (renderSettings_renderProducts_depOn_usdRenderSettings_pixelAspectRatio)
+    (renderSettings_renderProducts_depOn_usdRenderSettings_aspectRatioConformPolicy)
+    (renderSettings_renderProducts_depOn_usdRenderSettings_dataWindowNDC)
+    (renderSettings_renderProducts_depOn_usdRenderSettings_disableMotionBlur)
+    (renderSettings_renderProducts_depOn_usdRenderSettings_disableDepthOfField)
+    (renderSettings_renderProducts_depOn_usdRenderSettings_camera)
     (__dependencies_depOn_usdRenderSettings_products)
 );
 
@@ -64,7 +67,7 @@ public:
 
 void _GetProductAndVarPaths(
     const HdContainerDataSourceHandle &settingsDs,
-    const HdSceneIndexBaseRefPtr &si,
+    const HdSceneIndexBasePtr &si,
     SdfPathVector *products,
     SdfPathVector *vars)
 {
@@ -141,7 +144,7 @@ void _GetProductAndVarPaths(
 static HdContainerDataSourceHandle
 _GetRenderSettingsDependenciesDataSource(
     const HdContainerDataSourceHandle &settingsDs,
-    const HdSceneIndexBaseRefPtr &si,
+    const HdSceneIndexBasePtr &si,
     const SdfPath &settingsPrimPath)
 {
     if (!settingsDs) {
@@ -169,76 +172,76 @@ _GetRenderSettingsDependenciesDataSource(
         // renderSettings --> __usdRenderSettings
         // (1a) Schema entries that map 1:1.
         {
-            _tokens->renderSettings_depOn_usdRenderSettings_includedPurposes,
+            _tokens->renderSettings_includedPurposes_depOn_usdRenderSettings_includedPurposes,
             UsdImagingUsdRenderSettingsSchema::GetIncludedPurposesLocator(),
             HdRenderSettingsSchema::GetIncludedPurposesLocator(),
         },
         {
-            _tokens->renderSettings_depOn_usdRenderSettings_materialBindingPurposes,
+            _tokens->renderSettings_materialBindingPurposes_depOn_usdRenderSettings_materialBindingPurposes,
             UsdImagingUsdRenderSettingsSchema::GetMaterialBindingPurposesLocator(),
             HdRenderSettingsSchema::GetMaterialBindingPurposesLocator(),
         },
         {
-            _tokens->renderSettings_depOn_usdRenderSettings_namespacedSettings,
+            _tokens->renderSettings_namespacedSettings_depOn_usdRenderSettings_namespacedSettings,
             UsdImagingUsdRenderSettingsSchema::GetNamespacedSettingsLocator(),
             HdRenderSettingsSchema::GetNamespacedSettingsLocator(),
         },
         {
-            _tokens->renderSettings_depOn_usdRenderSettings_renderingColorSpace,
+            _tokens->renderSettings_renderingColorSpace_depOn_usdRenderSettings_renderingColorSpace,
             UsdImagingUsdRenderSettingsSchema::GetRenderingColorSpaceLocator(),
             HdRenderSettingsSchema::GetRenderingColorSpaceLocator(),
         },
-        // (1b) USD render product-related entries that map to the flattened
-        //     render products locator.
         {
-            _tokens->renderSettings_depOn_usdRenderSettings_resolution,
-            UsdImagingUsdRenderSettingsSchema::GetResolutionLocator(),
-            HdRenderSettingsSchema::GetRenderProductsLocator(),
-        },
-        {
-            _tokens->renderSettings_depOn_usdRenderSettings_pixelAspectRatio,
-            UsdImagingUsdRenderSettingsSchema::GetPixelAspectRatioLocator(),
-            HdRenderSettingsSchema::GetRenderProductsLocator(),
-        },
-        {
-            _tokens->renderSettings_depOn_usdRenderSettings_aspectRatioConformPolicy,
-            UsdImagingUsdRenderSettingsSchema::GetAspectRatioConformPolicyLocator(),
-            HdRenderSettingsSchema::GetRenderProductsLocator(),
-        },
-        {
-            _tokens->renderSettings_depOn_usdRenderSettings_dataWindowNDC,
-            UsdImagingUsdRenderSettingsSchema::GetDataWindowNDCLocator(),
-            HdRenderSettingsSchema::GetRenderProductsLocator(),
-        },
-        {
-            _tokens->renderSettings_depOn_usdRenderSettings_disableMotionBlur,
-            UsdImagingUsdRenderSettingsSchema::GetDisableMotionBlurLocator(),
-            HdRenderSettingsSchema::GetRenderProductsLocator(),
-        },
-        {
-            _tokens->renderSettings_depOn_usdRenderSettings_disableDepthOfField,
-            UsdImagingUsdRenderSettingsSchema::GetDisableDepthOfFieldLocator(),
-            HdRenderSettingsSchema::GetRenderProductsLocator(),
-        },
-        {
-            _tokens->renderSettings_depOn_usdRenderSettings_camera,
+            _tokens->renderSettings_camera_depOn_usdRenderSettings_camera,
             UsdImagingUsdRenderSettingsSchema::GetCameraLocator(),
-            HdRenderSettingsSchema::GetRenderProductsLocator(),
+            HdRenderSettingsSchema::GetCameraLocator(),
         },
         {
-            _tokens->renderSettings_depOn_usdRenderSettings_disableMotionBlur,
-            UsdImagingUsdRenderSettingsSchema::GetDisableMotionBlurLocator(),
-            HdRenderSettingsSchema::GetDisableMotionBlurLocator(),
-        },
-        {
-            _tokens->renderSettings_depOn_usdRenderSettings_disableDepthOfField,
+            _tokens->renderSettings_disableDepthOfField_depOn_usdRenderSettings_disableDepthOfField,
             UsdImagingUsdRenderSettingsSchema::GetDisableDepthOfFieldLocator(),
             HdRenderSettingsSchema::GetDisableDepthOfFieldLocator(),
         },
         {
-            _tokens->renderSettings_depOn_usdRenderSettings_camera,
+            _tokens->renderSettings_disableMotionBlur_depOn_usdRenderSettings_disableMotionBlur,
+            UsdImagingUsdRenderSettingsSchema::GetDisableMotionBlurLocator(),
+            HdRenderSettingsSchema::GetDisableMotionBlurLocator(),
+        },
+        // (1b) USD render product-related entries that map to the flattened
+        //     render products locator.
+        {
+            _tokens->renderSettings_renderProducts_depOn_usdRenderSettings_resolution,
+            UsdImagingUsdRenderSettingsSchema::GetResolutionLocator(),
+            HdRenderSettingsSchema::GetRenderProductsLocator(),
+        },
+        {
+            _tokens->renderSettings_renderProducts_depOn_usdRenderSettings_pixelAspectRatio,
+            UsdImagingUsdRenderSettingsSchema::GetPixelAspectRatioLocator(),
+            HdRenderSettingsSchema::GetRenderProductsLocator(),
+        },
+        {
+            _tokens->renderSettings_renderProducts_depOn_usdRenderSettings_aspectRatioConformPolicy,
+            UsdImagingUsdRenderSettingsSchema::GetAspectRatioConformPolicyLocator(),
+            HdRenderSettingsSchema::GetRenderProductsLocator(),
+        },
+        {
+            _tokens->renderSettings_renderProducts_depOn_usdRenderSettings_dataWindowNDC,
+            UsdImagingUsdRenderSettingsSchema::GetDataWindowNDCLocator(),
+            HdRenderSettingsSchema::GetRenderProductsLocator(),
+        },
+        {
+            _tokens->renderSettings_renderProducts_depOn_usdRenderSettings_disableMotionBlur,
+            UsdImagingUsdRenderSettingsSchema::GetDisableMotionBlurLocator(),
+            HdRenderSettingsSchema::GetRenderProductsLocator(),
+        },
+        {
+            _tokens->renderSettings_renderProducts_depOn_usdRenderSettings_disableDepthOfField,
+            UsdImagingUsdRenderSettingsSchema::GetDisableDepthOfFieldLocator(),
+            HdRenderSettingsSchema::GetRenderProductsLocator(),
+        },
+        {
+            _tokens->renderSettings_renderProducts_depOn_usdRenderSettings_camera,
             UsdImagingUsdRenderSettingsSchema::GetCameraLocator(),
-            HdRenderSettingsSchema::GetCameraLocator(),
+            HdRenderSettingsSchema::GetRenderProductsLocator(),
         },
         // (2) __dependencies --> __usdRenderSettings
         {
@@ -456,7 +459,7 @@ public:
 
     _RenderSettingsDataSource(
         const HdContainerDataSourceHandle &settingsPrimDs,
-        const HdSceneIndexBaseRefPtr &si)
+        const HdSceneIndexBasePtr &si)
     : _input(settingsPrimDs)
     , _si(si)
     {
@@ -539,7 +542,7 @@ public:
 
 private:
     HdContainerDataSourceHandle _input;
-    const HdSceneIndexBaseRefPtr _si;
+    const HdSceneIndexBasePtr _si;
 };
 
 // Prim data source override that adds the flattened representation for
@@ -552,7 +555,7 @@ public:
 
     _RenderSettingsPrimDataSource(
         const HdContainerDataSourceHandle &input,
-        const HdSceneIndexBaseRefPtr &si,
+        const HdSceneIndexBasePtr &si,
         const SdfPath &primPath)
     : _input(input)
     , _si(si)
@@ -591,8 +594,8 @@ public:
 
 private:
     HdContainerDataSourceHandle _input;
-    const HdSceneIndexBaseRefPtr _si;
-    SdfPath _primPath;
+    const HdSceneIndexBasePtr _si;
+    const SdfPath _primPath;
 };
 
 } // anonymous namespace

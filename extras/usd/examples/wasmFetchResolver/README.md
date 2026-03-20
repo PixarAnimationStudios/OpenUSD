@@ -7,6 +7,9 @@ load files from a webserver.  In order to facilitate file loading, a bare bones
 This server is configured to serve static files and showcase the resolver's
 functionality.
 
+It is important to note that the code provided in this example is for
+illustrative purposes only and is not meant for production use.
+
 ### Configuring the Example
 
 Make sure that examples are being built along with your Wasm build.

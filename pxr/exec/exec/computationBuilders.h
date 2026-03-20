@@ -508,6 +508,19 @@ struct Exec_ComputationBuilderAccessor
              ExecProviderResolution::DynamicTraversal::Local});
     }
 
+    /// See [IncomingConnections()](#exec_registration::IncomingConnections)
+    template <typename ResultType>
+    ValueSpecifier
+    IncomingConnections(const TfToken &computationName)
+    {
+        return ValueSpecifier(
+            computationName,
+            ExecTypeRegistry::GetInstance().CheckForRegistration<ResultType>(),
+            {Exec_ComputationBuilderAccessorBase::_GetLocalTraversal(),
+             ExecProviderResolution::DynamicTraversal::
+                 IncomingConnectionOwningAttributes});
+    }
+
     /// See [Metadata()](#exec_registration::Metadata)
     template <typename ResultType>
     ValueSpecifier
@@ -552,8 +565,7 @@ struct Exec_ComputationBuilderAttributeAccessor
     /// \addtogroup group_Exec_ValueSpecifiers
     /// @{
 
-    /// See
-    /// [Connections()](#exec_registration::Connections)
+    /// See [Connections()](#exec_registration::Connections)
     template <typename ResultType>
     ValueSpecifier
     Connections(const TfToken &computationName)
@@ -569,7 +581,7 @@ struct Exec_ComputationBuilderAttributeAccessor
     /// @}
 
     // XXX:TODO
-    // Accessors for AnimSpline, IncomingConnections
+    // Accessors for AnimSpline, etc.
 };
 
 /// Relationship accessor
@@ -1180,9 +1192,7 @@ AttributeValue(const TfToken &attributeName)
 /// it requests the named computation from the objects that are targeted by
 /// those connections. The reason we choose "Connections" as the name, rather
 /// than "ConnectionTargetedObjects," is to allow for future expansion of USD to
-/// allow for value-transforming behaviors on attribute connections. This
-/// concept exists in Presto and is extremely useful for rigging, so there's a
-/// good chance it will be introduced in the future in USD and OpenExec.
+/// allow for value-transforming behaviors on attribute connections themselves.
 ///
 /// The default input name is \p computationName; use `InputName` to specify a
 /// different input name.
@@ -1221,6 +1231,57 @@ Connections(const TfToken &computationName)
             {SdfPath::ReflexiveRelativePath(),
              ExecProviderResolution::DynamicTraversal::
                  ConnectionTargetedObjects});
+}
+
+/// On any provider, requests input values from the computation \p
+/// computationName of type \p ResultType on the attributes that own any
+/// attribute connections that target the provider object.
+///
+/// When this input parameter produces multiple input values, there is no
+/// deterministic ordering.
+///
+/// \note
+/// Conceptually, this input registration provides access to the connections
+/// that target the provider, but as outlined in the paragraph above, in
+/// practice it requests the named computation from the attributes that own
+/// those connections. The reason we choose "IncomingConnections" as the name,
+/// rather than "IncomingConnectionOwningAttributes," is to allow for future
+/// expansion of USD to allow for value-transforming behaviors on attribute
+/// connections themselves.
+///
+/// The default input name is \p computationName; use `InputName` to specify a
+/// different input name.
+///
+/// # Example
+///
+/// ```{.cpp}
+/// EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(MySchemaType)
+/// {
+///     // Register a prim computation that sums the values of the
+///     // integer-valued attributes that own connections that target the
+///     // provider prim.
+///     self.PrimComputation(_tokens->computeSum)
+///         .Callback<int>(+[](const VdfContext &ctx) {
+///             VdfReadIteratorRange<int> range(
+///                 ctx, ExecBuiltinComputations->computeValue);
+///             return std::accumulate(range.begin(), range.end(), 0);
+///         })
+///         .Inputs(
+///             IncomingConnections<int>(ExecBuiltinComputations->computeValue));
+/// }
+/// ```
+///
+template <typename ResultType>
+auto
+IncomingConnections(const TfToken &computationName)
+{
+    return Exec_ComputationBuilderComputationValueSpecifier<
+        Exec_ComputationBuilderProviderTypes::Any>(
+            computationName,
+            ExecTypeRegistry::GetInstance().CheckForRegistration<ResultType>(),
+            {SdfPath::ReflexiveRelativePath(),
+             ExecProviderResolution::DynamicTraversal::
+                 IncomingConnectionOwningAttributes});
 }
 
 /// @} // Value Specifiers

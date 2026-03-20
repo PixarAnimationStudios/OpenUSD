@@ -105,6 +105,16 @@ public:
     PCP_API
     static VariableUniquePtr NewVariable(Value && initialValue);
 
+    /// Create a new PcpMapExpression equivalent to:
+    /// \code
+    /// transferFunc.Compose(classArc.Compose(transferFunc.Inverse()))
+    ///    .AddRootIdentity()
+    /// \endcode
+    PCP_API
+    static PcpMapExpression ImpliedClass(
+        const PcpMapExpression& transferFunc,
+        const PcpMapExpression& classArc);
+
     /// Create a new PcpMapExpression representing the application of
     /// f's value, followed by the application of this expression's value.
     PCP_API
@@ -179,7 +189,8 @@ private: // data
         _OpVariable,
         _OpInverse,
         _OpCompose,
-        _OpAddRootIdentity
+        _OpAddRootIdentity,
+        _OpImpliedClass
     };
 
     class _Node {

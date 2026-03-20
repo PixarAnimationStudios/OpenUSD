@@ -49,6 +49,10 @@ struct UsdTokensType {
     /// 
     ///  A listop metadata containing the API schemas which have been applied to this prim, using the Apply() method on the particular schema class.  
     const TfToken apiSchemas;
+    /// \brief "automatic"
+    /// 
+    /// Fallback value for UsdCollectionAPI::GetModeAttr()
+    const TfToken automatic;
     /// \brief "clips"
     /// 
     ///  Dictionary that contains the definition of the clip sets on this prim. See \ref UsdClipsAPI::GetClips. 
@@ -85,6 +89,10 @@ struct UsdTokensType {
     /// 
     /// UsdCollectionAPI
     const TfToken collection_MultipleApplyTemplate_MembershipExpression;
+    /// \brief "collection:__INSTANCE_NAME__:mode"
+    /// 
+    /// UsdCollectionAPI
+    const TfToken collection_MultipleApplyTemplate_Mode;
     /// \brief "colorSpaceDefinition"
     /// 
     /// Property namespace prefix for the UsdColorSpaceDefinitionAPI schema.
@@ -141,10 +149,18 @@ struct UsdTokensType {
     /// 
     /// Possible value for UsdCollectionAPI::GetExpansionRuleAttr()
     const TfToken explicitOnly;
+    /// \brief "expression"
+    /// 
+    /// Possible value for UsdCollectionAPI::GetModeAttr()
+    const TfToken expression;
     /// \brief "fallbackPrimTypes"
     /// 
     ///  A dictionary metadata that maps the name of a concrete schema prim type to an ordered list of schema prim types to use instead if the schema prim type doesn't exist in version of USD being used. 
     const TfToken fallbackPrimTypes;
+    /// \brief "relationship"
+    /// 
+    /// Possible value for UsdCollectionAPI::GetModeAttr()
+    const TfToken relationship;
     /// \brief "APISchemaBase"
     /// 
     /// Schema identifer and family for UsdAPISchemaBase

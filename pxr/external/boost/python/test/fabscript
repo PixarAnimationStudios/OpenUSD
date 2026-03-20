@@ -68,6 +68,7 @@ for t in [('injected',),
           ('raw_ctor',),
           ('exception_translator',),
           ('module_init_exception',),
+          ('module_nogil',),
           ('test_enum', ['enum_ext']),
           ('test_cltree', ['cltree']),
           ('newtest', ['m1', 'm2']),
@@ -118,10 +119,10 @@ for t in [('injected',),
 
 tests.append(extension_test('shared_ptr',
                             condition=set.define.contains('HAS_CXX11')))
-tests.append(extension_test('polymorphism2_auto_ptr',
-                            condition=set.define.contains('HAS_CXX11').not_()))
-tests.append(extension_test('auto_ptr',
-                            condition=set.define.contains('HAS_CXX11')))
+#tests.append(extension_test('polymorphism2_auto_ptr',
+#                            condition=set.define.contains('HAS_CXX11').not_()))
+#tests.append(extension_test('auto_ptr',
+#                            condition=set.define.contains('HAS_CXX11')))
 
 import_ = binary('import_', ['import_.cpp', src.bpl], features=features|python_libs)
 if platform.os == 'Windows':

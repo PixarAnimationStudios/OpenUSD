@@ -1749,24 +1749,8 @@ target layer. We call this a *Layer Offset*, embodied in
 3.5, then data resolved at **A** whose source is **C** will have a total
 time-scale of 7.0 applied to it.
 
-When an arc has both an offset and scale applied, the referenced animation is
-**first scaled, then offset** as it is brought into the referencing layer. So,
-in the following example, a `timeSample <#usdglossary-timesample>`_ at `timeCode
-<#usdglossary-timecode>`_ 12 in the file :filename:`someAnimation.usd` will
-appear at ((12 * 0.5) + 10) = **16** as resolved from the referencing
-layer. Layer offsets cannot themselves vary over time. If a consuming context
-requires variable retiming of referenced data, it can use the more powerful (and
-somewhat more costly) `Value Clips <#usdglossary-valueclips>`_ feature.
-
-.. code-block:: usda
-   :caption: SubLayer offset/scale in usda
-
-   #usda 1.0
-   (
-       subLayers = [
-           @./someAnimation.usd@ (offset = 10; scale = 0.5)
-       ]
-   )
+See :ref:`time_configuring_using_layer_offsets` for more details and example 
+using Layer Offsets.
 
 .. _usdglossary-layerstack:
 
@@ -3764,7 +3748,8 @@ demonstrate how SubLayers supports nested LayerStacks:
        ]
    )
 
-Note that SubLayers can specify `Layer Offsets <#usdglossary-layeroffset>`_ to
+Note that SubLayers can specify 
+:ref:`Layer Offsets <time_configuring_using_layer_offsets>` to
 offset and scale time-varying data contained in the sub-layer(s)
 
 .. _usdglossary-timecode:
@@ -3776,21 +3761,9 @@ TimeCode
 can encode the coordinate for a `TimeSample <#usdglossary-timesample>`_ (or
 :ref:`Spline knot <usdglossary-spline>`) in double-precision floating point, 
 but can also encode the coordinate that maps to an attribute's 
-`Default Value <#usdglossary-defaultvalue>`_. For any given composed scene, 
-defined by its root layer, the TimeCode coordinates of the TimeSamples 
-or Spline data contained in the scene are 
-:ref:`scaled to seconds <usdglossary-timecodes-scaled>` by the root layer's
-:usda:`timeCodesPerSecond` metadata, which can be retrieved with
-:usdcpp:`UsdStage::GetTimeCodesPerSecond`. This allows clients great
-flexibility to encode their time-varying data within the range and scale that 
-makes the most sense for their application, while retaining a robust mapping to 
-"real time" for decoding and playback.
+`Default Value <#usdglossary-defaultvalue>`_. 
 
-TimeCodes can also appear in USD scenes as the :usda:`timeCode` metadata or 
-attribute value type, and when they do, queried attribute *values* will receive 
-the same time-remapping that TimeSample/Spline knot coordinates do. Such 
-timeCode-valued attributes can serve as "timing curves" that maintain their 
-accuracy through composed layer offsets.
+For more details and examples, see :ref:`time_understanding_timecodes`.
 
 .. _usdglossary-timecodes-scaled:
 
@@ -3800,83 +3773,11 @@ TimeCodes Scaled to Real Time
 For a composed scene, :ref:`TimeCode <usdglossary-timecode>` coordinate values 
 from :ref:`animated values <usdglossary-animatedvalue>` are scaled to real-time 
 seconds by the root layer's (or session layer's) :usda:`timeCodesPerSecond` 
-metadata. In the following example layer, the translation TimeSample on Sphere 
-at TimeCode 240 corresponds to 10 seconds of real time, based on the layer's 
-:usda:`timeCodesPerSecond` of 24.
+metadata. 
 
-.. code-block:: usda 
-
-  #usda 1.0
-  (
-      timeCodesPerSecond = 24
-      endTimeCode = 240
-      startTimeCode = 1
-  )
-
-  def Xform "Asset"
-  {
-      def Sphere "Sphere"
-      {
-          double3 xformOp:translate.timeSamples = {
-              1: (0, 5.0, 0),
-              240: (0, -5.0, 0),
-          }
-          uniform token[] xformOpOrder = ["xformOp:translate"]
-      }
-  }
-
-
-If a layer specifies :usda:`timeCodesPerSecond` and is sublayered or referenced 
-into another layer, the TimeCode values and animated value coordinates in the 
-sublayered/referenced layer are automatically scaled to map into the timing 
-defined by the root layer's :usda:`timeCodesPerSecond`. If the previous example 
-layer was referenced into another layer that specified a 
-:usda:`timeCodesPerSecond` value of 48, the TimeSamples on Sphere would be 
-scaled accordingly. For example, the TimeSample at TimeCode 240 would be scaled 
-to TimeCode 480 to ensure that the translation still occurs at 10 seconds of 
-real time.
-
-USD also provides the :usda:`framesPerSecond` layer metadata, however this is 
-not used to directly scale TimeCodes, but instead used as an indication of the 
-desired play-back rate when the animation is viewed in a playback device 
-(DCC tool, usdview, etc). If the previous example layer specified a 
-:usda:`framesPerSecond` of 12, this would *not* change the scaling of the 
-TimeSample at TimeCode 240, and instead change the playback rate in a playback 
-device to march forward by two TimeCodes for each consecutive rendered frame, 
-which will be held for 1/12 of a second.
-
-.. code-block:: usda
-
-  #usda 1.0
-  (
-      timeCodesPerSecond = 24
-      framesPerSecond = 12
-      endTimeCode = 240
-      startTimeCode = 1
-  )
-
-Note that :usda:`framesPerSecond` can be used indirectly to scale TimeCodes, 
-because it is used as a fallback value for :usda:`timeCodesPerSecond` if 
-:usda:`timeCodesPerSecond` is not set. The order of precedence USD uses for 
-determining the :usda:`timeCodesPerSecond` to use is: 
-
-* :usda:`timeCodesPerSecond` from session layer
-* :usda:`timeCodesPerSecond` from root layer
-* :usda:`framesPerSecond` from session layer
-* :usda:`framesPerSecond` from root layer
-* fallback value of 24 
-
-The general best practice is to use :usda:`timeCodesPerSecond` to specify how 
-TimeCodes are scaled to real time, and :usda:`framesPerSecond` if you need to 
-encode a specific playback rate on playback devices, regardless of how many 
-samples per second are recorded in the USD scene.
-
-.. note::
-
-    We provide the information about :usda:`framesPerSecond` as fallback for 
-    :usda:`timeCodesPerSecond` primarily as a debugging aid, should you observe 
-    unexpected time-scaling. The fallback behavior derives only from USD's 
-    relationship to Pixar's Presto animation system.
+See :ref:`time_scaling_timecodes_to_real_time` for more details and examples 
+using :usda:`timeCodesPerSecond` (and the legacy :usda:`framesPerSecond` layer 
+metadata).
 
 .. _usdglossary-timesample:
 

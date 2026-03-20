@@ -85,6 +85,7 @@
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
 #include "pxr/imaging/hd/volumeFieldSchema.h"
+#include "pxr/imaging/hd/volumeSchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 
 #include "pxr/imaging/hf/perfLog.h"
@@ -346,6 +347,9 @@ HdSceneIndexAdapterSceneDelegate::PrimsAdded(
 {
     TRACE_FUNCTION();
 
+    TF_VERIFY(!GetRenderIndex().IsSyncAllInProgress(),
+        "Unsafe scene index invalidation detected during SyncAll()");
+
     // Drop per-thread scene index input prim cache
     _inputPrimCache.clear();
 
@@ -363,6 +367,9 @@ HdSceneIndexAdapterSceneDelegate::PrimsRemoved(
     const RemovedPrimEntries &entries)
 {
     TRACE_FUNCTION();
+
+    TF_VERIFY(!GetRenderIndex().IsSyncAllInProgress(),
+        "Unsafe scene index invalidation detected during SyncAll()");
 
     // Drop per-thread scene index input prim cache
     _inputPrimCache.clear();
@@ -427,6 +434,9 @@ HdSceneIndexAdapterSceneDelegate::PrimsDirtied(
     const DirtiedPrimEntries &entries)
 {
     TRACE_FUNCTION();
+
+    TF_VERIFY(!GetRenderIndex().IsSyncAllInProgress(),
+        "Unsafe scene index invalidation detected during SyncAll()");
 
     // Drop per-thread scene index input prim cache
     _inputPrimCache.clear();
@@ -1013,6 +1023,31 @@ HdSceneIndexAdapterSceneDelegate::GetVolumeFieldDescriptors(
     }
 
     return result;
+}
+
+VtValue
+HdSceneIndexAdapterSceneDelegate::GetVolumeParamValue(
+        SdfPath const &id, TfToken const &paramName)
+{
+    TRACE_FUNCTION();
+
+    HdSceneIndexPrim prim = _GetInputPrim(id);
+    if (!prim.dataSource) {
+        return VtValue();
+    }
+
+    HdContainerDataSourceHandle volume =
+        HdContainerDataSource::Cast(
+            prim.dataSource->Get(HdVolumeSchemaTokens->volume));
+    if (volume) {
+        HdSampledDataSourceHandle valueDs = HdSampledDataSource::Cast(
+                volume->Get(paramName));
+        if (valueDs) {
+            return valueDs->GetValue(0);
+        }
+    }
+
+    return VtValue();
 }
 
 SdfPath
@@ -1662,11 +1697,30 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
         }
     }
 
-    if (key == HdRenderSettingsPrimTokens->shutterInterval) {
-        if (HdVec2dDataSourceHandle shutterIntervalDS =
-                rsSchema.GetUnionedSamplingInterval()) {
+    if (key == HdRenderSettingsPrimTokens->unionedSamplingInterval) {
+        if (HdVec2dDataSourceHandle unionedSamplingIntervalDS =
+            rsSchema.GetUnionedSamplingInterval()) {
+            return VtValue(unionedSamplingIntervalDS->GetTypedValue(0.f));
+        }
+    }
 
-            return VtValue(shutterIntervalDS->GetTypedValue(0));
+    if (key == HdRenderSettingsPrimTokens->camera) {
+        if (HdPathDataSourceHandle cameraDS = rsSchema.GetCamera()) {
+            return VtValue(cameraDS->GetTypedValue(0.f));
+        }
+    }
+
+    if (key == HdRenderSettingsPrimTokens->disableDepthOfField) {
+        if (HdBoolDataSourceHandle disableDepthOfFieldDS =
+            rsSchema.GetDisableDepthOfField()) {
+            return VtValue(disableDepthOfFieldDS->GetTypedValue(0.f));
+        }
+    }
+
+    if (key == HdRenderSettingsPrimTokens->disableMotionBlur) {
+        if (HdBoolDataSourceHandle disableMotionBlurDS =
+            rsSchema.GetDisableMotionBlur()) {
+            return VtValue(disableMotionBlurDS->GetTypedValue(0.f));
         }
     }
 
@@ -2940,9 +2994,6 @@ HdSceneIndexAdapterSceneDelegate::Sync(HdSyncRequestVector* request)
         return;
     }
 
-    // Drop per-thread scene index input prim cache
-    _inputPrimCache.clear();
-
     if (!_sceneDelegatesBuilt) {
         tbb::concurrent_unordered_set<HdSceneDelegate*> sds;
         _primCache.ParallelForEach(
@@ -2985,9 +3036,6 @@ HdSceneIndexAdapterSceneDelegate::PostSyncCleanup()
             sd->PostSyncCleanup();
         }
     }
-
-    // Drop per-thread scene index input prim cache
-    _inputPrimCache.clear();
 }
 
 // ----------------------------------------------------------------------------

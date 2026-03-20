@@ -63,7 +63,8 @@ namespace detail
           typedef objects::pointer_holder<Ptr,value_type> holder;
           typedef objects::instance<holder> instance_t;
 
-          void* memory = holder::allocate(this->m_self, offsetof(instance_t, storage), sizeof(holder));
+          void* memory = holder::allocate(this->m_self, offsetof(instance_t, storage), sizeof(holder),
+                                          PXR_BOOST_NAMESPACE::python::detail::alignment_of<holder>::value);
           try {
               (new (memory) holder(std::move(x)))->install(this->m_self);
           }

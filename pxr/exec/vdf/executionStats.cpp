@@ -9,6 +9,8 @@
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/stringUtils.h"
 
+#include <cinttypes>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 VdfExecutionStats::ScopedEvent::ScopedEvent(
@@ -95,9 +97,10 @@ VdfExecutionStats::GetMallocTagName(
     const VdfNode &node)
 {
     return !invokingNodeId
-        ? TfStringPrintf("%p n %lx", &node.GetNetwork(), node.GetId())
+        ? TfStringPrintf("%p n %" PRIx64, &node.GetNetwork(), node.GetId())
         : TfStringPrintf(
-            "%p %lx %lx", &node.GetNetwork(), *invokingNodeId, node.GetId());
+            "%p %" PRIx64 " %" PRIx64,
+            &node.GetNetwork(), *invokingNodeId, node.GetId());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

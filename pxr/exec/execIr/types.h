@@ -7,6 +7,8 @@
 #ifndef PXR_EXEC_EXEC_IR_TYPES_H
 #define PXR_EXEC_EXEC_IR_TYPES_H
 
+/// \file
+
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/denseHashMap.h"
@@ -15,14 +17,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Map used to return results from a controller inverse compute function.
+/// Map used to return results from controller forward and inverse computations.
 ///
-/// Keys are the names of invertible input attributes and values are the values
-/// the inputs must assume in order to produce the desired output values that
-/// were specified.
+/// The map entries are the names of attributes for which the computation
+/// produces values and the corresponding computed values.
 ///
-using ExecIrInversionResult =
-    TfDenseHashMap<TfToken, VtValue, TfToken::HashFunctor>;
+using ExecIrResult = TfDenseHashMap<TfToken, VtValue, TfToken::HashFunctor>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

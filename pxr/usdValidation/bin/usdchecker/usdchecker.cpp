@@ -46,12 +46,11 @@ struct Args {
     std::string outFile = "stdout";
     StringVector variants;
     StringVector variantSets;
-    StringVector includeKeywords;
+    std::string includeKeywords;
     bool skipVariants = false;
     bool disableVariantValidationLimit = false;
     bool rootPackageOnly = false;
     bool noAssetChecks = false;
-    bool arkit = false;
     bool dumpRules = false;
     bool verbose = false;
     bool strict = false;
@@ -66,11 +65,11 @@ _Configure(CLI::App* app, Args& args) {
         ->type_name("FILE");
     // Add a new flag to only include validators from a specific keywords
     app->add_option(
-        "--includeKeywords", args.includeKeywords, 
+        "--includeKeywords", args.includeKeywords,
         "If specified, only validators from the included keywords are run. "
-        "Multiple keywords can be specified as a comma separated list or "
-        "by using the option multiple times. If not specified, all validators "
-        "are run.");
+        "Multiple keywords can be specified as a comma separated list. "
+        "If not specified, all validators are run.")
+        ->type_name("KEYWORDS");
     app->add_flag(
         "-s, --skipVariants", args.skipVariants, 
         "If specified, only the prims that are present in the default (i.e.\n"
@@ -91,12 +90,6 @@ _Configure(CLI::App* app, Args& args) {
         "--noAssetChecks", args.noAssetChecks, 
         "If specified, do NOT perform extra checks to help ensure the stage\n"
         "or package can be easily and safely referenced into aggregate stages.");
-    app->add_flag(
-        "--arkit", args.arkit, 
-        "Check if the given USD stage is compatible with RealityKit's\n"
-        "implementation of USDZ as of 2023. These assets operate under\n"
-        "greater constraints that usdz files for more general in-house uses,\n"
-        "and this option attempts to ensure that these constraints are met.");
     app->add_flag(
         "-d, --dumpRules", args.dumpRules, "Dump the enumerated set of rules\n"
         "being checked for the given set of options.");
@@ -147,11 +140,6 @@ _ValidateArgs(const Args& args) {
         std::cerr<<"Error: Either an inputFile or the --dumpRules option "
             "must be specified.\n";
         return false;
-    }
-
-    // Warn if deprecated --arkit flag is used
-    if (args.arkit) {
-        std::cerr<<"Warning: --arkit is deprecated.\n";
     }
 
     return true;
@@ -555,14 +543,8 @@ _UsdChecker(const Args& args)
     if (args.includeKeywords.empty()) {
         metadata = validationReg.GetAllValidatorMetadata();
     } else {
-        StringVector allKeywords;
-        // at least one keyword in comma separated list should be present
-        for (const std::string &includedKeywordList : args.includeKeywords) {
-            StringVector keywords = TfStringTokenize(
-                includedKeywordList, ",");
-            allKeywords.insert(
-                allKeywords.end(), keywords.begin(), keywords.end());
-        }
+        const StringVector allKeywords = TfStringTokenize(
+            args.includeKeywords, ",");
         metadata = validationReg.GetValidatorMetadataForKeywords(
             TfToTokenVector(allKeywords));
     }
@@ -681,7 +663,6 @@ main(int argc, char const *argv[]) {
 
     Args args;
     _Configure(&app, args);
-    deprecate_option(&app, "--arkit");
 
     CLI11_PARSE(app, argc, argv);
     return _UsdChecker(args);

@@ -155,7 +155,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((default_, "default"))                     \
     (cross)                                     \
     (box)                                       \
-    (fromTexture)     
+    (fromTexture)
 
 #define HD_PERF_TOKENS                          \
     (adjacencyBufSize)                          \
@@ -249,6 +249,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (surface)                                   \
     (displacement)                              \
     (volume)                                    \
+    (volumeFilter)                              \
     (light)                                     \
     (lightFilter)                               \
     (imageShader)
@@ -264,7 +265,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((universal, ""))
 
 #define HD_OPTION_TOKENS                        \
-    (parallelRprimSync)                        
+    (parallelRprimSync)
 
 #define HD_RPRIMTYPE_TOKENS                     \
     /* Rprims */                                \
@@ -458,9 +459,12 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (includedPurposes)                                \
     (materialBindingPurposes)                         \
     (renderingColorSpace)                             \
-    (shutterInterval)
+    (unionedSamplingInterval)                         \
+    (camera)                                          \
+    (disableDepthOfField)                             \
+    (disableMotionBlur)
 
-/* Aspect Ratio Conform Policy Tokens used on render settings prims 
+/* Aspect Ratio Conform Policy Tokens used on render settings prims
  * Note that these mirror the conform policy tokens in UsdRenderTokens */
 #define HD_ASPECT_RATIO_CONFORM_POLICY                \
     (adjustApertureWidth)                             \
@@ -503,11 +507,11 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     ((hasConstantInfluences,     "hydra:hasConstantInfluences"))        \
     ((numInfluencesPerComponent, "hydra:numInfluencesPerComponent"))    \
     ((influences,                "hydra:influences"))                   \
-    /* skinningMethod primvar on the skel schema is a token, we provide a 
+    /* skinningMethod primvar on the skel schema is a token, we provide a
      * numeric alternative to pass to storm's vertex shader.
      */                                                                 \
     ((numSkinningMethod,         "hydra:numSkinningMethod"))            \
-    /* Extra primvars for computing instance/vertex offsets to index into 
+    /* Extra primvars for computing instance/vertex offsets to index into
      * concatenated skinningXForms/blendShapeWeights constant primvars.
      */                                                                 \
     ((numJoints,                 "hydra:numJoints"))                    \
@@ -515,15 +519,15 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
 
 /* Skinning inputs that already exist on skel binding. */
 #define HD_SKINNING_SKEL_INPUT_TOKENS                                   \
-    /* HYD-3510 
+    /* HYD-3510
      * these two already exist and they are the source of influences and
      * numInfluencesPerComponent above. but currently hydra doesn't handle
-     * tensor valued vertex primvar correctly. once that's addressed, we 
+     * tensor valued vertex primvar correctly. once that's addressed, we
      * can access these two in the vertex shader directly and remove the
      * two above. see imaging/hdSt/mesh.cpp _PopulateVertexPrimvars()#1417
      * buffer source array size is currently hardcoded to 1.
      *
-     *((jointIndices,            "skel:jointIndices"))                  
+     *((jointIndices,            "skel:jointIndices"))
      *((jointWeights,            "skel:jointWeights"))
      */                                                                 \
     ((geomBindTransform,         "skel:geomBindTransform"))
@@ -555,16 +559,16 @@ TF_DECLARE_PUBLIC_TOKENS(HdAovTokens, HD_API, HD_AOV_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_API, HD_RENDER_SETTINGS_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsPrimTokens, HD_API,
                          HD_RENDER_SETTINGS_PRIM_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdAspectRatioConformPolicyTokens, HD_API, 
+TF_DECLARE_PUBLIC_TOKENS(HdAspectRatioConformPolicyTokens, HD_API,
                          HD_ASPECT_RATIO_CONFORM_POLICY);
 TF_DECLARE_PUBLIC_TOKENS(HdResourceTypeTokens, HD_API, HD_RESOURCE_TYPE_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdSceneIndexEmulationTokens, HD_API, 
+TF_DECLARE_PUBLIC_TOKENS(HdSceneIndexEmulationTokens, HD_API,
                          HD_SCENE_INDEX_EMULATION_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdCollectionEmulationTokens, HD_API, 
+TF_DECLARE_PUBLIC_TOKENS(HdCollectionEmulationTokens, HD_API,
                          HD_COLLECTION_EMULATION_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdSkinningInputTokens, HD_API, 
+TF_DECLARE_PUBLIC_TOKENS(HdSkinningInputTokens, HD_API,
                          HD_SKINNING_INPUT_TOKENS);
-TF_DECLARE_PUBLIC_TOKENS(HdSkinningSkelInputTokens, HD_API, 
+TF_DECLARE_PUBLIC_TOKENS(HdSkinningSkelInputTokens, HD_API,
                          HD_SKINNING_SKEL_INPUT_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE

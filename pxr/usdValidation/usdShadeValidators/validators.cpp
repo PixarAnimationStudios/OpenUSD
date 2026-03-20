@@ -38,6 +38,16 @@ static UsdValidationErrorVector
 _EncapsulationValidator(const UsdPrim &usdPrim, 
                         const UsdValidationTimeRange &/*timeRange*/)
 {
+    // Encapsulation rules for connections are only relevant for UsdShadeShader,
+    // UsdShadeMaterial, and UsdShadeNodeGraph prims. (Even though
+    // UsdShadeMaterial IsA UsdShadeNodeGraph, we explicitly check for it, to
+    // express the intent.
+    if (! (usdPrim.IsA<UsdShadeShader>() || 
+           usdPrim.IsA<UsdShadeMaterial>() ||
+           usdPrim.IsA<UsdShadeNodeGraph>())) {
+        return {};
+    }
+
     const UsdShadeConnectableAPI &connectable = UsdShadeConnectableAPI(usdPrim);
 
     if (!connectable) {

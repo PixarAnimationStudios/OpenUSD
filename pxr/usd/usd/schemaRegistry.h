@@ -564,6 +564,9 @@ private:
         const TfTokenVector &appliedAPISchemas,
         _FamilyAndInstanceToVersionMap *seenSchemaFamilyVersions) const;
 
+    TfTokenVector _PruneBaseClassPropertiesForPrimDefinition(
+        const UsdPrimDefinition *primDef, const TfToken &schemaName) const;
+
     // Private class for helping initialize the schema registry. Defined 
     // entirely in the implementation. Declared here for private access to the
     // registry.

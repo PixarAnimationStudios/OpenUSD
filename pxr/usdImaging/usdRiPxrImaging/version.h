@@ -13,8 +13,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 //        1: Clone off PXR_USD_IMAGING_USD_RI_PXR_IMAGING_VERSION_H and add light filter support
 //  1 ->  2: Add support for camera projection plugins.
+//  2 ->  3: Add UsdRiPxrImagingPrimTypeTokens->volumeFilter.
 
-#define USD_RI_PXR_IMAGING_API_VERSION 2
+#define USD_RI_PXR_IMAGING_API_VERSION 3
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

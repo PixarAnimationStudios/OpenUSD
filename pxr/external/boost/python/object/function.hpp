@@ -42,6 +42,8 @@ struct PXR_BOOST_PYTHON_DECL function : PyObject
     static void add_to_namespace(
         object const& name_space, char const* name, object const& attribute, char const* doc);
 
+    static object const& add_doc(object const& attribute, char const* doc);
+
     object const& doc() const;
     void doc(object const& x);
     
@@ -49,6 +51,8 @@ struct PXR_BOOST_PYTHON_DECL function : PyObject
 
     object const& get_namespace() const { return m_namespace; }
     
+    object const& get_module() const { return m_module; }
+
  private: // helper functions
     object signature(bool show_return_type=false) const;
     object signatures(bool show_return_type=false) const;
@@ -60,6 +64,7 @@ struct PXR_BOOST_PYTHON_DECL function : PyObject
     handle<function> m_overloads;
     object m_name;
     object m_namespace;
+    object m_module;
     object m_doc;
     object m_arg_names;
     unsigned m_nkeyword_values;

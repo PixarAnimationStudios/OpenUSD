@@ -22,7 +22,7 @@ from .qt import QtCore, QtGui, QtWidgets, QtOpenGL, QGLWidget, QGLFormat
 from pxr import Tf
 from pxr import Gf
 from pxr import Glf
-from pxr import Sdf, Usd, UsdGeom
+from pxr import Sdf, Usd, UsdGeom, UsdRender
 from pxr import UsdImagingGL
 from pxr import CameraUtil
 
@@ -2442,3 +2442,11 @@ class StageView(QGLWidget):
 
     def SetActiveRenderPassPrim(self, prim):
         self._getRenderer().SetActiveRenderPassPrimPath(prim.GetPath())
+        # Also activate associated render settings, if specified
+        rpPrim = UsdRender.Pass(prim)
+        renderSources = rpPrim.GetRenderSourceRel().GetForwardedTargets()
+        if len(renderSources) > 0:
+            rsPath = renderSources[0]
+        else:
+            rsPath = Sdf.Path()
+        self._getRenderer().SetActiveRenderSettingsPrimPath(rsPath)

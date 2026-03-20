@@ -337,8 +337,9 @@ namespace objects
           for (instance_holder* p = kill_me->objects, *next; p != 0; p = next)
           {
               next = p->next();
+              void* q = dynamic_cast<void*>(p);
               p->~instance_holder();
-              instance_holder::deallocate(inst, dynamic_cast<void*>(p));
+              instance_holder::deallocate(inst, q);
           }
         
           // Python 2.2.1 won't add weak references automatically when
@@ -506,6 +507,16 @@ namespace objects
           );
   }
 
+  object qualname(const char *name)
+  {
+#if PY_VERSION_HEX >= 0x03030000
+      if (PyObject_HasAttrString(scope().ptr(), "__qualname__")) {
+          return str("%s.%s" % make_tuple(scope().attr("__qualname__"), name));
+      }
+#endif
+      return str(name);
+  }
+
   namespace
   {
     // Find a registered class object corresponding to id. Return a
@@ -568,6 +579,9 @@ namespace objects
    
       object m = module_prefix();
       if (m) d["__module__"] = m;
+#if PY_VERSION_HEX >= 0x03030000
+      d["__qualname__"] = qualname(name);
+#endif
 
       if (doc != 0)
           d["__doc__"] = doc;
@@ -757,10 +771,9 @@ void* instance_holder::allocate(PyObject* self_, std::size_t holder_offset, std:
             throw std::bad_alloc();
 
         const uintptr_t x = reinterpret_cast<uintptr_t>(base_storage) + sizeof(alignment_marker_t);
-        //this has problems for x -> max(void *)
-        //const size_t padding = alignment - ((x + sizeof(alignment_marker_t)) % alignment);
-        //only works for alignments with alignments of powers of 2, but no edge conditions
-        const uintptr_t padding = alignment == 1 ? 0 : ( alignment - (x & (alignment - 1)) );
+        // Padding required to align the start of a data structure is: (alignment - (x % alignment)) % alignment
+        // Since the alignment is a power of two, the formula can be simplified with bitwise AND operator as follow:
+        const uintptr_t padding = (alignment - (x & (alignment - 1))) & (alignment - 1);
         const size_t aligned_offset = sizeof(alignment_marker_t) + padding;
         void* const aligned_storage = (char *)base_storage + aligned_offset;
         assert((char *) aligned_storage + holder_size <= (char *)base_storage + base_allocation);

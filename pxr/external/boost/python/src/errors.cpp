@@ -15,11 +15,23 @@
 #include "pxr/external/boost/python/errors.hpp"
 #include "pxr/external/boost/python/detail/integer_cast.hpp"
 #include "pxr/external/boost/python/detail/exception_handler.hpp"
+#include "pxr/external/boost/python/detail/pymutex.hpp"
 #include <exception>
 #include <new>
 #include <stdexcept>
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
+
+#ifdef Py_GIL_DISABLED
+namespace detail {
+    // Global mutex for protecting all Boost.Python internal state
+    pymutex& get_global_mutex()
+    {
+        static pymutex mutex;
+        return mutex;
+    }
+}
+#endif
 
 error_already_set::~error_already_set() {}
 
@@ -28,8 +40,13 @@ PXR_BOOST_PYTHON_DECL bool handle_exception_impl(std::function<void()> f)
 {
     try
     {
-        if (detail::exception_handler::chain)
-            return detail::exception_handler::chain->handle(f);
+        detail::exception_handler* handler_chain = nullptr;
+        {
+            PXR_BOOST_PYTHON_LOCK_STATE();
+            handler_chain = detail::exception_handler::chain;
+        }
+        if (handler_chain)
+            return handler_chain->handle(f);
         f();
         return false;
     }
@@ -88,6 +105,7 @@ exception_handler::exception_handler(handler_function const& impl)
     : m_impl(impl)
     , m_next(0)
 {
+    PXR_BOOST_PYTHON_LOCK_STATE();
     if (chain != 0)
         tail->m_next = this;
     else

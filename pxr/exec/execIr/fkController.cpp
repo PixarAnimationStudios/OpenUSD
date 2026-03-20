@@ -6,6 +6,7 @@
 //
 #include "pxr/pxr.h"
 
+#include "pxr/exec/execIr/controllerBuilder.h"
 #include "pxr/exec/execIr/tokens.h"
 #include "pxr/exec/execIr/types.h"
 #include "pxr/exec/execIr/utils.h"
@@ -19,46 +20,36 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-static GfMatrix4d
-_Compute(const VdfContext &ctx);
-
-static ExecIrInversionResult
-_Invert(const VdfContext &ctx);
+static ExecIrResult _Compute(const VdfContext &ctx);
+static ExecIrResult _Invert(const VdfContext &ctx);
 
 EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(ExecIrFkController)
 {
-    self.PrimComputation(ExecIrTokens->forwardCompute)
-        .Callback<GfMatrix4d>(&_Compute)
-        .Inputs(
-            AttributeValue<double>(ExecIrTokens->txToken),
-            AttributeValue<double>(ExecIrTokens->tyToken),
-            AttributeValue<double>(ExecIrTokens->tzToken),
+    ExecIrControllerBuilder builder(self, &_Compute, &_Invert);
 
-            AttributeValue<double>(ExecIrTokens->rxToken),
-            AttributeValue<double>(ExecIrTokens->ryToken),
-            AttributeValue<double>(ExecIrTokens->rzToken),
-            AttributeValue<double>(ExecIrTokens->rspinToken),
-            AttributeValue<TfToken>(ExecIrTokens->rotationOrderToken),
+    builder.InvertibleInputAttribute<double>(ExecIrTokens->txToken);
+    builder.InvertibleInputAttribute<double>(ExecIrTokens->tyToken);
+    builder.InvertibleInputAttribute<double>(ExecIrTokens->tzToken);
+    builder.InvertibleInputAttribute<double>(ExecIrTokens->rxToken);
+    builder.InvertibleInputAttribute<double>(ExecIrTokens->ryToken);
+    builder.InvertibleInputAttribute<double>(ExecIrTokens->rzToken);
+    builder.InvertibleInputAttribute<double>(ExecIrTokens->rspinToken);
 
-            AttributeValue<GfMatrix4d>(ExecIrTokens->defaultSpaceToken),
-            AttributeValue<GfMatrix4d>(ExecIrTokens->parentSpaceToken)
-        )
-        ;
+    builder.NoninvertibleInputAttribute<GfMatrix4d>(
+        ExecIrTokens->parentSpaceToken);
 
-    self.PrimComputation(ExecIrTokens->inverseCompute)
-        .Callback<ExecIrInversionResult>(&_Invert)
-        .Inputs(
-            AttributeValue<GfMatrix4d>(ExecIrTokens->outSpaceToken),
-            AttributeValue<TfToken>(ExecIrTokens->rotationOrderToken),
-            AttributeValue<GfMatrix4d>(ExecIrTokens->defaultSpaceToken),
-            AttributeValue<GfMatrix4d>(ExecIrTokens->parentSpaceToken)
-        )
-        ;
+    builder.InvertibleOutputAttribute<GfMatrix4d>(ExecIrTokens->outSpaceToken);
+
+    builder.SwitchAttribute<TfToken>(
+        ExecIrTokens->rotationOrderToken);
+
+    builder.PassthroughAttribute<GfMatrix4d>(
+        ExecIrTokens->defaultSpaceToken);
 }
 
-// Returns the forward-computed result space.
+// Returns the forward-computed result for Out:Space.
 //
-static GfMatrix4d
+static ExecIrResult
 _Compute(const VdfContext &ctx)
 {
     const GfMatrix4d startingSpace =
@@ -70,16 +61,19 @@ _Compute(const VdfContext &ctx)
         ExecIr_UtilsComputeStandardRotationOrientation(ctx, startingSpace)
     };
 
-    return ExecIr_UtilsCompute(
+    const GfMatrix4d outSpaceValue = ExecIr_UtilsCompute(
         params,
         ExecIr_UtilsComputeLocalTranslation(ctx),
         ExecIr_UtilsComputeLocalRotation(ctx));
+
+    return ExecIrResult({
+        {ExecIrTokens->outSpaceToken, VtValue(outSpaceValue)}});
 }
 
 // Populates \p resultMap with inverted values that attempt to satisfy the given
 // \p posedSpace.
 //
-static ExecIrInversionResult
+static ExecIrResult
 _Invert(const VdfContext &ctx)
 {
     const GfMatrix4d &posedSpace =
@@ -94,7 +88,7 @@ _Invert(const VdfContext &ctx)
         ExecIr_UtilsComputeStandardRotationOrientation(ctx, startingSpace)
     };
 
-    ExecIrInversionResult resultMap;
+    ExecIrResult resultMap;
     ExecIr_UtilsInvert(ctx, posedSpace, params, &resultMap);
     return resultMap;
 }

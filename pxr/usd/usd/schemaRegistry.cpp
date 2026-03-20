@@ -1007,6 +1007,15 @@ public:
         // Populate all typed (abstract or concrete) + API schema definitions 
         // after all API schemas they may depend on have been populated.
         _PopulateTypedPrimDefinitions();
+
+        // At this point all the prim definitions for all the schemas should be
+        // fully built, which means we can go and prune any base class
+        // properties to finalize the list of locally sourced properties for
+        // each prim definition.
+        // Note that Applied API schemas can only be inherit from APISchemaBase,
+        // and hence we do not need to prune properties from any base classes
+        // for APISchema prim definitions.
+        _FinalizeLocallyDefinedPropertiesForPrimDefinitions();
     }
 
 private:
@@ -1070,6 +1079,8 @@ private:
 
     void _PopulateAppliedAPIPrimDefinitions();
     void _PopulateTypedPrimDefinitions() const;
+
+    void _FinalizeLocallyDefinedPropertiesForPrimDefinitions() const;
 
     UsdSchemaRegistry *_registry;
 
@@ -1330,6 +1341,76 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_GetDirectBuiltinAPISchemas(
     return result;
 }
 
+TfTokenVector
+UsdSchemaRegistry::_PruneBaseClassPropertiesForPrimDefinition(
+    const UsdPrimDefinition *primDef, const TfToken &schemaName) const
+{
+    TRACE_FUNCTION();
+    TfTokenVector result = primDef->_locallyDefinedPropertyNames;
+
+    // We get the base type, and remove any properties defined on the ancestor
+    // type from the list of locally defined properties, so that the local
+    // properties list only contains properties that are actually defined in
+    // schema.usda for this prim type.
+    const TfType schemaType = GetTypeFromSchemaTypeName(schemaName);
+
+    // We must find a valid type for this schema in the type registry, 
+    // return early!
+    if (!TF_VERIFY(schemaType, "Could not find TfType for schema '%s'", 
+                  schemaName.GetText())) {
+        return result;
+    }
+
+    const std::vector<TfType> &baseTypes = schemaType.GetBaseTypes();
+
+    if (baseTypes.empty()) {
+        return result;
+    }
+
+    TfHashSet<TfToken, TfHash> propsToPrune;
+
+    for (const TfType &baseType : baseTypes) {
+        // We can skip the base Typed schema since we do not have prim
+        // definition for it
+        if (baseType == TfType::Find<UsdTyped>()) {
+            continue;
+        }
+
+        const SchemaInfo *schemaInfo = FindSchemaInfo(baseType);
+        if (!TF_VERIFY(schemaInfo, "Could not find schema info for base type "
+                       "'%s' of schema '%s'", baseType.GetTypeName().c_str(),
+                       schemaName.GetText())) {
+            continue;
+        }
+        const TfToken baseIdentifier = schemaInfo->identifier;
+        const UsdPrimDefinition *basePrimDef =
+            IsConcrete(baseIdentifier) ? 
+                FindConcretePrimDefinition(baseIdentifier) :
+                FindAbstractPrimDefinition(baseIdentifier);
+
+        // We must have found a typed (concrete or abstract) prim definition for 
+        // the this base schema, as all prim definitions should have been built
+        // by this point.
+        if (!TF_VERIFY(basePrimDef, 
+                  "Could not find prim definition for base schema '%s' of "
+                  "schema '%s'", baseIdentifier.GetText(), 
+                  schemaName.GetText())) {
+            continue;
+        }
+
+        const TfTokenVector &baseProperties = basePrimDef->GetPropertyNames();
+        propsToPrune.insert(baseProperties.begin(), baseProperties.end());
+    }
+
+    if (!propsToPrune.empty()) {
+        result.erase(std::remove_if(result.begin(), result.end(),
+            [&propsToPrune](const TfToken &propName) {
+                return propsToPrune.count(propName) > 0;
+            }), result.end());
+    }
+    return result;
+}
+
 // Helper that builds a complete prim definition for an API schema. This may
 // be recursive in the sense that any include built-in API schemas will also 
 // be built before being composed into the definition this building.
@@ -1377,6 +1458,21 @@ BuildPrimDefinition(_SchemaDefInitHelper *defInitHelper)
     primDef->_InitializeForAPISchema(apiSchemaName, 
         schematicsLayer, schematicsPrimPath, 
         /* propertiesToIgnore = */ overridePropertyNames);
+
+    // Save the state of properties here before we compose in any built-in API
+    // schemas. Once all prim definitions are built, we will go and prune any
+    // properties that are derived from any base class prim definition for this
+    // schema, as generatedSchema bake in these properties from the base
+    // classes. Properties marked with apiSchemaOverride = true in the schemata
+    // are considered locally sourced as that's where the default values for
+    // these properties are defined, even though these get composed from
+    // built-in API schemas.
+    primDef->_locallyDefinedPropertyNames.reserve(
+        primDef->_properties.size() + overridePropertyNames.size());
+    primDef->_locallyDefinedPropertyNames = primDef->_properties;
+    for (const TfToken &overridePropName : overridePropertyNames) {
+        primDef->_locallyDefinedPropertyNames.push_back(overridePropName);
+    }
 
     // Also hold ownership of the prim definition until is either taken by the
     // registry or we delete it to rebuild the prim definition (in the case 
@@ -1575,6 +1671,23 @@ _PopulateTypedPrimDefinitions() const
             primDef->_InitializeForTypedSchema(
                 schematicsLayer, schematicsPrimPath, overridePropertyNames);
 
+            // Save the state of properties here before we compose in any
+            // built-in API schemas. Once all prim definitions are built, we
+            // will go and prune any properties that are derived from any base
+            // class prim definition for this schema, as generatedSchema bake in
+            // these properties from the base classes. Properties marked with
+            // apiSchemaOverride = true in the schemata are considered locally
+            // sourced as that's where the default values for these properties
+            // are defined, even though these get composed from built-in API
+            // schemas.
+            primDef->_locallyDefinedPropertyNames.reserve(
+                primDef->_properties.size() + overridePropertyNames.size());
+            primDef->_locallyDefinedPropertyNames = primDef->_properties;
+            for (const TfToken &overridePropName : overridePropertyNames) {
+                primDef->_locallyDefinedPropertyNames.push_back(
+                    overridePropName);
+            }
+
             // Get the directly built-in and auto applied API schema for this
             // typed schema and compose them into the prim definition. Since all
             // API schema prim definitions have been fully  expanded; each direct
@@ -1621,6 +1734,30 @@ _PopulateTypedPrimDefinitions() const
 
     for (const auto &infoAndIndex : _concreteSchemaDefsToBuild) {
         _PopulatePrimDefinition(infoAndIndex);
+    }
+}
+
+void
+UsdSchemaRegistry::_SchemaDefInitHelper::
+_FinalizeLocallyDefinedPropertiesForPrimDefinitions() const
+{
+    TRACE_FUNCTION();
+
+    // For each typed (abstract and concrete) prim definition, prune any base
+    // class properties from the local properties list.
+    auto _DoPropertyPruning = [this](auto &primDefPair) {
+        const TfToken &schemaName = primDefPair.first;
+        UsdPrimDefinition *primDef = primDefPair.second.get();
+        primDef->_locallyDefinedPropertyNames =
+            _registry->_PruneBaseClassPropertiesForPrimDefinition(
+                primDef, schemaName);
+    };
+
+    for (auto &abstractSchemaPair : _registry->_abstractTypedPrimDefinitions) {
+        _DoPropertyPruning(abstractSchemaPair);
+    }
+    for (auto &concreteSchemaPair : _registry->_concreteTypedPrimDefinitions) {
+        _DoPropertyPruning(concreteSchemaPair);
     }
 }
 

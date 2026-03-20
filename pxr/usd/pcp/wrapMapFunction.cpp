@@ -103,6 +103,10 @@ void wrapMapFunction()
         .def("IdentityPathMap", &This::IdentityPathMap,
              return_value_policy<TfPyMapToDictionary>())
         .staticmethod("IdentityPathMap")
+
+        .def("ImpliedClass", &This::ImpliedClass)
+        .staticmethod("ImpliedClass")
+
         .add_property("isIdentity", &This::IsIdentity)
         .add_property("isIdentityPathMapping", &This::IsIdentityPathMapping)
         .add_property("isNull", &This::IsNull)

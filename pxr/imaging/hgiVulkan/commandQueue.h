@@ -13,6 +13,8 @@
 #include "pxr/imaging/hgiVulkan/api.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 
+#include "pxr/base/tf/span.h"
+
 #include <atomic>
 #include <mutex>
 #include <thread>
@@ -103,7 +105,7 @@ public:
     HGIVULKAN_API
     void Flush(
         HgiSubmitWaitType wait,
-        VkSemaphore signalSemaphore = VK_NULL_HANDLE);
+        TfSpan<const std::pair<VkSemaphore, uint64_t>> signalSemaphores = {});
 
     /// Checks if the timeline semaphore has passed the desiredValue,
     /// and can optionally force a wait on this. This may cause a flush.

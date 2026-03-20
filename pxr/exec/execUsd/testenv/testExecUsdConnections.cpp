@@ -53,6 +53,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (attr)
     (computeViaConnections)
+    (computeViaIncomingConnections)
     (computeConnectedConstants)
     (computeConstant)
 );
@@ -79,6 +80,27 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(
         })
         .Inputs(
             Connections<std::string>(ExecBuiltinComputations->computeValue)
+        );
+
+    // A prim computation that computes the values of the string-valued
+    // attributes that target the prim with attribute connections.
+    self.PrimComputation(
+        _tokens->computeViaIncomingConnections)
+        .Callback(+[](const VdfContext &ctx) -> std::string {
+            std::string result;
+            for (VdfReadIterator<std::string> it(
+                     ctx, ExecBuiltinComputations->computeValue);
+                 !it.IsAtEnd(); ++it) {
+                if (!result.empty()) {
+                    result += " ";
+                }
+                result += "'" + *it + "'";
+            }
+            return result.empty() ? "(no value)" : result;
+        })
+        .Inputs(
+            IncomingConnections<std::string>(
+                ExecBuiltinComputations->computeValue)
         );
 
     // An attribute computation that always returns the constant value 1.
@@ -226,6 +248,58 @@ TestConnectionsComputationNotFound()
     TF_AXIOM(errorMark.IsClean());
 }
 
+static void
+TestIncomingConnections()
+{
+    const SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
+    layer->ImportFromString(R"usd(#usda 1.0
+        def CustomSchema "Prim" {
+            string attr = "attr value"
+            string attr.connect = [</Prim>]
+            string attr3 = "attr3 value"
+        }
+    )usd");
+    const UsdStageConstRefPtr usdStage = UsdStage::Open(layer);
+    TF_AXIOM(usdStage);
+
+    ExecUsdSystem execSystem(usdStage);
+
+    UsdPrim prim = usdStage->GetPrimAtPath(SdfPath("/Prim"));
+    TF_AXIOM(prim.IsValid());
+
+    ExecUsdRequest request = execSystem.BuildRequest({
+        {prim, _tokens->computeViaIncomingConnections}});
+    TF_AXIOM(request.IsValid());
+
+    execSystem.PrepareRequest(request);
+    TF_AXIOM(request.IsValid());
+
+    {
+        ExecUsdCacheView view = execSystem.Compute(request);
+        VtValue v = view.Get(0);
+        TF_AXIOM(v.IsHolding<std::string>());
+        ASSERT_EQ(
+            v.Get<std::string>(),
+            "'attr value'");
+    }
+
+    UsdAttribute attr3 = usdStage->GetAttributeAtPath(SdfPath("/Prim.attr3"));
+    TF_AXIOM(attr3.IsValid());
+
+    // Add another connection
+    attr3.AddConnection(SdfPath("/Prim"));
+
+    {
+        ExecUsdCacheView view = execSystem.Compute(request);
+        VtValue v = view.Get(0);
+        TF_AXIOM(v.IsHolding<std::string>());
+        ASSERT_EQ(
+            v.Get<std::string>(),
+            "'attr value' "
+            "'attr3 value'");
+    }
+}
+
 int main()
 {
     // Load test custom schemas.
@@ -237,6 +311,7 @@ int main()
 
     TestAttributeConnections();
     TestConnectionsComputationNotFound();
+    TestIncomingConnections();
 
     return 0;
 }

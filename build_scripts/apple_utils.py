@@ -18,25 +18,41 @@ import re
 import platform
 import shlex
 import subprocess
-import glob
 from typing import Optional, List, Dict
+
 
 TARGET_NATIVE = "native"
 TARGET_X86 = "x86_64"
 TARGET_ARM64 = "arm64"
 TARGET_UNIVERSAL = "universal"
 TARGET_IOS = "iOS"
+TARGET_IOS_SIMULATOR = "iOSSimulator"
 TARGET_VISIONOS = "visionOS"
+TARGET_VISIONOS_SIMULATOR = "visionOSSimulator"
 
-EMBEDDED_PLATFORMS = [TARGET_IOS, TARGET_VISIONOS]
+EMBEDDED_PLATFORMS = [TARGET_IOS, TARGET_IOS_SIMULATOR,
+                      TARGET_VISIONOS, TARGET_VISIONOS_SIMULATOR]
 
 def GetBuildTargets():
-    return [TARGET_NATIVE,
-            TARGET_X86,
-            TARGET_ARM64,
-            TARGET_UNIVERSAL,
-            TARGET_IOS,
-            TARGET_VISIONOS]
+    return [
+        TARGET_NATIVE,
+        TARGET_X86,
+        TARGET_ARM64,
+        TARGET_UNIVERSAL,
+        TARGET_IOS,
+        TARGET_IOS_SIMULATOR,
+        TARGET_VISIONOS,
+        TARGET_VISIONOS_SIMULATOR
+    ]
+
+def normalizeBuildTarget(target: str) -> Optional[str]:
+    """Returns a case-normalized build target name, or
+    None if the target is not recognized."""
+    targetLower = target.casefold()
+    for validTarget in GetBuildTargets():
+        if targetLower == validTarget.casefold():
+            return validTarget
+    return None
 
 def GetBuildTargetDefault():
     return TARGET_NATIVE
@@ -45,7 +61,8 @@ def MacOS():
     return platform.system() == "Darwin"
 
 def TargetEmbeddedOS(context):
-    return context.buildTarget in EMBEDDED_PLATFORMS
+    targetLower = context.buildTarget.casefold()
+    return targetLower in map(str.casefold, EMBEDDED_PLATFORMS)
 
 def GetLocale():
     return sys.stdout.encoding or locale.getdefaultlocale()[1] or "UTF-8"
@@ -77,15 +94,16 @@ def GetTargetArch(context):
         return GetTargetArmArch()
 
     if context.targetNative:
-        macTargets = GetHostArch()
-    else:
-        if context.targetX86:
-            macTargets = TARGET_X86
-        if context.targetARM64:
-            macTargets = GetTargetArmArch()
-        if context.targetUniversal:
-            macTargets = TARGET_X86 + ";" + GetTargetArmArch()
-    return macTargets
+        return GetHostArch()
+    
+    if context.targetX86:
+        return TARGET_X86
+    if context.targetARM64:
+        return GetTargetArmArch()
+    if context.targetUniversal:
+        return TARGET_X86 + ";" + GetTargetArmArch()
+
+    return None
 
 def IsHostArm():
     return GetHostArch() != TARGET_X86
@@ -102,7 +120,7 @@ def GetTargetArchPair(context):
         primaryArch = TARGET_X86
     if context.targetARM64:
         primaryArch = GetTargetArmArch()
-    if context.buildTarget in EMBEDDED_PLATFORMS:
+    if TargetEmbeddedOS(context):
         primaryArch = GetTargetArmArch()
     if context.targetUniversal:
         primaryArch = GetHostArch()
@@ -123,33 +141,49 @@ def GetSDKName(context) -> str:
     sdk = "macosx"
     if context.buildTarget == TARGET_IOS:
         sdk = "iPhoneOS"
+    elif context.buildTarget == TARGET_IOS_SIMULATOR:
+        sdk = "iPhoneSimulator"
     elif context.buildTarget == TARGET_VISIONOS:
         sdk = "xrOS"
+    elif context.buildTarget == TARGET_VISIONOS_SIMULATOR:
+        sdk = "xrSimulator"
+
     return sdk
 
 def GetSDKRoot(context) -> Optional[str]:
     sdk = GetSDKName(context).lower()
+
     for arg in (context.cmakeBuildArgs or '').split():
         if "CMAKE_OSX_SYSROOT" in arg:
             override = arg.split('=')[1].strip('"').strip()
             if override:
                 sdk = override
+
     sdkroot = GetCommandOutput(["xcrun", "--sdk", sdk, "--show-sdk-path"])
     if not sdkroot:
         raise RuntimeError(f"Could not find an sdk path. Make sure you have the {sdk} sdk installed.")
     return sdkroot
 
-def SetTarget(context, targetName):
+def GetSDKVersion(context):
+    sdk_basename = os.path.basename(GetSDKRoot(context))
+    return re.search(r'\d+\.\d+', sdk_basename).group()
+
+def SetTarget(context):
+    targetName = normalizeBuildTarget(context.buildTarget)
+    context.buildTarget = targetName
     context.targetNative = (targetName == TARGET_NATIVE)
     context.targetX86 = (targetName == TARGET_X86)
     context.targetARM64 = (targetName == GetTargetArmArch())
     context.targetUniversal = (targetName == TARGET_UNIVERSAL)
-    context.targetIOS = (targetName == TARGET_IOS)
-    context.targetVisionOS = (targetName == TARGET_VISIONOS)
+    context.targetIOS = (targetName in (TARGET_IOS, TARGET_IOS_SIMULATOR))
+    context.targetVisionOS = (
+        targetName in (TARGET_VISIONOS, TARGET_VISIONOS_SIMULATOR))
+    context.targetSimulator = (
+        targetName in (TARGET_IOS_SIMULATOR, TARGET_VISIONOS_SIMULATOR))
     if context.targetUniversal and not SupportsMacOSUniversalBinaries():
         context.targetUniversal = False
         raise ValueError(
-                "Universal binaries only supported in macOS 11.0 and later.")
+            "Universal binaries only supported in macOS 11.0 and later.")
 
 def GetTargetName(context):
     return (TARGET_NATIVE if context.targetNative else
@@ -157,6 +191,9 @@ def GetTargetName(context):
             GetTargetArmArch() if context.targetARM64 else
             TARGET_UNIVERSAL if context.targetUniversal else
             context.buildTarget)
+
+def GetTargetPlatform(context):
+    return GetTargetName(context).replace("Simulator", "")
 
 devout = open(os.devnull, 'w')
 
@@ -240,7 +277,7 @@ def GetDevelopmentTeamID(identifier=None):
         ["security", "find-certificate", "-c", identifier_hash, "-p"])
     subject = GetCommandOutput(["openssl", "x509", "-subject"], input=certs)
     subject = subject.splitlines()[0]
-    match = re.search("OU\s*=\s*(?P<team>([A-Za-z0-9_])+)", subject)
+    match = re.search(r"OU\s*=\s*(?P<team>([A-Za-z0-9_])+)", subject)
     if not match:
         raise RuntimeError("Could not parse the output "
                            "certificate to find the team ID")
@@ -402,7 +439,7 @@ def CreateUniversalBinaries(context, libNames, x86Dir, armDir):
 def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
     system_name = None
     if TargetEmbeddedOS(context):
-        system_name = context.buildTarget
+        system_name = GetTargetPlatform(context)
 
     if system_name:
         args.append(f"-DCMAKE_SYSTEM_NAME={system_name}")
@@ -431,13 +468,26 @@ def GetTBBPatches(context):
                             ("iOS", context.buildTarget),
                             ("IPHONEOS",sdk_name.upper())]
 
-    if context.buildTarget == TARGET_VISIONOS:
+    if context.buildTarget in (TARGET_VISIONOS, TARGET_VISIONOS_SIMULATOR):
         target_config_patches.extend([("iPhone", "XR"),
                                       ("?= 8.0", "?= 1.0")])
 
         clang_config_patches.append(("iPhone", "XR"),)
 
     if context.buildTarget == TARGET_VISIONOS:
-        clang_config_patches.append(("-miphoneos-version-min=", "-target arm64-apple-xros"))
+        clang_config_patches.append(
+            ("-miphoneos-version-min=",
+             "-target arm64-apple-xros"))
+    else:
+        version = GetSDKVersion(context)
+
+        if context.buildTarget == TARGET_VISIONOS_SIMULATOR:
+            clang_config_patches.append(
+                ("-miphoneos-version-min=",
+                 f"-target arm64-apple-xros{version}-simulator"))
+        elif context.buildTarget == TARGET_IOS_SIMULATOR:
+            clang_config_patches.append(
+                ("-miphoneos-version-min=",
+                 f"-target arm64-apple-ios{version}-simulator"))
 
     return target_config_patches, clang_config_patches

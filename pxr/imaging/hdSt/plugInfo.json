@@ -3,77 +3,175 @@
         {
             "Info": {
                 "Types": {
+                    # NOTE:
+                    # 1. The tags and ordering specified below (like
+                    # hdSt:phaseN) are based on the insertion phase/order
+                    # specified in the CPP registration.
+                    # This is a temporary transitionary approach and will be
+                    # replaced with more semantically meaningful strings when
+                    # appropriate in the future.
+                    #
+                    # 2. The "priority" and "displayName" fields are required
+                    # fields for "hydra plugins"; the former isn't relevant for
+                    # scene index plugins, and the latter isn't used yet.
+                    #
                     "HdSt_DependencySceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",
                         "priority": 0,
-                        "displayName": "Storm Dependency Scene Index"
+                        "displayName": "Storm Dependency Scene Index",
+
+                        # phase=100, InsertionOrderAtStart
+                        "tags": ["hdSt:phase100", "hdSt:renderDelegateDependencies"],
+                        "ordering": {
+                            "after": "hdSt:phase4",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdSt_DependencyForwardingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",
                         "priority": 0,
-                        "displayName": "Storm Dependency Forwarding Scene Index"
+                        "displayName": "Storm Dependency Forwarding Scene Index",
+
+                        # phase=1000, InsertionOrderAtEnd
+                        "tags": ["hdSt:phase1000", "hdSt:dependencyForwarding"],
+                        "ordering": {
+                            "after": ["hdSt:phase900", "hdSt:renderDelegateDependencies"],
+                            "position": "lastBefore"
+                        }
                     },
                     "HdSt_MaterialBindingResolvingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",
                         "priority": 0,
-                        "displayName": "Scene Index to resolve material bindings."
+                        "displayName": "Scene Index to resolve material bindings.",
+
+                        # phase=0, InsertionOrderAtStart
+                        "tags": ["hdSt:phase0"],
+                        "ordering": {
+                            "after": "hd:sceneAssembly",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdSt_MaterialPrimvarTransferSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",
                         "priority": 0,
-                        "displayName": "Scene Index to transfer primvars from material to prim."
+                        "displayName": "Scene Index to transfer primvars from material to prim.",
+
+                        # phase=3, InsertionOrderAtStart
+                        "tags": ["hdSt:phase3"],
+                        "ordering": {
+                            "after": ["hdSt:phase1", "hdGp:proceduralResolution"],
+                            "position": "firstAfter"
+                        }
                     },
                     "HdSt_NodeIdentifierResolvingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",
                         "priority": 0,
-                        "displayName": "Scene Index to resolve nodeIdentifier from glslfx sourceAsset."
+                        "displayName": "Scene Index to resolve nodeIdentifier from glslfx sourceAsset.",
+
+                        # phase=0, InsertionOrderAtStart
+                        "tags": ["hdSt:phase0"],
+                        "ordering": {
+                            "after": "hd:sceneAssembly",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdSt_ImplicitSurfaceSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",
                         "priority": 0,
-                        "displayName": "Scene Index to turn implicit surfaces into prims suitable for Storm"
+                        "displayName": "Scene Index to turn implicit surfaces into prims suitable for Storm",
+
+                        # phase=0, InsertionOrderAtStart
+                        "tags": ["hdSt:phase0"],
+                        "ordering": {
+                            "after": "hd:sceneAssembly",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdSt_NurbsApproximatingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",
                         "priority": 0,
-                        "displayName": "Scene Index to resolve terminal names."
+                        "displayName": "Scene Index to resolve terminal names.",
+
+                        # phase=0, InsertionOrderAtStart
+                        "tags": ["hdSt:phase0"],
+                        "ordering": {
+                            "after": "hd:sceneAssembly",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdSt_RenderPassPruneSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",
                         "priority": 0,
-                        "displayName": "Scene Index to resolve render pass prune rules."
+                        "displayName": "Scene Index to resolve render pass prune rules.",
+
+                        # phase=1, InsertionOrderAtStart
+                        "tags": ["hdSt:phase1"],
+                        "ordering": {
+                            "after": ["hdSt:phase0", "hd:sceneAssembly", "hd:sceneGlobals"],
+                            "before": "hdGp:proceduralResolution",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdSt_RenderPassVisibilitySceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",
                         "priority": 0,
-                        "displayName": "Scene Index to resolve render pass visibility rules."
+                        "displayName": "Scene Index to resolve render pass visibility rules.",
+
+                        # phase=4, InsertionOrderAtStart
+                        "tags": ["hdSt:phase4"],
+                        "ordering": {
+                            "after": ["hdSt:phase3", "hdGp:proceduralResolution", "hd:sceneGlobals"],
+                            "position": "firstAfter"
+                        }
                     },
                     "HdSt_TetMeshConversionSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",
                         "priority": 0,
-                        "displayName": "Scene Index to convert tet meshes into standard triangle based meshes."
+                        "displayName": "Scene Index to convert tet meshes into standard triangle based meshes.",
+
+                        # phase=0, InsertionOrderAtStart
+                        "tags": ["hdSt:phase0"],
+                        "ordering": {
+                            "after": "hd:sceneAssembly",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdSt_UnboundMaterialPruningSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": "GL",
                         "priority": 0,
-                        "displayName": "Scene index to prune materials that aren't bound."
+                        "displayName": "Scene index to prune materials that aren't bound.",
+
+                        # phase=900, InsertionOrderAtStart
+                        "tags": ["hdSt:phase900"],
+                        "ordering": {
+                            "after": "hdSt:phase100",
+                            "position": "firstAfter"
+                        }
                     },
                     "HdSt_VelocityMotionResolvingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": "GL",
                         "priority": 0,
-                        "displayName": "Scene index to resolve velocity-based motion."
+                        "displayName": "Scene index to resolve velocity-based motion.",
+
+                        # phase=0, InsertionOrderAtEnd
+                        "tags": ["hdSt:phase0"],
+                        "ordering": {
+                            "after": "hd:sceneAssembly",
+                            "before": "hdSt:phase1",
+                            "position": "lastBefore"
+                        }
                     }
                 },
                 "ShaderResources": "shaders"

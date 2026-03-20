@@ -15,6 +15,15 @@
                         "loadWithRenderer" : "",
                         "loadWithApps" : "",
 
+                        # New fields to express scene index plugin ordering
+                        # via JSON.
+                        "tags" : ["cleanupTag"],
+                        "ordering" : {
+                            # Don't need to specify transitive dependencies
+                            # like "prepTag" and "makeTag".
+                            "after" : "enjoyTag"
+                        },
+
                         # Unused but mandatory fields (see HfPluginRegistry).
                         "priority": 0,
                         "displayName": "Tidy Up Scene Index Plugin"

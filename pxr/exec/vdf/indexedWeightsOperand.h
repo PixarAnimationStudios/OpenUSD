@@ -133,7 +133,8 @@ public:
     ///
     This operator-() const {
         This w(*this);
-        return w *= -1.0;
+        w *= -1.0;
+        return w;
     }
 
     /// Returns a new VdfIndexedWeightsOperand having the scalar \p s added to
@@ -141,7 +142,8 @@ public:
     ///
     This operator+(double s) const {
         This w(*this);
-        return w += s;
+        w += s;
+        return w;
     }
 
     /// Returns a new VdfIndexedWeightsOperand having the scalar \p s subtracted
@@ -149,7 +151,8 @@ public:
     ///
     This operator-(double s) const {
         This w(*this);
-        return w -= s;
+        w -= s;
+        return w;
     }
 
     /// Returns a new VdfIndexedWeightsOperand having the weights of this
@@ -157,7 +160,8 @@ public:
     ///
     This operator*(double s) const {
         This w(*this);
-        return w *= s;
+        w *= s;
+        return w;
     }
 
     /// Returns a new VdfIndexedWeightsOperand having the weights of this
@@ -165,7 +169,8 @@ public:
     ///
     This operator/(double s) const {
         This w(*this);
-        return w /= s;
+        w /= s;
+        return w;
     }
 
     /// Returns a new VdfIndexedWeightsOperand having the weights of
@@ -173,7 +178,8 @@ public:
     ///
     This operator+(const This &v) const {
         This w(*this);
-        return w += v;
+        w += v;
+        return w;
     }
 
     /// Returns a new VdfIndexedWeightsOperand having the weights of
@@ -182,7 +188,8 @@ public:
     ///
     This operator-(const This &v) const {
         This w(*this);
-        return w -= v;
+        w -= v;
+        return w;
     }
 
     /// Returns a new VdfIndexedWeightsOperand having the weights of this
@@ -190,7 +197,8 @@ public:
     ///
     This operator*(const This &v) const {
         This w(*this);
-        return w *= v;
+        w *= v;
+        return w;
     }
 
     /// Returns a new VdfIndexedWeightsOperand having the weights of this
@@ -198,7 +206,8 @@ public:
     ///
     This operator/(const This &v) const {
         This w(*this);
-        return w /= v;
+        w /= v;
+        return w;
     }
 
     /// Component-wise comparisons.

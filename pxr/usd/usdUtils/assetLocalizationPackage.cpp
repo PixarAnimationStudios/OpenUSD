@@ -303,7 +303,12 @@ UsdUtils_AssetLocalizationPackage::_ProcessAssetPath(
         // resolver contexts.
         const std::string refAssetPath = 
                 SdfComputeAssetPathRelativeToLayer(layer, refPath);
-        const std::string refFilePath = resolver.Resolve(refAssetPath);
+
+        const std::pair<std::string, std::string> splitIdentifier = 
+            SdfLayer::SplitIdentifier(refAssetPath);
+
+        const std::string refFilePath = resolver.Resolve(
+            splitIdentifier.first);
 
         const bool resolveOk = !refFilePath.empty();
 

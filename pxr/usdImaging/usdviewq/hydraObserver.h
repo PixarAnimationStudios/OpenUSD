@@ -140,7 +140,10 @@ public:
 
 private:
 
-    bool _Target(const HdSceneIndexBaseRefPtr &sceneIndex);
+    // Set the target scene index.  Takes a refptr, rather than a
+    // C++ reference to a refptr, to ensure that the sceneIndex
+    // remains alive during the operation.
+    bool _Target(HdSceneIndexBaseRefPtr sceneIndex);
 
     // Fill _nestedInputSceneIndices.
     void _ComputeNestedInputSceneIndices();

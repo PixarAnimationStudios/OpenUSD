@@ -133,6 +133,13 @@ class "CollectionAPI" (
         collection."""
         }
     )
+    uniform token collection:__INSTANCE_NAME__:mode = "automatic" (
+        allowedTokens = ["automatic", "relationship", "expression"]
+        customData = {
+            string userDocBrief = """Specifies which mode the collection uses to determine
+        membership: `automatic`, `relationship`, or `expression`."""
+        }
+    )
 }
 
 class "ClipsAPI" (

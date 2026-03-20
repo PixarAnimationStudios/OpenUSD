@@ -8,10 +8,7 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-// If PXR_BOOST_PYTHON_NO_PY_SIGNATURES was defined when building this module,
-// boost::python will generate simplified docstrings that break the associated
-// test unless we undefine it before including any headers.
-#undef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
+#include "docstring_preamble.hpp"
 
 #include "pxr/external/boost/python/operators.hpp"
 #include "pxr/external/boost/python/class.hpp"
@@ -42,12 +39,6 @@ unsigned long fact(unsigned long n)
 
 PXR_BOOST_PYTHON_MODULE(docstring_ext)
 {
-    // Explicitly enable Python signatures in docstrings in case boost::python
-    // was built with PXR_BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
-    // signatures by default.
-    docstring_options doc_options;
-    doc_options.enable_py_signatures();
-
     scope().attr("__doc__") =
         "A simple test module for documentation strings\n"
         "Exercised by docstring.py"

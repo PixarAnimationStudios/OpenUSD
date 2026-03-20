@@ -121,6 +121,9 @@ void wrapUsdPrimDefinition()
     scope s = class_<This, noncopyable>("PrimDefinition", no_init)
         .def("GetPropertyNames", &This::GetPropertyNames,
              return_value_policy<TfPySequenceToList>())
+        .def("GetLocallyDefinedPropertyNames", 
+             &This::GetLocallyDefinedPropertyNames,
+             return_value_policy<TfPySequenceToList>())
         .def("GetAppliedAPISchemas", &This::GetAppliedAPISchemas,
              return_value_policy<TfPySequenceToList>())
         .def("GetSpecType", &This::GetSpecType,

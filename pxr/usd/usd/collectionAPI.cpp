@@ -75,6 +75,8 @@ UsdCollectionAPI::IsSchemaPropertyBaseName(const TfToken &baseName)
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
             UsdTokens->collection_MultipleApplyTemplate_MembershipExpression),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
+            UsdTokens->collection_MultipleApplyTemplate_Mode),
+        UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
             UsdTokens->collection_MultipleApplyTemplate_),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
             UsdTokens->collection_MultipleApplyTemplate_Includes),
@@ -243,6 +245,29 @@ UsdCollectionAPI::CreateMembershipExpressionAttr(VtValue const &defaultValue, bo
 }
 
 UsdAttribute
+UsdCollectionAPI::GetModeAttr() const
+{
+    return GetPrim().GetAttribute(
+        _GetNamespacedPropertyName(
+            GetName(),
+            UsdTokens->collection_MultipleApplyTemplate_Mode));
+}
+
+UsdAttribute
+UsdCollectionAPI::CreateModeAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(
+                       _GetNamespacedPropertyName(
+                            GetName(),
+                           UsdTokens->collection_MultipleApplyTemplate_Mode),
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdCollectionAPI::GetCollectionAttr() const
 {
     return GetPrim().GetAttribute(
@@ -323,6 +348,7 @@ UsdCollectionAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdTokens->collection_MultipleApplyTemplate_ExpansionRule,
         UsdTokens->collection_MultipleApplyTemplate_IncludeRoot,
         UsdTokens->collection_MultipleApplyTemplate_MembershipExpression,
+        UsdTokens->collection_MultipleApplyTemplate_Mode,
         UsdTokens->collection_MultipleApplyTemplate_,
     };
     static TfTokenVector allNames =
@@ -695,24 +721,34 @@ UsdCollectionAPI::ComputeMembershipQuery(
         return;
     }
 
-    SdfPathSet chainedCollectionPaths { GetCollectionPath() };
-    _ComputeMembershipQueryImpl(query, chainedCollectionPaths);
-
-    // Now embed the expression evaluator & the top-level expansion rule.
+    // Get this collection's mode.
+    TfToken mode;
+    GetModeAttr().Get(&mode);
+    
+    // Get the top-level expansion rule.
     TfToken expRule;
     GetExpansionRuleAttr().Get(&expRule);
     if (expRule.IsEmpty()) {
         expRule = UsdTokens->expandPrims;
     }
 
-    PathExpansionRuleMap map = query->GetAsPathExpansionRuleMap();
-    SdfPathSet collections = query->GetIncludedCollections();
+    if (mode == UsdTokens->expression) {
+        *query = UsdCollectionMembershipQuery({}, {}, expRule);
+    }
+    else {
+        SdfPathSet chainedCollectionPaths { GetCollectionPath() };
+        _ComputeMembershipQueryImpl(query, chainedCollectionPaths);
+        PathExpansionRuleMap map = query->GetAsPathExpansionRuleMap();
+        SdfPathSet collections = query->GetIncludedCollections();
+        *query = UsdCollectionMembershipQuery(
+            std::move(map), std::move(collections), expRule);
+    }
 
-    *query = UsdCollectionMembershipQuery(
-        std::move(map), std::move(collections), expRule);
-    query->SetExpressionEvaluator({
-            GetPrim().GetStage(), ResolveCompleteMembershipExpression()
-        });
+    if (mode != UsdTokens->relationship) {
+        query->SetExpressionEvaluator({
+                GetPrim().GetStage(), ResolveCompleteMembershipExpression()
+            });
+    }
 }
 
 void
@@ -736,6 +772,7 @@ UsdCollectionAPI::_ComputeMembershipQueryImpl(
     if (expRule.IsEmpty()) {
         expRule = UsdTokens->expandPrims;
     }
+
 
     SdfPathVector includes, excludes;
     GetIncludesRel().GetTargets(&includes);

@@ -10,6 +10,8 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/resolverScopedCache.h"
 
+#include "pxr/base/tf/pyLock.h"
+
 #include <memory>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -30,6 +32,13 @@ public:
 
     void Enter()
     {
+        // Do not hold the GIL while constructing the ArResolverScopedCache.
+        // The cache may try to construct the resolver and it's possible another
+        // thread is already constructing it. We would then block waiting for
+        // that construction to complete. Meanwhile, the other thread may need
+        // the GIL to load plugins. See GitHub issue #3986.
+        TF_PY_ALLOW_THREADS_IN_SCOPE();
+
         _scopedCache.reset(new ArResolverScopedCache);
     }
 

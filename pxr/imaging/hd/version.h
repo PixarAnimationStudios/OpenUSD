@@ -130,8 +130,16 @@
 // 90 -> 91: Add camera, disableMotionBlur, and disableDepthOfField to
 //           HdRenderSettingsSchema and rename shutterInterval to
 //           unionedSamplingInterval
+// 91 -> 92: Expose camera, disableMotionBlur, and disableDepthOfField
+//           through HdSceneIndexAdapterSceneDelegate, HdDirtyBitsTranslator,
+//           and HdRenderSettings; finish renaming shutterInterval to
+//           unionedSamplingInterval
+// 92 -> 93: Add HdVolumeSchema, HdSceneDelegate::GetVolumeParamValue(),
+//           HdChangeTracker::AddSprimRprimDependency(), and
+//           HdChangeTracker::RemoveSprimRprimDependency().
+// 93 -> 94: Add HdSceneIndexPlugin::IsEnabled() and _IsEnabled().
 
-#define HD_API_VERSION 91
+#define HD_API_VERSION 94
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 // 2  ->  3: Use GetLightCount() instead of NUM_LIGHTS to get light count.

@@ -18,6 +18,7 @@ void wrapUsdTokens()
     pxr_boost::python::class_<UsdTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, apiSchemas);
+    _ADD_TOKEN(cls, automatic);
     _ADD_TOKEN(cls, clips);
     _ADD_TOKEN(cls, clipSets);
     _ADD_TOKEN(cls, collection);
@@ -27,6 +28,7 @@ void wrapUsdTokens()
     _ADD_TOKEN(cls, collection_MultipleApplyTemplate_IncludeRoot);
     _ADD_TOKEN(cls, collection_MultipleApplyTemplate_Includes);
     _ADD_TOKEN(cls, collection_MultipleApplyTemplate_MembershipExpression);
+    _ADD_TOKEN(cls, collection_MultipleApplyTemplate_Mode);
     _ADD_TOKEN(cls, colorSpaceDefinition);
     _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_BlueChroma);
     _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_Gamma);
@@ -41,7 +43,9 @@ void wrapUsdTokens()
     _ADD_TOKEN(cls, expandPrims);
     _ADD_TOKEN(cls, expandPrimsAndProperties);
     _ADD_TOKEN(cls, explicitOnly);
+    _ADD_TOKEN(cls, expression);
     _ADD_TOKEN(cls, fallbackPrimTypes);
+    _ADD_TOKEN(cls, relationship);
     _ADD_TOKEN(cls, APISchemaBase);
     _ADD_TOKEN(cls, ClipsAPI);
     _ADD_TOKEN(cls, CollectionAPI);

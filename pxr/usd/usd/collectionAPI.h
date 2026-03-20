@@ -55,11 +55,15 @@ class SdfAssetPath;
 /// *relationship-mode* and those using the `membershipExpression` as being in
 /// *expression-mode*.
 /// 
-/// A collection is determined to be in *relationship-mode* when either or both
-/// of its `includes` and `excludes` relationships have valid targets, or the
-/// `includeRoot` attribute is set `true`.  In this case, the pattern-based
-/// `membershipExpression` attribute is ignored.  Otherwise, the collection is
-/// in *expression-mode* and the `membershipExpression` attribute applies.
+/// The `mode` attribute controls which mode the collection uses.  When set to
+/// `relationship` the collection is explicitly in *relationship-mode*, and when
+/// set to `expression` it is explicitly in *expression-mode*.  Properties
+/// belonging to the non-selected mode are ignored.  When `mode` is `automatic`
+/// (the default), the mode is inferred from the collection's authored
+/// properties: the collection is in *relationship-mode* when either or both of
+/// its `includes` and `excludes` relationships have valid targets, or the
+/// `includeRoot` attribute is set to `true`; otherwise it is in
+/// *expression-mode* and the `membershipExpression` attribute applies.
 /// 
 /// In *relationship-mode* the `includes` and `excludes` relationships specify
 /// the collection members as a set of paths to include and a set of paths to
@@ -420,6 +424,49 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // MODE 
+    // --------------------------------------------------------------------- //
+    /// Specifies which mode the collection uses to determine
+    /// membership: `automatic`, `relationship`, or `expression`.
+    /// <ul>
+    /// <li>`automatic` - the collection's mode is inferred from its authored
+    /// properties.  If either or both of the `includes` and `excludes`
+    /// relationships have valid targets, or the `includeRoot` attribute is set
+    /// to `true`, the collection is in *relationship-mode* and the
+    /// `membershipExpression` attribute is ignored.  Otherwise, the collection
+    /// is in *expression-mode* and the `membershipExpression` attribute
+    /// applies.  This is the default behavior and is backward compatible with
+    /// collections that predate this attribute.</li>
+    /// <li>`relationship` - the collection is explicitly in
+    /// *relationship-mode*.  The `includes`, `excludes`, and `includeRoot`
+    /// attributes determine membership, and `membershipExpression` is
+    /// ignored.</li>
+    /// <li>`expression` - the collection is explicitly in *expression-mode*.
+    /// The `membershipExpression` attribute determines membership, and
+    /// `includes`, `excludes`, and `includeRoot` are ignored.</li>
+    /// </ul>
+    /// The fallback value is `automatic`.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token mode = "automatic"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdTokens "Allowed Values" | automatic, relationship, expression |
+    USD_API
+    UsdAttribute GetModeAttr() const;
+
+    /// See GetModeAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USD_API
+    UsdAttribute CreateModeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // COLLECTION 
     // --------------------------------------------------------------------- //
     /// This property represents the collection for the purpose of 
@@ -581,17 +628,20 @@ public:
 
     /// Return true if this collection is *relationships-mode*.  That is, if it
     /// uses the `includes` and `excludes` relationships to determine membership
-    /// and not the `membershipExpression` attribute.  This is the case when
-    /// either or both of its `includes` and `excludes` relationships have valid
-    /// targets, or the `includeRoot` attribute is set `true`.  This is
-    /// equivalent to `!IsInExpressionMode()`.
+    /// and not the `membershipExpression` attribute.  This is the case when the
+    /// `mode` attribute is set to `relationship`, or when the mode attribute is
+    /// set to `automatic` and either or both of its `includes` and `excludes`
+    /// relationships have valid targets, or the `includeRoot` attribute is set
+    /// `true`.  This is equivalent to `!IsInExpressionMode()`.
     USD_API
     bool IsInRelationshipsMode() const;
 
     /// Return true if this collection is *expression-mode*.  That is, if it
     /// uses the `membershipExpression` attribute to determine membership and
-    /// not the `includes` and `excludes` relationships.  Equivalent to
-    /// `!IsInRelationshipsMode()`.
+    /// not the `includes` and `excludes` relationships.  This is the case when
+    /// the `mode` attribute is set to `expression`, or when the mode attribute
+    /// is set to `automatic` and none of the relationship-mode related
+    /// properties are authored.  Equivalent to `!IsInRelationshipsMode()`.
     bool IsInExpressionMode() const {
         return !IsInRelationshipsMode();
     }

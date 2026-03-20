@@ -126,6 +126,21 @@ protected:
         RtPrimVarList *primvars,
         std::vector<HdGeomSubset> *geomSubsets,
         std::vector<RtPrimVarList> *geomSubsetPrimvars) = 0;
+    
+    // Allow subclasses to inject additional geometry primvars.
+    virtual void
+    _AddPrimvars(RtPrimVarList*) const
+    {
+        // Add nothing by default.
+    }
+
+    // Allow subclasses to contribute additional coordinate system IDs.
+    virtual const std::vector<riley::CoordinateSystemId>&
+    _GetAdditionalCoordSysIds() const
+    {
+        static const std::vector<riley::CoordinateSystemId> empty;
+        return empty;
+    }
 
     // This class does not support copying.
     HdPrman_Gprim(const HdPrman_Gprim&)             = delete;
@@ -212,11 +227,20 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
 
     // Convert (and cache) coordinate systems.
     riley::CoordinateSystemList coordSysList = {0, nullptr};
+    std::vector<riley::CoordinateSystemId> allCoordSysIds;
     if (HdPrman_RenderParam::RileyCoordSysIdVecRefPtr convertedCoordSys =
         param->ConvertAndRetainCoordSysBindings(sceneDelegate, id)) {
-        coordSysList.count = convertedCoordSys->size();
-        coordSysList.ids = convertedCoordSys->data();
+        allCoordSysIds.insert(allCoordSysIds.end(),
+                              convertedCoordSys->begin(),
+                              convertedCoordSys->end());
     }
+    // Append any additional coordinate system IDs from subclasses.
+    const auto& additionalCoordSysIds = _GetAdditionalCoordSysIds();
+    allCoordSysIds.insert(allCoordSysIds.end(),
+                          additionalCoordSysIds.begin(),
+                          additionalCoordSysIds.end());
+    coordSysList.count = allCoordSysIds.size();
+    coordSysList.ids = allCoordSysIds.data();
 
     // Hydra dirty bits corresponding to PRMan prototype attributes (also called
     // "primitive variables" but not synonymous with USD primvars). See prman
@@ -292,6 +316,8 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
             _prototypeIds.resize(newCount,
                               riley::GeometryPrototypeId::InvalidId());
         }
+
+        _AddPrimvars(&primvars);
 
         // Update Riley geom prototypes.
         if (geomSubsets.empty()) {

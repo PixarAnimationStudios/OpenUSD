@@ -7,17 +7,25 @@
 #ifndef PXR_IMAGING_HD_RENDER_SETTINGS_H
 #define PXR_IMAGING_HD_RENDER_SETTINGS_H
 
-#include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/bprim.h"
+#include "pxr/imaging/hd/types.h"
 
+#include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/gf/range2f.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/dictionary.h"
-#include "pxr/base/gf/vec2i.h"
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/vec2d.h"
-#include "pxr/base/gf/range2f.h"
+#include "pxr/base/vt/value.h"
 
+#include "pxr/pxr.h"
+
+#include <cstddef>
+#include <ostream>
+#include <string>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -25,7 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Hydra prim backing render settings scene description.
 /// While it is a state prim (Sprim) in spirit, it is made to be a Bprim to
-/// ensure that it is sync'd prior to Sprims and Rprims to allow render setting 
+/// ensure that it is sync'd prior to Sprims and Rprims to allow render setting
 /// opinions to be discovered and inform the sync process of those prims.
 ///
 /// \note Hydra has several "render settings" concepts as of this writing, which
@@ -44,7 +52,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \sa HdRenderSettingsPrimTokens (defined in hd/tokens.h) for tokens
 ///     permitted in (legacy) scene delegate queries via Get(...).
 ///
-/// \sa HdRenderSettingsSchema for querying locators and building container 
+/// \sa HdRenderSettingsSchema for querying locators and building container
 ///     data sources when using scene indices.
 ///
 class HdRenderSettings : public HdBprim
@@ -59,17 +67,27 @@ public:
         DirtyIncludedPurposes        = 1 << 4,
         DirtyMaterialBindingPurposes = 1 << 5,
         DirtyRenderingColorSpace     = 1 << 6,
-        DirtyShutterInterval         = 1 << 7,
+        DirtyUnionedSamplingInterval = 1 << 7,
         DirtyFrameNumber             = 1 << 8,
+        DirtyCamera                  = 1 << 9,
+        DirtyDisableDepthOfField     = 1 << 10,
+        DirtyDisableMotionBlur       = 1 << 11,
         AllDirty                     =    DirtyActive
                                         | DirtyNamespacedSettings
                                         | DirtyRenderProducts
                                         | DirtyIncludedPurposes
                                         | DirtyMaterialBindingPurposes
                                         | DirtyRenderingColorSpace
-                                        | DirtyShutterInterval
+                                        | DirtyUnionedSamplingInterval
                                         | DirtyFrameNumber
+                                        | DirtyCamera
+                                        | DirtyDisableDepthOfField
+                                        | DirtyDisableMotionBlur
     };
+
+    HD_API
+    static std::string
+    StringifyDirtyBits(HdDirtyBits dirtyBits);
 
     // Parameters that may be queried and invalidated.
     //
@@ -152,9 +170,19 @@ public:
     HD_API
     const TfToken& GetRenderingColorSpace() const;
 
-    // XXX Using VtValue in a std::optional (C++17) sense.
+    // XXX: Using VtValue in a std::optional (C++17) sense.
     HD_API
-    const VtValue& GetShutterInterval() const;
+    const VtValue& GetUnionedSamplingInterval() const;
+
+    // XXX: Using VtValue in a std::optional (C++17) sense.
+    HD_API
+    const VtValue& GetCamera() const;
+
+    HD_API
+    bool GetDisableDepthOfField() const;
+
+    HD_API
+    bool GetDisableMotionBlur() const;
 
     /// Returns whether the render products were invalidated since the last
     /// time this function was called.
@@ -173,8 +201,8 @@ public:
     void
     Sync(HdSceneDelegate *sceneDelegate,
          HdRenderParam *renderParam,
-         HdDirtyBits *dirtyBits) override final;
-    
+         HdDirtyBits *dirtyBits) final;
+
     HD_API
     HdDirtyBits
     GetInitialDirtyBitsMask() const override;
@@ -207,7 +235,10 @@ private:
     VtArray<TfToken> _includedPurposes;
     VtArray<TfToken> _materialBindingPurposes;
     TfToken _renderingColorSpace;
-    VtValue _vShutterInterval;
+    VtValue _vUnionedSamplingInterval;
+    VtValue _vCamera;
+    bool _disableDepthOfField;
+    bool _disableMotionBlur;
 };
 
 // VtValue requirements
@@ -219,20 +250,20 @@ std::ostream& operator<<(
     std::ostream& out, const HdRenderSettings::RenderProduct&);
 
 HD_API
-bool operator==(const HdRenderSettings::RenderProduct& lhs, 
+bool operator==(const HdRenderSettings::RenderProduct& lhs,
                 const HdRenderSettings::RenderProduct& rhs);
 HD_API
-bool operator!=(const HdRenderSettings::RenderProduct& lhs, 
+bool operator!=(const HdRenderSettings::RenderProduct& lhs,
                 const HdRenderSettings::RenderProduct& rhs);
 HD_API
 std::ostream& operator<<(
     std::ostream& out, const HdRenderSettings::RenderProduct::RenderVar&);
 
 HD_API
-bool operator==(const HdRenderSettings::RenderProduct::RenderVar& lhs, 
+bool operator==(const HdRenderSettings::RenderProduct::RenderVar& lhs,
                 const HdRenderSettings::RenderProduct::RenderVar& rhs);
 HD_API
-bool operator!=(const HdRenderSettings::RenderProduct::RenderVar& lhs, 
+bool operator!=(const HdRenderSettings::RenderProduct::RenderVar& lhs,
                 const HdRenderSettings::RenderProduct::RenderVar& rhs);
 
 

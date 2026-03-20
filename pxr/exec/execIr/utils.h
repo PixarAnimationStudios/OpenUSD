@@ -8,6 +8,16 @@
 #define PXR_EXEC_EXEC_IR_UTILS_H
 
 /// \file
+///
+/// This file provides utilities that are used to implement exec computations
+/// for invertible rigging controllers.
+/// 
+/// Invertible rigging controllers define forward computations that take input
+/// values and produce spaces (matrices that represent coordinate frames). They
+/// also define inverse computations that take desired output spaces and produce
+/// the input values necessary for the forward computation to produce the
+/// desired spaces.
+///
 
 #include "pxr/pxr.h"
 
@@ -103,7 +113,7 @@ ExecIr_UtilsInvert(
     const VdfContext &ctx,
     const GfMatrix4d &posedSpace,
     const ExecIr_UtilsParams &params,
-    ExecIrInversionResult *const resultMap);
+    ExecIrResult *const resultMap);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

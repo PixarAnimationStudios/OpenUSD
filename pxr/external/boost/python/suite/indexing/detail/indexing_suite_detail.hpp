@@ -223,7 +223,13 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
         {
             for (const_iterator i = proxies.begin(); i != proxies.end(); ++i)
             {
-                if ((*i)->ob_refcnt <= 0)
+                if (
+#if PY_VERSION_HEX < 0x03090000
+                (*i)->ob_refcnt
+#else
+                Py_REFCNT(*i)
+#endif
+                <= 0)
                 {
                     PyErr_SetString(PyExc_RuntimeError, 
                         "Invariant: Proxy vector in an inconsistent state");

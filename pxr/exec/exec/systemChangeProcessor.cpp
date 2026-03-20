@@ -53,10 +53,16 @@ ExecSystem::_ChangeProcessor::DidResync(const SdfPath &path)
 {
     // TODO: Resyncs on an object may trigger edit reasons on related objects.
     // (E.g. resync on /Prim.attr would trigger a ChangedPropertyList on /Prim)
-    // That would be handled here. For now, resync is the only supported edit
-    // reason.
+    // That would be handled here.
     _state->uncompiler.UncompileForSceneChange(
         path, EsfEditReason::ResyncedObject);
+}
+
+void
+ExecSystem::_ChangeProcessor::DidChangeIncomingConnections(const SdfPath &path)
+{
+    _state->uncompiler.UncompileForSceneChange(
+        path, EsfEditReason::ChangedIncomingConnections);
 }
 
 void

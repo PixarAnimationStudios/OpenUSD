@@ -290,7 +290,8 @@ _GetSdrContextFromShaderType(const TfToken &shaderType)
         { TfToken("displayfilter"), SdrNodeContext->DisplayFilter },
         { TfToken("lightfilter"), SdrNodeContext->LightFilter },
         { TfToken("pixelfilter"), SdrNodeContext->PixelFilter },
-        { TfToken("samplefilter"), SdrNodeContext->SampleFilter }
+        { TfToken("samplefilter"), SdrNodeContext->SampleFilter },
+        { TfToken("volumefilter"), SdrNodeContext->VolumeFilter }
     });
 
     const auto it = contextMapping.find(shaderType);

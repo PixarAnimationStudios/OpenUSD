@@ -35,6 +35,7 @@ HdChangeTracker::HdChangeTracker()
     , _instancerInstancerDependencies()
     , _sprimSprimTargetDependencies()
     , _sprimSprimSourceDependencies()
+    , _sprimRprimTargetDependencies()
     // Note: Version numbers start at 1, with observers resetting theirs to 0.
     // This is to cause a version mismatch during first-time processing.
     , _varyingStateVersion(1)
@@ -300,6 +301,20 @@ HdChangeTracker::RemoveSprimSprimDependency(SdfPath const& parentSprimId,
 {
     _RemoveDependency(_sprimSprimTargetDependencies, parentSprimId, sprimId);
     _RemoveDependency(_sprimSprimSourceDependencies, sprimId, parentSprimId);
+}
+
+void
+HdChangeTracker::AddSprimRprimDependency(SdfPath const& sprimId,
+                                         SdfPath const& rprimId)
+{
+    _AddDependency(_sprimRprimTargetDependencies, sprimId, rprimId);
+}
+
+void
+HdChangeTracker::RemoveSprimRprimDependency(SdfPath const& sprimId,
+                                            SdfPath const& rprimId)
+{
+    _RemoveDependency(_sprimRprimTargetDependencies, sprimId, rprimId);
 }
 
 void
@@ -640,6 +655,11 @@ HdChangeTracker::_MarkSprimDirty(SdfPath const& id, HdDirtyBits bits)
     if (_sprimSprimTargetDependencies.find(aIR, id)) {
         for (SdfPath const& dep : aIR->second) {
             _MarkSprimDirty(dep, ~Clean);
+        }
+    }
+    if (_sprimRprimTargetDependencies.find(aIR, id)) {
+        for (SdfPath const& dep : aIR->second) {
+            _MarkRprimDirty(dep, ~Clean);
         }
     }
 

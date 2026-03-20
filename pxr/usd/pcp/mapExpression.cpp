@@ -57,6 +57,19 @@ PcpMapExpression::Constant( const Value & value )
 }
 
 PcpMapExpression
+PcpMapExpression::ImpliedClass(
+    const PcpMapExpression& transferFunc,
+    const PcpMapExpression& classArc)
+{
+    if (transferFunc.IsConstantIdentity()) {
+        return classArc;
+    }
+
+    return PcpMapExpression( _Node::New(_OpImpliedClass, 
+        transferFunc._node, classArc._node));
+}
+
+PcpMapExpression
 PcpMapExpression::Compose(const PcpMapExpression &f) const
 {
     // Fast path short-circuits for identities
@@ -200,6 +213,10 @@ PcpMapExpression::_Node::_ExpressionTreeAlwaysHasIdentity(const Key& key)
         return (key.arg1 && key.arg1->expressionTreeAlwaysHasIdentity &&
                 key.arg2 && key.arg2->expressionTreeAlwaysHasIdentity);
 
+    case _OpImpliedClass:
+        // The implied class operation always adds the root identity.
+        return true;
+
     default:
         // For any other operation, if either of the subtrees has an
         // identity mapping, so does this tree.
@@ -308,6 +325,15 @@ PcpMapExpression::_Node::_EvaluateUncached() const
             .Compose(key.arg2->EvaluateAndCache());
     case _OpAddRootIdentity:
         return _AddRootIdentity(key.arg1->EvaluateAndCache());
+    case _OpImpliedClass: 
+        {
+            const PcpMapExpression::Value& transferFunc =
+                key.arg1->EvaluateAndCache();
+            const PcpMapExpression::Value& classArc =
+                key.arg2->EvaluateAndCache();
+            // The root identity is added below if needed.
+            return PcpMapFunction::ImpliedClass(transferFunc, classArc);
+        }
     default:
         TF_VERIFY(false, "unhandled case");
         return PcpMapFunction();

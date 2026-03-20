@@ -13,6 +13,8 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec3f.h"
 
+#include "pxr/imaging/plugin/hdEmbree/pxrPbrt/pbrtUtils.h"
+
 namespace {
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -405,6 +407,51 @@ _EvalDomeLight(HdEmbree_LightData const& light, GfVec3f const& W,
     return ls;
 }
 
+HdEmbreeLightSampler::LightSample
+_EvalDistantLight(HdEmbree_LightData const& light, GfVec3f const& position,
+                  float u1, float u2)
+{
+    auto const& distant = std::get<HdEmbree_Distant>(light.lightVariant);
+
+    GfVec3f Le = _EvalLightBasic(light);
+
+    if (distant.halfAngleRadians > 0.0f)
+    {
+        if (light.normalize)
+        {
+            float sinTheta = sinf(distant.halfAngleRadians);
+            Le /= _Sqr(sinTheta) * _pi<float>;
+        }
+
+        // There's an implicit double-negation of the wI direction here
+        GfVec3f localDir = pxr_pbrt::SampleUniformCone(GfVec2f(u1, u2),
+            distant.halfAngleRadians);
+        GfVec3f wI = light.xformLightToWorld.TransformDir(localDir);
+        wI.Normalize();
+
+        return HdEmbreeLightSampler::LightSample {
+            Le,
+            wI,
+            std::numeric_limits<float>::max(),
+            pxr_pbrt::InvUniformConePDF(distant.halfAngleRadians)
+        };
+    }
+    else
+    {
+        // delta case, infinite pdf
+        GfVec3f wI = light.xformLightToWorld.TransformDir(
+            GfVec3f(0.0f, 0.0f, 1.0f));
+        wI.Normalize();
+
+        return HdEmbreeLightSampler::LightSample {
+            Le,
+            wI,
+            std::numeric_limits<float>::max(),
+            1.0f,
+        };
+    }
+}
+
 } // namespace ""
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -465,6 +512,11 @@ HdEmbreeLightSampler::LightSample HdEmbreeLightSampler::operator()(
             _u1,
             _u2);
     return _EvalAreaLight(_lightData, shapeSample, _hitPosition);
+}
+
+HdEmbreeLightSampler::LightSample HdEmbreeLightSampler::operator()(
+        HdEmbree_Distant const& distant) {
+    return _EvalDistantLight(_lightData, _hitPosition, _u1, _u2);
 }
 
 HdEmbreeLightSampler::LightSample HdEmbreeLightSampler::operator()(

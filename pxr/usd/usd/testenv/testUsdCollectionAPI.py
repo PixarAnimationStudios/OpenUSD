@@ -204,7 +204,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         expandPnPCollObjects = Usd.CollectionAPI.ComputeIncludedObjects(
                 expandPnPCollMquery, stage)
 
-        self.assertEqual(len(expandPnPCollObjects), 21)
+        self.assertEqual(len(expandPnPCollObjects), 22)
         for obj in expandPnPCollObjects:
             self.assertTrue(expandPnPCollMquery.IsPathIncluded(obj.GetPath()))
 
@@ -231,7 +231,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         for obj in combinedCollIncObjects:
             self.assertTrue(combinedMquery.IsPathIncluded(obj.GetPath()))
 
-        self.assertEqual(len(combinedCollIncObjects), 18)
+        self.assertEqual(len(combinedCollIncObjects), 19)
 
         # now add the collection "expandPrimsColl", which includes "Geom" and 
         # exludes "Shapes", but is weaker than the "expandPrimsAndProperties" 
@@ -387,7 +387,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.checkQuery(allGeomPropertiesMquery, stage)
         self.assertEqual(allGeomPropertiesMquery.GetIncludedCollections(), [])
         self.assertEqual(len(Usd.CollectionAPI.ComputeIncludedObjects(
-                allGeomPropertiesMquery, stage)), 33)
+                allGeomPropertiesMquery, stage)), 35)
 
         hasRels = Usd.CollectionAPI(testPrim, "hasRelationships")
         (valid, reason) = hasRels.Validate()
@@ -705,30 +705,35 @@ class TestUsdCollectionAPI(unittest.TestCase):
                          ['collection:__INSTANCE_NAME__:expansionRule', 
                           'collection:__INSTANCE_NAME__:includeRoot',
                           'collection:__INSTANCE_NAME__:membershipExpression',
+                          'collection:__INSTANCE_NAME__:mode',
                           'collection:__INSTANCE_NAME__'])
 
         self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(False, ""),
                          ['collection:__INSTANCE_NAME__:expansionRule', 
                           'collection:__INSTANCE_NAME__:includeRoot',
                           'collection:__INSTANCE_NAME__:membershipExpression',
+                          'collection:__INSTANCE_NAME__:mode',
                           'collection:__INSTANCE_NAME__'])
 
         self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(True, ""),
                          ['collection:__INSTANCE_NAME__:expansionRule', 
                           'collection:__INSTANCE_NAME__:includeRoot',
                           'collection:__INSTANCE_NAME__:membershipExpression',
+                          'collection:__INSTANCE_NAME__:mode',
                           'collection:__INSTANCE_NAME__'])
 
         self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(False, "foo"),
                          ['collection:foo:expansionRule', 
                           'collection:foo:includeRoot',
                           'collection:foo:membershipExpression',
+                          'collection:foo:mode',
                           'collection:foo'])
 
         self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(True, "bar"),
                          ['collection:bar:expansionRule', 
                           'collection:bar:includeRoot',
                           'collection:bar:membershipExpression',
+                          'collection:bar:mode',
                           'collection:bar'])
 
     def test_RelativePathIsPathIncluded(self):
@@ -804,6 +809,60 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertEqual(srcCapi.GetMembershipExpressionAttr().Get(),
                          Sdf.PathExpression('//'))
 
+    def test_ExplicitModeAttr(self):
+        stage = Usd.Stage.CreateInMemory()
+        stage.DefinePrim('/rel')
+        stage.DefinePrim('/expr')
+        test = stage.DefinePrim('/test')
+
+        coll = Usd.CollectionAPI.Apply(test, 'coll')
+
+        coll.CreateMembershipExpressionAttr().Set(Sdf.PathExpression('/expr'))
+        coll.CreateIncludesRel().AddTarget('/rel')
+
+        # Fallback value for `mode` is `automatic`, and means we infer that coll
+        # is in relationships mode since the `includes` rel is authored.
+        self.assertEqual(coll.GetModeAttr().Get(), Usd.Tokens.automatic)
+        self.assertTrue(coll.IsInRelationshipsMode())
+        self.assertFalse(coll.IsInExpressionMode())
+        mQuery = coll.ComputeMembershipQuery();
+        self.assertTrue(mQuery.IsPathIncluded('/rel'))
+        self.assertFalse(mQuery.IsPathIncluded('/expr'))
+
+        # Set mode to explicit `expression`-mode.
+        self.assertTrue(coll.GetModeAttr().Set(Usd.Tokens.expression))
+        self.assertFalse(coll.IsInRelationshipsMode())
+        self.assertTrue(coll.IsInExpressionMode())
+        mQuery = coll.ComputeMembershipQuery();
+        self.assertFalse(mQuery.IsPathIncluded('/rel'))
+        self.assertTrue(mQuery.IsPathIncluded('/expr'))
+
+        # Set to explicit `relationship`-mode.
+        self.assertTrue(coll.GetModeAttr().Set(Usd.Tokens.relationship))
+        self.assertTrue(coll.IsInRelationshipsMode())
+        self.assertFalse(coll.IsInExpressionMode())
+        mQuery = coll.ComputeMembershipQuery();
+        self.assertTrue(mQuery.IsPathIncluded('/rel'))
+        self.assertFalse(mQuery.IsPathIncluded('/expr'))
+
+        # Clear, reverting to `automatic`-mode.
+        self.assertTrue(coll.GetModeAttr().Clear())
+        self.assertTrue(coll.IsInRelationshipsMode())
+        self.assertFalse(coll.IsInExpressionMode())
+        mQuery = coll.ComputeMembershipQuery();
+        self.assertTrue(mQuery.IsPathIncluded('/rel'))
+        self.assertFalse(mQuery.IsPathIncluded('/expr'))
+
+        # Clear the `includes` relationship, causing `automatic`-mode to now
+        # infer `expression`-mode.
+        self.assertTrue(coll.GetIncludesRel().ClearTargets(False))
+        self.assertFalse(coll.IsInRelationshipsMode())
+        self.assertTrue(coll.IsInExpressionMode())
+        mQuery = coll.ComputeMembershipQuery();
+        self.assertFalse(mQuery.IsPathIncluded('/rel'))
+        self.assertTrue(mQuery.IsPathIncluded('/expr'))
+        
+        
     def test_HashMembershipQuery(self):
         self.assertEqual(
             hash(Usd.UsdCollectionMembershipQuery()),

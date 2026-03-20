@@ -639,7 +639,9 @@ HgiInteropVulkan::CompositeToInterop(
         _hgiVulkan->GetPrimaryDevice()->GetCommandQueue();
     if (_vkComplete) {
         // Manually submit/flush before to signal the semaphore
-        commandQueue->Flush(HgiSubmitWaitTypeNoWait, _vkComplete->_vkSemaphore);
+        std::pair<VkSemaphore, uint64_t> signal =
+            { _vkComplete->_vkSemaphore, 0 };
+        commandQueue->Flush(HgiSubmitWaitTypeNoWait, { &signal, 1 });
 
         glWaitSemaphoreEXT(_vkComplete->_glSemaphore, 0, nullptr,
             2, glTexs, glLayouts);

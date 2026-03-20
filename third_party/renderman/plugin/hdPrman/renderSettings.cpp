@@ -6,6 +6,8 @@
 //
 #include "hdPrman/renderSettings.h"
 
+#include "pxr/pxr.h"
+
 #if PXR_VERSION >= 2308
 
 #include "hdPrman/debugCodes.h"
@@ -22,28 +24,34 @@
 
 #include "pxr/imaging/hd/cameraSchema.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
+#include "pxr/imaging/hd/renderSettings.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
+#include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/utils.h"
+#include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hdsi/renderSettingsFilteringSceneIndex.h"
 
 #include "pxr/usdImaging/usdImaging/renderSettingsAdapter.h"
 
-#include "pxr/base/tf/getenv.h"
+#include "pxr/base/gf/vec2d.h"
+#include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/token.h"
 
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// This env var exists only to compare results from driving the render pass 
+// This env var exists only to compare results from driving the render pass
 // using the task's aov bindings v/s using the render settings prim.
 // This is currently relevant and limited to non-interactive rendering
 // (e.g., in an application like usdrecord).
 //
 // See DriveRenderPass(..) below for more info.
-// 
+//
 TF_DEFINE_ENV_SETTING(HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS, false,
                       "Drive the render pass using the first RenderProduct on "
                       "the render settings prim when the render pass has "
@@ -98,7 +106,7 @@ _GetRiName(std::string const &propertyName)
         return RtUString(propertyName.c_str() + 3);
     }
 
-    // Unhandled property. This likely indicates an issue with namespace 
+    // Unhandled property. This likely indicates an issue with namespace
     // filtering upstream.
     TF_WARN("Could not translate settings property %s to RtUString.",
             propertyName.c_str());
@@ -146,7 +154,7 @@ _HasNonFallbackRenderSettingsPrim(const HdSceneIndexBaseRefPtr &si)
     if (!si) {
         return false;
     }
-    
+
 #if PXR_VERSION >= 2311
     const SdfPath &renderScope =
         HdsiRenderSettingsFilteringSceneIndex::GetRenderScope();
@@ -255,7 +263,7 @@ _UpdateFrame(
     const HdSceneIndexBaseRefPtr &terminalSi,
     RtParamList *options)
 {
-    // Get the Frame from the Terminal Scene Index 
+    // Get the Frame from the Terminal Scene Index
     double frame;
     if (!HdUtils::GetCurrentFrame(terminalSi, &frame)) {
         return;
@@ -265,7 +273,7 @@ _UpdateFrame(
     // As an explicit policy choice, round down.
     const int intFrame(floor(frame));
 
-    // Store on the options list to be used in a later Riley.SetOptions() call 
+    // Store on the options list to be used in a later Riley.SetOptions() call
     HdPrman_Utils::SetParamFromVtValue(
         RixStr.k_Ri_Frame, VtValue(intFrame),
         /* role */ TfToken(), options);
@@ -330,7 +338,7 @@ _SetOptionsAndRender(
     param->SetRileyOptions();
 
     const riley::RenderViewId renderViews[] = { rvId };
-    
+
     RtParamList renderOptions;
     static RtUString const US_RENDERMODE("renderMode");
     static RtUString const US_BATCH("batch");
@@ -338,7 +346,7 @@ _SetOptionsAndRender(
 
     renderOptions.SetString(
         US_RENDERMODE, interactive? US_INTERACTIVE : US_BATCH);
-    
+
     param->AcquireRiley()->Render(
         {static_cast<uint32_t>(TfArraySize(renderViews)), renderViews},
         renderOptions);
@@ -368,11 +376,11 @@ HdPrman_RenderSettings::DriveRenderPass(
     //    setting HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS.
     //
     // 2. The hdPrman test harness where the task does not have AOV bindings.
-    // 
-    // XXX Interactive viewport rendering using hdPrman currently relies on 
-    // AOV bindings from the task and uses the "hydra" Display Driver to write 
-    // rendered pixels into an intermediate framebuffer which is then blit 
-    // into the Hydra AOVs. Using the render settings prim to drive the render 
+    //
+    // XXX Interactive viewport rendering using hdPrman currently relies on
+    // AOV bindings from the task and uses the "hydra" Display Driver to write
+    // rendered pixels into an intermediate framebuffer which is then blit
+    // into the Hydra AOVs. Using the render settings prim to drive the render
     // pass in an interactive viewport setting is not yet supported.
     //
 
@@ -444,13 +452,13 @@ HdPrman_RenderSettings::UpdateAndRender(
         }
 
         TF_DEBUG(HDPRMAN_RENDER_PASS).Msg(
-            "--- Processing render product %s ...\n", product.name.GetText()); 
+            "--- Processing render product %s ...\n", product.name.GetText());
 
         // XXX This can be moved to _Sync once we have a camera context
         //     per-product.
         _UpdateCameraContextFromProduct(product, &cameraContext);
 
-        // Some camera params may override values on the integrator. 
+        // Some camera params may override values on the integrator.
         param->UpdateIntegrator(renderIndex);
 
         // This _cannot_ be moved to Sync since the camera Sprim wouldn't have
@@ -474,7 +482,7 @@ HdPrman_RenderSettings::UpdateAndRender(
             _UpdateRenderViewContext(
                 {product}, param, &renderViewContext);
         }
-        
+
         const bool result =
             _SetOptionsAndRender(
                 cameraContext,
@@ -483,14 +491,14 @@ HdPrman_RenderSettings::UpdateAndRender(
                 shutter,
                 interactive,
                 param);
-        
+
         if (TfDebug::IsEnabled(HDPRMAN_RENDER_PASS)) {
             if (result) {
                 TfDebug::Helper().Msg(
-                    "--- Rendered product %s.\n", product.name.GetText()); 
+                    "--- Rendered product %s.\n", product.name.GetText());
             } else {
                 TfDebug::Helper().Msg(
-                    "!!! Did not render product %s.\n", product.name.GetText()); 
+                    "!!! Did not render product %s.\n", product.name.GetText());
             }
         }
 
@@ -532,10 +540,16 @@ void HdPrman_RenderSettings::_Sync(
     HdRenderParam *renderParam,
     const HdDirtyBits *dirtyBits)
 {
+#if HD_API_VERSION >= 92
+    TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
+        "Syncing render settings prim %s (dirty bits = %s)...\n{",
+        GetId().GetText(),
+        HdRenderSettings::StringifyDirtyBits(*dirtyBits).c_str());
+#else
     TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
         "Syncing render settings prim %s (dirty bits = %x)...\n{",
         GetId().GetText(), *dirtyBits);
-        
+#endif
     HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
 
     const VtDictionary& namespacedSettings = GetNamespacedSettings();
@@ -543,7 +557,7 @@ void HdPrman_RenderSettings::_Sync(
     HdSceneIndexBaseRefPtr terminalSi =
         sceneDelegate->GetRenderIndex().GetTerminalSceneIndex();
 
-    // We defer the first SetOptions call to correctly handle immutable scene 
+    // We defer the first SetOptions call to correctly handle immutable scene
     // options authored on a render settings prim to below (SetRileyOptions).
     // To accommodate scenes without a render settings prim, a fallback
     // prim is always inserted via a scene index plugin.
@@ -561,7 +575,7 @@ void HdPrman_RenderSettings::_Sync(
         TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
             "Short-circuiting sync for fallback render settings prim %s because"
             "an authored render setting prim is present.\n", GetId().GetText());
-        
+
         return;
     }
 
@@ -572,7 +586,18 @@ void HdPrman_RenderSettings::_Sync(
         _settingsOptions = _GenerateParamList(namespacedSettings);
     }
 
-#if PXR_VERSION >= 2311
+#if HD_API_VERSION >= 92
+    if (*dirtyBits & HdRenderSettings::DirtyUnionedSamplingInterval ||
+        *dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
+        if (GetUnionedSamplingInterval().IsHolding<GfVec2d>()) {
+            HdPrman_Utils::SetParamFromVtValue(
+                RixStr.k_Ri_Shutter,
+                GetUnionedSamplingInterval(),
+                /* role = */ TfToken(),
+                &_settingsOptions);
+        }
+    }
+#elif PXR_VERSION >= 2311
     if (*dirtyBits & HdRenderSettings::DirtyShutterInterval ||
         *dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
         if (GetShutterInterval().IsHolding<GfVec2d>()) {
@@ -617,25 +642,26 @@ void HdPrman_RenderSettings::_Sync(
     //     opinions and the first sync'd prim's immutable opinions would win.
     //
     const bool hasActiveRsp = HdUtils::HasActiveRenderSettingsPrim(terminalSi);
-    
+
     if (IsActive() || !hasActiveRsp) {
 
         param->SetDrivingRenderSettingsPrimPath(GetId());
 
-#if PXR_VERSION >= 2407
-        if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
-            *dirtyBits & HdRenderSettings::DirtyActive ||
-            *dirtyBits & HdRenderSettings::DirtyShutterInterval ||
-            *dirtyBits & HdRenderSettings::DirtyFrameNumber) {
+        static const HdDirtyBits rileyOptionsBits =
+            HdRenderSettings::DirtyActive
+            | HdRenderSettings::DirtyNamespacedSettings
+#if HD_API_VERSION >= 92
+            | HdRenderSettings::DirtyDisableMotionBlur
 #elif PXR_VERSION >= 2311
-        if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
-            *dirtyBits & HdRenderSettings::DirtyActive ||
-            *dirtyBits & HdRenderSettings::DirtyShutterInterval) {
-#else
-        if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
-            *dirtyBits & HdRenderSettings::DirtyActive) {
+            | HdRenderSettings::DirtyShutterInterval
 #endif
-            
+#if PXR_VERSION >= 2407
+            | HdRenderSettings::DirtyFrameNumber
+#endif
+            ;
+
+        if (*dirtyBits & rileyOptionsBits) {
+
             // Handle attributes ...
             param->SetRenderSettingsPrimOptions(_settingsOptions);
             param->SetRileyOptions();
@@ -674,7 +700,7 @@ void HdPrman_RenderSettings::_Sync(
 
     TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
         "}\nDone syncing render settings prim %s.\n", GetId().GetText());
-        
+
 }
 
 void
@@ -735,7 +761,7 @@ HdPrman_RenderSettings::_ProcessRenderTerminals(
                 _renderTerminalTokens->riSampleFilters.GetString(),
                 VtDefault = SdfPathVector());
         }
-        
+
         // Fallback to legacy terminal connection
         // (Remove in a future USD version)
         if (paths.empty() && (!rsSchemaHasRelationships || terminalsWarn)) {
@@ -787,16 +813,20 @@ HdPrman_RenderSettings::_ProcessRenderProducts(HdPrman_RenderParam *param)
     if (GetRenderProducts().empty()) {
         return;
     }
-    // Fallback path for apps using an older version of Hydra wherein 
-    // the computed "unioned shutter interval" on the render settings 
+    // Fallback path for apps using an older version of Hydra wherein
+    // the computed "unioned shutter interval" on the render settings
     // prim via HdsiRenderSettingsFilteringSceneIndex is not available.
     // In this scenario, the *legacy* scene options param list is updated
     // with the camera shutter interval of the first render product
     // during HdPrmanCamera::Sync. The riley shutter interval needs to
     // be set before any time-sampled primvars are synced.
-    // 
+    //
 #if PXR_VERSION >= 2311
+#if HD_API_VERSION >= 92
+    if (GetUnionedSamplingInterval().IsEmpty()) {
+# else
     if (GetShutterInterval().IsEmpty()) {
+#endif
 #else
     {
 #endif

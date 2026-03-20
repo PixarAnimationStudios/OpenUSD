@@ -654,15 +654,15 @@ _FindStartingNodeForImpliedClasses(const PcpNodeRef& n)
 }
 
 // This is a convenience function to create a map expression
-// that maps a given source path to a target node, composing in
+// that maps a given source path to a path in the target node, composing in
 // relocations and layer offsets if any exist.
 static PcpMapExpression
 _CreateMapExpressionForArc(const SdfPath &sourcePath, 
+                           const SdfPath &targetNodePath,
                            const PcpNodeRef &targetNode,
-                           const PcpPrimIndexInputs &inputs,
                            const SdfLayerOffset &offset = SdfLayerOffset())
 {
-    const SdfPath targetPath = targetNode.GetPath().StripAllVariantSelections();
+    const SdfPath targetPath = targetNodePath.StripAllVariantSelections();
 
     PcpMapFunction::PathMap sourceToTargetMap;
     sourceToTargetMap[sourcePath] = targetPath;
@@ -677,6 +677,15 @@ _CreateMapExpressionForArc(const SdfPath &sourcePath,
         arcExpr = reloMapExpr.Compose(arcExpr);
     }
     return arcExpr;
+}
+
+static PcpMapExpression
+_CreateMapExpressionForArc(const SdfPath &sourcePath, 
+                           const PcpNodeRef &targetNode,
+                           const SdfLayerOffset &offset = SdfLayerOffset())
+{
+    return _CreateMapExpressionForArc(
+        sourcePath, targetNode.GetPath(), targetNode, offset);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2419,21 +2428,20 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
         SdfPath primPath = defaultPrimPath.IsEmpty() ? 
             refOrPayload.GetPrimPath() : defaultPrimPath;
 
-        if (nodePathAtIntroduction != node.GetPath()) {
-            primPath = node.GetPath().ReplacePrefix(nodePathAtIntroduction, primPath);
-        }
-
         // The mapping for a reference (or payload) arc makes the source
         // and target map to each other.  Paths outside these will not map,
         // except for the case of internal references.
-        PcpMapExpression mapExpr = 
+        PcpMapExpression mapExpr =
             _CreateMapExpressionForArc(
-                /* source */ primPath, /* targetNode */ node, 
-                indexer->inputs, layerOffset);
+                primPath, nodePathAtIntroduction, node, layerOffset);
         if (isInternal) {
             // Internal references maintain full namespace visibility
             // outside the source & target.
             mapExpr = mapExpr.AddRootIdentity();
+        }
+
+        if (nodePathAtIntroduction != node.GetPath()) {
+            primPath = node.GetPath().ReplacePrefix(nodePathAtIntroduction, primPath);
         }
 
         _ArcOptions opts;
@@ -3455,8 +3463,7 @@ _AddClassBasedArcs(
         // Every other path maps to itself.
         PcpMapExpression mapExpr = 
             _CreateMapExpressionForArc(
-                /* source */ arcPath, /* targetNode */ node,
-                indexer->inputs)
+                /* source */ arcPath, /* targetNode */ node)
             .AddRootIdentity();
 
         _AddClassBasedArc(arcType,
@@ -3518,12 +3525,7 @@ static PcpMapExpression
 _GetImpliedClass( const PcpMapExpression & transfer,
                   const PcpMapExpression & classArc )
 {
-    if (transfer.IsConstantIdentity()) {
-        return classArc;
-    }
-
-    return transfer.Compose( classArc.Compose( transfer.Inverse() ))
-        .AddRootIdentity();
+    return PcpMapExpression::ImpliedClass(transfer, classArc);
 }
 
 // Check the given node for class-based children, and add corresponding

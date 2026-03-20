@@ -1287,7 +1287,7 @@ class AppController(QtCore.QObject):
                    populationMaskPaths, muteLayersRe):
 
         if self._mallocTags != 'none':
-            Tf._mallocTags.Initialize()
+            Tf.MallocTag.Initialize()
 
         if not usdFilePath:
             stage = self._openEmptyStage()

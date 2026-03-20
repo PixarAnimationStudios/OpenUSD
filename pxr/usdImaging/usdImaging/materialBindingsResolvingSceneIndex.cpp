@@ -43,7 +43,7 @@ public:
 
     _HdMaterialBindingsDataSource(
         const HdContainerDataSourceHandle &primContainer,
-        const HdSceneIndexBaseRefPtr &si,
+        const HdSceneIndexBasePtr &si,
         const SdfPath &primPath)
     : _primContainer(primContainer)
     , _si(si)
@@ -302,7 +302,7 @@ private:
 
 private:
     HdContainerDataSourceHandle _primContainer;
-    const HdSceneIndexBaseRefPtr _si;
+    const HdSceneIndexBasePtr _si;
     const SdfPath _primPath;
 };
 
@@ -316,7 +316,7 @@ public:
 
     _PrimDataSource(
         const HdContainerDataSourceHandle &primContainer,
-        const HdSceneIndexBaseRefPtr &si,
+        const HdSceneIndexBasePtr &si,
         const SdfPath &primPath)
     : _primContainer(primContainer)
     , _si(si)
@@ -359,7 +359,7 @@ public:
 
 private:
     HdContainerDataSourceHandle _primContainer;
-    const HdSceneIndexBaseRefPtr _si;
+    const HdSceneIndexBasePtr _si;
     const SdfPath _primPath;
 };
 

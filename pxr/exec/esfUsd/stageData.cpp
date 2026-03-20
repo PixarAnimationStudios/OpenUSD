@@ -329,7 +329,7 @@ EsfUsdStageData::UpdateForResync(
     // Note that as long as an owning attribute has a given connection, the
     // incoming connection map entry remains populated, regardless of whether
     // the targeted object exists in the scene.
-    if (!resyncedPrim || !UsdPrimDefaultPredicate(resyncedPrim)) {
+    if (!UsdPrimDefaultPredicate(resyncedPrim)) {
         TRACE_FUNCTION_SCOPE("Update for expired resynced prim");
 
         for (auto it = _outgoing.lower_bound(resyncedPath);

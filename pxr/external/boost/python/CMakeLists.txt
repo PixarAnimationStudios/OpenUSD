@@ -137,6 +137,7 @@ pxr_library(python
         detail/pointee.hpp
         detail/prefix.hpp
         detail/preprocessor.hpp
+        detail/pymutex.hpp
         detail/python_type.hpp
         detail/raw_pyobject.hpp
         detail/referent_storage.hpp
@@ -500,6 +501,7 @@ boost_python_test("enum"
 )
 
 boost_python_test("exception_translator")
+boost_python_test("module_nogil")
 
 boost_python_test("pearu1"
     SCRIPT "test/test_cltree.py"

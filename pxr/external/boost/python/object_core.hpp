@@ -426,6 +426,16 @@ inline api::object_base& api::object_base::operator=(api::object_base const& rhs
 
 inline api::object_base::~object_base()
 {
+#ifdef Py_GIL_DISABLED
+    // This is a not very elegant fix for a problem that occurs with the
+    // free-threaded build of Python.  If this is called when the interpreter
+    // has already been finalized, the thread-state can be null.  Unlike the
+    // GIL-enabled build, Py_DECREF() requires a valid thread-state.  This
+    // causes a memory leak, rather than crash, which seems preferable.
+    if (PyThreadState_GetUnchecked() == NULL) {
+        return;
+    }
+#endif
     assert( Py_REFCNT(m_ptr) > 0 );
     Py_DECREF(m_ptr);
 }

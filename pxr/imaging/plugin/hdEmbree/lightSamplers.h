@@ -37,6 +37,7 @@ public:
     LightSample operator()(HdEmbree_Rect const& rect);
     LightSample operator()(HdEmbree_Sphere const& sphere);
     LightSample operator()(HdEmbree_Disk const& disk);
+    LightSample operator()(HdEmbree_Distant const& distant);
     LightSample operator()(HdEmbree_Cylinder const& cylinder);
     LightSample operator()(HdEmbree_Dome const& dome);
 

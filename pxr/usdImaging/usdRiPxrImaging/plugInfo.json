@@ -55,6 +55,21 @@
                         "isInternal": true,
                         "primTypeName": "PxrSampleFilterPluginBase",
                         "includeDerivedPrimTypes" : true
+                    },
+                    "UsdRiPxrImagingVolumeAPIAdapter": {
+                        "bases": [
+                            "UsdImagingAPISchemaAdapter"
+                        ],
+                        "isInternal": true,
+                        "apiSchemaName": "PxrVolumeAPI"
+                    },
+                    "UsdRiPxrImagingVolumeFilterAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PxrVolumeFilterPluginBase",
+                        "includeDerivedPrimTypes" : true
                     }
                 }
             },

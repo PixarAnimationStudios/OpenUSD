@@ -40,9 +40,15 @@
  ****************************************************************************/
 
 // backwards compatibility:
-#ifdef PXR_BOOST_PYTHON_STATIC_LIB
-#  define PXR_BOOST_PYTHON_STATIC_LINK
-# elif !defined(PXR_BOOST_PYTHON_DYNAMIC_LIB)
+#if defined(PXR_BOOST_PYTHON_STATIC_LINK) && !defined(PXR_BOOST_PYTHON_STATIC_LIB)
+#  define PXR_BOOST_PYTHON_STATIC_LIB
+#endif
+
+#if defined(PXR_BOOST_PYTHON_DYNAMIC_LINK) && !defined(PXR_BOOST_PYTHON_DYNAMIC_LIB)
+#  define PXR_BOOST_PYTHON_DYNAMIC_LIB
+#endif
+
+#if !defined(PXR_BOOST_PYTHON_STATIC_LIB) && !defined(PXR_BOOST_PYTHON_DYNAMIC_LIB)
 #  define PXR_BOOST_PYTHON_DYNAMIC_LIB
 #endif
 
@@ -80,5 +86,10 @@
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 #define PXR_BOOST_PYTHON_SUPPORTS_PY_SIGNATURES // enables smooth transition
 #endif
+
+// Upstream boost::python conditionally defines HAS_CXX11 as part of its
+// build system. We define it here unconditionally since we don't support
+// older versions of the standard.
+#define PXR_BOOST_PYTHON_HAS_CXX11
 
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONFIG_HPP

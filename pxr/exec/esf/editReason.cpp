@@ -22,6 +22,8 @@ EsfEditReason::_GetBitDescription(EsfEditReason::_BitIndex bitIndex)
         return "ChangedPropertyList";
     case EsfEditReason::_BitIndex::ChangedConnectionPaths:
         return "ChangedConnectionPaths";
+    case EsfEditReason::_BitIndex::ChangedIncomingConnections:
+        return "ChangedIncomingConnections";
     case EsfEditReason::_BitIndex::ChangedTargetPaths:
         return "ChangedTargetPaths";
     case EsfEditReason::_BitIndex::Max:

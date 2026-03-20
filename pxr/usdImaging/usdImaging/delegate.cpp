@@ -3075,6 +3075,24 @@ UsdImagingDelegate::GetVolumeFieldDescriptors(SdfPath const &volumeId)
     return HdVolumeFieldDescriptorVector();
 }
 
+VtValue 
+UsdImagingDelegate::GetVolumeParamValue(SdfPath const &id, 
+                                        TfToken const &paramName)
+{
+    if (!TF_VERIFY(id != SdfPath())) {
+        return VtValue();
+    }
+
+    SdfPath cachePath = ConvertIndexPathToCachePath(id);
+    _HdPrimInfo* primInfo = _GetHdPrimInfo(cachePath);
+    if (!TF_VERIFY(primInfo)) {
+        return VtValue();
+    }
+
+    return primInfo->adapter->GetVolumeParamValue(primInfo->usdPrim,
+        cachePath, paramName, _time);
+}
+
 TfTokenVector
 UsdImagingDelegate::GetExtComputationSceneInputNames(
     SdfPath const& computationId)

@@ -6,12 +6,45 @@
 //
 #include "dataSourceValueTreeView.h"
 
-#include "pxr/base/gf/bbox3d.h"
-#include "pxr/base/gf/matrix3f.h"
-#include "pxr/base/gf/matrix4f.h"
+#include "pxr/base/vt/visitValue.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/primOriginSchema.h"
 #include "pxr/usd/sdf/path.h"
+
+// Include everything in VT_VALUE_TYPES; see pxr/base/vt/types.h
+// This is required for TfStringify() on T elements of VtArray<T>.
+#include "pxr/base/gf/bbox3d.h"
+#include "pxr/base/gf/dualQuatf.h"
+#include "pxr/base/gf/dualQuath.h"
+#include "pxr/base/gf/dualQuath.h"
+#include "pxr/base/gf/dualQuatd.h"
+#include "pxr/base/gf/frustum.h"
+#include "pxr/base/gf/interval.h"
+#include "pxr/base/gf/matrix2f.h"
+#include "pxr/base/gf/matrix2d.h"
+#include "pxr/base/gf/matrix3f.h"
+#include "pxr/base/gf/matrix3d.h"
+#include "pxr/base/gf/matrix4f.h"
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/quatf.h"
+#include "pxr/base/gf/quath.h"
+#include "pxr/base/gf/quatd.h"
+#include "pxr/base/gf/range1f.h"
+#include "pxr/base/gf/range1d.h"
+#include "pxr/base/gf/range2f.h"
+#include "pxr/base/gf/range2d.h"
+#include "pxr/base/gf/range3f.h"
+#include "pxr/base/gf/range3d.h"
+#include "pxr/base/gf/rect2i.h"
+#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec2d.h"
+#include "pxr/base/gf/vec3i.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec4i.h"
+#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/vec4d.h"
 
 #include <QAbstractItemModel>
 #include <QAction>
@@ -43,14 +76,9 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
             override {
 
-        if (!(role == Qt::DisplayRole || role == Qt::ToolTipRole)) {
-            return QVariant();
-        }
-
         if (role == Qt::ToolTipRole) {
             return GetToolTipText(index);
         }
-
         if (role != Qt::DisplayRole) {
             return QVariant();
         }
@@ -143,7 +171,7 @@ protected:
     }
 
 protected:
-    VtValue _value;
+    const VtValue _value;
 };
 
 //-----------------------------------------------------------------------------
@@ -152,12 +180,12 @@ template <typename T>
 class Hdui_TypedArrayValueItemModel : public Hdui_ValueItemModel
 {
 public:
-    Hdui_TypedArrayValueItemModel(VtValue value, QObject *parent = nullptr)
-    : Hdui_ValueItemModel(value, parent)
+    Hdui_TypedArrayValueItemModel(
+        VtArray<T> const& array,
+        QObject *parent = nullptr)
+    : Hdui_ValueItemModel(VtValue(array), parent)
+    , _array(array)
     {
-        if (_value.IsHolding<VtArray<T>>()) {
-            _array = _value.UncheckedGet<VtArray<T>>();
-        }
     }
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
@@ -184,9 +212,7 @@ public:
             return QVariant(index.row());
         } else if (index.column() == 0) {
             if (index.row() < static_cast<int>(_array.size())) {
-                std::ostringstream buffer;
-                buffer << _array.cdata()[index.row()];
-                std::string str = buffer.str();
+                std::string str = TfStringify( _array.cdata()[index.row()] );
                 return QVariant(QString::fromUtf8(str.data(), str.size()));
             }
         }
@@ -213,106 +239,34 @@ public:
     }
 
 private:
-    VtArray<T> _array;
+    const VtArray<T> _array;
 };
 
 //-----------------------------------------------------------------------------
 
-class Hdui_UnsupportedTypeValueItemModel : public Hdui_ValueItemModel
+struct _VtValueToItemModel
 {
-public:
-    Hdui_UnsupportedTypeValueItemModel(VtValue value, QObject *parent = nullptr)
-    : Hdui_ValueItemModel(value, parent)
-    {}
+    QObject *parent;
 
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
-            override {
+    using ResultType = Hdui_ValueItemModel*;
 
-        if (role != Qt::DisplayRole) {
-            return QVariant();
-        }
-
-        return QVariant("(unsupported type)");
+    template <typename T>
+    ResultType operator()(VtArray<T> const& array) const {
+        return new Hdui_TypedArrayValueItemModel<T>(array, parent);
     }
-
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override {
-        if (parent.isValid() || parent.column() > 0) {
-            return 0;
+    ResultType operator()(const VtValue &value) const {
+        // VtArray<SdfPath> is not in VT_VALUE_TYPES, so must handle explicitly
+        if (value.IsHolding< VtArray<SdfPath> >()) {
+            return operator()( value.UncheckedGet<VtArray<SdfPath> >() );
         }
-        return 1;
-    }
-};
-
-//-----------------------------------------------------------------------------
-
-Hdui_ValueItemModel *
-Hdui_GetModelFromValue(VtValue value, QObject *parent = nullptr)
-{
-    if (!value.IsArrayValued()) {
         return new Hdui_ValueItemModel(value, parent);
     }
+};
 
-    if (value.IsHolding<VtArray<int>>()) {
-        return new Hdui_TypedArrayValueItemModel<int>(value, parent);
-    }
-
-    if (value.IsHolding<VtArray<float>>()) {
-        return new Hdui_TypedArrayValueItemModel<float>(value, parent);
-    }
-
-    if (value.IsHolding<VtArray<double>>()) {
-        return new Hdui_TypedArrayValueItemModel<double>(value, parent);
-    }
-
-    if (value.IsHolding<VtArray<TfToken>>()) {
-        return new Hdui_TypedArrayValueItemModel<TfToken>(value, parent);
-    }
-
-    if (value.IsHolding<VtArray<std::string>>()) {
-        return new Hdui_TypedArrayValueItemModel<std::string>(value, parent);
-    }
-
-    if (value.IsHolding<VtArray<SdfPath>>()) {
-        return new Hdui_TypedArrayValueItemModel<SdfPath>(value, parent);
-    }
-
-    if (value.IsHolding<VtArray<GfVec3f>>()) {
-        return new Hdui_TypedArrayValueItemModel<GfVec3f>(value, parent);
-    }
-
-    if (value.IsHolding<VtArray<GfVec3d>>()) {
-        return new Hdui_TypedArrayValueItemModel<GfVec3d>(value, parent);
-    }
-
-    if (value.IsHolding<VtArray<GfVec4f>>()) {
-        return new Hdui_TypedArrayValueItemModel<GfVec4f>(value, parent);
-    }
-
-    if (value.IsHolding<VtArray<GfMatrix4d>>()) {
-        return new Hdui_TypedArrayValueItemModel<GfMatrix4d>(value, parent);
-    }
-
-    if (value.IsHolding<VtArray<GfMatrix4f>>()) {
-        return new Hdui_TypedArrayValueItemModel<GfMatrix4f>(value, parent);
-    }
-
-    if (value.IsHolding<VtArray<GfMatrix3f>>()) {
-        return new Hdui_TypedArrayValueItemModel<GfMatrix3f>(value, parent);
-    }
-
-    if (value.IsHolding<VtArray<GfVec2f>>()) {
-        return new Hdui_TypedArrayValueItemModel<GfVec2f>(value, parent);
-    }
-
-    if (value.IsHolding<VtArray<GfVec2i>>()) {
-        return new Hdui_TypedArrayValueItemModel<GfVec2i>(value, parent);
-    }
-
-    if (value.IsHolding<VtArray<GfBBox3d>>()) {
-        return new Hdui_TypedArrayValueItemModel<GfBBox3d>(value, parent);
-    }
-
-    return new Hdui_UnsupportedTypeValueItemModel(value, parent);
+Hdui_ValueItemModel *
+Hdui_NewModelFromValue(VtValue value, QObject *parent = nullptr)
+{
+    return VtVisitValue(value, _VtValueToItemModel{parent});
 }
 
 //-----------------------------------------------------------------------------
@@ -399,7 +353,7 @@ HduiDataSourceValueTreeView::SetDataSource(
 
     _dataSource = dataSource;
     if (_dataSource) {
-        setModel(Hdui_GetModelFromValue(_dataSource->GetValue(0.0f), this));
+        setModel(Hdui_NewModelFromValue(_dataSource->GetValue(0.0f), this));
 
         header()->setSectionResizeMode(0, QHeaderView::Stretch);
         if (header()->count() > 1) {

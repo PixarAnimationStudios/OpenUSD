@@ -96,7 +96,7 @@ public:
 
 private:
     _PrimvarsDataSource(
-        const HdSceneIndexBaseRefPtr &inputScene,
+        const HdSceneIndexBasePtr &inputScene,
         const HdContainerDataSourceHandle &primDs,
         const HdContainerDataSourceHandle &primvarsDs,
         const HdsiMaterialPrimvarTransferSceneIndex::ComposeFn &composeFn)
@@ -128,7 +128,7 @@ private:
         return mpds;
     }
 
-    HdSceneIndexBaseRefPtr const _inputScene;
+    HdSceneIndexBasePtr const _inputScene;
     HdContainerDataSourceHandle const _primDs;
     HdContainerDataSourceHandle const _primvarsDs;
     HdContainerDataSourceAtomicHandle _materialPrimvarsDs;
@@ -173,7 +173,7 @@ public:
 
 private:
     _PrimDataSource(
-        const HdSceneIndexBaseRefPtr &inputScene,
+        const HdSceneIndexBasePtr &inputScene,
         const HdContainerDataSourceHandle &inputDs,
         const HdsiMaterialPrimvarTransferSceneIndex::ComposeFn &composeFn)
     : _inputScene(inputScene)
@@ -269,7 +269,7 @@ private:
             count, names, dataSources);
     }
 
-    HdSceneIndexBaseRefPtr const _inputScene;
+    HdSceneIndexBasePtr const _inputScene;
     HdContainerDataSourceHandle const _inputDs;
     HdsiMaterialPrimvarTransferSceneIndex::ComposeFn _composeFn;
 };

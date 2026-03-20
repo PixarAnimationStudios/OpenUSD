@@ -217,6 +217,7 @@ pxr_library(hd
         volume
         volumeFieldBindingSchema
         volumeFieldSchema
+        volumeSchema
         vtBufferSource
         xformSchema
 

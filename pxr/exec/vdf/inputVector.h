@@ -18,6 +18,8 @@
 
 #include "pxr/base/tf/diagnostic.h"
 
+#include <utility>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class TfType;
@@ -68,7 +70,7 @@ public:
 
     /// Creates an input vector with \p n elements.
     ///
-    VdfInputVector(VdfNetwork *network, size_t n) :
+    VdfInputVector(VdfNetwork *const network, size_t n) :
         Vdf_InputVectorBase(
             network,
             VdfOutputSpecs()
@@ -77,23 +79,37 @@ public:
     {
     }
 
-    /// Sets the value for the input stored at \p index.
+    /// Sets the value for the input stored at \p index to \p value.
     ///
-    void SetValue(size_t index, const T &val)
+    void SetValue(const size_t index, const T &value)
     {
-        if (!TF_VERIFY(index >= 0 && index < _values.GetSize()))
+        if (!TF_VERIFY(index < _values.GetSize())) {
             return;
+        }
 
         VdfVector::ReadWriteAccessor<T> a = _values.GetReadWriteAccessor<T>();
-        a[index] = val;
+        a[index] = value;
+    }
+
+    /// Moves \p value into the input vector at \p index.
+    ///
+    void SetValue(const size_t index, T &&value)
+    {
+        if (!TF_VERIFY(index < _values.GetSize())) {
+            return;
+        }
+
+        VdfVector::ReadWriteAccessor<T> a = _values.GetReadWriteAccessor<T>();
+        a[index] = std::move(value);
     }
 
     /// Returns \c true if the value stored at \p index is equal to \p val.
     ///
-    bool IsValueEqual(size_t index, const T &val) const
+    bool IsValueEqual(const size_t index, const T &val) const
     {
-        if (const T *v = GetValue(index))
+        if (const T *v = GetValue(index)) {
             return *v == val;
+        }
             
         return false;
     }
@@ -101,10 +117,11 @@ public:
     /// Returns a pointer to the value at \p index.  If \p index is out of
     /// range an error will be raised and a nullptr returned.
     ///
-    const T *GetValue(size_t index) const
+    const T *GetValue(const size_t index) const
     {
-        if (!TF_VERIFY(index >= 0 && index < _values.GetSize()))
+        if (index >= _values.GetSize()) {
             return nullptr;
+        }
 
         const VdfVector::ReadAccessor<T> a = _values.GetReadAccessor<T>();
         return &a[index];
@@ -121,8 +138,9 @@ protected:
     // Implements IsEqual() API of VdfNode
     bool _IsDerivedEqual(const VdfNode &rhs) const override
     {
-        if (const This *other = dynamic_cast<const This *>(&rhs))
+        if (const This *other = dynamic_cast<const This *>(&rhs)) {
             return _ValuesAreEqual(other);
+        }
 
         return false;
     }
@@ -133,7 +151,7 @@ private:
     // this is factored out in order to prevent a performance regression due
     // to code generation.
     //
-    bool _ValuesAreEqual(const This *rhs) const
+    bool _ValuesAreEqual(const This *const rhs) const
     {
         const size_t size = _values.GetSize();
         if (size == rhs->_values.GetSize()) {

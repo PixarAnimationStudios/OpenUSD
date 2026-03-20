@@ -6,16 +6,31 @@
 //
 #include "pxr/imaging/hd/renderSettings.h"
 
+#include "pxr/imaging/hd/bprim.h"
+#include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/types.h"
 
-#include "pxr/base/arch/hash.h"
+#include "pxr/usd/sdf/path.h"
 
+#include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/base/vt/dictionary.h"
+#include "pxr/base/vt/value.h"
+
+#include "pxr/pxr.h"
+
+#include <cstddef>
+#include <ostream>
+#include <sstream>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-    
+
 template <class HashState>
 void TfHashAppend(
         HashState &h,
@@ -53,6 +68,51 @@ void TfHashAppend(
 }
 // -------------------------------------------------------------------------- //
 
+/* static */
+std::string
+HdRenderSettings::StringifyDirtyBits(HdDirtyBits dirtyBits)
+{
+    if (dirtyBits == Clean) {
+        return std::string("Clean");
+    }
+    std::stringstream ss;
+    if (dirtyBits & DirtyActive) {
+        ss << "Active ";
+    }
+    if (dirtyBits & DirtyNamespacedSettings) {
+        ss << "DirtyNamespacedSettings ";
+    }
+    if (dirtyBits & DirtyRenderProducts) {
+        ss << "DirtyRenderProducts ";
+    }
+    if (dirtyBits & DirtyIncludedPurposes) {
+        ss << "DirtyIncludedPurposes ";
+    }
+    if (dirtyBits & DirtyMaterialBindingPurposes) {
+        ss << "DirtyMaterialBindingPurposes ";
+    }
+    if (dirtyBits & DirtyRenderingColorSpace) {
+        ss << "DirtyRenderingColorSpace ";
+    }
+    if (dirtyBits & DirtyUnionedSamplingInterval) {
+        ss << "DirtyUnionedSamplingInterval ";
+    }
+    if (dirtyBits & DirtyFrameNumber) {
+        ss << "DirtyFrameNumber ";
+    }
+    if (dirtyBits & DirtyCamera) {
+        ss << "DirtyCamera ";
+    }
+    if (dirtyBits & DirtyDisableDepthOfField) {
+        ss << "DirtyDisableDepthOfField ";
+    }
+    if (dirtyBits & DirtyDisableMotionBlur) {
+        ss << "DirtyDisableMotionBlur ";
+    }
+    ss << TfStringPrintf("(0x%x)", dirtyBits);
+    return ss.str();
+}
+
 HdRenderSettings::HdRenderSettings(
     SdfPath const& id)
     : HdBprim(id)
@@ -72,7 +132,7 @@ HdRenderSettings::IsActive() const
 bool
 HdRenderSettings::IsValid() const
 {
-    // The RenderSettings prim is considered valid if there is at least one 
+    // The RenderSettings prim is considered valid if there is at least one
     // RenderProduct, and we have a camera path specified.
     return !_products.empty() && !_products[0].cameraPath.IsEmpty();
 }
@@ -108,9 +168,27 @@ HdRenderSettings::GetRenderingColorSpace() const
 }
 
 const VtValue&
-HdRenderSettings::GetShutterInterval() const
+HdRenderSettings::GetUnionedSamplingInterval() const
 {
-    return _vShutterInterval;
+    return _vUnionedSamplingInterval;
+}
+
+const VtValue&
+HdRenderSettings::GetCamera() const
+{
+    return _vCamera;
+}
+
+bool
+HdRenderSettings::GetDisableDepthOfField() const
+{
+    return _disableDepthOfField;
+}
+
+bool
+HdRenderSettings::GetDisableMotionBlur() const
+{
+    return _disableMotionBlur;
 }
 
 bool
@@ -185,9 +263,26 @@ HdRenderSettings::Sync(
         }
     }
 
-    if (*dirtyBits & HdRenderSettings::DirtyShutterInterval) {
-        _vShutterInterval = sceneDelegate->Get(
-            GetId(), HdRenderSettingsPrimTokens->shutterInterval);
+    if (*dirtyBits & HdRenderSettings::DirtyUnionedSamplingInterval) {
+        _vUnionedSamplingInterval = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->unionedSamplingInterval);
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyCamera) {
+        _vCamera = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->camera);
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyDisableDepthOfField) {
+        _disableDepthOfField = sceneDelegate->Get(
+            GetId(),HdRenderSettingsPrimTokens->disableDepthOfField)
+        .GetWithDefault(false);
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyDisableMotionBlur) {
+        _disableMotionBlur = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->disableMotionBlur)
+        .GetWithDefault(false);
     }
 
     // Allow subclasses to do any additional processing if necessary.
@@ -236,8 +331,8 @@ std::ostream& operator<<(
     return out;
 }
 
-bool operator==(const HdRenderSettings::RenderProduct& lhs, 
-                const HdRenderSettings::RenderProduct& rhs) 
+bool operator==(const HdRenderSettings::RenderProduct& lhs,
+                const HdRenderSettings::RenderProduct& rhs)
 {
     return
            lhs.productPath == rhs.productPath
@@ -255,8 +350,8 @@ bool operator==(const HdRenderSettings::RenderProduct& lhs,
         && lhs.namespacedSettings == rhs.namespacedSettings;
 }
 
-bool operator!=(const HdRenderSettings::RenderProduct& lhs, 
-                const HdRenderSettings::RenderProduct& rhs) 
+bool operator!=(const HdRenderSettings::RenderProduct& lhs,
+                const HdRenderSettings::RenderProduct& rhs)
 {
     return !(lhs == rhs);
 }
@@ -271,8 +366,8 @@ std::ostream& operator<<(
     return out;
 }
 
-bool operator==(const HdRenderSettings::RenderProduct::RenderVar& lhs, 
-                const HdRenderSettings::RenderProduct::RenderVar& rhs) 
+bool operator==(const HdRenderSettings::RenderProduct::RenderVar& lhs,
+                const HdRenderSettings::RenderProduct::RenderVar& rhs)
 {
     return
            lhs.varPath == rhs.varPath
@@ -282,8 +377,8 @@ bool operator==(const HdRenderSettings::RenderProduct::RenderVar& lhs,
         && lhs.namespacedSettings == rhs.namespacedSettings;
 }
 
-bool operator!=(const HdRenderSettings::RenderProduct::RenderVar& lhs, 
-                const HdRenderSettings::RenderProduct::RenderVar& rhs) 
+bool operator!=(const HdRenderSettings::RenderProduct::RenderVar& lhs,
+                const HdRenderSettings::RenderProduct::RenderVar& rhs)
 {
     return !(lhs == rhs);
 }

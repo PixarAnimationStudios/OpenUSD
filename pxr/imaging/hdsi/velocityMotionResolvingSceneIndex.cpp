@@ -119,7 +119,7 @@ public:
         const HdSampledDataSourceHandle& source,
         const SdfPath& primPath,
         const HdContainerDataSourceHandle& primSource,
-        const HdSceneIndexBaseRefPtr& inputSceneIndex)
+        const HdSceneIndexBasePtr& inputSceneIndex)
       : _name(name)
       , _source(source)
       , _primPath(primPath)
@@ -504,7 +504,7 @@ private:
     HdSampledDataSourceHandle _source;
     SdfPath _primPath;
     HdContainerDataSourceHandle _primSource;
-    HdSceneIndexBaseRefPtr _inputSceneIndex;
+    HdSceneIndexBasePtr _inputSceneIndex;
 };
 
 // -----------------------------------------------------------------------------
@@ -523,7 +523,7 @@ public:
         const HdSampledDataSourceHandle& source,
         const SdfPath& primPath,
         const HdContainerDataSourceHandle& primSource,
-        const HdSceneIndexBaseRefPtr& inputSceneIndex)
+        const HdSceneIndexBasePtr& inputSceneIndex)
       : _VelocityHelper(
             name, source, primPath, primSource, inputSceneIndex)
     { }
@@ -562,7 +562,7 @@ public:
         const HdSampledDataSourceHandle& source,
         const SdfPath& primPath,
         const HdContainerDataSourceHandle& primSource,
-        const HdSceneIndexBaseRefPtr& inputSceneIndex)
+        const HdSceneIndexBasePtr& inputSceneIndex)
       : _VelocityHelper(name, source, primPath, primSource, inputSceneIndex)
     { }
 
@@ -597,7 +597,7 @@ public:
         const HdSampledDataSourceHandle& source,
         const SdfPath& primPath,
         const HdContainerDataSourceHandle& primSource,
-        const HdSceneIndexBaseRefPtr& inputSceneIndex)
+        const HdSceneIndexBasePtr& inputSceneIndex)
     {
         return _TypedValueDataSource<T>::Handle(
             new _TypedValueDataSource<T>(
@@ -613,7 +613,7 @@ struct _PrimvarSourceTypeVisitor
     const HdSampledDataSourceHandle& source;
     const SdfPath& primPath;
     const HdContainerDataSourceHandle& primSource;
-    const HdSceneIndexBaseRefPtr& inputSceneIndex;
+    const HdSceneIndexBasePtr& inputSceneIndex;
 
     template <typename T>
     HdDataSourceBaseHandle
@@ -644,7 +644,7 @@ public:
         const HdContainerDataSourceHandle& source,
         const SdfPath& primPath,
         const HdContainerDataSourceHandle& primSource,
-        const HdSceneIndexBaseRefPtr& inputSceneIndex)
+        const HdSceneIndexBasePtr& inputSceneIndex)
       : _name(name)
       , _source(source)
       , _primPath(primPath)
@@ -687,7 +687,7 @@ private:
     HdContainerDataSourceHandle _source;
     SdfPath _primPath;
     HdContainerDataSourceHandle _primSource;
-    HdSceneIndexBaseRefPtr _inputSceneIndex;
+    HdSceneIndexBasePtr _inputSceneIndex;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(_PrimvarDataSource);
@@ -704,7 +704,7 @@ public:
         const HdContainerDataSourceHandle& source,
         const SdfPath& primPath,
         const HdContainerDataSourceHandle& primSource,
-        const HdSceneIndexBaseRefPtr& inputSceneIndex)
+        const HdSceneIndexBasePtr& inputSceneIndex)
       : _source(source)
       , _primPath(primPath)
       , _primSource(primSource)
@@ -738,7 +738,7 @@ private:
     HdContainerDataSourceHandle _source;
     SdfPath _primPath;
     HdContainerDataSourceHandle _primSource;
-    HdSceneIndexBaseRefPtr _inputSceneIndex;
+    HdSceneIndexBasePtr _inputSceneIndex;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(_PrimvarsDataSource);
@@ -754,7 +754,7 @@ public:
     _PrimDataSource(
         const SdfPath& primPath,
         const HdContainerDataSourceHandle& primSource,
-        const HdSceneIndexBaseRefPtr& inputSceneIndex)
+        const HdSceneIndexBasePtr& inputSceneIndex)
       : _primPath(primPath)
       , _primSource(primSource)
       , _inputSceneIndex(inputSceneIndex)
@@ -816,7 +816,7 @@ public:
 private:
     SdfPath _primPath;
     HdContainerDataSourceHandle _primSource;
-    HdSceneIndexBaseRefPtr _inputSceneIndex;
+    HdSceneIndexBasePtr _inputSceneIndex;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(_PrimDataSource);

@@ -90,6 +90,8 @@ public:
     VtArray<TfToken> GetCategories(SdfPath const &id) override;
     HdVolumeFieldDescriptorVector GetVolumeFieldDescriptors(
             SdfPath const &volumeId) override;
+    VtValue GetVolumeParamValue(SdfPath const &id,
+        TfToken const &paramName) override;
 
     // ------------------------------------------------------------------------
     // Transform API
