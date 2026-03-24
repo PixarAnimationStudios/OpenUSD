@@ -5,14 +5,50 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 
-"""Tests for registering validators implemented in Python."""
+"""Tests for registering validators implemented in Python.
 
+Two registration paths are exercised:
+
+1. Explicit registration (RegisterLayerValidator, etc.) -- the caller
+   provides full ValidatorMetadata.  Use this when validators are created
+   at runtime without a plugin.
+
+2. Plugin registration (RegisterPluginLayerValidator, etc.) -- the caller
+   provides only a TfToken name; metadata comes from the plugin's
+   plugInfo.json.  Use this when implementing a validator declared in a
+   plugin.
+"""
+
+import os
 import unittest
 
-from pxr import Sdf, Usd, UsdValidation
+from pxr import Plug, Sdf, Usd, UsdValidation
+
+# Plugin name must match the "Name" field in
+# TestUsdValidationRegistryPy_plugInfo.json.
+_PLUGIN_NAME = "testValidationRegistryPyPlugin"
 
 
 class TestUsdValidationRegistryPyRegister(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        # Register the test plugin BEFORE the ValidationRegistry singleton
+        # is created.  The registry constructor parses plugInfo.json from
+        # all known plugins; if the plugin is not registered first, its
+        # validator metadata will not be available for
+        # RegisterPlugin*Validator calls.
+        testPluginsDsoSearchPath = os.path.join(
+            os.path.dirname(__file__),
+            "UsdValidationPlugins/lib/TestUsdValidationRegistryPy*/"
+            "Resources/")
+        try:
+            plugins = Plug.Registry().RegisterPlugins(
+                testPluginsDsoSearchPath)
+            assert len(plugins) == 1
+            assert plugins[0].name == _PLUGIN_NAME
+        except RuntimeError:
+            pass  # Plugin may already be registered.
 
     def test_RegisterLayerValidator(self):
         # RegisterLayerValidator accepts a Python callable with the signature
@@ -261,6 +297,134 @@ class TestUsdValidationRegistryPyRegister(unittest.TestCase):
         stage = Usd.Stage.CreateInMemory()
         errors = validator.Validate(stage)
         self.assertEqual(len(errors), 0)
+
+    # ------------------------------------------------------------------
+    # Plugin registration tests
+    #
+    # These exercise RegisterPlugin*Validator, where the validator name
+    # maps to metadata already declared in plugInfo.json.  The plugin
+    # was registered in setUpClass.
+    # ------------------------------------------------------------------
+
+    def test_RegisterPluginLayerValidator(self):
+        """Register a layer validator using plugin metadata."""
+        registry = UsdValidation.ValidationRegistry()
+        name = _PLUGIN_NAME + ":PyPluginLayerValidator"
+
+        called_with = []
+
+        def layer_task(layer):
+            called_with.append(layer)
+            return [
+                UsdValidation.ValidationError(
+                    "PluginLayerError",
+                    UsdValidation.ValidationErrorType.Warn,
+                    [UsdValidation.ValidationErrorSite(
+                        layer, Sdf.Path.absoluteRootPath)],
+                    "Plugin layer validator ran",
+                )
+            ]
+
+        registry.RegisterPluginLayerValidator(name, layer_task)
+        self.assertTrue(registry.HasValidator(name))
+
+        validator = registry.GetOrLoadValidatorByName(name)
+        self.assertIsNotNone(validator)
+
+        # Metadata should come from plugInfo.json, not from the caller.
+        metadata = validator.GetMetadata()
+        self.assertEqual(
+            metadata.doc, "Layer validator registered from Python.")
+        self.assertIn("testPyPlugin", metadata.GetKeywords())
+
+        layer = Sdf.Layer.CreateAnonymous(".usda")
+        errors = validator.Validate(layer)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].GetName(), "PluginLayerError")
+        self.assertEqual(len(called_with), 1)
+
+    def test_RegisterPluginStageValidator(self):
+        """Register a stage validator using plugin metadata."""
+        registry = UsdValidation.ValidationRegistry()
+        name = _PLUGIN_NAME + ":PyPluginStageValidator"
+
+        def stage_task(stage, timeRange):
+            return [
+                UsdValidation.ValidationError(
+                    "PluginStageError",
+                    UsdValidation.ValidationErrorType.Error,
+                    [UsdValidation.ValidationErrorSite(
+                        stage, Sdf.Path.absoluteRootPath)],
+                    "Plugin stage validator ran",
+                )
+            ]
+
+        registry.RegisterPluginStageValidator(name, stage_task)
+        self.assertTrue(registry.HasValidator(name))
+
+        validator = registry.GetOrLoadValidatorByName(name)
+        stage = Usd.Stage.CreateInMemory()
+        errors = validator.Validate(stage)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].GetName(), "PluginStageError")
+
+    def test_RegisterPluginPrimValidator(self):
+        """Register a prim validator using plugin metadata."""
+        registry = UsdValidation.ValidationRegistry()
+        name = _PLUGIN_NAME + ":PyPluginPrimValidator"
+
+        def prim_task(prim, timeRange):
+            if prim.IsPseudoRoot():
+                return []
+            return [
+                UsdValidation.ValidationError(
+                    "PluginPrimError",
+                    UsdValidation.ValidationErrorType.Error,
+                    [UsdValidation.ValidationErrorSite(
+                        prim.GetStage(), prim.GetPath())],
+                    f"Plugin prim validator ran on {prim.GetPath()}",
+                )
+            ]
+
+        registry.RegisterPluginPrimValidator(name, prim_task)
+        self.assertTrue(registry.HasValidator(name))
+
+        validator = registry.GetOrLoadValidatorByName(name)
+        stage = Usd.Stage.CreateInMemory()
+        prim = stage.DefinePrim("/TestPrim")
+        errors = validator.Validate(prim)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0].GetName(), "PluginPrimError")
+
+    def test_RegisterPluginValidatorSuite(self):
+        """Register a validator suite using plugin metadata."""
+        # Depends on test_RegisterPluginStageValidator and
+        # test_RegisterPluginPrimValidator having run first
+        # (alphabetical order guarantees this).
+        registry = UsdValidation.ValidationRegistry()
+        suite_name = _PLUGIN_NAME + ":PyPluginSuite"
+
+        stage_validator = registry.GetOrLoadValidatorByName(
+            _PLUGIN_NAME + ":PyPluginStageValidator"
+        )
+        prim_validator = registry.GetOrLoadValidatorByName(
+            _PLUGIN_NAME + ":PyPluginPrimValidator"
+        )
+        self.assertIsNotNone(stage_validator)
+        self.assertIsNotNone(prim_validator)
+
+        registry.RegisterPluginValidatorSuite(
+            suite_name, [stage_validator, prim_validator]
+        )
+        self.assertTrue(registry.HasValidatorSuite(suite_name))
+
+        suite = registry.GetOrLoadValidatorSuiteByName(suite_name)
+        self.assertIsNotNone(suite)
+
+        contained = suite.GetContainedValidators()
+        self.assertEqual(len(contained), 2)
+        self.assertIn(stage_validator, contained)
+        self.assertIn(prim_validator, contained)
 
 
 if __name__ == "__main__":

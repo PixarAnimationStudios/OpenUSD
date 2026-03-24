@@ -248,6 +248,55 @@ _RegisterValidatorSuite(UsdValidationRegistry &registry,
     registry.RegisterValidatorSuite(metadata, containedValidators);
 }
 
+// ---------------------------------------------------------------------------
+// Plugin validator registration
+//
+// RegisterPluginValidator differs from RegisterValidator in that it takes
+// only a TfToken name -- the metadata is already populated from the
+// plugin's plugInfo.json during registry initialization.  This is the
+// standard registration path for validators defined in plugins.
+
+static void
+_RegisterPluginLayerValidator(UsdValidationRegistry &registry,
+                              const TfToken &validatorName,
+                              pxr_boost::python::object pyFn)
+{
+    registry.RegisterPluginValidator(validatorName, _WrapLayerTaskFn(pyFn));
+}
+
+static void
+_RegisterPluginStageValidator(UsdValidationRegistry &registry,
+                              const TfToken &validatorName,
+                              pxr_boost::python::object pyFn)
+{
+    registry.RegisterPluginValidator(validatorName, _WrapStageTaskFn(pyFn));
+}
+
+static void
+_RegisterPluginPrimValidator(UsdValidationRegistry &registry,
+                             const TfToken &validatorName,
+                             pxr_boost::python::object pyFn)
+{
+    registry.RegisterPluginValidator(validatorName, _WrapPrimTaskFn(pyFn));
+}
+
+static void
+_RegisterPluginValidatorSuite(UsdValidationRegistry &registry,
+                              const TfToken &validatorSuiteName,
+                              pxr_boost::python::list validators)
+{
+    std::vector<const UsdValidationValidator *> containedValidators;
+    for (pxr_boost::python::ssize_t i = 0,
+             n = pxr_boost::python::len(validators);
+         i < n; ++i) {
+        containedValidators.push_back(
+            pxr_boost::python::extract<const UsdValidationValidator *>(
+                validators[i]));
+    }
+    registry.RegisterPluginValidatorSuite(
+        validatorSuiteName, containedValidators);
+}
+
 } // anonymous namespace
 
 void wrapUsdValidationRegistry()
@@ -298,7 +347,8 @@ void wrapUsdValidationRegistry()
         .def("GetValidatorMetadataForSchemaTypes",
              &UsdValidationRegistry::GetValidatorMetadataForSchemaTypes,
              return_value_policy<TfPySequenceToList>(), (args("schemaTypes")))
-        // Python validator registration
+        // Explicit registration -- caller provides full metadata.
+        // Use when registering validators at runtime without a plugin.
         .def("RegisterLayerValidator", &_RegisterLayerValidator,
              (args("metadata", "layerTaskFn")))
         .def("RegisterStageValidator", &_RegisterStageValidator,
@@ -306,5 +356,19 @@ void wrapUsdValidationRegistry()
         .def("RegisterPrimValidator", &_RegisterPrimValidator,
              (args("metadata", "primTaskFn")))
         .def("RegisterValidatorSuite", &_RegisterValidatorSuite,
-             (args("metadata", "validators")));
+             (args("metadata", "validators")))
+        // Plugin registration -- metadata comes from plugInfo.json.
+        // Use when implementing a validator declared in a plugin.
+        .def("RegisterPluginLayerValidator",
+             &_RegisterPluginLayerValidator,
+             (args("validatorName", "layerTaskFn")))
+        .def("RegisterPluginStageValidator",
+             &_RegisterPluginStageValidator,
+             (args("validatorName", "stageTaskFn")))
+        .def("RegisterPluginPrimValidator",
+             &_RegisterPluginPrimValidator,
+             (args("validatorName", "primTaskFn")))
+        .def("RegisterPluginValidatorSuite",
+             &_RegisterPluginValidatorSuite,
+             (args("validatorSuiteName", "validators")));
 }
