@@ -520,6 +520,106 @@ registry.RegisterPluginValidatorSuite(
 )
 ```
 
+### How Python plugin validators are triggered  {#python_plugin_triggering}
+
+For C++ plugins (`"Type": "library"`), the Plug system loads the shared
+library and the `TF_REGISTRY_FUNCTION(UsdValidationRegistry)` macro
+ensures the registration code runs automatically at load time.
+
+Python plugins work the same way, but use `"Type": "python"` in
+`plugInfo.json` and rely on module-level registration code in
+`__init__.py` instead of `TF_REGISTRY_FUNCTION`.
+
+The lazy-load flow for a Python plugin:
+
+1. **Startup**: `ValidationRegistry` parses `plugInfo.json` for all
+   discovered plugins. Validator metadata (name, doc, keywords,
+   schemaTypes) is available immediately, before any code is loaded.
+
+2. **Query**: Client code calls
+   `registry.GetOrLoadValidatorByName("myPlugin:CheckUpAxis")`.
+   The registry finds metadata for this name and sees it belongs to
+   a plugin that has not been loaded yet.
+
+3. **Load**: The registry calls `plugin->Load()`. For a Python-type
+   plugin, the Plug system executes
+   `import <module_name>` (where `<module_name>` matches the `"Name"`
+   field in `plugInfo.json`).
+
+4. **Register**: The module's `__init__.py` runs at import time.
+   Its top-level code calls `RegisterPluginStageValidator` (or
+   the layer/prim variant) to register task functions with the
+   registry.
+
+5. **Return**: The registry now has a fully registered validator and
+   returns it to the caller.
+
+#### Python plugin directory structure
+
+The module directory name must match the `"Name"` field in
+`plugInfo.json`, and the `plugInfo.json` lives inside the module
+directory alongside `__init__.py`:
+
+```
+myPlugin/
+    __init__.py       # Registration code runs at import time
+    plugInfo.json     # "Type": "python", "Name": "myPlugin"
+```
+
+#### Example plugInfo.json (Python type)
+
+```json
+{
+    "Plugins": [{
+        "Type": "python",
+        "Name": "myPlugin",
+        "Info": {
+            "Validators": {
+                "CheckUpAxis": {
+                    "doc": "Error when upAxis is missing.",
+                    "keywords": ["stageMetadata"]
+                }
+            }
+        }
+    }]
+}
+```
+
+Note the differences from a C++ plugin's `plugInfo.json`:
+`"Type"` is `"python"` instead of `"library"`, and there is no
+`"LibraryPath"`, `"ResourcePath"`, or `"Root"`.
+
+#### Example __init__.py
+
+```python
+from pxr import Sdf, UsdGeom, UsdValidation
+
+_PLUGIN_NAME = "myPlugin"
+
+def _check_up_axis(stage, timeRange):
+    if not stage.HasAuthoredMetadata(UsdGeom.Tokens.upAxis):
+        return [
+            UsdValidation.ValidationError(
+                "MissingUpAxis",
+                UsdValidation.ValidationErrorType.Error,
+                [UsdValidation.ValidationErrorSite(
+                    stage, Sdf.Path.absoluteRootPath)],
+                "Stage is missing upAxis metadata.",
+            )
+        ]
+    return []
+
+# Registration at import time — equivalent to TF_REGISTRY_FUNCTION
+_registry = UsdValidation.ValidationRegistry()
+_registry.RegisterPluginStageValidator(
+    _PLUGIN_NAME + ":CheckUpAxis", _check_up_axis)
+```
+
+The plugin directory must be discoverable by `Plug.Registry` (either
+on `PXR_PLUGINPATH_NAME` or registered via
+`Plug.Registry().RegisterPlugins()`). The parent directory of the
+module must be on `sys.path` so the `import` succeeds.
+
 ### Running a Python validator
 
 Retrieve the registered validator by name and call `Validate()`, or

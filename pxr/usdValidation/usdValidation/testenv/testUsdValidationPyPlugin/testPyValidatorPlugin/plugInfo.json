@@ -1,0 +1,20 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "testPyValidatorPlugin",
+            "Info": {
+                "Validators": {
+                    "PyStageValidator": {
+                        "doc": "Stage validator implemented in a Python plugin.",
+                        "keywords": ["testPyValidatorPlugin"]
+                    },
+                    "PyLayerValidator": {
+                        "doc": "Layer validator implemented in a Python plugin.",
+                        "keywords": ["testPyValidatorPlugin"]
+                    }
+                }
+            }
+        }
+    ]
+}
