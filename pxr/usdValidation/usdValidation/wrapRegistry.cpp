@@ -7,6 +7,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usdValidation/usdValidation/error.h"
+#include "pxr/usdValidation/usdValidation/fixer.h"
 #include "pxr/usdValidation/usdValidation/registry.h"
 #include "pxr/usdValidation/usdValidation/validator.h"
 
@@ -179,6 +180,27 @@ _WrapPrimTaskFn(object pyFn)
     return _WrapTaskFnHelper<UsdValidatePrimTaskFn>::WrapPyTaskFn(pyFn);
 }
 
+// ---------------------------------------------------------------------------
+// Fixer extraction helper
+//
+// Converts a Python list of ValidationFixer objects to a C++ vector.
+// Used by the registration shims below when the caller provides fixers.
+
+static std::vector<UsdValidationFixer>
+_ExtractFixers(object pyFixers)
+{
+    std::vector<UsdValidationFixer> fixers;
+    if (pyFixers.is_none()) {
+        return fixers;
+    }
+    list fixerList(pyFixers);
+    for (ssize_t i = 0, n = len(fixerList); i < n; ++i) {
+        fixers.push_back(
+            extract<UsdValidationFixer>(fixerList[i]));
+    }
+    return fixers;
+}
+
 // The three _Register* functions below are thin shims that wrap the Python
 // callable and forward to the appropriate RegisterValidator() overload.
 // They are bound as Python methods on ValidationRegistry below.
@@ -186,25 +208,31 @@ _WrapPrimTaskFn(object pyFn)
 static void
 _RegisterLayerValidator(UsdValidationRegistry &registry,
                         const UsdValidationValidatorMetadata &metadata,
-                        object pyFn)
+                        object pyFn,
+                        object pyFixers)
 {
-    registry.RegisterValidator(metadata, _WrapLayerTaskFn(pyFn));
+    registry.RegisterValidator(
+        metadata, _WrapLayerTaskFn(pyFn), _ExtractFixers(pyFixers));
 }
 
 static void
 _RegisterStageValidator(UsdValidationRegistry &registry,
                         const UsdValidationValidatorMetadata &metadata,
-                        object pyFn)
+                        object pyFn,
+                        object pyFixers)
 {
-    registry.RegisterValidator(metadata, _WrapStageTaskFn(pyFn));
+    registry.RegisterValidator(
+        metadata, _WrapStageTaskFn(pyFn), _ExtractFixers(pyFixers));
 }
 
 static void
 _RegisterPrimValidator(UsdValidationRegistry &registry,
                        const UsdValidationValidatorMetadata &metadata,
-                       object pyFn)
+                       object pyFn,
+                       object pyFixers)
 {
-    registry.RegisterValidator(metadata, _WrapPrimTaskFn(pyFn));
+    registry.RegisterValidator(
+        metadata, _WrapPrimTaskFn(pyFn), _ExtractFixers(pyFixers));
 }
 
 static void
@@ -235,25 +263,31 @@ _RegisterValidatorSuite(UsdValidationRegistry &registry,
 static void
 _RegisterPluginLayerValidator(UsdValidationRegistry &registry,
                               const TfToken &validatorName,
-                              object pyFn)
+                              object pyFn,
+                              object pyFixers)
 {
-    registry.RegisterPluginValidator(validatorName, _WrapLayerTaskFn(pyFn));
+    registry.RegisterPluginValidator(
+        validatorName, _WrapLayerTaskFn(pyFn), _ExtractFixers(pyFixers));
 }
 
 static void
 _RegisterPluginStageValidator(UsdValidationRegistry &registry,
                               const TfToken &validatorName,
-                              object pyFn)
+                              object pyFn,
+                              object pyFixers)
 {
-    registry.RegisterPluginValidator(validatorName, _WrapStageTaskFn(pyFn));
+    registry.RegisterPluginValidator(
+        validatorName, _WrapStageTaskFn(pyFn), _ExtractFixers(pyFixers));
 }
 
 static void
 _RegisterPluginPrimValidator(UsdValidationRegistry &registry,
                              const TfToken &validatorName,
-                             object pyFn)
+                             object pyFn,
+                             object pyFixers)
 {
-    registry.RegisterPluginValidator(validatorName, _WrapPrimTaskFn(pyFn));
+    registry.RegisterPluginValidator(
+        validatorName, _WrapPrimTaskFn(pyFn), _ExtractFixers(pyFixers));
 }
 
 static void
@@ -323,25 +357,35 @@ void wrapUsdValidationRegistry()
              return_value_policy<TfPySequenceToList>(), (args("schemaTypes")))
         // Explicit registration -- caller provides full metadata.
         // Use when registering validators at runtime without a plugin.
+        // An optional list of ValidationFixer objects can be provided to
+        // associate fixers with the validator.
         .def("RegisterLayerValidator", &_RegisterLayerValidator,
-             (args("metadata", "layerTaskFn")))
+             (args("metadata", "layerTaskFn"),
+              arg("fixers") = object()))
         .def("RegisterStageValidator", &_RegisterStageValidator,
-             (args("metadata", "stageTaskFn")))
+             (args("metadata", "stageTaskFn"),
+              arg("fixers") = object()))
         .def("RegisterPrimValidator", &_RegisterPrimValidator,
-             (args("metadata", "primTaskFn")))
+             (args("metadata", "primTaskFn"),
+              arg("fixers") = object()))
         .def("RegisterValidatorSuite", &_RegisterValidatorSuite,
              (args("metadata", "validators")))
         // Plugin registration -- metadata comes from plugInfo.json.
         // Use when implementing a validator declared in a plugin.
+        // An optional list of ValidationFixer objects can be provided to
+        // associate fixers with the validator.
         .def("RegisterPluginLayerValidator",
              &_RegisterPluginLayerValidator,
-             (args("validatorName", "layerTaskFn")))
+             (args("validatorName", "layerTaskFn"),
+              arg("fixers") = object()))
         .def("RegisterPluginStageValidator",
              &_RegisterPluginStageValidator,
-             (args("validatorName", "stageTaskFn")))
+             (args("validatorName", "stageTaskFn"),
+              arg("fixers") = object()))
         .def("RegisterPluginPrimValidator",
              &_RegisterPluginPrimValidator,
-             (args("validatorName", "primTaskFn")))
+             (args("validatorName", "primTaskFn"),
+              arg("fixers") = object()))
         .def("RegisterPluginValidatorSuite",
              &_RegisterPluginValidatorSuite,
              (args("validatorSuiteName", "validators")));
