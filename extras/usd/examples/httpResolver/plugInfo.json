@@ -1,0 +1,19 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "HttpResolver": {
+                        "bases": ["ArDefaultResolver"],
+                        "uriSchemes": ["http", "https"]
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "httpResolver",
+            "ResourcePath": "resources",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

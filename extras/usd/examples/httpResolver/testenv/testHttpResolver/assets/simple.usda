@@ -1,0 +1,10 @@
+#usda 1.0
+
+def Xform "Root" {
+    def Sphere "Ball" {
+        double radius = 1.0
+    }
+    def Cube "Box" {
+        double size = 2.0
+    }
+}
