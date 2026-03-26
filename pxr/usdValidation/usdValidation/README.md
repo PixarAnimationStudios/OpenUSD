@@ -682,6 +682,96 @@ registry.RegisterValidatorSuite(
 )
 ```
 
+### Adding fixers in Python
+
+Fixers can be created in Python and passed to any registration method
+via the optional `fixers` parameter. Each fixer requires two callables:
+
+| Callable | Signature | Purpose |
+|---|---|---|
+| `fixerImplFn` | `(error: ValidationError, editTarget: Usd.EditTarget, timeCode: Usd.TimeCode) -> bool` | Apply the fix; return `True` on success |
+| `canApplyFn` | `(error: ValidationError, editTarget: Usd.EditTarget, timeCode: Usd.TimeCode) -> bool` | Return whether the fix is applicable |
+
+```python
+from pxr import Sdf, Usd, UsdValidation
+
+registry = UsdValidation.ValidationRegistry()
+
+# Define fixer callables.
+def _can_fix_missing_doc(error, editTarget, timeCode):
+    layer = editTarget.GetLayer()
+    prim_spec = layer.GetPrimAtPath(error.GetSites()[0].GetPrim().GetPath())
+    return prim_spec is not None and not prim_spec.documentation
+
+def _fix_missing_doc(error, editTarget, timeCode):
+    layer = editTarget.GetLayer()
+    prim_spec = layer.GetPrimAtPath(error.GetSites()[0].GetPrim().GetPath())
+    if prim_spec is None:
+        return False
+    prim_spec.documentation = "TODO: add documentation"
+    return True
+
+# Create the fixer.
+fixer = UsdValidation.ValidationFixer(
+    name="AddPlaceholderDoc",
+    description="Add a placeholder documentation string.",
+    fixerImplFn=_fix_missing_doc,
+    canApplyFn=_can_fix_missing_doc,
+    errorName="MissingDocumentation",       # optional; omit to match any error
+    keywords=["pipeline"],                  # optional
+)
+
+# Register a validator with the fixer attached.
+metadata = UsdValidation.ValidatorMetadata(
+    name="myPackage:RequiresDocumentation",
+    doc="Warn when a prim has no documentation.",
+    keywords=["myPackage"],
+)
+
+def _check_documentation(prim, timeRange):
+    if prim.IsPseudoRoot():
+        return []
+    if not prim.GetDocumentation():
+        return [
+            UsdValidation.ValidationError(
+                "MissingDocumentation",
+                UsdValidation.ValidationErrorType.Warn,
+                [UsdValidation.ValidationErrorSite(
+                    prim.GetStage(), prim.GetPath())],
+                f"Prim '{prim.GetPath()}' has no documentation.",
+            )
+        ]
+    return []
+
+registry.RegisterPrimValidator(metadata, _check_documentation, fixers=[fixer])
+```
+
+After validation, retrieve and apply fixers:
+
+```python
+validator = registry.GetOrLoadValidatorByName(
+    "myPackage:RequiresDocumentation"
+)
+
+# Fixers are accessible from the validator or from individual errors.
+fixers = validator.GetFixers()
+fixer = validator.GetFixerByName("AddPlaceholderDoc")
+
+# After running validation:
+stage = Usd.Stage.Open("asset.usda")
+prim = stage.GetPrimAtPath("/MyPrim")
+errors = validator.Validate(prim)
+
+for error in errors:
+    for f in error.GetFixersByErrorName():
+        editTarget = Usd.EditTarget(stage.GetRootLayer())
+        if f.CanApplyFix(error, editTarget):
+            f.ApplyFix(error, editTarget)
+```
+
+Note that `ApplyFix` calls `editTarget.GetLayer()->Save()` internally
+on success. The target layer must be file-backed (not anonymous).
+
 ### Notes
 
 * The `ValidationRegistry` is a singleton; validators registered in
