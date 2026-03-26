@@ -425,7 +425,7 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         self.assertTrue(rigidbody_found)
         self.assertTrue(cube_found)
 
-    def test_rigidbody_collision_multihreading_parse(self):
+    def test_rigidbody_collision_multithreading_parse(self):
         """Check that if a single rigid body has many collision objects, the
         multithreaded parsing works correctly.
         """
@@ -442,7 +442,16 @@ class TestUsdPhysicsParsing(unittest.TestCase):
             sphere = UsdGeom.Sphere.Define(stage, f"/Body/SphereCollider_{k}")
             UsdPhysics.CollisionAPI.Apply(sphere.GetPrim())
 
-        UsdPhysics.LoadUsdPhysicsFromRange(stage, [Sdf.Path.absoluteRootPath])
+        ret_dict = UsdPhysics.LoadUsdPhysicsFromRange(stage, [Sdf.Path.absoluteRootPath])
+
+        collider_count = 0
+        for key, value in ret_dict.items():
+            prim_paths, descs = value
+            if key == UsdPhysics.ObjectType.SphereShape:
+                collider_count = len(prim_paths)
+
+        self.assertEqual(collider_count, NUM_COLLIDERS,
+            f"Expected {NUM_COLLIDERS} colliders, got {collider_count}")
 
     def test_filtering_pairs_parse(self):
         stage = Usd.Stage.CreateInMemory()

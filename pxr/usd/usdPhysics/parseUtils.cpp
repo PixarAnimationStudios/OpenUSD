@@ -2045,17 +2045,20 @@ void _FinalizeCollisionDescs(
     const size_t numPrimPerBatch = 10;
     WorkParallelForN(physicsPrims.size(), workLambda, numPrimPerBatch);
 
-    // Merge into bodyDesc->collisions single-threaded. Sort by body pointer
-    // so all collisions for the same body are consecutive (better locality).
+    // Merge into bodyDesc->collisions single-threaded. Sort by body path
+    // so all collisions for the same body are consecutive (better locality)
+    // and by collision path for deterministic ordering.
     if (!bodyCollisionPairs.empty())
     {
-        std::vector<BodyCollisionPair> sorted(
-            bodyCollisionPairs.begin(), bodyCollisionPairs.end());
-        std::sort(sorted.begin(), sorted.end(),
+        std::sort(bodyCollisionPairs.begin(), bodyCollisionPairs.end(),
             [](const BodyCollisionPair& a, const BodyCollisionPair& b) {
-                return a.first < b.first;
+                if (a.first->primPath < b.first->primPath)
+                    return true;
+                if (b.first->primPath < a.first->primPath)
+                    return false;
+                return a.second < b.second;
             });
-        for (const BodyCollisionPair& pair : sorted)
+        for (const BodyCollisionPair& pair : bodyCollisionPairs)
         {
             pair.first->collisions.push_back(pair.second);
         }
