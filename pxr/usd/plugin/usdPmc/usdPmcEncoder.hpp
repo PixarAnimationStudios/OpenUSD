@@ -83,6 +83,9 @@ private:
     /// Pack all processed files back into the output USDZ archive
     bool _PackUSDZ();
 
+    /// Write PMC files as siblings of the output file for non-USDZ output
+    bool _WriteNonUsdzOutput();
+
     /// Remove all the non flatten references from the list
     bool _RemoveFlattenedReferences();
 

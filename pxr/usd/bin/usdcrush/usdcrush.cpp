@@ -32,12 +32,12 @@ struct Args {
 // Configure command line interface options
 static void Configure(CLI::App *app, Args &args) {
     app->add_option(
-        "inputFile", args.inputFile, "The input USDZ file to process.")
+        "inputFile", args.inputFile, "The input USD file to process.")
         ->required(true);
 
     app->add_option(
         "-o,--out", args.outputFile,
-        "The output USDZ file to write to.")
+        "The output USD file to write to.")
         ->required(true);
 
     app->add_option(
@@ -68,22 +68,6 @@ static void Quarantine(const std::string &filepath) {
 static int UsdCrush(const Args &args) {
     if (!args.meshes) {
         std::cerr << "error: No compression options are enabled, no processing will occur." << std::endl;
-        return 1;
-    }
-
-    // Check that input file has .usdz extension
-    const std::string inputExt = TfStringToLower(TfGetExtension(args.inputFile));
-    if (inputExt != "usdz") {
-        std::cerr << "error: Input file must have .usdz extension, got ."
-                  << inputExt << std::endl;
-        return 1;
-    }
-
-    // Check that output file has .usdz extension
-    const std::string outputExt = TfStringToLower(TfGetExtension(args.outputFile));
-    if (outputExt != "usdz") {
-        std::cerr << "error: Output file must have .usdz extension, got ."
-                  << outputExt << std::endl;
         return 1;
     }
 

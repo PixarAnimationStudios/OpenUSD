@@ -344,26 +344,16 @@ UsdPmcMeshEncoder::_RemoveAttributes(
     return true;
 }
 
-bool UsdPmcMeshEncoder::EncodeStage(std::filesystem::path inUSDZFile,
-                                    std::filesystem::path outUSDZFile) {
-    // Validate input file extension
-    std::string inFileExt = inUSDZFile.extension().string();
-    std::transform(inFileExt.begin(), inFileExt.end(), inFileExt.begin(),
-                   ::tolower);
-    if (inFileExt != "usdz" && inFileExt != ".usdz") {
-        TF_RUNTIME_ERROR("Unsupported input file type, expected usdz, got: " +
-                         inFileExt);
-        return false;
-    }
-
+bool UsdPmcMeshEncoder::EncodeStage(std::filesystem::path inFile,
+                                    std::filesystem::path outFile) {
     // Verify input file exists
-    if (!std::filesystem::exists(inUSDZFile)) {
-        TF_RUNTIME_ERROR("Unable to open input file: " + inUSDZFile.string());
+    if (!std::filesystem::exists(inFile)) {
+        TF_RUNTIME_ERROR("Unable to open input file: " + inFile.string());
         return false;
     }
 
-    _inUSDZFile = inUSDZFile;
-    _outUSDZFile = outUSDZFile;
+    _inUSDZFile = inFile;
+    _outUSDZFile = outFile;
 
     // Create temporary directory for processing
     _tempDir = _GetTempDir();
@@ -372,23 +362,33 @@ bool UsdPmcMeshEncoder::EncodeStage(std::filesystem::path inUSDZFile,
         return false;
     }
 
-    // Extract all files from the USDZ archive
-    if (!_ExtractUSDZFiles ()) {
-        TF_RUNTIME_ERROR("Failed to extract dependencies.");
-        return false;
+    // Determine input format
+    std::string inExt = inFile.extension().string();
+    std::transform(inExt.begin(), inExt.end(), inExt.begin(), ::tolower);
+    const bool isUsdzInput = (inExt == ".usdz");
+
+    // For USDZ input, extract the archive; otherwise use the file directly
+    std::filesystem::path stageSource;
+    if (isUsdzInput) {
+        if (!_ExtractUSDZFiles()) {
+            TF_RUNTIME_ERROR("Failed to extract dependencies.");
+            return false;
+        }
+        stageSource = _tempDir / _entryFileName;
+    } else {
+        _entryFileName = inFile.filename().string();
+        stageSource = inFile;
     }
 
-    // ToDo: Remove the flattenning step once the layers processing is available
-    // Export the stage as flatten and use it as input for the encoder
-    std::filesystem::path inFile = _tempDir / _entryFileName;
-    std::filesystem::path flatten;
-    if (!_CreateFlattenOutput (inFile, flatten)) {
+    // Flatten the stage
+    std::filesystem::path flattenedPath;
+    if (!_CreateFlattenOutput(stageSource, flattenedPath)) {
         TF_RUNTIME_ERROR("Unable to create flatten stage");
         return false;
     }
 
-    // Open the USD stage from the USDZ file
-    UsdStageRefPtr stage = UsdStage::Open(flatten.string());
+    // Open the flattened USD stage
+    UsdStageRefPtr stage = UsdStage::Open(flattenedPath.string());
     if (!stage) {
         TF_RUNTIME_ERROR("Failed to open stage.");
         return false;
@@ -398,63 +398,122 @@ bool UsdPmcMeshEncoder::EncodeStage(std::filesystem::path inUSDZFile,
 
     // Process all meshes in the stage
     uint32_t meshCounter = 0;
-    for (UsdPrim prim: stage->TraverseAll()) {
+    for (UsdPrim prim : stage->TraverseAll()) {
         auto currentMesh = UsdGeomMesh(prim);
-        if (currentMesh) {
-            if (CanEncode(currentMesh)) {
-                std::set<std::string> processedAttributes;
-                std::set<std::string> processedSubSets;
-                VtDictionary meshResults;
+        if (currentMesh && CanEncode(currentMesh)) {
+            std::set<std::string> processedAttributes;
+            std::set<std::string> processedSubSets;
+            VtDictionary meshResults;
 
-                // Compress the mesh and track what was processed
-                if (_ProcessMesh(currentMesh, meshOptions, meshCounter,
-                                 processedAttributes, processedSubSets,
-                                 meshResults)) {
-                    // Remove original attributes since they're now compressed
-                    _RemoveAttributes(currentMesh, processedAttributes,
-                                      processedSubSets);
-                    meshCounter++;
-                }
+            if (_ProcessMesh(currentMesh, meshOptions, meshCounter,
+                             processedAttributes, processedSubSets,
+                             meshResults)) {
+                _RemoveAttributes(currentMesh, processedAttributes,
+                                  processedSubSets);
+                meshCounter++;
             }
         }
     }
 
-    // Set default entry filename if not found during extraction
     if (_entryFileName.empty()) {
         _entryFileName = "root.usdc";
     }
 
-    // Export the modified stage to the temporary directory
-    std::filesystem::path _outRootFile = std::filesystem::path(_tempDir) /
-                                         std::filesystem::path(_entryFileName);
-    if (!stage->GetRootLayer()->Export(_outRootFile.string())) {
-        TF_RUNTIME_ERROR("Unable to export stage to: " +
-                         _outRootFile.string());
-        return false;
-    }
+    // Determine output format
+    std::string outExt = outFile.extension().string();
+    std::transform(outExt.begin(), outExt.end(), outExt.begin(), ::tolower);
+    const bool isUsdzOutput = (outExt == ".usdz");
 
-    // Verify the export succeeded
-    if (!std::filesystem::exists(_outRootFile)) {
-        TF_RUNTIME_ERROR("Did not export the root layer of stage: " +
-                         _outRootFile.string());
-        return false;
-    }
+    if (isUsdzOutput) {
+        // Export the modified stage to the temporary directory for packing
+        std::filesystem::path outRootFile = _tempDir / _entryFileName;
+        if (!stage->GetRootLayer()->Export(outRootFile.string())) {
+            TF_RUNTIME_ERROR("Unable to export stage to: " +
+                             outRootFile.string());
+            return false;
+        }
+        if (!std::filesystem::exists(outRootFile)) {
+            TF_RUNTIME_ERROR("Did not export the root layer of stage: " +
+                             outRootFile.string());
+            return false;
+        }
 
-    if (!_RemoveFlattenedReferences()) {
-        TF_RUNTIME_ERROR("Failed to remove non flatten references.");
-        return false;
-    }
+        if (isUsdzInput) {
+            // Remove USD layers that were flattened into the entry
+            if (!_RemoveFlattenedReferences()) {
+                TF_RUNTIME_ERROR("Failed to remove non flatten references.");
+                return false;
+            }
+        } else {
+            // For non-USDZ input, build the references list:
+            // PMC files were appended by _ProcessMesh; prepend the entry layer
+            _references.push_front(_entryFileName);
+        }
 
-    // Pack everything back into a USDZ file
-    if (!_PackUSDZ()) {
-    TF_RUNTIME_ERROR("Failed to pack output usdz.");
-        return false;
+        if (!_PackUSDZ()) {
+            TF_RUNTIME_ERROR("Failed to pack output usdz.");
+            return false;
+        }
+    } else {
+        // Non-USDZ output: export stage directly to the output path
+        std::filesystem::path outDir = outFile.parent_path();
+        if (!outDir.empty() && !_CreateDirectory(outDir)) {
+            TF_RUNTIME_ERROR("Unable to create output directory: " +
+                             outDir.string());
+            return false;
+        }
+        if (!stage->GetRootLayer()->Export(outFile.string())) {
+            TF_RUNTIME_ERROR("Unable to export stage to: " + outFile.string());
+            return false;
+        }
+        // Copy PMC files as siblings of the output file
+        if (!_WriteNonUsdzOutput()) {
+            TF_RUNTIME_ERROR("Failed to write PMC files.");
+            return false;
+        }
     }
 
     // Clean up temporary directory
     _RemoveTempDir(_tempDir.string());
 
-    return true; // Fixed: should return true on success
+    return true;
+}
+
+bool
+UsdPmcMeshEncoder::_WriteNonUsdzOutput() {
+    std::filesystem::path outDir = _outUSDZFile.parent_path();
+    if (outDir.empty()) {
+        outDir = std::filesystem::current_path();
+    }
+
+    // Copy PMC files from temp dir into a sibling pmcCodec directory
+    std::filesystem::path pmcSrcDir = _tempDir / "pmcCodec";
+    if (std::filesystem::exists(pmcSrcDir)) {
+        std::filesystem::path pmcOutDir = outDir / "pmcCodec";
+        if (!_CreateDirectory(pmcOutDir)) {
+            return false;
+        }
+        for (const auto& entry :
+             std::filesystem::directory_iterator(pmcSrcDir)) {
+            if (!entry.is_regular_file()) {
+                continue;
+            }
+            std::filesystem::path dest =
+                pmcOutDir / entry.path().filename();
+            std::error_code ec;
+            std::filesystem::copy_file(
+                entry.path(), dest,
+                std::filesystem::copy_options::overwrite_existing, ec);
+            if (ec) {
+                TF_RUNTIME_ERROR(
+                    "Failed to copy PMC file: " +
+                    entry.path().string() + " -> " + dest.string() +
+                    ": " + ec.message());
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 bool
