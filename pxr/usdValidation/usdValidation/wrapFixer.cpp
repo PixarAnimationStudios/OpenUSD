@@ -18,6 +18,7 @@
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/make_constructor.hpp"
 #include "pxr/external/boost/python/object.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE

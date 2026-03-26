@@ -16,6 +16,7 @@ Exercises:
 """
 
 import os
+import tempfile
 import unittest
 
 from pxr import Plug, Sdf, Tf, Usd, UsdValidation
@@ -128,7 +129,11 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
         self.assertEqual(fixers[0].name, "layerFixer")
 
         # Validate to produce an error, then test CanApplyFix and ApplyFix.
-        layer = Sdf.Layer.CreateAnonymous(".usda")
+        # ApplyFix calls layer.Save() internally, so we need a file-backed
+        # layer (anonymous layers cannot be saved).
+        tmp = tempfile.NamedTemporaryFile(suffix=".usda", delete=False)
+        tmp.close()
+        layer = Sdf.Layer.CreateNew(tmp.name)
         errors = validator.Validate(layer)
         self.assertEqual(len(errors), 1)
 
@@ -144,6 +149,8 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
         result = fixers[0].ApplyFix(error, editTarget)
         self.assertTrue(result)
         self.assertEqual(len(apply_calls), 1)
+
+        os.unlink(tmp.name)
 
     def test_StageValidatorWithFixer(self):
         """Register a stage validator with a Python fixer."""
@@ -486,13 +493,18 @@ class TestFixerWithPluginRegistration(unittest.TestCase):
         self.assertEqual(fixers[0].name, "pluginLayerFixer")
 
         # Verify the fixer works end-to-end.
-        layer = Sdf.Layer.CreateAnonymous(".usda")
+        # Use a file-backed layer because ApplyFix calls Save() internally.
+        tmp = tempfile.NamedTemporaryFile(suffix=".usda", delete=False)
+        tmp.close()
+        layer = Sdf.Layer.CreateNew(tmp.name)
         errors = validator.Validate(layer)
         self.assertEqual(len(errors), 1)
 
         editTarget = Usd.EditTarget(layer)
         self.assertTrue(fixers[0].CanApplyFix(errors[0], editTarget))
         self.assertTrue(fixers[0].ApplyFix(errors[0], editTarget))
+
+        os.unlink(tmp.name)
 
 
 if __name__ == "__main__":
