@@ -182,7 +182,7 @@ apply_pxr24_impl (exr_encode_pipeline_t* encode)
                     if (nOut + nBytes > encode->scratch_alloc_size_1)
                         return EXR_ERR_OUT_OF_MEMORY;
                     nOut += nBytes;
-                    lastIn += w * 4;
+                    lastIn += (uint64_t) w * 4;
 
                     ptr[0] = out;
                     out += w;
@@ -371,7 +371,7 @@ undo_pxr24_impl (
                     ptr[2] = lastIn;
                     lastIn += w;
 
-                    if (nDec + (uint64_t) (w * 3) > outSize)
+                    if (nDec + (uint64_t) w * 3 > outSize)
                         return EXR_ERR_CORRUPT_CHUNK;
 
                     for (int x = 0; x < w; ++x)
@@ -384,7 +384,7 @@ undo_pxr24_impl (
                         unaligned_store32 (dout, pixel);
                         ++dout;
                     }
-                    nDec += (uint64_t) (w * 3);
+                    nDec += (uint64_t) w * 3;
                     break;
                 }
                 default: return EXR_ERR_INVALID_ARGUMENT;
