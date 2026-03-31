@@ -3393,7 +3393,7 @@ creation-time, a session layer participates fully in the stage's `composition
 LayerStack <#usdglossary-rootlayerstack>`_, and can possess its own `SubLayers
 <#usdglossary-sublayers>`_. Session layers generally embody "application state",
 and, if saved, would be saved as part of application state rather than as part 
-of the data set they modify. :ref:`toolset:usdview` creates a sesssion layer, 
+of the data set they modify. :ref:`toolset:usdview` creates a session layer, 
 into which are targeted all `VariantSet <#usdglossary-variantset>`_ selections,
 `vis/invis <#usdglossary-visibility>`_ opinions, and `activation/deactivation
 <#usdglossary-active-inactive>`_ operations provided by the GUI. In keeping with
