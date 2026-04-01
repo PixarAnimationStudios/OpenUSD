@@ -34,9 +34,15 @@ namespace
 // These follow the same GIL-safety pattern as the validator task function
 // wrappers in wrapRegistry.cpp: the Python callable is stored in a
 // TfPyObjWrapper, and the GIL is acquired before invoking it.
+//
+// FixerImplFn and FixerCanApplyFn share the same signature
+// (UsdValidationError, UsdEditTarget, UsdTimeCode) -> bool, so a single
+// wrapper function handles both.
 
-FixerImplFn
-_WrapFixerImplFn(pxr_boost::python::object pyFn)
+static std::function<bool(const UsdValidationError &,
+                          const UsdEditTarget &,
+                          const UsdTimeCode &)>
+_WrapFixerFn(object pyFn)
 {
     TfPyObjWrapper wrapper(pyFn);
     return [wrapper](const UsdValidationError &error,
@@ -44,36 +50,13 @@ _WrapFixerImplFn(pxr_boost::python::object pyFn)
                      const UsdTimeCode &timeCode) -> bool {
         TfPyLock lock;
         try {
-            pxr_boost::python::object result = wrapper.Get()(
-                pxr_boost::python::object(error),
-                pxr_boost::python::object(editTarget),
-                pxr_boost::python::object(timeCode));
-            return pxr_boost::python::extract<bool>(result);
+            object result = wrapper.Get()(
+                object(error),
+                object(editTarget),
+                object(timeCode));
+            return extract<bool>(result);
         }
-        catch (pxr_boost::python::error_already_set const &) {
-            TfPyConvertPythonExceptionToTfErrors();
-            PyErr_Clear();
-            return false;
-        }
-    };
-}
-
-FixerCanApplyFn
-_WrapFixerCanApplyFn(pxr_boost::python::object pyFn)
-{
-    TfPyObjWrapper wrapper(pyFn);
-    return [wrapper](const UsdValidationError &error,
-                     const UsdEditTarget &editTarget,
-                     const UsdTimeCode &timeCode) -> bool {
-        TfPyLock lock;
-        try {
-            pxr_boost::python::object result = wrapper.Get()(
-                pxr_boost::python::object(error),
-                pxr_boost::python::object(editTarget),
-                pxr_boost::python::object(timeCode));
-            return pxr_boost::python::extract<bool>(result);
-        }
-        catch (pxr_boost::python::error_already_set const &) {
+        catch (error_already_set const &) {
             TfPyConvertPythonExceptionToTfErrors();
             PyErr_Clear();
             return false;
@@ -87,15 +70,15 @@ _WrapFixerCanApplyFn(pxr_boost::python::object pyFn)
 UsdValidationFixer *
 _MakeValidationFixer(const TfToken &name,
                      const std::string &description,
-                     pxr_boost::python::object fixerImplFn,
-                     pxr_boost::python::object canApplyFn,
+                     object fixerImplFn,
+                     object canApplyFn,
                      const TfTokenVector &keywords,
                      const TfToken &errorName)
 {
     return new UsdValidationFixer(
         name, description,
-        _WrapFixerImplFn(fixerImplFn),
-        _WrapFixerCanApplyFn(canApplyFn),
+        _WrapFixerFn(fixerImplFn),
+        _WrapFixerFn(canApplyFn),
         keywords, errorName);
 }
 

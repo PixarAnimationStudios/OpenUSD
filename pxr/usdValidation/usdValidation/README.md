@@ -682,7 +682,7 @@ registry.RegisterValidatorSuite(
 )
 ```
 
-### Adding fixers in Python
+### Adding Fixers in Python
 
 Fixers can be created in Python and passed to any registration method
 via the optional `fixers` parameter. Each fixer requires two callables:
@@ -698,12 +698,12 @@ from pxr import Sdf, Usd, UsdValidation
 registry = UsdValidation.ValidationRegistry()
 
 # Define fixer callables.
-def _can_fix_missing_doc(error, editTarget, timeCode):
+def _CanFixMissingDoc(error, editTarget, timeCode):
     layer = editTarget.GetLayer()
     prim_spec = layer.GetPrimAtPath(error.GetSites()[0].GetPrim().GetPath())
     return prim_spec is not None and not prim_spec.documentation
 
-def _fix_missing_doc(error, editTarget, timeCode):
+def _FixMissingDoc(error, editTarget, timeCode):
     layer = editTarget.GetLayer()
     prim_spec = layer.GetPrimAtPath(error.GetSites()[0].GetPrim().GetPath())
     if prim_spec is None:
@@ -715,8 +715,8 @@ def _fix_missing_doc(error, editTarget, timeCode):
 fixer = UsdValidation.ValidationFixer(
     name="AddPlaceholderDoc",
     description="Add a placeholder documentation string.",
-    fixerImplFn=_fix_missing_doc,
-    canApplyFn=_can_fix_missing_doc,
+    fixerImplFn=_FixMissingDoc,
+    canApplyFn=_CanFixMissingDoc,
     errorName="MissingDocumentation",       # optional; omit to match any error
     keywords=["pipeline"],                  # optional
 )
@@ -728,7 +728,7 @@ metadata = UsdValidation.ValidatorMetadata(
     keywords=["myPackage"],
 )
 
-def _check_documentation(prim, timeRange):
+def _CheckDocumentation(prim, timeRange):
     if prim.IsPseudoRoot():
         return []
     if not prim.GetDocumentation():
@@ -743,7 +743,7 @@ def _check_documentation(prim, timeRange):
         ]
     return []
 
-registry.RegisterPrimValidator(metadata, _check_documentation, fixers=[fixer])
+registry.RegisterPrimValidator(metadata, _CheckDocumentation, fixers=[fixer])
 ```
 
 After validation, retrieve and apply fixers:

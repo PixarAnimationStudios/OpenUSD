@@ -21,9 +21,6 @@ import unittest
 
 from pxr import Plug, Sdf, Tf, Usd, UsdValidation
 
-# Plugin name must match the "Name" field in
-# TestUsdValidationRegistryPy_plugInfo.json.
-_PLUGIN_NAME = "testValidationRegistryPyPlugin"
 
 
 class TestValidationFixerConstruction(unittest.TestCase):
@@ -31,17 +28,17 @@ class TestValidationFixerConstruction(unittest.TestCase):
 
     def test_BasicConstruction(self):
         """A fixer can be constructed with name, description, and callables."""
-        def impl_fn(error, editTarget, timeCode):
+        def _ImplFn(error, editTarget, timeCode):
             return True
 
-        def can_apply_fn(error, editTarget, timeCode):
+        def _CanApplyFn(error, editTarget, timeCode):
             return True
 
         fixer = UsdValidation.ValidationFixer(
             name="testFixer",
             description="A test fixer",
-            fixerImplFn=impl_fn,
-            canApplyFn=can_apply_fn,
+            fixerImplFn=_ImplFn,
+            canApplyFn=_CanApplyFn,
         )
         self.assertEqual(fixer.name, "testFixer")
         self.assertEqual(fixer.description, "A test fixer")
@@ -50,17 +47,17 @@ class TestValidationFixerConstruction(unittest.TestCase):
 
     def test_ConstructionWithKeywordsAndErrorName(self):
         """A fixer can be constructed with optional keywords and errorName."""
-        def impl_fn(error, editTarget, timeCode):
+        def _ImplFn(error, editTarget, timeCode):
             return True
 
-        def can_apply_fn(error, editTarget, timeCode):
+        def _CanApplyFn(error, editTarget, timeCode):
             return True
 
         fixer = UsdValidation.ValidationFixer(
             name="testFixer2",
             description="Another test fixer",
-            fixerImplFn=impl_fn,
-            canApplyFn=can_apply_fn,
+            fixerImplFn=_ImplFn,
+            canApplyFn=_CanApplyFn,
             keywords=["studio", "lighting"],
             errorName="SomeError",
         )
@@ -80,22 +77,22 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
         """Register a layer validator with a Python fixer and invoke it."""
         registry = UsdValidation.ValidationRegistry()
 
-        can_apply_calls = []
-        apply_calls = []
+        canApplyCalls = []
+        applyCalls = []
 
-        def can_apply_fn(error, editTarget, timeCode):
-            can_apply_calls.append(True)
+        def _CanApplyFn(error, editTarget, timeCode):
+            canApplyCalls.append(True)
             return True
 
-        def impl_fn(error, editTarget, timeCode):
-            apply_calls.append(True)
+        def _ImplFn(error, editTarget, timeCode):
+            applyCalls.append(True)
             return True
 
         fixer = UsdValidation.ValidationFixer(
             name="layerFixer",
             description="Fixes layer errors",
-            fixerImplFn=impl_fn,
-            canApplyFn=can_apply_fn,
+            fixerImplFn=_ImplFn,
+            canApplyFn=_CanApplyFn,
             errorName="LayerFixerError",
         )
 
@@ -105,7 +102,7 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        def layer_task(layer):
+        def _LayerTask(layer):
             return [
                 UsdValidation.ValidationError(
                     "LayerFixerError",
@@ -116,7 +113,7 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
                 )
             ]
 
-        registry.RegisterLayerValidator(metadata, layer_task, fixers=[fixer])
+        registry.RegisterLayerValidator(metadata, _LayerTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(
             "testPyFixer:LayerValidatorWithFixer"
@@ -143,12 +140,12 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
         # CanApplyFix should invoke the Python callable.
         result = fixers[0].CanApplyFix(error, editTarget)
         self.assertTrue(result)
-        self.assertEqual(len(can_apply_calls), 1)
+        self.assertEqual(len(canApplyCalls), 1)
 
         # ApplyFix should invoke the Python callable and save the layer.
         result = fixers[0].ApplyFix(error, editTarget)
         self.assertTrue(result)
-        self.assertEqual(len(apply_calls), 1)
+        self.assertEqual(len(applyCalls), 1)
 
         os.unlink(tmp.name)
 
@@ -156,17 +153,17 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
         """Register a stage validator with a Python fixer."""
         registry = UsdValidation.ValidationRegistry()
 
-        def can_apply_fn(error, editTarget, timeCode):
+        def _CanApplyFn(error, editTarget, timeCode):
             return True
 
-        def impl_fn(error, editTarget, timeCode):
+        def _ImplFn(error, editTarget, timeCode):
             return True
 
         fixer = UsdValidation.ValidationFixer(
             name="stageFixer",
             description="Fixes stage errors",
-            fixerImplFn=impl_fn,
-            canApplyFn=can_apply_fn,
+            fixerImplFn=_ImplFn,
+            canApplyFn=_CanApplyFn,
         )
 
         metadata = UsdValidation.ValidatorMetadata(
@@ -175,7 +172,7 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        def stage_task(stage, timeRange):
+        def _StageTask(stage, timeRange):
             return [
                 UsdValidation.ValidationError(
                     "StageFixerError",
@@ -186,7 +183,7 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
                 )
             ]
 
-        registry.RegisterStageValidator(metadata, stage_task, fixers=[fixer])
+        registry.RegisterStageValidator(metadata, _StageTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(
             "testPyFixer:StageValidatorWithFixer"
@@ -199,17 +196,17 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
         """Register a prim validator with a Python fixer."""
         registry = UsdValidation.ValidationRegistry()
 
-        def can_apply_fn(error, editTarget, timeCode):
+        def _CanApplyFn(error, editTarget, timeCode):
             return True
 
-        def impl_fn(error, editTarget, timeCode):
+        def _ImplFn(error, editTarget, timeCode):
             return True
 
         fixer = UsdValidation.ValidationFixer(
             name="primFixer",
             description="Fixes prim errors",
-            fixerImplFn=impl_fn,
-            canApplyFn=can_apply_fn,
+            fixerImplFn=_ImplFn,
+            canApplyFn=_CanApplyFn,
         )
 
         metadata = UsdValidation.ValidatorMetadata(
@@ -218,7 +215,7 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        def prim_task(prim, timeRange):
+        def _PrimTask(prim, timeRange):
             if prim.IsPseudoRoot():
                 return []
             return [
@@ -231,7 +228,7 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
                 )
             ]
 
-        registry.RegisterPrimValidator(metadata, prim_task, fixers=[fixer])
+        registry.RegisterPrimValidator(metadata, _PrimTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(
             "testPyFixer:PrimValidatorWithFixer"
@@ -244,17 +241,17 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
         """A validator can have multiple fixers."""
         registry = UsdValidation.ValidationRegistry()
 
-        def noop(error, editTarget, timeCode):
+        def _Noop(error, editTarget, timeCode):
             return True
 
         fixer_a = UsdValidation.ValidationFixer(
             name="fixerA", description="First fixer",
-            fixerImplFn=noop, canApplyFn=noop,
+            fixerImplFn=_Noop, canApplyFn=_Noop,
             keywords=["teamA"],
         )
         fixer_b = UsdValidation.ValidationFixer(
             name="fixerB", description="Second fixer",
-            fixerImplFn=noop, canApplyFn=noop,
+            fixerImplFn=_Noop, canApplyFn=_Noop,
             keywords=["teamB"],
             errorName="SpecificError",
         )
@@ -265,11 +262,11 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        def layer_task(layer):
+        def _LayerTask(layer):
             return []
 
         registry.RegisterLayerValidator(
-            metadata, layer_task, fixers=[fixer_a, fixer_b])
+            metadata, _LayerTask, fixers=[fixer_a, fixer_b])
 
         validator = registry.GetOrLoadValidatorByName(
             "testPyFixer:MultiFixerValidator"
@@ -300,20 +297,20 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
         """CanApplyFix returning False prevents ApplyFix from running."""
         registry = UsdValidation.ValidationRegistry()
 
-        apply_calls = []
+        applyCalls = []
 
-        def can_apply_fn(error, editTarget, timeCode):
+        def _CanApplyFn(error, editTarget, timeCode):
             return False
 
-        def impl_fn(error, editTarget, timeCode):
-            apply_calls.append(True)
+        def _ImplFn(error, editTarget, timeCode):
+            applyCalls.append(True)
             return True
 
         fixer = UsdValidation.ValidationFixer(
             name="guardedFixer",
             description="A guarded fixer",
-            fixerImplFn=impl_fn,
-            canApplyFn=can_apply_fn,
+            fixerImplFn=_ImplFn,
+            canApplyFn=_CanApplyFn,
         )
 
         metadata = UsdValidation.ValidatorMetadata(
@@ -322,7 +319,7 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        def layer_task(layer):
+        def _LayerTask(layer):
             return [
                 UsdValidation.ValidationError(
                     "GuardedError",
@@ -333,7 +330,7 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
                 )
             ]
 
-        registry.RegisterLayerValidator(metadata, layer_task, fixers=[fixer])
+        registry.RegisterLayerValidator(metadata, _LayerTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(
             "testPyFixer:GuardedValidator"
@@ -353,20 +350,20 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
         # However, since the client should check CanApplyFix first, the
         # intent is that impl_fn would not be called.  We verify the
         # CanApplyFix path here.
-        self.assertEqual(len(apply_calls), 0)
+        self.assertEqual(len(applyCalls), 0)
 
     def test_FixerAccessFromError(self):
         """Fixers should be accessible from the ValidationError object."""
         registry = UsdValidation.ValidationRegistry()
 
-        def noop(error, editTarget, timeCode):
+        def _Noop(error, editTarget, timeCode):
             return True
 
         fixer = UsdValidation.ValidationFixer(
             name="errorAccessFixer",
             description="Fixer accessible from error",
-            fixerImplFn=noop,
-            canApplyFn=noop,
+            fixerImplFn=_Noop,
+            canApplyFn=_Noop,
             errorName="AccessibleError",
         )
 
@@ -376,7 +373,7 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        def layer_task(layer):
+        def _LayerTask(layer):
             return [
                 UsdValidation.ValidationError(
                     "AccessibleError",
@@ -387,7 +384,7 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
                 )
             ]
 
-        registry.RegisterLayerValidator(metadata, layer_task, fixers=[fixer])
+        registry.RegisterLayerValidator(metadata, _LayerTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(
             "testPyFixer:ErrorAccessValidator"
@@ -416,11 +413,11 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        def layer_task(layer):
+        def _LayerTask(layer):
             return []
 
         # No fixers argument -- should work exactly as before.
-        registry.RegisterLayerValidator(metadata, layer_task)
+        registry.RegisterLayerValidator(metadata, _LayerTask)
 
         validator = registry.GetOrLoadValidatorByName(
             "testPyFixer:NoFixerValidator"
@@ -431,6 +428,10 @@ class TestFixerWithExplicitRegistration(unittest.TestCase):
 
 class TestFixerWithPluginRegistration(unittest.TestCase):
     """Test fixers passed through plugin validator registration."""
+
+    # Must match the "Name" field in
+    # TestUsdValidationRegistryPy_plugInfo.json.
+    PLUGIN_NAME = "testValidationRegistryPyPlugin"
 
     @classmethod
     def setUpClass(cls):
@@ -447,7 +448,7 @@ class TestFixerWithPluginRegistration(unittest.TestCase):
     def test_PluginLayerValidatorWithFixer(self):
         """Register a plugin layer validator with a Python fixer."""
         registry = UsdValidation.ValidationRegistry()
-        name = _PLUGIN_NAME + ":PyPluginLayerValidatorWithFixer"
+        name = self.PLUGIN_NAME + ":PyPluginLayerValidatorWithFixer"
 
         # Skip if no such validator is declared in plugInfo.json.
         # The existing test plugin may not have this validator, so we
@@ -460,20 +461,20 @@ class TestFixerWithPluginRegistration(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        def can_apply_fn(error, editTarget, timeCode):
+        def _CanApplyFn(error, editTarget, timeCode):
             return True
 
-        def impl_fn(error, editTarget, timeCode):
+        def _ImplFn(error, editTarget, timeCode):
             return True
 
         fixer = UsdValidation.ValidationFixer(
             name="pluginLayerFixer",
             description="Plugin layer fixer",
-            fixerImplFn=impl_fn,
-            canApplyFn=can_apply_fn,
+            fixerImplFn=_ImplFn,
+            canApplyFn=_CanApplyFn,
         )
 
-        def layer_task(layer):
+        def _LayerTask(layer):
             return [
                 UsdValidation.ValidationError(
                     "PluginLayerFixerError",
@@ -484,7 +485,7 @@ class TestFixerWithPluginRegistration(unittest.TestCase):
                 )
             ]
 
-        registry.RegisterLayerValidator(metadata, layer_task, fixers=[fixer])
+        registry.RegisterLayerValidator(metadata, _LayerTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(name)
         self.assertIsNotNone(validator)
