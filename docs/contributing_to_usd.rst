@@ -56,6 +56,9 @@ coding conventions and styles in each file and library when making changes.
 Pull Request Guidelines
 ***********************
 
+Submitting PRs
+===============
+
     * All development should happen against the "**dev**" branch of the
       repository. Please make sure the base branch of your pull request is set
       to the "**dev**" branch when filing your pull request.
@@ -69,16 +72,113 @@ Pull Request Guidelines
       clean as possible.
 
     * Please make sure all tests are passing with your change prior to
-      submitting a pull request. The current GitHub CI pipeline only runs build 
-      tests; additional tests will be run when reviewing your submitted change 
+      submitting a pull request. The current GitHub CI pipeline only runs build
+      tests; additional tests will be run when reviewing your submitted change
       for consideration.
 
-    * Please search through 
+    * Please search through
       `existing open GitHub issues <https://github.com/PixarAnimationStudios/OpenUSD/issues>`__
-      and associate your PR with issues that your change addresses. If there are 
-      no issues related to your change, you do not need to create a new issue. 
-      However, if your change requires multiple pull requests, it can be helpful 
+      and associate your PR with issues that your change addresses. If there are
+      no issues related to your change, you do not need to create a new issue.
+      However, if your change requires multiple pull requests, it can be helpful
       to create a single issue to link together and organize related PRs.
+
+Ownership and Review
+====================
+
+    * Every line in a PR is the contributor's responsibility. Please be
+      prepared to explain, at the depth a reviewer requires:
+
+        * Why a particular API, pattern, or approach was chosen over
+          alternatives
+        * What real-world scenarios were considered and how they informed the
+          design
+
+    * For non-trivial PRs, we recommend including a review guide in the PR
+      description or as a companion document. A review guide should cover:
+
+        * What changed and why, organized by logical concern rather than file
+          list
+        * Design decisions that were considered and the reasoning behind the
+          chosen approach
+        * Where domain judgment shaped the result -- not just what the code
+          does, but why it is the right thing to do
+        * Known limitations, deferred work, and follow-up items
+
+      The goal is that a reviewer can read the guide, understand the intent,
+      and focus their attention on whether the design is correct for the
+      ecosystem rather than reverse-engineering motivation from the diff.
+
+    * Please scope PRs to reviewable units. When reviewer feedback raises
+      multiple concerns, evaluate whether they are separable. A
+      framework-level design change bundled into an API-surface PR risks
+      delaying both. Separate what can ship now from what needs its own
+      discussion.
+
+    * Review is a conversation. Contributors should expect reviewers to ask
+      probing questions and should welcome those questions as part of the
+      normal review process.
+
+Quality Expectations
+====================
+
+    * Code that is technically correct but does the wrong thing is still wrong.
+      Please consider the real-world implications of changes, not just whether
+      they resolve the immediate diagnostic.
+
+    * Documentation examples are normative. Readers treat them as the
+      specification for how to use the framework. When a more specific API
+      exists for a given task, examples should use it.
+
+    * Codebase consistency can outweigh local correctness. If adjacent code
+      follows a pattern, please match it, even when a technically cleaner
+      alternative exists.
+
+    * "Does it pass tests" and "is it the right thing to do" are different
+      questions. Please be prepared to answer both.
+
+.. _ai_assisted_contributions:
+
+*************************
+AI-Assisted Contributions
+*************************
+
+OpenUSD welcomes contributions developed with AI assistance. These
+contributions are held to the same standards described above. The guidelines
+below address concerns specific to AI-assisted work.
+
+Transparency
+============
+
+    * Please disclose AI assistance in the PR description.
+    * Use ``Co-Authored-By`` trailers on commits where AI tooling contributed
+      to the implementation.
+    * Reviewers may use this information however they see fit, including asking
+      the contributor to explain sections in more detail.
+
+Ownership
+=========
+
+"The agent wrote it and the tests pass" is not a sufficient explanation for
+any design choice. Contributors are responsible for understanding and being
+able to explain all code they submit, regardless of how it was produced.
+
+Reviewer Burden
+===============
+
+AI tooling can increase the volume of contributions faster than reviewers can
+absorb them. Please take active steps to make review efficient rather than
+shifting that cost to maintainers. The :ref:`review guide
+<pull_request_guidelines>` recommendations above are especially important for
+AI-assisted PRs, where the reasoning behind changes may not be immediately
+apparent from the diff alone.
+
+Review Expectations
+===================
+
+Reviewers may ask additional probing questions about AI-assisted submissions
+and may use their own AI tools to analyze them. The standard is the same in
+both directions: the human is responsible for the judgment.
 
 .. _git_workflow:
 
