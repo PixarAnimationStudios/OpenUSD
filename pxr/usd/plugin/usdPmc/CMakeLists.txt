@@ -32,3 +32,15 @@ pxr_library(usdPmc
         api.h
         usdPmcEncoder.hpp
 )
+
+pxr_test_scripts(
+    testenv/testUsdPmc.py
+)
+
+pxr_register_test(testUsdPmc
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPmc"
+    EXPECTED_RETURN_CODE 0
+    PRE_PATH
+        ${CMAKE_INSTALL_PREFIX}/bin
+)

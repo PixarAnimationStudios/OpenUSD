@@ -14,7 +14,7 @@ import math
 import tempfile
 
 
-class TestUsdCrush(unittest.TestCase):
+class TestUsdPmc(unittest.TestCase):
 
     def _make_sphere_stage(self, path):
         """Create a USD stage with a procedurally generated polygon sphere."""
@@ -67,13 +67,13 @@ class TestUsdCrush(unittest.TestCase):
         sphere_crushed_usdz = tempfile.NamedTemporaryFile(suffix='.usdz', delete=False).name
 
         self._make_sphere_stage(sphere_usdc)
-        
+
         # Package it into a usdz file using UsdUtils API
         from pxr.UsdUtils import CreateNewUsdzPackage
         success = CreateNewUsdzPackage(sphere_usdc, sphere_usdz)
         self.assertTrue(success, "Failed to create usdz package")
         self.assertTrue(os.path.exists(sphere_usdz))
-        
+
         # Run usdcrush on the usdz file
         # usdcrush will be found via PATH since PRE_PATH adds CMAKE_INSTALL_PREFIX/bin
         usdcrush_cmd = [
@@ -85,7 +85,7 @@ class TestUsdCrush(unittest.TestCase):
         self.assertEqual(result.returncode, 0,
                         f"usdcrush failed: {result.stderr}")
         self.assertTrue(os.path.exists(sphere_crushed_usdz))
-        
+
         # Verify the crushed usdz file structure
         with zipfile.ZipFile(sphere_crushed_usdz, 'r') as zf:
             file_list = sorted(zf.namelist())
@@ -95,14 +95,14 @@ class TestUsdCrush(unittest.TestCase):
                 os.path.basename(sphere_usdc),
                 'pmcCodec/0.pmc'
             ])
-            
+
             # For now, just verify we have some files in the archive
             self.assertGreater(len(file_list), 0,
                              "Crushed usdz should contain files")
-            
+
             self.assertEqual(file_list, expected_files,
                             f"File list mismatch. Got: {file_list}")
-            
+
         # Check that sphere_usdz is smaller than sphere_usdc
         usdc_size = os.path.getsize(sphere_usdc)
         usdz_size = os.path.getsize(sphere_crushed_usdz)

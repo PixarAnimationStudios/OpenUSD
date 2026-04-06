@@ -41,27 +41,9 @@ static void Configure(CLI::App *app, Args &args) {
         ->required(true);
 
     app->add_option(
-        "--meshes", args.meshes, 
+        "--meshes", args.meshes,
         "Controls whether meshes are processed for optimization.")
         ->default_val(true);
-}
-
-// Quarantine a potentially corrupt file by renaming it
-static void Quarantine(const std::string &filepath) {
-    if (!TfPathExists(filepath)) {
-        return;
-    }
-
-    const std::string newName = filepath + ".quarantine";
-    if (std::rename(filepath.c_str(), newName.c_str()) != 0) {
-        std::cerr << "Failed to rename possibly corrupt output file from "
-                  << filepath << " to " << newName << " : "
-                  << strerror(errno) << "\n";
-        return;
-    }
-
-    std::cerr << "Possibly corrupt output file renamed to " << newName
-              << "\n";
 }
 
 // Encode USD stage using PMC compression

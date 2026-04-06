@@ -16,16 +16,3 @@ pxr_cpp_bin(usdcrush
         usdUtils
         usdPmc
         )
-
-pxr_test_scripts(
-    testenv/testUsdCrush.py
-)
-
-pxr_register_test(testUsdCrush
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCrush"
-    EXPECTED_RETURN_CODE 0
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/bin
-)
-
