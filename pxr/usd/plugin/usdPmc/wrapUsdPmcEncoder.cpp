@@ -15,6 +15,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 using namespace pxr_boost::python;
 
+namespace {
+
 static bool
 _EncodeStage(UsdPmcMeshEncoder& self,
              const std::string& inFile,
@@ -22,6 +24,8 @@ _EncodeStage(UsdPmcMeshEncoder& self,
 {
     return self.EncodeStage(inFile, outFile);
 }
+
+} // anonymous namespace
 
 void wrapUsdPmcMeshEncoder()
 {
