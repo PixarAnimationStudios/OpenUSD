@@ -22,6 +22,10 @@ pxr_library(usdPmc
         usdPmcFileFormat.cpp
         usdPmcEncodeSession.cpp
 
+    PYMODULE_CPPFILES
+        module.cpp
+        wrapUsdPmcEncoder.cpp
+
     PYMODULE_FILES
         __init__.py
 

@@ -5,10 +5,9 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 
-from pxr import Usd, UsdGeom, Sdf, Vt, Gf
+from pxr import Usd, UsdGeom, Sdf, Vt, Gf, UsdPmc
 import unittest
 import os
-import subprocess
 import zipfile
 import math
 import tempfile
@@ -58,7 +57,7 @@ class TestUsdPmc(unittest.TestCase):
 
     def test_CrushUsdz(self):
         """
-        Test that usdcrush can process a usdz file containing a
+        Test that UsdPmcMeshEncoder can process a usdz file containing a
         procedurally generated polygon sphere and verify the output file
         structure.
         """
@@ -74,16 +73,10 @@ class TestUsdPmc(unittest.TestCase):
         self.assertTrue(success, "Failed to create usdz package")
         self.assertTrue(os.path.exists(sphere_usdz))
 
-        # Run usdcrush on the usdz file
-        # usdcrush will be found via PATH since PRE_PATH adds CMAKE_INSTALL_PREFIX/bin
-        usdcrush_cmd = [
-            'usdcrush',
-            sphere_usdz,
-            '-o', sphere_crushed_usdz
-        ]
-        result = subprocess.run(usdcrush_cmd, capture_output=True, text=True)
-        self.assertEqual(result.returncode, 0,
-                        f"usdcrush failed: {result.stderr}")
+        # Encode using the PMC API directly
+        encoder = UsdPmc.UsdPmcMeshEncoder()
+        result = encoder.EncodeStage(sphere_usdz, sphere_crushed_usdz)
+        self.assertTrue(result, "UsdPmcMeshEncoder.EncodeStage failed")
         self.assertTrue(os.path.exists(sphere_crushed_usdz))
 
         # Verify the crushed usdz file structure
@@ -113,8 +106,8 @@ class TestUsdPmc(unittest.TestCase):
 
     def test_CrushUsdc(self):
         """
-        Test that usdcrush can process a plain .usdc file and write the
-        output alongside sibling pmcCodec files.
+        Test that UsdPmcMeshEncoder can process a plain .usdc file and write
+        the output alongside sibling pmcCodec files.
         """
         sphere_usdc = tempfile.NamedTemporaryFile(suffix='.usdc', delete=False).name
         out_dir = tempfile.mkdtemp()
@@ -122,10 +115,9 @@ class TestUsdPmc(unittest.TestCase):
 
         self._make_sphere_stage(sphere_usdc)
 
-        usdcrush_cmd = ['usdcrush', sphere_usdc, '-o', out_usdc]
-        result = subprocess.run(usdcrush_cmd, capture_output=True, text=True)
-        self.assertEqual(result.returncode, 0,
-                         f"usdcrush failed: {result.stderr}")
+        encoder = UsdPmc.UsdPmcMeshEncoder()
+        result = encoder.EncodeStage(sphere_usdc, out_usdc)
+        self.assertTrue(result, "UsdPmcMeshEncoder.EncodeStage failed")
         self.assertTrue(os.path.exists(out_usdc),
                         "Output .usdc file should exist")
 
@@ -143,18 +135,17 @@ class TestUsdPmc(unittest.TestCase):
 
     def test_CrushUsdaToUsdz(self):
         """
-        Test that usdcrush can read a .usda input and produce a .usdz output
-        containing the entry layer and PMC files.
+        Test that UsdPmcMeshEncoder can read a .usda input and produce a
+        .usdz output containing the entry layer and PMC files.
         """
         sphere_usda = tempfile.NamedTemporaryFile(suffix='.usda', delete=False).name
         out_usdz = tempfile.NamedTemporaryFile(suffix='.usdz', delete=False).name
 
         self._make_sphere_stage(sphere_usda)
 
-        usdcrush_cmd = ['usdcrush', sphere_usda, '-o', out_usdz]
-        result = subprocess.run(usdcrush_cmd, capture_output=True, text=True)
-        self.assertEqual(result.returncode, 0,
-                         f"usdcrush failed: {result.stderr}")
+        encoder = UsdPmc.UsdPmcMeshEncoder()
+        result = encoder.EncodeStage(sphere_usda, out_usdz)
+        self.assertTrue(result, "UsdPmcMeshEncoder.EncodeStage failed")
         self.assertTrue(os.path.exists(out_usdz),
                         "Output .usdz file should exist")
 
@@ -169,8 +160,8 @@ class TestUsdPmc(unittest.TestCase):
 
     def test_CrushUsdzToUsdc(self):
         """
-        Test that usdcrush can read a .usdz input and write a plain .usdc
-        output with PMC files as siblings.
+        Test that UsdPmcMeshEncoder can read a .usdz input and write a plain
+        .usdc output with PMC files as siblings.
         """
         sphere_usdc = tempfile.NamedTemporaryFile(suffix='.usdc', delete=False).name
         sphere_usdz = tempfile.NamedTemporaryFile(suffix='.usdz', delete=False).name
@@ -183,10 +174,9 @@ class TestUsdPmc(unittest.TestCase):
         success = CreateNewUsdzPackage(sphere_usdc, sphere_usdz)
         self.assertTrue(success, "Failed to create input usdz package")
 
-        usdcrush_cmd = ['usdcrush', sphere_usdz, '-o', out_usdc]
-        result = subprocess.run(usdcrush_cmd, capture_output=True, text=True)
-        self.assertEqual(result.returncode, 0,
-                         f"usdcrush failed: {result.stderr}")
+        encoder = UsdPmc.UsdPmcMeshEncoder()
+        result = encoder.EncodeStage(sphere_usdz, out_usdc)
+        self.assertTrue(result, "UsdPmcMeshEncoder.EncodeStage failed")
         self.assertTrue(os.path.exists(out_usdc),
                         "Output .usdc file should exist")
 
