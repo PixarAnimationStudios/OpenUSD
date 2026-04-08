@@ -31,6 +31,7 @@
 #include "pxr/base/vt/dictionary.h"
 
 #include <deque>
+#include <iterator>
 #include <map>
 #include <set>
 #include <vector>
@@ -1539,6 +1540,7 @@ _AddValuesToValueContext(std::deque<Value> *values, Sdf_ParserValueContext *cont
             values->pop_front();
         }
     } else if (static_cast<size_t>(level) < context->valueTupleDimensions.size) {
+        TF_AXIOM(static_cast<size_t>(level) < std::size(context->valueTupleDimensions.d));
         context->BeginTuple();
         for (size_t i = 0; i < context->valueTupleDimensions.d[level]; i++) {
             _AddValuesToValueContext(values, context, level + 1);

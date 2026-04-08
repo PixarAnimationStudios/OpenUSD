@@ -24,6 +24,7 @@
 #include "pxr/usd/usd/tokens.h"
 
 #include "pxr/base/gf/interval.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/array.h"
@@ -430,6 +431,7 @@ Usd_Clip::GetBracketingTimeSamplesForPath(
         return true;
     }
 
+    TF_AXIOM(numTimes <= bracketingTimes.size());
     std::sort(bracketingTimes.begin(), bracketingTimes.begin() + numTimes);
     auto uniqueIt = std::unique(
         bracketingTimes.begin(), bracketingTimes.begin() + numTimes);
