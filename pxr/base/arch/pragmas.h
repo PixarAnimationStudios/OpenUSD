@@ -51,6 +51,9 @@
     #define ARCH_PRAGMA_STRINGOP_OVERFLOW \
         _Pragma("GCC diagnostic ignored \"-Wstringop-overflow=\"")
 
+    #define ARCH_PRAGMA_ARRAY_BOUNDS \
+        _Pragma("GCC diagnostic ignored \"-Warray-bounds\"")
+
     #if ARCH_COMPILER_GCC_MAJOR >= 13
         #define ARCH_PRAGMA_SELF_MOVE \
             _Pragma("GCC diagnostic ignored \"-Wself-move\"")
@@ -200,6 +203,10 @@
 
 #if !defined ARCH_PRAGMA_STRINGOP_OVERFLOW
     #define ARCH_PRAGMA_STRINGOP_OVERFLOW
+#endif
+
+#if !defined ARCH_PRAGMA_ARRAY_BOUNDS
+    #define ARCH_PRAGMA_ARRAY_BOUNDS
 #endif
 
 #if !defined ARCH_PRAGMA_UNUSED_PRIVATE_FIELD
