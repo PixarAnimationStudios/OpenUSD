@@ -195,7 +195,7 @@ private:
     friend class VtArrayEditBuilder<ELEM>;
     friend struct Vt_ArrayEditHashAccess;
 
-    friend
+    VT_API friend
     std::ostream &Vt_ArrayEditStreamImpl(
         Vt_ArrayEditOps const &ops, size_t literalsSize,
         TfFunctionRef<std::ostream &(int64_t index)> elemToStr,
