@@ -156,7 +156,6 @@ template <typename T, uint32_t N>
 class TfSmallVector : public TfSmallVectorBase
 {
 public:
-
     /// XXX: Functionality currently missing, and which we would like to add as
     ///  needed:
     ///     - emplace
@@ -240,8 +239,12 @@ public:
         // sizes. Note that capacities will be the same in this case, so no
         // need to swap those.
         else {
-            _UninitializedMove(rhs.begin(), rhs.end(), begin());
-            rhs._Destruct();
+            // If N is 0, this means that rhs is empty and there are no elements that need moving or destroying
+            // This avoids warnings in GCC.
+            if constexpr (N > 0) {
+                _UninitializedMove(rhs.begin(), rhs.end(), begin());
+                rhs._Destruct();
+            }
         }
         std::swap(_size, rhs._size);
     }

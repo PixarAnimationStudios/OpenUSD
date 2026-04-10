@@ -320,6 +320,33 @@ testNoLocalStorage()
 }
 
 static void
+testEmptyMoveNoLocalStorage()
+{
+    TfSmallVector<int, 0> empty{};
+    {
+        // Empty move construction
+        TfSmallVector<int, 0> v{std::move(empty)};
+        TF_AXIOM(v.size() == 0);
+        TF_AXIOM(v.capacity() == 0);
+
+        v.push_back(1414);
+        TF_AXIOM(v.size() == 1);
+        TF_AXIOM(v.capacity() == 1);
+        TF_AXIOM(v.front() == 1414);
+        TF_AXIOM(v.back() == 1414);
+
+        v.push_back(1515);
+        TF_AXIOM(v.size() == 2);
+        TF_AXIOM(v.capacity() == 2);
+        TF_AXIOM(v.front() == 1414);
+        TF_AXIOM(v.back() == 1515);
+    }
+
+    TF_AXIOM(empty.size() == 0);
+    TF_AXIOM(empty.capacity() == 0);
+}
+
+static void
 testGrowth()
 {
     TfSmallVector<int, 2> v;
@@ -1588,6 +1615,8 @@ Test_TfSmallVector()
     testConstructors();
     std::cout << "testNoLocalStorage" << std::endl;
     testNoLocalStorage();
+    std::cout << "testEmptyMoveNoLocalStorage" << std::endl;
+    testEmptyMoveNoLocalStorage();
     std::cout << "testGrowth" << std::endl;
     testGrowth();
     std::cout << "testIteration" << std::endl;
