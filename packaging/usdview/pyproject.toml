@@ -1,0 +1,63 @@
+[build-system]
+requires = [
+    "setuptools>=69",
+    "tomli; python_version < '3.11'",
+    "wheel",
+]
+build-backend = "openusd_pep517.backend"
+backend-path = ["."]
+
+[project]
+name = "usdview"
+dynamic = ["version"]
+description = "OpenUSD usdview application"
+readme = "README.md"
+requires-python = ">=3.9, <3.15"
+license = { text = "LicenseRef-TOST-1.0" }
+authors = [
+    { name = "Pixar Animation Studios", email = "openusd+usd_pypi@pixar.com" },
+]
+dependencies = [
+    "usd-imaging=={openusd_version}",
+    "PyOpenGL",
+    "PySide2==5.15.2.1; python_version < '3.11'",
+    "shiboken2==5.15.2.1; python_version < '3.11'",
+    "PySide6==6.11.0; python_version >= '3.11'",
+    "shiboken6==6.11.0; python_version >= '3.11'",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows :: Windows 10",
+    "Environment :: Console",
+    "Topic :: Multimedia :: Graphics",
+]
+
+[project.urls]
+Documentation = "https://openusd.org"
+"Developer Docs" = "https://www.openusd.org/release/apiDocs.html"
+Source = "https://github.com/PixarAnimationStudios/OpenUSD"
+"Discussion Group" = "https://forum.openusd.org"
+
+[tool.openusd-packaging.build]
+args = [
+    "--build-args",
+    "USD,-DPXR_BUILD_USD_TOOLS=OFF -DPXR_BUILD_EXEC=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo",
+    "--no-materialx",
+    "--no-examples",
+    "--no-tutorials",
+]
+windows-extra-args = [
+    "--build-args",
+    "USD,-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF",
+]
+
+[tool.openusd-packaging.manifest]
+include = [
+    "lib/python/pxr/Usdviewq/**",
+]
+scripts = [
+    "bin/usdrecord*",
+    "bin/usdview*",
+]

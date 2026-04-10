@@ -1,4 +1,7 @@
 .p4*
 .DS_Store
 .AppleDouble
-
+.wheel-build
+.venv_openusd_packaging
+dist
+packaging/**/*.pyc

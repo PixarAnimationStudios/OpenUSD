@@ -1,0 +1,74 @@
+[build-system]
+requires = [
+    "Jinja2",
+    "setuptools>=69",
+    "tomli; python_version < '3.11'",
+    "wheel",
+]
+build-backend = "openusd_pep517.backend"
+backend-path = ["."]
+
+[project]
+name = "usd-tools"
+dynamic = ["version"]
+description = "OpenUSD command-line tools"
+readme = "README.md"
+requires-python = ">=3.9, <3.15"
+license = { text = "LicenseRef-TOST-1.0" }
+authors = [
+    { name = "Pixar Animation Studios", email = "openusd+usd_pypi@pixar.com" },
+]
+dependencies = [
+    "Jinja2",
+    "usd-core=={openusd_version}",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows :: Windows 10",
+    "Environment :: Console",
+    "Topic :: Multimedia :: Graphics",
+]
+
+[project.urls]
+Documentation = "https://openusd.org"
+"Developer Docs" = "https://www.openusd.org/release/apiDocs.html"
+Source = "https://github.com/PixarAnimationStudios/OpenUSD"
+"Discussion Group" = "https://forum.openusd.org"
+
+[tool.openusd-packaging.build]
+args = [
+    "--build-args",
+    "USD,-DPXR_BUILD_EXEC=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo",
+    "--no-materialx",
+    "--no-imaging",
+    "--no-examples",
+    "--no-tutorials",
+]
+windows-extra-args = [
+    "--build-args",
+    "USD,-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF",
+]
+
+[tool.openusd-packaging.manifest]
+include = []
+scripts = [
+    "bin/sdfdump*",
+    "bin/sdffilter*",
+    "bin/usdcat*",
+    "bin/usdchecker*",
+    "bin/usdcompress*",
+    "bin/usddiff*",
+    "bin/usddumpcrate*",
+    "bin/usdedit*",
+    "bin/usdfixbrokenpixarschemas*",
+    "bin/usdGenSchema*",
+    "bin/usdInitSchema*",
+    "bin/usdgenschemafromsdr*",
+    "bin/usdresolve*",
+    "bin/usdstitch*",
+    "bin/usdstitchclips*",
+    "bin/usdtree*",
+    "bin/usdzip*",
+]

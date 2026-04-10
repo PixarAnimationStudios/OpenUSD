@@ -223,21 +223,28 @@ def GetPythonInfo(context):
     pythonVersion = sysconfig.get_config_var("py_version_short")  # "3.7"
 
     # Lib path is unfortunately special for each platform and there is no
-    # config_var for it. But we can deduce it for each platform, and this
-    # logic works for any Python version.
-    def _GetPythonLibraryFilename(context):
+    # single config_var that works everywhere. Build an ordered list of
+    # candidate filenames and then pick the first one that actually exists.
+    def _GetPythonLibraryFilenames(context):
         if Windows():
-            return "python{version}{suffix}.lib".format(
+            return ["python{version}{suffix}.lib".format(
                 version=sysconfig.get_config_var("py_version_nodot"),
                 suffix=('_d' if context.buildDebug and context.debugPython
                         else ''))
+            ]
         elif Linux():
-            return sysconfig.get_config_var("LDLIBRARY")
+            candidates = [
+                sysconfig.get_config_var("LDLIBRARY"),
+                sysconfig.get_config_var("INSTSONAME"),
+                sysconfig.get_config_var("LIBRARY"),
+            ]
+            return [c for i, c in enumerate(candidates) if c and c not in candidates[:i]]
         elif MacOS():
-            return "libpython{version}.dylib".format(
+            return ["libpython{version}.dylib".format(
                 version=(sysconfig.get_config_var('LDVERSION') or
                          sysconfig.get_config_var('VERSION') or
                          pythonVersion))
+            ]
         else:
             raise RuntimeError("Platform not supported")
 
@@ -250,27 +257,47 @@ def GetPythonInfo(context):
     # if in a venv, installed_base will be the "original" python,
     # which is where the libs are ("base" will be the venv dir)
     pythonBaseDir = sysconfig.get_config_var("installed_base")
+    pythonLibPath = None
     if Windows():
         pythonLibPath = os.path.join(pythonBaseDir, "libs",
-                                     _GetPythonLibraryFilename(context))
+                                     _GetPythonLibraryFilenames(context)[0])
     elif Linux():
         pythonMultiarchSubdir = sysconfig.get_config_var("multiarchsubdir")
-        # Try multiple ways to get the python lib dir
-        for pythonLibDir in (sysconfig.get_config_var("LIBDIR"),
-                             os.path.join(pythonBaseDir, "lib")):
-            if pythonMultiarchSubdir:
-                pythonLibPath = \
-                    os.path.join(pythonLibDir + pythonMultiarchSubdir,
-                                 _GetPythonLibraryFilename(context))
-                if os.path.isfile(pythonLibPath):
+        pythonLibDirs = []
+
+        def _AppendPythonLibDir(path):
+            if path and path not in pythonLibDirs:
+                pythonLibDirs.append(path)
+
+        def _AppendMultiarchPythonLibDir(path):
+            if not path or not pythonMultiarchSubdir:
+                return
+
+            multiarchSubdir = pythonMultiarchSubdir.lstrip(os.sep)
+            normalizedPath = os.path.normpath(path)
+            if os.path.basename(normalizedPath) == multiarchSubdir:
+                return
+            _AppendPythonLibDir(os.path.join(path, multiarchSubdir))
+
+        libDir = sysconfig.get_config_var("LIBDIR")
+        baseLibDir = os.path.join(pythonBaseDir, "lib")
+
+        _AppendPythonLibDir(libDir)
+        _AppendMultiarchPythonLibDir(libDir)
+        _AppendPythonLibDir(baseLibDir)
+        _AppendMultiarchPythonLibDir(baseLibDir)
+
+        for pythonLibDir in pythonLibDirs:
+            for pythonLibFilename in _GetPythonLibraryFilenames(context):
+                candidateLibPath = os.path.join(pythonLibDir, pythonLibFilename)
+                if os.path.isfile(candidateLibPath):
+                    pythonLibPath = candidateLibPath
                     break
-            pythonLibPath = os.path.join(pythonLibDir,
-                                         _GetPythonLibraryFilename(context))
-            if os.path.isfile(pythonLibPath):
+            if pythonLibPath:
                 break
     elif MacOS():
         pythonLibPath = os.path.join(pythonBaseDir, "lib",
-                                     _GetPythonLibraryFilename(context))
+                                     _GetPythonLibraryFilenames(context)[0])
     else:
         raise RuntimeError("Platform not supported")
 
@@ -1766,12 +1793,15 @@ def InstallUSD(context, force, buildArgs):
             # itself rather than rely on CMake's heuristics.
             pythonInfo = GetPythonInfo(context)
             if pythonInfo:
-                extraArgs.append('-DPython3_EXECUTABLE="{pyExecPath}"'
-                                 .format(pyExecPath=pythonInfo[0]))
-                extraArgs.append('-DPython3_LIBRARY="{pyLibPath}"'
-                                 .format(pyLibPath=pythonInfo[1]))
-                extraArgs.append('-DPython3_INCLUDE_DIR="{pyIncPath}"'
-                                 .format(pyIncPath=pythonInfo[2]))
+                if pythonInfo[0]:
+                    extraArgs.append('-DPython3_EXECUTABLE="{pyExecPath}"'
+                                     .format(pyExecPath=pythonInfo[0]))
+                if pythonInfo[1]:
+                    extraArgs.append('-DPython3_LIBRARY="{pyLibPath}"'
+                                     .format(pyLibPath=pythonInfo[1]))
+                if pythonInfo[2]:
+                    extraArgs.append('-DPython3_INCLUDE_DIR="{pyIncPath}"'
+                                     .format(pyIncPath=pythonInfo[2]))
         else:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 

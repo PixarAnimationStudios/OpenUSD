@@ -1,0 +1,151 @@
+[build-system]
+requires = [
+    "setuptools>=69",
+    "tomli; python_version < '3.11'",
+    "wheel",
+]
+build-backend = "openusd_pep517.backend"
+backend-path = ["."]
+
+[project]
+name = "usd-core"
+dynamic = ["version"]
+description = "Pixar's Universal Scene Description core runtime"
+readme = "README.md"
+requires-python = ">=3.9, <3.15"
+license = { text = "LicenseRef-TOST-1.0" }
+authors = [
+    { name = "Pixar Animation Studios", email = "openusd+usd_pypi@pixar.com" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows :: Windows 10",
+    "Environment :: Console",
+    "Topic :: Multimedia :: Graphics",
+]
+
+[project.urls]
+Documentation = "https://openusd.org"
+"Developer Docs" = "https://www.openusd.org/release/apiDocs.html"
+Source = "https://github.com/PixarAnimationStudios/OpenUSD"
+"Discussion Group" = "https://forum.openusd.org"
+
+[tool.openusd-packaging.build]
+args = [
+    "--build-args",
+    "USD,-DPXR_BUILD_USD_TOOLS=OFF -DPXR_BUILD_EXEC=OFF -DPXR_INSTALL_LOCATION=../pxr/pluginfo",
+    "--no-materialx",
+    "--no-imaging",
+    "--no-examples",
+    "--no-tutorials",
+]
+windows-extra-args = [
+    "--build-args",
+    "USD,-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF",
+]
+
+[tool.openusd-packaging.manifest]
+include = [
+    "lib/python/pxr/__init__.py",
+    "lib/python/pxr/Ar/**",
+    "lib/python/pxr/Gf/**",
+    "lib/python/pxr/Kind/**",
+    "lib/python/pxr/Pcp/**",
+    "lib/python/pxr/Plug/**",
+    "lib/python/pxr/Sdf/**",
+    "lib/python/pxr/Sdr/**",
+    "lib/python/pxr/Tf/**",
+    "lib/python/pxr/Trace/**",
+    "lib/python/pxr/Ts/**",
+    "lib/python/pxr/Usd/**",
+    "lib/python/pxr/UsdGeom/**",
+    "lib/python/pxr/UsdHydra/**",
+    "lib/python/pxr/UsdLux/**",
+    "lib/python/pxr/UsdMedia/**",
+    "lib/python/pxr/UsdMtlx/**",
+    "lib/python/pxr/UsdPhysics/**",
+    "lib/python/pxr/UsdProc/**",
+    "lib/python/pxr/UsdRender/**",
+    "lib/python/pxr/UsdRi/**",
+    "lib/python/pxr/UsdSemantics/**",
+    "lib/python/pxr/UsdShade/**",
+    "lib/python/pxr/UsdSkel/**",
+    "lib/python/pxr/UsdUI/**",
+    "lib/python/pxr/UsdUtils/**",
+    "lib/python/pxr/UsdValidation/**",
+    "lib/python/pxr/UsdVol/**",
+    "lib/python/pxr/Vt/**",
+    "lib/python/pxr/Work/**",
+    "lib/python/pxr/pluginfo/plugInfo.json",
+    "lib/python/pxr/pluginfo/ar/**",
+    "lib/python/pxr/pluginfo/sdf/**",
+    "lib/python/pxr/pluginfo/sdr/**",
+    "lib/python/pxr/pluginfo/usd/**",
+    "lib/python/pxr/pluginfo/usdGeom/**",
+    "lib/python/pxr/pluginfo/usdHydra/**",
+    "lib/python/pxr/pluginfo/usdLux/**",
+    "lib/python/pxr/pluginfo/usdMedia/**",
+    "lib/python/pxr/pluginfo/usdMtlx/**",
+    "lib/python/pxr/pluginfo/usdPhysics/**",
+    "lib/python/pxr/pluginfo/usdProc/**",
+    "lib/python/pxr/pluginfo/usdRender/**",
+    "lib/python/pxr/pluginfo/usdRi/**",
+    "lib/python/pxr/pluginfo/usdSemantics/**",
+    "lib/python/pxr/pluginfo/usdShade/**",
+    "lib/python/pxr/pluginfo/usdSkel/**",
+    "lib/python/pxr/pluginfo/usdUI/**",
+    "lib/python/pxr/pluginfo/usdValidation/**",
+    "lib/python/pxr/pluginfo/usdVol/**",
+    "lib/python/pxr/pluginfo/usdGeomValidators/**",
+    "lib/python/pxr/pluginfo/usdPhysicsValidators/**",
+    "lib/python/pxr/pluginfo/usdShadeValidators/**",
+    "lib/python/pxr/pluginfo/usdSkelValidators/**",
+    "lib/python/pxr/pluginfo/usdUtilsValidators/**",
+    "lib/python/pxr/pluginfo/usdAbc/**",
+    "lib/python/pxr/pluginfo/usdDraco/**",
+    "lib/python/pxr/pluginfo/usdShaders/**",
+    "lib/python/pxr/pluginfo/sdrOsl/**",
+    "lib/libarch*",
+    "lib/libar*",
+    "lib/libgf*",
+    "lib/libjs*",
+    "lib/libkind*",
+    "lib/libndr*",
+    "lib/libpcp*",
+    "lib/libsdf*",
+    "lib/libsdr*",
+    "lib/libtf*",
+    "lib/libtrace*",
+    "lib/libts*",
+    "lib/libusd",
+    "lib/libusd.*",
+    "lib/libusdGeom*",
+    "lib/libusdHydra*",
+    "lib/libusdLux*",
+    "lib/libusdMedia*",
+    "lib/libusdMtlx*",
+    "lib/libusdPhysics*",
+    "lib/libusdProc*",
+    "lib/libusdRender*",
+    "lib/libusdRi*",
+    "lib/libusdSemantics*",
+    "lib/libusdShade*",
+    "lib/libusdSkel*",
+    "lib/libusdUI*",
+    "lib/libusdUtils*",
+    "lib/libusdValidation*",
+    "lib/libusdVol*",
+    "lib/libusdGeomValidators*",
+    "lib/libusdPhysicsValidators*",
+    "lib/libusdShadeValidators*",
+    "lib/libusdSkelValidators*",
+    "lib/libusdUtilsValidators*",
+    "lib/libvt*",
+    "lib/libwork*",
+    "plugin/usd/usdAbc/*",
+    "plugin/usd/usdDraco/*",
+    "plugin/usd/usdShaders/*",
+    "plugin/usd/sdrOsl/*",
+]
