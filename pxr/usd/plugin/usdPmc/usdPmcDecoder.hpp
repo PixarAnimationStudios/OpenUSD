@@ -47,7 +47,7 @@ public:
     /// \return true if decoding was successful, false otherwise
     bool Decode(const char* buffer, size_t length, UsdGeomMesh& decodedMesh);
 
-protected:
+private:
     /// Inspect bitstream header and validate format
     bool _InspectBitstream(const char* buffer, size_t length);
     

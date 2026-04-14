@@ -51,48 +51,8 @@
 #include <sstream>
 #include <functional>
 #include <type_traits>
-#include <random>
-#include <chrono>
-#include <iomanip>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-/// Creates a unique temporary directory path using the system's temporary
-/// directory and a random identifier to ensure uniqueness across concurrent
-/// encoding operations. This implementation is platform-agnostic and works
-/// on macOS, Windows, and Linux.
-std::string
-_GetTempDir() {
-    const char* archTempDir = ArchGetTmpDir();
-    std::filesystem::path tempDir(archTempDir);
-    
-    // Generate a unique identifier using random number generator and timestamp
-    // This provides sufficient uniqueness for temporary directory names
-    std::random_device rd;
-    std::mt19937_64 gen(rd());
-    std::uniform_int_distribution<uint64_t> dis;
-    
-    // Combine timestamp and random values for uniqueness
-    auto now = std::chrono::high_resolution_clock::now();
-    auto timestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        now.time_since_epoch()).count();
-    uint64_t random1 = dis(gen);
-    uint64_t random2 = dis(gen);
-    
-    // Format as a UUID-like string: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    std::ostringstream oss;
-    oss << std::hex << std::setfill('0')
-        << std::setw(8) << (timestamp & 0xFFFFFFFF) << '-'
-        << std::setw(4) << ((random1 >> 48) & 0xFFFF) << '-'
-        << std::setw(4) << ((random1 >> 32) & 0xFFFF) << '-'
-        << std::setw(4) << ((random1 >> 16) & 0xFFFF) << '-'
-        << std::setw(4) << (random1 & 0xFFFF)
-        << std::setw(8) << (random2 & 0xFFFFFFFF);
-    
-    tempDir /= "usdPmcStageEncoder" / std::filesystem::path(oss.str());
-    return tempDir.string();
-}
 
 /// Safely creates the specified directory path, including any missing parent
 /// directories. Reports errors if directory creation fails.
@@ -356,11 +316,13 @@ bool UsdPmcMeshEncoder::EncodeStage(std::filesystem::path inFile,
     _outUSDZFile = outFile;
 
     // Create temporary directory for processing
-    _tempDir = _GetTempDir();
-    if (!_CreateDirectory(_tempDir)) {
-        TF_RUNTIME_ERROR("Unable to create temp folder: " + _tempDir.string());
+    const std::string tmpDirStr =
+        ArchMakeTmpSubdir(ArchGetTmpDir(), "usdPmcStageEncoder");
+    if (tmpDirStr.empty()) {
+        TF_RUNTIME_ERROR("Unable to create temp folder");
         return false;
     }
+    _tempDir = tmpDirStr;
 
     // Determine input format
     std::string inExt = inFile.extension().string();
