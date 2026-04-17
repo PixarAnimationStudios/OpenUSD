@@ -53,7 +53,8 @@ public:
     /// \param outUSDZFile Path to output USDZ file with PMC compression
     /// \return true if encoding was successful, false otherwise
     USDPMC_API bool EncodeStage(std::filesystem::path inUSDZFile,
-                                std::filesystem::path outUSDZFile);
+                                std::filesystem::path outUSDZFile,
+                                const VtDictionary& options);
 private:
     std::filesystem::path   _inUSDZFile;
     std::filesystem::path   _outUSDZFile;

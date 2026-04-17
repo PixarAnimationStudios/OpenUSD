@@ -26,6 +26,7 @@ using namespace pxr_CLI;
 struct Args {
     std::string inputFile;   // Input USD file path
     std::string outputFile;  // Output compressed USD file path
+    std::map<std::string,int> quantizers;  // Number of bits for each attribute
 };
 
 // Configure command line interface options
@@ -38,14 +39,25 @@ static void Configure(CLI::App *app, Args &args) {
         "-o,--out", args.outputFile,
         "The output USD file to write to.")
         ->required(true);
+
+    app->add_option(
+        "--qbits", args.quantizers,
+        "Number of bits for named attribute quantizer");
 }
 
 // Encode USD stage using PMC compression
 static int UsdCrush(const Args &args) {
+    VtDictionary quantizers;
+    for (const auto& [attrname, qbits] : args.quantizers)
+        quantizers[attrname] = VtValue(qbits);
+
+    VtDictionary options;
+    options["qbits"] = std::move(quantizers);
+
     UsdPmcMeshEncoder pmcEncoder;
     int exitCode = 0;
 
-    if (!pmcEncoder.EncodeStage(args.inputFile, args.outputFile)) {
+    if (!pmcEncoder.EncodeStage(args.inputFile, args.outputFile, options)) {
         exitCode = 1;
     }
     return exitCode;

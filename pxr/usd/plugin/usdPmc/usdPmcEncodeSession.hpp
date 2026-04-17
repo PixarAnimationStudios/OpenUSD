@@ -30,7 +30,10 @@ struct PmcEncodeSession
 {
     /// Construct an encode session for the given mesh.
     /// \param ugm The UsdGeomMesh to encode
-    PmcEncodeSession(const UsdGeomMesh& ugm) : _ugm(ugm) {}
+    /// \param options Encoder parameters
+    PmcEncodeSession(const UsdGeomMesh& ugm, const VtDictionary& options)
+    : _ugm(ugm), _options(options)
+    {}
 
     /// Encode the mesh into PMC compressed format.
     /// \return Encoded mesh data as a byte vector
@@ -63,8 +66,9 @@ protected:
     /// Perform the actual encoding
     std::vector<uint8_t> _encode();
 
-public:
+    public:
     const UsdGeomMesh& _ugm;
+    const VtDictionary& _options;
 
     pmc::Encoder _enc;
     pmc::GeometryMeshpart _gmp;

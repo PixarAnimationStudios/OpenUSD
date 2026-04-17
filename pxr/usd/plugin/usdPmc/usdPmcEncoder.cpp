@@ -91,8 +91,7 @@ UsdPmcMeshEncoder::Encode(UsdGeomMesh& mesh, const VtDictionary& options,
                           VtDictionary* resultInfo) {
     std::vector<uint8_t> bs;
     try {
-        // ToDo: take into account the input options
-        PmcEncodeSession pmces = PmcEncodeSession{UsdGeomMesh(mesh)};
+        PmcEncodeSession pmces = PmcEncodeSession{UsdGeomMesh(mesh), options};
         bs = pmces.encode();
         if (processedAttributes) {
             *processedAttributes = pmces.processedAttributes;
@@ -314,7 +313,8 @@ UsdPmcMeshEncoder::_RemoveAttributes(
 }
 
 bool UsdPmcMeshEncoder::EncodeStage(std::filesystem::path inFile,
-                                    std::filesystem::path outFile) {
+                                    std::filesystem::path outFile,
+                                    const VtDictionary& options) {
     // Verify input file exists
     if (!std::filesystem::exists(inFile)) {
         TF_RUNTIME_ERROR("Unable to open input file: " + inFile.string());
@@ -365,8 +365,6 @@ bool UsdPmcMeshEncoder::EncodeStage(std::filesystem::path inFile,
         return false;
     }
 
-    VtDictionary meshOptions;
-
     // Process all meshes in the stage
     uint32_t meshCounter = 0;
     for (UsdPrim prim : stage->TraverseAll()) {
@@ -376,7 +374,7 @@ bool UsdPmcMeshEncoder::EncodeStage(std::filesystem::path inFile,
             std::set<std::string> processedSubSets;
             VtDictionary meshResults;
 
-            if (_ProcessMesh(currentMesh, meshOptions, meshCounter,
+            if (_ProcessMesh(currentMesh, options, meshCounter,
                              &processedAttributes, &processedSubSets,
                              &meshResults)) {
                 _RemoveAttributes(currentMesh, &processedAttributes,

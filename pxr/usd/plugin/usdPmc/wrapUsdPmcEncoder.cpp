@@ -20,9 +20,10 @@ namespace {
 static bool
 _EncodeStage(UsdPmcMeshEncoder& self,
              const std::string& inFile,
-             const std::string& outFile)
+             const std::string& outFile,
+             const VtDictionary& options)
 {
-    return self.EncodeStage(inFile, outFile);
+    return self.EncodeStage(inFile, outFile, options);
 }
 
 } // anonymous namespace
@@ -31,6 +32,6 @@ void wrapUsdPmcMeshEncoder()
 {
     class_<UsdPmcMeshEncoder>("UsdPmcMeshEncoder", init<>())
         .def("EncodeStage", &_EncodeStage,
-             (arg("inFile"), arg("outFile")))
+             (arg("inFile"), arg("outFile"), arg("options")))
         ;
 }

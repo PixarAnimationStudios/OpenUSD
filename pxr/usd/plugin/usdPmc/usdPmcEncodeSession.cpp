@@ -309,6 +309,30 @@ ToPmc(const VtValue& src, std::vector<int>& dst, int fracbits)
     throw std::runtime_error("missing buffer type converter");
 }
 
+/// Look-up an attribute's options-specified quantization parameters.
+// First looks up options["qbits"][name]; if not found, then with name = "*";
+// if still not found, uses default values.
+Qparams QparamsFromOptions(const VtDictionary& options, const TfToken& name)
+{
+    auto it = options.find("qbits");
+    if (it == options.end() || !it->second.IsHolding<VtDictionary>())
+        return {};
+
+    const auto vtv =
+        [dict = it->second.UncheckedGet<VtDictionary>(), name]() -> VtValue {
+            for (const auto* str : {name.data(), "*"})
+                if (auto it = dict.find(str); it != dict.end())
+                    return it->second;
+            return {};
+        }();
+
+    if (!vtv.IsEmpty())
+        if (int nbits = vtv.Get<int>(); vtv.IsHolding<int>())
+            return { .fracbits = nbits, .maxsigbits = nbits };
+
+    return {};
+}
+
 pmc::MeshFaceType
 GetMeshFaceTypeFromFaceVertexCounts(const VtArray<int> fvcs)
 {
@@ -434,7 +458,8 @@ PmcEncodeSession::_setupGeom()
     _gmp.info.outputIndexCount =_gmp.info.indexCount = vidxs.size();
 
     // Calculate quantization parameters for vertex positions
-    int fb = GetFracBits(vtxs, {});
+    auto& usdname = UsdGeomTokens->points;
+    int fb = GetFracBits(vtxs, QparamsFromOptions(_options, usdname));
     _gmp.info.coordSys = {1 << fb, 1};
 
     // Convert USD data to PMC buffer format
@@ -519,7 +544,7 @@ PmcEncodeSession::_setupPrimvar(const UsdGeomPrimvar& pv)
         return;
     }
 
-    int fb = GetFracBits(vals, {});
+    int fb = GetFracBits(vals, QparamsFromOptions(_options, pvName));
     auto& amp = _setupAttr(vals, idxs, fb);
     amp.info.scope = GetScopeFromUsd(pv.GetInterpolation());
     amp.info.type = GuessAttributeType(pv.GetTypeName().GetRole(), pvName);
@@ -617,7 +642,8 @@ PmcEncodeSession::_setupCreases()
     ampIdxs.info.scope = pmc::AttributeScope::VERTEX;
     ampIdxs.info.sparse = true;
 
-    int fb = GetFracBits(vals, {});
+    auto& usdname = UsdGeomTokens->creaseSharpnesses;
+    int fb = GetFracBits(vals, QparamsFromOptions(_options, usdname));
     auto& ampVals = _setupAttr(vals, {}, fb);
     ampVals.info.type = pmc::AttributeType::SHARPNESS;
     ampVals.info.scope = pmc::AttributeScope::DERIVED;
@@ -642,7 +668,8 @@ PmcEncodeSession::_setupAttrs()
     // NB: for rendering, primvars should have priority; we preserve all data
     if (const auto attr = _ugm.GetNormalsAttr(); attr.HasAuthoredValue()) {
         auto vals = GetAs<VtValue>(attr);
-        int fb = GetFracBits(vals, {});
+        auto& usdname = UsdGeomTokens->normals;
+        int fb = GetFracBits(vals, QparamsFromOptions(_options, usdname));
         auto& amp = _setupAttr(vals, {}, fb);
         amp.info.type = pmc::AttributeType::NORMAL;
         amp.info.scope = GetScopeFromUsd(_ugm.GetNormalsInterpolation());
