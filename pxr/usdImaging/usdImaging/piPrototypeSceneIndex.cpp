@@ -269,26 +269,35 @@ UsdImaging_PiPrototypeSceneIndex::_PrimsAdded(
 
     // First pass: Identify instancers and overs.
     // Use thread-local results to avoid synchronizing.
-    tbb::enumerable_thread_specific<SdfPathVector> perThreadResults;
+    tbb::enumerable_thread_specific<SdfPathVector> perThreadInclusions;
+    tbb::enumerable_thread_specific<SdfPathVector> perThreadExclusions;
     WorkParallelForN(
         //entries.begin(), entries.end(),
         entries.size(),
         [&](size_t begin, size_t end)
         {
-            SdfPathVector &results = perThreadResults.local();
+            SdfPathVector &inclusions = perThreadInclusions.local();
+            SdfPathVector &exclusions = perThreadExclusions.local();
             for (size_t i=begin; i<end; ++i) {
                 const HdSceneIndexObserver::AddedPrimEntry &entry = entries[i];
                 if (entry.primType == HdPrimTypeTokens->instancer ||
                     _IsOver(_GetInputSceneIndex()->GetPrim(entry.primPath))) {
-                    results.push_back(entry.primPath);
+                    inclusions.push_back(entry.primPath);
+                }
+                else
+                {
+                    exclusions.push_back(entry.primPath);
                 }
             }
         },
         256 /* note: relatively coarse grain size */ );
 
     // Commit per-thread results back into _instancersAndOvers.
-    for (const SdfPath &path: tbb::flatten2d(perThreadResults)) {
+    for (const SdfPath &path: tbb::flatten2d(perThreadInclusions)) {
         _instancersAndOvers.insert(path);
+    }
+    for (const SdfPath &path: tbb::flatten2d(perThreadExclusions)) {
+        _instancersAndOvers.erase(path);
     }
 
     // Second pass: Clear out types for any prims under instancers or overs.
