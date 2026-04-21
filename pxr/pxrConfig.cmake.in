@@ -19,32 +19,9 @@ set(PXR_VERSION "@PXR_VERSION@")
 include(CMakeFindDependencyMacro)
 
 # If Python support was enabled for this USD build, find the import
-# targets by invoking the appropriate FindPython module. Use the same
-# LIBRARY and INCLUDE_DIR settings from the original build if they
-# were set. This can be overridden by specifying different values when
-# running cmake.
+# targets by invoking the appropriate FindPython module.
 if(@PXR_ENABLE_PYTHON_SUPPORT@)
-    if (NOT DEFINED Python3_EXECUTABLE)
-        if (NOT [[@Python3_EXECUTABLE@]] STREQUAL "")
-            set(Python3_EXECUTABLE [[@Python3_EXECUTABLE@]])
-        endif()
-    endif()
-
-    if (NOT DEFINED Python3_LIBRARY)
-        if (NOT [[@Python3_LIBRARY@]] STREQUAL "")
-            set(Python3_LIBRARY [[@Python3_LIBRARY@]])
-        endif()
-    endif()
-
-    if (NOT DEFINED Python3_INCLUDE_DIR)
-        if (NOT [[@Python3_INCLUDE_DIR@]] STREQUAL "")
-            set(Python3_INCLUDE_DIR [[@Python3_INCLUDE_DIR@]])
-        endif()
-    endif()
-
-    if (NOT DEFINED Python3_VERSION)
-        find_dependency(Python3 "@Python3_VERSION@" EXACT COMPONENTS Development)
-    else()
+    if(NOT Python3_FOUND)
         find_dependency(Python3 COMPONENTS Development)
     endif()
 endif()
