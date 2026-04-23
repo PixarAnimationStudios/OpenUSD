@@ -211,6 +211,17 @@ UsdImagingMaterialAdapter::InvalidateImagingSubprim(
 
     // If we dirtied an interface input dirty that terminal
     for (UsdShadeOutput& output : material.GetOutputs()) {
+        bool terminalDirty = false;
+        for (const TfToken& property : properties) {
+            if (output.GetFullName() == property) {
+                result.insert(_CreateTerminalLocator(output.GetBaseName()));
+                terminalDirty = true;
+                break;
+            }
+        }
+        if (terminalDirty) {
+            continue;
+        }
         for (UsdShadeConnectionSourceInfo& connection :
              output.GetConnectedSources()) {
             _ConnectionSet seenConnections;
