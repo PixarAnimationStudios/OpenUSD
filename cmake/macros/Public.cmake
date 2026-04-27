@@ -776,7 +776,7 @@ function(pxr_register_test TEST_NAME)
             CLEAN_OUTPUT
             EXPECTED_RETURN_CODE
             TESTENV TESTENV_DEST
-            WARN WARN_PERCENT HARD_WARN FAIL FAIL_PERCENT HARD_FAIL)
+            WARN WARN_PERCENT HARD_WARN FAIL FAIL_PERCENT HARD_FAIL LABELS)
     set(MULTI_VALUE_ARGS DIFF_COMPARE IMAGE_DIFF_COMPARE ENV PRE_PATH POST_PATH)
 
     cmake_parse_arguments(bt
@@ -1042,7 +1042,9 @@ function(pxr_register_test TEST_NAME)
     if (bt_RUN_SERIAL)
         set_tests_properties(${TEST_NAME} PROPERTIES RUN_SERIAL TRUE)
     endif()
-
+    if (bt_LABELS)
+        set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${bt_LABELS}")
+    endif()
 endfunction() # pxr_register_test
 
 function(pxr_setup_plugins)
