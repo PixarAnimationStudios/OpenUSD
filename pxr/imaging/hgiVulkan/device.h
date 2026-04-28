@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/hgiVulkan/api.h"
+#include "pxr/imaging/hgiVulkan/deviceFilter.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 
 #include <mutex>
@@ -23,6 +24,34 @@ class HgiVulkanCommandQueue;
 class HgiVulkanInstance;
 class HgiVulkanPipelineCache;
 
+/// \class HgiVulkanExtensionSet
+///
+/// Convenience wrapper for a list of VkExtensionProperties.
+///
+class HgiVulkanExtensionSet
+{
+public:
+    HGIVULKAN_API
+    HgiVulkanExtensionSet() = default;
+
+    /// Query the extensions from a physical device and populate the set.
+    HGIVULKAN_API
+    explicit HgiVulkanExtensionSet(VkPhysicalDevice device);
+
+    /// Check if the set contains and extension with a given name.
+    HGIVULKAN_API
+    bool Contains(std::string_view name) const;
+
+    /// Get the extensions properties for a given extension name. Returns null
+    /// if the extension isn't found.
+    HGIVULKAN_API
+    const VkExtensionProperties* Find(std::string_view name) const;
+
+private:
+    std::vector<VkExtensionProperties> _extensions;
+    std::unordered_map<std::string_view,
+        std::reference_wrapper<const VkExtensionProperties>> _extensionsByName;
+};
 
 /// \class HgiVulkanDevice
 ///
@@ -32,7 +61,7 @@ class HgiVulkanDevice final
 {
 public:
     HGIVULKAN_API
-    HgiVulkanDevice(HgiVulkanInstance* instance);
+    HgiVulkanDevice(HgiVulkanInstance* instance, HgiDeviceFilter* filter);
 
     HGIVULKAN_API
     ~HgiVulkanDevice();
@@ -80,8 +109,18 @@ public:
     HGIVULKAN_API
     void WaitForIdle();
 
+    HGIVULKAN_API
+    const HgiVulkanExtensionSet& GetExtensions() const
+    {
+        return _vkExtensions;
+    }
+
     /// Returns true if the provided extension is supported by the device
-    bool IsSupportedExtension(const char* extensionName) const;
+    HGIVULKAN_API
+    bool IsSupportedExtension(const char* extensionName) const
+    {
+        return _vkExtensions.Contains(extensionName);
+    }
 
     // Dumps detailed stats from VMA to VmaStatsOut.json in the working dir.
     // Can be processed with GpuMemDumpVis.py for easier readability.
@@ -115,7 +154,7 @@ private:
     // Vulkan device objects
     VkPhysicalDevice _vkPhysicalDevice;
     VkDevice _vkDevice;
-    std::vector<VkExtensionProperties> _vkExtensions;
+    HgiVulkanExtensionSet _vkExtensions;
     VmaAllocator _vmaAllocator;
     std::mutex _vmaInteropPoolsLock;
     std::unordered_map<uint32_t, VmaPool> _vmaInteropPoolsForMemoryType;
@@ -126,9 +165,9 @@ private:
     std::unordered_map<VkDeviceMemory, HANDLE> _vmaInteropWin32HandleForMemory;
 #endif
     uint32_t _vkGfxsQueueFamilyIndex;
-    HgiVulkanCommandQueue* _commandQueue;
-    HgiVulkanCapabilities* _capabilities;
-    HgiVulkanPipelineCache* _pipelineCache;
+    std::unique_ptr<HgiVulkanCommandQueue> _commandQueue;
+    std::unique_ptr<HgiVulkanCapabilities> _capabilities;
+    std::unique_ptr<HgiVulkanPipelineCache> _pipelineCache;
 };
 
 

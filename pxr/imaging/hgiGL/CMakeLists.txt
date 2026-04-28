@@ -45,6 +45,7 @@ pxr_library(hgiGL
 
     PUBLIC_HEADERS
         api.h
+        deviceFilter.h
 
     RESOURCE_FILES
         plugInfo.json

@@ -12,6 +12,7 @@
 #include "pxr/imaging/hgiVulkan/computeCmds.h"
 #include "pxr/imaging/hgiVulkan/computePipeline.h"
 #include "pxr/imaging/hgiVulkan/device.h"
+#include "pxr/imaging/hgiVulkan/deviceFilter.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
 #include "pxr/imaging/hgiVulkan/garbageCollector.h"
 #include "pxr/imaging/hgiVulkan/graphicsCmds.h"
@@ -40,9 +41,9 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory<HgiFactory<HgiVulkan>>();
 }
 
-HgiVulkan::HgiVulkan()
-    : _instance(new HgiVulkanInstance())
-    , _device(new HgiVulkanDevice(_instance))
+HgiVulkan::HgiVulkan(HgiDeviceFilter* filter)
+    : _instance(new HgiVulkanInstance(dynamic_cast<HgiVulkanDeviceFilter*>(filter)))
+    , _device(new HgiVulkanDevice(_instance, filter))
     , _garbageCollector(new HgiVulkanGarbageCollector(this))
     , _threadId(std::this_thread::get_id())
     , _frameDepth(0)
@@ -75,17 +76,17 @@ HgiVulkan::IsBackendSupported() const
         return false;
     }
 
-    // Want Vulkan 1.2 or higher.
+    // Want Vulkan 1.3 or higher.
     const uint32_t apiVersion = GetCapabilities()->GetAPIVersion();
     const uint32_t majorVersion = VK_VERSION_MAJOR(apiVersion);
     const uint32_t minorVersion = VK_VERSION_MINOR(apiVersion);
 
     bool support = (majorVersion > 1) ||
-        ((majorVersion == 1) && (minorVersion >= 2));
+        ((majorVersion == 1) && (minorVersion >= 3));
     if (!support) {
         TF_DEBUG(HGI_DEBUG_IS_SUPPORTED).Msg(
             "HgiVulkan unsupported due to Vulkan API version: %d.%d "
-            "(must be >= 1.2)\n",
+            "(must be >= 1.3)\n",
             majorVersion, minorVersion);
     }
     return support;

@@ -408,12 +408,13 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _allowAsynchronousSceneProcessing(allowAsynchronousSceneProcessing)
     , _enableUsdDrawModes(enableUsdDrawModes)
 {
-    if (!_gpuEnabled && _hgiDriver.name == HgiTokens->renderDriver &&
-        _hgiDriver.driver.IsHolding<Hgi*>()) {
-        TF_WARN("Trying to share GPU resources while disabling the GPU.");
-        _gpuEnabled = true;
+    if (_hgiDriver.driver.IsHolding<Hgi*>()) {
+        if (!_gpuEnabled && _hgiDriver.name == HgiTokens->renderDriver) {
+            TF_WARN("Trying to share GPU resources while disabling the GPU.");
+            _gpuEnabled = true;
+        }
+        _hgi = _hgiDriver.driver.Get<Hgi*>();
     }
-
     // _renderIndex, _taskController, and _sceneDelegate/_sceneIndex
     // are initialized by the plugin system.
     if (!SetRendererPlugin(!rendererPluginId.IsEmpty() ?
@@ -1599,9 +1600,10 @@ UsdImagingGLEngine::_InitializeHgiIfNecessary()
     // may have multiple UsdImagingGLEngines in one app that ideally all use
     // the same HdDriver and Hgi to share GPU resources.
     if (_gpuEnabled && _hgiDriver.driver.IsEmpty()) {
-        _hgi = Hgi::CreatePlatformDefaultHgi();
+        _ownedHgi = Hgi::CreatePlatformDefaultHgi();
+        _hgi = _ownedHgi.get();
         _hgiDriver.name = HgiTokens->renderDriver;
-        _hgiDriver.driver = VtValue(_hgi.get());
+        _hgiDriver.driver = VtValue(_hgi);
     }
 }
 
@@ -1615,7 +1617,7 @@ UsdImagingGLEngine::SetRendererPlugin(TfToken const &id)
 
     HdRendererCreateArgs rendererCreateArgs;
     rendererCreateArgs.gpuEnabled = _gpuEnabled;
-    rendererCreateArgs.hgi = _hgi.get();
+    rendererCreateArgs.hgi = _hgi;
 
     const TfToken resolvedId =
         id.IsEmpty()
@@ -2608,7 +2610,7 @@ UsdImagingGLEngine::GetHgi()
         return nullptr;
     }
 
-    return _hgi.get();
+    return _hgi;
 }
 
 //----------------------------------------------------------------------------

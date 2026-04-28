@@ -55,7 +55,7 @@ class HgiGL final : public Hgi
 {
 public:
     HGIGL_API
-    HgiGL();
+    HgiGL(HgiDeviceFilter* filter = nullptr);
 
     HGIGL_API
     ~HgiGL() override;

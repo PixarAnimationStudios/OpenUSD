@@ -34,7 +34,7 @@ class HgiVulkan final : public Hgi
 {
 public:
     HGIVULKAN_API
-    HgiVulkan();
+    HgiVulkan(HgiDeviceFilter* filter = nullptr);
 
     HGIVULKAN_API
     ~HgiVulkan() override;

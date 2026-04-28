@@ -30,6 +30,7 @@ pxr_library(hgiMetal
         capabilities.h
         computeCmds.h
         computePipeline.h
+        deviceFilter.h
         diagnostic.h
         graphicsCmds.h
         graphicsPipeline.h

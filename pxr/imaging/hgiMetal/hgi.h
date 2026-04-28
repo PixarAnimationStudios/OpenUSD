@@ -40,7 +40,7 @@ public:
     };
     
     HGIMETAL_API
-    HgiMetal(id<MTLDevice> device = nil);
+    HgiMetal(HgiDeviceFilter* filter = nullptr);
 
     HGIMETAL_API
     ~HgiMetal() override;
@@ -202,6 +202,9 @@ protected:
 private:
     HgiMetal & operator=(const HgiMetal&) = delete;
     HgiMetal(const HgiMetal&) = delete;
+
+    static std::pair<id<MTLDevice>, std::unique_ptr<HgiMetalCapabilities>>
+        _FindDevice(HgiDeviceFilter* filter);
 
     // Invalidates the resource handle and destroys the object.
     // Metal's internal garbage collection will handle the rest.

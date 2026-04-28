@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/hgiVulkan/api.h"
+#include "pxr/imaging/hgiVulkan/deviceFilter.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -23,7 +24,7 @@ class HgiVulkanInstance final
 {
 public:
     HGIVULKAN_API
-    HgiVulkanInstance();
+    HgiVulkanInstance(HgiVulkanDeviceFilter* filter);
 
     HGIVULKAN_API
     ~HgiVulkanInstance();

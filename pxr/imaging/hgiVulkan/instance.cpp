@@ -59,7 +59,8 @@ _RemoveUnsupportedInstanceLayers(
 static
 std::vector<const char*>
 _RemoveUnsupportedInstanceExtensions(
-    const std::vector<const char*>& desiredExtensions)
+    const std::vector<const char*>& desiredExtensions,
+    HgiVulkanDeviceFilter* filter)
 {
     // Determine available instance extensions.
     uint32_t numAvailableExtensions = 0u;
@@ -70,6 +71,15 @@ _RemoveUnsupportedInstanceExtensions(
     HGIVULKAN_VERIFY_VK_RESULT(vkEnumerateInstanceExtensionProperties(
         nullptr, &numAvailableExtensions,
         availableExtensions.data()));
+
+    if (filter) {
+        // Merge in extensions provided by the device filter (e.g. from a
+        // direct-loaded ICD that the loader doesn't know about yet).
+        const auto driverExtensions =
+            filter->GetDirectDriverInstanceExtensions();
+        availableExtensions.insert(availableExtensions.end(),
+            driverExtensions.begin(), driverExtensions.end());
+    }
 
     std::vector<const char*> extensions;
 
@@ -88,7 +98,7 @@ _RemoveUnsupportedInstanceExtensions(
     return extensions;
 }
 
-HgiVulkanInstance::HgiVulkanInstance()
+HgiVulkanInstance::HgiVulkanInstance(HgiVulkanDeviceFilter* filter)
     : vkDebugMessenger(nullptr)
     , vkCreateDebugUtilsMessengerEXT(nullptr)
     , vkDestroyDebugUtilsMessengerEXT(nullptr)
@@ -151,7 +161,7 @@ HgiVulkanInstance::HgiVulkanInstance()
     }
 
     layers = _RemoveUnsupportedInstanceLayers(layers);
-    extensions = _RemoveUnsupportedInstanceExtensions(extensions);
+    extensions = _RemoveUnsupportedInstanceExtensions(extensions, filter);
 
     _hasPresentation = std::any_of(extensions.begin(), extensions.end(),
         [](const char* extensionName) {
@@ -172,6 +182,10 @@ HgiVulkanInstance::HgiVulkanInstance()
                 VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
         }
     #endif
+
+    if (filter) {
+        filter->PreInstantiate(createInfo);
+    }
 
     HGIVULKAN_VERIFY_VK_RESULT(
         vkCreateInstance(

@@ -14,6 +14,7 @@
 #include "pxr/imaging/hgiMetal/computePipeline.h"
 #include "pxr/imaging/hgiMetal/capabilities.h"
 #include "pxr/imaging/hgiMetal/conversions.h"
+#include "pxr/imaging/hgiMetal/deviceFilter.h"
 #include "pxr/imaging/hgiMetal/diagnostic.h"
 #include "pxr/imaging/hgiMetal/graphicsCmds.h"
 #include "pxr/imaging/hgiMetal/graphicsPipeline.h"
@@ -27,6 +28,7 @@
 
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/smallVector.h"
 #include "pxr/base/tf/type.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -36,6 +38,18 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType t = TfType::Define<HgiMetal, TfType::Bases<Hgi> >();
     t.SetFactory<HgiFactory<HgiMetal>>();
 }
+
+#if defined(ARCH_OS_OSX)
+TF_DEFINE_ENV_SETTING(HGIMETAL_USE_INTEGRATED_GPU, false,
+   "Always use an integrated GPU (if one is available)");
+
+static bool
+_UseIntegratedGpu()
+{
+   static bool enabled = TfGetEnvSetting(HGIMETAL_USE_INTEGRATED_GPU);
+   return enabled;
+}
+#endif
 
 struct HgiMetal::AutoReleasePool
 {
@@ -61,29 +75,65 @@ struct HgiMetal::AutoReleasePool
 #endif
 };
 
-HgiMetal::HgiMetal(id<MTLDevice> device)
-: _device(device)
+std::pair<id<MTLDevice>, std::unique_ptr<HgiMetalCapabilities>>
+HgiMetal::_FindDevice(HgiDeviceFilter* filter)
+{
+    TfSmallVector<id<MTLDevice>, 4> devices;
+#if defined(ARCH_OS_OSX)
+    if (!filter && !_UseIntegratedGpu()) {
+        // No special device selection logic, ensure we use the default device.
+        devices.push_back(MTLCreateSystemDefaultDevice());
+    } else {
+        for (id<MTLDevice> device in MTLCopyAllDevices()) {
+            if (!_UseIntegratedGpu() || [device isLowPower]) {
+                devices.push_back(device);
+            }
+        }
+    }
+#else
+    // On Apple embedded it's currently always one device
+    devices.push_back(MTLCreateSystemDefaultDevice());
+#endif
+
+    if (!filter) {
+        id<MTLDevice> device = devices.front();
+        return {device,
+            std::unique_ptr<HgiMetalCapabilities>{
+                new HgiMetalCapabilities(device)}};
+    }
+
+    for (id<MTLDevice> device : devices) {
+        std::unique_ptr<HgiMetalCapabilities> capabilities{
+            new HgiMetalCapabilities(device)};
+        bool useDevice{};
+        if (const auto mtlFilter =
+                dynamic_cast<HgiMetalDeviceFilter*>(filter)) {
+            useDevice = mtlFilter->FilterDevice(*capabilities, device);
+        } else {
+            useDevice = filter->FilterDevice(*capabilities);
+        }
+        if (useDevice) {
+            return {device, std::move(capabilities)};
+        }
+    }
+
+    TF_WARN(
+        "All devices filtered, falling back to MTLCreateSystemDefaultDevice()");
+
+    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+    return {device,
+        std::unique_ptr<HgiMetalCapabilities>{
+            new HgiMetalCapabilities(device)}};
+}
+
+HgiMetal::HgiMetal(HgiDeviceFilter* filter)
+: _device(nil)
 , _currentCmds(nullptr)
 , _frameDepth(0)
 , _workToFlush(false)
 , _pool(std::make_unique<AutoReleasePool>())
 {
-    if (!_device) {
-#if defined(ARCH_OS_OSX)
-        if( TfGetenvBool("HGIMETAL_USE_INTEGRATED_GPU", false)) {
-            auto devices = MTLCopyAllDevices();
-            for (id<MTLDevice> d in devices) {
-                if ([d isLowPower]) {
-                    _device = d;
-                    break;
-                }
-            }
-        }
-#endif
-        if (!_device) {
-            _device = MTLCreateSystemDefaultDevice();
-        }
-    }
+    std::tie(_device, _capabilities) = _FindDevice(filter);
 
     static int const commandBufferPoolSize = 256;
 
@@ -92,7 +142,9 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
     _commandBuffer = [_commandQueue commandBuffer];
     [_commandBuffer retain];
 
-    _capabilities.reset(new HgiMetalCapabilities(_device));
+    if (!_capabilities) {
+        _capabilities.reset(new HgiMetalCapabilities(_device));
+    }
     _indirectCommandEncoder.reset(new HgiMetalIndirectCommandEncoder(this));
 
     MTLArgumentDescriptor *argumentDescBuffer =

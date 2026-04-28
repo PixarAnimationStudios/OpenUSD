@@ -143,14 +143,18 @@ _SupportsHostAccessibleDeviceMemory(
 
     return false;
 }
+HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device) :
+    HgiVulkanCapabilities(device->GetVulkanPhysicalDevice(),
+    device->GetGfxQueueFamilyIndex(), device->GetExtensions())
+{
+}
 
-HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
+HgiVulkanCapabilities::HgiVulkanCapabilities(VkPhysicalDevice physicalDevice,
+    uint32_t gfxQueueIndex, const HgiVulkanExtensionSet& extensions)
     : supportsTimeStamps(false),
     supportsNativeInterop(false),
     supportsHostImageCopy(false)
 {
-    VkPhysicalDevice physicalDevice = device->GetVulkanPhysicalDevice();
-
     uint32_t queueCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueCount, 0);
     std::vector<VkQueueFamilyProperties> queues(queueCount);
@@ -159,9 +163,6 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         physicalDevice,
         &queueCount,
         queues.data());
-
-    // Grab the properties of all queues up until the (gfx) queue we are using.
-    uint32_t gfxQueueIndex = device->GetGfxQueueFamilyIndex();
 
     // The last queue we grabbed the properties of is our gfx queue.
     if (TF_VERIFY(gfxQueueIndex < queues.size())) {
@@ -192,7 +193,7 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     // Host image copy feature
     const bool hostImageCopyExtAvailable =
         TfGetEnvSetting(HGIVULKAN_ENABLE_HOST_IMAGE_COPY) &&
-        device->IsSupportedExtension(VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME);
+        extensions.Contains(VK_EXT_HOST_IMAGE_COPY_EXTENSION_NAME);
     VkPhysicalDeviceHostImageCopyPropertiesEXT vkHostImageCopyProperties {};
     std::vector<VkImageLayout> hostImageCopySrcLayoutsVec;
     std::vector<VkImageLayout> hostImageCopyDstLayoutsVec;
@@ -250,24 +251,25 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     // Interop features
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
     if (TfGetEnvSetting(HGIVULKAN_ENABLE_NATIVE_INTEROP) &&
-        device->IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME) &&
-        device->IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME) &&
-        device->IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME) &&
-        device->IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME)) {
+        extensions.Contains(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME) &&
+        extensions.Contains(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME) &&
+        extensions.Contains(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME) &&
+        extensions.Contains(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME)) {
         supportsNativeInterop = true;
     }
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
     if (TfGetEnvSetting(HGIVULKAN_ENABLE_NATIVE_INTEROP) &&
-        device->IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME) &&
-        device->IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME) &&
-        device->IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME) &&
-        device->IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME)) {
+        extensions.Contains(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME) &&
+        extensions.Contains(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME) &&
+        extensions.Contains(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME) &&
+        extensions.Contains(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME)) {
         supportsNativeInterop = true;
     }
 #elif defined(VK_USE_PLATFORM_METAL_EXT)
     // To be added, either through MoltenVK adding GL interop,
     // or a later change if necessary
 #endif
+
 
     // Vertex attribute divisor features ext
     vkVertexAttributeDivisorFeatures.sType =
@@ -276,7 +278,7 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     vkDeviceFeatures2.pNext = &vkVertexAttributeDivisorFeatures;
 
     // Barycentric feature
-    const bool barycentricExtSupported = device->IsSupportedExtension(
+    const bool barycentricExtSupported = extensions.Contains(
         VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
     if (barycentricExtSupported) {
         vkBarycentricFeatures.sType =
@@ -286,7 +288,7 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     }
 
     // Line rasterization feature
-    const bool lineRasterizationExtSupported = device->IsSupportedExtension(
+    const bool lineRasterizationExtSupported = extensions.Contains(
         VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME);
     if (lineRasterizationExtSupported) {
         vkLineRasterizationFeatures.sType =
@@ -343,15 +345,6 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         (uma && TfGetEnvSetting(HGIVULKAN_ENABLE_UMA)) ||
         (rebar && TfGetEnvSetting(HGIVULKAN_ENABLE_REBAR));
 
-    if (HgiVulkanIsDebugEnabled()) {
-        auto memoryAccessString = "";
-        if (unifiedMemory) {
-            memoryAccessString = rebar ? " (ReBAR)" : " (UMA)";
-        }
-        TF_STATUS("Selected GPU: \"%s\"%s",
-            vkDeviceProperties2.properties.deviceName, memoryAccessString);
-    }
-
     _maxClipDistances = vkDeviceProperties2.properties.limits.maxClipDistances;
     _maxUniformBlockSize =
         vkDeviceProperties2.properties.limits.maxUniformBufferRange;
@@ -360,7 +353,7 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     _uniformBufferOffsetAlignment =
         vkDeviceProperties2.properties.limits.minUniformBufferOffsetAlignment;
 
-    const bool conservativeRasterEnabled = device->IsSupportedExtension(
+    const bool conservativeRasterEnabled = extensions.Contains(
         VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
     const bool shaderDrawParametersEnabled =
         vkVulkan11Features.shaderDrawParameters;

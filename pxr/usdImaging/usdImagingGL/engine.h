@@ -125,6 +125,8 @@ public:
     /// An HdDriver, containing the Hgi of your choice, can be optionally passed
     /// in during construction. This can be helpful if you application creates
     /// multiple UsdImagingGLEngine that wish to use the same HdDriver / Hgi.
+    /// The caller must ensure that the Hgi instance outlives the
+    /// UsdImagingGLEngine one.
     /// The \p rendererPluginId argument indicates the renderer plugin that
     /// Hyrda should use. If the empty token is passed in, a default renderer
     /// plugin will be chosen depending on the value of \p gpuEnabled.
@@ -796,7 +798,7 @@ protected:
     // in the future and subclasses should use the above getters
     // to access them instead.
 
-    HgiUniquePtr _hgi;
+    Hgi* _hgi;
     // Similar for HdDriver.
     HdDriver _hgiDriver;
 
@@ -871,6 +873,10 @@ private:
     /* Hydra 1.0 */
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
     std::unique_ptr<HdEngine> _engine;
+
+    // If an Hgi instance was create for this engine instance,
+    // this pointer owns it. Otherwise it is null.
+    HgiUniquePtr _ownedHgi;
 
     bool _allowAsynchronousSceneProcessing = false;
     bool _enableUsdDrawModes = true;

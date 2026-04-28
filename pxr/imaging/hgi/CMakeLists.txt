@@ -38,6 +38,7 @@ pxr_library(hgi
     PUBLIC_HEADERS
         api.h
         blitCmdsOps.h
+        deviceFilter.h
         enums.h
         handle.h
         version.h

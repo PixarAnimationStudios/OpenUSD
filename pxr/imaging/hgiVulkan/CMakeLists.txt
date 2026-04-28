@@ -45,6 +45,7 @@ pxr_library(hgiVulkan
 
     PUBLIC_HEADERS
         api.h
+        deviceFilter.h
         vulkan.h
 
     PRIVATE_CLASSES

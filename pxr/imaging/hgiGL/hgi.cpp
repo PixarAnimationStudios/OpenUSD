@@ -16,6 +16,7 @@
 #include "pxr/imaging/hgiGL/contextArena.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/device.h"
+#include "pxr/imaging/hgiGL/deviceFilter.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
 #include "pxr/imaging/hgiGL/graphicsCmds.h"
 #include "pxr/imaging/hgiGL/graphicsPipeline.h"
@@ -43,7 +44,7 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 
-HgiGL::HgiGL()
+HgiGL::HgiGL(HgiDeviceFilter* filter)
     : _device(nullptr)
     , _frameDepth(0)
 {
@@ -63,6 +64,11 @@ HgiGL::HgiGL()
     _device = new HgiGLDevice();
 
     _capabilities.reset(new HgiGLCapabilities());
+
+    if (filter && !filter->FilterDevice(*_capabilities)) {
+        TF_WARN("HgiDeviceFilter returned false: ignoring this since HgiGL"
+            " only ever has one device.");
+    }
 }
 
 HgiGL::~HgiGL()

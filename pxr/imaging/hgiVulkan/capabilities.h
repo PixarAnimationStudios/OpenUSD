@@ -19,6 +19,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HgiVulkanDevice;
+class HgiVulkanExtensionSet;
 
 struct HgiVulkanFormatInfo
 {
@@ -36,6 +37,10 @@ struct HgiVulkanFormatInfo
 class HgiVulkanCapabilities final : public HgiCapabilities
 {
 public:
+    HGIVULKAN_API
+    HgiVulkanCapabilities(VkPhysicalDevice physicalDevice,
+        uint32_t gfxQueueIndex, const HgiVulkanExtensionSet& extensions);
+
     HGIVULKAN_API
     HgiVulkanCapabilities(HgiVulkanDevice* device);
 

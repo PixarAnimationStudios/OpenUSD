@@ -16,6 +16,7 @@
 #include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/computeCmds.h"
 #include "pxr/imaging/hgi/computeCmdsDesc.h"
+#include "pxr/imaging/hgi/deviceFilter.h"
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/graphicsPipeline.h"
@@ -95,7 +96,7 @@ class Hgi
 {
 public:
     HGI_API
-    Hgi();
+    Hgi(HgiDeviceFilter* filter = nullptr);
 
     HGI_API
     virtual ~Hgi();
@@ -121,9 +122,11 @@ public:
     /// For example on Linux this may return HgiGL while on macOS HgiMetal.
     /// Caller, usually the application, owns the lifetime of the Hgi object and
     /// the object is destroyed when the caller drops the unique ptr.
+    /// Optionally a set of device filters can be used to hook into device
+    /// selection. Only one filter per target Hgi is allowed.
     /// Thread safety: Not thread safe.
     HGI_API
-    static HgiUniquePtr CreatePlatformDefaultHgi();
+    static HgiUniquePtr CreatePlatformDefaultHgi(const HgiDeviceFilters& filters = {});
 
     /// Helper function to return a Hgi object of choice supported by current 
     /// platform and build configuration.
@@ -137,9 +140,10 @@ public:
     /// HgiTokens.
     /// Caller, usually the application, owns the lifetime of the Hgi object and
     /// the object is destroyed when the caller drops the unique ptr.
+    /// Optionally a device filtes can be used to hook into device selection.
     /// Thread safety: Not thread safe.
     HGI_API
-    static HgiUniquePtr CreateNamedHgi(const TfToken& hgiToken);
+    static HgiUniquePtr CreateNamedHgi(const TfToken& hgiToken, HgiDeviceFilter* filter = nullptr);
 
     /// Determine if Hgi instance can run on current hardware.
     /// Thread safety: This call is thread safe.
@@ -154,9 +158,11 @@ public:
     /// token from HgiTokens. 
     /// An empty token will check support for creating the platform default Hgi.
     /// An invalid token will result in this function returning false.
+    /// Optionally a set of device filters can be used to hook into device
+    /// selection. Only one filter per target Hgi is allowed.
     /// Thread safety: Not thread safe.
     HGI_API
-    static bool IsSupported(const TfToken& hgiToken = TfToken());
+    static bool IsSupported(const TfToken& hgiToken = TfToken(), const HgiDeviceFilters& filters = {});
 
     /// Returns a GraphicsCmds object (for temporary use) that is ready to
     /// record draw commands. GraphicsCmds is a lightweight object that
@@ -373,14 +379,14 @@ private:
 ///
 class HgiFactoryBase : public TfType::FactoryBase {
 public:
-    virtual Hgi* New() const = 0;
+    virtual Hgi* New(HgiDeviceFilter* filter) const = 0;
 };
 
 template <class T>
 class HgiFactory : public HgiFactoryBase {
 public:
-    Hgi* New() const {
-        return new T;
+    Hgi* New(HgiDeviceFilter* filter) const {
+        return new T(filter);
     }
 };
 
