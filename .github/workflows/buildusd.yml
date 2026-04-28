@@ -95,7 +95,14 @@ jobs:
         working-directory: ./USDgen/build/OpenUSD
         run: |
           ctest --output-on-failure -j4 -C Release \
-                --exclude-regex "^(testUsdview|testUsdRecord|testUsdAppUtilsFrameRecorder|testUsdImaging|testHgiGL|testHdx|testHdSt|testExecGeomXformable_Perf_Large|testWorkThreadLimitsDefault)"
+                --exclude-regex "^(testUsdview|testUsdRecord|testUsdAppUtilsFrameRecorder|testUsdImaging|testHgiGL|testHdx|testHdSt|testExecGeomXformable_Perf_Large|testWorkThreadLimitsDefault)" \
+                -LE flaky --no-tests=error
+      - name: Run USD Headless Tests (flaky)
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          ctest --output-on-failure -j4 -C Release \
+                --exclude-regex "^(testUsdview|testUsdRecord|testUsdAppUtilsFrameRecorder|testUsdImaging|testHgiGL|testHdx|testHdSt|testExecGeomXformable_Perf_Large|testWorkThreadLimitsDefault)" \
+                -L flaky --repeat until-pass:3
 
   GPUTests:
     needs:
@@ -150,7 +157,18 @@ jobs:
           sudo vglrun +v -d egl \
           ctest --output-on-failure -j4 -V -C Release \
                 --tests-regex "^(testUsdview|testUsdRecord|testUsdAppUtilsFrameRecorder|testUsdImaging|testHgiGL|testHdx|testHdSt)" \
-                --exclude-regex "^($(paste -sd "|" ${{ github.workspace }}/.github/workflows/tests_to_ignore.txt))$"
+                --exclude-regex "^($(paste -sd "|" ${{ github.workspace }}/.github/workflows/tests_to_ignore.txt))$" \
+                -LE flaky --no-tests=error
+      - name: Run USD GPU Tests (flaky)
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          # Known test failures in tests_to_ignore.txt tracked by internal ticket: USD-11921
+          sudo xvfb-run --server-args="-screen 0 2560x1600x24 +extension GLX +render" \
+          sudo vglrun +v -d egl \
+          ctest --output-on-failure -j4 -V -C Release \
+                --tests-regex "^(testUsdview|testUsdRecord|testUsdAppUtilsFrameRecorder|testUsdImaging|testHgiGL|testHdx|testHdSt)" \
+                --exclude-regex "^($(paste -sd "|" ${{ github.workspace }}/.github/workflows/tests_to_ignore.txt))$" \
+                -L flaky --repeat until-pass:3
       - name: Prepare Test Artifacts
         if: always()
         working-directory: ./USDgen/build/OpenUSD
@@ -226,7 +244,14 @@ jobs:
         working-directory: ./USDgen/build/OpenUSD
         run: |
           export PATH=/Applications/CMake.app/Contents/bin:$PATH
-          ctest --output-on-failure -j4 -C Release --exclude-regex "testExecGeomXformable_Perf_Large"
+          ctest --output-on-failure -j4 -C Release --exclude-regex "testExecGeomXformable_Perf_Large" \
+                -LE flaky --no-tests=error
+      - name: Test USD (flaky)
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          export PATH=/Applications/CMake.app/Contents/bin:$PATH
+          ctest --output-on-failure -j4 -C Release --exclude-regex "testExecGeomXformable_Perf_Large" \
+                -L flaky --repeat until-pass:3
 
   Windows:
     needs:
@@ -283,7 +308,16 @@ jobs:
           call set PATH=${{ github.workspace }}\USDinst\bin;${{ github.workspace }}\USDinst\lib;${{ github.workspace }}\USDinst\share\usd\examples\plugin;${{ github.workspace }}\USDinst\plugin\usd;%PATH%
           call set PYTHONPATH=${{ github.workspace }}\USDinst\lib\python;%PYTHONPATH%
           :: Internal ticket USD-8035
-          ctest --output-on-failure -j4 -C Release --exclude-regex "TfPathUtils|testExecGeomXformable_Perf_Large"
+          ctest --output-on-failure -j4 -C Release --exclude-regex "TfPathUtils|testExecGeomXformable_Perf_Large" \
+                -LE flaky --no-tests=error
+      - name: Test USD (flaky)
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          call set PATH=${{ github.workspace }}\USDinst\bin;${{ github.workspace }}\USDinst\lib;${{ github.workspace }}\USDinst\share\usd\examples\plugin;${{ github.workspace }}\USDinst\plugin\usd;%PATH%
+          call set PYTHONPATH=${{ github.workspace }}\USDinst\lib\python;%PYTHONPATH%
+          :: Internal ticket USD-8035
+          ctest --output-on-failure -j4 -C Release --exclude-regex "TfPathUtils|testExecGeomXformable_Perf_Large" \
+                -L flaky --repeat until-pass:3
         shell: cmd
 
   Wasm:
@@ -336,4 +370,8 @@ jobs:
       - name: Test USD
         working-directory: ./USDgen/build/OpenUSD
         run: |
-          ctest --output-on-failure -j4 -C Release
+          ctest --output-on-failure -j4 -C Release -LE flaky --no-tests=error
+      - name: Test USD (flaky)
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          ctest --output-on-failure -j4 -C Release -L flaky --repeat until-pass:3
