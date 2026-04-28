@@ -18,6 +18,10 @@ list(APPEND CMAKE_MODULE_PATH
     ${PROJECT_SOURCE_DIR}/cmake/modules
     ${PROJECT_SOURCE_DIR}/cmake/macros)
 
+# Since we append to the targets file we need to delete on each reconfigure,
+# otherwise the file will keep growing every time CMake is rerun!
+file(REMOVE "${PROJECT_BINARY_DIR}/pxrTargets.cmake")
+
 include(Options)
 include(ProjectDefaults)
 include(Packages)

@@ -10,6 +10,10 @@
 # below may wind up stomping over this value.
 set(build_shared_libs "${BUILD_SHARED_LIBS}")
 
+# Keep track of the feature related compile definitions,
+# so we can export them later.
+set(PXR_FEATURE_DEFINITIONS)
+
 # Core USD Package Requirements 
 # ----------------------------------------------
 
@@ -173,7 +177,7 @@ if (PXR_BUILD_IMAGING)
     if (PXR_BUILD_OPENIMAGEIO_PLUGIN)
         set(REQUIRES_Imath TRUE)
         find_package(OpenImageIO REQUIRED)
-        add_definitions(-DPXR_OIIO_PLUGIN_ENABLED)
+        list(APPEND PXR_FEATURE_DEFINITIONS PXR_OIIO_PLUGIN_ENABLED)
         if (OIIO_idiff_BINARY)
             set(IMAGE_DIFF_TOOL ${OIIO_idiff_BINARY} CACHE STRING "Uses idiff for image diffing")
         endif()
@@ -181,7 +185,7 @@ if (PXR_BUILD_IMAGING)
     # --OpenColorIO
     if (PXR_BUILD_OPENCOLORIO_PLUGIN)
         find_package(OpenColorIO REQUIRED)
-        add_definitions(-DPXR_OCIO_PLUGIN_ENABLED)
+        list(APPEND PXR_FEATURE_DEFINITIONS PXR_OCIO_PLUGIN_ENABLED)
     endif()
     # --OpenGL
     if (PXR_ENABLE_GL_SUPPORT AND NOT PXR_APPLE_EMBEDDED)
@@ -191,11 +195,11 @@ if (PXR_BUILD_IMAGING)
             cmake_policy(SET CMP0072 OLD)
         endif()
         find_package(OpenGL REQUIRED)
-        add_definitions(-DPXR_GL_SUPPORT_ENABLED)
+        list(APPEND PXR_FEATURE_DEFINITIONS PXR_GL_SUPPORT_ENABLED)
     endif()
     # --Metal
     if (PXR_ENABLE_METAL_SUPPORT)
-        add_definitions(-DPXR_METAL_SUPPORT_ENABLED)
+        list(APPEND PXR_FEATURE_DEFINITIONS PXR_METAL_SUPPORT_ENABLED)
     endif()
     if (PXR_ENABLE_VULKAN_SUPPORT)
         message(STATUS "Enabling experimental feature Vulkan support")
@@ -211,7 +215,7 @@ if (PXR_BUILD_IMAGING)
                 # No extra libs required
             endif()
 
-            add_definitions(-DPXR_VULKAN_SUPPORT_ENABLED)
+            list(APPEND PXR_FEATURE_DEFINITIONS PXR_VULKAN_SUPPORT_ENABLED)
         else()
             message(FATAL_ERROR "VULKAN_SDK not valid")
         endif()
@@ -244,18 +248,18 @@ if (PXR_BUILD_IMAGING)
     # --Ptex
     if (PXR_ENABLE_PTEX_SUPPORT)
         find_package(PTex REQUIRED)
-        add_definitions(-DPXR_PTEX_SUPPORT_ENABLED)
+        list(APPEND PXR_FEATURE_DEFINITIONS PXR_PTEX_SUPPORT_ENABLED)
     endif()
     # --OpenVDB
     if (PXR_ENABLE_OPENVDB_SUPPORT)
         set(REQUIRES_Imath TRUE)
         find_package(OpenVDB REQUIRED)
-        add_definitions(-DPXR_OPENVDB_SUPPORT_ENABLED)
+        list(APPEND PXR_FEATURE_DEFINITIONS PXR_OPENVDB_SUPPORT_ENABLED)
     endif()
     # --X11
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         find_package(X11)
-        add_definitions(-DPXR_X11_SUPPORT_ENABLED)
+        list(APPEND PXR_FEATURE_DEFINITIONS PXR_X11_SUPPORT_ENABLED)
     endif()
     # --Embree
     if (PXR_BUILD_EMBREE_PLUGIN)
@@ -285,6 +289,7 @@ if (PXR_BUILD_ALEMBIC_PLUGIN)
                 HL
             REQUIRED
         )
+        list(APPEND PXR_FEATURE_DEFINITIONS PXR_HDF5_SUPPORT_ENABLED)
     endif()
 endif()
 
@@ -294,18 +299,23 @@ endif()
 
 if (PXR_ENABLE_MATERIALX_SUPPORT)
     find_package(MaterialX REQUIRED)
-    add_definitions(-DPXR_MATERIALX_SUPPORT_ENABLED)
+    list(APPEND PXR_FEATURE_DEFINITIONS PXR_MATERIALX_SUPPORT_ENABLED)
 endif()
 
 if(PXR_ENABLE_OSL_SUPPORT)
     find_package(OSL REQUIRED)
     set(REQUIRES_Imath TRUE)
-    add_definitions(-DPXR_OSL_SUPPORT_ENABLED)
+    list(APPEND PXR_FEATURE_DEFINITIONS PXR_OSL_SUPPORT_ENABLED)
 endif()
 
 if (PXR_BUILD_ANIMX_TESTS)
     find_package(AnimX REQUIRED)
 endif()
+
+# Add the definitions globally. These end up in the target
+# COMPILE_DEFINITIONS property, but not in the INTERFACE_COMPILE_DEFINITIONS,
+# which means that they are not exported targets. We have to add them manually.
+add_compile_definitions(${PXR_FEATURE_DEFINITIONS})
 
 # ----------------------------------------------
 
