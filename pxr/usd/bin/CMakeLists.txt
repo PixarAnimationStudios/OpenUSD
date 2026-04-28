@@ -10,6 +10,7 @@ set(DIRS
     sdfdump
     sdffilter
     usdtree
+    usdotio
 )
 
 foreach(d ${DIRS})
