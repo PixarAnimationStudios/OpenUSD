@@ -21,6 +21,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((propagatedPrototypesScope, "UsdNiPropagatedPrototypes"))
+);
+
 namespace UsdImagingSelectionSceneIndex_Impl
 {
 
@@ -887,8 +892,21 @@ _ExpandToDescendants(
             "        Processing seed %s\n",
             seeds[i].prim.GetText());
 
-        for (const SdfPath &descendant :
-                 HdSceneIndexPrimView(sceneIndex, seeds[i].prim)) {
+        HdSceneIndexPrimView descendants(sceneIndex, seeds[i].prim);
+        for (auto it = descendants.begin(); it != descendants.end(); ++it) {
+            const SdfPath &descendant = *it;
+
+            // The direct UsdNiPropagatedPrototypes child under a propagated
+            // UsdNiPrototype is a helper subtree for nested native instancing.
+            // Skipping it here forces traversal to go through the aggregated
+            // native-instance seeds below, which fixes nested instancing
+            // selection by avoiding duplicate walks into nested prototypes.
+            if (descendant.GetParentPath() == seeds[i].prim && 
+                descendant.GetNameToken() == _tokens->propagatedPrototypesScope) {
+                it.SkipDescendants();
+                continue;
+            }
+
             const HdSceneIndexPrim prim =
                 sceneIndex->GetPrim(descendant);
 

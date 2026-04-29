@@ -290,6 +290,16 @@ pxr_build_test(testUsdImagingColorSpace
     CPPFILES
         testenv/testUsdImagingColorSpace.cpp
 )
+pxr_build_test(testUsdImagingNestedInstancingSelection
+    LIBRARIES
+        usdImaging
+        usd
+        hdx
+        hd
+        tf
+    CPPFILES
+        testenv/testUsdImagingNestedInstancingSelection.cpp
+)
 
 # Register tests to be run
 pxr_register_test(testUsdImagingDataSourceAttribute
@@ -323,6 +333,13 @@ if (BUILD_SHARED_LIBS)
         EXPECTED_RETURN_CODE 0
     )
 endif()
+pxr_register_test(testUsdImagingNestedInstancingSelection
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingNestedInstancingSelection"
+    TESTENV testenv/testUsdImagingNestedInstancingSelection
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
+)
 pxr_register_test(testUsdImagingNestedInstancingCategories
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingNestedInstancingCategories"
     TESTENV testenv/testUsdImagingNestedInstancingCategories
