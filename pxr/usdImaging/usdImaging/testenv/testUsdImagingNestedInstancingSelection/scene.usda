@@ -1,0 +1,25 @@
+#usda 1.0
+(
+    defaultPrim = "Root"
+)
+
+def Xform "Root"
+{
+    def Xform "Tower_0" (
+        instanceable = true
+        prepend references = @tower.usda@
+    )
+    {
+        double3 xformOp:translate = (-2, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "Tower_1" (
+        instanceable = true
+        prepend references = @tower.usda@
+    )
+    {
+        double3 xformOp:translate = (2, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

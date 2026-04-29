@@ -1,0 +1,11 @@
+#usda 1.0
+(
+    defaultPrim = "Root"
+)
+
+def Xform "Root"
+{
+    def Cube "Cube"
+    {
+    }
+}
