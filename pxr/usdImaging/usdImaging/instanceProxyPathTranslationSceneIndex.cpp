@@ -101,33 +101,37 @@ _TranslatePath(
     // We do this for two reasons:
     // 1. Avoid querying the scene index at each path prefix for the general
     //    case where the prim is not a descendant of an instance prim.
-    // 2. To not incorreclty translate an instance prim path to its
+    // 2. To not incorrectly translate an instance prim path to its
     //    prototype path. We want to do this only for *descendant* paths of
     //    instance prims that don't have a corresponding prim in the scene
     //    index.
     //
-    const HdSceneIndexPrim prim = sceneIndex->GetPrim(path);
-    if (_IsValid(prim)) {
-        return path;
-    }
-
-    // Iterate over the prefixes, adding the terminal path element of each
-    // prefix and checking if the prim at the resulting path is an instance.
-    // If it is, replace the result with the prototype path of the instance and
-    // continue iterating over the prefixes.
-    //
-    SdfPath result = SdfPath::AbsoluteRootPath();
-
-    for (SdfPath const& p: path.GetPrefixes()) {
-        result = result.AppendChild(p.GetNameToken());
-
-        HdInstanceSchema instanceSchema = 
-            HdInstanceSchema::GetFromParent(
-                sceneIndex->GetPrim(result).dataSource);
-        
-        if (const std::optional<SdfPath> prototypePath =
-                _GetPrototypePath(instanceSchema, sceneIndex)) {
-            result = *prototypePath;
+    SdfPath result(path);
+    while (!_IsValid(sceneIndex->GetPrim(result)))
+    {
+        // Work back-to-front, until we find an ancestor prim that exists
+        bool loopAgain = false;
+        for (SdfPath const& ancestorPath : result.GetAncestorsRange()) {
+            if (HdSceneIndexPrim ancestor = sceneIndex->GetPrim(ancestorPath);
+                _IsValid(ancestor)) {
+                HdInstanceSchema instanceSchema = 
+                    HdInstanceSchema::GetFromParent(ancestor.dataSource);
+                // If the ancestor has an instanceSchema that provides a new
+                // prototype path, replace the prefix of our working path and
+                // start the loop again with this new path.
+                if (const std::optional<SdfPath> prototypePath =
+                        _GetPrototypePath(instanceSchema, sceneIndex)) {
+                    result = result.ReplacePrefix(
+                        ancestorPath, *prototypePath);
+                    loopAgain = true;
+                    break;
+                }
+            }
+        }
+        // If we've checked all the ancestors and not found any prototype paths
+        // then we're done.
+        if (!loopAgain) {
+            break;
         }
     }
 
