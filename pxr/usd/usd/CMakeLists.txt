@@ -496,6 +496,7 @@ pxr_build_test(testUsdUsdcBugGHSA02
 pxr_build_test(testUsdSplinesCpp
     LIBRARIES
         tf
+        tsTest
         ts
         sdf
         usd

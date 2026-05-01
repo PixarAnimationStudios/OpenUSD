@@ -54,16 +54,18 @@ set(pycpp
     wrapTypes.cpp
 )
 
+set(tsTestHeaders
+    tsTest_Museum.h
+    tsTest_SampleBezier.h
+    tsTest_SampleTimes.h
+    tsTest_SplineData.h
+    tsTest_TsEvaluator.h
+    tsTest_Types.h
+)
+
 if (${PXR_BUILD_TESTS})
-    list(APPEND classes
-        tsTest_Museum
-        tsTest_SampleBezier
-        tsTest_SampleTimes
-        tsTest_SplineData
-        tsTest_TsEvaluator
-    )
     list(APPEND headers
-        tsTest_Types.h
+        ${tsTestHeaders}
     )
     list(APPEND pycpp
         wrapTsTest_Museum.cpp
@@ -78,6 +80,13 @@ if (${PXR_BUILD_TESTS})
         TsTest_Baseliner.py
         TsTest_Grapher.py
     )
+endif()
+
+if (${PXR_BUILD_ANIMX_TESTS})
+    list(APPEND libs ${ANIMX_LIBRARY})
+    list(APPEND include ${ANIMX_INCLUDES})
+    list(APPEND headers tsTest_AnimXEvaluator.h)
+    list(APPEND pycpp wrapTsTest_AnimXEvaluator.cpp)
 endif()
 
 pxr_library(ts
@@ -122,8 +131,39 @@ pxr_library(ts
 )
 
 if (${PXR_BUILD_TESTS})
+    set(tsTestCpp
+        tsTest_Museum.cpp
+        tsTest_SampleBezier.cpp
+        tsTest_SampleTimes.cpp
+        tsTest_SplineData.cpp
+        tsTest_TsEvaluator.cpp
+    )
+    if (${PXR_BUILD_ANIMX_TESTS})
+        list(APPEND tsTestCpp tsTest_AnimXEvaluator.cpp)
+    endif()
+
+    pxr_library(tsTest
+        LIBRARIES
+            ts
+
+        INCLUDE_DIRS
+            ${include}
+
+        CPPFILES
+            ${tsTestCpp}
+    )
+    # TsTest headers currently use TS_API; export those symbols from tsTest.
+    target_compile_definitions(tsTest PRIVATE TS_EXPORTS=1)
+
     if (TARGET _ts)
         target_compile_definitions(_ts PRIVATE TS_BUILD_TEST_FRAMEWORK)
+        target_link_libraries(_ts PRIVATE tsTest)
+    endif()
+endif()
+
+if (${PXR_BUILD_ANIMX_TESTS})
+    if (TARGET _ts)
+        target_compile_definitions(_ts PRIVATE TS_BUILD_ANIMX_TEST_FRAMEWORK)
     endif()
 endif()
 
@@ -178,6 +218,7 @@ pxr_build_test(
         testenv/testTsSplineBaking.cpp
     LIBRARIES
         gf
+        tsTest
         ts
         tf
 )
@@ -207,6 +248,7 @@ pxr_build_test(
     CPPFILES
         testenv/testTsSplineSampling.cpp
     LIBRARIES
+        tsTest
         ts
         vt
         tf
