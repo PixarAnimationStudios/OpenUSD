@@ -273,6 +273,9 @@ struct _VtValueToRtParamList
     bool operator()(const std::string &v) {
         return params->SetString(name, RtUString(v.c_str()));
     }
+    bool operator()(const SdfPath &path) {
+        return (*this)(path.GetString());
+    }
     bool operator()(const SdfAssetPath &assetPath) {
         // Since we can't know how the texture will be consumed,
         // go with the default of flipping textures

@@ -16,6 +16,21 @@ def "GLOBAL" (
 {
 }
 
+class "IrController" (
+    doc = """
+    An abstract schema that represents an invertible controller.
+
+    Note: The functionality provided by this schema is extremely limited,
+    subject to change, and not yet ready for production use.
+    """
+    inherits = </Typed>
+    customData = {
+        string className = "IrController"
+    }
+)
+{
+}
+
 class IrFkController "IrFkController" (
     doc = """
     A simple invertible FK controller.
@@ -25,64 +40,131 @@ class IrFkController "IrFkController" (
     computation takes a desired posed space and the parent space as input and
     produces the FK attribute values that produce the desired space.
 
-    Note: The functionality here is extremely limited, subject to change, and
-    not yet ready for production use.
+    Note: The functionality provided by this schema is extremely limited,
+    subject to change, and not yet ready for production use.
     """
-    inherits = </Typed>
+    inherits = </IrController>
     customData = {
         string className = "FkController"
     }
 )
 {
-    matrix4d ParentIn:Space = (
+    matrix4d parentIn:space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "InputAttribute"
+        irIsInvertible = False
+    )
+    matrix4d parentIn:defaultSpace = (
         (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
         irRole = "InputAttribute"
         irIsInvertible = False
     )
 
-    matrix4d Out:Space = (
+    matrix4d out:space = (
         (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
         irRole = "OutputAttribute"
         irIsInvertible = True
     )
-
-    matrix4d In:DefaultSpace = (
+    matrix4d out:defaultSpace = (
         (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
         irRole = "PassthroughAttribute"
     )
-    double In:Tx = 0 (
+
+    matrix4d in:defaultSpace = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "PassthroughAttribute"
+    )
+    double in:tx = 0 (
         irRole = "InputAttribute"
         irIsInvertible = True
     )
-    double In:Ty = 0 (
+    double in:ty = 0 (
         irRole = "InputAttribute"
         irIsInvertible = True
     )
-    double In:Tz = 0 (
+    double in:tz = 0 (
         irRole = "InputAttribute"
         irIsInvertible = True
     )
 
-    double In:Rx = 0 (
+    double in:rx = 0 (
         irRole = "InputAttribute"
         irIsInvertible = True
     )
-    double In:Ry = 0 (
+    double in:ry = 0 (
         irRole = "InputAttribute"
         irIsInvertible = True
     )
-    double In:Rz = 0 (
+    double in:rz = 0 (
         irRole = "InputAttribute"
         irIsInvertible = True
     )
-    double In:Rspin = 0 (
+    double in:rspin = 0 (
         irRole = "InputAttribute"
         irIsInvertible = True
     )
 
-    token In:RotationOrder = "XYZ" (
+    token in:rotationOrder = "XYZ" (
         irRole = "SwitchAttribute"
         allowedTokens = ["XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX"]
+    )
+}
+
+class IrSwitchController "IrSwitchController" (
+    doc = """
+    An invertible controller that can determine which of several rigs are active
+    at a given time, depending on the value of a switch attribute.
+
+    Note: The functionality provided by this schema is extremely limited,
+    subject to change, and not yet ready for production use. In particular, this
+    schema is hard coded to support two rigs, each of which controls two joint
+    scopes. In the future, a general switch controller schema will be
+    configurable via application of multi-apply schemas. This will allow switch
+    controllers to switch among more than two rigs and to support any number of
+    joint scopes.
+    """
+    inherits = </IrController>
+    customData = {
+        string className = "SwitchController"
+    }
+)
+{
+    token switch = "rig1" (
+        irRole = "SwitchAttribute"
+        allowedTokens = ["rig1", "rig2"]
+    )
+
+    matrix4d rig1:joint1:space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "InputAttribute"
+        irIsInvertible = True
+    )
+    matrix4d rig1:joint2:space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "InputAttribute"
+        irIsInvertible = True
+    )
+
+    matrix4d rig2:joint1:space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "InputAttribute"
+        irIsInvertible = True
+    )
+    matrix4d rig2:joint2:space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "InputAttribute"
+        irIsInvertible = True
+    )
+
+    matrix4d out:joint1:space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "OutputAttribute"
+        irIsInvertible = True
+    )
+    matrix4d out:joint2:space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "OutputAttribute"
+        irIsInvertible = True
     )
 }
 
@@ -134,7 +216,6 @@ class "IrTransformable" (
     double default:rx = 0
     double default:ry = 0
     double default:rz = 0
-    double default:totalSize = 0
     matrix4d default:space = (
         (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1))
 
@@ -150,21 +231,17 @@ class "IrTransformable" (
     double avars:ry = 0
     double avars:rz = 0
     double avars:rspin = 0
-    double avars:totalSize = 0
     token avars:rotationOrder = "XYZ" (
         allowedTokens = ["XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX"]
     )
-    double avars:defaultTotalSize = 0
     matrix4d avars:defaultSpace = (
         (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1))
     double avars:unitScaleFactor = 0
 
     matrix4d parent:space = (
         (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1))
-    double parent:defaultTotalSize = 0
     matrix4d parent:defaultSpace = (
         (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1))
-    double parent:totalSize
 }
 
 class IrJointScope "IrJointScope" (
@@ -176,8 +253,8 @@ class IrJointScope "IrJointScope" (
     mainly so we can specialize drawing of guides, etc. In the future, other
     concrete schemas will also extend IrTransformable.
 
-    Note: The functionality here is extremely limited, subject to change, and
-    not yet ready for production use.
+    Note: The functionality provided by this schema is extremely limited,
+    subject to change, and not yet ready for production use.
     """
     inherits = </IrTransformable>
     customData = {

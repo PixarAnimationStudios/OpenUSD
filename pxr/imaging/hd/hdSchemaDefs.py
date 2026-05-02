@@ -940,6 +940,30 @@
     ),
 
     #--------------------------------------------------------------------------
+     # instanceProxy
+    dict(
+        SCHEMA_NAME = 'InstanceProxy',
+        DOC = '''A schema for marking a prim as an instance proxy. An instance
+                 proxy prim represents a descendant prim beneath an instance
+                 prim, even though no such prim actually exists in the scene.
+                 This schema is in service of HdInstanceProxyViewSceneIndex
+                 that provides a topological view of the scene as though
+                 instancing were not being used.
+                 This is useful for path expression-based
+                 collection membership evaluation, and for UI tools like the
+                 Hydra Scene Debugger.''',
+        
+        SCHEMA_TOKEN = 'instanceProxy',
+        ADD_DEFAULT_LOCATOR = True,
+        MEMBERS = [
+            ('prototypePath', T_PATH,
+             dict(DOC = '''The path to the propagated prototype prim that this
+                  instance proxy prim represents.''')),
+             # XXX Add the instancing context.
+        ],
+    ),
+
+    #--------------------------------------------------------------------------
     # legacyDisplayStyle
     dict(
         SCHEMA_NAME = 'LegacyDisplayStyle',

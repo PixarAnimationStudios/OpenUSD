@@ -90,16 +90,6 @@ HdRendererPlugin::CreateDelegate(HdRenderSettingsMap const& settingsMap)
 HdPluginRendererUniqueHandle
 HdRendererPlugin::CreateRenderer(
     HdSceneIndexBaseRefPtr const &sceneIndex,
-    HdContainerDataSourceHandle const &rendererCreateArgs)
-{
-    return CreateRenderer(
-        sceneIndex,
-        HdRendererCreateArgsSchema(rendererCreateArgs));
-}
-
-HdPluginRendererUniqueHandle
-HdRendererPlugin::CreateRenderer(
-    HdSceneIndexBaseRefPtr const &sceneIndex,
     const HdRendererCreateArgsSchema &rendererCreateArgs)
 {
     if (!IsSupported(rendererCreateArgs)) {
@@ -149,16 +139,6 @@ HdRendererPlugin::IsSupported(bool gpuEnabled) const
 
 bool
 HdRendererPlugin::IsSupported(
-    HdContainerDataSourceHandle const &rendererCreateArgs,
-    std::string * const reasonWhyNot) const
-{
-    return IsSupported(
-        HdRendererCreateArgsSchema(rendererCreateArgs),
-        reasonWhyNot);
-}
-
-bool
-HdRendererPlugin::IsSupported(
     const HdRendererCreateArgsSchema &rendererCreateArgs,
     std::string * const reasonWhyNot) const
 {
@@ -171,16 +151,6 @@ HdContainerDataSourceHandle
 HdRendererPlugin::GetSceneIndexCreateArgs() const
 {
     return {};
-}
-
-std::unique_ptr<HdRenderer>
-HdRendererPlugin::_CreateRenderer(
-    HdSceneIndexBaseRefPtr const &sceneIndex,
-    HdContainerDataSourceHandle const &rendererCreateArgs)
-{
-    return _CreateRendererFromRenderDelegate(
-        sceneIndex,
-        HdRendererCreateArgsSchema(rendererCreateArgs));
 }
 
 std::unique_ptr<HdRenderer>

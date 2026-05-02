@@ -29,6 +29,7 @@
 
 #include "pxr/base/trace/trace.h"
 
+#include <string>
 #include <variant>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -741,7 +742,7 @@ private:
 std::string
 _ComputeConstantPrimvarsRoleHash(HdPrimvarsSchema primvarsSchema)
 {
-    std::map<TfToken, TfToken> nameToRole;
+    std::map<std::string, std::string> nameToRole;
 
     for (const TfToken &name : primvarsSchema.GetPrimvarNames()) {
         HdPrimvarSchema primvarSchema = primvarsSchema.GetPrimvar(name);
@@ -754,7 +755,7 @@ _ComputeConstantPrimvarsRoleHash(HdPrimvarsSchema primvarsSchema)
                            primvarSchema.GetRole()) {
                     role = roleSrc->GetTypedValue(0.0f);
                 }
-                nameToRole[name] = role;
+                nameToRole[name.GetString()] = role.GetString();
             }
         }
     }

@@ -13,6 +13,7 @@
 #include "pxr/base/gf/matrix4d.h"
 
 #include "hdPrman/gprimbase.h"
+#include "hdPrman/idMap.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
@@ -191,12 +192,6 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     const bool isHdInstance = !instancerId.IsEmpty();
     SdfPath primPath = sceneDelegate->GetScenePrimPath(id, 0, nullptr);
 
-    // Prman has a default value for identifier:id of 0 (in case of ray miss),
-    // while Hydra treats id -1 as the clear value.  We map Prman primId as
-    // (Hydra primId + 1) to get around this, here and in
-    // hdPrman/framebuffer.cpp.
-    const int32_t primId = BASE::GetPrimId() + 1;
-
     // Sample transform
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
     sceneDelegate->SampleTransform(id,
@@ -292,8 +287,9 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
         primvars.SetString(RixStr.k_identifier_object,
                            RtUString(id.GetName().c_str()));
         for (size_t i=0, n=geomSubsets.size(); i<n; ++i) {
-            primvars.SetString(RixStr.k_identifier_object,
-                               RtUString(geomSubsets[i].id.GetName().c_str()));
+            geomSubsetPrimvars[i]
+                .SetString(RixStr.k_identifier_object,
+                           RtUString(geomSubsets[i].id.GetName().c_str()));
         }
 
 // In 2311 and beyond, we can use
@@ -412,9 +408,6 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     // Resolve attributes.
     RtParamList attrs = param->ConvertAttributes(sceneDelegate, id, true);
 
-    // Add "identifier:id" with the prim id.
-    attrs.SetInteger(RixStr.k_identifier_id, primId);
-
     // user:__materialid is useful for cryptomatte
     if(!hdMaterialId.IsEmpty()) {
         attrs.SetString(RtUString("user:__materialid"), RtUString(hdMaterialId.GetText()));
@@ -431,10 +424,6 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
             unsigned(xf.count),
             xf_rt.data(),
             xf.times.data()};
-
-        // Add "identifier:id2" with the instance number.
-        // XXX Do we want to distinguish facesets here?
-        attrs.SetInteger(RixStr.k_identifier_id2, 0);
 
         // Adjust _instanceIds array.
         const size_t oldCount = _instanceIds.size();
@@ -464,14 +453,19 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
             auto instanceMaterialId = materialId;
             RtParamList finalAttrs = attrs; // copy
 
-            // If a subset path was cached, use it. If not, use the prim path.
-            SdfPath* subsetPath(&primPath);
+            // To uniquely  identiy this geometry instance, use either
+            // the prim path or geometry subset path (if given).
+            SdfPath* idPath(&primPath);
             if (!subsetPaths.empty()) {
-                subsetPath = &subsetPaths[j];
+                idPath = &subsetPaths[j];
             }
 
-            finalAttrs.SetString(RixStr.k_identifier_name,
-                RtUString(subsetPath->GetText()));
+            // Assign & register ID.
+            param->GetIdMap()->RegisterId(
+                { idPath->GetString(),
+                  /* primId = */ BASE::GetPrimId(),
+                  /*instanceId = */ 0 },
+                &finalAttrs);
 
             // If a valid subset material was bound, use it.
             if (!subsetMaterialIds.empty()) {
@@ -479,11 +473,12 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                 instanceMaterialId = subsetMaterialIds[j];
             }
 
+            // Create or modify Riley geometry instance.
             if (instanceId == riley::GeometryInstanceId::InvalidId()) {
                 TRACE_SCOPE("riley::CreateGeometryInstance");
                 instanceId = riley->CreateGeometryInstance(
                     riley::UserId(
-                        stats::AddDataLocation(subsetPath->GetText()).GetValue()),
+                        stats::AddDataLocation(idPath->GetText()).GetValue()),
                     riley::GeometryPrototypeId::InvalidId(), prototypeId,
                     instanceMaterialId, coordSysList, xform, finalAttrs);
             } else if (prmanInstAttrBitsWereSet) {

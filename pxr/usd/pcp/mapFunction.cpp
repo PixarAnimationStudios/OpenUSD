@@ -18,6 +18,7 @@
 #include "pxr/base/tf/ostreamMethods.h"
 
 #include <limits>
+#include <optional>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -194,24 +195,23 @@ struct _SourceAndTargetPathPairs final
 
 struct PcpMapFunction::_Mappings final
 {
+    using SharedPtr = std::shared_ptr<_Mappings>;
+    using SharedPtrVector = std::vector<std::shared_ptr<_Mappings>>;
+
     _Mappings() = default;
     _Mappings(_PathPair const *begin, _PathPair const *end, bool hasRootIdentity)
         : data(std::in_place_type<_SourceAndTargetPathPairs>, 
             begin, end, hasRootIdentity)
     { }
-    _Mappings(_SourceAndTargetPathPairs&& pathPairs)
-        : data(std::in_place_type<_SourceAndTargetPathPairs>,
-            std::move(pathPairs))
+
+    template <class T>
+    _Mappings(T&& mappings)
+        : data(std::forward<T>(mappings))
     { }
 
-    bool operator==(const _Mappings& m) const
+    bool IsDeferredComposition() const
     {
-        return data == m.data;
-    }
-
-    bool operator!=(const _Mappings& m) const
-    {
-        return !(*this == m);
+        return std::holds_alternative<_Mappings::SharedPtrVector>(data);
     }
 
     bool IsPathPairs() const
@@ -229,18 +229,50 @@ struct PcpMapFunction::_Mappings final
         return std::get<_SourceAndTargetPathPairs>(data);
     }
 
-    template <class HashState>
-    friend void TfHashAppend(HashState &h, _Mappings const& m){
-        std::visit(TfOverloads{
-            [&](const _SourceAndTargetPathPairs& pairs) {
-                h.Append(pairs);
+    // Return true if f returns true for all _SourceAndTargetPathPairs
+    // contained in this mapping.
+    template <class Fn>
+    bool AllOf(Fn&& f) const
+    {
+        if (IsPathPairs()) {
+            return std::forward<Fn>(f)(GetPathPairs());
+        }
+
+        // List of mappings to visit.
+        std::vector<const _Mappings*> toVisit(1, this);
+        bool result = true;
+
+        auto check = TfOverloads {
+            [&f, &result](const _SourceAndTargetPathPairs& pathPairs) {
+                result &= std::forward<Fn>(f)(pathPairs);
+            },
+            [&toVisit](const _Mappings::SharedPtrVector& mappings) {
+                for (const _Mappings::SharedPtr& m : mappings) {
+                    toVisit.push_back(m.get());
+                }
             }
-        }, m.data);
+        };
+
+        while (!toVisit.empty()) {
+            const _Mappings* m = toVisit.back();
+            toVisit.pop_back();
+            
+            std::visit(check, m->data);
+            if (!result) {
+                break;
+            }
+        }
+
+        return result;
     }
 
     std::variant<
         // Flat list of (source path, target path) pairs.
-        _SourceAndTargetPathPairs
+        _SourceAndTargetPathPairs,
+
+        // List of mappings that have been composed together,
+        // in order from outermost to innermost function.
+        _Mappings::SharedPtrVector
     > data;
 };
 
@@ -562,6 +594,21 @@ PcpMapFunction::Create(const PathMap &sourceToTarget,
 }
 
 PcpMapFunction
+PcpMapFunction::DeferredComposition(const PcpMapFunction& mapFn)
+{
+    // An identity map function never defers composition since composing
+    // an identity with another map function is trivial. See Compose.
+    if (mapFn.IsIdentity()) {
+        return mapFn;
+    }
+
+    return PcpMapFunction(
+        std::make_shared<_Mappings>(
+            _Mappings::SharedPtrVector{mapFn._mappings}),
+        mapFn._offset);
+}
+
+PcpMapFunction
 PcpMapFunction::ImpliedClass(const PcpMapFunction& transferFunc,
                              const PcpMapFunction& classArc)
 {
@@ -576,6 +623,16 @@ PcpMapFunction::ImpliedClass(const PcpMapFunction& transferFunc,
         classArc.Compose(transferFunc.GetInverse()));
 
     if (!f.HasRootIdentity()) {
+        // _GetNormalized always returns a PcpMapFunction whose mappings
+        // are represented by _SourceAndTargetPathPairs, so we can just
+        // set the root identity bit. This is safe to do because f is
+        // a newly-created map function whose _mappings member isn't being
+        // shared with any other map function.
+        //
+        // XXX:
+        // We could explore just setting the hasRootIdentity bit on each
+        // stored mapping if _mappings holds a list of mappings.
+        f = f._GetNormalized();
         f._mappings->GetPathPairs().hasRootIdentity = true;
     }
     return f;
@@ -584,11 +641,16 @@ PcpMapFunction::ImpliedClass(const PcpMapFunction& transferFunc,
 bool
 PcpMapFunction::IsNull() const
 {
-    return std::visit(TfOverloads{
+    return _mappings->AllOf(
         [](const _SourceAndTargetPathPairs& pathPairs) {
             return pathPairs.IsNull();
-        }
-    }, _mappings->data);
+        });
+}
+
+bool 
+PcpMapFunction::IsDeferredComposition() const
+{
+    return _mappings->IsDeferredComposition();
 }
 
 PcpMapFunction *Pcp_MakeIdentity()
@@ -627,21 +689,19 @@ PcpMapFunction::IsIdentity() const
 bool
 PcpMapFunction::IsIdentityPathMapping() const
 {
-    return std::visit(TfOverloads{
+    return _mappings->AllOf(
         [](const _SourceAndTargetPathPairs& pathPairs) { 
             return pathPairs.numPairs == 0 && pathPairs.hasRootIdentity;
-        }
-    }, _mappings->data);
+        });
 }
 
 bool
 PcpMapFunction::HasRootIdentity() const
 {
-    return std::visit(TfOverloads{
+    return _mappings->AllOf(
         [](const _SourceAndTargetPathPairs& pathPairs) {
             return pathPairs.hasRootIdentity;
-        }
-    }, _mappings->data);
+        });
 }
 
 void
@@ -655,7 +715,17 @@ PcpMapFunction::Swap(PcpMapFunction& map)
 bool
 PcpMapFunction::operator==(const PcpMapFunction &map) const
 {
-    return *_mappings == *map._mappings && _offset == map._offset;
+    TRACE_FUNCTION();
+
+    // Compare normalized map functions since we want to check that the
+    // fully-composed source-to-target mappings are the same between
+    // both functions, regardless of whether one or the other was
+    // composed from a deferred-composition map function.
+    const PcpMapFunction thisFn = _GetNormalized();
+    const PcpMapFunction otherFn = map._GetNormalized();
+
+    return thisFn._mappings->GetPathPairs() == otherFn._mappings->GetPathPairs()
+        && thisFn._offset == otherFn._offset;
 }
 
 bool
@@ -755,11 +825,53 @@ _Map(const SdfPath& path,
 SdfPath
 PcpMapFunction::_MapPathImpl(bool invert, const SdfPath &path) const
 {
-    return std::visit(TfOverloads{
-        [&](const _SourceAndTargetPathPairs& pathPairs) {
-            return _Map(path, pathPairs, invert);
+    if (_mappings->IsPathPairs()) {
+        return _Map(path, _mappings->GetPathPairs(), invert);
+    }
+
+    // List of mappings to visit from last to first.
+    std::vector<const _Mappings*> toVisit(1, _mappings.get());
+    SdfPath result = path;
+
+    auto mapPathImpl = TfOverloads {
+        [&result, &invert](const _SourceAndTargetPathPairs& pathPairs) {
+            result = _Map(result, pathPairs, invert);
+        },
+        [&toVisit, &invert](const _Mappings::SharedPtrVector& mappings) {
+            if (invert) {
+                // Want to apply target -> source mapping from outermost to
+                // innermost function. Since mappings is in outer-to-inner
+                // order, reverse iterate and append so that the outermost
+                // function is the last element in toVisit.
+                for (auto it = mappings.rbegin(), e = mappings.rend();
+                     it != e; ++it) {
+                    toVisit.push_back(it->get());
+                }
+            }
+            else {
+                // Want to apply source -> target mapping from innermost to
+                // outermost function. Since mappings is in outer-to-inner
+                // order, forward iterate and push_back so the innermost
+                // function is the last element in toVisit.
+                for (auto it = mappings.begin(), e = mappings.end();
+                     it != e; ++it) {
+                    toVisit.push_back(it->get());
+                }
+            }
         }
-    }, _mappings->data);
+    };
+    
+    while (!toVisit.empty()) {
+        const _Mappings* m = toVisit.back();
+        toVisit.pop_back();
+        
+        std::visit(mapPathImpl, m->data);
+        if (result.IsEmpty()) {
+            break;
+        }
+    }
+
+    return result;
 }
 
 SdfPath
@@ -985,11 +1097,24 @@ PcpMapFunction::Compose(const PcpMapFunction &inner) const
     if (inner.IsIdentity())
         return *this;
 
-    return PcpMapFunction(
-        std::make_shared<_Mappings>(
+    _Mappings::SharedPtr composedMappings;
+
+    const auto canComposePairs = [](const PcpMapFunction& fn) {
+        return fn._mappings->IsPathPairs();
+    };
+
+    if (canComposePairs(*this) && canComposePairs(inner)) {
+        composedMappings = std::make_shared<_Mappings>(
             _ComposePathPairs(
-                _mappings->GetPathPairs(), inner._mappings->GetPathPairs())),
-        _offset * inner._offset);
+                _mappings->GetPathPairs(), inner._mappings->GetPathPairs()));
+    }
+    else {
+        composedMappings = std::make_shared<_Mappings>(
+            _Mappings::SharedPtrVector{_mappings, inner._mappings});
+    }
+
+    return PcpMapFunction(
+        std::move(composedMappings), _offset * inner._offset);
 }
 
 PcpMapFunction
@@ -1022,19 +1147,126 @@ PcpMapFunction::GetInverse() const
     TfAutoMallocTag tag("Pcp", "PcpMapFunction::GetInverse");
     TRACE_FUNCTION();
 
-    std::shared_ptr<_Mappings> invMappings = std::visit(TfOverloads{
-        [&](const _SourceAndTargetPathPairs& pathPairs) {
-            return std::make_shared<_Mappings>(_InvertPathPairs(pathPairs));
-        },
-    }, _mappings->data);
+    _Mappings::SharedPtr inverseMappings;
 
-    return PcpMapFunction(std::move(invMappings), _offset.GetInverse());
+    if (_mappings->IsPathPairs()) {
+        inverseMappings = std::make_shared<_Mappings>(
+            _InvertPathPairs(_mappings->GetPathPairs()));
+    }
+    else {
+        // List of mappings to visit from last to first.
+        // This list contains nullptrs to separate groups of mappings.
+        std::vector<const _Mappings*> toVisit(1, _mappings.get());
+
+        // Workspaces for groups of _Mappings. Each entry in the workspace
+        // corresponds to a group of mappings in toVisit.
+        std::vector<_Mappings::SharedPtrVector> workspace(1);
+
+        auto getInverse = TfOverloads {
+            [&workspace](const _SourceAndTargetPathPairs& pathPairs) {
+                // Push inverse into workspace for current group.
+                workspace.back().push_back(std::make_shared<_Mappings>(
+                    _InvertPathPairs(pathPairs)));
+            },
+            [&workspace, &toVisit](const _Mappings::SharedPtrVector& maps) {
+                // Start a new group.
+                toVisit.push_back(nullptr);
+                for (const _Mappings::SharedPtr& m : maps) {
+                    toVisit.push_back(m.get());
+                }
+                workspace.push_back(_Mappings::SharedPtrVector());
+            },
+        };
+
+        while (!toVisit.empty()) {
+            const _Mappings* m = toVisit.back();
+            toVisit.pop_back();
+
+            if (m) {
+                std::visit(getInverse, m->data);
+            }
+            else {
+                // We've finished inverting all of the mappings in this group.
+                // Consolidate the mappings in the group's workspace and push
+                // it into the parent's workspace.
+                TF_DEV_AXIOM(!workspace.back().empty());
+                _Mappings::SharedPtr invMaps = std::make_shared<_Mappings>(
+                    std::move(workspace.back()));
+                workspace.pop_back();
+
+                TF_DEV_AXIOM(!workspace.empty());
+                workspace.back().push_back(std::move(invMaps));
+            }
+        }
+
+        // At this point, we should have a single entry in the workspace;
+        // that entry should have only one _Mappings object which is the
+        // inverse of _mappings.
+        TF_AXIOM(workspace.size() == 1);
+        TF_AXIOM(workspace.back().size() == 1);
+        inverseMappings = std::move(workspace.back().back());
+    }
+
+    return PcpMapFunction(std::move(inverseMappings), _offset.GetInverse());
+}
+
+PcpMapFunction
+PcpMapFunction::_GetNormalized() const
+{
+    TRACE_FUNCTION();
+
+    if (_mappings->IsPathPairs()) {
+        return *this;
+    }
+
+    // List of mappings to visit from last to first.
+    std::vector<const _Mappings*> toVisit(1, _mappings.get());
+
+    std::optional<_SourceAndTargetPathPairs> normalized;
+
+    auto getNormalized = TfOverloads {
+        [&normalized](const _SourceAndTargetPathPairs& pathPairs) {
+            normalized = normalized.has_value() ?
+                _ComposePathPairs(pathPairs, *normalized) : pathPairs;
+        },
+        [&toVisit](const _Mappings::SharedPtrVector& mappings) {
+            for (const _Mappings::SharedPtr& m : mappings) {
+                toVisit.push_back(m.get());
+            }
+        }
+    };
+
+    while (!toVisit.empty()) {
+        const _Mappings* m = toVisit.back();
+        toVisit.pop_back();
+        std::visit(getNormalized, m->data);
+    }
+
+    TF_DEV_AXIOM(normalized.has_value());
+    return PcpMapFunction(
+        std::make_shared<_Mappings>(std::move(normalized.value())), _offset);
+}
+
+size_t
+PcpMapFunction::_GetNumMappingSets() const
+{
+    // For convenience, use AllOf to count the path pairs in _mappings.
+    size_t result = 0;
+    _mappings->AllOf(
+        [&result](const _SourceAndTargetPathPairs& pathPairs) {
+            ++result;
+            return true;
+        });
+
+    return result;
 }
 
 PcpMapFunction::PathMap
 PcpMapFunction::GetSourceToTargetMap() const
 {
-    const _SourceAndTargetPathPairs& mappings = _mappings->GetPathPairs();
+    const PcpMapFunction normalized = _GetNormalized();
+    const _SourceAndTargetPathPairs& mappings =
+        normalized._mappings->GetPathPairs();
 
     PathMap ret(mappings.begin(), mappings.end());
     if (mappings.hasRootIdentity) {
@@ -1067,7 +1299,11 @@ PcpMapFunction::GetString() const
 size_t
 PcpMapFunction::Hash() const
 {
-    return TfHash::Combine(*_mappings, _offset);
+    // Compute the hash based on the composed path mappings in the
+    // normalized map function to match operator==.
+    const PcpMapFunction normalized = _GetNormalized();
+    return TfHash::Combine(
+        normalized._mappings->GetPathPairs(), normalized._offset);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

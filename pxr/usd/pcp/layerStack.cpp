@@ -992,8 +992,15 @@ _FilterRelocationsForPath(const PcpLayerStack& layerStack,
 
     siteRelocates[SdfPath::AbsoluteRootPath()] = SdfPath::AbsoluteRootPath();
 
-    // Return a map function representing the relocates.
-    return PcpMapFunction::Create(siteRelocates, SdfLayerOffset());
+    // Return a map function representing the relocates. There may be an
+    // arbitrarily large number of relocates so we use a deferred-composition
+    // map function to improve performance in those cases.
+    // 
+    // XXX: Might want to explore tuning this to only return
+    // deferred-composition map functions if relocates are larger than a
+    // certain size.
+    return PcpMapFunction::DeferredComposition(
+        PcpMapFunction::Create(siteRelocates, SdfLayerOffset()));
 }
 
 ////////////////////////////////////////////////////////////////////////

@@ -397,6 +397,9 @@ public:
     /// \c tolerance must all be greater than 0.0. If any of these conditions
     /// are not met, \c Sample returns false and \c *splineSamples is unchanged.
     /// Otherwise, true is returned and \c splineSamples is populated.
+    ///
+    /// If \c timeInterval covers an infinite region, a coding error is issued
+    /// and \c splineSamples is unchanged.
     template <typename Vertex>
     bool
     Sample(

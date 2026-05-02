@@ -79,19 +79,17 @@ public:
         }
     }
 
-    struct MapFuncHash {
-        size_t operator()(const PcpMapFunction &m) const {
-            return m.Hash();
-        }
-    };
-
     static void AccumulateCacheStats(
         const PcpCache* cache, Pcp_CacheStats* stats)
     {
         typedef std::shared_ptr<PcpPrimIndex_Graph::_NodePool> 
             _SharedNodePool;
         std::set<_SharedNodePool> seenNodePools;
-        TfHashSet<PcpMapFunction, MapFuncHash> allMapFuncs;
+
+        // Avoid storing PcpMapFunction directly, since comparisons and
+        // hashing operations may be expensive due to deferred-composition
+        // functions.
+        std::set<PcpMapFunction::PathMap> seenPathMaps;
 
         TF_FOR_ALL(it, cache->_primIndexCache) {
             const PcpPrimIndex& primIndex = it->second;
@@ -121,8 +119,16 @@ public:
 
             // Gather map functions
             for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
-                allMapFuncs.insert(node.GetMapToParent().Evaluate());
-                allMapFuncs.insert(node.GetMapToRoot().Evaluate());
+                // Avoid reexamining nodes that were already processed via
+                // namespace ancestors.
+                if (node.IsDueToAncestor()) {
+                    continue;
+                }
+
+                seenPathMaps.insert(node.GetMapToParent().Evaluate()
+                    .GetSourceToTargetMap());
+                seenPathMaps.insert(node.GetMapToRoot().Evaluate()
+                    .GetSourceToTargetMap());
             }
         }
 
@@ -136,9 +142,8 @@ public:
         }
 
         // PcpMapFunction size distribution
-        TF_FOR_ALL(i, allMapFuncs) {
-            size_t size = i->GetSourceToTargetMap().size();
-            stats->mapFunctionSizeDistribution[size] += 1;
+        for (const auto& m : seenPathMaps) {
+            stats->mapFunctionSizeDistribution[m.size()] += 1;
         }
 
         // PcpLayerStack _relocatesPrimPaths size distribution

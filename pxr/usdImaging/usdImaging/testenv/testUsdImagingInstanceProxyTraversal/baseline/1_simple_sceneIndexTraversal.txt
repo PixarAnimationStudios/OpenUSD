@@ -1,0 +1,11 @@
+/ type=<empty>
+/World type=<empty>
+/World/InstanceA type=<empty>
+/World/InstanceB type=<empty>
+/UsdNiPropagatedPrototypes type=<empty>
+/UsdNiPropagatedPrototypes/NoPrimvars type=<empty>
+/UsdNiPropagatedPrototypes/NoPrimvars/__Prototype_1 type=<empty>
+/UsdNiPropagatedPrototypes/NoPrimvars/__Prototype_1/UsdNiInstancer type=instancer
+/UsdNiPropagatedPrototypes/NoPrimvars/__Prototype_1/UsdNiInstancer/UsdNiPrototype type=<empty>
+/UsdNiPropagatedPrototypes/NoPrimvars/__Prototype_1/UsdNiInstancer/UsdNiPrototype/Trunk type=sphere
+/UsdNiPropagatedPrototypes/NoPrimvars/__Prototype_1/UsdNiInstancer/UsdNiPrototype/Crown type=sphere

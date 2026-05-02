@@ -588,7 +588,12 @@ class ClassInfo(object):
         # Do not to inherit the type name of parent classes.
         if inherits:
             for path in inherits.GetAddedOrExplicitItems():
-                parentTypeName = parentLayer.GetPrimAtPath(path).typeName
+                parentPrim = parentLayer.GetPrimAtPath(path)
+                if not parentPrim:
+                    raise _GetSchemaDefException(
+                        f"The inherited prim <{path}> is not valid",
+                        sdfPrim.path)
+                parentTypeName = parentPrim.typeName
                 if parentTypeName == self.typeName:
                     self.typeName = ''
 

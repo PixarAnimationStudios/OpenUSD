@@ -17,6 +17,19 @@
 
 using std::string;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+class Pcp_MapFunctionPyAccess
+{
+public:
+    static size_t GetNumMappingSets(const PcpMapFunction& f)
+    {
+        return f._GetNumMappingSets();
+    }
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 using namespace pxr_boost::python;
@@ -31,7 +44,7 @@ _Repr(const PcpMapFunction &f)
     }
     string s = "Pcp.MapFunction(";
     if (!f.IsNull()) {
-        const pxr_boost::python::dict sourceToTargetMap = 
+        const pxr_boost::python::dict sourceToTargetMap =
             TfPyCopyMapToDictionary(f.GetSourceToTargetMap());
 
         s += TfPyObjectRepr(sourceToTargetMap);
@@ -41,6 +54,25 @@ _Repr(const PcpMapFunction &f)
         }
     }
     s += ")";
+
+    if (f.IsDeferredComposition()) {
+        std::string sourceRepr;
+
+        // XXX:
+        // We may need to store more information to generate a repr that
+        // exactly replicates a map function with more than 1 set of
+        // mappings, so for now we just generate a non-eval'able repr
+        // for simplicity.
+        const size_t numSubMappings =
+            Pcp_MapFunctionPyAccess::GetNumMappingSets(f);
+        if (numSubMappings > 1) {
+            sourceRepr = TfStringPrintf("<%zu mapping sets, composed: %s>",
+                numSubMappings, s.c_str());
+        }
+
+        s = "Pcp.MapFunction.DeferredComposition(" + 
+            (sourceRepr.empty() ? s : sourceRepr) + ")";
+    }
     return s;
 }
 
@@ -104,12 +136,16 @@ void wrapMapFunction()
              return_value_policy<TfPyMapToDictionary>())
         .staticmethod("IdentityPathMap")
 
+        .def("DeferredComposition", &This::DeferredComposition)
+        .staticmethod("DeferredComposition")
+
         .def("ImpliedClass", &This::ImpliedClass)
         .staticmethod("ImpliedClass")
 
         .add_property("isIdentity", &This::IsIdentity)
         .add_property("isIdentityPathMapping", &This::IsIdentityPathMapping)
         .add_property("isNull", &This::IsNull)
+        .add_property("isDeferredComposition", &This::IsDeferredComposition)
 
         .def("MapSourceToTarget",
              +[](This const &self, SdfPathExpression const &pathExpr) {

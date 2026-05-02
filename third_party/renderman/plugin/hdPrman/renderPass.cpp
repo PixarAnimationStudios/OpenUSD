@@ -10,6 +10,7 @@
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/debugUtil.h"
 #include "hdPrman/framebuffer.h"
+#include "hdPrman/idMap.h"
 #include "hdPrman/renderBuffer.h"
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/renderParam.h"
@@ -537,8 +538,8 @@ HdPrman_RenderPass::_Execute(
                 TfToken idMapProductName =
                     _renderParam->GetIdMapProductName(rsPrim);
                 if (!idMapProductName.IsEmpty()) {
-                    _renderParam->WriteIdMap(
-                        GetRenderIndex(), idMapProductName);
+                    _renderParam->GetIdMap()->WriteIdMap(
+                        idMapProductName.GetString());
                 }
             }
 

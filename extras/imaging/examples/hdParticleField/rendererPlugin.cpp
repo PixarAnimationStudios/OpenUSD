@@ -32,14 +32,25 @@ void HdParticleFieldRendererPlugin::DeleteRenderDelegate(
     delete renderDelegate;
 }
 
-bool HdParticleFieldRendererPlugin::IsSupported(bool gpuEnabled) const {
-    return true;
-}
-
+#if HD_API_VERSION >= 83
 bool HdParticleFieldRendererPlugin::IsSupported(
     HdRendererCreateArgs const &rendererCreateArgs,
     std::string *reasonWhyNot) const {
     return true;
 }
+#else
+bool HdParticleFieldRendererPlugin::IsSupported(bool gpuEnabled) const
+{
+    return true;
+}
+#endif
+
+#if HD_API_VERSION >= 98
+bool HdParticleFieldRendererPlugin::IsSupported(
+    const HdRendererCreateArgsSchema &rendererCreateArgs,
+    std::string *reasonWhyNot) const {
+    return true;
+}
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -82,6 +82,18 @@ public:
     Create(const PathMap &sourceToTargetMap,
            const SdfLayerOffset &offset);
 
+    /// Constructs a "deferred-composition" map function from the given source
+    /// \p mapFn.
+    /// 
+    /// A deferred-composition map function represents the same mappings as
+    /// its source function, but is not immediately combined with other
+    /// map functions when they are composed together. This is primarily
+    /// used for targeted performance optimizations. See more details
+    /// in the docs for Compose.
+    PCP_API
+    static PcpMapFunction
+    DeferredComposition(const PcpMapFunction& mapFn);
+
     /// Constructs a map function that is equivalent to
     /// \code
     /// transferFunc.Compose(classArc.Compose(transferFunc.Inverse))
@@ -117,6 +129,11 @@ public:
     /// For a null function, MapSourceToTarget() always returns an empty path.
     PCP_API
     bool IsNull() const;
+
+    /// Return true if the map function is a defered-composition function.
+    /// See DeferredComposition and Compose.
+    PCP_API
+    bool IsDeferredComposition() const;
 
     /// Return true if the map function is the identity function.
     /// The identity function has an identity path mapping and time offset.
@@ -193,6 +210,19 @@ public:
     /// Compose this map over the given map function.
     /// The result will represent the application of f followed by
     /// the application of this function.
+    ///
+    /// By default, the returned PcpMapFunction is created by combining
+    /// the mappings in this function and \p f into a single set of mappings.
+    /// Subsequent operations only need to examine this set of mappings;
+    /// however, the time to combine the mappings may be relatively high
+    /// if either (or both) of the functions is large.
+    ///
+    /// If either function is a deferred-composition map function, the returned
+    /// PcpMapFunction stores both functions separately. Subsequent operations
+    /// then examine the stored mappings in sequence. This avoids the upfront
+    /// time of combining the mappings and reduces memory usage since existing
+    /// mappings are just reused. However, this makes subsequent path mapping
+    /// operations more expensive.
     PCP_API
     PcpMapFunction Compose(const PcpMapFunction &f) const;
 
@@ -244,8 +274,25 @@ private:
         std::vector<SdfPathExpression::ExpressionReference> *unmappedRefs
         ) const;
 
+    // Return a "normalized" map function created from the mappings in
+    // this map function. This may return *this if this map function is
+    // already in normalized form.
+    //
+    // A normalized map function always contains a single set of
+    // source-to-target path mappings; all deferred-composition mappings
+    // are composed together. The resulting map function can be used
+    // for comparisons with other normalized map functions, or in
+    // cases where the fully-composed set of mappings is needed.
+    PcpMapFunction _GetNormalized() const;
+
+    // Return number of mapping sets in this map function. A map function
+    // may have more than 1 mapping set if it was composed from a
+    // deferred-composition map function.
+    PCP_API size_t _GetNumMappingSets() const;
+
 private:
     friend PcpMapFunction *Pcp_MakeIdentity();
+    friend class Pcp_MapFunctionPyAccess;
 
     // Specialize TfHashAppend for PcpMapFunction.
     template <typename HashState>

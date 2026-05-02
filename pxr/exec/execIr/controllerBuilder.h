@@ -39,7 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// defined by the `EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA` macro. The
 /// constructor also takes the callbacks that implement the forward and inverse
 /// computations for the controller. The client uses member functions to
-/// register controller atributes as inputs, outputs, switches, etc. (see the
+/// register controller attributes as inputs, outputs, switches, etc. (see the
 /// documentation on the corresonding registration methods for details). These
 /// registrations, in turn, generate the computation inputs for the callbacks
 /// (as documented in the member function documentation), as well as other
@@ -155,8 +155,19 @@ public:
     NonInvertibleInputAttribute(
         const TfToken &attributeName);
 
-    /// Registers an invertible output attribute; the output is inverible if \p
-    /// invertible is `true`.
+    /// Registers multiple invertible input attributes.
+    ///
+    template <typename ValueType>
+    void
+    InvertibleInputAttributes(
+        const TfTokenVector &attributeNames) {
+        for (const TfToken &attributeName : attributeNames) {
+            InvertibleInputAttribute<ValueType>(attributeName);
+        }
+    }
+
+
+    /// Registers an invertible output attribute.
     ///
     /// - Output attributes produce computed values that are the results of the
     ///   forward computation and provide input to the inverse computation.
@@ -167,6 +178,17 @@ public:
     void
     InvertibleOutputAttribute(
         const TfToken &attributeName);
+
+    /// Registers multiple invertible output attributes.
+    ///
+    template <typename ValueType>
+    void
+    InvertibleOutputAttributes(
+        const TfTokenVector &attributeNames) {
+        for (const TfToken &attributeName : attributeNames) {
+            InvertibleOutputAttribute<ValueType>(attributeName);
+        }
+    }
 
     /// Registers a switch attribute.
     /// 
@@ -181,17 +203,31 @@ public:
     SwitchAttribute(
         const TfToken &attributeName);
 
-    /// Registers a passthrough attribute.
+    /// Registers a pair of input, output passthrough attributes.
     /// 
-    /// - Passthrough attributes provide input to both the forward and the
-    ///   inverse computation.
+    /// - The passthrough input attribute provides input to both the forward and
+    ///   inverse computations.
+    /// - The passthrough output attribute produces the value of the input
+    ///   attribute.
     /// 
     template <typename ValueType>
     void
-    PassthroughAttribute(
-        const TfToken &attributeName);
+    PassthroughAttributes(
+        const TfToken &inAttributeName,
+        const TfToken &outAttributeName);
 
 private:
+
+    // Registers an expression that implements dataflow across attribute
+    // connections.
+    //
+    // TODO: This expression won't be needed when the OpenExec core defines
+    // default attribute connection dataflow behavior for all attributes.
+    template <typename ValueType>
+    void
+    _ConnectionDataflowExpression(
+        const TfToken &attributeName);
+
     // Returns a pointer to the desired value provided by the
     // 'explicitDesiredValue' and 'computedDesiredValue' inputs; otherwise,
     // returns null.
@@ -284,27 +320,7 @@ ExecIrControllerBuilder::InvertibleInputAttribute(
 
     // All input attributes (invertible or not) support dataflow across
     // connections.
-    //
-    // TODO: This expression won't be needed when the OpenExec core defines
-    // default attribute connection dataflow behavior for all attributes.
-    _self.AttributeExpression(attributeName)
-        .Callback(+[](const VdfContext &ctx) -> ValueType {
-            // A value that flows across a connection takes precedence.
-            if (const ValueType *const connectedValuePtr =
-                ctx.GetInputValuePtr<ValueType>(
-                    ExecBuiltinComputations->computeValue)) {
-                return *connectedValuePtr;
-            }
-
-            // Otherwise, the attribute's resolved value is its computed value.
-            return ctx.GetInputValue<ValueType>(
-                ExecBuiltinComputations->computeResolvedValue);
-        })
-        .Inputs(
-            Connections<ValueType>(
-                ExecBuiltinComputations->computeValue),
-            Computation<ValueType>(
-                ExecBuiltinComputations->computeResolvedValue));
+    _ConnectionDataflowExpression<ValueType>(attributeName);
 }
 
 template <typename ValueType>
@@ -323,27 +339,7 @@ ExecIrControllerBuilder::NonInvertibleInputAttribute(
 
     // All input attributes (invertible or not) support dataflow across
     // connections.
-    //
-    // TODO: This expression won't be needed when the OpenExec core defines
-    // default attribute connection dataflow behavior for all attributes.
-    _self.AttributeExpression(attributeName)
-        .Callback(+[](const VdfContext &ctx) -> ValueType {
-            // A value that flows across a connection takes precedence.
-            if (const ValueType *const connectedValuePtr =
-                ctx.GetInputValuePtr<ValueType>(
-                    ExecBuiltinComputations->computeValue)) {
-                return *connectedValuePtr;
-            }
-
-            // Otherwise, the attribute's resolved value is its computed value.
-            return ctx.GetInputValue<ValueType>(
-                ExecBuiltinComputations->computeResolvedValue);
-        })
-        .Inputs(
-            Connections<ValueType>(
-                ExecBuiltinComputations->computeValue),
-            Computation<ValueType>(
-                ExecBuiltinComputations->computeResolvedValue));
+    _ConnectionDataflowExpression<ValueType>(attributeName);
 }
 
 template <typename ValueType>
@@ -433,24 +429,67 @@ void
 ExecIrControllerBuilder::SwitchAttribute(
     const TfToken &attributeName)
 {
-    using namespace exec_registration;
+    // TODO: We will have work to do here that is specific to switch attributes
+    // when we implement more invertible rigging features. E.g., switch
+    // attributes play a key role in determining which controllers contribute to
+    // the current pose, and determining contributing controllers is critical
+    // for supporing advanced authoring behaviors for invertible rigs.
 
-    // Switch attributes are inputs to the forward and inverse computations.
-    _forwardComputeReg.Inputs(AttributeValue<ValueType>(attributeName));
-    _inverseComputeReg.Inputs(AttributeValue<ValueType>(attributeName));
+    // Switch attributes have all the exec registrations that non-invertible
+    // attributes have.
+    NonInvertibleInputAttribute<ValueType>(attributeName);
 }
 
 template <typename ValueType>
 void
-ExecIrControllerBuilder::PassthroughAttribute(
-    const TfToken &attributeName)
+ExecIrControllerBuilder::PassthroughAttributes(
+    const TfToken &inAttributeName,
+    const TfToken &outAttributeName)
 {
     using namespace exec_registration;
 
     // Passthrough attributes are inputs to the forward and inverse
     // computations.
-    _forwardComputeReg.Inputs(AttributeValue<ValueType>(attributeName));
-    _inverseComputeReg.Inputs(AttributeValue<ValueType>(attributeName));
+    _forwardComputeReg.Inputs(AttributeValue<ValueType>(inAttributeName));
+    _inverseComputeReg.Inputs(AttributeValue<ValueType>(inAttributeName));
+
+    // Passthrough attributes pass the value from the input attribute to the
+    // output attribute.
+    _self.AttributeExpression(outAttributeName)
+        .Inputs(Prim().AttributeValue<ValueType>(inAttributeName))
+        .template Callback<ValueType>([inAttributeName](const VdfContext &ctx) {
+            ctx.SetOutputToReferenceInput(inAttributeName);
+        });
+
+    // Passthrough input attributes support dataflow across connections.
+    _ConnectionDataflowExpression<ValueType>(inAttributeName);
+}
+
+template <typename ValueType>
+void
+ExecIrControllerBuilder::_ConnectionDataflowExpression(
+    const TfToken &attributeName)
+{
+    using namespace exec_registration;
+
+    _self.AttributeExpression(attributeName)
+        .Inputs(
+            Connections<ValueType>(
+                ExecBuiltinComputations->computeValue),
+            Computation<ValueType>(
+                ExecBuiltinComputations->computeResolvedValue))
+        .Callback(+[](const VdfContext &ctx) -> ValueType {
+            // A value that flows across a connection takes precedence.
+            if (const ValueType *const connectedValuePtr =
+                ctx.GetInputValuePtr<ValueType>(
+                    ExecBuiltinComputations->computeValue)) {
+                return *connectedValuePtr;
+            }
+
+            // Otherwise, the attribute's resolved value is its computed value.
+            return ctx.GetInputValue<ValueType>(
+                ExecBuiltinComputations->computeResolvedValue);
+        });
 }
 
 template <typename ValueType>

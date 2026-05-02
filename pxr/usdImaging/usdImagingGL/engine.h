@@ -23,6 +23,7 @@
 
 #include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/engine.h"
+#include "pxr/imaging/hd/noticeBatchingSceneIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h"
 #include "pxr/imaging/hd/pluginRendererUniqueHandle.h"
@@ -850,7 +851,7 @@ private:
     // Note that we'll only ever use one of _sceneIndex/_sceneDelegate
     // at a time.
     UsdExecImagingStageSceneIndexInterfaceRefPtr _execStageSceneIndex;
-    HdMergingSceneIndexRefPtr _mergingStageSceneIndex;
+    HdNoticeBatchingSceneIndexRefPtr _noticeBatchingStageSceneIndex;
     UsdImagingRootOverridesSceneIndexRefPtr _rootOverridesSceneIndex;
     UsdImagingLegacyRenderSettingsSceneIndexRefPtr _legacyRenderSettingsSceneIndex;
     HdsiLegacyDisplayStyleOverrideSceneIndexRefPtr _displayStyleSceneIndex;

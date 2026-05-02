@@ -102,6 +102,7 @@ pxr_plugin(${PXR_PACKAGE}
         displayColorSpaceSceneIndexPlugin
         gprim
         gprimbase
+        idMap
         instancer
         integrator
         light
@@ -156,6 +157,7 @@ pxr_plugin(${PXR_PACKAGE}
         debugUtil
         extComputationPrimvarPruningSceneIndexPlugin
         framebuffer
+        idSceneIndexPlugin
         implicitSurfaceSceneIndexPlugin
         materialPrimvarTransferSceneIndexPlugin
         motionBlurSceneIndexPlugin

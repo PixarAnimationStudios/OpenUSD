@@ -149,10 +149,6 @@ Property stacks:
 /FaceRig/BrowRig/LBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount:
     ref.usda             /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount
 
-Attribute connections:
-/FaceRig/BrowRig/LBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount:
-    /FaceRig/BrowRig/Anim/LBrow.InnUD
-
 ------------------------------------------------------------------------
 Results for composing </FaceRig/BrowRig/LBrow/Anim>
 
@@ -184,10 +180,6 @@ Property names:
 Property stacks:
 /FaceRig/BrowRig/RBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount:
     ref.usda             /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount
-
-Attribute connections:
-/FaceRig/BrowRig/RBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount:
-    /FaceRig/BrowRig/Anim/RBrow.InnUD
 
 ------------------------------------------------------------------------
 Results for composing </FaceRig/BrowRig/RBrow/Anim>

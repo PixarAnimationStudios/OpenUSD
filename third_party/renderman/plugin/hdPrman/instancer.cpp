@@ -8,9 +8,11 @@
 
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/debugUtil.h"
+#include "hdPrman/idMap.h"
 #include "hdPrman/light.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/rixStrings.h"
+#include "hdPrman/tokens.h"
 #include "hdPrman/utils.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
@@ -20,6 +22,7 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/timeSampleArray.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -79,6 +82,23 @@ const int HDPRMAN_MAX_SUPPORTED_NESTING_DEPTH = 4;
 // **        Internal helper functions         **
 // **********************************************
 namespace {
+
+static std::string
+_JoinIdentifiers(
+    RtUString const& prefix,
+    RtUString const& suffix)
+{
+    if (prefix.CStr()) {
+        if (suffix.CStr()) {
+            return std::string(prefix.CStr()) + "/" +
+                std::string(suffix.CStr());
+        }
+        return std::string(prefix.CStr());
+    } else if (suffix.CStr()) {
+        return std::string(suffix.CStr());
+    }
+    return std::string();
+}
 
 template <typename T1, typename T2, unsigned int C>
 void _AccumulateSampleTimes(
@@ -984,7 +1004,7 @@ HdPrmanInstancer::_PopulateInstances(
         || (*dirtyBits & HdChangeTracker::DirtyCategories)
         || (*dirtyBits & HdChangeTracker::DirtyVisibility);
     bool anyGroupIdChanged = false;
-    bool isLight = lightShaderId != riley::LightShaderId::InvalidId();
+    bool const isLight = lightShaderId != riley::LightShaderId::InvalidId();
 
     if (TfDebug::IsEnabled(HDPRMAN_INSTANCERS)) {
         using namespace HdPrmanDebugUtil;
@@ -1133,9 +1153,11 @@ HdPrmanInstancer::_PopulateInstances(
 #endif
                                            &xf);
         
-        for (_InstanceData& instance : instances) {
-            instance.transform = _MultiplyTransforms<GfMatrix4d>(
-                instance.transform, xf);
+        if (xf.count > 0) {
+            for (_InstanceData& instance : instances) {
+                instance.transform = _MultiplyTransforms<GfMatrix4d>(
+                    instance.transform, xf);
+            }
         }
 
         // Send allInstances up to the parent to populate
@@ -1310,6 +1332,45 @@ HdPrmanInstancer::_PopulateInstances(
                 riley::UserId userId = riley::UserId(
                     stats::AddDataLocation(instancePath.GetText()).GetValue());
 
+                // Assign identity, represented as several attributes in riley,
+                // and record it in the HdPrman_IdMap.
+                //
+                // To provide a human-legible and stable identity, we
+                // join the instanceLocation with primOrigin.
+                //
+                // The instanceLocation provides a "proxy" path in the scene
+                // unique to this instance, and primOrigin contributes a
+                // relative path below the prototype root.  The result is
+                // intended to approximate, as best as possible, the scene
+                // path that would be used if no instancing was in use.
+                //
+                // We must assemble these two pieces here, and not
+                // before, because the Hydra scene index does not
+                // provide a way to express per-prim per-instance data.
+                //
+                const static RtUString instLocKey("user:instanceLocations");
+                const static RtUString primOriginKey("user:primOrigin");
+                RtUString instLoc, protoPrimOrigin;
+                params.GetString(instLocKey, instLoc);
+                prototypeParams.GetString(primOriginKey, protoPrimOrigin);
+                const std::string identifier_name =
+                    _JoinIdentifiers(instLoc, protoPrimOrigin);
+
+                // Retrieve the HdRenderIndex primId to associate this with.
+                int renderIndexPrototypePrimId = 0;
+                if (const HdRprim *rprim =
+                    renderIndex.GetRprim(hydraPrototypeId)) {
+                    renderIndexPrototypePrimId = rprim->GetPrimId();
+                }
+
+                // Register the association, and store the identity in params
+                // as identifier:name, identifier:id, and identifier:id2.
+                param->GetIdMap()->RegisterId(
+                    { identifier_name,
+                      /* primId = */ renderIndexPrototypePrimId,
+                      /*instanceId = */ (int) i },
+                    &params);
+
                 if (lightShaderId != riley::LightShaderId::InvalidId()) {
 
                     // XXX: Temporary workaround for RMAN-20704
@@ -1446,15 +1507,21 @@ HdPrmanInstancer::_ComposeInstances(
     std::vector<_InstanceData>& instances)
 {
     HD_TRACE_FUNCTION();
-    // XXX: Using riley nested instancing breaks selection. Selection depends on
-    // enumerating every instance of a given hydra geometry prototype prim with
-    // a unique id and setting that id in riley as identifier:id2. When using
-    // riley prototype groups, there is no longer a 1:1 correspondence between
-    // hydra instances of a given prototype and riley instances. If instance
-    // picking and selection are required, users should disable riley nested
-    // instancing by setting HD_PRMAN_DISABLE_NESTED_INSTANCING=1. In future,
-    // we may consider adding an instancer id AOV to the picking and selection
-    // flow to support precise instance disambiguation.
+    // XXX: Using riley nested instancing breaks selection past the
+    // top-level of instances.  Selection depends on enumerating every
+    // instance of a given hydra geometry prototype prim with a unique
+    // identifier, stored in riley as the k_identifier_name,
+    // k_identifier_id, and k_identifier_id2 attributes on geometry
+    // instances.  When using riley prototype groups, there is no longer a
+    // 1:1 correspondence between hydra instances of a given prototype
+    // and riley instances.  If full-granularity instance-picking
+    // and selection are required, users should disable riley nested
+    // instancing by setting HD_PRMAN_DISABLE_NESTED_INSTANCING=1.
+    //
+    // In the future, we may consider additional attributes (and associated
+    // AOV's) beyond id and id2 in order to enable picking and selection
+    // with precise instance disambiguation in combination with nested
+    // riley instancing.
 
     HdSceneDelegate* delegate = GetDelegate();
     const SdfPath& id = GetId();
@@ -1466,31 +1533,28 @@ HdPrmanInstancer::_ComposeInstances(
             const int index = indices[i];
             _InstanceData& instance = instances[i];
             _GetInstanceParams(index, instance.params);
-            instance.params.SetInteger(RixStr.k_identifier_id2, int(i));
             _BuildStatsId(id, index, protoId, instance.params);
             _ComposeInstanceFlattenData(index, instance.params, instance.flattenData);
             _GetInstanceTransform(index, instance.transform);
         });
     } else {
         instances.resize(indices.size() * subInstances.size());
-        // Iteration order is critical to selection. identifier:id2 must
-        // increment in subInstance-major order. So we slow-iterate through
-        // this level's instances and fast-iterate through the subInstances.
-        // Note: Just to express things as clearly as possible, since this is
-        // a parallel loop as written now, it is actually the choice of index
-        // for the identifier:id2 parameter and the ordering of the *indexing*
-        // that is critical: the parallel for loop is free to set the values
-        // in whatever temporal order is most efficient/fastest, as long as the
-        // choice we make for the value of identifier:id2 is the same.
         _ParallelFor(indices.size() * subInstances.size(), [&](size_t ii) {
-            const size_t i = ii / subInstances.size();
-            const size_t index = indices[i];
+            const size_t i  = ii / subInstances.size();
             const size_t si = ii % subInstances.size();
+            const size_t index = indices[i];
             const _InstanceData& subInstance  = subInstances[si];
             _InstanceData& instance = instances[ii];
             _GetInstanceParams(index, instance.params);
+
+            static const RtUString instLoc("user:instanceLocations");
+            RtUString instName, subInstName;
+            instance.params.GetString(instLoc, instName);
+            subInstance.params.GetString(instLoc, subInstName);
+            std::string joinedName = _JoinIdentifiers(instName, subInstName);
+
             instance.params.Update(subInstance.params);
-            instance.params.SetInteger(RixStr.k_identifier_id2, int(ii));
+            instance.params.SetString(instLoc, RtUString(joinedName.c_str()));
             _BuildStatsId(id, index, protoId, instance.params);
             _ComposeInstanceFlattenData(
                 index, 

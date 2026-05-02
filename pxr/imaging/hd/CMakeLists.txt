@@ -94,9 +94,11 @@ pxr_library(hd
         instanceCategoriesSchema
         instancedBySchema
         instanceIndicesSchema
+        instanceProxySchema
         instancer
         instanceRegistry
         instancerTopologySchema
+        instanceProxyViewSceneIndex
         instanceSchema
         integratorSchema
         lazyContainerDataSource

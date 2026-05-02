@@ -16,6 +16,7 @@
 #include "pxr/exec/execUsd/valueKey.h"
 
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/rotation.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/layer.h"
@@ -23,6 +24,7 @@
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdGeom/xformable.h"
 
 #include <iostream>
 #include <utility>
@@ -57,29 +59,35 @@ Test_JointScopeBasic()
 
     const SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
     layer->ImportFromString(
-        R"usda(
-        #usda 1.0
+        R"usda(#usda 1.0
 
         def Scope "Root" {
             def IrJointScope "Joint" {
-                double avars:tx =     1.0
-                double avars:ty =     2.0
-                double avars:tz =     3.0
-                double avars:rx =    90.0
-                double avars:ry =   -90.0
-                double avars:rz =    90.0
-                double avars:rspin =  0.0
-                matrix4d posed:space.connect = </Root/FkController.Out:Space>
+                double avars:tx =   1.0
+                double avars:ty =   2.0
+                double avars:tz =   3.0
+                double avars:rx =  90.0
+                double avars:ry = -90.0
+                double avars:rz =  90.0
+                matrix4d posed:space.connect = [
+                    </Root/FkController.out:space>
+                ]
             }
 
             def IrFkController "FkController" {
-                double In:Tx.connect = </Root/Joint.avars:tx>
-                double In:Ty.connect = </Root/Joint.avars:ty>
-                double In:Tz.connect = </Root/Joint.avars:tz>
-                double In:Rx.connect = </Root/Joint.avars:rx>
-                double In:Ry.connect = </Root/Joint.avars:ry>
-                double In:Rz.connect = </Root/Joint.avars:rz>
-                double In:Rspin.connect = </Root/Joint.avars:rspin>
+                double in:tx.connect = </Root/Joint.avars:tx>
+                double in:ty.connect = </Root/Joint.avars:ty>
+                double in:tz.connect = </Root/Joint.avars:tz>
+                double in:rx.connect = </Root/Joint.avars:rx>
+                double in:ry.connect = </Root/Joint.avars:ry>
+                double in:rz.connect = </Root/Joint.avars:rz>
+                double in:rspin.connect = </Root/Joint.avars:rspin>
+                token in:rotationOrder.connect = [
+                    </Root/Joint.avars:rotationOrder>
+                ]
+                matrix4d in:defaultSpace.connect = [
+                    </Root/Joint.avars:defaultSpace>
+                ]
             }
         }
         )usda");
@@ -97,7 +105,6 @@ Test_JointScopeBasic()
         joint.GetAttribute(ExecIrTransformableTokens->avarsRy),
         joint.GetAttribute(ExecIrTransformableTokens->avarsRz),
         joint.GetAttribute(ExecIrTransformableTokens->avarsRspin),
-
         joint.GetAttribute(ExecIrTransformableTokens->avarsTx),
         joint.GetAttribute(ExecIrTransformableTokens->avarsTy),
         joint.GetAttribute(ExecIrTransformableTokens->avarsTz),
@@ -108,25 +115,38 @@ Test_JointScopeBasic()
 
     ExecUsdSystem execSystem(usdStage);
 
+    // Compute forward to get the output value produced by the authored
+    // scene.
     {
         const ExecUsdRequest request = execSystem.BuildRequest({
             ExecUsdValueKey{posedSpace, ExecBuiltinComputations->computeValue}
         });
         TF_AXIOM(request.IsValid());
 
-        // Compute forward to get the output value produced by the authored
-        // scene.
         {
             ExecUsdCacheView cache = execSystem.Compute(request);
-            const VtValue value = cache.Get(0);
-            TF_AXIOM(!value.IsEmpty());
-
             ASSERT_CLOSE(
-                value.Get<GfMatrix4d>(),
+                cache.Get(0).Get<GfMatrix4d>(),
                 GfMatrix4d(0,  0, 1, 0,
                            0, -1, 0, 0,
                            1,  0, 0, 0,
                            1,  2, 3, 1));
+        }
+
+        // Translate the rest space and compute again.
+        UsdAttribute restTz =
+            joint.GetAttribute(ExecIrTransformableTokens->restTz);
+        TF_AXIOM(restTz);
+        restTz.Set(10.0);
+
+        {
+            ExecUsdCacheView cache = execSystem.Compute(request);
+            ASSERT_CLOSE(
+                cache.Get(0).Get<GfMatrix4d>(),
+                GfMatrix4d(0,  0,  1, 0,
+                           0, -1,  0, 0,
+                           1,  0,  0, 0,
+                           1,  2, 13, 1));
         }
     }
 
@@ -143,10 +163,10 @@ Test_JointScopeBasic()
         // Perform an inverse compute, to get the values of the avars that
         // produce the desired value for the posed space.
         {
-            const GfMatrix4d desiredPosedSpaceValue(0,  0, 1, 0,
-                                                    0, -1, 0, 0,
-                                                    1,  0, 0, 0,
-                                                    1,  2, 3, 1);
+            const GfMatrix4d desiredPosedSpaceValue(0,  0,  1, 0,
+                                                    0, -1,  0, 0,
+                                                    1,  0,  0, 0,
+                                                    6,  7, 18, 1);
             ExecUsdValueOverrideVector overrides {
                 {{posedSpace, ExecIrComputationTokens->explicitDesiredValue},
                  VtValue(desiredPosedSpaceValue)}
@@ -157,33 +177,7 @@ Test_JointScopeBasic()
             // Expected input values in the same order as the value keys in the
             // request.
             const std::vector<double> expectedInputValues{
-                90.0, -90.0, 90.0, 0.0,    1.0, 2.0, 3.0,
-            };
-            for (unsigned int index=0;
-                 index<expectedInputValues.size(); ++index) {
-                ASSERT_CLOSE(
-                    cache.Get(index).Get<double>(),
-                    expectedInputValues[index]);
-            }
-        }
-
-        // Compute with a different desired value.
-        {
-            const GfMatrix4d desiredPosedSpaceValue( 0,  0, -1, 0,
-                                                     0,  1,  0, 0,
-                                                     1,  0,  0, 0,
-                                                    10, 20, 30, 1);
-            ExecUsdValueOverrideVector overrides {
-                {{posedSpace, ExecIrComputationTokens->explicitDesiredValue},
-                 VtValue(desiredPosedSpaceValue)}
-            };
-            ExecUsdCacheView cache =
-                execSystem.ComputeWithOverrides(request, std::move(overrides));
-
-            // Expected input values in the same order as the value keys in the
-            // request.
-            const std::vector<double> expectedInputValues{
-                0.0, 90.0, 0.0, 0.0,    10.0, 20.0, 30.0,
+                90.0, -90.0, 90.0, 0.0,    6.0, 7.0, 8.0,
             };
             for (unsigned int index=0;
                  index<expectedInputValues.size(); ++index) {
@@ -196,6 +190,113 @@ Test_JointScopeBasic()
 }
 
 static void
+Test_JointScopeRestSpace()
+{
+    _EnsureNoErrors mark;
+
+    const SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
+    layer->ImportFromString(
+        R"usda(#usda 1.0
+
+        def Xform "Root" {
+            def IrJointScope "Joint" {
+                double avars:ty = 10.0
+                matrix4d posed:space.connect = [
+                    </Root/FkController.out:space>
+                ]
+            }
+
+            def IrFkController "FkController" {
+                double in:tx.connect = </Root/Joint.avars:tx>
+                double in:ty.connect = </Root/Joint.avars:ty>
+                double in:tz.connect = </Root/Joint.avars:tz>
+                double in:rx.connect = </Root/Joint.avars:rx>
+                double in:ry.connect = </Root/Joint.avars:ry>
+                double in:rz.connect = </Root/Joint.avars:rz>
+                double in:rspin.connect = </Root/Joint.avars:rspin>
+                token in:rotationOrder.connect = [
+                    </Root/Joint.avars:rotationOrder>
+                ]
+                matrix4d in:defaultSpace.connect = [
+                    </Root/Joint.avars:defaultSpace>
+                ]
+            }
+        }
+        )usda");
+    const UsdStageConstRefPtr usdStage = UsdStage::Open(layer);
+    TF_AXIOM(usdStage);
+
+    const UsdPrim joint = usdStage->GetPrimAtPath(SdfPath("/Root/Joint"));
+    TF_AXIOM(joint);
+    const UsdAttribute posedSpace =
+        joint.GetAttribute(ExecIrTransformableTokens->posedSpace);
+    TF_AXIOM(posedSpace);
+
+    const std::vector<UsdAttribute> inputAttributes = {
+        joint.GetAttribute(ExecIrTransformableTokens->avarsRx),
+        joint.GetAttribute(ExecIrTransformableTokens->avarsRy),
+        joint.GetAttribute(ExecIrTransformableTokens->avarsRz),
+        joint.GetAttribute(ExecIrTransformableTokens->avarsRspin),
+        joint.GetAttribute(ExecIrTransformableTokens->avarsTx),
+        joint.GetAttribute(ExecIrTransformableTokens->avarsTy),
+        joint.GetAttribute(ExecIrTransformableTokens->avarsTz),
+    };
+    for (const UsdAttribute &attr : inputAttributes) {
+        TF_AXIOM(attr);
+    }
+
+    ExecUsdSystem execSystem(usdStage);
+    const ExecUsdRequest request = execSystem.BuildRequest({
+            ExecUsdValueKey{posedSpace, ExecBuiltinComputations->computeValue}
+        });
+    TF_AXIOM(request.IsValid());
+
+    // Compute forward to get the output value produced by the authored
+    // scene.
+    {
+        ExecUsdCacheView cache = execSystem.Compute(request);
+        ASSERT_CLOSE(
+            cache.Get(0).Get<GfMatrix4d>(),
+            GfMatrix4d(1,  0, 0, 0,
+                       0,  1, 0, 0,
+                       0,  0, 1, 0,
+                       0, 10, 0, 1));
+    }
+
+    // Rotate the posed space around the X axis.
+    {
+        const UsdAttribute avarsRx =
+            joint.GetAttribute(ExecIrTransformableTokens->avarsRx);
+        TF_AXIOM(avarsRx);
+        avarsRx.Set(90.0);
+
+        ExecUsdCacheView cache = execSystem.Compute(request);
+        ASSERT_CLOSE(
+            cache.Get(0).Get<GfMatrix4d>(),
+            GfMatrix4d(1,  0, 0, 0,
+                       0,  0, 1, 0,
+                       0, -1, 0, 0,
+                       0, 10, 0, 1));
+    }
+
+    // Translate the rest space along the Z axis.
+    {
+        const UsdAttribute restTz =
+            joint.GetAttribute(ExecIrTransformableTokens->restTz);
+        TF_AXIOM(restTz);
+        restTz.Set(5.0);
+
+        ExecUsdCacheView cache = execSystem.Compute(request);
+        ASSERT_CLOSE(
+            cache.Get(0).Get<GfMatrix4d>(),
+            GfMatrix4d(1,  0, 0, 0,
+                       0,  0, 1, 0,
+                       0, -1, 0, 0,
+                       0, 10, 5, 1));
+    }
+}
+
+static void
 Test_JointScopeParentChild()
 {
     _EnsureNoErrors mark;
@@ -204,52 +305,64 @@ Test_JointScopeParentChild()
     // parent space is connected to the output of the parent controller.
     const SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
     layer->ImportFromString(
-        R"usda(
-        #usda 1.0
+        R"usda(#usda 1.0
 
-        def Scope "Root" {
+        def Xform "Root" {
             def IrJointScope "ParentJoint" {
-                double avars:tx =     0.0
-                double avars:ty =     0.0
-                double avars:tz =     0.0
-                double avars:rx =    90.0
-                double avars:ry =   -90.0
-                double avars:rz =    90.0
-                double avars:rspin =  0.0
-                matrix4d posed:space.connect = </Root/ParentController.Out:Space>
+                double avars:rx = 90.0
+                matrix4d posed:space.connect = [
+                    </Root/ParentController.out:space>
+                ]
 
                 def IrJointScope "ChildJoint" {
-                    double avars:tx =    1.0
-                    double avars:ty =    2.0
-                    double avars:tz =    3.0
-                    double avars:rx =    0.0
-                    double avars:ry =    0.0
-                    double avars:rz =    0.0
-                    double avars:rspin = 0.0
-                    matrix4d posed:space.connect = </Root/ChildController.Out:Space>
+                    double avars:tx =  1.0
+                    double avars:ty =  2.0
+                    double avars:tz =  3.0
+                    double rest:tx  = 10.0
+                    matrix4d posed:space.connect = [
+                        </Root/ChildController.out:space>
+                    ]
                 }
             }
 
             def IrFkController "ParentController" {
-                double In:Tx.connect = </Root/ParentJoint.avars:tx>
-                double In:Ty.connect = </Root/ParentJoint.avars:ty>
-                double In:Tz.connect = </Root/ParentJoint.avars:tz>
-                double In:Rx.connect = </Root/ParentJoint.avars:rx>
-                double In:Ry.connect = </Root/ParentJoint.avars:ry>
-                double In:Rz.connect = </Root/ParentJoint.avars:rz>
-                double In:Rspin.connect = </Root/ParentJoint.avars:rspin>
+                double in:tx.connect = </Root/ParentJoint.avars:tx>
+                double in:ty.connect = </Root/ParentJoint.avars:ty>
+                double in:tz.connect = </Root/ParentJoint.avars:tz>
+                double in:rx.connect = </Root/ParentJoint.avars:rx>
+                double in:ry.connect = </Root/ParentJoint.avars:ry>
+                double in:rz.connect = </Root/ParentJoint.avars:rz>
+                double in:rspin.connect = </Root/ParentJoint.avars:rspin>
+                token in:rotationOrder.connect = [
+                    </Root/ParentJoint.avars:rotationOrder>
+                ]
+                matrix4d in:defaultSpace.connect = [
+                    </Root/ParentJoint.avars:defaultSpace>
+                ]
             }
 
             def IrFkController "ChildController" {
-                double In:Tx.connect = </Root/ParentJoint/ChildJoint.avars:tx>
-                double In:Ty.connect = </Root/ParentJoint/ChildJoint.avars:ty>
-                double In:Tz.connect = </Root/ParentJoint/ChildJoint.avars:tz>
-                double In:Rx.connect = </Root/ParentJoint/ChildJoint.avars:rx>
-                double In:Ry.connect = </Root/ParentJoint/ChildJoint.avars:ry>
-                double In:Rz.connect = </Root/ParentJoint/ChildJoint.avars:rz>
-                double In:Rspin.connect = </Root/ParentJoint/ChildJoint.avars:rspin>
-
-                matrix4d ParentIn:Space.connect = </Root/ParentController.Out:Space>
+                double in:tx.connect = </Root/ParentJoint/ChildJoint.avars:tx>
+                double in:ty.connect = </Root/ParentJoint/ChildJoint.avars:ty>
+                double in:tz.connect = </Root/ParentJoint/ChildJoint.avars:tz>
+                double in:rx.connect = </Root/ParentJoint/ChildJoint.avars:rx>
+                double in:ry.connect = </Root/ParentJoint/ChildJoint.avars:ry>
+                double in:rz.connect = </Root/ParentJoint/ChildJoint.avars:rz>
+                double in:rspin.connect = [
+                    </Root/ParentJoint/ChildJoint.avars:rspin>
+                ]
+                token in:rotationOrder.connect = [
+                    </Root/ParentJoint/ChildJoint.avars:rotationOrder>
+                ]
+                matrix4d in:defaultSpace.connect = [
+                    </Root/ParentJoint/ChildJoint.avars:defaultSpace>
+                ]
+                matrix4d parentIn:defaultSpace.connect = [
+                    </Root/ParentController.out:defaultSpace>
+                ]
+                matrix4d parentIn:space.connect = [
+                    </Root/ParentController.out:space>
+                ]
             }
         }
         )usda");
@@ -274,7 +387,6 @@ Test_JointScopeParentChild()
         parent.GetAttribute(ExecIrTransformableTokens->avarsRy),
         parent.GetAttribute(ExecIrTransformableTokens->avarsRz),
         parent.GetAttribute(ExecIrTransformableTokens->avarsRspin),
-
         parent.GetAttribute(ExecIrTransformableTokens->avarsTx),
         parent.GetAttribute(ExecIrTransformableTokens->avarsTy),
         parent.GetAttribute(ExecIrTransformableTokens->avarsTz),
@@ -283,7 +395,6 @@ Test_JointScopeParentChild()
         child.GetAttribute(ExecIrTransformableTokens->avarsRy),
         child.GetAttribute(ExecIrTransformableTokens->avarsRz),
         child.GetAttribute(ExecIrTransformableTokens->avarsRspin),
-
         child.GetAttribute(ExecIrTransformableTokens->avarsTx),
         child.GetAttribute(ExecIrTransformableTokens->avarsTy),
         child.GetAttribute(ExecIrTransformableTokens->avarsTz),
@@ -302,6 +413,19 @@ Test_JointScopeParentChild()
         });
     TF_AXIOM(outputRequest.IsValid());
 
+    // Matrices representing rotations about the X and Y axes by 90 degrees.
+    static const GfMatrix4d rotateX90(GfRotation({1, 0, 0}, 90), {0, 0, 0});
+    static const GfMatrix4d rotateY90(GfRotation({0, 1, 0}, 90), {0, 0, 0});
+
+    // Compute in the forward direction.
+    {
+        ExecUsdCacheView cache = execSystem.Compute(outputRequest);
+
+        ASSERT_CLOSE(cache.Get(0).Get<GfMatrix4d>(), rotateX90);
+        ASSERT_CLOSE(cache.Get(1).Get<GfMatrix4d>(),
+                     GfMatrix4d().SetTranslate({11, 2, 3}) * rotateX90);
+    }
+
     std::vector<ExecUsdValueKey> valueKeys;
     for (const UsdAttribute &attr : inputAttributes) {
         valueKeys.emplace_back(
@@ -311,17 +435,20 @@ Test_JointScopeParentChild()
         execSystem.BuildRequest(std::move(valueKeys));
     TF_AXIOM(inputRequest.IsValid());
 
-    const GfMatrix4d desiredParentPosedSpaceValue(0,  0, 1, 0,
-                                                  0, -1, 0, 0,
-                                                  1,  0, 0, 0,
-                                                  0,  0, 0, 1);
+    const GfMatrix4d desiredParentPosedSpaceValue(rotateY90);
     GfMatrix4d desiredChildPosedSpaceValue = desiredParentPosedSpaceValue;
-    desiredChildPosedSpaceValue.SetTranslateOnly({1, 2, 3});
+    desiredChildPosedSpaceValue.SetTranslateOnly({15, 20, 0});
 
-    // Expected input values in the same order as the value keys in the request.
+    // The expected results are:
+    // - The parent posed space is rotated by 90 degrees about the Y axis.
+    // - The child posed space is in a space that receives the parent rotation,
+    //   which results in:
+    //   o X is -10 (the Z goal rotated to the X axis, offsetting rest space)
+    //   o Y is 20 (directly from the goal, no rotation since we rotate about Y)
+    //   o Z is 15 (from the goal, rotated from X to Z)
     const std::vector<double> expectedInputValues{
-        90.0, -90.0, 90.0, 0.0,    0.0,  0.0, 0.0,
-        0.0,   0.0,   0.0, 0.0,    3.0, -2.0, 1.0,
+        0.0, 90.0, 0.0, 0.0,      0.0,  0.0,  0.0,
+        0.0,  0.0, 0.0, 0.0,    -10.0, 20.0, 15.0,
     };
 
     {
@@ -335,9 +462,8 @@ Test_JointScopeParentChild()
             execSystem.ComputeWithOverrides(inputRequest, std::move(overrides));
 
         for (unsigned int index=0; index<expectedInputValues.size(); ++index) {
-            ASSERT_CLOSE(
-                cache.Get(index).Get<double>(),
-                expectedInputValues[index]);
+            ASSERT_CLOSE(cache.Get(index).Get<double>(),
+                         expectedInputValues[index]);
         }
     }
 
@@ -356,10 +482,33 @@ Test_JointScopeParentChild()
         ASSERT_CLOSE(cache.Get(1).Get<GfMatrix4d>(),
                      desiredChildPosedSpaceValue);
     }
+
+    // Add a transform on the root Xform and test that it is inherited by the
+    // JointScope.
+    {
+        TF_AXIOM(usdStage->GetPrimAtPath(SdfPath("/Root")));
+        const UsdGeomXformable xformable(
+            usdStage->GetPrimAtPath(SdfPath("/Root")));
+        TF_AXIOM(xformable);
+
+        GfMatrix4d rootTransform;
+        rootTransform.SetTranslate({1.1, 2.2, 3.3});
+
+        UsdGeomXformOp transformOp =
+            xformable.AddXformOp(UsdGeomXformOp::TypeTransform);
+        transformOp.Set(VtValue(rootTransform));
+
+        ExecUsdCacheView cache = execSystem.Compute(outputRequest);
+        ASSERT_CLOSE(cache.Get(0).Get<GfMatrix4d>(),
+                     desiredParentPosedSpaceValue * rootTransform);
+        ASSERT_CLOSE(cache.Get(1).Get<GfMatrix4d>(),
+                     desiredChildPosedSpaceValue * rootTransform);
+    }
 }
 
 int main(int argc, char **argv)
 {
     Test_JointScopeBasic();
+    Test_JointScopeRestSpace();
     Test_JointScopeParentChild();
 }

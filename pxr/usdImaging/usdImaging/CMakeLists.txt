@@ -299,6 +299,14 @@ pxr_build_test(testUsdImagingNestedInstancingSelection
         tf
     CPPFILES
         testenv/testUsdImagingNestedInstancingSelection.cpp
+pxr_build_test(testUsdImagingInstanceProxyTraversal
+    LIBRARIES
+        usdImaging
+        hd
+        usd
+        sdf
+    CPPFILES
+        testenv/testUsdImagingInstanceProxyTraversal.cpp
 )
 
 # Register tests to be run
@@ -368,8 +376,30 @@ pxr_register_test(testUsdImagingStageSceneIndexContents
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingStageSceneIndexContents basic.usda basic.txt"
     TESTENV testenv/testUsdImagingStageSceneIndexContents
     EXPECTED_RETURN_CODE 0
-    DIFF_COMPARE 
+    DIFF_COMPARE
         basic.txt
+)
+pxr_register_test(testUsdImagingInstanceProxyTraversal_1
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingInstanceProxyTraversal 1_simple.usda"
+    TESTENV testenv/testUsdImagingInstanceProxyTraversal
+    EXPECTED_RETURN_CODE 0
+    DIFF_COMPARE
+        1_simple_usdTraversal.txt
+        1_simple_sceneIndexTraversal.txt
+        1_simple_sceneIndexInstanceProxyTraversal.txt
+    ENV
+        USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
+)
+pxr_register_test(testUsdImagingInstanceProxyTraversal_2
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingInstanceProxyTraversal 2_ni-2-levels.usda"
+    TESTENV testenv/testUsdImagingInstanceProxyTraversal
+    EXPECTED_RETURN_CODE 0
+    DIFF_COMPARE
+        2_ni-2-levels_usdTraversal.txt
+        2_ni-2-levels_sceneIndexTraversal.txt
+        2_ni-2-levels_sceneIndexInstanceProxyTraversal.txt
+    ENV
+        USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
 )
 
 # This test requires MaterialX support and is not currently supported on static 

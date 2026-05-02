@@ -474,7 +474,7 @@ UsdImagingGLEngine::_DestroyHydraObjects()
         _legacyRenderSettingsSceneIndex = nullptr;
         _rootOverridesSceneIndex = nullptr;
         _lightPruningSceneIndex = nullptr;
-        _mergingStageSceneIndex = nullptr;
+        _noticeBatchingStageSceneIndex = nullptr;
         _execStageSceneIndex = nullptr;
     }
 
@@ -523,6 +523,7 @@ UsdImagingGLEngine::PrepareBatch(
             _usdImagingSceneIndex->SetTime(params.frame);
             if (_execStageSceneIndex) {
                 _execStageSceneIndex->SetTime(params.frame);
+                _noticeBatchingStageSceneIndex->Flush();
             }
         } else {
             _sceneDelegate->SetTime(params.frame);
@@ -1869,14 +1870,25 @@ UsdImagingGLEngine::_AppendOverridesSceneIndices(
             // _execStageSceneIndex. The _execStageSceneIndex is added first so
             // that its data sources overshadow the corresponding data sources
             // from the input scene.
-            _mergingStageSceneIndex = HdMergingSceneIndex::New();
-            _mergingStageSceneIndex->AddInputScene(
+            const HdMergingSceneIndexRefPtr mergingSceneIndex =
+                HdMergingSceneIndex::New();
+            mergingSceneIndex->AddInputScene(
                 _execStageSceneIndex,
                 SdfPath::AbsoluteRootPath());
-            _mergingStageSceneIndex->AddInputScene(
+            mergingSceneIndex->AddInputScene(
                 inputScene,
                 SdfPath::AbsoluteRootPath());
-            sceneIndex = _mergingStageSceneIndex;
+            
+            // Insert a notice batching scene index that batches all notices
+            // originating from the UsdImagingStageSceneIndex and the
+            // UsdExecImagingStageSceneIndex. This ensures the exec scene index
+            // is able to refresh its exec request before notices are flushed
+            // to downstream scene indices.
+            _noticeBatchingStageSceneIndex = HdNoticeBatchingSceneIndex::New(
+                mergingSceneIndex);
+            _noticeBatchingStageSceneIndex->SetBatchingEnabled(true);
+
+            sceneIndex = _noticeBatchingStageSceneIndex;
         }
     }
 
@@ -2673,13 +2685,18 @@ UsdImagingGLEngine::_PreSetTime(const UsdImagingGLRenderParams& params)
         // We provide a fallback value here for all prims.
         _displayStyleSceneIndex->SetRefineLevelFallback(refineLevel);
 
-        _ScopedHydraNoticeBatch noticeBatch(
-            _usdImagingSceneIndex->
-                GetPostInstancingNoticeBatchingSceneIndex());
+        {
+            // The post instancing notice batching scene index will be flushed
+            // after the stage notice batching scene index (if one exists).
+            _ScopedHydraNoticeBatch noticeBatch(
+                _usdImagingSceneIndex->
+                    GetPostInstancingNoticeBatchingSceneIndex());
 
-        _usdImagingSceneIndex->ApplyPendingUpdates();
-        if (_execStageSceneIndex) {
-            _execStageSceneIndex->ApplyPendingUpdates();
+            _usdImagingSceneIndex->ApplyPendingUpdates();
+            if (_execStageSceneIndex) {
+                _execStageSceneIndex->ApplyPendingUpdates();
+                _noticeBatchingStageSceneIndex->Flush();
+            }
         }
     } else {
         // Set the fallback refine level; if this changes from the

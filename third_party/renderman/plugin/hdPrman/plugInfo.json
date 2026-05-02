@@ -72,16 +72,31 @@
                             "position": "firstAfter"
                         }
                     },
+                    "HdPrman_IdSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
+                        "priority": 0,
+                        "displayName": "Prman ID Assignemnt",
+
+                        # phase=115, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase115"],
+                        "ordering": {
+                            "after": ["hdPrman:phase113", "hdPrman:matFilt", "hdPrman:implicitSurfaces"],
+                            "position": "firstAfter"
+                        }
+                    },
                     "HdPrman_ImplicitSurfaceSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
                         "displayName": "Prman Implicit Surfaces",
 
-                        # phase=0, InsertionOrderAtStart
-                        "tags": ["hdPrman:phase0"],
+                        # phase=3, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase3", "hdPrman:implicitSurfaces"],
                         "ordering": {
-                            "after": "hd:sceneAssembly",
+                            "after": [  
+                                "hd:sceneAssembly",
+                                "hdGp:proceduralResolution"],
                             "position": "firstAfter"
                         }
                     },

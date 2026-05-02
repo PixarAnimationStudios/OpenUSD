@@ -46,6 +46,7 @@ class Session;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdPrman_IdMap;
 class HdPrmanFramebuffer;
 class HdPrmanCamera;
 class HdPrmanInstancer;
@@ -374,6 +375,10 @@ public:
         return _framebuffer.get();
     }
 
+    HdPrman_IdMap* GetIdMap() const {
+        return _idMap.get();
+    }
+
     // Creates displays in riley based on rendersettings map
     void CreateRenderViewFromLegacyProducts(
         const VtArray<HdRenderSettingsMap>& renderProducts, int frame);
@@ -479,10 +484,6 @@ public:
     // provided render settings. Returns an empty token if not found.
     static TfToken GetIdMapProductName(HdPrman_RenderSettings* renderSettings);
 
-    // Write the path to id mapping to a file with the provided name.
-    static void WriteIdMap(HdRenderIndex* renderIndex,
-                           const TfToken& productName);
-
 private:
     void _CreateStatsSession();
     void _CreateRiley(const std::string &rileyVariant,
@@ -578,6 +579,7 @@ private:
 
     std::unique_ptr<class HdRenderThread> _renderThread;
     std::unique_ptr<HdPrmanFramebuffer> _framebuffer;
+    std::unique_ptr<HdPrman_IdMap> _idMap;
 
     int _sceneLightCount;
 

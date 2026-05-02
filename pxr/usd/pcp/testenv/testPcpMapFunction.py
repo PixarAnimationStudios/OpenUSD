@@ -6,6 +6,7 @@
 # https://openusd.org/license.
 
 from pxr import Sdf, Pcp
+import itertools
 import unittest
 
 testPaths = [
@@ -14,6 +15,9 @@ testPaths = [
     Sdf.Path('/foo'),
     Sdf.Path('/a/b/c')
     ]
+
+def DeferredComposition(m):
+    return Pcp.MapFunction.DeferredComposition(m)
 
 class TestPcpMapFunction(unittest.TestCase):
 
@@ -26,6 +30,21 @@ class TestPcpMapFunction(unittest.TestCase):
         self.assertEqual(null.timeOffset, Sdf.LayerOffset())
         for path in testPaths:
             self.assertTrue(null.MapSourceToTarget( path ).isEmpty)
+
+    def test_DeferredComposition(self):
+        m = Pcp.MapFunction({'/Model': '/Model_1'})
+        self.assertFalse(m.isDeferredComposition)
+
+        s = Pcp.MapFunction.DeferredComposition(m)
+        self.assertTrue(s.isDeferredComposition)
+
+        # An identity function is never a deferred composition function.
+        self.assertFalse(DeferredComposition(
+            Pcp.MapFunction.Identity()).isDeferredComposition)
+
+        # A deferred-composition function has the same mappings as its source.
+        self.assertEqual(s.sourceToTargetMap, m.sourceToTargetMap)
+        self.assertEqual(s.timeOffset, m.timeOffset)
 
     def test_Identity(self):
         # Test identity function
@@ -51,86 +70,113 @@ class TestPcpMapFunction(unittest.TestCase):
     def test_Simple(self):
         # Test a simple mapping, simulating a referenced model instance.
         m = Pcp.MapFunction({'/Model': '/Model_1'})
-        self.assertFalse(m.isNull)
-        self.assertFalse(m.isIdentity)
-        self.assertFalse(m.isIdentityPathMapping)
-        self.assertTrue(m.MapSourceToTarget('/').isEmpty)
-        self.assertEqual(m.MapSourceToTarget('/Model'), Sdf.Path('/Model_1'))
-        self.assertEqual(
-            m.MapSourceToTarget('/Model/anim'), Sdf.Path('/Model_1/anim'))
-        self.assertTrue(m.MapSourceToTarget('/Model_1').isEmpty)
-        self.assertTrue(m.MapSourceToTarget('/Model_1/anim').isEmpty)
-        self.assertTrue(m.MapTargetToSource('/').isEmpty)
-        self.assertTrue(m.MapTargetToSource('/Model').isEmpty)
-        self.assertTrue(m.MapTargetToSource('/Model/anim').isEmpty)
-        self.assertEqual(m.MapTargetToSource('/Model_1'), Sdf.Path('/Model'))
-        self.assertEqual(
-            m.MapTargetToSource('/Model_1/anim'), Sdf.Path('/Model/anim'))
 
-        # Mapping functions do not affect nested target paths.
-        self.assertEqual(m.MapTargetToSource('/Model_1.x[/Model_1.y]'),
-                         Sdf.Path('/Model.x[/Model_1.y]'))
-        self.assertEqual(m.MapSourceToTarget('/Model.x[/Model.y]'),
-                         Sdf.Path('/Model_1.x[/Model.y]'))
+        def _Validate(m):
+            self.assertFalse(m.isNull)
+            self.assertFalse(m.isIdentity)
+            self.assertFalse(m.isIdentityPathMapping)
+            self.assertTrue(m.MapSourceToTarget('/').isEmpty)
+            self.assertEqual(
+                m.MapSourceToTarget('/Model'), Sdf.Path('/Model_1'))
+            self.assertEqual(
+                m.MapSourceToTarget('/Model/anim'), Sdf.Path('/Model_1/anim'))
+            self.assertTrue(m.MapSourceToTarget('/Model_1').isEmpty)
+            self.assertTrue(m.MapSourceToTarget('/Model_1/anim').isEmpty)
+            self.assertTrue(m.MapTargetToSource('/').isEmpty)
+            self.assertTrue(m.MapTargetToSource('/Model').isEmpty)
+            self.assertTrue(m.MapTargetToSource('/Model/anim').isEmpty)
+            self.assertEqual(
+                m.MapTargetToSource('/Model_1'), Sdf.Path('/Model'))
+            self.assertEqual(
+                m.MapTargetToSource('/Model_1/anim'), Sdf.Path('/Model/anim'))
+
+            # Mapping functions do not affect nested target paths.
+            self.assertEqual(m.MapTargetToSource('/Model_1.x[/Model_1.y]'),
+                             Sdf.Path('/Model.x[/Model_1.y]'))
+            self.assertEqual(m.MapSourceToTarget('/Model.x[/Model.y]'),
+                             Sdf.Path('/Model_1.x[/Model.y]'))
+
+        _Validate(m)
+        _Validate(DeferredComposition(m))
 
     def test_NestedRef(self):
         # Test a mapping representing a nested rig reference.
         m2 = Pcp.MapFunction({'/CharRig': '/Model/Rig'})
-        self.assertFalse(m2.isNull)
-        self.assertFalse(m2.isIdentity)
-        self.assertFalse(m2.isIdentityPathMapping)
-        self.assertTrue(m2.MapSourceToTarget('/').isEmpty)
-        self.assertEqual(m2.MapSourceToTarget('/CharRig'),
-                         Sdf.Path('/Model/Rig'))
-        self.assertEqual(m2.MapSourceToTarget('/CharRig/rig'),
-                         Sdf.Path('/Model/Rig/rig'))
-        self.assertTrue(m2.MapSourceToTarget('/Model').isEmpty)
-        self.assertTrue(m2.MapSourceToTarget('/Model/Rig').isEmpty)
-        self.assertTrue(m2.MapSourceToTarget('/Model/Rig/rig').isEmpty)
-        self.assertTrue(m2.MapTargetToSource('/').isEmpty)
-        self.assertTrue(m2.MapTargetToSource('/CharRig').isEmpty)
-        self.assertTrue(m2.MapTargetToSource('/CharRig/rig').isEmpty)
-        self.assertTrue(m2.MapTargetToSource('/Model').isEmpty)
-        self.assertEqual(m2.MapTargetToSource('/Model/Rig'),
-                         Sdf.Path('/CharRig'))
-        self.assertEqual(m2.MapTargetToSource('/Model/Rig/rig'),
-                         Sdf.Path('/CharRig/rig'))
+
+        def _Validate(m2):
+            self.assertFalse(m2.isNull)
+            self.assertFalse(m2.isIdentity)
+            self.assertFalse(m2.isIdentityPathMapping)
+            self.assertTrue(m2.MapSourceToTarget('/').isEmpty)
+            self.assertEqual(m2.MapSourceToTarget('/CharRig'),
+                             Sdf.Path('/Model/Rig'))
+            self.assertEqual(m2.MapSourceToTarget('/CharRig/rig'),
+                             Sdf.Path('/Model/Rig/rig'))
+            self.assertTrue(m2.MapSourceToTarget('/Model').isEmpty)
+            self.assertTrue(m2.MapSourceToTarget('/Model/Rig').isEmpty)
+            self.assertTrue(m2.MapSourceToTarget('/Model/Rig/rig').isEmpty)
+            self.assertTrue(m2.MapTargetToSource('/').isEmpty)
+            self.assertTrue(m2.MapTargetToSource('/CharRig').isEmpty)
+            self.assertTrue(m2.MapTargetToSource('/CharRig/rig').isEmpty)
+            self.assertTrue(m2.MapTargetToSource('/Model').isEmpty)
+            self.assertEqual(m2.MapTargetToSource('/Model/Rig'),
+                             Sdf.Path('/CharRig'))
+            self.assertEqual(m2.MapTargetToSource('/Model/Rig/rig'),
+                             Sdf.Path('/CharRig/rig'))
+
+        _Validate(m2)
+        _Validate(DeferredComposition(m2))
 
     def test_Composition(self):
         # Test composing two map functions.
         m = Pcp.MapFunction({'/Model': '/Model_1'})
         m2 = Pcp.MapFunction({'/CharRig': '/Model/Rig'})
-        m3 = m.Compose(m2)
-        self.assertFalse(m3.isNull)
-        self.assertFalse(m3.isIdentity)
-        self.assertFalse(m3.isIdentityPathMapping)
-        self.assertTrue(m3.MapSourceToTarget('/').isEmpty)
-        self.assertEqual(m3.MapSourceToTarget('/CharRig'),
-                         Sdf.Path('/Model_1/Rig'))
-        self.assertEqual(m3.MapSourceToTarget('/CharRig/rig'), 
-                         Sdf.Path('/Model_1/Rig/rig'))
-        self.assertTrue(m3.MapSourceToTarget('/Model').isEmpty)
-        self.assertTrue(m3.MapSourceToTarget('/Model/Rig').isEmpty)
-        self.assertTrue(m3.MapSourceToTarget('/Model/Rig/rig').isEmpty)
-        self.assertTrue(m3.MapSourceToTarget('/Model_1').isEmpty)
-        self.assertTrue(m3.MapSourceToTarget('/Model_1/Rig').isEmpty)
-        self.assertTrue(m3.MapSourceToTarget('/Model_1/Rig/rig').isEmpty)
-        self.assertTrue(m3.MapTargetToSource('/').isEmpty)
-        self.assertTrue(m3.MapTargetToSource('/CharRig').isEmpty)
-        self.assertTrue(m3.MapTargetToSource('/CharRig/rig').isEmpty)
-        self.assertTrue(m3.MapTargetToSource('/Model').isEmpty)
-        self.assertTrue(m3.MapTargetToSource('/Model/Rig').isEmpty)
-        self.assertTrue(m3.MapTargetToSource('/Model/Rig/rig').isEmpty)
-        self.assertTrue(m3.MapTargetToSource('/Model_1').isEmpty)
-        self.assertEqual(m3.MapTargetToSource('/Model_1/Rig'),
-                         Sdf.Path('/CharRig'))
-        self.assertEqual(m3.MapTargetToSource('/Model_1/Rig/rig'),
-                         Sdf.Path('/CharRig/rig'))
+
+        def _Validate(m, m2):
+            m3 = m.Compose(m2)
+            self.assertFalse(m3.isNull)
+            self.assertFalse(m3.isIdentity)
+            self.assertFalse(m3.isIdentityPathMapping)
+            self.assertTrue(m3.MapSourceToTarget('/').isEmpty)
+            self.assertEqual(m3.MapSourceToTarget('/CharRig'),
+                             Sdf.Path('/Model_1/Rig'))
+            self.assertEqual(m3.MapSourceToTarget('/CharRig/rig'), 
+                             Sdf.Path('/Model_1/Rig/rig'))
+            self.assertTrue(m3.MapSourceToTarget('/Model').isEmpty)
+            self.assertTrue(m3.MapSourceToTarget('/Model/Rig').isEmpty)
+            self.assertTrue(m3.MapSourceToTarget('/Model/Rig/rig').isEmpty)
+            self.assertTrue(m3.MapSourceToTarget('/Model_1').isEmpty)
+            self.assertTrue(m3.MapSourceToTarget('/Model_1/Rig').isEmpty)
+            self.assertTrue(m3.MapSourceToTarget('/Model_1/Rig/rig').isEmpty)
+            self.assertTrue(m3.MapTargetToSource('/').isEmpty)
+            self.assertTrue(m3.MapTargetToSource('/CharRig').isEmpty)
+            self.assertTrue(m3.MapTargetToSource('/CharRig/rig').isEmpty)
+            self.assertTrue(m3.MapTargetToSource('/Model').isEmpty)
+            self.assertTrue(m3.MapTargetToSource('/Model/Rig').isEmpty)
+            self.assertTrue(m3.MapTargetToSource('/Model/Rig/rig').isEmpty)
+            self.assertTrue(m3.MapTargetToSource('/Model_1').isEmpty)
+            self.assertEqual(m3.MapTargetToSource('/Model_1/Rig'),
+                             Sdf.Path('/CharRig'))
+            self.assertEqual(m3.MapTargetToSource('/Model_1/Rig/rig'),
+                             Sdf.Path('/CharRig/rig'))
+
+        _Validate(m, m2)
+        _Validate(DeferredComposition(m), m2)
+        _Validate(m, DeferredComposition(m2))
+        _Validate(DeferredComposition(m), DeferredComposition(m2))
+
         # Test composing map functions that should produce identity mappings.
         m1 = Pcp.MapFunction({'/':'/', '/a':'/b'})
         m2 = Pcp.MapFunction({'/':'/', '/b':'/a'})
-        self.assertEqual(m1.Compose(m2), Pcp.MapFunction.Identity())
-        self.assertEqual(m2.Compose(m1), Pcp.MapFunction.Identity())
+
+        def _Validate(m1, m2):
+            self.assertEqual(m1.Compose(m2), Pcp.MapFunction.Identity())
+            self.assertEqual(m2.Compose(m1), Pcp.MapFunction.Identity())
+
+        _Validate(m1, m2)
+        _Validate(DeferredComposition(m1), m2)
+        _Validate(m1, DeferredComposition(m2))
+        _Validate(DeferredComposition(m1), DeferredComposition(m2))
 
     def test_InheritRelocateChain(self):
         # Test a chain of composed mappings that simulates an inherit of
@@ -140,29 +186,44 @@ class TestPcpMapFunction(unittest.TestCase):
         # - M/Rig/Inst is an instance of the local class M/Rig/Class
         # - M/Rig/Inst/Scope is an anim scope relocated to M/Anim/Scope
         #
-        m4 = Pcp.MapFunction({'/M': '/M_1'} ).Compose(
-            Pcp.MapFunction( {'/M/Rig/Inst/Scope': '/M/Anim/Scope'} ).Compose(
-                Pcp.MapFunction( {'/M/Rig/Class': '/M/Rig/Inst'} ).Compose(
-                    Pcp.MapFunction( {'/M_1': '/M'} ))))
+        transfer = Pcp.MapFunction( {'/M':'/M_1'} )
+        relocation = Pcp.MapFunction( {'/M/Rig/Inst/Scope': '/M/Anim/Scope'} )
+        classArc = Pcp.MapFunction( {'/M/Rig/Class': '/M/Rig/Inst'} )
+        refArc = Pcp.MapFunction( {'/M_1': '/M'} )
 
-        # The composed result should map opinions from the model instance's
-        # rig class scope, to the relocated anim scope.
-        expected = Pcp.MapFunction({'/M_1/Rig/Class/Scope': '/M_1/Anim/Scope'})
-        self.assertEqual(m4, expected)
-        self.assertTrue(m4.MapSourceToTarget(
-            Sdf.Path('/M_1/Rig/Class/Scope/x')) == Sdf.Path('/M_1/Anim/Scope/x'))
-        self.assertTrue(m4.MapTargetToSource(
-            Sdf.Path('/M_1/Anim/Scope/x')) == Sdf.Path('/M_1/Rig/Class/Scope/x'))
+        for (transfer, relocation, classArc, refArc) in \
+            itertools.product([transfer, DeferredComposition(transfer)],
+                              [relocation, DeferredComposition(relocation)],
+                              [classArc, DeferredComposition(classArc)],
+                              [refArc, DeferredComposition(refArc)]):
+            m4 = transfer.Compose(relocation.Compose(classArc).Compose(refArc))
+
+            # The composed result should map opinions from the model instance's
+            # rig class scope, to the relocated anim scope.
+            expected = Pcp.MapFunction(
+                {'/M_1/Rig/Class/Scope': '/M_1/Anim/Scope'})
+            self.assertEqual(m4, expected)
+            self.assertEqual(m4.MapSourceToTarget('/M_1/Rig/Class/Scope/x'),
+                             '/M_1/Anim/Scope/x')
+            self.assertEqual(m4.MapTargetToSource('/M_1/Anim/Scope/x'),
+                             '/M_1/Rig/Class/Scope/x')
 
     def test_ImpliedClass(self):
         # Test ImpliedClass operation with the same mappings from the
         # test_InheritRelocateChain test case.
-        self.assertEqual(
-            Pcp.MapFunction({'/':'/', '/M_1/Rig/Class/Scope': '/M_1/Anim/Scope'}), 
-            Pcp.MapFunction.ImpliedClass(
-                Pcp.MapFunction({'/M':'/M_1'}),
-                Pcp.MapFunction( {'/M/Rig/Inst/Scope': '/M/Anim/Scope'} ).Compose(
-                    Pcp.MapFunction( {'/M/Rig/Class': '/M/Rig/Inst'}))))
+        transfer = Pcp.MapFunction( {'/M':'/M_1'} )
+        relocation = Pcp.MapFunction( {'/M/Rig/Inst/Scope': '/M/Anim/Scope'} )
+        classArc = Pcp.MapFunction( {'/M/Rig/Class': '/M/Rig/Inst'} )
+
+        for (transfer, relocation, classArc) in \
+            itertools.product([transfer, DeferredComposition(transfer)],
+                              [relocation, DeferredComposition(relocation)],
+                              [classArc, DeferredComposition(classArc)]):
+            self.assertEqual(
+                Pcp.MapFunction({'/':'/', '/M_1/Rig/Class/Scope': '/M_1/Anim/Scope'}), 
+                Pcp.MapFunction.ImpliedClass(
+                    transfer, relocation.Compose(classArc)),
+                f"Unexpected result:\n{transfer=}\n{relocation=}\n{classArc=}")
 
     def test_LayerOffsets(self):
         # Test layer offsets
@@ -171,10 +232,16 @@ class TestPcpMapFunction(unittest.TestCase):
         m5 = Pcp.MapFunction({'/':'/'}, offset1)
         m6 = Pcp.MapFunction({'/':'/'}, offset2)
 
-        self.assertEqual(m5.timeOffset, offset1)
-        self.assertEqual(m6.timeOffset, offset2)
-        self.assertEqual(m5.Compose(m6).timeOffset, (offset1 * offset2))
-        self.assertEqual(m5.ComposeOffset(m6.timeOffset).timeOffset, (offset1 * offset2))
+        def _Validate(m5, m6):
+            self.assertEqual(m5.timeOffset, offset1)
+            self.assertEqual(m6.timeOffset, offset2)
+            self.assertEqual(m5.Compose(m6).timeOffset, (offset1 * offset2))
+            self.assertEqual(m5.ComposeOffset(m6.timeOffset).timeOffset, (offset1 * offset2))
+
+        _Validate(m5, m6)
+        _Validate(DeferredComposition(m5), m6)
+        _Validate(m5, DeferredComposition(m6))
+        _Validate(DeferredComposition(m5), DeferredComposition(m6))
 
     def test_Basics(self):
         testMapFuncs = [
@@ -195,11 +262,17 @@ class TestPcpMapFunction(unittest.TestCase):
             Pcp.MapFunction({'/':'/'}, Sdf.LayerOffset(offset=0.0, scale=2.0)),
             Pcp.MapFunction({'/':'/'}, Sdf.LayerOffset(offset=10.0, scale=1.0))
         ]
-        
+
+        # Add deferred-composition versions of test map functions.
+        testMapFuncs = testMapFuncs + \
+            [DeferredComposition(m) for m in testMapFuncs]
+
         # Test equality/inequality
         for i in range(len(testMapFuncs)):
             for j in range(len(testMapFuncs)):
-                if i == j:
+                if (i == j or
+                    i == j + (len(testMapFuncs) / 2) or
+                    j == i + (len(testMapFuncs) / 2)):
                     self.assertEqual(testMapFuncs[i], testMapFuncs[j])
                 else:
                     self.assertNotEqual(testMapFuncs[i], testMapFuncs[j])
@@ -207,6 +280,9 @@ class TestPcpMapFunction(unittest.TestCase):
         # Test repr
         for m in testMapFuncs:
             self.assertEqual(eval(repr(m)), m)
+            self.assertEqual(
+                eval(repr(m)).isDeferredComposition,
+                m.isDeferredComposition)
 
         # Composing any function with identity should return itself.
         identity = Pcp.MapFunction.Identity()

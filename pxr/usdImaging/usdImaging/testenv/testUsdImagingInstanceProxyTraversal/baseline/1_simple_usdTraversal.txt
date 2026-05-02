@@ -1,0 +1,7 @@
+/World type=Xform
+/World/InstanceA type=Xform
+/World/InstanceA/Trunk type=Sphere (instance proxy)
+/World/InstanceA/Crown type=Sphere (instance proxy)
+/World/InstanceB type=Xform
+/World/InstanceB/Trunk type=Sphere (instance proxy)
+/World/InstanceB/Crown type=Sphere (instance proxy)

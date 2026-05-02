@@ -518,13 +518,6 @@ void DoTest(std::ostream& out, const std::string& sampleFunc)
         << std::endl;
 
     for (const std::string& name : names) {
-        // USD-11935: Remove the exclusion here when the sampling
-        // implementation is replaced with the segment iterator.
-        // Currently, the following test case hangs.
-        if (name == "ExtrapLoopRepeatDualValued") {
-            continue;
-        }
-
         const TsTest_SplineData data = TsTest_Museum::GetDataByName(name);
 
         // Convert the generic spline data to an actual spline

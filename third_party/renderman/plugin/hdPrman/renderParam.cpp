@@ -12,6 +12,7 @@
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/debugUtil.h"
 #include "hdPrman/framebuffer.h"
+#include "hdPrman/idMap.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
 #include "hdPrman/motionBlurSceneIndexPlugin.h"
@@ -101,7 +102,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
 #include <functional>
 #include <ios>
 #include <iterator>
@@ -248,6 +248,7 @@ HdPrman_RenderParam::HdPrman_RenderParam(
 #if PXR_VERSION >= 2302
     _statsSceneIndex(nullptr),
 #endif
+    _idMap(new HdPrman_IdMap()),
     _sceneLightCount(0),
     _fallbackLightEnabled(false),
     _shutterInterval(HDPRMAN_SHUTTEROPEN_DEFAULT, HDPRMAN_SHUTTERCLOSE_DEFAULT),
@@ -968,8 +969,11 @@ HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
         _Convert(sceneDelegate, id, hdInterp, attrs, 1, GetShutterInterval());
     }
 
-    // Hydra id -> Riley Rix::k_identifier_name
-    attrs.SetString(RixStr.k_identifier_name, RtUString(id.GetText()));
+    // Hydra id -> Riley Rix::k_identifier_name, if it has not already
+    // been provided.
+    if (!attrs.HasParam(RixStr.k_identifier_name)) {
+        attrs.SetString(RixStr.k_identifier_name, RtUString(id.GetText()));
+    }
 
     // Hydra visibility -> Riley Rix::k_visibility
     if (!sceneDelegate->GetVisible(id)) {
@@ -3448,6 +3452,7 @@ HdPrman_RenderParam::End()
     StopRender(true);
     DeleteRenderThread();
     _framebuffer.reset();
+    _idMap->Clear();
     _DestroyRiley();
 }
 
@@ -3927,7 +3932,7 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
 #endif
 {
     if (!_framebuffer) {
-        _framebuffer = std::make_unique<HdPrmanFramebuffer>();
+        _framebuffer = std::make_unique<HdPrmanFramebuffer>(GetIdMap());
     }
 
 #if PXR_VERSION >= 2308
@@ -4983,32 +4988,6 @@ HdPrman_RenderParam::GetIdMapProductName(HdPrman_RenderSettings* renderSettings)
     }
 
     return TfToken();
-}
-
-void
-HdPrman_RenderParam::WriteIdMap(
-    HdRenderIndex* renderIndex,
-    const TfToken& productName)
-{
-    std::ofstream outFile(productName.GetText(), std::ios::binary);
-    if (!outFile) {
-        TF_WARN("Failed to create ID file '%s'", productName.GetText());
-        return;
-    }
-
-    for (const auto& path : renderIndex->GetRprimIds()) {
-        const int64_t pathLen = path.GetString().size() + 1;
-        const int64_t id = renderIndex->GetRprim(path)->GetPrimId() + 1;
-
-        outFile.write(reinterpret_cast<const char*>(&id), sizeof(int64_t))
-               .write(reinterpret_cast<const char*>(&pathLen), sizeof(pathLen))
-               .write(path.GetText(), pathLen);
-
-        if (!outFile) {
-            TF_WARN("Writing ID file failed on '%s'", path.GetText());
-            return;
-        }
-    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

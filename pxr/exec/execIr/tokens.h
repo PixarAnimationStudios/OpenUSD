@@ -28,23 +28,55 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_PUBLIC_TOKENS(
     ExecIrComputationTokens, EXECIR_API, EXEC_IR_COMPUTATION_TOKENS);
 
-#define EXEC_IR_TOKENS                          \
-    ((parentSpaceToken, "ParentIn:Space"))      \
-                                                \
-    ((defaultSpaceToken, "In:DefaultSpace"))    \
-                                                \
-    ((txToken, "In:Tx"))                        \
-    ((tyToken, "In:Ty"))                        \
-    ((tzToken, "In:Tz"))                        \
-    ((rxToken, "In:Rx"))                        \
-    ((ryToken, "In:Ry"))                        \
-    ((rzToken, "In:Rz"))                        \
-    ((rspinToken, "In:Rspin"))                  \
-    ((rotationOrderToken, "In:RotationOrder"))  \
-                                                \
-    ((outSpaceToken, "Out:Space"))
+#define EXEC_IR_ROTATION_ORDER_TOKENS                                           \
+    (XYZ)                                                                       \
+    (XZY)                                                                       \
+    (YXZ)                                                                       \
+    (YZX)                                                                       \
+    (ZXY)                                                                       \
+    (ZYX)
 
-TF_DECLARE_PUBLIC_TOKENS(ExecIrTokens, EXECIR_API, EXEC_IR_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(
+    ExecIrRotationOrderTokens, EXECIR_API, EXEC_IR_ROTATION_ORDER_TOKENS);
+
+#define EXEC_IR_FK_CONTROLLER_TOKENS                                            \
+    ((parentInSpace, "parentIn:space"))                                         \
+    ((parentInDefaultSpace, "parentIn:defaultSpace"))                           \
+                                                                                \
+    ((inDefaultSpace, "in:defaultSpace"))                                       \
+                                                                                \
+    ((inTx, "in:tx"))                                                           \
+    ((inTy, "in:ty"))                                                           \
+    ((inTz, "in:tz"))                                                           \
+    ((inRx, "in:rx"))                                                           \
+    ((inRy, "in:ry"))                                                           \
+    ((inRz, "in:rz"))                                                           \
+    ((inRspin, "in:rspin"))                                                     \
+    ((inRotationOrder, "in:rotationOrder"))                                     \
+                                                                                \
+    ((outSpace, "out:space"))                                                   \
+    ((outDefaultSpace, "out:defaultSpace"))
+
+TF_DECLARE_PUBLIC_TOKENS(
+    ExecIrFkControllerTokens, EXECIR_API, EXEC_IR_FK_CONTROLLER_TOKENS);
+
+#define EXEC_IR_SWITCH_CONTROLLER_TOKENS                                        \
+    (rig1)                                                                      \
+    (rig2)                                                                      \
+                                                                                \
+    ((switchToken, "switch"))                                                   \
+                                                                                \
+    ((rig1Joint1Space, "rig1:joint1:space"))                                    \
+    ((rig1Joint2Space, "rig1:joint2:space"))                                    \
+                                                                                \
+    ((rig2Joint1Space, "rig2:joint1:space"))                                    \
+    ((rig2Joint2Space, "rig2:joint2:space"))                                    \
+                                                                                \
+    ((outJoint1Space, "out:joint1:space"))                                      \
+    ((outJoint2Space, "out:joint2:space"))                                      \
+
+TF_DECLARE_PUBLIC_TOKENS(
+    ExecIrSwitchControllerTokens, EXECIR_API, EXEC_IR_SWITCH_CONTROLLER_TOKENS);
 
 #define EXEC_IR_TRANSFORMABLE_TOKENS                                            \
     ((avarsTx, "avars:tx"))                                                     \
@@ -54,9 +86,7 @@ TF_DECLARE_PUBLIC_TOKENS(ExecIrTokens, EXECIR_API, EXEC_IR_TOKENS);
     ((avarsRy, "avars:ry"))                                                     \
     ((avarsRz, "avars:rz"))                                                     \
     ((avarsRspin, "avars:rspin"))                                               \
-    ((avarsTotalSize, "avars:totalSize"))                                       \
     ((avarsRotationOrder, "avars:rotationOrder"))                               \
-    ((avarsDefaultTotalSize, "avars:defaultTotalSize"))                         \
     ((avarsDefaultSpace, "avars:defaultSpace"))                                 \
     ((avarsUnitScaleFactor, "avars:unitScaleFactor"))                           \
                                                                                 \
@@ -74,16 +104,13 @@ TF_DECLARE_PUBLIC_TOKENS(ExecIrTokens, EXECIR_API, EXEC_IR_TOKENS);
     ((defaultRx, "default:rx"))                                                 \
     ((defaultRy, "default:ry"))                                                 \
     ((defaultRz, "default:rz"))                                                 \
-    ((defaultTotalSize, "default:totalSize"))                                   \
     ((defaultSpace, "default:space"))                                           \
                                                                                 \
     ((posedSpace, "posed:space"))                                               \
     ((posedDefaultSpace, "posed:defaultSpace"))                                 \
                                                                                 \
     ((parentSpace, "parent:Space"))                                             \
-    ((parentDefaultTotalSize, "parent:defaultTotalSize"))                       \
     ((parentDefaultSpace, "parent:defaultSpace"))                               \
-    ((parentTotalSize, "parent:totalSize"))
 
 TF_DECLARE_PUBLIC_TOKENS(
     ExecIrTransformableTokens, EXECIR_API, EXEC_IR_TRANSFORMABLE_TOKENS);

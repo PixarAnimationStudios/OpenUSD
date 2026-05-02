@@ -182,59 +182,12 @@ public:
     HD_API
     virtual bool IsSupported(bool gpuEnabled = true) const;
 
-    ///
-    /// \deprecated Use overload taking HdRendererCreateArgsSchema
-    ///
-    /// Returns \c true if this renderer plugin is supported in the running 
-    /// process and \c false if not.
-    /// 
-    /// This gives the plugin a chance to perform some runtime checks to make
-    /// sure that the system meets minimum requirements.  The 
-    /// \p rendererCreateArgs parameter should conform to
-    /// HdRendererCreateArgsSchema to indicate the resources available when 
-    /// making this determination.
-    /// 
-    /// The \p reasonWhyNot param, when provided, can be filled with the reason
-    /// why the renderer plugin is not supported.
-    HD_API
-    virtual bool IsSupported(
-        HdContainerDataSourceHandle const &rendererCreateArgs,
-        std::string *reasonWhyNot = nullptr) const;
-
-    ///
-    /// \deprecated Use overload taking HdRendererCreateArgsSchema
-    ///
-    /// Create renderer through the plugin and wrap it in a handle that
-    /// keeps this plugin alive until the renderer is destroyed.
-    ///
-    /// The renderer is populated from the given scene index.
-    /// rendererCreateArgs should conform to HdRendererCreateArgsSchema.
-    ///
-    /// Note that for a seamless transition, this  Hydra 2.0 method
-    /// falls back to creating a Hydra 1.0 render delegate and the 
-    /// necessary "back-end" emulation for render
-    /// plugins that do not implement the Hydra 2.0
-    /// _CreateRenderer.
-    ///
-    HD_API
-    HdPluginRendererUniqueHandle CreateRenderer(
-        HdSceneIndexBaseRefPtr const &sceneIndex,
-        HdContainerDataSourceHandle const &rendererCreateArgs);
-
     /// @}
 
 protected:
     HdRendererPlugin() = default;
     HD_API
     ~HdRendererPlugin() override;
-
-    //
-    // \deprecated Implement overload taking HdRendererCreateArgsSchema.
-    //
-    HD_API
-    virtual std::unique_ptr<HdRenderer> _CreateRenderer(
-        HdSceneIndexBaseRefPtr const &sceneIndex,
-        HdContainerDataSourceHandle const &rendererCreateArgs);
 
     HD_API
     virtual std::unique_ptr<HdRenderer> _CreateRenderer(

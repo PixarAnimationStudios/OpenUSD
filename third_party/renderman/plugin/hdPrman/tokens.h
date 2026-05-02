@@ -17,7 +17,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (meshLight)                                 \
     (meshLightSourceMesh)                       \
     (meshLightSourceVolume)                     \
-    (sourceGeom)
+    (sourceGeom)                                \
+    (hdPrimOriginId)
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanTokens, HDPRMAN_API, HD_PRMAN_TOKENS);
 
@@ -60,6 +61,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanRenderParamTokens,
                          HD_PRMAN_RENDER_PARAM_TOKENS);
 
 #define HD_PRMAN_PLUGIN_TOKENS \
+    ((idAssigning,       "HdPrman_IdSceneIndexPlugin")) \
     ((motionBlur,        "HdPrman_MotionBlurSceneIndexPlugin")) \
     ((extComp,           "HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin")) \
     ((retesselation,     "HdPrman_RetesselationSceneIndexPlugin")) \
@@ -77,6 +79,14 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanPluginTokens, HD_PRMAN_PLUGIN_TOKENS);
     ((RenderManXPUGPU,  "RenderMan XPU - GPU"))
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanDisplayNamesTokens, HD_PRMAN_DISPLAY_NAMES);
+
+#define HD_PRMAN_ATTRIBUTE_NAMES \
+    ((riAttributesIdentifierId, \
+        "ri:attributes:identifier:id")) \
+    ((riAttributesIdentifierId2, \
+        "ri:attributes:identifier:id2"))
+
+TF_DECLARE_PUBLIC_TOKENS(HdPrmanAttributeTokens, HD_PRMAN_ATTRIBUTE_NAMES);
 
 
 const std::vector<std::string>& HdPrman_GetPluginDisplayNames();

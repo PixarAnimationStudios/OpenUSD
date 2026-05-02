@@ -30,11 +30,17 @@ class HdParticleFieldRendererPlugin final : public HdRendererPlugin {
     void DeleteRenderDelegate(HdRenderDelegate* renderDelegate) override;
 
     /// Is this plugin supported?
-    bool IsSupported(bool gpuEnabled = true) const override;
-
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 89
+#if HD_API_VERSION >= 83
     bool IsSupported(
         HdRendererCreateArgs const &rendererCreateArgs,
+        std::string *reasonWhyNot = nullptr) const override;
+#else
+    bool IsSupported(bool gpuEnabled = true) const override;
+#endif
+
+#if HD_API_VERSION >= 98
+    bool IsSupported(
+        const HdRendererCreateArgsSchema &rendererCreateArgs,
         std::string *reasonWhyNot = nullptr) const override;
 #endif
 
