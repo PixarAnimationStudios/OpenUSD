@@ -626,15 +626,9 @@ PmcEncodeSession::_setupCreases()
     const auto attrLens = _ugm.GetCreaseLengthsAttr();
     const auto attrVals = _ugm.GetCreaseSharpnessesAttr();
 
-    if (!attrIdxs.HasAuthoredValue()) {
-        return;
-    }
-    if (!attrLens.HasAuthoredValue()) {
-        return;
-    }
-    if (!attrVals.HasAuthoredValue()) {
-        return;
-    }
+    for (const auto& attr : {attrIdxs, attrLens, attrVals})
+        if (!attr.HasAuthoredValue())
+            return;
 
     const auto idxs = GetAs<VtArray<int>>(attrIdxs);
     const auto lens = GetAs<VtValue>(attrLens);
