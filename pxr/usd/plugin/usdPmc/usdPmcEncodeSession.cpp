@@ -93,15 +93,6 @@ GetAs(const UsdAttribute& attr)
     return values;
 };
 
-/// Template struct to get VtValue type indices at compile time.
-template<typename T>
-struct VtVtindex {
-    static constexpr int index = VtGetKnownValueTypeIndex<T>();
-};
-
-template<typename T>
-constexpr auto VtVtindex_v = VtVtindex<T>::index;
-
 /// Type trait to determine the component count of vector types.
 template<typename T, typename Enable = void>
 constexpr size_t oneextent_v = std::max(size_t(1), std::extent_v<T>);
@@ -117,24 +108,24 @@ GetExtentFromType(const VtValue& vtv)
         return 0;
 
     switch (vtv.GetKnownValueTypeIndex()) {
-        case VtVtindex_v<VtArray<GfVec2i>>: return 2;
-        case VtVtindex_v<VtArray<GfVec2f>>: return 2;
-        case VtVtindex_v<VtArray<GfVec2h>>: return 2;
-        case VtVtindex_v<VtArray<GfVec2d>>: return 2;
-        case VtVtindex_v<VtArray<GfVec3i>>: return 3;
-        case VtVtindex_v<VtArray<GfVec3f>>: return 3;
-        case VtVtindex_v<VtArray<GfVec3h>>: return 3;
-        case VtVtindex_v<VtArray<GfVec3d>>: return 3;
-        case VtVtindex_v<VtArray<GfVec4i>>: return 4;
-        case VtVtindex_v<VtArray<GfVec4f>>: return 4;
-        case VtVtindex_v<VtArray<GfVec4h>>: return 4;
-        case VtVtindex_v<VtArray<GfVec4d>>: return 4;
+        case VtGetKnownValueTypeIndex<VtArray<GfVec2i>>(): return 2;
+        case VtGetKnownValueTypeIndex<VtArray<GfVec2f>>(): return 2;
+        case VtGetKnownValueTypeIndex<VtArray<GfVec2h>>(): return 2;
+        case VtGetKnownValueTypeIndex<VtArray<GfVec2d>>(): return 2;
+        case VtGetKnownValueTypeIndex<VtArray<GfVec3i>>(): return 3;
+        case VtGetKnownValueTypeIndex<VtArray<GfVec3f>>(): return 3;
+        case VtGetKnownValueTypeIndex<VtArray<GfVec3h>>(): return 3;
+        case VtGetKnownValueTypeIndex<VtArray<GfVec3d>>(): return 3;
+        case VtGetKnownValueTypeIndex<VtArray<GfVec4i>>(): return 4;
+        case VtGetKnownValueTypeIndex<VtArray<GfVec4f>>(): return 4;
+        case VtGetKnownValueTypeIndex<VtArray<GfVec4h>>(): return 4;
+        case VtGetKnownValueTypeIndex<VtArray<GfVec4d>>(): return 4;
 
-        case VtVtindex_v<VtArray<bool>>: return 1;
-        case VtVtindex_v<VtArray<int>>: return 1;
-        case VtVtindex_v<VtArray<float>>: return 1;
-        case VtVtindex_v<VtArray<double>>: return 1;
-        case VtVtindex_v<VtArray<GfHalf>>: return 1;
+        case VtGetKnownValueTypeIndex<VtArray<bool>>(): return 1;
+        case VtGetKnownValueTypeIndex<VtArray<int>>(): return 1;
+        case VtGetKnownValueTypeIndex<VtArray<float>>(): return 1;
+        case VtGetKnownValueTypeIndex<VtArray<double>>(): return 1;
+        case VtGetKnownValueTypeIndex<VtArray<GfHalf>>(): return 1;
     }
 
     // can't handle other types
