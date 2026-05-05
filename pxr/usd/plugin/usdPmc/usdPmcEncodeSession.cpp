@@ -373,7 +373,7 @@ GuessAttributeType(const TfToken pvRole, const TfToken pvName)
     if (ps.compare(ps.length() - suff.length(), suff.length(), suff) == 0)
         return pmc::AttributeType::TEX_COORD;
 
-    return pmc::AttributeType::USER_DEFINED;
+    return pmc::AttributeType::USER_DEFINED_START;
 }
 
 //=============================================================================
@@ -452,14 +452,12 @@ PmcEncodeSession::_setupGeom()
     }
 
     // Configure geometry meshpart information
-    _gmp.info.bitDepth = 0;
     _gmp.info.frameOrderCount = 0;
     _gmp.info.meshpartId = 0;
     _gmp.info.faceType = GetMeshFaceTypeFromFaceVertexCounts(fvcs);
-    // todo: fix api to remove one of these
-    _gmp.info.outputFaceCount = _gmp.info.faceCount = fvcs.size();
-    _gmp.info.outputVertexCount = _gmp.info.vertexCount = vtxs.GetArraySize();
-    _gmp.info.outputIndexCount =_gmp.info.indexCount = vidxs.size();
+    _gmp.info.faceCount = fvcs.size();
+    _gmp.info.vertexCount = vtxs.GetArraySize();
+    _gmp.info.indexCount = vidxs.size();
 
     // Calculate quantization parameters for vertex positions
     auto& usdname = UsdGeomTokens->points;
@@ -490,15 +488,15 @@ PmcEncodeSession::_setupAttr(VtValue vals, VtArray<int> idxs, int fracbits = 0)
     amp.info.frameOrderCount = 0,
     amp.info.meshpartId = 0,
     amp.info.attributeId = _amps.size() - 1;
-    amp.info.bitDepth = 0;
     amp.info.componentsPerVector = GetExtentFromType(vals);
-    amp.info.type = pmc::AttributeType::USER_DEFINED;
-    amp.info.vectorCount = vals.GetArraySize(),
-    amp.info.indexCount = idxs.size(),
+    amp.info.type = pmc::AttributeType::USER_DEFINED_START;
+    // todo: fix api to remove one of these
+    amp.info.outputVectorCount = amp.info.vectorCount = vals.GetArraySize(),
+    amp.info.outputIndexCount = amp.info.indexCount = idxs.size(),
     amp.info.explicitIndices = !idxs.empty();
 
     if (fracbits)
-        amp.info.coordSys = {1 << fracbits, 1};
+        amp.info.coordSys.emplace().scale = {1 << fracbits, 1};
 
     // todo: don't need to keep vals alive if conversion was performed
     amp.buffers.values = ToPmc(vals, _converted.emplace_back(), fracbits);
@@ -598,8 +596,9 @@ PmcEncodeSession::_setupGeomSubsets()
     }
 
     auto& amp = _setupAttr(VtValue(vals), idxs);
-    amp.info.type = pmc::AttributeType::FACE_GROUP_ID;
+    amp.info.type = pmc::AttributeType::FACE_GROUP;
     amp.info.scope = pmc::AttributeScope::FACE;
+    amp.info.indicesInterpretation = pmc::IndicesInterpretation::SCOPE_INDEXING;
     amp.info.sparse = true;
 
     // Generate list of subset names
@@ -634,9 +633,11 @@ PmcEncodeSession::_setupCreases()
     const auto lens = GetAs<VtValue>(attrLens);
     const auto vals = GetAs<VtValue>(attrVals);
 
+    using pmc::IndicesInterpretation;
     auto& ampIdxs = _setupAttr(lens, idxs);
     ampIdxs.info.type = pmc::AttributeType::CREASE;
     ampIdxs.info.scope = pmc::AttributeScope::VERTEX;
+    ampIdxs.info.indicesInterpretation = IndicesInterpretation::SCOPE_INDEXING;
     ampIdxs.info.sparse = true;
 
     auto& usdname = UsdGeomTokens->creaseSharpnesses;
@@ -645,6 +646,7 @@ PmcEncodeSession::_setupCreases()
     ampVals.info.type = pmc::AttributeType::SHARPNESS;
     ampVals.info.scope = pmc::AttributeScope::DERIVED;
     ampVals.info.derivedScope.scopedAttributeId = ampIdxs.info.attributeId;
+    ampVals.info.indicesInterpretation = IndicesInterpretation::VALUE_INDEXING;
     ampVals.info.sparse = true;
     ampVals.info.jsonCustomAui = JsonAuiForAttr(attrVals);
 
@@ -676,9 +678,12 @@ PmcEncodeSession::_setupAttrs()
     }
 
     if (const auto attr = _ugm.GetHoleIndicesAttr(); attr.HasAuthoredValue()) {
-        auto& amp = _setupAttr(GetAs<VtValue>(attr), {});
+        using pmc::IndicesInterpretation;
+        auto& amp = _setupAttr({}, GetAs<VtArray<int>>(attr));
         amp.info.type = pmc::AttributeType::HOLE;
         amp.info.scope = pmc::AttributeScope::FACE;
+        amp.info.indicesInterpretation = IndicesInterpretation::SCOPE_INDEXING;
+        amp.info.sparse = true;
         amp.info.jsonCustomAui = JsonAuiForAttr(attr);
         amp.info.name = attr.GetName();
         processedAttributes.insert (amp.info.name);

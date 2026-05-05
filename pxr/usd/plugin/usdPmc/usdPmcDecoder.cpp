@@ -60,31 +60,39 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// with appropriate scaling for floating-point types and no scaling for
 /// integer types.
 #define WRITE_ATTRIBUTE(attributeType, attribute) \
-    std::pair<int,int> scalingRange \
-        { attrPart.info.coordSys.q, attrPart.info.coordSys.p }; \
-    std::pair<int,int> noScalingRange(0, 0); \
-    WRITE_ATTRIBUTE_VECTOR(GfVec2i, attributeType, attribute, noScalingRange) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec3i, attributeType, attribute, noScalingRange) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec4i, attributeType, attribute, noScalingRange) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec2h, attributeType, attribute, scalingRange) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec3h, attributeType, attribute, scalingRange) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec4h, attributeType, attribute, scalingRange) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec2f, attributeType, attribute, scalingRange) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec3f, attributeType, attribute, scalingRange) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec4f, attributeType, attribute, scalingRange) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec2d, attributeType, attribute, scalingRange) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec3d, attributeType, attribute, scalingRange) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec4d, attributeType, attribute, scalingRange) \
-    WRITE_ATTRIBUTE_SCALAR(bool, attributeType, attribute, noScalingRange) \
-    WRITE_ATTRIBUTE_SCALAR(int, attributeType, attribute, noScalingRange) \
-    WRITE_ATTRIBUTE_SCALAR(uint8_t, attributeType, attribute, noScalingRange) \
-    WRITE_ATTRIBUTE_SCALAR(unsigned int, attributeType, attribute, \
-                           noScalingRange) \
-    WRITE_ATTRIBUTE_SCALAR(unsigned char, attributeType, attribute, \
-                           noScalingRange) \
-    WRITE_ATTRIBUTE_SCALAR(GfHalf, attributeType, attribute, scalingRange) \
-    WRITE_ATTRIBUTE_SCALAR(float, attributeType, attribute, scalingRange) \
-    WRITE_ATTRIBUTE_SCALAR(double, attributeType, attribute, scalingRange)
+    auto scale = ScalingRangeFrom(attrPart.info.coordSys); \
+    WRITE_ATTRIBUTE_VECTOR(GfVec2i, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_VECTOR(GfVec3i, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_VECTOR(GfVec4i, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_VECTOR(GfVec2h, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_VECTOR(GfVec3h, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_VECTOR(GfVec4h, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_VECTOR(GfVec2f, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_VECTOR(GfVec3f, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_VECTOR(GfVec4f, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_VECTOR(GfVec2d, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_VECTOR(GfVec3d, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_VECTOR(GfVec4d, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_SCALAR(bool, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_SCALAR(int, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_SCALAR(uint8_t, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_SCALAR(unsigned int, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_SCALAR(unsigned char, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_SCALAR(GfHalf, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_SCALAR(float, attributeType, attribute, scale) \
+    WRITE_ATTRIBUTE_SCALAR(double, attributeType, attribute, scale)
+
+
+/// Convert coordinate system scaling
+static std::pair<int,int>
+ScalingRangeFrom(const std::optional<pmc::AttributeInfo::CoordinateSystem>& cs)
+{
+    if (!cs)
+        return {0,0};
+    return { cs->scale.q, cs->scale.p };
+    // xxx need to handle offset
+}
+
 UsdPmcMeshDecoder::UsdPmcMeshDecoder() : _unnamedAttributeCount(0) {}
 UsdPmcMeshDecoder::~UsdPmcMeshDecoder() {}
 bool
@@ -206,17 +214,17 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
             pmc::GeometryMeshpartBuffers& bufs) noexcept {
             try {
                 // Points
-                usdPoints.resize(info.outputVertexCount * 3);
+                usdPoints.resize(info.vertexCount * 3);
                 bufs.positions = UsdPmc_ToPmcBuffer(usdPoints, 3,
                                                    pmc::DataType::Int32);
         
                 // Face vertex indices
-                usdFaceVertexIndices.resize(info.outputIndexCount);
+                usdFaceVertexIndices.resize(info.indexCount);
                 bufs.indices = UsdPmc_ToPmcBuffer(usdFaceVertexIndices, 1,
                                                  pmc::DataType::Int32);
 
                 // Face counts
-                usdFaceVertexCounts.resize(info.outputFaceCount);
+                usdFaceVertexCounts.resize(info.faceCount);
                 bufs.faceDegrees = UsdPmc_ToPmcBuffer(usdFaceVertexCounts, 1,
                                                      pmc::DataType::Int32);
 
@@ -349,10 +357,7 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
                     return pmc::Error::STATE_ERROR;
                 }
 
-                std::pair<int,int> scalingRange {
-                    attrPart.info.coordSys.q, attrPart.info.coordSys.p
-                };
-
+                auto scalingRange = ScalingRangeFrom(attrPart.info.coordSys);
                 if (!UsdPmc_WriteAttributeScalarValuesToUsdAttribute<float,
                                                                     UsdAttribute>(
                         attrPart, creaseSharpness, scalingRange)) {

@@ -1772,7 +1772,7 @@ EMBREE = Dependency("Embree", InstallEmbree,
 ############################################################
 # PMC
 
-PMC_URL = "https://gitlab.com/AOMediaVVM/reference-software/aomedia-pmc/-/archive/v15.1/aomedia-pmc-v15.1.zip"
+PMC_URL = "https://gitlab.com/AOMediaVVM/reference-software/aomedia-pmc/-/archive/v18.0/aomedia-pmc-v18.0.zip"
 
 def InstallPmc(context, force, buildArgs):
     # todo: support using prebuilt version: do not downloaded/build src
