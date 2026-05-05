@@ -44,10 +44,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+//=============================================================================
+// Helpers
+
 namespace {
 
-/// Template utility for validating expected values during PMC encoding
-/// operations.
+/// Validate expected values during PMC encoding operations.
 template<typename T>
 struct Expect {
     const T expected;
@@ -68,8 +70,7 @@ Expect<T>::operator=(const T& x) const
     return x;
 }
 
-/// Template function to extract values from USD attributes at earliest time
-/// code.
+/// Extract typed values from USD attributes at earliest time code.
 template<typename T>
 T
 GetAs(const UsdAttribute& attr)
@@ -88,7 +89,7 @@ struct VtVtindex {
 template<typename T>
 constexpr auto VtVtindex_v = VtVtindex<T>::index;
 
-/// Template to determine the component count of vector types.
+/// Type trait to determine the component count of vector types.
 template<typename T, typename Enable = void>
 struct oneextent
     : std::integral_constant<std::size_t, std::max(size_t(1),std::extent_v<T>)>
@@ -214,13 +215,13 @@ template<typename T>
 struct IntCast {
     int operator()(T v) const { return T(v); }
 };
-/// Integer case for scaling: perform cast instead.
 
+/// Integer case for scaling: perform cast instead.
 template<typename T, typename Enable = void>
 struct Q : public IntCast<T>
 {};
-/// Scale and round floating-point values by 2^fracbits.
 
+/// Scale and round floating-point values by 2^fracbits.
 template<typename T>
 struct Q<T, typename std::enable_if_t<std::is_floating_point_v<T>>> {
     const int _fracbits;
@@ -228,8 +229,8 @@ struct Q<T, typename std::enable_if_t<std::is_floating_point_v<T>>> {
         return int(std::round(std::scalbnf(v, _fracbits)));
     }
 };
-/// Sequentially apply op to each elementary value in the VtArray.
 
+/// Sequentially apply op to each elementary value in the VtArray.
 template<typename T, typename Op>
 void
 ScanVtArray(const VtArray<T>& vta, Op op)
@@ -242,9 +243,9 @@ ScanVtArray(const VtArray<T>& vta, Op op)
             op(sv);
     }
 }
+
 /// Convert source buffer to std::vector<int> by applying unary operation to
 /// each element.
-
 template<typename T, typename Op>
 pmc::ArrayBuffer
 ToPmc(const VtArray<T>& src, std::vector<int>& conv, Op op)
@@ -264,8 +265,8 @@ ToPmc(const VtArray<T>& src, std::vector<int>& conv, Op op)
     result.dataType = pmc::DataType::Int32;
     return result;
 }
-/// Special case, no conversion required.
 
+/// Special case, no conversion required.
 pmc::ArrayBuffer
 ToPmc(const VtArray<int>& src)
 {
@@ -278,8 +279,8 @@ ToPmc(const VtArray<int>& src)
     result.dataType = pmc::DataType::Int32;
     return result;
 }
-/// Convert source array to destination vector<int> with optional scaling.
 
+/// Convert source array to destination vector<int> with optional scaling.
 pmc::ArrayBuffer
 ToPmc(const VtValue& src, std::vector<int>& dst, int fracbits)
 {
@@ -333,6 +334,9 @@ Qparams QparamsFromOptions(const VtDictionary& options, const TfToken& name)
     return {};
 }
 
+//=============================================================================
+// :: Mesh properties
+
 pmc::MeshFaceType
 GetMeshFaceTypeFromFaceVertexCounts(const VtArray<int> fvcs)
 {
@@ -357,8 +361,8 @@ GetScopeFromUsd(pxr::TfToken interp)
     throw std::runtime_error(
         std::string("cannot convert interpolation type ") + interp.GetString());
 }
-/// Try and guess the attribute type from the name.
 
+/// Try and guess the attribute type from the name.
 pmc::AttributeType
 GuessAttributeType(const TfToken pvRole, const TfToken pvName)
 {
@@ -374,12 +378,15 @@ GuessAttributeType(const TfToken pvRole, const TfToken pvName)
     std::string suff = std::string("_uv");
     // If pvName ends with "_uv"
     if (ps.compare(ps.length() - suff.length(), suff.length(), suff) == 0)
-                                                              return pmc::AttributeType::TEX_COORD;
+        return pmc::AttributeType::TEX_COORD;
 
     return pmc::AttributeType::USER_DEFINED;
 }
-/// Pick an index coding strategy.
 
+//=============================================================================
+// :: Encoder parameter selection
+
+/// Pick an index coding strategy.
 pmc::AttributeIndicesCodingStrategy
 GetIndicesStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
 {
@@ -413,15 +420,15 @@ GetIndicesStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
             return pmc::AttributeIndicesCodingStrategy::SPARSE_BASED;
     }
 }
-/// Pick the traversal strategy.
 
+/// Pick the traversal strategy.
 pmc::TraversalStrategy
 GetTraversalStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
 {
     return pmc::TraversalStrategy::ADAPTIVE;
 }
-/// Pick the traversal strategy.
 
+/// Pick the traversal strategy.
 pmc::PredictionStrategy
 GetPredictionStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
 {
@@ -431,7 +438,11 @@ GetPredictionStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
     }
 }
 
+//=============================================================================
+
 }    // namespace <anon>
+
+//=============================================================================
 
 /// Set up geometry data for PMC encoding.
 void
@@ -509,7 +520,6 @@ PmcEncodeSession::_setupAttr(VtValue vals, VtArray<int> idxs, int fracbits = 0)
 }
 
 /// Generate PMC JSON attribute usability information.
-
 static std::string
 JsonAuiForAttr(const UsdAttribute& attr)
 {
@@ -526,8 +536,8 @@ JsonAuiForAttr(const UsdAttribute& attr)
 
     return std::move(os).str();
 }
-/// Setup a single primvar.
 
+/// Setup a single primvar.
 void
 PmcEncodeSession::_setupPrimvar(const UsdGeomPrimvar& pv)
 {
@@ -566,8 +576,8 @@ PmcEncodeSession::_setupPrimvar(const UsdGeomPrimvar& pv)
     if (pv.IsIndexed())
         processedAttributes.insert (amp.info.name + ":indices");
 }
-/// Build face group information from all subsets.
 
+/// Build face group information from all subsets.
 void
 PmcEncodeSession::_setupGeomSubsets()
 {
@@ -614,8 +624,8 @@ PmcEncodeSession::_setupGeomSubsets()
 
     amp.info.jsonCustomAui = std::move(os).str();
 }
-/// Setup crease data for PMC encoding.
 
+/// Setup crease data for PMC encoding.
 void
 PmcEncodeSession::_setupCreases()
 {
@@ -655,8 +665,8 @@ PmcEncodeSession::_setupCreases()
     processedAttributes.insert (_ugm.GetCreaseLengthsAttr().GetName());
     processedAttributes.insert (_ugm.GetCreaseSharpnessesAttr().GetName());
 }
-/// Find all primvars for attribute coding.
 
+/// Find all attributes for coding.
 void
 PmcEncodeSession::_setupAttrs()
 {
@@ -696,10 +706,10 @@ void
 PmcEncodeSession::_configurePmc()
 {
     constexpr Expect throwOnError {pmc::Error::OK};
-    
+
     // Configure geometry meshpart
     throwOnError = _enc.configure(_gmp.info);
-    
+
     // Configure all attribute meshparts
     for (const auto& amp : _amps) {
         throwOnError = _enc.configure(amp.info);
@@ -736,10 +746,10 @@ PmcEncodeSession::_encode()
     pmc::ByteBuffer dstBuf {dst.size(), 0, dst.data()};
 
     constexpr Expect throwOnError {pmc::Error::OK};
-    
+
     // Encode geometry meshpart
     throwOnError = _enc.encode(_gmp, dstBuf, geomOpts);
-    
+
     // Encode all attribute meshparts
     for (const auto& amp : _amps) {
         attrOpts.indicesCodingStrategy = GetIndicesStrategyForAttr(amp.info);
@@ -759,13 +769,13 @@ PmcEncodeSession::encode()
 {
     // Set up core mesh geometry (vertices, faces, indices)
     _setupGeom();
-    
+
     // Process all mesh attributes, primvars, subsets, and creases
     _setupAttrs();
-    
+
     // Configure the PMC encoder with all mesh parts
     _configurePmc();
-    
+
     // Perform the actual PMC encoding
     // TODO: ideally conversion should happen here for a fast-path failure
     return _encode();
