@@ -91,17 +91,10 @@ constexpr auto VtVtindex_v = VtVtindex<T>::index;
 
 /// Type trait to determine the component count of vector types.
 template<typename T, typename Enable = void>
-struct oneextent
-    : std::integral_constant<std::size_t, std::max(size_t(1),std::extent_v<T>)>
-{};
+constexpr size_t oneextent_v = std::max(size_t(1), std::extent_v<T>);
 
 template<typename T>
-struct oneextent<T, typename std::enable_if_t<GfIsGfVec<T>::value>>
-    : std::integral_constant<std::size_t, T::dimension>
-{};
-
-template<typename T>
-constexpr auto oneextent_v = oneextent<T>::value;
+constexpr size_t oneextent_v<T, typename std::enable_if_t<GfIsGfVec<T>::value>> = T::dimension;
 
 /// Analyzes the VtValue type to determine how many components each element has.
 int
