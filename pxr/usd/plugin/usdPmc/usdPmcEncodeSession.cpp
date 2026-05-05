@@ -448,7 +448,7 @@ GetIndicesStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
 
     if (!ampi.sparse) {
         switch (ampi.scope) {
-            case pmc::AttributeScope::CORNER: return pmc::AttributeIndicesCodingStrategy::CORNER_BASED;
+            case pmc::AttributeScope::CORNER: return pmc::AttributeIndicesCodingStrategy::ADAPTIVE;
             case pmc::AttributeScope::VERTEX: return pmc::AttributeIndicesCodingStrategy::VERTEX_BASED;
             case pmc::AttributeScope::FACE:   return pmc::AttributeIndicesCodingStrategy::CORNER_BASED;
             case pmc::AttributeScope::EDGE:      break; /* this isn't supported */
@@ -478,16 +478,24 @@ GetIndicesStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
 pmc::TraversalStrategy
 GetTraversalStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
 {
-    return pmc::TraversalStrategy::ADAPTIVE;
+    using AT = pmc::AttributeType;
+    switch (ampi.type) {
+        case AT::TEX_COORD: return pmc::TraversalStrategy::CONNECTIVITY_GUIDED;
+        case AT::NORMAL:    return pmc::TraversalStrategy::GEOMETRY_DEFINED;
+        default:            return pmc::TraversalStrategy::ADAPTIVE;
+    }
 }
 
 /// Pick the traversal strategy.
 pmc::PredictionStrategy
 GetPredictionStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
 {
+    using AT = pmc::AttributeType;
+    using PS = pmc::PredictionStrategy;
     switch (ampi.type) {
-        case pmc::AttributeType::TEX_COORD: return pmc::PredictionStrategy::TEX_COORD_GEOMETRY_GUIDED;
-        default:                            return pmc::PredictionStrategy::LINEAR;
+        case AT::TEX_COORD:     return PS::TEX_COORD_GEOMETRY_GUIDED;
+        case AT::NORMAL:        return PS::UNITARY_OCTAHEDRAL_NORMAL_VECTOR;
+        default:                return PS::LINEAR;
     }
 }
 
@@ -901,15 +909,10 @@ std::vector<uint8_t>
 PmcEncodeSession::_encode()
 {
     // Configure geometry encoding parameters
-    // todo: enable all of these options
     pmc::GeometryEncodingParameters geomOpts;
-    geomOpts.deduplicateVertices = false;
-    geomOpts.deduplicateVerticesSimple = false;
 
     // Configure attribute encoding parameters
-    // todo: enable all of these options
     pmc::AttributeEncodingParameters attrOpts;
-    attrOpts.deduplicateValuesBitfield = 0;
 
     // Estimate the total size needed for the output buffer
     size_t estSize = 0;
