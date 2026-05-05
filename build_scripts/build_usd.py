@@ -1775,7 +1775,9 @@ EMBREE = Dependency("Embree", InstallEmbree,
 PMC_URL = "https://gitlab.com/AOMediaVVM/reference-software/aomedia-pmc/-/archive/v15.1/aomedia-pmc-v15.1.zip"
 
 def InstallPmc(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(PMC_URL, context, force)):
+    # todo: support using prebuilt version: do not downloaded/build src
+    pmcSrcDir = context.pmcSrcDir if context.pmcSrcDir else DownloadURL(PMC_URL, context, force)
+    with CurrentWorkingDirectory(pmcSrcDir):
         cmakeOptions = [
             '-DPMC_LIB_ONLY=TRUE',
             '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
@@ -1971,9 +1973,8 @@ def InstallUSD(context, force, buildArgs):
 
         if context.buildPmc:
             extraArgs.append('-DPXR_BUILD_PMC_PLUGIN=ON')
-            pmc_root = (context.pmcLocation
-                          if context.pmcLocation else context.instDir)
-            extraArgs.append('-DPMC_ROOT="{}"'.format(pmc_root))
+            # todo: fix PMC_ROOT to behave correctly when not instDir
+            extraArgs.append('-DPMC_ROOT="{}"'.format(context.instDir))
         else:
             extraArgs.append('-DPXR_BUILD_PMC_PLUGIN=OFF')
 
@@ -2424,8 +2425,7 @@ subgroup.add_argument("--pmc", dest="build_pmc", action="store_true",
                       help="Build PMC plugin for USD")
 subgroup.add_argument("--no-pmc", dest="build_pmc", action="store_false",
                       help="Do not build PMC plugin for USD (default)")
-group.add_argument("--pmc-location", type=str,
-                   help="Directory where PMC is installed.")
+group.add_argument("--pmc-srcdir", type=str, help="Path to PMC source")
 
 args = parser.parse_args()
 
@@ -2621,8 +2621,8 @@ class InstallContext:
 
         # - PMC Plugin (AOMedia)
         self.buildPmc = args.build_pmc
-        self.pmcLocation = (os.path.abspath(args.pmc_location)
-                             if args.pmc_location else None)
+        self.pmcSrcDir = (os.path.abspath(args.pmc_srcdir)
+                             if args.pmc_srcdir else None)
 
     def GetBuildArguments(self, dep):
         return self.buildArgs.get(dep.name.lower(), [])
