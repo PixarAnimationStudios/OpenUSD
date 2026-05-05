@@ -366,10 +366,10 @@ GuessAttributeType(const TfToken pvRole, const TfToken pvName)
     if (pvName == "uv" || pvName == "UV" || pvName == "st")   return pmc::AttributeType::TEX_COORD;
     if (pvName == pxr::UsdGeomTokens->normals)                return pmc::AttributeType::NORMAL;
     if (pvName == "displayColor")                             return pmc::AttributeType::COLOR;
-    
-    std::string ps = pvName.GetString();
-    std::string suff = std::string("_uv");
+
     // If pvName ends with "_uv"
+    constexpr std::string_view suff {"_uv"};
+    std::string_view ps = pvName.GetString();
     if (ps.compare(ps.length() - suff.length(), suff.length(), suff) == 0)
         return pmc::AttributeType::TEX_COORD;
 
