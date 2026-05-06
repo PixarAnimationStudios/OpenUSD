@@ -36,6 +36,7 @@
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
+#include <algorithm>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -45,11 +46,22 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 //=============================================================================
+// Coordinate system definition
+
+struct PmcEncodeSession::CoordSys {
+    pmc::Rational scale;
+    std::vector<int> origin;
+};
+
+//=============================================================================
 // Helpers
 
 namespace {
 
-/// Validate expected values during PMC encoding operations.
+using CoordSys = PmcEncodeSession::CoordSys;
+
+/// Template utility for validating expected values during PMC encoding
+/// operations.
 template<typename T>
 struct Expect {
     const T expected;
@@ -100,6 +112,9 @@ constexpr size_t oneextent_v<T, typename std::enable_if_t<GfIsGfVec<T>::value>> 
 int
 GetExtentFromType(const VtValue& vtv)
 {
+    if (vtv.IsEmpty())
+        return 0;
+
     switch (vtv.GetKnownValueTypeIndex()) {
         case VtVtindex_v<VtArray<GfVec2i>>: return 2;
         case VtVtindex_v<VtArray<GfVec2f>>: return 2;
@@ -140,54 +155,31 @@ struct MinMax {
     double max = std::numeric_limits<double>().lowest();
 };
 
+// Determine min&max bounds of buffer values.
 std::vector<MinMax>
-GetMinMax(const VtValue& vals)
+GetMinMax(const pmc::ArrayBuffer& vals)
 {
-    auto fnGfVec = [](const auto& vta) {
-        using T = typename std::decay_t<decltype(vta)>::value_type;
-        std::vector<MinMax> minmax(T::dimension);
-        for (const auto& sv : vta)
-            for (int k = 0; k < T::dimension; k++) {
-                minmax[k].min = std::min(minmax[k].min, double(sv[k]));
-                minmax[k].max = std::max(minmax[k].max, double(sv[k]));
+    auto fn = [&vals](const auto* ptr) {
+        std::vector<MinMax> minmax(vals.componentsPerVector);
+        for (int i = 0; i < vals.vectorCount; i++)
+            for (int k = 0; k < vals.componentsPerVector; k++, ptr++) {
+                minmax[k].min = std::min(minmax[k].min, double(*ptr));
+                minmax[k].max = std::max(minmax[k].max, double(*ptr));
             }
         return minmax;
     };
 
-    auto fnScalar = [](const auto& vta) {
-        using T = typename std::decay_t<decltype(vta)>::value_type;
-        std::vector<MinMax> minmax(1);
-        for (const auto v : vta) {
-            minmax[0].min = std::min(minmax[0].min, double(v));
-            minmax[0].max = std::max(minmax[0].max, double(v));
-        }
-        return minmax;
-    };
-
-    switch (vals.GetKnownValueTypeIndex()) {
-#define CASE(T, fn) VtVtindex_v<T>: return fn(vals.UncheckedGet<T>())
-        case CASE(VtArray<GfVec2f>, fnGfVec);
-        case CASE(VtArray<GfVec2h>, fnGfVec);
-        case CASE(VtArray<GfVec2d>, fnGfVec);
-        case CASE(VtArray<GfVec3f>, fnGfVec);
-        case CASE(VtArray<GfVec3h>, fnGfVec);
-        case CASE(VtArray<GfVec3d>, fnGfVec);
-        case CASE(VtArray<GfVec4f>, fnGfVec);
-        case CASE(VtArray<GfVec4h>, fnGfVec);
-        case CASE(VtArray<GfVec4d>, fnGfVec);
-        // todo: need to take into account elementsize
-        case CASE(VtArray<float>, fnScalar);
-        case CASE(VtArray<GfHalf>, fnScalar);
-        case CASE(VtArray<double>, fnScalar);
+    switch (vals.dataType) {
+        case pmc::DataType::Float32: return fn((const float*)vals.data);
+        case pmc::DataType::Float64: return fn((const double*)vals.data);
         default: return {};
-#undef CASE
     }
 }
 
-/// Determine number of fractional bits to scale values for quantization
-/// parameters.
-int
-GetFracBits(const VtValue& vals, Qparams qp)
+/// Derive coding coordinate system using number of fractional bits to scale
+// values for quantization parameters.
+CoordSys
+MakeCoordSys(const pmc::ArrayBuffer& vals, const Qparams& qp)
 {
     // integer bits, ignores sign
     int intbits = 0;
@@ -200,102 +192,126 @@ GetFracBits(const VtValue& vals, Qparams qp)
     // number of fractional bits, limited by int + frac bits to maxsigbits
     intbits--;
     int fracbits = std::min(intbits + qp.fracbits, qp.maxsigbits) - intbits;
-    return fracbits;
+
+    CoordSys csys;
+    csys.scale.p = fracbits >= 0 ? 1 << fracbits : 1;
+    csys.scale.q = fracbits < 0 ? 1 << -fracbits : 1;
+    csys.origin.assign(vals.componentsPerVector, 0);
+    return csys;
 }
 
-/// Explicitly constructs int from T.
-template<typename T>
-struct IntCast {
-    int operator()(T v) const { return T(v); }
-};
+/// Derive coding coordinate system for mesh geometry.
+CoordSys
+MakeCoordSys(const pmc::GeometryMeshpart& gmp, const Qparams& qp)
+{
+    return MakeCoordSys(gmp.buffers.positions, qp);
+}
 
-/// Integer case for scaling: perform cast instead.
-template<typename T, typename Enable = void>
-struct Q : public IntCast<T>
-{};
-
-/// Scale and round floating-point values by 2^fracbits.
-template<typename T>
-struct Q<T, typename std::enable_if_t<std::is_floating_point_v<T>>> {
-    const int _fracbits;
-    int operator()(T v) const {
-        return int(std::round(std::scalbnf(v, _fracbits)));
+/// Derive coding coordinate system for attributes.
+CoordSys
+MakeCoordSys(const pmc::AttributeMeshpart& amp, const Qparams& qp)
+{
+    // for Normals, don't offset; choose a sensible scale.
+    if (amp.info.type == pmc::AttributeType::NORMAL) {
+        CoordSys cs;
+        cs.scale = {1 << (qp.maxsigbits - 1), 1};
+        cs.origin.assign(amp.info.componentsPerVector, 0);
+        return cs;
     }
-};
 
-/// Sequentially apply op to each elementary value in the VtArray.
-template<typename T, typename Op>
+    return MakeCoordSys(amp.buffers.values, qp);
+}
+
+/// Insert coordnate system into geometry info
 void
-ScanVtArray(const VtArray<T>& vta, Op op)
+operator<<(pmc::GeometryInfo& gi, const CoordSys& csys)
 {
-    for (const auto& sv : vta) {
-        if constexpr (GfIsGfVec<T>::value)
-            for (int i = 0; i < T::dimension; i++)
-                op(sv[i]);
-        else
-            op(sv);
+    gi.coordSys = csys.scale;
+    for (int k = 0; k < 3; k++)
+        gi.coordSysOrigin[k] = csys.origin[k];
+}
+
+/// Insert coordnate system into attribute info
+void
+operator<<(pmc::AttributeInfo& ai, const CoordSys& csys)
+{
+    auto& dst = ai.coordSys.emplace();
+    dst.scale = csys.scale;
+    for (auto origink : csys.origin) {
+        dst.origin.push_back(origink);
+        dst.originScaleLog2.push_back(0);
     }
 }
 
-/// Convert source buffer to std::vector<int> by applying unary operation to
-/// each element.
-template<typename T, typename Op>
-pmc::ArrayBuffer
-ToPmc(const VtArray<T>& src, std::vector<int>& conv, Op op)
+// Size of pmc buffer type
+size_t
+GetStride(pmc::DataType type)
 {
-    // Convert and flatten buffer
-    conv.resize(src.size() * oneextent_v<T>);
-    ScanVtArray(src, [it = conv.begin(), op](auto v) mutable {
-        *it++ = op(v);
-    });
+    switch (type) {
+    case pmc::DataType::Float32: return sizeof(float);
+    case pmc::DataType::Float64: return sizeof(double);
+    case pmc::DataType::Int32: return sizeof(int32_t);
+    case pmc::DataType::UInt32: return sizeof(uint32_t);
+    }
+    throw std::runtime_error("unknown type");
+}
 
+/// Wrap data in pmc::ArrayBuffer
+pmc::ArrayBuffer
+ToPmc(uint8_t* data, size_t width, size_t length, pmc::DataType type)
+{
     pmc::ArrayBuffer result;
-    result.data = (uint8_t*) conv.data();
+    result.data = data;
     result.offset = 0;
-    result.stride = oneextent_v<T> * sizeof(int);
-    result.vectorCount = src.size();
-    result.componentsPerVector = oneextent_v<T>;
-    result.dataType = pmc::DataType::Int32;
+    result.stride = width * GetStride(type);
+    result.vectorCount = length;
+    result.componentsPerVector = width;
+    result.dataType = type;
     return result;
 }
 
-/// Special case, no conversion required.
+/// Wrap VtArray in pmc::ArrayBuffer
+template<typename T>
+pmc::ArrayBuffer
+ToPmc(const VtArray<T>& src, pmc::DataType type)
+{
+    return ToPmc((uint8_t*)src.data(), oneextent_v<T>, src.size(), type);
+}
+
+/// Wrap VtArray<int> in pmc::ArrayBuffer
 pmc::ArrayBuffer
 ToPmc(const VtArray<int>& src)
 {
-    pmc::ArrayBuffer result;
-    result.data = (uint8_t*) src.data();
-    result.offset = 0;
-    result.stride = sizeof(int);
-    result.vectorCount = src.size();
-    result.componentsPerVector = 1;
-    result.dataType = pmc::DataType::Int32;
-    return result;
+    return ToPmc(src, pmc::DataType::Int32);
 }
 
-/// Convert source array to destination vector<int> with optional scaling.
+/// Wrap VtArray-containing VtValue in pmc::ArrayBuffer
 pmc::ArrayBuffer
-ToPmc(const VtValue& src, std::vector<int>& dst, int fracbits)
+ToPmc(const VtValue& src)
 {
+    if (src.IsEmpty())
+        return ToPmc(nullptr, 0, 0, pmc::DataType::Int32);
+
     switch (src.GetKnownValueTypeIndex()) {
-#define CASE(T, op) VtVtindex_v<T>: return ToPmc(src.UncheckedGet<T>(), dst, op)
-        case CASE(VtArray<GfVec2i>, IntCast<int>{});
-        case CASE(VtArray<GfVec2f>, Q<float>{fracbits});
-        case CASE(VtArray<GfVec2h>, Q<float>{fracbits});
-        case CASE(VtArray<GfVec2d>, Q<double>{fracbits});
-        case CASE(VtArray<GfVec3i>, IntCast<int>{});
-        case CASE(VtArray<GfVec3f>, Q<float>{fracbits});
-        case CASE(VtArray<GfVec3h>, Q<float>{fracbits});
-        case CASE(VtArray<GfVec3d>, Q<double>{fracbits});
-        case CASE(VtArray<GfVec4i>, IntCast<int>{});
-        case CASE(VtArray<GfVec4f>, Q<float>{fracbits});
-        case CASE(VtArray<GfVec4h>, Q<float>{fracbits});
-        case CASE(VtArray<GfVec4d>, Q<double>{fracbits});
-        case CASE(VtArray<bool>, IntCast<int>{});
-        case CASE(VtArray<int>, IntCast<int>{});
-        case CASE(VtArray<float>, Q<float>{fracbits});
-        case CASE(VtArray<GfHalf>, Q<float>{fracbits});
-        case CASE(VtArray<double>, Q<double>{fracbits});
+#define CASE(T, type) case VtGetKnownValueTypeIndex<T>(): \
+            return ToPmc(src.UncheckedGet<T>(), type)
+        CASE(VtArray<GfVec2i>, pmc::DataType::Int32);
+        CASE(VtArray<GfVec2f>, pmc::DataType::Float32);
+        //CASE(VtArray<GfVec2h>, pmc::DataType::Float16);
+        CASE(VtArray<GfVec2d>, pmc::DataType::Float64);
+        CASE(VtArray<GfVec3i>, pmc::DataType::Int32);
+        CASE(VtArray<GfVec3f>, pmc::DataType::Float32);
+        //CASE(VtArray<GfVec3h>, pmc::DataType::Float16);
+        CASE(VtArray<GfVec3d>, pmc::DataType::Float64);
+        CASE(VtArray<GfVec4i>, pmc::DataType::Int32);
+        CASE(VtArray<GfVec4f>, pmc::DataType::Float32);
+        //CASE(VtArray<GfVec4h>, pmc::DataType::Float16);
+        CASE(VtArray<GfVec4d>, pmc::DataType::Float64);
+        //CASE(VtArray<bool>, pmc::DataType::Int8);
+        CASE(VtArray<int>, pmc::DataType::Int32);
+        CASE(VtArray<float>, pmc::DataType::Float32);
+        //CASE(VtArray<GfHalf>, pmc::DataType::Float16);
+        CASE(VtArray<double>, pmc::DataType::Float64);
 #undef CASE
     }
 
@@ -432,6 +448,135 @@ GetPredictionStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
 }
 
 //=============================================================================
+// :: Quantization
+
+/// Scale and round floating-point values according to coordSys.
+struct Quantizer {
+    float _scale;
+    std::vector<float> _offset;
+
+    Quantizer(float scale, int32_t* origin, size_t width);
+    int32_t* operator()(int32_t* dst, const double* src, size_t width) const;
+};
+
+Quantizer::Quantizer(float scale, int32_t* origin, size_t width)
+    : _scale(scale)
+{
+    auto invScale = 1.0 / _scale;
+    for (size_t k = 0; k < width; k++)
+        _offset.push_back(origin[k] * invScale);
+}
+
+int32_t*
+Quantizer::operator()(int32_t* dst, const double* src, size_t width) const
+{
+    for (size_t k = 0; k < width; k++)
+        dst[k] = int(std::round((src[k] - _offset[k]) * _scale));
+    return dst + width;
+}
+
+struct QuantizerOctahedral {
+    double _oneOcs;
+    QuantizerOctahedral(float scale) : _oneOcs(scale) {}
+    int32_t* operator()(int32_t* dst, const double* src, size_t width) const;
+};
+
+int32_t*
+QuantizerOctahedral::operator()(int32_t* dst, const double* src, size_t width)
+const {
+    double sum = std::abs(src[0]) + std::abs(src[1]) + std::abs(src[2]);
+    if (sum == 0.0)
+        sum = 1.0;
+
+    double vScaled[3];
+    for (int32_t k = 0; k < 3; ++k) {
+        // Normalize `value` in terms of L1-norm, scale by a factor of one.
+        vScaled[k] = src[k] / sum * _oneOcs;
+        // Using std::trunc instead of std::round to make sure that
+        // oneOcs - 3 <= sumInt <= oneOcs when exiting this loop
+        dst[k] = (int32_t)std::trunc(vScaled[k]);
+    }
+
+    double sumInt = std::abs(dst[0]) + std::abs(dst[1]) + std::abs(dst[2]);
+    if (_oneOcs - sumInt > 1) {
+        for (int32_t k = 0; k < 3; ++k) {
+            sumInt -= std::abs(dst[k]);
+            dst[k] += vScaled[k] < 0 ? -1 : 1;
+            sumInt += std::abs(dst[k]);
+        }
+    }
+
+    // make sure sumInt == oneOcs
+    if (sumInt != _oneOcs) {
+        int err = _oneOcs - sumInt;
+        int bl = -1;
+        double ba = std::numeric_limits<double>::max();
+
+        for (int32_t l = 0; l < 3; ++l) {
+            double dot = 0;
+            double n_a = 0;
+            double val[3];
+            for (int32_t k = 0; k < 3; ++k) {
+                val[k] = dst[k] + (k == l ? (vScaled[k] < 0 ? -err : err) : 0);
+                dot += vScaled[k] * val[k];
+                n_a += vScaled[k] * vScaled[k];
+            }
+
+            double w = dot > 0.0 ? n_a / dot : 1.0;
+            double dist = 0.0;
+            for (int32_t k = 0; k < 3; ++k) {
+                double d = vScaled[k] - w * val[k];
+                dist += d * d;
+            }
+
+            if (dist < ba) {
+                ba = dist;
+                bl = l;
+            }
+        }
+
+        dst[bl] += vScaled[bl] < 0 ? -err : err;
+    }
+
+    return dst + 3;
+}
+
+//=============================================================================
+// :: Buffer conversion, applying convert(...) to each vector
+
+pmc::ArrayBuffer
+ConvertBuffer(
+    pmc::ArrayBuffer& buffer,
+    std::vector<int32_t>& backing,
+    std::function<int32_t*(int32_t*,double*,size_t)> convert)
+{
+    if (buffer.dataType == pmc::DataType::Int32)
+        return buffer;
+
+    const auto fn = [&](auto* buf) {
+        using T = std::remove_pointer_t<decltype(buf)>;
+        std::vector<double> tmp(buffer.componentsPerVector);
+        int32_t* out = backing.data();
+        for (size_t i = 0; i < size_t(buffer.vectorCount); i++) {
+            std::copy_n(buffer.vectorAtIndex<T>(i), tmp.size(), tmp.data());
+            out = convert(out, tmp.data(), tmp.size());
+        }
+    };
+
+    backing.resize(buffer.componentsPerVector * buffer.vectorCount);
+    switch (buffer.dataType) {
+        case pmc::DataType::Float32: fn((float*) buffer.data); break;
+        case pmc::DataType::Float64: fn((double*) buffer.data); break;
+        case pmc::DataType::Int32:   fn((int32_t*) buffer.data); break;
+        case pmc::DataType::UInt32:  fn((uint32_t*) buffer.data); break;
+        default: return buffer;
+    }
+
+    return ToPmc((uint8_t*)backing.data(), buffer.componentsPerVector,
+            buffer.vectorCount, pmc::DataType::Int32);
+}
+
+//=============================================================================
 
 }    // namespace <anon>
 
@@ -459,19 +604,19 @@ PmcEncodeSession::_setupGeom()
     _gmp.info.vertexCount = vtxs.GetArraySize();
     _gmp.info.indexCount = vidxs.size();
 
-    // Calculate quantization parameters for vertex positions
-    auto& usdname = UsdGeomTokens->points;
-    int fb = GetFracBits(vtxs, QparamsFromOptions(_options, usdname));
-    _gmp.info.coordSys = {1 << fb, 1};
-
     // Convert USD data to PMC buffer format
-    _gmp.buffers.positions = ToPmc(vtxs, _converted.emplace_back(), fb);
+    _gmp.buffers.positions = ToPmc(vtxs);
     _gmp.buffers.faceDegrees = ToPmc(fvcs);
     _gmp.buffers.indices = ToPmc(vidxs);
 
-    // Keep references to data that doesn't need conversion
+    // Keep references to data alive
+    _keepAlive.emplace_back(vtxs);
     _keepAlive.emplace_back(fvcs);
     _keepAlive.emplace_back(vidxs);
+
+    // Calculate quantization parameters for vertex positions
+    auto& usdname = UsdGeomTokens->points;
+    _gmp.info << MakeCoordSys(_gmp, QparamsFromOptions(_options, usdname));
 
     // Track which attributes have been processed
     processedAttributes.insert (_ugm.GetFaceVertexCountsAttr().GetName());
@@ -480,7 +625,7 @@ PmcEncodeSession::_setupGeom()
 }
 
 pmc::AttributeMeshpart&
-PmcEncodeSession::_setupAttr(VtValue vals, VtArray<int> idxs, int fracbits = 0)
+PmcEncodeSession::_setupAttr(VtValue vals, VtArray<int> idxs)
 {
     auto& amp = _amps.emplace_back();
     _gmp.attMeshparts.push_back(&amp);
@@ -495,12 +640,10 @@ PmcEncodeSession::_setupAttr(VtValue vals, VtArray<int> idxs, int fracbits = 0)
     amp.info.outputIndexCount = amp.info.indexCount = idxs.size(),
     amp.info.explicitIndices = !idxs.empty();
 
-    if (fracbits)
-        amp.info.coordSys.emplace().scale = {1 << fracbits, 1};
-
-    // todo: don't need to keep vals alive if conversion was performed
-    amp.buffers.values = ToPmc(vals, _converted.emplace_back(), fracbits);
-    _keepAlive.emplace_back(vals);
+    if (!vals.IsEmpty()) {
+        amp.buffers.values = ToPmc(vals);
+        _keepAlive.emplace_back(vals);
+    }
 
     if (!idxs.empty()) {
         amp.buffers.indices = ToPmc(idxs);
@@ -545,8 +688,7 @@ PmcEncodeSession::_setupPrimvar(const UsdGeomPrimvar& pv)
         return;
     }
 
-    int fb = GetFracBits(vals, QparamsFromOptions(_options, pvName));
-    auto& amp = _setupAttr(vals, idxs, fb);
+    auto& amp = _setupAttr(vals, idxs);
     amp.info.scope = GetScopeFromUsd(pv.GetInterpolation());
     amp.info.type = GuessAttributeType(pv.GetTypeName().GetRole(), pvName);
 
@@ -559,6 +701,8 @@ PmcEncodeSession::_setupPrimvar(const UsdGeomPrimvar& pv)
         amp.buffers.values.vectorCount /= width;
         amp.buffers.values.stride *= width;
     }
+
+    amp.info << MakeCoordSys(amp, QparamsFromOptions(_options, pvName));
 
     // metadata
     amp.info.name = pv.GetName();
@@ -641,14 +785,14 @@ PmcEncodeSession::_setupCreases()
     ampIdxs.info.sparse = true;
 
     auto& usdname = UsdGeomTokens->creaseSharpnesses;
-    int fb = GetFracBits(vals, QparamsFromOptions(_options, usdname));
-    auto& ampVals = _setupAttr(vals, {}, fb);
+    auto& ampVals = _setupAttr(vals, {});
     ampVals.info.type = pmc::AttributeType::SHARPNESS;
     ampVals.info.scope = pmc::AttributeScope::DERIVED;
     ampVals.info.derivedScope.scopedAttributeId = ampIdxs.info.attributeId;
     ampVals.info.indicesInterpretation = IndicesInterpretation::VALUE_INDEXING;
     ampVals.info.sparse = true;
     ampVals.info.jsonCustomAui = JsonAuiForAttr(attrVals);
+    ampVals.info << MakeCoordSys(ampVals, QparamsFromOptions(_options, usdname));
 
     processedAttributes.insert (_ugm.GetCreaseIndicesAttr().GetName());
     processedAttributes.insert (_ugm.GetCreaseLengthsAttr().GetName());
@@ -666,14 +810,14 @@ PmcEncodeSession::_setupAttrs()
     // If there are non-primvar normals, code them after the primvar version
     // NB: for rendering, primvars should have priority; we preserve all data
     if (const auto attr = _ugm.GetNormalsAttr(); attr.HasAuthoredValue()) {
-        auto vals = GetAs<VtValue>(attr);
         auto& usdname = UsdGeomTokens->normals;
-        int fb = GetFracBits(vals, QparamsFromOptions(_options, usdname));
-        auto& amp = _setupAttr(vals, {}, fb);
+        auto vals = GetAs<VtValue>(attr);
+        auto& amp = _setupAttr(vals, {});
         amp.info.type = pmc::AttributeType::NORMAL;
         amp.info.scope = GetScopeFromUsd(_ugm.GetNormalsInterpolation());
         amp.info.jsonCustomAui = JsonAuiForAttr(attr);
         amp.info.name = attr.GetName();
+        amp.info << MakeCoordSys(amp, QparamsFromOptions(_options, usdname));
         processedAttributes.insert (amp.info.name);
     }
 
@@ -737,16 +881,33 @@ PmcEncodeSession::_encode()
     std::vector<uint8_t> dst(estSize);
     pmc::ByteBuffer dstBuf {dst.size(), 0, dst.data()};
 
-    constexpr Expect throwOnError {pmc::Error::OK};
+    // Temporary buffer for conversions
+    std::vector<int32_t> tmp;
 
     // Encode geometry meshpart
+    if (1) {
+        Quantizer q(float(_gmp.info.coordSys), _gmp.info.coordSysOrigin, 3);
+        _gmp.buffers.positions = ConvertBuffer(_gmp.buffers.positions, tmp, q);
+    }
+    constexpr Expect throwOnError {pmc::Error::OK};
     throwOnError = _enc.encode(_gmp, dstBuf, geomOpts);
 
     // Encode all attribute meshparts
-    for (const auto& amp : _amps) {
+    for (auto& amp : _amps) {
         attrOpts.indicesCodingStrategy = GetIndicesStrategyForAttr(amp.info);
         attrOpts.traversalStrategy = GetTraversalStrategyForAttr(amp.info);
         attrOpts.predictionStrategy = GetPredictionStrategyForAttr(amp.info);
+
+        if (amp.info.coordSys) {
+            auto& cs = *amp.info.coordSys;
+            if (amp.info.type == pmc::AttributeType::NORMAL) {
+                QuantizerOctahedral q(float(cs.scale));
+                amp.buffers.values = ConvertBuffer(amp.buffers.values, tmp, q);
+            } else {
+                Quantizer q(float(cs.scale), cs.origin.data(), cs.origin.size());
+                amp.buffers.values = ConvertBuffer(amp.buffers.values, tmp, q);
+            }
+        }
 
         throwOnError = _enc.encode(amp, dstBuf, attrOpts);
     }
@@ -769,7 +930,6 @@ PmcEncodeSession::encode()
     _configurePmc();
 
     // Perform the actual PMC encoding
-    // TODO: ideally conversion should happen here for a fast-path failure
     return _encode();
 }
 

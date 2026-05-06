@@ -39,6 +39,8 @@ struct PmcEncodeSession
     /// \return Encoded mesh data as a byte vector
     std::vector<uint8_t> encode();
 
+    struct CoordSys;
+
 protected:
     /// Prepare PMC GeometryMeshPart from UsdGeomMesh geometry primitives
     void _setupGeom();
@@ -47,9 +49,7 @@ protected:
     void _setupAttrs();
 
     /// Common setup for a single attribute
-    pmc::AttributeMeshpart& _setupAttr(VtValue vals,
-                                       VtArray<int> idxs,
-                                       int fb);
+    pmc::AttributeMeshpart& _setupAttr(VtValue vals, VtArray<int> idxs);
 
     /// Prepare PMC AttributeMeshPart from primvar attributes
     void _setupPrimvar(const UsdGeomPrimvar& pv);
