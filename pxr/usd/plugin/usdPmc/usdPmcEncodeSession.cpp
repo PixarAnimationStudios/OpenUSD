@@ -404,7 +404,7 @@ GetIndicesStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
         case pmc::AttributeScope::VERTEX:
             // todo: re-enable vertex based index coding for creases when crease
             //       data is ordered correctly.
-            if constexpr (const bool creasesAreOrderedCorrectly = 0)
+            if ([[maybe_unused]] const bool creasesAreOrderedCorrectly = 0)
                 if (ampi.type == pmc::AttributeType::CREASE)
                     return pmc::AttributeIndicesCodingStrategy::EDGE_BASED;
             [[fallthrough]];
