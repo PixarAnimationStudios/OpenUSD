@@ -37,6 +37,7 @@
 #include "pxr/usd/usdGeom/tokens.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -179,7 +180,7 @@ GetMinMax(const pmc::ArrayBuffer& vals)
 /// Derive coding coordinate system using number of fractional bits to scale
 // values for quantization parameters.
 CoordSys
-MakeCoordSys(const pmc::ArrayBuffer& vals, const Qparams& qp)
+MakeCoordSysByFracBits(const pmc::ArrayBuffer& vals, const Qparams& qp)
 {
     // integer bits, ignores sign
     int intbits = 0;
@@ -198,6 +199,58 @@ MakeCoordSys(const pmc::ArrayBuffer& vals, const Qparams& qp)
     csys.scale.q = fracbits < 0 ? 1 << -fracbits : 1;
     csys.origin.assign(vals.componentsPerVector, 0);
     return csys;
+}
+
+/// Derive coding coordinate system mapping bounding box to maxsigbits.
+CoordSys
+MakeCoordSysByBBox(const pmc::ArrayBuffer& vals, const Qparams& qp)
+{
+    const auto minmaxs = GetMinMax(vals);
+    double range = 0.;
+    for (auto [min, max] : minmaxs)
+        range = std::max(range, max - min);
+
+    // NB: rounding signed values may cause qbits to be exceeded;
+    // eg: {-1,1} -> Round[{-127.5,127.5}]
+    auto scale = ((1 << qp.maxsigbits) - 1) / range;
+    for (auto [min, max] : minmaxs) {
+      auto qMax = int(std::round(max * scale));
+      auto qMin = int(std::round(min * scale));
+      if (qMax - qMin >= (1 << qp.maxsigbits)) {
+        scale = ((1 << qp.maxsigbits) - 2) / range;
+        break;
+      }
+    }
+
+    CoordSys csys;
+    int32_t exp;
+    csys.scale.p = (int32_t) std::scalbn(std::frexp(scale, &exp), 24);
+    csys.scale.q = 1 << (24 - exp);
+    while (!(csys.scale.p & 1) && !(csys.scale.q & 1)) {
+        csys.scale.q >>= 1;
+        csys.scale.p >>= 1;
+    }
+
+    scale = float(csys.scale);
+    for (auto [min, max] : minmaxs)
+        csys.origin.push_back(int(std::round(min * scale)));
+
+    return csys;
+}
+
+/// Derive coding coordinate system using environment defined method.
+// If environment variable USD_PMC_COORDSYS_BBOX is 1, bbox method is used.
+// Otherwise, the more appropriate fractional bit method is used.
+CoordSys
+MakeCoordSys(const pmc::ArrayBuffer& vals, const Qparams& qp)
+{
+    static bool coordSysModeIsFracBits = [](){
+        const auto ev = getenv("USD_PMC_COORDSYS_BBOX");
+        return (!ev || ev[0] != '1');
+    }();
+    if (!coordSysModeIsFracBits)
+        return MakeCoordSysByBBox(vals, qp);
+    return MakeCoordSysByFracBits(vals, qp);
 }
 
 /// Derive coding coordinate system for mesh geometry.
