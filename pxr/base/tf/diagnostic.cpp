@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <stdexcept>
 #include <csignal>
+#include <unistd.h>
 
 #if defined(ARCH_OS_WASM_VM)
 #include <emscripten.h>
