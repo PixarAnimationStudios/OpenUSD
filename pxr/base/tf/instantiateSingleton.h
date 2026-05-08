@@ -45,8 +45,15 @@ struct Tf_SingletonPyGILDropper
     TF_API
     ~Tf_SingletonPyGILDropper();
 private:
+
+    // Keep class ABI compatible between builds with python enabled or not
+    // Otherwise there will be stack corruption when loading plug-ins
+    // built between the two versions.
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     std::unique_ptr<class TfPyLock> _pyLock;
+    static_assert(sizeof(std::unique_ptr<class TfPyLock>) == sizeof(std::unique_ptr<void*>));
+#else
+    std::unique_ptr<void*> _unused;
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 };
 
