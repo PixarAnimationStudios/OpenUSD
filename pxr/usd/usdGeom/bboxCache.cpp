@@ -306,6 +306,9 @@ UsdGeomBBoxCache::UsdGeomBBoxCache(UsdGeomBBoxCache const &other)
 {
 }
 
+// Default destructor
+UsdGeomBBoxCache::~UsdGeomBBoxCache() = default;
+
 UsdGeomBBoxCache &
 UsdGeomBBoxCache::operator=(UsdGeomBBoxCache const &other)
 {
