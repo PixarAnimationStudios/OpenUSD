@@ -342,8 +342,9 @@ HdSt_MeshTopology::SanitizeGeomSubsets()
                     numUnusedFaces--;
                 } else {
                     // Warn about duplicated face indices.
-                    TF_WARN("Face index %d is repeated between geom subsets", 
-                        index);;
+                    TF_WARN("Face index %d is repeated between geom subsets "
+                            "(in subset <%s>)",
+                            index, geomSubset.id.GetText());
                 }
             }
             sanitizedGeomSubset.indices = sanitizedFaceIndices;
