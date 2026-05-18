@@ -63,7 +63,9 @@ UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     _colorCorrectionMode(HdxColorCorrectionTokens->disabled),
     _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy}),
     _cameraLightEnabled(true),
-    _domeLightsVisible(false)
+    _domeLightsVisible(false),
+    _drawMode(UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH),
+    _sceneMaterialsEnabled(true)
 {
     // Disable presentation to avoid the need to create an OpenGL context when
     // using other graphics APIs such as Metal and Vulkan.
@@ -150,6 +152,37 @@ void
 UsdAppUtilsFrameRecorder::SetPrimaryCameraPrimPath(const SdfPath& cameraPath)
 {
     _imagingEngine.SetCameraPath(cameraPath);
+}
+
+void
+UsdAppUtilsFrameRecorder::SetDrawMode(const TfToken& drawMode)
+{
+    if (drawMode == TfToken("Points")) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_POINTS;
+    } else if (drawMode == TfToken("Wireframe")) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
+    } else if (drawMode == TfToken("WireframeOnSurface")) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE;
+    } else if (drawMode == TfToken("Flat Shaded")) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_FLAT;
+    } else if (drawMode == TfToken("Smooth Shaded")) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
+    } else if (drawMode == TfToken("Geom Only")) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_GEOM_ONLY;
+    } else if (drawMode == TfToken("Geom Flat")) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_GEOM_FLAT;
+    } else if (drawMode == TfToken("Geom Smooth")) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_GEOM_SMOOTH;
+    } else {
+        // Default fallback
+        _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
+    }
+}
+
+void
+UsdAppUtilsFrameRecorder::SetSceneMaterialsEnabled(bool enabled)
+{
+    _sceneMaterialsEnabled = enabled;
 }
 
 static GfCamera
@@ -465,6 +498,8 @@ UsdAppUtilsFrameRecorder::Record(
     renderParams.showProxy = _HasPurpose(_purposes, UsdGeomTokens->proxy);
     renderParams.showRender = _HasPurpose(_purposes, UsdGeomTokens->render);
     renderParams.showGuides = _HasPurpose(_purposes, UsdGeomTokens->guide);
+    renderParams.drawMode = _drawMode;
+    renderParams.enableSceneMaterials = _sceneMaterialsEnabled;
 
     const UsdPrim& pseudoRoot = stage->GetPseudoRoot();
 
