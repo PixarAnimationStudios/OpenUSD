@@ -30,6 +30,7 @@
 #include "pxr/base/vt/arrayEdit.h"
 
 #include <optional>
+#include <array>
 #include <ostream>
 #include <string>
 #include <vector>
