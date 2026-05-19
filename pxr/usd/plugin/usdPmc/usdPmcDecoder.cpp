@@ -279,8 +279,10 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
                 return pmc::Error::STATE_ERROR;
             }
 
-            // UsdGeomSubsets
-            if (attrPart.info.type == pmc::AttributeType::FACE_GROUP) {
+            // UsdGeomSubsets (face only)
+            if (attrPart.info.type == pmc::AttributeType::FACE_GROUP
+                && attrPart.info.scope == pmc::AttributeScope::FACE
+                && attrPart.info.indicesInterpretation == pmc::IndicesInterpretation::SCOPE_INDEXING) {
                 
                 if (userData.find(kUSDJsonSubmeshNamesKey) == userData.end() ||
                     !userData[kUSDJsonSubmeshNamesKey].IsHolding<
