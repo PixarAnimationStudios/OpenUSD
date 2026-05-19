@@ -316,6 +316,18 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
                 return pmc::Error::OK;
             }
 
+            // Holes
+            if (attrPart.info.type == pmc::AttributeType::HOLE
+                && attrPart.info.scope == pmc::AttributeScope::FACE
+                && attrPart.info.indicesInterpretation == pmc::IndicesInterpretation::SCOPE_INDEXING) {
+                UsdAttribute holeIndicesAttr = decodedMesh.CreateHoleIndicesAttr();
+                if (!holeIndicesAttr.IsValid()) {
+                    TF_RUNTIME_ERROR("Cannot create hole indices attribute");
+                    return pmc::Error::STATE_ERROR;
+                }
+                holeIndicesAttr.Set(attrIndices);
+                return pmc::Error::OK;
+            }
             // Creases
             if (attrPart.info.type == pmc::AttributeType::SHARPNESS) {
                 UsdAttribute creaseSharpness =
@@ -452,7 +464,7 @@ UsdPmcMeshDecoder::_InferNameFromInfo(std::string* attrName,
             *attrName = "primvars:displayColor";
             break;
         case pmc::AttributeType::HOLE:
-            *attrName = "hole";
+            *attrName = "holeIndices";
             break;
         case pmc::AttributeType::CREASE:
             *attrName = "crease";
