@@ -30,6 +30,8 @@ TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_REBAR, false,
                       "Use Vulkan with ReBAR (if device supports)");
 TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_HOST_IMAGE_COPY, true,
                       "Use Vulkan direct image copy from host");
+TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_GEOMETRY_SHADER, true,
+                      "Use Vulkan geometry shader stage  (if device supports)");
 
 static HgiVulkanFormatInfo
 _CreateFormatInfo(HgiVulkanDevice* hgi, HgiTextureType type, HgiFormat format,
@@ -382,6 +384,10 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         && (vkHostImageCopyProperties.identicalMemoryTypeRequirements
             || unifiedMemory);
 
+    const bool geometryShader =
+        TfGetEnvSetting(HGIVULKAN_ENABLE_GEOMETRY_SHADER) &&
+        vkDeviceFeatures2.features.geometryShader;
+
     _SetFlag(HgiDeviceCapabilitiesBitsUnifiedMemory, unifiedMemory);
     _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne, false);
     _SetFlag(HgiDeviceCapabilitiesBitsStencilReadback, true);
@@ -395,6 +401,7 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         shaderDrawParametersEnabled);
      _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect,
         multiDrawIndirectEnabled);
+     _SetFlag(HgiDeviceCapabilitiesBitsGeometricStage, geometryShader);
 }
 
 HgiVulkanCapabilities::~HgiVulkanCapabilities() = default;

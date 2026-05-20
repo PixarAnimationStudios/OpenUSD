@@ -41,6 +41,7 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
                        bool doubleSided,
                        bool hasBuiltinBarycentrics,
                        bool hasMetalTessellation,
+                       bool hasGeometricStage,
                        bool hasCustomDisplacement,
                        bool hasPerFaceInterpolation,
                        bool hasTopologicalVisibility,

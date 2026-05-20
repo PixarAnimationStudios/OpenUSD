@@ -191,6 +191,9 @@ HdSt_ResourceBinder::ResolveBindings(
         capabilities->IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
     const bool isMetal =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
+    const bool barycentricFromPoints =
+        !capabilities->IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics) &&
+        !capabilities->IsSet(HgiDeviceCapabilitiesBitsGeometricStage);
 
     HdStBinding::Type arrayBufferBindingType = HdStBinding::SSBO;
     if (bindlessBuffersEnabled) {
@@ -258,7 +261,7 @@ HdSt_ResourceBinder::ResolveBindings(
     }
 
      // constant primvars are interleaved into single struct.
-    _bindingMap[_tokens->constantPrimvars] = constantPrimvarBinding;
+    _bindingMap.emplace(_tokens->constantPrimvars, constantPrimvarBinding);
 
     TfTokenVector filterNames = _GetInstancerFilterNames(drawItem);
 
@@ -284,7 +287,7 @@ HdSt_ResourceBinder::ResolveBindings(
                 // non-interleaved, always create new binding.
                 HdStBinding instancePrimvarBinding =
                     locator.GetBinding(arrayBufferBindingType, name);
-                _bindingMap[NameAndLevel(name, i)] = instancePrimvarBinding;
+                _bindingMap.emplace(NameAndLevel(name, i), instancePrimvarBinding);
 
                 HdTupleType valueType = it->second->GetTupleType();
                 TfToken glType =
@@ -311,7 +314,7 @@ HdSt_ResourceBinder::ResolveBindings(
             TfToken glName =  HdStGLConversions::GetGLSLIdentifier(name);
             HdStBinding vertexPrimvarBinding =
                 locator.GetBinding(HdStBinding::VERTEX_ATTR, name);
-            _bindingMap[name] = vertexPrimvarBinding;
+            _bindingMap.emplace(name, vertexPrimvarBinding);
 
             HdTupleType valueType = it->second->GetTupleType();
             // Special case: VBOs have intrinsic support for packed types,
@@ -327,6 +330,20 @@ HdSt_ResourceBinder::ResolveBindings(
             metaDataOut->vertexData[vertexPrimvarBinding] =
                 MetaData::Primvar(/*name=*/glName,
                                   /*type=*/glType);
+
+            if (barycentricFromPoints && name == HdTokens->points &&
+                drawItem->GetFaceVaryingPrimvarRange()) {
+                HdStBinding const binding =
+                    locator.GetBinding(HdStBinding::SSBO, name);
+                _bindingMap.emplace(name, binding);
+                static const TfToken shaderName{"triPoints", TfToken::Immortal};
+                MetaData::BindingDeclaration const bindingDecl(
+                    /*name=*/shaderName,
+                    /*type=*/glType,
+                    /*binding=*/binding,
+                    /*isWritable=*/false);
+                metaDataOut->pointsBufferBinding = bindingDecl;
+            }
         }
     }
 
@@ -342,7 +359,7 @@ HdSt_ResourceBinder::ResolveBindings(
             TfToken glName =  HdStGLConversions::GetGLSLIdentifier(name);
             HdStBinding varyingPrimvarBinding =
                 locator.GetBinding(arrayBufferBindingType, name);
-            _bindingMap[name] = varyingPrimvarBinding;
+            _bindingMap.emplace(name, varyingPrimvarBinding);
 
             HdTupleType valueType = resource.second->GetTupleType();
             TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
@@ -366,12 +383,16 @@ HdSt_ResourceBinder::ResolveBindings(
             HdStBufferResourceSharedPtr const& resource = it->second;
 
             if (name == HdTokens->indices) {
-                if (isMetal && drawItem->GetVaryingPrimvarRange()) {
+                // Bind index buffer as IBO, no need for codeGen.
+                _bindingMap.emplace(name, HdStBinding(HdStBinding::INDEX_ATTR, 0));
+
+                if ((isMetal && drawItem->GetVaryingPrimvarRange()) ||
+                    (barycentricFromPoints && drawItem->GetFaceVaryingPrimvarRange())) {
                     // Bind index buffer as an SSBO so that we can
                     // access varying data by index.
                     HdStBinding const binding =
                         locator.GetBinding(HdStBinding::SSBO, name);
-                    _bindingMap[name] = binding;
+                    _bindingMap.emplace(name, binding);
 
                     HdType const componentType =
                         HdGetComponentType(resource->GetTupleType().type);
@@ -379,15 +400,12 @@ HdSt_ResourceBinder::ResolveBindings(
                         HdStGLConversions::GetGLSLTypename(componentType);
 
                     MetaData::BindingDeclaration const bindingDecl(
-                                         /*name=*/name,
-                                         /*type=*/glType,
-                                         /*binding=*/binding);
+                        /*name=*/name,
+                        /*type=*/glType,
+                        /*binding=*/binding,
+                        /*isWritable=*/false);
                     metaDataOut->indexBufferBinding = bindingDecl;
-                } else {
-                    // Bind index buffer as IBO, no need for codeGen.
-                    _bindingMap[name] = HdStBinding(HdStBinding::INDEX_ATTR, 0);
                 }
-
             } else {
                 // We expect the following additional topology based info:
                 // - primitive parameter (for all tris, quads and patches)
@@ -399,7 +417,7 @@ HdSt_ResourceBinder::ResolveBindings(
 
                 HdStBinding binding =
                     locator.GetBinding(arrayBufferBindingType, name);
-                _bindingMap[name] = binding;
+                _bindingMap.emplace(name, binding);
 
                 HdTupleType valueType = resource->GetTupleType();
                 TfToken glType =
@@ -435,7 +453,7 @@ HdSt_ResourceBinder::ResolveBindings(
         TfToken const name = HdTokens->tessFactors;
         HdStBinding binding =
             locator.GetBinding(arrayBufferBindingType, name);
-        _bindingMap[name] = binding;
+        _bindingMap.emplace(name, binding);
 
         HdTupleType valueType{HdTypeFloat, 1};
         TfToken glType =
@@ -457,7 +475,7 @@ HdSt_ResourceBinder::ResolveBindings(
                                    /*debugName*/_tokens->topologyVisibility);
 
         // topology visibility is interleaved into single struct.
-        _bindingMap[_tokens->topologyVisibility] = topologyVisibilityBinding;
+        _bindingMap.emplace(_tokens->topologyVisibility, topologyVisibilityBinding);
 
         HdStBufferArrayRangeSharedPtr topVisBar =
             std::static_pointer_cast<HdStBufferArrayRange>(topVisBar_);
@@ -491,7 +509,7 @@ HdSt_ResourceBinder::ResolveBindings(
             TfToken glName =  HdStGLConversions::GetGLSLIdentifier(name);
             HdStBinding elementPrimvarBinding =
                 locator.GetBinding(arrayBufferBindingType, name);
-            _bindingMap[name] = elementPrimvarBinding;
+            _bindingMap.emplace(name, elementPrimvarBinding);
             HdTupleType valueType = it->second->GetTupleType();
                 TfToken glType =
                     HdStGLConversions::GetGLSLTypename(valueType.type);
@@ -517,7 +535,7 @@ HdSt_ResourceBinder::ResolveBindings(
 
             HdStBinding fvarPrimvarBinding =
                 locator.GetBinding(arrayBufferBindingType, name);
-            _bindingMap[name] = fvarPrimvarBinding;
+            _bindingMap.emplace(name, fvarPrimvarBinding);
             HdTupleType valueType = it->second->GetTupleType();
             TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
 
@@ -546,7 +564,7 @@ HdSt_ResourceBinder::ResolveBindings(
     // because there's only instanced version of glMultiDrawElementsIndirect.
     HdStBinding drawingCoord0Binding = locator.GetBinding(
         drawingCoordBindingType, HdTokens->drawingCoord0);
-    _bindingMap[HdTokens->drawingCoord0] = drawingCoord0Binding;
+    _bindingMap.emplace(HdTokens->drawingCoord0, drawingCoord0Binding);
     metaDataOut->drawingCoord0Binding =
         MetaData::BindingDeclaration(/*name=*/HdTokens->drawingCoord0,
                                      /*type=*/_tokens->ivec4,
@@ -554,7 +572,7 @@ HdSt_ResourceBinder::ResolveBindings(
 
     HdStBinding drawingCoord1Binding = locator.GetBinding(
         drawingCoordBindingType, HdTokens->drawingCoord1);
-    _bindingMap[HdTokens->drawingCoord1] = drawingCoord1Binding;
+    _bindingMap.emplace(HdTokens->drawingCoord1, drawingCoord1Binding);
     metaDataOut->drawingCoord1Binding =
         MetaData::BindingDeclaration(/*name=*/HdTokens->drawingCoord1,
                                      /*type=*/_tokens->ivec4,
@@ -562,7 +580,7 @@ HdSt_ResourceBinder::ResolveBindings(
 
     HdStBinding drawingCoord2Binding = locator.GetBinding(
         drawingCoordBindingType, HdTokens->drawingCoord2);
-    _bindingMap[HdTokens->drawingCoord2] = drawingCoord2Binding;
+    _bindingMap.emplace(HdTokens->drawingCoord2, drawingCoord2Binding);
     metaDataOut->drawingCoord2Binding =
         MetaData::BindingDeclaration(/*name=*/HdTokens->drawingCoord2,
                                      /*type=*/_tokens->ivec2,
@@ -576,7 +594,7 @@ HdSt_ResourceBinder::ResolveBindings(
         // each vertex attribute takes 1 location
         locator.attribLocation += instancerNumLevels;
 
-        _bindingMap[HdTokens->drawingCoordI] = drawingCoordIBinding;
+        _bindingMap.emplace(HdTokens->drawingCoordI, drawingCoordIBinding);
         metaDataOut->drawingCoordIBinding =
             MetaData::BindingDeclaration(/*name=*/HdTokens->drawingCoordI,
                                          /*type=*/_tokens->_int,
@@ -602,8 +620,7 @@ HdSt_ResourceBinder::ResolveBindings(
             HdStBinding instanceIndexArrayBinding =
                 locator.GetBinding(arrayBufferBindingType,
                                    HdInstancerTokens->instanceIndices);
-            _bindingMap[HdInstancerTokens->instanceIndices] =
-                instanceIndexArrayBinding;
+            _bindingMap.emplace(HdInstancerTokens->instanceIndices, instanceIndexArrayBinding);
             HdTupleType valueType = instanceIndices->GetTupleType();
                 TfToken glType =
                     HdStGLConversions::GetGLSLTypename(valueType.type);
@@ -617,8 +634,7 @@ HdSt_ResourceBinder::ResolveBindings(
             HdStBinding culledInstanceIndexArrayBinding =
                 locator.GetBinding(arrayBufferBindingType,
                                    HdInstancerTokens->culledInstanceIndices);
-            _bindingMap[HdInstancerTokens->culledInstanceIndices] =
-                culledInstanceIndexArrayBinding;
+            _bindingMap.emplace(HdInstancerTokens->culledInstanceIndices, culledInstanceIndexArrayBinding);
             HdTupleType valueType = instanceIndices->GetTupleType();
                 TfToken glType =
                     HdStGLConversions::GetGLSLTypename(valueType.type);
@@ -633,7 +649,7 @@ HdSt_ResourceBinder::ResolveBindings(
 
     HdStBinding dispatchBinding(
                         HdStBinding::DISPATCH, /*location=(not used)*/0);
-    _bindingMap[HdTokens->drawDispatch] = dispatchBinding;
+    _bindingMap.emplace(HdTokens->drawDispatch, dispatchBinding);
 
     // shader parameter bindings
     TF_FOR_ALL(shader, shaders) {
@@ -671,7 +687,7 @@ HdSt_ResourceBinder::ResolveBindings(
             //XXX:hack  we want to generalize materialParams to other shaders.
             if ((*shader) == drawItem->GetMaterialNetworkShader()) {
                 // shader parameters are interleaved into single struct.
-                _bindingMap[HdTokens->materialParams] = shaderParamBinding;
+                _bindingMap.emplace(HdTokens->materialParams, shaderParamBinding);
             }
         }
 
@@ -715,7 +731,7 @@ HdSt_ResourceBinder::ResolveBindings(
                             /*inPrimvars=*/param.samplerCoords,
                             /*isPremultiplied=*/param.isPremultiplied,
                             /*processTextureFallbackValue=*/isMaterialShader);
-                    _bindingMap[name] = texelBinding; // used for non-bindless
+                    _bindingMap.emplace(name, texelBinding); // used for non-bindless
 
                     HdStBinding layoutBinding = bindless
                         ? HdStBinding(HdStBinding::BINDLESS_TEXTURE_PTEX_LAYOUT,
@@ -734,7 +750,7 @@ HdSt_ResourceBinder::ResolveBindings(
                     // Layout for Ptex
                     const TfToken layoutName(_ConcatLayout(name));
                     // used for non-bindless
-                    _bindingMap[layoutName] = layoutBinding; 
+                    _bindingMap.emplace(layoutName, layoutBinding); 
                 } else if (param.textureType == HdStTextureType::Udim) {
                     // Texture Array for UDIM
                     HdStBinding textureBinding = bindless
@@ -753,7 +769,7 @@ HdSt_ResourceBinder::ResolveBindings(
                             /*isPremultiplied=*/param.isPremultiplied,
                             /*processTextureFallbackValue=*/isMaterialShader);
                     // used for non-bindless
-                    _bindingMap[param.name] = textureBinding;
+                    _bindingMap.emplace(param.name, textureBinding);
 
                     // Layout for UDIM
                     const TfToken layoutName(_ConcatLayout(param.name));
@@ -772,7 +788,7 @@ HdSt_ResourceBinder::ResolveBindings(
                                 HdType::HdTypeFloat));
 
                     // used for non-bindless
-                    _bindingMap[layoutName] = layoutBinding;
+                    _bindingMap.emplace(layoutName, layoutBinding);
                 } else if (param.textureType == HdStTextureType::Uv) {
                     if (param.IsArrayOfTextures()) {
                         size_t const numTextures = param.arrayOfTexturesSize;
@@ -787,7 +803,7 @@ HdSt_ResourceBinder::ResolveBindings(
                                 locator.uniformLocation++,
                                 locator.textureUnit++);
                         // used for non-bindless
-                        _bindingMap[name] = textureBinding;
+                        _bindingMap.emplace(name, textureBinding);
 
                         // For APIs (like OpenGL) in which each texture in an 
                         // array of textures takes up a slot, increment the 
@@ -825,7 +841,7 @@ HdSt_ResourceBinder::ResolveBindings(
                                 /*isPremultiplied=*/param.isPremultiplied,
                                 /*processTextureFallbackValue=*/isMaterialShader);
                         // used for non-bindless
-                        _bindingMap[name] = textureBinding;
+                        _bindingMap.emplace(name, textureBinding);
                     }
                 } else if (param.textureType == HdStTextureType::Field) {
                     // 3d texture
@@ -844,7 +860,7 @@ HdSt_ResourceBinder::ResolveBindings(
                             /*inPrimvars=*/param.samplerCoords,
                             /*isPremultiplied=*/param.isPremultiplied,
                             /*processTextureFallbackValue=*/isMaterialShader);
-                    _bindingMap[name] = textureBinding; // used for non-bindless
+                    _bindingMap.emplace(name, textureBinding); // used for non-bindless
                 } else if (param.textureType == HdStTextureType::Cubemap) {
                     // Cubemap texture
                     HdStBinding textureBinding = bindless
@@ -863,7 +879,7 @@ HdSt_ResourceBinder::ResolveBindings(
                             /*isPremultiplied=*/param.isPremultiplied,
                             /*processTextureFallbackValue=*/isMaterialShader);
                     // used for non-bindless
-                    _bindingMap[name] = textureBinding;
+                    _bindingMap.emplace(name, textureBinding);
                 }
             } else if (param.IsPrimvarRedirect() || param.IsFieldRedirect()) {
                 TfTokenVector const& samplePrimvars = param.samplerCoords;
@@ -933,7 +949,7 @@ HdSt_ResourceBinder::ResolveBindings(
             sblock.arraySize = it->GetArraySize();
             metaDataOut->customInterleavedBindings.insert(
                 std::make_pair(binding, sblock));
-            _bindingMap[it->GetName()] = binding;
+            _bindingMap.emplace(it->GetName(), binding);
         } else {
             // Non interleaved resource
             typedef MetaData::BindingDeclaration BindingDeclaration;
@@ -954,7 +970,7 @@ HdSt_ResourceBinder::ResolveBindings(
                         binding,
                         it->isWritable());
                     metaDataOut->customBindings.push_back(b);
-                    _bindingMap[nameRes.first] = binding;
+                    _bindingMap.emplace(nameRes.first, binding);
                 }
             } else {
                 HdStBinding binding = locator.GetBinding(
@@ -970,7 +986,7 @@ HdSt_ResourceBinder::ResolveBindings(
                 // declarations and accessors only for BindingDeclaration
                 // with a valid type.
                 metaDataOut->customBindings.push_back(b);
-                _bindingMap[it->GetName()] = binding;
+                _bindingMap.emplace(it->GetName(), binding);
             }
         }
     }
@@ -1005,7 +1021,7 @@ HdSt_ResourceBinder::ResolveComputeBindings(
     // read-write per prim data
     for (HdBufferSpec const& spec: readWriteBufferSpecs) {
         HdStBinding binding = locator.GetBinding(bindingType, spec.name);
-        _bindingMap[spec.name] = binding;
+        _bindingMap.emplace(spec.name, binding);
         metaDataOut->computeReadWriteData[binding] =
             MetaData::Primvar(spec.name,
                               HdStGLConversions::GetGLSLTypename(
@@ -1015,7 +1031,7 @@ HdSt_ResourceBinder::ResolveComputeBindings(
     // read-only per prim data
     for (HdBufferSpec const& spec: readOnlyBufferSpecs) {
         HdStBinding binding = locator.GetBinding(bindingType, spec.name);
-        _bindingMap[spec.name] = binding;
+        _bindingMap.emplace(spec.name, binding);
         metaDataOut->computeReadOnlyData[binding] =
             MetaData::Primvar(spec.name,
                               HdStGLConversions::GetGLSLTypename(
@@ -1038,44 +1054,44 @@ HdSt_ResourceBinder::GetBufferBindingDesc(
 {
     if (!resource || !resource->GetHandle()) return;
 
-    HdStBinding binding = GetBinding(name, level);
+    for (const auto binding : GetBindings(name, HdStBinding::UNKNOWN, level)) {
+        HgiShaderStage stageUsage =
+            HgiShaderStageVertex |
+            HgiShaderStagePostTessellationControl |
+            HgiShaderStagePostTessellationVertex |
+            HgiShaderStageTessellationControl | HgiShaderStageTessellationEval |
+            HgiShaderStageGeometry | HgiShaderStageFragment;
+        HgiBufferBindDesc desc;
+        desc.writable = true;
 
-    HgiShaderStage stageUsage =
-        HgiShaderStageVertex |
-        HgiShaderStagePostTessellationControl |
-        HgiShaderStagePostTessellationVertex |
-        HgiShaderStageTessellationControl | HgiShaderStageTessellationEval |
-        HgiShaderStageGeometry | HgiShaderStageFragment;
-    HgiBufferBindDesc desc;
-    desc.writable = true;
-
-    switch (binding.GetType()) {
-    case HdStBinding::SSBO:
-        // Bind the entire buffer at offset zero.
-        desc.buffers = { resource->GetHandle() };
-        desc.offsets = { 0 };
-        desc.sizes = { 0 };
-        desc.bindingIndex = static_cast<uint32_t>(binding.GetLocation());
-        desc.resourceType = HgiBindResourceTypeStorageBuffer;
-        desc.stageUsage = stageUsage;
-        desc.writable = false;
-        bindingsDesc->buffers.push_back(desc);
-        break;
-    case HdStBinding::UBO:
-        // Bind numElements slices of the buffer at the specified offset.
-        desc.buffers = { resource->GetHandle() };
-        desc.offsets = { static_cast<uint32_t>(offset) };
-        desc.sizes =
-            { static_cast<uint32_t>(numElements * resource->GetStride()) };
-        desc.bindingIndex = static_cast<uint32_t>(binding.GetLocation());
-        desc.resourceType = HgiBindResourceTypeUniformBuffer;
-        desc.stageUsage = stageUsage;
-        desc.writable = false;
-        bindingsDesc->buffers.push_back(desc);
-        break;
-    default:
-        // Do nothing here for other binding types.
-        break;
+        switch (binding.GetType()) {
+        case HdStBinding::SSBO:
+            // Bind the entire buffer at offset zero.
+            desc.buffers = { resource->GetHandle() };
+            desc.offsets = { 0 };
+            desc.sizes = { 0 };
+            desc.bindingIndex = static_cast<uint32_t>(binding.GetLocation());
+            desc.resourceType = HgiBindResourceTypeStorageBuffer;
+            desc.stageUsage = stageUsage;
+            desc.writable = false;
+            bindingsDesc->buffers.push_back(desc);
+            break;
+        case HdStBinding::UBO:
+            // Bind numElements slices of the buffer at the specified offset.
+            desc.buffers = { resource->GetHandle() };
+            desc.offsets = { static_cast<uint32_t>(offset) };
+            desc.sizes =
+                { static_cast<uint32_t>(numElements * resource->GetStride()) };
+            desc.bindingIndex = static_cast<uint32_t>(binding.GetLocation());
+            desc.resourceType = HgiBindResourceTypeUniformBuffer;
+            desc.stageUsage = stageUsage;
+            desc.writable = false;
+            bindingsDesc->buffers.push_back(desc);
+            break;
+        default:
+            // Do nothing here for other binding types.
+            break;
+        }
     }
 }
 
@@ -1116,7 +1132,7 @@ HdSt_ResourceBinder::GetInstanceBufferArrayBindingDesc(
     if (!bar) return;
 
     for (auto const & it : bar->GetResources()) {
-        if (HasBinding(it.first, level)) {
+        if (HasBinding(it.first, HdStBinding::UNKNOWN, level)) {
             GetBufferBindingDesc(
                 bindingsDesc,
                 it.first, it.second, it.second->GetOffset(), level);
@@ -1288,7 +1304,7 @@ HdSt_ResourceBinder::BindBuffer(TfToken const &name,
     // the instanceIndex is empty (e.g. FX points. see bug 120354)
     if (!buffer->GetHandle()) return;
 
-    HdStBinding binding = GetBinding(name, level);
+    HdStBinding binding = GetBinding(name, HdStBinding::UNKNOWN, level);
     HdStBinding::Type type = binding.GetType();
     int loc              = binding.GetLocation();
 
@@ -1418,7 +1434,7 @@ HdSt_ResourceBinder::UnbindBuffer(TfToken const &name,
     // the instanceIndex is empty (e.g. FX points)
     if (!buffer->GetHandle()) return;
 
-    HdStBinding binding = GetBinding(name, level);
+    HdStBinding binding = GetBinding(name, HdStBinding::UNKNOWN, level);
     HdStBinding::Type type = binding.GetType();
     int loc = binding.GetLocation();
 
@@ -1523,7 +1539,7 @@ HdSt_ResourceBinder::BindInstanceBufferArray(
     if (!bar) return;
 
     TF_FOR_ALL(it, bar->GetResources()) {
-        if (HasBinding(it->first, level)) {
+        if (HasBinding(it->first, HdStBinding::UNKNOWN, level)) {
             BindBuffer(it->first, it->second, it->second->GetOffset(), level);
         }
     }
@@ -1536,7 +1552,7 @@ HdSt_ResourceBinder::UnbindInstanceBufferArray(
     if (!bar) return;
 
     TF_FOR_ALL(it, bar->GetResources()) {
-        if (HasBinding(it->first, level)) {
+        if (HasBinding(it->first, HdStBinding::UNKNOWN, level)) {
             UnbindBuffer(it->first, it->second, level);
         }
     }

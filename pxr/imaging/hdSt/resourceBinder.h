@@ -14,9 +14,11 @@
 #include "pxr/imaging/hgi/capabilities.h"
 #include "pxr/imaging/hgi/handle.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/tf/smallVector.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/staticTokens.h"
 
+#include <map>
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -316,6 +318,7 @@ public:
         BindingDeclaration edgeIndexBinding;
         BindingDeclaration coarseFaceIndexBinding;
         BindingDeclaration indexBufferBinding;
+        BindingDeclaration pointsBufferBinding;
         std::vector<BindingDeclaration> fvarPatchParamBindings;
         std::vector<BindingDeclaration> fvarIndicesBindings;
 
@@ -491,16 +494,53 @@ public:
     // Binding Queries
     ////////////////////////////////////////////////////////////
 
-    /// Returns whether a binding exists.
-    bool HasBinding(TfToken const &name, int level=-1) const {
-        return _bindingMap.find(NameAndLevel(name, level)) != _bindingMap.end();
+    /// Returns whether a binding exists for a given name, type (optional),
+    /// and level (optional)
+    bool HasBinding(TfToken const &name,
+        HdStBinding::Type type = HdStBinding::UNKNOWN, int level = -1) const {
+        if (type == HdStBinding::Type::UNKNOWN) {
+            return _bindingMap.find(NameAndLevel(name, level)) !=
+                _bindingMap.end();
+        }
+
+        const auto [begin, end] = _bindingMap.equal_range(
+            NameAndLevel(name, level));
+        for (auto iter = begin; iter != end; iter++) {
+            if (iter->second.GetType() == type) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    /// Returns binding point.
-    HdStBinding GetBinding(TfToken const &name, int level=-1) const {
-        HdStBinding binding;
-        TfMapLookup(_bindingMap, NameAndLevel(name, level), &binding);
-        return binding;
+    /// Return the bindings points for a given name, type (optional),
+    /// and level (optional)
+    TfSmallVector<HdStBinding, 1> GetBindings(TfToken const &name,
+        HdStBinding::Type type = HdStBinding::UNKNOWN, int level = -1) const
+    {
+        TfSmallVector<HdStBinding, 1> bindings;
+        const auto [begin, end] = _bindingMap.equal_range(
+            NameAndLevel(name, level));
+        for (auto iter = begin; iter != end; iter++) {
+            if (type == HdStBinding::Type::UNKNOWN ||
+                iter->second.GetType() == type) {
+                bindings.emplace_back(iter->second);
+            }
+        }
+        return bindings;
+    }
+
+    /// Like GetBindings(), but assume the name is unique. Will generate an
+    /// error and return the first binding if the name is not unique.
+    HdStBinding GetBinding(TfToken const &name,
+        HdStBinding::Type type = HdStBinding::UNKNOWN, int level = -1) const
+    {
+        const auto bindings = GetBindings(name, type, level);
+        if (bindings.empty()) {
+            return {};
+        }
+        TF_VERIFY(bindings.size() == 1);
+        return bindings.front();
     }
 
     /// Returns the bindless handle for \p textureHandle using \p samplerHandle
@@ -559,7 +599,7 @@ private:
                   (name == other.name && level < other.level);
         }
     };
-    using _BindingMap = std::map<NameAndLevel, HdStBinding>;
+    using _BindingMap = std::multimap<NameAndLevel, HdStBinding>;
     _BindingMap _bindingMap;
 };
 

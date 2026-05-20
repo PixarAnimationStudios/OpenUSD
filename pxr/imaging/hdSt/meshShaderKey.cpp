@@ -159,6 +159,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool doubleSided,
     bool hasBuiltinBarycentrics,
     bool hasMetalTessellation,
+    bool hasGeometricStage,
     bool hasCustomDisplacement,
     bool hasPerFaceInterpolation,
     bool hasTopologicalVisibility,
@@ -415,6 +416,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // Optimization : See if we can skip the geometry shader.
     bool const canSkipGS =
+            !hasGeometricStage ||
             ptvsStageEnabled ||
             // Whether we can skip executing the displacement shading terminal
             (!hasCustomDisplacement
@@ -645,4 +647,3 @@ HdSt_MeshShaderKey::~HdSt_MeshShaderKey()
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

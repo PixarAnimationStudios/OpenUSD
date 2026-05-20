@@ -648,9 +648,14 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             resourceRegistry->GetHgi()->GetCapabilities()->
                 IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
 
+        bool const hasGeometricStage =
+            resourceRegistry->GetHgi()->GetCapabilities()->
+                IsSet(HgiDeviceCapabilitiesBitsGeometricStage);
+
         HdSt_MeshTopologySharedPtr topology =
             HdSt_MeshTopology::New(meshTopology, refineLevel, refineMode,
-                (hasBuiltinBarycentrics || hasMetalTessellation)
+                (hasBuiltinBarycentrics || hasMetalTessellation ||
+                !hasGeometricStage)
                     ? HdSt_MeshTopology::QuadsTriangulated
                     : HdSt_MeshTopology::QuadsUntriangulated);
         
@@ -2944,6 +2949,10 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
         resourceRegistry->GetHgi()->GetCapabilities()->
             IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
 
+    bool const hasGeometricStage =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+            IsSet(HgiDeviceCapabilitiesBitsGeometricStage);
+
     bool const nativeRoundPoints =
         resourceRegistry->GetHgi()->GetCapabilities()->
             IsSet(HgiDeviceCapabilitiesBitsRoundPoints);
@@ -2960,6 +2969,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  _doubleSided || desc.doubleSided,
                                  hasBuiltinBarycentrics,
                                  hasMetalTessellation,
+                                 hasGeometricStage,
                                  hasCustomDisplacement,
                                  hasPerFaceInterpolation,
                                  hasTopologicalVisibility,
@@ -3391,4 +3401,3 @@ HdStMesh::GetInitialDirtyBitsMask() const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
