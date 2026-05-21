@@ -93,13 +93,12 @@ UsdPmcMeshEncoder::Encode(UsdGeomMesh& mesh, const VtDictionary& options,
     try {
         PmcEncodeSession pmces = PmcEncodeSession{UsdGeomMesh(mesh), options};
         bs = pmces.encode();
-        if (processedAttributes) {
-            *processedAttributes = pmces.processedAttributes;
-        }
-        if (processedSubSets) {
-            *processedSubSets = pmces.processedSubSets;
-        }
         // resultInfo is currently unused but could be populated in the future
+        if (processedAttributes)
+            *processedAttributes = std::move(pmces.GetProcessedAttributeNames());
+
+        if (processedSubSets)
+            *processedSubSets = std::move(pmces.GetProcessedGeomSubsetNames());
     } catch (std::exception& e) {
         TF_RUNTIME_ERROR("Mesh encoding failed: " + std::string(e.what()));
     }

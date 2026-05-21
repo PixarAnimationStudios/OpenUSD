@@ -681,9 +681,9 @@ PmcEncodeSession::_setupGeom()
     _gmp.info << MakeCoordSys(_gmp, QparamsFromOptions(_options, usdname));
 
     // Track which attributes have been processed
-    processedAttributes.insert (_ugm.GetFaceVertexCountsAttr().GetName());
-    processedAttributes.insert (_ugm.GetFaceVertexIndicesAttr().GetName());
-    processedAttributes.insert (_ugm.GetPointsAttr().GetName());
+    _processedAttributes.insert(_ugm.GetFaceVertexCountsAttr().GetName());
+    _processedAttributes.insert(_ugm.GetFaceVertexIndicesAttr().GetName());
+    _processedAttributes.insert(_ugm.GetPointsAttr().GetName());
 }
 
 pmc::AttributeMeshpart&
@@ -767,9 +767,9 @@ PmcEncodeSession::_setupPrimvar(const UsdGeomPrimvar& pv)
     // metadata
     amp.info.name = pv.GetName();
     amp.info.jsonCustomAui = JsonAuiForAttr(pv);
-    processedAttributes.insert (amp.info.name);
+    _processedAttributes.insert(amp.info.name);
     if (pv.IsIndexed())
-        processedAttributes.insert (amp.info.name + ":indices");
+        _processedAttributes.insert(pv.GetIndicesAttr().GetName());
 }
 
 /// Build face group information from all subsets.
@@ -812,7 +812,7 @@ PmcEncodeSession::_setupGeomSubsets()
        << "\":";
     char sep = '[';
     for (const auto& set : sets) {
-        processedSubSets.insert (set.GetPrim().GetName());
+        _processedSubsets.insert(set.GetPrim().GetName());
         os << sep << '\"' << set.GetPrim().GetName() << '\"';
         sep = ',';
     }
@@ -855,9 +855,9 @@ PmcEncodeSession::_setupCreases()
     ampVals.info.jsonCustomAui = JsonAuiForAttr(attrVals);
     ampVals.info << MakeCoordSys(ampVals, QparamsFromOptions(_options, usdname));
 
-    processedAttributes.insert (_ugm.GetCreaseIndicesAttr().GetName());
-    processedAttributes.insert (_ugm.GetCreaseLengthsAttr().GetName());
-    processedAttributes.insert (_ugm.GetCreaseSharpnessesAttr().GetName());
+    _processedAttributes.insert(attrIdxs.GetName());
+    _processedAttributes.insert(attrLens.GetName());
+    _processedAttributes.insert(attrVals.GetName());
 }
 
 /// Find all attributes for coding.
@@ -879,7 +879,7 @@ PmcEncodeSession::_setupAttrs()
         amp.info.jsonCustomAui = JsonAuiForAttr(attr);
         amp.info.name = attr.GetName();
         amp.info << MakeCoordSys(amp, QparamsFromOptions(_options, usdname));
-        processedAttributes.insert (amp.info.name);
+        _processedAttributes.insert(attr.GetName());
     }
 
     if (const auto attr = _ugm.GetHoleIndicesAttr(); attr.HasAuthoredValue()) {
@@ -891,7 +891,7 @@ PmcEncodeSession::_setupAttrs()
         amp.info.sparse = true;
         amp.info.jsonCustomAui = JsonAuiForAttr(attr);
         amp.info.name = attr.GetName();
-        processedAttributes.insert (amp.info.name);
+        _processedAttributes.insert(attr.GetName());
     }
 
     _setupGeomSubsets();

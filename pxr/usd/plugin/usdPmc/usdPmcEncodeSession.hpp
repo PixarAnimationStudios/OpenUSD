@@ -39,6 +39,14 @@ struct PmcEncodeSession
     /// \return Encoded mesh data as a byte vector
     std::vector<uint8_t> encode();
 
+    /// The USD attributes that have been encoded.
+    /// \return USD attribute names.
+    std::set<std::string>& GetProcessedAttributeNames();
+
+    /// The UsdGeomSubsets that have been encoded.
+    /// \return USD geom subset names.
+    std::set<std::string>& GetProcessedGeomSubsetNames();
+
     struct CoordSys;
 
 protected:
@@ -68,7 +76,6 @@ protected:
     /// Perform the actual encoding
     std::vector<uint8_t> _encode();
 
-    public:
     const UsdGeomMesh& _ugm;
     const VtDictionary& _options;
 
@@ -76,8 +83,11 @@ protected:
     pmc::GeometryMeshpart _gmp;
     std::vector<pmc::AttributeMeshpart> _amps;
 
-    std::set<std::string> processedAttributes;
-    std::set<std::string> processedSubSets;
+    /// The attributes that have been captured for encoding.
+    std::set<std::string> _processedAttributes;
+
+    /// The geometry subsets that have been captured for encoding.
+    std::set<std::string> _processedSubsets;
 
     // Storage for converted buffers. Access them via the meshpart buffer.
     // todo: let pmc adopt these.
@@ -86,6 +96,18 @@ protected:
     // Smart pointers to keep mesh data alive
     std::vector<VtValue> _keepAlive;
 };
+
+inline std::set<std::string>&
+PmcEncodeSession::GetProcessedAttributeNames()
+{
+    return _processedAttributes;
+}
+
+inline std::set<std::string>&
+PmcEncodeSession::GetProcessedGeomSubsetNames()
+{
+    return _processedSubsets;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
