@@ -69,7 +69,7 @@ _Repr(const {{ cls.cppClassName }} &self)
 {% if cls.isMultipleApply %}
     std::string instanceName = TfPyRepr(self.GetName());
     return TfStringPrintf(
-        "{{ libraryName[0]|upper }}{{ libraryName[1:] }}.{{ cls.className }}(%s, '%s')",
+        "{{ libraryName[0]|upper }}{{ libraryName[1:] }}.{{ cls.className }}(%s, %s)",
         primRepr.c_str(), instanceName.c_str());
 {% else %}
     return TfStringPrintf(

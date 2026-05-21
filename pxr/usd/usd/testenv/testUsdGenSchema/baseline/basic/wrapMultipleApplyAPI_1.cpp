@@ -59,7 +59,7 @@ _Repr(const UsdContrivedMultipleApplyAPI_1 &self)
     std::string primRepr = TfPyRepr(self.GetPrim());
     std::string instanceName = TfPyRepr(self.GetName());
     return TfStringPrintf(
-        "UsdContrived.MultipleApplyAPI_1(%s, '%s')",
+        "UsdContrived.MultipleApplyAPI_1(%s, %s)",
         primRepr.c_str(), instanceName.c_str());
 }
 
