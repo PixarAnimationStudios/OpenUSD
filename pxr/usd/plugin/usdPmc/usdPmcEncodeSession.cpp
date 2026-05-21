@@ -443,8 +443,6 @@ GuessAttributeType(const TfToken pvRole, const TfToken pvName)
 pmc::AttributeIndicesCodingStrategy
 GetIndicesStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
 {
-    if (!ampi.indexCount)
-        return pmc::AttributeIndicesCodingStrategy::SKIP;
 
     if (!ampi.sparse) {
         switch (ampi.scope) {
