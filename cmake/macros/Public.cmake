@@ -1018,7 +1018,6 @@ function(pxr_register_test TEST_NAME)
             # Make sure to add the image diff tool to the PATH so
             # it can be easily found within the testWrapper
             get_filename_component(IMAGE_DIFF_TOOL_PATH ${IMAGE_DIFF_TOOL} DIRECTORY)
-            set(testWrapperCmd ${testWrapperCmd} --post-path=${IMAGE_DIFF_TOOL_PATH})
         endif()
     endif()
 
@@ -1061,52 +1060,17 @@ function(pxr_register_test TEST_NAME)
         set(testWrapperCmd ${testWrapperCmd} --expected-return-code=${bt_EXPECTED_RETURN_CODE})
     endif()
 
-    # Ensure that TF_FATAL_VERIFY is enabled for tests, so that failed verifies
-    # turn into test failures.
-    # Set this first, so that env vars passed to pxr_register_test can turn off
-    # TF_FATAL_VERIFY where desired.
-    set(testWrapperCmd ${testWrapperCmd} --env-var=TF_FATAL_VERIFY=1)
+    # Configure environment variables for test
+    # * Ensure that TF_FATAL_VERIFY is enabled for tests, so that failed
+    #   verifies turn into test failures. Set this first, so that env vars
+    #   passed to pxr_register_test can turn off TF_FATAL_VERIFY where desired.
+    # * Allows env vars to be set via a global variable to make it easier
+    #   to affect a set of tests (e.g., all tests in a library). Set
+    #   this second to allow tests to override these env vars.
+    # * Avoid the just-in-time debugger where possible when running tests.
+    #   Set last
+    set(testEnvVars "TF_FATAL_VERIFY=1" ${PXR_TEST_ENV_VARS} ${bt_ENV} "ARCH_AVOID_JIT=1")
 
-    # If building on Windows, the tests need to add directories containing DLLs
-    # to the PATH. This includes directories for core libraries, plugins, and
-    # test-only libraries. On non-Windows platforms, this is handled by the
-    # RPATH embedded in the test executable. Note this is a best-effort to add
-    # the appropriate DLL paths, but the user may still be responsible for
-    # modifying the PATH to find 3rd party DLLs from outside the tree.
-    if (WIN32)
-        set(testWrapperCmd ${testWrapperCmd}
-            "--pre-path=${CMAKE_INSTALL_PREFIX}/lib"
-            "--pre-path=${CMAKE_INSTALL_PREFIX}/plugin/usd"
-            "--pre-path=${CMAKE_INSTALL_PREFIX}/tests/lib")
-    endif()
-
-    # Allow env vars to be set via a global variable to make it easier
-    # to affect a set of tests (e.g., all tests in a library). Set
-    # this first to allow tests to override these env vars.
-    if (PXR_TEST_ENV_VARS)
-        foreach(env ${PXR_TEST_ENV_VARS})
-            set(testWrapperCmd ${testWrapperCmd} --env-var=${env})
-        endforeach()
-    endif()
-
-    if (bt_ENV)
-        foreach(env ${bt_ENV})
-            set(testWrapperCmd ${testWrapperCmd} --env-var=${env})
-        endforeach()
-    endif()
-
-    if (bt_PRE_PATH)
-        foreach(path ${bt_PRE_PATH})
-            set(testWrapperCmd ${testWrapperCmd} --pre-path=${path})
-        endforeach()
-    endif()
-
-    if (bt_POST_PATH)
-        foreach(path ${bt_POST_PATH})
-            set(testWrapperCmd ${testWrapperCmd} --post-path=${path})
-        endforeach()
-    endif()
-        
     # If we're building static libraries, the C++ tests that link against
     # these libraries will look for resource files in the "usd" subdirectory
     # relative to where the tests are installed. However, the build installs
@@ -1116,26 +1080,73 @@ function(pxr_register_test TEST_NAME)
     # we set the PXR_PLUGINPATH_NAME env var to point to the "lib/usd"
     # directory where these files are installed.
     if (NOT TARGET shared_libs)
-        set(testWrapperCmd ${testWrapperCmd} --env-var=${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/lib/usd)
+        list(APPEND testEnvVars "${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/lib/usd")
     endif()
+
+    foreach (testEnvVar ${testEnvVars})
+        if (testEnvVar MATCHES "^PATH=")
+           message(FATAL_ERROR "Error: use PRE_PATH or POST_PATH to edit PATH.")
+        endif()
+        if (testEnvVar MATCHES "^PYTHONPATH=")
+           message(FATAL_ERROR "Error: Do not explicitly set PYTHONPATH.")
+        endif()
+        # Extract the key by matching until "="
+        string(REGEX MATCH "^[^=]+" testEnvVarKey "${testEnvVar}")
+        if (NOT testEnvVarKey)
+            message(FATAL_ERROR "Error: ${testEnvVar} does not have a key in the form KEY=VALUE")
+        endif()
+        string(LENGTH "${testEnvVarKey}" testEnvVarKeyLength)
+        # Store the value and '=' delimeter.
+        string(SUBSTRING "${testEnvVar}" "${testEnvVarKeyLength}" -1 testEnvVarDelimeterAndValue)
+        string(LENGTH "${testEnvVarDelimeterAndValue}" testEnvVarDelimeterAndValueLength)
+        if (testEnvVarDelimeterAndValueLength LESS 2)
+            message(FATAL_ERROR "Error: ${testEnvVar} does not have a value in the form KEY=VALUE")
+        endif()
+        if (testEnvVarDelimeterAndValue MATCHES ".*<PXR_TEST_DIR>.*")
+            message(WARNING "PXR_TEST_DIR substitution is deprecated for ${testEnvVarKey}.")
+            set(testWrapperCmd ${testWrapperCmd} --test-dir-envvar=${testEnvVarKey})
+        endif()
+    endforeach()
+
+    # NOTE: prepend operations will be appended in their result order which will
+    # require a REVERSE before applying append operations
+    set(testPathEdits "")
+    if (WIN32)
+         list(APPEND testPathEdits
+              "PATH=path_list_prepend:${CMAKE_INSTALL_PREFIX}/lib")
+         list(APPEND testPathEdits
+              "PATH=path_list_prepend:${CMAKE_INSTALL_PREFIX}/plugin/usd")
+         list(APPEND testPathEdits
+              "PATH=path_list_prepend:${CMAKE_INSTALL_PREFIX}/tests/lib")
+    endif()
+    foreach(path ${bt_PRE_PATH})
+        list(APPEND testPathEdits "PATH=path_list_prepend:${path}")
+    endforeach()
+    list(REVERSE testPathEdits)
+
+    if (IMAGE_DIFF_TOOL_PATH)
+         list(APPEND testPathEdits "PATH=path_list_append:${IMAGE_DIFF_TOOL_PATH}")
+    endif()
+    foreach(path ${bt_POST_PATH})
+        list(APPEND testPathEdits "PATH=path_list_append:${path}")
+    endforeach()
 
     if (PXR_TEST_RUN_TEMP_DIR_PREFIX)
           set(testWrapperCmd ${testWrapperCmd} --tempdirprefix=${PXR_TEST_RUN_TEMP_DIR_PREFIX})
     endif()
 
     # Ensure that Python imports the Python files built by this build.
-    # On Windows convert backslash to slash and don't change semicolons
-    # to colons.
+    # On Windows convert backslash to slash
     if(IS_ABSOLUTE "${PXR_PYTHON_INSTALL_DIR}")
-        set(_testPythonPath "${PXR_PYTHON_INSTALL_DIR};$ENV{PYTHONPATH}")
+        set(_testPythonPath "${PXR_PYTHON_INSTALL_DIR}")
     else()
-        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/${PXR_PYTHON_INSTALL_DIR};$ENV{PYTHONPATH}")
+        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/${PXR_PYTHON_INSTALL_DIR}")
     endif()
     if(WIN32)
         string(REGEX REPLACE "\\\\" "/" _testPythonPath "${_testPythonPath}")
-    else()
-        string(REPLACE ";" ":" _testPythonPath "${_testPythonPath}")
     endif()
+
+    list(APPEND testPathEdits "PYTHONPATH=path_list_prepend:${_testPythonPath}")
 
     # Ensure we run with the appropriate python executable.
     if (bt_CUSTOM_PYTHON)
@@ -1148,9 +1159,12 @@ function(pxr_register_test TEST_NAME)
 
     add_test(
         NAME ${TEST_NAME}
-        COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd}
-                "--env-var=PYTHONPATH=${_testPythonPath}" ${testCmd}
+        COMMAND ${PYTHON_EXECUTABLE} ${testWrapperCmd} ${testCmd}
     )
+    set_tests_properties(${TEST_NAME} PROPERTIES ENVIRONMENT "${testEnvVars}")
+    if (testPathEdits)
+        set_tests_properties(${TEST_NAME} PROPERTIES ENVIRONMENT_MODIFICATION "${testPathEdits}")
+    endif()
 
     # But in some cases, we need to pass cmake properties directly to cmake
     # run_test, rather than configuring the environment
