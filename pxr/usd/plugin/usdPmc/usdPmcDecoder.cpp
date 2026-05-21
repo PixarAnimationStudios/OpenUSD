@@ -115,15 +115,6 @@ UsdPmcMeshDecoder::_InspectBitstream(const char* buffer, size_t length) {
             decode = true;
             return pmc::Error::OK;
         };
-        
-    // Set up geometry refinement meshpart inspection
-    inspector.onInspectGeometryRefinementMeshpart =
-        [&](const pmc::GeometryRefinementMeshpartInfo& info,
-            const pmc::GeometryRefinementDecodingParameters& params,
-            bool& decode) noexcept {
-            decode = true;
-            return pmc::Error::OK;
-        };
 
     // Set up attribute meshpart inspection
     inspector.onInspectAttributeMeshpart =
@@ -181,14 +172,6 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
             return pmc::Error::OK;
         };
 
-    inspectFns.onInspectGeometryRefinementMeshpart =
-        [&](const pmc::GeometryRefinementMeshpartInfo& info,
-            const pmc::GeometryRefinementDecodingParameters& params,
-            bool& decode) noexcept {
-            decode = true;
-            return pmc::Error::OK;
-        };
-
     inspectFns.onInspectAttributeMeshpart =
         [&](const pmc::AttributeMeshpartInfo& info, bool& decode) noexcept {
             decode = true;
@@ -228,17 +211,6 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
                 bufs.faceDegrees = UsdPmc_ToPmcBuffer(usdFaceVertexCounts, 1,
                                                      pmc::DataType::Int32);
 
-                return pmc::Error::OK;
-            } catch (...) {
-                return pmc::Error::STATE_ERROR;
-            }
-        };
-
-    decodeFns.onStartGeometryRefinementMeshpartDecoding =
-        [&](const pmc::GeometryRefinementMeshpartInfo& info,
-            pmc::GeometryRefinementMeshpartBuffers& bufs) noexcept {
-            try {
-                // TODO: Process geometry refinement decoded data
                 return pmc::Error::OK;
             } catch (...) {
                 return pmc::Error::STATE_ERROR;
@@ -292,11 +264,6 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
                 decodedMesh->CreateFaceVertexCountsAttr();
             usdFaceVertexCountsAttr.Set(usdFaceVertexCounts);
 
-            return pmc::Error::OK;
-        };
-
-    decodeFns.onEndGeometryRefinementMeshpartDecoding =
-        [](auto, auto) {
             return pmc::Error::OK;
         };
 
