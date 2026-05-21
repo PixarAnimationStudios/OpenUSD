@@ -397,19 +397,21 @@ GetMeshFaceTypeFromFaceVertexCounts(const VtArray<int> fvcs)
     const int min = *minmax.first;
     const int max = *minmax.second;
 
-    if (max == min && min == 3) return pmc::MeshFaceType::TRIANGULAR;
-    if (max == min && min == 4) return pmc::MeshFaceType::QUADRILATERAL;
-    if (max == 4 && min == 3)   return pmc::MeshFaceType::TRIANGULAR_QUADRILATERAL;
-    return pmc::MeshFaceType::POLYGONAL;
+    using MFT = pmc::MeshFaceType;
+    if (max == min && min == 3) return MFT::TRIANGULAR;
+    if (max == min && min == 4) return MFT::QUADRILATERAL;
+    if (max == 4 && min == 3)   return MFT::TRIANGULAR_QUADRILATERAL;
+    return MFT::POLYGONAL;
 }
 
 pmc::AttributeScope
 GetScopeFromUsd(pxr::TfToken interp)
 {
-    if (interp == pxr::UsdGeomTokens->vertex)       return pmc::AttributeScope::VERTEX;
-    if (interp == pxr::UsdGeomTokens->varying)      return pmc::AttributeScope::VERTEX;
-    if (interp == pxr::UsdGeomTokens->faceVarying)  return pmc::AttributeScope::CORNER;
-    if (interp == pxr::UsdGeomTokens->uniform)      return pmc::AttributeScope::FACE;
+    using AS = pmc::AttributeScope;
+    if (interp == pxr::UsdGeomTokens->vertex)       return AS::VERTEX;
+    if (interp == pxr::UsdGeomTokens->varying)      return AS::VERTEX;
+    if (interp == pxr::UsdGeomTokens->faceVarying)  return AS::CORNER;
+    if (interp == pxr::UsdGeomTokens->uniform)      return AS::FACE;
 
     throw std::runtime_error(
         std::string("cannot convert interpolation type ") + interp.GetString());
@@ -419,21 +421,22 @@ GetScopeFromUsd(pxr::TfToken interp)
 pmc::AttributeType
 GuessAttributeType(const TfToken pvRole, const TfToken pvName)
 {
-    if (pvRole == pxr::SdfValueRoleNames->Color)              return pmc::AttributeType::COLOR;
-    if (pvRole == pxr::SdfValueRoleNames->Normal)             return pmc::AttributeType::NORMAL;
-    if (pvRole == pxr::SdfValueRoleNames->TextureCoordinate)  return pmc::AttributeType::TEX_COORD;
+    using AT = pmc::AttributeType;
+    if (pvRole == pxr::SdfValueRoleNames->Color)              return AT::COLOR;
+    if (pvRole == pxr::SdfValueRoleNames->Normal)             return AT::NORMAL;
+    if (pvRole == pxr::SdfValueRoleNames->TextureCoordinate)  return AT::TEX_COORD;
 
-    if (pvName == "uv" || pvName == "UV" || pvName == "st")   return pmc::AttributeType::TEX_COORD;
-    if (pvName == pxr::UsdGeomTokens->normals)                return pmc::AttributeType::NORMAL;
-    if (pvName == "displayColor")                             return pmc::AttributeType::COLOR;
+    if (pvName == "uv" || pvName == "UV" || pvName == "st")   return AT::TEX_COORD;
+    if (pvName == pxr::UsdGeomTokens->normals)                return AT::NORMAL;
+    if (pvName == "displayColor")                             return AT::COLOR;
 
     // If pvName ends with "_uv"
     constexpr std::string_view suff {"_uv"};
     std::string_view ps = pvName.GetString();
     if (ps.compare(ps.length() - suff.length(), suff.length(), suff) == 0)
-        return pmc::AttributeType::TEX_COORD;
+        return AT::TEX_COORD;
 
-    return pmc::AttributeType::USER_DEFINED_START;
+    return AT::USER_DEFINED_START;
 }
 
 //=============================================================================
@@ -443,18 +446,20 @@ GuessAttributeType(const TfToken pvRole, const TfToken pvName)
 pmc::AttributeIndicesCodingStrategy
 GetIndicesStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
 {
+    using AICS = pmc::AttributeIndicesCodingStrategy;
 
     if (!ampi.sparse) {
         switch (ampi.scope) {
-            case pmc::AttributeScope::CORNER: return pmc::AttributeIndicesCodingStrategy::ADAPTIVE;
-            case pmc::AttributeScope::VERTEX: return pmc::AttributeIndicesCodingStrategy::VERTEX_BASED;
-            case pmc::AttributeScope::FACE:   return pmc::AttributeIndicesCodingStrategy::CORNER_BASED;
-            case pmc::AttributeScope::EDGE:      break; /* this isn't supported */
-            case pmc::AttributeScope::DERIVED:   break; /* sparse only */
-            case pmc::AttributeScope::EXTERNAL:  break; /* sparse only */
-            case pmc::AttributeScope::UNDEFINED: break; /* this should be removed from the API */
+            using AS = pmc::AttributeScope;
+            case AS::CORNER: return AICS::ADAPTIVE;
+            case AS::VERTEX: return AICS::VERTEX_BASED;
+            case AS::FACE:   return AICS::CORNER_BASED;
+            case AS::EDGE:      break; /* this isn't supported */
+            case AS::DERIVED:   break; /* sparse only */
+            case AS::EXTERNAL:  break; /* sparse only */
+            case AS::UNDEFINED: break; /* this should be removed from the API */
         }
-        return pmc::AttributeIndicesCodingStrategy::SKIP;
+        return AICS::SKIP;
     }
 
     /* sparse attribtues */
@@ -464,11 +469,11 @@ GetIndicesStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
             //       data is ordered correctly.
             if ([[maybe_unused]] const bool creasesAreOrderedCorrectly = 0)
                 if (ampi.type == pmc::AttributeType::CREASE)
-                    return pmc::AttributeIndicesCodingStrategy::EDGE_BASED;
+                    return AICS::EDGE_BASED;
             [[fallthrough]];
 
         default:
-            return pmc::AttributeIndicesCodingStrategy::SPARSE_BASED;
+            return AICS::SPARSE_BASED;
     }
 }
 
@@ -477,10 +482,11 @@ pmc::TraversalStrategy
 GetTraversalStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
 {
     using AT = pmc::AttributeType;
+    using TS = pmc::TraversalStrategy;
     switch (ampi.type) {
-        case AT::TEX_COORD: return pmc::TraversalStrategy::CONNECTIVITY_GUIDED;
-        case AT::NORMAL:    return pmc::TraversalStrategy::GEOMETRY_DEFINED;
-        default:            return pmc::TraversalStrategy::ADAPTIVE;
+        case AT::TEX_COORD: return TS::CONNECTIVITY_GUIDED;
+        case AT::NORMAL:    return TS::GEOMETRY_DEFINED;
+        default:            return TS::ADAPTIVE;
     }
 }
 
@@ -488,12 +494,13 @@ GetTraversalStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
 pmc::PredictionStrategy
 GetPredictionStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
 {
+    using AS = pmc::AttributeScope;
     using AT = pmc::AttributeType;
     using PS = pmc::PredictionStrategy;
     switch (ampi.type) {
-        case AT::TEX_COORD:     return PS::TEX_COORD_GEOMETRY_GUIDED;
-        case AT::NORMAL:        return PS::UNITARY_OCTAHEDRAL_NORMAL_VECTOR;
-        default:                return PS::LINEAR;
+        default:                 return PS::LINEAR;
+        case AT::TEX_COORD:      return PS::TEX_COORD_GEOMETRY_GUIDED;
+        case AT::NORMAL:         return PS::UNITARY_OCTAHEDRAL_NORMAL_VECTOR;
     }
 }
 
