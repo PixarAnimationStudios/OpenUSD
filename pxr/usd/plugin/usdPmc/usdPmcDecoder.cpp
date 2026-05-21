@@ -280,7 +280,7 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
             }
 
             // UsdGeomSubsets
-            if (attrPart.info.type == pmc::AttributeType::FACE_GROUP_ID) {
+            if (attrPart.info.type == pmc::AttributeType::FACE_GROUP) {
                 
                 if (userData.find(kUSDJsonSubmeshNamesKey) == userData.end() ||
                     !userData[kUSDJsonSubmeshNamesKey].IsHolding<
