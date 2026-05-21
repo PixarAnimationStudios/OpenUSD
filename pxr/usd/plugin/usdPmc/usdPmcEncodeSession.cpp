@@ -690,8 +690,6 @@ pmc::AttributeMeshpart&
 PmcEncodeSession::_setupAttr(VtValue vals, VtArray<int> idxs)
 {
     auto& amp = _amps.emplace_back();
-    _gmp.attMeshparts.push_back(&amp);
-
     amp.info.frameOrderCount = 0,
     amp.info.meshpartId = 0,
     amp.info.attributeId = _amps.size() - 1;
@@ -841,6 +839,7 @@ PmcEncodeSession::_setupCreases()
 
     using pmc::IndicesInterpretation;
     auto& ampIdxs = _setupAttr(lens, idxs);
+    const auto ampIdxsId = ampIdxs.info.attributeId;
     ampIdxs.info.type = pmc::AttributeType::CREASE;
     ampIdxs.info.scope = pmc::AttributeScope::VERTEX;
     ampIdxs.info.indicesInterpretation = IndicesInterpretation::SCOPE_INDEXING;
@@ -850,7 +849,7 @@ PmcEncodeSession::_setupCreases()
     auto& ampVals = _setupAttr(vals, {});
     ampVals.info.type = pmc::AttributeType::SHARPNESS;
     ampVals.info.scope = pmc::AttributeScope::DERIVED;
-    ampVals.info.derivedScope.scopedAttributeId = ampIdxs.info.attributeId;
+    ampVals.info.derivedScope.scopedAttributeId = ampIdxsId;
     ampVals.info.indicesInterpretation = IndicesInterpretation::VALUE_INDEXING;
     ampVals.info.sparse = true;
     ampVals.info.jsonCustomAui = JsonAuiForAttr(attrVals);
@@ -946,6 +945,11 @@ PmcEncodeSession::_encode()
         Quantizer q(float(_gmp.info.coordSys), _gmp.info.coordSysOrigin, 3);
         _gmp.buffers.positions = ConvertBuffer(_gmp.buffers.positions, tmp, q);
     }
+
+    // cross-reference attributes for encoder connectivity decisions
+    for (auto& amp : _amps)
+        _gmp.attMeshparts.push_back(&amp);
+
     constexpr Expect throwOnError {pmc::Error::OK};
     throwOnError = _enc.encode(_gmp, dstBuf, geomOpts);
 

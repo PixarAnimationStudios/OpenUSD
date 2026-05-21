@@ -49,6 +49,8 @@ protected:
     void _setupAttrs();
 
     /// Common setup for a single attribute
+    /// \return life-time limited reference to created pmc attribute structure.
+    /// NB: returned reference is invalidated by subsequent _setupAttr() call.
     pmc::AttributeMeshpart& _setupAttr(VtValue vals, VtArray<int> idxs);
 
     /// Prepare PMC AttributeMeshPart from primvar attributes
