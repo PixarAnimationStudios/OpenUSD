@@ -165,6 +165,9 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
         return false;
     }
     pmc::Decoder::InspectionDelegate inspectFns;
+    VtIntArray sharpnessesDerivedIds;
+    int creaseAttrId = -1;
+    bool decodeCrease = false;
 
     inspectFns.onInspectGeometryMeshpart =
         [&](const pmc::GeometryMeshpartInfo& info, bool& decode) noexcept {
@@ -174,6 +177,20 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
 
     inspectFns.onInspectAttributeMeshpart =
         [&](const pmc::AttributeMeshpartInfo& info, bool& decode) noexcept {
+            if (info.type == pmc::AttributeType::CREASE
+                && info.scope == pmc::AttributeScope::VERTEX
+                && info.indicesInterpretation == pmc::IndicesInterpretation::SCOPE_INDEXING) {
+                
+                // Crease lengths and indices, saving Id for future reference
+                creaseAttrId = info.attributeId;
+            }
+            if (info.type == pmc::AttributeType::SHARPNESS
+                && info.scope == pmc::AttributeScope::DERIVED
+                && info.indicesInterpretation == pmc::IndicesInterpretation::VALUE_INDEXING) {
+                
+                // Sharpnesses (corner, crease?), saving derived Id
+                sharpnessesDerivedIds.push_back(info.derivedScope.scopedAttributeId);
+            }
             decode = true;
             return pmc::Error::OK;
         };
@@ -188,6 +205,13 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
         return false;
     }
 
+    // Check crease data
+    if ( std::find(sharpnessesDerivedIds.begin(),
+                   sharpnessesDerivedIds.end(),
+                   creaseAttrId) != sharpnessesDerivedIds.end()) {
+        // There is a combination of compatible Sharpnesses, Lengths and Indices for crease
+        decodeCrease = true;
+    }
     pmc::Decoder::DecodingDelegate decodeFns;
     VtIntArray usdFaceVertexIndices;
     VtIntArray usdFaceVertexCounts;
@@ -320,7 +344,7 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
             if (attrPart.info.type == pmc::AttributeType::HOLE
                 && attrPart.info.scope == pmc::AttributeScope::FACE
                 && attrPart.info.indicesInterpretation == pmc::IndicesInterpretation::SCOPE_INDEXING) {
-                UsdAttribute holeIndicesAttr = decodedMesh.CreateHoleIndicesAttr();
+                UsdAttribute holeIndicesAttr = decodedMesh->CreateHoleIndicesAttr();
                 if (!holeIndicesAttr.IsValid()) {
                     TF_RUNTIME_ERROR("Cannot create hole indices attribute");
                     return pmc::Error::STATE_ERROR;
@@ -329,44 +353,46 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
                 return pmc::Error::OK;
             }
             // Creases
-            if (attrPart.info.type == pmc::AttributeType::SHARPNESS) {
-                UsdAttribute creaseSharpness =
-                    decodedMesh->CreateCreaseSharpnessesAttr();
-                if (!creaseSharpness.IsValid()) {
-                    TF_RUNTIME_ERROR("Cannot create crease sharpnesses "
-                                     "attribute");
-                    return pmc::Error::STATE_ERROR;
+            if ( decodeCrease ) {
+                if (attrPart.info.type == pmc::AttributeType::SHARPNESS
+                    && attrPart.info.derivedScope.scopedAttributeId == creaseAttrId) {
+                    UsdAttribute creaseSharpness =
+                        decodedMesh->CreateCreaseSharpnessesAttr();
+                    if (!creaseSharpness.IsValid()) {
+                        TF_RUNTIME_ERROR("Cannot create crease sharpnesses "
+                                        "attribute");
+                        return pmc::Error::STATE_ERROR;
+                    }
+
+                    auto scalingRange = ScalingRangeFrom(attrPart.info.coordSys);
+                    if (!UsdPmc_WriteAttributeScalarValuesToUsdAttribute<float,
+                                                                 UsdAttribute>(
+                            attrPart, creaseSharpness, scalingRange)) {
+                        TF_RUNTIME_ERROR("Cannot create crease sharpnesses "
+                                        "attribute");
+                        return pmc::Error::STATE_ERROR;
+                    }
+                    return pmc::Error::OK;
                 }
 
-                auto scalingRange = ScalingRangeFrom(attrPart.info.coordSys);
-                if (!UsdPmc_WriteAttributeScalarValuesToUsdAttribute<float,
-                                                                    UsdAttribute>(
-                        attrPart, creaseSharpness, scalingRange)) {
-                    TF_RUNTIME_ERROR("Cannot create crease sharpnesses "
-                                     "attribute");
-                    return pmc::Error::STATE_ERROR;
+                if (attrPart.info.attributeId == creaseAttrId) {
+                    UsdAttribute creaseIndices =
+                        decodedMesh->CreateCreaseIndicesAttr();
+                    if (!creaseIndices.IsValid()) {
+                        TF_RUNTIME_ERROR("Cannot create crease indices attribute");
+                        return pmc::Error::STATE_ERROR;
+                    }
+                    creaseIndices.Set(attrIndices);
+                    UsdAttribute creaseLengths =
+                        decodedMesh->CreateCreaseLengthsAttr();
+                    if (!creaseLengths.IsValid()) {
+                        TF_RUNTIME_ERROR("Cannot create crease lengths attribute");
+                        return pmc::Error::STATE_ERROR;
+                    }
+                    creaseLengths.Set(attrValues);
+                    return pmc::Error::OK;
                 }
-                return pmc::Error::OK;
             }
-
-            if (attrPart.info.type == pmc::AttributeType::CREASE) {
-                UsdAttribute creaseIndices =
-                    decodedMesh->CreateCreaseIndicesAttr();
-                if (!creaseIndices.IsValid()) {
-                    TF_RUNTIME_ERROR("Cannot create crease indices attribute");
-                    return pmc::Error::STATE_ERROR;
-                }
-                creaseIndices.Set(attrIndices);
-                UsdAttribute creaseLengths =
-                    decodedMesh->CreateCreaseLengthsAttr();
-                if (!creaseLengths.IsValid()) {
-                    TF_RUNTIME_ERROR("Cannot create crease lengths attribute");
-                    return pmc::Error::STATE_ERROR;
-                }
-                creaseLengths.Set(attrValues);
-                return pmc::Error::OK;
-            }
-
             // General case
             if (attrName == "") {
                 // Fallback to commonly used names
@@ -462,15 +488,6 @@ UsdPmcMeshDecoder::_InferNameFromInfo(std::string* attrName,
             break;
         case pmc::AttributeType::COLOR:
             *attrName = "primvars:displayColor";
-            break;
-        case pmc::AttributeType::HOLE:
-            *attrName = "holeIndices";
-            break;
-        case pmc::AttributeType::CREASE:
-            *attrName = "crease";
-            break;
-        case pmc::AttributeType::SHARPNESS:
-            *attrName = "sharpness";
             break;
         default:
             *attrName = "attribute_" + std::to_string(_unnamedAttributeCount++);
