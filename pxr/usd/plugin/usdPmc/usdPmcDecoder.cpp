@@ -41,8 +41,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define WRITE_ATTRIBUTE_SCALAR(attribute_type, usd_attr_type, usd_attr, \
                                 scalingRange) \
     if (cppTypeName == #attribute_type) \
-        res = _WriteAttributeScalarValuesToUsdAttribute<attribute_type, \
-                                                        usd_attr_type>( \
+        res = UsdPmc_WriteAttributeScalarValuesToUsdAttribute<attribute_type, \
+                                                             usd_attr_type>( \
             attrPart, usd_attr, scalingRange);
 
 /// This macro generates code to write vector (multi-component) attribute
@@ -51,8 +51,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define WRITE_ATTRIBUTE_VECTOR(attribute_type, usd_attr_type, usd_attr, \
                                 scalingRange) \
     if (cppTypeName == #attribute_type) \
-        res = _WriteAttributeVectorValuesToUsdAttribute<attribute_type, \
-                                                        usd_attr_type>( \
+        res = UsdPmc_WriteAttributeVectorValuesToUsdAttribute<attribute_type, \
+                                                             usd_attr_type>( \
             attrPart, usd_attr, scalingRange);
 
 /// This macro generates a comprehensive set of type-specific attribute writing
@@ -85,12 +85,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     WRITE_ATTRIBUTE_SCALAR(GfHalf, attributeType, attribute, scalingRange) \
     WRITE_ATTRIBUTE_SCALAR(float, attributeType, attribute, scalingRange) \
     WRITE_ATTRIBUTE_SCALAR(double, attributeType, attribute, scalingRange)
-
-
 UsdPmcMeshDecoder::UsdPmcMeshDecoder() : _unnamedAttributeCount(0) {}
-
 UsdPmcMeshDecoder::~UsdPmcMeshDecoder() {}
-
 bool
 UsdPmcMeshDecoder::CanDecode(const char* buffer, size_t length) {
     return _InspectBitstream(buffer, length);
@@ -150,7 +146,11 @@ UsdPmcMeshDecoder::_InspectBitstream(const char* buffer, size_t length) {
 
 bool
 UsdPmcMeshDecoder::Decode(const char* buffer, size_t length,
-                          UsdGeomMesh& decodedMesh) {
+                          UsdGeomMesh* decodedMesh) {
+    if (!decodedMesh) {
+        TF_RUNTIME_ERROR("decodedMesh cannot be null");
+        return false;
+    }
     if (!_DecodeBitstream(buffer, length, decodedMesh)) {
         TF_RUNTIME_ERROR("Unable to decode PMC bitstream");
         return false;
@@ -160,7 +160,11 @@ UsdPmcMeshDecoder::Decode(const char* buffer, size_t length,
 
 bool
 UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
-                                    UsdGeomMesh& decodedMesh) {
+                                    UsdGeomMesh* decodedMesh) {
+    if (!decodedMesh) {
+        TF_RUNTIME_ERROR("decodedMesh cannot be null");
+        return false;
+    }
     pmc::Decoder::InspectionDelegate inspectFns;
 
     inspectFns.onInspectGeometryMeshpart =
@@ -203,18 +207,18 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
             try {
                 // Points
                 usdPoints.resize(info.outputVertexCount * 3);
-                bufs.positions = ToPmcBuffer(usdPoints, 3,
-                                           pmc::DataType::Int32);
+                bufs.positions = UsdPmc_ToPmcBuffer(usdPoints, 3,
+                                                   pmc::DataType::Int32);
         
                 // Face vertex indices
                 usdFaceVertexIndices.resize(info.outputIndexCount);
-                bufs.indices = ToPmcBuffer(usdFaceVertexIndices, 1,
-                                         pmc::DataType::Int32);
+                bufs.indices = UsdPmc_ToPmcBuffer(usdFaceVertexIndices, 1,
+                                                 pmc::DataType::Int32);
 
                 // Face counts
                 usdFaceVertexCounts.resize(info.outputFaceCount);
-                bufs.faceDegrees = ToPmcBuffer(usdFaceVertexCounts, 1,
-                                             pmc::DataType::Int32);
+                bufs.faceDegrees = UsdPmc_ToPmcBuffer(usdFaceVertexCounts, 1,
+                                                     pmc::DataType::Int32);
 
                 return pmc::Error::OK;
             } catch (...) {
@@ -242,14 +246,14 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
             try {
                 attrValues.resize(info.vectorCount *
                                   info.componentsPerVector);
-                bufs.values = ToPmcBuffer(attrValues,
-                                        info.componentsPerVector,
-                                        pmc::DataType::Int32);
+                bufs.values = UsdPmc_ToPmcBuffer(attrValues,
+                                                info.componentsPerVector,
+                                                pmc::DataType::Int32);
 
                 if (info.indexCount > 0) {
                     attrIndices.resize(info.indexCount);
-                    bufs.indices = ToPmcBuffer(attrIndices, 1,
-                                             pmc::DataType::Int32);
+                    bufs.indices = UsdPmc_ToPmcBuffer(attrIndices, 1,
+                                                     pmc::DataType::Int32);
                 } else {
                     attrIndices.resize(0);
                 }
@@ -263,21 +267,21 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
     decodeFns.onEndGeometryMeshpartDecoding =
         [&](const pmc::GeometryMeshpart& meshPart,
             size_t decodedByteCount) {
-            auto usdPointsAttr = decodedMesh.CreatePointsAttr();
+            auto usdPointsAttr = decodedMesh->CreatePointsAttr();
 
             std::pair<int,int> scalingRange {
                 meshPart.info.coordSys.q, meshPart.info.coordSys.p
             };
 
-            usdPointsAttr.Set(flattenToMultidimUsdArray<GfVec3f>(
+            usdPointsAttr.Set(UsdPmc_FlattenToMultidimUsdArray<GfVec3f>(
                 usdPoints, 3, scalingRange));
 
             auto usdFaceVertexIndicesAttr =
-                decodedMesh.CreateFaceVertexIndicesAttr();
+                decodedMesh->CreateFaceVertexIndicesAttr();
             usdFaceVertexIndicesAttr.Set(usdFaceVertexIndices);
 
             auto usdFaceVertexCountsAttr =
-                decodedMesh.CreateFaceVertexCountsAttr();
+                decodedMesh->CreateFaceVertexCountsAttr();
             usdFaceVertexCountsAttr.Set(usdFaceVertexCounts);
 
             return pmc::Error::OK;
@@ -294,7 +298,7 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
             std::string attrName = attrPart.info.name;
 
             VtDictionary userData;
-            if (!_GetUserDataInfo(userData, attrPart.info.jsonCustomAui)) {
+            if (!_GetUserDataInfo(&userData, attrPart.info.jsonCustomAui)) {
                 TF_RUNTIME_ERROR("Error for attribute " + attrName +
                                  ": unable to parse user data");
                 return pmc::Error::STATE_ERROR;
@@ -327,7 +331,7 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
                     for (auto pos = 0; pos < currentLength; pos++) {
                         subsetIndices[pos] = attrIndices[indexPosition++];
                     }
-                    UsdGeomSubset::CreateGeomSubset(decodedMesh, TfToken(ssn),
+                    UsdGeomSubset::CreateGeomSubset(*decodedMesh, TfToken(ssn),
                                                     UsdGeomTokens->face,
                                                     subsetIndices);
                 }
@@ -338,7 +342,7 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
             // Creases
             if (attrPart.info.type == pmc::AttributeType::SHARPNESS) {
                 UsdAttribute creaseSharpness =
-                    decodedMesh.CreateCreaseSharpnessesAttr();
+                    decodedMesh->CreateCreaseSharpnessesAttr();
                 if (!creaseSharpness.IsValid()) {
                     TF_RUNTIME_ERROR("Cannot create crease sharpnesses "
                                      "attribute");
@@ -349,8 +353,8 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
                     attrPart.info.coordSys.q, attrPart.info.coordSys.p
                 };
 
-                if (!_WriteAttributeScalarValuesToUsdAttribute<float,
-                                                               UsdAttribute>(
+                if (!UsdPmc_WriteAttributeScalarValuesToUsdAttribute<float,
+                                                                    UsdAttribute>(
                         attrPart, creaseSharpness, scalingRange)) {
                     TF_RUNTIME_ERROR("Cannot create crease sharpnesses "
                                      "attribute");
@@ -361,14 +365,14 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
 
             if (attrPart.info.type == pmc::AttributeType::CREASE) {
                 UsdAttribute creaseIndices =
-                    decodedMesh.CreateCreaseIndicesAttr();
+                    decodedMesh->CreateCreaseIndicesAttr();
                 if (!creaseIndices.IsValid()) {
                     TF_RUNTIME_ERROR("Cannot create crease indices attribute");
                     return pmc::Error::STATE_ERROR;
                 }
                 creaseIndices.Set(attrIndices);
                 UsdAttribute creaseLengths =
-                    decodedMesh.CreateCreaseLengthsAttr();
+                    decodedMesh->CreateCreaseLengthsAttr();
                 if (!creaseLengths.IsValid()) {
                     TF_RUNTIME_ERROR("Cannot create crease lengths attribute");
                     return pmc::Error::STATE_ERROR;
@@ -380,13 +384,13 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
             // General case
             if (attrName == "") {
                 // Fallback to commonly used names
-                _InferNameFromInfo(attrName, attrPart.info);
+                _InferNameFromInfo(&attrName, attrPart.info);
             }
 
             auto attrTypeName = SdfValueTypeNames->IntArray;
             // Update attrTypeName
-            if (!_ExtractTypeNameFromUserData(attrTypeName, userData)) {
-                _InferTypeNameFromName(attrTypeName, attrName);
+            if (!_ExtractTypeNameFromUserData(&attrTypeName, userData)) {
+                _InferTypeNameFromName(&attrTypeName, attrName);
             }
             
             int16_t elementSize = -1;
@@ -399,7 +403,7 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
 
             auto cppTypeName = attrTypeName.GetScalarType().GetCPPTypeName();
 
-            if (auto usdAttribute = decodedMesh.GetPrim().CreateAttribute(
+            if (auto usdAttribute = decodedMesh->GetPrim().CreateAttribute(
                     TfToken(attrName.c_str()), attrTypeName)) {
                 // General case attribute
                 if ( auto primVar = UsdGeomPrimvar(usdAttribute) ) {
@@ -428,7 +432,7 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
                     }
                     if ( attrName == "normals" ) {
                         if ( attrIndices.size() > 0 ) {
-                            auto normalsIndicesAttr = decodedMesh.GetPrim()
+                            auto normalsIndicesAttr = decodedMesh->GetPrim()
                                 .CreateAttribute(TfToken("normals:indices"),
                                                SdfValueTypeNames->IntArray,
                                                false);
@@ -457,29 +461,33 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
 }
 
 void
-UsdPmcMeshDecoder::_InferNameFromInfo(std::string& attrName,
+UsdPmcMeshDecoder::_InferNameFromInfo(std::string* attrName,
                                       const pmc::AttributeMeshpartInfo& info) {
+    if (!attrName) {
+        TF_RUNTIME_ERROR("attrName cannot be null");
+        return;
+    }
     switch(info.type) {
         case pmc::AttributeType::TEX_COORD:
-            attrName = "primvars:st";
+            *attrName = "primvars:st";
             break;
         case pmc::AttributeType::NORMAL:
-            attrName = "primvars:normals";
+            *attrName = "primvars:normals";
             break;
         case pmc::AttributeType::COLOR:
-            attrName = "primvars:displayColor";
+            *attrName = "primvars:displayColor";
             break;
         case pmc::AttributeType::HOLE:
-            attrName = "hole";
+            *attrName = "hole";
             break;
         case pmc::AttributeType::CREASE:
-            attrName = "crease";
+            *attrName = "crease";
             break;
         case pmc::AttributeType::SHARPNESS:
-            attrName = "sharpness";
+            *attrName = "sharpness";
             break;
         default:
-            attrName = "attribute_" + std::to_string(_unnamedAttributeCount++);
+            *attrName = "attribute_" + std::to_string(_unnamedAttributeCount++);
     }
 }
 
@@ -493,7 +501,19 @@ UsdPmcMeshDecoder::_InferNameFromInfo(std::string& attrName,
 
 bool
 UsdPmcMeshDecoder::_GetTypeNameFromString(const std::string_view strTypeName,
-                                          SdfValueTypeName& typeName) {
+                                          SdfValueTypeName* typeName) {
+    if (!typeName) {
+        TF_RUNTIME_ERROR("typeName cannot be null");
+        return false;
+    }
+
+    // Redefine the macro to use pointer syntax
+    #undef USD_PMC_CHECK_TYPENAME
+    #define USD_PMC_CHECK_TYPENAME(typename) \
+        if (strTypeName == SdfValueTypeNames->typename.GetAsToken().GetString()) { \
+            *typeName = SdfValueTypeNames->typename; \
+            return true; \
+        }
 
     // Basic array types
     USD_PMC_CHECK_TYPENAME(BoolArray);
@@ -550,45 +570,57 @@ UsdPmcMeshDecoder::_GetTypeNameFromString(const std::string_view strTypeName,
     // USD_PMC_CHECK_TYPENAME(QuathArray);
 
     // Default fallback type
-    typeName = SdfValueTypeNames->IntArray;
+    *typeName = SdfValueTypeNames->IntArray;
     return false;
 }
 
 bool
 UsdPmcMeshDecoder::_ExtractTypeNameFromUserData(
-    SdfValueTypeName& attrTypeName, const VtDictionary& userData) {
+    SdfValueTypeName* attrTypeName, const VtDictionary& userData) {
+    if (!attrTypeName) {
+        TF_RUNTIME_ERROR("attrTypeName cannot be null");
+        return false;
+    }
     const auto userTypeName = userData.find(kUSDJsonTypeNameKey);
     if ( userTypeName != userData.end() ) {
         return _GetTypeNameFromString(userTypeName->second.Get<std::string>(),
                                       attrTypeName);
     }
-    attrTypeName = SdfValueTypeNames->IntArray;
+    *attrTypeName = SdfValueTypeNames->IntArray;
     return false;
 }
 
 void
-UsdPmcMeshDecoder::_InferTypeNameFromName(SdfValueTypeName& attrTypeName,
+UsdPmcMeshDecoder::_InferTypeNameFromName(SdfValueTypeName* attrTypeName,
                                           const std::string_view attrName) {
-    attrTypeName = SdfValueTypeNames->IntArray;
+    if (!attrTypeName) {
+        TF_RUNTIME_ERROR("attrTypeName cannot be null");
+        return;
+    }
+    *attrTypeName = SdfValueTypeNames->IntArray;
     if ( attrName == "normals" || attrName == "primvars:normals" ) {
-        attrTypeName = SdfValueTypeNames->Normal3fArray;
+        *attrTypeName = SdfValueTypeNames->Normal3fArray;
     } else if ( attrName == "primvars:uv" || attrName == "primvars:st" ) {
-        attrTypeName = SdfValueTypeNames->TexCoord2fArray;
+        *attrTypeName = SdfValueTypeNames->TexCoord2fArray;
     } else if ( attrName == "primvars:displayColor" ) {
-        attrTypeName = SdfValueTypeNames->Color3fArray;
+        *attrTypeName = SdfValueTypeNames->Color3fArray;
     } else if ( attrName == "primvars:displayOpacity" ) {
-        attrTypeName = SdfValueTypeNames->FloatArray;
+        *attrTypeName = SdfValueTypeNames->FloatArray;
     }
 }
 
 bool
-UsdPmcMeshDecoder::_GetUserDataInfo(VtDictionary& userData,
+UsdPmcMeshDecoder::_GetUserDataInfo(VtDictionary* userData,
                                     const std::string& jsonUserData) {
+    if (!userData) {
+        TF_RUNTIME_ERROR("userData cannot be null");
+        return false;
+    }
     try {
         if ( jsonUserData == "" ) {
             return true;
         }
-        userData.clear();
+        userData->clear();
         JsValue jsonData = JsParseString(jsonUserData);
         if ( jsonData.IsNull()
             || !jsonData.IsObject() ) {
@@ -615,7 +647,7 @@ UsdPmcMeshDecoder::_GetUserDataInfo(VtDictionary& userData,
                 mainUsdDictionary.end()
             && !mainUsdDictionary.at(kUSDJsonTypeNameKey).IsNull()
             && mainUsdDictionary.at(kUSDJsonTypeNameKey).IsString() ) {
-            userData.SetValueAtPath(kUSDJsonTypeNameKey,
+            userData->SetValueAtPath(kUSDJsonTypeNameKey,
                 VtValue(mainUsdDictionary.at(kUSDJsonTypeNameKey).GetString()));
         }
 
@@ -629,7 +661,7 @@ UsdPmcMeshDecoder::_GetUserDataInfo(VtDictionary& userData,
                      .at(kUSDJsonSubmeshNamesKey).GetArrayOf<std::string>()) {
                 ssn.emplace_back(currentSSN);
             }
-            userData.SetValueAtPath(kUSDJsonSubmeshNamesKey, VtValue(ssn));
+            userData->SetValueAtPath(kUSDJsonSubmeshNamesKey, VtValue(ssn));
         }
 
         return true;

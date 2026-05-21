@@ -326,7 +326,9 @@ if(PXR_ENABLE_OSL_SUPPORT)
 endif()
 
 if ( PXR_BUILD_PMC_PLUGIN)
-    cmake_policy(SET CMP0144 NEW)
+    if(POLICY CMP0144)
+        cmake_policy(SET CMP0144 NEW)
+    endif()
     find_package(Pmc REQUIRED)
 endif()
 

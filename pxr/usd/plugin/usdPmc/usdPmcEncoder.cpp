@@ -86,16 +86,21 @@ UsdPmcMeshEncoder::CanEncode(const UsdGeomMesh& mesh) {
 
 std::vector<uint8_t>
 UsdPmcMeshEncoder::Encode(UsdGeomMesh& mesh, const VtDictionary& options,
-                          std::set<std::string>& processedAttributes,
-                          std::set<std::string>& processedSubSets,
-                          VtDictionary& resultInfo) {
+                          std::set<std::string>* processedAttributes,
+                          std::set<std::string>* processedSubSets,
+                          VtDictionary* resultInfo) {
     std::vector<uint8_t> bs;
     try {
         // ToDo: take into account the input options
         PmcEncodeSession pmces = PmcEncodeSession{UsdGeomMesh(mesh)};
         bs = pmces.encode();
-        processedAttributes = pmces.processedAttributes;
-        processedSubSets = pmces.processedSubSets;
+        if (processedAttributes) {
+            *processedAttributes = pmces.processedAttributes;
+        }
+        if (processedSubSets) {
+            *processedSubSets = pmces.processedSubSets;
+        }
+        // resultInfo is currently unused but could be populated in the future
     } catch (std::exception& e) {
         TF_RUNTIME_ERROR("Mesh encoding failed: " + std::string(e.what()));
     }
@@ -211,9 +216,9 @@ bool
 UsdPmcMeshEncoder::_ProcessMesh(UsdGeomMesh& mesh,
                                 const VtDictionary& options,
                                 const uint32_t meshCounter,
-                                std::set<std::string>& processedAttributes,
-                                std::set<std::string>& processedSubSets,
-                                VtDictionary& resultInfo) {
+                                std::set<std::string>* processedAttributes,
+                                std::set<std::string>* processedSubSets,
+                                VtDictionary* resultInfo) {
    if (!mesh) {
        return false;
    }
@@ -263,31 +268,33 @@ UsdPmcMeshEncoder::_ProcessMesh(UsdGeomMesh& mesh,
 bool
 UsdPmcMeshEncoder::_RemoveAttributes(
     UsdGeomMesh& mesh,
-    std::set<std::string>& processedAttributes,
-    std::set<std::string>& processedSubSets) {
+    std::set<std::string>* processedAttributes,
+    std::set<std::string>* processedSubSets) {
     if (!mesh) {
         return false;
     }
 
     // Remove all the processed attributes that were compressed
-    for (auto attr: processedAttributes) {
+    if (processedAttributes) {
+        for (auto attr: *processedAttributes) {
 
-        if (mesh.GetPrim().HasProperty(TfToken(attr))) {
-            mesh.GetPrim().GetAttribute(TfToken(attr)).Clear();
-            mesh.GetPrim().GetAttribute(TfToken(attr))
-                .ClearMetadata(UsdGeomTokens->elementSize);
-        } else {
-            // Handle primvar attributes with namespaces
-            std::string attrVarType = attr;
-            auto pos = attrVarType.substr(0, attrVarType.rfind(':')).rfind(':');
-            if (pos != std::string::npos) {
-                attrVarType.erase(pos);
-                if (attrVarType != "primvars") {
-                    if (mesh.GetPrim().HasProperty(TfToken(attrVarType))) {
-                        mesh.GetPrim().GetAttribute(TfToken(attrVarType))
-                            .Clear();
-                        mesh.GetPrim().GetAttribute(TfToken(attrVarType))
-                            .ClearMetadata(UsdGeomTokens->elementSize);
+            if (mesh.GetPrim().HasProperty(TfToken(attr))) {
+                mesh.GetPrim().GetAttribute(TfToken(attr)).Clear();
+                mesh.GetPrim().GetAttribute(TfToken(attr))
+                    .ClearMetadata(UsdGeomTokens->elementSize);
+            } else {
+                // Handle primvar attributes with namespaces
+                std::string attrVarType = attr;
+                auto pos = attrVarType.substr(0, attrVarType.rfind(':')).rfind(':');
+                if (pos != std::string::npos) {
+                    attrVarType.erase(pos);
+                    if (attrVarType != "primvars") {
+                        if (mesh.GetPrim().HasProperty(TfToken(attrVarType))) {
+                            mesh.GetPrim().GetAttribute(TfToken(attrVarType))
+                                .Clear();
+                            mesh.GetPrim().GetAttribute(TfToken(attrVarType))
+                                .ClearMetadata(UsdGeomTokens->elementSize);
+                        }
                     }
                 }
             }
@@ -295,10 +302,12 @@ UsdPmcMeshEncoder::_RemoveAttributes(
     }
 
     // Remove indices from processed geometry subsets
-    for (auto submesh: UsdGeomSubset::GetAllGeomSubsets(mesh)) {
-        if (std::find(processedSubSets.begin(), processedSubSets.end(),
-                      submesh.GetPrim().GetName()) != processedSubSets.end()) {
-            submesh.GetPrim().RemoveProperty(TfToken("indices"));
+    if (processedSubSets) {
+        for (auto submesh: UsdGeomSubset::GetAllGeomSubsets(mesh)) {
+            if (std::find(processedSubSets->begin(), processedSubSets->end(),
+                          submesh.GetPrim().GetName()) != processedSubSets->end()) {
+                submesh.GetPrim().RemoveProperty(TfToken("indices"));
+            }
         }
     }
     return true;
@@ -344,7 +353,7 @@ bool UsdPmcMeshEncoder::EncodeStage(std::filesystem::path inFile,
 
     // Flatten the stage
     std::filesystem::path flattenedPath;
-    if (!_CreateFlattenOutput(stageSource, flattenedPath)) {
+    if (!_CreateFlattenOutput(stageSource, &flattenedPath)) {
         TF_RUNTIME_ERROR("Unable to create flatten stage");
         return false;
     }
@@ -368,10 +377,10 @@ bool UsdPmcMeshEncoder::EncodeStage(std::filesystem::path inFile,
             VtDictionary meshResults;
 
             if (_ProcessMesh(currentMesh, meshOptions, meshCounter,
-                             processedAttributes, processedSubSets,
-                             meshResults)) {
-                _RemoveAttributes(currentMesh, processedAttributes,
-                                  processedSubSets);
+                             &processedAttributes, &processedSubSets,
+                             &meshResults)) {
+                _RemoveAttributes(currentMesh, &processedAttributes,
+                                  &processedSubSets);
                 meshCounter++;
             }
         }
@@ -480,7 +489,11 @@ UsdPmcMeshEncoder::_WriteNonUsdzOutput() {
 
 bool
 UsdPmcMeshEncoder::_CreateFlattenOutput(std::filesystem::path input,
-                                        std::filesystem::path& output) {
+                                        std::filesystem::path* output) {
+    if (!output) {
+        TF_RUNTIME_ERROR("output cannot be null");
+        return false;
+    }
     if (!std::filesystem::exists(input)) {
         TF_RUNTIME_ERROR("Unable to open input file: " + input.string());
         return false;
@@ -495,7 +508,7 @@ UsdPmcMeshEncoder::_CreateFlattenOutput(std::filesystem::path input,
 
     // Generate output path for the flattened stage
     std::string flattenedFileName = "flattened_" + _entryFileName;
-    output = _tempDir / std::filesystem::path(flattenedFileName);
+    *output = _tempDir / std::filesystem::path(flattenedFileName);
 
     // Flatten the entire stage - this collapses all layer composition and
     // value resolution into a single layer while preserving geometry and
@@ -662,16 +675,16 @@ UsdPmcMeshEncoder::_CreateFlattenOutput(std::filesystem::path input,
     }
 
     // Export the flattened layer to the output path
-    if (!flattenedLayer->Export(output.string())) {
+    if (!flattenedLayer->Export(output->string())) {
         TF_RUNTIME_ERROR("Failed to export flattened layer to: " +
-                         output.string());
+                         output->string());
         return false;
     }
 
     // Verify the export succeeded
-    if (!std::filesystem::exists(output)) {
+    if (!std::filesystem::exists(*output)) {
         TF_RUNTIME_ERROR("Flattened file was not created: " +
-                         output.string());
+                         output->string());
         return false;
     }
     return true;

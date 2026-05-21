@@ -1,7 +1,9 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdPmc)
 
-cmake_policy(SET CMP0144 NEW)
+if(POLICY CMP0144)
+    cmake_policy(SET CMP0144 NEW)
+endif()
 
 pxr_library(usdPmc
     LIBRARIES

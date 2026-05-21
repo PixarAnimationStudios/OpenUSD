@@ -10,6 +10,8 @@
 #ifndef USD_PMC_DECODER_H
 #define USD_PMC_DECODER_H
 
+#include "api.h"
+
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/tokens.h"
@@ -31,59 +33,46 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// to USD's native representation.
 class UsdPmcMeshDecoder {
 public:
-    UsdPmcMeshDecoder();
-    ~UsdPmcMeshDecoder();
-
+    USDPMC_API UsdPmcMeshDecoder();
+    USDPMC_API ~UsdPmcMeshDecoder();
     /// Check if buffer contains valid PMC data that can be decoded.
     /// \param buffer Pointer to the PMC data buffer
     /// \param length Size of the buffer in bytes
     /// \return true if the buffer contains valid PMC data, false otherwise
-    bool CanDecode(const char* buffer, size_t length);
-    
+    USDPMC_API bool CanDecode(const char* buffer, size_t length);
     /// Decode PMC buffer into UsdGeomMesh.
     /// \param buffer Pointer to the PMC data buffer
     /// \param length Size of the buffer in bytes
-    /// \param decodedMesh The UsdGeomMesh to populate with decoded data
+    /// \param decodedMesh Pointer to the UsdGeomMesh to populate with decoded data
     /// \return true if decoding was successful, false otherwise
-    bool Decode(const char* buffer, size_t length, UsdGeomMesh& decodedMesh);
-
+    USDPMC_API bool Decode(const char* buffer, size_t length, UsdGeomMesh* decodedMesh);
 private:
     /// Inspect bitstream header and validate format
     bool _InspectBitstream(const char* buffer, size_t length);
-    
     /// Perform actual decoding of PMC bitstream
     bool _DecodeBitstream(const char* buffer, size_t length,
-                          UsdGeomMesh& decodedMesh);
-
+                          UsdGeomMesh* decodedMesh);
     /// Generate attribute name from PMC attribute info
-    void _InferNameFromInfo(std::string& attrName,
+    void _InferNameFromInfo(std::string* attrName,
                             const pmc::AttributeMeshpartInfo& info);
-    
     /// Convert string type name to USD SdfValueTypeName
     bool _GetTypeNameFromString(const std::string_view strTypeName,
-                                SdfValueTypeName& typeName);
-    
+                                SdfValueTypeName* typeName);
     /// Extract type name from JSON user data
-    bool _ExtractTypeNameFromUserData(SdfValueTypeName& attrTypeName,
+    bool _ExtractTypeNameFromUserData(SdfValueTypeName* attrTypeName,
                                       const VtDictionary& userData);
-    
     /// Infer USD type name from attribute name
-    void _InferTypeNameFromName(SdfValueTypeName& attrTypeName,
+    void _InferTypeNameFromName(SdfValueTypeName* attrTypeName,
                                 const std::string_view attrName);
-    
     /// Extract custom attribute flag from user data
-    void _ExtractCustomFromUserData(bool& attrCustom,
+    void _ExtractCustomFromUserData(bool* attrCustom,
                                     const VtDictionary& userData);
-    
     /// Parse JSON user data into VtDictionary
-    bool _GetUserDataInfo(VtDictionary& userData,
+    bool _GetUserDataInfo(VtDictionary* userData,
                           const std::string& jsonUserData);
-
     pmc::Decoder _dec;
     uint32_t _unnamedAttributeCount;
-
 };
-
 /// Convert USD buffer to PMC ArrayBuffer format.
 /// \param usdBuffer The USD buffer to convert
 /// \param cpv Components per vector
@@ -91,7 +80,7 @@ private:
 /// \return PMC ArrayBuffer structure
 template<typename T>
 inline pmc::ArrayBuffer
-ToPmcBuffer(T& usdBuffer, int cpv, pmc::DataType dt) {
+UsdPmc_ToPmcBuffer(T& usdBuffer, int cpv, pmc::DataType dt) {
     pmc::ArrayBuffer buf;
     buf.data = (uint8_t*)usdBuffer.data();
     buf.offset = 0;
@@ -101,15 +90,14 @@ ToPmcBuffer(T& usdBuffer, int cpv, pmc::DataType dt) {
     buf.dataType = dt;
     return buf;
 }
-
 /// Convert flat integer buffer to multidimensional USD array with scaling.
 /// \param buffer The flat integer buffer to convert
 /// \param cpv Components per vector
 /// \param scalingRange Scaling range for value conversion
 /// \return Converted multidimensional USD array
 template<typename T>
-inline VtArray<T> flattenToMultidimUsdArray(const VtIntArray& buffer, int cpv,
-                                             std::pair<int,int> scalingRange) {
+inline VtArray<T> UsdPmc_FlattenToMultidimUsdArray(const VtIntArray& buffer, int cpv,
+                                                    std::pair<int,int> scalingRange) {
     VtArray<T> outBuffer;
     if (cpv <= 0) {
         return outBuffer;
@@ -135,14 +123,13 @@ inline VtArray<T> flattenToMultidimUsdArray(const VtIntArray& buffer, int cpv,
     }
     return outBuffer;
 }
-
 /// Write PMC scalar attribute values to USD attribute with scaling.
 /// \param pmcAttr The PMC attribute containing the data
 /// \param usdAttr The USD attribute to write to
 /// \param scalingRange Scaling range for value conversion
 /// \return true if successful, false otherwise
 template<typename T, typename U>
-inline bool _WriteAttributeScalarValuesToUsdAttribute(
+inline bool UsdPmc_WriteAttributeScalarValuesToUsdAttribute(
     const pmc::AttributeMeshpart& pmcAttr, U& usdAttr,
     std::pair<int,int> scalingRange) {
     try {
@@ -170,14 +157,13 @@ inline bool _WriteAttributeScalarValuesToUsdAttribute(
         return false;
     }
 }
-
 /// Write PMC vector attribute values to USD attribute with scaling.
 /// \param pmcAttr The PMC attribute containing the data
 /// \param usdAttr The USD attribute to write to
 /// \param scalingRange Scaling range for value conversion
 /// \return true if successful, false otherwise
 template<typename T, typename U>
-inline bool _WriteAttributeVectorValuesToUsdAttribute(
+inline bool UsdPmc_WriteAttributeVectorValuesToUsdAttribute(
     const pmc::AttributeMeshpart& pmcAttr, U& usdAttr,
     std::pair<int,int> scalingRange) {
     VtArray<T> tmpBuffer;
@@ -185,7 +171,6 @@ inline bool _WriteAttributeVectorValuesToUsdAttribute(
         int* values = (int*)(pmcAttr.buffers.values.data);
         size_t elementsCount = pmcAttr.info.vectorCount;
         size_t elementDimension = pmcAttr.info.componentsPerVector;
-
         if (scalingRange.second == 0 ||
             scalingRange.first == scalingRange.second) {
             for (auto idx = 0; idx < elementsCount * elementDimension;
@@ -218,7 +203,5 @@ inline bool _WriteAttributeVectorValuesToUsdAttribute(
         return false;
     }
 }
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 #endif // USD_PMC_DECODER_H

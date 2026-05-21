@@ -89,16 +89,10 @@ bool
 UsdPmcFileFormat::ReadFromString(SdfLayer* layer,
                                  const std::string& str) const {
     try {
-        std::string error;
-        if (!_ReadFromBuffer(layer, str.c_str(), str.size(), false,
-                             &error)) {
-            TF_RUNTIME_ERROR("Read: failed to decompress string, error %s",
-                             error.c_str());
-            return false;
-        }
-        return true;
+        return SdfFileFormat::FindById(SdfUsdaFileFormatTokens->Id)
+            ->ReadFromString(layer, str);
     } catch(...) {
-        TF_RUNTIME_ERROR("Read: failed to decompress string, exception");
+        TF_RUNTIME_ERROR("ReadFromString: exception");
         return false;
     }
 }
@@ -108,13 +102,8 @@ bool
 UsdPmcFileFormat::WriteToString(const SdfLayer& layer,
                                 std::string* str,
                                 const std::string& comment) const {
-    try {
-        return SdfFileFormat::FindById(SdfUsdaFileFormatTokens->Id)
-            ->WriteToString(layer, str, comment);
-    } catch(...) {
-        TF_RUNTIME_ERROR("WriteToString: exception");
-        return false;
-    }
+    return SdfFileFormat::FindById(SdfUsdaFileFormatTokens->Id)
+        ->WriteToString(layer, str, comment);
 }
 
 // Defer to the usda file format for this.
@@ -122,13 +111,8 @@ bool
 UsdPmcFileFormat::WriteToStream(const SdfSpecHandle& spec,
                                 std::ostream& out,
                                 size_t indent) const {
-    try {
-        return SdfFileFormat::FindById(SdfUsdaFileFormatTokens->Id)
-            ->WriteToStream(spec, out, indent);
-    } catch(...) {
-        TF_RUNTIME_ERROR("WriteToStream: exception");
-        return false;
-    }
+    return SdfFileFormat::FindById(SdfUsdaFileFormatTokens->Id)
+        ->WriteToStream(spec, out, indent);
 }
 
 bool
@@ -170,7 +154,7 @@ UsdPmcFileFormat::_ReadFromBuffer(SdfLayer* layer,
     UsdPmcMeshDecoder decoder;
 
     // Decode the PMC bitstream buffer into the USD mesh
-    if (!decoder.Decode(buffer, length, decodedUsdMesh)) {
+    if (!decoder.Decode(buffer, length, &decodedUsdMesh)) {
         return false;
     }
 

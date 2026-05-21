@@ -515,7 +515,7 @@ PmcEncodeSession::_setupPrimvar(const UsdGeomPrimvar& pv)
 
     const auto vals = GetAs<VtValue>(pv);
     const auto idxs = GetAs<VtArray<int>>(pv.GetIndicesAttr());
-    if (!vals.IsArrayValued()) {
+    if (!vals.IsArrayValued() || vals.IsHolding<VtArray<std::string>>() || vals.IsHolding<VtArray<TfToken>>()) {
         return;
     }
 

@@ -26,7 +26,6 @@ using namespace pxr_CLI;
 struct Args {
     std::string inputFile;   // Input USD file path
     std::string outputFile;  // Output compressed USD file path
-    bool meshes = true;
 };
 
 // Configure command line interface options
@@ -39,20 +38,10 @@ static void Configure(CLI::App *app, Args &args) {
         "-o,--out", args.outputFile,
         "The output USD file to write to.")
         ->required(true);
-
-    app->add_option(
-        "--meshes", args.meshes,
-        "Controls whether meshes are processed for optimization.")
-        ->default_val(true);
 }
 
 // Encode USD stage using PMC compression
 static int UsdCrush(const Args &args) {
-    if (!args.meshes) {
-        std::cerr << "error: No compression options are enabled, no processing will occur." << std::endl;
-        return 1;
-    }
-
     UsdPmcMeshEncoder pmcEncoder;
     int exitCode = 0;
 
