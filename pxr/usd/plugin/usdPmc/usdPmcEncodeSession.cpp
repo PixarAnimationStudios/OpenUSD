@@ -500,7 +500,12 @@ GetPredictionStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
     switch (ampi.type) {
         default:                 return PS::LINEAR;
         case AT::TEX_COORD:      return PS::TEX_COORD_GEOMETRY_GUIDED;
-        case AT::NORMAL:         return PS::UNITARY_OCTAHEDRAL_NORMAL_VECTOR;
+        case AT::NORMAL:
+            switch (ampi.scope) {
+                case AS::CORNER: return PS::UNITARY_OCTAHEDRAL_NORMAL_VECTOR;
+                case AS::VERTEX: return PS::UNITARY_OCTAHEDRAL_NORMAL_VECTOR;
+                default:         return PS::LINEAR;
+            }
     }
 }
 
