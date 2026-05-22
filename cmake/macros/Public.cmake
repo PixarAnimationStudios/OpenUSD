@@ -678,16 +678,20 @@ function(pxr_build_test_library LIBRARY_NAME)
             "${PROJECT_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include"
     )
 
-    # Copy all public and private headers to the build directory. This is also
-    # the case for core libraries. Clients linking to an installed tree should
+    # Clients linking to an installed tree should
     # not find test-only headers, so the public headers are not installed.
     set(headers ${args_PUBLIC_HEADERS} ${args_PRIVATE_HEADERS})
     foreach(className IN LISTS args_PUBLIC_CLASSES args_PRIVATE_CLASSES)
         list(APPEND headers ${className}.h)
     endforeach()
-    _copy_headers(${LIBRARY_NAME}
-        FILES ${headers}
-        PREFIX ${PXR_PREFIX}
+    target_sources(${LIBRARY_NAME}
+        PRIVATE
+            FILE_SET library_headers
+            TYPE HEADERS
+            BASE_DIRS
+                ${CMAKE_CURRENT_SOURCE_DIR}
+            FILES
+                ${headers}
     )
 
     # Define macros for api.h
