@@ -195,7 +195,46 @@ vec3 GetShadingNormal(vec3 N, bool isFlipped)
 
 vec3 GetShadingNormal(vec3 N, bool isFlipped)
 {
-    // note that negative scaling isn't taken into account in gl_FrontFacing
+    // note that negative scaling isn't taken into account in IsFrontFacing()
     // so we have to consider isFlipped here too.
-    return (isFlipped != gl_FrontFacing) ? N : -N;
+    return (isFlipped != IsFrontFacing()) ? N : -N;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshNormal.WireframeLineFallback.FacingNormal
+
+vec3 GetFacingNormal()
+{
+    ivec2 planarPoint = GetPlanarPointIndex();
+    int i2 = planarPoint.x; 
+    bool invert = planarPoint.y > 0;
+
+    int vertexOffset = GetDrawingCoord().vertexCoord;
+    vec3 p0 = HdGet_vertPoints(vertexOffset + HdGet_indices(0));
+    vec3 p1 = HdGet_vertPoints(vertexOffset + HdGet_indices(1));
+    vec3 p2 = HdGet_vertPoints(vertexOffset + i2);
+    vec3 normal = normalize(cross(p1 - p0, p2 - p0));
+
+    if (invert != IsFlipped()) {
+        normal = -normal;
+    }
+
+    MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
+    return vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
+        vec4(normal, 0)).xyz;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshNormal.WireframeLineFallback.ScreenSpace
+
+FORWARD_DECL(vec3 GetFacingNormal());
+
+vec3 GetNormal(vec3 Neye, int index)
+{
+    return GetFacingNormal();
+}
+
+vec3 GetNormal(vec3 Neye, int index, vec2 localST)
+{
+    return GetNormal(Neye, index);
 }

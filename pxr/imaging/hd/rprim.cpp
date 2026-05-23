@@ -101,7 +101,7 @@ HdRprim::InitRepr(HdSceneDelegate* delegate,
                   TfToken const &reprToken,
                   HdDirtyBits *dirtyBits)
 {
-    _InitRepr(reprToken, dirtyBits);
+    _InitRepr(delegate, reprToken, dirtyBits);
 }
 
 // -------------------------------------------------------------------------- //

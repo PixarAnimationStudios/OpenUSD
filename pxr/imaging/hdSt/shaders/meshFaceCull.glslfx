@@ -38,3 +38,51 @@ void DiscardBasedOnShading(bool frontFacing, bool isFlipped)
         discard;
     }
 }
+
+--- --------------------------------------------------------------------------
+-- glsl MeshFaceCull.Fragment.WireframeLineFallback.SingleSided
+
+void DiscardBasedOnShading(bool frontFacing, bool isFlipped)
+{
+    const uint HdCullStyleBack = 2;
+    const uint HdCullStyleFront = 3;
+    const uint HdCullStyleBackUnlessDoubleSided = 4;
+    const uint HdCullStyleFrontUnlessDoubleSided = 5;
+
+    uint cullStyle = 0;
+#if defined(HD_HAS_cullStyle)
+    cullStyle = HdGet_cullStyle();
+#endif
+
+    if (isFlipped) {
+        frontFacing = !frontFacing;
+    }
+    if (((cullStyle == HdCullStyleBack ||
+            cullStyle == HdCullStyleBackUnlessDoubleSided) && !frontFacing) ||
+        ((cullStyle == HdCullStyleFront ||
+            cullStyle == HdCullStyleFrontUnlessDoubleSided) && frontFacing)) {
+        discard;
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshFaceCull.Fragment.WireframeLineFallback.DoubleSided
+
+void DiscardBasedOnShading(bool frontFacing, bool isFlipped)
+{
+    const uint HdCullStyleBack = 2;
+    const uint HdCullStyleFront = 3;
+
+    uint cullStyle = 0;
+#if defined(HD_HAS_cullStyle)
+    cullStyle = HdGet_cullStyle();
+#endif
+
+    if (isFlipped) {
+        frontFacing = !frontFacing;
+    }
+    if ((cullStyle == HdCullStyleBack && !frontFacing) ||
+        (cullStyle == HdCullStyleFront && frontFacing)) {
+        discard;
+    }
+}

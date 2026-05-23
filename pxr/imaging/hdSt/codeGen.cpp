@@ -2006,6 +2006,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         capabilities->IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
     const bool metalTessellationEnabled =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
+    const bool geometricStageEnabled =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsGeometricStage);
     const bool requiresBasePrimitiveOffset =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsBasePrimitiveOffset);
     const bool requiresPrimitiveIdEmulation =
@@ -2042,7 +2044,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _hasTES = (!tessEvalShader.empty());
     _hasPTCS = (!postTessControlShader.empty()) && metalTessellationEnabled;
     _hasPTVS = (!postTessVertexShader.empty()) && metalTessellationEnabled;
-    _hasGS  = (!geometryShader.empty()) && !metalTessellationEnabled;
+    _hasGS  = (!geometryShader.empty()) && geometricStageEnabled;
     _hasFS  = (!fragmentShader.empty());
     _hasCS  = (!computeShader.empty());
 
@@ -2301,10 +2303,62 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         }
     }
 
+    if (_geometricShader->GetUseWireframeLinesFallback()) {
+        if (_geometricShader->IsPrimTypeRefinedMesh()) {
+            _genFS << "FORWARD_DECL(ivec4 HdGet_primitiveParam());\n";
+        } else {
+            _genFS << "FORWARD_DECL(ivec3 HdGet_primitiveParam());\n";
+        }
+        _genFS << "ivec2 GetPlanarPointIndex() {\n";
+        if (_geometricShader->IsPrimTypeRefinedMesh()) {
+            _genFS << "  int param = HdGet_primitiveParam().w;\n";
+        } else {
+            _genFS << "  int param = HdGet_primitiveParam().z;\n";
+        }
+        _genFS << "  bool invert = false;\n"
+                  "  const int invertFlag = 1 << 31;"
+                  "  if ((param & invertFlag) != 0) {\n"
+                  "    invert = true;\n"
+                  "    param &= ~invertFlag;\n"
+                  "  }\n"
+                  "  return ivec2(param, int(invert));\n"
+                  "}\n"
+                  "FORWARD_DECL(vec3 GetFacingNormal());\n"
+                  "bool IsFrontFacing() {\n"
+                  "  return GetFacingNormal().z > 0;\n"
+                  "}\n";
+        // Convert line barycentric coordinates to triangle.
+        _genFS << "FORWARD_DECL(int GetEdgeLocalIndex());\n"
+                  "vec3 TransformBarycentricCoordinates(vec3 st) {\n"
+                  "  vec3 triangleSt = vec3(0);\n"
+                  "  int localEdgeId = GetEdgeLocalIndex();\n";
+        if (_geometricShader->IsPrimTypeTriQuads()) {
+            _genFS << "  if (localEdgeId >= 2) {\n"
+                      "    localEdgeId -= 2;\n"
+                      "  }\n";
+        }
+        _genFS << "  if (localEdgeId == 0) {\n"
+                  "    triangleSt.yx = st.xy;\n"
+                  "  } else if (localEdgeId == 1) {\n"
+                  "    triangleSt.yz = st.xy;\n"
+                  "  } else { // localEdgeId == 2\n"
+                  "    triangleSt.zx = st.xy;\n"
+                  "  }\n"
+                  "  return triangleSt;\n"
+                  "}\n";
+    } else {
+        _genFS << "bool IsFrontFacing() {\n"
+                  "  return gl_FrontFacing;\n"
+                  "}\n";
+        _genFS << "vec3 TransformBarycentricCoordinates(vec3 st) {\n"
+                  "  return st;\n"
+                  "}\n";
+    }
+
     // Barycentric coordinates
     if (builtinBarycentricsEnabled) {
         _genFS << "vec3 GetBarycentricCoord() {\n"
-                  "  return hd_BaryCoordNoPersp;\n"
+                  "  return TransformBarycentricCoordinates(hd_BaryCoordNoPersp);\n"
                   "}\n";
     } else {
         if (_hasGS) {
@@ -2322,12 +2376,94 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                 TfToken("noperspective"));
 
             _genFS << "vec3 GetBarycentricCoord() {\n"
-                      "  return hd_barycentricCoord;\n"
+                      "  return TransformBarycentricCoordinates(hd_barycentricCoord);\n"
                       "}\n";
         } else {
-            _genFS << "vec3 GetBarycentricCoord() {\n"
-                      "  return vec3(0);\n"
-                      "}\n";
+            // We can reconstruct the barycentric coordinates for a fragment
+            // given the three original non-interpolated point, and the
+            // interpolated result. This can be done in local coordinate space
+            // as long as the interpolated point is also in the local space,
+            // which is already the case for the value of HdGet_points().
+            // Barycentric interpolation can be written as:
+            //     mat3(p0, p1, p2) * stp = pI
+            // where p0, p1, p2 are the triangle positions, stp is the
+            // barycentric coordinate triplet, and pI is the interpolated
+            // position. Solving for stp is a bit more complicated than just
+            // inverting the matrix and multiplying by pI, since the matrix can
+            // be non-invertible even when stp solutions should exist (any colum
+            // or row is all 0's). That's because p = 1 - s - t, and we actually
+            // need to reduce the matrix to 2x2 and solve for st only. Expanding
+            // the equation and doing the substitution algebra for p, we find
+            // that we instead need to solve for:
+            //    mat2(v0 - v2, v1 - v2) * st = vI - v2
+            // where v0, v1, v2, vI are any 2-component subvectors of p0, p1,
+            // p2, and pI. There are three possible matrices, with at least one
+            // always being invertible. If the triangle lies in an x, y or z
+            // plane, then the two matrices using the component for that plane
+            // are non-invertible. If all three matrices are non-invertible then
+            // the triangle is degenerate, and we don't care about that case.
+            //
+            // For the line case, it's just a scalar projection.
+            switch (_geometricShader->GetPrimitiveIndexSize()) {
+                case 6: // triquads
+                case 3: {
+                    _genFS << "#if defined(HD_HAS_indices) && defined(HD_HAS_vertPoints) && defined(HD_HAS_points)\n"
+                              "FORWARD_DECL(int HdGet_indices(int localIndex));\n"
+                              "FORWARD_DECL(vec3 HdGet_vertPoints(int localIndex));\n"
+                              "FORWARD_DECL(vec3 HdGet_points());\n"
+                              "vec3 GetBarycentricCoord() {\n"
+                              "  int vertexOffset = GetDrawingCoord().vertexCoord;\n"
+                              "  vec3 p0 = HdGet_vertPoints(vertexOffset + HdGet_indices(0));\n"
+                              "  vec3 p1 = HdGet_vertPoints(vertexOffset + HdGet_indices(1));\n"
+                              "  vec3 p2 = HdGet_vertPoints(vertexOffset + HdGet_indices(2));\n"
+                              "  vec3 pI = HdGet_points();\n"
+                              "  mat2 m = mat2(p0.yz - p2.yz, p1.yz - p2.yz);\n"
+                              "  vec2 d = pI.yz - p2.yz;\n"
+                              "  if (abs(determinant(m)) < 1e-6) {\n"
+                              "    m = mat2(p0.xz - p2.xz, p1.xz - p2.xz);\n"
+                              "    d = pI.xz - p2.xz;\n"
+                              "  }\n"
+                              "  if (abs(determinant(m)) < 1e-6) {\n"
+                              "    m = mat2(p0.xy - p2.xy, p1.xy - p2.xy);\n"
+                              "    d = pI.xy - p2.xy;\n"
+                              "  }\n"
+                              "  vec2 st = inverse(m) * d;\n"
+                              "  return TransformBarycentricCoordinates(vec3(st, 1 - st.x - st.y));\n"
+                              "}\n"
+                              "#else\n"
+                              "vec3 GetBarycentricCoord() {\n"
+                              "  return vec3(0, 0, 0);\n"
+                              "}\n"
+                              "#endif\n";
+                    break;
+                }
+                case 2: {
+                    _genFS << "#if defined(HD_HAS_indices) && defined(HD_HAS_vertPoints) && defined(HD_HAS_points)\n"
+                              "FORWARD_DECL(int HdGet_indices(int localIndex));\n"
+                              "FORWARD_DECL(vec3 HdGet_vertPoints(int localIndex));\n"
+                              "FORWARD_DECL(vec3 HdGet_points());\n"
+                              "vec3 GetBarycentricCoord() {\n"
+                              "  int vertexOffset = GetDrawingCoord().vertexCoord;\n"
+                              "  vec3 p0 = HdGet_vertPoints(vertexOffset + HdGet_indices(0));\n"
+                              "  vec3 p1 = HdGet_vertPoints(vertexOffset + HdGet_indices(1));\n"
+                              "  vec3 pI = HdGet_points();\n"
+                              "  vec3 d = p0 - p1;\n"
+                              "  float s = dot(pI - p1, d) / dot(d, d);\n"
+                              "  return TransformBarycentricCoordinates(vec3(s, 1 - s, 0));\n"
+                              "}\n"
+                              "#else\n"
+                              "vec3 GetBarycentricCoord() {\n"
+                              "  return vec3(0, 0, 0);\n"
+                              "}\n"
+                              "#endif\n";
+                    break;
+                }
+                default: {
+                    _genFS << "vec3 GetBarycentricCoord() {\n"
+                              "  return vec3(0, 0, 0);\n"
+                              "}\n";
+                }
+            }
         }
     }
 
@@ -3611,9 +3747,9 @@ static void _EmitStructAccessor(std::stringstream &str,
 static void _EmitBufferAccessor(std::stringstream &str,
                                 TfToken const &name,
                                 TfToken const &type,
-                                const char *index)
+                                std::string_view index = "")
 {
-    if (index) {
+    if (!index.empty()) {
         str << _GetUnpackedType(type, false) << " HdGet_" << name
             << "(int localIndex) {\n"
             << "  int index = " << index << ";\n"
@@ -4860,21 +4996,27 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                         << "  return (patch_id - GetBasePrimitiveOffset());\n"
                         << "}\n";
         }
-    } else {
-        if (HdSt_GeometricShader::IsPrimTypeTriQuads(
-                                    _geometricShader->GetPrimitiveType())) {
+    } else if (_geometricShader->IsPrimTypeTriQuads()) {
+        if (_geometricShader->GetUseWireframeLinesFallback()) {
+            primitiveID << "int GetPrimitiveID() {\n"
+                        << "  return gl_PrimitiveID;\n"
+                        << "}\n"
+                        << "FORWARD_DECL(int GetEdgeLocalIndex());\n"
+                        << "int GetTriQuadID() {\n"
+                        << "  return GetEdgeLocalIndex() >= 2 ? 1 : 0;\n"
+                        << "}\n";
+        } else {
             primitiveID << "int GetPrimitiveID() {\n"
                         << "  return gl_PrimitiveID / 2;\n"
                         << "}\n"
                         << "int GetTriQuadID() {\n"
                         << "  return gl_PrimitiveID & 1;\n"
                         << "}\n";
-
-        } else {
-            primitiveID << "int GetPrimitiveID() {\n"
-                        << "  return gl_PrimitiveID;\n"
-                        << "}\n";
         }
+    } else {
+        primitiveID << "int GetPrimitiveID() {\n"
+                    << "  return gl_PrimitiveID;\n"
+                    << "}\n";
     }
 
     _genTCS << primitiveID.str();
@@ -5559,6 +5701,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                 << "int GetElementID() {\n"
                 << "  return (hd_int_get(HdGet_primitiveParam()));\n"
                 << "}\n";
+
             accessors
                 << "int GetAggregatedElementID() {\n"
                 << "  return GetElementID()\n"
@@ -5579,10 +5722,12 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                         << "  return ivec3(HdGet_primitiveParam().y, \n"
                         << "               HdGet_primitiveParam().z, 0);\n"
                         << "}\n";
-                    accessors
-                        << "int GetEdgeFlag() {\n"
-                        << "  return (HdGet_primitiveParam().x & 3);\n"
-                        << "}\n";
+                    if (!_geometricShader->GetUseWireframeLinesFallback()) {
+                        accessors
+                            << "int GetEdgeFlag() {\n"
+                            << "  return (HdGet_primitiveParam().x & 3);\n"
+                            << "}\n";
+                    }
                     break;
                 }
 
@@ -5613,24 +5758,32 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                     // triangulated meshes, the other fields can be left as 0.
                     // When there are geom subsets, we can no longer use the 
                     // primitiveId and instead use a buffer source generated
-                    // per subset draw item containing the coarse face indices. 
-                    accessors
-                        << "#if defined(HD_HAS_coarseFaceIndex)\n"
-                        << "FORWARD_DECL(int HdGetScalar_coarseFaceIndex());\n"
-                        << "#endif\n"
-                        << "ivec3 GetPatchParam() {\n"
-                        << "#if defined(HD_HAS_coarseFaceIndex)\n "
-                        << "  return ivec3(HdGetScalar_coarseFaceIndex(), 0, 0);\n"
-                        << "#else\n "
-                        << "  return ivec3(GetPrimitiveID(), 0, 0);\n"
-                        << "#endif\n"
-                        << "}\n";
-                    // edge flag encodes edges which have been
-                    // introduced by quadrangulation or triangulation
-                    accessors
-                        << "int GetEdgeFlag() {\n"
-                        << "  return (HdGet_primitiveParam() & 3);\n"
-                        << "}\n";
+                    // per subset draw item containing the coarse face indices.
+                    if (_geometricShader->GetUseWireframeLinesFallback()) {
+                        accessors
+                            << "ivec3 GetPatchParam() {\n"
+                            << "  return ivec3(HdGet_primitiveParam().y, 0, 0);\n"
+                            << "}\n";
+                    } else {
+                        accessors
+                            << "#if defined(HD_HAS_coarseFaceIndex)\n"
+                            << "FORWARD_DECL(int HdGetScalar_coarseFaceIndex());\n"
+                            << "#endif\n";
+                        accessors
+                            << "ivec3 GetPatchParam() {\n"
+                            << "#if defined(HD_HAS_coarseFaceIndex)\n "
+                            << "  return ivec3(HdGetScalar_coarseFaceIndex(), 0, 0);\n"
+                            << "#else\n "
+                            << "  return ivec3(GetPrimitiveID(), 0, 0);\n"
+                            << "#endif\n"
+                            << "}\n";
+                        // edge flag encodes edges which have been
+                        // introduced by quadrangulation or triangulation
+                        accessors
+                            << "int GetEdgeFlag() {\n"
+                            << "  return (HdGet_primitiveParam() & 3);\n"
+                            << "}\n";
+                    }
                     break;
                 }
 
@@ -5667,16 +5820,30 @@ HdSt_CodeGen::_GenerateElementPrimvar()
             }
 
             // ElementID getters
-            accessors
-                << "int GetElementID() {\n"
-                << "  return (hd_int_get(HdGet_primitiveParam()) >> 2);\n"
-                << "}\n";
+            if (_geometricShader->GetUseWireframeLinesFallback()) {
+                accessors
+                    << "int GetElementID() {\n"
+                    << "  return (hd_int_get(HdGet_primitiveParam().x) >> 2);\n"
+                    << "}\n";
+                // edge flag encodes edges which have been
+                // introduced by quadrangulation or triangulation
+                accessors
+                    << "int GetEdgeLocalIndex() {\n"
+                    << "  return HdGet_primitiveParam().x & 3;\n"
+                    << "}\n";
+            } else {
+                accessors
+                    << "int GetElementID() {\n"
+                    << "  return (hd_int_get(HdGet_primitiveParam()) >> 2);\n"
+                    << "}\n";
+            }
 
             accessors
                 << "int GetAggregatedElementID() {\n"
                 << "  return GetElementID()\n"
                 << "  + GetDrawingCoord().elementCoord;\n"
                 << "}\n";
+
         }
         else {
             TF_CODING_ERROR("HdSt_GeometricShader::PrimitiveType %d is "
@@ -6004,14 +6171,20 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
       } inPrimvars;
     */
 
-    HdSt_ResourceBinder::MetaData::BindingDeclaration const &
-            indexBufferBinding = _metaData->indexBufferBinding;
-    if (!indexBufferBinding.name.IsEmpty()) {
+    if (const auto& indexBufferBinding = _metaData->indexBufferBinding;
+        !indexBufferBinding.name.IsEmpty()) {
+        _genDefines << "#define HD_HAS_"
+                    << indexBufferBinding.name << " 1\n";
+
         _EmitDeclaration(&_resPTCS,
                          indexBufferBinding.name,
                          indexBufferBinding.dataType,
                          indexBufferBinding.binding);
         _EmitDeclaration(&_resPTVS,
+                         indexBufferBinding.name,
+                         indexBufferBinding.dataType,
+                         indexBufferBinding.binding);
+        _EmitDeclaration(&_resFS,
                          indexBufferBinding.name,
                          indexBufferBinding.dataType,
                          indexBufferBinding.binding);
@@ -6024,6 +6197,35 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
                             indexBufferBinding.name,
                             indexBufferBinding.dataType,
             "patch_id * VERTEX_CONTROL_POINTS_PER_PATCH + localIndex");
+        if (_geometricShader->IsPrimTypeTriQuads() &&
+            !_geometricShader->GetUseWireframeLinesFallback()) {
+            _EmitBufferAccessor(accessorsFS,
+                                indexBufferBinding.name,
+                                indexBufferBinding.dataType,
+                "(GetPrimitiveIndex() * 2 + GetTriQuadID()) * 3 + localIndex");
+        } else {
+            _EmitBufferAccessor(accessorsFS, indexBufferBinding.name,
+                indexBufferBinding.dataType,
+                "GetPrimitiveIndex() * " +
+                    std::to_string(_geometricShader->GetPrimitiveIndexSize()) +
+                    " + localIndex");
+        }
+    }
+
+    if (const auto& pointsBufferBinding = _metaData->pointsBufferBinding;
+        !pointsBufferBinding.name.IsEmpty()) {
+        _genDefines << "#define HD_HAS_"
+                    << pointsBufferBinding.name << " 1\n";
+
+        _EmitDeclaration(&_resFS,
+                         pointsBufferBinding.name,
+                         pointsBufferBinding.dataType,
+                         pointsBufferBinding.binding);
+
+        _EmitBufferAccessor(accessorsFS,
+                            pointsBufferBinding.name,
+                            pointsBufferBinding.dataType,
+                            "localIndex");
     }
 
     TF_FOR_ALL (it, _metaData->varyingData) {
@@ -7064,4 +7266,3 @@ HdSt_CodeGen::_GetFallbackScalarSwizzleString(TfToken const &returnType,
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

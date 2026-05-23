@@ -204,6 +204,11 @@ public:
     HDST_API
     bool RefinesToBoxSplineTrianglePatches() const;
 
+    /// Returns true if the subdivision of this mesh produces patches
+    bool RefinesToPatches() const {
+        return RefinesToBSplinePatches() || RefinesToBoxSplineTrianglePatches();
+    }
+
     /// Returns the subdivision topology computation. It computes
     /// far mesh and produces refined quad-indices buffer.
     HDST_API

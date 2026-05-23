@@ -245,6 +245,12 @@ protected:
     /// See HdRprim::InitRepr()
     virtual void _InitRepr(TfToken const &reprToken,
                            HdDirtyBits *dirtyBits) = 0;
+    virtual void _InitRepr(HdSceneDelegate* delegate,
+                           TfToken const &reprToken,
+                           HdDirtyBits *dirtyBits)
+    {
+        _InitRepr(reprToken, dirtyBits);
+    }
 
     // ---------------------------------------------------------------------- //
     /// \name Rprim Shared API

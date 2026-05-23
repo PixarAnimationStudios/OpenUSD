@@ -235,3 +235,21 @@ int GetPrimitiveEdgeId()
     }
     return edgeId;
 }
+
+--- --------------------------------------------------------------------------
+-- glsl EdgeId.Fragment.WireframeLineFallback
+
+int GetPrimitiveEdgeId()
+{
+    return HdGetScalar_edgeIndices();
+}
+
+float GetSelectedEdgeOpacity()
+{
+    return 0;
+}
+
+bool SelectWireframeFaceEdges()
+{
+    return false;
+}

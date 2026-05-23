@@ -139,6 +139,7 @@ public:
                        HdPolygonMode polygonMode,
                        bool cullingPass,
                        FvarPatchType fvarPatchType,
+                       bool useWireframeLinesFallback,
                        SdfPath const &debugId = SdfPath(),
                        float lineWidth = 0);
 
@@ -171,6 +172,10 @@ public:
 
     bool GetUseMetalTessellation() const {
         return _useMetalTessellation;
+    }
+
+    bool GetUseWireframeLinesFallback() const {
+        return _useWireframeLinesFallback;
     }
 
     float GetLineWidth() const {
@@ -258,6 +263,7 @@ private:
     bool _hasMirroredTransform;
     bool _doubleSided;
     bool _useMetalTessellation;
+    bool _useWireframeLinesFallback;
     HdPolygonMode _polygonMode;
     float _lineWidth;
 

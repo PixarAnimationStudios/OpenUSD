@@ -98,6 +98,9 @@ struct HdSt_ShaderKey {
     HDST_API
     virtual HdSt_GeometricShader::FvarPatchType GetFvarPatchType() const;
 
+    HDST_API
+    virtual bool UseWireframeLinesFallback() const;
+
 protected:
     
     HDST_API

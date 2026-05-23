@@ -411,7 +411,10 @@ HdStResourceRegistry::AddSources(HdBufferArrayRangeSharedPtr const &range,
     while (srcNum < sources.size()) {
         if (ARCH_LIKELY(sources[srcNum]->IsValid())) {
             if (ARCH_UNLIKELY(sources[srcNum]->HasPreChainedBuffer())) {
-                AddSource(sources[srcNum]->GetPreChainedBuffer());
+                for (const auto& buf :
+                    sources[srcNum]->GetPreChainedBuffers()) {
+                    AddSource(buf);
+                }
             }
             if (!sources[srcNum]->IsResolved()) {
                 _pendingSourcesToResolve.push_back(std::make_pair(
@@ -479,7 +482,9 @@ HdStResourceRegistry::AddSource(HdBufferArrayRangeSharedPtr const &range,
     }
 
     if (ARCH_UNLIKELY(source->HasPreChainedBuffer())) {
-        AddSource(source->GetPreChainedBuffer());
+        for (const auto& buf : source->GetPreChainedBuffers()) {
+            AddSource(buf);
+        }
     }
 
     if (!source->IsResolved()) {
@@ -516,7 +521,9 @@ HdStResourceRegistry::AddSource(HdBufferSourceSharedPtr const &source)
     }
 
     if (ARCH_UNLIKELY(source->HasPreChainedBuffer())) {
-        AddSource(source->GetPreChainedBuffer());
+        for (const auto& buf : source->GetPreChainedBuffers()) {
+            AddSource(buf);
+        }
     }
 
     if (!source->IsResolved()) {

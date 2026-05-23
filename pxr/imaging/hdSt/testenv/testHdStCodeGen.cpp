@@ -390,6 +390,7 @@ int main(int argc, char *argv[])
                 doubleSided,
                 /* hasBuiltinBarycentics */ false,
                 /* hasMetalTessellation */ false,
+                /* hasGeometricStage */ true,
                 /* hasCustomDisplacement */ false,
                 faceVarying,
                 topologicalVisibility,
@@ -400,7 +401,8 @@ int main(int argc, char *argv[])
                 /* pointsShadingEnabled */ false,
                 /* forceOpaqueEdges */ true,
                 /* surfaceEdgeIds */ true,
-                /* nativeRoundPoints */ true),
+                /* nativeRoundPoints */ true,
+                /* triangleLineFill */ true),
                  instance, smoothNormals);
         success &= TestShader(
             registry,
@@ -417,6 +419,7 @@ int main(int argc, char *argv[])
                 doubleSided,
                 /* hasBuiltinBarycentics */ false,
                 /* hasMetalTessellation */ false,
+                /* hasGeometricStage */ true,
                 /* hasCustomDisplacement */ false, 
                 faceVarying, topologicalVisibility,
                 blendWireframeColor,
@@ -426,7 +429,8 @@ int main(int argc, char *argv[])
                 /* pointsShadingEnabled */ false,
                 /* forceOpaqueEdges */ true,
                 /* surfaceEdgeIds */ true,
-                /* nativeRoundPoints */ true),
+                /* nativeRoundPoints */ true,
+                /* triangleLineFill */ true),
                  instance, smoothNormals);
     }
 

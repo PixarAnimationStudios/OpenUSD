@@ -73,7 +73,15 @@ public:
 
 protected:
     HDST_API
-    void _InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits) override;
+    void _InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits) override
+    {
+        TF_FATAL_CODING_ERROR(
+            "Call to overload with HdSceneDelegate was expected");
+    }
+
+    HDST_API
+    void _InitRepr(HdSceneDelegate *sceneDelegate, TfToken const &reprToken,
+        HdDirtyBits *dirtyBits) override;
 
     HDST_API
     HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
@@ -106,6 +114,14 @@ protected:
     bool _UseSmoothNormals(HdSt_MeshTopologySharedPtr const& topology) const;
 
     bool _UseFlatNormals(const HdMeshReprDesc &desc) const;
+
+    bool _NeedsWireframeLinesFallback(
+        const HdStResourceRegistrySharedPtr& resourceRegistry,
+        const HdMeshReprDesc& desc) const;
+
+    bool _CanUseTriangulatedFlatNormals(
+        const HdStResourceRegistrySharedPtr& resourceRegistry,
+        const HdMeshReprDesc& desc);
 
     void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                          HdRenderParam *renderParam,
@@ -299,6 +315,8 @@ private:
     enum DrawingCoord {
         HullTopology = HdDrawingCoord::CustomSlotsBegin,
         PointsTopology,
+        WireframeLinesTopology,
+        HullWireframeLinesTopology,
         FreeSlot // If the mesh topology has geom subsets, we might place
                  // them here as geom subsets are processed before instance 
                  // primvars. The instance primvars will follow after. If there
@@ -307,10 +325,13 @@ private:
 
     enum DirtyBits : HdDirtyBits {
         DirtySmoothNormals  = HdChangeTracker::CustomBitsBegin,
-        DirtyFlatNormals    = (DirtySmoothNormals << 1),
-        DirtyIndices        = (DirtyFlatNormals   << 1),
-        DirtyHullIndices    = (DirtyIndices       << 1),
-        DirtyPointsIndices  = (DirtyHullIndices   << 1)
+        DirtyFlatNormals    = DirtySmoothNormals << 1,
+        DirtyIndices        = DirtyFlatNormals   << 1,
+        DirtyHullIndices    = DirtyIndices       << 1,
+        DirtyPointsIndices  = DirtyHullIndices   << 1,
+        DirtyWireframeLinesIndices = DirtyPointsIndices << 1,
+        DirtyHullWireframeLinesIndices = DirtyHullIndices |
+            DirtyWireframeLinesIndices,
     };
 
     HdSt_MeshTopologySharedPtr _topology;

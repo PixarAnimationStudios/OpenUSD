@@ -269,5 +269,11 @@ HdSt_ShaderKey::GetFvarPatchType() const {
     return HdSt_GeometricShader::FvarPatchType::PATCH_NONE;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+/*virtual*/
+bool
+HdSt_ShaderKey::UseWireframeLinesFallback() const
+{
+    return false;
+}
 
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -181,7 +181,7 @@ public:
     HdTupleType GetTupleType() const override;
 
     bool HasPreChainedBuffer() const override;
-    HdBufferSourceSharedPtr GetPreChainedBuffer() const override;
+    HdBufferSourceSharedPtrVector GetPreChainedBuffers() const override;
 
 
 protected:

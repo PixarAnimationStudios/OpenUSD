@@ -390,10 +390,10 @@ HdSt_QuadrangulateComputation::HasPreChainedBuffer() const
     return true;
 }
 
-HdBufferSourceSharedPtr
-HdSt_QuadrangulateComputation::GetPreChainedBuffer() const
+HdBufferSourceSharedPtrVector
+HdSt_QuadrangulateComputation::GetPreChainedBuffers() const
 {
-    return _source;
+    return {_source};
 }
 
 // ---------------------------------------------------------------------------
@@ -667,4 +667,3 @@ HdSt_QuadrangulateComputationGPU::GetNumOutputElements() const
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

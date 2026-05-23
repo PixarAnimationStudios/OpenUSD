@@ -33,6 +33,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
                                        HdPolygonMode polygonMode,
                                        bool cullingPass,
                                        FvarPatchType fvarPatchType,
+                                       bool useWireframeLinesFallback,
                                        SdfPath const &debugId,
                                        float lineWidth)
     : HdStShaderCode()
@@ -42,6 +43,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
     , _hasMirroredTransform(hasMirroredTransform)
     , _doubleSided(doubleSided)
     , _useMetalTessellation(useMetalTessellation)
+    , _useWireframeLinesFallback(useWireframeLinesFallback)
     , _polygonMode(polygonMode)
     , _lineWidth(lineWidth)
     , _frustumCullingPass(cullingPass)
@@ -50,6 +52,12 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
+
+    if (_useWireframeLinesFallback && !IsPrimTypeTriangles() &&
+        !IsPrimTypeTriQuads()) {
+        TF_CODING_ERROR(
+            "Invalid prim type for wireframe lines fallback: %d", _primType);
+    }
 
     // XXX
     // we will likely move this (the constructor or the entire class) into
@@ -184,9 +192,12 @@ HdSt_GeometricShader::AddBindings(HdStBindingRequestVector *customBindings)
 
 int
 HdSt_GeometricShader::GetPrimitiveIndexSize() const
-{
-    int primIndexSize = 1;
+{ 
+    if (GetUseWireframeLinesFallback()) {
+        return 2;
+    }
 
+    int primIndexSize = 1;
     switch (_primType)
     {
         case PrimitiveType::PRIM_POINTS:
@@ -254,8 +265,11 @@ HdSt_GeometricShader::GetNumPatchEvalVerts() const
 int
 HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
 {
-    int numPrimVerts = 1;
+    if (GetUseWireframeLinesFallback()) {
+        return 2;
+    }
 
+    int numPrimVerts = 1;
     switch (_primType)
     {
         case PrimitiveType::PRIM_POINTS:
@@ -291,8 +305,11 @@ HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
 HgiPrimitiveType
 HdSt_GeometricShader::GetHgiPrimitiveType() const
 {
-    HgiPrimitiveType primitiveType = HgiPrimitiveTypePointList;
+    if (GetUseWireframeLinesFallback()) {
+        return HgiPrimitiveTypeLineList;
+    }
 
+    HgiPrimitiveType primitiveType = HgiPrimitiveTypePointList;
     switch (GetPrimitiveType())
     {
         case PrimitiveType::PRIM_POINTS:
@@ -359,6 +376,7 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
                 shaderKey.GetPolygonMode(),
                 shaderKey.IsFrustumCullingPass(),
                 shaderKey.GetFvarPatchType(),
+                shaderKey.UseWireframeLinesFallback(),
                 /*debugId=*/SdfPath(),
                 shaderKey.GetLineWidth()));
     }
@@ -366,4 +384,3 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

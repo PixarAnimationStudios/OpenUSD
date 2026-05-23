@@ -182,7 +182,7 @@ public:
     void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     bool Resolve() override;
     bool HasPreChainedBuffer() const override;
-    HdBufferSourceSharedPtr GetPreChainedBuffer() const override;
+    HdBufferSourceSharedPtrVector GetPreChainedBuffers() const override;
     HdSt_MeshTopology::Interpolation GetInterpolation() const;
 
 protected:

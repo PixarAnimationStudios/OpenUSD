@@ -298,8 +298,12 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         _capabilities->vkDeviceFeatures2.features.sampleRateShading;
     features2.features.shaderClipDistance =
         _capabilities->vkDeviceFeatures2.features.shaderClipDistance;
+    // gl_PrimitiveID requires either tessellation or geometry shader (or mesh
+    // or raytracing shaders).
     features2.features.tessellationShader =
         _capabilities->vkDeviceFeatures2.features.tessellationShader;
+    features2.features.geometryShader =
+        _capabilities->vkDeviceFeatures2.features.geometryShader;
     features2.features.depthClamp =
         _capabilities->vkDeviceFeatures2.features.depthClamp;
     features2.features.shaderFloat64 =
@@ -317,9 +321,6 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     // Needed for buffer address feature
     features2.features.shaderInt64 =
         _capabilities->vkDeviceFeatures2.features.shaderInt64;
-    // Needed for gl_primtiveID
-    features2.features.geometryShader =
-        _capabilities->vkDeviceFeatures2.features.geometryShader;
 
     VkPhysicalDeviceVulkan11Features vulkan11Features =
         {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};

@@ -30,6 +30,11 @@ TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_REBAR, false,
                       "Use Vulkan with ReBAR (if device supports)");
 TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_HOST_IMAGE_COPY, true,
                       "Use Vulkan direct image copy from host");
+TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_GEOMETRY_SHADER, true,
+                      "Use Vulkan geometry shader stage (if device supports)");
+TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_FILL_MODE_NON_SOLID, true,
+                      "Use Vulkan non-solid fill mode for wireframes "
+                      "(disable this to test line-based fallback)");
 
 static HgiVulkanFormatInfo
 _CreateFormatInfo(HgiVulkanDevice* hgi, HgiTextureType type, HgiFormat format,
@@ -364,10 +369,13 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
     const bool shaderDrawParametersEnabled =
         vkVulkan11Features.shaderDrawParameters;
+    const bool doublePrecision = vkDeviceFeatures2.features.shaderFloat64;
     bool multiDrawIndirectEnabled = true;
     bool builtinBarycentricsEnabled =
         barycentricExtSupported &&
         vkBarycentricFeatures.fragmentShaderBarycentric;
+    bool geometryShader = vkDeviceFeatures2.features.geometryShader;
+    bool fillModeNonSolid = vkDeviceFeatures2.features.fillModeNonSolid;
 
     // Check Hgi env settings
     if (!TfGetEnvSetting(HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT)) {
@@ -375,6 +383,12 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     }
     if (!TfGetEnvSetting(HGIVULKAN_ENABLE_BUILTIN_BARYCENTRICS)) {
         builtinBarycentricsEnabled = false;
+    }
+    if (!TfGetEnvSetting(HGIVULKAN_ENABLE_GEOMETRY_SHADER)) {
+        vkDeviceFeatures2.features.geometryShader = geometryShader = false;
+    }
+    if (!TfGetEnvSetting(HGIVULKAN_ENABLE_FILL_MODE_NON_SOLID)) {
+        vkDeviceFeatures2.features.fillModeNonSolid = fillModeNonSolid = false;
     }
 
     supportsHostImageCopy = hostImageCopyExtAvailable 
@@ -395,6 +409,8 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         shaderDrawParametersEnabled);
      _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect,
         multiDrawIndirectEnabled);
+     _SetFlag(HgiDeviceCapabilitiesBitsGeometricStage, geometryShader);
+    _SetFlag(HgiDeviceCapabilitiesBitsTriangleLineFill, fillModeNonSolid);
 }
 
 HgiVulkanCapabilities::~HgiVulkanCapabilities() = default;

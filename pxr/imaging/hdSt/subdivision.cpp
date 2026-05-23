@@ -646,10 +646,10 @@ HdSt_OsdRefineComputationCPU::HasPreChainedBuffer() const
     return true;
 }
 
-HdBufferSourceSharedPtr
-HdSt_OsdRefineComputationCPU::GetPreChainedBuffer() const
+HdBufferSourceSharedPtrVector
+HdSt_OsdRefineComputationCPU::GetPreChainedBuffers() const
 {
-    return _source;
+    return {_source};
 }
 
 // ---------------------------------------------------------------------------

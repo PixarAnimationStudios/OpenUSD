@@ -140,6 +140,7 @@ pxr_library(hdSt
         vboSimpleMemoryManager
         velocityMotionResolvingSceneIndexPlugin
         volume
+        wireframeLinesComputation
         ${optionalPublicClasses}
 
     PUBLIC_HEADERS

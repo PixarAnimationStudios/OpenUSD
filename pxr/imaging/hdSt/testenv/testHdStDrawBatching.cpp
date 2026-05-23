@@ -209,6 +209,7 @@ _RegisterDrawItem(
         /*doubleSided=*/false,
         /*hasBuiltinBarycentrics*/false,
         /* hasMetalTessellation */ false,
+        /* hasGeometricStage */ true,
         /*hasCustomDisplacementTerminal=*/false,
         /*faceVarying=*/false,
         /*hasTopologicalVisibility=*/false,
@@ -219,7 +220,8 @@ _RegisterDrawItem(
         /*pointsShadingEnabled=*/ false,
         /* forceOpaqueEdges */ true,
         /* surfaceEdgeIds */ true,
-        /* nativeRoundPoints */ true);
+        /* nativeRoundPoints */ true,
+        /* triangleLineFill */ true);
 
     // need to register to get batching works
     HdSt_GeometricShaderSharedPtr const geomShader = 

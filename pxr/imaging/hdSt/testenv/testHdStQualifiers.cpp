@@ -268,6 +268,7 @@ My_TestGLDrawing::DrawTest()
                 shaderKey.GetPolygonMode(),
                 shaderKey.IsFrustumCullingPass(),
                 shaderKey.GetFvarPatchType(),
+                shaderKey.UseWireframeLinesFallback(),
                 /*debugId=*/SdfPath(),
                 shaderKey.GetLineWidth()));
     }

@@ -54,6 +54,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (full)                                      \
     (geometry)                                  \
     (hermite)                                   \
+    (wireframeLineIndices)                      \
     (hullIndices)                               \
     (indices)                                   \
     (isFlipped)                                 \

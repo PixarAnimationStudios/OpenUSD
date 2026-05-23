@@ -14,6 +14,7 @@
 #include "pxr/imaging/hdSt/flatNormals.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
+#include "pxr/imaging/hdSt/wireframeLinesComputation.h"
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/mesh.h"
 #include "pxr/imaging/hdSt/meshShaderKey.h"
@@ -251,6 +252,24 @@ HdStMesh::IsEnabledPackedNormals()
 {
     static bool enabled = (TfGetEnvSetting(HD_ENABLE_PACKED_NORMALS) == 1);
     return enabled;
+}
+
+static bool
+_GetDoubleSupport(
+    const HdStResourceRegistrySharedPtr& resourceRegistry)
+{
+    const HgiCapabilities* capabilities =
+        resourceRegistry->GetHgi()->GetCapabilities();
+    return capabilities->IsSet(HgiDeviceCapabilitiesBitsShaderDoublePrecision);
+}
+
+static bool
+_GetWireframeSupport(
+    const HdStResourceRegistrySharedPtr& resourceRegistry)
+{
+    const HgiCapabilities* capabilities =
+        resourceRegistry->GetHgi()->GetCapabilities();
+    return capabilities->IsSet(HgiDeviceCapabilitiesBitsTriangleLineFill);
 }
 
 int
@@ -648,9 +667,14 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             resourceRegistry->GetHgi()->GetCapabilities()->
                 IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
 
+        bool const hasGeometricStage =
+            resourceRegistry->GetHgi()->GetCapabilities()->
+                IsSet(HgiDeviceCapabilitiesBitsGeometricStage);
+
         HdSt_MeshTopologySharedPtr topology =
             HdSt_MeshTopology::New(meshTopology, refineLevel, refineMode,
-                (hasBuiltinBarycentrics || hasMetalTessellation)
+                (hasBuiltinBarycentrics || hasMetalTessellation ||
+                !hasGeometricStage || !_GetWireframeSupport(resourceRegistry))
                     ? HdSt_MeshTopology::QuadsTriangulated
                     : HdSt_MeshTopology::QuadsUntriangulated);
         
@@ -781,6 +805,20 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         }
         *dirtyBits &= ~DirtyPointsIndices;
         indexToken = HdTokens->pointsIndices;
+    } else if (drawItem->GetDrawingCoord()->GetTopologyIndex() == 
+        HdStMesh::WireframeLinesTopology) {
+        if ((*dirtyBits & DirtyWireframeLinesIndices) == 0 && canSkipFvarTopologyComp) {
+            return;
+        }
+        *dirtyBits &= ~DirtyWireframeLinesIndices;
+        indexToken = HdTokens->wireframeLineIndices;
+    } else if (drawItem->GetDrawingCoord()->GetTopologyIndex() == 
+        HdStMesh::HullWireframeLinesTopology) {
+        if ((*dirtyBits & DirtyHullWireframeLinesIndices) == 0 && canSkipFvarTopologyComp) {
+            return;
+        }
+        *dirtyBits &= ~DirtyHullWireframeLinesIndices;
+        indexToken = HdTokens->wireframeLineIndices;
     } else {
         if ((*dirtyBits & DirtyIndices) == 0 && canSkipFvarTopologyComp) { 
             return;
@@ -806,17 +844,15 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             if (rangeInstance.IsFirstInstance()) {
                 // if not exists, update actual topology buffer to range.
                 // Allocate new one if necessary.
-                HdBufferSourceSharedPtrVector sources;
-                HdBufferSourceSharedPtr source;
+                HdBufferSourceSharedPtr indexSource;
+                HdBufferSourceSharedPtrVector fvarIndicesSources;
 
                 if (desc.geomStyle == HdMeshGeomStylePoints) {
                     // create coarse points indices
-                    source = _topology->GetPointsIndexBuilderComputation();
-                    sources.push_back(source);
+                    indexSource = _topology->GetPointsIndexBuilderComputation();
                 } else if (refineLevelForDesc > 0) {
                     // create refined indices, primitiveParam and edgeIndices
-                    source = _topology->GetOsdIndexBuilderComputation();
-                    sources.push_back(source);
+                    indexSource = _topology->GetOsdIndexBuilderComputation();
 
                     // Add face-varying indices and patch params to topology BAR if 
                     // necessary
@@ -827,21 +863,29 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                             ++i) {
                             HdBufferSourceSharedPtr fvarIndicesSource = 
                                 _topology->GetOsdFvarIndexBuilderComputation(i);
-                            sources.push_back(fvarIndicesSource);
+                            fvarIndicesSources.push_back(fvarIndicesSource);
                         }
                     }
                 } else if (_UseQuadIndices(sceneDelegate->GetRenderIndex(), _topology)) {
                     // not refined = quadrangulate
                     // create quad indices, primitiveParam and edgeIndices
-                    source = _topology->GetQuadIndexBuilderComputation(GetId());
-                    sources.push_back(source);
-
+                    indexSource = _topology->GetQuadIndexBuilderComputation(GetId());
                 } else {
                     // create triangle indices, primitiveParam and edgeIndices
-                    source = _topology->GetTriangleIndexBuilderComputation(GetId());
-                    sources.push_back(source);  
+                    indexSource = _topology->GetTriangleIndexBuilderComputation(GetId());
                 }
-                
+
+                HdBufferSourceSharedPtrVector sources;
+
+                if (_NeedsWireframeLinesFallback(resourceRegistry, desc)) {
+                    indexSource = std::make_shared<HdSt_WireframeLinesComputation>(
+                        refineLevelForDesc > 0, indexSource, fvarIndicesSources);
+                } else {
+                    sources = std::move(fvarIndicesSources);
+                }
+
+                sources.push_back(indexSource);
+
                 // initialize buffer array
                 //   * indices
                 //   * primitiveParam
@@ -1259,15 +1303,6 @@ _RefineOrQuadrangulateOrTriangulateFaceVaryingPrimvar(
     }
 
     return source;
-}
-
-static bool
-_GetDoubleSupport(
-    const HdStResourceRegistrySharedPtr& resourceRegistry)
-{
-    const HgiCapabilities* capabilities =
-        resourceRegistry->GetHgi()->GetCapabilities();
-    return capabilities->IsSet(HgiDeviceCapabilitiesBitsShaderDoublePrecision);
 }
 
 void
@@ -2505,13 +2540,27 @@ HdStMesh::_UseFlatNormals(const HdMeshReprDesc &desc) const
     return true;
 }
 
-static bool
-_CanUseTriangulatedFlatNormals(HdSt_MeshTopologySharedPtr const &topology)
+bool
+HdStMesh::_NeedsWireframeLinesFallback(
+    const HdStResourceRegistrySharedPtr& resourceRegistry,
+    const HdMeshReprDesc& desc) const
+{
+    return (desc.geomStyle == HdMeshGeomStyleEdgeOnly ||
+        desc.geomStyle == HdMeshGeomStyleHullEdgeOnly) &&
+        !(_GetRefineLevelForDesc(desc) > 0 && _topology->RefinesToPatches()) &&
+        !_GetWireframeSupport(resourceRegistry);
+}
+
+bool
+HdStMesh::_CanUseTriangulatedFlatNormals(
+    const HdStResourceRegistrySharedPtr& resourceRegistry,
+    const HdMeshReprDesc& desc)
 {
     // For triangle subdivison or subdivision scheme "none" we
     // can use triangulated flat normals. 
-    return topology->RefinesToTriangles() ||
-           topology->GetScheme() == PxOsdOpenSubdivTokens->none;
+    return _topology->RefinesToTriangles() ||
+           _topology->GetScheme() == PxOsdOpenSubdivTokens->none ||
+           _NeedsWireframeLinesFallback(resourceRegistry, desc);
 }
 
 HdBufferArrayRangeSharedPtr
@@ -2612,7 +2661,8 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                     | HdChangeTracker::DirtyPrimvar
                                      | DirtyIndices
                                      | DirtyHullIndices
-                                     | DirtyPointsIndices)) {
+                                     | DirtyPointsIndices
+                                     | DirtyWireframeLinesIndices)) {
         _PopulateTopology(sceneDelegate,
                           renderParam,
                           drawItem,
@@ -2641,7 +2691,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
 
     // If the subdivision scheme can use triangle normals,
     // disable flat normal generation.
-    if (_CanUseTriangulatedFlatNormals(_topology)) {
+    if (_CanUseTriangulatedFlatNormals(resourceRegistry, desc)) {
         requireFlatNormals = false;
         *dirtyBits &= ~DirtyFlatNormals;
     }
@@ -2782,6 +2832,10 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
 {
     HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
 
+    HdStResourceRegistrySharedPtr const& resourceRegistry = 
+        std::static_pointer_cast<HdStResourceRegistry>(
+            renderIndex.GetResourceRegistry());
+
     bool hasFaceVaryingPrimvars =
         (bool)drawItem->GetFaceVaryingPrimvarRange();
 
@@ -2851,8 +2905,10 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
         _topology->GetScheme() != PxOsdOpenSubdivTokens->bilinear;
 
     // Should the geometric shader expect computed flat normals for this mesh?
+    const bool canUseTriangulatedFlatNormals =
+        _CanUseTriangulatedFlatNormals(resourceRegistry, desc);
     bool hasGeneratedFlatNormals = _UseFlatNormals(desc) &&
-         !_CanUseTriangulatedFlatNormals(_topology);
+         !canUseTriangulatedFlatNormals;
 
     // Has the draw style been forced to flat-shading?
     bool forceFlatShading =
@@ -2871,7 +2927,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
     if (forceFlatShading) {
         if (hasGeneratedFlatNormals) {
             normalsSource = HdSt_MeshShaderKey::NormalSourceFlat;
-        } else if (_CanUseTriangulatedFlatNormals(_topology)) {
+        } else if (canUseTriangulatedFlatNormals) {
             normalsSource = HdSt_MeshShaderKey::NormalSourceFlatScreenSpace;
         } else {
             normalsSource = HdSt_MeshShaderKey::NormalSourceFlatGeometric;
@@ -2932,10 +2988,6 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    HdStResourceRegistrySharedPtr resourceRegistry =
-        std::static_pointer_cast<HdStResourceRegistry>(
-            renderIndex.GetResourceRegistry());
-
     bool const hasBuiltinBarycentrics =
         resourceRegistry->GetHgi()->GetCapabilities()->
             IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
@@ -2944,9 +2996,17 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
         resourceRegistry->GetHgi()->GetCapabilities()->
             IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
 
+    bool const hasGeometricStage =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+            IsSet(HgiDeviceCapabilitiesBitsGeometricStage);
+
     bool const nativeRoundPoints =
         resourceRegistry->GetHgi()->GetCapabilities()->
             IsSet(HgiDeviceCapabilitiesBitsRoundPoints);
+
+    bool const triangleLineFill =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+            IsSet(HgiDeviceCapabilitiesBitsTriangleLineFill);
 
     // create a shaderKey and set to the geometric shader.
     HdSt_MeshShaderKey shaderKey(primType,
@@ -2960,6 +3020,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  _doubleSided || desc.doubleSided,
                                  hasBuiltinBarycentrics,
                                  hasMetalTessellation,
+                                 hasGeometricStage,
                                  hasCustomDisplacement,
                                  hasPerFaceInterpolation,
                                  hasTopologicalVisibility,
@@ -2970,7 +3031,8 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  _pointsShadingEnabled,
                                  desc.forceOpaqueEdges,
                                  desc.surfaceEdgeIds,
-                                 nativeRoundPoints);
+                                 nativeRoundPoints,
+                                 triangleLineFill);
 
     HdSt_GeometricShaderSharedPtr geomShader =
         HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
@@ -3031,119 +3093,154 @@ HdStMesh::_PropagateDirtyBits(HdDirtyBits bits) const
     // If the topology is dirty, recompute custom indices resources.
     if (bits & HdChangeTracker::DirtyTopology) {
         bits |= _customDirtyBitsInUse &
-                   (DirtyIndices      |
-                    DirtyHullIndices  |
-                    DirtyPointsIndices);
+                   (DirtyIndices       |
+                    DirtyHullIndices   |
+                    DirtyPointsIndices |
+                    DirtyWireframeLinesIndices);
     }
 
     return bits;
 }
 
 void
-HdStMesh::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits)
+HdStMesh::_InitRepr(HdSceneDelegate *sceneDelegate,
+    TfToken const &reprToken, HdDirtyBits *dirtyBits)
 {
-    _ReprVector::iterator it = std::find_if(_reprs.begin(), _reprs.end(),
-                                            _ReprComparator(reprToken));
-    bool isNew = it == _reprs.end();
-    if (isNew) {
-        // add new repr
-        _reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
-        HdReprSharedPtr &repr = _reprs.back().second;
+    const auto it = std::find_if(_reprs.begin(), _reprs.end(),
+        _ReprComparator(reprToken));
+    if (it != _reprs.end()) {
+        return;
+    }
 
-        // set dirty bit to say we need to sync a new repr (buffer array
-        // ranges may change)
-        *dirtyBits |= HdChangeTracker::NewRepr;
+    HdRenderIndex &renderIndex = sceneDelegate->GetRenderIndex();
+    HdStResourceRegistrySharedPtr resourceRegistry =
+    std::static_pointer_cast<HdStResourceRegistry>(
+        renderIndex.GetResourceRegistry());
 
-        _MeshReprConfig::DescArray descs = _GetReprDesc(reprToken);
+    // add new repr
+    _reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
+    HdReprSharedPtr &repr = _reprs.back().second;
 
-        // allocate all draw items
-        size_t numGeomSubsets = _topology ? 
-            _topology->GetGeomSubsets().size() : 0;
-        
-        for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-            const HdMeshReprDesc &desc = descs[descIdx];
+    // set dirty bit to say we need to sync a new repr (buffer array
+    // ranges may change)
+    *dirtyBits |= HdChangeTracker::NewRepr;
 
-            if (desc.geomStyle == HdMeshGeomStyleInvalid) {
-                continue;
+    _MeshReprConfig::DescArray descs = _GetReprDesc(reprToken);
+
+    // allocate all draw items
+    size_t numGeomSubsets = _topology ? 
+        _topology->GetGeomSubsets().size() : 0;
+
+    const bool needWireframeLinesTopology =
+        !_GetWireframeSupport(resourceRegistry);
+
+    for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
+        const HdMeshReprDesc &desc = descs[descIdx];
+
+        if (desc.geomStyle == HdMeshGeomStyleInvalid) {
+            continue;
+        }
+
+        int geomSubsetTopologyIndexOffset = 0;
+        {
+            HdRepr::DrawItemUniquePtr drawItem =
+                std::make_unique<HdStDrawItem>(&_sharedData);
+            HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
+            repr->AddDrawItem(std::move(drawItem));
+
+            switch (desc.geomStyle) {
+                case HdMeshGeomStyleHull:
+                case HdMeshGeomStyleHullEdgeOnly:
+                case HdMeshGeomStyleHullEdgeOnSurf:
+                {
+                    geomSubsetTopologyIndexOffset = 1;
+                    int hullDirtyBits = DirtyHullIndices;
+                    if (desc.geomStyle == HdMeshGeomStyleHullEdgeOnly &&
+                        needWireframeLinesTopology) {
+                        drawingCoord->SetTopologyIndex(
+                            HdStMesh::HullWireframeLinesTopology);
+                        hullDirtyBits |= DirtyWireframeLinesIndices;
+                    } else {
+                        drawingCoord->SetTopologyIndex(HdStMesh::HullTopology);
+                    }
+                    if ((_customDirtyBitsInUse & hullDirtyBits) !=
+                        hullDirtyBits) {
+                        _customDirtyBitsInUse |= hullDirtyBits;
+                        *dirtyBits |= hullDirtyBits;
+                    }
+                    break;
+                }
+
+                case HdMeshGeomStylePoints:
+                {
+                    // in the current implementation, we use topology
+                    // for points too, to draw a subset of vertex primvars
+                    // (note that the points may be followed by the refined
+                    // vertices)
+                    drawingCoord->SetTopologyIndex(HdStMesh::PointsTopology);
+                    if (!(_customDirtyBitsInUse & DirtyPointsIndices)) {
+                        _customDirtyBitsInUse |= DirtyPointsIndices;
+                        *dirtyBits |= DirtyPointsIndices;
+                    }
+                    break;
+                }
+
+                case HdMeshGeomStyleEdgeOnly:
+                {
+                    if (needWireframeLinesTopology) {
+                        drawingCoord->SetTopologyIndex(
+                            HdStMesh::WireframeLinesTopology);
+                        if (!(_customDirtyBitsInUse &
+                                DirtyWireframeLinesIndices)) {
+                            _customDirtyBitsInUse |= DirtyWireframeLinesIndices;
+                            *dirtyBits |= DirtyWireframeLinesIndices;
+                        }
+                        break;
+                    }
+                    [[fallthrough]];
+                }
+
+                default:
+                {
+                    if (!(_customDirtyBitsInUse & DirtyIndices)) {
+                        _customDirtyBitsInUse |= DirtyIndices;
+                        *dirtyBits |= DirtyIndices;
+                    }
+                }
             }
 
-            int geomSubsetTopologyIndexOffset = 0;
-            {
+            // Set up drawing coord instance primvars.
+            drawingCoord->SetInstancePrimvarBaseIndex(
+                HdStMesh::FreeSlot + 2 * numGeomSubsets);
+        }
+
+        // Allocate geom subset draw items
+        if (desc.geomStyle != HdMeshGeomStylePoints) {
+            for (size_t i = 0; i < numGeomSubsets; ++i) {
                 HdRepr::DrawItemUniquePtr drawItem =
                     std::make_unique<HdStDrawItem>(&_sharedData);
                 HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
-                repr->AddDrawItem(std::move(drawItem));
-
-                switch (desc.geomStyle) {
-                    case HdMeshGeomStyleHull:
-                    case HdMeshGeomStyleHullEdgeOnly:
-                    case HdMeshGeomStyleHullEdgeOnSurf:
-                    {
-                        geomSubsetTopologyIndexOffset = 1; 
-                        drawingCoord->SetTopologyIndex(HdStMesh::HullTopology);
-                        if (!(_customDirtyBitsInUse & DirtyHullIndices)) {
-                            _customDirtyBitsInUse |= DirtyHullIndices;
-                            *dirtyBits |= DirtyHullIndices;
-                        }
-                        break;
-                    }
-
-                    case HdMeshGeomStylePoints:
-                    {
-                        // in the current implementation, we use topology
-                        // for points too, to draw a subset of vertex primvars
-                        // (note that the points may be followed by the refined
-                        // vertices)
-                        drawingCoord->SetTopologyIndex(HdStMesh::PointsTopology);
-                        if (!(_customDirtyBitsInUse & DirtyPointsIndices)) {
-                            _customDirtyBitsInUse |= DirtyPointsIndices;
-                            *dirtyBits |= DirtyPointsIndices;
-                        }
-                        break;
-                    }
-
-                    default:
-                    {
-                        if (!(_customDirtyBitsInUse & DirtyIndices)) {
-                            _customDirtyBitsInUse |= DirtyIndices;
-                            *dirtyBits |= DirtyIndices;
-                        }
-                    }
-                }
-
-                // Set up drawing coord instance primvars.
+                repr->AddGeomSubsetDrawItem(std::move(drawItem));
+                drawingCoord->SetTopologyIndex(
+                    HdStMesh::FreeSlot + 2 * i + 
+                        geomSubsetTopologyIndexOffset);
                 drawingCoord->SetInstancePrimvarBaseIndex(
                     HdStMesh::FreeSlot + 2 * numGeomSubsets);
             }
+        }
 
-            // Allocate geom subset draw items
-            if (desc.geomStyle != HdMeshGeomStylePoints) {
-                for (size_t i = 0; i < numGeomSubsets; ++i) {
-                    HdRepr::DrawItemUniquePtr drawItem =
-                        std::make_unique<HdStDrawItem>(&_sharedData);
-                    HdDrawingCoord *drawingCoord = drawItem->GetDrawingCoord();
-                    repr->AddGeomSubsetDrawItem(std::move(drawItem));
-                    drawingCoord->SetTopologyIndex(
-                        HdStMesh::FreeSlot + 2 * i + 
-                            geomSubsetTopologyIndexOffset);
-                    drawingCoord->SetInstancePrimvarBaseIndex(
-                        HdStMesh::FreeSlot + 2 * numGeomSubsets);
-                }
+        if (desc.flatShadingEnabled) {
+            if (!(_customDirtyBitsInUse & DirtyFlatNormals)) {
+                _customDirtyBitsInUse |= DirtyFlatNormals;
+                *dirtyBits |= DirtyFlatNormals;
             }
-
-            if (desc.flatShadingEnabled) {
-                if (!(_customDirtyBitsInUse & DirtyFlatNormals)) {
-                    _customDirtyBitsInUse |= DirtyFlatNormals;
-                    *dirtyBits |= DirtyFlatNormals;
-                }
-            } else {
-                if (!(_customDirtyBitsInUse & DirtySmoothNormals)) {
-                    _customDirtyBitsInUse |= DirtySmoothNormals;
-                    *dirtyBits |= DirtySmoothNormals;
-                }
+        } else {
+            if (!(_customDirtyBitsInUse & DirtySmoothNormals)) {
+                _customDirtyBitsInUse |= DirtySmoothNormals;
+                *dirtyBits |= DirtySmoothNormals;
             }
-        } // for each repr desc for the repr
-    } // if new repr
+        }
+    } // for each repr desc for the repr
 }
 
 void
@@ -3391,4 +3488,3 @@ HdStMesh::GetInitialDirtyBitsMask() const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

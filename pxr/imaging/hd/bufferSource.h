@@ -105,9 +105,9 @@ public:
     HD_API
     virtual bool HasPreChainedBuffer() const;
 
-    /// Returns the pre-chained buffer.
+    /// Returns the pre-chained buffer(s)
     HD_API
-    virtual HdBufferSourceSharedPtr GetPreChainedBuffer() const;
+    virtual HdBufferSourceSharedPtrVector GetPreChainedBuffers() const;
 
     /// Returns true if this buffer has any chained buffer(s)
     HD_API

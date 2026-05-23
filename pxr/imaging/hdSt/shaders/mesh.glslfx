@@ -1470,7 +1470,7 @@ vec3 ComputeScreenSpaceNeye()
 {
     vec3 Peye = ComputeScreenSpacePeye();
     vec3 Neye = normalize(cross(dFdx(Peye), dFdy(Peye)));
-    return (gl_FrontFacing ? Neye : -Neye);
+    return (IsFrontFacing() ? Neye : -Neye);
 }
 
 void main(void)
@@ -1479,7 +1479,7 @@ void main(void)
 
     bool isFlipped = IsFlipped();
 
-    DiscardBasedOnShading(gl_FrontFacing, isFlipped);
+    DiscardBasedOnShading(IsFrontFacing(), isFlipped);
 
     DiscardBasedOnTopologicalVisibility();
 

@@ -41,6 +41,7 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
                        bool doubleSided,
                        bool hasBuiltinBarycentrics,
                        bool hasMetalTessellation,
+                       bool hasGeometricStage,
                        bool hasCustomDisplacement,
                        bool hasPerFaceInterpolation,
                        bool hasTopologicalVisibility,
@@ -51,7 +52,8 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
                        bool pointsShadingEnabled,
                        bool forceOpaqueEdges,
                        bool surfaceEdgeIds,
-                       bool nativeRoundPoints);
+                       bool nativeRoundPoints,
+                       bool triangleLineFill);
 
     // Note: it looks like gcc 4.8 has a problem issuing
     // a wrong warning as "array subscript is above array bounds"
@@ -83,6 +85,9 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     HdSt_GeometricShader::FvarPatchType GetFvarPatchType() const override {
         return fvarPatchType; 
     }
+    bool UseWireframeLinesFallback() const override {
+        return useWireframeLinesFallback;
+    }
 
     HdSt_GeometricShader::PrimitiveType primType;
     HdCullStyle cullStyle;
@@ -93,6 +98,7 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     HdPolygonMode polygonMode;
     float lineWidth;
     HdSt_GeometricShader::FvarPatchType fvarPatchType;
+    bool useWireframeLinesFallback;
 
     TfToken const &GetGlslfxFilename() const override { return glslfx; }
     TfToken const *GetVS()  const override { return VS; }
@@ -110,7 +116,7 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     TfToken PTCS[4];
     TfToken PTVS[13];
     TfToken GS[10];
-    TfToken FS[23];
+    TfToken FS[24];
 };
 
 

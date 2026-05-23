@@ -1417,14 +1417,20 @@ HdStComputeSharedPrimvarId(
                                sizeof(sourceId), primvarId);
 
         if (bufferSource->HasPreChainedBuffer()) {
-            HdBufferSourceSharedPtr src = bufferSource->GetPreChainedBuffer();
-
-            while (src) {
-                size_t chainedSourceId = bufferSource->ComputeHash();
-                primvarId = ArchHash64((const char*)&chainedSourceId,
-                                       sizeof(chainedSourceId), primvarId);
-
-                src = src->GetPreChainedBuffer();
+            auto nextBuffers = bufferSource->GetPreChainedBuffers();
+            std::deque<HdBufferSourceSharedPtr> srcs{
+                nextBuffers.begin(), nextBuffers.end()};
+            while (!srcs.empty()) {
+                HdBufferSourceSharedPtr src = srcs.front();
+                srcs.pop_front();
+                size_t chainedSourceId = src->ComputeHash();
+                primvarId = ArchHash64((const char*) &chainedSourceId,
+                    sizeof(chainedSourceId), primvarId);
+                if (src->HasPreChainedBuffer()) {
+                    nextBuffers = src->GetPreChainedBuffers();
+                    srcs.insert(
+                        srcs.end(), nextBuffers.begin(), nextBuffers.end());
+                }
             }
         }
     }

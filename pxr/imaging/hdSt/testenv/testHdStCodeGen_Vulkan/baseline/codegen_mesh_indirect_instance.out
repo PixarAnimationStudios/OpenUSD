@@ -2070,6 +2070,12 @@ vec3 HdGet_hydra_instanceTranslations() { return HdGet_hydra_instanceTranslation
 
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
+bool IsFrontFacing() {
+  return gl_FrontFacing;
+}
+vec3 TransformBarycentricCoordinates(vec3 st) {
+  return st;
+}
 vec3 GetBarycentricCoord() {
   return hd_BaryCoordNoPersp;
 }
@@ -3017,7 +3023,7 @@ vec3 ComputeScreenSpaceNeye()
 {
     vec3 Peye = ComputeScreenSpacePeye();
     vec3 Neye = normalize(cross(dFdx(Peye), dFdy(Peye)));
-    return (gl_FrontFacing ? Neye : -Neye);
+    return (IsFrontFacing() ? Neye : -Neye);
 }
 
 void main(void)
@@ -3026,7 +3032,7 @@ void main(void)
 
     bool isFlipped = IsFlipped();
 
-    DiscardBasedOnShading(gl_FrontFacing, isFlipped);
+    DiscardBasedOnShading(IsFrontFacing(), isFlipped);
 
     DiscardBasedOnTopologicalVisibility();
 
@@ -5166,6 +5172,12 @@ vec3 HdGet_hydra_instanceTranslations() { return HdGet_hydra_instanceTranslation
 
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
+bool IsFrontFacing() {
+  return gl_FrontFacing;
+}
+vec3 TransformBarycentricCoordinates(vec3 st) {
+  return st;
+}
 vec3 GetBarycentricCoord() {
   return hd_BaryCoordNoPersp;
 }
@@ -6061,6 +6073,7 @@ int GetPrimitiveEdgeId()
 }
 
 
+
 int GetPointId()
 {
     return -1;
@@ -6116,7 +6129,7 @@ vec3 ComputeScreenSpaceNeye()
 {
     vec3 Peye = ComputeScreenSpacePeye();
     vec3 Neye = normalize(cross(dFdx(Peye), dFdy(Peye)));
-    return (gl_FrontFacing ? Neye : -Neye);
+    return (IsFrontFacing() ? Neye : -Neye);
 }
 
 void main(void)
@@ -6125,7 +6138,7 @@ void main(void)
 
     bool isFlipped = IsFlipped();
 
-    DiscardBasedOnShading(gl_FrontFacing, isFlipped);
+    DiscardBasedOnShading(IsFrontFacing(), isFlipped);
 
     DiscardBasedOnTopologicalVisibility();
 

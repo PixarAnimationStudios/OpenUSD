@@ -60,6 +60,10 @@ using HgiBits = uint32_t;
 ///   Indirect command buffers are supported</li>
 /// <li>HgiDeviceCapabilitiesBitsRoundPoints:
 ///   Points can be natively rasterized as disks</li>
+/// <li>HgiDeviceCapabilitiesBitsGeometricStage:
+///   Supports geometry shaders</li>
+/// <li>HgiDeviceCapabilitiesBitsTriangleLineFill:
+///   Triangles can be rasterized as their edge lines.</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
@@ -84,6 +88,8 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsIndirectCommandBuffers   = 1 << 17,
     HgiDeviceCapabilitiesBitsRoundPoints              = 1 << 18,
     HgiDeviceCapabilitiesBitsSingleSlotResourceArrays = 1 << 19,
+    HgiDeviceCapabilitiesBitsGeometricStage           = 1 << 20,
+    HgiDeviceCapabilitiesBitsTriangleLineFill         = 1 << 21,
 };
 
 using HgiDeviceCapabilities = HgiBits;

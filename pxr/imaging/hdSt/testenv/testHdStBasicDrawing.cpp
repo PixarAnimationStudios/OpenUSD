@@ -88,6 +88,7 @@ My_TestGLDrawing::InitTest()
 void
 My_TestGLDrawing::DrawTest()
 {
+    _driver->GetHgi()->StartFrame();
     int width = GetWidth(), height = GetHeight();
     GfMatrix4d viewMatrix = GetViewMatrix();
     GfMatrix4d projMatrix = GetProjectionMatrix();
@@ -103,6 +104,7 @@ My_TestGLDrawing::DrawTest()
     _driver->UpdateAovDimensions(width, height);
 
     _driver->Draw();
+    _driver->GetHgi()->EndFrame();
 }
 
 void
@@ -183,4 +185,3 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 }
-

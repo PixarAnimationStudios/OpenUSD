@@ -243,13 +243,20 @@ HdStRenderPassState::Prepare(
 
     HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
         std::static_pointer_cast<HdStResourceRegistry>(resourceRegistry);
+    const HgiCapabilities* capabilities =
+        hdStResourceRegistry->GetHgi()->GetCapabilities();
 
+    const bool wireframeSupport = 
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsTriangleLineFill);
+
+    const size_t maxClipPlanes = capabilities->GetMaxClipDistances();
+
+    const bool clipDistanceSupport = maxClipPlanes > 0;
+    _clippingEnabled = _clippingEnabled && clipDistanceSupport;
     VtVec4fArray clipPlanes;
     TF_FOR_ALL(it, GetClipPlanes()) {
         clipPlanes.push_back(GfVec4f(*it));
     }
-    const size_t maxClipPlanes = (size_t)hdStResourceRegistry->GetHgi()->
-        GetCapabilities()->GetMaxClipDistances();
     if (clipPlanes.size() >= maxClipPlanes) {
         clipPlanes.resize(maxClipPlanes);
     }
@@ -344,6 +351,12 @@ HdStRenderPassState::Prepare(
             HdShaderTokens->numClipPlanes,
             HdTupleType{HdTypeUInt32, 1});
 
+        if (!wireframeSupport) {
+            bufferSpecs.emplace_back(
+                HdShaderTokens->cullStyle,
+                HdTupleType{HdTypeUInt32, 1});
+        }
+
         // allocate interleaved buffer
         _renderPassStateBar = 
             hdStResourceRegistry->AllocateUniformBufferArrayRange(
@@ -371,8 +384,6 @@ HdStRenderPassState::Prepare(
     GfMatrix4d const& worldToViewMatrix = GetWorldToViewMatrix();
     GfMatrix4d projMatrix = GetProjectionMatrix();
 
-    HgiCapabilities const * capabilities =
-        hdStResourceRegistry->GetHgi()->GetCapabilities();
     if (!capabilities->IsSet(
         HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne)) {
         // Different backends use different clip space depth ranges. The
@@ -488,6 +499,13 @@ HdStRenderPassState::Prepare(
     std::make_shared<HdVtBufferSource>(
         HdShaderTokens->numClipPlanes,
         VtValue(uint32_t(clipPlanes.size()))));
+
+    if (!wireframeSupport) {
+        sources.push_back(
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->cullStyle,
+            VtValue(static_cast<uint32_t>(_cullStyle))));
+    }
 
     hdStResourceRegistry->AddSources(_renderPassStateBar, std::move(sources));
 

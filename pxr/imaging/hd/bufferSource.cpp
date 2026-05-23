@@ -37,10 +37,10 @@ HdBufferSource::HasPreChainedBuffer() const
     return false;
 }
 
-HdBufferSourceSharedPtr
-HdBufferSource::GetPreChainedBuffer() const
+HdBufferSourceSharedPtrVector
+HdBufferSource::GetPreChainedBuffers() const
 {
-    return HdBufferSourceSharedPtr();
+    return HdBufferSourceSharedPtrVector();
 }
 
 bool
@@ -152,4 +152,3 @@ HdNullBufferSource::GetBufferSpecs(HdBufferSpecVector *specs) const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

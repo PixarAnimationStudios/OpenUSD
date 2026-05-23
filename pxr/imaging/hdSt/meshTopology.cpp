@@ -291,8 +291,7 @@ HdSt_MeshTopology::GetOsdTopologyComputation(SdfPath const &id)
     // this has to be the first instance.
     if (!TF_VERIFY(!_subdivision)) return HdBufferSourceSharedPtr();
 
-    bool const adaptive = RefinesToBSplinePatches() ||
-                          RefinesToBoxSplineTrianglePatches();
+    bool const adaptive = RefinesToPatches();
 
     // create HdSt_Subdivision
     _subdivision = std::make_unique<HdSt_Subdivision>(adaptive, _refineLevel);
@@ -909,4 +908,3 @@ HdSt_GeomSubsetFaceIndexHelperComputation::_CheckValid() const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
