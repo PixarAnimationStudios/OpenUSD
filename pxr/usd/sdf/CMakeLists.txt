@@ -75,6 +75,7 @@ pxr_library(sdf
         textParserUtils
         timeCode
         tokens
+        transcodeUtils
         types
         usdFileFormat
         usdaData
@@ -178,6 +179,7 @@ pxr_library(sdf
         wrapVariableExpression.cpp
         wrapVariableExpressionAST.cpp
         wrapTimeCode.cpp
+        wrapTranscodeUtils.cpp
         wrapTypes.cpp
         wrapUsdFileFormat.cpp
         wrapValueTypeName.cpp
@@ -226,6 +228,7 @@ pxr_test_scripts(
     testenv/testSdfSplineVersioning.py
     testenv/testSdfTargetFileFormat.py
     testenv/testSdfTimeCode.py
+    testenv/testSdfTranscodeUtils.py
     testenv/testSdfTypes.py
     testenv/testSdfVariableExpression.py
     testenv/testSdfVariableExpressionAST.py
@@ -282,6 +285,14 @@ pxr_build_test_shared_lib(TestSdfTargetFileFormat
 
     CPPFILES
         testenv/TestSdfTargetFileFormat.cpp
+)
+
+pxr_build_test(testSdfTranscodeUtils_Cpp
+    LIBRARIES
+        sdf
+
+    CPPFILES
+        testenv/testSdfTranscodeUtils.cpp
 )
 
 pxr_build_test_shared_lib(TestSdfResolver
@@ -700,6 +711,13 @@ pxr_register_test(testSdfTextFile_1_1
 pxr_register_test(testSdfTimeCode
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTimeCode"
+)
+pxr_register_test(testSdfTranscodeUtils
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTranscodeUtils"
+)
+pxr_register_test(testSdfTranscodeUtils_Cpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTranscodeUtils_Cpp"
 )
 pxr_register_test(testSdfTypes
     PYTHON
