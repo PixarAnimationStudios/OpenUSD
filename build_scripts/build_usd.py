@@ -1816,6 +1816,11 @@ def InstallUSD(context, force, buildArgs):
         else:
             extraArgs.append('-DPXR_BUILD_EXAMPLES=OFF')
 
+        if context.buildHttpResolverExample:
+            extraArgs.append('-DPXR_BUILD_HTTP_RESOLVER_EXAMPLE=ON')
+        else:
+            extraArgs.append('-DPXR_BUILD_HTTP_RESOLVER_EXAMPLE=OFF')
+
         if context.buildTutorials:
             extraArgs.append('-DPXR_BUILD_TUTORIALS=ON')
         else:
@@ -2150,6 +2155,13 @@ subgroup.add_argument("--examples", dest="build_examples", action="store_true",
 subgroup.add_argument("--no-examples", dest="build_examples", action="store_false",
                       help="Do not build examples")
 subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--http-resolver-example", dest="build_http_resolver_example",
+                      action="store_true", default=True,
+                      help="Build the HTTP resolver example (default)")
+subgroup.add_argument("--no-http-resolver-example", dest="build_http_resolver_example",
+                      action="store_false",
+                      help="Do not build the HTTP resolver example")
+subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--tutorials", dest="build_tutorials", action="store_true",
                       default=True, help="Build tutorials (default)")
 subgroup.add_argument("--no-tutorials", dest="build_tutorials", action="store_false",
@@ -2430,8 +2442,11 @@ class InstallContext:
         self.buildPython = (args.build_python and 
                             not embedded and 
                             not self.targetWasm)
-        self.buildExamples = (args.build_examples and 
+        self.buildExamples = (args.build_examples and
                               not embedded)
+        self.buildHttpResolverExample = (args.build_http_resolver_example and
+                                         not embedded and
+                                         not self.targetWasm)
         self.buildTutorials = (args.build_tutorials and 
                                not embedded and 
                                not self.targetWasm)
@@ -2814,6 +2829,7 @@ summaryMsg += """\
     Documentation               {buildHtmlDocs}
     Tests                       {buildTests}
     Examples                    {buildExamples}
+      HTTP Resolver Example:    {buildHttpResolverExample}
     Tutorials                   {buildTutorials}
     Tools                       {buildTools}
     Alembic Plugin              {buildAlembic}
@@ -2891,6 +2907,7 @@ summaryMsg = summaryMsg.format(
     buildHtmlDocs=("On" if context.buildHtmlDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
     buildExamples=("On" if context.buildExamples else "Off"),
+    buildHttpResolverExample=("On" if context.buildHttpResolverExample else "Off"),
     buildTutorials=("On" if context.buildTutorials else "Off"),
     enableVulkan=("On" if context.enableVulkan else "Off"),
     buildTools=("On" if context.buildTools else "Off"),
