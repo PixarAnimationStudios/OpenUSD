@@ -33,6 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((jointInvalidPrimRel,  "JointInvalidPrimRel"))                        \
     ((jointMultiplePrimsRel,  "JointMultiplePrimsRel"))                    \
     ((colliderNonUniformScale, "ColliderNonUniformScale"))                 \
+    ((colliderPlaneNotStatic, "ColliderPlaneNotStatic"))                    \
     ((colliderSpherePointsDataMissing, "ColliderSpherePointsDataMissing")) \
     ((massInvalidValues, "MassInvalidValues"))                             \
     ((densityInvalidValues, "DensityInvalidValues"))                       \

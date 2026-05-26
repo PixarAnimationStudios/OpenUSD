@@ -24,6 +24,7 @@
 #include "pxr/usd/usdGeom/capsule_1.h"
 #include "pxr/usd/usdGeom/cylinder.h"
 #include "pxr/usd/usdGeom/cylinder_1.h"
+#include "pxr/usd/usdGeom/plane.h"
 #include "pxr/usd/usdGeom/points.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdPhysics/rigidBodyAPI.h"
@@ -358,6 +359,24 @@ _GetColliderErrors(const UsdPrim &usdPrim,
         const UsdValidationErrorSites primErrorSites = {
             UsdValidationErrorSite(usdPrim.GetStage(), usdPrim.GetPath())
         };
+
+        if (usdPrim.IsA<UsdGeomPlane>())
+        {
+            UsdPrim bodyPrim;
+            if (HasDynamicBodyParent(usdPrim, &bodyPrim))
+            {
+                errors.emplace_back(
+                    UsdPhysicsValidationErrorNameTokens->colliderPlaneNotStatic,
+                    UsdValidationErrorType::Error,
+                    primErrorSites,
+                    TfStringPrintf(
+                        "UsdGeomPlane collider must be static and cannot be "
+                        "attached to a dynamic nor kinematic rigid body, "
+                        "prim path: %s",
+                        usdPrim.GetPath().GetText())
+                );
+            }
+        }
 
     if (usdPrim.IsA<UsdGeomSphere>() ||
         usdPrim.IsA<UsdGeomCapsule>() ||

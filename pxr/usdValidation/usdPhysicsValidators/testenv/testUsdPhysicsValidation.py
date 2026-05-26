@@ -267,6 +267,49 @@ class TestUsdPhysicsValidation(unittest.TestCase):
 
         stage.RemovePrim(shape.GetPrim().GetPrimPath())
 
+    def test_plane_collider_static_only(self):
+        validationRegistry = UsdValidation.ValidationRegistry()
+        validator = validationRegistry.GetOrLoadValidatorByName(
+            "usdPhysicsValidators:ColliderChecker"
+        )
+
+        self.assertTrue(validator)
+
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        # Static plane collider (no rigid body parent) - should pass
+        plane = UsdGeom.Plane.Define(stage, "/staticPlane")
+        UsdPhysics.CollisionAPI.Apply(plane.GetPrim())
+
+        errors = validator.Validate(plane.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # Plane under a dynamic rigid body - should fail
+        dynamicBody = UsdGeom.Xform.Define(stage, "/dynamicBody")
+        rboAPI = UsdPhysics.RigidBodyAPI.Apply(dynamicBody.GetPrim())
+
+        dynamicPlane = UsdGeom.Plane.Define(stage, "/dynamicBody/plane")
+        UsdPhysics.CollisionAPI.Apply(dynamicPlane.GetPrim())
+
+        errors = validator.Validate(dynamicPlane.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "ColliderPlaneNotStatic")
+
+        # Plane under a static rigid body (enabled=false) - should pass
+        rboAPI.GetRigidBodyEnabledAttr().Set(False)
+
+        errors = validator.Validate(dynamicPlane.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # Plane under a kinematic rigid body - should still fail
+        rboAPI.GetRigidBodyEnabledAttr().Set(True)
+        rboAPI.GetKinematicEnabledAttr().Set(True)
+
+        errors = validator.Validate(dynamicPlane.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "ColliderPlaneNotStatic")
+
     def test_rigid_body_mass_api(self):
         validationRegistry = UsdValidation.ValidationRegistry()
         rigidBodyValidator = validationRegistry.GetOrLoadValidatorByName(
