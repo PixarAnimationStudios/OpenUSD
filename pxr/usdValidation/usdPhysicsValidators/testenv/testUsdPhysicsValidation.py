@@ -6,7 +6,7 @@
 # https://openusd.org/license.
 
 import sys, os, unittest
-from pxr import Tf, Usd, UsdValidation, UsdPhysics, UsdGeom, Gf
+from pxr import Tf, Usd, UsdValidation, UsdPhysics, UsdGeom, Gf, Sdf, Vt
 
 
 class TestUsdPhysicsValidation(unittest.TestCase):
@@ -337,6 +337,99 @@ class TestUsdPhysicsValidation(unittest.TestCase):
         self.assertTrue(errors[0].GetName() == "ColliderNonUniformScale")
 
         stage.RemovePrim(shape.GetPrim().GetPrimPath())
+
+    def test_points_collider_primvar_widths(self):
+        validationRegistry = UsdValidation.ValidationRegistry()
+        validator = validationRegistry.GetOrLoadValidatorByName(
+            "usdPhysicsValidators:ColliderChecker"
+        )
+
+        self.assertTrue(validator)
+
+        # only widths attr authored, matching count — should pass
+        stage = Usd.Stage.CreateInMemory()
+        shape = UsdGeom.Points.Define(stage, "/shape")
+        UsdPhysics.CollisionAPI.Apply(shape.GetPrim())
+        shape.GetPointsAttr().Set([Gf.Vec3f(1.0), Gf.Vec3f(2.0)])
+        shape.GetWidthsAttr().Set([1.0, 2.0])
+
+        errors = validator.Validate(shape.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # only primvars:widths authored, matching count — should pass
+        stage = Usd.Stage.CreateInMemory()
+        shape = UsdGeom.Points.Define(stage, "/shape")
+        UsdPhysics.CollisionAPI.Apply(shape.GetPrim())
+        shape.GetPointsAttr().Set([Gf.Vec3f(1.0), Gf.Vec3f(2.0)])
+        primvarsAPI = UsdGeom.PrimvarsAPI(shape.GetPrim())
+        widthsPv = primvarsAPI.CreatePrimvar(
+            "widths", Sdf.ValueTypeNames.FloatArray)
+        widthsPv.Set([1.0, 2.0])
+
+        errors = validator.Validate(shape.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # both authored, primvars:widths wins — widths attr has wrong count
+        # but primvars:widths matches, so should pass
+        stage = Usd.Stage.CreateInMemory()
+        shape = UsdGeom.Points.Define(stage, "/shape")
+        UsdPhysics.CollisionAPI.Apply(shape.GetPrim())
+        shape.GetPointsAttr().Set([Gf.Vec3f(1.0), Gf.Vec3f(2.0)])
+        shape.GetWidthsAttr().Set([1.0])
+        primvarsAPI = UsdGeom.PrimvarsAPI(shape.GetPrim())
+        widthsPv = primvarsAPI.CreatePrimvar(
+            "widths", Sdf.ValueTypeNames.FloatArray)
+        widthsPv.Set([1.0, 2.0])
+
+        errors = validator.Validate(shape.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # both authored, primvars:widths wins — primvars has wrong count
+        # widths attr matches, but primvar takes priority so should fail
+        stage = Usd.Stage.CreateInMemory()
+        shape = UsdGeom.Points.Define(stage, "/shape")
+        UsdPhysics.CollisionAPI.Apply(shape.GetPrim())
+        shape.GetPointsAttr().Set([Gf.Vec3f(1.0), Gf.Vec3f(2.0)])
+        shape.GetWidthsAttr().Set([1.0, 2.0])
+        primvarsAPI = UsdGeom.PrimvarsAPI(shape.GetPrim())
+        widthsPv = primvarsAPI.CreatePrimvar(
+            "widths", Sdf.ValueTypeNames.FloatArray)
+        widthsPv.Set([1.0])
+
+        errors = validator.Validate(shape.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "ColliderSpherePointsDataMissing")
+
+        # neither authored — should fail
+        stage = Usd.Stage.CreateInMemory()
+        shape = UsdGeom.Points.Define(stage, "/shape")
+        UsdPhysics.CollisionAPI.Apply(shape.GetPrim())
+        shape.GetPointsAttr().Set([Gf.Vec3f(1.0)])
+
+        errors = validator.Validate(shape.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "ColliderSpherePointsDataMissing")
+
+        # indexed primvars:widths — 1 value, 2 indices matching 2 points
+        stage = Usd.Stage.CreateInMemory()
+        shape = UsdGeom.Points.Define(stage, "/shape")
+        UsdPhysics.CollisionAPI.Apply(shape.GetPrim())
+        shape.GetPointsAttr().Set([Gf.Vec3f(1.0), Gf.Vec3f(2.0)])
+        primvarsAPI = UsdGeom.PrimvarsAPI(shape.GetPrim())
+        widthsPv = primvarsAPI.CreatePrimvar(
+            "widths", Sdf.ValueTypeNames.FloatArray)
+        widthsPv.Set([1.0])
+        widthsPv.SetIndices(Vt.IntArray([0, 0]))
+
+        errors = validator.Validate(shape.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # indexed primvars:widths — wrong flattened count
+        widthsPv.SetIndices(Vt.IntArray([0]))
+
+        errors = validator.Validate(shape.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "ColliderSpherePointsDataMissing")
 
     def test_plane_collider_static_only(self):
         validationRegistry = UsdValidation.ValidationRegistry()

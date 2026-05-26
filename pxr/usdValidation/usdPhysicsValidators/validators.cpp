@@ -26,6 +26,8 @@
 #include "pxr/usd/usdGeom/cylinder_1.h"
 #include "pxr/usd/usdGeom/plane.h"
 #include "pxr/usd/usdGeom/points.h"
+#include "pxr/usd/usdGeom/primvar.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdPhysics/rigidBodyAPI.h"
 #include "pxr/usd/usdPhysics/massAPI.h"
@@ -401,25 +403,55 @@ _GetColliderErrors(const UsdPrim &usdPrim,
     }
         if (usdPrim.IsA<UsdGeomPoints>())
         {
+            const UsdGeomPoints shape(usdPrim);
+
+            VtArray<GfVec3f> positions;
+            shape.GetPointsAttr().Get(&positions);
+
+            const UsdGeomPrimvarsAPI primvarsAPI(usdPrim);
+            const UsdGeomPrimvar widthsPrimvar =
+                primvarsAPI.GetPrimvar(TfToken("widths"));
+
+            size_t widthsCount = 0;
+            std::string widthsSource;
+            if (widthsPrimvar && widthsPrimvar.HasAuthoredValue())
             {
-                const UsdGeomPoints shape(usdPrim);
-
-                VtArray<float> widths;
-                VtArray<GfVec3f> positions;
-                shape.GetWidthsAttr().Get(&widths);
-                shape.GetPointsAttr().Get(&positions);
-
-                if (widths.empty() || positions.empty() || widths.size() != positions.size())
+                if (widthsPrimvar.IsIndexed())
                 {
-                    errors.emplace_back(
-                        UsdPhysicsValidationErrorNameTokens->colliderSpherePointsDataMissing,
-                        UsdValidationErrorType::Error,
-                        primErrorSites,
-                        TfStringPrintf(
-                            "UsdGeomPoints width or position array not filled or sizes do not match, prim path: %s",
-                            usdPrim.GetPath().GetText())
-                    );
+                    VtIntArray indices;
+                    widthsPrimvar.GetIndices(&indices);
+                    widthsCount = indices.size();
+                    widthsSource = "primvars:widths:indices";
                 }
+                else
+                {
+                    VtArray<float> widthsValues;
+                    widthsPrimvar.Get(&widthsValues);
+                    widthsCount = widthsValues.size();
+                    widthsSource = "primvars:widths";
+                }
+            }
+            else
+            {
+                VtArray<float> widthsValues;
+                shape.GetWidthsAttr().Get(&widthsValues);
+                widthsCount = widthsValues.size();
+                widthsSource = "widths";
+            }
+
+            if (widthsCount == 0 || positions.empty() ||
+                widthsCount != positions.size())
+            {
+                errors.emplace_back(
+                    UsdPhysicsValidationErrorNameTokens->colliderSpherePointsDataMissing,
+                    UsdValidationErrorType::Error,
+                    primErrorSites,
+                    TfStringPrintf(
+                        "UsdGeomPoints %s array has %zu elements but points "
+                        "has %zu elements, prim path: %s",
+                        widthsSource.c_str(), widthsCount,
+                        positions.size(), usdPrim.GetPath().GetText())
+                );
             }
         }
 
