@@ -294,7 +294,11 @@ if (PXR_BUILD_DRACO_PLUGIN)
 endif()
 
 if (PXR_ENABLE_MATERIALX_SUPPORT)
-    find_package(MaterialX REQUIRED)
+    # MaterialX versions before 1.39.5 do not support package components.
+    find_package(MaterialX QUIET COMPONENTS RenderGlsl)
+    if (NOT MaterialX_FOUND)
+        find_package(MaterialX REQUIRED)
+    endif()
     add_definitions(-DPXR_MATERIALX_SUPPORT_ENABLED)
 endif()
 

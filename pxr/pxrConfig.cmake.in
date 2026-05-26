@@ -87,7 +87,11 @@ if(@PXR_ENABLE_MATERIALX_SUPPORT@)
             set(MaterialX_DIR [[@MaterialX_DIR@]])
         endif()
     endif()
-    find_dependency(MaterialX)
+    # MaterialX versions before 1.39.5 do not support package components.
+    find_package(MaterialX QUIET COMPONENTS RenderGlsl)
+    if (NOT MaterialX_FOUND)
+        find_dependency(MaterialX)
+    endif()
 endif()
 
 # Similar to MaterialX above, we are using Imath's cmake package config, so set
