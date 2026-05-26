@@ -152,13 +152,82 @@ class TestUsdPhysicsValidation(unittest.TestCase):
         stage = Usd.Stage.CreateInMemory()
         self.assertTrue(stage)
 
-        physicsJoint = UsdPhysics.Joint.Define(stage, "/joint")
+        body0 = UsdGeom.Xform.Define(stage, "/body0")
+        UsdPhysics.RigidBodyAPI.Apply(body0.GetPrim())
 
+        physicsJoint = UsdPhysics.Joint.Define(stage, "/joint")
+        physicsJoint.GetBody0Rel().AddTarget("/body0")
         physicsJoint.GetBody1Rel().AddTarget("/invalidPrim")
 
         errors = validator.Validate(physicsJoint.GetPrim())
         self.assertTrue(len(errors) == 1)
-        self.assertTrue(errors[0].GetName() == "JointInvalidPrimRel")        
+        self.assertTrue(errors[0].GetName() == "JointInvalidPrimRel")
+
+    def test_physics_joint_rel_not_xformable(self):
+        validationRegistry = UsdValidation.ValidationRegistry()
+        validator = validationRegistry.GetOrLoadValidatorByName(
+            "usdPhysicsValidators:PhysicsJointChecker"
+        )
+
+        self.assertTrue(validator)
+
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        UsdGeom.Scope.Define(stage, "/scope")
+        xform = UsdGeom.Xform.Define(stage, "/xform")
+        UsdPhysics.RigidBodyAPI.Apply(xform.GetPrim())
+
+        physicsJoint = UsdPhysics.Joint.Define(stage, "/joint")
+        physicsJoint.GetBody0Rel().AddTarget("/scope")
+        physicsJoint.GetBody1Rel().AddTarget("/xform")
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "JointRelNotXformable")
+
+        # Xform is Xformable — should not trigger JointRelNotXformable
+        physicsJoint.GetBody0Rel().SetTargets(["/xform"])
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+    def test_physics_joint_requires_enabled_rigid_body(self):
+        validationRegistry = UsdValidation.ValidationRegistry()
+        validator = validationRegistry.GetOrLoadValidatorByName(
+            "usdPhysicsValidators:PhysicsJointChecker"
+        )
+
+        self.assertTrue(validator)
+
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        # Joint with no body rels — no enabled rigid body
+        physicsJoint = UsdPhysics.Joint.Define(stage, "/joint")
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "JointNoEnabledRigidBody")
+
+        # Add one enabled rigid body — should clear the error
+        body0 = UsdGeom.Xform.Define(stage, "/body0")
+        rbo0 = UsdPhysics.RigidBodyAPI.Apply(body0.GetPrim())
+        physicsJoint.GetBody0Rel().AddTarget("/body0")
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # Disable the rigid body — should fail again
+        body1 = UsdGeom.Xform.Define(stage, "/body1")
+        rbo1 = UsdPhysics.RigidBodyAPI.Apply(body1.GetPrim())
+        rbo0.GetRigidBodyEnabledAttr().Set(False)
+        rbo1.GetRigidBodyEnabledAttr().Set(False)
+        physicsJoint.GetBody1Rel().AddTarget("/body1")
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "JointNoEnabledRigidBody")
 
     def test_physics_joint_multiple_rels(self):
         validationRegistry = UsdValidation.ValidationRegistry()
@@ -171,8 +240,10 @@ class TestUsdPhysicsValidation(unittest.TestCase):
         stage = Usd.Stage.CreateInMemory()
         self.assertTrue(stage)
 
-        UsdGeom.Xform.Define(stage, "/xform0")
-        UsdGeom.Xform.Define(stage, "/xform1")
+        xform0 = UsdGeom.Xform.Define(stage, "/xform0")
+        UsdPhysics.RigidBodyAPI.Apply(xform0.GetPrim())
+        xform1 = UsdGeom.Xform.Define(stage, "/xform1")
+        UsdPhysics.RigidBodyAPI.Apply(xform1.GetPrim())
 
         physicsJoint = UsdPhysics.Joint.Define(stage, "/joint")
 

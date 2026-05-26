@@ -505,17 +505,42 @@ SdfPath GetRel(const UsdRelationship& ref)
     return targets.at(0);
 }
 
-bool CheckJointRel(const SdfPath& relPath, const UsdPrim& jointPrim)
+enum class JointRelStatus
+{
+    Valid,
+    Empty,
+    InvalidPrim,
+    NotXformable
+};
+
+JointRelStatus CheckJointRel(const SdfPath& relPath, const UsdPrim& jointPrim)
 {
     if (relPath == SdfPath())
-        return true;
+        return JointRelStatus::Empty;
 
     const UsdPrim relPrim = jointPrim.GetStage()->GetPrimAtPath(relPath);
     if (!relPrim)
     {
-        return false;
+        return JointRelStatus::InvalidPrim;
     }
-    return true;
+    if (!relPrim.IsA<UsdGeomXformable>())
+    {
+        return JointRelStatus::NotXformable;
+    }
+    return JointRelStatus::Valid;
+}
+
+bool HasEnabledRigidBody(const SdfPath& relPath, const UsdPrim& jointPrim)
+{
+    if (relPath == SdfPath())
+        return false;
+
+    const UsdPrim relPrim = jointPrim.GetStage()->GetPrimAtPath(relPath);
+    if (!relPrim)
+        return false;
+
+    bool physicsAPIFound = false;
+    return IsDynamicBody(relPrim, &physicsAPIFound);
 }
 
 
@@ -540,9 +565,11 @@ _GetPhysicsJointErrors(const UsdPrim &usdPrim,
             const SdfPath rel0 = GetRel(physicsJoint.GetBody0Rel());
             const SdfPath rel1 = GetRel(physicsJoint.GetBody1Rel());
 
-            // check rel validity
-            if (!CheckJointRel(rel0, usdPrim) || !CheckJointRel(
-                rel1, usdPrim))
+            const JointRelStatus status0 = CheckJointRel(rel0, usdPrim);
+            const JointRelStatus status1 = CheckJointRel(rel1, usdPrim);
+
+            if (status0 == JointRelStatus::InvalidPrim ||
+                status1 == JointRelStatus::InvalidPrim)
             {
                 errors.emplace_back(
                     UsdPhysicsValidationErrorNameTokens->jointInvalidPrimRel,
@@ -551,6 +578,34 @@ _GetPhysicsJointErrors(const UsdPrim &usdPrim,
                     TfStringPrintf(
                         "Joint (%s) body relationship points to a non "
                         "existent prim, joint will not be parsed.",
+                        usdPrim.GetPrimPath().GetText())
+                );
+            }
+
+            if (status0 == JointRelStatus::NotXformable ||
+                status1 == JointRelStatus::NotXformable)
+            {
+                errors.emplace_back(
+                    UsdPhysicsValidationErrorNameTokens->jointRelNotXformable,
+                    UsdValidationErrorType::Error,
+                    primErrorSites,
+                    TfStringPrintf(
+                        "Joint (%s) body relationship must point to an "
+                        "Xformable prim.",
+                        usdPrim.GetPrimPath().GetText())
+                );
+            }
+
+            if (!HasEnabledRigidBody(rel0, usdPrim) &&
+                !HasEnabledRigidBody(rel1, usdPrim))
+            {
+                errors.emplace_back(
+                    UsdPhysicsValidationErrorNameTokens->jointNoEnabledRigidBody,
+                    UsdValidationErrorType::Error,
+                    primErrorSites,
+                    TfStringPrintf(
+                        "Joint (%s) must have at least one body relationship "
+                        "pointing to a prim with an enabled RigidBodyAPI.",
                         usdPrim.GetPrimPath().GetText())
                 );
             }
