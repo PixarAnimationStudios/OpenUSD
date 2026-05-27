@@ -815,7 +815,7 @@ bool _ParseSpherePointsShapeDesc(const UsdPhysicsCollisionAPI& collisionAPI,
 
             const UsdGeomPrimvarsAPI primvarsAPI(usdPrim);
             const UsdGeomPrimvar widthsPrimvar =
-                primvarsAPI.GetPrimvar(TfToken("widths"));
+                primvarsAPI.GetPrimvar(UsdGeomTokens->widths);
 
             if (widthsPrimvar && widthsPrimvar.HasAuthoredValue())
             {

@@ -410,7 +410,7 @@ _GetColliderErrors(const UsdPrim &usdPrim,
 
             const UsdGeomPrimvarsAPI primvarsAPI(usdPrim);
             const UsdGeomPrimvar widthsPrimvar =
-                primvarsAPI.GetPrimvar(TfToken("widths"));
+                primvarsAPI.GetPrimvar(UsdGeomTokens->widths);
 
             size_t widthsCount = 0;
             std::string widthsSource;
