@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((jointNoEnabledRigidBody, "JointNoEnabledRigidBody"))                \
     ((jointMultiplePrimsRel,  "JointMultiplePrimsRel"))                    \
     ((colliderNonUniformScale, "ColliderNonUniformScale"))                 \
-    ((colliderPlaneNotStatic, "ColliderPlaneNotStatic"))                    \
+    ((colliderPlaneDynamic, "ColliderPlaneDynamic"))                        \
     ((colliderSpherePointsDataMissing, "ColliderSpherePointsDataMissing")) \
     ((massInvalidValues, "MassInvalidValues"))                             \
     ((densityInvalidValues, "DensityInvalidValues"))                       \

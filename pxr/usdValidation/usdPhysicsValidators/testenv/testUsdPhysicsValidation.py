@@ -458,7 +458,7 @@ class TestUsdPhysicsValidation(unittest.TestCase):
 
         errors = validator.Validate(dynamicPlane.GetPrim())
         self.assertTrue(len(errors) == 1)
-        self.assertTrue(errors[0].GetName() == "ColliderPlaneNotStatic")
+        self.assertTrue(errors[0].GetName() == "ColliderPlaneDynamic")
 
         # Plane under a static rigid body (enabled=false) - should pass
         rboAPI.GetRigidBodyEnabledAttr().Set(False)
@@ -466,13 +466,12 @@ class TestUsdPhysicsValidation(unittest.TestCase):
         errors = validator.Validate(dynamicPlane.GetPrim())
         self.assertTrue(len(errors) == 0)
 
-        # Plane under a kinematic rigid body - should still fail
+        # Plane under a kinematic rigid body - should pass
         rboAPI.GetRigidBodyEnabledAttr().Set(True)
         rboAPI.GetKinematicEnabledAttr().Set(True)
 
         errors = validator.Validate(dynamicPlane.GetPrim())
-        self.assertTrue(len(errors) == 1)
-        self.assertTrue(errors[0].GetName() == "ColliderPlaneNotStatic")
+        self.assertTrue(len(errors) == 0)
 
     def test_rigid_body_mass_api(self):
         validationRegistry = UsdValidation.ValidationRegistry()

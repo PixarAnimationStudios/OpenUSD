@@ -367,16 +367,24 @@ _GetColliderErrors(const UsdPrim &usdPrim,
             UsdPrim bodyPrim;
             if (HasDynamicBodyParent(usdPrim, &bodyPrim))
             {
-                errors.emplace_back(
-                    UsdPhysicsValidationErrorNameTokens->colliderPlaneNotStatic,
-                    UsdValidationErrorType::Error,
-                    primErrorSites,
-                    TfStringPrintf(
-                        "UsdGeomPlane collider must be static and cannot be "
-                        "attached to a dynamic nor kinematic rigid body, "
-                        "prim path: %s",
-                        usdPrim.GetPath().GetText())
-                );
+                const UsdPhysicsRigidBodyAPI bodyAPI(bodyPrim);
+                bool isKinematic = false;
+                if (bodyAPI)
+                {
+                    bodyAPI.GetKinematicEnabledAttr().Get(&isKinematic);
+                }
+                if (!isKinematic)
+                {
+                    errors.emplace_back(
+                        UsdPhysicsValidationErrorNameTokens->colliderPlaneDynamic,
+                        UsdValidationErrorType::Error,
+                        primErrorSites,
+                        TfStringPrintf(
+                            "UsdGeomPlane collider cannot be attached to a "
+                            "simulated rigid body, prim path: %s",
+                            usdPrim.GetPath().GetText())
+                    );
+                }
             }
         }
 
