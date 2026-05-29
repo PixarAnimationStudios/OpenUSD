@@ -44,6 +44,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (texcoord)
     (geompropvalue)
+    (geomprop)
+    ((defaultInput, "default"))
     (filename)
     (ND_surface)
     (typeName)
@@ -219,6 +221,67 @@ _UsesTexcoordNode(mx::NodeDefPtr const& mxNodeDef)
         }
     }
     return false;
+}
+
+// Returns the geompropvalue/geompropvalueuniform node within the given
+// nodeDef's implementation nodegraph, or nullptr if the implementation is not
+// a nodegraph or contains no such node.
+static mx::NodePtr
+_GetWrappedGeompropValueNode(mx::NodeDefPtr const& mxNodeDef)
+{
+    if (!mxNodeDef) {
+        return nullptr;
+    }
+    mx::InterfaceElementPtr impl = mxNodeDef->getImplementation();
+    if (!impl || !impl->isA<mx::NodeGraph>()) {
+        return nullptr;
+    }
+    mx::NodeGraphPtr nodegraph = impl->asA<mx::NodeGraph>();
+    for (mx::NodePtr const& node : nodegraph->getNodes()) {
+        const std::string& category = node->getCategory();
+        if (category == "geompropvalue" ||
+            category == "geompropvalueuniform") {
+            return node;
+        }
+    }
+    return nullptr;
+}
+
+// Returns the name of the node input that the wrapped geompropvalue binds to
+// the given internal input via 'interfacename'. If there is no wrapper binding
+// (native geompropvalue nodes, or anything else), falls back to the internal
+// input name itself, which is the name native geompropvalue nodes use directly.
+static TfToken
+_GetPrimvarInputName(
+    mx::NodeDefPtr const& mxNodeDef,
+    TfToken const& geompropInputName)
+{
+    mx::NodePtr geompropNode = _GetWrappedGeompropValueNode(mxNodeDef);
+    if (geompropNode) {
+        mx::InputPtr input = geompropNode->getInput(geompropInputName.GetString());
+        if (input && !input->getInterfaceName().empty()) {
+            return TfToken(input->getInterfaceName());
+        }
+    }
+    return geompropInputName;
+}
+
+bool
+HdMtlxIsPrimvarReaderNodeDef(mx::NodeDefPtr const& mxNodeDef)
+{
+    return _GetWrappedGeompropValueNode(mxNodeDef) != nullptr;
+}
+
+TfToken
+HdMtlxGetPrimvarNameInputName(mx::NodeDefPtr const& mxNodeDef)
+{
+    return _GetPrimvarInputName(mxNodeDef, _tokens->geomprop);
+}
+
+TfToken
+HdMtlxGetPrimvarDefaultInputName(mx::NodeDefPtr const& mxNodeDef)
+{
+    return _GetPrimvarInputName(mxNodeDef, _tokens->defaultInput);
 }
 
 static std::string
@@ -452,8 +515,11 @@ _AddMaterialXNode(
     }
 
     // Primvar nodes:
-    // Save the node path so the primvarName can be declared in ShaderGen
-    if (mxNodeCategory == _tokens->geompropvalue) {
+    // Save the node path so the primvarName can be declared in ShaderGen.
+    // This covers native 'geompropvalue' nodes as well as nodes (such as
+    // UsdPrimvarReader) whose implementation wraps a geompropvalue node.
+    if (mxNodeCategory == _tokens->geompropvalue ||
+        HdMtlxIsPrimvarReaderNodeDef(mxNodeDef)) {
         mxHdData->hdPrimvarNodes.insert(hdNodePath);
     }
 

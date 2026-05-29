@@ -46,7 +46,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Default Texture Coordinate Token
     (st)
     (texcoord)
-    (geomprop)
     (index)
     ((defaultInput, "default"))
     (filename)
@@ -486,15 +485,16 @@ _UpdatePrimvarNodes(
     for (auto const& primvarPath : hdPrimvarNodes) {
         const HdMaterialNode2& hdPrimvarNode = hdNetwork.nodes.at(primvarPath);
 
-        // Save primvar name for the glslfx header
-        auto primvarNameIt = hdPrimvarNode.parameters.find(_tokens->geomprop);
+        mx::NodeDefPtr mxNodeDef = mxDoc->getNodeDef(
+                hdPrimvarNode.nodeTypeId.GetString());
+
+        auto primvarNameIt =
+            hdPrimvarNode.parameters.find(HdMtlxGetPrimvarNameInputName(mxNodeDef));
         if (primvarNameIt != hdPrimvarNode.parameters.end()) {
             std::string const& primvarName =
                 HdMtlxConvertToString(primvarNameIt->second);
 
             // Figure out the mx typename
-            mx::NodeDefPtr mxNodeDef = mxDoc->getNodeDef(
-                    hdPrimvarNode.nodeTypeId.GetString());
             if (mxNodeDef) {
                 (*mxHdPrimvarMap)[primvarName] = mxNodeDef->getType();
             }
@@ -502,9 +502,9 @@ _UpdatePrimvarNodes(
             // Get the Default value if authored
             std::string defaultPrimvarValue;
             const auto defaultPrimvarValueIt =
-                hdPrimvarNode.parameters.find(_tokens->defaultInput);
+                hdPrimvarNode.parameters.find(HdMtlxGetPrimvarDefaultInputName(mxNodeDef));
             if (hdPrimvarNode.parameters.end() != defaultPrimvarValueIt) {
-                defaultPrimvarValue = 
+                defaultPrimvarValue =
                     HdMtlxConvertToString(defaultPrimvarValueIt->second);
             }
             (*mxHdPrimvarDefaultValueMap)[primvarName] = defaultPrimvarValue;
@@ -1367,8 +1367,15 @@ _IsTopologicalShader(TfToken const& nodeId)
     const SdrShaderNodeConstPtr sdrNode = 
         sdrRegistry.GetShaderNodeByIdentifierAndType(nodeId, _tokens->mtlx);
 
-    if (sdrNode) {
-        return topologicalTokenSet.count(sdrNode->GetFamily()) > 0;
+    if (sdrNode && topologicalTokenSet.count(sdrNode->GetFamily()) > 0) {
+        return true;
+    }
+
+    // Nodes whose implementation wraps a geompropvalue node (such as
+    // UsdPrimvarReader) carry a primvar name that is topology-affecting, so
+    // they must be treated as topological to preserve that parameter.
+    if (HdMtlxIsPrimvarReaderNodeDef(HdMtlxGetNodeDef(nodeId))) {
+        return true;
     }
 
     // Swizzle nodes were topolgical in MaterialX v1.38 but were removed in 
