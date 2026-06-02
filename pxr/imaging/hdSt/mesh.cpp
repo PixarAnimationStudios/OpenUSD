@@ -895,7 +895,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         } else {
             // Geom subsets case
             HdBufferSourceSharedPtr indicesSource;
-            HdBufferSourceSharedPtr fvarIndicesSource;
+            HdBufferSourceSharedPtrVector fvarIndicesSources;
 
             bool refined = false;
             bool quadrangulated = false;
@@ -910,9 +910,10 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                     for (size_t i = 0; 
                            i < _fvarTopologyTracker->GetNumTopologies(); 
                             ++i) {
-                        fvarIndicesSource = 
+                        HdBufferSourceSharedPtr fvarIndicesSource = 
                             _topology->GetOsdFvarIndexBuilderComputation(i);
                         resourceRegistry->AddSource(fvarIndicesSource);
+                        fvarIndicesSources.push_back(fvarIndicesSource);
                     }
                 }
 
@@ -954,7 +955,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                 _topology->GetNonSubsetFaces();
             _CreateTopologyRangeForGeomSubset(resourceRegistry, changeTracker, 
                 renderParam, drawItem, indexToken, indicesSource,
-                fvarIndicesSource, geomSubsetFaceIndicesHelperSource,
+                fvarIndicesSources, geomSubsetFaceIndicesHelperSource,
                 VtIntArray(nonSubsetFaces->begin(), nonSubsetFaces->end()), 
                 refined);
 
@@ -967,7 +968,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                         geomSubsetDescIndex, numGeomSubsets, i));
                 _CreateTopologyRangeForGeomSubset(resourceRegistry, 
                     changeTracker, renderParam, subsetDrawItem, indexToken, 
-                    indicesSource, fvarIndicesSource, 
+                    indicesSource, fvarIndicesSources, 
                     geomSubsetFaceIndicesHelperSource, geomSubset.indices, 
                     refined);
             }
@@ -983,7 +984,7 @@ void HdStMesh::_CreateTopologyRangeForGeomSubset(
     HdStDrawItem *drawItem, 
     const TfToken &indexToken,
     HdBufferSourceSharedPtr indicesSource, 
-    HdBufferSourceSharedPtr fvarIndicesSource, 
+    HdBufferSourceSharedPtrVector const &fvarIndicesSources, 
     HdBufferSourceSharedPtr geomSubsetFaceIndicesHelperSource,
     const VtIntArray &faceIndices,
     bool refined)
@@ -1013,11 +1014,14 @@ void HdStMesh::_CreateTopologyRangeForGeomSubset(
                     indicesSource, geomSubsetFaceIndicesSource);
             sources.push_back(subsetSource);
 
-            if (fvarIndicesSource) {
-                HdBufferSourceSharedPtr fvarSubsetSource = 
-                    _topology->GetRefinedIndexSubsetComputation(
-                        fvarIndicesSource, geomSubsetFaceIndicesSource);
-                sources.push_back(fvarSubsetSource);
+            if (fvarIndicesSources.empty() == false) {
+                for (HdBufferSourceSharedPtr const &fvarIndicesSource :
+                        fvarIndicesSources) {
+                    HdBufferSourceSharedPtr fvarSubsetSource = 
+                        _topology->GetRefinedIndexSubsetComputation(
+                            fvarIndicesSource, geomSubsetFaceIndicesSource);
+                    sources.push_back(fvarSubsetSource);
+                }
             }
         } else {
             HdBufferSourceSharedPtr subsetSource = 

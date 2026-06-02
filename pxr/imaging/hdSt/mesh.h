@@ -19,6 +19,7 @@
 #include "pxr/base/vt/array.h"
 
 #include <memory>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -29,6 +30,7 @@ class HdSceneDelegate;
 using HdSt_VertexAdjacencyBuilderSharedPtr =
         std::shared_ptr<class HdSt_VertexAdjacencyBuilder>;
 using HdBufferSourceSharedPtr = std::shared_ptr<class HdBufferSource>;
+using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
 using HdSt_MeshTopologySharedPtr = std::shared_ptr<class HdSt_MeshTopology>;
 
 using HdStResourceRegistrySharedPtr =
@@ -156,7 +158,7 @@ protected:
         HdStDrawItem *drawItem, 
         const TfToken &indexToken,
         HdBufferSourceSharedPtr indicesSource, 
-        HdBufferSourceSharedPtr fvarIndicesSource, 
+        HdBufferSourceSharedPtrVector const &fvarIndicesSources, 
         HdBufferSourceSharedPtr geomSubsetFaceIndicesHelperSource,
         const VtIntArray &faceIndices,
         bool refined);
