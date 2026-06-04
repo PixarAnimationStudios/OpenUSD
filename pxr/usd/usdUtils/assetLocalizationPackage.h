@@ -46,6 +46,8 @@ class UsdUtils_AssetLocalizationPackage :
     public UsdUtils_WritableLocalizationClient
 {
 public:
+    virtual ~UsdUtils_AssetLocalizationPackage() = default;
+
     // Sets the original file path for this asset.
     // The path specified should be resolved by AR.
     inline void SetOriginalRootFilePath(const std::string &origRootFilePath)

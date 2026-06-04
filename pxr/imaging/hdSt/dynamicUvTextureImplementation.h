@@ -21,6 +21,8 @@ class HdStDynamicUvTextureObject;
 class HdStDynamicUvTextureImplementation
 {
 public:
+    virtual ~HdStDynamicUvTextureImplementation() = default;
+
     /// Called during the load phase of the Storm texture system
     /// when a texture file is supposed to be loaded to the CPU.
     ///

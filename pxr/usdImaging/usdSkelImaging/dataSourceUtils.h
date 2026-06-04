@@ -20,6 +20,8 @@ template<typename T>
 class UsdSkelImagingSharedPtrThunk
 {
 public:
+    virtual ~UsdSkelImagingSharedPtrThunk() = default;
+
     using Handle = std::shared_ptr<T>;
 
     Handle Get()

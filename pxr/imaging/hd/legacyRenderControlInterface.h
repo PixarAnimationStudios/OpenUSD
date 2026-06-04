@@ -32,6 +32,8 @@ using HdCommandDescriptors =
 class HdLegacyRenderControlInterface
 {
 public:
+    virtual ~HdLegacyRenderControlInterface() = default;
+
     /// \name Task control
     /// @{
 
