@@ -28,11 +28,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// This is a wrapper to realpath(3), which caters for situations where the
 /// real realpath() would return a NULL string, such as the case where the
 /// path is really just a program name.  The memory allocated by realpath is
-/// managed internally.
+/// managed internally. This should match the behavior of Linux command
+/// `realpath -e` and python function `os.path.realpath(..., strict=True)`.
 ///
 /// If \a allowInaccessibleSuffix is true, then this function will only invoke
 /// realpath on the longest accessible prefix of \a path, and then append the
-/// inaccessible suffix.
+/// inaccessible suffix. This is similar to the Linux command `realpath -m` and
+/// python function `os.path.realpath(..., strict=False)` EXCEPT that a broken
+/// symlink is not resolved to the missing target before the suffix is
+/// appended. This makes the broken symlink effectively part of the
+/// "inaccessible suffix".
 ///
 /// If \a error is provided, it is set to the error reason should an error
 /// occur while computing the real path. If no error occurs, the string is
