@@ -223,7 +223,7 @@ _RegisterDrawItem(
 
     // need to register to get batching works
     HdSt_GeometricShaderSharedPtr const geomShader = 
-        HdSt_GeometricShader::Create(shaderKey, registry);
+        HdSt_GeometricShader::Create(shaderKey, {}, {}, registry);
     TF_VERIFY(geomShader);
     drawItem.SetGeometricShader(geomShader);
     drawItem.SetMaterialNetworkShader(_GetFallbackShader());
@@ -723,7 +723,7 @@ EmptyDrawBatchTest(HdStResourceRegistrySharedPtr const &registry)
 
     // need to register to get batching works
     HdSt_GeometricShaderSharedPtr const geomShader = 
-        HdSt_GeometricShader::Create(shaderKey, registry);
+        HdSt_GeometricShader::Create(shaderKey, {}, {}, registry);
     TF_VERIFY(geomShader);
     drawItem.SetGeometricShader(geomShader);
     drawItem.SetMaterialNetworkShader(_GetFallbackShader());

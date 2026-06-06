@@ -2973,7 +2973,7 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  nativeRoundPoints);
 
     HdSt_GeometricShaderSharedPtr geomShader =
-        HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
+        HdSt_GeometricShader::Create(shaderKey, {}, {}, resourceRegistry);
 
     TF_VERIFY(geomShader);
 

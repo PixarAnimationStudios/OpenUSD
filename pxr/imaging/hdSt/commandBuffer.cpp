@@ -79,11 +79,21 @@ struct _SortByTexture {
         HdStDrawItem const *a = aInstance->GetDrawItem();
         HdStDrawItem const *b = bInstance->GetDrawItem();
 
-        size_t const textureA =
-            a->GetMaterialNetworkShader()->ComputeTextureSourceHash();
-        size_t const textureB =
-            b->GetMaterialNetworkShader()->ComputeTextureSourceHash();
-        return textureA < textureB;
+        size_t const geometricTextureHashA =
+            a->GetGeometricShader()->ComputeTextureSourceHash();
+        size_t const geometricTextureHashB =
+            b->GetGeometricShader()->ComputeTextureSourceHash();
+        if (geometricTextureHashA != geometricTextureHashB) {
+            return geometricTextureHashA < geometricTextureHashB;
+        }
+        else
+        {
+            size_t const materialTextureHashA =
+                a->GetMaterialNetworkShader()->ComputeTextureSourceHash();
+            size_t const materialTextureHashB =
+                b->GetMaterialNetworkShader()->ComputeTextureSourceHash();
+            return materialTextureHashA < materialTextureHashB;
+        }
     }
 };
 
@@ -170,9 +180,11 @@ _InsertDrawItemInstance(
     // batch, we'll also combine the texture source hash into the key.
     // (Note the texture source hash will be 0 for bindless textures).
     if (!allowTextureResourceRebinding) {
-        size_t const textureHash =
+        size_t const geometricTextureHash =
+            drawItem->GetGeometricShader()->ComputeTextureSourceHash();
+        size_t const materialTextureHash =
             drawItem->GetMaterialNetworkShader()->ComputeTextureSourceHash();
-        key = TfHash::Combine(key, textureHash);
+        key = TfHash::Combine(key, geometricTextureHash, materialTextureHash);
     }
 
     // Keep track of newly created draw batches.

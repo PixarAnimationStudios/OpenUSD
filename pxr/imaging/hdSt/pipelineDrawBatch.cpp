@@ -1118,6 +1118,20 @@ _BindingState::GetBindingsForDrawing(
         HdSt_TextureBinder::GetBindingDescs(
             binder, bindingsDesc, shader->GetNamedTextureHandles());
     }
+    HdStBufferArrayRangeSharedPtr shaderBar =
+        std::static_pointer_cast<HdStBufferArrayRange>(
+            geometricShader->GetShaderData());
+
+    binder.GetInterleavedBufferArrayBindingDesc(
+        bindingsDesc, shaderBar, HdTokens->materialParams);
+
+    HdStBindingRequestVector bindingRequests;
+    geometricShader->AddBindings(&bindingRequests);
+    for (auto const& req : bindingRequests) {
+        binder.GetBindingRequestBindingDesc(bindingsDesc, req);
+    }
+    HdSt_TextureBinder::GetBindingDescs(
+        binder, bindingsDesc, geometricShader->GetNamedTextureHandles());
 }
 
 HgiVertexBufferDescVector
@@ -1968,7 +1982,7 @@ HdSt_PipelineDrawBatch::_CreateCullingProgram(
 
         // sharing the culling geometric shader for the same configuration.
         HdSt_GeometricShaderSharedPtr cullShader =
-            HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
+            HdSt_GeometricShader::Create(shaderKey, {}, {}, resourceRegistry);
         _cullingProgram.SetDrawingCoordBufferBinding(drawingCoordBufferBinding);
         _cullingProgram.SetGeometricShader(cullShader);
 

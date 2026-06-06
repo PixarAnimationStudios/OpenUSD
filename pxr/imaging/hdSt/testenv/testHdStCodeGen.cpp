@@ -91,7 +91,7 @@ CodeGenTest(HdStResourceRegistrySharedPtr const &registry,
     HdDrawingCoord *drawingCoord = drawItem.GetDrawingCoord();
 
     HdSt_GeometricShaderSharedPtr geometricShader = 
-        HdSt_GeometricShader::Create(key, registry);
+        HdSt_GeometricShader::Create(key, {}, {}, registry);
 
     // topology
     {

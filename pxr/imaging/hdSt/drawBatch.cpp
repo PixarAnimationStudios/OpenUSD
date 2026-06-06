@@ -212,8 +212,10 @@ HdSt_DrawBatch::_CanAggregateTextures(HdStDrawItem const *drawItem0,
                                       HdStDrawItem const *drawItem1)
 {
     return _allowTextureResourceRebinding ||
-           (drawItem0->GetMaterialNetworkShader()->ComputeTextureSourceHash() ==
-            drawItem1->GetMaterialNetworkShader()->ComputeTextureSourceHash());
+           ((drawItem0->GetMaterialNetworkShader()->ComputeTextureSourceHash() ==
+            drawItem1->GetMaterialNetworkShader()->ComputeTextureSourceHash()) &&
+            (drawItem0->GetGeometricShader()->ComputeTextureSourceHash() ==
+            drawItem1->GetGeometricShader()->ComputeTextureSourceHash()));
 }
 
 bool
@@ -444,8 +446,10 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
 
     // also (surface, renderPass) shaders use their bindings
     HdStShaderCodeSharedPtrVector shaders = GetComposedShaders();
+    HdStShaderCodeSharedPtrVector shadersForParameterBinding = shaders;
+    shadersForParameterBinding.push_back(_geometricShader);
 
-    TF_FOR_ALL(it, shaders) {
+    TF_FOR_ALL(it, shadersForParameterBinding) {
         (*it)->AddBindings(&customBindings);
     }
 
@@ -455,7 +459,7 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
     // let resourcebinder resolve bindings and populate metadata
     // which is owned by codegen.
     _resourceBinder.ResolveBindings(drawItem,
-                                    shaders,
+                                    shadersForParameterBinding,
                                     metaData.get(),
                                     _drawingCoordBufferBinding,
                                     instanceDraw,
