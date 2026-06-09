@@ -260,7 +260,8 @@ if (PXR_BUILD_IMAGING)
     endif()
     # --Embree
     if (PXR_BUILD_EMBREE_PLUGIN)
-        find_package(Embree REQUIRED)
+        find_package(Embree 4 REQUIRED CONFIG)
+        add_library(Embree::embree ALIAS embree)
     endif()
 endif()
 
