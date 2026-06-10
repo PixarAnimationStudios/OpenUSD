@@ -311,7 +311,7 @@ if (PXR_BUILD_ALEMBIC_PLUGIN)
 endif()
 
 if (PXR_BUILD_DRACO_PLUGIN)
-    find_package(Draco REQUIRED)
+    find_package(Draco 1.5.6...<1.6 REQUIRED CONFIG)
 endif()
 
 if (PXR_ENABLE_MATERIALX_SUPPORT)
