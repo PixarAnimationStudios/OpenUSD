@@ -70,6 +70,9 @@ protected:
     /// Prepare PMC AttributeMeshPart for crease attributes
     void _setupCreases();
 
+    /// Prepare PMC AttributeMeshPart for corners attributes
+    void _setupCorners();
+
     /// Configure the encode session (geometry, attributes)
     void _configurePmc();
 

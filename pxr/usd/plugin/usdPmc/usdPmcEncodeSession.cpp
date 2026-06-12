@@ -860,6 +860,43 @@ PmcEncodeSession::_setupCreases()
     _processedAttributes.insert(attrVals.GetName());
 }
 
+/// Setup crease data for PMC encoding.
+void
+PmcEncodeSession::_setupCorners()
+{
+    const auto attrIdxs = _ugm.GetCornerIndicesAttr();
+    const auto attrVals = _ugm.GetCornerSharpnessesAttr();
+
+    for (const auto& attr : {attrIdxs, attrVals})
+        if (!attr.HasAuthoredValue())
+            return;
+
+    const auto idxs = GetAs<VtArray<int>>(attrIdxs);
+    const auto vals = GetAs<VtValue>(attrVals);
+
+    using pmc::IndicesInterpretation;
+    auto& ampIdxs = _setupAttr({}, idxs);
+    const auto ampIdxsId = ampIdxs.info.attributeId;
+    ampIdxs.info.type = pmc::AttributeType::CREASE;
+    ampIdxs.info.scope = pmc::AttributeScope::VERTEX;
+    ampIdxs.info.indicesInterpretation = IndicesInterpretation::SCOPE_INDEXING;
+    ampIdxs.info.sparse = true;
+    ampIdxs.info.name = UsdGeomTokens->cornerIndices;
+
+    auto& usdname = UsdGeomTokens->creaseSharpnesses;
+    auto& ampVals = _setupAttr(vals, {});
+    ampVals.info.type = pmc::AttributeType::SHARPNESS;
+    ampVals.info.scope = pmc::AttributeScope::DERIVED;
+    ampVals.info.derivedScope.scopedAttributeId = ampIdxsId;
+    ampVals.info.indicesInterpretation = IndicesInterpretation::VALUE_INDEXING;
+    ampVals.info.sparse = true;
+    ampVals.info.jsonCustomAui = JsonAuiForAttr(attrVals);
+    ampVals.info << MakeCoordSys(ampVals, QparamsFromOptions(_options, usdname));
+
+    _processedAttributes.insert(attrIdxs.GetName());
+    _processedAttributes.insert(attrVals.GetName());
+}
+
 /// Find all attributes for coding.
 void
 PmcEncodeSession::_setupAttrs()
@@ -894,8 +931,33 @@ PmcEncodeSession::_setupAttrs()
         _processedAttributes.insert(attr.GetName());
     }
 
+    if (const auto attr = _ugm.GetVelocitiesAttr(); attr.HasAuthoredValue()) {
+        auto& usdname = UsdGeomTokens->velocities;
+        auto vals = GetAs<VtValue>(attr);
+        auto& amp = _setupAttr(vals, {});
+        amp.info.type = pmc::AttributeType::USER_DEFINED_START;
+        amp.info.scope = pmc::AttributeScope::VERTEX;
+        amp.info.jsonCustomAui = JsonAuiForAttr(attr);
+        amp.info.name = attr.GetName();
+        amp.info << MakeCoordSys(amp, QparamsFromOptions(_options, usdname));
+        _processedAttributes.insert(attr.GetName());
+    }
+
+    if (const auto attr = _ugm.GetAccelerationsAttr(); attr.HasAuthoredValue()) {
+        auto& usdname = UsdGeomTokens->accelerations;
+        auto vals = GetAs<VtValue>(attr);
+        auto& amp = _setupAttr(vals, {});
+        amp.info.type = pmc::AttributeType::USER_DEFINED_START;
+        amp.info.scope = pmc::AttributeScope::VERTEX;
+        amp.info.jsonCustomAui = JsonAuiForAttr(attr);
+        amp.info.name = attr.GetName();
+        amp.info << MakeCoordSys(amp, QparamsFromOptions(_options, usdname));
+        _processedAttributes.insert(attr.GetName());
+    }
+
     _setupGeomSubsets();
     _setupCreases();
+    _setupCorners();
 }
 
 /// Configure the PMC encoder with geometry and attribute information.

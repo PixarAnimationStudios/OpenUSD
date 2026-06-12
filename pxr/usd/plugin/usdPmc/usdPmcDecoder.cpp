@@ -167,7 +167,9 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
     pmc::Decoder::InspectionDelegate inspectFns;
     VtIntArray sharpnessesDerivedIds;
     int creaseAttrId = -1;
+    int cornerAttrId = -1;
     bool decodeCrease = false;
+    bool decodeCorner = false;
 
     inspectFns.onInspectGeometryMeshpart =
         [&](const pmc::GeometryMeshpartInfo& info, bool& decode) noexcept {
@@ -180,9 +182,13 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
             if (info.type == pmc::AttributeType::CREASE
                 && info.scope == pmc::AttributeScope::VERTEX
                 && info.indicesInterpretation == pmc::IndicesInterpretation::SCOPE_INDEXING) {
-                
-                // Crease lengths and indices, saving Id for future reference
-                creaseAttrId = info.attributeId;
+                if ( info.name == UsdGeomTokens->cornerIndices ) {
+                    // Corner creases
+                    cornerAttrId = info.attributeId;
+                } else {
+                    // Crease lengths and indices, saving Id for future reference
+                    creaseAttrId = info.attributeId;
+                }
             }
             if (info.type == pmc::AttributeType::SHARPNESS
                 && info.scope == pmc::AttributeScope::DERIVED
@@ -212,6 +218,15 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
         // There is a combination of compatible Sharpnesses, Lengths and Indices for crease
         decodeCrease = true;
     }
+
+    // Check corner data
+    if ( std::find(sharpnessesDerivedIds.begin(),
+                   sharpnessesDerivedIds.end(),
+                   cornerAttrId) != sharpnessesDerivedIds.end()) {
+        // There is a combination of compatible Sharpnesses and Corners
+        decodeCorner = true;
+    }
+
     pmc::Decoder::DecodingDelegate decodeFns;
     VtIntArray usdFaceVertexIndices;
     VtIntArray usdFaceVertexCounts;
@@ -352,7 +367,7 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
                 holeIndicesAttr.Set(attrIndices);
                 return pmc::Error::OK;
             }
-            // Creases
+            // Creases/Sharpnesses
             if ( decodeCrease ) {
                 if (attrPart.info.type == pmc::AttributeType::SHARPNESS
                     && attrPart.info.derivedScope.scopedAttributeId == creaseAttrId) {
@@ -393,6 +408,42 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
                     return pmc::Error::OK;
                 }
             }
+
+            // Corners/Sharpnesses
+            if ( decodeCorner ) {
+                if (attrPart.info.type == pmc::AttributeType::SHARPNESS
+                    && attrPart.info.derivedScope.scopedAttributeId == cornerAttrId) {
+                    UsdAttribute cornerSharpness =
+                        decodedMesh->CreateCornerSharpnessesAttr();
+                    if (!cornerSharpness.IsValid()) {
+                        TF_RUNTIME_ERROR("Cannot create corner sharpnesses "
+                                        "attribute");
+                        return pmc::Error::STATE_ERROR;
+                    }
+
+                    auto scalingRange = ScalingRangeFrom(attrPart.info.coordSys);
+                    if (!UsdPmc_WriteAttributeScalarValuesToUsdAttribute<float,
+                                                                         UsdAttribute>(
+                            attrPart, cornerSharpness, scalingRange)) {
+                        TF_RUNTIME_ERROR("Cannot create crease sharpnesses "
+                                        "attribute");
+                        return pmc::Error::STATE_ERROR;
+                    }
+                    return pmc::Error::OK;
+                }
+
+                if (attrPart.info.attributeId == cornerAttrId) {
+                    UsdAttribute cornerIndices =
+                        decodedMesh->CreateCornerIndicesAttr();
+                    if (!cornerIndices.IsValid()) {
+                        TF_RUNTIME_ERROR("Cannot create corner indices attribute");
+                        return pmc::Error::STATE_ERROR;
+                    }
+                    cornerIndices.Set(attrIndices);
+                    return pmc::Error::OK;
+                }
+            }
+
             // General case
             if (attrName == "") {
                 // Fallback to commonly used names
