@@ -8,5 +8,6 @@ Schema Domains
    usdLux/usdLux_toc
    usdMedia/usdMedia_toc
    usdRender/usdRender_toc
+   usdSolid/usdSolid_toc
    usdUI/usdUI_toc
    usdVol/usdVol_toc

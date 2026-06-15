@@ -1,0 +1,56 @@
+/*!
+\page usdSolid_page_front UsdSolid : USD Solid Models Schema
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdSolid : USD Solid Models Schema
+\endif
+
+\tableofcontents
+
+\section usdSolid_overview Overview
+
+UsdSolid provides native, mathematically-exact solid boundary-representation
+(B-rep) geometry for OpenUSD. Its single concrete schema, UsdSolidBrepArray,
+stores one or more Breps in a packed, flat, array-based representation built on
+Weiler's Radial Edge data model, so it can represent manifold solids,
+non-manifold solids, sheet bodies, and wireframes in a kernel-neutral form.
+
+Unlike UsdGeomMesh, which is a fixed-resolution approximation, a UsdSolid stores
+the exact source surfaces and curves (currently NURBS, in double precision) and
+can be re-tessellated to any fidelity on demand. This makes it suitable as a CAD
+reference and transport representation that maps cleanly onto PRC (ISO 14739-1),
+STEP (ISO 10303), and Parasolid topology.
+
+\note UsdSolid is an active OpenUSD proposal (AOUSD PR #109) and is not yet a
+ratified Core schema. Attribute names, packing conventions, and rules may change
+as the AOUSD Geometry Working Group aligns on a design.
+
+\section usdSolid_schemas Schemas
+
+\subsection usdSolid_brepArray BrepArray
+
+UsdSolidBrepArray is an IsA Gprim (deriving from UsdGeomGprim) that stores one or
+more Breps as parallel, flat arrays on a single prim. Topology (regions, shells,
+faces, loops, edges, edgeuses, vertices) is carried by the \c region:, \c shell:,
+\c face:, \c loop:, \c edgeuse:, \c edge:, and \c vertex: array families;
+geometry (NURBS surfaces, 3D curves, trim curves, and points) is carried by
+\c brep: -prefixed applied API schemas.
+
+\subsection usdSolid_geomApis Geometry API Schemas
+
+Per-face surfaces and per-edge curves are supplied by applied API schemas,
+selected per element via \c face:surfaceType and \c edge:curveType:
+ - Surfaces: UsdSolidBrepSurfaceNurbAPI, UsdSolidBrepSurfacePlaneAPI,
+   UsdSolidBrepSurfaceCylinderAPI, UsdSolidBrepSurfaceConeAPI,
+   UsdSolidBrepSurfaceSphereAPI, UsdSolidBrepSurfaceTorusAPI
+ - 3D edge curves: UsdSolidBrepCurve3dNurbAPI, UsdSolidBrepCurve3dLineAPI,
+   UsdSolidBrepCurve3dCircleAPI, UsdSolidBrepCurve3dEllipseAPI
+ - Trim curves and points: UsdSolidBrepCurveUvNurbAPI (2D pcurves),
+   UsdSolidBrepPointAPI (vertex points)
+
+\section usdSolid_userguide User Guide
+
+For B-rep concepts, the Radial Edge data model, the flat-array packing
+conventions, a worked authoring example, tessellation, and the full set of rules
+and restrictions, see the UsdSolid user guide.
+
+*/

@@ -1,0 +1,279 @@
+#usda 1.0
+(
+    subLayers = [
+        @../schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "usdSolid"
+        string userDocTitle = "Solid Models"
+    }
+)
+{
+}
+
+over "BrepArray" (
+    customData = {
+        string userDocBrief = """UsdSolid provides native, mathematically-exact solid boundary-representation (B-rep) geometry for OpenUSD, built on the Radial Edge data model. Solid boundary representation models (Breps) rigorously partition space into regions by connecting sets of surfaces into region boundaries."""
+        string userDoc = """ Solid boundary representation models (Breps) rigorously partition space into regions by connecting sets of surfaces into region boundaries.  Regions are the set of points that can be connected by curves of any shape that don't cross boundaries.  
+              The boundaries between regions must be watertight to prevent the points of each region from being connectable to one another.  Manifold solid objects partition space into one solid region and one or more void regions. 
+              Non-manifold objects can partition space from one to any number of regions, where every point in space classifies to one of the model's regions.  
+              In the world of geometric modeling, where mathematical approximations of shape are rife, gaps between adjacent surfaces are common. 
+              In this model, the connections of adjacent surfaces are explicit objects that can fill the gaps and create the necessary partition of space.
+
+              This model is comprised of 3 parts: shapes, topology objects, and special connectivity objects called "uses." For a thorough description of this model, see the Solid Models USD Proposal.
+    
+              Rules and restrictions on topology and geometry are listed in the proposal. They will be migrated to this schema when the AOUSD Geometry WG is aligned on a design.
+    
+              For compact storage of the radial edge data model redundant elements are removed from the flattened representation.  There are no attributes for Vertexuses and Loopuses.  
+              The lists of Edgeuses represents pairs, so the arrays size() are half the number of Edgeuses in the Brep model.
+
+              Objects related to a single Brep must be consecutive in the BrepArray. For example, if Brep_1 has a total of 3 shells, the Brep_2 startShellIndx for its first region would be the number 3.  
+              Another example, the Edges of Brep_i are the brep:edgeCount[ii] consecutive Edges starting at SUM(brep:edgeCount[n]), for n in [0,ii).  """
+    }
+)
+{
+}
+
+over "BrepPointAPI" (
+    customData = {
+        string userDocBrief = """Associated and packed point descriptions of brep objects defined by a 3d point."""
+        string userDoc = """ Associated and packed point descriptions of brep objects defined by a 3d point. """
+    }
+)
+{
+}
+
+over "BrepCurve3dNurbAPI" (
+    customData = {
+        string userDocBrief = """Associated and packed NURB curve descriptions of brep:edges and brep:wireEdges defined by 3d BSpline curves."""
+        string userDoc = """ Associated and packed NURB curve descriptions of brep:edges and brep:wireEdges defined by 3d BSpline curves.
+
+    This class varies from the UsdGeomNurbCurves primarily in having double precision control vertices. 
+    
+    This schema is analagous to NURB Curves in packages like Maya and Houdini, often used for interchange of rigging
+    and modeling curves. We require 'numSegments + 2 * degree + 1' knots (2 more than maya does). This is to be more
+    consistent with RenderMan's NURB patch specification. """
+    }
+)
+{
+}
+
+over "BrepCurve3dLineAPI" (
+    customData = {
+        string userDocBrief = """Associated and packed analytic 3d line descriptions of brep:edges and brep:wireEdges."""
+        string userDoc = """ Associated and packed analytic 3d line descriptions of brep:edges and brep:wireEdges.
+
+    A line is defined by a point on the line and a unit direction vector.
+    The parameterization follows the STEP/PRC convention:
+        C(t) = origin + t * direction
+    where t is the curve parameter and direction is a unit vector.
+    The edge:range attribute provides the parameter bounds {tMin, tMax} for each line edge.
+
+    Both PRC (A3DCrvLineData) and SMLib (SmLine) define lines with a point and direction.
+    SMLib additionally stores a scale factor (curve speed); in this schema the speed is
+    always 1.0, meaning distance along the line equals the parameter change.
+    """
+    }
+)
+{
+}
+
+over "BrepCurve3dCircleAPI" (
+    customData = {
+        string userDocBrief = """Associated and packed analytic 3d circle descriptions of brep:edges and brep:wireEdges."""
+        string userDoc = """ Associated and packed analytic 3d circle descriptions of brep:edges and brep:wireEdges.
+
+    A circle is defined by a center, an axis (normal to the plane of the circle),
+    a reference direction (in the plane of the circle), and a radius.
+    The parameterization follows the STEP convention:
+        C(t) = center + radius * cos(t) * refDirection
+                      + radius * sin(t) * (axis x refDirection)
+    where t is the angular parameter in radians.
+    The edge:range attribute provides the parameter bounds {tMin, tMax} in radians.
+
+    Both PRC (A3DCrvCircleData) and SMLib (SmCircle) define circles with an axis placement
+    and a radius. PRC uses radians; SMLib uses degrees internally but this schema
+    normalizes to radians.
+    """
+    }
+)
+{
+}
+
+over "BrepCurve3dEllipseAPI" (
+    customData = {
+        string userDocBrief = """Associated and packed analytic 3d ellipse descriptions of brep:edges and brep:wireEdges."""
+        string userDoc = """ Associated and packed analytic 3d ellipse descriptions of brep:edges and brep:wireEdges.
+
+    An ellipse is defined by a center, an axis (normal to the plane of the ellipse),
+    a reference direction (toward the semi-major axis), a semi-major radius, and a semi-minor radius.
+    The parameterization follows the STEP convention:
+        C(t) = center + xRadius * cos(t) * refDirection
+                      + yRadius * sin(t) * (axis x refDirection)
+    where t is the angular parameter in radians.
+    The edge:range attribute provides the parameter bounds {tMin, tMax} in radians.
+
+    Both PRC (A3DCrvEllipseData) and SMLib (SmEllipse) define ellipses with an axis placement
+    and two radii. PRC uses radians; SMLib uses degrees internally but this schema
+    normalizes to radians.
+
+    Conflict note: PRC names the radii 'semiAxis1Length' and 'semiAxis2Length' without
+    requiring semiAxis1 >= semiAxis2. SMLib uses 'RadiusAtXAxis' and 'RadiusAtYAxis'.
+    STEP AP242 names them 'semi_axis_1' (along refDirection) and 'semi_axis_2'.
+    This schema uses 'xRadius' (along refDirection) and 'yRadius'
+    without requiring xRadius >= yRadius, matching the STEP convention
+    where the first radius is along the reference direction regardless of magnitude.
+    """
+    }
+)
+{
+}
+
+over "BrepCurveUvNurbAPI" (
+    customData = {
+        string userDocBrief = """Associated and packed 2d NURB UV curve descriptions of brep:edgeuses defined by 2d BSpline curves."""
+        string userDoc = """ Associated and packed 2d NURB UV curve descriptions of brep:edgeuses defined by 2d BSpline curves. """
+    }
+)
+{
+}
+
+over "BrepSurfaceNurbAPI" (
+    customData = {
+        string userDocBrief = """Associated and packed 3d NURBs Surface descriptions of brep:faces defined by 3d BSpline surfaces."""
+        string userDoc = """ Associated and packed 3d NURBs Surface descriptions of brep:faces defined by 3d BSpline surfaces.
+
+    These attributes vary from the UsdGeomNurbPatch primarily in having double precision control vertices. 
+
+    The encoding mostly follows that of RiNuPatch and RiTrimCurve:
+    https://renderman.pixar.com/resources/current/RenderMan/geometricPrimitives.html#rinupatch , with some minor
+    renaming and coalescing for clarity.
+
+    The layout of control vertices in the \em points attribute is row-major with U considered rows, and V columns.
+
+    The authored points, orders, knots, weights, and ranges are all that is required to render the nurbs patch.
+    """
+    }
+)
+{
+}
+
+over "BrepSurfaceSphereAPI" (
+    customData = {
+        string userDocBrief = """Associated analytic 3d sphere surface descriptions of brep:faces."""
+        string userDoc = """ Associated analytic 3d sphere surface descriptions of brep:faces.
+
+    A sphere surface is defined by a center point, a pole axis, a reference direction, and a radius.
+    The parameterization follows the standard geographic convention:
+        S(u,v) = center + radius * [ cos(v) * cos(u) * refDirection
+                                   + cos(v) * sin(u) * (axis x refDirection)
+                                   + sin(v) * axis ]
+    where u is longitude (radians) and v is latitude (radians).
+    The surface normal points outward (away from center).
+    The face:range attribute provides the UV trim domain bounds in radians for each sphere face.
+    """
+    }
+)
+{
+}
+
+over "BrepSurfacePlaneAPI" (
+    customData = {
+        string userDocBrief = """Associated analytic 3d plane surface descriptions of brep:faces."""
+        string userDoc = """ Associated analytic 3d plane surface descriptions of brep:faces.
+
+    A plane is defined by a position (origin), a reference direction (X axis), and a normal direction (Z axis).
+    The Y axis is implied as Z cross X (forming a right-handed frame after orthonormalization).
+    The parameterization follows the STEP convention:
+        S(u,v) = origin + u * refDirection + v * (axis x refDirection)
+    where u and v are unbounded real parameters.
+    The surface normal equals the axis direction.
+    The face:range attribute provides the UV trim domain bounds for each plane face.
+
+    This definition is compatible with both PRC (A3DSurfPlaneData) and SMLib (SmPlane)
+    which both use an axis placement (origin, X axis, Z axis) to define the plane.
+    Note: SMLib additionally stores a UV scale factor that scales the U and V directions
+    independently. In this schema, UV scale is always 1.0; any scaling is absorbed into
+    the face:range domain bounds.
+    """
+    }
+)
+{
+}
+
+over "BrepSurfaceCylinderAPI" (
+    customData = {
+        string userDocBrief = """Associated analytic 3d cylinder surface descriptions of brep:faces."""
+        string userDoc = """ Associated analytic 3d cylinder surface descriptions of brep:faces.
+
+    A cylinder is defined by a position (origin on the axis), an axis direction,
+    a reference direction, and a radius. The parameterization follows the STEP convention:
+        S(u,v) = origin + radius * cos(u) * refDirection
+                        + radius * sin(u) * (axis x refDirection)
+                        + v * axis
+    where u is the angular parameter in radians and v is the linear height parameter.
+    The surface normal points outward (away from the axis).
+    The face:range attribute provides the UV trim domain bounds {uMin, vMin, uMax, vMax}
+    in radians for u and linear units for v.
+
+    Both PRC and SMLib define the cylinder using an axis placement and radius.
+    PRC uses radians for the angular parameter; SMLib (SmCylinder) uses degrees internally
+    but this schema normalizes to radians.
+    """
+    }
+)
+{
+}
+
+over "BrepSurfaceConeAPI" (
+    customData = {
+        string userDocBrief = """Associated analytic 3d cone surface descriptions of brep:faces."""
+        string userDoc = """ Associated analytic 3d cone surface descriptions of brep:faces.
+
+    A cone is defined by a position (origin), an axis direction, a reference direction,
+    a radius at the origin, and a semi-angle. The parameterization follows the STEP convention:
+        R(v)   = radius + v * tan(semiAngle)
+        S(u,v) = origin + R(v) * cos(u) * refDirection
+                        + R(v) * sin(u) * (axis x refDirection)
+                        + v * axis
+    where u is the angular parameter in radians, v is the linear height parameter,
+    and semiAngle is the half-angle between the axis and the cone surface.
+    When semiAngle is 0, the cone degenerates to a cylinder.
+    The surface normal points outward (away from the axis).
+    The face:range attribute provides the UV trim domain bounds in radians (u) and linear units (v).
+
+    Both PRC and SMLib define the cone with an axis placement, base radius, and semi-angle.
+    PRC uses radians for the angular parameter; SMLib (SmCone) uses degrees internally
+    but this schema normalizes to radians.
+    """
+    }
+)
+{
+}
+
+over "BrepSurfaceTorusAPI" (
+    customData = {
+        string userDocBrief = """Associated analytic 3d torus surface descriptions of brep:faces."""
+        string userDoc = """ Associated analytic 3d torus surface descriptions of brep:faces.
+
+    A torus is defined by a position (origin), an axis direction, a reference direction,
+    a major radius, and a minor radius. The parameterization follows the STEP convention:
+        S(u,v) = origin + (majorRadius + minorRadius * cos(v)) * cos(u) * refDirection
+                        + (majorRadius + minorRadius * cos(v)) * sin(u) * (axis x refDirection)
+                        + minorRadius * sin(v) * axis
+    where u is the major (sweep) angle in radians and v is the minor (tube) angle in radians.
+    The surface normal points outward.
+    The face:range attribute provides the UV trim domain bounds in radians.
+
+    Both PRC and SMLib define the torus with an axis placement, major radius, and minor radius.
+    PRC uses radians for both angular parameters; SMLib (SmTorus) uses degrees internally
+    but this schema normalizes to radians.
+    """
+    }
+)
+{
+}
+
