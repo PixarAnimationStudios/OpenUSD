@@ -412,7 +412,7 @@ private:
     {}
 
     UsdShadeShader _shaderNode;
-    const UsdImagingDataSourceStageGlobals &_stageGlobals;
+    [[maybe_unused]] const UsdImagingDataSourceStageGlobals &_stageGlobals;
     const SdfPath _materialPrefix;
 };
 
