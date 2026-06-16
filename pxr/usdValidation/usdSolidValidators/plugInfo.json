@@ -1,0 +1,63 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Validators": {
+                    "BrepArrayStructure": {
+                        "doc": "Validates Brep-level attributes of a UsdSolid BrepArray: required attributes are authored, the brep:intersectTol3d, brep:regionCount and brep:extent array sizes are mutually consistent with the number of Breps, intersectTol3d values are positive, and each brep:extent bounding box is min<=max ordered.",
+                        "keywords": [
+                            "UsdSolidBrep"
+                        ],
+                        "schemaTypes": [
+                            "UsdSolidBrepArray"
+                        ]
+                    },
+                    "BrepArrayTopology": {
+                        "doc": "Validates that the flat-packed Radial Edge topology arrays of a UsdSolid BrepArray have consistent sizes: each level (region, shell, faceuse, face, loop, edgeuse, edge, wireEdge, vertex) must have array sizes derived from the counts at the level above it.",
+                        "keywords": [
+                            "UsdSolidBrep"
+                        ],
+                        "schemaTypes": [
+                            "UsdSolidBrepArray"
+                        ]
+                    },
+                    "BrepArrayTokenValues": {
+                        "doc": "Validates that token-valued attributes of a UsdSolid BrepArray (region:type, shell:pointType, faceuse:orientationType, face:surfaceType, face:trimType, edgeuse:orientationType, edgeuse:thisRadialEntryType, edge:curveType, wireEdge:curveType, vertex:pointType) only contain values from their allowed token sets.",
+                        "keywords": [
+                            "UsdSolidBrep"
+                        ],
+                        "schemaTypes": [
+                            "UsdSolidBrepArray"
+                        ]
+                    },
+                    "BrepArrayRanges": {
+                        "doc": "Validates parameter ranges of a UsdSolid BrepArray: face:loopCount is at least one, face:range U and V intervals are non-degenerate, and edge:range / wireEdge:range pairs are ordered (min<=max).",
+                        "keywords": [
+                            "UsdSolidBrep"
+                        ],
+                        "schemaTypes": [
+                            "UsdSolidBrepArray"
+                        ]
+                    },
+                    "BrepArrayAnalyticSurfaces": {
+                        "doc": "Validates analytic surface parameters of a UsdSolid BrepArray (plane, cylinder, cone, sphere, torus): the parameter arrays match the number of faces of that surface type, radii are positive, axis and refDirection are unit-length and mutually orthogonal, and cone semiAngle lies in (0, pi/2).",
+                        "keywords": [
+                            "UsdSolidBrep"
+                        ],
+                        "schemaTypes": [
+                            "UsdSolidBrepArray"
+                        ]
+                    },
+                    "keywords": [
+                        "UsdSolidValidators"
+                    ]
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "usdSolidValidators",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

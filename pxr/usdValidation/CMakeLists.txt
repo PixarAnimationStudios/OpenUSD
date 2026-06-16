@@ -5,6 +5,7 @@ set(DIRS
     usdPhysicsValidators
     usdShadeValidators
     usdSkelValidators
+    usdSolidValidators
     usdUtilsValidators
 )
 
