@@ -22,7 +22,17 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((brepArrayTokenValues, "usdSolidValidators:BrepArrayTokenValues"))        \
     ((brepArrayRanges, "usdSolidValidators:BrepArrayRanges"))                  \
     ((brepArrayAnalyticSurfaces,                                               \
-      "usdSolidValidators:BrepArrayAnalyticSurfaces"))
+      "usdSolidValidators:BrepArrayAnalyticSurfaces"))                         \
+    ((brepArrayAuthorship, "usdSolidValidators:BrepArrayAuthorship"))          \
+    ((brepArrayDataTypes, "usdSolidValidators:BrepArrayDataTypes"))            \
+    ((brepArraySchemaUsage, "usdSolidValidators:BrepArraySchemaUsage"))        \
+    ((brepArrayReferences, "usdSolidValidators:BrepArrayReferences"))          \
+    ((brepArrayCompleteness, "usdSolidValidators:BrepArrayCompleteness"))      \
+    ((brepArrayContainment, "usdSolidValidators:BrepArrayContainment"))        \
+    ((brepArraySpans, "usdSolidValidators:BrepArraySpans"))                    \
+    ((brepArrayAnalyticCurves,                                                 \
+      "usdSolidValidators:BrepArrayAnalyticCurves"))                           \
+    ((brepArrayNurbs, "usdSolidValidators:BrepArrayNurbs"))
 
 #define USD_SOLID_VALIDATOR_KEYWORD_TOKENS                                     \
     (UsdSolidValidators)                                                       \
@@ -67,7 +77,55 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((nonUnitSurfaceAxis, "NonUnitSurfaceAxis"))                               \
     ((nonUnitSurfaceRefDirection, "NonUnitSurfaceRefDirection"))               \
     ((nonOrthogonalSurfaceAxes, "NonOrthogonalSurfaceAxes"))                   \
-    ((invalidConeSemiAngle, "InvalidConeSemiAngle"))
+    ((invalidConeSemiAngle, "InvalidConeSemiAngle"))                           \
+    /* BrepArrayAuthorship */                                                  \
+    ((attributeNotAuthored, "AttributeNotAuthored"))                           \
+    /* BrepArrayDataTypes */                                                   \
+    ((invalidAttributeDataType, "InvalidAttributeDataType"))                   \
+    /* BrepArraySchemaUsage */                                                 \
+    ((schemaUsageInconsistent, "SchemaUsageInconsistent"))                     \
+    /* BrepArrayReferences */                                                  \
+    ((faceuseFaceIndexOutOfRange, "FaceuseFaceIndexOutOfRange"))               \
+    ((loopVertexIndexOutOfRange, "LoopVertexIndexOutOfRange"))                 \
+    ((edgeuseNextRadialIndexOutOfRange, "EdgeuseNextRadialIndexOutOfRange"))   \
+    ((edgeuseEdgeIndexOutOfRange, "EdgeuseEdgeIndexOutOfRange"))               \
+    ((edgeVertexIndexOutOfRange, "EdgeVertexIndexOutOfRange"))                 \
+    ((wireEdgeVertexIndexOutOfRange, "WireEdgeVertexIndexOutOfRange"))         \
+    /* BrepArrayCompleteness */                                                \
+    ((faceusePairingViolation, "FaceusePairingViolation"))                     \
+    ((radialEdgeuseChainNotClosed, "RadialEdgeuseChainNotClosed"))             \
+    ((orphanEdge, "OrphanEdge"))                                               \
+    /* BrepArrayContainment */                                                 \
+    ((brepExtentOutsidePrimExtent, "BrepExtentOutsidePrimExtent"))             \
+    ((vertexPositionOutsideBrepExtent, "VertexPositionOutsideBrepExtent"))     \
+    ((controlPointOutsideBrepExtent, "ControlPointOutsideBrepExtent"))         \
+    /* BrepArraySpans */                                                       \
+    ((surfaceDomainSpanExceeded, "SurfaceDomainSpanExceeded"))                 \
+    ((sphereVDomainOutOfBounds, "SphereVDomainOutOfBounds"))                   \
+    ((curveParamSpanExceeded, "CurveParamSpanExceeded"))                       \
+    /* BrepArrayAnalyticCurves */                                              \
+    ((analyticCurveArraySizeMismatch, "AnalyticCurveArraySizeMismatch"))       \
+    ((analyticCurveNonPositiveRadius, "AnalyticCurveNonPositiveRadius"))       \
+    ((analyticCurveAxisNotUnitLength, "AnalyticCurveAxisNotUnitLength"))       \
+    ((analyticCurveRefDirectionNotUnitLength,                                  \
+      "AnalyticCurveRefDirectionNotUnitLength"))                               \
+    ((analyticCurveAxisRefDirectionNotOrthogonal,                             \
+      "AnalyticCurveAxisRefDirectionNotOrthogonal"))                           \
+    ((lineDirectionNotUnitLength, "LineDirectionNotUnitLength"))               \
+    /* BrepArrayNurbs */                                                       \
+    ((nurbSizeArrayMismatch, "NurbSizeArrayMismatch"))                         \
+    ((nurbNonPositiveOrder, "NurbNonPositiveOrder"))                           \
+    ((nurbOrderExceedsVertexCount, "NurbOrderExceedsVertexCount"))             \
+    ((nurbControlVertexWeightSizeMismatch,                                     \
+      "NurbControlVertexWeightSizeMismatch"))                                  \
+    ((nurbNonPositiveWeight, "NurbNonPositiveWeight"))                         \
+    ((nurbKnotCountMismatch, "NurbKnotCountMismatch"))                         \
+    ((nurbKnotNotMonotonic, "NurbKnotNotMonotonic"))                           \
+    ((nurbSchemaUsageInconsistent, "NurbSchemaUsageInconsistent"))             \
+    ((nurbSchemaDataIncomplete, "NurbSchemaDataIncomplete"))                   \
+    ((nurbInvalidDataType, "NurbInvalidDataType"))                             \
+    ((nurbOrderBelowMinimum, "NurbOrderBelowMinimum"))                         \
+    ((nurbVertexCountBelowOrder, "NurbVertexCountBelowOrder"))
 
 /// \def USD_SOLID_VALIDATOR_NAME_TOKENS
 /// Tokens representing validator names. Note that for plugin provided

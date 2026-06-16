@@ -48,6 +48,87 @@
                             "UsdSolidBrepArray"
                         ]
                     },
+                    "BrepArrayAuthorship": {
+                        "doc": "Validates that every per-family schema attribute (region, shell, faceuse, face, loop, edgeuse, edge, wireEdge, vertex) is authored on a UsdSolid BrepArray prim.",
+                        "keywords": [
+                            "UsdSolidBrep"
+                        ],
+                        "schemaTypes": [
+                            "UsdSolidBrepArray"
+                        ]
+                    },
+                    "BrepArrayDataTypes": {
+                        "doc": "Validates that authored attributes of a UsdSolid BrepArray (including the BrepPointAPI vertexPoint/shellPoint position attributes) use the correct USD value types.",
+                        "keywords": [
+                            "UsdSolidBrep"
+                        ],
+                        "schemaTypes": [
+                            "UsdSolidBrepArray"
+                        ]
+                    },
+                    "BrepArraySchemaUsage": {
+                        "doc": "Validates two-way consistency between applied API schemas (BrepPointAPI:vertexPoint and the analytic BrepSurface*API schemas) and the corresponding face:surfaceType / vertex:pointType usage and authored data on a UsdSolid BrepArray.",
+                        "keywords": [
+                            "UsdSolidBrep"
+                        ],
+                        "schemaTypes": [
+                            "UsdSolidBrepArray"
+                        ]
+                    },
+                    "BrepArrayReferences": {
+                        "doc": "Validates that topological cross-reference indices of a UsdSolid BrepArray (faceuse->face, loop->vertex, edgeuse->edge, edgeuse->edgeuse radial, edge->vertex, wireEdge->vertex) fall within the owning Brep's partition.",
+                        "keywords": [
+                            "UsdSolidBrep"
+                        ],
+                        "schemaTypes": [
+                            "UsdSolidBrepArray"
+                        ]
+                    },
+                    "BrepArrayCompleteness": {
+                        "doc": "Validates Brep graph integrity of a UsdSolid BrepArray: every face is referenced by exactly two faceuses, the radial edgeuse chains close into cycles, and no edge is orphaned (every edge is referenced by at least one edgeuse).",
+                        "keywords": [
+                            "UsdSolidBrep"
+                        ],
+                        "schemaTypes": [
+                            "UsdSolidBrepArray"
+                        ]
+                    },
+                    "BrepArrayContainment": {
+                        "doc": "Validates spatial containment on a UsdSolid BrepArray: each brep:extent box lies within the prim's extent, and vertex positions and NURBS control points lie within their owning Brep's brep:extent box.",
+                        "keywords": [
+                            "UsdSolidBrep"
+                        ],
+                        "schemaTypes": [
+                            "UsdSolidBrepArray"
+                        ]
+                    },
+                    "BrepArraySpans": {
+                        "doc": "Validates parametric-domain limits on analytic geometry of a UsdSolid BrepArray: periodic surface/curve domains (sphere/cylinder/cone/torus faces, circle/ellipse edges) span at most 2*pi, and sphere latitude lies within [-pi/2, pi/2].",
+                        "keywords": [
+                            "UsdSolidBrep"
+                        ],
+                        "schemaTypes": [
+                            "UsdSolidBrepArray"
+                        ]
+                    },
+                    "BrepArrayAnalyticCurves": {
+                        "doc": "Validates analytic curve parameters of a UsdSolid BrepArray (circle, line, ellipse for edge and wireEdge instances): parameter arrays match the number of edges of that curve type, radii are positive, axis/refDirection/direction are unit-length, and axis and refDirection are orthogonal.",
+                        "keywords": [
+                            "UsdSolidBrep"
+                        ],
+                        "schemaTypes": [
+                            "UsdSolidBrepArray"
+                        ]
+                    },
+                    "BrepArrayNurbs": {
+                        "doc": "Validates NURBS geometry coherence of a UsdSolid BrepArray (surface, edge3d, wireEdge3d, curveUv): array sizes, orders positive and >= 2, order <= vertexCount, control-vertex/weight/knot vector sizes, positive weights, non-decreasing knot vectors, and schema/data usage consistency.",
+                        "keywords": [
+                            "UsdSolidBrep"
+                        ],
+                        "schemaTypes": [
+                            "UsdSolidBrepArray"
+                        ]
+                    },
                     "keywords": [
                         "UsdSolidValidators"
                     ]

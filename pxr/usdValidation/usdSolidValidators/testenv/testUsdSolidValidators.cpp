@@ -121,6 +121,49 @@ def Xform "World"
         double3[] brep:surface:cylinder:refDirection = [(1, 0, 0)]
         double[] brep:surface:cylinder:radius = [3.0]
     }
+
+    def BrepArray "MissingFamilies"
+    {
+        uniform uint[] brep:regionCount = [1]
+    }
+
+    def BrepArray "BadRefs"
+    {
+        uniform uint[] brep:regionCount = [1]
+        uniform uint[] region:shellCount = [1]
+        uniform token[] region:type = ["solidRegion"]
+        uniform uint[] shell:faceuseCount = [2]
+        uniform uint[] shell:wireEdgeCount = [0]
+        uniform token[] shell:pointType = ["none"]
+        uniform uint[] faceuse:faceIndex = [0, 5]
+        uniform token[] faceuse:orientationType = ["same", "opposite"]
+        uniform uint[] face:loopCount = [1]
+        uniform token[] face:surfaceType = ["BrepSurfaceNurbAPI"]
+        uniform token[] face:trimType = ["general"]
+        uniform double2[] face:range = [(0, 0), (1, 1)]
+        uniform uint[] loop:edgeuseCount = [0]
+        uniform uint[] loop:vertexIndex = [0]
+        uniform token[] edge:curveType = []
+        uniform token[] vertex:pointType = ["BrepPointAPI"]
+    }
+
+    def BrepArray "BadNurbOrder"
+    {
+        uniform token[] face:surfaceType = ["BrepSurfaceNurbAPI"]
+        uint[] brep:surface:nurb:uOrder = [0]
+        uint[] brep:surface:nurb:vOrder = [2]
+        uint[] brep:surface:nurb:uVertexCount = [4]
+        uint[] brep:surface:nurb:vVertexCount = [4]
+    }
+
+    def BrepArray "BadAnalyticCircle"
+    {
+        uniform token[] edge:curveType = ["BrepCurve3dCircleAPI"]
+        point3d[] brep:edge3dCircle:curve3d:circle:center = [(0, 0, 0)]
+        vector3d[] brep:edge3dCircle:curve3d:circle:axis = [(0, 0, 1)]
+        vector3d[] brep:edge3dCircle:curve3d:circle:refDirection = [(1, 0, 0)]
+        double[] brep:edge3dCircle:curve3d:circle:radius = [-1.0]
+    }
 }
 )usda";
 
@@ -136,12 +179,21 @@ TestRegistration()
         UsdSolidValidatorNameTokens->brepArrayTokenValues,
         UsdSolidValidatorNameTokens->brepArrayRanges,
         UsdSolidValidatorNameTokens->brepArrayAnalyticSurfaces,
+        UsdSolidValidatorNameTokens->brepArrayAuthorship,
+        UsdSolidValidatorNameTokens->brepArrayDataTypes,
+        UsdSolidValidatorNameTokens->brepArraySchemaUsage,
+        UsdSolidValidatorNameTokens->brepArrayReferences,
+        UsdSolidValidatorNameTokens->brepArrayCompleteness,
+        UsdSolidValidatorNameTokens->brepArrayContainment,
+        UsdSolidValidatorNameTokens->brepArraySpans,
+        UsdSolidValidatorNameTokens->brepArrayAnalyticCurves,
+        UsdSolidValidatorNameTokens->brepArrayNurbs,
     };
 
     const UsdValidationValidatorMetadataVector metadata
         = registry.GetValidatorMetadataForPlugin(
             _tokens->usdSolidValidatorsPlugin);
-    TF_AXIOM(metadata.size() == 5);
+    TF_AXIOM(metadata.size() == 14);
 
     std::set<TfToken> validatorNames;
     for (const UsdValidationValidatorMetadata &m : metadata) {
@@ -263,6 +315,69 @@ TestBrepArrayAnalyticSurfaces()
     }
 }
 
+static void
+TestBrepArrayAuthorship()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidationValidator *validator = registry.GetOrLoadValidatorByName(
+        UsdSolidValidatorNameTokens->brepArrayAuthorship);
+    TF_AXIOM(validator);
+
+    UsdStageRefPtr stage = _OpenLayer(layerContents);
+    const UsdPrim prim
+        = stage->GetPrimAtPath(SdfPath("/World/MissingFamilies"));
+    TF_AXIOM(prim);
+    const UsdValidationErrorVector errors = validator->Validate(prim);
+    TF_AXIOM(_HasError(errors, ".AttributeNotAuthored"));
+}
+
+static void
+TestBrepArrayReferences()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidationValidator *validator = registry.GetOrLoadValidatorByName(
+        UsdSolidValidatorNameTokens->brepArrayReferences);
+    TF_AXIOM(validator);
+
+    UsdStageRefPtr stage = _OpenLayer(layerContents);
+    const UsdPrim prim = stage->GetPrimAtPath(SdfPath("/World/BadRefs"));
+    TF_AXIOM(prim);
+    const UsdValidationErrorVector errors = validator->Validate(prim);
+    // faceuse:faceIndex value 5 is outside the single Brep's one-face range.
+    TF_AXIOM(_HasError(errors, ".FaceuseFaceIndexOutOfRange"));
+}
+
+static void
+TestBrepArrayNurbs()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidationValidator *validator = registry.GetOrLoadValidatorByName(
+        UsdSolidValidatorNameTokens->brepArrayNurbs);
+    TF_AXIOM(validator);
+
+    UsdStageRefPtr stage = _OpenLayer(layerContents);
+    const UsdPrim prim = stage->GetPrimAtPath(SdfPath("/World/BadNurbOrder"));
+    TF_AXIOM(prim);
+    const UsdValidationErrorVector errors = validator->Validate(prim);
+    TF_AXIOM(_HasError(errors, ".NurbNonPositiveOrder"));
+}
+
+static void
+TestBrepArrayAnalyticCurves()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidationValidator *validator = registry.GetOrLoadValidatorByName(
+        UsdSolidValidatorNameTokens->brepArrayAnalyticCurves);
+    TF_AXIOM(validator);
+
+    UsdStageRefPtr stage = _OpenLayer(layerContents);
+    const UsdPrim prim
+        = stage->GetPrimAtPath(SdfPath("/World/BadAnalyticCircle"));
+    TF_AXIOM(prim);
+    const UsdValidationErrorVector errors = validator->Validate(prim);
+    TF_AXIOM(_HasError(errors, ".AnalyticCurveNonPositiveRadius"));
+}
+
 int
 main()
 {
@@ -272,6 +387,10 @@ main()
     TestBrepArrayTokenValues();
     TestBrepArrayRanges();
     TestBrepArrayAnalyticSurfaces();
+    TestBrepArrayAuthorship();
+    TestBrepArrayReferences();
+    TestBrepArrayNurbs();
+    TestBrepArrayAnalyticCurves();
 
     std::cout << "OK\n";
     return EXIT_SUCCESS;
