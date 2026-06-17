@@ -169,8 +169,8 @@ class TestUsdSkelUtils(unittest.TestCase):
         
         assert UsdSkel.SortInfluences(indices, weights, 1)
         
-        assert indices == Vt.IntArray([1,2,3,4])
-        assert weights == Vt.FloatArray([3,1,4,2])
+        self.assertEqual(indices, Vt.IntArray([1,2,3,4]))
+        self.assertEqual(weights, Vt.FloatArray([3,1,4,2]))
 
 
     def test_ResizeInfluences(self):

@@ -59,28 +59,28 @@ class TestUsdStageCache(unittest.TestCase):
         stageId = cache.Insert(stage)
         assert stageId
         assert not cache.IsEmpty() and cache.Size() == 1
-        assert len(cache.GetAllStages()) == 1
-        assert cache.GetAllStages()[0] == stage
-        assert cache.Find(stageId) == stage
-        assert cache.FindOneMatching(stage.GetRootLayer(),
+        self.assertEqual(len(cache.GetAllStages()), 1)
+        self.assertEqual(cache.GetAllStages()[0], stage)
+        self.assertEqual(cache.Find(stageId), stage)
+        self.assertEqual(cache.FindOneMatching(stage.GetRootLayer(),
                                      stage.GetSessionLayer(),
-                                     stage.GetPathResolverContext()) == stage
-        assert cache.FindOneMatching(stage.GetRootLayer()) == stage
-        assert cache.FindOneMatching(stage.GetRootLayer(),
-                                     stage.GetSessionLayer()) == stage
-        assert cache.FindOneMatching(stage.GetRootLayer(),
-                                     stage.GetPathResolverContext()) == stage
+                                     stage.GetPathResolverContext()), stage)
+        self.assertEqual(cache.FindOneMatching(stage.GetRootLayer()), stage)
+        self.assertEqual(cache.FindOneMatching(stage.GetRootLayer(),
+                                     stage.GetSessionLayer()), stage)
+        self.assertEqual(cache.FindOneMatching(stage.GetRootLayer(),
+                                     stage.GetPathResolverContext()), stage)
         
-        assert cache.FindAllMatching(stage.GetRootLayer(),
+        self.assertEqual(cache.FindAllMatching(stage.GetRootLayer(),
                                      stage.GetSessionLayer(),
-                                     stage.GetPathResolverContext()) == [stage]
-        assert cache.FindAllMatching(stage.GetRootLayer()) == [stage]
-        assert cache.FindAllMatching(stage.GetRootLayer(),
-                                     stage.GetSessionLayer()) == [stage]
-        assert cache.FindAllMatching(stage.GetRootLayer(),
-                                     stage.GetPathResolverContext()) == [stage]
+                                     stage.GetPathResolverContext()), [stage])
+        self.assertEqual(cache.FindAllMatching(stage.GetRootLayer()), [stage])
+        self.assertEqual(cache.FindAllMatching(stage.GetRootLayer(),
+                                     stage.GetSessionLayer()), [stage])
+        self.assertEqual(cache.FindAllMatching(stage.GetRootLayer(),
+                                     stage.GetPathResolverContext()), [stage])
 
-        assert cache.GetId(stage) == stageId
+        self.assertEqual(cache.GetId(stage), stageId)
 
         assert cache.Erase(stageId)
         stage = Usd.Stage.CreateInMemory()
@@ -88,16 +88,16 @@ class TestUsdStageCache(unittest.TestCase):
         assert cache.Erase(stage)
         stage = Usd.Stage.CreateInMemory()
         cache.Insert(stage)
-        assert cache.EraseAll(stage.GetRootLayer()) == 1
+        self.assertEqual(cache.EraseAll(stage.GetRootLayer()), 1)
         stage = Usd.Stage.CreateInMemory()
         cache.Insert(stage)
-        assert cache.EraseAll(stage.GetRootLayer(),
-                              stage.GetSessionLayer()) == 1
+        self.assertEqual(cache.EraseAll(stage.GetRootLayer(),
+                              stage.GetSessionLayer()), 1)
         stage = Usd.Stage.CreateInMemory()
         cache.Insert(stage)
-        assert cache.EraseAll(stage.GetRootLayer(),
+        self.assertEqual(cache.EraseAll(stage.GetRootLayer(),
                               stage.GetSessionLayer(),
-                              stage.GetPathResolverContext()) == 1
+                              stage.GetPathResolverContext()), 1)
         stage = Usd.Stage.CreateInMemory()
         cache.Insert(stage)
         cache.Clear()
@@ -192,11 +192,11 @@ class TestUsdStageCache(unittest.TestCase):
         assert all(ids)
 
         for stage, i in zip(allStages, ids):
-            assert cache.GetId(stage) == i
-            assert cache.Find(i) == stage
+            self.assertEqual(cache.GetId(stage), i)
+            self.assertEqual(cache.Find(i), stage)
             # round trip from/to string and int.
-            assert cache.Find(Usd.StageCache.Id.FromLongInt(i.ToLongInt())) == stage
-            assert cache.Find(Usd.StageCache.Id.FromString(i.ToString())) == stage
+            self.assertEqual(cache.Find(Usd.StageCache.Id.FromLongInt(i.ToLongInt())), stage)
+            self.assertEqual(cache.Find(Usd.StageCache.Id.FromString(i.ToString())), stage)
 
         assert all(map(cache.Erase, ids))
         assert cache.IsEmpty() and cache.Size() == 0
@@ -213,9 +213,9 @@ class TestUsdStageCache(unittest.TestCase):
         with Usd.StageCacheContext(cache1):
             stage = Usd.Stage.Open(layer1)
 
-        assert cache1.Size() == 1
+        self.assertEqual(cache1.Size(), 1)
         assert cache1.Contains(stage)
-        assert cache1.FindOneMatching(layer1) == stage
+        self.assertEqual(cache1.FindOneMatching(layer1), stage)
 
         # Read the stage from the read-only cache, assert a different opened stage
         # doesn't populate the cache.
@@ -260,11 +260,11 @@ class TestUsdStageCache(unittest.TestCase):
                 # Open() should create a new stage, since cache is blocked.
                 newStage2 = Usd.Stage.Open(layer1)
                 assert newStage2 != newStage
-                assert cache1.Size() == 1
+                self.assertEqual(cache1.Size(), 1)
                 # Opening a different stage should not populate the cache.
                 newStage3 = Usd.Stage.Open(layer2)
                 assert not cache1.Contains(newStage3)
-                assert cache1.Size() == 1
+                self.assertEqual(cache1.Size(), 1)
 
         # Try blocking cache writes only.
         cache1.Clear()
@@ -275,11 +275,11 @@ class TestUsdStageCache(unittest.TestCase):
             with Usd.StageCacheContext(Usd.BlockStageCachePopulation):
                 # Open() should read the stage from the cache.
                 newStage2 = Usd.Stage.Open(layer1)
-                assert newStage2 == newStage
+                self.assertEqual(newStage2, newStage)
                 # Opening a different stage should not populate the cache.
                 newStage3 = Usd.Stage.Open(layer2)
                 assert not cache1.Contains(newStage3)
-                assert cache1.Size() == 1
+                self.assertEqual(cache1.Size(), 1)
                 
     def test_CacheContextLifetime(self):
         # Check that python object lifetimes are preserved as expected, to ensure
@@ -360,7 +360,7 @@ class TestUsdStageCache(unittest.TestCase):
 
         # The explicitSession stage should have the session layer we specified, and
         # should not be the same as noSession or implicitSession.
-        assert explicitSession.GetSessionLayer() == sess
+        self.assertEqual(explicitSession.GetSessionLayer(), sess)
         assert explicitSession not in (noSession, implicitSession)
 
         # The dontCareSession should be either noSession or explicitSession or

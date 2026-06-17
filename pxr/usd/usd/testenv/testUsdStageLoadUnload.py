@@ -432,8 +432,8 @@ class TestUsdLoadUnload(unittest.TestCase):
             p.PrintPaths("All unloaded")
             assert not p.stage.GetPrimAtPath("/Sad/Panda")
             assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply")
-            assert len(p.stage.GetLoadSet()) == 0
-            assert len(p.stage.FindLoadable()) == 2
+            self.assertEqual(len(p.stage.GetLoadSet()), 0)
+            self.assertEqual(len(p.stage.FindLoadable()), 2)
             assert Sdf.Path("/Sad") in p.stage.FindLoadable()
             assert Sdf.Path("/Foo/Baz") in p.stage.FindLoadable()
             assert Sdf.Path("/Foo/Baz/Garply") not in p.stage.FindLoadable()
@@ -448,7 +448,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert Sdf.Path("/Foo") not in p.stage.GetLoadSet()
             assert Sdf.Path("/Foo/Baz") not in p.stage.GetLoadSet()
             assert Sdf.Path("/Foo/Baz/Garply") not in p.stage.GetLoadSet()
-            assert len(p.stage.FindLoadable()) == 2
+            self.assertEqual(len(p.stage.FindLoadable()), 2)
             assert Sdf.Path("/Foo/Baz/Garply") not in p.stage.FindLoadable()
 
             #
@@ -462,7 +462,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert Sdf.Path("/Foo") not in p.stage.GetLoadSet()
             assert Sdf.Path("/Foo/Baz") in p.stage.GetLoadSet()
             assert Sdf.Path("/Foo/Baz/Garply") not in p.stage.GetLoadSet()
-            assert len(p.stage.FindLoadable()) == 3
+            self.assertEqual(len(p.stage.FindLoadable()), 3)
             assert Sdf.Path("/Foo/Baz/Garply") in p.stage.FindLoadable()
 
             #
@@ -474,7 +474,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert Sdf.Path("/Foo") not in p.stage.GetLoadSet()
             assert Sdf.Path("/Foo/Baz") in p.stage.GetLoadSet()
             assert Sdf.Path("/Foo/Baz/Garply") in p.stage.GetLoadSet()
-            assert len(p.stage.FindLoadable()) == 3
+            self.assertEqual(len(p.stage.FindLoadable()), 3)
             assert Sdf.Path("/Foo/Baz/Garply") in p.stage.FindLoadable()
 
             #
@@ -488,7 +488,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert Sdf.Path("/Foo") not in p.stage.GetLoadSet()
             assert Sdf.Path("/Foo/Baz") in p.stage.GetLoadSet()
             assert Sdf.Path("/Foo/Baz/Garply") not in p.stage.GetLoadSet()
-            assert len(p.stage.FindLoadable()) == 3
+            self.assertEqual(len(p.stage.FindLoadable()), 3)
             assert Sdf.Path("/Foo/Baz/Garply") in p.stage.FindLoadable()
 
             #
@@ -500,7 +500,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert Sdf.Path("/Foo") not in p.stage.GetLoadSet()
             assert Sdf.Path("/Foo/Baz") in p.stage.GetLoadSet()
             assert Sdf.Path("/Foo/Baz/Garply") in p.stage.GetLoadSet()
-            assert len(p.stage.FindLoadable()) == 3
+            self.assertEqual(len(p.stage.FindLoadable()), 3)
             assert Sdf.Path("/Foo/Baz/Garply") in p.stage.FindLoadable()
 
             #
@@ -516,7 +516,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert Sdf.Path("/Foo") not in p.stage.GetLoadSet()
             assert Sdf.Path("/Foo/Baz") in p.stage.GetLoadSet()
             assert Sdf.Path("/Foo/Baz/Garply") not in p.stage.GetLoadSet()
-            assert len(p.stage.FindLoadable()) == 3
+            self.assertEqual(len(p.stage.FindLoadable()), 3)
             assert Sdf.Path("/Foo/Baz/Garply") in p.stage.FindLoadable()
             
             #
@@ -526,9 +526,9 @@ class TestUsdLoadUnload(unittest.TestCase):
             p.PrintPaths("/Foo unloaded")
             assert not p.stage.GetPrimAtPath("/Sad/Panda")
             assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply")
-            assert len(p.stage.GetLoadSet()) == 0
+            self.assertEqual(len(p.stage.GetLoadSet()), 0)
             # /Foo/Baz/Garply's payload is no longer visible, loadable count = 2
-            assert len(p.stage.FindLoadable()) == 2
+            self.assertEqual(len(p.stage.FindLoadable()), 2)
 
             #
             # Explicitly load /Foo/Baz, which will implicitly pull in
@@ -538,7 +538,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             p.PrintPaths("/Foo/Baz loaded")
             assert not p.stage.GetPrimAtPath("/Sad/Panda")
             assert p.stage.GetPrimAtPath("/Foo/Baz/Garply")
-            assert len(p.stage.GetLoadSet()) == 2
+            self.assertEqual(len(p.stage.GetLoadSet()), 2)
 
             #
             # Unload /Foo, which unloads everything recursively
@@ -548,7 +548,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert not p.stage.GetPrimAtPath("/Sad/Panda")
             assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply")
             assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
-            assert len(p.stage.GetLoadSet()) == 0, str(p.stage.GetLoadSet())
+            self.assertEqual(len(p.stage.GetLoadSet()), 0, str(p.stage.GetLoadSet()))
 
             #
             # Load /Foo, but unload /Foo/Baz. Verify that the loading of /Foo
@@ -559,9 +559,9 @@ class TestUsdLoadUnload(unittest.TestCase):
                                   (Sdf.Path("/Foo/Baz/Garply"),))
             p.PrintPaths()
             assert p.stage.GetPrimAtPath("/Foo/Baz/Garply")
-            assert len(p.stage.GetLoadSet()) == 2
+            self.assertEqual(len(p.stage.GetLoadSet()), 2)
             p.stage.Unload("/")
-            assert len(p.stage.GetLoadSet()) == 0
+            self.assertEqual(len(p.stage.GetLoadSet()), 0)
 
             #
             # Load only /Foo/Baz/Garply, which will load /Foo, but not /Sad/Panda
@@ -572,7 +572,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert not p.stage.GetPrimAtPath("/Sad/Panda")
             assert p.stage.GetPrimAtPath("/Foo/Baz")
             assert p.stage.GetPrimAtPath("/Foo/Baz/Garply")
-            assert len(p.stage.GetLoadSet()) == 2
+            self.assertEqual(len(p.stage.GetLoadSet()), 2)
 
 
     def test_Load(self):
@@ -588,7 +588,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             p.PrintPaths()
             assert not p.stage.GetPrimAtPath("/Sad/Panda")
             assert p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
-            assert (set(p.stage.GetLoadSet()) ==
+            self.assertEqual(set(p.stage.GetLoadSet()),
                     set([Sdf.Path("/Foo/Baz"), 
                          Sdf.Path("/Foo/Baz/Garply")]))
 
@@ -596,7 +596,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             p.PrintPaths()
             assert p.stage.GetPrimAtPath("/Sad/Panda")
             assert p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
-            assert (set(p.stage.GetLoadSet()) ==
+            self.assertEqual(set(p.stage.GetLoadSet()),
                     set([Sdf.Path("/Sad"), 
                          Sdf.Path("/Foo/Baz"), 
                          Sdf.Path("/Foo/Baz/Garply")]))
@@ -619,7 +619,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             p.PrintPaths()
             assert p.stage.GetPrimAtPath("/Sad/Panda")
             assert p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
-            assert (set(p.stage.GetLoadSet()) ==
+            self.assertEqual(set(p.stage.GetLoadSet()),
                     set([Sdf.Path("/Sad"), 
                          Sdf.Path("/Foo/Baz"), 
                          Sdf.Path("/Foo/Baz/Garply")]))
@@ -632,7 +632,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             p.PrintPaths()
             assert not p.stage.GetPrimAtPath("/Sad/Panda")
             assert p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
-            assert (set(p.stage.GetLoadSet()) ==
+            self.assertEqual(set(p.stage.GetLoadSet()),
                     set([Sdf.Path("/Sad"), 
                          Sdf.Path("/Foo/Baz"), 
                          Sdf.Path("/Foo/Baz/Garply")]))
@@ -646,7 +646,7 @@ class TestUsdLoadUnload(unittest.TestCase):
             p.PrintPaths()
             assert not p.stage.GetPrimAtPath("/Sad/Panda")
             assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
-            assert (set(p.stage.GetLoadSet()) ==
+            self.assertEqual(set(p.stage.GetLoadSet()),
                     set([Sdf.Path("/Sad"), 
                          Sdf.Path("/Foo/Baz"), 
                          Sdf.Path("/Foo/Baz/Garply")]))
@@ -664,8 +664,8 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert not p.stage.GetPrimAtPath("/Sad/Panda")
             assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply")
             assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
-            assert len(p.stage.GetLoadSet()) == 0
-            assert len(p.stage.FindLoadable()) == 2
+            self.assertEqual(len(p.stage.GetLoadSet()), 0)
+            self.assertEqual(len(p.stage.FindLoadable()), 2)
 
             # Try loading all
             p = PayloadedScene(fmt, unload=False, loadSet=Usd.Stage.LoadAll)
@@ -673,8 +673,8 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert p.stage.GetPrimAtPath("/Sad/Panda")
             assert p.stage.GetPrimAtPath("/Foo/Baz/Garply")
             assert p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
-            assert len(p.stage.GetLoadSet()) == 3, str(p.stage.GetLoadSet())
-            assert len(p.stage.FindLoadable()) == 3
+            self.assertEqual(len(p.stage.GetLoadSet()), 3, str(p.stage.GetLoadSet()))
+            self.assertEqual(len(p.stage.FindLoadable()), 3)
 
         # Exercise creating an on-disk stage
         for fmt in allFormats:
@@ -686,8 +686,8 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert not p.stage.GetPrimAtPath("/Sad/Panda")
             assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply")
             assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
-            assert len(p.stage.GetLoadSet()) == 0
-            assert len(p.stage.FindLoadable()) == 2
+            self.assertEqual(len(p.stage.GetLoadSet()), 0)
+            self.assertEqual(len(p.stage.FindLoadable()), 2)
 
             p.CleanupOnDiskAssets(fmt) 
 
@@ -698,8 +698,8 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert p.stage.GetPrimAtPath("/Sad/Panda")
             assert p.stage.GetPrimAtPath("/Foo/Baz/Garply")
             assert p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
-            assert len(p.stage.GetLoadSet()) == 3, str(p.stage.GetLoadSet())
-            assert len(p.stage.FindLoadable()) == 3
+            self.assertEqual(len(p.stage.GetLoadSet()), 3, str(p.stage.GetLoadSet()))
+            self.assertEqual(len(p.stage.FindLoadable()), 3)
 
             p.CleanupOnDiskAssets(fmt)
 
@@ -718,8 +718,8 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert not p.stage.GetPrimAtPath("/Sad/Panda")
             assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply")
             assert not p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
-            assert len(p.stage.GetLoadSet()) == 0
-            assert len(p.stage.FindLoadable()) == 2
+            self.assertEqual(len(p.stage.GetLoadSet()), 0)
+            self.assertEqual(len(p.stage.FindLoadable()), 2)
 
             # reopen the stage with everything loaded
             p.stage = Usd.Stage.Open(p.stage.GetRootLayer().identifier,
@@ -728,8 +728,8 @@ class TestUsdLoadUnload(unittest.TestCase):
             assert p.stage.GetPrimAtPath("/Sad/Panda")
             assert p.stage.GetPrimAtPath("/Foo/Baz/Garply")
             assert p.stage.GetPrimAtPath("/Foo/Baz/Garply/Qux")
-            assert len(p.stage.GetLoadSet()) == 3, str(p.stage.GetLoadSet())
-            assert len(p.stage.FindLoadable()) == 3
+            self.assertEqual(len(p.stage.GetLoadSet()), 3, str(p.stage.GetLoadSet()))
+            self.assertEqual(len(p.stage.FindLoadable()), 3)
 
 
     def test_Errors(self):

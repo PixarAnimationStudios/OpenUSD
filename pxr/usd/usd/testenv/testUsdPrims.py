@@ -19,8 +19,8 @@ class TestUsdPrim(unittest.TestCase):
             p = s.GetPrimAtPath('/')
             q = s.GetPrimAtPath('/')
             assert p is not q
-            assert p == q
-            assert hash(p) == hash(q)
+            self.assertEqual(p, q)
+            self.assertEqual(hash(p), hash(q))
 
             # Check that unicode objects convert to sdfpaths.
             #
@@ -30,8 +30,8 @@ class TestUsdPrim(unittest.TestCase):
             p = s.GetPrimAtPath(u'/')
             q = s.GetPrimAtPath(u'/')
             assert p is not q
-            assert p == q
-            assert hash(p) == hash(q)
+            self.assertEqual(p, q)
+            self.assertEqual(hash(p), hash(q))
 
             p = s.OverridePrim('/foo')
             p.CreateAttribute('attr', Sdf.ValueTypeNames.String)
@@ -39,8 +39,8 @@ class TestUsdPrim(unittest.TestCase):
             b = p.GetAttribute('attr')
             assert a and b
             assert a is not b
-            assert a == b
-            assert hash(a) == hash(b)
+            self.assertEqual(a, b)
+            self.assertEqual(hash(a), hash(b))
             assert not a.HasFallbackValue()
             assert not b.HasFallbackValue()
 
@@ -49,8 +49,8 @@ class TestUsdPrim(unittest.TestCase):
             b = p.GetRelationship('relationship')
             assert a and b
             assert a is not b
-            assert a == b
-            assert hash(a) == hash(b)
+            self.assertEqual(a, b)
+            self.assertEqual(hash(a), hash(b))
 
             # check for prims/props that exist
             p = s.GetObjectAtPath(u'/foo')
@@ -94,7 +94,7 @@ class TestUsdPrim(unittest.TestCase):
             assert p
             assert p.SetMetadata(
                 "hidden", False), "Failed to set metadata in stronger layer" 
-            assert p.GetName() == p.GetPath().name
+            self.assertEqual(p.GetName(), p.GetPath().name)
 
     def test_GetPrimStack(self):
         layers = [Sdf.Layer.CreateAnonymous('base.usda'),
@@ -132,7 +132,7 @@ class TestUsdPrim(unittest.TestCase):
         stage = Usd.Stage.Open(base)
         prim = stage.GetPrimAtPath(primPath)
 
-        assert prim.GetPrimStack() == expectedPrimStack
+        self.assertEqual(prim.GetPrimStack(), expectedPrimStack)
 
         expectedPrimStackWithLayerOffsets = [
             (expectedPrimStack[0], Sdf.LayerOffset()),
@@ -140,7 +140,7 @@ class TestUsdPrim(unittest.TestCase):
             (expectedPrimStack[2], Sdf.LayerOffset(10.0)),
             (expectedPrimStack[3], Sdf.LayerOffset(10.0, 2.0)),
         ]
-        assert (prim.GetPrimStackWithLayerOffsets() == 
+        self.assertEqual(prim.GetPrimStackWithLayerOffsets(), 
                     expectedPrimStackWithLayerOffsets)
 
     def test_GetCachedPrimBits(self):
@@ -168,8 +168,8 @@ class TestUsdPrim(unittest.TestCase):
         propertyOrder = stage.GetPrimAtPath('/PropertyOrder')
 
         # Named child access API
-        assert group.GetChild('ModelChild') == modelChild
-        assert group.GetChild('LocalChild') == localChild
+        self.assertEqual(group.GetChild('ModelChild'), modelChild)
+        self.assertEqual(group.GetChild('LocalChild'), localChild)
         assert not group.GetChild('__NoSuchChild__')
 
         # Check filtered children access.
@@ -598,14 +598,14 @@ class TestUsdPrim(unittest.TestCase):
         attrs = po.GetAttributes()
         # expected order:
         expected = ['A0', 'a1', 'a2', 'A3', 'a4', 'a5', 'a10', 'A20']
-        assert [a.GetName() for a in attrs] == expected, \
-            '%s != %s' % ([a.GetName() for a in attrs], expected)
+        self.assertEqual([a.GetName() for a in attrs], expected,
+            '%s != %s' % ([a.GetName() for a in attrs], expected))
 
         rels = po.GetRelationships()
         # expected order:
         expected = ['R0', 'r1', 'r2', 'R3', 'r4', 'r5', 'r10', 'R20']
-        assert [r.GetName() for r in rels] == expected, \
-            '%s != %s' % ([r.GetName() for r in rels], expected)
+        self.assertEqual([r.GetName() for r in rels], expected,
+            '%s != %s' % ([r.GetName() for r in rels], expected))
         
         
     def test_PropertyReorder(self):
@@ -785,19 +785,19 @@ class TestUsdPrim(unittest.TestCase):
 
             # Create the prim, should pick it up.
             fooPrim = s.OverridePrim('/foo')
-            assert s.GetDefaultPrim() == fooPrim
+            self.assertEqual(s.GetDefaultPrim(), fooPrim)
 
             # Change defaultPrim, ensure it picks up again.
             s.GetRootLayer().defaultPrim = 'bar'
             assert not s.GetDefaultPrim()
             barPrim = s.OverridePrim('/bar')
-            assert s.GetDefaultPrim() == barPrim
+            self.assertEqual(s.GetDefaultPrim(), barPrim)
 
             # Set sub-root prims as default, should pick it up
             s.GetRootLayer().defaultPrim = 'foo/bar'
             assert not s.GetDefaultPrim()
             fooBarPrim = s.OverridePrim('/foo/bar')
-            assert s.GetDefaultPrim() == fooBarPrim
+            self.assertEqual(s.GetDefaultPrim(), fooBarPrim)
             
             # Try error cases
             s.GetRootLayer().defaultPrim = ''
@@ -805,7 +805,7 @@ class TestUsdPrim(unittest.TestCase):
 
             # Try stage-level authoring API.
             s.SetDefaultPrim(fooPrim)
-            assert s.GetDefaultPrim() == fooPrim
+            self.assertEqual(s.GetDefaultPrim(), fooPrim)
             assert s.HasDefaultPrim()
             s.ClearDefaultPrim()
             assert not s.GetDefaultPrim()
@@ -857,22 +857,22 @@ class TestUsdPrim(unittest.TestCase):
             s = Usd.Stage.CreateInMemory('Instanceable.'+fmt)
             p = s.DefinePrim('/Instanceable', 'Mesh')
             assert not p.IsInstanceable()
-            assert p.GetMetadata('instanceable') == None
+            self.assertEqual(p.GetMetadata('instanceable'), None)
             assert not p.HasAuthoredInstanceable()
 
             p.SetInstanceable(True)
             assert p.IsInstanceable()
-            assert p.GetMetadata('instanceable') == True
+            self.assertEqual(p.GetMetadata('instanceable'), True)
             assert p.HasAuthoredInstanceable()
 
             p.SetInstanceable(False)
             assert not p.IsInstanceable()
-            assert p.GetMetadata('instanceable') == False
+            self.assertEqual(p.GetMetadata('instanceable'), False)
             assert p.HasAuthoredInstanceable()
 
             p.ClearInstanceable()
             assert not p.IsInstanceable()
-            assert p.GetMetadata('instanceable') == None
+            self.assertEqual(p.GetMetadata('instanceable'), None)
             assert not p.HasAuthoredInstanceable()
 
     def test_GetComposedPrimChildrenAsMetadataTest(self):

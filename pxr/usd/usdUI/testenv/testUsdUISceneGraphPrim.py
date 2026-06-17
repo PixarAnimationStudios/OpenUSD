@@ -27,9 +27,9 @@ class TestUsdUISceneGraphPrim(unittest.TestCase):
         assert displayNameAttr
         displayNameAttr = sceneGraphPrim.CreateDisplayNameAttr()
         assert displayNameAttr, "Failed creating display attribute"
-        assert displayNameAttr.GetTypeName() == 'token', \
+        self.assertEqual(displayNameAttr.GetTypeName(), 'token',
             "Type of position attribute should be 'token', not %s" % \
-            displayNameAttr.GetTypeName()
+            displayNameAttr.GetTypeName())
         displayNameAttr.Set('foo')
        
         # Test Display Color
@@ -37,9 +37,9 @@ class TestUsdUISceneGraphPrim(unittest.TestCase):
         assert displayGroupAttr
         displayGroupAttr = sceneGraphPrim.CreateDisplayGroupAttr()
         assert displayGroupAttr, "Failed creating display color attribute"
-        assert displayGroupAttr.GetTypeName() == 'token', \
+        self.assertEqual(displayGroupAttr.GetTypeName(), 'token',
             "Type of position attribute should be 'token', not %s" % \
-            displayGroupAttr.GetTypeName()
+            displayGroupAttr.GetTypeName())
         displayGroupAttr.Set("bar")
        
         stage.GetRootLayer().Save()

@@ -90,8 +90,8 @@ class TestShaderNode(unittest.TestCase):
 
         # Test that the registry does not see 'RmanCpp' twice as a source type,
         # and that it finds 'glslfx' as a source type
-        assert sorted(self.reg.GetAllShaderNodeSourceTypes()) == \
-            [self.oslType, self.argsType, self.glslfxType]
+        self.assertEqual(sorted(self.reg.GetAllShaderNodeSourceTypes()),
+            [self.oslType, self.argsType, self.glslfxType])
 
         # Calling SdrRegistry::GetShaderNodesByFamily() will actually parse the
         # discovery results.
@@ -102,15 +102,15 @@ class TestShaderNode(unittest.TestCase):
         # parser plugin to support it
         nodes = self.reg.GetShaderNodesByFamily()
         shaderNodeNames = [node.GetName() for node in nodes]
-        assert set(shaderNodeNames) == {
+        self.assertEqual(set(shaderNodeNames), {
             "TestNodeARGS",
             "TestNodeARGS2",
             "TestNodeOSL",
             "TestNodeSameName",
             "TestNodeSameName"
-        }
+        })
 
-        assert self.reg.GetSearchURIs() == ["/TestSearchPath", "/TestSearchPath2"]
+        self.assertEqual(self.reg.GetSearchURIs(), ["/TestSearchPath", "/TestSearchPath2"])
 
         # Calling SdrRegistry::GetShaderNodeNames only looks at discovery
         # results without parsing them.
@@ -119,53 +119,53 @@ class TestShaderNode(unittest.TestCase):
         # Notice that we see 'TestNodeGLSLFX' because it is in our discovery
         # results even though we do not have a parser plugin that supports its
         # source type.
-        assert set(self.reg.GetShaderNodeNames()) == {
+        self.assertEqual(set(self.reg.GetShaderNodeNames()), {
             "TestNodeARGS",
             "TestNodeARGS2",
             "TestNodeOSL",
             "TestNodeSameName",
             "TestNodeGLSLFX"
-        }
+        })
         # Verify that GetShaderNodeIdentifiers follows the same rules as
         # GetShaderNodeNames.
         # Note that the names and identifiers do happen to be the same in this
         # test case which is common.
-        assert set(self.reg.GetShaderNodeIdentifiers()) == {
+        self.assertEqual(set(self.reg.GetShaderNodeIdentifiers()), {
             "TestNodeARGS",
             "TestNodeARGS2",
             "TestNodeOSL",
             "TestNodeSameName",
             "TestNodeGLSLFX"
-        }
+        })
 
-        assert id(self.reg.GetShaderNodeByName(nodes[0].GetName())) == id(nodes[0])
+        self.assertEqual(id(self.reg.GetShaderNodeByName(nodes[0].GetName())), id(nodes[0]))
 
         nodeName = "TestNodeSameName"
         nodeIdentifier = "TestNodeSameName"
 
         # Ensure that the registry can retrieve two nodes of the same name but
         # different source types
-        assert len(self.reg.GetShaderNodesByName(nodeName)) == 2
+        self.assertEqual(len(self.reg.GetShaderNodesByName(nodeName)), 2)
         node = self.reg.GetShaderNodeByNameAndType(nodeName, self.oslType)
         assert node is not None
         node = self.reg.GetShaderNodeByNameAndType(nodeName, self.argsType)
         assert node is not None
         node = self.reg.GetShaderNodeByName(nodeName, [self.oslType, self.argsType])
-        assert node.GetSourceType() == self.oslType
+        self.assertEqual(node.GetSourceType(), self.oslType)
         node = self.reg.GetShaderNodeByName(nodeName, [self.argsType, self.oslType])
-        assert node.GetSourceType() == self.argsType
+        self.assertEqual(node.GetSourceType(), self.argsType)
 
         # Ensure that the registry can retrieve these same nodes via identifier,
         # which, in these cases, are the same as the node names.
-        assert len(self.reg.GetShaderNodesByIdentifier(nodeIdentifier)) == 2
+        self.assertEqual(len(self.reg.GetShaderNodesByIdentifier(nodeIdentifier)), 2)
         node = self.reg.GetShaderNodeByIdentifierAndType(nodeIdentifier, self.oslType)
         assert node is not None
         node = self.reg.GetShaderNodeByIdentifierAndType(nodeIdentifier, self.argsType)
         assert node is not None
         node = self.reg.GetShaderNodeByIdentifier(nodeIdentifier, [self.oslType, self.argsType])
-        assert node.GetSourceType() == self.oslType
+        self.assertEqual(node.GetSourceType(), self.oslType)
         node = self.reg.GetShaderNodeByIdentifier(nodeIdentifier, [self.argsType, self.oslType])
-        assert node.GetSourceType() == self.argsType
+        self.assertEqual(node.GetSourceType(), self.argsType)
 
         # Test GetShaderNodeFromAsset to check that a subidentifier is part of
         # the node's identifier if one is specified
@@ -174,7 +174,7 @@ class TestShaderNode(unittest.TestCase):
             {},                                         # metadata
             "mySubIdentifier")                          # subIdentifier
         assert node.GetIdentifier().endswith("<mySubIdentifier><>")
-        assert node.GetName() == "TestNodeSourceAsset.oso"
+        self.assertEqual(node.GetName(), "TestNodeSourceAsset.oso")
 
         # Test GetShaderNodeFromAsset to check that a sourceType is part of
         # the node's identifier if one is specified
@@ -194,7 +194,7 @@ class TestShaderNode(unittest.TestCase):
         assert nodeNew is not None
         nodeOld = self.reg.GetShaderNodeByNameAndType("TestNodeSameName", self.oslType)
         assert nodeOld is not None
-        assert nodeOld.GetMetadata()['sdrUsdEncodingVersion'] == "0"
+        self.assertEqual(nodeOld.GetMetadata()['sdrUsdEncodingVersion'], "0")
 
         def _CheckTypes(node, expectedTypes):
             for inputName in node.GetShaderInputNames():
@@ -249,8 +249,8 @@ class TestShaderNode(unittest.TestCase):
         nodeNew = self.reg.GetShaderNodeByNameAndType("TestNodeOSL", self.oslType)
         intProp = nodeNew.GetShaderInput("IntProperty")
         val, err = Sdr.MetadataHelpers.ParseSdfValue("3", intProp)
-        assert val == 3
-        assert err == ""
+        self.assertEqual(val, 3)
+        self.assertEqual(err, "")
 
 if __name__ == '__main__':
     unittest.main()

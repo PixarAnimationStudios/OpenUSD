@@ -55,13 +55,13 @@ class TestShaderNode(unittest.TestCase):
         its job correctly.
         """
         nodeMetadata = self.node.GetMetadata()
-        assert nodeMetadata["extra"] == self.metadata["extra"]
+        self.assertEqual(nodeMetadata["extra"], self.metadata["extra"])
 
         # The primvars value will be overridden by the parser plugin.
         assert nodeMetadata["primvars"] != self.metadata["primvars"]
 
         # Ensure that the source code gets copied.
-        assert self.node.GetSourceCode() == self.sourceCode
+        self.assertEqual(self.node.GetSourceCode(), self.sourceCode)
 
         utils.TestBasicNode(self.node,
                             "OSL",

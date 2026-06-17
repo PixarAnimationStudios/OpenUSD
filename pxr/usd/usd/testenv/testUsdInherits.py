@@ -85,7 +85,7 @@ class TestUsdInherits(unittest.TestCase):
                              ['/ClassA'])
 
             assert concrete.GetInherits().RemoveInherit(classA.GetPath())
-            assert len(concrete.GetChildren()) == 0
+            self.assertEqual(len(concrete.GetChildren()), 0)
 
     def test_InheritPathMapping(self):
         for fmt in allFormats:

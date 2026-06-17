@@ -18,7 +18,7 @@ class TestBasisCurves(unittest.TestCase):
     
     def test_create(self):
         assert self.curves
-        assert self.curves.GetName() == 'TestCurves'
+        self.assertEqual(self.curves.GetName(), 'TestCurves')
         
     def test_schema(self):
         assert self.schema
@@ -41,7 +41,7 @@ class TestNurbsCurves(unittest.TestCase):
     
     def test_create(self):
         assert self.curves
-        assert self.curves.GetName() == 'TestCurves'
+        self.assertEqual(self.curves.GetName(), 'TestCurves')
         
     def test_schema(self):
         assert self.schema

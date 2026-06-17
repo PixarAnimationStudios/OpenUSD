@@ -31,8 +31,8 @@ class TestSdrFilesystemDiscovery(unittest.TestCase):
             (result.identifier, result.name, result.family, result.version) 
             for result in discoveryResults]
 
-        assert len(discoveryResults) == 13
-        assert set(discoveredNodeNames) == {
+        self.assertEqual(len(discoveryResults), 13)
+        self.assertEqual(set(discoveredNodeNames), {
             ("TestNodeARGS", "TestNodeARGS", "TestNodeARGS", 
              Sdr.Version()),
             ("TestNodeOSL", "TestNodeOSL", "TestNodeOSL", 
@@ -57,17 +57,17 @@ class TestSdrFilesystemDiscovery(unittest.TestCase):
              Sdr.Version(3, 0)),
             ("Primvar_float2_3_4", "Primvar_float2", "Primvar", 
              Sdr.Version(3, 4))
-        }
+        })
 
         # Verify that the discovery files helper returns the same URIs as 
         # full discovery plugin when run on the same search path and allowed
         # extensions.
         discoveryUris = Sdr.FsHelpersDiscoverFiles(
             [os.getcwd()], ["oso","args"], True)
-        assert len(discoveryResults) == 13
+        self.assertEqual(len(discoveryResults), 13)
         for result, uris in zip(discoveryResults, discoveryUris):
-            assert result.uri == uris.uri
-            assert result.resolvedUri == result.resolvedUri
+            self.assertEqual(result.uri, uris.uri)
+            self.assertEqual(result.resolvedUri, result.resolvedUri)
 
     def test_testSplitShaderIdentifier(self):
         self.assertEqual(

@@ -27,8 +27,8 @@ class TestUsdUIBackdrop(unittest.TestCase):
         # Test Description
         descAttr = backdrop.GetDescriptionAttr()
         assert descAttr
-        assert descAttr.GetTypeName() == 'token', \
-            "Type of description attribute should be 'token', not %s" % descAttr.GetTypeName()
+        self.assertEqual(descAttr.GetTypeName(), 'token',
+            "Type of description attribute should be 'token', not %s" % descAttr.GetTypeName())
         descAttr.Set("Backdrop test description")
 
         stage.GetRootLayer().Save()
