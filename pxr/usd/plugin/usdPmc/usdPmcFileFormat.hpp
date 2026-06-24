@@ -45,7 +45,7 @@ public:
     /// \param file Path to the file to check
     /// \return true if the file can be read, false otherwise
     virtual bool CanRead(const std::string &file) const override;
-    
+
     /// Read PMC data from file into USD layer.
     /// \param layer The SdfLayer to populate with decoded data
     /// \param resolvedPath Path to the PMC file to read
@@ -54,7 +54,7 @@ public:
     virtual bool Read(SdfLayer* layer,
                       const std::string& resolvedPath,
                       bool metadataOnly) const override;
-    
+
     /// Read PMC data from string into USD layer.
     /// \param layer The SdfLayer to populate with decoded data
     /// \param str String containing PMC data
@@ -72,7 +72,7 @@ public:
     virtual bool WriteToString(const SdfLayer& layer, std::string* str,
                                const std::string& comment=std::string())
                                const override;
-    
+
     /// Write USD data to stream (delegates to USDA format).
     /// Writing USD data to PMC format is not supported. Use the PMC
     /// compression tools to generate PMC files from USD data.

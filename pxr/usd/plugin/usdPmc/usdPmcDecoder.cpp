@@ -94,7 +94,9 @@ ScalingRangeFrom(const std::optional<pmc::AttributeInfo::CoordinateSystem>& cs)
 }
 
 UsdPmcMeshDecoder::UsdPmcMeshDecoder() : _unnamedAttributeCount(0) {}
+
 UsdPmcMeshDecoder::~UsdPmcMeshDecoder() {}
+
 bool
 UsdPmcMeshDecoder::CanDecode(const char* buffer, size_t length) {
     return _InspectBitstream(buffer, length);
