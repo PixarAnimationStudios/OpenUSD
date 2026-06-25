@@ -597,11 +597,15 @@ public:
     GetTypedValue(const HdSampledDataSource::Time shutterOffset) override {
         TRACE_FUNCTION();
 
-        const TfSpan<const TfToken> blendShapes(  
+        const VtTokenArray blendShapesValue(
             UsdSkelImagingGetTypedValue(_blendShapes, shutterOffset));
-        const TfSpan<const float> blendShapeWeights(
+        const TfSpan<const TfToken> blendShapes(blendShapesValue);
+
+        const VtFloatArray blendShapeWeightsValue(
             UsdSkelImagingGetTypedValue(_blendShapeWeights, shutterOffset));
-        const TfSpan<const GfVec2i> blendShapeRanges(
+        const TfSpan<const float> blendShapeWeights(blendShapeWeightsValue);
+
+        const VtVec2iArray blendShapeRanges(
             UsdSkelImagingGetTypedValue(_blendShapeRanges, shutterOffset));
 
         const size_t numSubShapes = _blendShapeData->numSubShapes;
