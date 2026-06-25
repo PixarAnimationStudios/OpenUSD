@@ -29,69 +29,141 @@
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/base/js/json.h"
 #include <string_view>
+#include <type_traits>
 
 // PMC specific includes
 #include <pmc/pmDecoder.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// This macro generates code to write scalar (single-component) attribute
-/// values from PMC decoded data to USD attributes, with optional
-/// scaling/quantization reversal.
-#define WRITE_ATTRIBUTE_SCALAR(attribute_type, usd_attr_type, usd_attr, \
-                                scalingRange) \
-    if (cppTypeName == #attribute_type) \
-        res = UsdPmc_WriteAttributeScalarValuesToUsdAttribute<attribute_type, \
-                                                             usd_attr_type>( \
-            attrPart, usd_attr, scalingRange);
+//=============================================================================
+// Coordinate system derivation
 
-/// This macro generates code to write vector (multi-component) attribute
-/// values from PMC decoded data to USD attributes, with optional
-/// scaling/quantization reversal.
-#define WRITE_ATTRIBUTE_VECTOR(attribute_type, usd_attr_type, usd_attr, \
-                                scalingRange) \
-    if (cppTypeName == #attribute_type) \
-        res = UsdPmc_WriteAttributeVectorValuesToUsdAttribute<attribute_type, \
-                                                             usd_attr_type>( \
-            attrPart, usd_attr, scalingRange);
+namespace {
 
-/// This macro generates a comprehensive set of type-specific attribute writing
-/// code that handles all supported USD attribute types (vectors and scalars)
-/// with appropriate scaling for floating-point types and no scaling for
-/// integer types.
-#define WRITE_ATTRIBUTE(attributeType, attribute) \
-    auto scale = ScalingRangeFrom(attrPart.info.coordSys); \
-    WRITE_ATTRIBUTE_VECTOR(GfVec2i, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec3i, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec4i, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec2h, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec3h, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec4h, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec2f, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec3f, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec4f, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec2d, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec3d, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_VECTOR(GfVec4d, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_SCALAR(bool, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_SCALAR(int, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_SCALAR(uint8_t, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_SCALAR(unsigned int, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_SCALAR(unsigned char, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_SCALAR(GfHalf, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_SCALAR(float, attributeType, attribute, scale) \
-    WRITE_ATTRIBUTE_SCALAR(double, attributeType, attribute, scale)
+struct StaticCast {
+    template<typename T>
+    void operator()(T* dst, const int* src, size_t width) const {
+        for (size_t k = 0; k < width; k++)
+            dst[k] = T(src[k]);
+    }
+};
 
+//-----------------------------------------------------------------------------
 
-/// Convert coordinate system scaling
-static std::pair<int,int>
-ScalingRangeFrom(const std::optional<pmc::AttributeInfo::CoordinateSystem>& cs)
+// Coordinate system scaler
+struct Scaler {
+    float scale;
+    std::vector<int> origin;
+
+    Scaler(const pmc::AttributeInfo::CoordinateSystem& cs);
+    Scaler(const pmc::GeometryInfo& gi);
+
+    template<typename T>
+    void operator()(T*, const int*, size_t width) const;
+};
+
+Scaler::Scaler(const pmc::AttributeInfo::CoordinateSystem& cs)
+: scale(float(pmc::Rational{cs.scale.q, cs.scale.p}))
+, origin(cs.origin)
+{}
+
+Scaler::Scaler(const pmc::GeometryInfo& gi)
+: scale(float(pmc::Rational{gi.coordSys.q, gi.coordSys.p}))
+, origin(std::begin(gi.coordSysOrigin), std::end(gi.coordSysOrigin))
+{}
+
+template<typename T>
+void Scaler::operator()(T* dst, const int* src, size_t width) const
 {
-    if (!cs)
-        return {0,0};
-    return { cs->scale.q, cs->scale.p };
-    // xxx need to handle offset
+    for (size_t k = 0; k < width; k++)
+        dst[k] = T((src[k] + origin[k]) * scale);
 }
+
+//-----------------------------------------------------------------------------
+
+// Convert buf to an array of vectors, VtArray<GfVecXX>, using transformation
+// function fn for each vector.
+template<typename T, typename F, std::enable_if_t<GfIsGfVec<T>::value,int> =0>
+VtValue
+TransformToVtArray(const pmc::ArrayBuffer& buf, F&& fn)
+{
+    VtArray<T> arr;
+    arr.resize(buf.vectorCount);
+    for (int i = 0; i < buf.vectorCount; i++)
+        fn(&arr[i][0], buf.vectorAtIndex<int>(i), buf.componentsPerVector);
+    return VtValue(arr);
+}
+
+// Flatten and convert buf to an array of scalars, VtArray<T>, using
+// transformation function fn for each vector in buf.
+template<typename T, typename F, std::enable_if_t<!GfIsGfVec<T>::value,int> =0>
+VtValue
+TransformToVtArray(const pmc::ArrayBuffer& buf, F&& fn)
+{
+    VtArray<T> arr;
+    arr.resize(buf.vectorCount * buf.componentsPerVector);
+    for (int i = 0, j = 0; i < buf.vectorCount; i++, j += buf.componentsPerVector)
+        fn(&arr[j], buf.vectorAtIndex<int>(i), buf.componentsPerVector);
+    return VtValue(arr);
+}
+
+template<typename F>
+VtValue
+TransformToVtArray(const pmc::ArrayBuffer& buf, F&& fn, VtValue dstType)
+{
+    switch (dstType.GetKnownValueTypeIndex()) {
+#define CASE(T) case VtGetKnownValueTypeIndex<VtArray<T>>(): \
+            return TransformToVtArray<T>(buf, std::forward<F>(fn))
+        CASE(GfVec2i);
+        CASE(GfVec2f);
+        CASE(GfVec2h);
+        CASE(GfVec2d);
+        CASE(GfVec3i);
+        CASE(GfVec3f);
+        CASE(GfVec3h);
+        CASE(GfVec3d);
+        CASE(GfVec4i);
+        CASE(GfVec4f);
+        CASE(GfVec4h);
+        CASE(GfVec4d);
+        CASE(bool);
+        CASE(int);
+        CASE(float);
+        CASE(double);
+        CASE(GfHalf);
+#undef CASE
+    }
+
+    return VtValue{};
+}
+
+template<typename UsdAttrT>
+bool
+SetConvertedScaledBuffer(UsdAttrT& dst, const pmc::AttributeMeshpart& amp)
+try {
+    const UsdAttribute& usdAttr = dst;
+    auto dstType = usdAttr.GetTypeName().GetDefaultValue();
+
+    VtValue arr = [&](){
+        if (amp.info.coordSys)
+            return TransformToVtArray(amp.buffers.values,
+                Scaler(*amp.info.coordSys), dstType);
+
+        return TransformToVtArray(amp.buffers.values, StaticCast{}, dstType);
+    }();
+
+    if (arr.IsEmpty())
+        return false;
+    return dst.Set(arr);
+} catch (...) {
+    TF_RUNTIME_ERROR("Unable to assign values to attribute");
+    return false;
+}
+
+} // anon namespace
+
+//=============================================================================
 
 UsdPmcMeshDecoder::UsdPmcMeshDecoder() : _unnamedAttributeCount(0) {}
 
@@ -290,12 +362,8 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
             size_t decodedByteCount) {
             auto usdPointsAttr = decodedMesh->CreatePointsAttr();
 
-            std::pair<int,int> scalingRange {
-                meshPart.info.coordSys.q, meshPart.info.coordSys.p
-            };
-
-            usdPointsAttr.Set(UsdPmc_FlattenToMultidimUsdArray<GfVec3f>(
-                usdPoints, 3, scalingRange));
+            usdPointsAttr.Set(TransformToVtArray<GfVec3f>(
+                meshPart.buffers.positions, Scaler(meshPart.info)));
 
             auto usdFaceVertexIndicesAttr =
                 decodedMesh->CreateFaceVertexIndicesAttr();
@@ -381,10 +449,7 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
                         return pmc::Error::STATE_ERROR;
                     }
 
-                    auto scalingRange = ScalingRangeFrom(attrPart.info.coordSys);
-                    if (!UsdPmc_WriteAttributeScalarValuesToUsdAttribute<float,
-                                                                 UsdAttribute>(
-                            attrPart, creaseSharpness, scalingRange)) {
+                    if (!SetConvertedScaledBuffer(creaseSharpness, attrPart)) {
                         TF_RUNTIME_ERROR("Cannot create crease sharpnesses "
                                         "attribute");
                         return pmc::Error::STATE_ERROR;
@@ -423,10 +488,7 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
                         return pmc::Error::STATE_ERROR;
                     }
 
-                    auto scalingRange = ScalingRangeFrom(attrPart.info.coordSys);
-                    if (!UsdPmc_WriteAttributeScalarValuesToUsdAttribute<float,
-                                                                         UsdAttribute>(
-                            attrPart, cornerSharpness, scalingRange)) {
+                    if (!SetConvertedScaledBuffer(cornerSharpness, attrPart)) {
                         TF_RUNTIME_ERROR("Cannot create crease sharpnesses "
                                         "attribute");
                         return pmc::Error::STATE_ERROR;
@@ -470,16 +532,14 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
 
             if (auto usdAttribute = decodedMesh->GetPrim().CreateAttribute(
                     TfToken(attrName.c_str()), attrTypeName)) {
+
+                if (!SetConvertedScaledBuffer(usdAttribute, attrPart))
+                    return pmc::Error::STATE_ERROR;
+
                 // General case attribute
                 if ( auto primVar = UsdGeomPrimvar(usdAttribute) ) {
                     if ( elementSize > 1 ) {
                         primVar.SetElementSize(elementSize);
-                    }
-                    bool res = false;
-                    WRITE_ATTRIBUTE(UsdGeomPrimvar, primVar);
-
-                    if ( res != true ) {
-                        return pmc::Error::STATE_ERROR;
                     }
 
                     // Indices, if any
@@ -489,12 +549,6 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
 
                     return pmc::Error::OK;
                 } else {
-                    bool res = false;
-                    WRITE_ATTRIBUTE(UsdAttribute, usdAttribute);
-
-                    if ( res != true ) {
-                        return pmc::Error::STATE_ERROR;
-                    }
                     if ( attrName == "normals" ) {
                         if ( attrIndices.size() > 0 ) {
                             auto normalsIndicesAttr = decodedMesh->GetPrim()
