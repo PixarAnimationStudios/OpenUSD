@@ -66,12 +66,18 @@ struct Scaler {
 Scaler::Scaler(const pmc::AttributeInfo::CoordinateSystem& cs)
 : scale(float(pmc::Rational{cs.scale.q, cs.scale.p}))
 , origin(cs.origin)
-{}
+{
+    for (size_t k = 0, end = origin.size(); k < end; k++)
+        origin[k] <<= cs.originScaleLog2[k];
+}
 
 Scaler::Scaler(const pmc::GeometryInfo& gi)
 : scale(float(pmc::Rational{gi.coordSys.q, gi.coordSys.p}))
 , origin(std::begin(gi.coordSysOrigin), std::end(gi.coordSysOrigin))
-{}
+{
+    for (size_t k = 0, end = origin.size(); k < end; k++)
+        origin[k] <<= gi.coordSysOriginScaleLog2[k];
+}
 
 template<typename T>
 void Scaler::operator()(T* dst, const int* src, size_t width) const
