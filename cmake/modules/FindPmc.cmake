@@ -5,8 +5,8 @@
 # https://openusd.org/license.
 #
 
-find_library(PMC_LIBRARY NAMES pmc PATHS "${PMC_ROOT}/lib")
-find_path(PMC_INCLUDES pmc/pmDecoder.hpp PATHS "${PMC_ROOT}/../lib/public")
+find_library(PMC_LIBRARY NAMES pmc)
+find_path(PMC_INCLUDES pmc/pmDecoder.hpp)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Pmc

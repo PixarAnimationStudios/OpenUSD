@@ -1973,8 +1973,6 @@ def InstallUSD(context, force, buildArgs):
 
         if context.buildPmc:
             extraArgs.append('-DPXR_BUILD_PMC_PLUGIN=ON')
-            # todo: fix PMC_ROOT to behave correctly when not instDir
-            extraArgs.append('-DPMC_ROOT="{}"'.format(context.instDir))
         else:
             extraArgs.append('-DPXR_BUILD_PMC_PLUGIN=OFF')
 

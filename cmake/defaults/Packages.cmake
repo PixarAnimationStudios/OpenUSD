@@ -325,12 +325,7 @@ if(PXR_ENABLE_OSL_SUPPORT)
     add_definitions(-DPXR_OSL_SUPPORT_ENABLED)
 endif()
 
-if ( PXR_BUILD_PMC_PLUGIN)
-    # Enable CMP0144 to allow find_package(Pmc) to use both Pmc_ROOT and
-    # PMC_ROOT variables (CMake 3.27+)
-    if(POLICY CMP0144)
-        cmake_policy(SET CMP0144 NEW)
-    endif()
+if (PXR_BUILD_PMC_PLUGIN)
     find_package(Pmc REQUIRED)
 endif()
 
