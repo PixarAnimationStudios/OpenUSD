@@ -88,6 +88,36 @@ void Scaler::operator()(T* dst, const int* src, size_t width) const
 
 //-----------------------------------------------------------------------------
 
+// Normalize octahedral unit vectors.
+template<typename ScalerT>
+struct Normalizer {
+    ScalerT scaler;
+
+    Normalizer(ScalerT&& scaler) : scaler(std::move(scaler)) {}
+
+    template<typename T>
+    typename std::enable_if_t<!std::is_floating_point_v<T>>
+    operator()(T* dst, const int* src, size_t width) const {
+        scaler(dst, src, width);
+    }
+
+    template<typename T>
+    typename std::enable_if_t<std::is_floating_point_v<T>>
+    operator()(T* dst, const int* src, size_t width) const {
+        scaler(dst, src, width);
+
+        T l2 = 0;
+        for (int32_t k = 0; k < width; ++k)
+            l2 += dst[k] * dst[k];
+        l2 = std::sqrt(l2);
+
+        for (int32_t k = 0; k < width; ++k)
+            dst[k] /= l2;
+    }
+};
+
+//-----------------------------------------------------------------------------
+
 // Convert buf to an array of vectors, VtArray<GfVecXX>, using transformation
 // function fn for each vector.
 template<typename T, typename F, std::enable_if_t<GfIsGfVec<T>::value,int> =0>
@@ -152,9 +182,17 @@ try {
     auto dstType = usdAttr.GetTypeName().GetDefaultValue();
 
     VtValue arr = [&](){
-        if (amp.info.coordSys)
-            return TransformToVtArray(amp.buffers.values,
-                Scaler(*amp.info.coordSys), dstType);
+        if (amp.info.coordSys) {
+            switch (amp.info.coordSysProjection) {
+            case pmc::CoordSysProjection::IDENTITY:
+                return TransformToVtArray(amp.buffers.values,
+                    Scaler(*amp.info.coordSys), dstType);
+
+            case pmc::CoordSysProjection::OCTAHEDRAL:
+                return TransformToVtArray(amp.buffers.values,
+                    Normalizer(Scaler(*amp.info.coordSys)), dstType);
+            }
+        }
 
         return TransformToVtArray(amp.buffers.values, StaticCast{}, dstType);
     }();
