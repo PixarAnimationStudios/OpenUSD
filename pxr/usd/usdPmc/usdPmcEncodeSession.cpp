@@ -364,11 +364,11 @@ ToPmc(const VtValue& src)
 }
 
 /// Look-up an attribute's options-specified quantization parameters.
-// First looks up options["qbits"][name]; if not found, then with name = "*";
+// First looks up options["mesh-qbits"][name]; if not found, then with name = "*";
 // if still not found, uses default values.
 Qparams QparamsFromOptions(const VtDictionary& options, const TfToken& name)
 {
-    auto it = options.find("qbits");
+    auto it = options.find("mesh-qbits");
     if (it == options.end() || !it->second.IsHolding<VtDictionary>())
         return {};
 

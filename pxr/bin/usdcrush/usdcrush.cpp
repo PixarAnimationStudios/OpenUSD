@@ -41,18 +41,18 @@ static void Configure(CLI::App *app, Args &args) {
         ->required(true);
 
     app->add_option(
-        "--qbits", args.quantizers,
-        "Number of bits for named attribute quantizer");
+        "--mesh-qbits", args.quantizers,
+        "Number of bits for named mesh attribute quantizer");
 }
 
 // Encode USD stage using PMC compression
 static int UsdCrush(const Args &args) {
     VtDictionary quantizers;
-    for (const auto& [attrname, qbits] : args.quantizers)
-        quantizers[attrname] = VtValue(qbits);
+    for (const auto& [attrname, meshQbits] : args.quantizers)
+        quantizers[attrname] = VtValue(meshQbits);
 
     VtDictionary options;
-    options["qbits"] = std::move(quantizers);
+    options["mesh-qbits"] = std::move(quantizers);
 
     UsdPmcMeshEncoder pmcEncoder;
     int exitCode = 0;

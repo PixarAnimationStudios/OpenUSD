@@ -515,9 +515,10 @@ usdcrush
 ********
 
 :program:`usdcrush` is a command-line utility for reducing the size of USD
-files by applying AOMedia PMC compression to meshes. It accepts any
-USD-readable input format. When writing to a non-USDZ output file, compressed
-PMC data is placed in a ``pmcCodec/`` directory alongside the output file.
+files by applying AOMedia Polygonal Mesh Coding compression to meshes.
+It accepts any USD-readable input format. When writing to a non-USDZ output
+file, compressed PMC data is placed in a ``pmcCodec/`` directory alongside
+the output file.
 
 
 .. literalinclude:: toolset.help

@@ -2416,7 +2416,7 @@ subgroup.add_argument("--onetbb", dest="build_onetbb", action="store_true",
 subgroup.add_argument("--no-onetbb", dest="build_onetbb", action="store_false",
                       help="Build using TBB (default)")
 
-group = parser.add_argument_group(title="PMC Plugin Options")
+group = parser.add_argument_group(title="AOMedia Polygonal Mesh Coding Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--pmc", dest="build_pmc", action="store_true",
                       default=True,
@@ -2617,7 +2617,7 @@ class InstallContext:
         # Note: wasm build requires requires building oneTBB
         self.buildOneTBB = args.build_onetbb or self.targetWasm
 
-        # - PMC Plugin (AOMedia)
+        # - AOMedia Polygonal Mesh Coding
         self.buildPmc = args.build_pmc
         self.pmcSrcDir = (os.path.abspath(args.pmc_srcdir)
                              if args.pmc_srcdir else None)
@@ -2925,32 +2925,32 @@ if MacOS():
 """
 
 summaryMsg += """\
-    Variant                     {buildVariant}
-    Target                      {buildTarget}
-    UsdValidation               {buildUsdValidation}
-    Imaging                     {buildImaging}
-      Ptex support:             {enablePtex}
-      OpenVDB support:          {enableOpenVDB}
-      ImageIO support:          {buildImageIO}
-      OpenImageIO support:      {buildOIIO} 
-      OpenColorIO support:      {buildOCIO} 
-      Embree support:           {buildEmbree}
-      PRMan support:            {buildPrman}
-      Vulkan support:           {enableVulkan}
-    UsdImaging                  {buildUsdImaging}
-      usdview:                  {buildUsdview}
-    MaterialX support           {buildMaterialX}
-    Python support              {buildPython}
-      Python Debug:             {debugPython}
-      Python docs:              {buildPythonDocs}
-    Documentation               {buildHtmlDocs}
-    Tests                       {buildTests}
-    Examples                    {buildExamples}
-    Tutorials                   {buildTutorials}
-    Tools                       {buildTools}
-    Alembic Plugin              {buildAlembic}
-    Draco Plugin                {buildDraco}
-    PMC Plugin                  {buildPmc}
+    Variant                          {buildVariant}
+    Target                           {buildTarget}
+    UsdValidation                    {buildUsdValidation}
+    Imaging                          {buildImaging}
+      Ptex support:                  {enablePtex}
+      OpenVDB support:               {enableOpenVDB}
+      ImageIO support:               {buildImageIO}
+      OpenImageIO support:           {buildOIIO}
+      OpenColorIO support:           {buildOCIO}
+      Embree support:                {buildEmbree}
+      PRMan support:                 {buildPrman}
+      Vulkan support:                {enableVulkan}
+    UsdImaging                       {buildUsdImaging}
+      usdview:                       {buildUsdview}
+    MaterialX support                {buildMaterialX}
+    Python support                   {buildPython}
+      Python Debug:                  {debugPython}
+      Python docs:                   {buildPythonDocs}
+    Documentation                    {buildHtmlDocs}
+    Tests                            {buildTests}
+    Examples                         {buildExamples}
+    Tutorials                        {buildTutorials}
+    Tools                            {buildTools}
+    Alembic Plugin                   {buildAlembic}
+    Draco Plugin                     {buildDraco}
+    AOMedia Polygonal Mesh Coding    {buildPmc}
 
   Dependencies                  {dependencies}"""
 

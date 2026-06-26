@@ -33,7 +33,8 @@ TF_DECLARE_WEAK_AND_REF_PTRS(UsdPmcFileFormat);
 ///
 /// This file format plugin provides the ability to read PMC compressed
 /// mesh files and decompress them into USD geometry. PMC files contain
-/// compressed mesh data using the AOMedia PMC compression algorithm.
+/// compressed mesh data using the AOMedia Polygonal Mesh Coding compression
+/// algorithm.
 ///
 /// The plugin supports reading PMC files and converting them to USD
 /// geometry, but does not support writing USD data back to PMC format.

@@ -27,10 +27,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Decode PMC compressed mesh data into UsdGeomMesh.
 ///
-/// This class provides functionality to decode AOMedia PMC compressed
-/// mesh data and convert it into USD geometry. It handles the conversion
-/// of compressed geometry, attributes, and metadata from the PMC format
-/// to USD's native representation.
+/// This class provides functionality to decode AOMedia Polygonal Mesh Coding
+/// compressed mesh data and convert it into USD geometry. It handles the
+/// conversion of compressed geometry, attributes, and metadata from the
+/// PMC format to USD's native representation.
 class UsdPmcMeshDecoder {
 public:
     USDPMC_API UsdPmcMeshDecoder();
