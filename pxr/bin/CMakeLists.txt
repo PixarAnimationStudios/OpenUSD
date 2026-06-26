@@ -7,7 +7,7 @@ foreach(d ${DIRS})
     add_subdirectory(${d})
 endforeach()
 
-if (PXR_BUILD_PMC_PLUGIN)
+if (PXR_BUILD_USDPMC)
     add_subdirectory(usdcrush)
 endif()
 

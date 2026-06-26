@@ -1972,9 +1972,9 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
 
         if context.buildPmc:
-            extraArgs.append('-DPXR_BUILD_PMC_PLUGIN=ON')
+            extraArgs.append('-DPXR_BUILD_USDPMC=ON')
         else:
-            extraArgs.append('-DPXR_BUILD_PMC_PLUGIN=OFF')
+            extraArgs.append('-DPXR_BUILD_USDPMC=OFF')
 
         if Windows() and not context.targetWasm:
             # Increase the precompiled header buffer limit.
@@ -2420,9 +2420,9 @@ group = parser.add_argument_group(title="PMC Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--pmc", dest="build_pmc", action="store_true",
                       default=True,
-                      help="Build PMC plugin for USD")
+                      help="Build PMC library for USD (default)")
 subgroup.add_argument("--no-pmc", dest="build_pmc", action="store_false",
-                      help="Do not build PMC plugin for USD (default)")
+                      help="Do not build PMC library for USD")
 group.add_argument("--pmc-srcdir", type=str, help="Path to PMC source")
 
 args = parser.parse_args()

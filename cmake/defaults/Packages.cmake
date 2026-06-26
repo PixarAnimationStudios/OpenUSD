@@ -325,7 +325,7 @@ if(PXR_ENABLE_OSL_SUPPORT)
     add_definitions(-DPXR_OSL_SUPPORT_ENABLED)
 endif()
 
-if (PXR_BUILD_PMC_PLUGIN)
+if (PXR_BUILD_USDPMC)
     find_package(Pmc REQUIRED)
 endif()
 
