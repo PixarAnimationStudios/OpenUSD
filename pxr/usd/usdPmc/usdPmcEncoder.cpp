@@ -104,6 +104,17 @@ UsdPmcMeshEncoder::CanEncode(const UsdGeomMesh& mesh) {
         return false;
     }
 
+    // Validate that the topology is internally consistent (vertex counts sum
+    // to the index count, and every index references an existing point) so the
+    // encoder is never handed malformed topology.
+    std::string reason;
+    if (!UsdGeomMesh::ValidateTopology(faceVertexIndices, faceVertexCounts,
+                                       points.size(), &reason)) {
+        TF_WARN("Cannot encode mesh <%s>: invalid topology: %s",
+                mesh.GetPrim().GetPath().GetText(), reason.c_str());
+        return false;
+    }
+
     return true;
 }
 

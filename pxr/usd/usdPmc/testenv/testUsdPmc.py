@@ -335,5 +335,34 @@ class TestUsdPmc(unittest.TestCase):
                 f"output")
 
 
+    def test_InvalidTopologySkipped(self):
+        """
+        A mesh whose topology fails UsdGeomMesh.ValidateTopology (e.g. a face
+        vertex index outside the point range) must be skipped by CanEncode
+        rather than handed to the encoder.
+        """
+        stage_path = tempfile.NamedTemporaryFile(
+            suffix='.usdc', delete=False).name
+        out_dir = tempfile.mkdtemp()
+        out_usdc = os.path.join(out_dir, 'out.usdc')
+
+        stage = Usd.Stage.CreateNew(stage_path)
+        mesh = UsdGeom.Mesh.Define(stage, '/Bad')
+        mesh.CreatePointsAttr().Set(Vt.Vec3fArray([
+            Gf.Vec3f(0, 0, 0), Gf.Vec3f(1, 0, 0), Gf.Vec3f(0, 1, 0)]))
+        mesh.CreateFaceVertexCountsAttr().Set(Vt.IntArray([3]))
+        # Index 9 is out of range for a 3-point mesh.
+        mesh.CreateFaceVertexIndicesAttr().Set(Vt.IntArray([0, 1, 9]))
+        stage.Save()
+
+        encoder = UsdPmc.UsdPmcMeshEncoder()
+        result = encoder.EncodeStage(stage_path, out_usdc)
+        self.assertTrue(
+            result, "EncodeStage should succeed even when a mesh is skipped")
+        self.assertFalse(
+            os.path.exists(os.path.join(out_dir, 'pmcCodec', '0.pmc')),
+            "A mesh with invalid topology should not produce a PMC file")
+
+
 if __name__ == '__main__':
     unittest.main()
