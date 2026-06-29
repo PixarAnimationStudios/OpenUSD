@@ -366,14 +366,28 @@ ToPmc(const VtValue& src)
     throw std::runtime_error("missing buffer type converter");
 }
 
+Qparams QparamsDefault(const TfToken& pvRole)
+{
+    Qparams qp = {14, 14};
+    if (pvRole == pxr::SdfValueRoleNames->Color) {
+        qp.fracbits = 8;
+    }
+    if (pvRole == pxr::SdfValueRoleNames->Normal) {
+        qp.fracbits = 10;
+    }
+    if (pvRole == pxr::SdfValueRoleNames->TextureCoordinate) {
+        qp.fracbits = 12;
+    }
+}
+
 /// Look-up an attribute's options-specified quantization parameters.
 // First looks up options["mesh-qbits"][name]; if not found, then with name = "*";
 // if still not found, uses default values.
-Qparams QparamsFromOptions(const VtDictionary& options, const TfToken& name)
+Qparams QparamsFromOptions(const VtDictionary& options, const TfToken& name, const TfToken& pvRole)
 {
     auto it = options.find("mesh-qbits");
     if (it == options.end() || !it->second.IsHolding<VtDictionary>())
-        return {};
+        return QparamsDefault(pvRole);
 
     const auto vtv =
         [dict = it->second.UncheckedGet<VtDictionary>(), name]() -> VtValue {
@@ -387,7 +401,7 @@ Qparams QparamsFromOptions(const VtDictionary& options, const TfToken& name)
         if (int nbits = vtv.Get<int>(); vtv.IsHolding<int>())
             return Qparams{nbits, nbits};
 
-    return {};
+    return QparamsDefault(pvRole);
 }
 
 //=============================================================================
@@ -682,7 +696,7 @@ PmcEncodeSession::_setupGeom()
 
     // Calculate quantization parameters for vertex positions
     auto& usdname = UsdGeomTokens->points;
-    _gmp.info << MakeCoordSys(_gmp, QparamsFromOptions(_options, usdname));
+    _gmp.info << MakeCoordSys(_gmp, QparamsFromOptions(_options, usdname, pxr::SdfValueRoleNames->Point));
 
     // Track which attributes have been processed
     _processedAttributes.insert(_ugm.GetFaceVertexCountsAttr().GetName());
@@ -745,7 +759,7 @@ PmcEncodeSession::_setupPrimvar(const UsdGeomPrimvar& pv)
     }
 
     auto pvName = pv.GetPrimvarName();
-
+    const auto pvRole = pv.GetTypeName().GetRole();
     const auto vals = GetAs<VtValue>(pv);
     const auto idxs = GetAs<VtArray<int>>(pv.GetIndicesAttr());
     if (!vals.IsArrayValued() || vals.IsHolding<VtArray<std::string>>() || vals.IsHolding<VtArray<TfToken>>()) {
@@ -754,7 +768,7 @@ PmcEncodeSession::_setupPrimvar(const UsdGeomPrimvar& pv)
 
     auto& amp = _setupAttr(vals, idxs);
     amp.info.scope = GetScopeFromUsd(pv.GetInterpolation());
-    amp.info.type = GuessAttributeType(pv.GetTypeName().GetRole(), pvName);
+    amp.info.type = GuessAttributeType(pvRole, pvName);
 
     // flat arrays may have elementSize set manually, eg: jointIndices
     // todo: check these are treated as values ...
@@ -766,7 +780,7 @@ PmcEncodeSession::_setupPrimvar(const UsdGeomPrimvar& pv)
         amp.buffers.values.stride *= width;
     }
 
-    amp.info << MakeCoordSys(amp, QparamsFromOptions(_options, pvName));
+    amp.info << MakeCoordSys(amp, QparamsFromOptions(_options, pvName, pvRole));
 
     // metadata
     amp.info.name = pv.GetName();
@@ -857,7 +871,7 @@ PmcEncodeSession::_setupCreases()
     ampVals.info.indicesInterpretation = IndicesInterpretation::VALUE_INDEXING;
     ampVals.info.sparse = true;
     ampVals.info.jsonCustomAui = JsonAuiForAttr(attrVals);
-    ampVals.info << MakeCoordSys(ampVals, QparamsFromOptions(_options, usdname));
+    ampVals.info << MakeCoordSys(ampVals, QparamsFromOptions(_options, usdname, pxr::SdfValueRoleNames->Vector));
 
     _processedAttributes.insert(attrIdxs.GetName());
     _processedAttributes.insert(attrLens.GetName());
@@ -895,7 +909,7 @@ PmcEncodeSession::_setupCorners()
     ampVals.info.indicesInterpretation = IndicesInterpretation::VALUE_INDEXING;
     ampVals.info.sparse = true;
     ampVals.info.jsonCustomAui = JsonAuiForAttr(attrVals);
-    ampVals.info << MakeCoordSys(ampVals, QparamsFromOptions(_options, usdname));
+    ampVals.info << MakeCoordSys(ampVals, QparamsFromOptions(_options, usdname, pxr::SdfValueRoleNames->Vector));
 
     _processedAttributes.insert(attrIdxs.GetName());
     _processedAttributes.insert(attrVals.GetName());
@@ -919,7 +933,7 @@ PmcEncodeSession::_setupAttrs()
         amp.info.scope = GetScopeFromUsd(_ugm.GetNormalsInterpolation());
         amp.info.jsonCustomAui = JsonAuiForAttr(attr);
         amp.info.name = attr.GetName();
-        amp.info << MakeCoordSys(amp, QparamsFromOptions(_options, usdname));
+        amp.info << MakeCoordSys(amp, QparamsFromOptions(_options, usdname, pxr::SdfValueRoleNames->Normal));
         _processedAttributes.insert(attr.GetName());
     }
 
@@ -943,7 +957,7 @@ PmcEncodeSession::_setupAttrs()
         amp.info.scope = pmc::AttributeScope::VERTEX;
         amp.info.jsonCustomAui = JsonAuiForAttr(attr);
         amp.info.name = attr.GetName();
-        amp.info << MakeCoordSys(amp, QparamsFromOptions(_options, usdname));
+        amp.info << MakeCoordSys(amp, QparamsFromOptions(_options, usdname, pxr::SdfValueRoleNames->Vector));
         _processedAttributes.insert(attr.GetName());
     }
 
@@ -955,7 +969,7 @@ PmcEncodeSession::_setupAttrs()
         amp.info.scope = pmc::AttributeScope::VERTEX;
         amp.info.jsonCustomAui = JsonAuiForAttr(attr);
         amp.info.name = attr.GetName();
-        amp.info << MakeCoordSys(amp, QparamsFromOptions(_options, usdname));
+        amp.info << MakeCoordSys(amp, QparamsFromOptions(_options, usdname, pxr::SdfValueRoleNames->Vector));
         _processedAttributes.insert(attr.GetName());
     }
 
