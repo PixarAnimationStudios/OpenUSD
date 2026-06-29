@@ -101,6 +101,15 @@ if(@Imath_FOUND@)
     find_dependency(Imath)
 endif()
 
+# OpenUSD's cmake setup has no notion of `PRIVATE` libraries. When plugins are
+# folded into a monolithic or static build, the transitive targets come along as well
+# and must be located via `CONFIG`.
+if (@PXR_BUILD_MONOLITHIC@ OR NOT @BUILD_SHARED_LIBS@) # if (@PXR_BUILD_MONOLITHIC@ OR NOT @BUILD_SHARED_LIBS@) 
+    if (@PXR_BUILD_ALEMBIC_PLUGIN@) # if (@PXR_BUILD_ALEMBIC_PLUGIN@)
+        find_dependency(Alembic @Alembic_VERSION@ CONFIG)
+    endif()
+endif()
+
 # If this build is using a custom work implementation, find the package
 # providing that implementation.
 if(NOT "@PXR_WORK_IMPL_PACKAGE@" STREQUAL "")
