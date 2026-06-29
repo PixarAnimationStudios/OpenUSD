@@ -1,18 +1,8 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdAbc)
 
-if(NOT ALEMBIC_FOUND)
-    message(WARNING "Not building ${PXR_PACKAGE} because of missing dependency: Alembic")
-    return()
-endif()
-
-set(optionalLibs "")
-set(optionalIncludeDirs "")
-
 if (PXR_ENABLE_HDF5_SUPPORT)
    add_definitions(-DPXR_HDF5_SUPPORT_ENABLED)
-   list(APPEND optionalLibs ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
-   list(APPEND optionalIncludeDirs ${HDF5_INCLUDE_DIRS})
 endif()
 
 pxr_plugin(usdAbc
@@ -22,13 +12,7 @@ pxr_plugin(usdAbc
         sdf
         usd
         usdGeom
-        ${ALEMBIC_LIBRARIES}
-        Imath::Imath
-        ${optionalLibs}
-
-    INCLUDE_DIRS
-        ${ALEMBIC_INCLUDE_DIR}
-        ${optionalIncludeDirs}
+        Alembic::Alembic
 
     PRIVATE_CLASSES
         alembicData
