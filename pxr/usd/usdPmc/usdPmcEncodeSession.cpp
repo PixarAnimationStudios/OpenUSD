@@ -385,7 +385,7 @@ Qparams QparamsFromOptions(const VtDictionary& options, const TfToken& name)
 
     if (!vtv.IsEmpty())
         if (int nbits = vtv.Get<int>(); vtv.IsHolding<int>())
-            return { .fracbits = nbits, .maxsigbits = nbits };
+            return Qparams{nbits, nbits};
 
     return {};
 }
