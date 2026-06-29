@@ -153,8 +153,8 @@ GetMinMax(const pmc::ArrayBuffer& vals)
 {
     auto fn = [&vals](const auto* ptr) {
         std::vector<MinMax> minmax(vals.componentsPerVector);
-        for (int i = 0; i < vals.vectorCount; i++)
-            for (int k = 0; k < vals.componentsPerVector; k++, ptr++) {
+        for (size_t i = 0; i < vals.vectorCount; i++)
+            for (size_t k = 0; k < vals.componentsPerVector; k++, ptr++) {
                 minmax[k].min = std::min(minmax[k].min, double(*ptr));
                 minmax[k].max = std::max(minmax[k].max, double(*ptr));
             }
@@ -164,8 +164,11 @@ GetMinMax(const pmc::ArrayBuffer& vals)
     switch (vals.dataType) {
         case pmc::DataType::Float32: return fn((const float*)vals.data);
         case pmc::DataType::Float64: return fn((const double*)vals.data);
-        default: return {};
+        case pmc::DataType::Int32:   return fn((const int32_t*)vals.data);
+        case pmc::DataType::UInt32:  return fn((const uint32_t*)vals.data);
     }
+
+    throw std::runtime_error("cannot compute min/max for unknown data type");
 }
 
 /// Derive coding coordinate system using number of fractional bits to scale
@@ -433,7 +436,8 @@ GuessAttributeType(const TfToken pvRole, const TfToken pvName)
     // If pvName ends with "_uv"
     constexpr std::string_view suff {"_uv"};
     std::string_view ps = pvName.GetString();
-    if (ps.compare(ps.length() - suff.length(), suff.length(), suff) == 0)
+    if (ps.length() >= suff.length() &&
+        ps.compare(ps.length() - suff.length(), suff.length(), suff) == 0)
         return AT::TEX_COORD;
 
     return AT::USER_DEFINED_START;

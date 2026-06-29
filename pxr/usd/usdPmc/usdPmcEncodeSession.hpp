@@ -92,10 +92,6 @@ protected:
     /// The geometry subsets that have been captured for encoding.
     std::set<std::string> _processedSubsets;
 
-    // Storage for converted buffers. Access them via the meshpart buffer.
-    // todo: let pmc adopt these.
-    std::vector<std::vector<int>> _converted;
-
     // Smart pointers to keep mesh data alive
     std::vector<VtValue> _keepAlive;
 };

@@ -77,10 +77,6 @@ private:
     void _InferTypeNameFromName(SdfValueTypeName* attrTypeName,
                                 const std::string_view attrName);
 
-    /// Extract custom attribute flag from user data
-    void _ExtractCustomFromUserData(bool* attrCustom,
-                                    const VtDictionary& userData);
-
     /// Parse JSON user data into VtDictionary
     bool _GetUserDataInfo(VtDictionary* userData,
                           const std::string& jsonUserData);

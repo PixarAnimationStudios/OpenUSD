@@ -107,11 +107,11 @@ struct Normalizer {
         scaler(dst, src, width);
 
         T l2 = 0;
-        for (int32_t k = 0; k < width; ++k)
+        for (size_t k = 0; k < width; ++k)
             l2 += dst[k] * dst[k];
         l2 = std::sqrt(l2);
 
-        for (int32_t k = 0; k < width; ++k)
+        for (size_t k = 0; k < width; ++k)
             dst[k] /= l2;
     }
 };
@@ -126,7 +126,7 @@ TransformToVtArray(const pmc::ArrayBuffer& buf, F&& fn)
 {
     VtArray<T> arr;
     arr.resize(buf.vectorCount);
-    for (int i = 0; i < buf.vectorCount; i++)
+    for (size_t i = 0; i < buf.vectorCount; i++)
         fn(&arr[i][0], buf.vectorAtIndex<int>(i), buf.componentsPerVector);
     return VtValue(arr);
 }
@@ -456,9 +456,17 @@ UsdPmcMeshDecoder::_DecodeBitstream(const char* buffer, size_t length,
                 size_t currentLengthPosition = 0;
                 for (const auto& ssn: subsetNames) {
                     VtIntArray subsetIndices;
+                    if (currentLengthPosition >= attrValues.size()) {
+                        TF_RUNTIME_ERROR("Subset length data out of range");
+                        return pmc::Error::STATE_ERROR;
+                    }
                     size_t currentLength = attrValues[currentLengthPosition++];
+                    if (indexPosition + currentLength > attrIndices.size()) {
+                        TF_RUNTIME_ERROR("Subset index data out of range");
+                        return pmc::Error::STATE_ERROR;
+                    }
                     subsetIndices.resize(currentLength);
-                    for (auto pos = 0; pos < currentLength; pos++) {
+                    for (size_t pos = 0; pos < currentLength; pos++) {
                         subsetIndices[pos] = attrIndices[indexPosition++];
                     }
                     UsdGeomSubset::CreateGeomSubset(*decodedMesh, TfToken(ssn),

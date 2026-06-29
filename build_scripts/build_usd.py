@@ -1775,9 +1775,7 @@ EMBREE = Dependency("Embree", InstallEmbree,
 PMC_URL = "https://gitlab.com/AOMediaVVM/reference-software/aomedia-pmc/-/archive/v18.0/aomedia-pmc-v18.0.zip"
 
 def InstallPmc(context, force, buildArgs):
-    # todo: support using prebuilt version: do not downloaded/build src
-    pmcSrcDir = context.pmcSrcDir if context.pmcSrcDir else DownloadURL(PMC_URL, context, force)
-    with CurrentWorkingDirectory(pmcSrcDir):
+    with CurrentWorkingDirectory(DownloadURL(PMC_URL, context, force)):
         cmakeOptions = [
             '-DPMC_LIB_ONLY=TRUE',
             '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
@@ -2423,7 +2421,6 @@ subgroup.add_argument("--pmc", dest="build_pmc", action="store_true",
                       help="Build PMC library for USD (default)")
 subgroup.add_argument("--no-pmc", dest="build_pmc", action="store_false",
                       help="Do not build PMC library for USD")
-group.add_argument("--pmc-srcdir", type=str, help="Path to PMC source")
 
 args = parser.parse_args()
 
@@ -2619,8 +2616,6 @@ class InstallContext:
 
         # - AOMedia Polygonal Mesh Coding
         self.buildPmc = args.build_pmc
-        self.pmcSrcDir = (os.path.abspath(args.pmc_srcdir)
-                             if args.pmc_srcdir else None)
 
     def GetBuildArguments(self, dep):
         return self.buildArgs.get(dep.name.lower(), [])

@@ -81,6 +81,29 @@ UsdPmcMeshEncoder::~UsdPmcMeshEncoder() {}
 
 bool
 UsdPmcMeshEncoder::CanEncode(const UsdGeomMesh& mesh) {
+    if (!mesh) {
+        return false;
+    }
+
+    // A mesh can only be encoded if it carries the geometry the encoder
+    // requires: points and face topology.
+    VtVec3fArray points;
+    if (!mesh.GetPointsAttr().Get(&points) || points.empty()) {
+        return false;
+    }
+
+    VtIntArray faceVertexCounts;
+    if (!mesh.GetFaceVertexCountsAttr().Get(&faceVertexCounts) ||
+        faceVertexCounts.empty()) {
+        return false;
+    }
+
+    VtIntArray faceVertexIndices;
+    if (!mesh.GetFaceVertexIndicesAttr().Get(&faceVertexIndices) ||
+        faceVertexIndices.empty()) {
+        return false;
+    }
+
     return true;
 }
 
@@ -190,7 +213,6 @@ UsdPmcMeshEncoder::_PackUSDZ() {
     }
 
     // Add all referenced files to the new USDZ archive
-    std::string target = "";
     for (std::string ref : _references) {
         std::filesystem::path src = _tempDir / std::filesystem::path(ref);
         if (!std::filesystem::exists(src)) {
@@ -198,7 +220,12 @@ UsdPmcMeshEncoder::_PackUSDZ() {
                              src.string());
             continue;
         }
-        target = usdZipWriter.AddFile(src.string(), ref);
+        std::string target = usdZipWriter.AddFile(src.string(), ref);
+        if (target.empty()) {
+            TF_RUNTIME_ERROR("Error: Failed to add file to output usdz: " +
+                             src.string());
+            return false;
+        }
     }
 
     // Save the final USDZ file
@@ -476,6 +503,49 @@ UsdPmcMeshEncoder::_WriteNonUsdzOutput() {
                 TF_RUNTIME_ERROR(
                     "Failed to copy PMC file: " +
                     entry.path().string() + " -> " + dest.string() +
+                    ": " + ec.message());
+                return false;
+            }
+        }
+    }
+
+    // For USDZ input, the exported root layer still references the non-USD
+    // resources (textures, audio, etc.) that were unpacked into the temp dir.
+    // Copy them alongside the output, preserving their relative paths, so the
+    // references continue to resolve after the temp dir is removed. USD layers
+    // were flattened into the exported root and are intentionally skipped.
+    std::string inExt = _inUSDZFile.extension().string();
+    std::transform(inExt.begin(), inExt.end(), inExt.begin(), ::tolower);
+    if (inExt == ".usdz") {
+        for (const std::string& ref : _references) {
+            std::filesystem::path refPath(ref);
+            std::string ext = refPath.extension().string();
+            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+            // Skip the flattened entry layer, USD layers, and PMC files
+            // (PMC files are copied above via the pmcCodec directory).
+            if (ref == _entryFileName ||
+                ext == ".usd" || ext == ".usda" || ext == ".usdc" ||
+                ext == ".pmc") {
+                continue;
+            }
+
+            std::filesystem::path src = _tempDir / refPath;
+            if (!std::filesystem::exists(src)) {
+                continue;
+            }
+            std::filesystem::path dest = outDir / refPath;
+            std::filesystem::path destParent = dest.parent_path();
+            if (!destParent.empty() && !_CreateDirectory(destParent)) {
+                return false;
+            }
+            std::error_code ec;
+            std::filesystem::copy_file(
+                src, dest,
+                std::filesystem::copy_options::overwrite_existing, ec);
+            if (ec) {
+                TF_RUNTIME_ERROR(
+                    "Failed to copy referenced resource: " +
+                    src.string() + " -> " + dest.string() +
                     ": " + ec.message());
                 return false;
             }

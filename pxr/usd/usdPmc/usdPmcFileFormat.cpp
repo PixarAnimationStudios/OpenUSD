@@ -50,8 +50,25 @@ UsdPmcFileFormat::~UsdPmcFileFormat() { }
 
 bool
 UsdPmcFileFormat::CanRead(const std::string& filePath) const {
-    // TODO: basic validation of bitstream
-    return true;
+    try {
+        std::shared_ptr<ArAsset> bitstreamAsset =
+            ArGetResolver().OpenAsset(ArResolvedPath(filePath));
+        if (!bitstreamAsset) {
+            return false;
+        }
+
+        const size_t length = bitstreamAsset->GetSize();
+        if (length == 0) {
+            return false;
+        }
+
+        // Inspect the bitstream to confirm it is a valid PMC stream rather
+        // than claiming any file with a .pmc extension.
+        UsdPmcMeshDecoder decoder;
+        return decoder.CanDecode(bitstreamAsset->GetBuffer().get(), length);
+    } catch (...) {
+        return false;
+    }
 }
 
 bool

@@ -32,6 +32,6 @@ void wrapUsdPmcMeshEncoder()
 {
     class_<UsdPmcMeshEncoder>("UsdPmcMeshEncoder", init<>())
         .def("EncodeStage", &_EncodeStage,
-             (arg("inFile"), arg("outFile"), arg("options")))
+             (arg("inFile"), arg("outFile"), arg("options") = VtDictionary()))
         ;
 }
