@@ -1019,6 +1019,11 @@ PmcEncodeSession::_encode()
     constexpr Expect throwOnError {pmc::Error::OK};
     throwOnError = _enc.encode(_gmp, dstBuf, geomOpts);
 
+    static bool useOctahedral = [](){
+        const auto ev = getenv("USD_PMC_OCTAHEDRAL_NORMALS");
+        return (ev && ev[0] == '1');
+    }();
+
     // Encode all attribute meshparts
     for (auto& amp : _amps) {
         attrOpts.indicesCodingStrategy = GetIndicesStrategyForAttr(amp.info);
@@ -1027,9 +1032,10 @@ PmcEncodeSession::_encode()
 
         if (amp.info.coordSys) {
             auto& cs = *amp.info.coordSys;
-            if (amp.info.type == pmc::AttributeType::NORMAL) {
+            if (amp.info.type == pmc::AttributeType::NORMAL && useOctahedral) {
                 QuantizerOctahedral q(float(cs.scale));
                 amp.buffers.values = ConvertBuffer(amp.buffers.values, tmp, q);
+                amp.info.coordSysProjection = pmc::CoordSysProjection::OCTAHEDRAL;
             } else {
                 Quantizer q(float(cs.scale), cs.origin.data(), cs.origin.size());
                 amp.buffers.values = ConvertBuffer(amp.buffers.values, tmp, q);
