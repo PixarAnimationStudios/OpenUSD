@@ -515,13 +515,21 @@ GetPredictionStrategyForAttr(const pmc::AttributeMeshpartInfo& ampi)
     using AS = pmc::AttributeScope;
     using AT = pmc::AttributeType;
     using PS = pmc::PredictionStrategy;
+
+    static auto normalsStrategy = [](){
+        const auto ev = getenv("USD_PMC_OCTAHEDRAL_NORMALS");
+        if (ev && ev[0] == '1')
+            return PS::UNITARY_OCTAHEDRAL_NORMAL_VECTOR;
+        return PS::LINEAR;
+    }();
+
     switch (ampi.type) {
         default:                 return PS::LINEAR;
         case AT::TEX_COORD:      return PS::TEX_COORD_GEOMETRY_GUIDED;
         case AT::NORMAL:
             switch (ampi.scope) {
-                case AS::CORNER: return PS::UNITARY_OCTAHEDRAL_NORMAL_VECTOR;
-                case AS::VERTEX: return PS::UNITARY_OCTAHEDRAL_NORMAL_VECTOR;
+                case AS::CORNER: return normalsStrategy;
+                case AS::VERTEX: return normalsStrategy;
                 default:         return PS::LINEAR;
             }
     }
@@ -1033,20 +1041,16 @@ PmcEncodeSession::_encode()
     constexpr Expect throwOnError {pmc::Error::OK};
     throwOnError = _enc.encode(_gmp, dstBuf, geomOpts);
 
-    static bool useOctahedral = [](){
-        const auto ev = getenv("USD_PMC_OCTAHEDRAL_NORMALS");
-        return (ev && ev[0] == '1');
-    }();
-
     // Encode all attribute meshparts
     for (auto& amp : _amps) {
+        using PS = pmc::PredictionStrategy;
         attrOpts.indicesCodingStrategy = GetIndicesStrategyForAttr(amp.info);
         attrOpts.traversalStrategy = GetTraversalStrategyForAttr(amp.info);
         attrOpts.predictionStrategy = GetPredictionStrategyForAttr(amp.info);
 
         if (amp.info.coordSys) {
             auto& cs = *amp.info.coordSys;
-            if (amp.info.type == pmc::AttributeType::NORMAL && useOctahedral) {
+            if (attrOpts.predictionStrategy == PS::UNITARY_OCTAHEDRAL_NORMAL_VECTOR) {
                 QuantizerOctahedral q(float(cs.scale));
                 amp.buffers.values = ConvertBuffer(amp.buffers.values, tmp, q);
                 amp.info.coordSysProjection = pmc::CoordSysProjection::OCTAHEDRAL;
