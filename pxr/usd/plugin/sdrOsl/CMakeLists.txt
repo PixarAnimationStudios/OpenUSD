@@ -5,14 +5,6 @@ if(NOT PXR_ENABLE_OSL_SUPPORT)
     return()
 endif()
 
-# Use the import targets set by Imath's package config
-if (Imath_FOUND)
-    set(__OSL_IMATH_LIBS "Imath::Imath")
-else()
-    set(__OSL_IMATH_INCLUDE ${OPENEXR_INCLUDE_DIRS})
-    set(__OSL_IMATH_LIBS ${OPENEXR_LIBRARIES})
-endif()
-
 pxr_plugin(sdrOsl
     LIBRARIES
         gf
@@ -22,12 +14,11 @@ pxr_plugin(sdrOsl
         sdr
         ${OSL_QUERY_LIBRARY}
         ${OIIO_LIBRARIES}
-        ${__OSL_IMATH_LIBS}
+        Imath::Imath
 
     INCLUDE_DIRS
         ${OSL_INCLUDE_DIR}
         ${OIIO_INCLUDE_DIRS}
-        ${__OSL_IMATH_INCLUDE}
 
     PUBLIC_CLASSES
         oslParser
