@@ -909,7 +909,7 @@ PmcEncodeSession::_setupCorners()
     ampIdxs.info.sparse = true;
     ampIdxs.info.name = UsdGeomTokens->cornerIndices;
 
-    auto& usdname = UsdGeomTokens->creaseSharpnesses;
+    auto& usdname = UsdGeomTokens->cornerSharpnesses;
     auto& ampVals = _setupAttr(vals, {});
     ampVals.info.type = pmc::AttributeType::SHARPNESS;
     ampVals.info.scope = pmc::AttributeScope::DERIVED;
