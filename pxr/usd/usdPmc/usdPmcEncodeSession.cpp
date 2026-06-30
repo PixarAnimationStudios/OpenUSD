@@ -368,16 +368,16 @@ ToPmc(const VtValue& src)
 
 Qparams QparamsDefault(const TfToken& pvRole)
 {
-    Qparams qp = {14, 14};
     if (pvRole == pxr::SdfValueRoleNames->Color) {
-        qp.fracbits = 8;
+        return Qparams{8,8};
     }
     if (pvRole == pxr::SdfValueRoleNames->Normal) {
-        qp.fracbits = 10;
+        return Qparams{10,10};
     }
     if (pvRole == pxr::SdfValueRoleNames->TextureCoordinate) {
-        qp.fracbits = 12;
+        return Qparams{12,12};
     }
+    return Qparams{14,14};
 }
 
 /// Look-up an attribute's options-specified quantization parameters.
