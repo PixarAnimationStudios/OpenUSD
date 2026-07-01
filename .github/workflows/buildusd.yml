@@ -304,6 +304,7 @@ jobs:
           path: USDinst
       - name: Test USD
         working-directory: ./USDgen/build/OpenUSD
+        shell: cmd
         run: |
           call set PATH=${{ github.workspace }}\USDinst\bin;${{ github.workspace }}\USDinst\lib;${{ github.workspace }}\USDinst\share\usd\examples\plugin;${{ github.workspace }}\USDinst\plugin\usd;%PATH%
           call set PYTHONPATH=${{ github.workspace }}\USDinst\lib\python;%PYTHONPATH%
