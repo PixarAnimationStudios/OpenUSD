@@ -274,12 +274,12 @@ SdfUsdaFileFormat::InitData(const FileFormatArguments& args) const
 }
 
 bool
-SdfUsdaFileFormat::CanRead(const string& filePath) const
+SdfUsdaFileFormat::CanRead(const string& resolvedPath) const
 {
     TRACE_FUNCTION();
 
     std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
-        ArResolvedPath(filePath));
+        ArResolvedPath(resolvedPath));
     return asset && _CanReadImpl(asset, GetFileCookie());
 }
 
