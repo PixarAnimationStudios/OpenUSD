@@ -204,13 +204,37 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
             }
         }
 
+        // See if anything depends on this prim directly.
+        if (_DependencyMap::const_iterator dIt
+            = _dependencies.find(entry.primPath);
+            dIt != _dependencies.end()) {
+            for (const SdfPath &dependentPath : dIt->second) {
+                // don't bother checking a procedural which already scheduled
+                if (proceduralsToCook.find(dependentPath) !=
+                       proceduralsToCook.end()) {
+                    continue;
+                }
+
+                _ProcEntryMap::const_iterator procIt =
+                    _procedurals.find(dependentPath);
+                if (procIt == _procedurals.end()) {
+                    continue;
+                }
+
+                proceduralsToCook.insert(dependentPath);
+            }
+        }
+
+        // To handle the case of things that depend on "child names", we look
+        // for the parent path in the deps table.
+        //
         // We've already skipped the case where entry.primPath is the absolute
         // root, so GetParentPath() makes sense here.
         const SdfPath entryPrimParentPath = entry.primPath.GetParentPath();
         // NOTE: potentially share code with primsremoved
-        _DependencyMap::const_iterator dIt =
-            _dependencies.find(entryPrimParentPath);
-        if (dIt != _dependencies.end()) {
+        if (_DependencyMap::const_iterator dIt
+            = _dependencies.find(entryPrimParentPath);
+            dIt != _dependencies.end()) {
             for (const SdfPath &dependentPath : dIt->second) {
                 // don't bother checking a procedural which already scheduled
                 if (proceduralsToCook.find(dependentPath) !=
@@ -373,7 +397,10 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsRemoved(
     // 1) if what's removed is a dependency, we need to dirty the dependents
     // 2) if what's removed in a procedural, we need to remove the cooked
     //    record of it as well as its dependency entry
-    TfDenseHashSet<SdfPath, TfHash> removedDependencies;
+    //
+    // Note, if prim /A depends on prim /B, and /B is removed, we should still
+    // keep the record of this dependency.  If /B is re-added in the future,
+    // we'll need to know to notify /A.
     TfDenseHashSet<SdfPath, TfHash> invalidatedProcedurals;
     TfDenseHashSet<SdfPath, TfHash> removedProcedurals;
 
@@ -388,8 +415,6 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsRemoved(
                     _DependencyMap::const_iterator dIt =
                         _dependencies.find(dependencyPath);
                     if (dIt != _dependencies.end()) {
-                        removedDependencies.insert(dependencyPath);
-
                         for (const SdfPath &dependentPath : dIt->second) {
                             // don't invalidate procedurals which know are 
                             // directly removed.
@@ -446,13 +471,6 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsRemoved(
                     invalidatedProcedurals.erase(procPath);
                 }
             }
-        }
-    }
-
-    if (!removedDependencies.empty()) {
-        _MapLock depsLock(_dependenciesMutex);
-        for (const SdfPath &dependencyPath : removedDependencies) {
-            _dependencies.erase(dependencyPath);
         }
     }
 

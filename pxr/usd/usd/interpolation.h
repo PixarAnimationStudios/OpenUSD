@@ -36,7 +36,7 @@ enum UsdInterpolationType
 /// \li <b>GfHalf</b>
 /// \li <b>float</b>
 /// \li <b>double</b>
-/// \li <b>SdfTimeCode</b>
+/// \li <b>GfTimeCode</b>
 /// \li <b>GfMatrix2d</b>
 /// \li <b>GfMatrix3d</b>
 /// \li <b>GfMatrix4d</b>
@@ -57,7 +57,7 @@ enum UsdInterpolationType
     (GfHalf) (VtArray<GfHalf>)                       \
     (float) (VtArray<float>)                         \
     (double) (VtArray<double>)                       \
-    (SdfTimeCode) (VtArray<SdfTimeCode>)             \
+    (GfTimeCode) (VtArray<GfTimeCode>)               \
     (GfMatrix2d) (VtArray<GfMatrix2d>)               \
     (GfMatrix3d) (VtArray<GfMatrix3d>)               \
     (GfMatrix4d) (VtArray<GfMatrix4d>)               \

@@ -1,0 +1,28 @@
+#usda 1.0
+
+over "Root"
+{
+    over "A" (
+        customData = {
+            pathExpression layer1PrimExpr = "/Root/A/B"
+        }
+    )
+    {
+        pathExpression fromLayer1:a = "/Root/A/B /Root/A/C" (
+            customData = {
+                pathExpression layer1PropExpr = "/Root/A/C"
+            }
+        )
+
+        def "B"
+        {
+            custom int attr
+            pathExpression fromLayer1:b = "/Root/A /Root/A/C /Root/A.attr /Root/A/C.attr"
+        }
+    }
+
+    def "OtherPrim"
+    {
+        pathExpression fromLayer1:other = "/Root/A //Geom*"
+    }
+}

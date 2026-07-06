@@ -10,25 +10,14 @@
 #define TF_MAX_ARITY 7
 #include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
-#if defined(ARCH_OS_DARWIN)
-#include <mach/mach_time.h>
-#endif
 #if defined(ARCH_OS_LINUX)
 #include <unistd.h>
-#include <x86intrin.h>
-#endif
-#if defined(ARCH_OS_WINDOWS)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-
-#include <Windows.h>
-#include <intrin.h>
 #endif
 #include <algorithm>
 #include <any>
 #include <array>
 #include <atomic>
+#include <chrono>
 #include <cinttypes>
 #include <cmath>
 #include <complex>
@@ -71,15 +60,19 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 #include <vector>
 #include <tbb/blocked_range.h>
 #include <tbb/cache_aligned_allocator.h>
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_queue.h>
+#include <tbb/concurrent_unordered_set.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_for_each.h>
+#include <tbb/parallel_reduce.h>
+#include <tbb/parallel_sort.h>
 #include <tbb/queuing_rw_mutex.h>
 #include <tbb/spin_mutex.h>
 #include <tbb/spin_rw_mutex.h>

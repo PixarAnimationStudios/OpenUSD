@@ -36,7 +36,7 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
+    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 3;
 
     for( auto const& rendererPluginName : HdPrman_GetPluginDisplayNames() ) {
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(

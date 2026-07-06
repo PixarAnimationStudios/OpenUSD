@@ -15,7 +15,6 @@ def test():
     parser.add_argument('localizationDir')
     parser.add_argument('-l', '--listContents', type=str, default='', 
                         dest='outfile')
-    parser.add_argument('--check', dest='check', action='store_true')
     parser.add_argument('--editLayersInPlace', dest='editLayersInPlace',
                         default=False, action='store_true')
     parser.add_argument('--expectedDirtyLayers', type=str, default='', 
@@ -53,30 +52,14 @@ def test():
     localizedAssetRoot = os.path.join(args.localizationDir, 
                                       os.path.basename(args.assetPath))
 
-    if args.check:
-        CheckLocalizedAsset(localizedAssetRoot)
+    # Validate that the localized asset can be opened on a stage
+    stage = Usd.Stage.Open(localizedAssetRoot)
+    assert stage
     
     if args.outfile:
         WriteFileList(args.localizationDir, args.outfile)
 
     sys.exit(0)
-
-# Validates that the localized asset can be opened on a stage
-def CheckLocalizedAsset(localizedAssetRoot):
-    stage = Usd.Stage.Open(localizedAssetRoot)
-    assert stage
-
-    rootLayerPath = stage.GetRootLayer().realPath
-    context = Ar.GetResolver().CreateDefaultContextForAsset(rootLayerPath)
-    with Ar.ResolverContextBinder(context):
-        checker = UsdUtils.ComplianceChecker(verbose=True)
-        checker.CheckCompliance(localizedAssetRoot)
-        failedChecks = checker.GetFailedChecks()
-        errors = checker.GetErrors()
-        for msg in failedChecks + errors:
-            print(msg, file=sys.stderr)
-        assert len(failedChecks) == 0
-        assert len(errors) == 0
 
 def WriteFileList(localizedAssetDir, listPath):
     rootFolderPathStr = localizedAssetDir + os.sep

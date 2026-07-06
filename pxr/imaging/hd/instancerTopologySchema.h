@@ -112,7 +112,7 @@ public:
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 
     HD_API
-    VtArray<int> ComputeInstanceIndicesForProto(SdfPath const &path);
+    VtArray<int> ComputeInstanceIndicesForProto(SdfPath const &path) const;
 
 // --(END CUSTOM CODE: Schema Methods)--
 

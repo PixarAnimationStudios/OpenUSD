@@ -1145,14 +1145,13 @@ void main(void)
 
 vec4 GetPatchCoord(int index)
 {
-    vec2 uv[4];
-    uv[0] = vec2(0, 0);
-    uv[1] = vec2(1, 0);
-    uv[2] = vec2(1, 1);
-    uv[3] = vec2(0, 1);
+    vec2 uv[2][3] = {
+        { vec2(0, 0), vec2(1, 0), vec2(1, 1) }, // triangle 0, 1, 2
+        { vec2(1, 1), vec2(0, 1), vec2(0, 0) }, // triangle 2, 3, 0
+    };
 
     ivec3 patchParam = GetPatchParam();
-    return InterpolatePatchCoord(uv[index], patchParam);
+    return InterpolatePatchCoord(uv[GetTriQuadID()][index], patchParam);
 }
 
 void emit(int index, vec4 Peye, vec3 Neye)
@@ -1506,6 +1505,17 @@ void main(void)
 
     vec4 patchCoord = GetPatchCoord();
     color = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord);
+    
+#if defined(HD_HAS_depthReadback) && defined(HD_EARLY_FRAGMENT_TESTS)
+    // This section needs to come after ShadingTerminal to avoid possible
+    // non-uniform paths when sampling textures required for shading
+    const float bufferVal = texelFetch(HdGetSampler_depthReadback(),
+                                       ivec2(gl_FragCoord.xy),
+                                       /* lod = */ 0).x;
+    if (gl_FragCoord.z >= bufferVal) {
+      discard;
+    }
+#endif
 
     color = ApplyEdgeColor(color, patchCoord);
 

@@ -209,6 +209,8 @@ void wrapSpline()
         .def("GetPreExtrapolation", &This::GetPreExtrapolation)
         .def("SetPostExtrapolation", &This::SetPostExtrapolation)
         .def("GetPostExtrapolation", &This::GetPostExtrapolation)
+        .def("IsPreExtrapolationValid", &This::IsPreExtrapolationValid)
+        .def("IsPostExtrapolationValid", &This::IsPostExtrapolationValid)
 
         .def("SetInnerLoopParams", &This::SetInnerLoopParams)
         .def("GetInnerLoopParams", &This::GetInnerLoopParams)
@@ -269,6 +271,14 @@ void wrapSpline()
         .def("IsSupportedValueType",
             &This::IsSupportedValueType)
         .staticmethod("IsSupportedValueType")
+
+        .def("GetTruncated",
+             &This::GetTruncated)
+        .def("GetTimeScaled",
+             &This::GetTimeScaled)
+        .def("Concatenate",
+             &This::Concatenate)
+        .staticmethod("Concatenate")
         ;
 
     _CanBreakdownResult::Wrap<_CanBreakdownResult>("_CanBreakdownResult",

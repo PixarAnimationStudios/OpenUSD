@@ -7,11 +7,11 @@
     <input name="surfaceshader" type="surfaceshader" nodename="Surface" />
   </surfacematerial>
   <nodegraph name="NodeGraphs">
-    <switch name="switch" type="float" nodedef="ND_switch_floatI">
+    <switch name="NodeGraphs_switch" type="float" nodedef="ND_switch_floatI">
       <input name="in1" type="float" value="0.2" />
       <input name="in2" type="float" value="0.4" />
       <input name="which" type="integer" value="0" />
     </switch>
-    <output name="base_out" type="float" nodename="switch" />
+    <output name="base_out" type="float" nodename="NodeGraphs_switch" />
   </nodegraph>
 </materialx>

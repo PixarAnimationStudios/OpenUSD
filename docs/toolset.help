@@ -11,15 +11,16 @@ as follows: - USD_EDITOR environment variable - EDITOR environment variable -
 emacs in PATH - vim in PATH - notepad in PATH
 
 positional arguments:
-  usdFileName          The usd file to edit.
+  usdFileName           The usd file to edit.
 
-options:
-  -h, --help           show this help message and exit
-  -n, --noeffect       Do not edit the file. Create the temporary file in a
-                       default location guided by the TMPDIR, TEMP, and TMP
-                       environment variables.
-  -f, --forcewrite     Override file permissions to allow writing.
-  -p, --prefix PREFIX  Provide a prefix for the temporary file name.
+optional arguments:
+  -h, --help            show this help message and exit
+  -n, --noeffect        Do not edit the file. Create the temporary file in a
+                        default location guided by the TMPDIR, TEMP, and TMP
+                        environment variables.
+  -f, --forcewrite      Override file permissions to allow writing.
+  -p PREFIX, --prefix PREFIX
+                        Provide a prefix for the temporary file name.
 
 ==== usdedit end ====
 
@@ -78,7 +79,7 @@ positional arguments:
   files           The files to compare. These must be of the form DIR DIR,
                   FILE... DIR, DIR FILE... or FILE FILE.
 
-options:
+optional arguments:
   -h, --help      show this help message and exit
   -n, --noeffect  Do not edit either file.
   -f, --flatten   Fully compose both layers as Usd Stages and flatten into
@@ -89,48 +90,51 @@ options:
 ==== usddiff end ====
 
 ==== usdview start ====
-usage: usdview [-h]                                                
-                                                  [--renderer {Storm,Embree,RenderMan RIS,RenderMan XPU,GL}]
-                                                  [--select PRIMPATH]
-                                                  [--camera CAMERA]
-                                                  [--mask PRIMPATH[,PRIMPATH...]]
-                                                  [--clearsettings]
-                                                  [--config {}]
-                                                  [--defaultsettings]
-                                                  [--norender] [--noplugins]
-                                                  [--unloaded] [--bboxStandin]
-                                                  [--timing] [--allow-async]
-                                                  [--traceToFile TRACETOFILE]
-                                                  [--traceFormat {chrome,trace}]
-                                                  [--tracePython]
-                                                  [--memstats {none,stage,stageAndImaging}]
-                                                  [--dumpFirstImage DUMPFIRSTIMAGE]
-                                                  [--numThreads NUMTHREADS]
-                                                  [--ff FIRSTFRAME]
-                                                  [--lf LASTFRAME]
-                                                  [--cf CURRENTFRAME]
-                                                  [--complexity {low,medium,high,veryhigh}]
-                                                  [--quitAfterStartup]
-                                                  [--sessionLayer SESSIONLAYER]
-                                                  [--mute MUTELAYERSRE]
-                                                  [--detachLayers]
-                                                  [--detachLayersInclude PATTERN[,PATTERN...]]
-                                                  [--detachLayersExclude PATTERN[,PATTERN,...]]
-                                                  [usdFile]
+usage: usdview [-h]
+                                                       [--renderer {Storm,Embree,RenderMan RIS,RenderMan XPU,GL}]
+                                                       [--select PRIMPATH]
+                                                       [--camera CAMERA]
+                                                       [--mask PRIMPATH[,PRIMPATH...]]
+                                                       [--clearsettings]
+                                                       [--config {}]
+                                                       [--defaultsettings]
+                                                       [--norender]
+                                                       [--noplugins]
+                                                       [--unloaded]
+                                                       [--bboxStandin]
+                                                       [--timing]
+                                                       [--allow-async]
+                                                       [--traceToFile TRACETOFILE]
+                                                       [--traceFormat {chrome,trace}]
+                                                       [--tracePython]
+                                                       [--memstats {none,stage,stageAndImaging}]
+                                                       [--dumpFirstImage DUMPFIRSTIMAGE]
+                                                       [--numThreads NUMTHREADS]
+                                                       [--ff FIRSTFRAME]
+                                                       [--lf LASTFRAME]
+                                                       [--cf CURRENTFRAME]
+                                                       [--complexity {low,medium,high,veryhigh}]
+                                                       [--quitAfterStartup]
+                                                       [--sessionLayer SESSIONLAYER]
+                                                       [--mute MUTELAYERSRE]
+                                                       [--detachLayers]
+                                                       [--detachLayersInclude PATTERN[,PATTERN...]]
+                                                       [--detachLayersExclude PATTERN[,PATTERN,...]]
+                                                       [usdFile]
 
 View a usd file
 
 positional arguments:
   usdFile               The file to view (Optional)
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   --renderer {Storm,Embree,RenderMan RIS,RenderMan XPU,GL}, -r {Storm,Embree,RenderMan RIS,RenderMan XPU,GL}
                         Which render backend to use (named as it appears in
                         the menu). 'GL' and 'Storm' currentlyalias to the same
                         renderer, Storm.
   --select PRIMPATH     A prim path to initially select and frame
-  --camera, -cam CAMERA
+  --camera CAMERA, -cam CAMERA
                         Which camera to set the view to on open - may be given
                         as either just the camera's prim name (ie, just the
                         last element in the prim path), or as a full prim
@@ -179,7 +183,7 @@ options:
   --ff FIRSTFRAME       Set the first frame of the viewer
   --lf LASTFRAME        Set the last frame of the viewer
   --cf CURRENTFRAME     Set the current frame of the viewer
-  --complexity, -c {low,medium,high,veryhigh}
+  --complexity {low,medium,high,veryhigh}, -c {low,medium,high,veryhigh}
                         Set the initial mesh refinement complexity (low).
   --quitAfterStartup    quit immediately after start up
   --sessionLayer SESSIONLAYER
@@ -222,9 +226,8 @@ usage: usdrecord [-h] [--mask PRIMPATH[,PRIMPATH...]]
                  [--defaultTime | --frames FRAMESPEC[,FRAMESPEC...]]
                  [--complexity {low,medium,high,veryhigh}]
                  [--colorCorrectionMode {disabled,sRGB,openColorIO}]
-                 [--renderer {Storm,Embree,RenderMan RIS,RenderMan XPU,GL}] 
-                 [--imageWidth IMAGEWIDTH]
-                 [--enableDomeLightVisibility]
+                 [--renderer {Storm,Embree,RenderMan RIS,RenderMan XPU,GL}]
+                 [--imageWidth IMAGEWIDTH] [--enableDomeLightVisibility]
                  [--renderPassPrimPath RPPRIMPATH]
                  [--renderSettingsPrimPath RSPRIMPATH]
                  [--traceToFile TRACETOFILE] [--traceFormat {chrome,trace}]
@@ -240,7 +243,7 @@ positional arguments:
                         form "###" or "###.###". Note that the number of hash
                         marks is variable in each group.
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   --mask PRIMPATH[,PRIMPATH...]
                         Limit stage population to these prims, their
@@ -275,7 +278,7 @@ options:
                         "root" will create a resolver based on the rootLayer.
                         Choosing "inherit" will inherit the incoming resolver
                         from the environment.
-  --camera, -cam CAMERA
+  --camera CAMERA, -cam CAMERA
                         Which camera to use - may be given as either just the
                         camera's prim name (i.e. just the last element in the
                         prim path), or as a full prim path. Note that if only
@@ -285,7 +288,7 @@ options:
   --defaultTime, -d     explicitly operate at the Default time code (the
                         default behavior is to operate at the startTimeCode
                         authored on the UsdStage which defaults to 0.0)
-  --frames, -f FRAMESPEC[,FRAMESPEC...]
+  --frames FRAMESPEC[,FRAMESPEC...], -f FRAMESPEC[,FRAMESPEC...]
                         specify FrameSpec(s) of the time codes to operate on -
                         A FrameSpec consists of up to three floating point
                         values for the start time code, end time code, and
@@ -298,15 +301,15 @@ options:
                         combined as a comma-separated list. The following are
                         examples of valid FrameSpecs: 123 - 101:105 - 105:101
                         - 101:109x2 - 101:110x2 - 101:104x0.5
-  --complexity, -c {low,medium,high,veryhigh}
+  --complexity {low,medium,high,veryhigh}, -c {low,medium,high,veryhigh}
                         level of refinement to use (default=low)
-  --colorCorrectionMode, -color {disabled,sRGB,openColorIO}
+  --colorCorrectionMode {disabled,sRGB,openColorIO}, -color {disabled,sRGB,openColorIO}
                         the color correction mode to use (default=sRGB)
   --renderer {Storm,Embree,RenderMan RIS,RenderMan XPU,GL}, -r {Storm,Embree,RenderMan RIS,RenderMan XPU,GL}
                         Hydra renderer plugin to use when generating images.
                         "GL" and "Storm" currently alias to the same renderer,
                         Storm.
-  --imageWidth, -w IMAGEWIDTH
+  --imageWidth IMAGEWIDTH, -w IMAGEWIDTH
                         Width of the output image. The height will be computed
                         from this value and the camera's aspect ratio
                         (default=960). Note that this only affects the
@@ -317,10 +320,10 @@ options:
                         If this option is not included and there is a dome
                         light in the stage, the IBL from it will be used for
                         lighting but not drawn into the background.
-  --renderPassPrimPath, -rp RPPRIMPATH
+  --renderPassPrimPath RPPRIMPATH, -rp RPPRIMPATH
                         Specify the RenderPass prim to use. This overrides any
                         renderSettingsPrimPath specified in stage metadata.
-  --renderSettingsPrimPath, -rs RSPRIMPATH
+  --renderSettingsPrimPath RSPRIMPATH, -rs RSPRIMPATH
                         Specify the RenderSettings prim to use. This overrides
                         any renderSettingsPrimPath specified in stage
                         metadata.
@@ -341,8 +344,8 @@ options:
 ==== usdrecord end ====
 
 ==== usdresolve start ====
-usage: usdresolve [-h] [--createContextForAsset CREATECONTEXTFORASSET |
-                  --createContextFromString CREATECONTEXTFROMSTRING]
+usage: usdresolve [-h]
+                  [--createContextForAsset CREATECONTEXTFORASSET | --createContextFromString CREATECONTEXTFROMSTRING]
                   [--anchorPath ANCHORPATH]
                   inputPath
 
@@ -352,7 +355,7 @@ positional arguments:
   inputPath             An asset path to be resolved by the USD Asset
                         Resolver.
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   --createContextForAsset CREATECONTEXTFORASSET
                         Run CreateDefaultContextForAsset with the given asset
@@ -396,60 +399,26 @@ Options:
 ==== usdtree end ====
 
 ==== usdzip start ====
-usage: usdzip [-h] [-r] [-a ASSET] [--arkitAsset ARKITASSET] [-c]
-              [-l [LISTTARGET]] [-d [DUMPTARGET]] [-v]
-              [usdzFile] [inputFiles ...]
+Utility for creating a .usdz file containing USD assets and for inspecting existing .usdz files.
+Usage: usdzip [OPTIONS] [usdzFile] [inputFiles...]
 
-Utility for creating a .usdz file containing USD assets and for inspecting
-existing .usdz files.
+Positionals:
+  usdzFile TEXT               Name of the .usdz file to create or to inspect the contents of.
+  inputFiles TEXT ...         Files to include in the .usdz files
 
-positional arguments:
-  usdzFile              Name of the .usdz file to create or to inspect the
-                        contents of.
-  inputFiles            Files to include in the .usdz file.
-
-options:
-  -h, --help            show this help message and exit
-  -r, --recurse         If specified, files in sub-directories are recursively
-                        added to the package.
-  -a, --asset ASSET     Resolvable asset path pointing to the root layer of
-                        the asset to be isolated and copied into the package.
-  --arkitAsset ARKITASSET
-                        [DEPRECATED] Similar to the --asset option, the
-                        --arkitAsset option packages all of the dependencies
-                        of the named scene file. Assets targeted at the
-                        initial usdz implementation in ARKit operate under
-                        greater constraints than usdz files for more general
-                        'in house' uses, and this option attempts to ensure
-                        that these constraints are honored; this may involve
-                        more transformations to the data, which may cause loss
-                        of features such as VariantSets.
-  -c, --checkCompliance
-                        Perform compliance checking of the input files. If the
-                        input asset or "root" layer fails any of the
-                        compliance checks, the package is not created and the
-                        program fails.
-  -l, --list [LISTTARGET]
-                        List contents of the specified usdz file. If a file-
-                        path argument is provided, the list is output to a
-                        file at the given path. If no argument is provided or
-                        if '-' is specified as the argument, the list is
-                        output to stdout.
-  -d, --dump [DUMPTARGET]
-                        Dump contents of the specified usdz file. If a file-
-                        path argument is provided, the contents are output to
-                        a file at the given path. If no argument is provided
-                        or if '-' is specified as the argument, the contents
-                        are output to stdout.
-  -v, --verbose         Enable verbose mode, which causes messages regarding
-                        files being added to the package to be output to
-                        stdout.
+Options:
+  -h,--help                   Print this help message and exit
+  -r,--recurse                If specified, files in sub-directories are recursively added to the package
+  -a,--asset TEXT             Resolvable asset path pointing to the root layerof the asset to be isolated and copied into the package.
+  -c,--checkCompliance        Perform compliance checking of the input files.If the input asset or "root" layer fails any of the compliance checks, the package is not created and the program fails.
+  -l,--list TEXT              List contents of the specified usdz file. If a file-path argument is provided, the list is output to a file at the given path. If no argument is provided or if '-' is specified as the argument, the list is output to stdout
+  -d,--dump TEXT              Dump contents of the specified usdz file. If a file-path argument is provided, the contents are output to a file at the given path. If no argument is provided or if '-' is specified as the argument, the contents are output to stdout.
+  -v,--verbose                Enable verbose mode, which causes messages regarding files being added to the package to be output to stdout
 
 ==== usdzip end ====
 
 ==== usdchecker start ====
-Utility for checking the compliance of a given USD stage or a USDZ package. 
-Only the first sample of any relevant time-sampled attribute is checked, currently.
+Utility for checking the compliance of a given USD stage or a USDZ package.  Only the first sample of any relevant time-sampled attribute is checked, currently.
 Usage: usdchecker [OPTIONS] [inputFile]
 
 Positionals:
@@ -457,7 +426,7 @@ Positionals:
 
 Options:
   -h,--help                   Print this help message and exit
-  --includeKeywords TEXT ...  If specified, only validators from the included keywords are run. Multiple keywords can be specified as a comma separated list or by using the option multiple times. If not specified, all validators are run.
+  --includeKeywords KEYWORDS  If specified, only validators from the included keywords are run. Multiple keywords can be specified as a comma separated list. If not specified, all validators are run.
   -s,--skipVariants           If specified, only the prims that are present in the default (i.e.
                               selected) variants are checked. When this option is not specified,
                               prims in all possible combinations of variant selections are
@@ -469,10 +438,6 @@ Options:
                               coloring will be suppressed.
   --noAssetChecks             If specified, do NOT perform extra checks to help ensure the stage
                               or package can be easily and safely referenced into aggregate stages.
-  --arkit :DEPRECATED         Check if the given USD stage is compatible with RealityKit's
-                              implementation of USDZ as of 2023. These assets operate under
-                              greater constraints that usdz files for more general in-house uses,
-                              and this option attempts to ensure that these constraints are met.
   -d,--dumpRules              Dump the enumerated set of rules
                               being checked for the given set of options.
   -v,--verbose                Enable verbose output mode.
@@ -513,7 +478,7 @@ a backup of the original.
 positional arguments:
   inputFile            Name of the input file to inspect and fix.
 
-options:
+optional arguments:
   -h, --help           show this help message and exit
   --backup BACKUPFILE  optional backup file path, if none provided creates a
                        <inputFile>.bck.<usda|usdc|usdz> at the inputFile
@@ -524,7 +489,8 @@ options:
 
 ==== usdstitch start ====
 usage: usdstitch [-h] [-o OUT]
-                                                    usdFiles [usdFiles ...]
+                                                         usdFiles
+                                                         [usdFiles ...]
 
 Stitch multiple usd file(s) together into one. Opinion strength is determined
 by the order in which the file is given, with the first file getting the
@@ -535,9 +501,9 @@ in that, if two time sample keys conflict, the strong layer takes precedence.
 positional arguments:
   usdFiles
 
-options:
-  -h, --help     show this help message and exit
-  -o, --out OUT  specify a file to write out to
+optional arguments:
+  -h, --help         show this help message and exit
+  -o OUT, --out OUT  specify a file to write out to
 
 ==== usdstitch end ====
 
@@ -558,24 +524,25 @@ This will produce two files, a result.topology.usd and a result.usd.
 positional arguments:
   usdFiles
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
-  -o, --out OUT         specify the filename for the top-level result file,
+  -o OUT, --out OUT     specify the filename for the top-level result file,
                         which also serves as base-name for the topology and
                         manifest files.
-  -c, --clipPath CLIPPATH
+  -c CLIPPATH, --clipPath CLIPPATH
                         specify a prim path at which to begin stitching clip
                         data.
-  -s, --startTimeCode STARTTIMECODE
+  -s STARTTIMECODE, --startTimeCode STARTTIMECODE
                         specify the time at which the clips will become active
-  -r, --stride STRIDE   specify a stride for the numeric component of
+  -r STRIDE, --stride STRIDE
+                        specify a stride for the numeric component of
                         filenames for template metadata
-  -e, --endTimeCode ENDTIMECODE
+  -e ENDTIMECODE, --endTimeCode ENDTIMECODE
                         specify the time at which the clips will cease being
                         active
   -t, --templateMetadata
                         author template clip metadata in the root layer.
-  -p, --templatePath TEMPLATEPATH
+  -p TEMPLATEPATH, --templatePath TEMPLATEPATH
                         specify a template asset path to author
   --clipSet CLIPSET     specify a named clipSet in which to author clip
                         metadata, so that multiple sets of clips can be
@@ -600,7 +567,7 @@ Write information about a usd crate (usdc) file to stdout
 positional arguments:
   inputFiles
 
-options:
+optional arguments:
   -h, --help     show this help message and exit
   -s, --summary  report only a short summary
 
@@ -680,9 +647,9 @@ Measure and export USD functional performance
 positional arguments:
   asset                 Asset file path.
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
-  -c, --custom-metrics [CUSTOM_METRICS ...]
+  -c [CUSTOM_METRICS ...], --custom-metrics [CUSTOM_METRICS ...]
                         Additional custom metrics to run `testusdview` timing
                         on. If not set, a default set of metrics is run. This
                         should be a whitespace-separated list of
@@ -690,13 +657,14 @@ options:
                         stageTraversalMetric.py:'traverse stage'. Note the
                         <script> path is relative to the directory from which
                         usdmeasureperformance.py is invoked.
-  -o, --output OUTPUT   Required output file path for metrics data. Must be
+  -o OUTPUT, --output OUTPUT
+                        Required output file path for metrics data. Must be
                         .yaml
-  -i, --iterations ITERATIONS
+  -i ITERATIONS, --iterations ITERATIONS
                         Number of iterations to run. Performance metrics are
                         reported as an average across all iterations. Requires
                         -o to be set. By default, 3 iterations are set.
-  -a, --aggregation {min,mean,max} [{min,mean,max} ...]
+  -a {min,mean,max} [{min,mean,max} ...], --aggregation {min,mean,max} [{min,mean,max} ...]
                         When multiple iterations are set, report an aggregated
                         statistic instead of every value. Requires -o to be
                         set. When one aggregation is requested, the output
@@ -707,7 +675,7 @@ options:
                         <agg2>:...}.When no aggregation is set, the output
                         format will be <metric_name>: [<val1>, <val2>, ...] or
                         one measured value for each iteration.
-  -t, --tracedir TRACEDIR
+  -t TRACEDIR, --tracedir TRACEDIR
                         Outputs a trace file for each run of usdview in the
                         given directory if provided and if 'aggregation'
                         includes min or max. A trace file for the iteration of
@@ -731,22 +699,22 @@ positional arguments:
   codeGenPath           The target directory where the code should be
                         generated. [Default: .]
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   -v, --validate        Verify that the source files are unchanged.
   -q, --quiet           Do not output text during execution.
-  -n, --namespace NAMESPACE [NAMESPACE ...]
+  -n NAMESPACE [NAMESPACE ...], --namespace NAMESPACE [NAMESPACE ...]
                         Wrap code in this specified namespace. Multiple
                         arguments will be interpreted as a nested namespace.
                         The leftmost argument will be treated as the outermost
                         namespace, with the rightmost argument as the
                         innermost.
-  -t, --templates TEMPLATEPATH
+  -t TEMPLATEPATH, --templates TEMPLATEPATH
                         Directory containing schema class templates. [Default:
                         first directory that exists from this list:
                         <usd install dir>/bin/codegenTemplates:<usd install dir>
                         /lib/usd/usd/resources/codegenTemplates]
-  -hts, --headerTerminatorString HEADERTERMINATORSTRING
+  -hts HEADERTERMINATORSTRING, --headerTerminatorString HEADERTERMINATORSTRING
                         The string used to terminate generated C++ header
                         files, after the custom code section. [Default:
                         #endif]
@@ -796,97 +764,97 @@ usage: usdgenschemafromsdr [-h] [--noreadme] [-v]
 
     UsdUtils.UpdateSchemaWithSdrNode is responsible for:
     
-Updates the given schemaLayer with primSpec and propertySpecs from sdrNode
-metadata. 
+    Updates the given schemaLayer with primSpec and propertySpecs from sdrNode
+    metadata. 
 
-A renderContext can be provided which is used in determining the
-shaderId namespace, which follows the pattern: 
-"<renderContext>:<SdrShaderNodeContext>:shaderId". Note that we are using a
-node's context (SDR_NODE_CONTEXT_TOKENS) here to construct the shaderId
-namespace, so shader parsers should make sure to use appropriate
-SDR_NODE_CONTEXT_TOKENS in the node definitions.
+    A renderContext can be provided which is used in determining the
+    shaderId namespace, which follows the pattern: 
+    "<renderContext>:<SdrShaderNodeContext>:shaderId". Note that we are using a
+    node's context (SDR_NODE_CONTEXT_TOKENS) here to construct the shaderId
+    namespace, so shader parsers should make sure to use appropriate
+    SDR_NODE_CONTEXT_TOKENS in the node definitions.
 
-overrideIdentifier parameter is the identifier which should be used when 
-the identifier of the node being processed differs from the one Sdr will 
-discover at runtime, such as when this function is def a node constructed 
-from an explicit asset path. This should only be used when clients know the 
-identifier being passed is the true identifier which sdr Runtime will 
-provide when querying using GetShaderNodeByIdentifierAndType, etc.
+    overrideIdentifier parameter is the identifier which should be used when 
+    the identifier of the node being processed differs from the one Sdr will 
+    discover at runtime, such as when this function is def a node constructed 
+    from an explicit asset path. This should only be used when clients know the 
+    identifier being passed is the true identifier which sdr Runtime will 
+    provide when querying using GetShaderNodeByIdentifierAndType, etc.
 
-It consumes the following attributes (that manifest as Sdr 
-metadata) in addition to many of the standard Sdr metadata
-specified and parsed (via its parser plugin).
+    It consumes the following attributes (that manifest as Sdr 
+    metadata) in addition to many of the standard Sdr metadata
+    specified and parsed (via its parser plugin).
 
-Node Level Metadata:
-    - "schemaName": Name of the new schema populated from the given sdrNode
-      (Required)
-    - "schemaKind": Specifies the UsdSchemaKind for the schema being
-      populated from the sdrNode. (Note that this does not support
-      multiple apply schema kinds).
-    - "schemaBase": Base schema from which the new schema should inherit
-      from. Note this defaults to "APISchemaBase" for an API schema or 
-      "Typed" for a concrete scheme.
-    - "apiSchemasForAttrPruning": A list of core API schemas which will be
-      composed together and any shared shader property from this prim
-      definition is pruned from the resultant schema. 
-    - "typedSchemaForAttrPruning": A core typed schema which will be
-      composed together with the apiSchemasForAttrPruning and any shared 
-      shader property from this prim definition is pruned from the 
-      resultant schema. If no typedSchemaForAttrPruning is provided then 
-      only the apiSchemasForAttrPruning are composed to create a prim 
-      definition. This will only be used when creating an APISchema.
-    - "apiSchemaAutoApplyTo": The schemas to which the sdrNode populated 
-      API schema will autoApply to.
-    - "apiSchemaCanOnlyApplyTo": If specified, the API schema generated 
-      from the sdrNode can only be validly applied to this set of schemas.
-    - "providesUsdShadeConnectableAPIBehavior": Used to enable a 
-      connectability behavior for an API schema.
-    - "isUsdShadeContainer": Only used when
-      providesUsdShadeConnectableAPIBehavior is set to true. Marks the
-      connectable prim as a UsdShade container type.
-    - "requiresUsdShadeEncapsulation": Only used when
-      providesUsdShadeConnectableAPIBehavior is set to true. Configures the
-      UsdShade encapsulation rules governing its connectableBehavior.
-    - "tfTypeNameSuffix": Class name which will get registered with TfType 
-      system. This gets appended to the domain name to register with TfType.
-    - "schemaPropertyNSPrefixOverride": Node level metadata which can drive
-      all node's properties namespace prefix. This can be useful for
-      non connectable nodes which should not get UsdShade inputs and outputs
-      namespace prefix.
+    Node Level Metadata:
+        - "schemaName": Name of the new schema populated from the given sdrNode
+          (Required)
+        - "schemaKind": Specifies the UsdSchemaKind for the schema being
+          populated from the sdrNode. (Note that this does not support
+          multiple apply schema kinds).
+        - "schemaBase": Base schema from which the new schema should inherit
+          from. Note this defaults to "APISchemaBase" for an API schema or 
+          "Typed" for a concrete scheme.
+        - "apiSchemasForAttrPruning": A list of core API schemas which will be
+          composed together and any shared shader property from this prim
+          definition is pruned from the resultant schema. 
+        - "typedSchemaForAttrPruning": A core typed schema which will be
+          composed together with the apiSchemasForAttrPruning and any shared 
+          shader property from this prim definition is pruned from the 
+          resultant schema. If no typedSchemaForAttrPruning is provided then 
+          only the apiSchemasForAttrPruning are composed to create a prim 
+          definition. This will only be used when creating an APISchema.
+        - "apiSchemaAutoApplyTo": The schemas to which the sdrNode populated 
+          API schema will autoApply to.
+        - "apiSchemaCanOnlyApplyTo": If specified, the API schema generated 
+          from the sdrNode can only be validly applied to this set of schemas.
+        - "providesUsdShadeConnectableAPIBehavior": Used to enable a 
+          connectability behavior for an API schema.
+        - "isUsdShadeContainer": Only used when
+          providesUsdShadeConnectableAPIBehavior is set to true. Marks the
+          connectable prim as a UsdShade container type.
+        - "requiresUsdShadeEncapsulation": Only used when
+          providesUsdShadeConnectableAPIBehavior is set to true. Configures the
+          UsdShade encapsulation rules governing its connectableBehavior.
+        - "tfTypeNameSuffix": Class name which will get registered with TfType 
+          system. This gets appended to the domain name to register with TfType.
+        - "schemaPropertyNSPrefixOverride": Node level metadata which can drive
+          all node's properties namespace prefix. This can be useful for
+          non connectable nodes which should not get UsdShade inputs and outputs
+          namespace prefix.
 
-Property Level Metadata:
-    - "usdVariability": Property level metadata which specifies a specific 
-      sdrNodeProperty should have its USD variability set to Uniform or 
-      Varying
-    - "usdSuppressProperty": A property level metadata which determines if 
-      the property should be suppressed from translation from args to 
-      property spec.
-    - "propertyNSPrefixOverride": Provides a way to override a property's
-      namespace from the default (inputs:/outputs:) or from a node's
-      schemaPropertyNSPrefixOverride metadata.
+    Property Level Metadata:
+        - "usdVariability": Property level metadata which specifies a specific 
+          sdrNodeProperty should have its USD variability set to Uniform or 
+          Varying
+        - "usdSuppressProperty": A property level metadata which determines if 
+          the property should be suppressed from translation from args to 
+          property spec.
+        - "propertyNSPrefixOverride": Provides a way to override a property's
+          namespace from the default (inputs:/outputs:) or from a node's
+          schemaPropertyNSPrefixOverride metadata.
 
-Sdr Property Metadata to SdfPropertySpec Translations
-    - A "null" value for Widget SdrShaderProperty metadata translates to
-      'hidden' in the SdfPropertySpec's uiHints metadata dictionary.
-    - SdrShaderProperty's Help metadata (Label metadata if Help metadata not
-      provided) translates to the SdfPropertySpec's userDocBrief and userDoc
-      custom metadata strings.  
-    - SdrShaderProperty's Page metadata translates to 'displayGroup'
-      in the SdfPropertySpec's uiHints metadata dictionary.
-    - SdrShaderProperty's Label metadata translates to 'displayName'
-      in the SdfPropertySpec's uiHints metadata dictionary.
-    - SdrShaderProperty's Options translates to either 'allowedTokens'
-      (when either labels or values are provided) or 'valueLabels' (when
-      both labels and values are provided) in the SdfPropertySpec's uiHints
-      metadata dictionary. For backwards compatibility, set
-      USD_POPULATE_LEGACY_ALLOWED_TOKENS to write allowedTokens in addition
-      to valueLabels for string- and token-valued attributes that provide
-      both labels and values.
-    - SdrShaderProperty's Default value translates to the SdfPropertySpec's
-      Default value.
-    - Connectable input properties translates to InterfaceOnly
-      SdfPropertySpec's CONNECTABILITY.
-
+    Sdr Property Metadata to SdfPropertySpec Translations
+        - A "null" value for Widget SdrShaderProperty metadata translates to
+          'hidden' in the SdfPropertySpec's uiHints metadata dictionary.
+        - SdrShaderProperty's Help metadata (Label metadata if Help metadata not
+          provided) translates to the SdfPropertySpec's userDocBrief and userDoc
+          custom metadata strings.  
+        - SdrShaderProperty's Page metadata translates to 'displayGroup'
+          in the SdfPropertySpec's uiHints metadata dictionary.
+        - SdrShaderProperty's Label metadata translates to 'displayName'
+          in the SdfPropertySpec's uiHints metadata dictionary.
+        - SdrShaderProperty's Options translates to either 'allowedTokens'
+          (when either labels or values are provided) or 'valueLabels' (when
+          both labels and values are provided) in the SdfPropertySpec's uiHints
+          metadata dictionary. For backwards compatibility, set
+          USD_POPULATE_LEGACY_ALLOWED_TOKENS to write allowedTokens in addition
+          to valueLabels for string- and token-valued attributes that provide
+          both labels and values.
+        - SdrShaderProperty's Default value translates to the SdfPropertySpec's
+          Default value.
+        - Connectable input properties translates to InterfaceOnly
+          SdfPropertySpec's CONNECTABILITY.
+    
     
 
 positional arguments:
@@ -930,7 +898,7 @@ positional arguments:
                         GLOBAL prim configured with appropriate libraryName.
                         [Default: .]
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   --noreadme            
                         When specified a README.md will not be created in the schemaGenerationPath
@@ -961,7 +929,7 @@ positional arguments:
                         pxr/usd/usd, the prefix would be pxr/usd. Omit this
                         argument for non-OpenUSD build systems.
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   -v, --validate        Verify that the source files are unchanged.
   -q, --quiet           Do not output text during execution.
@@ -969,7 +937,7 @@ options:
                         template will need to be filled in and kept up to date
                         with library dependencies if you are not using the
                         OpenUSD build system.
-  -t, --templates TEMPLATEPATH
+  -t TEMPLATEPATH, --templates TEMPLATEPATH
                         Directory containing schema class templates. [Default:
                         first directory that exists from this list:
                         <usd install dir>/bin/codegenTemplates:<usd install dir>

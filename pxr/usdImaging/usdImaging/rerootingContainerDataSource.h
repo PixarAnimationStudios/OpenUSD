@@ -10,6 +10,7 @@
 #include "pxr/usdImaging/usdImaging/api.h"
 
 #include "pxr/imaging/hd/dataSource.h"
+#include "pxr/usd/pcp/mapFunction.h"
 #include "pxr/usd/sdf/path.h"
 
 
@@ -17,7 +18,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdImagingRerootingContainerDataSource
 ///
-/// Calls ReplacePrefix on any path or path array data source in the given
+/// Applies the given PcpMapFunction to data source in the given
 /// container data source.
 ///
 class UsdImagingRerootingContainerDataSource : public HdContainerDataSource
@@ -38,12 +39,16 @@ private:
     USDIMAGING_API
     UsdImagingRerootingContainerDataSource(
         HdContainerDataSourceHandle inputDataSource,
+        PcpMapFunction const& mapFn);
+
+    USDIMAGING_API
+    UsdImagingRerootingContainerDataSource(
+        HdContainerDataSourceHandle inputDataSource,
         const SdfPath &srcPrefix,
         const SdfPath &dstPrefix);
 
-    HdContainerDataSourceHandle const _inputDataSource;
-    const SdfPath _srcPrefix;
-    const SdfPath _dstPrefix;
+    const HdContainerDataSourceHandle _inputDataSource;
+    const PcpMapFunction _mapFn;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

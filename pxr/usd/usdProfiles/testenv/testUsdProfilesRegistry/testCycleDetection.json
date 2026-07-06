@@ -1,0 +1,26 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Profiles": {
+                    "Capabilities": {
+                        "cycle.a": {
+                            "predecessors": ["cycle.c"],
+                            "docstring": "Node A in cycle"
+                        },
+                        "cycle.b": {
+                            "predecessors": ["cycle.a"],
+                            "docstring": "Node B in cycle"
+                        },
+                        "cycle.c": {
+                            "predecessors": ["cycle.b"],
+                            "docstring": "Node C in cycle"
+                        }
+                    }
+                }
+            },
+            "Name": "TestCycleDetection",
+            "Type": "resource"
+        }
+    ]
+}

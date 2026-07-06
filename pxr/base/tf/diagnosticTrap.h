@@ -235,7 +235,12 @@ private:
     TF_API void _OnContentsChanged() const;
 
     Tf_DiagnosticContainer _container;
-    bool _active = false;
+
+    // Index into _trappedDiagnosticsLogText marking the start of this trap's
+    // entries.  Set lazily on the first diagnostic posted to this trap and
+    // resynced after every log text rebuild by TfDiagnosticMgr.
+    size_t  _logStart = size_t(-1); // size_t(-1) means "not yet established".
+    void   *_trapKey  = nullptr;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

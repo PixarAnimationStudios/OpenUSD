@@ -1,0 +1,29 @@
+#usda 1.0
+(
+    defaultPrim = "world"
+)
+
+def Camera "main_cam"
+{
+    float4[] clippingPlanes = []
+    float2 clippingRange = (1, 2000000)
+    float focalLength = 34.2608
+    float focusDistance = 26.01757
+    float fStop = 0
+    float horizontalAperture = 20.377293
+    float horizontalApertureOffset = 0
+    token projection = "perspective"
+    float verticalAperture = 20.955
+    float verticalApertureOffset = 0
+    matrix4d xformOp:transform = ( (0.9271838545667874, -0.374606593415912, 8.317937303734802e-17, 0), (0.12658583058951173, 0.3133109251208831, 0.9411760152563705, 0), (-0.35257074087995144, -0.8726432056512111, 0.3379167180033272, 0), (-9.173034428898896, -22.70405692090272, 8.791772342221897, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Xform "world"
+{
+    def Sphere "sphere1"
+    {
+        color3f[] primvars:displayColor = [(0, 0.3, 0.6)]
+        double radius = 5.0
+    }
+}

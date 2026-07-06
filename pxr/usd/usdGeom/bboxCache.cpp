@@ -306,6 +306,8 @@ UsdGeomBBoxCache::UsdGeomBBoxCache(UsdGeomBBoxCache const &other)
 {
 }
 
+UsdGeomBBoxCache::~UsdGeomBBoxCache() = default;
+
 UsdGeomBBoxCache &
 UsdGeomBBoxCache::operator=(UsdGeomBBoxCache const &other)
 {

@@ -69,10 +69,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 {%- endif -%}
 
 {%- if STATIC_TOKEN_DATASOURCE_BUILDERS is defined -%}
+{%- set tokensNs = namespace(tokenList=[]) -%}
 {%- for typeName, tokens in STATIC_TOKEN_DATASOURCE_BUILDERS -%}
-{%- for token in tokens %}
-    ({{token}}) \
+{%- set tokensNs.tokenList = tokensNs.tokenList + tokens -%}
 {%- endfor -%}
+{%- for token in tokensNs.tokenList | unique | list %}
+    ({{token}}) \
 {%- endfor -%}
 {%- endif %}
 

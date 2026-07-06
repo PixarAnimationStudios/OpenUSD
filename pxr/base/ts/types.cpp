@@ -69,17 +69,29 @@ bool TsLoopParams::operator!=(const TsLoopParams &other) const
 
 GfInterval TsLoopParams::GetPrototypeInterval() const
 {
-    return GfInterval(
-        protoStart, protoEnd,
-        /* minClosed = */ true, /* maxClosed = */ false);
+    if (protoEnd > protoStart && (numPreLoops > 0 || numPostLoops > 0)) {
+        return GfInterval(
+            protoStart, protoEnd,
+            /* minClosed = */ true, /* maxClosed = */ false);
+    }
+
+    // Return empty interval. The inner loop's parameters indicate that the
+    // inner loop doesn't exist.
+    return GfInterval();
 }
 
 GfInterval TsLoopParams::GetLoopedInterval() const
 {
-    const TsTime protoSpan = protoEnd - protoStart;
-    return GfInterval(
-        protoStart - numPreLoops * protoSpan,
-        protoEnd + numPostLoops * protoSpan);
+    if (protoEnd > protoStart && (numPreLoops > 0 || numPostLoops > 0)) {
+        const TsTime protoSpan = protoEnd - protoStart;
+        return GfInterval(
+            protoStart - numPreLoops * protoSpan,
+            protoEnd + numPostLoops * protoSpan);
+    }
+    
+    // Return empty interval. The inner loop's parameters indicate that the
+    // inner loop doesn't exist.
+    return GfInterval();
 }
 
 TsExtrapolation::TsExtrapolation() = default;

@@ -51,6 +51,42 @@ private:
     const Exec_InputKeyVectorConstRefPtr _inputKeys;
 };
 
+/// A computation that yields the value received across a single connection 
+/// that is owned by the provider attribute and targets another attribute of 
+/// the same type that is valid, i.e. it is active, loaded, defined, and 
+/// non-abstract (see EsfAttribute::IsValid()).
+///
+/// This computation does not currently support providers that own multiple 
+/// connections or a single connection that targets any object other than a 
+/// valid attribute. 
+///
+class Exec_ComputeConnectedValueComputationDefinition final
+    : public Exec_ComputationDefinition
+{
+public:
+    Exec_ComputeConnectedValueComputationDefinition();
+
+    ~Exec_ComputeConnectedValueComputationDefinition() override;
+
+    TfType GetResultType(
+        const EsfObjectInterface &providerObject,
+        const TfToken &disambiguatingId,
+        EsfJournal *journal) const override;
+
+    TfType GetExtractionType(
+        const EsfObjectInterface &providerObject) const override;
+
+    Exec_InputKeyVectorConstRefPtr GetInputKeys(
+        const EsfObjectInterface &providerObject,
+        EsfJournal *journal) const override;
+
+    VdfNode *CompileNode(
+        const EsfObjectInterface &providerObject,
+        const TfToken &disambiguatingId,
+        EsfJournal *nodeJournal,
+        Exec_Program *program) const override;
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

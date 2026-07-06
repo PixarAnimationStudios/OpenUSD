@@ -675,6 +675,18 @@ _ContextToString(Sdf_TextParserCurrentParsingContext parsingContext)
         {
             return "SplineKeywordLoop";
         }
+        case Sdf_TextParserCurrentParsingContext::SplineKeywordRepeat:
+        {
+            return "SplineKeywordRepeat";
+        }
+        case Sdf_TextParserCurrentParsingContext::SplineKeywordReset:
+        {
+            return "SplineKeywordReset";
+        }
+        case Sdf_TextParserCurrentParsingContext::SplineKeywordOscillate:
+        {
+            return "SplineKeywordOscillate";
+        }
         case Sdf_TextParserCurrentParsingContext::SplineKnotParam:
         {
             return "SplineKnotParam";

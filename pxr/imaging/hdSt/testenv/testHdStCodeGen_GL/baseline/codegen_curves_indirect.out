@@ -299,6 +299,13 @@ MAT4  GetProjectionMatrix() {
     return MAT4(1);
 #endif
 }
+MAT4  GetProjectionInverseMatrix() {
+#if defined(HD_HAS_projectionInverseMatrix)
+    return MAT4(HdGet_projectionInverseMatrix());
+#else
+    return MAT4(1);
+#endif
+}
 vec3 GetPositionInWorldSpace(vec3 windowRelativeCoord)
 {
 #if defined(HD_HAS_imageToWorldMatrix)
@@ -1281,6 +1288,13 @@ MAT4  GetProjectionMatrix() {
     return MAT4(1);
 #endif
 }
+MAT4  GetProjectionInverseMatrix() {
+#if defined(HD_HAS_projectionInverseMatrix)
+    return MAT4(HdGet_projectionInverseMatrix());
+#else
+    return MAT4(1);
+#endif
+}
 vec3 GetPositionInWorldSpace(vec3 windowRelativeCoord)
 {
 #if defined(HD_HAS_imageToWorldMatrix)
@@ -1861,6 +1875,13 @@ MAT4  GetProjectionMatrix() {
     return MAT4(1);
 #endif
 }
+MAT4  GetProjectionInverseMatrix() {
+#if defined(HD_HAS_projectionInverseMatrix)
+    return MAT4(HdGet_projectionInverseMatrix());
+#else
+    return MAT4(1);
+#endif
+}
 vec3 GetPositionInWorldSpace(vec3 windowRelativeCoord)
 {
 #if defined(HD_HAS_imageToWorldMatrix)
@@ -2318,6 +2339,7 @@ vec4 InterpolatePrimvar(vec4 inPv0, vec4 inPv1, vec4 inPv2, vec4 inPv3,
 #extension GL_NV_shader_buffer_load : require
 #extension GL_NV_gpu_shader5 : require
 #extension GL_ARB_bindless_texture : require
+#extension GL_NV_fragment_shader_barycentric: require
 #define REF(space,type) inout type
 #define FORWARD_DECL(func_decl) func_decl;
 #define ATOMIC_LOAD(a) (a)
@@ -2351,6 +2373,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 // //////// Global Structs ////////
 
 // //////// Global Member Declarations ////////
+vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspNV;
 
 // //////// Global Function Definitions ////////
 
@@ -2511,7 +2534,7 @@ float HdGetScalar_widths() { return HdGet_widths(0); }
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
 #define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
 vec3 GetBarycentricCoord() {
-  return vec3(0);
+  return hd_BaryCoordNoPersp;
 }
 int GetPrimitiveID() {
   return gl_PrimitiveID;
@@ -2612,6 +2635,13 @@ MAT4  GetWorldToViewInverseMatrix() {
 MAT4  GetProjectionMatrix() {
 #if defined(HD_HAS_projectionMatrix)
     return MAT4(HdGet_projectionMatrix());
+#else
+    return MAT4(1);
+#endif
+}
+MAT4  GetProjectionInverseMatrix() {
+#if defined(HD_HAS_projectionInverseMatrix)
+    return MAT4(HdGet_projectionInverseMatrix());
 #else
     return MAT4(1);
 #endif

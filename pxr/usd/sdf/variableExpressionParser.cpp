@@ -220,6 +220,7 @@ using AvailableFunctions = std::tuple<
     Impl::LogicalNotNode,
 
     Impl::ContainsNode,
+    Impl::MatchesRegexNode,
     Impl::AtNode,
     Impl::LenNode,
 

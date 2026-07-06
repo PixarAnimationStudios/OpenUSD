@@ -146,7 +146,7 @@ TF_DEFINE_ENV_SETTING(
     "implementations.");
 
 TF_DEFINE_ENV_SETTING(
-    PXR_USDC_EMIT_DEPRECATION_WARNINGS, true,
+    PXR_USDC_EMIT_DEPRECATION_WARNINGS, false,
     "If set, emit warnings when reading binary USD files with deprecated "
     "versions prior to " OLDEST_CURRENT_VERSION ".");
 
@@ -353,6 +353,8 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
+// 0.15.0: Added support for loopBoundaryTime-delimited spline extrapolation
+//         loops and GfTimeCode-native splines.
 // 0.14.0: Added support for ArrayEdits.
 // 0.13.0: Support for splines with tangent algorithms None, Custom, AutoEase.
 // 0.12.0: Added support for splines.
@@ -372,7 +374,7 @@ using std::vector;
 //         See _PathItemHeader_0_0_1.
 //  0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 14;
+constexpr uint8_t USDC_MINOR = 15;
 constexpr uint8_t USDC_PATCH = 0;
 
 constexpr CrateFile::Version
@@ -1199,8 +1201,8 @@ public:
                            std::is_same_v<T, SdfPathExpression>) {
             return T(Read<string>());
         }
-        else if constexpr (std::is_same_v<T, SdfTimeCode>) {
-            return SdfTimeCode(Read<double>());
+        else if constexpr (std::is_same_v<T, GfTimeCode>) {
+            return GfTimeCode(Read<double>());
         }
         else if constexpr (std::is_same_v<T, SdfUnregisteredValue>) {
             VtValue val = Read<VtValue>();
@@ -1443,7 +1445,7 @@ public:
     void Write(SdfPath const &path) { Write(crate->_AddPath(path)); }
     void Write(VtDictionary const &dict) { WriteMap(dict); }
     void Write(SdfAssetPath const &ap) { Write(ap.GetAssetPath()); }
-    void Write(SdfTimeCode const &tc) { 
+    void Write(GfTimeCode const &tc) { 
         crate->_packCtx->RequestWriteVersionUpgrade(
             Version(0, 9, 0),
             "A timecode or timecode[] value type was detected which requires "
@@ -1569,6 +1571,14 @@ public:
                 Version(0,13,0),
                 "A spline tangent algorithm was detected which requires crate"
                 " version 0.13.0.");
+            break;
+          case 3: // looped extrapolation with loopBoundaryTime set
+                  // or GfTimeCode-native spline
+            crate->_packCtx->RequestWriteVersionUpgrade(
+                Version(0,15,0),
+                "A spline loopBoundaryTime parameter on looping extrapolation "
+                "or GfTimeCode-native spline was detected which requires "
+                "crate version 0.15.0.");
             break;
 
           default:

@@ -144,29 +144,32 @@ TestCreateVector()
         ASSERT_EQ(accessor[1], arr[1]);
     }
 
-    // SdfTimeCode is not known to Vt but is an Sdf value type.
+    // SdfAssetPath is not known to Vt but is an Sdf value type.
     {
-        static_assert(!VtIsKnownValueType<SdfTimeCode>());
-        static_assert(SdfValueTypeTraits<SdfTimeCode>::IsValueType);
-        const SdfTimeCode t = 1.0;
-        const VdfVector vec = reg.CreateVector(VtValue(t));
-        TF_AXIOM(vec.Holds<SdfTimeCode>());
-        const auto accessor = vec.GetReadAccessor<SdfTimeCode>();
+        static_assert(!VtIsKnownValueType<SdfAssetPath>());
+        static_assert(SdfValueTypeTraits<SdfAssetPath>::IsValueType);
+        const SdfAssetPath ap{"/Some/Where"};
+        const VdfVector vec = reg.CreateVector(VtValue(ap));
+        TF_AXIOM(vec.Holds<SdfAssetPath>());
+        const auto accessor = vec.GetReadAccessor<SdfAssetPath>();
         ASSERT_EQ(accessor.GetNumValues(), 1);
-        ASSERT_EQ(accessor[0], t);
+        ASSERT_EQ(accessor[0], ap);
     }
 
-    // VtArray<SdfTimeCode> is not known to Vt but is an Sdf value type.
+    // VtArray<SdfAssetPath> is not known to Vt but is an Sdf value type.
     {
-        static_assert(!VtIsKnownValueType<VtArray<SdfTimeCode>>());
-        static_assert(SdfValueTypeTraits<VtArray<SdfTimeCode>>::IsValueType);
-        const VtArray<SdfTimeCode> ts = { 0., 1. };
-        const VdfVector vec = reg.CreateVector(VtValue(ts));
-        TF_AXIOM(vec.Holds<SdfTimeCode>());
-        const auto accessor = vec.GetReadAccessor<SdfTimeCode>();
+        static_assert(!VtIsKnownValueType<VtArray<SdfAssetPath>>());
+        static_assert(SdfValueTypeTraits<VtArray<SdfAssetPath>>::IsValueType);
+        const VtArray<SdfAssetPath> aps = {
+            SdfAssetPath("/Some"),
+            SdfAssetPath("/Where")
+        };
+        const VdfVector vec = reg.CreateVector(VtValue(aps));
+        TF_AXIOM(vec.Holds<SdfAssetPath>());
+        const auto accessor = vec.GetReadAccessor<SdfAssetPath>();
         ASSERT_EQ(accessor.GetNumValues(), 2);
-        ASSERT_EQ(accessor[0], ts[0]);
-        ASSERT_EQ(accessor[1], ts[1]);
+        ASSERT_EQ(accessor[0], aps[0]);
+        ASSERT_EQ(accessor[1], aps[1]);
     }
 
     // TestExecTypeRegistrationValue is not known to Vt and is not an Sdf

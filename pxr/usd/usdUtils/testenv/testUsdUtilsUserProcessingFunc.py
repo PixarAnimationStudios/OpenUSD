@@ -201,6 +201,79 @@ class TestUsdUtilsUserProcessFunc(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             self._Localize("package/package.usdz", "package_localized2", 
                            ModifyLayerInPackage)
+            
+    def test_UpdateExpressionVariables(self):
+        """Tests that if expression variables are updated in the callback func
+        the new paths are resolved and recursively searched for deps"""
+
+        def UpdateExprVariable(layer, depInfo):
+            if Sdf.VariableExpression.IsExpression(depInfo.rawAssetPath):
+                return UsdUtils.DependencyInfo('`"${UPDATED}"`')
+            else:
+                return depInfo
+            
+        localizationDir = "localize_updateExpVar"
+        self._Localize("variableExpressions/root_update.usda", localizationDir, 
+                       UpdateExprVariable)
+        
+        expectedFiles = [
+            'pay.usda',
+            'ref.usda',
+            'root_update.usda'
+        ]
+
+        self._CheckLocalizedPackageContents(localizationDir, expectedFiles)
+            
+    def test_ExpressionVariables(self):
+        """Tests that user processing function receives the correct paths
+        when expressionVariables are present"""
+        results = []
+
+        def RecordDepInfo(layer, depInfo):
+            results.append((
+                depInfo.assetPath,
+                depInfo.rawAssetPath,
+                depInfo.expressionVariables
+            ))
+
+            return depInfo
+
+        expectedExpressionVars = {
+            "ATTR": "./attr.usda",
+            "ATTR_ARR": "./attr_arr.usda",
+            "META": "./meta.usda",
+            "META_ARR": "./meta_arr.usda",
+            "PAYLOAD": "./pay.usda",
+            "REFERENCE": "./ref.usda",
+            "SUBLAYER": "./sub.usda"
+        }
+        
+        expectedResults = [
+            ('./sub.usda', '`"${SUBLAYER}"`', expectedExpressionVars),
+            ('./meta.usda', '`"${META}"`', expectedExpressionVars),
+            ('./meta_arr.usda', '`"${META_ARR}"`', expectedExpressionVars),
+            ('./pay.usda', '`"${PAYLOAD}"`', expectedExpressionVars),
+            ('./attr.usda', '`"${ATTR}"`', expectedExpressionVars),
+            ('./attr_arr.usda', '`"${ATTR_ARR}"`', 
+             expectedExpressionVars),
+            ('./ref.usda', '`"${REFERENCE}"`', expectedExpressionVars)
+        ]
+
+        # ensure writable delegates correctly populate callback func args
+        # for cases with expression variables
+        self._Localize("variableExpressions/root.usda", "localize_ExpVar", 
+                       RecordDepInfo)
+        
+        self.assertEqual(expectedResults, results)
+
+        results = []
+
+        #ensure that read only delegates populate callback func args
+        # for cases with expression variables
+        UsdUtils.ComputeAllDependencies("variableExpressions/root.usda", 
+                                        RecordDepInfo)
+        
+        self.assertEqual(expectedResults, results)
 
     def _Localize(self, rootPath, localizationDir, userFunc):
         if os.path.isdir(localizationDir):

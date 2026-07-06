@@ -7,6 +7,7 @@
 #ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_INSTANCER_H
 #define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_INSTANCER_H
 
+#include "hdPrman/concurrentMap.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/rixStrings.h"
 
@@ -18,6 +19,7 @@
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
@@ -29,18 +31,17 @@
 #include <RileyIds.h>
 #include <RiTypesHelper.h>
 
-#include <tbb/concurrent_unordered_map.h>
-#include <tbb/spin_rw_mutex.h>
+#include <tbb/queuing_mutex.h>
+#include <tbb/spin_mutex.h>
 
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <tuple>
-#include <type_traits>
+#include <initializer_list>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <utility>
 #include <vector>
 
 #define HDPRMAN_INSTANCER_MAX_TIME_SAMPLES 1
@@ -56,7 +57,7 @@ public:
 
     /// Destructor.
     ~HdPrmanInstancer();
-    
+
     void Sync(HdSceneDelegate *sceneDelegate,
               HdRenderParam   *renderParam,
               HdDirtyBits     *dirtyBits) override;
@@ -66,12 +67,12 @@ public:
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
     /**
-     * @brief Instructs the instancer to generate riley instances for the given 
+     * @brief Instructs the instancer to generate riley instances for the given
      * prototypes. Caller is responsible for the lifecycle of the riley
      * prototypes, while the instancer will own the riley instances. This should
      * only be called with all of the riley prototypes associated with a given
      * hydra prototype path.
-     * 
+     *
      * @param renderParam
      * @param dirtyBits The hydra prototype's dirty bits.
      * @param hydraPrototypeId The path of the hydra prototype prim.
@@ -100,7 +101,7 @@ public:
      * @param rileyMaterialIds The riley material ids to be assigned to the
      *        instances of each of the supplied riley prototypes; this should
      *        match rileyPrototypeIds in length and indexing.
-     * @param prototypePaths The stage paths of the (sub)prims each riley 
+     * @param prototypePaths The stage paths of the (sub)prims each riley
      *        prototype id represents, e.g., the stage paths to the geomSubsets;
      *        this should always match prototypeIds in length and indexing.
      *        These are used for identification purposes and, when they are
@@ -114,7 +115,7 @@ public:
      */
     void Populate(
         HdRenderParam* renderParam,
-        HdDirtyBits* dirtyBits,
+        const HdDirtyBits& dirtyBits,
         const SdfPath& hydraPrototypeId,
         const std::vector<riley::GeometryPrototypeId>& rileyPrototypeIds,
         const riley::CoordinateSystemList& coordSysList,
@@ -129,20 +130,17 @@ public:
      * @brief Instructs the instancer to destroy any riley instances for the
      * given hydra prototype prim path, optionally preserving those instances of
      * a given list of prototype ids.
-     * 
-     * @param renderParam 
+     *
+     * @param renderParam
      * @param prototypePrimPath The path of the hydra prototype.
-     * @param excludedPrototypeIds List of riley prototype ids whose instances
+     * @param protoIdsToKeep List of riley prototype ids whose instances
      *        should be preserved. When empty or not provided, all instances of
      *        all prototypes for the given prototypePrimPath will be destroyed.
-     *        HdPrmanInstancer itself uses this list to preserve instances of
-     *        its own prototype groups when depopulating some instances from a
-     *        parent instancer.
      */
     void Depopulate(
         HdRenderParam* renderParam,
         const SdfPath& prototypePrimPath,
-        const std::vector<riley::GeometryPrototypeId>& excludedPrototypeIds = {});
+        const std::vector<riley::GeometryPrototypeId>& protoIdsToKeep = {});
 
 private:
 
@@ -154,14 +152,14 @@ private:
         HdTimeSampleArray<GfMatrix4d, HDPRMAN_INSTANCER_MAX_TIME_SAMPLES>;
     using _RtMatrixSA =
         HdTimeSampleArray<RtMatrix4x4, HDPRMAN_INSTANCER_MAX_TIME_SAMPLES>;
-    
+
     struct _RtParamListHashFunctor
     {
         size_t operator()(const RtParamList& params) const noexcept
         {
             // Wow this sucks, but RtParamList::Hash() is not const!
             RtParamList copy = params;
-            return std::hash<uint32_t>()(copy.Hash());
+            return TfHash()(copy.Hash());
         }
     };
 
@@ -181,7 +179,7 @@ private:
 
     struct _FlattenData
     {
-        
+
         // The set of light linking categories
         std::unordered_set<TfToken, TfToken::HashFunctor> categories;
 
@@ -191,35 +189,48 @@ private:
         // have been authored on a given (native) instance.
         RtParamList params;
 
+        // Rendertag-based visibility uses grouping:membership, which is not
+        // supported inside prototype groups.
+        TfToken renderTag;
+
         _FlattenData() = default;
-        _FlattenData(const VtTokenArray& cats) 
-            : categories(cats.begin(), cats.end()) { }
+        _FlattenData(const VtTokenArray& cats)
+          : categories(cats.begin(), cats.end()) { }
         _FlattenData(const VtTokenArray& cats, bool vis)
-            : categories(cats.begin(), cats.end())
+          : categories(cats.begin(), cats.end())
         {
             SetVisibility(vis);
         }
         // Copy constructor
-        _FlattenData(const _FlattenData& other) 
-        : categories(other.categories.cbegin(), other.categories.cend())
+        _FlattenData(const _FlattenData& other)
+          : categories(other.categories.cbegin(), other.categories.cend())
+          , renderTag(other.renderTag)
         {
             params.Update(other.params);
         }
 
         // Params that already exist here will not be changed;
-        // categories will be merged
+        // categories will be merged; renderTag will be updated only
+        // if it was empty.
         void Inherit(const _FlattenData& rhs)
         {
             categories.insert(rhs.categories.cbegin(), rhs.categories.cend());
             params.Inherit(rhs.params);
+            if (renderTag.IsEmpty()) {
+                renderTag = rhs.renderTag;
+            }
         }
 
         // Params that already exist here will be changed;
-        // categories will be merged
+        // categories will be merged; renderTag will be overwritten unless
+        // empty on rhs.
         void Update(const _FlattenData& rhs)
         {
             categories.insert(rhs.categories.cbegin(), rhs.categories.cend());
             params.Update(rhs.params);
+            if (!rhs.renderTag.IsEmpty()) {
+                renderTag = rhs.renderTag;
+            }
         }
 
         // Update this FlattenData's visibility from an RtParamList. Visibility
@@ -242,7 +253,7 @@ private:
             // Copy any existing value for grouping:membership into the
             // flatten data. For lights, this gets a value during light sync,
             // and ConvertCategoriesToAttributes specifically handles preserving
-            // it. We need to capture the value from light sync here so we can 
+            // it. We need to capture the value from light sync here so we can
             // and flatten against it. It won't be captured by the categories
             // because the value set in light sync comes from a different
             // source. It has to be handled separately from categories.
@@ -276,7 +287,8 @@ private:
         bool operator==(const _FlattenData& rhs) const noexcept
         {
             return categories == rhs.categories &&
-                _RtParamListEqualToFunctor()(params, rhs.params);
+                _RtParamListEqualToFunctor()(params, rhs.params) &&
+                renderTag == rhs.renderTag;
         }
 
         struct HashFunctor {
@@ -284,13 +296,17 @@ private:
             {
                 size_t hash = 0ul;
 
-                // simple order-independent XOR hash aggregation 
+                // simple order-independent XOR hash aggregation
                 for (const TfToken& tok : fd.categories) {
-                    hash ^= tok.Hash();
+                    hash ^= TfHash()(tok.GetString());
                 }
-                return hash ^ _RtParamListHashFunctor()(fd.params);
+                hash ^= _RtParamListHashFunctor()(fd.params);
+                hash ^= TfHash()(fd.renderTag.GetString());
+                return hash;
             }
         };
+
+        std::string ToString() const;
 
     private:
         static std::vector<RtUString> _GetLightLinkParams()
@@ -334,116 +350,7 @@ private:
         }
     };
 
-    // A simple concurrent hashmap built from tbb::concurrent_unordered_map but
-    // with a simpler interface. Thread-safe operations (insertion, retrieval,
-    // const iteration) happen under a shared_lock, while unsafe operations
-    // (erase, clear, non-const iteration) use an exclusive lock. This way, the
-    // thread-safe operations can all run concurrently with one another, relying
-    // on tbb::concurrent_unordered_map's thread safety, but will never run
-    // while an unsafe operation is in progress, nor will the unsafe operations
-    // start while a safe one is running.
-    template<
-        typename Key, 
-        typename T, 
-        typename Hash = std::hash<Key>, 
-        typename KeyEqual = std::equal_to<Key>>
-    class _LockingMap
-    {
-    public:
-        // Check whether the map contains the given key; check this call before
-        // calling get() if you want to avoid get's auto-insertion.
-        bool has(const Key& key) const
-        {
-            tbb::spin_rw_mutex::scoped_lock lock(_mutex, false);
-            if (_map.size() == 0) { return false; }
-            return _map.find(key) != _map.end();
-        }
-
-        // Retrieve the value for the given key. If the key is not present in
-        // the map, a default-constructed value will be inserted and returned.
-        // T must have default constructor
-        T& get(const Key& key)
-        {
-            static_assert(std::is_default_constructible<T>::value, 
-                          "T must be default constructible");
-
-            tbb::spin_rw_mutex::scoped_lock lock(_mutex, false);
-            auto it = _map.find(key);
-            if (it == _map.end()) {
-                it = _map.emplace(
-                    std::piecewise_construct,
-                    std::forward_as_tuple(key),
-                    std::tuple<>{}).first;
-            }
-            return it->second;
-        }
-
-        // Set key to value, returns true if the key was newly inserted
-        // T must have copy assignment operator
-        bool set(const Key& key, T& val)
-        {
-            static_assert(std::is_copy_assignable<T>::value, 
-                          "T must be copy-assignable");
-
-            tbb::spin_rw_mutex::scoped_lock lock(_mutex, false);
-            if (_map.size() > 0) {
-                auto it = _map.find(key);
-                if (it != _map.end()) {
-                    it->second = val;
-                    return false;
-                }
-            }
-            _map.insert({key, val});
-            return true;
-        }
-
-        // Iterate the map with a non-const value reference under exclusive lock
-        void iterate(std::function<void(const Key&, T&)> fn)
-        {
-            // exclusive lock
-            tbb::spin_rw_mutex::scoped_lock lock(_mutex, true);
-            for (std::pair<const Key, T>& p : _map) {
-                fn(p.first, p.second);
-            }
-        }
-
-        // Iterate the map with a const value reference under shared lock
-        void citerate(std::function<void(const Key&, const T&)> fn) const
-        {
-            tbb::spin_rw_mutex::scoped_lock lock(_mutex, false);
-            for (const auto& p : _map) {
-                fn(p.first, p.second);
-            }
-        }
-
-        // Gives the count of keys currently in the map
-        size_t size() const
-        {
-            tbb::spin_rw_mutex::scoped_lock lock(_mutex, false);
-            return _map.size();
-        }
-
-        // Erase the given key from the map under exclusive lock
-        void erase(const Key& key)
-        {
-            // exclusive lock
-            tbb::spin_rw_mutex::scoped_lock lock(_mutex, true);
-            _map.unsafe_erase(key);
-        }
-
-        // Clear all map entries under exclusive lock
-        void clear()
-        {
-            // exclusive lock
-            tbb::spin_rw_mutex::scoped_lock lock(_mutex, true);
-            _map.clear();
-        }
-    private:
-        tbb::concurrent_unordered_map<Key, T, Hash, KeyEqual> _map;
-        mutable tbb::spin_rw_mutex _mutex;
-    };
-
-    using _LockingFlattenGroupMap = _LockingMap<
+    using _FlattenGroupMap = HdPrmanConcurrentMap<
         _FlattenData,
         riley::GeometryPrototypeId,
         _FlattenData::HashFunctor>;
@@ -456,11 +363,11 @@ private:
     };
 
     using _InstanceIdVec = std::vector<_RileyInstanceId>;
-    
+
     struct _ProtoIdHash
     {
         size_t operator()(const riley::GeometryPrototypeId& id) const noexcept
-        { 
+        {
             return std::hash<uint32_t>()(id.AsUInt32());
         }
     };
@@ -469,8 +376,8 @@ private:
         riley::GeometryPrototypeId,
         _InstanceIdVec,
         _ProtoIdHash>;
-    
-    using _LockingProtoGroupCounterMap = _LockingMap<
+
+    using _ProtoGroupCounterMap = HdPrmanConcurrentMap<
         riley::GeometryPrototypeId,
         std::atomic<int>,
         _ProtoIdHash>;
@@ -481,11 +388,37 @@ private:
         bool dirty;
     };
 
-    using _LockingProtoMap = _LockingMap<SdfPath, _ProtoMapEntry, SdfPath::Hash>;
+    struct _ChildPopulateLockMapKey
+    {
+        SdfPath childInstancerId;
+        SdfPath prototypePrimPath;
+
+        struct Hash {
+            size_t operator()(const _ChildPopulateLockMapKey& key) const
+            {
+                return TfHash::Combine(
+                    key.childInstancerId, key.prototypePrimPath);
+            }
+        };
+
+        bool operator==(const _ChildPopulateLockMapKey& other) const
+        {
+            return childInstancerId == other.childInstancerId &&
+                prototypePrimPath == other.prototypePrimPath;
+        }
+    };
+
+    using _ProtoMap = HdPrmanConcurrentMap<
+        SdfPath, _ProtoMapEntry, SdfPath::Hash>;
+
+    using _ChildPopulateLockMap = HdPrmanConcurrentMap<
+        _ChildPopulateLockMapKey,
+        tbb::queuing_mutex,
+        _ChildPopulateLockMapKey::Hash>;
 
     // **********************************************
     // **             Private Methods              **
-    // **********************************************    
+    // **********************************************
 
     // Sync helper; caches instance-rate primvars
     void _SyncPrimvars(const HdDirtyBits* dirtyBits);
@@ -498,6 +431,9 @@ private:
 
     // Sync helper; caches instancer visibility
     void _SyncVisibility(const HdDirtyBits* dirtyBits);
+
+    // Sync helper; caches instancer render tag
+    void _SyncRenderTag(const HdDirtyBits* dirtyBits);
 
     // Generates InstanceData structures for this instancer's instances;
     // will multiply those by any supplied subInstances
@@ -528,17 +464,18 @@ private:
         const SdfPathVector& subProtoPaths,
         const std::vector<_FlattenData>& subProtoFlats,
         std::vector<RtParamList>& protoParams,
-        std::vector<_FlattenData>& protoFlats,
-        std::vector<TfToken>& protoRenderTags);
+        std::vector<_FlattenData>& protoFlats);
 
-    // Deletes riley instances owned by this instancer that are of riley
-    // geometry prototypes that are no longer associated with the given
-    // prototype prim. Returns true if there are any new riley geometry
-    // prototype ids to associate with this prototype prim path.
-    bool _RemoveDeadInstances(
-        riley::Riley* riley,
-        const SdfPath& prototypePrimPath,
-        const std::vector<riley::GeometryPrototypeId>& protoIds);
+    // Gathers knownProtoIds from protoMapEntry, then:
+    //     newProtoIds  = (inputProtoIds - knownProtoIds)
+    //     deadProtoIds = (knownProtoIds - inputProtoIds)
+    // Returns true unless both output sets are empty.
+    static
+    bool _GatherChangedPrototypeIds(
+        const _ProtoMapEntry& protoMapEntry,
+        const std::vector<riley::GeometryPrototypeId>& inputProtoIds,
+        std::vector<riley::GeometryPrototypeId>& newProtoIds,
+        std::vector<riley::GeometryPrototypeId>& deadProtoIds);
 
     // Flags all previously seen prototype prim paths as needing their instances
     // updated the next time they show up in a Populate call.
@@ -549,10 +486,13 @@ private:
     // up to this method on the parent instancer. The given prototypes may be
     // prims (when called through the public Populate method) or may be
     // child instancers represented by riley geometry prototype groups. In
-    // either case, the caller owns the riley prototypes.
+    // either case, the caller owns the riley prototypes. _PopulateInstances()
+    // is thread-safe except when called for the same hydraPrototypeId and
+    // prototypePrimPath. That's only possible from child instancers, so those
+    // must use _PopulateInstancesForChild() instead.
     void _PopulateInstances(
         HdRenderParam* renderParam,
-        HdDirtyBits* dirtyBits,
+        const HdDirtyBits& dirtyBits,
         const SdfPath& hydraPrototypeId,
         const SdfPath& prototypePrimPath,
         const std::vector<riley::GeometryPrototypeId>& rileyPrototypeIds,
@@ -568,13 +508,12 @@ private:
 
     // Locks before calling _PopulateInstances() to prevent duplicated Riley
     // calls that may arise when Populate() has been called from multiple
-    // threads producing identical population requests from the same child
-    // instancer. Locks are segregated by prototypePrimPath to avoid
-    // over-locking.
-    void _PopulateInstancesFromChild(
+    // threads from the same child instancer. Locks are segregated by
+    // childInstancerId and prototypePrimPath to avoid over-locking.
+    void _PopulateInstancesForChild(
         HdRenderParam* renderParam,
-        HdDirtyBits* dirtyBits,
-        const SdfPath& hydraPrototypeId,
+        const HdDirtyBits& dirtyBits,
+        const SdfPath& childInstancerId,
         const SdfPath& prototypePrimPath,
         const std::vector<riley::GeometryPrototypeId>& rileyPrototypeIds,
         const riley::CoordinateSystemList& coordSysList,
@@ -587,16 +526,29 @@ private:
         const std::vector<_InstanceData>& subInstances,
         const std::vector<_FlattenData>& prototypeFlats);
 
+    void _DepopulateInstances(
+        HdRenderParam* renderParam,
+        const SdfPath& prototypePrimPath,
+        const std::vector<riley::GeometryPrototypeId>& protoIdsToKeep = {});
+
+    // Locks before calling _DepopulateInstances(), using the same locking
+    // strategy as _PopulateInstancesForChild().
+    void _DepopulateInstancesForChild(
+        HdRenderParam* renderParam,
+        const SdfPath& childInstancerId,
+        const SdfPath& prototypePrimPath,
+        const std::vector<riley::GeometryPrototypeId>& protoIdsToKeep = {});
+
     // Get pointer to parent instancer, if one exists
     HdPrmanInstancer* _GetParentInstancer();
-    
+
     // Resize the instancer's interal state store for tracking riley instances.
     // Shrinking the number of instances for a given prototype path and id will
     // delete excess instances from riley. Call with newSize = 0 to kill 'em all.
     void _ResizeProtoMap(
         riley::Riley* riley,
-        const SdfPath& prototypePrimPath, 
-        const std::vector<riley::GeometryPrototypeId>& rileyPrototypeIds, 
+        const SdfPath& prototypePrimPath,
+        const std::vector<riley::GeometryPrototypeId>& rileyPrototypeIds,
         size_t newSize);
 
     // Deletes any riley geometry prototype groups that are no longer needed.
@@ -605,8 +557,12 @@ private:
 
     // Obtain the riley geometry prototype group id for a given FlattenData.
     // Returns true if the group had to be created. Gives InvalidId when this
-    // instancer has no parent instancer.
-    bool _AcquireGroupId(
+    // instancer has no parent instancer. Also atomically increments the group's
+    // instance counter, under the assumption that a new instance will be added
+    // to the group. This is necessary to prevent possible deletion of a newly-
+    // created prototype group by another thread. If a new instance is not added
+    // to the group, you must decrement the counter afterwards.
+    bool _AcquireGroupIdAndIncrementCounter(
         HdPrman_RenderParam* param,
         const _FlattenData& flattenGroup,
         riley::GeometryPrototypeId& groupId);
@@ -636,10 +592,18 @@ private:
     // parents.
     int _Depth();
 
+    // Wrapper around ++(_groupCounters[groupId]) that encapsulates
+    // debug messaging. This should only ever be called under lock
+    // from _AcquireGroupIdAndIncrementCounter()!
+    void _IncrementGroupCounter(const riley::GeometryPrototypeId& id);
+
+    // Wrapper around --(_groupCounters[groupId]) that encapsulates
+    // debug messaging. This is safe to call at any time.
+    void _DecrementGroupCounter(const riley::GeometryPrototypeId& id);
 
     // **********************************************
     // **             Private Members              **
-    // **********************************************   
+    // **********************************************
 
     // This instancer's cached instance transforms
     HdTimeSampleArray<VtMatrix4dArray, HDPRMAN_INSTANCER_MAX_TIME_SAMPLES> _sa;
@@ -663,18 +627,18 @@ private:
     // that the incompatible params may be set on the outermost riley
     // instances of those groups where they are supported. This map may be
     // written to during Populate, so access must be gated behind a mutex
-    // lock (built into LockingMap).
-    _LockingFlattenGroupMap _groupMap;
+    // lock (built into HdPrmanConcurrentMap).
+    _FlattenGroupMap _groupMap;
 
     // Counters for tracking number of instances in each prototype group. Used
     // to speed up empty prototype group removal.
-    _LockingProtoGroupCounterMap _groupCounters;
+    _ProtoGroupCounterMap _groupCounters;
 
     // riley geometry prototype groups are created during Populate; these must
     // be serialized to prevent creating two different groups for the same set
     // of flatten data.
-    tbb::spin_rw_mutex _groupIdAcquisitionLock;
-    
+    tbb::spin_mutex _groupIdAcquisitionLock;
+
     // Main storage for tracking riley instances owned by this instancer.
     // Instance ids are paired with their containing group id (RileyInstanceId),
     // then grouped by their riley geometry prototype id (ProtoInstMap). These
@@ -684,13 +648,13 @@ private:
     // the top level is gated behind a mutex lock (built into LockingMap).
     // Deeper levels are only ever written to from within a single call to
     // Populate, so they do not have gated access.
-    _LockingProtoMap _protoMap;
+    _ProtoMap _protoMap;
 
-    // Locks used by _PopulateInstancesFromChild() to serialize (and dedupe)
-    // parallel calls from the same child instancer, which occur when the child
-    // has multiple prototype prims and would otherwise lead to duplicated
-    // Riley calls to Create or Remove instances, both of which are problematic.
-    _LockingMap<SdfPath, tbb::spin_rw_mutex, SdfPath::Hash> _childPopulateLocks;
+    // Locks used by _PopulateInstancesFromChild() to serialize parallel calls
+    // from the same child instancer for the same prototype prim, which can
+    // occur when the child has multiple prototype prims that are being synced
+    // in parallel.
+    _ChildPopulateLockMap _childPopulateLocks;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

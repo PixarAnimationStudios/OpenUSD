@@ -23,6 +23,7 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/exec/ef/timeInterval.h"
+#include "pxr/exec/exec/builtinComputations.h"
 #include "pxr/exec/exec/computationBuilders.h"
 #include "pxr/exec/exec/registerSchema.h"
 #include "pxr/exec/exec/validationError.h"
@@ -45,6 +46,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     
     (cyclicComputation)
+    (cyclicAttr)
     (cyclicComputationPairA)
     (cyclicComputationPairB)
     (customRel)
@@ -71,6 +73,27 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(TestExecUsdCycleDetectionCustomSchema)
             return ctx.GetInputValue<int>(_tokens->cyclicComputation);
         })
         .Inputs(Computation<int>(_tokens->cyclicComputation));
+
+    // This attribute introduces a cycle when it is targeted by a connection 
+    // that is owned by a valid attribute that consumes 'computeValue' across 
+    // the connection.   
+    self.AttributeExpression(_tokens->cyclicAttr)
+        .Callback(+[](const VdfContext &ctx) -> std::string {
+            std::string result;
+            for (VdfReadIterator<std::string> it(
+                     ctx, ExecBuiltinComputations->computeValue);
+                 !it.IsAtEnd(); ++it) {
+                if (!result.empty()) {
+                    result += " ";
+                }
+                result += "'" + *it + "'";
+            }
+            return result.empty() ? "(no value)" : result;
+        })
+        .Inputs(
+            IncomingConnections<std::string>(
+                ExecBuiltinComputations->computeValue)
+        );
 
     // The following 2 computations consume each other as input.
     self.PrimComputation(_tokens->cyclicComputationPairA)
@@ -316,6 +339,76 @@ Test_CyclicComputation()
     // Should extract an empty value because the leaf node was not compiled.
     const ExecUsdCacheView cacheView = system.Compute(request);
     TF_AXIOM(cacheView.Get(0).IsEmpty());
+}
+
+// Test that we detect a cycle when a computation sources itself as an input 
+// across an attribute connection via a builtin expression that uses incoming 
+// connections.
+static void
+Test_CyclicIncomingConnection()
+{
+    Fixture fixture;
+    ExecUsdSystem &system = fixture.NewSystemFromLayer(R"usd(#usda 1.0
+        def CustomSchema "Prim" {
+            string cyclicAttr = "cyclic"
+            string attr = "attr value"
+            string attr.connect = [</Prim.cyclicAttr>]
+        }
+    )usd");
+
+    // Test that a cycle is detected when computing 'attr' that owns a 
+    // connection targeting 'cyclicAttr', which has a builtin expression 
+    // that introduces a cycle when it has a single valid incoming connection. 
+    ExecUsdRequest request = fixture.BuildRequest({
+        {fixture.GetAttributeAtPath("/Prim.attr"), 
+            ExecBuiltinComputations->computeValue}
+    });
+    {
+        // Compiling the request should detect a cycle.
+        EXPECT_VALIDATION_ERRORS(ExecValidationErrorType::DataDependencyCycle);
+
+        system.PrepareRequest(request);
+        TF_AXIOM(request.IsValid());
+    }   
+    {
+        EXPECT_VALIDATION_ERRORS(ExecValidationErrorType::DataDependencyCycle);
+        ExecUsdCacheView view = system.Compute(request);
+        TF_AXIOM(view.Get(0).IsEmpty());
+    }
+}
+
+// Test that a cycle is detected when computing 'attr1' or 'attr2', as each owns a 
+// connection that targets the other. 
+static void
+Test_CyclicAttributeConnections()
+{
+    Fixture fixture;
+    ExecUsdSystem &system = fixture.NewSystemFromLayer(R"usd(#usda 1.0
+        def "Prim" {
+            double attr1 = 1.0
+            double attr1.connect = </Prim.attr2>
+
+            double attr2 = 2.0
+            double attr2.connect = </Prim.attr1>
+        }
+    )usd");
+
+    ExecUsdRequest request = fixture.BuildRequest({
+        {fixture.GetAttributeAtPath("/Prim.attr1"), 
+            ExecBuiltinComputations->computeValue},
+        });
+    {
+        // Compiling the request should detect a cycle.
+        EXPECT_VALIDATION_ERRORS(ExecValidationErrorType::DataDependencyCycle);
+
+        system.PrepareRequest(request);
+        TF_AXIOM(request.IsValid());
+    }   
+    {
+        EXPECT_VALIDATION_ERRORS(ExecValidationErrorType::DataDependencyCycle);
+        ExecUsdCacheView view = system.Compute(request);
+        TF_AXIOM(view.Get(0).IsEmpty());
+    }
 }
 
 // Test that we detect a cycle when a pair of computations source eachother as
@@ -675,6 +768,8 @@ int main()
 
     Test_CycleDetectionRequiresRecompilation();
     Test_CyclicComputation();
+    Test_CyclicIncomingConnection();
+    Test_CyclicAttributeConnections();
     Test_CyclicComputationPair();
     Test_CyclicRelationshipComputation();
     Test_LargeCyclicRelationshipComputation();

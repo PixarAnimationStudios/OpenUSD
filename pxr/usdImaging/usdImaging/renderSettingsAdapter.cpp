@@ -42,6 +42,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((riIntegrator, "ri:integrator"))
     ((riSampleFilters, "ri:sampleFilters"))
     ((riDisplayFilters, "ri:displayFilters"))
+    ((riEnergyFilters, "ri:energyFilters"))
     // Deprecated in favor of corresponding ri* tokens
     ((outputsRiIntegrator, "outputs:ri:integrator"))
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
@@ -135,7 +136,8 @@ _StripRelsFromSettings(
         UsdRelationship rel = prim.GetRelationship(name);
         if (rel && name != _tokens->riIntegrator
                 && name != _tokens->riSampleFilters
-                && name != _tokens->riDisplayFilters) {
+                && name != _tokens->riDisplayFilters
+                && name != _tokens->riEnergyFilters) {
             toErase.push_back(it.first);
         }
     }
@@ -211,7 +213,8 @@ UsdImagingRenderSettingsAdapter::Populate(
         const TfToken outputTokens[] = {
             _tokens->riIntegrator,
             _tokens->riSampleFilters,
-            _tokens->riDisplayFilters
+            _tokens->riDisplayFilters,
+            _tokens->riEnergyFilters
         };
 
         for (const auto &token : outputTokens) {

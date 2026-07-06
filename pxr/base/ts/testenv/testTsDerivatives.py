@@ -94,12 +94,11 @@ class TsTest_Derivatives(unittest.TestCase):
         grapher = None
         if graph and Ts.TsTest_Grapher.Init():
             evaluator = Ts.TsTest_TsEvaluator()
-            data = evaluator.SplineToSplineData(spline)
-            sampleTimes = Ts.TsTest_SampleTimes(data)
+            sampleTimes = Ts.TsTest_SampleTimes(spline)
             sampleTimes.AddStandardTimes()
-            samples = evaluator.Eval(data, sampleTimes)
+            samples = evaluator.Eval(spline, sampleTimes)
             grapher = Ts.TsTest_Grapher(case, **graphParams)
-            grapher.AddSpline(case, data, samples)
+            grapher.AddSpline(case, spline, samples)
 
         # Build the list of between-knot times.
         # This also includes one pre-extrapolation and one post-extrapolation.
@@ -144,11 +143,10 @@ class TsTest_Derivatives(unittest.TestCase):
                 spline.SetKnot(knot)
 
             if grapher:
-                data = evaluator.SplineToSplineData(spline)
-                sampleTimes = Ts.TsTest_SampleTimes(data)
+                sampleTimes = Ts.TsTest_SampleTimes(spline)
                 sampleTimes.AddStandardTimes()
-                samples = evaluator.Eval(data, sampleTimes)
-                grapher.AddSpline(f"{case} (dual)", data, samples)
+                samples = evaluator.Eval(spline, sampleTimes)
+                grapher.AddSpline(f"{case} (dual)", spline, samples)
 
             # Test with the dual-valued spline.
             errors += self._DoTestWithDualityVariation(

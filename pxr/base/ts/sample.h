@@ -99,8 +99,21 @@ public:
             // We need to create a new polyline
             _sampledSpline->polylines.emplace_back(
                 typename SplineSamples::Polyline{vertex0, vertex1});
-        } else {
-            _sampledSpline->polylines.back().push_back(vertex1);
+        } else if (vertex0 != vertex1) {
+            typename SplineSamples::Polyline& polyline =
+                _sampledSpline->polylines.back();
+            TF_VERIFY(polyline.size() >= 2,
+                      "Polylines are initialized with two points.");
+                    
+            if (polyline.rbegin()[1] == vertex0 &&
+                polyline.back() == vertex0)
+            {
+                // If the last segment in the polyline is a zero-length segment
+                // just overwrite the last point.
+                polyline.back() = vertex1;
+            } else {
+                polyline.push_back(vertex1);
+            }
         }
     }
 
@@ -144,18 +157,41 @@ public:
         Vertex vertex0(time0, value0);
         Vertex vertex1(time1, value1);
 
-        if (_sampledSpline->polylines.empty() ||
-            _sampledSpline->sources.back() != source ||
-            (!_sampledSpline->polylines.back().empty() &&
-             _sampledSpline->polylines.back().back() != vertex0))
-        {
+        bool needNewPolyline = _sampledSpline->polylines.empty();
+    
+        // Add a new polyline if we've encountered a discontinuity.
+        needNewPolyline = needNewPolyline ||
+                          (!_sampledSpline->polylines.back().empty() &&
+                           _sampledSpline->polylines.back().back() != vertex0);
+
+        // Add a new polyline when there's a new source unless the added
+        // segment's vertices are equal and the previous polyline's last
+        // vertex is the same as the new vertices.
+        needNewPolyline = needNewPolyline ||
+                          (_sampledSpline->sources.back() != source &&
+                           vertex0 != vertex1);
+
+        if (needNewPolyline) {
             // We need to create a new polyline
             _sampledSpline->polylines.emplace_back(
                 typename SplineSamples::Polyline{vertex0, vertex1});
             // And add a source for it.
             _sampledSpline->sources.push_back(source);
-        } else {
-            _sampledSpline->polylines.back().push_back(vertex1);
+        } else if (vertex0 != vertex1) {
+            typename SplineSamples::Polyline& polyline =
+                _sampledSpline->polylines.back();
+            TF_VERIFY(polyline.size() >= 2,
+                      "Polylines are initialized with two points.");
+
+            if (polyline.rbegin()[1] == vertex0 &&
+                polyline.back() == vertex0)
+            {
+                // If the last segment in the polyline is a zero-length segment
+                // just overwrite the last point.
+                polyline.back() = vertex1;
+            } else {
+                polyline.push_back(vertex1);
+            }
         }
     }
 
@@ -185,6 +221,16 @@ Ts_SplineData*
 Ts_Bake(const Ts_SplineData* const data,
         const GfInterval& timeInterval,
         const bool includeExtrapLoops);
+
+// Truncate the given data to the given interval. See Spline::GetTruncated
+// for expected behavior of this function. Proper deallocation of the
+// return value is the caller's respondibility.
+TS_API
+Ts_SplineData*
+Ts_Truncate(const Ts_SplineData* const data,
+            const GfInterval& interval,
+            TsExtrapolation preFallback,
+            TsExtrapolation postFallback);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

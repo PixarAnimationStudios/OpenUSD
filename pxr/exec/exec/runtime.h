@@ -128,6 +128,7 @@ private:
     size_t _executorTopologicalStateVersion;
     std::unique_ptr<EfPageCacheStorage> _cacheStorage;
     std::unique_ptr<EfMaskedSubExecutor> _overridesExecutor;
+    size_t _overridesExecutorNetworkVersion;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

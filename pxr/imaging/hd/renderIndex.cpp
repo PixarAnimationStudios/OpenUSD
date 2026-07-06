@@ -51,12 +51,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// \deprecated.
-//
-// Future version will always enable scene index emulation!
-//
-TF_DEFINE_ENV_SETTING(HD_ENABLE_SCENE_INDEX_EMULATION, true,
-                      "Enable scene index emulation in the render index.");
 TF_DEFINE_ENV_SETTING(HD_ENABLE_TERMINAL_CACHING_SCENE_INDEX, false,
                   "Enable terminal HdCachingSceneIndex in the render index.");
 
@@ -66,13 +60,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((postMerging, "Post-Merging Notice Batching Scene Index"))
 );
 
-
-static bool
-_IsEnabledSceneIndexEmulation()
-{
-    static bool enabled = TfGetEnvSetting(HD_ENABLE_SCENE_INDEX_EMULATION);
-    return enabled;
-}
 
 static bool
 _IsEnabledTerminalCachingSceneIndex()
@@ -144,19 +131,13 @@ private:
 
 // -------------------------------------------------------------------------- //
 
-bool
-HdRenderIndex::IsSceneIndexEmulationEnabled()
-{
-    return _IsEnabledSceneIndexEmulation();
-}
-
 HdRenderIndex::HdRenderIndex(
     HdRenderDelegate *renderDelegate,
     HdDriverVector const& drivers,
     const std::string &instanceName,
     const std::string &appName,
     HdSceneIndexBaseRefPtr const &terminalSceneIndex,
-    const bool createFrontEndEmulationOnly)
+    const bool createFrontendEmulationOnly)
     : _emulationBatchingCtx(std::make_unique<_NoticeBatchingContext>(
         _noticeBatchingTokens->postEmulation))
     , _mergingBatchingCtx(std::make_unique<_NoticeBatchingContext>(
@@ -193,54 +174,50 @@ HdRenderIndex::HdRenderIndex(
 
         _tracker._SetDisableEmulationAPI(true);
     } else {
-        // If we need to emulate a scene index we create the 
-        // data structures now.
-        if (_IsEnabledSceneIndexEmulation()) {
-            _emulationSceneIndex = HdLegacyPrimSceneIndex::New();
+        _emulationSceneIndex = HdLegacyPrimSceneIndex::New();
 
-            _tracker._SetTargetSceneIndex(get_pointer(_emulationSceneIndex));
+        _tracker._SetTargetSceneIndex(get_pointer(_emulationSceneIndex));
 
-            // The legacy prim scene index holds prims contributed from
-            // upstream scene delegates.  Convert any legacy subsets
-            // to HdGeomSubsetSchema.  Since legacy prims are typically
-            // populated iteratively, use notice batching upstream from
-            // scanning for geom subsets.
-            _finalEmulationSceneIndex =
-                HdLegacyGeomSubsetSceneIndex::New(
-                    _emulationBatchingCtx->Append(_emulationSceneIndex));
+        // The legacy prim scene index holds prims contributed from
+        // upstream scene delegates.  Convert any legacy subsets
+        // to HdGeomSubsetSchema.  Since legacy prims are typically
+        // populated iteratively, use notice batching upstream from
+        // scanning for geom subsets.
+        _finalEmulationSceneIndex =
+            HdLegacyGeomSubsetSceneIndex::New(
+                _emulationBatchingCtx->Append(_emulationSceneIndex));
 
-            if (createFrontEndEmulationOnly) {
-                return;
-            }
-
-            _mergingSceneIndex = HdMergingSceneIndex::New();
-
-            _mergingSceneIndex->AddInputScene(
-                _finalEmulationSceneIndex,
-                SdfPath::AbsoluteRootPath());
-
-            HdSceneIndexBaseRefPtr sceneIndex = _mergingSceneIndex;
-
-            sceneIndex =
-                _mergingBatchingCtx->Append(sceneIndex);
-
-            const std::string &rendererDisplayName =
-                renderDelegate->GetRendererDisplayName();
-
-            if (!rendererDisplayName.empty()) {
-                sceneIndex =
-                    HdSceneIndexPluginRegistry::GetInstance()
-                        .AppendSceneIndicesForRenderer(
-                            rendererDisplayName, sceneIndex,
-                            instanceName, appName);
-            }
-
-            if (_IsEnabledTerminalCachingSceneIndex()) {
-                sceneIndex = HdCachingSceneIndex::New(sceneIndex);
-            }
-
-            _terminalSceneIndex = sceneIndex;
+        if (createFrontendEmulationOnly) {
+            return;
         }
+
+        _mergingSceneIndex = HdMergingSceneIndex::New();
+
+        _mergingSceneIndex->AddInputScene(
+            _finalEmulationSceneIndex,
+            SdfPath::AbsoluteRootPath());
+
+        HdSceneIndexBaseRefPtr sceneIndex = _mergingSceneIndex;
+
+        sceneIndex =
+            _mergingBatchingCtx->Append(sceneIndex);
+
+        const std::string &rendererDisplayName =
+            renderDelegate->GetRendererDisplayName();
+
+        if (!rendererDisplayName.empty()) {
+            sceneIndex =
+                HdSceneIndexPluginRegistry::GetInstance()
+                    .AppendSceneIndicesForRenderer(
+                        rendererDisplayName, sceneIndex,
+                        instanceName, appName);
+        }
+
+        if (_IsEnabledTerminalCachingSceneIndex()) {
+            sceneIndex = HdCachingSceneIndex::New(sceneIndex);
+        }
+
+        _terminalSceneIndex = sceneIndex;
     }
 
     if (_terminalSceneIndex) {
@@ -289,7 +266,7 @@ HdRenderIndex::New(
 }
 
 HdRenderIndex*
-HdRenderIndex::New(
+HdRenderIndex::NewForBackendEmulation(
     HdRenderDelegate *renderDelegate,
     HdDriverVector const& drivers,
     HdSceneIndexBaseRefPtr const &terminalSceneIndex)
@@ -312,12 +289,12 @@ HdRenderIndex::New(
 }
 
 HdRenderIndex*
-HdRenderIndex::New(
-    HdRenderDelegate *renderDelegate)
+HdRenderIndex::NewForFrontendEmulation(
+    HdRenderDelegate *nullRenderDelegate)
 {
-    if (renderDelegate == nullptr) {
+    if (nullRenderDelegate == nullptr) {
         TF_CODING_ERROR(
-            "Null Render Delegate provided to create render index");
+            "No Null Render Delegate provided to create render index");
         return nullptr;
     }
 
@@ -325,12 +302,12 @@ HdRenderIndex::New(
     // the merging scene index and all the filtering scene indices following
     // the merging scene index.
     return new HdRenderIndex(
-        renderDelegate,
+        nullRenderDelegate,
         /* drivers = */ {},
         /* instanceName = */ TfToken(),
         /* appName = */ TfToken(),
         /* terminalSceneIndex = */ nullptr,
-        /* createFrontEndEmulationSceneIndex = */ true);
+        /* createFrontendEmulationSceneIndex = */ true);
 }
 
 void
@@ -341,9 +318,10 @@ HdRenderIndex::InsertSceneIndex(
 {
     TRACE_FUNCTION();
 
-    if (!_IsEnabledSceneIndexEmulation()) {
-        TF_WARN("Unable to add scene index at prefix %s because emulation is off.",
-                scenePathPrefix.GetText());
+    if (!_mergingSceneIndex) {
+        TF_CODING_ERROR(
+            "HdRenderIndex::InsertSceneIndex called but render index was "
+            "constructed given a terminal scene index.");
         return;
     }
 
@@ -376,7 +354,10 @@ HdRenderIndex::RemoveSceneIndex(
 {
     TRACE_FUNCTION();
 
-    if (!_IsEnabledSceneIndexEmulation()) {
+    if (!_mergingSceneIndex) {
+        TF_CODING_ERROR(
+            "HdRenderIndex::RemoveSceneIndex called but render index was "
+            "constructed given a terminal scene index.");
         return;
     }
 
@@ -963,7 +944,17 @@ HdRenderIndex::GetInstanceName() const
         return _instanceName;
     }
 
-    return ArchStringPrintf("%p", (void *)this);
+    // Use the renderer plugin provided display name if available as the
+    // instance name.
+    const std::string &rendererDisplayName =
+        _renderDelegate->GetRendererDisplayName();
+    if (!rendererDisplayName.empty()) {
+        return ArchStringPrintf("Renderer: %s", rendererDisplayName.c_str());
+    }
+
+    // Fallback to the demangled type name.
+    return ArchStringPrintf("Renderer: %s",
+        ArchGetDemangled(typeid(*_renderDelegate)).c_str());
 }
 
 bool
@@ -1610,9 +1601,7 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
     // an Update call; run this before legacy Hydra prim sync.
     //
 
-    if (_IsEnabledSceneIndexEmulation()) {
-        _renderDelegate->Update();
-    }
+    _renderDelegate->Update();
 
     //
     ////////////////////////////////////////////////////////////////////////////

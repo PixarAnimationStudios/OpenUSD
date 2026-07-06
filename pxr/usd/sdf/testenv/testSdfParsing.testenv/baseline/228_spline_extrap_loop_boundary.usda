@@ -1,0 +1,16 @@
+#usda 1.3
+
+def XForm "Prim1"
+{
+    double a.spline = {
+        pre: loop repeat(5),
+        post: loop repeat,
+        5: 5.5; pre (0, 0); post held,
+        6: 6; post held,
+    }
+    double b.spline = {
+        pre: loop oscillate(5),
+        post: loop reset(5),
+    }
+}
+

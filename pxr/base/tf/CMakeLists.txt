@@ -624,6 +624,9 @@ pxr_register_test(TfError
     ENV TF_FATAL_VERIFY=0
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfError"
 )
+pxr_register_test(TfErrorAndDiagnosticTransportLogText
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfErrorAndDiagnosticTransportLogText"
+)
 pxr_register_test(TfErrorThreadTransport
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfErrorThreadTransport"
 )

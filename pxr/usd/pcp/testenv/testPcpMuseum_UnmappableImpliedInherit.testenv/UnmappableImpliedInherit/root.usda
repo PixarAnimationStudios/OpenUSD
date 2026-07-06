@@ -1,0 +1,31 @@
+#usda 1.0
+(
+    """
+    This exercises an edge case for implying inherits.
+
+    Model_1 has reference to Model in another layer. In that layer
+    Model has a child Instance that inherits a class /Model_1/Class
+    which was purposefully set up to use the same name parent name
+    as the referencing prim here. When computing the prim index for
+    /Model_1/Instance, we try to imply the inherit to /Model_1/Class
+    from model.usda across the reference from /Model_1 to /Model. But
+    we fail because /Model_1/Class cannot be mapped across the transfer
+    map function containing /Model -> /Model_1 and / -> / as its not
+    one-to-one with the inverse mapping. So we just don't imply the
+    inherit.
+    """
+)
+
+def "Model_1" (
+    references = @model.usda@</Model>
+)
+{
+    over "Instance" {
+    }
+
+    # This spec will NOT be part /Model_1/Instance's prim stack, 
+    # we will not be able to imply the inherit @model.usda@</Model_1/Class>
+    # across the reference to /Model_1/Class here.
+    over "Class" {
+    }
+}

@@ -75,7 +75,7 @@ private:
             auto higherPrec = [](Op left, Op right) {
                 return (left < right) || (left == right && left != Op::Not);
             };            
-            // Reduce while prior ops have higher precendence.
+            // Reduce while prior ops have higher precedence.
             while (!opStack.empty() && higherPrec(opStack.back(), op)) {
                 _Reduce();
             }
@@ -116,7 +116,7 @@ private:
                     SdfPredicateExpression::MakeNot(std::move(right)));
             }
             else {
-                // All other ops are all binary.
+                // All other ops are binary.
                 SdfPredicateExpression left = std::move(exprStack.back());
                 exprStack.pop_back();
                 exprStack.push_back(
@@ -147,9 +147,6 @@ namespace SdfPredicateExpressionParser {
 
 using namespace PXR_PEGTL_NAMESPACE;
 
-template <class Rule, class Sep>
-using LookaheadList = seq<Rule, star<at<Sep, Rule>, Sep, Rule>>;
-
 template <class Rule> using OptSpaced = pad<Rule, blank>;
 
 using OptSpacedComma = OptSpaced<one<','>>;
@@ -157,12 +154,12 @@ using OptSpacedComma = OptSpaced<one<','>>;
 ////////////////////////////////////////////////////////////////////////
 // Predicate expression grammar.
 
-struct NotKW : keyword<'n','o','t'> {};
-struct AndKW : keyword<'a','n','d'> {};
-struct OrKW  : keyword<'o','r'> {};
-struct Inf : keyword<'i','n','f'> {};
-struct True : keyword<'t','r','u','e'> {};
-struct False : keyword<'f','a','l','s','e'> {};
+struct NotKW  : PXR_PEGTL_KEYWORD("not") {};
+struct AndKW  : PXR_PEGTL_KEYWORD("and") {};
+struct OrKW   : PXR_PEGTL_KEYWORD("or") {};
+struct Inf    : PXR_PEGTL_KEYWORD("inf") {};
+struct True   : PXR_PEGTL_KEYWORD("true") {};
+struct False  : PXR_PEGTL_KEYWORD("false") {};
 struct ImpliedAnd : plus<blank> {};
 
 struct ReservedWord : sor<
@@ -170,7 +167,7 @@ struct ReservedWord : sor<
 
 struct Digits : plus<range<'0','9'>> {};
 
-struct Exp : seq<one<'e','E'>, opt<one<'-','+'>>, must<Digits>> {};
+struct Exp  : seq<one<'e','E'>, opt<one<'-','+'>>, must<Digits>> {};
 struct Frac : if_must<one<'.'>, Digits> {};
 struct PredArgFloat : seq<
     opt<one<'-'>>, sor<Inf, seq<Digits, if_then_else<Frac, opt<Exp>, Exp>>>
@@ -189,7 +186,7 @@ struct StringChar : if_then_else<
     one<'\\'>, must<Escaped<Quote>>, Unescaped<Quote>> {};
 
 struct QuotedString : sor<
-    if_must<one<'"'>, until<one<'"'>, StringChar<one<'"'>>>>,
+    if_must<one<'"'>,  until<one<'"'>,  StringChar<one<'"'>>>>,
     if_must<one<'\''>, until<one<'\''>, StringChar<one<'\''>>>>
     > {};
 
@@ -214,17 +211,31 @@ struct PredParenPosArg : seq<not_at<PredKWArgPrefix>, PredArgVal> {};
 
 struct PredFuncName : minus<identifier, ReservedWord> {};
 
+// Within keyword args, ',' unambiguously requires another keyword arg.
+struct PredKWArgStep : if_must<OptSpacedComma, PredKWArg> {};
+struct PredKWArgs : seq<PredKWArg, star<PredKWArgStep>> {};
+
+// The positional-to-keyword transition uses lookahead in the positional list
+// because a ',' after a positional arg could precede either another positional
+// arg or a keyword arg -- we can't commit to PredParenPosArg specifically.
+// Once all positional args are consumed, a ',' commits to requiring kwargs.
 struct PredParenArgs
     : if_then_else<list<PredParenPosArg, OptSpacedComma>,
-                   opt<OptSpacedComma, list<PredKWArg, OptSpacedComma>>,
-                   opt<list<PredKWArg, OptSpacedComma>>>
+                   opt<if_must<OptSpacedComma, PredKWArgs>>,
+                   opt<PredKWArgs>>
 {};
 
-struct PredColonArgs : list<PredArgVal, one<','>> {};
+struct PredColonArgs;
+struct PredColonArgStep : if_must<one<','>, PredArgVal> {};
+struct PredColonArgs : seq<PredArgVal, star<PredColonArgStep>> {};
+
 struct PredColonCall : if_must<seq<PredFuncName, one<':'>>, PredColonArgs> {};
+
+// Named for error messaging.
+struct PredParenClose : one<')'> {};
 struct PredParenCall : seq<
     PredFuncName, OptSpaced<one<'('>>,
-    must<PredParenArgs, star<blank>, one<')'>>
+    must<PredParenArgs, star<blank>, PredParenClose>
     >
 {};
 
@@ -232,21 +243,87 @@ struct PredBareCall : PredFuncName {};
 
 struct PredExpr;
 
-struct PredOpenGroup : one<'('> {};
+struct PredOpenGroup  : one<'('> {};
 struct PredCloseGroup : one<')'> {};
+
+// Named wrapper so the group's inner expression gets a targeted error message.
+struct GroupedPredExpr : OptSpaced<PredExpr> {};
 
 struct PredAtom
     : sor<
     PredColonCall,
     PredParenCall,
     PredBareCall,
-    if_must<PredOpenGroup, OptSpaced<PredExpr>, PredCloseGroup>
+    if_must<PredOpenGroup, GroupedPredExpr, PredCloseGroup>
     >
 {};
 
 struct PredFactor : seq<opt<OptSpaced<list<NotKW, plus<blank>>>>, PredAtom> {};
-struct PredOperator : sor<OptSpaced<AndKW>, OptSpaced<OrKW>, ImpliedAnd> {};
-struct PredExpr : LookaheadList<PredFactor, PredOperator> {};
+
+// 'and'/'or' are unambiguous operators -- commit to requiring another factor.
+// Implied and (whitespace) needs a lookahead because trailing whitespace is
+// valid and must not commit to requiring another factor.
+// Note: the lookahead parses ImpliedAnd+PredFactor twice; acceptable given
+// the bounded syntax involved.
+struct PredExplicitOp : sor<OptSpaced<AndKW>, OptSpaced<OrKW>> {};
+struct PredExprStep : if_must<PredExplicitOp, PredFactor> {};
+struct ImpliedAndStep : seq<
+    at<seq<ImpliedAnd, PredFactor>>, ImpliedAnd, PredFactor> {};
+
+struct PredExpr : seq<PredFactor, star<sor<PredExprStep, ImpliedAndStep>>> {};
+
+// Wrap eolf so we can attach a targeted error message without specializing
+// the PEGTL built-in directly.
+struct PredExprEnd : eolf {};
+
+////////////////////////////////////////////////////////////////////////
+// Errors.
+//
+// This is the root of the Errors inheritance chain used across the family
+// of grammars that embed predicate expressions:
+//
+//   SdfPredicateExpressionParser::Errors  (predicate rules, this file)
+//     <- SdfPathPatternParser::Errors     (path pattern rules)
+//       <- pathExpression.cpp Errors      (path expression rules)
+//
+// Each layer in the chain handles only its own grammar's rules; errors from
+// embedded grammars propagate upward automatically via inheritance.
+//
+// inline on static member definitions avoids ODR violations since this
+// header is included in multiple translation units.
+
+template <class Rule>
+struct Errors : public normal<Rule>
+{
+    static char const *message;
+
+    template <class Input, class... States>
+    [[noreturn]] static void raise(Input const &in, States &&...) {
+        throw parse_error(message, in);
+    }
+};
+
+template <class Rule>
+inline char const *Errors<Rule>::message = "";
+
+#define PARSE_ERROR(rule, msg) \
+    template <> inline char const *Errors<rule>::message = msg
+
+PARSE_ERROR(PredExprEnd,        "expected end of predicate expression");
+PARSE_ERROR(Digits,             "expected digits");
+PARSE_ERROR(Escaped<one<'\''>>, "expected escape character after '\\'");
+PARSE_ERROR(Escaped<one<'"'>>,  "expected escape character after '\\'");
+PARSE_ERROR(PredArgVal,         "expected argument value after '='");
+PARSE_ERROR(PredColonArgs,      "expected argument list after ':'");
+PARSE_ERROR(PredKWArg,          "expected keyword argument after ','");
+PARSE_ERROR(PredKWArgs,         "expected keyword argument after ','");
+PARSE_ERROR(PredParenClose,     "expected ')' to close function call");
+PARSE_ERROR(GroupedPredExpr,    "expected predicate expression after '('");
+PARSE_ERROR(PredCloseGroup,     "expected ')' to close predicate expression "
+                                "group");
+PARSE_ERROR(PredFactor,         "expected predicate expression after operator");
+
+#undef PARSE_ERROR
 
 // Actions ///////////////////////////////////////////////////////////////
 
@@ -384,7 +461,7 @@ template <> struct PredAction<PredParenCall>
 template <> struct PredAction<PredColonCall>
     : PredCallAction<SdfPredicateExpression::FnCall::ColonCall> {};
 
-}
+} // SdfPredicateExpressionParser
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

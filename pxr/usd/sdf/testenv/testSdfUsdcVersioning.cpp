@@ -26,6 +26,26 @@ main(int argc, char const *argv[])
         }) == 1);
     }
 
+    {
+        // Ensure that Export()ing to the layer's resolved path upgrades the
+        // file version.
+        {
+            TF_AXIOM(!SdfLayer::Find("deprecated_0_7_0.usd"));
+            TfDiagnosticTrap trap;
+            SdfLayerRefPtr layer = SdfLayer::FindOrOpen("deprecated_0_7_0.usd");
+            TF_AXIOM(layer);
+            TF_AXIOM(layer->Export(layer->GetResolvedPath().GetPathString()));
+        }
+        // Now that we Export()ed to upgrade, we should see no warnings.
+        TF_AXIOM(!SdfLayer::Find("deprecated_0_7_0.usd"));
+        TfDiagnosticTrap trap;
+        SdfLayerRefPtr layer = SdfLayer::FindOrOpen("deprecated_0_7_0.usd");
+        TF_AXIOM(layer);
+        TF_AXIOM(trap.EraseMatching([&](TfWarning const &w) {
+            return TfStringContains(w.GetCommentary(), "deprecated version");
+        }) == 0);
+    }
+    
     // Ensure no warnings are emitted reading a current version.
     SdfLayerRefPtr newLayer = SdfLayer::CreateNew("current.usdc");
     TF_AXIOM(newLayer);

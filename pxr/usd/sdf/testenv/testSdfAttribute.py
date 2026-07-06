@@ -565,6 +565,55 @@ def Xform "Prim"
         self.assertFalse(e.HasInfo('spline'))
         self.assertFalse(e.HasSpline())
 
+    def test_SplineRoundTrip(self):
+        layer = self.CreateAnonymous()
+        layer.ImportFromString(
+'''#usda 1.0
+def Xform "Prim"
+{
+    double a.spline = {
+        1: 5; post held,
+        2: 18; post held,
+    }
+    float b.spline = {
+        1: 10; post held,
+    }
+    double c.spline = {
+        pre: loop repeat(5),
+        post: loop repeat
+    }
+    double d.spline = {
+        pre: loop oscillate(5),
+        post: loop reset(5),
+        5: 5.5; post held,
+        6: 6.0; post held,
+    }
+}
+''')
+        a = layer.GetAttributeAtPath("/Prim.a").GetSpline()
+        b = layer.GetAttributeAtPath("/Prim.b").GetSpline()
+        c = layer.GetAttributeAtPath("/Prim.c").GetSpline()
+        d = layer.GetAttributeAtPath("/Prim.d").GetSpline()
+
+        # Export to file & string, open and compare.
+        fname = 'testSdfAttributeArrayEditAuthoring.' + self.extension
+        layer.Export(fname)
+
+        fileLayer = Sdf.Layer.FindOrOpen(fname)
+        self.assertTrue(fileLayer)
+
+        strLayer = self.CreateAnonymous()
+        self.assertTrue(strLayer.ImportFromString(layer.ExportToString()))
+
+        self.assertEqual(
+            fileLayer.GetAttributeAtPath("/Prim.a").GetSpline(), a)
+        self.assertEqual(
+            fileLayer.GetAttributeAtPath("/Prim.b").GetSpline(), b)
+        self.assertEqual(
+            fileLayer.GetAttributeAtPath("/Prim.c").GetSpline(), c)
+        self.assertEqual(
+            fileLayer.GetAttributeAtPath("/Prim.d").GetSpline(), d)
+
     def test_Limits(self):
         """
         Exercise basic API for the limits metadata field

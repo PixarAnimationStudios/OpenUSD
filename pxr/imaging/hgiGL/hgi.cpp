@@ -28,6 +28,7 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/trace/trace.h"
 
 #include <mutex>
 
@@ -335,6 +336,7 @@ HgiGL::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
     bool result = Hgi::_SubmitCmds(cmds, wait);
 
     if (wait == HgiSubmitWaitTypeWaitUntilCompleted) {
+        TRACE_SCOPE("HgiGL GPU Wait...");
         // CPU - GPU synchronization (stall) by client request only.
         static const uint64_t timeOut = 100000000000;
 

@@ -1,0 +1,25 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Validators": {
+                    "EncapsulationRulesValidator": {
+                        "doc": "Connectable prims in UsdLux (e.g. Light, LightFilters) can only be nested inside other Container-like Connectable prims (UsdShadeNodeGraph, UsdLuxLight or UsdLuxLightFilter).",
+                        "schemaTypes": [
+                            "UsdLuxLightAPI",
+                            "UsdLuxLightFilter"
+                        ]
+                    }, 
+                    "keywords": [
+                        "UsdLuxValidators"
+                    ]
+                }
+            }, 
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 
+            "Name": "usdLuxValidators", 
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@", 
+            "Root": "@PLUG_INFO_ROOT@", 
+            "Type": "library"
+        }
+    ]
+}

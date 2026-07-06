@@ -672,6 +672,15 @@ GfFrustum::ComputeCornersAtDistance(double d) const
     return corners;
 }
 
+GfFrustum::FrustumPlanes
+GfFrustum::ComputePlanes() const
+{
+    // Recalculate frustum planes if necessary
+    _CalculateFrustumPlanes();
+
+    return *_planes;
+}
+
 // Utility function for mapping normalized window coordinates to a window point.
 static GfVec2d
 _WindowNormalizedToPoint(const GfVec2d &windowPos, const GfRange2d &windowRect)
@@ -906,7 +915,7 @@ GfFrustum::Intersects(const GfVec3d &point) const
 }
 
 inline static uint32_t
-_CalcIntersectionBitMask(const std::array<GfPlane, 6> &planes,
+_CalcIntersectionBitMask(const GfFrustum::FrustumPlanes &planes,
                          GfVec3d const &p)
 {
     return
@@ -1098,8 +1107,8 @@ GfFrustum::_CalculateFrustumPlanes() const
         return;
     }
 
-    std::unique_ptr<std::array<GfPlane, 6>>
-        newPlanesOwner(new std::array<GfPlane, 6>);
+    std::unique_ptr<FrustumPlanes>
+        newPlanesOwner(new FrustumPlanes);
 
     auto &newPlanes = *newPlanesOwner;
 

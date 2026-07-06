@@ -799,6 +799,7 @@ HdStPopulateConstantPrimvars(
     HdMeshGeomStyle descGeomStyle,
     int geomSubsetDescIndex,
     size_t numGeomSubsets,
+    HdBufferSpecVector const& customSpecs,
     bool *hasMirroredTransform,
     bool *hasDisplayOpacity,
     bool *hasNormals)
@@ -1020,6 +1021,12 @@ HdStPopulateConstantPrimvars(
     HdBufferSpecVector bufferSpecs;
     HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
+    if (!customSpecs.empty()) {
+        bufferSpecs.insert(bufferSpecs.end(),
+                           customSpecs.begin(),
+                           customSpecs.end());
+    }
+
     // XXX: This should be based off the DirtyPrimvarDesc bit.
     bool hasDirtyPrimvarDesc =
         (*dirtyBits & HdChangeTracker::DirtyPrimvar) ||
@@ -1061,6 +1068,42 @@ HdStPopulateConstantPrimvars(
         hdStResourceRegistry->AddSources(
             drawItem->GetConstantPrimvarRange(), std::move(sources));
     }
+}
+
+void
+HdStPopulateConstantPrimvars(
+    HdRprim *prim,
+    HdRprimSharedData *sharedData,
+    HdSceneDelegate *delegate,
+    HdRenderParam *renderParam,
+    HdStDrawItem *drawItem,
+    HdDirtyBits *dirtyBits,
+    HdReprSharedPtr const &repr,
+    HdMeshGeomStyle descGeomStyle,
+    int geomSubsetDescIndex,
+    size_t numGeomSubsets,
+    bool *hasMirroredTransform,
+    bool *hasDisplayOpacity,
+    bool *hasNormals)
+{
+    HD_TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    HdStPopulateConstantPrimvars(
+        prim,
+        sharedData,
+        delegate,
+        renderParam,
+        drawItem,
+        dirtyBits,
+        repr,
+        descGeomStyle,
+        geomSubsetDescIndex,
+        numGeomSubsets,
+        HdBufferSpecVector(),
+        hasMirroredTransform,
+        hasDisplayOpacity,
+        hasNormals);
 }
 
 // -----------------------------------------------------------------------------

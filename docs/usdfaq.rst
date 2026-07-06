@@ -752,15 +752,9 @@ If you get an error message when using USD's Python bindings like this:
    ImportError: No module named pxr
 
 Make sure that the :envvar:`PYTHONPATH` environment variable includes
-the directory containing the USD Python modules:
-
-.. code-block:: sh
-
-   $ export PYTHONPATH=$PYTHONPATH:<inst>/lib/python
-
-Where :file:`<inst>` represents the :makevar:`CMAKE_INSTALL_PREFIX` set in your
-build configuration. See `Advanced Build Configuration
-<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md>`_ for
+the directory containing the USD Python modules. See the
+`Python docs
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md#Python>`__ for
 more information.
 
 Why Isn't This Plugin Being Built?

@@ -1,0 +1,55 @@
+#usda 1.0
+(
+    """
+    This museum case exercises behavior with nested relocates that
+    rename prims with opinions from inherit arcs.
+
+    First, /CharGroup/RefChar (which comes across a reference arc)
+    is renamed by a relocates statement to /CharGroup/Char. The
+    original prim across the reference should have an opinion from
+    /_class_CharGroup/RefChar due to the ancestral inherit arc
+    between /RefCharGroup and /_class_CharGroup. Due to spooky inherits,
+    the composed prim should also have an opinion from the prim at
+    the same path in the root layer stack.
+
+    Second, the child prim /CharGroup/Char/RefTask is renamed to
+    /CharGroup/Char/Task. The original prim across the reference should
+    have an opinion from /_class_CharGroup/RefChar/RefTask in both the
+    referencing and root layer stacks due to the same ancestral inherit
+    arc from above. It should also have opinions from _class_Task in
+    both layer stacks due to the direct inherit arc between
+    /RefCharGroup/RefChar/RefTask and /_class_Task across the reference.
+    """
+
+    relocates = {
+        </CharGroup/RefChar> : </CharGroup/Char>,
+        </CharGroup/Char/RefTask> : </CharGroup/Char/Task>
+    }
+)
+
+class "_class_CharGroup"
+{
+    over "RefChar"
+    {
+        over "RefTask"
+        {
+        }
+    }
+}
+
+class "_class_Task"
+{
+}
+
+over "CharGroup" (
+    references = @./ref.usda@</RefCharGroup>
+)
+{
+    over "Char"
+    {
+        over "Task"
+        {
+        }
+    }
+}
+

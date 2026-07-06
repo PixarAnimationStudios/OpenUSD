@@ -1,0 +1,69 @@
+#usda 1.0
+(
+    """This test is from https://github.com/PixarAnimationStudios/OpenUSD/issues/4056 and exercises instance proxy path translation for
+    material bindings on a native instance prototype within a
+    point instancer."""
+    endTimeCode = 1
+    framesPerSecond = 24
+    metersPerUnit = 1
+    startTimeCode = 1
+    timeCodesPerSecond = 24
+    upAxis = "Y"
+)
+
+over "materials_proto"
+{
+    def Material "green"
+    {
+        token outputs:surface.connect = </materials_proto/green/usdpreviewsurface.outputs:surface>
+
+        def Shader "usdpreviewsurface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:emissiveColor = (0, 1, 0)
+            token outputs:surface
+        }
+    }
+}
+
+over "scene_proto"
+{
+    def Sphere "sphere" (
+        apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </scene_proto/materials/green>
+    }
+
+    def Scope "materials" (
+        instanceable = true
+        add references = </materials_proto>
+    )
+    {
+    }
+}
+
+def PointInstancer "pointinstancer"
+{
+    point3f[] positions = [(0, 0, 0)]
+    int[] protoIndices = [0]
+    rel prototypes = </pointinstancer/Prototypes/scene>
+
+    def Scope "Prototypes" (
+        kind = "group"
+    )
+    {
+        def Xform "scene" (
+            instanceable = true
+            add references = </scene_proto>
+        )
+        {
+        }
+    }
+}
+
+def Camera "main_cam"
+{
+     point3f xformOp:translate = (0,0,10)
+     uniform token[] xformOpOrder = ["xformOp:translate"]
+}

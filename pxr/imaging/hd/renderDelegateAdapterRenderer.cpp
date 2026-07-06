@@ -22,11 +22,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 std::vector<HdDriver>
-_ComputeDrivers(HdContainerDataSourceHandle const &rendererCreateArgs)
+_ComputeDrivers(const HdRendererCreateArgsSchema &rendererCreateArgs)
 {
-    const HdRendererCreateArgsSchema argsSchema(rendererCreateArgs);
     const HdSampledDataSourceContainerSchema driverSchema =
-        argsSchema.GetDrivers();
+        rendererCreateArgs.GetDrivers();
 
     std::vector<HdDriver> drivers;
     for (const TfToken &name : driverSchema.GetNames()) {
@@ -198,11 +197,11 @@ _ToPointers(const std::vector<HdDriver> &drivers)
 HdRenderDelegateAdapterRenderer::HdRenderDelegateAdapterRenderer(
     HdPluginRenderDelegateUniqueHandle renderDelegate,
     HdSceneIndexBaseRefPtr const &terminalSceneIndex,
-    HdContainerDataSourceHandle const &rendererCreateArgs)
+    const HdRendererCreateArgsSchema &rendererCreateArgs)
  : _drivers(_ComputeDrivers(rendererCreateArgs))
  , _renderDelegate(std::move(renderDelegate))
  , _renderIndex(
-     HdRenderIndex::New(
+     HdRenderIndex::NewForBackendEmulation(
          _renderDelegate.Get(),
          _ToPointers(_drivers),
          terminalSceneIndex))
@@ -212,6 +211,17 @@ HdRenderDelegateAdapterRenderer::HdRenderDelegateAdapterRenderer(
          _renderDelegate.Get(),
          _renderIndex.get(),
          _engine.get()))
+{
+}
+
+HdRenderDelegateAdapterRenderer::HdRenderDelegateAdapterRenderer(
+    HdPluginRenderDelegateUniqueHandle renderDelegate,
+    HdSceneIndexBaseRefPtr const &terminalSceneIndex,
+    HdContainerDataSourceHandle const &rendererCreateArgs)
+ : HdRenderDelegateAdapterRenderer(
+     std::move(renderDelegate),
+     terminalSceneIndex,
+     HdRendererCreateArgsSchema(rendererCreateArgs))
 {
 }
 

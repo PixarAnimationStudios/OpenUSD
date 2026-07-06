@@ -427,13 +427,11 @@ void
 HdxFullscreenShader::_SetDefaultProgram(
     bool writeDepth)
 {
-    const TfToken& fragShader =
-        writeDepth ? _tokens->compositeFragmentWithDepth :
-                     _tokens->compositeFragmentNoDepth;
-
     HgiShaderFunctionDesc fragDesc;
-    fragDesc.debugName = fragShader.GetString();
     fragDesc.shaderStage = HgiShaderStageFragment;
+    fragDesc.debugName = writeDepth ?
+        _tokens->compositeFragmentWithDepth.GetString() :
+        _tokens->compositeFragmentNoDepth.GetString();
     HgiShaderFunctionAddStageInput(
         &fragDesc, "uvOut", "vec2");
     HgiShaderFunctionAddStageOutput(
@@ -448,7 +446,34 @@ HdxFullscreenShader::_SetDefaultProgram(
             &fragDesc, "depth", /*bindIndex = */1);
     }
 
-    SetProgram(HdxPackageFullscreenShader(), fragShader, fragDesc);
+    static const HioGlslfx fragGlslfx(HdxPackageFullscreenShader());
+    std::string reason;
+    if (!fragGlslfx.IsValid(&reason)) {
+        TF_CODING_ERROR("Couldn't load fragment shader %s, error: %s",
+            fragGlslfx.GetFilePath().c_str(),
+            reason.c_str());
+    } else {
+        _glslfxPath = HdxPackageFullscreenShader();
+        if (writeDepth) {
+            _shaderName = _tokens->compositeFragmentWithDepth;
+            static const std::string fsCodeWithDepth =
+                fragGlslfx.GetSource(_tokens->compositeFragmentWithDepth);
+            TF_VERIFY(!fsCodeWithDepth.empty());
+            fragDesc.shaderCode = fsCodeWithDepth.c_str();
+        } else {
+            _shaderName = _tokens->compositeFragmentNoDepth;
+            static const std::string fsCodeNoDepth =
+                fragGlslfx.GetSource(_tokens->compositeFragmentNoDepth);
+            TF_VERIFY(!fsCodeNoDepth.empty());
+            fragDesc.shaderCode = fsCodeNoDepth.c_str();
+        }
+
+        // Not calling other SetProgram overload to avoid caching and benefit
+        // from using statics for shader strings
+        SetProgram(fragDesc);
+
+        fragDesc.shaderCode = nullptr;
+    }
 }
 
 void 

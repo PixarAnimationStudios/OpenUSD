@@ -28,6 +28,8 @@ Exec_PrivateBuiltinComputationTokens::Exec_PrivateBuiltinComputationTokens(
             .SetHasDefinition(false)
             .SetIsUserDefinable(true)
             .SetIsInputConsumable(false)))
+    , computeConnectedValue(registry._RegisterBuiltinComputation(
+        "computeConnectedValue"))
 {}
 
 PXR_NAMESPACE_CLOSE_SCOPE

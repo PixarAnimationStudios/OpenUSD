@@ -1,0 +1,31 @@
+#usda 1.0
+
+def Cube "left"
+{
+    double3 xformOp:translate = (-10, 0, 0)
+    token[] xformOpOrder = ["xformOp:translate"]
+}
+
+over "Over"
+{
+    def Cube "Prototype"
+    {
+        double3 xformOp:translate = (-2, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def PointInstancer "PointInstancer"
+{
+    def Cube "Prototype"
+    {
+        double3 xformOp:translate = (2, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Cube "right"
+{
+    double3 xformOp:translate = (10, 0, 0)
+    token[] xformOpOrder = ["xformOp:translate"]
+}

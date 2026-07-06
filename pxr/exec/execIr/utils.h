@@ -55,12 +55,27 @@ struct ExecIr_UtilsParams
     GfMatrix4d rotationOrientation = GfMatrix4d(1.0);
 };
 
-// Computes the starting space -- where the joint would be without 
-// the effect of any local translation, rotation, or scale avars.
-//
+// Compute a local transform matrix given scalars for translation and rotation.
 GfMatrix4d
-ExecIr_UtilsComputeStandardStartingSpace(
+ExecIr_ComputeLocalXf(
+    double tx, 
+    double ty, 
+    double tz,
+    double rSpin, 
+    double rx, 
+    double ry, 
+    double rz,
+    const TfToken &rotationOrder,
     const VdfContext &ctx);
+
+// Compute the default space by combining default translates, rotates, and
+// scales with local rest space and the default space of the parent.
+GfMatrix4d
+ExecIr_ComputeDefaultSpace(
+    const GfMatrix4d &defaultTransRotOffsetXf,
+    const GfMatrix4d &defaultScaleXf,
+    const GfMatrix4d &localRestXf,
+    const GfMatrix4d &parentDefaultSpace);
 
 // Computes the orientation and scale in which local translations are 
 // applied.
@@ -114,6 +129,11 @@ ExecIr_UtilsInvert(
     const GfMatrix4d &posedSpace,
     const ExecIr_UtilsParams &params,
     ExecIrResult *const resultMap);
+
+// Returns standard FK controller parameters.
+//
+ExecIr_UtilsParams
+ExecIr_ComputeFkParams(const VdfContext &ctx);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -29,14 +29,10 @@
 
 #include "pxr/base/trace/trace.h"
 
+#include <string>
 #include <variant>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    ((propagatedPrototypesScope, "UsdNiPropagatedPrototypes")));
-
 
 namespace UsdImaging_NiInstanceAggregationSceneIndex_Impl {
 
@@ -741,7 +737,7 @@ private:
 std::string
 _ComputeConstantPrimvarsRoleHash(HdPrimvarsSchema primvarsSchema)
 {
-    std::map<TfToken, TfToken> nameToRole;
+    std::map<std::string, std::string> nameToRole;
 
     for (const TfToken &name : primvarsSchema.GetPrimvarNames()) {
         HdPrimvarSchema primvarSchema = primvarsSchema.GetPrimvar(name);
@@ -754,7 +750,7 @@ _ComputeConstantPrimvarsRoleHash(HdPrimvarsSchema primvarsSchema)
                            primvarSchema.GetRole()) {
                     role = roleSrc->GetTypedValue(0.0f);
                 }
-                nameToRole[name] = role;
+                nameToRole[name.GetString()] = role.GetString();
             }
         }
     }
@@ -878,7 +874,7 @@ struct _InstanceInfo {
     SdfPath GetBindingPrimPath() const {
         return
             enclosingPrototypeRoot
-                .AppendChild(_tokens->propagatedPrototypesScope)
+                .AppendChild(UsdImagingTokens->niPropagatedPrototypesScope)
                 .AppendChild(bindingHash);
     }
 

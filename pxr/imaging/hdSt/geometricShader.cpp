@@ -34,7 +34,8 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
                                        bool cullingPass,
                                        FvarPatchType fvarPatchType,
                                        SdfPath const &debugId,
-                                       float lineWidth)
+                                       float lineWidth,
+                                       uint32_t vertexCountFallback)
     : HdStShaderCode()
     , _primType(primType)
     , _cullStyle(cullStyle)
@@ -44,6 +45,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
     , _useMetalTessellation(useMetalTessellation)
     , _polygonMode(polygonMode)
     , _lineWidth(lineWidth)
+    , _vertexCountFallback(vertexCountFallback)
     , _frustumCullingPass(cullingPass)
     , _fvarPatchType(fvarPatchType)
     , _hash(0)
@@ -360,7 +362,8 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
                 shaderKey.IsFrustumCullingPass(),
                 shaderKey.GetFvarPatchType(),
                 /*debugId=*/SdfPath(),
-                shaderKey.GetLineWidth()));
+                shaderKey.GetLineWidth(),
+                shaderKey.GetVertexCountFallback()));
     }
     return geometricShaderInstance.GetValue();
 }

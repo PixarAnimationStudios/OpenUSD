@@ -12,6 +12,7 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usdValidation/usdValidation/error.h"
+#include "pxr/usdValidation/usdValidation/notice.h"
 #include "pxr/usdValidation/usdValidation/registry.h"
 #include "pxr/usdValidation/usdValidation/timeRange.h"
 #include "pxr/usdValidation/usdValidation/validator.h"
@@ -234,6 +235,74 @@ TestUsdValidationRegistry()
     }
 }
 
+void TestUsdValidationRegisterValidatorDynamicallyAndListener()
+{
+    // listen to new validators being registered, OnValidatorRegistered will
+    // check the name of the validator being registered.
+    struct TestListener : public TfWeakBase
+    {
+        void OnValidatorRegistered(
+            const UsdValidationNotice::DidRegisterValidator &notice) {
+            const UsdValidationValidator *const validator
+                = notice.GetValidator();
+            TF_AXIOM(validator);
+            const UsdValidationValidatorMetadata &metadata =
+                validator->GetMetadata();
+            TF_AXIOM(
+                metadata.name == TfToken("dynamicallyRegisteredValidator"));
+            receivedNoticeCount++;
+        }
+        void OnValidatorSuiteRegistered(
+            const UsdValidationNotice::DidRegisterValidatorSuite &notice) {
+            const UsdValidationValidatorSuite *const suite
+                = notice.GetValidatorSuite();
+            TF_AXIOM(suite);
+            const UsdValidationValidatorMetadata &metadata = 
+                suite->GetMetadata();
+            TF_AXIOM(
+                metadata.name == TfToken("dynamicallyRegisteredValidatorSuite"));
+            receivedNoticeCount++;
+        }
+
+        size_t receivedNoticeCount = 0;
+    };
+
+    TestListener listener;
+
+    TfNotice::Register(
+        TfCreateWeakPtr(&listener), 
+        &TestListener::OnValidatorRegistered);
+    TfNotice::Register(
+        TfCreateWeakPtr(&listener), 
+        &TestListener::OnValidatorSuiteRegistered);
+
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+
+    {
+        UsdValidationValidatorMetadata metadata;
+        metadata.name = TfToken("dynamicallyRegisteredValidator");
+        metadata.doc = "dynamic validator: notice should be sent and received.";
+        registry.RegisterValidator(
+            metadata, [](
+                const UsdStagePtr &/*stage*/,
+                const UsdValidationTimeRange &/*timeRange*/) {
+                return UsdValidationErrorVector {};
+            });
+    }
+    TF_AXIOM(listener.receivedNoticeCount == 1);
+
+    {
+        UsdValidationValidatorMetadata metadata;
+        metadata.name = TfToken("dynamicallyRegisteredValidatorSuite");
+        metadata.isSuite = true;
+        metadata.doc = 
+            "dynamic validator suite: notice should be sent and received.";
+        registry.RegisterValidatorSuite(
+            metadata, {});
+    }
+    TF_AXIOM(listener.receivedNoticeCount == 2);
+}
+
 int
 main()
 {
@@ -242,6 +311,7 @@ main()
     TF_AXIOM(!PlugRegistry::GetInstance().RegisterPlugins(testDir).empty());
 
     TestUsdValidationRegistry();
+    TestUsdValidationRegisterValidatorDynamicallyAndListener();
 
     printf("OK\n");
 }

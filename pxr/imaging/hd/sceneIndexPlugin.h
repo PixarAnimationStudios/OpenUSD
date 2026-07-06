@@ -14,6 +14,65 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// A scene index plugin bundles one or more (typically filtering) scene indices 
+/// together and enables their runtime discovery and participation in the
+/// scene index graph construction process.
+///
+/// Scene index plugins leverage the Plug system and are required to have a
+/// corresponding entry in the plugInfo.json file in the library directory they
+/// are housed in. They are managed by the HdSceneIndexPluginRegistry.
+///
+/// The JSON entry for a scene index plugin should have the following structure:
+///
+/// \code
+/// "MySceneIndexPlugin": {
+///     "bases": ["HdSceneIndexPlugin"],
+///
+///     # Mandatory fields for "hydra plugins" due to HfPluginRegistry.
+///     "displayName": "My Awesome Plugin", # Unused currently.
+///     "priority": 0, # Not relevant for scene index plugins.
+///
+///     # Filtering fields that specify which renderers and apps the plugin
+///     # is relevant for. The empty string "" indicates "all".
+///     #
+///     "loadWithRenderer": ["rendererA", "rendererB"], # Mandatory.
+///     "loadWithApps": ["appA", "appB"], # Optional, defaults to "" (all).
+/// 
+///     # Fields that specify tags and tag-based ordering constraints for the
+///     # plugin. These fields provide an alternative and improvement to the
+///     # insertion phase/order based constraints of the C++ registration API.
+///     # These constraints are considered when the ordering policy used by the 
+///     # HdSceneIndexPluginRegistry is "Hybrid" or "JsonMetadataOnly".
+///
+///     "tags": ["tagA", "tagB"], # Optional. The plugin typename serves as an
+///                               # implicit tag.
+///     "ordering": { # Optional.
+///
+///        # Tags or plugin typenames that this plugin should be ordered after.
+///         "after": ["PluginTypeName1", "Tag3"],
+///
+///         # Tags or plugin typenames that this plugin should be ordered before.
+///         "before": ["PluginTypeName2", "Tag4"],
+///
+///         # The tags above partition the plugins into three groups (indicated
+///         # by [] below):
+///         # [afterTags] -> [... -> "MySceneIndexPlugin" -> ...] -> [beforeTags]
+///         # The insertion position specifies the ordering of this plugin 
+///         # within the middle group of plugins, with the options:
+///         # - "firstAfter": insert as early as possible, after the afterTags.
+///         # - "lastBefore": insert as late as possible, before the beforeTags.
+///         # - "doesNotMatter": insert in any position within the middle group.
+///         # The default is "doesNotMatter".
+///         "position": "firstAfter"
+///     }
+/// }
+///
+/// \endcode
+///
+/// \sa HdSceneIndexPluginRegistry
+/// \sa HdSceneIndexPluginRegistry::PluginOrderingPolicy
+/// \sa HdSceneIndexPluginRegistry::RegisterSceneIndexForRenderer
+///     
 class HdSceneIndexPlugin : public HfPluginBase
 {
 public:

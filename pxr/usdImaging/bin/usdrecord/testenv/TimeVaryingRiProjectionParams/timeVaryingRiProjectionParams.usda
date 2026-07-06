@@ -1,0 +1,58 @@
+#usda 1.0
+(
+    startTimeCode = 1
+    endTimeCode = 10
+    renderSettingsPrimPath = "/Render/Settings"
+)
+
+def Scope "Render"
+{
+    def RenderSettings "Settings"
+    {
+        bool ri:hider:jitter = 0
+        float ri:Ri:PixelVariance = 0.0
+        int ri:hider:minsamples = 4
+        int ri:hider:maxsamples = 4
+    }
+}
+
+def Cube "Cube1" {
+    ColorFloat[] primvars:displayColor = [(0.5,0.5,1)]
+}
+
+def Camera "main_cam"
+{
+    float2 clippingRange = (0.1, 10000)
+    float focalLength = 35
+    float focusDistance = 50
+    float fStop = 1000
+    float3 xformOp:rotateXYZ = (60, 0, 45)
+    double3 xformOp:translate = (4, -4, 4)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    rel ri:projection = </main_cam/CylCamera>
+
+    def PxrCylinderCamera "CylCamera"
+    {
+        float inputs:ri:hsweep.timeSamples = {
+            1: 30,
+            10: 90
+        }
+    }
+}
+
+def Camera "main_cam_panini"
+{
+    float2 clippingRange = (0.1, 10000)
+    float focalLength = 35
+    float focusDistance = 50
+    float fStop = 1000
+    float3 xformOp:rotateXYZ = (60, 0, 45)
+    double3 xformOp:translate = (4, -4, 4)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    rel ri:projection = </main_cam_panini/PaniniCam>
+
+    def PxrPanini "PaniniCam"
+    {
+        float inputs:ri:fov = 70
+    }
+}

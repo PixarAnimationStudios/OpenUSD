@@ -26,3 +26,17 @@ class "HydraGenerativeProceduralAPI" (
     )
 }
 
+class "HydraRenderPassAPI" (
+    customData = {
+        string userDocBrief = "Provides Hydra-specific properties for UsdRenderPass."
+    }
+)
+{
+    uniform token hydra:rendererName (
+        customData = {
+            string userDocBrief = """The name of the Hydra renderer to use if the user does
+        not otherwise specify one to the application."""
+        }
+    )
+}
+

@@ -1,0 +1,226 @@
+/*!
+\page usdLod_page_front UsdLod : USD Level of Detail Schema
+\if ( PIXAR_MFB_BUILD )
+\mainpage UsdLod : USD Level of Detail Schema
+\endif
+
+\section usdLod_overview Overview
+
+UsdLod provides a standardized representation for Level of Detail (LOD) in USD
+scenes. LOD systems allow renderers and engines to efficiently select among
+multiple representations of an asset based on configurable criteria such as
+camera distance or projected screen size. The schema defines the data; selection
+logic is the responsibility of the renderer or engine consuming the scene.
+
+UsdLod supports:
+
+  - Multiple independent LOD domains (imaging, physics, audio, and custom
+    domains), allowing different renderers to independently select among LOD
+    representations without interference.
+
+  - Hierarchical LOD, where LOD roots may be nested within one another, with
+    deterministic top-down evaluation.
+
+  - Runtime selection by any renderer using heuristic prims that encode the
+    selection criteria.
+
+  - Override mechanisms that allow a renderer to bypass heuristics and select a
+    specific LOD item for a subtree.
+
+  - Limited backward compatibility with legacy renderers that do not understand
+    the LOD schemas.
+
+The key concepts in the LOD system are:
+  - __Renderers__
+  - __LOD Roots__ and __LOD Items__
+  - __heuristics__
+  - __Domains__
+
+A __renderer__ is commonly the code that generates images from the contents of
+the USD scene graph, but in the LOD system it is more generally any bit of code
+that processes the scene graph and wants to use level of detail.
+
+When the renderer is processing the scene graph, it may encounter __LOD root__
+prims. These are prims with the `LODRootAPI` schema applied. The immediate
+namespace children of the root are the __LOD items__. It is the renderer's job
+The renderer is responsible for choosing which LOD items are displayed and which
+are hidden. It does so primarily using __heuristics__.
+
+__Heuristics__ are concretely typed prims that derive from the `LODHeuristic`
+schema and are targeted by the `lod:heuristics` relationship on the LOD
+root. Each type of heuristic prim has a __domain__ property (`lod:domain`) and
+various other properties to inform the heuristic's decision algorithm. If the
+renderer is interested in the heuristic's __domain__ and understands the
+heuristic's type, then the renderer can invoke methods in the heuristic's code
+to compute a recommended level-of-detail. Each of these methods will likely
+require information from the renderer itself as well as information from the
+scene. For example, a distance heuristic needs the position of renderer's camera
+as well as the position of the object in the scene.
+
+The __domain__ values are just arbitrary tokens. The generic domain values
+defined as part of the LOD system itself are "imaging", "audio", and
+"physics". Each renderer may be interested in specific domain values as well as
+or instead of the generic value. For example, hydra may be interested in both
+"hydra:imaging" and "imaging". When a renderer gets the list of heuristics
+targeted by the `lod:heuristics` relationship on a root. It scans the list for
+heuristics with a desired domain value and a type that it understands, selects
+an appropriate heuristic and uses it to select an LOD level to display.
+
+Once a renderer has chosen an LOD item (or items) to display, the renderer
+should pretend that the selected item is visible/audible/etc. and the unselected
+items are invisible/inaudible/etc. The renderer's choice does __not__ affect the
+scene graph contents, it only affects how the renderer chooses to display those
+contents. There is more detail below in the \ref usdLod_evaluation section.
+
+The remaining pieces are an LOD override schema that can short-circuit the
+heuristic querying to directly inform the renderer which LOD item(s) to display,
+and default index property on the LOD root prim that tells the renderer which
+LOD item to display when there are no relevant heuristics or overrides.
+
+\section usdLod_schemas Schemas
+
+\subsection usdLod_RootAPI UsdLodRootAPI
+
+UsdLodRootAPI is a single-apply API schema that marks a prim as the root
+of an LOD hierarchy. The immediate namespace children of this prim are the
+__LOD items__, indexed from 0 to n-1 by their order in the composed
+stage. Only children that are active, defined, loaded, and not abstract
+(i.e., those returned by UsdPrim::GetChildren()) are considered LOD items.
+
+UsdLodRootAPI provides:
+
+  - `lod:heuristics` — a relationship targeting one or more heuristic prims
+    that renderers may use to select the active LOD item.
+
+  - `lod:default:index` — the index of the child to use when no heuristic
+    produces a usable result for a given renderer.
+
+A child or descendant of an LOD root may itself have UsdLodRootAPI applied,
+forming a nested LOD hierarchy. Nested roots are only evaluated if their
+parent LOD item is selected.
+
+\subsection usdLod_Heuristic UsdLodHeuristic
+
+UsdLodHeuristic is an abstract typed prim that serves as the base class for
+all LOD heuristics. Each heuristic carries an `lod:domain` token that
+identifies the rendering domain to which it applies. Predefined domain
+tokens include `imaging,` `physics,` and `audio.` Custom domain names
+may be used, and it is recommended that custom domains be prefixed with a
+company or product name to avoid conflicts.
+
+Renderers select from among the heuristics referenced by an LOD root's
+`lod:heuristics` relationship by choosing heuristics whose domain matches
+the renderer's own domain and whose concrete type the renderer understands.
+Heuristics that are not understood or that do not yield a usable result
+should be ignored.
+
+Two concrete heuristic types are provided:
+
+  -  UsdLodDistanceHeuristic - selects an LOD item based on the distance
+     from the viewpoint to the LOD root. Thresholds are specified in
+     ascending order in scene units. An optional `blendThresholds` array
+     may be provided to support smooth blending or cross-fading between
+     adjacent LOD levels.
+
+  -  UsdLodScreenSizeHeuristic - selects an LOD item based on the fraction
+     of the viewport that would be covered by the LOD root's bounds.
+     Thresholds are specified in descending order as fractions of the
+     viewport size. An optional `blendThresholds` array is also supported.
+
+Both heuristic types accept an optional `boundingVolume` relationship
+targeting a UsdGeomBoundable prim whose computed extent is used for the
+geometric calculation. If `boundingVolume` is not authored or its extent
+is not valid, the heuristic falls back to a center point or default
+extent.
+
+\subsection usdLod_OverrideAPI UsdLodOverrideAPI
+
+UsdLodOverrideAPI is a single-apply schema that overrides LOD selection for all
+LOD roots that are namespace descendants of the prim to which it is applied.
+
+The schema provides `lod:override:mode` and `lod:override:index` attributes.
+The mode is a token that is one of the following:
+
+  - __inherited__: The default. This prim does not provide any override
+    information, it inherits any value set above it.
+
+  - __noOverride__: There is explicitly no override. Use the heuristics.
+
+  - __indexedLOD__: The lod:override:index property provides the value.
+
+  - __noLOD__: No LOD items should be hidden.
+
+  - __allLOD__: All LOD items should be displayed.
+
+When the mode is "indexedLOD" then the value of `lod:override:index` is to be
+used as the LOD index. If the value is outside the range of available LOD items,
+the renderer should clamp the value into range to select an appropriate LOD. If
+the value is fractional, the renderer may choose to blend or interpolate between
+multiple LOD items. Alternatively, the renderer may simply round the value to
+the nearest integer.
+        
+Renderers should call UsdLodOverrideAPI::ComputeLODOverrideIndex() to
+check for an active override before consulting heuristics.
+
+\section usdLod_evaluation LOD Evaluation
+
+When a renderer encounters a prim with UsdLodRootAPI applied, it determines
+the active LOD item as follows:
+
+  -# It checks for an override using `UsdLodOverrideAPI::ComputeLODOverride`.
+
+  -# If there is no override then it iterates over the heuristic prims targeted
+     by `lod:heuristics`. It selects a heuristic based on the type and domain of
+     the heuristic prim and uses it to suggest which LOD items to display. The
+     renderer may support multiple domains and may prefer some domains over
+     others, for example "hydra:imaging" and "imaging".
+
+  -# If no heuristic produces a usable result, use `lod:default:index`.
+
+The renderer should then treat the selected LOD item child as enabled and its
+siblings as disabled. For an imaging renderer this typically means treating
+the selected child as if it were visible and its siblings as invisible.
+These overrides are internal to the renderer and do not affect the stage.
+
+\subsection usdLod_blending LOD Blending
+
+When `blendThresholds` is specified on a distance or screen-size heuristic, the
+`ComputeLOD` methods may return non-integer values. A value between two
+integers, for example 1.4, indicates that the renderer may blend between the two
+adjacent LOD items at indices 1 and 2 with a blend weight of 0.4. Renderers that
+do not support blending should round the returned value to the nearest integer
+using standard rounding.
+
+\subsection usdLod_hysteresis Hysteresis
+
+Both heuristic query classes support an optional hysteresis parameter in
+their `ComputeDistance` and `ComputeScreenSize` methods. When hysteresis
+is specified, the computed metric is only updated when its change from the
+previous value exceeds the hysteresis amount. This prevents rapid LOD
+switching when the metric value hovers near a threshold boundary.
+
+\section usdLod_legacy Legacy Renderer Compatibility
+
+Renderers that do not understand UsdLod schemas will traverse the scene
+graph without any LOD-aware selection. Scene authors should therefore
+construct LOD hierarchies to degrade gracefully for such renderers.
+
+The recommended approach is to set the visibility of the default LOD item
+to `"inherited"` and all other LOD items to `"invisible".` An
+LOD-unaware renderer will then traverse only the default item. An
+LOD-aware renderer will override the visibility of individual items
+internally to enable the appropriate selection. Similarly, for
+non-imaging domains, appropriate domain-specific properties (such as
+`volume` for audio) should be set to express the default selection state.
+
+\section usdLod_extensibility Extending UsdLod
+
+The heuristic mechanism is designed for extensibility. Application
+developers may define new concrete subclasses of UsdLodHeuristic with
+domain-specific selection criteria. Examples of custom heuristics might
+include framerate-based LOD switching for interactive applications, or
+entity-presence-based switching for physics engines. Custom heuristics
+will be used only by renderers that understand them; other renderers will
+fall through to the default index.
+
+*/

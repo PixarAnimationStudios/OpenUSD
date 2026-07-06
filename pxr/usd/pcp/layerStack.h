@@ -381,6 +381,10 @@ bool
 Pcp_NeedToRecomputeLayerStackTimeCodesPerSecond(
     const PcpLayerStackPtr& layerStack, const SdfLayerHandle &changedLayer);
 
+/// Return true if sublayers are reordered according to the current session 
+/// owner (session owner's sublayers are promoted), return false otherwise.
+bool PcpIsSessionOwnerSublayerReorderingEnabled();
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_PCP_LAYER_STACK_H

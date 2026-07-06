@@ -108,4 +108,123 @@ def Xform "Materials" (
     }
 }
 
+def Xform "TextureMaterials" (
+    apiSchemas = ["ColorSpaceAPI"]
+)
+{
+    uniform token colorSpace:name = "lin_ap0_scene"
+
+    def Material "Mat1"
+    {
+        token outputs:surface.connect = </TextureMaterials/Mat1/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </TextureMaterials/Mat1/Image1.outputs:rgb>
+            color3f inputs:SpecularColor.connect = </TextureMaterials/Mat1/Image2.outputs:rgb>
+            token outputs:surface
+        }
+        def Shader "Image1"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = "testImage.png"
+            color3f outputs:rgb
+        }
+        def Shader "Image2"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = "testImage.png" (
+                colorSpace = "sRGB"
+            )
+            color3f outputs:rgb
+        }
+    }
+
+    def Material "Mat2" (
+        apiSchemas = ["ColorSpaceAPI"]
+    )
+    {
+        uniform token colorSpace:name = "lin_rec2020_scene"
+        token outputs:surface.connect = </TextureMaterials/Mat2/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </TextureMaterials/Mat2/Image1.outputs:rgb>
+            color3f inputs:specularColor.connect = </TextureMaterials/Mat2/Image2.outputs:rgb>
+            token outputs:surface
+        }
+        def Shader "Image1"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = "testImage.png"
+            color3f outputs:rgb
+        }
+        def Shader "Image2"(
+            apiSchemas = ["ColorSpaceAPI"]
+        )
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = "testImage.png"
+            uniform token colorSpace:name = "srgb_p3d65_scene"
+            color3f outputs:rgb
+        }
+    }
+
+    def Material "Mat3"(
+        apiSchemas = ["ColorSpaceAPI"]
+    )
+    {
+        uniform token colorSpace:name = "lin_rec2020_scene"
+        token outputs:surface.connect = </TextureMaterials/Mat3/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </TextureMaterials/Mat3/Image.outputs:rgb>
+            token outputs:surface
+        }
+        def Shader "Image"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = "testImage.png"
+            token inputs:sourceColorSpace = "raw"
+            color3f outputs:rgb
+        }
+    }
+}
+
+def Xform "Lights" (
+    apiSchemas = ["ColorSpaceAPI"]
+)
+{
+    uniform token colorSpace:name = "lin_ap0_scene"
+    def DistantLight "DistLight1"
+    {
+        uniform token light:shaderId = "DistantLight" 
+        color3f inputs:color = (1,0,0)
+    }
+    def DistantLight "DistLight2"
+    {
+        uniform token light:shaderId = "DistantLight" 
+        color3f inputs:color = (1,0,0) (
+            colorSpace = "lin_rec2020_scene"
+        )
+    }
+    def DomeLight "DomeLight1"
+    {
+        uniform token light:shaderId = "DomeLight" 
+        asset inputs:texture:file = "testImage.png"
+        
+    }
+    def DomeLight "DomeLight2" (
+        apiSchemas = ["ColorSpaceAPI"]
+    )
+    {
+        uniform token light:shaderId = "DomeLight" 
+        asset inputs:texture:file = "testImage.png"
+        uniform token colorSpace:name = "srgb_rec709_scene"
+    }
+}
 

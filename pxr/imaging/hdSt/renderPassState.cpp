@@ -255,7 +255,7 @@ HdStRenderPassState::Prepare(
     }
 
     // allocate bar if it does not exist
-    if (!_renderPassStateBar || 
+    if (!_renderPassStateBar ||
         _clipPlanesBufferSize < clipPlanes.size() ||
         _alphaThresholdCurrent != _alphaThreshold) {
         HdBufferSpecVector bufferSpecs;
@@ -273,6 +273,9 @@ HdStRenderPassState::Prepare(
             HdTupleType{matType, 1});
         bufferSpecs.emplace_back(
             HdShaderTokens->projectionMatrix,
+            HdTupleType{matType, 1});
+        bufferSpecs.emplace_back(
+            HdShaderTokens->projectionInverseMatrix,
             HdTupleType{matType, 1});
         bufferSpecs.emplace_back(
             HdShaderTokens->imageToWorldMatrix,
@@ -345,7 +348,7 @@ HdStRenderPassState::Prepare(
             HdTupleType{HdTypeUInt32, 1});
 
         // allocate interleaved buffer
-        _renderPassStateBar = 
+        _renderPassStateBar =
             hdStResourceRegistry->AllocateUniformBufferArrayRange(
                 HdTokens->drawingShader, bufferSpecs,
                 HdBufferArrayUsageHintBitsUniform);
@@ -401,6 +404,10 @@ HdStRenderPassState::Prepare(
             projMatrix,
             doublesSupported),
         std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->projectionInverseMatrix,
+            projMatrix.GetInverse(),
+            doublesSupported),
+        std::make_shared<HdVtBufferSource>(
             HdShaderTokens->imageToWorldMatrix,
             GetImageToWorldMatrix(),
             doublesSupported),
@@ -453,7 +460,7 @@ HdStRenderPassState::Prepare(
                 renderBuffer->GetMSAASampleCount() : 1;
         }
     }
-            
+
     sources.push_back(
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->multisampleCount,
@@ -517,7 +524,7 @@ HdStRenderPassState::SetLightingShader(HdStLightingShaderSharedPtr const &lighti
     }
 }
 
-void 
+void
 HdStRenderPassState::SetRenderPassShader(
     HdStRenderPassShaderSharedPtr const &renderPassShader)
 {
@@ -645,7 +652,7 @@ void
 HdStRenderPassState::ApplyStateFromCamera()
 {
     // notify view-transform to the lighting shader to update its uniform block
-    // this needs to be done in execute as a multi camera setup may have been 
+    // this needs to be done in execute as a multi camera setup may have been
     // synced with a different view matrix baked in for shadows.
     // SetCamera will no-op if the transforms are the same as before.
     _lightingShader->SetCamera(GetWorldToViewMatrix(),
@@ -694,7 +701,7 @@ HdStRenderPassState::Bind(HgiCapabilities const &hgiCapabilities)
     } else {
         glDisable(GL_STENCIL_TEST);
     }
-    
+
     // Line width
     if (_lineWidth > 0) {
         glLineWidth(_lineWidth);
@@ -725,7 +732,7 @@ HdStRenderPassState::Bind(HgiCapabilities const &hgiCapabilities)
     } else {
         glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     }
-    
+
     glEnable(GL_PROGRAM_POINT_SIZE);
     GLint glMaxClipPlanes;
     glGetIntegerv(GL_MAX_CLIP_PLANES, &glMaxClipPlanes);
@@ -749,7 +756,7 @@ HdStRenderPassState::Bind(HgiCapabilities const &hgiCapabilities)
             }
         }
     }
-    
+
     if (hgiCapabilities.IsSet(HgiDeviceCapabilitiesBitsConservativeRaster)) {
         if (_conservativeRasterizationEnabled) {
             glEnable(GL_CONSERVATIVE_RASTERIZATION_NV);
@@ -766,7 +773,7 @@ HdStRenderPassState::Bind(HgiCapabilities const &hgiCapabilities)
         }
     } else {
         glDisable(GL_MULTISAMPLE);
-        // If not using GL_MULTISAMPLE, use GL_POINT_SMOOTH to render points as 
+        // If not using GL_MULTISAMPLE, use GL_POINT_SMOOTH to render points as
         // circles instead of square.
         // XXX Switch points rendering to emit quad with FS that draws circle.
         glEnable(GL_POINT_SMOOTH);
@@ -1017,7 +1024,7 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
             useMultiSample && renderBuffer->IsMultiSampled();
         const VtValue rv = renderBuffer->GetResource(multiSampled);
 
-        if (!TF_VERIFY(rv.IsHolding<HgiTextureHandle>(), 
+        if (!TF_VERIFY(rv.IsHolding<HgiTextureHandle>(),
             "Invalid render buffer texture")) {
             continue;
         }
@@ -1124,7 +1131,7 @@ HdStRenderPassState::_InitAttachmentState(
     HgiGraphicsPipelineDesc * pipeDesc,
     bool firstDrawBatch) const
 {
-    // For Metal and Vulkan, we have to pass the color and depth descriptors 
+    // For Metal and Vulkan, we have to pass the color and depth descriptors
     // down so that they are available when creating the Render Pipeline State
     // for the fragment shaders.
     HdRenderPassAovBindingVector const& aovBindings = GetAovBindings();
@@ -1135,7 +1142,7 @@ HdStRenderPassState::_InitAttachmentState(
         _InitAttachmentDesc(
             attachment, binding, binding.renderBuffer, aovIndex);
 
-        // For HgiVulkan, don't want to run a clear operation unless this is 
+        // For HgiVulkan, don't want to run a clear operation unless this is
         // the first draw batch in a graphics cmds submission.
         if (!firstDrawBatch) {
             attachment.loadOp = HgiAttachmentLoadOpLoad;
@@ -1313,12 +1320,12 @@ HdStRenderPassState::GetGraphicsPipelineHash(
     for (HdRenderPassAovBinding const& binding : GetAovBindings()) {
         HdStRenderBuffer *renderBuffer =
             static_cast<HdStRenderBuffer*>(binding.renderBuffer);
-        
+
         const uint32_t msaaCount = renderBuffer->IsMultiSampled() ?
             renderBuffer->GetMSAASampleCount() : 1;
         const bool clear =
             firstDrawBatch ? !binding.clearValue.IsEmpty() : false;
-        
+
         hash = TfHash::Combine(hash,
                                binding.aovName,
                                renderBuffer->GetFormat(),
@@ -1327,6 +1334,79 @@ HdStRenderPassState::GetGraphicsPipelineHash(
     }
 
     return hash;
+}
+
+void
+HdStRenderPassState::CopyAllExceptShaderFrom(
+    const HdStRenderPassState& other)
+{
+    _camera = other._camera;
+    _viewport = other._viewport;
+    _framing = other._framing;
+    if (other._overrideWindowPolicy.has_value()) {
+        _overrideWindowPolicy.emplace(other._overrideWindowPolicy.value());
+    } else {
+        _overrideWindowPolicy.reset();
+    }
+    _overrideColor = other._overrideColor;
+    _wireframeColor = other._wireframeColor;
+    _pointColor = other._pointColor;
+    _pointSize = other._pointSize;
+    _lightingEnabled = other._lightingEnabled;
+    _clippingEnabled = other._clippingEnabled;
+    _maskColor = other._maskColor;
+    _indicatorColor = other._indicatorColor;
+    _pointSelectedSize = other._pointSelectedSize;
+    _alphaThreshold = other._alphaThreshold;
+    _tessLevel = other._tessLevel;
+    _drawRange = other._drawRange;
+    _depthBiasUseDefault = other._depthBiasUseDefault;
+    _depthBiasEnabled = other._depthBiasEnabled;
+    _depthBiasConstantFactor = other._depthBiasConstantFactor;
+    _depthBiasSlopeFactor = other._depthBiasSlopeFactor;
+    _depthFunc = other._depthFunc;
+    _depthMaskEnabled = other._depthMaskEnabled;
+    _depthTestEnabled = other._depthTestEnabled;
+    _depthClampEnabled = other._depthClampEnabled;
+    _depthRange = other._depthRange;
+    _cullStyle = other._cullStyle;
+    _stencilFunc = other._stencilFunc;
+    _stencilRef = other._stencilRef;
+    _stencilMask = other._stencilMask;
+    _stencilFailOp = other._stencilFailOp;
+    _stencilZFailOp = other._stencilZFailOp;
+    _stencilZPassOp = other._stencilZPassOp;
+    _stencilEnabled = other._stencilEnabled;
+    _lineWidth = other._lineWidth;
+    _blendColorOp = other._blendColorOp;
+    _blendColorSrcFactor = other._blendColorSrcFactor;
+    _blendColorDstFactor = other._blendColorDstFactor;
+    _blendAlphaOp = other._blendAlphaOp;
+    _blendAlphaSrcFactor = other._blendAlphaSrcFactor;
+    _blendAlphaDstFactor = other._blendColorDstFactor;
+    _blendConstantColor = other._blendConstantColor;
+    _blendEnabled = other._blendEnabled;
+    _alphaToCoverageEnabled = other._alphaToCoverageEnabled;
+    _colorMaskUseDefault = other._colorMaskUseDefault;
+    _colorMasks.assign(other._colorMasks.cbegin(), other._colorMasks.cend());
+    _aovBindings.assign(other._aovBindings.cbegin(), other._aovBindings.cend());
+    _aovInputBindings.assign(
+        other._aovInputBindings.cbegin(), other._aovInputBindings.cend());
+    _useMultiSampleAov = other._useMultiSampleAov;
+    _conservativeRasterizationEnabled = other._conservativeRasterizationEnabled;
+    _stepSize = other._stepSize;
+    _stepSizeLighting = other._stepSizeLighting;
+    _multiSampleEnabled = other._multiSampleEnabled;
+    _worldToViewMatrix = other._worldToViewMatrix;
+    _projectionMatrix = other._projectionMatrix;
+    _clipPlanes.assign(other._clipPlanes.cbegin(), other._clipPlanes.cend());
+    _cullMatrix = other._cullMatrix;
+    _fallbackLightingShader = other._fallbackLightingShader;
+    _lightingShader = other._lightingShader;
+    _renderPassStateBar = other._renderPassStateBar;
+    _clipPlanesBufferSize = other._clipPlanesBufferSize;
+    _alphaThresholdCurrent = other._alphaThresholdCurrent;
+    _resolveMultiSampleAov = other._resolveMultiSampleAov;
 }
 
 

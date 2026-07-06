@@ -1,6 +1,6 @@
 #usda 1.0
 
-def "Model"
+def "ModelInClip"
 {
     double attrNotInFirstClip = 42.0
     double attrNotInMiddleClips = 42.0

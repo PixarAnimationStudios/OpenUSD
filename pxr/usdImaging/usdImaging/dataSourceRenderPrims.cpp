@@ -14,12 +14,10 @@
 #include "pxr/usd/usdRender/pass.h"
 #include "pxr/usd/usdRender/product.h"
 #include "pxr/usd/usdRender/settings.h"
-#include "pxr/usd/usdRender/spec.h"
 #include "pxr/usd/usdRender/var.h"
 
 #include "pxr/imaging/hd/renderPassSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
-#include "pxr/imaging/hd/utils.h"
 
 #include "pxr/base/tf/token.h"
 
@@ -33,6 +31,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((riIntegrator, "ri:integrator"))
     ((riSampleFilters, "ri:sampleFilters"))
     ((riDisplayFilters, "ri:displayFilters"))
+    ((riEnergyFilters, "ri:energyFilters"))
 );
 
 inline TfTokenVector
@@ -45,42 +44,107 @@ _Concat(const TfTokenVector &a, const TfTokenVector &b)
     return result;
 }
 
+static bool
+_IsNamespacedAttribute(const UsdAttribute &attr)
+{
+    const std::string &name = attr.GetName().GetString();
+    // Strip "outputs:" prefix (UsdShadeOutput convention) before checking
+    // for a namespace delimiter.
+    const std::string &basename =
+        (name.size() > 8 && name.compare(0, 8, "outputs:") == 0)
+            ? name.substr(8) : name;
+    return basename.find(':') != std::string::npos;
+}
+
+// A container data source for "namespacedSettings" that vends each
+// namespaced attribute as a live UsdImagingDataSourceAttribute, preserving
+// time-varying values and registering them with the stage globals.
+//
 // XXX: We explicitly populate PxrRenderTerminalsAPI relationships
 // to RenderSettings, avoiding populating all relationships; this
 // should be moved to renderman-specific code in a future change.
 // https://jira.pixar.com/browse/HYD-3280
-void
-_StripRelsFromSettings(
-    UsdPrim const& prim,
-    VtDictionary *settings)
+class _DataSourceNamespacedSettings : public HdContainerDataSource
 {
-    std::vector<std::string> toErase;
-    for (const auto& it : *settings) {
-        const TfToken name = TfToken(it.first);
-        UsdRelationship rel = prim.GetRelationship(name);
-        if (rel && name != _tokens->riIntegrator
-                && name != _tokens->riSampleFilters
-                && name != _tokens->riDisplayFilters) {
-            toErase.push_back(it.first);
+public:
+    HD_DECLARE_DATASOURCE(_DataSourceNamespacedSettings);
+
+    TfTokenVector GetNames() override
+    {
+        TfTokenVector names;
+        for (const UsdAttribute &attr : _prim.GetAuthoredAttributes()) {
+            if (_IsNamespacedAttribute(attr)) {
+                names.push_back(attr.GetName());
+            }
         }
+        // XXX UsdImaging should not have knowledge of RenderMan
+        // specific concepts; these should be moved out to a
+        // usdRiPxrImaging adapter.
+        for (const TfToken &relName : {
+                _tokens->riIntegrator,
+                _tokens->riSampleFilters,
+                _tokens->riDisplayFilters,
+                _tokens->riEnergyFilters}) {
+            if (UsdRelationship rel = _prim.GetRelationship(relName)) {
+                if (rel.HasAuthoredTargets()) {
+                    names.push_back(relName);
+                }
+            }
+        }
+        return names;
     }
 
-    for (const std::string& name : toErase) {
-        settings->erase(name);
-    }
-}
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        // XXX UsdImaging should not have knowledge of RenderMan
+        // specific concepts; these should be moved out to a
+        // usdRiPxrImaging adapter.
+        for (const TfToken &relName : {
+                _tokens->riIntegrator,
+                _tokens->riSampleFilters,
+                _tokens->riDisplayFilters,
+                _tokens->riEnergyFilters}) {
+            if (name == relName) {
+                if (UsdRelationship rel = _prim.GetRelationship(name)) {
+                    SdfPathVector targets;
+                    rel.GetTargets(&targets);
+                    // XXX Surprisingly, these settings come through as
+                    // std::vector even though VtArray is what is typically
+                    // used in the scene index.
+                    return HdRetainedTypedSampledDataSource<SdfPathVector>
+                        ::New(targets);
+                }
+                return nullptr;
+            }
+        }
 
-VtDictionary
-_ComputeNamespacedSettings(const UsdPrim &prim)
-{
-    // Note that we don't filter by namespaces (as we do in the 1.0 API;
-    // see UsdImagingRenderSettingsAdapter::Get). A downstream renderer-specific
-    // scene index plugin will provide the necessary filtering instead.
-    VtDictionary settings = UsdRenderComputeNamespacedSettings(
-            prim, /* namespaces */ TfTokenVector());
-    _StripRelsFromSettings(prim, &settings);
-    return settings;
-}
+        if (UsdAttribute attr = _prim.GetAttribute(name)) {
+            return UsdImagingDataSourceAttributeNew(
+                attr, _stageGlobals, _sceneIndexPath,
+                _locatorPrefix.Append(name));
+        }
+        return nullptr;
+    }
+
+private:
+    _DataSourceNamespacedSettings(
+            const SdfPath &sceneIndexPath,
+            const UsdPrim &prim,
+            const UsdImagingDataSourceStageGlobals &stageGlobals,
+            const HdDataSourceLocator &locatorPrefix)
+        : _sceneIndexPath(sceneIndexPath)
+        , _prim(prim)
+        , _stageGlobals(stageGlobals)
+        , _locatorPrefix(locatorPrefix)
+    {}
+
+    SdfPath _sceneIndexPath;
+    UsdPrim _prim;
+    const UsdImagingDataSourceStageGlobals &_stageGlobals;
+    HdDataSourceLocator _locatorPrefix;
+};
+
+HD_DECLARE_DATASOURCE_HANDLES(_DataSourceNamespacedSettings);
 
 }
 
@@ -249,10 +313,11 @@ public:
     {
         if (name == UsdImagingUsdRenderSettingsSchemaTokens->namespacedSettings)
         {
-            VtDictionary settingsDict =
-                _ComputeNamespacedSettings(_usdRenderSettings.GetPrim());
-
-            return HdUtils::ConvertVtDictionaryToContainerDS(settingsDict);
+            return _DataSourceNamespacedSettings::New(
+                _sceneIndexPath,
+                _usdRenderSettings.GetPrim(),
+                _stageGlobals,
+                UsdImagingUsdRenderSettingsSchema::GetNamespacedSettingsLocator());
         }
 
         if (name == UsdImagingUsdRenderSettingsSchemaTokens->camera) {
@@ -411,10 +476,11 @@ public:
     {
         if (name == UsdImagingUsdRenderProductSchemaTokens->namespacedSettings)
         {
-            VtDictionary settingsDict =
-                _ComputeNamespacedSettings(_usdRenderProduct.GetPrim());
-
-            return HdUtils::ConvertVtDictionaryToContainerDS(settingsDict);
+            return _DataSourceNamespacedSettings::New(
+                _sceneIndexPath,
+                _usdRenderProduct.GetPrim(),
+                _stageGlobals,
+                UsdImagingUsdRenderProductSchema::GetNamespacedSettingsLocator());
         }
 
         if (name == UsdImagingUsdRenderProductSchemaTokens->camera) {
@@ -586,11 +652,11 @@ public:
     {
         if (name == UsdImagingUsdRenderVarSchemaTokens->namespacedSettings)
         {
-            VtDictionary settingsDict =
-                _ComputeNamespacedSettings(_usdRenderVar.GetPrim());
-
-            return HdUtils::ConvertVtDictionaryToContainerDS(settingsDict);
-
+            return _DataSourceNamespacedSettings::New(
+                _sceneIndexPath,
+                _usdRenderVar.GetPrim(),
+                _stageGlobals,
+                UsdImagingUsdRenderVarSchema::GetNamespacedSettingsLocator());
         }
 
         if (UsdAttribute attr =

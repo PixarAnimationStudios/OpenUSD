@@ -170,6 +170,13 @@ def GetSDKVersion(context):
 
 def SetTarget(context):
     targetName = normalizeBuildTarget(context.buildTarget)
+
+    # In the case that normalizeBuildTarget returns no value, we are cross 
+    # compiling and none of the targets set below are relevant. We want to
+    # explicitly preserve the buildTarget for further consumers of context.
+    if targetName is None:
+        return
+
     context.buildTarget = targetName
     context.targetNative = (targetName == TARGET_NATIVE)
     context.targetX86 = (targetName == TARGET_X86)

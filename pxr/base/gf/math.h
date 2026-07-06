@@ -17,8 +17,11 @@
 #include "pxr/base/gf/traits.h"
 
 #include <type_traits>
+#include <typeinfo>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class TfType;
 
 /// Returns true if \p a and \p b are with \p epsilon of each other.
 /// \ingroup group_gf_BasicMath
@@ -371,7 +374,6 @@ inline decltype(std::declval<Left>() / std::declval<Right>())
 GfCompDiv(Left left, Right right) {
     return left / right;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

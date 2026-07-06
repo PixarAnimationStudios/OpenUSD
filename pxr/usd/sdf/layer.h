@@ -308,6 +308,11 @@ public:
     /// Returns \c false if the layer has no remembered file name or the 
     /// layer type cannot be saved. The layer will not be overwritten if the 
     /// file exists and the layer is not dirty unless \p force is true.
+    ///
+    /// \note If the layer is a USD text or binary file, its existing file
+    /// version is preserved unless the saved content requires newer versions to
+    /// represent, in which case it is automatically upgraded to the required
+    /// version.
     SDF_API
     bool Save(bool force = false) const;
 
@@ -321,8 +326,8 @@ public:
     ///
     /// Note that the file name or comment of the original layer is not
     /// updated. This only saves a copy of the layer to the given filename.
-    /// Subsequent calls to Save() will still save the layer to it's
-    /// previously remembered file name.
+    /// Subsequent calls to Save() will still save the layer to its previously
+    /// remembered file name.
     SDF_API
     bool Export(const std::string& filename, 
                 const std::string& comment = std::string(),
@@ -1901,16 +1906,12 @@ private:
     // regardless of those conditions.
     bool _Save(bool force) const;
 
-    // A helper method used by Save and Export.
-    // This method allows Save to specify the existing file format and Export
-    // to use the format provided by the file extension in newFileName. If no
-    // file format can be discovered from the file name, the existing file
-    // format associated with the layer will be used in both cases. This allows
-    // users to export and save to any file name, regardless of extension.
-    bool _WriteToFile(const std::string& newFileName, 
-                      const std::string& comment, 
-                      SdfFileFormatConstPtr fileFormat,
-                      const FileFormatArguments& args) const;
+    // Helper for Save and Export, checks whether or not writing to \p
+    // newFileName with \p format is supported and issues diagnostics and
+    // returns false if not.
+    bool _CheckFormatWritability(bool isSave,
+                                 SdfFileFormatConstPtr format,
+                                 const std::string &newFileName) const;
 
     // Swap contents of _data and data. This operation does not register
     // inverses or emit change notification.
@@ -1926,7 +1927,8 @@ private:
     // consider property spec fields. In some cases, this can avoid expensive
     // operations which would pull large amounts of data.
     template<typename DeleteSpecFunc, typename CreateSpecFunc, 
-            typename GetFieldValuesFunc, typename SetFieldFunc, typename ErrorFunc>
+             typename GetFieldValuesFunc, typename SetFieldFunc,
+             typename ErrorFunc>
     void _ProcessIncomingData(const SdfAbstractDataPtr &newData,
                               const SdfSchemaBase *newDataSchema,
                               bool processPropertyFields,

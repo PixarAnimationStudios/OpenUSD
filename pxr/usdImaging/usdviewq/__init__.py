@@ -12,8 +12,8 @@ Tf.PreparePythonModule()
 
 import sys, argparse, os
 
-from .qt import QtWidgets, QtCore
-from .common import Timer
+from .qt import QtCore, QtGui, QtWidgets
+from .common import Timer, GetIconPath
 from .appController import AppController
 from .settings import ConfigManager
 
@@ -77,6 +77,10 @@ class Launcher(object):
                 traceCollector.enabled = True
 
             app, appController = self.LaunchPreamble(arg_parse_result)
+
+            if arg_parse_result.viewportSize and appController._stageView:
+                w, h = arg_parse_result.viewportSize
+                appController._stageView.SetPhysicalWindowSize(w, h)
 
             if arg_parse_result.dumpFirstImage:
                 appController.SaveViewerImageToFile(arg_parse_result.dumpFirstImage)
@@ -225,6 +229,13 @@ class Launcher(object):
                             dest='dumpFirstImage',
                             default=None,
                             help='Dumps the first image to file (as png)')
+
+        parser.add_argument('--viewportSize', action='store',
+                            type=lambda s: tuple(int(x) for x in s.split('x')),
+                            dest='viewportSize',
+                            default=None,
+                            help='Fix the viewport to a specific size (WxH) '
+                                 'for deterministic rendering, e.g. 601x458')
 
         parser.add_argument('--numThreads', action='store',
                             type=int, default=0,
@@ -410,8 +421,54 @@ class Launcher(object):
         if arg_parse_result.clearSettings:
             AppController.clearSettings()
 
+        # On Windows, set the AppUserModelID so that the taskbar groups
+        # usdview as its own application rather than under "Python".
+        if sys.platform == 'win32':
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                'pxr.usd.usdview')
+
+        # On MacOS, override the bundle name so the menu bar and Dock
+        # show "usdview" rather than "Python"
+        if sys.platform == 'darwin':
+            import ctypes
+            import ctypes.util
+            objc_lib = ctypes.util.find_library('objc')
+            if objc_lib:
+                objc = ctypes.cdll.LoadLibrary(objc_lib)
+                objc.objc_getClass.restype = ctypes.c_void_p
+                objc.sel_registerName.restype = ctypes.c_void_p
+                objc.objc_msgSend.restype = ctypes.c_void_p
+                objc.objc_msgSend.argtypes = [
+                    ctypes.c_void_p, ctypes.c_void_p]
+
+                NSBundle = objc.objc_getClass(b'NSBundle')
+                mainBundle = objc.objc_msgSend(
+                    NSBundle, objc.sel_registerName(b'mainBundle'))
+                info = objc.objc_msgSend(
+                    mainBundle, objc.sel_registerName(b'infoDictionary'))
+
+                objc.objc_msgSend.argtypes = [
+                    ctypes.c_void_p, ctypes.c_void_p, ctypes.c_char_p]
+                NSString = objc.objc_getClass(b'NSString')
+                strSel = objc.sel_registerName(b'stringWithUTF8String:')
+                setSel = objc.sel_registerName(b'setObject:forKey:')
+
+                for key in (b'CFBundleName', b'CFBundleDisplayName'):
+                    objc.objc_msgSend.argtypes = [
+                        ctypes.c_void_p, ctypes.c_void_p,
+                        ctypes.c_char_p]
+                    nsKey = objc.objc_msgSend(NSString, strSel, key)
+                    nsVal = objc.objc_msgSend(NSString, strSel, b'usdview')
+                    objc.objc_msgSend.argtypes = [
+                        ctypes.c_void_p, ctypes.c_void_p,
+                        ctypes.c_void_p, ctypes.c_void_p]
+                    objc.objc_msgSend(info, setSel, nsVal, nsKey)
+
         # Create the Qt application
         app = QtWidgets.QApplication(sys.argv)
+        app.setApplicationName("usdview")
+        app.setApplicationDisplayName("usdview")
 
         contextCreator = lambda usdFile: self.GetResolverContext(usdFile)
         appController = AppController(arg_parse_result, contextCreator)

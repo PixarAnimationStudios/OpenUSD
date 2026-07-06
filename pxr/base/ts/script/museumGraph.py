@@ -5,7 +5,7 @@
 # https://openusd.org/license.
 #
 
-from pxr import Ts, Gf
+from pxr import Gf, Ts, Tf
 
 from pxr.Ts import TsTest_Museum as Museum
 from pxr.Ts import TsTest_SampleTimes as STimes
@@ -114,8 +114,9 @@ if args.list:
     sys.exit()
 
         
-data = Museum.GetDataByName(args.case)
-times = STimes(data)
+spline = Museum.GetSplineByName(args.case, Tf.Type.FindByName('double'))
+
+times = STimes(spline)
 times.AddStandardTimes()
 
 kwargs = dict()
@@ -141,29 +142,27 @@ if args.timeScale is None:
     args.timeScale = args.width / timeSpan
 
 if args.valueScale is None:
-    knots = data.GetKnots()
-    minValue = min(knot.value for knot in knots)
-    maxValue = max(knot.value for knot in knots)
+    knotMap = spline.GetKnots()
+    minValue = min(knot.GetValue() for knot in knotMap.values())
+    maxValue = max(knot.GetValue() for knot in knotMap.values())
     valueSpan = max(maxValue - minValue, .001)
     args.valueScale = args.height / valueSpan
 
-def GetSamples(data, sampler="eval", antiRegressor=None):
+def GetSamples(spline, sampler="eval", antiRegressor=None):
     global times, args
 
+    splineCopy = Ts.Spline(spline)
+
     if antiRegressor is not None:
-        spline = Evaluator().SplineDataToSpline(data)
         with Ts.AntiRegressionAuthoringSelector(antiRegressor):
-            spline.AdjustRegressiveTangents()
-        adjustedData == Evaluator().SplineToSplineData(spline)
-    else:
-        adjustedData = data
+            splineCopy.AdjustRegressiveTangents()
 
     if sampler == "bez":
-        return SampleBezier(data, numSamples=200)
+        return SampleBezier(splineCopy, numSamples=200)
     if sampler == "eval":
-        return Evaluator().Eval(adjustedData, times)
+        return Evaluator().Eval(splineCopy, times)
     if sampler == "sample":
-        return Evaluator().Sample(adjustedData,
+        return Evaluator().Sample(splineCopy,
                                   Gf.Interval(args.minTime,
                                               args.maxTime),
                                   args.timeScale,
@@ -171,7 +170,7 @@ def GetSamples(data, sampler="eval", antiRegressor=None):
                                   args.tolerance,
                                   withSources=False)
     if sampler == "sampleWithSources":
-        return Evaluator().Sample(adjustedData,
+        return Evaluator().Sample(splineCopy,
                                   Gf.Interval(args.minTime,
                                               args.maxTime),
                                   args.timeScale,
@@ -181,46 +180,45 @@ def GetSamples(data, sampler="eval", antiRegressor=None):
     assert (sampler in ("bez", "eval", "sample", "sampleWithSources"))
             
     
-def EvalWithAntiRegression(name, mode, data, colorIndex):
-    spline = Evaluator().SplineDataToSpline(data)
+def EvalWithAntiRegression(name, mode, spline, colorIndex):
+    splineCopy = Ts.Spline(spline)
     with Ts.AntiRegressionAuthoringSelector(mode):
-        spline.AdjustRegressiveTangents()
-    adjustedData = Evaluator().SplineToSplineData(spline)
-    samples = Evaluator().Eval(adjustedData, times)
-    grapher.AddSpline(name, adjustedData, samples, colorIndex = colorIndex)
+        splineCopy.AdjustRegressiveTangents()
+    samples = Evaluator().Eval(splineCopy, times)
+    grapher.AddSpline(name, splineCopy, samples, colorIndex = colorIndex)
 
 
 if args.bez:
-    samples = GetSamples(data, "bez");
-    grapher.AddSpline("Bezier", data, samples, colorIndex = 0)
+    samples = GetSamples(spline, "bez");
+    grapher.AddSpline("Bezier", spline, samples, colorIndex = 0)
 
 if args.ts:
-    samples = GetSamples(data, "eval");
-    grapher.AddSpline("Ts", data, samples, colorIndex = 1)
+    samples = GetSamples(spline, "eval");
+    grapher.AddSpline("Ts", spline, samples, colorIndex = 1)
 
 if args.contain:
-    samples = GetSamples(data, "eval", Ts.AntiRegressionContain)
-    grapher.AddSpline("Contain", data, samples, colorIndex = 2)
+    samples = GetSamples(spline, "eval", Ts.AntiRegressionContain)
+    grapher.AddSpline("Contain", spline, samples, colorIndex = 2)
 
 if args.keepRatio:
-    samples = GetSamples(data, "eval", Ts.AntiRegressionKeepRatio)
-    grapher.AddSpline("Contain", data, samples, colorIndex = 3)
+    samples = GetSamples(spline, "eval", Ts.AntiRegressionKeepRatio)
+    grapher.AddSpline("Contain", spline, samples, colorIndex = 3)
 
 if args.keepStart:
-    samples = GetSamples(data, "eval", Ts.AntiRegressionKeepStart)
-    grapher.AddSpline("Contain", data, samples, colorIndex = 4)
+    samples = GetSamples(spline, "eval", Ts.AntiRegressionKeepStart)
+    grapher.AddSpline("Contain", spline, samples, colorIndex = 4)
     
 if args.sample:
     # Note that using "samples" returns a Ts.SplineSamples instead of a list of
     # TsTest_Sample objects.
-    samples = GetSamples(data, "sample")
-    grapher.AddSpline("Sample", data, samples, colorIndex = 5)
+    samples = GetSamples(spline, "sample")
+    grapher.AddSpline("Sample", spline, samples, colorIndex = 5)
     
 if args.sampleWithSources:
     # Note that using "samplesWithSources returns a Ts.SplineSamplesWithSources
     # instead of a list of TsTest_Sample objects.
-    samples = GetSamples(data, "sampleWithSources")
-    grapher.AddSpline("Sources", data, samples, colorIndex = 6)
+    samples = GetSamples(spline, "sampleWithSources")
+    grapher.AddSpline("Sources", spline, samples, colorIndex = 6)
 
 if args.out:
     grapher.Write(args.out)

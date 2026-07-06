@@ -43,7 +43,7 @@ if(@PXR_ENABLE_PYTHON_SUPPORT@)
     endif()
 
     if (NOT DEFINED Python3_VERSION)
-        find_dependency(Python3 "@Python3_VERSION@" EXACT COMPONENTS Development)
+        find_dependency(Python3 "@Python3_VERSION_MAJOR@.@Python3_VERSION_MINOR@" EXACT COMPONENTS Development)
     else()
         find_dependency(Python3 COMPONENTS Development)
     endif()

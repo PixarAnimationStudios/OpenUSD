@@ -34,7 +34,7 @@ Variant Selections:
     {vset = with_children}
 
 Child names:
-     ['_prototype', 'InstanceViaReference', 'InstanceViaClass']
+     ['_prototype', 'InstanceViaReference', 'InstanceViaClass', 'InstanceViaOtherModelRef', 'InstanceViaOtherModelClass']
 
 Property names:
      ['modelRootAttribute']
@@ -103,4 +103,38 @@ Property stacks:
 Attribute connections:
 /ModelRefWithChildren/InstanceViaClass.attr1:
     /ModelRefWithChildren.modelRootAttribute
+
+------------------------------------------------------------------------
+Results for composing </ModelRefWithChildren/InstanceViaOtherModelRef>
+
+Prim Stack:
+    model.usda           /Model{vset=with_children}InstanceViaOtherModelRef
+    model.usda           /OtherModel{vset=with_other_children}_prototype
+
+Property names:
+     ['attr1', 'attr2']
+
+Property stacks:
+/ModelRefWithChildren/InstanceViaOtherModelRef.attr1:
+    model.usda           /OtherModel{vset=with_other_children}_prototype.attr1
+/ModelRefWithChildren/InstanceViaOtherModelRef.attr2:
+    model.usda           /Model{vset=with_children}InstanceViaOtherModelRef.attr2
+    model.usda           /OtherModel{vset=with_other_children}_prototype.attr2
+
+------------------------------------------------------------------------
+Results for composing </ModelRefWithChildren/InstanceViaOtherModelClass>
+
+Prim Stack:
+    model.usda           /Model{vset=with_children}InstanceViaOtherModelClass
+    model.usda           /OtherModel{vset=with_other_children}_prototype
+
+Property names:
+     ['attr1', 'attr2']
+
+Property stacks:
+/ModelRefWithChildren/InstanceViaOtherModelClass.attr1:
+    model.usda           /OtherModel{vset=with_other_children}_prototype.attr1
+/ModelRefWithChildren/InstanceViaOtherModelClass.attr2:
+    model.usda           /Model{vset=with_children}InstanceViaOtherModelClass.attr2
+    model.usda           /OtherModel{vset=with_other_children}_prototype.attr2
 

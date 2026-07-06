@@ -11,6 +11,7 @@
 
 #include "pxr/usd/usd/prim.h"
 
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
 
@@ -41,6 +42,7 @@ private:
     /// treated as the terminal shader node in the graph rather than as a
     /// material (with relationships to the prims serving as terminal shader
     /// nodes). This is relevant for light and light filter cases.
+    USDIMAGING_API
     UsdImagingDataSourceMaterial(
         const UsdPrim &usdPrim,
         const UsdImagingDataSourceStageGlobals &stageGlobals,

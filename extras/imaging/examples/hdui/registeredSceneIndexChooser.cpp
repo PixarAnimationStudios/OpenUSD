@@ -53,6 +53,10 @@ HduiRegisteredSceneIndexChooser::HduiRegisteredSceneIndexChooser(
             // Update button text to reflect selection.
             this->setText(name.c_str());
             Q_EMIT this->SceneIndexSelected(name, sceneIndex);
+            Q_EMIT this->StatusMessage(
+                QString(
+                    "Inspecting graph leading to registered scene index: %1")
+                    .arg(name.c_str()));
         }
     });
 

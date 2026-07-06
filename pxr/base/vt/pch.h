@@ -10,26 +10,15 @@
 #define TF_MAX_ARITY 7
 #include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
-#if defined(ARCH_OS_DARWIN)
-#include <mach/mach_time.h>
-#endif
 #if defined(ARCH_OS_LINUX)
 #include <unistd.h>
-#include <x86intrin.h>
-#endif
-#if defined(ARCH_OS_WINDOWS)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-
-#include <Windows.h>
-#include <intrin.h>
 #endif
 #include <algorithm>
 #include <any>
 #include <array>
 #include <atomic>
 #include <cfloat>
+#include <chrono>
 #include <cinttypes>
 #include <cmath>
 #include <complex>
@@ -76,7 +65,6 @@
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_mutex.h>
-#include <tbb/spin_rw_mutex.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

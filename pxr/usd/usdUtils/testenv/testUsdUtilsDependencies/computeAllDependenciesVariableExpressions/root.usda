@@ -1,0 +1,43 @@
+#usda 1.0
+(
+    expressionVariables = {
+        string ATTR = "INVALID"
+        string PAYLOAD = "./payload.usda"
+        string METADATA = "./metadata.txt"
+        string METADATA_ARR = "INVALID"
+        string REFERENCE = "./ref.usda"
+        string SUBLAYER = "./sub.usda"
+
+        bool IS_VALID = false
+    }
+
+    subLayers = [
+        @`"${SUBLAYER}"`@,
+        @`if(${IS_VALID}, "SUBLAYER_TRUE")`@
+    ]
+)
+
+# Test that expression variables compose over references
+def "ComposeRef" (
+    prepend references = @./compose_ref.usda@
+)
+{}
+
+# Test that expression variables compose over payloads
+def "ComposePay" (
+    prepend payload = @./compose_pay.usda@
+)
+{}
+
+# these expressions should resolve to valid layers
+def "ValidReferencesAndPayloads"(
+    prepend references = @`"${REFERENCE}"`@
+    prepend payload = @`"${PAYLOAD}"`@
+) {}
+
+# The expressions here evaluate to None and should not introduce any
+# warnings or new references / payloads that would fail to resolve
+def "InvalidReferencesAndPayloads"(
+    prepend references = @`if(${IS_VALID}, "REFERENCE_TRUE")`@
+    prepend payload = @`if(${IS_VALID}, "PAYLOAD_TRUE")`@
+){}

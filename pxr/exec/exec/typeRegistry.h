@@ -247,7 +247,6 @@ ExecTypeRegistry::_MakeExtractorFunction()
                 v.GetReadAccessor<T>();
 
             if (access.IsEmpty()) {
-                TF_VERIFY(mask.GetNumSet() == 0);
                 return VtValue();
             }
 

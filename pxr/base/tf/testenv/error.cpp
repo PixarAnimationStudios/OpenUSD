@@ -344,6 +344,20 @@ Test_TfDiagnosticTrap()
             mark.Clear();
         }
 
+        // TfErrorMark interaction - trapped errors reposted under an active
+        // mark are caught by the mark.
+        {
+            TfDiagnosticTrap trap;
+            TF_RUNTIME_ERROR("trapped error");
+            TfErrorMark mark;
+            TF_AXIOM(mark.IsClean());
+            TF_AXIOM(trap.HasErrors());
+            trap.Dismiss();
+            TF_AXIOM(!mark.IsClean());
+            TF_AXIOM(!trap.HasErrors());
+            mark.Clear();
+        }
+
         // ForEach with type-specific callable -- only matching types visited.
         {
             TfDiagnosticTrap trap;
@@ -756,4 +770,346 @@ Test_TfDiagnosticTransport()
 }
 
 TF_ADD_REGTEST(TfDiagnosticTransport);
+
+// Test hooks -- defined in diagnosticMgr.cpp, not in any public header.
+PXR_NAMESPACE_OPEN_SCOPE
+
+TF_API std::vector<std::string> Tf_GetPendingErrorsLogTextForTesting();
+TF_API std::vector<std::string> Tf_GetTrappedDiagnosticsLogTextForTesting();
+
+TF_API std::vector<std::string>
+Tf_GetTransportLogTextForTesting(TfErrorTransport const &);
+TF_API std::vector<std::string>
+Tf_GetTransportLogTextForTesting(TfDiagnosticTransport const &);
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+static bool
+Test_TfErrorAndDiagnosticTransportLogText()
+{
+    // All cases run on a dedicated thread to avoid interference from the test
+    // framework's top-level TfErrorMark and to get a clean thread-local state.
+    bool result = false;
+    std::thread t([&result]() {
+
+        // Helper: return true if any entry in 'log' contains 'substr'.
+        auto logContains = [](const std::vector<std::string> &log,
+                              const std::string &substr) {
+            for (const auto &entry : log) {
+                if (TfStringContains(entry, substr)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        // Helpers for each log text.
+        auto hasErrLog = [&logContains](std::string const &substr) {
+            return logContains(
+                Tf_GetPendingErrorsLogTextForTesting(), substr);
+        };
+
+        auto hasTrapLog = [&logContains](std::string const &substr) {
+            return logContains(
+                Tf_GetTrappedDiagnosticsLogTextForTesting(), substr);
+        };
+
+        auto hasTransportLog = [&logContains](auto const &transport,
+                                              std::string const &substr) {
+            return logContains(
+                Tf_GetTransportLogTextForTesting(transport), substr);
+        };
+
+        ////////////////////////////////////////////////////////////////
+        // TfErrorMark::Transport()
+
+        // Transport() immediately rebuilds the primary pending-errors log,
+        // removing the transported entries.  They live in a separate transient
+        // Arch key for the lifetime of the TfErrorTransport.
+        {
+            TfErrorMark m;
+            TF_RUNTIME_ERROR("flight error");
+            TF_AXIOM(hasErrLog("flight error"));
+
+            TfErrorTransport transport = m.Transport();
+            TF_AXIOM(m.IsClean());
+            // Immediate rebuild: transported entry no longer in primary log.
+            TF_AXIOM(!hasErrLog("flight error"));
+
+            // Transported entry should be in its own transient log.
+            TF_AXIOM(hasTransportLog(transport, "flight error"));
+
+            // Post() re-adds "flight error" to this thread's error list and
+            // primary log; the transient Arch key is removed.
+            transport.Post();
+            TF_AXIOM(hasErrLog("flight error"));
+            TF_AXIOM(!hasTransportLog(transport, "flight error"));
+
+            // Clear() should remove the error entriely.
+            m.Clear();
+            TF_AXIOM(!hasErrLog("flight error"));
+            TF_AXIOM(!hasTransportLog(transport, "flight error"));
+        }
+
+        // Dropping a transport without Post() just removes its transient Arch
+        // key; the primary log was already rebuilt at Transport() time.
+        {
+            TfErrorMark m;
+            TF_RUNTIME_ERROR("dropped error");
+            TF_AXIOM(hasErrLog("dropped error"));
+            {
+                TfErrorTransport transport = m.Transport();
+                TF_AXIOM(m.IsClean());
+                // Primary log already clean.
+                TF_AXIOM(!hasErrLog("dropped error"));
+                // transport destroyed here -- transient Arch key removed.
+            }
+            TF_AXIOM(!hasErrLog("dropped error"));
+            m.Clear();
+        }
+
+        // Multiple concurrent transports are independent: each removes its
+        // errors from the primary log immediately and owns a unique Arch key.
+        {
+            TfErrorMark m;
+            TF_RUNTIME_ERROR("multi error");
+
+            TfErrorTransport t1 = m.Transport();
+            // "multi error" immediately removed from primary log.
+            TF_AXIOM(!hasErrLog("multi error"));
+            TF_AXIOM(hasTransportLog(t1, "multi error"));
+
+            TF_RUNTIME_ERROR("second error");
+            TfErrorTransport t2 = m.Transport();
+            // "second error" immediately removed.
+            TF_AXIOM(!hasErrLog("second error"));
+            TF_AXIOM(hasTransportLog(t2, "second error"));
+            TF_AXIOM(!hasTransportLog(t1, "second error"));
+            TF_AXIOM(m.IsClean());
+
+            // Drop t1 -- its transient key removed; t2's key and primary log
+            // state are unaffected.
+            t1 = TfErrorTransport{};
+            TF_AXIOM(!hasTransportLog(t1, "multi error"));
+            TF_AXIOM(!hasErrLog("multi error"));
+            TF_AXIOM(hasTransportLog(t2, "second error"));
+
+            // Drop t2 -- its transient key removed; primary log still clean.
+            t2 = TfErrorTransport{};
+            TF_AXIOM(!hasErrLog("second error"));
+            TF_AXIOM(!hasTransportLog(t2, "second error"));
+            m.Clear();
+        }
+
+        // Transport() cleans the primary log even when the mark is later
+        // destroyed before the transport is posted or dropped.
+        {
+            TfErrorTransport transport;
+            {
+                TfErrorMark m;
+                TF_RUNTIME_ERROR("quiescent error");
+                transport = m.Transport();
+                // Primary log already clean at Transport() time.
+                TF_AXIOM(!hasErrLog("quiescent error"));
+                TF_AXIOM(hasTransportLog(transport, "quiescent error"));
+            }
+            // m destroyed; transport still in flight -- primary log clean.
+            TF_AXIOM(!hasErrLog("quiescent error"));
+            TF_AXIOM(hasTransportLog(transport, "quiescent error"));
+
+            // Dropping the transport removes the transient Arch key.
+            transport = TfErrorTransport{};
+            TF_AXIOM(!hasErrLog("quiescent error"));
+            TF_AXIOM(!hasTransportLog(transport, "quiescent error"));
+        }
+
+        ////////////////////////////////////////////////////////////////
+        // TfDiagnosticTrap::Transport()
+
+        // Transport() immediately rebuilds the primary trapped-diagnostics log,
+        // removing the transported entries.
+        {
+            TfDiagnosticTrap trap;
+            TF_WARN("trap flight warning");
+            TF_AXIOM(hasTrapLog("trap flight warning"));
+
+            TfDiagnosticTransport transport = trap.Transport();
+            TF_AXIOM(trap.IsClean());
+            // Immediate rebuild: transported entry no longer in primary log.
+            TF_AXIOM(!hasTrapLog("trap flight warning"));
+            TF_AXIOM(hasTransportLog(transport, "trap flight warning"));
+
+            // Drop the transport -- transient Arch key removed.
+            transport = TfDiagnosticTransport{};
+            TF_AXIOM(!hasTrapLog("trap flight warning"));
+            TF_AXIOM(!hasTransportLog(transport, "trap flight warning"));
+            trap.Clear();
+        }
+
+        // _PopTrap always rebuilds; after Transport() the primary log is
+        // already clean, so new diagnostics issued after Transport() and before
+        // the trap destructs are correctly removed by _PopTrap.
+        {
+            TfDiagnosticTransport transport;
+            {
+                TfDiagnosticTrap trap;
+                TF_WARN("d1");
+                TF_AXIOM(hasTrapLog("d1"));
+
+                // Transport d1 -- primary log immediately rebuilt.
+                transport = trap.Transport();
+                TF_AXIOM(trap.IsClean());
+                TF_AXIOM(!hasTrapLog("d1"));
+                TF_AXIOM(hasTransportLog(transport, "d1"));
+
+                // New diagnostic while transport is in flight.
+                TF_WARN("d2");
+                TF_AXIOM(hasTrapLog("d2"));
+                TF_AXIOM(!hasTransportLog(transport, "d2"));
+                // d1 is in the transient key, not the primary log.
+                TF_AXIOM(!hasTrapLog("d1"));
+                TF_AXIOM(hasTransportLog(transport, "d1"));
+
+                // trap destructs: _PopTrap rebuilds from trap._logStart,
+                // removing d2 (which is dispatched to delegates, no outer trap).
+            }
+            // Primary log clean; d1 is in transient key.
+            TF_AXIOM(!hasTrapLog("d1"));
+            TF_AXIOM(!hasTrapLog("d2"));
+            TF_AXIOM(hasTransportLog(transport, "d1"));
+
+            // Drop the transport -- transient key removed.
+            transport = TfDiagnosticTransport{};
+            TF_AXIOM(!hasTrapLog("d1"));
+            TF_AXIOM(!hasTransportLog(transport, "d1"));
+        }
+
+        // _OnContentsChanged always rebuilds; after Transport() the primary log
+        // is already clean, so clearing a trap while a transport is in flight
+        // correctly removes any subsequent entries without disturbing the
+        // transient key.
+        {
+            TfDiagnosticTransport transport;
+            {
+                TfDiagnosticTrap trap;
+                TF_WARN("ct1");
+                TF_AXIOM(hasTrapLog("ct1"));
+
+                // Transport ct1 -- primary log immediately rebuilt.
+                transport = trap.Transport();
+                TF_AXIOM(trap.IsClean());
+                TF_AXIOM(!hasTrapLog("ct1"));
+                TF_AXIOM(hasTransportLog(transport, "ct1"));
+
+                // Issue a second warning, then clear it.
+                // _OnContentsChanged immediately rebuilds the primary log.
+                TF_WARN("ct2");
+                TF_AXIOM(hasTrapLog("ct2"));
+                trap.Clear();
+                TF_AXIOM(trap.IsClean());
+                TF_AXIOM(!hasTrapLog("ct2"));
+                // ct1 is in the transient key, not the primary log.
+                TF_AXIOM(!hasTrapLog("ct1"));
+                TF_AXIOM(hasTransportLog(transport, "ct1"));
+
+                // trap destructs cleanly (container empty, nothing to re-post).
+            }
+            // Transport still in flight; transient key still registered.
+            TF_AXIOM(!hasTrapLog("ct1"));
+            TF_AXIOM(hasTransportLog(transport, "ct1"));
+                
+            // Drop the transport -- transient Arch key removed.
+            transport = TfDiagnosticTransport{};
+            TF_AXIOM(!hasTrapLog("ct1"));
+            TF_AXIOM(!hasTransportLog(transport, "ct1"));
+        }
+
+        // Cross-thread drop: dropping a TfDiagnosticTransport on a different
+        // thread removes only its transient Arch key.  The source thread's
+        // primary log was already rebuilt at Transport() time and is unaffected.
+        {
+            TfDiagnosticTrap trap;
+            TF_WARN("cross w1");
+            TF_AXIOM(hasTrapLog("cross w1"));
+
+            TfDiagnosticTransport transport = trap.Transport();
+            TF_AXIOM(trap.IsClean());
+            // Primary log rebuilt immediately.
+            TF_AXIOM(!hasTrapLog("cross w1"));
+            TF_AXIOM(hasTransportLog(transport, "cross w1"));
+
+            // Drop on a child thread -- removes transient Arch key cross-thread.
+            std::thread child([t = std::move(transport)]() {});
+            child.join();
+
+            transport = TfDiagnosticTransport{};
+            
+            // Primary log is unchanged (was already clean).
+            TF_AXIOM(!hasTrapLog("cross w1"));
+            TF_AXIOM(!hasTransportLog(transport, "cross w1"));
+
+            // New diagnostic appended correctly -- no stale state to correct.
+            TF_WARN("cross w2");
+            TF_AXIOM(trap.HasWarnings());
+            TF_AXIOM(trap.GetWarnings().size() == 1);
+            TF_AXIOM(trap.GetWarnings()[0].GetCommentary() == "cross w2");
+            TF_AXIOM(hasTrapLog("cross w2"));
+            trap.Clear();
+        }
+
+        // Nested traps: Transport() of inner entries immediately rebuilds the
+        // primary log, preserving outer entries and correctly re-computing
+        // _logStart for all traps on the stack.
+        {
+            TfDiagnosticTrap outer;
+            TF_WARN("outer w1");
+            TF_AXIOM(hasTrapLog("outer w1"));
+            {
+                TfDiagnosticTrap inner;
+                TF_WARN("inner w1");
+                TF_AXIOM(hasTrapLog("inner w1"));
+
+                TfDiagnosticTransport transport = inner.Transport();
+                TF_AXIOM(inner.IsClean());
+                // Primary log rebuilt: outer w1 present, inner w1 removed.
+                TF_AXIOM(hasTrapLog("outer w1"));
+                TF_AXIOM(!hasTrapLog("inner w1"));
+                TF_AXIOM(!hasTransportLog(transport, "outer w1"));
+                TF_AXIOM(hasTransportLog(transport, "inner w1"));
+
+                // Drop on child thread -- removes transient key only.
+                std::thread child([t = std::move(transport)]() {});
+                child.join();
+
+                transport = TfDiagnosticTransport{};
+
+                TF_AXIOM(hasTrapLog("outer w1"));
+                TF_AXIOM(!hasTrapLog("inner w1"));
+                TF_AXIOM(!hasTransportLog(transport, "outer w1"));
+                TF_AXIOM(!hasTransportLog(transport, "inner w1"));
+
+                // Post into inner -- _logStart was already resynced at
+                // Transport() time; append is correct.
+                TF_WARN("inner w2");
+                TF_AXIOM(inner.HasWarnings());
+                TF_AXIOM(inner.GetWarnings().size() == 1);
+                TF_AXIOM(inner.GetWarnings()[0].GetCommentary() == "inner w2");
+                TF_AXIOM(hasTrapLog("outer w1"));
+                TF_AXIOM(hasTrapLog("inner w2"));
+                inner.Clear();
+            }
+            // inner re-posts nothing (was cleared).
+            TF_AXIOM(outer.HasWarnings());
+            TF_AXIOM(outer.GetWarnings().size() == 1);
+            TF_AXIOM(outer.GetWarnings()[0].GetCommentary() == "outer w1");
+            outer.Clear();
+        }
+
+        result = true;
+    });
+    t.join();
+    return result;
+}
+
+TF_ADD_REGTEST(TfErrorAndDiagnosticTransportLogText);
 

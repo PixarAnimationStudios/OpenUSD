@@ -95,7 +95,7 @@ bool TsConvertToStandardTangent(
     using NonVolatileT = typename std::remove_volatile<T>::type;
 
     static_assert((
-        TF_PP_SEQ_FOR_EACH(_MAKE_CLAUSE, ~, TS_SPLINE_SUPPORTED_VALUE_TYPES) \
+        TF_PP_SEQ_FOR_EACH(_MAKE_CLAUSE, ~, TS_SPLINE_STORAGE_VALUE_TYPES) \
             false), "Can only use the values supported by the spline system.");
 
     return Ts_ConvertToStandardHelper(
@@ -116,7 +116,7 @@ bool TsConvertFromStandardTangent(
     using NonVolatileT = typename std::remove_volatile<T>::type;
 
     static_assert((
-        TF_PP_SEQ_FOR_EACH(_MAKE_CLAUSE, ~, TS_SPLINE_SUPPORTED_VALUE_TYPES) \
+        TF_PP_SEQ_FOR_EACH(_MAKE_CLAUSE, ~, TS_SPLINE_STORAGE_VALUE_TYPES) \
             false), "Can only use the values supported by the spline system.");
 
     return Ts_ConvertFromStandardHelper(

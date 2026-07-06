@@ -22,12 +22,19 @@ def Scope "World"
             color3f inputs:diffuseColor = (1, 0, 0)
             token outputs:surface.connect = </World/Material/NodeGraph/PreviewSurface.outputs:surface>
             
-            def Shader "PreviewSurface" ()
+            def Shader "PreviewSurface"
             {
                 uniform token info:id = "UsdPreviewSurface"
                 color3f inputs:diffuseColor.connect = </World/Material/NodeGraph.inputs:diffuseColor>
                 token outputs:surface
             }
+        }
+
+        def Shader "AlternatePreviewSurface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (1, 2, 3)
+            token outputs:surface
         }
     }
 }

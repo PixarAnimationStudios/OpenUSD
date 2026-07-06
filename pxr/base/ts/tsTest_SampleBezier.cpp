@@ -6,28 +6,41 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/ts/spline.h"
 #include "pxr/base/ts/tsTest_SampleBezier.h"
+#include "pxr/base/ts/types.h"
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/math.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-using SData = TsTest_SplineData;
 
 // Obtain one sample between knot0 and knot1, at parameter value t.
 // Uses de Casteljau algorithm.
 //
 static TsTest_Sample
 _ComputeSample(
-    const SData::Knot &knot0,
-    const SData::Knot &knot1,
+    const TsKnot& knot0,
+    const TsKnot& knot1,
     const double t)
 {
-    const GfVec2d p0(knot0.time, knot0.value);
-    const GfVec2d tan1(knot0.postLen, knot0.postSlope * knot0.postLen);
+    double knotValue0, knotPostTanSlope0,
+           knotValue1, knotPreTanSlope1;
+    bool success = true;
+    success &= knot0.GetValue<double>(&knotValue0);
+    success &= knot0.GetPostTanSlope<double>(&knotPostTanSlope0);
+    success &= knot1.GetValue<double>(&knotValue1);
+    success &= knot1.GetPreTanSlope<double>(&knotPreTanSlope1);
+
+    TF_VERIFY(success,
+              "TsTest_SampleBezier supports double-valued splines only.");
+
+    const GfVec2d p0(knot0.GetTime(), knotValue0);
+    const GfVec2d tan1(knot0.GetPostTanWidth(),
+                       knotPostTanSlope0 * knot0.GetPostTanWidth());
     const GfVec2d p1 = p0 + tan1;
-    const GfVec2d p3(knot1.time, knot1.value);
-    const GfVec2d tan2(-knot1.preLen, -knot1.preSlope * knot1.preLen);
+    const GfVec2d p3(knot1.GetTime(), knotValue1);
+    const GfVec2d tan2(-knot1.GetPreTanWidth(),
+                       -knotPreTanSlope1 * knot1.GetPreTanWidth());
     const GfVec2d p2 = p3 + tan2;
 
     const GfVec2d lerp11 = GfLerp(t, p0, p1);
@@ -44,16 +57,16 @@ _ComputeSample(
 
 TsTest_SampleVec
 TsTest_SampleBezier(
-    const SData &splineData,
+    const TsSpline& spline,
     const int numSamples)
 {
-    if (splineData.GetRequiredFeatures() != SData::FeatureBezierSegments)
+    if (spline.GetCurveType() != TsCurveTypeBezier)
     {
         TF_CODING_ERROR("SampleBezier supports only plain Beziers");
         return {};
     }
 
-    const SData::KnotSet &knots = splineData.GetKnots();
+    const TsKnotMap knots = spline.GetKnots();
     if (knots.size() < 2)
     {
         TF_CODING_ERROR("SampleBezier requires at least two knots");
@@ -81,8 +94,12 @@ TsTest_SampleBezier(
     }
 
     // Add one sample at the end of the last segment.
-    const SData::Knot &lastKnot = *knots.rbegin();
-    result.push_back(TsTest_Sample(lastKnot.time, lastKnot.value));
+    const TsKnot& lastKnot = *knots.rbegin();
+    double lastKnotValue;
+    TF_VERIFY(lastKnot.GetValue<double>(&lastKnotValue),
+              "TsTest_SampleBezier supports double-valued splines only.");
+    const TsTest_Sample sample(lastKnot.GetTime(), lastKnotValue);
+    result.push_back(sample);
 
     return result;
 }

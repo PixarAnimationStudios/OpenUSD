@@ -1,0 +1,77 @@
+#usda 1.0
+
+def Xform "ReferencePoint"
+{
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1, 0, 1, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+
+    def Cylinder "X"
+    {
+        double height = 1.0
+        double radius = 0.1
+
+        float3[] extent = [ (-0.1, -0.1, -0.5), (0.1, 0.1, 0.5) ]
+
+        double xformOp:rotateY = 90
+        token[] xformOpOrder = ["xformOp:rotateY"]
+
+        color3f[] primvars:displayColor = [(1,0,0)] (interpolation = "constant")
+    }
+
+    def Cylinder "Y"
+    {
+        double height = 1.0
+        double radius = 0.1
+
+        float3[] extent = [ (-0.1, -0.1, -0.5), (0.1, 0.1, 0.5) ]
+
+        double xformOp:rotateX = 90
+        token[] xformOpOrder = ["xformOp:rotateX"]
+
+        color3f[] primvars:displayColor = [(0,1,0)] (interpolation = "constant")
+    }
+
+    def Cylinder "Z"
+    {
+        double height = 1.0
+        double radius = 0.1
+
+        float3[] extent = [ (-0.1, -0.1, -0.5), (0.1, 0.1, 0.5) ]
+
+        color3f[] primvars:displayColor = [(0,0,1)] (interpolation = "constant")
+    }
+}
+
+def Xform "A"
+{
+    double3 xformOp:translate = (1, 0, 0)
+    token[] xformOpOrder = ["xformOp:translate"]
+
+    def Unknown "B"
+    {
+        # Not a transformable prim: we should not pick up
+        # its transform but not loose the parent transform either.
+        # See USD-10664.
+
+        double3 xformOp:translate = (0, 1, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "C"
+        {
+            double3 xformOp:translate = (0, 0, 1)
+            token[] xformOpOrder = ["xformOp:translate"]
+
+            def Sphere "sphere"
+            {
+                double radius = 0.2
+                float3[] extent = [(-0.2, -0.2, -0.2), (0.2, 0.2, 0.2)]
+            }
+        }
+    }
+}
+
+def Camera "main_cam"
+{
+    matrix4d xformOp:transform = ( (0.678, 0.7343, 0, 0), (-0.4026, 0.37218, 0.83628, 0), (0.61410, -0.56767, 0.54829, 0), (3.24, -2.07, 3.0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}

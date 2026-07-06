@@ -6,6 +6,7 @@
 //
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
 
+#include "pxr/base/arch/stackTrace.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/bufferUtils.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -73,7 +74,7 @@ HdStVBOMemoryManager::ComputeAggregationId(
 
 
 /// Returns the buffer specs from a given buffer array
-HdBufferSpecVector 
+HdBufferSpecVector
 HdStVBOMemoryManager::GetBufferSpecs(
     HdBufferArraySharedPtr const &bufferArray) const
 {
@@ -84,11 +85,11 @@ HdStVBOMemoryManager::GetBufferSpecs(
 
 
 /// Returns the size of the GPU memory used by the passed buffer array
-size_t 
+size_t
 HdStVBOMemoryManager::GetResourceAllocation(
-    HdBufferArraySharedPtr const &bufferArray, 
-    VtDictionary &result) const 
-{ 
+    HdBufferArraySharedPtr const &bufferArray,
+    VtDictionary &result) const
+{
     std::set<uint64_t> idSet;
     size_t gpuMemoryUsed = 0;
 
@@ -215,7 +216,7 @@ HdStVBOMemoryManager::_StripedBufferArray::_AddResource(TfToken const& name,
         }
     }
 
-    HdStBufferResourceSharedPtr bufferRes = 
+    HdStBufferResourceSharedPtr bufferRes =
         std::make_shared<HdStBufferResource>(
             GetRole(), tupleType, offset, stride);
     _resourceList.emplace_back(name, bufferRes);
@@ -317,7 +318,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
     _SetRangeList(ranges);
 
     _totalCapacity = totalNumElements;
-    
+
     Hgi* hgi = _resourceRegistry->GetHgi();
     HgiBlitCmds* blitCmds = _resourceRegistry->GetGlobalBlitCmds();
     blitCmds->PushDebugGroup(__ARCH_PRETTY_FUNCTION__);
@@ -489,6 +490,9 @@ HdStBufferResourceSharedPtr
 HdStVBOMemoryManager::_StripedBufferArray::GetResource(TfToken const& name)
 {
     HD_TRACE_FUNCTION();
+    if (name.IsEmpty()) {
+        return GetResource();
+    }
 
     // linear search.
     // The number of buffer resources should be small (<10 or so).
@@ -669,12 +673,12 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
     HgiBufferCpuToGpuOp blitOp;
     blitOp.cpuSourceBuffer = bufferSource->GetData();
     blitOp.gpuDestinationBuffer = VBO->GetHandle();
-    
+
     blitOp.sourceByteOffset = 0;
     blitOp.byteSize = srcSize;
     blitOp.destinationByteOffset = vboOffset;
 
-    HdStStagingBuffer *stagingBuffer = 
+    HdStStagingBuffer *stagingBuffer =
         GetResourceRegistry()->GetStagingBuffer();
     stagingBuffer->StageCopy(blitOp);
 }
@@ -688,6 +692,7 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::GetByteOffset(
         _stripedBufferArray->GetResource(resourceName);
 
     if (!VBO || (!VBO->GetHandle() && _numElements > 0)) {
+        ArchLogStackTrace(TfStringPrintf("VBO doesn't exist for %s", resourceName.GetText()), true);
         TF_CODING_ERROR("VBO doesn't exist for %s", resourceName.GetText());
         return 0;
     }
@@ -771,7 +776,7 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::GetResources() const
 void
 HdStVBOMemoryManager::_StripedBufferArrayRange::SetBufferArray(HdBufferArray *bufferArray)
 {
-    _stripedBufferArray = static_cast<_StripedBufferArray *>(bufferArray);    
+    _stripedBufferArray = static_cast<_StripedBufferArray *>(bufferArray);
 }
 
 void

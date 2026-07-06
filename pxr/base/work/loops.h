@@ -14,14 +14,15 @@
 #include "pxr/base/work/impl.h"
 #include "pxr/base/work/threadLimits.h"
 
-#include "pxr/base/tf/errorTransport.h"
+#include "pxr/base/tf/diagnosticTrap.h"
+#include "pxr/base/tf/diagnosticTransport.h"
 #include "pxr/base/tf/mallocTag.h"
 
 #include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using Work_ErrorTransports = tbb::concurrent_vector<TfErrorTransport>;
+using Work_DiagnosticTransports = tbb::concurrent_vector<TfDiagnosticTransport>;
 
 template <class Fn>
 class Work_LoopsTaskWrapper
@@ -29,23 +30,22 @@ class Work_LoopsTaskWrapper
 public:
     Work_LoopsTaskWrapper(
         Fn &&callback,
-        Work_ErrorTransports *errors)
+        Work_DiagnosticTransports *diagnostics)
     : _callback(callback)
-    , _errors(errors) {}
+    , _diagnostics(diagnostics) {}
 
     template <typename ... Args>
     void operator()(Args&&... args) const {
-        TfErrorMark m;
+        TfDiagnosticTrap trap;
         _callback(std::forward<Args>(args)...);
-        if (!m.IsClean()) {
-            TfErrorTransport transport = m.Transport();
-            _errors->grow_by(1)->swap(transport);
+        if (!trap.IsClean()) {
+            *_diagnostics->grow_by(1) = trap.Transport();
         }
     }
 
 private:
     Fn & _callback;
-    Work_ErrorTransports *_errors;
+    Work_DiagnosticTransports *_diagnostics;
 };
 
 template <class Fn>
@@ -54,25 +54,24 @@ class Work_MallocTagsLoopsTaskWrapper
 public:
     Work_MallocTagsLoopsTaskWrapper(
         Fn &&callback,
-        Work_ErrorTransports *errors)
+        Work_DiagnosticTransports *diagnostics)
     : _callback(callback)
-    , _errors(errors)
+    , _diagnostics(diagnostics)
     , _mallocTagStack(TfMallocTag::GetCurrentStackState()) {}
 
     template <typename ... Args>
     void operator()(Args&&... args) const {
-        TfErrorMark m;
+        TfDiagnosticTrap trap;
         TfMallocTag::StackOverride ovr(_mallocTagStack);
         _callback(std::forward<Args>(args)...);
-        if (!m.IsClean()) {
-            TfErrorTransport transport = m.Transport();
-            _errors->grow_by(1)->swap(transport);
+        if (!trap.IsClean()) {
+            *_diagnostics->grow_by(1) = trap.Transport();
         }
     }
 
 private:
     Fn & _callback;
-    Work_ErrorTransports *_errors;
+    Work_DiagnosticTransports *_diagnostics;
     TfMallocTag::StackState _mallocTagStack;
 };
 
@@ -82,23 +81,22 @@ class Work_LoopsForEachTaskWrapper
 public:
     Work_LoopsForEachTaskWrapper(
         Fn &&callback,
-        Work_ErrorTransports *errors)
+        Work_DiagnosticTransports *diagnostics)
     : _callback(callback)
-    , _errors(errors) {}
+    , _diagnostics(diagnostics) {}
 
     template <typename Arg>
     void operator()(Arg &&arg) const {
-        TfErrorMark m;
+        TfDiagnosticTrap trap;
         _callback(std::forward<Arg>(arg));
-        if (!m.IsClean()) {
-            TfErrorTransport transport = m.Transport();
-            _errors->grow_by(1)->swap(transport);
+        if (!trap.IsClean()) {
+            *_diagnostics->grow_by(1) = trap.Transport();
         }
     }
 
 private:
     Fn & _callback;
-    Work_ErrorTransports *_errors;
+    Work_DiagnosticTransports *_diagnostics;
 };
 
 template <class Fn>
@@ -107,25 +105,24 @@ class Work_MallocTagsLoopsForEachTaskWrapper
 public:
     Work_MallocTagsLoopsForEachTaskWrapper(
         Fn &&callback,
-        Work_ErrorTransports *errors)
+        Work_DiagnosticTransports *diagnostics)
     : _callback(callback)
-    , _errors(errors)
+    , _diagnostics(diagnostics)
     , _mallocTagStack(TfMallocTag::GetCurrentStackState()) {}
 
     template <typename Arg>
     void operator()(Arg &&arg) const {
-        TfErrorMark m;
+        TfDiagnosticTrap trap;
         TfMallocTag::StackOverride ovr(_mallocTagStack);
         _callback(std::forward<Arg>(arg));
-        if (!m.IsClean()) {
-            TfErrorTransport transport = m.Transport();
-            _errors->grow_by(1)->swap(transport);
+        if (!trap.IsClean()) {
+            *_diagnostics->grow_by(1) = trap.Transport();
         }
     }
 
 private:
     Fn & _callback;
-    Work_ErrorTransports *_errors;
+    Work_DiagnosticTransports *_diagnostics;
     TfMallocTag::StackState _mallocTagStack;
 };
 
@@ -173,20 +170,20 @@ WorkParallelForN(size_t n, Fn &&callback, size_t grainSize)
     // Don't bother with parallel_for, if concurrency is limited to 1.
     if (WorkHasConcurrency()) {
         PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
-        Work_ErrorTransports errorTransports;
+        Work_DiagnosticTransports diagnosticTransports;
         if (TfMallocTag::IsInitialized()) {
             Work_MallocTagsLoopsTaskWrapper<Fn>
-                task(std::forward<Fn>(callback), &errorTransports);
+                task(std::forward<Fn>(callback), &diagnosticTransports);
             WorkImpl_ParallelForN(n, task, grainSize);
         }
         else {
             Work_LoopsTaskWrapper<Fn>
-                task(std::forward<Fn>(callback), &errorTransports);
+                task(std::forward<Fn>(callback), &diagnosticTransports);
             WorkImpl_ParallelForN(n, task, grainSize);
         }
 
-        for (auto &et: errorTransports) {
-            et.Post();
+        for (auto &dt: diagnosticTransports) {
+            dt.Post();
         }
     } else {
         // If concurrency is limited to 1, execute serially.
@@ -236,19 +233,19 @@ WorkParallelForTBBRange(const RangeType &range, Fn &&callback)
         // otherwise use the default implementation below that builds off of the 
         // dispatcher.
 #if defined WORK_IMPL_HAS_PARALLEL_FOR_TBB_RANGE
-        Work_ErrorTransports errorTransports;
+        Work_DiagnosticTransports diagnosticTransports;
         if (TfMallocTag::IsInitialized()) {
             Work_MallocTagsLoopsTaskWrapper<Fn>
-                task(std::forward<Fn>(callback), &errorTransports);
+                task(std::forward<Fn>(callback), &diagnosticTransports);
             WorkImpl_ParallelForTBBRange(range, task);
         }
         else {
             Work_LoopsTaskWrapper<Fn>
-                task(std::forward<Fn>(callback), &errorTransports);
+                task(std::forward<Fn>(callback), &diagnosticTransports);
             WorkImpl_ParallelForTBBRange(range, task);
         }
-        for (auto &et: errorTransports) {
-            et.Post();
+        for (auto &dt: diagnosticTransports) {
+            dt.Post();
         }
 #else
         // The parallel task responsible for recursively sub-dividing the range
@@ -317,19 +314,19 @@ WorkParallelForEach(
 {
     if (WorkHasConcurrency()) {
         PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
-        Work_ErrorTransports errorTransports;
+        Work_DiagnosticTransports diagnosticTransports;
         if (TfMallocTag::IsInitialized()) {
             Work_MallocTagsLoopsForEachTaskWrapper<Fn>
-                task(std::forward<Fn>(fn), &errorTransports);
+                task(std::forward<Fn>(fn), &diagnosticTransports);
             WorkImpl_ParallelForEach(first, last, task);
         }
         else {
             Work_LoopsForEachTaskWrapper<Fn>
-                task(std::forward<Fn>(fn), &errorTransports);
+                task(std::forward<Fn>(fn), &diagnosticTransports);
             WorkImpl_ParallelForEach(first, last, task);
         }
-        for (auto &et: errorTransports) {
-            et.Post();
+        for (auto &dt: diagnosticTransports) {
+            dt.Post();
         }
     } else {
         std::for_each(first, last, std::forward<Fn>(fn));

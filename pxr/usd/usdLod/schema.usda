@@ -1,0 +1,352 @@
+#usda 1.0
+(
+    "This files describes the USD Level of Detail (LOD) schemas."
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName       = "usdLod"
+        string libraryPath       = "pxr/usd/usdLod"
+    }
+)
+{
+}
+
+class "LODRootAPI"
+(
+    customData = {
+        string className = "RootAPI"
+        string apiSchemaType = "singleApply"
+    }
+    inherits = </APISchemaBase>
+    doc = """API for configuring Level of Detail (LOD) facilities on a prim.
+
+    This API schema marks a prim as the root of an LOD selection hierarchy. The
+    immediate namespace children of this prim are the LOD items that can be
+    selected during rendering. The order of LOD item child prims in the USD stage
+    determines the LOD index, from 0 to the number_of_children - 1.
+
+    Selection of appropriate LOD items is entirely up to the renderer that is
+    processing the scene. Upon encountering an LOD root, the renderer should
+    check for an LOD override (see UsdLodOverrideAPI), then check the targets of
+    the lod:heuristics relationship for an appropriate heuristic using the
+    heuristic's type and lod:domain value to select one, falling back to the
+    lod:default:index value if all else fails. Each heuristic type will likely
+    have a specific, unique API to query that heuristic for its LOD
+    recommendation. It is then up to the renderer to display the selected LOD
+    item child and not display LOD item children that are not selected.
+
+    LOD heuristics are specified by heuristic prims targeted by the
+    lod:heuristics relationship. The targeted heuristics are intended to be
+    queried and used by the renderer.
+
+    LOD items are generally mutually exclusive selections, though renderers may
+    blend between multiple children or even display all of them when given an
+    appropriate override.
+
+    The schema is singleApply, but multiple systems may independently specify
+    level of detail criteria via heuristics specified by the lod:heuristics
+    relationship. For example, a single prim may have both "imaging" and
+    "physics" domain heuristics; the choice of the domains to consider and the
+    heuristic(s) to use is up to the renderer.
+
+    A child or descendent of an LODRootAPI prim may itself have LODRootAPI
+    applied to create nested hierarchical LOD structures.
+    """
+)
+{
+    int lod:default:index = 0 (
+        doc = """The LOD item child to use if none of the heuristics are
+        understood by the renderer or if none return a usable LOD.
+
+        Consider an "audio" renderer that does not understand "imaging" domain
+        heuristics. When it encounters a prim with LODRootAPI applied and only
+        "imaging" domain heuristics, it should select and process the child
+        indicated by lod:default:index and ignore the other children.
+        """
+    )
+    rel lod:heuristics (
+        doc = """Relationship targeting all the heuristic prims that could be
+        used for this particular LOD root. The choice of which heuristic(s) will
+        be used is up to the renderer.
+        """
+    )
+}
+
+class "LODOverrideAPI"
+(
+    customData = {
+        string className = "OverrideAPI"
+        string apiSchemaType = "singleApply"
+    }
+    inherits = </APISchemaBase>
+    doc = """API for overriding Level of Detail (LOD) choices.
+
+    This API schema defines an LOD override for namespace descendents. When the
+    renderer encounters a prim with LODRootAPI applied, it should first check to
+    see if there is an override for the LOD domain of interest before consulting
+    heuristics or the root's lod:default:index.
+    """
+)
+{
+    token lod:override:mode = "inherited" (
+        allowedTokens = ["inherited", "noOverride", "indexedLOD", "noLOD", "allLOD"]
+        doc = """How to apply override to LOD decisions. Valid values are:
+
+        - __inherited__: The default. This prim does not provide any override
+          information, it inherits any value set above it.
+        - __noOverride__: There is explicitly no override. Use the heuristics.
+        - __indexedLOD__: The lod:override:index property provides the value.
+        - __noLOD__: No LOD items should be displayed.
+        - __allLOD__: All LOD items should be displayed.
+        """
+    )
+    float lod:override:index = 0 (
+        doc = """The index value to use when lod:override:mode is "indexedLOD".
+
+        If the value is outside the range of available LOD items, the renderer
+        must clamp the value into range to select an appropriate LOD. If the
+        value is fractional, the renderer may choose to blend or interpolate
+        between multiple LOD items. Alternatively, the renderer may simply round
+        the value to the nearest integer.
+        """
+    )
+}
+
+class "LODHeuristic"
+(
+    customData = {
+        string className = "Heuristic"
+        dictionary schemaTokens = {
+            dictionary imaging = {
+                string doc = """Name of the LOD domain for heuristics for
+                generic imaging based renderers."""
+            }
+            dictionary audio = {
+                string doc = """Name of the LOD domain for heuristics for
+                generic audio based renderers."""
+            }
+            dictionary physics = {
+                string doc = """Name of the LOD domain for heuristics for
+                generic physics based renderers."""
+            }
+        }
+    }
+    inherits = </Typed>
+    doc = """Base class for LOD Heuristics.
+
+    Due to the varying nature of the inputs, and potentially outputs, of
+    each heuristic, the method of using the heuristic and the type of
+    value that it returns may be different for each type of heuristic.
+    It is the responsibility of the renderer to select a heuristic (or
+    heuristics) that it knows how to use, to invoke it, and to apply
+    the result."""
+)
+{
+    # The renderer will choose heuristics to evaluate based on both the domain
+    # token AND the concrete heuristic prim type. Each heuristic will have its
+    # own specific method for computing an LOD Index. For example, the
+    # UsdLodDistanceHeuristic defines a ComputeLOD method that takes a
+    # viewpoint and an object-to-worldspace transform, and returns a float. The
+    # UsdLodScreenSizeHeuristic has a ComputeLOD method that takes a GfFrustum
+    # instead of a viewpoint. Renderers cannot invoke methods that they do not
+    # understand.
+    uniform token lod:domain (
+        doc = """The "domain" of this heuristic. Predefined generic domains
+        include "imaging", "physics", and "audio". Other generic domain names
+        may be added in the future. If you are creating your own unique
+        heuristics, it is recommended that you prefix them with your company,
+        product, or renderer name."""
+    )
+}
+
+# The LODDistanceHeuristic and the LODScreenSizeHeuristic are proof-of-concept
+# implementations. It's likely that any specific renderer may require an equally
+# specific heuristic, but these are intended to be working examples that
+# demonstrate the concepts while being usable enough for most simple uses.
+class LODDistanceHeuristic "LODDistanceHeuristic"
+(
+    customData = {
+        string className = "DistanceHeuristic"
+        string extraIncludes = """
+#include "pxr/usd/usdLod/distanceHeuristicQuery.h"
+#include "pxr/usd/usdGeom/boundable.h"
+"""
+    }
+
+    inherits = </LODHeuristic>
+    doc = """This LOD heuristic selects LOD children on the basis of distance
+    from the view point to the LOD root.
+
+    The LOD child selected is determined by the comparing the computed
+    distance with the values in thresholds and blendThresholds. Providing
+    values in blendThresholds can allow the renderer to blend between
+    different LOD children which can be useful to avoid flickering
+    between two LODs. Alternatively, hysteresis can be employed to avoid
+    changing the LOD when the distance changes by a small amount.
+
+    The center and boundingVolume properties describe geometric information for
+    the Root prim that informs the distance calculation. If boundingVolume is
+    authored and has a valid extent, the distance to the nearest point on the
+    extent box is used; otherwise the distance to the center is used. Both
+    center and boundingVolume coordinates are assumed to be in the local
+    coordinate system of the LOD root. (Note that this heuristic prim may have
+    a completely different coordinate system than that of the root.)
+    """
+)
+{
+    point3f center = (0.0, 0.0, 0.0) (
+        doc = """The center point of this LOD Root in local coordinates.
+
+        This value is used to calculate the distance from the view point if the
+        boundingVolume relationship does not target a Boundable prim.
+        """
+    )
+
+    rel boundingVolume (
+        doc = """Optional relationship to a Boundable prim that defines the
+        bounding volume for this LOD Root, the prim's extent will be used for
+        distance calculation if it is valid (not empty). The distance will be
+        calculated from the viewpoint to the nearest point on the extent box.
+        """
+    )
+
+    uniform float[] thresholds = [] (
+        doc = """This defines the distance thresholds for LOD transitions in
+        ascending order.
+
+        For example, [10.0, 50.0, 100.0] means:
+        - Use LOD 0 when distance < 10.0
+        - Use LOD 1 when 10.0 <= distance < 50.0
+        - Use LOD 2 when 50.0 <= distance < 100.0
+        - Use LOD 3 when 100.0 <= distance
+        """
+    )
+
+    uniform float[] blendThresholds = [] (
+        doc = """This defines distance thresholds for LOD transitions in
+        ascending order. If the blend threshold values are defined, then the
+        calculation can return a result between two levels of detail that can be
+        used to blend or combine multiple LOD items.
+
+        For example if:
+        - thresholds is [10.0, 50.0, 100.0]
+        - blendThresholds is [11.0, 55.0, 110.0]
+
+        then:
+        - Use LOD 0 when distance < 10.0
+        - Blend LOD 0 and LOD 1 when 10.0 <= distance < 11.0
+        - Use LOD 1 when 11.0 <= distance < 50.0
+        - Blend LOD 1 and LOD 2 when 50 <= distance < 55.0
+        - Use LOD 2 when 55.0 <= distance < 100.0
+        - Blend LOD 2 and LOD 3 when 100 <= distance < 110.0
+        - Use LOD 3 when 110.0 <= distance
+
+        The blend amount should be computed linearly between the corresponding
+        thresholds and blendThresholds values. See thresholds for additional
+        information. Note that blendThresholds values are clamped internally to
+        the current and next thresholds values, ensuring that blending never
+        occurs between more than 2 LOD children. Missing blendThresholds
+        values result in no blending, just a discontinuous jump from one LOD
+        child to the next.
+        """
+    )
+}
+
+class LODScreenSizeHeuristic "LODScreenSizeHeuristic"
+(
+    customData = {
+        string className = "ScreenSizeHeuristic"
+        string extraIncludes = """
+#include "pxr/usd/usdLod/screenSizeHeuristicQuery.h"
+#include "pxr/usd/usdGeom/boundable.h"
+"""
+    }
+    inherits = </LODHeuristic>
+
+    doc = """This LOD heuristic selects LOD children on the basis of the
+    fraction of the viewplane would be covered by the extent.
+
+    The LOD child selected is determined by the comparing the computed screen
+    size with the values in thresholds and blendThresholds. Providing values in
+    blendThresholds can allow the renderer to blend between different LOD
+    children which can be useful to avoid flickering between two LODs.
+    Alternatively, hysteresis can be employed to avoid changing the LOD when the
+    distance changes by just a small amount.
+
+    The extent and boundingVolume properties describe geometric information for
+    the Root prim that informs the distance calculation. If boundingVolume is
+    authored and targets a prim with a valid extent, the targeted prim's extent
+    should govern the heuristic; otherwise, the extent holds. Both extent and
+    boundingVolume coordinates are assumed to be in the local coordinate system
+    of the LOD root. (Note that this heuristic prim may have a completely
+    different coordinate system than the root does.)
+    """
+)
+{
+    float3[] extent = [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)] (
+        doc = """The extent of this LOD Root in local coordinates.
+
+        This value is used to calculate the screen size from the camera if the
+        boundingVolume relationship does not target a Boundable prim with a
+        valid extent.
+        """
+    )
+
+    rel boundingVolume (
+        doc = """Optional relationship to a Boundable prim that defines the
+        bounding volume for this LOD Root, used for size calculation if
+        the referenced prim has a valid extent.
+        """
+    )
+
+    uniform token projectionMethod = "projectedSphere" (
+        allowedTokens = ["projectedExtent", "projectedSphere"]
+        doc = """Defines how screen size is calculated.
+
+        - projectedExtent: Project the extent to the view plane
+        - projectedSphere: Project the extent bounding sphere to the view plane
+        """
+    )
+
+    uniform float[] thresholds = [] (
+        doc = """The screen size thresholds for LOD transitions in descending
+        order as a fraction of the viewport size.
+
+        For example, [0.25, 0.10, 0.025] means:
+        - Use LOD 0 when the bounds cover more than 25% of the screen
+        - Use LOD 1 when the bounds cover 25% or less but more than 10%
+        - Use LOD 2 when the bounds cover 10% or less but more than 2.5%
+        - Use LOD 3 when the bounds cover 2.5% or less of the screen
+
+        This field is advisory and not strongly interoperable.
+        """
+    )
+
+    uniform float[] blendThresholds = [] (
+        doc = """This defines screen size thresholds for LOD transitions in
+        descending order. The blend threshold is consulted for transitions that
+        blend or combine multiple LOD items.
+
+        For example if:
+        - thresholds is [0.25, 0.10, 0.025]
+        - blendThresholds is [0.20, 0.08, 0.020]
+
+        then:
+        - Use LOD 0 when size > 25%
+        - Blend LOD 0 and LOD 1 when 25% >= size > 20%
+        - Use LOD 1 when 20% >= size > 10%
+        - Blend LOD 1 and LOD 2 when 10% >= size > 8%
+        - Use LOD 2 when 8% >= size > 2.5%
+        - Blend LOD 2 and LOD 3 when 2.5 >= size > 2%
+        - Use LOD 3 when 2% >= size
+
+        The blend amount should be computed linearly between the corresponding
+        thresholds and blendThresholds values. See thresholds for complementary
+        information.
+        """
+    )
+}

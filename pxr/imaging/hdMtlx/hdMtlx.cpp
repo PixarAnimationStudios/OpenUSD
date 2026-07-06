@@ -83,12 +83,6 @@ _ComputeSearchPaths()
     for (auto path : searchPathStrings) {
         searchPaths.append(mx::FilePath(path));
     }
-#ifdef PXR_DCC_LOCATION_ENV_VAR
-    const std::string dccLocationEnvVar(PXR_DCC_LOCATION_ENV_VAR);
-    const std::string dccLocation = mx::getEnviron(dccLocationEnvVar);
-    searchPaths.append(mx::FilePath(dccLocation + PXR_MATERIALX_STDLIB_DIR));
-    searchPaths.append(mx::FilePath(dccLocation + PXR_MATERIALX_BASE_DIR));
-#endif
     return searchPaths;
 }
 
@@ -128,16 +122,13 @@ _GetMxNodeString(mx::NodeDefPtr const& mxNodeDef)
 std::string
 HdMtlxCreateNameFromPath(SdfPath const& path)
 {
-#ifdef PXR_DCC_LOCATION_ENV_VAR
-    std::string pathnm = path.GetText();
-    if(pathnm.size() > 3 &&
-       pathnm[0] == '/' && pathnm[1] == '_' && pathnm[2] == '_') {
-        pathnm[0] = 's'; // triple leading underscores aren't allowed in osl
+    std::string pathName = path.GetText();
+    pathName = TfStringReplace(pathName, "/", "_");
+    // Strip leading underscore from root
+    if (TfStringStartsWith(pathName, "_")) {
+        pathName = pathName.substr(1);
     }
-    return TfStringReplace( pathnm, "/", "_");
-#else
-    return path.GetName();
-#endif
+    return pathName;
 }
 
 // Convert the HdParameterValue to a string MaterialX can understand
@@ -793,7 +784,13 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
 
     // Potentially upgrade the MaterialX document to the "current" version,
     // using the MaterialX upgrade mechanism.
-    mxDoc->upgradeVersion();
+    try {
+        mxDoc->upgradeVersion();
+    } catch (mx::Exception& exception) {
+        TF_DEBUG(HDMTLX_VERSION_UPGRADE).Msg(
+            "[%s] : MaterialX document failed upgrade.\nException: %s\n",
+            TF_FUNC_NAME().c_str(), exception.what());
+    }
 
     if (TfDebug::IsEnabled(HDMTLX_VERSION_UPGRADE)) {
         const std::string filename =

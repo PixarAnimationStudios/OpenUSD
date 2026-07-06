@@ -40,9 +40,6 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdr/registry.h"
 
-#include "pxr/usdImaging/usdRiPxrImaging/tokens.h"
-#include "pxr/usdImaging/usdRiPxrImaging/version.h"
-
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -80,6 +77,9 @@
 #endif
 #if PXR_VERSION >= 2308
 #include "hdPrman/displayFilter.h"
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+#include "hdPrman/energyFilter.h"
+#endif
 #include "hdPrman/integrator.h"
 #include "hdPrman/renderSettings.h"
 #include "hdPrman/sampleFilter.h"
@@ -209,6 +209,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (__FnKat_bbox)
     (viewerMouseClick)
     ((houdiniInteractive, "houdini:interactive"))
+    (volumeFilter)
 );
 
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanRenderSettingsTokens,
@@ -248,6 +249,7 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_RPRIM_TYPES =
 
     // New type, specific to mesh light source geom.
     HdPrmanTokens->meshLightSourceMesh,
+    HdPrmanTokens->meshLightSourcePoints,
     HdPrmanTokens->meshLightSourceVolume
 };
 
@@ -263,8 +265,8 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->diskLight,
     HdPrimTypeTokens->cylinderLight,
     HdPrimTypeTokens->sphereLight,
-#if USD_RI_PXR_IMAGING_API_VERSION >= 3 && _PRMANAPI_VERSION_MAJOR_ >= 27
-    UsdRiPxrImagingPrimTypeTokens->volumeFilter,
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+    _tokens->volumeFilter,
 #endif
 #if PXR_VERSION <= 2211
     HdPrmanTokens->meshLight,
@@ -278,6 +280,9 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->integrator,
     HdPrimTypeTokens->sampleFilter,
     HdPrimTypeTokens->displayFilter,
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+    HdPrimTypeTokens->energyFilter,
+#endif
 #endif
 };
 
@@ -319,6 +324,21 @@ _GetExtraArgs(const HdRenderSettingsMap &settingsMap)
     }
     return TfStringTokenize(extraArgs, " ");
 }
+
+TF_MAKE_STATIC_DATA(
+    std::vector<HdPrmanRenderDelegate::DidCreateRenderPassCallback>,
+    _didCreateRenderPassCallbacks)
+{
+    _didCreateRenderPassCallbacks->clear();
+}
+
+TF_MAKE_STATIC_DATA(
+    std::vector<HdPrmanRenderDelegate::WillDestructRenderPassCallback>,
+    _willDestructRenderPassCallbacks)
+{
+    _willDestructRenderPassCallbacks->clear();
+}
+
 
 HdPrmanRenderDelegate::HdPrmanRenderDelegate(
     HdRenderSettingsMap const& settingsMap,
@@ -433,7 +453,16 @@ HdPrmanRenderDelegate::_Initialize()
         _renderParam);
 }
 
-HdPrmanRenderDelegate::~HdPrmanRenderDelegate() = default;
+HdPrmanRenderDelegate::~HdPrmanRenderDelegate()
+{
+    // Invoke destruction callback for render pass.
+    if (_renderPass) {
+        for(auto const& cb: *_willDestructRenderPassCallbacks) {
+            cb(this, _renderPass);
+        }
+        _renderPass.reset();
+    }
+}
 
 HdRenderSettingsMap
 HdPrmanRenderDelegate::GetRenderSettingsMap() const
@@ -498,6 +527,11 @@ HdPrmanRenderDelegate::CreateRenderPass(HdRenderIndex *index,
     if (!_renderPass) {
         _renderPass = std::make_shared<HdPrman_RenderPass>(
             index, collection, _renderParam);
+        // Invoke render pass creation callback.  This represents the first
+        // opportunity for HdPrman extensions to access the HdRenderIndex.
+        for(auto const& cb: *_didCreateRenderPassCallbacks) {
+            cb(this, _renderPass);
+        }
     }
     return _renderPass;
 }
@@ -526,6 +560,8 @@ HdPrmanRenderDelegate::CreateRprim(TfToken const& typeId,
     }
     if (typeId == HdPrmanTokens->meshLightSourceMesh) {
         return new HdPrman_Mesh(rprimId, true /* isMeshLight */);
+    } else if (typeId == HdPrmanTokens->meshLightSourcePoints) {
+        return new HdPrman_Points(rprimId, true /* isMeshLight */);
     } else if (typeId == HdPrmanTokens->meshLightSourceVolume) {
         return new HdPrman_Volume(rprimId, true /* isMeshLight */);
     } else if (typeId == HdPrimTypeTokens->mesh) {
@@ -568,8 +604,8 @@ HdPrmanRenderDelegate::CreateSprim(TfToken const& typeId,
         sprim = new HdPrmanMaterial(sprimId);
     } else if (typeId == HdPrimTypeTokens->coordSys) {
         sprim = new HdPrmanCoordSys(sprimId);
-#if USD_RI_PXR_IMAGING_API_VERSION >= 3
-    } else if (typeId == UsdRiPxrImagingPrimTypeTokens->volumeFilter) {
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+    } else if (typeId == _tokens->volumeFilter) {
         sprim = new HdPrman_VolumeFilter(sprimId);
 #endif
     } else if (typeId == HdPrimTypeTokens->lightFilter) {
@@ -609,6 +645,10 @@ HdPrmanRenderDelegate::CreateSprim(TfToken const& typeId,
         sprim = new HdPrman_SampleFilter(sprimId);
     } else if (typeId == HdPrimTypeTokens->displayFilter) {
         sprim = new HdPrman_DisplayFilter(sprimId);
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+    } else if (typeId == HdPrimTypeTokens->energyFilter) {
+        sprim = new HdPrman_EnergyFilter(sprimId);
+#endif
 #endif
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
@@ -630,8 +670,8 @@ HdPrmanRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
         return new HdPrmanCoordSys(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->lightFilter) {
         return new HdPrmanLightFilter(SdfPath::EmptyPath(), typeId);
-#if USD_RI_PXR_IMAGING_API_VERSION >= 3
-    } else if (typeId == UsdRiPxrImagingPrimTypeTokens->volumeFilter) {
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+    } else if (typeId == _tokens->volumeFilter) {
         return new HdPrman_VolumeFilter(SdfPath::EmptyPath());
 #endif
     } else if (typeId == HdPrimTypeTokens->light ||
@@ -657,6 +697,10 @@ HdPrmanRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
         return new HdPrman_SampleFilter(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->displayFilter) {
         return new HdPrman_DisplayFilter(SdfPath::EmptyPath());
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+    } else if (typeId == HdPrimTypeTokens->energyFilter) {
+        return new HdPrman_EnergyFilter(SdfPath::EmptyPath());
+#endif
 #endif
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
@@ -899,6 +943,28 @@ HdPrmanRenderDelegate::GetRenderIndex() const
     return nullptr;
 }
 
+void
+HdPrmanRenderDelegate::RegisterDidCreateRenderPassCallback(
+    DidCreateRenderPassCallback const& callback)
+{
+    if (!callback) {
+        TF_CODING_ERROR("Null callback provided; ignoring");
+        return;
+    }
+    _didCreateRenderPassCallbacks->push_back(callback);
+}
+
+void
+HdPrmanRenderDelegate::RegisterWillDestructRenderPassCallback(
+    WillDestructRenderPassCallback const& callback)
+{
+    if (!callback) {
+        TF_CODING_ERROR("Null callback provided; ignoring");
+        return;
+    }
+    _willDestructRenderPassCallbacks->push_back(callback);
+}
+
 #if HD_API_VERSION >= 55
 
 ////////////////////////////////////////////////////////////////////////////
@@ -939,16 +1005,17 @@ HdPrmanRenderDelegate::IsParallelSyncEnabled(const TfToken &primType) const
     // The prim types below have been reviewed for Sync thread safety.
     //
     // Notable exceptions include integrator, renderSettings,
-    // volume, and lights.  These exceptions are generally due
-    // to interaction with HdChangeTracker state.
+    // volume, lights, displayFilters, and sampleFilters.
+    //
+    // These exceptions are generally due to interaction with
+    // HdChangeTracker state.  Display and sample filters are
+    // excluded due to interaction with HdPrmanRenderParam.
     return
         _enableParallelPrimSync && (
         primType == HdPrimTypeTokens->camera ||
         primType == HdPrimTypeTokens->coordSys ||
-        primType == HdPrimTypeTokens->displayFilter ||
         primType == HdPrimTypeTokens->lightFilter ||
-        primType == HdPrimTypeTokens->material ||
-        primType == HdPrimTypeTokens->sampleFilter);
+        primType == HdPrimTypeTokens->material);
 }
 #endif
 

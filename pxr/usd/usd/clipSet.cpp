@@ -755,10 +755,18 @@ Usd_ClipSet::_FindClipIndexForTime(double time) const
         }
     }
 
-    return TF_VERIFY(
-        clipIndex < valueClips.size()
-        && time >= valueClips[clipIndex]->startTime 
-        && time < valueClips[clipIndex]->endTime) ? clipIndex : 0;
+    if (!TF_VERIFY(
+            clipIndex < valueClips.size()
+            // A clip is active in the interval [startTime, endTime) except
+            // for the last clip which is active from [startTime, endTime].
+            && time >= valueClips[clipIndex]->startTime 
+            && (clipIndex == valueClips.size() - 1 ?
+                    time <= valueClips[clipIndex]->endTime :
+                    time < valueClips[clipIndex]->endTime))) {
+        return 0;
+    }
+
+    return clipIndex;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

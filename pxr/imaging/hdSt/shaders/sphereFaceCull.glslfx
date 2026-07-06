@@ -1,0 +1,39 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2026 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/sphereFaceCull.glslfx
+
+
+--- --------------------------------------------------------------------------
+-- glsl SphereFaceCull.Fragment.None
+
+void DiscardBasedOnShading(bool frontFacing)
+{
+}
+
+--- --------------------------------------------------------------------------
+-- glsl SphereFaceCull.Fragment.FrontFacing
+
+void DiscardBasedOnShading(bool frontFacing)
+{
+    if (frontFacing) {
+        discard;
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl SphereFaceCull.Fragment.BackFacing
+
+void DiscardBasedOnShading(bool frontFacing)
+{
+    if (!frontFacing) {
+        discard;
+    }
+}

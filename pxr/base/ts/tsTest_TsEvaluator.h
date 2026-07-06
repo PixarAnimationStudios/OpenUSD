@@ -10,6 +10,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/ts/api.h"
+#include "pxr/base/ts/spline.h"
 #include "pxr/base/ts/types.h"
 #include "pxr/base/ts/tsTest_Types.h"
 
@@ -17,7 +18,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class TsTest_SplineData;
 class TsTest_SampleTimes;
 class TsSpline;
 class GfInterval;
@@ -31,16 +31,15 @@ public:
     // EVALUATION
 
     // Evaluate at specified times.
-    TS_API
     TsTest_SampleVec Eval(
-        const TsTest_SplineData &splineData,
+        const TsSpline& spline,
         const TsTest_SampleTimes &sampleTimes) const;
 
     // Produce bulk samples for drawing.  Sample times are determined adaptively
     // and cannot be controlled.
     template <typename SampleData>
     bool Sample(
-        const TsTest_SplineData &splineData,
+        const TsSpline& spline,
         const GfInterval& timeInterval,
         double timeScale,
         double valueScale,
@@ -48,33 +47,13 @@ public:
         SampleData* splineSamples) const;
 
     ////////////////////////////////////////////////////////////////////////////
-    // CONVERSION
-
-    // Convert a TsSpline into TsTest's SplineData form.
-    TS_API
-    TsTest_SplineData SplineToSplineData(
-        const TsSpline &spline) const;
-
-    // Convert SplineData to a TsSpline with double values
-    TS_API
-    TsSpline SplineDataToSpline(
-        const TsTest_SplineData &splineData) const;
- 
-    // Convert SplineData to a TsSpline with valueType values
-   TS_API
-    TsSpline SplineDataToSpline(
-        const TsTest_SplineData &splineData,
-        const TfType& valueType) const;
-
-    ////////////////////////////////////////////////////////////////////////////
     // TEST DATA TRANSFORMATION
 
-    // Produce a copy of splineData with inner loops, if any, baked out into
+    // Produce a copy of spline with inner loops, if any, baked out into
     // ordinary knots.
     /*
-    TS_API
-    TsTest_SplineData BakeInnerLoops(
-        const TsTest_SplineData &splineData) const;
+    TsSpline BakeInnerLoops(
+        const TsSpline &spline) const;
     */
 };
 

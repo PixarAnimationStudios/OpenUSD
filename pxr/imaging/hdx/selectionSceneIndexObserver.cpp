@@ -59,6 +59,8 @@ void
 HdxSelectionSceneIndexObserver::SetSceneIndex(
     HdSceneIndexBaseRefPtr const &sceneIndex)
 {
+    TRACE_FUNCTION();
+
     if (sceneIndex == _sceneIndex) {
         return;
     }
@@ -99,9 +101,12 @@ HdxSelectionSceneIndexObserver::GetSelection()
     return _selection;
 }
 
+//
+// Wraps HdInstancerTopologySchema::ComputeInstanceIndicesForProto.
+//
 static
-int
-_GetNumInstancesForPrototypeIndex(
+VtIntArray
+_GetInstanceIndicesForPrototypeIndex(
     HdSceneIndexBaseRefPtr const &sceneIndex,
     const SdfPath &instancerPath,
     const int prototypeIndex)
@@ -112,88 +117,173 @@ _GetNumInstancesForPrototypeIndex(
         HdInstancerTopologySchema::GetFromParent(
             sceneIndex->GetPrim(instancerPath).dataSource);
 
-    const HdIntArrayVectorSchema indicesSchema =
-        instancerTopologySchema.GetInstanceIndices();
-    
-    HdIntArrayDataSourceHandle const indicesDs =
-        indicesSchema.GetElement(prototypeIndex);
-    if (!indicesDs) {
-        return 1;
+    HdPathArrayDataSourceHandle const prototypesDs =
+        instancerTopologySchema.GetPrototypes();
+    if (!prototypesDs) {
+        return {};
     }
 
-    return indicesDs->GetTypedValue(0.0f).size();
+    const VtArray<SdfPath> prototypes = prototypesDs->GetTypedValue(0.0f);
+    if (prototypeIndex < 0 ||
+        static_cast<size_t>(prototypeIndex) >= prototypes.size()) {
+        return {};
+    }
+
+    return instancerTopologySchema.ComputeInstanceIndicesForProto(
+        prototypes[prototypeIndex]);
 }
 
-// Finds the instancer and prototype from the HdInstanceIndicesSchema to
-// query the instancer how often it instances the prototype.
+//
+// Calls HdInstancerTopologySchema::ComputeInstanceIndicesForProto
+// using the instancer and prototype from the HdInstanceIndicesSchema.
+//
 static
-int
-_GetNumInstances(
+VtIntArray
+_GetInstanceIndicesForPrototype(
     HdSceneIndexBaseRefPtr const &sceneIndex,
-    const HdInstanceIndicesSchema &instanceIndices)
+    const HdInstanceIndicesSchema &instanceIndicesSchema)
 {
     TRACE_FUNCTION();
 
     HdPathDataSourceHandle const instancerPathDs =
-        instanceIndices.GetInstancer();
+        instanceIndicesSchema.GetInstancer();
     if (!instancerPathDs) {
-        return 1;
+        return { };
     }
     const SdfPath instancerPath = instancerPathDs->GetTypedValue(0.0f);
     if (instancerPath.IsEmpty()) {
-        return 1;
+        return { };
     }
 
     HdIntDataSourceHandle const prototypeIndexDs =
-        instanceIndices.GetPrototypeIndex();
+        instanceIndicesSchema.GetPrototypeIndex();
     if (!prototypeIndexDs) {
-        return 1;
+        return { };
     }
 
-    return _GetNumInstancesForPrototypeIndex(
+    return _GetInstanceIndicesForPrototypeIndex(
         sceneIndex,
         instancerPath,
         prototypeIndexDs->GetTypedValue(0.0f));
 }
 
+//
+// Instance indices from instance indices schema. 
+//
 static
 VtIntArray
-_GetInstanceIndices(const HdInstanceIndicesSchema &instanceIds)
+_GetSelectedInstanceIndices(
+    const HdInstanceIndicesSchema &selectedInstanceIndicesSchema)
 {
     HdIntArrayDataSourceHandle const dataSource =
-        instanceIds.GetInstanceIndices();
+        selectedInstanceIndicesSchema.GetInstanceIndices();
     if (!dataSource) {
         return {};
     }
     return dataSource->GetTypedValue(0.0f);
 }
 
-// The selection of the schema is something like:
-//     instance 5 and 6 of 10 in the outer most instancer
-//     instance 3 of 12 in the next instancer
-//     instance 7 and 8 of 15 in the inner most instancer.
-// So in total, we have 4 nested instances selected.
-// HdSelection expects only one number for each selected nested instance
-// which we will compute them as follows:
+//
+// Note: There are two ways to identify an instance by an integer.
+//
+// We say instance index if the index is into the arrays that
+// are assigned to, for example, UsdGeom's PointInstancer.protoIndices,
+// PointInstancer.positions, ... or instance-rate primvars of either
+// UsdGeom's PointInstancer or the Hydra instancer.
+//
+// The HdInstancerTopologySchema::ComputeInstanceIndicesForProto
+// returns the indices of the visible instances of a given prototype
+// as a VtArray<int>.
+//
+// If we identify an instance as an index into the result of
+// HdInstancerTopologySchema::ComputeInstanceIndicesForProto, we
+// call it an instance id.
+//
+// This function converts from instance indices to instance ids.
+// It also gives the number of instance ids, that is of visible
+// instance of the given given prototype.
+//
+static
+std::pair<VtIntArray, int>
+_GetSelectedInstanceIdsAndNumForPrototype(
+    const VtIntArray &instanceIndicesForPrototype,
+    const VtIntArray &selectedInstanceIndices)
+{
+    TRACE_FUNCTION();
+
+    VtIntArray sorted(selectedInstanceIndices);
+    std::sort(sorted.begin(), sorted.end());
+
+    VtIntArray selectedInstanceIds;
+
+    const size_t n = instanceIndicesForPrototype.size();
+    for (size_t i = 0; i < n; i++) {
+        if (std::binary_search(sorted.cbegin(), sorted.cend(),
+                               instanceIndicesForPrototype[i])) {
+            selectedInstanceIds.push_back(i);
+        }
+    }
+
+    return { selectedInstanceIds, n };
+}
+
+//
+// Convert data in schema to instance ids.
+//
+static
+std::pair<VtIntArray, int>
+_GetSelectedInstanceIdsAndNumForPrototype(
+    HdSceneIndexBaseRefPtr const &sceneIndex,
+    const HdInstanceIndicesSchema &selectedInstanceIndicesSchema)
+{
+    TRACE_FUNCTION();
+
+    return
+        _GetSelectedInstanceIdsAndNumForPrototype(
+            _GetInstanceIndicesForPrototype(
+                sceneIndex,
+                selectedInstanceIndicesSchema),
+            _GetSelectedInstanceIndices(
+                selectedInstanceIndicesSchema));
+}    
+
+//
+// If we have nested instancer's we obtain an instance id for
+// each level. We encode those instance id's as a single integer
+// we call the nested instance id using the number of possible id's
+// for that instancer (and prototype).
+//
+// For example, assume we selected
+//     the instances with id 5 and 6 of 10 in the outer most instancer
+//     the instances with id 3 of 12 in the next instancer
+//     the instances with id 7 and 8 of 15 in the inner most instancer.
+// So in total, we have 4 nested instances selected. The corresponding
+// nested instance id's are:
+//
 //  [ (5 * 12 + 3) * 15 + 7,
 //    (5 * 12 + 3) * 15 + 8,
 //    (6 * 12 + 3) * 15 + 7,
 //    (6 * 12 + 3) * 15 + 8 ].
 //
+// Note that when we say nested instance indices, we think of a sequence
+// of integers, one for each level of instancing. However, when we say
+// nested instance id, we think of these choices of instance at each level
+// of instancing being encoded by a single integer.
+//
 static
 VtIntArray
-_GetInstanceIndices(
+_GetSelectedNestedInstanceIds(
     HdSceneIndexBaseRefPtr const &sceneIndex,
-    const HdInstanceIndicesVectorSchema &instanceIndicesVector)
+    const HdInstanceIndicesVectorSchema &selectedNestedInstanceIndices)
 {
     TRACE_FUNCTION();
 
-    const size_t n = instanceIndicesVector.GetNumElements();
-    if (n == 0) {
+    const size_t depth = selectedNestedInstanceIndices.GetNumElements();
+    if (depth == 0) {
         return {};
     }
 
-    VtIntArray result({0});
+    VtIntArray selectedNestedInstanceIds({0});
 
     // Going from outer most to inner most instancer.
 
@@ -205,33 +295,31 @@ _GetInstanceIndices(
     // third iteration:
     // as above.
 
-    for (size_t i = 0; i < n; i++) {
-        const HdInstanceIndicesSchema instanceIndicesSchema =
-            instanceIndicesVector.GetElement(i);
+    for (size_t d = 0; d < depth; d++) {
+ 
+        auto [ selectedInstanceIdsForPrototype, num ] =
+            _GetSelectedInstanceIdsAndNumForPrototype(
+                sceneIndex,
+                selectedNestedInstanceIndices.GetElement(d));
 
-        // Number of instances of this prototype.
-        const int numInstances = _GetNumInstances(
-            sceneIndex, instanceIndicesSchema);
-
-        const VtIntArray instanceIndices = _GetInstanceIndices(
-            instanceIndicesSchema);
-        const size_t l = instanceIndices.size();
+        const size_t n = selectedNestedInstanceIds.size();
+        const size_t m = selectedInstanceIdsForPrototype.size();
 
         // Multiply number of nested instances by number of instances selected
         // at this nesting level.
-        VtIntArray newResult(result.size() * l);
-        for (size_t j = 0; j < result.size(); j++) {
-            for (size_t k = 0; k < l; k++) {
-                newResult[j * l + k] =
-                    numInstances * result.AsConst()[j] +
-                    instanceIndices[k];
+        VtIntArray newSelectedNestedInstanceIds(n * m);
+        for (size_t i = 0; i < n; i++) {
+            const int nestedIdBase = num * selectedNestedInstanceIds.AsConst()[i];
+            for (size_t j = 0; j < m; j++) {
+                newSelectedNestedInstanceIds[i * m + j] =
+                    nestedIdBase + selectedInstanceIdsForPrototype[j];
             }
         }
 
-        result = std::move(newResult);
+        selectedNestedInstanceIds = std::move(newSelectedNestedInstanceIds);
     }
 
-    return result;
+    return selectedNestedInstanceIds;
 }
 
 // Given one of the data source under the selections locator
@@ -246,6 +334,8 @@ _AddToSelection(
     HdSelectionSharedPtr const &result,
     std::mutex &resultMutex)
 {
+    TRACE_FUNCTION();
+
     // Only support fully selected for now.
     HdBoolDataSourceHandle const ds = selectionSchema.GetFullySelected();
     if (!ds) {
@@ -257,33 +347,35 @@ _AddToSelection(
     }
 
     // Retrieve instancing information.
-    const HdInstanceIndicesVectorSchema instanceIndicesVectorSchema =
+    const HdInstanceIndicesVectorSchema selectedNestedInstanceIndices =
         selectionSchema.GetNestedInstanceIndices();
 
-    {
-        if (instanceIndicesVectorSchema.GetNumElements() > 0) {
-            const VtIntArray instanceIndices = 
-                _GetInstanceIndices(sceneIndex, instanceIndicesVectorSchema);
+    if (selectedNestedInstanceIndices.GetNumElements() > 0) {
+        // HdSelection::AddInstance expects nested instance ids.
+        // See above explanations.
+        //
+        const VtIntArray selectedNestedInstanceIds = 
+            _GetSelectedNestedInstanceIds(
+                sceneIndex, selectedNestedInstanceIndices);
 
-            {
-                std::unique_lock lock(resultMutex);
-
-                result->AddInstance(
-                    HdSelection::HighlightModeSelect,
-                    primPath,
-                    // The information in the schema is nested, that is it
-                    // the instance id for each nesting level.
-                    // HdSelection only expects one number for each selected
-                    // instance encoding the selection of all levels.
-                    instanceIndices);
-            }
-        } else {
+        // For HdSelection::AddInstance, nothing is everything.
+        // That is, passing an empty array selects all instances.
+        // This is not what we intent here. An empty array can result,
+        // if a user selects an instance proxy path to an invis'd instance.
+        if (!selectedNestedInstanceIds.empty()) {
             std::unique_lock lock(resultMutex);
 
-            result->AddRprim(
+            result->AddInstance(
                 HdSelection::HighlightModeSelect,
-                primPath);
+                primPath,
+                selectedNestedInstanceIds);
         }
+    } else {
+        std::unique_lock lock(resultMutex);
+
+        result->AddRprim(
+            HdSelection::HighlightModeSelect,
+            primPath);
     }
 }
 

@@ -1925,8 +1925,8 @@ public:
         static const bool value =
             std::is_same<T, SdfAssetPath>::value ||
             std::is_same<T, VtArray<SdfAssetPath>>::value ||
-            std::is_same<T, SdfTimeCode>::value ||
-            std::is_same<T, VtArray<SdfTimeCode>>::value ||
+            std::is_same<T, GfTimeCode>::value ||
+            std::is_same<T, VtArray<GfTimeCode>>::value ||
             std::is_same<T, SdfPathExpression>::value ||
             std::is_same<T, VtArray<SdfPathExpression>>::value ||
             std::is_same<T, SdfTimeSampleMap>::value ||

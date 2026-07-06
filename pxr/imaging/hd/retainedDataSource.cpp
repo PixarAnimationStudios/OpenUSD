@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -27,15 +28,18 @@ namespace
 class Hd_EmptyContainerDataSource : public HdRetainedContainerDataSource
 {
 public:
-    TfTokenVector GetNames() override 
+    HD_DECLARE_DATASOURCE(Hd_EmptyContainerDataSource)
+    TfTokenVector GetNames() override
     {
         return {};
     }
 
-    HdDataSourceBaseHandle Get(const TfToken &name) override 
+    HdDataSourceBaseHandle Get(const TfToken &name) override
     {
         return nullptr;
     }
+private:
+    Hd_EmptyContainerDataSource() = default;
 };
 
 //-----------------------------------------------------------------------------
@@ -49,7 +53,7 @@ public:
     static const size_t capacity = T;
     HD_DECLARE_DATASOURCE(Hd_SmallRetainedContainerDataSource<T>);
 
-    TfTokenVector GetNames() override 
+    TfTokenVector GetNames() override
     {
         TfTokenVector result;
         result.reserve(_count);
@@ -61,7 +65,7 @@ public:
         return result;
     }
 
-    HdDataSourceBaseHandle Get(const TfToken &name) override 
+    HdDataSourceBaseHandle Get(const TfToken &name) override
     {
         for (size_t i = 0; i < _count; ++i) {
             if (name == _names[i]) {
@@ -73,7 +77,7 @@ public:
 
 private:
     Hd_SmallRetainedContainerDataSource(
-        size_t count, 
+        size_t count,
         const TfToken *names,
         const HdDataSourceBaseHandle *values)
     {
@@ -133,7 +137,7 @@ public:
 
 private:
     Hd_MappedRetainedContainerDataSource(
-        size_t count, 
+        size_t count,
         const TfToken *names,
         const HdDataSourceBaseHandle *values)
     {
@@ -154,7 +158,7 @@ private:
 
 HdRetainedContainerDataSource::Handle
 HdRetainedContainerDataSource::New(
-    size_t count, 
+    size_t count,
     const TfToken * names,
     const HdDataSourceBaseHandle *values)
 {
@@ -162,8 +166,8 @@ HdRetainedContainerDataSource::New(
     {
     case 0:
     {
-        static const HdRetainedContainerDataSourceHandle emptyContainer(
-            new Hd_EmptyContainerDataSource);
+        static const HdRetainedContainerDataSourceHandle emptyContainer
+            = Hd_EmptyContainerDataSource::New();
         return emptyContainer;
     }
     case 1:
@@ -322,8 +326,8 @@ HdRetainedContainerDataSource::New(
 // ----------------------------------------------------------------------------
 
 HdRetainedSmallVectorDataSource::HdRetainedSmallVectorDataSource(
-    const size_t count, 
-    const HdDataSourceBaseHandle *values) : 
+    const size_t count,
+    const HdDataSourceBaseHandle *values) :
     _values(count)
 {
     for (size_t i = 0; i < count; ++i) {
@@ -333,13 +337,13 @@ HdRetainedSmallVectorDataSource::HdRetainedSmallVectorDataSource(
     }
 }
 
-size_t 
+size_t
 HdRetainedSmallVectorDataSource::GetNumElements()
 {
     return _values.size();
 }
 
-HdDataSourceBaseHandle 
+HdDataSourceBaseHandle
 HdRetainedSmallVectorDataSource::GetElement(size_t element)
 {
     if (element >= _values.size()) return HdDataSourceBaseHandle();
@@ -397,22 +401,20 @@ HdCreateTypedRetainedDataSource(VtValue const &v)
 }
 
 //-----------------------------------------------------------------------------
-// HdRetainedTypedSampledDataSource<>::New specializations
+// HdRetainedTypedSampledDataSource specializations
 
-template <>
-HD_API
 HdRetainedTypedSampledDataSource<bool>::Handle
-HdRetainedTypedSampledDataSource<bool>::New(const bool &value)
+HdRetainedTypedSampledDataSource<bool>::New(
+    const bool &value)
 {
-    if (value) {
-        const static HdRetainedTypedSampledDataSource<bool>::Handle ds(
-            new HdRetainedTypedSampledDataSource<bool>(true));
-        return ds;
-    } else {
-        const static HdRetainedTypedSampledDataSource<bool>::Handle ds(
-            new HdRetainedTypedSampledDataSource<bool>(false));
-        return ds;
-    }
+    // bool has only two possible values; we statically create both
+    // and return the appropriate one as needed.
+    using T = HdRetainedTypedSampledDataSource<bool>;
+    static const T::Handle trueDs =
+        std::allocate_shared<T>(HdDataSourceAllocator<T>{ }, true);
+    static const T::Handle falseDs =
+        std::allocate_shared<T>(HdDataSourceAllocator<T>{ }, false);
+    return value ? trueDs : falseDs;
 }
 
 static

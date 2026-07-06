@@ -7,14 +7,14 @@
 # https://openusd.org/license.
 #
 
-from pxr import Ts
+from pxr import Gf, Ts
 from pxr.Ts import TsTest_Museum as Museum
 from pxr.Ts import TsTest_TsEvaluator as Evaluator
 from pxr.Ts import TsTest_Baseliner as Baseliner
 from pxr.Ts import TsTest_SampleTimes as STimes
 from pxr.Ts import TsTest_SampleBezier as SampleBezier
 
-import sys, unittest, difflib
+import re, sys, unittest, difflib
 
 
 class TestTsRegressionPreventer(unittest.TestCase):
@@ -28,10 +28,8 @@ class TestTsRegressionPreventer(unittest.TestCase):
         possible, write a graph image of the modified spline.
         """
         # Get the starting spline.
-        origData = Museum.GetData(museumId)
         with Ts.AntiRegressionAuthoringSelector(Ts.AntiRegressionNone):
-            origSpline = Evaluator().SplineDataToSpline(
-                origData)
+            origSpline = Museum.GetSpline(museumId)
 
         # Copy the knot we're modifying.
         knot = origSpline.GetKnot(knotTime)
@@ -56,8 +54,7 @@ class TestTsRegressionPreventer(unittest.TestCase):
         # Convert the unfiltered spline to splineData, and sample as a Bezier.
         # This illustrates the possibly regressive spline that results from the
         # unfiltered edit.
-        bezSplineData = Evaluator().SplineToSplineData(unfilteredSpline)
-        bezSamples = SampleBezier(bezSplineData, numSamples = 200)
+        bezSamples = SampleBezier(unfilteredSpline, numSamples = 200)
 
         # Gather test results, but always keep going.  This ensures we get all
         # possible information.
@@ -94,19 +91,19 @@ class TestTsRegressionPreventer(unittest.TestCase):
             self.assertTrue(result)
 
             # Use Evaluator to generate splineData and samples.
-            splineData = Evaluator().SplineToSplineData(spline)
-            times = STimes(splineData)
+            times = STimes(spline)
             times.AddStandardTimes()
-            samples = Evaluator().Eval(splineData, times)
+            samples = Evaluator().Eval(spline, times)
 
             # Use Baseliner to validate modified + anti-regressed spline.
             # Include the result of Set() to be diffed against baseline.
             # Include the non-anti-regressed Bezier as a reference.
             baseliner = Baseliner.CreateForParamCompare(
-                subCaseStr, splineData, samples, precision = 6)
+                subCaseStr, spline, samples, precision = 6)
             baseliner.SetCreationString(
                 result.GetDebugDescription(precision = 6))
-            baseliner.AddReferenceSpline("Bezier", bezSplineData, bezSamples)
+            baseliner.AddReferenceSpline("Bezier", unfilteredSpline,
+                                         bezSamples)
             subCaseOk = baseliner.Validate()
             if not subCaseOk:
                 ok = False
@@ -166,17 +163,28 @@ class TestTsRegressionPreventer(unittest.TestCase):
 
     def _DiffSplines(self, name1, spline1, name2, spline2, msg):
 
-        # XXX: should just stringify splines, rather than going through TsTest
-        data1 = Evaluator().SplineToSplineData(spline1)
-        data2 = Evaluator().SplineToSplineData(spline2)
-        lines1 = data1.GetDebugDescription().splitlines(keepends = True)
-        lines2 = data2.GetDebugDescription().splitlines(keepends = True)
-
-        # ...however, this produced a strange error (Unicode?)
-        #lines1 = str(spline1)
-        #lines2 = str(spline2)
-
+        lines1 = str(spline1).splitlines(keepends = True)
+        lines2 = str(spline2).splitlines(keepends = True)
         if lines2 == lines1:
+            return True
+
+        # Allow minor floating point differences.
+        # Note this code is checking against spline debug descriptions
+        # in the baseline files. Spline fields in the description, if
+        # float valued, have one float at the line's end.
+        success = len(lines1) == len(lines2)
+        if success:
+            floatPattern = r'[+-]?(\d+\.\d*|\.\d+)([eE][+-]?\d+)?$'
+            for line1, line2 in zip(lines1, lines2):
+                match1 = re.search(floatPattern, line1.strip())
+                match2 = re.search(floatPattern, line2.strip())
+                if match1 is not None and match2 is not None:
+                    if not Gf.IsClose(float(match1.group()),
+                                      float(match2.group()), 1e-6):
+                        success = False
+                        break
+
+        if success:
             return True
 
         print(msg)

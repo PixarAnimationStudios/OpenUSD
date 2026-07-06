@@ -187,6 +187,9 @@ UsdSkelImagingComputeSkelGuidePoints(
 
     VtVec3fArray result;
 
+    if (skelGuideData.numJoints == 0) {
+        return result;
+    }
     if (!TF_VERIFY(skelGuideData.boneJointIndices.size() == numPoints)) {
         return result;
     }

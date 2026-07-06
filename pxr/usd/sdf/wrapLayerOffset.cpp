@@ -72,8 +72,8 @@ void wrapLayerOffset()
         .def( self * self )
 
         // This order is required to prevent doubles from implicitly converting
-        // to SdfTimeCode when calling SdfLayerOffset * double.
-        .def( self * SdfTimeCode() )
+        // to GfTimeCode when calling SdfLayerOffset * double.
+        .def( self * GfTimeCode() )
         .def( self * double() )
 
         .def("__repr__", _Repr)

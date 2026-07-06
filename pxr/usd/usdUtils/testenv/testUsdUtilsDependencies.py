@@ -372,5 +372,36 @@ class TestUsdUtilsDependencies(unittest.TestCase):
         self.assertEqual([os.path.normcase(f) for f in assets], expectedAssets)
         self.assertEqual(unresolved, [])
 
+    def test_ComputeAllDependenciesVariableExpressions(self):
+        """Tests that external asset dependencies are included in the output"""
+        testFolder = "computeAllDependenciesVariableExpressions"
+
+        layers, assets, unresolved = \
+            UsdUtils.ComputeAllDependencies(f"{testFolder}/root.usda")
+
+        expectedLayers = [
+            Sdf.Layer.FindOrOpen(os.path.join(testFolder, "root.usda")),
+            Sdf.Layer.FindOrOpen(os.path.join(testFolder, "compose_pay.usda")),
+            Sdf.Layer.FindOrOpen(os.path.join(testFolder, "compose_ref.usda")),
+            Sdf.Layer.FindOrOpen(os.path.join(testFolder, "payload.usda")),
+            Sdf.Layer.FindOrOpen(os.path.join(testFolder, "ref.usda")),
+            Sdf.Layer.FindOrOpen(os.path.join(testFolder, "sub.usda"))]
+        self.assertEqual(layers, expectedLayers)
+
+        expectedAssets = [
+            os.path.join(testFolder, "attr.txt"),
+            os.path.join(testFolder, "metadata.txt"),
+            os.path.join(testFolder, "metadata_arr.txt")
+        ]
+
+        self.assertEqual(
+            set([os.path.normcase(f) for f in assets]),
+            set([os.path.normcase(os.path.abspath(f)) for f in expectedAssets]))
+
+        expectedUnresolved = [
+        ]
+
+        self.assertEqual(expectedUnresolved, unresolved)
+
 if __name__=="__main__":
     unittest.main()

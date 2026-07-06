@@ -4,9 +4,11 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
+#include "pxr/pxr.h"
 #include "hdPrman/matfiltMaterialX.h"
 #include "hdPrman/debugCodes.h"
 
+#include "pxr/base/arch/env.h"
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/arch/library.h"
 #include "pxr/base/arch/fileSystem.h"
@@ -24,13 +26,13 @@
 
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/materialNetwork2Interface.h"
-#ifdef PXR_DCC_LOCATION_ENV_VAR
-#include "hdPrman/hdMtlx.h" // copied from pxr/imaging/hdMtlx, this has fixes
-#else
+#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+#if PXR_VERSION >= 2608
 #include "pxr/imaging/hdMtlx/hdMtlx.h"
+#else
+#include "hdPrman/pxr/imaging/hdMtlx/hdMtlx.h"
 #endif
 
-#include "pxr/pxr.h"
 #if PXR_VERSION >= 2511
 #include "pxr/imaging/hdMtlx/combinedMtlxVersion.h"
 #else
@@ -653,7 +655,11 @@ _UpdateNetwork(
             nodesToKeep.insert(upstreamNodeName);
 
             // Generate the oslSource code for the connected upstream node
-            std::string shaderName = mxNodeName + "Shader";
+            std::string shaderName = mxNodeName + "_Shader";
+            // Triple leading underscores are not allowed in OSL
+            if (TfStringStartsWith(shaderName, "___")) {
+                shaderName = "mtlx" + shaderName.substr(2);
+            }
             std::string oslSource = _GenMaterialXShaderCode(
                 mxDoc, searchPath, shaderName, mxNodeName, mxNodeGraphName);
 
@@ -918,11 +924,11 @@ _NetworkHasMtlxNodes(HdMaterialNetworkInterface *netInterface)
 // may have inserted UsdVerticalFlip.
 // Convert nonstandard UsdVerticalFlip to a pass through ND_dot_vector2,
 // and the mtlx nodes for flipping will be inserted by _UpdateTextureNodes.
-#ifdef PXR_DCC_LOCATION_ENV_VAR
 static void
 _FixNodeNames(
     HdMaterialNetworkInterface *netInterface)
 {
+    SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
     const TfTokenVector nodeNames = netInterface->GetNodeNames();
     for (TfToken const &nodeName : nodeNames) {
         TfToken nodeType = netInterface->GetNodeType(nodeName);
@@ -934,11 +940,13 @@ _FixNodeNames(
             } else {
                 nodeType = TfToken("ND_"+nodeType.GetString());
             }
-            netInterface->SetNodeType(nodeName, nodeType);
+            // Only rename if the target node definition exists
+            if (sdrRegistry.GetShaderNodeByIdentifier(nodeType)) {
+                netInterface->SetNodeType(nodeName, nodeType);
+            }
         }
     }
 }
-#endif
 
 static void 
 _UpdateTextureNodes(
@@ -1291,6 +1299,31 @@ _UpdatePrimvarNodes(
     }
 }
 
+static mx::FileSearchPath
+_HdPrmanMtlxSearchPaths()
+{
+    mx::FileSearchPath searchPaths = HdMtlxSearchPaths();
+#ifdef HDPRMAN_MTLX_SEARCH_PATHS
+    for (const std::string& path :
+            TfStringSplit(HDPRMAN_MTLX_SEARCH_PATHS, " ")) {
+        std::string expanded = ArchExpandEnvironmentVariables(path);
+        if (!expanded.empty()) {
+            searchPaths.append(mx::FilePath(expanded));
+        }
+    }
+#endif
+    return searchPaths;
+}
+
+static mx::DocumentPtr
+_HdPrmanMtlxStdLibraries()
+{
+    mx::FilePathVec libraryFolders;
+    mx::FileSearchPath searchPaths = _HdPrmanMtlxSearchPaths();
+    mx::DocumentPtr stdLibraries = mx::createDocument();
+    mx::loadLibraries(libraryFolders, searchPaths, stdLibraries);
+    return stdLibraries;
+}
 
 void
 MatfiltMaterialX(
@@ -1345,14 +1378,12 @@ MatfiltMaterialX(
 
             // Get Standard Libraries and SearchPaths (for mxDoc and 
             // mxShaderGen)
-            mx::DocumentPtr stdLibraries = HdMtlxStdLibraries();
-            mx::FileSearchPath searchPath = HdMtlxSearchPaths();
+            static const mx::DocumentPtr stdLibraries = _HdPrmanMtlxStdLibraries();
+            static const mx::FileSearchPath searchPaths = _HdPrmanMtlxSearchPaths();
 
-#ifdef PXR_DCC_LOCATION_ENV_VAR
             // Preprocess node network, converting UsdUvTexture, and
             // related nodes to their mtlx definition nodes.
             _FixNodeNames(netInterface);
-#endif
 
             // Create the MaterialX Document from the material network
             HdMtlxTexturePrimvarData hdMtlxData;
@@ -1374,7 +1405,7 @@ MatfiltMaterialX(
 
             // Update nodes directly connected to the terminal node with 
             // MX generated shaders that capture the rest of the nodegraph
-            _UpdateNetwork(netInterface, terminalNodeName, mxDoc, searchPath,
+            _UpdateNetwork(netInterface, terminalNodeName, mxDoc, searchPaths,
                            nodesToKeep, nodesToRemove);
         }
 

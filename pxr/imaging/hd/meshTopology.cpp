@@ -5,8 +5,12 @@
 // https://openusd.org/license.
 //
 #include "pxr/imaging/hd/meshTopology.h"
+#include "pxr/imaging/hd/meshSchema.h"
+#include "pxr/imaging/hd/meshTopologySchema.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/envSetting.h"
@@ -95,6 +99,42 @@ HdMeshTopology::HdMeshTopology(const TfToken &scheme,
     HD_PERF_COUNTER_INCR(HdPerfTokens->meshTopology);
     _numPoints = HdMeshTopology::ComputeNumPoints(
             _topology.GetFaceVertexIndices());
+}
+
+template<typename T>
+static T
+_Get(const typename HdTypedSampledDataSource<T>::Handle &ds,
+     const T &default_ = T())
+{
+    if (ds) {
+        return ds->GetTypedValue(0.0f);
+    } else {
+        return default_;
+    }
+}
+
+HdMeshTopology::HdMeshTopology(const HdMeshSchema &schema)
+ : HdMeshTopology(
+     _Get<TfToken>(
+         schema.GetSubdivisionScheme(), PxOsdOpenSubdivTokens->none),
+     schema.GetTopology())
+{
+}
+
+HdMeshTopology::HdMeshTopology(
+    const TfToken &scheme,
+    const HdMeshTopologySchema &topologySchema)
+ : HdMeshTopology(
+     scheme,
+     _Get<TfToken>(
+         topologySchema.GetOrientation(), PxOsdOpenSubdivTokens->rightHanded),
+     _Get<VtIntArray>(
+         topologySchema.GetFaceVertexCounts()),
+     _Get<VtIntArray>(
+         topologySchema.GetFaceVertexIndices()),
+     _Get<VtIntArray>(
+         topologySchema.GetHoleIndices()))
+{
 }
 
 HdMeshTopology::~HdMeshTopology()

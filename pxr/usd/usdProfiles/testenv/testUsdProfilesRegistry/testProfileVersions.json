@@ -1,0 +1,59 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Profiles": {
+                    "Capabilities": {
+                        "usd": {
+                            "docstring": "Root USD capability",
+                            "name": "USD",
+                            "style": "core",
+                            "subgraph": "Capabilities"
+                        },
+                        "usd.geom.mesh": {
+                            "predecessors": ["usd"],
+                            "docstring": "Polygonal mesh geometry",
+                            "name": "Mesh",
+                            "style": "core",
+                            "subgraph": "Capabilities"
+                        },
+                        "usd.geom.nurbs": {
+                            "predecessors": ["usd.geom.mesh"],
+                            "docstring": "NURBS geometry",
+                            "name": "NURBS",
+                            "style": "core",
+                            "subgraph": "Capabilities"
+                        },
+                        "profile.25.11": {
+                            "predecessors": ["usd.geom.mesh"],
+                            "docstring": "November 2025 profile - predates mesh deprecation",
+                            "name": "Profile 25.11",
+                            "style": "profile",
+                            "subgraph": "Profiles"
+                        },
+                        "profile.26.08": {
+                            "predecessors": [
+                                "usd.geom.nurbs",
+                                {"name": "profile.25.11", "deprecated": true}
+                            ],
+                            "docstring": "August 2026 profile - profile.25.11 is now deprecated",
+                            "name": "Profile 26.08",
+                            "style": "profile",
+                            "subgraph": "Profiles"
+                        }
+                    },
+                    "CapabilityStyles": {
+                        "core": "fill:#cce5ff,stroke:#004085",
+                        "profile": "fill:#d4edda,stroke:#155724"
+                    },
+                    "CapabilityGroups": {
+                        "Capabilities": {"label": "Capabilities", "order": 1},
+                        "Profiles": {"label": "Profiles", "order": 2}
+                    }
+                }
+            },
+            "Name": "TestProfileVersions",
+            "Type": "resource"
+        }
+    ]
+}

@@ -265,7 +265,7 @@ LossyDctDecoder_execute (
     }
 
     for (int comp = 1; comp < numComp; ++comp)
-        rowBlock[comp] = rowBlock[comp - 1] + numBlocksX * 64;
+        rowBlock[comp] = rowBlock[comp - 1] + (size_t) numBlocksX * 64;
 
     //
     // Pack DC components together by common plane, so we can get
@@ -275,7 +275,7 @@ LossyDctDecoder_execute (
 
     currDcComp[0] = (uint16_t*) d->_packedDc;
     for (int comp = 1; comp < numComp; ++comp)
-        currDcComp[comp] = currDcComp[comp - 1] + numBlocksX * numBlocksY;
+        currDcComp[comp] = currDcComp[comp - 1] + (size_t) numBlocksX * numBlocksY;
 
     for (int blocky = 0; blocky < numBlocksY; ++blocky)
     {
@@ -651,13 +651,22 @@ LossyDctDecoder_execute (
         /* process in place in reverse to avoid temporary buffer */
         for (int y = 0; y < d->_height; ++y)
         {
-            float*    floatXdrPtr = (float*) chanData[chan]->_rows[y];
-            uint16_t* halfXdr     = (uint16_t*) floatXdrPtr;
+            uint8_t* rowBytes = chanData[chan]->_rows[y];
 
             for (int x = d->_width - 1; x >= 0; --x)
             {
-                floatXdrPtr[x] = one_from_native_float (
-                    half_to_float (one_to_native16 (halfXdr[x])));
+                // TODO: make an unaligned_store32f that takes the float and
+                // packages up a one_from_native_float and calls memcpy
+                // instead of the two memcpy. We should look at the metrics
+                // for dwa and see if there's a performance difference to do
+                // so at some point. See:
+                // https://github.com/AcademySoftwareFoundation/openexr/pull/2324
+
+                uint16_t h = unaligned_load16 (rowBytes + x * sizeof (uint16_t));
+                float    f = half_to_float (h);
+                uint32_t bits;
+                memcpy (&bits, &f, sizeof (bits));
+                unaligned_store32 (rowBytes + x * sizeof (float), bits);
             }
         }
     }

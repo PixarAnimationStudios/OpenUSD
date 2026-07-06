@@ -264,6 +264,13 @@ HdSt_ShaderKey::GetLineWidth() const
 }
 
 /*virtual*/
+uint32_t
+HdSt_ShaderKey::GetVertexCountFallback() const
+{
+    return 0;
+}
+
+/*virtual*/
 HdSt_GeometricShader::FvarPatchType 
 HdSt_ShaderKey::GetFvarPatchType() const {
     return HdSt_GeometricShader::FvarPatchType::PATCH_NONE;

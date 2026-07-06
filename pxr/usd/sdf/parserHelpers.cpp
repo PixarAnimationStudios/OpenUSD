@@ -88,9 +88,9 @@ MakeScalarValueImpl(GfHalf *out, vector<Value> const &vars, size_t &index) {
 
 inline void
 MakeScalarValueImpl(
-    SdfTimeCode *out, vector<Value> const &vars, size_t &index) {
+    GfTimeCode *out, vector<Value> const &vars, size_t &index) {
     CHECK_BOUNDS(1, "timecode");
-    *out = SdfTimeCode(vars[index++].Get<double>());
+    *out = GfTimeCode(vars[index++].Get<double>());
 }
 
 template <class Int>
@@ -510,7 +510,7 @@ TF_MAKE_STATIC_DATA(_ValueFactoryMap, _valueFactories) {
     builder.Add<GfHalf>(SdfValueTypeNames->Half);
     builder.Add<float>(SdfValueTypeNames->Float);
     builder.Add<double>(SdfValueTypeNames->Double);
-    builder.Add<SdfTimeCode>(SdfValueTypeNames->TimeCode);
+    builder.Add<GfTimeCode>(SdfValueTypeNames->TimeCode);
     builder.Add<std::string>(SdfValueTypeNames->String);
     builder.Add<TfToken>(SdfValueTypeNames->Token);
     builder.Add<SdfAssetPath>(SdfValueTypeNames->Asset);

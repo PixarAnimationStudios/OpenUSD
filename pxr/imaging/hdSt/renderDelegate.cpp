@@ -23,8 +23,9 @@
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/renderParam.h"
-#include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/sphere.h"
+#include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/volume.h"
 
 #include "pxr/imaging/hd/aov.h"
@@ -34,6 +35,7 @@
 #include "pxr/imaging/hd/imageShader.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderDelegateInfo.h"
+#include "pxr/imaging/hd/rendererCreateArgsSchema.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hgi/hgi.h"
@@ -59,13 +61,31 @@ TF_DEFINE_ENV_SETTING(HDST_DOME_LIGHT_CUBEMAP_TARGET_MEMORY_MB, 0,
                       "Maximum memory target in MB for the cubemap computed "
                       "from the latlong texture for the dome light.");
 
-const TfTokenVector HdStRenderDelegate::SUPPORTED_RPRIM_TYPES =
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_NATIVE_SPHERES, false,
+    "Enable native rendering of sphere primitives in Storm instead of "
+    "converting them to meshes via the implicit surface scene index.");
+
+namespace {
+const TfTokenVector _SupportedRprimTypes()
 {
-    HdPrimTypeTokens->mesh,
-    HdPrimTypeTokens->basisCurves,
-    HdPrimTypeTokens->points,
-    HdPrimTypeTokens->volume
-};
+    TfTokenVector supportedTypes = {
+        HdPrimTypeTokens->mesh,
+        HdPrimTypeTokens->basisCurves,
+        HdPrimTypeTokens->points,
+        HdPrimTypeTokens->volume
+    };
+
+    if (TfGetEnvSetting(HDST_ENABLE_NATIVE_SPHERES)) {
+        supportedTypes.emplace_back(HdPrimTypeTokens->sphere);
+    }
+
+    return supportedTypes;
+}
+}
+
+const TfTokenVector
+HdStRenderDelegate::SUPPORTED_RPRIM_TYPES = _SupportedRprimTypes();
+
 
 const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
@@ -403,6 +423,8 @@ HdStRenderDelegate::CreateRprim(TfToken const& typeId,
         return new HdStPoints(rprimId);
     } else  if (typeId == HdPrimTypeTokens->volume) {
         return new HdStVolume(rprimId);
+    } else  if (typeId == HdPrimTypeTokens->sphere) {
+        return new HdStSphere(rprimId);
     } else {
         TF_CODING_ERROR("Unknown Rprim Type %s", typeId.GetText());
     }
@@ -563,17 +585,68 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
     _drawItemsCache->GarbageCollect();
 }
 
+static
+bool _GetGpuEnabled(const HdRendererCreateArgsSchema &args)
+{
+    HdBoolDataSourceHandle const ds = args.GetGpuEnabled();
+    if (!ds) {
+        return true;
+    }
+    return ds->GetTypedValue(0.0f);
+}
+
+static
+Hgi * _GetHgi(const HdRendererCreateArgsSchema &args)
+{
+    auto ds =
+        HdTypedSampledDataSource<Hgi*>::Cast(
+            args.GetDrivers().Get(HdRendererCreateArgsSchemaTokens->hgi));
+    if (!ds) {
+        return nullptr;
+    }
+    return ds->GetTypedValue(0.0f);
+}
+
+static
+const char * _NullOrReasonWhyNotSupported(
+    const HdRendererCreateArgsSchema &rendererCreateArgs)
+{
+    if (!_GetGpuEnabled(rendererCreateArgs)) {
+        return "GPU not enabled";
+    }
+    if (Hgi * const hgi = _GetHgi(rendererCreateArgs)) {
+        if (hgi->IsBackendSupported()) {
+            return nullptr;
+        } else {
+            return "Given Hgi backend not supported";
+        }
+    } else {
+        // If invalid Hgi instance is provided, check support for platform default
+        // Hgi.
+        if (Hgi::IsSupported()) {
+            return nullptr;
+        } else {
+            return "Platform default Hgi not supported";
+        }
+    }
+}
+
 bool
 HdStRenderDelegate::IsSupported(
-    HdRendererCreateArgs const& rendererCreateArgs)
+    const HdRendererCreateArgsSchema &rendererCreateArgs,
+    std::string * const reasonWhyNot)
 {
-    if (rendererCreateArgs.hgi) {
-        return rendererCreateArgs.hgi->IsBackendSupported();
+    if (const char * const result =
+                _NullOrReasonWhyNotSupported(rendererCreateArgs)) {
+        TF_DEBUG(HD_RENDERER_PLUGIN).Msg(
+            "Storm renderer not supported: %s.\n", result);
+        if (reasonWhyNot) {
+            *reasonWhyNot = result;
+        }
+        return false;
+    } else {
+        return true;
     }
-
-    // If invalid Hgi instance is provided, check support for platform default
-    // Hgi.
-    return Hgi::IsSupported();
 }
 
 TfTokenVector
@@ -645,6 +718,12 @@ HdStRenderDelegate::GetRenderDelegateInfo()
 {
     static const HdRenderDelegateInfo info = _RenderDelegateInfo();
     return info;
+}
+
+bool
+HdStRenderDelegate::IsEnabledNativeSphereRenderingSupport()
+{
+    return TfGetEnvSetting(HDST_ENABLE_NATIVE_SPHERES);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

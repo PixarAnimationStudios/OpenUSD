@@ -5,8 +5,6 @@
 # https://openusd.org/license.
 #
 
-from . import TsTest_SplineData as SData
-
 from pxr import Ts
 
 import sys
@@ -15,8 +13,8 @@ import sys
 class TsTest_Grapher(object):
 
     class Spline(object):
-        def __init__(self, name, data, samples, baked, colorIndex):
-            self.data = data
+        def __init__(self, name, spline, samples, baked, colorIndex):
+            self.spline = spline
             self.name = name
             self.baked = baked
             self.samples = samples
@@ -35,12 +33,11 @@ class TsTest_Grapher(object):
                 self.openStart = openStart
                 self.isDim = isDim
 
-        def __init__(self, data, forKnots):
+        def __init__(self, spline, forKnots):
 
             self._regions = []
 
-            knots = list(data.GetKnots())
-            lp = data.GetInnerLoopParams()
+            knots = list(spline.GetKnots().values())
 
             # Before first knot: dim
             self._regions.append(self._Region(
@@ -54,11 +51,12 @@ class TsTest_Grapher(object):
             # After first knot: normal
             # XXX: incorrect if the earliest knot is from looping
             self._regions.append(self._Region(
-                knots[0].time,
+                knots[0].GetTime(),
                 openStart = False, isDim = False))
 
             # Looping regions
-            if lp.enabled:
+            if spline.HasInnerLoops():
+                lp = spline.GetInnerLoopParams()
 
                 protoLen = lp.protoEnd - lp.protoStart
 
@@ -91,7 +89,7 @@ class TsTest_Grapher(object):
             # After last knot: dim.  A knot exactly on the boundary belongs to
             # the prior region (openStart).
             self._regions.append(self._Region(
-                knots[-1].time, openStart = forKnots, isDim = True))
+                knots[-1].GetTime(), openStart = forKnots, isDim = True))
 
         def IsDim(self, time):
 
@@ -115,9 +113,9 @@ class TsTest_Grapher(object):
 
     class _KnotData(object):
 
-        def __init__(self, splineData):
+        def __init__(self, spline):
 
-            self.splineData = splineData
+            self.spline = spline
 
             # Points: 1D arrays
             self.knotTimes, self.knotValues = [], []
@@ -134,7 +132,7 @@ class TsTest_Grapher(object):
                     color = color, marker = "o")
 
             if self.tanPtTimes:
-                if not self.splineData.GetIsHermite():
+                if self.spline.GetCurveType() == Ts.CurveTypeBezier:
                     ax.scatter(
                         self.tanPtTimes, self.tanPtValues,
                         color = color, marker = "s")
@@ -202,13 +200,13 @@ class TsTest_Grapher(object):
         self._diffs = None
         self._figure = None
 
-    def AddSpline(self, name, splineData, samples, baked = None,
+    def AddSpline(self, name, spline, samples, baked = None,
                   colorIndex = None):
 
         self._splines.append(
             TsTest_Grapher.Spline(
-                name, splineData, samples,
-                baked or splineData, colorIndex))
+                name, spline, samples,
+                baked or spline, colorIndex))
 
         # Reset the graph in case we're working incrementally.
         self._ClearGraph()
@@ -312,10 +310,10 @@ class TsTest_Grapher(object):
 
             # Build style region tables.
             styleTable = self._StyleTable(
-                self._splines[splineIdx].data,
+                self._splines[splineIdx].spline,
                 forKnots = False)
             knotStyleTable = self._StyleTable(
-                self._splines[splineIdx].data,
+                self._splines[splineIdx].spline,
                 forKnots = True)
 
             # Find regions to draw.  A region is a time extent in which the
@@ -434,17 +432,17 @@ class TsTest_Grapher(object):
         # Knot points and tangents
         knotSplines = [self._splines[0]] if sharedData else self._splines
         for splineIdx in range(len(knotSplines)):
-            splineData = knotSplines[splineIdx].baked
+            spline = knotSplines[splineIdx].baked
 
             # Build style region table.
             styleTable = self._StyleTable(
-                knotSplines[splineIdx].data,
+                knotSplines[splineIdx].spline,
                 forKnots = True)
 
-            normalKnotData = self._KnotData(splineData)
-            dimKnotData = self._KnotData(splineData)
+            normalKnotData = self._KnotData(spline)
+            dimKnotData = self._KnotData(spline)
 
-            knots = list(splineData.GetKnots())
+            knots = list(spline.GetKnots().values())
             for knotIdx in range(len(knots)):
                 knot = knots[knotIdx]
                 prevKnot = knots[knotIdx - 1] if knotIdx > 0 else None
@@ -452,64 +450,64 @@ class TsTest_Grapher(object):
                     knots[knotIdx + 1] if knotIdx < len(knots) - 1 else None
 
                 # Decide whether to draw dim or not
-                if styleTable.IsDim(knot.time):
+                if styleTable.IsDim(knot.GetTime()):
                     knotData = dimKnotData
                 else:
                     knotData = normalKnotData
 
                 # Pre-value
                 if knotIdx > 0 \
-                        and prevKnot.nextSegInterpMethod == SData.InterpHeld:
-                    knotData.knotTimes.append(knot.time)
-                    knotData.knotValues.append(prevKnot.value)
-                elif knot.isDualValued:
-                    knotData.knotTimes.append(knot.time)
-                    knotData.knotValues.append(knot.preValue)
+                        and prevKnot.GetNextInterpolation() == Ts.InterpHeld:
+                    knotData.knotTimes.append(knot.GetTime())
+                    knotData.knotValues.append(prevKnot.GetValue())
+                elif knot.IsDualValued():
+                    knotData.knotTimes.append(knot.GetTime())
+                    knotData.knotValues.append(knot.GetPreValue())
 
                 # Knot
-                knotData.knotTimes.append(knot.time)
-                knotData.knotValues.append(knot.value)
+                knotData.knotTimes.append(knot.GetTime())
+                knotData.knotValues.append(knot.GetValue())
 
                 # In-tangent
                 if prevKnot \
-                        and prevKnot.nextSegInterpMethod == SData.InterpCurve \
-                        and not knot.preAuto:
+                        and prevKnot.GetNextInterpolation() == Ts.InterpCurve \
+                        and knot.GetPreTanAlgorithm() != Ts.TangentAlgorithmAutoEase:
 
-                    if splineData.GetIsHermite():
-                        preLen = (knot.time - prevKnot.time) / 3.0
+                    if spline.GetCurveType() == Ts.CurveTypeHermite:
+                        preTanWidth = (knot.GetTime() - prevKnot.GetTime()) / 3.0
                     else:
-                        preLen = knot.preLen
+                        preTanWidth = knot.GetPreTanWidth()
 
-                    if preLen > 0:
+                    if preTanWidth > 0:
                         value = \
-                            knot.preValue if knot.isDualValued else knot.value
-                        knotData.tanPtTimes.append(knot.time - preLen)
+                            knot.GetPreValue() if knot.IsDualValued() else knot.GetValue()
+                        knotData.tanPtTimes.append(knot.GetTime() - preTanWidth)
                         knotData.tanPtValues.append(
-                            value - knot.preSlope * preLen)
+                            value - knot.GetPreTanSlope() * preTanWidth)
                         knotData.tanLineTimes[0].append(knotData.tanPtTimes[-1])
-                        knotData.tanLineTimes[1].append(knot.time)
+                        knotData.tanLineTimes[1].append(knot.GetTime())
                         knotData.tanLineValues[0].append(
                             knotData.tanPtValues[-1])
                         knotData.tanLineValues[1].append(value)
 
                 # Out-tangent
                 if nextKnot \
-                        and knot.nextSegInterpMethod == SData.InterpCurve \
-                        and not knot.postAuto:
+                        and knot.GetNextInterpolation() == Ts.InterpCurve \
+                        and knot.GetPostTanAlgorithm() != Ts.TangentAlgorithmAutoEase:
 
-                    if splineData.GetIsHermite():
-                        postLen = (nextKnot.time - knot.time) / 3.0
+                    if spline.GetCurveType() == Ts.CurveTypeHermite:
+                        postTanWidth = (nextKnot.GetTime() - knot.GetTime()) / 3.0
                     else:
-                        postLen = knot.postLen
+                        postTanWidth = knot.GetPostTanWidth()
 
-                    if postLen > 0:
-                        knotData.tanPtTimes.append(knot.time + postLen)
+                    if postTanWidth > 0:
+                        knotData.tanPtTimes.append(knot.GetTime() + postTanWidth)
                         knotData.tanPtValues.append(
-                            knot.value + knot.postSlope * postLen)
-                        knotData.tanLineTimes[0].append(knot.time)
+                            knot.GetValue() + knot.GetPostTanSlope() * postTanWidth)
+                        knotData.tanLineTimes[0].append(knot.GetTime())
                         knotData.tanLineTimes[1].append(
                             knotData.tanPtTimes[-1])
-                        knotData.tanLineValues[0].append(knot.value)
+                        knotData.tanLineValues[0].append(knot.GetValue())
                         knotData.tanLineValues[1].append(
                             knotData.tanPtValues[-1])
 

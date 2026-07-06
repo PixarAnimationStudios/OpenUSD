@@ -1,0 +1,86 @@
+Loading @VariantSelectionsInVariantsOrder/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    root.usda            /Root
+    root.usda            /Root{a=one}
+    root.usda            /Root{b=one}
+    root.usda            /Root{c=two}
+    root.usda            /Root{d=one}
+
+Variant Selections:
+    {a = one}
+    {b = one}
+    {c = two}
+    {d = one}
+
+Child names:
+     ['C_two']
+
+------------------------------------------------------------------------
+Results for composing </Root/C_two>
+
+Prim Stack:
+    root.usda            /Root{c=two}C_two
+
+------------------------------------------------------------------------
+Results for composing </AncestralRoot>
+
+Prim Stack:
+    root.usda            /AncestralRoot
+    root.usda            /Root{c=two}C_two
+
+------------------------------------------------------------------------
+Results for composing </Root2>
+
+Prim Stack:
+    root.usda            /Root2
+    root.usda            /Root2{a=one}
+    root.usda            /A_One
+    root.usda            /Root2{b=one}
+    root.usda            /B_One
+    root.usda            /Root2{c=two}
+    root.usda            /Root2{d=one}
+
+Variant Selections:
+    {a = one}
+    {b = one}
+    {c = two}
+    {d = one}
+
+------------------------------------------------------------------------
+Results for composing </A_One>
+
+Prim Stack:
+    root.usda            /A_One
+
+------------------------------------------------------------------------
+Results for composing </B_One>
+
+Prim Stack:
+    root.usda            /B_One
+
+------------------------------------------------------------------------
+Results for composing </Root3>
+
+Prim Stack:
+    root.usda            /Root3
+    root.usda            /Root3{a=one}
+    root.usda            /Root3{b=one}
+    root.usda            /Root3{b=one}{b_one=enabled}
+    root.usda            /Root3{c=two}
+    root.usda            /Root3{d=one}
+
+Variant Selections:
+    {a = one}
+    {b = one}
+    {b_one = enabled}
+    {c = two}
+    {d = one}
+

@@ -32,6 +32,15 @@ public:
     HdRenderDelegateAdapterRenderer(
         HdPluginRenderDelegateUniqueHandle renderDelegate,
         HdSceneIndexBaseRefPtr const &terminalSceneIndex,
+        const HdRendererCreateArgsSchema &rendererCreateArgs);
+
+    ///
+    /// \deprecated Use overload taking HdRendererCreateArgsSchema.
+    ///
+    HD_API
+    HdRenderDelegateAdapterRenderer(
+        HdPluginRenderDelegateUniqueHandle renderDelegate,
+        HdSceneIndexBaseRefPtr const &terminalSceneIndex,
         HdContainerDataSourceHandle const &rendererCreateArgs);
 
     HD_API

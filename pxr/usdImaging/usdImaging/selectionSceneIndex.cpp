@@ -7,7 +7,9 @@
 #include "pxr/usdImaging/usdImaging/selectionSceneIndex.h"
 
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
+#include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
+#include "pxr/imaging/hd/concatenatedVectorDataSource.h"
 #include "pxr/imaging/hd/instanceSchema.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instanceIndicesSchema.h"
@@ -42,7 +44,7 @@ struct _InstanceIndices
     // The instancer.
     SdfPath instancer;
     // The index of the prototype within the prototypes of the above instancer.
-    int prototypeIndex;
+    int prototypeIndex = 0;
     // The selected instances.
     VtIntArray instanceIndices;
 };
@@ -151,10 +153,10 @@ class _PrimSource : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(_PrimSource);
 
-    _PrimSource(HdContainerDataSourceHandle const &inputSource,
+    _PrimSource(HdContainerDataSourceHandle const &inputPrimSource,
                 _SelectionInfoSharedPtr const &selectionInfo,
                 const SdfPath &primPath)
-        : _inputSource(inputSource)
+        : _inputPrimSource(inputPrimSource)
         , _selectionInfo(selectionInfo)
         , _primPath(primPath)
     {
@@ -162,7 +164,7 @@ public:
 
     TfTokenVector GetNames() override
     {
-        TfTokenVector names = _inputSource->GetNames();
+        TfTokenVector names = _inputPrimSource->GetNames();
         auto it = _selectionInfo->primToSelections.find(_primPath);
         if (it != _selectionInfo->primToSelections.end()) {
             names.push_back(HdSelectionsSchema::GetSchemaToken());
@@ -172,20 +174,24 @@ public:
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
     {
-        if (name == HdSelectionsSchema::GetSchemaToken()) {
-            auto it = _selectionInfo->primToSelections.find(_primPath);
-            if (it != _selectionInfo->primToSelections.end()) {
-                return _ToDs(it->second);
-            } else {
-                return nullptr;
-            }
+        HdDataSourceBaseHandle const inputSrc = _inputPrimSource->Get(name);
+        if (name != HdSelectionsSchema::GetSchemaToken()) {
+            return inputSrc;
+        }
+        
+        auto it = _selectionInfo->primToSelections.find(_primPath);
+        if (it == _selectionInfo->primToSelections.end()) {
+            return inputSrc;
         }
 
-        return _inputSource->Get(name);
+        return
+            HdConcatenatedVectorDataSource::ConcatenatedVectorDataSources(
+                HdVectorDataSource::Cast(inputSrc),
+                _ToDs(it->second));
     }
 
 private:
-    HdContainerDataSourceHandle const _inputSource;
+    HdContainerDataSourceHandle const _inputPrimSource;
     _SelectionInfoSharedPtr const _selectionInfo;
     const SdfPath _primPath;
 };
@@ -227,7 +233,7 @@ _GetPath(HdPathArrayDataSourceHandle const dataSource,
 //
 // Get the index of the given prototype in that array.
 int
-_GetIndexOfPrototype(HdInstancerTopologySchema &schema,
+_GetIndexOfPrototype(const HdInstancerTopologySchema &schema,
                      const SdfPath &prototype)
 {
     HdPathArrayDataSourceHandle const prototypesDs = schema.GetPrototypes();
@@ -243,32 +249,18 @@ _GetIndexOfPrototype(HdInstancerTopologySchema &schema,
     return 0;
 }
 
-// Get how often the prototype identified by prototypeIndex is
-// instantiated by the instancer.
-size_t
-_NumInstances(HdInstancerTopologySchema &schema,
-              const size_t prototypeIndex)
-{
-    HdIntArrayDataSourceHandle const indicesDs =
-        schema.GetInstanceIndices().GetElement(prototypeIndex);
-    if (!indicesDs) {
-        return 0;
-    }
-
-    const VtIntArray &indices = indicesDs->GetTypedValue(0.0f);
-    return indices.size();
-}
-
-// [0, 1, 2, ..., n - 1]
-//
+// All instances for the prototype.
 VtIntArray
-_Range(const size_t n)
+_GetInstanceIndicesForPrototype(
+    const HdInstancerTopologySchema &instancerTopologySchema,
+    const int prototypeIndex)
 {
-    VtIntArray result(n);
-    for (size_t i = 0; i < n; i++) {
-        result[i] = i;
+    const HdIntArrayDataSourceHandle ds =
+        instancerTopologySchema.GetInstanceIndices().GetElement(prototypeIndex);
+    if (!ds) {
+        return {};
     }
-    return result;
+    return ds->GetTypedValue(0.0f);    
 }
 
 // If the prim in the scene index at prototypePath is a prototype,
@@ -290,16 +282,17 @@ _ComputeAllInstanceIndicesForPrototype(
 
     HdContainerDataSourceHandle const primSource =
         sceneIndex->GetPrim(prototypePath).dataSource;
-    HdInstancedBySchema instancedBySchema =
+    const HdInstancedBySchema instancedBySchema =
         HdInstancedBySchema::GetFromParent(primSource);
-    HdPathArrayDataSourceHandle instancersDs = instancedBySchema.GetPaths();
+    HdPathArrayDataSourceHandle const instancersDs =
+        instancedBySchema.GetPaths();
     if (!instancersDs) {
-        return { SdfPath(), 0, {}};
+        return { };
     }
 
     const VtArray<SdfPath> &instancers = instancersDs->GetTypedValue(0.0f);
     if (instancers.empty()) {
-        return { SdfPath(), 0, {}};
+        return { };
     }
 
     if (instancers.size() > 1) {
@@ -307,16 +300,18 @@ _ComputeAllInstanceIndicesForPrototype(
     }
 
     const SdfPath &instancer = instancers[0];
-    HdInstancerTopologySchema instancerTopologySchema =
+    const HdInstancerTopologySchema instancerTopologySchema =
         HdInstancerTopologySchema::GetFromParent(
             sceneIndex->GetPrim(instancer).dataSource);
     const int prototypeIndex =
         _GetIndexOfPrototype(instancerTopologySchema, prototypePath);
 
-    const VtIntArray instanceIndices =
-        _Range(_NumInstances(instancerTopologySchema, prototypeIndex));
-
-    return { instancer, prototypeIndex, instanceIndices};
+    return {
+        instancer,
+        prototypeIndex,
+        _GetInstanceIndicesForPrototype(
+            instancerTopologySchema, prototypeIndex)
+    };
 }
 
 // If a prim in the scene index at prototypePath is a prototype (see above),
@@ -887,8 +882,26 @@ _ExpandToDescendants(
             "        Processing seed %s\n",
             seeds[i].prim.GetText());
 
-        for (const SdfPath &descendant :
-                 HdSceneIndexPrimView(sceneIndex, seeds[i].prim)) {
+        HdSceneIndexPrimView view(sceneIndex, seeds[i].prim);
+
+        for (auto it = view.begin(); it != view.end(); ++it) {
+            const SdfPath &descendant = *it;
+
+            if (descendant.GetNameToken() ==
+                            UsdImagingTokens->niPropagatedPrototypesScope) {
+                //
+                // Do not descend into the NI propagated prototypes here.
+                //
+                // That is: the fact that the user selects a namespace ancestor
+                // of a NI propagated prototype is accidental. The relevant
+                // information for populating the selection schema of the
+                // geometry in a NI propagated prototype is which corresponding
+                // instances are selected. See HYD-3646.
+                //
+                it.SkipDescendants();
+                continue;
+            }
+
             const HdSceneIndexPrim prim =
                 sceneIndex->GetPrim(descendant);
 

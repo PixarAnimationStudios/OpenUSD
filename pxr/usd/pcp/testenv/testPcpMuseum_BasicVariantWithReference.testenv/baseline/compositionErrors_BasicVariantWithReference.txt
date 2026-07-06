@@ -1,0 +1,10 @@
+------------------------------------------------------------------------
+Errors while composing </ModelRefWithChildren/InstanceViaOtherModelRef>
+
+The attribute connection </OtherModel.modelRootAttribute> from </OtherModel{vset=with_other_children}_prototype.attr1> in layer @BasicVariantWithReference/model.usda@ refers to a path outside the scope of the variant from </OtherModel>.  Ignoring.
+
+------------------------------------------------------------------------
+Errors while composing </ModelRefWithChildren/InstanceViaOtherModelClass>
+
+The attribute connection </OtherModel.modelRootAttribute> from </OtherModel{vset=with_other_children}_prototype.attr1> in layer @BasicVariantWithReference/model.usda@ refers to a path outside the scope of the variant from </OtherModel>.  Ignoring.
+

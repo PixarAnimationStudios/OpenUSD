@@ -125,7 +125,16 @@ _add_define("WIN32_LEAN_AND_MEAN")
 set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /bigobj")
 
 # Enable PDB generation.
-set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zi")
+cmake_policy(SET CMP0141 NEW)
+if(PXR_ENABLE_COMPILER_CACHE)
+    # Neither ccache nor sccache support /Zi PDB generation, so using embedded
+    # debug information is necessary to avoid build errors or cache misses.
+    # See https://github.com/mozilla/sccache#usage and
+    # https://github.com/ccache/ccache/issues/1040 for more information.
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
+else()
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>")
+endif()
 
 # Enable multiprocessor builds.
 set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /MP")

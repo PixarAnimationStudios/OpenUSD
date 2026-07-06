@@ -27,7 +27,7 @@ class SpatialAudio "SpatialAudio" (
     transformed relative to the model, rather than copying its animation.
 
     \\section Usd_SpatialAudio_TimeScaling Timecode Attributes and Time Scaling
-    \\a startTime and \\a endTime are \\ref SdfTimeCode "timecode" valued 
+    \\a startTime and \\a endTime are \\ref GfTimeCode "timecode" valued 
     attributes which gives them the special behavior that 
     \\ref SdfLayerOffset "layer offsets" affecting the layer in 
     which one of these values is authored are applied to the attribute's value 

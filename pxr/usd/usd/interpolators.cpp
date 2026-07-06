@@ -103,16 +103,6 @@ struct _LerpVisitor
         }
         // else leave lowerVal alone.
     }
-    
-    void operator()(VtValue const &lower) {
-        // SdfTimeCode isn't a VtValue-known value type, so handle it specially.
-        if (lower.IsHolding<SdfTimeCode>()) {
-            (*this)(lower.UncheckedGet<SdfTimeCode>());
-        }
-        else if (lower.IsHolding<VtArray<SdfTimeCode>>()) {
-            (*this)(lower.UncheckedGet<VtArray<SdfTimeCode>>());
-        }
-    }
 };
 
 } // anon

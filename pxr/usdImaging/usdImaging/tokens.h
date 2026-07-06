@@ -13,7 +13,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 #define USDIMAGING_TOKENS   \
     ((collectionLightLink, "collection:lightLink")) \
     ((collectionShadowLink, "collection:shadowLink")) \
@@ -42,7 +41,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (UsdPrimvarReader_float4)\
     (UsdPrimvarReader_int)   \
     (UsdTransform2d)         \
-    ((stageSceneIndexRepopulate,  "__usdStageSceneIndexRepopulate"))
+    ((stageSceneIndexRepopulate,  "__usdStageSceneIndexRepopulate")) \
+    ((niPropagatedPrototypesScope, "UsdNiPropagatedPrototypes"))
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdImagingTokens,

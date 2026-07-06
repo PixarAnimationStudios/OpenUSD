@@ -1,0 +1,17 @@
+#usda 1.0
+(
+    expressionVariables = {
+        string METADATA = "INVALID"
+    }
+)
+
+# The expression variables in this layer are not composed due to the fact this
+# is not the root layer in the stack.
+
+def "Metadata" (
+    assetInfo = {
+        asset meta_a = @`"${METADATA}"`@
+        asset meta_b = @`if(${IS_VALID}, "METADATA_TRUE")`@
+    }
+) {}
+

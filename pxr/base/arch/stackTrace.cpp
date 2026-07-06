@@ -33,6 +33,7 @@
 #endif
 #else
 #include <dlfcn.h>
+#include <fcntl.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <sys/param.h>
@@ -107,29 +108,88 @@ ForkFunc Arch_nonLockingFork =
 // Stores the application's launch time
 static time_t _appLaunchTime;
 
+// Hostname cached at load time, before any signal handler can fire.  Used
+// during crash reporting; gethostname() is not on POSIX's async-signal-safe
+// list and may allocate on some platforms, so we capture it once up front and
+// read the buffer in the signal handler.
+//
+// The buffer is one byte larger than the size we hand to gethostname(). Static
+// storage zero-initializes it.  This means:
+// - On success, the string is NUL-terminated.
+// - On ENAMETOOLONG (system hostname too long for our buffer), POSIX leaves it
+//   unspecified whether the truncated name is NUL-terminated -- the trailing
+//   reserved byte still terminates the string, and we keep whatever was
+//   written rather than wiping the partial name.
+// - On any other failure, the buffer remains all zeros (empty string).
+static char _hostname[MAXHOSTNAMELEN + 1];
+namespace {
+const bool _hostnameInited = []() {
+    // Pass sizeof - 1 so the final byte stays zero-initialized.
+    gethostname(_hostname, sizeof(_hostname) - 1);
+    return true;
+}();
+}
+
 // This bool determines whether a stack trace should be
 // logged upon catching a crash. Use ArchSetFatalStackLogging
 // to set this value.
-static bool _shouldLogStackToDb = false;
+//
+// All of the configuration globals below may be read from a signal handler
+// concurrently with non-handler writes, so they are std::atomic.  Setters are
+// expected to run during process init, well before signals fire, but the API
+// doesn't forbid concurrent updates.
+static std::atomic<bool> _shouldLogStackToDb {false};
 
 // This string holds the path the script used to log sessions
 // to a database.
-static const char * _logStackToDbCmd = nullptr;
+static std::atomic<const char*> _logStackToDbCmd {nullptr};
 
 // Arguments to _logStackToDbCmd for non-crash and crash reports, respectively.
-static const char* const* _sessionLogArgv = nullptr;
-static const char* const* _sessionCrashLogArgv = nullptr;
+static std::atomic<const char* const*> _sessionLogArgv {nullptr};
+static std::atomic<const char* const*> _sessionCrashLogArgv {nullptr};
 
 // This string stores the program name to be used when
 // displaying error information.  Initialized in
-// Arch_InitConfig() to ArchGetExecutablePath()
-static char * _progNameForErrors = NULL;
+// Arch_InitConfig() to ArchGetExecutablePath().
+//
+// Stored atomically.  Set via ArchSetProgramNameForErrors which publishes
+// the new value before freeing the old one, so a signal-handler reader
+// never sees a half-published or freed pointer.  In practice this setter
+// runs once during process init.
+static std::atomic<char*> _progNameForErrors {nullptr};
 
 // Flag indicating whether the crash signal handler has been invoked.
 // Use a type that's safe in the presence of asynchronous signals.
 static volatile std::sig_atomic_t _isCrashing = 0;
 
 namespace {
+void aswrite(int fd, const char* msg);
+
+// A tiny mutex built on std::atomic_flag in order to be async-signal-safe.
+// Compatible with std::lock_guard.
+class _AtomicFlagMutex
+{
+public:
+    constexpr _AtomicFlagMutex() = default;
+    _AtomicFlagMutex(const _AtomicFlagMutex&) = delete;
+    _AtomicFlagMutex& operator=(const _AtomicFlagMutex&) = delete;
+
+    void lock() {
+        while (_flag.test_and_set(std::memory_order_acquire)) {
+            std::this_thread::yield();
+        }
+    }
+    bool try_lock() {
+        return !_flag.test_and_set(std::memory_order_acquire);
+    }
+    void unlock() {
+        _flag.clear(std::memory_order_release);
+    }
+
+private:
+    std::atomic_flag _flag = ATOMIC_FLAG_INIT;
+};
+
 // Key-value map for program info. Stores additional
 // program info to be used when displaying error information.
 class Arch_ProgInfo
@@ -150,10 +210,10 @@ public:
 private:
     typedef std::map<std::string, std::string> _MapType;
     _MapType _progInfoMap;
-    mutable std::mutex _progInfoForErrorsMutex;
+    mutable _AtomicFlagMutex _progInfoForErrorsMutex;
 
     // Printed version of _progInfo map, since we can't
-    // traverse it during an error. 
+    // traverse it during an error.
     char *_progInfoForErrors;
 };
 
@@ -167,7 +227,7 @@ void
 Arch_ProgInfo::SetProgramInfoForErrors(
     const std::string& key, const std::string& value)
 {
-    std::lock_guard<std::mutex> lock(_progInfoForErrorsMutex);
+    std::lock_guard<_AtomicFlagMutex> lock(_progInfoForErrorsMutex);
 
     if (value.empty()) {
         _progInfoMap.erase(key);
@@ -190,10 +250,10 @@ Arch_ProgInfo::SetProgramInfoForErrors(
     _progInfoForErrors = strdup(ss.str().c_str());
 }
 
-std::string 
+std::string
 Arch_ProgInfo::GetProgramInfoForErrors(const std::string& key) const
 {
-    std::lock_guard<std::mutex> lock(_progInfoForErrorsMutex);
+    std::lock_guard<_AtomicFlagMutex> lock(_progInfoForErrorsMutex);
 
     _MapType::const_iterator iter = _progInfoMap.find(key);
     std::string result;
@@ -203,25 +263,71 @@ Arch_ProgInfo::GetProgramInfoForErrors(const std::string& key) const
     return result;
 } 
 
-void 
+void
 Arch_ProgInfo::PrintInfoForErrors() const
 {
-    std::lock_guard<std::mutex> lock(_progInfoForErrorsMutex);
+    if (!_progInfoForErrorsMutex.try_lock()) {
+        return;
+    }
+    std::lock_guard<_AtomicFlagMutex>
+        lock(_progInfoForErrorsMutex, std::adopt_lock);
     if (_progInfoForErrors) {
-        fprintf(stderr, "%s", _progInfoForErrors);
+        aswrite(2, _progInfoForErrors);
     }
 }
 
 } // anon-namespace
 
+// Singletons for Arch_ProgInfo and Arch_LogInfo are stored as atomic pointers
+// rather than function-local statics for two reasons: (1) the C++11 thread-
+// safe-static guard mutex is not async-signal-safe, so a first-call from a
+// signal handler can deadlock; (2) function-local statics run destructors at
+// exit, and these singletons own STL containers / heap memory that we'd rather
+// not touch during teardown.  The objects are intentionally leaked at process
+// exit.
+//
+// Lazy creation goes through the heap (so it is NOT async-signal-safe).
+// Crash-handler code must use the Try* accessors below, which are pure atomic
+// loads and return nullptr if the singleton has not yet been constructed.
+namespace {
+template <class T>
+T *
+_GetOrCreate(std::atomic<T*>& slot)
+{
+    T *p = slot.load(std::memory_order_acquire);
+    if (!p) {
+        T *fresh = new T;
+        T *expected = nullptr;
+        if (slot.compare_exchange_strong(
+                expected, fresh, std::memory_order_acq_rel)) {
+            p = fresh;
+        } else {
+            // Lost the race; another thread published first.
+            delete fresh;
+            p = expected;
+        }
+    }
+    return p;
+}
+
+std::atomic<Arch_ProgInfo*> _progInfoSingleton {nullptr};
+
+} // anon-namespace
+
+// Lazy create.  Not AS-safe; do not call from a signal handler.
 static Arch_ProgInfo &
 ArchStackTrace_GetProgInfo()
 {
-    static Arch_ProgInfo progInfo;
-    return progInfo;
+    return *_GetOrCreate(_progInfoSingleton);
 }
 
-
+// AS-safe accessor.  Returns nullptr if the singleton has not yet been
+// constructed.
+static Arch_ProgInfo*
+ArchStackTrace_TryGetProgInfo()
+{
+    return _progInfoSingleton.load(std::memory_order_acquire);
+}
 
 namespace {
 
@@ -230,90 +336,60 @@ namespace {
 class Arch_LogInfo
 {
 public:
-
     void SetExtraLogInfoForErrors(const std::string &key,
                                   std::vector<std::string> const *lines);
-    void EmitAnyExtraLogInfo(FILE *outFile, size_t max = 0) const;
+
+    // Attempt to write the extra log info to outFile.  If maxLines > 0, writes
+    // at most that many value lines (header lines do not count) plus a
+    // truncation message.  NOT async-signal-safe.
+    void EmitAnyExtraLogInfo(FILE *outFile, size_t maxLines = 0) const;
+
+    // Attempt to write the extra log info to fd via aswrite().  If maxLines >
+    // 0, writes at most that many value lines (header lines do not count) plus
+    // a truncation marker.  Async-signal-safe for crash-handler paths.
+    void ASEmitAnyExtraLogInfo(int fd, size_t maxLines = 0) const;
 
     // Attempt to write the extra log info to buf, up to one less than bufSize,
-    // always null-terminates.  Return false in case of failure to acquire the
-    // lock or if not all the log info was written.
-    bool TryToFillLogInfoBuffer(char *buf, size_t bufSize) const;
+    // always null-terminates.  If maxLines > 0, writes at most that many value
+    // lines (header lines do not count) and appends a truncation marker.
+    // Return false in case of failure to acquire the lock or if not all the log
+    // info was written.  Async-signal-safe for crash-handler paths.
+    bool TryToFillLogInfoBuffer(char *buf, size_t bufSize,
+                                size_t maxLines = 0) const;
 
 private:
+    // Walk the log map and invoke emit() for each chunk of text in emission
+    // order: a leading "\n", the key name, ":\n", then each value line.
+    // emit(const char *) must return false to signal that no more text can be
+    // accepted (e.g., the destination buffer is full); the walk stops on the
+    // first false return.  If maxLines > 0, after that many value lines a
+    // truncation marker is emitted and the walk stops.  Returns true if the
+    // entire map was emitted without truncation or refusal.
+    //
+    // Caller must hold _logInfoForErrorsMutex.
+    template <class EmitFn>
+    bool _ForEachLine(EmitFn emit, size_t maxLines) const;
+
     typedef std::map<std::string, std::vector<std::string> const *> _LogInfoMap;
     _LogInfoMap _logInfoForErrors;
-    mutable std::mutex _logInfoForErrorsMutex;
+    mutable _AtomicFlagMutex _logInfoForErrorsMutex;
 };
 
-void
-Arch_LogInfo::SetExtraLogInfoForErrors(const std::string &key,
-                                       std::vector<std::string> const *lines)
-{
-    std::lock_guard<std::mutex> lock(_logInfoForErrorsMutex);
-    if (!lines || lines->empty()) {
-        _logInfoForErrors.erase(key);
-    } else {
-        _logInfoForErrors[key] = lines;
-    }
-}
-
-void 
-Arch_LogInfo::EmitAnyExtraLogInfo(FILE *outFile, size_t max) const
-{
-    // This function can't cause any heap allocation, be careful.
-    // XXX -- std::string::c_str and fprintf can do allocations.
-    if (!_logInfoForErrorsMutex.try_lock()) {
-        return;
-    }
-    std::lock_guard<std::mutex> lock(_logInfoForErrorsMutex, std::adopt_lock);
-    size_t n = 0;
-    for (_LogInfoMap::const_iterator i = _logInfoForErrors.begin(),
-             end = _logInfoForErrors.end(); i != end; ++i) {
-        fputs("\n", outFile);
-        fputs(i->first.c_str(), outFile);
-        fputs(":\n", outFile);
-        for (std::string const &line: *i->second) {
-            if (max && n++ >= max) {
-                fputs("... see full diagnostics in crash report.\n", outFile);
-                return;
-            }
-            fputs(line.c_str(), outFile);
-        }
-    }
-}
-
+template <class EmitFn>
 bool
-Arch_LogInfo::TryToFillLogInfoBuffer(char *buf, size_t bufSize) const
+Arch_LogInfo::_ForEachLine(EmitFn emit, size_t maxLines) const
 {
-    if (!_logInfoForErrorsMutex.try_lock()) {
-        buf[0] = '\0';
-        return false;
-    }
-    std::lock_guard<std::mutex> lock(_logInfoForErrorsMutex, std::adopt_lock);
-
-    char const * const end = buf + bufSize-1;
-    char *p = buf;
-
-    auto writeTxt = [&p, end](char const *str) {
-        while (*str && p != end) {
-            *p++ = *str++;
-        }
-        *p = '\0';
-        return p != end;
-    };
-    
-    for (_LogInfoMap::const_iterator i = _logInfoForErrors.begin(),
-             end = _logInfoForErrors.end(); i != end; ++i) {
-
-        if (!(writeTxt("\n") &&
-              writeTxt(i->first.c_str()) &&
-              writeTxt(":\n"))) {
+    size_t n = 0;
+    for (auto const &kv : _logInfoForErrors) {
+        if (!emit("\n") || !emit(kv.first.c_str()) || !emit(":\n")) {
             return false;
         }
-
-        for (std::string const &line: *i->second) {
-            if (!writeTxt(line.c_str())) {
+        for (std::string const &line : *kv.second) {
+            if (maxLines && n++ >= maxLines) {
+                emit("... see full diagnostics in crash report.\n");
+                return false;
+            }
+            if (!emit(line.c_str())) {
                 return false;
             }
         }
@@ -321,24 +397,103 @@ Arch_LogInfo::TryToFillLogInfoBuffer(char *buf, size_t bufSize) const
     return true;
 }
 
+void
+Arch_LogInfo::SetExtraLogInfoForErrors(const std::string &key,
+                                       std::vector<std::string> const *lines)
+{
+    std::lock_guard<_AtomicFlagMutex> lock(_logInfoForErrorsMutex);
+    if (!lines || lines->empty()) {
+        _logInfoForErrors.erase(key);
+    } else {
+        _logInfoForErrors[key] = lines;
+    }
+}
+
+void
+Arch_LogInfo::EmitAnyExtraLogInfo(FILE *outFile, size_t maxLines) const
+{
+    // Uses stdio (fputs) and is NOT async-signal-safe.  Callers on the
+    // signal-handler path must use TryToFillLogInfoBuffer instead.
+    if (!_logInfoForErrorsMutex.try_lock()) {
+        return;
+    }
+    std::lock_guard<_AtomicFlagMutex>
+        lock(_logInfoForErrorsMutex, std::adopt_lock);
+    _ForEachLine([outFile](const char *s) {
+        fputs(s, outFile);
+        return true;
+    }, maxLines);
+}
+
+void
+Arch_LogInfo::ASEmitAnyExtraLogInfo(int fd, size_t maxLines) const
+{
+    // Uses aswrite (write(2)) and is async-signal-safe.  Each chunk emitted by
+    // _ForEachLine results in one aswrite call -- several small writes rather
+    // than one buffered write, which is fine on the crash path.
+    if (!_logInfoForErrorsMutex.try_lock()) {
+        return;
+    }
+    std::lock_guard<_AtomicFlagMutex>
+        lock(_logInfoForErrorsMutex, std::adopt_lock);
+    _ForEachLine([fd](const char *s) {
+        aswrite(fd, s);
+        return true;
+    }, maxLines);
+}
+
+bool
+Arch_LogInfo::TryToFillLogInfoBuffer(char *buf, size_t bufSize,
+                                     size_t maxLines) const
+{
+    if (!_logInfoForErrorsMutex.try_lock()) {
+        buf[0] = '\0';
+        return false;
+    }
+    std::lock_guard<_AtomicFlagMutex>
+        lock(_logInfoForErrorsMutex, std::adopt_lock);
+
+    char const * const bufEnd = buf + bufSize - 1;
+    char *p = buf;
+    return _ForEachLine([&p, bufEnd](const char *str) {
+        while (*str && p != bufEnd) {
+            *p++ = *str++;
+        }
+        *p = '\0';
+        return p != bufEnd;
+    }, maxLines);
+}
+
+std::atomic<Arch_LogInfo*> _logInfoSingleton{nullptr};
 } // anon-namespace
 
+// Lazy create.  Not AS-safe; do not call from a signal handler.
 static Arch_LogInfo &
 ArchStackTrace_GetLogInfo()
 {
-    static Arch_LogInfo logInfo;
-    return logInfo;
+    return *_GetOrCreate(_logInfoSingleton);
 }
 
-static constexpr size_t ExtraLogInfoBufSize = 64 * 1024 * 1024;
-static char _extraLogInfoBuffer[ExtraLogInfoBufSize];
+// AS-safe accessor.  Returns nullptr if the singleton has not yet been
+// constructed by a non-signal caller.
+static Arch_LogInfo*
+ArchStackTrace_TryGetLogInfo()
+{
+    return _logInfoSingleton.load(std::memory_order_acquire);
+}
+
+// Serializes entry to _ArchLogProcessStateHelper across threads and disallows
+// recursive entry from a nested crash.  Namespace-scope (and constant-init)
+// so a first-call from a signal handler does not race with construction.
+static _AtomicFlagMutex _archLogProcessStateBusy;
 
 static char const *
 _GetExtraLogInfoReportDebugUnsafeImpl()
 {
-    ArchStackTrace_GetLogInfo()
-        .TryToFillLogInfoBuffer(_extraLogInfoBuffer, ExtraLogInfoBufSize);
-    return _extraLogInfoBuffer;
+    static constexpr size_t bufSize = 1 * 1024 * 1024;
+    static char buf[bufSize];
+    ArchStackTrace_GetLogInfo().TryToFillLogInfoBuffer(buf, bufSize);
+    return buf;
 }
 
 static void
@@ -356,9 +511,9 @@ ArchEnableSessionLogging()
 
 static const char* const stackTracePrefix = "st";
 
-static const char* _processStateCmd = nullptr;
-static const char* const* _nonFatalArgv = nullptr;
-static const char* const* _fatalArgv = nullptr;
+static std::atomic<const char*>        _processStateCmd {nullptr};
+static std::atomic<const char* const*> _nonFatalArgv    {nullptr};
+static std::atomic<const char* const*> _fatalArgv       {nullptr};
 
 static long _GetAppElapsedTime();
 
@@ -463,6 +618,17 @@ size_t asNumDigits(long x)
 // sufficient space available.
 char* asitoa(char* s, long x)
 {
+    // Special-case zero up front so the digit loop below runs only for x != 0.
+    // This avoids a GCC -Warray-bounds false positive when asitoa is inlined
+    // into a caller with a known small buffer: the compiler can't always prove
+    // asNumDigits(x) >= 1, and the *--s = '0' path triggers an incorrect
+    // "subscript -1" warning.
+    if (x == 0) {
+        s[0] = '0';
+        s[1] = '\0';
+        return s + 1;
+    }
+
     // Write the minus sign.
     if (x < 0) {
         x = -x;
@@ -474,15 +640,10 @@ char* asitoa(char* s, long x)
     *s = '\0';
 
     // Write each digit, starting with the 1's column, working backwards.
-    if (x == 0) {
-        *--s = '0';
-    }
-    else {
-        static const char digit[] = "0123456789";
-        while (x) {
-            *--s = digit[x % 10];
-            x /= 10;
-        }
+    static const char digit[] = "0123456789";
+    while (x) {
+        *--s = digit[x % 10];
+        x /= 10;
     }
     return end;
 }
@@ -505,6 +666,51 @@ void aswrite(int fd, const char* msg)
         written += n;
     }
     errno = saved;
+}
+
+// Write a long converted to decimal ASCII to a file descriptor.
+void aswriteLong(int fd, long x)
+{
+    char buf[numericBufferSize];
+    asitoa(buf, x);
+    aswrite(fd, buf);
+}
+
+// Write nDashes '-' characters to fd.  Async-signal-safe.
+void aswriteDashes(int fd, int nDashes)
+{
+    static const char dash64[] =
+        "----------------------------------------------------------------";
+    if (nDashes <= 0) {
+        return;
+    }
+    int dividend = nDashes / 64;
+    int remainder = nDashes % 64;
+    while (dividend--) {
+        aswrite(fd, dash64);
+    }
+    aswrite(fd, dash64 + 64 - remainder);
+}
+
+// Write a centered "---- progname suffix ----" banner to fd, padding to at
+// least 80 columns.  Returns the total banner width (useful when emitting a
+// matching closing banner).  Async-signal-safe.
+int aswriteBanner(int fd, const char *progname, const char *suffix)
+{
+    const int labelSize = (int)(asstrlen(progname) + asstrlen(suffix));
+    // 6 == 2 * strlen("-- "): minimum dashes-and-space padding on each side.
+    const int bannerSize = std::max<int>(80, labelSize + 6);
+    const int numLeading = (bannerSize - labelSize) / 2 - 1;
+
+    aswrite(fd, "\n");
+    aswriteDashes(fd, numLeading);
+    aswrite(fd, " ");
+    aswrite(fd, progname);
+    aswrite(fd, suffix);
+    aswrite(fd, " ");
+    aswriteDashes(fd, bannerSize - numLeading - labelSize - 2);
+    aswrite(fd, "\n");
+    return bannerSize;
 }
 
 int _GetStackTraceName(char* buf, size_t len)
@@ -769,9 +975,10 @@ int _LogStackTraceForPid(bool isFatal,
     // Get the command to run.
     const char* cmd = asgetenv("ARCH_POSTMORTEM");
     const char* const* cmdArgv =
-        isFatal ? _fatalArgv : _nonFatalArgv;
+        isFatal ? _fatalArgv.load(std::memory_order_acquire)
+                : _nonFatalArgv.load(std::memory_order_acquire);
     if (!cmd) {
-        cmd = _processStateCmd;
+        cmd = _processStateCmd.load(std::memory_order_acquire);
     }
     if (!cmd || !cmdArgv) {
         // Silently do nothing.
@@ -805,13 +1012,13 @@ int _LogStackTraceForPid(bool isFatal,
 }
 
 void
-ArchSetProcessStateLogCommand(const char* command, 
-                              const char *const argv[], 
+ArchSetProcessStateLogCommand(const char* command,
+                              const char *const argv[],
                               const char *const fatalArgv[])
 {
-    _processStateCmd  = command;
-    _nonFatalArgv = argv;
-    _fatalArgv = fatalArgv;
+    _processStateCmd.store(command, std::memory_order_release);
+    _nonFatalArgv.store(argv, std::memory_order_release);
+    _fatalArgv.store(fatalArgv, std::memory_order_release);
 }
 
 /*
@@ -851,7 +1058,7 @@ ArchGetAppLaunchTime()
 void
 ArchSetFatalStackLogging( bool flag )
 {
-    _shouldLogStackToDb = flag;   
+    _shouldLogStackToDb.store(flag, std::memory_order_release);
 }
 
 /*
@@ -864,7 +1071,7 @@ ArchSetFatalStackLogging( bool flag )
 bool
 ArchGetFatalStackLogging()
 {
-    return _shouldLogStackToDb;
+    return _shouldLogStackToDb.load(std::memory_order_acquire);
 }
 
 void
@@ -895,30 +1102,31 @@ ArchSetExtraLogInfoForErrors(const std::string &key,
 void
 ArchSetProgramNameForErrors( const char *progName )
 {
-     
-    if (_progNameForErrors)
-        free(_progNameForErrors);
-    
-    if (progName)
-        _progNameForErrors = strdup(getBase(progName).c_str());
-    else
-        _progNameForErrors = NULL;
+    // Publish the new name before freeing the old one so a signal-handler
+    // reader never sees a half-published or freed pointer.  A theoretical
+    // use-after-free window remains if a signal handler captures the old
+    // pointer and this setter then frees it before the signal handler
+    // dereferences it, but in practice this setter is called once during
+    // process init.
+    char *newName = progName ? strdup(getBase(progName).c_str()) : nullptr;
+    char *oldName =
+        _progNameForErrors.exchange(newName, std::memory_order_acq_rel);
+    if (oldName) {
+        free(oldName);
+    }
 }
 
 /*
  * ArchGetProgramNameForErrors
  * ----------------------------
- * Returns the currently set program name used for
- * reporting error information.  Returns "libArch"
- * if a value hasn't been set.
+ * Returns the currently set program name used for reporting error information.
+ * Returns "pxr/arch" if a value hasn't been set.
  */
 const char *
 ArchGetProgramNameForErrors()
 {
-    if (_progNameForErrors)
-        return _progNameForErrors;
-
-    return "libArch";
+    const char *name = _progNameForErrors.load(std::memory_order_acquire);
+    return name ? name : "pxr/arch";
 }
 
 #if defined(ARCH_OS_WINDOWS)
@@ -968,9 +1176,10 @@ _InvokeSessionLogger(const char* progname, const char *stackTrace)
     // Get the command to run.
     const char* cmd = asgetenv("ARCH_LOGSESSION");
     const char* const* srcArgv =
-        stackTrace ? _sessionCrashLogArgv : _sessionLogArgv;
+        stackTrace ? _sessionCrashLogArgv.load(std::memory_order_acquire)
+                   : _sessionLogArgv.load(std::memory_order_acquire);
     if (!cmd) {
-        cmd = _logStackToDbCmd;
+        cmd = _logStackToDbCmd.load(std::memory_order_acquire);
     }
     if (!cmd || !srcArgv) {
         // Silently do nothing.
@@ -1004,6 +1213,10 @@ _InvokeSessionLogger(const char* progname, const char *stackTrace)
  * '_FinishLoggingFatalStackTrace' appends the sessionLog
  * to the stackTrace, and then calls an external program to add it
  * to the stack_trace database table.
+ *
+ * The crashingHard=false branch uses fopen/fputs/fgets/fclose and is therefore
+ * not async-signal-safe.  Signal-handler callers MUST pass crashingHard=true so
+ * that branch is skipped.
  */
 static void
 _FinishLoggingFatalStackTrace(const char *progname, const char *stackTrace,
@@ -1011,6 +1224,7 @@ _FinishLoggingFatalStackTrace(const char *progname, const char *stackTrace,
 {
     if (!crashingHard && sessionLog) {
         // If we were given a session log, cat it to the end of the stack.
+        // Not async-signal-safe; only reached when crashingHard is false.
         if (FILE* stackFd = ArchOpenFile(stackTrace, "a")) {
             if (FILE* sessionLogFd = ArchOpenFile(sessionLog, "r")) {
                 fputs("\n\n********** Session Log **********\n\n", stackFd);
@@ -1026,7 +1240,7 @@ _FinishLoggingFatalStackTrace(const char *progname, const char *stackTrace,
     }
 
     // Add trace to database if _shouldLogStackToDb is true
-    if (_shouldLogStackToDb)
+    if (_shouldLogStackToDb.load(std::memory_order_acquire))
     {
         _InvokeSessionLogger(progname, stackTrace);
     }
@@ -1036,7 +1250,7 @@ _FinishLoggingFatalStackTrace(const char *progname, const char *stackTrace,
 void
 ArchLogSessionInfo(const char *crashStackTrace)
 {
-    if (_shouldLogStackToDb)
+    if (_shouldLogStackToDb.load(std::memory_order_acquire))
     {
         _InvokeSessionLogger(ArchGetProgramNameForErrors(), crashStackTrace);
     }
@@ -1048,9 +1262,9 @@ ArchSetLogSession(
     const char* const argv[],
     const char* const crashArgv[])
 {
-    _logStackToDbCmd     = command;
-    _sessionLogArgv      = argv;
-    _sessionCrashLogArgv = crashArgv;
+    _logStackToDbCmd.store(command, std::memory_order_release);
+    _sessionLogArgv.store(argv, std::memory_order_release);
+    _sessionCrashLogArgv.store(crashArgv, std::memory_order_release);
 }
 
 bool
@@ -1069,7 +1283,10 @@ _SetAppIsCrashing(bool crashing)
  * Run an external program to make a report and tell the user where the report
  * file is.
  *
- * Use of char*'s is deliberate: only async-safe calls allowed past this point!
+ * Use of char*'s is deliberate: only async-signal-safe calls allowed past this
+ * point!  All output goes through aswrite (write(2)) -- never stdio because
+ * stdio lazily allocates per-FILE buffers and takes per-FILE locks, both of
+ * which deadlock if a signal interrupts malloc or another stdio call.
  */
 static void
 _ArchLogProcessStateHelper(bool isFatal,
@@ -1077,13 +1294,8 @@ _ArchLogProcessStateHelper(bool isFatal,
                            const char* message = nullptr,
                            const char* extraLogMsg = nullptr)
 {
-    static std::atomic_flag busy = ATOMIC_FLAG_INIT;
-
-    // Disallow recursion and allow only one thread at a time.
-    while (busy.test_and_set(std::memory_order_acquire)) {
-        // Spin!
-        std::this_thread::yield();
-    }
+    // Serialize entry; disallow recursion and allow only one thread at a time.
+    std::lock_guard<_AtomicFlagMutex> busyLock(_archLogProcessStateBusy);
 
     if (isFatal) {
         _SetAppIsCrashing(true);
@@ -1101,102 +1313,85 @@ _ArchLogProcessStateHelper(bool isFatal,
     char logfile[1024];
     if (_GetStackTraceName(logfile, sizeof(logfile)) == -1) {
         // Cannot create the logfile.
-        static const char msg[] = "Cannot create a log file\n";
-        aswrite(2, msg);
-        busy.clear(std::memory_order_release);
+        aswrite(2, "Cannot create a log file\n");
         return;
     }
 
-    // Write reason for stack trace to logfile.
-    if (FILE* stackFd = ArchOpenFile(logfile, "a")) {
-        if (reason) {
-            fputs("This stack trace was requested because: ", stackFd);
-            fputs(reason, stackFd);
-            fputs("\n", stackFd);
+    // Write reason for stack trace to the logfile.  fd-based I/O only:
+    // stdio's lazy malloc would deadlock if a signal interrupted malloc.
+    {
+        const int stackFd =
+            open(logfile, O_WRONLY | O_APPEND | O_CREAT, 0666);
+        if (stackFd >= 0) {
+            if (reason) {
+                aswrite(stackFd, "This stack trace was requested because: ");
+                aswrite(stackFd, reason);
+                aswrite(stackFd, "\n");
+            }
+            if (message) {
+                aswrite(stackFd, message);
+                aswrite(stackFd, "\n");
+            }
+            if (Arch_LogInfo* logInfo = ArchStackTrace_TryGetLogInfo()) {
+                logInfo->ASEmitAnyExtraLogInfo(stackFd);
+            }
+            if (extraLogMsg) {
+                aswrite(stackFd, extraLogMsg);
+                aswrite(stackFd, "\n");
+            }
+            aswrite(stackFd, "\nPostmortem Stack Trace\n");
+            close(stackFd);
         }
-        if (message) {
-            fputs(message, stackFd);
-            fputs("\n", stackFd);
-        }
-        ArchStackTrace_GetLogInfo().EmitAnyExtraLogInfo(stackFd);
-        if (extraLogMsg) {
-            fputs(extraLogMsg, stackFd);
-            fputs("\n", stackFd);
-        }
-        fputs("\nPostmortem Stack Trace\n", stackFd);
-        fclose(stackFd);
     }
 
-    /* get hostname for printing out in the error message only */
-    char hostname[MAXHOSTNAMELEN];
-    if (gethostname(hostname,MAXHOSTNAMELEN) != 0) {
-        /* error getting hostname; don't try to print it */
-        hostname[0] = '\0';
-    }
-
-    auto printNDashes = [](int nDashes) {
-        const char *dash64 =
-            "----------------------------------------------------------------";
-        int dividend = nDashes / 64;
-        int remainder = nDashes % 64;
-        while (dividend--) {
-            fputs(dash64, stderr);
-        }
-        fputs(dash64 + 64 - remainder, stderr);
-    };
-
-    const char *haltMsg = " terminated";
-    int labelSize = strlen(progname) + strlen(haltMsg);
-    int bannerSize = std::max<int>(80, labelSize + strlen("-- ") * 2);
-
-    fputs("\n", stderr);
-    int numLeadingDashes = (bannerSize - labelSize) / 2 - 1;
-    printNDashes(numLeadingDashes);
-    fputs(" ", stderr);
-    fputs(progname, stderr);
-    fputs(haltMsg, stderr);
-    fputs(" ", stderr);
-    printNDashes(bannerSize - numLeadingDashes - labelSize - 2);
-    fputs("\n", stderr);
+    // Banner: "---- progname terminated ----" centered, padded to >= 80 cols.
+    const int bannerSize = aswriteBanner(2, progname, " terminated");
 
     // print out any registered program info
-    {
-        ArchStackTrace_GetProgInfo().PrintInfoForErrors();
+    if (Arch_ProgInfo* progInfo = ArchStackTrace_TryGetProgInfo()) {
+        progInfo->PrintInfoForErrors();
     }
 
     if (reason) {
-        fputs("This stack trace was requested because: ", stderr);
-        fputs(reason, stderr);
-        fputs("\n", stderr);
+        aswrite(2, "This stack trace was requested because: ");
+        aswrite(2, reason);
+        aswrite(2, "\n");
     }
     if (message) {
-        fputs(message, stderr);
-        fputs("\n", stderr);
+        aswrite(2, message);
+        aswrite(2, "\n");
     }
 
-    fputs("writing crash report to [ ", stderr);
-    fputs(hostname, stderr);
-    fputs(":", stderr);
-    fputs(logfile, stderr);
-    fputs(" ] ...", stderr);
-    fflush(stderr);
+    aswrite(2, "writing crash report to [ ");
+    aswrite(2, _hostname);
+    aswrite(2, ":");
+    aswrite(2, logfile);
+    aswrite(2, " ] ...");
 
     int loggedStack = reason ?
          _LogStackTraceForPid(isFatal, logfile, reason) :
          _LogStackTraceForPid(isFatal, logfile, message);
-    fputs(" done.\n", stderr);
-    // Additionally, print the first few lines of extra log information since
-    // developers don't always think to look for it in the stack trace file.
-    ArchStackTrace_GetLogInfo().EmitAnyExtraLogInfo(stderr, 3 /* max */);
-    printNDashes(bannerSize);
-    fputs("\n", stderr);
+    aswrite(2, " done.\n");
+
+    // Print the first few lines of extra log information since developers
+    // don't always think to look for it in the stack trace file.  Use a
+    // small stack buffer rather than the global 64 MB buffer; we only need
+    // a handful of lines.
+    {
+        char preview[4096] = {};
+        if (Arch_LogInfo* logInfo = ArchStackTrace_TryGetLogInfo()) {
+            logInfo->TryToFillLogInfoBuffer(
+                preview, sizeof(preview), /* maxLines = */ 3);
+        }
+        aswrite(2, preview);
+    }
+    aswriteDashes(2, bannerSize);
+    aswrite(2, "\n");
 
     if (loggedStack) {
-        _FinishLoggingFatalStackTrace(progname, logfile, NULL /*session log*/, 
+        _FinishLoggingFatalStackTrace(progname, logfile, NULL /*session log*/,
                                       true /* crashing hard? */);
     }
-
-    busy.clear(std::memory_order_release);
 }
 
 void
@@ -1243,12 +1438,6 @@ ArchLogStackTrace(const std::string& progname, const std::string& reason,
                                               ArchGetProgramNameForErrors()),
                              &tmpFile);
 
-    /* get hostname for printing out in the error message only */
-    char hostname[MAXHOSTNAMELEN];
-    if (gethostname(hostname,MAXHOSTNAMELEN) != 0) {
-        hostname[0]= '\0';
-    }
-
     fprintf(stderr,
             "--------------------------------------------------------------\n"
             "A stack trace has been requested by %s because of %s\n",
@@ -1263,7 +1452,7 @@ ArchLogStackTrace(const std::string& progname, const std::string& reason,
         FILE* fout = ArchFdOpen(fd, "w");
         fprintf(stderr, "The stack can be found in %s:%s\n"
                 "--------------------------------------------------------------"
-                "\n", hostname, tmpFile.c_str());
+                "\n", _hostname, tmpFile.c_str());
         ArchPrintStackTrace(fout, progname, reason);
         /* If this is a fatal stack trace, attempt to add it to the db */
         if (fatal) {
@@ -1636,10 +1825,8 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
     pid_t pid = nonLockingFork(); /* use non-locking fork */
     if (pid == -1) {
         /* fork() failed */
-        char errBuffer[numericBufferSize];
-        asitoa(errBuffer, errno);
         aswrite(2, "FAIL: Unable to fork() crash handler: errno=");
-        aswrite(2, errBuffer);
+        aswriteLong(2, errno);
         aswrite(2, "\n");
         return -1;
     }
@@ -1661,12 +1848,10 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
         nonLockingExecv(pathname, argv);
 
         /* Exec failed */
-        char errBuffer[numericBufferSize];
-        asitoa(errBuffer, errno);
         aswrite(2, "FAIL: Unable to exec crash handler ");
         aswrite(2, pathname);
         aswrite(2, ": errno=");
-        aswrite(2, errBuffer);
+        aswriteLong(2, errno);
         aswrite(2, "\n");
         _exit(127);
     }
@@ -1698,10 +1883,8 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
                 /* waitpid error.  return if not due to signal. */
                 if (errno != EINTR) {
                     retval = -1;
-                    char errBuffer[numericBufferSize];
-                    asitoa(errBuffer, errno);
                     aswrite(2, "FAIL: Crash handler wait failed: errno=");
-                    aswrite(2, errBuffer);
+                    aswriteLong(2, errno);
                     aswrite(2, "\n");
                     goto out;
                 }
@@ -1726,20 +1909,16 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
                     /* child died due to uncaught signal */
                     errno = EINTR;
                     retval = -1;
-                    char sigBuffer[numericBufferSize];
-                    asitoa(sigBuffer, WTERMSIG(status));
                     aswrite(2, "FAIL: Crash handler died: signal=");
-                    aswrite(2, sigBuffer);
+                    aswriteLong(2, WTERMSIG(status));
                     aswrite(2, "\n");
                     goto out;
                 }
                 /* child died for an unknown reason */
                 errno = EINTR;
                 retval = -1;
-                char statusBuffer[numericBufferSize];
-                asitoa(statusBuffer, status);
                 aswrite(2, "FAIL: Crash handler unexpected wait status=");
-                aswrite(2, statusBuffer);
+                aswriteLong(2, status);
                 aswrite(2, "\n");
                 goto out;
             }

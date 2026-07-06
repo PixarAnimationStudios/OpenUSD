@@ -203,6 +203,9 @@ void wrapFrustum()
         .def("ComputeCornersAtDistance", &This::ComputeCornersAtDistance,
              return_value_policy<TfPySequenceToTuple>())
 
+        .def("ComputePlanes", &This::ComputePlanes,
+             return_value_policy<TfPySequenceToTuple>())
+
         .def("ComputeNarrowedFrustum", 
             (GfFrustum (This::*)(const GfVec2d &, const GfVec2d &) const)
             &This::ComputeNarrowedFrustum)

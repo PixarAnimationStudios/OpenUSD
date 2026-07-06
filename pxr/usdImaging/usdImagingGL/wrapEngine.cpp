@@ -28,12 +28,12 @@ using namespace pxr_boost::python;
 namespace {
 
 static pxr_boost::python::tuple
-_TestIntersection(
+_TestIntersection1(
     UsdImagingGLEngine & self,
     const GfMatrix4d &viewMatrix,
     const GfMatrix4d &projectionMatrix,
     const UsdPrim& root,
-    UsdImagingGLRenderParams params)
+    const UsdImagingGLRenderParams& params)
 {
     GfVec3d hitPoint(0);
     GfVec3d hitNormal(0);
@@ -65,6 +65,33 @@ _TestIntersection(
             hitInstanceIndex, topLevelPath, topLevelInstanceIndex);
 }
 
+static
+UsdImagingGLEngine::IntersectionResultVector
+_TestIntersection2(
+    UsdImagingGLEngine & self,
+    const UsdImagingGLEngine::PickParams& pickParams,
+    const GfMatrix4d& viewMatrix,
+    const GfMatrix4d& projectionMatrix,
+    const UsdPrim& root,
+    const UsdImagingGLRenderParams& params)
+{
+    UsdImagingGLEngine::IntersectionResultVector result;
+    self.TestIntersection(
+        pickParams, viewMatrix, projectionMatrix, root, params, &result);
+    return result;
+}
+    
+static
+pxr_boost::python::list
+_ToPyList(const HdInstancerContext &ctx)
+{
+    pxr_boost::python::list result;
+    for (const auto& [path, id] : ctx) {
+        result.append(pxr_boost::python::make_tuple(path, id));
+    }
+    return result;
+}
+    
 static void
 _SetLightingState(UsdImagingGLEngine &self, GlfSimpleLightVector const &lights,
                   GlfSimpleMaterial const &material, GfVec4f const &sceneAmbient)
@@ -88,90 +115,87 @@ void _SetOverrideWindowPolicy(UsdImagingGLEngine & self,
 void wrapEngine()
 {
     {
-        using Parameters = UsdImagingGLEngine::Parameters;
+        using This = UsdImagingGLEngine;
+        
+        using Parameters = This::Parameters;
+        using PickParams = This::PickParams;
+        using IntersectionResult = This::IntersectionResult;
 
-        scope engineScope = class_<UsdImagingGLEngine, noncopyable>(
+        scope engineScope = class_<This, noncopyable>(
                 "Engine", "UsdImaging Renderer class")
             .def( init<>() )
             .def( init<const SdfPath &, const SdfPathVector&,
                     const SdfPathVector& >() )
             .def( init<const Parameters &>() )
-            .def("Render", &UsdImagingGLEngine::Render)
-            .def("SetWindowPolicy", &UsdImagingGLEngine::SetWindowPolicy)
-            .def("SetRenderViewport", &UsdImagingGLEngine::SetRenderViewport)
-            .def("SetCameraPath", &UsdImagingGLEngine::SetCameraPath)
-            .def("SetCameraState", &UsdImagingGLEngine::SetCameraState)
+            .def("Render", &This::Render)
+            .def("SetWindowPolicy", &This::SetWindowPolicy)
+            .def("SetRenderViewport", &This::SetRenderViewport)
+            .def("SetCameraPath", &This::SetCameraPath)
+            .def("SetCameraState", &This::SetCameraState)
             .def("SetLightingState", &_SetLightingState)
-            .def("SetSelected", &UsdImagingGLEngine::SetSelected)
-            .def("ClearSelected", &UsdImagingGLEngine::ClearSelected)
-            .def("AddSelected", &UsdImagingGLEngine::AddSelected)
-            .def("SetSelectionColor", &UsdImagingGLEngine::SetSelectionColor)
-            .def("TestIntersection", &_TestIntersection)
-            .def("IsConverged", &UsdImagingGLEngine::IsConverged)
-            .def("GetRendererPlugins", &UsdImagingGLEngine::GetRendererPlugins,
+            .def("SetSelected", &This::SetSelected)
+            .def("ClearSelected", &This::ClearSelected)
+            .def("AddSelected", &This::AddSelected)
+            .def("SetSelectionColor", &This::SetSelectionColor)
+            .def("TestIntersection", &_TestIntersection1)
+            .def("TestIntersection",
+                 &_TestIntersection2,
                  return_value_policy< TfPySequenceToList >())
-                .staticmethod("GetRendererPlugins")
-            .def("GetRendererDisplayName",
-                    &UsdImagingGLEngine::GetRendererDisplayName)
-                .staticmethod("GetRendererDisplayName")
-            .def("GetRendererHgiDisplayName",
-                    &UsdImagingGLEngine::GetRendererHgiDisplayName)
-            .def("GetCurrentRendererId",
-                    &UsdImagingGLEngine::GetCurrentRendererId)
-            .def("SetRendererPlugin",
-                    &UsdImagingGLEngine::SetRendererPlugin)
-            .def("GetRendererAovs",
-                    &UsdImagingGLEngine::GetRendererAovs,
+            .def("IsConverged", &This::IsConverged)
+            .def("GetRendererPlugins", &This::GetRendererPlugins,
                  return_value_policy< TfPySequenceToList >())
-            .def("SetRendererAov",
-                    &UsdImagingGLEngine::SetRendererAov)
-            .def("GetRenderStats",
-                    &UsdImagingGLEngine::GetRenderStats)
-            .def("GetRendererSettingsList",
-                    &UsdImagingGLEngine::GetRendererSettingsList,
+            .staticmethod("GetRendererPlugins")
+            .def("GetRendererDisplayName", &This::GetRendererDisplayName)
+            .staticmethod("GetRendererDisplayName")
+            .def("GetRendererHgiDisplayName", &This::GetRendererHgiDisplayName)
+            .def("GetCurrentRendererId", &This::GetCurrentRendererId)
+            .def("SetRendererPlugin", &This::SetRendererPlugin)
+            .def("GetRendererAovs", &This::GetRendererAovs,
                  return_value_policy< TfPySequenceToList >())
-            .def("GetRendererSetting", &UsdImagingGLEngine::GetRendererSetting)
-            .def("SetRendererSetting", &UsdImagingGLEngine::SetRendererSetting)
+            .def("SetRendererAov", &This::SetRendererAov)
+            .def("GetRenderStats", &This::GetRenderStats)
+            .def("GetRendererSettingsList", &This::GetRendererSettingsList,
+                 return_value_policy< TfPySequenceToList >())
+            .def("GetRendererSetting", &This::GetRendererSetting)
+            .def("SetRendererSetting", &This::SetRendererSetting)
             .def("GetActiveRenderPassPrimPath",
-                 &UsdImagingGLEngine::GetActiveRenderPassPrimPath)
+                 &This::GetActiveRenderPassPrimPath)
             .def("GetActiveRenderSettingsPrimPath",
-                 &UsdImagingGLEngine::GetActiveRenderSettingsPrimPath)
+                 &This::GetActiveRenderSettingsPrimPath)
             .def("SetActiveRenderPassPrimPath",
-                 &UsdImagingGLEngine::SetActiveRenderPassPrimPath)
+                 &This::SetActiveRenderPassPrimPath)
             .def("SetActiveRenderSettingsPrimPath",
-                 &UsdImagingGLEngine::SetActiveRenderSettingsPrimPath)
+                 &This::SetActiveRenderSettingsPrimPath)
             .def("GetAvailableRenderSettingsPrimPaths",
-                 &UsdImagingGLEngine::GetAvailableRenderSettingsPrimPaths,
+                 &This::GetAvailableRenderSettingsPrimPaths,
                  return_value_policy< TfPySequenceToList >())
                  .staticmethod("GetAvailableRenderSettingsPrimPaths")
             .def("SetColorCorrectionSettings",
-                    &UsdImagingGLEngine::SetColorCorrectionSettings)
+                 &This::SetColorCorrectionSettings)
             .def("IsColorCorrectionCapable",
-                &UsdImagingGLEngine::IsColorCorrectionCapable)
-                .staticmethod("IsColorCorrectionCapable")
+                 &This::IsColorCorrectionCapable)
+            .staticmethod("IsColorCorrectionCapable")
             .def("GetRendererCommandDescriptors",
-                &UsdImagingGLEngine::GetRendererCommandDescriptors,
+                &This::GetRendererCommandDescriptors,
                 return_value_policy< TfPySequenceToList >() )
             .def("InvokeRendererCommand",
-                &UsdImagingGLEngine::InvokeRendererCommand,
+                &This::InvokeRendererCommand,
                 (pxr_boost::python::arg("command"),
                  pxr_boost::python::arg("args") = HdCommandArgs()))
             .def("IsPauseRendererSupported",
-                &UsdImagingGLEngine::IsPauseRendererSupported)
-            .def("PauseRenderer", &UsdImagingGLEngine::PauseRenderer)
-            .def("ResumeRenderer", &UsdImagingGLEngine::ResumeRenderer)
-            .def("IsStopRendererSupported",
-                &UsdImagingGLEngine::IsStopRendererSupported)
-            .def("StopRenderer", &UsdImagingGLEngine::StopRenderer)
-            .def("RestartRenderer", &UsdImagingGLEngine::RestartRenderer)
-            .def("SetRenderBufferSize", &UsdImagingGLEngine::SetRenderBufferSize)
-            .def("SetFraming", &UsdImagingGLEngine::SetFraming)
+                &This::IsPauseRendererSupported)
+            .def("PauseRenderer", &This::PauseRenderer)
+            .def("ResumeRenderer", &This::ResumeRenderer)
+            .def("IsStopRendererSupported", &This::IsStopRendererSupported)
+            .def("StopRenderer", &This::StopRenderer)
+            .def("RestartRenderer", &This::RestartRenderer)
+            .def("SetRenderBufferSize", &This::SetRenderBufferSize)
+            .def("SetFraming", &This::SetFraming)
             .def("SetOverrideWindowPolicy", _SetOverrideWindowPolicy)
             .def("PollForAsynchronousUpdates",
-                &UsdImagingGLEngine::PollForAsynchronousUpdates)
+                 &This::PollForAsynchronousUpdates)
 
         ;
-
 
         class_<Parameters>(
                 "Parameters", "Parameters to construct renderer engine")
@@ -190,6 +214,26 @@ void wrapEngine()
                 &Parameters::enableUsdDrawModes)
 
         ;
+
+        class_<PickParams>(
+                "PickParams", "Parameters for TestIntersection")
+            .def_readwrite("resolveMode", &PickParams::resolveMode)
+
+        ;
+
+        class_<IntersectionResult>(
+                "IntersectionResult", "Results of TestIntersection")
+            .def_readwrite("hitPoint", &IntersectionResult::hitPoint)
+            .def_readwrite("hitNormal", &IntersectionResult::hitNormal)
+            .def_readwrite("hitPrimPath", &IntersectionResult::hitPrimPath)
+            .def_readwrite("hitInstancerPath",
+                &IntersectionResult::hitInstancerPath)
+            .def_readwrite("hitInstanceIndex",
+                &IntersectionResult::hitInstanceIndex)
+            .add_property("instancerContext",
+                +[](const IntersectionResult &result) {
+                    return _ToPyList(result.instancerContext); })
+        ;
     }
 
     // Wrap the constants.
@@ -198,4 +242,6 @@ void wrapEngine()
     TfPyContainerConversions::from_python_sequence<
         std::vector<GlfSimpleLight>,
         TfPyContainerConversions::variable_capacity_policy>();
+
+    
 }

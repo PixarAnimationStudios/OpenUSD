@@ -1,0 +1,13 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Profiles": {
+                    "Capabilities": {}
+                }
+            },
+            "Name": "TestEmpty",
+            "Type": "resource"
+        }
+    ]
+}

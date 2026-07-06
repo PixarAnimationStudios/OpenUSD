@@ -13,6 +13,7 @@
 #if defined(ARCH_OS_LINUX)
 #include <unistd.h>
 #endif
+#include <algorithm>
 #include <any>
 #include <atomic>
 #include <cinttypes>
@@ -22,10 +23,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <deque>
 #include <functional>
 #include <inttypes.h>
 #include <iosfwd>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <list>
 #include <locale>
@@ -52,6 +55,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <tbb/concurrent_hash_map.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

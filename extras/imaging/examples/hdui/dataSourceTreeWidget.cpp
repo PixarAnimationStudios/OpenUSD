@@ -319,7 +319,6 @@ HduiDataSourceTreeWidget::HduiDataSourceTreeWidget(QWidget *parent)
             return;
         }
 
-
         if (Hdui_DataSourceTreeWidgetItem * dsItem =
                 dynamic_cast<Hdui_DataSourceTreeWidgetItem *>(items[0])) {
             Q_EMIT DataSourceSelected(dsItem->GetDataSource());

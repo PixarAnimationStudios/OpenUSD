@@ -14,6 +14,7 @@ class Preferences(QtWidgets.QDialog):
 
     Editable properties:
        fontSize, int
+       appIconMode, str
 
     Readable properties:
 
@@ -39,12 +40,17 @@ class Preferences(QtWidgets.QDialog):
         if self._muteUpdates:
             return
         self._ui.fontSizeSpinBox.setValue(self._dataModel.viewSettings.fontSize)
+        idx = self._ui.appIconComboBox.findText(
+            self._dataModel.viewSettings.appIconMode)
+        if idx >= 0:
+            self._ui.appIconComboBox.setCurrentIndex(idx)
         self.update()
 
 
     def _apply(self):
         self._muteUpdates = True
         self._dataModel.viewSettings.fontSize = self._ui.fontSizeSpinBox.value()
+        self._dataModel.viewSettings.appIconMode = self._ui.appIconComboBox.currentText()
         self._muteUpdates = False
 
     def _buttonBoxButtonClicked(self, button):

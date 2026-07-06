@@ -176,7 +176,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (gpuMemoryUsed)                             \
     (instBasisCurvesTopology)                   \
     (instBasisCurvesTopologyRange)              \
+    (instImplicitPrimsTopologyRange)            \
     (instExtComputationDataRange)               \
+    (instGlslProgram)                           \
     (instMeshTopology)                          \
     (instMeshTopologyRange)                     \
     (instPrimvarRange)                          \
@@ -220,6 +222,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (overrideColor)                             \
     (maskColor)                                 \
     (projectionMatrix)                          \
+    (projectionInverseMatrix)                   \
     (pointColor)                                \
     (pointSize)                                 \
     (pointSelectedSize)                         \
@@ -314,6 +317,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (integrator)                                \
     (sampleFilter)                              \
     (displayFilter)                             \
+    (energyFilter)                              \
     (imageShader)                               \
                                                 \
     HD_LIGHT_TYPE_TOKENS                        \
@@ -449,8 +453,6 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (threadLimit)                                     \
     /* interactive vs offline */                      \
     (enableInteractive)                               \
-    /* To pass HdRendererCreateArgs to HdRendererPlugin::CreateDelegate */ \
-    (rendererCreateArgs)
 
 #define HD_RENDER_SETTINGS_PRIM_TOKENS                \
     (active)                                          \

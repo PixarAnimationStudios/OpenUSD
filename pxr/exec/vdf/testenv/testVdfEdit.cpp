@@ -106,7 +106,7 @@ AddPoints(const VdfContext &context)
         result.template GetReadWriteAccessor<GfVec3d>();
 
     VdfReadIterator<GfVec3d> iter(context, _tokens->input1);
-    if (context.HasInputValue<GfVec3d>(_tokens->input2)) {
+    if (context.HasInputValue(_tokens->input2)) {
         VdfReadIterator<GfVec3d> iter2(context, _tokens->input2);
     
         size_t i = 0;

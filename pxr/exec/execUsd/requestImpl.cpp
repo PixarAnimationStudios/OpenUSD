@@ -65,11 +65,12 @@ struct _IsValidVisitor
     }
 
     bool operator()(const ExecUsd_AttributeComputationValueKey &key) const {
-        return key.provider.IsValid();
+        return key.provider.IsValid() &&
+            UsdPrimDefaultPredicate(key.provider.GetPrim());
     }
 
     bool operator()(const ExecUsd_PrimComputationValueKey &key) const {
-        return key.provider.IsValid();
+        return key.provider.IsValid() && UsdPrimDefaultPredicate(key.provider);
     }
 };
 

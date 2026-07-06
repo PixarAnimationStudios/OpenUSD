@@ -20,14 +20,16 @@ class HdPrmanMeshLightResolvingSceneIndex :
 {
 public:
     static HdPrmanMeshLightResolvingSceneIndexRefPtr
-    New(const HdSceneIndexBaseRefPtr& inputSceneIndex);
+    New(const HdSceneIndexBaseRefPtr& inputSceneIndex, 
+        const bool disableDeformationMotionBlur = false);
 
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
 protected:
     HdPrmanMeshLightResolvingSceneIndex(
-        const HdSceneIndexBaseRefPtr& inputSceneIndex);
+        const HdSceneIndexBaseRefPtr& inputSceneIndex, 
+        const bool disableDeformationMotionBlur = false);
     ~HdPrmanMeshLightResolvingSceneIndex();
 
     void _PrimsAdded(
@@ -54,6 +56,9 @@ private:
   
 private:
     std::unordered_map<SdfPath, bool, SdfPath::Hash> _meshLights;
+
+    // TODO: Remove this option once RIS has been deprecated.
+    bool _disableDeformationMotionBlur;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

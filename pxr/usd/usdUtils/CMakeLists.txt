@@ -60,7 +60,6 @@ pxr_library(usdUtils
 
     PYMODULE_FILES
         __init__.py
-        complianceChecker.py
         constantsGroup.py
         fixBrokenPixarSchemas.py
         toolPaths.py
@@ -95,6 +94,17 @@ pxr_test_scripts(
     testenv/testUsdUtilsUsdzUtils.py
     testenv/testUsdUtilsUserProcessingFunc.py
     testenv/testUsdUtilsVarSelsSessionLayer.py
+)
+
+pxr_build_test_shared_lib(TestUsdUtilsCustomFilesystemResolver
+    INSTALL_PREFIX UsdUtilsPlugins
+    LIBRARIES
+        ar
+        sdf
+        tf
+
+    CPPFILES
+        testenv/TestUsdUtilsCustomFilesystemResolver_plugin.cpp
 )
 
 pxr_build_test_shared_lib(TestUsdUtilsDependenciesCustomResolver
@@ -343,21 +353,21 @@ pxr_register_test(testUsdUtilsCoalescingDiagnosticDelegateCpp
 
 pxr_register_test(testUsdUtilsCreateNewARKitUsdzPackage
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check --arkit -l contents_arkit.txt package.usdz root.usd"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --arkit -l contents_arkit.txt package.usdz root.usd"
     TESTENV testenv/testUsdUtilsCreateNewUsdzPackage
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsCreateNewARKitUsdzPackageInPlace
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --editLayersInPlace --expectedDirtyLayers flat.usda --check --arkit package_flat.usdz flat.usda -l contents_arkit_flat_in_place.txt"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --editLayersInPlace --expectedDirtyLayers flat.usda --arkit package_flat.usdz flat.usda -l contents_arkit_flat_in_place.txt"
     TESTENV testenv/testUsdUtilsCreateNewUsdzPackage
     EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsCreateNewUsdzPackage
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents.txt package.usdz root.usd"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage -l contents.txt package.usdz root.usd"
     TESTENV testenv/testUsdUtilsCreateNewUsdzPackage
     DIFF_COMPARE contents.txt
     EXPECTED_RETURN_CODE 0
@@ -365,7 +375,7 @@ pxr_register_test(testUsdUtilsCreateNewUsdzPackage
 
 pxr_register_test(testUsdUtilsCreateNewUsdzPackageContextDep
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents_usdz_context_dep_assets.txt usdzContextDepAssets.usdz usdzContextDepAssets/usdzContextDepAssets.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage -l contents_usdz_context_dep_assets.txt usdzContextDepAssets.usdz usdzContextDepAssets/usdzContextDepAssets.usda"
     TESTENV testenv/testUsdUtilsCreateNewUsdzPackage
     DIFF_COMPARE contents_usdz_context_dep_assets.txt
     EXPECTED_RETURN_CODE 0
@@ -373,7 +383,7 @@ pxr_register_test(testUsdUtilsCreateNewUsdzPackageContextDep
 
 pxr_register_test(testUsdUtilsCreateNewUsdzPackageFilterMetadataKeys
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents_filter_metadata_keys.txt filter_metadata_keys.usdz filterMetadataKeys/filter_metadata_keys.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage -l contents_filter_metadata_keys.txt filter_metadata_keys.usdz filterMetadataKeys/filter_metadata_keys.usda"
     TESTENV testenv/testUsdUtilsCreateNewUsdzPackage
     DIFF_COMPARE contents_filter_metadata_keys.txt
     EXPECTED_RETURN_CODE 0
@@ -381,7 +391,7 @@ pxr_register_test(testUsdUtilsCreateNewUsdzPackageFilterMetadataKeys
 
 pxr_register_test(testUsdUtilsCreateNewUsdzPackageUdim
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents_udim.txt udim.usdz udim/root.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage -l contents_udim.txt udim.usdz udim/root.usda"
     TESTENV testenv/testUsdUtilsCreateNewUsdzPackage
     DIFF_COMPARE contents_udim.txt
     EXPECTED_RETURN_CODE 0
@@ -389,7 +399,7 @@ pxr_register_test(testUsdUtilsCreateNewUsdzPackageUdim
 
 pxr_register_test(testUsdUtilsCreateNewUsdzPackageRemapClipsDir
    PYTHON
-   COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check remapClipsDir.usdz remapClipsDir/root.usda -l contents_remap_clips_dir.txt"
+   COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage remapClipsDir.usdz remapClipsDir/root.usda -l contents_remap_clips_dir.txt"
    TESTENV testenv/testUsdUtilsCreateNewUsdzPackage
    DIFF_COMPARE contents_remap_clips_dir.txt
    EXPECTED_RETURN_CODE 0
@@ -397,7 +407,7 @@ pxr_register_test(testUsdUtilsCreateNewUsdzPackageRemapClipsDir
 
 pxr_register_test(testUsdUtilsCreateNewUsdzPackageEditInPlace
    PYTHON
-   COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --editLayersInPlace --expectedDirtyLayers nestedUsdz/combined.usda --check combined.usdz nestedUsdz/combined.usda -l contents_nested_in_place.txt"
+   COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --editLayersInPlace --expectedDirtyLayers nestedUsdz/combined.usda combined.usdz nestedUsdz/combined.usda -l contents_nested_in_place.txt"
    TESTENV testenv/testUsdUtilsCreateNewUsdzPackage
    DIFF_COMPARE contents_nested_in_place.txt
    EXPECTED_RETURN_CODE 0

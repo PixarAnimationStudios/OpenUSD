@@ -93,12 +93,15 @@ riley::ShadingNode _CreateNode(
     HdSceneDelegate *sceneDelegate,
     const SdfPath& riProjectionPath)
 {
-    VtValue resourceValue = 
-        sceneDelegate->Get(riProjectionPath, _tokens->resource);
-
-    auto resource = resourceValue.UncheckedGet<HdMaterialNode2>();
-
     riley::ShadingNode node;
+
+    VtValue resourceValue =
+        sceneDelegate->Get(riProjectionPath, _tokens->resource);
+    if (!resourceValue.IsHolding<HdMaterialNode2>()) {
+        node.type = riley::ShadingNode::Type::k_Invalid;
+        return node;
+    }
+    auto resource = resourceValue.UncheckedGet<HdMaterialNode2>();
 
     SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrEntry = 

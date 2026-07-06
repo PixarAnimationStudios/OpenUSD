@@ -229,6 +229,7 @@ function(pxr_library NAME)
         PYTHON_PRIVATE_HEADERS
         PYTHON_CPPFILES
         PYMODULE_CPPFILES
+        PYMODULE_DIRS
         PYMODULE_FILES
         PYSIDE_UI_FILES
     )
@@ -427,12 +428,15 @@ function(pxr_library NAME)
         LIB_INSTALL_PREFIX_RESULT libInstallPrefix
     )
 
-    if(PXR_ENABLE_PYTHON_SUPPORT AND (args_PYMODULE_CPPFILES OR args_PYMODULE_FILES OR args_PYSIDE_UI_FILES))
+    if(PXR_ENABLE_PYTHON_SUPPORT AND
+       (args_PYMODULE_CPPFILES OR args_PYMODULE_DIRS OR
+        args_PYMODULE_FILES OR args_PYSIDE_UI_FILES))
         list(APPEND pythonModuleIncludeDirs ${PYTHON_INCLUDE_DIRS})
 
         _pxr_python_module(
             ${NAME}
             WRAPPED_LIB_INSTALL_PREFIX "${libInstallPrefix}"
+            PYTHON_DIRS ${args_PYMODULE_DIRS}
             PYTHON_FILES ${args_PYMODULE_FILES}
             PYSIDE_UI_FILES ${args_PYSIDE_UI_FILES}
             CPPFILES ${args_PYMODULE_CPPFILES}
@@ -474,7 +478,7 @@ function(pxr_setup_python)
     string(REPLACE ";" ", " pyModulesStr "${converted}")
 
     # Install a pxr __init__.py with an appropriate __all__
-    _get_install_dir(lib/python/pxr installPrefix)
+    _get_install_dir(${PXR_PYTHON_INSTALL_DIR}/pxr installPrefix)
 
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
          "__all__ = [${pyModulesStr}]\n")
@@ -776,7 +780,7 @@ function(pxr_register_test TEST_NAME)
             CLEAN_OUTPUT
             EXPECTED_RETURN_CODE
             TESTENV TESTENV_DEST
-            WARN WARN_PERCENT HARD_WARN FAIL FAIL_PERCENT HARD_FAIL)
+            WARN WARN_PERCENT HARD_WARN FAIL FAIL_PERCENT HARD_FAIL LABELS)
     set(MULTI_VALUE_ARGS DIFF_COMPARE IMAGE_DIFF_COMPARE ENV PRE_PATH POST_PATH)
 
     cmake_parse_arguments(bt
@@ -812,12 +816,20 @@ function(pxr_register_test TEST_NAME)
     # e.g. by changing the environment, changing the expected return code, etc.
     set(testWrapperCmd ${PROJECT_SOURCE_DIR}/cmake/macros/testWrapper.py --verbose)
 
-    # For Emscripten we want to explicitly run the test with node.  The tests
-    # themselves are javascript files which contain a shebang, however if we are
-    # trying to run them on windows this will result in errors when trying to
-    # spawn the test process.
+    # For Emscripten we want to explicitly run the test with the emsdk provided
+    # node (this make sure we are using emscripten with compatible node and not
+    # use an outdated node available on the system). The test themselves are
+    # javascript files which contain a shebang, however if we are trying to run
+    # them on windows this will result in errors when trying to spawn the test
+    # process.
     if (EMSCRIPTEN)
-        set(testWrapperCmd ${testWrapperCmd} --test-runner node)
+        if (DEFINED ENV{EMSDK_NODE})
+            message(STATUS "Using EMSDK_NODE node for tests: $ENV{EMSDK_NODE}")
+            set(testWrapperCmd ${testWrapperCmd} --test-runner $ENV{EMSDK_NODE})
+        else()
+            message(STATUS "EMSDK_NODE not set, falling back to system provided node")
+            set(testWrapperCmd ${testWrapperCmd} --test-runner node)
+        endif()
     endif()
 
     if (bt_STDOUT_REDIRECT)
@@ -1015,7 +1027,11 @@ function(pxr_register_test TEST_NAME)
     # Ensure that Python imports the Python files built by this build.
     # On Windows convert backslash to slash and don't change semicolons
     # to colons.
-    set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/lib/python;$ENV{PYTHONPATH}")
+    if(IS_ABSOLUTE "${PXR_PYTHON_INSTALL_DIR}")
+        set(_testPythonPath "${PXR_PYTHON_INSTALL_DIR};$ENV{PYTHONPATH}")
+    else()
+        set(_testPythonPath "${CMAKE_INSTALL_PREFIX}/${PXR_PYTHON_INSTALL_DIR};$ENV{PYTHONPATH}")
+    endif()
     if(WIN32)
         string(REGEX REPLACE "\\\\" "/" _testPythonPath "${_testPythonPath}")
     else()
@@ -1042,7 +1058,9 @@ function(pxr_register_test TEST_NAME)
     if (bt_RUN_SERIAL)
         set_tests_properties(${TEST_NAME} PROPERTIES RUN_SERIAL TRUE)
     endif()
-
+    if (bt_LABELS)
+        set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${bt_LABELS}")
+    endif()
 endfunction() # pxr_register_test
 
 function(pxr_setup_plugins)
@@ -1340,15 +1358,22 @@ endfunction() # pxr_tests_prologue
 
 function(pxr_build_python_documentation)
     set(BUILT_XML_DOCS "${PROJECT_BINARY_DIR}/docs/doxy_xml")
-    set(CONVERT_DOXYGEN_TO_PYTHON_DOCS_SCRIPT 
+    set(CONVERT_DOXYGEN_TO_PYTHON_DOCS_SCRIPT
        "${PROJECT_SOURCE_DIR}/docs/python/convertDoxygen.py")
-    set(INSTALL_PYTHON_PXR_ROOT "${CMAKE_INSTALL_PREFIX}/lib/python/pxr")
+
+    # Compute the absolute path to the Python bindings install directory.
+    if(IS_ABSOLUTE "${PXR_PYTHON_INSTALL_DIR}")
+        set(_pythonInstallDirAbs "${PXR_PYTHON_INSTALL_DIR}")
+    else()
+        set(_pythonInstallDirAbs "${CMAKE_INSTALL_PREFIX}/${PXR_PYTHON_INSTALL_DIR}")
+    endif()
+    set(INSTALL_PYTHON_PXR_ROOT "${_pythonInstallDirAbs}/pxr")
 
     # Get the list of pxr python modules and run a install command for each
     get_property(pxrPythonModules GLOBAL PROPERTY PXR_PYTHON_MODULES)
     # Create string of module names, joined with ","
     string(REPLACE ";" "," pxrPythonModulesStr "${pxrPythonModules}")
-    # Run convertDoxygen on the module list, setting PYTHONPATH 
+    # Run convertDoxygen on the module list, setting PYTHONPATH
     # to the install path for the USD Python modules
     if (WIN32)
         set(DLL_PATH_FLAG "--dllPath \"${CMAKE_INSTALL_PREFIX}/lib;${CMAKE_INSTALL_PREFIX}/bin;${CMAKE_INSTALL_PREFIX}/plugin/usd;${CMAKE_INSTALL_PREFIX}/share/usd/examples/plugin\"")
@@ -1362,7 +1387,7 @@ function(pxr_build_python_documentation)
             COMMAND ${PYTHON_EXECUTABLE} ${CONVERT_DOXYGEN_TO_PYTHON_DOCS_SCRIPT} \
                 --package pxr --module ${pxrPythonModulesStr} \
                 --inputIndex ${BUILT_XML_DOCS}/index.xml \
-                --pythonPath ${CMAKE_INSTALL_PREFIX}/lib/python \
+                --pythonPath ${_pythonInstallDirAbs} \
                 ${DLL_PATH_FLAG} \
                 --output ${INSTALL_PYTHON_PXR_ROOT})
         if (NOT \${convert_doxygen_return_code} EQUAL \"0\")

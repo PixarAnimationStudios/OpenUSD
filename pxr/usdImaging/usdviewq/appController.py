@@ -47,7 +47,7 @@ from .configController import ConfigController
 
 # Common Utilities
 from .common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
-                     GetPropertyColor, GetPropertyTextFont,
+                     GetIconPath, GetPropertyColor, GetPropertyTextFont,
                      Timer, Drange, BusyContext, DumpMallocTags,
                      GetValueAndDisplayString, ResetSessionVisibility,
                      InvisRootPrims, GetAssetCreationTime, LayerInfo,
@@ -339,7 +339,8 @@ class AppController(QtCore.QObject):
         app = QtWidgets.QApplication.instance()
         app.setStyleSheet(sheetString)
 
-        
+        self._updateApplicationIcon()
+
     def __del__(self):
         # This is needed to free Qt items before exit; Qt hits failed GTK
         # assertions without it.
@@ -415,7 +416,7 @@ class AppController(QtCore.QObject):
             self._mainWindow.show()
             self._mainWindow.setFocus()
             self._mainWindow.activateWindow()
-            
+
             # Install our custom event filter.  The member assignment of the
             # filter is just for lifetime management
             from .appEventFilter import AppEventFilter
@@ -2829,10 +2830,16 @@ class AppController(QtCore.QObject):
         extensions = list(filter(builtInFiles, extensions)) + \
                      list(filter(notBuiltInFiles, extensions))
         fileFilter = "USD Compatible Files (" + " ".join("*." + e for e in extensions) + ")" 
+
+        # Default to the location of the current file, if there is one;
+        # otherwise, use cwd.
+        openDir = os.path.dirname(self._parserData.usdFile) \
+            if self._parserData.usdFile else "."
+
         (filename, _) = QtWidgets.QFileDialog.getOpenFileName(
             self._mainWindow,
-            caption="Select file",
-            dir=".",
+            caption="Open File",
+            dir=openDir,
             filter=fileFilter,
             selectedFilter=fileFilter)
 
@@ -5510,6 +5517,31 @@ class AppController(QtCore.QObject):
             return
         if self._stageView.PollForAsynchronousUpdates():
             self._usdviewApi.UpdateViewport()
+
+    def _updateApplicationIcon(self):
+        # Update the application icon based on the appIconMode preference.
+        iconMode = self._dataModel.viewSettings.appIconMode
+        if iconMode == "Light":
+            iconFile = "usdview-light.svg"
+        elif iconMode == "Dark":
+            iconFile = "usdview-dark.svg"
+        elif iconMode == "Blue":
+            iconFile = "usdview-blue.svg"
+        else:
+            # Automatic: detect system theme via palette colors. Note that the
+            # stylesheet doesn't affect the palette.
+            palette = QtGui.QPalette()
+            windowColor = palette.color(QtGui.QPalette.ColorRole.Window)
+            textColor = palette.color(QtGui.QPalette.ColorRole.WindowText)
+            isDark = windowColor.lightness() < textColor.lightness()
+            iconFile = "usdview-dark.svg" if isDark else "usdview-light.svg"
+
+        app = QtWidgets.QApplication.instance()
+
+        # Note: on Windows, this icon doesn't always seem to be reflected in
+        # the taskbar. A platform-specific workaround might be required.
+        iconPath = GetIconPath(iconFile)
+        app.setWindowIcon(QtGui.QIcon(iconPath))
 
     def getActiveRenderSettingsPrim(self):
         """Returns the active render settings prim, if any. Called when

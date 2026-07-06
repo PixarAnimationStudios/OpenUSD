@@ -41,9 +41,27 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 
 -- glsl HdxRenderPass.WriteOitLayersToBufferCommon
 
+// PackRGBA takes a float4 value and packs it into a UINT (8 bits / float)
+uint PackRGBA(vec4 unpackedInput)
+{
+    uvec4 u = uvec4(unpackedInput * vec4(255, 255, 255, 1.0f));
+    uint packedOutput = (u.w << 24u) | (u.z << 16u) | (u.y << 8u) | u.x;
+	return packedOutput;
+}
+
+// ToRGBE - takes a float RGB value and converts it to a float RGB value with a shared exponent
+vec4 ToRGBE(vec3 inColor)
+{
+	float base = max(inColor.r, max(inColor.g, inColor.b));
+	int e;
+	float m = frexp(base, e);
+    vec3 rgb = clamp(inColor.rgb / exp2(float(e)), 0.0, 1.0);
+	return vec4(rgb, e + 127);
+}
+
 void RenderOutputImpl(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
-    #if defined(HD_HAS_hdxOitDataBuffer)
+    #if defined(HD_HAS_hdxOitColorBuffer) || defined(HD_HAS_hdxOitDataBuffer)
 
     const int screenWidth = int(HdGet_oitScreenSize().x);
     const int screenHeight = int(HdGet_oitScreenSize().y);
@@ -65,7 +83,12 @@ void RenderOutputImpl(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         if (screenIndex < counterBufferSize) {
             int prevIndex =
                 ATOMIC_EXCHANGE(hdxOitCounterBuffer[screenIndex+1], writeIndex);
+            #if defined(HD_HAS_hdxOitDataBuffer)
             hdxOitDataBuffer[writeIndex] = color;
+            #else
+            uint packedColor = PackRGBA(ToRGBE(color.rgb));
+            hdxOitColorBuffer[writeIndex] = packedColor;
+            #endif
 
             // Note that we have a choice here to either pick gl_FragCoord.z or
             // the depth value from Peye. The former is obtained by applying
@@ -87,8 +110,23 @@ void RenderOutputImpl(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
             // OIT resolve shader cannot compare depths in the OIT list
             // against the depth buffer unless it takes the perspective
             // transform into account.
-            hdxOitDepthBuffer[writeIndex] = Peye.z / Peye.w;
-            hdxOitIndexBuffer[writeIndex] = prevIndex;
+            #if defined(HD_HAS_hdxOitDataBuffer)
+            oitJointBufferBar[writeIndex].hdxOitDepthBuffer = Peye.z / Peye.w;
+            #else
+            float c = HdGet_projectionMatrix()[2][2];
+            float d = HdGet_projectionMatrix()[2][3];
+
+            // Calculate the near and far planes
+            float nearPlane = d / (2.0 * (c + 1.0));
+            float farPlane = d / (2.0 * (c - 1.0));
+            float depth = gl_FragCoord.z;
+            float linearDepth = (2.0 * nearPlane) / (farPlane + nearPlane - depth * (farPlane - nearPlane));
+
+            oitJointBufferBar[writeIndex].hdxOitTransmissionDepthBuffer =
+                (uint(color.a * 0xFF) & 0xFFu) | ((uint(linearDepth * 0xFFFFFF) & 0xFFFFFFu) << 8);
+            #endif
+
+            oitJointBufferBar[writeIndex].hdxOitIndexBuffer = prevIndex;
         }
     } else {
         // We may overrun the counter buffer integer and wrap back to 0 if

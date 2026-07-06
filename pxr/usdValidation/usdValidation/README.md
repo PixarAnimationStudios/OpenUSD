@@ -338,6 +338,70 @@ registry.RegisterPluginValidator(validatorName, stageTaskFn, _ValidatorFixers())
 Note that UsdValidationRegistry does not manage fixers directly, and these are 
 held by their respective UsdValidationValidator(s).
 
+## Listening for Validator Registration  {#listening_for_registration}
+
+When validators or suites are registered via the explicit APIs
+(`RegisterValidator`, `RegisterValidatorSuite`) and not plugin registration
+APIs, the registry sends a `TfNotice`-based notification. Clients can
+subscribe to be notified when new validators become available. No notice is
+sent for plugin-based registration, since plugin metadata is already
+available at registry initialization time.
+
+This is useful in scenarios such as:
+
+- **Validation UI population**: A UI that lists available validators can
+  populate itself from the registry at initialization time (covering all
+  plugin validators whose metadata is already known). For validators
+  registered explicitly at runtime — for example, by a script or tool
+  running in the same session — the UI can listen for
+  `DidRegisterValidator` / `DidRegisterValidatorSuite` notices to add
+  newly registered validators without requiring a full refresh.
+- **Dynamic context management**: A client that maintains a
+  `UsdValidationContext` can listen for registration notices to detect
+  when new validators matching its criteria have been added, and
+  dirty or recreate its context accordingly.
+
+### C++
+
+```cpp
+#include "pxr/usdValidation/usdValidation/notice.h"
+
+struct MyListener : public TfWeakBase {
+    void OnValidatorRegistered(
+        const UsdValidationNotice::DidRegisterValidator &notice) {
+        const UsdValidationValidator *validator = notice.GetValidator();
+        // ... react to the new validator ...
+    }
+};
+
+MyListener listener;
+TfNotice::Register(
+    TfCreateWeakPtr(&listener),
+    &MyListener::OnValidatorRegistered);
+```
+
+### Python
+
+```python
+from pxr import Tf, UsdValidation
+
+def _on_validator_registered(notice, sender):
+    validator = notice.GetValidator()
+    # ... react to the new validator ...
+
+key = Tf.Notice.RegisterGlobally(
+    UsdValidation.Notice.DidRegisterValidator,
+    _on_validator_registered
+)
+
+# Revoke when no longer needed:
+key.Revoke()
+```
+
+For suites, use `UsdValidationNotice::DidRegisterValidatorSuite` (C++) or
+`UsdValidation.Notice.DidRegisterValidatorSuite` (Python) and call
+`notice.GetValidatorSuite()`.
+
 ## Creating Custom Validators in Python  {#python_validators}
 
 Custom validators can be implemented in Python using either of the two

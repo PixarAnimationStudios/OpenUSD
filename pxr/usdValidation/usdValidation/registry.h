@@ -113,11 +113,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Clients can also register validators by explicitly providing
 /// UsdValidationValidatorMetadata, instead of relying on plugInfo.json for the
-/// same. Though it's recommended to use appropriate APIs when validator metadata
-/// is being provided in the plugInfo.json.
+/// same. Though it's recommended to use appropriate APIs when validator
+/// metadata is being provided in the plugInfo.json. And DidRegisterValidator
+/// notice is sent for validators registered by explicitly providing metadata,
+/// but not for plugin based registration since plugin validator metadata is
+/// already available to clients at registry initialization time.
 ///
-/// Example of validator registration by explicitly providing metadata, when it's
-/// not available in the plugInfo.json:
+/// Example of validator registration by explicitly providing metadata, when
+/// it's not available in the plugInfo.json:
 ///
 /// ```cpp
 /// {
@@ -190,6 +193,10 @@ public:
     ///
     /// \p fixers can be provided to associate fixers with the validator.
     ///
+    /// Note that **no** UsdValidationNotice::DidRegisterValidator notice is
+    /// sent for plugin-based registration, since plugin validator metadata is
+    /// already available to clients at registry initialization time.
+    ///
     /// \sa HasValidator
     USDVALIDATION_API
     void RegisterPluginValidator(const TfToken &validatorName,
@@ -211,6 +218,10 @@ public:
     /// error.
     ///
     /// \p fixers can be provided to associate fixers with the validator.
+    ///
+    /// Note that **no** UsdValidationNotice::DidRegisterValidator notice is
+    /// sent for plugin-based registration, since plugin validator metadata is
+    /// already available to clients at registry initialization time.
     ///
     /// \sa HasValidator
     USDVALIDATION_API
@@ -234,6 +245,10 @@ public:
     ///
     /// \p fixers can be provided to associate fixers with the validator.
     ///
+    /// Note that **no** UsdValidationNotice::DidRegisterValidator notice is
+    /// sent for plugin-based registration, since plugin validator metadata is
+    /// already available to clients at registry initialization time.
+    ///
     /// \sa HasValidator
     USDVALIDATION_API
     void RegisterPluginValidator(const TfToken &validatorName,
@@ -245,7 +260,9 @@ public:
     ///
     /// Clients can explicitly provide validator metadata, which is then used to
     /// register a validator and associate it with name metadata. The metadata
-    /// here is not specified in a plugInfo.
+    /// here is not specified in a plugInfo. Upon successful registration, the
+    /// validator's metadata becomes immediately available via registry query
+    /// methods such as GetAllValidatorMetadata, etc.
     ///
     /// Note calling RegisterValidator with a validator name which is already
     /// registered will result in a coding error. HasValidator can be used to
@@ -256,6 +273,18 @@ public:
     /// error.
     ///
     /// \p fixers can be provided to associate fixers with the validator.
+    ///
+    /// A UsdValidationNotice::DidRegisterValidator notice is sent globally
+    /// after a successful registration of the validator, which clients can
+    /// listen to for dynamic discovery of newly registered validators. It is
+    /// important to note that this function should not be used from within a
+    /// plugin's TF_REGISTRY_FUNCTION, which could result in a listener to
+    /// respond to the notice causing potential unexpected behavior or deadlock,
+    /// since the plugin is still being loaded at that time. Instead use
+    /// RegisterPluginValidator APIs from within a plugin's
+    /// TF_REGISTRY_FUNCTION, which does not send out any notice, since plugin
+    /// validator metadata is already available to clients at registry
+    /// initialization time.
     ///
     /// \sa HasValidator
     USDVALIDATION_API
@@ -268,7 +297,9 @@ public:
     ///
     /// Clients can explicitly provide validator metadata, which is then used to
     /// register a validator and associate it with name metadata. The metadata
-    /// here is not specified in a plugInfo.
+    /// here is not specified in a plugInfo. Upon successful registration, the
+    /// validator's metadata becomes immediately available via registry query
+    /// methods such as GetAllValidatorMetadata, etc.
     ///
     /// Note calling RegisterValidator with a validator name which is already
     /// registered will result in a coding error. HasValidator can be used to
@@ -279,6 +310,10 @@ public:
     /// error.
     ///
     /// \p fixers can be provided to associate fixers with the validator.
+    ///
+    /// A UsdValidationNotice::DidRegisterValidator notice is sent globally
+    /// after a successful registration of the validator, which clients can
+    /// listen to for dynamic discovery of newly registered validators.
     ///
     /// \sa HasValidator
     USDVALIDATION_API
@@ -291,7 +326,9 @@ public:
     ///
     /// Clients can explicitly provide validator metadata, which is then used to
     /// register a validator and associate it with name metadata. The metadata
-    /// here is not specified in a plugInfo.
+    /// here is not specified in a plugInfo. Upon successful registration, the
+    /// validator's metadata becomes immediately available via registry query
+    /// methods such as GetAllValidatorMetadata, etc.
     ///
     /// Note calling RegisterValidator with a validator name which is already
     /// registered will result in a coding error. HasValidator can be used to
@@ -302,6 +339,10 @@ public:
     /// error.
     ///
     /// \p fixers can be provided to associate fixers with the validator.
+    ///
+    /// A UsdValidationNotice::DidRegisterValidator notice is sent globally
+    /// after a successful registration of the validator, which clients can
+    /// listen to for dynamic discovery of newly registered validators.
     ///
     /// \sa HasValidator
     USDVALIDATION_API
@@ -327,6 +368,10 @@ public:
     /// Also note any other failure to register a validator results in a coding
     /// error.
     ///
+    /// Note that **no** UsdValidationNotice::DidRegisterValidatorSuite notice
+    /// is sent for plugin-based registration, since plugin validator suite
+    /// metadata is already available to clients at registry initialization time.
+    ///
     /// \sa HasValidatorSuite
     USDVALIDATION_API
     void RegisterPluginValidatorSuite(
@@ -340,6 +385,10 @@ public:
     /// register a suite and associate it with name metadata. The metadata
     /// here is not specified in a plugInfo.
     ///
+    /// Upon successful registration, the validator suite's metadata becomes
+    /// immediately available via registry query methods such as
+    /// GetAllValidatorMetadata, etc.
+    ///
     /// Note UsdValidationValidatorMetadata::isSuite must be set to true in the
     /// plugInfo, else the validatorSuite will not be registered.
     ///
@@ -350,6 +399,18 @@ public:
     ///
     /// Also note any other failure to register a validator results in a coding
     /// error.
+    ///
+    /// A UsdValidationNotice::DidRegisterValidatorSuite notice is sent globally
+    /// after a successful registration of the validator suite, which clients
+    /// can listen to for dynamic discovery of newly registered validator
+    /// suites. It is important to note that this function should not be used
+    /// from within a plugin's TF_REGISTRY_FUNCTION, which could result in a
+    /// listener to respond to the notice causing potential unexpected behavior
+    /// or deadlock, since the plugin is still being loaded at that time.
+    /// Instead use RegisterPluginValidatorSuite API from within a plugin's
+    /// TF_REGISTRY_FUNCTION, which does not send out any notice, since plugin
+    /// validator suite metadata is already available to clients at registry 
+    /// initialization time.
     ///
     /// \sa HasValidatorSuite
     USDVALIDATION_API

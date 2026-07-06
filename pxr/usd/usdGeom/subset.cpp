@@ -547,9 +547,6 @@ _GetElementCountAtTime(
                 *isCountTimeVarying = tviAttr.ValueMightBeTimeVarying();
             }
         }
-    } else {
-        TF_CODING_ERROR("Unsupported element type '%s'.",
-                        elementType.GetText());
     }
 
     return elementCount;
@@ -557,31 +554,30 @@ _GetElementCountAtTime(
 
 static bool _ValidateGeomType(const UsdGeomImageable &geom, const TfToken &elementType) {
     const UsdPrim prim = geom.GetPrim();
-    if (prim.IsA<UsdGeomMesh>()) {
-        if (elementType != UsdGeomTokens->face && elementType != UsdGeomTokens->point 
-            && elementType != UsdGeomTokens->edge) {
-            TF_CODING_ERROR("Unsupported element type '%s' for prim type Mesh.",
-                            elementType.GetText());
-            return false;
+
+    if (elementType == UsdGeomTokens->face) {
+        if (prim.IsA<UsdGeomMesh>() || prim.IsA<UsdGeomTetMesh>()) {
+            return true;
         }
-    } else if (prim.IsA<UsdGeomTetMesh>()) {
-        if (elementType != UsdGeomTokens->face && elementType != UsdGeomTokens->tetrahedron) {
-            TF_CODING_ERROR("Unsupported element type '%s' for prim type TetMesh.",
-                            elementType.GetText());
-            return false;
+    } else if (elementType == UsdGeomTokens->point) {
+        if (prim.IsA<UsdGeomPointBased>()) {
+            return true;
         }
-    } else if (prim.IsA<UsdGeomBasisCurves>()) {
-        if (elementType != UsdGeomTokens->segment) {
-            TF_CODING_ERROR("Unsupported element type '%s' for prim type BasisCurves.",
-                            elementType.GetText());
-            return false;
+    } else if (elementType == UsdGeomTokens->edge) {
+        if (prim.IsA<UsdGeomMesh>()) {
+            return true;
         }
-    } else {
-        TF_CODING_ERROR("Unsupported prim type '%s'.",
-                        elementType.GetText());
-        return false;
+    } else if (elementType == UsdGeomTokens->segment) {
+        if (prim.IsA<UsdGeomBasisCurves>()) {
+            return true;
+        }
+    } else if (elementType == UsdGeomTokens->tetrahedron) {
+        if (prim.IsA<UsdGeomTetMesh>()) {
+            return true;
+        }
     }
-    return true;
+
+    return false;
 }
 
 VtVec2iArray UsdGeomSubset::_GetIndexPairs(const UsdTimeCode t, 
@@ -615,6 +611,9 @@ UsdGeomSubset::GetUnassignedIndices(
 {
     VtIntArray result;
     if (!_ValidateGeomType(geom, elementType)) {
+        TF_CODING_ERROR("Invalid geom type %s for elementType %s.",
+                        geom.GetPrim().GetTypeName().GetText(),
+                        elementType.GetText());
         return result;
     }
 
@@ -858,8 +857,11 @@ UsdGeomSubset::ValidateFamily(
     std::string * const reason)
 {
     if (!_ValidateGeomType(geom, elementType)) {
-        *reason += TfStringPrintf("Invalid geom type for elementType %s.",
+        if (reason) {
+            *reason += TfStringPrintf("Invalid geom type %s for elementType %s.",
+                geom.GetPrim().GetTypeName().GetText(),    
                 elementType.GetText());
+        }
         return false;
     }
 

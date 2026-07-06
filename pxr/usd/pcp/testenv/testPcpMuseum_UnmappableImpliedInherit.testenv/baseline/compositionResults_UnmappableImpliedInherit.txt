@@ -1,0 +1,30 @@
+Loading @UnmappableImpliedInherit/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Model_1>
+
+Prim Stack:
+    root.usda            /Model_1
+    model.usda           /Model
+
+Child names:
+     ['Instance', 'Class']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Instance>
+
+Prim Stack:
+    root.usda            /Model_1/Instance
+    model.usda           /Model/Instance
+    model.usda           /Model_1/Class
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Class>
+
+Prim Stack:
+    root.usda            /Model_1/Class
+

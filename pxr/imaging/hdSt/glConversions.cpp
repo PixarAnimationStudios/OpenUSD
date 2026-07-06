@@ -262,6 +262,7 @@ HdStGLConversions::GetGLSLTypename(HdType type)
     case HdTypeBool:
         return _glTypeNames->_bool;
 
+    case HdTypeInt16:
     case HdTypeInt32:
         return _glTypeNames->_int;
     case HdTypeInt32Vec2:
@@ -271,6 +272,8 @@ HdStGLConversions::GetGLSLTypename(HdType type)
     case HdTypeInt32Vec4:
         return _glTypeNames->ivec4;
 
+    case HdTypeUInt8:
+    case HdTypeUInt16:
     case HdTypeUInt32:
         return _glTypeNames->_uint;
     case HdTypeUInt32Vec2:

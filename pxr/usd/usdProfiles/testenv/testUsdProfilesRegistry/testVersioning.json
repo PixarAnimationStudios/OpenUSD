@@ -1,0 +1,58 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Profiles": {
+                    "Capabilities": {
+                        "usd": {
+                            "docstring": "Root USD capability",
+                            "name": "USD"
+                        },
+                        "usd.geom": {
+                            "predecessors": ["usd"],
+                            "docstring": "USD geometry schemas",
+                            "name": "USD Geom"
+                        },
+                        "usd.physics": {
+                            "predecessors": ["usd.geom"],
+                            "docstring": "USD physics v1 (original)",
+                            "name": "USD Physics"
+                        },
+                        "usd.physics_v2": {
+                            "predecessors": [
+                                "usd.geom",
+                                {"name": "usd.physics", "deprecated": true}
+                            ],
+                            "docstring": "USD physics v2 (adds usd.shade dependency)",
+                            "name": "USD Physics v2"
+                        },
+                        "yoyo.tool_v2": {
+                            "predecessors": ["usd"],
+                            "docstring": "Yoyodyne tool version 2",
+                            "name": "Yoyo Tool v2"
+                        },
+                        "yoyo.tool_v5": {
+                            "predecessors": [
+                                "usd",
+                                {"name": "yoyo.tool_v2", "deprecated": true}
+                            ],
+                            "docstring": "Yoyodyne tool version 5, supersedes v2",
+                            "name": "Yoyo Tool v5"
+                        },
+                        "profile.sim": {
+                            "predecessors": ["usd.physics_v2"],
+                            "docstring": "Simulation profile requiring physics v2",
+                            "name": "Simulation Profile",
+                            "isProfile": true
+                        }
+                    },
+                    "CapabilityStyles": {
+                        "core": "fill:#cce5ff,stroke:#004085"
+                    }
+                }
+            },
+            "Name": "TestVersioning",
+            "Type": "resource"
+        }
+    ]
+}

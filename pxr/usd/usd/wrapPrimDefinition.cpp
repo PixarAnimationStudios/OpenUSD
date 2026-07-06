@@ -9,6 +9,7 @@
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/usd/usd/prim.h"
 
+#include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/external/boost/python.hpp"
 
@@ -94,8 +95,15 @@ _WrapAttributeGetFallbackValue(const UsdPrimDefinition::Attribute &self)
 
 // Override that prevents crashing if an attempt is made to call data access 
 // methods on an invalid UsdPrimDefinition::Property from python.
+
+// Store the original __getattribute__ so we can dispatch to it after verifying
+// validity. Note that this TfPyObjWrapper is intentionally leaked to avoid
+// running Python refcount operations in its d'tor during process shutdown, 
+// which is unsafe if Python has been finalized.
+static TfStaticData<TfPyObjWrapper> _object__getattribute__;
+
 static object
-__getattribute__Impl(object selfObj, const char *name, const object &getattribute) {
+__getattribute__(object selfObj, const char *name) {
     // Allow attribute lookups if the attribute name starts with '__', if the
     // object's Property is valid, or if the attribute is one of a specific
     // inclusion list.
@@ -105,7 +113,7 @@ __getattribute__Impl(object selfObj, const char *name, const object &getattribut
         strcmp(name, "IsAttribute") == 0 ||
         strcmp(name, "IsRelationship") == 0) {
         // Dispatch to object's __getattribute__.
-        return getattribute(selfObj, name);
+        return (*_object__getattribute__)(selfObj, name);
     } else {
         // Otherwise raise a runtime error.
         TfPyThrowRuntimeError(
@@ -198,15 +206,10 @@ void wrapUsdPrimDefinition()
             .def("GetVariability", &This::Property::GetVariability)
             .def("GetDocumentation", &This::Property::GetDocumentation)
             ;
-        // Override __getattribute__ to prevent crashing if an attempt is made
-        // to call data access methods on an invalid UsdPrimDefinition::Property
-        // from python.
-        static object __getattribute__ = object(clsObj.attr("__getattribute__"));
-        clsObj.def("__getattribute__", 
-            +[](object selfObj, const char *name) {
-                return __getattribute__Impl(
-                    selfObj, name, __getattribute__);
-            });
+
+        // Save existing __getattribute__ and replace.
+        *_object__getattribute__ = object(clsObj.attr("__getattribute__"));
+        clsObj.def("__getattribute__", __getattribute__);
     }
 
     class_<This::Attribute, bases<This::Property>>("Attribute")

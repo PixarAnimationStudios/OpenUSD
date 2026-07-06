@@ -12,6 +12,7 @@ pxr_library(usdHydra
 
     PUBLIC_CLASSES
         discoveryPlugin
+        renderPassAPI
 
     PUBLIC_HEADERS
         api.h

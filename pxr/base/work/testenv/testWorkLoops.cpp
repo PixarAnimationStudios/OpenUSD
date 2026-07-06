@@ -10,10 +10,12 @@
 
 #include "pxr/base/work/threadLimits.h"
 
-#include "pxr/base/tf/stopwatch.h"
+#include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/tf/diagnosticTrap.h"
+#include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticData.h"
-#include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/tf/stopwatch.h"
 
 #include <tbb/concurrent_vector.h>
 #include <tbb/concurrent_unordered_set.h>
@@ -160,7 +162,8 @@ _DoErrorTest(bool verify, const size_t numIterations)
                                   std::hash<std::thread::id>> threadIds;
     std::vector<int> v;
     _PopulateVector(arraySize, &v);
-    
+
+    TfDiagnosticTrap trap;
     TfErrorMark m;
 
     TfStopwatch sw;
@@ -170,6 +173,8 @@ _DoErrorTest(bool verify, const size_t numIterations)
         WorkParallelForN(arraySize, [&](size_t begin, size_t end){
             threadIds.insert(std::this_thread::get_id());
             TF_RUNTIME_ERROR("Cross-thread transfer test error");
+            TF_WARN("Cross-thread transfer test warning");
+            TF_STATUS("Cross-thread transfer test status");
         });
 
         if (threadIds.size() < 2) {
@@ -180,8 +185,16 @@ _DoErrorTest(bool verify, const size_t numIterations)
 
     if (verify) {
         TF_AXIOM(numIterations == 1);
-        TF_AXIOM(!m.IsClean() && 
-        (static_cast<size_t>(std::distance(m.begin(),m.end())) == arraySize));
+        TF_AXIOM(!m.IsClean() &&
+                 (static_cast<size_t>(
+                     std::distance(m.begin(), m.end())) == arraySize));
+
+        TF_AXIOM(!trap.IsClean());
+        TF_AXIOM(!trap.HasErrors());
+        TF_AXIOM((trap.CountMatching(
+                      [](TfWarning const &) { return true; }) == arraySize));
+        TF_AXIOM((trap.CountMatching(
+                      [](TfStatus const &) { return true; }) == arraySize));
     }
 
     sw.Stop();

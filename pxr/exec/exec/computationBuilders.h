@@ -33,6 +33,7 @@
 #include "pxr/usd/sdf/path.h"
 
 #include <memory>
+#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -331,7 +332,7 @@ struct Exec_ComputationBuilderComputationValueSpecifier
     ///     // Register a prim computation that returns the value of another
     ///     // prim computation, using a non-default input name.
     ///     self.PrimComputation(_tokens->myComputation)
-    ///         .Callback<double>(+[](const VdfContext &ctx) {
+    ///         .Callback(+[](const VdfContext &ctx) -> double {
     ///             const double *const valuePtr =
     ///                 ctx.GetInputValuePtr<double>(_tokens->myInputName);
     ///             return valuePtr ? *valuePtr : 0.0;
@@ -363,7 +364,7 @@ struct Exec_ComputationBuilderComputationValueSpecifier
     ///     // Register a prim computation that returns the value of another
     ///     // prim computation, using a non-default input name.
     ///     self.PrimComputation(_tokens->myComputation)
-    ///         .Callback<int>(+[](const VdfContext &ctx) {
+    ///         .Callback(+[](const VdfContext &ctx) -> int {
     ///             return ctx.GetInputValue<int>(_tokens->myInputName);
     ///         })
     ///         .Inputs(
@@ -391,12 +392,12 @@ struct Exec_ComputationBuilderComputationValueSpecifier
     /// {
     ///     // Register a dispatched prim computation.
     ///     self.DispatchedPrimComputation(_tokens->myDispatchedComputation)
-    ///         .Callback<double>(+[](const VdfContext &) { return 11.0; })
+    ///         .Callback(+[](const VdfContext &) -> double { return 11.0; })
     ///
     ///     // Register a prim computation that requests the above dispatched
     ///     // computation via uses relationship targets.
     ///     self.PrimComputation(_tokens->myComputation)
-    ///         .Callback<double>(+[](const VdfContext &ctx) {
+    ///         .Callback(+[](const VdfContext &ctx) -> double {
     ///             const double *const valuePtr =
     ///                 ctx.GetInputValuePtr<double>(
     ///                     _tokens->myDispatchedComputation);
@@ -499,7 +500,7 @@ struct Exec_ComputationBuilderAccessor
     Computation(const TfToken &computationName)
     {
         static_assert(!VtIsArray<ResultType>::value,
-                      "VtArray is not a supported result type");
+                      "VtArray is not a supported result type.");
 
         return ValueSpecifier(
             computationName,
@@ -527,7 +528,7 @@ struct Exec_ComputationBuilderAccessor
     Metadata(const TfToken &metadataKey)
     {
         static_assert(!VtIsArray<ResultType>::value,
-                      "VtArray is not a supported result type");
+                      "VtArray is not a supported result type.");
 
         return _GetMetadataValueSpecifier<allowed>(
             ExecTypeRegistry::GetInstance().CheckForRegistration<ResultType>(),
@@ -620,7 +621,7 @@ struct Exec_ComputationBuilderRelationshipAccessor
     ///     // 'sourceComputation' on all targeted objects of the relationship
     ///     // 'myRel' and returns the number of matching targets.
     ///     self.PrimComputation(_tokens->myComputation)
-    ///         .Callback<int>(+[](const VdfContext &ctx) {
+    ///         .Callback(+[](const VdfContext &ctx) -> int {
     ///             VdfReadIterator<int> it(_tokens->sourceComputation);
     ///             return static_cast<int>(it.ComputeSize());
     ///         })
@@ -671,7 +672,7 @@ struct Attribute final
     ///     // Register a prim computation that returns the value of an
     ///     // attribute owned by the prim.
     ///     self.PrimComputation(_tokens->myComputation)
-    ///         .Callback<double>(+[](const VdfContext &ctx) {
+    ///         .Callback(+[](const VdfContext &ctx) -> double {
     ///             return ctx.GetInputValue<double>(
     ///                 ExecBuiltinComputations->computeValue));
     ///         })
@@ -739,7 +740,7 @@ struct Prim final
     ///     self.AttributeComputation(
     ///         _tokens->attr,
     ///         _tokens->myComputation)
-    ///         .Callback<int>(+[](const VdfContext &ctx) {
+    ///         .Callback(+[](const VdfContext &ctx) -> int {
     ///             return ctx.GetInputValue<int>(
     ///                 ExecBuiltinComputations->computeValue));
     ///         })
@@ -816,7 +817,7 @@ struct Stage final
     /// {
     ///     // Register a prim computation that returns the current time.
     ///     self.PrimComputation(_tokens->myComputation)
-    ///         .Callback<EfTime>(+[](const VdfContext &ctx) {
+    ///         .Callback(+[](const VdfContext &ctx) -> EfTime {
     ///             return ctx.GetInputValue<EfTime>(
     ///                 ExecBuiltinComputations->computeTime));
     ///         })
@@ -863,7 +864,7 @@ struct Computation final
     ///     // Register a prim computation that returns the value of another
     ///     // prim computation.
     ///     self.PrimComputation(_tokens->myComputation)
-    ///         .Callback<double>(+[](const VdfContext &ctx) {
+    ///         .Callback(+[](const VdfContext &ctx) -> double {
     ///             const double *const valuePtr =
     ///                 ctx.GetInputValuePtr<double>(_tokens->sourceComputation);
     ///             return valuePtr ? *valuePtr : 0.0;
@@ -906,7 +907,7 @@ struct Metadata final
     /// 
     /// ```{.cpp}
     /// self.PrimComputation(_tokens->computeDocMetadata)
-    ///     .Callback<std::string>(+[](const VdfContext &ctx) {
+    ///     .Callback(+[](const VdfContext &ctx) -> std::string {
     ///          return ctx.GetInputValue<std::string>(
     ///              SdfFieldKeys->Documentation);
     ///     })
@@ -925,7 +926,7 @@ struct Metadata final
                     metadataKey))
     {
         static_assert(!VtIsArray<ValueType>::value,
-                      "VtArray is not a supported result type");
+                      "VtArray is not a supported result type.");
 
         InputName(metadataKey);
     }
@@ -988,7 +989,7 @@ struct Constant final
     ///     // Register a prim computation that returns the value of its
     ///     // constant input.
     ///     self.PrimComputation(_tokens->myComputation)
-    ///         .Callback<double>(+[](const VdfContext &ctx) {
+    ///         .Callback(+[](const VdfContext &ctx) -> double {
     ///             return ctx.GetInputValue<double>(_tokens->myConstant);
     ///         })
     ///         .Inputs(
@@ -1006,7 +1007,7 @@ struct Constant final
     /// template <typename RegistrationType>
     /// void RegisterCallback(RegistrationType &reg)
     /// {
-    ///     reg.Callback<std::string>(+[](const VdfContext &ctx) {
+    ///     reg.Callback(+[](const VdfContext &ctx) -> std::string {
     ///         const TfToken &mode = ctx.GetInputValue<TfToken>(_tokens->mode);
     ///         if (mode == _tokens->mode1) {
     ///             return "Mode 1 selected";
@@ -1110,7 +1111,7 @@ struct NamespaceAncestor final
     ///     // an `int` result type. If found, the result is the value of the
     ///     // ancestor compuation; otherwise, returns 0.
     ///     self.PrimComputation(_tokens->myComputation)
-    ///         .Callback<int>(+[](const VdfContext &ctx) {
+    ///         .Callback(+[](const VdfContext &ctx) -> int {
     ///             const int *const valuePtr =
     ///                 ctx.GetInputValuePtr<int>(_tokens->sourceComputation);
     ///             return valuePtr ? *valuePtr : 0;
@@ -1148,7 +1149,8 @@ struct NamespaceAncestor final
 /// Input alias that yields the value of the named attribute.
 /// 
 /// This registration must follow a
-/// [PrimComputation](#ExecComputationBuilder::PrimComputation) registration.
+/// [PrimComputation](#ExecComputationBuilder::PrimComputation) registration or
+/// a function that returns a prim computation registration.
 ///
 /// > **Note:**  
 /// > ```{.cpp}
@@ -1218,14 +1220,10 @@ AttributeValue(const TfToken &attributeName)
 ///     // sums the results of the integer values flowing over myAttr's
 ///     // connections from the objects targeted by those connections.
 ///     self.AttributeComputation(_tokens->myAttr, _tokens->computeSum)
-///         .Callback<int>(+[](const VdfContext &ctx) {
-///             int sum = 0;
-///             for (VdfReadIterator<int> it(
-///                      ExecBuiltinComputations->computeValue);
-///                  !it.IsAtEnd(); ++it) {
-///                  sum += *it;
-///             }
-///             return sum;
+///         .Callback(+[](const VdfContext &ctx) -> int {
+///             VdfReadIteratorRange<int> range(
+///                 ctx, ExecBuiltinComputations->computeValue);
+///             return std::accumulate(range.begin(), range.end(), 0);
 ///         })
 ///         .Inputs(
 ///             Connections<int>(ExecBuiltinComputations->computeValue));
@@ -1273,7 +1271,7 @@ Connections(const TfToken &computationName)
 ///     // integer-valued attributes that own connections that target the
 ///     // provider prim.
 ///     self.PrimComputation(_tokens->computeSum)
-///         .Callback<int>(+[](const VdfContext &ctx) {
+///         .Callback(+[](const VdfContext &ctx) -> int {
 ///             VdfReadIteratorRange<int> range(
 ///                 ctx, ExecBuiltinComputations->computeValue);
 ///             return std::accumulate(range.begin(), range.end(), 0);
@@ -1326,10 +1324,9 @@ public:
     // Only schema computation registration functions should create computation
     // builders.
     struct ConstructionAccess {
+        EXEC_API
         static ExecComputationBuilder
-        Construct(TfType schemaType) {
-            return ExecComputationBuilder(schemaType);
-        }
+        Construct(const std::string &schemaTypeName);
     };
 
     /// \addtogroup group_Exec_ComputationRegistrations
@@ -1344,7 +1341,7 @@ public:
     /// {
     ///     // Register a trivial prim computation.
     ///     self.PrimComputation(_tokens->eleven)
-    ///         .Callback<double>(+[](const VdfContext &) { return 11.0; })
+    ///         .Callback(+[](const VdfContext &) -> double { return 11.0; })
     /// }
     /// ```
     ///
@@ -1364,7 +1361,7 @@ public:
     ///     self.AttributeComputation(
     ///         _tokens->attr,   // attributeName
     ///         _tokens->eleven) // computationName
-    ///         .Callback<double>(+[](const VdfContext &) { return 11.0; })
+    ///         .Callback(+[](const VdfContext &) -> double { return 11.0; })
     /// }
     /// ```
     ///
@@ -1448,13 +1445,13 @@ public:
     ///     // scopes.
     ///     const TfType scopeType = TfType::FindByName("UsdGeomScope");
     ///     self.DispatchedPrimComputation(_tokens->eleven, scopeType)
-    ///         .Callback<double>(+[](const VdfContext &) { return 11.0; })
+    ///         .Callback(+[](const VdfContext &) -> double { return 11.0; })
     ///
     ///     // Register a prim computation that requests the above dispatched
     ///     // computation via uses relationship targets. Any targeted prim
     ///     // whose type is UsdGeomScope will find the requested computation.
     ///     self.PrimComputation(_tokens->myComputation)
-    ///         .Callback<double>(+[](const VdfContext &ctx) {
+    ///         .Callback(+[](const VdfContext &ctx) -> double {
     ///             const double *const valuePtr =
     ///                 ctx.GetInputValuePtr<double>(_tokens->eleven);
     ///             return valuePtr ? *valuePtr : -1.0;
@@ -1494,12 +1491,12 @@ public:
     ///     // attributes on scopes.
     ///     const TfType scopeType = TfType::FindByName("UsdGeomScope");
     ///     self.DispatchedAttributeComputation(_tokens->eleven, scopeType)
-    ///         .Callback<double>(+[](const VdfContext &) { return 11.0; })
+    ///         .Callback(+[](const VdfContext &) -> double { return 11.0; })
     ///
     ///     // Register a prim computation that requests the above dispatched
     ///     // computation on an attribute on the owning prim named 'attr'.
     ///     self.PrimComputation(_tokens->myComputation)
-    ///         .Callback<double>(+[](const VdfContext &ctx) {
+    ///         .Callback(+[](const VdfContext &ctx) -> double {
     ///             const double *const valuePtr =
     ///                 ctx.GetInputValuePtr<double>(_tokens->eleven);
     ///             return valuePtr ? *valuePtr : -1.0;
@@ -1610,11 +1607,13 @@ public:
     /// computation.
     /// 
     /// This registration must follow a [computation
-    /// registration](#group_Exec_ComputationRegistrations).
+    /// registration](#group_Exec_ComputationRegistrations) or a function that
+    /// returns a computation registration. This function returns a computation
+    /// registration.
     ///
-    /// Callback functions must be function pointers where the signature is
-    /// `ReturnType (*)(const VdfContext &)` and \p ReturnType can be any of the
-    /// following:
+    /// Accepts a callback function that is a function pointer with a signature
+    /// of `ReturnType (*)(const VdfContext &)`. \p ReturnType can be any of
+    /// the following:
     ///
     /// - The result type of the computation, in which case `ResultType` can be
     ///   deduced from the callback type.
@@ -1624,6 +1623,15 @@ public:
     /// - `void` in which case \p ResultType must be explicitly specified as a
     ///   template parameter *and* the callback must call VdfContext::SetOutput
     ///   to provide the output value.
+    ///
+    /// # Thread and Cache Safety
+    /// 
+    /// Computation callbacks must be pure functions. They must be thread safe
+    /// in the sense that multiple instances of a given computation callback may
+    /// be invoked simultaneously in multiple threads. They must be "cache
+    /// safe," meaning that all input values must be known to the exec system so
+    /// that it can invalidate cached computation results when input values
+    /// change.
     ///
     /// # Result Types
     ///
@@ -1663,6 +1671,66 @@ public:
         typename ReturnType = _UnspecifiedType>
     Derived&
     Callback(ReturnType (*callback)(const VdfContext &));
+
+    /// \ingroup group_Exec_ComputationRegistrations
+    ///
+    /// Registers a callback function that implements the evaluation logic for a
+    /// computation; this overload accepts a function object that isn't a
+    /// function pointer (e.g., a capturing lambda).
+    /// 
+    /// This registration must follow a [computation
+    /// registration](#group_Exec_ComputationRegistrations) or a function that
+    /// returns a computation registration. This function returns a computation
+    /// registration.
+    ///
+    /// Accepts a function object that takes a single argument of type
+    /// `const VdfContext &` and returns `void`. The \p ResultType must be
+    /// explicitly specified as a template parameter. The callback must provide
+    /// the output value by calling VdfContext::SetOutput,
+    /// VdfContext::SetEmptyOutput, or using a write iterator.
+    ///
+    /// # Thread and Cache Safety
+    /// 
+    /// Computation callbacks must be pure functions. They must be thread safe
+    /// in the sense that multiple instances of a given computation callback may
+    /// be invoked simultaneously in multiple threads. They must be "cache
+    /// safe," meaning that all input values must be known to the exec system so
+    /// that it can invalidate cached computation results when input values
+    /// change.
+    ///
+    /// When passing a function object as a callback, it is therefore important
+    /// to be careful not to run afoul of these requirements for callbacks. E.g.,
+    /// be careful with lambda capture, or shared state that is reachable from
+    /// function object data members.
+    /// 
+    /// # Result Types
+    ///
+    /// Note that the types used as computation result types (and as computation
+    /// input value types) must be known to the execution system. All types that
+    /// can be used to author attribute and metadata values in USD are known to
+    /// exec by default. User-defined types must be registered by calling
+    /// ExecTypeRegistry::RegisterType.
+    ///
+    /// # Example
+    ///
+    /// ```{.cpp}
+    /// EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(MySchemaType)
+    /// {
+    ///     const TfToken inputName("anInputName");
+    ///     
+    ///     // Register a prim computation with a capturing lambda as the
+    ///     // callback.
+    ///     self.PrimComputation(_tokens->stringValuedComputation)
+    ///         .Callback<int>([inputName](const VdfContext &) {
+    ///             int i = ctx.GetInputValue(inputName);
+    ///             ctx.SetValue(i+1);
+    ///         });
+    /// }
+    /// ```
+    ///
+    template<typename ResultType, typename FuncType>
+    Derived&
+    Callback(FuncType &&callback);
 };
 
 
@@ -1690,7 +1758,9 @@ public:
     /// that specify how to source input values for a prim computation.
     /// 
     /// This registration must follow a [computation
-    /// registration](#group_Exec_ComputationRegistrations).
+    /// registration](#group_Exec_ComputationRegistrations) or a function that
+    /// returns a computation registration. This function returns a computation
+    /// registration.
     ///
     /// # Example
     ///
@@ -1699,7 +1769,7 @@ public:
     /// {
     ///     // Register a prim computation that reads from two inputs.
     ///     self.PrimComputation(_tokens->myPrimComputation)
-    ///         .Callback<int>(&_MyCallbackFn)
+    ///         .Callback(&_MyCallbackFn)
     ///         .Inputs(
     ///             AttributeValue<int>(_tokens->myAttribute),
     ///             NamespaceAncestor<double>(_tokens->anotherPrimComputation));
@@ -1737,7 +1807,9 @@ public:
     /// that specify how to source input values for an attribute computation.
     /// 
     /// This registration must follow a [computation
-    /// registration](#group_Exec_ComputationRegistrations).
+    /// registration](#group_Exec_ComputationRegistrations) or a function that
+    /// returns a computation registration. This function returns a computation
+    /// registration.
     ///
     /// # Example
     ///
@@ -1750,7 +1822,7 @@ public:
     ///     self.AttributeComputation(
     ///         _tokens->attr,
     ///         _tokens->myAttrComputation)
-    ///         .Callback<int>(&_MyCallbackFn)
+    ///         .Callback(&_MyCallbackFn)
     ///         .Inputs(
     ///             Computation<double>(_tokens->anotherAttrComputation),
     ///             Prim().AttributeValue<double>(_tokens->anotherAttr));
@@ -1784,7 +1856,9 @@ public:
     /// that specify how to source input values for an attribute expression.
     /// 
     /// This registration must follow a [computation
-    /// registration](#group_Exec_ComputationRegistrations).
+    /// registration](#group_Exec_ComputationRegistrations) or a function that
+    /// returns a computation registration. This function returns a computation
+    /// registration.
     ///
     /// # Example
     ///
@@ -1795,7 +1869,7 @@ public:
     ///     // resolved value, and the computed value of all connected
     ///     // attributes.
     ///     self.AttributeExpression(_tokens->attr)
-    ///         .Callback<int>(&_MyCallbackFn)
+    ///         .Callback(&_MyCallbackFn)
     ///         .Inputs(
     ///             Computation<double>(
     ///                 ExecBuiltinComputations->computeResolvedValue),
@@ -1828,7 +1902,19 @@ Exec_ComputationBuilderBase::_ValidateInputs() {
         "Invalid type used as an input registration.");
     static_assert(
         regType::allowedProviders & allowed,
-        "Input is not allowed on a provider of this type.");
+        "This input registration is not allowed on a provider of this type.");
+    static_assert(
+        (regType::allowedProviders & allowed) ||
+        (allowed ==
+         Exec_ComputationBuilderProviderTypes::Attribute),
+        "This input registration is only allowed on a provider attribute; "
+        "there may be a missing Attribute(attributeName) registration.");
+    static_assert(
+        (regType::allowedProviders & allowed) ||
+        (allowed ==
+         Exec_ComputationBuilderProviderTypes::Prim),
+        "This input registration is only allowed on a provider prim; "
+        "there may be a missing Prim() registration.");
 }
 
 //
@@ -1856,13 +1942,13 @@ Exec_ComputationBuilderCRTPBase<Derived>::Callback(
         !std::is_void_v<ResultType> ||
         std::is_convertible_v<ReturnType, ResultType>,
         "Callback return type must be convertible to the computation result "
-        "type");
+        "type.");
     static_assert(
         !std::is_reference_v<ResultType>,
-        "Callback functions must return by value");
+        "Callback functions must return by value.");
     static_assert(
         !VtIsArray<ResultType>::value,
-        "VtArray is not a supported result type");
+        "VtArray is not a supported result type.");
 
     const TfType resultType =
         ExecTypeRegistry::GetInstance().CheckForRegistration<ResultType>();
@@ -1879,6 +1965,47 @@ Exec_ComputationBuilderCRTPBase<Derived>::Callback(
             },
             resultType);
     }
+
+    return *static_cast<Derived*>(this);
+}
+
+template <typename Derived>
+template<typename ResultType, typename FuncType>
+Derived&
+Exec_ComputationBuilderCRTPBase<Derived>::Callback(
+    FuncType &&callback)
+{
+    // This condition will also be caught by the check for void return below,
+    // but this produces a much clearer compile error, and therefore we do this
+    // check first.
+    static_assert(
+        std::is_invocable_v<
+            const std::remove_reference_t<FuncType>, const VdfContext&>,
+        "Callback function object must have const function call operator.");
+
+    static_assert(
+        !std::is_void_v<ResultType>,
+        "The ResultType template parameter cannot be void, as this indicates "
+        "the value type of the result produced by the computation.");
+
+    // The callback's return type must be void because any returned value
+    // will be ignored.
+    static_assert(
+        std::is_void_v<std::invoke_result_t<const FuncType, const VdfContext&>>,
+        "Callback return type must be void. Use VdfContext::SetOutput to "
+        "set a result value.");
+
+    static_assert(
+        !std::is_reference_v<ResultType>,
+        "Callback function must return by value.");
+    static_assert(
+        !VtIsArray<ResultType>::value,
+        "VtArray is not a supported result type.");
+
+    const TfType resultType =
+        ExecTypeRegistry::GetInstance().CheckForRegistration<ResultType>();
+
+    _AddCallback(callback, resultType);
 
     return *static_cast<Derived*>(this);
 }

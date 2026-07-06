@@ -182,7 +182,9 @@ HdPrman_MatFiltSceneIndexPlugin::GetInsertionPhase()
     return 100;
 }
 
+#if HDSI_API_VERSION >= 19
 extern TfEnvSetting<bool> USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX;
+#endif
 
 HdSceneIndexBaseRefPtr
 HdPrman_MatFiltSceneIndexPlugin::_AppendSceneIndex(

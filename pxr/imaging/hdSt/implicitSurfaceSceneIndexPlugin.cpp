@@ -10,6 +10,7 @@
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdsi/implicitSurfaceSceneIndex.h"
+#include "pxr/imaging/hdSt/renderDelegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -45,6 +46,37 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 HdSt_ImplicitSurfaceSceneIndexPlugin::
 HdSt_ImplicitSurfaceSceneIndexPlugin() = default;
 
+namespace {
+const HdContainerDataSourceHandle _LocalInputArgs()
+{
+    // Configure the scene index to generate meshes for implicit primitives
+    // that are not natively supported by Storm. With
+    // HDST_ENABLE_NATIVE_SPHERES enabled, spheres can be rendered natively,
+    // so we avoid converting them to meshes here.
+    HdDataSourceBaseHandle const toMeshSrc =
+    HdRetainedTypedSampledDataSource<TfToken>::New(
+        HdsiImplicitSurfaceSceneIndexTokens->toMesh);
+    
+    TfTokenVector names = {
+        HdPrimTypeTokens->cube,
+        HdPrimTypeTokens->cone,
+        HdPrimTypeTokens->cylinder,
+        HdPrimTypeTokens->capsule,
+        HdPrimTypeTokens->plane
+    };
+
+    if (!HdStRenderDelegate::IsEnabledNativeSphereRenderingSupport()) {
+        names.emplace_back(HdPrimTypeTokens->sphere);
+    }
+
+    std::vector<HdDataSourceBaseHandle> values(names.size(), toMeshSrc);
+
+    return HdRetainedContainerDataSource::New(names.size(),
+                                              names.data(),
+                                              values.data());
+}
+}
+
 HdSceneIndexBaseRefPtr
 HdSt_ImplicitSurfaceSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
@@ -55,20 +87,8 @@ HdSt_ImplicitSurfaceSceneIndexPlugin::_AppendSceneIndex(
     // something like "sceneIndexGraphCreateArgs" to allow the app and renderer
     // plugin to provide arguments for scene indices instantiated via the
     // scene index plugin system.
-       // Configure the scene index to generate the mesh for each of the implicit
-    // primitives since Storm doesn't natively support any.
-    HdDataSourceBaseHandle const toMeshSrc =
-        HdRetainedTypedSampledDataSource<TfToken>::New(
-            HdsiImplicitSurfaceSceneIndexTokens->toMesh);
 
-    HdContainerDataSourceHandle const localInputArgs =
-        HdRetainedContainerDataSource::New(
-            HdPrimTypeTokens->sphere, toMeshSrc,
-            HdPrimTypeTokens->cube, toMeshSrc,
-            HdPrimTypeTokens->cone, toMeshSrc,
-            HdPrimTypeTokens->cylinder, toMeshSrc,
-            HdPrimTypeTokens->capsule, toMeshSrc,
-            HdPrimTypeTokens->plane, toMeshSrc);
+    static HdContainerDataSourceHandle const localInputArgs = _LocalInputArgs();
 
     return HdsiImplicitSurfaceSceneIndex::New(inputScene, localInputArgs);
 }

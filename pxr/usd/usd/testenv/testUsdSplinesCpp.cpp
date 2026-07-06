@@ -18,8 +18,6 @@
 #include "pxr/base/tf/errorMark.h"
 
 #include "pxr/base/ts/spline.h"
-#include "pxr/base/ts/tsTest_Museum.h"
-#include "pxr/base/ts/tsTest_TsEvaluator.h"
 
 #include <iostream>
 
@@ -132,7 +130,7 @@ _DoSerializationTest(
     const SdfValueTypeName& attrType = SdfValueTypeNames->Double,
     bool isEmpty = false)
 {
-    std::cout << "Doing serialization test for " << desc << "with type as "
+    std::cout << "Doing serialization test for " << desc << " with type as "
         << attrType.GetAsToken().GetString() << "\n";
     for (const std::string format : {"usda", "usdc"}) {
         const std::string filename1 = TfStringPrintf(
@@ -229,11 +227,74 @@ static
 void
 TestSerializationMuseum()
 {
-    for (const std::string exhibit : {"TwoKnotBezier", "ComplexParams"}) {
-        const TsSpline spline = 
-            TsTest_TsEvaluator().SplineDataToSpline(
-                TsTest_Museum::GetDataByName(exhibit));
-        _DoSerializationTest("Museum." + exhibit, spline);
+    // These test cases were adapted from the similarly-named examples in
+    // tsTest_Museum.cpp.
+
+    const TsSpline twoKnotBezier = []() {
+        TsSpline spline;
+        spline.SetCurveType(TsCurveTypeBezier);
+        
+        TsKnot knot1;
+        knot1.SetTime(1.0);
+        knot1.SetNextInterpolation(TsInterpCurve);
+        knot1.SetValue(1.0);
+        knot1.SetPostTanSlope(1.0);
+        knot1.SetPostTanWidth(0.5);
+
+        TsKnot knot2;
+        knot2.SetTime(5.0);
+        knot2.SetNextInterpolation(TsInterpCurve);
+        knot2.SetValue(2.0);
+        knot2.SetPreTanSlope(0.0);
+        knot2.SetPreTanWidth(0.5);
+
+        spline.SetKnot(knot1);
+        spline.SetKnot(knot2);
+
+        return spline;
+    }();
+
+    const TsSpline complexParams = []() {
+        TsSpline spline;
+
+        spline.SetPreExtrapolation(TsExtrapolation(TsExtrapLinear));
+        TsExtrapolation postExtrap(TsExtrapSloped);
+        postExtrap.slope = 0.57;
+        spline.SetPostExtrapolation(postExtrap);
+
+        TsKnot knot1;
+        knot1.SetTime(7);
+        knot1.SetNextInterpolation(TsInterpHeld);
+        knot1.SetPreValue(5.5);
+        knot1.SetValue(7.21);
+
+        TsKnot knot2;
+        knot2.SetTime(15);
+        knot2.SetNextInterpolation(TsInterpCurve);
+        knot2.SetValue(8.18);
+        knot2.SetPostTanSlope(1.17);
+        knot2.SetPostTanWidth(2.49);
+
+        TsKnot knot3;
+        knot3.SetTime(20);
+        knot3.SetNextInterpolation(TsInterpCurve);
+        knot3.SetValue(14.72);
+        knot3.SetPreTanSlope(-1.4);
+        knot3.SetPreTanWidth(3.77);
+        knot3.SetPostTanSlope(-1.4);
+        knot3.SetPostTanWidth(1.1);
+
+        spline.SetKnot(knot1);
+        spline.SetKnot(knot2);
+        spline.SetKnot(knot3);
+
+        return spline;
+    }();
+
+    for (const auto& [exhibit, spline] : 
+             { std::make_pair("TwoKnotBezier", twoKnotBezier),
+               std::make_pair("ComplexParams", complexParams) }) {
+        _DoSerializationTest("Museum." + std::string(exhibit), spline);
     }
 }
 

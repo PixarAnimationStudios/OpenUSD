@@ -94,20 +94,33 @@ Exec_LeafCompilationTask::_Compile(
             _valueKey.GetProvider()->GetPath(nullptr),
             EsfEditReason::ResyncedObject);
 
+        const TfType outputType = sourceOutput.GetOutput()->GetSpec().GetType();
         EfLeafNode *const leafNode =
             compilationState.GetProgram()->CreateNode<EfLeafNode>(
                 nodeJournal,
-                sourceOutput.GetOutput()->GetSpec().GetType());
+                outputType);
 
         // Value keys are not durable across scene changes so their debug name
         // must be collected eagerly.
         leafNode->SetDebugName(_valueKey.GetDebugName());
 
+        // Make a copy of the stored input key to inform input recompilation 
+        // along with the resolved result type. 
+        const Exec_InputKey &inputKey = _inputKeys->Get()[0];
+        Exec_InputKeyVectorConstRefPtr inputKeys =
+            Exec_InputKeyVector::MakeConstShared({{
+                inputKey.inputName, 
+                inputKey.computationName, 
+                inputKey.disambiguatingId,
+                outputType,
+                inputKey.providerResolution
+            }});
+
         compilationState.GetProgram()->SetNodeRecompilationInfo(
             leafNode, 
             _valueKey.GetProvider(), 
             EsfSchemaConfigKey(),
-            std::move(_inputKeys));
+            std::move(inputKeys));
 
         compilationState.GetProgram()->SetCompiledLeafNode(_valueKey, leafNode);
 

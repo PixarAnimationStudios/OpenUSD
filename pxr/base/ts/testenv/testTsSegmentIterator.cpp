@@ -82,17 +82,26 @@ public:
 
 // Our test cases. simpleInnerLoop and simpleSpline are duplicates of the same
 // named splines in the "museum" but the others are unique to this test.
+static TestCase oneKnot;
+static TestCase oneKnotExtrapLoop;
 static TestCase simpleInnerLoop;
+static TestCase simpleInnerLoopDualValued;
 static TestCase twoKnotBezier;
 static TestCase simpleSpline;
+static TestCase simpleSplineDualValued;
 static TestCase longLoop;
 static TestCase extrapValueBlock;
 static TestCase extrapHeld;
 static TestCase extrapLinear;
 static TestCase extrapSloped;
 static TestCase extrapReset;
+static TestCase extrapResetDualValued;
+static TestCase extrapResetLoopBoundary;
+static TestCase extrapResetInvalidLoopBoundary;
 static TestCase extrapRepeat;
+static TestCase extrapRepeatDualValuedLoopBoundary;
 static TestCase extrapOscillate;
+static TestCase extrapOscillateLoopBoundary;
 
 // Given a vector of segments for the regular, non-extrap-looped section of a
 // spline, generate a vector of segments for the given time interval.  Note that
@@ -116,6 +125,8 @@ std::vector<Ts_Segment> GenSegments(const TestCase& testCase,
     const Ts_Segment& seg0 = testCase.segments.front();
     const Ts_Segment& seg1 = testCase.segments.back();
 
+    const size_t numKnots = testCase.spline.GetKnots().size();
+
     // Get the first and last knot time. For extrap segments, the first and last
     // times are infinite so get the knot time from the other end of the
     // segment.
@@ -130,18 +141,55 @@ std::vector<Ts_Segment> GenSegments(const TestCase& testCase,
     const TsExtrapolation preExtrap = testCase.spline.GetPreExtrapolation();
     const TsExtrapolation postExtrap = testCase.spline.GetPostExtrapolation();
 
+    // Calculate extrap loop informaton
+    double preLoopEndTime = segTime1;
+    double postLoopStartTime = segTime0;
+    bool preExtrapLoop = preExtrap.IsLooping() && segTimeSpan > 0;
+    bool postExtrapLoop = postExtrap.IsLooping() && segTimeSpan > 0;
+
+    const TsKnotMap knots = testCase.spline.GetKnots();
+    if (preExtrapLoop && preExtrap.loopBoundaryTime.has_value()) {
+        const double boundary = preExtrap.loopBoundaryTime.value();
+        if (boundary == segTime0 || knots.find(boundary) == knots.end()) {
+            preExtrapLoop = false;
+        } else {
+            preLoopEndTime = boundary;
+        }
+    }
+    if (postExtrapLoop && postExtrap.loopBoundaryTime.has_value()) {
+        const double boundary = postExtrap.loopBoundaryTime.value();
+        if (boundary == segTime1 || knots.find(boundary) == knots.end()) {
+            postExtrapLoop = false;
+        } else {
+            postLoopStartTime = boundary;
+        }
+    }
+
     const double minTime = interval.GetMin();
     const double maxTime = interval.GetMax();
+    const double preSpan  = preLoopEndTime - segTime0;
+    const double postSpan = segTime1 - postLoopStartTime;
 
-    // Note that segTimeSpan can be 0 if there is only 1 knot in the spline.
-    const int minIter = (segTimeSpan > 0 && preExtrap.IsLooping()
-                         ? int(std::floor((minTime - segTime0) / segTimeSpan))
+    const int minIter = (preSpan > 0 && preExtrapLoop
+                         ? int(std::floor((minTime - segTime0) / preSpan))
                          : 0);
-    const int maxIter = (segTimeSpan > 0 && postExtrap.IsLooping()
-                         ? int(std::floor((maxTime - segTime0) / segTimeSpan))
+    const int maxIter = (postSpan > 0 && postExtrapLoop
+                         ? int(std::ceil((maxTime - segTime1) / postSpan))
                          : 0);
 
     for (int iter = minIter; iter <= maxIter; ++iter) {
+        // Calculate loop region
+        double regionStartTime = segTime0;
+        double regionEndTime = segTime1;
+        if (iter < 0) {
+            regionEndTime = preLoopEndTime;
+        } else if (iter > 0) {
+            regionStartTime = postLoopStartTime;
+        }
+        const GfInterval regionInterval =
+            GfInterval(regionStartTime, regionEndTime, CLOSED, OPEN);
+        double span = regionEndTime - regionStartTime;
+
         const double segValueOffset = (iter < 0
                                        ? testCase.preExtrapValueOffset
                                        : testCase.postExtrapValueOffset);
@@ -152,9 +200,9 @@ std::vector<Ts_Segment> GenSegments(const TestCase& testCase,
         bool reversed = oscillating && (iter % 2 != 0);
 
         if (reversed) {
-            GfVec2d shift1(iter * segTimeSpan + segTime0,
+            GfVec2d shift1(iter * span + regionStartTime,
                            iter * segValueOffset);
-            double timeShift2 = segTime1;
+            double timeShift2 = regionEndTime;
 
             const double t1 = -(interval.GetMin() - shift1[0]) + timeShift2;
             const double t0 = -(interval.GetMax() - shift1[0]) + timeShift2;
@@ -165,11 +213,23 @@ std::vector<Ts_Segment> GenSegments(const TestCase& testCase,
                  ++segIt)
             {
                 Ts_Segment seg = *segIt;
-                // Skip extrap segments if we're looping
-                if ((!std::isfinite(seg.p0[0]) && preExtrap.IsLooping()) ||
-                    (!std::isfinite(seg.p1[0]) && postExtrap.IsLooping()) ||
+                // Skip extrap segments if we're looping and the spline has
+                // more than one knot.
+                if ((numKnots > 1 && ((!std::isfinite(seg.p0[0]) &&
+                                       preExtrapLoop) ||
+                                      (!std::isfinite(seg.p1[0]) &&
+                                       postExtrapLoop))) ||
                     (iter != 0 && (!std::isfinite(seg.p0[0]) ||
                                    !std::isfinite(seg.p1[0]))))
+                {
+                    continue;
+                }
+
+                // Only include segments within the region interval for
+                // extrapolation looping.
+                if (iter != 0 &&
+                    !regionInterval.Intersects(
+                        GfInterval(seg.p0[0], seg.p1[0], CLOSED, OPEN)))
                 {
                     continue;
                 }
@@ -183,18 +243,30 @@ std::vector<Ts_Segment> GenSegments(const TestCase& testCase,
                 }
             }
         } else {
-            GfVec2d shift1(iter * segTimeSpan,
+            GfVec2d shift1(iter * span,
                            iter * segValueOffset);
 
             // Shift the interval for this iteration
             GfInterval iterInterval = interval - GfInterval(shift1[0]);
 
             for (const auto& seg : testCase.segments) {
-                // Skip extrap segments if we're looping
-                if ((!std::isfinite(seg.p0[0]) && preExtrap.IsLooping()) ||
-                    (!std::isfinite(seg.p1[0]) && postExtrap.IsLooping()) ||
+                // Skip extrap segments if we're looping and the spline has
+                // more than one knot.
+                if ((numKnots > 1 && ((!std::isfinite(seg.p0[0]) &&
+                                       preExtrapLoop) ||
+                                      (!std::isfinite(seg.p1[0]) &&
+                                       postExtrapLoop))) ||
                     (iter != 0 && (!std::isfinite(seg.p0[0]) ||
                                    !std::isfinite(seg.p1[0]))))
+                {
+                    continue;
+                }
+
+                // Only include segments within the region interval for
+                // extrapolation looping.
+                if (iter != 0 &&
+                    !regionInterval.Intersects(
+                        GfInterval(seg.p0[0], seg.p1[0], CLOSED, OPEN)))
                 {
                     continue;
                 }
@@ -223,6 +295,36 @@ void InitTestCases()
     // In all the cases below, the segments array is hand calculated.
 
     const TsExtrapolation linearEx(TsExtrapLinear);
+
+    // ================ OneKnot ================
+    // Test a spline with one knot.
+    oneKnot.name = "OneKnot";
+    oneKnot.spline.SetKnots(
+        {
+            K(1.0, 1.0, 0.0, 0.0, 0.0, 0.0, TsInterpHeld)
+        });
+    oneKnot.segments =
+        {
+            {{-inf, 0.0},
+             {0.0, 0.0},
+             {0.0, 0.0},
+             {1.0, 1.0},
+             Ts_SegmentInterp::PreExtrap},
+            {{1.0, 1.0},
+             {0.0, 0.0},
+             {0.0, 0.0},
+             {+inf, 0.0},
+             Ts_SegmentInterp::PostExtrap}
+        };
+    oneKnot.spline.SetPreExtrapolation(TsExtrapHeld);
+    oneKnot.spline.SetPostExtrapolation(TsExtrapHeld);
+
+    // ================ OneKnotExtrapLoop ================
+    // Test a spline with one knot with looping extrap.
+    oneKnotExtrapLoop = oneKnot;
+    oneKnotExtrapLoop.name = "OneKnotExtrapLoop";
+    oneKnotExtrapLoop.spline.SetPreExtrapolation(TsExtrapLoopReset);
+    oneKnotExtrapLoop.spline.SetPostExtrapolation(TsExtrapLoopOscillate);
 
     // ================ TwoKnotBezier ================
     // Test a spline without any inner looping. This is a clone of
@@ -323,6 +425,36 @@ void InitTestCases()
 
     testSplineNames.insert(simpleInnerLoop.name);
 
+    // ================ SimpleInnerLoopDualValued ================
+    simpleInnerLoopDualValued = simpleInnerLoop;
+    simpleInnerLoopDualValued.name = "SimpleInnerLoopDualValued";
+
+    // Make the knots at the loop range endpoints dual-valued
+    TsKnot knotStart;
+    TsKnot knotEnd;
+    simpleInnerLoopDualValued.spline.GetKnot(137.0, &knotStart);
+    simpleInnerLoopDualValued.spline.GetKnot(155.0, &knotEnd);
+    knotStart.SetPreValue(0.0);
+    knotEnd.SetPreValue(20.2);
+    simpleInnerLoopDualValued.spline.SetKnot(knotStart);
+    simpleInnerLoopDualValued.spline.SetKnot(knotEnd);
+
+    // Remove the earliest knot so that the first segment's p1 is
+    // dual valued.
+    simpleInnerLoopDualValued.spline.RemoveKnot(112.0);
+
+    // Remove the first segment
+    Ts_Segment& origSegment = simpleInnerLoopDualValued.segments[0];
+    Ts_Segment& destSegment = simpleInnerLoopDualValued.segments[1];
+    destSegment.p0 = origSegment.p0;
+    destSegment.t0 = origSegment.t0;
+    destSegment.t1 = origSegment.t1;
+    destSegment.interp = origSegment.interp;
+    simpleInnerLoopDualValued.segments.erase(
+        simpleInnerLoopDualValued.segments.begin());
+
+    testSplineNames.insert(simpleInnerLoopDualValued.name);
+
     // ================ simpleSpline ================
     // Living up to its name, all the knots have simple, easy to hand compute values.
     simpleSpline.name = "SimpleSpline";
@@ -370,6 +502,30 @@ void InitTestCases()
         };
 
     testSplineNames.insert(simpleSpline.name);
+
+    // ================ SimpleSplineDualValued ================
+    simpleSplineDualValued = simpleSpline;
+    simpleSplineDualValued.name = "SimpleSpline";
+
+    // Make the knots at times 1.0, 3.0, 4.0 dual valued.
+    TsKnot knot1, knot3, knot4;
+    simpleSplineDualValued.spline.GetKnot(1.0, &knot1);
+    simpleSplineDualValued.spline.GetKnot(3.0, &knot3);
+    simpleSplineDualValued.spline.GetKnot(4.0, &knot4);
+    knot1.SetPreValue(5.0); // Pre-value is reported in the segment but doesn't
+                            // affect eval of spline since prev interp is held
+    knot3.SetPreValue(2.0); // Set pre-value to value, it's still "dual valued"
+    knot4.SetPreValue(2.0); // Pre-value will affect the corresponding segment.
+    simpleSplineDualValued.spline.SetKnot(knot1);
+    simpleSplineDualValued.spline.SetKnot(knot3);
+    simpleSplineDualValued.spline.SetKnot(knot4);
+
+    simpleSplineDualValued.segments[1].p1[1] = 5.0;
+    simpleSplineDualValued.segments[1].t1[1] = 5.0;
+    simpleSplineDualValued.segments[4].p1[1] = 2.0;
+    simpleSplineDualValued.segments[4].t1[1] = 2.0;
+
+    testSplineNames.insert(simpleSplineDualValued.name);
 
     // ================ LongLoop ================
     // LongLoop has inner looping that extends before and after the first and
@@ -501,6 +657,97 @@ void InitTestCases()
 
     testSplineNames.insert(extrapReset.name);
 
+    // ================ ExtrapResetDualValued ================
+    extrapResetDualValued = extrapReset;
+    extrapResetDualValued.name = "ExtrapResetDualValued";
+
+    // Set the "middle knot" of the inner loop to dual valued
+    TsKnot knotExtrapResetDV;
+    extrapResetDualValued.spline.GetKnot(2.0, &knotExtrapResetDV);
+    knotExtrapResetDV.SetPreValue(2.5);
+    extrapResetDualValued.spline.SetKnot(knotExtrapResetDV);
+
+    // ================ ExtrapResetLoopBoundary ================
+    extrapResetLoopBoundary = simpleSpline;
+    extrapResetLoopBoundary.name = "ExtrapResetLoopBoundary";
+    {
+        TsExtrapolation ex(TsExtrapLoopReset);
+        ex.loopBoundaryTime = 2.0;
+        extrapResetLoopBoundary.spline.SetPreExtrapolation(ex);
+        ex.loopBoundaryTime = 3.0;
+        extrapResetLoopBoundary.spline.SetPostExtrapolation(ex);
+    }
+    testSplineNames.insert(extrapResetLoopBoundary.name);
+
+    // ================ ExtrapResetInvalidLoopBoundary ================
+    extrapResetInvalidLoopBoundary = simpleSpline;
+    extrapResetInvalidLoopBoundary.name = "ExtrapResetInvalidLoopBoundary";
+    {
+        TsExtrapolation ex(TsExtrapLoopReset);
+        ex.loopBoundaryTime = 0.0; // held
+        extrapResetInvalidLoopBoundary.spline.SetPreExtrapolation(ex);
+        ex.loopBoundaryTime = 3.5; // value block
+        extrapResetInvalidLoopBoundary.spline.SetPostExtrapolation(ex);
+    }
+    extrapResetInvalidLoopBoundary.segments.back().interp =
+        Ts_SegmentInterp::ValueBlock;
+    testSplineNames.insert(extrapResetInvalidLoopBoundary.name);
+
+    // ================ ExtrapRepeatDualValuedLoopBoundary ================
+    extrapRepeatDualValuedLoopBoundary = simpleSpline;
+    extrapRepeatDualValuedLoopBoundary.name =
+        "ExtrapRepeatDualValuedLoopBoundary";
+    {
+        TsExtrapolation ex(TsExtrapLoopRepeat);
+        ex.loopBoundaryTime = 2.0;
+        extrapRepeatDualValuedLoopBoundary.spline.SetPreExtrapolation(ex);
+        ex.loopBoundaryTime = 2.0;
+        extrapRepeatDualValuedLoopBoundary.spline.SetPostExtrapolation(ex);
+    }
+
+    {
+        // Set the knot at time 0.0 to be dual valued
+        TsKnot knot0;
+        extrapRepeatDualValuedLoopBoundary.spline.GetKnot(0.0, &knot0);
+        knot0.SetPreValue(-0.5);
+        extrapRepeatDualValuedLoopBoundary.spline.SetKnot(knot0);
+        extrapRepeatDualValuedLoopBoundary.segments[0].t1[1] = -0.5;
+        extrapRepeatDualValuedLoopBoundary.segments[0].p1[1] = -0.5;
+
+        // Set the knot at time 2.0 to be dual valued
+        TsKnot knot2;
+        extrapRepeatDualValuedLoopBoundary.spline.GetKnot(2.0, &knot2);
+        knot2.SetPreValue(1.5);
+        extrapRepeatDualValuedLoopBoundary.spline.SetKnot(knot2);
+        extrapRepeatDualValuedLoopBoundary.segments[2].t1[1] = 1.5;
+        extrapRepeatDualValuedLoopBoundary.segments[2].p1[1] = 1.5;
+
+        // Set the knot at time 4.0 to be dual valued
+        TsKnot knot4;
+        extrapRepeatDualValuedLoopBoundary.spline.GetKnot(4.0, &knot4);
+        knot4.SetPreValue(4.0);
+        knot4.SetValue(6.0);
+        extrapRepeatDualValuedLoopBoundary.spline.SetKnot(knot4);
+        extrapRepeatDualValuedLoopBoundary.segments[5].t0[1] = 6.0;
+        extrapRepeatDualValuedLoopBoundary.segments[5].p0[1] = 6.0;
+    }
+
+    extrapRepeatDualValuedLoopBoundary.preExtrapValueOffset = 2.0;
+    extrapRepeatDualValuedLoopBoundary.postExtrapValueOffset = 3.5;
+    testSplineNames.insert(extrapRepeatDualValuedLoopBoundary.name);
+
+    // ================ ExtrapOscillateLoopBoundary ================
+    extrapOscillateLoopBoundary = simpleSpline;
+    extrapOscillateLoopBoundary.name = "ExtrapOscillateLoopBoundary";
+    {
+        TsExtrapolation ex(TsExtrapLoopOscillate);
+        ex.loopBoundaryTime = 1.0;
+        extrapOscillateLoopBoundary.spline.SetPreExtrapolation(ex);
+        ex.loopBoundaryTime = 2.0;
+        extrapOscillateLoopBoundary.spline.SetPostExtrapolation(ex);
+    }
+    testSplineNames.insert(extrapOscillateLoopBoundary.name);
+
     // ================ ExtrapRepeat ================
     // Same but change extrapolation to repeat looping.
     extrapRepeat = extrapReset;
@@ -520,6 +767,7 @@ void InitTestCases()
     extrapOscillate.spline.SetPostExtrapolation(TsExtrapLoopOscillate);
 
     testSplineNames.insert(extrapOscillate.name);
+
 }
 
 void ReportMismatch(const std::string& title,
@@ -543,6 +791,100 @@ void ReportMismatch(const std::string& title,
         std::cout << "  iterated: AtEnd\n";
     }
     std::cout << std::flush;
+}
+
+// Run a test using StepForward or StepBackward, depending on the value of
+// the given `backward` arg. This checks that we get the expected segments
+// in the expected order within the interval.
+template <typename ITER>
+static
+bool RunStepTest(
+    const TestCase& testCase,
+    const GfInterval& iterInterval,
+    const Dir direction,
+    const std::string& titleIn,
+    const std::vector<Ts_Segment>& expectedIn,
+    bool backward)
+{
+    bool result = true;
+
+    ITER iter;
+
+    if constexpr(std::is_same_v<ITER, Ts_SegmentIterator>) {
+        iter = ITER(testCase.spline, iterInterval);
+    } else {
+        iter = ITER(testCase.spline, iterInterval, (direction == Rev));
+    }
+
+    const std::vector<Ts_Segment> expected = backward
+        ? std::vector<Ts_Segment>(expectedIn.rbegin(), expectedIn.rend())
+        : expectedIn;
+    auto expectedIter = expected.begin();
+
+    const std::string title = titleIn + 
+        (backward ? " (StepBackward)" : " (StepForward)");
+
+    bool stepSuccess = true;
+    if (backward) {
+        // Step forward into AtEnd territory before running the test
+        size_t i = 0;
+        while (stepSuccess && !iter.AtEnd()) {
+            stepSuccess = iter.StepForward();
+            i++;
+        }
+        if (stepSuccess && i > 0) {
+            bool success = iter.StepBackward();
+            if (!success) {
+                std::cout << title << "; "
+                          << "StepBackward failed after successful StepForward"
+                          << std::endl;
+                return false;
+            }
+            i++;
+        }
+    }
+
+    while (expectedIter != expected.end() && (!iter.AtEnd() || !stepSuccess))
+    {
+        const Ts_Segment iterSeg = *iter;
+        const Ts_Segment expectedSeg = *expectedIter;
+        if (verbose) {
+            std::cout << "    " << iterSeg << std::endl;
+        }
+
+        if (*iter != *expectedIter) {
+            ReportMismatch(title, expectedSeg, iterSeg);
+            result = false;
+        }
+
+        stepSuccess = backward ? iter.StepBackward()
+                               : iter.StepForward();
+        ++expectedIter;
+    }
+
+    stepSuccess = true;
+    while (!iter.AtEnd()) {
+        const Ts_Segment iterSeg = *iter;
+        if (verbose) {
+            std::cout << "    " << iterSeg << std::endl;
+        }
+
+        ReportMismatch(title, std::nullopt, iterSeg);
+
+        result = false;
+        stepSuccess = backward ? iter.StepBackward()
+                               : iter.StepForward();
+    }
+
+    while (expectedIter != expected.end()) {
+        const Ts_Segment expectedSeg = *expectedIter;
+
+        ReportMismatch(title, expectedSeg, std::nullopt);
+
+        result = false;
+        ++expectedIter;
+    }
+    return result;
 }
 
 // Run a test given testCase with a particular iterator type.  iterInterval is
@@ -627,6 +969,17 @@ bool DoOneTest(const TestCase& testCase,
 
         result = false;
         ++expectedIter;
+    }
+
+    if (result) {
+        result = RunStepTest<ITER>(
+            testCase, iterInterval, direction,
+            title, expected, /* backward */ true);
+    }
+    if (result) {
+        result = RunStepTest<ITER>(
+            testCase, iterInterval, direction,
+            title, expected, /* backward */ false);
     }
 
     if (verbose) {
@@ -734,6 +1087,7 @@ bool TestIterators()
 {
     // Run all the tests!
     bool result =
+        ProtoTest(oneKnot, -5, 5, Fwd) &&
         ProtoTest(simpleInnerLoop, 137, 155, Fwd) &&
         ProtoTest(simpleInnerLoop, 137, 155, Rev) &&
         ProtoTest(simpleInnerLoop, 0, 999, Fwd) &&
@@ -776,15 +1130,24 @@ bool TestIterators()
         KnotTest(simpleInnerLoop, 119, 127.00001, Rev) &&
         KnotTest(simpleInnerLoop, 119, 127, Fwd) &&
         KnotTest(simpleInnerLoop, 119, 127, Rev) &&
+        KnotTest(simpleInnerLoop, 119, 137, Fwd) &&
+        KnotTest(simpleInnerLoop, 119, 137, Rev) &&
+        KnotTest(simpleInnerLoop, 112, 181, Fwd) &&
+        KnotTest(simpleInnerLoop, 112, 181, Rev) &&
         KnotTest(simpleInnerLoop, 163, 164, Fwd) &&
         KnotTest(simpleInnerLoop, 163, 164, Rev) &&
         KnotTest(simpleInnerLoop, 165, 166, Fwd) &&
         KnotTest(simpleInnerLoop, 165, 166, Rev) &&
         KnotTest(twoKnotBezier, 0, 999, Fwd) &&
         KnotTest(twoKnotBezier, 0, 999, Rev) &&
+        KnotTest(simpleSplineDualValued, -5, 10, Fwd) &&
+        KnotTest(simpleSplineDualValued, -5, 10, Rev) &&
 
+        FullTest(oneKnot, -5, 5, Fwd) &&
+        FullTest(oneKnotExtrapLoop, -5, 5, Fwd) &&
         FullTest(simpleInnerLoop, 137, 155, Fwd) &&
         FullTest(simpleInnerLoop, 0, 999, Fwd) &&
+        FullTest(simpleInnerLoopDualValued, 0, 999, Fwd) &&
         FullTest(simpleSpline, -5, 10, Fwd) &&
         FullTest(longLoop, -5, 10, Fwd) &&
         FullTest(longLoop, 0, 999, Fwd) &&
@@ -797,6 +1160,12 @@ bool TestIterators()
         FullTest(extrapOscillate, -10, 10, Fwd) &&
         FullTest(extrapOscillate, 0, 999, Fwd) &&
         FullTest(twoKnotBezier, 0, 999, Fwd) &&
+        FullTest(extrapResetDualValued, -10, 10, Fwd) &&
+        FullTest(extrapResetLoopBoundary, -10, 10, Fwd) &&
+        FullTest(extrapResetInvalidLoopBoundary, -10, 10, Fwd) &&
+        FullTest(extrapRepeatDualValuedLoopBoundary, -10, 10, Fwd) &&
+        FullTest(extrapOscillateLoopBoundary, -10, 10, Fwd) &&
+        FullTest(extrapOscillateLoopBoundary, 0, 999, Fwd) &&
 
         true;
 

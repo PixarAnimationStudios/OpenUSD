@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    upAxis = "Z"
+    startTimeCode = 0
+    endTimeCode = 100
+)
+
+def Plane "Plane"
+{
+    double width = 80
+    double length = 20
+}
+
+def Scope "Root" (
+    references = @waddlerRig.usda@</Rig>
+)
+{
+}

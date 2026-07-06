@@ -62,6 +62,13 @@ _CreateModelCardGeometryAttr(UsdGeomModelAPI &self,
 }
         
 static UsdAttribute
+_CreateModelCardVisibilityAttr(UsdGeomModelAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateModelCardVisibilityAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateModelCardTextureXPosAttr(UsdGeomModelAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateModelCardTextureXPosAttr(
@@ -191,6 +198,13 @@ void wrapUsdGeomModelAPI()
              &This::GetModelCardGeometryAttr)
         .def("CreateModelCardGeometryAttr",
              &_CreateModelCardGeometryAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetModelCardVisibilityAttr",
+             &This::GetModelCardVisibilityAttr)
+        .def("CreateModelCardVisibilityAttr",
+             &_CreateModelCardVisibilityAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

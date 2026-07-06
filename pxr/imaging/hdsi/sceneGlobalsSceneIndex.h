@@ -108,12 +108,12 @@ protected:
 private:
     friend class _SceneGlobalsDataSource;
 
-    SdfPath _activeRenderPassPrimPath;
-    std::optional<SdfPath> _activeRenderSettingsPrimPath;
-    std::optional<SdfPath> _primaryCameraPrimPath;
-    double _time = std::numeric_limits<double>::quiet_NaN();
-    double _timeCodesPerSecond = 24.0;
-    int _sceneStateId = 0;
+    std::optional<SdfPath> _activeRenderPassPrim;
+    std::optional<SdfPath> _activeRenderSettingsPrim;
+    std::optional<SdfPath> _primaryCameraPrim;
+    std::optional<double> _currentFrame;
+    std::optional<double> _timeCodesPerSecond;
+    std::optional<int> _sceneStateId;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

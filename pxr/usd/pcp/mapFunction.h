@@ -66,11 +66,10 @@ class PcpMapFunction
 public:
     /// A mapping from path to path.
     typedef std::map<SdfPath, SdfPath, SdfPath::FastLessThan> PathMap;
-    typedef std::pair<SdfPath, SdfPath> PathPair;
-    typedef std::vector<PathPair> PathPairVector;
 
     /// Construct a null function.
-    PcpMapFunction() = default;
+    PCP_API
+    PcpMapFunction();
 
     /// Constructs a map function with the given arguments.
     /// Returns a null map function on error (see IsNull()).
@@ -82,6 +81,18 @@ public:
     static PcpMapFunction 
     Create(const PathMap &sourceToTargetMap,
            const SdfLayerOffset &offset);
+
+    /// Constructs a "deferred-composition" map function from the given source
+    /// \p mapFn.
+    /// 
+    /// A deferred-composition map function represents the same mappings as
+    /// its source function, but is not immediately combined with other
+    /// map functions when they are composed together. This is primarily
+    /// used for targeted performance optimizations. See more details
+    /// in the docs for Compose.
+    PCP_API
+    static PcpMapFunction
+    DeferredComposition(const PcpMapFunction& mapFn);
 
     /// Constructs a map function that is equivalent to
     /// \code
@@ -119,6 +130,11 @@ public:
     PCP_API
     bool IsNull() const;
 
+    /// Return true if the map function is a defered-composition function.
+    /// See DeferredComposition and Compose.
+    PCP_API
+    bool IsDeferredComposition() const;
+
     /// Return true if the map function is the identity function.
     /// The identity function has an identity path mapping and time offset.
     PCP_API
@@ -132,7 +148,8 @@ public:
 
     /// Return true if the map function maps the absolute root path to the
     /// absolute root path, false otherwise.
-    bool HasRootIdentity() const { return _data.hasRootIdentity; }
+    PCP_API
+    bool HasRootIdentity() const;
 
     /// Map a path in the source namespace to the target.
     /// If the path is not in the domain, returns an empty path.
@@ -193,6 +210,19 @@ public:
     /// Compose this map over the given map function.
     /// The result will represent the application of f followed by
     /// the application of this function.
+    ///
+    /// By default, the returned PcpMapFunction is created by combining
+    /// the mappings in this function and \p f into a single set of mappings.
+    /// Subsequent operations only need to examine this set of mappings;
+    /// however, the time to combine the mappings may be relatively high
+    /// if either (or both) of the functions is large.
+    ///
+    /// If either function is a deferred-composition map function, the returned
+    /// PcpMapFunction stores both functions separately. Subsequent operations
+    /// then examine the stored mappings in sequence. This avoids the upfront
+    /// time of combining the mappings and reduces memory usage since existing
+    /// mappings are just reused. However, this makes subsequent path mapping
+    /// operations more expensive.
     PCP_API
     PcpMapFunction Compose(const PcpMapFunction &f) const;
 
@@ -225,14 +255,17 @@ public:
     size_t Hash() const;
 
 private:
+    struct _Mappings;
 
-    PCP_API
-    PcpMapFunction(PathPair const *sourceToTargetBegin,
-                   PathPair const *sourceToTargetEnd,
-                   SdfLayerOffset offset,
-                   bool hasRootIdentity);
+    PcpMapFunction(
+        std::shared_ptr<_Mappings>&& mappings,
+        SdfLayerOffset offset);
 
-    PCP_API
+    SdfPath
+    _MapPathImpl(
+        bool invert,
+        const SdfPath& path) const;
+
     SdfPathExpression
     _MapPathExpressionImpl(
         bool invert,
@@ -241,129 +274,34 @@ private:
         std::vector<SdfPathExpression::ExpressionReference> *unmappedRefs
         ) const;
 
+    // Return a "normalized" map function created from the mappings in
+    // this map function. This may return *this if this map function is
+    // already in normalized form.
+    //
+    // A normalized map function always contains a single set of
+    // source-to-target path mappings; all deferred-composition mappings
+    // are composed together. The resulting map function can be used
+    // for comparisons with other normalized map functions, or in
+    // cases where the fully-composed set of mappings is needed.
+    PcpMapFunction _GetNormalized() const;
+
+    // Return number of mapping sets in this map function. A map function
+    // may have more than 1 mapping set if it was composed from a
+    // deferred-composition map function.
+    PCP_API size_t _GetNumMappingSets() const;
+
 private:
     friend PcpMapFunction *Pcp_MakeIdentity();
-
-    static const int _MaxLocalPairs = 2;
-    struct _Data final {
-        _Data() {};
-
-        _Data(PathPair const *begin, PathPair const *end, bool hasRootIdentity)
-            : numPairs(end-begin)
-            , hasRootIdentity(hasRootIdentity) {
-            if (numPairs == 0)
-                return;
-            if (numPairs <= _MaxLocalPairs) {
-                std::uninitialized_copy(begin, end, localPairs);
-            }
-            else {
-                new (&remotePairs) std::shared_ptr<PathPair>(
-                    new PathPair[numPairs], std::default_delete<PathPair[]>());
-                std::copy(begin, end, remotePairs.get());
-            }
-        }
-        
-        _Data(_Data const &other)
-            : numPairs(other.numPairs)
-            , hasRootIdentity(other.hasRootIdentity) {
-            if (numPairs <= _MaxLocalPairs) {
-                std::uninitialized_copy(
-                    other.localPairs,
-                    other.localPairs + other.numPairs, localPairs);
-            }
-            else {
-                new (&remotePairs) std::shared_ptr<PathPair>(other.remotePairs);
-            }
-        }
-        _Data(_Data &&other)
-            : numPairs(other.numPairs)
-            , hasRootIdentity(other.hasRootIdentity) {
-            if (numPairs <= _MaxLocalPairs) {
-                PathPair *dst = localPairs;
-                PathPair *src = other.localPairs;
-                PathPair *srcEnd = other.localPairs + other.numPairs;
-                for (; src != srcEnd; ++src, ++dst) {
-                    ::new (static_cast<void*>(std::addressof(*dst)))
-                        PathPair(std::move(*src));
-                }
-            }
-            else {
-                new (&remotePairs)
-                    std::shared_ptr<PathPair>(std::move(other.remotePairs));
-            }
-        }
-        _Data &operator=(_Data const &other) {
-            if (this != &other) {
-                this->~_Data();
-                new (this) _Data(other);
-            }
-            return *this;
-        }
-        _Data &operator=(_Data &&other) {
-            if (this != &other) {
-                this->~_Data();
-                new (this) _Data(std::move(other));
-            }
-            return *this;
-        }
-        ~_Data() {
-            if (numPairs <= _MaxLocalPairs) {
-                for (PathPair *p = localPairs; numPairs--; ++p) {
-                    p->~PathPair();
-                }
-            }
-            else {
-                remotePairs.~shared_ptr<PathPair>();
-            }
-        }
-
-        bool IsNull() const {
-            return numPairs == 0 && !hasRootIdentity;
-        }
-
-        PathPair const *begin() const {
-            return numPairs <= _MaxLocalPairs ? localPairs : remotePairs.get();
-        }
-
-        PathPair const *end() const {
-            return begin() + numPairs;
-        }
-
-        bool operator==(_Data const &other) const {
-            return numPairs == other.numPairs &&
-                hasRootIdentity == other.hasRootIdentity &&
-                std::equal(begin(), end(), other.begin());
-        }
-
-        bool operator!=(_Data const &other) const {
-            return !(*this == other);
-        }
-
-        template <class HashState>
-        friend void TfHashAppend(HashState &h, _Data const &data){
-            h.Append(data.hasRootIdentity);
-            h.Append(data.numPairs);
-            h.AppendRange(std::begin(data), std::end(data));
-        }
-
-        union {
-            PathPair localPairs[_MaxLocalPairs > 0 ? _MaxLocalPairs : 1];
-            std::shared_ptr<PathPair> remotePairs;
-        };
-        typedef int PairCount;
-        PairCount numPairs = 0;
-        bool hasRootIdentity = false;
-    };
+    friend class Pcp_MapFunctionPyAccess;
 
     // Specialize TfHashAppend for PcpMapFunction.
     template <typename HashState>
     friend inline
     void TfHashAppend(HashState& h, const PcpMapFunction& x){
-        h.Append(x._data);
-        h.Append(x._offset);
+        h.Append(x.Hash());
     }
 
-    _Data _data;
+    std::shared_ptr<_Mappings> _mappings;
     SdfLayerOffset _offset;
 };
 

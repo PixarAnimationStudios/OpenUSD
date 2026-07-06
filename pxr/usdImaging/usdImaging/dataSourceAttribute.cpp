@@ -10,6 +10,7 @@
 
 #include "pxr/usd/usdShade/udimUtils.h"
 #include "pxr/usd/sdf/types.h"
+#include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,25 +37,41 @@ class UsdImagingDataSourceAssetPathAttribute :
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceAssetPathAttribute);
 
+    /// Value held via shared_ptr for atomic access.
+    using Value = std::shared_ptr<SdfAssetPath>;
+
     /// Returns the extracted SdfAssetPath value of the attribute at
     /// \p shutterOffset, with proper handling for UDIM paths.
     SdfAssetPath
     GetTypedValue(const HdSampledDataSource::Time shutterOffset) override
     {
+        // Check for cached value at 0.0 as a special case.
+        if (shutterOffset == 0.0) {
+            Value cachedValue = std::atomic_load(&_cachedValue);
+            if (cachedValue) {
+                return *cachedValue;
+            }
+        }
+
         using Parent = UsdImagingDataSourceAttribute<SdfAssetPath>;
         SdfAssetPath result = Parent::GetTypedValue(shutterOffset);
-        if (!UsdShadeUdimUtils::IsUdimIdentifier(result.GetAssetPath())) {
-            return result;
+        if (UsdShadeUdimUtils::IsUdimIdentifier(result.GetAssetPath())) {
+            UsdTimeCode time = _stageGlobals.GetTime();
+            if (time.IsNumeric()) {
+                time = UsdTimeCode(time.GetValue() + shutterOffset);
+            }
+            const std::string resolvedPath = UsdShadeUdimUtils::ResolveUdimPath(
+                result.GetAssetPath(),
+                _FindLayerHandle(_usdAttrQuery.GetAttribute(), time));
+            if (!resolvedPath.empty()) {
+                result = SdfAssetPath(result.GetAssetPath(), resolvedPath);
+            }
         }
-        UsdTimeCode time = _stageGlobals.GetTime();
-        if (time.IsNumeric()) {
-            time = UsdTimeCode(time.GetValue() + shutterOffset);
-        }
-        const std::string resolvedPath = UsdShadeUdimUtils::ResolveUdimPath(
-            result.GetAssetPath(),
-            _FindLayerHandle(_usdAttrQuery.GetAttribute(), time));
-        if (!resolvedPath.empty()) {
-            result = SdfAssetPath(result.GetAssetPath(), resolvedPath);
+
+        // Cache the result.
+        if (shutterOffset == 0.0) {
+            Value valueToCache = std::make_shared<SdfAssetPath>(result);
+            std::atomic_store(&_cachedValue, valueToCache);
         }
         return result;
     }
@@ -79,6 +96,10 @@ protected:
         : UsdImagingDataSourceAttribute<SdfAssetPath>(
             usdAttrQuery, stageGlobals, sceneIndexPath, timeVaryingFlagLocator)
     { }
+
+private:
+    // Cached result at shutterOffset=0.0
+    Value _cachedValue;
 };
 
 typedef HdSampledDataSourceHandle (*_DataSourceFactory)(

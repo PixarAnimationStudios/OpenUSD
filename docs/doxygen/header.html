@@ -60,7 +60,7 @@ function AddWarningBanner()
         // For now, we assume any other string is an older version string
         banner.innerHTML = "This document is for an older version of USD. See <a href='" + relURL + "'>this page</a> for the current release.";
       }
-      document.body.insertBefore(banner,document.body.childNodes[0]);
+      document.getElementById("top").appendChild(banner); 
     }
   }
 } 

@@ -424,6 +424,53 @@ class TestUsdValidationRegistryPyRegister(unittest.TestCase):
         self.assertIn(stage_validator, contained)
         self.assertIn(prim_validator, contained)
 
+    def test_NoticeOnRegisterValidator(self):
+        from pxr import Tf
+
+        received_validator_notices = []
+        key = Tf.Notice.RegisterGlobally(
+            UsdValidation.Notice.DidRegisterValidator,
+            lambda notice, sender: received_validator_notices.append(
+                notice.GetValidator()))
+
+        registry = UsdValidation.ValidationRegistry()
+        metadata = UsdValidation.ValidatorMetadata(
+            name="testPyStageValidatorForNotice",
+            doc="A validator used to test DidRegisterValidator notice"
+        )
+        registry.RegisterStageValidator(metadata, lambda stage, timeRange: [])
+
+        self.assertEqual(len(received_validator_notices), 1)
+        self.assertEqual(
+            received_validator_notices[0].GetMetadata().name,
+            "testPyStageValidatorForNotice"
+        )
+        key.Revoke()
+
+    def test_NoticeOnRegisterValidatorSuite(self):
+        from pxr import Tf
+
+        received_suite_notices = []
+        key = Tf.Notice.RegisterGlobally(
+            UsdValidation.Notice.DidRegisterValidatorSuite,
+            lambda notice, sender: received_suite_notices.append(
+                notice.GetValidatorSuite()))
+
+        registry = UsdValidation.ValidationRegistry()
+        suite_metadata = UsdValidation.ValidatorMetadata(
+            name="testPyValidatorSuiteForNotice",
+            doc="A validator suite used to test DidRegisterValidatorSuite notice",
+            isSuite=True,
+        )
+        registry.RegisterValidatorSuite(suite_metadata, [])
+
+        self.assertEqual(len(received_suite_notices), 1)
+        self.assertEqual(
+            received_suite_notices[0].GetMetadata().name, 
+            "testPyValidatorSuiteForNotice"
+        )
+        key.Revoke()
+
 
 if __name__ == "__main__":
     unittest.main()

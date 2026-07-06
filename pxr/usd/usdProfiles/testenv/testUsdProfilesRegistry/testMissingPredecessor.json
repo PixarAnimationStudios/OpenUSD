@@ -1,0 +1,21 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Profiles": {
+                    "Capabilities": {
+                        "exists.cap": {
+                            "docstring": "This capability exists"
+                        },
+                        "dangling.ref": {
+                            "predecessors": ["nonexistent.capability"],
+                            "docstring": "References a predecessor that does not exist"
+                        }
+                    }
+                }
+            },
+            "Name": "TestMissingPredecessor",
+            "Type": "resource"
+        }
+    ]
+}

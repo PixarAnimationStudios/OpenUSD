@@ -4,6 +4,9 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
+#ifndef USD_RESOLVER_EXAMPLE_RESOLVER_H
+#define USD_RESOLVER_EXAMPLE_RESOLVER_H
+
 #include "pxr/pxr.h"
 
 #include "pxr/usd/ar/asset.h"
@@ -78,3 +81,5 @@ private:
         bool forNewAsset) const;
     
 };
+
+#endif

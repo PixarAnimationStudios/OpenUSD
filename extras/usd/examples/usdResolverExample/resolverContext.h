@@ -4,6 +4,9 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
+#ifndef USD_RESOLVER_EXAMPLE_RESOLVER_CONTEXT_H
+#define USD_RESOLVER_EXAMPLE_RESOLVER_CONTEXT_H
+
 #include "pxr/pxr.h"
 
 #include "api.h"
@@ -57,3 +60,5 @@ private:
 PXR_NAMESPACE_OPEN_SCOPE
 AR_DECLARE_RESOLVER_CONTEXT(UsdResolverExampleResolverContext);
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif

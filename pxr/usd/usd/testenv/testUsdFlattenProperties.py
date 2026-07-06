@@ -6,7 +6,7 @@
 # https://openusd.org/license.
 
 import os, unittest
-from pxr import Usd, Sdf, Tf, Plug
+from pxr import Usd, Sdf, Tf, Gf, Plug
 
 class TestUsdFlattenProperties(unittest.TestCase):
     @classmethod
@@ -28,13 +28,13 @@ class TestUsdFlattenProperties(unittest.TestCase):
                 self.stage2: { -10: 100, 0: 1000 }
         }
         self.expectedTimeCodeDefaultValueOffsetSubLayer = {
-                self.srcStage: Sdf.TimeCode(0),
-                self.stage2: Sdf.TimeCode(-10)
+                self.srcStage: Gf.TimeCode(0),
+                self.stage2: Gf.TimeCode(-10)
         }
         self.expectedTimeCodeTimeSampleOffsetSubLayer = {
-                self.srcStage: { 0: Sdf.TimeCode(100), 10: Sdf.TimeCode(1000) },
+                self.srcStage: { 0: Gf.TimeCode(100), 10: Gf.TimeCode(1000) },
 
-                self.stage2: { -10.0: Sdf.TimeCode(90), 0.0: Sdf.TimeCode(990) }
+                self.stage2: { -10.0: Gf.TimeCode(90), 0.0: Gf.TimeCode(990) }
         }
 
     def tearDown(self):
@@ -180,9 +180,9 @@ class TestUsdFlattenProperties(unittest.TestCase):
         srcAttr = self.srcStage.GetPrimAtPath("/OffsetTimeCodeTimeSamples") \
                             .GetAttribute(propName)
 
-        self.assertEqual(self._GetDefault(srcAttr), Sdf.TimeCode(10))
+        self.assertEqual(self._GetDefault(srcAttr), Gf.TimeCode(10))
         self.assertEqual(self._GetTimeSamples(srcAttr), 
-                         { 10: Sdf.TimeCode(110), 20: Sdf.TimeCode(1010) })
+                         { 10: Gf.TimeCode(110), 20: Gf.TimeCode(1010) })
 
         rootPrimPath = Sdf.Path("/OffsetTimeCodeTimeSamplesRoot")
 
@@ -190,20 +190,20 @@ class TestUsdFlattenProperties(unittest.TestCase):
             dstAttr = srcAttr.FlattenTo(
                 dstStage.OverridePrim(rootPrimPath))
 
-            self.assertEqual(self._GetDefault(dstAttr), Sdf.TimeCode(10))
+            self.assertEqual(self._GetDefault(dstAttr), Gf.TimeCode(10))
             self.assertEqual(
-                self._GetTimeSamples(dstAttr), { 10: Sdf.TimeCode(110), 
-                                                 20: Sdf.TimeCode(1010) })
+                self._GetTimeSamples(dstAttr), { 10: Gf.TimeCode(110), 
+                                                 20: Gf.TimeCode(1010) })
             self.assertEqual(
                 self._GetDefaultInLayer(
                     dstStage.GetRootLayer(), rootPrimPath.AppendProperty(
                         propName)), 
-                Sdf.TimeCode(10))
+                Gf.TimeCode(10))
             self.assertEqual(
                 self._GetTimeSamplesInLayer(
                     dstStage.GetRootLayer(), rootPrimPath.AppendProperty(
                         propName)),
-                { 10: Sdf.TimeCode(110), 20: Sdf.TimeCode(1010) })
+                { 10: Gf.TimeCode(110), 20: Gf.TimeCode(1010) })
 
             subPrimPath = Sdf.Path("/OffsetTimeCodeTimeSamplesSublayer")
             dstSubLayer = dstStage.GetLayerStack()[-1]
@@ -212,10 +212,10 @@ class TestUsdFlattenProperties(unittest.TestCase):
                 dstAttr = srcAttr.FlattenTo(
                     dstStage.OverridePrim(subPrimPath))
 
-                self.assertEqual(self._GetDefault(dstAttr), Sdf.TimeCode(10))
+                self.assertEqual(self._GetDefault(dstAttr), Gf.TimeCode(10))
                 self.assertEqual(
-                    self._GetTimeSamples(dstAttr), { 10: Sdf.TimeCode(110), 
-                                                     20: Sdf.TimeCode(1010) })
+                    self._GetTimeSamples(dstAttr), { 10: Gf.TimeCode(110), 
+                                                     20: Gf.TimeCode(1010) })
                 self.assertEqual(
                     self._GetDefaultInLayer(
                         dstSubLayer, subPrimPath.AppendProperty(propName)), 

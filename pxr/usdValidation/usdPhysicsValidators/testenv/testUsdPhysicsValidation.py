@@ -6,7 +6,7 @@
 # https://openusd.org/license.
 
 import sys, os, unittest
-from pxr import Tf, Usd, UsdValidation, UsdPhysics, UsdGeom, Gf
+from pxr import Tf, Usd, UsdValidation, UsdPhysics, UsdGeom, Gf, Sdf, Vt
 
 
 class TestUsdPhysicsValidation(unittest.TestCase):
@@ -152,13 +152,82 @@ class TestUsdPhysicsValidation(unittest.TestCase):
         stage = Usd.Stage.CreateInMemory()
         self.assertTrue(stage)
 
-        physicsJoint = UsdPhysics.Joint.Define(stage, "/joint")
+        body0 = UsdGeom.Xform.Define(stage, "/body0")
+        UsdPhysics.RigidBodyAPI.Apply(body0.GetPrim())
 
+        physicsJoint = UsdPhysics.Joint.Define(stage, "/joint")
+        physicsJoint.GetBody0Rel().AddTarget("/body0")
         physicsJoint.GetBody1Rel().AddTarget("/invalidPrim")
 
         errors = validator.Validate(physicsJoint.GetPrim())
         self.assertTrue(len(errors) == 1)
-        self.assertTrue(errors[0].GetName() == "JointInvalidPrimRel")        
+        self.assertTrue(errors[0].GetName() == "JointInvalidPrimRel")
+
+    def test_physics_joint_rel_not_xformable(self):
+        validationRegistry = UsdValidation.ValidationRegistry()
+        validator = validationRegistry.GetOrLoadValidatorByName(
+            "usdPhysicsValidators:PhysicsJointChecker"
+        )
+
+        self.assertTrue(validator)
+
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        UsdGeom.Scope.Define(stage, "/scope")
+        xform = UsdGeom.Xform.Define(stage, "/xform")
+        UsdPhysics.RigidBodyAPI.Apply(xform.GetPrim())
+
+        physicsJoint = UsdPhysics.Joint.Define(stage, "/joint")
+        physicsJoint.GetBody0Rel().AddTarget("/scope")
+        physicsJoint.GetBody1Rel().AddTarget("/xform")
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "JointRelNotXformable")
+
+        # Xform is Xformable — should not trigger JointRelNotXformable
+        physicsJoint.GetBody0Rel().SetTargets(["/xform"])
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+    def test_physics_joint_requires_enabled_rigid_body(self):
+        validationRegistry = UsdValidation.ValidationRegistry()
+        validator = validationRegistry.GetOrLoadValidatorByName(
+            "usdPhysicsValidators:PhysicsJointChecker"
+        )
+
+        self.assertTrue(validator)
+
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        # Joint with no body rels — no enabled rigid body
+        physicsJoint = UsdPhysics.Joint.Define(stage, "/joint")
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "JointNoEnabledRigidBody")
+
+        # Add one enabled rigid body — should clear the error
+        body0 = UsdGeom.Xform.Define(stage, "/body0")
+        rbo0 = UsdPhysics.RigidBodyAPI.Apply(body0.GetPrim())
+        physicsJoint.GetBody0Rel().AddTarget("/body0")
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # Disable the rigid body — should fail again
+        body1 = UsdGeom.Xform.Define(stage, "/body1")
+        rbo1 = UsdPhysics.RigidBodyAPI.Apply(body1.GetPrim())
+        rbo0.GetRigidBodyEnabledAttr().Set(False)
+        rbo1.GetRigidBodyEnabledAttr().Set(False)
+        physicsJoint.GetBody1Rel().AddTarget("/body1")
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "JointNoEnabledRigidBody")
 
     def test_physics_joint_multiple_rels(self):
         validationRegistry = UsdValidation.ValidationRegistry()
@@ -171,8 +240,10 @@ class TestUsdPhysicsValidation(unittest.TestCase):
         stage = Usd.Stage.CreateInMemory()
         self.assertTrue(stage)
 
-        UsdGeom.Xform.Define(stage, "/xform0")
-        UsdGeom.Xform.Define(stage, "/xform1")
+        xform0 = UsdGeom.Xform.Define(stage, "/xform0")
+        UsdPhysics.RigidBodyAPI.Apply(xform0.GetPrim())
+        xform1 = UsdGeom.Xform.Define(stage, "/xform1")
+        UsdPhysics.RigidBodyAPI.Apply(xform1.GetPrim())
 
         physicsJoint = UsdPhysics.Joint.Define(stage, "/joint")
 
@@ -266,6 +337,141 @@ class TestUsdPhysicsValidation(unittest.TestCase):
         self.assertTrue(errors[0].GetName() == "ColliderNonUniformScale")
 
         stage.RemovePrim(shape.GetPrim().GetPrimPath())
+
+    def test_points_collider_primvar_widths(self):
+        validationRegistry = UsdValidation.ValidationRegistry()
+        validator = validationRegistry.GetOrLoadValidatorByName(
+            "usdPhysicsValidators:ColliderChecker"
+        )
+
+        self.assertTrue(validator)
+
+        # only widths attr authored, matching count — should pass
+        stage = Usd.Stage.CreateInMemory()
+        shape = UsdGeom.Points.Define(stage, "/shape")
+        UsdPhysics.CollisionAPI.Apply(shape.GetPrim())
+        shape.GetPointsAttr().Set([Gf.Vec3f(1.0), Gf.Vec3f(2.0)])
+        shape.GetWidthsAttr().Set([1.0, 2.0])
+
+        errors = validator.Validate(shape.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # only primvars:widths authored, matching count — should pass
+        stage = Usd.Stage.CreateInMemory()
+        shape = UsdGeom.Points.Define(stage, "/shape")
+        UsdPhysics.CollisionAPI.Apply(shape.GetPrim())
+        shape.GetPointsAttr().Set([Gf.Vec3f(1.0), Gf.Vec3f(2.0)])
+        primvarsAPI = UsdGeom.PrimvarsAPI(shape.GetPrim())
+        widthsPv = primvarsAPI.CreatePrimvar(
+            "widths", Sdf.ValueTypeNames.FloatArray)
+        widthsPv.Set([1.0, 2.0])
+
+        errors = validator.Validate(shape.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # both authored, primvars:widths wins — widths attr has wrong count
+        # but primvars:widths matches, so should pass
+        stage = Usd.Stage.CreateInMemory()
+        shape = UsdGeom.Points.Define(stage, "/shape")
+        UsdPhysics.CollisionAPI.Apply(shape.GetPrim())
+        shape.GetPointsAttr().Set([Gf.Vec3f(1.0), Gf.Vec3f(2.0)])
+        shape.GetWidthsAttr().Set([1.0])
+        primvarsAPI = UsdGeom.PrimvarsAPI(shape.GetPrim())
+        widthsPv = primvarsAPI.CreatePrimvar(
+            "widths", Sdf.ValueTypeNames.FloatArray)
+        widthsPv.Set([1.0, 2.0])
+
+        errors = validator.Validate(shape.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # both authored, primvars:widths wins — primvars has wrong count
+        # widths attr matches, but primvar takes priority so should fail
+        stage = Usd.Stage.CreateInMemory()
+        shape = UsdGeom.Points.Define(stage, "/shape")
+        UsdPhysics.CollisionAPI.Apply(shape.GetPrim())
+        shape.GetPointsAttr().Set([Gf.Vec3f(1.0), Gf.Vec3f(2.0)])
+        shape.GetWidthsAttr().Set([1.0, 2.0])
+        primvarsAPI = UsdGeom.PrimvarsAPI(shape.GetPrim())
+        widthsPv = primvarsAPI.CreatePrimvar(
+            "widths", Sdf.ValueTypeNames.FloatArray)
+        widthsPv.Set([1.0])
+
+        errors = validator.Validate(shape.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "ColliderSpherePointsDataMissing")
+
+        # neither authored — should fail
+        stage = Usd.Stage.CreateInMemory()
+        shape = UsdGeom.Points.Define(stage, "/shape")
+        UsdPhysics.CollisionAPI.Apply(shape.GetPrim())
+        shape.GetPointsAttr().Set([Gf.Vec3f(1.0)])
+
+        errors = validator.Validate(shape.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "ColliderSpherePointsDataMissing")
+
+        # indexed primvars:widths — 1 value, 2 indices matching 2 points
+        stage = Usd.Stage.CreateInMemory()
+        shape = UsdGeom.Points.Define(stage, "/shape")
+        UsdPhysics.CollisionAPI.Apply(shape.GetPrim())
+        shape.GetPointsAttr().Set([Gf.Vec3f(1.0), Gf.Vec3f(2.0)])
+        primvarsAPI = UsdGeom.PrimvarsAPI(shape.GetPrim())
+        widthsPv = primvarsAPI.CreatePrimvar(
+            "widths", Sdf.ValueTypeNames.FloatArray)
+        widthsPv.Set([1.0])
+        widthsPv.SetIndices(Vt.IntArray([0, 0]))
+
+        errors = validator.Validate(shape.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # indexed primvars:widths — wrong flattened count
+        widthsPv.SetIndices(Vt.IntArray([0]))
+
+        errors = validator.Validate(shape.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "ColliderSpherePointsDataMissing")
+
+    def test_plane_collider_static_only(self):
+        validationRegistry = UsdValidation.ValidationRegistry()
+        validator = validationRegistry.GetOrLoadValidatorByName(
+            "usdPhysicsValidators:ColliderChecker"
+        )
+
+        self.assertTrue(validator)
+
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        # Static plane collider (no rigid body parent) - should pass
+        plane = UsdGeom.Plane.Define(stage, "/staticPlane")
+        UsdPhysics.CollisionAPI.Apply(plane.GetPrim())
+
+        errors = validator.Validate(plane.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # Plane under a dynamic rigid body - should fail
+        dynamicBody = UsdGeom.Xform.Define(stage, "/dynamicBody")
+        rboAPI = UsdPhysics.RigidBodyAPI.Apply(dynamicBody.GetPrim())
+
+        dynamicPlane = UsdGeom.Plane.Define(stage, "/dynamicBody/plane")
+        UsdPhysics.CollisionAPI.Apply(dynamicPlane.GetPrim())
+
+        errors = validator.Validate(dynamicPlane.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "ColliderPlaneDynamic")
+
+        # Plane under a static rigid body (enabled=false) - should pass
+        rboAPI.GetRigidBodyEnabledAttr().Set(False)
+
+        errors = validator.Validate(dynamicPlane.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # Plane under a kinematic rigid body - should pass
+        rboAPI.GetRigidBodyEnabledAttr().Set(True)
+        rboAPI.GetKinematicEnabledAttr().Set(True)
+
+        errors = validator.Validate(dynamicPlane.GetPrim())
+        self.assertTrue(len(errors) == 0)
 
     def test_rigid_body_mass_api(self):
         validationRegistry = UsdValidation.ValidationRegistry()

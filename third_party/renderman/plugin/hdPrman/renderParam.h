@@ -46,6 +46,7 @@ class Session;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdPrman_IdMap;
 class HdPrmanFramebuffer;
 class HdPrmanCamera;
 class HdPrmanInstancer;
@@ -351,7 +352,11 @@ public:
 
     // Checks whether render param was successfully initialized.
     // ie. riley was created
+#if HD_API_VERSION >= 81
     bool IsValid() const override;
+#else
+    bool IsValid() const;
+#endif
 
     // Creates displays in riley based on aovBindings vector together
     // with HdPrmanFramebuffer to transfer the result between the
@@ -372,6 +377,10 @@ public:
     // Returns HdPrmanFramebuffer
     HdPrmanFramebuffer * GetFramebuffer() const {
         return _framebuffer.get();
+    }
+
+    HdPrman_IdMap* GetIdMap() const {
+        return _idMap.get();
     }
 
     // Creates displays in riley based on rendersettings map
@@ -443,6 +452,21 @@ public:
     void CreateDisplayFilterNetwork(HdSceneDelegate *sceneDelegate);
     riley::DisplayFilterList GetDisplayFilterList();
 
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+    // Riley Data from the Energy Filter Prim
+    void SetEnergyFilterPaths(HdSceneDelegate *sceneDelegate,
+        SdfPathVector const& energyFilterPaths);
+    SdfPathVector GetEnergyFilterPaths() {
+        return _energyFilterPaths;
+    }
+    void AddEnergyFilter(
+        HdSceneDelegate *sceneDelegate,
+        SdfPath const& path,
+        riley::ShadingNode const& node,
+        RtParamList const& properties);
+    void CreateEnergyFilterNetwork(HdSceneDelegate *sceneDelegate);
+#endif // _PRMANAPI_VERSION_MAJOR_ >= 27
+
     void FatalError(const char* msg);
 
     // Instancer by id
@@ -475,13 +499,11 @@ public:
     bool SetArbitraryValue(const TfToken& key, const VtValue& value) override;
 #endif
 
+#if PXR_VERSION >= 2308
     // Return the id map product name (ri:productType=idMap) in the provided
     // provided render settings. Returns an empty token if not found.
     static TfToken GetIdMapProductName(HdPrman_RenderSettings* renderSettings);
-
-    // Write the path to id mapping to a file with the provided name.
-    static void WriteIdMap(HdRenderIndex* renderIndex,
-                           const TfToken& productName);
+#endif
 
 private:
     void _CreateStatsSession();
@@ -578,6 +600,7 @@ private:
 
     std::unique_ptr<class HdRenderThread> _renderThread;
     std::unique_ptr<HdPrmanFramebuffer> _framebuffer;
+    std::unique_ptr<HdPrman_IdMap> _idMap;
 
     int _sceneLightCount;
 
@@ -656,7 +679,7 @@ private:
 
     // Render terminals
     // Since parallel sync is enabled for sample and display filters, filter
-    // nodes may be addeed in parallel via AddSampleFilter/AddDisplayFilter.
+    // nodes may be added in parallel via Add{Sample,Display}Filter.
     using _PathToRileyFilterMap =
         tbb::concurrent_unordered_map<SdfPath, riley::ShadingNode, SdfPath::Hash>;
 
@@ -671,6 +694,19 @@ private:
     SdfPathVector _displayFilterPaths;
     _PathToRileyFilterMap _displayFilterNodes;
     riley::DisplayFilterId _displayFiltersId;
+
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+    struct _EnergyFilterData {
+        riley::ShadingNode node;
+        RtParamList properties;
+        riley::EnergyFilterId id = riley::EnergyFilterId::InvalidId();
+    };
+    using _PathToEnergyFilterDataMap =
+        std::unordered_map<SdfPath, _EnergyFilterData, SdfPath::Hash>;
+
+    SdfPathVector _energyFilterPaths;
+    _PathToEnergyFilterDataMap _energyFilterNodes;
+#endif // _PRMANAPI_VERSION_MAJOR_ >= 27
     /// ------------------------------------------------------------------------
 
     /// ------------------------------------------------------------------------

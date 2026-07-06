@@ -35,6 +35,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRenderBuffer;
 
+///
+/// \deprecated Use HdxTaskControllerSceneIndex instead
+///
 class HdxTaskController final
 {
 public:

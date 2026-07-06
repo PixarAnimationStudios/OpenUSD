@@ -1,0 +1,147 @@
+#!/pxrpythonsubst
+#
+# Copyright 2026 Pixar
+#
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
+
+from __future__ import division
+from pxr import Gf, Tf
+import itertools, unittest
+
+# Test the basics of GfTimeCode which is a special typed wrapper around
+# double values.
+class TestGfTimeCode(unittest.TestCase):
+    def test_ReprAndConversion(self):
+        # Verify that the default time code is 0.
+        self.assertEqual(Gf.TimeCode(), Gf.TimeCode(0))
+
+        timeCode1 = Gf.TimeCode(0)
+        timeCode2 = Gf.TimeCode(3.0)
+        timeCode3 = Gf.TimeCode(-2.5)
+
+        self.assertEqual(repr(timeCode1), 'Gf.TimeCode(0)')
+        self.assertEqual(eval(repr(timeCode1)), timeCode1)
+        self.assertEqual(repr(timeCode2), 'Gf.TimeCode(3)')
+        self.assertEqual(eval(repr(timeCode2)), timeCode2)
+        self.assertEqual(repr(timeCode3), 'Gf.TimeCode(-2.5)')
+        self.assertEqual(eval(repr(timeCode3)), timeCode3)
+
+        self.assertEqual(str(timeCode1), '0')
+        self.assertEqual(str(timeCode2), '3')
+        self.assertEqual(str(timeCode3), '-2.5')
+
+        # Converts to float
+        self.assertEqual(float(timeCode1), 0)
+        self.assertEqual(float(timeCode2), 3)
+        self.assertEqual(float(timeCode3), -2.5)
+
+        # GetValue
+        self.assertEqual(timeCode1.GetValue(), 0)
+        self.assertEqual(timeCode2.GetValue(), 3)
+        self.assertEqual(timeCode3.GetValue(), -2.5)
+
+        # bool conversion
+        self.assertFalse(timeCode1)
+        self.assertTrue(timeCode2)
+        self.assertTrue(timeCode3)
+
+    def test_Comparison(self):
+        # Test the existence of comparison operators ==, !=, <, <=, >, >=.
+        # We test all operator permutations of Gf.TimeCode and float:
+        #   Gf.TimeCode <op> Gf.TimeCode
+        #   Gf.TimeCode <op> float
+        #   float <op> Gf.TimeCode
+        timeCode1 = Gf.TimeCode(0)
+        timeCode2 = Gf.TimeCode(3.0)
+        timeCode3 = Gf.TimeCode(-2.5)
+
+        self.assertTrue(timeCode2 == Gf.TimeCode(3))
+        self.assertTrue(timeCode2 == 3)
+        self.assertTrue(3 == timeCode2)
+
+        self.assertTrue(timeCode3 != Gf.TimeCode(3))
+        self.assertTrue(timeCode3 != 3)
+        self.assertTrue(3 != timeCode3)
+
+        self.assertFalse(timeCode1 < timeCode1)
+        self.assertTrue(timeCode1 < timeCode2)
+        self.assertFalse(timeCode1 < timeCode3)
+
+        self.assertFalse(timeCode1 < 0)
+        self.assertTrue(timeCode1 < 3)
+        self.assertFalse(timeCode1 < -2.5)
+
+        self.assertFalse(0 < timeCode1 )
+        self.assertFalse(3 < timeCode1)
+        self.assertTrue(-2.5 < timeCode1)
+
+        self.assertTrue(timeCode1 <= timeCode1)
+        self.assertTrue(timeCode1 <= timeCode2)
+        self.assertFalse(timeCode1 <= timeCode3)
+
+        self.assertTrue(timeCode1 <= 0)
+        self.assertTrue(timeCode1 <= 3)
+        self.assertFalse(timeCode1 <= -2.5)
+
+        self.assertTrue(0 <= timeCode1)
+        self.assertFalse(3 <= timeCode1)
+        self.assertTrue(-2.5 <= timeCode1)
+
+        self.assertFalse(timeCode1 > timeCode1)
+        self.assertFalse(timeCode1 > timeCode2)
+        self.assertTrue(timeCode1 > timeCode3)
+
+        self.assertFalse(timeCode1 > 0)
+        self.assertFalse(timeCode1 > 3)
+        self.assertTrue(timeCode1 > -2.5)
+
+        self.assertFalse(0 > timeCode1 )
+        self.assertTrue(3 > timeCode1)
+        self.assertFalse(-2.5 > timeCode1)
+
+        self.assertTrue(timeCode1 >= timeCode1)
+        self.assertFalse(timeCode1 >= timeCode2)
+        self.assertTrue(timeCode1 >= timeCode3)
+
+        self.assertTrue(timeCode1 >= 0)
+        self.assertFalse(timeCode1 >= 3)
+        self.assertTrue(timeCode1 >= -2.5)
+
+        self.assertTrue(0 >= timeCode1)
+        self.assertTrue(3 >= timeCode1)
+        self.assertFalse(-2.5 >= timeCode1)
+
+    def test_Arithmetic(self):
+        # Test the existence of the basic aritmetic operators +, -, *, /
+        # We test all operator permutations of Gf.TimeCode and float:
+        #   Gf.TimeCode <op> Gf.TimeCode
+        #   Gf.TimeCode <op> float
+        #   float <op> Gf.TimeCode
+        timeCode1 = Gf.TimeCode(0)
+        timeCode2 = Gf.TimeCode(3.0)
+        timeCode3 = Gf.TimeCode(-2.5)
+
+        self.assertEqual(timeCode2 + timeCode3, Gf.TimeCode(0.5))
+        self.assertEqual(timeCode3 + timeCode2, Gf.TimeCode(0.5))
+        self.assertEqual(timeCode2 + 5.0, Gf.TimeCode(8.0))
+        self.assertEqual(5.0 + timeCode2, Gf.TimeCode(8.0))
+
+        self.assertEqual(timeCode2 - timeCode3, Gf.TimeCode(5.5))
+        self.assertEqual(timeCode3 - timeCode2, Gf.TimeCode(-5.5))
+        self.assertEqual(timeCode2 - 5.0, Gf.TimeCode(-2.0))
+        self.assertEqual(5.0 - timeCode2, Gf.TimeCode(2.0))
+
+        self.assertEqual(timeCode2 * timeCode3, Gf.TimeCode(-7.5))
+        self.assertEqual(timeCode3 * timeCode2, Gf.TimeCode(-7.5))
+        self.assertEqual(timeCode2 * 5.0, Gf.TimeCode(15.0))
+        self.assertEqual(5.0 * timeCode2, Gf.TimeCode(15.0))
+
+        self.assertEqual(timeCode2 / Gf.TimeCode(2), Gf.TimeCode(1.5))
+        self.assertEqual(Gf.TimeCode(6.0) / timeCode2, Gf.TimeCode(2.0))
+        self.assertEqual(timeCode2 / 5.0, Gf.TimeCode(0.6))
+        self.assertEqual(6.0 / timeCode2, Gf.TimeCode(2.0))
+
+
+if __name__ == "__main__":
+    unittest.main()

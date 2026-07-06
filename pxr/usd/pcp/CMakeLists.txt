@@ -375,10 +375,10 @@ pxr_register_test(testPcpMuseum_BasicVariantWithConnections
 
 pxr_register_test(testPcpMuseum_BasicVariantWithReference
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd BasicVariantWithReference/root.usda" 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd --errorFile compositionErrors_BasicVariantWithReference.txt BasicVariantWithReference/root.usda" 
     TESTENV testenv/testPcpMuseum_BasicVariantWithReference.testenv
     STDOUT_REDIRECT compositionResults_BasicVariantWithReference.txt
-    DIFF_COMPARE compositionResults_BasicVariantWithReference.txt 
+    DIFF_COMPARE compositionResults_BasicVariantWithReference.txt compositionErrors_BasicVariantWithReference.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicOwner
@@ -427,6 +427,14 @@ pxr_register_test(testPcpMuseum_BasicSpecializesAndVariants
     TESTENV testenv/testPcpMuseum_BasicSpecializesAndVariants.testenv
     STDOUT_REDIRECT compositionResults_BasicSpecializesAndVariants.txt
     DIFF_COMPARE compositionResults_BasicSpecializesAndVariants.txt 
+)
+
+pxr_register_test(testPcpMuseum_EdgeCaseLocalAndGlobalClassCombination
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd EdgeCaseLocalAndGlobalClassCombination/root.usda" 
+    TESTENV testenv/testPcpMuseum_EdgeCaseLocalAndGlobalClassCombination.testenv
+    STDOUT_REDIRECT compositionResults_EdgeCaseLocalAndGlobalClassCombination.txt
+    DIFF_COMPARE compositionResults_EdgeCaseLocalAndGlobalClassCombination.txt 
 )
 
 pxr_register_test(testPcpMuseum_ElidedAncestralRelocates
@@ -1256,12 +1264,28 @@ pxr_register_test(testPcpMuseum_TrickyMultipleRelocationsAndClasses2
     DIFF_COMPARE compositionResults_TrickyMultipleRelocationsAndClasses2.txt 
 )
 
+pxr_register_test(testPcpMuseum_TrickyMultipleRelocationsAndClasses3
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd TrickyMultipleRelocationsAndClasses3/root.usda" 
+    TESTENV testenv/testPcpMuseum_TrickyMultipleRelocationsAndClasses3.testenv
+    STDOUT_REDIRECT compositionResults_TrickyMultipleRelocationsAndClasses3.txt
+    DIFF_COMPARE compositionResults_TrickyMultipleRelocationsAndClasses3.txt 
+)
+
 pxr_register_test(testPcpMuseum_TrickyNonLocalVariantSelection
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd TrickyNonLocalVariantSelection/root.usda" 
     TESTENV testenv/testPcpMuseum_TrickyNonLocalVariantSelection.testenv
     STDOUT_REDIRECT compositionResults_TrickyNonLocalVariantSelection.txt
     DIFF_COMPARE compositionResults_TrickyNonLocalVariantSelection.txt 
+)
+
+pxr_register_test(testPcpMuseum_UnmappableImpliedInherit
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd UnmappableImpliedInherit/root.usda" 
+    TESTENV testenv/testPcpMuseum_UnmappableImpliedInherit.testenv
+    STDOUT_REDIRECT compositionResults_UnmappableImpliedInherit.txt
+    DIFF_COMPARE compositionResults_UnmappableImpliedInherit.txt 
 )
 
 pxr_register_test(testPcpMuseum_ErrorOpinionAtRelocationSource
@@ -1391,6 +1415,14 @@ pxr_register_test(testPcpMuseum_ErrorRelocateWithVariantSelection
     DIFF_COMPARE compositionResults_ErrorRelocateWithVariantSelection.txt compositionErrors_ErrorRelocateWithVariantSelection.txt
     ENV 
         SDF_SCHEMA_PROHIBIT_INVALID_VARIANT_SELECTIONS=0
+)
+
+pxr_register_test(testPcpMuseum_VariantSelectionsInVariantsOrder
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd VariantSelectionsInVariantsOrder/root.usda" 
+    TESTENV testenv/testPcpMuseum_VariantSelectionsInVariantsOrder.testenv
+    STDOUT_REDIRECT compositionResults_VariantSelectionsInVariantsOrder.txt
+    DIFF_COMPARE compositionResults_VariantSelectionsInVariantsOrder.txt
 )
 
 pxr_register_test(testPcpMuseum_VariantSpecializesAndReferenceSurprisingBehavior

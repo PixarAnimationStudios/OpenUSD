@@ -49,6 +49,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Linear AdobeRGB: lin_adobergb_scene
 /// CIE XYZ-D65 - Scene-referred: lin_ciexyzd65_scene
 /// sRGB Encoded Rec.709 (sRGB): srgb_rec709_scene
+/// Gamma 2.4 Encoded Rec.709: g24_rec709_scene
 /// Gamma 2.2 Encoded Rec.709: g22_rec709_scene
 /// Gamma 1.8 Encoded Rec.709: g18_rec709_scene
 /// sRGB Encoded AP1: srgb_ap1_scene
@@ -79,6 +80,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((LinearAdobeRGB, "lin_adobergb_scene"))     \
     ((LinearCIEXYZD65, "lin_ciexyzd65_scene"))   \
     ((SRGBRec709, "srgb_rec709_scene"))          \
+    ((G24Rec709, "g24_rec709_scene"))            \
     ((G22Rec709, "g22_rec709_scene"))            \
     ((G18Rec709, "g18_rec709_scene"))            \
     ((SRGBAP1, "srgb_ap1_scene"))                \

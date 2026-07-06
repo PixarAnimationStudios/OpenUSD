@@ -14,10 +14,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // Validate ordering of various hdPrman scene index plugins at compile time.
 //
+#if PXR_VERSION >= 2402
 static_assert(
     HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin::GetInsertionPhase() <
     HdPrman_VelocityMotionResolvingSceneIndexPlugin::GetInsertionPhase(),
     "Resolve computed primvars before resolving velocity motion.");
+#endif
 
 static_assert(
     HdPrman_VelocityMotionResolvingSceneIndexPlugin::GetInsertionPhase() <

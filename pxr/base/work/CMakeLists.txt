@@ -23,6 +23,7 @@ if (use_tbb)
         workTBB/loops_impl.h
         workTBB/reduce_impl.h
         workTBB/sort_impl.h
+        workTBB/tbb_version.h
         workTBB/withScopedParallelism_impl.h
     )   
 
@@ -132,6 +133,7 @@ pxr_build_test(testWorkThreadLimits
 
 pxr_register_test(testWorkDispatcher
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkDispatcher"
+    LABELS $<IF:$<PLATFORM_ID:Windows>,flaky,>
 )
 pxr_register_test(testWorkLoops
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkLoops"
@@ -163,14 +165,17 @@ if (use_tbb)
     )
     pxr_register_test(testWorkThreadLimitsTBBDefault
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkThreadLimitsTBB"
+        LABELS "flaky"
     )
     pxr_register_test(testWorkThreadLimitsTBB1
         ENV PXR_WORK_THREAD_LIMIT=1
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkThreadLimitsTBB"
+        LABELS "flaky"
     )
     pxr_register_test(testWorkThreadLimitsTBB3
         ENV PXR_WORK_THREAD_LIMIT=3
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkThreadLimitsTBB"
+        LABELS "flaky"
     )
 
     # Note: These tests are disabled for emscripten due to TBB worker

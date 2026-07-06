@@ -52,7 +52,7 @@ HdPrman_VolumeFilter::Finalize(HdRenderParam *renderParam)
     std::lock_guard<std::mutex> lock(_syncToRileyMutex);
     auto* param = static_cast<HdPrman_RenderParam*>(renderParam);
     riley::Riley *riley = param->AcquireRiley();
-    if (_coordSysId != riley::CoordinateSystemId::InvalidId()) {
+    if (riley && _coordSysId != riley::CoordinateSystemId::InvalidId()) {
         riley->DeleteCoordinateSystem(_coordSysId);
         _coordSysId = riley::CoordinateSystemId::InvalidId();
     }

@@ -7,8 +7,8 @@
 # https://openusd.org/license.
 #
 
+from pxr import Ts
 from pxr.Ts import TsTest_Museum as Museum
-from pxr.Ts import TsTest_SplineData as SData
 from pxr.Ts import TsTest_SampleBezier as SampleBezier
 from pxr.Ts import TsTest_TsEvaluator as Evaluator
 from pxr.Ts import TsTest_SampleTimes as STimes
@@ -24,23 +24,23 @@ class TsTest_TsVsBezier(unittest.TestCase):
         Obtain a spline from the Museum, evaluate it, and compare the results
         against a ground-truth Bezier sampled with de Casteljau.
         """
-        # Get the Museum data.
-        data = Museum.GetDataByName(name)
+        # Get the Museum spline.
+        spline = Museum.GetSplineByName(name)
 
         # Perform Bezier sampling.
-        bezSamples = SampleBezier(data, numSamples = 200)
+        bezSamples = SampleBezier(spline, numSamples = 200)
 
         # Copy the sample times that were returned.
         times = STimes()
         times.AddTimes([s.time for s in bezSamples])
 
         # Perform evaluation at the same times.
-        evalSamples = Evaluator().Eval(data, times)
+        evalSamples = Evaluator().Eval(spline, times)
 
         # Compare.
         comparator = Comparator(title = name)
-        comparator.AddSpline("Bezier", data, bezSamples)
-        comparator.AddSpline("Ts", data, evalSamples)
+        comparator.AddSpline("Bezier", spline, bezSamples)
+        comparator.AddSpline("Ts", spline, evalSamples)
 
         # Create graph if possible.
         if Comparator.Init():
@@ -74,9 +74,27 @@ if __name__ == "__main__":
         if name.startswith("Regressive"):
             continue
 
-        # Skip cases that include non-Bezier segments.
-        data = Museum.GetDataByName(name)
-        if data.GetRequiredFeatures() != SData.FeatureBezierSegments:
+        # Skip cases that include non-Bezier segments, and that have features
+        # unsupported by a simple bezier implementation -- inner loops,
+        # extrapolation loops, sloped extrapolation.
+        spline = Museum.GetSplineByName(name)
+        if spline.GetCurveType() != Ts.CurveTypeBezier or \
+                spline.HasInnerLoops() or \
+                spline.GetPreExtrapolation().mode == Ts.ExtrapSloped or \
+                spline.GetPostExtrapolation().mode == Ts.ExtrapSloped or \
+                spline.GetPreExtrapolation().IsLooping() or \
+                spline.GetPostExtrapolation().IsLooping():
+            continue
+
+        # Skip cases whose knots have auto ease tangent algorithms or have
+        # dual values
+        skipKnotFeatures = False
+        for knot in spline.GetKnots().values():
+            if knot.IsDualValued() or \
+                    knot.GetPreTanAlgorithm() == Ts.TangentAlgorithmAutoEase or \
+                    knot.GetPostTanAlgorithm() == Ts.TangentAlgorithmAutoEase:
+                skipKnotFeatures = True
+        if skipKnotFeatures:
             continue
 
         def func(self, name):

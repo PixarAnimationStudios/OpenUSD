@@ -94,12 +94,6 @@ class SdfAssetPath;
 /// (i.e. less locally than) the local to parent transformation computed at 
 /// the root of the prototype it is instancing. 
 /// 
-/// If your processing of prototype geometry naturally takes into account the 
-/// transform of the prototype root, then this term can be omitted from the 
-/// computation of each instance transform, and this can be controlled when 
-/// computing instance transformation matrices using the 
-/// UsdGeomPointInstancer::PrototypeXformInclusion enumeration.
-/// 
 /// To understand the computation of the instance transform, in order to put
 /// an instance of a PointInstancer into the space of the PointInstancer's 
 /// parent prim we do the following:
@@ -838,7 +832,9 @@ public:
     // --------------------------------------------------------------------- //
  
     /// \enum ProtoXformInclusion
-    /// 
+    ///
+    /// Flag for \sa ComputeInstanceTransformsAtTime and
+    /// \sa ComputeInstanceTransformsAtTimes.
     /// Encodes whether to include each prototype's root prim's transformation
     /// as the most-local component of computed instance transforms.
     enum ProtoXformInclusion {
@@ -849,9 +845,10 @@ public:
     
     /// \enum MaskApplication
     /// 
+    /// Flag for \sa ComputeInstanceTransformsAtTime and
+    /// \sa ComputeInstanceTransformsAtTimes.
     /// Encodes whether to evaluate and apply the PointInstancer's
     /// mask to computed results.
-    /// \sa ComputeMaskAtTime()
     enum MaskApplication {
         ApplyMask,    //!< Compute and apply the PointInstancer mask
         IgnoreMask    //!< Ignore the PointInstancer mask

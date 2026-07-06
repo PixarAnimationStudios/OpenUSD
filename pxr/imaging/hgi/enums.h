@@ -60,6 +60,9 @@ using HgiBits = uint32_t;
 ///   Indirect command buffers are supported</li>
 /// <li>HgiDeviceCapabilitiesBitsRoundPoints:
 ///   Points can be natively rasterized as disks</li>
+/// <li>HgiDeviceCapabilitiesForceEarlyFragmentTest:
+///   Supports enforcing early fragment test(https://www.khronos.org/opengl/wiki/Early_Fragment_Test),
+///   regardless of the body of the shader</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
@@ -84,6 +87,7 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsIndirectCommandBuffers   = 1 << 17,
     HgiDeviceCapabilitiesBitsRoundPoints              = 1 << 18,
     HgiDeviceCapabilitiesBitsSingleSlotResourceArrays = 1 << 19,
+    HgiDeviceCapabilitiesForceEarlyFragmentTest       = 1 << 20,
 };
 
 using HgiDeviceCapabilities = HgiBits;

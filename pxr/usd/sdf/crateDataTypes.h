@@ -56,7 +56,7 @@ xx(Matrix4d,       15, GfMatrix4d,        true)
 
 // These are array types, but are defined below, since the greatest enumerant
 // value must be last.
-// xx(TimeCode,       56, SdfTimeCode,       true)   
+// xx(TimeCode,       56, GfTimeCode,        true)   
 // xx(PathExpression, 57, SdfPathExpression, true)
 
 
@@ -97,7 +97,7 @@ xx(PayloadListOp,           55, SdfPayloadListOp,            false)
 
 // These array types appear here since the greatest enumerant value must be
 // last.
-xx(TimeCode,                56, SdfTimeCode,                 true)
+xx(TimeCode,                56, GfTimeCode,                  true)
 xx(PathExpression,          57, SdfPathExpression,           true)
 
 xx(Relocates,               58, SdfRelocates,                false)

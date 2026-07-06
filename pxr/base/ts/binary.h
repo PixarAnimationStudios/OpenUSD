@@ -29,6 +29,9 @@ public:
     // Get spline data version that is needed to write the given spline.
     // 1: initial version.
     // 2: added tangent algorithms None and AutoEase
+    // 3: added loopBoundaryTime to delimit spline extrapolation loop regions,
+    //    and repurposed the time-valued header bit to denote a GfTimeCode
+    //    value type
     TS_API
     static uint8_t GetBinaryFormatVersion(const TsSpline& spline);
 
@@ -47,7 +50,7 @@ public:
         std::unordered_map<TsTime, VtDictionary> &&customData);
 
 private:
-    static TsSpline _ParseV1_2(
+    static TsSpline _ParseV1_3(
         uint8_t version,
         const std::vector<uint8_t> &buf,
         std::unordered_map<TsTime, VtDictionary> &&customData);

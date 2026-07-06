@@ -46,7 +46,11 @@ class ESF_API_TYPE EsfObjectInterface : public EsfFixedSizePolymorphicBase
 public:
     ESF_API ~EsfObjectInterface() override;
 
+    /// Returns true if the object is valid, active, loaded, defined, and
+    /// non-abstract.
+    ///
     /// \see UsdObject::IsValid
+    /// \see UsdPrimDefaultPredicate
     ESF_API bool IsValid(EsfJournal *journal) const;
 
     /// \see UsdObject::GetPath

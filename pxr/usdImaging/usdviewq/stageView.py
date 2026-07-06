@@ -2209,15 +2209,16 @@ class StageView(QGLWidget):
         cameraFrustum.nearFar = \
             Gf.Range1d(smallNear, smallNear*FreeCamera.maxSafeZResolution)
         pickResults = self.pick(cameraFrustum)
-        if pickResults[0] is None or pickResults[2] == Sdf.Path.emptyPath:
+        if len(pickResults) == 0:
             cameraFrustum.nearFar = \
                 Gf.Range1d(trueFar/FreeCamera.maxSafeZResolution, trueFar)
             pickResults = self.pick(cameraFrustum)
             if Tf.Debug.IsDebugSymbolNameEnabled(DEBUG_CLIPPING):
                 print("computeAndSetClosestDistance: Needed to call pick() a second time")
 
-        if pickResults[0] is not None and pickResults[2] != Sdf.Path.emptyPath:
-            self._dataModel.viewSettings.freeCamera.setClosestVisibleDistFromPoint(pickResults[0])
+        if len(pickResults) > 0:
+            self._dataModel.viewSettings.freeCamera.setClosestVisibleDistFromPoint(
+                pickResults[0].hitPoint)
             self.updateView()
 
     def pick(self, pickFrustum):
@@ -2230,7 +2231,7 @@ class StageView(QGLWidget):
         renderer = self._getRenderer()
         if not self._dataModel.stage or not renderer:
             # error has already been issued
-            return None, None, Sdf.Path.emptyPath, None, None, None
+            return []
 
         # this import is here to make sure the create_first_image stat doesn't
         # regress..
@@ -2259,10 +2260,18 @@ class StageView(QGLWidget):
         self._renderParams.enableSceneMaterials = self._dataModel.viewSettings.enableSceneMaterials
         self._renderParams.enableSceneLights = self._dataModel.viewSettings.enableSceneLights
 
+        pickParams = UsdImagingGL.Engine.PickParams()
+        # XXX See also HdxPickTokens in pickTask.h.
+        #
+        # Can we move this somewhere with Python wrapping?
+        pickParams.resolveMode = "resolveNearestToCenter"
+
         results = renderer.TestIntersection(
+                pickParams,
                 pickFrustum.ComputeViewMatrix(),
                 pickFrustum.ComputeProjectionMatrix(),
-                self._dataModel.stage.GetPseudoRoot(), self._renderParams)
+                self._dataModel.stage.GetPseudoRoot(),
+                self._renderParams)
         if Tf.Debug.IsDebugSymbolNameEnabled(DEBUG_CLIPPING):
             print("Pick results = {}".format(results))
 
@@ -2311,17 +2320,25 @@ class StageView(QGLWidget):
         try:
             (inImageBounds, pickFrustum) = self.computePickFrustum(x,y)
 
+            selectedPoint = [-1, -1]
+            selectedPrimPath = Sdf.Path.emptyPath
+            selectedInstanceIndex = -1
+            selectedTLPath, selectedTLIndex = Sdf.Path.emptyPath, -1
+
+            # If we're picking outside the image viewport (maybe because
+            # camera guides are on), treat that as a de-select.
             if inImageBounds:
-                selectedPoint, selectedNormal, selectedPrimPath, \
-                selectedInstanceIndex, selectedTLPath, selectedTLIndex = \
-                self.pick(pickFrustum)
-            else:
-                # If we're picking outside the image viewport (maybe because
-                # camera guides are on), treat that as a de-select.
-                selectedPoint, selectedNormal, selectedPrimPath, \
-                selectedInstanceIndex, selectedTLPath, selectedTLIndex = \
-                    [-1,-1], None, Sdf.Path.emptyPath, -1, Sdf.Path.emptyPath, -1
-        
+                hits = self.pick(pickFrustum)
+                if len(hits) > 0:
+                    hit = hits[0]
+                    selectedPoint = hit.hitPoint
+                    selectedPrimPath = hit.hitPrimPath
+                    selectedInstanceIndex = hit.hitInstanceIndex
+                    if len(hit.instancerContext) > 0:
+                        selectedTLPath, selectedTLIndex = hit.instancerContext[0]
+                    else:
+                        selectedTLPath, selectedTLIndex = Sdf.Path.emptyPath, -1
+
             # Correct for high DPI displays
             # Cast to int explicitly as some versions of PySide/Shiboken throw
             # when converting extremely small doubles held in selectedPoint

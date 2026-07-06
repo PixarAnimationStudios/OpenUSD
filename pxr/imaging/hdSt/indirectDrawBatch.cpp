@@ -621,7 +621,12 @@ HdSt_IndirectDrawBatch::_CompileBatch(
             drawItem->GetGeometricShader()->GetPrimitiveIndexSize();
 
         uint32_t const baseVertex = vertexDC;
-        uint32_t const vertexCount = _GetElementCount(dc.vertexBar);
+
+        // Query fallback vertex count from geometric shader if the vertex bar
+        // is empty
+        uint32_t const vertexCount = dc.vertexBar ?
+                    _GetElementCount(dc.vertexBar) : 
+                    drawItem->GetGeometricShader()->GetVertexCountFallback();
 
         // if delegate fails to get vertex primvars, it could be empty.
         // skip the drawitem to prevent drawing uninitialized vertices.

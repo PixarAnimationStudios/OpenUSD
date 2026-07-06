@@ -212,7 +212,12 @@ Exec_Runtime::ComputeWithOverrides(
         return nullptr;
     }
 
-    // Create a masked subexecutor that will be used for every call to
+    const VdfNetwork *const network = schedule.GetNetwork();
+    if (!TF_VERIFY(network)) {
+        return nullptr;
+    }
+
+    // Create a masked sub-executor that will be used for every call to
     // ComputeWithOverrides. This dataless executor maintains a mask of outputs
     // that are invalid (due to the overrides) without affecting the main
     // executor. This is a parent of the temporary executor created for only
@@ -222,15 +227,30 @@ Exec_Runtime::ComputeWithOverrides(
     if (!_overridesExecutor) {
         _overridesExecutor =
             std::make_unique<EfMaskedSubExecutor>(_executor.get());
+        _overridesExecutorNetworkVersion = network->GetVersion();
     }
     else {
+        // Clear the cached invalidation state in the masked sub-executor.
+        //
+        // This effectively marks every output as valid, setting us up for the
+        // call to InvalidateValues on the sub-executor below.
         _overridesExecutor->ClearData();
+
+        // If the network has changed since the masked sub-executor was last
+        // used, clear its topological state so that it won't use stale caches
+        // (e.g., the replay cache) when we call InvalidateValues on the
+        // sub-executor below.
+        if (const size_t newNetworkVersion = network->GetVersion();
+            newNetworkVersion != _overridesExecutorNetworkVersion) {
+            _overridesExecutor->InvalidateTopologicalState();
+            _overridesExecutorNetworkVersion = newNetworkVersion;
+        }
     }
 
     // Create a temporary executor only used for this call to
     // ComputeWithOverrides. Overridden values, and computation results that
-    // depend on overridden values are stored in this subexecutor, as to avoid
-    // overwriting values in the main executor. This subexecutor will be
+    // depend on overridden values are stored in this sub-executor, as to avoid
+    // overwriting values in the main executor. This sub-executor will be
     // returned to the caller, so that computed values can be extracted. Use a
     // parallel executor engine if paralellism is enabled, but only if the
     // schedule is sufficiently large. Small schedules are evaluated more
@@ -254,7 +274,7 @@ Exec_Runtime::ComputeWithOverrides(
             continue;
         }
 
-        // Set the override value in the subexecutor.
+        // Set the override value in the sub-executor.
         subExecutor->SetOutputValue(
             *maskedOutput.GetOutput(),
             ExecTypeRegistry::GetInstance().CreateVector(overriddenValues[i]),

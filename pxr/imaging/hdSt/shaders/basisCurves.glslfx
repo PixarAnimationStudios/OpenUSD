@@ -1299,6 +1299,15 @@ void main(void)
     }
 #endif
 
+#if defined(HD_HAS_depthReadback) && defined(HD_EARLY_FRAGMENT_TESTS)
+    const float bufferVal = texelFetch(HdGetSampler_depthReadback(),
+                                       ivec2(gl_FragCoord.xy),
+                                       /* lod = */ 0).x;
+    if (gl_FragCoord.z >= bufferVal) {
+      discard;
+    }
+#endif
+
     RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
 }
 

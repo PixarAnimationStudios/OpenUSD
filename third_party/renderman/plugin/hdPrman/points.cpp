@@ -14,9 +14,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdPrman_Points::HdPrman_Points(SdfPath const& id)
+HdPrman_Points::HdPrman_Points(SdfPath const& id, const bool isMeshLight)
     : BASE(id)
+    , _isMeshLight(isMeshLight)
 {
+}
+
+bool
+HdPrman_Points::_PrototypeOnly()
+{
+    return _isMeshLight;
 }
 
 HdDirtyBits

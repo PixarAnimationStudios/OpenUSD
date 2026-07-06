@@ -8,10 +8,14 @@
 #define PXR_BASE_GF_TRAITS_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/api.h"
 
 #include <type_traits>
+#include <typeinfo>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class TfType;
 
 /// A metafunction with a static const bool member 'value' that is true for
 /// GfVec types, like GfVec2i, GfVec4d, etc and false for all other types.
@@ -49,6 +53,15 @@ struct GfIsFloatingPoint : public std::is_floating_point<T>{};
 template <class T>
 struct GfIsArithmetic : public std::integral_constant<
     bool, GfIsFloatingPoint<T>::value || std::is_arithmetic<T>::value>{};
+
+/// Returns true if \p type represents a floating-point type (double, float,
+/// or GfHalf) -- i.e., a type T for which GfIsFloatingPoint<T>::value is true.
+GF_API
+bool GfIsFloatingPointType(const TfType& type);
+
+/// \overload
+GF_API
+bool GfIsFloatingPointType(const std::type_info& typeInfo);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

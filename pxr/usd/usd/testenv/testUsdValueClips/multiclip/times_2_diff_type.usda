@@ -1,0 +1,9 @@
+#usda 1.0
+
+def "Model"
+{
+    string size.timeSamples = {
+        3: "three",
+        4: "four"
+    }
+}

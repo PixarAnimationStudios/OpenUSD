@@ -89,12 +89,18 @@ public:
         }
     }
 
+    /// The size of a boxed vector is always 1, since that's the size of the
+    /// mask used to represent data held in a boxed vector.
     size_t GetSize() const override {
         return 1;
     }
 
+    /// The number of elements stored in a boxed vector is eiter 0 (if the box
+    /// is empty) or 1. We don't return the size of the box because the number
+    /// of stored elements is the same as the number of bits set in a
+    /// corresponding mask.
     size_t GetNumStoredElements() const override {
-        return 1;
+        return _box.empty() ? 0 : 1;
     }
 
     bool IsSharable() const override {

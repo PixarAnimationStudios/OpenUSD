@@ -6,6 +6,7 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/timeCode.h"
 #include "pxr/base/ts/splineData.h"
 #include "pxr/base/ts/spline.h"
 #include "pxr/base/ts/valueTypeDispatch.h"
@@ -35,7 +36,7 @@ Ts_SplineData* Ts_SplineData::Create(
 
     // Create the specific subtype.
     Ts_SplineData *result = nullptr;
-    TsDispatchToValueTypeTemplate<_Creator>(
+    TsDispatchToStorageValueTypeTemplate<_Creator>(
         actualType, &result);
 
     // Calling code should always have verified supported value type.
@@ -46,8 +47,10 @@ Ts_SplineData* Ts_SplineData::Create(
 
     // Fill in default values that aren't built into the member types.  This
     // static method serves as our constructor, so we need these explicitly.
-    result->timeValued = false;
     result->curveType = TsCurveTypeBezier;
+    // Note the timeValued bit is always false at spline data creation,
+    // since it's set only with TsSpline::SetTimeValued.
+    result->valueType = actualType;
 
     // Write the flag that indicates whether this is real or temporary data.
     result->isTyped = bool(valueType);

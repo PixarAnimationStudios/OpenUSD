@@ -14,7 +14,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#if defined PXR_DCC_LOCATION_ENV_VAR
+#if defined HDPRMAN_XCPT_TO_STDERR
 TF_DEFINE_ENV_SETTING(HD_PRMAN_XCPT_TO_STDERR,
                       true,
                       "Send RenderMan xcpt messages to stderr");

@@ -22,9 +22,8 @@
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 
 #include "pxr/imaging/hd/driver.h"
-#include "pxr/imaging/hd/engine.h"
+#include "pxr/imaging/hd/noticeBatchingSceneIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
-#include "pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h"
 #include "pxr/imaging/hd/pluginRendererUniqueHandle.h"
 
 #include "pxr/imaging/hdx/selectionTracker.h"
@@ -53,15 +52,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdPrim;
-class HdRenderIndex;
-class HdxTaskController;
 class UsdImagingDelegate;
+class HdRendererCreateArgsSchema;
+class HdLegacyRenderControlInterface;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
-TF_DECLARE_REF_PTRS(HdNoticeBatchingSceneIndex);
-TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
+TF_DECLARE_REF_PTRS(UsdImagingSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingRootOverridesSceneIndex);
-TF_DECLARE_REF_PTRS(UsdImagingSelectionSceneIndex);
 TF_DECLARE_REF_PTRS(HdCachingSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiLegacyDisplayStyleOverrideSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiPrimTypeAndPathPruningSceneIndex);
@@ -69,6 +66,7 @@ TF_DECLARE_REF_PTRS(HdsiSceneGlobalsSceneIndex);
 TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 TF_DECLARE_REF_PTRS(HdMergingSceneIndex);
 TF_DECLARE_REF_PTRS(HdxTaskControllerSceneIndex);
+TF_DECLARE_REF_PTRS(UsdExecImagingStageSceneIndexInterface);
 
 using UsdStageWeakPtr = TfWeakPtr<class UsdStage>;
 
@@ -309,75 +307,67 @@ public:
     /// @{
     // ---------------------------------------------------------------------
 
-    /// Finds closest point of intersection with a frustum by rendering.
+    /// Pick result
     ///
-    /// This method uses a PickRender and a customized depth buffer to find an
-    /// approximate point of intersection by rendering. This is less accurate
-    /// than implicit methods or rendering with GL_SELECT, but leverages any
-    /// data already cached in the renderer.
+    /// This includes the necessary information to identify the picked instance.
     ///
-    /// Returns whether a hit occurred and if so, \p outHitPoint will contain
-    /// the intersection point in world space (i.e. \p projectionMatrix and
-    /// \p viewMatrix factored back out of the result), and \p outHitNormal
-    /// will contain the world space normal at that point.
+    /// That is, if the picked prim is instanced by a point instancer, the
+    /// instancer path and the instance corresponding to the picked instance
+    /// are reported in the instancer context. If a picked prim is USD native
+    /// instance, the USD proxy path is used instead for the hitPrimPath.
+    /// Note that nested scenarios are supported. If a point instancer itself
+    /// is a native instance, its USD proxy path is reported in the instancer
+    /// context.
     ///
-    /// \p outHitPrimPath will point to the gprim selected by the pick.
-    /// \p outHitInstancerPath will point to the point instancer (if applicable)
-    /// of that gprim. For nested instancing, outHitInstancerPath points to
-    /// the closest instancer.
-    ///
-    /// \deprecated Please use the override of TestIntersection that takes
-    /// PickParams and returns an IntersectionResultVector instead!
-    USDIMAGINGGL_API
-    bool TestIntersection(
-        const GfMatrix4d &viewMatrix,
-        const GfMatrix4d &projectionMatrix,
-        const UsdPrim& root,
-        const UsdImagingGLRenderParams &params,
-        GfVec3d *outHitPoint,
-        GfVec3d *outHitNormal,
-        SdfPath *outHitPrimPath = NULL,
-        SdfPath *outHitInstancerPath = NULL,
-        int *outHitInstanceIndex = NULL,
-        HdInstancerContext *outInstancerContext = NULL);
-
-    // Pick result
     struct IntersectionResult
     {
+        /// Intersection point in world space (that is, given projectionMatrix
+        /// and viewMatrix are factored out of the result when picking is
+        /// using, for example, the depth buffer).
         GfVec3d hitPoint;
+        /// Normal at intersection point in world space.
         GfVec3d hitNormal;
+        /// Path to picked gprim on the USD stage.
+        /// This is a USD proxy path.
         SdfPath hitPrimPath;
+        /// \deprecated instancerContext has more complete information.
         SdfPath hitInstancerPath;
+        /// \deprecated instancerContext has more complete information.
         int hitInstanceIndex;
+        /// Paths to nested point instancers and instance indices identifying
+        /// the picked instance. This is in order from the outer most to
+        /// the inner most point instancer. The paths are USD proxy paths
+        /// to the relevant point instancers on the USD stage. Hydra instancers
+        /// created to realize USD native instancing are not included.
         HdInstancerContext instancerContext;
     };
 
-    typedef std::vector<struct IntersectionResult> IntersectionResultVector;
+    using IntersectionResultVector = std::vector<IntersectionResult>;
 
-    // Pick params
+    /// Pick params
     struct PickParams
     {
+        /// Resolve mode
+        ///
+        /// If resolve mode is set to resolveDeep, picking uses Deep Selection
+        /// to gather all paths within the given frustum even if obscured by
+        /// other visible objects.
+        /// If resolve mode is set to resolveNearestToCenter, picking renders
+        /// to a customized depth buffer to find all approximate points of
+        /// intersection. This is less accurate than implicit methods or
+        /// rendering with GL_SELECT, but leverages any data already cached
+        /// in the renderer.
+        ///
+        /// The tokens are defined in HdxPickResolveMode in hdx/pickTask.h.
+        ///
         TfToken resolveMode;
     };
 
-    /// Perform picking by finding the intersection of objects in the scene with a renderered frustum.
-    /// Depending on the resolve mode it may find all objects intersecting the frustum or the closest
-    /// point of intersection within the frustum.
+    /// Perform picking by finding the intersection of objects in the scene with
+    /// a given frustum.
     ///
-    /// If resolve mode is set to resolveDeep it uses Deep Selection to gather all paths within
-    /// the frustum even if obscured by other visible objects.
-    /// If resolve mode is set to resolveNearestToCenter it uses a PickRender and
-    /// a customized depth buffer to find all approximate points of intersection by rendering.
-    /// This is less accurate than implicit methods or rendering with GL_SELECT, but leverages any
-    /// data already cached in the renderer.
-    ///
-    /// Returns whether a hit occurred and if so, \p outResults will point to all the
-    /// gprims selected by the pick as determined by the resolve mode.
-    /// \p outHitPoint will contain the intersection point in world space
-    /// (i.e. \p projectionMatrix and \p viewMatrix factored back out of the result)
-    /// \p outHitNormal will contain the world space normal at that point.
-    /// \p hitPrimPath will point to the gprim selected by the pick.
-    /// \p hitInstancerPath will point to the point instancer (if applicable) of each gprim.
+    /// Depending on the resolve mode it may find all objects intersecting the
+    /// frustum or the closest point of intersection within the frustum.
     ///
     USDIMAGINGGL_API
     bool TestIntersection(
@@ -410,6 +400,39 @@ public:
         int *outHitInstanceIndex = NULL,
         HdInstancerContext *outInstancerContext = NULL);
 
+    /// \deprecated Please use the override of TestIntersection that takes
+    ///
+    /// PickParams and returns an IntersectionResultVector instead!
+    /// Finds closest point of intersection with a frustum by rendering.
+    ///
+    /// This method uses a PickRender and a customized depth buffer to find an
+    /// approximate point of intersection by rendering. This is less accurate
+    /// than implicit methods or rendering with GL_SELECT, but leverages any
+    /// data already cached in the renderer.
+    ///
+    /// Returns whether a hit occurred and if so, \p outHitPoint will contain
+    /// the intersection point in world space (i.e. \p projectionMatrix and
+    /// \p viewMatrix factored back out of the result), and \p outHitNormal
+    /// will contain the world space normal at that point.
+    ///
+    /// \p outHitPrimPath will point to the gprim selected by the pick.
+    /// \p outHitInstancerPath will point to the point instancer (if applicable)
+    /// of that gprim. For nested instancing, outHitInstancerPath points to
+    /// the closest instancer.
+    ///
+    USDIMAGINGGL_API
+    bool TestIntersection(
+        const GfMatrix4d &viewMatrix,
+        const GfMatrix4d &projectionMatrix,
+        const UsdPrim& root,
+        const UsdImagingGLRenderParams &params,
+        GfVec3d *outHitPoint,
+        GfVec3d *outHitNormal,
+        SdfPath *outHitPrimPath = NULL,
+        SdfPath *outHitInstancerPath = NULL,
+        int *outHitInstanceIndex = NULL,
+        HdInstancerContext *outInstancerContext = NULL);
+    
     /// @}
 
     // ---------------------------------------------------------------------
@@ -696,11 +719,6 @@ protected:
     /// Open some protected methods for whitebox testing.
     friend class UsdImagingGL_UnitTestGLDrawing;
 
-    /// Returns the render index of the engine, if any.  This is only used for
-    /// whitebox testing.
-    USDIMAGINGGL_API
-    HdRenderIndex *_GetRenderIndex() const;
-
     USDIMAGINGGL_API
     void _Execute(const UsdImagingGLRenderParams &params,
                   const SdfPathVector &taskPaths);
@@ -746,23 +764,7 @@ protected:
                           TfTokenVector *renderTags);
 
     USDIMAGINGGL_API
-    void _InitializeHgiIfNecessary();
-
-    USDIMAGINGGL_API
-    void _SetRenderDelegateAndRestoreState(
-        HdPluginRenderDelegateUniqueHandle &&,
-        HdContainerDataSourceHandle const &sceneIndexInputArgs);
-
-    USDIMAGINGGL_API
-    void _SetRenderDelegate(
-        HdPluginRenderDelegateUniqueHandle &&,
-        HdContainerDataSourceHandle const &sceneIndexInputArgs);
-
-    USDIMAGINGGL_API
     SdfPath _ComputeControllerPath(const TfToken &pluginId);
-
-    USDIMAGINGGL_API
-    SdfPath _ComputeControllerPath(const HdPluginRenderDelegateUniqueHandle &);
 
     USDIMAGINGGL_API
     static TfToken _GetDefaultRendererPluginId();
@@ -775,30 +777,43 @@ protected:
     USDIMAGINGGL_API
     UsdImagingDelegate *_GetSceneDelegate() const;
 
-    USDIMAGINGGL_API
-    HdEngine *_GetHdEngine();
-
-    /// \deprecated The HdxTaskController is replaced by the
-    ///             HdxTaskControllerSceneIndex.
-    USDIMAGINGGL_API
-    HdxTaskController *_GetTaskController() const;
-
+    /// \deprecated Hydra 1.0
     USDIMAGINGGL_API
     HdSelectionSharedPtr _GetSelection() const;
 
+    USDIMAGINGGL_API
+    HdContainerDataSourceHandle
+    _GetSceneIndexCreateArgs(
+        HdRendererPluginHandle const &plugin);
+
+    USDIMAGINGGL_API
+    HdContainerDataSourceHandle
+    _GetSceneIndexCreateArgsFromLegacyRenderControl();
+
     // Create UsdImagingStageSceneIndex and subsequent scene indices.
-    void
+    USDIMAGINGGL_API
+    HdSceneIndexBaseRefPtr
     _CreateUsdImagingSceneIndices(HdContainerDataSourceHandle const &inputArgs);
 
+    // Create the merging scene index and all subsequent filtering scene index
+    // and the renderer fed by those.
+    USDIMAGINGGL_API
+    void
+    _CreateSceneIndexChainAndRenderer(
+        HdContainerDataSourceHandle const &sceneIndexCreateArgs,
+        HdRendererPluginHandle const &plugin,
+        const HdRendererCreateArgsSchema &rendererCreateArgs);
+
+    Hgi *
+    _GetOrCreateHgi();
+
 protected:
+    // The Hgi used by the renderer.
+    // It is either provided by the user or the Hgi::CreatePlatformDefaultHgi().
+    Hgi * _hgi;
 
-    // Note that any of the fields below might become private
-    // in the future and subclasses should use the above getters
-    // to access them instead.
-
-    HgiUniquePtr _hgi;
-    // Similar for HdDriver.
-    HdDriver _hgiDriver;
+    // Result of Hgi::CreatePlatformDefaultHgi() if needed.
+    HgiUniquePtr _defaultHgi;
 
     VtValue _userFramebuffer;
 
@@ -806,19 +821,12 @@ protected:
     bool _displayUnloadedPrimsWithBounds;
     bool _gpuEnabled;
 
-    /* Hydra 2.0 */
-
-    HdPluginRendererUniqueHandle _renderer;
-    HdxTaskControllerSceneIndexRefPtr _taskControllerSceneIndex;
-
-    /* Hydra 1.0 */
-    HdPluginRenderDelegateUniqueHandle _renderDelegate;
-    std::unique_ptr<HdRenderIndex> _renderIndex;
-    std::unique_ptr<HdxTaskController> _taskController;
+    HdPluginRendererUniqueHandle _renderer; // Hydra 2.0
+    HdxTaskControllerSceneIndexRefPtr _taskControllerSceneIndex; // Hydra 2.0
 
     SdfPath const _sceneDelegateId;
 
-    HdxSelectionTrackerSharedPtr _selTracker;
+    HdxSelectionTrackerSharedPtr _selTracker; // Hydra 1.0
     HdRprimCollection _renderCollection;
     HdRprimCollection _intersectCollection;
 
@@ -834,8 +842,9 @@ protected:
     bool _isPopulated;
 
 private:
-    bool _HasRenderer() const;
     HdSceneIndexBaseRefPtr _GetTerminalSceneIndex() const;
+
+    HdLegacyRenderControlInterface * _GetLegacyRenderControl() const;
 
     HdSceneIndexBaseRefPtr
     _AppendOverridesSceneIndices(
@@ -845,7 +854,7 @@ private:
 
     bool _CreateSceneIndicesAndRenderer(
         HdRendererPluginHandle const &plugin,
-        HdContainerDataSourceHandle const &sceneIndexInputArgs);
+        const HdRendererCreateArgsSchema &rendererCreateArgs);
 
     void _DestroyHydraObjects();
 
@@ -853,16 +862,16 @@ private:
 
     // Note that we'll only ever use one of _sceneIndex/_sceneDelegate
     // at a time.
-    UsdImagingStageSceneIndexRefPtr _stageSceneIndex;
-    HdNoticeBatchingSceneIndexRefPtr _postInstancingNoticeBatchingSceneIndex;
-    UsdImagingSelectionSceneIndexRefPtr _selectionSceneIndex;
+    UsdExecImagingStageSceneIndexInterfaceRefPtr _execStageSceneIndex;
+    HdNoticeBatchingSceneIndexRefPtr _noticeBatchingStageSceneIndex;
     UsdImagingRootOverridesSceneIndexRefPtr _rootOverridesSceneIndex;
     UsdImagingLegacyRenderSettingsSceneIndexRefPtr _legacyRenderSettingsSceneIndex;
     HdsiLegacyDisplayStyleOverrideSceneIndexRefPtr _displayStyleSceneIndex;
     HdsiPrimTypeAndPathPruningSceneIndexRefPtr _lightPruningSceneIndex;
     // State of the _lightPruningSceneIndex.
     bool _lightPruningSceneIndexEnableSceneLights;
-    HdSceneIndexBaseRefPtr _usdImagingFinalSceneIndex;
+
+    UsdImagingSceneIndexRefPtr _usdImagingSceneIndex;
 
     HdMergingSceneIndexRefPtr _mergingSceneIndex;
     HdCachingSceneIndexRefPtr _cachingSceneIndex;
@@ -870,7 +879,6 @@ private:
 
     /* Hydra 1.0 */
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
-    std::unique_ptr<HdEngine> _engine;
 
     bool _allowAsynchronousSceneProcessing = false;
     bool _enableUsdDrawModes = true;

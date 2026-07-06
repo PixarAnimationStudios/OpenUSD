@@ -393,6 +393,7 @@ _ProcessUVTextureNode(
                 wrapSVal.GetWithDefault(_tokens->useMetadata);  
 
             // Check for source colorspace.
+#if PXR_VERSION >= 2602
             // Color Space info will be on the file param data 
             const HdMaterialNetworkInterface::NodeParamData fileParamData =
                 netInterface->GetNodeParameterData(nodeName, _tokens->file);
@@ -400,6 +401,21 @@ _ProcessUVTextureNode(
                 !fileParamData.colorSpace.IsEmpty() 
                     ? fileParamData.colorSpace
                     : _tokens->colorSpaceAuto;
+#else
+            VtValue sourceColorSpaceVal = netInterface->GetNodeParameterValue(
+                nodeName, _tokens->sourceColorSpace);
+            // XXX: This is a workaround for Presto. If there's no
+            // colorspace token, check if there's a colorspace
+            // string.
+            TfToken sourceColorSpace = 
+                sourceColorSpaceVal.GetWithDefault(TfToken());
+            if (sourceColorSpace.IsEmpty()) {
+                const std::string sourceColorSpaceStr = 
+                    sourceColorSpaceVal.GetWithDefault(
+                        _tokens->colorSpaceAuto.GetString());
+                sourceColorSpace = TfToken(sourceColorSpaceStr);
+            }
+#endif
             path =
                 TfStringPrintf("rtxplugin:%s?filename=%s"
                                 "&wrapS=%s&wrapT=%s&"

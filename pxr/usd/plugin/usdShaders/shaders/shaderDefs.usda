@@ -84,11 +84,11 @@ def Shader "UsdPreviewSurface" (
     token inputs:opacityMode = "transparent" (
         allowedTokens = ["transparent", "presence"]
         connectability = "interfaceOnly"
-        doc = """This is used to determine how opacity is interpreted when its 
-        value is zero. When set to "transparent" the material will still 
-        receive a lighting resoponse, "presence" results in no lighting 
-        response. Note that when opacityThreshold is non-zero, opacityMode is 
-        ignored."""
+        doc = """This is used to determine how materials with opacity less 
+        than one are interpreted. When set to "transparent", opacity reduces 
+        just the contribution of the diffuse lighting component, while when
+        set to "presence", opacity scales the entire lighting response. 
+        Note that when opacityThreshold is non-zero, opacityMode is ignored."""
     )
 
     float inputs:opacityThreshold = 0.0 (
@@ -100,7 +100,8 @@ def Shader "UsdPreviewSurface" (
         is greater or equal to that value. Note that when opacityThreshold is
         greater than zero, the opacity values less than the opacityThreshold will
         not be rendered, and the opacity values greater than or equal to the
-        opacityThreshold will be fully visible."""
+        opacityThreshold will be fully visible. This is the behavior regardless 
+        of the opacityMode."""
     )
 
     float inputs:ior = 1.5 (

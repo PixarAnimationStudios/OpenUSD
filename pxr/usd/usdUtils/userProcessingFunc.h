@@ -36,7 +36,26 @@ public:
         const std::vector<std::string> &dependencies) 
         : _assetPath(assetPath), _dependencies(dependencies) {}
 
-    /// Returns the asset value path for the dependency.
+private:
+    /// This constructor is meant to be used by the asset localization system.
+    /// The raw asset path and expression variables are not considered when
+    /// UsdUtilsDependencyInfo is returned from a callback function.
+    USDUTILS_API UsdUtilsDependencyInfo(
+        const std::string &assetPath,
+        const std::vector<std::string> &dependencies,
+        const std::string &rawAssetPath,
+        const VtDictionary *expressionVariables) 
+        : _assetPath(assetPath), _dependencies(dependencies),
+          _rawAssetPath(rawAssetPath), _expressionVariables(expressionVariables)
+          {}
+
+    friend class UsdUtils_LocalizationClient;
+
+public:
+    /// Returns the asset value path for the dependency.  The string returned
+    /// by this function will contain the result of evaluating any variable
+    /// expressions present in the asset path string.
+    ///
     /// When UsdUtilsDependencyInfo is returned as a parameter from a user
     /// processing function, the localization system compares the value
     /// with the value that was originally authored in the layer.
@@ -56,6 +75,21 @@ public:
     /// attempts to modify an asset path contained in an existing package.
     USDUTILS_API const std::string& GetAssetPath() const {
         return _assetPath;
+    }
+
+    /// Gets the raw asset path that was authored in the layer without any
+    /// substitutions or evaluations.  This value is ignored when
+    /// UsdUtilsDependencyInfo is returned from a callback functions.
+    USDUTILS_API const std::string& GetRawAssetPath() const {
+        return _rawAssetPath;
+    }
+
+    /// Gets the current set of variable expressions relevant to this
+    /// dependency. This value is ignored when UsdUtilsDependencyInfo is
+    /// returned from a callback function.
+    USDUTILS_API const VtDictionary &GetExpressionVariables() const {
+        return _expressionVariables ? 
+            *_expressionVariables : VtGetEmptyDictionary();
     }
 
     /// Returns a list of dependencies related to the asset path.
@@ -87,6 +121,8 @@ public:
 private:
     std::string _assetPath;
     std::vector<std::string> _dependencies;
+    std::string _rawAssetPath;
+    const VtDictionary *_expressionVariables = nullptr;
 };
 
 /// Signature for user supplied processing function.

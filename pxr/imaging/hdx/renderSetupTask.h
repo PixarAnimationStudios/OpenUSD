@@ -82,10 +82,16 @@ public:
     HDX_API
     void Prepare(HdTaskContext* ctx,
                  HdRenderIndex* renderIndex) override;
-    
+
     /// Execute render pass task
     HDX_API
     void Execute(HdTaskContext* ctx) override;
+
+    HDX_API
+    static void
+    SyncParamsHelper(
+        const HdRenderPassStateSharedPtr& renderPassState,
+        const HdxRenderTaskParams& params);
 
 private:
     HdRenderPassStateSharedPtr _renderPassState;

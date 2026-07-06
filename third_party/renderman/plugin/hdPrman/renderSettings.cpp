@@ -74,6 +74,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((riIntegrator, "ri:integrator"))
     ((riSampleFilters, "ri:sampleFilters"))
     ((riDisplayFilters, "ri:displayFilters"))
+    // Note: riEnergyFilters is only used when _PRMANAPI_VERSION_MAJOR_ >= 27,
+    // but the token is defined unconditionally because MSVC does not support
+    // preprocessor directives (#if/#endif) inside a macro argument list.
+    ((riEnergyFilters, "ri:energyFilters"))
     // Legacy terminal connections. Remove in a future USD version.
     ((outputsRiIntegrator, "outputs:ri:integrator"))
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
@@ -125,6 +129,9 @@ _GenerateParamList(VtDictionary const &settings)
         if (tokenName == _renderTerminalTokens->riIntegrator ||
             tokenName == _renderTerminalTokens->riSampleFilters ||
             tokenName == _renderTerminalTokens->riDisplayFilters ||
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+            tokenName == _renderTerminalTokens->riEnergyFilters ||
+#endif
             // Legacy terminal connections. Remove in a future USD version.
             tokenName == _renderTerminalTokens->outputsRiIntegrator ||
             tokenName == _renderTerminalTokens->outputsRiSampleFilters ||
@@ -337,21 +344,26 @@ _SetOptionsAndRender(
     param->SetRenderSettingsPrimOptions(renderSettingsPrimOptions);
     param->SetRileyOptions();
 
-    const riley::RenderViewId renderViews[] = { rvId };
+    if (interactive) {
+        // Interactive rendering: use the render thread so riley->Render()
+        // executes asynchronously in a background thread
+        param->StartRender();
+        return true;
+    } else {
+        const riley::RenderViewId renderViews[] = { rvId };
 
-    RtParamList renderOptions;
-    static RtUString const US_RENDERMODE("renderMode");
-    static RtUString const US_BATCH("batch");
-    static RtUString const US_INTERACTIVE = RtUString("interactive");
+        RtParamList renderOptions;
+        static RtUString const US_RENDERMODE("renderMode");
+        static RtUString const US_BATCH("batch");
+        static RtUString const US_INTERACTIVE = RtUString("interactive");
 
-    renderOptions.SetString(
-        US_RENDERMODE, interactive? US_INTERACTIVE : US_BATCH);
-
-    param->AcquireRiley()->Render(
-        {static_cast<uint32_t>(TfArraySize(renderViews)), renderViews},
-        renderOptions);
-
-    return true;
+        renderOptions.SetString(
+            US_RENDERMODE, interactive? US_INTERACTIVE : US_BATCH);
+        param->AcquireRiley()->Render(
+            {static_cast<uint32_t>(TfArraySize(renderViews)), renderViews},
+            renderOptions);
+        return true;
+    }
 }
 
 } // end anonymous namespace
@@ -377,6 +389,11 @@ HdPrman_RenderSettings::DriveRenderPass(
     //
     // 2. The hdPrman test harness where the task does not have AOV bindings.
     //
+    // 3. RenderServer, which, like usdrecord, enables 
+    //    HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS but needs to render
+    //    in a non-main thread as if it were interactive so the render
+    //    can be stopped and restarted asynchronously.
+    //
     // XXX Interactive viewport rendering using hdPrman currently relies on
     // AOV bindings from the task and uses the "hydra" Display Driver to write
     // rendered pixels into an intermediate framebuffer which is then blit
@@ -389,8 +406,7 @@ HdPrman_RenderSettings::DriveRenderPass(
 
     const bool result =
         IsValid() &&
-        (driveRenderPassWithAovBindings || !renderPassHasAovBindings) &&
-        !interactive;
+        (driveRenderPassWithAovBindings || !renderPassHasAovBindings);
 
     TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
         "Drive with RenderSettingsPrim = %d\n"
@@ -416,12 +432,6 @@ HdPrman_RenderSettings::UpdateAndRender(
         TF_CODING_ERROR(
             "Render settings prim %s does not have valid render products.\n",
             GetId().GetText());
-        return false;
-    }
-    if (interactive) {
-        TF_CODING_ERROR(
-            "Support for driving interactive renders using a render settings "
-            "prim is not yet available.\n");
         return false;
     }
 
@@ -805,6 +815,20 @@ HdPrman_RenderSettings::_ProcessRenderTerminals(
 
         param->SetDisplayFilterPaths(sceneDelegate, paths);
     }
+
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+    // Set the EnergyFilters on this Render Settings prim
+    {
+        SdfPathVector paths;
+        if (rsSchemaHasRelationships) {
+            paths = VtDictionaryGet<SdfPathVector>(
+                namespacedSettings,
+                _renderTerminalTokens->riEnergyFilters.GetString(),
+                VtDefault = SdfPathVector());
+        }
+        param->SetEnergyFilterPaths(sceneDelegate, paths);
+    }
+#endif // _PRMANAPI_VERSION_MAJOR_ >= 27
 }
 
 void

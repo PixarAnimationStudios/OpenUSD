@@ -666,7 +666,12 @@ HdSt_PipelineDrawBatch::_CompileBatch(
             drawItem->GetGeometricShader()->GetPrimitiveIndexSize();
 
         uint32_t const baseVertex = vertexDC;
-        uint32_t const vertexCount = _GetElementCount(dc.vertexBar);
+        
+        // Query fallback vertex count from geometric shader if the vertex bar
+        // is empty
+        uint32_t const vertexCount = dc.vertexBar ?
+                    _GetElementCount(dc.vertexBar) : 
+                    drawItem->GetGeometricShader()->GetVertexCountFallback();
 
         // if delegate fails to get vertex primvars, it could be empty.
         // skip the drawitem to prevent drawing uninitialized vertices.
@@ -1174,32 +1179,34 @@ _GetVertexBuffersForDrawing(_BindingState const & state)
     HgiVertexBufferDescVector vertexBufferDescVector =
         _GetVertexBuffersForViewTransformation(state);
 
-    for (auto const & namedResource : state.vertexBar->GetResources()) {
-        HdStBinding const binding =
-                                state.binder.GetBinding(namedResource.first);
-        HdStBufferResourceSharedPtr const & resource = namedResource.second;
-        HdTupleType const tupleType = resource->GetTupleType();
+    if (state.vertexBar) {
+        for (auto const & namedResource : state.vertexBar->GetResources()) {
+            HdStBinding const binding =
+                                    state.binder.GetBinding(namedResource.first);
+            HdStBufferResourceSharedPtr const & resource = namedResource.second;
+            HdTupleType const tupleType = resource->GetTupleType();
 
-        if (binding.GetType() == HdStBinding::VERTEX_ATTR) {
-            HgiVertexAttributeDesc attrDesc;
-            attrDesc.format =
-                HdStHgiConversions::GetHgiVertexFormat(tupleType.type);
-            attrDesc.offset = resource->GetOffset(),
-            attrDesc.shaderBindLocation = binding.GetLocation();
+            if (binding.GetType() == HdStBinding::VERTEX_ATTR) {
+                HgiVertexAttributeDesc attrDesc;
+                attrDesc.format =
+                    HdStHgiConversions::GetHgiVertexFormat(tupleType.type);
+                attrDesc.offset = resource->GetOffset(),
+                attrDesc.shaderBindLocation = binding.GetLocation();
 
-            // Each vertexBar resource is sourced from a distinct buffer.
-            HgiVertexBufferDesc bufferDesc;
-            bufferDesc.bindingIndex = vertexBufferDescVector.size();
-            bufferDesc.vertexAttributes = {attrDesc};
-            if (state.geometricShader->GetUseMetalTessellation()) {
-                bufferDesc.vertexStepFunction =
-                    HgiVertexBufferStepFunctionPerPatchControlPoint;
-            } else {
-                bufferDesc.vertexStepFunction =
-                    HgiVertexBufferStepFunctionPerVertex;
+                // Each vertexBar resource is sourced from a distinct buffer.
+                HgiVertexBufferDesc bufferDesc;
+                bufferDesc.bindingIndex = vertexBufferDescVector.size();
+                bufferDesc.vertexAttributes = {attrDesc};
+                if (state.geometricShader->GetUseMetalTessellation()) {
+                    bufferDesc.vertexStepFunction =
+                        HgiVertexBufferStepFunctionPerPatchControlPoint;
+                } else {
+                    bufferDesc.vertexStepFunction =
+                        HgiVertexBufferStepFunctionPerVertex;
+                }
+                bufferDesc.vertexStride = HdDataSizeOfTupleType(tupleType);
+                vertexBufferDescVector.push_back(bufferDesc);
             }
-            bufferDesc.vertexStride = HdDataSizeOfTupleType(tupleType);
-            vertexBufferDescVector.push_back(bufferDesc);
         }
     }
 
@@ -1230,16 +1237,18 @@ _GetVertexBufferBindingsForDrawing(
     uint32_t nextBinding = // continue binding subsequent locations
         _GetVertexBufferBindingsForViewTransformation(bindings, state);
 
-    for (auto const & namedResource : state.vertexBar->GetResources()) {
-        HdStBinding const binding =
-                                state.binder.GetBinding(namedResource.first);
-        HdStBufferResourceSharedPtr const & resource = namedResource.second;
+    if (state.vertexBar) {
+        for (auto const & namedResource : state.vertexBar->GetResources()) {
+            HdStBinding const binding =
+                                    state.binder.GetBinding(namedResource.first);
+            HdStBufferResourceSharedPtr const & resource = namedResource.second;
 
-        if (binding.GetType() == HdStBinding::VERTEX_ATTR) {
-            bindings->emplace_back(resource->GetHandle(),
-                                   static_cast<uint32_t>(resource->GetOffset()),
-                                   nextBinding);
-            nextBinding++;
+            if (binding.GetType() == HdStBinding::VERTEX_ATTR) {
+                bindings->emplace_back(resource->GetHandle(),
+                                    static_cast<uint32_t>(resource->GetOffset()),
+                                    nextBinding);
+                nextBinding++;
+            }
         }
     }
 

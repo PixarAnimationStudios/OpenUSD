@@ -342,6 +342,37 @@ static bool TestCompressedVector()
     return true;
 }
 
+static bool TestBoxedVector()
+{
+    TRACE_FUNCTION();
+
+    VdfTypedVector<int> emptyBoxedVec;
+    emptyBoxedVec.Set(Vdf_BoxedContainer<int>{});
+
+    // A boxed vector is never empty because emptiness is based on the size,
+    // which is always 1.
+    TF_AXIOM(!emptyBoxedVec.IsEmpty());
+    ASSERT_EQ(emptyBoxedVec.GetSize(), 1);
+    ASSERT_EQ(emptyBoxedVec.GetNumStoredElements(), 0);
+
+    VdfTypedVector<int> boxedVec;
+    const unsigned int size = 10;
+    Vdf_BoxedContainer<int> source(size);
+    for (unsigned int i=0; i<size; ++i) {
+        source[i] = i;
+    }
+    boxedVec.Set(source);
+
+    TF_AXIOM(!boxedVec.IsEmpty());
+    ASSERT_EQ(boxedVec.GetSize(), 1);
+    ASSERT_EQ(boxedVec.GetNumStoredElements(), 1);
+    for (unsigned int i=0; i<size; ++i) {
+        ASSERT_EQ(boxedVec.GetReadAccessor<int>()[i], static_cast<int>(i));
+    }
+
+    return true;
+}
+
 struct TestStruct
 {
     TestStruct() = default;
@@ -2253,6 +2284,7 @@ static Tests tests[] =
     { TestDenseVector,           "TestDenseVector"           },
     { TestSparseVector,          "TestSparseVector"          },
     { TestCompressedVector,      "TestCompressedVector"      },
+    { TestBoxedVector,           "TestBoxedVector"           },
     { TestSharedVector,          "TestSharedVector"          },
     { TestAssignmentOperator,    "TestAssignmentOperator"    },
     { TestTyping,                "TestTyping"                },

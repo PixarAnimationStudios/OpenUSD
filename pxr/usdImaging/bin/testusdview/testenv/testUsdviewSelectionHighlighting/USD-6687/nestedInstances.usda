@@ -1,0 +1,86 @@
+#usda 1.0
+
+class "Cube"
+{
+    def Cube "Cube"
+    {
+    }
+}
+
+class "Cubes"
+{
+    def Xform "Cube1" (
+        instanceable = true
+	prepend references = </Cube>    
+    )
+    {
+        double3 xformOp:translate = (-6, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "Cube2" (
+        instanceable = true
+	prepend references = </Cube>
+    )
+    {
+        double3 xformOp:translate = (-2, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "Cube3" (
+        instanceable = true
+	prepend references = </Cube>
+    )
+    {
+        double3 xformOp:translate = (2, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "Cube4" (
+        instanceable = true
+	prepend references = </Cube>
+    )
+    {
+        double3 xformOp:translate = (6, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Xform "root" (
+    kind = "assembly"
+)
+{
+        def Xform "CubesA" (
+             instanceable = true
+             prepend references = </Cubes>
+        )
+        {
+            double3 xformOp:translate = (0, -4, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "CubesB" (
+             instanceable = true
+             prepend references = </Cubes>
+        )
+        {
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "CubesC" (
+             instanceable = true
+             prepend references = </Cubes>
+        )
+        {
+            double3 xformOp:translate = (0, 4, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+}
+
+def Camera "main_cam"
+{
+    float focalLength = 10
+    double3 xformOp:translate = (0, 0, 10)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}

@@ -497,7 +497,12 @@ class _MotionBlurTypedSampledDataSource final
 public:
     using Time = HdSampledDataSource::Time;
 
+#if HD_API_VERSION < 102
     HD_DECLARE_DATASOURCE_ABSTRACT(_MotionBlurTypedSampledDataSource<T>);
+#else
+    HD_DECLARE_DATASOURCE(_MotionBlurTypedSampledDataSource<T>);
+private:
+#endif
 
     /// samplesSource: the original data source
     /// key: identifying name for samplesSource
@@ -513,6 +518,9 @@ public:
       : _MotionBlurHelper(
             samplesSource, key, primPath, primType, primvarsSource)
     { }
+# if HD_API_VERSION >= 102
+public:
+#endif
 
     VtValue GetValue(Time shutterOffset) override
     {
@@ -536,6 +544,7 @@ public:
         return T();
     }
 
+#if HD_API_VERSION < 102
     static typename _MotionBlurTypedSampledDataSource<T>::Handle New(
         const HdSampledDataSourceHandle& samplesSource,
         const TfToken& key,
@@ -548,6 +557,7 @@ public:
                 samplesSource, key, primPath,
                 primType, primvarsSource));
     }
+#endif
 };
 
 ////////////////////////////////////////////////////////////////////////////////

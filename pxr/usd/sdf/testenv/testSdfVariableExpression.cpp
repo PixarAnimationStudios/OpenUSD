@@ -69,6 +69,13 @@ _TestMakeFunction()
                 std::vector<int64_t>{1, 2, 3}),
             SdfVariableExpression::MakeVariable("foo")),
         {{"foo", VtValue(2)}}, true);
+
+    _TestExpression(
+        SdfVariableExpression::MakeFunction(
+            "matches_regex",
+            SdfVariableExpression::MakeLiteral("shot_1"),
+            SdfVariableExpression::MakeVariable("foo")),
+        {{"foo", VtValue("shot_?")}}, true);
 }
 
 static void

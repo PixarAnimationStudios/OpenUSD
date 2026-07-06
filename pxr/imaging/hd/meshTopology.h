@@ -26,6 +26,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 using HdMeshTopologySharedPtr = std::shared_ptr<class HdMeshTopology>;
+class HdMeshSchema;
+class HdMeshTopologySchema;
 
 /// \class HdMeshTopology
 ///
@@ -35,7 +37,8 @@ using HdMeshTopologySharedPtr = std::shared_ptr<class HdMeshTopology>;
 /// of computing derivative topological data (such as indices or subdivision
 /// stencil tables and patch tables).
 ///
-class HdMeshTopology : public HdTopology {
+class HdMeshTopology : public HdTopology
+{
 public:
     HD_API
     HdMeshTopology();
@@ -56,8 +59,12 @@ public:
                    const VtIntArray &faceVertexIndices,
                    const VtIntArray &holeIndices,
                    int refineLevel = 0);
+
     HD_API
-    virtual ~HdMeshTopology();
+    explicit HdMeshTopology(const HdMeshSchema &schema);
+
+    HD_API
+    ~HdMeshTopology() override;
 
     HD_API
     HdMeshTopology &operator =(const HdMeshTopology &copy);
@@ -194,6 +201,10 @@ public:
         return _invisibleFaces;
     }
     /// @}
+
+private:
+    HdMeshTopology(const TfToken &scheme,
+                   const HdMeshTopologySchema &topologySchema);
 
 protected:
     PxOsdMeshTopology _topology;

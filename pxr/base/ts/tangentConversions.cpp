@@ -138,7 +138,7 @@ bool Ts_ConvertFromStandardHelper(
         bool convertSlopeToHeight, bool multiplyValuesByThree,              \
         bool negateHeight, TsTime* widthOut,                                \
         TS_SPLINE_VALUE_CPP_TYPE(tuple)* slopeOrHeightOut);
-TF_PP_SEQ_FOR_EACH(_INSTANTIATE_HELPERS, ~, TS_SPLINE_SUPPORTED_VALUE_TYPES)
+TF_PP_SEQ_FOR_EACH(_INSTANTIATE_HELPERS, ~, TS_SPLINE_STORAGE_VALUE_TYPES)
 #undef _INSTANTIATE_HELPERS
 
 namespace { // anonymous namespace
@@ -205,9 +205,14 @@ bool TsConvertToStandardTangent(
     TsTime* widthOut,
     VtValue* slopeOut)
 {
+    if (slopeOrHeightIn.IsHolding<GfTimeCode>()) {
+        TF_CODING_ERROR("GfTimeCode is unsupported for "
+                        "TsConvertToStandardTangent");
+    }
+
     bool ok = true;
 
-    TsDispatchToValueTypeTemplate<_VtConvertToStandardHelper>(
+    TsDispatchToStorageValueTypeTemplate<_VtConvertToStandardHelper>(
         slopeOrHeightIn.GetType(),
         widthIn, slopeOrHeightIn, convertHeightToSlope, divideValuesByThree,
         negateHeight, widthOut, slopeOut, &ok);
@@ -224,10 +229,14 @@ bool TsConvertFromStandardTangent(
     TsTime* widthOut,
     VtValue* slopeOrHeightOut)
 {
+    if (slopeIn.IsHolding<GfTimeCode>()) {
+        TF_CODING_ERROR("GfTimeCode is unsupported for "
+                        "TsConvertFromStandardTangent");
+    }
 
     bool ok = true;
 
-    TsDispatchToValueTypeTemplate<_VtConvertFromStandardHelper>(
+    TsDispatchToStorageValueTypeTemplate<_VtConvertFromStandardHelper>(
         slopeIn.GetType(),
         widthIn, slopeIn, convertSlopeToHeight, multiplyValuesByThree,
         negateHeight, widthOut, slopeOrHeightOut, &ok);

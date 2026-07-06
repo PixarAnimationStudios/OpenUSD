@@ -5,7 +5,7 @@
 # https://openusd.org/license.
 #
 
-from pxr import Ts
+from pxr import Tf, Ts
 import sys, math, functools
 
 try:
@@ -283,14 +283,15 @@ class CanvasWidget(QtWidgets.QWidget):
     def LoadMuseumCase(self, caseName):
 
         # Get museum data.
-        splineData = Ts.TsTest_Museum.GetDataByName(caseName)
+        spline = Ts.TsTest_Museum.GetSplineByName(caseName,
+                                                  Tf.Type.FindByName('double'))
 
         # Only handle Beziers.
-        if splineData.GetIsHermite():
+        if spline.GetCurveType() == Ts.CurveTypeHermite:
             return
 
         # Build spline.
-        self._spline = Ts.TsTest_TsEvaluator().SplineDataToSpline(splineData)
+        self._spline = spline
 
         # If we have a batch ghost, remove it.
         self._RemoveBatchGhost()
@@ -511,13 +512,9 @@ class CanvasWidget(QtWidgets.QWidget):
             self._PaintTangent(
                 endKnot, startKnot, self.HandlePre, kColors["Bezier"])
 
-        # Convert spline to splineData.
-        splineData = Ts.TsTest_TsEvaluator().SplineToSplineData(
-            self._unlimitedSpline)
-
         # Sample with TsTest.
         samples = Ts.TsTest_SampleBezier(
-            splineData, numSamples = 200 * numSegments)
+            self._unlimitedSpline, numSamples = 200 * numSegments)
 
         # Translate to QPainterPath.
         path = QtGui.QPainterPath()
@@ -583,10 +580,9 @@ class CanvasWidget(QtWidgets.QWidget):
             # Sample with TsTest.
             # XXX: should use TsSpline.Sample() API when that becomes available.
             evaluator = Ts.TsTest_TsEvaluator()
-            splineData = evaluator.SplineToSplineData(self._spline)
-            times = Ts.TsTest_SampleTimes(splineData)
+            times = Ts.TsTest_SampleTimes(self._spline)
             times.AddStandardTimes()
-            samples = evaluator.Eval(splineData, times)
+            samples = evaluator.Eval(self._spline, times)
 
             # Translate to QPainterPath.
             path = QtGui.QPainterPath()

@@ -1,0 +1,21 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Profiles": {
+                    "Capabilities": {
+                        "vendor.root": {
+                            "docstring": "A root node not named usd"
+                        },
+                        "vendor.feature": {
+                            "predecessors": ["vendor.root"],
+                            "docstring": "Feature under a non-usd root"
+                        }
+                    }
+                }
+            },
+            "Name": "TestNoUsdRoot",
+            "Type": "resource"
+        }
+    ]
+}

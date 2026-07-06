@@ -28,11 +28,17 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
     // We need an "insertion point" that's *after* general material resolve.
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 115;
-    for( auto const& pluginDisplayName : HdPrman_GetPluginDisplayNames() ) {
+    const HdContainerDataSourceHandle inputRIS = HdRetainedContainerDataSource::New(
+        HdPrmanDisplayNamesTokens->RenderManRIS, 
+        HdRetainedTypedSampledDataSource<bool>::New(true)
+    );
+    for(auto const& pluginDisplayName : HdPrman_GetPluginDisplayNames()) {
+        // Pass a token through to signify RIS so we can disable motion blur.
+        const bool isRIS = (pluginDisplayName == HdPrmanDisplayNamesTokens->RenderManRIS);
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
             pluginDisplayName,
             _tokens->sceneIndexPluginName,
-            nullptr, // No input args.
+            isRIS ? inputRIS : nullptr,
             insertionPhase,
             HdSceneIndexPluginRegistry::InsertionOrderAtStart);
     }
@@ -46,7 +52,8 @@ HdPrman_MeshLightResolvingSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {
-    return HdPrmanMeshLightResolvingSceneIndex::New(inputScene);
+    const bool isRIS = (inputArgs && inputArgs->Get(HdPrmanDisplayNamesTokens->RenderManRIS));
+    return HdPrmanMeshLightResolvingSceneIndex::New(inputScene, isRIS);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

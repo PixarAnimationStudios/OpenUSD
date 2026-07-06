@@ -1,0 +1,51 @@
+#usda 1.0
+(
+    defaultPrim = "world"
+)
+
+def Camera "main_cam"
+{
+    float4[] clippingPlanes = []
+    float2 clippingRange = (1, 2000000)
+    float focalLength = 34.2608
+    float focusDistance = 4.473246
+    float fStop = 0
+    float horizontalAperture = 22.711006
+    float horizontalApertureOffset = 0
+    token projection = "perspective"
+    float verticalAperture = 20.955
+    float verticalApertureOffset = 0
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 2.220446049250313e-16, 1, 0), (0, -1, 2.220446049250313e-16, 0), (0, -4.473245932929024, 9.932601259097283e-16, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Xform "world"
+{
+    def Xform "sphere1Xform"
+    {
+        def Sphere "sphere1"
+        {
+            color3f[] primvars:displayColor = [(0.8, 0.2, 0.2)]
+
+            double radius = 0.5
+        }
+    }
+
+    def Xform "sphere2Xform"
+    {
+        def Sphere "sphere2"
+        {
+            color3f[] primvars:displayColor = [(0, 0.9, 0.6)]
+
+            double radius = 5.0
+        }
+    }
+}
+
+def Xform "lights" 
+{
+    def DomeLight "DomeLight"
+    {
+        asset inputs:texture:file = "./StinsonBeach.hdr"
+    }
+}

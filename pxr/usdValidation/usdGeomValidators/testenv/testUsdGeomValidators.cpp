@@ -125,6 +125,12 @@ def Xform "SubsetsTest" (
                 uniform token familyName = "outOfRangeIndices"
                 int[] indices = [3, 4, 5, 6, 7]
             }
+            def GeomSubset "invalidElementType"
+            {
+                uniform token elementType = "segment"
+                uniform token familyName = "invalidElementType"
+                int[] indices = [0]
+            }
         }
         def Mesh "NullMesh"
         {
@@ -210,6 +216,9 @@ TestUsdGeomSubsetFamilies()
             "does not match the element count 6.",
 
             "Imageable prim </SubsetsTest/Geom/Cube> has invalid subset family "
+            "'invalidElementType': Invalid geom type Mesh for elementType segment.",
+
+            "Imageable prim </SubsetsTest/Geom/Cube> has invalid subset family "
             "'mixedElementTypes': GeomSubset at path "
             "</SubsetsTest/Geom/Cube/mixedElementTypes_2> has elementType "
             "'point', which does not match 'face'.",
@@ -242,6 +251,8 @@ TestUsdGeomSubsetFamilies()
             TF_AXIOM(errorSite.IsValid());
             TF_AXIOM(errorSite.IsPrim());
             TF_AXIOM(errorSite.GetPrim().GetPath() == usdPrim.GetPath());
+            std::cerr << error.GetMessage().c_str() << "\n";
+            std::cerr << expectedErrorMsgs[errorIndex].c_str() << "\n\n";
             TF_AXIOM(error.GetMessage() == expectedErrorMsgs[errorIndex]);
         }
     }

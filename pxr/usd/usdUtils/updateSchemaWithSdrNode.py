@@ -396,13 +396,6 @@ def _PopulateOptions(attrHints, attrSpec, sdrProp, propName, attrType):
         elif namesProvided:
             attrSpec.allowedTokens = names
 
-        if populateLabels:
-            # If we also populated valueLabels, then this is a "legacy"
-            # allowedTokens write. Log a warning so users understand they'll
-            # need to update their assets and/or UI code at some point.
-            Tf.Warn("Wrote both valueLabels and allowedTokens for attribute " \
-                    "(%s) on schema (%s). " % (propName, attrSpec.owner.name))
-
     # Complain if allowed tokens were provided for a non-token-valued param
     if not isTokenValued and not populateLabels:
         Tf.Warn("Ignoring allowedTokens provided for non-token (%s) " \
@@ -753,16 +746,35 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
     attrsWithShownIf = []
     attrRenames = {}
 
+    # Track "legacy" allowedTokens opinions (see note in _PopulateOptions()
+    # above), so we can emit a warning below. Clients should move to consuming
+    # valueLabels in these cases.
+    attrsWithLegacyAllowedTokens = set()
+
     def _recordAttrInfo(attrName, sdrProp):
+        # Property order
         propOrder.append(attrName)
         attrRenames[sdrProp.GetName()] = attrName
 
+        # shownIf
         attr = stage.GetAttributeAtPath(
             primSpec.path.AppendProperty(attrName))
         attrHints = UsdUI.AttributeHints(attr)
 
-        if attrHints and attrHints.GetShownIf():
+        if not attrHints:
+            return
+
+        if attrHints.GetShownIf():
             attrsWithShownIf.append(attr)
+
+        # Legacy allowedTokens
+        attrSpec = primSpec.attributes.get(attrName)
+
+        if not attrSpec:
+            return
+
+        if attrSpec.allowedTokens and attrHints.GetValueLabels():
+            attrsWithLegacyAllowedTokens.add(attrName)
 
     # Create attrSpecs from input parameters
     for propName in sdrNode.GetShaderInputNames():
@@ -802,6 +814,11 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
 
     if pagesShownIf:
         primHints.SetDisplayGroupsShownIf(pagesShownIf)
+
+    if attrsWithLegacyAllowedTokens:
+        Tf.Warn("%s: Wrote both valueLabels and allowedTokens for %d "
+                "attribute(s)" % \
+                (sdrNode.GetName(), len(attrsWithLegacyAllowedTokens)))
 
     # Forward the source param order for typed and single-apply. Multiple-apply
     # schemas cannot specify propertyOrder.

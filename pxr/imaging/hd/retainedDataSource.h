@@ -7,6 +7,7 @@
 #ifndef PXR_IMAGING_HD_RETAINEDDATASOURCE_H
 #define PXR_IMAGING_HD_RETAINEDDATASOURCE_H
 
+#include "pxr/base/vt/value.h"
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/hd/api.h"
@@ -14,8 +15,12 @@
 
 #include "pxr/usd/sdf/pathExpression.h"
 
+#include "pxr/base/arch/align.h"
 #include "pxr/base/tf/smallVector.h"
 #include "pxr/base/tf/denseHashMap.h"
+
+#include <utility>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -37,7 +42,7 @@ public:
 
     HD_API
     static Handle New(
-        size_t count, 
+        size_t count,
         const TfToken *names,
         const HdDataSourceBaseHandle *values);
 
@@ -53,7 +58,7 @@ public:
         const TfToken &name2,
         const HdDataSourceBaseHandle &value2);
 
-    HD_API 
+    HD_API
     static Handle New(
         const TfToken &name1,
         const HdDataSourceBaseHandle &value1,
@@ -116,9 +121,6 @@ class HdRetainedSampledDataSource : public HdSampledDataSource
 public:
     HD_DECLARE_DATASOURCE(HdRetainedSampledDataSource);
 
-    HdRetainedSampledDataSource(VtValue value)
-    : _value(value) {}
-
     bool GetContributingSampleTimesForInterval(
         HdSampledDataSource::Time startTime,
         HdSampledDataSource::Time endTime,
@@ -132,7 +134,11 @@ public:
         return _value;
     }
 
-private:
+protected:
+    HdRetainedSampledDataSource(VtValue value)
+      : _value(std::move(value))
+    { }
+
     VtValue _value;
 };
 
@@ -149,11 +155,7 @@ template <typename T>
 class HdRetainedTypedSampledDataSource : public HdTypedSampledDataSource<T>
 {
 public:
-    //abstract to implement New outside in service of specialization
-    HD_DECLARE_DATASOURCE_ABSTRACT(HdRetainedTypedSampledDataSource<T>);
-
-    HdRetainedTypedSampledDataSource(const T &value)
-    : _value(value) {}
+    HD_DECLARE_DATASOURCE(HdRetainedTypedSampledDataSource<T>);
 
     bool GetContributingSampleTimesForInterval(
         HdSampledDataSource::Time startTime,
@@ -173,25 +175,68 @@ public:
         return _value;
     }
 
-    static 
-    typename HdRetainedTypedSampledDataSource<T>::Handle New(const T &value);
+    // This New() overload exists to support braced init lists for T passed
+    // directly to New(), which the standard variadic New() from
+    // HD_DECLARE_DATASOURCE cannot handle.
+    static
+    typename HdRetainedTypedSampledDataSource<T>::Handle
+    New(const T &value)
+    {
+        return std::allocate_shared<HdRetainedTypedSampledDataSource<T>>(
+            HdDataSourceAllocator<HdRetainedTypedSampledDataSource<T>>{ },
+            value);
+    }
 
 protected:
+    HdRetainedTypedSampledDataSource(const T &value)
+      : _value(value) {}
+
     T _value;
 };
 
-// New is specializable for cases where instances may be shared for efficiency
-template <typename T>
-typename HdRetainedTypedSampledDataSource<T>::Handle
-HdRetainedTypedSampledDataSource<T>::New(const T &value)
-{
-    return HdRetainedTypedSampledDataSource<T>::Handle(
-        new HdRetainedTypedSampledDataSource<T>(value));
-}
+// Specialization for bool that will let us use singletons. The specialization
+// must happen at the class level so we can use alignas to separate the
+// singletons from their control blocks. Keeping them out of the same cache
+// line prevents false-sharing, which we actually observed with the prior,
+// function-level specialization pattern. This class-level specialization
+// pattern is the recommended way to create type-specific specializations
+// of HdRetainedTypedSampledDataSource that use singletons for efficiency.
 
 template <>
-HdRetainedTypedSampledDataSource<bool>::Handle
-HdRetainedTypedSampledDataSource<bool>::New(const bool &value);
+class alignas(ARCH_CACHE_LINE_SIZE) HdRetainedTypedSampledDataSource<bool>
+  : public HdTypedSampledDataSource<bool>
+{
+public:
+    HD_DECLARE_DATASOURCE_ABSTRACT(HdRetainedTypedSampledDataSource<bool>)
+    _HD_ALLOCATOR_FRIEND
+
+    bool GetContributingSampleTimesForInterval(
+        HdSampledDataSource::Time,
+        HdSampledDataSource::Time,
+        std::vector<HdSampledDataSource::Time>*) override
+    {
+        return false;
+    }
+
+    VtValue GetValue(HdSampledDataSource::Time) override
+    {
+        return VtValue(_value);
+    }
+
+    bool GetTypedValue(HdSampledDataSource::Time) override
+    {
+        return _value;
+    }
+
+    HD_API
+    static Handle New(const bool& value);
+
+protected:
+    HdRetainedTypedSampledDataSource<bool>(const bool& value)
+      : _value(value) { }
+
+    bool _value;
+};
 
 //-----------------------------------------------------------------------------
 
@@ -207,7 +252,7 @@ public:
     HD_DECLARE_DATASOURCE(HdRetainedTypedMultisampledDataSource<T>);
 
     HdRetainedTypedMultisampledDataSource(
-        size_t count, 
+        size_t count,
         HdSampledDataSource::Time *sampleTimes,
         T *sampleValues);
 
@@ -230,7 +275,7 @@ private:
 
 template <typename T>
 HdRetainedTypedMultisampledDataSource<T>::HdRetainedTypedMultisampledDataSource(
-    size_t count, 
+    size_t count,
     HdSampledDataSource::Time *sampleTimes,
     T *sampleValues)
 {
@@ -284,14 +329,14 @@ HdRetainedTypedMultisampledDataSource<T>::GetTypedValue(
         const HdSampledDataSource::Time & sampleTime = _sampledValues[i].first;
 
         if (sampleTime > shutterOffset) {
-            
+
             // If we're first and we're already bigger, return us.
             if (i < 1) {
                 return _sampledValues[i].second;
             } else {
 
                 // This will always be positive
-                const HdSampledDataSource::Time delta = 
+                const HdSampledDataSource::Time delta =
                     sampleTime - shutterOffset;
 
                 // If we're kinda equal, go for it
@@ -326,7 +371,7 @@ HdRetainedTypedMultisampledDataSource<T>::GetTypedValue(
 
 /// \class HdRetainedSmallVectorDataSource
 ///
-/// A retained data source version of HdVectorDataSource. 
+/// A retained data source version of HdVectorDataSource.
 ///
 /// Internally it uses a TfSmallVector with up to 32 locally stored entries
 /// for storage.
@@ -337,15 +382,16 @@ public:
     HD_DECLARE_DATASOURCE(HdRetainedSmallVectorDataSource);
 
     HD_API
-    HdRetainedSmallVectorDataSource(
-        size_t count, 
-        const HdDataSourceBaseHandle *values);
-
-    HD_API
     size_t GetNumElements() override;
 
     HD_API
     HdDataSourceBaseHandle GetElement(size_t element) override;
+
+protected:
+    HD_API
+    HdRetainedSmallVectorDataSource(
+        size_t count,
+        const HdDataSourceBaseHandle *values);
 
 private:
     TfSmallVector<HdDataSourceBaseHandle, 32> _values;

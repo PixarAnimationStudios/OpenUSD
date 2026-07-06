@@ -29,3 +29,39 @@ class AddOneController "AddOneController" (
         irRole = "OutputAttribute"
     )
 }
+
+class AddWithClampController "AddWithClampController" (
+    inherits = </Typed>
+)
+{
+    double invertibleInput = 0 (
+        irIsInvertible = true
+        irRole = "InputAttribute"
+    )
+    double nonInvertibleInput = 0 (
+        irIsInvertible = false
+        irRole = "InputAttribute"
+    )
+    double output = 0 (
+        irIsInvertible = true
+        irRole = "OutputAttribute"
+    )
+}
+
+class AddController "AddController" (
+    inherits = </Typed>
+)
+{
+    double invertibleInput = 0 (
+        irIsInvertible = true
+        irRole = "InputAttribute"
+    )
+    double nonInvertibleInput = 0 (
+        irIsInvertible = false
+        irRole = "InputAttribute"
+    )
+    double output = 0 (
+        irIsInvertible = true
+        irRole = "OutputAttribute"
+    )
+}

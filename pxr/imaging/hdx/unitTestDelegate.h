@@ -7,6 +7,8 @@
 #ifndef PXR_IMAGING_HDX_UNIT_TEST_DELEGATE_H
 #define PXR_IMAGING_HDX_UNIT_TEST_DELEGATE_H
 
+#include "pxr/base/gf/vec2i.h"
+#include "pxr/imaging/hd/aov.h"
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -20,6 +22,7 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/usd/sdf/path.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,7 +38,7 @@ _BuildArray(T values[], int numValues)
 class Hdx_UnitTestDelegate : public HdSceneDelegate
 {
 public:
-    Hdx_UnitTestDelegate(HdRenderIndex *renderIndex, 
+    Hdx_UnitTestDelegate(HdRenderIndex *renderIndex,
         SdfPath const &delegateId = SdfPath::AbsoluteRootPath());
 
     void SetRefineLevel(int level);
@@ -43,8 +46,8 @@ public:
     // camera
     void SetCamera(GfMatrix4d const &viewMatrix, GfMatrix4d const &projMatrix);
     void SetCamera(
-        SdfPath const &id, 
-        GfMatrix4d const &viewMatrix, 
+        SdfPath const &id,
+        GfMatrix4d const &viewMatrix,
         GfMatrix4d const &projMatrix);
     void AddCamera(SdfPath const &id);
     void UpdateCamera(SdfPath const &id, TfToken const &key, VtValue value);
@@ -58,10 +61,14 @@ public:
     void UpdateTransform(SdfPath const& id, GfMatrix4f const& mat);
 
     // render buffer
-    void AddRenderBuffer(SdfPath const &id, 
+    void AddRenderBuffer(SdfPath const &id,
                          HdRenderBufferDescriptor const &desc);
-    void UpdateRenderBuffer(SdfPath const &id, 
+    void UpdateRenderBuffer(SdfPath const &id,
                             HdRenderBufferDescriptor const &desc);
+
+    HdRenderPassAovBindingVector AddAovBindings(
+        const GfVec2i& resolution,
+        bool multiSampled = false);
 
     // draw target
     void AddDrawTarget(SdfPath const &id);
@@ -70,6 +77,8 @@ public:
     // tasks
     void AddRenderTask(SdfPath const &id);
     void AddRenderSetupTask(SdfPath const &id);
+    void AddOitRenderTask(const SdfPath& id);
+    void AddOitResolveTask(const SdfPath& id);
     void AddSimpleLightTask(SdfPath const &id);
     void AddShadowTask(SdfPath const &id);
     void AddSelectionTask(SdfPath const &id);
@@ -97,7 +106,7 @@ public:
 
     void BindMaterial(SdfPath const &rprimId, SdfPath const &materialId);
 
-    // prims    
+    // prims
     void AddMesh(SdfPath const &id,
                  GfMatrix4d const &transform,
                  VtVec3fArray const &points,
@@ -108,7 +117,7 @@ public:
                  TfToken const &scheme=PxOsdOpenSubdivTokens->catmullClark,
                  TfToken const &orientation=HdTokens->rightHanded,
                  bool doubleSided=false);
-    
+
     void AddMesh(SdfPath const &id,
                  GfMatrix4d const &transform,
                  VtVec3fArray const &points,
@@ -125,7 +134,7 @@ public:
                  TfToken const &orientation=HdTokens->rightHanded,
                  bool doubleSided=false);
 
-    void AddCube(SdfPath const &id, GfMatrix4d const &transform, 
+    void AddCube(SdfPath const &id, GfMatrix4d const &transform,
                  bool guide=false,
                  SdfPath const &instancerId=SdfPath(),
                  TfToken const &scheme=PxOsdOpenSubdivTokens->catmullClark,
@@ -152,7 +161,7 @@ public:
     HdMeshTopology GetMeshTopology(SdfPath const& id) override;
     VtValue Get(SdfPath const& id, TfToken const& key) override;
     HdPrimvarDescriptorVector GetPrimvarDescriptors(
-        SdfPath const& id, 
+        SdfPath const& id,
         HdInterpolation interpolation) override;
     VtIntArray GetInstanceIndices(
         SdfPath const& instancerId,
@@ -216,7 +225,7 @@ private:
         bool doubleSided;
         TfToken reprName;
     };
-    
+
     struct _Instancer {
         _Instancer() { }
         _Instancer(VtVec3fArray const &scale,

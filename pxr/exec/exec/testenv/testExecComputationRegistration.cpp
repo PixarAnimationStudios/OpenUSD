@@ -62,6 +62,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (dispatchedPrimComputationOnCustomSchema)
     (emptyComputation)
     (functionPointerComputation)
+    (lambdaWithCaptureComputation)
     (missingComputation)
     (multiApplySchemaComputation)
     (namespaceAncestorInput)
@@ -178,6 +179,15 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(
         _tokens->convertibleReturnTypeComputation)
         .Callback<std::string>(+[](const VdfContext &ctx) {
             return "string result value";
+        });
+
+    const TfToken inputName("anInputName");
+
+    // Callback: a lambda with capture
+    self.PrimComputation(
+        _tokens->lambdaWithCaptureComputation)
+        .Callback<std::string>([inputName](const VdfContext &ctx) {
+            ctx.SetOutput(ctx.GetInputValue<std::string>(inputName));
         });
 
     //
@@ -648,7 +658,10 @@ TestRegistrationErrors()
     // The errors that are emitted because of conflicting plugins aren't stable
     // because order can vary, so they are not included among the expected error
     // messages here.
-    EXPECTED_ERRORS(expected, 8, {
+    EXPECTED_ERRORS(expected, 9, {
+        "Attempt to build computations for unknown schema type name "
+        "'TestUnknownSchemaType'.",
+
         "Attempt to register computation 'unknownSchemaTypeComputation' using "
         "an unknown schema type.",
 

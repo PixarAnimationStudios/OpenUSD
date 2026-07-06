@@ -126,6 +126,23 @@ class SdfAssetPath;
 /// 
 /// All card faces are drawn and textured as single-sided.
 /// 
+/// \section UsdGeomModelAPI_cardVisibility Card Visibility
+/// 
+/// In the \em cards \em model:drawMode the \em model:cardVisibility
+/// attribute controls which cards are visible:
+/// 
+/// - \em full - All cards specified in the various \em model:cardTexture
+/// parameters are visible
+/// - \em simple - Cards corresponding to the stage's \em upAxis are not
+/// visible. Ex: \em upAxis == "Z", then
+/// em model:cardTextureZPos and em model:cardTextureZNeg
+/// will not be visible.
+/// - \em inherited - Defer to parent opinion. Behaves like \em full if no
+/// parent opinion is found.
+/// 
+/// For \em simple \em model::cardVisibility, if the only cards specified
+/// correspond to the stage's \em upAxis then no cards will be visible.
+/// 
 /// \todo CreatePayload() 
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
@@ -345,6 +362,31 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
     UsdAttribute CreateModelCardGeometryAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // MODELCARDVISIBILITY 
+    // --------------------------------------------------------------------- //
+    /// When using the \em cards imaging mode, determines if cards
+    /// in the upAxis direction should be visible.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token model:cardVisibility = "inherited"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdGeomTokens "Allowed Values" | full, simple, inherited |
+    USDGEOM_API
+    UsdAttribute GetModelCardVisibilityAttr() const;
+
+    /// See GetModelCardVisibilityAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateModelCardVisibilityAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

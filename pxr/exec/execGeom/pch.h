@@ -37,6 +37,7 @@
 #include <memory>
 #include <mutex>
 #include <new>
+#include <optional>
 #include <ostream>
 #include <set>
 #include <sstream>
@@ -54,6 +55,7 @@
 #include <utility>
 #include <vector>
 #include <tbb/concurrent_queue.h>
+#include <tbb/concurrent_unordered_map.h>
 #include <tbb/spin_mutex.h>
 #include <tbb/spin_rw_mutex.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED

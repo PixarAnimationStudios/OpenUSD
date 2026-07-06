@@ -43,8 +43,22 @@ using TfMetaHead = Head;
 template <class Head, class... Tail>
 using TfMetaTail = TfMetaList<Tail...>;
 
-// TfMetaDecay<A1, A2, ... An> ->
-// TfMetaList<std::decay_t<A1>, ... std::decay_t<An>>
+template <class L1, class L2>
+struct Tf_MetaConcatImpl;
+
+template <class... A1s, class... A2s>
+struct Tf_MetaConcatImpl<TfMetaList<A1s...>, TfMetaList<A2s...>>
+{
+    using Type = TfMetaList<A1s..., A2s...>;
+};
+
+// TfMetaConcat<TfMetaList<Xs...>, TfMetaList<Ys...>>
+//     -> TfMetaList<Xs..., Ys...>
+template <class L1, class L2>
+using TfMetaConcat = typename Tf_MetaConcatImpl<L1, L2>::Type;
+
+// TfMetaDecay<A1, A2, ... An>
+//     -> TfMetaList<std::decay_t<A1>, ... std::decay_t<An>>
 template <class... Ts>
 using TfMetaDecay = TfMetaList<std::decay_t<Ts>...>;
 

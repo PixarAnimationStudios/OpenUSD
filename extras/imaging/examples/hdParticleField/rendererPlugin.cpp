@@ -32,13 +32,18 @@ void HdParticleFieldRendererPlugin::DeleteRenderDelegate(
     delete renderDelegate;
 }
 
-bool HdParticleFieldRendererPlugin::IsSupported(bool gpuEnabled) const {
-    return true;
-}
-
 bool HdParticleFieldRendererPlugin::IsSupported(
+#if HD_API_VERSION >= 103
+    const HdRendererCreateArgsSchema &rendererCreateArgs,
+    std::string *reasonWhyNot
+#elif HD_API_VERSION >= 83
     HdRendererCreateArgs const &rendererCreateArgs,
-    std::string *reasonWhyNot) const {
+    std::string *reasonWhyNot
+#else
+    bool gpuEnabled
+#endif
+    ) const
+{
     return true;
 }
 

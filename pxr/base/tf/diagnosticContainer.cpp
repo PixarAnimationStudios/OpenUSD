@@ -18,7 +18,7 @@ Tf_DiagnosticContainer::Post()
     TfDiagnosticMgr &mgr = TfDiagnosticMgr::GetInstance();
     Iterator it = GetIterator();
     while (it.Next(TfOverloads {
-                [&mgr](TfError const &e)   { mgr._ReportError(e); },
+                [&mgr](TfError const &e)   { mgr.PostError(e);    },
                 [&mgr](TfWarning const &w) { mgr.PostWarning(w);  },
                 [&mgr](TfStatus const &s)  { mgr.PostStatus(s);   }
             }));

@@ -33,6 +33,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((riIntegrator, "ri:integrator"))
     ((riSampleFilters, "ri:sampleFilters"))
     ((riDisplayFilters, "ri:displayFilters"))
+    // Note: defined unconditionally - MSVC does not support preprocessor
+    // directives inside macro argument lists. Usage is guarded separately.
+    ((riEnergyFilters, "ri:energyFilters"))
     // Legacy terminal connections. Remove in a future USD version.
     ((outputsRiIntegrator, "outputs:ri:integrator"))
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
@@ -231,6 +234,9 @@ _FillRileyParamsFromNamespacedSettings(
         if (name == _renderTerminalTokens->riIntegrator    ||
             name == _renderTerminalTokens->riSampleFilters ||
             name == _renderTerminalTokens->riDisplayFilters ||
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+            name == _renderTerminalTokens->riEnergyFilters ||
+#endif
             // Legacy terminal connections. Remove in a future USD version.
             name == _renderTerminalTokens->outputsRiIntegrator    ||
             name == _renderTerminalTokens->outputsRiSampleFilters ||

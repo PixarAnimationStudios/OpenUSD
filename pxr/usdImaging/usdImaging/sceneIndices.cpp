@@ -9,7 +9,6 @@
 #include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/extentResolvingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/instanceProxyPathTranslationSceneIndex.h"
-// #include "pxr/usdImaging/usdImaging/instanceProxyPathTranslationSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/materialBindingsResolvingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
@@ -18,7 +17,8 @@
 #include "pxr/usdImaging/usdImaging/selectionSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/unloadedDrawModeSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/usdSceneIndexInputArgsSchema.h"
+#include "pxr/usdImaging/usdImaging/usdUpAxisSchema.h"
+#include "pxr/usdImaging/usdImaging/sceneIndexCreateArgsSchema.h"
 
 #include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
@@ -79,7 +79,7 @@ _AddPluginSceneIndices(HdSceneIndexBaseRefPtr sceneIndex)
 
 static
 HdContainerDataSourceHandle
-_AdditionalStageSceneIndexInputArgs(
+_AdditionalStageSceneIndexCreateArgs(
     const bool displayUnloadedPrimsWithBounds)
 {
     if (!displayUnloadedPrimsWithBounds) {
@@ -87,8 +87,11 @@ _AdditionalStageSceneIndexInputArgs(
     }
     static HdContainerDataSourceHandle const ds =
         HdRetainedContainerDataSource::New(
-            UsdImagingStageSceneIndexTokens->includeUnloadedPrims,
-            HdRetainedTypedSampledDataSource<bool>::New(true));
+            UsdImagingSceneIndexCreateArgsSchema::GetSchemaToken(),
+            UsdImagingSceneIndexCreateArgsSchema::Builder()
+                .SetIncludeUnloadedPrims(
+                    HdRetainedTypedSampledDataSource<bool>::New(true))
+                .Build());
     return ds;
 }
 
@@ -98,7 +101,7 @@ _AdditionalStageSceneIndexInputArgs(
 // UsdImaging 1.0.
 static
 HdContainerDataSourceHandle
-_ExtentResolvingSceneIndexInputArgs()
+_ExtentResolvingSceneIndexCreateArgs()
 {
     HdDataSourceBaseHandle const purposeDataSources[] = {
         HdRetainedTypedSampledDataSource<TfToken>::New(
@@ -149,7 +152,8 @@ _InstanceDataSourceNames()
         // assetInfo, which may be used in material networks for texture
         // asset resolution.  See HdDataSourceMaterialNetworkInterface::
         // GetModelAssetName().
-        UsdImagingModelSchema::GetSchemaToken()
+        UsdImagingModelSchema::GetSchemaToken(),
+        UsdImagingUsdUpAxisSchema::GetSchemaToken()
     };
 
     for (const UsdImagingSceneIndexPluginUniquePtr &plugin :
@@ -197,7 +201,7 @@ UsdImagingCreateSceneIndices(
     sceneIndex = result.stageSceneIndex =
         UsdImagingStageSceneIndex::New(
             HdOverlayContainerDataSource::OverlayedContainerDataSources(
-                _AdditionalStageSceneIndexInputArgs(
+                _AdditionalStageSceneIndexCreateArgs(
                     createInfo.displayUnloadedPrimsWithBounds),
                 createInfo.stageSceneIndexInputArgs));
 
@@ -227,7 +231,7 @@ UsdImagingCreateSceneIndices(
     
     sceneIndex =
         UsdImagingExtentResolvingSceneIndex::New(
-            sceneIndex, _ExtentResolvingSceneIndexInputArgs());
+            sceneIndex, _ExtentResolvingSceneIndexCreateArgs());
 
     {
         TRACE_FUNCTION_SCOPE("UsdImagingPiPrototypePropagatingSceneIndex");
@@ -322,11 +326,11 @@ UsdImagingCreateSceneIndices(
 
 UsdImagingSceneIndices
 UsdImagingCreateSceneIndices(
-    HdContainerDataSourceHandle const &inputArgs,
+    HdContainerDataSourceHandle const &createArgs,
     const UsdImagingSceneIndexAppendCallback &overridesSceneIndexCallback)
 {
-    const UsdImagingUsdSceneIndexInputArgsSchema schema =
-        UsdImagingUsdSceneIndexInputArgsSchema::GetFromParent(inputArgs);
+    const UsdImagingSceneIndexCreateArgsSchema schema =
+        UsdImagingSceneIndexCreateArgsSchema::GetFromParent(createArgs);
     
     UsdImagingCreateSceneIndicesInfo info;
 

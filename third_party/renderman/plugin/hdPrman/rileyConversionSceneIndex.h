@@ -10,6 +10,8 @@
 #define EXT_RMANPKG_PLUGIN_RENDERMAN__HD_PRMAN_RILEY_CONVERSION_SCENE_INDEX__H
 
 #include "pxr/pxr.h"
+
+#if PXR_VERSION > 2311
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "hdPrman/api.h"
@@ -66,6 +68,8 @@ protected:
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION > 2311
 
 #endif // EXT_RMANPKG_PLUGIN_RENDERMAN__HD_PRMAN_RILEY_CONVERSION_SCENE_INDEX__H
 

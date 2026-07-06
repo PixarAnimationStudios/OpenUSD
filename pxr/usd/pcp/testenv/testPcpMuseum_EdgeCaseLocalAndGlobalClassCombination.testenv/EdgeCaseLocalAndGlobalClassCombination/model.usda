@@ -1,0 +1,38 @@
+#usda 1.0
+
+def "Model" (
+    add inherits = </GlobalParent>
+) {
+    over "Instance" {    
+    }
+    over "_class_InGlobal" {
+    }
+    over "_class_InModel" {    
+    }
+}
+
+class Prim "GlobalParent"
+{
+    over "Instance" (
+        add inherits = </GlobalParent/_class_InGlobal>
+    ) {
+    }
+    over "_class_InGlobal" (
+        inherits = </Model/_class_InModel>
+    ) {
+    }
+    over "_class_InModel" {    
+    }
+
+}
+
+def "OtherModel" (
+    add inherits = </GlobalParent>
+) {
+    over "Instance" {    
+    }
+    over "_class_InGlobal" {
+    }
+    over "_class_InModel" {    
+    }
+}

@@ -10,24 +10,13 @@
 #define TF_MAX_ARITY 7
 #include "pxr/pxr.h"
 #include "pxr/base/arch/defines.h"
-#if defined(ARCH_OS_DARWIN)
-#include <mach/mach_time.h>
-#endif
 #if defined(ARCH_OS_LINUX)
 #include <unistd.h>
-#include <x86intrin.h>
-#endif
-#if defined(ARCH_OS_WINDOWS)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-
-#include <Windows.h>
-#include <intrin.h>
 #endif
 #include <algorithm>
 #include <any>
 #include <atomic>
+#include <chrono>
 #include <cinttypes>
 #include <cmath>
 #include <complex>
@@ -51,6 +40,7 @@
 #include <map>
 #include <math.h>
 #include <memory>
+#include <new>
 #include <numeric>
 #include <optional>
 #include <ostream>

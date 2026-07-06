@@ -44,17 +44,19 @@ UsdUtilsExtractExternalReferences(
         subLayers, references, payloads, params);
 }
 
-struct UsdUtils_ComputeAllDependenciesClient
+class UsdUtils_ComputeAllDependenciesClient : 
+    public UsdUtils_ReadOnlyLocalizationClient
 {
+public:
     UsdUtils_ComputeAllDependenciesClient(
         const std::function<UsdUtilsProcessingFunc> &processingFunc)
             :processingFunc(processingFunc) {}
 
     UsdUtilsDependencyInfo 
-    Process( 
+    _ProcessDependency( 
         const SdfLayerRefPtr &layer, 
         const UsdUtilsDependencyInfo &depInfo,
-        UsdUtils_DependencyType dependencyType)
+        UsdUtils_DependencyType dependencyType) override
     {
         
         if (processingFunc) {
@@ -90,7 +92,7 @@ struct UsdUtils_ComputeAllDependenciesClient
             }
         }
 
-        return {};
+        return depInfo;
     }
 
     bool 
@@ -175,11 +177,7 @@ UsdUtilsComputeAllDependencies(
     }
 
     UsdUtils_ComputeAllDependenciesClient client(processingFunc);
-    UsdUtils_ReadOnlyLocalizationDelegate delegate(
-        std::bind(&UsdUtils_ComputeAllDependenciesClient::Process, &client,
-            std::placeholders::_1, std::placeholders::_2, 
-            std::placeholders::_3));
-    UsdUtils_LocalizationContext context(&delegate);
+    UsdUtils_LocalizationContext context(&client);
     context.SetMetadataFilteringEnabled(true);
 
     if (!context.Process(rootLayer)) {
@@ -207,28 +205,39 @@ UsdUtilsComputeAllDependencies(
     return true;
 }
 
+class UsdUtils_UsdUtilsModifyAssetPathsClient : 
+    public UsdUtils_WritableLocalizationClient 
+{
+public:
+    UsdUtils_UsdUtilsModifyAssetPathsClient(
+        const UsdUtilsModifyAssetPathFn &modifyPathFn)
+            : modifyPathFn(modifyPathFn) {}
+
+    virtual UsdUtilsDependencyInfo 
+    _ProcessDependency( 
+        const SdfLayerRefPtr &layer, 
+        const UsdUtilsDependencyInfo &depInfo,
+        UsdUtils_DependencyType dependencyType) override
+    {
+        return UsdUtilsDependencyInfo(
+            modifyPathFn(depInfo.GetAssetPath()));
+    }
+
+    UsdUtilsModifyAssetPathFn modifyPathFn;
+};
+
 void 
 UsdUtilsModifyAssetPaths(
     const SdfLayerHandle& layer,
     const UsdUtilsModifyAssetPathFn& modifyFn,
     bool keepEmptyPathsInArrays)
 {
-    auto processingFunc = 
-        [&modifyFn](const SdfLayerRefPtr&, 
-            const UsdUtilsDependencyInfo &dependencyInfo,
-            UsdUtils_DependencyType)
-        {
-            return UsdUtilsDependencyInfo(
-                modifyFn(dependencyInfo.GetAssetPath()));
-        };
+    UsdUtils_UsdUtilsModifyAssetPathsClient client(modifyFn);
+    client.SetEditLayersInPlace(true);
+    client.SetKeepEmptyPathsInArrays(keepEmptyPathsInArrays);
 
-    UsdUtils_WritableLocalizationDelegate delegate(processingFunc);
-    UsdUtils_LocalizationContext context(&delegate);
-    delegate.SetEditLayersInPlace(true);
+    UsdUtils_LocalizationContext context(&client);
     context.SetRecurseLayerDependencies(false);
-
-    delegate.SetKeepEmptyPathsInArrays(keepEmptyPathsInArrays);
-
     context.Process(layer);
 }
 

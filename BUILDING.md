@@ -134,6 +134,32 @@ Please refer to [VERSIONS.md](VERSIONS.md) for supported Python versions.
 Support for Python can optionally be disabled by specifying the cmake flag
 `PXR_ENABLE_PYTHON_SUPPORT=FALSE`.
 
+By default, Python bindings are installed into the standard Python site-packages
+directory under `CMAKE_INSTALL_PREFIX`. This directory varies depending on the
+platform and version of Python used to build USD. Typical locations are:
+
+- Linux/MacOS:
+  - `<prefix>/lib/pythonX.Y/site-packages`
+  - `<prefix>/lib64/pythonX.Y/site-packages`
+
+- Windows:
+  - `<prefix>/Lib/site-packages`
+
+To install into a custom directory instead, set `PXR_PYTHON_INSTALL_DIR` to a
+path relative to `CMAKE_INSTALL_PREFIX` or to an absolute path.  For example,
+to restore the layout used by older USD releases:
+
+```
+-DPXR_PYTHON_INSTALL_DIR=lib/python
+```
+
+Python must be set up to discover the bindings in order to use them and the
+components that depend on them. This is typically done by adding the install
+directory to the `PYTHONPATH` environment variable. Note that with the default
+settings, no additional configuration is required if USD is built into a
+virtualenv (i.e., `CMAKE_INSTALL_PREFIX` is set to the virtual environment's
+root directory).
+
 ##### OpenGL
 
 Support for OpenGL can optionally be disabled by specifying the cmake flag

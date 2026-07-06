@@ -12,10 +12,12 @@
 #include "pxr/base/ts/api.h"
 
 #include "pxr/base/gf/interval.h"
+#include "pxr/base/gf/timeCode.h"
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -25,8 +27,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>double</b>
 /// \li <b>float</b>
 /// \li <b>GfHalf</b>
+/// \li <b>GfTimeCode</b>
 /// \hideinitializer
 #define TS_SPLINE_SUPPORTED_VALUE_TYPES         \
+    ((Double,   double))                        \
+    ((Float,    float))                         \
+    ((Half,     GfHalf))                        \
+    ((TimeCode, GfTimeCode))
+
+#define TS_SPLINE_STORAGE_VALUE_TYPES           \
     ((Double,   double))                        \
     ((Float,    float))                         \
     ((Half,     GfHalf))
@@ -98,6 +107,8 @@ enum TsCurveType
 /// Curve-shaping mode for one of a spline's extrapolation regions (before all
 /// knots and after all knots).
 ///
+/// Note: If the extrapolation is looping and there is only one knot,
+/// extrapolation behaves as if it is held.
 enum TsExtrapMode
 {
     TsExtrapValueBlock    = 0, //< No value in this region.
@@ -220,7 +231,32 @@ class TsExtrapolation
 {
 public:
     TsExtrapMode mode = TsExtrapHeld;
+
+    // Used only in TsExtrapSloped mode. Specifies slope of the extrapolated
+    // segment.
     double slope = 0.0;
+
+    // Used only in looping extrapolation modes to optionally specify a
+    // subsection of the spline.
+    //
+    // This setting is incompatible with inner looping. Attempts to set
+    // extrapolation with a non-null loopBoundaryTime on a spline with inner
+    // looping, and vice versa, will cause a TF_CODING_ERROR to be issued.
+    //
+    // When this has no value, this extrapolation loops the full knot region.
+    //
+    // When this has a value that is exactly a knot time,
+    // this extrapolation loops the knot subregion demarcated by
+    // loopBoundaryTime and the knot subregion's start for post-extrapolation
+    // or end for pre-extrapolation.
+    // 
+    // There are a few degenerate cases.
+    // - This has a value that isn't exactly a knot time. The resulting
+    //   extrapolation is value block.
+    // - This has a value that is the start knot time for pre-extrapolation,
+    //   or end knot time for post-extrapolation. The resulting extrapolation
+    //   is held, and has the same behavior as TsExtrapHeld.
+    std::optional<double> loopBoundaryTime;
 
 public:
     TS_API
@@ -229,6 +265,10 @@ public:
     TS_API
     TsExtrapolation(TsExtrapMode mode);
 
+    /// Construct a TsExtrapolation with the given mode and slope
+    ///
+    /// \deprecated
+    /// Deprecated in favor of setting the slope field directly
     TS_API
     TsExtrapolation(TsExtrapMode mode, double slope);
 

@@ -26,6 +26,10 @@ void wrapUserProcessingFunc()
     typedef UsdUtilsDependencyInfo This;
 
     class_<This>("DependencyInfo", init<>())
+        // Note: we purposely do not expose the constructor which allows for
+        // providing expression variables.  These values are currently only
+        // specified by the asset localization system during dependency
+        // traversal.
         .def(init<const This&>())
         .def(init<const std::string &>())
         .def(init<const std::string &, const std::vector<std::string>>())
@@ -33,5 +37,10 @@ void wrapUserProcessingFunc()
             return_value_policy<return_by_value>()))
         .add_property("dependencies", make_function(&This::GetDependencies,
             return_value_policy<TfPySequenceToList>()))
+        .add_property("rawAssetPath", make_function(&This::GetRawAssetPath,
+            return_value_policy<return_by_value>()))
+        .add_property("expressionVariables", 
+            make_function(&This::GetExpressionVariables,
+            return_value_policy<return_by_value>()))
     ;
 }

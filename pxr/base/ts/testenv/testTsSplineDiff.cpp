@@ -181,7 +181,22 @@ bool TestKnotDiffs()
     TEST_EQUAL(simpleSpline.Diff(copy), expected2);
     TEST_EQUAL(copy.Diff(simpleSpline), expected2);
 
+    // Knot is dual-valued and the pre-value is the old value.
+    knot.SetPreValue(value);
+    copy.SetKnot(knot);
+    TEST_EQUAL(simpleSpline.Diff(copy), expected1);
+    TEST_EQUAL(copy.Diff(simpleSpline), expected1);
+
+    // Knot is dual-valued and the value is the old value.
+    knot.SetValue(value);
+    knot.SetNextInterpolation(TsInterpLinear);
+    copy.SetKnot(knot);
+    TEST_EMPTY(simpleSpline.Diff(copy));
+    TEST_EMPTY(copy.Diff(simpleSpline));
+
     // Compare only part of the change
+    knot.SetValue(value + 1);
+    copy.SetKnot(knot);
     GfInterval compareInterval(2.5, +inf);
     GfInterval expected3(2.5, 3.0, CLOSED, OPEN);
     TEST_EQUAL(simpleSpline.Diff(copy, compareInterval), expected3);
@@ -212,6 +227,13 @@ bool TestLoopedDiffs()
     // Get the loop parameters.
     TsLoopParams lp = copy.GetInnerLoopParams();
 
+    // Change the knot at 3. This is always overwritten.
+    copy.GetKnot(3.0, &knot);
+    knot.SetValue(20.0);
+    copy.SetKnot(knot);
+    TEST_EMPTY(longLoop.Diff(copy));
+    TEST_EMPTY(copy.Diff(longLoop));
+
     // The loop prototype interval is [1..3). Change the knot at 2.
     copy.GetKnot(2.0, &knot);
     knot.SetValue(2.0);
@@ -235,6 +257,16 @@ bool TestLoopedDiffs()
     GfInterval expected2 = GfInterval::GetFullInterval();
     TEST_EQUAL(longLoop.Diff(copy), expected2);
     TEST_EQUAL(copy.Diff(longLoop), expected2);
+
+    // This dual valued first knot should change everything but the
+    // last segment
+    copy = longLoop;
+    copy.GetKnot(1.0, &knot);
+    knot.SetPreValue(-1.0);
+    copy.SetKnot(knot);
+    GfInterval expected2a = GfInterval(-inf, 7, OPEN, OPEN);
+    TEST_EQUAL(longLoop.Diff(copy), expected2a);
+    TEST_EQUAL(copy.Diff(longLoop), expected2a);
 
     // Reset copy and change the loop params instead of the knots.
     copy = longLoop;

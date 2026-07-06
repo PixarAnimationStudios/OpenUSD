@@ -1,6 +1,6 @@
 #usda 1.0
 (
-    "This file describes the Pixar-specific USD Geometric schemata for code generation."
+    "This file describes the Hydra-specific USD schemata."
     subLayers = [
         @usd/schema.usda@
     ]
@@ -164,7 +164,7 @@ over "GLOBAL" (
             }
         }
     }
-){
+) {
 }
 
 class "HydraGenerativeProceduralAPI" (
@@ -197,5 +197,22 @@ class "HydraGenerativeProceduralAPI" (
         Multiple instances of the scene index can be used to determine where
         within a scene index chain a given procedural will be evaluated.
         """
+    )
+}
+
+class "HydraRenderPassAPI" (
+    inherits = </APISchemaBase>
+    doc = """Provides Hydra-specific properties for UsdRenderPass."""
+    customData = {
+        string className = "RenderPassAPI"
+        token[] apiSchemaCanOnlyApplyTo = ["RenderPass"]
+    }
+) {
+    uniform token hydra:rendererName (
+        doc = """The name of the Hydra renderer to use if the user does
+        not otherwise specify one to the application.  Applications
+        typically allow the user to specify a session renderer to use,
+        such as by the --renderer argument to usdrecord; this attribute
+        provides a way to specify renderer selection in a USD-based pipeline."""
     )
 }

@@ -96,8 +96,8 @@ operation, handling edit target changes for you:
 Namespace editing handles issues such as making sure that paths targeting 
 edited objects and overrides are still valid after renaming or reparenting 
 prims. Namespace editing tries to fix any existing composition arcs, 
-relationship targets, attribute connections, and overrides that used paths to 
-renamed or reparented prims to use the new paths.
+relationship targets, attribute connections, path expressions, and overrides 
+that used paths to renamed or reparented prims to use the new paths.
 
 Namespace editing will also use **relocates** for more complex edit scenarios. 
 Relocates are another composition arc that maps a prim path defined in a remote 
@@ -352,9 +352,7 @@ Places where paths are used that will get fixed currently include:
 
 - Relationship targets
 - Attribute connections
-
-Namespace editing will support fixing paths used in other areas (e.g. path 
-expressions for pattern based collections) in future updates.
+- Path expression-valued and path expression array-valued attributes and fields
 
 Note that fixes for edits that delete or move a prim or property that is 
 introduced across a composition arc (like a reference) may have undesired 

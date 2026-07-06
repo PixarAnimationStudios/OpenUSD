@@ -27,6 +27,7 @@ void wrapUsdHydraTokens()
     _ADD_TOKEN(cls, HwPtexTexture_1);
     _ADD_TOKEN(cls, HwUvTexture_1);
     _ADD_TOKEN(cls, hydraGenerativeProcedural);
+    _ADD_TOKEN(cls, hydraRendererName);
     _ADD_TOKEN(cls, infoFilename);
     _ADD_TOKEN(cls, infoVarname);
     _ADD_TOKEN(cls, linear);
@@ -47,4 +48,5 @@ void wrapUsdHydraTokens()
     _ADD_TOKEN(cls, wrapS);
     _ADD_TOKEN(cls, wrapT);
     _ADD_TOKEN(cls, HydraGenerativeProceduralAPI);
+    _ADD_TOKEN(cls, HydraRenderPassAPI);
 }

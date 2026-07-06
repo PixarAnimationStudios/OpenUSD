@@ -3101,38 +3101,18 @@ _EvalImpliedRelocations(
 ////////////////////////////////////////////////////////////////////////
 // Class-based Arcs
 
-// Walk over the child nodes of parent, looking for an existing inherit
-// node.
+// Return child node of given parent with the given site, or PcpNodeRef()
+// if no such node exists.
 static PcpNodeRef
 _FindMatchingChild(const PcpNodeRef& parent,
-                   const PcpArcType parentArcType,
-                   const PcpLayerStackSite& site,
-                   const PcpArcType arcType,
-                   const PcpMapExpression & mapToParent,
-                   int depthBelowIntroduction)
+                   const PcpLayerStackSite& site)
 {
     // Arbitrary-order traversal.
     TF_FOR_ALL(childIt, Pcp_GetChildrenRange(parent)) {
         const PcpNodeRef& child = *childIt;
-
-        // XXX:RelocatesSourceNodes: This somewhat arcane way of comparing
-        // inherits arc "identity" is necessary to handle the way implied
-        // inherits map across relocation source nodes.  In particular,
-        // comparing only the sites there would give us a collision, because
-        // the sites for implied inherits under relocates sources are
-        // not necessarily meaningful.
-        if (parentArcType == PcpArcTypeRelocate) {
-            if (child.GetArcType() == arcType &&
-                child.GetMapToParent().Evaluate() == mapToParent.Evaluate() &&
-                child.GetOriginNode().GetDepthBelowIntroduction()
-                == depthBelowIntroduction) {
-                return child;
-            }
-        }
-        else {
-            if (child.GetSite() == site) {
-                return child;
-            }
+        if (child.GetLayerStack() == site.layerStack &&
+            child.GetPath() == site.path) {
+            return child;
         }
     }
     return PcpNodeRef();
@@ -3147,19 +3127,25 @@ _FindContainingVariantSelection(SdfPath p)
     return p;
 }
 
-// Use the mapping function to figure out the path of the site to
-// inherit, by mapping the parent's site back to the source.
+// Use the transfer function to figure out the path of the site to inherit, by
+// mapping the source path to the destination through the transfer function.
 static SdfPath
 _DetermineInheritPath(
-    const SdfPath & parentPath,
-    const PcpMapExpression & inheritMap )
+    const SdfPath & destParentPath,
+    const SdfPath & sourceChildPath,
+    const PcpMapExpression & transferFunc)
 {
-    // For example, given an inherit map like this:
-    //    source: /Class
-    //    target: /Model
-    //
-    // Say we are adding this inherit arc to </Model>; we'll map
-    // the target path back to </Class>.
+    TRACE_FUNCTION();
+
+    // For example, given a transfer function like this that maps the source
+    // parent to the destination parent:
+    //    /Model -> /Char
+    //    / -> /
+    // A child of the source node child /Char/Class would map to /Model/Class
+    // under the destination node, while the source node child _class_Global
+    // would identity map to itself, _class_Global, under the destination node.
+    // If the source node had a child /Model/Class, that would fail to map to
+    // the destination node.
     //
     // Why don't we just use the source path directly?
     // The reason we use a mapping function to represent the arc,
@@ -3181,23 +3167,25 @@ _DetermineInheritPath(
     // the variant selections before mapping the path and then re-add
     // them afterwards.
     //
-    if (!parentPath.ContainsPrimVariantSelection()) {
+    if (!destParentPath.ContainsPrimVariantSelection()) {
         // Easy case: Just map the site back across the inherit.
-        return inheritMap.MapTargetToSource(parentPath);
+        return transferFunc.MapSourceToTarget(
+            sourceChildPath.StripAllVariantSelections());
     } else {
-        // Harder case: The site path has variant selections.
+        // Harder case: The destination site path has variant selections.
         // We want to map the site's namespace back across the
         // inherit, but retain the embedded variant selections.
 
         // Find the nearest containing variant selection.
-        SdfPath varPath = _FindContainingVariantSelection(parentPath);
+        SdfPath varPath = _FindContainingVariantSelection(destParentPath);
         TF_VERIFY(!varPath.IsEmpty());
 
         // Strip the variant selections from the site path, apply the
-        // inherit mapping, then re-add the variant selections.
-        return inheritMap.MapTargetToSource(
-                parentPath.StripAllVariantSelections() )
-                .ReplacePrefix( varPath.StripAllVariantSelections(), varPath );
+        // inherit mapping, then re-add the variant selections that map to the
+        // destination.
+        return transferFunc.MapSourceToTarget(
+            sourceChildPath.StripAllVariantSelections() )
+            .ReplacePrefix( varPath.StripAllVariantSelections(), varPath );
     }
 }
 
@@ -3216,6 +3204,7 @@ _PropagateNodeToRoot(
 // returns the existing node.
 static PcpNodeRef
 _AddClassBasedArc(
+    const SdfPath &inheritPath,
     PcpArcType arcType,
     PcpNodeRef parent,
     PcpNodeRef origin,
@@ -3238,10 +3227,6 @@ _AddClassBasedArc(
         inheritArcNum,
         ignoreIfSameAsSite == PcpLayerStackSite() ? 
             "<none>" : Pcp_FormatSite(ignoreIfSameAsSite).c_str());
-
-    // Use the inherit map to figure out the site path to inherit.
-    SdfPath inheritPath = 
-        _DetermineInheritPath( parent.GetPath(), inheritMap );
 
     // We need to check the parent node's arc type in a few places
     // below. PcpNode::GetArcType is insufficient because we could be in a
@@ -3280,10 +3265,34 @@ _AddClassBasedArc(
     // Check if there are multiple inherits with the same site.
     // For example, this might be an implied inherit that was also
     // broken down explicitly.
-    if (PcpNodeRef child = _FindMatchingChild(
-            parent, parentArcType, inheritSite, arcType, inheritMap,
-            origin.GetDepthBelowIntroduction())) {
+    auto findMatchingChild = [&]() {
+        if (parentArcType != PcpArcTypeRelocate) {
+            return _FindMatchingChild(parent, inheritSite);
+        }
 
+        // XXX:RelocatesSourceNodes: This somewhat arcane way of comparing
+        // inherits arc "identity" is necessary to handle the way implied
+        // inherits map across relocation source nodes.  In particular,
+        // comparing only the sites there would give us a collision, because
+        // the sites for implied inherits under relocates sources are
+        // not necessarily meaningful.
+        const int depthBelowIntroduction = origin.GetDepthBelowIntroduction();
+        const PcpMapExpression& mapToParent = inheritMap;
+        TF_FOR_ALL(childIt, Pcp_GetChildrenRange(parent)) {
+            const PcpNodeRef& child = *childIt;
+            if (child.GetArcType() == arcType &&
+                child.GetOriginNode().GetDepthBelowIntroduction()
+                    == depthBelowIntroduction &&
+                child.GetMapToParent().Evaluate()
+                    == mapToParent.Evaluate()) {
+                return child;
+            }
+        }
+        
+        return PcpNodeRef();
+    };
+
+    if (PcpNodeRef child = findMatchingChild()) {
         PCP_INDEXING_MSG(
             indexer, parent, child,
             TfEnum::GetDisplayName(arcType).c_str(),
@@ -3468,7 +3477,8 @@ _AddClassBasedArcs(
                 /* source */ arcPath, /* targetNode */ node)
             .AddRootIdentity();
 
-        _AddClassBasedArc(arcType,
+        _AddClassBasedArc(arcPath,
+            arcType,
             /* parent = */ node,
             /* origin = */ node,
             mapExpr,
@@ -3700,7 +3710,11 @@ _EvalImpliedClassTree(
         // a redundant inherit.
         //
         if (!destChild) {
+            SdfPath inheritPath = _DetermineInheritPath(
+                destNode.GetPath(), srcChild.GetPath(), transferFunc);
+
             destChild = _AddClassBasedArc(
+                inheritPath,
                 srcChild.GetArcType(),
                 /* parent = */ destNode,
                 /* origin = */ srcChild,
@@ -3713,23 +3727,7 @@ _EvalImpliedClassTree(
         // If we successfully added the arc (or found it already existed)
         // recurse on nested classes.  This will build up the full
         // class hierarchy that we are inheriting.
-        // Optimization: Recursion requires some cost to set up
-        // childTransferFunc, below.  Before we do that work,
-        // check if there are any nested inherits.
         if (destChild && _HasClassBasedChild(srcChild)) {
-            // Determine the transferFunc to use for the nested child,
-            // by composing the functions to walk up from the srcChild,
-            // across the transferFunc, and down to the destChild.
-            // (Since we are walking down to destChild, we use the
-            // inverse of its mapToParent.)
-            //
-            // This gives us a childTransferFunc that will map the
-            // srcChild namespace to the destChild namespace, so
-            // that can continue propagating implied classes from there.
-            //
-            PcpMapExpression childTransferFunc =
-                destClassFunc.Inverse()
-                .Compose(transferFunc.Compose(srcChild.GetMapToParent()));
 
             // If destChild is a specializes node, ensure we only add
             // implied children to its corresponding propagated node to
@@ -3741,7 +3739,7 @@ _EvalImpliedClassTree(
             }
 
             _EvalImpliedClassTree(destChild, srcChild,
-                                  childTransferFunc, 
+                                  transferFunc, 
                                   /* srcNodeIsStartOfTree = */ false,
                                   indexer);
         }
@@ -3839,11 +3837,7 @@ _PropagateNodeToRoot(
     PcpNodeRef parentNode = srcNode.GetRootNode();
     const PcpMapExpression& mapToParent = srcNode.GetMapToRoot();
 
-    PcpNodeRef newNode = _FindMatchingChild(
-        parentNode, srcNode.GetArcType(),
-        srcNode.GetSite(), srcNode.GetArcType(),
-        mapToParent, srcNode.GetDepthBelowIntroduction());
-
+    PcpNodeRef newNode = _FindMatchingChild(parentNode, srcNode.GetSite());
     if (!newNode) {
         _ArcOptions opts;
         opts.skipDuplicateNodes = true;
@@ -4217,6 +4211,31 @@ _ChooseBestFallbackAmongOptions(
     return std::string();
 }
 
+// Return true if the new node site could introduce variant selection opinions 
+// that would affect pending variant tasks. We check for direct variant
+// selections as well as any arc metadata (references, inherits, specializes,
+// payloads) that might transitively bring in selections through newly-added
+// nodes. Variant arcs whose sites do not bring in these composition
+// opinions will not affect pending variant tasks, so retrying variant tasks can
+// be skipped. Skipping can be a large performance gain when there a large
+// numbers of variants (and especially ancestral variants) composing a single
+// prim index.
+static bool
+_SiteMightIntroducePendingVariantSelections(
+    const PcpLayerStackSite &site)
+{   
+    for (const SdfLayerRefPtr &layer : site.layerStack->GetLayers()) {     
+        if (layer->HasField(site.path, SdfFieldKeys->VariantSelection) ||
+            layer->HasField(site.path, SdfFieldKeys->References) ||
+            layer->HasField(site.path, SdfFieldKeys->InheritPaths) ||
+            layer->HasField(site.path, SdfFieldKeys->Specializes) ||
+            layer->HasField(site.path, SdfFieldKeys->Payload)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void
 _AddVariantArc(
     Pcp_PrimIndexer *indexer,
@@ -4228,7 +4247,9 @@ _AddVariantArc(
     // storage.  For this reason, the source site includes the
     // variant selection but the mapping function is identity.
     SdfPath varPath = node.GetSite().path.AppendVariantSelection(vset, vsel);
-    if (_AddArc(indexer, PcpArcTypeVariant,
+    const PcpLayerStackSite varSite(node.GetLayerStack(), varPath);
+    if (const PcpNodeRef varNode = _AddArc(
+                indexer, PcpArcTypeVariant,
                 /* parent = */ node,
                 /* origin = */ node,
                 PcpLayerStackSite( node.GetLayerStack(), varPath ),
@@ -4236,8 +4257,11 @@ _AddVariantArc(
                 /* arcSiblingNum = */ vsetNum)) {
         // If we expanded a variant set, it may have introduced new
         // authored variant selections, so we must retry any pending
-        // variant tasks as authored tasks.
-        indexer->RetryVariantTasks();
+        // variant tasks as authored tasks if there's a chance of new
+        // selections.
+        if (_SiteMightIntroducePendingVariantSelections(varSite)) {
+            indexer->RetryVariantTasks();
+        }
     }
 }
 
@@ -4248,8 +4272,10 @@ _AddAncestralVariantArc(
     const SdfPath &vsetPath,
     const std::string &vset, int vsetNum, const std::string &vsel)
 {
+    const SdfPath ancestralVarPath =
+        vsetPath.AppendVariantSelection(vset, vsel);
     const SdfPath varPath = node.GetPath().ReplacePrefix(
-        vsetPath, vsetPath.AppendVariantSelection(vset, vsel));
+        vsetPath, ancestralVarPath);
     const int namespaceDepth =
         PcpNode_GetNonVariantPathElementCount(vsetPath);
 
@@ -4280,18 +4306,32 @@ _AddAncestralVariantArc(
         return false;
     }();
 
-    if (_AddArc(indexer, PcpArcTypeVariant,
+    const PcpLayerStackSite varSite(node.GetLayerStack(), varPath);
+    if (const PcpNodeRef varNode = _AddArc(
+                indexer, PcpArcTypeVariant,
                 /* parent = */ node,
                 /* origin = */ node,
-                PcpLayerStackSite( node.GetLayerStack(), varPath ),
+                varSite,
                 /* mapExpression = */ PcpMapExpression::Identity(),
                 /* arcSiblingNum = */ vsetNum,
                 namespaceDepth,
                 opts)) {
         // If we expanded a variant set, it may have introduced new
         // authored variant selections, so we must retry any pending
-        // variant tasks as authored tasks.
-        indexer->RetryVariantTasks();
+        // variant tasks as authored tasks if there's a chance of new
+        // selections. 
+        // Note that we're checking for the possibility of variant 
+        // selections introduced at the ancestral variant path only as
+        // tasks for authored variant selections deeper in namespace
+        // (including the non-ancestral site varSite) will not have been
+        // processed before this task. The retry here is for the variant
+        // tasks that are at the same level of namespace as this ancestral
+        // variant set that may now have new variant selection opinions
+        // because of this ancestral variant.
+        if (_SiteMightIntroducePendingVariantSelections(
+                PcpLayerStackSite(varSite.layerStack, ancestralVarPath))) {
+            indexer->RetryVariantTasks();
+        }
     }
 }
 

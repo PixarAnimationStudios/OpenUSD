@@ -32,7 +32,8 @@ TF_DEFINE_PUBLIC_TOKENS(HdInstancerTopologySchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 
 VtArray<int>
-HdInstancerTopologySchema::ComputeInstanceIndicesForProto(SdfPath const &path)
+HdInstancerTopologySchema::ComputeInstanceIndicesForProto(
+    SdfPath const &path) const
 {
     TRACE_FUNCTION();
 

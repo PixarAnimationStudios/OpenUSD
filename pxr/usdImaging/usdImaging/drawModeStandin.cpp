@@ -8,6 +8,7 @@
 
 #include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
+#include "pxr/usdImaging/usdImaging/usdUpAxisSchema.h"
 
 #include "pxr/imaging/hd/basisCurvesSchema.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
@@ -31,6 +32,7 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/sceneGlobalsSchema.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
@@ -985,9 +987,11 @@ class _CardsDataCache
 {
 public:
     _CardsDataCache(const SdfPath &primPath,
-        const HdContainerDataSourceHandle &primSource)
+        const HdContainerDataSourceHandle &primSource,
+        const TfToken& upAxis)
       : _primPath(primPath)
       , _primSource(primSource)
+      , _upAxis(upAxis)
     {
     }
 
@@ -1043,7 +1047,7 @@ private:
     /// So we do not support motion-blur for these attributes.
     struct _SchemaValues
     {
-        _SchemaValues(UsdImagingGeomModelSchema schema);
+        _SchemaValues(UsdImagingGeomModelSchema schema, const TfToken& upAxis);
 
         /// Card geometry, that is box, cross, or fromTexture.
         TfToken cardGeometry;
@@ -1107,7 +1111,9 @@ private:
             return cached;
         }
         auto data = std::make_shared<_CardsData>(
-            _SchemaValues(UsdImagingGeomModelSchema::GetFromParent(_primSource)),
+            _SchemaValues(
+                UsdImagingGeomModelSchema::GetFromParent(_primSource),
+                _upAxis),
             _primPath
         );
 
@@ -1118,6 +1124,7 @@ private:
     std::shared_ptr<_CardsData> _data;
     SdfPath const _primPath;
     HdContainerDataSourceHandle const _primSource;
+    TfToken const _upAxis;
 };
 
 template <class Vec>
@@ -1225,7 +1232,8 @@ GetWorldToScreenFromImageMetadata(
     return false;
 }
 
-_CardsDataCache::_SchemaValues::_SchemaValues(UsdImagingGeomModelSchema schema)
+_CardsDataCache::_SchemaValues::_SchemaValues(UsdImagingGeomModelSchema schema,
+    const TfToken& upAxis)
 {
     if (HdTokenDataSourceHandle src = schema.GetCardGeometry()) {
         cardGeometry = src->GetTypedValue(0.0f);
@@ -1275,6 +1283,26 @@ _CardsDataCache::_SchemaValues::_SchemaValues(UsdImagingGeomModelSchema schema)
         // draw mode color.
         if (hasFace.none()) {
             hasFace.set();
+        }
+    }
+
+    if (const HdTokenDataSourceHandle src = schema.GetCardVisibility()) {
+        const TfToken cardVisibility = src->GetTypedValue(0.0f);
+        if (cardVisibility == UsdGeomTokens->simple) {
+            static const TfToken upAxes[] = {
+                UsdGeomTokens->x,
+                UsdGeomTokens->y,
+                UsdGeomTokens->z };
+            // upAxis == x is not valid, so loop starts from y
+            for (size_t i = 1; i < 3; i++) {
+                if (upAxis == upAxes[i]) {
+                    for (size_t j = 0; j < 2; j++) {
+                        const size_t k = i + 3 * j;
+                        hasTexture[k] = false;
+                        hasFace[k] = false;
+                    }
+                }
+            }
         }
     }
 
@@ -2067,8 +2095,16 @@ public:
     _CardsStandin(const SdfPath &path,
              const HdContainerDataSourceHandle &primSource)
       : UsdImaging_DrawModeStandin(path, primSource)
-      , _dataCache(std::make_shared<_CardsDataCache>(path, primSource))
     {
+        TfToken upAxis;
+        if (HdTokenDataSourceHandle const ds =
+                UsdImagingUsdUpAxisSchema::GetFromParent(primSource).GetUpAxis()) {
+            upAxis = ds->GetTypedValue(0.0f);
+        }
+        _dataCache = std::make_shared<_CardsDataCache>(
+            path,
+            primSource,
+            upAxis);
     }
 
     void ProcessDirtyLocators(
@@ -2083,6 +2119,8 @@ public:
             UsdImagingGeomModelSchema::GetDefaultLocator().Append(
                 UsdImagingGeomModelSchemaTokens->cardGeometry),
             UsdImagingGeomModelSchema::GetDefaultLocator().Append(
+                UsdImagingGeomModelSchemaTokens->cardVisibility),
+            UsdImagingGeomModelSchema::GetDefaultLocator().Append(
                 UsdImagingGeomModelSchemaTokens->cardTextureXPos),
             UsdImagingGeomModelSchema::GetDefaultLocator().Append(
                 UsdImagingGeomModelSchemaTokens->cardTextureYPos),
@@ -2093,7 +2131,9 @@ public:
             UsdImagingGeomModelSchema::GetDefaultLocator().Append(
                 UsdImagingGeomModelSchemaTokens->cardTextureYNeg),
             UsdImagingGeomModelSchema::GetDefaultLocator().Append(
-                UsdImagingGeomModelSchemaTokens->cardTextureZNeg) };
+                UsdImagingGeomModelSchemaTokens->cardTextureZNeg),
+            UsdImagingUsdUpAxisSchema::GetDefaultLocator().Append(
+                UsdImagingUsdUpAxisSchemaTokens->upAxis) };
 
         // Blast the entire thing.
         if (dirtyLocators.Intersects(cardLocators)) {

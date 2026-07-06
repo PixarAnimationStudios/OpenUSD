@@ -61,7 +61,10 @@ TestBasics()
     {
         auto eval = MatchEval { SdfPathExpression("/foo//") };
         TF_AXIOM(eval.Match(SdfPath("/foo")));
-    }    
+        TF_AXIOM(eval.Match(SdfPath("/foo/bar")));
+        TF_AXIOM(eval.Match(SdfPath("/foo/bar/baz")));
+        TF_AXIOM(!eval.Match(SdfPath("/bar")));
+    }
 
     {
         auto eval = MatchEval { 
@@ -225,6 +228,67 @@ TestBasics()
     }
 
     {
+        auto eval = MatchEval { SdfPathExpression("/[abc]") };
+        TF_AXIOM(eval.Match(SdfPath("/a")));
+        TF_AXIOM(eval.Match(SdfPath("/b")));
+        TF_AXIOM(eval.Match(SdfPath("/c")));
+        TF_AXIOM(!eval.Match(SdfPath("/d")));
+        TF_AXIOM(!eval.Match(SdfPath("/abc")));
+    }
+
+    {
+        // Bracket class at start, wildcard after
+        auto eval = MatchEval { SdfPathExpression("/[abc]*") };
+        TF_AXIOM(eval.Match(SdfPath("/a")));
+        TF_AXIOM(eval.Match(SdfPath("/aXYZ")));
+        TF_AXIOM(eval.Match(SdfPath("/bFoo")));
+        TF_AXIOM(!eval.Match(SdfPath("/dFoo")));
+    }
+
+    {
+        // Range in bracket class
+        auto eval = MatchEval { SdfPathExpression("/[a-z]*") };
+        TF_AXIOM(eval.Match(SdfPath("/foo")));
+        TF_AXIOM(eval.Match(SdfPath("/bar")));
+        TF_AXIOM(!eval.Match(SdfPath("/Foo")));
+        TF_AXIOM(!eval.Match(SdfPath("/123")));
+    }    
+    
+    {
+        auto eval = MatchEval { SdfPathExpression("/foo/bar.*") };
+        TF_AXIOM(eval.Match(SdfPath("/foo/bar.x")));
+        TF_AXIOM(eval.Match(SdfPath("/foo/bar.myProp")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/bar")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/bar/x")));
+    }
+
+    {
+        // Namespaced property wildcard
+        auto eval = MatchEval { SdfPathExpression("/foo/bar.ns:*") };
+        TF_AXIOM(eval.Match(SdfPath("/foo/bar.ns:x")));
+        TF_AXIOM(eval.Match(SdfPath("/foo/bar.ns:myProp")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/bar.otherNs:x")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/bar.x")));
+    }
+
+    {
+        // Bare predicate on an element (no wildcard text)
+        auto eval = MatchEval { SdfPathExpression("/foo/{isPrimPath}") };
+        TF_AXIOM(eval.Match(SdfPath("/foo/bar")));
+        TF_AXIOM(eval.Match(SdfPath("/foo/anything")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/bar.prop")));
+    }
+
+    {
+        // Wildcard + predicate combined
+        auto eval = MatchEval { SdfPathExpression("/foo/bar*{isPrimPath}") };
+        TF_AXIOM(eval.Match(SdfPath("/foo/bar")));
+        TF_AXIOM(eval.Match(SdfPath("/foo/barXYZ")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/bar.prop")));
+        TF_AXIOM(!eval.Match(SdfPath("/foo/baz")));
+    }
+
+    {
         // ComposeOver
         SdfPathExpression a("/a");
         SdfPathExpression b("%_ /b");
@@ -364,6 +428,43 @@ TestBasics()
             TF_AXIOM(eval.Match(SdfPath("/Home/bar")));
             TF_AXIOM(eval.Match(SdfPath("/Home/test/baz/qux")));
             TF_AXIOM(eval.Match(SdfPath("/Home/test/baz/a/b/c/qux")));
+
+            // Test ReplacePrefix when newPrefix is empty. This should remove all
+            // expression refs and path patterns that had oldPrefix.
+            SdfPathExpression noPrefix("/World/test/foo /World/bar "
+                "/World/test/baz//qux %/World/test:otherRef /Other/foo* //World");
+
+            SdfPathExpression after = noPrefix.ReplacePrefix(
+                SdfPath("/World"), SdfPath());
+            TF_AXIOM(after.GetText() == "/Other/foo* //World");
+
+            auto evl = MatchEval { after };
+            TF_AXIOM(!evl.Match(SdfPath("/World/test/foo")));
+            TF_AXIOM(!evl.Match(SdfPath("/World/bar")));
+            TF_AXIOM(!evl.Match(SdfPath("/World/test/baz/qux")));
+            TF_AXIOM(evl.Match(SdfPath("/Other/foobar")));
+            TF_AXIOM(evl.Match(SdfPath("/World")));
+
+            // Ensure the path expression resolves to nothing if its only contents are
+            // a prefix that is deleted.
+            noPrefix = SdfPathExpression("/World/bar");
+            after = noPrefix.ReplacePrefix(SdfPath("/World/bar"), SdfPath(""));
+            TF_AXIOM(after == SdfPathExpression::Nothing());
+
+            evl = MatchEval { after };
+            TF_AXIOM(!evl.Match(SdfPath("/World/bar")));
+
+            // Ensure the path expression can resolve to everything
+            SdfPathExpression everything("~/foo/bar");
+            evl = MatchEval { everything };
+            TF_AXIOM(!evl.Match(SdfPath("/foo/bar")));
+            TF_AXIOM(evl.Match(SdfPath("/baz")));
+            after = everything.ReplacePrefix(SdfPath("/foo"), SdfPath(""));
+
+            evl = MatchEval { after };
+            TF_AXIOM(after == SdfPathExpression::Everything());
+            TF_AXIOM(evl.Match(SdfPath("/foo/bar")));
+            TF_AXIOM(evl.Match(SdfPath("/baz")));
         }
     }
 
@@ -973,6 +1074,54 @@ TestErrors()
     fprintf(stderr, "=== End expected errors ===\n");
 }
 
+static void
+TestErrorMessages()
+{
+    auto expectError = [](std::string const &exprTxt,
+                          std::string const &expectedMsg) {
+        SdfPathExpression expr(exprTxt);
+        if (!expr.IsEmpty()) {
+            TF_FATAL_ERROR("Expected '%s' to produce the empty expression",
+                           exprTxt.c_str());
+        }
+        std::string const &err = expr.GetParseError();
+        if (err.empty()) {
+            TF_FATAL_ERROR("Expected parsing '%s' to yield a parse error",
+                           exprTxt.c_str());
+        }
+        if (err.find(expectedMsg) == std::string::npos) {
+            TF_FATAL_ERROR("Parsing '%s' produced error:\n  %s\n"
+                           "Expected it to contain:\n  %s",
+                           exprTxt.c_str(), err.c_str(),
+                           expectedMsg.c_str());
+        }
+    };
+
+    fprintf(stderr, "=== Expected error messages =======\n");
+
+    // Path expression level errors.
+    expectError("/foo &",  "expected path expression after operator");
+    expectError("/foo +",  "expected path expression after operator");
+    expectError("/foo - ", "expected path expression after operator");
+    expectError("(/foo",   "expected ')' to close expression group");
+    expectError("()",      "expected path expression after '('");
+    expectError("/foo)",   "expected end of path expression");
+    expectError("%:",      "expected identifier");
+    expectError("%/",      "expected expression reference path after '/'");
+
+    // Path pattern level errors.
+    expectError("/foo/",        "expected path pattern element");
+    expectError("/foo/bar.",    "expected property pattern element after '.'");
+    expectError("/foo/{unclosed", "expected '}' to close predicate expression");
+    expectError("/[abc",        "expected ']' to close bracket class");
+
+    // Predicate expression level errors.
+    expectError("/foo{a and}",  "expected predicate expression after operator");
+    expectError("/foo{bar(}",   "expected ')' to close function call");
+
+    fprintf(stderr, "=== End expected error messages ===\n");
+}
+
 
 int
 main(int argc, char **argv)
@@ -981,7 +1130,8 @@ main(int argc, char **argv)
     TestSearch();
     TestPathPattern();
     TestErrors();
-    
+    TestErrorMessages();
+
     printf(">>> Test SUCCEEDED\n");
     return 0;
 }

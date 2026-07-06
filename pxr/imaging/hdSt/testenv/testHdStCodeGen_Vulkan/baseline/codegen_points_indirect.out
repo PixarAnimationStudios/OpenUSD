@@ -291,6 +291,13 @@ MAT4  GetProjectionMatrix() {
     return MAT4(1);
 #endif
 }
+MAT4  GetProjectionInverseMatrix() {
+#if defined(HD_HAS_projectionInverseMatrix)
+    return MAT4(HdGet_projectionInverseMatrix());
+#else
+    return MAT4(1);
+#endif
+}
 vec3 GetPositionInWorldSpace(vec3 windowRelativeCoord)
 {
 #if defined(HD_HAS_imageToWorldMatrix)
@@ -1134,6 +1141,7 @@ bool IsPointSelected(int pointId)
   FRAGMENT SHADER                                      
 =======================================================
 #version 450
+#extension GL_EXT_fragment_shader_barycentric: require
 #define REF(space,type) inout type
 #define FORWARD_DECL(func_decl) func_decl
 #define ATOMIC_LOAD(a) (a)
@@ -1273,6 +1281,7 @@ flat layout(location = 4) in int vsPointId;
 flat layout(location = 0) in ivec4 vs_interstageDrawingCoord0;
 flat layout(location = 1) in ivec4 vs_interstageDrawingCoord1;
 flat layout(location = 2) in ivec4 vs_interstageDrawingCoord2;
+vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspEXT;
 uint hd_SampleMaskIn = gl_SampleMaskIn[0];
 layout(location = 3) in VertexData {
   vec4 Peye;
@@ -1322,7 +1331,7 @@ float HdGetScalar_widths() { return HdGet_widths(0); }
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
 vec3 GetBarycentricCoord() {
-  return vec3(0);
+  return hd_BaryCoordNoPersp;
 }
 int GetPrimitiveID() {
   return gl_PrimitiveID;
@@ -1416,6 +1425,13 @@ MAT4  GetWorldToViewInverseMatrix() {
 MAT4  GetProjectionMatrix() {
 #if defined(HD_HAS_projectionMatrix)
     return MAT4(HdGet_projectionMatrix());
+#else
+    return MAT4(1);
+#endif
+}
+MAT4  GetProjectionInverseMatrix() {
+#if defined(HD_HAS_projectionInverseMatrix)
+    return MAT4(HdGet_projectionInverseMatrix());
 #else
     return MAT4(1);
 #endif

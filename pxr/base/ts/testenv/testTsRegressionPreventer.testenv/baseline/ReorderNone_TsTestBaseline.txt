@@ -12,16 +12,47 @@ TsRegressionPreventer::SetResult:
   postOppositeAdjustedWidth: 0.250000
 -----
 Spline:
-  hermite false
-  preExtrap Held
-  postExtrap Held
-Knots:
-  1.000000: 1.000000, Curve, preSlope 0.000000, postSlope -0.250000, preLen 0.000000, postLen 0.250000, auto false / false
-  3.000000: 1.000000, Curve, preSlope -0.250000, postSlope -0.250000, preLen 0.250000, postLen 0.250000, auto false / false
-  3.200000: 2.000000, Curve, preSlope 0.250000, postSlope 0.250000, preLen 0.250000, postLen 0.250000, auto false / false
-  4.000000: 2.000000, Curve, preSlope 0.250000, postSlope 0.000000, preLen 0.250000, postLen 0.000000, auto false / false
------
-Ts.TsTest_SplineData(isHermite = False, preExtrapolation = Ts.TsTest_SplineData.Extrapolation(method = Ts.TsTest_SplineData.ExtrapHeld), postExtrapolation = Ts.TsTest_SplineData.Extrapolation(method = Ts.TsTest_SplineData.ExtrapHeld), knots = [Ts.TsTest_SplineData.Knot(time = float.fromhex('0x1p+0'), nextSegInterpMethod = Ts.TsTest_SplineData.InterpCurve, value = float.fromhex('0x1p+0'), preSlope = float.fromhex('0x0p+0'), postSlope = float.fromhex('-0x1p-2'), preLen = float.fromhex('0x0p+0'), postLen = float.fromhex('0x1p-2'), preAuto = False, postAuto = False), Ts.TsTest_SplineData.Knot(time = float.fromhex('0x1.8p+1'), nextSegInterpMethod = Ts.TsTest_SplineData.InterpCurve, value = float.fromhex('0x1p+0'), preSlope = float.fromhex('-0x1p-2'), postSlope = float.fromhex('-0x1p-2'), preLen = float.fromhex('0x1p-2'), postLen = float.fromhex('0x1p-2'), preAuto = False, postAuto = False), Ts.TsTest_SplineData.Knot(time = float.fromhex('0x1.999999999999ap+1'), nextSegInterpMethod = Ts.TsTest_SplineData.InterpCurve, value = float.fromhex('0x1p+1'), preSlope = float.fromhex('0x1p-2'), postSlope = float.fromhex('0x1p-2'), preLen = float.fromhex('0x1p-2'), postLen = float.fromhex('0x1p-2'), preAuto = False, postAuto = False), Ts.TsTest_SplineData.Knot(time = float.fromhex('0x1p+2'), nextSegInterpMethod = Ts.TsTest_SplineData.InterpCurve, value = float.fromhex('0x1p+1'), preSlope = float.fromhex('0x1p-2'), postSlope = float.fromhex('0x0p+0'), preLen = float.fromhex('0x1p-2'), postLen = float.fromhex('0x0p+0'), preAuto = False, postAuto = False)])
+  value type double
+  time valued 0
+  curve type Bezier
+  pre extrap Held
+  post extrap Held
+Knot:
+  value type double
+  time 1
+  value 1
+  next interp Curve
+  pre-tan width 0
+  pre-tan slope 0
+  post-tan width 0.25
+  post-tan slope -0.25
+Knot:
+  value type double
+  time 3
+  value 1
+  next interp Curve
+  pre-tan width 0.25
+  pre-tan slope -0.25
+  post-tan width 0.25
+  post-tan slope -0.25
+Knot:
+  value type double
+  time 3.2
+  value 2
+  next interp Curve
+  pre-tan width 0.25
+  pre-tan slope 0.25
+  post-tan width 0.25
+  post-tan slope 0.25
+Knot:
+  value type double
+  time 4
+  value 2
+  next interp Curve
+  pre-tan width 0.25
+  pre-tan slope 0.25
+  post-tan width 0
+  post-tan slope 0
 -----
 0.400000 1.000000
 1.000000 1.000000
@@ -159,19 +190,19 @@ Ts.TsTest_SplineData(isHermite = False, preExtrapolation = Ts.TsTest_SplineData.
 2.970149 1.005757
 2.985075 1.003238
 3.000000 1.000000
-3.014925 0.997459
-3.029851 0.997744
-3.044776 1.001801
-3.059701 1.011213
-3.074627 1.029023
-3.089552 1.062711
-3.104478 1.851782
-3.119403 1.911125
-3.134328 1.945063
-3.149254 1.967138
-3.164179 1.982022
-3.179104 1.991977
-3.194030 1.998297
+3.014925 0.998197
+3.029851 1.001078
+3.044776 1.010478
+3.059701 1.029731
+3.074627 1.066155
+3.089552 1.143703
+3.104478 1.722350
+3.119403 1.860752
+3.134328 1.920207
+3.149254 1.955052
+3.164179 1.976886
+3.179104 1.990444
+3.194030 1.998185
 3.200000 2.000000
 3.208955 2.002154
 3.223881 2.005382

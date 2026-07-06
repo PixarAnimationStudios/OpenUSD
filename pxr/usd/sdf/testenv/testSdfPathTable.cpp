@@ -220,6 +220,34 @@ static void DoUnitTest()
                        SdfPath("/foo/anim/chars/MeridaGroup/MeridaSword")) == 1);
     }
 
+    // FindLongestPrefix
+    {
+        Table::const_iterator it;
+
+        it = table.FindLongestPrefix(SdfPath("/not_in_table"));
+        TF_AXIOM(it != table.end() && it->first == SdfPath("/"));
+
+        it = table.FindLongestPrefix(SdfPath("/also/not_in_table"));
+        TF_AXIOM(it != table.end() && it->first == SdfPath("/"));
+
+        it = table.FindLongestPrefix(SdfPath("/no/such/path/in/table"));
+        TF_AXIOM(it != table.end() && it->first == SdfPath("/"));
+
+        it = table.FindLongestPrefix(SdfPath("/foo"));
+        TF_AXIOM(it != table.end() && it->first == SdfPath("/foo"));
+
+        it = table.FindLongestPrefix(
+            SdfPath("/foo/anim/chars/MeridaGroup/MeridaSword"));
+        TF_AXIOM(it != table.end() &&
+            it->first == SdfPath("/foo/anim/chars/MeridaGroup/MeridaSword"));
+
+        it = table.FindLongestPrefix(SdfPath(
+            "/foo/anim/chars/MeridaGroup/MeridaSword/v/e/r/y/v/e/r/y/l/o/n/g/p/a/t/h/t/h/a/t/i/s/n/o/t/i/n/t/h/e/t/a/b/l/e"));
+        TF_AXIOM(
+            it != table.end() &&
+            it->first == SdfPath("/foo/anim/chars/MeridaGroup/MeridaSword"));
+    }
+
     // build a table<SdfPath, std::string> from the table.
     std::map<SdfPath, std::string> pathMap(table.begin(), table.end());
     TF_AXIOM(pathMap.size() == table.size());

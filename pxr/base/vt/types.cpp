@@ -147,10 +147,14 @@ TF_REGISTRY_FUNCTION(VtValue)
     VtValue::RegisterSimpleBidirectionalCast<GfVec4h, GfVec4f>();
     VtValue::RegisterSimpleBidirectionalCast<GfVec4f, GfVec4d>();
 
+    // TimeCode <-> double casts.
+    VtValue::RegisterSimpleBidirectionalCast<double, GfTimeCode>();
+
     // Precision casts.
     _RegisterArrayCasts<VtHalfArray, VtFloatArray>();
     _RegisterArrayCasts<VtHalfArray, VtDoubleArray>();
     _RegisterArrayCasts<VtFloatArray, VtDoubleArray>();
+    _RegisterArrayCasts<VtTimeCodeArray, VtDoubleArray>();
     _RegisterArrayCasts<VtVec2hArray, VtVec2fArray>();
     _RegisterArrayCasts<VtVec2hArray, VtVec2dArray>();
     _RegisterArrayCasts<VtVec2fArray, VtVec2dArray>();

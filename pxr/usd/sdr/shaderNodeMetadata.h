@@ -67,6 +67,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((PixelFilter, "pixelFilter"))      \
     ((SampleFilter, "sampleFilter"))    \
     ((VolumeFilter, "volumeFilter"))    \
+    ((EnergyFilter, "energyFilter"))    \
     /* rendering subdomain */           \
     ((Integrator, "integrator"))        \
     ((Projection, "projection"))

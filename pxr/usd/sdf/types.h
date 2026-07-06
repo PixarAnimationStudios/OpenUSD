@@ -346,7 +346,7 @@ SDF_API TfToken SdfGetRoleNameForValueTypeName(TfToken const &typeName);
     ((Half,           half,           GfHalf,            () )) \
     ((Float,          float,          float,             () )) \
     ((Double,         double,         double,            () )) \
-    ((TimeCode,       timecode,       SdfTimeCode,       () )) \
+    ((TimeCode,       timecode,       GfTimeCode,        () )) \
     ((String,         string,         std::string,       () )) \
     ((Token,          token,          TfToken,           () )) \
     ((Asset,          asset,          SdfAssetPath,      () )) \

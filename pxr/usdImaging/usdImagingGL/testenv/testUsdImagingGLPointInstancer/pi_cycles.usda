@@ -1,0 +1,46 @@
+#usda 1.0
+(
+    """This test exercises a few different types of cycles that are possible
+    due to UsdGeomPointInstancer's ability to point at arbitrary prototype
+    paths in the scene:
+    - a point instancer using its own ancestor prim as a prototype
+    - a co-recursive pair of point instancers using each others'
+      ancestors as prototypes
+    """
+)
+
+def Scope "AncestorRecursion"
+{
+    def Sphere "sphere_1"
+    {
+        def PointInstancer "instancer_1"
+        {
+            point3f[] positions = [(0, 0, 0)]
+            int[] protoIndices = [0]
+            rel prototypes = </AncestorRecursion/sphere_1>
+        }
+    }
+}
+
+def Scope "CorecursivePair"
+{
+    def Sphere "sphere_1"
+    {
+        def PointInstancer "instancer_1"
+        {
+            point3f[] positions = [(0, 0, 0)]
+            int[] protoIndices = [0]
+            rel prototypes = </CorecursivePair/sphere_2>
+        }
+    }
+
+    def Sphere "sphere_2"
+    {
+        def PointInstancer "instancer_2"
+        {
+            point3f[] positions = [(0, 0, 0)]
+            int[] protoIndices = [0]
+            rel prototypes = </CorecursivePair/sphere_1>
+        }
+    }
+}

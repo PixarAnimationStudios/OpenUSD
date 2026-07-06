@@ -14,6 +14,7 @@ pxr_library(usdValidation
         context 
         error
         fixer
+        notice
         registry
         timeRange
         validator
@@ -30,6 +31,7 @@ pxr_library(usdValidation
         wrapContext.cpp
         wrapError.cpp
         wrapFixer.cpp
+        wrapNotice.cpp
         wrapRegistry.cpp
         wrapTimeRange.cpp
         wrapValidator.cpp

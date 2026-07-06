@@ -31,9 +31,15 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    // materials
     (Surface)
     (diffuseColor)
     (specularColor)
+    (file)
+    // lights
+    (Light)
+    (color)
+    ((textureFile, "texture:file"))
     // primvars
     (displayColor)
     (customColor)
@@ -135,6 +141,44 @@ CheckParamColorSpace(
 }
 
 bool
+CheckLightParamColorSpace(
+    UsdImagingStageSceneIndexRefPtr const& stageSceneIndex,
+    SdfPath const& lightPath,
+    TfToken const& paramNameToken,
+    VtValue const& colorSpaceValue)
+{
+    HdSceneIndexPrim prim = stageSceneIndex->GetPrim(lightPath);
+    if (prim.primType.IsEmpty()) {
+        std::cout << " - no light prim <" << lightPath << ">.\n";
+        return false;
+    }
+
+    HdMaterialSchema matSchema = HdMaterialSchema::GetFromParent(prim.dataSource);
+    HdMaterialNetworkSchema netSchema = matSchema.GetMaterialNetwork(TfToken());
+    HdMaterialNodeSchema nodeSchema = netSchema.GetNodes().Get(lightPath.GetAsToken());
+    if (!nodeSchema.IsDefined()) {
+        std::cout << " - no node schema for '" << lightPath << "' node\n";
+        return false;
+    }
+    HdMaterialNodeParameterSchema paramSchema =
+        nodeSchema.GetParameters().Get(paramNameToken);
+    if (!paramSchema) {
+        std::cout << " - no param schema for '" << paramNameToken << "' param.\n";
+        return false;
+    }
+
+    const VtValue paramColorSpace = paramSchema.GetColorSpace()->GetValue(0);
+    if (paramColorSpace != colorSpaceValue) {
+        std::cout << " - color space does not match expected value (" 
+                  << colorSpaceValue << ") " << lightPath << "." 
+                  << paramNameToken << " has color space = " 
+                  << paramColorSpace << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool
 CheckPrimvarColorSpace(
     UsdImagingStageSceneIndexRefPtr const& stageSceneIndex,
     SdfPath const& primPath,
@@ -217,6 +261,73 @@ TestAttributes()
         _tokens->Surface,
         _tokens->specularColor,
         VtValue(TfToken("srgb_rec709_scene")));
+
+    // Check ColorSpace on Textured Materials
+    // Image1 file - lin_ap0_scene - color space API defined on 'TextureMaterials'
+    // Image2 file - sRGB - attribute metadata
+    const SdfPath mat1Path("/TextureMaterials/Mat1");
+    clean &= CheckParamColorSpace(
+        stageSceneIndex,
+        mat1Path,
+        TfToken("Image1"),
+        _tokens->file,
+        VtValue(TfToken("lin_ap0_scene")));
+    clean &= CheckParamColorSpace(
+        stageSceneIndex,
+        mat1Path,
+        TfToken("Image2"),
+        _tokens->file,
+        VtValue(TfToken("sRGB")));
+    // Image1 file - lin_rec2020_scene - color space API defined on 'Mat2'
+    // Image2 file - sRGB - color space API defined on 'Image2'
+    const SdfPath mat2Path("/TextureMaterials/Mat2");
+    clean &= CheckParamColorSpace(
+        stageSceneIndex,
+        mat2Path,
+        TfToken("Image1"),
+        _tokens->file,
+        VtValue(TfToken("lin_rec2020_scene")));
+    clean &= CheckParamColorSpace(
+        stageSceneIndex,
+        mat2Path,
+        TfToken("Image2"),
+        _tokens->file,
+        VtValue(TfToken("srgb_p3d65_scene")));
+    // Image file - raw - sourceColorSpace attribute on the texture node
+    clean &= CheckParamColorSpace(
+        stageSceneIndex,
+        SdfPath("/TextureMaterials/Mat3"),
+        TfToken("Image"),
+        _tokens->file,
+        VtValue(TfToken("raw")));
+
+    // Check Color Space on Lights
+    // color - lin_ap0_scene - colorSpaceAPI defined on 'Lights'
+    clean &= CheckLightParamColorSpace(
+        stageSceneIndex,
+        SdfPath("/Lights/DistLight1"),
+        _tokens->color,
+        VtValue(TfToken("lin_ap0_scene")));
+    // color - lin_rec2020_scene - attribute metadata
+    clean &= CheckLightParamColorSpace(
+        stageSceneIndex,
+        SdfPath("/Lights/DistLight2"),
+        _tokens->color,
+        VtValue(TfToken("lin_rec2020_scene")));
+    // textureFile - lin_ap0_scene - colorSpaceAPI defined on 'Lights'
+    clean &= CheckLightParamColorSpace(
+        stageSceneIndex,
+        SdfPath("/Lights/DomeLight1"),
+        _tokens->textureFile,
+        VtValue(TfToken("lin_ap0_scene")));
+    // textureFile - srgb_rec709_scene - colorSpaceAPI defined on 'DomeLight2'
+    clean &= CheckLightParamColorSpace(
+        stageSceneIndex,
+        SdfPath("/Lights/DomeLight2"),
+        _tokens->textureFile,
+        VtValue(TfToken("srgb_rec709_scene")));
+
+
     return clean;
 }
 

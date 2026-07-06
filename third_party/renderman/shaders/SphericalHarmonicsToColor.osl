@@ -1,8 +1,19 @@
+//
+// Copyright 2026 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
 // Converts spherical harmonics from particle fields 
 // (and seperated by the particle field conversion scene index) 
 // into a display color.
-shader SphericalHarmonicsToColor(
-    output color resultRGB = color(0, 0, 0)
+shader SphericalHarmonicsToColor
+[[
+    string primvars = "radiance:sphericalHarmonicsDegree|radiance:sphericalHarmonicsCoefficients00|radiance:sphericalHarmonicsCoefficients10|radiance:sphericalHarmonicsCoefficients11|radiance:sphericalHarmonicsCoefficients12|radiance:sphericalHarmonicsCoefficients20|radiance:sphericalHarmonicsCoefficients21|radiance:sphericalHarmonicsCoefficients22|radiance:sphericalHarmonicsCoefficients23|radiance:sphericalHarmonicsCoefficients24|radiance:sphericalHarmonicsCoefficients30|radiance:sphericalHarmonicsCoefficients31|radiance:sphericalHarmonicsCoefficients32|radiance:sphericalHarmonicsCoefficients33|radiance:sphericalHarmonicsCoefficients34|radiance:sphericalHarmonicsCoefficients35|radiance:sphericalHarmonicsCoefficients36"
+]]
+(
+    output color resultRGB = color(0, 0, 0),
 )
 {
     // Read how many degrees we have from primvar

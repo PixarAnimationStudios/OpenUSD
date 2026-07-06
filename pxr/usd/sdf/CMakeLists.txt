@@ -35,6 +35,7 @@ pxr_library(sdf
         declareSpec
         fileFormat
         fileVersion
+        globPattern
         identity
         layer
         layerOffset
@@ -149,7 +150,6 @@ pxr_library(sdf
         wrapArrayAssetPath.cpp
         wrapArrayPath.cpp
         wrapArrayPathExpression.cpp
-        wrapArrayTimeCode.cpp
         wrapAssetPath.cpp
         wrapAttributeSpec.cpp
         wrapChangeBlock.cpp
@@ -177,7 +177,6 @@ pxr_library(sdf
         wrapSpec.cpp
         wrapVariableExpression.cpp
         wrapVariableExpressionAST.cpp
-        wrapTimeCode.cpp
         wrapTypes.cpp
         wrapUsdFileFormat.cpp
         wrapValueTypeName.cpp
@@ -210,6 +209,7 @@ pxr_test_scripts(
     testenv/testSdfFileFormat.py
     testenv/testSdfLayer.py
     testenv/testSdfLayerMuting.py
+    testenv/testSdfLayerOffset.py
     testenv/testSdfLegacyFileFormat.py
     testenv/testSdfListOp.py
     testenv/testSdfParsing.py
@@ -225,7 +225,6 @@ pxr_test_scripts(
     testenv/testSdfSpecHash.py
     testenv/testSdfSplineVersioning.py
     testenv/testSdfTargetFileFormat.py
-    testenv/testSdfTimeCode.py
     testenv/testSdfTypes.py
     testenv/testSdfVariableExpression.py
     testenv/testSdfVariableExpressionAST.py
@@ -318,6 +317,13 @@ pxr_build_test(testSdfBooleanExpression
         testenv/testSdfBooleanExpression.cpp
 )
 
+pxr_build_test(testSdfGlobPattern
+    LIBRARIES
+        sdf
+    CPPFILES
+        testenv/testSdfGlobPattern.cpp
+)
+      
 pxr_build_test(testSdfHardToReach
     LIBRARIES
         sdf
@@ -537,6 +543,10 @@ pxr_register_test(testSdfDetachedLayerEnvVar2
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfDetachedLayer"
 )
 
+pxr_register_test(testSdfGlobPattern
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfGlobPattern"
+)
+  
 pxr_register_test(testSdfHardToReach
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfHardToReach"
 )
@@ -572,6 +582,11 @@ pxr_register_test(testSdfLayerMuting
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfLayerMuting"
     TESTENV testenv/testSdfLayerMuting.testenv
     TESTENV_DEST testSdfLayerMuting/testSdfLayerMuting.testenv
+)
+
+pxr_register_test(testSdfLayerOffset
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfLayerOffset"
 )
 
 pxr_register_test(testSdfLegacyFileFormat
@@ -697,10 +712,6 @@ pxr_register_test(testSdfTextFile_1_1
     ENV
         USD_WRITE_NEW_USDA_FILES_AS_VERSION=1.1
 )
-pxr_register_test(testSdfTimeCode
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTimeCode"
-)
 pxr_register_test(testSdfTypes
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTypes"
@@ -752,8 +763,15 @@ pxr_register_test(testSdfUsdcInvalidPrimChildren
     TESTENV testenv/testSdfUsdcInvalidPrimChildren.testenv
     EXPECTED_RETURN_CODE 0
 )
-pxr_register_test(testSdfUsdcVersioning
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfUsdcVersioning"
-    TESTENV testenv/testSdfUsdcVersioning
-    EXPECTED_RETURN_CODE 0
-)
+
+# This test is disabled for emscripten builds because it depends on
+# environment variables, which are currently unsupported in that configuration.
+if (NOT EMSCRIPTEN)
+    pxr_register_test(testSdfUsdcVersioning
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfUsdcVersioning"
+        TESTENV testenv/testSdfUsdcVersioning
+        EXPECTED_RETURN_CODE 0
+        ENV 
+            PXR_USDC_EMIT_DEPRECATION_WARNINGS=1
+    )
+endif()

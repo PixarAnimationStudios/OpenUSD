@@ -18,6 +18,7 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/exec/exec/builtinComputations.h"
 #include "pxr/exec/exec/registerSchema.h"
 #include "pxr/exec/vdf/context.h"
 #include "pxr/exec/vdf/readIterator.h"
@@ -52,7 +53,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     (attr)
-    (computeViaConnections)
+    (emptyAttr)
     (computeViaIncomingConnections)
     (computeConnectedConstants)
     (computeConstant)
@@ -61,27 +62,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(
     TestExecUsdConnectionsCustomSchema)
 {
-    // An attribute computation that computes the values of the string-valued
-    // attributes targeted by the attribute's connections.
-    self.AttributeComputation(
-        _tokens->attr,
-        _tokens->computeViaConnections)
-        .Callback(+[](const VdfContext &ctx) -> std::string {
-            std::string result;
-            for (VdfReadIterator<std::string> it(
-                     ctx, ExecBuiltinComputations->computeValue);
-                 !it.IsAtEnd(); ++it) {
-                if (!result.empty()) {
-                    result += " ";
-                }
-                result += "'" + *it + "'";
-            }
-            return result.empty() ? "(no value)" : result;
-        })
-        .Inputs(
-            Connections<std::string>(ExecBuiltinComputations->computeValue)
-        );
-
     // A prim computation that computes the values of the string-valued
     // attributes that target the prim with attribute connections.
     self.PrimComputation(
@@ -89,7 +69,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(
         .Callback(+[](const VdfContext &ctx) -> std::string {
             std::string result;
             for (VdfReadIterator<std::string> it(
-                     ctx, ExecBuiltinComputations->computeValue);
+                     ctx, ExecBuiltinComputations->computeResolvedValue);
                  !it.IsAtEnd(); ++it) {
                 if (!result.empty()) {
                     result += " ";
@@ -100,7 +80,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(
         })
         .Inputs(
             IncomingConnections<std::string>(
-                ExecBuiltinComputations->computeValue)
+                ExecBuiltinComputations->computeResolvedValue)
         );
 
     // An attribute computation that always returns the constant value 1.
@@ -118,6 +98,11 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(
         .Inputs(
             Connections<int>(_tokens->computeConstant)
         );
+
+    self.AttributeExpression(_tokens->emptyAttr)
+        .Callback<std::string>([](const VdfContext &ctx) -> void {
+            ctx.SetEmptyOutput();
+        });
 }
 
 static void
@@ -127,8 +112,13 @@ TestAttributeConnections()
     layer->ImportFromString(R"usd(#usda 1.0
         def CustomSchema "Prim" {
             string attr = "attr value"
-            string attr.connect = [</Prim.attr>, </Prim.attr2>]
+
+            // Note that 'attr2' does not exist
+            string attr.connect = [</Prim.attr2>]
+
             string attr3 = "attr3 value"
+            string emptyAttr = "empty"
+            string[] array = ["array value"]
         }
     )usd");
     const UsdStageConstRefPtr usdStage = UsdStage::Open(layer);
@@ -143,50 +133,93 @@ TestAttributeConnections()
     TF_AXIOM(attr.IsValid());
 
     ExecUsdRequest request = execSystem.BuildRequest({
-        {attr, _tokens->computeViaConnections}});
+        {attr, ExecBuiltinComputations->computeValue}});
     TF_AXIOM(request.IsValid());
 
     execSystem.PrepareRequest(request);
     TF_AXIOM(request.IsValid());
-
+    // The connection owned by 'attr' targets 'attr2', which does not exist, so 
+    // the computed result falls back to the resolved value of 'attr'. 
     {
         ExecUsdCacheView view = execSystem.Compute(request);
         VtValue v = view.Get(0);
         TF_AXIOM(v.IsHolding<std::string>());
         ASSERT_EQ(
             v.Get<std::string>(),
-            "'attr value'");
+            "attr value");
     }
 
-    // Add a connection to an existing attribute.
+    // Add a connection to an existing attribute. The value flowing over this 
+    // connection will be ignored, as multiple connections are not yet 
+    // supported for connection data flow. The computed result is the resolved  
+    // value of 'attr'. 
     attr.AddConnection(SdfPath("/Prim.attr3"));
-
     {
         ExecUsdCacheView view = execSystem.Compute(request);
         VtValue v = view.Get(0);
         TF_AXIOM(v.IsHolding<std::string>());
         ASSERT_EQ(
             v.Get<std::string>(),
-            "'attr value' "
-            "'attr3 value'");
+            "attr value");
     }
 
-    // Create attr2, which is already targeted by an attribute connection.
-    UsdAttribute attr2 = prim.CreateAttribute(
-        TfToken("attr2"),
-        SdfValueTypeNames->String,
-        /* custom */ true);
-    attr2.Set("attr2 value");
-
+    // Remove the connection that targets attr2, s.t. the single remaining 
+    // valid connection owned by 'attr' provides its computed value.
+    attr.RemoveConnection(SdfPath("/Prim.attr2"));
     {
         ExecUsdCacheView view = execSystem.Compute(request);
         VtValue v = view.Get(0);
         TF_AXIOM(v.IsHolding<std::string>());
         ASSERT_EQ(
             v.Get<std::string>(),
-            "'attr value' "
-            "'attr2 value' "
-            "'attr3 value'");
+            "attr3 value");
+    }
+    // Remove the existing connection and connect an attribute that produces an 
+    // empty output. 
+    attr.RemoveConnection(SdfPath("/Prim.attr3"));
+
+    UsdAttribute emptyAttr = usdStage->GetAttributeAtPath(SdfPath("/Prim.emptyAttr"));
+    TF_AXIOM(emptyAttr.IsValid());
+    
+    attr.AddConnection(SdfPath("/Prim.emptyAttr"));
+    {
+        ExecUsdCacheView view = execSystem.Compute(request);
+        TF_AXIOM(view.Get(0).IsEmpty());
+    }
+
+    // Reverse the connection s.t. 'emptyAttr' targets 'attr'. The connected 
+    // value is ignored since the computed value is provided by the expression 
+    // registered for 'emptyAttr'.   
+    attr.RemoveConnection(SdfPath("/Prim.emptyAttr"));
+    TF_AXIOM(emptyAttr.IsValid());
+    emptyAttr.AddConnection(SdfPath("/Prim.attr"));
+
+    ExecUsdRequest emptyAttrRequest = execSystem.BuildRequest({
+        {emptyAttr, ExecBuiltinComputations->computeValue}});
+    TF_AXIOM(emptyAttrRequest.IsValid());
+
+    execSystem.PrepareRequest(emptyAttrRequest);
+    TF_AXIOM(emptyAttrRequest.IsValid());
+    {
+        ExecUsdCacheView view = execSystem.Compute(emptyAttrRequest);
+        TF_AXIOM(view.Get(0).IsEmpty());
+    }
+
+    // Connect scalar-typed attribute 'attr' to an array-typed attribute 
+    // 'array' that contains a single element. 
+    UsdAttribute arrayAttr = usdStage->GetAttributeAtPath(SdfPath("/Prim.array"));
+    TF_AXIOM(arrayAttr.IsValid());
+
+    attr.AddConnection(SdfPath("/Prim.array"));
+    // This is an unsupported case, so the computed value is the resolved value 
+    // of 'attr'.
+    {
+        ExecUsdCacheView view = execSystem.Compute(request);
+        VtValue v = view.Get(0);
+        TF_AXIOM(v.IsHolding<std::string>());
+        ASSERT_EQ(
+            v.Get<std::string>(),
+            "attr value");
     }
 }
 

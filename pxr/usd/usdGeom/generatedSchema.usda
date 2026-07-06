@@ -2497,6 +2497,13 @@ class "GeomModelAPI" (
             string userDocBrief = "In cards imaging mode, the texture applied to the Z+ quad."
         }
     )
+    uniform token model:cardVisibility = "inherited" (
+        allowedTokens = ["full", "simple", "inherited"]
+        customData = {
+            string userDocBrief = """When using the cards imaging mode, determines if cards
+                 in the upAxis direction should be visible."""
+        }
+    )
     uniform token model:drawMode = "inherited" (
         allowedTokens = ["origin", "bounds", "cards", "default", "inherited"]
         customData = {
@@ -2686,5 +2693,47 @@ class HermiteCurves "HermiteCurves" (
         the desired positioning for this prim and its descendant prims."""
         }
     )
+}
+
+class "BackPlateAPI" (
+    customData = {
+        string userDocBrief = "This schema specifies a back plate i.e."
+    }
+)
+{
+    asset backPlate:__INSTANCE_NAME__:alpha:image = @@ (
+        customData = {
+            string userDocBrief = """Asset path to the file containing a texture or sequence of 
+        textures."""
+        }
+    )
+    float backPlate:__INSTANCE_NAME__:depth:cameraSpaceOffset = 0
+    asset backPlate:__INSTANCE_NAME__:depth:image = @@ (
+        customData = {
+            string userDocBrief = """Asset path to the file containing a texture or sequence of 
+        textures."""
+        }
+    )
+    float backPlate:__INSTANCE_NAME__:depth:minOffset = 0
+    float backPlate:__INSTANCE_NAME__:depth:normalizingFactor = 1
+    asset backPlate:__INSTANCE_NAME__:image = @@ (
+        customData = {
+            string userDocBrief = """Asset path to the file containing a texture or sequence of 
+        textures."""
+        }
+    )
+    float3 backPlate:__INSTANCE_NAME__:luma:gain = (1, 1, 1)
+    float3 backPlate:__INSTANCE_NAME__:luma:gamma = (1, 1, 1)
+    float3 backPlate:__INSTANCE_NAME__:luma:lift = (0, 0, 0)
+    token backPlate:__INSTANCE_NAME__:plateVisibility = "solo" (
+        allowedTokens = ["all", "solo", "mute"]
+        customData = {
+            string userDocBrief = """Toggles the visibility of the back plate to all cameras, only 
+        the owning camera, or no cameras."""
+        }
+    )
+    float3 backPlate:__INSTANCE_NAME__:rotateXYZ:tweak = (0, 0, 0)
+    float2 backPlate:__INSTANCE_NAME__:scale:tweak = (1, 1)
+    float3 backPlate:__INSTANCE_NAME__:translate:tweak = (0, 0, 0)
 }
 

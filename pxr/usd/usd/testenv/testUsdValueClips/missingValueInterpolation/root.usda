@@ -14,7 +14,7 @@ def "Model" (
         dictionary default = {
             asset[] assetPaths = [@./clip1.usda@, @./clip2.usda@, @./clip3.usda@, @./clip4.usda@]
             asset manifestAssetPath = @./manifest.usda@
-            string primPath = "/Model"
+            string primPath = "/ModelInClip"
             double2[] active = [(0, 0), (2, 1), (4, 2), (6, 3)]
             double2[] times = [(0, 0), (7, 7)]
             bool interpolateMissingClipValues = true

@@ -1,0 +1,63 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Profiles": {
+                    "Capabilities": {
+                        "usd": {
+                            "docstring": "Root from plugin A",
+                            "name": "USD",
+                            "style": "plugA",
+                            "subgraph": "PluginA"
+                        },
+                        "core.module": {
+                            "predecessors": ["usd"],
+                            "docstring": "Core module from plugin A",
+                            "name": "Core Module",
+                            "style": "plugA",
+                            "subgraph": "PluginA"
+                        }
+                    },
+                    "CapabilityStyles": {
+                        "plugA": "fill:#cce5ff,stroke:#004085"
+                    },
+                    "CapabilityGroups": {
+                        "PluginA": {"label": "Plugin A Capabilities", "order": 1}
+                    }
+                }
+            },
+            "Name": "TestPluginA",
+            "Type": "resource"
+        },
+        {
+            "Info": {
+                "Profiles": {
+                    "Capabilities": {
+                        "vendor.geom": {
+                            "predecessors": ["core.module"],
+                            "docstring": "Vendor geometry from plugin B",
+                            "name": "Vendor Geom",
+                            "style": "plugB",
+                            "subgraph": "PluginB"
+                        },
+                        "vendor.render": {
+                            "predecessors": ["core.module", "vendor.geom"],
+                            "docstring": "Vendor renderer from plugin B",
+                            "name": "Vendor Render",
+                            "style": "plugB",
+                            "subgraph": "PluginB"
+                        }
+                    },
+                    "CapabilityStyles": {
+                        "plugB": "fill:#ffeeba,stroke:#856404"
+                    },
+                    "CapabilityGroups": {
+                        "PluginB": {"label": "Plugin B Capabilities", "order": 2}
+                    }
+                }
+            },
+            "Name": "TestPluginB",
+            "Type": "resource"
+        }
+    ]
+}

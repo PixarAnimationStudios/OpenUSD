@@ -237,19 +237,6 @@ HdPrmanMaterial::_ResetMaterialWithLock(riley::Riley *riley)
     }
 }
 
-static VtArray<GfVec3f>
-_ConvertToVec3fArray(const VtArray<GfVec3d>& v)
-{
-    VtArray<GfVec3f> out;
-    out.resize(v.size());
-    for (size_t i=0; i<v.size(); ++i) {
-        for (uint8_t e=0; e<3; ++e) {
-            out[i][e] = v[i][e];
-        }
-    }
-    return out;
-}
-
 static int
 _ConvertOptionTokenToInt(
     const TfToken &option, const SdrOptionVec &options, bool *ok)
@@ -468,224 +455,105 @@ _ConvertNodes(
         }
 
         // Dispatch by propType and VtValue-held type.
-        // Cast value types to match where feasible.
+        // The SdrPropertyType maps to a corresponding role token, to
+        // handle color/point/normal/vector distinctions.
+        //
+        // Some cases require semantics beyond what HdPrman_Utils::SetParamFromVtValue
+        // provides: structs and vstructs, texture asset flipping arguments,
+        // SdrOption mapping from enum strings back to integers, and
+        // int<->float coercion.
         bool ok = false;
-        RtUString name(prop->GetImplementationName().c_str());
+        const RtUString name(prop->GetImplementationName().c_str());
+        VtValue const& val = param.second;
         if (propType == SdrPropertyTypes->Struct ||
             propType == SdrPropertyTypes->Vstruct) {
             // Ignore structs.  They are only used as ways to
             // pass data between shaders, not as a way to pass
             // in parameters.
             ok = true;
-        } else if (param.second.IsHolding<GfVec2f>()) {
-            GfVec2f v = param.second.UncheckedGet<GfVec2f>();
-            if (propType == SdrPropertyTypes->Float) {
-                sn.params.SetFloatArray(name, v.data(), 2);
-                ok = true;
-            }
-        } else if (param.second.IsHolding<GfVec3f>()) {
-            GfVec3f v = param.second.UncheckedGet<GfVec3f>();
-            if (propType == SdrPropertyTypes->Color) {
-                sn.params.SetColor(name, RtColorRGB(v[0], v[1], v[2]));
-                ok = true;
-            } else if (propType == SdrPropertyTypes->Vector) {
-                sn.params.SetVector(name, RtVector3(v[0], v[1], v[2]));
-                ok = true;
-            } else if (propType == SdrPropertyTypes->Point) {
-                sn.params.SetPoint(name, RtPoint3(v[0], v[1], v[2]));
-                ok = true;
-            } else if (propType == SdrPropertyTypes->Normal) {
-                sn.params.SetNormal(name, RtNormal3(v[0], v[1], v[2]));
-                ok = true;
-            } else if (propType == SdrPropertyTypes->Float) {
-                sn.params.SetFloatArray(name, v.data(), 3);
-                ok = true;
-            }
-        } else if (param.second.IsHolding<GfVec4f>()) {
-            GfVec4f v = param.second.UncheckedGet<GfVec4f>();
-            if (propType == SdrPropertyTypes->Float) {
-                sn.params.SetFloatArray(name, v.data(), 4);
-                ok = true;
-            }
-        } else if (param.second.IsHolding<VtArray<GfVec3f>>()) {
-            const VtArray<GfVec3f>& v =
-                param.second.UncheckedGet<VtArray<GfVec3f>>();
-            if (propType == SdrPropertyTypes->Color) {
-                sn.params.SetColorArray(
-                                      name,
-                                      reinterpret_cast<const RtColorRGB*>(v.cdata()),
-                                      v.size());
-                ok = true;
-            } else if (propType == SdrPropertyTypes->Vector) {
-                sn.params.SetVectorArray(
-                                       name,
-                                       reinterpret_cast<const RtVector3*>(v.cdata()),
-                                       v.size());
-                ok = true;
-            } else if (propType == SdrPropertyTypes->Point) {
-                sn.params.SetPointArray(
-                                      name,
-                                      reinterpret_cast<const RtPoint3*>(v.cdata()),
-                                      v.size());
-                ok = true;
-            } else if (propType == SdrPropertyTypes->Normal) {
-                sn.params.SetNormalArray(
-                                       name,
-                                       reinterpret_cast<const RtNormal3*>(v.cdata()),
-                                       v.size());
-                ok = true;
-            }
-        } else if (param.second.IsHolding<GfVec3d>()) {
-            const GfVec3d& v = param.second.UncheckedGet<GfVec3d>();
-            if (propType == SdrPropertyTypes->Color) {
-                sn.params.SetColor(name, RtColorRGB(v[0], v[1], v[2]));
-                ok = true;
-            } else if (propType == SdrPropertyTypes->Point) {
-                sn.params.SetPoint(name, RtPoint3(v[0], v[1], v[2]));
-                ok = true;
-            }
-        } else if (param.second.IsHolding<VtArray<GfVec3d>>()) {
-            if (propType == SdrPropertyTypes->Color) {
-                const VtArray<GfVec3d>& vd =
-                    param.second.UncheckedGet<VtArray<GfVec3d>>();
-                VtArray<GfVec3f> v = _ConvertToVec3fArray(vd);
-                sn.params.SetColorArray(
-                                      name,
-                                      reinterpret_cast<const RtColorRGB*>(v.cdata()),
-                                      v.size());
-                ok = true;
-            } else if (propType == SdrPropertyTypes->Point) {
-                const VtArray<GfVec3d>& vd =
-                    param.second.UncheckedGet<VtArray<GfVec3d>>();
-                VtArray<GfVec3f> v = _ConvertToVec3fArray(vd);
-                sn.params.SetPointArray(
-                    name,
-                    reinterpret_cast<const RtPoint3*>(v.cdata()),
-                    v.size());
-                ok = true;
-            }
-        } else if (param.second.IsHolding<float>()) {
-            float v = param.second.UncheckedGet<float>();
-            if (propType == SdrPropertyTypes->Int) {
-                sn.params.SetInteger(name, int(v));
-                ok = true;
-            } else if (propType == SdrPropertyTypes->Float) {
-                sn.params.SetFloat(name, v);
-                ok = true;
-            }
-        } else if (param.second.IsHolding<VtArray<float>>()) {
-            const VtArray<float>& v =
-                param.second.UncheckedGet<VtArray<float>>();
-            if (propType == SdrPropertyTypes->Float) {
-                sn.params.SetFloatArray(name, v.cdata(), v.size());
-                ok = true;
-            }
-        } else if (param.second.IsHolding<int>()) {
-            int v = param.second.UncheckedGet<int>();
-            if (propType == SdrPropertyTypes->Float) {
-                sn.params.SetFloat(name, v);
-                ok = true;
-            } else if (propType == SdrPropertyTypes->Int) {
-                sn.params.SetInteger(name, v);
-                ok = true;
-            }
-        } else if (param.second.IsHolding<VtArray<int>>()) {
-            const VtArray<int>& v =
-                param.second.UncheckedGet<VtArray<int>>();
-            if (propType == SdrPropertyTypes->Float) {
-                // Convert int array to float array.
-                VtArray<float> vf;
-                vf.resize(v.size());
-                for (size_t i=0,n=v.size(); i<n; ++i) {
-                    vf[i] = float(v[i]);
-                }
-                sn.params.SetFloatArray(name, vf.cdata(), vf.size());
-                ok = true;
-            } else if (propType == SdrPropertyTypes->Int) {
-                sn.params.SetIntegerArray(name, v.cdata(), v.size());
-                ok = true;
-            }
-        } else if (param.second.IsHolding<TfToken>()) {
-            TfToken v = param.second.UncheckedGet<TfToken>();
-            // A token can represent and enum option for an Int property
-            if (propType == SdrPropertyTypes->Int) {
-                const int value = _ConvertOptionTokenToInt(
-                    v, prop->GetOptions(), &ok);
-                if (ok) {
-                    sn.params.SetInteger(name, value);
-                }
-            } else {
-                sn.params.SetString(name, RtUString(v.GetText()));
-                ok = true;
-            }
-        } else if (param.second.IsHolding<std::string>()) {
-            static const RtUString us_filename("filename");
-            std::string v = param.second.UncheckedGet<std::string>();
-            // A string can represent and enum option for an Int property
-            if (propType == SdrPropertyTypes->Int) {
-                const int value = _ConvertOptionTokenToInt(
-                    TfToken(v), prop->GetOptions(), &ok);
-                if (ok) {
-                    sn.params.SetInteger(name, value);
-                }
-            } else if(name == us_filename) {
-                SdfAssetPath path(v);
-                bool isLight = (sn.type == riley::ShadingNode::Type::k_Light);
-                RtUString ustr = HdPrman_Utils::ResolveAssetToRtUString(
-                    path,
-                    !isLight, // only flip if NOT a light
-                    _IsWriteAsset(node.nodeTypeId, name),
-                    isLight ? _tokens->light.GetText() :
-                    _tokens->material.GetText());
-                if(!ustr.Empty()) {
-                    sn.params.SetString(name, ustr);
-                    ok = true;
-                } else {
-                    sn.params.SetString(name, RtUString(v.c_str()));
-                }
-                ok = true;
-            } else {
-                sn.params.SetString(name, RtUString(v.c_str()));
-                ok = true;
-            }
-        } else if (param.second.IsHolding<SdfAssetPath>()) {
+        } else if (val.IsHolding<SdfAssetPath>()) {
             // This code processes nodes for both surface materials
             // and lights.  RenderMan does not flip light textures
             // as it does surface textures.
-            bool isLight = (sn.type == riley::ShadingNode::Type::k_Light);
-            RtUString v = HdPrman_Utils::ResolveAssetToRtUString(
-                param.second.UncheckedGet<SdfAssetPath>(),
+            const bool isLight =
+                (sn.type == riley::ShadingNode::Type::k_Light);
+            const RtUString v = HdPrman_Utils::ResolveAssetToRtUString(
+                val.UncheckedGet<SdfAssetPath>(),
                 !isLight, // only flip if NOT a light
                 _IsWriteAsset(node.nodeTypeId, name),
                 isLight ? _tokens->light.GetText() :
                           _tokens->material.GetText());
-
-            sn.params.SetString(name, v);
-            ok = true;
-        } else if (param.second.IsHolding<bool>()) {
-            // RixParamList (specifically, RixDataType) doesn't have
-            // a bool entry; we convert to integer instead.
-            int v = param.second.UncheckedGet<bool>();
-            sn.params.SetInteger(name, v);
-            ok = true;
-        } else if (param.second.IsHolding<GfMatrix4d>()) {
-            if (propType == SdrPropertyTypes->Matrix) {
-                const RtMatrix4x4 v = HdPrman_Utils::GfMatrixToRtMatrix(
-                    param.second.UncheckedGet<GfMatrix4d>());
-                sn.params.SetMatrix(name, v);
-                ok = true;
+            ok = sn.params.SetString(name, v);
+        } else if (val.IsHolding<std::string>()) {
+            static const RtUString us_filename("filename");
+            const std::string v = val.UncheckedGet<std::string>();
+            if (propType == SdrPropertyTypes->Int) {
+                // A string can represent an enum option for an
+                // Int property.
+                const int value = _ConvertOptionTokenToInt(
+                    TfToken(v), prop->GetOptions(), &ok);
+                if (ok) {
+                    ok = sn.params.SetInteger(name, value);
+                }
+            } else if (name == us_filename) {
+                const SdfAssetPath path(v);
+                const bool isLight =
+                    (sn.type == riley::ShadingNode::Type::k_Light);
+                const RtUString ustr =
+                    HdPrman_Utils::ResolveAssetToRtUString(
+                        path,
+                        !isLight, // only flip if NOT a light
+                        _IsWriteAsset(node.nodeTypeId, name),
+                        isLight ? _tokens->light.GetText() :
+                                  _tokens->material.GetText());
+                if (!ustr.Empty()) {
+                    ok = sn.params.SetString(name, ustr);
+                } else {
+                    ok = sn.params.SetString(name, RtUString(v.c_str()));
+                }
+            } else {
+                ok = sn.params.SetString(name, RtUString(v.c_str()));
             }
+        } else if (val.IsHolding<TfToken>() &&
+                   propType == SdrPropertyTypes->Int) {
+            // A token can represent an enum option for an Int property.
+            const TfToken v = val.UncheckedGet<TfToken>();
+            const int value = _ConvertOptionTokenToInt(
+                v, prop->GetOptions(), &ok);
+            if (ok) {
+                ok = sn.params.SetInteger(name, value);
+            }
+        } else if (val.IsHolding<float>() &&
+                   propType == SdrPropertyTypes->Int) {
+            ok = sn.params.SetInteger(name, int(val.UncheckedGet<float>()));
+        } else if (val.IsHolding<int>() &&
+                   propType == SdrPropertyTypes->Float) {
+            ok = sn.params.SetFloat(name, val.UncheckedGet<int>());
+        } else if (val.IsHolding<VtArray<int>>() &&
+                   propType == SdrPropertyTypes->Float) {
+            const VtArray<int>& v = val.UncheckedGet<VtArray<int>>();
+            VtArray<float> vf;
+            vf.resize(v.size());
+            for (size_t i=0,n=v.size(); i<n; ++i) {
+                vf[i] = float(v[i]);
+            }
+            ok = sn.params.SetFloatArray(name, vf.cdata(), vf.size());
+        } else if (!val.IsEmpty()) {
+            // Delegate remaining cases  to SetParamFromVtValue().
+            ok = HdPrman_Utils::SetParamFromVtValue(
+                name, val,
+                HdPrman_Utils::GetRoleForSdrPropertyType(propType),
+                &sn.params);
         }
         if (!ok) {
-            TF_DEBUG(HDPRMAN_MATERIALS)
-                .Msg("Unknown shading parameter type '%s'; skipping "
-                     "parameter '%s' on node '%s' in <%s>; "
-                     "expected type '%s'\n",
-                     param.second.GetTypeName().c_str(),
-                     param.first.GetText(),
-                     nodePath.GetText(),
-                     id.GetText(),
-                     propType.GetText());
+            TF_WARN("Unknown shading parameter type '%s'; skipping "
+                "parameter '%s' on node '%s' in <%s>; "
+                "expected type '%s'\n",
+                param.second.GetTypeName().c_str(),
+                param.first.GetText(),
+                nodePath.GetText(),
+                id.GetText(),
+                propType.GetText());
         }
     }
     // Convert connected inputs.

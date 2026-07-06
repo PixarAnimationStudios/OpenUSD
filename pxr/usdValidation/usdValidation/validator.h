@@ -82,10 +82,10 @@ struct UsdValidationValidatorMetadata
     /// whether this test is time dependent or not.
     /// Only PrimValidators and StageValidators can be time dependent.
     /// By default this is false.
-    bool isTimeDependent;
+    bool isTimeDependent = false;
 
-    /// whether this test represents a test suite or not
-    bool isSuite;
+    /// whether this test represents a test suite or not, default is false.
+    bool isSuite = false;
 }; // UsdValidationValidatorMetadata
 
 using UsdValidationValidatorMetadataVector

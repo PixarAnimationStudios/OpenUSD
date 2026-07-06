@@ -243,7 +243,8 @@ public:
         _ContextSharedPtr const &context,
         const SdfPath &instancer,
         const SdfPath &prototype,
-        const SdfPath &propagatedPrototype);
+        const SdfPath &propagatedPrototype,
+        const SdfPathSet &ancestorPrototypes);
 
     ~_InstancerObserver();
 
@@ -293,9 +294,22 @@ private:
     void _Populate();
 
     _ContextSharedPtr const _context;
-    
+
     const SdfPath _prototype;
     const SdfPath _propagatedPrototype;
+
+    // Prototype paths of ancestor _InstancerObservers, used to detect
+    // recursive prototypes.  These are ancestors in the sense of being
+    // previously-seen prototypes, but not necessarily namespace path
+    // prefixes.  For example, there may be co-recursive cycles:
+    //
+    //   </PrototypeA/InstancerOfPrototypeB>
+    //   </PrototypeB/InstancerOfPrototypeA>
+    //
+    // This possibility is a consequence of UsdGeomPointInstancer's
+    // ability to use prototypes outside the scope of the instancer.
+    //
+    const SdfPathSet _ancestorPrototypes;
 
     HdSceneIndexBaseRefPtr const _prototypeSceneIndex;
     HdSceneIndexBaseRefPtr const _rerootingSceneIndex;
@@ -322,7 +336,8 @@ _InstancerObserver::_InstancerObserver(_ContextSharedPtr const &context)
       context,
       /* instancer = */ SdfPath(),
       /* prototype = */ SdfPath::AbsoluteRootPath(),
-      /* propagatedPrototype = */ SdfPath::AbsoluteRootPath())
+      /* propagatedPrototype = */ SdfPath::AbsoluteRootPath(),
+      /* ancestorPrototypes = */ SdfPathSet())
 {
 }
 
@@ -330,10 +345,12 @@ _InstancerObserver::_InstancerObserver(
         _ContextSharedPtr const &context,
         const SdfPath &instancer,
         const SdfPath &prototype,
-        const SdfPath &propagatedPrototype)
+        const SdfPath &propagatedPrototype,
+        const SdfPathSet &ancestorPrototypes)
   : _context(context)
   , _prototype(prototype)
   , _propagatedPrototype(propagatedPrototype)
+  , _ancestorPrototypes(ancestorPrototypes)
   , _prototypeSceneIndex(
       UsdImaging_PiPrototypeSceneIndex::New(
           // Isolate the prototype
@@ -456,20 +473,39 @@ _InstancerObserver::_UpdateInstancerPrototypes(
         }
     }
 
+    // Record this prototype as having been visited, for purposes
+    // of cycle detection.
+    SdfPathSet ancestorPrototypes = _ancestorPrototypes;
+    ancestorPrototypes.insert(_prototype);
+
     // Compute the re-rooted paths for the instancer's prototypes.
     // Add a _InstancerObserver for the re-rooted path if there wasn't a _InstancerObserver
     // already.
     VtArray<SdfPath> propagatedPrototypes;
     propagatedPrototypes.reserve(prototypes.size());
     for (const SdfPath &prototype : prototypes) {
+        if (instancer.HasPrefix(prototype) || _ancestorPrototypes.count(prototype)) {
+            // In the case of cycles, we create the _InstancerObserver but
+            // do not populate the prototype.  This case is exercised by
+            // the pi_cycles.usda case in testUsdImagingGLPointInstancer.
+            TF_WARN(
+                "Cycle detected in point instancer prototype propagation: "
+                "prototype <%s> contains a point instancer <%s> using "
+                "itself as a prototype.  Skipping to avoid infinite "
+                "recursion.",
+                prototype.GetText(),
+                instancer.GetText());
+            continue;
+        }
         const SdfPath propagatedPrototype =
             prototype.AppendChild(instancerHash);
         propagatedPrototypes.push_back(propagatedPrototype);
-        _InstancerObserverUniquePtr &observer = 
+        _InstancerObserverUniquePtr &observer =
             (*prototypeToInstancerObserver)[prototype];
         if (!observer) {
             observer = std::make_unique<_InstancerObserver>(
-                _context, rerootedInstancer, prototype, propagatedPrototype);
+                _context, rerootedInstancer, prototype, propagatedPrototype,
+                ancestorPrototypes);
             _context->usdPrimInfoSceneIndex->AddPropagatedPrototype(
                 prototype, instancerHash, propagatedPrototype);
         }

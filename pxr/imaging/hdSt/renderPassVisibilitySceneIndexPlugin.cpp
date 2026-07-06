@@ -12,10 +12,14 @@
 
 #include "pxr/imaging/hd/collectionExpressionEvaluator.h"
 #include "pxr/imaging/hd/collectionsSchema.h"
+#include "pxr/imaging/hd/instancedBySchema.h"
+#include "pxr/imaging/hd/instancerTopologySchema.h"
 #include "pxr/imaging/hd/containerDataSourceEditor.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneGlobalsSchema.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
@@ -25,6 +29,8 @@
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hdsi/utils.h"
 #include "pxr/base/trace/trace.h"
+
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -96,6 +102,20 @@ _IsVisible(const HdContainerDataSourceHandle& primSource)
 //////////////////////////////////
 // Render Pass Visibility State //
 //////////////////////////////////
+VtArray<bool>
+_GetInstancerMask(const HdContainerDataSourceHandle& primSource)
+{
+    const HdInstancerTopologySchema topoSchema =
+        HdInstancerTopologySchema::GetFromParent(primSource);
+    if (!topoSchema) {
+        return {};
+    }
+    if (const HdBoolArrayDataSourceHandle maskDs = topoSchema.GetMask()) {
+        return maskDs->GetTypedValue(0.0f);
+    }
+    return {};
+}
+
 
 struct _RenderPassVisibilityState {
     SdfPath renderPassPath;
@@ -114,6 +134,50 @@ struct _RenderPassVisibilityState {
             && _ShouldApplyPassVisibility(prim.primType)
             && !renderVisEval->Match(primPath)
             && _IsVisible(prim.dataSource);
+    }
+
+    // Returns per-instance render visibility mask values for instancer prims
+    // that use implicit instancing (i.e., have instanceLocations set). Entry i
+    // is true if instanceLocations[i] matches the renderVisibility collection,
+    // false otherwise (instance is masked out). Returns an empty array if not
+    // applicable or if all instances match (no override needed).
+    VtArray<bool> GetRenderVisPerInstance(
+        HdSceneIndexPrim const& prim) const
+    {
+        if (!renderVisEval || prim.primType != HdPrimTypeTokens->instancer) {
+            return {};
+        }
+        const HdInstancerTopologySchema topoSchema =
+            HdInstancerTopologySchema::GetFromParent(prim.dataSource);
+        if (!topoSchema) {
+            return {};
+        }
+        const HdPathArrayDataSourceHandle instanceLocationsDs =
+            topoSchema.GetInstanceLocations();
+        if (!instanceLocationsDs) {
+            return {};
+        }
+        const VtArray<SdfPath> instanceLocations =
+            instanceLocationsDs->GetTypedValue(0.0f);
+        if (instanceLocations.empty()) {
+            return {};
+        }
+        TRACE_FUNCTION();
+        const VtArray<bool> existingMask =
+            _GetInstancerMask(prim.dataSource);
+        VtArray<bool> mask =
+            (!existingMask.empty() &&
+             existingMask.size() == instanceLocations.size())
+            ? existingMask
+            : VtArray<bool>(instanceLocations.size(), true);
+        bool modified = false;
+        for (size_t i = 0; i < instanceLocations.size(); ++i) {
+            if (!renderVisEval->Match(instanceLocations[i]) && mask[i]) {
+                mask[i] = false;
+                modified = true;
+            }
+        }
+        return modified ? mask : existingMask;
     }
 };
 
@@ -227,6 +291,28 @@ _RenderPassVisibilityDataSource::Get(const TfToken &name)
         }
     }
 
+    // Instancer Render Visibility -> instancerTopology.mask
+    //
+    // For instancer prims using implicit instancing (instanceLocations
+    // present), evaluate the renderVisibility pattern against each instance
+    // location and set the instancer mask to false for non-matching instances.
+    //
+    if (name == HdInstancerTopologySchema::GetSchemaToken()) {
+        const VtArray<bool> renderVisPerInstance =
+            renderPass.GetRenderVisPerInstance(_prim);
+        if (!renderVisPerInstance.empty()) {
+            HdContainerDataSourceHandle existingTopoDs =
+                HdContainerDataSource::Cast(_prim.dataSource->Get(name));
+            return HdOverlayContainerDataSource::New(
+                HdInstancerTopologySchema::Builder()
+                    .SetMask(
+                        HdRetainedTypedSampledDataSource<VtArray<bool>>::New(
+                            renderVisPerInstance))
+                    .Build(),
+                existingTopoDs);
+        }
+    }
+
     return _prim.dataSource->Get(name);
 }
 
@@ -234,13 +320,44 @@ _RenderPassVisibilityDataSource::Get(const TfToken &name)
 // Render Pass Visibility Scene Index (cont.) //
 ////////////////////////////////////////////////
 
+static bool
+_IsPrototype(HdSceneIndexPrim const& prim)
+{
+    if (HdInstancedBySchema instancedBySchema =
+        HdInstancedBySchema::GetFromParent(prim.dataSource)) {
+        // XXX The docs for the InstancedBy schema say it is
+        // "A schema marking a prim as instanced by another prim"
+        //
+        // However, experimentally we observe prims from Presto Mf
+        // have this schema regardless of being instanced.  So we
+        // must pull apart the schema to check for instance paths.
+        //
+        // It seems like it would be better to only emit the
+        // instancedBy schema for prims that are instanced.
+        if (HdPathArrayDataSourceHandle pathsDs =
+            instancedBySchema.GetPaths()) {
+            VtArray<SdfPath> paths = pathsDs->GetTypedValue(0.0);
+            return !paths.empty();
+        }
+    }
+    return false;
+}
+
 HdSceneIndexPrim 
 _RenderPassVisibilitySceneIndex::GetPrim(
     const SdfPath &primPath) const
 {
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
 
-    if (prim.dataSource) {
+    // Do not modify prototype prims (those with instancedBy schema).
+    // Prototypes are an internal detail of the system, not something
+    // meant to be user-facing, so there must be no way to point
+    // user-defined operations (such as render pass collections)
+    // at prototypes.
+    const HdInstancedBySchema instancedBy =
+        HdInstancedBySchema::GetFromParent(prim.dataSource);
+
+    if (prim.dataSource && !_IsPrototype(prim)) {
         // Overrides happen in the prim-level data source.
         prim.dataSource = _RenderPassVisibilityDataSource::New(
             TfCreateWeakPtr(this), primPath, prim);
@@ -400,12 +517,20 @@ _RenderPassVisibilitySceneIndex::_UpdateActiveRenderPassState(
     //
     for (const SdfPath &path: HdSceneIndexPrimView(_GetInputSceneIndex())) {
         const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(path);
+        HdDataSourceLocatorSet locators;
         const bool visibilityDidChange =
             (priorState.DoesOverrideVis(path, prim)
              != state.DoesOverrideVis(path, prim));
+        const bool instancerTopologyDidChange =
+            (priorState.GetRenderVisPerInstance(prim)
+             != state.GetRenderVisPerInstance(prim));
         if (visibilityDidChange) {
-            HdDataSourceLocatorSet locators;
             locators.insert(HdVisibilitySchema::GetDefaultLocator());
+        }
+        if (instancerTopologyDidChange) {
+            locators.insert(HdInstancerTopologySchema::GetDefaultLocator());
+        }
+        if (!locators.IsEmpty()) {
             dirtyEntries->push_back({path, locators});
         }
     }

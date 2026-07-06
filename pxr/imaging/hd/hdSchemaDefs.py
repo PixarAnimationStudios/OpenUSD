@@ -940,6 +940,35 @@
     ),
 
     #--------------------------------------------------------------------------
+     # instanceProxy
+    dict(
+        SCHEMA_NAME = 'InstanceProxy',
+        SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/schemaTypeDefs'],
+        DOC = '''A schema for marking a prim as an instance proxy. An instance
+                 proxy prim represents a descendant prim beneath an instance
+                 prim, even though no such prim actually exists in the scene.
+                 This schema is in service of HdInstanceProxyViewSceneIndex
+                 that provides a topological view of the scene as though
+                 instancing were not being used.
+                 This is useful for path expression-based
+                 collection membership evaluation, and for UI tools like the
+                 Hydra Scene Debugger.''',
+        
+        SCHEMA_TOKEN = 'instanceProxy',
+        ADD_DEFAULT_LOCATOR = True,
+        MEMBERS = [
+            ('pathToPrimInPrototype', T_PATH,
+             dict(DOC = '''The path to the prim in the propagated prototype 
+                hierarchy that this instance proxy prim corresponds to.
+                This is modeled after the UsdPrim::GetPrimInPrototype() API. ''')),
+            ('instancingContext', 'HdInstanceVectorSchema',
+             dict(DOC = '''Starting from the outer most, lists the instancer, 
+                  prototype index and instance index for each level of instancing
+                  leading to this instance proxy prim.''')),
+        ],
+    ),
+
+    #--------------------------------------------------------------------------
     # legacyDisplayStyle
     dict(
         SCHEMA_NAME = 'LegacyDisplayStyle',
@@ -1475,6 +1504,7 @@
 
     #--------------------------------------------------------------------------
     # instanceIndices
+    # XXX WBN to rename this schema.
     dict(
         SCHEMA_NAME = 'InstanceIndices',
         MEMBERS = [
@@ -1574,13 +1604,13 @@
     ),
 
     #--------------------------------------------------------------------------
-    # sceneIndexInputArgsSchema
+    # sceneIndexCreateArgsSchema
     dict(
-        SCHEMA_NAME = 'SceneIndexInputArgs',
+        SCHEMA_NAME = 'SceneIndexCreateArgs',
         DOC = '''Schema for the container data source returned by
-        HdRendererPlugin::GetSceneIndexInputArgs. The application forwards it (possibly
+        HdRendererPlugin::GetSceneIndexCreateArgs. The application forwards it (possibly
         overlayed with its own container data source) to the scene index constructors
-        or scene index plugins. In other words, HdRendererPlugin::GetSceneIndexInputArgs
+        or scene index plugins. In other words, HdRendererPlugin::GetSceneIndexCreateArgs
         gives a renderer the opportunity to configure scene indices.
 
         Examples are: A scene index might use execution which is non-lazy and needs to

@@ -27,9 +27,7 @@ UsdImaging_CollectionCache::_MarkCollectionContentDirty(
     UsdCollectionAPI::MembershipQuery const& query)
 {
     SdfPathSet linkedPaths = UsdComputeIncludedPathsFromCollection(query, stage);
-    std::merge(_dirtyPaths.begin(), _dirtyPaths.end(), 
-        linkedPaths.begin(), linkedPaths.end(),
-        std::inserter(_dirtyPaths, _dirtyPaths.begin()));
+    _dirtyPaths.insert(linkedPaths.begin(), linkedPaths.end());
 }
 
 bool
@@ -108,7 +106,11 @@ UsdImaging_CollectionCache::RemoveCollection(
     _MarkCollectionContentDirty(stage, queryRef);
     _dirtyPaths.insert(collectionPath.GetPrimPath());
 
-    auto const& pathsForQueryEntry = _pathsForQuery.find(queryRef);
+    auto pathsForQueryEntry = _pathsForQuery.find(queryRef);
+    if (pathsForQueryEntry == _pathsForQuery.end()) {
+        return hash;
+    }
+
     pathsForQueryEntry->second.erase(collectionPath);
     TF_DEBUG(USDIMAGING_COLLECTIONS)
         .Msg("UsdImaging_CollectionCache: Id '%s' disused <%s>\n",

@@ -77,6 +77,8 @@ class GfFrustum {
         Perspective,                    ///< Perspective projection
     };
 
+    using FrustumPlanes = std::array<GfPlane, 6>;
+
     /// This constructor creates an instance with default viewing parameters:
     /// \li The position is the origin.
     /// \li The rotation is the identity rotation. (The view is along
@@ -97,7 +99,7 @@ class GfFrustum {
         , _projectionType(o._projectionType)
         , _planes(nullptr) {
         if (auto *planes = o._planes.load()) {
-            _planes = new std::array<GfPlane, 6>(*planes);
+            _planes = new FrustumPlanes(*planes);
         }
     }
 
@@ -144,7 +146,7 @@ class GfFrustum {
         _projectionType = o._projectionType;
         delete _planes.load(std::memory_order_relaxed);
         if (auto *planes = o._planes.load(std::memory_order_relaxed)) {
-            _planes.store(new std::array<GfPlane, 6>(*planes),
+            _planes.store(new FrustumPlanes(*planes),
                           std::memory_order_relaxed);
         }
         else {
@@ -495,6 +497,17 @@ class GfFrustum {
     GF_API
     std::vector<GfVec3d> ComputeCornersAtDistance(double d) const;
 
+    /// Returns the world-space clipping planes of the frustum as a vector
+    /// of 6 GfPlane objects, ordered as:
+    /// \li Left
+    /// \li Right
+    /// \li Bottom
+    /// \li Top
+    /// \li Near
+    /// \li Far
+    GF_API
+    FrustumPlanes ComputePlanes() const;
+
     /// Returns a frustum that is a narrowed-down version of this frustum. The
     /// new frustum has the same near and far planes, but the other planes are
     /// adjusted to be centered on \p windowPos with the new width and height
@@ -612,15 +625,15 @@ class GfFrustum {
 
   private:
     // Dirty the result of _CalculateFrustumPlanes.
-      GF_API void _DirtyFrustumPlanes();
+    GF_API void _DirtyFrustumPlanes();
 
     // Calculates cached frustum planes used for intersection tests.
-      GF_API void       _CalculateFrustumPlanes() const;
+    GF_API void       _CalculateFrustumPlanes() const;
 
     // Builds and returns a \c GfRay that can be used for picking. Given an
     // eye position and direction in camera space, offsets the ray to emanate
     // from the near plane, then transforms into worldspace
-      GF_API GfRay      _ComputePickRayOffsetToNearPlane(
+    GF_API GfRay      _ComputePickRayOffsetToNearPlane(
                                     const GfVec3d &camSpaceFrom, 
                                     const GfVec3d &camSpaceDir) const;
 
@@ -667,7 +680,7 @@ class GfFrustum {
 
     // Cached planes.
     // If null, the planes have not been calculated.
-    mutable std::atomic<std::array<GfPlane, 6> *> _planes;
+    mutable std::atomic<FrustumPlanes *> _planes;
 };
 
 /// Output a GfFrustum using the format [(position) (rotation) [window]

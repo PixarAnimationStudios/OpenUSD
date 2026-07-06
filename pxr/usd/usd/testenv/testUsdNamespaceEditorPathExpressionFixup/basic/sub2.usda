@@ -1,0 +1,25 @@
+#usda 1.0
+
+def "Root"
+{
+    def "A" (
+        customData = {
+            pathExpression layer2PrimExpr = "/Root/A/B /Root/A/C"
+        }
+    )
+    {
+        custom int attr
+        pathExpression fromLayer2:a = "/Root/A/B /Root/A/B.attr /Root/A/C /Root/A/C.attr" (
+            customData = {
+                pathExpression layer2PropExpr = "/Root/A/B.attr"
+            }
+        )
+    }
+
+    def "OtherPrim"
+    {
+        pathExpression[] fromLayer2:arr = ["/Root/A/B", "/Root/A/C", "/Root/A", "/Root/A/B.attr /Root/A/C.attr /Root/A.attr"]
+        pathExpression fromLayer2:global = "//B*"
+        pathExpression fromLayer2:exprRef = "%/Root/A:fromLayer2"
+    }
+}

@@ -174,6 +174,7 @@ public:
             TfToken blockName;
             std::vector<StructEntry> entries;
             int arraySize;
+            bool isWritable;
         };
         using StructBlockBinding = std::map<HdStBinding, StructBlock>;
 

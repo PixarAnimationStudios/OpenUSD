@@ -214,3 +214,10 @@ def "PayloadInVariant" (
        }
     }
 }
+
+def "AncestralMapFunction"
+{
+    def "Model" (payload = @model.testpcpdynamic@)
+    {
+    }
+}

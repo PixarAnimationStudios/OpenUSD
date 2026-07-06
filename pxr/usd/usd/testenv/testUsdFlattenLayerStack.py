@@ -88,21 +88,21 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
             # Prim metadata
             self.assertEqual(p.GetMetadata("timeCodeTest"), 0.0)
             self.assertEqual(p.GetMetadata("timeCodeArrayTest"), 
-                             Sdf.TimeCodeArray([0.0, 10.0]))
+                             Vt.TimeCodeArray([0.0, 10.0]))
             self.assertEqual(p.GetMetadata("doubleTest"), 10.0)
 
             self.assertEqual(
                 p.GetMetadataByDictKey("customData", "timeCode"), 0.0)
             self.assertEqual(
                 p.GetMetadataByDictKey("customData", "timeCodeArray"), 
-                Sdf.TimeCodeArray([0.0, 10.0]))
+                Vt.TimeCodeArray([0.0, 10.0]))
             self.assertEqual(
                 p.GetMetadataByDictKey("customData", "doubleVal"), 10.0)
             self.assertEqual(
                 p.GetMetadataByDictKey("customData", "subDict:timeCode"), 0.0)
             self.assertEqual(
                 p.GetMetadataByDictKey("customData", "subDict:timeCodeArray"), 
-                Sdf.TimeCodeArray([0.0, 10.0]))
+                Vt.TimeCodeArray([0.0, 10.0]))
             self.assertEqual(
                 p.GetMetadataByDictKey("customData", "subDict:doubleVal"), 10.0)
 
@@ -114,10 +114,10 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
             self.assertEqual(a.Get(-9), 10.0)
 
             a = p.GetAttribute("TimeCodeArray")
-            self.assertEqual(a.Get(), Sdf.TimeCodeArray([0.0, 10.0]))
+            self.assertEqual(a.Get(), Vt.TimeCodeArray([0.0, 10.0]))
             self.assertEqual(a.GetTimeSamples(), [-10.0, -9.0])
-            self.assertEqual(a.Get(-10.0), Sdf.TimeCodeArray([0.0, 20.0]))
-            self.assertEqual(a.Get(-9), Sdf.TimeCodeArray([10.0, 30.0]))
+            self.assertEqual(a.Get(-10.0), Vt.TimeCodeArray([0.0, 20.0]))
+            self.assertEqual(a.Get(-9), Vt.TimeCodeArray([10.0, 30.0]))
 
             a = p.GetAttribute("Double")
             self.assertEqual(a.Get(), 10.0)

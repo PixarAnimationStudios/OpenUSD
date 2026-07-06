@@ -23,10 +23,10 @@ PXR_NAMESPACE_USING_DIRECTIVE
 bool TestRetainedDataSource()
 {
     float inputValue = 5.0f;
-    HdRetainedTypedSampledDataSource<float> taco(inputValue);
-    std::cout << taco.GetTypedValue(inputValue) << std::endl;
+    auto taco = HdRetainedTypedSampledDataSource<float>::New(inputValue);
+    std::cout << taco->GetTypedValue(inputValue) << std::endl;
 
-    if (taco.GetTypedValue(inputValue) != inputValue) {
+    if (taco->GetTypedValue(inputValue) != inputValue) {
         std::cerr << "input doesn't match output." << std::endl;
         return false;
     }
@@ -296,7 +296,7 @@ bool TestRetainedSmallVectorDataSource()
     }
 
     HdDataSourceBaseHandle v3 = v->GetElement(3);
-    HdRetainedTypedSampledDataSource<int>::Handle i3 = 
+    HdRetainedTypedSampledDataSource<int>::Handle i3 =
         HdRetainedTypedSampledDataSource<int>::Cast(v3);
     if (i3) {
         std::cerr << "vector behavior doesn't match" << std::endl;
@@ -317,13 +317,13 @@ bool TestPrimvarSchema()
         std::cout << primvarNames[i].GetText() << std::endl;
     }
 
-    HdPrimvarSchema displayOpacity = 
+    HdPrimvarSchema displayOpacity =
         primvars.GetPrimvar(HdTokens->displayOpacity);
-        
+
     if (displayOpacity.IsDefined()) {
-        
+
         if (displayOpacity.IsIndexed()) {
-            std::cerr << "displayOpacity primvar should not be indexed" 
+            std::cerr << "displayOpacity primvar should not be indexed"
                 << std::endl;
             return false;
         }
@@ -333,33 +333,33 @@ bool TestPrimvarSchema()
             0.6f, 0.6f, 0.6f, 0.6f, 1.f, 1.f, 1.f, 1.f, 0.f, 0.f, 0.f, 0.f };
         VtValue pvValue;
 
-        if (HdSampledDataSourceHandle primvarValue = 
+        if (HdSampledDataSourceHandle primvarValue =
                 displayOpacity.GetPrimvarValue()) {
             pvValue = primvarValue->GetValue(0.0f);
             if (pvValue != expectedPvValue) {
-                std::cerr << "Unexpected displayOpacity primvar value" 
+                std::cerr << "Unexpected displayOpacity primvar value"
                     << std::endl;
                 return false;
             }
         } else {
-            std::cerr << "Couldn't get displayOpacity primvar value" 
+            std::cerr << "Couldn't get displayOpacity primvar value"
                 << std::endl;
             return false;
         }
 
-        // Would normally probably not want to call GetIndexedPrimvarValue() 
+        // Would normally probably not want to call GetIndexedPrimvarValue()
         // since IsIndexed() returned false.
-        if (HdSampledDataSourceHandle primvarValue = 
+        if (HdSampledDataSourceHandle primvarValue =
                 displayOpacity.GetIndexedPrimvarValue()) {
             VtValue indexedPvValue = primvarValue->GetValue(0.0f);
             if (indexedPvValue != expectedPvValue) {
-                std::cerr << "Unexpected displayOpacity indexed primvar value" 
+                std::cerr << "Unexpected displayOpacity indexed primvar value"
                     << std::endl;
                 return false;
             }
 
         } else {
-            std::cerr << "Couldn't get displayOpacity indexed primvar value" 
+            std::cerr << "Couldn't get displayOpacity indexed primvar value"
                 << std::endl;
             return false;
         }
@@ -369,7 +369,7 @@ bool TestPrimvarSchema()
         return false;
     }
 
-    
+
     HdPrimvarSchema displayColor = primvars.GetPrimvar(HdTokens->displayColor);
     if (displayColor.IsDefined()) {
         if (!displayColor.IsIndexed()) {
@@ -377,23 +377,23 @@ bool TestPrimvarSchema()
             return false;
         }
 
-        if (HdSampledDataSourceHandle primvarValue = 
+        if (HdSampledDataSourceHandle primvarValue =
                 displayColor.GetIndexedPrimvarValue()) {
             VtValue indexedPvValue = primvarValue->GetValue(0.0f);
             VtVec3fArray expectedPvValue = { GfVec3f(1, 0, 0),
                 GfVec3f(0, 1, 0), GfVec3f(0, 0, 1), GfVec3f(1, 1, 1) };
             if (indexedPvValue != expectedPvValue) {
-                std::cerr << "Unexpected displayColor primvar value" 
+                std::cerr << "Unexpected displayColor primvar value"
                     << std::endl;
                 return false;
             }
         } else {
-            std::cerr << "Couldn't get displayColor indexed primvar value" 
+            std::cerr << "Couldn't get displayColor indexed primvar value"
                 << std::endl;
             return false;
         }
 
-        if (HdTypedSampledDataSource<VtIntArray>::Handle primvarIndices = 
+        if (HdTypedSampledDataSource<VtIntArray>::Handle primvarIndices =
                 displayColor.GetIndices()) {
             VtIntArray indices = primvarIndices->GetTypedValue(0.0f);
             VtIntArray expectedIndices = { 3, 3, 3, 3, 0, 1, 2, 3, 0, 1, 2, 3,
@@ -408,20 +408,20 @@ bool TestPrimvarSchema()
         }
 
         VtValue pvValue;
-        if (HdSampledDataSourceHandle primvarValue = 
+        if (HdSampledDataSourceHandle primvarValue =
                 displayColor.GetPrimvarValue()) {
             VtValue pvValue = primvarValue->GetValue(0.0f);
-            VtVec3fArray expectedFlattenedValue = { GfVec3f(1, 1, 1), 
-                GfVec3f(1, 1, 1), GfVec3f(1, 1, 1), GfVec3f(1, 1, 1), 
-                GfVec3f(1, 0, 0), GfVec3f(0, 1, 0), GfVec3f(0, 0, 1), 
-                GfVec3f(1, 1, 1), GfVec3f(1, 0, 0), GfVec3f(0, 1, 0), 
+            VtVec3fArray expectedFlattenedValue = { GfVec3f(1, 1, 1),
+                GfVec3f(1, 1, 1), GfVec3f(1, 1, 1), GfVec3f(1, 1, 1),
+                GfVec3f(1, 0, 0), GfVec3f(0, 1, 0), GfVec3f(0, 0, 1),
+                GfVec3f(1, 1, 1), GfVec3f(1, 0, 0), GfVec3f(0, 1, 0),
                 GfVec3f(0, 0, 1), GfVec3f(1, 1, 1), GfVec3f(1, 0, 0),
                 GfVec3f(0, 1, 0), GfVec3f(0, 0, 1), GfVec3f(1, 1, 1),
-                GfVec3f(1, 0, 0), GfVec3f(0, 1, 0), GfVec3f(0, 0, 1), 
-                GfVec3f(1, 1, 1), GfVec3f(1, 0, 0), GfVec3f(0, 1, 0), 
+                GfVec3f(1, 0, 0), GfVec3f(0, 1, 0), GfVec3f(0, 0, 1),
+                GfVec3f(1, 1, 1), GfVec3f(1, 0, 0), GfVec3f(0, 1, 0),
                 GfVec3f(0, 0, 1), GfVec3f(1, 1, 1) };
             if (pvValue != expectedFlattenedValue) {
-                std::cerr << "Unexpected displayColor flattened primvar value" 
+                std::cerr << "Unexpected displayColor flattened primvar value"
                     << std::endl;
                 return false;
             }
@@ -501,7 +501,7 @@ bool TestContainerSchemas()
     };
 
     // Build material interface parameter
-    HdContainerDataSourceHandle c2 = 
+    HdContainerDataSourceHandle c2 =
         HdMaterialInterfaceParameterSchema::Builder()
             .SetDisplayGroup(
                 HdRetainedTypedSampledDataSource<TfToken>::New(
@@ -518,13 +518,13 @@ bool TestContainerSchemas()
 
     HdMaterialInterfaceParameterContainerSchema parameters(c3);
 
-    HdTokenDataSourceHandle t1 = 
+    HdTokenDataSourceHandle t1 =
         parameters.Get(TfToken("Q")).GetDisplayGroup();
-    
+
     if (!t1) {
-        std::cerr << "expected token data source for display group" 
+        std::cerr << "expected token data source for display group"
             << std::endl;
-        return false;  
+        return false;
     }
 
     if (t1->GetTypedValue(0.0f) != TfToken("Foo")) {
@@ -532,12 +532,12 @@ bool TestContainerSchemas()
         return false;
     }
 
-    HdTokenDataSourceHandle t2 = 
+    HdTokenDataSourceHandle t2 =
         parameters.Get(TfToken("Q")).GetDisplayName();
-    
+
     if (!t2) {
         std::cerr << "expected token data source for display name" << std::endl;
-        return false;  
+        return false;
     }
 
     if (t2->GetTypedValue(0.0f) != TfToken("Bar")) {
@@ -545,7 +545,7 @@ bool TestContainerSchemas()
         return false;
     }
 
-    HdMaterialInterfaceMappingVectorSchema v1 = 
+    HdMaterialInterfaceMappingVectorSchema v1 =
         parameters.Get(TfToken("Q")).GetMappings();
 
     if (!v1) {

@@ -73,6 +73,7 @@ template <> constexpr char Vt_FmtFor<unsigned long long>() { return 'Q'; }
 template <> constexpr char Vt_FmtFor<GfHalf>() { return 'e'; }
 template <> constexpr char Vt_FmtFor<float>() { return 'f'; }
 template <> constexpr char Vt_FmtFor<double>() { return 'd'; }
+template <> constexpr char Vt_FmtFor<GfTimeCode>() { return 'd'; }
 
 template <class Src, class Dst>
 inline Dst

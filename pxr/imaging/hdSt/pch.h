@@ -16,7 +16,6 @@
 #include <sys/mount.h>
 #include <sys/param.h>
 #include <unistd.h>
-#include <mach/mach_time.h>
 #endif
 #if defined(ARCH_OS_LINUX)
 #include <glob.h>
@@ -24,7 +23,6 @@
 #include <sys/param.h>
 #include <sys/statfs.h>
 #include <unistd.h>
-#include <x86intrin.h>
 #endif
 #if defined(ARCH_OS_WINDOWS)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -34,7 +32,6 @@
 #include <Windows.h>
 #include <intrin.h>
 #include <io.h>
-#include <stringapiset.h>
 #endif
 #include <algorithm>
 #include <any>
@@ -42,6 +39,7 @@
 #include <atomic>
 #include <cctype>
 #include <cfloat>
+#include <chrono>
 #include <cinttypes>
 #include <climits>
 #include <cmath>
@@ -53,6 +51,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <deque>
 #include <fcntl.h>
 #include <float.h>
@@ -80,6 +79,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string>
 #include <sys/stat.h>
@@ -92,13 +92,14 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 #include <vector>
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
+#include <MaterialXCore/Generated.h>
 #include <MaterialXCore/Library.h>
 #include <MaterialXCore/Value.h>
 #include <MaterialXGenGlsl/Nodes/SurfaceNodeGlsl.h>
 #include <MaterialXGenMsl/MslResourceBindingContext.h>
-#include <MaterialXGenMsl/MslShaderGenerator.h>
 #include <MaterialXGenMsl/Nodes/SurfaceNodeMsl.h>
 #include <MaterialXGenShader/DefaultColorManagementSystem.h>
 #include <MaterialXGenShader/Shader.h>
@@ -124,7 +125,11 @@
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_for_each.h>
+#include <tbb/parallel_reduce.h>
+#include <tbb/parallel_sort.h>
 #include <tbb/spin_mutex.h>
+#include <tbb/task.h>
+#include <tbb/task_arena.h>
 #include <tbb/task_group.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"

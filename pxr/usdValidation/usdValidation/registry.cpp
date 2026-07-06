@@ -6,6 +6,7 @@
 //
 
 #include "pxr/usdValidation/usdValidation/registry.h"
+#include "pxr/usdValidation/usdValidation/notice.h"
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
@@ -291,6 +292,10 @@ UsdValidationRegistry::_RegisterValidator(
         return;
     }
 
+    // newValidator will be used to send notice after the lock is released on a
+    // successful registration, to avoid sending notice while holding the unique
+    // lock on the registry mutex.
+    const UsdValidationValidator *newValidator = nullptr;
     {
         // Lock for writing validators.
         std::unique_lock lock(_mutex);
@@ -319,12 +324,29 @@ UsdValidationRegistry::_RegisterValidator(
         std::unique_ptr<UsdValidationValidator> validator
             = std::make_unique<UsdValidationValidator>(
                 metadata, taskFn, fixers);
-        if (!_validators.emplace(metadata.name, std::move(validator)).second) {
+        auto [validatorItr, inserted] =
+            _validators.emplace(metadata.name, std::move(validator));
+        if (inserted) {
+            newValidator = validatorItr->second.get();
+        } else {
             TF_CODING_ERROR(
                 "Validator with name '%s' already exists, failed to register "
                 "it again.",
                 metadata.name.GetText());
         }
+    }
+
+    // Since lock is released, it's safe to send notice now, with internal lock
+    // held by the notice system on a call from Send().
+    // Notice only needs to be sent for validator which are registered
+    // dynamically, outside the plugin registration process. addMetadata is used 
+    // to determine this, since for plugin registered validators, their metadata
+    // is already added during plugin metadata parsing, and for dynamic
+    // registration of validators, metadata needs to be added at the time of
+    // registration, so if addMetadata is true, that means this validator is
+    // dynamically registered.
+    if (newValidator && addMetadata) {
+        UsdValidationNotice::DidRegisterValidator(newValidator).Send();
     }
 }
 
@@ -503,6 +525,10 @@ UsdValidationRegistry::_RegisterValidatorSuite(
         }
     }
 
+    // newValidatorSuite will be used to send notice after the lock is released
+    // on a successful registration, to avoid sending notice while holding the
+    // unique lock on the registry mutex.
+    const UsdValidationValidatorSuite *newValidatorSuite = nullptr;
     {
         // Lock for writing validatorSuites
         std::unique_lock lock(_mutex);
@@ -531,13 +557,30 @@ UsdValidationRegistry::_RegisterValidatorSuite(
         std::unique_ptr<UsdValidationValidatorSuite> validatorSuite
             = std::make_unique<UsdValidationValidatorSuite>(
                 metadata, containedValidators);
-        if (!_validatorSuites.emplace(metadata.name, std::move(validatorSuite))
-                 .second) {
+        auto [validatorSuiteItr, inserted] = _validatorSuites.emplace(
+            metadata.name, std::move(validatorSuite));
+        if (inserted) {
+            newValidatorSuite = validatorSuiteItr->second.get();
+        } else {
             TF_CODING_ERROR(
                 "Suite with name '%s' already exists, failed to register it "
                 "again.",
                 metadata.name.GetText());
         }
+    }
+
+    // Since lock is released, it's safe to send notice now, with internal lock
+    // held by the notice system on a call from Send().
+    // Notice only needs to be sent for validator suites which are registered
+    // dynamically, outside the plugin registration process. addMetadata is used
+    // to determine this, since for plugin registered validator suites, their 
+    // metadata is already added during plugin metadata parsing, and for dynamic
+    // registration of validator suites, metadata needs to be added at the time
+    // of registration, so if addMetadata is true, that means this validator
+    // suite is dynamically registered.
+    if (newValidatorSuite && addMetadata) {
+        UsdValidationNotice::DidRegisterValidatorSuite(
+            newValidatorSuite).Send();
     }
 }
 

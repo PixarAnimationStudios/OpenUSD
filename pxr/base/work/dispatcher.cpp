@@ -37,10 +37,10 @@ Work_Dispatcher<Impl>::Wait()
         _dispatcher.Reset();
 
         // Post all diagnostics to this thread's list.
-        for (auto &et: _errors) {
-            et.Post();
+        for (auto &dt: _diagnostics) {
+            dt.Post();
         }
-        _errors.clear();
+        _diagnostics.clear();
         _waitCleanupFlag.clear();
         _isCancelled = false;
     }
@@ -64,11 +64,10 @@ Work_Dispatcher<Impl>::Cancel()
 /* static */
 template <class Impl>
 void
-Work_Dispatcher<Impl>::_TransportErrors(const TfErrorMark &mark,
-                                 _ErrorTransports *errors)
+Work_Dispatcher<Impl>::_TransportDiagnostics(TfDiagnosticTrap *trap,
+                                             _DiagnosticTransports *diagnostics)
 {
-    TfErrorTransport transport = mark.Transport();
-    errors->grow_by(1)->swap(transport);
+    *diagnostics->grow_by(1) = trap->Transport();
 }
 
 // Explicitly instantiate Work_Dispatchers

@@ -13,9 +13,12 @@
 
 #include "pxr/imaging/hd/sceneIndex.h"
 
+#include <QCheckBox>
 #include <QLabel>
+#include <QLineEdit>
 #include <QPushButton>
 #include <QMenu>
+#include <QStatusBar>
 #include <QTreeWidgetItem>
 #include <QSplitter>
 
@@ -65,6 +68,11 @@ private Q_SLOTS:
             HdSceneIndexBaseRefPtr sceneIndex, bool includeSelf);
 
 private:
+    // Updates the "Inputs" button's enabled state based on whether the
+    // given scene index has any input scenes.
+    void _UpdateInputsButton(HdSceneIndexBaseRefPtr sceneIndex);
+
+private:
     HduiSceneIndexTreeWidget *_siTreeWidget;
     HduiDataSourceTreeWidget *_dsTreeWidget;
     HduiRegisteredSceneIndexChooser *_siChooser;
@@ -73,7 +81,21 @@ private:
     QPushButton *_goToInputButton;
     QMenu *_goToInputButtonMenu;
 
-    HdSceneIndexBasePtr _currentSceneIndex;
+    QCheckBox *_instanceProxyViewCheckBox;
+
+    QCheckBox *_filterAsYouTypeCheckBox;
+    QLineEdit *_filterLineEdit;
+    
+    QStatusBar *_statusBar;
+
+    // The scene index as set by SetRegisteredSceneIndex/SetSceneIndex.
+    HdSceneIndexBaseRefPtr _targetSceneIndex;
+
+    // The scene index currently being inspected (i.e. the one driving the
+    // tree and data source views). When instance proxy view is enabled,
+    // this will be an HdInstanceProxyViewSceneIndex wrapping the target scene
+    // index.
+    HdSceneIndexBaseRefPtr _currentSceneIndex;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

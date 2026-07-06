@@ -73,6 +73,13 @@ def Scope "World"
         rel primvars:targetPrim = </World/childNameTest>
     }
 
+    def GenerativeProcedural "dependsOnRemovedProc" (
+        prepend apiSchemas = ["HydraGenerativeProceduralAPI"]
+    )
+    {
+        token primvars:hdGp:proceduralType = "DependsOnRemoved"
+        # This prim is harded to depend on /PrimToRemove/Child
+    }
 
     def Scope "childNameTest"
     {
@@ -93,5 +100,11 @@ def Scope "World"
     }
 }
 
-
-
+def Scope "PrimToRemove"
+{
+    def Xform "Child"
+    {
+        token[] xformOpOrder = ["xformOp:translate"]
+        double3 xformOp:translate = (-1, -1, -1)
+    }
+}

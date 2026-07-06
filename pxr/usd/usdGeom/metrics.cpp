@@ -157,6 +157,7 @@ constexpr double UsdGeomLinearUnits::nanometers;
 constexpr double UsdGeomLinearUnits::micrometers;
 constexpr double UsdGeomLinearUnits::millimeters;
 constexpr double UsdGeomLinearUnits::centimeters;
+constexpr double UsdGeomLinearUnits::decimeters;
 constexpr double UsdGeomLinearUnits::meters;
 constexpr double UsdGeomLinearUnits::kilometers;
 constexpr double UsdGeomLinearUnits::lightYears;

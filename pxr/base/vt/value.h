@@ -99,6 +99,9 @@ class VtValue
         explicit _Counted(T const &obj) : _obj(obj) {
             _refCount = 0;
         }
+        explicit _Counted(T &&obj) : _obj(std::move(obj)) {
+            _refCount = 0;
+        }
         bool IsUnique() const { return _refCount == 1; }
         T const &Get() const { return _obj; }
         T &GetMutable() { return _obj; }
@@ -590,8 +593,9 @@ class VtValue
             return Derived::_GetMutableObj(_Container(storage));
         }
 
-        static void CopyInitObj(T const &objSrc, _Storage &dst) {
-            Derived::_PlaceCopy(&_Container(dst), objSrc);
+        template <class Arg>
+        static void InitObj(Arg &&objSrc, _Storage &dst) {
+            Derived::_Place(&_Container(dst), std::forward<Arg>(objSrc));
         }
 
     private:
@@ -727,8 +731,11 @@ class VtValue
         // Get returns object directly.
         static T &_GetMutableObj(T &obj) { return obj; }
         static T const &_GetObj(T const &obj) { return obj; }
-        // Place placement new's object directly.
-        static void _PlaceCopy(T *dst, T const &src) { new (dst) T(src); }
+        // Place-construct object directly.
+        template <class Arg>
+        static void _Place(T *dst, Arg &&arg) {
+            new (dst) T(std::forward<Arg>(arg));
+        }
     };
 
     ////////////////////////////////////////////////////////////////////////
@@ -755,9 +762,11 @@ class VtValue
             return ptr->GetMutable();
         }
         static T const &_GetObj(Ptr const &ptr) { return ptr->Get(); }
-        // PlaceCopy() allocates a new _Counted<T> with a copy of the object.
-        static void _PlaceCopy(Ptr *dst, T const &src) {
-            new (dst) Ptr(TfDelegatedCountIncrementTag, new _Counted<T>(src));
+        // Allocate a new _Counted<T> holding the object.
+        template <class Arg>
+        static void _Place(Ptr *dst, Arg &&arg) {
+            new (dst) Ptr(TfDelegatedCountIncrementTag,
+                          new _Counted<T>(std::forward<Arg>(arg)));
         }
     };
 
@@ -806,13 +815,15 @@ class VtValue
             return TfPointerAndBits<const _TypeInfo>(&ti, flags);
         }
 
-        static void Init(VtValue *val, T const &obj) {
+        template <class Arg>
+        static void Init(VtValue *val, Arg &&obj) {
             val->_info = _GetTypeInfo();
             if constexpr (std::is_same_v<T, StoredType>) {
-                TypeInfo::CopyInitObj(obj, val->_storage);
+                TypeInfo::InitObj(std::forward<Arg>(obj), val->_storage);
             }
             else {
-                TypeInfo::CopyInitObj(StoredType {obj}, val->_storage);
+                TypeInfo::InitObj(
+                    StoredType{std::forward<Arg>(obj)}, val->_storage);
             }
         }
     };
@@ -832,8 +843,13 @@ public:
         _Move(other, *this);
     }
 
+    // Overloads to prevent the forwarding templates from matching VtValue
+    // arguments of any value category.
+    VtValue(VtValue &other) : VtValue(const_cast<VtValue const &>(other)) {}
+    VtValue(VtValue const &&other) : VtValue(other) {}
+
     /// Construct a VtValue holding a copy of \p obj.
-    /// 
+    ///
     /// If T is a char pointer or array, produce a VtValue holding a
     /// std::string. If T is pxr_boost::python::object, produce a VtValue
     /// holding a TfPyObjWrapper.
@@ -842,9 +858,27 @@ public:
         _Init<T>::Init(this, obj);
     }
 
+    /// Construct a VtValue by moving from \p obj (rvalue overload).
+    template <class T, std::enable_if_t<!std::is_lvalue_reference_v<T>, int> = 0>
+    explicit VtValue(T &&obj) {
+        _Init<T>::Init(this, std::move(obj));
+    }
+
     /// Construct with VtValueRef.
     VT_API
-    explicit VtValue(VtValueRef ref);
+    explicit VtValue(VtValueRef const &ref);
+
+    /// \overload
+    VT_API
+    explicit VtValue(VtValueRef &ref);
+
+    /// \overload
+    VT_API
+    explicit VtValue(VtValueRef &&ref);
+
+    /// \overload
+    VT_API
+    explicit VtValue(VtValueRef const &&ref);
 
     /// Create a new VtValue, taking its contents from \p obj.
     /// 
@@ -889,13 +923,38 @@ public:
         return *this;
     }
 
-    /// Assignment from VtValueRef
-    VT_API
-    VtValue &operator=(VtValueRef ref);
+    // Overloads to prevent the forwarding templates from matching VtValue
+    // arguments of any value category.
+    VtValue &operator=(VtValue &other) {
+        return *this = const_cast<VtValue const &>(other);
+    }
+    VtValue &operator=(VtValue const &&other) {
+        return *this = other;
+    }
 
-    /// Assignment operator from any type.
+    /// Assignment from VtValueRef.
+    VT_API
+    VtValue &operator=(VtValueRef const &ref);
+
+    /// \overload
+    VT_API
+    VtValue &operator=(VtValueRef &ref);
+
+    /// \overload
+    VT_API
+    VtValue &operator=(VtValueRef &&ref);
+
+    /// \overload
+    VT_API
+    VtValue &operator=(VtValueRef const &&ref);
+
+    /// Assign by copying from \p obj.
     template <class T>
     VtValue &operator=(T const &obj);
+
+    /// Assign by moving from \p obj (rvalue overload).
+    template <class T, std::enable_if_t<!std::is_lvalue_reference_v<T>, int> = 0>
+    VtValue &operator=(T &&obj);
 
     /// Swap this with \a rhs.
     VtValue &Swap(VtValue &rhs) noexcept {
@@ -1549,9 +1608,23 @@ VtValue::operator=(T const &obj)
     }
 }
 
-template <>
+template <class T, std::enable_if_t<!std::is_lvalue_reference_v<T>, int>>
 VtValue &
-VtValue::operator=<VtValueRef>(VtValueRef const &obj) = delete;
+VtValue::operator=(T &&obj)
+{
+    if constexpr (_TypeInfoFor<T>::IsLocal &&
+                  _TypeInfoFor<T>::HasTrivialCopy) {
+        _Clear();
+        _Init<T>::Init(this, std::move(obj));
+        return *this;
+    }
+    else {
+        _HoldAside tmp(this);
+        _Init<T>::Init(this, std::move(obj));
+        return *this;
+    }
+}
+
 
 VtValueRef
 VtValue::_TypeInfo::GetValueRef(_Storage const &storage, bool rvalue) const

@@ -18,11 +18,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// @warning
-/// This code is a work in progress and should not be used in production 
-/// scenarios. It is currently not feature-complete and subject to change.
+/// Provides namespace editing operations, where a namespace edit is an 
+/// operation that removes or changes the namespace path of a composed prim 
+/// or property on a stage. Edit operations currently consist of deleting and 
+/// moving (renaming and/or reparenting) a composed prim or property.
 ///
-/// Provides namespace editing operations 
+/// The namespace editor is designed to perform these editing operations on a 
+/// given stage, with the option of registering dependent stages that will be
+/// edited along with the primary stage.
+///
+/// In addition to performing the main edit, the namespace editor will also fix up
+/// relationship targets and connection paths, as well as path expressions, that
+/// refer to the path being edited.
+///
+/// Namespace editing also provides non-destructive editing of prims defined across 
+/// composition arcs by adding the relocates composition arc if needed. By using 
+/// relocates, namespace editing ensures non-destructive edits by not modifying 
+/// the source of a composition arc. The user can control whether relocates are
+/// allowed to be authored by using the EditOptions.
 class UsdNamespaceEditor 
 {
 public:
@@ -325,24 +338,22 @@ private:
         // Whether performing the edit will author new relocates.
         bool willAuthorRelocates = false;
 
-        // Layer edits that need to be performed to update connection and 
-        // relationship targets of other properties in order to keep them 
-        // targeting the same object after applying this processed edit.
-        struct TargetPathListOpEdit {
-            // Property spec to author the new targets value to. Note that we
-            // store the spec handle for the property as the property spec's
-            // path could change if the property is moved or deleted by the 
-            // primary namespace edit.
-            SdfPropertySpecHandle propertySpec;
+        // Layer edits that need to be performed to update path-bearing fields 
+        // (like connection and relationship targets) in order to keep them 
+        // referring to the same object after applying this processed edit.
+        struct PathBearingFieldEdit {
+            // Prim or property spec to author the new value to. Note that we
+            // store the spec handle for the object as the object's path could 
+            // change if it is moved or deleted by the primary namespace edit.
+            SdfSpecHandle spec;
 
-            // Name of the field that holds the path targets for the property
-            // which differs for attributes vs relationships.  
+            // Name of the path-bearing field.  
             TfToken fieldName;
 
-            // Updated list op value to set for the property spec.
-            SdfPathListOp newFieldValue;
+            // Updated field value to set.
+            VtValue newFieldValue;
         };
-        std::vector<TargetPathListOpEdit> targetPathListOpEdits;
+        std::vector<PathBearingFieldEdit> pathBearingFieldEdits;
 
         // Full set of namespace edits that need to be performed for all the
         // dependent stages of this editor as a result of dependencies on the

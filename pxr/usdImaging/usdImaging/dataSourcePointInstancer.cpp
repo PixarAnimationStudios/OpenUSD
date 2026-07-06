@@ -14,6 +14,10 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/base/tf/smallVector.h"
+
+#include "pxr/usd/sdf/listOp.h"
+
 #include "pxr/imaging/hd/instancerTopologySchema.h"
 #include "pxr/imaging/hd/mapContainerDataSource.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
@@ -89,6 +93,69 @@ _GetPrimvarDataSource(HdDataSourceBaseHandle const &ds)
     } else {
         return nullptr;
     }
+}
+
+// Helper used to prune the prototypes list for prototypes where all instances
+// are inactive.  Returns a mask where mask[i] is true if all instances of
+// prototype i have their IDs in the inactiveIds metadata. Returns an empty
+// vector when no prototypes are fully inactive (i.e., no filtering needed).
+std::vector<bool>
+_ComputeFullyInactiveProtoMask(
+    const UsdGeomPointInstancer &usdPI,
+    const VtIntArray &protoIndices,
+    size_t numProtos,
+    const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (!usdPI.GetPrim().HasMetadata(UsdGeomTokens->inactiveIds)) {    
+        return {};
+    }
+
+    TRACE_FUNCTION();
+
+    // inactiveIds is metadata on UsdGeomPointInstancer that is used to
+    // deactivate specific instances.  Unlike visibility, it cannot vary
+    // over time.
+    SdfInt64ListOp inactiveIdsListOp;
+    usdPI.GetPrim().GetMetadata(
+        UsdGeomTokens->inactiveIds, &inactiveIdsListOp);
+    const std::vector<int64_t> inactiveIdsList =
+        inactiveIdsListOp.GetExplicitItems();
+    if (inactiveIdsList.empty()) {
+        return {};
+    }
+
+    const std::set<int64_t> inactiveIds(
+        inactiveIdsList.begin(), inactiveIdsList.end());
+
+    // If ids attribute is present it maps array index -> instance ID;
+    // otherwise the array index is the instance ID.
+    VtInt64Array instanceIds;
+    usdPI.GetIdsAttr().Get(&instanceIds, stageGlobals.GetTime());
+
+    TfSmallVector<size_t, 32> totalCount(numProtos, 0);
+    TfSmallVector<size_t, 32> inactiveCount(numProtos, 0);
+    for (size_t i = 0; i < protoIndices.size(); ++i) {
+        const int protoIdx = protoIndices[i];
+        if (protoIdx < 0 || size_t(protoIdx) >= numProtos) {
+            continue;
+        }
+        ++totalCount[protoIdx];
+        const int64_t id = instanceIds.empty() ? int64_t(i) : instanceIds[i];
+        if (inactiveIds.count(id)) {
+            ++inactiveCount[protoIdx];
+        }
+    }
+
+    std::vector<bool> mask(numProtos, false);
+    bool anyInactive = false;
+    for (size_t i = 0; i < numProtos; ++i) {
+        if (totalCount[i] > 0 && totalCount[i] == inactiveCount[i]) {
+            mask[i] = true;
+            anyInactive = true;
+        }
+    }
+
+    return anyInactive ? mask : std::vector<bool>{};
 }
 
 };
@@ -238,8 +305,37 @@ HdDataSourceBaseHandle
 UsdImagingDataSourcePointInstancerTopology::Get(const TfToken &name)
 {
     if (name == HdInstancerTopologySchemaTokens->prototypes) {
-        return UsdImagingDataSourceRelationship::New(
-                _usdPI.GetPrototypesRel(), _stageGlobals);
+        if (!_usdPI.GetPrim().HasMetadata(UsdGeomTokens->inactiveIds)) {    
+            // No inactiveIds in use.
+            return UsdImagingDataSourceRelationship::New(
+                    _usdPI.GetPrototypesRel(), _stageGlobals);
+        } else {
+            // Filter prototypes based on inactiveIds.
+            SdfPathVector protoPaths;
+            _usdPI.GetPrototypesRel().GetTargets(&protoPaths);
+
+            VtIntArray protoIndices;
+            _usdPI.GetProtoIndicesAttr().Get(
+                &protoIndices, _stageGlobals.GetTime());
+
+            const std::vector<bool> inactiveMask = _ComputeFullyInactiveProtoMask(
+                _usdPI, protoIndices, protoPaths.size(), _stageGlobals);
+
+            if (inactiveMask.empty()) {
+                return UsdImagingDataSourceRelationship::New(
+                        _usdPI.GetPrototypesRel(), _stageGlobals);
+            }
+
+            VtArray<SdfPath> filteredPaths;
+            for (size_t i = 0; i < protoPaths.size(); ++i) {
+                if (!inactiveMask[i]) {
+                    filteredPaths.push_back(protoPaths[i]);
+                }
+            }
+            return HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
+                filteredPaths);
+        }
+
     } else if (name == HdInstancerTopologySchemaTokens->instanceIndices) {
         UsdAttribute attr = _usdPI.GetProtoIndicesAttr();
         if (!attr) {
@@ -266,11 +362,18 @@ UsdImagingDataSourcePointInstancerTopology::Get(const TfToken &name)
             instanceIndices[protoIndex].push_back(i);
         }
 
+        // Remove entries for fully-inactive prototypes to keep this array
+        // in sync with the filtered prototypes path array.
+        const std::vector<bool> inactiveMask = _ComputeFullyInactiveProtoMask(
+            _usdPI, protoIndices, instanceIndices.size(), _stageGlobals);
+
         std::vector<HdDataSourceBaseHandle> indicesVec;
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
-            indicesVec.push_back(
-                HdRetainedTypedSampledDataSource<VtArray<int>>::New(
-                    instanceIndices[i]));
+            if (inactiveMask.empty() || !inactiveMask[i]) {
+                indicesVec.push_back(
+                    HdRetainedTypedSampledDataSource<VtArray<int>>::New(
+                        instanceIndices[i]));
+            }
         }
         return HdRetainedSmallVectorDataSource::New(
             indicesVec.size(), indicesVec.data());

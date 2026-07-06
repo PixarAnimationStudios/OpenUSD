@@ -6,7 +6,6 @@
 #include "pxr/imaging/hdsi/particleFieldConversionSceneIndex.h"
 
 #include "pxr/usd/usdVol/tokens.h"
-#include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/tokens.h"

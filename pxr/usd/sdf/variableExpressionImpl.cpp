@@ -14,6 +14,7 @@
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/visitValue.h"
 
+#include "pxr/base/tf/patternMatcher.h"
 #include "pxr/base/tf/scoped.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -845,6 +846,109 @@ ContainsNode::Evaluate(EvalContext* ctx) const
     }
 
     return VtVisitValue(searchIn.value, _ContainsVisitor(searchFor.value));
+}
+
+// ------------------------------------------------------------
+
+const char* 
+MatchesRegexNode::GetFunctionName()
+{
+    return "matches_regex";
+}
+
+MatchesRegexNode::MatchesRegexNode(
+    std::unique_ptr<Node>&& searchIn,
+    std::unique_ptr<Node>&& pattern)
+    : _searchIn(std::move(searchIn))
+    , _pattern(std::move(pattern))
+{
+}
+
+class _MatchesRegexVisitor
+{
+public:
+    _MatchesRegexVisitor(const VtValue& pattern)
+        : _pattern(pattern)
+    { }
+
+    EvalResult
+    operator()(const std::string& searchIn) const
+    {
+        if (!_pattern.IsHolding<std::string>()) {
+            return Error("Pattern to match must be a string");
+        }
+
+        TfPatternMatcher patternMatcher(_pattern.UncheckedGet<std::string>(),
+                                        /* caseSensitive*/ true);
+
+        if (!patternMatcher.IsValid()) {
+            return Error(
+                "Invalid match pattern: " + patternMatcher.GetInvalidReason());
+        }
+
+        return EvalResult::Value(patternMatcher.Match(searchIn));
+    }
+
+    template <class ListType>
+    std::enable_if_t<
+        std::is_same<ListType, VtArray<std::string>>::value, EvalResult>
+    operator()(const ListType& searchIn) const
+    {
+        using ElemType = typename ListType::value_type;
+        if (!_pattern.IsHolding<ElemType>()) {
+            return Error("Pattern to match must be a string");
+        }
+
+        TfPatternMatcher patternMatcher(_pattern.UncheckedGet<std::string>(),
+                                        /* caseSensitive*/ true);
+
+        if (!patternMatcher.IsValid()) {
+            return Error(
+                "Invalid match pattern: " + patternMatcher.GetInvalidReason());
+        }
+
+        for (const auto& str : searchIn) {
+            if (patternMatcher.Match(str)) {
+                return EvalResult::Value(true);
+            }
+        }
+
+        return EvalResult::Value(false);
+    }
+
+    template <class T>
+    std::enable_if_t<!std::is_same<T, VtArray<std::string>>::value, EvalResult>
+    operator()(const T& searchIn) const
+    {
+        return Error("Value to search must be string[] or string");
+    }
+
+private:
+    static EvalResult
+    Error(const std::string& err)
+    {
+        return EvalResult::Error({_FormatFunctionError<MatchesRegexNode>(err)});
+    }
+
+    const VtValue& _pattern;
+};
+
+EvalResult
+MatchesRegexNode::Evaluate(EvalContext* ctx) const
+{
+    EvalResult searchIn = _searchIn->Evaluate(ctx);
+    EvalResult pattern = _pattern->Evaluate(ctx);
+
+    std::vector<std::string> errors = _CombineErrors(&searchIn, &pattern);
+    if (!errors.empty()) {
+        return EvalResult::Error(std::move(errors));
+    }
+
+    if (searchIn.value.IsHolding<SdfVariableExpression::EmptyList>()) {
+        return EvalResult::Value(false);
+    }
+
+    return VtVisitValue(searchIn.value, _MatchesRegexVisitor(pattern.value));
 }
 
 // ------------------------------------------------------------

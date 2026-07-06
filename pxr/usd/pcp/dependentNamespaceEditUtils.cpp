@@ -1066,11 +1066,7 @@ _PrimIndexDependentNodeEditProcessor::_ProcessNextNodeTask()
     // that we expect to have moved entirely from oldPath to newPath. Log this
     // change for the namespace editors.
     if (node.GetArcType() == PcpArcTypeRoot) {
-        // Ignore deletes; we only need to track cache paths that are moved.
-        if (!newPath.IsEmpty()) {           
-            _edits->dependentCachePathChanges[_cache].push_back(
-                {oldPath, newPath});
-        }
+        _edits->dependentCachePathChanges[_cache].push_back({oldPath, newPath});
         return true;
     }
 

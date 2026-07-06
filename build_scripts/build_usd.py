@@ -176,6 +176,9 @@ def IsVisualStudioVersionOrGreater(desiredVersion):
 # Helpers to determine the version of "Visual Studio" (also support the Build Tools) based
 # on the version of the MSVC compiler.
 # See MSVC++ versions table on https://en.wikipedia.org/wiki/Microsoft_Visual_C%2B%2B
+def IsVisualStudio2026OrGreater():
+    VISUAL_STUDIO_2026_VERSION = (14, 50)
+    return IsVisualStudioVersionOrGreater(VISUAL_STUDIO_2026_VERSION)
 def IsVisualStudio2022OrGreater():
     VISUAL_STUDIO_2022_VERSION = (14, 30)
     return IsVisualStudioVersionOrGreater(VISUAL_STUDIO_2022_VERSION)
@@ -308,14 +311,23 @@ def Run(cmd, logCommandOutput = True, env = None):
             p = subprocess.Popen(shlex.split(cmd), env=env)
             p.wait()
 
+        logfile.write("\n")
+        logfile.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
+        logfile.write("\n")
+        logfile.write("{cmd} exited with returncode {returncode}"
+                      .format(cmd=cmd, returncode=p.returncode))
+        logfile.write("\n\n")
+            
     if p.returncode != 0:
         # If verbosity >= 3, we'll have already been printing out command output
         # so no reason to print the log file again.
         if verbosity < 3:
             with open("log.txt", "r") as logfile:
                 Print(logfile.read())
-        raise RuntimeError("Failed to run '{cmd}' in {path}.\nSee {log} for more details."
-                           .format(cmd=cmd, path=os.getcwd(), log=os.path.abspath("log.txt")))
+        raise RuntimeError(
+            f"Failed to run '{cmd}' in {os.getcwd()} "
+            f"(exited with returncode {p.returncode}).\n\n"
+            f"See {os.path.abspath('log.txt')} for more details.")
 
 @contextlib.contextmanager
 def CurrentWorkingDirectory(dir):
@@ -387,8 +399,21 @@ def AppendCXX11ABIArg(buildFlag, context, buildArgs):
     buildArgs.append('{flag}="{flags}"'.format(
         flag=buildFlag, flags=" ".join(cxxFlags)))
 
+def GetCMakeCacheValue(buildDir, variable):
+    """Return the value of a CMake cache variable by querying the build
+    directory with 'cmake -N -LA <buildDir>', or None on failure."""
+    output = GetCommandOutput(
+        "cmake -N -LA {}".format(shlex.quote(buildDir)))
+    if output is None:
+        return None
+    for line in output.splitlines():
+        m = re.match(r"{}(?::[A-Z]+)?=(.*)".format(re.escape(variable)), line)
+        if m:
+            return m.group(1).strip()
+    return None
+
 def RunCMake(context, force, extraArgs = None, installDir = None):
-    """Invoke CMake to configure, build, and install a library whose 
+    """Invoke CMake to configure, build, and install a library whose
     source code is located in the current working directory."""
     # Create a directory for out-of-source builds in the build directory
     # using the name of the current working directory.
@@ -416,7 +441,9 @@ def RunCMake(context, force, extraArgs = None, installDir = None):
     # building a 64-bit project. (Surely there is a better way to do this?)
     # TODO: figure out exactly what "vcvarsall.bat x64" sets to force x64
     if generator is None and Windows():
-        if IsVisualStudio2022OrGreater():
+        if IsVisualStudio2026OrGreater():
+            generator = "Visual Studio 18 2026"
+        elif IsVisualStudio2022OrGreater():
             generator = "Visual Studio 17 2022"
         elif IsVisualStudio2019OrGreater():
             generator = "Visual Studio 16 2019"
@@ -752,25 +779,14 @@ def AnyPythonDependencies(deps):
 ############################################################
 # zlib
 
-ZLIB_URL = "https://github.com/madler/zlib/archive/v1.2.13.zip"
+ZLIB_URL = "https://github.com/madler/zlib/archive/v1.3.2.zip"
 
 def InstallZlib(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ZLIB_URL, context, force)):
-        # The following test files aren't portable to embedded platforms.
-        # They're not required for use on any platforms, so we elide them
-        # for efficiency
-        PatchFile("CMakeLists.txt",
-                [("add_executable(example test/example.c)",
-                    ""),
-                ("add_executable(minigzip test/minigzip.c)",
-                    ""),
-                ("target_link_libraries(example zlib)",
-                    ""),
-                ("target_link_libraries(minigzip zlib)",
-                    ""),
-                ("add_test(example example)",
-                    "")])
-        RunCMake(context, force, buildArgs)
+        extraArgs = [
+            "-DZLIB_BUILD_TESTING=OFF",
+        ]
+        RunCMake(context, force, extraArgs + buildArgs)
 
 ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
         
@@ -807,6 +823,9 @@ def InstallBoost_Helper(context, force, buildArgs):
     #   simplicity.
     # - Building on MacOS requires v1.82.0 or later for C++17 support starting
     #   with Xcode 15.
+    if IsVisualStudio2026OrGreater():
+        BOOST_VERSION = (1, 90, 0)
+        BOOST_SHA256 = "bdc79f179d1a4a60c10fe764172946d0eeafad65e576a8703c4d89d49949973c"
     if IsVisualStudio2022OrGreater():
         BOOST_VERSION = (1, 86, 0)
         BOOST_SHA256 = "cd20a5694e753683e1dc2ee10e2d1bb11704e65893ebcc6ced234ba68e5d8646"
@@ -952,12 +971,16 @@ def InstallBoost_Helper(context, force, buildArgs):
         if Windows():
             # toolset parameter for Visual Studio documented here:
             # https://github.com/boostorg/build/blob/develop/src/tools/msvc.jam
-            if context.cmakeToolset == "v143":
+            if context.cmakeToolset == "v145":
+                b2_settings.append("toolset=msvc-14.5")
+            elif context.cmakeToolset == "v143":
                 b2_settings.append("toolset=msvc-14.3")
             elif context.cmakeToolset == "v142":
                 b2_settings.append("toolset=msvc-14.2")
             elif context.cmakeToolset == "v141":
                 b2_settings.append("toolset=msvc-14.1")
+            elif IsVisualStudio2026OrGreater():
+                b2_settings.append("toolset=msvc-14.5")
             elif IsVisualStudio2022OrGreater():
                 b2_settings.append("toolset=msvc-14.3")
             elif IsVisualStudio2019OrGreater():
@@ -1229,55 +1252,79 @@ TBB = Dependency("TBB", InstallTBB, "include/tbb/tbb.h")
 ############################################################
 # JPEG
 
-JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/2.0.1.zip"
+JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/3.1.4.1.zip"
 
 def InstallJPEG(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(JPEG_URL, context, force)):
-        extraJPEGArgs = buildArgs
-        if not which("nasm"):
+        extraJPEGArgs = [
+            "-DWITH_TOOLS=FALSE"
+        ]
+
+        if MacOS() and context.targetUniversal:
+            # The libjpeg-turbo build errors out if CMAKE_OSX_ARCHITECTURES is
+            # set to a list of values, which is how we do universal builds.
+            # Per https://github.com/libjpeg-turbo/libjpeg-turbo/issues/512,
+            # this is because the library uses assembly for its SIMD support,
+            # which requires different builds for different architectures.
+            #
+            # However, the library _does_ provide a way to disable that SIMD
+            # support. So we (hackily) patch CMakeLists.txt to disable the
+            # CMAKE_OSX_ARCHITECTURES check, then turn off SIMD support to
+            # avoid the problem mentioned above.
+            #
+            # If we really wanted the SIMD support, we could run the two
+            # individual builds and then create a universal binary manually.
+            # This doesn't seem to be worth the effort since we're only
+            # building this library beacuse OpenImageIO requires it;
+            # OpenUSD doesn't actually use OpenImageIO to read jpeg images.
+            PatchFile("CMakeLists.txt",
+                      [('set(COUNT 1)', 
+                        'if(FALSE)\n' +
+                        'set(COUNT 1)'),
+                       
+                       ('  math(EXPR COUNT "${COUNT}+1")\n' +
+                        'endforeach()',
+                        '  math(EXPR COUNT "${COUNT}+1")\n' +
+                        'endforeach()\n' +
+                        'endif()')],
+                      multiLineMatches=True)
+
+            extraJPEGArgs.append("-DWITH_SIMD=FALSE")
+        elif not which("nasm"):
             extraJPEGArgs.append("-DWITH_SIMD=FALSE")
         
         # For compatibility with CMake 4+
         extraJPEGArgs.append("-DCMAKE_POLICY_VERSION_MINIMUM=3.5")
 
-        RunCMake(context, force, extraJPEGArgs)
-        return os.getcwd()
+        RunCMake(context, force, extraJPEGArgs + buildArgs)
 
 JPEG = Dependency("JPEG", InstallJPEG, "include/jpeglib.h")
         
 ############################################################
 # TIFF
 
-TIFF_URL = "https://gitlab.com/libtiff/libtiff/-/archive/v4.0.7/libtiff-v4.0.7.zip"
+TIFF_URL = "https://gitlab.com/libtiff/libtiff/-/archive/v4.7.1/libtiff-v4.7.1.zip"
 
 def InstallTIFF(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TIFF_URL, context, force)):
-        # libTIFF has a build issue on Windows where tools/tiffgt.c
-        # unconditionally includes unistd.h, which does not exist.
-        # To avoid this, we patch the CMakeLists.txt to skip building
-        # the tools entirely. We do this on Linux and MacOS as well
-        # to avoid requiring some GL and X dependencies.
-        #
-        # We also need to skip building tests, since they rely on 
-        # the tools we've just elided.
-        PatchFile("CMakeLists.txt", 
-                   [("add_subdirectory(tools)", "# add_subdirectory(tools)"),
-                    ("add_subdirectory(test)", "# add_subdirectory(test)")])
+        extraArgs = [
+            "-Dtiff-tools=OFF",
+            "-Dtiff-tests=OFF",
+            "-Dtiff-contrib=OFF",
+            "-Dtiff-docs=OFF"
+        ]
 
         # The libTIFF CMakeScript says the ld-version-script 
         # functionality is only for compilers using GNU ld on 
         # ELF systems or systems which provide an emulation; therefore
         # skipping it completely on mac and windows.
         if MacOS() or Windows():
-            extraArgs = ["-Dld-version-script=OFF"]
-        else:
-            extraArgs = []
-        extraArgs += buildArgs
+            extraArgs.append("-Dld-version-script=OFF")
 
         # For compatibility with CMake 4+
         extraArgs.append("-DCMAKE_POLICY_VERSION_MINIMUM=3.5")
 
-        RunCMake(context, force, extraArgs)
+        RunCMake(context, force, extraArgs + buildArgs)
 
 TIFF = Dependency("TIFF", InstallTIFF, "include/tiff.h")
 
@@ -1470,10 +1517,16 @@ OPENIMAGEIO = Dependency("OpenImageIO", InstallOpenImageIO,
 ############################################################
 # OpenColorIO
 
-OCIO_URL = "https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v2.2.1.zip"
+if MacOS():
+    OCIO_URL = "https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v2.4.2.zip"
+else:
+    OCIO_URL = "https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v2.2.1.zip"
 
 def InstallOpenColorIO(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(OCIO_URL, context, force)):
+    # build ocio dest file name based on the OCIO_URL version
+    ocioDestFileName = os.path.splitext(os.path.basename(OCIO_URL))[0]
+    with CurrentWorkingDirectory(DownloadURL(OCIO_URL, context, force,
+                                             destFileName=ocioDestFileName)):
         extraArgs = ['-DOCIO_BUILD_APPS=OFF',
                      '-DOCIO_BUILD_DOCS=OFF',
                      '-DOCIO_BUILD_TESTS=OFF',
@@ -1699,31 +1752,6 @@ EMBREE = Dependency("Embree", InstallEmbree,
                     "include/embree4/rtcore.h")
 
 ############################################################
-# AnimX
-
-# This GitHub project has no releases, so we fixed on the latest commit as of
-# 2024-02-06 - 5db8ee4, which was committed on 2018-11-05
-ANIMX_URL = "https://github.com/Autodesk/animx/archive/5db8ee416d5fa7050357f498d4dcfaa6ff3f7738.zip"
-
-def InstallAnimX(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(ANIMX_URL, context, force)):
-        # AnimX strangely installs its output to the inst root, rather than the
-        # lib subdirectory.  Fix.
-        PatchFile("src/CMakeLists.txt",
-                  [("LIBRARY DESTINATION .", "LIBRARY DESTINATION lib")])
-
-        extraArgs = [
-            '-DANIMX_BUILD_MAYA_TESTSUITE=OFF',
-            '-DMAYA_64BIT_TIME_PRECISION=ON',
-            '-DANIMX_BUILD_SHARED=ON',
-            '-DANIMX_BUILD_STATIC=OFF'
-        ]
-        RunCMake(context, force, extraArgs)
-
-ANIMX = Dependency("AnimX", InstallAnimX, "include/animx.h")
-
-
-############################################################
 # USD
 
 def InstallUSD(context, force, buildArgs):
@@ -1741,6 +1769,10 @@ def InstallUSD(context, force, buildArgs):
 
         if context.buildPython:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=ON')
+
+            if context.pythonInstallDir is not None:
+                extraArgs.append('-DPXR_PYTHON_INSTALL_DIR={}'
+                                 .format(context.pythonInstallDir))
 
             # Many people on Windows may not have Python libraries with debug
             # symbols (denoted by a '_d') installed. This is the common
@@ -1901,18 +1933,6 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=ON')
         else:
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
-
-        if context.buildMayapyTests:
-            extraArgs.append('-DPXR_BUILD_MAYAPY_TESTS=ON')
-            extraArgs.append('-DMAYAPY_LOCATION="{mayapyLocation}"'
-                             .format(mayapyLocation=context.mayapyLocation))
-        else:
-            extraArgs.append('-DPXR_BUILD_MAYAPY_TESTS=OFF')
-
-        if context.buildAnimXTests:
-            extraArgs.append('-DPXR_BUILD_ANIMX_TESTS=ON')
-        else:
-            extraArgs.append('-DPXR_BUILD_ANIMX_TESTS=OFF')
 
         if Windows() and not context.targetWasm:
             # Increase the precompiled header buffer limit.
@@ -2209,6 +2229,12 @@ subgroup.add_argument("--no-debug-python", dest="debug_python",
                       "Don't define Boost Python Debug if your Python "
                       "library comes with Debugging symbols.")
 
+group.add_argument("--python-install-dir", type=str,
+                   dest="python_install_dir", default=None,
+                   help=("Directory to install USD Python bindings, relative "
+                         "to the install prefix or absolute. Defaults to the "
+                         "Python site-packages directory."))
+
 (NO_IMAGING, IMAGING, USD_IMAGING) = (0, 1, 2)
 
 group = parser.add_argument_group(title="Imaging and USD Imaging Options")
@@ -2324,26 +2350,6 @@ subgroup.add_argument("--onetbb", dest="build_onetbb", action="store_true",
 subgroup.add_argument("--no-onetbb", dest="build_onetbb", action="store_false",
                       help="Build using TBB (default)")
 
-group = parser.add_argument_group(title="Spline Test Options")
-subgroup = group.add_mutually_exclusive_group()
-subgroup.add_argument("--mayapy-tests",
-                      dest="build_mayapy_tests", action="store_true",
-                      default=False,
-                      help="Build mayapy spline tests")
-subgroup.add_argument("--no-mayapy-tests",
-                      dest="build_mayapy_tests", action="store_false",
-                      help="Do not build mayapy spline tests (default)")
-group.add_argument("--mayapy-location", type=str,
-                   help="Directory where mayapy is installed")
-subgroup = group.add_mutually_exclusive_group()
-subgroup.add_argument("--animx-tests",
-                      dest="build_animx_tests", action="store_true",
-                      default=False,
-                      help="Build AnimX spline tests")
-subgroup.add_argument("--no-animx-tests",
-                      dest="build_animx_tests", action="store_false",
-                      help="Do not build AnimX spline tests (default)")
-
 args = parser.parse_args()
 
 class InstallContext:
@@ -2432,7 +2438,7 @@ class InstallContext:
             apple_utils.SetTarget(self)
 
             self.macOSCodesign = False
-            if args.macos_codesign:
+            if args.macos_codesign and not self.targetWasm:
                 self.macOSCodesign = (args.macos_codesign_id or 
                                       apple_utils.GetCodeSignID())
             if apple_utils.IsHostArm() and args.ignore_homebrew:
@@ -2453,9 +2459,11 @@ class InstallContext:
 
         # Optional components
         self.buildTests = (args.build_tests and not embedded)
-        self.buildPython = (args.build_python and 
-                            not embedded and 
+        self.buildPython = (args.build_python and
+                            not embedded and
                             not self.targetWasm)
+
+        self.pythonInstallDir = args.python_install_dir
         self.buildExamples = (args.build_examples and 
                               not embedded)
         self.buildTutorials = (args.build_tutorials and 
@@ -2523,11 +2531,6 @@ class InstallContext:
         # - TBB
         # Note: wasm build requires requires building oneTBB
         self.buildOneTBB = args.build_onetbb or self.targetWasm
-
-        # - Spline Tests
-        self.buildMayapyTests = args.build_mayapy_tests
-        self.mayapyLocation = args.mayapy_location
-        self.buildAnimXTests = args.build_animx_tests
 
     def GetBuildArguments(self, dep):
         return self.buildArgs.get(dep.name.lower(), [])
@@ -2601,9 +2604,6 @@ if context.buildImaging:
                              
 if context.buildUsdview:
     requiredDependencies += [PYOPENGL, PYSIDE]
-
-if context.buildAnimXTests:
-    requiredDependencies += [ANIMX]
 
 # Wasm, Linux and MacOS provide zlib. Skipping it here avoids issues where a host 
 # application loads a different version of zlib than the one we build against.
@@ -2806,22 +2806,6 @@ if PYSIDE in requiredDependencies:
                    .format(" or ".join(set(pyside2Uic+pyside6Uic))))
         sys.exit(1)
 
-if context.buildMayapyTests:
-    if not context.buildPython:
-        PrintError("--mayapy-tests requires --python")
-        sys.exit(1)
-    if not context.buildTests:
-        PrintError("--mayapy-tests requires --tests")
-        sys.exit(1)
-    if not context.mayapyLocation:
-        PrintError("--mayapy-tests requires --mayapy-location")
-        sys.exit(1)
-
-if context.buildAnimXTests:
-    if not context.buildTests:
-        PrintError("--animx-tests requires --tests")
-        sys.exit(1)
-
 # Summarize
 summaryMsg = """
 Building with settings:
@@ -2863,8 +2847,6 @@ summaryMsg += """\
       Python docs:              {buildPythonDocs}
     Documentation               {buildHtmlDocs}
     Tests                       {buildTests}
-      Mayapy Tests:             {buildMayapyTests}
-      AnimX Tests:              {buildAnimXTests}
     Examples                    {buildExamples}
     Tutorials                   {buildTutorials}
     Tools                       {buildTools}
@@ -2950,8 +2932,6 @@ summaryMsg = summaryMsg.format(
     buildAlembic=("On" if context.buildAlembic else "Off"),
     buildDraco=("On" if context.buildDraco else "Off"),
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
-    buildMayapyTests=("On" if context.buildMayapyTests else "Off"),
-    buildAnimXTests=("On" if context.buildAnimXTests else "Off"),
     omittedSchemaGenScripts=(", ".join(omittedSchemaGenScripts)))
 
 Print(summaryMsg)
@@ -2996,8 +2976,13 @@ except Exception as e:
     sys.exit(1)
 
 # Done. Print out a final status message.
+usdCMakeBuildDir = os.path.join(context.buildDir,
+                                os.path.basename(context.usdSrcDir))
+pythonInstallDir = GetCMakeCacheValue(usdCMakeBuildDir, "PXR_PYTHON_INSTALL_DIR")
 requiredInPythonPath = set([
-    os.path.join(context.usdInstDir, "lib", "python")
+    os.path.join(context.usdInstDir, pythonInstallDir)
+    if pythonInstallDir is not None else
+    "<unknown: could not read PXR_PYTHON_INSTALL_DIR from CMake cache>"
 ])
 requiredInPythonPath.update(extraPythonPaths)
 

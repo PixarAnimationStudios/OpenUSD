@@ -1,0 +1,40 @@
+Picking results for camera /pick_cam:
+    For frame 1:
+        Prim at /NoInstancing/RedModel/RedCube
+    For frame 2:
+        Prim at /NoInstancing/RedModel/RedCube
+            which is point-instanced by /PiInstancing/PointInstancerModel/PointInstancer (instanceIndex = 0)
+    For frame 3:
+        Prim at /NoInstancing/RedModel/RedCube
+            which is point-instanced by /PiInstancing/PointInstancerModel/PointInstancer (instanceIndex = 0)
+        Prim at /PiInstancing/PointInstancerModel/PointInstancer/GreenPrototype/GreenCube
+            which is point-instanced by /PiInstancing/PointInstancerModel/PointInstancer (instanceIndex = 1)
+    For frame 4:
+        Prim at /NoInstancing/RedModel/RedCube
+            which is point-instanced by /PiInstancing/PointInstancerModel/PointInstancer (instanceIndex = 2)
+    For frame 5:
+        Prim at /NoInstancing/RedModel/RedCube
+            which is point-instanced by /PiPiInstancing/PointInstancerModel/PointInstancer (instanceIndex = 1)
+    For frame 6:
+        Prim at /NoInstancing/RedModel/RedCube
+            which is point-instanced by /PiInstancing/PointInstancerModel/PointInstancer (instanceIndex = 0)
+                which is point-instanced by /PiPiInstancing/PointInstancerModel/PointInstancer (instanceIndex = 2)
+    For frame 7:
+        Prim at /NoInstancing/RedModel/RedCube
+            which is point-instanced by /PiInstancing/PointInstancerModel/PointInstancer (instanceIndex = 2)
+                which is point-instanced by /PiPiInstancing/PointInstancerModel/PointInstancer (instanceIndex = 2)
+        Prim at /PiInstancing/PointInstancerModel/PointInstancer/GreenPrototype/GreenCube
+            which is point-instanced by /PiInstancing/PointInstancerModel/PointInstancer (instanceIndex = 1)
+                which is point-instanced by /PiPiInstancing/PointInstancerModel/PointInstancer (instanceIndex = 2)
+    For frame 8:
+        Prim at /NiPiPiInstancing/Instance0/PointInstancer/PointInstancer/BlueCube
+            which is point-instanced by /NiPiPiInstancing/Instance0/PointInstancer/PointInstancer (instanceIndex = 0)
+                which is point-instanced by /NiPiPiInstancing/Instance0/PointInstancer (instanceIndex = 1)
+    For frame 9:
+        Prim at /NiPiPiInstancing/Instance0/PointInstancer/PointInstancer/BlueCube
+            which is point-instanced by /NiPiPiInstancing/Instance0/PointInstancer/PointInstancer (instanceIndex = 2)
+                which is point-instanced by /NiPiPiInstancing/Instance0/PointInstancer (instanceIndex = 0)
+    For frame 10:
+        Prim at /NiPiPiInstancing/Instance1/PointInstancer/PointInstancer/BlueCube
+            which is point-instanced by /NiPiPiInstancing/Instance1/PointInstancer/PointInstancer (instanceIndex = 0)
+                which is point-instanced by /NiPiPiInstancing/Instance1/PointInstancer (instanceIndex = 0)

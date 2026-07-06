@@ -94,6 +94,10 @@ public:
     /// Copy constructor.
     USDGEOM_API
     UsdGeomBBoxCache(UsdGeomBBoxCache const &other);
+
+    /// Destructor
+    USDGEOM_API
+    ~UsdGeomBBoxCache();
      
     /// Copy assignment.
     USDGEOM_API

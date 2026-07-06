@@ -20,7 +20,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 static int testCase = 0;
-static bool verbose = true;
+static bool verbose = false;
 
 using Polyline = std::vector<GfVec2d>;
 using Polylines = std::vector<Polyline>;
@@ -210,7 +210,17 @@ static bool VerifySamples(std::ostream& out,
                 const double u = k / 4.0;
                 samplePts[k] = GfLerp(u, prev, next);
                 splinePts[k] = samplePts[k];
-                if (!spline.Eval(splinePts[k][0], &splinePts[k][1])) {
+                bool result;
+                // Evaluate a pre-value at the end of the segment
+                if (k == 4) {
+                    result = spline.EvalPreValue(splinePts[k][0],
+                                                 &splinePts[k][1]);
+                } else {
+                    result = spline.Eval(splinePts[k][0],
+                                         &splinePts[k][1]);
+                }
+
+                if (!result) {
                     // Output to both out and cerr so the message is both
                     // in context and highlighted.
                     std::ostringstream msg;
@@ -274,10 +284,11 @@ static bool VerifySamples(std::ostream& out,
 
                 // Loop until we find a spline point close to the polyline
                 // or return from the function with an error.
-                while (true) {
+                size_t maxIter = 50;
+                while (maxIter-- > 0) {
                     // Correct the values of the intermediate points
                     spline.Eval(testPts[1][0], &testPts[1][1]);
-                    spline.Eval(testPts[3][0], &testPts[3][1]);
+                    spline.EvalPreValue(testPts[3][0], &testPts[3][1]);
 
                     double minErrorSq = std::numeric_limits<double>::infinity();
                     int errIndex = -1;
@@ -359,6 +370,16 @@ static bool VerifySamples(std::ostream& out,
                     testPts[1][0] = GfLerp(0.5, testPts[0][0], testPts[2][0]);
                     testPts[3][0] = GfLerp(0.5, testPts[2][0], testPts[4][0]);
                 }
+
+                if (maxIter <= 0) {
+                    std::ostringstream msg;
+                    msg.precision(std::numeric_limits<double>::digits10+1);
+                    msg << "Error: Sample evaluation did not converge within "
+                        << "50 iterations. ";
+                    out << msg.str() << std::endl;
+                    std::cerr << msg.str() << std::endl;
+                    return false;
+                }
             }
         }
     }
@@ -387,7 +408,7 @@ template <typename FLOAT, typename VERTEX>
 static
 void
 DoOneSample(std::ostream& out,
-            const TsTest_SplineData& data,
+            const std::string& splineName,
             std::string sampleFunc,
             const GfInterval& timeInterval,
             double timeScale,
@@ -411,10 +432,8 @@ DoOneSample(std::ostream& out,
         << valueScale << ", "
         << tolerance << ")\n";
 
-    // Convert the generic spline data to an actual spline
-    const TsTest_TsEvaluator evaluator;
-    const TsSpline spline = evaluator.SplineDataToSpline(data, valueType);
-
+    const TsSpline spline =
+        TsTest_Museum::GetSplineByName(splineName, valueType);
     bool result;
     if (sampleFunc == "Sample") {
         TsSplineSamples<GfVec2d> samples;
@@ -507,7 +526,6 @@ static
 void DoTest(std::ostream& out, const std::string& sampleFunc)
 {
     const std::vector<std::string> names = TsTest_Museum::GetAllNames();
-    const TsTest_TsEvaluator evaluator;
 
     // Assume a 500x500 resolution.
     const int xPixels = 500, yPixels = 500;
@@ -518,10 +536,7 @@ void DoTest(std::ostream& out, const std::string& sampleFunc)
         << std::endl;
 
     for (const std::string& name : names) {
-        const TsTest_SplineData data = TsTest_Museum::GetDataByName(name);
-
-        // Convert the generic spline data to an actual spline
-        const TsSpline spline = evaluator.SplineDataToSpline(data);
+        const TsSpline spline = TsTest_Museum::GetSplineByName(name);
 
         // Figure out the time and approximate value range of the spline
         const TsKnotMap knots = spline.GetKnots();
@@ -542,6 +557,14 @@ void DoTest(std::ostream& out, const std::string& sampleFunc)
         // Calculate a small span that is just the middle 50% of knotSpan
         GfInterval shortSpan(knotSpan.GetMin() + 0.25 * knotSpanSize,
                              knotSpan.GetMax() - 0.25 * knotSpanSize);
+
+        // Calculate a span entirely in the pre-extrap region
+        GfInterval preSpan(knotSpan.GetMin() - 1.5 * knotSpanSize,
+                           knotSpan.GetMin() - 0.5 * knotSpanSize);
+
+        // Calculate a span entirely in the post-extrap region
+        GfInterval postSpan(knotSpan.GetMax() + 0.5 * knotSpanSize,
+                            knotSpan.GetMax() + 1.5 * knotSpanSize);
 
         // We would like to use spline.GetValueRange() but it is
         // "not yet implemented." Estimate by scanning through
@@ -569,16 +592,24 @@ void DoTest(std::ostream& out, const std::string& sampleFunc)
             << std::endl;
 
         // Sample the knots.
-        DoOneSample<float, GfVec2f>(out, data, sampleFunc,
+        DoOneSample<float, GfVec2f>(out, name, sampleFunc,
                                     knotSpan, timeScale, valueScale, 1.0);
 
         // Sample the extended range but with less rigor
-        DoOneSample<GfHalf, GfVec2h>(out, data, sampleFunc,
+        DoOneSample<GfHalf, GfVec2h>(out, name, sampleFunc,
                                      longSpan, timeScale, valueScale, 10.0);
 
         // Sample the short range but more rigor
-        DoOneSample<double, GfVec2d>(out, data, sampleFunc,
+        DoOneSample<double, GfVec2d>(out, name, sampleFunc,
                                      shortSpan, timeScale, valueScale, 0.5);
+
+        // Sample the pre-extrap region
+        DoOneSample<float, GfVec2f>(out, name, sampleFunc,
+                                    preSpan, timeScale, valueScale, 1.0);
+
+        // Sample the post-extrap region
+        DoOneSample<float, GfVec2f>(out, name, sampleFunc,
+                                    postSpan, timeScale, valueScale, 1.0);
     }
 }
 

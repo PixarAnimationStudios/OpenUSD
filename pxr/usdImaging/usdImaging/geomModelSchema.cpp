@@ -60,6 +60,13 @@ UsdImagingGeomModelSchema::GetCardGeometry() const
         UsdImagingGeomModelSchemaTokens->cardGeometry);
 }
 
+HdTokenDataSourceHandle
+UsdImagingGeomModelSchema::GetCardVisibility() const
+{
+    return _GetTypedDataSource<HdTokenDataSource>(
+        UsdImagingGeomModelSchemaTokens->cardVisibility);
+}
+
 HdAssetPathDataSourceHandle
 UsdImagingGeomModelSchema::GetCardTextureXPos() const
 {
@@ -109,6 +116,7 @@ UsdImagingGeomModelSchema::BuildRetained(
         const HdBoolDataSourceHandle &applyDrawMode,
         const HdVec3fDataSourceHandle &drawModeColor,
         const HdTokenDataSourceHandle &cardGeometry,
+        const HdTokenDataSourceHandle &cardVisibility,
         const HdAssetPathDataSourceHandle &cardTextureXPos,
         const HdAssetPathDataSourceHandle &cardTextureYPos,
         const HdAssetPathDataSourceHandle &cardTextureZPos,
@@ -117,8 +125,8 @@ UsdImagingGeomModelSchema::BuildRetained(
         const HdAssetPathDataSourceHandle &cardTextureZNeg
 )
 {
-    TfToken _names[10];
-    HdDataSourceBaseHandle _values[10];
+    TfToken _names[11];
+    HdDataSourceBaseHandle _values[11];
 
     size_t _count = 0;
 
@@ -140,6 +148,11 @@ UsdImagingGeomModelSchema::BuildRetained(
     if (cardGeometry) {
         _names[_count] = UsdImagingGeomModelSchemaTokens->cardGeometry;
         _values[_count++] = cardGeometry;
+    }
+
+    if (cardVisibility) {
+        _names[_count] = UsdImagingGeomModelSchemaTokens->cardVisibility;
+        _values[_count++] = cardVisibility;
     }
 
     if (cardTextureXPos) {
@@ -207,6 +220,14 @@ UsdImagingGeomModelSchema::Builder::SetCardGeometry(
 }
 
 UsdImagingGeomModelSchema::Builder &
+UsdImagingGeomModelSchema::Builder::SetCardVisibility(
+    const HdTokenDataSourceHandle &cardVisibility)
+{
+    _cardVisibility = cardVisibility;
+    return *this;
+}
+
+UsdImagingGeomModelSchema::Builder &
 UsdImagingGeomModelSchema::Builder::SetCardTextureXPos(
     const HdAssetPathDataSourceHandle &cardTextureXPos)
 {
@@ -262,6 +283,7 @@ UsdImagingGeomModelSchema::Builder::Build()
         _applyDrawMode,
         _drawModeColor,
         _cardGeometry,
+        _cardVisibility,
         _cardTextureXPos,
         _cardTextureYPos,
         _cardTextureZPos,
@@ -366,6 +388,31 @@ UsdImagingGeomModelSchema::BuildCardGeometryDataSource(
     }
     // fallback for unknown token
     return HdRetainedTypedSampledDataSource<TfToken>::New(cardGeometry);
+}
+
+/*static*/
+HdTokenDataSourceHandle
+UsdImagingGeomModelSchema::BuildCardVisibilityDataSource(
+    const TfToken &cardVisibility)
+{
+
+    if (cardVisibility == UsdImagingGeomModelSchemaTokens->inherited) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(cardVisibility);
+        return ds;
+    }
+    if (cardVisibility == UsdImagingGeomModelSchemaTokens->simple) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(cardVisibility);
+        return ds;
+    }
+    if (cardVisibility == UsdImagingGeomModelSchemaTokens->full) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(cardVisibility);
+        return ds;
+    }
+    // fallback for unknown token
+    return HdRetainedTypedSampledDataSource<TfToken>::New(cardVisibility);
 } 
 
 PXR_NAMESPACE_CLOSE_SCOPE

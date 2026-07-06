@@ -6,6 +6,8 @@
 //
 #include "hdPrman/rileyConversionSceneIndex.h"
 
+#if PXR_VERSION > 2311
+
 #include "hdPrman/rileyFallbackMaterial.h"
 #include "hdPrman/rileyGeometryInstanceSchema.h"
 #include "hdPrman/rileyGeometryPrototypeSchema.h"
@@ -302,3 +304,5 @@ HdPrman_RileyConversionSceneIndex::_PrimsDirtied(
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION > 2311

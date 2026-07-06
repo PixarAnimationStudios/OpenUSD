@@ -309,7 +309,10 @@ HduiSceneIndexObserverLoggingTreeView::_ObserverModel::_AddedPrimsNoticeModel
             QString(_entries[index.row()].primPath.GetString().c_str()));
     }
 
-    //TODO, represent type token
+    if (index.column() == 1) {
+        return QVariant(
+            QString(_entries[index.row()].primType.GetString().c_str()));
+    }
 
     return QVariant();
 }

@@ -1,0 +1,71 @@
+//
+// Copyright 2025 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_USD_RI_PXR_IMAGING_PXR_CAMERA_PROJECTION_ADAPTER_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_USD_RI_PXR_IMAGING_PXR_CAMERA_PROJECTION_ADAPTER_H
+
+#include "usdRiPxrImaging/api.h"
+
+#include "pxr/imaging/hd/dataSource.h"
+#include "pxr/imaging/hd/dataSourceLocator.h"
+
+#include "pxr/usdImaging/usdImaging/primAdapter.h"
+#include "pxr/usdImaging/usdImaging/sceneIndexPrimAdapter.h"
+#include "pxr/usdImaging/usdImaging/types.h"
+
+#include "pxr/usd/usd/prim.h"
+
+#include "pxr/base/tf/token.h"
+
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+class UsdRiPxrImagingCameraProjectionAdapter
+  : public UsdImagingSceneIndexPrimAdapter
+{
+public:
+    using BaseAdapter = UsdImagingSceneIndexPrimAdapter;
+
+    UsdRiPxrImagingCameraProjectionAdapter();
+
+    USDRIPXRIMAGING_API
+    ~UsdRiPxrImagingCameraProjectionAdapter() override;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Hydra 2.0
+    // ---------------------------------------------------------------------- //
+
+    USDRIPXRIMAGING_API
+    TfTokenVector
+    GetImagingSubprims(
+        const UsdPrim& prim) override;
+
+    USDRIPXRIMAGING_API
+    TfToken
+    GetImagingSubprimType(
+        const UsdPrim& prim,
+        const TfToken& subprim) override;
+
+    USDRIPXRIMAGING_API
+    HdContainerDataSourceHandle
+    GetImagingSubprimData(
+        const UsdPrim& prim,
+        const TfToken& subprim,
+        const UsdImagingDataSourceStageGlobals& stageGlobals) override;
+
+    USDRIPXRIMAGING_API
+    HdDataSourceLocatorSet
+    InvalidateImagingSubprim(
+        const UsdPrim& prim,
+        const TfToken& subprim,
+        const TfTokenVector& properties,
+        UsdImagingPropertyInvalidationType invalidationType) override;
+};
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_USD_RI_PXR_IMAGING_PXR_CAMERA_PROJECTION_ADAPTER_H

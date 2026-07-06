@@ -292,10 +292,15 @@ _GetSdrContextFromShaderType(const TfToken &shaderType)
 {
     static const std::unordered_map<TfToken, TfToken, TfHash> contextMapping({
         { TfToken("displayfilter"), SdrNodeContext->DisplayFilter },
+        { TfToken("energyfilter"), SdrNodeContext->EnergyFilter },
         { TfToken("lightfilter"), SdrNodeContext->LightFilter },
         { TfToken("pixelfilter"), SdrNodeContext->PixelFilter },
         { TfToken("samplefilter"), SdrNodeContext->SampleFilter },
+#if USD_RI_PXR_IMAGING_API_VERSION >= 3
         { TfToken("volumefilter"), SdrNodeContext->VolumeFilter }
+#else
+        { TfToken("volumefilter"), TfToken("volumeFilter") }
+#endif
     });
 
     const auto it = contextMapping.find(shaderType);

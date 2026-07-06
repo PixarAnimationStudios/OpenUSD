@@ -113,7 +113,7 @@ _FileExtensionValidator(const UsdStagePtr& usdStage,
     const std::set<TfToken> validExtensions = {TfToken("usda"),
         TfToken("usdc"), TfToken("usd"), TfToken("usdz"), TfToken("png"),
         TfToken("jpg"), TfToken("jpeg"), TfToken("exr"), TfToken("avif"),
-        TfToken("m4a"), TfToken("mp3"), TfToken("wav"), TfToken("mtlx")};
+        TfToken("m4a"), TfToken("mp3"), TfToken("wav")};
 
     const SdfLayerHandle& rootLayer = usdStage->GetRootLayer();
     const SdfZipFile& zipFile = SdfZipFile::Open(rootLayer->GetRealPath());

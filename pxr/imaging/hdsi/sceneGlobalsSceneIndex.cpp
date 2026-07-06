@@ -67,38 +67,38 @@ _SceneGlobalsDataSource::GetNames()
     return names;
 }
 
+template<typename T>
+static
+HdDataSourceBaseHandle
+_OptionalToRetainedDataSource(const std::optional<T> &value)
+{
+    if (value) {
+        return HdRetainedTypedSampledDataSource<T>::New(*value);
+    } else {
+        return nullptr;
+    }
+}
+
 HdDataSourceBaseHandle
 _SceneGlobalsDataSource::Get(const TfToken &name)
 {
     if (name == HdSceneGlobalsSchemaTokens->activeRenderPassPrim) {
-        SdfPath const &path = _si->_activeRenderPassPrimPath;
-        return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
+        return _OptionalToRetainedDataSource(_si->_activeRenderPassPrim);
     }
     if (name == HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim) {
-        if (_si->_activeRenderSettingsPrimPath) {
-            SdfPath const &path = *_si->_activeRenderSettingsPrimPath;
-            return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
-        }
-        return nullptr;
+        return _OptionalToRetainedDataSource(_si->_activeRenderSettingsPrim);
     }
     if (name == HdSceneGlobalsSchemaTokens->primaryCameraPrim) {
-        if (_si->_primaryCameraPrimPath) {
-            SdfPath const &path = *_si->_primaryCameraPrimPath;
-            return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
-        }
-        return nullptr;
+        return _OptionalToRetainedDataSource(_si->_primaryCameraPrim);
     }
     if (name == HdSceneGlobalsSchemaTokens->currentFrame) {
-        const double timeCode = _si->_time;
-        return HdRetainedTypedSampledDataSource<double>::New(timeCode);
+        return _OptionalToRetainedDataSource(_si->_currentFrame);
     }
     if (name == HdSceneGlobalsSchemaTokens->timeCodesPerSecond) {
-        const double timeCodesPerSecond = _si->_timeCodesPerSecond;
-        return HdRetainedTypedSampledDataSource<double>::New(timeCodesPerSecond);
+        return _OptionalToRetainedDataSource(_si->_timeCodesPerSecond);
     }
     if (name == HdSceneGlobalsSchemaTokens->sceneStateId) {
-        const int sceneStateId = _si->_sceneStateId;
-        return HdRetainedTypedSampledDataSource<int>::New(sceneStateId);
+        return _OptionalToRetainedDataSource(_si->_sceneStateId);
     }
 
     return nullptr;
@@ -122,7 +122,7 @@ void
 HdsiSceneGlobalsSceneIndex::SetActiveRenderPassPrimPath(
     const SdfPath &path)
 {
-    if (_activeRenderPassPrimPath == path) {
+    if (_activeRenderPassPrim == path) {
         return;
     }
 
@@ -130,7 +130,7 @@ HdsiSceneGlobalsSceneIndex::SetActiveRenderPassPrimPath(
     // sceneGlobals.activeRenderSettingsPrim locator (if the render pass points
     // to a valid render settings prim).
     // We keep things simple in this scene index.
-    _activeRenderPassPrimPath = path;
+    _activeRenderPassPrim = path;
 
     if (_IsObserved()) {
         _SendPrimsDirtied({{
@@ -143,11 +143,11 @@ void
 HdsiSceneGlobalsSceneIndex::SetActiveRenderSettingsPrimPath(
     const SdfPath &path)
 {
-    if (_activeRenderSettingsPrimPath == path) {
+    if (_activeRenderSettingsPrim == path) {
         return;
     }
 
-    _activeRenderSettingsPrimPath = path;
+    _activeRenderSettingsPrim = path;
 
     if (_IsObserved()) {
         _SendPrimsDirtied({{
@@ -160,11 +160,11 @@ void
 HdsiSceneGlobalsSceneIndex::SetPrimaryCameraPrimPath(
     const SdfPath &path)
 {
-    if (_primaryCameraPrimPath == path) {
+    if (_primaryCameraPrim == path) {
         return;
     }
 
-    _primaryCameraPrimPath = path;
+    _primaryCameraPrim = path;
 
     if (_IsObserved()) {
         _SendPrimsDirtied({{
@@ -174,15 +174,15 @@ HdsiSceneGlobalsSceneIndex::SetPrimaryCameraPrimPath(
 }
 
 void
-HdsiSceneGlobalsSceneIndex::SetCurrentFrame(double time)
+HdsiSceneGlobalsSceneIndex::SetCurrentFrame(double currentFrame)
 {
     // XXX We might need to add a flag to force dirtying of the Frame locator 
     // even if the time has not changed 
-    if (_IsEqualTimeCode(_time, time)) {
+    if (_currentFrame && _IsEqualTimeCode(*_currentFrame, currentFrame)) {
         return;
     }
 
-    _time = time;
+    _currentFrame = currentFrame;
 
     if (_IsObserved()) {
         _SendPrimsDirtied({{

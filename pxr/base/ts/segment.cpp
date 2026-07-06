@@ -61,6 +61,30 @@ void Ts_Segment::SetInterp(TsInterpMode interpMode, TsCurveType curveType)
     }
 }
 
+TsInterpMode
+Ts_Segment::GetInterpMode() const
+{
+    switch (interp)
+    {
+        case Ts_SegmentInterp::ValueBlock:
+            return TsInterpValueBlock;
+        case Ts_SegmentInterp::Held:
+            return TsInterpHeld;
+        case Ts_SegmentInterp::Linear:
+            return TsInterpLinear;
+        case Ts_SegmentInterp::Hermite:
+        case Ts_SegmentInterp::Bezier:
+            return TsInterpCurve;
+        case Ts_SegmentInterp::PreExtrap:
+        case Ts_SegmentInterp::PostExtrap:
+            TF_VERIFY(false,
+                      "Unable to get interpolation mode from segment "
+                      "interp values Ts_SegmentInterp::PreExtrap,"
+                      "Ts_SegmentInterp::PostExtrap.");
+    }
+    return TsInterpHeld;
+}
+
 
 // This computes a derivative, but only for u == 0 or u == 1 for curved
 // segments. Fortunately, this is all that's required for linear extrapolation.

@@ -279,25 +279,25 @@ QTableView::item:hover:!pressed:selected {
 QTreeView::branch:has-children:!has-siblings:closed,
 QTreeView::branch:closed:has-children:has-siblings {
     border-image: none;
-    image: url(%(RESOURCE_DIR)s/icons/branch-closed.png);
+    image: url(%(RESOURCE_DIR)s/icons/branch-closed.svg);
 }
 
 QTreeView::branch:open:has-children:!has-siblings,
 QTreeView::branch:open:has-children:has-siblings  {
     border-image: none;
-    image: url(%(RESOURCE_DIR)s/icons/branch-open.png);
+    image: url(%(RESOURCE_DIR)s/icons/branch-open.svg);
 }
 
 QTreeView::branch:selected:has-children:!has-siblings:closed,
 QTreeView::branch:selected:closed:has-children:has-siblings {
     border-image: none;
-    image: url(%(RESOURCE_DIR)s/icons/branch-closed-selected.png);
+    image: url(%(RESOURCE_DIR)s/icons/branch-closed-selected.svg);
 }
 
 QTreeView::branch:selected:open:has-children:!has-siblings,
 QTreeView::branch:selected:open:has-children:has-siblings  {
     border-image: none;
-    image: url(%(RESOURCE_DIR)s/icons/branch-open-selected.png);
+    image: url(%(RESOURCE_DIR)s/icons/branch-open-selected.svg);
 }
 
 /* give the tables and trees an alternating dark/clear blue background */
@@ -555,11 +555,11 @@ QMenu::separator {
 
 /* Use a custom submenu arrow so it is not affected by the user's theme. */
 QMenu::right-arrow:enabled {
-    image: url(%(RESOURCE_DIR)s/icons/right-arrow.png);
+    image: url(%(RESOURCE_DIR)s/icons/right-arrow.svg);
 }
 
 QMenu::right-arrow:disabled {
-    image: url(%(RESOURCE_DIR)s/icons/right-arrow-disabled.png);
+    image: url(%(RESOURCE_DIR)s/icons/right-arrow-disabled.svg);
 }
 
 /* *** QComboBox ***

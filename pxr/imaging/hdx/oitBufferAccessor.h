@@ -19,7 +19,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class Hgi;
 
-using HdBufferArrayRangeSharedPtr = 
+using HdBufferArrayRangeSharedPtr =
     std::shared_ptr<class HdBufferArrayRange>;
 
 using HdStRenderPassShaderSharedPtr =
@@ -28,7 +28,16 @@ using HdStRenderPassShaderSharedPtr =
 /// Class for OIT render tasks to access the OIT buffers.
 class HdxOitBufferAccessor {
 public:
+    HDX_API
     static bool IsOitEnabled();
+
+    // This method helps improve the footprint of the OIT buffers by packing the
+    // color, transmission and depth into smaller buffers. This follows the
+    // theory in https://interplayoflight.wordpress.com/2022/06/25/order-independent-transparency-part-1/
+    // This compression results in a 4x reduction in the memory footprint of the
+    // OIT buffers at the cost of accuracy.
+    HDX_API
+    static bool IsOitPackedDepthEnabled();
 
     HDX_API
     HdxOitBufferAccessor(HdTaskContext *ctx);

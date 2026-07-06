@@ -21,6 +21,8 @@ class RixContext;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdPrman_IdMap;
+
 /// A simple framebuffer used to receive display-driver output from PRMan.
 /// This lives in a separate small library so it can be accessible to
 /// both the hdPrman hydra plgin at the d_hydra display driver plugin,
@@ -62,7 +64,7 @@ public:
     using AovDescVector = std::vector<AovDesc>;
     using AovBufferVector = std::vector<AovBuffer>;
 
-    HdPrmanFramebuffer();
+    HdPrmanFramebuffer(HdPrman_IdMap *idMap);
     ~HdPrmanFramebuffer();
 
     /// Find a buffer instance with the given ID.
@@ -84,6 +86,16 @@ public:
                 int cropWidth=0, int cropHeight=0);
 
     void Clear();
+
+    // Post-process the id and id2 attribute AOV buffers back to
+    // Hydra's primId and instanceId AOV values. 
+    void ConvertRmanIdAOVsToHydra(
+        int xmin, int xmax, int ymin, int ymax);
+
+public: // data
+
+    // Access to the HdPrman_IdMap for ID lookup.
+    const HdPrman_IdMap *_idMap = nullptr;
 
     std::mutex mutex;
     AovBufferVector aovBuffers;

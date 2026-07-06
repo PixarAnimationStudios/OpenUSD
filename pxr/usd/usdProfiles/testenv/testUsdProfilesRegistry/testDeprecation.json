@@ -1,0 +1,113 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Profiles": {
+                    "Capabilities": {
+                        "usd": {
+                            "docstring": "Root USD capability",
+                            "name": "USD",
+                            "style": "render",
+                            "subgraph": "Rendering"
+                        },
+                        "hydra.base": {
+                            "predecessors": ["usd"],
+                            "docstring": "Hydra rendering base",
+                            "name": "Hydra Base",
+                            "style": "render",
+                            "subgraph": "Rendering"
+                        },
+                        "hydra.v1": {
+                            "predecessors": ["hydra.base"],
+                            "docstring": "Hydra version 1 (legacy)",
+                            "name": "Hydra V1",
+                            "style": "render",
+                            "subgraph": "Rendering"
+                        },
+                        "hydra.v2": {
+                            "predecessors": [
+                                "hydra.base",
+                                {"name": "hydra.v1", "deprecated": true}
+                            ],
+                            "docstring": "Hydra version 2, replaces v1",
+                            "name": "Hydra V2",
+                            "style": "render",
+                            "subgraph": "Rendering"
+                        },
+                        "shade.base": {
+                            "predecessors": ["usd"],
+                            "docstring": "Shading base",
+                            "name": "Shade Base",
+                            "style": "shade",
+                            "subgraph": "Shading"
+                        },
+                        "shade.look": {
+                            "predecessors": ["shade.base"],
+                            "docstring": "Look-based shading (sunset)",
+                            "name": "Look",
+                            "style": "shade",
+                            "subgraph": "Shading"
+                        },
+                        "shade.material": {
+                            "predecessors": [
+                                "shade.base",
+                                {"name": "shade.look", "deprecated": true}
+                            ],
+                            "docstring": "Material-based shading, replaces Look",
+                            "name": "Material",
+                            "style": "shade",
+                            "subgraph": "Shading"
+                        },
+                        "pipeline.v1": {
+                            "predecessors": ["hydra.base"],
+                            "docstring": "Pipeline version 1 (oldest)",
+                            "name": "Pipeline V1",
+                            "style": "pipe",
+                            "subgraph": "Pipeline"
+                        },
+                        "pipeline.v2": {
+                            "predecessors": [
+                                "hydra.base",
+                                {"name": "pipeline.v1", "deprecated": true}
+                            ],
+                            "docstring": "Pipeline version 2",
+                            "name": "Pipeline V2",
+                            "style": "pipe",
+                            "subgraph": "Pipeline"
+                        },
+                        "pipeline.v3": {
+                            "predecessors": [
+                                "hydra.base",
+                                {"name": "pipeline.v1", "deprecated": true},
+                                {"name": "pipeline.v2", "deprecated": true}
+                            ],
+                            "docstring": "Pipeline version 3, current",
+                            "name": "Pipeline V3",
+                            "style": "pipe",
+                            "subgraph": "Pipeline"
+                        },
+                        "clean.leaf": {
+                            "predecessors": ["hydra.v2", "shade.material"],
+                            "docstring": "Clean leaf with no deprecated predecessors",
+                            "name": "Clean Leaf",
+                            "style": "render",
+                            "subgraph": "Rendering"
+                        }
+                    },
+                    "CapabilityStyles": {
+                        "render": "fill:#e2d9f3,stroke:#6f42c1",
+                        "shade": "fill:#fff3cd,stroke:#856404",
+                        "pipe": "fill:#f8d7da,stroke:#721c24"
+                    },
+                    "CapabilityGroups": {
+                        "Rendering": {"label": "Rendering", "order": 1},
+                        "Shading": {"label": "Shading", "order": 2},
+                        "Pipeline": {"label": "Pipeline", "order": 3}
+                    }
+                }
+            },
+            "Name": "TestDeprecation",
+            "Type": "resource"
+        }
+    ]
+}

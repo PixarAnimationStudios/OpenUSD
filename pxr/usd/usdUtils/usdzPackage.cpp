@@ -46,7 +46,14 @@ protected:
         const std::string& source,
         const std::string& dest) override
     {
-        std::string inPackagePath = _writer.AddFile(source, dest);
+        const ArResolvedPath resolvedPath = ArGetResolver().Resolve(source);
+
+        if (resolvedPath.IsEmpty()) {
+            return false;
+        }
+
+        std::string inPackagePath = 
+            _writer.AddFile(resolvedPath.GetPathString(), dest);
 
         return !inPackagePath.empty();
     }

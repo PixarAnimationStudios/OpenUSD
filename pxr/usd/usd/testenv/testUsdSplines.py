@@ -5,7 +5,7 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 
-from pxr import Usd, Sdf, Ts, Tf
+from pxr import Usd, Sdf, Ts, Tf, Gf
 import unittest, shutil
 
 
@@ -16,26 +16,30 @@ class TestUsdSplines(unittest.TestCase):
         Return a spline for cases where we don't particularly care about the
         contents.
         """
+        convertValueFn = lambda x: x
+        if attrType == Sdf.ValueTypeNames.TimeCode:
+            convertValueFn = lambda x: Gf.TimeCode(x)
+
         typeName = str(attrType)
         spline = Ts.Spline(typeName)
         spline.SetKnot(Ts.Knot(
             typeName = typeName,
             time = 1,
-            value = 8,
-            preValue = 6,
+            value = convertValueFn(8),
+            preValue = convertValueFn(6),
             nextInterp = Ts.InterpCurve,
             postTanWidth = 1.3,
-            postTanSlope = 0.125))
+            postTanSlope = convertValueFn(0.125)))
         spline.SetKnot(Ts.Knot(
             typeName = typeName,
             time = 6,
-            value = 20,
-            preValue = 10,
+            value = convertValueFn(20),
+            preValue = convertValueFn(10),
             nextInterp = Ts.InterpCurve,
             preTanWidth = 1.3,
-            preTanSlope = -0.2,
+            preTanSlope = convertValueFn(-0.2),
             postTanWidth = 2,
-            postTanSlope = 0.3))
+            postTanSlope = convertValueFn(0.3)))
         return spline
 
     def _DoSerializationTest(
@@ -111,8 +115,7 @@ class TestUsdSplines(unittest.TestCase):
         """
         for exhibit in ["TwoKnotBezier", "ComplexParams"]:
 
-            splineData = Ts.TsTest_Museum.GetDataByName(exhibit)
-            spline = Ts.TsTest_TsEvaluator().SplineDataToSpline(splineData)
+            spline = Ts.TsTest_Museum.GetSplineByName(exhibit)
             self._DoSerializationTest(f"Museum.{exhibit}", spline)
 
     def test_Serialization_Complex(self):
@@ -202,11 +205,10 @@ class TestUsdSplines(unittest.TestCase):
             "ValueTypes.Half", spline, attrType)
 
         # Timecode.
-        # Double-typed, and stamped as time-valued.
-        spline = self._GetTestSpline(Sdf.ValueTypeNames.Double)
-        spline.SetTimeValued(True)
+        attrType = Sdf.ValueTypeNames.TimeCode
+        spline = self._GetTestSpline(attrType)
         self._DoSerializationTest(
-            "ValueTypes.TimeCode", spline, Sdf.ValueTypeNames.TimeCode)
+            "ValueTypes.TimeCode", spline, attrType)
 
     def test_Serialization_Loops(self):
         """
@@ -295,6 +297,20 @@ class TestUsdSplines(unittest.TestCase):
         self.assertEqual(spline2, spline)
         self.assertEqual(spline3, spline)
         self.assertNotEqual(sdfSpline, spline)
+
+        # Check that time valued splines don't scale post and pre tan slopes,
+        # but splines that aren't time valued do scale them.
+        splineKnots = spline.GetKnots()
+        sdfSplineKnots = sdfSpline.GetKnots()
+        self.assertEqual(len(splineKnots), len(sdfSplineKnots))
+        for k1, k2 in zip(splineKnots.values(), sdfSplineKnots.values()):
+            assertFn = self.assertEqual if timeValued and scale != 1 \
+                  else self.assertNotEqual
+            if (k1.GetPreTanSlope() != 0):
+                assertFn(k1.GetPreTanSlope(), k2.GetPreTanSlope())
+            
+            if (k2.GetPostTanSlope() != 0):
+                assertFn(k1.GetPostTanSlope(), k2.GetPostTanSlope())
 
     def test_LayerOffsets(self):
         """

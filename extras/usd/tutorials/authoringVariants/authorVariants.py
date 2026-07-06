@@ -6,10 +6,6 @@
 # https://openusd.org/license.
 #
 
-from __future__ import print_function
-
-# Assumes that $USD_INSTALL_ROOT/lib/python is in sys.path
-
 from pxr import Usd, UsdGeom
 
 stage = Usd.Stage.Open('HelloWorld.usda')

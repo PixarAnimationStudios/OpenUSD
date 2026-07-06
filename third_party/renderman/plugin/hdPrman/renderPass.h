@@ -56,6 +56,8 @@ private:
 
     HdPrman_RenderSettings* _GetDrivingRenderSettingsPrim() const;
 
+    bool _IsConvergedInteractive() const;
+
     std::shared_ptr<HdPrman_RenderParam> _renderParam;
     bool _converged;
     int _lastRenderedVersion;

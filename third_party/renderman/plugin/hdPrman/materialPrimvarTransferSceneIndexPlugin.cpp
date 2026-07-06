@@ -17,7 +17,9 @@
 #include "pxr/imaging/hd/primvarSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hdsi/materialPrimvarTransferSceneIndex.h"
+#if PXR_VERSION >= 2405
 #include "pxr/imaging/hdsi/version.h"
+#endif
 #include "pxr/usd/usdRi/rmanUtilities.h"
 #include "pxr/usd/sdf/listOp.h"
 

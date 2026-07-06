@@ -452,8 +452,83 @@ int main(int argc, char *argv[])
         std::cout << "...OK" << std::endl;
     }
 
-    //
+    //-------------------------------------------------------------------------
+    // if we depend on /PrimToRemove/Child
+    {
+        SdfPath resultPath("/World/dependsOnRemovedProc/Child");
+        std::cout << "testing dependencies of " << resultPath
+            << " following deactivation of /PrimToRemove" << std::endl;
 
+        observer.Clear();
+
+        UsdPrim prim = stage->GetPrimAtPath(SdfPath("/PrimToRemove"));
+        prim.SetActive(false);
+
+        engine->Render(stage->GetPseudoRoot(), params);
+
+        bool resultPrimDirtied = false;
+
+        for (const auto &e : observer.GetEvents()) {
+            if (e.eventType ==
+                        _RecordingSceneIndexObserver::EventType_PrimDirtied) {
+                if (e.primPath == resultPath) {
+                    resultPrimDirtied = true;
+                    break;
+                }
+            }
+        }
+
+        TF_AXIOM(resultPrimDirtied);
+        std::cout << "...OK" << std::endl;
+
+        std::cout << "testing dependency of " << resultPath
+            << " following reactivation of /PrimToRemove" << std::endl;
+
+        observer.Clear();
+        prim.SetActive(true);
+
+        engine->Render(stage->GetPseudoRoot(), params);
+
+        resultPrimDirtied = false;
+
+        for (const auto &e : observer.GetEvents()) {
+            if (e.eventType ==
+                        _RecordingSceneIndexObserver::EventType_PrimDirtied) {
+                if (e.primPath == resultPath) {
+                    resultPrimDirtied = true;
+                    break;
+                }
+            }
+        }
+
+        TF_AXIOM(resultPrimDirtied);
+        std::cout << "...OK" << std::endl;
+
+        std::cout << "testing dependency of " << resultPath
+            << " on /PrimToRemove/Child is being tracked" << std::endl;
+
+        observer.Clear();
+
+        UsdPrim child = stage->GetPrimAtPath(SdfPath("/PrimToRemove/Child"));
+        child.GetAttribute(TfToken("xformOp:translate")).Set(GfVec3d(1.f));
+
+        engine->Render(stage->GetPseudoRoot(), params);
+
+        resultPrimDirtied = false;
+
+        for (const auto &e : observer.GetEvents()) {
+            if (e.eventType ==
+                        _RecordingSceneIndexObserver::EventType_PrimDirtied) {
+                if (e.primPath == resultPath) {
+                    resultPrimDirtied = true;
+                    break;
+                }
+            }
+        }
+
+        TF_AXIOM(resultPrimDirtied);
+        std::cout << "...OK" << std::endl;
+    }
 
     if (mark.IsClean()) {
         std::cout << "OK" << std::endl;

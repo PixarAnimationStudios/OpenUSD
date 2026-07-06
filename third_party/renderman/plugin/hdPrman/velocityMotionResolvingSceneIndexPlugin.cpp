@@ -282,7 +282,7 @@ protected:
             _name == HdInstancerTokens->scale
 #elif HD_API_VERSION < 67
             _name == HdInstancerTokens->scale ||
-            _name == HdInstancerTokens->instancerScales
+            _name == HdInstancerTokens->instanceScales
 #else
             _name == HdInstancerTokens->instanceScales
 #endif
@@ -356,7 +356,7 @@ protected:
             _name == HdInstancerTokens->scale
 #elif HD_API_VERSION < 67
             _name == HdInstancerTokens->scale ||
-            _name == HdInstancerTokens->instancerScales
+            _name == HdInstancerTokens->instanceScales
 #else
             _name == HdInstancerTokens->instanceScales
 #endif
@@ -1069,7 +1069,7 @@ HdsiVelocityMotionResolvingSceneIndex::_PrimsDirtied(
 #endif
 #if HD_API_VERSION >= 56
         , HdPrimvarsSchema::GetDefaultLocator()
-            .Append(HdInstancerTokens->instanceTranslations),
+            .Append(HdInstancerTokens->instanceTranslations)
         , HdPrimvarsSchema::GetDefaultLocator()
             .Append(HdInstancerTokens->instanceScales)
 #endif
@@ -1082,8 +1082,11 @@ HdsiVelocityMotionResolvingSceneIndex::_PrimsDirtied(
             .Append(HdInstancerTokens->scale)
 #endif
 #if HD_API_VERSION >= 56
-        , HdPrimvarsSchema::GetDefaultLocator()
-            .Append(HdInstancerTokens->instanceRotations),
+#if HD_API_VERSION < 67
+        ,
+#endif
+        HdPrimvarsSchema::GetDefaultLocator()
+            .Append(HdInstancerTokens->instanceRotations)
         , HdPrimvarsSchema::GetDefaultLocator()
             .Append(HdInstancerTokens->instanceScales)
 #endif

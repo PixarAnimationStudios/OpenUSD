@@ -20,7 +20,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT, true,
                       "Use Vulkan multi draw indirect");
-TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_BUILTIN_BARYCENTRICS, false,
+TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_BUILTIN_BARYCENTRICS, true,
                       "Use Vulkan built in barycentric coordinates");
 TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_NATIVE_INTEROP, true,
                       "Enable native interop with OpenGL (if device supports)");
@@ -395,6 +395,7 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         shaderDrawParametersEnabled);
      _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect,
         multiDrawIndirectEnabled);
+    _SetFlag(HgiDeviceCapabilitiesForceEarlyFragmentTest, true);
 }
 
 HgiVulkanCapabilities::~HgiVulkanCapabilities() = default;

@@ -53,6 +53,17 @@ public:
     //
     const TfToken computeExpression;
 
+    // Computes the value received across a single connection that is owned by 
+    // the provider attribute and targets another attribute of the same type  
+    // that is valid, i.e. it is active, loaded, defined, and non-abstract (see 
+    // EsfAttribute::IsValid()).
+    //
+    // This computation does not currently support providers that own multiple 
+    // connections or a single connection that targets any object other than a 
+    // valid attribute. 
+    //
+    const TfToken computeConnectedValue;
+
 private:
     Exec_PrivateBuiltinComputationTokens(
         Exec_BuiltinComputationRegistry &registry);

@@ -49,6 +49,7 @@
 #include "pxr/imaging/hd/cubeSchema.h"
 #include "pxr/imaging/hd/cylinderSchema.h"
 #include "pxr/imaging/hd/displayFilterSchema.h"
+#include "pxr/imaging/hd/energyFilterSchema.h"
 #include "pxr/imaging/hd/extComputationInputComputationSchema.h"
 #include "pxr/imaging/hd/extComputationOutputSchema.h"
 #include "pxr/imaging/hd/extComputationPrimvarSchema.h"
@@ -154,11 +155,10 @@ HdSceneIndexAdapterSceneDelegate::HdSceneIndexAdapterSceneDelegate(
 , _cachedDirtyBits(0)
 , _cachedPrimType()
 {
-
+    // The registered name is typically used in UI tools like the HSD.
+    // Make it simple to read.
     std::string registeredName = ArchStringPrintf(
-        "delegate adapter: %s @ %s",
-            delegateID.GetString().c_str(),
-            parentIndex->GetInstanceName().c_str());
+        "[Terminal SI] %s", parentIndex->GetInstanceName().c_str());
 
     HdSceneIndexNameRegistry::GetInstance().RegisterNamedSceneIndex(
         registeredName, inputSceneIndex);
@@ -667,50 +667,9 @@ HdSceneIndexAdapterSceneDelegate::GetMeshTopology(SdfPath const &id)
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneIndexPrim prim = _GetInputPrim(id);
-
-    HdMeshSchema meshSchema = HdMeshSchema::GetFromParent(prim.dataSource);
-
-
-    HdMeshTopologySchema meshTopologySchema = meshSchema.GetTopology();
-    if (!meshTopologySchema.IsDefined()) {
-        return HdMeshTopology();
-    }
-
-    HdIntArrayDataSourceHandle faceVertexCountsDataSource =
-            meshTopologySchema.GetFaceVertexCounts();
-
-    HdIntArrayDataSourceHandle faceVertexIndicesDataSource =
-            meshTopologySchema.GetFaceVertexIndices();
-
-    if (!faceVertexCountsDataSource || !faceVertexIndicesDataSource) {
-        return HdMeshTopology();
-    }
-
-    TfToken scheme = PxOsdOpenSubdivTokens->none;
-    if (HdTokenDataSourceHandle schemeDs =
-            meshSchema.GetSubdivisionScheme()) {
-        scheme = schemeDs->GetTypedValue(0.0f);
-    }
-
-    VtIntArray holeIndices;
-    if (HdIntArrayDataSourceHandle holeDs =
-            meshTopologySchema.GetHoleIndices()) {
-        holeIndices = holeDs->GetTypedValue(0.0f);
-    }
-
-    TfToken orientation = PxOsdOpenSubdivTokens->rightHanded;
-    if (HdTokenDataSourceHandle orientDs =
-            meshTopologySchema.GetOrientation()) {
-        orientation = orientDs->GetTypedValue(0.0f);
-    }
-
     HdMeshTopology meshTopology(
-        scheme,
-        orientation,
-        faceVertexCountsDataSource->GetTypedValue(0.0f),
-        faceVertexIndicesDataSource->GetTypedValue(0.0f),
-        holeIndices);
+        HdMeshSchema::GetFromParent(
+            _GetInputPrim(id).dataSource));
 
     if (_geomSubsetParents.find(id) != _geomSubsetParents.end()) {
         const TfToken purpose =
@@ -2136,6 +2095,21 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
     if (prim.primType == HdPrimTypeTokens->displayFilter) {
         if (key == HdDisplayFilterSchemaTokens->resource) {
             return _GetRenderTerminalResource<HdDisplayFilterSchema>(prim);
+        }
+        return VtValue();
+    }
+
+    // energyFilter use of Get().
+    if (prim.primType == HdPrimTypeTokens->energyFilter) {
+        if (key == HdEnergyFilterSchemaTokens->resource) {
+            return _GetRenderTerminalResource<HdEnergyFilterSchema>(prim);
+        }
+        // enabled, lpe, order are stored as flat attributes in the container.
+        if (prim.dataSource) {
+            if (const HdSampledDataSourceHandle ds =
+                    HdSampledDataSource::Cast(prim.dataSource->Get(key))) {
+                return ds->GetValue(0.0f);
+            }
         }
         return VtValue();
     }

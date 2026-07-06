@@ -1,0 +1,77 @@
+Loading @TrickyMultipleRelocationsAndClasses3/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </_class_CharGroup>
+
+Prim Stack:
+    root.usda            /_class_CharGroup
+
+Child names:
+     ['RefChar']
+
+------------------------------------------------------------------------
+Results for composing </_class_CharGroup/RefChar>
+
+Prim Stack:
+    root.usda            /_class_CharGroup/RefChar
+
+Child names:
+     ['RefTask']
+
+------------------------------------------------------------------------
+Results for composing </_class_CharGroup/RefChar/RefTask>
+
+Prim Stack:
+    root.usda            /_class_CharGroup/RefChar/RefTask
+
+------------------------------------------------------------------------
+Results for composing </_class_Task>
+
+Prim Stack:
+    root.usda            /_class_Task
+
+------------------------------------------------------------------------
+Results for composing </CharGroup>
+
+Prim Stack:
+    root.usda            /CharGroup
+    root.usda            /_class_CharGroup
+    ref.usda             /RefCharGroup
+    ref.usda             /_class_CharGroup
+
+Child names:
+     ['Char']
+
+Prohibited child names:
+     ['RefChar']
+
+------------------------------------------------------------------------
+Results for composing </CharGroup/Char>
+
+Prim Stack:
+    root.usda            /CharGroup/Char
+    root.usda            /_class_CharGroup/RefChar
+    ref.usda             /RefCharGroup/RefChar
+    ref.usda             /_class_CharGroup/RefChar
+
+Child names:
+     ['Task']
+
+Prohibited child names:
+     ['RefTask']
+
+------------------------------------------------------------------------
+Results for composing </CharGroup/Char/Task>
+
+Prim Stack:
+    root.usda            /CharGroup/Char/Task
+    root.usda            /_class_Task
+    root.usda            /_class_CharGroup/RefChar/RefTask
+    ref.usda             /RefCharGroup/RefChar/RefTask
+    ref.usda             /_class_Task
+    ref.usda             /_class_CharGroup/RefChar/RefTask
+

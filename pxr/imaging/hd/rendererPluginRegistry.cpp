@@ -5,6 +5,8 @@
 // https://openusd.org/license.
 //
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
+
+#include "pxr/imaging/hd/rendererCreateArgsSchema.h"
 #include "pxr/imaging/hd/rendererPlugin.h"
 #include "pxr/imaging/hd/rendererPluginHandle.h"
 #include "pxr/imaging/hd/pluginRenderDelegateUniqueHandle.h"
@@ -31,17 +33,9 @@ HdRendererPluginRegistry::HdRendererPluginRegistry()
 
 HdRendererPluginRegistry::~HdRendererPluginRegistry() = default;
 
-TfToken 
-HdRendererPluginRegistry::GetDefaultPluginId(bool gpuEnabled)
-{
-    HdRendererCreateArgs rendererCreateArgs;
-    rendererCreateArgs.gpuEnabled = gpuEnabled;
-    return GetDefaultPluginId(rendererCreateArgs);
-}
-
-TfToken 
+TfToken
 HdRendererPluginRegistry::GetDefaultPluginId(
-    HdRendererCreateArgs const &rendererCreateArgs)
+    HdRendererCreateArgsSchema const &rendererCreateArgs)
 {
     // Get all the available plugins to see if any of them is supported on this
     // platform and use the first one as the default.

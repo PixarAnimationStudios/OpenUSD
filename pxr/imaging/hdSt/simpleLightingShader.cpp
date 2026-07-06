@@ -569,6 +569,14 @@ HdStSimpleLightingShader::_AllocateShadowTextures(
             HdBorderColorOpaqueWhite, /*enableCompare*/true, 
             HdCmpFuncLEqual, /*maxAnisotropy*/16};
     for (uint32_t i = numShadowPasses; i < GetMaxShadows(); i++) {
+        const HdStTextureObjectSharedPtr& oldTexture =
+            _shadowTextureHandle.handles[i] ?
+            _shadowTextureHandle.handles[i]->GetTextureObject() : nullptr;
+        if (oldTexture &&
+            (oldTexture->GetTextureIdentifier() ==
+            _shadowBufferFallback->GetBuffer()->GetTextureIdentifier(false))) {
+            continue;
+        }
         _shadowTextureHandle.handles[i] =
             resourceRegistry->AllocateTextureHandle(
                 _shadowBufferFallback->GetBuffer()->GetTextureIdentifier(false),

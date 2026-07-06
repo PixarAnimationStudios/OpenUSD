@@ -65,7 +65,7 @@ TsKnot::TsKnot(TsKnot &&other)
       _customData(std::move(other._customData))
 {
     // Leave other with valid data.
-    const TfType valueType = _proxy->GetValueType();
+    const TfType valueType = GetValueType();
     other._data = Ts_KnotData::Create(valueType);
     other._proxy = Ts_KnotDataProxy::Create(other._data, valueType);
 }
@@ -102,7 +102,7 @@ TsKnot& TsKnot::operator=(TsKnot &&other)
     _customData = std::move(other._customData);
 
     // Leave other with valid data.
-    const TfType valueType = _proxy->GetValueType();
+    const TfType valueType = GetValueType();
     other._data = Ts_KnotData::Create(valueType);
     other._proxy = Ts_KnotDataProxy::Create(other._data, valueType);
 
@@ -175,7 +175,7 @@ bool TsKnot::SetValue(const VtValue value)
         return false;
     }
 
-    _proxy->SetValue(value);
+    _proxy->SetValue(_ToStorage(value));
     return true;
 }
 
@@ -186,7 +186,9 @@ bool TsKnot::GetValue(VtValue* const valueOut) const
         return false;
     }
 
-    _proxy->GetValue(valueOut);
+    VtValue value;
+    _proxy->GetValue(&value);
+    *valueOut = _FromStorage(value);
     return true;
 }
 
@@ -206,7 +208,7 @@ bool TsKnot::SetPreValue(const VtValue value)
     }
 
     _data->dualValued = true;
-    _proxy->SetPreValue(value);
+    _proxy->SetPreValue(_ToStorage(value));
     return true;
 }
 
@@ -217,14 +219,17 @@ bool TsKnot::GetPreValue(VtValue* const valueOut) const
         return false;
     }
 
+
+    VtValue value;
     if (_data->dualValued)
     {
-        _proxy->GetPreValue(valueOut);
+        _proxy->GetPreValue(&value);
     }
     else
     {
-        _proxy->GetValue(valueOut);
+        _proxy->GetValue(&value);
     }
+    *valueOut = _FromStorage(value);
 
     return true;
 }
@@ -277,7 +282,7 @@ bool TsKnot::SetPreTanSlope(const VtValue slope)
         return false;
     }
 
-    _proxy->SetPreTanSlope(slope);
+    _proxy->SetPreTanSlope(_ToStorage(slope));
     return true;
 }
 
@@ -288,7 +293,9 @@ bool TsKnot::GetPreTanSlope(VtValue* const slopeOut) const
         return false;
     }
 
-    _proxy->GetPreTanSlope(slopeOut);
+    VtValue value;
+    _proxy->GetPreTanSlope(&value);
+    *slopeOut = _FromStorage(value);
     return true;
 }
 
@@ -330,7 +337,7 @@ bool TsKnot::SetPostTanSlope(const VtValue slope)
         return false;
     }
 
-    _proxy->SetPostTanSlope(slope);
+    _proxy->SetPostTanSlope(_ToStorage(slope));
     return true;
 }
 
@@ -341,7 +348,9 @@ bool TsKnot::GetPostTanSlope(VtValue* const slopeOut) const
         return false;
     }
 
-    _proxy->GetPostTanSlope(slopeOut);
+    VtValue value;
+    _proxy->GetPostTanSlope(&value);
+    *slopeOut = _FromStorage(value);
     return true;
 }
 
@@ -466,8 +475,8 @@ bool TsKnot::_CheckInParamVt(const VtValue value) const
     }
 
     bool ok = false;
-    TsDispatchToValueTypeTemplate<_ValueChecker>(
-        value.GetType(), value, &ok);
+    TsDispatchToStorageValueTypeTemplate<_ValueChecker>(
+        value.GetType(), _ToStorage(value), &ok);
     if (!ok)
     {
         return false;
@@ -486,6 +495,32 @@ bool TsKnot::_CheckOutParamVt(VtValue* const valueOut) const
 
     return true;
 }
+
+VtValue TsKnot::_ToStorage(const VtValue& value) const
+{
+    if (_proxy->valueType == Ts_GetType<GfTimeCode>()) {
+        const GfTimeCode& tc = value.UncheckedGet<GfTimeCode>();
+        return VtValue(double(tc));
+    }
+    return value;
+}
+
+VtValue TsKnot::_FromStorage(const VtValue& value) const
+{
+    if (_proxy->valueType == Ts_GetType<GfTimeCode>()) {
+        if (!TF_VERIFY(value.IsHolding<double>(),
+                       "Time valued knots must have underlying "
+                       "stored doubles"))
+        {
+            return VtValue();
+        }
+
+        const double& d = value.UncheckedGet<double>();
+        return VtValue(GfTimeCode(d));
+    }
+    return value;
+}
+
 
 #define GET_VT_VALUE(method) [&](){ VtValue v; knot.method(&v); return v; }()
 

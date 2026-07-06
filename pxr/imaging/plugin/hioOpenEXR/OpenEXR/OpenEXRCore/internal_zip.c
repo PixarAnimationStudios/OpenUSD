@@ -367,7 +367,7 @@ apply_zip_impl (exr_encode_pipeline_t* encode)
 
     if (rv == EXR_ERR_SUCCESS)
     {
-        if (compbufsz > encode->packed_bytes)
+        if (compbufsz >= encode->packed_bytes)
         {
             memcpy (
                 encode->compressed_buffer,

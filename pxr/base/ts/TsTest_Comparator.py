@@ -19,14 +19,14 @@ class TsTest_Comparator(object):
         self._grapher = TsTest_Grapher(title, widthPx, heightPx)
         self._haveCompared = False
 
-    def AddSpline(self, name, splineData, samples, baked = None):
+    def AddSpline(self, name, spline, samples, baked = None):
         """
         Must always add at least two splines.  The first two will be compared.
         Additional splines will be graphed, but will not participate in the
         diff.
         """
         self._sampleSets.append(samples)
-        self._grapher.AddSpline(name, splineData, samples, baked)
+        self._grapher.AddSpline(name, spline, samples, baked)
 
     def Display(self):
         self._Compare()

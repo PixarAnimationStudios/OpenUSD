@@ -35,6 +35,7 @@
 #include <math.h>
 #include <memory>
 #include <mutex>
+#include <new>
 #include <ostream>
 #include <set>
 #include <sstream>
@@ -50,6 +51,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 #include <vector>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"

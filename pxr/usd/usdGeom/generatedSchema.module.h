@@ -37,4 +37,5 @@ TF_WRAP(UsdGeomSubset);
 TF_WRAP(UsdGeomModelAPI);
 TF_WRAP(UsdGeomMotionAPI);
 TF_WRAP(UsdGeomXformCommonAPI);
+TF_WRAP(UsdGeomBackPlateAPI);
 TF_WRAP(UsdGeomTokens);

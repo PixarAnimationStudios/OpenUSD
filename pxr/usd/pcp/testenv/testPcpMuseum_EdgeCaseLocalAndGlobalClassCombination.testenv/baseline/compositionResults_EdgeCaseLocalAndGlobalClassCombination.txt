@@ -1,0 +1,163 @@
+Loading @EdgeCaseLocalAndGlobalClassCombination/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Model_1>
+
+Prim Stack:
+    root.usda            /Model_1
+    root.usda            /GlobalParent
+    model.usda           /Model
+    model.usda           /GlobalParent
+
+Child names:
+     ['Instance', '_class_InGlobal', '_class_InModel']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/Instance>
+
+Prim Stack:
+    root.usda            /Model_1/Instance
+    root.usda            /Model_1/_class_InGlobal
+    root.usda            /GlobalParent/Instance
+    root.usda            /GlobalParent/_class_InGlobal
+    root.usda            /Model_1/_class_InModel
+    root.usda            /GlobalParent/_class_InModel
+    model.usda           /Model/Instance
+    model.usda           /Model/_class_InGlobal
+    model.usda           /GlobalParent/Instance
+    model.usda           /GlobalParent/_class_InGlobal
+    model.usda           /Model/_class_InModel
+    model.usda           /GlobalParent/_class_InModel
+
+------------------------------------------------------------------------
+Results for composing </Model_1/_class_InGlobal>
+
+Prim Stack:
+    root.usda            /Model_1/_class_InGlobal
+    root.usda            /GlobalParent/_class_InGlobal
+    root.usda            /Model_1/_class_InModel
+    root.usda            /GlobalParent/_class_InModel
+    model.usda           /Model/_class_InGlobal
+    model.usda           /GlobalParent/_class_InGlobal
+    model.usda           /Model/_class_InModel
+    model.usda           /GlobalParent/_class_InModel
+
+------------------------------------------------------------------------
+Results for composing </Model_1/_class_InModel>
+
+Prim Stack:
+    root.usda            /Model_1/_class_InModel
+    root.usda            /GlobalParent/_class_InModel
+    model.usda           /Model/_class_InModel
+    model.usda           /GlobalParent/_class_InModel
+
+------------------------------------------------------------------------
+Results for composing </OtherModel_1>
+
+Prim Stack:
+    root.usda            /OtherModel_1
+    root.usda            /GlobalParent
+    model.usda           /OtherModel
+    model.usda           /GlobalParent
+
+Child names:
+     ['Instance', '_class_InGlobal', '_class_InModel']
+
+------------------------------------------------------------------------
+Results for composing </OtherModel_1/Instance>
+
+Prim Stack:
+    root.usda            /OtherModel_1/Instance
+    root.usda            /OtherModel_1/_class_InGlobal
+    root.usda            /Model/_class_InModel
+    root.usda            /OtherModel_1/_class_InModel
+    root.usda            /GlobalParent/Instance
+    root.usda            /GlobalParent/_class_InGlobal
+    model.usda           /OtherModel/Instance
+    model.usda           /OtherModel/_class_InGlobal
+    model.usda           /OtherModel/_class_InModel
+    model.usda           /GlobalParent/Instance
+    model.usda           /GlobalParent/_class_InGlobal
+    model.usda           /Model/_class_InModel
+    model.usda           /GlobalParent/_class_InModel
+
+------------------------------------------------------------------------
+Results for composing </OtherModel_1/_class_InGlobal>
+
+Prim Stack:
+    root.usda            /OtherModel_1/_class_InGlobal
+    root.usda            /GlobalParent/_class_InGlobal
+    root.usda            /Model/_class_InModel
+    root.usda            /GlobalParent/_class_InModel
+    model.usda           /OtherModel/_class_InGlobal
+    model.usda           /GlobalParent/_class_InGlobal
+    model.usda           /Model/_class_InModel
+    model.usda           /GlobalParent/_class_InModel
+
+------------------------------------------------------------------------
+Results for composing </OtherModel_1/_class_InModel>
+
+Prim Stack:
+    root.usda            /OtherModel_1/_class_InModel
+    root.usda            /GlobalParent/_class_InModel
+    model.usda           /OtherModel/_class_InModel
+    model.usda           /GlobalParent/_class_InModel
+
+------------------------------------------------------------------------
+Results for composing </GlobalParent>
+
+Prim Stack:
+    root.usda            /GlobalParent
+
+Child names:
+     ['Instance', '_class_InGlobal', '_class_InModel']
+
+------------------------------------------------------------------------
+Results for composing </GlobalParent/Instance>
+
+Prim Stack:
+    root.usda            /GlobalParent/Instance
+
+------------------------------------------------------------------------
+Results for composing </GlobalParent/_class_InGlobal>
+
+Prim Stack:
+    root.usda            /GlobalParent/_class_InGlobal
+
+------------------------------------------------------------------------
+Results for composing </GlobalParent/_class_InModel>
+
+Prim Stack:
+    root.usda            /GlobalParent/_class_InModel
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.usda            /Model
+
+Child names:
+     ['Instance', '_class_InGlobal', '_class_InModel']
+
+------------------------------------------------------------------------
+Results for composing </Model/Instance>
+
+Prim Stack:
+    root.usda            /Model/Instance
+
+------------------------------------------------------------------------
+Results for composing </Model/_class_InGlobal>
+
+Prim Stack:
+    root.usda            /Model/_class_InGlobal
+
+------------------------------------------------------------------------
+Results for composing </Model/_class_InModel>
+
+Prim Stack:
+    root.usda            /Model/_class_InModel
+

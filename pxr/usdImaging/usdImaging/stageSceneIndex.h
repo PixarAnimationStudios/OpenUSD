@@ -23,12 +23,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define USDIMAGING_STAGE_SCENE_INDEX_TOKENS \
-    (includeUnloadedPrims)                  \
-
-TF_DECLARE_PUBLIC_TOKENS(UsdImagingStageSceneIndexTokens, USDIMAGING_API,
-                         USDIMAGING_STAGE_SCENE_INDEX_TOKENS);
-
 using UsdImagingPrimAdapterSharedPtr =
     std::shared_ptr<class UsdImagingPrimAdapter>;
 class UsdImaging_AdapterManager;
@@ -39,8 +33,8 @@ TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
 /// A scene index consuming a UsdStage.
 ///
 /// This scene index does not perform any transformations such as
-/// flattening visibility or transforms or aggregate native
-/// instances. Use UsdImagingCreateSceneIndices to get a chain
+/// flattening visibility or transforms or aggregating native
+/// instances. Use UsdImagingSceneIndex to get a chain
 /// of scene indices to resolve those.
 ///
 class UsdImagingStageSceneIndex : public HdSceneIndexBase
@@ -63,33 +57,36 @@ public:
     USDIMAGING_API
     SdfPathVector GetChildPrimPaths(const SdfPath & primPath) const override;
 
-    // ------------------------------------------------------------------------
-    // App-facing API
+    /// \name App-facing API
+    /// @{
 
-    // Set the USD stage to pull data from. Note that this will delete all
-    // scene index prims and reset stage global data.
+    /// Set the USD stage to pull data from. Note that this will delete all
+    /// scene index prims and reset stage global data.
+    ///
     USDIMAGING_API
     void SetStage(UsdStageRefPtr stage);
 
-    // Set the time, and call PrimsDirtied for any time-varying attributes.
-    //
-    // PrimsDirtied is only called if the time is different from the last call
-    // or forceDirtyingTimeDeps is true.
+    /// Set the time, and call PrimsDirtied for any time-varying attributes.
+    ///
+    /// PrimsDirtied is only called if the time is different from the last call
+    /// or forceDirtyingTimeDeps is true.
     USDIMAGING_API
     void SetTime(UsdTimeCode time, bool forceDirtyingTimeDeps = false);
 
-    // Return the current time.
+    /// Return the current time.
     USDIMAGING_API
     UsdTimeCode GetTime() const;
 
-    // Apply queued stage edits to imaging scene.
-    // If the USD stage is edited while the scene index is pulling from it,
-    // those edits get queued and deferred.  Calling ApplyPendingUpdates will
-    // turn resync requests into PrimsAdded/PrimsRemoved, and property changes
-    // into PrimsDirtied.
+    /// Apply queued stage edits to imaging scene.
+    /// If the USD stage is edited while the scene index is pulling from it,
+    /// those edits get queued and deferred.  Calling ApplyPendingUpdates will
+    /// turn resync requests into PrimsAdded/PrimsRemoved, and property changes
+    /// into PrimsDirtied.
     USDIMAGING_API
     void ApplyPendingUpdates();
 
+    /// @}
+    
 private:
     USDIMAGING_API
     UsdImagingStageSceneIndex(HdContainerDataSourceHandle const &inputArgs);

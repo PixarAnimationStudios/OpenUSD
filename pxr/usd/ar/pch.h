@@ -16,7 +16,6 @@
 #include <sys/mount.h>
 #include <sys/param.h>
 #include <unistd.h>
-#include <mach/mach_time.h>
 #endif
 #if defined(ARCH_OS_LINUX)
 #include <glob.h>
@@ -24,7 +23,6 @@
 #include <sys/param.h>
 #include <sys/statfs.h>
 #include <unistd.h>
-#include <x86intrin.h>
 #endif
 #if defined(ARCH_OS_WINDOWS)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -34,11 +32,11 @@
 #include <Windows.h>
 #include <intrin.h>
 #include <io.h>
-#include <stringapiset.h>
 #endif
 #include <algorithm>
 #include <any>
 #include <atomic>
+#include <chrono>
 #include <cinttypes>
 #include <cmath>
 #include <complex>
@@ -81,10 +79,10 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 #include <vector>
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/enumerable_thread_specific.h>
-#include <tbb/spin_rw_mutex.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

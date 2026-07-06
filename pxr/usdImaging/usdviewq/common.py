@@ -98,13 +98,15 @@ class KeyboardShortcuts(ConstantsGroup):
 class PropertyViewIndex(ConstantsGroup):
     TYPE, NAME, VALUE = range(3)
 
-ICON_DIR_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'icons')
+def GetIconPath(name):
+    iconDir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'icons')
+    return os.path.join(iconDir, name)
 
 # We use deferred loading because icons can't be constructed before
 # application initialization time.
 _icons = {}
-def _DeferredIconLoad(path):
-    fullPath = os.path.join(ICON_DIR_ROOT, path)
+def _DeferredIconLoad(name):
+    fullPath = GetIconPath(name)
     try:
         icon = _icons[fullPath]
     except KeyError:
@@ -113,13 +115,13 @@ def _DeferredIconLoad(path):
     return icon
 
 class PropertyViewIcons(ConstantsGroup):
-    ATTRIBUTE                  = lambda: _DeferredIconLoad('usd-attr-plain-icon.png')
-    ATTRIBUTE_WITH_CONNECTIONS = lambda: _DeferredIconLoad('usd-attr-with-conn-icon.png')
-    RELATIONSHIP               = lambda: _DeferredIconLoad('usd-rel-plain-icon.png')
-    RELATIONSHIP_WITH_TARGETS  = lambda: _DeferredIconLoad('usd-rel-with-target-icon.png')
-    TARGET                     = lambda: _DeferredIconLoad('usd-target-icon.png')
-    CONNECTION                 = lambda: _DeferredIconLoad('usd-conn-icon.png')
-    COMPOSED                   = lambda: _DeferredIconLoad('usd-cmp-icon.png')
+    ATTRIBUTE                  = lambda: _DeferredIconLoad('usd-attr-plain-icon.svg')
+    ATTRIBUTE_WITH_CONNECTIONS = lambda: _DeferredIconLoad('usd-attr-with-conn-icon.svg')
+    RELATIONSHIP               = lambda: _DeferredIconLoad('usd-rel-plain-icon.svg')
+    RELATIONSHIP_WITH_TARGETS  = lambda: _DeferredIconLoad('usd-rel-with-target-icon.svg')
+    TARGET                     = lambda: _DeferredIconLoad('usd-target-icon.svg')
+    CONNECTION                 = lambda: _DeferredIconLoad('usd-conn-icon.svg')
+    COMPOSED                   = lambda: _DeferredIconLoad('usd-cmp-icon.svg')
 
 class PropertyViewDataRoles(ConstantsGroup):
     ATTRIBUTE = "Attr"

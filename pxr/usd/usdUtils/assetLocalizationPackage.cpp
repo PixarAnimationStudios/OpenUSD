@@ -10,11 +10,13 @@
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
 
-#include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/usdFileFormat.h"
+#include "pxr/usd/sdf/variableExpression.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdShade/udimUtils.h"
 #include "pxr/usd/usdUtils/assetLocalization.h"
 #include "pxr/usd/usdUtils/assetLocalizationDelegate.h"
 #include "pxr/usd/usdUtils/assetLocalizationPackage.h"
@@ -49,7 +51,32 @@ UsdUtils_DirectoryRemapper::Remap(
             TfStringPrintf("%zu", _nextDirectoryNum++);
     }
     
-    return TfStringCatPaths(insertStatus.first->second, baseName);
+    const std::string remappedPath = 
+         TfStringCatPaths(insertStatus.first->second, baseName);
+    
+    if (insertStatus.second) {
+        _remappedDirectories.insert(remappedPath);
+    }
+
+    return remappedPath;
+}
+
+bool 
+UsdUtils_AssetLocalizationPackage::PathShouldResolve(const std::string &path) {
+    // Remapped paths are not expected to resolve due to the fact that they
+    // are synthesized for use within the package that is currently being
+    // built.
+    if (_directoryRemapper.PathIsRemapped(path)) {
+        return false;
+    }
+
+    // Raw Udim paths are not expected to resolve because they are only a
+    // template for a number of potential concrete paths.
+    if (UsdShadeUdimUtils::IsUdimIdentifier(path)) {
+        return false;
+    }
+
+    return UsdUtils_LocalizationClient::PathShouldResolve(path);
 }
 
 bool 
@@ -77,7 +104,7 @@ UsdUtils_AssetLocalizationPackage::Build(
         ? TfGetBaseName(_rootLayer->GetRealPath()) 
         : firstLayerName;
 
-    UsdUtils_LocalizationContext context(&_delegate);
+    UsdUtils_LocalizationContext context(this);
     context.SetMetadataFilteringEnabled(true);
     context.SetDependenciesToSkip(_dependenciesToSkip);
 
@@ -193,7 +220,13 @@ UsdUtils_AssetLocalizationPackage::_AddDependenciesToPackage(
     const std::string destDirectory = TfGetPathName(packagePath);
 
     if (depInfo.GetDependencies().empty()) {
-        _AddDependencyToPackage(layer, depInfo.GetAssetPath(), destDirectory);
+        // The user processing function may have introduced a variable
+        // expression. If that is the case we do not want to attempt to add
+        // this file into the package.
+        if (!SdfVariableExpression::IsExpression(depInfo.GetAssetPath())) {
+            _AddDependencyToPackage(layer, depInfo.GetAssetPath(), 
+                destDirectory);
+        }
     }
     else {
         for (const auto &dependency : depInfo.GetDependencies()) {
@@ -431,8 +464,7 @@ UsdUtils_AssetLocalizationPackage::_AddLayerToPackage(
     SdfLayerRefPtr sourceLayer,
     const std::string &destPath)
 {
-    SdfLayerConstHandle layer = 
-        _delegate.GetLayerUsedForWriting(sourceLayer);
+    SdfLayerConstHandle layer = GetLayerUsedForWriting(sourceLayer);
     TF_DEBUG(USDUTILS_CREATE_PACKAGE).Msg(
         ".. adding layer @%s@ to package at path '%s'.\n", 
         layer->GetIdentifier().c_str(), destPath.c_str());
@@ -507,7 +539,7 @@ UsdUtils_AssetLocalizationPackage::_AddLayerToPackage(
             // layers used for layer modifications need to be cleared to
             // prevent a mapped file descriptor from being held after
             // export to temporary file.
-            _delegate.ClearLayerUsedForWriting(sourceLayer);
+            ClearLayerUsedForWriting(sourceLayer);
             TfDeleteFile(tmpLayerExportPath);
         }
     }

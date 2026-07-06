@@ -46,17 +46,10 @@ HdRendererPlugin::CreateRenderDelegate(HdRenderSettingsMap const& settingsMap)
 HdRendererPlugin::~HdRendererPlugin() = default;
 
 HdPluginRenderDelegateUniqueHandle
-HdRendererPlugin::CreateDelegate(HdRenderSettingsMap const& settingsMap)
+HdRendererPlugin::CreateDelegate(
+    HdRenderSettingsMap const& settingsMap)
 {
-    HdRendererCreateArgs rendererCreateArgs;
-    if (const auto iter =
-            settingsMap.find(HdRenderSettingsTokens->rendererCreateArgs);
-        iter != settingsMap.end()) {
-        rendererCreateArgs =
-            iter->second.GetWithDefault<HdRendererCreateArgs>();
-    }
-
-    if (!IsSupported(rendererCreateArgs)) {
+    if (!IsSupported(HdRendererCreateArgsSchema(nullptr))) {
         return nullptr;
     }
 
@@ -90,9 +83,12 @@ HdRendererPlugin::CreateDelegate(HdRenderSettingsMap const& settingsMap)
 HdPluginRendererUniqueHandle
 HdRendererPlugin::CreateRenderer(
     HdSceneIndexBaseRefPtr const &sceneIndex,
-    HdContainerDataSourceHandle const &rendererCreateArgs)
+    const HdRendererCreateArgsSchema &rendererCreateArgs)
 {
     if (!IsSupported(rendererCreateArgs)) {
+        TF_CODING_ERROR(
+            "Clients are supposed to check HdRendererPlugin::IsSupported(...) "
+            "before calling HdRendererPlugin::CreateRenderer.");
         return nullptr;
     }
 
@@ -129,48 +125,8 @@ HdRendererPlugin::GetDisplayName() const
     return desc.displayName;
 }
 
-bool
-HdRendererPlugin::IsSupported(bool gpuEnabled) const
-{
-    HdRendererCreateArgs rendererCreateArgs;
-    rendererCreateArgs.gpuEnabled = gpuEnabled;
-    return IsSupported(rendererCreateArgs);
-}
-
-static
-HdRendererCreateArgs
-_ToRendererCreateArgs(
-    const HdRendererCreateArgsSchema &schema)
-{
-    HdRendererCreateArgs rendererCreateArgs;
-
-    if (HdBoolDataSourceHandle const ds = schema.GetGpuEnabled()) {
-        rendererCreateArgs.gpuEnabled = ds->GetTypedValue(0.0f);
-    }
-
-    if (auto const ds =
-            HdTypedSampledDataSource<Hgi*>::Cast(
-                schema
-                    .GetDrivers()
-                    .Get(HdRendererCreateArgsSchemaTokens->hgi))) {
-        rendererCreateArgs.hgi = ds->GetTypedValue(0.0f);
-    }
-
-    return rendererCreateArgs;
-}
-
-bool
-HdRendererPlugin::IsSupported(
-    HdContainerDataSourceHandle const &rendererCreateArgs,
-    std::string * const reasonWhyNot) const
-{
-    return IsSupported(
-        _ToRendererCreateArgs(HdRendererCreateArgsSchema(rendererCreateArgs)),
-        reasonWhyNot);
-}
-
 HdContainerDataSourceHandle
-HdRendererPlugin::GetSceneIndexInputArgs() const
+HdRendererPlugin::GetSceneIndexCreateArgs() const
 {
     return {};
 }
@@ -178,31 +134,19 @@ HdRendererPlugin::GetSceneIndexInputArgs() const
 std::unique_ptr<HdRenderer>
 HdRendererPlugin::_CreateRenderer(
     HdSceneIndexBaseRefPtr const &sceneIndex,
-    HdContainerDataSourceHandle const &rendererCreateArgs)
+    const HdRendererCreateArgsSchema &rendererCreateArgs)
 {
-    return _CreateRendererFromRenderDelegate(sceneIndex, rendererCreateArgs);
-}
-
-static
-HdRenderSettingsMap
-_ToRenderSettings(
-    const HdRendererCreateArgsSchema &schema)
-{
-    HdRenderSettingsMap result;
-    result[HdRenderSettingsTokens->rendererCreateArgs] =
-        _ToRendererCreateArgs(schema);
-    return result;
+    return _CreateRendererFromRenderDelegate(
+        sceneIndex,
+        rendererCreateArgs);
 }
 
 std::unique_ptr<HdRenderer>
 HdRendererPlugin::_CreateRendererFromRenderDelegate(
     HdSceneIndexBaseRefPtr const &sceneIndex,
-    HdContainerDataSourceHandle const &rendererCreateArgs)
+    const HdRendererCreateArgsSchema &rendererCreateArgs)
 {
-    HdPluginRenderDelegateUniqueHandle renderDelegate =
-        CreateDelegate(
-            _ToRenderSettings(
-                HdRendererCreateArgsSchema(rendererCreateArgs)));
+    HdPluginRenderDelegateUniqueHandle renderDelegate = CreateDelegate();
     if (!renderDelegate) {
         return nullptr;
     }

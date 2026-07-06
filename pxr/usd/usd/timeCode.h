@@ -71,12 +71,12 @@ TF_DECLARE_PUBLIC_TOKENS(UsdTimeCodeTokens, USD_API, USD_TIME_CODE_TOKENS);
 ///
 class UsdTimeCode {
 public:
-    /// Construct with optional time value.  Impilicitly convert from double.
+    /// Construct with optional time value.  Implicitly convert from double.
     constexpr UsdTimeCode(double t = 0.0) noexcept : _value(t) {}
 
-    /// Construct and implicitly cast from SdfTimeCode.
-    constexpr UsdTimeCode(const SdfTimeCode &sdfTimeCode) noexcept 
-        : _value(sdfTimeCode.GetValue()) {}
+    /// Construct and implicitly cast from GfTimeCode.
+    constexpr UsdTimeCode(const GfTimeCode &timeCode) noexcept 
+        : _value(timeCode.GetValue()) {}
 
     /// Produces a UsdTimeCode representing a pre-time at \p t.
     ///
@@ -85,9 +85,9 @@ public:
         return UsdTimeCode(t, /*isPreTime=*/true);
     }
 
-    /// Produces a UsdTimeCode representing a pre-time using SdfTimeCode \p 
+    /// Produces a UsdTimeCode representing a pre-time using GfTimeCode \p 
     /// timeCode.
-    static constexpr UsdTimeCode PreTime(const SdfTimeCode& timeCode) noexcept {
+    static constexpr UsdTimeCode PreTime(const GfTimeCode& timeCode) noexcept {
         return UsdTimeCode(timeCode.GetValue(), /*isPreTime=*/true);
     }
 

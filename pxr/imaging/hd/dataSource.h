@@ -23,9 +23,46 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// HdDataSourceAllocator
+///
+/// HdDataSourceAllocator simply wraps std::allocator. It exists to allow
+/// std::allocate_shared to access the private constructor, by being
+/// declared friend.
+template <typename U>
+struct HdDataSourceAllocator
+{
+    using value_type = U;
+    template <typename V>
+    struct rebind { using other = HdDataSourceAllocator<V>; };
+    HdDataSourceAllocator() = default;
+    template <typename V>
+    HdDataSourceAllocator(const HdDataSourceAllocator<V>&) noexcept { }
+    U* allocate(size_t n) { return std::allocator<U>{ }.allocate(n); }
+    void deallocate(U* p, size_t n) noexcept
+    { std::allocator<U>{ }.deallocate(p, n); }
+    template <typename... Args>
+    void construct(U*p, Args&&... args)
+    { ::new(static_cast<void*>(p)) U(std::forward<Args>(args)...); }
+    void destroy(U* p) noexcept { p->~U(); }
+};
+
+// XXX: clang is strict about qualified friend declarations, and will not
+// forward PXR_NS -> PXR_INTERNAL_NS when present. But PXR_INTERNAL_NS is not
+// always defined in all builds, so we can't just use that, either.
+#if defined(PXR_INTERNAL_NS)
+#define _HD_ALLOCATOR_FRIEND \
+    template <typename> friend struct PXR_INTERNAL_NS::HdDataSourceAllocator;
+#else
+#define _HD_ALLOCATOR_FRIEND \
+    template <typename> friend struct PXR_NS::HdDataSourceAllocator;
+#endif
+
 /// HD_DECLARE_DATASOURCE_ABSTRACT
 /// Used for non-instantiable classes, this defines a set of functions
-/// for manipulating handles to this type of datasource.
+/// for manipulating handles to this type of datasource. This macro should
+/// only be used for data source types that are not instantiable! Use
+/// HD_DECLARE_DATASOURCE for all instantiable types, including
+/// template classes!
 #define HD_DECLARE_DATASOURCE_ABSTRACT(type) \
     using Handle =  std::shared_ptr<type>; \
     using AtomicHandle = Handle; \
@@ -47,22 +84,33 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// HD_DECLARE_DATASOURCE
 /// Used for instantiable classes, this defines functions for manipulating
 /// and allocating handles to this type of datasource.
-/// 
+///
 /// Use of this macro in derived classes is important to make sure that
-/// core and client code share the same handle type and allocator.
+/// core and client code share the same handle type and allocator. Use this
+/// macro for all instantiable data source types, including template classes!
 #define HD_DECLARE_DATASOURCE(type) \
     HD_DECLARE_DATASOURCE_ABSTRACT(type) \
+    _HD_ALLOCATOR_FRIEND \
     template <typename ... Args> \
     static Handle New(Args&& ... args) { \
-        return Handle(new type(std::forward<Args>(args) ... )); \
+        return std::allocate_shared<type>( \
+            PXR_NS::HdDataSourceAllocator<type>{ }, \
+            std::forward<Args>(args)...); \
     }
 
 /// HD_DECLARE_DATASOURCE_INITIALIZER_LIST_NEW
 /// Used for declaring a `New` function for datasource types that have a
-/// constructor that takes an initializer_list<T>.
+/// constructor that takes an initializer_list<...>. This macro allows using
+/// braced-initialization of the initializer_list<...> like ::New({foo, bar}),
+/// since the standard variadic ::New above cannot resolve such calls.
+/// This macro should only be used after HD_DECLARE_DATASOURCE, never before or
+/// without it, and only on data sources that have a constructor that takes
+/// initializer_list<>
 #define HD_DECLARE_DATASOURCE_INITIALIZER_LIST_NEW(type, T) \
     static Handle New(std::initializer_list<T> initList) { \
-        return Handle(new type(initList)); \
+        return std::allocate_shared<type>( \
+            PXR_NS::HdDataSourceAllocator<type>{ }, \
+            (initList)); \
     }
 
 #define HD_DECLARE_DATASOURCE_HANDLES(type) \
@@ -73,17 +121,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Represents an object which can produce scene data.
 /// \sa HdContainerDataSource HdVectorDataSource HdSampledDataSource
-/// Note that most derived classes will have standard API for allocation 
-/// and handle manipulation. Derived classes that don't support instantiation 
-/// should use HD_DECLARE_DATASOURCE_ABSTRACT, which omits the 
+/// Note that most derived classes will have standard API for allocation
+/// and handle manipulation. Derived classes that don't support instantiation
+/// should use HD_DECLARE_DATASOURCE_ABSTRACT, which omits the
 /// definition of ::New().
 ///
 class HdDataSourceBase
 {
 public:
     HD_DECLARE_DATASOURCE_ABSTRACT(HdDataSourceBase)
-    
-    HD_API 
+
+    HD_API
     virtual ~HdDataSourceBase() = 0;
 };
 
@@ -113,7 +161,7 @@ public:
     /// identified by \p locator, which may be at any depth. Returns
     /// \p container itself on an empty locator, or null if \p locator doesn't
     /// identify a valid descendant.
-    HD_API 
+    HD_API
     static HdDataSourceBaseHandle Get(
         const Handle &container,
         const HdDataSourceLocator &locator);
@@ -129,7 +177,7 @@ HD_DECLARE_DATASOURCE_HANDLES(HdContainerDataSource);
 /// responsible for providing cache invalidation, if necessary.
 ///
 class HdVectorDataSource : public HdDataSourceBase
-{ 
+{
 public:
     HD_DECLARE_DATASOURCE_ABSTRACT(HdVectorDataSource);
 
@@ -178,13 +226,13 @@ public:
     /// call returns \p false, this value is uniform across the shutter window
     /// and the caller should call \p GetValue(0) to get that uniform value.
     virtual bool GetContributingSampleTimesForInterval(
-        Time startTime, 
+        Time startTime,
         Time endTime,
         std::vector<Time> * outSampleTimes) = 0;
 
 protected:
     friend class Hd_SampledDataSourceDefaultValueAccessor;
-    
+
     HD_API
     virtual VtValue _GetDefaultValue();
 };
@@ -227,8 +275,8 @@ class HdBlockDataSource : public HdDataSourceBase
 {
 public:
     HD_DECLARE_DATASOURCE(HdBlockDataSource);
-
-    HdBlockDataSource(){}
+protected:
+    HdBlockDataSource() = default;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(HdBlockDataSource);

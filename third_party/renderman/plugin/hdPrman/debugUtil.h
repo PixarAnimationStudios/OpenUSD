@@ -14,6 +14,7 @@
 #include "Riley.h"
 #include "RiTypesHelper.h"
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -40,7 +41,7 @@ std::string
 RtParamListToString(const RtParamList& params, const int indent = 0);
 
 std::string
-GetCallerAsString(const TfCallContext& ctx);
+GetCallerAsString(const TfCallContext& ctx, size_t offset = 0);
 
 template <typename T>
 std::string

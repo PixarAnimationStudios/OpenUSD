@@ -5,13 +5,15 @@
 // https://openusd.org/license.
 //
 #include "statsListener.h"
+#include <cstdio>
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdPrmanStatsListener::HdPrmanStatsListener(const std::string& name,
-    bool isInteractive)
+    HdPrman_RenderParam* param)
     : Listener(name),
-      m_isInteractive(isInteractive),
+      m_param(param),
       m_progressMetricName("/rman/renderer@progress"),
       m_progressMetricId(),
       m_progressMetricMissing(true),
@@ -67,10 +69,14 @@ HdPrmanStatsListener::EventCallback(stats::Session&, stats::ContextId, stats::Me
     if (metricId == m_progressMetricId) {
         m_currentProgress = *reinterpret_cast<const float*>(payload);
 
-        if (!m_isInteractive) {
+        if (m_param && !m_param->IsInteractive()) {
             // XXX Placeholder to simulate RenderMan's built-in writeProgress
             // option, until either HdPrman can pass that in, and/or it gets
             // replaced with Roz-based client-side progress reporting
+            // XXX: If we start seeing duplicates (here + prman), it's because
+            // we also send progressMode to prman via the riley->Render() call.
+            // Currently, that pathway may not be fully supported, or may be
+            // supported only in XPU.
             printf("R90000  %3i%%\n", static_cast<int>(m_currentProgress));
         }
     }

@@ -1066,6 +1066,8 @@ private:
 
 };
 
+// SdfPath supports value transforms.
+VT_VALUE_TYPE_CAN_TRANSFORM(SdfPath);
 
 /// \class SdfPathAncestorsRange
 ///

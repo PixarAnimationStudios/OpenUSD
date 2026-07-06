@@ -15,6 +15,9 @@
 #include "hdPrman/rileyDisplacementPrim.h"
 #include "hdPrman/rileyDisplayPrim.h"
 #include "hdPrman/rileyDisplayFilterPrim.h"
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+#include "hdPrman/rileyEnergyFilterPrim.h"
+#endif
 #include "hdPrman/rileyGeometryInstancePrim.h"
 #include "hdPrman/rileyGeometryPrototypePrim.h"
 #include "hdPrman/rileyGlobalsPrim.h"
@@ -90,6 +93,9 @@ class _RileyPrimTypePriorityFunctor
             primType == HdPrmanRileyPrimTypeTokens->renderOutput ||
             primType == HdPrmanRileyPrimTypeTokens->integrator||
             primType == HdPrmanRileyPrimTypeTokens->displayFilter||
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+            primType == HdPrmanRileyPrimTypeTokens->energyFilter||
+#endif
             primType == HdPrmanRileyPrimTypeTokens->sampleFilter||
             primType == HdPrmanRileyPrimTypeTokens->camera) {
             return 1;
@@ -163,6 +169,15 @@ HdPrman_RileyPrimFactory::CreatePrim(
             observer,
             _renderParam);
     }
+
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+    if (entry.primType == HdPrmanRileyPrimTypeTokens->energyFilter) {
+        return std::make_shared<HdPrman_RileyEnergyFilterPrim>(
+            _GetPrimSource(observer, entry.primPath),
+            observer,
+            _renderParam);
+    }
+#endif
 
     if (entry.primType == HdPrmanRileyPrimTypeTokens->displayFilter) {
         return std::make_shared<HdPrman_RileyDisplayFilterPrim>(

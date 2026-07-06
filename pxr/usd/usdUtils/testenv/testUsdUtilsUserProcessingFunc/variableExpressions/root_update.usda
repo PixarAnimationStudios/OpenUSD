@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    expressionVariables = {
+        string SUBLAYER = "./sub.usda"
+        string UPDATED = "./updated.usda"
+    }
+
+    subLayers = [
+        @`"${SUBLAYER}"`@
+    ]
+)
+
+def "World"
+{
+
+}

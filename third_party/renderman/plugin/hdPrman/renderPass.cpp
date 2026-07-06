@@ -10,6 +10,7 @@
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/debugUtil.h"
 #include "hdPrman/framebuffer.h"
+#include "hdPrman/idMap.h"
 #include "hdPrman/renderBuffer.h"
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/renderParam.h"
@@ -68,6 +69,16 @@ HdPrman_RenderPass::~HdPrman_RenderPass() = default;
 bool
 HdPrman_RenderPass::IsConverged() const
 {
+    if (_converged) {
+        return true;
+    }
+
+    HdPrmanRenderDelegate * const renderDelegate =
+        static_cast<HdPrmanRenderDelegate*>(
+            GetRenderIndex()->GetRenderDelegate());
+    if (renderDelegate->IsInteractive()) {
+        return _IsConvergedInteractive();
+    }
     return _converged;
 }
 
@@ -517,8 +528,33 @@ HdPrman_RenderPass::_Execute(
     if (driveWithRenderSettingsPrim) {
         HdPrman_RenderParam * const param = _renderParam.get();
 
-        const bool success =
-            rsPrim->UpdateAndRender(GetRenderIndex(), isInteractive, param);
+        if (isInteractive) {
+            // Interactive, render settings-driven mode
+            const bool needsRestart = 
+            _renderParam->sceneVersion.load() != _lastRenderedVersion;
+
+            if (needsRestart) {
+                rsPrim->UpdateAndRender(GetRenderIndex(), isInteractive, param);
+                _lastRenderedVersion = _renderParam->sceneVersion.load();
+            }
+            
+            _converged = _IsConvergedInteractive();
+            if (_converged) {
+                // End() destroys Riley and calls DspyImageClose()
+                
+                //_renderParam->End(); 
+                riley::Riley * const riley = _renderParam->AcquireRiley();
+                if (!riley) {
+                    return;
+                }
+                _renderParam->GetRenderViewContext().DeleteRenderView(riley);
+            }
+            return;
+        }
+
+        // non-interactive mode
+        bool success =
+                rsPrim->UpdateAndRender(GetRenderIndex(), isInteractive, param);
 
         // Mark all the associated RenderBuffers as converged since 
         // they are not being used in favor of the RenderProducts from the
@@ -529,18 +565,18 @@ HdPrman_RenderPass::_Execute(
             if (passHasAovBindings) {
                 _MarkBindingsAsConverged(aovBindings, GetRenderIndex());
             }
-            _converged = true;
 
+#if PXR_VERSION >= 2308
             // Write the id info for batch renders if the render pass contains 
             // an idMap product.
-            if (!isInteractive) {
-                TfToken idMapProductName =
-                    _renderParam->GetIdMapProductName(rsPrim);
-                if (!idMapProductName.IsEmpty()) {
-                    _renderParam->WriteIdMap(
-                        GetRenderIndex(), idMapProductName);
-                }
+            TfToken idMapProductName =
+                _renderParam->GetIdMapProductName(rsPrim);
+            if (!idMapProductName.IsEmpty()) {
+                _renderParam->GetIdMap()->WriteIdMap(
+                        idMapProductName.GetString());
             }
+#endif
+            _converged = true;
 
             return;
         }
@@ -912,10 +948,7 @@ HdPrman_RenderPass::_RestartRenderIfNecessary(
     // is also implicitly calling AcquireRiley.
     _lastRenderedVersion = _renderParam->sceneVersion.load();
 
-    _converged =
-        (_renderParam->GetActiveIntegratorId() ==
-         _renderParam->GetIntegratorId())
-        && !_renderParam->IsRendering();
+    _converged = _IsConvergedInteractive();
 }
 
 void
@@ -970,6 +1003,14 @@ HdPrman_RenderPass::_GetDrivingRenderSettingsPrim() const
         _renderParam->GetDrivingRenderSettingsPrimPath()));
 }
 #endif
+
+bool
+HdPrman_RenderPass::_IsConvergedInteractive() const
+{
+    return (_renderParam->GetActiveIntegratorId() ==
+            _renderParam->GetIntegratorId())
+            && !_renderParam->IsRendering();
+}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

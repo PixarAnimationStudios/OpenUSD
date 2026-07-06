@@ -153,11 +153,12 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     // Update _maxLights if necessary.
     bool maxLightsUpdated = false;
     if (renderDelegate->GetRenderSettingsVersion() != _settingsVersion) {
-        maxLightsUpdated = true;
+        const size_t previousMaxLights = _maxLights;
         _maxLights = size_t(
             renderIndex.GetRenderDelegate()->GetRenderSetting<int>(
                 HdStRenderSettingsTokens->maxLights, 16));
         _lightingShader->SetMaxLights(_maxLights);
+        maxLightsUpdated = _maxLights != previousMaxLights;
 
         // Update dome light textures max resolution.
         _lightingShader->SetDomeLightCubemapTargetMemory(

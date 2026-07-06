@@ -5,7 +5,7 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 
-from pxr import Usd,Sdf
+from pxr import Usd, Gf
 
 import unittest
 
@@ -39,9 +39,9 @@ class TestUsdTimeCodeRepr(unittest.TestCase):
         self.assertEqual(timeRepr, 'Usd.TimeCode()')
         self.assertEqual(eval(timeRepr), timeCode)
 
-        # Verify that a code constructed from a default Sdf.TimeCode is 
+        # Verify that a code constructed from a default Gf.TimeCode is 
         # represented by the default Usd.TimeCode
-        timeCode = Usd.TimeCode(Sdf.TimeCode())
+        timeCode = Usd.TimeCode(Gf.TimeCode())
         timeRepr = repr(timeCode)
         self.assertEqual(timeRepr, 'Usd.TimeCode()')
         self.assertEqual(eval(timeRepr), timeCode)
@@ -55,8 +55,8 @@ class TestUsdTimeCodeRepr(unittest.TestCase):
         self.assertEqual(timeRepr, 'Usd.TimeCode(123.0)')
         self.assertEqual(eval(timeRepr), timeCode)
 
-        # Verify that a numeric time code is constructable from an Sdf.TimeCode 
-        timeCode = Usd.TimeCode(Sdf.TimeCode(12))
+        # Verify that a numeric time code is constructable from an Gf.TimeCode 
+        timeCode = Usd.TimeCode(Gf.TimeCode(12))
         timeRepr = repr(timeCode)
         self.assertEqual(timeRepr, 'Usd.TimeCode(12.0)')
         self.assertEqual(eval(timeRepr), timeCode)
@@ -70,8 +70,8 @@ class TestUsdTimeCodeRepr(unittest.TestCase):
         self.assertEqual(timeRepr, 'Usd.TimeCode.PreTime(123.0)')
         self.assertEqual(eval(timeRepr), timeCode)
 
-        # Verify that a pre-time code is constructable from an Sdf.TimeCode 
-        timeCode = Usd.TimeCode.PreTime(Sdf.TimeCode(12))
+        # Verify that a pre-time code is constructable from an Gf.TimeCode 
+        timeCode = Usd.TimeCode.PreTime(Gf.TimeCode(12))
         timeRepr = repr(timeCode)
         self.assertEqual(timeRepr, 'Usd.TimeCode.PreTime(12.0)')
         self.assertEqual(eval(timeRepr), timeCode)

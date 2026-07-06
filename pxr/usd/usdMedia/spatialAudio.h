@@ -45,7 +45,7 @@ class SdfAssetPath;
 /// transformed relative to the model, rather than copying its animation.
 /// 
 /// \section Usd_SpatialAudio_TimeScaling Timecode Attributes and Time Scaling
-/// \a startTime and \a endTime are \ref SdfTimeCode "timecode" valued 
+/// \a startTime and \a endTime are \ref GfTimeCode "timecode" valued 
 /// attributes which gives them the special behavior that 
 /// \ref SdfLayerOffset "layer offsets" affecting the layer in 
 /// which one of these values is authored are applied to the attribute's value 
@@ -288,7 +288,7 @@ public:
     /// | ||
     /// | -- | -- |
     /// | Declaration | `uniform timecode startTime = 0` |
-    /// | C++ Type | SdfTimeCode |
+    /// | C++ Type | GfTimeCode |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TimeCode |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDMEDIA_API
@@ -322,7 +322,7 @@ public:
     /// | ||
     /// | -- | -- |
     /// | Declaration | `uniform timecode endTime = 0` |
-    /// | C++ Type | SdfTimeCode |
+    /// | C++ Type | GfTimeCode |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->TimeCode |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDMEDIA_API

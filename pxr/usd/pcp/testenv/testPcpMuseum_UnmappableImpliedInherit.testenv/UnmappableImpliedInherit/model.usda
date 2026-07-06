@@ -1,0 +1,15 @@
+#usda 1.0
+
+def "Model"
+{
+    def "Instance" (
+        inherits = </Model_1/Class>
+    ) {
+    }
+}
+
+def "Model_1" 
+{
+    def "Class" {
+    }
+}

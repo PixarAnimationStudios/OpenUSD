@@ -42,7 +42,54 @@ def "Model" (
             {
                 custom int attr2 = 789
             }
+
+            # These two children are here to demonstrate a difference with the
+            # above two children in that by referencing or inheriting a prim 
+            # in a different model, the other model's ancestral variant set
+            # selection is not affected by variant selection opinions in the 
+            # root that references /Model
+            def "InstanceViaOtherModelRef" (
+                prepend references = </OtherModel/_prototype>
+            )
+            {
+                custom int attr2 = 456
+            }
+
+            def "InstanceViaOtherModelClass" (
+                prepend inherits = </OtherModel/_prototype>
+            )
+            {
+                custom int attr2 = 789
+            }
         }
     }
 
+}
+
+# This has the same variant set as /Model to show that it will not be
+# affected by the same ancestral variant selections that will affect
+# /Model.
+def "OtherModel" (
+    prepend variantSets = "vset"
+    variants = {
+        string vset = "with_other_children"
+    }
+)
+{
+    custom int modelRootAttribute = 123
+
+    variantSet "vset" = {
+        "without_children" {
+        }
+
+        "with_other_children" {
+            def "_prototype"
+            {
+                custom int attr1
+                prepend int attr1.connect = </OtherModel.modelRootAttribute>
+
+                custom int attr2 = 123
+            }
+        }
+    }
 }

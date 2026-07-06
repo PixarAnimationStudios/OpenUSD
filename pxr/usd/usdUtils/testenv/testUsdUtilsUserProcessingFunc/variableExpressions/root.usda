@@ -1,0 +1,29 @@
+#usda 1.0
+(
+    expressionVariables = {
+        string ATTR = "./attr.usda"
+        string ATTR_ARR = "./attr_arr.usda"
+        string META = "./meta.usda"
+        string META_ARR = "./meta_arr.usda"
+        string PAYLOAD = "./pay.usda"
+        string REFERENCE = "./ref.usda"
+        string SUBLAYER = "./sub.usda"
+    }
+
+    subLayers = [
+        @`"${SUBLAYER}"`@
+    ]
+)
+
+def "World"(
+    references = @`"${REFERENCE}"`@
+    payload = [@`"${PAYLOAD}"`@]
+    assetInfo = {
+        asset meta = @`"${META}"`@
+        asset[] meta_arr = [@`"${META_ARR}"`@]
+    }
+)
+{
+    asset attr_asset = @`"${ATTR}"`@
+    asset[] attr_arr_asset = [@`"${ATTR_ARR}"`@]
+}

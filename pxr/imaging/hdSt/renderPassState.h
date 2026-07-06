@@ -134,7 +134,7 @@ public:
                                GfMatrix4d const &projectionMatrix,
                                GfVec4d const &viewport,
                                ClipPlanesVector const & clipPlanes);
-    
+
     GfMatrix4d GetCullMatrix() const { return _cullMatrix; }
 
     /// Overrides the case when no HdCamera is given. In the case, uses
@@ -196,6 +196,12 @@ public:
     AxisAlignedAffineTransform
     ComputeImageToHorizontallyNormalizedFilmback() const;
 
+    // Copies everything except the render pass shader from the given
+    // HdStRenderPassState to this one.
+    HDST_API
+    void
+    CopyAllExceptShaderFrom(const HdStRenderPassState& other);
+
 private:
     bool _UseAlphaMask() const;
     unsigned int _GetFramebufferHeight() const;
@@ -223,7 +229,7 @@ private:
     // ---------------------------------------------------------------------- //
     // Camera state used when no HdCamera available
     // ---------------------------------------------------------------------- //
-    
+
     GfMatrix4d _worldToViewMatrix;
     GfMatrix4d _projectionMatrix;
     ClipPlanesVector _clipPlanes;

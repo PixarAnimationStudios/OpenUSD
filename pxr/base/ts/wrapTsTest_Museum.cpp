@@ -35,9 +35,10 @@ void wrapTsTest_Museum()
         .def("GetAllNames", &This::GetAllNames,
             return_value_policy<TfPySequenceToList>())
 
-        .def("GetData", &This::GetData)
+        .def("GetSpline", &This::GetSpline,
+            (arg("id"), arg("valueType") = Ts_GetType<double>()))
 
-        .def("GetDataByName", &This::GetDataByName)
-
+        .def("GetSplineByName", &This::GetSplineByName,
+            (arg("name"), arg("valueType") = Ts_GetType<double>()))
         ;
 }

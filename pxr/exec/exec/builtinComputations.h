@@ -76,8 +76,20 @@ public:
     /// \ingroup group_Exec_Builtin_Computations
     /// @{
 
-    /// Computes the provider attribute's value.
+    /// Computes the provider attribute's value. 
     ///
+    /// The computed value is produced by the first of the following sources 
+    /// that can be resolved:
+    ///     1. An 
+    ///        [attribute expression](#ExecComputationBuilder::AttributeExpression), 
+    ///        if registered, defines the attribute's computed value. 
+    ///     2. If the provider owns exactly one connection that targets another 
+    ///        attribute of the same type that is valid (i.e. it is active, 
+    ///        loaded, defined, and non-abstract), then its computed value is 
+    ///        the computed value of the targeted attribute. 
+    ///     3. Otherwise, the computed value is the resolved value of the 
+    ///        provider. 
+    /// 
     /// \returns a value whose type is the provider attribute's scalar value
     /// type. If the attribute has registered an
     /// [attribute expression](#ExecComputationBuilder::AttributeExpression),

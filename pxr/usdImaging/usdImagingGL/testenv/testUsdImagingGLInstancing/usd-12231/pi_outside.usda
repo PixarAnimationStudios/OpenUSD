@@ -1,0 +1,65 @@
+#usda 1.0
+(
+    doc = '''
+        This file and ni_pi_outside.usda are hand-crafted to expose a bug in UsdImaging 2.0.
+        Both files should result in the same image (because they only differ in
+        "instaneable = true" set) - but they do not because of the bug.
+
+        The scenario exercised is native instances instancing a
+        point instancer instancing a prototype that is not a descendant of the point
+        instancer.'''
+)
+
+def Xform "NoInstancing"
+{
+    def Xform "Prototype"
+    {
+        def Cube "GreenCube"
+        {
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+        }
+    }
+
+    double3 xformOp:translate = (-4, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "PiPrototype" (
+    active = false
+)
+{
+    def PointInstancer "PointInstancer"
+    {
+        rel prototypes = [</NoInstancing/Prototype>]
+        int[] protoIndices = [ 0, 0, 0 ]
+        point3f[] positions = [ (-3, 0, 0), (0, 0, 0), (3, 0, 0) ]
+    }
+}
+
+def Xform "PiInstance0" (
+    active = true
+    # Same as ni_pi_outside.usda but without instanceable = true
+    # This should give the same image
+    references = </PiPrototype>
+)
+{
+    double3 xformOp:translate = (3, -2, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "PiInstance1" (
+    active = true
+    # Same as ni_pi_outside.usda but without instanceable = true
+    # This should give the same image
+    references = </PiPrototype>
+)
+{
+    double3 xformOp:translate = (3, 2, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Camera "main_cam"
+{
+    double3 xformOp:translate = (0, 0, 85)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}

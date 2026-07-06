@@ -238,12 +238,19 @@ _PatternImplBase::_Init(
             _components.push_back({ ExplicitName,
                     static_cast<int>(_explicitNames.size()-1), -1 });
         }
-        // A glob pattern (we translate to regex).
+        // A glob pattern.
         else {
-            // Must match the whole component.
-            _regexes.emplace_back("^" + component.text + "$", ArchRegex::GLOB);
-            _components.push_back({ Regex,
-                    static_cast<int>(_regexes.size()-1), -1 });
+            Sdf_GlobPattern glob = Sdf_GlobPattern::Compile(component.text);
+            if (!glob) {
+                TF_CODING_ERROR("Failed to compile glob pattern '%s' in '%s' "
+                                "-- expected the path expression parser to "
+                                "have rejected this upstream",
+                                component.text.c_str(),
+                                pattern.GetText().c_str());
+            }
+            _globPatterns.push_back(std::move(glob));
+            _components.push_back({ Glob,
+                    static_cast<int>(_globPatterns.size()-1), -1 });
         }
         // If the component has a predicate, link that.
         if (component.predicateIndex != -1) {
@@ -277,7 +284,7 @@ _PatternImplBase::_Init(
     }
     else {
         // No trailing stretch, and the final component requires a prim
-        // name/regex match means this pattern can only match prims.
+        // name/glob match means this pattern can only match prims.
         _matchObjType = _MatchPrimOnly;
     }
 
@@ -286,7 +293,7 @@ _PatternImplBase::_Init(
             std::string result = (component.type == ExplicitName)
                 ? TfStringPrintf(
                     "'%s'", _explicitNames[component.patternIndex].c_str())
-                : TfStringPrintf("<regex %d>", component.patternIndex);
+                : TfStringPrintf("<glob %d>", component.patternIndex);
             if (component.predicateIndex != -1) {
                 result += TfStringPrintf(" pred %d", component.predicateIndex);
             }
@@ -359,13 +366,13 @@ _PatternImplBase::_CheckExactMatch(
                       name.c_str(), pathIter->GetName().c_str());
         }
             break;
-        case Regex:
-            if (!_regexes[iter->patternIndex].Match(pathIter->GetName())) {
-                DEBUG_MSG("regex does not match '%s' -> varying false\n",
+        case Glob:
+            if (!_globPatterns[iter->patternIndex].Match(pathIter->GetName())) {
+                DEBUG_MSG("glob does not match '%s' -> varying false\n",
                           pathIter->GetName().c_str());
                 return Result::MakeVarying(false);
             }
-            DEBUG_MSG("regex matches '%s' -> continuing\n",
+            DEBUG_MSG("glob matches '%s' -> continuing\n",
                       pathIter->GetName().c_str());
             break;
         };

@@ -29,6 +29,7 @@
 #include <math.h>
 #include <memory>
 #include <mutex>
+#include <new>
 #include <set>
 #include <stdarg.h>
 #include <stddef.h>
@@ -40,4 +41,5 @@
 #include <typeinfo>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 #include <vector>

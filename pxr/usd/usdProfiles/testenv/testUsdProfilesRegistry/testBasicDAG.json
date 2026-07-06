@@ -1,0 +1,69 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Profiles": {
+                    "Capabilities": {
+                        "usd": {
+                            "docstring": "Root capability",
+                            "name": "Root",
+                            "style": "core",
+                            "subgraph": "Foundation"
+                        },
+                        "chain.a": {
+                            "predecessors": ["usd"],
+                            "docstring": "First link in chain",
+                            "name": "Chain A",
+                            "style": "core",
+                            "subgraph": "Foundation"
+                        },
+                        "chain.b": {
+                            "predecessors": ["chain.a"],
+                            "docstring": "Second link in chain",
+                            "name": "Chain B",
+                            "style": "core",
+                            "subgraph": "Foundation"
+                        },
+                        "branch.left": {
+                            "predecessors": ["usd"],
+                            "docstring": "Left branch from root",
+                            "name": "Branch Left",
+                            "style": "extra",
+                            "subgraph": "Extensions"
+                        },
+                        "branch.right": {
+                            "predecessors": ["usd"],
+                            "docstring": "Right branch from root",
+                            "name": "Branch Right",
+                            "style": "extra",
+                            "subgraph": "Extensions"
+                        },
+                        "merge.point": {
+                            "predecessors": ["chain.b", "branch.left", "branch.right"],
+                            "docstring": "Merges chain and both branches",
+                            "name": "Merge Point",
+                            "style": "extra",
+                            "subgraph": "Extensions"
+                        }
+                    },
+                    "CapabilityStyles": {
+                        "core": "fill:#cce5ff,stroke:#004085",
+                        "extra": "fill:#d4edda,stroke:#155724"
+                    },
+                    "CapabilityGroups": {
+                        "Foundation": {
+                            "label": "Foundation Capabilities",
+                            "order": 1
+                        },
+                        "Extensions": {
+                            "label": "Extension Capabilities",
+                            "order": 2
+                        }
+                    }
+                }
+            },
+            "Name": "TestBasicDAG",
+            "Type": "resource"
+        }
+    ]
+}

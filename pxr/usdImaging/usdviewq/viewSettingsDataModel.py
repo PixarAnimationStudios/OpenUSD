@@ -201,6 +201,7 @@ class ViewSettingsDataModel(StateSource, QtCore.QObject):
         self._freeCamera = None
         self._cameraPath = None
         self._fontSize = self.stateProperty("fontSize", default=10)
+        self._appIconMode = self.stateProperty("appIconMode", default="Automatic")
 
     def onSaveState(self, state):
         state["cameraMaskColor"] = list(self._cameraMaskColor)
@@ -258,6 +259,7 @@ class ViewSettingsDataModel(StateSource, QtCore.QObject):
         state["showHUDPerformance"] = self._showHUD_Performance
         state["showHUDGPUStats"] = self._showHUD_GPUstats
         state["fontSize"] = self._fontSize
+        state["appIconMode"] = self._appIconMode
 
     @property
     def cameraMaskColor(self):
@@ -873,5 +875,16 @@ class ViewSettingsDataModel(StateSource, QtCore.QObject):
     def fontSize(self, value):
         if value != self._fontSize:
             self._fontSize = value
+            self.signalStyleSettingsChanged.emit()
+
+    @property
+    def appIconMode(self):
+        return self._appIconMode
+
+    @appIconMode.setter
+    @invisibleViewSetting
+    def appIconMode(self, value):
+        if value != self._appIconMode:
+            self._appIconMode = value
             self.signalStyleSettingsChanged.emit()
 

@@ -61,6 +61,7 @@ public:
     std::string const & GetOutputFilePath() const { return _outputFilePath; }
 
     std::string const & GetCameraPath() const { return _cameraPath; }
+    std::string const & GetPickCameraPath() const { return _pickCameraPath; }
     std::vector<GfVec4d> const & GetClipPlanes() const { return _clipPlanes; }
     std::vector<double> const& GetTimes() const { return _times; }
     GfVec4f const & GetClearColor() const { return _clearColor; }
@@ -103,10 +104,6 @@ protected:
     bool _ShouldFrameAll() const { return _shouldFrameAll; }
     TfToken _GetRenderer() const { return _renderer; }
 
-    HdRenderIndex *_GetRenderIndex(UsdImagingGLEngine *engine) {
-        return engine->_GetRenderIndex();
-    }
-    
     void _Render(UsdImagingGLEngine *engine, 
                  const UsdImagingGLRenderParams &params) {
         SdfPathVector roots(1, SdfPath::AbsoluteRootPath());
@@ -123,8 +120,10 @@ private:
     bool _sceneLights;
     bool _cameraLight;
     std::string _cameraPath;
+    std::string _pickCameraPath;
     bool _enableSceneMaterials;
     bool _unloadedAsBounds;
+    bool _skipTestPlugins;
 
     std::string _stageFilePath;
     std::string _outputFilePath;

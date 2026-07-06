@@ -14,8 +14,8 @@
 #include "pxr/base/work/impl.h"
 #include "pxr/base/work/threadLimits.h"
 
-#include "pxr/base/tf/errorMark.h"
-#include "pxr/base/tf/errorTransport.h"
+#include "pxr/base/tf/diagnosticTrap.h"
+#include "pxr/base/tf/diagnosticTransport.h"
 #include "pxr/base/tf/mallocTag.h"
 
 #include <functional>
@@ -65,12 +65,12 @@ public:
             _dispatcher.Run(
                 _MallocTagsInvokerTask<
                 typename std::remove_reference<Callable>::type>(
-                    std::forward<Callable>(c), &_errors));
+                    std::forward<Callable>(c), &_diagnostics));
         }
         else {
             _dispatcher.Run(
                 _InvokerTask<typename std::remove_reference<Callable>::type>(
-                    std::forward<Callable>(c), &_errors));
+                    std::forward<Callable>(c), &_diagnostics));
         }
     }
 
@@ -103,20 +103,20 @@ public:
     WORK_API bool IsCancelled() const;
 
 private:
-    typedef tbb::concurrent_vector<TfErrorTransport> _ErrorTransports;
+    typedef tbb::concurrent_vector<TfDiagnosticTransport> _DiagnosticTransports;
 
-    // Function invoker helper that wraps the invocation with an ErrorMark so we
-    // can transmit errors that occur back to the thread that Wait() s for tasks
-    // to complete.
+    // Function invoker helper that wraps the invocation with a DiagnosticTrap
+    // so we can transmit diagnostics that occur back to the thread that calls
+    // Wait() for tasks to complete.
     template <class Fn>
     struct _InvokerTask {
-        explicit _InvokerTask(Fn &&fn, _ErrorTransports *err) 
+        explicit _InvokerTask(Fn &&fn, _DiagnosticTransports *diag) 
             : _fn(std::move(fn))
-            , _errors(err) {}
+            , _diagnostics(diag) {}
 
-        explicit _InvokerTask(Fn const &fn, _ErrorTransports *err) 
+        explicit _InvokerTask(Fn const &fn, _DiagnosticTransports *diag)
             : _fn(fn)
-            , _errors(err) {}
+            , _diagnostics(diag) {}
 
         // Ensure only moves happen, no copies.
         _InvokerTask(_InvokerTask &&other) = default;
@@ -124,31 +124,34 @@ private:
         _InvokerTask &operator=(const _InvokerTask &other) = delete;
 
         void operator()() const {
-            TfErrorMark m;
+            TfDiagnosticTrap trap;
             _fn();
-            if (!m.IsClean())
-                Work_Dispatcher::_TransportErrors(m, _errors);
+            if (!trap.IsClean()) {
+                Work_Dispatcher::_TransportDiagnostics(&trap, _diagnostics);
+            }
         }
     private:
         Fn _fn;
-        _ErrorTransports *_errors;
+        _DiagnosticTransports *_diagnostics;
     };
 
-    // Function invoker helper that wraps the invocation with an ErrorMark so we
-    // can transmit errors that occur back to the thread that Wait() s for tasks
-    // to complete.  This version also duplicates the caller's malloc tag stack
-    // to the callee's thread.
+    // Function invoker helper that wraps the invocation with a TfDiagnosticTrap
+    // so we can transmit diagnostics that occur back to the thread that Wait()
+    // s for tasks to complete.  This version also duplicates the caller's
+    // malloc tag stack to the callee's thread.
     template <class Fn>
     struct _MallocTagsInvokerTask {
-        explicit _MallocTagsInvokerTask(Fn &&fn, _ErrorTransports *err) 
+        explicit
+        _MallocTagsInvokerTask(Fn &&fn, _DiagnosticTransports *diag) 
             : _fn(std::move(fn))
-            , _errors(err)
+            , _diagnostics(diag)
             , _mallocTagStack(TfMallocTag::GetCurrentStackState())
             {}
 
-        explicit _MallocTagsInvokerTask(Fn const &fn, _ErrorTransports *err) 
+        explicit
+        _MallocTagsInvokerTask(Fn const &fn, _DiagnosticTransports *diag) 
             : _fn(fn)
-            , _errors(err)
+            , _diagnostics(diag)
             , _mallocTagStack(TfMallocTag::GetCurrentStackState()) {}
 
         // Ensure only moves happen, no copies.
@@ -158,30 +161,32 @@ private:
         operator=(const _MallocTagsInvokerTask &other) = delete;
 
         void operator()() const {
-            TfErrorMark m;
+            TfDiagnosticTrap trap;
             TfMallocTag::StackOverride ovr(_mallocTagStack);
             _fn();
-            if (!m.IsClean())
-                Work_Dispatcher::_TransportErrors(m, _errors);
+            if (!trap.IsClean()) {
+                Work_Dispatcher::_TransportDiagnostics(&trap, _diagnostics);
+            }
         }
     private:
         Fn _fn;
-        _ErrorTransports *_errors;
+        _DiagnosticTransports *_diagnostics;
         TfMallocTag::StackState _mallocTagStack;
     };
 
-    // Helper function that removes errors from \p m and stores them in a new
-    // entry in \p errors.
+    // Helper function that removes diagnostics from \p trap and stores them in
+    // a new entry in \p diagnostics.
     WORK_API static void
-    _TransportErrors(const TfErrorMark &m, _ErrorTransports *errors);
+    _TransportDiagnostics(TfDiagnosticTrap *trap,
+                          _DiagnosticTransports *diagnostics);
 
     // WorkDispatcher implementation
     Impl _dispatcher;
     std::atomic<bool> _isCancelled;
 
-    // The error transports we use to transmit errors in other threads back to
-    // this thread.
-    _ErrorTransports _errors;
+    // The diagnostic transports we use to transmit those issued in other
+    // threads back to this thread.
+    _DiagnosticTransports _diagnostics;
 
     // Concurrent calls to Wait() have to serialize certain cleanup operations.
     std::atomic_flag _waitCleanupFlag;

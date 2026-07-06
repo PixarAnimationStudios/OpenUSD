@@ -34,14 +34,17 @@ def _PopulateValidatorAndSuitesByPlugin():
     validationRegistry = UsdValidation.ValidationRegistry()
     validatorsByPlugin = {}
     for metadata in validationRegistry.GetAllValidatorMetadata():
-        plugName = metadata.plugin.name
+        # If validator doesn't belong to a specific plugin, we group these under 
+        # "Uncategorized" plugin group
+        plugName = metadata.plugin.name if metadata.plugin else "Uncategorized"
         validatorsByPlugin.setdefault(plugName, [])
         # Validator name implicitly has plugin name as prefix, for ui purposes
-        # we will strip that out
+        # we will strip that out, but for uncategorized validators we want to
+        # keep the full names.
+        validatorName = (metadata.name.split(":")[1] 
+            if plugName != "Uncategorized" else metadata.name)
         validatorsByPlugin[plugName].append(
-            (metadata.name.split(":")[1],
-             metadata.isSuite,
-             metadata.doc))
+            (validatorName, metadata.isSuite, metadata.doc))
     return validatorsByPlugin
 
 class WordWrapDelegate(QtWidgets.QStyledItemDelegate):
@@ -85,8 +88,12 @@ class ValidatorPluginsWidget(QtWidgets.QWidget):
         for pluginName in validatorsByPlugin:
             pluginItem = self.makeCheckableItem(
                 allSelectorItem, pluginName, role="plugin")
-            pluginItem.setText(
-                1, f"Validators registered by {pluginName} plugin.")
+            if pluginName == "Uncategorized":
+                pluginItem.setText(
+                    1, "Validators that don't belong to a specific plugin.")
+            else:
+                pluginItem.setText(
+                    1, f"Validators registered by {pluginName} plugin.")
             for validatorName, isSuite, doc in validatorsByPlugin[pluginName]:
                 childItem = self.makeCheckableItem(pluginItem, validatorName)
                 if isSuite:
@@ -96,8 +103,72 @@ class ValidatorPluginsWidget(QtWidgets.QWidget):
                 childItem.setToolTip(1, doc if doc else "")
 
         self.tree.sortItems(0, QtCore.Qt.SortOrder.AscendingOrder)
+        self._moveUncategorizedToBottom()
+
+        from pxr import Tf, UsdValidation
+        self._noticeKeys = [
+            Tf.Notice.RegisterGlobally(
+                UsdValidation.Notice.DidRegisterValidator,
+                self._onValidatorRegistered),
+            Tf.Notice.RegisterGlobally(
+                UsdValidation.Notice.DidRegisterValidatorSuite,
+                self._onValidatorRegistered)
+        ]
 
         layout.addWidget(self.tree)
+
+    def _findPluginItem(self, pluginName):
+        allSelectorItem = self.tree.invisibleRootItem().child(0)
+        for i in range(allSelectorItem.childCount()):
+            child = allSelectorItem.child(i)
+            if child.text(0) == pluginName:
+                return child
+        return None
+
+    def _findOrCreatePluginItem(self, pluginName):
+        foundPluginItem = self._findPluginItem(pluginName)
+        if foundPluginItem:
+            return foundPluginItem
+        allSelectorItem = self.tree.invisibleRootItem().child(0)
+        newItem = self.makeCheckableItem(
+            allSelectorItem, pluginName, role="plugin")
+        if pluginName == "Uncategorized":
+            newItem.setText(
+                1, "Validators that don't belong to a specific plugin.")
+        else:
+            newItem.setText(
+                1, f"Validators registered by {pluginName} plugin.")
+        return newItem
+
+    def _onValidatorRegistered(self, notice, sender):
+        # When a new validator or suite is registered, we need to add it to the
+        # tree. We need to insert the validator queried from the notice object
+        # at appropriate position. Since all such validators are non-plugin
+        # validators, we will add them under "Uncategorized" plugin group.
+        from pxr import UsdValidation
+        if isinstance(notice, UsdValidation.Notice.DidRegisterValidator):
+            isSuite = False
+            metadata = notice.GetValidator().GetMetadata()
+        else:
+            isSuite = True
+            metadata = notice.GetValidatorSuite().GetMetadata()
+        groupItem = self._findOrCreatePluginItem("Uncategorized")
+        childItem = self.makeCheckableItem(groupItem, metadata.name)
+        doc = metadata.doc if metadata.doc else ""
+        if isSuite:
+            childItem.setData(0, QtCore.Qt.ItemDataRole.UserRole, "suite")
+            doc = "(Suite) " + doc
+        childItem.setText(1, doc if doc else "")
+        childItem.setToolTip(1, doc if doc else "")
+        self.tree.sortItems(0, QtCore.Qt.SortOrder.AscendingOrder)
+        self._moveUncategorizedToBottom()
+
+    def _moveUncategorizedToBottom(self):
+        allSelectorItem = self.tree.invisibleRootItem().child(0)
+        for i in range(allSelectorItem.childCount()):
+            if allSelectorItem.child(i).text(0) == "Uncategorized":
+                allSelectorItem.addChild(allSelectorItem.takeChild(i))
+                break
 
     def makeCheckableItem(self, parent, text, role=None):
         item = QtWidgets.QTreeWidgetItem(parent, [text])
@@ -209,7 +280,12 @@ class SelectedValidatorsWidget(QtWidgets.QWidget):
             pluginName = pluginItem.text(0)
             for j in range(pluginItem.childCount()):
                 validatorName = pluginItem.child(j).text(0)
-                selectedValidators.append(f"{pluginName}:{validatorName}")
+                if pluginName == "Uncategorized":
+                    # For uncategorized validators, we keep the full name which
+                    # already has plugin prefix if any.
+                    selectedValidators.append(validatorName)
+                else:
+                    selectedValidators.append(f"{pluginName}:{validatorName}")
         return selectedValidators
 
     def _filterSelectedValidators(self, text):
@@ -271,7 +347,7 @@ class OptionsWidget(QtWidgets.QWidget):
         layout.addWidget(self.primsSetFromSelection)
         self.primsSetFromSelection.stateChanged.connect(
             lambda state: self.includeDescendantPrims.setEnabled(
-                state == QtCore.Qt.CheckState.Checked))
+                QtCore.Qt.CheckState(state) == QtCore.Qt.CheckState.Checked))
 
         self.includeDescendantPrims = QtWidgets.QCheckBox(
             "Include descendant prims")

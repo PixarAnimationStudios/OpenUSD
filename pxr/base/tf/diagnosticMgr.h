@@ -12,9 +12,11 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/callContext.h"
 #include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/diagnosticContainer.h"
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/error.h"
 #include "pxr/base/tf/singleton.h"
+#include "pxr/base/tf/smallVector.h"
 #include "pxr/base/tf/spinRWMutex.h"
 #include "pxr/base/tf/status.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -23,6 +25,7 @@
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/api.h"
 
+#include "pxr/base/arch/align.h"
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/functionLite.h"
@@ -32,7 +35,9 @@
 #include <atomic>
 #include <cstdarg>
 #include <list>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -162,10 +167,14 @@ public:
     void SetQuiet(bool quiet) { _quiet = quiet; }
     
     /// Return an iterator to the beginning of this thread's error list.
-    ErrorIterator GetErrorBegin() { return _errorList.local().begin(); }
+    ErrorIterator GetErrorBegin() {
+        return _threadState.local()._errorList.begin();
+    }        
 
     /// Return an iterator to the end of this thread's error list.
-    ErrorIterator GetErrorEnd() { return _errorList.local().end(); }
+    ErrorIterator GetErrorEnd() {
+        return _threadState.local()._errorList.end();
+    }
 
     /// Remove error specified by iterator \p i.
     /// \deprecated Use TfErrorMark instead.
@@ -247,7 +256,9 @@ public:
 
     /// Return true if an instance of TfErrorMark exists in the current thread
     /// of execution, false otherwise.
-    bool HasActiveErrorMark() { return _errorMarkCounts.local() > 0; }
+    bool HasActiveErrorMark() {
+        return _markCountsAndTrapStacks.local().markCount > 0;
+    }
 
 #if !defined(doxygen)
     //
@@ -384,16 +395,23 @@ private:
     ErrorIterator _GetErrorMarkBegin(size_t mark, size_t *nErrors);
 
     // Invoked by ErrorMark ctor.
-    inline void _CreateErrorMark() { ++_errorMarkCounts.local(); }
+    inline void *_CreateErrorMark() {
+        size_t &markCount = _markCountsAndTrapStacks.local().markCount;
+        ++markCount;
+        return &markCount;
+    }
 
     // Invoked by ErrorMark dtor.
-    inline bool _DestroyErrorMark() { return --_errorMarkCounts.local() == 0; }
+    inline bool _DestroyErrorMark(void *key) {
+        size_t &markCount = *static_cast<size_t *>(key);
+        return --markCount == 0;
+    }
 
     // Invoked by TfDiagnosticTrap constructor.
-    void _PushTrap(TfDiagnosticTrap *trap);
+    void *_PushTrap(TfDiagnosticTrap *trap);
 
     // Invoked by TfDiagnosticTrap destructor.
-    void _PopTrap(TfDiagnosticTrap *trap);
+    void _PopTrap(TfDiagnosticTrap *trap, void *key);
 
     TfDiagnosticTrap *_GetActiveTrap();
 
@@ -409,19 +427,55 @@ private:
     // Helper to append pending error messages to the crash log.
     void _AppendPendingErrorsLogText(ErrorIterator i);
 
-    // Helper to fully rebuild the crash log error text when errors are erased
-    // from the middle.
-    void _RebuildPendingErrorLogText();
+    // Rebuild the pending-errors crash log from startSerial onward.
+    // startSerial = 0 performs a full rebuild.  The backward scan to locate the
+    // dirty boundary is O(tail), not O(total).
+    void _RebuildPendingErrorLogText(size_t startSerial = 0);
 
     // Similar log text for trapped diagnostics.
-    void _AppendTrappedDiagnosticsLogText(TfDiagnosticBase const &d);
-    void _RebuildTrappedDiagnosticsLogText();
+    void _AppendTrappedDiagnosticsLogText(TfDiagnosticBase const &d,
+                                          TfDiagnosticTrap *trap);
+
+    // Rebuild the trapped-diagnostics crash log from validLogEnd onward.
+    // validLogEnd = 0 performs a full rebuild.  Only entries at index >=
+    // validLogEnd are re-scanned; the clean prefix is kept in place.
+    void _RebuildTrappedDiagnosticsLogText(size_t validLogEnd = 0);
+
+    // A handle owning a pinned transient diagnostics log text snapshot
+    // registered with ArchSetExtraLogInfoForErrors(), constructed by
+    // _Pin*LogText helpers. Destruction deregisters the snapshot.  Move-only.
+    struct _LogTextPin {
+        _LogTextPin() = default;
+        _LogTextPin(_LogTextPin &&) = default;
+        TF_API _LogTextPin &operator=(_LogTextPin &&);
+        _LogTextPin(const _LogTextPin &) = delete;
+        _LogTextPin &operator=(const _LogTextPin &) = delete;
+        TF_API ~_LogTextPin();
+    private:
+        friend class Tf_DiagnosticMgrTestAccess;
+        friend class TfDiagnosticMgr;
+        _LogTextPin(std::string &&key,
+                    std::unique_ptr<std::vector<std::string>> &&lines);
+        std::string                               _key;
+        std::unique_ptr<std::vector<std::string>> _lines;
+    };
+
+
+    // Build a transient log text snapshot of [first, last) and register it
+    // with Arch.  Return a _LogTextPin that deregisters it on destruction.
+    _LogTextPin
+    _PinErrorLogText(ErrorIterator first, ErrorIterator last) const;
+
+    // Build a transient log text snapshot of container and register it with
+    // Arch.  Returns a _LogTextPin that deregisters it on destruction.
+    _LogTextPin
+    _PinDiagnosticsLogText(Tf_DiagnosticContainer const &container) const;
 
     // Helper to apply a function to all the delegates.  Return true if `fn` was
     // invoked (i.e. there were delegates to call).
     template <class Fn>
     bool _ForEachDelegate(Fn const &fn) const;
-
+    
     // A guard used to protect reentrency when adding/removing
     // delegates as well as posting errors/warnings/statuses
     mutable tbb::enumerable_thread_specific<bool> _reentrantGuard;
@@ -431,46 +485,72 @@ private:
    
     mutable TfSpinRWMutex _delegatesMutex;
 
-    // Thread-local stack of active diagnostic traps, innermost last.
-    tbb::enumerable_thread_specific<
-        std::vector<TfDiagnosticTrap*>> _scopedTrapStack;
-    
     // Global serial number for sorting.
     std::atomic<size_t> _nextSerial;
 
-    // Thread-specific error list.
-    tbb::enumerable_thread_specific<ErrorList> _errorList;
-
     // Double-buffered vector<string> that publishes to
-    // ArchSetExtraLogInfoForErrors under a fixed label.  Update calls
-    // fn(active-text) *twice* in order to update the text in both buffers, and
-    // it must produce the same results on each call.
+    // ArchSetExtraLogInfoForErrors() under a fixed label.  The double-buffer is
+    // required because Arch may read the registered pointer at any time; we
+    // write to one buffer, publish it, then synchronize the other.
     struct _LogTextBuffer {
         _LogTextBuffer() = default;
         explicit _LogTextBuffer(std::string &&label);
+        ~_LogTextBuffer();
+
         template <class Fn> void Update(Fn &&fn);
-    private:
+
+        size_t GetSize() const {
+            return _texts.first.size();
+        }
+        
         std::string _label;
         std::pair<std::vector<std::string>,
                   std::vector<std::string>> _texts;
         bool _parity = false;
     };
 
-    // Thread-specific diagnostic log text for pending errors.
-    tbb::enumerable_thread_specific<_LogTextBuffer> _pendingErrorsLogText;
+    // Thread-specific error list and the two primary crash log text buffers.
+    struct _ThreadState {
+        _ThreadState()
+            : _pendingErrorsLogText(_MakeLabel("Pending Errors"))
+            , _trappedDiagnosticsLogText(_MakeLabel("Pending Diagnostics"))
+        {}
+        static std::string _MakeLabel(const char *suffix);
+        ErrorList      _errorList;
+        _LogTextBuffer _pendingErrorsLogText;
+        _LogTextBuffer _trappedDiagnosticsLogText;
+    };
 
-    // Thread-specific log text for trapped diagnostics.
-    tbb::enumerable_thread_specific<_LogTextBuffer> _trappedDiagnosticsLogText;
+    tbb::enumerable_thread_specific<_ThreadState> _threadState;
 
-    // Thread-specific error mark counts.  Use a native key for best performance
-    // here.
+    // Store as many trap pointers locally as we can in a cache line, minus the
+    // size needed for the error mark count.
+    static constexpr size_t _TrapStackLocalCap =
+        TfComputeSmallVectorLocalCapacityForTotalSize<
+        TfDiagnosticTrap*, ARCH_CACHE_LINE_SIZE - sizeof(size_t)>();
+
+    using _TrapStack = TfSmallVector<TfDiagnosticTrap*, _TrapStackLocalCap>;
+    
+    // Struct containing thread-local error mark count, and stack of active
+    // diagnostic traps, innermost last.
+    struct _MarkCountAndTrapStack {
+        size_t markCount = 0;
+        _TrapStack trapStack;
+    };
+
+    static_assert(sizeof(_MarkCountAndTrapStack) == ARCH_CACHE_LINE_SIZE);
+    
+    // Thread-specific error mark counts & trap stacks.  Use a native key for
+    // best performance here.
     tbb::enumerable_thread_specific<
-        size_t, tbb::cache_aligned_allocator<size_t>,
-        tbb::ets_key_per_instance> _errorMarkCounts;
+        _MarkCountAndTrapStack,
+        tbb::cache_aligned_allocator<_MarkCountAndTrapStack>,
+        tbb::ets_key_per_instance> _markCountsAndTrapStacks;
 
     bool _quiet;
 
     friend class Tf_DiagnosticContainer;
+    friend class Tf_DiagnosticMgrTestAccess;
     friend class TfDiagnosticTransport;
     friend class TfDiagnosticTrap;
     friend class TfError;

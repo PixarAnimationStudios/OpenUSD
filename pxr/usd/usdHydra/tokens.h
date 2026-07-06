@@ -85,6 +85,10 @@ struct UsdHydraTokensType {
     /// 
     /// Fallback value for UsdHydraGenerativeProceduralAPI::GetProceduralSystemAttr()
     const TfToken hydraGenerativeProcedural;
+    /// \brief "hydra:rendererName"
+    /// 
+    /// UsdHydraRenderPassAPI
+    const TfToken hydraRendererName;
     /// \brief "inputs:file"
     /// 
     /// The special "info:filename" property of a hydra Texture shader, which points to a resolvable texture asset.
@@ -165,6 +169,10 @@ struct UsdHydraTokensType {
     /// 
     /// Schema identifer and family for UsdHydraGenerativeProceduralAPI
     const TfToken HydraGenerativeProceduralAPI;
+    /// \brief "HydraRenderPassAPI"
+    /// 
+    /// Schema identifer and family for UsdHydraRenderPassAPI
+    const TfToken HydraRenderPassAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

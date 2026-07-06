@@ -16,7 +16,6 @@
 #include <sys/mount.h>
 #include <sys/param.h>
 #include <unistd.h>
-#include <mach/mach_time.h>
 #endif
 #if defined(ARCH_OS_LINUX)
 #include <glob.h>
@@ -24,7 +23,6 @@
 #include <sys/param.h>
 #include <sys/statfs.h>
 #include <unistd.h>
-#include <x86intrin.h>
 #endif
 #if defined(ARCH_OS_WINDOWS)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -34,7 +32,6 @@
 #include <Windows.h>
 #include <intrin.h>
 #include <io.h>
-#include <stringapiset.h>
 #endif
 #include <algorithm>
 #include <any>
@@ -42,6 +39,8 @@
 #include <atomic>
 #include <cctype>
 #include <cfloat>
+#include <charconv>
+#include <chrono>
 #include <cinttypes>
 #include <climits>
 #include <cmath>
@@ -54,6 +53,7 @@
 #include <cstring>
 #include <ctime>
 #include <deque>
+#include <exception>
 #include <fcntl.h>
 #include <float.h>
 #include <fstream>
@@ -75,6 +75,7 @@
 #include <optional>
 #include <ostream>
 #include <set>
+#include <shared_mutex>
 #include <sstream>
 #include <stdarg.h>
 #include <stddef.h>
@@ -102,6 +103,8 @@
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_for_each.h>
+#include <tbb/parallel_reduce.h>
+#include <tbb/parallel_sort.h>
 #include <tbb/queuing_rw_mutex.h>
 #include <tbb/spin_mutex.h>
 #include <tbb/spin_rw_mutex.h>

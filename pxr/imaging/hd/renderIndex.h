@@ -62,6 +62,11 @@ using HdTaskContext = std::unordered_map<TfToken,
 
 /// \class HdRenderIndex
 ///
+/// The render index is part of the Hydra 1.0 API and is only used for
+/// emulation purposes so that HdSceneDelegate's and HdRenderDelegate's
+/// can be used with scene indices through the HdRenderIndexAdapterSceneIndex
+/// and HdRenderDelegateAdapterRenderer.
+///
 /// The Hydra render index is a flattened representation of the client scene 
 /// graph, which may be composed of several self-contained scene graphs, each of
 /// which provides a HdSceneDelegate adapter for data access.
@@ -106,6 +111,10 @@ class HdRenderIndex final
 public:
     typedef std::vector<HdDrawItem const*> HdDrawItemPtrVector;
 
+    ///
+    /// \deprecated In Hydra 2.0, applications create scene indices feeding
+    /// into HdRenderer.
+    ///
     /// Create a render index with the given render delegate.
     /// Returns null if renderDelegate is null.
     /// The render delegate and render tasks may require access to a renderer's
@@ -140,7 +149,7 @@ public:
     ///   hgiDriver = new HdDriver<Hgi*>(HgiTokens→renderDriver, hgi)
     ///   HdRenderIndex::New(_renderDelegate, {_hgiDriver})
     ///
-    static HdRenderIndex *New(
+    static HdRenderIndex *NewForBackendEmulation(
         HdRenderDelegate *renderDelegate, 
         HdDriverVector const& drivers,
         HdSceneIndexBaseRefPtr const &terminalSceneIndex);
@@ -154,7 +163,7 @@ public:
     /// HdRenderDelegate::GetMaterialBindingPurpose().
     ///
     static HdRenderIndex *
-    New(HdRenderDelegate *renderDelegate);
+    NewForFrontendEmulation(HdRenderDelegate *nullRenderDelegate);
 
     HD_API
     ~HdRenderIndex();
@@ -436,12 +445,6 @@ public:
     HD_API
     HdResourceRegistrySharedPtr GetResourceRegistry() const;
 
-    /// Returns true if scene index features are available
-    /// This is true by default but can be controlled via an
-    /// HD_ENABLE_SCENE_INDEX_EMULATION environment variable.
-    HD_API
-    static bool IsSceneIndexEmulationEnabled();
-
     /// An application or legacy scene delegate may prefer for the scene 
     /// index observer notices generated from its prim insertions, removals, or
     /// invalidations to be consolidated into vectorized batches. Calling this
@@ -488,7 +491,7 @@ private:
         const std::string &instanceName,
         const std::string &appName,
         HdSceneIndexBaseRefPtr const &terminalSceneIndex = nullptr,
-        bool createFrontEndEmulationOnly = false);
+        bool createFrontendEmulationOnly = false);
 
     // ---------------------------------------------------------------------- //
     // Private Helper methods 

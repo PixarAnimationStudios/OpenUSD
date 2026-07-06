@@ -1,0 +1,47 @@
+#usda 1.0
+(
+    expressionVariables = {
+        string SUBLAYER = "sub.usda"
+        string REF = "ref.usda"
+        string PAY = "pay.usda"
+        string ATTR = "attr.usda"
+        string ATTR_ARR = "attr_arr.usda"
+        string META = "meta.usda"
+        string META_ARR = "meta_arr.usda"
+
+        bool FILTER = true
+    }
+
+    subLayers = [
+        @`"${SUBLAYER}"`@,
+        @`if(not($FILTER), "sub_invalid.usda")`@
+    ]
+)
+
+def "World" (
+    references = [
+        @`"${REF}"`@,
+        @`if(not($FILTER), "ref_invalid.usda")`@
+    ]
+
+    payload = [
+        @`"${PAY}"`@,
+        @`if(not($FILTER), "pay_invalid.usda")`@
+    ]
+
+    assetInfo = {
+        asset meta_a = @`"${META}"`@
+        asset meta_b = @`if(not($FILTER), "meta_invalid.usda")`@
+        asset[] meta_b = [
+            @`"${META_ARR}"`@, 
+            @`if(not($FILTER), "meta_arr_invalid.usda")`@]
+    }
+)
+{
+    asset attr_a = @`"${ATTR}"`@
+    asset attr_b = @`if(not($FILTER), "attr_invalid.usda")`@
+
+    asset[] attr_arr = [
+        @`"${ATTR_ARR}"`@, @`if(not($FILTER), "attr_arr_invalid.usda")`@
+    ]
+}

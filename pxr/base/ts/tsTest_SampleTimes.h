@@ -10,7 +10,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/ts/api.h"
-#include "pxr/base/ts/tsTest_SplineData.h"
+#include "pxr/base/ts/spline.h"
 
 #include <vector>
 #include <set>
@@ -77,21 +77,21 @@ public:
     // contents of splineData.
     TS_API
     TsTest_SampleTimes(
-        const TsTest_SplineData &splineData);
+        const TsSpline& spline);
 
-    // Adds a time for each knot in splineData.  For dual-valued knots, adds
+    // Adds a time for each knot in spline.  For dual-valued knots, adds
     // both a pre-time and an ordinary time.
     TS_API
     void AddKnotTimes();
 
-    // Adds evenly spaced sample times within the frame range of splineData.
+    // Adds evenly spaced sample times within the frame range of spline.
     // The first sample is after the first knot, and the last sample is before
     // the last knot.
     TS_API
     void AddUniformInterpolationTimes(
         int numSamples);
 
-    // Determines the time range of the knots in splineData, extends it by
+    // Determines the time range of the knots in spline, extends it by
     // extrapolationFactor on each end, and adds one pre-extrapolating and one
     // post-extrapolating sample.  For example, with a time range of 10, and an
     // extrapolationFactor of 0.25, samples will be added 2.5 time units before
@@ -136,8 +136,8 @@ private:
     SampleTimeSet _GetKnotTimes() const;
 
 private:
-    const bool _haveSplineData;
-    const TsTest_SplineData _splineData;
+    const bool _hasSpline;
+    const TsSpline _spline;
 
     SampleTimeSet _times;
 };

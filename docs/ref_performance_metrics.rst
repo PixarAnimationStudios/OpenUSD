@@ -178,7 +178,7 @@ The metrics have been measured with the base asset merged with the additional
 .. image:: https://animallogic.com/wp-content/uploads/2022/08/LoopySequence02.gif
     :width: 500
 
-The ALab asset can be `downloaded here <https://animallogic.com/alab/>`__.
+The ALab asset can be `downloaded here <https://animallogic.com/technology/alab/>`__.
 
 .. datatemplate:yaml:: performance/25.11_linux_alab.yaml
    :template: perf_metric_alab_template.tmpl

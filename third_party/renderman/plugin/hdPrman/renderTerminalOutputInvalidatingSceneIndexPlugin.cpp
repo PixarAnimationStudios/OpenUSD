@@ -28,6 +28,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((riIntegrator, "ri:integrator"))
     ((riSampleFilters, "ri:sampleFilters"))
     ((riDisplayFilters, "ri:displayFilters"))
+    // Note: defined unconditionally - MSVC does not support preprocessor
+    // directives inside macro argument lists. Usage is guarded separately.
+    ((riEnergyFilters, "ri:energyFilters"))
     // Legacy terminal connections. Remove in a future USD version.
     ((outputsRiIntegrator, "outputs:ri:integrator"))
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
@@ -83,6 +86,9 @@ _GetRenderSettingsTerminalPaths(const HdSceneIndexPrim &prim)
         _tokens->riIntegrator,
         _tokens->riSampleFilters,
         _tokens->riDisplayFilters,
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+        _tokens->riEnergyFilters,
+#endif
         _tokens->outputsRiIntegrator,
         _tokens->outputsRiSampleFilters,
         _tokens->outputsRiDisplayFilters

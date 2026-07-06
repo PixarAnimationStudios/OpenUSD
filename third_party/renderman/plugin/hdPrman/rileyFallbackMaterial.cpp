@@ -6,6 +6,8 @@
 //
 #include "hdPrman/rileyFallbackMaterial.h"
 
+#if PXR_VERSION > 2311
+
 #include "hdPrman/rileyMaterialSchema.h"
 #include "hdPrman/rileyParamSchema.h"
 #include "hdPrman/rileyShadingNodeSchema.h"
@@ -392,3 +394,5 @@ AppendSceneIndex(const HdSceneIndexBaseRefPtr &inputScene)
 } // HdPrman_RileyFallbackMaterial
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // #if PXR_VERSION > 2311

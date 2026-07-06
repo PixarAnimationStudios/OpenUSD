@@ -172,7 +172,7 @@ endfunction() # _plugInfo_subst
 function(_install_python LIBRARY_NAME)
     set(options  "")
     set(oneValueArgs "")
-    set(multiValueArgs FILES)
+    set(multiValueArgs DIRS FILES)
     cmake_parse_arguments(ip
         "${options}"
         "${oneValueArgs}"
@@ -180,14 +180,13 @@ function(_install_python LIBRARY_NAME)
         ${ARGN}
     )
 
-    set(libPythonPrefix lib/python)
+    set(libPythonPrefix "${PXR_PYTHON_INSTALL_DIR}")
     _get_python_module_name(${LIBRARY_NAME} LIBRARY_INSTALLNAME)
 
     set(files_copied "")
     foreach(file ${ip_FILES})
         set(filesToInstall "")
-        set(installDest
-            "${libPythonPrefix}/pxr/${LIBRARY_INSTALLNAME}")
+        set(installDest "${libPythonPrefix}/pxr/${LIBRARY_INSTALLNAME}")
 
         # Only attempt to compile .py files. Files like plugInfo.json may also
         # be in this list
@@ -216,24 +215,27 @@ function(_install_python LIBRARY_NAME)
             )
             list(APPEND filesToInstall ${CMAKE_CURRENT_SOURCE_DIR}/${file})
             list(APPEND filesToInstall ${CMAKE_CURRENT_BINARY_DIR}/${file_we}.pyc)
-        elseif (${file} MATCHES ".qss$")
-            # XXX -- Allow anything or allow nothing?
-            list(APPEND filesToInstall ${CMAKE_CURRENT_SOURCE_DIR}/${file})
         else()
-            message(FATAL_ERROR "Cannot have non-Python file ${file} in PYTHON_FILES.")
+            list(APPEND filesToInstall ${CMAKE_CURRENT_SOURCE_DIR}/${file})
         endif()
 
-        # Note that we always install under lib/python/pxr, even if we are in
-        # the third_party project. This means the import will always look like
-        # 'from pxr import X'. We need to do this per-loop iteration because
-        # the installDest may be different due to the presence of subdirs.
+        # Note that we always install under ${PXR_PYTHON_INSTALL_DIR}/pxr, even
+        # if we are in the third_party project. This means the import will
+        # always look like 'from pxr import X'. We need to do this per-loop
+        # iteration because  the installDest may be different due to the
+        # presence of subdirs.
         install(
-            FILES
-                ${filesToInstall}
-            DESTINATION
-                "${installDest}"
+            FILES ${filesToInstall}
+            DESTINATION "${installDest}"
         )
     endforeach()
+
+    if (ip_DIRS)
+        install(
+            DIRECTORY ${ip_DIRS}
+            DESTINATION "${installDest}"
+        )
+    endif()
 
     # Add the target.
     add_custom_target(${LIBRARY_NAME}_pythonfiles
@@ -393,7 +395,7 @@ function(_install_pyside_ui_files LIBRARY_NAME)
             FOLDER "${folder}"
     )
 
-    set(libPythonPrefix lib/python)
+    set(libPythonPrefix "${PXR_PYTHON_INSTALL_DIR}")
     _get_python_module_name(${LIBRARY_NAME} LIBRARY_INSTALLNAME)
 
     install(
@@ -951,6 +953,7 @@ function(_pxr_python_module NAME)
     )
     set(multiValueArgs
         CPPFILES
+        PYTHON_DIRS
         PYTHON_FILES
         PYSIDE_UI_FILES
         INCLUDE_DIRS
@@ -975,9 +978,10 @@ function(_pxr_python_module NAME)
         set(LIBRARY_NAME "_${NAME}")
     endif()
 
-    # Install .py files.
-    if(args_PYTHON_FILES)
+    # Install Python files and/or directories.
+    if(args_PYTHON_FILES OR args_PYTHON_DIRS)
         _install_python(${LIBRARY_NAME}
+            DIRS ${args_PYTHON_DIRS}
             FILES ${args_PYTHON_FILES}
         )
     endif()
@@ -1021,7 +1025,7 @@ function(_pxr_python_module NAME)
     # 'from pxr import X'. Additionally, python libraries always install
     # into the default lib install, not into the third_party subdirectory
     # or similar.
-    set(libInstallPrefix "lib/python/pxr/${pyModuleName}")
+    set(libInstallPrefix "${PXR_PYTHON_INSTALL_DIR}/pxr/${pyModuleName}")
 
     # Python modules need to be able to access their corresponding
     # wrapped library and the install lib directory.

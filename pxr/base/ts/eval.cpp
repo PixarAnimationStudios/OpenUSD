@@ -650,6 +650,9 @@ namespace
             { return _betweenLastProtoAndEnd; }
         double GetValueOffset() const { return _valueOffset; }
         bool GetNegate() const { return _negate; }
+        bool HasInvalidPreExtrapLoop() const { return _invalidPreExtrapLoop; }
+        bool HasInvalidPostExtrapLoop() const
+            { return _invalidPostExtrapLoop; }
 
         // Knot copiers for special cases.
         void ReplaceBoundaryKnots(
@@ -673,7 +676,10 @@ namespace
             const TsExtrapolation &extrapolation,
             TsTime offset,
             bool isPre);
-        void _ComputeExtrapValueOffset();
+        void _ComputeExtrapValueOffset(
+            TsTime extrapLoopStart,
+            TsTime extrapLoopEnd,
+            bool isPre);
         Ts_TypedKnotData<double> _CopyProtoKnotData(
             size_t index,
             int shiftIters) const;
@@ -708,6 +714,8 @@ namespace
         bool _betweenLoopedAndPostUnlooped = false;
         Ts_TypedKnotData<double> _extrapKnot1;
         Ts_TypedKnotData<double> _extrapKnot2;
+        bool _invalidPreExtrapLoop = false;
+        bool _invalidPostExtrapLoop = false;
     };
 }
 
@@ -1058,14 +1066,44 @@ void _LoopResolver::_ResolveExtrap()
 // The offset parameter specifies the distance between the evaluation time and
 // the non-extrapolating region.  It is always non-negative.
 //
+// This function is called only for looping extrapolation.
 void _LoopResolver::_DoExtrap(
     const TsExtrapolation &extrapolation,
     const TsTime offset,
     const bool isPre)
 {
+    TsTime extrapLoopStart = _firstTime;
+    TsTime extrapLoopEnd = _lastTime;
+    if (extrapolation.loopBoundaryTime.has_value()) {
+        const double boundary = extrapolation.loopBoundaryTime.value();
+
+        // Looped extrapolation region is value block if loopBoundaryTime
+        // is specified but doesn't match a knot time.
+        if (!std::binary_search(_data->times.begin(), _data->times.end(),
+                                boundary))
+        {
+            isPre ? _invalidPreExtrapLoop = true
+                  : _invalidPostExtrapLoop = true;
+            return;
+        }
+
+        // loopBoundaryTime matches a knot time, so shift the loop start
+        // or end time accordingly
+        isPre ? extrapLoopEnd = boundary
+              : extrapLoopStart = boundary;
+    }
+    const TsTime protoSpan = extrapLoopEnd - extrapLoopStart;
+
+    // Looping extrapolation behaves like held extrapolation when
+    // loopBoundaryTime causes the looped region to have no range.
+    if (protoSpan == 0) {
+        _evalTime = isPre ? _firstTime : _lastTime;
+        _location = isPre ? Ts_EvalPre : Ts_EvalPost;
+        return;
+    }
+
     // Figure out how many whole iterations the extrapolation distance covers.
     // Also determine if we're exactly at an iteration boundary.
-    const TsTime protoSpan = _lastTime - _firstTime;
     const double numItersFrac = offset / protoSpan;
     const int numItersTrunc = int(numItersFrac);
     const bool boundary = (numItersTrunc == numItersFrac);
@@ -1093,7 +1131,7 @@ void _LoopResolver::_DoExtrap(
     if (extrapolation.mode == TsExtrapLoopRepeat
         && _aspect != Ts_EvalDerivative)
     {
-        _ComputeExtrapValueOffset();
+        _ComputeExtrapValueOffset(extrapLoopStart, extrapLoopEnd, isPre);
         _valueOffset -= iterHop * _extrapValueOffset;
     }
 
@@ -1102,7 +1140,8 @@ void _LoopResolver::_DoExtrap(
     else if (extrapolation.mode == TsExtrapLoopOscillate
              && iterHop % 2 != 0)
     {
-        _evalTime = _firstTime + (protoSpan - (_evalTime - _firstTime));
+        _evalTime = extrapLoopStart +
+            (protoSpan - (_evalTime - extrapLoopStart));
         _location = (_location == Ts_EvalPre ? Ts_EvalPost : Ts_EvalPre);
         if (_aspect == Ts_EvalDerivative)
         {
@@ -1117,36 +1156,75 @@ void _LoopResolver::_DoExtrap(
     // evaluating on the pre-side or post-side.
 }
 
-void _LoopResolver::_ComputeExtrapValueOffset()
+void _LoopResolver::_ComputeExtrapValueOffset(
+    const TsTime extrapLoopStart,
+    const TsTime extrapLoopEnd,
+    const bool isPre)
 {
+    const auto &times = _data->times;
     const TsLoopParams &lp = _data->loopParams;
 
     double firstValue;
-    if (!_firstTimeLooped)
+    if (extrapLoopStart != _firstTime)
+    {
+        // Note that extrapLoopStart falls exactly on a knot time,
+        // guaranteed by previous logic in _DoExtrap.
+        const auto it = std::lower_bound(times.begin(), times.end(),
+                                         extrapLoopStart);
+        TF_VERIFY(it != times.end() && *it == extrapLoopStart,
+                  "The value of extrapLoopStart given to "
+                  "_ComputeExtrapValueOffset must correspond to a knot time.");
+        const size_t index = std::distance(times.begin(), it);
+        firstValue = isPre ? _data->GetKnotDataAsDouble(index).GetPreValue()
+                           : _data->GetKnotDataAsDouble(index).value;
+    }
+    else if (!_firstTimeLooped)
     {
         // Earliest knot is not from inner loops.  Read its value.
-        firstValue = _data->GetKnotDataAsDouble(0).GetPreValue();
+        firstValue = isPre ? _data->GetKnotDataAsDouble(0).GetPreValue()
+                           : _data->GetKnotDataAsDouble(0).value;
     }
     else
     {
         // Earliest knot is from inner loops.  Compute its value.
-        firstValue =
-            _data->GetKnotDataAsDouble(_firstInnerProtoIndex).GetPreValue()
+        const auto firstKnotData =
+            _data->GetKnotDataAsDouble(_firstInnerProtoIndex);
+        firstValue = (isPre ? firstKnotData.GetPreValue()
+                            : firstKnotData.value)
             - lp.numPreLoops * lp.valueOffset;
     }
 
     double lastValue;
-    if (!_lastTimeLooped)
+    if (extrapLoopEnd != _lastTime)
     {
+        // Note that extrapLoopEnd falls exactly on a knot time,
+        // guaranteed by previous logic in _DoExtrap.
+        const auto it = std::lower_bound(times.begin(), times.end(),
+                                         extrapLoopEnd);
+        TF_VERIFY(it != times.end() && *it == extrapLoopEnd,
+                  "The value of extrapLoopEnd given to "
+                  "_ComputeExtrapValueOffset must correspond to a knot time.");
+        const size_t index = std::distance(times.begin(), it);
+        lastValue = isPre ? _data->GetKnotDataAsDouble(index).GetPreValue()
+                          : _data->GetKnotDataAsDouble(index).value;
+    }
+    else if (!_lastTimeLooped)
+    { 
         // Latest knot is not from inner loops.  Read its value.
-        lastValue = _data->GetKnotDataAsDouble(_data->times.size() - 1).value;
+        const auto lastKnotData = _data->GetKnotDataAsDouble(times.size() - 1);
+        lastValue = isPre ? lastKnotData.GetPreValue()
+                          : lastKnotData.value;
     }
     else
     {
         // Latest knot is from inner loops.  It is the final echo of the
         // prototype start knot.  Compute its value.
-        lastValue =
-            _data->GetKnotDataAsDouble(_firstInnerProtoIndex).value
+        // Note that the value offset affects both the pre-value and value
+        // of the echoed prototype start knot.
+        const auto lastKnotData =
+            _data->GetKnotDataAsDouble(_firstInnerProtoIndex);
+        lastValue = (isPre ? lastKnotData.GetPreValue()
+                           : lastKnotData.value)
             + (lp.numPostLoops + 1) * lp.valueOffset;
     }
 
@@ -1391,7 +1469,9 @@ _EvalMain(
             // Pre-value after held segment = previous knot value.
             if (location == Ts_EvalPre) {
                 if (atFirst) {
-                    if (data->preExtrapolation.mode == TsExtrapValueBlock) {
+                    if (data->preExtrapolation.mode == TsExtrapValueBlock ||
+                        loopRes.HasInvalidPreExtrapLoop())
+                    {
                         return std::nullopt;
                     }
                 } else {
@@ -1405,7 +1485,9 @@ _EvalMain(
                 }
             } else {
                 if (atLast) {
-                    if (data->postExtrapolation.mode == TsExtrapValueBlock) {
+                    if (data->postExtrapolation.mode == TsExtrapValueBlock ||
+                        loopRes.HasInvalidPostExtrapLoop())
+                    {
                         return std::nullopt;
                     }
                 } else {
@@ -1479,7 +1561,9 @@ _EvalMain(
     // Extrapolate before first knot.
     if (beforeStart)
     {
-        if (data->preExtrapolation.mode == TsExtrapValueBlock) {
+        if (data->preExtrapolation.mode == TsExtrapValueBlock ||
+            loopRes.HasInvalidPreExtrapLoop())
+        {
             return std::nullopt;
         }
 
@@ -1528,7 +1612,9 @@ _EvalMain(
     // Extrapolate after last knot.
     if (afterEnd)
     {
-        if (data->postExtrapolation.mode == TsExtrapValueBlock) {
+        if (data->postExtrapolation.mode == TsExtrapValueBlock ||
+            loopRes.HasInvalidPostExtrapLoop())
+        {
             return std::nullopt;
         }
 
@@ -1668,8 +1754,8 @@ _BreakdownBezier(
         {prevData.time + prevData.postTanWidth, 
          prevData.value + prevData.GetPostTanHeight()},
         {nextData.time - nextData.preTanWidth,
-         nextData.value + nextData.GetPreTanHeight()},
-        {nextData.time, nextData.value}};
+         nextData.GetPreValue() + nextData.GetPreTanHeight()},
+        {nextData.time, nextData.GetPreValue()}};
 
     // Run one De Casteljau interpolation
     GfVec2d cp01   = GfLerp(u, cp[0], cp[1]);
@@ -2117,7 +2203,11 @@ _BreakdownMain(
           case TsExtrapSloped:
             knotData.nextInterp = TsInterpLinear;
             knotData.preTanSlope = knotData.postTanSlope = *slope;
-            prevData.nextInterp = TsInterpLinear;
+            if (prevData.nextInterp != TsInterpLinear) {
+                prevData.nextInterp = TsInterpLinear;
+                idx = data->SetKnotFromDouble(&prevData, VtDictionary());
+                data->UpdateKnotTangentsAtIndex(idx);
+            }
             break;
 
           default:
@@ -2135,7 +2225,7 @@ _BreakdownMain(
 
         // There's no nextKnot from which to compute a postTanWidth, so match
         // the prev knot instead.
-        knotData.preTanWidth = (prevData.time - knotData.time) / 3;
+        knotData.preTanWidth = (knotData.time - prevData.time) / 3;
         knotData.preTanAlgorithm = prevData.postTanAlgorithm;
         knotData.postTanWidth = prevData.postTanWidth;
         knotData.postTanAlgorithm = prevData.postTanAlgorithm;

@@ -35,6 +35,13 @@
                         ], 
                         "displayName": "AsyncTest",
                         "priority" : 0
+                    },
+                    "DependsOnRemovedProceduralPlugin": {
+                        "bases": [
+                            "HdGpGenerativeProceduralPlugin"
+                        ], 
+                        "displayName": "DependsOnRemoved",
+                        "priority" : 0
                     }
                 }
             }

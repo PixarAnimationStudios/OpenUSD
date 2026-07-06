@@ -11,13 +11,6 @@ categories:
 
 - <b>Framework.</b>  The base implementation of TsTest.  Includes data
   structures, generic evaluation interface, and graphical output.
-  
-  - \c tsTest_Evaluator (h, cpp, wrap): generic interface for spline evaluation.
-    Implemented by all backends.
-    
-  - \c tsTest_SplineData (h, cpp, wrap): input data structure for the evaluation
-    interface.  Provides a generic way of defining the control parameters of a
-    spline: knots, tangents, extrapolation, etc.
     
   - \c tsTest_SampleTimes (h, cpp, wrap): datatypes and convenience routines to
     determine a set of times at which to perform sampling.
@@ -38,32 +31,7 @@ categories:
   - \c tsTest_CompareBaseline (py): test helper that creates baseline files,
     compares results against baselines, and graphs differences.
 
-- <b>Backends.</b>  Implementations of the generic evaluation interface for
-  various spline evaluation engines.
-  
-  - \c tsTest_TsEvaluator (h, cpp, wrap): backend for the Ts library.
-  
-  - \c tsTest_MayapyEvaluator (py): backend for the `mayapy` interpreter.
-    Produces evaluations using Autodesk Maya.  Built optionally, and requires a
-    working installation of Maya.
-    
-    - \c tsTest_MayapyDriver (py): helper for `tsTest_MayapyEvaluator`.  A
-      script that runs inside `mayapy`.
-      
-  - \c tsTest_AnimXEvaluator (h, cpp, wrap): backend for the AnimX library, an
-    open-source Autodesk project that emulates Maya evaluation.  Built
-    optionally, and requires a working installation of AnimX.
-  
-- <b>Single-Backend Tests.</b>  CTest cases that call into one backend to
-  validate behavior.
-  
-  - Most tests in \c testenv that start with \c tsTest.  For example, \c
-    tsTest_TsFramework.
-  
-- <b>Comparison Tests.</b>  CTest cases that call into two backends to compare
-  their behavior with identical spline inputs.
-
-  - Tests in \c testenv that start with \c tsTest and include \c Vs.  For
-    example, \c tsTest_MayapyVsAnimX.
+The TsTest framework is available in the Ts Python module when Ts is built
+with tests enabled. See BUILDING.md for more details.
 
 */

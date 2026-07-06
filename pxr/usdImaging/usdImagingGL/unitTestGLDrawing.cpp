@@ -49,28 +49,25 @@ static void UsdImagingGL_UnitTestHelper_InitPlugins()
 
 ////////////////////////////////////////////////////////////
 
-class UsdImagingGL_UnitTestWindow : public GarchGLDebugWindow {
-public:
-    typedef UsdImagingGL_UnitTestWindow This;
-
+class UsdImagingGL_UnitTestWindow : public GarchGLDebugWindow
+{
 public:
     UsdImagingGL_UnitTestWindow(UsdImagingGL_UnitTestGLDrawing * unitTest,
                                 int w, int h);
-    virtual ~UsdImagingGL_UnitTestWindow();
+    ~UsdImagingGL_UnitTestWindow() override;
 
     void DrawOffscreen();
 
     bool WriteToFile(std::string const & attachment, 
                      std::string const & filename);
 
-    // GarchGLDebugWIndow overrides;
-    virtual void OnInitializeGL();
-    virtual void OnUninitializeGL();
-    virtual void OnPaintGL();
-    virtual void OnKeyRelease(int key);
-    virtual void OnMousePress(int button, int x, int y, int modKeys);
-    virtual void OnMouseRelease(int button, int x, int y, int modKeys);
-    virtual void OnMouseMove(int x, int y, int modKeys);
+    void OnInitializeGL() override;
+    void OnUninitializeGL() override;
+    void OnPaintGL() override;
+    void OnKeyRelease(int key) override;
+    void OnMousePress(int button, int x, int y, int modKeys) override;
+    void OnMouseRelease(int button, int x, int y, int modKeys) override;
+    void OnMouseMove(int x, int y, int modKeys) override;
 
 private:
     void _ClearPresentationOutput();
@@ -88,9 +85,7 @@ UsdImagingGL_UnitTestWindow::UsdImagingGL_UnitTestWindow(
 {
 }
 
-UsdImagingGL_UnitTestWindow::~UsdImagingGL_UnitTestWindow()
-{
-}
+UsdImagingGL_UnitTestWindow::~UsdImagingGL_UnitTestWindow() = default;
 
 void
 UsdImagingGL_UnitTestWindow::_ClearPresentationOutput()
@@ -262,6 +257,7 @@ UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     , _cameraLight(false)
     , _enableSceneMaterials(true)
     , _unloadedAsBounds(false)
+    , _skipTestPlugins(false)
     , _complexity(1.0f)
     , _drawMode(UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH)
     , _shouldFrameAll(false)
@@ -276,9 +272,7 @@ UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
 {
 }
 
-UsdImagingGL_UnitTestGLDrawing::~UsdImagingGL_UnitTestGLDrawing()
-{
-}
+UsdImagingGL_UnitTestGLDrawing::~UsdImagingGL_UnitTestGLDrawing() = default;
 
 int
 UsdImagingGL_UnitTestGLDrawing::GetWidth() const
@@ -423,6 +417,7 @@ static void Usage(int argc, char *argv[])
 "                           [-offscreen] [-lighting]\n"
 "                           [-disableSceneMaterials]\n"
 "                           [-camera pathToCamera]\n"
+"                           [-pickCamera pathToPickCamera]\n"
 "                           [-complexity complexity]\n"
 "                           [-renderer rendererName]\n"
 "                           [-shading [flat|smooth|wire|wireOnSurface|points]]\n"
@@ -435,7 +430,8 @@ static void Usage(int argc, char *argv[])
 "                           [-renderSetting name type value]\n"
 "                           [-rendererAov name]\n"
 "                           [-perfStatsFile path]\n"
-"                           [-traceFile path] [...]\n"
+"                           [-traceFile path]\n"
+"                           [-skipTestPlugins] [...]\n"
 "\n"
 "  usdImaging basic drawing test\n"
 "\n"
@@ -494,7 +490,8 @@ static void Usage(int argc, char *argv[])
 "  -windowPolicy [matchVertically|matchHorizontally|fit|crop|dontConform]\n"
 "                      Forces the window policy\n"
 "                      (defaults to matchVertically to match usdview)\n"
-"  -numErrorsAllowed n Number of errors allowed before test fails (default 0)"
+"  -numErrorsAllowed n Number of errors allowed before test fails (default 0)\n"
+"  -skipTestPlugins    Skip loading the usdImaging test plugins."
 ;
 
     Die(usage, TfGetBaseName(argv[0]).c_str());
@@ -656,6 +653,9 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         if (strcmp(argv[i], "-") == 0) {
             Usage(argc, argv);
         }
+        else if (strcmp(argv[i], "-skipTestPlugins") == 0) {
+            _skipTestPlugins = true;
+        }
         else if (strcmp(argv[i], "-frameAll") == 0) {
             _shouldFrameAll = true;
         }
@@ -678,6 +678,10 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         else if (strcmp(argv[i], "-camera") == 0) {
             CheckForMissingArguments(i, 1, argc, argv);
             _cameraPath = argv[++i];
+        }
+        else if (strcmp(argv[i], "-pickCamera") == 0) {
+            CheckForMissingArguments(i, 1, argc, argv);
+            _pickCameraPath = argv[++i];
         }
         else if (strcmp(argv[i], "-disableSceneMaterials") == 0) {
             _enableSceneMaterials = false;
@@ -851,7 +855,9 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
         TraceCollector::GetInstance().SetEnabled(true);
     }
 
-    UsdImagingGL_UnitTestHelper_InitPlugins();
+    if (!_skipTestPlugins) {
+        UsdImagingGL_UnitTestHelper_InitPlugins();
+    }
 
     for (size_t i=0; i<args.clipPlaneCoords.size()/4; ++i) {
         _clipPlanes.push_back(GfVec4d(&args.clipPlaneCoords[i*4]));

@@ -10,7 +10,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/ts/api.h"
-#include "pxr/base/ts/tsTest_SplineData.h"
+#include "pxr/base/ts/splineData.h"
+#include "pxr/base/ts/spline.h"
 
 #include <vector>
 #include <string>
@@ -28,6 +29,7 @@ public:
     {
         // Single-segment ordinary curves.
         TwoKnotBezier,
+        TwoKnotBezierAutoEase,
         TwoKnotHermite,
         TwoKnotLinear,
 
@@ -41,8 +43,15 @@ public:
         InnerLoopPre,
         InnerLoopPost,
         ExtrapLoopRepeat,
+        ExtrapLoopRepeatDualValued,
+        ExtrapLoopRepeatBoundary,
+        ExtrapLoopRepeatDualValuedBoundary,
         ExtrapLoopReset,
+        ExtrapLoopResetDualValued,
+        ExtrapLoopResetBoundary,
+        ExtrapLoopResetInvalidBoundary,
         ExtrapLoopOscillate,
+        ExtrapLoopOscillateBoundary,
         InnerAndExtrapLoops,
 
         // Tests of several regressive Bezier cases.
@@ -98,7 +107,9 @@ public:
 
     // Get a case by ID.
     TS_API
-    static TsTest_SplineData GetData(DataId id);
+    static TsSpline GetSpline(
+        DataId id,
+        const TfType valueType = Ts_GetType<double>());
 
     // Get all case names.
     TS_API
@@ -106,7 +117,16 @@ public:
 
     // Get a case by name.
     TS_API
-    static TsTest_SplineData GetDataByName(const std::string &name);
+    static TsSpline GetSplineByName(
+        const std::string &name,
+        const TfType valueType = Ts_GetType<double>());
+
+private:
+    static Ts_TypedSplineData<double> _GetData(DataId id);
+
+    static TsSpline _SplineDataToSpline(
+        const Ts_TypedSplineData<double>& data,
+        const TfType valueType);
 };
 
 

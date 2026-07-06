@@ -1,0 +1,42 @@
+#usda 1.0
+(
+    subLayers = [
+        @sub1.usda@,
+        @sub2.usda@
+    ]
+)
+
+over "Root"
+{
+    over "A" (
+        customData = {
+            pathExpression rootPrimExpr = "/Root/A//Mesh*"
+            pathExpression[] rootPrimArr = ["/Root/A/B", "/Root/A/C"]
+        }
+    )
+    {
+        pathExpression fromRoot:a = "/Root/A//Mesh*" (
+            customData = {
+                pathExpression rootPropExpr = "/Root/A/B /Root/A/C.attr"
+            }
+        )
+
+        over "B"
+        {
+            pathExpression fromRoot:b = "/Root/A/B /Root/Other"
+        }
+
+        def "C"
+        {
+            custom int attr
+            pathExpression fromRoot:c = "/Root/A/C & /Root/A/B"
+        }
+    }
+
+    over "OtherPrim"
+    {
+        pathExpression[] fromRoot:arr = ["/Root/A/B//Geom*", " /Root/A/C"]
+        pathExpression fromRoot:global = "//Mesh*"
+        pathExpression fromRoot:exprRef = "/Root/OtherPrim %/Root/A:test"
+    }
+}

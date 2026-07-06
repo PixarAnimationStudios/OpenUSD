@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   version="1.1"
+   id="svg1"
+   width="80"
+   height="80"
+   viewBox="0 0 80 80"
+   sodipodi:docname="usd-rel-plain-icon.svg"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="5.12"
+     inkscape:cx="76.855469"
+     inkscape:cy="51.953125"
+     inkscape:window-width="2560"
+     inkscape:window-height="1367"
+     inkscape:window-x="0"
+     inkscape:window-y="42"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g1" />
+  <g
+     inkscape:groupmode="layer"
+     inkscape:label="Image"
+     id="g1">
+    <path
+       style="font-size:59.0326px;font-family:Sans;-inkscape-font-specification:Sans;text-align:center;text-anchor:middle;fill:#e6e6e6;stroke-width:18.9747;stroke-linecap:round;stroke-linejoin:round;paint-order:markers stroke fill"
+       d="m 45.791737,40.681953 q 1.873593,0.63414 3.631889,2.709505 1.787119,2.075364 3.574239,5.707253 L 58.90689,60.859112 H 52.651971 L 47.146489,49.819324 q -2.133014,-4.323677 -4.15073,-5.736078 -1.988891,-1.412401 -5.447832,-1.412401 H 31.206534 V 60.859112 H 25.383983 V 17.824115 H 38.52796 q 7.379075,0 11.010964,3.084223 3.631888,3.084223 3.631888,9.310318 0,4.064256 -1.902418,6.744935 -1.873593,2.68068 -5.476657,3.718362 z M 31.206534,22.608984 v 15.276992 h 7.321426 q 4.208379,0 6.341393,-1.931243 2.161838,-1.960066 2.161838,-5.736077 0,-3.776011 -2.161838,-5.678429 -2.133014,-1.931243 -6.341393,-1.931243 z"
+       id="text1"
+       aria-label="R" />
+    <circle
+       style="fill:none;fill-opacity:1;stroke:#e6e6e6;stroke-width:7.10227;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+       id="path1-3-1-8"
+       cx="40"
+       cy="40"
+       r="34.827225" />
+  </g>
+</svg>

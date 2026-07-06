@@ -15,6 +15,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdFlattenedXformDataSourceProvider : public HdFlattenedDataSourceProvider
 {
+public:
     HD_API
     HdContainerDataSourceHandle GetFlattenedDataSource(
         const Context&) const override;

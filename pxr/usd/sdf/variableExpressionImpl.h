@@ -353,6 +353,27 @@ private:
     std::unique_ptr<Node> _searchFor;
 };
 
+/// \class MatchesRegexNode
+/// Expression node for function that performs basic regular expression pattern
+/// matching with strings or list of strings. The extended POSIX regular
+/// expression grammar is supported. 
+class MatchesRegexNode
+    : public FunctionWithNArgsNode<2>
+{
+public:
+    static const char* GetFunctionName();
+
+    MatchesRegexNode(
+        std::unique_ptr<Node>&& searchIn,
+        std::unique_ptr<Node>&& _pattern);
+
+    EvalResult Evaluate(EvalContext* ctx) const override;
+
+private:
+    std::unique_ptr<Node> _searchIn;
+    std::unique_ptr<Node> _pattern;
+};
+
 /// \class AtNode
 /// Expression node for function that retrieves a value from a list 
 /// or a character from a string at a given index.

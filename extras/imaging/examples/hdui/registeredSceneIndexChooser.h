@@ -15,6 +15,7 @@
 
 #include <QPushButton>
 #include <QMenu>
+#include <QString>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -29,6 +30,7 @@ Q_SIGNALS:
     void SceneIndexSelected(
         const std::string &name,
         HdSceneIndexBaseRefPtr sceneIndex);
+    void StatusMessage(const QString &msg);
 
 private:
     QMenu * _menu;

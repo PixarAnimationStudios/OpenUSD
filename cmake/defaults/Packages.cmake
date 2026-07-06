@@ -66,10 +66,11 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
             endif()
         endif()
 
-        # This option indicates that we don't want to explicitly link to the
-        # python libraries. See BUILDING.md for details.
+        # This option indicates that we don't want libraries to explicitly link
+        # to the Python libraries. However, executables must link to the Python
+        # libraries to avoid missing symbol errors. See BUILDING.md for details.
         if(PXR_PY_UNDEFINED_DYNAMIC_LOOKUP AND NOT WIN32)
-            set(PYTHON_LIBRARIES "")
+            set(PYTHON_LIBRARIES "$<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:${package}::Python>")
         else()
             set(PYTHON_LIBRARIES "${package}::Python")
         endif()
@@ -77,6 +78,37 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
 
     # USD builds only work with Python3
     setup_python_package(Python3)
+
+    # Compute the default Python bindings install directory from the Python
+    # interpreter if the user has not provided an explicit value. Note that
+    # we intentionally do not use Python3_SITEARCH since that may be an
+    # absolute path pointing outside of our install prefix. We should allow
+    # such paths only if they are given by the user.
+    if(NOT PXR_PYTHON_INSTALL_DIR)
+        execute_process(
+            COMMAND "${PYTHON_EXECUTABLE}"
+                "${PROJECT_SOURCE_DIR}/cmake/macros/getPythonInstallDir.py"
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            OUTPUT_VARIABLE _pxr_default_python_install_dir
+            RESULT_VARIABLE _pxr_sysconfig_rc
+        )
+        if(_pxr_sysconfig_rc EQUAL 0 AND _pxr_default_python_install_dir)
+            set(PXR_PYTHON_INSTALL_DIR "${_pxr_default_python_install_dir}"
+                CACHE STRING
+                "Directory for installing Python bindings." FORCE)
+        else()
+            set(PXR_PYTHON_INSTALL_DIR "lib/python"
+                CACHE STRING
+                "Directory for installing Python bindings." FORCE)
+            message(WARNING
+                "Could not detect Python site-packages path,"
+                "defaulting PXR_PYTHON_INSTALL_DIR to lib/python")
+        endif()
+        unset(_pxr_default_python_install_dir)
+        unset(_pxr_sysconfig_rc)
+    endif()
+
+    message(STATUS "Installing Python bindings to ${PXR_PYTHON_INSTALL_DIR}")
 
     # --Jinja2
     find_package(Jinja2)
@@ -301,10 +333,6 @@ if(PXR_ENABLE_OSL_SUPPORT)
     find_package(OSL REQUIRED)
     set(REQUIRES_Imath TRUE)
     add_definitions(-DPXR_OSL_SUPPORT_ENABLED)
-endif()
-
-if (PXR_BUILD_ANIMX_TESTS)
-    find_package(AnimX REQUIRED)
 endif()
 
 # ----------------------------------------------

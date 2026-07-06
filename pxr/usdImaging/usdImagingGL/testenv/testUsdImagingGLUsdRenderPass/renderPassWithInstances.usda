@@ -1,0 +1,406 @@
+#usda 1.0
+(
+    '''USD scene demonstrating render passes with instanced objects'''
+    upAxis = "Y"
+)
+
+class Xform "_class_Sphere"
+{
+    def Sphere "Geom"
+    {
+        double radius = 0.5
+    }
+}
+
+class Xform "_class_NestedSpheres"
+{
+    def "Sphere_1" (
+        inherits = </_class_Sphere>
+    ) {
+        float3 xformOp:scale = (0.5, 0.5, 0.5)
+        double3 xformOp:translate = (-0.1, -0.1, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+    def "Sphere_2" (
+        inherits = </_class_Sphere>
+    ) {
+        float3 xformOp:scale = (0.5, 0.5, 0.5)
+        double3 xformOp:translate = (0.1, -0.1, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+    def "Sphere_3" (
+        inherits = </_class_Sphere>
+    ) {
+        float3 xformOp:scale = (0.5, 0.5, 0.5)
+        double3 xformOp:translate = (0.0, 0.1414, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+}
+
+class Xform "_class_NestedSpheresInstanced" (
+    """Nested spheres, but with each sphere instanced."""
+)
+{
+    def "SphereInstance_1" (
+        inherits = </_class_Sphere>
+        instanceable = True
+    ) {
+        float3 xformOp:scale = (0.5, 0.5, 0.5)
+        double3 xformOp:translate = (-0.1, -0.1, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+    def "SphereInstance_2" (
+        inherits = </_class_Sphere>
+        instanceable = True
+    ) {
+        float3 xformOp:scale = (0.5, 0.5, 0.5)
+        double3 xformOp:translate = (0.1, -0.1, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+    def "SphereInstance_3" (
+        inherits = </_class_Sphere>
+        instanceable = True
+    ) {
+        float3 xformOp:scale = (0.5, 0.5, 0.5)
+        double3 xformOp:translate = (0.0, 0.1414, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+}
+
+
+
+def Xform "World"
+{
+    def Xform "Lights"
+    {
+        def DomeLight "DomeLight"
+        {
+        }
+    }
+
+    def Scope "Geom"
+    {
+        def Xform "GroundPlane"
+        {
+            def Cube "GroundMesh"
+            {
+                float3 xformOp:scale = (5, 0.05, 5)
+                token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:scale"]
+                float3 xformOp:rotateXYZ = (0, -90, 0)
+            }
+        }
+        def Xform "Cube"
+        {
+            def Cube "CubeMesh"
+            {
+                double size = 1.2
+                double3 xformOp:translate = (3.85, 0.65, 3.85)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        def Xform "Cone"
+        {
+            def Cone "ConeMesh"
+            {
+                token axis = "Y"
+                double height = 1.2
+                double radius = 0.6
+                double3 xformOp:translate = (-3.85, 0.65, 3.85)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        def Xform "LargeCone"
+        {
+            def Cone "LargeConeMesh"
+            {
+                token axis = "Y"
+                double radius = 2
+                double height = 4
+                double3 xformOp:translate = (0, 2, 0)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        def Xform "DiffuseSphere"
+        {
+            def Sphere "DiffuseSphereMesh"
+            {
+                double radius = 0.5
+                double3 xformOp:translate = (-1.5, 0.55, 3.5)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+        def Xform "ReflSphere"
+        {
+            def Sphere "ReflSphereMesh"
+            {
+                double radius = 0.5
+                double3 xformOp:translate = (1.5, 0.55, 3.5)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Xform "NativeInstances" (
+            "This scope exercises USD native instances."
+        )
+        {
+            double3 xformOp:translate = (3.85, 0.6, -3.5)
+            token[] xformOpOrder = ["xformOp:translate"]
+        
+            def "SphereInstance_1" (
+                inherits = </_class_Sphere>
+                instanceable = true
+            ) {
+                double3 xformOp:translate = (0, 0, 0)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+            def "SphereInstance_2" (
+                inherits = </_class_Sphere>
+                instanceable = true
+            ) {
+                double3 xformOp:translate = (0, 1, 0)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+            def "SphereInstance_3" (
+                inherits = </_class_Sphere>
+                instanceable = true
+            ) {
+                double3 xformOp:translate = (0, 2, 0)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Xform "NestedNativeInstances" (
+            "This scope exercises nested USD native instances."
+        )
+        {
+            double3 xformOp:translate = (-5.0, 0.6, -3.5)
+            token[] xformOpOrder = ["xformOp:translate"]
+        
+            def "NestedSpheres_1" (
+                inherits = </_class_NestedSpheresInstanced>
+                instanceable = true
+            ) {
+                double3 xformOp:translate = (0, 0, 0)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+            def "NestedSpheres_2" (
+                inherits = </_class_NestedSpheresInstanced>
+                instanceable = true
+            ) {
+                double3 xformOp:translate = (0, 1, 0)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+            def "NestedSpheres_3" (
+                inherits = </_class_NestedSpheresInstanced>
+                instanceable = true
+            ) {
+                double3 xformOp:translate = (0, 2, 0)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Xform "NativeInstancesWithMultiplePrims" (
+            "This scope exercises USD native instances with child prims."
+        )
+        {
+            double3 xformOp:translate = (-6.35, 0.6, -3.5)
+            token[] xformOpOrder = ["xformOp:translate"]
+        
+            def "NestedSpheres_1" (
+                inherits = </_class_NestedSpheres>
+                instanceable = true
+            ) {
+                double3 xformOp:translate = (0, 0, 0)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+            def "NestedSpheres_2" (
+                inherits = </_class_NestedSpheres>
+                instanceable = true
+            ) {
+                double3 xformOp:translate = (0, 1, 0)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+            def "NestedSpheres_3" (
+                inherits = </_class_NestedSpheres>
+                instanceable = true
+            ) {
+                double3 xformOp:translate = (0, 2, 0)
+                token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def PointInstancer "PointInstancer" (
+            "This scope exercises UsdGeomPointInstancer."
+        )
+        {
+            double3 xformOp:translate = (2.5, 0.6, -3.5)
+            token[] xformOpOrder = ["xformOp:translate"]
+
+            rel prototypes = [
+                </World/Geom/PointInstancer/Prototypes/SphereProto>,
+            ]
+            float3[] positions = [
+                (0,0,0),
+                (0,1,0),
+                (0,2,0),
+            ]
+            int[] protoIndices = [
+                0, 0, 0
+            ]
+            int64[] ids = [
+                111, 222, 333
+            ]
+
+            def "Prototypes"
+            {
+                def "SphereProto" (
+                    inherits = </_class_Sphere>
+                    instanceable = True
+                ) {
+                }
+            }
+        }
+    }
+
+    def Camera "main_cam"
+    {
+        float2 clippingRange = (0.1, 10000)
+        float focalLength = 45
+        float focusDistance = 21
+        float fStop = 0
+        float horizontalAperture = 35.555
+        float verticalAperture = 20
+        double3 xformOp:rotateXYZ = (-18.9, 17.76, 0)
+        double3 xformOp:translate = (-1, 0.5, 21)
+        token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+    }
+}
+
+def Scope "Render"
+{
+    def Scope "Vars"
+    {
+        def RenderVar "alpha"
+        {
+            uniform token dataType = "float"
+            uniform string sourceName = "a"
+        }
+
+        def RenderVar "color"
+        {
+            uniform string sourceName = "Ci"
+        }
+    }
+
+    def Scope "Outputs"
+    {
+        def RenderProduct "Default" (
+            apiSchemas = ["PxrDspyOpenExrAPI"]
+        )
+        {
+            rel orderedVars = [
+                </Render/Vars/color>,
+                </Render/Vars/alpha>,
+            ]
+            bool ri:displayDriver:asrgba = 1
+        }
+    }
+
+    def Scope "Settings"
+    {
+        def RenderSettings "Default"
+        {
+            rel camera = </World/main_cam>
+            uniform int2 resolution = (128, 128)
+
+            bool ri:hider:jitter = 0
+            int ri:hider:minsamples = 16
+            int ri:hider:maxsamples = 16
+            rel ri:integrator = </Render/Settings/PxrDirectLighting>
+        }
+
+        def RenderSettings "Visualizer"
+        {
+            rel camera = </World/main_cam>
+            uniform int2 resolution = (128, 128)
+
+            bool ri:hider:jitter = 0
+            int ri:hider:minsamples = 4
+            int ri:hider:maxsamples = 4
+            rel ri:integrator = </Render/Settings/PxrVisualizer>
+        }
+
+        def PxrVisualizer "PxrVisualizer"
+        {
+            token outputs:result
+        }
+
+        def PxrDirectLighting "PxrDirectLighting"
+        {
+            token outputs:result
+        }
+    }
+
+    def Scope "Passes"
+    {
+        def RenderPass "default"
+        {
+            uniform token passType = "render"
+            rel renderSource = </Render/Settings/Visualizer>
+        }
+
+        def RenderPass "prune_test" (
+            """
+            Test pruning of
+            - a native instance with regular children
+            - a native instance with native instance children
+            - a native instance inside another native instance (see HYD-3640)
+            - a non-instanced parent of another mesh
+            """
+        )
+        {
+            uniform bool collection:prune:includeRoot = 0
+            uniform pathExpression collection:prune:membershipExpression = "/World/Geom/NativeInstances/SphereInstance_2 /World/Geom/NestedNativeInstances/NestedSpheres_2 /World/Geom/NestedNativeInstances/NestedSpheres_3/SphereInstance_2 /World/Geom/NativeInstancesWithMultiplePrims/NestedSpheres_2 /World/Geom/GroundPlane"
+            uniform token passType = "render"
+            # Can use visualizer here
+            rel renderSource = </Render/Settings/Visualizer>
+        }
+
+        def RenderPass "matte_test"
+        {
+            uniform bool collection:matte:includeRoot = 0
+            uniform pathExpression collection:matte:membershipExpression = "/World/Geom/NativeInstances/SphereInstance_2 /World/Geom/NestedNativeInstances/NestedSpheres_2 /World/Geom/NestedNativeInstances/NestedSpheres_3/SphereInstance_2 /World/Geom/NativeInstancesWithMultiplePrims/NestedSpheres_2 /World/Geom/Cube// /World/Geom/Cone// /World/Geom/LargeCone//"
+            uniform token passType = "render"
+            # Visualizer does not support matte
+            rel renderSource = </Render/Settings/Default>
+        }
+
+        def RenderPass "renderVisibility_test"
+        {
+            uniform bool collection:renderVisibility:includeRoot = 0
+            uniform pathExpression collection:renderVisibility:membershipExpression = "~(/World/Geom/NativeInstances/SphereInstance_2// /World/Geom/NestedNativeInstances/NestedSpheres_2// /World/Geom/NestedNativeInstances/NestedSpheres_3/SphereInstance_2// /World/Geom/NativeInstancesWithMultiplePrims/NestedSpheres_2// /World/Geom/Cube// /World/Geom/Cone// /World/Geom/LargeCone//)"
+            uniform token passType = "render"
+            # Can use visualizer here
+            rel renderSource = </Render/Settings/Visualizer>
+        }
+
+        def RenderPass "renderVisibility_test2"
+        {
+            uniform bool collection:renderVisibility:includeRoot = 0
+            uniform pathExpression collection:renderVisibility:membershipExpression = "/World//"
+            uniform token passType = "render"
+            # Can use visualizer here
+            rel renderSource = </Render/Settings/Visualizer>
+        }
+
+        def RenderPass "cameraVisibility_test"
+        {
+            uniform bool collection:cameraVisibility:includeRoot = 0
+            uniform pathExpression collection:cameraVisibility:membershipExpression = "~(/World/Geom/NativeInstances/SphereInstance_2// /World/Geom/NestedNativeInstances/NestedSpheres_2// /World/Geom/NestedNativeInstances/NestedSpheres_3/SphereInstance_2// /World/Geom/NativeInstancesWithMultiplePrims/NestedSpheres_2// /World/Geom/Cube// /World/Geom/Cone// /World/Geom/LargeCone//)"
+            uniform token passType = "render"
+            # Need lighting to confirm that shadowing from camera-invised
+            # geomtry
+            rel renderSource = </Render/Settings/Default>
+        }
+    }
+}

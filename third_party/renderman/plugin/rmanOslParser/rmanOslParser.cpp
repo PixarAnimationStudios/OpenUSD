@@ -18,6 +18,8 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/plug/registry.h"
+#include "pxr/base/plug/plugin.h"
 #include "pxr/usd/ar/ar.h"
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/resolvedPath.h"
@@ -77,13 +79,26 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sdrGlobalConfigPrefix, "sdrGlobalConfig_"))
     (sdrDefinitionNameFallbackPrefix)
     (schemaBase)
+
+    // If we already have a sdrOSL use these discovery/source types.
+    // We don't expect to find them but we also don't want to conflict with sdrOsl
+    // so instead lets return something to prevent warnings/errors.
+    ((rmanDiscoveryType, "rmanoso"))
+    ((rmanSourceType, "rmanOSL"))
 );
 
 const SdrTokenVec& 
 RmanOslParserPlugin::GetDiscoveryTypes() const
 {
-    static const SdrTokenVec _DiscoveryTypes = {_tokens->discoveryType};
-    return _DiscoveryTypes;
+    // Only use the Renderman OSL fallback if sdrOsl was not built.
+    if (!PlugRegistry::GetInstance().GetPluginWithName("sdrOsl")) {
+        static const SdrTokenVec _DiscoveryTypes = {_tokens->discoveryType};
+        return _DiscoveryTypes;
+    }
+    else {
+        static const SdrTokenVec _RmanDiscoveryTypes = {_tokens->rmanDiscoveryType};
+        return _RmanDiscoveryTypes;
+    }
 }
 
 const TfToken& 
@@ -93,7 +108,13 @@ RmanOslParserPlugin::GetShadingSystem() const
 RmanOslParserPlugin::GetSourceType() const
 #endif
 {
-    return _tokens->shadingSystem;
+    // Only use the Renderman OSL fallback if sdrOsl was not built.
+    if (!PlugRegistry::GetInstance().GetPluginWithName("sdrOsl")) {
+        return _tokens->shadingSystem;
+    }
+    else {
+        return _tokens->rmanSourceType;
+    }
 }
 
 static std::unique_ptr<RixShaderQuery>
@@ -207,6 +228,15 @@ NdrNodeUniquePtr
 RmanOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 #endif
 {
+    // Only use the Renderman OSL fallback if sdrOsl was not built.
+    if (PlugRegistry::GetInstance().GetPluginWithName("sdrOsl")) {
+#if PXR_VERSION >= 2505
+        return SdrParserPlugin::GetInvalidShaderNode(discoveryResult);
+#else
+        return NdrParserPlugin::GetInvalidNode(discoveryResult);
+#endif
+    }
+
     std::unique_ptr<RixShaderQuery> sq = _getShaderQuery();
     if (!sq)
     {
@@ -221,6 +251,22 @@ RmanOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
     bool hasErrors = false;
 
     if (!discoveryResult.uri.empty()) {
+#if AR_VERSION == 1 || !defined AR_VERSION
+        // Get the resolved URI to a location that it can be read by the OSL
+        // parser    
+        bool localFetchSuccessful = ArGetResolver().FetchToLocalResolvedPath(
+            discoveryResult.uri,
+            discoveryResult.resolvedUri
+        );
+
+        if (!localFetchSuccessful) {
+            TF_WARN("Could not localize the OSL at URI [%s] into a local path. "
+                    "An invalid Sdr node definition will be created.", 
+                    discoveryResult.uri.c_str());
+
+            return NdrParserPlugin::GetInvalidNode(discoveryResult);
+        }
+#endif
         if (TfIsFile(discoveryResult.resolvedUri.c_str())) {
             // Attempt to parse the node
             hasErrors = sq->Open(discoveryResult.resolvedUri.c_str(), ""); 
@@ -259,7 +305,6 @@ RmanOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             TfDeleteFile(tmpFile);
             m.Clear();
         }
-
     }
     else {
 #if PXR_VERSION >= 2505
@@ -322,10 +367,8 @@ RmanOslParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
     // Set Sdr context if it's not already set in metadata, and if it's
     // a semantically valid context defined by USD 26.05.
     if (metadata.find(SdrNodeMetadata->Context) == metadata.end()) {
-        TfToken context = _getSdrContextFromSchemaBase(metadata);
-        if (context != _tokens->shadingSystem) {
-            metadata[SdrNodeMetadata->Context] = context;
-        }
+        metadata[SdrNodeMetadata->Context] = 
+            _getSdrContextFromSchemaBase(metadata);
     }
 #endif
 
@@ -367,7 +410,9 @@ RmanOslParserPlugin::_getSdrContextFromSchemaBase(
     std::string schemaBase = metaIt->second;
 
     static const std::unordered_map<TfToken, TfToken, TfHash> contextMapping({
+#if PXR_VERSION >= 2308
         { TfToken("displayfilter"), SdrNodeContext->DisplayFilter },
+#endif
         { TfToken("lightfilter"), SdrNodeContext->LightFilter },
         { TfToken("samplefilter"), SdrNodeContext->SampleFilter },
         { TfToken("integrator"), TfToken("integrator")},
@@ -388,6 +433,8 @@ RmanOslParserPlugin::_getSdrContextFromSchemaBase(
     }
     
     // fallback to shadingSystem as default context
+    // NOTE: This fallback will be removed and trigger a change in behavior
+    // in SdrShaderNode::GetContext in an upcoming release.
     return _tokens->shadingSystem;
 }
 
@@ -537,8 +584,12 @@ RmanOslParserPlugin::_getPropertyMetadata(const RixShaderParameter* param,
             // Replace OslPageDelimiter with SdrShaderProperty's Page Delimiter
             metadata[entryName] = TfStringReplace(
                     std::string(*metaParam->DefaultS()),
-                    _tokens->oslPageDelimiter, 
+                    _tokens->oslPageDelimiter,
+#if PXR_VERSION >= 2308
                     SdrPropertyTokens->PageDelimiter.GetString());
+#else
+                    ":");
+#endif
         } else if (metaParam->Type() == RixShaderParameter::k_String) {
             metadata[entryName] = std::string(*metaParam->DefaultS());
         } else if (metaParam->Type() == RixShaderParameter::k_Int) {

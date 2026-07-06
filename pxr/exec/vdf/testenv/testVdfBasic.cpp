@@ -265,7 +265,7 @@ EmptyOutputProducer(const VdfContext &context)
 {
     // If we have an input value, set it on our output. Otherwise, set an
     // empty output value.
-    if (context.HasInputValue<int>(_tokens->input1)) {
+    if (context.HasInputValue(_tokens->input1)) {
         context.SetOutput(context.GetInputValue<int>(_tokens->input1));
     } else {
         context.SetEmptyOutput();
@@ -275,7 +275,7 @@ EmptyOutputProducer(const VdfContext &context)
 static void
 EmptyOutputConsumer(const VdfContext &context)
 {
-    if (context.HasInputValue<int>(_tokens->input1)) {
+    if (context.HasInputValue(_tokens->input1)) {
         context.SetOutput(std::string("got value"));
     } else {
         context.SetOutput(std::string("no value"));

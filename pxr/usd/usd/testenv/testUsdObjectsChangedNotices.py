@@ -6,7 +6,7 @@
 # https://openusd.org/license.
 
 import unittest
-from pxr import Kind, Sdf, Tf, Usd
+from pxr import Kind, Sdf, Tf, Ts, Usd
 
 _LAYER_CONTENTS = '''#usda 1.0
 def Sphere "Ref1" (
@@ -25,6 +25,7 @@ def Scope "Parent1" {
     int attr2 = 2
     int attr2.connect = </Parent1.attr3>
     int attr3 = 3
+    double attr4
 
     rel rel1 = </Parent1/Child1>
 
@@ -55,6 +56,7 @@ class TestUsdObjectsChangedNotices(unittest.TestCase):
         self._attr1 = self._parent1.GetAttribute('attr1')
         self._attr2 = self._parent1.GetAttribute('attr2')
         self._attr3 = self._parent1.GetAttribute('attr3')
+        self._attr4 = self._parent1.GetAttribute('attr4')
         self._rel1 = self._parent1.GetRelationship('rel1')
 
         self.assertTrue(self._parent1)
@@ -290,6 +292,26 @@ class TestUsdObjectsChangedNotices(unittest.TestCase):
         self.assertDictEqual(self._notices[0], {
             'ChangedInfoOnly': {
                 '/Parent1.attr1': ['default']
+            }
+        })
+
+    def test_AttributeSetTimeSample(self):
+        self._attr1.Set(42, time=1.0)
+        self.assertEqual(len(self._notices), 1)
+        self.assertDictEqual(self._notices[0], {
+            'ChangedInfoOnly': {
+                '/Parent1.attr1': ['timeSamples']
+            }
+        })
+
+    def test_AttributeSetSpline(self):
+        spline = Ts.Spline("double")
+        spline.SetKnot(Ts.Knot(time=1, value=42))
+        self._attr4.SetSpline(spline)
+        self.assertEqual(len(self._notices), 1)
+        self.assertDictEqual(self._notices[0], {
+            'ChangedInfoOnly': {
+                '/Parent1.attr4': ['spline']
             }
         })
 

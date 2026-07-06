@@ -87,9 +87,9 @@ template <bool RegisterForArrays, class T, class Xf>
 void
 Vt_RegisterTransformImpl(T (*fn)(T const &obj, Xf const &xform))
 {
-    static_assert(!VtIsKnownValueType<T>(),
-                  "Unexpected transform registration for one of the "
-                  "known value types");
+    static_assert(Vt_IsTypeAllowedToRegisterTransforms<T>(),
+                  "Unexpected transform registration for a built-in or "
+                  "low-level value type known to Vt");
 
     static_assert(VtValueTypeCanTransform<T>::value,
                   "Use VT_VALUE_TYPE_CAN_TRANSFORM or directly specialize "
@@ -184,9 +184,9 @@ void
 VtRegisterErasedTransform(
     std::optional<T> (*fn)(T const &obj, TfFunctionRef<VtValue (VtValueRef)>))
 {
-    static_assert(!VtIsKnownValueType<T>(),
-                  "Unexpected transform registration for one of the "
-                  "known value types");
+    static_assert(Vt_IsTypeAllowedToRegisterTransforms<T>(),
+                  "Unexpected transform registration for a built-in or "
+                  "low-level value type known to Vt");
 
     static_assert(VtValueTypeCanTransform<T>::value,
                   "Use VT_VALUE_TYPE_CAN_TRANSFORM or specialize "

@@ -59,6 +59,7 @@
 #include "pxr/imaging/hd/renderSettingsSchema.h"
 #include "pxr/imaging/hd/sampleFilterSchema.h"
 #include "pxr/imaging/hd/displayFilterSchema.h"
+#include "pxr/imaging/hd/energyFilterSchema.h"
 #include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
@@ -366,6 +367,16 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
     } else if (primType == HdPrimTypeTokens->displayFilter) {
         if (bits & HdChangeTracker::DirtyParams) {
             set->append(HdDisplayFilterSchema::GetDefaultLocator());
+        }
+        if (bits & HdChangeTracker::DirtyVisibility) {
+            set->append(HdVisibilitySchema::GetDefaultLocator());
+        }
+    } else if (primType == HdPrimTypeTokens->energyFilter) {
+        if (bits & HdChangeTracker::DirtyParams) {
+            set->append(HdEnergyFilterSchema::GetDefaultLocator());
+            set->append(HdDataSourceLocator(TfToken("ri:energyFilter:lpe")));
+            set->append(HdDataSourceLocator(TfToken("ri:energyFilter:enabled")));
+            set->append(HdDataSourceLocator(TfToken("ri:energyFilter:order")));
         }
         if (bits & HdChangeTracker::DirtyVisibility) {
             set->append(HdVisibilitySchema::GetDefaultLocator());
@@ -1061,6 +1072,22 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
         }
     } else if (primType == HdPrimTypeTokens->displayFilter) {
         if (_FindLocator(HdDisplayFilterSchema::GetDefaultLocator(), end, &it)) {
+            bits |= HdChangeTracker::DirtyParams;
+        }
+        if (_FindLocator(HdVisibilitySchema::GetDefaultLocator(), end, &it)) {
+            bits |= HdChangeTracker::DirtyVisibility;
+        }
+    } else if (primType == HdPrimTypeTokens->energyFilter) {
+        static const HdDataSourceLocator lpeLocator(
+            TfToken("ri:energyFilter:lpe"));
+        static const HdDataSourceLocator enabledLocator(
+            TfToken("ri:energyFilter:enabled"));
+        static const HdDataSourceLocator orderLocator(
+            TfToken("ri:energyFilter:order"));
+        if (_FindLocator(HdEnergyFilterSchema::GetDefaultLocator(), end, &it) ||
+            _FindLocator(lpeLocator, end, &it) ||
+            _FindLocator(enabledLocator, end, &it) ||
+            _FindLocator(orderLocator, end, &it)) {
             bits |= HdChangeTracker::DirtyParams;
         }
         if (_FindLocator(HdVisibilitySchema::GetDefaultLocator(), end, &it)) {

@@ -60,6 +60,9 @@ class TestUsdGeomMetrics(unittest.TestCase):
         self.assertNotEqual(authored, fromFeet)
         self.assertTrue(UsdGeom.LinearUnitsAre(authored, fromFeet))
 
+        self.assertTrue(UsdGeom.LinearUnitsAre(10 * UsdGeom.LinearUnits.decimeters,
+                                               UsdGeom.LinearUnits.meters))
+
 
 if __name__ == "__main__":
     unittest.main()

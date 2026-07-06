@@ -6,7 +6,7 @@
 # https://openusd.org/license.
 
 import unittest, shutil
-from pxr import Sdf, Usd
+from pxr import Gf, Sdf, Usd
 
 class TestUsdCrateForPayloadLists(unittest.TestCase):
     # Verify that a payload list has a specific set of explicit items
@@ -351,7 +351,7 @@ class TestUsdCrateForPayloadLists(unittest.TestCase):
         attr = Sdf.AttributeSpec(payloadNoOpinion, "TimeCode",
                                  Sdf.ValueTypeNames.TimeCode)
         self.assertTrue(attr)
-        attr.default = Sdf.TimeCode(10)
+        attr.default = Gf.TimeCode(10)
         self.assertEqual(attr.default, 10)
 
         # Save the layer and verify the 0.9 version.

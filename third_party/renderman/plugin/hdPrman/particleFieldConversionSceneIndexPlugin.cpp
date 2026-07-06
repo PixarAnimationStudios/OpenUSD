@@ -5,12 +5,26 @@
 // https://openusd.org/license.
 #include "hdPrman/particleFieldConversionSceneIndexPlugin.h"
 
+#include "pxr/imaging/hd/version.h"
+
+// There was no hdsi/version.h before this HD_API_VERSION.
+#if HD_API_VERSION >= 58
+
+#include "pxr/imaging/hdsi/version.h"
+
+#if HDSI_API_VERSION >= 19
+#define HDPRMAN_USE_PARTICLE_FIELD_CONVERSION_SCENE_INDEX
+#endif
+
+#endif // #if HD_API_VERSION >= 58
+
 #include "hdPrman/tokens.h"
 #include "pxr/usd/usdVol/tokens.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/tokens.h"
+#ifdef HDPRMAN_USE_PARTICLE_FIELD_CONVERSION_SCENE_INDEX
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
@@ -23,6 +37,7 @@
 #include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
 #include "pxr/imaging/hdsi/particleFieldConversionSceneIndex.h"
+#endif
 
 #include <array>
 
@@ -66,6 +81,7 @@ HdPrman_ParticleFieldConversionSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr& inputScene,
     const HdContainerDataSourceHandle& inputArgs)
 {
+#ifdef HDPRMAN_USE_PARTICLE_FIELD_CONVERSION_SCENE_INDEX
     /// Set a constant width of 5.6 to bound RenderMan's points within a gaussian falloff power of 2
     static const HdRetainedTypedSampledDataSource<float>::Handle constantWidth =
         HdRetainedTypedSampledDataSource<float>::New(5.6f);
@@ -163,6 +179,9 @@ HdPrman_ParticleFieldConversionSceneIndexPlugin::_AppendSceneIndex(
     static const HdContainerDataSourceHandle materialOverlay = HdRetainedContainerDataSource::New(HdMaterialSchema::GetSchemaToken(), materialDS);
 
     return HdsiParticleFieldConversionSceneIndex::New(inputScene, constantWidth, geometryOverlay, materialOverlay);
+#else
+    return inputScene;
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

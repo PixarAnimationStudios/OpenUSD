@@ -161,7 +161,7 @@ private:
             const VdfVector::ReadAccessor<T> b = 
                 rhsValues.GetReadAccessor<T>();
             for (size_t i = 0; i < size; ++i) {
-                if (a[i] != b[i]) {
+                if (!(a[i] == b[i])) {
                     return false;
                 }
             }

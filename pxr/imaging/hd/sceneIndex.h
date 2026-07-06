@@ -41,7 +41,7 @@ struct HdSceneIndexPrim
     /// scene index?
     bool IsDefined() const { return bool(dataSource); }
     /// Same as IsDefined.
-    operator bool() const { return IsDefined(); }
+    explicit operator bool() const { return IsDefined(); }
 };
 
 ///

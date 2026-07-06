@@ -56,8 +56,8 @@ static tbb::spin_mutex _activeMarkStacksLock;
 
 
 TfErrorMark::TfErrorMark()
+    : _markKey(TfDiagnosticMgr::GetInstance()._CreateErrorMark())
 {
-    TfDiagnosticMgr::GetInstance()._CreateErrorMark();
     SetMark();
 
     if (_enableTfErrorMarkStackTraces &&
@@ -79,8 +79,26 @@ TfErrorMark::~TfErrorMark()
     }
 
     TfDiagnosticMgr &mgr = TfDiagnosticMgr::GetInstance();
-    if (mgr._DestroyErrorMark() && !IsClean())
+    if (mgr._DestroyErrorMark(_markKey) && !IsClean()) {
         _ReportErrors(mgr);
+    }
+}
+
+TfErrorTransport
+TfErrorMark::Transport() const
+{
+    TfErrorTransport transport;
+    Iterator begin = GetBegin(), end = GetEnd();
+    if (begin == end) {
+        return transport;
+    }
+    TfDiagnosticMgr &mgr = TfDiagnosticMgr::GetInstance();
+    auto &ts = mgr._threadState.local();
+    transport = TfErrorTransport {
+        ts._errorList, begin, end, mgr._PinErrorLogText(begin, end)
+    };
+    mgr._RebuildPendingErrorLogText(_mark);
+    return transport;
 }
 
 void

@@ -1,0 +1,231 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2026 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/sphere.glslfx
+
+#import $TOOLS/hdSt/shaders/instancing.glslfx
+#import $TOOLS/hdSt/shaders/sphereFaceCull.glslfx
+#import $TOOLS/hdSt/shaders/sphereNormal.glslfx
+#import $TOOLS/hdSt/shaders/terminals.glslfx
+#import $TOOLS/hdSt/shaders/edgeId.glslfx
+#import $TOOLS/hdSt/shaders/pointId.glslfx
+
+--- --------------------------------------------------------------------------
+-- layout Sphere.Vertex
+
+[
+    ["out block", "VertexData", "outData",
+        ["vec3", "Peye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Sphere.Vertex
+
+vec3 columnLengths(mat3 m)
+{
+    return vec3(length(m[0]), length(m[1]), length(m[2]));
+}
+
+vec3 rowLengths(mat3 m)
+{
+    return columnLengths(transpose(m));
+}
+
+void main(void)
+{
+    ProcessPrimvarsIn();
+
+    const MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
+    const vec4 sphereCenterObj = vec4(0.0, 0.0, 0.0, 1);
+
+    const MAT4 viewMat = GetWorldToViewMatrix();
+    const MAT4 projMat = GetProjectionMatrix();
+    const MAT4 viewModel = viewMat * transform;
+
+    const vec3 sphereCenterEye = (viewModel * sphereCenterObj).xyz;
+    
+    const float radius = HdGet_radius();
+
+    // Get max x, y, and z radii for the sphere in eye space
+    const vec3 bboxSizeEye = radius * rowLengths(mat3(viewModel));
+
+    // Get bounds for the sphere in eye space
+    const vec3 bboxMinEye = sphereCenterEye - bboxSizeEye;
+    const vec3 bboxMaxEye = sphereCenterEye + bboxSizeEye;
+
+    // Get min and max x and y values in screen space
+    const vec4 clipMinBack = projMat * vec4(
+                             bboxMinEye, 1.0);
+
+    const vec4 clipMaxBack = projMat * vec4(
+                             bboxMaxEye.xy,
+                             bboxMinEye.z, 1.0);
+
+    const vec4 clipMinFront = projMat * vec4(
+                              bboxMinEye.xy,
+                              bboxMaxEye.z, 1.0);
+
+    const vec4 clipMaxFront = projMat * vec4(
+                              bboxMaxEye, 1.0);
+
+    vec3 xyzmin = min(clipMinFront.xyz / clipMinFront.w,
+                      clipMinBack.xyz / clipMinBack.w);
+    vec3 xyzmax = max(clipMaxFront.xyz / clipMaxFront.w,
+                      clipMaxBack.xyz / clipMaxBack.w);
+
+    // If the camera is too close to the sphere, clip x and y bounds to -1.0,
+    // 0.0 or 1.0 depending on their eye space positions
+    if (clipMinFront.w < 0.0) {
+        if (clipMinFront.x < 0.0) {
+            xyzmin.x = -1.0;
+        } else {
+            xyzmin.x = 0.0;
+        }
+
+        if (clipMaxFront.x < 0.0) {
+            xyzmax.x = 0.0;
+        } else {
+            xyzmax.x = 1.0;
+        }
+
+        if (clipMinFront.y < 0.0) {
+            xyzmin.y = -1.0;
+        } else {
+            xyzmin.y = 0.0;
+        }
+
+        if (clipMaxFront.y < 0.0) {
+            xyzmax.y = 0.0;
+        } else {
+            xyzmax.y = 1.0;
+        }
+    }
+
+#if defined(VULKAN) || defined(METAL)
+    const float nearPlaneZ = 0.0;
+#else
+    const float nearPlaneZ = -1.0;
+#endif
+
+    const float zmin = min(xyzmax.z, max(nearPlaneZ, xyzmin.z));
+
+    switch(hd_VertexID)
+    {
+        case 0:
+            gl_Position = vec4(xyzmin.x, xyzmax.y, zmin, 1.0);
+            break;
+        case 1:
+            gl_Position = vec4(xyzmax.xy, zmin, 1.0);
+            break;
+        case 2:
+            gl_Position = vec4(xyzmax.x, xyzmin.y, zmin, 1.0);
+            break;
+        default:
+            gl_Position = vec4(xyzmin.xy, zmin, 1.0);
+            break;
+    }
+
+    outData.Peye = (GetProjectionInverseMatrix() * gl_Position).xyz;
+}
+
+--- --------------------------------------------------------------------------
+-- layout Sphere.Fragment
+
+[
+    ["in block", "VertexData", "inData",
+        ["vec3", "Peye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Sphere.Fragment
+
+vec2 IntersectObjSpace(vec3 rayOrigin, vec3 rayDir)
+{
+    const float radius = HdGet_radius();
+
+    // Coeffs for the quadratic equation for the sphere
+    const float halfB = dot(rayOrigin, rayDir);
+    const float c = dot(rayOrigin, rayOrigin) - radius * radius;
+
+    // Discriminant
+    const float quarterH = halfB * halfB - c;
+
+    if(quarterH < 0.0) {
+        return vec2(-1.0);
+    }
+    
+    const float sqrtQuarterH = sqrt(quarterH);
+
+    const float t1 = -halfB - sqrtQuarterH;
+    const float t2 = -halfB + sqrtQuarterH;
+
+    return vec2(t1, t2);
+}
+
+void main(void)
+{
+    const MAT4 viewModel = GetWorldToViewMatrix() * ApplyInstanceTransform(HdGet_transform());
+
+    const MAT4 viewToObjMat = ApplyInstanceTransformInverse(HdGet_transformInverse()) * 
+                                GetWorldToViewInverseMatrix();
+
+    const vec3 rayDirObj = normalize(
+                            (viewToObjMat *
+                             vec4(inData.Peye, 0.0)).xyz);
+
+    const vec3 rayOriginObj = (viewToObjMat * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+
+    const vec2 hitDists = IntersectObjSpace(rayOriginObj, rayDirObj);
+
+    const bool frontFacing = hitDists.x > 0.0;
+
+    const float dist = frontFacing ? hitDists.x : hitDists.y;
+
+    if (dist < 0.0) {
+        discard;
+    }
+
+    DiscardBasedOnShading(frontFacing);
+
+    const vec3 intersectionPoint = rayOriginObj + dist * rayDirObj;
+
+    const mat3 matrixForNormal = transpose(mat3(viewToObjMat));
+    vec3 Neye = normalize(matrixForNormal * intersectionPoint);
+
+    // We get -Neye if this is a backface and the sphere is double-sided
+    Neye = GetShadingNormal(Neye, frontFacing);
+
+    const vec3 Peye = (viewModel * vec4(intersectionPoint, 1.0)).xyz;
+
+    const vec4 clipCoord = GetProjectionMatrix() * vec4(Peye, 1.0);
+
+#if defined(VULKAN) || defined(METAL)
+    gl_FragDepth = clipCoord.z/clipCoord.w;
+#else
+    // Map from [-1, 1] to [0, 1] for GL
+    gl_FragDepth = clipCoord.z/clipCoord.w * 0.5 + 0.5;
+#endif
+
+    vec4 color = vec4(0.5, 0.5, 0.5, 1);
+#ifdef HD_HAS_displayColor
+    color.rgb = HdGet_displayColor().rgb;
+#endif
+#ifdef HD_HAS_displayOpacity
+    color.a = HdGet_displayOpacity();
+#endif
+
+    // hard code patchCoord since the entire implicit surface is one "patch"
+    const vec4 patchCoord = vec4(0, 0.5, 0, 0);
+
+    color = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord);
+    RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
+}

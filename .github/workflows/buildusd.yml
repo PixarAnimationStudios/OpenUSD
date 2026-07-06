@@ -23,12 +23,12 @@ jobs:
       validation-failed: ${{ steps.changed-workflows.outputs.any_changed }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 #v4.3.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
         with:
           ref: ${{ github.ref }}
       - name: Check workflows directory
         id: changed-workflows
-        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c #v46
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 #v47.0.6
         with:
           files: |
             .github/workflows/**
@@ -45,7 +45,7 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Checkout Code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 #v4.3.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
         with:
           ref: ${{ github.ref }}
       - name: Restore cached artifacts
@@ -95,7 +95,14 @@ jobs:
         working-directory: ./USDgen/build/OpenUSD
         run: |
           ctest --output-on-failure -j4 -C Release \
-                --exclude-regex "^(testUsdview|testUsdRecord|testUsdAppUtilsFrameRecorder|testUsdImaging|testHgiGL|testHdx|testHdSt|testExecGeomXformable_Perf_Large|testWorkThreadLimitsDefault)"
+                --exclude-regex "^(testUsdview|testUsdRecord|testUsdAppUtilsFrameRecorder|testUsdImaging|testHgiGL|testHdx|testHdSt|testExecGeomXformable_Perf_Large|testWorkThreadLimitsDefault)" \
+                -LE flaky --no-tests=error
+      - name: Run USD Headless Tests (flaky)
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          ctest --output-on-failure -j4 -C Release \
+                --exclude-regex "^(testUsdview|testUsdRecord|testUsdAppUtilsFrameRecorder|testUsdImaging|testHgiGL|testHdx|testHdSt|testExecGeomXformable_Perf_Large|testWorkThreadLimitsDefault)" \
+                -L flaky --repeat until-pass:3
 
   GPUTests:
     needs:
@@ -150,7 +157,18 @@ jobs:
           sudo vglrun +v -d egl \
           ctest --output-on-failure -j4 -V -C Release \
                 --tests-regex "^(testUsdview|testUsdRecord|testUsdAppUtilsFrameRecorder|testUsdImaging|testHgiGL|testHdx|testHdSt)" \
-                --exclude-regex "^($(paste -sd "|" ${{ github.workspace }}/.github/workflows/tests_to_ignore.txt))$"
+                --exclude-regex "^($(paste -sd "|" ${{ github.workspace }}/.github/workflows/tests_to_ignore.txt))$" \
+                -LE flaky --no-tests=error
+      - name: Run USD GPU Tests (flaky)
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          # Known test failures in tests_to_ignore.txt tracked by internal ticket: USD-11921
+          sudo xvfb-run --server-args="-screen 0 2560x1600x24 +extension GLX +render" \
+          sudo vglrun +v -d egl \
+          ctest --output-on-failure -j4 -V -C Release \
+                --tests-regex "^(testUsdview|testUsdRecord|testUsdAppUtilsFrameRecorder|testUsdImaging|testHgiGL|testHdx|testHdSt)" \
+                --exclude-regex "^($(paste -sd "|" ${{ github.workspace }}/.github/workflows/tests_to_ignore.txt))$" \
+                -L flaky --repeat until-pass:3
       - name: Prepare Test Artifacts
         if: always()
         working-directory: ./USDgen/build/OpenUSD
@@ -181,7 +199,7 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 #v4.3.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
         with:
           ref: ${{ github.ref }}
       - name: Restore cached artifacts
@@ -226,7 +244,14 @@ jobs:
         working-directory: ./USDgen/build/OpenUSD
         run: |
           export PATH=/Applications/CMake.app/Contents/bin:$PATH
-          ctest --output-on-failure -j4 -C Release --exclude-regex "testExecGeomXformable_Perf_Large"
+          ctest --output-on-failure -j4 -C Release --exclude-regex "testExecGeomXformable_Perf_Large" \
+                -LE flaky --no-tests=error
+      - name: Test USD (flaky)
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          export PATH=/Applications/CMake.app/Contents/bin:$PATH
+          ctest --output-on-failure -j4 -C Release --exclude-regex "testExecGeomXformable_Perf_Large" \
+                -L flaky --repeat until-pass:3
 
   Windows:
     needs:
@@ -237,19 +262,26 @@ jobs:
       contents: write # Grant write permissions in order to upload artifacts
     env:
       PYTHON_VERSION: "3.9"
-    timeout-minutes: 120
+      PYTHONIOENCODING: "utf-8"
+      PYTHONUNBUFFERED: "1"
+      CCACHE_DEPEND: "1"
+    timeout-minutes: 180
     steps:
       - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 #v4.3.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
         with:
           ref: ${{ github.ref }}
-      - name: Restore cached artifacts
-        id: cache-usd-build-dependency
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@33522472633dbd32578e909b315f5ee43ba878ce #v1.2.22
         with:
-          path: |
-            USDinst
-          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
+          key: ${{ runner.os }}-ccache  # Distinguish cache by OS
+          max-size: 3GB
+      - name: Use D drive for temp dirs
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "D:\temp" | Out-Null
+          echo "TEMP=D:\temp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "TMP=D:\temp" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Install Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 #v5.6.0
         with:
@@ -261,16 +293,10 @@ jobs:
           python -m pip install PyOpenGL PySide2
       - name: Build USD
         run: |
-          # Not using '--tests' to avoid building extra dependencies that are unneeded for headless tests
-          python build_scripts/build_usd.py --no-materialx --generator "Visual Studio 17 2022" --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF -DPXR_HEADLESS_TEST_MODE=ON -DPXR_BUILD_TESTS=ON" -v
+          :: Not using '--tests' to avoid building extra dependencies that are unneeded for headless tests
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          python build_scripts/build_usd.py --no-materialx --generator "Ninja" --compiler-cache --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF -DPXR_HEADLESS_TEST_MODE=ON -DPXR_BUILD_TESTS=ON" -v
         shell: cmd
-      - name: Save build artifacts to cache
-        if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
-        with:
-          path: |
-            USDinst
-          key: ${{ steps.cache-usd-build-dependency.outputs.cache-primary-key }}
       - name: Upload artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
@@ -281,8 +307,17 @@ jobs:
         run: |
           call set PATH=${{ github.workspace }}\USDinst\bin;${{ github.workspace }}\USDinst\lib;${{ github.workspace }}\USDinst\share\usd\examples\plugin;${{ github.workspace }}\USDinst\plugin\usd;%PATH%
           call set PYTHONPATH=${{ github.workspace }}\USDinst\lib\python;%PYTHONPATH%
-          # Internal ticket USD-8035
-          ctest --output-on-failure -j4 -C Release --exclude-regex "TfPathUtils|testExecGeomXformable_Perf_Large"
+          :: Internal ticket USD-8035
+          ctest --output-on-failure -j4 -C Release --exclude-regex "TfPathUtils|testExecGeomXformable_Perf_Large" \
+                -LE flaky --no-tests=error
+      - name: Test USD (flaky)
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          call set PATH=${{ github.workspace }}\USDinst\bin;${{ github.workspace }}\USDinst\lib;${{ github.workspace }}\USDinst\share\usd\examples\plugin;${{ github.workspace }}\USDinst\plugin\usd;%PATH%
+          call set PYTHONPATH=${{ github.workspace }}\USDinst\lib\python;%PYTHONPATH%
+          :: Internal ticket USD-8035
+          ctest --output-on-failure -j4 -C Release --exclude-regex "TfPathUtils|testExecGeomXformable_Perf_Large" \
+                -L flaky --repeat until-pass:3
         shell: cmd
 
   Wasm:
@@ -298,15 +333,15 @@ jobs:
       contents: write # Grant write permissions in order to upload artifacts
     steps:
       - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 #v4.3.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
         with:
           ref: ${{ github.ref }}
       - name: Install Emscripten SDK
         run: |
           git clone https://github.com/emscripten-core/emsdk.git
           cd emsdk
-          ./emsdk install latest
-          ./emsdk activate latest
+          ./emsdk install 5.0.7
+          ./emsdk activate 5.0.7
       - name: Restore cached artifacts
         id: cache-usd-build-dependency
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 #v4.3.0
@@ -335,4 +370,8 @@ jobs:
       - name: Test USD
         working-directory: ./USDgen/build/OpenUSD
         run: |
-          ctest --output-on-failure -j4 -C Release
+          ctest --output-on-failure -j4 -C Release -LE flaky --no-tests=error
+      - name: Test USD (flaky)
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          ctest --output-on-failure -j4 -C Release -L flaky --repeat until-pass:3

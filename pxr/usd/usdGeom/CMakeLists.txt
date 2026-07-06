@@ -56,6 +56,7 @@ pxr_library(usdGeom
 
 pxr_test_scripts(
     testenv/testUsdGeomBasisCurves.py
+    testenv/testUsdGeomBackPlateAPI.py
     testenv/testUsdGeomBBoxCache.py
     testenv/testUsdGeomCamera.py
     testenv/testUsdGeomComputeAtTime.py
@@ -111,6 +112,12 @@ pxr_build_test(testUsdGeomHasAPI
         usdGeom
     CPPFILES
         testenv/testUsdGeomHasAPI.cpp
+)
+
+pxr_register_test(testUsdGeomBackPlateAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomBackPlateAPI"
+    EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdGeomBasisCurves

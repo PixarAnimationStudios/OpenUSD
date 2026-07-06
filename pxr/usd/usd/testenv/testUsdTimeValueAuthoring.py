@@ -6,7 +6,7 @@
 # https://openusd.org/license.
 
 import sys, os, unittest
-from pxr import Sdf, Usd, Tf, Plug
+from pxr import Sdf, Usd, Tf, Gf, Vt, Plug
 
 class TestUsdTimeValueAuthoring(unittest.TestCase):
     """ 
@@ -94,11 +94,11 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
 
             # Attribute timeSamples metadata.
             self.assertEqual(attr.GetMetadata("timeSamples"),
-                             {0.0 : Sdf.TimeCode(10.0),
-                              1.0 : Sdf.TimeCode(20.0)})
+                             {0.0 : Gf.TimeCode(10.0),
+                              1.0 : Gf.TimeCode(20.0)})
             self.assertEqual(arrayAttr.GetMetadata("timeSamples"),
-                             {0.0 : Sdf.TimeCodeArray([10.0, 30.0]),
-                              1.0 : Sdf.TimeCodeArray([20.0, 40.0])})
+                             {0.0 : Vt.TimeCodeArray([10.0, 30.0]),
+                              1.0 : Vt.TimeCodeArray([20.0, 40.0])})
             self.assertEqual(doubleAttr.GetMetadata("timeSamples"),
                              {0.0 : 10.0,
                               1.0 : 20.0})
@@ -106,23 +106,23 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
             # Attribute default metadata.
             self.assertEqual(attr.GetMetadata("default").GetValue(), 10.0)
             self.assertEqual(arrayAttr.GetMetadata("default"), 
-                             Sdf.TimeCodeArray([10.0, 20.0]))
+                             Vt.TimeCodeArray([10.0, 20.0]))
             self.assertEqual(doubleAttr.GetMetadata("default"), 10.0)
 
             # Test prim metadata resolution
             self.assertEqual(prim.GetMetadata("timeCodeTest"), 10.0)
             self.assertEqual(prim.GetMetadata("timeCodeArrayTest"), 
-                             Sdf.TimeCodeArray([10.0, 20.0]))
+                             Vt.TimeCodeArray([10.0, 20.0]))
             self.assertEqual(prim.GetMetadata("doubleTest"), 10.0)
 
             # Prim customData retrieved as the full dictionary
             expectedCustomData = {
-                "timeCode" : Sdf.TimeCode(10.0),
-                "timeCodeArray" : Sdf.TimeCodeArray([10.0, 20.0]),
+                "timeCode" : Gf.TimeCode(10.0),
+                "timeCodeArray" : Vt.TimeCodeArray([10.0, 20.0]),
                 "doubleVal": 10.0,
                 "subDict" : {
-                    "timeCode" : Sdf.TimeCode(10.0),
-                    "timeCodeArray" : Sdf.TimeCodeArray([10.0, 20.0]),
+                    "timeCode" : Gf.TimeCode(10.0),
+                    "timeCodeArray" : Vt.TimeCodeArray([10.0, 20.0]),
                     "doubleVal" : 10.0
                 }
             }
@@ -133,7 +133,7 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
                 prim.GetMetadataByDictKey("customData", "timeCode"), 10.0)
             self.assertEqual(
                 prim.GetMetadataByDictKey("customData", "timeCodeArray"), 
-                Sdf.TimeCodeArray(2, (10.0, 20.0)))
+                Vt.TimeCodeArray(2, (10.0, 20.0)))
             self.assertEqual(
                 prim.GetMetadataByDictKey("customData", "doubleVal"), 10.0)
             self.assertEqual(
@@ -141,7 +141,7 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
                 10.0)
             self.assertEqual(
                 prim.GetMetadataByDictKey("customData", "subDict:timeCodeArray"), 
-                Sdf.TimeCodeArray(2, (10.0, 20.0)))
+                Vt.TimeCodeArray(2, (10.0, 20.0)))
             self.assertEqual(
                 prim.GetMetadataByDictKey("customData", "subDict:doubleVal"), 
                 10.0)
@@ -171,16 +171,16 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
             arrayAttr = prim.GetAttribute("TimeCodeArray")
             doubleAttr = prim.GetAttribute("Double")
 
-            # Attribute timeSamples metadata. The SdfTimeCode valued attribute
+            # Attribute timeSamples metadata. The Gf.TimeCode valued attribute
             # has offsets applied to both the time sample keys and the value itself.
             # The double value attribute is only offset by the time sample keys, the
             # values remains as authored.
             self.assertEqual(attr.GetMetadata("timeSamples"),
-                             {3.0 : Sdf.TimeCode(23.0),
-                              5.0 : Sdf.TimeCode(43.0)})
+                             {3.0 : Gf.TimeCode(23.0),
+                              5.0 : Gf.TimeCode(43.0)})
             self.assertEqual(arrayAttr.GetMetadata("timeSamples"),
-                             {3.0 : Sdf.TimeCodeArray([23.0, 63.0]),
-                              5.0 : Sdf.TimeCodeArray([43.0, 83.0])})
+                             {3.0 : Vt.TimeCodeArray([23.0, 63.0]),
+                              5.0 : Vt.TimeCodeArray([43.0, 83.0])})
             self.assertEqual(doubleAttr.GetMetadata("timeSamples"),
                              {3.0 : 10.0,
                               5.0 : 20.0})
@@ -189,7 +189,7 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
             # offsets, double values are not.
             self.assertEqual(attr.GetMetadata("default").GetValue(), 23.0)
             self.assertEqual(arrayAttr.GetMetadata("default"), 
-                             Sdf.TimeCodeArray(2, (23.0, 43.0)))
+                             Vt.TimeCodeArray(2, (23.0, 43.0)))
             self.assertEqual(doubleAttr.GetMetadata("default"), 10.0)
 
             # Test prim metadata resolution. All time code values are offset, 
@@ -197,17 +197,17 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
             # within dictionaries.
             self.assertEqual(prim.GetMetadata("timeCodeTest"), 23.0)
             self.assertEqual(prim.GetMetadata("timeCodeArrayTest"), 
-                             Sdf.TimeCodeArray([23.0, 43.0]))
+                             Vt.TimeCodeArray([23.0, 43.0]))
             self.assertEqual(prim.GetMetadata("doubleTest"), 10.0)
 
             # Prim customData retrieved as the full dictionary
             expectedCustomData = {
-                "timeCode" : Sdf.TimeCode(23.0),
-                "timeCodeArray" : Sdf.TimeCodeArray([23.0, 43.0]),
+                "timeCode" : Gf.TimeCode(23.0),
+                "timeCodeArray" : Vt.TimeCodeArray([23.0, 43.0]),
                 "doubleVal": 10.0,
                 "subDict" : {
-                    "timeCode" : Sdf.TimeCode(23.0),
-                    "timeCodeArray" : Sdf.TimeCodeArray([23.0, 43.0]),
+                    "timeCode" : Gf.TimeCode(23.0),
+                    "timeCodeArray" : Vt.TimeCodeArray([23.0, 43.0]),
                     "doubleVal" : 10.0
                 }
             }
@@ -218,7 +218,7 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
                 prim.GetMetadataByDictKey("customData", "timeCode"), 23.0)
             self.assertEqual(
                 prim.GetMetadataByDictKey("customData", "timeCodeArray"), 
-                Sdf.TimeCodeArray(2, (23.0, 43.0)))
+                Vt.TimeCodeArray(2, (23.0, 43.0)))
             self.assertEqual(
                 prim.GetMetadataByDictKey("customData", "doubleVal"), 10.0)
             self.assertEqual(
@@ -226,7 +226,7 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
                 23.0)
             self.assertEqual(
                 prim.GetMetadataByDictKey("customData", "subDict:timeCodeArray"), 
-                Sdf.TimeCodeArray(2, (23.0, 43.0)))
+                Vt.TimeCodeArray(2, (23.0, 43.0)))
             self.assertEqual(
                 prim.GetMetadataByDictKey("customData", "subDict:doubleVal"), 
                 10.0)
@@ -237,12 +237,12 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
             metadataDict = stage.GetMetadata("customLayerData")
             self.assertEqual(metadataDict["timeCode"].GetValue(), 10.0)
             self.assertEqual(metadataDict["timeCodeArray"], 
-                             Sdf.TimeCodeArray(2, (10.0, 20.0)))
+                             Vt.TimeCodeArray(2, (10.0, 20.0)))
 
             metadataDict = metadataDict["subDict"]
             self.assertEqual(metadataDict["timeCode"].GetValue(), 10.0)
             self.assertEqual(metadataDict["timeCodeArray"], 
-                             Sdf.TimeCodeArray(2, (10.0, 20.0)))
+                             Vt.TimeCodeArray(2, (10.0, 20.0)))
 
     def test_SetMetaDataWithEditTarget(self):
         """Test the SetMetadata API on UsdObjects for time code valued metadata
@@ -335,19 +335,19 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
                 rootEditTarget, obj, fieldName, key, resolvedValue, 
                 expectedAuthoredValues[3])
 
-        # Set SdfTimeCode and SdfTimeCodeArray metadata on prim. Each edit 
+        # Set Gf.TimeCode and Vt.TimeCodeArray metadata on prim. Each edit 
         # target resolves against a different composed layer offset.
         _SetMetadataWithEachEditTarget(prim, "timeCodeTest", 25.0,
-            [Sdf.TimeCode(11.0),
-             Sdf.TimeCode(14.0),
-             Sdf.TimeCode(50.0),
-             Sdf.TimeCode(25.0)])
+            [Gf.TimeCode(11.0),
+             Gf.TimeCode(14.0),
+             Gf.TimeCode(50.0),
+             Gf.TimeCode(25.0)])
         _SetMetadataWithEachEditTarget(prim, "timeCodeArrayTest", 
-                                       Sdf.TimeCodeArray([25.0, 45.0]), 
-            [Sdf.TimeCodeArray([11.0, 21.0]), 
-             Sdf.TimeCodeArray([14.0, 24.0]), 
-             Sdf.TimeCodeArray([50.0, 90.0]), 
-             Sdf.TimeCodeArray([25.0, 45.0])])
+                                       Vt.TimeCodeArray([25.0, 45.0]), 
+            [Vt.TimeCodeArray([11.0, 21.0]), 
+             Vt.TimeCodeArray([14.0, 24.0]), 
+             Vt.TimeCodeArray([50.0, 90.0]), 
+             Vt.TimeCodeArray([25.0, 45.0])])
 
         # Set double value metadata on prim. Values are not resolved over
         # edit target offsets.
@@ -359,38 +359,38 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
         # expected authored value for that layer against the whole dictionary
         # for that edit target.
         authoredCustomData = {
-            "timeCode" : Sdf.TimeCode(10.0),
-            "timeCodeArray" : Sdf.TimeCodeArray([10,20]),
+            "timeCode" : Gf.TimeCode(10.0),
+            "timeCodeArray" : Vt.TimeCodeArray([10,20]),
             "doubleVal" : 10.0,
             "subDict" : 
             {
-                "timeCode" : Sdf.TimeCode(10),
-                "timeCodeArray" : Sdf.TimeCodeArray([10,20]),
+                "timeCode" : Gf.TimeCode(10),
+                "timeCodeArray" : Vt.TimeCodeArray([10,20]),
                 "doubleVal" : 10.0
             }
         }
 
-        # Set SdfTimeCode and SdfTimeCodeArray metadata by key in the prim's
+        # Set Gf.TimeCode and Vt.TimeCodeArray metadata by key in the prim's
         # customData metadata. Each edit target resolves against a different 
         # composed layer offset.
-        authoredCustomData["timeCode"] = Sdf.TimeCode(1.5)
+        authoredCustomData["timeCode"] = Gf.TimeCode(1.5)
         _SetMetadataByKeyWithEachEditTarget(
-            prim, "customData", "timeCode", Sdf.TimeCode(6.0), 
+            prim, "customData", "timeCode", Gf.TimeCode(6.0), 
             [authoredCustomData, 
-             {"timeCode" : Sdf.TimeCode(4.5)}, 
-             {"timeCode" : Sdf.TimeCode(12.0)}, 
-             {"timeCode" : Sdf.TimeCode(6.0)}])
+             {"timeCode" : Gf.TimeCode(4.5)}, 
+             {"timeCode" : Gf.TimeCode(12.0)}, 
+             {"timeCode" : Gf.TimeCode(6.0)}])
 
-        authoredCustomData["subDict"]["timeCode"] = Sdf.TimeCode(4)
+        authoredCustomData["subDict"]["timeCode"] = Gf.TimeCode(4)
         _SetMetadataByKeyWithEachEditTarget(
-            prim, "customData", "subDict:timeCode", Sdf.TimeCode(11.0), 
+            prim, "customData", "subDict:timeCode", Gf.TimeCode(11.0), 
             [authoredCustomData, 
-             {"timeCode" : Sdf.TimeCode(4.5),
-              "subDict" : {"timeCode" : Sdf.TimeCode(7)}}, 
-             {"timeCode" : Sdf.TimeCode(12.0),
-              "subDict" : {"timeCode" : Sdf.TimeCode(22)}}, 
-             {"timeCode" : Sdf.TimeCode(6.0),
-              "subDict" : {"timeCode" : Sdf.TimeCode(11)}}])
+             {"timeCode" : Gf.TimeCode(4.5),
+              "subDict" : {"timeCode" : Gf.TimeCode(7)}}, 
+             {"timeCode" : Gf.TimeCode(12.0),
+              "subDict" : {"timeCode" : Gf.TimeCode(22)}}, 
+             {"timeCode" : Gf.TimeCode(6.0),
+              "subDict" : {"timeCode" : Gf.TimeCode(11)}}])
 
         # Set double value metadata by key in the prim's customData metadata. 
         # The double values are not resolved over edit target offsets.
@@ -398,12 +398,12 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
         _SetMetadataByKeyWithEachEditTarget(
             prim, "customData", "subDict:doubleVal", 11.0, 
             [authoredCustomData, 
-             {"timeCode" : Sdf.TimeCode(4.5),
-              "subDict" : {"timeCode" : Sdf.TimeCode(7), "doubleVal" : 11.0}}, 
-             {"timeCode" : Sdf.TimeCode(12.0),
-              "subDict" : {"timeCode" : Sdf.TimeCode(22), "doubleVal" : 11.0}}, 
-             {"timeCode" : Sdf.TimeCode(6.0),
-              "subDict" : {"timeCode" : Sdf.TimeCode(11), "doubleVal" : 11.0}}])
+             {"timeCode" : Gf.TimeCode(4.5),
+              "subDict" : {"timeCode" : Gf.TimeCode(7), "doubleVal" : 11.0}}, 
+             {"timeCode" : Gf.TimeCode(12.0),
+              "subDict" : {"timeCode" : Gf.TimeCode(22), "doubleVal" : 11.0}}, 
+             {"timeCode" : Gf.TimeCode(6.0),
+              "subDict" : {"timeCode" : Gf.TimeCode(11), "doubleVal" : 11.0}}])
 
         # Currently, it's impossible to set the "timeSamples" metadata field 
         # directly through SetMetadata in python as there is no wrapping for
@@ -411,15 +411,15 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
         # test case here. This case is tested in testUsdTimeValueAuthoring.cpp
         # version of this test.
 
-        # Set SdfTimeCode and SdfTimeCodeArray default value metadata on the
+        # Set Gf.TimeCode and Vt.TimeCodeArray default value metadata on the
         # time valued attributes. Each edit target resolves against a different 
         # composed layer offset.
         #
         # Noting here that in this section of the test case, passing an explicit
-        # Sdf.TimeCode instead of a double (like we do for prim metadata) is 
+        # Gf.TimeCode instead of a double (like we do for prim metadata) is 
         # deliberate and necessary. Currently if you don't pass an explicit 
-        # Sdf.TimeCode value to SetMetaData("default", value) for a 
-        # UsdAttribute, the value is not cast up to an SdfTimeCode and gets set 
+        # Gf.TimeCode value to SetMetaData("default", value) for a 
+        # UsdAttribute, the value is not cast up to a Gf.TimeCode and gets set 
         # as a double in the layer with no layer offset conversion. This is 
         # because the fallback value type  for the "default" field is VtValue,
         # accepting any value, and we don't check the attribute's type when 
@@ -428,17 +428,17 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
         # Usd.Attribute.Set does correctly cast to the correct attribute value 
         # type if it can.
         _SetMetadataWithEachEditTarget(
-            attr, "default", Sdf.TimeCode(19.0),
-            [Sdf.TimeCode(8.0),
-             Sdf.TimeCode(11.0),
-             Sdf.TimeCode(38.0),
-             Sdf.TimeCode(19.0)])
+            attr, "default", Gf.TimeCode(19.0),
+            [Gf.TimeCode(8.0),
+             Gf.TimeCode(11.0),
+             Gf.TimeCode(38.0),
+             Gf.TimeCode(19.0)])
         _SetMetadataWithEachEditTarget(
-            arrayAttr, "default", Sdf.TimeCodeArray([19.0, -11]),
-            [Sdf.TimeCodeArray([8.0, -7.0]),
-             Sdf.TimeCodeArray([11.0, -4.0]),
-             Sdf.TimeCodeArray([38.0, -22.0]),
-             Sdf.TimeCodeArray([19.0, -11.0])])
+            arrayAttr, "default", Vt.TimeCodeArray([19.0, -11]),
+            [Vt.TimeCodeArray([8.0, -7.0]),
+             Vt.TimeCodeArray([11.0, -4.0]),
+             Vt.TimeCodeArray([38.0, -22.0]),
+             Vt.TimeCodeArray([19.0, -11.0])])
 
         # Set double value default metadata on the double valued attribute. 
         # Values are not resolved over edit target offsets.
@@ -546,39 +546,39 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
                 rootEditTarget, attr, resolvedValue, 
                 expectedAuthoredValues[3])
 
-        # Set SdfTimeCode and SdfTimeCodeArray values at times and at default. 
+        # Set Gf.TimeCode and Vt.TimeCodeArray values at times and at default. 
         # Each edit target resolves against a different composed layer offset.
         # Both the time sample keys and the time sample values are resolved
         # against offsets
         _SetTimeSampleWithEachEditTarget(attr, 12.0, 19.0,
-            [{0.0 : Sdf.TimeCode(10.0),
-              1.0 : Sdf.TimeCode(20.0),
-              4.5 : Sdf.TimeCode(8.0)},
-             {7.5 : Sdf.TimeCode(11.0)},
-             {24.0 : Sdf.TimeCode(38.0)},
-             {12.0 : Sdf.TimeCode(19.0)}])
+            [{0.0 : Gf.TimeCode(10.0),
+              1.0 : Gf.TimeCode(20.0),
+              4.5 : Gf.TimeCode(8.0)},
+             {7.5 : Gf.TimeCode(11.0)},
+             {24.0 : Gf.TimeCode(38.0)},
+             {12.0 : Gf.TimeCode(19.0)}])
 
         _SetDefaultWithEachEditTarget(attr, 19.0, 
-            [Sdf.TimeCode(8.0),
-             Sdf.TimeCode(11.0),
-             Sdf.TimeCode(38.0),
-             Sdf.TimeCode(19.0)])
+            [Gf.TimeCode(8.0),
+             Gf.TimeCode(11.0),
+             Gf.TimeCode(38.0),
+             Gf.TimeCode(19.0)])
 
 
         _SetTimeSampleWithEachEditTarget(arrayAttr, 12.0, 
-                                         Sdf.TimeCodeArray([19.0, 12.0]),
-            [{0.0 : Sdf.TimeCodeArray([10.0, 30.0]),
-              1.0 : Sdf.TimeCodeArray([20.0, 40.0]),
-              4.5 : Sdf.TimeCodeArray([8.0, 4.5])},
-             {7.5 : Sdf.TimeCodeArray([11.0, 7.5])},
-             {24.0 : Sdf.TimeCodeArray([38.0, 24.0])},
-             {12.0 : Sdf.TimeCodeArray([19.0, 12.0])}])
+                                         Vt.TimeCodeArray([19.0, 12.0]),
+            [{0.0 : Vt.TimeCodeArray([10.0, 30.0]),
+              1.0 : Vt.TimeCodeArray([20.0, 40.0]),
+              4.5 : Vt.TimeCodeArray([8.0, 4.5])},
+             {7.5 : Vt.TimeCodeArray([11.0, 7.5])},
+             {24.0 : Vt.TimeCodeArray([38.0, 24.0])},
+             {12.0 : Vt.TimeCodeArray([19.0, 12.0])}])
 
-        _SetDefaultWithEachEditTarget(arrayAttr, Sdf.TimeCodeArray([19.0, 12.0]),
-            [Sdf.TimeCodeArray([8.0, 4.5]),
-             Sdf.TimeCodeArray([11.0, 7.5]),
-             Sdf.TimeCodeArray([38.0, 24.0]),
-             Sdf.TimeCodeArray([19.0, 12.0])])
+        _SetDefaultWithEachEditTarget(arrayAttr, Vt.TimeCodeArray([19.0, 12.0]),
+            [Vt.TimeCodeArray([8.0, 4.5]),
+             Vt.TimeCodeArray([11.0, 7.5]),
+             Vt.TimeCodeArray([38.0, 24.0]),
+             Vt.TimeCodeArray([19.0, 12.0])])
 
         # Set double values at times and at default. Time sample keys are
         # resolved against each edit target's offset, but none of the values

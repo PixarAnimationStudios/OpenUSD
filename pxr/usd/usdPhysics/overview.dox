@@ -426,10 +426,16 @@ combine modes should be exposed.
 
 \subsubsection usdPhysics_plane_shapes Plane Shapes
 
-Implicit plane shapes are a very common physics primitive used primarily for 
-testing simple simulations. There are plans to add a Plane class to USD as a 
-UsdGeomGPrim. We look forward to supporting such plane shapes as static 
-colliders when they become available.
+Plane shapes are a common physics primitive used primarily as an unbounded
+ground plane. A UsdGeomPlane with a UsdPhysicsCollisionAPI applied is treated
+as a plane collider. Although UsdGeomPlane has finite extents (so that, like
+other GPrims, it can be frustum culled for rendering), these extents are
+ignored for simulation: a plane collider is treated as an infinite half-space
+volume.
+
+Because of this unbounded size and volume, plane colliders are only supported
+as static or kinematic colliders. A UsdGeomPlane collider must not be attached
+to a simulated (non-kinematic) rigid body.
 
 \subsubsection usdPhysics_collision_filtering Collision Filtering
 

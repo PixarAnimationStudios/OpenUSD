@@ -1,0 +1,139 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+over "NestedNestedPrototype"
+{
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Cube "geom" (
+        apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        custom rel material:binding = </NestedNestedPrototype/Shaders/Blue>
+    }
+
+    def Scope "Shaders"
+    {
+        def Material "Blue"
+        {
+            token outputs:surface.connect = </NestedNestedPrototype/Shaders/Blue/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                float inputs:clearcoat = 0
+                float inputs:clearcoatRoughness = 1
+                color3f inputs:diffuseColor = (0, 0, 1)
+                float inputs:displacement = 0
+                color3f inputs:emissiveColor = (0, 0, 0)
+                float inputs:ior = 1.5
+                float inputs:metallic = 0.1
+                float3 inputs:normal = (0, 0, 1)
+                float inputs:occlusion = 1
+                float inputs:opacity = 1
+                float inputs:roughness = 0.5
+                color3f inputs:specularColor = (0, 0, 0.5)
+                int inputs:useSpecularWorkflow = 0
+                token outputs:surface
+            }
+        }
+    }
+}
+
+over "NestedPrototype"
+{
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Xform "Cube0" (
+        instanceable = true
+        add references = </NestedNestedPrototype>
+    )
+    {
+        double3 xformOp:translate = (0, 0, 0)
+    }
+
+    def Xform "Cube1" (
+        instanceable = true
+        add references = </NestedNestedPrototype>
+    )
+    {
+        double3 xformOp:translate = (5, 0, 0)
+    }
+
+    def Xform "Cube2" (
+        instanceable = true
+        add references = </NestedNestedPrototype>
+    )
+    {
+        double3 xformOp:translate = (10, 0, 0)
+    }
+
+    def Xform "Cube3" (
+        instanceable = true
+        add references = </NestedNestedPrototype>
+    )
+    {
+        double3 xformOp:translate = (15, 0, 0)
+    }
+
+    def Xform "Cube4" (
+        instanceable = true
+        add references = </NestedNestedPrototype>
+    )
+    {
+        double3 xformOp:translate = (20, 0, 0)
+    }
+}
+
+over "Prototype" {
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Xform "Cubes0" (
+        instanceable = true
+        add references = </NestedPrototype>
+    )
+    {
+        double3 xformOp:translate = (0, 0, 0)
+    }
+
+    def Xform "Cubes1" (
+        instanceable = true
+        add references = </NestedPrototype>
+    )
+    {
+        double3 xformOp:translate = (0, 5, 0)
+    }
+
+    def Xform "Cubes2" (
+        instanceable = true
+        add references = </NestedPrototype>
+    )
+    {
+        double3 xformOp:translate = (0, 10, 0)
+    }
+}
+
+def Xform "World"
+{
+    def Xform "CubePlane0" (
+        instanceable = true
+        add references = </Prototype>
+    )
+    {
+        double3 xformOp:translate = (0, 0, 0)
+    }
+
+    def Xform "CubePlane1" (
+        instanceable = true
+        add references = </Prototype>
+    )
+    {
+        double3 xformOp:translate = (0, 0, 5)
+    }
+
+    double xformOp:rotateX = 30
+    double xformOp:rotateZ = 33
+    token[] xformOpOrder = ["xformOp:rotateX", "xformOp:rotateZ", "xformOp:scale"]
+}

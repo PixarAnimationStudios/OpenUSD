@@ -13,7 +13,10 @@
 #include "pxr/base/gf/half.h"
 #include "pxr/base/trace/trace.h"
 
+#include <algorithm>
 #include <mutex>
+#include <string>
+#include <vector>
 
 class RixContext;
 
@@ -25,11 +28,14 @@ namespace {
 
 // Per TextureCtx user data.
 struct RtxHioImagePluginUserData {
-    HioImageSharedPtr image;
     bool flipped;
+    std::string filename;
+    HioImage::SourceColorSpace sourceColorSpace;
 
     std::mutex mipLevelsMutex;
     std::vector<HioImage::StorageSpec> mipLevels;
+
+    std::vector<HioImageSharedPtr> mipReaders;
 };
 
 /// A Renderman Rtx texture plugin that uses HioImage to read files,
@@ -102,7 +108,7 @@ _ConvertWrapMode(HioAddressMode hioWrapMode, RixMessages *msgs,
 
 template <class T>
 static void
-_ConvertSRGBtoLinear(T *dest, unsigned nPixels, 
+_ConvertSRGBtoLinear(T *dest, unsigned nPixels,
                      unsigned nChannels, unsigned channelOffset)
 {
     const bool hasAlphaChannel = (channelOffset + nChannels == 4);
@@ -111,7 +117,7 @@ _ConvertSRGBtoLinear(T *dest, unsigned nPixels,
     for (unsigned i=0; i<(nPixels*nChannels); i++) {
 
         // The alpha channel is generally linear already -- skip pixel
-        const bool isAlphaChannel = 
+        const bool isAlphaChannel =
             hasAlphaChannel && ((i + 1) % nChannels == 0);
         if (!isAlphaChannel) {
             *s = GfConvertDisplayToLinear(*s);
@@ -124,18 +130,18 @@ _ConvertSRGBtoLinear(T *dest, unsigned nPixels,
 template<class T>
 static void
 _ConvertToFloatAndFill(
-    const HioImage::StorageSpec& level, 
+    const HioImage::StorageSpec& level,
     RtxPlugin::FillRequest& fillReq)
 {
     TRACE_FUNCTION();
-    
+
     const int numImageChannels = HioGetComponentCount(level.format);
 
     const int startX = fillReq.tile.offset.X * fillReq.tile.size.X;
     const int startY = fillReq.tile.offset.Y * fillReq.tile.size.Y;
     const int endY = startY + fillReq.tile.size.Y;
 
-    const T *src = reinterpret_cast<const T*>(level.data) 
+    const T *src = reinterpret_cast<const T*>(level.data)
         + (startY * level.width + startX) * numImageChannels
         + (fillReq.channelOffset);
     float *dest = (float*) fillReq.tileData;
@@ -144,7 +150,7 @@ _ConvertToFloatAndFill(
     if (fillReq.channelOffset == 0 && fillReq.numChannels == numImageChannels) {
         for (int y = startY; y < endY; y++) {
             const T *s = src;
-            for (int x = 0; x < numImageChannels * fillReq.tile.size.X; 
+            for (int x = 0; x < numImageChannels * fillReq.tile.size.X;
                  x++, s++, dest++) {
                 *dest = static_cast<float>(*s);
             }
@@ -175,6 +181,15 @@ RtxHioImagePlugin::Open(TextureCtx& tCtx)
     std::string flipped;
     HioImage::SourceColorSpace sourceColorSpace = HioImage::Auto;
     for (unsigned int i = 0; i < tCtx.argc; i += 2) {
+        // Expect parameters as key/value pairs only.
+        if (i+1 >= tCtx.argc) {
+            if (m_msgHandler) {
+                m_msgHandler->ErrorAlways(
+                    "RtxHioImagePlugin: Unexpected parameter without value",
+                    this);
+            }
+            return 1;
+        }
         if (strcmp(tCtx.argv[i], "filename") == 0) {
             filename = tCtx.argv[i + 1];
         } else if (strcmp(tCtx.argv[i], "wrapS") == 0) {
@@ -189,11 +204,17 @@ RtxHioImagePlugin::Open(TextureCtx& tCtx)
             } else if (strcmp(tCtx.argv[i + 1], "raw") == 0) {
                 sourceColorSpace = HioImage::Raw;
             }
+        } else {
+            if (m_msgHandler) {
+                m_msgHandler->ErrorAlways(
+                    "RtxHioImagePlugin: Unexpected parameter", this);
+            }
+            return 1;
         }
     }
 
     // Open HioImage.
-    HioImageSharedPtr image = HioImage::OpenForReading(filename, 0, 0, 
+    HioImageSharedPtr image = HioImage::OpenForReading(filename, 0, 0,
         sourceColorSpace);
     if (!image) {
         if(m_msgHandler) {
@@ -282,7 +303,16 @@ RtxHioImagePlugin::Open(TextureCtx& tCtx)
     // request as tiles, which we will service from this buffer.
     RtxHioImagePluginUserData* data = new RtxHioImagePluginUserData();
     tCtx.userData = data;
-    data->image = image;
+    data->filename = filename;
+    data->sourceColorSpace = sourceColorSpace;
+
+    const int numMips = image->GetNumMipLevels();
+    // mipReaders is sized only once, and the top level mip reader at index 0
+    // is populated only once, here. So it is safe for unlocked meteadata
+    // access. The other mip level readers at indices > 0 will be filled as
+    // needed and in under lock during Fill().
+    data->mipReaders.assign(std::max(1, numMips), nullptr);
+    data->mipReaders[0] = image;
 
     // Flip vertically. The default is true.
     data->flipped = (flipped != "false");
@@ -295,6 +325,8 @@ RtxHioImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
 {
     RtxHioImagePluginUserData* data = this->data(tCtx);
     assert(nullptr != data);
+
+    const HioImageSharedPtr& image = data->mipReaders[0];
 
     // Find (or create) appropriate MIP level.
     HioImage::StorageSpec level;
@@ -313,10 +345,10 @@ RtxHioImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
             // Allocate a new MIP level.
             level.width = fillReq.imgRes.X;
             level.height = fillReq.imgRes.Y;
-            level.depth = data->image->GetBytesPerPixel();
-            level.format = data->image->GetFormat();
+            level.depth = 0;
+            level.format = image->GetFormat();
 
-            if (tCtx.dataType != TextureCtx::k_Byte && 
+            if (tCtx.dataType != TextureCtx::k_Byte &&
                 tCtx.dataType != TextureCtx::k_Float) {
                 if(m_msgHandler) {
                     m_msgHandler->ErrorAlways(
@@ -325,14 +357,46 @@ RtxHioImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
                 return 1;
             }
 
-            const int numBytes = level.width * level.height * level.depth;
+            const int numBytes = level.width * level.height *
+                image->GetBytesPerPixel();
             level.data = new char[numBytes];
-            data->image->Read(level);
+
+            // Find the smallest mip whose dimensions are greater or equal to
+            // the requested sampling resolution.
+            const int numMips = (int)data->mipReaders.size();
+            const int baseW = image->GetWidth();
+            const int baseH = image->GetHeight();
+            int srcMip = 0;
+            // Level selection by successive bitshift mirrors that used by Hio.
+            while (srcMip + 1 < numMips &&
+                   std::max(1, baseW >> (srcMip + 1)) >= level.width &&
+                   std::max(1, baseH >> (srcMip + 1)) >= level.height) {
+                ++srcMip;
+            }
+
+            // Find the cached reader for this level
+            HioImageSharedPtr reader = data->mipReaders[srcMip];
+            if (!reader) {
+                reader = HioImage::OpenForReading(
+                    data->filename, 0, srcMip,
+                    data->sourceColorSpace);
+                if (reader) {
+                    // Cache the reader for this level
+                    data->mipReaders[srcMip] = reader;
+                }
+            }
+            if (!reader) {
+                // Open of the desired mip level reader failed;
+                // fall back to using level 0
+                reader = data->mipReaders[0];
+            }
+
+            reader->Read(level);
             data->mipLevels.push_back(level);
         }
     }
 
-    const HioType channelType = HioGetHioType(data->image->GetFormat());
+    const HioType channelType = HioGetHioType(image->GetFormat());
 
     if (channelType == HioTypeSignedByte) {
         _ConvertToFloatAndFill<signed char>(level, fillReq);
@@ -353,7 +417,7 @@ RtxHioImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
         const int bytesPerChannel = HioGetDataSizeOfType(channelType);
 
         // Copy out tile data, one row at a time.
-        const int bytesPerImagePixel = level.depth;
+        const int bytesPerImagePixel = image->GetBytesPerPixel();
         const int bytesPerImageRow = bytesPerImagePixel * level.width;
         const int bytesPerTilePixel = bytesPerChannel * fillReq.numChannels;
         const int bytesPerTileRow = bytesPerTilePixel * fillReq.tile.size.X;
@@ -366,9 +430,9 @@ RtxHioImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
         char *dest = (char*) fillReq.tileData;
 
         // If fill request wants all channels in the image, just memcpy each row.
-        // Otherwise we need to iterate over each pixel and copy just the 
+        // Otherwise we need to iterate over each pixel and copy just the
         // requested channels.
-        if (fillReq.channelOffset == 0 && 
+        if (fillReq.channelOffset == 0 &&
             fillReq.numChannels == numImageChannels) {
 
             for (int y = startY; y < endY; y++) {
@@ -379,7 +443,7 @@ RtxHioImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
         }
         else {
             for (int y = startY; y < endY; y++) {
-                for (char *d = dest, *dEnd = dest + bytesPerTileRow, *s = src; 
+                for (char *d = dest, *dEnd = dest + bytesPerTileRow, *s = src;
                     d != dEnd; d += bytesPerTilePixel, s += bytesPerImagePixel) {
                     memcpy(d, s, bytesPerTilePixel);
                 }
@@ -390,15 +454,15 @@ RtxHioImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
     }
 
     // Make sure texture data is linear
-    if (data->image->IsColorSpaceSRGB()) {
+    if (image->IsColorSpaceSRGB()) {
         if (tCtx.dataType == TextureCtx::k_Float) {
             _ConvertSRGBtoLinear(
-                (float*)fillReq.tileData, 
+                (float*)fillReq.tileData,
                 fillReq.tile.size.X * fillReq.tile.size.Y,
                 fillReq.numChannels, fillReq.channelOffset);
         } else if (tCtx.dataType == TextureCtx::k_Byte) {
             _ConvertSRGBtoLinear(
-                (unsigned char*)fillReq.tileData, 
+                (unsigned char*)fillReq.tileData,
                 fillReq.tile.size.X * fillReq.tile.size.Y,
                 fillReq.numChannels, fillReq.channelOffset);
         }

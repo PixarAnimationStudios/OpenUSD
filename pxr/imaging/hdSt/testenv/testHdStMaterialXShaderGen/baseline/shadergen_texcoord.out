@@ -206,6 +206,7 @@ void mxInit(vec4 Peye, vec3 Neye)
 #if NUM_LIGHTS > 0
     for (int i = 0; i < GetLightCount(); ++i) {
         LightSource light = GetLightSource(i);
+        float intensityAdj = 1.0;
 
         // Save the indirect light transformation
         if (light.isIndirectLight) {
@@ -226,6 +227,27 @@ void mxInit(vec4 Peye, vec3 Neye)
                 u_lightData[u_numActiveLightSources].direction = 
                     (HdGet_worldToViewInverseMatrix() * -light.position).xyz;
             }
+            // Spot lights should have an authored spot cutoff < 180 
+            else if (light.spotCutoffAndFalloff.x < 180.0) {
+                // We pre-apply the spot light attenuation and treat this as 
+                // a point light.
+                u_lightData[u_numActiveLightSources].type = 1; // point
+
+                // Position (Hydra position in ViewSpace)
+                u_lightData[u_numActiveLightSources].position = 
+                    (HdGet_worldToViewInverseMatrix() * light.position).xyz;
+
+                // The only difference between spot and point lights is the 
+                // attenuation calculation. They differ a lot between 
+                // MaterialX and USD. This is the USD calculation that we 
+                // pre-apply to the intensity instead of using MaterialX's 
+                // spot light calculation. 
+                vec3 l = (light.position.w == 0.0)
+                            ? normalize(light.position.xyz)
+                            : normalize(light.position - Peye).xyz;
+                intensityAdj = lightSpotAttenuation(l, i);
+                intensityAdj *= lightDistanceAttenuation(Peye, i);
+            }
             // Treat all other lights as Point lights
             else {
                 u_lightData[u_numActiveLightSources].type = 1; // point
@@ -233,6 +255,10 @@ void mxInit(vec4 Peye, vec3 Neye)
                 // Position (Hydra position in ViewSpace)
                 u_lightData[u_numActiveLightSources].position = 
                     (HdGet_worldToViewInverseMatrix() * light.position).xyz;
+                
+                // Pre-apply Attenuation to the intensity instead of using 
+                // MaterialX's attenuation calculation. 
+                intensityAdj = lightDistanceAttenuation(Peye, i);
             }
 
             // Color and Intensity 
@@ -242,20 +268,13 @@ void mxInit(vec4 Peye, vec3 Neye)
             vec3 lightColor = (intensity == 0.0) 
                 ? light.diffuse.rgb : light.diffuse.rgb/intensity;
             u_lightData[u_numActiveLightSources].color = lightColor;
-            u_lightData[u_numActiveLightSources].intensity = intensity;
-            
+            u_lightData[u_numActiveLightSources].intensity = intensity * intensityAdj;
+
             // Attenuation 
-            // Hydra: vec3(const, linear, quadratic)
-            // MaterialX: const = 0.0, linear = 1.0, quadratic = 2.0
-            if (light.attenuation.z > 0) {
-                u_lightData[u_numActiveLightSources].decay_rate = 2.0;
-            }
-            else if (light.attenuation.y > 0) {
-                u_lightData[u_numActiveLightSources].decay_rate = 1.0;
-            }
-            else {
-                u_lightData[u_numActiveLightSources].decay_rate = 0.0;
-            }
+            // We use MaterialX's constant attenuation (decay_rate of 0.0) 
+            // because we are pre-applying the USD calculation for light 
+            // distance Attenuation when applicable.
+            u_lightData[u_numActiveLightSources].decay_rate = 0.0;
 
             // ShadowOcclusion value
             #if USE_SHADOWS

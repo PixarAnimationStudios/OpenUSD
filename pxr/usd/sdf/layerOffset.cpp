@@ -63,10 +63,10 @@ SdfLayerOffset::operator*(double rhs) const
     return ( rhs * _scale + _offset );
 }
 
-SdfTimeCode
-SdfLayerOffset::operator*(const SdfTimeCode &rhs) const
+GfTimeCode
+SdfLayerOffset::operator*(const GfTimeCode &rhs) const
 {
-    return SdfTimeCode( (*this) * double(rhs) );
+    return GfTimeCode( (*this) * double(rhs) );
 }
 
 bool

@@ -194,10 +194,10 @@ SdfPredicateExpression::GetText() const
         case FnCall::BareCall: break;
         case FnCall::ColonCall: {
             std::vector<std::string> argStrs;
-        for (auto const &arg: call.args) {
+            for (auto const &arg: call.args) {
                 argStrs.push_back(
                     Sdf_FileIOUtility::StringFromVtValue(arg.value));
-        }
+            }
             if (!argStrs.empty()) {
                 result += ":" + TfStringJoin(argStrs, ",");
             }
@@ -241,28 +241,41 @@ SdfPredicateExpression::SdfPredicateExpression(
     try {
         SdfPredicateExprBuilder builder;
         // Uncomment the 'tracer' bit below for debugging.
-        parse<must<seq<SdfPredicateExpressionParser::PredExpr, eolf>>,
-              SdfPredicateExpressionParser::PredAction/*, tracer*/>(
-            string_input<> {
-                input, context.empty() ? "<input>" : context.c_str()
-            }, builder);
+        parse<must<SdfPredicateExpressionParser::PredExpr,
+                   SdfPredicateExpressionParser::PredExprEnd>,
+              SdfPredicateExpressionParser::PredAction,
+              SdfPredicateExpressionParser::Errors>(
+                  string_input<> {
+                      input, context.empty() ? "<input>" : context.c_str()
+                  }, builder);
         *this = builder.Finish();
     }
     catch (parse_error const &err) {
-        // Failed to parse -- make an err msg.
-        std::string errMsg = err.what();
-        errMsg += " -- ";
-        bool first = true;
-        for (position const &p: err.positions()) {
-            if (!first) {
-                errMsg += ", ";
+        // Failed to parse -- make an error msg.
+        std::string location;
+        auto const &positions = err.positions();
+        if (!positions.empty()) {
+            // column is 1-based
+            const size_t col = positions.front().column;
+            const size_t idx = col - 1;
+            if (col >= 1 && idx < input.size()) {
+                location = TfStringPrintf(
+                    " at character %zu ('%c')", col, input[idx]);
             }
-            first = false;
-            errMsg += to_string(p);
+            else {
+                location = TfStringPrintf(" at character %zu", col);
+            }
+            std::string errMsg = TfStringPrintf(
+                "Ill-formed predicate expression '%s'%s: %s",
+                input.c_str(), location.c_str(),
+                std::string(err.message()).c_str());
+            _parseError = std::move(errMsg);
         }
-        _parseError = std::move(errMsg);
+        else {
+            _parseError = TfStringPrintf(
+                "Ill-formed predicate expression '%s'", input.c_str());
+        }
     }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

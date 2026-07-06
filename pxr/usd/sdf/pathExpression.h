@@ -257,7 +257,9 @@ public:
         TfFunctionRef<void (PathPattern const &)> pattern) const;
 
     /// Return a new expression created by replacing literal path prefixes that
-    /// start with \p oldPrefix with \p newPrefix.
+    /// start with \p oldPrefix with \p newPrefix. If \p newPrefix is an empty
+    /// path, PathPatterns and ExpressionReferences with \p oldPrefix will be 
+    /// removed from the returned expression.
     SdfPathExpression
     ReplacePrefix(SdfPath const &oldPrefix,
                   SdfPath const &newPrefix) const & {
@@ -265,7 +267,9 @@ public:
     }
 
     /// Return a new expression created by replacing literal path prefixes that
-    /// start with \p oldPrefix with \p newPrefix.
+    /// start with \p oldPrefix with \p newPrefix. If \p newPrefix is an empty
+    /// path, PathPatterns and ExpressionReferences with \p oldPrefix will be 
+    /// removed from the returned expression.
     SDF_API
     SdfPathExpression
     ReplacePrefix(SdfPath const &oldPrefix,

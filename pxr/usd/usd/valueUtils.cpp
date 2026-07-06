@@ -47,8 +47,8 @@ void
 Usd_ApplyLayerOffsetToValue(VtValue *value, const SdfLayerOffset &offset)
 {
     // Try applying the offset for each of our supported value types.
-    _TryApplyLayerOffsetToValue<SdfTimeCode>(value, offset) ||
-    _TryApplyLayerOffsetToValue<VtArray<SdfTimeCode>>(value, offset) ||
+    _TryApplyLayerOffsetToValue<GfTimeCode>(value, offset) ||
+    _TryApplyLayerOffsetToValue<VtArray<GfTimeCode>>(value, offset) ||
     _TryApplyLayerOffsetToValue<VtDictionary>(value, offset) ||
     _TryApplyLayerOffsetToValue<SdfTimeSampleMap>(value, offset);
 }

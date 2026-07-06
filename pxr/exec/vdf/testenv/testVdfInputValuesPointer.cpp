@@ -43,6 +43,15 @@ ReadCallback(const VdfContext &context)
     TF_AXIOM(
         ptr.GetSize() == 100 || (ptr.GetSize() == 0 && !ptr.GetData()));
 
+    // Make sure HasInputValue agrees here, including in cases where we have
+    // empty data, including boxed data.
+    if (ptr.GetSize() == 100) {
+        TF_AXIOM(context.HasInputValue(_tokens->in));
+    }
+    else {
+        TF_AXIOM(!context.HasInputValue(_tokens->in));
+    }
+
     for (size_t i = 0; i < ptr.GetSize(); ++i) {
         TF_AXIOM(ptr.GetData()[i] == static_cast<int>(i));
     }
@@ -149,6 +158,14 @@ TestInputValuesPointer()
     VdfInputVector<int> *in20_5 = CreateInputNode(&net, 20, 80);
 
     // Create a bunch of input nodes to supply boxed integer values
+
+    VdfInputVector<std::pair<int, int>> *num0 =
+        new VdfInputVector<std::pair<int, int>>(&net, 1);
+    num0->SetValue(0, std::make_pair(0, 0));
+    VdfNode *boxedIn0 = CreateBoxedInputNode(&net);
+    net.Connect(
+        num0->GetOutput(), boxedIn0, _tokens->in, VdfMask::AllOnes(1));
+
     VdfInputVector<std::pair<int, int>> *num100 =
         new VdfInputVector<std::pair<int, int>>(&net, 1);
     num100->SetValue(0, std::make_pair(100, 0));
@@ -209,6 +226,11 @@ TestInputValuesPointer()
     net.Connect(
         in20_5->GetOutput(), read20, _tokens->in, VdfMask::AllOnes(20));
 
+    VdfNode *readBoxed0 = CreateReadNode(&net);
+    net.Connect(
+        boxedIn0->GetOutput(),
+        readBoxed0, _tokens->in, VdfMask::AllOnes(1));
+
     VdfNode *readBoxed100 = CreateReadNode(&net);
     net.Connect(
         boxedIn100->GetOutput(),
@@ -238,6 +260,7 @@ TestInputValuesPointer()
     mos.emplace_back(read100AndEmpty->GetOutput(), VdfMask::AllOnes(1));
     mos.emplace_back(read50->GetOutput(), VdfMask::AllOnes(1));
     mos.emplace_back(read20->GetOutput(), VdfMask::AllOnes(1));
+    mos.emplace_back(readBoxed0->GetOutput(), VdfMask::AllOnes(1));
     mos.emplace_back(readBoxed100->GetOutput(), VdfMask::AllOnes(1));
     mos.emplace_back(readBoxed50->GetOutput(), VdfMask::AllOnes(1));
     mos.emplace_back(readBoxedMixed->GetOutput(), VdfMask::AllOnes(1));

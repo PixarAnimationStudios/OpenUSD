@@ -13,6 +13,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/cube.h"
 #include "pxr/usd/usdGeom/points.h"
+#include "pxr/usd/usdShade/material.h"
 
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/meshTopologySchema.h"
@@ -268,14 +269,14 @@ void SetTimeTest()
                 TfToken("material"),
                 TfToken(),
                 TfToken("nodes"),
-                TfToken("/testMaterial/Surface"),
+                TfToken("Surface"),
                 TfToken("parameters"),
                 TfToken("emitColor")).Append(TfToken("value")),
             HdDataSourceLocator(
                 TfToken("material"),
                 TfToken("__all"),
                 TfToken("nodes"),
-                TfToken("/testMaterial/Surface"),
+                TfToken("Surface"),
                 TfToken("parameters"),
                 TfToken("emitColor")).Append(TfToken("value"))
             }
@@ -407,6 +408,9 @@ void NodeGraphInputChangeTest()
     inputSceneIndex->AddObserver(HdSceneIndexObserverPtr(&primListener));
 
     SdfPath materialPath("/World/Material");
+    UsdPrim matPrim = stage->GetPrimAtPath(materialPath);
+    TF_VERIFY(matPrim);
+    UsdShadeMaterial material(matPrim);
     UsdPrim ngPrim = stage->GetPrimAtPath(SdfPath("/World/Material/NodeGraph"));
     if (!TF_VERIFY(ngPrim)) {
         return;
@@ -438,6 +442,105 @@ void NodeGraphInputChangeTest()
     if (!TF_VERIFY(materialDirtied)) {
         return;
     }
+
+    // Change the terminal connection to a new shader node, that
+    // was not previously part of the material network.
+    material.GetSurfaceAttr().SetConnections(
+        {SdfPath("/World/Material/AlternatePreviewSurface.outputs:surface")});
+
+    primListener.ResetEntries();
+    inputSceneIndex->ApplyPendingUpdates();
+
+    // We expect the material to be dirtied.
+    materialDirtied = false;
+    for (const HdSceneIndexObserver::DirtiedPrimEntry &entry :
+            primListener.GetDirtied()) {
+        if (entry.primPath == materialPath) {
+            if (entry.dirtyLocators.Intersects(
+                    HdMaterialSchema::GetDefaultLocator())) {
+                materialDirtied = true;
+            }
+        }
+    }
+    TF_VERIFY(materialDirtied);
+
+    // We expect the new shader node to exist in the material.
+    {
+        HdSceneIndexPrim prim = inputSceneIndex->GetPrim(materialPath);
+        auto diffuseValueDs = HdTypedSampledDataSource<GfVec3f>::Cast(
+            HdContainerDataSource::Get(
+                prim.dataSource,
+                HdDataSourceLocator(
+                TfToken("material"),
+                TfToken(""), // universal
+                TfToken("nodes"),
+                TfToken("AlternatePreviewSurface"),
+                TfToken("parameters"),
+                TfToken("diffuseColor"))
+                .Append(TfToken("value"))));
+        TF_VERIFY(diffuseValueDs->GetTypedValue(0.0) == GfVec3f(1, 2, 3));
+    }
+}
+
+// Regression test for FLOW-7634: changing an inputs:* attribute directly on
+// the material prim (a material interface input) must dirty the full material
+// network, not just the terminal locator.
+void MaterialInterfaceInputChangeTest()
+{
+    UsdStageRefPtr stage = UsdStage::Open("materialInterfaceInput.usda");
+    if (!TF_VERIFY(stage)) {
+        return;
+    }
+
+    UsdImagingStageSceneIndexRefPtr inputSceneIndex =
+        UsdImagingStageSceneIndex::New();
+    if (!TF_VERIFY(inputSceneIndex)) {
+        return;
+    }
+
+    inputSceneIndex->SetStage(stage);
+
+    PrimListener primListener;
+    inputSceneIndex->AddObserver(HdSceneIndexObserverPtr(&primListener));
+
+    const SdfPath materialPath("/World/Material");
+    UsdPrim matPrim = stage->GetPrimAtPath(materialPath);
+    if (!TF_VERIFY(matPrim)) {
+        return;
+    }
+
+    UsdAttribute baseColorAttr =
+        matPrim.GetAttribute(TfToken("inputs:baseColor"));
+    if (!TF_VERIFY(baseColorAttr)) {
+        return;
+    }
+
+    // Change the material interface input directly on the material prim.
+    baseColorAttr.Set(VtValue(GfVec3f(0.0f, 1.0f, 0.0f)));
+
+    inputSceneIndex->ApplyPendingUpdates();
+
+    // The full material network must be dirtied, not just the terminal.
+    // Without the fix in InvalidateImagingSubprim, only
+    // 'material/""/terminals/surface' was inserted.  That locator does not
+    // intersect with the nodes locator below (they are siblings under the
+    // same render context), so this check would fail.  With the fix, the
+    // root 'material' locator is also inserted, which is a prefix of the
+    // nodes locator, so Intersects returns true.
+    const HdDataSourceLocator nodesLocator(
+        HdMaterialSchema::GetSchemaToken(),
+        TfToken(""),        // universal render context
+        TfToken("nodes"));
+    bool materialNodesDirtied = false;
+    for (const HdSceneIndexObserver::DirtiedPrimEntry &entry :
+            primListener.GetDirtied()) {
+        if (entry.primPath == materialPath &&
+                entry.dirtyLocators.Intersects(nodesLocator)) {
+            materialNodesDirtied = true;
+            break;
+        }
+    }
+    TF_VERIFY(materialNodesDirtied);
 }
 
 void AddNonEmptyLayerTest()
@@ -740,6 +843,10 @@ int main()
     // Ensure that edits made to the nodegraphs result in the enclosing material
     // being dirtied.
     NodeGraphInputChangeTest();
+
+    // Ensure that changing a material interface input (inputs:* on the material
+    // prim itself) dirties the full material network (regression for FLOW-7634).
+    MaterialInterfaceInputChangeTest();
 
     // Ensure that adding a non-empty layer to the layer stack will trigger the
     // appropriate resyncs.

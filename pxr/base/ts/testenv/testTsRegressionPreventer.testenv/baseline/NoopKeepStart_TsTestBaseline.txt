@@ -12,14 +12,29 @@ TsRegressionPreventer::SetResult:
   postOppositeAdjustedWidth: 0.800000
 -----
 Spline:
-  hermite false
-  preExtrap Held
-  postExtrap Held
-Knots:
-  0.000000: 0.000000, Curve, preSlope 0.000000, postSlope 0.000000, preLen 0.000000, postLen 0.800000, auto false / false
-  1.000000: 1.000000, Curve, preSlope 0.000000, postSlope 0.000000, preLen 0.800000, postLen 0.000000, auto false / false
------
-Ts.TsTest_SplineData(isHermite = False, preExtrapolation = Ts.TsTest_SplineData.Extrapolation(method = Ts.TsTest_SplineData.ExtrapHeld), postExtrapolation = Ts.TsTest_SplineData.Extrapolation(method = Ts.TsTest_SplineData.ExtrapHeld), knots = [Ts.TsTest_SplineData.Knot(time = float.fromhex('0x0p+0'), nextSegInterpMethod = Ts.TsTest_SplineData.InterpCurve, value = float.fromhex('0x0p+0'), preSlope = float.fromhex('0x0p+0'), postSlope = float.fromhex('0x0p+0'), preLen = float.fromhex('0x0p+0'), postLen = float.fromhex('0x1.999999999999ap-1'), preAuto = False, postAuto = False), Ts.TsTest_SplineData.Knot(time = float.fromhex('0x1p+0'), nextSegInterpMethod = Ts.TsTest_SplineData.InterpCurve, value = float.fromhex('0x1p+0'), preSlope = float.fromhex('0x0p+0'), postSlope = float.fromhex('0x0p+0'), preLen = float.fromhex('0x1.999999999999ap-1'), postLen = float.fromhex('0x0p+0'), preAuto = False, postAuto = False)])
+  value type double
+  time valued 0
+  curve type Bezier
+  pre extrap Held
+  post extrap Held
+Knot:
+  value type double
+  time 0
+  value 0
+  next interp Curve
+  pre-tan width 0
+  pre-tan slope 0
+  post-tan width 0.8
+  post-tan slope 0
+Knot:
+  value type double
+  time 1
+  value 1
+  next interp Curve
+  pre-tan width 0.8
+  pre-tan slope 0
+  post-tan width 0
+  post-tan slope 0
 -----
 -0.200000 0.000000
 0.000000 0.000000
@@ -42,7 +57,7 @@ Ts.TsTest_SplineData(isHermite = False, preExtrapolation = Ts.TsTest_SplineData.
 0.084577 0.004148
 0.089552 0.004682
 0.094527 0.005253
-0.099502 0.005862
+0.099502 0.005861
 0.104478 0.006508
 0.109453 0.007194
 0.114428 0.007919
@@ -53,9 +68,9 @@ Ts.TsTest_SplineData(isHermite = False, preExtrapolation = Ts.TsTest_SplineData.
 0.139303 0.012180
 0.144279 0.013166
 0.149254 0.014199
-0.154229 0.015281
+0.154229 0.015280
 0.159204 0.016411
-0.164179 0.017594
+0.164179 0.017593
 0.169154 0.018828
 0.174129 0.020116
 0.179104 0.021459
@@ -65,16 +80,16 @@ Ts.TsTest_SplineData(isHermite = False, preExtrapolation = Ts.TsTest_SplineData.
 0.199005 0.027415
 0.203980 0.029058
 0.208955 0.030766
-0.213930 0.032543
+0.213930 0.032542
 0.218905 0.034388
 0.223881 0.036305
-0.228856 0.038297
+0.228856 0.038296
 0.233831 0.040364
 0.238806 0.042511
 0.243781 0.044739
 0.248756 0.047052
-0.253731 0.049453
-0.258706 0.051944
+0.253731 0.049452
+0.258706 0.051943
 0.263682 0.054529
 0.268657 0.057211
 0.273632 0.059995
@@ -84,15 +99,15 @@ Ts.TsTest_SplineData(isHermite = False, preExtrapolation = Ts.TsTest_SplineData.
 0.293532 0.072226
 0.298507 0.075581
 0.303483 0.079065
-0.308458 0.082684
-0.313433 0.086444
+0.308458 0.082683
+0.313433 0.086443
 0.318408 0.090351
 0.323383 0.094414
 0.328358 0.098639
-0.333333 0.103035
+0.333333 0.103034
 0.338308 0.107610
 0.343284 0.112375
-0.348259 0.117340
+0.348259 0.117339
 0.353234 0.122515
 0.358209 0.127914
 0.363184 0.133549
@@ -153,15 +168,15 @@ Ts.TsTest_SplineData(isHermite = False, preExtrapolation = Ts.TsTest_SplineData.
 0.636816 0.866451
 0.641791 0.872086
 0.646766 0.877485
-0.651741 0.882660
+0.651741 0.882661
 0.656716 0.887625
 0.661692 0.892390
-0.666667 0.896965
+0.666667 0.896966
 0.671642 0.901361
 0.676617 0.905586
 0.681592 0.909649
-0.686567 0.913556
-0.691542 0.917316
+0.686567 0.913557
+0.691542 0.917317
 0.696517 0.920935
 0.701493 0.924419
 0.706468 0.927774
@@ -171,16 +186,16 @@ Ts.TsTest_SplineData(isHermite = False, preExtrapolation = Ts.TsTest_SplineData.
 0.726368 0.940005
 0.731343 0.942789
 0.736318 0.945471
-0.741294 0.948056
-0.746269 0.950547
+0.741294 0.948057
+0.746269 0.950548
 0.751244 0.952948
 0.756219 0.955261
 0.761194 0.957489
 0.766169 0.959636
-0.771144 0.961703
+0.771144 0.961704
 0.776119 0.963695
 0.781095 0.965612
-0.786070 0.967457
+0.786070 0.967458
 0.791045 0.969234
 0.796020 0.970942
 0.800995 0.972585
@@ -190,9 +205,9 @@ Ts.TsTest_SplineData(isHermite = False, preExtrapolation = Ts.TsTest_SplineData.
 0.820896 0.978541
 0.825871 0.979884
 0.830846 0.981172
-0.835821 0.982406
+0.835821 0.982407
 0.840796 0.983589
-0.845771 0.984719
+0.845771 0.984720
 0.850746 0.985801
 0.855721 0.986834
 0.860697 0.987820
@@ -203,7 +218,7 @@ Ts.TsTest_SplineData(isHermite = False, preExtrapolation = Ts.TsTest_SplineData.
 0.885572 0.992081
 0.890547 0.992806
 0.895522 0.993492
-0.900498 0.994138
+0.900498 0.994139
 0.905473 0.994747
 0.910448 0.995318
 0.915423 0.995852

@@ -55,7 +55,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 //   Ts_Get[Typed]SplineData
 //   Knot -> proxy
 //   Knot -> _TypedData -> direct access
-//   TsDispatchToValueTypeTemplate
+//   TsDispatchToStorageValueTypeTemplate
 
 
 // Non-template base class for knot data.
@@ -66,7 +66,7 @@ public:
     // Typically used by Create(), but can be invoked directly for clients that
     // don't care about the value dimension, and instantiate this struct without
     // subclassing.
-    Ts_KnotData();
+    TS_API Ts_KnotData();
 
     // Creates an appropriately subtyped instance on the heap.
     static Ts_KnotData* Create(TfType valueType);
@@ -224,6 +224,7 @@ public:
     virtual bool UpdateTangents(const Ts_KnotDataProxy* prevProxy,
                                 const Ts_KnotDataProxy* nextProxy,
                                 const TsCurveType curveType) = 0;
+    TfType valueType;
 };
 
 
@@ -239,6 +240,8 @@ public:
     Ts_KnotData* CloneData() const override;
     void DeleteData() override;
 
+    // Note that T is the storage type and the TfType returned by
+    // GetValueType is the true type.
     TfType GetValueType() const override;
     bool IsDataEqualTo(const Ts_KnotData &other) const override;
 
@@ -294,7 +297,9 @@ bool Ts_TypedKnotData<T>::operator==(
     // COMP(curveType);
 
     COMP(value);
-    COMP(preValue);
+    if (dualValued) {
+        COMP(preValue);
+    }
     COMP(preTanSlope);
     COMP(postTanSlope);
 
@@ -361,7 +366,7 @@ void Ts_TypedKnotDataProxy<T>::DeleteData()
 template <typename T>
 TfType Ts_TypedKnotDataProxy<T>::GetValueType() const
 {
-    return Ts_GetType<T>();
+    return valueType;
 }
 
 template <typename T>

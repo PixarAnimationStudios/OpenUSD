@@ -26,6 +26,8 @@ using HdRenderProductVectorSchema =
     HdVectorOfSchemasSchema<class HdRenderProductSchema>;
 using HdRenderVarVectorSchema =
     HdVectorOfSchemasSchema<class HdRenderVarSchema>;
+using HdInstanceVectorSchema =
+    HdVectorOfSchemasSchema<class HdInstanceSchema>;
 using HdInstanceIndicesVectorSchema =
     HdVectorOfSchemasSchema<class HdInstanceIndicesSchema>;
 using HdMaterialInterfaceMappingVectorSchema =

@@ -67,7 +67,7 @@ USD Home
 
       :fa:`book` Learn
       ^^^^^^^^^^^^^
-      - `Learning Content on the USD Working Group Wiki <https://wiki.aswf.io/display/WGUSD/Learning+Content>`_
+      - `USD Resources on the USD Working Group Wiki <https://lf-aswf.atlassian.net/wiki/spaces/WGUSD/pages/11274324/Index>`_
       - :doc:`Terms and Concepts <glossary>`
       - `API Documentation <api/index.html>`_
       - `OpenUSD Forum <https://forum.openusd.org>`_

@@ -29,12 +29,10 @@
 #include <cstring>
 #include <errno.h>
 #include <fcntl.h>
-#include <fstream>
 #include <unistd.h>
 #include <string>
 #include <string_view>
 #include <system_error>
-#include <utility>
 #endif
 #if defined(ARCH_OS_DARWIN)
 #include <sys/sysctl.h>
@@ -54,9 +52,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 // we don't confuse the debugger's stack unwinding.
 static void Arch_DebuggerInit() ARCH_NOINLINE;
 
-static bool _archDebuggerInitialized = false;
+// Gate for one-time initialization in Arch_DebuggerInit().  Stored atomically
+// so a first call from a signal handler doesn't race with concurrent init on
+// another thread; release/acquire ordering on this flag also publishes the
+// non-atomic state set during init (_archDebuggerEnabled and the installed
+// SIGTRAP handler).
+static std::atomic<bool> _archDebuggerInitialized {false};
+static bool _archAvoidJIT = (getenv("ARCH_AVOID_JIT") != nullptr);
 static bool _archDebuggerEnabled = false;
-static std::atomic<bool> _archDebuggerWait(false);
+static std::atomic<bool> _archDebuggerWait {false};
 
 static char** _archDebuggerAttachArgs = 0;
 
@@ -80,8 +84,6 @@ static
 void
 Arch_DebuggerInitPosix()
 {
-    _archDebuggerInitialized = true;
-
     // Handle the SIGTRAP signal so if no debugger is attached then
     // nothing happens when ArchDebuggerTrap() is called.  If we
     // didn't handle this signal then the app would die.
@@ -89,19 +91,12 @@ Arch_DebuggerInitPosix()
     sigemptyset(&act.sa_mask);
     act.sa_flags   = SA_NODEFER;
     act.sa_handler = Arch_DebuggerTrapHandler;
-    if (sigaction(SIGTRAP, &act, 0)) {
-        ARCH_WARNING("Failed to set SIGTRAP handler;  "
-                     "debug trap not enabled");
-        _archDebuggerEnabled = false;
-    }
-    else {
-        _archDebuggerEnabled = true;
-    }
-}
-namespace {
-struct InitPosix {
-    InitPosix() { Arch_DebuggerInitPosix(); }
-};
+    _archDebuggerEnabled = (sigaction(SIGTRAP, &act, 0) == 0);
+
+    // Publish initialization last with release ordering so that a reader doing
+    // an acquire-load on _archDebuggerInitialized is guaranteed to see
+    // _archDebuggerEnabled and the installed SIGTRAP handler.
+    _archDebuggerInitialized.store(true, std::memory_order_release);
 }
 #endif
 
@@ -129,8 +124,20 @@ Arch_DebuggerInit()
         );
 #endif
 
-    // Initialize once.
-    static InitPosix initPosix;
+    // Initialize once.  Gate via an atomic-bool flag rather than a non-trivial
+    // function-local static, because Arch_DebuggerInit() can be reached from a
+    // signal handler via ArchDebuggerAttach() / ArchDebuggerIsAttached() on the
+    // crash path, and the C++11 thread-safe-static guard variable for
+    // non-trivial initializers is effectively a mutex that is not
+    // async-signal-safe -- a first call from a signal handler could deadlock
+    // against the guard.
+    //
+    // Arch_DebuggerInitPosix() is itself async-signal-safe and idempotent
+    // (sigaction with the same args is a no-op), so a race that two callers run
+    // benignly converges to the same state.
+    if (!_archDebuggerInitialized.load(std::memory_order_acquire)) {
+        Arch_DebuggerInitPosix();
+    }
 
 #if defined(ARCH_CPU_INTEL) && defined(ARCH_BITS_64)
     // Restore the saved registers.
@@ -147,8 +154,8 @@ Arch_DebuggerInit()
 
 #elif defined(ARCH_OS_WINDOWS)
 
-    _archDebuggerInitialized = true;
     _archDebuggerEnabled = true;
+    _archDebuggerInitialized.store(true, std::memory_order_release);
 
 #endif
 }
@@ -341,54 +348,49 @@ Arch_DebuggerAttachExecPosix(void* data)
 
 #if defined(ARCH_OS_LINUX)
 
-// Reads /proc/self/status, finds the line starting with "field:", and
-// returns the portion following the ":".
-// Note that the returned string will generally include leading whitespace
+// Reads the "TracerPid:" field from /proc/self/status.
+// Returns the tracer PID, 0 if not traced, or -1 on error.
+//
+// This is called from the signal handler and needs to 
+// be async-signal-safe.
 static
-std::string Arch_ReadProcStatusField(const std::string_view field)
+int Arch_ReadTracerPid()
 {
-    std::ifstream procStatusFile("/proc/self/status");
-    if (!procStatusFile) {
-        ARCH_WARNING("Unable to open /proc/self/status");
-        return std::string();
+    const int fd = ::open("/proc/self/status", O_RDONLY);
+    if (fd < 0) {
+        return -1;
     }
-    for (std::string line; std::getline(procStatusFile, line);) {
-        // the field needs to start with the given fieldLen AND the ':' char
-        if (line.size() < field.size() + 1) {
-            continue;
+    char buf[4096];
+    const ssize_t n = ::read(fd, buf, sizeof(buf) - 1);
+    ::close(fd);
+    if (n <= 0) {
+        return -1;
+    }
+    buf[n] = '\0';
+
+    // Search line-by-line for "TracerPid:"
+    static constexpr char kField[] = "TracerPid:";
+    static constexpr size_t kFieldLen = sizeof(kField) - 1;
+    const char* p = buf;
+    const char* const end = buf + n;
+    while (p < end) {
+        const char* lineEnd = p;
+        while (lineEnd < end && *lineEnd != '\n') {
+            ++lineEnd;
         }
-
-        if (line.compare(0, field.size(), field) == 0 &&
-            line[field.size()] == ':') {
-            // We found our "field:" line
-            return line.substr(field.size() + 1);
+        if (static_cast<size_t>(lineEnd - p) >= kFieldLen &&
+                memcmp(p, kField, kFieldLen) == 0) {
+            p += kFieldLen;
+            while (p < lineEnd && (*p == ' ' || *p == '\t')) {
+                ++p;
+            }
+            int tracerPid = 0;
+            auto result = std::from_chars(p, lineEnd, tracerPid);
+            return result.ec == std::errc() ? tracerPid : -1;
         }
+        p = (lineEnd < end) ? lineEnd + 1 : end;
     }
-
-    ARCH_WARNING((std::string("Unable to find given field in "
-                              "/proc/self/status: ") += field).c_str());
-    return std::string();
-}
-
-// Reads the "TracerPid:" field from /proc/self/status
-// Returns a result < 0 if there was an error.
-static
-int Arch_ReadTracerPid() {
-
-    const std::string field = Arch_ReadProcStatusField("TracerPid");
-
-    // Trim any leading spaces or tabs in a locale-independent way.
-    char const *b = field.c_str();
-    char const * const e = field.c_str() + field.size();
-    while (b != e && (*b == '\t' || *b == ' ')) {
-        ++b;
-    }
-
-    // Try to convert to int.
-    int tracerPid = 0;
-    auto [ptr, err] = std::from_chars(b, e, tracerPid);
-
-    return err == std::errc() ? tracerPid : -1;
+    return -1;
 }
 
 static
@@ -616,21 +618,17 @@ ArchDebuggerWait(bool wait)
     _archDebuggerWait = wait;
 }
 
-namespace {
-bool
-_ArchAvoidJIT()
-{
-    return (getenv("ARCH_AVOID_JIT") != nullptr);
-}
-}
-
+// This can be invoked by the crash handler and
+// needs to be async-signal-safe.
 bool
 ArchDebuggerAttach()
 {
-    return !_ArchAvoidJIT() &&
+    return !_archAvoidJIT &&
             (ArchDebuggerIsAttached() || Arch_DebuggerAttach());
 }
 
+// This can be invoked by the crash handler and
+// needs to be async-signal-safe.
 bool
 ArchDebuggerIsAttached()
 {
@@ -648,7 +646,7 @@ ArchDebuggerIsAttached()
 void
 ArchAbort(bool logging)
 {
-    if (!_ArchAvoidJIT() || ArchDebuggerIsAttached()) {
+    if (!_archAvoidJIT || ArchDebuggerIsAttached()) {
         if (!logging) {
 #if !defined(ARCH_OS_WINDOWS) && !defined(ARCH_OS_WASM_VM)
             // Remove signal handler.

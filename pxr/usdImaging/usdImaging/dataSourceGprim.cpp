@@ -41,10 +41,6 @@ _GetCustomPrimvarMappings(const UsdPrim &usdPrim)
                     UsdGeomTokens->velocities},
                 {HdTokens->accelerations,
                     UsdGeomTokens->accelerations},
-                {HdTokens->nonlinearSampleCount,
-                    UsdGeomTokens->motionNonlinearSampleCount},
-                {HdTokens->blurScale,
-                    UsdGeomTokens->motionBlurScale},
                 {HdPrimvarsSchemaTokens->normals,
                     UsdGeomTokens->normals},
             };
@@ -95,7 +91,7 @@ UsdImagingDataSourceGprim::Get(const TfToken &name)
 
     HdDataSourceBaseHandle const result = UsdImagingDataSourcePrim::Get(name);
     if (name == HdPrimvarsSchema::GetSchemaToken()) {
-        const UsdImagingDataSourceCustomPrimvars::Mappings &mappings = 
+        const UsdImagingDataSourceCustomPrimvars::Mappings &mappings =
             _GetCustomPrimvarMappings(_GetUsdPrim());
         if (mappings.empty()) {
             return result;
@@ -131,7 +127,7 @@ UsdImagingDataSourceGprim::Invalidate(
             prim, subprim, properties, invalidationType);
 
     if (subprim.IsEmpty()) {
-        const UsdImagingDataSourceCustomPrimvars::Mappings &mappings = 
+        const UsdImagingDataSourceCustomPrimvars::Mappings &mappings =
             _GetCustomPrimvarMappings(prim);
 
         if (!mappings.empty()) {

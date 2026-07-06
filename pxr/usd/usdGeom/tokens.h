@@ -51,7 +51,7 @@ struct UsdGeomTokensType {
     const TfToken accelerations;
     /// \brief "all"
     /// 
-    /// Possible value for UsdGeomMesh::GetFaceVaryingLinearInterpolationAttr()
+    /// Possible value for UsdGeomMesh::GetFaceVaryingLinearInterpolationAttr(), Possible value for UsdGeomBackPlateAPI::GetPlateVisibilityAttr()
     const TfToken all;
     /// \brief "angularVelocities"
     /// 
@@ -61,6 +61,62 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomCylinder, UsdGeomCapsule, UsdGeomCone, UsdGeomCylinder_1, UsdGeomCapsule_1, UsdGeomPlane
     const TfToken axis;
+    /// \brief "backPlate"
+    /// 
+    /// Property namespace prefix for the UsdGeomBackPlateAPI schema.
+    const TfToken backPlate;
+    /// \brief "backPlate:__INSTANCE_NAME__:alpha:image"
+    /// 
+    /// UsdGeomBackPlateAPI
+    const TfToken backPlate_MultipleApplyTemplate_AlphaImage;
+    /// \brief "backPlate:__INSTANCE_NAME__:depth:cameraSpaceOffset"
+    /// 
+    /// UsdGeomBackPlateAPI
+    const TfToken backPlate_MultipleApplyTemplate_DepthCameraSpaceOffset;
+    /// \brief "backPlate:__INSTANCE_NAME__:depth:image"
+    /// 
+    /// UsdGeomBackPlateAPI
+    const TfToken backPlate_MultipleApplyTemplate_DepthImage;
+    /// \brief "backPlate:__INSTANCE_NAME__:depth:minOffset"
+    /// 
+    /// UsdGeomBackPlateAPI
+    const TfToken backPlate_MultipleApplyTemplate_DepthMinOffset;
+    /// \brief "backPlate:__INSTANCE_NAME__:depth:normalizingFactor"
+    /// 
+    /// UsdGeomBackPlateAPI
+    const TfToken backPlate_MultipleApplyTemplate_DepthNormalizingFactor;
+    /// \brief "backPlate:__INSTANCE_NAME__:image"
+    /// 
+    /// UsdGeomBackPlateAPI
+    const TfToken backPlate_MultipleApplyTemplate_Image;
+    /// \brief "backPlate:__INSTANCE_NAME__:luma:gain"
+    /// 
+    /// UsdGeomBackPlateAPI
+    const TfToken backPlate_MultipleApplyTemplate_LumaGain;
+    /// \brief "backPlate:__INSTANCE_NAME__:luma:gamma"
+    /// 
+    /// UsdGeomBackPlateAPI
+    const TfToken backPlate_MultipleApplyTemplate_LumaGamma;
+    /// \brief "backPlate:__INSTANCE_NAME__:luma:lift"
+    /// 
+    /// UsdGeomBackPlateAPI
+    const TfToken backPlate_MultipleApplyTemplate_LumaLift;
+    /// \brief "backPlate:__INSTANCE_NAME__:plateVisibility"
+    /// 
+    /// UsdGeomBackPlateAPI
+    const TfToken backPlate_MultipleApplyTemplate_PlateVisibility;
+    /// \brief "backPlate:__INSTANCE_NAME__:rotateXYZ:tweak"
+    /// 
+    /// UsdGeomBackPlateAPI
+    const TfToken backPlate_MultipleApplyTemplate_RotateXYZTweak;
+    /// \brief "backPlate:__INSTANCE_NAME__:scale:tweak"
+    /// 
+    /// UsdGeomBackPlateAPI
+    const TfToken backPlate_MultipleApplyTemplate_ScaleTweak;
+    /// \brief "backPlate:__INSTANCE_NAME__:translate:tweak"
+    /// 
+    /// UsdGeomBackPlateAPI
+    const TfToken backPlate_MultipleApplyTemplate_TranslateTweak;
     /// \brief "basis"
     /// 
     /// UsdGeomBasisCurves
@@ -257,6 +313,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomCamera
     const TfToken fStop;
+    /// \brief "full"
+    /// 
+    /// Possible value for UsdGeomModelAPI::GetModelCardVisibilityAttr()
+    const TfToken full;
     /// \brief "guide"
     /// 
     /// Possible value for UsdGeomImageable::GetPurposeAttr()
@@ -299,7 +359,7 @@ struct UsdGeomTokensType {
     const TfToken indices;
     /// \brief "inherited"
     /// 
-    /// Fallback value for UsdGeomImageable::GetVisibilityAttr(), Possible value for UsdGeomVisibilityAPI::GetGuideVisibilityAttr(), Fallback value for UsdGeomVisibilityAPI::GetProxyVisibilityAttr(), Fallback value for UsdGeomVisibilityAPI::GetRenderVisibilityAttr(), Fallback value for UsdGeomModelAPI::GetModelDrawModeAttr()
+    /// Fallback value for UsdGeomImageable::GetVisibilityAttr(), Possible value for UsdGeomVisibilityAPI::GetGuideVisibilityAttr(), Fallback value for UsdGeomVisibilityAPI::GetProxyVisibilityAttr(), Fallback value for UsdGeomVisibilityAPI::GetRenderVisibilityAttr(), Fallback value for UsdGeomModelAPI::GetModelCardVisibilityAttr(), Fallback value for UsdGeomModelAPI::GetModelDrawModeAttr()
     const TfToken inherited;
     /// \brief "interpolateBoundary"
     /// 
@@ -377,6 +437,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomModelAPI
     const TfToken modelCardTextureZPos;
+    /// \brief "model:cardVisibility"
+    /// 
+    /// UsdGeomModelAPI
+    const TfToken modelCardVisibility;
     /// \brief "model:drawMode"
     /// 
     /// UsdGeomModelAPI
@@ -401,6 +465,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomMotionAPI
     const TfToken motionVelocityScale;
+    /// \brief "mute"
+    /// 
+    /// Possible value for UsdGeomBackPlateAPI::GetPlateVisibilityAttr()
+    const TfToken mute;
     /// \brief "none"
     /// 
     /// Possible value for UsdGeomMesh::GetFaceVaryingLinearInterpolationAttr(), Possible value for UsdGeomMesh::GetInterpolateBoundaryAttr(), Possible value for UsdGeomMesh::GetSubdivisionSchemeAttr()
@@ -569,6 +637,10 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomCamera
     const TfToken shutterOpen;
+    /// \brief "simple"
+    /// 
+    /// Possible value for UsdGeomModelAPI::GetModelCardVisibilityAttr()
+    const TfToken simple;
     /// \brief "size"
     /// 
     /// UsdGeomCube
@@ -577,6 +649,10 @@ struct UsdGeomTokensType {
     /// 
     /// Possible value for UsdGeomMesh::GetTriangleSubdivisionRuleAttr()
     const TfToken smooth;
+    /// \brief "solo"
+    /// 
+    /// Fallback value for UsdGeomBackPlateAPI::GetPlateVisibilityAttr()
+    const TfToken solo;
     /// \brief "stereoRole"
     /// 
     /// UsdGeomCamera
@@ -745,6 +821,10 @@ struct UsdGeomTokensType {
     /// 
     /// Fallback value for UsdGeomCylinder::GetAxisAttr(), Fallback value for UsdGeomCapsule::GetAxisAttr(), Fallback value for UsdGeomCone::GetAxisAttr(), Fallback value for UsdGeomCylinder_1::GetAxisAttr(), Fallback value for UsdGeomCapsule_1::GetAxisAttr(), Fallback value for UsdGeomPlane::GetAxisAttr()
     const TfToken z;
+    /// \brief "BackPlateAPI"
+    /// 
+    /// Schema identifer and family for UsdGeomBackPlateAPI
+    const TfToken BackPlateAPI;
     /// \brief "BasisCurves"
     /// 
     /// Schema identifer and family for UsdGeomBasisCurves

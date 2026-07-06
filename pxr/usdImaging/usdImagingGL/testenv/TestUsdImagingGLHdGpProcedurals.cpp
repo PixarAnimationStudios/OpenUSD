@@ -637,7 +637,7 @@ public:
 /// _DependsOnChildNamesProcedural ////////////////////////////////////////////
 
 // This procedural which makes data sources on a single prim based of the
-// immediate children of another prim on the inpout scene..
+// immediate children of another prim on the input scene..
 // This is here to test that a "__childNames" dependency works correctly for
 // when children are added or removed from a specified prim path.
 
@@ -1053,6 +1053,116 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _dependenciesTestTokens,
+    (Child)
+);
+
+namespace
+{
+class _DependsOnRemovedTestProcedural : public HdGpGenerativeProcedural
+{
+public:
+    _DependsOnRemovedTestProcedural(const SdfPath& proceduralPrimPath)
+        : HdGpGenerativeProcedural(proceduralPrimPath)
+    {
+        _targetPrimPath = SdfPath("/PrimToRemove/Child");
+        _procChildPrimPath
+            = proceduralPrimPath.AppendChild(_dependenciesTestTokens->Child);
+    }
+
+    static HdGpGenerativeProcedural* New(const SdfPath& proceduralPrimPath)
+    {
+        return new _DependsOnRemovedTestProcedural(proceduralPrimPath);
+    }
+
+    DependencyMap
+    UpdateDependencies(const HdSceneIndexBaseRefPtr& inputScene) override
+    {
+        DependencyMap result;
+
+        HdSceneIndexPrim myPrim = inputScene->GetPrim(_GetProceduralPrimPath());
+
+        // Arbitrarily depend on the xform schema..  This test just
+        // ultimately just wants to get a notice when the whole prim is
+        // removed/added.
+        result[_targetPrimPath].insert(HdXformSchema::GetDefaultLocator());
+
+        return result;
+    }
+
+    const HdSceneIndexPrim& _GetChildPrim() 
+    {
+        static HdSceneIndexPrim prim = { TfToken(),
+                                         // just need this to be non-null
+                                         HdRetainedContainerDataSource::New() };
+        return prim;
+    }
+
+    ChildPrimTypeMap Update(
+        const HdSceneIndexBaseRefPtr& inputScene,
+        const ChildPrimTypeMap& previousResult,
+        const DependencyMap& dirtiedDependencies,
+        HdSceneIndexObserver::DirtiedPrimEntries* outputDirtiedPrims) override
+    {
+        std::cout << "_DependsOnRemovedTestProcedural::Update.. dirtiedDependencies"
+                  << std::endl;
+        for (const auto& [path, locSet] : dirtiedDependencies) {
+            std::cout << path << " " << locSet << std::endl;
+        }
+
+        const bool changed = std::any_of(
+            dirtiedDependencies.begin(), dirtiedDependencies.end(),
+            [&](const auto& entry) -> bool {
+                const auto& [path, locSet] = entry;
+                return path == _targetPrimPath;
+            });
+
+        if (changed) {
+            outputDirtiedPrims->emplace_back(
+                    _procChildPrimPath, HdDataSourceLocatorSet::UniversalSet());
+        }
+        return {
+            { _procChildPrimPath, _GetChildPrim().primType },
+        };
+    }
+
+    HdSceneIndexPrim GetChildPrim(
+        const HdSceneIndexBaseRefPtr& inputScene,
+        const SdfPath& childPrimPath) override
+    {
+        if (childPrimPath == _procChildPrimPath) {
+            if (!_targetPrimPath.IsEmpty()) {
+                return _GetChildPrim();
+            }
+        }
+        return {};
+    }
+
+private:
+    SdfPath _procChildPrimPath;
+    SdfPath _targetPrimPath;
+};
+
+} // anonymous namespace
+
+
+class DependsOnRemovedProceduralPlugin
+    : public HdGpGenerativeProceduralPlugin
+{
+public:
+    DependsOnRemovedProceduralPlugin() = default;
+
+    HdGpGenerativeProcedural *Construct(
+        const SdfPath &proceduralPrimPath) override
+    {
+        return _DependsOnRemovedTestProcedural::New(proceduralPrimPath);
+    }
+};
+
+
+///////////////////////////////////////////////////////////////////////////////
+
 
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -1073,4 +1183,7 @@ TF_REGISTRY_FUNCTION(TfType)
         AsyncTestProceduralPlugin,
         HdGpGenerativeProceduralPlugin>();
 
+    HdGpGenerativeProceduralPluginRegistry::Define<
+        DependsOnRemovedProceduralPlugin,
+        HdGpGenerativeProceduralPlugin>();
 }

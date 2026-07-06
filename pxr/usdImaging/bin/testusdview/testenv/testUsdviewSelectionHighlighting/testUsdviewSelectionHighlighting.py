@@ -75,6 +75,34 @@ def _testColorSelection(appController):
     appController._ui.actionSelYellow.setChecked(True)
     appController._changeHighlightColor(appController._ui.actionSelYellow)
 
+def _testNestedInstanceSelectionWithVisibility(appController):
+    from pxr import Sdf
+
+    testALayer = Sdf.Layer.FindOrOpen("USD-6687/nestedInstances.usda")
+    appController._dataModel.stage.GetRootLayer().TransferContent(testALayer)
+    appController._dataModel._viewSettingsDataModel.cameraPath = Sdf.Path('/main_cam')
+
+    appController._dataModel.selection.clearPrims()
+    appController._dataModel.selection.addPrimPath("/root/CubesB/Cube2/Cube")
+    appController._dataModel.selection.addPrimPath("/root/CubesC/Cube4/Cube")
+
+    appController._takeShot("nestedInstanceSelection1.png")
+
+    appController._dataModel.stage.GetPropertyAtPath("/root/CubesA.visibility").Set('invisible')
+    appController._dataModel.stage.GetPropertyAtPath("/Cubes/Cube2.visibility").Set('invisible')
+
+
+    appController._dataModel.selection.clearPrims()
+    appController._dataModel.selection.addPrimPath("/root/CubesB/Cube2/Cube")
+    appController._dataModel.selection.addPrimPath("/root/CubesC/Cube4/Cube")
+
+    appController._takeShot("nestedInstanceSelection2.png")
+
+    appController._dataModel.selection.clearPrims()
+    appController._dataModel.selection.addPrimPath("/root/CubesC")
+
+    appController._takeShot("nestedInstanceSelection3.png")
+
 # Test that selection highlighting works properly in usdview
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
@@ -83,4 +111,4 @@ def testUsdviewInputFunction(appController):
     _testDoubleSelection(appController)
     _testInstanceSelection(appController)
     _testColorSelection(appController)
-
+    _testNestedInstanceSelectionWithVisibility(appController)

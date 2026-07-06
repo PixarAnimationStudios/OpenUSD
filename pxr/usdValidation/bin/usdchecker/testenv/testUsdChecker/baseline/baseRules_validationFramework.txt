@@ -17,6 +17,11 @@
 	Keywords: UsdGeomValidators, UsdGeomSubset
 	SchemaTypes: UsdGeomSubset
 	isSuite: False
+[usdLuxValidators:EncapsulationRulesValidator]:
+	Doc: Connectable prims in UsdLux (e.g. Light, LightFilters) can only be nested inside other Container-like Connectable prims (UsdShadeNodeGraph, UsdLuxLight or UsdLuxLightFilter).
+	Keywords: UsdLuxValidators
+	SchemaTypes: UsdLuxLightAPI, UsdLuxLightFilter
+	isSuite: False
 [usdPhysicsValidators:ArticulationChecker]:
 	Doc: Validates all of the UsdPhysicsArticulationRootAPIs applied to a prim.
 	Keywords: UsdPhysicsValidators, UsdPhysicsArticulationRootAPI

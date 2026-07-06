@@ -2,11 +2,13 @@
 
 # Public Classes
 generativeProceduralAPI
+renderPassAPI
 tokens
 
 # Python Module Files
 module.cpp
 wrapGenerativeProceduralAPI.cpp
+wrapRenderPassAPI.cpp
 wrapTokens.cpp
 
 # Resource Files

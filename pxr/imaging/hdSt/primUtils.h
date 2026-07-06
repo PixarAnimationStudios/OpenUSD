@@ -220,6 +220,25 @@ bool HdStShouldPopulateConstantPrimvars(
 // Given prim information it will create sources representing
 // constant primvars and hand it to the resource registry.
 // If transforms are dirty, updates the optional bool.
+// Will include customSpecs in the BAR buffer specs, but is not responsible
+// for their sources.
+HDST_API
+void HdStPopulateConstantPrimvars(
+    HdRprim *prim,
+    HdRprimSharedData *sharedData,
+    HdSceneDelegate *delegate,
+    HdRenderParam *renderParam,
+    HdStDrawItem *drawItem,
+    HdDirtyBits *dirtyBits,
+    HdReprSharedPtr const &repr,
+    HdMeshGeomStyle descGeomStyle,
+    int geomSubsetDescIndex,
+    size_t numGeomSubsets,
+    HdBufferSpecVector const& customSpecs,
+    bool *hasMirroredTransform = nullptr,
+    bool *hasDisplayOpacity = nullptr,
+    bool *hasNormals = nullptr);
+
 HDST_API
 void HdStPopulateConstantPrimvars(
     HdRprim *prim,

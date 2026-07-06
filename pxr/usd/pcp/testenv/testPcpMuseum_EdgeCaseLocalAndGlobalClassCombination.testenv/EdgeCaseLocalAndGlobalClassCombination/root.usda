@@ -1,0 +1,78 @@
+#usda 1.0
+(
+    """
+    This exercises an edge case for classes nested in namespace.
+
+    The model inherits a global class.
+    The global class has a namespace child that inherits a 
+    a local nested class of the global class. The local
+    nested class then inherits a class back under the Model again.
+
+    This 'inheriting back into' the Model again is an edge case 
+    that we haven't seen used in practice and we expect that we
+    may want to restrict in the future. But it has implications
+    into how we imply this inherit back into root in that we map
+    implied classes from under /Model to under /Model_1 in the
+    root when /Model maps across the reference even when the 
+    introducing prim introducing prim is a nested class in a
+    global namespace, /GlobalParent, that doesn't map across the
+    reference.
+
+    Note, that before the change where we stopped computing a 
+    new child transfer function for each nested class when implying
+    class trees, this case would actually result in a composition
+    cycle error.
+    """
+)
+
+# This references /Model so the implied nested class under 
+# /Model can map to this namespace.
+def "Model_1" (
+    add references = @model.usda@</Model>
+)
+{
+    over "Instance" {
+    }
+    over "_class_InGlobal" {
+    }
+    over "_class_InModel" {
+    }
+}
+
+# This references /OtherModel so the implied nested class under 
+# /Model does not map to this namespace.
+def "OtherModel_1" (
+    add references = @model.usda@</OtherModel>
+)
+{
+    over "Instance" {
+    }
+    over "_class_InGlobal" {
+    }
+    over "_class_InModel" {
+    }
+}
+
+# Global implied inherit specs for both Model and OtherModel
+# cases
+over "GlobalParent"
+{
+    over "Instance" {
+    }
+    over "_class_InGlobal" {
+    }
+    over "_class_InModel" {
+    }
+}
+
+# Implied inherit specs for the OtherModel case where Model
+# does not map to OtherModel_1 across the reference.
+over "Model"
+{
+    over "Instance" {
+    }
+    over "_class_InGlobal" {
+    }
+    over "_class_InModel" {
+    }
+}

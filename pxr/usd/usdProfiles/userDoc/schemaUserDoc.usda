@@ -1,0 +1,72 @@
+#usda 1.0
+(
+    subLayers = [
+        @../schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "UsdProfiles"
+        string userDocTitle = "Profiles"
+    }
+)
+{
+}
+
+over "ClaimsAPI" (
+    customData = {
+        string userDocBrief = """An applied API schema that records a prim's
+profile compatibility claims and per-capability usage declarations."""
+
+        string userDoc = """ClaimsAPI attaches two tiers of profile data to a
+prim, stored as sub-dictionaries in the prim's `customData` metadata under the
+key `profilesInfo`:
+
+**Capability usage** (DCC-authored): which USD capabilities this prim relies
+on, each annotated with a degradation class:
+
+- `hard` — load-bearing; a consumer that lacks this capability will produce
+  incorrect results.
+- `soft` — the prim degrades gracefully if the capability is absent.
+- `enhancement` — the capability improves quality but its absence is
+  acceptable.
+
+This tier is intended to be written by the DCC tool that saved the prim, or
+during an automated post-process that traverses the stage aggregating
+capability usage.
+
+**Profile compatibility** (pipeline-authored): which profiles (tagged nodes in
+the `UsdProfileRegistry` DAG) this prim is compatible with, plus an optional
+per-profile exception set listing capabilities that are intentionally out of
+compliance.
+
+A compatibility declaration without exceptions is an unqualified assertion
+that the prim satisfies every capability in the profile's transitive closure.
+A declaration with exceptions is an audited degradation record: the prim
+satisfies the profile except for the listed capabilities, which are present
+but failing audit.
+
+This tier is authored by a pipeline conformance step or platform-compatibility
+audit tool.
+
+### Querying Compatibility
+
+Use `IsCompatibleWith()` for the common single-profile check. It calls
+`UsdProfileRegistry::CoversCapabilities()` with the stored capability usages
+as the required set and the stored exception list for that profile:
+
+```{code-block} python
+status, results = api.IsCompatibleWith("studio.vfx.26.08")
+if status == PR.QueryStatus.ValidPath:
+    print("fully compatible")
+```
+
+For bulk raw access, use `GetProfilesInfo()` / `SetProfilesInfo()`.
+
+See {ref}`usdProfiles_using_claimsapi` for workflow examples.
+"""
+    }
+)
+{
+}

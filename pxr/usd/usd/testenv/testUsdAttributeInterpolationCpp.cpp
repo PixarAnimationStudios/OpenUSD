@@ -518,58 +518,58 @@ struct TestCase<VtArray<double> >
 };
 
 template <>
-struct TestCase<SdfTimeCode>
+struct TestCase<GfTimeCode>
 {
     static void AddTestCase(const UsdPrim& prim)
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testTimeCode"), SdfValueTypeNames->TimeCode);
-        TF_VERIFY(attr.Set(SdfTimeCode(0.0), UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(SdfTimeCode(2.0), UsdTimeCode(2.0)));
+        TF_VERIFY(attr.Set(GfTimeCode(0.0), UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(GfTimeCode(2.0), UsdTimeCode(2.0)));
     }
 
     static void TestLinearInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testTimeCode"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), SdfTimeCode(0.0));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), SdfTimeCode(1.0));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), SdfTimeCode(2.0));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), GfTimeCode(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), GfTimeCode(1.0));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), GfTimeCode(2.0));
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testTimeCode"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), SdfTimeCode(0.0));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), SdfTimeCode(0.0));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), SdfTimeCode(2.0));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), GfTimeCode(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), GfTimeCode(0.0));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), GfTimeCode(2.0));
     }
 };
 
 template <>
-struct TestCase<VtArray<SdfTimeCode> >
+struct TestCase<VtArray<GfTimeCode> >
 {
     static void AddTestCase(const UsdPrim& prim)
     {
         UsdAttribute attr = 
             prim.CreateAttribute(TfToken("testTimeCodeArray"), SdfValueTypeNames->TimeCodeArray);
-        TF_VERIFY(attr.Set(CreateVtArray(SdfTimeCode(0.0)), UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(CreateVtArray(SdfTimeCode(2.0)), UsdTimeCode(2.0)));
+        TF_VERIFY(attr.Set(CreateVtArray(GfTimeCode(0.0)), UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(CreateVtArray(GfTimeCode(2.0)), UsdTimeCode(2.0)));
     }
 
     static void TestLinearInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testTimeCodeArray"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(SdfTimeCode(0.0)));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(SdfTimeCode(1.0)));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(SdfTimeCode(2.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(GfTimeCode(0.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(GfTimeCode(1.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(GfTimeCode(2.0)));
     }
 
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testTimeCodeArray"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(SdfTimeCode(0.0)));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(SdfTimeCode(0.0)));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(SdfTimeCode(2.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0), CreateVtArray(GfTimeCode(0.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0), CreateVtArray(GfTimeCode(0.0)));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0), CreateVtArray(GfTimeCode(2.0)));
     }
 };
 
@@ -2056,7 +2056,7 @@ TestInterpolationWithLayerOffsets(const string &layerIdent)
     // Add test cases to the sub stage, using an edit target with the layer
     // offset we'll use when we add it as a sublayer. This should result in time
     // samples being authored at times 0.0 and 1.0 as the edit target will 
-    // invert the offset and apply it to the time samples. For SdfTimeCode
+    // invert the offset and apply it to the time samples. For GfTimeCode
     // value types this will also inverse scale the time sampled values 
     // themselves.
     const SdfLayerOffset testOffset(0.0, 2.0);

@@ -28,6 +28,10 @@ class TfToken;
 class SdfAssetPath;
 class VtValue;
 
+// TfStringify overload for RtParamList.  Useful for diagnostics.
+HDPRMAN_API
+std::string TfStringify(RtParamList const&);
+
 namespace HdPrman_Utils {
 
 /// Adds (or updates) a VtValue parameter to \p params and returns true if
@@ -58,6 +62,15 @@ SetPrimVarFromVtValue(
 HDPRMAN_API
 SdfPath
 GetPathFromVtValue(VtValue const& val);
+
+/// Map an Sdr shader property type token (e.g. SdrPropertyTypes->Color)
+/// to the corresponding HdPrimvarRoleTokens role token (e.g.
+/// HdPrimvarRoleTokens->color), suitable for passing to
+/// SetParamFromVtValue.  Returns an empty TfToken for property types
+/// that have no corresponding primvar role.
+HDPRMAN_API
+TfToken
+GetRoleForSdrPropertyType(TfToken const& propType);
 
 /// Helper to convert matrix types, handling double->float conversion.
 inline RtMatrix4x4

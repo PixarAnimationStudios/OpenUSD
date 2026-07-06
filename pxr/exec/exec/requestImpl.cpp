@@ -575,7 +575,12 @@ Exec_RequestImpl::_ExpireIndices(const ExecRequestIndexSet &expired)
 void
 Exec_RequestImpl::_Discard()
 {
-    _system->_requestTracker->Remove(this);
+    // If we get here because the system reset its unique_ptr to the request
+    // tracker, the pointer will be null; but in that case, we don't need to
+    // remove this impl from the tracker, since the tracker is being deleted.
+    if (Exec_RequestTracker *const tracker = _system->_requestTracker.get()) {
+        tracker->Remove(this);
+    }
     _system = nullptr;
     TfReset(_leafOutputs);
     TfReset(_extractors);

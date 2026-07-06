@@ -13,8 +13,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdFlattenedPurposeDataSourceProvider : public HdFlattenedDataSourceProvider
+class HdFlattenedPurposeDataSourceProvider :
+    public HdFlattenedDataSourceProvider
 {
+public:
     HD_API
     HdContainerDataSourceHandle GetFlattenedDataSource(
         const Context&) const override;

@@ -390,11 +390,63 @@ TestLinkErrors() {
 
 }
 
+static void
+TestParseErrorMessages()
+{
+    auto expectError = [](std::string const &exprTxt,
+                          std::string const &expectedMsg) {
+        SdfPredicateExpression expr(exprTxt);
+        if (expr) {
+            TF_FATAL_ERROR("Expected '%s' to produce the empty expression",
+                           exprTxt.c_str());
+        }
+        std::string const &err = expr.GetParseError();
+        if (err.empty()) {
+            TF_FATAL_ERROR("Expected parsing '%s' to yield a parse error",
+                           exprTxt.c_str());
+        }
+        if (err.find(expectedMsg) == std::string::npos) {
+            TF_FATAL_ERROR("Parsing '%s' produced error:\n  %s\n"
+                           "Expected it to contain:\n  %s",
+                           exprTxt.c_str(), err.c_str(),
+                           expectedMsg.c_str());
+        }
+    };
+
+    fprintf(stderr, "=== Expected error messages =======\n");
+
+    // Trailing garbage after valid expression.
+    expectError("a )",      "expected end of predicate expression");
+
+    // Operator without following operand.
+    expectError("a and",    "expected predicate expression after operator");
+    expectError("a or",     "expected predicate expression after operator");
+
+    // Empty/unclosed group.
+    expectError("()",       "expected predicate expression after '('");
+    expectError("(foo",     "expected ')' to close predicate expression group");
+
+    // Unclosed function call.
+    expectError("foo(1",    "expected ')' to close function call");
+
+    // Trailing comma in keyword args.
+    expectError("foo(kw=1,)", "expected keyword argument after ','");
+
+    // Invalid escape in quoted string.
+    expectError("foo('\\z')", "expected escape character after '\\'");
+
+    // Dot in float literal commits to requiring digits.
+    expectError("foo:1.x",  "expected digits");
+
+    fprintf(stderr, "=== End expected error messages ===\n");
+}
+
 int
 main(int argc, char **argv)
 {
     TestSimple();
     TestParseErrors();
+    TestParseErrorMessages();
     TestLinkErrors();
 
     printf(">>> Test SUCCEEDED\n");

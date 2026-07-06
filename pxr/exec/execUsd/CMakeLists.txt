@@ -252,6 +252,24 @@ pxr_register_test(testExecUsdDispatchedComputations
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_build_test(testExecUsdInvalidation
+    LIBRARIES
+        exec
+        execUsd
+        sdf
+        tf
+        ts
+        usd
+        vt
+    CPPFILES
+        testenv/testExecUsdInvalidation.cpp
+)
+
+pxr_register_test(testExecUsdInvalidation
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdInvalidation"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_build_test(testExecUsdMetadataInput
     LIBRARIES
         tf

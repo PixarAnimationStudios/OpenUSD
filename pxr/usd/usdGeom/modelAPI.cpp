@@ -154,6 +154,23 @@ UsdGeomModelAPI::CreateModelCardGeometryAttr(VtValue const &defaultValue, bool w
 }
 
 UsdAttribute
+UsdGeomModelAPI::GetModelCardVisibilityAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->modelCardVisibility);
+}
+
+UsdAttribute
+UsdGeomModelAPI::CreateModelCardVisibilityAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->modelCardVisibility,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdGeomModelAPI::GetModelCardTextureXPosAttr() const
 {
     return GetPrim().GetAttribute(UsdGeomTokens->modelCardTextureXPos);
@@ -276,6 +293,7 @@ UsdGeomModelAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->modelApplyDrawMode,
         UsdGeomTokens->modelDrawModeColor,
         UsdGeomTokens->modelCardGeometry,
+        UsdGeomTokens->modelCardVisibility,
         UsdGeomTokens->modelCardTextureXPos,
         UsdGeomTokens->modelCardTextureYPos,
         UsdGeomTokens->modelCardTextureZPos,

@@ -16,9 +16,3 @@ try:
     from .TsTest_Comparator import TsTest_Comparator
 except ImportError:
     pass
-
-# Maya-specific test framework isn't always built.
-try:
-    from .TsTest_MayapyEvaluator import TsTest_MayapyEvaluator
-except ImportError:
-    pass

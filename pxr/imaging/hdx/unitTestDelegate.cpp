@@ -7,10 +7,20 @@
 #include "pxr/imaging/hdx/unitTestDelegate.h"
 
 #include "pxr/base/gf/frustum.h"
+#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec3i.h"
+#include "pxr/base/gf/vec4d.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/tf/scoped.h"
 
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/value.h"
+#include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/mesh.h"
+#include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/repr.h"
+#include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/renderBuffer.h"
@@ -21,7 +31,10 @@
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/light.h"
 
+#include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdx/drawTargetTask.h"
+#include "pxr/imaging/hdx/oitRenderTask.h"
+#include "pxr/imaging/hdx/oitResolveTask.h"
 #include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
@@ -34,6 +47,10 @@
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/base/gf/camera.h"
+#include "pxr/usd/sdf/path.h"
+#include <tuple>
+#include <utility>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -105,7 +122,7 @@ private:
 }
 
 // ------------------------------------------------------------------------
-Hdx_UnitTestDelegate::Hdx_UnitTestDelegate(HdRenderIndex *index, 
+Hdx_UnitTestDelegate::Hdx_UnitTestDelegate(HdRenderIndex *index,
                                            SdfPath const& delegateId)
     : HdSceneDelegate(index, delegateId)
     , _refineLevel(0)
@@ -223,7 +240,7 @@ Hdx_UnitTestDelegate::AddLight(SdfPath const &id, GlfSimpleLight const &light)
     cache[HdLightTokens->params] = light;
     cache[HdLightTokens->shadowParams] = shadowParams;
     cache[HdLightTokens->shadowCollection]
-        = HdRprimCollection(HdTokens->geometry, 
+        = HdRprimCollection(HdTokens->geometry,
                 HdReprSelector(HdReprTokens->refined));
 }
 
@@ -274,7 +291,7 @@ Hdx_UnitTestDelegate::UpdateTransform(SdfPath const& id,
         _cameraTransforms[id] = GfMatrix4d(mat);
         HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
         tracker.MarkSprimDirty(id, HdChangeTracker::DirtyTransform);
-    }        
+    }
 }
 
 void
@@ -306,50 +323,84 @@ Hdx_UnitTestDelegate::AddDrawTarget(SdfPath const &id)
 
     {
         const TfToken attachmentName("color");
-        
+
         const SdfPath path = id.AppendProperty(attachmentName);
-        
+
         HdRenderBufferDescriptor desc;
         desc.dimensions = GfVec3i(256, 256, 1);
         desc.format = HdFormatUNorm8Vec4;
         desc.multiSampled = true;
 
         AddRenderBuffer(path, desc);
-        
+
         HdRenderPassAovBinding aovBinding;
         aovBinding.aovName = attachmentName;
         aovBinding.renderBufferId = path;
         aovBinding.clearValue = VtValue(GfVec4f(1,1,0,1));
         aovBindings.push_back(aovBinding);
     }
-    
+
     {
         const TfToken attachmentName("depth");
-        
+
         const SdfPath path = id.AppendProperty(attachmentName);
-        
+
         HdRenderBufferDescriptor desc;
         desc.dimensions = GfVec3i(256, 256, 1);
         desc.format = HdFormatFloat32;
         desc.multiSampled = true;
 
         AddRenderBuffer(path, desc);
-        
+
         HdRenderPassAovBinding aovBinding;
         aovBinding.aovName = attachmentName;
         aovBinding.renderBufferId = path;
         aovBinding.clearValue = VtValue(GfVec4f(1,1,1,1));
         aovBindings.push_back(aovBinding);
     }
-    
+
     cache[HdStDrawTargetTokens->aovBindings] = VtValue(aovBindings);
 
     cache[HdStDrawTargetTokens->resolution]      = VtValue(GfVec2i(256, 256));
     cache[HdStDrawTargetTokens->enable]          = VtValue(true);
     cache[HdStDrawTargetTokens->camera]          = VtValue(SdfPath());
     cache[HdStDrawTargetTokens->collection]      =
-        VtValue(HdRprimCollection(HdTokens->geometry, 
+        VtValue(HdRprimCollection(HdTokens->geometry,
             HdReprSelector(HdReprTokens->hull)));
+}
+
+HdRenderPassAovBindingVector
+Hdx_UnitTestDelegate::AddAovBindings(
+    const GfVec2i& resolution,
+    const bool multiSampled)
+{
+    HdRenderDelegate* renderDelegate = GetRenderIndex().GetRenderDelegate();
+    const std::vector<std::tuple<TfToken, SdfPath, VtValue>> aovs {
+        {   HdAovTokens->color,
+            GetDelegateID().AppendChild(TfToken("aov_color")),
+            VtValue(GfVec4f(0.1f, 0.1f, 0.1f, 1.f)) },
+        {   HdAovTokens->depth,
+            GetDelegateID().AppendChild(TfToken("aov_depth")),
+            VtValue(1.f) } };
+
+    HdRenderPassAovBindingVector aovBindings;
+    for (const auto& aov : aovs) {
+        const HdAovDescriptor desc = renderDelegate->GetDefaultAovDescriptor(
+            std::get<0>(aov));
+        HdRenderBufferDescriptor bufDesc;
+        bufDesc.dimensions = GfVec3i(resolution[0], resolution[1], 1);
+        bufDesc.format = desc.format;
+        bufDesc.multiSampled = multiSampled;
+        AddRenderBuffer(std::get<1>(aov), bufDesc);
+        HdRenderPassAovBinding binding;
+        binding.aovName = std::get<0>(aov);
+        binding.renderBufferId = std::get<1>(aov);
+        binding.clearValue = std::get<2>(aov);
+        binding.aovSettings = desc.aovSettings;
+        aovBindings.push_back(std::move(binding));
+    }
+
+    return aovBindings;
 }
 
 void
@@ -385,7 +436,7 @@ Hdx_UnitTestDelegate::AddRenderTask(SdfPath const &id)
     GetRenderIndex().InsertTask<HdxRenderTask>(this, id);
     _ValueCache &cache = _valueCacheMap[id];
     cache[HdTokens->collection]
-        = HdRprimCollection(HdTokens->geometry, 
+        = HdRprimCollection(HdTokens->geometry,
             HdReprSelector(HdReprTokens->smoothHull));
 
     // Don't filter on render tag.
@@ -405,6 +456,32 @@ Hdx_UnitTestDelegate::AddRenderSetupTask(SdfPath const &id)
 }
 
 void
+Hdx_UnitTestDelegate::AddOitRenderTask(const SdfPath& id)
+{
+    const HdRenderPassAovBindingVector aovBindings =
+        AddAovBindings(GfVec2i(256, 256), /*multiSampled = */ false);
+    GetRenderIndex().InsertTask<HdxOitRenderTask>(this, id);
+    _ValueCache& cache = _valueCacheMap[id];
+    HdxRenderTaskParams params;
+    params.camera = _cameraId;
+    params.viewport = GfVec4d(0, 0, 256, 256);
+    params.aovBindings = aovBindings;
+    cache[HdTokens->params] = VtValue(params);
+    cache[HdTokens->collection] = VtValue(HdRprimCollection(
+        HdTokens->geometry, HdReprSelector(HdReprTokens->smoothHull)));
+    cache[HdTokens->renderTags] = VtValue(TfTokenVector {
+        HdRenderTagTokens->geometry });
+}
+
+void
+Hdx_UnitTestDelegate::AddOitResolveTask(const SdfPath& id)
+{
+    GetRenderIndex().InsertTask<HdxOitResolveTask>(this, id);
+    _ValueCache& cache = _valueCacheMap[id];
+    cache[HdTokens->params] = VtValue(HdxOitResolveTaskParams());
+}
+
+void
 Hdx_UnitTestDelegate::AddSimpleLightTask(SdfPath const &id)
 {
     GetRenderIndex().InsertTask<HdxSimpleLightTask>(this, id);
@@ -413,7 +490,7 @@ Hdx_UnitTestDelegate::AddSimpleLightTask(SdfPath const &id)
     params.cameraPath = _cameraId;
     params.viewport = GfVec4f(0,0,512,512);
     params.enableShadows = true;
-    
+
     cache[HdTokens->params] = VtValue(params);
 
 }
@@ -510,7 +587,7 @@ Hdx_UnitTestDelegate::SetInstancerProperties(SdfPath const &id,
     HD_TRACE_FUNCTION();
 
     if (!TF_VERIFY(prototypeIndex.size() == scale.size())  ||
-        !TF_VERIFY(prototypeIndex.size() == rotate.size()) || 
+        !TF_VERIFY(prototypeIndex.size() == rotate.size()) ||
         !TF_VERIFY(prototypeIndex.size() == translate.size())) {
         return;
     }
@@ -583,8 +660,8 @@ Hdx_UnitTestDelegate::AddMesh(SdfPath const &id,
 }
 
 void
-Hdx_UnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4d const &transform, 
-                              bool guide, SdfPath const &instancerId, 
+Hdx_UnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4d const &transform,
+                              bool guide, SdfPath const &instancerId,
                               TfToken const &scheme, VtValue const &color,
                               HdInterpolation colorInterpolation,
                               VtValue const &opacity,
@@ -767,7 +844,7 @@ Hdx_UnitTestDelegate::GetExtent(SdfPath const & id)
     GfRange3d range;
     VtVec3fArray points;
     if(_meshes.find(id) != _meshes.end()) {
-        points = _meshes[id].points; 
+        points = _meshes[id].points;
     }
     TF_FOR_ALL(it, points) {
         range.UnionWith(*it);
@@ -906,14 +983,14 @@ Hdx_UnitTestDelegate::GetDisplayStyle(SdfPath const& id)
 }
 
 HdPrimvarDescriptorVector
-Hdx_UnitTestDelegate::GetPrimvarDescriptors(SdfPath const& id, 
+Hdx_UnitTestDelegate::GetPrimvarDescriptors(SdfPath const& id,
                                             HdInterpolation interpolation)
-{       
+{
     HdPrimvarDescriptorVector primvars;
     if (interpolation == HdInterpolationVertex) {
         primvars.emplace_back(HdTokens->points, interpolation,
                               HdPrimvarRoleTokens->point);
-    }                       
+    }
     if(_meshes.find(id) != _meshes.end()) {
         if (_meshes[id].colorInterpolation == interpolation) {
             primvars.emplace_back(HdTokens->displayColor, interpolation,
@@ -935,7 +1012,7 @@ Hdx_UnitTestDelegate::GetPrimvarDescriptors(SdfPath const& id,
     return primvars;
 }
 
-void 
+void
 Hdx_UnitTestDelegate::AddMaterialResource(SdfPath const &id,
                                          VtValue materialResource)
 {
@@ -951,8 +1028,8 @@ Hdx_UnitTestDelegate::BindMaterial(SdfPath const &rprimId,
     _materialBindings[rprimId] = materialId;
 }
 
-/*virtual*/ 
-SdfPath 
+/*virtual*/
+SdfPath
 Hdx_UnitTestDelegate::GetMaterialId(SdfPath const &rprimId)
 {
     SdfPath materialId;
@@ -961,7 +1038,7 @@ Hdx_UnitTestDelegate::GetMaterialId(SdfPath const &rprimId)
 }
 
 /*virtual*/
-VtValue 
+VtValue
 Hdx_UnitTestDelegate::GetMaterialResource(SdfPath const &materialId)
 {
     if (VtValue *material = TfMapLookupPtr(_materials, materialId)){
@@ -1000,7 +1077,7 @@ Hdx_UnitTestDelegate::GetRenderBufferDescriptor(SdfPath const &id)
     if (!vcache) {
         return HdRenderBufferDescriptor();
     }
-    
+
     VtValue ret;
     if (!TfMapLookup(*vcache, _tokens->renderBufferDescriptor, &ret)) {
         return HdRenderBufferDescriptor();
@@ -1063,7 +1140,7 @@ Hdx_UnitTestDelegate::WriteRenderBufferToFile(SdfPath const &id,
                         id.GetText());
         return false;
     }
-    
+
     HioImageSharedPtr const image = HioImage::OpenForWriting(filePath);
     if (!image) {
         TF_RUNTIME_ERROR("Failed toopen image for writing %s",

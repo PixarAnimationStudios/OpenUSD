@@ -99,7 +99,7 @@ _ComputeExpandedValue(
             outIt = std::copy(input.cbegin() + inputStartIdx,
                               input.cbegin() + inputEndIdx,
                               outIt);
-            
+
             // Repeat the last value as necessary.
             outIt = std::fill_n(outIt, numRepeat, input[inputEndIdx - 1]);
         }
@@ -157,20 +157,7 @@ class _ExpandedDataSource final : public HdTypedSampledDataSource<VtArray<T>>
 public:
     using Time = HdSampledDataSource::Time;
 
-    HD_DECLARE_DATASOURCE_ABSTRACT(_ExpandedDataSource<T>);
-
-    /// input: the original data source
-    _ExpandedDataSource(
-        const HdSampledDataSourceHandle& input,
-        const TfToken &primvarName,
-        const VtIntArray& perCurveCounts,
-        const size_t numExtraEnds)
-        : _input(input)
-        , _primvarName(primvarName)
-        , _perCurveCounts(perCurveCounts)
-        , _numExtraEnds(numExtraEnds)
-    {
-    }
+    HD_DECLARE_DATASOURCE(_ExpandedDataSource<T>);
 
     VtValue GetValue(Time shutterOffset) override
     {
@@ -201,17 +188,20 @@ public:
         return VtArray<T>();
     }
 
-    static typename _ExpandedDataSource<T>::Handle
-    New(const HdSampledDataSourceHandle& input,
-        const TfToken& primvarName,
+private:
+    /// input: the original data source
+    _ExpandedDataSource(
+        const HdSampledDataSourceHandle& input,
+        const TfToken &primvarName,
         const VtIntArray& perCurveCounts,
         const size_t numExtraEnds)
+        : _input(input)
+        , _primvarName(primvarName)
+        , _perCurveCounts(perCurveCounts)
+        , _numExtraEnds(numExtraEnds)
     {
-        return _ExpandedDataSource<T>::Handle(new _ExpandedDataSource<T>(
-            input, primvarName, perCurveCounts, numExtraEnds));
     }
 
-private:
     HdSampledDataSourceHandle _input;
     const TfToken _primvarName;
     const VtIntArray _perCurveCounts;
@@ -302,7 +292,7 @@ public:
         if (name == HdPrimvarSchemaTokens->primvarValue ||
             name == HdPrimvarSchemaTokens->indices) {
             HdPrimvarSchema pvs(_input);
-            const TfToken interp = 
+            const TfToken interp =
                 _SafeGetTypedValue<TfToken>(pvs.GetInterpolation());
 
             // Expansion will only be necessary for some vertex and some varying
@@ -496,7 +486,7 @@ public:
         if (name == HdBasisCurvesTopologySchemaTokens->curveIndices) {
             VtIntArray curveIndices = _SafeGetTypedValue<VtIntArray>(
                 ts.GetCurveIndices());
-            
+
             if (!curveIndices.empty()) {
                 // Curve indices can be expanded just like we'd expand a
                 // vertex primvar by replicating the first and last values as
@@ -591,7 +581,7 @@ private:
 //         primvarSchema[]
 //             primvarValue
 //             indexedPrimvarValue
-//     
+//
 class _PrimDataSource : public HdContainerDataSource
 {
 public:
@@ -648,7 +638,7 @@ public:
             // 1 for catmullRom|centripetalCatmullRom.
             const size_t numExtraEnds =
                 (basis == HdTokens->bspline)? 2 : 1;
-            
+
             // Need to cache the per-curve vertex counts since the
             // expansion is per-curve.
             const VtIntArray curveVertexCounts =
@@ -670,7 +660,7 @@ public:
                 // additional curve segments.
                 VtIntArray curveIndices =
                     _SafeGetTypedValue<VtIntArray>(ts.GetCurveIndices());
-            
+
                 if (HdContainerDataSourceHandle pc =
                         HdContainerDataSource::Cast(result)) {
                     return _PrimvarsDataSource::New(
@@ -690,13 +680,13 @@ class _SubsetIndicesDataSource : public HdIntArrayDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(_SubsetIndicesDataSource);
-    
+
     VtValue
     GetValue(Time shutterOffset) override
     {
         return VtValue(GetTypedValue(shutterOffset));
     }
-    
+
     VtIntArray
     GetTypedValue(Time shutterOffset) override
     {
@@ -707,13 +697,13 @@ public:
         }
         return _dataSource->GetTypedValue(shutterOffset);
     }
-    
+
     bool
     GetContributingSampleTimesForInterval(
         Time startTime, Time endTime,
         std::vector<HdSampledDataSource::Time> *outSampleTimes) override
     {
-        std::vector<HdSampledDataSourceHandle> sources { 
+        std::vector<HdSampledDataSourceHandle> sources {
             _dataSource, _typeSource };
         const auto& topoSchema = HdBasisCurvesTopologySchema::GetFromParent(
             _parentSource);
@@ -739,7 +729,7 @@ private:
         TF_VERIFY(typeSource);
         TF_VERIFY(parentSource);
     }
-    
+
     HdIntArrayDataSourceHandle _dataSource;
     HdTokenDataSourceHandle _typeSource;
     HdContainerDataSourceHandle _parentSource;
@@ -779,14 +769,14 @@ HdsiPinnedCurveExpandingSceneIndex::GetPrim(const SdfPath &primPath) const
     if (prim.primType == HdPrimTypeTokens->basisCurves) {
         prim.dataSource = _PrimDataSource::New(prim.dataSource);
     }
-    
+
     // Override the prim data source for geom subsets if parent is basis curves
     if (prim.primType == HdPrimTypeTokens->geomSubset) {
         const HdSceneIndexPrim parentPrim = _GetInputSceneIndex()->GetPrim(
             primPath.GetParentPath());
         if (parentPrim.primType == HdPrimTypeTokens->basisCurves &&
             parentPrim.dataSource) {
-                
+
             // overlay indices
             // XXX: When basis curves support visible subsets,
             //      add support for subset primvars.

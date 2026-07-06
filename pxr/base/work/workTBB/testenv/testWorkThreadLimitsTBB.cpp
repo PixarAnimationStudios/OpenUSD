@@ -8,6 +8,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/threadLimits.h"
+#include "pxr/base/work/workTBB/tbb_version.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/staticData.h"

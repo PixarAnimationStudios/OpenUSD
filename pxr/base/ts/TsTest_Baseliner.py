@@ -34,7 +34,7 @@ class TsTest_Baseliner:
 
     - If there is no baseline file yet, a candidate baseline file will be
       written to the test run directory, along with a graph made from the spline
-      data and samples.  If the graph looks right, both of these files should be
+      and samples.  If the graph looks right, both of these files should be
       copied into the test source, such that they are installed into a
       "baseline" subdirectory of the test run directory.  (The graph isn't
       necessary for operation of the test, but is a useful reference for
@@ -48,7 +48,7 @@ class TsTest_Baseliner:
 
     - If comparing parameters:
 
-      - If the spline data differs from what is recorded in the baseline file
+      - If the spline differs from what is recorded in the baseline file
         (beyond the specified precision), the differences will be listed on
         stdout, candidate baseline files will be written, a graph of the
         differences will also be written, and Validate will return False.  If
@@ -57,7 +57,7 @@ class TsTest_Baseliner:
 
     - If comparing samples:
 
-      - If the spline data, sample times, or precision differ from those
+      - If the spline, sample times, or precision differ from those
         recorded in the baseline file, that is an error in the test setup; it is
         a difference in the test inputs rather than the outputs.  Candidate
         baseline files will be written, and Validate will return False.  If the
@@ -74,37 +74,37 @@ class TsTest_Baseliner:
     - Otherwise, no files will be written, and Validate will return True.
     """
     @staticmethod
-    def CreateForParamCompare(testName, splineData, samples, precision = 6):
+    def CreateForParamCompare(testName, spline, samples, precision = 6):
         """
         Create a TsTest_Baseliner to compare spline parameters.  Validate() will
         compare only the parameters.  Samples are required so that graphs can be
         created in failure conditions.
         """
         return TsTest_Baseliner(
-            testName, splineData, samples, precision, compareSamples = False)
+            testName, spline, samples, precision, compareSamples = False)
 
     @staticmethod
-    def CreateForEvalCompare(testName, splineData, samples, precision = 6):
+    def CreateForEvalCompare(testName, spline, samples, precision = 6):
         """
         Create a TsTest_Baseliner to compare spline evaluation.  Validate() will
         first verify that parameters match, then compare the samples.
         """
         return TsTest_Baseliner(
-            testName, splineData, samples, precision, compareSamples = True)
+            testName, spline, samples, precision, compareSamples = True)
 
     class _Spline:
 
         def __init__(
-                self, splineData = None, samples = None,
+                self, spline = None, samples = None,
                 name = "", debugDesc = ""):
 
             self.name = name
-            self.splineData = splineData
+            self.spline = spline
             self.samples = samples or list()
             self.debugDesc = debugDesc
 
     def __init__(
-            self, testName, splineData, samples, precision, compareSamples):
+            self, testName, spline, samples, precision, compareSamples):
         """
         Private constructor.  Call a CreateFor* method instead.
         """
@@ -114,8 +114,8 @@ class TsTest_Baseliner:
         self._diffGraphFileName = "%s_TsTestDiff.png" % testName
         self._precision = precision
         self._resultSpline = self._Spline(
-            splineData, samples,
-            debugDesc = splineData.GetDebugDescription(self._precision))
+            spline, samples,
+            debugDesc = str(spline))
         self._epsilon = 10 ** -self._precision
         self._compareSamples = compareSamples
 
@@ -140,15 +140,15 @@ class TsTest_Baseliner:
         """
         self._creationStr = creationString
 
-    def AddReferenceSpline(self, name, splineData, samples):
+    def AddReferenceSpline(self, name, spline, samples):
         """
         Add a spline to be graphed along with the baseline and result.
         Optional.  Does not affect validation.
         """
         self._referenceSplines.append(
             self._Spline(
-                splineData, samples, name,
-                splineData.GetDebugDescription(self._precision)))
+                spline, samples, name,
+                str(spline)))
 
     def Validate(self):
 
@@ -212,12 +212,12 @@ class TsTest_Baseliner:
         # diff and return False.
         self._newParamStr = self._DiffString(
             self._baselineSpline.debugDesc, self._resultSpline.debugDesc,
-            "spline data", errorIfDifferent)
+            "spline", errorIfDifferent)
         return not self._newParamStr
 
     def _ValidateInputs(self):
 
-        # Input spline data should always match.
+        # Input spline should always match.
         if not self._ValidateParams(errorIfDifferent = True):
             return False
 
@@ -305,11 +305,7 @@ class TsTest_Baseliner:
             print(paramStr, file = outfile, end = "")
             print("-----", file = outfile)
 
-            # Section 3: input data repr.
-            print(repr(self._resultSpline.splineData), file = outfile)
-            print("-----", file = outfile)
-
-            # Section 4: samples, one per line.  Each is a time and a value.
+            # Section 3: samples, one per line.  Each is a time and a value.
             for s in self._resultSpline.samples:
                 print("%.*f %.*f"
                       % (self._precision, s.time, self._precision, s.value),
@@ -330,7 +326,7 @@ class TsTest_Baseliner:
             # Handle section separators.
             if line.rstrip() == "-----":
                 section += 1
-                if section == 4:
+                if section == 3:
                     self._baselineSampleLineOffset = lineNum + 1
                 continue
 
@@ -342,16 +338,6 @@ class TsTest_Baseliner:
             # Read spline parameter description.
             if section == 2:
                 self._baselineSpline.debugDesc += line
-                continue
-
-            # Read spline parameter repr.
-            if section == 3:
-                try:
-                    self._baselineSpline.splineData = eval(line)
-                except:
-                    print("%s: Error: section 2 eval failure" % path)
-                    traceback.print_exc(file = sys.stdout)
-                    return False
                 continue
 
             # Parse sample lines.  Each is a time and a value.
@@ -379,8 +365,8 @@ class TsTest_Baseliner:
             sample.value = float(valStr)
             self._baselineSpline.samples.append(sample)
 
-        if section != 4:
-            print("Error: %s: found %d sections, expected 4" % (path, section))
+        if section != 3:
+            print("Error: %s: found %d sections, expected 3" % (path, section))
             return False
 
         if bool(self._baselineCreationStr) != bool(self._creationStr):
@@ -489,7 +475,7 @@ class TsTest_Baseliner:
         grapher = TsTest_Grapher(title = self._testName)
         grapher.AddSpline(
             "Baseline",
-            self._resultSpline.splineData,
+            self._resultSpline.spline,
             self._resultSpline.samples)
 
         # Add reference splines.  Offset the color indices, so that reference
@@ -498,7 +484,7 @@ class TsTest_Baseliner:
         for i in range(len(self._referenceSplines)):
             spline = self._referenceSplines[i]
             grapher.AddSpline(
-                spline.name, spline.splineData, spline.samples,
+                spline.name, spline.spline, spline.samples,
                 colorIndex = i + 2)
 
         grapher.Write(self._singleGraphFileName)
@@ -519,16 +505,12 @@ class TsTest_Baseliner:
             grapher = TsTest_Grapher(title = self._testName)
 
         grapher.AddSpline(
-            "Baseline",
-            self._baselineSpline.splineData,
-            self._baselineSpline.samples)
-        grapher.AddSpline(
             "Actual",
-            self._resultSpline.splineData,
+            self._resultSpline.spline,
             self._resultSpline.samples)
         for spline in self._referenceSplines:
             grapher.AddSpline(
-                spline.name, spline.splineData, spline.samples)
+                spline.name, spline.spline, spline.samples)
 
         grapher.Write(self._diffGraphFileName)
         print("Wrote diff graph %s" % self._diffGraphFileName)

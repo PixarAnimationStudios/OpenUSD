@@ -256,11 +256,36 @@ public:
     HDPRMAN_API
     HdRenderIndex* GetRenderIndex() const;
 
-private:
+    // ------------------------------------------------------------------------
+    // Extension / customization API
+    // ------------------------------------------------------------------------
+
+    // Callbacks invoked during render pass creation and destruction.
+    // The callback implementation must not register additional callbacks.
+    using DidCreateRenderPassCallback =
+        void (*)(HdPrmanRenderDelegate *renderDelegate,
+                 HdRenderPassSharedPtr const& renderPass);
+    using WillDestructRenderPassCallback =
+        void (*)(HdPrmanRenderDelegate *renderDelegate,
+                 HdRenderPassSharedPtr const& renderPass);
+
+    // Register a callback invoked by CreateRenderPass().
+    HDPRMAN_API
+    static void
+    RegisterDidCreateRenderPassCallback(
+        DidCreateRenderPassCallback const& callback);
+
+    // Register a callback invoked before the render pass is destroyed.
+    HDPRMAN_API
+    static void
+    RegisterWillDestructRenderPassCallback(
+        WillDestructRenderPassCallback const& callback);
+
     // This class does not support copying.
     HdPrmanRenderDelegate(const HdPrmanRenderDelegate &) = delete;
     HdPrmanRenderDelegate &operator =(const HdPrmanRenderDelegate &) = delete;
 
+private:
     void _Initialize();
 
     std::string _GetRenderVariant(const HdRenderSettingsMap &settingsMap);

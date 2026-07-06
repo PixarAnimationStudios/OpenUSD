@@ -29,9 +29,6 @@ TsKnotMap::TsKnotMap(const Ts_SplineData* const data)
         return;
     }
 
-    // Determine value type.
-    const TfType valueType = data->GetValueType();
-
     // Reserve storage for Knot objects.
     const size_t numKnots = data->times.size();
     _knots.reserve(numKnots);
@@ -55,7 +52,7 @@ TsKnotMap::TsKnotMap(const Ts_SplineData* const data)
         // header dependencies make it not trivial.
         TsKnot knot(
             data->CloneKnotAtIndex(i),
-            valueType,
+            data->GetValueType(),
             std::move(knotCustom));
         _knots.emplace_back(std::move(knot));
     }
@@ -68,9 +65,6 @@ TsKnotMap::TsKnotMap(const Ts_SplineData* const data,
         // Empty spline data. Yield an empty knot map.
         return;
     }
-
-    // Determine value type.
-    const TfType valueType = data->GetValueType();
 
     auto lowerIt = std::lower_bound(data->times.begin(),
                                     data->times.end(),
@@ -124,7 +118,7 @@ TsKnotMap::TsKnotMap(const Ts_SplineData* const data,
         // header dependencies make it not trivial.
         TsKnot knot(
             data->CloneKnotAtIndex(index),
-            valueType,
+            data->GetValueType(),
             std::move(knotCustom));
         _knots.emplace_back(std::move(knot));
     }

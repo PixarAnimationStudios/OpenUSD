@@ -17,8 +17,6 @@
 #include <sys/param.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <utime.h>
-#include <mach/mach_time.h>
 #endif
 #if defined(ARCH_OS_LINUX)
 #include <dirent.h>
@@ -27,8 +25,9 @@
 #include <sys/statfs.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <utime.h>
-#include <x86intrin.h>
+#endif
+#if defined(ARCH_OS_WASM_VM)
+#include <emscripten.h>
 #endif
 #if defined(ARCH_OS_WINDOWS)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -39,7 +38,6 @@
 #include <Shlwapi.h>
 #include <intrin.h>
 #include <io.h>
-#include <stringapiset.h>
 #endif
 #include <algorithm>
 #include <any>
@@ -113,7 +111,6 @@
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_mutex.h>
-#include <tbb/spin_rw_mutex.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #include <frameobject.h>

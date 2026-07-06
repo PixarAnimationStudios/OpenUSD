@@ -1,0 +1,42 @@
+Picking results for camera /pick_cam:
+    For frame 1:
+        Prim at /NoInstancing/Scope/GreenCube
+    For frame 2:
+        Prim at /NiInstancing/Instance0/RedCube
+    For frame 3:
+        Prim at /NiInstancing/Instance1/RedCube
+    For frame 4:
+        Prim at /NiNiInstancing/Instance0/Instance0/RedCube
+    For frame 5:
+        Prim at /NiNiInstancing/Instance0/Instance1/RedCube
+    For frame 6:
+        Prim at /NiNiInstancing/Instance1/Instance1/RedCube
+    For frame 7:
+        Prim at /NoInstancing/Scope/GreenCube
+            which is point-instanced by /PiInstancing (instanceIndex = 0)
+    For frame 8:
+        Prim at /NoInstancing/Scope/GreenCube
+            which is point-instanced by /PiInstancing (instanceIndex = 2)
+        Prim at /PiInstancing/Prototype/BlueCube
+            which is point-instanced by /PiInstancing (instanceIndex = 1)
+    For frame 9:
+        Prim at /PiNiInstancing/Prototype0/RedCube
+            which is point-instanced by /PiNiInstancing (instanceIndex = 0)
+    For frame 10:
+        Prim at /PiNiInstancing/Prototype0/RedCube
+            which is point-instanced by /PiNiInstancing (instanceIndex = 2)
+        Prim at /PiNiInstancing/Prototype1/Instance/GreenCube
+            which is point-instanced by /PiNiInstancing (instanceIndex = 1)
+    For frame 11:
+        Prim at /NiPiNiNiInstancing/Instance0/PiNiNiInstancing/Prototype/NiInstance0/Instance0/RedCube
+            which is point-instanced by /NiPiNiNiInstancing/Instance0/PiNiNiInstancing (instanceIndex = 0)
+    For frame 12:
+        Prim at /NiPiNiNiInstancing/Instance0/PiNiNiInstancing/Prototype/NiInstance1/Instance0/RedCube
+            which is point-instanced by /NiPiNiNiInstancing/Instance0/PiNiNiInstancing (instanceIndex = 0)
+        Prim at /NiPiNiNiInstancing/Instance0/PiNiNiInstancing/Prototype/NiInstance1/Instance1/RedCube
+            which is point-instanced by /NiPiNiNiInstancing/Instance0/PiNiNiInstancing (instanceIndex = 0)
+    For frame 13:
+        Prim at /NiPiNiNiInstancing/Instance1/PiNiNiInstancing/Prototype/NiInstance1/Instance0/RedCube
+            which is point-instanced by /NiPiNiNiInstancing/Instance1/PiNiNiInstancing (instanceIndex = 1)
+        Prim at /NiPiNiNiInstancing/Instance1/PiNiNiInstancing/Prototype/NiInstance1/Instance0/RedCube
+            which is point-instanced by /NiPiNiNiInstancing/Instance1/PiNiNiInstancing (instanceIndex = 2)

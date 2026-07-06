@@ -156,11 +156,14 @@ class TestUsdLuxLight(unittest.TestCase):
         self.assertFalse(filterOutput.CanConnect(lightGraphOutput))
         self.assertFalse(filterOutput.CanConnect(filterGraphOutput))
 
-        # Light filters inputs diverge from the default behavior and should be 
-        # connectable across its own scope (encapsulation is not required)
-        self.assertTrue(filterInput.CanConnect(filterOutput))
+        # Light filters follow encapsulation rules, so should not be connectable
+        # across its own scope. (encapsulation is required) and
+        # cannot connect its own input to its own output
+        self.assertFalse(filterInput.CanConnect(filterOutput))
         self.assertTrue(filterInput.CanConnect(filterGraphOutput))
-        self.assertTrue(filterInput.CanConnect(lightGraphOutput))
+        # cannot connect its own input to another light's output which is
+        # outside its own encapsulated scope
+        self.assertFalse(filterInput.CanConnect(lightGraphOutput))
 
         # The shaping API can add more connectable attributes to the light 
         # and implements the same connectable interface functions. We test 

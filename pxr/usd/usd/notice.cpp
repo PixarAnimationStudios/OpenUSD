@@ -72,6 +72,14 @@ UsdNotice::ObjectsChanged::PathRange::const_iterator::GetChangedFields() const
         std::transform(
             entry->infoChanged.begin(), entry->infoChanged.end(),
             std::back_inserter(fields), TfGet<0>());
+
+        // The underlying SdfChangeList sets a bit to indicate time sample
+        // changes instead of including the field in its infoChanged list.
+        // We manually add the field here so that clients can determine
+        // that time samples have changed.
+        if (entry->flags.didChangeAttributeTimeSamples) {
+            fields.push_back(SdfFieldKeys->TimeSamples);
+        }
     }
 
     std::sort(fields.begin(), fields.end());
@@ -83,7 +91,10 @@ bool
 UsdNotice::ObjectsChanged::PathRange::const_iterator::HasChangedFields() const
 {
     for (const SdfChangeList::Entry* entry : _underlyingIterator->second) {
-        if (!entry->infoChanged.empty()) {
+        if (!entry->infoChanged.empty() ||
+
+            // See comment in GetChangedFields
+            entry->flags.didChangeAttributeTimeSamples) {
             return true;
         }
     }

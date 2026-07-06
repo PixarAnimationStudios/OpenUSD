@@ -1,0 +1,48 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Validators": {
+                    "HeuristicLodDomain": {
+                        "doc": "lod:domain on a UsdLodHeuristic must be non-empty.",
+                        "schemaTypes": [
+                            "UsdLodHeuristic"
+                        ]
+                    },
+                    "DistanceHeuristicThresholds": {
+                        "doc": "thresholds must be strictly increasing; blendThresholds (if present) must satisfy thresholds[i] <= blendThresholds[i] <= thresholds[i+1].",
+                        "schemaTypes": [
+                            "UsdLodDistanceHeuristic"
+                        ]
+                    },
+                    "ScreenSizeHeuristicThresholds": {
+                        "doc": "thresholds must be strictly decreasing; blendThresholds (if present) must satisfy thresholds[i+1] <= blendThresholds[i] <= thresholds[i]; projectionMethod must be a valid token; extent (if present) must be empty or have exactly 2 elements.",
+                        "schemaTypes": [
+                            "UsdLodScreenSizeHeuristic"
+                        ]
+                    },
+                    "LodOverrideApiMode": {
+                        "doc": "lod:override:mode must be one of the allowed tokens; if mode is indexedLOD, lod:override:index must be readable.",
+                        "schemaTypes": [
+                            "UsdLodOverrideAPI"
+                        ]
+                    },
+                    "LodRootApiHeuristics": {
+                        "doc": "lod:heuristics relationship targets must resolve to prims that IsA UsdLodHeuristic.",
+                        "schemaTypes": [
+                            "UsdLodRootAPI"
+                        ]
+                    },
+                    "keywords": [
+                        "UsdLodValidators"
+                    ]
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "usdLodValidators",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

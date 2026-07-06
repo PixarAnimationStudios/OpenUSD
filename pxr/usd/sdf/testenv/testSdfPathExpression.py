@@ -330,6 +330,43 @@ class TestSdfPathExpression(unittest.TestCase):
         self.assertTrue(evl.Match(Sdf.Path("/Home/test/baz/qux")))
         self.assertTrue(evl.Match(Sdf.Path("/Home/test/baz/a/b/c/qux")))
 
+        # Test ReplacePrefix when newPrefix is empty. This should remove all
+        # expression refs and path patterns that had oldPrefix.
+        noPrefix = Sdf.PathExpression(
+            "/World/test/foo /World/bar /World/test/baz//qux "
+            "%/World/test:otherRef /Other/foo* //World")
+
+        after = noPrefix.ReplacePrefix(Sdf.Path("/World"), Sdf.Path())
+        self.assertEqual(after.GetText(), "/Other/foo* //World")
+
+        evl = MatchEval(after.GetText())
+        self.assertFalse(evl.Match(Sdf.Path("/World/test/foo")))
+        self.assertFalse(evl.Match(Sdf.Path("/World/bar")))
+        self.assertFalse(evl.Match(Sdf.Path("/World/test/baz/qux")))
+        self.assertTrue(evl.Match(Sdf.Path("/Other/foobar")))
+        self.assertTrue(evl.Match(Sdf.Path("/World")))
+
+        # Ensure the path expression resolves to nothing if its only contents are
+        # a prefix that is deleted.
+        noPrefix = Sdf.PathExpression("/World/bar")
+        after = noPrefix.ReplacePrefix(Sdf.Path("/World/bar"), Sdf.Path(""))
+        self.assertEqual(after, Sdf.PathExpression.Nothing())
+
+        evl = MatchEval(after.GetText())
+        self.assertFalse(evl.Match(Sdf.Path("/World/bar")))
+
+        # Ensure the path expression can resolve to everything
+        everything = Sdf.PathExpression("~/foo/bar")
+        evl = MatchEval(everything.GetText())
+        self.assertFalse(evl.Match(Sdf.Path("/foo/bar")))
+        self.assertTrue(evl.Match(Sdf.Path("/baz")))
+        after = everything.ReplacePrefix(Sdf.Path("/foo"), Sdf.Path(""))
+
+        evl = MatchEval(after.GetText())
+        self.assertEqual(after, Sdf.PathExpression.Everything())
+        self.assertTrue(evl.Match(Sdf.Path("/foo/bar")))
+        self.assertTrue(evl.Match(Sdf.Path("/baz")))
+
     def test_PrefixConstancy(self):
         # Check constancy wrt prefix relations.
         evl = MatchEval("/prefix/path//")

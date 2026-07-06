@@ -12,6 +12,7 @@
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/debugUtil.h"
 #include "hdPrman/framebuffer.h"
+#include "hdPrman/idMap.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
 #include "hdPrman/motionBlurSceneIndexPlugin.h"
@@ -101,7 +102,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
 #include <functional>
 #include <ios>
 #include <iterator>
@@ -248,6 +248,7 @@ HdPrman_RenderParam::HdPrman_RenderParam(
 #if PXR_VERSION >= 2302
     _statsSceneIndex(nullptr),
 #endif
+    _idMap(new HdPrman_IdMap()),
     _sceneLightCount(0),
     _fallbackLightEnabled(false),
     _shutterInterval(HDPRMAN_SHUTTEROPEN_DEFAULT, HDPRMAN_SHUTTERCLOSE_DEFAULT),
@@ -968,8 +969,11 @@ HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
         _Convert(sceneDelegate, id, hdInterp, attrs, 1, GetShutterInterval());
     }
 
-    // Hydra id -> Riley Rix::k_identifier_name
-    attrs.SetString(RixStr.k_identifier_name, RtUString(id.GetText()));
+    // Hydra id -> Riley Rix::k_identifier_name, if it has not already
+    // been provided.
+    if (!attrs.HasParam(RixStr.k_identifier_name)) {
+        attrs.SetString(RixStr.k_identifier_name, RtUString(id.GetText()));
+    }
 
     // Hydra visibility -> Riley Rix::k_visibility
     if (!sceneDelegate->GetVisible(id)) {
@@ -2053,8 +2057,8 @@ HdPrman_RenderParam::_CreateStatsSession(void)
         editor.Finish()}});
 
     // Create and register listener for progress metric
-    _statsListener = new HdPrmanStatsListener("HdPrman Stats Listenr",
-                                              IsInteractive());
+    _statsListener = new HdPrmanStatsListener("HdPrman Stats Listener",
+                                              this);
     if (_statsListener) {
         _statsSession->AttachListener(_statsListener);
     } else {
@@ -3134,7 +3138,10 @@ HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
     // Force initialization of Riley scene options.
     // (see related comments in SetRileyOptions)
 #if PXR_VERSION >= 2311 // avoid deferring for now because can cause crash
-    if (!HdRenderIndex::IsSceneIndexEmulationEnabled() ||
+    if (
+#if HD_API_VERSION < 99
+        !HdRenderIndex::IsSceneIndexEmulationEnabled() ||
+#endif
         !TfGetEnvSetting(HD_PRMAN_DEFER_SET_OPTIONS))
 #endif
     {
@@ -3242,6 +3249,7 @@ _DeleteAndResetDisplayFilter(
     }
 }
 
+
 void
 HdPrman_RenderParam::_DeleteInternalPrims()
 {
@@ -3260,6 +3268,15 @@ HdPrman_RenderParam::_DeleteInternalPrims()
     _DeleteAndResetIntegrator(riley, &_quickIntegratorId);
     _DeleteAndResetSampleFilter(riley, &_sampleFiltersId);
     _DeleteAndResetDisplayFilter(riley, &_displayFiltersId);
+
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+    for (auto &kv : _energyFilterNodes) {
+        if (kv.second.id != riley::EnergyFilterId::InvalidId()) {
+            riley->DeleteEnergyFilter(kv.second.id);
+        }
+    }
+    _energyFilterNodes.clear();
+#endif // _PRMANAPI_VERSION_MAJOR_ >= 27
 }
 
 void
@@ -3445,6 +3462,7 @@ HdPrman_RenderParam::End()
     StopRender(true);
     DeleteRenderThread();
     _framebuffer.reset();
+    _idMap->Clear();
     _DestroyRiley();
 }
 
@@ -3924,12 +3942,14 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
 #endif
 {
     if (!_framebuffer) {
-        _framebuffer = std::make_unique<HdPrmanFramebuffer>();
+        _framebuffer = std::make_unique<HdPrmanFramebuffer>(GetIdMap());
     }
 
 #if PXR_VERSION >= 2308
     static bool useRenderSettingsProductsForInteractiveRenderView =
         TfGetEnvSetting(HD_PRMAN_INTERACTIVE_RENDER_WITH_RENDER_SETTINGS);
+#else
+    static bool useRenderSettingsProductsForInteractiveRenderView = false;
 #endif
 
     const bool dirtyProductsOnRenderSettingsPrim =
@@ -4536,12 +4556,14 @@ HdPrman_RenderParam::SetRenderSettingsIntegratorPath(
     SdfPath const &renderSettingsIntegratorPath)
 {
     if (_renderSettingsIntegratorPath != renderSettingsIntegratorPath) {
+#if HD_API_VERSION < 99
         if (! HdRenderIndex::IsSceneIndexEmulationEnabled()) {
             // Mark the Integrator Prim Dirty
             sceneDelegate->GetRenderIndex().GetChangeTracker()
                 .MarkSprimDirty(renderSettingsIntegratorPath,
                                 HdChangeTracker::DirtyParams);
         }
+#endif
         _renderSettingsIntegratorPath = renderSettingsIntegratorPath;
 
         // Update the Integrator back to the default when the path is empty
@@ -4574,6 +4596,7 @@ HdPrman_RenderParam::SetSampleFilterPaths(
         _sampleFilterNodes.clear();
         _sampleFilterPaths = sampleFilterPaths;
 
+#if HD_API_VERSION < 99
         if (! HdRenderIndex::IsSceneIndexEmulationEnabled()) {
             // Mark the SampleFilter Prims Dirty
             for (const SdfPath &path : sampleFilterPaths) {
@@ -4581,6 +4604,7 @@ HdPrman_RenderParam::SetSampleFilterPaths(
                     .MarkSprimDirty(path, HdChangeTracker::DirtyParams);
             }
         }
+#endif
     }
 
     // If there are no SampleFilters, delete the riley SampleFilter
@@ -4602,6 +4626,7 @@ HdPrman_RenderParam::SetDisplayFilterPaths(
         _displayFilterNodes.clear();
         _displayFilterPaths = displayFilterPaths;
 
+#if HD_API_VERSION < 99
         if (! HdRenderIndex::IsSceneIndexEmulationEnabled()) {
             // Mark the DisplayFilter prims Dirty
             for (const SdfPath &path : displayFilterPaths) {
@@ -4609,6 +4634,7 @@ HdPrman_RenderParam::SetDisplayFilterPaths(
                     .MarkSprimDirty(path, HdChangeTracker::DirtyParams);
             }
         }
+#endif
     }
 
     // If there are no DisplayFilters, delete the riley DisplayFilter
@@ -4769,6 +4795,100 @@ HdPrman_RenderParam::AddDisplayFilter(
         CreateDisplayFilterNetwork(sceneDelegate);
     }
 }
+
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+
+void
+HdPrman_RenderParam::SetEnergyFilterPaths(
+    HdSceneDelegate *sceneDelegate,
+    SdfPathVector const &energyFilterPaths)
+{
+    if (_energyFilterPaths != energyFilterPaths) {
+        // Delete existing Riley energy filters and reset state
+        riley::Riley *riley = AcquireRiley();
+        for (auto &kv : _energyFilterNodes) {
+            if (kv.second.id != riley::EnergyFilterId::InvalidId()) {
+                riley->DeleteEnergyFilter(kv.second.id);
+            }
+        }
+        _energyFilterNodes.clear();
+        _energyFilterPaths = energyFilterPaths;
+
+#if HD_API_VERSION < 99
+        // Explicitly dirty all energy filter sprims so they re-sync and
+        // re-add their nodes after we cleared _energyFilterNodes above.
+        for (const SdfPath &path : energyFilterPaths) {
+            sceneDelegate->GetRenderIndex().GetChangeTracker()
+                .MarkSprimDirty(path, HdChangeTracker::DirtyParams);
+        }
+#endif
+    }
+}
+
+void
+HdPrman_RenderParam::CreateEnergyFilterNetwork(HdSceneDelegate *sceneDelegate)
+{
+    riley::Riley *riley = AcquireRiley();
+
+    for (const SdfPath &path : _energyFilterPaths) {
+        if (!sceneDelegate->GetVisible(path)) {
+            continue;
+        }
+        const auto nodeIt = _energyFilterNodes.find(path);
+        if (nodeIt == _energyFilterNodes.end()) {
+            // Node not yet available; will be created when the sprim syncs.
+            continue;
+        }
+        if (!nodeIt->second.node.name) {
+            continue;
+        }
+
+        riley::ShadingNetwork const network = { 1, &nodeIt->second.node };
+        const RtParamList &properties = nodeIt->second.properties;
+
+        if (nodeIt->second.id == riley::EnergyFilterId::InvalidId()) {
+            riley::UserId userId(
+                stats::AddDataLocation(path.GetText()).GetValue());
+            nodeIt->second.id =
+                riley->CreateEnergyFilter(userId, network, properties);
+            if (nodeIt->second.id == riley::EnergyFilterId::InvalidId()) {
+                TF_WARN("Failed to create energy filter <%s>\n",
+                        path.GetText());
+            }
+        } else {
+            riley->ModifyEnergyFilter(nodeIt->second.id, nullptr, &network,
+                                      &properties);
+        }
+    }
+}
+
+void
+HdPrman_RenderParam::AddEnergyFilter(
+    HdSceneDelegate *sceneDelegate,
+    SdfPath const& path,
+    riley::ShadingNode const& node,
+    RtParamList const& properties)
+{
+    _EnergyFilterData data;
+    data.node = node;
+    data.properties = properties;
+
+    const auto filterIt = _energyFilterNodes.insert({ path, data });
+    if (!filterIt.second) {
+        // Preserve the existing riley::EnergyFilterId - only update the
+        // shading node and properties so ModifyEnergyFilter is used instead
+        // of CreateEnergyFilter on subsequent syncs.
+        filterIt.first->second.node = node;
+        filterIt.first->second.properties = properties;
+    }
+
+    // Create/update this filter's Riley resource immediately. Since each
+    // energy filter has its own riley::EnergyFilterId, we don't need to
+    // wait for all nodes (unlike sample/display filters with a combined network).
+    CreateEnergyFilterNetwork(sceneDelegate);
+}
+
+#endif // _PRMANAPI_VERSION_MAJOR_ >= 27
 
 riley::SampleFilterList
 HdPrman_RenderParam::GetSampleFilterList()
@@ -4958,6 +5078,7 @@ HdPrman_RenderParam::_UpdateShutterInterval(const RtParamList& composedParams)
         _shutterInterval[0], _shutterInterval[1]);
 }
 
+#if PXR_VERSION >= 2308
 TfToken
 HdPrman_RenderParam::GetIdMapProductName(HdPrman_RenderSettings* renderSettings)
 {
@@ -4975,31 +5096,6 @@ HdPrman_RenderParam::GetIdMapProductName(HdPrman_RenderSettings* renderSettings)
 
     return TfToken();
 }
-
-void
-HdPrman_RenderParam::WriteIdMap(
-    HdRenderIndex* renderIndex,
-    const TfToken& productName)
-{
-    std::ofstream outFile(productName.GetText(), std::ios::binary);
-    if (!outFile) {
-        TF_WARN("Failed to create ID file '%s'", productName.GetText());
-        return;
-    }
-
-    for (const auto& path : renderIndex->GetRprimIds()) {
-        const int64_t pathLen = path.GetString().size() + 1;
-        const int64_t id = renderIndex->GetRprim(path)->GetPrimId() + 1;
-
-        outFile.write(reinterpret_cast<const char*>(&id), sizeof(int64_t))
-               .write(reinterpret_cast<const char*>(&pathLen), sizeof(pathLen))
-               .write(path.GetText(), pathLen);
-
-        if (!outFile) {
-            TF_WARN("Writing ID file failed on '%s'", path.GetText());
-            return;
-        }
-    }
-}
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

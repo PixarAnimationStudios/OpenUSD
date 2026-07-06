@@ -68,9 +68,6 @@ variables. We'll refer to the install location of your USD build with
    * - Environment Variable
      - Meaning
      - Value
-   * - :envvar:`PYTHONPATH`
-     - This is a path list which Python uses to find modules.
-     - :filename:`$PYTHONPATH:<inst>/lib/python`
    * - :envvar:`RMANTREE`
      - Directory where Pixar's RenderMan is installed
      - Required

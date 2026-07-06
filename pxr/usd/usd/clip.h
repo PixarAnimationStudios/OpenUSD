@@ -37,8 +37,8 @@ std::vector<TfToken>
 UsdGetClipRelatedFields();
 
 /// Sentinel values authored on the edges of a clipTimes range.
-constexpr double Usd_ClipTimesEarliest = -std::numeric_limits<double>::max();
-constexpr double Usd_ClipTimesLatest = std::numeric_limits<double>::max();
+constexpr double Usd_ClipTimesEarliest = -std::numeric_limits<double>::infinity();
+constexpr double Usd_ClipTimesLatest = std::numeric_limits<double>::infinity();
 
 /// \class Usd_Clip
 ///

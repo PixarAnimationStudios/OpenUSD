@@ -9,11 +9,15 @@
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/collectionsSchema.h"
+#include "pxr/imaging/hd/containerDataSourceEditor.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
+#include "pxr/imaging/hd/instancerTopologySchema.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneGlobalsSchema.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/schema.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdsi/utils.h"
 #include "pxr/base/trace/trace.h"
 
@@ -43,7 +47,7 @@ bool
 HdsiRenderPassPruneSceneIndex::_RenderPassPruneState::DoesPrune(
     SdfPath const& primPath) const
 {
-    return pruneEval && pruneEval->Match(primPath);
+    return pruneEval ? HdsiUtilsIsPruned(primPath, *pruneEval) : false;
 }
 
 HdSceneIndexPrim 
@@ -61,9 +65,71 @@ HdsiRenderPassPruneSceneIndex::GetPrim(
     }
     if (_activeRenderPass.DoesPrune(primPath)) {
         return HdSceneIndexPrim();
-    } else {
-        return _GetInputSceneIndex()->GetPrim(primPath);
     }
+
+    HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
+
+    // For instancers: populate the instance-location→instancer map, and
+    // apply pruning to the instance mask if pruning is active.
+    if (prim.primType == HdPrimTypeTokens->instancer) {
+        if (HdInstancerTopologySchema topologySchema =
+            HdInstancerTopologySchema::GetFromParent(prim.dataSource))
+        {
+            HdPathArrayDataSourceHandle instanceLocationPathsDs =
+                topologySchema.GetInstanceLocations();
+            VtArray<SdfPath> instanceLocationPaths =
+                instanceLocationPathsDs
+                ? instanceLocationPathsDs->GetTypedValue(0.0)
+                : VtArray<SdfPath>();
+
+            // Track which instancers use each instance location so that
+            // prune changes can dirty only the relevant instancer masks.
+            // GetPrim() can be called from worker threads, so guard writes.
+            {
+                std::unique_lock<std::mutex> instancerLock(_instancerMutex);
+                for (const SdfPath &path : instanceLocationPaths) {
+                    _instanceToInstancerMap[path].insert(primPath);
+                }
+            }
+
+            // Apply pruning to the instance mask.
+            if (!instanceLocationPaths.empty() && _activeRenderPass.pruneEval) {
+                HdBoolArrayDataSourceHandle maskDs = topologySchema.GetMask();
+                VtArray<bool> mask =
+                    maskDs
+                    ? maskDs->GetTypedValue(0.0)
+                    : VtArray<bool>(instanceLocationPaths.size(), true);
+
+                if (instanceLocationPaths.size() == mask.size()) {
+                    bool maskWasModified = false;
+                    for (size_t i = 0, n = mask.size(); i < n; ++i) {
+                        if (!mask[i]) {
+                            continue;
+                        }
+                        mask[i] = !HdsiUtilsIsPruned(
+                            instanceLocationPaths[i],
+                            *_activeRenderPass.pruneEval);
+                        maskWasModified |= !mask[i];
+                    }
+                    if (maskWasModified) {
+                        static const auto instancerMaskLocator =
+                            HdInstancerTopologySchema::GetDefaultLocator()
+                                .Append(HdInstancerTopologySchemaTokens->mask);
+                        HdContainerDataSourceEditor editor(prim.dataSource);
+                        editor.Set(instancerMaskLocator,
+                                   HdCreateTypedRetainedDataSource(
+                                       VtValue(mask)));
+                        prim.dataSource = editor.Finish();
+                    }
+                } else {
+                    TF_RUNTIME_ERROR("Instancer topology mismatch in <%s>",
+                                     primPath.GetText());
+                }
+            }
+        }
+    }
+
+    return prim;
 }
 
 SdfPathVector 
@@ -101,6 +167,9 @@ General notes on change processing and invalidation:
   contents of the active render pass.  In either case, if the
   effective render pass state changes, downstream observers
   must be notified about the effects.
+
+- The use of HdContainerDataSourceEditor requires sentinel
+  invalidation; use of see ComputeDirtyLocators().
 
 */
 
@@ -141,7 +210,7 @@ _PruneEntries(
     // Pre-pass to see if any prune applies to the list.
     bool foundEntryToPrune = false;
     for (const auto& entry: entries) {
-        if (pruneEval->Match(entry.primPath)) {
+        if (HdsiUtilsIsPruned(entry.primPath, *pruneEval)) {
             foundEntryToPrune = true;
             break;
         }
@@ -152,7 +221,7 @@ _PruneEntries(
     } else {
         // Prune matching entries.
         for (const auto& entry: entries) {
-            if (!pruneEval->Match(entry.primPath)) {
+            if (!HdsiUtilsIsPruned(entry.primPath, *pruneEval)) {
                 // Accumulate survivors.
                 postPruneEntries->push_back(entry);
             }
@@ -189,7 +258,7 @@ HdsiRenderPassPruneSceneIndex::_PrimsAdded(
     _SendPrimsRemoved(extraRemovedEntries);
 }
 
-void 
+void
 HdsiRenderPassPruneSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
@@ -217,6 +286,8 @@ HdsiRenderPassPruneSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::AddedPrimEntries extraAddedEntries;
     HdSceneIndexObserver::DirtiedPrimEntries extraDirtyEntries;
     HdSceneIndexObserver::RemovedPrimEntries extraRemovedEntries;
@@ -226,10 +297,41 @@ HdsiRenderPassPruneSceneIndex::_PrimsDirtied(
         _UpdateActiveRenderPassState(&extraAddedEntries, &extraRemovedEntries);
     }
 
-    // Filter entries against any active render pass prune collection.
+    // Filter incoming entries against any active render pass prune collection.
     if (!_PruneEntries(_activeRenderPass.pruneEval, entries,
                        &extraDirtyEntries)) {
         _SendPrimsDirtied(entries);
+    }
+
+    // Dirty the instance mask only on instancers whose instance locations
+    // were affected by the prune change (newly pruned or un-pruned paths).
+    if (!_instanceToInstancerMap.empty()
+        && (!extraRemovedEntries.empty() || !extraAddedEntries.empty()))
+    {
+        static const HdDataSourceLocatorSet instancerMaskLocatorSet =
+            HdContainerDataSourceEditor::ComputeDirtyLocators(
+                {HdInstancerTopologySchema::GetDefaultLocator()
+                    .Append(HdInstancerTopologySchemaTokens->mask)});
+
+        SdfPathSet affectedInstancers;
+        for (const auto &entry : extraRemovedEntries) {
+            const auto [begin, end] =
+                _instanceToInstancerMap.FindSubtreeRange(entry.primPath);
+            for (auto i = begin; i != end; ++i) {
+                affectedInstancers.insert(i->second.begin(), i->second.end());
+            }
+        }
+        for (const auto &entry : extraAddedEntries) {
+            const auto [begin, end] =
+                _instanceToInstancerMap.FindSubtreeRange(entry.primPath);
+            for (auto i = begin; i != end; ++i) {
+                affectedInstancers.insert(i->second.begin(), i->second.end());
+            }
+        }
+        for (const SdfPath &instancerPath : affectedInstancers) {
+            extraDirtyEntries.emplace_back(instancerPath,
+                                           instancerMaskLocatorSet);
+        }
     }
 
     _SendPrimsAdded(extraAddedEntries);

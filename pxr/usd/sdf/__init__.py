@@ -8,6 +8,9 @@ from pxr import Tf
 Tf.PreparePythonModule()
 del Tf
 
+from pxr.Gf import TimeCode
+from pxr.Vt import TimeCodeArray
+
 def Find(layerFileName, scenePath=None):
     '''Find(layerFileName, scenePath) -> object
 

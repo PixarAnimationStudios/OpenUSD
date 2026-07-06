@@ -64,6 +64,9 @@ struct Ts_Segment
     /// Set interp from a TsInterpMode and TsCurveType.
     void SetInterp(TsInterpMode interpMode, TsCurveType curveType);
 
+    /// Get TsInterpMode from this segment's interp
+    TsInterpMode GetInterpMode() const;
+
     /// Add the (timeDelta, valueDelta) contained in the \c GfVec2d argument to
     /// the segment's time and value.
     Ts_Segment& operator +=(const GfVec2d& delta)

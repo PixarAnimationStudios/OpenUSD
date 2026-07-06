@@ -1336,7 +1336,7 @@ class GeomSubset "GeomSubset" (
         attribute. Edges are not currently defined for a UsdGeomTetMesh, but
         could be derived from all tetrahedron edges or surface face edges only 
         if a specific use-case arises.</li>
-        <li><b>segment</b>: for any Curve, each pair of elements 
+        <li><b>segment</b>: for any UsdGeomBasisCurves, each pair of elements 
         in the _indices_ attribute would refer to a pair of indices 
         (_curveIndex_, _segmentIndex_) where _curveIndex_ is the position of 
         the specified curve in the Curve's _curveVertexCounts_ attribute, and 
@@ -1973,12 +1973,6 @@ class PointInstancer "PointInstancer" (
     (i.e. less locally than) the local to parent transformation computed at 
     the root of the prototype it is instancing. 
 
-    If your processing of prototype geometry naturally takes into account the 
-    transform of the prototype root, then this term can be omitted from the 
-    computation of each instance transform, and this can be controlled when 
-    computing instance transformation matrices using the 
-    UsdGeomPointInstancer::PrototypeXformInclusion enumeration.
-
     To understand the computation of the instance transform, in order to put
     an instance of a PointInstancer into the space of the PointInstancer's 
     parent prim we do the following:
@@ -2555,6 +2549,23 @@ class "GeomModelAPI"
 
     All card faces are drawn and textured as single-sided.
 
+    \\section UsdGeomModelAPI_cardVisibility Card Visibility
+
+    In the \\em cards \\em model:drawMode the \\em model:cardVisibility
+    attribute controls which cards are visible:
+
+    - \\em full - All cards specified in the various \\em model:cardTexture
+                  parameters are visible
+    - \\em simple - Cards corresponding to the stage's \\em upAxis are not
+                    visible. Ex: \\em upAxis == "Z", then
+                    \em model:cardTextureZPos and \em model:cardTextureZNeg
+                    will not be visible.
+    - \\em inherited - Defer to parent opinion. Behaves like \\em full if no
+                       parent opinion is found.
+
+    For \\em simple \\em model::cardVisibility, if the only cards specified
+    correspond to the stage's \\em upAxis then no cards will be visible.
+
     \\todo CreatePayload() """
 )
 {
@@ -2582,6 +2593,11 @@ class "GeomModelAPI"
         doc = """The geometry to generate for imaging prims inserted for \\em
                  cards imaging mode. See \\ref UsdGeomModelAPI_cardGeometry for
                  geometry descriptions."""
+    )
+    uniform token model:cardVisibility = "inherited" (
+        allowedTokens = [ "full", "simple", "inherited" ]
+        doc = """When using the \\em cards imaging mode, determines if cards
+                 in the upAxis direction should be visible."""
     )
     asset model:cardTextureXPos (
         doc = """In \\em cards imaging mode, the texture applied to the X+ quad.
@@ -2778,4 +2794,127 @@ class HermiteCurves "HermiteCurves" (
     vector3f[] tangents = [] (
         doc = """Defines the outgoing trajectory tangent for each point. 
                  Tangents should be the same size as the points attribute.""")
+}
+
+class "BackPlateAPI" (
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdGeom/camera.h"
+"""
+        token apiSchemaType = "multipleApply"
+        token className  = "BackPlateAPI"
+        token propertyNamespacePrefix = "backPlate"
+    }
+        inherits = </APISchemaBase>
+
+
+    doc = """ This schema specifies a back plate i.e. a camera-constrained but 
+    not always camera-facing texture card, that exists in scene space. Multiple
+    back plates can be applied to a single camera and each plate can 
+    independently specify its own overall visibility, as well as its own 
+    opacity and depth varying over the plate.
+
+    UsdGeomBackplateAPI is designed to work with UsdGeomCamera, and thus 
+    specifically builds off of the camera model that the Camera schema defines,
+    adding the ability to incorporate separately imaged or captured images
+    into a synthetic 3D scene where the UsdGeomCamera can correspond to the
+    camera from which the images were taken.
+    
+    \\section UsdGeomBackPlatesAPI_AutoFocus Auto-Focus
+    By default, back plates are placed at the \\ref UsdGeomCamera::GetFocusDistanceAttr "focus distance"
+    and scaled to fit the camera frustum such that the plate is always in
+    focus. If the focus distance changes, then the back plate will also shift 
+    along the optical axis to remain at focus distance and scale accordingly. 
+    This auto-focus setup is tailored for match moving and assumes that 
+    the captured photos are intended to be shown as is without any additional 
+    camera-based-depth blurring.
+    
+    This schema provides additional rotation, translation, and scale controls,
+    suffixed with 'tweak', that are intended for local adjustments to the 
+    plate. These are applied to the center of the plate after it has been 
+    autofocused i.e. moved by the focus distance and scaled accordingly. It 
+    also has a subset of color grading controls for modifying gain, gamma, and 
+    lift values, as well as offset and normalization factors for modifying 
+    texture-refered depth information.
+    
+    \\section UsdGeomBackPlatesAPI_CameraModel Cameral Model
+    Back plates use a Gaussian thin lens model, whose origin is defined at the 
+    point where the optical axis intersects the focal plane. Note that the focus
+    distance used for back plate computations is assumed to be 
+    \\ref UsdGeomCamera::GetFocusDistanceAttr "UsdGeomCamera::focusDistance" + 
+    \\ref UsdGeomCamera::GetFocalLengthAttr "UsdGeomCamera::focalLength" 
+    such that our model aligns with film-production on-set practices. """ 
+)  {
+    
+    float2 scale:tweak = (1.0,1.0) (
+        doc = """The (X,Y) scale of the plate about its center. The back plate's 
+        default dimensions will be determined by its focus distance and the size
+        of the camera frustum."""
+    )
+    float3 rotateXYZ:tweak = (0.0,0.0,0.0) (
+        doc = """The (X,Y,Z) rotation of the plate about its center in 
+        degrees. The rotation order is XYZ."""
+    )
+    float3 translate:tweak = (0.0,0.0,0.0) (
+        doc = """The (X,Y,Z) translation of the plate about its center after it 
+        has been translated by the focus distance and scaled accordingly."""
+    )
+    asset image = ""(
+        doc = """Asset path to the file containing a texture or sequence of 
+        textures.  Currently, each asset must be a simple texture, not more 
+        general media such as movie files. The images by default will be 
+        centered on the back plate. If an invalid image is provided, then the 
+        plate will default to black."""
+    )
+    asset alpha:image = "" (
+        doc = """Asset path to channel representing the opacity of the back 
+        plate. If a single-channel texture is fed into this property, the alpha 
+        values will be set to that channel. If a two-channel texture is fed 
+        into this property, the alpha values will be set to the second channel. 
+        If a four-channel texture is fed into this property, then the fourth 
+        channel will be considered the alpha channel. If any other n-channel
+        texture is fed into image then it will be ignored and the alpha will 
+        default to 1.0.
+        """
+    )
+    asset depth:image = "" (
+        doc = """File path to a single-channel texture that describes the depth 
+        associated with the image if one exists. If not then the back plate 
+        will have uniform depth. The depth channel should be linear, and the 
+        final depth value is a float computed as `computedDepth = (textureValue 
+        - minOffset) * normalizingFactor + cameraSpaceOffset`, where the 
+        offsets can be set by the user. The depth channel is not a hardware 
+        generated z buffer as these have unknown format and are not generally 
+        readable outside of the GPU."""
+    )
+    float depth:minOffset = 0.0 (
+        doc = """Offset to shift the depth values if minimum value of current 
+        range is not set at 0 if needed."""
+    )
+    float depth:normalizingFactor = 1.0 (
+        doc = """Value to scale the texture depth value if needed."""
+    )
+    float depth:cameraSpaceOffset = 0.0 (
+        doc = """Offset to shift the depth into camera space if needed."""
+    )
+    float3 luma:gain = (1.0,1.0,1.0) (
+        doc = """Scales the per-channel upper bound of the normalized signal 
+        before gamma, analogous to per-channel exposure or slope. It is applied 
+        in the order of `colorValue = (value*(gain-lift)+lift)^(1/gamma)`."""
+    )
+    float3 luma:lift = (0.0,0.0,0.0) (
+        doc = """Raises or lowers the signal floor (black level) of the 
+        normalized value prior to the gain and gamma stages. It is applied
+        in the order of `colorValue = (value*(gain-lift)+lift)^(1/gamma)`."""
+    )
+    float3 luma:gamma = (1.0,1.0,1.0) (
+        doc = """Per-channel power applied to the normalized RGB signal after 
+        lift and gain. Must be > 0. It is applied
+        in the order of `colorValue = (value*(gain-lift)+lift)^(1/gamma)`."""
+    )
+    token plateVisibility = "solo" (
+        allowedTokens = ["all", "solo", "mute"]
+        doc = """Toggles the visibility of the back plate to all cameras, only 
+        the owning camera, or no cameras."""
+    )
 }

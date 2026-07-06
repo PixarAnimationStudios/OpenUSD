@@ -16,23 +16,24 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDX_TOKENS              \
     (hdxOitCounterBuffer)       \
+    (hdxOitColorBuffer)         \
     (hdxOitDataBuffer)          \
     (hdxOitDepthBuffer)         \
+    (hdxOitTransmissionDepthBuffer)\
     (hdxOitIndexBuffer)         \
+    (hdxOitJointBuffer)         \
     (hdxSelectionBuffer)        \
     (imagerVersion) /* \deprecated */ \
     (lightingContext)           \
     (lightingShader)            \
     (occludedSelectionOpacity)  \
     (oitCounter)                \
+    (oitJointBuffer)            \
     (oitData)                   \
-    (oitDepth)                  \
-    (oitIndices)                \
     (oitUniforms)               \
     (oitCounterBufferBar)       \
     (oitDataBufferBar)          \
-    (oitDepthBufferBar)         \
-    (oitIndexBufferBar)         \
+    (oitJointBufferBar)         \
     (oitUniformBar)             \
     (oitRenderPassState)        \
     (oitScreenSize)             \

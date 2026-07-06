@@ -28,6 +28,8 @@ class HdEmbreeRendererPlugin final : public HdRendererPlugin
 public:
     HdEmbreeRendererPlugin() = default;
 
+    HdContainerDataSourceHandle GetSceneIndexCreateArgs() const override;
+    
     /// Construct a new render delegate of type HdEmbreeRenderDelegate.
     /// Embree render delegates own the embree scene object, so a new render
     /// delegate should be created for each instance of HdRenderIndex.
@@ -50,7 +52,7 @@ public:
     /// Checks to see if the embree plugin is supported on the running system
     ///
     bool IsSupported(
-        HdRendererCreateArgs const &rendererCreateArgs,
+        const HdRendererCreateArgsSchema &rendererCreateArgs,
         std::string *reasonWhyNot = nullptr) const override;
 
 private:

@@ -45,9 +45,6 @@ creating USD assets. The high-level grouping of classes and functions is as foll
     \ref UsdUtilsStageCache for managing a singleton instance \ref UsdStageCache
     to be shared amongst various clients.
 
-\li complianceChecker.py provides a set of Python classes and methods used for 
-    checking the compliance of a given USD asset or USDZ package.
-
 \section usdUtils_userProcessingFunctions User Processing Functions
 
 Localization routines can be customized by supplying your own processing 
@@ -123,9 +120,10 @@ def ProcessingFunc(layer, dependencyInfo):
 
 After a processing function has been called, the system looks at the returned
 asset path.  If it is empty, then the reference to that path is removed,
-otherwise the new value is placed in the layer. Additionally, each item in the 
+otherwise the new value is placed in the layer. Additionally, each path in the 
 dependencies array is added to the resulting package and enqueued for 
-recursive traversal.
+recursive traversal.  The system will attempt to evaluate any variable
+expressions it encounters when searching for additional dependencies.
 
 \subsection usdUtils_modifyAssetPathsAndDeps Modifying AssetPaths and Dependencies
 

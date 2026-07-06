@@ -8,10 +8,10 @@
     <input name="surfaceshader" type="surfaceshader" nodename="Surface" />
   </surfacematerial>
   <nodegraph name="NodeGraphs">
-    <atan2 name="atan2" type="float" nodedef="ND_atan2_float">
+    <atan2 name="NodeGraphs_atan2" type="float" nodedef="ND_atan2_float">
       <input name="iny" type="float" value="0.2" />
       <input name="inx" type="float" value="0.7" />
     </atan2>
-    <output name="metallic_out" type="float" nodename="atan2" />
+    <output name="metallic_out" type="float" nodename="NodeGraphs_atan2" />
   </nodegraph>
 </materialx>

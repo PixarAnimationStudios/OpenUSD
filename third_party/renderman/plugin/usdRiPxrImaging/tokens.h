@@ -1,0 +1,62 @@
+//
+// Copyright 2016 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_USD_RI_PXR_IMAGING_TOKENS_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_USD_RI_PXR_IMAGING_TOKENS_H
+
+#include "usdRiPxrImaging/api.h"
+
+#include "pxr/base/tf/staticTokens.h"
+
+#include "pxr/pxr.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+#define USDRIPXRIMAGING_TOKENS   \
+    ((infoSource, "info:source")) \
+    (faceIndexPrimvar)      \
+    (faceOffsetPrimvar)     \
+    ((primvarsNormals, "primvars:normals")) \
+    ((primvarsWidths,  "primvars:widths")) \
+    (ptexFaceIndex)         \
+    (ptexFaceOffset)        \
+    (usdPopulatedPrimCount) \
+    (usdVaryingExtent)      \
+    (usdVaryingPrimvar)     \
+    (usdVaryingTopology)    \
+    (usdVaryingVisibility)  \
+    (usdVaryingWidths)      \
+    (usdVaryingNormals)     \
+    (usdVaryingXform)       \
+    (usdVaryingTexture)     \
+    (uvPrimvar)             \
+    (UsdPreviewSurface)     \
+    (UsdUVTexture)          \
+    (UsdPrimvarReader_float)\
+    (UsdPrimvarReader_float2)\
+    (UsdPrimvarReader_float3)\
+    (UsdPrimvarReader_float4)\
+    (UsdPrimvarReader_int)  \
+    (UsdTransform2d)  \
+    (pxrBarnLightFilter)    \
+    (pxrIntMultLightFilter) \
+    (pxrRodLightFilter)
+
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdRiPxrImagingTokens,
+    USDRIPXRIMAGING_API, USDRIPXRIMAGING_TOKENS);
+
+#define USDRIPXRIMAGING_PRIM_TYPE_TOKENS \
+    (projection)                         \
+    (volumeFilter)
+
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdRiPxrImagingPrimTypeTokens,
+    USDRIPXRIMAGING_API, USDRIPXRIMAGING_PRIM_TYPE_TOKENS);
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_USD_RI_PXR_IMAGING_TOKENS_H

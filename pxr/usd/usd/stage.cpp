@@ -374,7 +374,7 @@ namespace {
 // value resolution functions below. This allows to only resolve the layer 
 // offset once we've determined that a value is holding a type that can be 
 // resolved layer offsets while caching this computation for types that may
-// use it multiple times (e.g. SdfTimeCodeMap and VtDictionary)
+// use it multiple times (e.g. SdfTimeSampleMap and VtDictionary)
 struct LayerOffsetAccess
 {
 public:
@@ -677,8 +677,8 @@ _TransformSpline(TsSpline const &spline, Xf const &xf)
 }
 
 template <class Xf>
-SdfTimeCode
-_TransformTimeCode(SdfTimeCode const &timeCode, Xf const &xf)
+GfTimeCode
+_TransformTimeCode(GfTimeCode const &timeCode, Xf const &xf)
 {
     return xf.GetLayerOffset() * timeCode;
 }
@@ -8000,7 +8000,7 @@ UsdStage::_GetValueFromResolveInfoImpl(
                     // XXX Clips automatically transform time values to the
                     // stage's time, so skip transforming time-valued values.
                     // WBN to refactor to avoid this hacky bit.
-                    std::type_info const &timeCodeType = typeid(SdfTimeCode);
+                    std::type_info const &timeCodeType = typeid(GfTimeCode);
                     const bool isTimeValued =
                         sample.value.GetTypeid() == timeCodeType ||
                         sample.value.GetElementTypeid() == timeCodeType;
@@ -8855,7 +8855,7 @@ struct UsdStage::_TimeSampleMapResolver
             // XXX Clips automatically transform time values to the
             // stage's time, so skip transforming time-valued values.
             // WBN to refactor to avoid this hacky bit.
-            std::type_info const &timeCodeType = typeid(SdfTimeCode);
+            std::type_info const &timeCodeType = typeid(GfTimeCode);
             VtValue clipValue;
             if (!clipSet->QueryTimeSample(
                     specPath, clipTime,

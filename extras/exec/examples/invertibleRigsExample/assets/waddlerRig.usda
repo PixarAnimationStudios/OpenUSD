@@ -1,0 +1,137 @@
+#usda 1.0
+(
+    defaultPrim = "Rig"
+    doc = """
+    This scene defines a "waddler," a rig with two JointScopes and a
+    SwitchController that allows one or the other JointScope to act as the
+    parent. I.e., when the switch attribute is set to 'rig1', Joint1 acts as the
+    parent and Joint1's avars control the posing and Joint2 inherits
+    transformation from Joint1. When the switch attribute is set to 'rig2', the
+    roles are reversed, and Joint2's avars drive the overall pose. And
+    importantly, rotate avars pivot about the origin of whichever JointScope is
+    currently acting as the parent, allowing the rig to "waddle," as it
+    alternately pivots about one end or the other.
+    """
+)
+
+def Scope "Rig" {
+    def Scope "Anim" {
+        token switch = "rig1" (
+            allowedTokens = ["rig1", "rig2"]
+        )
+
+        def IrJointScope "Joint1" {
+            double guide:length = 10.0
+            matrix4d posed:space.connect = [
+                </Rig/Control/Switch1.out:space>
+            ]
+
+            def IrJointScope "Joint2" {
+                double rest:tz = 10.0
+                matrix4d posed:space.connect = [
+                    </Rig/Control/Switch2.out:space>
+                ]
+            }
+        }
+    }
+
+    def Scope "Control" {
+        def IrSwitchController "Switch1" {
+            token switch.connect = </Rig/Anim.switch>
+            matrix4d rig1:space.connect = </Rig/Control/Rig1/FK1.out:space>
+            matrix4d rig2:space.connect = </Rig/Control/Rig2/FK1.out:space>
+        }
+
+        def IrSwitchController "Switch2" {
+            token switch.connect = </Rig/Anim.switch>
+            matrix4d rig1:space.connect = </Rig/Control/Rig1/FK2.out:space>
+            matrix4d rig2:space.connect = </Rig/Control/Rig2/FK2.out:space>
+        }
+
+        def Scope "Rig1" {
+            def IrFkController "FK1" {
+                double in:tx.connect = </Rig/Anim/Joint1.avars:tx>
+                double in:ty.connect = </Rig/Anim/Joint1.avars:ty>
+                double in:tz.connect = </Rig/Anim/Joint1.avars:tz>
+                double in:rx.connect = </Rig/Anim/Joint1.avars:rx>
+                double in:ry.connect = </Rig/Anim/Joint1.avars:ry>
+                double in:rz.connect = </Rig/Anim/Joint1.avars:rz>
+                double in:rspin.connect = </Rig/Anim/Joint1.avars:rspin>
+                token in:rotationOrder.connect = [
+                    </Rig/Anim/Joint1.avars:rotationOrder>
+                ]
+                matrix4d in:defaultSpace.connect = [
+                    </Rig/Anim/Joint1.avars:defaultSpace>
+                ]
+            }
+
+            def IrFkController "FK2" {
+                double in:tx.connect = </Rig/Anim/Joint1/Joint2.avars:tx>
+                double in:ty.connect = </Rig/Anim/Joint1/Joint2.avars:ty>
+                double in:tz.connect = </Rig/Anim/Joint1/Joint2.avars:tz>
+                double in:rx.connect = </Rig/Anim/Joint1/Joint2.avars:rx>
+                double in:ry.connect = </Rig/Anim/Joint1/Joint2.avars:ry>
+                double in:rz.connect = </Rig/Anim/Joint1/Joint2.avars:rz>
+                double in:rspin.connect = [
+                    </Rig/Anim/Joint1/Joint2.avars:rspin>
+                ]
+                token in:rotationOrder.connect = [
+                    </Rig/Anim/Joint1/Joint2.avars:rotationOrder>
+                ]
+                matrix4d in:defaultSpace.connect = [
+                    </Rig/Anim/Joint1/Joint2.avars:defaultSpace>
+                ]
+
+                matrix4d parentIn:defaultSpace.connect = [
+                    </Rig/Control/Rig1/FK1.out:defaultSpace>
+                ]
+                matrix4d parentIn:space.connect = [
+                    </Rig/Control/Rig1/FK1.out:space>
+                ]
+            }
+        }
+
+        def Scope "Rig2" {
+            def IrFkController "FK1" {
+                double in:tx.connect = </Rig/Anim/Joint1.avars:tx>
+                double in:ty.connect = </Rig/Anim/Joint1.avars:ty>
+                double in:tz.connect = </Rig/Anim/Joint1.avars:tz>
+                double in:rx.connect = </Rig/Anim/Joint1.avars:rx>
+                double in:ry.connect = </Rig/Anim/Joint1.avars:ry>
+                double in:rz.connect = </Rig/Anim/Joint1.avars:rz>
+                double in:rspin.connect = </Rig/Anim/Joint1.avars:rspin>
+                token in:rotationOrder.connect = [
+                    </Rig/Anim/Joint1.avars:rotationOrder>
+                ]
+                matrix4d in:defaultSpace.connect = [
+                    </Rig/Anim/Joint1.avars:defaultSpace>
+                ]
+
+                matrix4d parentIn:defaultSpace.connect = [
+                    </Rig/Control/Rig2/FK2.out:defaultSpace>
+                ]
+                matrix4d parentIn:space.connect = [
+                    </Rig/Control/Rig2/FK2.out:space>
+                ]
+            }
+
+            def IrFkController "FK2" {
+                double in:tx.connect = </Rig/Anim/Joint1/Joint2.avars:tx>
+                double in:ty.connect = </Rig/Anim/Joint1/Joint2.avars:ty>
+                double in:tz.connect = </Rig/Anim/Joint1/Joint2.avars:tz>
+                double in:rx.connect = </Rig/Anim/Joint1/Joint2.avars:rx>
+                double in:ry.connect = </Rig/Anim/Joint1/Joint2.avars:ry>
+                double in:rz.connect = </Rig/Anim/Joint1/Joint2.avars:rz>
+                double in:rspin.connect = [
+                    </Rig/Anim/Joint1/Joint2.avars:rspin>
+                ]
+                token in:rotationOrder.connect = [
+                    </Rig/Anim/Joint1/Joint2.avars:rotationOrder>
+                ]
+                matrix4d in:defaultSpace.connect = [
+                    </Rig/Anim/Joint1/Joint2.avars:defaultSpace>
+                ]
+            }
+        }
+    }
+}

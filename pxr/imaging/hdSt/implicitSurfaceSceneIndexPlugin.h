@@ -17,8 +17,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Storm scene index plugin that configures the implicit surface scene index
 /// to generate meshes for various implicit surfaces.
-/// \note Storm does _not_ natively support implicit geometry such
-/// as spheres or cubes, so they need to be transformed into meshes.
+/// \note Storm does _not_ natively support some implicit geometry such
+/// as cubes and cones, so they need to be transformed into meshes.
 ///
 class HdSt_ImplicitSurfaceSceneIndexPlugin : public HdSceneIndexPlugin
 {

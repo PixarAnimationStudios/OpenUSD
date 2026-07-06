@@ -154,11 +154,11 @@ class UsdLuxLightFilter_ConnectableAPIBehavior :
 {
 public:
     // By default all UsdLuxLightFilter connectable behavior should be container
-    // and we expect to make light filters be connected across multiple light
-    // scopes, hence ignoring encapsulation rules.
+    // and like a generic UsdShadeNodeGraph or UsdLuxLight we want light filters 
+    // to adhere to encapsulation rules.
     UsdLuxLightFilter_ConnectableAPIBehavior() :
         UsdShadeConnectableAPIBehavior(
-                true /*isContainer*/, false /*requiresEncapsulation*/) {}
+                true /*isContainer*/, true /*requiresEncapsulation*/) {}
 
     bool
     CanConnectInputToSource(const UsdShadeInput &input,

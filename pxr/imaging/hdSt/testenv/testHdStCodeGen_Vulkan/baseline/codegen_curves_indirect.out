@@ -296,6 +296,13 @@ MAT4  GetProjectionMatrix() {
     return MAT4(1);
 #endif
 }
+MAT4  GetProjectionInverseMatrix() {
+#if defined(HD_HAS_projectionInverseMatrix)
+    return MAT4(HdGet_projectionInverseMatrix());
+#else
+    return MAT4(1);
+#endif
+}
 vec3 GetPositionInWorldSpace(vec3 windowRelativeCoord)
 {
 #if defined(HD_HAS_imageToWorldMatrix)
@@ -1273,6 +1280,13 @@ MAT4  GetProjectionMatrix() {
     return MAT4(1);
 #endif
 }
+MAT4  GetProjectionInverseMatrix() {
+#if defined(HD_HAS_projectionInverseMatrix)
+    return MAT4(HdGet_projectionInverseMatrix());
+#else
+    return MAT4(1);
+#endif
+}
 vec3 GetPositionInWorldSpace(vec3 windowRelativeCoord)
 {
 #if defined(HD_HAS_imageToWorldMatrix)
@@ -1848,6 +1862,13 @@ MAT4  GetProjectionMatrix() {
     return MAT4(1);
 #endif
 }
+MAT4  GetProjectionInverseMatrix() {
+#if defined(HD_HAS_projectionInverseMatrix)
+    return MAT4(HdGet_projectionInverseMatrix());
+#else
+    return MAT4(1);
+#endif
+}
 vec3 GetPositionInWorldSpace(vec3 windowRelativeCoord)
 {
 #if defined(HD_HAS_imageToWorldMatrix)
@@ -2302,6 +2323,7 @@ vec4 InterpolatePrimvar(vec4 inPv0, vec4 inPv1, vec4 inPv2, vec4 inPv3,
   FRAGMENT SHADER                                      
 =======================================================
 #version 450
+#extension GL_EXT_fragment_shader_barycentric: require
 #define REF(space,type) inout type
 #define FORWARD_DECL(func_decl) func_decl
 #define ATOMIC_LOAD(a) (a)
@@ -2444,6 +2466,7 @@ layout(std430, binding = 1) readonly buffer ssbo_faceVisibility { float faceVisi
 flat layout(location = 1) in ivec4 tes_interstageDrawingCoord0;
 flat layout(location = 2) in ivec4 tes_interstageDrawingCoord1;
 flat layout(location = 3) in ivec4 tes_interstageDrawingCoord2;
+vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspEXT;
 layout(location = 0) in CurveVertexData {
   vec4 Peye;
 } inData;
@@ -2492,7 +2515,7 @@ float HdGetScalar_widths() { return HdGet_widths(0); }
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
 vec3 GetBarycentricCoord() {
-  return vec3(0);
+  return hd_BaryCoordNoPersp;
 }
 int GetPrimitiveID() {
   return gl_PrimitiveID;
@@ -2593,6 +2616,13 @@ MAT4  GetWorldToViewInverseMatrix() {
 MAT4  GetProjectionMatrix() {
 #if defined(HD_HAS_projectionMatrix)
     return MAT4(HdGet_projectionMatrix());
+#else
+    return MAT4(1);
+#endif
+}
+MAT4  GetProjectionInverseMatrix() {
+#if defined(HD_HAS_projectionInverseMatrix)
+    return MAT4(HdGet_projectionInverseMatrix());
 #else
     return MAT4(1);
 #endif

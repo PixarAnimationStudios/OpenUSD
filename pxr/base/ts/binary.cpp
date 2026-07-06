@@ -140,6 +140,8 @@ uint8_t Ts_BinaryDataAccess::GetBinaryFormatVersion(
 {
     // Version 1: initial spline implementation
     // Version 2: addition of tangent algorithm AutoEase
+    // Version 3: addition of loopBoundaryTime for looped extrapolation
+    //            addition of GfTimeCode value type to replace timeValued bit
 
     uint8_t version = 1;
 
@@ -154,6 +156,20 @@ uint8_t Ts_BinaryDataAccess::GetBinaryFormatVersion(
             version = 2;
             break;
         }
+    }
+
+    // Check looped extrapolation for specification of loopBoundaryTime.
+    const TsExtrapolation& preExtrap = data.preExtrapolation;
+    const TsExtrapolation& postExtrap = data.postExtrapolation;
+    if ((preExtrap.IsLooping() && preExtrap.loopBoundaryTime.has_value()) ||
+        (postExtrap.IsLooping() && postExtrap.loopBoundaryTime.has_value()))
+    {
+        version = 3;
+    }
+
+    // Check for presence of time valued splines or modern GfTimeCode splines.
+    if (spline.IsTimeValued()) {
+        version = 3;
     }
 
     return version;
@@ -176,7 +192,7 @@ void Ts_BinaryDataAccess::GetBinaryData(
     }
 
     const Ts_SplineData &data = *(spline._data.get());
-    const TfType valueType = spline.GetValueType();
+    TfType valueType = spline.GetValueType();
     const bool hasLoops = (spline.GetInnerLoopParams() != TsLoopParams());
     const bool isHermite = (spline.GetCurveType() == TsCurveTypeHermite);
 
@@ -197,19 +213,26 @@ void Ts_BinaryDataAccess::GetBinaryData(
         { TfType(),             0 },    // Can be valid with no knots.
         { Ts_GetType<double>(), 1 },
         { Ts_GetType<float>(),  2 },
-        { Ts_GetType<GfHalf>(), 3 } };
+        { Ts_GetType<GfHalf>(), 3 },
+        { Ts_GetType<GfTimeCode>(), 4} };
 
+    if (spline.IsTimeValued()) {
+        valueType = Ts_GetType<GfTimeCode>();
+    }
     const uint8_t typeDescriptor = TfMapLookupByValue(typeMap, valueType, 0);
 
     // Header byte 1:
     // Bits 0-3: version.  Must exist in all versions.
-    // Bits 4-5: value type.
-    // Bit 6: whether time-valued.
+    // Bits 4-6 (version > 2): value type.
     // Bit 7: curve type.
+    //
+    // NOTE: dataVersion <= 2 always implicitly writes 0-valued
+    //       legacy timeValued to bit 6, because all 1-valued legacy time
+    //       valued splines are upgraded to to dataVersion > 2 GfTimeCode
+    //       splines.
     const uint8_t dataVersion = GetBinaryFormatVersion(spline);
     uint8_t headerByte = (dataVersion
                           | (typeDescriptor << 4)
-                          | (data.timeValued << 6)
                           | (static_cast<uint8_t>(data.curveType) << 7));
     _WriteBytes<uint8_t>(buf, headerByte);
 
@@ -221,6 +244,31 @@ void Ts_BinaryDataAccess::GetBinaryData(
                   | (static_cast<uint8_t>(data.postExtrapolation.mode) << 3)
                   | (hasLoops << 6));
     _WriteBytes<uint8_t>(buf, headerByte);
+
+    // Header byte 3:
+    // Bit 0: whether pre-extrapolation is looping and has loopBoundaryTime
+    // Bit 1: whether post-extrapolation is looping and has loopBoundaryTime
+    if (dataVersion > 2) {
+        const bool bit0 = data.preExtrapolation.IsLooping() &&
+            data.preExtrapolation.loopBoundaryTime.has_value();
+        const bool bit1 = data.postExtrapolation.IsLooping() &&
+            data.postExtrapolation.loopBoundaryTime.has_value();
+        headerByte = static_cast<uint8_t>(bit0)
+                   | static_cast<uint8_t>(bit1) << 1;
+        _WriteBytes<uint8_t>(buf, headerByte);
+
+        // For each looping extrapolation with loopBoundaryTime, write
+        // loopBoundaryTime. We can write this immediately because
+        // the last header byte is written.
+        if (bit0) {
+            _WriteBytes<double>(buf,
+                data.preExtrapolation.loopBoundaryTime.value());
+        }
+        if (bit1) {
+            _WriteBytes<double>(buf,
+                data.postExtrapolation.loopBoundaryTime.value());
+        }
+    }
 
     // For each sloped extrapolation, write slope.
     if (data.preExtrapolation.mode == TsExtrapSloped)
@@ -246,7 +294,7 @@ void Ts_BinaryDataAccess::GetBinaryData(
     // Write knot data, if any.  This is value-type-specific.
     if (valueType)
     {
-        TsDispatchToValueTypeTemplate<_BinaryDataWriter>(
+        TsDispatchToStorageValueTypeTemplate<_BinaryDataWriter>(
             valueType, data, dataVersion, isHermite, buf);
     }
 
@@ -271,7 +319,7 @@ void Ts_BinaryDataAccess::GetBinaryData(
 namespace
 {
     template <typename T>
-    struct _BinaryDataReaderV1_2
+    struct _BinaryDataReaderV1_3
     {
         void operator()(
             uint8_t version,
@@ -351,7 +399,7 @@ namespace
     }
 
 // static
-TsSpline Ts_BinaryDataAccess::_ParseV1_2(
+TsSpline Ts_BinaryDataAccess::_ParseV1_3(
     uint8_t version,
     const std::vector<uint8_t> &buf,
     std::unordered_map<TsTime, VtDictionary> &&customData)
@@ -364,13 +412,15 @@ TsSpline Ts_BinaryDataAccess::_ParseV1_2(
         { 0, Ts_GetType<double>() },    // Value type unspecified.
         { 1, Ts_GetType<double>() },
         { 2, Ts_GetType<float>()  },
-        { 3, Ts_GetType<GfHalf>() } };
+        { 3, Ts_GetType<GfHalf>() },
+        { 4, Ts_GetType<GfTimeCode>() }, };
 
     // Header byte 1.
     uint8_t headerByte = 0;
     READ(&headerByte);
-    const uint8_t typeDescriptor = (headerByte & 0x30) >> 4;
-    const TfType valueType =
+    const uint8_t typeDescriptor = version > 2 ? (headerByte & 0x70) >> 4
+                                               : (headerByte & 0x30) >> 4;
+    TfType valueType =
         TfMapLookupByValue(typeMap, typeDescriptor, TfType());
     if (!valueType)
     {
@@ -378,12 +428,20 @@ TsSpline Ts_BinaryDataAccess::_ParseV1_2(
         return {};
     }
 
+    // If the legacy time valued bit is specified, upgrade the in-memory spline
+    // representation to using GfTimeCode directly.
+    if (version <= 2) {
+        const bool timeValued = headerByte & 0x40;
+        if (timeValued) {
+            valueType = Ts_GetType<GfTimeCode>();
+        }
+    }
+
     // Now that we know value type, create typed SplineData.
     std::unique_ptr<Ts_SplineData> data(Ts_SplineData::Create(valueType));
 
     // Read flags.
     data->isTyped = (typeDescriptor != 0);
-    data->timeValued = headerByte & 0x40;
     data->curveType = static_cast<TsCurveType>((headerByte & 0x80) >> 7);
     const bool isHermite = (data->curveType == TsCurveTypeHermite);
 
@@ -392,8 +450,25 @@ TsSpline Ts_BinaryDataAccess::_ParseV1_2(
     data->preExtrapolation.mode =
         static_cast<TsExtrapMode>(headerByte & 0x07);
     data->postExtrapolation.mode =
-        static_cast<TsExtrapMode>((headerByte & 0x18) >> 3);
+        static_cast<TsExtrapMode>((headerByte & 0x38) >> 3);
     const bool hasLoops = headerByte & 0x40;
+
+    // Header byte 3.
+    // For each looping extrapolation with loopBoundaryTime, read
+    // loopBoundaryTime.
+    if (version > 2) {
+        READ(&headerByte);
+        if (headerByte & 0x1) {
+            double preLoopBoundaryTime;
+            READ(&preLoopBoundaryTime);
+            data->preExtrapolation.loopBoundaryTime = preLoopBoundaryTime;
+        }
+        if (headerByte & 0x2) {
+            double postLoopBoundaryTime;
+            READ(&postLoopBoundaryTime);
+            data->postExtrapolation.loopBoundaryTime = postLoopBoundaryTime;
+        }
+    }
 
     // For each sloped extrapolation, read slope.
     if (data->preExtrapolation.mode == TsExtrapSloped)
@@ -420,7 +495,7 @@ TsSpline Ts_BinaryDataAccess::_ParseV1_2(
     if (valueType)
     {
         bool ok = false;
-        TsDispatchToValueTypeTemplate<_BinaryDataReaderV1_2>(
+        TsDispatchToStorageValueTypeTemplate<_BinaryDataReaderV1_3>(
             valueType, version, data.get(), isHermite, &readPtr, &remain, &ok);
         if (!ok)
         {
@@ -461,7 +536,8 @@ TsSpline Ts_BinaryDataAccess::CreateSplineFromBinaryData(
     switch (version) {
       case 1:
       case 2:
-        spline = _ParseV1_2(version, buf, std::move(customData));
+      case 3:
+        spline = _ParseV1_3(version, buf, std::move(customData));
         break;
 
       default:

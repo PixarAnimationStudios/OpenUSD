@@ -10,7 +10,9 @@
 #include "hdPrman/rileyGlobalsSceneIndex.h"
 #include "hdPrman/tokens.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+#if PXR_VERSION >= 2505
 #include "pxr/imaging/hd/sceneIndexUtil.h"
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -52,10 +54,12 @@ protected:
         }
         si = HdPrman_RileyGlobalsSceneIndex::New(si, inputArgs);
 
+#if PXR_VERSION >= 2505
         if (TfGetEnvSetting<bool>(HD_USE_ENCAPSULATING_SCENE_INDICES)) {
             si = HdMakeEncapsulatingSceneIndex({ inputScene }, si);
             si->SetDisplayName("HdPrman 2.0 plugins");
         }
+#endif
 
         return si;
 #else

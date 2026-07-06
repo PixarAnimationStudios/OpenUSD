@@ -103,7 +103,7 @@ HdMergingSceneIndex::_HasPrim(const SdfPath &path)
         return true;
     }
 
-    return GetPrim(path);
+    return (bool)GetPrim(path);
 }
 
 void

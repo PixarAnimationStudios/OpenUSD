@@ -247,6 +247,10 @@ void ArchSetExtraLogInfoForErrors(const std::string &key,
 /// reporting that a stack trace has been taken and what file it has been
 /// written to.  And if \c fatal is true, then the stack trace will  be added
 /// to the stack_trace database table.
+///
+/// \note This function is NOT async-signal-safe.  Use \c
+/// ArchLogFatalProcessState or \c ArchLogCurrentProcessState from a signal
+/// handler instead.
 ARCH_API
 void ArchLogStackTrace(const std::string& progName,
                        const std::string& reason,

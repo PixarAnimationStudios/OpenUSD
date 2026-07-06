@@ -126,7 +126,7 @@ Assets
 Additional Assets
 #################
 
-| Animal Logic - `ALab Open Source Scene <https://animallogic.com/alab/>`__
+| Animal Logic - `ALab Open Source Scene <https://animallogic.com/technology/alab/>`__
 | Apple - `ARKit Example Assets <https://developer.apple.com/augmented-reality/quick-look/>`__
 | Intel - `4004 Moore Lane Scene <https://dpel.aswf.io/4004-moore-lane/>`__
 | NVIDIA - `Example Assets <https://developer.nvidia.com/usd#sample>`__

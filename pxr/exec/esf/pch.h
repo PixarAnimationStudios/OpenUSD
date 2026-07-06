@@ -24,7 +24,9 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <float.h>
 #include <functional>
+#include <initializer_list>
 #include <iosfwd>
 #include <iostream>
 #include <iterator>
@@ -35,6 +37,7 @@
 #include <math.h>
 #include <memory>
 #include <new>
+#include <optional>
 #include <ostream>
 #include <set>
 #include <sstream>

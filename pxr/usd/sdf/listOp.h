@@ -347,6 +347,10 @@ private:
 template <class T>
 struct VtValueTypeCanCompose<SdfListOp<T>> : std::true_type {};
 
+// SdfListOps support VtValue transforms.
+template <class T>
+struct VtValueTypeCanTransform<SdfListOp<T>> : std::true_type {};
+
 // ADL swap.
 template <class T>
 void swap(SdfListOp<T> &x, SdfListOp<T> &y)

@@ -98,6 +98,15 @@ void testTfMeta()
     ASSERT_SAME((TfMetaApply<std::tuple, TestList>),
                 (std::tuple<int, float, std::string>));
 
+    ASSERT_SAME((TfMetaConcat<TestList, TestList>),
+                (TfMetaList<int, float, std::string, int, float, std::string>));
+    ASSERT_SAME((TfMetaConcat<TestList, TfMetaApply<TfMetaTail, TestList>>),
+                (TfMetaList<int, float, std::string, float, std::string>));
+
+    ASSERT_SAME((TfMetaConcat<TfMetaList<short, int, long>,
+                 TfMetaList<float, double>>),
+                (TfMetaList<short, int, long, float, double>));
+
     ASSERT_SAME((TfConditionalType<true, int, float>), int);
     ASSERT_SAME((TfConditionalType<false, int, float>), float);
                 

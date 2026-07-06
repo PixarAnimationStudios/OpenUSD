@@ -410,13 +410,13 @@ void GetInfo<double>(VtArray<double> *array, string *name)
 }
 
 template <>
-void GetInfo<SdfTimeCode>(VtArray<SdfTimeCode> *array, string *name)
+void GetInfo<GfTimeCode>(VtArray<GfTimeCode> *array, string *name)
 {
     *name = "timecode";
-    *array = VtArray<SdfTimeCode>(3);
-    (*array)[0] = SdfTimeCode(1.0);
-    (*array)[1] = SdfTimeCode(1.5);
-    (*array)[2] = SdfTimeCode(2.0);
+    *array = VtArray<GfTimeCode>(3);
+    (*array)[0] = GfTimeCode(1.0);
+    (*array)[1] = GfTimeCode(1.5);
+    (*array)[2] = GfTimeCode(2.0);
 }
 
 template <>

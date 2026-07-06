@@ -181,9 +181,11 @@ _InitHdStMaterialXContext(
     HdSt_MxShaderGenInfo const& mxHdInfo,
     TfToken const& apiName)
 {
+#ifdef PXR_METAL_SUPPORT_ENABLED
     if (apiName == HgiTokens->Metal) {
         return HdStMaterialXShaderGenMsl::create(mxHdInfo);
     }
+#endif  // PXR_METAL_SUPPORT_ENABLED
     if (apiName == HgiTokens->Vulkan) {
         return HdStMaterialXShaderGenVkGlsl::create(mxHdInfo);
     }
@@ -444,14 +446,15 @@ _UpdateMxHdTextureNames(
 {
     // Store the added connection to the terminal node for MaterialXShaderGen
     for (SdfPath const& texturePath : hdTextureNodes) {
-        auto mtlxTextureInfo = hdMtlxTextureInfo.find(texturePath.GetName());
+        const std::string mtlxTexturePath = HdMtlxCreateNameFromPath(texturePath);
+        auto mtlxTextureInfo = hdMtlxTextureInfo.find(mtlxTexturePath);
         if (mtlxTextureInfo != hdMtlxTextureInfo.end()) {
             for (std::string const& fileInputName : mtlxTextureInfo->second) {
                 // Note these connections were made in _UpdateTextureNode()
                 // and use the mtlx paramName which follows the pattern:
                 // 'nodeName_paramName'
                 mxHdTextureNames->push_back(
-                    _CreateNodeParamName(texturePath.GetName(), fileInputName));
+                    _CreateNodeParamName(mtlxTexturePath, fileInputName));
             }
         }
     }
@@ -957,7 +960,11 @@ _UpdateTextureNode(
     // Get the name of the file parameter from the mtlxFileParamName which is
     // of the form nodeName_fileParamName.
     const std::string mtlxFileParamNameStr(mtlxFileParamName);
-    const auto underscorePos = mtlxFileParamNameStr.find('_');
+    auto underscorePos = mtlxFileParamNameStr.find('_');
+    if (TfStringStartsWith(mtlxFileParamNameStr, _tokens->NG_Anonymized.GetString())) {
+        static const std::string anonPrefix = _tokens->NG_Anonymized.GetString() + "_";
+        underscorePos = mtlxFileParamNameStr.find('_', anonPrefix.size());
+    }
     const std::string fileParamName = 
         underscorePos != std::string_view::npos
             ? mtlxFileParamNameStr.substr(underscorePos+1)
@@ -1157,7 +1164,7 @@ _AddMaterialXParams(
         if (nodePath != terminalNodePath) {
             const auto anonNodePathIt = hdToAnonNodePathMap.find(nodePath);
             if (anonNodePathIt != hdToAnonNodePathMap.end()) {
-                anonNodeNamePrefix = anonNodePathIt->second.GetName();
+                anonNodeNamePrefix = HdMtlxCreateNameFromPath(anonNodePathIt->second);
             }
         }
         for (auto const& [paramName, paramValue] : hdNode.parameters) {
@@ -1177,7 +1184,7 @@ _AddMaterialXParams(
     std::map<std::string, SdfPath> anonToHdNodePathMap;
     for (auto const& [hdPath, anonPath] : hdToAnonNodePathMap) {
         if (hdPath != terminalNodePath) {
-            anonToHdNodePathMap.emplace(anonPath.GetName(), hdPath);
+            anonToHdNodePathMap.emplace(HdMtlxCreateNameFromPath(anonPath), hdPath);
         }
     }
 
@@ -1283,7 +1290,12 @@ _AddMaterialXParams(
             // Get the anonymized (or sanitized) MaterialX node name from the 
             // mxParamName which is of the form anonNodeName_paramName
             std::string anonNodeName = mxParamName;
-            const auto underscorePos = anonNodeName.find('_');
+            auto underscorePos = anonNodeName.find('_');
+            if (TfStringStartsWith(anonNodeName, _tokens->NG_Anonymized.GetString())) {
+                static const std::string anonPrefix = _tokens->NG_Anonymized.GetString() + "_";
+                underscorePos = anonNodeName.find('_', anonPrefix.size());
+            }
+
             if (underscorePos != std::string_view::npos) {
                 anonNodeName = anonNodeName.substr(0, underscorePos);
             }

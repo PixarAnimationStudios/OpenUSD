@@ -42,23 +42,26 @@ public:
         }
 
         const SdfPath srcPath = _inputDataSource->GetTypedValue(shutterOffset);
-        return srcPath.ReplacePrefix(_srcPrefix, _dstPrefix);
+
+        SdfPath targetPath = _mapFn.MapSourceToTarget(srcPath);
+
+        // If the path is outside the mapping, this data source
+        // implicitly leaves the path alone; it does not enforce
+        // encapsulation in the way that USD composition arcs do.
+        return targetPath.IsEmpty() ? srcPath : targetPath;
     }
 
 private:
     _RerootingPathDataSource(
         HdPathDataSourceHandle inputDataSource,
-        const SdfPath &srcPrefix,
-        const SdfPath &dstPrefix)
+        PcpMapFunction const& mapFn)
       : _inputDataSource(std::move(inputDataSource))
-      , _srcPrefix(srcPrefix)
-      , _dstPrefix(dstPrefix)
+      , _mapFn(mapFn)
     {
     }
 
-    HdPathDataSourceHandle const _inputDataSource;
-    const SdfPath _srcPrefix;
-    const SdfPath _dstPrefix;
+    const HdPathDataSourceHandle _inputDataSource;
+    const PcpMapFunction _mapFn;
 };
 
 // ----------------------------------------------------------------------------
@@ -95,37 +98,11 @@ public:
         VtArray<SdfPath> result
             = _inputDataSource->GetTypedValue(shutterOffset);
 
-        const size_t n = result.size();
-
-        if (n == 0) {
-            return result;
-        }
-
-        size_t i = 0;
-
-        // If _srcPrefix is absolute root path, we know that we
-        // need to translate every path.
-        if (!_srcPrefix.IsAbsoluteRootPath()) {
-            // Find the first element where we need to change the path.
-            //
-            // Use const & so that paths[i] does not trigger VtArray
-            // to make a copy.
-            const VtArray<SdfPath> &paths = result.AsConst();
-            while (!paths[i].HasPrefix(_srcPrefix)) {
-                ++i;
-                if (i == n) {
-                    // No need to modify result if no path needed
-                    // to be changed.
-                    return result;
-                }
+        for (SdfPath &path: result) {
+            SdfPath targetPath = _mapFn.MapSourceToTarget(path);
+            if (!targetPath.IsEmpty()) {
+                path = targetPath;
             }
-        }
-
-        // Starting with the first element where the path matched the
-        // prefix, process it and all following elements.
-        for (; i < n; i++) {
-            SdfPath &path = result[i];
-            path = path.ReplacePrefix(_srcPrefix, _dstPrefix);
         }
 
         return result;
@@ -134,17 +111,14 @@ public:
 private:
     _RerootingPathArrayDataSource(
         HdPathArrayDataSourceHandle inputDataSource,
-        const SdfPath &srcPrefix,
-        const SdfPath &dstPrefix)
+        PcpMapFunction const& mapFn)
       : _inputDataSource(std::move(inputDataSource))
-      , _srcPrefix(srcPrefix)
-      , _dstPrefix(dstPrefix)
+      , _mapFn(mapFn)
     {
     }
 
-    HdPathArrayDataSourceHandle const _inputDataSource;
-    const SdfPath _srcPrefix;
-    const SdfPath _dstPrefix;
+    const HdPathArrayDataSourceHandle _inputDataSource;
+    const PcpMapFunction _mapFn;
 };
 
 // ----------------------------------------------------------------------------
@@ -152,8 +126,7 @@ private:
 HdDataSourceBaseHandle
 _RerootingCreateDataSource(
     HdDataSourceBaseHandle const &inputDataSource,
-    const SdfPath &srcPrefix,
-    const SdfPath &dstPrefix);
+    PcpMapFunction const& mapFn);
 
 class _RerootingVectorDataSource : public HdVectorDataSource
 {
@@ -167,24 +140,20 @@ public:
     HdDataSourceBaseHandle GetElement(const size_t element) {
         return _RerootingCreateDataSource(
             _inputDataSource->GetElement(element),
-            _srcPrefix,
-            _dstPrefix);
+            _mapFn);
     }
 
 private:
     _RerootingVectorDataSource(
         HdVectorDataSourceHandle inputDataSource,
-        const SdfPath &srcPrefix,
-        const SdfPath &dstPrefix)
+        PcpMapFunction const& mapFn)
      : _inputDataSource(std::move(inputDataSource))
-     , _srcPrefix(srcPrefix)
-     , _dstPrefix(dstPrefix)
+     , _mapFn(mapFn)
     {
     }
 
-    HdVectorDataSourceHandle const _inputDataSource;
-    const SdfPath _srcPrefix;
-    const SdfPath _dstPrefix;
+    const HdVectorDataSourceHandle _inputDataSource;
+    const PcpMapFunction _mapFn;
 };
 
 // ----------------------------------------------------------------------------
@@ -192,8 +161,7 @@ private:
 HdDataSourceBaseHandle
 _RerootingCreateDataSource(
     HdDataSourceBaseHandle const &inputDataSource,
-    const SdfPath &srcPrefix,
-    const SdfPath &dstPrefix)
+    PcpMapFunction const& mapFn)
 {
     if (!inputDataSource) {
         return nullptr;
@@ -201,24 +169,24 @@ _RerootingCreateDataSource(
 
     if (auto containerDs = HdContainerDataSource::Cast(inputDataSource)) {
         return UsdImagingRerootingContainerDataSource::New(
-            std::move(containerDs), srcPrefix, dstPrefix);
+            std::move(containerDs), mapFn);
     }
 
     if (auto vectorDs = HdVectorDataSource::Cast(inputDataSource)) {
         return _RerootingVectorDataSource::New(
-            std::move(vectorDs), srcPrefix, dstPrefix);
+            std::move(vectorDs), mapFn);
     }
 
     if (auto pathDataSource =
             HdTypedSampledDataSource<SdfPath>::Cast(inputDataSource)) {
         return _RerootingPathDataSource::New(
-            std::move(pathDataSource), srcPrefix, dstPrefix);
+            std::move(pathDataSource), mapFn);
     }
 
     if (auto pathArrayDataSource =
             HdTypedSampledDataSource<VtArray<SdfPath>>::Cast(inputDataSource)) {
         return _RerootingPathArrayDataSource::New(
-            std::move(pathArrayDataSource),srcPrefix, dstPrefix);
+            std::move(pathArrayDataSource),mapFn);
     }
 
     return inputDataSource;
@@ -228,11 +196,19 @@ _RerootingCreateDataSource(
 
 UsdImagingRerootingContainerDataSource::UsdImagingRerootingContainerDataSource(
     HdContainerDataSourceHandle inputDataSource,
+    PcpMapFunction const& mapFn)
+ : _inputDataSource(std::move(inputDataSource))
+ , _mapFn(mapFn)
+{
+}
+
+UsdImagingRerootingContainerDataSource::UsdImagingRerootingContainerDataSource(
+    HdContainerDataSourceHandle inputDataSource,
     const SdfPath &srcPrefix,
     const SdfPath &dstPrefix)
  : _inputDataSource(std::move(inputDataSource))
- , _srcPrefix(srcPrefix)
- , _dstPrefix(dstPrefix)
+ , _mapFn( PcpMapFunction::Create(
+            {{srcPrefix, dstPrefix}}, SdfLayerOffset()))
 {
 }
 
@@ -258,10 +234,7 @@ UsdImagingRerootingContainerDataSource::Get(const TfToken &name)
 
     return _RerootingCreateDataSource(
         _inputDataSource->Get(name),
-        _srcPrefix,
-        _dstPrefix);
+        _mapFn);
 }
-
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

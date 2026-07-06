@@ -1,0 +1,307 @@
+#usda 1.0
+(
+    defaultPrim = "world"
+)
+
+def Camera "main_cam"
+{
+    float4[] clippingPlanes = []
+    float2 clippingRange = (1, 2000000)
+    float focalLength = 34.2608
+    float focusDistance = 83.65276
+    float fStop = 0
+    float horizontalAperture = 30.895868
+    float horizontalApertureOffset = 0
+    token projection = "perspective"
+    float verticalAperture = 20.955
+    float verticalApertureOffset = 0
+    matrix4d xformOp:transform = ( (0.669130606358858, 0, 0.7431448254773945, 0), (0.16717121202132743, 0.9743700647852352, -0.15052163539417482, 0), (-0.7240980717452212, 0.224951054343865, 0.6519808322676642, 0), (-60.57280370710935, 18.817777025199142, 54.539997432340414, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Xform "world"
+{
+    def Xform "L1"
+    {
+        def Xform "I1" (
+            instanceable = true
+            add references = </Prototypes/L2>
+        )
+        {
+            matrix4d xformOp:transform:L1 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,-17,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L1"]
+            float primvars:level1 = 0
+        }
+
+        def Xform "I2" (
+            instanceable = true
+            add references = </Prototypes/L2>
+        )
+        {
+            matrix4d xformOp:transform:L1 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L1"]
+            float primvars:level1 = 0.5
+        }
+
+        def Xform "I3" (
+            instanceable = true
+            add references = </Prototypes/L2>
+        )
+        {
+            matrix4d xformOp:transform:L1 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,17,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L1"]
+            float primvars:level1 = 1
+        }
+    }
+}
+
+def Scope "Prototypes"(
+    active = false
+)
+{
+    
+    def Xform "L2"
+    {
+        def Xform "I1" (
+            instanceable = true
+            add references = </Prototypes/L3>
+        )
+        {
+            matrix4d xformOp:transform:L2 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,-17,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L2"]
+            float primvars:level2 = 0
+        }
+
+        def Xform "I2" (
+            instanceable = true
+            add references = </Prototypes/L3>
+        )
+        {
+            matrix4d xformOp:transform:L2 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L2"]
+            float primvars:level2 = 0.5
+        }
+
+        def Xform "I3" (
+            instanceable = true
+            add references = </Prototypes/L3>
+        )
+        {
+            matrix4d xformOp:transform:L2 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,17,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L2"]
+            float primvars:level2 = 1
+        }
+    }
+
+    def Xform "L3"
+    {
+        def Xform "I1" (
+            instanceable = true
+            add references = </Prototypes/L4>
+        )
+        {
+            matrix4d xformOp:transform:L3 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(-17,0,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L3"]
+            float primvars:level3 = 0
+        }
+
+        def Xform "I2" (
+            instanceable = true
+            add references = </Prototypes/L4>
+        )
+        {
+            matrix4d xformOp:transform:L3 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L3"]
+            float primvars:level3 = 0.5
+        }
+
+        def Xform "I3" (
+            instanceable = true
+            add references = </Prototypes/L4>
+        )
+        {
+            matrix4d xformOp:transform:L3 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(17,0,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L3"]
+            float primvars:level3 = 1
+        }
+    }
+    
+    def Xform "L4"
+    {
+        def Xform "I1" (
+            instanceable = true
+            add references = </Prototypes/L5>
+        )
+        {
+            matrix4d xformOp:transform:L4 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,-6,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L4"]
+            float primvars:level4 = 0
+        }
+
+        def Xform "I2" (
+            instanceable = true
+            add references = </Prototypes/L5>
+        )
+        {
+            matrix4d xformOp:transform:L4 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,-3,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L4"]
+            float primvars:level4 = 0.25
+        }
+
+        def Xform "I3" (
+            instanceable = true
+            add references = </Prototypes/L5>
+        )
+        {
+            matrix4d xformOp:transform:L4 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L4"]
+            float primvars:level4 = 0.5
+        }
+
+        def Xform "I4" (
+            instanceable = true
+            add references = </Prototypes/L5>
+        )
+        {
+            matrix4d xformOp:transform:L4 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,3,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L4"]
+            float primvars:level4 = 0.75
+        }
+
+        def Xform "I5" (
+            instanceable = true
+            add references = </Prototypes/L5>
+        )
+        {
+            matrix4d xformOp:transform:L4 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,6,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L4"]
+            float primvars:level4 = 1
+        }
+    }
+
+    def Xform "L5"
+    {
+        def Xform "I1" (
+            instanceable = true
+            add references = </Prototypes/L6>
+        )
+        {
+            matrix4d xformOp:transform:L5 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,-6,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L5"]
+            float primvars:level5 = 0
+        }
+
+        def Xform "I2" (
+            instanceable = true
+            add references = </Prototypes/L6>
+        )
+        {
+            matrix4d xformOp:transform:L5 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,-3,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L5"]
+            float primvars:level5 = 0.25
+        }
+
+        def Xform "I3" (
+            instanceable = true
+            add references = </Prototypes/L6>
+        )
+        {
+            matrix4d xformOp:transform:L5 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L5"]
+            float primvars:level5 = 0.5
+        }
+
+        def Xform "I4" (
+            instanceable = true
+            add references = </Prototypes/L6>
+        )
+        {
+            matrix4d xformOp:transform:L5 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,3,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L5"]
+            float primvars:level5 = 0.75
+        }
+
+        def Xform "I5" (
+            instanceable = true
+            add references = </Prototypes/L6>
+        )
+        {
+            matrix4d xformOp:transform:L5 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,6,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L5"]
+            float primvars:level5 = 1
+        }
+    }
+
+    def Xform "L6"
+    {
+        def Xform "I1" (
+            instanceable = true
+            add references = </Prototypes/Ball>
+        )
+        {
+            matrix4d xformOp:transform:L6 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(-6,0,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L6"]
+            float primvars:level6 = 0
+        }
+
+        def Xform "I2" (
+            instanceable = true
+            add references = </Prototypes/Sphere>
+        )
+        {
+            matrix4d xformOp:transform:L6 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(-3,0,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L6"]
+            float primvars:level6 = 0.25
+        }
+
+
+        def Xform "I3" (
+            instanceable = true
+            add references = </Prototypes/Ball>
+        )
+        {
+            matrix4d xformOp:transform:L6 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L6"]
+            float primvars:level6 = 0.5
+        }
+
+        def Xform "I4" (
+            instanceable = true
+            add references = </Prototypes/Sphere>
+        )
+        {
+            matrix4d xformOp:transform:L6 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(3,0,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L6"]
+            float primvars:level6 = 0.75
+        }
+
+        def Xform "I5" (
+            instanceable = true
+            add references = </Prototypes/Ball>
+        )
+        {
+            matrix4d xformOp:transform:L6 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(6,0,0,1))
+            uniform token[] xformOpOrder = ["xformOp:transform:L6"]
+            float primvars:level6 = 1
+        }
+    }
+
+    def "Ball"
+    {
+        def Sphere "BallGeom"
+        {
+        }
+    }
+
+    def "Sphere"
+    {
+        def Sphere "SphereSphere"
+        {
+        }
+
+        def Cube "SphereCube"
+        {
+            double size = 1.412
+        }
+    }
+}

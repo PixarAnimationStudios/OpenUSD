@@ -276,13 +276,49 @@ ARCH_CONSTRUCTOR(Vt_CastRegistryInit, 255)
     Vt_CastRegistry::GetInstance();
 }
 
-VtValue::VtValue(VtValueRef ref)
+VtValue::VtValue(VtValueRef const &ref)
+{
+    *this = ref.operator VtValue();
+}
+
+VtValue::VtValue(VtValueRef &ref)
+{
+    *this = ref.operator VtValue();
+}
+
+VtValue::VtValue(VtValueRef &&ref)
+{
+    *this = ref.operator VtValue();
+}
+
+VtValue::VtValue(VtValueRef const &&ref)
 {
     *this = ref.operator VtValue();
 }
 
 VtValue &
-VtValue::operator=(VtValueRef ref)
+VtValue::operator=(VtValueRef const &ref)
+{
+    *this = ref.operator VtValue();
+    return *this;
+}
+
+VtValue &
+VtValue::operator=(VtValueRef &ref)
+{
+    *this = ref.operator VtValue();
+    return *this;
+}
+
+VtValue &
+VtValue::operator=(VtValueRef &&ref)
+{
+    *this = ref.operator VtValue();
+    return *this;
+}
+
+VtValue &
+VtValue::operator=(VtValueRef const &&ref)
 {
     *this = ref.operator VtValue();
     return *this;

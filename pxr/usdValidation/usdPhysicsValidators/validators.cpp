@@ -24,7 +24,10 @@
 #include "pxr/usd/usdGeom/capsule_1.h"
 #include "pxr/usd/usdGeom/cylinder.h"
 #include "pxr/usd/usdGeom/cylinder_1.h"
+#include "pxr/usd/usdGeom/plane.h"
 #include "pxr/usd/usdGeom/points.h"
+#include "pxr/usd/usdGeom/primvar.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdPhysics/rigidBodyAPI.h"
 #include "pxr/usd/usdPhysics/massAPI.h"
@@ -359,48 +362,105 @@ _GetColliderErrors(const UsdPrim &usdPrim,
             UsdValidationErrorSite(usdPrim.GetStage(), usdPrim.GetPath())
         };
 
-    if (usdPrim.IsA<UsdGeomSphere>() ||
-        usdPrim.IsA<UsdGeomCapsule>() ||
-        usdPrim.IsA<UsdGeomCapsule_1>() ||
-        usdPrim.IsA<UsdGeomCylinder>() ||
-        usdPrim.IsA<UsdGeomCylinder_1>() ||
-        usdPrim.IsA<UsdGeomCone>() ||
-        usdPrim.IsA<UsdGeomPoints>() )
-    {
-        // non uniform scale check
-        if (!CheckNonUniformScale(usdPrim))
+        if (usdPrim.IsA<UsdGeomPlane>())
         {
-            errors.emplace_back(
-                UsdPhysicsValidationErrorNameTokens->colliderNonUniformScale,
-                UsdValidationErrorType::Error,
-                primErrorSites,
-                TfStringPrintf(
-                    "Non-uniform scale is not supported for %s geometry, prim path: %s",
-                    usdPrim.GetTypeName().GetText(), usdPrim.GetPath().GetText())
-            );
-        }            
-    }
-        if (usdPrim.IsA<UsdGeomPoints>())
-        {
+            UsdPrim bodyPrim;
+            if (HasDynamicBodyParent(usdPrim, &bodyPrim))
             {
-                const UsdGeomPoints shape(usdPrim);
-
-                VtArray<float> widths;
-                VtArray<GfVec3f> positions;
-                shape.GetWidthsAttr().Get(&widths);
-                shape.GetPointsAttr().Get(&positions);
-
-                if (widths.empty() || positions.empty() || widths.size() != positions.size())
+                const UsdPhysicsRigidBodyAPI bodyAPI(bodyPrim);
+                bool isKinematic = false;
+                if (bodyAPI)
+                {
+                    bodyAPI.GetKinematicEnabledAttr().Get(&isKinematic);
+                }
+                if (!isKinematic)
                 {
                     errors.emplace_back(
-                        UsdPhysicsValidationErrorNameTokens->colliderSpherePointsDataMissing,
+                        UsdPhysicsValidationErrorNameTokens->colliderPlaneDynamic,
                         UsdValidationErrorType::Error,
                         primErrorSites,
                         TfStringPrintf(
-                            "UsdGeomPoints width or position array not filled or sizes do not match, prim path: %s",
+                            "UsdGeomPlane collider cannot be attached to a "
+                            "simulated rigid body, prim path: %s",
                             usdPrim.GetPath().GetText())
                     );
                 }
+            }
+        }
+
+        if (usdPrim.IsA<UsdGeomSphere>() ||
+            usdPrim.IsA<UsdGeomCapsule>() ||
+            usdPrim.IsA<UsdGeomCapsule_1>() ||
+            usdPrim.IsA<UsdGeomCylinder>() ||
+            usdPrim.IsA<UsdGeomCylinder_1>() ||
+            usdPrim.IsA<UsdGeomCone>() ||
+            usdPrim.IsA<UsdGeomPoints>() )
+        {
+            // non uniform scale check
+            if (!CheckNonUniformScale(usdPrim))
+            {
+                errors.emplace_back(
+                    UsdPhysicsValidationErrorNameTokens->colliderNonUniformScale,
+                    UsdValidationErrorType::Error,
+                    primErrorSites,
+                    TfStringPrintf(
+                        "Non-uniform scale is not supported for %s geometry, "
+                        "prim path: %s", usdPrim.GetTypeName().GetText(), 
+                        usdPrim.GetPath().GetText())
+                );
+            }            
+        }
+        if (usdPrim.IsA<UsdGeomPoints>())
+        {
+            const UsdGeomPoints shape(usdPrim);
+
+            VtArray<GfVec3f> positions;
+            shape.GetPointsAttr().Get(&positions);
+
+            const UsdGeomPrimvarsAPI primvarsAPI(usdPrim);
+            const UsdGeomPrimvar widthsPrimvar =
+                primvarsAPI.GetPrimvar(UsdGeomTokens->widths);
+
+            size_t widthsCount = 0;
+            std::string widthsSource;
+            if (widthsPrimvar && widthsPrimvar.HasAuthoredValue())
+            {
+                if (widthsPrimvar.IsIndexed())
+                {
+                    VtIntArray indices;
+                    widthsPrimvar.GetIndices(&indices);
+                    widthsCount = indices.size();
+                    widthsSource = "primvars:widths:indices";
+                }
+                else
+                {
+                    VtArray<float> widthsValues;
+                    widthsPrimvar.Get(&widthsValues);
+                    widthsCount = widthsValues.size();
+                    widthsSource = "primvars:widths";
+                }
+            }
+            else
+            {
+                VtArray<float> widthsValues;
+                shape.GetWidthsAttr().Get(&widthsValues);
+                widthsCount = widthsValues.size();
+                widthsSource = "widths";
+            }
+
+            if (widthsCount == 0 || positions.empty() ||
+                widthsCount != positions.size())
+            {
+                errors.emplace_back(
+                    UsdPhysicsValidationErrorNameTokens->colliderSpherePointsDataMissing,
+                    UsdValidationErrorType::Error,
+                    primErrorSites,
+                    TfStringPrintf(
+                        "UsdGeomPoints %s array has %zu elements but points "
+                        "has %zu elements, prim path: %s",
+                        widthsSource.c_str(), widthsCount,
+                        positions.size(), usdPrim.GetPath().GetText())
+                );
             }
         }
 
@@ -486,17 +546,45 @@ SdfPath GetRel(const UsdRelationship& ref)
     return targets.at(0);
 }
 
-bool CheckJointRel(const SdfPath& relPath, const UsdPrim& jointPrim)
+enum class JointRelStatus
 {
-    if (relPath == SdfPath())
-        return true;
+    Valid,
+    Empty,
+    InvalidPrim,
+    NotXformable
+};
+
+JointRelStatus CheckJointRel(const SdfPath& relPath, const UsdPrim& jointPrim)
+{
+    if (relPath == SdfPath()) {
+        return JointRelStatus::Empty;
+    }
 
     const UsdPrim relPrim = jointPrim.GetStage()->GetPrimAtPath(relPath);
     if (!relPrim)
     {
+        return JointRelStatus::InvalidPrim;
+    }
+    if (!relPrim.IsA<UsdGeomXformable>())
+    {
+        return JointRelStatus::NotXformable;
+    }
+    return JointRelStatus::Valid;
+}
+
+bool HasEnabledRigidBody(const SdfPath& relPath, const UsdPrim& jointPrim)
+{
+    if (relPath == SdfPath()) {
         return false;
     }
-    return true;
+
+    const UsdPrim relPrim = jointPrim.GetStage()->GetPrimAtPath(relPath);
+    if (!relPrim) {
+        return false;
+    }
+
+    bool physicsAPIFound = false;
+    return IsDynamicBody(relPrim, &physicsAPIFound);
 }
 
 
@@ -521,9 +609,11 @@ _GetPhysicsJointErrors(const UsdPrim &usdPrim,
             const SdfPath rel0 = GetRel(physicsJoint.GetBody0Rel());
             const SdfPath rel1 = GetRel(physicsJoint.GetBody1Rel());
 
-            // check rel validity
-            if (!CheckJointRel(rel0, usdPrim) || !CheckJointRel(
-                rel1, usdPrim))
+            const JointRelStatus status0 = CheckJointRel(rel0, usdPrim);
+            const JointRelStatus status1 = CheckJointRel(rel1, usdPrim);
+
+            if (status0 == JointRelStatus::InvalidPrim ||
+                status1 == JointRelStatus::InvalidPrim)
             {
                 errors.emplace_back(
                     UsdPhysicsValidationErrorNameTokens->jointInvalidPrimRel,
@@ -532,6 +622,34 @@ _GetPhysicsJointErrors(const UsdPrim &usdPrim,
                     TfStringPrintf(
                         "Joint (%s) body relationship points to a non "
                         "existent prim, joint will not be parsed.",
+                        usdPrim.GetPrimPath().GetText())
+                );
+            }
+
+            if (status0 == JointRelStatus::NotXformable ||
+                status1 == JointRelStatus::NotXformable)
+            {
+                errors.emplace_back(
+                    UsdPhysicsValidationErrorNameTokens->jointRelNotXformable,
+                    UsdValidationErrorType::Error,
+                    primErrorSites,
+                    TfStringPrintf(
+                        "Joint (%s) body relationship must point to an "
+                        "Xformable prim.",
+                        usdPrim.GetPrimPath().GetText())
+                );
+            }
+
+            if (!HasEnabledRigidBody(rel0, usdPrim) &&
+                !HasEnabledRigidBody(rel1, usdPrim))
+            {
+                errors.emplace_back(
+                    UsdPhysicsValidationErrorNameTokens->jointNoEnabledRigidBody,
+                    UsdValidationErrorType::Error,
+                    primErrorSites,
+                    TfStringPrintf(
+                        "Joint (%s) must have at least one body relationship "
+                        "pointing to a prim with an enabled RigidBodyAPI.",
                         usdPrim.GetPrimPath().GetText())
                 );
             }

@@ -11,6 +11,7 @@
 
 
 #include "pxr/pxr.h"
+#include "pxr/base/vt/dictionary.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usdUtils/api.h"
 #include "pxr/usd/usdUtils/dependencies.h"
@@ -44,8 +45,8 @@ public:
     };
 
 public:
-    UsdUtils_LocalizationContext(UsdUtils_LocalizationDelegate* delegate)
-        :_delegate(delegate)
+    UsdUtils_LocalizationContext(UsdUtils_LocalizationClient* client)
+        :_delegate(client)
         {}
 
     // Begins recursive dependency analysis on the supplied layer
@@ -96,28 +97,36 @@ public:
     }
 
 private:
-    void _ProcessLayer(const SdfLayerRefPtr& layer);
-    void _ProcessSublayers(const SdfLayerRefPtr&  layer);
-    void _ProcessMetadata(const SdfLayerRefPtr&  layer,
+    void _ProcessLayer(const SdfLayerRefPtr& layer, 
+                       size_t expressionVariablesIndex);
+    void _ProcessSublayers(const SdfLayerRefPtr& layer,
+                           size_t expressionVariablesIndex);
+    void _ProcessMetadata(const SdfLayerRefPtr& layer,
+                          size_t expressionVariablesIndex,
                           const SdfPrimSpecHandle &primSpec);
-    void _ProcessPayloads(const SdfLayerRefPtr&  layer,
+    void _ProcessPayloads(const SdfLayerRefPtr& layer,
+                          size_t expressionVariablesIndex,
                           const SdfPrimSpecHandle &primSpec);
-    void _ProcessProperties(const SdfLayerRefPtr&  layer,
+    void _ProcessProperties(const SdfLayerRefPtr& layer,
+                            size_t expressionVariablesIndex,
                             const SdfPrimSpecHandle &primSpec);
-    void _ProcessReferences(const SdfLayerRefPtr&  layer,
+    void _ProcessReferences(const SdfLayerRefPtr& layer,
+                            size_t expressionVariablesIndex,
                             const SdfPrimSpecHandle &primSpec);
     bool _ShouldFilterAssetPath(const std::string &key,
                                 bool processingMetadata);
 
-    void _ProcessAssetValue(const SdfLayerRefPtr&  layer, 
-                               const std::string &key,
-                               const VtValue &val,
-                               bool processingMetadata = false,
-                               bool processingDictionary = false);
-    void _ProcessAssetValue(const SdfLayerRefPtr&  layer, 
-                             const VtValue &val,
-                             bool processingMetadata = false,
-                             bool processingDictionary = false);
+    void _ProcessAssetValue(const SdfLayerRefPtr& layer,
+                            size_t expressionVariablesIndex,
+                            const std::string &key,
+                            const VtValue &val,
+                            bool processingMetadata = false,
+                            bool processingDictionary = false);
+    void _ProcessAssetValue(const SdfLayerRefPtr& layer,
+                            size_t expressionVariablesIndex,
+                            const VtValue &val,
+                            bool processingMetadata = false,
+                            bool processingDictionary = false);
 
     // Searches for udim tiles associated with the given asset path.
     std::vector<std::string> _GetUdimTiles(const SdfLayerRefPtr& layer,
@@ -134,17 +143,27 @@ private:
                                                 const std::string &assetPath);
 
     // Enqueues a dependency into the LIFO processing queue
-    void _EnqueueDependency(const SdfLayerRefPtr layer, 
-                           const std::string &assetPath);
+    void _EnqueueDependency(const SdfLayerRefPtr layer,
+                            size_t expressionVariablesIndex,
+                            const std::string &assetPath);
+    void _EnqueueDependency(const SdfLayerRefPtr layer,
+                            size_t expressionVariablesIndex,
+                            const std::string &assetPath,
+                            bool composeExpressionVariables);
     void _EnqueueDependencies(const SdfLayerRefPtr layer,
-                              const std::vector<std::string> &dependencies);
+                              size_t expressionVariablesIndex,
+                              const std::vector<std::string> &dependencies,
+                              bool composeExpressionVariables = false);
 
     // Determines if a value needs to be processed by the delegate. Dictionaries
     // are always considered because they main contain asset path values.
     static bool _ValueTypeIsRelevant(const VtValue &val);
 
+    size_t _ComposeExpressionVariables(size_t parentExpressionVarIndex, 
+                                       const SdfLayerRefPtr& layer);
+
 private:
-    UsdUtils_LocalizationDelegate* _delegate;
+    UsdUtils_LocalizationClient* _delegate;
 
     SdfLayerRefPtr _rootLayer;
 
@@ -153,7 +172,12 @@ private:
     // holds a list of assets that needs to be recursively processed
     // this queue is used in order to preserve the processing order of
     // the previous localization code.
-    std::vector<std::string> _queue;
+    struct QueueItem{
+        std::string anchoredPath;
+        size_t parentExpressionVariablesIndex;
+        bool composeExpressionVariables = false;
+    };
+    std::vector<QueueItem> _queue;
 
     // holds the list of paths that have already been processed
     std::unordered_set<std::string> _encounteredPaths;
@@ -173,6 +197,10 @@ private:
     // user supplied list of dependencies that will be skipped when 
     // processing the asset
     std::unordered_set<std::string> _dependenciesToSkip;
+
+    // tracks the sets of expression variables that are composed during
+    // dependency traversal.
+    std::vector<VtDictionary> _composedExpressionVariables;
 };
 
 void UsdUtils_ExtractExternalReferences(

@@ -1,0 +1,107 @@
+#usda 1.0
+(
+    "This file describes the USD Profiles API schema for declarative capability taxonomy."
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "UsdProfiles"
+        string libraryPath      = "pxr/usd/usdProfiles"
+    }
+)
+{
+}
+
+class "ClaimsAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """UsdClaimsAPI records a prim's profile compatibility claims 
+    and per-capability usage declarations.
+
+    It provides two tiers of data, stored as sub-dictionaries within the
+    prim's \\c profilesInfo metadata dictionary (analogous to \\c assetInfo):
+
+    \\section profiles_capability_usage Capability Usage (DCC-authored)
+
+    The \\em capability usage tier records which USD capabilities this prim
+    actually uses, together with a degradation class for each:
+
+    - \\b hard  — the capability is load-bearing; a consumer that does not
+      support it will produce incorrect results.
+    - \\b soft  — it is acceptable that the prim degrades gracefully if the
+      capability is absent (e.g. although the capability may be absent, an
+      application has a fallback representation).
+    - \\b enhancement — the capability improves quality but its absence is
+      allowable.
+
+    This tier is intended to be written automatically by the DCC tool that
+    saved the prim, or during a tool-based post-process that traverses a stage
+    aggregating capabilities.
+
+    \\section profiles_compatibility Profile Compatibility (pipeline-authored)
+
+    The \\em profile compatibility tier records which named profiles (nodes in
+    the UsdProfileRegistry DAG) this prim is compatible with, together with an
+    optional per-profile exception set listing capabilities that are
+    present but known to be out of compliance. As an example, a low-end mobile
+    profile may be able to display a particular material, but the performance
+    is known to be poor. So, while the prim has a `hard` capability declared,
+    the specific embodiment of that prim fails the profile's constraints.
+    
+    A compatibility claim without exceptions is an unqualified assertion:
+    "this prim satisfies every capability in the profile's transitive closure."
+    A claim with exceptions is an audited, signed degradation declaration:
+    "this prim satisfies the profile except for the listed capabilities, which
+    are present but failing audit."
+
+    This tier is appropriate for publishable deliverables.  It is authored by
+    a pipeline conformance step or when performing a platform-compatibility
+    audit.
+
+    \\section profiles_query Querying Compatibility
+
+    Use \\c IsCompatibleWith() for the common single-profile check.  It calls
+    \\c UsdProfileRegistry::CoversCapabilities() under the hood, passing the
+    stored exception set, and returns the aggregate \\c QueryStatus.
+
+    For bulk access, \\c GetProfilesInfo() / \\c SetProfilesInfo() expose the
+    raw \\c VtDictionary so callers can read or write the full record at once.
+
+    \\section profiles_data_layout Data Layout
+
+    All data lives in the prim-level \\c profilesInfo metadata dictionary:
+
+    \\code
+    profilesInfo = {
+        dictionary capabilityUsages = {
+            string "usd.geom.mesh"    = "hard"
+            string "usd.geom.hairAndFur" = "soft"
+            string "usd.shading.mtlx" = "hard"
+        }
+        dictionary profileCompatibility = {
+            # profile token and list of present capabilities that 
+            # don't pass audit. (may be empty)
+            string[] "profile.studio.vfx.25.08" = []
+            string[] "vnd.apple.visionos_v1"    = ["usd.geom.hairAndFur"]
+        }
+    }
+    \\endcode
+    """
+    customData = {
+        string className = "ClaimsAPI"
+        token apiSchemaType = "singleApply"
+        string extraIncludes = """
+#include "pxr/usd/usdProfiles/profileRegistry.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/base/vt/dictionary.h"
+    """
+    }
+)
+{
+    # UsdClaimsAPI stores all data in the prim-level metadata dictionary
+    # "profilesInfo".  It has no USD properties (attributes or relationships).
+}

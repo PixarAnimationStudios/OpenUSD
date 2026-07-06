@@ -192,20 +192,32 @@ HdxPickFromRenderBufferTask::Execute(HdTaskContext* ctx)
     const GfMatrix4d renderView = _camera->GetTransform().GetInverse();
     const GfMatrix4d renderProj = _ComputeProjectionMatrix();
 
-    // renderBufferXf transforms renderbuffer NDC to integer renderbuffer
+    // ndcToRenderBufferXf transforms renderbuffer NDC to integer renderbuffer
     // indices, assuming (-1,-1) maps to 0,0 and (1,1) maps to w,h.
-    GfMatrix4d renderBufferXf;
-    renderBufferXf.SetScale(
+    GfMatrix4d ndcToRenderBufferXf;
+    if (_params.framing.IsValid()) {
+        // Framing policy may adjust displayWindow, such as due to masking.
+        // Use the framing displayWindow when mapping NDC to account for this.
+        GfVec2f windowSize = _params.framing.displayWindow.GetSize();
+        GfVec2f windowMidp = _params.framing.displayWindow.GetMidpoint();
+        ndcToRenderBufferXf.SetScale(
+            GfVec3d(0.5 * windowSize[0], 0.5 * windowSize[1], 1));
+        ndcToRenderBufferXf.SetTranslateOnly(
+            GfVec3d(windowMidp[0], windowMidp[1], 0));
+    } else {
+        // If no framing policy is provided, assume NDC covers renderbuffer.
+        ndcToRenderBufferXf.SetScale(
             GfVec3d(0.5 * renderBufferSize[0], 0.5 * renderBufferSize[1], 1));
-    renderBufferXf.SetTranslateOnly(
+        ndcToRenderBufferXf.SetTranslateOnly(
             GfVec3d(0.5 * renderBufferSize[0], 0.5 * renderBufferSize[1], 0));
+    }
 
     // Transform the corners of the pick frustum near plane from picking
     // NDC space to main render NDC space to render buffer indices.
     GfMatrix4d pickNdcToRenderBuffer =
         (_contextParams.viewMatrix *
          _contextParams.projectionMatrix).GetInverse() *
-        renderView * renderProj * renderBufferXf;
+        renderView * renderProj * ndcToRenderBufferXf;
 
     // Calculate the ID buffer area of interest: the indices of the pick
     // frustum near plane.

@@ -588,6 +588,11 @@ static void _WriteSplineExtrapolation(
     const char *label,
     const TsExtrapolation &extrap)
 {
+    // Examples:
+    //   pre: linear,
+    //   post: sloped(0.57),
+    //   post: repeat,
+    //   post: repeat(5.1),
     if (extrap == TsExtrapolation()) {
         return;
     }
@@ -597,6 +602,15 @@ static void _WriteSplineExtrapolation(
             label,
             Sdf_FileIOUtility::Stringify(extrap.mode),
             TfStringify(extrap.slope).c_str());
+    } else if (extrap.IsLooping() && extrap.loopBoundaryTime.has_value()) {
+        out.RequestWriteVersionUpgrade(
+            SdfFileVersion(1,3,0),
+            "loopBoundaryTime parameter on spline looping extrapolation"
+            " was detected which requires version 1.3.");
+        Sdf_FileIOUtility::Write(out, indent + 1, "%s: %s(%s),\n",
+            label,
+            Sdf_FileIOUtility::Stringify(extrap.mode),
+            TfStringify(extrap.loopBoundaryTime.value()).c_str());
     } else {
         Sdf_FileIOUtility::Write(out, indent + 1, "%s: %s,\n",
             label,

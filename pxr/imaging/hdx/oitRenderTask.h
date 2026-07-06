@@ -23,7 +23,7 @@ using HdStRenderPassShaderSharedPtr = std::shared_ptr<HdStRenderPassShader>;
 /// A task for rendering transparent geometry into OIT buffers.
 /// Its companion task, OITResolveTask, will blend the buffers to screen.
 ///
-class HdxOitRenderTask : public HdxRenderTask 
+class HdxOitRenderTask : public HdxRenderTask
 {
 public:
     HDX_API
@@ -32,9 +32,12 @@ public:
     HDX_API
     ~HdxOitRenderTask() override;
 
+    HDX_API
+    bool IsConverged() const override;
+
     /// Prepare the tasks resources
     HDX_API
-    void Prepare(HdTaskContext* ctx, 
+    void Prepare(HdTaskContext* ctx,
                  HdRenderIndex* renderIndex) override;
 
     /// Execute render pass task
@@ -53,9 +56,11 @@ private:
     HdxOitRenderTask(const HdxOitRenderTask &) = delete;
     HdxOitRenderTask &operator =(const HdxOitRenderTask &) = delete;
 
-    HdStRenderPassShaderSharedPtr _oitTranslucentRenderPassShader;
-    HdStRenderPassShaderSharedPtr _oitOpaqueRenderPassShader;
+    HdStRenderPassShaderSharedPtr _translucentPassShader;
+    HdStRenderPassShaderSharedPtr _opaquePassShader;
     const bool _isOitEnabled;
+    HdRenderPassStateSharedPtr _translucentPassState;
+    HdRenderPassSharedPtr _translucentPass;
 };
 
 

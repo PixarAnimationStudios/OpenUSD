@@ -356,10 +356,46 @@ Exec_DefinitionRegistry::_GetComputeValueDefinition(
         return expressionDefinition;
     }
 
-    // TODO: If the provider attribute owns exactly one attribute connection,
-    // then the definition of computeValue is a built-in computation that
-    // computes the implicit data flow.
+    // If the provider attribute owns exactly one connection that targets a 
+    // valid attribute, then the definition of 'computeValue' is a built-in 
+    // computation that returns the computed value of the targeted attribute. 
+    // 
+    // If the attribute targeted by the connection is not valid, or if the 
+    // targeted attribute's type does not match the provider's type, then the 
+    // computed value is the resolved value of the provider.
+    //
+    // TODO: Multiple connections and non-attribute targets are not currently 
+    // supported. 
+    const SdfPathVector connectionPaths = 
+        providerAttribute.GetConnections(journal);
+    
+    if (connectionPaths.size() == 1) {
+        const EsfAttribute connectedAttr = 
+            providerAttribute.GetStage()->GetAttributeAtPath(
+                connectionPaths[0], journal);
 
+        if (connectedAttr->IsValid(journal)) {
+            const TfType providerType = 
+                providerAttribute.GetValueTypeName(journal).GetType();
+
+            const TfType connectedType = 
+                connectedAttr->GetValueTypeName(journal).GetType();
+
+            if (providerType == connectedType) { 
+                const auto connectionDefIt = 
+                    _builtinAttributeComputationDefinitions.find(
+                        Exec_PrivateBuiltinComputations->computeConnectedValue);
+                        
+                if (TF_VERIFY(connectionDefIt != 
+                    _builtinAttributeComputationDefinitions.end())) {
+                    
+                    return connectionDefIt->second.get();
+                }
+                return nullptr;
+            }
+        } 
+    }
+    
     // Otherwise, computeResolvedValue is used as the definition of
     // computeValue.
     const auto builtinIt =
@@ -763,6 +799,10 @@ Exec_DefinitionRegistry::_RegisterBuiltinComputations()
     _RegisterBuiltinAttributeComputation(
         ExecBuiltinComputations->computeResolvedValue,
         std::make_unique<Exec_ComputeResolvedValueComputationDefinition>());
+
+    _RegisterBuiltinAttributeComputation(
+        Exec_PrivateBuiltinComputations->computeConnectedValue,
+        std::make_unique<Exec_ComputeConnectedValueComputationDefinition>());
 
     // Object computations
     //

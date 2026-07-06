@@ -3857,9 +3857,8 @@ created to include validators for ancestor schema types (see examples below).
 
 Validators are made available through the **validator registry**. The registry
 lets you query for validators by various metadata filters (name, schema types,
-keywords). Validators can be registered and retrieved dynamically via the 
-OpenUSD plugin infrastructure, supporting complex validation scenarios across 
-different modules or plugins.
+keywords). Validators can be registered via the **OpenUSD plugin infrastructure**
+for lazy loading, or registered directly via the Registry API.
 
 The registry also provides access to **validator suites** which are predefined 
 sets of validators that can be used to create validator contexts (suites cannot 

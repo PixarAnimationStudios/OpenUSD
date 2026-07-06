@@ -14,8 +14,8 @@
 #include "pxr/usd/sdf/predicateExpression.h"
 #include "pxr/usd/sdf/predicateLibrary.h"
 #include "pxr/usd/sdf/predicateProgram.h"
+#include "pxr/usd/sdf/globPattern.h"
 
-#include "pxr/base/arch/regex.h"
 #include "pxr/base/tf/functionRef.h"
 
 #include <string>
@@ -99,12 +99,12 @@ protected:
 
         enum _ComponentType {
             ExplicitName,      // an explicit name (not a glob pattern).
-            Regex              // a glob pattern (handled via regex).
+            Glob               // a glob pattern.
         };
 
         struct _Component {
             _ComponentType type;
-            int patternIndex; // into either _explicitNames or _regexes
+            int patternIndex; // into either _explicitNames or _globPatterns
             int predicateIndex;  // into _predicates or -1 if no predicate.
         };
 
@@ -165,7 +165,7 @@ protected:
         std::vector<_Component> _components;
         std::vector<_Segment> _segments;
         std::vector<std::string> _explicitNames;
-        std::vector<ArchRegex> _regexes;
+        std::vector<Sdf_GlobPattern> _globPatterns;
 
         bool _stretchBegin;
         bool _stretchEnd;

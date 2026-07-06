@@ -38,6 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (applyDrawMode) \
     (drawModeColor) \
     (cardGeometry) \
+    (cardVisibility) \
     (cardTextureXPos) \
     (cardTextureYPos) \
     (cardTextureZPos) \
@@ -52,6 +53,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (cross) \
     (box) \
     (fromTexture) \
+    (simple) \
+    (full) \
 
 TF_DECLARE_PUBLIC_TOKENS(UsdImagingGeomModelSchemaTokens, USDIMAGING_API,
     USD_IMAGING_GEOM_MODEL_SCHEMA_TOKENS);
@@ -59,6 +62,8 @@ TF_DECLARE_PUBLIC_TOKENS(UsdImagingGeomModelSchemaTokens, USDIMAGING_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class UsdImagingGeomModelSchema
+///
 class UsdImagingGeomModelSchema : public HdSchema
 {
 public:
@@ -96,6 +101,9 @@ public:
 
     USDIMAGING_API
     HdTokenDataSourceHandle GetCardGeometry() const;
+
+    USDIMAGING_API
+    HdTokenDataSourceHandle GetCardVisibility() const;
 
     USDIMAGING_API
     HdAssetPathDataSourceHandle GetCardTextureXPos() const;
@@ -163,6 +171,7 @@ public:
         const HdBoolDataSourceHandle &applyDrawMode,
         const HdVec3fDataSourceHandle &drawModeColor,
         const HdTokenDataSourceHandle &cardGeometry,
+        const HdTokenDataSourceHandle &cardVisibility,
         const HdAssetPathDataSourceHandle &cardTextureXPos,
         const HdAssetPathDataSourceHandle &cardTextureYPos,
         const HdAssetPathDataSourceHandle &cardTextureZPos,
@@ -193,6 +202,9 @@ public:
         Builder &SetCardGeometry(
             const HdTokenDataSourceHandle &cardGeometry);
         USDIMAGING_API
+        Builder &SetCardVisibility(
+            const HdTokenDataSourceHandle &cardVisibility);
+        USDIMAGING_API
         Builder &SetCardTextureXPos(
             const HdAssetPathDataSourceHandle &cardTextureXPos);
         USDIMAGING_API
@@ -220,6 +232,7 @@ public:
         HdBoolDataSourceHandle _applyDrawMode;
         HdVec3fDataSourceHandle _drawModeColor;
         HdTokenDataSourceHandle _cardGeometry;
+        HdTokenDataSourceHandle _cardVisibility;
         HdAssetPathDataSourceHandle _cardTextureXPos;
         HdAssetPathDataSourceHandle _cardTextureYPos;
         HdAssetPathDataSourceHandle _cardTextureZPos;
@@ -252,6 +265,17 @@ public:
     USDIMAGING_API
     static HdTokenDataSourceHandle BuildCardGeometryDataSource(
         const TfToken &cardGeometry);
+
+    /// Returns token data source for use as cardVisibility value.
+    ///
+    /// The following values will be stored statically and reused for future
+    /// calls:
+    /// - UsdImagingGeomModelSchemaTokens->inherited
+    /// - UsdImagingGeomModelSchemaTokens->simple
+    /// - UsdImagingGeomModelSchemaTokens->full
+    USDIMAGING_API
+    static HdTokenDataSourceHandle BuildCardVisibilityDataSource(
+        const TfToken &cardVisibility);
 
     /// @}
 };

@@ -1,0 +1,52 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Profiles": {
+                    "Capabilities": {
+                        "usd": {
+                            "docstring": "Root USD capability",
+                            "name": "USD",
+                            "style": "core"
+                        },
+                        "usd.geom": {
+                            "predecessors": ["usd"],
+                            "docstring": "USD geometry schemas",
+                            "name": "USD Geom",
+                            "style": "core"
+                        },
+                        "usd.geom.mesh": {
+                            "predecessors": ["usd.geom"],
+                            "docstring": "Polygonal mesh geometry",
+                            "name": "Polygonal Mesh",
+                            "style": "core"
+                        },
+                        "usd.core.26.03": {
+                            "predecessors": ["usd.geom"],
+                            "docstring": "USD 26.03 release profile",
+                            "name": "USD Core 26.03",
+                            "style": "profile",
+                            "isProfile": true
+                        },
+                        "usd.core.26.11": {
+                            "predecessors": [
+                                "usd.geom.mesh",
+                                {"name": "usd.core.26.03", "deprecated": true}
+                            ],
+                            "docstring": "USD 26.11 release profile",
+                            "name": "USD Core 26.11",
+                            "style": "profile",
+                            "isProfile": true
+                        }
+                    },
+                    "CapabilityStyles": {
+                        "core": "fill:#cce5ff,stroke:#004085",
+                        "profile": "fill:#fff3cd,stroke:#856404"
+                    }
+                }
+            },
+            "Name": "TestIsProfile",
+            "Type": "resource"
+        }
+    ]
+}

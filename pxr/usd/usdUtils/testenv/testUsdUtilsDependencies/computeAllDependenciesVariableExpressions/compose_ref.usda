@@ -1,0 +1,19 @@
+#usda 1.0
+(
+    expressionVariables = {
+        string ATTR = "./attr.txt"
+    }
+
+    defaultPrim = "Attr"
+)
+# The value for ATTR overwrites the INVALID value specified in root
+# due to the fact this layer is referenced in.
+
+def "Attr"
+{
+    asset attr_a = @`"${ATTR}"`@
+
+    # this should evaluate to false and introduce no asset path that would
+    # result in a resolution error.
+    asset attr_b= @`if(${IS_VALID}, "ATTR_TRUE")`@
+}

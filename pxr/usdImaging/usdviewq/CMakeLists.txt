@@ -69,6 +69,10 @@ pxr_library(usdviewq
         usdviewstyle.qss
         validationWidget.py
 
+    PYMODULE_DIRS
+        icons
+        fonts
+
     PYSIDE_UI_FILES
         mainWindowUI.ui
         adjustDefaultMaterialUI.ui
@@ -81,16 +85,6 @@ pxr_library(usdviewq
     DOXYGEN_FILES
         README.md
         blackBoxTesting.md
-)
-
-install(DIRECTORY
-    icons
-    DESTINATION lib/python/pxr/Usdviewq
-)
-
-install(DIRECTORY
-    fonts
-    DESTINATION lib/python/pxr/Usdviewq
 )
 
 pxr_test_scripts(

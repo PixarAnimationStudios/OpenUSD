@@ -24,6 +24,7 @@
 #include <filesystem>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <fcntl.h>
 #include <sys/types.h>
@@ -32,13 +33,16 @@
 #include <functional>
 #include <io.h>
 #include <process.h>
+#include <sys/utime.h>
 #include <Windows.h>
 #include <WinIoCtl.h>
 #else
 #include <alloca.h>
 #include <sys/mman.h>
 #include <sys/file.h>
+#include <sys/time.h>
 #include <unistd.h>
+#include <utime.h>
 #endif
 
 #if defined(ARCH_OS_DARWIN)
@@ -53,11 +57,80 @@ using std::set;
 
 #if defined (ARCH_OS_WINDOWS)
 namespace {
-static inline HANDLE _FileToWinHANDLE(FILE *file)
+static inline HANDLE
+_FileToWinHANDLE(FILE *file)
 {
     return reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(file)));
 }
+
+// Call GetFullPathNameW with automatic buffer resizing.  Returns inPath
+// unchanged on failure.
+std::wstring
+_GetFullPathW(const std::wstring& inPath)
+{
+    std::wstring fullPath(ARCH_PATH_MAX, L'\0');
+    DWORD needed = GetFullPathNameW(
+        inPath.c_str(), fullPath.size(), fullPath.data(), nullptr);
+    while (needed > fullPath.size()) {
+        fullPath.resize(needed, L'\0');
+        needed = GetFullPathNameW(
+            inPath.c_str(), fullPath.size(), fullPath.data(), nullptr);
+    }
+    if (needed == 0) {
+        return inPath;
+    }
+    fullPath.resize(needed);
+    return fullPath;
 }
+
+/// Convert a UTF-8 path to a UTF-16 path suitable for Win32 APIs, prepending
+/// the long path prefix (\\?\) when the path is long enough to require it.
+/// See https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
+std::wstring
+_MakeWinPath(const char *path)
+{
+    std::wstring wpath;
+    if (path == nullptr) {
+        return wpath;
+    }
+
+    // Win32 APIs that take paths generally fail around MAX_PATH (260)
+    // characters.  CreateDirectoryW is even stricter: MAX_PATH minus 12
+    // (space for an 8.3 filename within the directory).  We use the
+    // stricter threshold to decide when to add the \\?\ prefix, which
+    // removes the length limit entirely.
+    static constexpr size_t LongPathThreshold = ARCH_PATH_MAX - 12 - 1;
+    static constexpr wchar_t LongPrefix[] = LR"(\\?\)";
+    static constexpr size_t LongPrefixLen = std::size(LongPrefix) - 1;
+    static constexpr wchar_t UNCPrefix[] = LR"(\\?\UNC\)";
+
+    // Convert to UTF-16.
+    wpath = ArchWindowsUtf8ToUtf16(path);
+
+    // If path is short or it already starts with a long prefix we're done.
+    if (wpath.size() < LongPathThreshold ||
+        wpath.compare(0, LongPrefixLen, LongPrefix) == 0) {
+        return wpath;
+    }
+    
+    // The \\?\ prefix requires an absolute, normalized path with backslash
+    // separators.  _GetFullPathW (calling GetFullPathNameW) provides all of
+    // this: it resolves relative paths against the CWD, normalizes . and ..,
+    // and returns backslash separators.
+    wpath = _GetFullPathW(wpath);
+    if (wpath.size() < LongPathThreshold) {
+        // Normalization shrunk below the threshold -- no prefix needed.
+    } else if (wpath[0] == L'\\' && wpath[1] == L'\\') {
+        // Share paths need the UNC prefix.
+        wpath = UNCPrefix + wpath.substr(2);
+    } else if (wpath[1] == L':' && wpath[2] == L'\\') {
+        // Drive-letter abs paths get the normal long prefix.
+        wpath = LongPrefix + wpath;
+    }
+
+    return wpath;
+}
+} // anon
 #endif // ARCH_OS_WINDOWS
 
 FILE* ArchOpenFile(char const* fileName, char const* mode)
@@ -101,7 +174,7 @@ FILE* ArchOpenFile(char const* fileName, char const* mode)
 
     // Call CreateFileW.
     HANDLE hfile = CreateFileW(
-        ArchWindowsUtf8ToUtf16(fileName).c_str(),
+        _MakeWinPath(fileName).c_str(),
         desiredAccess,
         shareMode,
         /* securityAttributes=*/nullptr,
@@ -118,7 +191,7 @@ FILE* ArchOpenFile(char const* fileName, char const* mode)
     // ownership of hfile to the C runtime file descriptor, so a later _close()
     // is sufficient to clean up.  There's no need to call CloseHandle().
     int osfHandle = _open_osfhandle((intptr_t)hfile, openFlags);
-    if (osfHandle == -1) { 
+    if (osfHandle == -1) {
         CloseHandle(hfile);
         return nullptr;
     }
@@ -137,10 +210,62 @@ FILE* ArchOpenFile(char const* fileName, char const* mode)
 #endif
 }
 
+bool ArchTouchFile(const std::string& fileName, bool create) {
+#if defined(ARCH_OS_WINDOWS)
+    const std::wstring winPath = _MakeWinPath(fileName.c_str());
+#endif
+
+    if (create) {
+#if !defined(ARCH_OS_WINDOWS)
+        // Attempt to create the file so it is readable and writable by user,
+        // group and other.
+        int fd = open(fileName.c_str(),
+            O_WRONLY | O_CREAT | O_NONBLOCK | O_NOCTTY,
+            S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+        if (fd == -1)
+            return false;
+        close(fd);
+#else
+        HANDLE fileHandle =
+                ::CreateFileW(winPath.c_str(),
+                              GENERIC_WRITE,          // open for write
+                              0,                      // not for sharing
+                              NULL,                   // default security
+                              OPEN_ALWAYS,            // opens existing
+                              FILE_ATTRIBUTE_NORMAL,  // normal file
+                              NULL);                  // no template
+
+        if (fileHandle == INVALID_HANDLE_VALUE) {
+            return false;
+        }
+
+        // Close the file
+        ::CloseHandle(fileHandle);
+#endif
+    }
+
+    // Passing NULL to the 'times' argument sets both the atime and mtime to
+    // the current time, with millisecond precision.
+#if defined(ARCH_OS_WINDOWS)
+    return _wutime(winPath.c_str(), /* times */ NULL) == 0;
+#else
+    return utimes(fileName.c_str(), /* times */ NULL) == 0;
+#endif
+
+}
+
+int ArchUnlinkFile(const char* path) {
+#if defined(ARCH_OS_WINDOWS)
+    return _wunlink(_MakeWinPath(path).c_str());
+#else
+    return unlink(path);
+#endif
+}
+
 #if defined(ARCH_OS_WINDOWS)
 int ArchRmDir(const char* path)
 {
-    return RemoveDirectoryW(ArchWindowsUtf8ToUtf16(path).c_str()) ? 0 : -1;
+    return RemoveDirectoryW(_MakeWinPath(path).c_str()) ? 0 : -1;
 }
 #endif
 
@@ -150,7 +275,7 @@ ArchStatIsWritable(const ArchStatType *st)
 #if defined(ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN) || \
     defined(ARCH_OS_WASM_VM)
     if (st) {
-        return (st->st_mode & S_IWOTH) || 
+        return (st->st_mode & S_IWOTH) ||
             ((getegid() == st->st_gid) && (st->st_mode & S_IWGRP)) ||
             ((geteuid() == st->st_uid) && (st->st_mode & S_IWUSR))
             ;
@@ -171,7 +296,7 @@ ArchGetModificationTime(const char* pathname, double* time)
 {
     ArchStatType st;
 #if defined(ARCH_OS_WINDOWS)
-    if (_wstat64(ArchWindowsUtf8ToUtf16(pathname).c_str(), &st) == 0)
+    if (_wstat64(_MakeWinPath(pathname).c_str(), &st) == 0)
 #else
     if (stat(pathname, &st) == 0)
 #endif
@@ -262,7 +387,7 @@ _NormPath(string const &inPath)
     //
     // /foo/../bar
     //  w      [  ]
-    // 
+    //
     // The final token is the regular path Elem 'bar' so we copy it and trim the
     // string to produce the final result '/bar'.
     //
@@ -287,7 +412,7 @@ _NormPath(string const &inPath)
     // Save a reverse iterator at where we start the output, we'll use this when
     // scanning backward to handle DotDot tokens.
     size_t firstWriteIdx = writeIdx;
-    
+
     // Now walk through the string, copying tokens, looking for slashes and dots
     // to handle.
     for (; t.first != inPath.end(); t = _NextToken(t.second, inPath.end())) {
@@ -338,7 +463,7 @@ _NormPath(string const &inPath)
             break;
         };
     }
-    
+
     // Remove a trailing slash if we wrote one.  We're careful to use const
     // iterators here to avoid incurring a string copy if it's not necessary (in
     // the case of libstdc++'s copy-on-write basic_string)
@@ -348,11 +473,11 @@ _NormPath(string const &inPath)
     // Trim the string to length if necessary.
     if (writeIdx != path.size())
         path.erase(writeIdx);
-    
+
     // If the resulting path is empty, return "."
     if (path.empty())
         path.assign(".");
-    
+
     return path;
 }
 } // anon
@@ -394,16 +519,7 @@ ArchAbsPath(const string& path)
     }
 
 #if defined(ARCH_OS_WINDOWS)
-    // @TODO support 32,767 long paths on windows by prepending "\\?\" to the
-    // path
-    wchar_t buffer[ARCH_PATH_MAX];
-    if (GetFullPathNameW(ArchWindowsUtf8ToUtf16(path).c_str(),
-                         ARCH_PATH_MAX, buffer, nullptr)) {
-        return ArchWindowsUtf16ToUtf8(buffer);
-    }
-    else {
-        return path;
-    }
+    return ArchWindowsUtf16ToUtf8(_GetFullPathW(ArchWindowsUtf8ToUtf16(path)));
 #else
     if (path[0] == '/') {
         return ArchNormPath(path);
@@ -419,12 +535,12 @@ ArchAbsPath(const string& path)
 #endif
 }
 
-bool 
+bool
 ArchGetStatMode(const char *pathname, int *mode)
 {
     ArchStatType st;
 #if defined(ARCH_OS_WINDOWS)
-    if (__stat64(pathname, &st) == 0) {
+    if (_wstat64(_MakeWinPath(pathname).c_str(), &st) == 0) {
 #else
     if (stat(pathname, &st) == 0) {
 #endif
@@ -505,9 +621,9 @@ ArchGetFileLength(const char* fileName)
     // Open a handle with 0 as the desired access and full sharing.
     // This opens the file even if exclusively locked.
     HANDLE handle =
-        CreateFileW(ArchWindowsUtf8ToUtf16(fileName).c_str(), 0,
-                   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                   nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        CreateFileW(_MakeWinPath(fileName).c_str(), 0,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (handle) {
         const auto result = _GetFileLength(handle);
         CloseHandle(handle);
@@ -556,12 +672,12 @@ ArchGetFileName(FILE *file)
         // Strip path prefix if necessary.
         // See https://learn.microsoft.com/en-us/dotnet/standard/io/file-path-formats
         // for format of DOS device paths.
-        
+
         auto canonicalPath = std::filesystem::canonical(
             std::filesystem::path(filePath.begin(), filePath.begin() + dwSize));
         result = ArchWindowsUtf16ToUtf8(canonicalPath.wstring());
     }
-    return result;                                        
+    return result;
 #else
 #error Unknown system architecture
 #endif
@@ -611,7 +727,7 @@ MakeUnique(
     (void)init;
 
     std::string attempt;
-    
+
     const auto xsPos = [&]() {
         auto pos = sTemplate.find_last_not_of("X");
         return pos == sTemplate.npos ? pos : pos + 1; // npos or first 'X'.
@@ -619,7 +735,7 @@ MakeUnique(
     if (xsPos == sTemplate.npos) {
         return attempt;
     }
-    
+
     // Fill template with random characters from table.
     const char table[] = "bcdfghjklmnpqrstvwxz0123456789";
     attempt = sTemplate;
@@ -639,26 +755,27 @@ MakeUnique(
 }
 #endif
 
+#define MAKE_TMP_FORMAT "%s" ARCH_PATH_SEP "%s.XXXXXX"
+
 int
 ArchMakeTmpFile(const std::string& tmpdir,
                 const std::string& prefix, std::string* pathname)
 {
     // Format the template.
     std::string sTemplate =
-        ArchStringPrintf("%s/%s.XXXXXX", tmpdir.c_str(), prefix.c_str());
+        ArchStringPrintf(MAKE_TMP_FORMAT, tmpdir.c_str(), prefix.c_str());
 
 #if defined(ARCH_OS_WINDOWS)
     int fd = -1;
     auto cTemplate =
-        MakeUnique(sTemplate, [&fd](const char* name){
-                    _wsopen_s(&fd, ArchWindowsUtf8ToUtf16(name).c_str(),
-                              _O_CREAT | _O_EXCL | _O_RDWR | _O_BINARY,
-                              _SH_DENYNO, _S_IREAD | _S_IWRITE);
+        MakeUnique(sTemplate, [&fd](const char* name) {
+            _wsopen_s(&fd, _MakeWinPath(name).c_str(),
+                      _O_CREAT | _O_EXCL | _O_RDWR | _O_BINARY,
+                      _SH_DENYNO, _S_IREAD | _S_IWRITE);
             return fd != -1;
         });
 #else
     char* cTemplate = sTemplate.data();
-
     // Open the file.
     int fd = mkstemp(cTemplate);
     if (fd != -1) {
@@ -687,13 +804,12 @@ ArchMakeTmpSubdir(const std::string& tmpdir,
 
     // Format the template.
     std::string sTemplate =
-        ArchStringPrintf("%s/%s.XXXXXX", tmpdir.c_str(), prefix.c_str());
+        ArchStringPrintf(MAKE_TMP_FORMAT, tmpdir.c_str(), prefix.c_str());
 
 #if defined(ARCH_OS_WINDOWS)
     retstr =
-        MakeUnique(sTemplate, [](const char* name){
-            return CreateDirectoryW(
-                ArchWindowsUtf8ToUtf16(name).c_str(), NULL) != FALSE;
+        MakeUnique(sTemplate, [](const char* name) {
+            return CreateDirectoryW(_MakeWinPath(name).c_str(), NULL) != FALSE;
         });
 #else
     // Copy template to a writable buffer and open the tmpdir.
@@ -718,21 +834,24 @@ void
 Arch_InitTmpDir()
 {
 #if defined(ARCH_OS_WINDOWS)
-    wchar_t tmpPath[MAX_PATH];
+    std::wstring tmpPath(ARCH_PATH_MAX, L'\0');
 
     // On Windows, let GetTempPath use the standard env vars, not our own.
-    int sizeOfPath = GetTempPathW(MAX_PATH - 1, tmpPath);
-    if (sizeOfPath > MAX_PATH || sizeOfPath == 0) {
+    DWORD sizeOfPath = GetTempPathW(tmpPath.size(), tmpPath.data());
+    while (sizeOfPath > tmpPath.size()) {
+        tmpPath.resize(sizeOfPath, L'\0');
+        sizeOfPath = GetTempPathW(tmpPath.size(), tmpPath.data());
+    }
+    if (sizeOfPath == 0) {
         ARCH_ERROR("Call to GetTempPath failed.");
         _TmpDir = ".";
         return;
     }
 
     // Strip the trailing slash
-    tmpPath[sizeOfPath-1] = 0;
+    tmpPath.resize(sizeOfPath - 1);
     _TmpDir = _strdup(ArchWindowsUtf16ToUtf8(tmpPath).c_str());
 #elif defined(ARCH_OS_DARWIN)
-    // On Apple platforms, we use the system APIs to get the designated temp directory
     _TmpDir = strdup(Arch_DarwinGetTemporaryDirectory());
 #else
     const std::string tmpdir = ArchGetEnv("TMPDIR");
@@ -841,7 +960,7 @@ ArchMapFileReadWrite(FILE *file, std::string *errMsg)
 
 namespace
 {
-    
+
 struct _Fcloser
 {
     void operator()(FILE *f) const
@@ -1023,7 +1142,7 @@ ArchPWrite(FILE *file, void const *bytes, size_t count, int64_t offset)
     // we cap write operations at this limit. Linux already does this
     // internally.
     constexpr int64_t maxChunkSize = INT_MAX;
-    
+
     int64_t signedCount = static_cast<int64_t>(count);
     int64_t chunkSize = std::min(signedCount, maxChunkSize);
     int64_t nwritten = pwrite(fd, bytes, chunkSize, offset);
@@ -1105,8 +1224,8 @@ int ArchWindowsFileAccess(const char* path, uint32_t dwAccessMask)
 {
     // We take the arg as uint32_t to avoid including Windows.h in our .h.
     DWORD accessMask = dwAccessMask;
-    
-    std::wstring wpath{ ArchWindowsUtf8ToUtf16(path) };
+
+    const std::wstring winPath = _MakeWinPath(path);
 
     const SECURITY_INFORMATION securityInfo = OWNER_SECURITY_INFORMATION |
                                               GROUP_SECURITY_INFORMATION |
@@ -1114,7 +1233,7 @@ int ArchWindowsFileAccess(const char* path, uint32_t dwAccessMask)
 
     // Get the SECURITY_DESCRIPTOR size.
     DWORD length = 0;
-    if (!GetFileSecurityW(wpath.c_str(), securityInfo, NULL, 0, &length)) {
+    if (!GetFileSecurityW(winPath.c_str(), securityInfo, NULL, 0, &length)) {
         if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
             return Arch_FileAccessError();
         }
@@ -1124,7 +1243,7 @@ int ArchWindowsFileAccess(const char* path, uint32_t dwAccessMask)
     std::unique_ptr<unsigned char[]> buffer(new unsigned char[length]);
     PSECURITY_DESCRIPTOR security = (PSECURITY_DESCRIPTOR)buffer.get();
     if (!GetFileSecurityW(
-            wpath.c_str(), securityInfo, security, length, &length)) {
+            winPath.c_str(), securityInfo, security, length, &length)) {
         return Arch_FileAccessError();
     }
 
@@ -1186,9 +1305,9 @@ int ArchFileAccess(const char* path, int mode)
 {
     // Simple existence check is handled specially.
     if (mode == F_OK) {
-        std::wstring wpath{ ArchWindowsUtf8ToUtf16(path) };
+        const std::wstring wpath = _MakeWinPath(path);
         return (GetFileAttributesW(wpath.c_str()) != INVALID_FILE_ATTRIBUTES)
-                ? 0 : Arch_FileAccessError();
+            ? 0 : Arch_FileAccessError();
     }
     return ArchWindowsFileAccess(path, ArchModeToAccess(mode));
 }
@@ -1227,11 +1346,11 @@ typedef struct _REPARSE_DATA_BUFFER {
 std::string ArchReadLink(const char* path)
 {
     HANDLE handle = ::CreateFileW(
-        ArchWindowsUtf8ToUtf16(path).c_str(), GENERIC_READ, FILE_SHARE_READ,
+        _MakeWinPath(path).c_str(), GENERIC_READ, FILE_SHARE_READ,
         NULL, OPEN_EXISTING,
         FILE_FLAG_OPEN_REPARSE_POINT |
         FILE_FLAG_BACKUP_SEMANTICS, NULL);
-
+    
     if (handle == INVALID_HANDLE_VALUE)
         return std::string();
 
@@ -1262,9 +1381,7 @@ std::string ArchReadLink(const char* path)
 
             reparsePath.get()[length] = 0;
 
-            // Convert wide-char to narrow char
-            std::wstring ws(reparsePath.get());
-            string str(ws.begin(), ws.end());
+            string str = ArchWindowsUtf16ToUtf8(reparsePath.get());
 
             // Symlinks can be absolute, or relative to the parent directory.
             // Deal with the relative case here by prepending the parent path.
@@ -1296,9 +1413,7 @@ std::string ArchReadLink(const char* path)
 
             reparsePath.get()[length] = 0;
 
-            // Convert wide-char to narrow char
-            std::wstring ws(reparsePath.get());
-            string str(ws.begin(), ws.end());
+            string str = ArchWindowsUtf16ToUtf8(reparsePath.get());
 
             // Mount point paths starting with \?? are NT Object Manager paths
             // and cannot be used as file paths, so disable converting the path

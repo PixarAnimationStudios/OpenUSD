@@ -62,13 +62,13 @@ void wrapUsdTimeCode()
 {
     scope s = class_<UsdTimeCode>("TimeCode")
         .def(init<double>())
-        .def(init<SdfTimeCode>())
+        .def(init<GfTimeCode>())
         .def(init<UsdTimeCode>())
 
         .def("PreTime", static_cast<UsdTimeCode(*)(double)>(
             &UsdTimeCode::PreTime), (arg("value")))
-        .def("PreTime", static_cast<UsdTimeCode(*)(const SdfTimeCode&)>(
-            &UsdTimeCode::PreTime), (arg("sdfTimeCode")))
+        .def("PreTime", static_cast<UsdTimeCode(*)(const GfTimeCode&)>(
+            &UsdTimeCode::PreTime), (arg("timeCode")))
         .staticmethod("PreTime")
 
         .def("EarliestTime", &UsdTimeCode::EarliestTime)
@@ -115,5 +115,5 @@ void wrapUsdTimeCode()
     TF_PY_WRAP_PUBLIC_TOKENS("Tokens", UsdTimeCodeTokens, USD_TIME_CODE_TOKENS);
 
     implicitly_convertible<double, UsdTimeCode>();
-    implicitly_convertible<SdfTimeCode, UsdTimeCode>();
+    implicitly_convertible<GfTimeCode, UsdTimeCode>();
 }

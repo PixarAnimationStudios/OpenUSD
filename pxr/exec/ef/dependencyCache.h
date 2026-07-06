@@ -151,7 +151,7 @@ private:
         }
 
         void Invalidate() {
-            valid.store(std::memory_order_relaxed);
+            valid.store(false, std::memory_order_relaxed);
         }
 
         // The resulting output dependencies.

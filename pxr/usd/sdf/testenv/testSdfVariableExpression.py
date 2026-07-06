@@ -570,6 +570,69 @@ class TestSdfVariableExpression(unittest.TestCase):
         self.assertEvaluationErrors(
             "`not(None)`", {}, ["not: Invalid type None for argument"])
 
+    def test_MatchesRegex(self):
+        """Tests matches_regex function and error conditions"""
+
+        # Test basic matching patterns
+        self.assertEvaluates(
+            "`matches_regex(${S}, 'shot_[[:digit:]]\{2\}\.usd')`", 
+            {'S' : "shot_10.usd"}, True)
+        self.assertEvaluates(
+            "`matches_regex(${S}, 'shot_[[:digit:]]\{2\}\.usd')`", 
+            {'S' : "Shot_10.usd"}, False)
+        self.assertEvaluates(
+            "`matches_regex(${S}, 'shot_[AB]\.usd[ac]')`", 
+            {'S' : "shot_A.usdc"}, True)
+        self.assertEvaluates(
+            "`matches_regex(${S}, 'shot_[AB]\.usd[ac]')`", 
+            {'S' : "shot_B.usda"}, True)
+        self.assertEvaluates(
+            "`matches_regex(${S}, 'shot_[AB]\.usd')`", 
+            {'S' : "shot_C.usd"}, False)
+        self.assertEvaluates(
+            "`matches_regex(${S}, 'shot_[A-Z]\.usd')`", 
+            {'S' : "shot_B.usd"}, True)
+        self.assertEvaluates(
+            "`matches_regex(${S}, 'shot_[A-Z]\.usd')`", 
+            {'S' : "shot_b.usd"}, False)
+        
+        self.assertEvaluates(
+            "`matches_regex(${S}, 'shot_[1-9]+\.usd?')`", 
+            {'S' : "shot_17.usda"}, True)
+        self.assertEvaluates(
+            "`matches_regex(${S}, 'shot_[1-9]+\.usd?')`", 
+            {'S' : "shot_09.usda"}, False)
+        
+        # Simulating startswith / endswith
+        self.assertEvaluates(
+            "`matches_regex(${S}, '^shot.*')`", 
+            {'S' : "shot_101_final.usd"}, True)
+        self.assertEvaluates(
+            "`matches_regex(${S}, '.*final.usd$')`", 
+            {'S' : "shot_101_final.usd"}, True)
+        
+        # Test list matching patterns
+        self.assertEvaluates(
+            "`matches_regex([${A}, ${B}], 'layer.*')`", 
+            {'A':'shot1.usd', 'B':'layer1.usd'}, 
+            True)
+        
+        self.assertEvaluates(
+            "`matches_regex([${A}, ${B}], 'layer.*')`", 
+            {'A':'shot1.usd', 'B':'shot2.usd'}, 
+            False)
+        
+        # Test error states
+        self.assertEvaluationErrors(
+            "`matches_regex(1, 'a')`", {},
+            ["matches_regex: Value to search must be string[] or string"])
+        self.assertEvaluationErrors(
+            "`matches_regex('shot1', 7)`", {},
+            ["matches_regex: Pattern to match must be a string"])
+        self.assertEvaluationErrors(
+            "`matches_regex(['shot1', 'shot2'], 7)`", {},
+            ["matches_regex: Pattern to match must be a string"])
+
     def test_Contains(self):
         """Test contains function."""
         # Test searching in lists.

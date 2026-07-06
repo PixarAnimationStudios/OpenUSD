@@ -21,9 +21,6 @@ namespace SdfPathPatternParser {
 
 using namespace PXR_PEGTL_NAMESPACE;
 
-template <class Rule, class Sep>
-using LookaheadList = seq<Rule, star<at<Sep, Rule>, Sep, Rule>>;
-
 template <class Rule> using OptSpaced = pad<Rule, blank>;
 
 ////////////////////////////////////////////////////////////////////////
@@ -31,22 +28,28 @@ template <class Rule> using OptSpaced = pad<Rule, blank>;
 struct PathPatStretch : two<'/'> {};
 struct PathPatSep : sor<PathPatStretch, one<'/'>> {};
 
+// Named close rules so the Errors class can attach targeted messages.
+struct PredExprClose     : one<'}'> {};
+struct BracketClassClose : one<']'> {};
+
+// '{' commits to requiring a predicate expression and a closing '}'.
+// PredExprClose is named so the Errors class can target it specifically.
 struct BracedPredExpr
     : if_must<one<'{'>,
               OptSpaced<SdfPredicateExpressionParser::PredExpr>,
-              one<'}'>> {};
+              PredExprClose> {};
+
+// '[' commits to requiring valid content and a closing ']'.
+struct BracketClass :
+    if_must<one<'['>,
+            plus<sor<identifier_other, one<'!','-','?','*'>>>,
+            BracketClassClose> {};
 
 struct PrimPathWildCard :
-    seq<
-    plus<sor<identifier_other, one<'?','*'>>>,
-    opt<one<'['>,plus<sor<identifier_other, one<'[',']','!','-','?','*'>>>>
-    > {};
+    plus<sor<BracketClass, identifier_other, one<'?','*'>>> {};
 
 struct PropPathWildCard :
-    seq<
-    plus<sor<identifier_other, one<':','?','*'>>>,
-    opt<one<'['>,plus<sor<identifier_other, one<':','[',']','!','-','?','*'>>>>
-    > {};
+    plus<sor<BracketClass, identifier_other, one<':','?','*'>>> {};
 
 struct PrimPathPatternElemText : PrimPathWildCard {};
 struct PropPathPatternElemText : PropPathWildCard {};
@@ -59,27 +62,82 @@ struct PropPathPatternElem
     : if_then_else<PropPathPatternElemText, opt<BracedPredExpr>,
                    BracedPredExpr> {};
 
+// A single '/' that is not the start of '//'. Used as a commitment point:
+// once matched, a path pattern element is unconditionally required.
+struct PatSepSlash : seq<one<'/'>, not_at<one<'/'>>> {};
+
+// PatSepSlash commits to requiring a following prim pattern element.
+struct PrimPatStep : if_must<PatSepSlash, PrimPathPatternElem> {};
+
+// '//' as separator, but only when a prim element immediately follows.
+// Trailing '//' without a following element falls through to
+// opt<PathPatStretch> at the end of PathPatternElems.  Note: the lookahead
+// parses PathPatStretch+PrimPathPatternElem twice; acceptable given the bounded
+// syntax involved.
+struct StretchStep : seq<
+    at<seq<PathPatStretch, PrimPathPatternElem>>,
+    PathPatStretch,
+    PrimPathPatternElem> {};
+
 struct PathPatternElems
-    : seq<LookaheadList<PrimPathPatternElem, PathPatSep>,
+    : seq<PrimPathPatternElem,
+          star<sor<StretchStep, PrimPatStep>>,
           if_must_else<one<'.'>, PropPathPatternElem, opt<PathPatStretch>>> {};
 
 struct AbsPathPattern : seq<PathPatSep, opt<PathPatternElems>> {};
 
-struct DotDot : two<'.'> {};
+struct DotDot  : two<'.'> {};
 struct DotDots : list<DotDot, one<'/'>> {};
 
 struct ReflexiveRelative : one<'.'> {};
 
 struct AbsoluteStart : at<one<'/'>> {};
 
+// After DotDots, single '/' commits to requiring pattern elements.  '//'
+// retains optional-elements behavior since a bare '..//' (stretch from ancestor
+// context) is a valid pattern with no following elements.
+struct DotDotsStep        : if_must<PatSepSlash, PathPatternElems> {};
+struct DotDotsStretchTail : seq<PathPatStretch, opt<PathPatternElems>> {};
+
 struct PathPattern :
     sor<
     if_must<AbsoluteStart, AbsPathPattern>,
-    seq<DotDots, if_then_else<PathPatSep, opt<PathPatternElems>, success>>,
+    seq<DotDots, opt<sor<DotDotsStretchTail, DotDotsStep>>>,
     PathPatternElems,
     seq<ReflexiveRelative, opt<PathPatStretch, opt<PathPatternElems>>>
     >
 {};
+
+////////////////////////////////////////////////////////////////////////
+// Errors.
+//
+// Inherits from SdfPredicateExpressionParser::Errors so predicate rule errors
+// propagate automatically without re-listing them here. Only
+// path-pattern-specific rules need PARSE_ERROR entries.
+//
+// The struct-override macro is used (rather than a message pointer) because the
+// derived Errors class has no message member of its own -- it uses the base's
+// raise() for inherited rules and overrides raise() directly for local ones.
+
+template <class Rule>
+struct Errors : SdfPredicateExpressionParser::Errors<Rule> {};
+
+#define PARSE_ERROR(rule, msg)                                              \
+    template <> struct Errors<rule>                                         \
+        : SdfPredicateExpressionParser::Errors<rule> {                      \
+        template <class Input, class... States>                             \
+        [[noreturn]] static void raise(Input const &in, States &&...) {     \
+            throw parse_error(msg, in);                                     \
+        }                                                                   \
+    }
+
+PARSE_ERROR(PrimPathPatternElem, "expected path pattern element");
+PARSE_ERROR(PathPatternElems,    "expected path pattern element after '/'");
+PARSE_ERROR(PropPathPatternElem, "expected property pattern element after '.'");
+PARSE_ERROR(PredExprClose,       "expected '}' to close predicate expression");
+PARSE_ERROR(BracketClassClose,   "expected ']' to close bracket class");
+
+#undef PARSE_ERROR
 
 } // SdfPathPatternParser
 
@@ -204,4 +262,3 @@ struct PathPatternAction<DotDot>
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_SDF_PATH_PATTERN_PARSER_H
-

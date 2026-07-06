@@ -5,7 +5,7 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 
-from pxr import Sdf, Usd, UsdMedia
+from pxr import Gf, Sdf, Usd, UsdMedia
 import unittest, math
 
 class TestUsdMediaSpatialAudio(unittest.TestCase):
@@ -24,21 +24,21 @@ class TestUsdMediaSpatialAudio(unittest.TestCase):
         refs.AddReference(refLayer.identifier, Sdf.Path("/RefAudio"), 
                           layerOffset=Sdf.LayerOffset(scale=2.0, offset=10.0))
 
-        self.assertEqual(refAudio.GetStartTimeAttr().Get(), Sdf.TimeCode(0))
-        self.assertEqual(refAudio.GetEndTimeAttr().Get(), Sdf.TimeCode(0))
+        self.assertEqual(refAudio.GetStartTimeAttr().Get(), Gf.TimeCode(0))
+        self.assertEqual(refAudio.GetEndTimeAttr().Get(), Gf.TimeCode(0))
         self.assertEqual(refAudio.GetMediaOffsetAttr().Get(), 0.0)
-        self.assertEqual(audio.GetStartTimeAttr().Get(), Sdf.TimeCode(0))
-        self.assertEqual(audio.GetEndTimeAttr().Get(), Sdf.TimeCode(0))
+        self.assertEqual(audio.GetStartTimeAttr().Get(), Gf.TimeCode(0))
+        self.assertEqual(audio.GetEndTimeAttr().Get(), Gf.TimeCode(0))
         self.assertEqual(audio.GetMediaOffsetAttr().Get(), 0)
 
-        refAudio.CreateStartTimeAttr().Set(Sdf.TimeCode(10.0))
-        refAudio.CreateEndTimeAttr().Set(Sdf.TimeCode(200.0))
+        refAudio.CreateStartTimeAttr().Set(Gf.TimeCode(10.0))
+        refAudio.CreateEndTimeAttr().Set(Gf.TimeCode(200.0))
         refAudio.CreateMediaOffsetAttr().Set(5.0)
-        self.assertEqual(refAudio.GetStartTimeAttr().Get(), Sdf.TimeCode(10))
-        self.assertEqual(refAudio.GetEndTimeAttr().Get(), Sdf.TimeCode(200))
+        self.assertEqual(refAudio.GetStartTimeAttr().Get(), Gf.TimeCode(10))
+        self.assertEqual(refAudio.GetEndTimeAttr().Get(), Gf.TimeCode(200))
         self.assertEqual(refAudio.GetMediaOffsetAttr().Get(), 5.0)
-        self.assertEqual(audio.GetStartTimeAttr().Get(), Sdf.TimeCode(30))
-        self.assertEqual(audio.GetEndTimeAttr().Get(), Sdf.TimeCode(410))
+        self.assertEqual(audio.GetStartTimeAttr().Get(), Gf.TimeCode(30))
+        self.assertEqual(audio.GetEndTimeAttr().Get(), Gf.TimeCode(410))
         self.assertEqual(audio.GetMediaOffsetAttr().Get(), 5.0)
 
 if __name__ == '__main__':

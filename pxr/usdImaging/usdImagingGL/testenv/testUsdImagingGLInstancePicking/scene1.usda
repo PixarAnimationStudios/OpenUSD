@@ -1,0 +1,135 @@
+#usda 1.0
+(
+    startTimeCode = 1
+    endTimeCode = 10
+)
+
+def Xform "NoInstancing"
+{
+    def Xform "RedModel"
+    {
+        def Cube "RedCube"
+        {
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+    }
+
+    double3 xformOp:translate = (-10, 5, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "PiInstancing"
+{
+    def Xform "PointInstancerModel"
+    {
+        def PointInstancer "PointInstancer"
+        {
+            rel prototypes = [</NoInstancing/RedModel>,
+                              </PiInstancing/PointInstancerModel/PointInstancer/GreenPrototype> ]
+            int[] protoIndices = [ 0, 1, 0 ]
+            point3f[] positions = [ (-3, 0, 0), (0, 0, 0), (3, 0, 0) ]
+
+            def Xform "GreenPrototype"
+            {
+                def Cube "GreenCube"
+                {
+                    color3f[] primvars:displayColor = [(0, 1, 0)]
+                }
+            }
+        }
+    }
+
+    double3 xformOp:translate = (-1, 5, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "PiPiInstancing"
+{
+    def Xform "PointInstancerModel"
+    {
+        def PointInstancer "PointInstancer"
+        {
+            rel prototypes = [</NoInstancing/RedModel>,
+                              </PiInstancing/PointInstancerModel>]
+            int[] protoIndices = [ 0, 0, 1 ]
+            point3f[] positions = [ (0, 3, 0), (0, 0, 0), (0, -4, 0) ]
+        }
+    }
+
+    double3 xformOp:translate = (10, 5, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "PiPiModel" (
+    active = false
+)
+{
+    def PointInstancer "PointInstancer"
+    {
+        rel prototypes = [</PiPiModel/PointInstancer/PointInstancer>]
+        int[] protoIndices = [ 0, 0 ]
+        point3f[] positions = [ (0, 1.5, 0), (0, -1.5, 0) ]
+
+        def PointInstancer "PointInstancer"
+        {
+            rel prototypes = [</PiPiModel/PointInstancer/PointInstancer/BlueCube>]
+            int[] protoIndices = [ 0, 0, 0 ]
+            point3f[] positions = [ (-3, 0, 0), (0, 0, 0), (3, 0, 0) ]
+
+            def Cube "BlueCube"
+            {
+                color3f[] primvars:displayColor = [(0, 0, 1)]
+            }
+        }
+    }
+}
+
+def Xform "NiPiPiInstancing"
+{
+    def "Instance0" (
+        active = true
+        instanceable = true
+        references = </PiPiModel>)
+    {
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def "Instance1" (
+        active = true
+        instanceable = true
+        references = </PiPiModel>)
+    {
+        double3 xformOp:translate = (11, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    double3 xformOp:translate = (-7, -5, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Camera "main_cam"
+{
+    double3 xformOp:translate = (0, 0, 70)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Camera "pick_cam"
+{
+    float2 clippingRange = (1, 20)
+    float focalLength = 90
+    uniform token guideVisibility = "visible"
+    double3 xformOp:translate.timeSamples = {
+        1 : (-10, 5, 18),
+        2 : (-5, 5, 18),
+        3 : (-3, 5, 18),
+        4 : (3, 5, 18),
+        5 : (10,5,18),
+        6 : (6,1,18),
+        7 : (12,1,18),
+        8 : (-11,-7,18),
+        9 : (-3,-3,18),
+        10 : (0,-3,18)
+    }
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}

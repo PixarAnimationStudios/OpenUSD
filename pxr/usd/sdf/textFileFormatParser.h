@@ -788,10 +788,30 @@ struct SplineCurveTypeItem : PEGTL_NS::sor<
     KeywordBezier> {};
 
 struct SlopeValue : Number {};
+struct LoopBoundaryTime : Number {};
+
+// SplineExtrapLoopWithoutBoundary = LOOP TokenSeparator
+// REPEAT / RESET / OSCILLATE
+struct SplineExtrapLoopWithoutBoundary : PEGTL_NS::seq<
+    KeywordLoop,
+    TokenSeparator,
+    PEGTL_NS::sor<KeywordRepeat, KeywordReset, KeywordOscillate>> {};
+
+// SplineExtrapLoopWithBoundary = LOOP TokenSeparator
+// REPEAT / RESET / OSCILLATE
+// (InlinePadding)* '(' (InlinePadding)* LoopBoundaryTime (InlinePadding)* ')'
+struct SplineExtrapLoopWithBoundary : PEGTL_NS::seq<
+    KeywordLoop,
+    TokenSeparator,
+    PEGTL_NS::sor<KeywordRepeat, KeywordReset, KeywordOscillate>,
+    PEGTL_NS::pad<LeftParen, InlinePadding>,
+    PEGTL_NS::pad<LoopBoundaryTime, InlinePadding>,
+    RightParen> {};
+
 // SplineExtrapolationType = NONE / HELD / LINEAR /
 // SLOPED (InlinePadding)* '(' (InlinePadding)* SlopeValue (InlinePadding)* ')' /
-// LOOP TokenSeparator REPEAT / LOOP TokenSeparator RESET / LOOP
-// TokenSeparator OSCILLATE
+// SplineExtrapLoopWithBoundary /
+// SplineExtrapLoopWithoutBoundary
 struct SplineExtrapolationType : PEGTL_NS::sor<
     KeywordNone_LC,
     KeywordHeld,
@@ -800,9 +820,8 @@ struct SplineExtrapolationType : PEGTL_NS::sor<
                   PEGTL_NS::pad<LeftParen, InlinePadding>, 
                   PEGTL_NS::pad<SlopeValue, InlinePadding>, 
                   RightParen>,
-    PEGTL_NS::seq<KeywordLoop, TokenSeparator, KeywordRepeat>,
-    PEGTL_NS::seq<KeywordLoop, TokenSeparator, KeywordReset>,
-    PEGTL_NS::seq<KeywordLoop, TokenSeparator, KeywordOscillate>> {};
+    SplineExtrapLoopWithBoundary,
+    SplineExtrapLoopWithoutBoundary> {};
 
 // SplinePreExtrapItem = pre (TokenSeparator)? Colon (TokenSeparator)? 
 // SplineExtrapolationType

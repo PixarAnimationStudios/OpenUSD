@@ -14,6 +14,7 @@
 #include "pxr/usd/usdUtils/assetLocalizationDelegate.h"
 
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 /// \file usdUtils/assetLocalizationPackage.h
@@ -30,21 +31,21 @@ public:
     // subsequent call to Remap.
     std::string Remap(const std::string& filePath);
 
+    // Returns true if the supplied path is a remapped path.
+    bool PathIsRemapped(const std::string &path) {
+        return _remappedDirectories.count(path) > 0;
+    }
+
 private:
     size_t _nextDirectoryNum;
     std::unordered_map<std::string, std::string> _oldToNewDirectory;
+    std::unordered_set<std::string> _remappedDirectories;
 };
 
-class UsdUtils_AssetLocalizationPackage
+class UsdUtils_AssetLocalizationPackage : 
+    public UsdUtils_WritableLocalizationClient
 {
 public:
-    UsdUtils_AssetLocalizationPackage()
-    : _delegate(std::bind(
-            &UsdUtils_AssetLocalizationPackage::_ProcessDependency, this, 
-            std::placeholders::_1, std::placeholders::_2, 
-            std::placeholders::_3))
-    {}
-
     // Sets the original file path for this asset.
     // The path specified should be resolved by AR.
     inline void SetOriginalRootFilePath(const std::string &origRootFilePath)
@@ -58,12 +59,6 @@ public:
         const std::vector<std::string> &dependenciesToSkip) 
     {
         _dependenciesToSkip = dependenciesToSkip;
-    }
-
-    // Controls whether layers are edited in place
-    // Refer to UsdUtils_WritableLocalizationDelegate::SetEditLayersInPlace
-    inline void SetEditLayersInPlace(bool editLayersInPlace) {
-        _delegate.SetEditLayersInPlace(editLayersInPlace);
     }
 
     // Sets the optional user processing function that will be invoked before
@@ -88,6 +83,8 @@ public:
         return _directoryRemapper.Remap(path);
     }
 
+    bool PathShouldResolve(const std::string &path) override;
+
 protected:
     virtual 
     std::string  _RemapAssetPath(
@@ -99,6 +96,12 @@ protected:
     bool _WriteToPackage(
         const std::string& source,
         const std::string& dest) = 0;
+
+protected:
+    UsdUtilsDependencyInfo _ProcessDependency( 
+        const SdfLayerRefPtr &layer, 
+        const UsdUtilsDependencyInfo &dependencyInfo,
+        UsdUtils_DependencyType dependencyType) override;
 
 private:
     std::string _ProcessAssetPath(
@@ -118,11 +121,6 @@ private:
         const std::string &srcPath,
         const std::string &destPath);
 
-    UsdUtilsDependencyInfo _ProcessDependency( 
-        const SdfLayerRefPtr &layer, 
-        const UsdUtilsDependencyInfo &dependencyInfo,
-        UsdUtils_DependencyType dependencyType);
-
     UsdUtilsDependencyInfo _AddDependenciesToPackage( 
         const SdfLayerRefPtr &layer, 
         const UsdUtilsDependencyInfo &depInfo);
@@ -141,8 +139,6 @@ private:
 
     // The original root file path...used for ARkit packages
     std::string _origRootFilePath;
-
-    UsdUtils_WritableLocalizationDelegate _delegate;
 
     std::string _packagePath;
 

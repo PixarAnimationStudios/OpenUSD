@@ -20,6 +20,7 @@
 #include "pxr/base/work/loops.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
+#include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/stage.h"
 
@@ -385,23 +386,13 @@ EsfUsdStageData::_UpdateForResync(
     else {
         TRACE_FUNCTION_SCOPE("Update for valid prim");
 
-        // Update for the resynced prim.
+        // Update for the namespace subtree rooted at the resynced prim.
         dispatcher.Run(
             [this, &resyncedPrim, &incomingToRemove, incomingConnectionsChanged]
         {
-            TRACE_SCOPE("Update for resynced prim");
+            TRACE_SCOPE("Update for resynced namespace subtree");
 
-            _UpdateForChangedPrim(
-                resyncedPrim, &incomingToRemove, incomingConnectionsChanged);
-        });
-
-        // Update for all descendants of the resynced prim.
-        dispatcher.Run(
-            [this, &resyncedPrim, &incomingToRemove, incomingConnectionsChanged]
-        {
-            TRACE_SCOPE("Update for resynced prim descendants");
-
-            const auto range = resyncedPrim.GetDescendants();
+            const auto range = UsdPrimRange(resyncedPrim);
             WorkParallelForEach(
                 range.begin(), range.end(),
                 [this, &incomingToRemove, incomingConnectionsChanged]

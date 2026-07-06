@@ -12,9 +12,64 @@
 #include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/primSpec.h"
+#include "pxr/usd/sdf/variableExpression.h"
 #include "pxr/usd/usd/clipsAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// Evaluates any variable expressions in a path. This function should be called
+// before paths are passed to any processing functions.  If this function
+// returns an empty string, it signals to the delegate that the path should be
+// skipped for further processing.
+std::string 
+UsdUtils_EvaluateVariableExpressionInPath(
+    const VtDictionary &expressionVariables,
+    const std::string &path)
+{
+    if (!SdfVariableExpression::IsExpression(path)) {
+        return path;
+    }
+
+    SdfVariableExpression expression(path);
+
+    const std::vector<std::string>& parseErrors = 
+        expression.GetErrors();
+    if (!parseErrors.empty()) {
+        TF_WARN("Failed to parse variable expression '%s': %s",
+            path.c_str(), TfStringJoin(parseErrors, ", ").c_str());
+
+        return {};
+    }
+
+    SdfVariableExpression::Result result = 
+        expression.EvaluateTyped<std::string>(expressionVariables);
+
+    if (!result.errors.empty()) {
+        TF_WARN("Failed to evaluate variable expression '%s': %s",
+            path.c_str(), TfStringJoin(result.errors, ", ").c_str());
+
+        return {};
+    }
+
+    // The expression evaluated to None, this is not an error, and we should
+    // return an empty string so the path is skipped.
+    if (result.value.IsEmpty()) {
+        return {};
+    }
+
+    return result.value.UncheckedGet<std::string>();
+}
+
+UsdUtilsDependencyInfo 
+UsdUtils_LocalizationClient::_CreateUsdUtilsDependencyInfo(
+        const std::string &assetPath,
+        const std::vector<std::string> &dependencies,
+        const std::string &rawAssetPath,
+        const VtDictionary *expressionVariables)
+{
+    return UsdUtilsDependencyInfo(
+        assetPath, dependencies, rawAssetPath, expressionVariables);
+}
 
 static
 std::vector<std::string> 
@@ -31,7 +86,7 @@ _AllDependenciesForInfo(
 }
 
 UsdUtilsDependencyInfo 
-UsdUtils_ProcessedPathCache::GetProcessedInfo(
+UsdUtils_CachedPathLocalizationClient::GetProcessedInfo(
     const SdfLayerRefPtr &layer, 
     const UsdUtilsDependencyInfo &dependencyInfo,
     UsdUtils_DependencyType dependencyType)
@@ -40,7 +95,7 @@ UsdUtils_ProcessedPathCache::GetProcessedInfo(
         std::make_tuple(layer->GetRealPath(), dependencyInfo.GetAssetPath());
     auto result = _cachedPaths.find(depKey);
     if (result == _cachedPaths.end()) {
-        UsdUtilsDependencyInfo depInfo = _processingFunc(
+        UsdUtilsDependencyInfo depInfo = _ProcessDependency(
             layer, dependencyInfo, dependencyType);
 
         _cachedPaths.insert(std::make_pair(depKey, depInfo.GetAssetPath()));
@@ -55,15 +110,24 @@ UsdUtils_ProcessedPathCache::GetProcessedInfo(
 // Processes sublayer paths, removing duplicates and only updates the paths in
 // the writable layer if the processed list differs from the source list.
 std::vector<std::string> 
-UsdUtils_WritableLocalizationDelegate::ProcessSublayers(
-    const SdfLayerRefPtr &layer)
+UsdUtils_WritableLocalizationClient::ProcessSublayers(
+    const SdfLayerRefPtr &layer,
+    const VtDictionary &expressionVariables)
 {
     SdfSubLayerProxy sublayerPaths = layer->GetSubLayerPaths();
     std::vector<std::string> processedPaths, dependencies;
 
     for (const std::string& sublayerPath : sublayerPaths) {
-        UsdUtilsDependencyInfo depInfo(sublayerPath);
-        UsdUtilsDependencyInfo info = _pathCache.GetProcessedInfo( 
+        const std::string processedPath = 
+        UsdUtils_EvaluateVariableExpressionInPath(
+            expressionVariables, sublayerPath);
+        if (processedPath.empty()) {
+            continue;
+        }
+
+        UsdUtilsDependencyInfo depInfo = _CreateUsdUtilsDependencyInfo(
+            processedPath, {}, sublayerPath, &expressionVariables);
+        UsdUtilsDependencyInfo info = GetProcessedInfo( 
             layer, depInfo, UsdUtils_DependencyType::Sublayer);
 
         if (info.GetAssetPath().empty()) {
@@ -95,23 +159,25 @@ UsdUtils_WritableLocalizationDelegate::ProcessSublayers(
 }
 
 std::vector<std::string> 
-UsdUtils_WritableLocalizationDelegate::ProcessPayloads(
+UsdUtils_WritableLocalizationClient::ProcessPayloads(
     const SdfLayerRefPtr &layer,
+    const VtDictionary &expressionVariables,
     const SdfPrimSpecHandle &primSpec)
 {
     return _ProcessReferencesOrPayloads
-        <SdfPayloadListOp, UsdUtils_DependencyType::Payload>(
-        layer, primSpec, SdfFieldKeys->Payload);
+        <SdfPayloadListOp, UsdUtils_DependencyType::Payload>(layer,
+        expressionVariables, primSpec, SdfFieldKeys->Payload);
 }
 
 std::vector<std::string> 
-UsdUtils_WritableLocalizationDelegate::ProcessReferences(
+UsdUtils_WritableLocalizationClient::ProcessReferences(
     const SdfLayerRefPtr &layer,
+    const VtDictionary &expressionVariables,
     const SdfPrimSpecHandle &primSpec)
 {
     return _ProcessReferencesOrPayloads
-        <SdfReferenceListOp, UsdUtils_DependencyType::Reference>(
-        layer, primSpec, SdfFieldKeys->References);
+        <SdfReferenceListOp, UsdUtils_DependencyType::Reference>(layer,
+        expressionVariables, primSpec, SdfFieldKeys->References);
 }
 
 
@@ -120,8 +186,9 @@ UsdUtils_WritableLocalizationDelegate::ProcessReferences(
 // existing list ops.
 template <class ListOpType, UsdUtils_DependencyType DEP_TYPE>
 std::vector<std::string> 
-UsdUtils_WritableLocalizationDelegate::_ProcessReferencesOrPayloads(
+UsdUtils_WritableLocalizationClient::_ProcessReferencesOrPayloads(
     const SdfLayerRefPtr &layer,
+    const VtDictionary &expressionVariables,
     const SdfPrimSpecHandle &primSpec,
     const TfToken &listOpToken)
 {
@@ -132,11 +199,11 @@ UsdUtils_WritableLocalizationDelegate::_ProcessReferencesOrPayloads(
     }
 
     const bool modified = processedListOps.ModifyOperations(
-        [this, &layer, &dependencies](
+        [this, &layer, &expressionVariables, &dependencies](
             const typename ListOpType::ItemType& item){
             return 
                 _ProcessRefOrPayload <typename ListOpType::ItemType, DEP_TYPE>(
-                    layer, item, &dependencies);
+                    layer, expressionVariables, item, &dependencies);
         });
 
     if (!modified) {
@@ -163,8 +230,9 @@ UsdUtils_WritableLocalizationDelegate::_ProcessReferencesOrPayloads(
 
 template <class RefOrPayloadType, UsdUtils_DependencyType DEP_TYPE>
 std::optional<RefOrPayloadType>
-UsdUtils_WritableLocalizationDelegate::_ProcessRefOrPayload(
+UsdUtils_WritableLocalizationClient::_ProcessRefOrPayload(
     const SdfLayerRefPtr &layer,
+    const VtDictionary& expressionVariables,
     const RefOrPayloadType& refOrPayload,
     std::vector<std::string>* dependencies)
 {
@@ -175,8 +243,18 @@ UsdUtils_WritableLocalizationDelegate::_ProcessRefOrPayload(
         return std::optional<RefOrPayloadType>(refOrPayload);
     }
 
-    UsdUtilsDependencyInfo depInfo(refOrPayload.GetAssetPath());
-    const UsdUtilsDependencyInfo info = _pathCache.GetProcessedInfo( 
+    const std::string processedPath = UsdUtils_EvaluateVariableExpressionInPath(
+            expressionVariables, refOrPayload.GetAssetPath());
+    
+    // if we have a variable expression that evaluates to nothing, then we do
+    // not want to do anything special here.
+    if (processedPath.empty()) {
+        return std::optional<RefOrPayloadType>(refOrPayload);
+    }
+
+    UsdUtilsDependencyInfo depInfo = _CreateUsdUtilsDependencyInfo(processedPath, 
+        {}, refOrPayload.GetAssetPath(), &expressionVariables);
+    const UsdUtilsDependencyInfo info = GetProcessedInfo( 
         layer, depInfo, DEP_TYPE);
 
     if (info.GetAssetPath().empty()) {
@@ -200,7 +278,7 @@ UsdUtils_WritableLocalizationDelegate::_ProcessRefOrPayload(
 // updated in this copied dictionary.  We will only get callbacks for asset 
 // related keys, so other properties will be left unaffected.
 void
-UsdUtils_WritableLocalizationDelegate::BeginProcessValue(
+UsdUtils_WritableLocalizationClient::BeginProcessValue(
     const SdfLayerRefPtr &layer,
     const VtValue &val)
 {
@@ -210,8 +288,9 @@ UsdUtils_WritableLocalizationDelegate::BeginProcessValue(
 }
 
 std::vector<std::string> 
-UsdUtils_WritableLocalizationDelegate::ProcessValuePath(
+UsdUtils_WritableLocalizationClient::ProcessValuePath(
     const SdfLayerRefPtr &layer,
+    const VtDictionary &expressionVariables,
     const std::string &keyPath,
     const std::string &authoredPath,
     const std::vector<std::string> &dependencies,
@@ -222,8 +301,16 @@ UsdUtils_WritableLocalizationDelegate::ProcessValuePath(
         return {};
     }
 
-    UsdUtilsDependencyInfo depInfo = {authoredPath, dependencies};
-    UsdUtilsDependencyInfo info = _pathCache.GetProcessedInfo(
+    const std::string processedPath = UsdUtils_EvaluateVariableExpressionInPath(
+        expressionVariables, authoredPath);
+
+    if (processedPath.empty()) {
+        return {};
+    }
+
+    UsdUtilsDependencyInfo depInfo = _CreateUsdUtilsDependencyInfo(processedPath,
+        dependencies, authoredPath, &expressionVariables);
+    UsdUtilsDependencyInfo info = GetProcessedInfo(
         layer, depInfo, UsdUtils_DependencyType::Reference);
 
     const std::string relativeKeyPath = _GetRelativeKeyPath(keyPath);
@@ -246,14 +333,23 @@ UsdUtils_WritableLocalizationDelegate::ProcessValuePath(
 }
 
 std::vector<std::string> 
-UsdUtils_WritableLocalizationDelegate::ProcessValuePathArrayElement(
+UsdUtils_WritableLocalizationClient::ProcessValuePathArrayElement(
     const SdfLayerRefPtr &layer,
+    const VtDictionary &expressionVariables,
     const std::string &keyPath,
     const std::string &authoredPath,
     const std::vector<std::string> &dependencies)
 {
-    UsdUtilsDependencyInfo depInfo = {authoredPath, dependencies};
-    const UsdUtilsDependencyInfo info = _pathCache.GetProcessedInfo(
+    const std::string processedPath = UsdUtils_EvaluateVariableExpressionInPath(
+        expressionVariables, authoredPath);
+
+    if (processedPath.empty()) {
+        return {};
+    }
+
+    UsdUtilsDependencyInfo depInfo = _CreateUsdUtilsDependencyInfo(processedPath, 
+        dependencies, authoredPath, &expressionVariables);
+    const UsdUtilsDependencyInfo info = GetProcessedInfo(
         layer, depInfo, UsdUtils_DependencyType::Reference);
     
     if (!info.GetAssetPath().empty()) {
@@ -273,7 +369,7 @@ UsdUtils_WritableLocalizationDelegate::ProcessValuePathArrayElement(
 }
 
 void 
-UsdUtils_WritableLocalizationDelegate::EndProcessingValuePathArray(
+UsdUtils_WritableLocalizationClient::EndProcessingValuePathArray(
     const SdfLayerRefPtr &layer,
     const std::string &keyPath)
 {
@@ -295,7 +391,7 @@ UsdUtils_WritableLocalizationDelegate::EndProcessingValuePathArray(
 }
 
 VtValue 
-UsdUtils_WritableLocalizationDelegate::_GetUpdatedValue(
+UsdUtils_WritableLocalizationClient::_GetUpdatedValue(
     const VtValue &val)
 {
     VtValue updatedValue;
@@ -330,7 +426,7 @@ UsdUtils_WritableLocalizationDelegate::_GetUpdatedValue(
 }
  
 void 
-UsdUtils_WritableLocalizationDelegate::EndProcessValue(
+UsdUtils_WritableLocalizationClient::EndProcessValue(
     const SdfLayerRefPtr &layer,
     const SdfPath &path,
     const TfToken &key,
@@ -355,7 +451,7 @@ UsdUtils_WritableLocalizationDelegate::EndProcessValue(
 }
 
 void 
-UsdUtils_WritableLocalizationDelegate::EndProcessTimeSampleValue(
+UsdUtils_WritableLocalizationClient::EndProcessTimeSampleValue(
         const SdfLayerRefPtr &layer,
         const SdfPath &path,
         double t,
@@ -379,7 +475,7 @@ UsdUtils_WritableLocalizationDelegate::EndProcessTimeSampleValue(
 }
 
 std::vector<std::string>
-UsdUtils_WritableLocalizationDelegate::ProcessClipTemplateAssetPath(
+UsdUtils_WritableLocalizationClient::ProcessClipTemplateAssetPath(
     const SdfLayerRefPtr &layer,
     const SdfPrimSpecHandle &primSpec,
     const std::string &clipSetName,
@@ -387,7 +483,7 @@ UsdUtils_WritableLocalizationDelegate::ProcessClipTemplateAssetPath(
     std::vector<std::string> dependencies)
 {
     UsdUtilsDependencyInfo depInfo = {templateAssetPath, dependencies};
-    const UsdUtilsDependencyInfo info = _pathCache.GetProcessedInfo(layer,
+    const UsdUtilsDependencyInfo info = GetProcessedInfo(layer,
         depInfo, UsdUtils_DependencyType::Reference);
 
     if (info.GetAssetPath() == templateAssetPath) {
@@ -415,7 +511,7 @@ UsdUtils_WritableLocalizationDelegate::ProcessClipTemplateAssetPath(
 }
 
 std::string 
-UsdUtils_WritableLocalizationDelegate::_GetRelativeKeyPath(
+UsdUtils_WritableLocalizationClient::_GetRelativeKeyPath(
     const std::string& fullPath) 
 {
     std::string::size_type pos = fullPath.find_first_of(':');
@@ -428,7 +524,7 @@ UsdUtils_WritableLocalizationDelegate::_GetRelativeKeyPath(
 }
 
 SdfLayerRefPtr 
-UsdUtils_WritableLocalizationDelegate::_GetOrCreateWritableLayer(
+UsdUtils_WritableLocalizationClient::_GetOrCreateWritableLayer(
     const SdfLayerRefPtr& layer)
 {
     if (!layer ) {
@@ -468,7 +564,7 @@ UsdUtils_WritableLocalizationDelegate::_GetOrCreateWritableLayer(
 }
 
 SdfLayerConstHandle
-UsdUtils_WritableLocalizationDelegate::GetLayerUsedForWriting(
+UsdUtils_WritableLocalizationClient::GetLayerUsedForWriting(
     const SdfLayerRefPtr& layer) 
 {
     if (_editLayersInPlace || !layer) {
@@ -485,73 +581,32 @@ UsdUtils_WritableLocalizationDelegate::GetLayerUsedForWriting(
 }
 
 void
-UsdUtils_WritableLocalizationDelegate::ClearLayerUsedForWriting(
+UsdUtils_WritableLocalizationClient::ClearLayerUsedForWriting(
     const SdfLayerRefPtr& layer)
 {
     _writableLayerMap.erase(layer);
 }
 
 std::vector<std::string> 
-UsdUtils_ReadOnlyLocalizationDelegate::ProcessSublayers(
-    const SdfLayerRefPtr &layer)
+UsdUtils_ReadOnlyLocalizationClient::ProcessSublayers(
+    const SdfLayerRefPtr &layer,
+    const VtDictionary &expressionVariables)
 {
+    SdfSubLayerProxy sublayerPaths = layer->GetSubLayerPaths();
     std::vector<std::string> dependencies;
 
-    for (const auto &path : layer->GetSubLayerPaths()) {
-        UsdUtilsDependencyInfo info = _pathCache.GetProcessedInfo(
-            layer, {path, {}}, UsdUtils_DependencyType::Sublayer);
-
-        if (info.GetAssetPath().empty()) {
+    for (const auto &path : sublayerPaths) {
+        const std::string processedPath = 
+            UsdUtils_EvaluateVariableExpressionInPath(
+                expressionVariables, path);
+        if (processedPath.empty()) {
             continue;
         }
 
-        dependencies.emplace_back(info.GetAssetPath());
-        dependencies.insert(dependencies.end(), 
-            info.GetDependencies().begin(), info.GetDependencies().end());
-    }
-
-    return {};
-}
-
-std::vector<std::string>
-UsdUtils_ReadOnlyLocalizationDelegate::ProcessPayloads(
-    const SdfLayerRefPtr &layer,
-    const SdfPrimSpecHandle &primSpec)
-{
-    return ProcessReferencesOrPayloads
-        <SdfPayload, UsdUtils_DependencyType::Payload>(
-            layer, primSpec->GetPayloadList().GetAppliedItems());
-}
-
-std::vector<std::string> 
-UsdUtils_ReadOnlyLocalizationDelegate::ProcessReferences(
-        const SdfLayerRefPtr &layer,
-        const SdfPrimSpecHandle &primSpec)
-{
-    return ProcessReferencesOrPayloads
-        <SdfReference, UsdUtils_DependencyType::Reference>(
-            layer, primSpec->GetReferenceList().GetAppliedItems());
-}
-
-
-template <typename RefOrPayloadType, UsdUtils_DependencyType dependencyType>
-std::vector<std::string> 
-UsdUtils_ReadOnlyLocalizationDelegate::ProcessReferencesOrPayloads(
-    const SdfLayerRefPtr &layer,
-    const std::vector<RefOrPayloadType>& appliedItems)
-{
-    std::vector<std::string> dependencies;
-
-    for (const auto& refOrPayload: appliedItems) {
-        // If the asset path is empty this is a local reference or payload.
-        // We can ignore these since they refer to the same layer where it was 
-        // authored.
-        if (refOrPayload.GetAssetPath().empty()) {
-            continue;
-        }
-
-        UsdUtilsDependencyInfo info = _pathCache.GetProcessedInfo(layer, 
-            {refOrPayload.GetAssetPath(), {}}, dependencyType);
+        UsdUtilsDependencyInfo depInfo = _CreateUsdUtilsDependencyInfo(
+            processedPath, {}, path, &expressionVariables);
+        UsdUtilsDependencyInfo info = GetProcessedInfo(
+            layer, depInfo, UsdUtils_DependencyType::Sublayer);
 
         if (info.GetAssetPath().empty()) {
             continue;
@@ -566,8 +621,77 @@ UsdUtils_ReadOnlyLocalizationDelegate::ProcessReferencesOrPayloads(
 }
 
 std::vector<std::string>
-UsdUtils_ReadOnlyLocalizationDelegate::ProcessValuePath(
+UsdUtils_ReadOnlyLocalizationClient::ProcessPayloads(
     const SdfLayerRefPtr &layer,
+    const VtDictionary& expressionVariables,
+    const SdfPrimSpecHandle &primSpec)
+{
+    return ProcessReferencesOrPayloads
+        <SdfPayload, UsdUtils_DependencyType::Payload>(layer,
+            expressionVariables, primSpec->GetPayloadList().GetAppliedItems());
+}
+
+std::vector<std::string> 
+UsdUtils_ReadOnlyLocalizationClient::ProcessReferences(
+        const SdfLayerRefPtr &layer,
+        const VtDictionary& expressionVariables,
+        const SdfPrimSpecHandle &primSpec)
+{
+    return ProcessReferencesOrPayloads
+        <SdfReference, UsdUtils_DependencyType::Reference>(layer,
+            expressionVariables, primSpec->GetReferenceList().GetAppliedItems());
+}
+
+
+template <typename RefOrPayloadType, UsdUtils_DependencyType dependencyType>
+std::vector<std::string> 
+UsdUtils_ReadOnlyLocalizationClient::ProcessReferencesOrPayloads(
+    const SdfLayerRefPtr &layer,
+    const VtDictionary &expressionVariables,
+    const std::vector<RefOrPayloadType>& appliedItems)
+{
+    std::vector<std::string> dependencies;
+
+    for (const auto& refOrPayload: appliedItems) {
+        // If the asset path is empty this is a local reference or payload.
+        // We can ignore these since they refer to the same layer where it was 
+        // authored.
+        if (refOrPayload.GetAssetPath().empty()) {
+            continue;
+        }
+
+        const std::string& processedPath = 
+            UsdUtils_EvaluateVariableExpressionInPath(
+                expressionVariables, refOrPayload.GetAssetPath());
+        
+        // if an expression variable evaluated to nothing, then we do not need
+        // to take any action here
+        if (processedPath.empty()) {
+            continue;
+        }
+
+        UsdUtilsDependencyInfo depInfo = _CreateUsdUtilsDependencyInfo(
+            processedPath, {}, refOrPayload.GetAssetPath(),
+            &expressionVariables);
+        UsdUtilsDependencyInfo info = GetProcessedInfo(layer, depInfo,
+             dependencyType);
+
+        if (info.GetAssetPath().empty()) {
+            continue;
+        }
+
+        dependencies.emplace_back(info.GetAssetPath());
+        dependencies.insert(dependencies.end(), 
+            info.GetDependencies().begin(), info.GetDependencies().end());
+    }
+
+    return dependencies;
+}
+
+std::vector<std::string>
+UsdUtils_ReadOnlyLocalizationClient::ProcessValuePath(
+    const SdfLayerRefPtr &layer,
+    const VtDictionary &expressionVariables,
     const std::string &keyPath,
     const std::string &authoredPath,
     const std::vector<std::string> &dependencies,
@@ -578,13 +702,23 @@ UsdUtils_ReadOnlyLocalizationDelegate::ProcessValuePath(
         return {};
     }
 
-    return _AllDependenciesForInfo(_pathCache.GetProcessedInfo(layer, 
-        {authoredPath, dependencies}, UsdUtils_DependencyType::Reference));
+    const std::string processedPath = UsdUtils_EvaluateVariableExpressionInPath(
+        expressionVariables, authoredPath);
+
+    if (processedPath.empty()) {
+        return {};
+    }
+
+    UsdUtilsDependencyInfo depInfo = _CreateUsdUtilsDependencyInfo(processedPath, 
+        dependencies, authoredPath, &expressionVariables);
+    return _AllDependenciesForInfo(GetProcessedInfo(layer, depInfo,
+        UsdUtils_DependencyType::Reference));
 }
 
 std::vector<std::string>
-UsdUtils_ReadOnlyLocalizationDelegate::ProcessValuePathArrayElement(
+UsdUtils_ReadOnlyLocalizationClient::ProcessValuePathArrayElement(
     const SdfLayerRefPtr &layer,
+    const VtDictionary &expressionVariables,
     const std::string &keyPath,
     const std::string &authoredPath,
     const std::vector<std::string> &dependencies)
@@ -595,19 +729,28 @@ UsdUtils_ReadOnlyLocalizationDelegate::ProcessValuePathArrayElement(
         return {};
     }
 
-    return _AllDependenciesForInfo(_pathCache.GetProcessedInfo(layer, 
-        {authoredPath, dependencies}, UsdUtils_DependencyType::Reference));
+    const std::string processedPath = UsdUtils_EvaluateVariableExpressionInPath(
+        expressionVariables, authoredPath);
+
+    if (processedPath.empty()) {
+        return {};
+    }
+
+    UsdUtilsDependencyInfo depInfo = _CreateUsdUtilsDependencyInfo(processedPath,
+        dependencies, authoredPath, &expressionVariables);
+    return _AllDependenciesForInfo(GetProcessedInfo(layer, depInfo,
+        UsdUtils_DependencyType::Reference));
 }
 
 std::vector<std::string>
-UsdUtils_ReadOnlyLocalizationDelegate::ProcessClipTemplateAssetPath(
+UsdUtils_ReadOnlyLocalizationClient::ProcessClipTemplateAssetPath(
     const SdfLayerRefPtr &layer,
     const SdfPrimSpecHandle &primSpec,
     const std::string &clipSetName,
     const std::string &templateAssetPath,
     std::vector<std::string> dependencies)
 {
-    return _AllDependenciesForInfo(_pathCache.GetProcessedInfo(
+    return _AllDependenciesForInfo(GetProcessedInfo(
         layer, {templateAssetPath, dependencies}, 
         UsdUtils_DependencyType::ClipTemplateAssetPath));
 }

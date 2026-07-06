@@ -48,7 +48,7 @@ public:
         TfType valueType,
         const Ts_SplineData *overallParamSource = nullptr);
 
-    virtual ~Ts_SplineData();
+    TS_API virtual ~Ts_SplineData();
 
 public:
     // Virtual interface for typed data.
@@ -106,6 +106,7 @@ public:
     // Returns whether there is a valid inner-loop configuration.  If
     // firstProtoIndexOut is provided, it receives the index of the first knot
     // in the prototype.
+    TS_API
     bool HasInnerLoops(
         size_t *firstProtoIndexOut = nullptr) const;
 
@@ -150,11 +151,14 @@ public:
     // we have been presumptively created as TypedSplineData<double>.
     bool isTyped : 1;
 
-    // Whether ApplyOffsetAndScale applies to values also.
+    // Deprecated in favor of valueType for full type specification. This bit
+    // currently exists solely to ensure double values and not GfTimeCode
+    // values are extracted when the legacy TsSpline::SetTimeValued is invoked.
     bool timeValued : 1;
 
     // Overall spline parameters.
     TsCurveType curveType : 2;
+    TfType valueType;
     TsExtrapolation preExtrapolation;
     TsExtrapolation postExtrapolation;
     TsLoopParams loopParams;
@@ -267,7 +271,7 @@ TfType Ts_TypedSplineData<T>::GetValueType() const
         return TfType();
     }
 
-    return Ts_GetType<T>();
+    return valueType;
 }
 
 template <typename T>
@@ -289,7 +293,9 @@ bool Ts_TypedSplineData<T>::operator==(
 {
     // Compare non-templated data.
     if (isTyped != other.isTyped
-        || timeValued != other.timeValued
+        || ((timeValued || valueType == Ts_GetType<GfTimeCode>())
+            != (other.timeValued ||
+                other.valueType == Ts_GetType<GfTimeCode>()))
         || curveType != other.curveType
         || preExtrapolation != other.preExtrapolation
         || postExtrapolation != other.postExtrapolation
@@ -595,25 +601,20 @@ void Ts_TypedSplineData<T>::RemoveKnotAtTime(
     }
 }
 
+// Apply offset and scale to knot for knot fields that need to be
+// transformed regardless of whether the spline is time valued.
 template <typename T>
 static void _ApplyOffsetAndScaleToKnot(
     Ts_TypedKnotData<T>* const knotData,
     const TsTime offset,
     const double scale)
 {
-    // In our private implementation, we must have set a positive scale.
-    TF_VERIFY(scale > 0);
-
     // Process knot time (absolute).
     knotData->time = knotData->time * scale + offset;
 
     // Process tangent widths (relative, strictly positive).
-    knotData->preTanWidth *= scale;
-    knotData->postTanWidth *= scale;
-
-    // Process slopes (inverse relative).
-    knotData->preTanSlope /= scale;
-    knotData->postTanSlope /= scale;
+    knotData->preTanWidth *= fabs(scale);
+    knotData->postTanWidth *= fabs(scale);
 }
 
 template <typename T>
@@ -621,12 +622,29 @@ void Ts_TypedSplineData<T>::ApplyOffsetAndScale(
     const TsTime offset,
     const double scale)
 {
-    if (scale <= 0)
+    TF_VERIFY(scale != 0);
+
+    // XXX: Negative scaling doesn't perfectly invert splines. Some
+    // asymmetrical behavior persists. However, inverting a spline
+    // twice will recover the original spline's shape.
+    //
+    // - Evaluating in a held segment always produces the values from
+    //   the preceding knot. After negative scaling, the value will
+    //   be taken from the originally following knot instead.
+    // - Evaluating exactly at a dual-valued knot produces the ordinary
+    //   value, not the pre-value. After negative scaling, the value
+    //   will be taken from the original pre-value instead.
+
+    if (scale < 0 && HasInnerLoops())
     {
-        TF_CODING_ERROR("Applying zero or negative scale to spline data, "
-                        "collapsing/reversing time and spline representation "
-                        "is not allowed.");
+        TF_CODING_ERROR("Negative time scale factor is not compatible "
+                        "inner loops. Please first bake inner loops.");
         return;
+    }
+
+    if (scale < 0) {
+        // Flip pre and post extrapolation.
+        std::swap(preExtrapolation, postExtrapolation);
     }
 
     // The spline is changed in the time dimension only.
@@ -634,15 +652,22 @@ void Ts_TypedSplineData<T>::ApplyOffsetAndScale(
     // - Absolute times (e.g. knot times): apply scale and offset.
     // - Relative times (e.g. tan widths): apply scale only.
     // - Inverse relative (slopes): slope = height/width, so we apply 1/scale.
+    // 
+    // Note: Time valued splines don't need slopes scaled, because their
+    // slopes are in units of time value / time value; the scale reduces to 1.
 
-    // Scale extrapolation slopes if applicable (inverse relative).
-    if (preExtrapolation.mode == TsExtrapSloped)
+    // Process loop boundary times if they exist.
+    if (preExtrapolation.IsLooping()
+        && preExtrapolation.loopBoundaryTime.has_value())
     {
-        preExtrapolation.slope /= scale;
+        double& lbt = preExtrapolation.loopBoundaryTime.value();
+        lbt = lbt * scale + offset;
     }
-    if (postExtrapolation.mode == TsExtrapSloped)
+    if (postExtrapolation.IsLooping()
+        && postExtrapolation.loopBoundaryTime.has_value())
     {
-        postExtrapolation.slope /= scale;
+        double& lbt = postExtrapolation.loopBoundaryTime.value();
+        lbt = lbt * scale + offset;
     }
 
     // Process inner-loop params.
@@ -658,10 +683,47 @@ void Ts_TypedSplineData<T>::ApplyOffsetAndScale(
         time = time * scale + offset;
     }
 
-    // Process knots.  Duplicate the logic that is applied unconditionally, so
-    // that we can rip through the entire vector just once, and we don't have to
-    // do the if-check on each iteration.
-    if (timeValued)
+    // Reverse knot order if scale is negative. This flips the spline about
+    // time 0. It swaps knots' pre and post values, changes interpolation
+    // knot sources accordingly, and reverses the items in the spline data
+    // `knots` and `times` vectors. This section does *not* scale any knot
+    // fields, including knot time.
+    if (scale < 0) {
+        std::reverse(times.begin(), times.end());
+
+        for (size_t i = 0; i < knots.size(); i++) {
+            size_t idx = knots.size() - 1 - i;
+            Ts_TypedKnotData<T> reversedKnot;
+            const Ts_TypedKnotData<T> knot = knots[idx];
+            if (knot.dualValued) {
+                reversedKnot.value = knot.preValue;
+                reversedKnot.dualValued = true;
+                reversedKnot.preValue = knot.value;
+            } else {
+                reversedKnot.value = knot.value;
+            }
+
+            reversedKnot.time = knot.time;
+            reversedKnot.preTanWidth = knot.postTanWidth;
+            reversedKnot.postTanWidth = knot.preTanWidth;
+            reversedKnot.preTanSlope = knot.postTanSlope;
+            reversedKnot.postTanSlope = knot.preTanSlope;
+            reversedKnot.preTanAlgorithm = knot.postTanAlgorithm;
+            reversedKnot.postTanAlgorithm = knot.preTanAlgorithm;
+
+            if (idx > 0) {
+                reversedKnot.nextInterp = knots[idx - 1].nextInterp;
+            }
+
+            knots[idx] = reversedKnot;
+        }
+        std::reverse(knots.begin(), knots.end());
+    }
+
+    // Scale and offset knot fields.  Duplicate the logic that is applied
+    // unconditionally, so that we can rip through the entire vector just
+    // once, and we don't have to do the if-check on each iteration.
+    if (timeValued || valueType == Ts_GetType<GfTimeCode>())
     {
         for (Ts_TypedKnotData<T> &knotData : knots)
         {
@@ -676,8 +738,25 @@ void Ts_TypedSplineData<T>::ApplyOffsetAndScale(
     }
     else
     {
+        // Note that we scale slopes only for value types that are not
+        // time valued, because the units for time valued slopes are
+        // GfTimeCode over GfTimeCode, which reduces to 1 for any valid scale.
         for (Ts_TypedKnotData<T> &knotData : knots) {
             _ApplyOffsetAndScaleToKnot(&knotData, offset, scale);
+
+            // Process slopes (inverse relative).
+            knotData.preTanSlope /= scale;
+            knotData.postTanSlope /= scale;
+        }
+
+        // Scale extrapolation slopes if applicable (inverse relative).
+        if (preExtrapolation.mode == TsExtrapSloped)
+        {
+            preExtrapolation.slope /= scale;
+        }
+        if (postExtrapolation.mode == TsExtrapSloped)
+        {
+            postExtrapolation.slope /= scale;
         }
     }
 

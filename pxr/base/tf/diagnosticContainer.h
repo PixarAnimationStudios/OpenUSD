@@ -44,8 +44,18 @@ public:
     // the callable returns void, \c Next() returns \c bool - Otherwise, \c
     // Next() returns \c std::optional<ReturnType>
     struct Iterator {
-        explicit Iterator(Tf_DiagnosticContainer const &container)
-            : _container(container) {}
+        explicit Iterator(Tf_DiagnosticContainer const &container,
+                          size_t skip = 0)
+            : _container(container) {
+            // Advance past the first `skip` diagnostics.
+            while (skip-- > 0 && _orderIndex < _container._order.size()) {
+                switch (_container._order[_orderIndex++]) {
+                case 'E': ++_errorIndex;   break;
+                case 'W': ++_warningIndex; break;
+                case 'S': ++_statusIndex;  break;
+                }
+            }
+        }
 
         template <class Fn>
         auto Next(Fn &&fn)
@@ -89,6 +99,9 @@ public:
     // Return true if no diagnostics have been accumulated.
     bool IsEmpty() const { return _order.empty(); }
 
+    // Return the total number of accumulated diagnostics.
+    size_t size() const { return _order.size(); }
+
     // Return the accumulated errors.
     std::vector<TfError> const& GetErrors() const { return _errors; }
 
@@ -125,9 +138,10 @@ public:
 
     // Iteration
 
-    // Return an iterator over this container's diagnostics.
-    Iterator GetIterator() const {
-        return Iterator(*this);
+    // Return an iterator over this container's diagnostics, optionally
+    // skipping the first \p skip entries.
+    Iterator GetIterator(size_t skip = 0) const {
+        return Iterator(*this, skip);
     }
 
     // Post all diagnostics in their original order then clear.

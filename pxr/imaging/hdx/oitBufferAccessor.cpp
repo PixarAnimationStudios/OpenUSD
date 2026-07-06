@@ -19,14 +19,25 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(HDX_ENABLE_OIT, true, 
+TF_DEFINE_ENV_SETTING(HDX_ENABLE_OIT, true,
                       "Enable order independent translucency");
+
+TF_DEFINE_ENV_SETTING(HDX_ENABLE_OIT_PACKED_DATA, false,
+    "Pack color, transmission and depth into smaller "
+    "buffers, trading accuracy for memory.");
 
 /* static */
 bool
 HdxOitBufferAccessor::IsOitEnabled()
 {
     return TfGetEnvSetting(HDX_ENABLE_OIT);
+}
+
+/* static */
+bool
+HdxOitBufferAccessor::IsOitPackedDepthEnabled()
+{
+    return TfGetEnvSetting(HDX_ENABLE_OIT_PACKED_DATA);
 }
 
 HdxOitBufferAccessor::HdxOitBufferAccessor(HdTaskContext *ctx)
@@ -61,14 +72,16 @@ HdxOitBufferAccessor::AddOitBufferBindings(
         _GetBar(HdxTokens->oitCounterBufferBar);
     HdBufferArrayRangeSharedPtr const & dataBar =
         _GetBar(HdxTokens->oitDataBufferBar);
-    HdBufferArrayRangeSharedPtr const & depthBar =
-        _GetBar(HdxTokens->oitDepthBufferBar);
-    HdBufferArrayRangeSharedPtr const & indexBar =
-        _GetBar(HdxTokens->oitIndexBufferBar);
+    HdBufferArrayRangeSharedPtr const & jointBar =
+        _GetBar(HdxTokens->oitJointBufferBar);
     HdBufferArrayRangeSharedPtr const & uniformBar =
         _GetBar(HdxTokens->oitUniformBar);
 
-    if (counterBar && dataBar && depthBar && indexBar && uniformBar) {
+    if (counterBar && dataBar && jointBar && uniformBar) {
+
+        HdStBufferArrayRangeSharedPtr jointBar_ =
+            std::static_pointer_cast<HdStBufferArrayRange>(jointBar);
+
         shader->AddBufferBinding(
             HdStBindingRequest(HdStBinding::SSBO,
                                HdxTokens->oitCounterBufferBar,
@@ -82,23 +95,16 @@ HdxOitBufferAccessor::AddOitBufferBindings(
                                dataBar,
                                /*interleave = */ false,
                                /*writable = */ true));
-        
+
         shader->AddBufferBinding(
-            HdStBindingRequest(HdStBinding::SSBO,
-                               HdxTokens->oitDepthBufferBar,
-                               depthBar,
-                               /*interleave = */ false,
-                               /*writable = */ true));
-        
+                HdStBindingRequest(HdStBinding::SSBO,
+                                   HdxTokens->oitJointBufferBar,
+                                   jointBar_,
+                                   /*interleave = */ true,
+                                   /*writable = */ true));
+
         shader->AddBufferBinding(
-            HdStBindingRequest(HdStBinding::SSBO,
-                               HdxTokens->oitIndexBufferBar,
-                               indexBar,
-                               /*interleave = */ false,
-                               /*writable = */ true));
-        
-        shader->AddBufferBinding(
-            HdStBindingRequest(HdStBinding::UBO, 
+            HdStBindingRequest(HdStBinding::UBO,
                                HdxTokens->oitUniformBar,
                                uniformBar,
                                /*interleave = */ true));
@@ -106,15 +112,14 @@ HdxOitBufferAccessor::AddOitBufferBindings(
     } else {
         shader->RemoveBufferBinding(HdxTokens->oitCounterBufferBar);
         shader->RemoveBufferBinding(HdxTokens->oitDataBufferBar);
-        shader->RemoveBufferBinding(HdxTokens->oitDepthBufferBar);
-        shader->RemoveBufferBinding(HdxTokens->oitIndexBufferBar);
+        shader->RemoveBufferBinding(HdxTokens->oitJointBufferBar);
         shader->RemoveBufferBinding(HdxTokens->oitUniformBar);
         return false;
     }
 }
 
 void
-HdxOitBufferAccessor::InitializeOitBuffersIfNecessary(Hgi *hgi) 
+HdxOitBufferAccessor::InitializeOitBuffersIfNecessary(Hgi *hgi)
 {
     // If the OIT buffers were already cleared earlier, skip and do not
     // clear them again.
@@ -127,7 +132,7 @@ HdxOitBufferAccessor::InitializeOitBuffersIfNecessary(Hgi *hgi)
     clearFlag = true;
 
     // Clear counter buffer.
-    
+
     // The shader determines what elements in each buffer are used based on
     // finding -1 in the counter buffer. We can skip clearing the other buffers.
 
@@ -141,12 +146,12 @@ HdxOitBufferAccessor::InitializeOitBuffersIfNecessary(Hgi *hgi)
         return;
     }
 
-    HdStBufferResourceSharedPtr stCounterResource = 
+    HdStBufferResourceSharedPtr stCounterResource =
         stCounterBar->GetResource(HdxTokens->hdxOitCounterBuffer);
 
-    // We want to fill the buffer with int -1 but the FillBuffer interface 
+    // We want to fill the buffer with int -1 but the FillBuffer interface
     // supports uint8_t (due to a limitation in the Metal API which we can later
-    // revisit to find a workaround). A buffer filled with uint8_t 0xff is the 
+    // revisit to find a workaround). A buffer filled with uint8_t 0xff is the
     // same as a buffer filled with int 0xffffffff.
     const uint8_t clearCounter = -1;
 

@@ -6,7 +6,12 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/ts/knotData.h"
+#include "pxr/base/ts/raii.h"
+#include "pxr/base/ts/spline.h"
+#include "pxr/base/ts/splineData.h"
 #include "pxr/base/ts/tsTest_Museum.h"
+#include "pxr/base/ts/types.h"
 
 #include "pxr/base/gf/math.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -15,11 +20,29 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using SData = TsTest_SplineData;
+namespace {
+
+// Some of the test values are outside the range of a finite half value.
+// Safely make finite values out of them. Note that any non-zero value
+// will yield a non-zero half value.
+GfHalf MakeHalf(double v)
+{
+    if (v == 0) {
+        return 0;
+    } else if (std::abs(v) < std::numeric_limits<GfHalf>::min()) {
+        v = std::copysign(double(std::numeric_limits<GfHalf>::min()), v);
+    } else if (std::abs(v) > std::numeric_limits<GfHalf>::max()) {
+        v = std::copysign(double(std::numeric_limits<GfHalf>::max()), v);
+    }
+
+    return GfHalf(v);
+}
+} // anonymous namespace
 
 TF_REGISTRY_FUNCTION(TfEnum)
 {
     TF_ADD_ENUM_NAME(TsTest_Museum::TwoKnotBezier);
+    TF_ADD_ENUM_NAME(TsTest_Museum::TwoKnotBezierAutoEase);
     TF_ADD_ENUM_NAME(TsTest_Museum::TwoKnotHermite);
     TF_ADD_ENUM_NAME(TsTest_Museum::TwoKnotLinear);
     TF_ADD_ENUM_NAME(TsTest_Museum::FourKnotBezier);
@@ -29,8 +52,15 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(TsTest_Museum::InnerLoopPre);
     TF_ADD_ENUM_NAME(TsTest_Museum::InnerLoopPost);
     TF_ADD_ENUM_NAME(TsTest_Museum::ExtrapLoopRepeat);
+    TF_ADD_ENUM_NAME(TsTest_Museum::ExtrapLoopRepeatDualValued);
+    TF_ADD_ENUM_NAME(TsTest_Museum::ExtrapLoopRepeatDualValuedBoundary);
+    TF_ADD_ENUM_NAME(TsTest_Museum::ExtrapLoopRepeatBoundary);
     TF_ADD_ENUM_NAME(TsTest_Museum::ExtrapLoopReset);
+    TF_ADD_ENUM_NAME(TsTest_Museum::ExtrapLoopResetDualValued);
+    TF_ADD_ENUM_NAME(TsTest_Museum::ExtrapLoopResetBoundary);
+    TF_ADD_ENUM_NAME(TsTest_Museum::ExtrapLoopResetInvalidBoundary);
     TF_ADD_ENUM_NAME(TsTest_Museum::ExtrapLoopOscillate);
+    TF_ADD_ENUM_NAME(TsTest_Museum::ExtrapLoopOscillateBoundary);
     TF_ADD_ENUM_NAME(TsTest_Museum::InnerAndExtrapLoops);
     TF_ADD_ENUM_NAME(TsTest_Museum::RegressiveLoop);
     TF_ADD_ENUM_NAME(TsTest_Museum::RegressiveS);
@@ -62,100 +92,128 @@ TF_REGISTRY_FUNCTION(TfEnum)
 }
 
 
-static TsTest_SplineData _TwoKnotBezier()
+static Ts_TypedSplineData<double> _TwoKnotBezier()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 1.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 1.0;
-    knot1.postSlope = 1.0;
-    knot1.postLen = 0.5;
+    knot1.postTanSlope = 1.0;
+    knot1.postTanWidth = 0.5;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 5.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 2.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 0.5;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 0.5;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _TwoKnotHermite()
+static Ts_TypedSplineData<double> _TwoKnotBezierAutoEase()
+{
+    Ts_TypedKnotData<double> knot1;
+    knot1.time = 1.0;
+    knot1.nextInterp = TsInterpCurve;
+    knot1.value = 1.0;
+    knot1.postTanAlgorithm = TsTangentAlgorithmAutoEase;
+
+    Ts_TypedKnotData<double> knot2;
+    knot2.time = 5.0;
+    knot2.nextInterp = TsInterpCurve;
+    knot2.value = 2.0;
+    knot2.preTanAlgorithm = TsTangentAlgorithmAutoEase;
+
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    TsExtrapolation extrap(TsExtrapLoopRepeat);
+    data.preExtrapolation = extrap;
+    data.postExtrapolation = extrap;
+    return data;
+}
+
+static Ts_TypedSplineData<double> _TwoKnotHermite()
 {
     // Same as TwoKnotBezier but with Hermite interpolation
-    SData data = _TwoKnotBezier();
-    data.SetIsHermite(true);
+    Ts_TypedSplineData<double> data = _TwoKnotBezier();
+    data.curveType = TsCurveTypeHermite;
     return data;
 }
 
-static TsTest_SplineData _TwoKnotLinear()
+static Ts_TypedSplineData<double> _TwoKnotLinear()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 1.0;
-    knot1.nextSegInterpMethod = SData::InterpLinear;
+    knot1.nextInterp = TsInterpLinear;
     knot1.value = 1.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 5.0;
-    knot2.nextSegInterpMethod = SData::InterpLinear;
+    knot2.nextInterp = TsInterpLinear;
     knot2.value = 2.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _FourKnotBezier()
+static Ts_TypedSplineData<double> _FourKnotBezier()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 1.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 1.0;
-    knot1.postSlope = -0.25;
-    knot1.postLen = 0.25;
+    knot1.postTanSlope = -0.25;
+    knot1.postTanWidth = 0.25;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 2.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 2.0;
-    knot2.preSlope = 0.25;
-    knot2.preLen = 0.25;
-    knot2.postSlope = 0.25;
-    knot2.postLen = 0.25;
+    knot2.preTanSlope = 0.25;
+    knot2.preTanWidth = 0.25;
+    knot2.postTanSlope = 0.25;
+    knot2.postTanWidth = 0.25;
 
-    SData::Knot knot3;
+    Ts_TypedKnotData<double> knot3;
     knot3.time = 3.0;
-    knot3.nextSegInterpMethod = SData::InterpCurve;
+    knot3.nextInterp = TsInterpCurve;
     knot3.value = 1.0;
-    knot3.preSlope = -0.25;
-    knot3.preLen = 0.25;
-    knot3.postSlope = -0.25;
-    knot3.postLen = 0.25;
+    knot3.preTanSlope = -0.25;
+    knot3.preTanWidth = 0.25;
+    knot3.postTanSlope = -0.25;
+    knot3.postTanWidth = 0.25;
 
-    SData::Knot knot4;
+    Ts_TypedKnotData<double> knot4;
     knot4.time = 4.0;
-    knot4.nextSegInterpMethod = SData::InterpCurve;
+    knot4.nextInterp = TsInterpCurve;
     knot4.value = 2.0;
-    knot4.preSlope = 0.25;
-    knot4.preLen = 0.25;
+    knot4.preTanSlope = 0.25;
+    knot4.preTanWidth = 0.25;
 
-    SData data;
-    data.SetKnots({knot1, knot2, knot3, knot4});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.SetKnot(&knot3, VtDictionary());
+    data.SetKnot(&knot4, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _FourKnotHermite()
+static Ts_TypedSplineData<double> _FourKnotHermite()
 {
     // Same as FourKnotBezier but with Hermite interpolation
-    SData data = _FourKnotBezier();
-    data.SetIsHermite(true);
+    Ts_TypedSplineData<double> data = _FourKnotBezier();
+    data.curveType = TsCurveTypeHermite;
     return data;
 }
 
-static TsTest_SplineData _SimpleInnerLoop()
+static Ts_TypedSplineData<double> _SimpleInnerLoop()
 {
     // proto len: 18
     // pre-loop len: 18 (1 iteration)
@@ -170,62 +228,65 @@ static TsTest_SplineData _SimpleInnerLoop()
     // post-shadowed: 155
     // post-unlooped: 181
 
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 112.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 8.8;
-    knot1.postSlope = 15.0;
-    knot1.postLen = 0.9;
+    knot1.postTanSlope = 15.0;
+    knot1.postTanWidth = 0.9;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 137.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 0.0;
-    knot2.preSlope = -5.3;
-    knot2.postSlope = -5.3;
-    knot2.preLen = 1.3;
-    knot2.postLen = 1.8;
+    knot2.preTanSlope = -5.3;
+    knot2.postTanSlope = -5.3;
+    knot2.preTanWidth = 1.3;
+    knot2.postTanWidth = 1.8;
 
-    SData::Knot knot3;
+    Ts_TypedKnotData<double> knot3;
     knot3.time = 145.0;
-    knot3.nextSegInterpMethod = SData::InterpCurve;
+    knot3.nextInterp = TsInterpCurve;
     knot3.value = 8.5;
-    knot3.preSlope = 12.5;
-    knot3.postSlope = 12.5;
-    knot3.preLen = 1.0;
-    knot3.postLen = 1.2;
+    knot3.preTanSlope = 12.5;
+    knot3.postTanSlope = 12.5;
+    knot3.preTanWidth = 1.0;
+    knot3.postTanWidth = 1.2;
 
-    SData::Knot knot4;
+    Ts_TypedKnotData<double> knot4;
     knot4.time = 155.0;
-    knot4.nextSegInterpMethod = SData::InterpCurve;
+    knot4.nextInterp = TsInterpCurve;
     knot4.value = 20.2;
-    knot4.preSlope = -15.7;
-    knot4.postSlope = -15.7;
-    knot4.preLen = 0.7;
-    knot4.postLen = 0.8;
+    knot4.preTanSlope = -15.7;
+    knot4.postTanSlope = -15.7;
+    knot4.preTanWidth = 0.7;
+    knot4.postTanWidth = 0.8;
 
-    SData::Knot knot5;
+    Ts_TypedKnotData<double> knot5;
     knot5.time = 181.0;
-    knot5.nextSegInterpMethod = SData::InterpCurve;
+    knot5.nextInterp = TsInterpCurve;
     knot5.value = 38.2;
-    knot5.preSlope = -9.0;
-    knot5.preLen = 2.0;
+    knot5.preTanSlope = -9.0;
+    knot5.preTanWidth = 2.0;
 
-    SData::InnerLoopParams lp;
-    lp.enabled = true;
+    TsLoopParams lp;
     lp.protoStart = 137.0;
     lp.protoEnd = 155.0;
     lp.numPreLoops = 1;
     lp.numPostLoops = 1;
     lp.valueOffset = 20.2;
 
-    SData data;
-    data.SetKnots({knot1, knot2, knot3, knot4, knot5});
-    data.SetInnerLoopParams(lp);
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.SetKnot(&knot3, VtDictionary());
+    data.SetKnot(&knot4, VtDictionary());
+    data.SetKnot(&knot5, VtDictionary());
+    data.loopParams = lp;
     return data;
 }
 
-static TsTest_SplineData _InnerLoop2and2()
+static Ts_TypedSplineData<double> _InnerLoop2and2()
 {
     // proto len: 10
     // pre-loop len: 20 (2 iterations)
@@ -244,39 +305,39 @@ static TsTest_SplineData _InnerLoop2and2()
     // post-shadowed: none
     // post-unlooped: none
 
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 100.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 20.0;
-    knot1.preSlope = 2.0;
-    knot1.postSlope = 2.0;
-    knot1.preLen = 2.0;
-    knot1.postLen = 2.0;
+    knot1.preTanSlope = 2.0;
+    knot1.postTanSlope = 2.0;
+    knot1.preTanWidth = 2.0;
+    knot1.postTanWidth = 2.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 105.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 10.0;
-    knot2.preSlope = 1.5;
-    knot2.postSlope = 1.5;
-    knot2.preLen = 2.5;
-    knot2.postLen = 2.5;
+    knot2.preTanSlope = 1.5;
+    knot2.postTanSlope = 1.5;
+    knot2.preTanWidth = 2.5;
+    knot2.postTanWidth = 2.5;
 
-    SData::InnerLoopParams lp;
-    lp.enabled = true;
+    TsLoopParams lp;
     lp.protoStart = 100.0;
     lp.protoEnd = 110.0;
     lp.numPreLoops = 2;
     lp.numPostLoops = 2;
     lp.valueOffset = -5.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
-    data.SetInnerLoopParams(lp);
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.loopParams = lp;
     return data;
 }
 
-static TsTest_SplineData _InnerLoopPre()
+static Ts_TypedSplineData<double> _InnerLoopPre()
 {
     // proto len: 10
     // pre-loop len: 20 (2 iterations)
@@ -293,62 +354,65 @@ static TsTest_SplineData _InnerLoopPre()
     // post-shadowed: none
     // post-unlooped: 120
 
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 70.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 8.8;
-    knot1.postSlope = -1.0;
-    knot1.postLen = 2.2;
+    knot1.postTanSlope = -1.0;
+    knot1.postTanWidth = 2.2;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 85.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 35.0;
-    knot2.preSlope = -5.3;
-    knot2.postSlope = -5.3;
-    knot2.preLen = 1.3;
-    knot2.postLen = 1.8;
+    knot2.preTanSlope = -5.3;
+    knot2.postTanSlope = -5.3;
+    knot2.preTanWidth = 1.3;
+    knot2.postTanWidth = 1.8;
 
-    SData::Knot knot3;
+    Ts_TypedKnotData<double> knot3;
     knot3.time = 100.0;
-    knot3.nextSegInterpMethod = SData::InterpCurve;
+    knot3.nextInterp = TsInterpCurve;
     knot3.value = 20.0;
-    knot3.preSlope = 2.0;
-    knot3.postSlope = 2.0;
-    knot3.preLen = 2.0;
-    knot3.postLen = 2.0;
+    knot3.preTanSlope = 2.0;
+    knot3.postTanSlope = 2.0;
+    knot3.preTanWidth = 2.0;
+    knot3.postTanWidth = 2.0;
 
-    SData::Knot knot4;
+    Ts_TypedKnotData<double> knot4;
     knot4.time = 105.0;
-    knot4.nextSegInterpMethod = SData::InterpCurve;
+    knot4.nextInterp = TsInterpCurve;
     knot4.value = 10.0;
-    knot4.preSlope = 1.5;
-    knot4.postSlope = 1.5;
-    knot4.preLen = 2.5;
-    knot4.postLen = 2.5;
+    knot4.preTanSlope = 1.5;
+    knot4.postTanSlope = 1.5;
+    knot4.preTanWidth = 2.5;
+    knot4.postTanWidth = 2.5;
 
-    SData::Knot knot5;
+    Ts_TypedKnotData<double> knot5;
     knot5.time = 120.0;
-    knot5.nextSegInterpMethod = SData::InterpCurve;
+    knot5.nextInterp = TsInterpCurve;
     knot5.value = 15.0;
-    knot5.preSlope = -4.0;
-    knot5.preLen = 3.0;
+    knot5.preTanSlope = -4.0;
+    knot5.preTanWidth = 3.0;
 
-    SData::InnerLoopParams lp;
-    lp.enabled = true;
+    TsLoopParams lp;
     lp.protoStart = 100.0;
     lp.protoEnd = 110.0;
     lp.numPreLoops = 2;
     lp.numPostLoops = 0;
     lp.valueOffset = -5.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2, knot3, knot4, knot5});
-    data.SetInnerLoopParams(lp);
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.SetKnot(&knot3, VtDictionary());
+    data.SetKnot(&knot4, VtDictionary());
+    data.SetKnot(&knot5, VtDictionary());
+    data.loopParams = lp;
     return data;
 }
 
-static TsTest_SplineData _InnerLoopPost()
+static Ts_TypedSplineData<double> _InnerLoopPost()
 {
     // proto len: 10
     // pre-loop len: 0 (0 iterations)
@@ -365,793 +429,1070 @@ static TsTest_SplineData _InnerLoopPost()
     // post-shadowed: 125
     // post-unlooped: 140
 
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 90.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 8.8;
-    knot1.postSlope = -1.0;
-    knot1.postLen = 2.2;
+    knot1.postTanSlope = -1.0;
+    knot1.postTanWidth = 2.2;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 100.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 20.0;
-    knot2.preSlope = 2.0;
-    knot2.postSlope = 2.0;
-    knot2.preLen = 2.0;
-    knot2.postLen = 2.0;
+    knot2.preTanSlope = 2.0;
+    knot2.postTanSlope = 2.0;
+    knot2.preTanWidth = 2.0;
+    knot2.postTanWidth = 2.0;
 
-    SData::Knot knot3;
+    Ts_TypedKnotData<double> knot3;
     knot3.time = 105.0;
-    knot3.nextSegInterpMethod = SData::InterpCurve;
+    knot3.nextInterp = TsInterpCurve;
     knot3.value = 10.0;
-    knot3.preSlope = 1.5;
-    knot3.postSlope = 1.5;
-    knot3.preLen = 2.5;
-    knot3.postLen = 2.5;
+    knot3.preTanSlope = 1.5;
+    knot3.postTanSlope = 1.5;
+    knot3.preTanWidth = 2.5;
+    knot3.postTanWidth = 2.5;
 
-    SData::Knot knot4;
+    Ts_TypedKnotData<double> knot4;
     knot4.time = 125.0;
-    knot4.nextSegInterpMethod = SData::InterpCurve;
+    knot4.nextInterp = TsInterpCurve;
     knot4.value = 35.0;
-    knot4.preSlope = -5.3;
-    knot4.postSlope = -5.3;
-    knot4.preLen = 1.3;
-    knot4.postLen = 1.8;
+    knot4.preTanSlope = -5.3;
+    knot4.postTanSlope = -5.3;
+    knot4.preTanWidth = 1.3;
+    knot4.postTanWidth = 1.8;
 
-    SData::Knot knot5;
+    Ts_TypedKnotData<double> knot5;
     knot5.time = 140.0;
-    knot5.nextSegInterpMethod = SData::InterpCurve;
+    knot5.nextInterp = TsInterpCurve;
     knot5.value = 15.0;
-    knot5.preSlope = -4.0;
-    knot5.preLen = 3.0;
+    knot5.preTanSlope = -4.0;
+    knot5.preTanWidth = 3.0;
 
-    SData::InnerLoopParams lp;
-    lp.enabled = true;
+    TsLoopParams lp;
     lp.protoStart = 100.0;
     lp.protoEnd = 110.0;
     lp.numPreLoops = 0;
     lp.numPostLoops = 2;
     lp.valueOffset = -5.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2, knot3, knot4, knot5});
-    data.SetInnerLoopParams(lp);
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.SetKnot(&knot3, VtDictionary());
+    data.SetKnot(&knot4, VtDictionary());
+    data.SetKnot(&knot5, VtDictionary());
+    data.loopParams = lp;
     return data;
 }
 
-static TsTest_SplineData _ExtrapLoopRepeat()
+static Ts_TypedSplineData<double> _ExtrapLoopRepeat()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 100.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 10.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 3.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 3.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 105.0;
-    knot2.nextSegInterpMethod = SData::InterpLinear;
+    knot2.nextInterp = TsInterpLinear;
     knot2.value = 20.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 3.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 3.0;
 
-    SData::Knot knot3;
+    Ts_TypedKnotData<double> knot3;
     knot3.time = 110.0;
-    knot3.nextSegInterpMethod = SData::InterpHeld;
+    knot3.nextInterp = TsInterpHeld;
     knot3.value = 15.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2, knot3});
-    SData::Extrapolation extrap(SData::ExtrapLoop);
-    extrap.loopMode = SData::LoopRepeat;
-    data.SetPreExtrapolation(extrap);
-    data.SetPostExtrapolation(extrap);
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.SetKnot(&knot3, VtDictionary());
+    TsExtrapolation extrap(TsExtrapLoopRepeat);
+    data.preExtrapolation = extrap;
+    data.postExtrapolation = extrap;
     return data;
 }
 
-static TsTest_SplineData _ExtrapLoopReset()
+static Ts_TypedSplineData<double> _ExtrapLoopRepeatDualValued()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 100.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 10.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 3.0;
+    knot1.preValue = -10.0;
+    knot1.dualValued = true;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 3.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 105.0;
-    knot2.nextSegInterpMethod = SData::InterpLinear;
+    knot2.nextInterp = TsInterpLinear;
     knot2.value = 20.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 3.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 3.0;
 
-    SData::Knot knot3;
+    Ts_TypedKnotData<double> knot3;
     knot3.time = 110.0;
-    knot3.nextSegInterpMethod = SData::InterpHeld;
+    knot3.nextInterp = TsInterpHeld;
     knot3.value = 15.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2, knot3});
-    SData::Extrapolation extrap(SData::ExtrapLoop);
-    extrap.loopMode = SData::LoopReset;
-    data.SetPreExtrapolation(extrap);
-    data.SetPostExtrapolation(extrap);
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.SetKnot(&knot3, VtDictionary());
+    TsExtrapolation extrap(TsExtrapLoopRepeat);
+    data.preExtrapolation = extrap;
+    data.postExtrapolation = extrap;
     return data;
 }
 
-static TsTest_SplineData _ExtrapLoopOscillate()
+static Ts_TypedSplineData<double> _ExtrapLoopRepeatBoundary()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 100.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 10.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 3.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 3.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 105.0;
-    knot2.nextSegInterpMethod = SData::InterpLinear;
+    knot2.nextInterp = TsInterpLinear;
     knot2.value = 20.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 3.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 3.0;
 
-    SData::Knot knot3;
+    Ts_TypedKnotData<double> knot3;
     knot3.time = 110.0;
-    knot3.nextSegInterpMethod = SData::InterpHeld;
+    knot3.nextInterp = TsInterpHeld;
     knot3.value = 15.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2, knot3});
-    SData::Extrapolation extrap(SData::ExtrapLoop);
-    extrap.loopMode = SData::LoopOscillate;
-    data.SetPreExtrapolation(extrap);
-    data.SetPostExtrapolation(extrap);
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.SetKnot(&knot3, VtDictionary());
+    TsExtrapolation extrap(TsExtrapLoopRepeat);
+    extrap.loopBoundaryTime = 105.0;
+    data.preExtrapolation = extrap;
+
+    extrap.loopBoundaryTime = 100.0;
+    data.postExtrapolation = extrap;
     return data;
 }
 
-static TsTest_SplineData _InnerAndExtrapLoops()
+static Ts_TypedSplineData<double> _ExtrapLoopRepeatDualValuedBoundary()
+{
+    Ts_TypedKnotData<double> knot1;
+    knot1.time = 100.0;
+    knot1.nextInterp = TsInterpCurve;
+    knot1.value = 10.0;
+    knot1.preValue = -10.0;
+    knot1.dualValued = true;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 3.0;
+
+    Ts_TypedKnotData<double> knot2;
+    knot2.time = 105.0;
+    knot2.nextInterp = TsInterpLinear;
+    knot2.value = 20.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 3.0;
+
+    Ts_TypedKnotData<double> knot3;
+    knot3.time = 110.0;
+    knot3.nextInterp = TsInterpHeld;
+    knot3.value = 15.0;
+    knot3.preValue = 25.0;
+    knot3.dualValued = true;
+
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.SetKnot(&knot3, VtDictionary());
+    TsExtrapolation extrap(TsExtrapLoopRepeat);
+    extrap.loopBoundaryTime = 110.0;
+    data.preExtrapolation = extrap;
+
+    extrap.loopBoundaryTime = 105.0;
+    data.postExtrapolation = extrap;
+    return data;
+}
+
+static Ts_TypedSplineData<double> _ExtrapLoopReset()
+{
+    Ts_TypedKnotData<double> knot1;
+    knot1.time = 100.0;
+    knot1.nextInterp = TsInterpCurve;
+    knot1.value = 10.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 3.0;
+
+    Ts_TypedKnotData<double> knot2;
+    knot2.time = 105.0;
+    knot2.nextInterp = TsInterpLinear;
+    knot2.value = 20.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 3.0;
+
+    Ts_TypedKnotData<double> knot3;
+    knot3.time = 110.0;
+    knot3.nextInterp = TsInterpHeld;
+    knot3.value = 15.0;
+
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.SetKnot(&knot3, VtDictionary());
+    TsExtrapolation extrap(TsExtrapLoopReset);
+    data.preExtrapolation = extrap;
+    data.postExtrapolation = extrap;
+    return data;
+}
+
+static Ts_TypedSplineData<double> _ExtrapLoopResetDualValued()
+{
+    Ts_TypedKnotData<double> knot1;
+    knot1.time = 100.0;
+    knot1.nextInterp = TsInterpCurve;
+    knot1.value = 10.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 3.0;
+
+    Ts_TypedKnotData<double> knot2;
+    knot2.time = 105.0;
+    knot2.nextInterp = TsInterpLinear;
+    knot2.value = 20.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 3.0;
+
+    Ts_TypedKnotData<double> knot3;
+    knot3.time = 110.0;
+    knot3.nextInterp = TsInterpHeld;
+    knot3.value = 20.0;
+    knot3.dualValued = true;
+    knot3.preValue = 15.0;
+
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.SetKnot(&knot3, VtDictionary());
+    TsExtrapolation extrap(TsExtrapLoopReset);
+    data.preExtrapolation = extrap;
+    data.postExtrapolation = extrap;
+    return data;
+}
+
+static Ts_TypedSplineData<double> _ExtrapLoopResetBoundary()
+{
+    Ts_TypedKnotData<double> knot1;
+    knot1.time = 100.0;
+    knot1.nextInterp = TsInterpCurve;
+    knot1.value = 10.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 3.0;
+
+    Ts_TypedKnotData<double> knot2;
+    knot2.time = 105.0;
+    knot2.nextInterp = TsInterpLinear;
+    knot2.value = 20.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 3.0;
+
+    Ts_TypedKnotData<double> knot3;
+    knot3.time = 110.0;
+    knot3.nextInterp = TsInterpHeld;
+    knot3.value = 15.0;
+
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.SetKnot(&knot3, VtDictionary());
+    TsExtrapolation extrap(TsExtrapLoopReset);
+    extrap.loopBoundaryTime = 105.0;
+    data.preExtrapolation = extrap;
+
+    extrap.loopBoundaryTime = 105.0;
+    data.postExtrapolation = extrap;
+    return data;
+}
+
+static Ts_TypedSplineData<double> _ExtrapLoopResetInvalidBoundary()
+{
+    Ts_TypedKnotData<double> knot1;
+    knot1.time = 100.0;
+    knot1.nextInterp = TsInterpCurve;
+    knot1.value = 10.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 3.0;
+
+    Ts_TypedKnotData<double> knot2;
+    knot2.time = 105.0;
+    knot2.nextInterp = TsInterpLinear;
+    knot2.value = 20.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 3.0;
+
+    Ts_TypedKnotData<double> knot3;
+    knot3.time = 110.0;
+    knot3.nextInterp = TsInterpHeld;
+    knot3.value = 15.0;
+
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.SetKnot(&knot3, VtDictionary());
+    TsExtrapolation extrap(TsExtrapLoopReset);
+    extrap.loopBoundaryTime = 99.0;
+    data.preExtrapolation = extrap;
+
+    extrap.loopBoundaryTime = 107.0;
+    data.postExtrapolation = extrap;
+    return data;
+}
+
+static Ts_TypedSplineData<double> _ExtrapLoopOscillate()
+{
+    Ts_TypedKnotData<double> knot1;
+    knot1.time = 100.0;
+    knot1.nextInterp = TsInterpCurve;
+    knot1.value = 10.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 3.0;
+
+    Ts_TypedKnotData<double> knot2;
+    knot2.time = 105.0;
+    knot2.nextInterp = TsInterpLinear;
+    knot2.value = 20.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 3.0;
+
+    Ts_TypedKnotData<double> knot3;
+    knot3.time = 110.0;
+    knot3.nextInterp = TsInterpHeld;
+    knot3.value = 15.0;
+
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.SetKnot(&knot3, VtDictionary());
+    TsExtrapolation extrap(TsExtrapLoopOscillate);
+    data.preExtrapolation = extrap;
+    data.postExtrapolation = extrap;
+    return data;
+}
+
+static Ts_TypedSplineData<double> _ExtrapLoopOscillateBoundary()
+{
+    Ts_TypedKnotData<double> knot1;
+    knot1.time = 100.0;
+    knot1.nextInterp = TsInterpCurve;
+    knot1.value = 10.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 3.0;
+
+    Ts_TypedKnotData<double> knot2;
+    knot2.time = 105.0;
+    knot2.nextInterp = TsInterpLinear;
+    knot2.value = 20.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 3.0;
+
+    Ts_TypedKnotData<double> knot3;
+    knot3.time = 110.0;
+    knot3.nextInterp = TsInterpHeld;
+    knot3.value = 15.0;
+
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.SetKnot(&knot3, VtDictionary());
+    TsExtrapolation extrap(TsExtrapLoopOscillate);
+    extrap.loopBoundaryTime = 105.0;
+    data.preExtrapolation = extrap;
+
+    extrap.loopBoundaryTime = 110.0;
+    data.postExtrapolation = extrap;
+    return data;
+}
+
+static Ts_TypedSplineData<double> _InnerAndExtrapLoops()
 {
     // Same knots and inner loop params as InnerLoop2and2
 
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 100.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 20.0;
-    knot1.preSlope = 2.0;
-    knot1.postSlope = 2.0;
-    knot1.preLen = 2.0;
-    knot1.postLen = 2.0;
+    knot1.preTanSlope = 2.0;
+    knot1.postTanSlope = 2.0;
+    knot1.preTanWidth = 2.0;
+    knot1.postTanWidth = 2.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 105.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 10.0;
-    knot2.preSlope = 1.5;
-    knot2.postSlope = 1.5;
-    knot2.preLen = 2.5;
-    knot2.postLen = 2.5;
+    knot2.preTanSlope = 1.5;
+    knot2.postTanSlope = 1.5;
+    knot2.preTanWidth = 2.5;
+    knot2.postTanWidth = 2.5;
 
-    SData::InnerLoopParams lp;
-    lp.enabled = true;
+    TsLoopParams lp;
     lp.protoStart = 100.0;
     lp.protoEnd = 110.0;
     lp.numPreLoops = 2;
     lp.numPostLoops = 2;
     lp.valueOffset = -5.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
-    data.SetInnerLoopParams(lp);
-    SData::Extrapolation extrap(SData::ExtrapLoop);
-    extrap.loopMode = SData::LoopRepeat;
-    data.SetPreExtrapolation(extrap);
-    extrap.loopMode = SData::LoopOscillate;
-    data.SetPostExtrapolation(extrap);
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.loopParams = lp;
+    TsExtrapolation extrap(TsExtrapLoopRepeat);
+    data.preExtrapolation = extrap;
+    extrap.mode = TsExtrapLoopOscillate;
+    data.postExtrapolation = extrap;
     return data;
 }
 
-static TsTest_SplineData _RegressiveLoop()
+static Ts_TypedSplineData<double> _RegressiveLoop()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 156.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.preSlope = -1.3;
-    knot1.postSlope = -1.3;
-    knot1.preLen = 6.2;
-    knot1.postLen = 15.8;
+    knot1.preTanSlope = -1.3;
+    knot1.postTanSlope = -1.3;
+    knot1.preTanWidth = 6.2;
+    knot1.postTanWidth = 15.8;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 167.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 28.8;
-    knot2.preSlope = 2.4;
-    knot2.postSlope = 2.4;
-    knot2.preLen = 21.7;
-    knot2.postLen = 5.5;
+    knot2.preTanSlope = 2.4;
+    knot2.postTanSlope = 2.4;
+    knot2.preTanWidth = 21.7;
+    knot2.postTanWidth = 5.5;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _RegressiveS()
+static Ts_TypedSplineData<double> _RegressiveS()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 156.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = -1.3;
-    knot1.postLen = 15.8;
+    knot1.postTanSlope = -1.3;
+    knot1.postTanWidth = 15.8;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 167.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 28.8;
-    knot2.preSlope = 0.4;
-    knot2.preLen = 16.8;
+    knot2.preTanSlope = 0.4;
+    knot2.preTanWidth = 16.8;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _RegressiveSStandard()
+static Ts_TypedSplineData<double> _RegressiveSStandard()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 1.2;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 1.2;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 1.2;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 1.2;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _RegressiveSPreOut()
+static Ts_TypedSplineData<double> _RegressiveSPreOut()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.5;
-    knot1.postLen = 1.0;
+    knot1.postTanSlope = 0.5;
+    knot1.postTanWidth = 1.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 3.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 3.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _RegressiveSPostOut()
+static Ts_TypedSplineData<double> _RegressiveSPostOut()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 3.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 3.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.5;
-    knot2.preLen = 1.0;
+    knot2.preTanSlope = 0.5;
+    knot2.preTanWidth = 1.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _RegressiveSBothOut()
+static Ts_TypedSplineData<double> _RegressiveSBothOut()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 4.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 4.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 4.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 4.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _RegressivePreJ()
+static Ts_TypedSplineData<double> _RegressivePreJ()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 2.5;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 2.5;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.6;
-    knot2.preLen = 2.5;
+    knot2.preTanSlope = 0.6;
+    knot2.preTanWidth = 2.5;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _RegressivePostJ()
+static Ts_TypedSplineData<double> _RegressivePostJ()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.6;
-    knot1.postLen = 2.5;
+    knot1.postTanSlope = 0.6;
+    knot1.postTanWidth = 2.5;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 2.5;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 2.5;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _RegressivePreC()
+static Ts_TypedSplineData<double> _RegressivePreC()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 0.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 0.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 2.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 2.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _RegressivePostC()
+static Ts_TypedSplineData<double> _RegressivePostC()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 2.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 2.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 0.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 0.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _RegressivePreG()
+static Ts_TypedSplineData<double> _RegressivePreG()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 2.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 2.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.57;
-    knot2.preLen = 3.5;
+    knot2.preTanSlope = 0.57;
+    knot2.preTanWidth = 3.5;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _RegressivePostG()
+static Ts_TypedSplineData<double> _RegressivePostG()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.57;
-    knot1.postLen = 3.5;
+    knot1.postTanSlope = 0.57;
+    knot1.postTanWidth = 3.5;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 2.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 2.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _RegressivePreFringe()
+static Ts_TypedSplineData<double> _RegressivePreFringe()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 0.05;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 0.05;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 1.3;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 1.3;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _RegressivePostFringe()
+static Ts_TypedSplineData<double> _RegressivePostFringe()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 1.3;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 1.3;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 0.05;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 0.05;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _BoldS()
+static Ts_TypedSplineData<double> _BoldS()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 1.25;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 1.25;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 0.5;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 0.5;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _Cusp()
+static Ts_TypedSplineData<double> _Cusp()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.5;
-    knot1.postLen = 1.0;
+    knot1.postTanSlope = 0.5;
+    knot1.postTanWidth = 1.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 0.0;
-    knot2.preSlope = -0.5;
-    knot2.preLen = 1.0;
+    knot2.preTanSlope = -0.5;
+    knot2.preTanWidth = 1.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _CenterVertical()
+static Ts_TypedSplineData<double> _CenterVertical()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 1.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 1.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 1.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 1.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _NearCenterVertical()
+static Ts_TypedSplineData<double> _NearCenterVertical()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 0.8;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 0.8;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 0.8;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 0.8;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _VerticalTorture()
+static Ts_TypedSplineData<double> _VerticalTorture()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.5;
-    knot1.postLen = 0.44092698519760592513;
+    knot1.postTanSlope = 0.5;
+    knot1.postTanWidth = 0.44092698519760592513;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 1.3227809555928178309;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 1.3227809555928178309;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _FourThirdOneThird()
+static Ts_TypedSplineData<double> _FourThirdOneThird()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 4.0 / 3.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 4.0 / 3.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 1.0 / 3.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 1.0 / 3.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _OneThirdFourThird()
+static Ts_TypedSplineData<double> _OneThirdFourThird()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 1.0 / 3.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 1.0 / 3.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 4.0 / 3.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 4.0 / 3.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _StartVert()
+static Ts_TypedSplineData<double> _StartVert()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 0.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 0.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 1.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 1.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _EndVert()
+static Ts_TypedSplineData<double> _EndVert()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 1.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 1.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 0.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 0.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _FringeVert()
+static Ts_TypedSplineData<double> _FringeVert()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = (2.0 + GfSqrt(3.0)) / 3.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = (2.0 + GfSqrt(3.0)) / 3.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = (2.0 - GfSqrt(3.0)) / 3.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = (2.0 - GfSqrt(3.0)) / 3.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _MarginalN()
+static Ts_TypedSplineData<double> _MarginalN()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 1e12;
-    knot1.postLen = 5e-12;
+    knot1.postTanSlope = 1e12;
+    knot1.postTanWidth = 5e-12;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 1e12;
-    knot2.preLen = 5e-12;
+    knot2.preTanSlope = 1e12;
+    knot2.preTanWidth = 5e-12;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _ZeroTans()
+static Ts_TypedSplineData<double> _ZeroTans()
 {
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 0.0;
-    knot1.nextSegInterpMethod = SData::InterpCurve;
+    knot1.nextInterp = TsInterpCurve;
     knot1.value = 0.0;
-    knot1.postSlope = 0.0;
-    knot1.postLen = 0.0;
+    knot1.postTanSlope = 0.0;
+    knot1.postTanWidth = 0.0;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 1.0;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 1.0;
-    knot2.preSlope = 0.0;
-    knot2.preLen = 0.0;
+    knot2.preTanSlope = 0.0;
+    knot2.preTanWidth = 0.0;
 
-    SData data;
-    data.SetKnots({knot1, knot2});
+    Ts_TypedSplineData<double> data{};
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
     return data;
 }
 
-static TsTest_SplineData _ComplexParams()
+static Ts_TypedSplineData<double> _ComplexParams()
 {
-    SData data;
+    Ts_TypedSplineData<double> data{};
 
-    data.SetPreExtrapolation(SData::Extrapolation(SData::ExtrapLinear));
-    SData::Extrapolation postExtrap(SData::ExtrapSloped);
+    data.preExtrapolation = TsExtrapolation(TsExtrapLinear);
+    TsExtrapolation postExtrap(TsExtrapSloped);
     postExtrap.slope = 0.57;
-    data.SetPostExtrapolation(postExtrap);
+    data.postExtrapolation = postExtrap;
 
-    SData::InnerLoopParams lp;
-    lp.protoStart = 15;
-    lp.protoEnd = 25;
-    lp.numPreLoops = 1;
-    lp.numPostLoops = 2;
-    lp.valueOffset = 11.7;
-    data.SetInnerLoopParams(lp);
+    // Note: These params were never used in the original
+    // implementation of _ComplexParams, so continue to omit
+    // them. Enable them as desired.
+    // TsInnerLoopParams lp;
+    // lp.protoStart = 15;
+    // lp.protoEnd = 25;
+    // lp.numPreLoops = 1;
+    // lp.numPostLoops = 2;
+    // lp.valueOffset = 11.7;
+    // data.loopParams = lp;
 
-    SData::Knot knot1;
+    Ts_TypedKnotData<double> knot1;
     knot1.time = 7;
-    knot1.nextSegInterpMethod = SData::InterpHeld;
-    knot1.isDualValued = true;
+    knot1.nextInterp = TsInterpHeld;
+    knot1.dualValued = true;
     knot1.preValue = 5.5;
     knot1.value = 7.21;
 
-    SData::Knot knot2;
+    Ts_TypedKnotData<double> knot2;
     knot2.time = 15;
-    knot2.nextSegInterpMethod = SData::InterpCurve;
+    knot2.nextInterp = TsInterpCurve;
     knot2.value = 8.18;
-    knot2.postSlope = 1.17;
-    knot2.postLen = 2.49;
+    knot2.postTanSlope = 1.17;
+    knot2.postTanWidth = 2.49;
 
-    SData::Knot knot3;
+    Ts_TypedKnotData<double> knot3;
     knot3.time = 20;
-    knot3.nextSegInterpMethod = SData::InterpCurve;
+    knot3.nextInterp = TsInterpCurve;
     knot3.value = 14.72;
-    knot3.preSlope = -1.4;
-    knot3.preLen = 3.77;
-    knot3.postSlope = -1.4;
-    knot3.postLen = 1.1;
+    knot3.preTanSlope = -1.4;
+    knot3.preTanWidth = 3.77;
+    knot3.postTanSlope = -1.4;
+    knot3.postTanWidth = 1.1;
 
-    data.SetKnots({knot1, knot2, knot3});
+    data.SetKnot(&knot1, VtDictionary());
+    data.SetKnot(&knot2, VtDictionary());
+    data.SetKnot(&knot3, VtDictionary());
 
     return data;
 }
 
-TsTest_SplineData
-TsTest_Museum::GetData(const DataId id)
+Ts_TypedSplineData<double>
+TsTest_Museum::_GetData(DataId id)
 {
     switch (id)
     {
         case TwoKnotBezier: return _TwoKnotBezier();
+        case TwoKnotBezierAutoEase: return _TwoKnotBezierAutoEase();
         case TwoKnotHermite: return _TwoKnotHermite();
         case TwoKnotLinear: return _TwoKnotLinear();
         case FourKnotBezier: return _FourKnotBezier();
@@ -1161,8 +1502,15 @@ TsTest_Museum::GetData(const DataId id)
         case InnerLoopPre: return _InnerLoopPre();
         case InnerLoopPost: return _InnerLoopPost();
         case ExtrapLoopRepeat: return _ExtrapLoopRepeat();
+        case ExtrapLoopRepeatDualValued: return _ExtrapLoopRepeatDualValued();
+        case ExtrapLoopRepeatBoundary: return _ExtrapLoopRepeatBoundary();
+        case ExtrapLoopRepeatDualValuedBoundary: return _ExtrapLoopRepeatDualValuedBoundary();
         case ExtrapLoopReset: return _ExtrapLoopReset();
+        case ExtrapLoopResetDualValued: return _ExtrapLoopResetDualValued();
+        case ExtrapLoopResetBoundary: return _ExtrapLoopResetBoundary();
+        case ExtrapLoopResetInvalidBoundary: return _ExtrapLoopResetInvalidBoundary();
         case ExtrapLoopOscillate: return _ExtrapLoopOscillate();
+        case ExtrapLoopOscillateBoundary: return _ExtrapLoopOscillateBoundary();
         case InnerAndExtrapLoops: return _InnerAndExtrapLoops();
         case RegressiveLoop: return _RegressiveLoop();
         case RegressiveS: return _RegressiveS();
@@ -1196,24 +1544,125 @@ TsTest_Museum::GetData(const DataId id)
     return {};
 }
 
+TsSpline
+TsTest_Museum::_SplineDataToSpline(
+    const Ts_TypedSplineData<double>& data,
+    const TfType valueType)
+{
+    if (!TsSpline::IsSupportedValueType(valueType)) {
+        TF_CODING_ERROR("Unsupported spline value type: '%s'",
+                        valueType.GetTypeName().c_str());
+        return TsSpline();
+    }
+
+    TsSpline spline(valueType);
+    spline.SetCurveType(data.curveType);
+    spline.SetPreExtrapolation(data.preExtrapolation);
+    spline.SetPostExtrapolation(data.postExtrapolation);
+    spline.SetInnerLoopParams(data.loopParams);
+
+    // Don't de-regress.  If the SplineData is regressive, the Spline should be
+    // too.
+    TsAntiRegressionAuthoringSelector selector(TsAntiRegressionNone);
+
+    for (const auto& knotData : data.knots) {
+        TsKnot knot(valueType);
+        knot.SetTime(knotData.time);
+        knot.SetPreTanWidth(knotData.preTanWidth);
+        knot.SetPostTanWidth(knotData.postTanWidth);
+        knot.SetNextInterpolation(knotData.nextInterp);
+        knot.SetPreTanAlgorithm(knotData.preTanAlgorithm);
+        knot.SetPostTanAlgorithm(knotData.postTanAlgorithm);
+
+        if (valueType == Ts_GetType<double>()) {
+            knot.SetValue(knotData.value);      
+            if (knotData.dualValued) {                                                                                                       
+                knot.SetPreValue(knotData.preValue);                                                                                         
+            }                                                                                                                                
+            knot.SetPreTanSlope(knotData.preTanSlope);                                                                                       
+            knot.SetPostTanSlope(knotData.postTanSlope);                                                                                     
+        } else if (valueType == Ts_GetType<float>()) {
+            knot.SetValue(float(knotData.value));
+            if (knotData.dualValued) {
+                knot.SetPreValue(float(knotData.preValue));
+            }
+            knot.SetPreTanSlope(float(knotData.preTanSlope));
+            knot.SetPostTanSlope(float(knotData.postTanSlope));
+
+        } else if (valueType == Ts_GetType<GfHalf>()) {
+            knot.SetValue(MakeHalf(knotData.value));
+            if (knotData.dualValued) {
+                knot.SetPreValue(MakeHalf(knotData.preValue));
+            }
+
+            // Adjust tangents while maintaining general magnitude even if the
+            // slope is changed by conversion.
+            //
+            // This is for one particular spline in the Museum that sets almost
+            // vertical tangents. The slope is 1e+12 and the width is 1e-12, so
+            // the tangent vector (1e-12, 1.0), or almost exactly (0, 1). When
+            // the slope is mapped into a GfHalf, it becomes 65504.0. If the
+            // width is not similarly changed, the the tangent would become the
+            // vector (1e-12, 6.5504e-8) or almost exactly (0, 0), which changes
+            // the shape of the curve significantly. This math computes the
+            // tangent vector to be (1.5266e-5, 1.0) which is as close to
+            // vertical as we can get with a GfHalf slope.
+            //
+            // We could apply this same math to float values above, but the
+            // range of float extendes to 1e+/-38 so it hasn't been an issue.
+            double preHeight = knotData.preTanSlope * knotData.preTanWidth;
+            GfHalf preTanSlope = MakeHalf(knotData.preTanSlope);
+            double preWidth = preTanSlope == 0
+                              ? knotData.preTanWidth
+                              : preHeight / preTanSlope;
+            knot.SetPreTanSlope(preTanSlope);
+            knot.SetPreTanWidth(preWidth);
+
+            double postHeight = knotData.postTanSlope * knotData.postTanWidth;
+            GfHalf postTanSlope = MakeHalf(knotData.postTanSlope);
+            double postWidth = postTanSlope == 0
+                               ? knotData.postTanWidth
+                               : postHeight / postTanSlope;
+            knot.SetPostTanSlope(postTanSlope);
+            knot.SetPostTanWidth(postWidth);
+        } else {
+            TF_CODING_ERROR("Unimplemented spline value type: '%s'",
+                            valueType.GetTypeName().c_str());
+            return TsSpline(valueType);
+        }
+
+        spline.SetKnot(knot);
+    }
+
+    return spline;
+}
+
+
+TsSpline
+TsTest_Museum::GetSpline(const DataId id, const TfType valueType)
+{
+    const Ts_TypedSplineData<double> data = _GetData(id);
+    return _SplineDataToSpline(data, valueType);
+}
+
 std::vector<std::string>
 TsTest_Museum::GetAllNames()
 {
     return TfEnum::GetAllNames<DataId>();
 }
 
-TsTest_SplineData
-TsTest_Museum::GetDataByName(const std::string &name)
+TsSpline
+TsTest_Museum::GetSplineByName(const std::string &name, const TfType valueType)
 {
     bool found = false;
     const DataId id = TfEnum::GetValueFromName<DataId>(name, &found);
     if (!found)
     {
         TF_CODING_ERROR("No Museum exhibit named '%s'", name.c_str());
-        return TsTest_SplineData();
+        return TsSpline();
     }
 
-    return GetData(id);
+    return GetSpline(id, valueType);
 }
 
 

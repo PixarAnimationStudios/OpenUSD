@@ -1,0 +1,191 @@
+#usda 1.0
+(
+    """
+    This tests the ordering when multiple sibling variant sets have variant
+    selections that affect the other variants. In these cases, the root prim
+    has variants "a", "b", "c", "d" in that order, but only express a 
+    variant selection opinion for the weakest variant set "d" which it sets
+    to "one". The variant d=one brings in a variant selection opinion for "b"
+    where b=one. The b=one variant is used and brings in opinions for both 
+    "a" and "c" where both would be set to their variant "one". However, the
+    variant a=one brings in a different variant selection for "c" where c=two.
+    With "a" being stronger than "b", the c=two variant from "a" should win
+    over the c=one variant from "b" even though "b" variant was necessarily
+    processed before "a" as it was needed to get the variant selection for 
+    "a" in the first place. This test assures that we get the correct c=two
+    variant.
+    """
+)
+
+# Basic case where the variant specs provide the variant selection opinions
+# directly.
+def "Root" (
+    variants = {
+        string d = "one"
+    }
+    prepend variantSets = ["a", "b", "c", "d"]
+)
+{
+    variantSet "a" = {
+        "one" (
+            variants = {
+                string c = "two"
+            }
+        ){
+        }
+        "two" {
+        }
+    }
+    variantSet "b" = {
+        "one" (
+            variants = {
+                string a = "one"
+                string c = "one"
+            }
+        ){
+        }
+        "two" {
+        }
+    }
+    variantSet "c" = {
+        "one" {
+        }
+        "two" {
+            def "C_two" {
+
+            }
+        }
+    }
+    variantSet "d" = {
+        "one" (
+            variants = {
+                string b = "one"
+            }
+        ) {
+        }
+        "two" {
+        }
+    }
+}
+
+# References a prim subroot prim that only exists in the c=two
+# variant to prove that also works for ancestral variant selections.
+def "AncestralRoot" (
+    references = </Root/C_two>
+) {
+    
+}
+
+# Similar case to /Root but where the variant selection opinions in
+# "a" and "b" are set in prim's that are references by the variant
+# specs.
+def "Root2" (
+    variants = {
+        string d = "one"
+    }
+    prepend variantSets = ["a", "b", "c", "d"]
+)
+{
+    variantSet "a" = {
+        "one" (
+            references = </A_One>
+        ) {
+        }
+        "two" {
+        }
+    }
+    variantSet "b" = {
+        "one" (
+            references = </B_One>
+        ) {
+        }
+        "two" {
+        }
+    }
+    variantSet "c" = {
+        "one" {
+        }
+        "two" {
+        }
+    }
+    variantSet "d" = {
+        "one" (
+            variants = {
+                string b = "one"
+            }
+        ) {
+        }
+        "two" {
+        }
+    }
+}
+
+def "A_One" (
+    variants = {
+        string c = "two"
+    }
+) {
+}
+
+def "B_One" (
+    variants = {
+        string a = "one"
+        string c = "one"
+    }
+) {
+}
+
+# Another similar case to /Root, but with b's variant selection for
+# "a" nested in a another variant within b=one.
+def "Root3" (
+    variants = {
+        string d = "one"
+        string b_one = "enabled"
+    }
+    prepend variantSets = ["a", "b", "c", "d"]
+)
+{
+    variantSet "a" = {
+        "one" (
+            variants = {
+                string c = "two"
+            }
+        ){
+        }
+        "two" {
+        }
+    }
+    variantSet "b" = {
+        "one" (
+            prepend variantSets = ["b_one"]            
+        ){
+            variantSet "b_one" = {
+                "enabled" (
+                    variants = {
+                        string c = "one"
+                        string a = "one"
+                    }
+                ) {
+                }
+            }
+        }
+        "two" {
+        }
+    }
+    variantSet "c" = {
+        "one" {
+        }
+        "two" {
+        }
+    }
+    variantSet "d" = {
+        "one" (
+            variants = {
+                string b = "one"
+            }
+        ) {
+        }
+        "two" {
+        }
+    }
+}

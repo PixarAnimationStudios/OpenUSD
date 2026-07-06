@@ -15,18 +15,21 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+template <typename T>
+static double _ToDouble(const T &v) { return double(v); }
+
 
 #define VERIFY_GET(knot, getter, type, expected)                \
     {                                                           \
         type actual = type();                                   \
         TF_AXIOM(knot.getter(&actual));                         \
-        TF_AXIOM(GfIsClose(actual, expected, 1e-3));            \
+        TF_AXIOM(GfIsClose(_ToDouble(actual), expected, 1e-3)); \
                                                                 \
         VtValue value;                                          \
         TF_AXIOM(knot.getter(&value));                          \
         TF_AXIOM(value.IsHolding<type>());                      \
         actual = value.Get<type>();                             \
-        TF_AXIOM(GfIsClose(actual, expected, 1e-3));            \
+        TF_AXIOM(GfIsClose(_ToDouble(actual), expected, 1e-3)); \
     }
 
 
@@ -58,7 +61,7 @@ void TestKnotIO()
     TF_AXIOM(knot.SetPreValue(T(-5)));
     TF_AXIOM(knot.IsDualValued());
     VERIFY_GET(knot, GetPreValue, T, -5);
-    TF_AXIOM(knot.SetPreTanWidth(T(0.5)));
+    TF_AXIOM(knot.SetPreTanWidth(0.5));
     TF_AXIOM(knot.GetPreTanWidth() == 0.5);
     TF_AXIOM(knot.SetPreTanSlope(T(2.3)));
     VERIFY_GET(knot, GetPreTanSlope, T, 2.3);
@@ -147,8 +150,6 @@ void TestSplineIO()
 
 
     // Round-trip some values.
-    spline.SetTimeValued(true);
-    TF_AXIOM(spline.IsTimeValued());
     spline.SetPreExtrapolation(TsExtrapLinear);
     TF_AXIOM(spline.GetPreExtrapolation().mode == TsExtrapLinear);
     TF_AXIOM(spline.GetPreExtrapolation() == TsExtrapLinear);
@@ -279,10 +280,12 @@ int main()
     TestKnotIO<double>();
     TestKnotIO<float>();
     TestKnotIO<GfHalf>();
+    TestKnotIO<GfTimeCode>();
 
     TestSplineIO<double>();
     TestSplineIO<float>();
     TestSplineIO<GfHalf>();
+    TestSplineIO<GfTimeCode>();
 
     return 0;
 }

@@ -101,16 +101,13 @@ class TfErrorMark
 
     /// Remove all errors in this mark fom the error system and return them in
     /// a TfErrorTransport.
-    /// 
+    ///
     /// This can be used to transfer errors from one thread to another.  See
     /// TfErrorTransport for more information.  As with Clear(), all the
     /// removed errors are considered handled for this thread.  See also
     /// TransportTo().
-    inline TfErrorTransport Transport() const {
-        TfDiagnosticMgr &mgr = TfDiagnosticMgr::GetInstance();
-        return TfErrorTransport(mgr._errorList.local(),
-                                GetBegin(), mgr.GetErrorEnd());
-    }
+    TF_API
+    TfErrorTransport Transport() const;
 
     /// Remove all errors in this mark fom the error system and return them in
     /// a TfErrorTransport.
@@ -165,6 +162,7 @@ class TfErrorMark
     void _ReportErrors(TfDiagnosticMgr &mgr) const;
 
     size_t _mark;
+    void  *_markKey = nullptr;
 };
 
 

@@ -88,13 +88,11 @@ ExecSystem::_Compute(
     TRACE_FUNCTION();
 
     // Reset the accumulated input nodes requiring invalidation on the program,
-    // and retain the invalidation request for executor invalidation below.
-    const VdfMaskedOutputVector invalidationRequest =
-        _program->ResetInputNodesRequiringInvalidation();
-
-    // Make sure that the executor data manager is properly invalidated for any
-    // input nodes that were just initialized.
-    _runtime->InvalidateExecutor(invalidationRequest);
+    // and use the returned invalidation request to make sure that the executor
+    // data manager is properly invalidated for any input nodes that were
+    // initialized.
+    _runtime->InvalidateExecutor(
+        _program->ResetInputNodesRequiringInvalidation());
 
     // Run the executor to compute the values.
     _runtime->ComputeValues(schedule, computeRequest);
@@ -185,6 +183,13 @@ ExecSystem::_ComputeWithOverrides(
         overriddenOutputs.push_back(cacheHit->output);
         overriddenValues.push_back(std::move(valueOverride.overrideValue));
     }
+
+    // Reset the accumulated input nodes requiring invalidation on the program,
+    // and use the returned invalidation request to make sure that the executor
+    // data manager is properly invalidated for any input nodes that were
+    // initialized.
+    _runtime->InvalidateExecutor(
+        _program->ResetInputNodesRequiringInvalidation());
 
     // Compute the request using the overridden values. The result is a pointer
     // to the subexecutor that performed the computation, which is returned to

@@ -14,9 +14,13 @@
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/renderSettingsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#if PXR_VERSION >= 2505
 #include "pxr/imaging/hd/sceneGlobalsSchema.h"
+#endif
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+#if PXR_VERSION >= 2505
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
+#endif
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/xformSchema.h"
 
@@ -46,7 +50,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((worldOffset, "worldoffset"))
 );
 
-
 static bool
 _IsInstancePrototype(const HdContainerDataSourceHandle& primDs)
 {
@@ -68,6 +71,7 @@ _HasXform(const HdContainerDataSourceHandle& primDs)
         != names.end();
 }
 
+#if PXR_VERSION >= 2505
 // Compute the worldoffset value for the input scene.
 static GfVec3d
 _ComputeWorldOffset(
@@ -188,6 +192,7 @@ _ApplyWorldOffsetToRenderSettings(
             .Finish()
     };
 }
+#endif
 
 /////////////////////////////////////
 // World Offset Matrix Data Source //
@@ -627,6 +632,9 @@ public:
                 1, &HdXformSchemaTokens->xform, &xformDataSource
             );
             HdContainerDataSourceHandle handles[2] = { xformContainerDataSource, prim.dataSource };
+#if PXR_VERSION <= 2305 && defined(ARCH_OS_WINDOWS)
+            return prim;
+#else
             return {
                 prim.primType,
                 _WorldOffsetPrimDataSource::New(
@@ -634,6 +642,7 @@ public:
                     _worldOffset + _cameraOffset
                 )
             };
+#endif
         }
 
         // Add the transform to all other prims.

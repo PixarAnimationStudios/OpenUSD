@@ -1,0 +1,110 @@
+#usda 1.0
+(
+    defaultPrim = "world"
+)
+
+def Camera "main_cam"
+{
+    float4[] clippingPlanes = []
+    float2 clippingRange = (1, 2000000)
+    float focalLength = 34.2608
+    float focusDistance = 83.65276
+    float fStop = 0
+    float horizontalAperture = 30.895868
+    float horizontalApertureOffset = 0
+    token projection = "perspective"
+    float verticalAperture = 20.955
+    float verticalApertureOffset = 0
+    matrix4d xformOp:transform = ( (0.669130606358858, 0, 0.7431448254773945, 0), (0.16717121202132743, 0.9743700647852352, -0.15052163539417482, 0), (-0.7240980717452212, 0.224951054343865, 0.6519808322676642, 0), (-60.57280370710935, 18.817777025199142, 54.539997432340414, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Xform "world"
+{
+    def PointInstancer "L1"
+    {
+        float3[] extent = [(-24, -24, -24), (24, 24, 24)]
+        point3f[] positions = [(0, 0, -17), (0, 0, 0), (0, 0, 17)]
+        int[] protoIndices = [0, 0, 0]
+        float[] primvars:level1 = [0, 0.5, 1] ( interpolation = "varying" )
+        rel prototypes = [
+            </world/L1/L2>
+        ]
+
+        def PointInstancer "L2"
+        {
+            float3[] extent = [(-24, -24, -7), (24, 24, 7)]
+            point3f[] positions = [(0, -17, 0), (0, 0, 0), (0, 17, 0)]
+            int[] protoIndices = [0, 0, 0]
+            float[] primvars:level2 = [0, 0.5, 1] ( interpolation = "varying" )
+            rel prototypes = [
+                </world/L1/L2/L3>
+            ]
+
+            def PointInstancer "L3"
+            {
+                float3[] extent = [(-24, -7, -7), (24, 7, 7)]
+                point3f[] positions = [(-17, 0, 0), (0, 0, 0), (17, 0, 0)]
+                int[] protoIndices = [0, 0, 0]
+                float[] primvars:level3 = [0, 0.5, 1] ( interpolation = "varying" )
+                rel prototypes = [
+                    </world/L1/L2/L3/L4>
+                ]
+
+                def PointInstancer "L4"
+                {
+                    float3[] extent = [(-7, -7, -7), (7, 7, 7)]
+                    point3f[] positions = [(0, 0, -6), (0, 0, -3), (0, 0, 0), (0, 0, 3), (0, 0, 6)]
+                    int[] protoIndices = [0, 0, 0, 0, 0]
+                    float[] primvars:level4 = [0, 0.25, 0.5, 0.75, 1] ( interpolation = "varying" )
+                    rel prototypes = [
+                        </world/L1/L2/L3/L4/L5>
+                    ]
+
+                    def PointInstancer "L5"
+                    {
+                        float3[] extent = [(-7, -7, -1), (7, 7, 1)]
+                        point3f[] positions = [(0, -6, 0), (0, -3, 0), (0, 0, 0), (0, 3, 0), (0, 6, 0)]
+                        int[] protoIndices = [0, 0, 0, 0, 0]
+                        float[] primvars:level5 = [0, 0.25, 0.5, 0.75, 1] ( interpolation = "varying" )
+                        rel prototypes = [
+                            </world/L1/L2/L3/L4/L5/L6>
+                        ]
+                        
+                        def PointInstancer "L6"
+                        {
+                            float3[] extent = [(-7, -1, -1), (7, 1, 1)]
+                            point3f[] positions = [(-6, 0, 0), (-3, 0, 0), (0, 0, 0), (3, 0, 0), (6, 0, 0)]
+                            int[] protoIndices = [0, 1, 0, 1, 0]
+                            float[] primvars:level6 = [0, 0.25, 0.5, 0.75, 1] ( interpolation = "varying" )
+                            rel prototypes = [
+                                </world/L1/L2/L3/L4/L5/L6/Ball>,
+                                </world/L1/L2/L3/L4/L5/L6/Sphere>
+                            ]
+
+                            def "Sphere"
+                            {
+                                def Sphere "SphereSphere"
+                                {
+                                }
+
+                                def Cube "SphereCube"
+                                {
+                                    double size = 1.412
+                                }
+                            }
+
+                            def "Ball"
+                            {
+                                def Sphere "BallGeom"
+                                {
+                                }
+                            }
+                        }   
+                    }
+                }
+            }
+        }
+    }
+}
+

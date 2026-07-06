@@ -11,7 +11,8 @@
 #include <tbb/tbb.h>
 
 #include "pxr/pxr.h"
-#include "hdPrman/prmanArchDefs.h"
+#include "hdPrman/prmanArchDefs.h" // IWYU pragma: keep
+#include "hdPrman/renderParam.h"
 #include "stats/Id.h"
 #include "stats/Listener.h"
 #include "stats/Metric.h"
@@ -24,7 +25,7 @@ class HdPrmanStatsListener : public stats::Listener
 {
 public:
     HdPrmanStatsListener(const std::string& name,
-                         bool isInteractive);
+                         HdPrman_RenderParam* param);
     ~HdPrmanStatsListener() override;
 
     void SessionAttachedCallback(stats::Session& session) override;
@@ -46,7 +47,7 @@ public:
     float GetCurrentProgress();
 
 private:
-    bool m_isInteractive;
+    HdPrman_RenderParam* m_param;
 
     // Fully-qualified name of metric
     const std::string m_progressMetricName;

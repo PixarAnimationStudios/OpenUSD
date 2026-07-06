@@ -14,9 +14,11 @@ The attribute connection </ConnectionToLocalClass/Instance_2.y> from </Connectio
 Errors while composing </FaceRig/BrowRig/LBrow/BrowInnUDPosBrowInnUDNeg_sculpt>
 
 The attribute connection </BrowRig/Anim/RBrow.InnUD> from </BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount> in layer @ErrorInvalidInstanceTargetPath/ref.usda@ is authored in a class but refers to an instance of that class.  Ignoring.
+The attribute connection </BrowRig/Anim/LBrow.InnUD> from </BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount> in layer @ErrorInvalidInstanceTargetPath/ref.usda@ refers to a path outside the scope of the inherit from </BrowRig/LBrow>.  Ignoring.
 
 ------------------------------------------------------------------------
 Errors while composing </FaceRig/BrowRig/RBrow/BrowInnUDPosBrowInnUDNeg_sculpt>
 
+The attribute connection </BrowRig/Anim/RBrow.InnUD> from </BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount> in layer @ErrorInvalidInstanceTargetPath/ref.usda@ refers to a path outside the scope of the inherit from </BrowRig/RBrow>.  Ignoring.
 The attribute connection </BrowRig/Anim/LBrow.InnUD> from </BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount> in layer @ErrorInvalidInstanceTargetPath/ref.usda@ is authored in a class but refers to an instance of that class.  Ignoring.
 

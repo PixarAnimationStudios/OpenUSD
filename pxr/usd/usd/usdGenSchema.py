@@ -588,7 +588,12 @@ class ClassInfo(object):
         # Do not to inherit the type name of parent classes.
         if inherits:
             for path in inherits.GetAddedOrExplicitItems():
-                parentTypeName = parentLayer.GetPrimAtPath(path).typeName
+                parentPrim = parentLayer.GetPrimAtPath(path)
+                if not parentPrim:
+                    raise _GetSchemaDefException(
+                        f"The inherited prim <{path}> is not valid",
+                        sdfPrim.path)
+                parentTypeName = parentPrim.typeName
                 if parentTypeName == self.typeName:
                     self.typeName = ''
 
@@ -1971,7 +1976,7 @@ def getTopoSortedSchemas(classes):
     return ret
 
 def GenerateBuildHelpers(templatePath, codeGenPath, tokenData, classList, 
-                         libName, validate, env):
+                         libName, tokensPrefix, validate, env):
     Print('Generating Build Helper Files:')
 
     #
@@ -2007,7 +2012,7 @@ def GenerateBuildHelpers(templatePath, codeGenPath, tokenData, classList,
 
     # Write out generated module.cpp contents
     cppClassNames = [classObj.cppClassName for classObj in classes]
-    cppClassNames.append(_ProperCase(libName + "Tokens"))
+    cppClassNames.append(tokensPrefix + "Tokens")
 
     modulesFilePath = os.path.join(codeGenPath, 'generatedSchema.module.h')
     if not os.path.exists(modulesFilePath):
@@ -2194,7 +2199,7 @@ if __name__ == '__main__':
                          useExportAPI, j2_env, args.headerTerminatorString, classInfos)
             # Generate Build Helper Files
             GenerateBuildHelpers(templatePath, codeGenPath, tokenData, classes, 
-                                 libName, args.validate, j2_env)
+                                 libName, tokensPrefix, args.validate, j2_env)
 
         # We always generate plugInfo and generateSchema.
         GeneratePlugInfo(templatePath, codeGenPath, classes, args.validate,

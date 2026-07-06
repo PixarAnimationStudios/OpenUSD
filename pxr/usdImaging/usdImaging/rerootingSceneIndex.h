@@ -8,8 +8,10 @@
 #define PXR_USD_IMAGING_USD_IMAGING_REROOTING_SCENE_INDEX_H
 
 #include "pxr/usdImaging/usdImaging/api.h"
-
 #include "pxr/imaging/hd/filteringSceneIndex.h"
+#include "pxr/usd/pcp/mapFunction.h"
+#include "pxr/usd/sdf/pathTable.h"
+#include <variant>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -17,29 +19,41 @@ TF_DECLARE_REF_PTRS(UsdImagingRerootingSceneIndex);
 
 /// \class UsdImagingRerootingSceneIndex
 ///
-/// Drops all prims not under srcPrefix and moves those under srcPrefix to
-/// dstPrefix.
+/// Applies a bijective namespace mapping, as represented by a PcpMapFunction,
+/// to the input namespace.
 ///
-/// Data sources containing paths will be updated accordingly. That is, if it
-/// contains a path with srcPrefix as prefix, the prefix will be replaced by
-/// dstPrefix.
+/// Data sources containing paths will be updated accordingly. That is, 
+/// the namespace mapping function will be applied to path-valued data.
 ///
-/// Note that this can be used as prefixing scene index by setting srcPrefix
-/// to the root path. It can also use to isolate part of the namespace by
-/// setting the srcPrefix and dstPrefix to be equal.
+/// Note that this can be used as prefixing scene index by mapping a
+/// path to the root path.  It can also use to isolate part of the namespace
+/// by using a namespace mapping that maps a specific path to itself but
+/// does not include a root identity mapping.  See PcpMapFunction for more.
+/// The SdfLayerOffset component of the path mapping is not applied.
 ///
 class UsdImagingRerootingSceneIndex final
     : public HdSingleInputFilteringSceneIndexBase
 {
 public:
+    /// A convenience method that maps between two provided paths.
     static UsdImagingRerootingSceneIndexRefPtr New(
         HdSceneIndexBaseRefPtr const &inputScene,
         const SdfPath &srcPrefix,
         const SdfPath &dstPrefix)
     {
+        const PcpMapFunction mapFn =
+            PcpMapFunction::Create(
+                {{srcPrefix, dstPrefix}}, SdfLayerOffset());
         return TfCreateRefPtr(
-            new UsdImagingRerootingSceneIndex(
-                inputScene, srcPrefix, dstPrefix));
+            new UsdImagingRerootingSceneIndex(inputScene, mapFn));
+    }
+
+    static UsdImagingRerootingSceneIndexRefPtr New(
+        HdSceneIndexBaseRefPtr const &inputScene,
+        PcpMapFunction const& mapFn)
+    {
+        return TfCreateRefPtr(
+            new UsdImagingRerootingSceneIndex(inputScene, mapFn));
     }
 
     USDIMAGING_API
@@ -52,8 +66,7 @@ protected:
     USDIMAGING_API
     UsdImagingRerootingSceneIndex(
         HdSceneIndexBaseRefPtr const &inputScene,
-        const SdfPath &srcPrefix,
-        const SdfPath &dstPrefix);
+        PcpMapFunction const& mapFn);
 
     USDIMAGING_API
     ~UsdImagingRerootingSceneIndex() override;
@@ -72,17 +85,8 @@ protected:
         const HdSceneIndexObserver::DirtiedPrimEntries& entries) override;
 
 private:
-    SdfPath _SrcPathToDstPath(const SdfPath &primPath) const;
-    SdfPath _DstPathToSrcPath(const SdfPath &primPath) const;
-
-    const SdfPath _srcPrefix;
-    const SdfPath _dstPrefix;
-    // Prefixes of _dstPrefix
-    const SdfPathVector _dstPrefixes;
-    // Is _srcPrefix equal to _dstPrefix?
-    const bool _srcEqualsDst;
-    // Is _srcPrefix == / ?
-    const bool _srcPrefixIsRoot;
+    const PcpMapFunction _mapFn;
+    SdfPathTable<std::monostate> _targetRootPathsTable;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

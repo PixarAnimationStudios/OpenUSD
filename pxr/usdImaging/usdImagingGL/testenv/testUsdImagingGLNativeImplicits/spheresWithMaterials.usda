@@ -1,0 +1,75 @@
+#usda 1.0
+(
+)
+
+def Camera "main_cam"
+{
+    float4[] clippingPlanes = []
+    float2 clippingRange = (1, 2000000)
+    float focalLength = 34.2608
+    float focusDistance = 9.53194
+    float fStop = 0
+    float horizontalAperture = 22.711006
+    float horizontalApertureOffset = 0
+    token projection = "perspective"
+    float verticalAperture = 20.955
+    float verticalApertureOffset = 0
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 9.531940044024186, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Sphere "sphere1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/USD_Default_Green>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1.5, 1.5, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+def Sphere "sphere2" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/USD_Gold>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1.5, 1.5, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+def Sphere "sphere3" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/USD_Plastic>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1.5, -1.5, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+def Sphere "sphere4" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/USD_Plastic_Rough>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1.5, -1.5, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Scope "Materials" {
+    def "MaterialX" (
+        references = [
+            # USD Preview Surface MaterialX Nodes
+            @./mtlxFiles/usd_preview_surface_nodes.mtlx@</MaterialX>,
+        ]
+    )
+    {
+    }
+}
+
+def Xform "lights" 
+{
+    def DomeLight "DomeLight"
+    {
+        asset inputs:texture:file = "./StinsonBeach.hdr"
+    }
+}

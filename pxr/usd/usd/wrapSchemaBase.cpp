@@ -26,7 +26,9 @@ using namespace pxr_boost::python;
 // and raise an exception instead of crashing from Python.
 
 // Store the original __getattribute__ so we can dispatch to it after verifying
-// validity.
+// validity. Note that this TfPyObjWrapper is intentionally leaked to avoid
+// running Python refcount operations in its d'tor during process shutdown, 
+// which is unsafe if Python has been finalized.
 static TfStaticData<TfPyObjWrapper> _object__getattribute__;
 
 // This function gets wrapped as __getattribute__ on UsdSchemaBase.

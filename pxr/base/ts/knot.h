@@ -16,6 +16,7 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/gf/half.h"
+#include "pxr/base/gf/timeCode.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/type.h"
@@ -371,11 +372,17 @@ private:
     bool _CheckInParamVt(VtValue value) const;
     bool _CheckOutParamVt(VtValue* value) const;
 
-    template <typename T>
-    Ts_TypedKnotData<T>* _TypedData() const;
+    // Helpers to transform external VtValues holding time codes to and from
+    // internally stored VtValues holding doubles. If TsKnot::GetValueType
+    // isn't a time code, these functions return the stored value as-is.
+    VtValue _ToStorage(const VtValue& value) const;
+    VtValue _FromStorage(const VtValue& value) const;
 
     template <typename T>
-    const Ts_TypedKnotData<T>* _ConstTypedData() const;
+    Ts_TypedKnotData<Ts_StorageType<T>>* _TypedData() const;
+
+    template <typename T>
+    const Ts_TypedKnotData<Ts_StorageType<T>>* _ConstTypedData() const;
 
 private:
     // Main knot fields.  Never null.  The data is on the heap, and we own it
@@ -409,6 +416,7 @@ std::ostream& operator<<(std::ostream& out, const TsKnot &knot);
 /// TsKnot knot1(TfType::Find<double>());
 /// TsKnot knot2(TfType::Find<float>());
 /// TsKnot knot3(TfType::Find<GfHalf>());
+/// TsKnot knot4(TfType::Find<GfTimeCode>());
 /// </pre>
 ///
 /// One may write:
@@ -417,6 +425,7 @@ std::ostream& operator<<(std::ostream& out, const TsKnot &knot);
 /// TsDoubleKnot knot1;
 /// TsFloatKnot knot2;
 /// TsHalfKnot knot3;
+/// TsTimeCodeKnot knot4;
 /// </pre>
 ///
 template <typename T,
@@ -439,6 +448,10 @@ using TsFloatKnot = TsTypedKnot<float>;
 /// A knot-construction convenience.  See TsTypedKnot.
 using TsHalfKnot = TsTypedKnot<GfHalf>;
 
+/// \class TsTimeCodeKnot
+/// A knot-construction convenience.  See TsTypedKnot.
+using TsTimeCodeKnot = TsTypedKnot<GfTimeCode>;
+
 // Make sure we have coverage for all allowed types.
 #define _MAKE_CLAUSE(unused, tuple)                                          \
     static_assert(std::is_same_v<TF_PP_CAT(TF_PP_CAT(Ts,                     \
@@ -459,7 +472,7 @@ bool TsKnot::_CheckInParam(const T value) const
     if constexpr (!Ts_IsSupportedValueType<T>::value)
     {
         static_assert(Ts_IsSupportedValueType<T>::value,
-            "Cannot pass non-floating-point type as T-typed knot parameter");
+            "Cannot pass unsupported type as T-typed knot parameter");
         return false;
     }
     else
@@ -514,17 +527,17 @@ bool TsKnot::_CheckOutParam(T *valueOut) const
 }
 
 template <typename T>
-Ts_TypedKnotData<T>*
+Ts_TypedKnotData<Ts_StorageType<T>>*
 TsKnot::_TypedData() const
 {
-    return static_cast<Ts_TypedKnotData<T>*>(_data);
+    return static_cast<Ts_TypedKnotData<Ts_StorageType<T>>*>(_data);
 }
 
 template <typename T>
-const Ts_TypedKnotData<T>*
+const Ts_TypedKnotData<Ts_StorageType<T>>*
 TsKnot::_ConstTypedData() const
 {
-    return static_cast<const Ts_TypedKnotData<T>*>(_data);
+    return static_cast<const Ts_TypedKnotData<Ts_StorageType<T>>*>(_data);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -544,7 +557,7 @@ bool TsKnot::SetValue(const T value)
         return false;
     }
 
-    _TypedData<T>()->value = value;
+    _TypedData<T>()->value = Ts_StorageType<T>(value);
     return true;
 }
 
@@ -569,7 +582,7 @@ bool TsKnot::SetPreValue(const T value)
     }
 
     _data->dualValued = true;
-    _TypedData<T>()->preValue = value;
+    _TypedData<T>()->preValue = Ts_StorageType<T>(value);
     return true;
 }
 
@@ -604,7 +617,7 @@ bool TsKnot::SetPreTanSlope(const T slope)
         return false;
     }
 
-    _TypedData<T>()->preTanSlope = slope;
+    _TypedData<T>()->preTanSlope = Ts_StorageType<T>(slope);
     return true;
 }
 
@@ -631,7 +644,7 @@ bool TsKnot::SetPostTanSlope(const T slope)
         return false;
     }
 
-    _TypedData<T>()->postTanSlope = slope;
+    _TypedData<T>()->postTanSlope = Ts_StorageType<T>(slope);
     return true;
 }
 

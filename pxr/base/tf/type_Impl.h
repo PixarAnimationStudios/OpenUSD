@@ -62,9 +62,13 @@ TfType::Define()
 {
     Tf_BaseTypeInfos<BaseTypes> btis;
     Tf_TypeCastFunctions<T, BaseTypes> tcfs;
+
+    constexpr bool isPodType =
+        std::is_trivial_v<T> && std::is_standard_layout_v<T>;
+
     return _DefineImpl(
         typeid(T), btis.baseTypeInfos, tcfs.castFunctions, btis.NumBases,
-        TfSizeofType<T>::value, std::is_pod_v<T>, std::is_enum_v<T>);
+        TfSizeofType<T>::value, isPodType, std::is_enum_v<T>);
 }
 
 template <typename T>

@@ -48,21 +48,34 @@ UsdUtils_LocalizationContext::Process(
 
     _rootLayer = layer;
 
+    _composedExpressionVariables.clear();
+    _composedExpressionVariables.emplace_back(layer->GetExpressionVariables());
+
     _encounteredPaths.insert(_rootLayer->GetIdentifier());
-    _ProcessLayer(_rootLayer);
+    _ProcessLayer(_rootLayer, 0U);
 
     while (!_queue.empty()) {
-        std::string anchoredPath = _queue.back();
+        const QueueItem item = _queue.back();
         _queue.pop_back();
+        
 
-        if (!UsdStage::IsSupportedFile(anchoredPath)) {
+        if (!UsdStage::IsSupportedFile(item.anchoredPath)) {
             continue;
         }
 
-        SdfLayerRefPtr layer = SdfLayer::FindOrOpen(anchoredPath);
-        if (layer) {
-            _ProcessLayer(layer);
+        SdfLayerRefPtr layer = SdfLayer::FindOrOpen(item.anchoredPath);
+        if (!layer) {
+            continue;
         }
+
+        // Depending how this layer was enqueued (i.e. from a reference) we
+        // may need to compute the composed set of expression variables.
+        size_t expressionVariablesIndex = item.composeExpressionVariables 
+            ? _ComposeExpressionVariables(
+                item.parentExpressionVariablesIndex, layer) 
+            : item.parentExpressionVariablesIndex;
+
+        _ProcessLayer(layer, expressionVariablesIndex);
     }
 
     return true;
@@ -71,54 +84,85 @@ UsdUtils_LocalizationContext::Process(
 void
 UsdUtils_LocalizationContext::_EnqueueDependencies(
     const SdfLayerRefPtr layer,
-    const std::vector<std::string> &dependencies)
+    size_t expressionVariablesIndex,
+    const std::vector<std::string> &dependencies,
+    bool composeExpressionVariables)
 {
     for (const auto &dependency : dependencies) {
-        _EnqueueDependency(layer, dependency);
+        _EnqueueDependency(layer, expressionVariablesIndex, dependency, 
+                           composeExpressionVariables);
     }
 }
 
 void 
 UsdUtils_LocalizationContext::_EnqueueDependency(
     const SdfLayerRefPtr layer,
-    const std::string &assetPath) 
+    size_t expressionVariablesIndex,
+    const std::string &assetPath)
+{
+    _EnqueueDependency(layer, expressionVariablesIndex, assetPath, 
+                       /*composeExpressionVariables*/ false);
+}
+
+void 
+UsdUtils_LocalizationContext::_EnqueueDependency(
+    const SdfLayerRefPtr layer,
+    size_t expressionVariablesIndex,
+    const std::string &assetPath,
+    bool composeExpressionVariables) 
 {
     if (!_recurseLayerDependencies || assetPath.empty()) {
         return;
     }
 
+    const std::string processedPath = UsdUtils_EvaluateVariableExpressionInPath(
+        _composedExpressionVariables[expressionVariablesIndex], assetPath);
+
+    if (processedPath.empty()) {
+        return;
+    }
+
     const std::string anchoredPath = 
-        SdfComputeAssetPathRelativeToLayer(layer, assetPath);
+        SdfComputeAssetPathRelativeToLayer(layer, processedPath);
 
     if (_encounteredPaths.count(anchoredPath) > 0 || 
         _dependenciesToSkip.count(anchoredPath)) {
         return;
     }
 
+    _encounteredPaths.insert(anchoredPath);
+
     const std::pair<std::string, std::string> splitIdentifier =
         SdfLayer::SplitIdentifier(anchoredPath);
+
+    if (!_delegate->PathShouldResolve(splitIdentifier.first)) {
+        return;
+    }
 
     ArResolvedPath resolvedPath = ArGetResolver().Resolve(
         splitIdentifier.first);
     if (resolvedPath.empty()) {
         TF_WARN("Failed to resolve reference @%s@ with computed asset path "
             "@%s@ found in layer @%s@.",
-            assetPath.c_str(),
+            processedPath.c_str(),
             anchoredPath.c_str(),
             layer->GetRealPath().c_str());
+
         return;
     }
 
-    _encounteredPaths.insert(anchoredPath);
-
-    _queue.emplace_back(anchoredPath);
+    QueueItem& item = _queue.emplace_back();
+    item.anchoredPath = anchoredPath;
+    item.parentExpressionVariablesIndex = expressionVariablesIndex;
+    item.composeExpressionVariables = composeExpressionVariables;
 }
 
 void 
 UsdUtils_LocalizationContext::_ProcessLayer(
-    const SdfLayerRefPtr& layer ) 
+    const SdfLayerRefPtr& layer,
+    size_t expressionVariablesIndex) 
 {
-    _ProcessSublayers(layer);
+    _ProcessSublayers(layer, expressionVariablesIndex);
 
     std::stack<SdfPrimSpecHandle> dfs;
     dfs.push(layer->GetPseudoRoot());
@@ -129,11 +173,11 @@ UsdUtils_LocalizationContext::_ProcessLayer(
 
         // Metadata is processed even on the pseudoroot, which ensures
         // we process layer metadata properly.
-        _ProcessMetadata(layer, curr);
+        _ProcessMetadata(layer, expressionVariablesIndex, curr);
         if (curr != layer->GetPseudoRoot()) {
-            _ProcessPayloads(layer, curr);    
-            _ProcessProperties(layer, curr);
-            _ProcessReferences(layer, curr);
+            _ProcessPayloads(layer, expressionVariablesIndex, curr);
+            _ProcessProperties(layer, expressionVariablesIndex, curr);
+            _ProcessReferences(layer, expressionVariablesIndex, curr);
         }
 
         // variants "children"
@@ -152,9 +196,34 @@ UsdUtils_LocalizationContext::_ProcessLayer(
     }
 }
 
+// Computes the new set of expression variables for a layer with respect to
+// is parent layer.  In the case that this layer does not have any
+// expression variables, we dop not need to do anything here.
+size_t 
+UsdUtils_LocalizationContext::_ComposeExpressionVariables(
+    size_t parentExpressionVarIndex, 
+    const SdfLayerRefPtr& layer)
+{
+    const VtDictionary layerVariables = layer->GetExpressionVariables();
+    if (layerVariables.empty()) {
+        return parentExpressionVarIndex;
+    }
+
+    const size_t index = _composedExpressionVariables.size();
+    const VtDictionary& parentVariables = 
+        _composedExpressionVariables[parentExpressionVarIndex];
+    VtDictionary composedVariables = 
+        VtDictionaryOver(layerVariables, parentVariables);
+
+    _composedExpressionVariables.emplace_back(std::move(composedVariables));
+
+    return index;
+}
+
 void 
 UsdUtils_LocalizationContext::_ProcessSublayers(
-    const SdfLayerRefPtr& layer)
+    const SdfLayerRefPtr& layer,
+    size_t expressionVariablesIndex)
 {
     SdfSubLayerProxy sublayers = layer->GetSubLayerPaths();
 
@@ -163,13 +232,13 @@ UsdUtils_LocalizationContext::_ProcessSublayers(
     }
 
     for (const auto& sublayerPath : sublayers) {
-        _EnqueueDependency(layer, sublayerPath);
+        _EnqueueDependency(layer, expressionVariablesIndex, sublayerPath);
     }
     
     const std::vector<std::string> processedDeps = 
-        _delegate->ProcessSublayers(layer);
-    _EnqueueDependencies(layer, processedDeps);
-
+        _delegate->ProcessSublayers(layer,
+            _composedExpressionVariables[expressionVariablesIndex]);
+    _EnqueueDependencies(layer, expressionVariablesIndex, processedDeps);
 }
 
 static 
@@ -221,6 +290,7 @@ _GetTemplateAssetPathForClipSet(
 void
 UsdUtils_LocalizationContext::_ProcessMetadata(
     const SdfLayerRefPtr& layer,
+    size_t expressionVariablesIndex,
     const SdfPrimSpecHandle &primSpec)
 {
     if (_refTypesToInclude == ReferenceType::All) {
@@ -233,7 +303,7 @@ UsdUtils_LocalizationContext::_ProcessMetadata(
 
             _delegate->BeginProcessValue(layer, value);
 
-            _ProcessAssetValue(layer, infoKey, value, 
+            _ProcessAssetValue(layer, expressionVariablesIndex, infoKey, value, 
                 /*processingMetadata*/ true,
                 /*processingDictionary*/ false);
             _delegate->EndProcessValue(
@@ -261,7 +331,7 @@ UsdUtils_LocalizationContext::_ProcessMetadata(
             _delegate->ProcessClipTemplateAssetPath(layer, primSpec, clipSet, 
                 templatePath, clipFiles);
 
-        _EnqueueDependencies(layer, dependencies);
+        _EnqueueDependencies(layer, expressionVariablesIndex, dependencies);
     }
 }
 
@@ -316,9 +386,11 @@ UsdUtils_LocalizationContext::_GetTemplatedClips(
     return clipAssetRefs;
 }
 
+
 void 
 UsdUtils_LocalizationContext::_ProcessPayloads(
     const SdfLayerRefPtr& layer,
+    size_t expressionVariablesIndex,
     const SdfPrimSpecHandle &primSpec)
 {
     SdfPayloadsProxy payloads = primSpec->GetPayloadList();
@@ -328,18 +400,23 @@ UsdUtils_LocalizationContext::_ProcessPayloads(
 
     for (auto const& payload : payloads.GetAppliedItems()) {
         if (!payload.GetAssetPath().empty()) {
-            _EnqueueDependency(layer, payload.GetAssetPath());
+            _EnqueueDependency(
+                layer, expressionVariablesIndex, payload.GetAssetPath(),
+                /*composeExpressionVariables*/ true);
         }
     }
 
     const std::vector<std::string> processedDeps = 
-        _delegate->ProcessPayloads(layer, primSpec);
-    _EnqueueDependencies(layer, processedDeps);
+        _delegate->ProcessPayloads(layer, 
+            _composedExpressionVariables[expressionVariablesIndex], primSpec);
+    _EnqueueDependencies(layer, expressionVariablesIndex, processedDeps,
+                         /*composeExpressionVariables*/ true);
 }
 
 void
 UsdUtils_LocalizationContext::_ProcessReferences(
     const SdfLayerRefPtr& layer,
+    size_t expressionVariablesIndex,
     const SdfPrimSpecHandle &primSpec)
 {
     SdfReferencesProxy references = primSpec->GetReferenceList();
@@ -349,18 +426,23 @@ UsdUtils_LocalizationContext::_ProcessReferences(
 
     for (SdfReference const& reference : references.GetAppliedItems()) {
         if (!reference.GetAssetPath().empty()) {
-            _EnqueueDependency(layer, reference.GetAssetPath());
+            _EnqueueDependency(
+                layer, expressionVariablesIndex, reference.GetAssetPath(),
+                /*composeExpressionVariables*/ true);
         }
     }
 
     const std::vector<std::string> processedDeps = 
-        _delegate->ProcessReferences(layer, primSpec);
-    _EnqueueDependencies(layer, processedDeps);
+        _delegate->ProcessReferences(layer,
+            _composedExpressionVariables[expressionVariablesIndex], primSpec);
+    _EnqueueDependencies(layer, expressionVariablesIndex, processedDeps,
+                         /*composeExpressionVariables*/ true);
 }
 
 void
 UsdUtils_LocalizationContext::_ProcessProperties(
     const SdfLayerRefPtr& layer,
+    size_t expressionVariablesIndex,
     const SdfPrimSpecHandle &primSpec)
 {
     // Include external references in property values and metadata only if 
@@ -397,7 +479,7 @@ UsdUtils_LocalizationContext::_ProcessProperties(
                 }
 
                 _delegate->BeginProcessValue(layer, value);
-                _ProcessAssetValue(layer, value);
+                _ProcessAssetValue(layer, expressionVariablesIndex, value);
                 _delegate->EndProcessValue(layer, path, infoKey, value);
                 
             }
@@ -419,7 +501,7 @@ UsdUtils_LocalizationContext::_ProcessProperties(
 
             if (_ValueTypeIsRelevant(defValue)) {
                 _delegate->BeginProcessValue(layer, defValue);
-                _ProcessAssetValue(layer, defValue);
+                _ProcessAssetValue(layer, expressionVariablesIndex, defValue);
                 _delegate->EndProcessValue(
                         layer, path, SdfFieldKeys->Default, defValue);
             }
@@ -433,7 +515,8 @@ UsdUtils_LocalizationContext::_ProcessProperties(
                     }
 
                     _delegate->BeginProcessValue(layer, timeSampleVal);
-                    _ProcessAssetValue(layer, timeSampleVal);
+                    _ProcessAssetValue(
+                        layer, expressionVariablesIndex, timeSampleVal);
                     _delegate->EndProcessTimeSampleValue(
                             layer, path, t, timeSampleVal);
                 }
@@ -445,16 +528,19 @@ UsdUtils_LocalizationContext::_ProcessProperties(
 void 
 UsdUtils_LocalizationContext::_ProcessAssetValue(
     const SdfLayerRefPtr& layer,
+    size_t expressionVariablesIndex,
     const VtValue &val,
     bool processingMetadata,
     bool processingDictionary)
 {
-    _ProcessAssetValue(layer, std::string(), val, processingMetadata, processingDictionary);
+    _ProcessAssetValue(layer, expressionVariablesIndex, std::string(), val,
+                       processingMetadata, processingDictionary);
 }
 
 void
 UsdUtils_LocalizationContext::_ProcessAssetValue(
     const SdfLayerRefPtr& layer,
+    size_t expressionVariablesIndex,
     const std::string &keyPath,
     const VtValue &val,
     bool processingMetadata,
@@ -463,6 +549,9 @@ UsdUtils_LocalizationContext::_ProcessAssetValue(
     if (_ShouldFilterAssetPath(keyPath, processingMetadata)) {
         return;
     }
+
+    const VtDictionary& expressionVariables = 
+        _composedExpressionVariables[expressionVariablesIndex];
 
     if (val.IsHolding<SdfAssetPath>()) {
         auto assetPath = val.UncheckedGet<SdfAssetPath>();
@@ -473,11 +562,11 @@ UsdUtils_LocalizationContext::_ProcessAssetValue(
 
         const std::vector<std::string> processedDeps = 
             _delegate->ProcessValuePath(
-                    layer, keyPath, rawAssetPath, dependencies,
-                    processingMetadata, processingDictionary);
+                    layer, expressionVariables, keyPath, rawAssetPath,
+                    dependencies, processingMetadata, processingDictionary);
         
-        _EnqueueDependency(layer, rawAssetPath);
-        _EnqueueDependencies(layer, processedDeps);
+        _EnqueueDependency(layer, expressionVariablesIndex, rawAssetPath);
+        _EnqueueDependencies(layer, expressionVariablesIndex, processedDeps);
     } else if (val.IsHolding<VtArray<SdfAssetPath>>()) {
         const VtArray<SdfAssetPath>& originalArray = 
             val.UncheckedGet< VtArray<SdfAssetPath> >();
@@ -487,17 +576,19 @@ UsdUtils_LocalizationContext::_ProcessAssetValue(
             return;
         }
 
-        for (const SdfAssetPath& assetPath : originalArray) {                
+        for (const SdfAssetPath& assetPath : originalArray) {
             const std::string& rawAssetPath = assetPath.GetAssetPath();
             const std::vector<std::string> dependencies = 
                 _GetDependencies(layer, rawAssetPath);
 
             const std::vector<std::string> processedDeps = 
-                _delegate->ProcessValuePathArrayElement(
-                        layer, keyPath, rawAssetPath, dependencies);
+                _delegate->ProcessValuePathArrayElement(layer, 
+                        expressionVariables, keyPath, rawAssetPath,
+                        dependencies);
             
-            _EnqueueDependency(layer, rawAssetPath);
-            _EnqueueDependencies(layer, processedDeps);
+            _EnqueueDependency(layer, expressionVariablesIndex, rawAssetPath);
+            _EnqueueDependencies(layer, expressionVariablesIndex, 
+                                 processedDeps);
         }
 
         _delegate->EndProcessingValuePathArray(layer, keyPath);
@@ -514,9 +605,8 @@ UsdUtils_LocalizationContext::_ProcessAssetValue(
             const std::string dictKey = 
                 keyPath.empty() ? p.first : keyPath + ':' + p.first;
             _ProcessAssetValue(
-                layer, dictKey, p.second,
+                layer, expressionVariablesIndex, dictKey, p.second,
                 processingMetadata, /*processingDictionary*/true);
-
         }
     }
 }
@@ -582,13 +672,15 @@ UsdUtils_LocalizationContext::_ValueTypeIsRelevant(
             val.IsHolding<VtDictionary>();
 }
 
-struct UsdUtils_ExtractExternalReferencesClient {
+class UsdUtils_ExtractExternalReferencesClient :
+    public UsdUtils_ReadOnlyLocalizationClient 
+{
+protected:
     UsdUtilsDependencyInfo 
-    Process (
+    _ProcessDependency (
         const SdfLayerRefPtr &, 
         const UsdUtilsDependencyInfo &depInfo,
-        UsdUtils_DependencyType dependencyType
-    )
+        UsdUtils_DependencyType dependencyType) override
     {
         if (depInfo.GetDependencies().empty()) {
             PlaceAsset(depInfo.GetAssetPath(), dependencyType);
@@ -602,6 +694,7 @@ struct UsdUtils_ExtractExternalReferencesClient {
         return {};
     }
 
+private:
     void PlaceAsset(
         const std::string &dependency, 
         UsdUtils_DependencyType dependencyType)
@@ -620,6 +713,7 @@ struct UsdUtils_ExtractExternalReferencesClient {
         }
     }
 
+public:
     void SortAndRemoveDuplicates() {
         std::sort(sublayers.begin(), sublayers.end());
         sublayers.erase(std::unique(sublayers.begin(), sublayers.end()),
@@ -648,11 +742,7 @@ void UsdUtils_ExtractExternalReferences(
     TRACE_FUNCTION();
 
     UsdUtils_ExtractExternalReferencesClient client;
-    UsdUtils_ReadOnlyLocalizationDelegate delegate(
-        std::bind(&UsdUtils_ExtractExternalReferencesClient::Process, &client,
-        std::placeholders::_1, std::placeholders::_2, 
-        std::placeholders::_3));
-    UsdUtils_LocalizationContext context(&delegate);
+    UsdUtils_LocalizationContext context(&client);
     context.SetRefTypesToInclude(refTypesToInclude);
     context.SetRecurseLayerDependencies(false);
     context.SetResolveUdimPaths(params.GetResolveUdimPaths());

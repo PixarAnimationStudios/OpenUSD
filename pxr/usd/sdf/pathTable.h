@@ -164,7 +164,7 @@ private:
 
         // The firstChild and nextSiblingOrParent fields describe the tree
         // structure of paths.  An entry has one or more children when
-        // firstChild is non null.  Its chlidren are stored in a singly linked
+        // firstChild is non null.  Its children are stored in a singly linked
         // list, where nextSiblingOrParent points to the next entry in the list.
         //
         // The end of the list is reached when the bit stored in
@@ -250,7 +250,7 @@ public:
             return result;
         }
 
-        /// Returns true if incrementing this iterator would move to a child
+        /// Return true if incrementing this iterator would move to a child
         /// entry, false otherwise.
         bool HasChild() const {
             return bool(_entry->firstChild);
@@ -538,6 +538,66 @@ public:
         result.first = find(path);
         result.second = result.first.GetNextSubtree();
         return result;
+    }
+
+    /// Return a const_iterator to the element keyed by \a path if it is present
+    /// or the element keyed by the longest prefix of \a path otherwise.
+    /// Return end() if the table is empty.
+    const_iterator FindLongestPrefix(SdfPath const& path) const {
+        if (empty()) {
+            return end();
+        }
+
+        // Since `SdfPathTable` only works with absolute paths, we assume
+        // `path` is an absolute path.  
+
+        if (size() == 1) {
+            // If the table only has one entry, then the `/` entry is the
+            // longest prefix for any (absolute) path.
+            return begin();
+        }
+
+        if (const auto it = find(path); it != end()) {
+            return it;
+        }
+
+        auto _GetNthAncestor = [](SdfPath path, size_t n) {
+            for (size_t i = 0; i < n; i++) {
+                path = path.GetParentPath();
+            }
+            return path;
+        };
+
+        // To reduce how many times we call `find`, we'll do a binary
+        // search through the prefixes.
+        //
+        // `found` will be our longest prefix so far and `notFound` is the
+        // longest prefix that is not in the table.
+        auto foundIt = begin();
+        for (SdfPath notFoundPath = path;
+             notFoundPath.GetParentPath() != foundIt->first;) {
+            // Since notFoundPath is not foundIt's parent, n > 1.
+            size_t n = notFoundPath.GetPathElementCount() -
+                foundIt->first.GetPathElementCount();
+            const SdfPath probe = _GetNthAncestor(notFoundPath, n / 2);
+            // Update either `foundIt` or `notFoundPath`.
+            if (auto it = find(probe); it != end()) {
+                foundIt = it;
+            }
+            else {
+                notFoundPath = probe;
+            }
+        }
+
+        return foundIt;
+    }
+
+    /// Return an iterator to the element keyed by \a path if it is present
+    /// or the element keyed by the longest prefix of \a path otherwise.
+    /// Return end() if the table is empty.
+    iterator FindLongestPrefix(SdfPath const& path) {
+        return iterator(const_cast<_Entry*>(
+            std::as_const(*this).FindLongestPrefix(path)._entry));
     }
 
     /// Return 1 if there is an element for \a path in the table, otherwise 0.

@@ -15,7 +15,6 @@
 #include "pxr/exec/exec/types.h"
 
 #include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/type.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -56,8 +55,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     /* function.                                                             */ \
     TF_REGISTRY_FUNCTION(ExecDefinitionRegistryTag) {                           \
         ExecComputationBuilder self =                                           \
-            ExecComputationBuilder::ConstructionAccess::Construct(              \
-                TfType::FindByName(#SchemaType));                               \
+            ExecComputationBuilder::ConstructionAccess::Construct(#SchemaType); \
         PXR_NS::exec_registration::_EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA_NAME( \
             SchemaType)(self);                                                  \
     }                                                                           \

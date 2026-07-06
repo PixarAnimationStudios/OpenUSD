@@ -106,6 +106,10 @@ My_TestGLDrawing::InitTest()
         GfVec3d worldCenter = (world.GetMin() + world.GetMax()) / 2.0;
         double worldSize = world.GetSize().GetLength();
 
+        if (GetStageFilePath() == "ni_ni_ni.usda") {
+            worldSize *= 0.25;
+        }
+        
         std::cerr << "worldCenter: " << worldCenter << "\n";
         std::cerr << "worldSize: " << worldSize << "\n";
         if (UsdGeomGetStageUpAxis(_stage) == UsdGeomTokens->z) {
@@ -210,7 +214,34 @@ My_TestGLDrawing::DrawTest(bool offscreen)
                             .GetPrototype().GetPath();
         _engine->SetSelected({prototype2.AppendPath(SdfPath("cube"))});
         Draw();
-    } // else nothing.
+    } else if (GetStageFilePath() == "ni_ni_ni.usda") {
+        _engine->SetSelected({SdfPath("/World/CubePlane0")});
+        Draw();
+        _engine->SetSelected({SdfPath("/World/CubePlane1")});
+        Draw();
+        _engine->SetSelected({SdfPath("/World/CubePlane0/Cubes0")});
+        Draw();
+        _engine->SetSelected({SdfPath("/World/CubePlane0/Cubes2")});
+        Draw();
+        _engine->SetSelected({SdfPath("/World/CubePlane1/Cubes0")});
+        Draw();
+        _engine->SetSelected({SdfPath("/World/CubePlane1/Cubes1")});
+        Draw();
+        _engine->SetSelected({SdfPath("/World/CubePlane1/Cubes2")});
+        Draw();
+        _engine->SetSelected({SdfPath("/World/CubePlane0/Cubes0/Cube0")});
+        Draw();
+        _engine->SetSelected({SdfPath("/World/CubePlane1/Cubes0/Cube1")});
+        Draw();
+        _engine->SetSelected({SdfPath("/World/CubePlane1/Cubes1/Cube4")});
+        Draw();
+        _engine->SetSelected({
+                SdfPath("/World/CubePlane0"),
+                SdfPath("/World/CubePlane1/Cubes1/Cube2")});
+        Draw();
+    } else {
+        TF_CODING_ERROR("Unknown test scenario.\n");
+    }
 }
 
 void

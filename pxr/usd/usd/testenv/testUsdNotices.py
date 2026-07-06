@@ -6,11 +6,24 @@
 # https://openusd.org/license.
 
 import contextlib, os, platform, sys, unittest
-from pxr import Ar,Sdf,Usd,Tf
+from pxr import Ar,Sdf,Usd,Tf,Ts
 
 allFormats = ['usd' + x for x in 'ac']
 
 class TestUsdNotices(unittest.TestCase):
+
+    @contextlib.contextmanager
+    def ExpectedNotice(self, stage, callback):
+        received = False
+        def _RunTest(notice, sender):
+            self.assertEqual(notice.GetStage(), stage)
+            callback(notice, sender)
+            nonlocal received
+            received = True
+        key = Tf.Notice.Register(Usd.Notice.ObjectsChanged, _RunTest, stage)
+        yield
+        self.assertTrue(received, "Did not receive notice")
+
     def setUp(self):
         self._ResetCounters()
 
@@ -191,34 +204,41 @@ class TestUsdNotices(unittest.TestCase):
             prim = s.DefinePrim("/Foo")
 
             def OnAttributeCreation(notice, stage):
-                self.assertEqual(notice.GetStage(), stage)
-                self.assertEqual(notice.GetResyncedPaths(), [Sdf.Path("/Foo.attr")])
+                attr = stage.GetPrimAtPath("/Foo").GetAttribute("attr")
+                self.assertEqual(notice.GetResyncedPaths(), [attr.GetPath()])
                 self.assertEqual(notice.GetChangedInfoOnlyPaths(), [])
-                self.assertTrue(notice.AffectedObject(stage.GetPrimAtPath("/Foo").GetAttribute("attr")))
-                self.assertTrue(notice.ResyncedObject(stage.GetPrimAtPath("/Foo").GetAttribute("attr")))
-                self.assertTrue(not notice.ChangedInfoOnly(stage.GetPrimAtPath("/Foo").GetAttribute("attr")))
+                self.assertTrue(notice.AffectedObject(attr))
+                self.assertTrue(notice.ResyncedObject(attr))
+                self.assertTrue(not notice.ChangedInfoOnly(attr))
 
-            objectsChanged = Tf.Notice.Register(
-                Usd.Notice.ObjectsChanged, OnAttributeCreation, s)
-            attr = prim.CreateAttribute("attr", Sdf.ValueTypeNames.Int)
+            with self.ExpectedNotice(s, OnAttributeCreation):
+                attr = prim.CreateAttribute("attr", Sdf.ValueTypeNames.Double)
 
-            def OnAttributeValueChange(notice, stage):
-                self.assertEqual(notice.GetStage(), stage)
-                self.assertEqual(notice.GetResyncedPaths(), [])
-                self.assertTrue(notice.GetChangedInfoOnlyPaths() == \
-                    [Sdf.Path("/Foo.attr")])
-                self.assertTrue(notice.AffectedObject(
-                    stage.GetPrimAtPath("/Foo").GetAttribute("attr")))
-                self.assertTrue(not notice.ResyncedObject(
-                    stage.GetPrimAtPath("/Foo").GetAttribute("attr")))
-                self.assertTrue(notice.ChangedInfoOnly(
-                    stage.GetPrimAtPath("/Foo").GetAttribute("attr")))
+            def OnAttributeValueChange(field):
+                def _Test(notice, stage, field):
+                    attr = stage.GetPrimAtPath("/Foo").GetAttribute("attr")
 
-            objectsChanged = Tf.Notice.Register(
-                Usd.Notice.ObjectsChanged, OnAttributeValueChange, s)
-            attr.Set(42)
+                    self.assertEqual(notice.GetResyncedPaths(), [])
+                    self.assertEqual(notice.GetChangedInfoOnlyPaths(),
+                                     [attr.GetPath()])
+                    self.assertTrue(notice.AffectedObject(attr))
+                    self.assertTrue(not notice.ResyncedObject(attr))
+                    self.assertTrue(notice.ChangedInfoOnly(attr))
+                    self.assertTrue(notice.HasChangedFields(attr))
+                    self.assertEqual(notice.GetChangedFields(attr), [field])
 
-            del objectsChanged
+                return lambda notice, stage: _Test(notice, stage, field)
+
+            with self.ExpectedNotice(s, OnAttributeValueChange("default")):
+                attr.Set(42)
+
+            with self.ExpectedNotice(s, OnAttributeValueChange("timeSamples")):
+                attr.Set(42, time=1)
+
+            with self.ExpectedNotice(s, OnAttributeValueChange("spline")):
+                spline = Ts.Spline("double")
+                spline.SetKnot(Ts.Knot(time=1, value=42))
+                attr.SetSpline(spline)
 
     def test_ObjectsChangedNoticeForRelationships(self):
         for fmt in allFormats:
@@ -430,36 +450,25 @@ class TestUsdNotices(unittest.TestCase):
 
         s = Usd.Stage.Open(rootLayer)
 
-        @contextlib.contextmanager
-        def ExpectedNotice(stage, callback):
-            received = False
-            def _RunTest(notice, sender):
-                callback(notice)
-                nonlocal received
-                received = True
-            key = Tf.Notice.Register(Usd.Notice.ObjectsChanged, _RunTest, stage)
-            yield
-            self.assertTrue(received, "Did not receive notice")
-
         # Author a change to the expression variables in the root layer
         # stack. This should not send a resync for any objects, but it
         # should send a resolved asset path resync covering the entire stage
         # since there may be asset-valued attributes (that we may have never 
         # pulled a value from) that depend on those variables.
-        def RootResync(notice):
+        def RootResync(notice, stage):
             self.assertEqual(notice.GetResyncedPaths(), [])
             self.assertEqual(notice.GetResolvedAssetPathsResyncedPaths(), ['/'])
             self.assertEqual(notice.GetChangedInfoOnlyPaths(), ['/'])
             self.assertEqual(notice.GetChangedFields('/'), ['expressionVariables'])
 
-        with ExpectedNotice(s, RootResync):
+        with self.ExpectedNotice(s, RootResync):
             rootLayer.expressionVariables = {'ROOT':'B'}
 
         # Author a change to the expression variables in a referenced layer
         # stack. This should not send a resync for the prim(s) that are
         # referencing that layer, but it should send a resolved asset path
         # resync covering those two prims.
-        def ReferencingPrimsResync(notice):
+        def ReferencingPrimsResync(notice, stage):
             self.assertEqual(notice.GetResyncedPaths(), [])
             self.assertEqual(notice.GetResolvedAssetPathsResyncedPaths(), 
                              ['/Ref1', '/Ref2'])
@@ -477,7 +486,7 @@ class TestUsdNotices(unittest.TestCase):
             self.assertEqual(
                 notice.GetChangedFields('/Ref2'), ['expressionVariables'])
 
-        with ExpectedNotice(s, ReferencingPrimsResync):
+        with self.ExpectedNotice(s, ReferencingPrimsResync):
             refLayer.expressionVariables = {'REF':'B'}
 
 if __name__ == "__main__":

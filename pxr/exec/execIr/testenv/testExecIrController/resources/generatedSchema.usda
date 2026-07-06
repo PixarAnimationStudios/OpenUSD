@@ -14,3 +14,35 @@ class AddOneController "AddOneController"
         irRole = "OutputAttribute"
     )
 }
+
+class AddController "AddController"
+{
+    double invertibleInput = 0 (
+        irIsInvertible = true
+        irRole = "InputAttribute"
+    )
+    double nonInvertibleInput = 0 (
+        irIsInvertible = false
+        irRole = "InputAttribute"
+    )
+    double output = 0 (
+        irIsInvertible = true
+        irRole = "OutputAttribute"
+    )
+}
+
+class AddWithClampController "AddWithClampController"
+{
+    double invertibleInput = 0 (
+        irIsInvertible = true
+        irRole = "InputAttribute"
+    )
+    double nonInvertibleInput = 0 (
+        irIsInvertible = false
+        irRole = "InputAttribute"
+    )
+    double output = 0 (
+        irIsInvertible = true
+        irRole = "OutputAttribute"
+    )
+}

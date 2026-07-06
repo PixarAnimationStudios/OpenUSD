@@ -37,7 +37,7 @@ public:
     void Compute(const VdfContext &context) const override;
 
 private:
-    ExecCallbackFn _callback;
+    const ExecCallbackFn _callback;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

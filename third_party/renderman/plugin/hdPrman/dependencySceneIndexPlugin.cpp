@@ -340,6 +340,7 @@ _ComputeCameraDependencies(const HdContainerDataSourceHandle &)
 
 #endif // PXR_VERSION >= 2307
 
+#if PXR_VERSION >= 2308
 class _VolumePrimContainerDataSource final : public HdContainerDataSource
 {
 public:
@@ -422,8 +423,9 @@ public:
 private:
     const HdContainerDataSourceHandle _primContainer;
 };
+#endif
 
-
+#if PXR_VERSION >= 2505
 class _CameraPrimContainerDataSource final : public HdContainerDataSource
 {
 public:
@@ -462,6 +464,7 @@ public:
 private:
     const HdContainerDataSourceHandle _primContainer;
 };
+#endif // PXR_VERSION >= 2505
 
 
 TF_DECLARE_REF_PTRS(_SceneIndex);
@@ -487,6 +490,7 @@ public:
         HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
         
         if (prim.primType == HdPrimTypeTokens->volume) {
+#if PXR_VERSION >= 2308
             // Override prim data source in a lazy manner instead of using
             // a lazy container data source override for the dependencies, like:
             //
@@ -511,18 +515,45 @@ public:
             //
             prim.dataSource =
                 _VolumePrimContainerDataSource::New(primPath, prim.dataSource);
+#else
+            return
+                { prim.primType,
+                  HdContainerDataSourceEditor(prim.dataSource)
+                      .Overlay(
+                          HdDependenciesSchema::GetDefaultLocator(),
+                          HdLazyContainerDataSource::New(
+                              std::bind(_ComputeVolumeFieldBindingDependencies,
+                                        primPath, prim.dataSource)))
+                      .Finish() };
+#endif
         }
 
+#if PXR_VERSION >= 2308
         if (HdPrimTypeIsLight(prim.primType) && prim.dataSource) {
             // Override prim data source in a lazy manner.
             prim.dataSource =
                 _LightPrimContainerDataSource::New(prim.dataSource);
         }
+#else
+        if (HdPrimTypeIsLight(prim.primType)) {
+            return
+                { prim.primType,
+                  HdContainerDataSourceEditor(prim.dataSource)
+                      .Overlay(
+                          HdDependenciesSchema::GetDefaultLocator(),
+                          HdLazyContainerDataSource::New(
+                              std::bind(_ComputeLightFilterDependencies,
+                                        prim.dataSource)))
+                      .Finish() };
+        }
+#endif
 
+#if PXR_VERSION >= 2505
         if (prim.primType == HdPrimTypeTokens->camera && prim.dataSource) {
             prim.dataSource =
                 _CameraPrimContainerDataSource::New(prim.dataSource);
         }
+#endif
 
         return prim;
     }

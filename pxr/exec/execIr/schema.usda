@@ -10,7 +10,27 @@ def "GLOBAL" (
     customData = {
         string libraryName = "execIr"
         string libraryPath = "pxr/exec/execIr"
-        bool skipCodeGeneration = true
+    }
+)
+{
+}
+
+class "IrController" (
+    doc = """
+    An abstract schema that represents an invertible controller.
+
+    @warning
+    The functionality provided by this schema is very limited, subject to
+    change, and not yet ready for production use.
+
+    Controllers have explicit input and output attributes, a forward computation
+    that produces output values from input values and an inverse computation
+    that computes the input values that satisfy a given set of desired output
+    values.
+    """
+    inherits = </Typed>
+    customData = {
+        string className = "Controller"
     }
 )
 {
@@ -18,70 +38,351 @@ def "GLOBAL" (
 
 class IrFkController "IrFkController" (
     doc = """
-    A simple invertible FK controller.
+    A simple invertible controller that computes a forward kinematic transform.
 
-    The forward computation takes inputs from scalar translate and rotate
-    FK attributes, and a parent space, and produces a posed space. The inverse
-    computation takes a desired posed space and the parent space as input and
-    produces the FK attribute values that produce the desired space.
+    @warning
+    The functionality provided by this schema is very limited, subject to
+    change, and not yet ready for production use.
 
-    Note: The functionality here is extremely limited, subject to change, and
-    not yet ready for production use.
+    An FK controller takes as inputs scalar translate and rotate attributes and
+    parent and default spaces, and computes a posed space that can be used to
+    drive model posing. The parent space input allows one ExecIrFkController to
+    be the child of another, linking them in a hierarchy. A hierarchy of FK
+    controllers functions like a transform hierarchy, with the child inheriting
+    the transformation of the parent. The resulting network of controllers can
+    be used collectively to pose a model or some part of a model, such as an
+    arm.
+
+    An FK controller also defines an inverse computation that takes as inputs a
+    desired posed space and the parent and default spaces, and computes the FK
+    attribute values that produce the desired pose. This capability enables
+    authoring operations that need to compute inverses. E.g., a model can be
+    posed by multiple rigs, and inversion can be used to compute the
+    compensating input values needed to switch from one rig to another, while
+    maintaining the same pose.
     """
-    inherits = </Typed>
+    inherits = </IrController>
     customData = {
         string className = "FkController"
     }
 )
 {
-    matrix4d ParentIn:Space = (
+    matrix4d parentIn:space = (
         (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
         irRole = "InputAttribute"
         irIsInvertible = False
+        doc = """
+        If the FK controller has a parent controller, this attribute takes the
+        parent's posed space as input.
+        """
+    )
+    matrix4d parentIn:defaultSpace = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "InputAttribute"
+        irIsInvertible = False
+        doc = """
+        If the FK controller has a parent controller, this attribute takes the
+        parent's default space as input.
+        """
     )
 
-    matrix4d Out:Space = (
+    matrix4d out:space = (
         (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
         irRole = "OutputAttribute"
         irIsInvertible = True
+        doc = """
+        A 4x4 matrix that represents the computed output space produced by the
+        controller.
+        """
     )
-
-    matrix4d In:DefaultSpace = (
+    matrix4d out:defaultSpace = (
         (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
         irRole = "PassthroughAttribute"
+        doc = """
+        Passes through the value of the 'in:defaultSpace' attribute.
+        """
     )
-    double In:Tx = 0 (
+
+    matrix4d in:defaultSpace = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "PassthroughAttribute"
+        doc = """
+        A local-to-world space transform representing the "zero" position for
+        posing.
+        """
+    )
+    double in:tx = 0 (
         irRole = "InputAttribute"
         irIsInvertible = True
     )
-    double In:Ty = 0 (
+    double in:ty = 0 (
         irRole = "InputAttribute"
         irIsInvertible = True
     )
-    double In:Tz = 0 (
+    double in:tz = 0 (
         irRole = "InputAttribute"
         irIsInvertible = True
     )
 
-    double In:Rx = 0 (
+    double in:rx = 0 (
         irRole = "InputAttribute"
         irIsInvertible = True
     )
-    double In:Ry = 0 (
+    double in:ry = 0 (
         irRole = "InputAttribute"
         irIsInvertible = True
     )
-    double In:Rz = 0 (
+    double in:rz = 0 (
         irRole = "InputAttribute"
         irIsInvertible = True
     )
-    double In:Rspin = 0 (
+    double in:rspin = 0 (
         irRole = "InputAttribute"
         irIsInvertible = True
+        doc = """
+        The rotation attribute that gets zeroed out when solving for rotation
+        values.
+        """
     )
 
-    token In:RotationOrder = "XYZ" (
+    token in:rotationOrder = "XYZ" (
         irRole = "SwitchAttribute"
         allowedTokens = ["XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX"]
     )
+}
+
+class IrSwitchController "IrSwitchController" (
+    doc = """
+    An invertible controller that can determine which of several rigs are active
+    at a given time, depending on the value of a switch attribute.
+
+    @warning
+    The functionality provided by this schema is very limited, subject to
+    change, and not yet ready for production use. In particular, this schema is
+    hard coded to support two rigs, named "rig1" and "rig2". In the future, a
+    general switch controller schema will likely be configurable via application
+    of multi-apply schemas. This will allow switch controllers to switch among
+    more than two rigs with arbitrary names.
+
+    The ExecIrSwitchController has two input attributes and one output
+    attribute, which provides the value of one of the two inputs attributes,
+    depending on the value of the 'switch' attribute. Multiple switch
+    controllers can be ganged together to switch between two different rigs.    
+    """
+    inherits = </IrController>
+    customData = {
+        string className = "SwitchController"
+    }
+)
+{
+    token switch = "rig1" (
+        irRole = "SwitchAttribute"
+        allowedTokens = ["rig1", "rig2"]
+        doc = """
+        The value of this attribute determines which rig is selected at any
+        given time.
+        """
+
+        customData = {
+            # TODO: The switch must be disabled from code generation, because
+            # there is a bug in usdGenSchema. 'switch' is a reserved C++
+            # keyword. While usdGenSchema properly fixes the token name to
+            # 'ExecIrTokens->switch_', the generated schema class continues to
+            # refer to the token by the unfixed name 'ExecIrTokens->switch'.
+            # By setting apiName to the empty string, we disable generation of
+            # schema methods for this attribute, which sidesteps the bug.
+            string apiName = ""
+        }
+    )
+
+    matrix4d rig1:space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "InputAttribute"
+        irIsInvertible = True
+        doc = """
+        Takes as input the value of rig1's 'out:posed' space.
+        """
+    )
+    matrix4d rig2:space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "InputAttribute"
+        irIsInvertible = True
+        doc = """
+        Takes as input the value of rig2's 'out:posed' space.
+        """
+    )
+    matrix4d out:space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        irRole = "OutputAttribute"
+        irIsInvertible = True
+        doc = """
+        Produces either the value of 'rig1:space' or 'rig2:space' depending on
+        the value of the 'switch' attribute.
+        """
+    )
+}
+
+class "IrXformable" (
+    doc = """
+    An abstract schema that provides an animation interface for an animatable
+    coordinate space.
+
+    @warning
+    The functionality provided by this schema is very limited, subject to
+    change, and not yet ready for production use.
+
+    ExecIrXformable defines scalar avars that produce rest and default spaces
+    that are meant to be fed into a controller that computes a posed space that
+    feeds back into the IrXformable posed space attribute. In this way,
+    ExecIrXformable%s act as the interface for a controller network, providing
+    the input avars where animation is authored and the resulting computed
+    outputs that can be used to drive model posing.
+
+    # Spaces
+
+    **Rest Space**: A local-to-world space transform representing the position
+    of the transformable object "at rest," generally meaning before any posing
+    has happened. This can be thought of as a "bind pose" for deformation.
+    Deformations use the local difference between restSpace and posedSpace to
+    deform the model. Note that rest space is always orthonormalized.
+   
+    **Default Space**: A local-to-world space transform that represents the
+    "zero" position for posing. This may be different from the rest pose in
+    order to provide default scaling for a character, to make variants, or to
+    set a more natural starting place for animation controls. The default space
+    is passed to controllers to be used as the 'start pose'.
+   
+    **Posed Space**: The final world space transform, after posing. This is
+    generally the computed result of some set of controllers that define the
+    pose (IK, FK, etc.).
+    
+    # Connecting to controllers
+
+    The intended use is for an ExecIrXformable to be posed by one or more
+    ExecIrController%s that compute its posed space. One or more
+    ExecIrController%s connect to one or more of the avars in the 'avars'
+    namespace, compute a posed space, and then supply that to the 'posed:space'
+    attribute. Note that without an external controller, the avars under the
+    'avars:' namespace don't do anything. In that case, the ExecIrXformable will
+    fall back to following the parent's posed space (including the local rest
+    and default offsets).
+    
+    """
+    inherits = </Typed>
+    customData = {
+        string className = "Xformable"
+    }
+)
+{
+    double rest:tx = 0
+    double rest:ty = 0
+    double rest:tz = 0
+    double rest:rx = 0
+    double rest:ry = 0
+    double rest:rz = 0
+    matrix4d rest:space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        doc = """
+        A local-to-world space transform representing the position of this
+        object before any posing has happened.
+
+        The value combines the effect of the scalar 'rest:' attributes to yield
+        a local transform. Rest space inherits from the nearest ExecIrXformable
+        or UsdGeomXformable namespace ancestor.
+        """
+    )
+
+    double default:tx = 0
+    double default:ty = 0
+    double default:tz = 0
+    double default:rx = 0
+    double default:ry = 0
+    double default:rz = 0
+    matrix4d default:space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        doc = """
+        A local-to-world space transform representing the "zero" position for
+        posing.
+
+        This may be different from rest space in order to provide default
+        scaling for a character, to make variants, or to set a more natural
+        starting place for animation controls. Combines the effect of the local
+        transform defined by the 'default:' scalars with the rest space offset.
+        """
+    )
+
+    matrix4d posed:space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1))
+    matrix4d posed:defaultSpace = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+        doc = """
+        Default space as computed by the controller network.
+
+        This is almost always identical to 'default:space', except for unusual
+        cases where the control network wants to affect the default space (as in
+        re-rooting).
+        """
+    )
+
+    double avars:tx = 0
+    double avars:ty = 0
+    double avars:tz = 0
+    double avars:rx = 0
+    double avars:ry = 0
+    double avars:rz = 0
+    double avars:rspin = 0 (
+        doc = """
+        The rotation avar that gets zeroed out when solving for rotation values.
+        """
+    )
+    token avars:rotationOrder = "XYZ" (
+        allowedTokens = ["XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX"]
+        doc = """
+        The rotation order for computing the posed space from the scalar rotate
+        avars.
+
+        Note that this does not affect the rotation order for rest or default
+        space.
+        """
+    )
+    matrix4d avars:defaultSpace = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1)) (
+    )
+    double avars:unitScaleFactor = 0 (
+       doc = """
+       Size of a canonical unit.
+
+       This value is used by various controllers to preserve scale independence.
+       For example, translating by 1.0 will move this far in world space.
+       """
+    )
+
+    matrix4d parent:space = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1))
+    matrix4d parent:defaultSpace = (
+        (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1))
+}
+
+class IrJointScope "IrJointScope" (
+    doc = """
+    A concrete typed schema that represents the joint of an armature-based
+    model.
+
+    @warning
+    The functionality provided by this schema is very limited, subject to
+    change, and not yet ready for production use.
+
+    See the base schema ExecIrXformable for the properties and behavior that
+    this schema provides; this schema exists mainly so we can specialize drawing
+    of guides.
+    """
+    inherits = </IrXformable>
+    customData = {
+        string className = "JointScope"
+    }
+)
+{
+    double guide:length = 0
+    color3f guide:displayColor = (1.0, 0.3, 0.3)
+    float guide:displayOpacity = 0.5
 }

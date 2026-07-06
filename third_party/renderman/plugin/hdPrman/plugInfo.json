@@ -72,16 +72,31 @@
                             "position": "firstAfter"
                         }
                     },
+                    "HdPrman_IdSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
+                        "priority": 0,
+                        "displayName": "Prman ID Assignemnt",
+
+                        # phase=115, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase115"],
+                        "ordering": {
+                            "after": ["hdPrman:phase113", "hdPrman:matFilt", "hdPrman:implicitSurfaces"],
+                            "position": "firstAfter"
+                        }
+                    },
                     "HdPrman_ImplicitSurfaceSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
                         "displayName": "Prman Implicit Surfaces",
 
-                        # phase=0, InsertionOrderAtStart
-                        "tags": ["hdPrman:phase0"],
+                        # phase=3, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase3", "hdPrman:implicitSurfaces"],
                         "ordering": {
-                            "after": "hd:sceneAssembly",
+                            "after": [  
+                                "hd:sceneAssembly",
+                                "hdGp:proceduralResolution"],
                             "position": "firstAfter"
                         }
                     },
@@ -319,6 +334,42 @@
                         "tags": ["hdPrman:phase1"],
                         "ordering": {
                             "before": ["hdPrman:phase2", "hdPrman:matFilt", "hdPrman:matResolve"],
+                            "position": "firstAfter"
+                        }
+                    },
+                    "HdPrman_RenderingColorSpaceSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
+                        "priority": 0,
+                        "displayName": "Translates Color attributes from their Source Color Space to the Rendering Color Space.",
+
+                        # phase=5, InsertionOrderAtStart
+                        "tags": ["hdPrman:colorSpace"],
+                        # XXX Unclear if this has a dependency on other
+                        # plugins that manipulate material networks on lights.
+                        # XXX Preseving existing order. This should come after
+                        # mat filt plugins, but that doesn't correctly handle
+                        # lama materials. See HYD-3581.
+                        # i.e. it should be:
+                        #"after": ["hdPrman:phase4", "hdPrman:matFilt"],
+                        "ordering": {
+                            "after": ["hdPrman:phase4"],
+                            "position": "firstAfter"
+                        }
+                    },
+                    "HdPrman_DisplayColorSpaceSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
+                        "priority": 0,
+                        "displayName": "Translates Color attributes from the Rendering Color Space to the Display Color Space.",
+                        
+                        # phase=5, InsertionOrderAtStart
+                        "tags": ["hdPrman:colorSpace"],
+                        # XXX Preseving existing order by having this go after
+                        # phase4/light linking. This shouldn't have any 
+                        # dependencies.
+                        "ordering": {
+                            "after": ["hdPrman:phase4"],
                             "position": "firstAfter"
                         }
                     }

@@ -183,7 +183,7 @@ public:
     /// attribute. Edges are not currently defined for a UsdGeomTetMesh, but
     /// could be derived from all tetrahedron edges or surface face edges only 
     /// if a specific use-case arises.</li>
-    /// <li><b>segment</b>: for any Curve, each pair of elements 
+    /// <li><b>segment</b>: for any UsdGeomBasisCurves, each pair of elements 
     /// in the _indices_ attribute would refer to a pair of indices 
     /// (_curveIndex_, _segmentIndex_) where _curveIndex_ is the position of 
     /// the specified curve in the Curve's _curveVertexCounts_ attribute, and 

@@ -127,11 +127,19 @@ ArchOpenFile(char const* fileName, char const* mode);
 #   define ArchCloseFile(fd)            close(fd)
 #endif
 
-#if defined(ARCH_OS_WINDOWS)
-#   define ArchUnlinkFile(path)         _unlink(path)
-#else
-#   define ArchUnlinkFile(path)         unlink(path)
-#endif
+/// Touch \p fileName, updating access and modification time to 'now'.
+///
+/// A simple touch-like functionality. Simple in a sense that it does not
+/// offer as many options as the same-name unix touch command, but otherwise
+/// is identical to the default touch behavior. If \p create is true and 
+/// the file does not already exist, an empty file gets created, otherwise
+/// the touch call fails if the file does not already exist.
+ARCH_API bool ArchTouchFile(const std::string& fileName, bool create);
+
+/// Delete a file.
+///
+/// Returns 0 on success, or -1 otherwise.
+ARCH_API int ArchUnlinkFile(const char* path);
 
 #if defined(ARCH_OS_WINDOWS)
     ARCH_API int ArchWindowsFileAccess(const char* path, uint32_t dwAccessMask);
@@ -158,6 +166,9 @@ ArchOpenFile(char const* fileName, char const* mode);
 #   define ArchFileIsaTTY(stream)       isatty(stream)
 #endif
 
+/// Delete an empty directory
+///
+/// Returns 0 on success, or -1 otherwise.
 #if defined(ARCH_OS_WINDOWS)
     ARCH_API int ArchRmDir(const char* path);
 #else
@@ -274,10 +285,10 @@ ARCH_API
 int ArchMakeTmpFile(const std::string& tmpdir,
                     const std::string& prefix, std::string* pathname = 0);
 
-/// Create a temporary sub-direcrory, in a given temporary directory.
+/// Create a temporary sub-directory, in a given temporary directory.
 ///
 /// The result returned has the form TMPDIR/prefix.XXXXXX/ where TMPDIR is the
-/// given temporary directory and XXXXXX is a unique suffix.  Returns the the
+/// given temporary directory and XXXXXX is a unique suffix.  Returns the
 /// full path to the subdir in pathname.  Returns empty string on failure and
 /// errno is set.
 ///

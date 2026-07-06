@@ -111,8 +111,7 @@ private:
     GfVec2i _screenSize;
     HdBufferArrayRangeSharedPtr _counterBar;
     HdBufferArrayRangeSharedPtr _dataBar;
-    HdBufferArrayRangeSharedPtr _depthBar;
-    HdBufferArrayRangeSharedPtr _indexBar;
+    HdBufferArrayRangeSharedPtr _jointBar;
     HdBufferArrayRangeSharedPtr _uniformBar;
 };
 

@@ -10,6 +10,8 @@
 
 #include "pxr/usd/usdGeom/tokens.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -17,12 +19,15 @@ namespace {
 bool
 _ContainsDrawMode(const TfTokenVector &vec)
 {
-    for (const TfToken &token : vec) {
-        if (token == UsdImagingGeomModelSchemaTokens->drawMode) {
-            return true;
-        }
-    }
-    return false;
+    return std::find(vec.begin(), vec.end(),
+        UsdImagingGeomModelSchemaTokens->drawMode) != vec.end();
+}
+
+bool
+_ContainsCardVisibility(const TfTokenVector &vec)
+{
+    return std::find(vec.begin(), vec.end(),
+        UsdImagingGeomModelSchemaTokens->cardVisibility) != vec.end();
 }
 
 class _ModelDataSource : public HdContainerDataSource
@@ -36,22 +41,23 @@ public:
              _ContainsDrawMode(_parentModel->GetNames())) {
             result.push_back(UsdImagingGeomModelSchemaTokens->drawMode);
         }
+        if (!_ContainsCardVisibility(result) &&
+             _ContainsCardVisibility(_parentModel->GetNames())) {
+            result.push_back(
+                UsdImagingGeomModelSchemaTokens->cardVisibility);
+        }
 
         return result;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        if (name != UsdImagingGeomModelSchemaTokens->drawMode) {
-            return _primModel->Get(name);
+        if (name == UsdImagingGeomModelSchemaTokens->drawMode) {
+            return _GetDrawMode();
         }
-        if (HdTokenDataSourceHandle ds =
-               UsdImagingGeomModelSchema(_primModel).GetDrawMode()) {
-            const TfToken drawMode = ds->GetTypedValue(0.0f);
-            if (!drawMode.IsEmpty() && drawMode != UsdGeomTokens->inherited) {
-                return ds;
-            }
+        if (name == UsdImagingGeomModelSchemaTokens->cardVisibility) {
+            return _GetCardVisibility();
         }
-        return UsdImagingGeomModelSchema(_parentModel).GetDrawMode();
+        return _primModel->Get(name);
     }
 
     static
@@ -78,6 +84,28 @@ private:
     {
     }
 
+    HdDataSourceBaseHandle _GetDrawMode() {
+        if (HdTokenDataSourceHandle ds =
+               UsdImagingGeomModelSchema(_primModel).GetDrawMode()) {
+            const TfToken drawMode = ds->GetTypedValue(0.0f);
+            if (!drawMode.IsEmpty() && drawMode != UsdGeomTokens->inherited) {
+                return ds;
+            }
+        }
+        return UsdImagingGeomModelSchema(_parentModel).GetDrawMode();
+    }
+
+    HdDataSourceBaseHandle _GetCardVisibility() {
+        if (HdTokenDataSourceHandle ds =
+               UsdImagingGeomModelSchema(_primModel).GetCardVisibility()) {
+            const TfToken drawMode = ds->GetTypedValue(0.0f);
+            if (!drawMode.IsEmpty() && drawMode != UsdGeomTokens->inherited) {
+                return ds;
+            }
+        }
+        return UsdImagingGeomModelSchema(_parentModel).GetCardVisibility();
+    }
+
     HdContainerDataSourceHandle const _primModel;
     HdContainerDataSourceHandle const _parentModel;
 };
@@ -102,12 +130,23 @@ UsdImagingFlattenedGeomModelDataSourceProvider::ComputeDirtyLocatorsForDescendan
 {
     static const HdDataSourceLocator drawModeLocator(
         UsdImagingGeomModelSchemaTokens->drawMode);
+    static const HdDataSourceLocator cardModeComplexityLocator(
+        UsdImagingGeomModelSchemaTokens->cardVisibility);
     static const HdDataSourceLocatorSet drawModeLocatorSet{
         drawModeLocator};
+    static const HdDataSourceLocatorSet cardModeComplexityLocatorSet{
+        cardModeComplexityLocator};
+    static const HdDataSourceLocatorSet drawModeAndCardModeComplexityLocatorSet{
+        drawModeLocator, cardModeComplexityLocator};
 
-    // Only the draw mode is inherited by ancestors.
-    if (locators->Intersects(drawModeLocator)) {
+    bool drawMode = locators->Intersects(drawModeLocator);
+    bool cardInvis = locators->Intersects(cardModeComplexityLocator);
+    if (drawMode && cardInvis) {
+        *locators = drawModeAndCardModeComplexityLocatorSet;
+    } else if (drawMode) {
         *locators = drawModeLocatorSet;
+    } else if (cardInvis) {
+        *locators = cardModeComplexityLocatorSet;
     } else {
         *locators = HdDataSourceLocatorSet();
     }

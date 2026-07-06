@@ -17,6 +17,7 @@
 #include "pxr/base/tf/type.h"
 
 #include <atomic>
+#include <initializer_list>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -56,6 +57,14 @@ struct Exec_InputKey
     bool optional:1;
 };
 
+/// A reference-counted pointer to a shared mutable vector of input keys.
+using Exec_InputKeyVectorRefPtr =
+    TfDelegatedCountPtr<class Exec_InputKeyVector>;
+
+/// A reference-counted pointer to a shared immutable vector of input keys.
+using Exec_InputKeyVectorConstRefPtr =
+    TfDelegatedCountPtr<const class Exec_InputKeyVector>;
+
 /// A vector of input keys.
 ///
 /// This is chosen for efficient storage of input keys in
@@ -66,20 +75,26 @@ struct Exec_InputKey
 class Exec_InputKeyVector
 {
 public:
-    /// Returns a TfDelegatedCountPtr to a new Exec_InputKeyVector.
-    template <class... Args>
-    static TfDelegatedCountPtr<Exec_InputKeyVector> MakeShared(Args &&...args) {
-        return TfMakeDelegatedCountPtr<Exec_InputKeyVector>(
-            std::forward<Args>(args)...);
+    /// Returns a Exec_InputKeyVectorConstRefPtr to a new Exec_InputKeyVector.
+    static Exec_InputKeyVectorConstRefPtr MakeConstShared(
+        std::initializer_list<Exec_InputKey> &&keys) {
+        return TfMakeDelegatedCountPtr<const Exec_InputKeyVector>(
+            std::move(keys));
     }
 
-    /// Returns a TfDelegatedCountPtr to a common immutable empty vector.
+    /// Returns a Exec_InputKeyVectorRefPtr to a new empty Exec_InputKeyVector.
+    static Exec_InputKeyVectorRefPtr MakeShared() {
+        return TfMakeDelegatedCountPtr<Exec_InputKeyVector>();
+    }
+
+    /// Returns a Exec_InputKeyVectorConstRefPtr to a common immutable empty
+    /// vector.
     ///
     /// Computation definitions can return this pointer instead of allocating
     /// their own empty vectors.
     ///
-    static TfDelegatedCountPtr<const Exec_InputKeyVector> GetEmptyVector() {
-        static TfDelegatedCountPtr<const Exec_InputKeyVector> emptyVector =
+    static Exec_InputKeyVectorConstRefPtr GetEmptyVector() {
+        static Exec_InputKeyVectorConstRefPtr emptyVector =
             TfMakeDelegatedCountPtr<const Exec_InputKeyVector>();
         return emptyVector;
     }
@@ -129,14 +144,6 @@ private:
 
     mutable std::atomic_int _refCount;
 };
-
-/// A reference-counted pointer to a shared mutable vector of input keys.
-using Exec_InputKeyVectorRefPtr =
-    TfDelegatedCountPtr<Exec_InputKeyVector>;
-
-/// A reference-counted pointer to a shared immutable vector of input keys.
-using Exec_InputKeyVectorConstRefPtr =
-    TfDelegatedCountPtr<const Exec_InputKeyVector>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

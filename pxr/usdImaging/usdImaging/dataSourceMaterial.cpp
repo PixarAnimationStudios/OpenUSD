@@ -607,12 +607,15 @@ public:
         }
 
         if (name == HdMaterialNodeSchemaTokens->parameters) {
+            const TfToken nodeName = 
+                _RelativePath(_materialPrefix, _shaderNode.GetPath())
+                .GetToken();
             return _UsdImagingDataSourceShadingNodeParameters::New(
                 _shaderNode, _stageGlobals, _sceneIndexPath,
                     _locatorPrefix.IsEmpty()
                         ? _locatorPrefix
                         : _locatorPrefix
-                            .Append(_shaderNode.GetPrim().GetPath().GetToken())
+                            .Append(nodeName)
                             .Append(HdMaterialNodeSchemaTokens->parameters)
                             );
 

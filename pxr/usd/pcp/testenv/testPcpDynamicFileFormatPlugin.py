@@ -5,8 +5,6 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 
-from __future__ import print_function
-
 from pxr import Sdf, Pcp, Plug, Tf, Vt
 import os, unittest
 
@@ -674,6 +672,47 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
             in pi.primStack)
         
         print("\ntest_AncestralPayloadsAndVariants Success!\n")
+
+    def test_AncestralPayloadsMapFunction(self):
+        # Tests that the map function for an ancestral dynamic payload
+        # maps the paths where the payload arc was introduced.
+        
+        print("\ntest_AncestralPayloadsMapFunction start\n")
+
+        rootLayerFile = 'root.usda'
+        rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
+        self.assertTrue(rootLayer)
+        cache = self._CreatePcpCache(rootLayer)
+
+        cache.RequestPayloads(['/AncestralMapFunction/Model'], [])
+
+        # This prim index structure should look like:
+        #
+        #  root: root.usda /AncestralMapFunction/Model/Inherit
+        #    implied inherit: root.usda /AncestralMapFunction/Model/Class
+        #      ancestral payload: model.testpcpdynamic /Model/Class
+        #    payload: model.testpcpdynamic /Model/Inherit
+        #      inherit: model.testpcpdynamic /Model/Class
+        #
+        # Verify that the map function for the ancestral payload beneath
+        # the implied inherit maps the source and target sites where the
+        # payload was authored.
+        #
+        # XXX:
+        # The presence of the ancestral payload node seems like a
+        # pre-existing bug since it duplicates the opinion of the authored
+        # inherit beneath the payload. This test case may become moot when
+        # that bug is fixed.
+        pi, err = cache.ComputePrimIndex('/AncestralMapFunction/Model/Inherit')
+        self.assertFalse(err)
+
+        payloadNode = pi.rootNode.children[0].children[0]
+        self.assertEqual(payloadNode.arcType, Pcp.ArcTypePayload)
+        self.assertEqual(
+            payloadNode.mapToParent.Evaluate(), 
+            Pcp.MapFunction({'/Model':'/AncestralMapFunction/Model'}))
+
+        print("\ntest_AncestralPayloadsMapFunction Success!\n")
 
     def test_Changes(self):
         # Change processing behavior can be different for Pcp caches in USD mode

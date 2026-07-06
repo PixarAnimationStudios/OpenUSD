@@ -70,45 +70,9 @@ int main(int argc, char *argv[])
     tasks.push_back(index->GetTask(renderTask));
 
     // setup AOVs
-    const SdfPath colorAovId = SdfPath("/aov_color");
-    const SdfPath depthAovId = SdfPath("/aov_depth");
-    HdRenderPassAovBindingVector aovBindings;
-
-    // color AOV
-    {
-        HdRenderPassAovBinding colorAovBinding;
-        const HdAovDescriptor colorAovDesc = 
-            renderDelegate.GetDefaultAovDescriptor(HdAovTokens->color);
-        colorAovBinding.aovName = HdAovTokens->color;
-        colorAovBinding.clearValue = VtValue(GfVec4f(0.1f, 0.1f, 0.1f, 1.0f));
-        colorAovBinding.renderBufferId = colorAovId;
-        colorAovBinding.aovSettings = colorAovDesc.aovSettings;
-        aovBindings.push_back(std::move(colorAovBinding));
-
-        HdRenderBufferDescriptor colorRbDesc;
-        colorRbDesc.dimensions = GfVec3i(512, 512, 1);
-        colorRbDesc.format = colorAovDesc.format;
-        colorRbDesc.multiSampled = false;
-        delegate->AddRenderBuffer(colorAovId, colorRbDesc);
-    }
-
-    // depth AOV
-    {
-        HdRenderPassAovBinding depthAovBinding;
-        const HdAovDescriptor depthAovDesc = 
-            renderDelegate.GetDefaultAovDescriptor(HdAovTokens->depth);
-        depthAovBinding.aovName = HdAovTokens->depth;
-        depthAovBinding.clearValue = VtValue(1.f);
-        depthAovBinding.renderBufferId = depthAovId;
-        depthAovBinding.aovSettings = depthAovDesc.aovSettings;
-        aovBindings.push_back(std::move(depthAovBinding));
-
-        HdRenderBufferDescriptor depthRbDesc;
-        depthRbDesc.dimensions = GfVec3i(512, 512, 1);
-        depthRbDesc.format = depthAovDesc.format;
-        depthRbDesc.multiSampled = false;
-        delegate->AddRenderBuffer(depthAovId, depthRbDesc);
-    }
+    const HdRenderPassAovBindingVector aovBindings =
+        delegate->AddAovBindings(GfVec2i(512, 512));
+    const SdfPath colorAovId = aovBindings[0].renderBufferId;
 
     // prep lights
     GlfSimpleLight light1;
@@ -138,7 +102,7 @@ int main(int argc, char *argv[])
     // set renderTask
     delegate->SetTaskParam(
         renderTask, HdTokens->collection,
-        VtValue(HdRprimCollection(HdTokens->geometry, 
+        VtValue(HdRprimCollection(HdTokens->geometry,
                 HdReprSelector(HdReprTokens->refined))));
 
     // set render setup param
@@ -152,7 +116,7 @@ int main(int argc, char *argv[])
     // draw.
     engine.Execute(index.get(), &tasks);
     delegate->WriteRenderBufferToFile(colorAovId, "color1.png");
-    
+
     // --------------------------------------------------------------------
     // add light
     GlfSimpleLight light2;

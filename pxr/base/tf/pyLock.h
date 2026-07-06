@@ -175,10 +175,28 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#else 
+#else // PXR_PYTHON_SUPPORT_ENABLED is false:
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+// Stub-out TfPyLock to do nothing when Python support is disabled.
+class TfPyLock {
+public:
+    void Acquire() {}
+    void Release() {}
+    void BeginAllowThreads() {}
+    void EndAllowThreads() {}
+};
+
+// Helper class for TF_PY_ALLOW_THREADS_IN_SCOPE()
+struct TfPyEnsureGILUnlockedObj
+{
+};
 
 // When python is disabled, we stub this macro out to nothing.
 #define TF_PY_ALLOW_THREADS_IN_SCOPE()
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 

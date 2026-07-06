@@ -10,6 +10,7 @@
 #include "internal_huf.h"
 #include "internal_xdr.h"
 
+#include <limits.h>
 #include <string.h>
 
 /**************************************/
@@ -171,10 +172,11 @@ wdec16 (uint16_t l, uint16_t h, uint16_t* a, uint16_t* b)
 static void
 wav_2D_encode (uint16_t* in, int nx, int ox, int ny, int oy, uint16_t mx)
 {
-    int w14 = (mx < (1 << 14)) ? 1 : 0;
-    int n   = (nx > ny) ? ny : nx;
-    int p   = 1; // == 1 <<  level
-    int p2  = 2; // == 1 << (level+1)
+    int     w14  = (mx < (1 << 14)) ? 1 : 0;
+    int     n    = (nx > ny) ? ny : nx;
+    int     p    = 1; // == 1 <<  level
+    int     p2   = 2; // == 1 << (level+1)
+    int64_t oy64 = oy;
 
     //
     // Hierarchical loop on smaller dimension n
@@ -183,9 +185,9 @@ wav_2D_encode (uint16_t* in, int nx, int ox, int ny, int oy, uint16_t mx)
     while (p2 <= n)
     {
         uint16_t* py  = in;
-        uint16_t* ey  = in + oy * (ny - p2);
-        int       oy1 = oy * p;
-        int       oy2 = oy * p2;
+        uint16_t* ey  = in + oy64 * (ny - p2);
+        int64_t   oy1 = oy64 * p;
+        int64_t   oy2 = oy64 * p2;
         int       ox1 = ox * p;
         int       ox2 = ox * p2;
         uint16_t  i00, i01, i10, i11;
@@ -284,10 +286,11 @@ wav_2D_decode (
     int       oy, // i : y offset
     uint16_t  mx)  // i : maximum in[x][y] value
 {
-    int w14 = (mx < (1 << 14)) ? 1 : 0;
-    int n   = (nx > ny) ? ny : nx;
-    int p   = 1;
-    int p2;
+    int     w14  = (mx < (1 << 14)) ? 1 : 0;
+    int     n    = (nx > ny) ? ny : nx;
+    int     p    = 1;
+    int     p2;
+    int64_t oy64 = oy;
 
     //
     // Search max level
@@ -307,9 +310,9 @@ wav_2D_decode (
     while (p >= 1)
     {
         uint16_t* py  = in;
-        uint16_t* ey  = in + oy * (ny - p2);
-        int       oy1 = oy * p;
-        int       oy2 = oy * p2;
+        uint16_t* ey  = in + oy64 * (ny - p2);
+        int64_t   oy1 = oy64 * p;
+        int64_t   oy2 = oy64 * p2;
         int       ox1 = ox * p;
         int       ox2 = ox * p2;
         uint16_t  i00, i01, i10, i11;
@@ -502,11 +505,13 @@ internal_exr_apply_piz (exr_encode_pipeline_t* encode)
         nx     = curc->width;
         ny     = curc->height;
         wcount = (int) (curc->bytes_per_element / 2);
+        if (wcount > 0 && nx > INT_MAX / wcount)
+            return EXR_ERR_CORRUPT_CHUNK;
         for (int j = 0; j < wcount; ++j)
         {
             wav_2D_encode (wavbuf + j, nx, wcount, ny, wcount * nx, maxValue);
         }
-        wavbuf += nx * ny * wcount;
+        wavbuf += (uint64_t) nx * ny * wcount;
     }
 
     nBytes    = 0;
@@ -655,11 +660,13 @@ internal_exr_undo_piz (
         nx     = curc->width;
         ny     = curc->height;
         wcount = (int) (curc->bytes_per_element / 2);
+        if (wcount > 0 && nx > INT_MAX / wcount)
+            return EXR_ERR_CORRUPT_CHUNK;
         for (int j = 0; j < wcount; ++j)
         {
             wav_2D_decode (wavbuf + j, nx, wcount, ny, wcount * nx, maxValue);
         }
-        wavbuf += nx * ny * wcount;
+        wavbuf += (uint64_t) nx * ny * wcount;
     }
 
     //

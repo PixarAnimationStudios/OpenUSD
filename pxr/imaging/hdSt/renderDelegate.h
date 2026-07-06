@@ -133,11 +133,11 @@ public:
     /// \name Misc public API
     // ---------------------------------------------------------------------- //
 
-    // Returns whether or not HdStRenderDelegate can run on the current
-    // hardware.
+    // Returns whether HdStRenderDelegate can run on the given hardware.
     HDST_API
     static bool IsSupported(
-        HdRendererCreateArgs const& rendererCreateArgs = {});
+        const HdRendererCreateArgsSchema &,
+        std::string * reasonWhyNot = nullptr);
 
     // Returns a raw pointer to the draw items cache owned (solely) by the
     // render delegate.
@@ -151,6 +151,9 @@ public:
     HDST_API
     static
     const HdRenderDelegateInfo &GetRenderDelegateInfo();
+
+    HDST_API
+    static bool IsEnabledNativeSphereRenderingSupport();
     
 private:
     void _ApplyTextureSettings();

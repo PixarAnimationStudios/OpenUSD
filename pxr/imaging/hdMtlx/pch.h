@@ -16,7 +16,6 @@
 #include <sys/mount.h>
 #include <sys/param.h>
 #include <unistd.h>
-#include <mach/mach_time.h>
 #endif
 #if defined(ARCH_OS_LINUX)
 #include <glob.h>
@@ -24,7 +23,6 @@
 #include <sys/param.h>
 #include <sys/statfs.h>
 #include <unistd.h>
-#include <x86intrin.h>
 #endif
 #if defined(ARCH_OS_WINDOWS)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -34,11 +32,11 @@
 #include <Windows.h>
 #include <intrin.h>
 #include <io.h>
-#include <stringapiset.h>
 #endif
 #include <algorithm>
 #include <any>
 #include <atomic>
+#include <chrono>
 #include <cinttypes>
 #include <cmath>
 #include <complex>
@@ -66,6 +64,7 @@
 #include <numeric>
 #include <optional>
 #include <ostream>
+#include <regex>
 #include <set>
 #include <sstream>
 #include <stdarg.h>
@@ -85,6 +84,7 @@
 #include <vector>
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include <MaterialXCore/Document.h>
+#include <MaterialXCore/Generated.h>
 #include <MaterialXCore/Library.h>
 #include <MaterialXCore/Node.h>
 #include <MaterialXFormat/Environ.h>

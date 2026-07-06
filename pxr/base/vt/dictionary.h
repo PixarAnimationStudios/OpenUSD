@@ -322,6 +322,59 @@ public:
     VT_API
     std::pair<iterator, bool> insert(const value_type& obj);
 
+    /// Attempts to insert \p value into the \p VtDictionary at \p key.
+    template<class... Args>
+    std::pair<iterator, bool>
+    try_emplace(const key_type& key, 
+                Args&&... args)
+    {
+        TfAutoMallocTag tag("Vt", "VtDictionary::try_emplace");
+        _CreateDictIfNeeded();
+        std::pair<_Map::iterator, bool> inserted = 
+            _dictMap->try_emplace(key, std::forward<Args>(args)...);
+        return {iterator(_dictMap.get(), inserted.first), inserted.second};
+    }
+
+    /// Attempts to insert \p value into the \p VtDictionary at \p key.
+    template<class... Args>
+    std::pair<iterator, bool>
+    try_emplace(key_type&& key, 
+                Args&&... args)
+    {
+        TfAutoMallocTag tag("Vt", "VtDictionary::try_emplace");
+        _CreateDictIfNeeded();
+        std::pair<_Map::iterator, bool> inserted = 
+            _dictMap->try_emplace(std::move(key), std::forward<Args>(args)...);
+        return {iterator(_dictMap.get(), inserted.first), inserted.second};
+    }
+
+    /// Inserts or assigns \p value into the \p VtDictionary at \p key.
+    template<class... Args>
+    std::pair<iterator, bool> 
+    insert_or_assign(const key_type& key, 
+                     Args&&... args)
+    {
+        TfAutoMallocTag tag("Vt", "VtDictionary::insert_or_assign");
+        _CreateDictIfNeeded();
+        std::pair<_Map::iterator, bool> inserted = 
+            _dictMap->insert_or_assign(key, std::forward<Args>(args)...);
+        return {iterator(_dictMap.get(), inserted.first), inserted.second};
+    }
+
+    /// Inserts or assigns \p value into the \p VtDictionary at \p key.
+    template<class... Args>
+    std::pair<iterator, bool> 
+    insert_or_assign(key_type&& key, 
+                     Args&&... args)
+    {
+        TfAutoMallocTag tag("Vt", "VtDictionary::insert_or_assign");
+        _CreateDictIfNeeded();
+        std::pair<_Map::iterator, bool> inserted = 
+            _dictMap->insert_or_assign(
+                std::move(key), std::forward<Args>(args)...);
+        return {iterator(_dictMap.get(), inserted.first), inserted.second};
+    }
+
     /// Return a pointer to the value at \p keyPath if one exists.  \p keyPath
     /// is a delimited string of sub-dictionary names.  Key path elements are
     /// produced by calling TfStringTokenize() with \p keyPath and
@@ -382,6 +435,7 @@ private:
         std::vector<std::string>::const_iterator curKeyElem,
         std::vector<std::string>::const_iterator keyElemEnd);
 
+    VT_API
     void _CreateDictIfNeeded();
 
 };

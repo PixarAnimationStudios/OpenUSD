@@ -19,7 +19,7 @@ if (NOT BUILD_SHARED_LIBS)
 endif()
 
 pxr_register_test(testUsdCheckerListValidators
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --includeKeywords UsdCoreValidators,UsdGeomValidators,UsdPhysicsValidators,UsdShadeValidators,UsdSkelValidators,UsdUtilsValidators -d"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --includeKeywords UsdCoreValidators,UsdGeomValidators,UsdLuxValidators,UsdPhysicsValidators,UsdShadeValidators,UsdSkelValidators,UsdUtilsValidators -d"
     TESTENV testenv/testUsdChecker
     STDOUT_REDIRECT baseRules_validationFramework.txt
     DIFF_COMPARE baseRules_validationFramework.txt
@@ -182,4 +182,11 @@ pxr_register_test(testUsdChecker23
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/badImageableConnectableMaterialDesc.usda"
     TESTENV testenv/testUsdChecker
     EXPECTED_RETURN_CODE 1
+)
+
+# ensures that validation of paths with variable expressions correctly resolve
+pxr_register_test(testUsdChecker24
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker clean/clean_variable_expression.usda"
+    TESTENV testenv/testUsdChecker
+    EXPECTED_RETURN_CODE 0
 )

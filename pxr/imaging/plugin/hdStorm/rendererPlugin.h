@@ -26,11 +26,11 @@ public:
         override;
 
     bool IsSupported(
-        HdRendererCreateArgs const &rendererCreateArgs,
+        const HdRendererCreateArgsSchema &rendererCreateArgs,
         std::string *reasonWhyNot = nullptr) const override;
 
-    HdContainerDataSourceHandle GetSceneIndexInputArgs() const override;
-    
+    HdContainerDataSourceHandle GetSceneIndexCreateArgs() const override;
+
 private:
     HdStormRendererPlugin(const HdStormRendererPlugin &)             = delete;
     HdStormRendererPlugin &operator =(const HdStormRendererPlugin &) = delete;

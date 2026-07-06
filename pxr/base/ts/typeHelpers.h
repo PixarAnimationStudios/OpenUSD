@@ -12,6 +12,7 @@
 #include "pxr/base/ts/api.h"
 #include "pxr/base/ts/types.h"
 #include "pxr/base/gf/half.h"
+#include "pxr/base/gf/timeCode.h"
 #include "pxr/base/tf/type.h"
 
 #include <cmath>
@@ -57,14 +58,21 @@ TfType Ts_GetTypeFromTypeName(const std::string &typeName);
 TS_API
 std::string Ts_GetTypeNameFromType(TfType valueType);
 
+template <class T>
+using Ts_StorageType =
+    std::conditional_t<std::is_same_v<T, GfTimeCode>, double, T>;
 
-// GfHalf doesn't have an overload for std::isfinite, so we provide an adapter.
+// GfHalf, GfTimeCode don't have an overload for std::isfinite, so we
+// provide adapters.
 //
 template <typename T>
 bool Ts_IsFinite(T value);
 
 template <>
 TS_API bool Ts_IsFinite(const GfHalf value);
+
+template <>
+TS_API bool Ts_IsFinite(const GfTimeCode value);
 
 template <typename T>
 bool Ts_IsFinite(const T value)

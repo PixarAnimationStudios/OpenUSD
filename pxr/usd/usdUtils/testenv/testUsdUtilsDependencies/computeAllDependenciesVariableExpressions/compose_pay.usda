@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    expressionVariables = {
+        string METADATA_ARR = "./metadata_arr.txt"
+    }
+
+    defaultPrim = "MetadataArr"
+)
+
+# The value for METADATA_ARR overwrites the INVALID value specified in root
+# due to the fact this layer is payloaded in.
+
+def "MetadataArr" (
+    assetInfo = {
+        asset[] meta_b = [@`"${METADATA_ARR}"`@, @`if(${IS_VALID}, "METADATA_ARR_TRUE")`@]
+    }
+) {}
+

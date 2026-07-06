@@ -11,6 +11,8 @@
 #include "pxr/exec/exec/inputKey.h"
 #include "pxr/exec/exec/privateBuiltinComputations.h"
 
+#include "pxr/base/tf/diagnosticLite.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 //
@@ -417,6 +419,19 @@ ExecComputationBuilder::~ExecComputationBuilder()
     Exec_DefinitionRegistry::RegistrationAccess::
         _GetInstanceForRegistration().SetComputationRegistrationComplete(
             _schemaType);
+}
+
+ExecComputationBuilder
+ExecComputationBuilder::ConstructionAccess::Construct(
+    const std::string &schemaTypeName)
+{
+    const TfType schemaType(TfType::FindByName(schemaTypeName));
+    if (schemaType.IsUnknown()) {
+        TF_CODING_ERROR(
+            "Attempt to build computations for unknown schema type name '%s'.",
+            schemaTypeName.c_str());
+    }
+    return ExecComputationBuilder(schemaType);
 }
 
 ExecPrimComputationBuilder 

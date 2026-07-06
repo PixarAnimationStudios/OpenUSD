@@ -16,6 +16,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyAdditionalRoleTokens,
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanRenderParamTokens, HD_PRMAN_RENDER_PARAM_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanPluginTokens, HD_PRMAN_PLUGIN_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanDisplayNamesTokens, HD_PRMAN_DISPLAY_NAMES);
+TF_DEFINE_PUBLIC_TOKENS(HdPrmanAttributeTokens, HD_PRMAN_ATTRIBUTE_NAMES);
 
 TF_MAKE_STATIC_DATA(std::vector<std::string>, _pluginDisplayNameTokens) {
     _pluginDisplayNameTokens->push_back(HdPrmanDisplayNamesTokens->RenderManRIS);

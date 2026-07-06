@@ -560,7 +560,7 @@ public:
 
     /// Set the spline using the current edit target.
     USD_API
-    bool SetSpline(const TsSpline &spline);
+    bool SetSpline(const TsSpline &spline) const;
 
     /// Clears the authored default value, all time samples and spline for this
     /// attribute at the current EditTarget and returns true on success.

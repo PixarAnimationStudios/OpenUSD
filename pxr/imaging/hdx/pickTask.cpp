@@ -42,7 +42,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(HdxPickTokens, HDX_PICK_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(
+    HdxPickResolveModeTokens, HDX_PICK_RESOLVE_MODE_TOKENS);
+
+TF_DEFINE_PUBLIC_TOKENS(
+    HdxPickTokens, HDX_PICK_TOKENS);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -548,6 +552,15 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         state->SetBlendEnabled(false);
         state->SetCullStyle(_params.cullStyle);
         state->SetLightingEnabled(false);
+
+        state->SetPointSize(_contextParams.pointSize);
+        state->SetPointSelectedSize(_contextParams.pointSelectedSize);
+
+        // Match depth bias from visual pass so surface depth is consistent.
+        state->SetDepthBiasUseDefault(false);
+        state->SetDepthBiasEnabled(_contextParams.depthBiasEnable);
+        state->SetDepthBias(_contextParams.depthBiasConstantFactor,
+                            _contextParams.depthBiasSlopeFactor);
 
         state->SetVolumeRenderingConstants(stepSize, stepSizeLighting);
         

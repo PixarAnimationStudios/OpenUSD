@@ -28,7 +28,7 @@ public:
     HdPrmanLoaderRendererPlugin();
 
     HDPRMANLOADER_API
-    virtual ~HdPrmanLoaderRendererPlugin();
+    ~HdPrmanLoaderRendererPlugin() override;
 
     HDPRMANLOADER_API
     HdRenderDelegate *CreateRenderDelegate() override;
@@ -41,14 +41,26 @@ public:
     void DeleteRenderDelegate(HdRenderDelegate *) override;
 
     HDPRMANLOADER_API
-#if PXR_VERSION < 2305
-    bool IsSupported() const override;
-#elif HD_API_VERSION < 83
-    bool IsSupported(bool gpuEnabled = true) const override;
-#else
     bool IsSupported(
+#if HD_API_VERSION >= 103
+        const HdRendererCreateArgsSchema &rendererCreateArgs,
+        std::string * reasonWhyNot = nullptr
+#elif HD_API_VERSION >= 83
         HdRendererCreateArgs const &rendererCreateArgs,
-        std::string * reasonWhyNot = nullptr) const override;
+        std::string * reasonWhyNot = nullptr
+#elif PXR_VERSION < 2305
+        bool gpuEnabled = true
+#endif
+        ) const override;
+
+#if HD_API_VERSION >= 90
+#if HD_API_VERSION >= 101
+    HDPRMANLOADER_API
+    HdContainerDataSourceHandle GetSceneIndexCreateArgs() const override;
+#else
+    HDPRMANLOADER_API
+    HdContainerDataSourceHandle GetSceneIndexInputArgs() const override;
+#endif
 #endif
 
 protected:

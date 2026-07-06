@@ -183,6 +183,7 @@ public:
     static constexpr double micrometers = 1e-6;
     static constexpr double millimeters = 0.001;
     static constexpr double centimeters = 0.01;
+    static constexpr double decimeters = 0.1;
     static constexpr double meters = 1.0;
     static constexpr double kilometers = 1000;
 

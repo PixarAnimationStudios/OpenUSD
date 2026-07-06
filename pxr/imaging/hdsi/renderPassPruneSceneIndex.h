@@ -11,6 +11,8 @@
 #include "pxr/imaging/hd/collectionExpressionEvaluator.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hdsi/api.h"
+#include "pxr/usd/sdf/pathTable.h"
+#include <mutex>
 #include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -81,6 +83,14 @@ private:
 
     // Flag used to track the first time prims have been added.
     bool _hasPopulated = false;
+
+    // Maps each instance location path to the set of instancer paths that
+    // reference it. Populated lazily in GetPrim() and used to find only the
+    // instancers affected by a prune change (via FindSubtreeRange), rather
+    // than dirtying all known instancers.
+    using InstanceToInstancerMap = SdfPathTable<SdfPathSet>;
+    mutable InstanceToInstancerMap _instanceToInstancerMap;
+    mutable std::mutex _instancerMutex;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

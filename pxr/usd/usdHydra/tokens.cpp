@@ -19,6 +19,7 @@ UsdHydraTokensType::UsdHydraTokensType() :
     HwPtexTexture_1("HwPtexTexture_1", TfToken::Immortal),
     HwUvTexture_1("HwUvTexture_1", TfToken::Immortal),
     hydraGenerativeProcedural("hydraGenerativeProcedural", TfToken::Immortal),
+    hydraRendererName("hydra:rendererName", TfToken::Immortal),
     infoFilename("inputs:file", TfToken::Immortal),
     infoVarname("inputs:varname", TfToken::Immortal),
     linear("linear", TfToken::Immortal),
@@ -39,6 +40,7 @@ UsdHydraTokensType::UsdHydraTokensType() :
     wrapS("wrapS", TfToken::Immortal),
     wrapT("wrapT", TfToken::Immortal),
     HydraGenerativeProceduralAPI("HydraGenerativeProceduralAPI", TfToken::Immortal),
+    HydraRenderPassAPI("HydraRenderPassAPI", TfToken::Immortal),
     allTokens({
         black,
         clamp,
@@ -50,6 +52,7 @@ UsdHydraTokensType::UsdHydraTokensType() :
         HwPtexTexture_1,
         HwUvTexture_1,
         hydraGenerativeProcedural,
+        hydraRendererName,
         infoFilename,
         infoVarname,
         linear,
@@ -69,7 +72,8 @@ UsdHydraTokensType::UsdHydraTokensType() :
         uv,
         wrapS,
         wrapT,
-        HydraGenerativeProceduralAPI
+        HydraGenerativeProceduralAPI,
+        HydraRenderPassAPI
     })
 {
 }

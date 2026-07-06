@@ -32,3 +32,11 @@ table.doxtable th:empty {
   font-weight: 400;
   font-size: 16px;
 }
+
+/* When inside #top (a flex container from doxygen-awesome), force the banner       
+ to span a full row and appear before the title/nav items. */                      
+#top .non_release_version_warning {                                                  
+  flex: 0 0 100%;                                                                    
+  order: -1;                                                                         
+  margin-bottom: 0;                                                                  
+}          

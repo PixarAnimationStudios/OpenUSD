@@ -33,6 +33,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#define HDX_PICK_RESOLVE_MODE_TOKENS \
+    (resolveNearestToCamera)         \
+    (resolveNearestToCenter)         \
+    (resolveUnique)                  \
+    (resolveAll)                     \
+    (resolveDeep)
+
+TF_DECLARE_PUBLIC_TOKENS(
+    HdxPickResolveModeTokens, HDX_API, HDX_PICK_RESOLVE_MODE_TOKENS);
+
 #define HDX_PICK_TOKENS              \
     /* Task context */               \
     (pickParams)                     \
@@ -44,14 +54,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (pickPoints)                     \
     (pickPointsAndInstances)         \
                                      \
-    /* Resolve mode */               \
-    (resolveNearestToCamera)         \
-    (resolveNearestToCenter)         \
-    (resolveUnique)                  \
-    (resolveAll)                     \
-    (resolveDeep)
+    HDX_PICK_RESOLVE_MODE_TOKENS
 
-TF_DECLARE_PUBLIC_TOKENS(HdxPickTokens, HDX_API, HDX_PICK_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(
+    HdxPickTokens, HDX_API, HDX_PICK_TOKENS);
 
 class HdStRenderBuffer;
 class HdStRenderPassState;
@@ -276,6 +282,11 @@ struct HdxPickTaskContextParams
         , depthMaskCallback(nullptr)
         , collection()
         , alphaThreshold(0.0001f)
+        , pointSize(3.0f)
+        , pointSelectedSize(5.0f)
+        , depthBiasEnable(false)
+        , depthBiasConstantFactor(0.0f)
+        , depthBiasSlopeFactor(0.0f)
         , outHits(nullptr)
     {}
 
@@ -290,6 +301,11 @@ struct HdxPickTaskContextParams
     DepthMaskCallback depthMaskCallback;
     HdRprimCollection collection;
     float alphaThreshold;
+    float pointSize;
+    float pointSelectedSize;
+    bool depthBiasEnable;
+    float depthBiasConstantFactor;
+    float depthBiasSlopeFactor;
     HdxPickHitVector *outHits;
 };
 

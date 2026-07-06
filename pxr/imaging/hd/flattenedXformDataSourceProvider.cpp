@@ -80,6 +80,8 @@ HdFlattenedXformDataSourceProvider::GetFlattenedDataSource(
             .SetResetXformStack(
                 HdRetainedTypedSampledDataSource<bool>::New(true))
             .Build();
+    static const HdBoolDataSourceHandle boolTrueDs =
+        HdRetainedTypedSampledDataSource<bool>::New(true);
 
     const HdXformSchema inputXform(ctx.GetInputDataSource());
 
@@ -119,8 +121,7 @@ HdFlattenedXformDataSourceProvider::GetFlattenedDataSource(
         // transform.
         return HdXformSchema::Builder()
             .SetMatrix(inputMatrixDataSource)
-            .SetResetXformStack(
-                HdRetainedTypedSampledDataSource<bool>::New(true))
+            .SetResetXformStack(boolTrueDs)
             .Build();
     } else {
         // Otherwise, concatenate the matrices. The return value is marked as
@@ -128,8 +129,7 @@ HdFlattenedXformDataSourceProvider::GetFlattenedDataSource(
         return HdXformSchema::Builder()
             .SetMatrix(_MatrixCombinerDataSource::New(
                 parentMatrixDataSource, inputMatrixDataSource))
-            .SetResetXformStack(
-                HdRetainedTypedSampledDataSource<bool>::New(true))
+            .SetResetXformStack(boolTrueDs)
             .Build();
     }
 }
