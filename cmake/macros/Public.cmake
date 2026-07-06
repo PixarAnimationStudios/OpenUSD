@@ -1070,12 +1070,17 @@ function(pxr_setup_plugins)
 
     # Add extra plugInfo.json include paths to the top-level plugInfo.json,
     # relative to that top-level file.
+    if(PXR_INSTALL_DLL_IN_BIN AND WIN32)
+        set(runtimeInstallDir "bin")
+    else()
+        set(runtimeInstallDir "lib")
+    endif()
     set(extraIncludes "")
     list(REMOVE_DUPLICATES PXR_EXTRA_PLUGINS)
     foreach(dirName ${PXR_EXTRA_PLUGINS})
         file(RELATIVE_PATH
             relDirName
-            "${CMAKE_INSTALL_PREFIX}/lib/usd"
+            "${CMAKE_INSTALL_PREFIX}/${runtimeInstallDir}/usd"
             "${CMAKE_INSTALL_PREFIX}/${dirName}"
         )
         set(extraIncludes "${extraIncludes},\n        \"${relDirName}/\"")
@@ -1086,7 +1091,7 @@ function(pxr_setup_plugins)
          "${plugInfoContents}")
     install(
         FILES "${CMAKE_CURRENT_BINARY_DIR}/plugins_plugInfo.json"
-        DESTINATION lib/usd
+        DESTINATION ${runtimeInstallDir}/usd
         RENAME "plugInfo.json"
     )
 
@@ -1215,17 +1220,23 @@ function(pxr_toplevel_prologue)
                     OUTPUT_NAME ${libName}
             )
             _get_install_dir("lib" libInstallPrefix)
+            _get_install_dir("bin" binInstallPrefix)
+            if(PXR_INSTALL_DLL_IN_BIN)
+                set(runtimeInstallPrefix "${binInstallPrefix}")
+            else()
+                set(runtimeInstallPrefix "${libInstallPrefix}")
+            endif()
             install(
                 TARGETS usd_m
                 EXPORT pxrTargets
                 LIBRARY DESTINATION ${libInstallPrefix}
                 ARCHIVE DESTINATION ${libInstallPrefix}
-                RUNTIME DESTINATION ${libInstallPrefix}
+                RUNTIME DESTINATION ${runtimeInstallPrefix}
             )
             if(WIN32 AND BUILD_SHARED_LIBS)
                 install(
                     FILES $<TARGET_PDB_FILE:usd_m>
-                    DESTINATION ${libInstallPrefix}
+                    DESTINATION ${runtimeInstallPrefix}
                     OPTIONAL
                 )
             endif()
