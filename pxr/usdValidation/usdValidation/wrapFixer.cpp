@@ -44,10 +44,10 @@ static std::function<bool(const UsdValidationError &,
                           const UsdTimeCode &)>
 _WrapFixerFn(object pyFn)
 {
-    TfPyObjWrapper wrapper(pyFn);
-    return [wrapper](const UsdValidationError &error,
-                     const UsdEditTarget &editTarget,
-                     const UsdTimeCode &timeCode) -> bool {
+    return [wrapper = TfPyObjWrapper(pyFn)](
+        const UsdValidationError &error,
+        const UsdEditTarget &editTarget,
+        const UsdTimeCode &timeCode) -> bool {
         TfPyLock lock;
         try {
             object result = wrapper.Get()(

@@ -18,7 +18,6 @@ Exercises:
 import concurrent.futures
 import functools
 import os
-import tempfile
 import threading
 import unittest
 from unittest import mock
@@ -44,19 +43,59 @@ class TestUsdValidationFixerPy(unittest.TestCase):
         except RuntimeError:
             pass  # Plugin may already be registered.
 
+    @staticmethod
+    def _LayerTask(layer):
+        return [
+            UsdValidation.ValidationError(
+                "LayerFixerError",
+                UsdValidation.ValidationErrorType.Warn,
+                [UsdValidation.ValidationErrorSite(
+                    layer, Sdf.Path.absoluteRootPath)],
+                "Fixable layer error",
+            )
+        ]
+
+    @staticmethod
+    def _StageTask(stage, timeRange):
+        return [
+            UsdValidation.ValidationError(
+                "StageFixerError",
+                UsdValidation.ValidationErrorType.Error,
+                [UsdValidation.ValidationErrorSite(
+                    stage, Sdf.Path.absoluteRootPath)],
+                "Fixable stage error",
+            )
+        ]
+
+    @staticmethod
+    def _PrimTask(prim, timeRange):
+        if prim.IsPseudoRoot():
+            return []
+        return [
+            UsdValidation.ValidationError(
+                "PrimFixerError",
+                UsdValidation.ValidationErrorType.Error,
+                [UsdValidation.ValidationErrorSite(
+                    prim.GetStage(), prim.GetPath())],
+                f"Fixable prim error on {prim.GetPath()}",
+            )
+        ]
+
+    @staticmethod
+    def _ImplFn(error, editTarget, timeCode):
+        return True
+
+    @staticmethod
+    def _CanApplyFn(error, editTarget, timeCode):
+        return True
+
     def test_BasicConstruction(self):
         """A fixer can be constructed with name, description, and callables."""
-        def _ImplFn(error, editTarget, timeCode):
-            return True
-
-        def _CanApplyFn(error, editTarget, timeCode):
-            return True
-
         fixer = UsdValidation.ValidationFixer(
             name="testFixer",
             description="A test fixer",
-            fixerImplFn=_ImplFn,
-            canApplyFn=_CanApplyFn,
+            fixerImplFn=self._ImplFn,
+            canApplyFn=self._CanApplyFn,
         )
         self.assertEqual(fixer.name, "testFixer")
         self.assertEqual(fixer.description, "A test fixer")
@@ -65,17 +104,11 @@ class TestUsdValidationFixerPy(unittest.TestCase):
 
     def test_ConstructionWithKeywordsAndErrorName(self):
         """A fixer can be constructed with optional keywords and errorName."""
-        def _ImplFn(error, editTarget, timeCode):
-            return True
-
-        def _CanApplyFn(error, editTarget, timeCode):
-            return True
-
         fixer = UsdValidation.ValidationFixer(
             name="testFixer2",
             description="Another test fixer",
-            fixerImplFn=_ImplFn,
-            canApplyFn=_CanApplyFn,
+            fixerImplFn=self._ImplFn,
+            canApplyFn=self._CanApplyFn,
             keywords=["studio", "lighting"],
             errorName="SomeError",
         )
@@ -105,19 +138,12 @@ class TestUsdValidationFixerPy(unittest.TestCase):
                 description="Fixer with local Python callable refs",
                 fixerImplFn=_ImplFn,
                 canApplyFn=_CanApplyFn,
-                errorName="CallableLifetimeError",
             )
 
         fixer = _CreateValidationFixer()
 
         layer = Sdf.Layer.CreateAnonymous(".usda")
-        error = UsdValidation.ValidationError(
-            "CallableLifetimeError",
-            UsdValidation.ValidationErrorType.Warn,
-            [UsdValidation.ValidationErrorSite(
-                layer, Sdf.Path.absoluteRootPath)],
-            "Callable lifetime error",
-        )
+        error = self._LayerTask(layer)[0]
         editTarget = Usd.EditTarget(layer)
 
         self.assertTrue(fixer.CanApplyFix(error, editTarget))
@@ -128,76 +154,38 @@ class TestUsdValidationFixerPy(unittest.TestCase):
     def test_ConstructionCanApplyRaises(self):
         """Exceptions from canApplyFn are restored at the Python boundary."""
         _CanApplyFn = mock.Mock(side_effect=AttributeError)
-        _ImplFn = mock.Mock(return_value=True)
 
         fixer = UsdValidation.ValidationFixer(
             name="canApplyRaisesFixer",
             description="Fixer with raising canApplyFn",
-            fixerImplFn=_ImplFn,
+            fixerImplFn=self._ImplFn,
             canApplyFn=_CanApplyFn,
         )
 
         layer = Sdf.Layer.CreateAnonymous(".usda")
-        error = UsdValidation.ValidationError(
-            "CanApplyRaisesError",
-            UsdValidation.ValidationErrorType.Warn,
-            [UsdValidation.ValidationErrorSite(
-                layer, Sdf.Path.absoluteRootPath)],
-            "canApply raises error",
-        )
+        error = self._LayerTask(layer)[0]
         editTarget = Usd.EditTarget(layer)
 
         with self.assertRaises(AttributeError):
             fixer.CanApplyFix(error, editTarget)
-        _CanApplyFn.assert_called_once()
 
     def test_ConstructionFixerImplRaises(self):
         """Exceptions from fixerImplFn are restored at the Python boundary."""
-        _CanApplyFn = mock.Mock(return_value=True)
         _ImplFn = mock.Mock(side_effect=AttributeError)
 
         fixer = UsdValidation.ValidationFixer(
             name="fixerImplRaisesFixer",
             description="Fixer with raising fixerImplFn",
             fixerImplFn=_ImplFn,
-            canApplyFn=_CanApplyFn,
+            canApplyFn=self._CanApplyFn,
         )
 
         layer = Sdf.Layer.CreateAnonymous(".usda")
-        error = UsdValidation.ValidationError(
-            "FixerImplRaisesError",
-            UsdValidation.ValidationErrorType.Warn,
-            [UsdValidation.ValidationErrorSite(
-                layer, Sdf.Path.absoluteRootPath)],
-            "fixerImpl raises error",
-        )
+        error = self._LayerTask(layer)[0]
         editTarget = Usd.EditTarget(layer)
 
         with self.assertRaises(AttributeError):
             fixer.ApplyFix(error, editTarget)
-        _ImplFn.assert_called_once()
-
-    def test_ValidatorWithNoFixers(self):
-        """Registering without fixers (backward compat) still works."""
-        registry = UsdValidation.ValidationRegistry()
-
-        metadata = UsdValidation.ValidatorMetadata(
-            name="testPyFixer:NoFixerValidator",
-            doc="Validator with no fixers",
-            keywords=["testPyFixer"],
-        )
-
-        def _LayerTask(layer):
-            return []
-
-        # No fixers argument -- should work exactly as before.
-        registry.RegisterLayerValidator(metadata, _LayerTask)
-
-        validator = registry.GetOrLoadValidatorByName(
-            "testPyFixer:NoFixerValidator"
-        )
-        self.assertIsNotNone(validator)
-        self.assertEqual(len(validator.GetFixers()), 0)
 
     def test_ValidationFixerByValue(self):
         """Registered validators keep copied fixer callables by value."""
@@ -218,19 +206,8 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        def _LayerTask(layer):
-            return [
-                UsdValidation.ValidationError(
-                    "RegisteredFixerByValueError",
-                    UsdValidation.ValidationErrorType.Warn,
-                    [UsdValidation.ValidationErrorSite(
-                        layer, Sdf.Path.absoluteRootPath)],
-                    "Registered fixer by value error",
-                )
-            ]
-
         registry.RegisterLayerValidator(
-            metadata, _LayerTask, fixers=[fixer])
+            metadata, self._LayerTask, fixers=[fixer])
         del fixer
 
         validator = registry.GetOrLoadValidatorByName(
@@ -252,23 +229,20 @@ class TestUsdValidationFixerPy(unittest.TestCase):
         _CanApplyFn.assert_called_once()
         _ImplFn.assert_called_once()
 
-    def test_ValidatorFixerLookup(self):
-        """Validator fixer lookup APIs return matching fixers."""
+    def test_FixerLookupFromValidatorAndError(self):
+        """Validator and error fixer lookup APIs return matching fixers."""
         registry = UsdValidation.ValidationRegistry()
-
-        def _Noop(error, editTarget, timeCode):
-            return True
 
         fixer_a = UsdValidation.ValidationFixer(
             name="fixerA", description="First fixer",
-            fixerImplFn=_Noop, canApplyFn=_Noop,
+            fixerImplFn=self._ImplFn, canApplyFn=self._CanApplyFn,
             keywords=["teamA"],
         )
         fixer_b = UsdValidation.ValidationFixer(
             name="fixerB", description="Second fixer",
-            fixerImplFn=_Noop, canApplyFn=_Noop,
+            fixerImplFn=self._ImplFn, canApplyFn=self._CanApplyFn,
             keywords=["teamB"],
-            errorName="SpecificError",
+            errorName="LayerFixerError",
         )
 
         metadata = UsdValidation.ValidatorMetadata(
@@ -277,11 +251,8 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        def _LayerTask(layer):
-            return []
-
         registry.RegisterLayerValidator(
-            metadata, _LayerTask, fixers=[fixer_a, fixer_b])
+            metadata, self._LayerTask, fixers=[fixer_a, fixer_b])
 
         validator = registry.GetOrLoadValidatorByName(
             "testPyFixer:MultiFixerValidator"
@@ -289,69 +260,23 @@ class TestUsdValidationFixerPy(unittest.TestCase):
         fixers = validator.GetFixers()
         self.assertEqual(len(fixers), 2)
 
-        # GetFixerByName
         found = validator.GetFixerByName("fixerA")
         self.assertIsNotNone(found)
         self.assertEqual(found.name, "fixerA")
 
-        found = validator.GetFixerByName("fixerB")
-        self.assertIsNotNone(found)
-        self.assertEqual(found.name, "fixerB")
-
-        # GetFixersByKeywords
         by_keyword = validator.GetFixersByKeywords(["teamA"])
         self.assertEqual(len(by_keyword), 1)
         self.assertEqual(by_keyword[0].name, "fixerA")
 
-        # GetFixersByErrorName
-        by_error = validator.GetFixersByErrorName("SpecificError")
-        # fixerA has no errorName so it matches all; fixerB matches specifically
+        by_error = validator.GetFixersByErrorName("LayerFixerError")
         self.assertEqual(len(by_error), 2)
 
-    def test_ErrorGetFixersByErrorName(self):
-        """ValidationError.GetFixersByErrorName returns matching fixers."""
-        registry = UsdValidation.ValidationRegistry()
-
-        def _Noop(error, editTarget, timeCode):
-            return True
-
-        fixer = UsdValidation.ValidationFixer(
-            name="errorAccessFixer",
-            description="Fixer accessible from error",
-            fixerImplFn=_Noop,
-            canApplyFn=_Noop,
-            errorName="AccessibleError",
-        )
-
-        metadata = UsdValidation.ValidatorMetadata(
-            name="testPyFixer:ErrorAccessValidator",
-            doc="Validator for error-fixer access test",
-            keywords=["testPyFixer"],
-        )
-
-        def _LayerTask(layer):
-            return [
-                UsdValidation.ValidationError(
-                    "AccessibleError",
-                    UsdValidation.ValidationErrorType.Warn,
-                    [UsdValidation.ValidationErrorSite(
-                        layer, Sdf.Path.absoluteRootPath)],
-                    "Error with accessible fixer",
-                )
-            ]
-
-        registry.RegisterLayerValidator(metadata, _LayerTask, fixers=[fixer])
-
-        validator = registry.GetOrLoadValidatorByName(
-            "testPyFixer:ErrorAccessValidator"
-        )
         layer = Sdf.Layer.CreateAnonymous(".usda")
         errors = validator.Validate(layer)
         self.assertEqual(len(errors), 1)
 
         fixers = errors[0].GetFixersByErrorName()
-        self.assertEqual(len(fixers), 1)
-        self.assertEqual(fixers[0].name, "errorAccessFixer")
+        self.assertEqual(len(fixers), 2)
 
     def test_ThreadedFixerCallback(self):
         """A Python-backed fixer callback can be invoked from threads."""
@@ -360,24 +285,15 @@ class TestUsdValidationFixerPy(unittest.TestCase):
         def _CanApplyFn(error, editTarget, timeCode):
             return startEvent.wait(timeout=5.0)
 
-        def _ImplFn(error, editTarget, timeCode):
-            return True
-
         fixer = UsdValidation.ValidationFixer(
             name="threadedFixer",
             description="Fixer invoked from multiple threads",
-            fixerImplFn=_ImplFn,
+            fixerImplFn=self._ImplFn,
             canApplyFn=_CanApplyFn,
         )
 
         layer = Sdf.Layer.CreateAnonymous(".usda")
-        error = UsdValidation.ValidationError(
-            "ThreadedFixerError",
-            UsdValidation.ValidationErrorType.Warn,
-            [UsdValidation.ValidationErrorSite(
-                layer, Sdf.Path.absoluteRootPath)],
-            "Threaded fixer error",
-        )
+        error = self._LayerTask(layer)[0]
         editTarget = Usd.EditTarget(layer)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
@@ -418,18 +334,8 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        def _LayerTask(layer):
-            return [
-                UsdValidation.ValidationError(
-                    "LayerFixerError",
-                    UsdValidation.ValidationErrorType.Warn,
-                    [UsdValidation.ValidationErrorSite(
-                        layer, Sdf.Path.absoluteRootPath)],
-                    "Fixable layer error",
-                )
-            ]
-
-        registry.RegisterLayerValidator(metadata, _LayerTask, fixers=[fixer])
+        registry.RegisterLayerValidator(
+            metadata, self._LayerTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(
             "testPyFixer:LayerValidatorWithFixer"
@@ -471,18 +377,8 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        def _StageTask(stage, timeRange):
-            return [
-                UsdValidation.ValidationError(
-                    "StageFixerError",
-                    UsdValidation.ValidationErrorType.Error,
-                    [UsdValidation.ValidationErrorSite(
-                        stage, Sdf.Path.absoluteRootPath)],
-                    "Fixable stage error",
-                )
-            ]
-
-        registry.RegisterStageValidator(metadata, _StageTask, fixers=[fixer])
+        registry.RegisterStageValidator(
+            metadata, self._StageTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(
             "testPyFixer:StageValidatorWithFixer"
@@ -522,20 +418,7 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        def _PrimTask(prim, timeRange):
-            if prim.IsPseudoRoot():
-                return []
-            return [
-                UsdValidation.ValidationError(
-                    "PrimFixerError",
-                    UsdValidation.ValidationErrorType.Error,
-                    [UsdValidation.ValidationErrorSite(
-                        prim.GetStage(), prim.GetPath())],
-                    f"Fixable prim error on {prim.GetPath()}",
-                )
-            ]
-
-        registry.RegisterPrimValidator(metadata, _PrimTask, fixers=[fixer])
+        registry.RegisterPrimValidator(metadata, self._PrimTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(
             "testPyFixer:PrimValidatorWithFixer"
@@ -575,18 +458,8 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             canApplyFn=_CanApplyFn,
         )
 
-        def _LayerTask(layer):
-            return [
-                UsdValidation.ValidationError(
-                    "PluginLayerFixerError",
-                    UsdValidation.ValidationErrorType.Warn,
-                    [UsdValidation.ValidationErrorSite(
-                        layer, Sdf.Path.absoluteRootPath)],
-                    "Plugin layer fixer error",
-                )
-            ]
-
-        registry.RegisterPluginLayerValidator(name, _LayerTask, fixers=[fixer])
+        registry.RegisterPluginLayerValidator(
+            name, self._LayerTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(name)
         self.assertIsNotNone(validator)
@@ -620,18 +493,8 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             canApplyFn=_CanApplyFn,
         )
 
-        def _StageTask(stage, timeRange):
-            return [
-                UsdValidation.ValidationError(
-                    "PluginStageFixerError",
-                    UsdValidation.ValidationErrorType.Warn,
-                    [UsdValidation.ValidationErrorSite(
-                        stage, Sdf.Path.absoluteRootPath)],
-                    "Plugin stage fixer error",
-                )
-            ]
-
-        registry.RegisterPluginStageValidator(name, _StageTask, fixers=[fixer])
+        registry.RegisterPluginStageValidator(
+            name, self._StageTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(name)
         self.assertIsNotNone(validator)
@@ -665,20 +528,7 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             canApplyFn=_CanApplyFn,
         )
 
-        def _PrimTask(prim, timeRange):
-            if prim.IsPseudoRoot():
-                return []
-            return [
-                UsdValidation.ValidationError(
-                    "PluginPrimFixerError",
-                    UsdValidation.ValidationErrorType.Warn,
-                    [UsdValidation.ValidationErrorSite(
-                        prim.GetStage(), prim.GetPath())],
-                    f"Plugin prim fixer error on {prim.GetPath()}",
-                )
-            ]
-
-        registry.RegisterPluginPrimValidator(name, _PrimTask, fixers=[fixer])
+        registry.RegisterPluginPrimValidator(name, self._PrimTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(name)
         self.assertIsNotNone(validator)

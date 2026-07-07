@@ -24,6 +24,10 @@
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/object.hpp"
 #include "pxr/external/boost/python/raw_function.hpp"
+#include "pxr/external/boost/python/stl_iterator.hpp"
+
+#include <algorithm>
+#include <iterator>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -194,10 +198,14 @@ _ExtractFixers(object pyFixers)
         return fixers;
     }
     list fixerList(pyFixers);
-    for (ssize_t i = 0, n = len(fixerList); i < n; ++i) {
-        fixers.push_back(
-            extract<UsdValidationFixer>(fixerList[i]));
-    }
+    fixers.reserve(len(fixerList));
+    std::transform(
+        stl_input_iterator<object>(fixerList),
+        stl_input_iterator<object>(),
+        std::back_inserter(fixers),
+        [](const object &fixer) {
+            return extract<UsdValidationFixer>(fixer);
+        });
     return fixers;
 }
 
