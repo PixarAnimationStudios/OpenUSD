@@ -97,39 +97,39 @@ void wrapUsdValidationFixer()
                   arg("errorName") = TfToken())))
         .add_property("name",
             make_function(
-                +[](const UsdValidationFixer &fixer) {
-                      return fixer.GetName();
+                +[](const UsdValidationFixer &fixer) { 
+                      return fixer.GetName(); 
                 },
                 return_value_policy<return_by_value>()))
         .add_property("description",
             make_function(
-                +[](const UsdValidationFixer &fixer) {
-                    return fixer.GetDescription();
+                +[](const UsdValidationFixer &fixer) { 
+                    return fixer.GetDescription(); 
                 },
                 return_value_policy<return_by_value>()))
         .add_property("errorName",
             make_function(
-                +[](const UsdValidationFixer &fixer) {
-                    return fixer.GetErrorName();
+                +[](const UsdValidationFixer &fixer) { 
+                    return fixer.GetErrorName(); 
                 },
                 return_value_policy<return_by_value>()))
         .add_property("keywords",
             make_function(
-                +[](const UsdValidationFixer &fixer) {
-                    return fixer.GetKeywords();
+                +[](const UsdValidationFixer &fixer) { 
+                    return fixer.GetKeywords(); 
                 },
                 return_value_policy<TfPySequenceToList>()))
-        .def("IsAssociatedWithErrorName",
+        .def("IsAssociatedWithErrorName", 
              &UsdValidationFixer::IsAssociatedWithErrorName, (arg("errorName")))
-        .def("HasKeyword",
+        .def("HasKeyword", 
              &UsdValidationFixer::HasKeyword, (arg("keyword")))
-        .def("CanApplyFix",
+        .def("CanApplyFix", 
              &UsdValidationFixer::CanApplyFix,
-             (arg("error"), arg("editTarget"),
+             (arg("error"), arg("editTarget"), 
               arg("timeCode") = UsdTimeCode::Default()))
-        .def("ApplyFix",
+        .def("ApplyFix", 
              &UsdValidationFixer::ApplyFix,
-             (arg("error"), arg("editTarget"),
+             (arg("error"), arg("editTarget"), 
               arg("timeCode") = UsdTimeCode::Default()));
 
     TfPyRegisterStlSequencesFromPython<UsdValidationFixer>();
