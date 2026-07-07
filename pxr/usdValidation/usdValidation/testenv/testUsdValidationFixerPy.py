@@ -34,8 +34,8 @@ class TestUsdValidationFixerPy(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         testPluginsDsoSearchPath = os.path.join(
-            os.path.dirname(__file__),
-            "testUsdValidationFixerPy")
+            os.path.dirname(__file__), "testUsdValidationFixerPy"
+        )
         try:
             plugins = Plug.Registry().RegisterPlugins(testPluginsDsoSearchPath)
             assert len(plugins) == 1
@@ -49,8 +49,7 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             UsdValidation.ValidationError(
                 "LayerFixerError",
                 UsdValidation.ValidationErrorType.Warn,
-                [UsdValidation.ValidationErrorSite(
-                    layer, Sdf.Path.absoluteRootPath)],
+                [UsdValidation.ValidationErrorSite(layer, Sdf.Path.absoluteRootPath)],
                 "Fixable layer error",
             )
         ]
@@ -61,8 +60,7 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             UsdValidation.ValidationError(
                 "StageFixerError",
                 UsdValidation.ValidationErrorType.Error,
-                [UsdValidation.ValidationErrorSite(
-                    stage, Sdf.Path.absoluteRootPath)],
+                [UsdValidation.ValidationErrorSite(stage, Sdf.Path.absoluteRootPath)],
                 "Fixable stage error",
             )
         ]
@@ -75,8 +73,7 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             UsdValidation.ValidationError(
                 "PrimFixerError",
                 UsdValidation.ValidationErrorType.Error,
-                [UsdValidation.ValidationErrorSite(
-                    prim.GetStage(), prim.GetPath())],
+                [UsdValidation.ValidationErrorSite(prim.GetStage(), prim.GetPath())],
                 f"Fixable prim error on {prim.GetPath()}",
             )
         ]
@@ -206,8 +203,7 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        registry.RegisterLayerValidator(
-            metadata, self._LayerTask, fixers=[fixer])
+        registry.RegisterLayerValidator(metadata, self._LayerTask, fixers=[fixer])
         del fixer
 
         validator = registry.GetOrLoadValidatorByName(
@@ -234,13 +230,17 @@ class TestUsdValidationFixerPy(unittest.TestCase):
         registry = UsdValidation.ValidationRegistry()
 
         fixer_a = UsdValidation.ValidationFixer(
-            name="fixerA", description="First fixer",
-            fixerImplFn=self._ImplFn, canApplyFn=self._CanApplyFn,
+            name="fixerA",
+            description="First fixer",
+            fixerImplFn=self._ImplFn,
+            canApplyFn=self._CanApplyFn,
             keywords=["teamA"],
         )
         fixer_b = UsdValidation.ValidationFixer(
-            name="fixerB", description="Second fixer",
-            fixerImplFn=self._ImplFn, canApplyFn=self._CanApplyFn,
+            name="fixerB",
+            description="Second fixer",
+            fixerImplFn=self._ImplFn,
+            canApplyFn=self._CanApplyFn,
             keywords=["teamB"],
             errorName="LayerFixerError",
         )
@@ -252,11 +252,10 @@ class TestUsdValidationFixerPy(unittest.TestCase):
         )
 
         registry.RegisterLayerValidator(
-            metadata, self._LayerTask, fixers=[fixer_a, fixer_b])
-
-        validator = registry.GetOrLoadValidatorByName(
-            "testPyFixer:MultiFixerValidator"
+            metadata, self._LayerTask, fixers=[fixer_a, fixer_b]
         )
+
+        validator = registry.GetOrLoadValidatorByName("testPyFixer:MultiFixerValidator")
         fixers = validator.GetFixers()
         self.assertEqual(len(fixers), 2)
 
@@ -299,15 +298,17 @@ class TestUsdValidationFixerPy(unittest.TestCase):
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
             futures = [
                 executor.submit(
-                    functools.partial(fixer.CanApplyFix, error, editTarget)),
+                    functools.partial(fixer.CanApplyFix, error, editTarget)
+                ),
                 executor.submit(
-                    functools.partial(fixer.CanApplyFix, error, editTarget)),
+                    functools.partial(fixer.CanApplyFix, error, editTarget)
+                ),
             ]
             startEvent.set()
 
             self.assertEqual(
-                [future.result(timeout=5.0) for future in futures],
-                [True, True])
+                [future.result(timeout=5.0) for future in futures], [True, True]
+            )
 
     # ------------------------------------------------------------------
     # Manual registration tests
@@ -334,8 +335,7 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        registry.RegisterLayerValidator(
-            metadata, self._LayerTask, fixers=[fixer])
+        registry.RegisterLayerValidator(metadata, self._LayerTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(
             "testPyFixer:LayerValidatorWithFixer"
@@ -377,8 +377,7 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             keywords=["testPyFixer"],
         )
 
-        registry.RegisterStageValidator(
-            metadata, self._StageTask, fixers=[fixer])
+        registry.RegisterStageValidator(metadata, self._StageTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(
             "testPyFixer:StageValidatorWithFixer"
@@ -458,8 +457,7 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             canApplyFn=_CanApplyFn,
         )
 
-        registry.RegisterPluginLayerValidator(
-            name, self._LayerTask, fixers=[fixer])
+        registry.RegisterPluginLayerValidator(name, self._LayerTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(name)
         self.assertIsNotNone(validator)
@@ -493,8 +491,7 @@ class TestUsdValidationFixerPy(unittest.TestCase):
             canApplyFn=_CanApplyFn,
         )
 
-        registry.RegisterPluginStageValidator(
-            name, self._StageTask, fixers=[fixer])
+        registry.RegisterPluginStageValidator(name, self._StageTask, fixers=[fixer])
 
         validator = registry.GetOrLoadValidatorByName(name)
         self.assertIsNotNone(validator)
