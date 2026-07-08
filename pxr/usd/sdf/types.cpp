@@ -796,7 +796,14 @@ _ConvertToValidMetadataDictValueInternal(
 
     bool allValid = true;
 
-    if (value->IsHolding<VtDictionary>()) {
+    if (value->IsEmpty()) {
+        errMsgs->push_back(
+            TfStringPrintf(
+                "empty value%s is not a valid dictionary entry",
+                _GetKeyPathText(*keyPath).c_str()));
+        allValid = false;
+    }
+    else if (value->IsHolding<VtDictionary>()) {
         VtDictionary d;
         value->UncheckedSwap(d);
         for (auto &kv: d) {

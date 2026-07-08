@@ -841,6 +841,18 @@ Sdf_FileIOUtility::_WriteDictionary(
     Sdf_FileIOUtility::_OrderedDictionary &dictionary,
     bool stringValuesOnly)
 {
+    for (auto it = dictionary.begin(); it != dictionary.end(); ) {
+        if (it->second->IsEmpty()) {
+            TF_CODING_ERROR(
+                "Skipping dictionary entry '%s' because its value is empty",
+                it->first->c_str());
+            it = dictionary.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
     Puts(out, 0, multiLine ? "{\n" : "{ ");
     size_t counter = dictionary.size();
     TF_FOR_ALL(i, dictionary) {

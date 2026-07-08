@@ -1991,7 +1991,14 @@ SdfLayer::GetCustomLayerData() const
 void
 SdfLayer::SetCustomLayerData(const VtDictionary& dict)
 {
-    _SetValue(SdfFieldKeys->CustomLayerData, dict);
+    VtDictionary validated = dict;
+    std::string errorMessage;
+    if (!SdfConvertToValidMetadataDictionary(&validated, &errorMessage)) {
+        TF_CODING_ERROR(
+            "Cannot set customLayerData: %s", errorMessage.c_str());
+        return;
+    }
+    _SetValue(SdfFieldKeys->CustomLayerData, std::move(validated));
 }
 
 bool 

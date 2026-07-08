@@ -345,6 +345,14 @@ pxr_build_test(testSdfLayerHints
         testenv/testSdfLayerHints.cpp
 )
 
+pxr_build_test(testSdfInvalidDictionaryAuthoring
+    LIBRARIES
+        sdf
+        tf
+    CPPFILES
+        testenv/testSdfInvalidDictionaryAuthoring.cpp
+)
+
 pxr_build_test(testSdfMetaDataPlugInfo
     LIBRARIES
         sdf
@@ -575,6 +583,10 @@ pxr_register_test(testSdfLayerHints
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfLayerHints"
     TESTENV testenv/testSdfLayerHints.testenv
     TESTENV_DEST testSdfLayerHints/testSdfLayerHints.testenv
+)
+
+pxr_register_test(testSdfInvalidDictionaryAuthoring
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfInvalidDictionaryAuthoring"
 )
 
 pxr_register_test(testSdfLayerMuting
