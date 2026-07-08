@@ -28,16 +28,22 @@ from pxr import Plug, Sdf, Usd, UsdValidation
 class TestUsdValidationFixerPy(unittest.TestCase):
     """Test Python validation fixer behavior."""
 
-    # Must match the "Name" field in testUsdValidationFixerPy/plugInfo.json.
     PLUGIN_NAME = "testValidationFixerPyPlugin"
 
     @classmethod
     def setUpClass(cls):
-        testPluginsDsoSearchPath = os.path.join(
-            os.path.dirname(__file__), "testUsdValidationFixerPy"
-        )
+        # The test working directory is set to the TESTENV location by
+        # pxr_register_test, so the plugin package is a subdirectory.
+        pluginDir = os.path.join(os.getcwd(), cls.PLUGIN_NAME)
+        if not os.path.isdir(pluginDir):
+            # Fallback for manual invocation outside ctest.
+            pluginDir = os.path.join(
+                os.path.dirname(__file__),
+                "testUsdValidationFixerPy",
+                cls.PLUGIN_NAME,
+            )
         try:
-            plugins = Plug.Registry().RegisterPlugins(testPluginsDsoSearchPath)
+            plugins = Plug.Registry().RegisterPlugins(pluginDir)
             assert len(plugins) == 1
             assert plugins[0].name == cls.PLUGIN_NAME
         except RuntimeError:
