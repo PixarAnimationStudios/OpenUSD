@@ -1,4 +1,4 @@
-set(PXR_PREFIX pxr/usdIrImaging)
+set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdIrImaging)
 
 if(NOT PXR_BUILD_EXEC)
