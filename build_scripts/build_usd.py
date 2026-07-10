@@ -2127,12 +2127,14 @@ if MacOS():
         "--build-apple-framework",
         dest="build_apple_framework",
         action="store_true",
+        default=None,
         help=("Build USD as an Apple Framework "
               "(Default if using embedded platforms)"))
     subgroup.add_argument(
         "--no-build-apple-framework",
         dest="build_apple_framework",
         action="store_false",
+        default=None,
         help="Do not build USD as an Apple Framework (Default if macOS)")
 
     if apple_utils.IsHostArm():
@@ -2483,8 +2485,10 @@ class InstallContext:
             if apple_utils.IsHostArm() and args.ignore_homebrew:
                 self.ignorePaths.append("/opt/homebrew")
 
-            self.buildAppleFramework = (args.build_apple_framework or
-                                        MacOSTargetEmbedded(self))
+            if args.build_apple_framework is None:
+                self.buildAppleFramework = MacOSTargetEmbedded(self)
+            else:
+                self.buildAppleFramework = args.build_apple_framework
 
             if self.buildAppleFramework:
                 self.buildShared = False
