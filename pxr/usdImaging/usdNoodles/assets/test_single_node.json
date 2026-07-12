@@ -1,0 +1,44 @@
+{
+  "nodes": [
+    {
+      "test_node_001": {
+        "name": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz!@#$%^&*()_+-=[]{}",
+        "type_": "TestType",
+        "pos": [0, 0],
+        "input_ports": [
+          {"name": "_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz!@#$%^&*()_+-=[]{}"},
+          {"name": "222222222222"},
+          {"name": "333333333333"},
+          {"name": "444444444444"},
+          {"name": "555555555555"},
+          {"name": "666666666666"},
+          {"name": "777777777777"},
+          {"name": "888888888888"},
+          {"name": "999999999999"},
+          {"name": "000000000000"},
+          {"name": "AAAAAAAAAAAA"},
+          {"name": "aaaaaaaaaaaa"},
+          {"name": "BBBBBBBBBBBB"},
+          {"name": "bbbbbbbbbbbb"},
+          {"name": "CCCCCCCCCCCC"},
+          {"name": "cccccccccccc"},
+          {"name": "DDDDDDDDDDDD"},
+          {"name": "dddddddddddd"},
+          {"name": "EEEEEEEEEEEE"},
+          {"name": "eeeeeeeeeeee"},
+          {"name": "111111111111"},
+          {"name": "__ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz!@#$%^&*()_+-=[]{}"}
+
+        ],
+        "output_ports": [
+          {"name": "output_alpha"},
+          {"name": "output_beta"},
+          {"name": "output_gamma"},
+          {"name": "output_delta"},
+          {"name": "output_epsilon"}
+        ],
+        "outputs": {}
+      }
+    }
+  ]
+}
