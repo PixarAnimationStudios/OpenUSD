@@ -35,6 +35,9 @@ pxr_library(usdNoodles
         python
         ${NOODLES_LIBRARY}
 
+    PUBLIC_CLASSES
+        usd/UsdPrimRegistry
+
     PYMODULE_CPPFILES
         bindings/module.cpp
         bindings/wrapGraphLayout.cpp
@@ -46,6 +49,7 @@ pxr_library(usdNoodles
         bindings/wrapSpatial.cpp
         bindings/wrapTextLayout.cpp
         bindings/wrapUndo.cpp
+        bindings/wrapUsdPrimRegistry.cpp
         bindings/wrapVertexCache.cpp
 
     PYMODULE_FILES
@@ -69,7 +73,6 @@ pxr_library(usdNoodles
         nodeLibs/__init__.py
         nodeLibs/registry.py
         nodeLibs/usdPrimLibrary.py
-        nodeLibs/usdPrimRegistry.py
         nodeLibs/usdTypedPrimBase.py
         noodlesConfig.py
         noodlesPreferences.py
@@ -122,7 +125,6 @@ pxr_library(usdNoodles
         testenv/testUsdNoodlesNodeLibraryRegistry.py
         testenv/testUsdNoodlesPinDragInteractions.py
         testenv/testUsdNoodlesPinGroups.py
-        testenv/testUsdNoodlesPrimRegistry.py
         testenv/testUsdNoodlesPropertyTooltip.py
         testenv/testUsdNoodlesRenderManagerGuards.py
         testenv/testUsdNoodlesRowDrift.py

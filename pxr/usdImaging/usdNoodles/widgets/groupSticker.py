@@ -358,80 +358,42 @@ class GroupStickerRenderer:
         self._cpp = None
 
     def initialize(self, shaderLibrary, cpp_renderer=None):
-        if cpp_renderer is not None:
-            self._cpp = cpp_renderer
-        else:
-            try:
-                from pxr.UsdNoodles.render import StickerRenderer
-
-                self._cpp = StickerRenderer()
-            except ImportError as e:
-                Tf.Warn(f"Could not initialize C++ sticker renderer: {e}")
-                self._cpp = None
-
-        if self._cpp:
-            self._cpp.initialize(shaderLibrary)
+        self._cpp = cpp_renderer
 
     def cleanup(self):
         if self._cpp:
             self._cpp.cleanup()
             self._cpp = None
 
-    def markDirty(self):
-        if self._cpp:
-            self._cpp.markDirty()
-
-    def _buildVertexData(self, stickers, NodeVertex):
-        stickerVertexData = []
-        depth = 0.0
-
-        for sticker in stickers:
-            vertices = sticker.generateVertexData(NodeVertex, depth)
-            stickerVertexData.extend(vertices)
-            depth += 1.0
-
-        return stickerVertexData
-
-    def renderStickers(self, stickers, projection, node_vertex_cls=None):
-        if not stickers:
-            return False
-
-        if node_vertex_cls is None:
-            try:
-                from pxr.UsdNoodles.render import NodeVertex
-
-                node_vertex_cls = NodeVertex
-            except ImportError as e:
-                Tf.Warn(f"Could not load NodeVertex for sticker rendering: {e}")
-                return False
-
-        stickerVertexData = self._buildVertexData(stickers, node_vertex_cls)
-        if not stickerVertexData:
-            return False
-
-        if not self._cpp:
-            Tf.Warn("C++ sticker renderer is not initialized")
-            return False
-
-        if hasattr(projection, "data"):
-            projectionData = list(projection.data())
-        else:
-            projectionData = list(projection)
-
-        cornerRadius = stickers[0].cornerRadius
-        strokeColor = list(stickers[0].strokeColor)
-        self._cpp.renderStickers(
-            stickerVertexData, projectionData, cornerRadius, strokeColor
-        )
-        return True
-
     def render(self, stickers, graphView, NodeVertex):
         if not stickers or not graphView.shaderLibrary:
             return False
 
         try:
+            stickerVertexData = []
+            depth = 0.0
+
+            for sticker in stickers:
+                vertices = sticker.generateVertexData(NodeVertex, depth)
+                stickerVertexData.extend(vertices)
+                depth += 1.0
+
+            if not stickerVertexData:
+                return False
+
             projection = graphView._worldSpaceProjectionMatrix()
-            return self.renderStickers(stickers, projection, NodeVertex)
+
+            if stickers:
+                cornerRadius = stickers[0].cornerRadius
+                strokeColor = stickers[0].strokeColor
+            else:
+                cornerRadius = DEFAULT_CORNER_RADIUS
+                strokeColor = DEFAULT_STROKE_COLOR
+
+            graphView._drawNodeVertices(
+                stickerVertexData, projection, cornerRadius, strokeColor, generation=0
+            )
+            return True
 
         except Exception as e:
             Tf.Warn(f"Error rendering group stickers: {e}")

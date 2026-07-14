@@ -21,4 +21,5 @@ TF_WRAP_MODULE {
   TF_WRAP(RenderManagers);
   TF_WRAP(GraphRenderer);
   TF_WRAP(Undo);
+  TF_WRAP(UsdPrimRegistry);
 }

@@ -13,7 +13,7 @@ USD Prim Node Library Implementation.
 
 Unified library for all standard USD prim types, including UsdShade shaders.
 Discovers concrete typed prim schemas from UsdSchemaRegistry at runtime via the
-Python UsdPrimRegistry, and queries the Sdr (Shader Definition Registry) for
+C++ UsdPrimRegistry, and queries the Sdr (Shader Definition Registry) for
 shader-specific node types and port introspection.
 
 Standard USD plugin families (usdGeom, usdLux, usdMedia, usdRender, usdShade,
@@ -72,14 +72,13 @@ class UsdPrimLibrary(UsdTypedPrimLibraryBase):
     Unified node library for standard USD prim types and UsdShade shaders.
 
     Discovers standard USD concrete typed prim schemas from UsdSchemaRegistry
-    at runtime via the Python UsdPrimRegistry. For Shader prims, additionally
+    at runtime via the C++ UsdPrimRegistry. For Shader prims, additionally
     queries the Sdr (Shader Definition Registry) for port definitions and
     shader identifiers.
 
-    Non-shader prims use the shared Python pin-discovery helpers
-    (schema enumeration via UsdPrimRegistry, connection reading via
-    pinUtils). For shader prims, falls back to Sdr-based introspection for
-    richer port discovery.
+    Uses the C++ backend for performance-critical operations on non-shader
+    prims (schema enumeration, connection reading). For shader prims, falls
+    back to Sdr-based introspection for richer port discovery.
     """
 
     def __init__(self, enabled: bool = True) -> None:
@@ -91,21 +90,16 @@ class UsdPrimLibrary(UsdTypedPrimLibraryBase):
         self._cached_sdr_nodes: dict[str, list[dict[str, str]]] = {}
 
     def _get_registry(self) -> object | None:
-        """Lazy-load the Python UsdPrimRegistry.
-
-        Discovery is deferred to first use because enumerating every concrete
-        schema from UsdSchemaRegistry is not free; the instance caches its
-        result thereafter.
-        """
+        """Lazy-load the C++ UsdPrimRegistry."""
         if self._registry is None and not self._discovery_failed:
             try:
-                from .usdPrimRegistry import UsdPrimRegistry
+                from pxr.UsdNoodles._usdNoodles import UsdPrimRegistry
 
                 self._registry = UsdPrimRegistry()
             except ImportError as e:
                 Tf.Warn(
                     f"UsdPrimLibrary: Failed to import UsdPrimRegistry: {e}. "
-                    "Prim discovery will be disabled."
+                    "C++ prim discovery will be disabled."
                 )
                 self._discovery_failed = True
         return self._registry

@@ -70,7 +70,6 @@ from .textRenderer import TextRenderer
 from .usdNoticeHandler import UsdNoticeHandler
 from .utils import M, MenuBuilder
 from .widgets import (
-    GroupSticker,
     GroupStickerRenderer,
     HotkeyPopup,
     Minimap,
@@ -266,7 +265,6 @@ class GraphView(QGLWidget):
     _worldProjCache = None
     _screenProjCacheKey = None
     _screenProjCache = None
-    _BACKDROP_PADDING = 80.0
 
     @property
     def nodeGraph(self):
@@ -2652,12 +2650,6 @@ class GraphView(QGLWidget):
                 None,
                 self.deleteSelectedNodes,
             ),
-            (
-                M.ACTION,
-                "Create Backdrop from Selection",
-                None,
-                self.createBackdropFromSelection,
-            ),
             (M.SEPARATOR,),
             (
                 M.SUBMENU,
@@ -2743,7 +2735,6 @@ class GraphView(QGLWidget):
         actions["Frame Selection (F)"].setEnabled(hasSelection)
         actions["Frame Selection with Connections (Shift+F)"].setEnabled(hasSelection)
         actions["Clear Selection"].setEnabled(hasSelection or hasLinkSelection)
-        actions["Create Backdrop from Selection"].setEnabled(hasSelection)
 
         actions["Nodes Only"].setChecked(
             self._linkSelectionMode == LinkSelectionMode.NODES_ONLY
@@ -8818,174 +8809,6 @@ class GraphView(QGLWidget):
                 stage, self._usdviewApi.dataModel if self._usdviewApi else None
             )
         return parent_path
-
-    @staticmethod
-    def _selectedGraphNodes(gv):
-        selectedNodeIds = set(getattr(gv, "_selectedNodes", set()))
-        return [
-            node
-            for nodeId, node in gv.nodes.items()
-            if nodeId in selectedNodeIds or getattr(node, "selected", False)
-        ]
-
-    @staticmethod
-    def _computeBackdropBoundsForNodes(nodes, padding):
-        minX = None
-        minY = None
-        maxX = None
-        maxY = None
-
-        for node in nodes:
-            position = getattr(node, "position", None)
-            size = getattr(node, "size", None)
-            if position is None or size is None:
-                continue
-
-            x0 = float(position[0])
-            y0 = float(position[1])
-            x1 = x0 + float(size[0])
-            y1 = y0 + float(size[1])
-
-            minX = x0 if minX is None else min(minX, x0)
-            minY = y0 if minY is None else min(minY, y0)
-            maxX = x1 if maxX is None else max(maxX, x1)
-            maxY = y1 if maxY is None else max(maxY, y1)
-
-        if minX is None or minY is None or maxX is None or maxY is None:
-            return None
-
-        return (
-            Gf.Vec2d(minX - padding, minY - padding),
-            Gf.Vec2d((maxX - minX) + padding * 2.0, (maxY - minY) + padding * 2.0),
-        )
-
-    @staticmethod
-    def _stickerPrimPath(sticker):
-        prim = getattr(sticker, "_prim", None)
-        if not prim:
-            return None
-        try:
-            return str(prim.GetPath())
-        except Exception:
-            return None
-
-    @staticmethod
-    def _removeBackdropSticker(gv, prim_path):
-        pathStr = str(prim_path)
-        stickers = gv.groupStickers
-        stickers[:] = [
-            sticker
-            for sticker in stickers
-            if GraphView._stickerPrimPath(sticker) != pathStr
-        ]
-
-    @staticmethod
-    def _addBackdropStickerFromPrim(gv, prim):
-        GraphView._removeBackdropSticker(gv, prim.GetPath())
-        sticker = GroupSticker.from_prim(prim)
-        gv.groupStickers.append(sticker)
-        return sticker
-
-    @staticmethod
-    def _finishBackdropChange(gv):
-        renderer = getattr(gv, "_groupStickerRenderer", None)
-        if renderer:
-            renderer.markDirty()
-        gv.update()
-
-    def _resolveBackdropParentPath(self, stage):
-        parentPath = self._currentPrimPath if self._currentPrimPath is not None else "/"
-        parentPrim = stage.GetPrimAtPath(parentPath)
-        if not parentPrim or not parentPrim.IsValid():
-            return None
-        return parentPath
-
-    def _stageForBackdropCreation(self):
-        stage = self.nodeGraph.getStage() if self.nodeGraph else None
-        if stage is None and self._usdviewApi:
-            stage = self._usdviewApi.stage
-        return stage
-
-    def _authorBackdropPrim(self, stage, parentPath, position, size):
-        from .primAuthoring import PrimAuthor
-
-        noticeHandler = getattr(self, "_noticeHandler", None)
-        try:
-            if noticeHandler:
-                noticeHandler.setEnabled(False)
-            return PrimAuthor.create_backdrop_prim(
-                stage,
-                parentPath,
-                position,
-                size,
-                description="Backdrop",
-                color=Gf.Vec3f(0.196, 0.196, 0.196),
-            )
-        finally:
-            if noticeHandler:
-                noticeHandler.setEnabled(True)
-
-    def _pushCreateBackdropUndo(self, stage, primPath):
-        gv = self
-        createdPath = str(primPath)
-
-        def redo():
-            primToActivate = stage.GetPrimAtPath(createdPath)
-            if primToActivate:
-                primToActivate.SetActive(True)
-                if primToActivate.IsValid():
-                    GraphView._addBackdropStickerFromPrim(gv, primToActivate)
-            GraphView._finishBackdropChange(gv)
-
-        def undo():
-            primToDeactivate = stage.GetPrimAtPath(createdPath)
-            if primToDeactivate:
-                primToDeactivate.SetActive(False)
-            GraphView._removeBackdropSticker(gv, createdPath)
-            GraphView._finishBackdropChange(gv)
-
-        _push_undo_command("Create Backdrop", redo, undo)
-
-    def createBackdropFromSelection(self):
-        selectedNodes = GraphView._selectedGraphNodes(self)
-        if not selectedNodes:
-            self._showPopupMessage("No nodes selected")
-            return
-
-        stage = GraphView._stageForBackdropCreation(self)
-        if not stage:
-            self._showPopupMessage("Cannot create backdrop: no USD stage")
-            return
-
-        parentPath = self._resolveBackdropParentPath(stage)
-        if not parentPath:
-            self._showPopupMessage("No graph root found for backdrop")
-            return
-
-        bounds = GraphView._computeBackdropBoundsForNodes(
-            selectedNodes, GraphView._BACKDROP_PADDING
-        )
-        if bounds is None:
-            self._showPopupMessage("Cannot create backdrop: invalid selection bounds")
-            return
-
-        position, size = bounds
-        primPath = GraphView._authorBackdropPrim(
-            self, stage, parentPath, position, size
-        )
-        if not primPath:
-            self._showPopupMessage("Failed to create backdrop")
-            return
-
-        prim = stage.GetPrimAtPath(primPath)
-        if not prim or not prim.IsValid():
-            self._showPopupMessage("Failed to load created backdrop")
-            return
-
-        GraphView._addBackdropStickerFromPrim(self, prim)
-        GraphView._pushCreateBackdropUndo(self, stage, primPath)
-        GraphView._finishBackdropChange(self)
-        self._showPopupMessage(f"Created backdrop for {len(selectedNodes)} node(s)")
 
     def _onNodeCreated(self, prim, prim_path, stage, identifier):
         """Handle post-creation setup: add to graph, select, push undo."""

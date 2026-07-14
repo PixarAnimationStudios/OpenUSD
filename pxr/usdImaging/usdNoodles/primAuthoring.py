@@ -12,9 +12,7 @@ Provides utilities for creating and manipulating USD prims in the node graph,
 particularly for node creation workflows.
 """
 
-from contextlib import nullcontext
-
-from pxr import Gf, Sdf, Tf, Usd
+from pxr import Gf, Sdf, Tf
 
 try:
     from pxr import UsdUI
@@ -169,10 +167,6 @@ class PrimAuthor:
         Returns:
             Sdf.Path: Path to the created prim, or None on failure
         """
-        if UsdUI is None:
-            Tf.Warn("Cannot create backdrop: UsdUI is not available")
-            return None
-
         if isinstance(parent_path, Sdf.Path):
             parent_path = str(parent_path)
 
@@ -191,39 +185,61 @@ class PrimAuthor:
 
         prim_path = Sdf.Path(prim_path)
 
+        if edit_target:
+            layer = edit_target.GetLayer()
+        else:
+            layer = stage.GetEditTarget().GetLayer()
+
+        if not layer:
+            Tf.Warn("No edit target layer found")
+            return None
+
         try:
-            edit_context = (
-                Usd.EditContext(stage, edit_target) if edit_target else nullcontext()
-            )
-            with edit_context:
-                backdrop = UsdUI.Backdrop.Define(stage, prim_path)
-                prim = backdrop.GetPrim()
-                if not prim or not prim.IsValid():
-                    Tf.Warn(f"Failed to define Backdrop prim at {prim_path}")
-                    return None
-
-                position_scale = 1.0 / 1000.0
-                scaled_pos = Gf.Vec2f(
-                    position[0] * position_scale, position[1] * position_scale
-                )
-                scaled_size = Gf.Vec2f(
-                    size[0] * position_scale, size[1] * position_scale
-                )
-
-                api = UsdUI.NodeGraphNodeAPI(prim)
-                api.CreatePosAttr().Set(scaled_pos)
-                api.CreateSizeAttr().Set(scaled_size)
-
-                if description:
-                    backdrop.CreateDescriptionAttr().Set(description)
-
-                if color is not None:
-                    display_color = Gf.Vec3f(color[0], color[1], color[2])
-                    api.CreateDisplayColorAttr().Set(display_color)
-
-            if not stage.GetPrimAtPath(prim_path):
-                Tf.Warn(f"Created Backdrop prim is not visible at {prim_path}")
+            primSpec = Sdf.CreatePrimInLayer(layer, prim_path)
+            if not primSpec:
+                Tf.Warn(f"Failed to create prim spec at {prim_path}")
                 return None
+
+            primSpec.typeName = "Backdrop"
+            primSpec.specifier = Sdf.SpecifierDef
+
+            position_scale = 1.0 / 1000.0
+
+            # Position
+            scaled_pos = Gf.Vec2f(
+                position[0] * position_scale, position[1] * position_scale
+            )
+            posAttrSpec = Sdf.AttributeSpec(
+                primSpec, "ui:nodegraph:node:pos", Sdf.ValueTypeNames.Float2
+            )
+            if posAttrSpec:
+                posAttrSpec.default = scaled_pos
+
+            # Size
+            scaled_size = Gf.Vec2f(size[0] * position_scale, size[1] * position_scale)
+            sizeAttrSpec = Sdf.AttributeSpec(
+                primSpec, "ui:nodegraph:node:size", Sdf.ValueTypeNames.Float2
+            )
+            if sizeAttrSpec:
+                sizeAttrSpec.default = scaled_size
+
+            # Description
+            if description:
+                descAttrSpec = Sdf.AttributeSpec(
+                    primSpec, "ui:description", Sdf.ValueTypeNames.Token
+                )
+                if descAttrSpec:
+                    descAttrSpec.default = description
+
+            # Display color
+            if color is not None:
+                colorAttrSpec = Sdf.AttributeSpec(
+                    primSpec,
+                    "ui:nodegraph:node:displayColor",
+                    Sdf.ValueTypeNames.Float3,
+                )
+                if colorAttrSpec:
+                    colorAttrSpec.default = color
 
             Tf.Status(f"Created Backdrop prim at {prim_path} with position {position}")
             return prim_path

@@ -1,3 +1,2 @@
-*.sdf		text eol=lf
-*.usda		text eol=lf
-
+# Enforce LF line endings for all text files
+* text=auto eol=lf
