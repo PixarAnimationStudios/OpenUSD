@@ -163,8 +163,6 @@ pxr_library(usdNoodles
         assets/fonts/Poppins-Medium.png
         assets/fonts/Poppins-Regular.json
         assets/fonts/Poppins-Regular.png
-        assets/fonts/baskerville.json
-        assets/fonts/baskerville.png
         assets/icons/box.png
         assets/icons/relationship-arrows.png
         assets/icons/row-minus.png

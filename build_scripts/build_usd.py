@@ -1772,7 +1772,12 @@ EMBREE = Dependency("Embree", InstallEmbree,
 ############################################################
 # Noodles
 
-NOODLES_URL = "https://github.com/facebookexperimental/noodles/archive/refs/heads/main.zip"
+# Pinned to a specific noodles commit for reproducibility, matching the
+# versioning pattern used by every other dep in this file. Bump this
+# when noodles ships an API change; the wrap*.cpp files under
+# pxr/usdImaging/usdNoodles/bindings/ are the coupling point.
+NOODLES_COMMIT = "ff5d473"
+NOODLES_URL = "https://github.com/facebookexperimental/noodles/archive/{}.zip".format(NOODLES_COMMIT)
 
 def GetNoodlesIncludeDir(context):
     return os.path.join(context.instDir, "include", "noodles")
