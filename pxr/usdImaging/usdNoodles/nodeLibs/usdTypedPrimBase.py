@@ -12,7 +12,7 @@ from __future__ import annotations
 USD Typed Prim Library Base Class.
 
 Provides default implementations for creating, describing, and connecting
-standard USD typed prims. Libraries for specific prim domains (OpenRig,
+standard USD typed prims. Libraries for specific prim domains (
 Graph Composition, Asset Data, generic USD Prims) inherit from this base
 and only need to define type discovery and ownership.
 """

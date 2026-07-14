@@ -228,11 +228,10 @@ class UsdPrimLibrary(UsdTypedPrimLibraryBase):
     def _apply_auto_api_schemas(prim: Usd.Prim) -> None:
         """Apply companion API schemas that the prim type expects.
 
-        In USD 24.11 (and the open-source builds used by openrig),
-        ShadowAPI and ShapingAPI are standalone schemas — they don't
-        declare ``apiSchemaAutoApplyTo`` and are not built-in on light
-        types.  We apply them explicitly so light nodes surface shadow
-        and shaping pins.  Extend the list below for other prim families.
+        In USD 24.11, ShadowAPI and ShapingAPI are standalone schemas — they
+        don't declare ``apiSchemaAutoApplyTo`` and are not built-in on light
+        types. We apply them explicitly so light nodes surface shadow and
+        shaping pins. Extend the list below for other prim families.
         """
         applied = {str(s) for s in prim.GetAppliedSchemas()}
         if not any("LightAPI" in s for s in applied):

@@ -12,7 +12,7 @@ Tests for the generic UsdPrimLibrary node library.
 
 Covers connection authoring/deletion (inherited from UsdTypedPrimLibraryBase)
 and link collection. The per-schema libraries (AssetData, GraphComposition,
-OpenRig) were removed in favor of this single generic catch-all, so all prim
+were removed in favor of this single generic catch-all, so all prim
 types are now handled by UsdPrimLibrary.
 """
 
@@ -39,9 +39,9 @@ def _mock_prim(type_name: str) -> MagicMock:
 class UsdPrimLibraryConnectionTest(unittest.TestCase):
     """Connection authoring/deletion behavior.
 
-    These methods are inherited from UsdTypedPrimLibraryBase. They were
-    previously exercised via OpenRigLibrary; now the generic UsdPrimLibrary
-    owns every prim type, so the suite targets it directly.
+    These methods are inherited from UsdTypedPrimLibraryBase. Now the
+    generic UsdPrimLibrary owns every prim type, so the suite targets it
+    directly.
     """
 
     def setUp(self) -> None:
