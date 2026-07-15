@@ -783,6 +783,7 @@ PmcEncodeSession::_setupPrimvar(const UsdGeomPrimvar& pv)
     if (auto width = pv.GetElementSize(); width > 1) {
         amp.info.componentsPerVector = width;
         amp.info.vectorCount /= width;
+        amp.info.outputVectorCount /= width;
         amp.buffers.values.componentsPerVector = width;
         amp.buffers.values.vectorCount /= width;
         amp.buffers.values.stride *= width;
