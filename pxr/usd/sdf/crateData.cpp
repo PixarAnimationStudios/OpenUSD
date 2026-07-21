@@ -1171,7 +1171,7 @@ private:
         }
         
         Sdf_Shared<_FieldValuePairVector> fields;
-        SdfSpecType specType;
+        SdfSpecType specType = SdfSpecTypeUnknown;
     };
 
     using _HashMap = pxr_tsl::robin_map<
