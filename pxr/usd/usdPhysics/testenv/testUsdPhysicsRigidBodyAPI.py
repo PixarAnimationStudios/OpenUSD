@@ -560,6 +560,37 @@ class TestUsdPhysicsRigidBodyAPI(unittest.TestCase):
                                 
         self.compare_mass_information(rigidBodyAPI, 1000.0 * 2.0, expectedCoM=Gf.Vec3f(0.0))
 
+    # A collider with physics:collisionEnabled = false is not enabled and
+    # takes no part in simulation, so it must not contribute to the aggregated
+    # mass. A body whose only enabled collider is a unit cube should report the
+    # same mass, center of mass, and inertia as if the disabled collider were
+    # absent.
+    def test_mass_rigid_body_cube_disabled_collider(self):
+        self.setup_scene()
+
+        # top level xform - rigid body
+        self.xform = UsdGeom.Xform.Define(self.stage, "/xform")
+        rigidBodyAPI = UsdPhysics.RigidBodyAPI.Apply(self.xform.GetPrim())
+
+        # Enabled collider cube0 at the origin.
+        self.cube = UsdGeom.Cube.Define(self.stage, "/xform/cube0")
+        self.cube.GetSizeAttr().Set(1.0)
+        UsdPhysics.CollisionAPI.Apply(self.cube.GetPrim())
+
+        # Disabled collider cube1, offset so that if it were (incorrectly)
+        # included it would both change the mass and shift the center of mass.
+        self.cube2 = UsdGeom.Cube.Define(self.stage, "/xform/cube1")
+        self.cube2.GetSizeAttr().Set(1.0)
+        disabledCollisionAPI = UsdPhysics.CollisionAPI.Apply(self.cube2.GetPrim())
+        disabledCollisionAPI.GetCollisionEnabledAttr().Set(False)
+        self.cube2.AddTranslateOp().Set(Gf.Vec3f(0, 0, 4.0))
+
+        self.rigidBodyWorldTransform = UsdGeom.Xformable(self.xform.GetPrim()).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        self.rigidBodyPrim = self.xform.GetPrim()
+
+        # Only the single enabled unit cube (default density 1000) contributes.
+        self.compare_mass_information(rigidBodyAPI, 1000.0, expectedCoM=Gf.Vec3f(0.0), expectedInertia=Gf.Vec3f(166.667))
+
     def test_mass_rigid_body_nested(self):
         self.setup_scene()
 
