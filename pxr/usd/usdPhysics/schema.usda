@@ -202,7 +202,13 @@ class "PhysicsMassAPI"
 
     doc = """Defines explicit mass properties (mass, density, inertia etc.).        
     MassAPI can be applied to any object that has a PhysicsCollisionAPI or
-    a PhysicsRigidBodyAPI."""
+    a PhysicsRigidBodyAPI. MassAPI only has an effect where the underlying
+    PhysicsCollisionAPI or PhysicsRigidBodyAPI is enabled; a collider whose
+    physics:collisionEnabled is false, or a rigid body whose
+    physics:rigidBodyEnabled is false, takes no part in simulation, so any
+    MassAPI applied to it is likewise ignored. When neither an enabled
+    collider nor an enabled rigid body remains on a prim, it is not a physics
+    prim and its MassAPI has no effect."""
 
     inherits = </APISchemaBase>
 )

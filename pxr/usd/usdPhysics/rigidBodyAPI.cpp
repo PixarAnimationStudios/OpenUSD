@@ -498,6 +498,14 @@ float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia,
 
             if (collisionPrim && collisionPrim.HasAPI<UsdPhysicsCollisionAPI>())
             {
+                const UsdPhysicsCollisionAPI collisionAPI(collisionPrim);
+                bool collisionEnabled = true;
+                collisionAPI.GetCollisionEnabledAttr().Get(&collisionEnabled);
+                if (!collisionEnabled)
+                {
+                    continue;
+                }
+
                 collisionPrims.push_back(std::move(collisionPrim));
             }
         }
