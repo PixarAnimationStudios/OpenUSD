@@ -209,6 +209,17 @@ namespace {
         float mass = self.ComputeMassProperties(&diagonalInertia, &com, &principalAxes, massInfoFn);        
         return pxr_boost::python::make_tuple( mass, diagonalInertia, com, principalAxes );
     }
+
+    static pxr_boost::python::list
+    GetCollisionPrimsHelper( const UsdPhysicsRigidBodyAPI &self )
+    {
+        pxr_boost::python::list result;
+        for (const UsdPrim& prim : self.GetCollisionPrims())
+        {
+            result.append(prim);
+        }
+        return result;
+    }
         
 
     WRAP_CUSTOM {
@@ -219,6 +230,7 @@ namespace {
 
         scope s = _class
             .def("ComputeMassProperties", ComputeMassPropertiesHelper)
+            .def("GetCollisionPrims", GetCollisionPrimsHelper)
 
         ;
 
