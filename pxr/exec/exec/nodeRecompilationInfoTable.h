@@ -71,7 +71,7 @@ private:
         // Instances of _Storage are allocated by a zero allocator. 
         // Therefore, if memory for a _Storage has been allocated, this flag
         // will be false, even if the _Storage has not been constructed.
-        bool isInfoConstructed;
+        bool isInfoConstructed{false};
     };
 
     using _StorageVector =
