@@ -668,6 +668,48 @@ class TestUsdPhysicsRigidBodyAPI(unittest.TestCase):
         # nested body, whose subtree is still pruned.
         self.compare_mass_information(rigidBodyAPI, 1000.0, expectedCoM=Gf.Vec3f(0.0), expectedInertia=Gf.Vec3f(166.667))
 
+    def test_get_collision_prims(self):
+        self.setup_scene()
+
+        # top level xform - rigid body
+        self.xform = UsdGeom.Xform.Define(self.stage, "/xform")
+        rigidBodyAPI = UsdPhysics.RigidBodyAPI.Apply(self.xform.GetPrim())
+
+        # Enabled collider - should be returned.
+        enabled = UsdGeom.Cube.Define(self.stage, "/xform/enabled")
+        UsdPhysics.CollisionAPI.Apply(enabled.GetPrim())
+
+        # Disabled collider - should be excluded.
+        disabled = UsdGeom.Cube.Define(self.stage, "/xform/disabled")
+        disabledCollisionAPI = UsdPhysics.CollisionAPI.Apply(disabled.GetPrim())
+        disabledCollisionAPI.GetCollisionEnabledAttr().Set(False)
+
+        # A collider owned by a nested rigid body - should be pruned, since it
+        # belongs to the nested body, not to this one.
+        nestedBody = UsdGeom.Xform.Define(self.stage, "/xform/nestedBody")
+        UsdPhysics.RigidBodyAPI.Apply(nestedBody.GetPrim())
+        nestedCollider = UsdGeom.Cube.Define(self.stage, "/xform/nestedBody/collider")
+        UsdPhysics.CollisionAPI.Apply(nestedCollider.GetPrim())
+
+        # A collider below a DISABLED nested rigid body - should be returned.
+        # A disabled body takes no part in simulation and so owns no colliders;
+        # its subtree still belongs to this body.
+        disabledBody = UsdGeom.Xform.Define(self.stage, "/xform/disabledBody")
+        disabledBodyAPI = UsdPhysics.RigidBodyAPI.Apply(disabledBody.GetPrim())
+        disabledBodyAPI.GetRigidBodyEnabledAttr().Set(False)
+        colliderBelowDisabledBody = UsdGeom.Cube.Define(self.stage, "/xform/disabledBody/collider")
+        UsdPhysics.CollisionAPI.Apply(colliderBelowDisabledBody.GetPrim())
+
+        collisionPrims = rigidBodyAPI.GetCollisionPrims()
+        collisionPaths = set(p.GetPath() for p in collisionPrims)
+
+        # Only the enabled colliders that this body owns are returned.
+        self.assertEqual(collisionPaths,
+                         {enabled.GetPrim().GetPath(),
+                          colliderBelowDisabledBody.GetPrim().GetPath()})
+        self.assertNotIn(disabled.GetPrim().GetPath(), collisionPaths)
+        self.assertNotIn(nestedCollider.GetPrim().GetPath(), collisionPaths)
+
     def test_mass_rigid_body_nested(self):
         self.setup_scene()
 
