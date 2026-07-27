@@ -512,6 +512,59 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         self.assertTrue(rigidbody_found)
         self.assertTrue(cube_found)
 
+    def test_rigidbody_disabled_nested_body_collision_parse(self):
+        """A nested rigid body only owns colliders while it is enabled. A
+        collider below a disabled nested body must be reported as belonging to
+        the nearest enabled rigid body above it, matching the subtree that
+        UsdPhysicsRigidBodyAPI::ComputeMassProperties aggregates.
+        """
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        UsdPhysics.Scene.Define(stage, '/physicsScene')
+
+        rigidbody = UsdGeom.Xform.Define(stage, "/rigidBody")
+        UsdPhysics.RigidBodyAPI.Apply(rigidbody.GetPrim())
+
+        # Disabled nested rigid body: it takes no part in simulation, so it
+        # does not form the root of its own subtree.
+        disabled_body = UsdGeom.Xform.Define(stage, "/rigidBody/disabledBody")
+        disabled_body_api = UsdPhysics.RigidBodyAPI.Apply(
+            disabled_body.GetPrim())
+        disabled_body_api.GetRigidBodyEnabledAttr().Set(False)
+
+        cube = UsdGeom.Cube.Define(stage, "/rigidBody/disabledBody/cube")
+        UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+
+        ret_dict = UsdPhysics.UsdPhysicsLoadStageFromPrimRange(stage, ["/"])
+
+        rigidbody_found = False
+        cube_found = False
+
+        for key, value in ret_dict.items():
+            prim_paths, descs = value
+            if key == UsdPhysics.ObjectType.RigidBody:
+                for prim_path, desc in zip(prim_paths, descs):
+                    if prim_path == rigidbody.GetPrim().GetPrimPath():
+                        rigidbody_found = True
+                        # The collider below the disabled nested body belongs
+                        # to the enabled body above it.
+                        self.assertTrue(len(desc.collisions) == 1)
+                        self.assertTrue(desc.collisions[0] ==
+                                        cube.GetPrim().GetPrimPath())
+                    elif prim_path == disabled_body.GetPrim().GetPrimPath():
+                        # The disabled body owns no colliders.
+                        self.assertTrue(len(desc.collisions) == 0)
+            elif key == UsdPhysics.ObjectType.CubeShape:
+                for prim_path, desc in zip(prim_paths, descs):
+                    cube_found = True
+                    self.assertTrue(prim_path == cube.GetPrim().GetPrimPath())
+                    self.assertTrue(desc.rigidBody ==
+                                    rigidbody.GetPrim().GetPrimPath())
+
+        self.assertTrue(rigidbody_found)
+        self.assertTrue(cube_found)
+
     def test_rigidbody_collision_multithreading_parse(self):
         """Check that if a single rigid body has many collision objects, the
         multithreaded parsing works correctly.
