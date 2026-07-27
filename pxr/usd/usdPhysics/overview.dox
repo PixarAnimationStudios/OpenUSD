@@ -226,6 +226,12 @@ of a rigid body that are not parts of other rigid bodies. Multiple rigid bodies
 in a subtree move completely independently, even if their transforms are stored
 relative to one another.  
 
+This exception applies only while the nested UsdPhysicsRigidBodyAPI is enabled.
+A nested rigid body whose physics:rigidBodyEnabled is false takes no part in
+simulation and therefore does not create a separate rigid body, so it does not
+form the root of its own subtree; the prims below it remain part of the nearest
+enabled rigid body above it in the hierarchy.
+
 If aggregate properties of the entire rigid body must be computed, such as
 total mass or the entirety of its collision volume, then the contents of the
 entire subtree are considered, taking care to exclude the contents of any
@@ -314,10 +320,14 @@ times the locally effective density.
 
 \li Implicit mass of a rigid body is the total implicit mass of all children in
 the subtree belonging to the rigid body. Only enabled colliders are counted
-among these children: a collider whose physics:collisionEnabled is false, or a
-child rigid body whose physics:rigidBodyEnabled is false, takes no part in
-simulation and is excluded from the mass computation, so any UsdPhysicsMassAPI
-applied to it has no effect.
+among these children: a collider whose physics:collisionEnabled is false takes
+no part in simulation and is excluded from the mass computation, so any
+UsdPhysicsMassAPI applied to it has no effect. Likewise, a UsdPhysicsMassAPI
+applied to a nested rigid body whose physics:rigidBodyEnabled is false has no
+effect. Note however that a disabled nested rigid body does not itself form the
+root of a subtree: because it takes no part in simulation it owns no colliders,
+so the enabled colliders below it still belong to the nearest enabled rigid body
+above it and still contribute their mass to it.
 
 \li Density is assumed to be 1000.0 kg/m3 (approximately the density of water) 
 for volume computation when no other density is specified locally, or in bound 
