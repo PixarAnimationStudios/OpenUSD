@@ -208,7 +208,10 @@ class "PhysicsMassAPI"
     physics:rigidBodyEnabled is false, takes no part in simulation, so any
     MassAPI applied to it is likewise ignored. When neither an enabled
     collider nor an enabled rigid body remains on a prim, it is not a physics
-    prim and its MassAPI has no effect."""
+    prim and its MassAPI has no effect. Note that this concerns only the prim
+    the MassAPI is applied to: disabling a prim does not discard the mass of
+    the enabled colliders beneath it, which continue to contribute to the
+    nearest enabled rigid body above them."""
 
     inherits = </APISchemaBase>
 )
