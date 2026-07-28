@@ -1689,6 +1689,18 @@ def InstallMaterialX(context, force, buildArgs):
                         '        add_subdirectory(source/MaterialXRenderGlsl)\n' +
                         '    endif()')
                        ], multiLineMatches=True)
+            # Add iOS, visionOS support
+            PatchFile("CMakeLists.txt",
+                      [('IF (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" AND CMAKE_OSX_ARCHITECTURES STREQUAL "") OR ("arm64" IN_LIST CMAKE_OSX_ARCHITECTURES))',
+                                'IF (APPLE AND ((CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR (CMAKE_SYSTEM_NAME STREQUAL "iOS") OR (CMAKE_SYSTEM_NAME STREQUAL "visionOS")) AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" AND CMAKE_OSX_ARCHITECTURES STREQUAL "") OR ("arm64" IN_LIST CMAKE_OSX_ARCHITECTURES))'
+                        )])
+            PatchFile("common/cmake/clang.cmake",
+                      [('    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")   # makes sure code runs on older MacOSX versions\n',
+                        '    IF (CMAKE_SYSTEM_NAME STREQUAL "Darwin")\n'
+                        '      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")   # makes sure code runs on older MacOSX versions\n'
+                        '    ENDIF()\n'
+                        )],
+                      multiLineMatches=True)
 
         cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
