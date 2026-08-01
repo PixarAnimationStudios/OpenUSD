@@ -95,6 +95,8 @@ public:
         return depInfo;
     }
 
+    using UsdUtils_ReadOnlyLocalizationClient::PathShouldResolve;
+
     bool 
     PathShouldResolve(
         const SdfLayerRefPtr &layer, 
