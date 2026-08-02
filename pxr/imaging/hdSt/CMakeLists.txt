@@ -149,6 +149,9 @@ pxr_library(hdSt
         dynamicUvTextureImplementation.h
         enums.h
 
+    PRIVATE_HEADERS
+        ptexMipmapTextureLoaderSizing.h
+
     PRIVATE_CLASSES
         assetUvTextureCpuData
         basisCurvesComputations
@@ -3014,6 +3017,17 @@ pxr_register_test(testHdStSubResourceRegistry
 if (TARGET shared_libs)
 
 if (PXR_ENABLE_PTEX_SUPPORT)
+pxr_build_test(testHdStPtexBufferSize
+    LIBRARIES
+        tf
+    CPPFILES
+        testenv/testHdStPtexBufferSize.cpp
+)
+pxr_register_test(testHdStPtexBufferSize
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStPtexBufferSize"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_build_test(testHdStPtex
     LIBRARIES
         hdSt
