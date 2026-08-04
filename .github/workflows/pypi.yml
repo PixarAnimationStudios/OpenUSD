@@ -28,6 +28,11 @@ jobs:
   Linux:
     strategy:
       matrix:
+        ARCH:
+          - NAME: x86_64
+            RUNNER: ubuntu-22.04
+          - NAME: aarch64
+            RUNNER: ubuntu-22.04-arm
         PYTHON:
           - TAG: cp39
             INTERPRETER: /opt/python/cp39-cp39/bin/python
@@ -47,10 +52,10 @@ jobs:
           - TAG: cp314
             INTERPRETER: /opt/python/cp314-cp314/bin/python
             VERSION_SPEC: '3.14.3'
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.ARCH.RUNNER }}
     permissions:
       contents: write # Grant write permissions in order to upload artifacts
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd #v6.0.2
@@ -61,7 +66,7 @@ jobs:
           check-latest: false
       - name: Setting up docker
         run: |
-          docker build -t manylinuxwithcmake build_scripts/pypi/docker
+          docker build --build-arg ARCH=${{ matrix.ARCH.NAME }} -t manylinuxwithcmake build_scripts/pypi/docker
           docker run --name usdmanylinux --rm -id -v ./:/opt/USD -v /home/vsts/dist:/opt/USD-dist manylinuxwithcmake
       - name: Install Dependencies
         run: |
@@ -107,7 +112,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
         with:
-          name: dist-linux-${{ matrix.PYTHON.TAG }}
+          name: dist-linux-${{ matrix.ARCH.NAME }}-${{ matrix.PYTHON.TAG }}
           path: /home/vsts/dist
   macOS:
     strategy:
@@ -304,6 +309,30 @@ jobs:
           - NAME: Linux_Python314
             PYTHON_VERSION_SPEC: '3.14.3'
             IMAGE: ubuntu-22.04
+            PYTHON_INTERPRETER: python3
+          - NAME: Linux_aarch64_Python39
+            PYTHON_VERSION_SPEC: '3.9'
+            IMAGE: ubuntu-22.04-arm
+            PYTHON_INTERPRETER: python3
+          - NAME: Linux_aarch64_Python310
+            PYTHON_VERSION_SPEC: '3.10'
+            IMAGE: ubuntu-22.04-arm
+            PYTHON_INTERPRETER: python3
+          - NAME: Linux_aarch64_Python311
+            PYTHON_VERSION_SPEC: '3.11'
+            IMAGE: ubuntu-22.04-arm
+            PYTHON_INTERPRETER: python3
+          - NAME: Linux_aarch64_Python312
+            PYTHON_VERSION_SPEC: '3.12'
+            IMAGE: ubuntu-22.04-arm
+            PYTHON_INTERPRETER: python3
+          - NAME: Linux_aarch64_Python313
+            PYTHON_VERSION_SPEC: '3.13.5'
+            IMAGE: ubuntu-22.04-arm
+            PYTHON_INTERPRETER: python3
+          - NAME: Linux_aarch64_Python314
+            PYTHON_VERSION_SPEC: '3.14.3'
+            IMAGE: ubuntu-22.04-arm
             PYTHON_INTERPRETER: python3
           - NAME: Mac_Python39
             PYTHON_VERSION_SPEC: '3.9'
