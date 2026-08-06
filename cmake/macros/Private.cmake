@@ -354,6 +354,15 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
             DESTINATION ${installDestination}
             RENAME ${destFileName}
         )
+        file(GENERATE
+            OUTPUT "${PROJECT_BINARY_DIR}/install/$<CONFIG>/${resourcesPath}/${dirPath}/${destFileName}"
+            INPUT "${resourceFile}"
+        )
+        get_filename_component(absResourceFile ${resourceFile} ABSOLUTE)
+        set_property(TARGET ${NAME}
+            PROPERTY USD_RESOURCES "${absResourceFile}@${resourcesPath}/${dirPath}/${destFileName}"
+            APPEND
+        )
     endforeach()
 
 endfunction() # _install_resource_files
@@ -1357,6 +1366,9 @@ function(_pxr_library NAME)
             IMPORT_PREFIX "${args_PREFIX}"            
             PREFIX "${args_PREFIX}"
             SUFFIX "${args_SUFFIX}"
+            ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/install/$<CONFIG>/lib"
+            LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/install/$<CONFIG>/lib"
+            RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/install/$<CONFIG>/bin"
     )
 
     target_compile_definitions(${NAME}
