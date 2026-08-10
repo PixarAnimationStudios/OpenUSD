@@ -288,7 +288,7 @@ JsParseStream(
     _LineTracker<rj::IStreamWrapper> isw(istr, buf.get(), bufLen);
     // Need Full precision flag to round trip double values correctly.
     constexpr auto parseFlags =
-        rj::kParseFullPrecisionFlag | rj::kParseStopWhenDoneFlag;
+        rj::kParseFullPrecisionFlag | rj::kParseStopWhenDoneFlag | rj::kParseNanAndInfFlag;
     rj::ParseResult result;
     if (error) {
         result = reader.Parse<parseFlags>(isw, handler);
@@ -332,7 +332,7 @@ JsParseString(
     rj::StringStream ss(data.c_str());
     // Need Full precision flag to round trip double values correctly.
     rj::ParseResult result =
-        reader.Parse<rj::kParseFullPrecisionFlag|rj::kParseStopWhenDoneFlag>(
+        reader.Parse<rj::kParseFullPrecisionFlag|rj::kParseStopWhenDoneFlag|rj::kParseNanAndInfFlag>(
             ss, handler);
 
     if (!result) {
