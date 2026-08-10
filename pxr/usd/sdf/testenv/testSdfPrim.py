@@ -79,6 +79,31 @@ class TestSdfPrim(unittest.TestCase):
                 print("     previous list {0}".format(prevGroundTruthList))
                 self.fail("Prim insertion test failed")
 
+    def test_NameChildrenFind(self):
+        layer = Sdf.Layer.CreateAnonymous("test")
+        rootPrim = Sdf.PrimSpec(layer, 'Root', Sdf.SpecifierDef, 'Scope')
+
+        # find the index of a non-existent prim with no children
+        index = rootPrim.nameChildren.index('nonexistent')
+        self.assertEqual(index, -1)
+
+        # insert some child prims to find
+        for i in range(10):
+            primName = 'geom{0}'.format(i)
+            primSpec = Sdf.PrimSpec(layer, primName, Sdf.SpecifierDef, 'Scope')
+
+            rootPrim.nameChildren.insert(i, primSpec)
+
+        # find the index of the prims
+        for i in range(10):
+            primName = 'geom{0}'.format(i)
+            index = rootPrim.nameChildren.index(primName)
+            self.assertEqual(index, i)
+        
+        # find the index of a non-existent prim
+        index = rootPrim.nameChildren.index('nonexistent')
+        self.assertEqual(index, -1)
+
     def test_InertSpecRemoval(self):
         layer = Sdf.Layer.CreateAnonymous()
 
