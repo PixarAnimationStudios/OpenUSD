@@ -19,8 +19,6 @@
 # - specifying non-zero return codes
 # - comparing output files against a baseline
 #
-from __future__ import print_function
-
 import argparse
 import glob
 import os
@@ -95,15 +93,6 @@ def _parseArgs():
                   'Currently used for emscripten builds.'))
     parser.add_argument('--expected-return-code', type=int, default=0,
             help='Expected return code of this test.')
-    parser.add_argument('--env-var', dest='envVars', default=[], type=str, 
-            action='append',
-            help=('Variable to set in the test environment, in KEY=VALUE form. '
-                  'If "<PXR_TEST_DIR>" is in the value, it is replaced with the '
-                  'absolute path of the temp directory the tests are run in'))
-    parser.add_argument('--pre-path', dest='prePaths', default=[], type=str, 
-            action='append', help='Path to prepend to the PATH env var.')
-    parser.add_argument('--post-path', dest='postPaths', default=[], type=str, 
-            action='append', help='Path to append to the PATH env var.')
     parser.add_argument('--verbose', '-v', action='store_true',
             help='Verbose output.')
     parser.add_argument('cmd', metavar='CMD', type=str, 
@@ -360,29 +349,7 @@ if __name__ == '__main__':
             sys.stderr.write("Error: copying testenv directory: {0}".format(e))
             sys.exit(1)
 
-    # Add any envvars specified with --env-var options into the environment
     env = os.environ.copy()
-    for varStr in args.envVars:
-        try:
-            k, v = varStr.split('=', 1)
-            if k == 'PATH':
-                sys.stderr.write("Error: use --pre-path or --post-path to edit PATH.")
-                sys.exit(1)
-            v = v.replace('<PXR_TEST_DIR>', testDir)
-            env[k] = v
-        except IndexError:
-            sys.stderr.write("Error: envvar '{0}' not of the form "
-                             "key=value".format(varStr))
-            sys.exit(1)
-
-    # Modify the PATH env var.  The delimiter depends on the platform.
-    pathDelim = ';' if platform.system() == 'Windows' else ':'
-    paths = env.get('PATH', '').split(pathDelim)
-    paths = args.prePaths + paths + args.postPaths
-    env['PATH'] = pathDelim.join(paths)
-
-    # Avoid the just-in-time debugger where possible when running tests.
-    env['ARCH_AVOID_JIT'] = '1'
 
     if args.pre_command:
         _runCommand(args.pre_command, args.pre_command_stdout_redirect,
