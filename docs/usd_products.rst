@@ -319,6 +319,17 @@ Muse
 
 --------
 
+Kanzi
+=============
+
+`Kanzi Studio <https://rightware.com/product/kanzi-studio/>`_ is the first choice for automotive user interface projects all over the world. UX experts and creative professionals throughout the industry love its impressive design capabilities, along with its powerful and robust 3D graphics engine that runs smoothly on any embedded platform.
+
+Kanzi USD Importer allows user to import Universal Scene Description files to a Kanzi Studio project. 
+
+`Kanzi USD Importer Documentation <https://docs.kanzi.com/usd-importer/1.0.0/>`_
+
+--------
+
 Left Angle Autograph
 ====================
 
