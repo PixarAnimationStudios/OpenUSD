@@ -1521,14 +1521,14 @@ private:
                 }
         }
         // Parse NaN or Infinity here
-        else if ((parseFlags & kParseNanAndInfFlag) && RAPIDJSON_LIKELY((s.Peek() == 'I' || s.Peek() == 'i' || s.Peek() == 'N'))) {
+        else if ((parseFlags & kParseNanAndInfFlag) && RAPIDJSON_LIKELY((s.Peek() == 'I' || s.Peek() == 'N'))) {
             if (Consume(s, 'N')) {
                 if (Consume(s, 'a') && Consume(s, 'N')) {
                     d = std::numeric_limits<double>::quiet_NaN();
                     useNanOrInf = true;
                 }
             }
-            else if (RAPIDJSON_LIKELY(Consume(s, 'I') || Consume(s, 'i'))) {
+            else if (RAPIDJSON_LIKELY(Consume(s, 'I'))) {
                 if (Consume(s, 'n') && Consume(s, 'f')) {
                     d = (minus ? -std::numeric_limits<double>::infinity() : std::numeric_limits<double>::infinity());
                     useNanOrInf = true;
