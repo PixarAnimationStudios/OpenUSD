@@ -95,11 +95,11 @@ TestNumbers()
     TF_AXIOM(strcmp(buffer, "nan") == 0);
 
     TF_AXIOM(
-        TfDoubleToString(std::numeric_limits<double>::infinity(), buffer, bufferSize, true, "Inf", "NaN"));
-    TF_AXIOM(strcmp(buffer, "Inf") == 0);
+        TfDoubleToString(std::numeric_limits<double>::infinity(), buffer, bufferSize, true, "Infinity", "NaN"));
+    TF_AXIOM(strcmp(buffer, "Infinity") == 0);
     TF_AXIOM(
-        TfDoubleToString(-std::numeric_limits<double>::infinity(), buffer, bufferSize, true, "Inf", "NaN"));
-    TF_AXIOM(strcmp(buffer, "-Inf") == 0);
+        TfDoubleToString(-std::numeric_limits<double>::infinity(), buffer, bufferSize, true, "Infinity", "NaN"));
+    TF_AXIOM(strcmp(buffer, "-Infinity") == 0);
     TF_AXIOM(
         TfDoubleToString(std::numeric_limits<double>::quiet_NaN(), buffer, bufferSize, true, "Inf", "NaN"));
     TF_AXIOM(strcmp(buffer, "NaN") == 0);

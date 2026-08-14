@@ -158,7 +158,7 @@ public:
     bool Double(double d) { 
         constexpr int bufferSize = 32;
         char buffer[bufferSize];
-        TfDoubleToString(d, buffer, bufferSize, true, "Inf", "NaN");
+        TfDoubleToString(d, buffer, bufferSize, true, "Infinity", "NaN");
         
         return Base::RawValue(buffer, strlen(buffer), rj::kNumberType);
      }
