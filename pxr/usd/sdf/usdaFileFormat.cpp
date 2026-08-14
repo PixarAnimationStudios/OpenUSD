@@ -178,14 +178,17 @@ SdfUsdaFileFormat::~SdfUsdaFileFormat()
 namespace
 {
 
-bool _CheckBOM(const char* bufferRead, size_t bufferSize) {
+bool
+_CheckBOM(
+    const char* bufferRead, size_t bufferSize, std::string* whyNot)
+{
     // Check for UTF-8 BOM (EF BB BF)
     if (bufferSize >= 3 &&
         static_cast<unsigned char>(bufferRead[0]) == 0xEF &&
         static_cast<unsigned char>(bufferRead[1]) == 0xBB &&
         static_cast<unsigned char>(bufferRead[2]) == 0xBF) {
-        TF_WARN("Asset starts with UTF-8 BOM which is not supported, "
-                "please convert the file to UTF-8 without the BOM.");
+        *whyNot = "Asset starts with UTF-8 BOM which is not supported, "
+                  "please convert the file to UTF-8 without the BOM.";
         return false;
     }
 
@@ -195,8 +198,8 @@ bool _CheckBOM(const char* bufferRead, size_t bufferSize) {
          static_cast<unsigned char>(bufferRead[1]) == 0xFF) ||
         (static_cast<unsigned char>(bufferRead[0]) == 0xFF &&
          static_cast<unsigned char>(bufferRead[1]) == 0xFE))) {
-        TF_WARN("Asset starts with UTF-16 BOM marker which is not supported, "
-                "please convert the file to UTF-8 without the BOM.");
+        *whyNot = "Asset starts with UTF-16 BOM marker which is not supported, "
+                  "please convert the file to UTF-8 without the BOM.";
         return false;
     }
 
@@ -210,8 +213,8 @@ bool _CheckBOM(const char* bufferRead, size_t bufferSize) {
          static_cast<unsigned char>(bufferRead[1]) == 0xFE &&
          static_cast<unsigned char>(bufferRead[2]) == 0x00 &&
          static_cast<unsigned char>(bufferRead[3]) == 0x00))) {
-        TF_WARN("Asset starts with UTF-32 BOM marker which is not supported, "
-                "please convert the file to UTF-8 without the BOM.");
+        *whyNot = "Asset starts with UTF-32 BOM marker which is not supported, "
+                  "please convert the file to UTF-8 without the BOM.";
         return false;
     }
 
@@ -221,7 +224,7 @@ bool _CheckBOM(const char* bufferRead, size_t bufferSize) {
 bool
 _CanReadImpl(const std::shared_ptr<ArAsset>& asset,
              const std::string& cookie,
-             bool bomCheckWarning = true)
+             std::string* whyNot = nullptr)
 {
     TfErrorMark mark;
 
@@ -242,8 +245,8 @@ _CanReadImpl(const std::shared_ptr<ArAsset>& asset,
         return false;
     }
 
-    // Check bom markers if requested
-    if (bomCheckWarning && !_CheckBOM(buf, bytesRead)) {
+    // Check BOM markers if the caller wants a specific failure reason.
+    if (whyNot && !_CheckBOM(buf, bytesRead, whyNot)) {
         return false;
     }
 
@@ -276,7 +279,7 @@ SdfUsdaFileFormat::CanRead(const string& filePath) const
 
     std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
         ArResolvedPath(filePath));
-    return asset && _CanReadImpl(asset, GetFileCookie(), false);
+    return asset && _CanReadImpl(asset, GetFileCookie());
 }
 
 bool
@@ -284,7 +287,7 @@ SdfUsdaFileFormat::_CanReadFromAsset(
     const std::string& resolvedPath,
     const std::shared_ptr<ArAsset>& asset) const
 {
-    return _CanReadImpl(asset, GetFileCookie(), false);
+    return _CanReadImpl(asset, GetFileCookie());
 }
 
 bool
@@ -313,10 +316,18 @@ SdfUsdaFileFormat::_ReadFromAsset(
 {
     // Quick check to see if the file has the magic cookie before spinning up
     // the parser.
-    if (!_CanReadImpl(asset, GetFileCookie(), true)) {
-        TF_RUNTIME_ERROR("<%s> is not a valid %s layer",
-                         resolvedPath.c_str(),
-                         GetFormatId().GetText());
+    std::string whyNot;
+    if (!_CanReadImpl(asset, GetFileCookie(), &whyNot)) {
+        if (whyNot.empty()) {
+            TF_RUNTIME_ERROR("<%s> is not a valid %s layer",
+                             resolvedPath.c_str(),
+                             GetFormatId().GetText());
+        } else {
+            TF_RUNTIME_ERROR("<%s> is not a valid %s layer: %s",
+                             resolvedPath.c_str(),
+                             GetFormatId().GetText(),
+                             whyNot.c_str());
+        }
         return false;
     }
 

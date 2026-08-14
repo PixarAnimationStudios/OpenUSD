@@ -313,8 +313,12 @@ class TestSdfParsing(unittest.TestCase):
                 print('\tReading "%s"' % layerFile)
                 try:
                     layer = Sdf.Layer.FindOrOpen( layerFile )
-                except Tf.ErrorException:
+                except Tf.ErrorException as error:
                     # Parsing errors should always be Tf.ErrorExceptions
+                    if '_BOM' in file:
+                        self.assertIn(
+                            'please convert the file to UTF-8 without the BOM',
+                            str(error))
                     print('\tErrors encountered, as expected')
                     print('\tPassed')
                     continue
