@@ -199,7 +199,7 @@ _CollectPrefixes(
     using ExpressionReference = PathExpr::ExpressionReference;
 
     // Ignore logical operators.
-    auto logic = [&xf](Op op, int argIndex) {};
+    auto logic = [](Op op, int argIndex) {};
 
     // Collect the expression reference path.
     auto mapRef =
