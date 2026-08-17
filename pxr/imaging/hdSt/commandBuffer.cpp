@@ -522,7 +522,7 @@ HdStCommandBuffer::SyncDrawItemVisibility(unsigned visChangeCount)
     }
 
     _visibleSize = 0;
-    int const N = 10000;
+    constexpr int N = 10000;
     tbb::enumerable_thread_specific<size_t> visCounts;
 
     WorkParallelForN(_drawItemInstances.size()/N+1,

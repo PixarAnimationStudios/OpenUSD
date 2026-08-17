@@ -465,7 +465,7 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelectionSharedPtr const &selection,
     std::vector<int> ids;
     ids.resize(numPrims);
 
-    size_t const N = 1000;
+    constexpr size_t N = 1000;
     WorkParallelForN(numPrims/N + 1,
        [&ids, index, &selectedPrims](size_t begin, size_t end) mutable {
         end = std::min(end*N, ids.size());
