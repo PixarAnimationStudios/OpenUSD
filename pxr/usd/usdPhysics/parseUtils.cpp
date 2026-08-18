@@ -944,9 +944,18 @@ UsdPrim _GetBodyPrim(UsdStageWeakPtr stage, const SdfPath& relPath,
     UsdPrim collisionPrim = UsdPrim();
     while (parent && parent != stage->GetPseudoRoot())
     {
-        if (parent.HasAPI<UsdPhysicsRigidBodyAPI>())
+        const UsdPhysicsRigidBodyAPI rigidBodyAPI(parent);
+        if (rigidBodyAPI)
         {
-            return parent;
+            // A disabled body takes no part in simulation and does not own
+            // this prim, so keep searching the ancestors as though the API
+            // were not applied at all.
+            bool rigidBodyEnabled = true;
+            rigidBodyAPI.GetRigidBodyEnabledAttr().Get(&rigidBodyEnabled);
+            if (rigidBodyEnabled)
+            {
+                return parent;
+            }
         }
         if (parent.HasAPI<UsdPhysicsCollisionAPI>())
         {

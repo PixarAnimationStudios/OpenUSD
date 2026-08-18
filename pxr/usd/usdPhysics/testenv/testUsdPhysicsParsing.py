@@ -565,6 +565,63 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         self.assertTrue(rigidbody_found)
         self.assertTrue(cube_found)
 
+    def test_joint_disabled_body_rel_parse(self):
+        """A joint body relationship resolves to the nearest enabled rigid body
+        above its target. A disabled body is treated as though the API were not
+        applied at all, so it is skipped in favour of an enabled body above it.
+        """
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        UsdPhysics.Scene.Define(stage, '/physicsScene')
+
+        rigidbody = UsdGeom.Xform.Define(stage, "/rigidBody")
+        UsdPhysics.RigidBodyAPI.Apply(rigidbody.GetPrim())
+
+        disabled_body = UsdGeom.Xform.Define(stage, "/rigidBody/disabledBody")
+        disabled_body_api = UsdPhysics.RigidBodyAPI.Apply(
+            disabled_body.GetPrim())
+        disabled_body_api.GetRigidBodyEnabledAttr().Set(False)
+
+        cube = UsdGeom.Cube.Define(stage, "/rigidBody/disabledBody/cube")
+        UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+
+        joint = UsdPhysics.FixedJoint.Define(stage, "/joint")
+        joint.GetBody0Rel().AddTarget(cube.GetPrim().GetPrimPath())
+
+        ret_dict = UsdPhysics.UsdPhysicsLoadStageFromPrimRange(stage, ["/"])
+
+        joint_found = False
+        for key, value in ret_dict.items():
+            prim_paths, descs = value
+            if key == UsdPhysics.ObjectType.FixedJoint:
+                for prim_path, desc in zip(prim_paths, descs):
+                    joint_found = True
+                    # The disabled body is skipped, so the relationship
+                    # resolves to the enabled body above it.
+                    self.assertTrue(desc.body0 ==
+                                    rigidbody.GetPrim().GetPrimPath())
+
+        self.assertTrue(joint_found)
+
+        # With no enabled body above the target, the relationship no longer
+        # resolves to a body.
+        UsdPhysics.RigidBodyAPI(
+            rigidbody.GetPrim()).GetRigidBodyEnabledAttr().Set(False)
+
+        ret_dict = UsdPhysics.UsdPhysicsLoadStageFromPrimRange(stage, ["/"])
+
+        joint_found = False
+        for key, value in ret_dict.items():
+            prim_paths, descs = value
+            if key == UsdPhysics.ObjectType.FixedJoint:
+                for prim_path, desc in zip(prim_paths, descs):
+                    joint_found = True
+                    self.assertTrue(desc.body0 !=
+                                    rigidbody.GetPrim().GetPrimPath())
+
+        self.assertTrue(joint_found)
+
     def test_rigidbody_collision_multithreading_parse(self):
         """Check that if a single rigid body has many collision objects, the
         multithreaded parsing works correctly.
