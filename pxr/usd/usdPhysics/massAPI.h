@@ -37,16 +37,14 @@ class SdfAssetPath;
 ///
 /// Defines explicit mass properties (mass, density, inertia etc.).        
 /// MassAPI can be applied to any object that has a PhysicsCollisionAPI or
-/// a PhysicsRigidBodyAPI. MassAPI only has an effect where the underlying
-/// PhysicsCollisionAPI or PhysicsRigidBodyAPI is enabled; a collider whose
-/// physics:collisionEnabled is false, or a rigid body whose
-/// physics:rigidBodyEnabled is false, takes no part in simulation, so any
-/// MassAPI applied to it is likewise ignored. When neither an enabled
-/// collider nor an enabled rigid body remains on a prim, it is not a physics
-/// prim and its MassAPI has no effect. Note that this concerns only the prim
-/// the MassAPI is applied to: disabling a prim does not discard the mass of
-/// the enabled colliders beneath it, which continue to contribute to the
-/// nearest enabled rigid body above them.
+/// a PhysicsRigidBodyAPI, and takes effect only while that collider or rigid
+/// body is enabled. A prim whose physics:collisionEnabled or
+/// physics:rigidBodyEnabled is false is not simulated, and its MassAPI is
+/// ignored.
+///
+/// This applies only to the prim the MassAPI is applied to. Enabled colliders
+/// beneath it are unaffected and still contribute their mass to the nearest
+/// enabled rigid body above them.
 ///
 class UsdPhysicsMassAPI : public UsdAPISchemaBase
 {

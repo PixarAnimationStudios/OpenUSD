@@ -319,15 +319,14 @@ a prim higher in the tree, overrides any density specified via a material
 times the locally effective density.
 
 \li Implicit mass of a rigid body is the total implicit mass of all children in
-the subtree belonging to the rigid body. Only enabled colliders are counted
-among these children: a collider whose physics:collisionEnabled is false takes
-no part in simulation and is excluded from the mass computation, so any
-UsdPhysicsMassAPI applied to it has no effect. Likewise, a UsdPhysicsMassAPI
-applied to a nested rigid body whose physics:rigidBodyEnabled is false has no
-effect. Note however that a disabled nested rigid body does not itself form the
-root of a subtree: because it takes no part in simulation it owns no colliders,
-so the enabled colliders below it still belong to the nearest enabled rigid body
-above it and still contribute their mass to it.
+the subtree belonging to the rigid body. Only enabled colliders count toward
+that total. A collider whose physics:collisionEnabled is false is not simulated,
+and any UsdPhysicsMassAPI applied to it is ignored, as is a UsdPhysicsMassAPI
+applied to a disabled nested rigid body.
+
+\li A disabled nested rigid body does not, however, exclude the colliders
+beneath it. It owns no colliders while it is disabled, so those colliders belong
+to the nearest enabled rigid body above it and contribute that body's mass.
 
 \li Density is assumed to be 1000.0 kg/m3 (approximately the density of water) 
 for volume computation when no other density is specified locally, or in bound 
