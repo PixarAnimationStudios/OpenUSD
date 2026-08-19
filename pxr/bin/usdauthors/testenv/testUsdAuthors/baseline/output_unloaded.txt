@@ -1,0 +1,4 @@
+/Outer
+  outer
+      softwarePackage = "com.example.outertool"
+      softwareVersion = "2.0"

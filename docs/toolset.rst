@@ -176,6 +176,50 @@ Prints to terminal a unixtree-like summary of a USD layer or composition.
    :start-after: ==== usdtree start ====
    :end-before: ==== usdtree end ====
 
+**********
+usdauthors
+**********
+
+Lists the authorship records in a USD file, grouped by the prims they apply to.
+Each record is one applied instance of :usdcpp:`UsdMediaAuthorshipAPI` and
+describes a single authoring step, such as a generation run, an export, or a
+cleanup session.
+
+.. literalinclude:: toolset.help
+   :language: none
+   :start-after: ==== usdauthors start ====
+   :end-before: ==== usdauthors end ====
+
+**Notes:**
+
+    * Records are read from the composed stage. The :option:`--deep` option
+      instead gathers them from every prim spec contributing to each prim, which
+      finds records the composed prim cannot report: an application shadowed by
+      an explicit :code:`apiSchemas` list in a stronger layer, and authorship
+      properties authored without the schema ever having been applied. Such
+      records are marked in the output, and their values are still readable
+      because the properties compose normally. Records inside unselected
+      variants are not found either way, since those specs are not part of a
+      prim's spec stack.
+
+    * :option:`--deep` also reveals clobbering. Nothing is deduplicated, so a
+      record whose instance name was authored in several layers is reported once
+      per contributing spec, and the output notes how many. Composition keeps
+      only the strongest opinion for each field, so this is the only way to see
+      that weaker values were dropped.
+
+    * :option:`--layer` reads the input as a single layer and composes nothing,
+      reporting only what that layer authors rather than what a stage built from
+      it resolves to. This is the way to check what a particular layer
+      contributes, for example the output of a DCC export, and it is the only
+      mode that reaches records inside variants that are not selected.
+
+    * :option:`--summary` tallies software packages and digital source types
+      across all records instead of listing them. Software packages are
+      counted per :code:`softwareVersion`, since two versions of one tool can
+      produce very different results. The tally counts records rather than
+      prims, so a prim carrying two records contributes twice.
+
 ******
 usdzip
 ******

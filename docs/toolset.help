@@ -404,6 +404,30 @@ Options:
 
 ==== usdtree end ====
 
+==== usdauthors start ====
+usdauthors : Lists the authorship records in a USD file, grouped by
+the prims they apply to. Each record describes one authoring step,
+such as a generation run, an export, or a cleanup session.
+
+Records are read from the composed stage. Use --deep to read them from
+every contributing prim spec instead, which also reveals records that
+composition hid or collapsed, or --layer to report only what a single
+layer authors.
+
+Usage: usdauthors [OPTIONS] inputPath
+
+Positionals:
+  inputPath TEXT REQUIRED     The input file to process
+
+Options:
+  -h,--help                   Print this help message and exit
+  -d,--deep                   Gather records from every prim spec instead of the composed prim. Finds records shadowed by an explicit apiSchemas list in a stronger layer, records authored without applying the schema, and records clobbered by the same instance name in another layer. Slower.
+  --unloaded                  Do not load payloads.
+  -s,--summary                Print only a summary: how many records were found, and the tally of software packages and digital source types.
+  -l,--layer                  Read the input as a single layer and compose nothing, reporting only what that layer authors. Reaches specs no stage reports, including those inside variants that are not selected. Ignores --deep and --unloaded, which are about composition.
+
+==== usdauthors end ====
+
 ==== usdzip start ====
 Utility for creating a .usdz file containing USD assets and for inspecting existing .usdz files.
 Usage: usdzip [OPTIONS] [usdzFile] [inputFiles...]
