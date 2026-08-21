@@ -193,9 +193,10 @@ endif()
 if (PXR_BUILD_IMAGING)
     # --OpenImageIO
     if (PXR_BUILD_OPENIMAGEIO_PLUGIN)
-        set(REQUIRES_Imath TRUE)
-        find_package(OpenImageIO REQUIRED)
+        find_package(OpenImageIO REQUIRED CONFIG)
         add_definitions(-DPXR_OIIO_PLUGIN_ENABLED)
+        # TODO: Request `idiff` be an exported target so this
+        # can be converted to if (TARGET OpenImageIO::idiff)
         if (OIIO_idiff_BINARY)
             set(IMAGE_DIFF_TOOL ${OIIO_idiff_BINARY} CACHE STRING "Uses idiff for image diffing")
         endif()

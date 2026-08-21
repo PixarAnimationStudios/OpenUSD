@@ -13,12 +13,10 @@ pxr_plugin(sdrOsl
         ar
         sdr
         ${OSL_QUERY_LIBRARY}
-        ${OIIO_LIBRARIES}
-        Imath::Imath
+        OpenImageIO::OpenImageIO
 
     INCLUDE_DIRS
         ${OSL_INCLUDE_DIR}
-        ${OIIO_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
         oslParser
