@@ -1292,6 +1292,16 @@ exr_read_tile_chunk_info (
         return pctxt->report_error (
             pctxt, EXR_ERR_INVALID_ARGUMENT, "Invalid packed size of 0");
 
+    if (part->comp_type == EXR_COMPRESSION_NONE &&
+       cinfo->packed_size != cinfo->unpacked_size)
+    {
+         return pctxt->print_error (
+             pctxt,
+             EXR_ERR_BAD_CHUNK_LEADER,
+             "Mismatch between unpacked and packed size with uncompressed data: packed is %" PRIu64 "; unpacked is %" PRIu64,
+             cinfo->packed_size, cinfo->unpacked_size);
+    }
+
     return EXR_ERR_SUCCESS;
 }
 
@@ -1350,11 +1360,15 @@ exr_read_chunk (
         rv    = pctxt->do_read (
             pctxt, packed_data, toread, &dataoffset, &nread, rmode);
 
-        if (rmode == EXR_ALLOW_SHORT_READ && nread < (int64_t) toread)
+        if (rmode == EXR_ALLOW_SHORT_READ &&
+            nread >= 0 &&
+            nread < (int64_t) toread)
+        {
             memset (
                 ((uint8_t*) packed_data) + nread,
-                0,
-                toread - (uint64_t) (nread));
+                    0,
+            (size_t)(toread - (uint64_t)nread));
+        }
     }
     else
         rv = EXR_ERR_SUCCESS;
