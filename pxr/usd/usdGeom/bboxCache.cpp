@@ -306,6 +306,17 @@ UsdGeomBBoxCache::UsdGeomBBoxCache(UsdGeomBBoxCache const &other)
 {
 }
 
+UsdGeomBBoxCache::UsdGeomBBoxCache()
+    : _time()
+    , _baseTime()
+    , _includedPurposes()
+    , _ctmCache()
+    , _bboxCache()
+    , _useExtentsHint(false)
+    , _ignoreVisibility(false)
+{
+}
+
 UsdGeomBBoxCache::~UsdGeomBBoxCache() = default;
 
 UsdGeomBBoxCache &
