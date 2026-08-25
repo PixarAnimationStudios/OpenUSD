@@ -1,12 +1,6 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hdEmbree)
 
-if (NOT ${PXR_BUILD_GPU_SUPPORT})
-    message(STATUS
-        "Skipping ${PXR_PACKAGE} because PXR_BUILD_GPU_SUPPORT is OFF")
-    return()
-endif()
-
 pxr_plugin(hdEmbree
    LIBRARIES
         tf
@@ -50,7 +44,7 @@ pxr_plugin(hdEmbree
         overview.dox
 )
 
-if (X11_FOUND OR APPLE)
+if (${PXR_BUILD_GPU_SUPPORT} AND (X11_FOUND OR APPLE))
 pxr_build_test(testHdEmbree
     LIBRARIES
         arch

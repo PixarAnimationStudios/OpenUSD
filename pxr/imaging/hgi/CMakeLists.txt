@@ -58,11 +58,13 @@ if (WIN32)
     return()
 endif()
 
-pxr_build_test(testHgiCommand
-    LIBRARIES
-        hgi
-        garch
-        tf
-    CPPFILES
-        testenv/testHgiCommand.cpp
-)
+if (${PXR_BUILD_GPU_SUPPORT})
+    pxr_build_test(testHgiCommand
+        LIBRARIES
+            hgi
+            garch
+            tf
+        CPPFILES
+            testenv/testHgiCommand.cpp
+    )
+endif()
