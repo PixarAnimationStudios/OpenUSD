@@ -53,6 +53,13 @@ if (NOT DEFINED PXR_FIND_TBB_IN_CONFIG)
     set(PXR_FIND_TBB_IN_CONFIG "@PXR_FIND_TBB_IN_CONFIG@")
 endif()
 if (PXR_FIND_TBB_IN_CONFIG)
+    # Set TBB_DIR to where the TBBConfig.cmake file was located.
+    # This can be overridden by specifying a different TBB_DIR when running cmake.
+    if (NOT DEFINED TBB_DIR)
+        if (NOT [[@TBB_DIR@]] STREQUAL "")
+            set(TBB_DIR [[@TBB_DIR@]])
+        endif()
+    endif()
     find_dependency(TBB @TBB_VERSION@ CONFIG)
 else()
     add_library(TBB::tbb SHARED IMPORTED)
@@ -74,6 +81,13 @@ if (NOT DEFINED PXR_FIND_OPENSUBDIV_IN_CONFIG)
     set(PXR_FIND_OPENSUBDIV_IN_CONFIG "@PXR_FIND_OPENSUBDIV_IN_CONFIG@")
 endif()
 if (PXR_FIND_OPENSUBDIV_IN_CONFIG)
+    # Set OpenSubdiv_DIR to where the OpenSubdivConfig.cmake file was located.
+    # This can be overridden by specifying a different OpenSubdiv_DIR when running cmake.
+    if (NOT DEFINED OpenSubdiv_DIR)
+        if (NOT [[@OpenSubdiv_DIR@]] STREQUAL "")
+            set(OpenSubdiv_DIR [[@OpenSubdiv_DIR@]])
+        endif()
+    endif()
     find_dependency(OpenSubdiv @OpenSubdiv_VERSION@ CONFIG)
 endif()
 
