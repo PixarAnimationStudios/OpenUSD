@@ -15,6 +15,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/export.h"
+#include "pxr/base/arch/api.h"
 
 #include <memory>
 
@@ -298,8 +299,6 @@ struct Arch_ConstructorEntry {
         static void _name()
 
 #elif defined(ARCH_OS_WINDOWS)
-    
-#    include "pxr/base/arch/api.h"
     
 // Entry for a constructor/destructor in the custom section.
     __declspec(align(16))
