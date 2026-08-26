@@ -586,6 +586,8 @@ void Hio_OpenEXRImage::_AttributeReadCallback(void* self_, exr_context_t exr) {
         // possible attribute types.
         switch(attr->type) {
             case EXR_ATTR_UNKNOWN:
+            case EXR_ATTR_BYTES:
+            case EXR_ATTR_DEEP_IMAGE_STATE:
                 continue;
             case EXR_ATTR_BOX2I: {
                 // no GfVec2i, convert to float
@@ -666,7 +668,8 @@ void Hio_OpenEXRImage::_AttributeReadCallback(void* self_, exr_context_t exr) {
                 break;
             }
             case EXR_ATTR_STRING:
-                self->_metadata[attr->name] = VtValue(attr->string);
+                self->_metadata[attr->name] =
+                    VtValue(std::string(attr->string->str, attr->string->length));
                 break;
             case EXR_ATTR_STRING_VECTOR: {
                 std::vector<std::string> v;

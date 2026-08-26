@@ -1923,15 +1923,17 @@ public:
     template <class T>
     struct _HasTypeSpecificResolution {
         static const bool value =
-            std::is_same<T, SdfAssetPath>::value ||
-            std::is_same<T, VtArray<SdfAssetPath>>::value ||
-            std::is_same<T, GfTimeCode>::value ||
-            std::is_same<T, VtArray<GfTimeCode>>::value ||
-            std::is_same<T, SdfPathExpression>::value ||
-            std::is_same<T, VtArray<SdfPathExpression>>::value ||
-            std::is_same<T, SdfTimeSampleMap>::value ||
-            std::is_same<T, TsSpline>::value ||
-            std::is_same<T, VtDictionary>::value;
+            std::is_same_v<T, SdfAssetPath> ||
+            std::is_same_v<T, VtArray<SdfAssetPath>> ||
+            std::is_same_v<T, GfTimeCode> ||
+            std::is_same_v<T, VtArray<GfTimeCode>> ||
+            std::is_same_v<T, GfDuration> ||
+            std::is_same_v<T, VtArray<GfDuration>> ||
+            std::is_same_v<T, SdfPathExpression> ||
+            std::is_same_v<T, VtArray<SdfPathExpression>> ||
+            std::is_same_v<T, SdfTimeSampleMap> ||
+            std::is_same_v<T, TsSpline> ||
+            std::is_same_v<T, VtDictionary>;
     };
 
 private:

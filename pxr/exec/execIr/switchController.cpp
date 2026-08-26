@@ -87,6 +87,23 @@ ExecIrSwitchController::_GetTfType() const
 }
 
 UsdAttribute
+ExecIrSwitchController::GetSwitchAttr() const
+{
+    return GetPrim().GetAttribute(ExecIrTokens->switch_);
+}
+
+UsdAttribute
+ExecIrSwitchController::CreateSwitchAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(ExecIrTokens->switch_,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 ExecIrSwitchController::GetRig1SpaceAttr() const
 {
     return GetPrim().GetAttribute(ExecIrTokens->rig1Space);
@@ -154,6 +171,7 @@ const TfTokenVector&
 ExecIrSwitchController::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        ExecIrTokens->switch_,
         ExecIrTokens->rig1Space,
         ExecIrTokens->rig2Space,
         ExecIrTokens->outSpace,

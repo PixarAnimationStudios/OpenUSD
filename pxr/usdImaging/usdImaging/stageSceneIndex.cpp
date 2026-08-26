@@ -362,20 +362,19 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
 
 // ---------------------------------------------------------------------------
 
+void UsdImagingStageSceneIndex::SetTime(UsdTimeCode time)
+{
+    if (_stageGlobals.GetTime() != time) {
+        _SetTime(time);
+    }
+}
+
 void UsdImagingStageSceneIndex::SetTime(
     UsdTimeCode time,
     const bool forceDirtyingTimeDeps)
 {
-    TRACE_FUNCTION();
-
-    if (_stageGlobals.GetTime() == time && !forceDirtyingTimeDeps) {
-        return;
-    }
-
-    HdSceneIndexObserver::DirtiedPrimEntries dirtied;
-    _stageGlobals.SetTime(time, &dirtied);
-    if (!dirtied.empty()) {
-        _SendPrimsDirtied(dirtied);
+    if (_stageGlobals.GetTime() != time || forceDirtyingTimeDeps) {
+        _SetTime(time);
     }
 }
 
@@ -410,6 +409,17 @@ void UsdImagingStageSceneIndex::SetStage(UsdStageRefPtr stage)
     }
 
     _Populate();
+}
+
+void UsdImagingStageSceneIndex::_SetTime(UsdTimeCode time)
+{
+    TRACE_FUNCTION();
+
+    HdSceneIndexObserver::DirtiedPrimEntries dirtied;
+    _stageGlobals.SetTime(time, &dirtied);
+    if (!dirtied.empty()) {
+        _SendPrimsDirtied(dirtied);
+    }
 }
 
 void UsdImagingStageSceneIndex::_Populate()

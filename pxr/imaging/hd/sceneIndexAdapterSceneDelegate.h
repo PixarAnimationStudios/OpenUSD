@@ -282,6 +282,7 @@ private:
         _ComputeExtCmpPrimvarDescriptors(
             const HdContainerDataSourceHandle &primDataSource);
 
+    bool _didAddOrRemovePrimsSinceLastSync;
     bool _sceneDelegatesBuilt;
     std::vector<HdSceneDelegate*> _sceneDelegates;
 

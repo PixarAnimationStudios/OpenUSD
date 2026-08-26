@@ -40,6 +40,47 @@ _IsHolding(const object& obj)
     }
 }
 
+  static SdfVariableExpression::Builder
+  _MakeLiteralBuilder(const object& o)
+  {
+      if (_IsHolding<bool>(o)) {
+          return SdfVariableExpression::MakeLiteral(extract<bool>(o)());
+      }
+      else if (_IsHolding<int64_t>(o)) {
+          return SdfVariableExpression::MakeLiteral(extract<int64_t>(o)());
+      }
+      else if (_IsHolding<std::string>(o)) {
+          return SdfVariableExpression::MakeLiteral(extract<std::string>(o)());
+      }
+      TfPyThrowTypeError("literal argument must be bool, int, or str");
+      return SdfVariableExpression::MakeNone(); // unreachable
+  }
+
+  static SdfVariableExpression
+  _MakeListOfLiteralsExpr(const list& elems)
+  {
+      if (len(elems) == 0) {
+          return SdfVariableExpression::MakeList();
+      }
+      else if (_IsHolding<bool>(elems[0])) {
+          return SdfVariableExpression::MakeListOfLiterals(
+              extract<std::vector<bool>>(elems)());
+      }
+      else if (_IsHolding<int64_t>(elems[0])) {
+          return SdfVariableExpression::MakeListOfLiterals(
+              extract<std::vector<int64_t>>(elems)());
+      }
+      else if (_IsHolding<std::string>(elems[0])) {
+          return SdfVariableExpression::MakeListOfLiterals(
+              extract<std::vector<std::string>>(elems)());
+      }
+
+      TfPyThrowTypeError(
+          "argument must be an empty list or contain only bool, int, or str");
+      return SdfVariableExpression(); // unreachable
+  }
+
+
 void
 wrapVariableExpression()
 {
@@ -119,23 +160,8 @@ wrapVariableExpression()
                     // the supported literal types.
                     const extract<list> listExtract(posArgs[0]);
                     if (listExtract.check()) {
-                        const list elems = listExtract();
-                        if (len(elems) == 0) {
-                            return SdfVariableExpression::MakeList();
-                        }
-                        else if (_IsHolding<bool>(elems[0])) {
-                            return SdfVariableExpression::MakeListOfLiterals(
-                                extract<std::vector<bool>>(elems)());
-                        }
-                        else if (_IsHolding<int64_t>(elems[0])) {
-                            return SdfVariableExpression::MakeListOfLiterals(
-                                extract<std::vector<int64_t>>(elems)());
-                        }
-                        else if (_IsHolding<std::string>(elems[0])) {
-                            return SdfVariableExpression::MakeListOfLiterals(
-                                extract<std::vector<std::string>>(elems)());
-                        }
-                    };
+                        return _MakeListOfLiteralsExpr(listExtract());
+                    }
                 }
 
                 TfPyThrowTypeError(
@@ -147,21 +173,7 @@ wrapVariableExpression()
 
         .def("MakeLiteral",
             +[](object o) -> SdfVariableExpression {
-                if (_IsHolding<bool>(o)) {
-                    return SdfVariableExpression::MakeLiteral(
-                        extract<bool>(o)());
-                }
-                else if (_IsHolding<int64_t>(o)) {
-                    return SdfVariableExpression::MakeLiteral(
-                        extract<int64_t>(o)());
-                }
-                else if (_IsHolding<std::string>(o)) {
-                    return SdfVariableExpression::MakeLiteral(
-                        extract<std::string>(o)());
-                }
-
-                TfPyThrowTypeError("argument must be bool, int, or str");
-                return SdfVariableExpression(); // unreachable
+                return _MakeLiteralBuilder(o);
             })
         .staticmethod("MakeLiteral")
 
@@ -172,9 +184,30 @@ wrapVariableExpression()
         .staticmethod("MakeNone")
 
         .def("MakeVariable",
-            +[](const std::string& name) -> SdfVariableExpression {
-                return SdfVariableExpression::MakeVariable(name);
-            })
+            +[](const std::string& name, object fallback)
+                -> SdfVariableExpression
+            {
+                if (fallback.is_none()) {
+                    return SdfVariableExpression::MakeVariable(name);
+                }
+
+                // Result of MakeList or MakeFunction.
+                const extract<SdfVariableExpression> exprExtract(fallback);
+                if (exprExtract.check()) {
+                    return SdfVariableExpression::MakeVariable(
+                        name, exprExtract());
+                }
+
+                const extract<list> listExtract(fallback);
+                if (listExtract.check()) {
+                    return SdfVariableExpression::MakeVariable(
+                        name, _MakeListOfLiteralsExpr(listExtract()));
+                }
+
+                return SdfVariableExpression::MakeVariable(
+                    name, _MakeLiteralBuilder(fallback));
+            },
+            (arg("name"), arg("fallbackValue") = object()))
         .staticmethod("MakeVariable")
         ;
 

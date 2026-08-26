@@ -54,42 +54,42 @@ pxr_test_scripts(
     testPlug.py
 )
 
-pxr_build_test_shared_lib(TestPlugDso1
+pxr_build_test_plugin(TestPlugDso1
     INSTALL_PREFIX PlugPlugins
     LIBRARIES
         tf
     CPPFILES
         testenv/TestPlugDso1.cpp
 ) 
-pxr_build_test_shared_lib(TestPlugDso2
+pxr_build_test_plugin(TestPlugDso2
     INSTALL_PREFIX PlugPlugins
     LIBRARIES
         tf
     CPPFILES
         testenv/TestPlugDso2.cpp
 ) 
-pxr_build_test_shared_lib(TestPlugDso3
+pxr_build_test_plugin(TestPlugDso3
     INSTALL_PREFIX PlugPlugins
     LIBRARIES
         tf
     CPPFILES
         testenv/TestPlugDso3.cpp
 ) 
-pxr_build_test_shared_lib(TestPlugDsoEmpty
+pxr_build_test_plugin(TestPlugDsoEmpty
     INSTALL_PREFIX PlugPlugins
     LIBRARIES
         tf
     CPPFILES
         testenv/TestPlugDsoEmpty.cpp
 ) 
-pxr_build_test_shared_lib(TestPlugDsoIncomplete
+pxr_build_test_plugin(TestPlugDsoIncomplete
     INSTALL_PREFIX PlugPlugins
     LIBRARIES
         tf
     CPPFILES
         testenv/TestPlugDsoIncomplete.cpp
 ) 
-pxr_build_test_shared_lib(TestPlugDsoUnloadable
+pxr_build_test_plugin(TestPlugDsoUnloadable
     INSTALL_PREFIX PlugPlugins
     LIBRARIES
         tf

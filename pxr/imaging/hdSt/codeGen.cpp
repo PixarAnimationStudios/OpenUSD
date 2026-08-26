@@ -2125,6 +2125,10 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         HdStGLConversions::GetGLSLTypename(
             HdVtBufferSource::GetDefaultMatrixType()) << "\n";
 
+    if (minusOneToOneDepth) {
+        _genDefines << "#define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE\n";
+    }
+
     // a trick to tightly pack unaligned data (vec3, etc) into SSBO/UBO.
     _genDefines << _GetPackedTypeDefinitions();
 
@@ -2133,9 +2137,6 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     }
     if (doublePrecisionEnabled) {
         _genFS << "#define HD_SHADER_SUPPORTS_DOUBLE_PRECISION\n";
-    }
-    if (minusOneToOneDepth) {
-        _genFS << "#define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE\n";
     }
     if (bindlessBuffersEnabled) {
         _genVS << "#define HD_BINDLESS_BUFFERS_ENABLED\n";
@@ -3030,6 +3031,13 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
             }
         }
 
+        const TfToken depthQualifier = _geometricShader->GetDepthQualifier();
+        if (!depthQualifier.IsEmpty()) {
+            HgiShaderFunctionAddStageOutput(&desc,
+                                            "gl_FragDepth",
+                                            "float", depthQualifier);
+        }
+
         if (!glslProgram->CompileShader(desc)) {
             return nullptr;
         }
@@ -3456,6 +3464,13 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 HgiShaderFunctionAddStageOutput(&fsDesc, "hd_SampleMask",
                     "uint", HgiShaderKeywordTokens->hdSampleMask);
             }
+        }
+
+        const TfToken depthQualifier = _geometricShader->GetDepthQualifier();
+        if (!depthQualifier.IsEmpty()) {
+            HgiShaderFunctionAddStageOutput(&fsDesc,
+                                            "gl_FragDepth",
+                                            "float", depthQualifier);
         }
 
         if (!glslProgram->CompileShader(fsDesc)) {

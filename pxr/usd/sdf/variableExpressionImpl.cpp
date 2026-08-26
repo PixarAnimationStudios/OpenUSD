@@ -293,7 +293,11 @@ StringNode::Evaluate(EvalContext* ctx) const
             bool varHasValue = false;
             std::tie(varResult, varHasValue) = ctx->GetVariable(variable);
 
-            if (!varHasValue) {
+            if (!varHasValue && part.fallback) {
+                varResult = part.fallback->Evaluate(ctx);
+            }
+
+            if (!varHasValue && !part.fallback) {
                 // No value for variable. Leave the substitution
                 // string in place in case downstream clients want to
                 // handle it.
@@ -342,8 +346,9 @@ StringNode::Evaluate(EvalContext* ctx) const
 
 // ------------------------------------------------------------
 
-VariableNode::VariableNode(std::string&& var)
-    : _var(std::move(var))
+VariableNode::VariableNode(std::string&& var, std::unique_ptr<Node>&& fallback)
+    : _var(std::move(var)),
+      _fallback(std::move(fallback))
 {
 }
 
@@ -353,6 +358,10 @@ VariableNode::Evaluate(EvalContext* ctx) const
     std::pair<EvalResult, bool> varResult = ctx->GetVariable(_var);
 
     if (!varResult.second) {
+        if (_fallback) {
+            return _fallback->Evaluate(ctx);
+        }
+
         return EvalResult::Error({
             TfStringPrintf("No value for variable '%s'", _var.c_str())
         });

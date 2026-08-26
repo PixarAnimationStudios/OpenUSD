@@ -98,7 +98,7 @@ pxr_register_test(testUsdProfilesSchemaImplication
 # its own seeded capability sub-graph. Lets us regress the file-format ->
 # capability implication machinery without depending on any optional plugin
 # (e.g. usdMtlx).
-pxr_build_test_shared_lib(TestUsdProfilesPhonyFileFormat
+pxr_build_test_plugin(TestUsdProfilesPhonyFileFormat
     INSTALL_PREFIX UsdProfilesPlugins
     LIBRARIES
         sdf

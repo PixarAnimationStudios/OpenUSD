@@ -20,6 +20,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class EfLeafNode;
 class EfTime;
 class Exec_Program;
 class Exec_RequestImpl;
@@ -101,7 +102,9 @@ protected:
 private:
     // Requires access to _Compute, _Compile, and _HasPendingRecompilation.
     friend class Exec_RequestImpl;
-    std::vector<VdfMaskedOutput> _Compile(TfSpan<const ExecValueKey> valueKeys);
+
+    std::pair<std::vector<VdfMaskedOutput>, std::vector<const EfLeafNode*>>
+    _Compile(TfSpan<const ExecValueKey> valueKeys);
 
     // Returns true if the program has inputs requiring recompilation.
     EXEC_API

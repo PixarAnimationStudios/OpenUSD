@@ -46,8 +46,7 @@ Vdf_AllocateBoxedValue(
     }
 
     // Keep track of how much memory we are allocating.
-    TfAutoMallocTag tag(
-        "Vdf", TfMallocTag::IsInitialized() ? TF_FUNC_NAME() : "");
+    TfAutoMallocTag tag("Vdf", TF_FUNC_NAME());
     TfAutoMallocTag typedTag("Vdf", __ARCH_PRETTY_FUNCTION__);
 
     // Store a new Vdf_BoxedContainer at the output.

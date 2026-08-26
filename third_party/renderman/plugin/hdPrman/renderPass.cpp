@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "hdPrman/renderPass.h" 
+#include "hdPrman/renderPass.h"
 
 #include "hdPrman/camera.h"
 #include "hdPrman/debugCodes.h"
@@ -40,6 +40,9 @@
 #endif
 
 #include <Riley.h>
+#include <RiTypesHelper.h>
+
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -152,7 +155,7 @@ _GetRenderBuffer(const HdRenderPassAovBinding &aov,
     if (aov.renderBuffer) {
         return aov.renderBuffer;
     }
-    
+
     return dynamic_cast<HdRenderBuffer*>(
         renderIndex->GetBprim(
             HdPrimTypeTokens->renderBuffer, aov.renderBufferId));
@@ -416,7 +419,7 @@ _ExtractLegacyProductNames(const _LegacyRenderProducts &legacyProducts)
         }
     }
     return names;
-}  
+}
 
 } // end anonymous namespace
 
@@ -428,7 +431,7 @@ HdPrman_RenderPass::_UpdateCameraPath(
 {
     if (const HdPrmanCamera * const cam =
             static_cast<const HdPrmanCamera *>(renderPassState->GetCamera())) {
-        cameraContext->SetCameraPath(cam->GetId());
+        cameraContext->SetActiveCameraPath(cam->GetId());
     }
 }
 
@@ -491,7 +494,7 @@ HdPrman_RenderPass::_UpdateCameraFramingAndWindowPolicy(
 #endif
             }
             else {
-                cameraContext->SetWindowPolicy(renderPassState->GetWindowPolicy());    
+                cameraContext->SetWindowPolicy(renderPassState->GetWindowPolicy());
             }
         } else {
             // If no camera framing was provided,
@@ -513,7 +516,7 @@ HdPrman_RenderPass::_Execute(
     TfTokenVector const & renderTags)
 {
     HD_TRACE_FUNCTION();
-    
+
     if (!TF_VERIFY(_renderParam)) {
         return;
     }
@@ -538,7 +541,7 @@ HdPrman_RenderPass::_Execute(
         // Legacy settings version tracking.
         const int currentLegacySettingsVersion =
             renderDelegate->GetRenderSettingsVersion();
-        legacySettingsChanged = _renderParam->GetLastLegacySettingsVersion() 
+        legacySettingsChanged = _renderParam->GetLastLegacySettingsVersion()
                                 != currentLegacySettingsVersion;
         if (legacySettingsChanged) {
             // Note: UpdateLegacyOptions() only updates the legacy options
@@ -548,7 +551,7 @@ HdPrman_RenderPass::_Execute(
                 currentLegacySettingsVersion);
         }
     }
-    
+
     _UpdateActiveRenderTagsIfChanged(renderTags);
 
     // ------------------------------------------------------------------------
@@ -584,25 +587,25 @@ HdPrman_RenderPass::_Execute(
         rsPrim &&
         rsPrim->DriveRenderPass(isInteractive,
                                 passHasAovBindings);
-    
+
     if (driveWithRenderSettingsPrim) {
         HdPrman_RenderParam * const param = _renderParam.get();
 
         if (isInteractive) {
             // Interactive, render settings-driven mode
-            const bool needsRestart = 
+            const bool needsRestart =
             _renderParam->sceneVersion.load() != _lastRenderedVersion;
 
             if (needsRestart) {
                 rsPrim->UpdateAndRender(GetRenderIndex(), isInteractive, param);
                 _lastRenderedVersion = _renderParam->sceneVersion.load();
             }
-            
+
             _converged = _IsConvergedInteractive();
             if (_converged) {
                 // End() destroys Riley and calls DspyImageClose()
-                
-                //_renderParam->End(); 
+
+                //_renderParam->End();
                 riley::Riley * const riley = _renderParam->AcquireRiley();
                 if (!riley) {
                     return;
@@ -616,7 +619,7 @@ HdPrman_RenderPass::_Execute(
         bool success =
                 rsPrim->UpdateAndRender(GetRenderIndex(), isInteractive, param);
 
-        // Mark all the associated RenderBuffers as converged since 
+        // Mark all the associated RenderBuffers as converged since
         // they are not being used in favor of the RenderProducts from the
         // RenderSettings prim.
         // XXX When we add support to drive interactive rendering with
@@ -627,7 +630,7 @@ HdPrman_RenderPass::_Execute(
             }
 
 #if PXR_VERSION >= 2308
-            // Write the id info for batch renders if the render pass contains 
+            // Write the id info for batch renders if the render pass contains
             // an idMap product.
             TfToken idMapProductName =
                 _renderParam->GetIdMapProductName(rsPrim);
@@ -657,6 +660,31 @@ HdPrman_RenderPass::_Execute(
     _UpdateCameraPath(renderPassState, &cameraContext);
     const bool dataWindowChanged = _UpdateCameraFramingAndWindowPolicy(
         renderPassState, renderDelegate, &cameraContext);
+
+    if (legacySettingsChanged) {
+        // If the legacy settings changed, make sure the camera context is
+        // up to date *before* checking whether it's invalid (camChanged) below.
+        // Doing this here instead of below, where it used to be, avoids a one-
+        // frame lag when changing the projection name or depth of field setting
+        // in the legacy render settings map.
+
+        auto projection = renderDelegate->GetRenderSetting<std::string>(
+            HdPrmanRenderSettingsTokens->projectionName, "");
+        RtParamList projectionParams;
+        if (!projection.empty()) {
+            _renderParam->SetProjectionParamsFromRenderSettings(
+                renderDelegate, projection, projectionParams);
+        }
+        cameraContext.SetProjectionOverride(
+            RtUString(projection.c_str()), projectionParams);
+
+        const VtValue dof = renderDelegate->GetRenderSetting(
+            HdPrmanRenderSettingsTokens->disableDepthOfField);
+        if (dof.IsHolding<bool>()) {
+            cameraContext.SetDisableDepthOfField(dof.UncheckedGet<bool>());
+        }
+    }
+
     const bool camChanged = cameraContext.IsInvalid();
     cameraContext.MarkValid();
 
@@ -699,7 +727,7 @@ HdPrman_RenderPass::_Execute(
                 GfVec3d(0.0, 0.0, 0.0))
             : GfVec3d(0.0, 0.0, 0.0);
         SdfPath renderCamera = (worldOrigin == "camera")
-            ? cameraContext.GetCameraPath()
+            ? cameraContext.GetActiveCameraPath()
             : SdfPath::EmptyPath();
 
         if (worldOffset != HdPrman_WorldOffsetSceneIndexPlugin::GetWorldOffset()
@@ -708,7 +736,7 @@ HdPrman_RenderPass::_Execute(
             HdPrman_WorldOffsetSceneIndexPlugin::SetRenderCamera(renderCamera);
             // Mark Some Prims Dirty To Trigger Re-Cook
             GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
-                cameraContext.GetCameraPath(), HdChangeTracker::DirtyTransform);
+                cameraContext.GetActiveCameraPath(), HdChangeTracker::DirtyTransform);
             GetRenderIndex()->GetChangeTracker().MarkAllRprimsDirty(
                 HdChangeTracker::DirtyTransform);
         }
@@ -722,7 +750,7 @@ HdPrman_RenderPass::_Execute(
     // There is divergence in whether the render view (and associated resouces)
     // are always re-created or updated in the branches below and the
     // resolution used for the render target. For the latter, we specifically
-    // update the resolution on the render view context below. 
+    // update the resolution on the render view context below.
     //
     if (hasLegacyProducts) {
         // Use RenderProducts from the RenderSettingsMap (Solaris)
@@ -747,7 +775,7 @@ HdPrman_RenderPass::_Execute(
 
         _renderParam->CreateRenderViewFromLegacyProducts(legacyProducts, frame);
     } else if (!passHasAovBindings) {
-        // Note: This handles the case that we are rendering with the 
+        // Note: This handles the case that we are rendering with the
         // render spec through the HdPrman test harness.
 
         if (hasLegacyRenderSpec) {
@@ -809,15 +837,13 @@ HdPrman_RenderPass::_Execute(
     }
 
     if (camChanged || resolutionChanged) {
-        riley::Riley * const riley = _renderParam->AcquireRiley();
-
         // Resolution affects the data flow to riley in the following ways:
         // 1. Render target size (associated with the render view)
         // 2. The "Ri:FormatResolution" and "Ri:CropWindow" scene options
         // 3. The "Ri:ScreenWindow" param on the riley camera
         //
         // (1) was handled earlier.
-        
+
         // Handle (2) ...
         if (resolutionChanged) {
             _renderParam->GetLegacyOptions().SetIntegerArray(
@@ -834,18 +860,16 @@ HdPrman_RenderPass::_Execute(
                 resolution);
         }
 
-        // and (3).
+        // and (3): apply the active camera's overlay and, if the active-camera
+        // identity changed, run the transition (revert previous + re-issue the
+        // default dicing camera + repoint the render view) -- all consolidated
+        // inside UpdateActiveCamera.
         if (aovBindings.empty() || hasLegacyProducts) {
-            cameraContext.UpdateRileyCameraAndClipPlanes(
-                riley,
-                GetRenderIndex());
+            cameraContext.UpdateActiveCamera(GetRenderIndex());
         } else {
             // When using AOV-bindings, we setup the camera slightly
             // differently.
-            cameraContext.UpdateRileyCameraAndClipPlanesInteractive(
-                riley, 
-                GetRenderIndex(),
-                resolution);
+            cameraContext.UpdateActiveCamera(GetRenderIndex(), resolution);
         }
     }
 
@@ -853,49 +877,31 @@ HdPrman_RenderPass::_Execute(
     if (legacySettingsChanged) {
         _renderParam->UpdateLegacyOptions();
 
-        // Set Projection Settings
-        std::string projection = renderDelegate->GetRenderSetting<std::string>(
-            HdPrmanRenderSettingsTokens->projectionName,
-            "");
-
-        if (!projection.empty()) {
-            RtParamList projectionParams;
-            _renderParam->SetProjectionParamsFromRenderSettings(
-                (HdPrmanRenderDelegate*)renderDelegate,
-                projection,
-                projectionParams);
-
-            cameraContext.SetProjectionOverride(
-                RtUString(projection.c_str()), projectionParams);
-        }
-
         // Set Resolution, Crop Window, Pixel Aspect Ratio,
         // and update camera settings.
         // For valid framing this was handled above.
         if(!framingValid) {
-            riley::Riley * const riley = _renderParam->AcquireRiley();
 #if !defined(DISPLAY_INTERFACE_VERSION) || DISPLAY_INTERFACE_VERSION < 3
             if (_renderParam->IsXpu()) {
                 // This can be removed once XPU handles under/overscan correctly.
                 cameraContext.SetRileyOptionsInteractive(
                     &(_renderParam->GetLegacyOptions()), _renderParam->GetResolution());
-                cameraContext.UpdateRileyCameraAndClipPlanesInteractive(
-                    riley, GetRenderIndex(), _renderParam->GetResolution());
+                cameraContext.UpdateActiveCamera(
+                    GetRenderIndex(), _renderParam->GetResolution());
             }
             else {
                 cameraContext.SetRileyOptions(&(_renderParam->GetLegacyOptions()));
-                cameraContext.UpdateRileyCameraAndClipPlanes(
-                    riley, GetRenderIndex());
+                cameraContext.UpdateActiveCamera(GetRenderIndex());
             }
 #else
             cameraContext.SetRileyOptions(&(_renderParam->GetLegacyOptions()));
-            cameraContext.UpdateRileyCameraAndClipPlanes(riley, GetRenderIndex());
+            cameraContext.UpdateActiveCamera(GetRenderIndex());
 #endif
         }
 
-        cameraContext.SetDisableDepthOfField(
-            renderDelegate->GetRenderSetting<bool>(
-                HdPrmanRenderSettingsTokens->disableDepthOfField, false));
+        // NOTE: the projection-override and depth-of-field opinions used to be
+        // set here. They now live above the camChanged latch, because opinions
+        // set at this point in Execute cannot be applied until a later frame.
 
         // Set Display and Sample Filters
         _renderParam->SetFiltersFromRenderSettings(
@@ -914,7 +920,7 @@ HdPrman_RenderPass::_Execute(
     if (HdPrmanFramebuffer * const framebuffer =
             _renderParam->GetFramebuffer()) {
         if (const HdCamera * const cam =
-                cameraContext.GetCamera(GetRenderIndex())) {
+                cameraContext.GetActiveCamera(GetRenderIndex())) {
             // Update the framebuffer Z scaling
 #if HD_API_VERSION >= 44
             framebuffer->proj = cam->ComputeProjectionMatrix();
@@ -926,7 +932,7 @@ HdPrman_RenderPass::_Execute(
 
 #if HD_API_VERSION >= 76
     // Update the render param arbirary value for the scene state id.
-    // This value is extracted from the terminal scene index right before 
+    // This value is extracted from the terminal scene index right before
     // before restarting the render. Setting this at this point allows
     // clients to be aware when the rendering of a specific scene state
     // is about to begin. This could also be directly accessed via the
@@ -943,7 +949,7 @@ HdPrman_RenderPass::_Execute(
     } else {
         _RenderInMainThread();
     }
-    
+
     if (HdPrmanFramebuffer * const framebuffer =
             _renderParam->GetFramebuffer()) {
         _Blit(framebuffer, aovBindings, _converged);
@@ -956,7 +962,7 @@ HdPrman_RenderPass::_RestartRenderIfNecessary(
 {
     const bool needsRestart =
         _renderParam->sceneVersion.load() != _lastRenderedVersion;
-    
+
     if (needsRestart) {
         // NOTE:
         //
@@ -965,15 +971,15 @@ HdPrman_RenderPass::_RestartRenderIfNecessary(
         // integrator for a couple of interations
         // and then switch back to PxrPathTracer/PbsPathTracer
         // The thinking is that we want to use PxrDirectLighting for quick
-        // camera tumbles. To enable this mode, the 
+        // camera tumbles. To enable this mode, the
         // HD_PRMAN_ENABLE_QUICKINTEGRATE (bool) env var must be set.
-        
+
         // Start renders using the quick integrator if:
         // - the corresponding env var is enabled
         // - the time out is positive
         // - the main integrator is an (expensive) primary integrator.
         const bool useQuickIntegrator =
-            _enableQuickIntegrate && 
+            _enableQuickIntegrate &&
             _quickIntegrateTime > 0 &&
             _UsesPrimaryIntegrator(renderDelegate);
         const riley::IntegratorId integratorId =
@@ -1024,21 +1030,21 @@ HdPrman_RenderPass::_RenderInMainThread()
 
     _renderParam->SetActiveIntegratorId(
         _renderParam->GetIntegratorId());
-    
+
     HdPrman_RenderViewContext &ctx =
         _renderParam->GetRenderViewContext();
-    
+
     const riley::RenderViewId renderViews[] = { ctx.GetRenderViewId() };
-    
+
     RtParamList renderOptions;
     static RtUString const US_RENDERMODE("renderMode");
-    static RtUString const US_BATCH("batch");   
-    renderOptions.SetString(US_RENDERMODE, US_BATCH);   
-    
+    static RtUString const US_BATCH("batch");
+    renderOptions.SetString(US_RENDERMODE, US_BATCH);
+
     riley->Render(
         {static_cast<uint32_t>(TfArraySize(renderViews)), renderViews},
         renderOptions);
-    
+
     _converged = true;
 }
 

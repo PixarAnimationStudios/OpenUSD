@@ -17,6 +17,7 @@ pxr_library(gf
         dualQuatd
         dualQuatf
         dualQuath
+        duration
         frustum
         gamma
         half
@@ -99,6 +100,7 @@ pxr_library(gf
         wrapDualQuatd.cpp
         wrapDualQuatf.cpp
         wrapDualQuath.cpp
+        wrapDuration.cpp
         wrapFrustum.cpp
         wrapGamma.cpp
         wrapHalf.cpp
@@ -202,6 +204,7 @@ pxr_test_scripts(
     testenv/testGfColorPy.py
     testenv/testGfDecomposeRotation.py
     testenv/testGfDualQuaternion.py
+    testenv/testGfDuration.py
     testenv/testGfFrustum.py
     testenv/testGfGamma.py
     testenv/testGfHomogeneous.py
@@ -242,6 +245,10 @@ pxr_register_test(testGfDecomposeRotation
 pxr_register_test(testGfDualQuaternion
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfDualQuaternion"
+)
+pxr_register_test(testGfDuration
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfDuration"
 )
 if (NOT APPLE)
     pxr_register_test(testGfFrustum

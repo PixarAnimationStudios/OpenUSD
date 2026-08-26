@@ -82,8 +82,8 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
             self.assertEqual( a.GetResolveInfo(5).GetSource(),
                     Usd.ResolveInfoSourceValueClips )
 
-            # Confirm time code values were resolve across the offset layer
-            p = stage.GetPrimAtPath('/TimeCodeTest')
+            # Confirm time code values were resolved across the offset layer
+            p = stage.GetPrimAtPath('/TimeTest')
 
             # Prim metadata
             self.assertEqual(p.GetMetadata("timeCodeTest"), 0.0)
@@ -124,6 +124,36 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
             self.assertEqual(a.GetTimeSamples(), [-10.0, -9.0])
             self.assertEqual(a.Get(-10.0), 10.0)
             self.assertEqual(a.Get(-9), 20.0)
+
+            # Duration values are only scaled, not offset, so with a scale of
+            # 1.0 the values are unchanged; the time sample keys still receive
+            # the full offset like all other types.
+            self.assertEqual(p.GetMetadata("durationTest"), 10.0)
+            self.assertEqual(p.GetMetadata("durationArrayTest"),
+                             Vt.DurationArray([10.0, 20.0]))
+            self.assertEqual(
+                p.GetMetadataByDictKey("customData", "durationVal"), 10.0)
+            self.assertEqual(
+                p.GetMetadataByDictKey("customData", "durationArray"),
+                Vt.DurationArray([10.0, 20.0]))
+            self.assertEqual(
+                p.GetMetadataByDictKey("customData", "subDict:durationVal"),
+                10.0)
+            self.assertEqual(
+                p.GetMetadataByDictKey("customData", "subDict:durationArray"),
+                Vt.DurationArray([10.0, 20.0]))
+
+            a = p.GetAttribute("Duration")
+            self.assertEqual(a.Get(), 10.0)
+            self.assertEqual(a.GetTimeSamples(), [-10.0, -9.0])
+            self.assertEqual(a.Get(-10.0), 10.0)
+            self.assertEqual(a.Get(-9), 20.0)
+
+            a = p.GetAttribute("DurationArray")
+            self.assertEqual(a.Get(), Vt.DurationArray([10.0, 20.0]))
+            self.assertEqual(a.GetTimeSamples(), [-10.0, -9.0])
+            self.assertEqual(a.Get(-10.0), Vt.DurationArray([10.0, 30.0]))
+            self.assertEqual(a.Get(-9), Vt.DurationArray([20.0, 40.0]))
 
             # Variant sets and selections
             p = stage.GetPrimAtPath('/assetWithVariant')
@@ -381,6 +411,45 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
             b.GetResolveInfo().GetSource(), Usd.ResolveInfoSourceDefault)
         self.assertEqual(b.Get(), 5.0)
         self.assertEqual(b.Get(1), 5.0)
+
+    def test_TimeCodeDurationScaling(self):
+        """Tests that flattening a layer offset with both a non-zero offset and
+        a non-unit scale remaps timecode values affinely (value*scale + offset)
+        but only scales duration values (value*scale, no offset), while the
+        time sample keys of all types receive the full offset."""
+
+        src_stage = Usd.Stage.Open('scaledOffset_root.usda')
+        src_layer_stack = src_stage._GetPcpCache().layerStack
+        layer = Usd.FlattenLayerStack(src_layer_stack, tag='scaledOffset')
+
+        result_stage = Usd.Stage.Open(layer)
+
+        for stage in [src_stage, result_stage]:
+            p = stage.GetPrimAtPath('/ScaledTimeTest')
+
+            # The sublayer offset is (offset=10, scale=2), so sample keys are
+            # remapped as key*2 + 10: {0, 1} -> {10, 12}.
+
+            # Plain doubles: values are untouched; only the keys are remapped.
+            a = p.GetAttribute("Double")
+            self.assertEqual(a.Get(), 10.0)
+            self.assertEqual(a.GetTimeSamples(), [10.0, 12.0])
+            self.assertEqual(a.Get(10), 10.0)
+            self.assertEqual(a.Get(12), 20.0)
+
+            # Timecodes: values are scaled and offset (value*2 + 10).
+            a = p.GetAttribute("TimeCode")
+            self.assertEqual(a.Get(), 30.0)
+            self.assertEqual(a.GetTimeSamples(), [10.0, 12.0])
+            self.assertEqual(a.Get(10), 30.0)
+            self.assertEqual(a.Get(12), 50.0)
+
+            # Durations: values are scaled only, not offset (value*2).
+            a = p.GetAttribute("Duration")
+            self.assertEqual(a.Get(), 20.0)
+            self.assertEqual(a.GetTimeSamples(), [10.0, 12.0])
+            self.assertEqual(a.Get(10), 20.0)
+            self.assertEqual(a.Get(12), 40.0)
 
     def test_ValueBlocks(self):
         src_stage = Usd.Stage.Open('valueBlocks_root.usda')
@@ -769,7 +838,7 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
             for p in actualPayloadListOp.deletedItems]
         self.assertEqual(expectedPayloadListOp, actualPayloadListOp)
 
-    def test_ListOpsInSublayersWithScale(self):
+    def test_ListOpsInSublayersWithOffsets(self):
         """Tests that list ops from sublayers with multiple offsets take the
            strongest opinion """
         stage = Usd.Stage.Open(

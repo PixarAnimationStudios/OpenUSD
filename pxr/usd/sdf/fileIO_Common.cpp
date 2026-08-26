@@ -152,6 +152,12 @@ _StringFromValue(const SdfPathExpression& pathExpr)
     return Sdf_FileIOUtility::Quote(pathExpr.GetText());
 }
 
+static string
+_StringFromValue(const GfDuration& duration)
+{
+    return TfStringify(duration);
+}
+
 template <class T>
 static void
 _StringFromVtArray(
@@ -191,21 +197,46 @@ _StringFromVtValueHelper(string* valueStr, const VtValue& value,
                          UpgradeFn &&requestUpgrade)
 {
     if (value.IsHolding<T>()) {
+        if constexpr (std::is_same_v<T, GfDuration>) {
+            std::forward<UpgradeFn>(requestUpgrade)(
+                SdfFileVersion(1,4,0),
+                "A GfDuration value was detected which requires usda"
+                " version 1.4.");
+        }
+
         *valueStr = _StringFromValue(value.UncheckedGet<T>());
+
         return true;
     }
     else if (value.IsHolding<VtArray<T> >()) {
+        if constexpr (std::is_same_v<T, GfDuration>) {
+            std::forward<UpgradeFn>(requestUpgrade)(
+                SdfFileVersion(1,4,0),
+                "A GfDuration value was detected which requires usda"
+                " version 1.4.");
+        }
+
         const VtArray<T>& valArray = value.UncheckedGet<VtArray<T> >();
         _StringFromVtArray(valueStr,valArray);
+
         return true;
     }
     else if (value.IsHolding<VtArrayEdit<T>>()) {
-        std::forward<UpgradeFn>(requestUpgrade)(
-            SdfFileVersion(1,2,0),
-            "A VtArrayEdit instance was detected which requires usda "
-            "version 1.2.");
+        if constexpr (std::is_same_v<T, GfDuration>) {
+            std::forward<UpgradeFn>(requestUpgrade)(
+                SdfFileVersion(1,4,0),
+                "A GfDuration value was detected which requires usda"
+                " version 1.4.");
+        } else {
+            std::forward<UpgradeFn>(requestUpgrade)(
+                SdfFileVersion(1,2,0),
+                "A VtArrayEdit instance was detected which requires usda "
+                "version 1.2.");
+        }
+
         const VtArrayEdit<T> &arrayEdit = value.UncheckedGet<VtArrayEdit<T>>();
         _StringFromVtArrayEdit(valueStr, arrayEdit);
+
         return true;
     }
     return false;
@@ -892,7 +923,8 @@ Sdf_FileIOUtility::_WriteDictionary(
                 string str;
                 if (_StringFromVtValueHelper<string>(out, &str, value) || 
                     _StringFromVtValueHelper<TfToken>(out, &str, value) ||
-                    _StringFromVtValueHelper<SdfAssetPath>(out, &str, value)) {
+                    _StringFromVtValueHelper<SdfAssetPath>(out, &str, value) ||
+                    _StringFromVtValueHelper<GfDuration>(out, &str, value)) {
                     Puts(out, 0, str);
                 } else {
                     Puts(out, 0, TfStringify(value));
@@ -1110,7 +1142,10 @@ _StringFromVtValueImpl(const VtValue &value, Fn &&upgrade)
         _StringFromVtValueHelper<SdfAssetPath>(
             &s, value, std::forward<Fn>(upgrade)) ||
         _StringFromVtValueHelper<SdfPathExpression>(
-            &s, value, std::forward<Fn>(upgrade))) {
+            &s, value, std::forward<Fn>(upgrade)) ||
+        _StringFromVtValueHelper<GfDuration>(
+            &s, value, std::forward<Fn>(upgrade)))
+    {
         return s;
     }
     

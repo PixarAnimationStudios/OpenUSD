@@ -6,6 +6,7 @@
 # https://openusd.org/license.
 
 import contextlib
+import math
 import os
 import shutil
 import sys
@@ -122,10 +123,22 @@ class TestUsdValueClips(unittest.TestCase):
                     Gf.Interval(endClip, endClip + 1, False, True)),
                 [])
 
-    def CheckSpline(self, attr):
-        """Verifies attribute spline is as expected via the spline API"""
+    def CheckSpline(self, attr, extrap=True):
+        """
+        Verifies attribute spline is as expected via the spline API. If extrap is
+        True (the default) then it checks the pre- and post extrapolation
+        regions.
+        """
+        # XXX: The extrap flag is a workaround for a bug where the first and last
+        # knots on the spline have dual valued knots. The clip evaluation clamps
+        # values outside the clip time range to the edges of the range, but the
+        # dual valued knots give the spline different values in the extrapolation
+        # region than the ones computed for normal evaluation.
         self.assertTrue(attr.HasSpline())
         spline = attr.GetSpline()
+
+        stage = attr.GetStage()
+        held = (stage.GetInterpolationType() == Usd.InterpolationTypeHeld)
 
         # All splines "may be time varying"
         self.assertTrue(attr.ValueMightBeTimeVarying())
@@ -140,15 +153,23 @@ class TestUsdValueClips(unittest.TestCase):
         # UsdAttribute::Get(t). Note that `spline` is expected to have
         # layer offsets baked in.
         span = spline.GetKnotsWithInnerLoopsBaked().GetTimeSpan()
-        for t in range(int(span.min - 1), int(span.max + 2)):
-            evalResult = spline.Eval(t)
+        if extrap:
+            begin = int(span.min - 1)
+            end = int(span.max + 2)
+        else:
+            begin = int(math.floor(span.min + 1))
+            end = int(math.ceil(span.max))
+        for t in range(begin, end):
+            evalResult = (spline.EvalHeld(t) if held else
+                          spline.Eval(t))
             getResult = attr.Get(t)
             if evalResult is None or getResult is None:
                 self.assertEqual(evalResult, getResult)
             else:
                 self.assertAlmostEqual(float(evalResult), float(getResult))
 
-            evalPreResult = spline.EvalPreValue(t)
+            evalPreResult = (spline.EvalPreValueHeld(t) if held else
+                             spline.EvalPreValue(t))
             getPreResult = attr.Get(Usd.TimeCode.PreTime(t))
             if evalPreResult is None or getPreResult is None:
                 self.assertEqual(evalPreResult, getPreResult)
@@ -226,7 +247,7 @@ class TestUsdValueClips(unittest.TestCase):
         # Clips are never consulted for default values.  This implies also
         # that no clips should even get loaded as a result of the queries.
         # However, we must tell CheckValue() not to construct UsdAttributeQuery
-        # objects, since that act *does* need to load clips is the attr is 
+        # objects, since that act *does* need to load clips if the attr is 
         # affected by clips
         self.CheckValue(localAttr, expected=1.0, query=False)
         self.CheckValue(refAttr, expected=1.0, query=False)
@@ -468,30 +489,93 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckTimeSamples(attr)
 
     def test_ClipTimeCodeTiming(self):
-        """Exercises clip retiming via clipTimes metadata for timecode value 
-        attributes"""
+        """Exercises clip retiming via clipTimes metadata for timecode and
+        duration value attributes, authored as time samples, splines, and
+        arrays.
+
+        Time-based values read from a clip are converted from the clip's
+        internal time to external (stage) time using the bracketing clipTimes
+        segment. A GfTimeCode is a point on the time axis, so the segment's
+        full linear map (scale and offset) is applied, exactly as an internal
+        time would be translated to external time. A GfDuration is a length on
+        the time axis, so only the segment's scale is applied; a constant offset
+        would cancel out of a duration and must not be added.
+
+        With the clipTimes authored here the first segment maps external
+        [0, 20] to internal [10, 20] (external advances twice as fast as
+        internal, so scale = 2), and after a jump discontinuity the second
+        segment maps external [20, 40] to internal [0, 20] (scale = 1). This is
+        why, e.g., the same clip value resolves to different external values in
+        the two segments, and why 'dur' (scaled only) diverges from 'time'
+        (scaled and offset)."""
         stage = Usd.Stage.Open('timeCodeTiming/root.usda')
 
         model = stage.GetPrimAtPath('/Model')
         attr = model.GetAttribute('time')
         attr2 = model.GetAttribute('timeArray')
+        timeSpline = model.GetAttribute('timeSpline')
+        dur = model.GetAttribute('dur')
+        durSpline = model.GetAttribute('durSpline')
+        durArray = model.GetAttribute('durArray')
 
         # Default value should come through regardless of clip timing.
         self.CheckValue(attr, expected=1.0)
         self.CheckValue(attr2, expected=Vt.TimeCodeArray([1.0,2.0]))
+        self.CheckValue(timeSpline, expected=1.0)
+        self.CheckValue(dur, expected=Gf.Duration(1.0))
+        self.CheckValue(durSpline, expected=Gf.Duration(1.0))
+        self.CheckValue(durArray, expected=Vt.DurationArray([1.0, 2.0]))
+
+        self.assertTrue(timeSpline.HasSpline())
+        self.assertTrue(durSpline.HasSpline())
+
+        # 'timeSpline' is a timecode spline whose value equals the internal
+        # time; it retimes identically to the 'time' time samples below (scale
+        # and offset). Outside the clip's mapped range the query external time
+        # is clamped to the range boundary, so the value is held (10.0 / 25.0)
+        # rather than extrapolated along the spline.
+        #
+        # The value after the jump discontinuity below is tricky to follow. The
+        # time values come through a value clip with two time regions. The first
+        # is [(0, 10), (20, 20)]. Which maps stage times of 0 and 20 to clip
+        # times of 10 and 20. This is equivalent to a layer offset of scale = 2
+        # and offset = -20. (Remember, layer offsets map from clip times toward
+        # stage times while the "times" array in clips defines the inverse
+        # operation.) A scale of 2 and offset of -20 maps clipTime 10 to
+        # stageTime 0 and clipTime 20 to stageTime 20. But the second time
+        # region maps [(20, 0), (40, 20)] which is linear, but with an offset.
+        # As a layer offset, it would be scale = 1 and offset = +20
+        #
+        # So:
+        #   stageTime 0 -> clipTime 10 -> clipValue 15 -> stageValue 10
+        #   stageTime 5 -> clipTime 12.5 -> clipValue 12.5 -> stageValue 5
+        #   stageTime pre 20 -> clipTime pre 20 -> clipValue 5 -> stageValue -10
+        # <jump discontinuity>, switch to the second time region and layer offset
+        #   stageTime 20 -> clipTime 0 -> clipValue 25 -> stageValue 45
+        #   ...
+        #
+        # XXX: See the comment at the top of CheckSpline for an explanation
+        # of the extrap argument and why we're setting it to false.
+        self.CheckSpline(timeSpline, extrap=False)
+
+        # 'durSpline' is a duration spline with the same authored values, but
+        # durations are only scaled (never offset), so it diverges from
+        # 'timeSpline': the left segment scales by 2, the right segment by 1.
+        self.CheckSpline(durSpline, extrap=False)
 
         stage.SetInterpolationType(Usd.InterpolationTypeLinear)
 
-        # The 'clipTimes' metadata authored in the test asset offsets the 
-        # time samples in the clip by 10 frames and scales it slower by 50%,
-        # then at frame 21 it repeats the clip from frame 0 without the offset
-        # and scaling..
-        self.CheckValue(attr, time=0, expected=5.0)
+        # The 'clipTimes' metadata authored in the test asset maps external
+        # [0, 20] to internal [10, 20] (external advances twice as fast, so
+        # timecode values scale by 2), then after a jump discontinuity maps
+        # external [20, 40] to internal [0, 20] (scale 1).
+        self.CheckValue(attr, time=0, expected=10.0)
         self.CheckValue(attr, time=5, expected=5.0)
-        self.CheckValue(attr, time=10, expected=5.0)
-        self.CheckValue(attr, time=15, expected=5.0)
-        # @20 we should get the jump discontinuity time sample as the pre-time.
-        self.CheckValue(attr, time=Usd.TimeCode.PreTime(20), expected=5.0)
+        self.CheckValue(attr, time=10, expected=0.0)
+        self.CheckValue(attr, time=15, expected=-5.0)
+        # @20 we should get the jump discontinuity time sample as the pre-time
+        # (left segment, scale 2).
+        self.CheckValue(attr, time=Usd.TimeCode.PreTime(20), expected=-10.0)
         self.CheckValue(attr, time=20, expected=45.0)
         self.CheckValue(attr, time=25, expected=40.0)
         self.CheckValue(attr, time=30, expected=35.0)
@@ -499,50 +583,87 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr, time=40, expected=25.0)
 
         # Requests for samples before and after the mapping specified in
-        # 'clipTimes' just pick up the first or last time sample.
-        self.CheckValue(attr, time=-1, expected=5.0)
+        # 'clipTimes' hold the first or last time sample (scaled by the nearest
+        # real segment).
+        self.CheckValue(attr, time=-1, expected=10.0)
         self.CheckValue(attr, time=41, expected=25.0)
 
-        # Repeat getting values at the same times for the Vt.TimeCodeArray 
+        # Repeat getting values at the same times for the Vt.TimeCodeArray
         # valued attribute.
-        self.CheckValue(attr2, time=0, expected=Vt.TimeCodeArray([0.0, 5.0]))
+        self.CheckValue(attr2, time=0, expected=Vt.TimeCodeArray([0.0, 10.0]))
         self.CheckValue(attr2, time=5, expected=Vt.TimeCodeArray([5.0, 5.0]))
-        self.CheckValue(attr2, time=10, expected=Vt.TimeCodeArray([10.0, 5.0]))
-        self.CheckValue(attr2, time=15, expected=Vt.TimeCodeArray([15.0, 5.0]))
+        self.CheckValue(attr2, time=10, expected=Vt.TimeCodeArray([10.0, 0.0]))
+        self.CheckValue(attr2, time=15, expected=Vt.TimeCodeArray([15.0, -5.0]))
         # @20 we should get the jump discontinuity time sample as the pre-time
-        # that means we should get first time mapping @20, with appropriate time
-        # offset (0 in this case as both external and internal times at
-        # this jump discontinuity are the same, so external-internal time zeros
-        # out) applied to the results.
+        # (left segment, scale 2).
         self.CheckValue(attr2, time=Usd.TimeCode.PreTime(20),
-                        expected=Vt.TimeCodeArray([20.0, 5.0]))
+                        expected=Vt.TimeCodeArray([20.0, -10.0]))
         self.CheckValue(attr2, time=20, expected=Vt.TimeCodeArray([20.0, 45.0]))
         self.CheckValue(attr2, time=25, expected=Vt.TimeCodeArray([25.0, 40.0]))
         self.CheckValue(attr2, time=30, expected=Vt.TimeCodeArray([30.0, 35.0]))
         self.CheckValue(attr2, time=35, expected=Vt.TimeCodeArray([35.0, 30.0]))
         self.CheckValue(attr2, time=40, expected=Vt.TimeCodeArray([40.0, 25.0]))
 
-        self.CheckValue(attr2, time=-1, expected=Vt.TimeCodeArray([0.0, 5.0]))
+        self.CheckValue(attr2, time=-1, expected=Vt.TimeCodeArray([0.0, 10.0]))
         self.CheckValue(attr2, time=41, expected=Vt.TimeCodeArray([40.0, 25.0]))
+
+        # 'dur' is a duration authored with the same clip time samples as
+        # 'time', but durations are only scaled (never offset): each value is
+        # multiplied by the bracketing segment's scale (2 in the first segment,
+        # 1 in the second).
+        self.CheckValue(dur, time=0, expected=Gf.Duration(30.0))
+        self.CheckValue(dur, time=5, expected=Gf.Duration(25.0))
+        self.CheckValue(dur, time=10, expected=Gf.Duration(20.0))
+        self.CheckValue(dur, time=15, expected=Gf.Duration(15.0))
+        self.CheckValue(dur, time=Usd.TimeCode.PreTime(20),
+                        expected=Gf.Duration(10.0))
+        self.CheckValue(dur, time=20, expected=Gf.Duration(25.0))
+        self.CheckValue(dur, time=25, expected=Gf.Duration(20.0))
+        self.CheckValue(dur, time=30, expected=Gf.Duration(15.0))
+        self.CheckValue(dur, time=35, expected=Gf.Duration(10.0))
+        self.CheckValue(dur, time=40, expected=Gf.Duration(5.0))
+        self.CheckValue(dur, time=-1, expected=Gf.Duration(30.0))
+        self.CheckValue(dur, time=41, expected=Gf.Duration(5.0))
+
+        # 'durArray' mirrors 'timeArray' but scaled only (no offset).
+        self.CheckValue(durArray, time=0,
+                        expected=Vt.DurationArray([20.0, 30.0]))
+        self.CheckValue(durArray, time=5,
+                        expected=Vt.DurationArray([25.0, 25.0]))
+        self.CheckValue(durArray, time=10,
+                        expected=Vt.DurationArray([30.0, 20.0]))
+        self.CheckValue(durArray, time=15,
+                        expected=Vt.DurationArray([35.0, 15.0]))
+        self.CheckValue(durArray, time=Usd.TimeCode.PreTime(20),
+                        expected=Vt.DurationArray([40.0, 10.0]))
+        self.CheckValue(durArray, time=20,
+                        expected=Vt.DurationArray([0.0, 25.0]))
+        self.CheckValue(durArray, time=25,
+                        expected=Vt.DurationArray([5.0, 20.0]))
+        self.CheckValue(durArray, time=30,
+                        expected=Vt.DurationArray([10.0, 15.0]))
+        self.CheckValue(durArray, time=35,
+                        expected=Vt.DurationArray([15.0, 10.0]))
+        self.CheckValue(durArray, time=40,
+                        expected=Vt.DurationArray([20.0, 5.0]))
+        self.CheckValue(durArray, time=-1,
+                        expected=Vt.DurationArray([20.0, 30.0]))
+        self.CheckValue(durArray, time=41,
+                        expected=Vt.DurationArray([20.0, 5.0]))
 
         # Repeat the test over again with held interpolation.
         stage.SetInterpolationType(Usd.InterpolationTypeHeld)
 
-        # The 'clipTimes' metadata authored in the test asset offsets the 
-        # time samples in the clip by 10 frames and scales it slower by 50%,
-        # then at frame 21 it repeats the clip from frame 0 without the offset
-        # and scaling..
-        self.CheckValue(attr, time=0, expected=5.0)
-        self.CheckValue(attr, time=5, expected=5.0)
-        self.CheckValue(attr, time=10, expected=5.0)
-        self.CheckValue(attr, time=15, expected=5.0)
-        # @20 we should get the jump discontinuity time sample as the pre-time,
-        # that means we should get first time mapping @20, with appropriate time
-        # offset (0 in this case as both external and internal times at
-        # this jump discontinuity are the same, so external-internal time zeros
-        # out) applied to the results.
-        self.CheckValue(attr, time=Usd.TimeCode.PreTime(20), 
-                        expected=5.0)
+        # The same retiming as above, now with held interpolation of the
+        # clip's time samples.
+        self.CheckValue(attr, time=0, expected=10.0)
+        self.CheckValue(attr, time=5, expected=10.0)
+        self.CheckValue(attr, time=10, expected=0.0)
+        self.CheckValue(attr, time=15, expected=0.0)
+        # @20 we should get the jump discontinuity time sample as the pre-time
+        # (left segment, scale 2).
+        self.CheckValue(attr, time=Usd.TimeCode.PreTime(20),
+                        expected=-10.0)
         self.CheckValue(attr, time=20, expected=45.0)
         self.CheckValue(attr, time=25, expected=40.0)
         self.CheckValue(attr, time=30, expected=35.0)
@@ -550,45 +671,94 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr, time=40, expected=25.0)
 
         # Requests for samples before and after the mapping specified in
-        # 'clipTimes' just pick up the first or last time sample.
-        self.CheckValue(attr, time=-1, expected=5.0)
+        # 'clipTimes' hold the first or last time sample (scaled by the nearest
+        # real segment).
+        self.CheckValue(attr, time=-1, expected=10.0)
         self.CheckValue(attr, time=41, expected=25.0)
 
-        # Repeat getting values at the same times for the Vt.TimeCodeArray 
+        # Repeat getting values at the same times for the Vt.TimeCodeArray
         # valued attribute.
-        self.CheckValue(attr2, time=0, expected=Vt.TimeCodeArray([0.0, 5.0]))
-        self.CheckValue(attr2, time=5, expected=Vt.TimeCodeArray([0.0, 5.0]))
-        self.CheckValue(attr2, time=10, expected=Vt.TimeCodeArray([10.0, 5.0]))
-        self.CheckValue(attr2, time=15, expected=Vt.TimeCodeArray([10.0, 5.0]))
-        # @20 we should get the jump discontinuity time sample as the pre-time,
-        # that means we should get first time mapping @20, with appropriate time
-        # offset (0 in this case as both external and internal times at
-        # this jump discontinuity are the same, so external-internal time zeros
-        # out) applied to the results.
-        self.CheckValue(attr2, time=Usd.TimeCode.PreTime(20), 
-                        expected=Vt.TimeCodeArray([20.0, 5.0]))
-        self.CheckValue(attr2, time=20, 
+        self.CheckValue(attr2, time=0, expected=Vt.TimeCodeArray([0.0, 10.0]))
+        self.CheckValue(attr2, time=5, expected=Vt.TimeCodeArray([0.0, 10.0]))
+        self.CheckValue(attr2, time=10, expected=Vt.TimeCodeArray([10.0, 0.0]))
+        self.CheckValue(attr2, time=15, expected=Vt.TimeCodeArray([10.0, 0.0]))
+        # @20 we should get the jump discontinuity time sample as the pre-time
+        # (left segment, scale 2).
+        self.CheckValue(attr2, time=Usd.TimeCode.PreTime(20),
+                        expected=Vt.TimeCodeArray([20.0, -10.0]))
+        self.CheckValue(attr2, time=20,
                         expected=Vt.TimeCodeArray([20.0, 45.0]))
         self.CheckValue(attr2, time=25, expected=Vt.TimeCodeArray([25.0, 40.0]))
         self.CheckValue(attr2, time=30, expected=Vt.TimeCodeArray([30.0, 35.0]))
         self.CheckValue(attr2, time=35, expected=Vt.TimeCodeArray([35.0, 30.0]))
         self.CheckValue(attr2, time=40, expected=Vt.TimeCodeArray([40.0, 25.0]))
 
-        self.CheckValue(attr2, time=-1, expected=Vt.TimeCodeArray([0.0, 5.0]))
+        self.CheckValue(attr2, time=-1, expected=Vt.TimeCodeArray([0.0, 10.0]))
         self.CheckValue(attr2, time=41, expected=Vt.TimeCodeArray([40.0, 25.0]))
+
+        # 'dur' held (scaled only, no offset).
+        self.CheckValue(dur, time=0, expected=Gf.Duration(30.0))
+        self.CheckValue(dur, time=5, expected=Gf.Duration(30.0))
+        self.CheckValue(dur, time=10, expected=Gf.Duration(20.0))
+        self.CheckValue(dur, time=15, expected=Gf.Duration(20.0))
+        self.CheckValue(dur, time=Usd.TimeCode.PreTime(20),
+                        expected=Gf.Duration(10.0))
+        self.CheckValue(dur, time=20, expected=Gf.Duration(25.0))
+        self.CheckValue(dur, time=25, expected=Gf.Duration(20.0))
+        self.CheckValue(dur, time=30, expected=Gf.Duration(15.0))
+        self.CheckValue(dur, time=35, expected=Gf.Duration(10.0))
+        self.CheckValue(dur, time=40, expected=Gf.Duration(5.0))
+        self.CheckValue(dur, time=-1, expected=Gf.Duration(30.0))
+        self.CheckValue(dur, time=41, expected=Gf.Duration(5.0))
+
+        # 'durArray' held (scaled only, no offset).
+        self.CheckValue(durArray, time=0,
+                        expected=Vt.DurationArray([20.0, 30.0]))
+        self.CheckValue(durArray, time=5,
+                        expected=Vt.DurationArray([20.0, 30.0]))
+        self.CheckValue(durArray, time=10,
+                        expected=Vt.DurationArray([30.0, 20.0]))
+        self.CheckValue(durArray, time=15,
+                        expected=Vt.DurationArray([30.0, 20.0]))
+        self.CheckValue(durArray, time=Usd.TimeCode.PreTime(20),
+                        expected=Vt.DurationArray([40.0, 10.0]))
+        self.CheckValue(durArray, time=20,
+                        expected=Vt.DurationArray([0.0, 25.0]))
+        self.CheckValue(durArray, time=25,
+                        expected=Vt.DurationArray([5.0, 20.0]))
+        self.CheckValue(durArray, time=30,
+                        expected=Vt.DurationArray([10.0, 15.0]))
+        self.CheckValue(durArray, time=35,
+                        expected=Vt.DurationArray([15.0, 10.0]))
+        self.CheckValue(durArray, time=40,
+                        expected=Vt.DurationArray([20.0, 5.0]))
+        self.CheckValue(durArray, time=-1,
+                        expected=Vt.DurationArray([20.0, 30.0]))
+        self.CheckValue(durArray, time=41,
+                        expected=Vt.DurationArray([20.0, 5.0]))
 
         # The clip has time samples authored every 5 frames, but
         # since we've scaled everything by 50%, we should have samples
         # every 10 frames.
         self.assertEqual(
-            attr.GetTimeSamples(), 
+            attr.GetTimeSamples(),
             [0, 10, 20 - Usd.TimeCode.SafeStep(), 20, 25, 30, 35, 40])
         self.assertEqual(
             attr.GetTimeSamplesInInterval(Gf.Interval(0, 30)),
             [0, 10, 20 - Usd.TimeCode.SafeStep(), 20, 25, 30])
 
+        # 'dur' shares the same retimed sample times as 'time'.
+        self.assertEqual(
+            dur.GetTimeSamples(),
+            [0, 10, 20 - Usd.TimeCode.SafeStep(), 20, 25, 30, 35, 40])
+        self.assertEqual(
+            dur.GetTimeSamplesInInterval(Gf.Interval(0, 30)),
+            [0, 10, 20 - Usd.TimeCode.SafeStep(), 20, 25, 30])
+
         self.CheckTimeSamples(attr)
         self.CheckTimeSamples(attr2)
+        self.CheckTimeSamples(dur)
+        self.CheckTimeSamples(durArray)
 
     def test_ClipsWithLayerOffsets(self):
         """Tests behavior of clips when layer offsets are involved"""
@@ -600,6 +770,16 @@ class TestUsdValueClips(unittest.TestCase):
         attr2 = model2.GetAttribute('size')
         model3 = stage.GetPrimAtPath('/Model_3')
         attr3 = model3.GetAttribute('size')
+        model4 = stage.GetPrimAtPath('/Model_4')
+        attr4 = model4.GetAttribute('size')
+        model5 = stage.GetPrimAtPath('/Model_5')
+        attr5 = model5.GetAttribute('size')
+        model6 = stage.GetPrimAtPath('/Model_6')
+        attr6 = model6.GetAttribute('size')
+        model7 = stage.GetPrimAtPath('/Model_7')
+        attr7 = model7.GetAttribute('size')
+        model8 = stage.GetPrimAtPath('/Model_8')
+        attr8 = model8.GetAttribute('size')
 
         # Default value should be unaffected by layer offsets.
         self.CheckValue(attr1, expected=1.0)
@@ -646,14 +826,34 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(attr3.GetTimeSamples(), 
             [20.0, 25.0, 30.0, 35.0, 40.0])
         self.assertEqual(attr3.GetTimeSamplesInInterval(
-            Gf.Interval(-5, 5)), 
+            Gf.Interval(-5, 5)),
             [])
+
+        # Test that a reference offset with a non-unit scale is taken into
+        # account. Model_4 references the same clip data as Model_3 but with a
+        # scale of 2 on the reference (offset = 10; scale = 2), which composes
+        # with the sublayer offset of 10 to a net offset of 20 and a scale of 2.
+        # The clip's internal time t therefore maps to stage time 2*t + 20. The
+        # 'size' value is a plain float, so only the sample lookup is retimed;
+        # the returned values are not themselves transformed.
+        self.CheckValue(attr4, expected=1.0)
+        self.CheckValue(attr4, time=19, expected=-5.0)
+        self.CheckValue(attr4, time=30, expected=-5.0)
+        self.CheckValue(attr4, time=40, expected=-10.0)
+        self.CheckValue(attr4, time=50, expected=-15.0)
+        self.CheckValue(attr4, time=60, expected=-20.0)
+        self.assertEqual(attr4.GetTimeSamples(),
+            [20.0, 30.0, 40.0, 50.0, 60.0])
+        self.assertEqual(attr4.GetTimeSamplesInInterval(
+            Gf.Interval(-5, 25)),
+            [20.0])
 
         self.CheckTimeSamples(attr1)
         self.CheckTimeSamples(attr2)
         self.CheckTimeSamples(attr3)
+        self.CheckTimeSamples(attr4)
 
-        # Verify GetPropertyStackWithLayerOffsets run on an attribute with 
+        # Verify GetPropertyStackWithLayerOffsets run on an attribute with
         # clips returns the clip spec's layer offset matching the source spec's
         # layer offset.
         self.assertEqual(attr3.GetPropertyStackWithLayerOffsets(40),
@@ -661,6 +861,55 @@ class TestUsdValueClips(unittest.TestCase):
                 Sdf.LayerOffset(20)), 
              (Sdf.Find('layerOffsets/ref.usda', '/Model.size'), 
                 Sdf.LayerOffset(20))])
+
+        # Test that layer offsets are taken into account when clip times is
+        # absent. This should result in the same time samples as attr1
+        self.CheckValue(attr5, time=0, expected=-5)
+        self.CheckValue(attr5, time=9, expected=-5)
+        self.CheckValue(attr5, time=10, expected=-5)
+        self.CheckValue(attr5, time=15, expected=-5)
+        self.CheckValue(attr5, time=20, expected=-10)
+        self.CheckValue(attr5, time=25, expected=-15)
+        self.CheckValue(attr5, time=30, expected=-20)
+        self.CheckValue(attr5, time=50, expected=-20)
+        self.assertEqual(attr1.GetTimeSamples(), attr5.GetTimeSamples())
+        self.CheckTimeSamples(attr5)
+
+        # Test that layer offsets combined with stretch/shrink regions in clip
+        # times are taken into account. This example is sped up 2x by clip
+        # times with a layer offset of 10.
+        self.CheckValue(attr6, time=0, expected=-5)
+        self.CheckValue(attr6, time=2.5, expected=-5)
+        self.CheckValue(attr6, time=5, expected=-5)
+        self.CheckValue(attr6, time=10, expected=-10)
+        self.CheckValue(attr6, time=11, expected=-10)
+        self.CheckTimeSamples(attr6)
+
+        # Test that the layer offset for a clipSet is the offset from the
+        # stage to the layer where the strongest authored 'active' metadata
+        # is defined.
+        self.CheckValue(attr7, time=0, expected=-5)
+        self.CheckValue(attr7, time=20, expected=-5)
+        self.CheckValue(attr7, time=25, expected=-5)
+        self.CheckValue(attr7, time=30, expected=-10)
+        self.CheckValue(attr7, time=35, expected=-15)
+        self.CheckValue(attr7, time=40, expected=-20)
+        self.CheckValue(attr7, time=45, expected=-20)
+        self.CheckTimeSamples(attr7)
+
+        # Test that clip times are offset independently of the layer offset
+        # for a clipSet. The base offset is 20 and the clip times offset is
+        # 10, so evaluation proceeds as if clip times is scaled by
+        # 10 - 20 = -10. Note that evaluation itself proceeds by first
+        # applying the base offset (20) to the queried time.
+        self.CheckValue(attr8, time=0, expected=-5)
+        self.CheckValue(attr8, time=10, expected=-5)
+        self.CheckValue(attr8, time=15, expected=-5)
+        self.CheckValue(attr8, time=20, expected=-10)
+        self.CheckValue(attr8, time=25, expected=-15)
+        self.CheckValue(attr8, time=30, expected=-20)
+        self.CheckValue(attr8, time=50, expected=-20)
+        self.CheckTimeSamples(attr8)
 
     def test_ClipsWithSplineWithLayerOffsets(self):
         """Tests behavior of splines in clips with layer offsets involvement"""
@@ -684,6 +933,20 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr3, time=40, expected=9)
         self.CheckValue(attr3, time=60, expected=9)
 
+        # Model_4's net layer offset is (offset = 20, scale = 2), so the clip's
+        # internal time t maps to stage time 2*t + 20. attr1's checks land at
+        # internal times 4/5/16/20/40; for Model_4 those occur at 2*t + 20,
+        # i.e. stage 28/30/52/60/100. The spline values are plain floats and so
+        # are not transformed; only the spline's time axis is retimed.
+        model4 = stage.GetPrimAtPath('/Model_4')
+        attr4 = model4.GetAttribute('attrSpline')
+        self.CheckSpline(attr4)
+        self.CheckValue(attr4, time=28, expected=3)
+        self.CheckValue(attr4, time=30, expected=5)
+        self.CheckValue(attr4, time=52, expected=17)
+        self.CheckValue(attr4, time=60, expected=9)
+        self.CheckValue(attr4, time=100, expected=9)
+
     def test_TimeCodeClipsWithLayerOffsets(self):
         """Tests behavior of clips when layer offsets are involved and the
         attributes are GfTimeCode values. This test is almost identical to 
@@ -697,6 +960,8 @@ class TestUsdValueClips(unittest.TestCase):
         attr2 = model2.GetAttribute('time')
         model3 = stage.GetPrimAtPath('/Model_3')
         attr3 = model3.GetAttribute('time')
+        model4 = stage.GetPrimAtPath('/Model_4')
+        attr4 = model4.GetAttribute('time')
 
         # Default time code value will be affected by layer offsets.
         self.CheckValue(attr1, expected=11.0)
@@ -745,12 +1010,136 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(attr3.GetTimeSamples(), 
             [20.0, 25.0, 30.0, 35.0, 40.0])
         self.assertEqual(attr3.GetTimeSamplesInInterval(
-            Gf.Interval(-5, 5)), 
+            Gf.Interval(-5, 5)),
             [])
+
+        # This gets a little complicated so some explanation is in order:
+        # Model_4 comes from the root_sublayer.usda with an offset of 10.  But
+        # Model_4 in root_sublayer.usda comes from /Model in ref2.usda with
+        # another offset of 10 and a scale of 2. /Model in ref2.usda comes from
+        # /Model in ref.usda (with no scale or offset). The default value for
+        # the time attribute is in ref.usda, but ref2.usda used a value clip
+        # referencing clip.usda for the timeSamples. So the default is 1.0 but
+        # the time samples are 5:-5, 10:-10, 15:-15, and 20:-20.
+        #
+        # Mapping this all back, the total time offset from clip.usda or
+        # ref.usda to the stage is a scale=2 and offset=20.
+        #
+        # When querying the default value, 1.0 is found in ref.usda:
+        #    stageValue = 1.0 * 2 + 20 = 22.0
+        #
+        # When querying time samples, they are found in clip.usda. Stage times
+        # are mapped back through the offsets as:
+        #    clipTime = (stageTime - 20) / 2
+        # So:
+        #    stageTime 30 -> clipTime 5 -> clipValue -5 -> stageValue 10
+        #    stageTime 40 -> clipTime 10 -> clipValue -10 -> stageValue 0
+        #    ...
+        self.CheckValue(attr4, expected=22.0)
+        self.CheckValue(attr4, time=19, expected=10.0)
+        self.CheckValue(attr4, time=30, expected=10.0)
+        self.CheckValue(attr4, time=40, expected=0.0)
+        self.CheckValue(attr4, time=50, expected=-10.0)
+        self.CheckValue(attr4, time=60, expected=-20.0)
+        self.assertEqual(attr4.GetTimeSamples(),
+            [20.0, 30.0, 40.0, 50.0, 60.0])
+        self.assertEqual(attr4.GetTimeSamplesInInterval(
+            Gf.Interval(-5, 25)),
+            [20.0])
 
         self.CheckTimeSamples(attr1)
         self.CheckTimeSamples(attr2)
         self.CheckTimeSamples(attr3)
+        self.CheckTimeSamples(attr4)
+
+    def test_DurationClipsWithLayerOffsets(self):
+        """Tests behavior of clips when layer offsets are involved and the
+        attributes are GfDuration values. This is analogous to
+        test_TimeCodeClipsWithLayerOffsets, except that a GfDuration is a length
+        on the time axis rather than a point: only the scale of a layer offset
+        is applied to a duration value, never the offset (a constant translation
+        cancels out of a length). With the translation-only offsets on
+        Model_1/2/3 (scale = 1), the returned duration values therefore equal
+        the raw clip values, matching test_ClipsWithLayerOffsets; only Model_4,
+        whose net offset has scale = 2, shows the values scaled."""
+        stage = Usd.Stage.Open('layerOffsets/root.usda')
+
+        model1 = stage.GetPrimAtPath('/Model_1')
+        attr1 = model1.GetAttribute('dur')
+        model2 = stage.GetPrimAtPath('/Model_2')
+        attr2 = model2.GetAttribute('dur')
+        model3 = stage.GetPrimAtPath('/Model_3')
+        attr3 = model3.GetAttribute('dur')
+        model4 = stage.GetPrimAtPath('/Model_4')
+        attr4 = model4.GetAttribute('dur')
+
+        # Default duration value is unaffected by the translation-only offset
+        # (scale = 1, offset dropped).
+        self.CheckValue(attr1, expected=Gf.Duration(1.0))
+
+        # The clip is active starting from frame +10.0 due to the offset; before
+        # that, we get the held value of the clip's first time sample. Unlike a
+        # timecode, the duration value is not shifted by the offset.
+        self.CheckValue(attr1, time=9, expected=Gf.Duration(-5.0))
+
+        # Sublayer offset of 10 frames is present, so the attribute value at
+        # frame 20 comes from the clip at frame 10, etc. The value itself is not
+        # offset.
+        self.CheckValue(attr1, time=20, expected=Gf.Duration(-10.0))
+        self.CheckValue(attr1, time=15, expected=Gf.Duration(-5.0))
+        self.CheckValue(attr1, time=10, expected=Gf.Duration(-5.0))
+        self.assertEqual(attr1.GetTimeSamples(),
+           [10.0, 15.0, 20.0, 25.0, 30.0])
+        self.assertEqual(attr1.GetTimeSamplesInInterval(
+            Gf.Interval(-10, 10)), [10.0])
+
+        # As in test_ClipsWithLayerOffsets, Model_2 authors clipTimes/clipActive
+        # in a sublayer offset by 20 frames instead of 10.
+        self.CheckValue(attr2, expected=Gf.Duration(1.0))
+        self.CheckValue(attr2, time=19, expected=Gf.Duration(-5.0))
+        self.CheckValue(attr2, time=40, expected=Gf.Duration(-20.0))
+        self.CheckValue(attr2, time=35, expected=Gf.Duration(-15.0))
+        self.CheckValue(attr2, time=30, expected=Gf.Duration(-10.0))
+        self.assertEqual(attr2.GetTimeSamples(),
+            [20.0, 25.0, 30.0, 35.0, 40.0])
+        self.assertEqual(attr2.GetTimeSamplesInInterval(
+            Gf.Interval(-17, 21)),
+            [20.0])
+
+        # Model_3 combines a reference offset of 10 with the sublayer offset of
+        # 10 for a net offset of 20 (scale = 1). The duration values are still
+        # not shifted.
+        self.CheckValue(attr3, expected=Gf.Duration(1.0))
+        self.CheckValue(attr3, time=19, expected=Gf.Duration(-5.0))
+        self.CheckValue(attr3, time=40, expected=Gf.Duration(-20.0))
+        self.CheckValue(attr3, time=35, expected=Gf.Duration(-15.0))
+        self.CheckValue(attr3, time=30, expected=Gf.Duration(-10.0))
+        self.assertEqual(attr3.GetTimeSamples(),
+            [20.0, 25.0, 30.0, 35.0, 40.0])
+        self.assertEqual(attr3.GetTimeSamplesInInterval(
+            Gf.Interval(-5, 5)),
+            [])
+
+        # Model_4's net layer offset is (offset = 20, scale = 2), so the clip's
+        # internal time t maps to stage time 2*t + 20. A duration is scaled but
+        # not offset, so the returned values are 2*clipValue (the +20 is
+        # dropped), which is what distinguishes this from the timecode case.
+        self.CheckValue(attr4, expected=Gf.Duration(2.0))
+        self.CheckValue(attr4, time=19, expected=Gf.Duration(-10.0))
+        self.CheckValue(attr4, time=30, expected=Gf.Duration(-10.0))
+        self.CheckValue(attr4, time=40, expected=Gf.Duration(-20.0))
+        self.CheckValue(attr4, time=50, expected=Gf.Duration(-30.0))
+        self.CheckValue(attr4, time=60, expected=Gf.Duration(-40.0))
+        self.assertEqual(attr4.GetTimeSamples(),
+            [20.0, 30.0, 40.0, 50.0, 60.0])
+        self.assertEqual(attr4.GetTimeSamplesInInterval(
+            Gf.Interval(-5, 25)),
+            [20.0])
+
+        self.CheckTimeSamples(attr1)
+        self.CheckTimeSamples(attr2)
+        self.CheckTimeSamples(attr3)
+        self.CheckTimeSamples(attr4)
 
     def test_ClipTimingDiscontinuities(self):
         """Tests behavior of clip timing with discontinuities to control
@@ -809,6 +1198,64 @@ class TestUsdValueClips(unittest.TestCase):
             [0, 2, 4, 6, 8])
 
         self.CheckTimeSamples(attr)
+
+        # Verify reversed timing for time-based values. The 'times' metadata
+        # maps external [0, 4] to internal [0, 4] (scale 1, offset 0), then
+        # reverses on external (4, 8], mapping to internal [4, 0] (scale -1,
+        # offset 8). A GfTimeCode is a point on the time axis, so it is retimed
+        # with the segment's full linear map (scale and offset). A GfDuration is
+        # a length, so only the scale is applied (a constant offset cancels);
+        # when the segment reverses the duration is negated and can go negative.
+        timeAttr = stage.GetAttributeAtPath('/Model.time')
+        durAttr = stage.GetAttributeAtPath('/Model.dur')
+
+        # Default values pass through unaffected by clip retiming.
+        self.CheckValue(timeAttr, expected=1.0)
+        self.CheckValue(durAttr, expected=Gf.Duration(1.0))
+
+        # Forward segment (scale 1, offset 0): timecode and duration agree.
+        self.CheckValue(timeAttr, time=0, expected=10.0)
+        self.CheckValue(timeAttr, time=1, expected=12.0)
+        self.CheckValue(timeAttr, time=2, expected=14.0)
+        self.CheckValue(timeAttr, time=3, expected=16.0)
+        self.CheckValue(timeAttr, time=4, expected=18.0)
+
+        self.CheckValue(durAttr, time=0, expected=Gf.Duration(10.0))
+        self.CheckValue(durAttr, time=1, expected=Gf.Duration(12.0))
+        self.CheckValue(durAttr, time=2, expected=Gf.Duration(14.0))
+        self.CheckValue(durAttr, time=3, expected=Gf.Duration(16.0))
+        self.CheckValue(durAttr, time=4, expected=Gf.Duration(18.0))
+
+        # Reversed segment (scale -1, offset 8): the clip authors samples at
+        # internal times 0, 2, 4, which retime to external times 4, 6, 8, so
+        # 6 and 8 are exact samples. A timecode keeps the segment's offset
+        # (8 - v): 14 -> -6, 10 -> -2. A duration is scale-only (-v): 14 -> -14,
+        # 10 -> -10, i.e. negative and diverging from the timecode.
+        self.CheckValue(timeAttr, time=6, expected=-6.0)
+        self.CheckValue(timeAttr, time=8, expected=-2.0)
+
+        self.CheckValue(durAttr, time=6, expected=Gf.Duration(-14.0))
+        self.CheckValue(durAttr, time=8, expected=Gf.Duration(-10.0))
+
+        # Values between the retimed samples are linearly interpolated by value
+        # resolution from the *converted* bracketing samples, not by evaluating
+        # a single segment's linear map at the query time. External time 5 falls
+        # between the samples at external 4 (forward: 18) and external 6
+        # (reversed: -6 for timecode, -14 for duration), so it blends across the
+        # timing peak: timecode -> (18 + -6)/2 = 6, duration -> (18 + -14)/2 = 2.
+        # External time 7 lies wholly within the reversed segment, between the
+        # samples at 6 and 8.
+        self.CheckValue(timeAttr, time=5, expected=6.0)
+        self.CheckValue(timeAttr, time=7, expected=-4.0)
+
+        self.CheckValue(durAttr, time=5, expected=Gf.Duration(2.0))
+        self.CheckValue(durAttr, time=7, expected=Gf.Duration(-12.0))
+
+        self.assertEqual(timeAttr.GetTimeSamples(), [0, 2, 4, 6, 8])
+        self.assertEqual(durAttr.GetTimeSamples(), [0, 2, 4, 6, 8])
+
+        self.CheckTimeSamples(timeAttr)
+        self.CheckTimeSamples(durAttr)
 
     def test_ClipStrengthOrderingInherits(self):
         '''Tests strength of clips when inherits provides clips with nested

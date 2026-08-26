@@ -192,14 +192,6 @@ bool Sdf_ChildrenUtils<ChildPolicy>::SetChildren(
     // treated atomically.
     SdfChangeBlock block;
 
-    // Delete Specs that aren't in the new set.
-    TF_FOR_ALL(i, childNames) {
-        if (newNamesSet.find(*i) == newNamesSet.end()) {
-            SdfPath childPath = ChildPolicy::GetChildPath(path, *i);
-            layer->_DeleteSpec(childPath);
-        }
-    }
-
     // Create a set that contains all of the old names.
     std::set<FieldType> oldKeys(childNames.begin(), childNames.end());
 
@@ -248,7 +240,17 @@ bool Sdf_ChildrenUtils<ChildPolicy>::SetChildren(
 
         layer->_MoveSpec((*i)->GetPath(), newPath);
     }
-            
+
+    // Delete specs that aren't in the new set. We do this after applying the
+    // moves above in case any of those moves were previously children of one 
+    // of the specs to be deleted.
+    TF_FOR_ALL(i, childNames) {
+        if (newNamesSet.find(*i) == newNamesSet.end()) {
+            SdfPath childPath = ChildPolicy::GetChildPath(path, *i);
+            layer->_DeleteSpec(childPath);
+        }
+    }
+
     // Store the new vector of keys and update this object's internal state.
     if (newNames.empty()) {
         layer->EraseField(path, childrenKey);

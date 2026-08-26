@@ -13,6 +13,18 @@
   VERTEX SHADER                                        
 =======================================================
 #version 450
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #extension GL_ARB_shader_draw_parameters : require
 int HgiGetBaseVertex() {
   return gl_BaseVertexARB;
@@ -959,6 +971,18 @@ float ApplyPointSizeBias(float pointSize)
   TESS CONTROL SHADER                                  
 =======================================================
 #version 450
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #define REF(space,type) inout type
 #define FORWARD_DECL(func_decl) func_decl
 #define ATOMIC_LOAD(a) (a)
@@ -1389,10 +1413,12 @@ struct Coeffs
     vec4 tangent_basis;
 };
 
+#define NUM_CURVE_CONTROL_VERTS 4
+
 struct CurveData
 {
-    vec4 Peye[4];
-    vec3 Neye[4];
+    vec4 Peye[NUM_CURVE_CONTROL_VERTS];
+    vec3 Neye[NUM_CURVE_CONTROL_VERTS];
 };
 
 float WorldToPixelWidth(MAT4 projMat, float posZ)
@@ -1490,7 +1516,7 @@ float GetScreenSpaceWidth(int index, CurveData vertexData, MAT4 projMat)
 CurveData PopulatePeye()
 {
     CurveData vertexData;
-    for (int i = 0; i < gl_MaxPatchVertices; i++) {
+    for (int i = 0; i < NUM_CURVE_CONTROL_VERTS; i++) {
         vertexData.Peye[i] = inData[i].Peye;
     }
     return vertexData;
@@ -1535,6 +1561,18 @@ void determineLODSettings(CurveData vertexData)
   TESS EVAL SHADER                                     
 =======================================================
 #version 450
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #define REF(space,type) inout type
 #define FORWARD_DECL(func_decl) func_decl
 #define ATOMIC_LOAD(a) (a)
@@ -1991,10 +2029,12 @@ struct Coeffs
     vec4 tangent_basis;
 };
 
+#define NUM_CURVE_CONTROL_VERTS 4
+
 struct CurveData
 {
-    vec4 Peye[4];
-    vec3 Neye[4];
+    vec4 Peye[NUM_CURVE_CONTROL_VERTS];
+    vec3 Neye[NUM_CURVE_CONTROL_VERTS];
 };
 
 float WorldToPixelWidth(MAT4 projMat, float posZ)
@@ -2229,7 +2269,7 @@ bool IsFlipped()
 CurveData PopulatePeye()
 {
     CurveData vertexData;
-    for (int i = 0; i < gl_MaxPatchVertices; i++) {
+    for (int i = 0; i < NUM_CURVE_CONTROL_VERTS; i++) {
         vertexData.Peye[i] = inData[i].Peye;
     }
     return vertexData;
@@ -2237,14 +2277,15 @@ CurveData PopulatePeye()
 
 
 
-FORWARD_DECL(Coeffs evaluateBasis(float u, const vec4 cv[4]));
+FORWARD_DECL(
+    Coeffs evaluateBasis(float u, const vec4 cv[NUM_CURVE_CONTROL_VERTS]));
 
 void main()
 {
     float u = gl_TessCoord.x;
     float v = .5;
 
-    const vec4 cv[4] = {
+    const vec4 cv[NUM_CURVE_CONTROL_VERTS] = {
         inData[0].Peye,
         inData[1].Peye,
         inData[2].Peye,
@@ -2269,7 +2310,7 @@ void main()
 
 
 
-Coeffs evaluateBasis(float u, const vec4 cv[4])
+Coeffs evaluateBasis(float u, const vec4 cv[NUM_CURVE_CONTROL_VERTS])
 {
   const float u2 = u*u;
   const float u3 = u2*u;
@@ -2323,6 +2364,18 @@ vec4 InterpolatePrimvar(vec4 inPv0, vec4 inPv1, vec4 inPv2, vec4 inPv3,
   FRAGMENT SHADER                                      
 =======================================================
 #version 450
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #extension GL_EXT_fragment_shader_barycentric: require
 #define REF(space,type) inout type
 #define FORWARD_DECL(func_decl) func_decl

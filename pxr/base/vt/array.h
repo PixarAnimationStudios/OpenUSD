@@ -1120,13 +1120,41 @@ hash_value(VtArray<ELEM> const &array) {
 template <typename T>
 struct VtIsArray< VtArray <T> > : public std::true_type {};
 
-template <class T>
-struct Vt_ArrayOpHelp {
-    static T Add(T l, T r) { return l + r; }
-    static T Sub(T l, T r) { return l - r; }
-    static T Mul(T l, T r) { return l * r; }
-    static T Div(T l, T r) { return l / r; }
-    static T Mod(T l, T r) { return l % r; }
+// Per-operation functor structs.  The template operator() uses a trailing
+// return type (-> decltype(l op r)) so that the result type is deduced *and*
+// an ill-formed element op (e.g. GfTimeCode * GfTimeCode) is a substitution
+// failure in the immediate context -- this is what makes Vt_IsValidArrayBinOp
+// a real SFINAE gate rather than a hard error.  The bool overloads preserve
+// existing Hyrum's-Law behavior for bool arrays.
+struct Vt_AddOp {
+    template <class L, class R>
+    auto operator()(L const &l, R const &r) const -> decltype(l + r)
+        { return l + r; }
+    bool operator()(bool l, bool r) const { return l | r; }
+};
+struct Vt_SubOp {
+    template <class L, class R>
+    auto operator()(L const &l, R const &r) const -> decltype(l - r)
+        { return l - r; }
+    bool operator()(bool l, bool r) const { return l ^ r; }
+};
+struct Vt_MulOp {
+    template <class L, class R>
+    auto operator()(L const &l, R const &r) const -> decltype(l * r)
+        { return l * r; }
+    bool operator()(bool l, bool r) const { return l & r; }
+};
+struct Vt_DivOp {
+    template <class L, class R>
+    auto operator()(L const &l, R const &r) const -> decltype(l / r)
+        { return l / r; }
+    bool operator()(bool l, bool r) const { return l; }
+};
+struct Vt_ModOp {
+    template <class L, class R>
+    auto operator()(L const &l, R const &r) const -> decltype(l % r)
+        { return l % r; }
+    bool operator()(bool, bool) const { return false; }
 };
 
 template <class T>
@@ -1140,15 +1168,6 @@ struct Vt_ArrayOpHelpScalar {
 // These operations on bool-arrays are highly questionable, but this preserves
 // existing behavior in the name of Hyrum's Law.
 template <>
-struct Vt_ArrayOpHelp<bool> {
-    static bool Add(bool l, bool r) { return l | r; }
-    static bool Sub(bool l, bool r) { return l ^ r; }
-    static bool Mul(bool l, bool r) { return l & r; }
-    static bool Div(bool l, bool r) { return l; }
-    static bool Mod(bool l, bool r) { return false; }
-};
-
-template <>
 struct Vt_ArrayOpHelpScalar<bool> {
     static bool Mul(bool l, double r) { return l && (r != 0.0); }
     static bool Mul(double l, bool r) { return (l != 0.0) && r; }
@@ -1156,35 +1175,106 @@ struct Vt_ArrayOpHelpScalar<bool> {
     static bool Div(double l, bool r) { return !r || (l != 0.0); }
 };
 
-#define VTOPERATOR_CPPARRAY(op, opName)                                        \
-    template <class T>                                                         \
-    VtArray<T>                                                                 \
-    operator op (VtArray<T> const &lhs, VtArray<T> const &rhs)                 \
+// Trait restricting heterogeneous array-array operand pairs.  Homogeneous
+// (L == R) is always allowed, preserving all existing behavior.  For
+// heterogeneous operands, only pairs from the GfTimeCode/GfDuration family
+// are permitted -- this prevents accidental silent cross-numeric promotion
+// (e.g. VtArray<int> + VtArray<float>).
+template <class T> struct Vt_IsTimeType : std::false_type {};
+template <> struct Vt_IsTimeType<GfTimeCode> : std::true_type {};
+template <> struct Vt_IsTimeType<GfDuration> : std::true_type {};
+
+template <class L, class R>
+struct Vt_ArrayBinOpPairAllowed
+    : std::bool_constant<std::is_same_v<L, R> ||
+          (Vt_IsTimeType<L>::value && Vt_IsTimeType<R>::value)> {};
+
+// Deduce the result element type produced by Fn(L, R).
+template <class Fn, class L, class R>
+using Vt_ArrayBinOpDeducedT =
+    decltype(std::declval<Fn>()(std::declval<L const &>(),
+                                std::declval<R const &>()));
+
+// For homogeneous L == R on non-time types, return L exactly (prevents
+// char/short integer-promotion when the element op promotes to int).
+// For the time family, always use the deduced type even when L == R, because
+// GfTimeCode - GfTimeCode -> GfDuration (not GfTimeCode).
+template <class Fn, class L, class R>
+using Vt_ArrayBinOpResult =
+    std::conditional_t<
+        std::is_same_v<L, R> && !Vt_IsTimeType<L>::value,
+        L,
+        Vt_ArrayBinOpDeducedT<Fn, L, R>>;
+
+// SFINAE gate: the operator exists iff (a) the element op is well-formed and
+// (b) the operand pair is allowed.  std::void_t substitution failure on (a)
+// removes operators for ill-formed element ops (e.g. TimeCode * TimeCode).
+template <class Fn, class L, class R, class = void>
+struct Vt_IsValidArrayBinOp : std::false_type {};
+template <class Fn, class L, class R>
+struct Vt_IsValidArrayBinOp<Fn, L, R,
+        std::void_t<Vt_ArrayBinOpDeducedT<Fn, L, R>>>
+    : Vt_ArrayBinOpPairAllowed<L, R> {};
+
+// Same gate for scalar (array op scalar) pairs.
+template <class ArrElem, class Scalar>
+struct Vt_ArrayScalarOpPairAllowed
+    : std::bool_constant<std::is_same_v<ArrElem, Scalar> ||
+          (Vt_IsTimeType<ArrElem>::value && Vt_IsTimeType<Scalar>::value)> {};
+
+// Result element type for scalar ops.  For homogeneous non-time types, use
+// ArrElem exactly (prevents char promotion to int).  For the time family,
+// always use the deduced type so that e.g. VtArray<GfTimeCode> - GfTimeCode
+// correctly returns VtArray<GfDuration>.
+template <class DeducedT, class ArrElem, class Scalar>
+using Vt_ArrayScalarBinOpResult =
+    std::conditional_t<
+        std::is_same_v<ArrElem, Scalar> && !Vt_IsTimeType<ArrElem>::value,
+        ArrElem,
+        DeducedT>;
+
+// Two-type array-array operator.  The result element type is deduced from the
+// functor's return type.  For homogeneous L==R the result element is L (no
+// integer promotion), for heterogeneous time-family pairs it is the deduced
+// type (e.g. GfTimeCode - GfTimeCode -> GfDuration).  Ill-formed element ops
+// (e.g. TimeCode * TimeCode) are SFINAE-removed rather than hard-erroring.
+#define VTOPERATOR_CPPARRAY(op, Functor)                                       \
+    template <class L, class R>                                                \
+    auto                                                                       \
+    operator op (VtArray<L> const &lhs, VtArray<R> const &rhs)                 \
+        -> std::enable_if_t<                                                   \
+               Vt_IsValidArrayBinOp<Functor, L, R>::value,                     \
+               VtArray<Vt_ArrayBinOpResult<Functor, L, R>>>                    \
     {                                                                          \
-        using Op = Vt_ArrayOpHelp<T>;                                          \
+        using RetElem = Vt_ArrayBinOpResult<Functor, L, R>;                    \
+        Functor fn;                                                            \
         /* accept empty vecs */                                                \
         if (!lhs.empty() && !rhs.empty() && lhs.size() != rhs.size()) {        \
             TF_CODING_ERROR("Non-conforming inputs for operator %s", #op);     \
-            return VtArray<T>();                                               \
+            return VtArray<RetElem>();                                         \
         }                                                                      \
         /* promote empty vecs to vecs of zeros */                              \
-        const bool leftEmpty = lhs.size() == 0, rightEmpty = rhs.size() == 0;  \
-        VtArray<T> ret(leftEmpty ? rhs.size() : lhs.size());                   \
-        T zero = VtZero<T>();                                                  \
+        const bool leftEmpty  = lhs.size() == 0;                               \
+        const bool rightEmpty = rhs.size() == 0;                               \
+        VtArray<RetElem> ret(leftEmpty ? rhs.size() : lhs.size());             \
+        L lz = VtZero<L>(); R rz = VtZero<R>();                                \
         if (leftEmpty) {                                                       \
             std::transform(                                                    \
                 rhs.begin(), rhs.end(), ret.begin(),                           \
-                [zero](T const &r) { return Op:: opName (zero, r); });         \
+                [&fn, lz](R const &r) {                                        \
+                    return static_cast<RetElem>(fn(lz, r)); });                \
         }                                                                      \
         else if (rightEmpty) {                                                 \
             std::transform(                                                    \
                 lhs.begin(), lhs.end(), ret.begin(),                           \
-                [zero](T const &l) { return Op:: opName (l, zero); });         \
+                [&fn, rz](L const &l) {                                        \
+                    return static_cast<RetElem>(fn(l, rz)); });                \
         }                                                                      \
         else {                                                                 \
             std::transform(                                                    \
                 lhs.begin(), lhs.end(), rhs.begin(), ret.begin(),              \
-                [](T const &l, T const &r) { return Op:: opName (l, r); });    \
+                [&fn](L const &l, R const &r) {                                \
+                    return static_cast<RetElem>(fn(l, r)); });                 \
         }                                                                      \
         return ret;                                                            \
     }
@@ -1194,12 +1284,15 @@ ARCH_PRAGMA_FORCING_TO_BOOL
 ARCH_PRAGMA_UNSAFE_USE_OF_BOOL
 ARCH_PRAGMA_UNARY_MINUS_ON_UNSIGNED
 
-VTOPERATOR_CPPARRAY(+, Add);
-VTOPERATOR_CPPARRAY(-, Sub);
-VTOPERATOR_CPPARRAY(*, Mul);
-VTOPERATOR_CPPARRAY(/, Div);
-VTOPERATOR_CPPARRAY(%, Mod);
-    
+VTOPERATOR_CPPARRAY(+, Vt_AddOp)
+VTOPERATOR_CPPARRAY(-, Vt_SubOp)
+VTOPERATOR_CPPARRAY(*, Vt_MulOp)
+VTOPERATOR_CPPARRAY(/, Vt_DivOp)
+VTOPERATOR_CPPARRAY(%, Vt_ModOp)
+
+// Do not use decltype for the result of unary minus. Types smaller than int are
+// promoted to int by arithmetic operations but we want to return the same type
+// as the input array.
 template <class T>
 VtArray<T>
 operator-(VtArray<T> const &a) {
@@ -1211,29 +1304,49 @@ operator-(VtArray<T> const &a) {
 
 ARCH_PRAGMA_POP
 
-// Operations on scalars and arrays
-// These are free functions defined in Array.h
-#define VTOPERATOR_CPPSCALAR(op,opName)                                 \
-    template<typename T>                                                \
-    VtArray<T> operator op (T const &scalar, VtArray<T> const &arr) {   \
-        using Op = Vt_ArrayOpHelp<T>;                                   \
-        VtArray<T> ret(arr.size());                                     \
-        std::transform(arr.begin(), arr.end(), ret.begin(),             \
-                       [&scalar](T const &aObj) {                       \
-                           return Op:: opName (scalar, aObj);           \
-                       });                                              \
-        return ret;                                                     \
-    }                                                                   \
-    template<typename T>                                                \
-    VtArray<T> operator op (VtArray<T> const &arr, T const &scalar) {   \
-        using Op = Vt_ArrayOpHelp<T>;                                   \
-        VtArray<T> ret(arr.size());                                     \
-        std::transform(arr.begin(), arr.end(), ret.begin(),             \
-                       [&scalar](T const &aObj) {                       \
-                           return Op:: opName (aObj, scalar);           \
-                       });                                              \
-        return ret;                                                     \
-    } 
+// Operations on scalars and arrays.
+// The two-type version (ArrT, ScalarT) supports heterogeneous pairs in the
+// GfTimeCode/GfDuration family (e.g. VtArray<GfTimeCode> + GfDuration).
+// For homogeneous ArrT==ScalarT the result stays ArrT (no integer promotion).
+// The pair gate excludes double from Vt_IsTimeType, so arr*2.0 continues to
+// resolve exclusively through the VTOPERATOR_CPPSCALAR_DOUBLE path below.
+#define VTOPERATOR_CPPSCALAR(op, Functor)                                     \
+    template <class ArrT, class ScalarT>                                      \
+    auto operator op (ScalarT const &scalar, VtArray<ArrT> const &arr)        \
+        -> std::enable_if_t<                                                  \
+               Vt_ArrayScalarOpPairAllowed<ArrT, ScalarT>::value,             \
+               VtArray<Vt_ArrayScalarBinOpResult<                             \
+                   Vt_ArrayBinOpDeducedT<Functor, ScalarT, ArrT>,             \
+                   ArrT, ScalarT>>>                                           \
+    {                                                                         \
+        Functor fn;                                                           \
+        using RetElem = Vt_ArrayScalarBinOpResult<                            \
+            Vt_ArrayBinOpDeducedT<Functor, ScalarT, ArrT>, ArrT, ScalarT>;    \
+        VtArray<RetElem> ret(arr.size());                                     \
+        std::transform(arr.begin(), arr.end(), ret.begin(),                   \
+                       [&scalar, &fn](ArrT const &aObj) {                     \
+                           return static_cast<RetElem>(fn(scalar, aObj));     \
+                       });                                                    \
+        return ret;                                                           \
+    }                                                                         \
+    template <class ArrT, class ScalarT>                                      \
+    auto operator op (VtArray<ArrT> const &arr, ScalarT const &scalar)        \
+        -> std::enable_if_t<                                                  \
+               Vt_ArrayScalarOpPairAllowed<ArrT, ScalarT>::value,             \
+               VtArray<Vt_ArrayScalarBinOpResult<                             \
+                   Vt_ArrayBinOpDeducedT<Functor, ArrT, ScalarT>,             \
+                   ArrT, ScalarT>>>                                           \
+    {                                                                         \
+        Functor fn;                                                           \
+        using RetElem = Vt_ArrayScalarBinOpResult<                            \
+            Vt_ArrayBinOpDeducedT<Functor, ArrT, ScalarT>, ArrT, ScalarT>;    \
+        VtArray<RetElem> ret(arr.size());                                     \
+        std::transform(arr.begin(), arr.end(), ret.begin(),                   \
+                       [&scalar, &fn](ArrT const &aObj) {                     \
+                           return static_cast<RetElem>(fn(aObj, scalar));     \
+                       });                                                    \
+        return ret;                                                           \
+    }
 
 // define special-case operators on arrays and doubles - except if the array
 // holds doubles, in which case we already defined the operator (with
@@ -1267,13 +1380,13 @@ ARCH_PRAGMA_PUSH
 ARCH_PRAGMA_FORCING_TO_BOOL
 ARCH_PRAGMA_UNSAFE_USE_OF_BOOL
 ARCH_PRAGMA_UNARY_MINUS_ON_UNSIGNED
-VTOPERATOR_CPPSCALAR(+, Add)
-VTOPERATOR_CPPSCALAR(-, Sub)
-VTOPERATOR_CPPSCALAR(*, Mul)
+VTOPERATOR_CPPSCALAR(+, Vt_AddOp)
+VTOPERATOR_CPPSCALAR(-, Vt_SubOp)
+VTOPERATOR_CPPSCALAR(*, Vt_MulOp)
 VTOPERATOR_CPPSCALAR_DOUBLE(*, Mul)
-VTOPERATOR_CPPSCALAR(/, Div)
+VTOPERATOR_CPPSCALAR(/, Vt_DivOp)
 VTOPERATOR_CPPSCALAR_DOUBLE(/, Div)
-VTOPERATOR_CPPSCALAR(%, Mod)
+VTOPERATOR_CPPSCALAR(%, Vt_ModOp)
 ARCH_PRAGMA_POP
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1430,12 +1430,22 @@ UsdNamespaceEditor::_EditProcessor::_GatherPathBearingFieldEditsForStage(
             continue;
         }
 
-        // First we're only going to look at specs that originated from
-        // the root node of the prim index (local opinions). These specs can 
-        // be edited to update the relevant path-bearing fields.
+        // First we're only going to look at specs that originated from nodes 
+        // within the local layer stack, since these specs can be edited to 
+        // update the relevant path-bearing fields.
         for (const auto &specInfo : *specs) {
-            // Stop when we hit a non-root node as the specs are in strength order.
-            if (!specInfo.originatingNode.IsRootNode()) {
+            // We only care about local and variant opinions here as other arcs
+            // within the local layer stack will have their specs fixed up 
+            // directly.
+            if (specInfo.originatingNode.GetPath().StripAllVariantSelections() 
+                != specInfo.originatingNode.GetRootNode().GetPath()) {
+                continue;
+            }
+
+            // We only want opinions from the root layer stack. Since the specs
+            // are in strength order, if we have reached a layer not in the 
+            // local layer stack, we are done.
+            if (!stage->HasLocalLayer(specInfo.layer)) {
                 break;
             }
 
@@ -1497,6 +1507,13 @@ UsdNamespaceEditor::_EditProcessor::_GatherPathBearingFieldEditsForStage(
             // Stop when we hit a spec originating from the root node
             if (specInfo.originatingNode.IsRootNode()) {
                 break;
+            }
+
+            // Skip if the spec is from a local variant, as we have handled 
+            // it above and it won't require a relocate.
+            if (specInfo.originatingNode.GetPath().StripAllVariantSelections() 
+                == specInfo.originatingNode.GetRootNode().GetPath()) {
+                continue;
             }
 
             SdfPath pathAtIntroduction = rIt->originatingNode.GetPathAtIntroduction();

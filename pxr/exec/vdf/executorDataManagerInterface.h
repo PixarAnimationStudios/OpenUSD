@@ -168,7 +168,7 @@ protected:
         return _Self()->Untouch(handle);
     }
 
-    /// Clears the executor data for a specific output
+    /// Clears the buffer data for a specific output.
     ///
     void _ClearDataForOutput(const VdfOutput &output) {
         return _Self()->ClearDataForOutput(output);

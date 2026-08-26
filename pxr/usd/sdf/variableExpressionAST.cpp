@@ -144,16 +144,40 @@ LiteralNode::_GetExpressionBuilder() const
         }, _value);
 }
 
+void
+VariableNode::SetFallbackValue(const Node& node) {
+    // A fallback may be a literal or a list. This mirrors the types accepted
+    // by the parser's VariableFallbackValue rule.
+    if (const LiteralNode* literalNode = node.As<LiteralNode>()) {
+        if (std::holds_alternative<std::monostate>(literalNode->GetValue())) {
+            TF_CODING_ERROR("VariableNode: fallback value should not be None.");
+            return;
+        }
+    }
+    else if (!node.As<ListNode>()) {
+        TF_CODING_ERROR(
+            "VariableNode: fallback must be a literal or list.");
+        return;
+    }
+
+    _fallbackValue = node.Clone();
+}
+
 Node*
 VariableNode::_Clone() const
 {
-    return new VariableNode(std::string(_name));
+    std::unique_ptr<Node> fallbackClone = _fallbackValue ?
+        _fallbackValue->Clone() : nullptr;
+    return new VariableNode(std::string(_name), std::move(fallbackClone));
 }
 
 SdfVariableExpression::Builder
 VariableNode::_GetExpressionBuilder() const
 {
-    return SdfVariableExpression::MakeVariable(_name);
+    return _fallbackValue ? 
+        SdfVariableExpression::MakeVariable(_name, 
+            _fallbackValue->GetExpressionBuilder()) :
+        SdfVariableExpression::MakeVariable(_name);
 }
 
 SdfVariableExpression::ListBuilder

@@ -109,12 +109,12 @@ bool
 {% for attrName in cls.attrOrder %}
 {% set attr = cls.attrs[attrName] %}
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
-            {{ tokensPrefix }}Tokens->{{ attr.name }}),
+            {{ tokensPrefix }}Tokens->{{ attr.tokenId }}),
 {% endfor %}
 {% for relName in cls.relOrder %}
 {% set rel = cls.rels[relName] %}
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
-            {{ tokensPrefix }}Tokens->{{ rel.name }}),
+            {{ tokensPrefix }}Tokens->{{ rel.tokenId }}),
 {% endfor %}
     };
 
@@ -245,9 +245,9 @@ UsdAttribute
     return GetPrim().GetAttribute(
         _GetNamespacedPropertyName(
             GetName(),
-            {{ tokensPrefix }}Tokens->{{ attr.name }}));
+            {{ tokensPrefix }}Tokens->{{ attr.tokenId }}));
 {% else %}
-    return GetPrim().GetAttribute({{ tokensPrefix }}Tokens->{{ attr.name }});
+    return GetPrim().GetAttribute({{ tokensPrefix }}Tokens->{{ attr.tokenId }});
 {% endif %}
 }
 {% endif %}
@@ -259,9 +259,9 @@ UsdAttribute
     return UsdSchemaBase::_CreateAttr(
                        _GetNamespacedPropertyName(
                             GetName(),
-                           {{ tokensPrefix }}Tokens->{{ attr.name }}),
+                           {{ tokensPrefix }}Tokens->{{ attr.tokenId }}),
 {% else %}
-    return UsdSchemaBase::_CreateAttr({{ tokensPrefix }}Tokens->{{ attr.name }},
+    return UsdSchemaBase::_CreateAttr({{ tokensPrefix }}Tokens->{{ attr.tokenId }},
 {% endif %}
                        {{ attr.usdType }},
                        /* custom = */ {{ "true" if attr.custom else "false" }},
@@ -284,9 +284,9 @@ UsdRelationship
     return GetPrim().GetRelationship(
         _GetNamespacedPropertyName(
             GetName(),
-            {{ tokensPrefix }}Tokens->{{ rel.name }}));
+            {{ tokensPrefix }}Tokens->{{ rel.tokenId }}));
 {% else %}
-    return GetPrim().GetRelationship({{ tokensPrefix }}Tokens->{{ rel.name }});
+    return GetPrim().GetRelationship({{ tokensPrefix }}Tokens->{{ rel.tokenId }});
 {% endif %}
 }
 {% endif %}
@@ -298,9 +298,9 @@ UsdRelationship
     return GetPrim().CreateRelationship(
                        _GetNamespacedPropertyName(
                            GetName(),
-                           {{ tokensPrefix }}Tokens->{{ rel.name }}),
+                           {{ tokensPrefix }}Tokens->{{ rel.tokenId }}),
 {% else %}
-    return GetPrim().CreateRelationship({{ tokensPrefix }}Tokens->{{rel.name}},
+    return GetPrim().CreateRelationship({{ tokensPrefix }}Tokens->{{rel.tokenId}},
 {% endif %}
                        /* custom = */ {{ "true" if rel.custom else "false" }});
 }
@@ -330,7 +330,7 @@ const TfTokenVector&
 {% for attrName in cls.attrOrder %}
 {% set attr = cls.attrs[attrName] %}
 {% if attr.apiName != '' %}
-        {{ tokensPrefix }}Tokens->{{ attr.name }},
+        {{ tokensPrefix }}Tokens->{{ attr.tokenId }},
 {% endif %}
 {% endfor %}
     };

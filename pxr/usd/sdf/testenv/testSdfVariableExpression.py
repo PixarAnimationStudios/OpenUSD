@@ -159,7 +159,107 @@ class TestSdfVariableExpression(unittest.TestCase):
         # Test invalid expressions
         self.assertInvalid("`${FO-O}`")
         self.assertInvalid("`${FOO`")
-        
+
+    def test_VarExpressionWithFallbacks(self):
+        """Test variable expressions with fallback values consisting of just a
+        top-level substitution."""
+
+        self.assertEvaluates(
+            "`${FOO:1234}`", {},
+            expected=1234,
+            expectedUsedVars=["FOO"])
+
+        self.assertEvaluates(
+            "`${FOO:'usd'}`", {},
+            expected='usd',
+            expectedUsedVars=["FOO"])
+
+        self.assertEvaluates(
+            "`${FOO:true}`", {},
+            expected=True,
+            expectedUsedVars=["FOO"])
+
+        # A "${" in a fallback string can be escaped to produce a literal;
+        # it is not treated as a variable reference.
+        self.assertEvaluates(
+            r"`${FOO:'\${VAR}_value'}`", {},
+            expected="${VAR}_value",
+            expectedUsedVars=["FOO"])
+
+    def test_VarExpressionWithListFallbacks(self):
+        """Test variable expressions whose fallback value is a list."""
+
+        self.assertEvaluates(
+            "`${FOO:[1, 2, 3]}`", {},
+            expected=Vt.Int64Array([1, 2, 3]),
+            expectedUsedVars=["FOO"])
+
+        self.assertEvaluates(
+            "`${FOO:['a', 'b']}`", {},
+            expected=Vt.StringArray(['a', 'b']),
+            expectedUsedVars=["FOO"])
+
+        self.assertEvaluates(
+            "`${FOO:[]}`", {},
+            expected=[],
+            expectedUsedVars=["FOO"])
+
+        self.assertEvaluates(
+            "`${FOO:[1, 2, 3]}`", {"FOO" : Vt.Int64Array([4, 5])},
+            expected=Vt.Int64Array([4, 5]),
+            expectedUsedVars=["FOO"])
+
+    def test_VarExpressionWithInvalidFallbacks(self):
+        # Fallback values only support literals, or lists of literals
+        self.assertInvalid("`${FOO:if(true, 10, 20)}`")
+        self.assertInvalid("`${FOO:if(${B}, 1, 0)}`")
+        self.assertInvalid("`\"${FOO:if(true, '/shots', '/prod')}\"`")
+        self.assertInvalid("`${FOO:${BAR}}`")
+        self.assertInvalid("`${FOO:None}`")
+        self.assertInvalid("`${FOO:[${BAR}, 2, 3]}`")
+        self.assertInvalid("`${FOO:[if(true, 1, 2), 3]}`")
+        self.assertInvalid("`${FOO:['a', None]}`")
+
+        # Inline variable references are not allowed within a fallback string,
+        self.assertInvalid("`${FOO:'${BAR}_x'}`")
+        self.assertInvalid("`\"${FOO:'${BAR}_x'}\"`")
+        self.assertInvalid("`${FOO:['a_${BAR}', 'b']}`")
+
+        errors = Sdf.VariableExpression("`${FOO:'${BAR}_x'}`").GetErrors()
+        self.assertTrue(any(
+            "Variable references are not allowed in fallback string values"
+            in e for e in errors), errors)
+
+    def test_VarExpressionWithFallbacksInString(self):
+        """Test fallback values on variable references embedded 
+        within a string"""
+
+        self.assertEvaluates(
+            "`\"${FOO:'/shots'}/shot.usda\"`", {},
+            expected="/shots/shot.usda",
+            expectedUsedVars=["FOO"])
+
+        self.assertEvaluates(
+            "`\"${FOO:'/shots'}/shot.usda\"`", {"FOO" : "/prod"},
+            expected="/prod/shot.usda",
+            expectedUsedVars=["FOO"])
+
+        self.assertInvalid("`\"${FOO:'${BAR}_x'}\"`")
+
+        self.assertEvaluates(
+            r'''`"${FOO:'\${BAR}_x'}"`''', {},
+            expected="${BAR}_x",
+            expectedUsedVars=["FOO"])
+
+        self.assertEvaluationErrors(
+            "`\"${B:42}\"`", {},
+            ["String value required for substituting variable 'B', got int."])
+
+        # A list fallback in a string context cannot be substituted
+        self.assertEvaluationErrors(
+            "`\"${B:[1, 2]}\"`", {},
+            ["String value required for substituting variable 'B', got list."])
+
     def test_StringExpressions(self):
         """Test string expressions."""
 

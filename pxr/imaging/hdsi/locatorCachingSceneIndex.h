@@ -186,14 +186,17 @@ protected:
         TfToken const& primTypeToCache);
 
     void _PrimsAdded(
-            const HdSceneIndexBase &sender,
-            const HdSceneIndexObserver::AddedPrimEntries &entries) override;
+        const HdSceneIndexBase &sender,
+        const HdSceneIndexObserver::AddedPrimEntries &entries) override;
     void _PrimsRemoved(
-            const HdSceneIndexBase &sender,
-            const HdSceneIndexObserver::RemovedPrimEntries &entries) override;
+        const HdSceneIndexBase &sender,
+        const HdSceneIndexObserver::RemovedPrimEntries &entries) override;
     void _PrimsDirtied(
-            const HdSceneIndexBase &sender,
-            const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
+        const HdSceneIndexBase &sender,
+        const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
+    void _SystemMessage(
+        const TfToken& messageType,
+        const HdDataSourceBaseHandle& args) override;
 
     // A data source that delegates back to HdsiLocatorCachingSceneIndex, allowing
     // it to manage invalidation.

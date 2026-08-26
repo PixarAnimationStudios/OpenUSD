@@ -37,7 +37,7 @@ Exec_Compiler::Exec_Compiler(
     , _runtime(runtime)
 {}
 
-std::vector<VdfMaskedOutput>
+std::pair<std::vector<VdfMaskedOutput>, std::vector<const EfLeafNode*>>
 Exec_Compiler::Compile(TfSpan<const ExecValueKey> valueKeys)
 {
     TRACE_FUNCTION();
@@ -46,14 +46,16 @@ Exec_Compiler::Compile(TfSpan<const ExecValueKey> valueKeys)
     // This begins a new round of compilation.
     _program->BeginCompilation();
 
-    // Note that the returned vector should always have the same size as
-    // valueKeys.  Any key that failed to compile should yield a null masked
-    // output at the corresponding index in the result.
+    // Note that the returned vectors must have the same size as valueKeys. Any
+    // key that fails to compile should yield a null masked output and a null
+    // leaf node pointer at the corresponding index in the result.
     std::vector<VdfMaskedOutput> leafOutputs(valueKeys.size());
+    std::vector<const EfLeafNode*> leafNodes(valueKeys.size());
 
     // Process requested value keys in parallel and spawn compilation tasks.
     WorkWithScopedDispatcher(
-        [valueKeys, &leafOutputs, &stage = _stage, &program = _program]
+        [valueKeys, &leafOutputs, &leafNodes,
+         &stage = _stage, &program = _program]
         (WorkDispatcher &dispatcher) {
 
         // Compiler state shared between all compilation tasks.
@@ -66,12 +68,12 @@ Exec_Compiler::Compile(TfSpan<const ExecValueKey> valueKeys)
             const auto busyScope = state.GetTaskCycleDetector().NewBusyScope();
 
             WorkParallelForN(valueKeys.size(),
-                [&state, valueKeys, &leafOutputs](size_t b, size_t e) {
+            [&state, valueKeys, &leafOutputs, &leafNodes](size_t b, size_t e) {
                 const auto busyScope =
                     state.GetTaskCycleDetector().NewBusyScope();
                 for (size_t i = b; i != e; ++i) {
                     Exec_CompilationState::NewTask<Exec_LeafCompilationTask>(
-                        state, valueKeys[i], &leafOutputs[i]);
+                        state, valueKeys[i], &leafOutputs[i], &leafNodes[i]);
                 }
             });
 
@@ -135,7 +137,7 @@ Exec_Compiler::Compile(TfSpan<const ExecValueKey> valueKeys)
             });
     }
 
-    return leafOutputs;
+    return {std::move(leafOutputs), std::move(leafNodes)};
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

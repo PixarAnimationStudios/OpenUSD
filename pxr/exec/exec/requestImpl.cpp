@@ -185,16 +185,28 @@ void
 Exec_RequestImpl::DidInvalidateComputedValues(
     const Exec_DisconnectedInputsInvalidationResult &invalidationResult)
 {
-    if (!_valueCallback || _leafOutputs.empty()) {
+    if (_leafOutputs.empty()) {
         TF_DEBUG(EXEC_REQUEST_INVALIDATION).Msg(
             "[%s] %s\n", TF_FUNC_NAME().c_str(),
-            !_valueCallback
-            ? "No value invalidation callback"
-            : "Request has not been prepared");
+            "Request has not been prepared");
         return;
     }
 
     TRACE_FUNCTION();
+
+    if (!_valueCallback) {
+        TF_DEBUG(EXEC_REQUEST_INVALIDATION).Msg(
+            "[%s] %s\n", TF_FUNC_NAME().c_str(),
+            "No value invalidation callback");
+
+        // If the callback is empty, it is still necessary to invalidate 
+        // the schedule if any of the disconnected leaf nodes correspond to 
+        // value keys in this request. However, we can skip building the set 
+        // of invalid indices, since there is no callback to invoke. 
+        _InvalidateScheduleForLeafNodes(
+            invalidationResult.disconnectedLeafNodes);
+        return;
+    }
 
     // For topological edits like disconnected inputs we always invalidate over
     // the entire time range. This is considered new invalidation if the last
@@ -210,11 +222,18 @@ Exec_RequestImpl::DidInvalidateComputedValues(
     ExecRequestIndexSet invalidIndices;
     _InvalidateLeafOutputs(
         isNewlyInvalidInterval,
-        invalidationResult.invalidLeafNodes,
+        invalidationResult.disconnectedLeafNodes,
         &invalidIndices);
+
+    // If any disconnected leaf nodes correspond to value keys in the request, 
+    // invalidate the schedule to signal that it needs to be rebuilt. 
+    if (!invalidIndices.empty()) {
+         _schedule.reset();
+    }
+    
     _InvalidateLeafOutputs(
         isNewlyInvalidInterval,
-        invalidationResult.disconnectedLeafNodes,
+        invalidationResult.invalidLeafNodes,
         &invalidIndices);
 
     // Only invoke the invalidation callback if there are any invalid indices
@@ -390,12 +409,18 @@ Exec_RequestImpl::_Compile(
     // avoid repopulating _leafOutputs.
 
     TRACE_FUNCTION();
+    TfAutoMallocTag tag("Exec", __ARCH_PRETTY_FUNCTION__);
+
+    std::vector<const EfLeafNode*> leafNodes;
 
     // Compile the value keys.
-    WorkWithScopedDispatcher([this, valueKeys] (WorkDispatcher &d) {
+    WorkWithScopedDispatcher([this, valueKeys, &leafNodes] (WorkDispatcher &d) {
 
-        d.Run([valueKeys, system = _system, &leafOutputs = _leafOutputs] {
-            leafOutputs = system->_Compile(valueKeys);
+        d.Run([valueKeys, system = _system,
+               &leafOutputs = _leafOutputs, &leafNodes] {
+            auto leafOutputsAndNodes = system->_Compile(valueKeys);
+            leafOutputs = std::move(leafOutputsAndNodes.first);
+            leafNodes = std::move(leafOutputsAndNodes.second);
         });
 
         {
@@ -447,7 +472,7 @@ Exec_RequestImpl::_Compile(
     // We must greedily build the leaf node to index map. When requests are
     // informed of network edits, some leaf nodes may have already been
     // disconnected from their source output.
-    _BuildLeafNodeToIndexMap();
+    _BuildLeafNodeToIndexMap(valueKeys, leafNodes);
 }
 
 void
@@ -590,32 +615,29 @@ Exec_RequestImpl::_Discard()
 }
 
 void
-Exec_RequestImpl::_BuildLeafNodeToIndexMap()
+Exec_RequestImpl::_BuildLeafNodeToIndexMap(
+    TfSpan<const ExecValueKey> valueKeys,
+    const std::vector<const EfLeafNode*> &leafNodes)
 {
-    // We only need to populate this map for client notification, so if there
-    // are no callbacks registered, we can avoid doing the work.
-    if (!_valueCallback && !_timeCallback) {
+    const Exec_Program *const program = _system->_program.get();
+    if (!program) {
         return;
     }
 
     TRACE_FUNCTION();
+    TfAutoMallocTag tag("Exec", __ARCH_PRETTY_FUNCTION__);
 
     // Invalid leaf nodes will need to be converted into indices for client
     // notification. Here, we build a data structure for efficient lookup.
     _leafNodeToIndex.clear();
-    _leafNodeToIndex.reserve(_leafOutputs.size());
-    for (size_t i = 0; i < _leafOutputs.size(); ++i) {
-        const VdfMaskedOutput &sourceOutput = _leafOutputs[i];
-        if (!sourceOutput) {
+    _leafNodeToIndex.reserve(valueKeys.size());
+    for (size_t i = 0; i < valueKeys.size(); ++i) {
+        const EfLeafNode *const leafNode = leafNodes[i];
+        if (!leafNode) {
             continue;
         }
-        for (const VdfConnection *const connection :
-                sourceOutput.GetOutput()->GetConnections()) {
-            const VdfNode &targetNode = connection->GetTargetNode();
-            if (EfLeafNode::IsALeafNode(targetNode)) {
-                _leafNodeToIndex.emplace(targetNode.GetId(), i);
-            }
-        }
+
+        _leafNodeToIndex.emplace(leafNode->GetId(), i);
     }
 }
 
@@ -648,6 +670,24 @@ Exec_RequestImpl::_InvalidateLeafOutputs(
             invalidIndices->insert(index);
         }
         _lastInvalidatedIndices.Set(index); 
+    }
+}
+
+void Exec_RequestImpl::_InvalidateScheduleForLeafNodes(
+    TfSpan<const VdfNode *const> disconnectedLeafNodes)
+{
+    if (disconnectedLeafNodes.empty()) {
+        return;
+    }
+
+    TRACE_FUNCTION();
+
+    for (const VdfNode *const leafNode : disconnectedLeafNodes) {
+        const auto it = _leafNodeToIndex.find(leafNode->GetId());
+        if (it != _leafNodeToIndex.end()) { 
+            _schedule.reset();
+            return;
+        }
     }
 }
 

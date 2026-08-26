@@ -113,6 +113,11 @@ wrapVariableExpressionASTNodes()
             .def("GetName", &This::GetName,
                 return_value_policy<return_by_value>())
             .def("SetName", &This::SetName)
+            .def("GetFallbackValue",
+                +[](This& n) { return n.GetFallbackValue(); },
+                return_internal_reference<>())
+            .def("SetFallbackValue", &This::SetFallbackValue)
+            .def("ClearFallbackValue", &This::ClearFallbackValue)
             ;
     }
 

@@ -80,7 +80,6 @@ pxr_library(usdMtlx
         __init__.py
 
     RESOURCE_FILES
-        plugInfo.json
         ${MATERIALX_STDLIB_RESOURCES}
 
     DOXYGEN_FILES

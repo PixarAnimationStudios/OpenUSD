@@ -20,6 +20,29 @@ def _popupFileMenu(appController):
     appController._ui.menuFile.exec_()
     appController._processEvents()
 
+def _assertFocus(expected, appController, where):
+    """Verify keyboard focus is where the test needs it.
+
+    Previously either focus was none, because window was not active or in an
+    interactive run, focus could be moved, causing test to fail in a confusing
+    way. With this we will get a clear assertion failure with a message that
+    explains the focus problem.
+    """
+    def describe(w):
+        if w is None:
+            return None
+        return w.objectName() or w.__class__.__name__
+    actual = QtWidgets.QApplication.focusWidget()
+    assert actual is expected, (
+            f"{where}: expected keyboard focus on {describe(expected)}, but "
+            f"focusWidget() is {describe(actual)}. activeWindow() is "
+            f"{QtWidgets.QApplication.activeWindow()}, isActiveWindow() is "
+            f"{expected.window().isActiveWindow()}. Focus is required for "
+            f"usdview's event filter to route navigation keys to this widget; "
+            f"Qt drops focus while the toplevel window is inactive, and the "
+            f"filter re-derives focus from the mouse position on MouseMove."
+        )
+
 def _postAndProcessKeyEvent(key, widget, appController):
     event = QtGui.QKeyEvent(QtCore.QEvent.Type.KeyPress,
                             key,
@@ -46,8 +69,14 @@ def _testBasic(appController):
 
     # Start out fully collapsed, and make sure PrimView has focus
     _emitCollapseAllAction(appController)
+    # Qt will not grant keyboard focus to a widget whose toplevel window is
+    # inactive: setFocus() does nothing and focusWidget() stays None.
+    appController._mainWindow.activateWindow()
+    QtWidgets.QApplication.processEvents()
     appController._ui.primView.setFocus()
     QtWidgets.QApplication.processEvents()
+    _assertFocus(appController._ui.primView, appController,
+                 "before navigating the prim tree")
 
     # Send events to the application's QObject to ensure our app filter
     # reroutes it to the focusWidget.
@@ -81,7 +110,11 @@ def _testBasic(appController):
     # MainWindow) will result in transport movement
     startFrame = stage.GetStartTimeCode()
     appController._mainWindow.setFocus()
-    assert appController._dataModel.currentFrame == startFrame
+    _assertFocus(appController._mainWindow, appController,
+                 "before testing transport movement")
+    assert appController._dataModel.currentFrame == startFrame, \
+        "Expected frame %s, got %s" % (startFrame,
+                                       appController._dataModel.currentFrame)
 
     _postAndProcessKeyEvent(QtCore.Qt.Key.Key_Right, appObj, appController)
     assert appController._dataModel.currentFrame == startFrame + 1

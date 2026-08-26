@@ -1,0 +1,186 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2026 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/coordUtils.glslfx
+
+--- --------------------------------------------------------------------------
+-- glsl CoordUtils.Transform
+
+// Transform a point by a 4x4 matrix
+vec3
+TransformPoint(MAT4 m, vec3 point)
+{
+    const vec4 result = vec4(m * vec4(point, 1.0));
+    return result.xyz / result.w;
+}
+
+// Transform a direction by a 4x4 matrix
+vec3
+TransformDir(MAT4 m, vec3 dir)
+{
+    const vec4 result = vec4(m * vec4(dir, 0.0));
+    return result.xyz;
+}
+
+float
+ComputeMax3(float a, float b, float c)
+{
+    return max(a, max(b, c));
+}
+
+// Computes the inverse of the scaling of an affine transform.
+// Approximately - since most transforms have uniform scaling
+// and no shear, this is fine.
+float
+ScaleOfMatrix(MAT4 m)
+{
+    // Take the maximum of the lengths of the images of the x, y
+    // and z vector.
+    //
+    // A more general, coordinate independent implementation would take
+    // the minimum singular value from the singular value decomposition.
+    //
+    const mat3 affinePart = mat3(m[0][0], m[0][1], m[0][2], 
+                                 m[1][0], m[1][1], m[1][2],
+                                 m[2][0], m[2][1], m[2][2]);
+    return ComputeMax3(length(affinePart[0]),
+                       length(affinePart[1]),
+                       length(affinePart[2]));
+}
+
+// Gets the upper left 3x3 part of a 4x4 matrix.
+// Note: Currently, it will always return a single-precision matrix.
+mat3
+Mat4ToMat3(MAT4 m)
+{
+    return mat3(m[0].xyz, m[1].xyz, m[2].xyz);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl CoordUtils.Projection
+
+bool
+IsCameraOrthographic()
+{
+    return abs(GetProjectionMatrix()[3][3] - 1.0) < 1e-5;
+}
+
+// Consider the ray from the eye to a given point in eye space.
+// Computes the (unnormalized) direction of this ray in both cases where the
+// camera is orthographic or perspective.
+vec3
+ComputeRayDirectionEye(vec3 rayPointEye)
+{
+    // In NDC space, the ray is always pointing into the z-direction (0,0,1).
+    // In clip space, this corresponds to (0,0,1,0).
+    // We need to multiply (0,0,1,0) by the inverse projection matrix to
+    // get to homogeneous eye space.
+    // Or alternatively, we can get the direction in homogeneous eye space
+    // by taking the respective column of the inverse projection matrix:
+    const vec4 dir = vec4(GetProjectionInverseMatrix()[2]);
+
+    // To compute the corresponding direction in non-homogeneous eye space,
+    // compute the position of the ray after time dt << 1:
+    //     vec4 pHomogeneous = vec4(rayPointEye, 1.0) + dt * dir;
+    //     vec3 p = pHomogeneous.xyz / pHomogeneous.w;
+    //
+    // Or equivalently:
+    //     vec3 p = (rayPointEye + dt * dir.xyz) / (1.0 + dir.w * dt);
+    // And since dt << 1, we have
+    //     vec3 p = (rayPointEye + dt * dir.xyz) * (1.0 - dir.w * dt);
+    // And dropping higher order terms:
+    //     vec3 p = rayPointEye + dt * (dir.xyz - rayPointEye * dir.w);
+    // So the new direction is given by:
+    //     vec3 d = dir.xyz - rayPointEye * dir.w;
+
+    // Return unnormalized direction in eye space.
+    return dir.xyz - rayPointEye * dir.w;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl CoordUtils.Depth
+
+// Convert depth value z in NDC to depth in eye space [near, far].
+float
+NDCtoEyeZ(float z)
+{
+    const MAT4 m = GetProjectionInverseMatrix();
+    return float((m[2][2] * z + m[3][2]) / (m[2][3] * z + m[3][3]));
+}
+
+float
+GetNearPlaneNDC()
+{
+#ifdef HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+    return -1.0;
+#else
+    return 0.0;
+#endif
+}
+
+// Compute the z-value of the near clipping plane in eye space.
+float
+ComputeNearZ()
+{
+    return NDCtoEyeZ(GetNearPlaneNDC());
+}
+
+// Compute the near clipping distance. Always returns a positive value.
+float
+ComputeNearDistance()
+{
+    return abs(ComputeNearZ());
+}
+
+// Compute window depth from depth in NDC.
+// Note: Window coordinates are assumed to be [0,1].
+// If we ever change window or NDC depth range, we'll need to update this function.
+float
+NDCToWindowDepth(float ndcDepth)
+{
+#ifdef HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+    // Map from [-1, 1] to [0, 1]
+    return ndcDepth * 0.5 + 0.5;
+#else
+    return ndcDepth;
+#endif
+}
+
+// Compute NDC depth from window depth.
+// Note: Window coordinates are assumed to be [0,1].
+// If we ever change window or NDC depth range, we'll need to update this function.
+float
+WindowToNDCDepth(float windowDepth)
+{
+#ifdef HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+    // Map from [0, 1] to [-1, 1]
+    return windowDepth * 2.0 - 1.0;
+#else
+    return windowDepth;
+#endif
+}
+
+// The depth at which we hit opaque geometry in eye space (negative
+// value by OpenGL convention).
+float
+SampleZBuffer(vec2 fragcoord)
+{
+#ifdef HD_HAS_depthReadback
+    // Sample the z-Buffer at the frag coordinate.
+    const float bufferVal = texelFetch(HdGetSampler_depthReadback(),
+                                       ivec2(fragcoord),
+                                       /* lod = */ 0).x;
+#else
+    // Assume far-plane if we cannot sample the z-Buffer.
+    const float bufferVal = 1.0;
+#endif
+
+    return NDCtoEyeZ(WindowToNDCDepth(bufferVal));
+}

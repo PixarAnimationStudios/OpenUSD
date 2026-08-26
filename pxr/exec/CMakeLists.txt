@@ -1,4 +1,5 @@
 set(DIRS
+    execTest
     vdf
     ef
     esf

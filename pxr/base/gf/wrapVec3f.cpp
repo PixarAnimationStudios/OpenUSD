@@ -9,7 +9,19 @@
 // wrapVec.template.cpp file to make changes.
 
 #include "pxr/pxr.h"
+
+#include "pxr/base/gf/vec2d.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec2h.h"
+#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec3h.h"
+#include "pxr/base/gf/vec3i.h"
+#include "pxr/base/gf/vec4d.h"
+#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/vec4h.h"
+#include "pxr/base/gf/vec4i.h"
 
 #include "pxr/base/gf/pyBufferUtils.h"
 
@@ -18,12 +30,6 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
-
-// Include headers for other vec types to support wrapping conversions and
-// operators.
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/gf/vec3h.h"
-#include "pxr/base/gf/vec3i.h"
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/def.hpp"
@@ -460,6 +466,109 @@ void wrapVec3f()
 
         .def("__repr__", __repr__)
         .def("__hash__", __hash__)
+
+        // Named components, readable and writable.
+        //
+        // These are by-value accessors rather than def_readwrite() because
+        // def_readwrite() hands out a reference to the member, which requires a
+        // registered Python class for the member's type.  GfHalf deliberately
+        // has none -- it converts to and from a Python float by value, see
+        // wrapHalf.cpp -- so no reference can be formed.  By value also matches
+        // __getitem__, so v.x and v[0] yield the same Python type.
+        .add_property("x",
+            +[](Vec const &self) { return self.x; },
+            +[](Vec &self, Scalar value) { self.x = value; })
+        .add_property("y",
+            +[](Vec const &self) { return self.y; },
+            +[](Vec &self, Scalar value) { self.y = value; })
+        .add_property("z",
+            +[](Vec const &self) { return self.z; },
+            +[](Vec &self, Scalar value) { self.z = value; })
+
+        // Swizzles.  The getter returns a new vector by value; the setter
+        // writes the components the name names.  Unlike C++, where swizzles are
+        // read-only, Python permits assigning through them -- 'v.xy = a', and
+        // 'v.xy += a' too, since Python rewrites that as a get followed by a
+        // set.  No proxy is involved either way; values are copied in and out.
+        .add_property("xy",
+            +[](Vec const &self) { return self.xy(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.x = in[0];
+                self.y = in[1];
+            })
+        .add_property("xz",
+            +[](Vec const &self) { return self.xz(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.x = in[0];
+                self.z = in[1];
+            })
+        .add_property("yx",
+            +[](Vec const &self) { return self.yx(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.y = in[0];
+                self.x = in[1];
+            })
+        .add_property("yz",
+            +[](Vec const &self) { return self.yz(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.y = in[0];
+                self.z = in[1];
+            })
+        .add_property("zx",
+            +[](Vec const &self) { return self.zx(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.z = in[0];
+                self.x = in[1];
+            })
+        .add_property("zy",
+            +[](Vec const &self) { return self.zy(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.z = in[0];
+                self.y = in[1];
+            })
+        .add_property("xyz",
+            +[](Vec const &self) { return self.xyz(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.x = in[0];
+                self.y = in[1];
+                self.z = in[2];
+            })
+        .add_property("xzy",
+            +[](Vec const &self) { return self.xzy(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.x = in[0];
+                self.z = in[1];
+                self.y = in[2];
+            })
+        .add_property("yxz",
+            +[](Vec const &self) { return self.yxz(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.y = in[0];
+                self.x = in[1];
+                self.z = in[2];
+            })
+        .add_property("yzx",
+            +[](Vec const &self) { return self.yzx(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.y = in[0];
+                self.z = in[1];
+                self.x = in[2];
+            })
+        .add_property("zxy",
+            +[](Vec const &self) { return self.zxy(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.z = in[0];
+                self.x = in[1];
+                self.y = in[2];
+            })
+        .add_property("zyx",
+            +[](Vec const &self) { return self.zyx(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.z = in[0];
+                self.y = in[1];
+                self.x = in[2];
+            })
+
         ;
     to_python_converter<std::vector<GfVec3f>,
         TfPySequenceToPython<std::vector<GfVec3f> > >();

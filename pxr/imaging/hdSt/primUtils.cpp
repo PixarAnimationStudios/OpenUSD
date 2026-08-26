@@ -637,10 +637,10 @@ HdStUpdateDrawItemBAR(
                     "doesn't aggregate with the existing BAR (%p)\n",
                     id.GetText(), newRange.get(), curRange.get());
             
-            } else {
+            } else if (rebuildDispatchBuffer) {
                 TfDebug::Helper().Msg(
                     "%s: Marking all batches dirty since the new BAR (%p) "
-                    "doesn't aggregate with the existing BAR (%p)\n",
+                    "has different layout than the existing BAR (%p)\n",
                     id.GetText(), newRange.get(), curRange.get());
             }
         }

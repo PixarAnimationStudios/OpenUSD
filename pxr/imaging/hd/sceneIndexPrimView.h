@@ -24,12 +24,20 @@ TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 /// the prim itself) in a scene index in depth-first order.
 /// The descendants of the current prim can be skipped by calling
 /// SkipDescendants.
+/// The order is determined by HdSceneIndex::GetChildPrimPaths by default, but
+/// can be changed to the lexicographic order.
 ///
 /// Example:
 /// \code
 ///
 /// for (const SdfPath &primPath :
 ///           HdSceneIndexPrimView(mySceneIndex, myRootPath)) {
+///     ...
+/// }
+///
+/// for (const SdfPath &primPath :
+///           HdSceneIndexPrimView(mySceneIndex,
+///                                HdSceneIndexPrimView::Lexicographic)) {
 ///     ...
 /// }
 ///
@@ -47,10 +55,17 @@ TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 class HdSceneIndexPrimView
 {
 public:
+    enum Order
+    {
+        ChildPrimPaths,
+        Lexicographic
+    };
+
     class const_iterator
     {
     public:
         inline const SdfPath &operator*() const;
+        inline const SdfPath *operator->() const;
 
         HD_API
         const_iterator& operator++();
@@ -64,20 +79,25 @@ public:
         struct _StackFrame;
 
         const_iterator(HdSceneIndexBaseRefPtr const &inputSceneIndex,
-                       const SdfPath &root);
-        const_iterator(HdSceneIndexBaseRefPtr const &inputSceneIndex);
+                       const SdfPath &root,
+                       Order order);
+        const_iterator(HdSceneIndexBaseRefPtr const &inputSceneIndex,
+                       Order order);
 
         HdSceneIndexBaseRefPtr const _inputSceneIndex;
         std::vector<_StackFrame> _stack;
         bool _skipDescendants;
+        Order _order;
     };
 
     HD_API
-    HdSceneIndexPrimView(HdSceneIndexBaseRefPtr const &inputSceneIndex);
+    HdSceneIndexPrimView(HdSceneIndexBaseRefPtr const &inputSceneIndex,
+                         Order order = ChildPrimPaths);
 
     HD_API
     HdSceneIndexPrimView(HdSceneIndexBaseRefPtr const &inputSceneIndex,
-                         const SdfPath &root);
+                         const SdfPath &root,
+                         Order order = ChildPrimPaths);
 
     HD_API
     const const_iterator &begin() const;
@@ -106,6 +126,12 @@ HdSceneIndexPrimView::const_iterator::operator*() const
 {
     const _StackFrame &frame = _stack.back();
     return frame.paths[frame.index];
+}
+
+const SdfPath *
+HdSceneIndexPrimView::const_iterator::operator->() const
+{
+    return &(**this);
 }
 
 void

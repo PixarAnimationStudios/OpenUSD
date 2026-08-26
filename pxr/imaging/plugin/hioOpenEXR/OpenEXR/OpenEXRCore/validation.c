@@ -5,22 +5,22 @@
 
 #include "internal_file.h"
 
+#include "internal_constants.h"
+
+#include "openexr_part.h"
+
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 /**************************************/
 
 static exr_result_t
-validate_req_attr (
-    struct _internal_exr_context* f,
-    struct _internal_exr_part*    curpart,
-    int                           adddefault)
+validate_req_attr (exr_context_t f, exr_priv_part_t curpart, int adddefault)
 {
     exr_result_t rv = EXR_ERR_SUCCESS;
-    if (!curpart->channels)
-        return f->print_error (
-            f, EXR_ERR_MISSING_REQ_ATTR, "'channels' attribute not found");
+
     if (!curpart->compression)
     {
         if (adddefault)
@@ -45,6 +45,11 @@ validate_req_attr (
                 "'compression' attribute not found");
         }
     }
+    else if (curpart->compression->type != EXR_ATTR_COMPRESSION)
+        return f->print_error (
+            f,
+            EXR_ERR_ATTR_TYPE_MISMATCH,
+            "'compression' attribute has wrong data type");
 
     if (!curpart->dataWindow)
     {
@@ -73,6 +78,11 @@ validate_req_attr (
                 "'dataWindow' attribute not found");
         }
     }
+    else if (curpart->dataWindow->type != EXR_ATTR_BOX2I)
+        return f->print_error (
+            f,
+            EXR_ERR_ATTR_TYPE_MISMATCH,
+            "'dataWindow' attribute has wrong data type");
 
     if (!curpart->displayWindow)
     {
@@ -99,6 +109,11 @@ validate_req_attr (
                 "'displayWindow' attribute not found");
         }
     }
+    else if (curpart->displayWindow->type != EXR_ATTR_BOX2I)
+        return f->print_error (
+            f,
+            EXR_ERR_ATTR_TYPE_MISMATCH,
+            "'displayWindow' attribute has wrong data type");
 
     if (!curpart->lineOrder)
     {
@@ -122,6 +137,11 @@ validate_req_attr (
                 f, EXR_ERR_MISSING_REQ_ATTR, "'lineOrder' attribute not found");
         }
     }
+    else if (curpart->lineOrder->type != EXR_ATTR_LINEORDER)
+        return f->print_error (
+            f,
+            EXR_ERR_ATTR_TYPE_MISMATCH,
+            "'lineOrder' attribute has wrong data type");
 
     if (!curpart->pixelAspectRatio)
     {
@@ -146,6 +166,11 @@ validate_req_attr (
                 "'pixelAspectRatio' attribute not found");
         }
     }
+    else if (curpart->pixelAspectRatio->type != EXR_ATTR_FLOAT)
+        return f->print_error (
+            f,
+            EXR_ERR_ATTR_TYPE_MISMATCH,
+            "'pixelAspectRatio' attribute has wrong data type");
 
     if (!curpart->screenWindowCenter)
     {
@@ -171,6 +196,11 @@ validate_req_attr (
                 "'screenWindowCenter' attribute not found");
         }
     }
+    else if (curpart->screenWindowCenter->type != EXR_ATTR_V2F)
+        return f->print_error (
+            f,
+            EXR_ERR_ATTR_TYPE_MISMATCH,
+            "'screenWindowCenter' attribute has wrong data type");
 
     if (!curpart->screenWindowWidth)
     {
@@ -195,25 +225,62 @@ validate_req_attr (
                 "'screenWindowWidth' attribute not found");
         }
     }
+    else if (curpart->screenWindowWidth->type != EXR_ATTR_FLOAT)
+        return f->print_error (
+            f,
+            EXR_ERR_ATTR_TYPE_MISMATCH,
+            "'screenWindowWidth' attribute has wrong data type, expect float");
 
     if (f->is_multipart || f->has_nonimage_data)
     {
-        if (f->is_multipart && !curpart->name)
-            return f->print_error (
-                f,
-                EXR_ERR_MISSING_REQ_ATTR,
-                "'name' attribute for multipart file not found");
+        if (f->is_multipart)
+        {
+            if (!curpart->name)
+                return f->print_error (
+                    f,
+                    EXR_ERR_MISSING_REQ_ATTR,
+                    "'name' attribute for multipart file not found");
+            else if (curpart->name->type != EXR_ATTR_STRING)
+                return f->print_error (
+                    f,
+                    EXR_ERR_ATTR_TYPE_MISMATCH,
+                    "'name' attribute has wrong data type, expect string");
+        }
         if (!curpart->type)
+        {
             return f->print_error (
                 f,
                 EXR_ERR_MISSING_REQ_ATTR,
                 "'type' attribute for v2+ file not found");
-        if (f->has_nonimage_data && !curpart->version)
+        }
+        else if (curpart->type->type != EXR_ATTR_STRING)
             return f->print_error (
                 f,
-                EXR_ERR_MISSING_REQ_ATTR,
-                "'version' attribute for deep file not found");
-        if (!curpart->chunkCount)
+                EXR_ERR_ATTR_TYPE_MISMATCH,
+                "'type' attribute has wrong data type, expect string");
+        if (f->has_nonimage_data && !curpart->version)
+        {
+            if (adddefault)
+            {
+                rv = exr_attr_list_add_static_name (
+                    f,
+                    &(curpart->attributes),
+                    EXR_REQ_VERSION_STR,
+                    EXR_ATTR_INT,
+                    0,
+                    NULL,
+                    &(curpart->version));
+                curpart->version->i = 1;
+            }
+            else
+            {
+                return f->print_error (
+                    f,
+                    EXR_ERR_MISSING_REQ_ATTR,
+                    "'version' attribute for deep file not found");
+            }
+        }
+        if (f->strict_header && !curpart->chunkCount)
             return f->print_error (
                 f,
                 EXR_ERR_MISSING_REQ_ATTR,
@@ -226,8 +293,7 @@ validate_req_attr (
 /**************************************/
 
 static exr_result_t
-validate_image_dimensions (
-    struct _internal_exr_context* f, struct _internal_exr_part* curpart)
+validate_image_dimensions (exr_context_t f, exr_priv_part_t curpart)
 {
     // sanity check the various parts...
     const int64_t          kLargeVal = (int64_t) (INT32_MAX / 2);
@@ -321,18 +387,23 @@ validate_image_dimensions (
 
 static exr_result_t
 validate_channels (
-    struct _internal_exr_context* f,
-    struct _internal_exr_part*    curpart,
-    const exr_attr_chlist_t*      channels)
+    exr_context_t f, exr_priv_part_t curpart)
 {
-    exr_attr_box2i_t dw;
-    int64_t          w, h;
+    exr_attr_box2i_t         dw;
+    int64_t                  w, h;
+    const exr_attr_chlist_t* channels;
 
-    if (!channels)
-        return f->report_error (
+    if (!curpart->channels)
+        return f->print_error (
+            f, EXR_ERR_MISSING_REQ_ATTR, "'channels' attribute not found");
+    else if (curpart->channels->type != EXR_ATTR_CHLIST)
+        return f->print_error (
             f,
-            EXR_ERR_INVALID_ARGUMENT,
-            "Missing required channels attribute to validate against");
+            EXR_ERR_ATTR_TYPE_MISMATCH,
+            "'channels' attribute has wrong data type, expect chlist");
+
+    channels = curpart->channels->chlist;
+
     if (!curpart->dataWindow)
         return f->report_error (
             f,
@@ -408,41 +479,82 @@ validate_channels (
 /**************************************/
 
 static exr_result_t
-validate_part_type (
-    struct _internal_exr_context* f, struct _internal_exr_part* curpart)
+validate_part_type (exr_context_t f, exr_priv_part_t curpart)
 {
     // TODO: there are probably more tests to add here...
     if (curpart->type)
     {
-        int rv;
+        const char *expectedtype = NULL;
+        exr_result_t rv;
 
         // see if the type overwrote the storage mode
-        if (f->is_singlepart_tiled &&
-            curpart->storage_mode != EXR_STORAGE_TILED)
+        if (f->is_singlepart_tiled)
         {
-            // mismatch between type attr and file flag. c++ believed the
-            // flag first and foremost
-            curpart->storage_mode = EXR_STORAGE_TILED;
-
-            // TODO: define how strict we should be
-            //exr_attr_list_remove( f, &(curpart->attributes), curpart->type );
-            //curpart->type = NULL;
-            f->print_error (
-                f,
-                EXR_ERR_INVALID_ATTR,
-                "attribute 'type': Mismatch between file flags and type string '%s', believing file flags",
-                curpart->type->string->str);
-
-            if (f->mode == EXR_CONTEXT_WRITE) return EXR_ERR_INVALID_ATTR;
-
-            rv = exr_attr_string_set_with_length (
-                (exr_context_t) f, curpart->type->string, "tiledimage", 10);
-            if (rv != EXR_ERR_SUCCESS)
+            if (f->is_multipart || f->num_parts > 1)
                 return f->print_error (
                     f,
                     EXR_ERR_INVALID_ATTR,
-                    "attribute 'type': Mismatch between file flags and type attribute, unable to fix");
+                    "Multipart files cannot have the tiled bit set");
+
+            if (curpart->storage_mode != EXR_STORAGE_TILED)
+            {
+                curpart->storage_mode = EXR_STORAGE_TILED;
+
+                if (f->strict_header)
+                {
+                    return f->print_error (
+                        f,
+                        EXR_ERR_INVALID_ATTR,
+                        "attribute 'type': Single part tiled flag set but not marked as tiled storage type");
+                }
+            }
         }
+
+        if (curpart->storage_mode == EXR_STORAGE_SCANLINE)
+            expectedtype = "scanlineimage";
+        else if (curpart->storage_mode == EXR_STORAGE_TILED)
+            expectedtype = "tiledimage";
+        else if (curpart->storage_mode == EXR_STORAGE_DEEP_SCANLINE)
+            expectedtype = "deepscanline";
+        else if (curpart->storage_mode == EXR_STORAGE_DEEP_TILED)
+            expectedtype = "deeptile";
+
+        if (expectedtype && 0 != strcmp (curpart->type->string->str, expectedtype))
+        {
+            if (f->mode == EXR_CONTEXT_WRITE) return EXR_ERR_INVALID_ATTR;
+
+            if (f->strict_header)
+            {
+                return f->print_error (
+                    f,
+                    EXR_ERR_INVALID_ATTR,
+                    "attribute 'type': Type should be '%s' but set to '%s', believing file flags",
+                    expectedtype,
+                    curpart->type->string->str);
+            }
+            else
+            {
+                /* C++ silently changed this */
+                rv = exr_attr_string_set (
+                    f, curpart->type->string, expectedtype);
+
+                if (rv != EXR_ERR_SUCCESS)
+                    return f->print_error (
+                        f,
+                        EXR_ERR_INVALID_ATTR,
+                        "attribute 'type': Mismatch between file flags and type attribute, unable to fix");
+            }
+        }
+    }
+
+    /* NB: we allow an 'unknown' storage type of EXR_STORAGE_UNKNOWN
+     * for future proofing */
+    if (curpart->storage_mode == EXR_STORAGE_LAST_TYPE)
+    {
+        return f->print_error (
+            f,
+            EXR_ERR_INVALID_ATTR,
+            "Unable to determine data storage type for part");
     }
 
     return EXR_ERR_SUCCESS;
@@ -451,8 +563,7 @@ validate_part_type (
 /**************************************/
 
 static exr_result_t
-validate_tile_data (
-    struct _internal_exr_context* f, struct _internal_exr_part* curpart)
+validate_tile_data (exr_context_t f, exr_priv_part_t curpart)
 {
     if (curpart->storage_mode == EXR_STORAGE_TILED ||
         curpart->storage_mode == EXR_STORAGE_DEEP_TILED)
@@ -469,6 +580,11 @@ validate_tile_data (
                 f,
                 EXR_ERR_MISSING_REQ_ATTR,
                 "'tiles' attribute for tiled file not found");
+        else if (curpart->tiles->type != EXR_ATTR_TILEDESC)
+            return f->print_error (
+                f,
+                EXR_ERR_ATTR_TYPE_MISMATCH,
+                "'tiles' attribute has wrong data type, expect tile description");
 
         desc    = curpart->tiles->tiledesc;
         levmode = EXR_GET_TILE_LEVEL_MODE (*desc);
@@ -539,8 +655,7 @@ validate_tile_data (
 /**************************************/
 
 static exr_result_t
-validate_deep_data (
-    struct _internal_exr_context* f, struct _internal_exr_part* curpart)
+validate_deep_data (exr_context_t f, exr_priv_part_t curpart)
 {
     if (curpart->storage_mode == EXR_STORAGE_DEEP_SCANLINE ||
         curpart->storage_mode == EXR_STORAGE_DEEP_TILED)
@@ -579,8 +694,7 @@ validate_deep_data (
 /**************************************/
 
 exr_result_t
-internal_exr_validate_read_part (
-    struct _internal_exr_context* f, struct _internal_exr_part* curpart)
+internal_exr_validate_read_part (exr_context_t f, exr_priv_part_t curpart)
 {
     exr_result_t rv;
 
@@ -590,7 +704,7 @@ internal_exr_validate_read_part (
     rv = validate_image_dimensions (f, curpart);
     if (rv != EXR_ERR_SUCCESS) return rv;
 
-    rv = validate_channels (f, curpart, curpart->channels->chlist);
+    rv = validate_channels (f, curpart);
     if (rv != EXR_ERR_SUCCESS) return rv;
 
     rv = validate_part_type (f, curpart);
@@ -608,8 +722,122 @@ internal_exr_validate_read_part (
 /**************************************/
 
 exr_result_t
-internal_exr_validate_write_part (
-    struct _internal_exr_context* f, struct _internal_exr_part* curpart)
+internal_exr_validate_shared_attrs (exr_context_t ctxt,
+                                    exr_priv_part_t basepart,
+                                    exr_priv_part_t curpart,
+                                    int curpartidx,
+                                    const char **mismatchattr,
+                                    int *mismatchcount)
+{
+    exr_result_t rv, rv1;
+    const exr_attribute_t *battr, *cattr;
+    int misidx = 0;
+
+    rv = EXR_ERR_SUCCESS;
+    if (basepart->displayWindow)
+    {
+        if (curpart->displayWindow)
+        {
+            if (basepart->displayWindow->type != EXR_ATTR_BOX2I ||
+                basepart->displayWindow->type !=
+                curpart->displayWindow->type)
+            {
+                rv = EXR_ERR_ATTR_TYPE_MISMATCH;
+            }
+            else if (memcmp (basepart->displayWindow->box2i,
+                             curpart->displayWindow->box2i,
+                             sizeof(exr_attr_box2i_t)))
+                rv = EXR_ERR_ATTR_TYPE_MISMATCH;
+        }
+        else
+            rv = EXR_ERR_ATTR_TYPE_MISMATCH;
+    }
+    else if (curpart->displayWindow)
+        rv = EXR_ERR_ATTR_TYPE_MISMATCH;
+
+    if (rv != EXR_ERR_SUCCESS)
+        mismatchattr[misidx++] = EXR_REQ_DISP_STR;
+
+    rv = EXR_ERR_SUCCESS;
+    if (basepart->pixelAspectRatio)
+    {
+        if (curpart->pixelAspectRatio)
+        {
+            if (basepart->pixelAspectRatio->type != EXR_ATTR_FLOAT ||
+                basepart->pixelAspectRatio->type !=
+                curpart->pixelAspectRatio->type)
+            {
+                rv = EXR_ERR_ATTR_TYPE_MISMATCH;
+            }
+            else if (memcmp (&(basepart->pixelAspectRatio->f),
+                             &(curpart->pixelAspectRatio->f),
+                             sizeof(float)))
+                rv = EXR_ERR_ATTR_TYPE_MISMATCH;
+        }
+        else
+            rv = EXR_ERR_ATTR_TYPE_MISMATCH;
+    }
+    else if (curpart->pixelAspectRatio)
+        rv = EXR_ERR_ATTR_TYPE_MISMATCH;
+    if (rv != EXR_ERR_SUCCESS)
+        mismatchattr[misidx++] = EXR_REQ_PAR_STR;
+
+    rv = exr_get_attribute_by_name (ctxt, 0, "timecode", &battr);
+    rv1 = exr_get_attribute_by_name (ctxt, curpartidx, "timecode", &cattr);
+    if (EXR_ERR_SUCCESS == rv && rv == rv1)
+    {
+        if (battr->type != EXR_ATTR_TIMECODE ||
+            battr->type != cattr->type)
+        {
+            rv = EXR_ERR_ATTR_TYPE_MISMATCH;
+        }
+        else if (memcmp (battr->timecode,
+                         cattr->timecode,
+                         sizeof(exr_attr_timecode_t)))
+        {
+            rv = EXR_ERR_ATTR_TYPE_MISMATCH;
+        }
+        else
+            rv = EXR_ERR_SUCCESS;
+    }
+    else if (EXR_ERR_SUCCESS == rv1)
+        rv = EXR_ERR_ATTR_TYPE_MISMATCH;
+    else
+        rv = EXR_ERR_SUCCESS; // both missing, ok
+    if (rv != EXR_ERR_SUCCESS)
+        mismatchattr[misidx++] = "timecode";
+
+    rv = exr_get_attribute_by_name (ctxt, 0, "chromaticities", &battr);
+    rv1 = exr_get_attribute_by_name (ctxt, curpartidx, "chromaticities", &cattr);
+    if (EXR_ERR_SUCCESS == rv && rv == rv1)
+    {
+        if (battr->type != EXR_ATTR_CHROMATICITIES ||
+            battr->type != cattr->type)
+        {
+            rv = EXR_ERR_ATTR_TYPE_MISMATCH;
+        }
+        else if (memcmp (battr->chromaticities,
+                         cattr->chromaticities,
+                         sizeof(exr_attr_chromaticities_t)))
+            rv = EXR_ERR_ATTR_TYPE_MISMATCH;
+        else
+            rv = EXR_ERR_SUCCESS;
+    }
+    else if (EXR_ERR_SUCCESS == rv1)
+        rv = EXR_ERR_ATTR_TYPE_MISMATCH;
+    else
+        rv = EXR_ERR_SUCCESS; // both missing, ok
+    if (rv != EXR_ERR_SUCCESS)
+        mismatchattr[misidx++] = "chromaticities";
+
+    *mismatchcount = misidx;
+    return misidx == 0 ? EXR_ERR_SUCCESS : EXR_ERR_ATTR_TYPE_MISMATCH;
+}
+
+/**************************************/
+
+exr_result_t
+internal_exr_validate_write_part (exr_context_t f, exr_priv_part_t curpart)
 {
     exr_result_t rv;
 
@@ -619,7 +847,7 @@ internal_exr_validate_write_part (
     rv = validate_image_dimensions (f, curpart);
     if (rv != EXR_ERR_SUCCESS) return rv;
 
-    rv = validate_channels (f, curpart, curpart->channels->chlist);
+    rv = validate_channels (f, curpart);
     if (rv != EXR_ERR_SUCCESS) return rv;
 
     rv = validate_part_type (f, curpart);

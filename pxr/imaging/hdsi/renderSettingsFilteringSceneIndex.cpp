@@ -427,11 +427,11 @@ _BuildOverlayContainerDataSource(
     const HdContainerDataSourceHandle &src4)
 {
     return
-        HdOverlayContainerDataSource::OverlayedContainerDataSources(
+        HdCreateOverlayContainerDataSource(
             src1,
-            HdOverlayContainerDataSource::OverlayedContainerDataSources(
+            HdCreateOverlayContainerDataSource(
                 src2,
-                HdOverlayContainerDataSource::OverlayedContainerDataSources(
+                HdCreateOverlayContainerDataSource(
                     src3, src4)));
 }
 

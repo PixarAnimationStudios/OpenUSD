@@ -271,6 +271,14 @@ HdSt_ShaderKey::GetVertexCountFallback() const
 }
 
 /*virtual*/
+const TfToken
+HdSt_ShaderKey::GetDepthQualifier() const
+{
+    return TfToken();
+}
+
+
+/*virtual*/
 HdSt_GeometricShader::FvarPatchType 
 HdSt_ShaderKey::GetFvarPatchType() const {
     return HdSt_GeometricShader::FvarPatchType::PATCH_NONE;

@@ -37,17 +37,13 @@ public:
     virtual ~VdfExecutorObserver();
 
 protected:
-    /// This will be called once the observed executor gets deleted.
-    ///
-    /// The observed \p executor is passed as a parameter.
+    /// Called when the observed \p executor gets deleted.
     ///
     virtual void _OnExecutorDelete(
         VdfExecutorInterface *executor) const = 0;
 
-    /// This will get called once the data is being cleared on the
-    /// observed executor.
-    ///
-    /// The observed \p executor is passed as a parameter.
+    /// Called when temporary buffers and invalidation state are cleared for
+    /// the observed \p executor.
     ///
     virtual void _OnExecutorClearData(
         VdfExecutorInterface *executor) const = 0;

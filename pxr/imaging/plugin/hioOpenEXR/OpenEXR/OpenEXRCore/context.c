@@ -27,12 +27,12 @@
 
 static exr_result_t
 dispatch_read (
-    const struct _internal_exr_context* ctxt,
-    void*                               buf,
-    uint64_t                            sz,
-    uint64_t*                           offsetp,
-    int64_t*                            nread,
-    enum _INTERNAL_EXR_READ_MODE        rmode)
+    exr_const_context_t          ctxt,
+    void*                        buf,
+    uint64_t                     sz,
+    uint64_t*                    offsetp,
+    int64_t*                     nread,
+    enum _INTERNAL_EXR_READ_MODE rmode)
 {
     int64_t      rval = -1;
     exr_result_t rv   = EXR_ERR_UNKNOWN;
@@ -49,12 +49,7 @@ dispatch_read (
 
     if (ctxt->read_fn)
         rval = ctxt->read_fn (
-            (exr_const_context_t) ctxt,
-            ctxt->user_data,
-            buf,
-            sz,
-            *offsetp,
-            (exr_stream_error_func_ptr_t) ctxt->print_error);
+            ctxt, ctxt->user_data, buf, sz, *offsetp, ctxt->print_error);
     else
         return ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_READ);
 
@@ -73,10 +68,7 @@ dispatch_read (
 
 static exr_result_t
 dispatch_write (
-    struct _internal_exr_context* ctxt,
-    const void*                   buf,
-    uint64_t                      sz,
-    uint64_t*                     offsetp)
+    exr_context_t ctxt, const void* buf, uint64_t sz, uint64_t* offsetp)
 {
     int64_t rval = -1;
 
@@ -90,12 +82,7 @@ dispatch_write (
 
     if (ctxt->write_fn)
         rval = ctxt->write_fn (
-            (exr_const_context_t) ctxt,
-            ctxt->user_data,
-            buf,
-            sz,
-            *offsetp,
-            (exr_stream_error_func_ptr_t) ctxt->print_error);
+            ctxt, ctxt->user_data, buf, sz, *offsetp, ctxt->print_error);
     else
         return ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_WRITE);
 
@@ -107,8 +94,7 @@ dispatch_write (
 /**************************************/
 
 static exr_result_t
-process_query_size (
-    struct _internal_exr_context* ctxt, exr_context_initializer_t* inits)
+process_query_size (exr_context_t ctxt, exr_context_initializer_t* inits)
 {
     if (inits->size_fn)
     {
@@ -160,11 +146,11 @@ exr_result_t
 exr_test_file_header (
     const char* filename, const exr_context_initializer_t* ctxtdata)
 {
-    exr_result_t                  rv    = EXR_ERR_SUCCESS;
-    struct _internal_exr_context* ret   = NULL;
-    exr_context_initializer_t     inits = fill_context_data (ctxtdata);
+    exr_result_t              rv    = EXR_ERR_SUCCESS;
+    exr_context_t             ret   = NULL;
+    exr_context_initializer_t inits = fill_context_data (ctxtdata);
 
-    if (filename && filename[0] != '\0')
+    if (filename)
     {
         rv = internal_exr_alloc_context (
             &ret,
@@ -175,8 +161,7 @@ exr_test_file_header (
         {
             ret->do_read = &dispatch_read;
 
-            rv = exr_attr_string_create (
-                (exr_context_t) ret, &(ret->filename), filename);
+            rv = exr_attr_string_create (ret, &(ret->filename), filename);
             if (rv == EXR_ERR_SUCCESS)
             {
                 if (!inits.read_fn)
@@ -190,7 +175,7 @@ exr_test_file_header (
                 if (rv == EXR_ERR_SUCCESS) rv = internal_exr_check_magic (ret);
             }
 
-            exr_finish ((exr_context_t*) &ret);
+            exr_finish (&ret);
         }
         else
             rv = EXR_ERR_OUT_OF_MEMORY;
@@ -211,12 +196,12 @@ exr_test_file_header (
 exr_result_t
 exr_finish (exr_context_t* pctxt)
 {
-    struct _internal_exr_context* ctxt;
-    exr_result_t                  rv = EXR_ERR_SUCCESS;
+    exr_context_t ctxt;
+    exr_result_t  rv = EXR_ERR_SUCCESS;
 
     if (!pctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
 
-    ctxt = EXR_CTXT (*pctxt);
+    ctxt = *pctxt;
     if (ctxt)
     {
         int failed = 0;
@@ -224,10 +209,11 @@ exr_finish (exr_context_t* pctxt)
             ctxt->mode == EXR_CONTEXT_WRITING_DATA)
             failed = 1;
 
-        if (ctxt->mode != EXR_CONTEXT_READ) rv = finalize_write (ctxt, failed);
+        if (ctxt->mode != EXR_CONTEXT_READ &&
+            ctxt->mode != EXR_CONTEXT_TEMPORARY)
+            rv = finalize_write (ctxt, failed);
 
-        if (ctxt->destroy_fn)
-            ctxt->destroy_fn (*pctxt, ctxt->user_data, failed);
+        if (ctxt->destroy_fn) ctxt->destroy_fn (ctxt, ctxt->user_data, failed);
 
         internal_exr_destroy_context (ctxt);
     }
@@ -244,9 +230,9 @@ exr_start_read (
     const char*                      filename,
     const exr_context_initializer_t* ctxtdata)
 {
-    exr_result_t                  rv    = EXR_ERR_UNKNOWN;
-    struct _internal_exr_context* ret   = NULL;
-    exr_context_initializer_t     inits = fill_context_data (ctxtdata);
+    exr_result_t              rv    = EXR_ERR_UNKNOWN;
+    exr_context_t             ret   = NULL;
+    exr_context_initializer_t inits = fill_context_data (ctxtdata);
 
     if (!ctxt)
     {
@@ -258,7 +244,7 @@ exr_start_read (
         return EXR_ERR_INVALID_ARGUMENT;
     }
 
-    if (filename && filename[0] != '\0')
+    if (filename)
     {
         rv = internal_exr_alloc_context (
             &ret,
@@ -312,9 +298,9 @@ exr_start_write (
     exr_default_write_mode_t         default_mode,
     const exr_context_initializer_t* ctxtdata)
 {
-    int                           rv    = EXR_ERR_UNKNOWN;
-    struct _internal_exr_context* ret   = NULL;
-    exr_context_initializer_t     inits = fill_context_data (ctxtdata);
+    int                       rv    = EXR_ERR_UNKNOWN;
+    exr_context_t             ret   = NULL;
+    exr_context_initializer_t inits = fill_context_data (ctxtdata);
 
     if (!ctxt)
     {
@@ -325,7 +311,7 @@ exr_start_write (
         return EXR_ERR_INVALID_ARGUMENT;
     }
 
-    if (filename && filename[0] != '\0')
+    if (filename)
     {
         rv = internal_exr_alloc_context (
             &ret,
@@ -385,20 +371,76 @@ exr_start_inplace_header_update (
 
 /**************************************/
 
+exr_result_t exr_start_temporary_context (
+    exr_context_t*                   ctxt,
+    const char*                      context_name,
+    const exr_context_initializer_t* ctxtdata)
+{
+    exr_result_t              rv    = EXR_ERR_UNKNOWN;
+    exr_context_t             ret   = NULL;
+    exr_context_initializer_t inits = fill_context_data (ctxtdata);
+
+    if (!ctxt) return EXR_ERR_INVALID_ARGUMENT;
+
+    rv = internal_exr_alloc_context (
+        &ret,
+        &inits,
+        EXR_CONTEXT_TEMPORARY,
+        0);
+
+    if (rv == EXR_ERR_SUCCESS)
+    {
+        rv = exr_attr_string_create (
+            (exr_context_t) ret, &(ret->filename), context_name ? context_name : "<temporary>");
+        if (rv != EXR_ERR_SUCCESS) exr_finish ((exr_context_t*) &ret);
+    }
+
+    *ctxt = (exr_context_t) ret;
+    return rv;
+}
+
+
+/**************************************/
+
 exr_result_t
 exr_get_file_name (exr_const_context_t ctxt, const char** name)
 {
-    EXR_PROMOTE_CONST_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
 
     /* not changeable after construction, no locking needed */
     if (name)
     {
-        *name = pctxt->filename.str;
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (EXR_ERR_SUCCESS);
+        *name = ctxt->filename.str;
+        if (ctxt->mode == EXR_CONTEXT_WRITE) internal_exr_unlock (ctxt);
+        return EXR_ERR_SUCCESS;
     }
 
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (
-        pctxt->standard_error (pctxt, EXR_ERR_INVALID_ARGUMENT));
+    return ctxt->standard_error (ctxt, EXR_ERR_INVALID_ARGUMENT);
+}
+
+/**************************************/
+
+exr_result_t
+exr_get_file_version_and_flags (exr_const_context_t ctxt, uint32_t* ver)
+{
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
+    if (ctxt->mode == EXR_CONTEXT_WRITE) internal_exr_lock (ctxt);
+
+    if (ver)
+    {
+        exr_result_t ret = EXR_ERR_SUCCESS;
+
+        if (ctxt->orig_version_and_flags != 0)
+            *ver = ctxt->orig_version_and_flags;
+        else
+            ret = internal_exr_calc_header_version_flags (ctxt, ver);
+
+        if (ctxt->mode == EXR_CONTEXT_WRITE) internal_exr_unlock (ctxt);
+        return ret;
+    }
+
+    if (ctxt->mode == EXR_CONTEXT_WRITE) internal_exr_unlock (ctxt);
+    return ctxt->standard_error (ctxt, EXR_ERR_INVALID_ARGUMENT);
 }
 
 /**************************************/
@@ -406,17 +448,19 @@ exr_get_file_name (exr_const_context_t ctxt, const char** name)
 exr_result_t
 exr_get_user_data (exr_const_context_t ctxt, void** userdata)
 {
-    EXR_PROMOTE_CONST_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
+    if (ctxt->mode == EXR_CONTEXT_WRITE) internal_exr_lock (ctxt);
 
     /* not changeable after construction, no locking needed */
     if (userdata)
     {
-        *userdata = pctxt->real_user_data;
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (EXR_ERR_SUCCESS);
+        *userdata = ctxt->real_user_data;
+        if (ctxt->mode == EXR_CONTEXT_WRITE) internal_exr_unlock (ctxt);
+        return EXR_ERR_SUCCESS;
     }
 
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (
-        pctxt->standard_error (pctxt, EXR_ERR_INVALID_ARGUMENT));
+    if (ctxt->mode == EXR_CONTEXT_WRITE) internal_exr_unlock (ctxt);
+    return ctxt->standard_error (ctxt, EXR_ERR_INVALID_ARGUMENT);
 }
 
 /**************************************/
@@ -446,20 +490,21 @@ exr_register_attr_type_handler (
     size_t                slen;
     exr_attribute_list_t* curattrs;
 
-    EXR_PROMOTE_LOCKED_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
+    internal_exr_lock (ctxt);
 
-    mlen = (int32_t) pctxt->max_name_length;
+    mlen = (int32_t) ctxt->max_name_length;
 
     if (!type || type[0] == '\0')
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->report_error (
-            pctxt,
+        return EXR_UNLOCK_AND_RETURN (ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid type to register_attr_handler"));
 
     slen = strlen (type);
     if (slen > (size_t) mlen)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt,
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+            ctxt,
             EXR_ERR_NAME_TOO_LONG,
             "Provided type name '%s' too long for file (len %d, max %d)",
             type,
@@ -468,38 +513,35 @@ exr_register_attr_type_handler (
     tlen = (int32_t) slen;
 
     if (internal_exr_is_standard_type (type))
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt,
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Provided type name '%s' is a reserved / internal type name",
             type));
 
-    rv = exr_attr_list_find_by_name (
-        ctxt, &(pctxt->custom_handlers), type, &ent);
+    rv =
+        exr_attr_list_find_by_name (ctxt, &(ctxt->custom_handlers), type, &ent);
     if (rv == EXR_ERR_SUCCESS)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt,
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Attribute handler for '%s' previously registered",
             type));
 
     ent = NULL;
     rv  = exr_attr_list_add_by_type (
-        ctxt, &(pctxt->custom_handlers), type, type, 0, NULL, &ent);
+        ctxt, &(ctxt->custom_handlers), type, type, 0, NULL, &ent);
     if (rv != EXR_ERR_SUCCESS)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt,
-            rv,
-            "Unable to register custom handler for type '%s'",
-            type));
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+            ctxt, rv, "Unable to register custom handler for type '%s'", type));
 
     ent->opaque->unpack_func_ptr           = unpack_func_ptr;
     ent->opaque->pack_func_ptr             = pack_func_ptr;
     ent->opaque->destroy_unpacked_func_ptr = destroy_unpacked_func_ptr;
 
-    for (int p = 0; p < pctxt->num_parts; ++p)
+    for (int p = 0; p < ctxt->num_parts; ++p)
     {
-        curattrs = &(pctxt->parts[p]->attributes);
+        curattrs = &(ctxt->parts[p]->attributes);
         if (curattrs)
         {
             int nattr = curattrs->num_attributes;
@@ -518,7 +560,7 @@ exr_register_attr_type_handler (
         }
     }
 
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -528,29 +570,35 @@ exr_set_longname_support (exr_context_t ctxt, int onoff)
 {
     uint8_t oldval, newval;
 
-    EXR_PROMOTE_LOCKED_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
+    internal_exr_lock (ctxt);
 
-    if (pctxt->mode != EXR_CONTEXT_WRITE)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_NOT_OPEN_WRITE));
+    if (ctxt->mode != EXR_CONTEXT_WRITE && ctxt->mode != EXR_CONTEXT_TEMPORARY)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_WRITE));
 
-    oldval = pctxt->max_name_length;
+    oldval = ctxt->max_name_length;
     newval = EXR_SHORTNAME_MAXLEN;
-    if (onoff) newval = EXR_LONGNAME_MAXLEN;
+    if (onoff)
+    {
+        newval        = EXR_LONGNAME_MAXLEN;
+        ctxt->version = 2;
+    }
+    else { ctxt->version = 1; }
 
     if (oldval > newval)
     {
-        for (int p = 0; p < pctxt->num_parts; ++p)
+        for (int p = 0; p < ctxt->num_parts; ++p)
         {
-            struct _internal_exr_part* curp = pctxt->parts[p];
+            exr_priv_part_t curp = ctxt->parts[p];
             for (int a = 0; a < curp->attributes.num_attributes; ++a)
             {
                 exr_attribute_t* curattr = curp->attributes.entries[a];
                 if (curattr->name_length > newval ||
                     curattr->type_name_length > newval)
                 {
-                    return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-                        pctxt,
+                    return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                        ctxt,
                         EXR_ERR_NAME_TOO_LONG,
                         "Part %d, attribute '%s' (type '%s') has a name too long for new longname setting (%d)",
                         curp->part_index,
@@ -565,8 +613,8 @@ exr_set_longname_support (exr_context_t ctxt, int onoff)
                     {
                         if (chs->entries[c].name.length > newval)
                         {
-                            return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-                                pctxt,
+                            return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                                ctxt,
                                 EXR_ERR_NAME_TOO_LONG,
                                 "Part %d, channel '%s' has a name too long for new longname setting (%d)",
                                 curp->part_index,
@@ -578,8 +626,8 @@ exr_set_longname_support (exr_context_t ctxt, int onoff)
             }
         }
     }
-    pctxt->max_name_length = newval;
-    return EXR_UNLOCK_AND_RETURN_PCTXT (EXR_ERR_SUCCESS);
+    ctxt->max_name_length = newval;
+    return EXR_UNLOCK_AND_RETURN (EXR_ERR_SUCCESS);
 }
 
 /**************************************/
@@ -588,67 +636,93 @@ exr_result_t
 exr_write_header (exr_context_t ctxt)
 {
     exr_result_t rv = EXR_ERR_SUCCESS;
-    EXR_PROMOTE_LOCKED_CONTEXT_OR_ERROR (ctxt);
 
-    if (pctxt->mode != EXR_CONTEXT_WRITE)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_NOT_OPEN_WRITE));
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
+    internal_exr_lock (ctxt);
 
-    if (pctxt->num_parts == 0)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->report_error (
-            pctxt,
+    if (ctxt->mode != EXR_CONTEXT_WRITE)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_WRITE));
+
+    if (ctxt->num_parts == 0)
+        return EXR_UNLOCK_AND_RETURN (ctxt->report_error (
+            ctxt,
             EXR_ERR_FILE_BAD_HEADER,
             "No parts defined in file prior to writing data"));
 
-    for (int p = 0; rv == EXR_ERR_SUCCESS && p < pctxt->num_parts; ++p)
+    /* add part and set name should have already validated the uniqueness
+     * so just ensure the name has been set for multi part files
+     */
+    for ( int p = ctxt->num_parts > 1 ? 0 : 1; p < ctxt->num_parts; ++p )
     {
-        struct _internal_exr_part* curp = pctxt->parts[p];
+        const exr_attribute_t* pname = ctxt->parts[p]->name;
+        if (!pname)
+        {
+            return EXR_UNLOCK_AND_RETURN (
+                ctxt->print_error (
+                    ctxt,
+                    EXR_ERR_INVALID_ARGUMENT,
+                    "Part %d missing required name for multi-part file",
+                    p));
+        }
+    }
+
+    for (int p = 0; rv == EXR_ERR_SUCCESS && p < ctxt->num_parts; ++p)
+    {
+        exr_priv_part_t curp = ctxt->parts[p];
 
         int32_t ccount = 0;
 
         if (!curp->channels)
-            return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-                pctxt,
+            return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                ctxt,
                 EXR_ERR_MISSING_REQ_ATTR,
                 "Part %d is missing channel list",
                 p));
 
-        rv = internal_exr_compute_tile_information (pctxt, curp, 0);
+        rv = internal_exr_compute_tile_information (ctxt, curp, 0);
         if (rv != EXR_ERR_SUCCESS) break;
 
         ccount = internal_exr_compute_chunk_offset_size (curp);
+        if (ccount < 0)
+            return EXR_UNLOCK_AND_RETURN (
+                ctxt->report_error (
+                    ctxt,
+                    EXR_ERR_FILE_BAD_HEADER,
+                    "Invalid part specification computing number of chunks in file"));
 
         curp->chunk_count = ccount;
 
-        if (pctxt->has_nonimage_data || pctxt->is_multipart)
+        if (ctxt->has_nonimage_data || ctxt->is_multipart)
         {
-            EXR_UNLOCK (pctxt);
+            internal_exr_unlock (ctxt);
             rv = exr_attr_set_int (ctxt, p, EXR_REQ_CHUNK_COUNT_STR, ccount);
-            EXR_LOCK (pctxt);
+            internal_exr_lock (ctxt);
             if (rv != EXR_ERR_SUCCESS) break;
         }
 
-        rv = internal_exr_validate_write_part (pctxt, curp);
+        rv = internal_exr_validate_write_part (ctxt, curp);
     }
 
-    pctxt->output_file_offset = 0;
+    ctxt->output_file_offset = 0;
 
-    if (rv == EXR_ERR_SUCCESS) rv = internal_exr_write_header (pctxt);
+    if (rv == EXR_ERR_SUCCESS) rv = internal_exr_write_header (ctxt);
 
     if (rv == EXR_ERR_SUCCESS)
     {
-        pctxt->mode               = EXR_CONTEXT_WRITING_DATA;
-        pctxt->cur_output_part    = 0;
-        pctxt->last_output_chunk  = -1;
-        pctxt->output_chunk_count = 0;
-        for (int p = 0; rv == EXR_ERR_SUCCESS && p < pctxt->num_parts; ++p)
+        ctxt->mode               = EXR_CONTEXT_WRITING_DATA;
+        ctxt->cur_output_part    = 0;
+        ctxt->last_output_chunk  = -1;
+        ctxt->output_chunk_count = 0;
+        for (int p = 0; rv == EXR_ERR_SUCCESS && p < ctxt->num_parts; ++p)
         {
-            struct _internal_exr_part* curp = pctxt->parts[p];
-            curp->chunk_table_offset        = pctxt->output_file_offset;
-            pctxt->output_file_offset +=
+            exr_priv_part_t curp = ctxt->parts[p];
+
+            curp->chunk_table_offset = ctxt->output_file_offset;
+            ctxt->output_file_offset +=
                 (uint64_t) (curp->chunk_count) * sizeof (uint64_t);
         }
     }
 
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }

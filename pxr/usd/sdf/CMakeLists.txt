@@ -233,7 +233,7 @@ pxr_test_scripts(
     testenv/testSdfZipFileLimits.py
 )
 
-pxr_build_test_shared_lib(TestSdfFileFormatCapabilities
+pxr_build_test_plugin(TestSdfFileFormatCapabilities
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         sdf
@@ -243,7 +243,7 @@ pxr_build_test_shared_lib(TestSdfFileFormatCapabilities
         testenv/TestSdfFileFormatCapabilities.cpp
 )
 
-pxr_build_test_shared_lib(TestSdfLayerExceptionHandling
+pxr_build_test_plugin(TestSdfLayerExceptionHandling
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         sdf
@@ -253,7 +253,7 @@ pxr_build_test_shared_lib(TestSdfLayerExceptionHandling
         testenv/TestSdfLayerExceptionHandling.cpp
 )
 
-pxr_build_test_shared_lib(TestSdfNoAssetFileFormat
+pxr_build_test_plugin(TestSdfNoAssetFileFormat
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         sdf
@@ -263,7 +263,7 @@ pxr_build_test_shared_lib(TestSdfNoAssetFileFormat
         testenv/TestSdfNoAssetFileFormat.cpp
 )
 
-pxr_build_test_shared_lib(TestSdfStreamingFileFormat
+pxr_build_test_plugin(TestSdfStreamingFileFormat
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         sdf
@@ -273,7 +273,7 @@ pxr_build_test_shared_lib(TestSdfStreamingFileFormat
         testenv/TestSdfStreamingFileFormat.cpp
 )
 
-pxr_build_test_shared_lib(TestSdfTargetFileFormat
+pxr_build_test_plugin(TestSdfTargetFileFormat
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         sdf
@@ -283,7 +283,7 @@ pxr_build_test_shared_lib(TestSdfTargetFileFormat
         testenv/TestSdfTargetFileFormat.cpp
 )
 
-pxr_build_test_shared_lib(TestSdfResolver
+pxr_build_test_plugin(TestSdfResolver
     INSTALL_PREFIX SdfPlugins
     LIBRARIES
         ar

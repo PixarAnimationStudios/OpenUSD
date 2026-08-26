@@ -138,13 +138,13 @@ UsdContrivedBase::CreateMyDoubleAttr(VtValue const &defaultValue, bool writeSpar
 UsdAttribute
 UsdContrivedBase::GetBoolAttr() const
 {
-    return GetPrim().GetAttribute(UsdContrivedTokens->bool);
+    return GetPrim().GetAttribute(UsdContrivedTokens->bool_);
 }
 
 UsdAttribute
 UsdContrivedBase::CreateBoolAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->bool,
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->bool_,
                        SdfValueTypeNames->Bool,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -172,13 +172,13 @@ UsdContrivedBase::CreateUcharAttr(VtValue const &defaultValue, bool writeSparsel
 UsdAttribute
 UsdContrivedBase::GetIntAttr() const
 {
-    return GetPrim().GetAttribute(UsdContrivedTokens->int);
+    return GetPrim().GetAttribute(UsdContrivedTokens->int_);
 }
 
 UsdAttribute
 UsdContrivedBase::CreateIntAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->int,
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->int_,
                        SdfValueTypeNames->Int,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -257,13 +257,13 @@ UsdContrivedBase::CreateHalfAttr(VtValue const &defaultValue, bool writeSparsely
 UsdAttribute
 UsdContrivedBase::GetFloatAttr() const
 {
-    return GetPrim().GetAttribute(UsdContrivedTokens->float);
+    return GetPrim().GetAttribute(UsdContrivedTokens->float_);
 }
 
 UsdAttribute
 UsdContrivedBase::CreateFloatAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->float,
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->float_,
                        SdfValueTypeNames->Float,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -274,13 +274,13 @@ UsdContrivedBase::CreateFloatAttr(VtValue const &defaultValue, bool writeSparsel
 UsdAttribute
 UsdContrivedBase::GetDoubleAttr() const
 {
-    return GetPrim().GetAttribute(UsdContrivedTokens->double);
+    return GetPrim().GetAttribute(UsdContrivedTokens->double_);
 }
 
 UsdAttribute
 UsdContrivedBase::CreateDoubleAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->double,
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->double_,
                        SdfValueTypeNames->Double,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -1771,15 +1771,15 @@ UsdContrivedBase::GetSchemaAttributeNames(bool includeInherited)
         UsdContrivedTokens->myVaryingTokenArray,
         UsdContrivedTokens->myUniformBool,
         UsdContrivedTokens->myDouble,
-        UsdContrivedTokens->bool,
+        UsdContrivedTokens->bool_,
         UsdContrivedTokens->uchar,
-        UsdContrivedTokens->int,
+        UsdContrivedTokens->int_,
         UsdContrivedTokens->uint,
         UsdContrivedTokens->int64,
         UsdContrivedTokens->uint64,
         UsdContrivedTokens->half,
-        UsdContrivedTokens->float,
-        UsdContrivedTokens->double,
+        UsdContrivedTokens->float_,
+        UsdContrivedTokens->double_,
         UsdContrivedTokens->string,
         UsdContrivedTokens->token,
         UsdContrivedTokens->asset,

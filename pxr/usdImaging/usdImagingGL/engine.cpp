@@ -16,9 +16,7 @@
 #include "pxr/usdImaging/usdImaging/sceneIndex.h"
 #include "pxr/usdImaging/usdImaging/sceneIndices.h"
 #include "pxr/usdImaging/usdImaging/sceneIndexCreateArgsSchema.h"
-
-#include "pxr/usdImaging/usdExecImaging/stageSceneIndexFactory.h"
-#include "pxr/usdImaging/usdExecImaging/stageSceneIndexInterface.h"
+#include "pxr/usdImaging/usdImaging/stageSceneIndexInterface.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/camera.h"
@@ -40,11 +38,14 @@
 #include "pxr/imaging/hd/rendererCreateArgsSchema.h"
 #include "pxr/imaging/hd/rendererPlugin.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
+#include "pxr/imaging/hd/renderSettingDescriptorSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/sceneGlobalsSchema.h"
 #include "pxr/imaging/hd/sceneIndexCreateArgsSchema.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/systemMessages.h"
 #include "pxr/imaging/hd/utils.h"
+#include "pxr/imaging/hdsi/applicationRenderSettingsSceneIndex.h"
 #include "pxr/imaging/hdsi/domeLightCameraVisibilitySceneIndex.h"
 #include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
 #include "pxr/imaging/hdsi/prefixPathPruningSceneIndex.h"
@@ -58,6 +59,8 @@
 
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
+
+#include "pxr/base/plug/registry.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
@@ -88,6 +91,12 @@ TF_DEFINE_ENV_SETTING(
     "Use caching scene index.");
 
 TF_DEFINE_ENV_SETTING(
+    USDIMAGINGGL_ENGINE_ENABLE_RENDER_SETTINGS_SCENE_INDEX, false,
+    "Communicate render settings in-band through the application render "
+    "settings scene index rather than through the "
+    "HdLegacyRenderControlInterface.");
+
+TF_DEFINE_ENV_SETTING(
     USDIMAGINGGL_ENGINE_ENABLE_EXEC_SCENE_INDEX, false,
     "Inserts an initial scene index which provides values computed by exec. "
     "The exec scene index is added by a merging scene index in the overrides "
@@ -113,6 +122,8 @@ struct _AppSceneIndices
         domeLightCameraVisibilitySceneIndex;
     HdsiSceneMaterialPruningSceneIndexRefPtr
         sceneMaterialPruningSceneIndex;
+    HdsiApplicationRenderSettingsSceneIndexRefPtr
+        applicationRenderSettingsSceneIndex;
 
     _AppSceneIndicesSharedPtr
     static New(const TfToken &renderInstanceId)
@@ -146,7 +157,8 @@ private:
     }
 
     HdSceneIndexBaseRefPtr _Append(
-        const HdSceneIndexBaseRefPtr &inputScene)
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const HdContainerDataSourceHandle &createArgs)
     {
         HdSceneIndexBaseRefPtr sceneIndex = inputScene;
 
@@ -161,6 +173,16 @@ private:
         sceneIndex =
             sceneMaterialPruningSceneIndex =
                 HdsiSceneMaterialPruningSceneIndex::New(sceneIndex);
+
+        static const bool enableRenderSettingsSceneIndex =
+            TfGetEnvSetting(
+                USDIMAGINGGL_ENGINE_ENABLE_RENDER_SETTINGS_SCENE_INDEX);
+        if (enableRenderSettingsSceneIndex) {
+            sceneIndex =
+                applicationRenderSettingsSceneIndex =
+                    HdsiApplicationRenderSettingsSceneIndex::New(
+                        sceneIndex, createArgs);
+        }
 
         return sceneIndex;
     }
@@ -177,7 +199,7 @@ private:
                             renderInstanceId.c_str());
             return inputScene;
         }
-        return instance->_Append(inputScene);
+        return instance->_Append(inputScene, createArgs);
     }
 
     static void _Register()
@@ -409,6 +431,9 @@ UsdImagingGLEngine::_DestroyHydraObjects()
         TRACE_SCOPE("Destroy UsdImaging delegate");
 
         _sceneDelegate = nullptr;
+
+        // Reset flag.
+        _setActiveRenderSettingsPrimPathCalled = false;
     }
 
     // We are not removing _usdImagingFinalSceneIndex from _mergingSceneIndex
@@ -446,6 +471,8 @@ UsdImagingGLEngine::_DestroyHydraObjects()
 
         _taskControllerSceneIndex = TfNullPtr;
     }
+
+    _sceneIndexCreateArgs = nullptr;
 
     _isPopulated = false;
 }
@@ -549,9 +576,9 @@ UsdImagingGLEngine::PrepareBatch(
                 stage->GetPrimAtPath(_rootPath),
                 _excludedPrimPaths);
             _sceneDelegate->SetInvisedPrimPaths(_invisedPrimPaths);
-            // This is only necessary when using the legacy scene delegate.
-            // The stage scene index provides this functionality.
-            _SetActiveRenderSettingsPrimFromStageMetadata(stage);
+            if (!_setActiveRenderSettingsPrimPathCalled) {
+                _SetActiveRenderSettingsPrimFromStageMetadata(stage);
+            }
         }
         _isPopulated = true;
     }
@@ -578,32 +605,32 @@ void
 UsdImagingGLEngine::_SetActiveRenderSettingsPrimFromStageMetadata(
     UsdStageWeakPtr stage)
 {
+    if (UseUsdImagingSceneIndex()) {
+        TF_CODING_ERROR(
+            "The canonical source of the active render settings prim path of "
+            "the UsdStage is the UsdImagingSceneIndex.");
+    }
+    
     if (!TF_VERIFY(stage)) {
         return;
     }
 
-    HdSceneIndexBaseRefPtr const terminalSceneIndex =
-        _GetTerminalSceneIndex();
-    if (!TF_VERIFY(terminalSceneIndex)) {
+    if (!stage->HasAuthoredMetadata(UsdRenderTokens->renderSettingsPrimPath)) {
         return;
     }
 
-    // If we already have an opinion, skip the stage metadata.
-    if (!HdUtils::HasActiveRenderSettingsPrim(terminalSceneIndex)) {
-        std::string pathStr;
-        if (stage->HasAuthoredMetadata(
-                UsdRenderTokens->renderSettingsPrimPath)) {
-            stage->GetMetadata(
-                UsdRenderTokens->renderSettingsPrimPath, &pathStr);
-        }
-        // Add the delegateId prefix since the scene globals scene index is
-        // inserted into the merging scene index.
-        if (!pathStr.empty()) {
-            SetActiveRenderSettingsPrimPath(
-                SdfPath(pathStr).ReplacePrefix(
-                    SdfPath::AbsoluteRootPath(), _sceneDelegateId));
-        }
+    std::string pathStr;
+    stage->GetMetadata(UsdRenderTokens->renderSettingsPrimPath, &pathStr);
+
+    if (pathStr.empty()) {
+        return;
     }
+
+    // Add the delegateId prefix since the scene globals scene index is
+    // inserted into the merging scene index.
+    SetActiveRenderSettingsPrimPath(
+        SdfPath(pathStr).ReplacePrefix(
+            SdfPath::AbsoluteRootPath(), _sceneDelegateId));
 }
 
 void
@@ -631,17 +658,12 @@ UsdImagingGLEngine::_UpdateDomeLightCameraVisibility()
     // as we move towards Hydra 2.0 render delegates and render settings are
     // communicated in-band through scene indices.
 
+    const VtValue v = 
+        GetRendererSetting(HdRenderSettingsTokens->domeLightCameraVisibility);
+
     // The absence of a setting in the map is the same as camera visibility
     // being on.
-    HdLegacyRenderControlInterface * const renderControl =
-        _GetLegacyRenderControl();
-    if (!renderControl) {
-        return;
-    }
-    const VtValue v = renderControl->GetRenderSetting(
-        HdRenderSettingsTokens->domeLightCameraVisibility);
-    bool domeLightCamVisSetting = v.GetWithDefault<bool>(true);
-
+    const bool domeLightCamVisSetting = v.GetWithDefault<bool>(true);
     if (_domeLightCameraVisibility == domeLightCamVisSetting) {
         return;
     }
@@ -1320,13 +1342,7 @@ UsdImagingGLEngine::DecodeIntersection(
     int * const outHitInstanceIndex,
     HdInstancerContext *const outInstancerContext)
 {
-    HdLegacyRenderControlInterface * const renderControl =
-        _GetLegacyRenderControl();
-    if (!renderControl) {
-        return false;
-    }
-
-    const SdfPath sceneIndexPath = renderControl->GetRprimPathFromPrimId(primIdx);
+    const SdfPath sceneIndexPath = _GetSceneIndexPrimPathFromPrimId(primIdx);
     if (sceneIndexPath.IsEmpty()) {
         return false;
     }
@@ -1378,29 +1394,11 @@ UsdImagingGLEngine::DecodeIntersection(
     return true;
 }
 
-// Convert a PickId to an HdxPickHit
-static HdxPickHit
-_PickHitFromPickId(
-    const UsdImagingGLEngine::PickId& pickId,
-    HdLegacyRenderControlInterface * const renderControl)
-{
-    HdxPickHit hit;
-    hit.objectId = renderControl->GetRprimPathFromPrimId(pickId.primId);
-    hit.instanceIndex = pickId.instanceId;
-    return hit;
-}
-
 UsdImagingGLEngine::DecodeResultVector
 UsdImagingGLEngine::DecodeIntersections(const PickIdVector& pickIds)
 {
     DecodeResultVector results;
     results.resize(pickIds.size());
-
-    HdLegacyRenderControlInterface * const renderControl =
-        _GetLegacyRenderControl();
-    if (!renderControl) {
-        return results;
-    }
 
     if (_sceneDelegate) {
         // Legacy scene delegate path: resolve each rprimPath individually
@@ -1408,7 +1406,7 @@ UsdImagingGLEngine::DecodeIntersections(const PickIdVector& pickIds)
             const auto [primIdx, instanceIdx] = pickIds[i];
 
             const SdfPath sceneIndexPath =
-                renderControl->GetRprimPathFromPrimId(primIdx);
+                _GetSceneIndexPrimPathFromPrimId(primIdx);
             if (sceneIndexPath.IsEmpty()) {
                 continue;
             }
@@ -1424,7 +1422,10 @@ UsdImagingGLEngine::DecodeIntersections(const PickIdVector& pickIds)
         hits.resize(pickIds.size());
 
         for (size_t i = 0; i < pickIds.size(); ++i) {
-            hits[i] = _PickHitFromPickId(pickIds[i], renderControl);
+            const PickId& pickId = pickIds[i];
+            HdxPickHit& hit = hits[i];
+            hit.objectId = _GetSceneIndexPrimPathFromPrimId(pickId.primId);
+            hit.instanceIndex = pickId.instanceId;
         }
 
         const std::vector<HdxPrimOriginInfo> infos =
@@ -1586,6 +1587,10 @@ UsdImagingGLEngine::_CreateSceneIndicesAndRenderer(
     HdContainerDataSourceHandle const sceneIndexCreateArgs =
         _GetSceneIndexCreateArgs(plugin);
 
+    // Retain the create-args so that GetRendererSettingsList() can source the
+    // renderer's advertised render settings from them.
+    _sceneIndexCreateArgs = sceneIndexCreateArgs;
+
     // Create the merging scene index, all subsequent scene indices
     // and the renderer.
     _CreateSceneIndexChainAndRenderer(
@@ -1610,7 +1615,7 @@ UsdImagingGLEngine::_CreateSceneIndicesAndRenderer(
 
         HdRenderIndexAdapterSceneIndexRefPtr const adapter =
             HdRenderIndexAdapterSceneIndex::New(
-                HdOverlayContainerDataSource::OverlayedContainerDataSources(
+                HdCreateOverlayContainerDataSource(
                     sceneIndexCreateArgs,
                     _GetSceneIndexCreateArgsFromLegacyRenderControl()));
 
@@ -1673,37 +1678,13 @@ UsdImagingGLEngine::_ComputeControllerPath(
 
 HdSceneIndexBaseRefPtr
 UsdImagingGLEngine::_AppendOverridesSceneIndices(
-    HdSceneIndexBaseRefPtr const &inputScene)
+    HdSceneIndexBaseRefPtr const &inputScene,
+    HdContainerDataSourceHandle const &)
 {
     HdSceneIndexBaseRefPtr sceneIndex = inputScene;
 
     if (TfGetEnvSetting(USDIMAGINGGL_ENGINE_ENABLE_EXEC_SCENE_INDEX)) {
-        _execStageSceneIndex = UsdExecImagingCreateStageSceneIndex();
-        if (TF_VERIFY(_execStageSceneIndex)) {
-            // Insert a merging scene index that merges the input scene with the
-            // _execStageSceneIndex. The _execStageSceneIndex is added first so
-            // that its data sources overshadow the corresponding data sources
-            // from the input scene.
-            const HdMergingSceneIndexRefPtr mergingSceneIndex =
-                HdMergingSceneIndex::New();
-            mergingSceneIndex->AddInputScene(
-                _execStageSceneIndex,
-                SdfPath::AbsoluteRootPath());
-            mergingSceneIndex->AddInputScene(
-                inputScene,
-                SdfPath::AbsoluteRootPath());
-
-            // Insert a notice batching scene index that batches all notices
-            // originating from the UsdImagingStageSceneIndex and the
-            // UsdExecImagingStageSceneIndex. This ensures the exec scene index
-            // is able to refresh its exec request before notices are flushed
-            // to downstream scene indices.
-            _noticeBatchingStageSceneIndex = HdNoticeBatchingSceneIndex::New(
-                mergingSceneIndex);
-            _noticeBatchingStageSceneIndex->SetBatchingEnabled(true);
-
-            sceneIndex = _noticeBatchingStageSceneIndex;
-        }
+        sceneIndex = _CreateExecSceneIndices(sceneIndex);
     }
 
     const HdContainerDataSourceHandle prefixPathPruningInputArgs =
@@ -1738,18 +1719,72 @@ UsdImagingGLEngine::_AppendOverridesSceneIndices(
 }
 
 HdSceneIndexBaseRefPtr
+UsdImagingGLEngine::_CreateExecSceneIndices(
+    const HdSceneIndexBaseRefPtr &inputScene)
+{
+    // Try to manufacture an instance of UsdExecImaging_StageSceneIndex from a
+    // registered factory object. If this cannot be done, emit an error and do
+    // not modify the input scene.
+
+    const TfType execStageSceneIndexType =
+        PlugRegistry::FindDerivedTypeByName<UsdImagingStageSceneIndexInterface>(
+            "UsdExecImaging_StageSceneIndex");
+    if (!TF_VERIFY(!execStageSceneIndexType.IsUnknown())) {
+        return inputScene;
+    }
+
+    const auto *const execSceneIndexFactory =
+        execStageSceneIndexType.GetFactory<
+            UsdImagingStageSceneIndexInterfaceFactoryBase>();
+    if (!TF_VERIFY(execSceneIndexFactory)) {
+        return inputScene;
+    }
+
+    _execStageSceneIndex = execSceneIndexFactory->New();
+    if (!TF_VERIFY(_execStageSceneIndex)) {
+        return inputScene;
+    }
+
+    // Insert a merging scene index that merges the input scene with the
+    // _execStageSceneIndex. The _execStageSceneIndex is added first so that its
+    // data sources overshadow the corresponding data sources from the input
+    // scene.
+    const HdMergingSceneIndexRefPtr mergingSceneIndex =
+        HdMergingSceneIndex::New();
+    mergingSceneIndex->AddInputScene(
+        _execStageSceneIndex,
+        SdfPath::AbsoluteRootPath());
+    mergingSceneIndex->AddInputScene(
+        inputScene,
+        SdfPath::AbsoluteRootPath());
+
+    // Insert a notice batching scene index that batches all notices
+    // originating from the UsdImagingStageSceneIndex and the
+    // UsdExecImagingStageSceneIndex. This ensures the exec scene index
+    // is able to refresh its exec request before notices are flushed
+    // to downstream scene indices.
+    _noticeBatchingStageSceneIndex = HdNoticeBatchingSceneIndex::New(
+        mergingSceneIndex);
+    _noticeBatchingStageSceneIndex->SetBatchingEnabled(true);
+
+    return _noticeBatchingStageSceneIndex;
+}
+
+HdSceneIndexBaseRefPtr
 UsdImagingGLEngine::_CreateUsdImagingSceneIndices(
     HdContainerDataSourceHandle const &sceneIndexCreateArgs)
 {
     HdSceneIndexBaseRefPtr sceneIndex;
 
+    UsdImagingSceneIndex::SceneIndexAppendCallbacks callbacks;
+    callbacks.overridesSceneIndexCallback =
+        std::bind(
+            &UsdImagingGLEngine::_AppendOverridesSceneIndices,
+            this, std::placeholders::_1, std::placeholders::_2);
+
     sceneIndex =
         _usdImagingSceneIndex =
-            UsdImagingSceneIndex::New(
-                sceneIndexCreateArgs,
-                std::bind(
-                    &UsdImagingGLEngine::_AppendOverridesSceneIndices,
-                    this, std::placeholders::_1));
+            UsdImagingSceneIndex::New(sceneIndexCreateArgs, callbacks);
 
     sceneIndex =
         _displayStyleSceneIndex =
@@ -1782,7 +1817,7 @@ UsdImagingGLEngine::_GetSceneIndexCreateArgs(
                         _displayUnloadedPrimsWithBounds))
                 .Build());
 
-    return HdOverlayContainerDataSource::OverlayedContainerDataSources(
+    return HdCreateOverlayContainerDataSource(
         rendererPluginArgs,
         usdImagingArgs);
 }
@@ -1839,7 +1874,8 @@ UsdImagingGLEngine::_CreateSceneIndexChainAndRenderer(
         sceneIndex =
             HdSceneIndexPluginRegistry::GetInstance()
                 .AppendSceneIndicesForRenderer(
-                    rendererDisplayName, sceneIndex, renderInstanceId);
+                    rendererDisplayName, sceneIndex, renderInstanceId,
+                    /* appName = */ std::string(), sceneIndexCreateArgs);
     }
 
     if (_IsEnabledTerminalCachingSceneIndex()) {
@@ -1962,57 +1998,126 @@ UsdImagingGLEngine::GetAovRenderBuffer(TfToken const& name) const
     return renderControl->GetRenderBuffer(path);
 }
 
+// Determine the kind of UI widget to create based on the type of the
+// setting's default value. Returns false (and warns) if the type is not
+// supported, in which case the setting should be skipped.
+static bool
+_ComputeRendererSettingType(UsdImagingGLRendererSetting * const r)
+{
+    if (r->defValue.IsHolding<bool>()) {
+        r->type = UsdImagingGLRendererSetting::TYPE_FLAG;
+    } else if (r->defValue.IsHolding<int>() ||
+               r->defValue.IsHolding<unsigned int>()) {
+        r->type = UsdImagingGLRendererSetting::TYPE_INT;
+    } else if (r->defValue.IsHolding<float>()) {
+        r->type = UsdImagingGLRendererSetting::TYPE_FLOAT;
+    } else if (r->defValue.IsHolding<std::string>()) {
+        r->type = UsdImagingGLRendererSetting::TYPE_STRING;
+    } else {
+        TF_WARN("Setting '%s' with type '%s' doesn't have a UI"
+                " implementation...",
+                r->name.c_str(),
+                r->defValue.GetTypeName().c_str());
+        return false;
+    }
+    return true;
+}
+    
 UsdImagingGLRendererSettingsList
 UsdImagingGLEngine::GetRendererSettingsList() const
 {
-    HdLegacyRenderControlInterface * const renderControl =
-        _GetLegacyRenderControl();
-    if (!renderControl) {
-        return {};
-    }
-
     UsdImagingGLRendererSettingsList ret;
 
-    for (const HdRenderSettingDescriptor& desc :
-             renderControl->GetRenderSettingDescriptors()) {
-        UsdImagingGLRendererSetting r;
-        r.key = desc.key;
-        r.name = desc.name;
-        r.defValue = desc.defaultValue;
+    // Use the application render setting scene index to get the
+    // render settings advertised by the renderer plugin.
+    const HdsiApplicationRenderSettingsSceneIndexRefPtr si =
+        _GetApplicationRenderSettingsSceneIndex();
+    if (si) {
+        const HdRenderSettingDescriptorContainerSchema descriptors =
+            si->GetRenderSettingDescriptorsFromRenderer();
+        if (descriptors.IsDefined()) {
+            // The container maps each setting's key (the entry name) to a
+            // descriptor.
+            for (const TfToken &name : descriptors.GetNames()) {
+                const HdRenderSettingDescriptorSchema descriptor =
+                    descriptors.Get(name);
 
-        // Use the type of the default value to tell us what kind of
-        // widget to create...
-        if (r.defValue.IsHolding<bool>()) {
-            r.type = UsdImagingGLRendererSetting::TYPE_FLAG;
-        } else if (r.defValue.IsHolding<int>() ||
-                   r.defValue.IsHolding<unsigned int>()) {
-            r.type = UsdImagingGLRendererSetting::TYPE_INT;
-        } else if (r.defValue.IsHolding<float>()) {
-            r.type = UsdImagingGLRendererSetting::TYPE_FLOAT;
-        } else if (r.defValue.IsHolding<std::string>()) {
-            r.type = UsdImagingGLRendererSetting::TYPE_STRING;
-        } else {
-            TF_WARN("Setting '%s' with type '%s' doesn't have a UI"
-                    " implementation...",
-                    r.name.c_str(),
-                    r.defValue.GetTypeName().c_str());
-            continue;
+                UsdImagingGLRendererSetting r;
+                r.key = name;
+                if (const HdStringDataSourceHandle nameDs =
+                    descriptor.GetName()) {
+                    r.name = nameDs->GetTypedValue(0.0f);
+                }
+                if (const HdSampledDataSourceHandle defValueDs =
+                    descriptor.GetDefaultValue()) {
+                    r.defValue = defValueDs->GetValue(0.0f);
+                }
+
+                if (_ComputeRendererSettingType(&r)) {
+                    ret.push_back(r);
+                }
+            }
+            return ret;
         }
-        ret.push_back(r);
+    }
+
+    // Fallbck to getting the render setting through the
+    // HdLegacyRenderControlInterface (really a Hydra 1.0 backdoor).
+    if (HdLegacyRenderControlInterface * const renderControl =
+            _GetLegacyRenderControl()) {
+        for (const HdRenderSettingDescriptor& desc :
+                 renderControl->GetRenderSettingDescriptors()) {
+            UsdImagingGLRendererSetting r;
+            r.key = desc.key;
+            r.name = desc.name;
+            r.defValue = desc.defaultValue;
+
+            if (_ComputeRendererSettingType(&r)) {
+                ret.push_back(r);
+            }
+        }
+
+        return ret;
     }
 
     return ret;
+    
 }
 
 VtValue
 UsdImagingGLEngine::GetRendererSetting(TfToken const& id) const
 {
-    HdLegacyRenderControlInterface * const renderControl =
-        _GetLegacyRenderControl();
-    if (!renderControl) {
-        return {};
+    // Use the application render setting scene index to see the current
+    // value the application sets it to.
+    if (const HdsiApplicationRenderSettingsSceneIndexRefPtr si =
+            _GetApplicationRenderSettingsSceneIndex()) {
+        const VtValue setting =
+            si->GetRenderSetting(
+                HdsiApplicationRenderSettingsSceneIndex::
+                RenderSettingsSource::Resolved,
+                id);
+        if (setting.IsEmpty()) {
+            if (HdLegacyRenderControlInterface * const renderControl =
+                _GetLegacyRenderControl()) {
+                for (const HdRenderSettingDescriptor& desc :
+                         renderControl->GetRenderSettingDescriptors()) {
+                    if (desc.key == id) {
+                        return desc.defaultValue;
+                    }
+                }
+            }
+        }
+        return setting;
     }
-    return renderControl->GetRenderSetting(id);
+
+    // Fallbck to getting the render setting through the
+    // HdLegacyRenderControlInterface (really a Hydra 1.0 backdoor).
+    if (HdLegacyRenderControlInterface * const renderControl =
+            _GetLegacyRenderControl()) {
+        return renderControl->GetRenderSetting(id);
+    }
+
+    return {};
 }
 
 void
@@ -2023,12 +2128,21 @@ UsdImagingGLEngine::SetRendererSetting(TfToken const& id, VtValue const& value)
     }
 
     TF_PY_ALLOW_THREADS_IN_SCOPE();
-    HdLegacyRenderControlInterface * const renderControl =
-        _GetLegacyRenderControl();
-    if (!renderControl) {
+
+    // Prefer the application render settings scene index (Hydra 2.0 path);
+    // fall back to the legacy render control interface if the renderer did not
+    // advertise render setting descriptors.
+    if (const HdsiApplicationRenderSettingsSceneIndexRefPtr si =
+            _GetApplicationRenderSettingsSceneIndex()) {
+        si->SetApplicationOverrideRenderSetting(id, value);
         return;
     }
-    renderControl->SetRenderSetting(id, value);
+
+    if (HdLegacyRenderControlInterface * const renderControl =
+            _GetLegacyRenderControl()) {
+        renderControl->SetRenderSetting(id, value);
+        return;
+    }
 }
 
 SdfPath
@@ -2052,15 +2166,27 @@ UsdImagingGLEngine::GetActiveRenderPassPrimPath() const
 SdfPath
 UsdImagingGLEngine::GetActiveRenderSettingsPrimPath() const
 {
-    HdSceneIndexBaseRefPtr const terminalSceneIndex =
-        _GetTerminalSceneIndex();
-    if (ARCH_UNLIKELY(!terminalSceneIndex)) {
+    if (!_appSceneIndices) {
+        return {};
+    }
+
+    // After the HdsiApplicationRenderSettingsSceneIndex,
+    // the active render settings prim path is always the same.
+    //
+    // Thus, pick it up just after the scene globals scene index.
+    // That way it corresponds to either the path coming from the
+    // UsdImagingSceneIndex or the one explicitly set by
+    // UsdImagingGLEngine::SetActiveRenderSettingsPrimPath.
+
+    HdSceneIndexBaseRefPtr const sceneIndex =
+        _appSceneIndices->sceneGlobalsSceneIndex;
+    if (!TF_VERIFY(sceneIndex)) {
         return {};
     }
 
     SdfPath activeRenderSettingsPath;
     if (!HdUtils::HasActiveRenderSettingsPrim(
-            terminalSceneIndex, &activeRenderSettingsPath)) {
+            sceneIndex, &activeRenderSettingsPath)) {
         return {};
     }
     return activeRenderSettingsPath;
@@ -2117,6 +2243,10 @@ UsdImagingGLEngine::SetActiveRenderSettingsPrimPath(SdfPath const &path)
     auto &sgsi = _appSceneIndices->sceneGlobalsSceneIndex;
     if (ARCH_UNLIKELY(!sgsi)) {
         return;
+    }
+
+    if (!UseUsdImagingSceneIndex()) {
+        _setActiveRenderSettingsPrimPathCalled = true;
     }
 
     sgsi->SetActiveRenderSettingsPrimPath(path);
@@ -2665,6 +2795,40 @@ UsdImagingGLEngine::_GetLegacyRenderControl() const
     }
 
     return renderControl;
+}
+
+HdsiApplicationRenderSettingsSceneIndexRefPtr
+UsdImagingGLEngine::_GetApplicationRenderSettingsSceneIndex() const
+{
+    if (!_appSceneIndices) {
+        return nullptr;
+    }
+    return _appSceneIndices->applicationRenderSettingsSceneIndex;
+}
+
+SdfPath
+UsdImagingGLEngine::_GetSceneIndexPrimPathFromPrimId(const int primId) const
+{
+    HdSceneIndexBaseRefPtr const si = _GetTerminalSceneIndex();
+    if (!si) {
+        return {};
+    }
+
+    // Prefer prim id from terminal scene index.
+    if (HdPathDataSourceHandle const ds =
+            HdSceneGlobalsSchema::GetFromSceneIndex(si)
+                .GetPrimIdToPath()
+                .GetElement(primId)) {
+        return ds->GetTypedValue(0.0f);
+    }
+
+    // Fall back to the render index's own prim id table.
+    if (HdLegacyRenderControlInterface * const renderControl =
+            _GetLegacyRenderControl()) {
+        return renderControl->GetRprimPathFromPrimId(primId);
+    }
+
+    return {};
 }
 
 bool

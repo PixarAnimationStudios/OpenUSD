@@ -12,6 +12,18 @@
   VERTEX SHADER                                        
 =======================================================
 #version 450
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #extension GL_ARB_shader_draw_parameters : require
 int HgiGetBaseVertex() {
   return gl_BaseVertexARB;
@@ -962,6 +974,18 @@ void main(void)
   GEOMETRY SHADER                                      
 =======================================================
 #version 450
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #define REF(space,type) inout type
 #define FORWARD_DECL(func_decl) func_decl
 #define ATOMIC_LOAD(a) (a)
@@ -1776,6 +1800,18 @@ void main(void)
   FRAGMENT SHADER                                      
 =======================================================
 #version 450
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #extension GL_EXT_fragment_shader_barycentric: require
 #define REF(space,type) inout type
 #define FORWARD_DECL(func_decl) func_decl
@@ -3005,6 +3041,18 @@ void main(void)
   VERTEX SHADER                                        
 =======================================================
 #version 450
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #extension GL_ARB_shader_draw_parameters : require
 int HgiGetBaseVertex() {
   return gl_BaseVertexARB;
@@ -3955,6 +4003,18 @@ void main(void)
   GEOMETRY SHADER                                      
 =======================================================
 #version 450
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #define REF(space,type) inout type
 #define FORWARD_DECL(func_decl) func_decl
 #define ATOMIC_LOAD(a) (a)
@@ -4798,6 +4858,18 @@ void main(void)
   FRAGMENT SHADER                                      
 =======================================================
 #version 450
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #extension GL_EXT_fragment_shader_barycentric: require
 #define REF(space,type) inout type
 #define FORWARD_DECL(func_decl) func_decl

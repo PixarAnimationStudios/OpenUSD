@@ -168,7 +168,7 @@ public:
     /// \see GetShaderId
     /// \see GetShaderIdAttrForRenderContext
     /// \see SdrRegistry::GetShaderNodeByIdentifier
-    /// \see SdrRegistry::GetShaderNodeByIdentifierAndType
+    /// \see SdrRegistry::GetShaderNodeByIdentifierAndSystem
     /// 
     ///
     /// | ||

@@ -55,7 +55,7 @@ pxr_test_scripts(
     testenv/testUsdValidatorMetadata.py
 )
 
-pxr_build_test_shared_lib(TestUsdValidationContextValidators
+pxr_build_test_plugin(TestUsdValidationContextValidators
     INSTALL_PREFIX UsdValidationPlugins
     LIBRARIES
         tf
@@ -66,7 +66,7 @@ pxr_build_test_shared_lib(TestUsdValidationContextValidators
         testenv/testUsdValidationContextValidators.cpp
 )
 
-pxr_build_test_shared_lib(TestUsdValidationRegistryPy
+pxr_build_test_plugin(TestUsdValidationRegistryPy
     INSTALL_PREFIX UsdValidationPlugins
     LIBRARIES
         tf

@@ -205,8 +205,11 @@ bool TsConvertToStandardTangent(
     TsTime* widthOut,
     VtValue* slopeOut)
 {
-    if (slopeOrHeightIn.IsHolding<GfTimeCode>()) {
-        TF_CODING_ERROR("GfTimeCode is unsupported for "
+    if (slopeOrHeightIn.IsHolding<GfTimeCode>() ||
+        slopeOrHeightIn.IsHolding<GfDuration>())
+    {
+        // XXX: why not?
+        TF_CODING_ERROR("GfTimeCode and GfDuration are not supported for "
                         "TsConvertToStandardTangent");
     }
 
@@ -229,9 +232,18 @@ bool TsConvertFromStandardTangent(
     TsTime* widthOut,
     VtValue* slopeOrHeightOut)
 {
-    if (slopeIn.IsHolding<GfTimeCode>()) {
+    if (slopeIn.IsHolding<GfTimeCode>())
+    {
         TF_CODING_ERROR("GfTimeCode is unsupported for "
                         "TsConvertFromStandardTangent");
+        return false;
+    }
+
+    if (slopeIn.IsHolding<GfDuration>())
+    {
+        TF_CODING_ERROR("GfDuration is unsupported for "
+                        "TsConvertFromStandardTangent");
+        return false;
     }
 
     bool ok = true;

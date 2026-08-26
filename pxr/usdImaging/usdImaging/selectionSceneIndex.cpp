@@ -812,43 +812,6 @@ _ComputeSceneIndexPrimsAndInstanceIndices(
     return result;
 }
 
-bool
-_PrimTypeSupportsSelection(const TfToken &primType)
-{
-    TRACE_FUNCTION();
-
-    if (primType.IsEmpty()) {
-        return false;
-    }
-    for (const TfToken &t : {
-            // "Rprims"
-
-            // Most frequent ones on top
-            HdPrimTypeTokens->mesh,
-            HdPrimTypeTokens->basisCurves,
-            HdPrimTypeTokens->points,
-            HdPrimTypeTokens->nurbsPatch,
-            HdPrimTypeTokens->nurbsCurves,
-            HdPrimTypeTokens->volume,
-            HdPrimTypeTokens->tetMesh,
-            HdPrimTypeTokens->geomSubset,
-            HdPrimTypeTokens->plane,
-
-            HdPrimTypeTokens->capsule,
-            HdPrimTypeTokens->cone,
-            HdPrimTypeTokens->cube,
-            HdPrimTypeTokens->cylinder,
-            HdPrimTypeTokens->sphere,
-            HdPrimTypeTokens->model }) {
-        if (primType == t) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-
 // For each seed, traverses the name space children and collects them
 // recursively as follows:
 // - If it is just a normal prim, add it to the result.
@@ -938,7 +901,7 @@ _ExpandToDescendants(
                     primAndNestedInstanceIndices,
                     &seeds);
 
-                if (_PrimTypeSupportsSelection(prim.primType)) {
+                if (HdPrimTypeIsGprim(prim.primType)) {
                     result.push_back(std::move(primAndNestedInstanceIndices));
                 }
             }

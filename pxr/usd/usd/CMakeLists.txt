@@ -275,7 +275,7 @@ pxr_test_scripts(
     testenv/testUsdVariants.py
 )
 
-pxr_build_test_shared_lib(TestUsdProceduralExternalAssetsFileFormatPlugin
+pxr_build_test_plugin(TestUsdProceduralExternalAssetsFileFormatPlugin
     INSTALL_PREFIX UsdPlugins
     LIBRARIES
         sdf
@@ -286,7 +286,7 @@ pxr_build_test_shared_lib(TestUsdProceduralExternalAssetsFileFormatPlugin
         testenv/TestUsdProceduralExternalAssetsFileFormatPlugin.cpp
 )
 
-pxr_build_test_shared_lib(TestUsdResolverChangedResolver
+pxr_build_test_plugin(TestUsdResolverChangedResolver
     INSTALL_PREFIX UsdPlugins
     LIBRARIES
         ar

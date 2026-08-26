@@ -141,7 +141,8 @@ public:
                        FvarPatchType fvarPatchType,
                        SdfPath const &debugId = SdfPath(),
                        float lineWidth = 0,
-                       uint32_t vertexCountFallback = 0);
+                       uint32_t vertexCountFallback = 0,
+                       TfToken const &depthQualifier = TfToken());
 
     HDST_API
     ~HdSt_GeometricShader() override;
@@ -184,6 +185,10 @@ public:
 
     uint32_t GetVertexCountFallback() const {
         return _vertexCountFallback;
+    }
+
+    const TfToken GetDepthQualifier() const {
+        return _depthQualifier;
     }
 
     /// member query functions for PrimitiveType
@@ -266,6 +271,7 @@ private:
     HdPolygonMode _polygonMode;
     float _lineWidth;
     uint32_t _vertexCountFallback;
+    const TfToken _depthQualifier;
 
     std::unique_ptr<HioGlslfx> _glslfx;
     bool _frustumCullingPass;

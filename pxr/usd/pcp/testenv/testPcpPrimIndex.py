@@ -401,6 +401,11 @@ class TestPcpPrimIndex(unittest.TestCase):
         layer = Sdf.Layer.CreateAnonymous()
         layer.ImportFromString('''
         #usda 1.0
+        (
+            relocates = {
+                </Root/Child> : </Root/Child_Relocated>
+            }
+        )
 
         def "Ref"
         {
@@ -414,9 +419,6 @@ class TestPcpPrimIndex(unittest.TestCase):
 
         def "Root" (
             references = </Ref>
-            relocates = {
-                <Child> : <Child_Relocated>
-            }
         )
         {
         }

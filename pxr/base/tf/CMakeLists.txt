@@ -135,6 +135,7 @@ pxr_library(tf
         error
         errorMark
         errorTransport
+        eternalString
         exception
         expiryNotifier
         fastCompression
@@ -258,6 +259,7 @@ pxr_library(tf
         pyErrorInternal
 
     PRIVATE_HEADERS
+        buffer.h
         scopeDescriptionPrivate.h
         pxrDoubleConversion/ieee.h
         pxrDoubleConversion/utils.h
@@ -400,12 +402,12 @@ pxr_build_test(testTfSIGSEGV
         testenv/SIGSEGV.cpp
 )
 
-pxr_build_test_shared_lib(TestTfDl
+pxr_build_test_plugin(TestTfDl
     CPPFILES
         testenv/TestTfDl.cpp
 )
 
-pxr_build_test_shared_lib(TestTfRegistryFunctionPlugin
+pxr_build_test_plugin(TestTfRegistryFunctionPlugin
     LIBRARIES
         tf
     CPPFILES
@@ -444,6 +446,7 @@ pxr_build_test(testTf
         testenv/atomicOfstreamWrapper.cpp
         testenv/bits.cpp
         testenv/bitUtils.cpp
+        testenv/buffer.cpp
         testenv/compressedBits.cpp
         testenv/debug.cpp
         testenv/denseHashMap.cpp
@@ -452,6 +455,7 @@ pxr_build_test(testTf
         testenv/enum.cpp
         testenv/error.cpp
         testenv/envSetting.cpp
+        testenv/eternalString.cpp
         testenv/exception.cpp
         testenv/fastCompression.cpp
         testenv/fileUtils.cpp
@@ -565,6 +569,9 @@ pxr_register_test(TfBits
 pxr_register_test(TfBitUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfBitUtils"
 )
+pxr_register_test(Tf_Buffer
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf Tf_Buffer"
+)
 pxr_register_test(TfCompressedBits
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfCompressedBits"
 )
@@ -629,6 +636,9 @@ pxr_register_test(TfErrorAndDiagnosticTransportLogText
 )
 pxr_register_test(TfErrorThreadTransport
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfErrorThreadTransport"
+)
+pxr_register_test(TfEternalString
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfEternalString"
 )
 pxr_register_test(TfFileUtils_Python
     PYTHON

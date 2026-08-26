@@ -16,11 +16,17 @@
 #include "pxr/base/gf/numericCast.h"
 #include "pxr/base/gf/size2.h"
 #include "pxr/base/gf/size3.h"
+#include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec2h.h"
 #include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec3h.h"
 #include "pxr/base/gf/vec3i.h"
+#include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/vec4h.h"
 #include "pxr/base/gf/vec4i.h"
 
 #include "pxr/base/tf/diagnostic.h"
@@ -30,6 +36,82 @@
 #include <type_traits>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+// Each swizzle accessor is checked against the components its name gives,
+// rather than against literal values, so that one macro covers every vector
+// type: the expected type comes from decltype(), which makes the check
+// independent of both the scalar type and the result dimension.  The literal
+// checks in main() cover what these cannot -- an error in the components
+// themselves.
+#define CHECK_SWZ2(v, a, b)                                     \
+    TF_AXIOM((v.a##b()) == decltype(v.a##b())(v.a, v.b))
+#define CHECK_SWZ3(v, a, b, c)                                          \
+    TF_AXIOM((v.a##b##c()) == decltype(v.a##b##c())(v.a, v.b, v.c))
+#define CHECK_SWZ4(v, a, b, c, d)                                              \
+    TF_AXIOM((v.a##b##c##d()) == decltype(v.a##b##c##d())(v.a, v.b, v.c, v.d))
+
+// All 2 swizzles of a 2-dimensional vector.
+template <class Vec>
+static void
+_CheckDim2Swizzles(Vec const &v)
+{
+    // 2 of length 2
+    CHECK_SWZ2(v, x, y); CHECK_SWZ2(v, y, x);
+}
+
+// All 12 swizzles of a 3-dimensional vector.
+template <class Vec>
+static void
+_CheckDim3Swizzles(Vec const &v)
+{
+    // 6 of length 2
+    CHECK_SWZ2(v, x, y); CHECK_SWZ2(v, x, z); CHECK_SWZ2(v, y, x);
+    CHECK_SWZ2(v, y, z); CHECK_SWZ2(v, z, x); CHECK_SWZ2(v, z, y);
+
+    // 6 of length 3
+    CHECK_SWZ3(v, x, y, z); CHECK_SWZ3(v, x, z, y); CHECK_SWZ3(v, y, x, z);
+    CHECK_SWZ3(v, y, z, x); CHECK_SWZ3(v, z, x, y); CHECK_SWZ3(v, z, y, x);
+}
+
+// All 60 swizzles of a 4-dimensional vector.
+template <class Vec>
+static void
+_CheckDim4Swizzles(Vec const &v)
+{
+    // 12 of length 2
+    CHECK_SWZ2(v, x, y); CHECK_SWZ2(v, x, z); CHECK_SWZ2(v, x, w);
+    CHECK_SWZ2(v, y, x); CHECK_SWZ2(v, y, z); CHECK_SWZ2(v, y, w);
+    CHECK_SWZ2(v, z, x); CHECK_SWZ2(v, z, y); CHECK_SWZ2(v, z, w);
+    CHECK_SWZ2(v, w, x); CHECK_SWZ2(v, w, y); CHECK_SWZ2(v, w, z);
+
+    // 24 of length 3
+    CHECK_SWZ3(v, x, y, z); CHECK_SWZ3(v, x, y, w); CHECK_SWZ3(v, x, z, y);
+    CHECK_SWZ3(v, x, z, w); CHECK_SWZ3(v, x, w, y); CHECK_SWZ3(v, x, w, z);
+    CHECK_SWZ3(v, y, x, z); CHECK_SWZ3(v, y, x, w); CHECK_SWZ3(v, y, z, x);
+    CHECK_SWZ3(v, y, z, w); CHECK_SWZ3(v, y, w, x); CHECK_SWZ3(v, y, w, z);
+    CHECK_SWZ3(v, z, x, y); CHECK_SWZ3(v, z, x, w); CHECK_SWZ3(v, z, y, x);
+    CHECK_SWZ3(v, z, y, w); CHECK_SWZ3(v, z, w, x); CHECK_SWZ3(v, z, w, y);
+    CHECK_SWZ3(v, w, x, y); CHECK_SWZ3(v, w, x, z); CHECK_SWZ3(v, w, y, x);
+    CHECK_SWZ3(v, w, y, z); CHECK_SWZ3(v, w, z, x); CHECK_SWZ3(v, w, z, y);
+
+    // 24 of length 4
+    CHECK_SWZ4(v, x, y, z, w); CHECK_SWZ4(v, x, y, w, z);
+    CHECK_SWZ4(v, x, z, y, w); CHECK_SWZ4(v, x, z, w, y);
+    CHECK_SWZ4(v, x, w, y, z); CHECK_SWZ4(v, x, w, z, y);
+    CHECK_SWZ4(v, y, x, z, w); CHECK_SWZ4(v, y, x, w, z);
+    CHECK_SWZ4(v, y, z, x, w); CHECK_SWZ4(v, y, z, w, x);
+    CHECK_SWZ4(v, y, w, x, z); CHECK_SWZ4(v, y, w, z, x);
+    CHECK_SWZ4(v, z, x, y, w); CHECK_SWZ4(v, z, x, w, y);
+    CHECK_SWZ4(v, z, y, x, w); CHECK_SWZ4(v, z, y, w, x);
+    CHECK_SWZ4(v, z, w, x, y); CHECK_SWZ4(v, z, w, y, x);
+    CHECK_SWZ4(v, w, x, y, z); CHECK_SWZ4(v, w, x, z, y);
+    CHECK_SWZ4(v, w, y, x, z); CHECK_SWZ4(v, w, y, z, x);
+    CHECK_SWZ4(v, w, z, x, y); CHECK_SWZ4(v, w, z, y, x);
+}
+
+#undef CHECK_SWZ2
+#undef CHECK_SWZ3
+#undef CHECK_SWZ4
 
 int
 main(int argc, char *argv[])
@@ -88,10 +170,117 @@ main(int argc, char *argv[])
     // GfVec4f
     {
         float vals[] = { 1.0f, 2.0f, 3.0f, 4.0f };
-        GfVec4f v(vals);
+        const GfVec4f v(vals);
         TF_AXIOM(v == GfVec4f(1,2,3,4));
         float const *f = v.GetArray();
         TF_AXIOM(f[0] == 1 && f[1] == 2 && f[2] == 3 && f[3] == 4);
+    }
+
+    // Swizzles.
+    {
+        // Components, and their agreement with operator[] and data().
+        GfVec4f v(1, 2, 3, 4);
+        TF_AXIOM(v.x == 1 && v.y == 2 && v.z == 3 && v.w == 4);
+        TF_AXIOM(v.data() == &v.x);
+        TF_AXIOM(sizeof(GfVec4f) == GfVec4f::dimension * sizeof(float));
+        for (size_t i = 0; i != GfVec4f::dimension; ++i) {
+            TF_AXIOM(v[i] == v.data()[i]);
+        }
+
+        // Components are writable, and alias operator[].
+        v.z = 30;
+        TF_AXIOM(v[2] == 30);
+        v[3] = 40;
+        TF_AXIOM(v.w == 40);
+        TF_AXIOM(v == GfVec4f(1, 2, 30, 40));
+    }
+    {
+        // Literal checks.  The mapping checks below are self-consistent, so
+        // these are what would catch an error in the components.
+        GfVec4f v(1, 2, 3, 4);
+        TF_AXIOM(v.xy() == GfVec2f(1, 2));
+        TF_AXIOM(v.yx() == GfVec2f(2, 1));
+        TF_AXIOM(v.zxw() == GfVec3f(3, 1, 4));
+        TF_AXIOM(v.wzyx() == GfVec4f(4, 3, 2, 1));
+        TF_AXIOM(v.xyzw() == v);
+
+        GfVec3d d(1.5, 2.5, 3.5);
+        TF_AXIOM(d.zy() == GfVec2d(3.5, 2.5));
+        TF_AXIOM(d.zyx() == GfVec3d(3.5, 2.5, 1.5));
+
+        GfVec2i i(7, 8);
+        TF_AXIOM(i.yx() == GfVec2i(8, 7));
+    }
+    {
+        // Every swizzle of every vector type: 74 names per scalar type, 296 in
+        // all, each against the components its name gives.
+        _CheckDim2Swizzles(GfVec2d(1.5, 2.5));
+        _CheckDim2Swizzles(GfVec2f(1.5f, 2.5f));
+        _CheckDim2Swizzles(GfVec2h(1.5f, 2.5f));
+        _CheckDim2Swizzles(GfVec2i(1, 2));
+
+        _CheckDim3Swizzles(GfVec3d(1.5, 2.5, 3.5));
+        _CheckDim3Swizzles(GfVec3f(1.5f, 2.5f, 3.5f));
+        _CheckDim3Swizzles(GfVec3h(1.5f, 2.5f, 3.5f));
+        _CheckDim3Swizzles(GfVec3i(1, 2, 3));
+
+        _CheckDim4Swizzles(GfVec4d(1.5, 2.5, 3.5, 4.5));
+        _CheckDim4Swizzles(GfVec4f(1.5f, 2.5f, 3.5f, 4.5f));
+        _CheckDim4Swizzles(GfVec4h(1.5f, 2.5f, 3.5f, 4.5f));
+        _CheckDim4Swizzles(GfVec4i(1, 2, 3, 4));
+    }
+    {
+        // Composing a permutation with its inverse is the identity.
+        GfVec4f v(1, 2, 3, 4);
+        TF_AXIOM(v.wzyx().wzyx() == v);
+        TF_AXIOM(v.yxwz().yxwz() == v);
+        TF_AXIOM(v.xy().yx() == v.yx());
+
+        GfVec3f u(1, 2, 3);
+        TF_AXIOM(u.zxy().yzx() == u);
+        TF_AXIOM(u.zyx().zyx() == u);
+    }
+    {
+        // Swizzle results are ordinary vectors, so every existing operator and
+        // free function applies.
+        GfVec4f v(1, 2, 3, 4), w(10, 20, 30, 40);
+        TF_AXIOM(v.xy() * 2.0 == GfVec2f(2, 4));
+        TF_AXIOM(v.xy() / 2.0 == GfVec2f(0.5f, 1));
+        TF_AXIOM(v.xy() + w.zw() == GfVec2f(31, 42));
+        TF_AXIOM(v.zw() - v.xy() == GfVec2f(2, 2));
+        TF_AXIOM(-v.yx() == GfVec2f(-2, -1));
+        TF_AXIOM(GfDot(v.xy(), w.xy()) == 50);
+        TF_AXIOM(GfCross(v.xyz(), v.xyz()) == GfVec3f(0));
+        TF_AXIOM(GfCompMult(v.xy(), w.xy()) == GfVec2f(10, 40));
+        TF_AXIOM(v.xy().GetLengthSq() == 5);
+        // 3-4-5 triangle, so the length is exact.
+        TF_AXIOM(v.zw().GetLength() == 5);
+
+        // Comparison works in both operand orders.
+        TF_AXIOM(v.xy() == GfVec2f(1, 2));
+        TF_AXIOM(GfVec2f(1, 2) == v.xy());
+        TF_AXIOM(v.xy() != w.xy());
+    }
+    {
+        // Result types are the matching vector of the same scalar type.
+        static_assert(
+            std::is_same<decltype(GfVec4f().xy()), GfVec2f>::value, "");
+        static_assert(
+            std::is_same<decltype(GfVec4d().zyx()), GfVec3d>::value, "");
+        static_assert(
+            std::is_same<decltype(GfVec4i().wzyx()), GfVec4i>::value, "");
+        static_assert(
+            std::is_same<decltype(GfVec3h().yx()), GfVec2h>::value, "");
+    }
+    {
+        // Components and swizzles work in constant expressions.  Neither is
+        // possible if components are union members.
+        constexpr GfVec4f c(1, 2, 3, 4);
+        static_assert(c.x == 1 && c.y == 2 && c.z == 3 && c.w == 4, "");
+        constexpr GfVec2f p = c.zx();
+        static_assert(p.x == 3 && p.y == 1, "");
+        constexpr GfVec4f q = c.wzyx();
+        static_assert(q.x == 4 && q.y == 3 && q.z == 2 && q.w == 1, "");
     }
 
     // GfSize2, GfSize3

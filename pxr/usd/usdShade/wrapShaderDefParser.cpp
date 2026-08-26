@@ -39,6 +39,6 @@ void wrapUsdShadeShaderDefParser()
         .def("ParseShaderNode", &_ParseShaderNode,
              return_value_policy<manage_new_object>())
         .def("GetDiscoveryTypes", &This::GetDiscoveryTypes, copyRefPolicy)
-        .def("GetSourceType", &This::GetSourceType, copyRefPolicy)
+        .def("GetShadingSystem", &This::GetShadingSystem, copyRefPolicy)
         ;
 }

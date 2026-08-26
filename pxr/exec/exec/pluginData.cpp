@@ -136,9 +136,9 @@ Exec_PluginData::_ReadPluginMetadata(const PlugPluginPtr &plugin)
             TF_CODING_ERROR(
                 "Plugin '%s' declares schema %s as %sallowing plugin "
                 "computations, but plugin '%s' already declared this schema.",
-                (allowsPluginComputations ? " " : "not "),
                 plugin->GetName().c_str(),
                 schemaType.GetTypeName().c_str(),
+                (allowsPluginComputations ? "" : "not "),
                 oldPlugin->GetName().c_str());
         } else {
             // In the case of disagreement, ensure the schema is marked as
@@ -149,11 +149,11 @@ Exec_PluginData::_ReadPluginMetadata(const PlugPluginPtr &plugin)
                 "Plugin '%s' declares schema %s as %sallowing plugin "
                 "computations, but plugin '%s' already declared it as "
                 "%sallowing plugin computations.",
-                (allowsPluginComputations ? " " : "not "),
                 plugin->GetName().c_str(),
                 schemaType.GetTypeName().c_str(),
+                (allowsPluginComputations ? "" : "not "),
                 oldPlugin->GetName().c_str(),
-                (oldAllowsPluginComputations ? " " : "not "));
+                (oldAllowsPluginComputations ? "" : "not "));
         }
     }
 }

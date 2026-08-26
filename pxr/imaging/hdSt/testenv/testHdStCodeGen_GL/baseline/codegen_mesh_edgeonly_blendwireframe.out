@@ -15,6 +15,18 @@
 #extension GL_NV_shader_buffer_load : require
 #extension GL_NV_gpu_shader5 : require
 #extension GL_ARB_bindless_texture : require
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #extension GL_ARB_shader_draw_parameters : require
 int HgiGetBaseVertex() {
   return gl_BaseVertexARB;
@@ -47,6 +59,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 // //////// Codegen Defines //////// 
 #define HD_SHADER_API 3
 #define MAT4 mat4
+#define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -968,6 +981,18 @@ void main(void)
 #extension GL_NV_shader_buffer_load : require
 #extension GL_NV_gpu_shader5 : require
 #extension GL_ARB_bindless_texture : require
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #define REF(space,type) inout type
 #define FORWARD_DECL(func_decl) func_decl;
 #define ATOMIC_LOAD(a) (a)
@@ -996,6 +1021,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 // //////// Codegen Defines //////// 
 #define HD_SHADER_API 3
 #define MAT4 mat4
+#define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -1787,6 +1813,18 @@ void main(void)
 #extension GL_NV_shader_buffer_load : require
 #extension GL_NV_gpu_shader5 : require
 #extension GL_ARB_bindless_texture : require
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #extension GL_NV_fragment_shader_barycentric: require
 #define REF(space,type) inout type
 #define FORWARD_DECL(func_decl) func_decl;
@@ -1829,6 +1867,7 @@ vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspNV;
 // //////// Codegen Defines //////// 
 #define HD_SHADER_API 3
 #define MAT4 mat4
+#define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -1994,7 +2033,6 @@ float HdGetScalar_widths() { return HdGet_widths(0); }
 
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
-#define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
 vec3 GetBarycentricCoord() {
   return hd_BaryCoordNoPersp;
 }
@@ -3080,6 +3118,18 @@ void main(void)
 #extension GL_NV_shader_buffer_load : require
 #extension GL_NV_gpu_shader5 : require
 #extension GL_ARB_bindless_texture : require
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #extension GL_ARB_shader_draw_parameters : require
 int HgiGetBaseVertex() {
   return gl_BaseVertexARB;
@@ -3112,6 +3162,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 // //////// Codegen Defines //////// 
 #define HD_SHADER_API 3
 #define MAT4 mat4
+#define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -4033,6 +4084,18 @@ void main(void)
 #extension GL_NV_shader_buffer_load : require
 #extension GL_NV_gpu_shader5 : require
 #extension GL_ARB_bindless_texture : require
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #define REF(space,type) inout type
 #define FORWARD_DECL(func_decl) func_decl;
 #define ATOMIC_LOAD(a) (a)
@@ -4061,6 +4124,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 // //////// Codegen Defines //////// 
 #define HD_SHADER_API 3
 #define MAT4 mat4
+#define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -4881,6 +4945,18 @@ void main(void)
 #extension GL_NV_shader_buffer_load : require
 #extension GL_NV_gpu_shader5 : require
 #extension GL_ARB_bindless_texture : require
+#if defined(GL_EXT_control_flow_attributes)
+	#extension GL_EXT_control_flow_attributes: require
+	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+	#define HGI_COMPILER_ATTR_UNROLL
+	#define HGI_COMPILER_ATTR_DONT_UNROLL
+	#define HGI_COMPILER_ATTR_FLATTEN
+	#define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
 #extension GL_NV_fragment_shader_barycentric: require
 #define REF(space,type) inout type
 #define FORWARD_DECL(func_decl) func_decl;
@@ -4923,6 +4999,7 @@ vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspNV;
 // //////// Codegen Defines //////// 
 #define HD_SHADER_API 3
 #define MAT4 mat4
+#define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -5088,7 +5165,6 @@ float HdGetScalar_widths() { return HdGet_widths(0); }
 
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
-#define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
 vec3 GetBarycentricCoord() {
   return hd_BaryCoordNoPersp;
 }

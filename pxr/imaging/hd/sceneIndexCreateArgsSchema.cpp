@@ -53,16 +53,24 @@ HdSceneIndexCreateArgsSchema::GetLegacyRenderDelegateInfo() const
         HdSceneIndexCreateArgsSchemaTokens->legacyRenderDelegateInfo);
 }
 
+HdRenderSettingDescriptorContainerSchema
+HdSceneIndexCreateArgsSchema::GetRenderSettingDescriptors() const
+{
+    return HdRenderSettingDescriptorContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdSceneIndexCreateArgsSchemaTokens->renderSettingDescriptors));
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdSceneIndexCreateArgsSchema::BuildRetained(
         const HdBoolDataSourceHandle &motionBlurSupport,
         const HdBoolDataSourceHandle &cameraMotionBlurSupport,
-        const HdRenderDelegateInfoDataSourceHandle &legacyRenderDelegateInfo
+        const HdRenderDelegateInfoDataSourceHandle &legacyRenderDelegateInfo,
+        const HdContainerDataSourceHandle &renderSettingDescriptors
 )
 {
-    TfToken _names[3];
-    HdDataSourceBaseHandle _values[3];
+    TfToken _names[4];
+    HdDataSourceBaseHandle _values[4];
 
     size_t _count = 0;
 
@@ -79,6 +87,11 @@ HdSceneIndexCreateArgsSchema::BuildRetained(
     if (legacyRenderDelegateInfo) {
         _names[_count] = HdSceneIndexCreateArgsSchemaTokens->legacyRenderDelegateInfo;
         _values[_count++] = legacyRenderDelegateInfo;
+    }
+
+    if (renderSettingDescriptors) {
+        _names[_count] = HdSceneIndexCreateArgsSchemaTokens->renderSettingDescriptors;
+        _values[_count++] = renderSettingDescriptors;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -107,13 +120,22 @@ HdSceneIndexCreateArgsSchema::Builder::SetLegacyRenderDelegateInfo(
     return *this;
 }
 
+HdSceneIndexCreateArgsSchema::Builder &
+HdSceneIndexCreateArgsSchema::Builder::SetRenderSettingDescriptors(
+    const HdContainerDataSourceHandle &renderSettingDescriptors)
+{
+    _renderSettingDescriptors = renderSettingDescriptors;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdSceneIndexCreateArgsSchema::Builder::Build()
 {
     return HdSceneIndexCreateArgsSchema::BuildRetained(
         _motionBlurSupport,
         _cameraMotionBlurSupport,
-        _legacyRenderDelegateInfo
+        _legacyRenderDelegateInfo,
+        _renderSettingDescriptors
     );
 } 
 

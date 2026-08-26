@@ -93,7 +93,8 @@ struct HdSt_ShaderKey {
     virtual float GetLineWidth() const;
     HDST_API
     virtual uint32_t GetVertexCountFallback() const;
-
+    HDST_API
+    virtual const TfToken GetDepthQualifier() const;
     // Returns the face-varying patch type used in code gen during creation
     // of the face-varying primvar accessors. Only relevant for mesh prims with 
     // face-varying primvars.

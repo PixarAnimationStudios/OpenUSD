@@ -107,7 +107,7 @@ public:
 
     template <class T>
     friend bool operator == (const TfRefPtr<T>& p1, Derived const &p2) {
-        return p2 == p1;
+        return p2.operator==(p1);
     }
 
     template <class T>

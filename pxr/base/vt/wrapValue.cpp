@@ -288,6 +288,9 @@ void wrapValue()
         TfStringPrintf(funcDocString, "Float","float","float").c_str());
     def("Double", Vt_ValueWrapper::Create<double>, 
         TfStringPrintf(funcDocString, "Double","double","double").c_str());
+    def("Duration", Vt_ValueWrapper::Create<GfDuration>,
+        TfStringPrintf(funcDocString,
+                       "Duration","duration","GfDuration").c_str());
     def("TimeCode", Vt_ValueWrapper::Create<GfTimeCode>,
         TfStringPrintf(funcDocString,
                        "TimeCode","timecode","GfTimeCode").c_str());
@@ -323,7 +326,9 @@ void wrapValue()
     VtValueFromPython<string>();
     VtValueFromPython<double>();
     VtValueFromPython<int>();
-    // GfTimeCode is treated like a scalar but it still needs a conversion
+    // GfTimeCode and GfDuration are treated like scalars but still need
+    // explicit conversions.
+    VtValueFromPython<GfDuration>();
     VtValueFromPython<GfTimeCode>();
     // XXX: Disable rvalue conversion of TfType.  It causes a mysterious
     //      crash and we don't need any implicit conversions.

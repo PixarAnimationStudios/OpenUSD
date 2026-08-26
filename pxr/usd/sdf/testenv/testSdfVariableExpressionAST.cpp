@@ -60,6 +60,11 @@ _TestLiteral()
     _TestLiteralNode("`\"DoubleQuote\"`");
     _TestLiteralNode("`'SingleQuote'`", "`\"SingleQuote\"`");
     _TestLiteralNode("`\"shot_${SHOT_ID}.usda\"`");
+
+    // Literal string nodes may contain variable references with fallback values
+    _TestLiteralNode(
+        "`\"${FOO:'/shots'}/shot.usda\"`",
+        "`'${FOO:\"/shots\"}/shot.usda'`");
 }
 
 static void
@@ -72,6 +77,39 @@ _TestVariable()
     AST::VariableNode* variableNode = ast.GetRoot()->As<AST::VariableNode>();
     SdfVariableExpression expr = variableNode->GetExpressionBuilder();
     TF_AXIOM(expr.GetString() == "`${FOO}`");
+    
+}
+
+template <class ExpectedFallbackType>
+static void
+_TestFallbackVariable(
+    const std::string& exprStr, const std::string& expectedStr = "")
+{
+    SdfVariableExpressionAST ast(exprStr);
+    _TestCasts<AST::VariableNode>(ast.GetRoot());
+    _TestCasts<AST::VariableNode>(std::as_const(ast).GetRoot());
+    _TestCasts<ExpectedFallbackType>(
+        ast.GetRoot()->As<AST::VariableNode>()->GetFallbackValue());
+
+    AST::VariableNode* variableNode = ast.GetRoot()->As<AST::VariableNode>();
+    SdfVariableExpression expr = variableNode->GetExpressionBuilder();
+    TF_AXIOM(
+        expr.GetString() == (expectedStr.empty() ? exprStr : expectedStr));
+}
+
+static void
+_TestVariablesWithFallbackValues()
+{
+    _TestFallbackVariable<AST::LiteralNode>("`${FALLBACK:False}`");
+    _TestFallbackVariable<AST::LiteralNode>("`${FALLBACK:True}`");
+    _TestFallbackVariable<AST::LiteralNode>("`${FALLBACK:42}`");
+    _TestFallbackVariable<AST::LiteralNode>("`${FALLBACK:\"I<3Usd\"}`");
+    // note single quoted strings are round tripped as double quoted.
+    _TestFallbackVariable<AST::LiteralNode>(
+        "`${FALLBACK:'I<3Usd'}`", "`${FALLBACK:\"I<3Usd\"}`");
+
+    _TestFallbackVariable<AST::ListNode>("`${FALLBACK:[1, 2, 3]}`");
+    _TestFallbackVariable<AST::ListNode>("`${FALLBACK:[\"a\", \"b\"]}`");
 }
 
 static void
@@ -122,6 +160,7 @@ int main()
 {
     _TestLiteral();
     _TestVariable();
+    _TestVariablesWithFallbackValues();
     _TestList();
     _TestFunction();
 

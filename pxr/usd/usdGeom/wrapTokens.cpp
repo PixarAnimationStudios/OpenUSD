@@ -28,9 +28,9 @@ void wrapUsdGeomTokens()
     _ADD_TOKEN(cls, backPlate_MultipleApplyTemplate_DepthMinOffset);
     _ADD_TOKEN(cls, backPlate_MultipleApplyTemplate_DepthNormalizingFactor);
     _ADD_TOKEN(cls, backPlate_MultipleApplyTemplate_Image);
-    _ADD_TOKEN(cls, backPlate_MultipleApplyTemplate_LumaGain);
-    _ADD_TOKEN(cls, backPlate_MultipleApplyTemplate_LumaGamma);
-    _ADD_TOKEN(cls, backPlate_MultipleApplyTemplate_LumaLift);
+    _ADD_TOKEN(cls, backPlate_MultipleApplyTemplate_LumaOffset);
+    _ADD_TOKEN(cls, backPlate_MultipleApplyTemplate_LumaPower);
+    _ADD_TOKEN(cls, backPlate_MultipleApplyTemplate_LumaSlope);
     _ADD_TOKEN(cls, backPlate_MultipleApplyTemplate_PlateVisibility);
     _ADD_TOKEN(cls, backPlate_MultipleApplyTemplate_RotateXYZTweak);
     _ADD_TOKEN(cls, backPlate_MultipleApplyTemplate_ScaleTweak);

@@ -163,7 +163,39 @@ SdfSchemaBase::FieldDefinition::ListValueValidator(Validator v)
     return *this;
 }
 
-SdfSchemaBase::FieldDefinition& 
+SdfAllowed
+SdfSchemaBase::FieldDefinition::IsValidValue(const VtValueRef& value) const
+{
+    return (_valueValidator ? 
+            _valueValidator(_schema, value) : 
+            SdfAllowed(true));
+}
+
+SdfAllowed
+SdfSchemaBase::FieldDefinition::IsValidListValue(const VtValueRef& value) const
+{
+    return (_listValueValidator ? 
+            _listValueValidator(_schema, value) : 
+            SdfAllowed(true));
+}
+
+SdfAllowed
+SdfSchemaBase::FieldDefinition::IsValidMapKey(const VtValueRef& value) const
+{
+    return (_mapKeyValidator ?
+            _mapKeyValidator(_schema, value) :
+            SdfAllowed(true));
+}
+
+SdfAllowed
+SdfSchemaBase::FieldDefinition::IsValidMapValue(const VtValueRef& value) const
+{
+    return (_mapValueValidator ?
+            _mapValueValidator(_schema, value) :
+            SdfAllowed(true));
+}
+
+SdfSchemaBase::FieldDefinition&
 SdfSchemaBase::FieldDefinition::MapKeyValidator(Validator v)
 {
     _mapKeyValidator = v;
@@ -310,7 +342,7 @@ SdfSchemaBase::_SpecDefiner::CopyFrom(const SpecDefinition &other)
 
 static
 SdfAllowed
-_ValidateFramesPerSecond(const SdfSchemaBase&, const VtValue& value)
+_ValidateFramesPerSecond(const SdfSchemaBase&, const VtValueRef& value)
 {
     if (!value.IsHolding<double>()) {
         return SdfAllowed("Expected value of type double");
@@ -321,7 +353,7 @@ _ValidateFramesPerSecond(const SdfSchemaBase&, const VtValue& value)
 }
 
 static SdfAllowed
-_ValidateIsString(const SdfSchemaBase&, const VtValue& value)
+_ValidateIsString(const SdfSchemaBase&, const VtValueRef& value)
 {
     if (!value.IsHolding<std::string>()) {
         return SdfAllowed("Expected value of type string");
@@ -330,7 +362,7 @@ _ValidateIsString(const SdfSchemaBase&, const VtValue& value)
 }
 
 static SdfAllowed
-_ValidateIsNonEmptyString(const SdfSchemaBase& schema, const VtValue& value)
+_ValidateIsNonEmptyString(const SdfSchemaBase& schema, const VtValueRef& value)
 {
     SdfAllowed result = _ValidateIsString(schema, value);
     if (result && value.Get<std::string>().empty()) {
@@ -340,7 +372,7 @@ _ValidateIsNonEmptyString(const SdfSchemaBase& schema, const VtValue& value)
 }
 
 static SdfAllowed
-_ValidateIdentifierToken(const SdfSchemaBase&, const VtValue& value)
+_ValidateIdentifierToken(const SdfSchemaBase&, const VtValueRef& value)
 {
     if (!value.IsHolding<TfToken>()) {
         return SdfAllowed("Expected value of type TfToken");
@@ -349,7 +381,8 @@ _ValidateIdentifierToken(const SdfSchemaBase&, const VtValue& value)
 }
 
 static SdfAllowed
-_ValidateNamespacedIdentifierToken(const SdfSchemaBase&, const VtValue& value)
+_ValidateNamespacedIdentifierToken(
+    const SdfSchemaBase&, const VtValueRef& value)
 {
     if (!value.IsHolding<TfToken>()) {
         return SdfAllowed("Expected value of type TfToken");
@@ -358,19 +391,21 @@ _ValidateNamespacedIdentifierToken(const SdfSchemaBase&, const VtValue& value)
 }
 
 static SdfAllowed
-_ValidateIsSceneDescriptionValue(const SdfSchemaBase& schema, const VtValue& value)
+_ValidateIsSceneDescriptionValue(
+    const SdfSchemaBase& schema, const VtValueRef& value)
 {
     return schema.IsValidValue(value);
 }
 
 #define SDF_VALIDATE_WRAPPER(name_, expectedType_)                      \
 static SdfAllowed                                                       \
-_Validate ## name_(const SdfSchemaBase& schema, const VtValue& value)   \
+_Validate ## name_(const SdfSchemaBase& schema, const VtValueRef& value)\
 {                                                                       \
     if (!value.IsHolding<expectedType_>()) {                            \
         return SdfAllowed("Expected value of type " # expectedType_);   \
     }                                                                   \
-    return SdfSchemaBase::IsValid ## name_(value.Get<expectedType_>()); \
+    return SdfSchemaBase::IsValid ## name_(                             \
+        value.UncheckedGet<expectedType_>());                           \
 }
 
 SDF_VALIDATE_WRAPPER(AttributeConnectionPath, SdfPath);
@@ -443,6 +478,7 @@ _AddStandardTypesToRegistry(Sdf_ValueTypeRegistry* r)
     r->AddType(T("float",  float()));
     r->AddType(T("double", double()));
     r->AddType(T("timecode", GfTimeCode()));
+    r->AddType(T("duration", GfDuration()));
     // TfType reports "string" as the typename for "std::string", but we want
     // the fully-qualified name for documentation purposes.
     r->AddType(T("string", std::string()).CPPTypeName("std::string"));
@@ -1936,6 +1972,7 @@ Sdf_InitializeValueTypeNames()
     n->Float           = r.FindType("float");
     n->Double          = r.FindType("double");
     n->TimeCode        = r.FindType("timecode");
+    n->Duration        = r.FindType("duration");
     n->String          = r.FindType("string");
     n->Token           = r.FindType("token");
     n->Asset           = r.FindType("asset");
@@ -1993,6 +2030,7 @@ Sdf_InitializeValueTypeNames()
     n->FloatArray      = r.FindType("float[]");
     n->DoubleArray     = r.FindType("double[]");
     n->TimeCodeArray   = r.FindType("timecode[]");
+    n->DurationArray   = r.FindType("duration[]");
     n->StringArray     = r.FindType("string[]");
     n->TokenArray      = r.FindType("token[]");
     n->AssetArray      = r.FindType("asset[]");

@@ -1,5 +1,4 @@
 #usda 1.0
-#tagged-as-never-update
 (
     """Test of attribute value parsing."""
     framesPerSecond = 24

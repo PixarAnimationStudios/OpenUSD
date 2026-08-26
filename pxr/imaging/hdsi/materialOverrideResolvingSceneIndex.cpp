@@ -154,7 +154,7 @@ public:
 
         // Overlay the overridingDs onto the originalDs. If there is no
         // originalDs, overlays on a default empty container.
-        return HdOverlayContainerDataSource::OverlayedContainerDataSources(
+        return HdCreateOverlayContainerDataSource(
             overrideContainerDs,
             HdContainerDataSource::Cast(result)); 
     }
@@ -719,7 +719,7 @@ public:
                 HdRetainedContainerDataSource::New(
                     HdMaterialBindingSchemaTokens->path, 
                     HdRetainedTypedSampledDataSource<SdfPath>::New(_newBinding));
-            return HdOverlayContainerDataSource::OverlayedContainerDataSources(
+            return HdCreateOverlayContainerDataSource(
                 overrideDs, HdContainerDataSource::Cast(result));
         }
 
@@ -1340,14 +1340,14 @@ HdsiMaterialOverrideResolvingSceneIndex::_CreateGeneratedMaterialDataSource(
     const HdDataSourceBaseHandle originalMaterialOverrides = 
         prim.dataSource->Get(HdMaterialOverrideSchema::GetSchemaToken());
     const HdContainerDataSourceHandle overlayedMaterialOverrides = 
-        HdOverlayContainerDataSource::OverlayedContainerDataSources(
+        HdCreateOverlayContainerDataSource(
             materialOver, 
             HdContainerDataSource::Cast(originalMaterialOverrides));
 
     // Overlay the fully resolved materialOverride data source on top of the
     // data source for the generated material
     prim.dataSource = 
-        HdOverlayContainerDataSource::OverlayedContainerDataSources(
+        HdCreateOverlayContainerDataSource(
             HdRetainedContainerDataSource::New(
                 HdMaterialOverrideSchema::GetSchemaToken(),
                 overlayedMaterialOverrides),

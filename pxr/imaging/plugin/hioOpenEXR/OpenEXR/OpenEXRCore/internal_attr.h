@@ -9,7 +9,7 @@
 #include "openexr_attr.h"
 #include "openexr_context.h"
 
-/** 
+/**
  * @defgroup InternalAttributeFunctions Functions for manipulating attributes
  *
  * The functions are currently internal to the library and are not
@@ -28,6 +28,7 @@
 #include "internal_channel_list.h"
 #include "internal_float_vector.h"
 #include "internal_opaque.h"
+#include "internal_bytes.h"
 #include "internal_preview.h"
 #include "internal_string.h"
 #include "internal_string_vector.h"
@@ -36,7 +37,7 @@
 extern "C" {
 #endif
 
-EXR_INTERNAL int internal_exr_is_standard_type (const char* typen);
+int internal_exr_is_standard_type (const char* typen);
 
 /** @addtogroup InternalAttributeFunctions
  * @{
@@ -52,18 +53,18 @@ typedef struct exr_attribute_list
 } exr_attribute_list_t;
 
 /** Initialize a list to an empty attribute list */
-EXR_INTERNAL exr_result_t exr_attr_list_init (exr_context_t ctxt, exr_attribute_list_t* l);
+exr_result_t exr_attr_list_init (exr_context_t ctxt, exr_attribute_list_t* l);
 
 /** Free memory for all the owned attributes in the list as well as the list itself */
-EXR_INTERNAL exr_result_t
+exr_result_t
 exr_attr_list_destroy (exr_context_t ctxt, exr_attribute_list_t* l);
 
 /** Compute the number of bytes required to store this attribute list in a file */
-EXR_INTERNAL exr_result_t exr_attr_list_compute_size (
+exr_result_t exr_attr_list_compute_size (
     exr_context_t ctxt, exr_attribute_list_t* l, uint64_t* out);
 
 /** Find an attribute in the list by name */
-EXR_INTERNAL exr_result_t exr_attr_list_find_by_name (
+exr_result_t exr_attr_list_find_by_name (
     exr_const_context_t   ctxt,
     exr_attribute_list_t* l,
     const char*           name,
@@ -79,7 +80,7 @@ EXR_INTERNAL exr_result_t exr_attr_list_find_by_name (
  * not to free this returned memory.
  *
  */
-EXR_INTERNAL exr_result_t exr_attr_list_add_by_type (
+exr_result_t exr_attr_list_add_by_type (
     exr_context_t         ctxt,
     exr_attribute_list_t* l,
     const char*           name,
@@ -98,7 +99,7 @@ EXR_INTERNAL exr_result_t exr_attr_list_add_by_type (
  * not to free this returned memory.
  *
  */
-EXR_INTERNAL exr_result_t exr_attr_list_add (
+exr_result_t exr_attr_list_add (
     exr_context_t         ctxt,
     exr_attribute_list_t* l,
     const char*           name,
@@ -118,7 +119,7 @@ EXR_INTERNAL exr_result_t exr_attr_list_add (
  * not to free this returned memory.
  *
  */
-EXR_INTERNAL exr_result_t exr_attr_list_add_static_name (
+exr_result_t exr_attr_list_add_static_name (
     exr_context_t         ctxt,
     exr_attribute_list_t* l,
     const char*           name,
@@ -128,7 +129,7 @@ EXR_INTERNAL exr_result_t exr_attr_list_add_static_name (
     exr_attribute_t**     attr);
 
 /** Removes an attribute from the list and frees any associated memory */
-EXR_INTERNAL exr_result_t exr_attr_list_remove (
+exr_result_t exr_attr_list_remove (
     exr_context_t ctxt, exr_attribute_list_t* l, exr_attribute_t* attr);
 
 /**

@@ -103,12 +103,68 @@ static exr_result_t LossyDctDecoder_execute (
 // value in the buffer - with the index into zig zag
 // order data. If we return 0, we have DC only data.
 //
-static int LossyDctDecoder_unRleAc (
+//
+// This is assuminging that halfZigBlock is zero'ed
+// prior to calling
+//
+static inline exr_result_t
+LossyDctDecoder_unRleAc (
     LossyDctDecoder* d,
     int*             lastNonZero,
     uint16_t**       currAcComp,
-    uint16_t*        acBufferEnd,
-    uint16_t*        halfZigBlock);
+    uint16_t*        packedAcEnd,
+    uint16_t*        halfZigBlock)
+{
+    //
+    // Un-RLE the RLE'd blocks. If we find an item whose
+    // high byte is 0xff, then insert the number of 0's
+    // as indicated by the low byte.
+    //
+    // Otherwise, just copy the number verbatim.
+    //
+    int       dctComp = 1;
+    uint16_t* acComp  = *currAcComp;
+    uint16_t  val;
+    int       lnz      = 0;
+    uint64_t  ac_count = 0;
+
+    //
+    // Start with a zero'ed block, so we don't have to
+    // write when we hit a run symbol
+    //
+
+    while (dctComp < 64)
+    {
+        if (acComp >= packedAcEnd) { return EXR_ERR_CORRUPT_CHUNK; }
+        val = *acComp;
+        if ((val & 0xff00) == 0xff00)
+        {
+            uint8_t count = val & 0xff;
+
+            // run, insert 0s - since block pre-zeroed, nothing to do
+            // just increment dctComp but test for end of block...
+            dctComp += (count == 0) ? 64 : count;
+        }
+        else
+        {
+            //
+            // Not a run, just copy over the value
+            //
+            lnz                   = dctComp;
+            halfZigBlock[dctComp] = val;
+
+            ++dctComp;
+        }
+
+        ++ac_count;
+        ++acComp;
+    }
+
+    d->_packedAcCount += ac_count;
+    *lastNonZero = lnz;
+    *currAcComp  = acComp;
+    return EXR_ERR_SUCCESS;
+}
 
 //
 // Used to decode a single channel of LOSSY_DCT data.
@@ -133,7 +189,14 @@ LossyDctDecoder_construct (
     //
 
     rv = LossyDctDecoder_base_construct (
-        d, packedAc, packedAcEnd, packedDc, remDcCount, toLinear, width, height);
+        d,
+        packedAc,
+        packedAcEnd,
+        packedDc,
+        remDcCount,
+        toLinear,
+        width,
+        height);
 
     d->_channel_decode_data[0]    = rowPtrs;
     d->_channel_decode_data_count = 1;
@@ -168,7 +231,14 @@ LossyDctDecoderCsc_construct (
 {
     exr_result_t rv;
     rv = LossyDctDecoder_base_construct (
-        d, packedAc, packedAcEnd, packedDc, remDcCount, toLinear, width, height);
+        d,
+        packedAc,
+        packedAcEnd,
+        packedDc,
+        remDcCount,
+        toLinear,
+        width,
+        height);
     if (rv != EXR_ERR_SUCCESS) return rv;
 
     d->_channel_decode_data[0]    = rowPtrsR;
@@ -201,7 +271,6 @@ LossyDctDecoder_base_construct (
     d->_toLinear      = toLinear;
     d->_width         = width;
     d->_height        = height;
-    if (d->_toLinear == NULL) d->_toLinear = dwaCompressorNoOp;
 
     //d->_isNativeXdr = GLOBAL_SYSTEM_LITTLE_ENDIAN;
 
@@ -224,9 +293,9 @@ LossyDctDecoder_execute (
     DctCoderChannelData* chanData[3];
     int                  lastNonZero = 0;
     int                  numBlocksX  = (d->_width + 7) / 8;
-    int                  numBlocksY = (d->_height + 7) / 8;
-    int                  leftoverX  = d->_width - (numBlocksX - 1) * 8;
-    int                  leftoverY  = d->_height - (numBlocksY - 1) * 8;
+    int                  numBlocksY  = (d->_height + 7) / 8;
+    int                  leftoverX   = d->_width - (numBlocksX - 1) * 8;
+    int                  leftoverY   = d->_height - (numBlocksY - 1) * 8;
 
     int numFullBlocksX = d->_width / 8;
 
@@ -236,7 +305,8 @@ LossyDctDecoder_execute (
     uint8_t*  rowBlockHandle;
     uint16_t* rowBlock[3];
 
-    if (d->_remDcCount < ((uint64_t)numComp * (uint64_t)numBlocksX * (uint64_t)numBlocksY))
+    if (d->_remDcCount <
+        ((uint64_t) numComp * (uint64_t) numBlocksX * (uint64_t) numBlocksY))
     {
         return EXR_ERR_CORRUPT_CHUNK;
     }
@@ -250,19 +320,12 @@ LossyDctDecoder_execute (
     // Allocate a temp aligned buffer to hold a rows worth of full
     // 8x8 half-float blocks
     //
-
     rowBlockHandle = alloc_fn (
         (size_t) numComp * (size_t) numBlocksX * 64 * sizeof (uint16_t) +
         _SSE_ALIGNMENT);
     if (!rowBlockHandle) return EXR_ERR_OUT_OF_MEMORY;
 
-    rowBlock[0] = (uint16_t*) rowBlockHandle;
-
-    for (int i = 0; i < _SSE_ALIGNMENT; ++i)
-    {
-        if (((uintptr_t) (rowBlockHandle + i) & _SSE_ALIGNMENT_MASK) == 0)
-            rowBlock[0] = (uint16_t*) (rowBlockHandle + i);
-    }
+    rowBlock[0] = (uint16_t*) simd_align_pointer (rowBlockHandle);
 
     for (int comp = 1; comp < numComp; ++comp)
         rowBlock[comp] = rowBlock[comp - 1] + (size_t) numBlocksX * 64;
@@ -508,27 +571,17 @@ LossyDctDecoder_execute (
             //
 
 #ifdef IMF_HAVE_SSE2
-
-            uint8_t fastPath = DWA_CLASSIFIER_TRUE;
-
-            for (int y = 8 * blocky; y < 8 * blocky + maxY; ++y)
+            //
+            // Handle all the full X blocks, in a fast path with sse2 and
+            //
+            // test for no-op conversion
+            //
+            if (d->_toLinear != NULL)
             {
-                if ((uintptr_t) (chanData[comp]->_rows[y]) &
-                    _SSE_ALIGNMENT_MASK)
-                    fastPath = DWA_CLASSIFIER_FALSE;
-            }
-
-            if (fastPath)
-            {
-                //
-                // Handle all the full X blocks, in a fast path with sse2 and
-                // aligned row pointers
-                //
-
                 for (int y = 8 * blocky; y < 8 * blocky + maxY; ++y)
                 {
-                    __m128i* dst = (__m128i*) chanData[comp]->_rows[y];
-                    __m128i* src = (__m128i*) &rowBlock[comp][(y & 0x7) * 8];
+                    __m128i* restrict dst = (__m128i *) chanData[comp]->_rows[y];
+                    __m128i const * restrict src = (__m128i const *)&rowBlock[comp][(y & 0x7) * 8];
 
                     for (int blockx = 0; blockx < numFullBlocksX; ++blockx)
                     {
@@ -538,17 +591,18 @@ LossyDctDecoder_execute (
                         // Run with multiples of 8
                         //
 
-                        _mm_prefetch ((char*) (src + 16), _MM_HINT_NTA);
+                        _mm_prefetch ((const char*) (src + 16*8), _MM_HINT_NTA);
+                        __m128i srcv = _mm_loadu_si128 (src);
 
-                        i0 = (uint16_t) _mm_extract_epi16 (*src, 0);
-                        i1 = (uint16_t) _mm_extract_epi16 (*src, 1);
-                        i2 = (uint16_t) _mm_extract_epi16 (*src, 2);
-                        i3 = (uint16_t) _mm_extract_epi16 (*src, 3);
-
-                        i4 = (uint16_t) _mm_extract_epi16 (*src, 4);
-                        i5 = (uint16_t) _mm_extract_epi16 (*src, 5);
-                        i6 = (uint16_t) _mm_extract_epi16 (*src, 6);
-                        i7 = (uint16_t) _mm_extract_epi16 (*src, 7);
+                        // TODO: avx2 scatter gather
+                        i0 = (uint16_t) _mm_extract_epi16 (srcv, 0);
+                        i1 = (uint16_t) _mm_extract_epi16 (srcv, 1);
+                        i2 = (uint16_t) _mm_extract_epi16 (srcv, 2);
+                        i3 = (uint16_t) _mm_extract_epi16 (srcv, 3);
+                        i4 = (uint16_t) _mm_extract_epi16 (srcv, 4);
+                        i5 = (uint16_t) _mm_extract_epi16 (srcv, 5);
+                        i6 = (uint16_t) _mm_extract_epi16 (srcv, 6);
+                        i7 = (uint16_t) _mm_extract_epi16 (srcv, 7);
 
                         i0 = d->_toLinear[i0];
                         i1 = d->_toLinear[i1];
@@ -560,37 +614,53 @@ LossyDctDecoder_execute (
                         i6 = d->_toLinear[i6];
                         i7 = d->_toLinear[i7];
 
-                        *dst = _mm_insert_epi16 (_mm_setzero_si128 (), i0, 0);
-                        *dst = _mm_insert_epi16 (*dst, i1, 1);
-                        *dst = _mm_insert_epi16 (*dst, i2, 2);
-                        *dst = _mm_insert_epi16 (*dst, i3, 3);
+                        __m128i dstv = _mm_insert_epi16 (_mm_setzero_si128 (), i0, 0);
+                        dstv = _mm_insert_epi16 (dstv, i1, 1);
+                        dstv = _mm_insert_epi16 (dstv, i2, 2);
+                        dstv = _mm_insert_epi16 (dstv, i3, 3);
+                        dstv = _mm_insert_epi16 (dstv, i4, 4);
+                        dstv = _mm_insert_epi16 (dstv, i5, 5);
+                        dstv = _mm_insert_epi16 (dstv, i6, 6);
+                        dstv = _mm_insert_epi16 (dstv, i7, 7);
 
-                        *dst = _mm_insert_epi16 (*dst, i4, 4);
-                        *dst = _mm_insert_epi16 (*dst, i5, 5);
-                        *dst = _mm_insert_epi16 (*dst, i6, 6);
-                        *dst = _mm_insert_epi16 (*dst, i7, 7);
+                        _mm_storeu_si128 (dst, dstv);
 
+                        ++dst;
                         src += 8;
-                        dst++;
                     }
                 }
             }
             else
             {
+                // no-op conversion to linear
+                for (int y = 8 * blocky; y < 8 * blocky + maxY; ++y)
+                {
+                    __m128i* restrict dst = (__m128i *) chanData[comp]->_rows[y];
+                    __m128i const * restrict src = (__m128i const *)&rowBlock[comp][(y & 0x7) * 8];
 
-#endif /* IMF_HAVE_SSE2 */
+                    for (int blockx = 0; blockx < numFullBlocksX; ++blockx)
+                    {
+                        _mm_storeu_si128 (dst, _mm_loadu_si128 (src));
 
+                        ++dst;
+                        src += 8;
+                    }
+                }
+            }
+#else
+            if (d->_toLinear)
+            {
                 //
                 // Basic scalar kinda slow path for handling the full X blocks
                 //
 
                 for (int y = 8 * blocky; y < 8 * blocky + maxY; ++y)
                 {
-                    uint16_t* dst = (uint16_t*) chanData[comp]->_rows[y];
+                    uint16_t* restrict dst = (uint16_t*) chanData[comp]->_rows[y];
 
                     for (int blockx = 0; blockx < numFullBlocksX; ++blockx)
                     {
-                        uint16_t* src =
+                        uint16_t* restrict src =
                             &rowBlock[comp][blockx * 64 + ((y & 0x7) * 8)];
 
                         dst[0] = d->_toLinear[src[0]];
@@ -606,10 +676,23 @@ LossyDctDecoder_execute (
                         dst += 8;
                     }
                 }
-
-#ifdef IMF_HAVE_SSE2
             }
+            else
+            {
+                // no-op conversion to linear
+                for (int y = 8 * blocky; y < 8 * blocky + maxY; ++y)
+                {
+                    uint16_t* dst = (uint16_t*) chanData[comp]->_rows[y];
 
+                    for (int blockx = 0; blockx < numFullBlocksX; ++blockx)
+                    {
+                        uint16_t* src =
+                            &rowBlock[comp][blockx * 64 + ((y & 0x7) * 8)];
+                        memcpy (dst, src, 8*sizeof(uint16_t));
+                        dst += 8;
+                    }
+                }
+            }
 #endif /* IMF_HAVE_SSE2 */
 
             //
@@ -630,9 +713,16 @@ LossyDctDecoder_execute (
 
                     dst += 8 * numFullBlocksX;
 
-                    for (int x = 0; x < maxX; ++x)
+                    if (d->_toLinear)
                     {
-                        *dst++ = d->_toLinear[*src++];
+                        for (int x = 0; x < maxX; ++x)
+                        {
+                            *dst++ = d->_toLinear[*src++];
+                        }
+                    }
+                    else
+                    {
+                        memcpy (dst, src, maxX * sizeof(uint16_t));
                     }
                 }
             }
@@ -677,87 +767,3 @@ LossyDctDecoder_execute (
 }
 
 /**************************************/
-
-//
-// Un-RLE the packed AC components into
-// a half buffer. The half block should
-// be the full 8x8 block (in zig-zag order
-// still), not the first AC component.
-//
-// currAcComp is advanced as bytes are decoded.
-//
-// This returns the index of the last non-zero
-// value in the buffer - with the index into zig zag
-// order data. If we return 0, we have DC only data.
-//
-// This is assuminging that halfZigBlock is zero'ed
-// prior to calling
-//
-exr_result_t
-LossyDctDecoder_unRleAc (
-    LossyDctDecoder* d,
-    int*             lastNonZero,
-    uint16_t**       currAcComp,
-    uint16_t*        packedAcEnd,
-    uint16_t*        halfZigBlock)
-{
-    //
-    // Un-RLE the RLE'd blocks. If we find an item whose
-    // high byte is 0xff, then insert the number of 0's
-    // as indicated by the low byte.
-    //
-    // Otherwise, just copy the number verbatim.
-    //
-    int       dctComp = 1;
-    uint16_t* acComp  = *currAcComp;
-    uint16_t  val;
-    int       lnz      = 0;
-    uint64_t  ac_count = 0;
-
-    //
-    // Start with a zero'ed block, so we don't have to
-    // write when we hit a run symbol
-    //
-
-    while (dctComp < 64)
-    {
-        if (acComp >= packedAcEnd) { return EXR_ERR_CORRUPT_CHUNK; }
-        val = *acComp;
-        if (val == 0xff00)
-        {
-            //
-            // End of block
-            //
-
-            dctComp = 64;
-        }
-        else if ((val >> 8) == 0xff)
-        {
-            //
-            // Run detected! Insert 0's.
-            //
-            // Since the block has been zeroed, just advance the ptr
-            //
-
-            dctComp += val & 0xff;
-        }
-        else
-        {
-            //
-            // Not a run, just copy over the value
-            //
-            lnz                   = dctComp;
-            halfZigBlock[dctComp] = val;
-
-            dctComp++;
-        }
-
-        ac_count++;
-        acComp++;
-    }
-
-    d->_packedAcCount += ac_count;
-    *lastNonZero = lnz;
-    *currAcComp  = acComp;
-    return EXR_ERR_SUCCESS;
-}

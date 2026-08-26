@@ -29,13 +29,13 @@ static TfStaticData<UsdStageCache> _StageCache;
 static
 SdrTokenMap
 _GetSdrMetadata(const UsdShadeShader &shaderDef,
-                const SdrTokenMap &discoveryResultMetadata) 
+                const SdrShaderNodeDiscoveryResult &discoveryResult) 
 {
     // XXX Currently, this parser does not support 'vstruct' parsing, but if
     //     we decide to support 'vstruct' type in the future, we would need to
     //     identify 'vstruct' types in this function by examining the metadata.
 
-    SdrTokenMap metadata = discoveryResultMetadata;
+    SdrTokenMap metadata = discoveryResult.metadata;
 
     auto shaderDefMetadata = shaderDef.GetSdrMetadata();
     metadata.insert(shaderDefMetadata.begin(), shaderDefMetadata.end());
@@ -46,6 +46,11 @@ _GetSdrMetadata(const UsdShadeShader &shaderDef,
     if (!primvarsStr.empty()) {
         metadata[SdrNodeMetadata->Primvars] = primvarsStr;
     }
+
+    // NOTE: discoveryType as context will be replaced in a future
+    // release with shader-specific terms that have correct "context"
+    // semantics
+    metadata[SdrNodeMetadata->Context] = discoveryResult.discoveryType;
 
     return metadata;
 }
@@ -110,16 +115,12 @@ UsdShadeShaderDefParserPlugin::ParseShaderNode(
         discoveryResult.version,
         discoveryResult.name,
         discoveryResult.function,
-        // NOTE: discoveryType as context will be replaced in a future
-        // release with shader-specific terms that have correct "context"
-        // semantics
-        discoveryResult.discoveryType, /* context */
         discoveryResult.shadingSystem, /* shadingSystem */
         rootLayerPath,
         resolvedImplementationUri,
         UsdShadeShaderDefUtils::GetProperties(
             shaderDef.ConnectableAPI()),
-        _GetSdrMetadata(shaderDef, discoveryResult.metadata),
+        _GetSdrMetadata(shaderDef, discoveryResult),
         discoveryResult.sourceCode
     ));
     

@@ -15,17 +15,17 @@ extern "C" {
  * @{
  */
 
-EXR_INTERNAL exr_result_t exr_attr_opaquedata_init (
+exr_result_t exr_attr_opaquedata_init (
     exr_context_t ctxt, exr_attr_opaquedata_t* odata, size_t sz);
-EXR_INTERNAL exr_result_t exr_attr_opaquedata_create (
+exr_result_t exr_attr_opaquedata_create (
     exr_context_t          ctxt,
     exr_attr_opaquedata_t* odata,
     size_t                 sz,
     const void*            values);
-EXR_INTERNAL exr_result_t
+exr_result_t
 exr_attr_opaquedata_destroy (exr_context_t ctxt, exr_attr_opaquedata_t* ud);
 
-EXR_INTERNAL exr_result_t exr_attr_opaquedata_copy (
+exr_result_t exr_attr_opaquedata_copy (
     exr_context_t                ctxt,
     exr_attr_opaquedata_t*       ud,
     const exr_attr_opaquedata_t* srcud);
@@ -33,12 +33,12 @@ EXR_INTERNAL exr_result_t exr_attr_opaquedata_copy (
 /** If an unpack routine was registered, this unpacks the opaque data, returning the pointer and size.
  *
  * The unpacked pointer is stored internally and will be freed during destroy */
-EXR_INTERNAL exr_result_t exr_attr_opaquedata_unpack (
+exr_result_t exr_attr_opaquedata_unpack (
     exr_context_t ctxt, exr_attr_opaquedata_t*, int32_t* sz, void** unpacked);
 /** If a pack routine was registered, this packs the opaque data, returning the pointer and size.
  *
  * The packed pointer is stored internally and will be freed during destroy */
-EXR_INTERNAL exr_result_t exr_attr_opaquedata_pack (
+exr_result_t exr_attr_opaquedata_pack (
     exr_context_t ctxt, exr_attr_opaquedata_t*, int32_t* sz, void** packed);
 
 /** Assigns unpacked data
@@ -47,10 +47,10 @@ EXR_INTERNAL exr_result_t exr_attr_opaquedata_pack (
  * unpacked data to the provided value. This memory will be freed at
  * destruction time using the destroy pointer
  */
-EXR_INTERNAL exr_result_t exr_attr_opaquedata_set_unpacked (
+exr_result_t exr_attr_opaquedata_set_unpacked (
     exr_context_t ctxt, exr_attr_opaquedata_t*, void* unpacked, int32_t sz);
 
-EXR_INTERNAL exr_result_t exr_attr_opaquedata_set_packed (
+exr_result_t exr_attr_opaquedata_set_packed (
     exr_context_t ctxt, exr_attr_opaquedata_t*, const void* packed, int32_t sz);
 
 /** @} */

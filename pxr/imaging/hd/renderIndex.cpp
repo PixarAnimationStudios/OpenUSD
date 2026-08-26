@@ -22,12 +22,14 @@
 #include "pxr/imaging/hd/points.h"
 #include "pxr/imaging/hd/prefixingSceneIndex.h"
 #include "pxr/imaging/hd/primGather.h"
+#include "pxr/imaging/hd/primIdSchema.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/sceneGlobalsSchema.h"
 #include "pxr/imaging/hd/sceneIndexAdapterSceneDelegate.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/sprim.h"
@@ -67,6 +69,39 @@ _IsEnabledTerminalCachingSceneIndex()
     static bool enabled =
         TfGetEnvSetting(HD_ENABLE_TERMINAL_CACHING_SCENE_INDEX);
     return enabled;
+}
+
+// Returns whether the scene index publishes prim ids.
+//
+// Checks this by using the HdSceneGlobalsSchema.
+static bool
+_SceneIndexHasPrimIds(HdSceneIndexBaseRefPtr const &sceneIndex)
+{
+    return
+        sceneIndex &&
+        HdSceneGlobalsSchema::GetFromSceneIndex(sceneIndex)
+            .GetPrimIdToPath();
+}
+
+static
+int32_t
+_GetPrimIdFromSceneIndex(
+    HdSceneIndexBaseRefPtr const &sceneIndex,
+    SdfPath const &rprimId)
+{
+    TRACE_FUNCTION();
+
+    HdSceneIndexPrim const prim =
+        sceneIndex->GetPrim(rprimId);
+    HdPrimIdDataSourceHandle const ds =
+        HdPrimIdSchema::GetFromParent(prim.dataSource).GetPrimId();
+    if (!ds) {
+        TF_WARN(
+            "No prim id for prim <%s> of type '%s' from terminal scene index.",
+            rprimId.GetText(), prim.primType.GetText());
+        return -1;
+    }
+    return static_cast<int32_t>(ds->GetTypedValue(0.0f));
 }
 
 // -------------------------------------------------------------------------- //
@@ -142,6 +177,12 @@ HdRenderIndex::HdRenderIndex(
         _noticeBatchingTokens->postEmulation))
     , _mergingBatchingCtx(std::make_unique<_NoticeBatchingContext>(
         _noticeBatchingTokens->postMerging))
+    , _rprimPrimIdMap(
+        _SceneIndexHasPrimIds(terminalSceneIndex)
+            // prim ids are read from scene index
+            ? std::nullopt
+            // prim ids are assgined by this render index.
+            : std::make_optional<_RprimPrimIDVector>())
     , _renderDelegate(renderDelegate)
     , _drivers(drivers)
     , _instanceName(instanceName)
@@ -150,7 +191,9 @@ HdRenderIndex::HdRenderIndex(
 {
     // Note: HdRenderIndex::New(...) guarantees renderDelegate is non-null.
 
-    _rprimPrimIdMap.reserve(128);
+    if (_rprimPrimIdMap) {
+        _rprimPrimIdMap->reserve(128);
+    }
 
     // Register well-known reprs (to be deprecated).
     static std::once_flag reprsOnce;
@@ -476,7 +519,15 @@ HdRenderIndex::_InsertRprim(TfToken const& typeId,
     // render index manages render tags, rather than the rprim implementation.
     _tracker.RprimInserted(rprimId, rprim->GetInitialDirtyBitsMask() |
                                     HdChangeTracker::DirtyRenderTag);
-    _AllocatePrimId(rprim);
+    if (_rprimPrimIdMap) {
+        // Prim ids are assigned by this HdRenderIndex.
+        _AllocatePrimId(rprim);
+    } else {
+        // Prim ids are read from the terminal scene index.
+        rprim->SetPrimId(
+            _GetPrimIdFromSceneIndex(
+                _terminalSceneIndex, rprimId));
+    }
 
     _RprimInfo info = {
       sceneDelegate,
@@ -651,7 +702,9 @@ HdRenderIndex::_Clear()
     // Clear Rprims, Rprim IDs, and delegate mappings.
     _rprimMap.clear();
     _rprimIds.Clear();
-    _rprimPrimIdMap.clear();
+    if (_rprimPrimIdMap) {
+        _rprimPrimIdMap->clear();
+    }
 
     // Clear S & B prims
     _sprimIndex.Clear(_tracker, _renderDelegate);
@@ -1893,12 +1946,17 @@ HdRenderIndex::GetDrivers() const
 void
 HdRenderIndex::_CompactPrimIds()
 {
-    _rprimPrimIdMap.resize(_rprimMap.size());
+    if (!TF_VERIFY(_rprimPrimIdMap)) {
+        return;
+    }
+    _RprimPrimIDVector &rprimPrimIdMap = *_rprimPrimIdMap;
+
+    rprimPrimIdMap.resize(_rprimMap.size());
     int32_t nextPrimId = 0;
     for (const auto &pair : _rprimMap) {
         pair.second.rprim->SetPrimId(nextPrimId);
         _tracker.MarkRprimDirty(pair.first, HdChangeTracker::DirtyPrimID);
-        _rprimPrimIdMap[nextPrimId] = pair.first;
+        rprimPrimIdMap[nextPrimId] = pair.first;
         ++nextPrimId;
     }
 }
@@ -1906,27 +1964,46 @@ HdRenderIndex::_CompactPrimIds()
 void
 HdRenderIndex::_AllocatePrimId(HdRprim *prim)
 {
+    if (!TF_VERIFY(_rprimPrimIdMap)) {
+        return;
+    }
+    _RprimPrimIDVector &rprimPrimIdMap = *_rprimPrimIdMap;
+
     const size_t maxId = (1 << 24) - 1;
-    if (_rprimPrimIdMap.size() > maxId) {
+    if (rprimPrimIdMap.size() > maxId) {
         // We are wrapping around our max prim id.. time to reallocate
         _CompactPrimIds();
         // Make sure we have a valid next id after compacting
-        TF_VERIFY(_rprimPrimIdMap.size() < maxId);
+        TF_VERIFY(rprimPrimIdMap.size() < maxId);
     }
-    int32_t nextPrimId = _rprimPrimIdMap.size();
+    int32_t nextPrimId = rprimPrimIdMap.size();
     prim->SetPrimId(nextPrimId);
     // note: not marking DirtyPrimID here to avoid undesirable variability tracking.
-    _rprimPrimIdMap.push_back(prim->GetId());
+    rprimPrimIdMap.push_back(prim->GetId());
 }
 
 SdfPath
 HdRenderIndex::GetRprimPathFromPrimId(int primId) const
 {
-    if (static_cast<size_t>(primId) >= _rprimPrimIdMap.size()) {
-        return SdfPath();
+    if (_rprimPrimIdMap) {
+        // Prim id's are assigned by this HdRenderIndex.
+        if (static_cast<size_t>(primId) >= _rprimPrimIdMap->size()) {
+            return {};
+        }
+
+        return (*_rprimPrimIdMap)[primId];
+    }
+        
+    const HdPathVectorSchema primPathsDs =
+        HdSceneGlobalsSchema::GetFromSceneIndex(_terminalSceneIndex)
+            .GetPrimIdToPath();
+    HdPathDataSourceHandle const primPathDs =
+        primPathsDs.GetElement(primId);
+    if (!primPathDs) {
+        return {};
     }
 
-    return _rprimPrimIdMap[primId];
+    return primPathDs->GetTypedValue(0.0f);
 }
 
 void

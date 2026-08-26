@@ -152,6 +152,12 @@ public:
     static
     const HdRenderDelegateInfo &GetRenderDelegateInfo();
 
+    // Static version of GetRenderSettingDescriptors for
+    // the renderer plugin.
+    HDST_API
+    static
+    const HdRenderSettingDescriptorList &GetRenderSettingDescriptorsForPlugin();
+
     HDST_API
     static bool IsEnabledNativeSphereRenderingSupport();
     
@@ -167,8 +173,6 @@ private:
 
     // Resource registry used in this render delegate
     HdStResourceRegistrySharedPtr _resourceRegistry;
-
-    HdRenderSettingDescriptorList _settingDescriptors;
 
     Hgi* _hgi;
 

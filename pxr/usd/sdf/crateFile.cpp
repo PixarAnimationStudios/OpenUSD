@@ -382,6 +382,7 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
+// 0.16.0: Added support for GfDuration values.
 // 0.15.0: Added support for loopBoundaryTime-delimited spline extrapolation
 //         loops and GfTimeCode-native splines.
 // 0.14.0: Added support for ArrayEdits.
@@ -403,7 +404,7 @@ using std::vector;
 //         See _PathItemHeader_0_0_1.
 //  0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 15;
+constexpr uint8_t USDC_MINOR = 16;
 constexpr uint8_t USDC_PATCH = 0;
 
 constexpr CrateFile::Version
@@ -1258,6 +1259,9 @@ public:
         else if constexpr (std::is_same_v<T, GfTimeCode>) {
             return GfTimeCode(Read<double>());
         }
+        else if constexpr (std::is_same_v<T, GfDuration>) {
+            return GfDuration(Read<double>());
+        }
         else if constexpr (std::is_same_v<T, SdfUnregisteredValue>) {
             VtValue val = Read<VtValue>();
             if (val.IsHolding<string>())
@@ -1513,9 +1517,16 @@ public:
             "crate version 0.9.0.");
         Write(tc.GetValue()); 
     }
+    void Write(GfDuration const &dur) { 
+        crate->_packCtx->RequestWriteVersionUpgrade(
+            Version(0, 16, 0),
+            "A duration or duration[] value type was detected which requires "
+            "crate version 0.16.0.");
+        Write(dur.GetValue()); 
+    }
     void Write(SdfPathExpression const &pathExpr) {
         crate->_packCtx->RequestWriteVersionUpgrade(
-            Version(0,10,0),
+            Version(0, 10, 0),
             "A pathExpression value type was detected which requires crate "
             "version 0.10.0.");
         Write(pathExpr.GetText());
@@ -1633,6 +1644,7 @@ public:
                 "A spline tangent algorithm was detected which requires crate"
                 " version 0.13.0.");
             break;
+
           case 3: // looped extrapolation with loopBoundaryTime set
                   // or GfTimeCode-native spline
             crate->_packCtx->RequestWriteVersionUpgrade(
@@ -1640,6 +1652,13 @@ public:
                 "A spline loopBoundaryTime parameter on looping extrapolation "
                 "or GfTimeCode-native spline was detected which requires "
                 "crate version 0.15.0.");
+            break;
+
+          case 4: // GfDuration valued spline.
+            crate->_packCtx->RequestWriteVersionUpgrade(
+                Version(0,16,0),
+                "A GfDuration spline was detected which requires "
+                "crate version 0.16.0.");
             break;
 
           default:

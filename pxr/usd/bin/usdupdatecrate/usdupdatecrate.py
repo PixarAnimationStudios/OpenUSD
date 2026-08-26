@@ -363,6 +363,60 @@ def _SearchOneInner(
     )]
 
 ########################################################################
+# Attribute preservation
+#
+# Which of the original file's attributes an update copies onto the file it
+# writes.  These are separate axes because they need different privileges:
+# chmod needs only ownership of the temp we just wrote, setting the group needs
+# membership in the original's group, and setting the owner effectively needs
+# root.  The default (mode|group) is what a non-root user updating other
+# people's files can actually achieve.
+#
+# Carried through the update path as a single int so the worker task tuples
+# and the recovery subprocess argument stay one value wide.
+
+_PRESERVE_MODE       = 1 << 0
+_PRESERVE_GROUP      = 1 << 1
+_PRESERVE_OWNER      = 1 << 2
+_PRESERVE_MODE_GROUP = _PRESERVE_MODE | _PRESERVE_GROUP
+
+def _GroupName(gid: int) -> str:
+    """'gfx (219)' if the gid resolves, else '219'.  Error paths only."""
+    try:
+        import grp
+        return f"{grp.getgrgid(gid).gr_name} ({gid})"
+    except Exception:
+        return str(gid)
+
+def _ApplyPreserved(path: str, origStat, preserve: int) -> Optional[str]:
+    """Copy the attributes selected by `preserve` from origStat onto path.
+    Returns None on success, or a message naming the axis that failed.
+
+    chown runs before chmod: chown can clear setuid/setgid, so the mode is
+    applied last.
+    """
+    if preserve & (_PRESERVE_GROUP | _PRESERVE_OWNER):
+        uid = origStat.st_uid if preserve & _PRESERVE_OWNER else -1
+        gid = origStat.st_gid if preserve & _PRESERVE_GROUP else -1
+        try:
+            os.chown(path, uid, gid)
+        except OSError as e:
+            what = []
+            if uid != -1:
+                what.append(f"owner uid {uid}")
+            if gid != -1:
+                what.append(f"group {_GroupName(gid)}")
+            return f"could not preserve original {' and '.join(what)}: {e}"
+    if preserve & _PRESERVE_MODE:
+        try:
+            os.chmod(path, origStat.st_mode & 0o7777)
+        except OSError as e:
+            return (f"could not preserve original mode "
+                    f"{origStat.st_mode & 0o7777:04o}: {e}")
+    return None
+
+
+########################################################################
 # Update worker
 
 def _TryUnlink(p: str) -> None:
@@ -375,13 +429,13 @@ def _UpdateSingle(
     displayPath:    str,
     targetPath:     str,
     olderThan:      Version,
-    preserveAttrs:  bool,
+    preserve:       int,
 ) -> FileResult:
     """Core per-file update.  Exports the layer at targetPath via
-    Sdf.Layer.FindOrOpen + Export to a sibling temp, optionally matches the
-    original's mode and ownership, verifies the new crate version, and
-    atomically renames the temp into place.  The original is left untouched on
-    any failure.
+    Sdf.Layer.FindOrOpen + Export to a sibling temp, copies over whichever of
+    the original's mode/group/owner `preserve` selects, verifies the new crate
+    version, and atomically renames the temp into place.  The original is left
+    untouched on any failure.
 
     Returns a FileResult whose realPath is targetPath; callers that need a
     composite (bracketed) realPath in the result should override it after this
@@ -423,7 +477,7 @@ def _UpdateSingle(
                     "Sdf.Layer.FindOrOpen returned None")
 
     origStat = None
-    if preserveAttrs:
+    if preserve:
         try:
             origStat = os.stat(targetPath)
         except OSError as e:
@@ -440,14 +494,11 @@ def _UpdateSingle(
 
     del layer
 
-    if preserveAttrs:
-        try:
-            os.chmod(tmpPath, origStat.st_mode & 0o7777)
-            os.chown(tmpPath, origStat.st_uid, origStat.st_gid)
-        except OSError as e:
+    if preserve:
+        attrErr = _ApplyPreserved(tmpPath, origStat, preserve)
+        if attrErr is not None:
             _TryUnlink(tmpPath)
-            return _err(ResultKind.ERROR_EXPORT,
-                        f"could not preserve original attrs: {e}")
+            return _err(ResultKind.ERROR_EXPORT, attrErr)
 
     versionAfter = ReadCrateVersion(tmpPath)
     if versionAfter is None or versionAfter < olderThan:
@@ -479,10 +530,10 @@ def _UpdateSingle(
 def _UpdateLoose(
     fr: FileResult,
     olderThan: Version,
-    preserveAttrs: bool,
+    preserve: int,
 ) -> FileResult:
     """Update a loose .usd/.usdc file in place."""
-    return _UpdateSingle(fr.displayPath, fr.realPath, olderThan, preserveAttrs)
+    return _UpdateSingle(fr.displayPath, fr.realPath, olderThan, preserve)
 
 
 def _UpdateInner(
@@ -493,12 +544,11 @@ def _UpdateInner(
     """Update an inner crate file inside an extract dir.  Preserves the original
     composite (bracketed) display/real paths in the result.
 
-    preserveAttrs is forced False: the file's mode/uid/gid will be discarded by
+    Preservation is forced off: the file's mode/uid/gid will be discarded by
     the surrounding package repack, and the outer's attrs are what
     UsdzUpdateIterator preserves at the package boundary.
     """
-    res = _UpdateSingle(fr.displayPath, innerAbsPath, olderThan,
-                        preserveAttrs=False)
+    res = _UpdateSingle(fr.displayPath, innerAbsPath, olderThan, preserve=0)
     res.realPath = fr.realPath
     return res
 
@@ -532,7 +582,7 @@ def _UpdatePackage(
     packagePath:    str,
     items:          List[Tuple[FileResult, str]],
     olderThan:      Version,
-    preserveAttrs:  bool,
+    preserve:       int,
 ) -> List[FileResult]:
     """Update one or more inner crate files inside packagePath.
 
@@ -542,7 +592,8 @@ def _UpdatePackage(
     Semantics: partial-commit.  Every inner update that can succeed does; any
     that fail are reported as ERROR_EXPORT.  The package is repacked in one
     atomic os.replace; if that repack itself raises, no changes land and every
-    in-flight UPDATED result is downgraded to ERROR_EXPORT.
+    in-flight UPDATED result is downgraded to ERROR_EXPORT.  Returns exactly one
+    result per entry in items, whatever goes wrong.
 
     Recurses on entries with further bracket nesting: opens the next-level outer
     with its own UsdzUpdateIterator (whose __exit__ repacks the inner package in
@@ -567,7 +618,9 @@ def _UpdatePackage(
     try:
         with UsdUtils.UsdzUpdateIterator(
                 packagePath,
-                preserveAttrs = preserveAttrs,
+                preserveMode  = bool(preserve & _PRESERVE_MODE),
+                preserveGroup = bool(preserve & _PRESERVE_GROUP),
+                preserveOwner = bool(preserve & _PRESERVE_OWNER),
                 tag           = 'usdupdatecrate') as upd:
             arcToAbs = dict((arc, abs) for abs, arc in upd.Entries())
 
@@ -589,12 +642,28 @@ def _UpdatePackage(
                     continue
                 results.extend(_UpdatePackage(
                     nestedAbs, nestedItems, olderThan,
-                    preserveAttrs=False))
+                    preserve=0))
     except Exception as e:
         repackError = e
 
     if repackError is not None:
         results = [_DowngradeIfUpdated(r, repackError) for r in results]
+        # An exception could have been raised before an item is ever looked at
+        # -- a failed extract or an iterator that rejects its arguments raises
+        # before the loops above run at all.  So loop through all items and
+        # create error results for any we haven't yet reported.  That way every
+        # item we were handed goes back with an outcome.
+        reported = set(r.displayPath for r in results)
+        for fr, _ in items:
+            if fr.displayPath in reported:
+                continue
+            results.append(FileResult(
+                kind          = ResultKind.ERROR_EXPORT,
+                displayPath   = fr.displayPath,
+                realPath      = fr.realPath,
+                versionBefore = fr.versionBefore,
+                errorMessage  = f"package update failed: {repackError}",
+            ))
 
     return results
 
@@ -602,10 +671,10 @@ def _UpdatePackage(
 def _UpdateWorker(
     foundResults: List[FileResult],
     olderThan: Version,
-    preserveAttrs: bool,
+    preserve: int,
 ) -> List[FileResult]:
     """Worker function: given a pre-chunked list of FileResult(FOUND) records,
-    the threshold version, and a preserveAttrs flag, attempt to update each
+    the threshold version, and a _PRESERVE_* mask, attempt to update each
     file (loose or in-package).
 
     Inner-file entries (composite realPath) are grouped by their outermost .usdz
@@ -643,10 +712,10 @@ def _UpdateWorker(
 
     outcomes: List[FileResult] = []
     for fr in looseEntries:
-        outcomes.append(_UpdateLoose(fr, olderThan, preserveAttrs))
+        outcomes.append(_UpdateLoose(fr, olderThan, preserve))
     for outerPath, items in packageGroups.items():
         outcomes.extend(_UpdatePackage(
-            outerPath, items, olderThan, preserveAttrs))
+            outerPath, items, olderThan, preserve))
 
     return outcomes
 
@@ -657,16 +726,16 @@ def _UpdateWorkerIndexed(args):
     """Pool-side wrapper.  Returns (idx, results) so completion order is
     enough to identify which chunks are still pending after a quiescence
     timeout."""
-    idx, chunk, olderThan, preserveAttrs = args
-    return idx, _UpdateWorker(chunk, olderThan, preserveAttrs)
+    idx, chunk, olderThan, preserve = args
+    return idx, _UpdateWorker(chunk, olderThan, preserve)
 
-def _UpdateWorkerSendResult(conn, foundResults, olderThan, preserveAttrs):
+def _UpdateWorkerSendResult(conn, foundResults, olderThan, preserve):
     """Subprocess-side target for per-file isolation.  Module-level so
     'spawn' can pickle it.  Sends ('ok', results) or ('exc', message)
     via conn; if the process dies before sending, the parent treats it
     as a crash."""
     try:
-        results = _UpdateWorker(foundResults, olderThan, preserveAttrs)
+        results = _UpdateWorker(foundResults, olderThan, preserve)
         conn.send(('ok', results))
     except Exception as e:
         conn.send(('exc', f"{type(e).__name__}: {e}"))
@@ -674,7 +743,7 @@ def _UpdateWorkerSendResult(conn, foundResults, olderThan, preserveAttrs):
         conn.close()
 
 def _RunIsolatedSubprocess(
-        frList, olderThan, preserveAttrs, ctx, perFileTimeout):
+        frList, olderThan, preserve, ctx, perFileTimeout):
     """Spawn a fresh subprocess to update the given group of FileResults
     (one loose file or all inner entries of one .usdz package).  Returns
     ('ok', [FileResult]) | ('exc', message) | ('crash', message).
@@ -683,7 +752,7 @@ def _RunIsolatedSubprocess(
     """
     parent, child = ctx.Pipe(duplex=False)
     p = ctx.Process(target=_UpdateWorkerSendResult,
-                    args=(child, frList, olderThan, preserveAttrs))
+                    args=(child, frList, olderThan, preserve))
     p.start()
     child.close()
     p.join(timeout=perFileTimeout)
@@ -709,7 +778,7 @@ def _RunIsolatedSubprocess(
     finally:
         parent.close()
 
-def _RecoverPendingFiles(pending, olderThan, preserveAttrs, nWorkers,
+def _RecoverPendingFiles(pending, olderThan, preserve, nWorkers,
                          perFileTimeout, ctx):
     """Run each pending group (loose file, or one package's stale inners) in its
     own subprocess, paralleled across nWorkers threads.  pending = [(chunkIdx,
@@ -734,7 +803,7 @@ def _RecoverPendingFiles(pending, olderThan, preserveAttrs, nWorkers,
         chunkIdx = key[0]
         items    = groups[key]
         outcome, data = _RunIsolatedSubprocess(
-            items, olderThan, preserveAttrs, ctx, perFileTimeout)
+            items, olderThan, preserve, ctx, perFileTimeout)
         if outcome == 'ok':
             return chunkIdx, data
         return chunkIdx, [FileResult(
@@ -749,7 +818,7 @@ def _RecoverPendingFiles(pending, olderThan, preserveAttrs, nWorkers,
             max_workers=nWorkers) as tpool:
         return list(tpool.map(doOne, order))
 
-def _DispatchUpdate(chunks, olderThan, preserveAttrs, nWorkers,
+def _DispatchUpdate(chunks, olderThan, preserve, nWorkers,
                     quiescenceTimeout, perFileTimeout):
     """Run _UpdateWorker on each chunk in a process pool with quiescence-
     based crash detection.  When no result has arrived for
@@ -762,7 +831,7 @@ def _DispatchUpdate(chunks, olderThan, preserveAttrs, nWorkers,
     """
     ctx = multiprocessing.get_context('spawn')
     completed = {}                      # idx -> List[FileResult]
-    tasks = [(i, c, olderThan, preserveAttrs)
+    tasks = [(i, c, olderThan, preserve)
              for i, c in enumerate(chunks)]
     nFilesTotal = sum(len(c) for c in chunks)
 
@@ -823,7 +892,7 @@ def _DispatchUpdate(chunks, olderThan, preserveAttrs, nWorkers,
             file=sys.stderr,
         )
         for idx, items in _RecoverPendingFiles(
-                pending, olderThan, preserveAttrs, nWorkers,
+                pending, olderThan, preserve, nWorkers,
                 perFileTimeout, ctx):
             completed.setdefault(idx, []).extend(items)
 
@@ -1380,26 +1449,39 @@ def _BuildParser() -> argparse.ArgumentParser:
 
     # Default-True on POSIX, default-False on Windows.  Use None as a
     # sentinel so we can detect 'user did not pass either flag' below.
-    preserveGroup = p.add_mutually_exclusive_group()
-    preserveGroup.add_argument(
+    attrsGroup = p.add_mutually_exclusive_group()
+    attrsGroup.add_argument(
         '--preserveAttrs',
         action  = 'store_true',
         default = None,
         dest    = 'preserveAttrs',
-        help    = ("Preserve the original file's mode and ownership on the "
-                   "updated file.  If the mode or ownership cannot be matched "
-                   "(e.g. insufficient privilege to chown), the update for "
+        help    = ("Preserve the original file's mode and group on the "
+                   "updated file.  If either cannot be matched (e.g. you are "
+                   "not a member of the original's group), the update for "
                    "that file is treated as failed and the original is left "
-                   "untouched.  Default: on (POSIX), unsupported (Windows)."),
+                   "untouched.  The owner is not preserved unless "
+                   "--preserveOwner is also given.  "
+                   "Default: on (POSIX), unsupported (Windows)."),
     )
-    preserveGroup.add_argument(
+    attrsGroup.add_argument(
         '--noPreserveAttrs',
         action  = 'store_false',
         default = None,
         dest    = 'preserveAttrs',
-        help    = ("Disable preservation of original mode and ownership.  "
-                   "Updated files take on the running user's uid/gid and "
+        help    = ("Disable preservation of the original mode and group.  "
+                   "Updated files take on the running user's primary group "
+                   "(or the directory's group, if it is setgid) and a "
                    "umask-respecting mode."),
+    )
+    p.add_argument(
+        '--preserveOwner',
+        action  = 'store_true',
+        dest    = 'preserveOwner',
+        help    = ("Also preserve the original file's owner.  Off by default "
+                   "because changing a file's owner requires root; without "
+                   "it, updated files are owned by the running user.  A file "
+                   "whose owner cannot be set is treated as failed and left "
+                   "untouched.  POSIX only."),
     )
     p.add_argument(
         '--workers',
@@ -1510,13 +1592,25 @@ def main() -> int:
     else:
         explicitWalkFlags.append('--walkThreads')
 
-    # --preserveAttrs default: True on POSIX, False (unsupported) on Windows.
-    if args.preserveAttrs is None:
-        args.preserveAttrs = (os.name != 'nt')
-    elif args.preserveAttrs and os.name == 'nt':
-        print("ERROR: --preserveAttrs is only supported on POSIX systems.",
-              file=sys.stderr)
-        return 2
+    # Resolve the preservation flags into a _PRESERVE_* mask.  Mode and group
+    # are on by default on POSIX; owner is opt-in because chown to another uid
+    # effectively requires root.
+    if os.name == 'nt':
+        if args.preserveAttrs or args.preserveOwner:
+            print("ERROR: --preserveAttrs and --preserveOwner are only "
+                  "supported on POSIX systems.", file=sys.stderr)
+            return 2
+        args.preserve = 0
+    else:
+        args.preserve = (0 if args.preserveAttrs is False
+                         else _PRESERVE_MODE_GROUP)
+        if args.preserveOwner:
+            args.preserve |= _PRESERVE_OWNER
+        if (args.update and (args.preserve & _PRESERVE_OWNER)
+                and os.geteuid() != 0):
+            print(f"WARNING: --preserveOwner given but running as uid "
+                  f"{os.geteuid()}, not root; every file owned by another "
+                  f"user will fail to update.", file=sys.stderr)
 
     maxWorkers = (
         args.workers
@@ -1723,8 +1817,8 @@ def main() -> int:
     )
 
     updateWorker = functools.partial(_UpdateWorker,
-                                     olderThan     = args.olderThan,
-                                     preserveAttrs = args.preserveAttrs)
+                                     olderThan = args.olderThan,
+                                     preserve  = args.preserve)
 
     if nUpdateWorkers > 1:
         print(
@@ -1734,7 +1828,7 @@ def main() -> int:
         updateBatches = _DispatchUpdate(
             updateChunks,
             args.olderThan,
-            args.preserveAttrs,
+            args.preserve,
             nUpdateWorkers,
             args.quiescenceTimeout,
             args.perFileTimeout,

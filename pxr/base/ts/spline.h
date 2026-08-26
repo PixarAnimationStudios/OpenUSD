@@ -102,7 +102,7 @@ public:
     bool IsHolding() const;
 
     /// Convenience function that returns true if the value type of the
-    /// spline is GfTimeCode.
+    /// spline is GfTimeCode or GfDuration.
     TS_API
     bool IsTimeValued() const;
 
@@ -827,7 +827,7 @@ bool TsSpline::_Eval(
 
 // Implement a special case that will ensure the contents of the VtValue output
 // variable contain a value of the same type (double, float, GfHalf,
-// GfTimeCode) as the spline.
+// GfTimeCode, or GfDuration) as the spline.
 template <>
 TS_API
 bool TsSpline::_Eval(

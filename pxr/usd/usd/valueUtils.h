@@ -320,7 +320,7 @@ Usd_ResolveValuesInDictionary(VtDictionary *dict, const Fn &resolveFunc)
 }
 
 /// Apply the given layer \p offset to the given \p value if the value holds
-/// a type a that can be offset it time. Each supported type haa an overload 
+/// a type a that can be offset in time. Each supported type haa an overload 
 /// of this function defined.
 void
 Usd_ApplyLayerOffsetToValue(VtValue *value, const SdfLayerOffset &offset);
@@ -349,6 +349,33 @@ Usd_ApplyLayerOffsetToValue(VtArrayEdit<GfTimeCode> *value,
 {
     for (GfTimeCode &timeCode : value->GetMutableLiterals()) {
         timeCode = offset * timeCode;
+    }
+}
+
+/// \overload
+inline void
+Usd_ApplyLayerOffsetToValue(GfDuration *value, const SdfLayerOffset &offset)
+{
+    *value = offset * (*value);
+}
+
+/// \overload
+inline void
+Usd_ApplyLayerOffsetToValue(VtArray<GfDuration> *value, 
+                            const SdfLayerOffset &offset)
+{
+    for (GfDuration &duration : *value) {
+        duration = offset * duration;
+    }
+}
+
+/// \overload
+inline void
+Usd_ApplyLayerOffsetToValue(VtArrayEdit<GfDuration> *value, 
+                            const SdfLayerOffset &offset)
+{
+    for (GfDuration &duration : value->GetMutableLiterals()) {
+        duration = offset * duration;
     }
 }
 
@@ -395,7 +422,6 @@ bool
 Usd_QuerySpline(
     const TsSpline& spline,
     UsdTimeCode timeCode,
-    const SdfLayerOffset& layerToStageOffset,
     T* result);
 
 PXR_NAMESPACE_CLOSE_SCOPE

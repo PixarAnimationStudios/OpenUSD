@@ -101,7 +101,7 @@ UsdSkelImagingDataSourceSkeletonPrim::Get(const TfToken & name)
                         HdRenderTagTokens->guide))
                 .Build();
 
-        return HdOverlayContainerDataSource::OverlayedContainerDataSources(
+        return HdCreateOverlayContainerDataSource(
             // Authored opinion about purpose overrides default.
             HdContainerDataSource::Cast(result),
             purposeSchemaDataSource);

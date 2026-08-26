@@ -11,6 +11,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/ts/api.h"
 
+#include "pxr/base/gf/duration.h"
 #include "pxr/base/gf/interval.h"
 #include "pxr/base/gf/timeCode.h"
 #include "pxr/base/gf/vec2d.h"
@@ -28,12 +29,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>float</b>
 /// \li <b>GfHalf</b>
 /// \li <b>GfTimeCode</b>
+/// \li <b>GfDuration</b>
 /// \hideinitializer
 #define TS_SPLINE_SUPPORTED_VALUE_TYPES         \
     ((Double,   double))                        \
     ((Float,    float))                         \
     ((Half,     GfHalf))                        \
-    ((TimeCode, GfTimeCode))
+    ((TimeCode, GfTimeCode))                    \
+    ((Duration, GfDuration))
 
 #define TS_SPLINE_STORAGE_VALUE_TYPES           \
     ((Double,   double))                        \

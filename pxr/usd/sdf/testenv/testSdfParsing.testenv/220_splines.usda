@@ -18,6 +18,10 @@ def Xform "Prim1"
         14: 44; post linear,
         18: 27; post linear,
     }
+    duration zodiac.spline = {
+        14: 44; post linear,
+        18: 27; post linear,
+    }
 }
 
 def Xform "Prim2"

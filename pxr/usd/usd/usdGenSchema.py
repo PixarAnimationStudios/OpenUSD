@@ -355,6 +355,8 @@ class PropInfo(object):
             _GetNameAndGeneratedSchemaPropNameForPropInfo(
                 sdfPropName, classInfo)
 
+        self.tokenId = _MakeValidTokenId(self.name)
+
         # Determine if this property will be an API schema override in the 
         # flattened stage.
         self.isAPISchemaOverride = self.customData.get(
@@ -491,7 +493,7 @@ class MultiApplyPropertyNamespace:
 
     @classmethod
     def Create(cls, prefix, useLiteralIdentifier):
-        return cls(prefix, _MakeValidToken(prefix, useLiteralIdentifier)) \
+        return cls(prefix, _MakeValidTokenId(prefix, useLiteralIdentifier)) \
                if prefix else None
 
 
@@ -1159,10 +1161,7 @@ def _MakeValidToken(tokenId, useLiteralIdentifier):
                 originalToken, tokenId))
     return tokenId
 
-
-def _AddToken(tokenDict, classTokenSet, tokenId, val, desc, 
-              useLiteralIdentifier=False):
-    """tokenId must be an identifier"""
+def _MakeValidTokenId(tokenId, useLiteralIdentifier=False):
 
     cppReservedKeywords = [
         "alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel",
@@ -1185,10 +1184,8 @@ def _AddToken(tokenDict, classTokenSet, tokenId, val, desc,
     # If token is a reserved word in either language, append with underscore.
     # 'interface' is not a reserved word but is a macro on Windows when using
     # COM so we treat it as reserved.
-    # None is a reserved word for python3 
-    reserved = set(cppReservedKeywords + keyword.kwlist + [
+    reserved = set(cppReservedKeywords + pythonReservedKeywords + [
         'interface',
-        'None',
     ])
     
     if not Tf.IsValidIdentifier(tokenId):
@@ -1197,10 +1194,18 @@ def _AddToken(tokenDict, classTokenSet, tokenId, val, desc,
         # if not using literal identifier we always camelCase our valid
         # identifiers as per convention.
         tokenId = _CamelCase(tokenId)
- 
+
     # After conversion to camelCase, check if the token is reserved.
     if tokenId in reserved:
         tokenId = tokenId + '_'
+
+    return tokenId
+
+def _AddToken(tokenDict, classTokenSet, tokenId, val, desc, 
+              useLiteralIdentifier=False):
+    """tokenId must be an identifier"""
+
+    tokenId = _MakeValidTokenId(tokenId, useLiteralIdentifier)
 
     if tokenId in tokenDict:
         token = tokenDict[tokenId]

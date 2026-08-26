@@ -36,6 +36,7 @@
 #include <vector>
 #include <unordered_map>
 #include <memory>
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -604,7 +605,10 @@ private:
     _RprimMap _rprimMap;
     Hd_SortedIds _rprimIds;
 
-    _RprimPrimIDVector _rprimPrimIdMap;
+    // Prim id -> rprim path table. Only maintained (and non-empty optional)
+    // if the prim id is not coming from the given terminal scene index.
+    //
+    std::optional<_RprimPrimIDVector> _rprimPrimIdMap;
 
     _TaskMap _taskMap;
 

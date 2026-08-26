@@ -164,7 +164,7 @@ public:
         }
         if (name == HdDependenciesSchema::GetSchemaToken()) {
             return
-                HdOverlayContainerDataSource::OverlayedContainerDataSources(
+                HdCreateOverlayContainerDataSource(
                     HdContainerDataSource::Cast(ds),
                     _GetDependencies());
         }

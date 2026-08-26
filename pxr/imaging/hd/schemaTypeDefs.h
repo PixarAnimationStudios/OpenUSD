@@ -58,6 +58,8 @@ using HdExtComputationOutputContainerSchema =
     HdContainerOfSchemasSchema<class HdExtComputationOutputSchema>;
 using HdSampledDataSourceContainerContainerSchema =
     HdContainerOfSchemasSchema<HdSampledDataSourceContainerSchema>;
+using HdRenderSettingDescriptorContainerSchema =
+    HdContainerOfSchemasSchema<class HdRenderSettingDescriptorSchema>;
 
 // Containers of vectors of schemas
 using HdMaterialConnectionVectorContainerSchema =

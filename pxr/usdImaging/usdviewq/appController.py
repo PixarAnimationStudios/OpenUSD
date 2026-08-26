@@ -5307,6 +5307,7 @@ class AppController(QtCore.QObject):
 
     def _viewSettingChanged(self):
         self._refreshViewMenubar()
+        self._resolveCameraFraming()
         self._displayPurposeChanged()
         self._HUDInfoChanged()
 
@@ -5486,6 +5487,12 @@ class AppController(QtCore.QObject):
             action.setChecked(
                 str(action.text())
                 == self._dataModel.viewSettings.highlightColorName)
+
+    def _resolveCameraFraming(self):
+        # Resolve the camera in case the computed camera
+        # is needed before the next repaint is executed.
+        if self._stageView:
+            self._stageView.resolveCamera()
 
     def _displayPurposeChanged(self):
         self._updatePropertyView()

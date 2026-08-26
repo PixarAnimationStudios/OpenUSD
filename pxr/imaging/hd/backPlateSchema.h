@@ -44,9 +44,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (depthMinOffset) \
     (depthNormalizingFactor) \
     (depthCameraSpaceOffset) \
-    (lumaGain) \
-    (lumaGamma) \
-    (lumaLift) \
+    (lumaSlope) \
+    (lumaOffset) \
+    (lumaPower) \
     (plateVisibility) \
     (all) \
     (solo) \
@@ -118,13 +118,13 @@ public:
     HdFloatDataSourceHandle GetDepthCameraSpaceOffset() const;
 
     HD_API
-    HdVec3fDataSourceHandle GetLumaGain() const;
+    HdVec3fDataSourceHandle GetLumaSlope() const;
 
     HD_API
-    HdVec3fDataSourceHandle GetLumaGamma() const;
+    HdVec3fDataSourceHandle GetLumaOffset() const;
 
     HD_API
-    HdVec3fDataSourceHandle GetLumaLift() const;
+    HdVec3fDataSourceHandle GetLumaPower() const;
 
     HD_API
     HdTokenDataSourceHandle GetPlateVisibility() const; 
@@ -163,9 +163,9 @@ public:
         const HdFloatDataSourceHandle &depthMinOffset,
         const HdFloatDataSourceHandle &depthNormalizingFactor,
         const HdFloatDataSourceHandle &depthCameraSpaceOffset,
-        const HdVec3fDataSourceHandle &lumaGain,
-        const HdVec3fDataSourceHandle &lumaGamma,
-        const HdVec3fDataSourceHandle &lumaLift,
+        const HdVec3fDataSourceHandle &lumaSlope,
+        const HdVec3fDataSourceHandle &lumaOffset,
+        const HdVec3fDataSourceHandle &lumaPower,
         const HdTokenDataSourceHandle &plateVisibility
     );
 
@@ -206,14 +206,14 @@ public:
         Builder &SetDepthCameraSpaceOffset(
             const HdFloatDataSourceHandle &depthCameraSpaceOffset);
         HD_API
-        Builder &SetLumaGain(
-            const HdVec3fDataSourceHandle &lumaGain);
+        Builder &SetLumaSlope(
+            const HdVec3fDataSourceHandle &lumaSlope);
         HD_API
-        Builder &SetLumaGamma(
-            const HdVec3fDataSourceHandle &lumaGamma);
+        Builder &SetLumaOffset(
+            const HdVec3fDataSourceHandle &lumaOffset);
         HD_API
-        Builder &SetLumaLift(
-            const HdVec3fDataSourceHandle &lumaLift);
+        Builder &SetLumaPower(
+            const HdVec3fDataSourceHandle &lumaPower);
         HD_API
         Builder &SetPlateVisibility(
             const HdTokenDataSourceHandle &plateVisibility);
@@ -232,9 +232,9 @@ public:
         HdFloatDataSourceHandle _depthMinOffset;
         HdFloatDataSourceHandle _depthNormalizingFactor;
         HdFloatDataSourceHandle _depthCameraSpaceOffset;
-        HdVec3fDataSourceHandle _lumaGain;
-        HdVec3fDataSourceHandle _lumaGamma;
-        HdVec3fDataSourceHandle _lumaLift;
+        HdVec3fDataSourceHandle _lumaSlope;
+        HdVec3fDataSourceHandle _lumaOffset;
+        HdVec3fDataSourceHandle _lumaPower;
         HdTokenDataSourceHandle _plateVisibility;
 
     };

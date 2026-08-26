@@ -10,8 +10,13 @@
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/legacyRenderControlInterface.h"
 #include "pxr/imaging/hd/renderBuffer.h"
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/rendererCreateArgsSchema.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/renderSettingsSchema.h"
+#include "pxr/imaging/hd/sceneGlobalsSchema.h"
+#include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/sceneIndexObserver.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -20,6 +25,16 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (renderDriver)
 );
+
+namespace {
+
+bool
+_IsNamespaced(const TfToken &name)
+{
+    return name.GetString().find(':') != std::string::npos;
+}
+
+}
 
 std::vector<HdDriver>
 _ComputeDrivers(const HdRendererCreateArgsSchema &rendererCreateArgs)
@@ -80,6 +95,14 @@ public:
 
     void SetTaskContextData(const TfToken &name, const VtValue &data) override {
         return _engine->SetTaskContextData(name, data);
+    }
+
+    void RemoveTaskContextData(const TfToken &name) override {
+        _engine->RemoveTaskContextData(name);
+    }
+
+    void ClearTaskContextData() override {
+        _engine->ClearTaskContextData();
     }
 
     HdAovDescriptor
@@ -182,6 +205,229 @@ private:
     HdEngine * const _engine;
 };
 
+// Observes the terminal scene index for render settings and translates them
+// into HdRenderDelegate::SetRenderSetting calls.
+//
+// More precisely, it uses the render settings from the active rendersettings
+// prim pointed to by the scene globals.
+//
+// Note that only render settings advertised by
+// HdRenderDelegate::GetRenderSettingDescriptors are observed.
+//
+class HdRenderDelegateAdapterRenderer::_RenderSettingsObserver final
+    : public HdSceneIndexObserver
+{
+public:
+    _RenderSettingsObserver(
+        HdSceneIndexBaseRefPtr const &terminalSceneIndex,
+        HdRenderDelegate * const renderDelegate)
+      : _sceneIndex(terminalSceneIndex)
+      , _renderDelegate(renderDelegate)
+    {
+        _activeRenderSettingsPath = _ComputeActiveRenderSettingsPath();
+
+        _SetRenderSettings(HdDataSourceLocatorSet::UniversalSet());
+
+        if (_sceneIndex) {
+            _sceneIndex->AddObserver(HdSceneIndexObserverPtr(this));
+        }
+    }
+
+    ~_RenderSettingsObserver() override
+    {
+        if (_sceneIndex) {
+            _sceneIndex->RemoveObserver(HdSceneIndexObserverPtr(this));
+        }
+    }
+
+    void PrimsAdded(
+        const HdSceneIndexBase &,
+        const AddedPrimEntries &entries) override
+    {
+        bool reapply = false;
+
+        for (const AddedPrimEntry &entry : entries) {
+            // The scene globals (root) prim may (re-)appear, changing which
+            // prim is the active render settings prim; recompute the path.
+            if (entry.primPath == HdSceneGlobalsSchema::GetDefaultPrimPath()) {
+                _activeRenderSettingsPath =
+                    _ComputeActiveRenderSettingsPath();
+                reapply = true;
+                break;
+            }
+            // The active render settings prim itself (re-)appeared.
+            if (entry.primPath == _activeRenderSettingsPath) {
+                reapply = true;
+            }
+        }
+        if (!reapply) {
+            return;
+        }
+        _SetRenderSettings(HdDataSourceLocatorSet::UniversalSet());
+    }
+
+    void PrimsRemoved(
+        const HdSceneIndexBase &,
+        const RemovedPrimEntries &entries) override
+    {
+        // Does not handle the case where scene globals prim gets removed.
+        // But that should never happen.
+
+        if (_activeRenderSettingsPath.IsEmpty()) {
+            return;
+        }
+
+        for (const RemovedPrimEntry &entry : entries) {
+            if (_activeRenderSettingsPath.HasPrefix(entry.primPath)) {
+                _SetRenderSettings(HdDataSourceLocatorSet::UniversalSet());
+                return;
+            }
+        }
+    }
+
+    void PrimsRenamed(
+        const HdSceneIndexBase &,
+        const RenamedPrimEntries &entries) override
+    {
+        // Does not handle the case where scene globals get removed.
+        // But that should never happen.
+
+        if (_activeRenderSettingsPath.IsEmpty()) {
+            return;
+        }
+
+        for (const RenamedPrimEntry &entry : entries) {
+            if (_activeRenderSettingsPath.HasPrefix(entry.oldPrimPath)) {
+                _SetRenderSettings(HdDataSourceLocatorSet::UniversalSet());
+                return;
+            }
+        }
+    }
+
+    void PrimsDirtied(
+        const HdSceneIndexBase &,
+        const DirtiedPrimEntries &entries) override
+    {
+        // (a) The active render settings prim path may have changed; if so,
+        //     re-push the entire set.
+        for (const DirtiedPrimEntry &entry : entries) {
+            if (entry.primPath == HdSceneGlobalsSchema::GetDefaultPrimPath() &&
+                entry.dirtyLocators.Intersects(
+                    HdSceneGlobalsSchema::
+                        GetActiveRenderSettingsPrimLocator())) {
+                const SdfPath newPath = _ComputeActiveRenderSettingsPath();
+                if (newPath != _activeRenderSettingsPath) {
+                    _activeRenderSettingsPath = newPath;
+                    _SetRenderSettings(HdDataSourceLocatorSet::UniversalSet());
+                    return;
+                }
+            }
+            if (entry.primPath == _activeRenderSettingsPath) {
+                _SetRenderSettings(entry.dirtyLocators);
+            }
+        }
+    }
+
+private:
+    // The path of the scene's active render settings prim (from scene globals),
+    // or an empty path if there is none.
+    SdfPath _ComputeActiveRenderSettingsPath() const
+    {
+        if (!_sceneIndex) {
+            return {};
+        }
+        HdPathDataSourceHandle const ds =
+            HdSceneGlobalsSchema::GetFromSceneIndex(_sceneIndex)
+                .GetActiveRenderSettingsPrim();
+        if (!ds) {
+            return {};
+        }
+        return ds->GetTypedValue(0.0);
+    }
+
+    // The 'renderSettings' container of the active render settings prim, or
+    // null.
+    HdRenderSettingsSchema _GetActiveRenderSettingsSchema() const
+    {
+        if (!_sceneIndex || _activeRenderSettingsPath.IsEmpty()) {
+            return {nullptr};
+        }
+        const HdSceneIndexPrim prim =
+            _sceneIndex->GetPrim(_activeRenderSettingsPath);
+        return HdRenderSettingsSchema::GetFromParent(prim.dataSource);
+    }
+
+    static
+    HdDataSourceLocator _GetRenderSettingLocator(
+        const TfToken &name)
+    {
+        if (_IsNamespaced(name)) {
+            return HdRenderSettingsSchema::GetNamespacedSettingsLocator()
+                .Append(name);
+        } else {
+            return HdRenderSettingsSchema::GetDefaultLocator()
+                .Append(name);
+        }
+    }
+
+    static
+    HdSampledDataSourceHandle _GetRenderSettingDataSource(
+        const TfToken &name,
+        const HdRenderSettingsSchema &renderSettings)
+    {
+        if (_IsNamespaced(name)) {
+            return renderSettings.GetNamespacedSettings().Get(name);
+        } else {
+            HdContainerDataSourceHandle const container =
+                renderSettings.GetContainer();
+            if (!container) {
+                return nullptr;
+            }
+            return HdSampledDataSource::Cast(container->Get(name));
+        }
+    }
+
+    // Pushes render settings that are known to the render delegate
+    // and that correspond to data source locators in the given \p
+    // locators.
+    void _SetRenderSettings(const HdDataSourceLocatorSet &locators)
+    {
+        if (!locators.Intersects(
+                HdRenderSettingsSchema::GetDefaultLocator())) {
+            return;
+        }
+
+        const HdRenderSettingsSchema renderSettings =
+            _GetActiveRenderSettingsSchema();
+
+        // Only push render settings to the render delegate via the legacy
+        // HdRenderDelegate::SetRenderSetting API if the active render settings
+        // prim opts in via useForLegacyRenderDelegateSettings.
+        HdBoolDataSourceHandle const useForLegacyDs =
+            renderSettings.GetUseForLegacyRenderDelegateSettings();
+        if (!(useForLegacyDs && useForLegacyDs->GetTypedValue(0.0f))) {
+            return;
+        }
+
+        for (const HdRenderSettingDescriptor &descriptor :
+                 _renderDelegate->GetRenderSettingDescriptors()) {
+            if (!locators.Intersects(
+                    _GetRenderSettingLocator(descriptor.key))) {
+                continue;
+            }
+            HdSampledDataSourceHandle const ds =
+                _GetRenderSettingDataSource(descriptor.key, renderSettings);
+            _renderDelegate->SetRenderSetting(
+                descriptor.key,
+                ds ? ds->GetValue(0.0f) : descriptor.defaultValue);
+        }
+    }
+
+    HdSceneIndexBaseRefPtr const _sceneIndex;
+    HdRenderDelegate * const _renderDelegate;
+    SdfPath _activeRenderSettingsPath;
+};
+
 static
 HdDriverVector
 _ToPointers(const std::vector<HdDriver> &drivers)
@@ -211,6 +457,10 @@ HdRenderDelegateAdapterRenderer::HdRenderDelegateAdapterRenderer(
          _renderDelegate.Get(),
          _renderIndex.get(),
          _engine.get()))
+ , _renderSettingsObserver(
+     std::make_unique<_RenderSettingsObserver>(
+         terminalSceneIndex,
+         _renderDelegate.Get()))
 {
 }
 

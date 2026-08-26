@@ -24,6 +24,7 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -828,6 +829,8 @@ HdPrmanMaterial::_SyncToRileyWithLock(
     HdSceneDelegate *sceneDelegate,
     riley::Riley *riley)
 {
+    TfAutoMallocTag mallocTag("hdPrman", "Materials");
+
     SdfPath const& id = GetId();
     VtValue hdMatVal = sceneDelegate->GetMaterialResource(id);
 

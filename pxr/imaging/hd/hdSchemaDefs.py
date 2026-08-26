@@ -1086,6 +1086,41 @@
                       times and is expected to span the union of the shutter
                       intervals of cameras used in generating the render
                       artifacts.''')),
+            ('useForLegacyRenderDelegateSettings', T_BOOL,
+             dict(DOC = '''
+                A temporary field to transition to in-band render settings.
+
+                This field will not exist in a pure Hydra 2.0 world since
+                render settings are always communicated in-band through the
+                scene index. It mitigates the risk for HdRenderDelegate's
+                implementing both in-band render settings and the legacy
+                HdRenderDelegate::SetRenderSettings and those implementations
+                interact in complicated ways. That is, applications can use,
+                for example, an env var to switch between the new mechanism
+                and direct calls to HdRenderDelegate::SetRenderSettings to
+                revert to the old behavior while we address fall-out.
+
+                This field changes the emulation layer
+                HdRenderDelegateAdapterRenderer, to
+                set the legacy render settings on the legacy render delegate
+                using HdRenderDelegate::SetRenderSetting with the values
+                provided by this schema.''')),
+        ],
+    ),
+
+    #--------------------------------------------------------------------------
+    # renderSettingDescriptor
+    dict(
+        SCHEMA_NAME = 'RenderSettingDescriptor',
+        SCHEMA_TOKEN = 'renderSettingDescriptor',
+        DOC = '''Describes render setting advertised by a renderer through
+                 HdRendererPlugin::GetSceneIndexCreateArgs, see
+                 HdSceneIndexCreateArgsSchema::GetRenderSettings.''',
+        MEMBERS = [
+            ('name', T_STRING,
+             dict(DOC = '''Human-readable name of the render setting, suitable
+                           for display in a UI.''')),
+            ('defaultValue', T_SAMPLED, {})
         ],
     ),
 
@@ -1266,9 +1301,9 @@
             ('depthMinOffset', T_FLOAT, {}),
             ('depthNormalizingFactor', T_FLOAT, {}),
             ('depthCameraSpaceOffset', T_FLOAT, {}),
-            ('lumaGain', T_VEC3F, {}),
-            ('lumaGamma', T_VEC3F, {}),
-            ('lumaLift', T_VEC3F, {}),
+            ('lumaSlope', T_VEC3F, {}),
+            ('lumaOffset', T_VEC3F, {}),
+            ('lumaPower', T_VEC3F, {}),
             ('plateVisibility', T_TOKEN, {}),
         ],
         STATIC_TOKEN_DATASOURCE_BUILDERS = [ # optional for shared token ds's
@@ -1522,6 +1557,21 @@
     ),
 
     #--------------------------------------------------------------------------
+    # primId
+    dict(
+        SCHEMA_NAME = 'PrimId',
+        SCHEMA_TOKEN = 'primId',
+        DOC = '''Unique id assigned to all imageable prims. Inverse map is in
+                 SceneGlobals.
+                 For example, these can be assigned by the HdsiPrimIdSceneIndex
+                 and used for an Id buffer for picking.''',
+        ADD_DEFAULT_LOCATOR = True,
+        MEMBERS = [
+            ('primId', 'HdPrimIdDataSource', {}),
+        ],
+    ),
+
+    #--------------------------------------------------------------------------
     # selection
     dict(
         SCHEMA_NAME = 'Selection',
@@ -1576,6 +1626,8 @@
             ('timeCodesPerSecond', T_DOUBLE, {}),
             ('currentFrame', T_DOUBLE, {}),
             ('sceneStateId', T_INT, {}),
+            ('primIdToPath', 'HdPathVectorSchema',
+             dict(DOC = '''Maps id's from PrimId schema to prim paths.''')),
         ],
     ),
 
@@ -1653,6 +1705,7 @@
         render contexts such as glslflx which is understood by Storm but not Prman,
         for example.
         ''',
+        SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/schemaTypeDefs'],
         MEMBERS = [
             ('motionBlurSupport', T_BOOL,
              dict(DOC = '''Does consumer (most likely HdRenderer) of scene indices need
@@ -1670,6 +1723,8 @@
                            false: the UsdImagingDelegate is querying an emulation
                            render delegate for information to resolve, for example,
                            the material render contexts correctly.''')),
+            ('renderSettingDescriptors', 'HdRenderSettingDescriptorContainerSchema',
+             dict(DOC = '''Render settings advertised by rendererer.''')),
         ],
     ),
 

@@ -32,7 +32,7 @@ namespace Sdf_VariableExpressionImpl {
 /// Class responsible for parsing and evaluating variable expressions.
 ///
 /// Variable expressions are written in a custom language and 
-/// represented in scene description as a string surrounded by backticks (`).
+/// represented in scene description as a string surrounded by backticks.
 /// These expressions may refer to "expression variables", which are key-value
 /// pairs provided by clients. For example, when evaluating an expression like:
 ///
@@ -69,7 +69,6 @@ public:
     SDF_API
     explicit SdfVariableExpression(const std::string& expr);
 
-    /// \overload
     SDF_API
     explicit SdfVariableExpression(std::string&& expr);
 
@@ -81,7 +80,7 @@ public:
     ~SdfVariableExpression();
 
     /// Returns true if \p s is a variable expression, false otherwise.
-    /// A variable expression is a string surrounded by backticks (`).
+    /// A variable expression is a string surrounded by backticks.
     ///
     /// A return value of true does not guarantee that \p s is a valid
     /// expression. This function is meant to be used as an initial check
@@ -356,6 +355,16 @@ public:
     /// \p name, i.e. `${name}`.
     SDF_API static Builder MakeVariable(const std::string& name);
 
+    /// Create a variable reference expression for the variable named
+    /// \p name and \p fallbackValue, i.e. `${name:val}`.
+    SDF_API static Builder MakeVariable(const std::string& name,
+                                        const Builder& fallbackValue);
+
+    /// Create a variable reference expression whose fallback is the
+    /// expression \p fallbackValue. This is useful when the fallback is an
+    /// already-built expression, e.g. the result of MakeList.
+    SDF_API static Builder MakeVariable(const std::string& name,
+                                        const SdfVariableExpression& fallbackValue);
     /// @}
 
 private:

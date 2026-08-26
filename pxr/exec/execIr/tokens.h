@@ -223,7 +223,7 @@ struct ExecIrTokensType {
     const TfToken restTz;
     /// \brief "rig1"
     /// 
-    /// Fallback value for ExecIrSwitchController schema attribute switch
+    /// Fallback value for ExecIrSwitchController::GetSwitchAttr()
     const TfToken rig1;
     /// \brief "rig1:space"
     /// 
@@ -231,7 +231,7 @@ struct ExecIrTokensType {
     const TfToken rig1Space;
     /// \brief "rig2"
     /// 
-    /// Possible value for ExecIrSwitchController schema attribute switch
+    /// Possible value for ExecIrSwitchController::GetSwitchAttr()
     const TfToken rig2;
     /// \brief "rig2:space"
     /// 

@@ -23,6 +23,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class EfLeafNode;
 class Exec_CompilationState;
 
 /// Leaf compilation task for compiling requested outputs.
@@ -37,10 +38,12 @@ public:
     Exec_LeafCompilationTask(
         Exec_CompilationState &compilationState,
         const ExecValueKey &valueKey,
-        VdfMaskedOutput *leafOutput)
+        VdfMaskedOutput *leafOutput,
+        const EfLeafNode **leafNode)
         : Exec_CompilationTask(compilationState)
         , _valueKey(valueKey)
         , _leafOutput(leafOutput)
+        , _leafNode(leafNode)
     {}
 
 private:
@@ -71,6 +74,9 @@ private:
 
     // Pointer to the leaf output to be populated by this task.
     VdfMaskedOutput *const _leafOutput;
+
+    // Pointer to the leaf node to be compiled by this task.
+    const EfLeafNode **const _leafNode;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

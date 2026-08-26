@@ -139,8 +139,10 @@ struct Tf_TokenRegistry
 
 private:
 
+    // Emptiness, like identity, is a property of the c-string: a std::string
+    // whose first character is NUL names the empty token however long it is.
     inline bool _IsEmpty(char const *s) const { return !s || !s[0]; }
-    inline bool _IsEmpty(string const &s) const { return s.empty(); }
+    inline bool _IsEmpty(string const &s) const { return s.empty() || !s[0]; }
 
     inline char const *_CStr(char const *s) const { return s; }
     inline char const *_CStr(string const &s) const { return s.c_str(); }
@@ -151,11 +153,19 @@ private:
         return ret;
     }
 
+    // Pack the first sizeof(uint64_t) characters into an integer, most
+    // significant character first, so that comparing two codes numerically
+    // orders those characters lexicographically.  A string shorter than that is
+    // padded with NULs, which sort below any other byte, so a prefix orders
+    // before its extensions.
     static inline uint64_t _ComputeCompareCode(char const *p) {
         uint64_t compCode = 0;
         int nchars = sizeof(compCode);
         while (nchars--) {
-            compCode |= static_cast<uint64_t>(*p) << (8*nchars);
+            // Cast through unsigned char to avoid sign extension for UTF-8
+            // bytes and to ensure agreement with strcmp().
+            compCode |= static_cast<uint64_t>(
+                static_cast<unsigned char>(*p)) << (8*nchars);
             if (*p) {
                 ++p;
             }
@@ -176,6 +186,12 @@ private:
         unsigned setNum = _GetSetNum(_CStr(s));
         _Set &set = _sets[setNum];
 
+        // Nothing reachable from inside this locked region may intern a string
+        // -- not directly, and not indirectly through a diagnostic, via
+        // TfEternalString, or through the malloc tagging below, etc.
+        // tbb::spin_mutex is not recursive, so a name hashing into this same
+        // set would self-deadlock, and since the name decides the set that is a
+        // 1-in-_NumSets nondeterministic hang.
         tbb::spin_mutex::scoped_lock lock(set.mutex);
 
         // Insert or lookup an existing.
@@ -293,8 +309,13 @@ TF_REGISTRY_FUNCTION(TfType)
 string const&
 TfToken::_GetEmptyString()
 {
-    static std::string empty;
-    return empty;
+    // Heap allocated and never freed, so the referent remains valid for the
+    // remainder of the process, including during and after static destruction.
+    // A function-local static of std::string would be destroyed at exit, which
+    // would make an empty token's string a dangling reference for any code
+    // still running.
+    static std::string const *empty = new std::string();
+    return *empty;
 }
 
 TfToken::TfToken(const string &s)
@@ -329,7 +350,17 @@ TfToken::Find(const string& s)
     return t;
 }
 
-bool 
+// Note for maintainers: o is compared in full, deliberately, rather than being
+// trimmed at an embedded NUL the way construction is.  That means TfToken(s) ==
+// s can be false when s contains one, which looks like something to fix.
+//
+// It isn't.  Trimming o would restore that identity at the cost of
+// transitivity: a token whose text is "a" would then equal both "a" and
+// std::string("a\0b", 3), which are not equal to each other.  Comparing in full
+// instead preserves "t == o implies t.GetString() == o", which is the more
+// useful of the two properties, and a name containing an embedded NUL is
+// outside what this type represents in any case.
+bool
 TfToken::operator==(const string &o) const
 {
     return GetString() == o;

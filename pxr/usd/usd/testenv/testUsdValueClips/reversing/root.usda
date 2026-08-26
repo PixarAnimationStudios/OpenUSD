@@ -7,7 +7,9 @@ def "Ref"
         2: -10,
         4: -15,
     }
-}  
+    timecode time = 1.0
+    duration dur = 1.0
+}
 
 def "Model" (
     references = </Ref>

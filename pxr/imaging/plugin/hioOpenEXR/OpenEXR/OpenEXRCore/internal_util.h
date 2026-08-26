@@ -6,6 +6,7 @@
 #ifndef OPENEXR_PRIVATE_UTIL_H
 #define OPENEXR_PRIVATE_UTIL_H
 
+#include <stdio.h>
 #include <stdint.h>
 
 static inline int
@@ -19,24 +20,27 @@ compute_sampled_height (int height, int y_sampling, int start_y)
         nlines = (start_y % y_sampling) == 0 ? 1 : 0;
     else
     {
-        int start, end;
+        int off, tmph;
 
         /* computed the number of times y % ysampling == 0, by
          * computing interval based on first and last time that occurs
          * on the given range
          */
-        start = start_y % y_sampling;
-        if (start != 0)
-            start = start_y + (y_sampling - start);
+        if (start_y < 0)
+        {
+            off = -start_y % y_sampling;
+        }
         else
-            start = start_y;
-        end = start_y + height - 1;
-        end -= (end < 0) ? (-end % y_sampling) : (end % y_sampling);
+        {
+            off = start_y % y_sampling;
+            if (off != 0)
+                off = (y_sampling - off);
+        }
 
-        if (start > end)
-            nlines = 0;
-        else
-            nlines = (end - start) / y_sampling + 1;
+        tmph = height - off;
+        if (tmph == 0) return 0;
+        --tmph;
+        nlines = tmph / y_sampling + 1;
     }
 
     return nlines;

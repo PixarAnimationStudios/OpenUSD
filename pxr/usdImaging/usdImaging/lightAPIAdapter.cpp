@@ -55,11 +55,23 @@ public:
             return HdRetainedTypedSampledDataSource<bool>::New(true);
         }
         if (name == HdTokens->materialSyncMode) {
+            // XXX: This branch is functionally identical to the else branch
+            // below. Maintained separate because materialSyncMode is a known
+            // light schema member. Also note that UsdLux declares
+            // materialSyncMode as `uniform` and, strictly speaking, should
+            // never be time-varying. However, time-varying values survive so
+            // long as USD_VALIDATE_VARIABILITY isn't enabled. Allowing this
+            // parameter to be time-varying is useful for testing purposes; if
+            // production demands require time-varying materialSyncMode, UsdLux
+            // schema will need to be updated to drop `uniform` from the
+            // declaration.
             if (UsdAttribute attr = _lightApi.GetMaterialSyncModeAttr()) {
-                TfToken v;
-                if (_syncModeQuery.Get(&v, _stageGlobals.GetTime())) {
-                    return HdRetainedTypedSampledDataSource<TfToken>::New(v);
-                }
+                return UsdImagingDataSourceAttributeNew(
+                    attr,
+                    _stageGlobals,
+                    _lightApi.GetPrim().GetPath(),
+                    HdLightSchema::GetDefaultLocator().Append(
+                        HdTokens->materialSyncMode));
             }
         } else {
 
@@ -99,22 +111,13 @@ private:
     }
 
     _LightDataSource(
-        const UsdPrim& prim,
+        const UsdLuxLightAPI &lightApi,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
-      : _lightApi(prim)
-      , _syncModeQuery(_lightApi.GetMaterialSyncModeAttr())
+      : _lightApi(lightApi)
       , _stageGlobals(stageGlobals)
-    {
-        if (_syncModeQuery.ValueMightBeTimeVarying()) {
-            _stageGlobals.FlagAsTimeVarying(
-                prim.GetPath(),
-                HdLightSchema::GetDefaultLocator()
-                    .Append(HdTokens->materialSyncMode));
-        }
-    }
+    { }
 
     UsdLuxLightAPI _lightApi;
-    UsdAttributeQuery _syncModeQuery;
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
 };
 
@@ -160,7 +163,7 @@ UsdImagingLightAPIAdapter::GetImagingSubprimData(
                 stageGlobals,
                 HdMaterialTerminalTokens->light),
             HdLightSchemaTokens->light,
-            _LightDataSource::New(prim, stageGlobals));
+            _LightDataSource::New(UsdLuxLightAPI(prim), stageGlobals));
     }
 
     return nullptr;

@@ -88,7 +88,7 @@ _PrototypeRootOverlaySource(const HdContainerDataSourceHandle &ds)
             // The prototypes should always be defined at the origin.
             HdXformSchema::GetSchemaToken(),
             _ResetXformToIdentityDataSource());
-    return HdOverlayContainerDataSource::OverlayedContainerDataSources(
+    return HdCreateOverlayContainerDataSource(
         overlayDs, ds);
 }
 

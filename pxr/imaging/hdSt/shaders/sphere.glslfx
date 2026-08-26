@@ -10,6 +10,7 @@
 --- This is what an import might look like.
 --- #import $TOOLS/hdSt/shaders/sphere.glslfx
 
+#import $TOOLS/hdSt/shaders/coordUtils.glslfx
 #import $TOOLS/hdSt/shaders/instancing.glslfx
 #import $TOOLS/hdSt/shaders/sphereFaceCull.glslfx
 #import $TOOLS/hdSt/shaders/sphereNormal.glslfx
@@ -44,46 +45,58 @@ void main(void)
     ProcessPrimvarsIn();
 
     const MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
-    const vec4 sphereCenterObj = vec4(0.0, 0.0, 0.0, 1);
 
     const MAT4 viewMat = GetWorldToViewMatrix();
     const MAT4 projMat = GetProjectionMatrix();
     const MAT4 viewModel = viewMat * transform;
 
-    const vec3 sphereCenterEye = (viewModel * sphereCenterObj).xyz;
+    const vec3 sphereCenterEye = TransformPoint(viewModel, vec3(0.0));
     
     const float radius = HdGet_radius();
 
     // Get max x, y, and z radii for the sphere in eye space
-    const vec3 bboxSizeEye = radius * rowLengths(mat3(viewModel));
+    const vec3 bboxSizeEye = radius * rowLengths(Mat4ToMat3(viewModel));
 
     // Get bounds for the sphere in eye space
     const vec3 bboxMinEye = sphereCenterEye - bboxSizeEye;
     const vec3 bboxMaxEye = sphereCenterEye + bboxSizeEye;
 
-    // Get min and max x and y values in screen space
-    const vec4 clipMinBack = projMat * vec4(
-                             bboxMinEye, 1.0);
+    // Get min and max x and y values in screen space.
+    // Converting to vec4 explicitly in case projMat is a double-precision matrix
+    const vec4 clipMinBack = vec4(projMat * vec4(
+                                  bboxMinEye, 1.0));
 
-    const vec4 clipMaxBack = projMat * vec4(
-                             bboxMaxEye.xy,
-                             bboxMinEye.z, 1.0);
+    const vec4 clipMaxBack = vec4(projMat * vec4(
+                                  bboxMaxEye.xy,
+                                  bboxMinEye.z, 1.0));
 
-    const vec4 clipMinFront = projMat * vec4(
-                              bboxMinEye.xy,
-                              bboxMaxEye.z, 1.0);
+    const vec4 clipMinFront = vec4(projMat * vec4(
+                                   bboxMinEye.xy,
+                                   bboxMaxEye.z, 1.0));
 
-    const vec4 clipMaxFront = projMat * vec4(
-                              bboxMaxEye, 1.0);
+    const vec4 clipMaxFront = vec4(projMat * vec4(
+                                   bboxMaxEye, 1.0));
 
     vec3 xyzmin = min(clipMinFront.xyz / clipMinFront.w,
                       clipMinBack.xyz / clipMinBack.w);
     vec3 xyzmax = max(clipMaxFront.xyz / clipMaxFront.w,
                       clipMaxBack.xyz / clipMaxBack.w);
 
-    // If the camera is too close to the sphere, clip x and y bounds to -1.0,
-    // 0.0 or 1.0 depending on their eye space positions
+    const float nearPlaneNDC = GetNearPlaneNDC();
+
+    // If the entire sphere is behind the camera, early out
+    if (clipMinBack.w < 0.0) {
+        gl_Position = vec4(0, 0, nearPlaneNDC - 1.0, 1);
+        outData.Peye = vec3(0);
+        return;
+    }
+    // If part of the sphere is behind the camera, clip x and y bounds to
+    // -1.0, 0.0 or 1.0 depending on their eye space positions.
+    // Also clip z lower bound to the near plane, since the perspective division
+    // might yield a large positive value for it, in this case.
     if (clipMinFront.w < 0.0) {
+        xyzmin.z = nearPlaneNDC;
+
         if (clipMinFront.x < 0.0) {
             xyzmin.x = -1.0;
         } else {
@@ -109,31 +122,38 @@ void main(void)
         }
     }
 
-#if defined(VULKAN) || defined(METAL)
-    const float nearPlaneZ = 0.0;
-#else
-    const float nearPlaneZ = -1.0;
-#endif
+    const float zmin = min(xyzmax.z, max(nearPlaneNDC, xyzmin.z));
 
-    const float zmin = min(xyzmax.z, max(nearPlaneZ, xyzmin.z));
+    // Early out if sphere is not visible
+    if (zmin < nearPlaneNDC) {
+        gl_Position = vec4(0, 0, zmin, 1);
+        outData.Peye = vec3(0);
+        return;
+    }
 
+    vec2 xyNDC;
     switch(hd_VertexID)
     {
         case 0:
-            gl_Position = vec4(xyzmin.x, xyzmax.y, zmin, 1.0);
+            xyNDC = vec2(xyzmin.x, xyzmax.y);
             break;
         case 1:
-            gl_Position = vec4(xyzmax.xy, zmin, 1.0);
+            xyNDC = xyzmax.xy;
             break;
         case 2:
-            gl_Position = vec4(xyzmax.x, xyzmin.y, zmin, 1.0);
+            xyNDC = vec2(xyzmax.x, xyzmin.y);
             break;
         default:
-            gl_Position = vec4(xyzmin.xy, zmin, 1.0);
+            xyNDC = xyzmin.xy;
             break;
     }
 
-    outData.Peye = (GetProjectionInverseMatrix() * gl_Position).xyz;
+    gl_Position = vec4(xyNDC, zmin, 1.0);
+    
+    // When calculating Peye, push the billboard slightly away from the surface,
+    // because the FS uses Peye as rayOrigin
+    const float epsilon = 1e-5;
+    outData.Peye = TransformPoint(GetProjectionInverseMatrix(), vec3(xyNDC, zmin - epsilon));
 }
 
 --- --------------------------------------------------------------------------
@@ -148,16 +168,20 @@ void main(void)
 --- --------------------------------------------------------------------------
 -- glsl Sphere.Fragment
 
+// Computes the 2 hit distances in object space for a ray intersecting the sphere.
+// It is assumed that rayOrigin and rayDir are in object space.
+// rayDir need not be normalized.
 vec2 IntersectObjSpace(vec3 rayOrigin, vec3 rayDir)
 {
     const float radius = HdGet_radius();
 
     // Coeffs for the quadratic equation for the sphere
+    const float a = dot(rayDir, rayDir);
     const float halfB = dot(rayOrigin, rayDir);
     const float c = dot(rayOrigin, rayOrigin) - radius * radius;
 
     // Discriminant
-    const float quarterH = halfB * halfB - c;
+    const float quarterH = halfB * halfB - a * c;
 
     if(quarterH < 0.0) {
         return vec2(-1.0);
@@ -168,52 +192,60 @@ vec2 IntersectObjSpace(vec3 rayOrigin, vec3 rayDir)
     const float t1 = -halfB - sqrtQuarterH;
     const float t2 = -halfB + sqrtQuarterH;
 
-    return vec2(t1, t2);
+    return vec2(t1, t2)/a;
 }
 
 void main(void)
 {
-    const MAT4 viewModel = GetWorldToViewMatrix() * ApplyInstanceTransform(HdGet_transform());
+    const MAT4 instanceModelView = GetWorldToViewMatrix() * ApplyInstanceTransform(HdGet_transform());
 
-    const MAT4 viewToObjMat = ApplyInstanceTransformInverse(HdGet_transformInverse()) * 
-                                GetWorldToViewInverseMatrix();
+    const MAT4 instanceModelViewInverse = ApplyInstanceTransformInverse(HdGet_transformInverse()) * 
+                                            GetWorldToViewInverseMatrix();
 
-    const vec3 rayDirObj = normalize(
-                            (viewToObjMat *
-                             vec4(inData.Peye, 0.0)).xyz);
+    const vec3 rayDirEye = ComputeRayDirectionEye(inData.Peye);
+    const vec3 rayDirObj = TransformDir(instanceModelViewInverse, rayDirEye);
 
-    const vec3 rayOriginObj = (viewToObjMat * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+    const vec3 rayOriginObj = TransformPoint(instanceModelViewInverse,
+                                             inData.Peye);
 
     const vec2 hitDists = IntersectObjSpace(rayOriginObj, rayDirObj);
 
-    const bool frontFacing = hitDists.x > 0.0;
+    const bool frontFacing = hitDists.x >= 0.0;
 
     const float dist = frontFacing ? hitDists.x : hitDists.y;
 
     if (dist < 0.0) {
         discard;
+        // Explicit return needed for MSL version < 2.4
+        return;
     }
 
     DiscardBasedOnShading(frontFacing);
 
-    const vec3 intersectionPoint = rayOriginObj + dist * rayDirObj;
+    const vec3 intersectionPointObj = rayOriginObj + dist * rayDirObj;
 
-    const mat3 matrixForNormal = transpose(mat3(viewToObjMat));
-    vec3 Neye = normalize(matrixForNormal * intersectionPoint);
+    const mat3 matrixForNormal = transpose(Mat4ToMat3(instanceModelViewInverse));
+
+    vec3 Neye = normalize(matrixForNormal * intersectionPointObj);
 
     // We get -Neye if this is a backface and the sphere is double-sided
     Neye = GetShadingNormal(Neye, frontFacing);
 
-    const vec3 Peye = (viewModel * vec4(intersectionPoint, 1.0)).xyz;
+    const vec3 Peye = TransformPoint(instanceModelView, intersectionPointObj);
 
-    const vec4 clipCoord = GetProjectionMatrix() * vec4(Peye, 1.0);
+    const vec3 ndc = TransformPoint(GetProjectionMatrix(), Peye);
 
-#if defined(VULKAN) || defined(METAL)
-    gl_FragDepth = clipCoord.z/clipCoord.w;
-#else
-    // Map from [-1, 1] to [0, 1] for GL
-    gl_FragDepth = clipCoord.z/clipCoord.w * 0.5 + 0.5;
-#endif
+    const float depth = NDCToWindowDepth(ndc.z);
+
+    // We need to manually discard if both intersections are before the near
+    // plane because of the depth_greater qualifier
+    if (depth < 0.0) {
+        discard;
+        // Explicit return needed for MSL version < 2.4
+        return;
+    }
+    
+    gl_FragDepth = depth;
 
     vec4 color = vec4(0.5, 0.5, 0.5, 1);
 #ifdef HD_HAS_displayColor
@@ -227,5 +259,13 @@ void main(void)
     const vec4 patchCoord = vec4(0, 0.5, 0, 0);
 
     color = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord);
+
+#ifdef HD_MATERIAL_TAG_MASKED   
+    if (ShouldDiscardByAlpha(color)) {
+        discard;
+        return;
+    }
+#endif
+
     RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
 }

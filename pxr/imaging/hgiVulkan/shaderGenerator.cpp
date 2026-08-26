@@ -190,6 +190,20 @@ HgiVulkanShaderGenerator::_WriteExtensions(std::ostream &ss)
     const bool builtinBarycentricsEnabled = _hgi->GetCapabilities()->
         IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
 
+    // Control flow attributes
+    ss <<   "#if defined(GL_EXT_control_flow_attributes)\n"
+                "\t#extension GL_EXT_control_flow_attributes: require\n"
+                "\t#define HGI_COMPILER_ATTR_UNROLL [[unroll]]\n"
+                "\t#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]\n"
+                "\t#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]\n"
+                "\t#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]\n"
+            "#else\n"
+                "\t#define HGI_COMPILER_ATTR_UNROLL\n"
+                "\t#define HGI_COMPILER_ATTR_DONT_UNROLL\n"
+                "\t#define HGI_COMPILER_ATTR_FLATTEN\n"
+                "\t#define HGI_COMPILER_ATTR_DONT_FLATTEN\n"
+            "#endif\n";
+
     if (_GetShaderStage() & HgiShaderStageVertex) {
         if (glslVersion < 460 && shaderDrawParametersEnabled) {
             ss << "#extension GL_ARB_shader_draw_parameters : require\n";
@@ -373,7 +387,6 @@ HgiVulkanShaderGenerator::_WriteInOuts(
     const static std::set<std::string> takenOutParams {
         "gl_Position",
         "gl_FragColor",
-        "gl_FragDepth",
         "gl_PointSize",
         "gl_CullDistance",
         "hd_SampleMask",
@@ -382,7 +395,8 @@ HgiVulkanShaderGenerator::_WriteInOuts(
     // Some params are built-in, but we may want to declare them in the shader 
     // anyway, such as to declare their array size.
     const static std::set<std::string> takenOutParamsToDeclare {
-        "gl_ClipDistance"
+        "gl_ClipDistance",
+        "gl_FragDepth"
     };
 
     const static std::unordered_map<std::string, std::string> takenInParams {
@@ -406,6 +420,12 @@ HgiVulkanShaderGenerator::_WriteInOuts(
         { HgiShaderKeywordTokens->hdSampleMaskIn, "gl_SampleMaskIn[0]"}
     };
 
+    const static std::unordered_map<std::string, std::string> attrIndexM {
+        { HgiShaderKeywordTokens->hdDepthAny, "depth_any"},
+        { HgiShaderKeywordTokens->hdDepthGreater, "depth_greater"},
+        { HgiShaderKeywordTokens->hdDepthLess, "depth_less"}
+    };
+
     const bool in_qualifier = qualifier == "in";
     const bool out_qualifier = qualifier == "out";
     for (const HgiShaderFunctionParamDesc &param : parameters) {
@@ -417,13 +437,23 @@ HgiVulkanShaderGenerator::_WriteInOuts(
         }
         if (out_qualifier && takenOutParamsToDeclare.find(paramName) !=
                              takenOutParamsToDeclare.end()) {
+            HgiShaderSectionAttributeVector attrs{};
+
+            const std::string &role = param.role;
+            auto const& attr = attrIndexM.find(role);
+            if (attr != attrIndexM.end()) {
+                if (paramName != attr->second) {
+                    attrs.push_back({attr->second, ""});
+                }
+            }
+
             CreateShaderSection<HgiVulkanMemberShaderSection>(
                 paramName,
                 param.type,
                 param.interpolation,
                 param.sampling,
                 param.storage,
-                HgiShaderSectionAttributeVector(),
+                attrs,
                 qualifier,
                 std::string(),
                 param.arraySize);

@@ -298,6 +298,29 @@ def "Foo" {
         self.assertEqual(test2_attr.Get(20.0), 10)
         self.assertEqual(test2_attr.Get(30.0), 10)
 
+        # Create a prim with a sublayer offset of 10 frames. This is the
+        # raw time samples complement of clip behavior in
+        # TestUsdValueClips.test_ClipsWithLayerOffsets's attr4
+        source_attr3 = source.CreateAttribute('x2', Sdf.ValueTypeNames.Float)
+        source_attr3.Set(-5.0, 5.0)
+        source_attr3.Set(-10.0, 10.0)
+        source_attr3.Set(-15.0, 15.0)
+        source_attr3.Set(-20.0, 20.0)
+        self.assertEqual(source_attr3.GetTimeSamples(), [5.0, 10.0, 15.0, 20.0])
+
+        # Reference that prim, with an offset of +10 frames
+        test3 = stage.DefinePrim('/Test3')
+        test3.GetReferences().AddInternalReference('/Source',
+            Sdf.LayerOffset(offset=10.0, scale=1.0))
+        test3_attr = test3.GetAttribute('x2')
+        self.assertEqual(test3_attr.GetTimeSamples(), [15.0, 20.0, 25.0, 30.0])
+        self.assertEqual(test3_attr.Get(0.0), -5.0)
+        self.assertEqual(test3_attr.Get(9.0), -5.0)
+        self.assertEqual(test3_attr.Get(15.0), -5.0)
+        self.assertEqual(test3_attr.Get(20.0), -10.0)
+        self.assertEqual(test3_attr.Get(30.0), -20.0)
+        self.assertEqual(test3_attr.Get(50.0), -20.0)
+
     def test_PreviousTimeSamples(self):
 
         def _CheckPreviousTimeSamples(layer):

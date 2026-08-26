@@ -84,9 +84,11 @@ print_attr (const exr_attribute_t* a, int verbose)
                 "b44",
                 "b44a",
                 "dwaa",
-                "dwab"};
+                "dwab",
+                "htj2k256",
+                "htj2k32"};
             printf (
-                "'%s'", (a->uc < 10 ? compressionnames[a->uc] : "<UNKNOWN>"));
+                "'%s'", (a->uc < EXR_COMPRESSION_LAST_TYPE ? compressionnames[a->uc] : "<UNKNOWN>"));
             if (verbose) printf (" (0x%02X)", a->uc);
             break;
         }
@@ -277,26 +279,28 @@ print_attr (const exr_attribute_t* a, int verbose)
 exr_result_t
 exr_print_context_info (exr_const_context_t ctxt, int verbose)
 {
-    EXR_PROMOTE_CONST_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
+
+    if (ctxt->mode == EXR_CONTEXT_WRITE) internal_exr_lock (ctxt);
     if (verbose)
     {
         printf (
             "File '%s': ver %d flags%s%s%s%s\n",
-            pctxt->filename.str,
-            (int) pctxt->version,
-            pctxt->is_singlepart_tiled ? " singletile" : "",
-            pctxt->max_name_length == EXR_LONGNAME_MAXLEN ? " longnames"
-                                                          : " shortnames",
-            pctxt->has_nonimage_data ? " deep" : "",
-            pctxt->is_multipart ? " multipart" : "");
-        printf (" parts: %d\n", pctxt->num_parts);
+            ctxt->filename.str,
+            (int) ctxt->version,
+            ctxt->is_singlepart_tiled ? " singletile" : "",
+            ctxt->max_name_length == EXR_LONGNAME_MAXLEN ? " longnames"
+                                                         : " shortnames",
+            ctxt->has_nonimage_data ? " deep" : "",
+            ctxt->is_multipart ? " multipart" : "");
+        printf (" parts: %d\n", ctxt->num_parts);
     }
-    else { printf ("File '%s':\n", pctxt->filename.str); }
+    else { printf ("File '%s':\n", ctxt->filename.str); }
 
-    for (int partidx = 0; partidx < pctxt->num_parts; ++partidx)
+    for (int partidx = 0; partidx < ctxt->num_parts; ++partidx)
     {
-        const struct _internal_exr_part* curpart = pctxt->parts[partidx];
-        if (verbose || pctxt->is_multipart || curpart->name)
+        exr_const_priv_part_t curpart = ctxt->parts[partidx];
+        if (verbose || ctxt->is_multipart || curpart->name)
             printf (
                 " part %d: %s\n",
                 partidx + 1,
@@ -354,5 +358,6 @@ exr_print_context_info (exr_const_context_t ctxt, int verbose)
             printf ("\n");
         }
     }
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (EXR_ERR_SUCCESS);
+    if (ctxt->mode == EXR_CONTEXT_WRITE) internal_exr_unlock (ctxt);
+    return EXR_ERR_SUCCESS;
 }

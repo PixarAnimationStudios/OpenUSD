@@ -11,7 +11,6 @@
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/usd/sdf/path.h"
-#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -106,14 +105,11 @@ protected:
         const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
 
 private:
-    friend class _SceneGlobalsDataSource;
+    class _SceneGlobalsSchemaDataSource;
+    using _SceneGlobalsSchemaDataSourceHandle =
+        std::shared_ptr<_SceneGlobalsSchemaDataSource>;
 
-    std::optional<SdfPath> _activeRenderPassPrim;
-    std::optional<SdfPath> _activeRenderSettingsPrim;
-    std::optional<SdfPath> _primaryCameraPrim;
-    std::optional<double> _currentFrame;
-    std::optional<double> _timeCodesPerSecond;
-    std::optional<int> _sceneStateId;
+    const _SceneGlobalsSchemaDataSourceHandle _sceneGlobalsSchemaDataSource;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

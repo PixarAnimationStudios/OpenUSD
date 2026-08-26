@@ -268,8 +268,13 @@ private:
         std::set<ExternalTime>* samples) const;
 
     // Helpers to translate between internal and external time domains.
+    // _TranslateTimeToInternal optionally returns the resolved TimeMapping
+    // segment it used (after any jump-discontinuity substitution) via
+    // \p m1Out / \p m2Out, so callers can apply the same linear map (scale
+    // and offset) when converting time-based values.
     InternalTime _TranslateTimeToInternal(
-        UsdTimeCode extTime) const;
+        UsdTimeCode extTime,
+        TimeMapping* m1Out = nullptr, TimeMapping* m2Out = nullptr) const;
     ExternalTime _TranslateTimeToExternal(
         InternalTime clipTime, size_t i1, size_t i2) const;
 
@@ -279,7 +284,9 @@ private:
     // computing whether the translated time should be pre time or regular
     // time, necessary for value source formats that contain dual valued
     // datapoints like splines.
-    UsdTimeCode _TranslateTimeToInternalDualValued(UsdTimeCode extTime) const;
+    UsdTimeCode _TranslateTimeToInternalDualValued(
+        UsdTimeCode extTime,
+        TimeMapping* m1Out = nullptr, TimeMapping* m2Out = nullptr) const;
 
 private:
     mutable bool _hasLayer;

@@ -7,7 +7,6 @@
 
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 
-
 #include "pxr/imaging/hdsi/backPlateSceneIndex.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -26,7 +25,7 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 4;
+    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
 
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
         _pluginDisplayName, _tokens->sceneIndexPluginName, nullptr,

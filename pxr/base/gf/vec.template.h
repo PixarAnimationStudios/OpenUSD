@@ -15,7 +15,6 @@
 /// \ingroup group_gf_LinearAlgebra
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/api.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
@@ -25,9 +24,11 @@
 #include "pxr/base/gf/half.h"
 {% endif %}
 {% endif %}
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/hash.h"
 
 #include <cstddef>
+#include <type_traits>
 {% if IS_FLOATING_POINT(SCL) -%}
 #include <cmath>
 {% endif %}
@@ -36,7 +37,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class {{ VEC }};
+{% for D in range(2, DIM) %}
+class {{ VECNAME(D, SCL) }};
+{% endfor %}
 
 template <>
 struct GfIsGfVec<class {{ VEC }}> { static const bool value = true; };
@@ -56,26 +59,40 @@ public:
     typedef {{ SCL }} ScalarType;
     static const size_t dimension = {{ DIM }};
 
+    /// \name Vector Components
+    ///
+    /// The vector's components, which are also its storage.  These are public
+    /// and directly readable and writable.
+    ///
+    /// The components are contiguous and in declaration order, so \c &x points
+    /// to \c dimension values.  See data() and operator[]().
+    ///
+    /// For multi-component access see the swizzle accessors below, which return
+    /// a new vector by value.
+    /// @{
+    {{ SCL }} {{ LIST("%(c)s") }};
+    /// @}
+
     /// {{ VEC }} value-initializes to zero and performs no default
     /// initialization, like float or double.
     {{ VEC }}() = default;
 
     /// Initialize all elements to a single value.
     constexpr explicit {{ VEC }}({{ SCL }} value)
-        : _data{ {{ LIST("value") }} }
+        : {{ LIST("%(c)s(value)") }}
     {
     }
 
     /// Initialize all elements with explicit arguments.
     constexpr {{ VEC }}({{ LIST(SCL + " s%(i)s") }})
-        : _data{ {{ LIST("s%(i)s") }} }
+        : {{ LIST("%(c)s(s%(i)s)") }}
     {
     }
 
     /// Construct with pointer to values.
     template <class Scl>
     constexpr explicit {{ VEC }}(Scl const *p)
-        : _data{ {{ LIST("p[%(i)s]") }} }
+        : {{ LIST("%(c)s(p[%(i)s])") }}
     {
     }
 {% if IS_FLOATING_POINT(SCL) %}
@@ -85,7 +102,6 @@ public:
     {{ '' if ALLOW_IMPLICIT_CONVERSION(S, SCL) else 'explicit ' }}{{ VEC }}(class {{ VECNAME(DIM, S) }} const &other);
 {% endfor %}
 {% endif %}
- 
 {% for X in 'XYZW'[:DIM] %}
     /// Create a unit vector along the {{ X }}-axis.
     static {{ VEC }} {{ X }}Axis() {
@@ -93,8 +109,8 @@ public:
         result[{{ loop.index0 }}] = 1;
         return result;
     }
-{% endfor %}
 
+{% endfor %}
     /// Create a unit vector along the i-th axis, zero-based.  Return the zero
     /// vector if \p i is greater than or equal to {{ DIM }}.
     static {{ VEC }} Axis(size_t i) {
@@ -106,7 +122,7 @@ public:
 
     /// Set all elements with passed arguments.
     {{ VEC }} &Set({{ LIST(SCL + " s%(i)s") }}) {
-        {{ LIST("_data[%(i)s] = s%(i)s;", sep='\n        ') }}
+        {{ LIST("%(c)s = s%(i)s;", sep='\n        ') }}
         return *this;
     }
 
@@ -116,22 +132,26 @@ public:
     }
 
     /// Direct data access.
-    {{ SCL }} const *data() const { return _data; }
-    {{ SCL }} *data() { return _data; }
+    ///
+    /// data() is the only member that relies on the components being
+    /// contiguous; every other member either names them directly or goes
+    /// through here.
+    {{ SCL }} const *data() const { return &x; }
+    {{ SCL }} *data() { return &x; }
     {{ SCL }} const *GetArray() const { return data(); }
 
     /// Indexing.
-    {{ SCL }} const &operator[](size_t i) const { return _data[i]; }
-    {{ SCL }} &operator[](size_t i) { return _data[i]; }
+    {{ SCL }} const &operator[](size_t i) const { return data()[i]; }
+    {{ SCL }} &operator[](size_t i) { return data()[i]; }
 
     /// Hash.
     friend inline size_t hash_value({{ VEC }} const &vec) {
-        return TfHash::Combine({{ LIST("vec[%(i)s]", sep=', ') }});
+        return TfHash::Combine({{ LIST("vec.%(c)s", sep=', ') }});
     }
 
     /// Equality comparison.
     bool operator==({{ VEC }} const &other) const {
-        return {{ LIST("_data[%(i)s] == other[%(i)s]",
+        return {{ LIST("%(c)s == other.%(c)s",
                        sep=' &&\n               ') }};
     }
     bool operator!=({{ VEC }} const &other) const {
@@ -147,12 +167,12 @@ public:
 
     /// Create a vec with negated elements.
     {{ VEC }} operator-() const {
-        return {{ VEC }}({{ LIST("-_data[%(i)s]") }});
+        return {{ VEC }}({{ LIST("-%(c)s") }});
     }
 
     /// Addition.
     {{ VEC }} &operator+=({{ VEC }} const &other) {
-        {{ LIST("_data[%(i)s] += other[%(i)s];", sep='\n        ') }}
+        {{ LIST("%(c)s += other.%(c)s;", sep='\n        ') }}
         return *this;
     }
     friend {{ VEC }} operator+({{ VEC }} const &l, {{ VEC }} const &r) {
@@ -161,7 +181,7 @@ public:
 
     /// Subtraction.
     {{ VEC }} &operator-=({{ VEC }} const &other) {
-        {{ LIST("_data[%(i)s] -= other[%(i)s];", sep='\n        ') }}
+        {{ LIST("%(c)s -= other.%(c)s;", sep='\n        ') }}
         return *this;
     }
     friend {{ VEC }} operator-({{ VEC }} const &l, {{ VEC }} const &r) {
@@ -170,7 +190,7 @@ public:
 
     /// Multiplication by scalar.
     {{ VEC }} &operator*=(double s) {
-        {{ LIST("_data[%(i)s] *= s;", sep='\n        ') }}
+        {{ LIST("%(c)s *= s;", sep='\n        ') }}
         return *this;
     }
     {{ VEC }} operator*(double s) const {
@@ -195,7 +215,7 @@ public:
     {% else %}
     /// Division by scalar.
     {{ VEC }} &operator/=({{ SCL }} s) {
-        {{ LIST("_data[%(i)s] /= s;", sep='\n        ') }}
+        {{ LIST("%(c)s /= s;", sep='\n        ') }}
         return *this;
     }
     {{ VEC }} operator/({{ SCL }} s) const {
@@ -205,7 +225,7 @@ public:
 
     /// See GfDot().
     {{ SCL }} operator*({{ VEC }} const &v) const {
-        return {{ LIST("_data[%(i)s] * v[%(i)s]", sep=" + ") }};
+        return {{ LIST("%(c)s * v.%(c)s", sep=" + ") }};
     }
 
     /// Returns the projection of \p this onto \p v. That is:
@@ -280,43 +300,92 @@ public:
     /// delivers a continuous result as *this shrinks in length.
     GF_API
     void BuildOrthonormalFrame({{ VEC }} *v1, {{ VEC }} *v2,
-                    {{ SCL }} eps = {{ EPS }}) const;
+                               {{ SCL }} eps = {{ EPS }}) const;
 
 {% endif %} {# DIM == 3 #}
 {% endif %} {# IS_FLOATING_POINT(SCL) #}
 
-private:
-    {{ SCL }} _data[{{ DIM }}];
+{% if SWIZZLES %}
+    /// \name Swizzles
+    ///
+    /// Each accessor returns a new vector built from this one's components, in
+    /// the order named.  For example {{ SWIZZLES[-1].NAME }}() returns
+    /// {{ VECNAME(SWIZZLES[-1].RETDIM, SCL) }}({{ SWIZZLES[-1].ARGS }}).
+    ///
+    /// Every permutation of 2 to {{ DIM }} of the {{ DIM }} components is
+    /// available.  Repeated components (\c xx, \c xyy) are not; nor are
+    /// single-component swizzles, which are just the components themselves.
+    ///
+    /// The results are ordinary GfVecs, so all the usual operators, GfDot() and
+    /// so on apply to them.  They are values, not references into this vector,
+    /// so they cannot be assigned through.
+    ///
+    /// @{
+#if defined (doxygen)
+{% for S in SWIZZLES %}
+    constexpr {{ VECNAME(S.RETDIM, SCL) }} {{ S.NAME }}() const;
+{% endfor %}
+    /// @}
+#else // !doxygen
+    // Note that these are templated on their own return type so that the
+    // declarations cost nothing in compile time & debug info unless they are
+    // actually called in a TU.  Naming a different type is an error and
+    // static_assert()ed against.
+{% for S in SWIZZLES %}
+    template <class Vec = {{ VECNAME(S.RETDIM, SCL) }}> constexpr Vec {{ S.NAME }}() const;
+{% endfor %}
+#endif // doxygen
+{% endif %} {# SWIZZLES #}
 };
 
 /// Output a {{ VEC }}.
 /// \ingroup group_gf_DebuggingOutput
 GF_API std::ostream& operator<<(std::ostream &, {{ VEC }} const &);
 
-{% if IS_FLOATING_POINT(SCL) %}
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
+{% if IS_FLOATING_POINT(SCL) %}
+// Other scalar types of the same dimension, for the conversions above.
 {% for S in SCALARS if S != SCL %}
 #include "pxr/base/gf/vec{{ DIM }}{{ SCALAR_SUFFIX(S) }}.h"
 {% endfor %}
+{% endif %}
+{% if DIM > 2 %}
+// Lower dimensions of the same scalar type, for the swizzles above.  Note that
+// lower dimensions never include higher ones, so this introduces no cycle.
+{% for D in range(2, DIM) %}
+#include "pxr/base/gf/vec{{ D }}{{ SCALAR_SUFFIX(SCL) }}.h"
+{% endfor %}
+{% endif %}
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+{% if IS_FLOATING_POINT(SCL) %}
 {% for S in SCALARS if S != SCL %}
 inline
 {{ VEC }}::{{ VEC }}(class {{ VECNAME(DIM, S) }} const &other)
 {
-    {{ LIST("_data[%(i)s] = other[%(i)s];", sep='\n    ') }}
+    {{ LIST("%(c)s = other.%(c)s;", sep='\n    ') }}
 }
 {% endfor %}
 {% endif %}
+
+{% for S in SWIZZLES %}
+template <class Vec>
+constexpr Vec
+{{ VEC }}::{{ S.NAME }}() const
+{
+    static_assert(std::is_same<Vec, {{ VECNAME(S.RETDIM, SCL) }}>::value);
+    return Vec({{ S.ARGS }});
+}
+
+{% endfor %}
 
 /// Returns component-wise multiplication of vectors \p v1 and \p v2.
 inline {{ VEC }}
 GfCompMult({{ VEC }} const &v1, {{ VEC }} const &v2) {
     return {{ VEC }}(
-        {{ LIST("v1[%(i)s] * v2[%(i)s]", sep=",\n        ") }}
+        {{ LIST("v1.%(c)s * v2.%(c)s", sep=",\n        ") }}
         );
 }
 
@@ -324,7 +393,7 @@ GfCompMult({{ VEC }} const &v1, {{ VEC }} const &v2) {
 inline {{ VEC }}
 GfCompDiv({{ VEC }} const &v1, {{ VEC }} const &v2) {
     return {{ VEC }}(
-        {{ LIST("v1[%(i)s] / v2[%(i)s]", sep=",\n        ") }}
+        {{ LIST("v1.%(c)s / v2.%(c)s", sep=",\n        ") }}
         );
 }
 
@@ -407,9 +476,9 @@ inline {{ VEC }}
 GfCross({{ VEC }} const &v1, {{ VEC }} const &v2)
 {
     return {{ VEC }}(
-        v1[1] * v2[2] - v1[2] * v2[1],
-        v1[2] * v2[0] - v1[0] * v2[2],
-        v1[0] * v2[1] - v1[1] * v2[0]);
+        v1.y * v2.z - v1.z * v2.y,
+        v1.z * v2.x - v1.x * v2.z,
+        v1.x * v2.y - v1.y * v2.x);
 }
 
 /// Returns the cross product of \p v1 and \p v2. 

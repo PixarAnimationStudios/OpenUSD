@@ -55,6 +55,97 @@ using std::cout;
 using std::endl;
 PXR_NAMESPACE_USING_DIRECTIVE
 
+// --------------------------------------------------------------------------
+// Compile-time checks for GfTimeCode / GfDuration VtArray arithmetic.
+//
+// The VtArray operators deduce their result element type from the underlying
+// element operation, so these assertions pin down the dimensionally-typed
+// results (e.g. TimeCode - TimeCode -> Duration) and guard against
+// integer-promotion regressions for homogeneous element types.
+// --------------------------------------------------------------------------
+
+// Array-array, homogeneous time family.
+static_assert(std::is_same_v<
+    decltype(std::declval<VtTimeCodeArray>() - std::declval<VtTimeCodeArray>()),
+    VtDurationArray>);
+static_assert(std::is_same_v<
+    decltype(std::declval<VtTimeCodeArray>() + std::declval<VtTimeCodeArray>()),
+    VtTimeCodeArray>);
+static_assert(std::is_same_v<
+    decltype(std::declval<VtTimeCodeArray>() / std::declval<VtTimeCodeArray>()),
+    VtDoubleArray>);
+static_assert(std::is_same_v<
+    decltype(std::declval<VtDurationArray>() + std::declval<VtDurationArray>()),
+    VtDurationArray>);
+static_assert(std::is_same_v<
+    decltype(std::declval<VtDurationArray>() - std::declval<VtDurationArray>()),
+    VtDurationArray>);
+static_assert(std::is_same_v<
+    decltype(std::declval<VtDurationArray>() / std::declval<VtDurationArray>()),
+    VtDoubleArray>);
+
+// Array-array, cross-type time family.
+static_assert(std::is_same_v<
+    decltype(std::declval<VtTimeCodeArray>() + std::declval<VtDurationArray>()),
+    VtTimeCodeArray>);
+static_assert(std::is_same_v<
+    decltype(std::declval<VtTimeCodeArray>() - std::declval<VtDurationArray>()),
+    VtTimeCodeArray>);
+static_assert(std::is_same_v<
+    decltype(std::declval<VtDurationArray>() + std::declval<VtTimeCodeArray>()),
+    VtTimeCodeArray>);
+static_assert(std::is_same_v<
+    decltype(std::declval<VtDurationArray>() - std::declval<VtTimeCodeArray>()),
+    VtTimeCodeArray>);
+
+// Scalar forms.  The double path preserves the array element type; the
+// cross-type scalar path follows the element operator's return type.
+static_assert(std::is_same_v<
+    decltype(std::declval<VtTimeCodeArray>() * 2.0), VtTimeCodeArray>);
+static_assert(std::is_same_v<
+    decltype(std::declval<VtDurationArray>() * 2.0), VtDurationArray>);
+static_assert(std::is_same_v<
+    decltype(std::declval<VtTimeCodeArray>() - std::declval<GfTimeCode>()),
+    VtDurationArray>);
+static_assert(std::is_same_v<
+    decltype(std::declval<VtTimeCodeArray>() - std::declval<GfDuration>()),
+    VtTimeCodeArray>);
+static_assert(std::is_same_v<
+    decltype(std::declval<GfDuration>() - std::declval<VtTimeCodeArray>()),
+    VtTimeCodeArray>);
+
+// Homogeneous non-time regression: element type must be preserved exactly
+// (no char/short -> int promotion, no cross-numeric promotion).
+static_assert(std::is_same_v<
+    decltype(std::declval<VtIntArray>() + std::declval<VtIntArray>()),
+    VtIntArray>);
+static_assert(std::is_same_v<
+    decltype(std::declval<VtCharArray>() + std::declval<VtCharArray>()),
+    VtCharArray>);
+
+// Negative checks: ops that do not exist at the element level must be
+// SFINAE-removed rather than hard-error.
+template <class L, class R, class = void>
+struct _VtHasMul : std::false_type {};
+template <class L, class R>
+struct _VtHasMul<L, R,
+    std::void_t<decltype(std::declval<L>() * std::declval<R>())>>
+    : std::true_type {};
+
+template <class L, class R, class = void>
+struct _VtHasMod : std::false_type {};
+template <class L, class R>
+struct _VtHasMod<L, R,
+    std::void_t<decltype(std::declval<L>() % std::declval<R>())>>
+    : std::true_type {};
+
+static_assert(!_VtHasMul<VtTimeCodeArray, VtTimeCodeArray>::value);
+static_assert(!_VtHasMul<VtDurationArray, VtDurationArray>::value);
+static_assert(!_VtHasMod<VtTimeCodeArray, VtTimeCodeArray>::value);
+static_assert(!_VtHasMod<VtDurationArray, VtDurationArray>::value);
+// Heterogeneous non-time pairs stay forbidden.
+static_assert(!_VtHasMul<VtIntArray, VtFloatArray>::value);
+
 // Types for testing extended VtVisitValue dispatch.
 struct _ExtTypeA {
     int value;

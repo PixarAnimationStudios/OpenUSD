@@ -417,6 +417,22 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedBase
     const TfToken point3hArray;
+    /// \brief "public"
+    /// 
+    /// Property namespace prefix for the UsdContrivedPublicMultipleApplyAPI schema.
+    const TfToken public_;
+    /// \brief "public:__INSTANCE_NAME__"
+    /// 
+    /// UsdContrivedPublicMultipleApplyAPI
+    const TfToken public_MultipleApplyTemplate_;
+    /// \brief "public:__INSTANCE_NAME__:testAttrOne"
+    /// 
+    /// UsdContrivedPublicMultipleApplyAPI
+    const TfToken public_MultipleApplyTemplate_TestAttrOne;
+    /// \brief "public:__INSTANCE_NAME__:testAttrTwo"
+    /// 
+    /// UsdContrivedPublicMultipleApplyAPI
+    const TfToken public_MultipleApplyTemplate_TestAttrTwo;
     /// \brief "quatd"
     /// 
     /// UsdContrivedBase
@@ -529,22 +545,6 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedMultipleApplyAPI_1
     const TfToken testNewVersion_MultipleApplyTemplate_TestAttrTwo;
-    /// \brief "testo"
-    /// 
-    /// Property namespace prefix for the UsdContrivedPublicMultipleApplyAPI schema.
-    const TfToken testo;
-    /// \brief "testo:__INSTANCE_NAME__"
-    /// 
-    /// UsdContrivedPublicMultipleApplyAPI
-    const TfToken testo_MultipleApplyTemplate_;
-    /// \brief "testo:__INSTANCE_NAME__:testAttrOne"
-    /// 
-    /// UsdContrivedPublicMultipleApplyAPI
-    const TfToken testo_MultipleApplyTemplate_TestAttrOne;
-    /// \brief "testo:__INSTANCE_NAME__:testAttrTwo"
-    /// 
-    /// UsdContrivedPublicMultipleApplyAPI
-    const TfToken testo_MultipleApplyTemplate_TestAttrTwo;
     /// \brief "testRelDuplicate"
     /// 
     /// UsdTestReflectedExternalAPI, UsdContrivedTestReflectedInternalAPI

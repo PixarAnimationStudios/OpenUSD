@@ -67,6 +67,16 @@ struct TfTokenFastArbitraryLessThan;
 /// constructors).  However, auto conversion from \c TfToken to \c string and
 /// \c char* is provided.
 ///
+/// A token's identity is the NUL-terminated c-string of the text it is created
+/// from, so text containing an embedded NUL names the same token as the text up
+/// to that NUL, and is stored trimmed.  \c TfToken(std::string("a\\0b", 3)) and
+/// \c TfToken("a") are one token, whose \c GetString() is "a" and whose
+/// \c size() is 1.  This type is for names, not for arbitrary binary data.
+///
+/// Comparing a token against a \c std::string compares the token's interned
+/// string, trimmed as above, to that \c std::string in full; see
+/// \c operator==(std::string const &).
+///
 class TfToken
 {
 public:
@@ -111,12 +121,22 @@ public:
     // This constructor involves a string hash and a lookup in the global
     // table, and so should not be done more often than necessary.  When
     // possible, create a token once and reuse it many times.
+    //
+    // Any content in \p s past an embedded NUL is ignored, and is not stored;
+    // see the class documentation.
     TF_API explicit TfToken(std::string const& s);
     /// \overload
-    // Create a token for \p s, and make it immortal.  If \p s exists in the
-    // token table already and is not immortal, make it immortal.  Immortal
-    // tokens are faster to copy than mortal tokens, but they will never expire
-    // and release their memory.
+    /// Create a token for \p s, and make it immortal.  If \p s exists in the
+    /// token table already and is not immortal, make it immortal.  Immortal
+    /// tokens are faster to copy than mortal tokens, but they will never expire
+    /// and release their memory.
+    ///
+    /// The characters of an immortal token remain valid at a fixed address for
+    /// the remainder of the process, even after every \c TfToken referring to
+    /// them has been destroyed.
+    ///
+    /// Any content in \p s past an embedded NUL is ignored, and is not stored;
+    /// see the class documentation.
     TF_API TfToken(std::string const& s, _ImmortalTag);
 
     /// Acquire a token for the given string.
@@ -126,16 +146,23 @@ public:
     // possible, create a token once and reuse it many times.
     TF_API explicit TfToken(char const* s);
     /// \overload
-    // Create a token for \p s, and make it immortal.  If \p s exists in the
-    // token table already and is not immortal, make it immortal.  Immortal
-    // tokens are faster to copy than mortal tokens, but they will never expire
-    // and release their memory.
+    /// Create a token for \p s, and make it immortal.  If \p s exists in the
+    /// token table already and is not immortal, make it immortal.  Immortal
+    /// tokens are faster to copy than mortal tokens, but they will never expire
+    /// and release their memory.
+    ///
+    /// The characters of an immortal token remain valid at a fixed address for
+    /// the remainder of the process, even after every \c TfToken referring to
+    /// them has been destroyed.
     TF_API TfToken(char const* s, _ImmortalTag);
 
     /// Find the token for the given string, if one exists.
     //
     // If a token has previous been created for the given string, this
     // will return it.  Otherwise, the empty token will be returned.
+    //
+    // Lookup uses the same identity rule as construction, so any content in
+    // \p s past an embedded NUL is ignored.
     TF_API static TfToken Find(std::string const& s);
 
     /// Return a size_t hash for this token.
@@ -166,6 +193,10 @@ public:
     typedef std::set<TfToken, TfTokenFastArbitraryLessThan> Set;
     
     /// Return the size of the string that this token represents.
+    ///
+    /// This is always \c strlen(GetText()).  A token's identity is its
+    /// NUL-terminated c-string, so a name containing an embedded NUL is the
+    /// same name as its prefix, and is stored trimmed.
     size_t size() const {
         _Rep const *rep = _rep.Get();
         return rep ? rep->_str.size() : 0;
@@ -175,6 +206,12 @@ public:
     ///
     /// \note The returned pointer value is not valid after this TfToken
     /// object has been destroyed.
+    ///
+    /// \note For the empty token the returned pointer is not canonical.  It is
+    /// a string literal materialized wherever this inline function was
+    /// instantiated, so empty tokens can yield different pointers in different
+    /// binaries.  Never compare \c GetText() pointers to decide whether two
+    /// tokens are the same.  Use \c operator==, which is correct and cheaper.
     ///
     char const* GetText() const {
         _Rep const *rep = _rep.Get();
@@ -187,6 +224,11 @@ public:
     }
 
     /// Return the string that this token represents.
+    ///
+    /// For the empty token this returns a canonical empty string whose address
+    /// is fixed and whose referent remains valid for the remainder of the
+    /// process, so it may be retained on the same terms as an immortal token's
+    /// characters.
     std::string const& GetString() const {
         _Rep const *rep = _rep.Get();
         return rep ? rep->_str : _GetEmptyString();
@@ -208,13 +250,17 @@ public:
         return !(*this == o);
     }
 
-    /// Equality operator for \c char strings.  Not as fast as direct
+    /// Compare this token's interned string to \p o.  Not as fast as direct
     /// token to token equality testing
+    ///
+    /// The interned string is trimmed at an embedded NUL (see the class
+    /// documentation) while \p o is compared in full, so a \c std::string
+    /// containing a NUL does not equal the token it creates.
     TF_API bool operator==(std::string const& o) const;
 
-    /// Equality operator for \c char strings.  Not as fast as direct
+    /// Compare this token's interned string to \p o.  Not as fast as direct
     /// token to token equality testing
-    TF_API bool operator==(const char *) const;
+    TF_API bool operator==(const char *o) const;
 
     /// \overload
     friend bool operator==(std::string const& o, TfToken const& t) {
@@ -249,7 +295,8 @@ public:
     }
 
     /// Less-than operator that compares tokenized strings lexicographically.
-    /// Allows \c TfToken to be used in \c std::set
+    /// Allows \c TfToken to be used in \c std::set.  Characters are ordered by
+    /// unsigned byte value, agreeing with \c strcmp.
     inline bool operator<(TfToken const& r) const {
         auto ll = _rep.GetLiteral(), rl = r._rep.GetLiteral();
         if (!ll || !rl) {
@@ -345,23 +392,25 @@ private:
     struct _Rep {
         _Rep() = default;
 
-        explicit _Rep(std::string &&str,
+        // A rep's identity in the token table is its NUL-terminated c-string
+        // (see Tf_TokenRegistry::_Eq), so _str must hold exactly that.
+        // Building it from the c-string trims any content past an embedded NUL,
+        // which keeps _str.size() == strlen(_cstr) and makes a token's
+        // observable content independent of whether a char * or std::string
+        // happened to intern it.
+        explicit _Rep(char const *str,
                       unsigned setNum,
                       uint64_t compareCode)
-            : _setNum(setNum)
+            : _refCount(0)
+            , _setNum(setNum)
             , _compareCode(compareCode)
-            , _str(std::move(str))
+            , _str(str)
             , _cstr(_str.c_str()) {}
 
         explicit _Rep(std::string const &str,
                       unsigned setNum,
                       uint64_t compareCode)
-            : _Rep(std::string(str), setNum, compareCode) {}
-
-        explicit _Rep(char const *str,
-                      unsigned setNum,
-                      uint64_t compareCode)
-            : _Rep(std::string(str), setNum, compareCode) {}
+            : _Rep(str.c_str(), setNum, compareCode) {}
 
         // Make sure we reacquire _cstr from _str on copy and assignment
         // to avoid holding on to a dangling pointer. However, if rhs'

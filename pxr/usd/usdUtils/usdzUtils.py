@@ -206,6 +206,14 @@ class UsdzUpdateIterator:
     optionally chmod/chown to match the original, then os.replace() into
     place.  The original is left untouched on any failure along the way.
 
+    Attribute preservation is opt-in per axis via preserveMode, preserveGroup,
+    and preserveOwner.  They are independent because they need different
+    privileges: chmod needs only ownership of the temp (which we always have),
+    setting the group needs membership in the original's group, and setting the
+    owner effectively needs root.  A caller that wants the rewrite to inherit
+    the running user's identity while keeping the original's permissions asks
+    for mode and group but not owner.
+
     If the with-block raises, the rewrite is skipped entirely.
 
     Temp-file naming:
@@ -218,23 +226,28 @@ class UsdzUpdateIterator:
     passing path separators or bracket characters.
 
     Platform notes:
-    - preserveAttrs is POSIX-only and rejected on Windows; os.chown is not
-      available and os.chmod only honors the read-only bit there, so there's no
-      meaningful permission/ownership to copy.
+    - The preserve* flags are POSIX-only and rejected on Windows; os.chown is
+      not available and os.chmod only honors the read-only bit there, so
+      there's no meaningful permission/ownership to copy.
     - On Windows, os.replace fails if another process holds the destination open
       (sharing violation).  Callers that need to tolerate that should retry
       around the with-block.
 
     """
 
-    def __init__(self, usdzPath, *, outputPath=None, preserveAttrs=False,
+    def __init__(self, usdzPath, *, outputPath=None, preserveMode=False,
+                 preserveGroup=False, preserveOwner=False,
                  parentDir=None, tag=None, verbose=False):
-        if preserveAttrs and os.name == 'nt':
-            raise ValueError("preserveAttrs=True is not supported on Windows")
+        if (preserveMode or preserveGroup or preserveOwner) \
+                and os.name == 'nt':
+            raise ValueError("preserveMode, preserveGroup and preserveOwner "
+                             "are not supported on Windows")
         self._inputPath = os.path.abspath(usdzPath)
         self._outputPath = (os.path.abspath(outputPath) if outputPath
                             else self._inputPath)
-        self._preserveAttrs = preserveAttrs
+        self._preserveMode = preserveMode
+        self._preserveGroup = preserveGroup
+        self._preserveOwner = preserveOwner
         self._parentDir = parentDir
         self._tag = tag
         self._verbose = verbose
@@ -275,8 +288,10 @@ class UsdzUpdateIterator:
             if not self._extractDir or not os.path.isdir(self._extractDir):
                 return
 
+            preserveAny = (self._preserveMode or self._preserveGroup
+                           or self._preserveOwner)
             origStat = None
-            if self._preserveAttrs and os.path.exists(self._inputPath):
+            if preserveAny and os.path.exists(self._inputPath):
                 origStat = os.stat(self._inputPath)
 
             tmpPath = "%s%s%d.tmp.usdz" % (
@@ -286,8 +301,15 @@ class UsdzUpdateIterator:
 
             if origStat is not None:
                 try:
-                    os.chmod(tmpPath, origStat.st_mode)
-                    os.chown(tmpPath, origStat.st_uid, origStat.st_gid)
+                    # chown first: on some platforms it clears setuid/setgid,
+                    # so the mode has to be applied after it, not before.
+                    if self._preserveGroup or self._preserveOwner:
+                        os.chown(
+                            tmpPath,
+                            origStat.st_uid if self._preserveOwner else -1,
+                            origStat.st_gid if self._preserveGroup else -1)
+                    if self._preserveMode:
+                        os.chmod(tmpPath, origStat.st_mode & 0o7777)
                 except OSError:
                     try:
                         os.unlink(tmpPath)
@@ -370,11 +392,10 @@ class UsdzAssetIterator(UsdzUpdateIterator):
 
     Thin compatibility shim preserving the legacy positional signature
     UsdzAssetIterator(usdzFile, verbose, parentDir=None).  Behaves like
-    UsdzUpdateIterator with outputPath=usdzFile and preserveAttrs=False.
+    UsdzUpdateIterator with outputPath=usdzFile and no attribute preservation.
     """
     def __init__(self, usdzFile, verbose, parentDir=None):
         super().__init__(usdzFile,
                          outputPath=None,
-                         preserveAttrs=False,
                          parentDir=parentDir,
                          verbose=verbose)

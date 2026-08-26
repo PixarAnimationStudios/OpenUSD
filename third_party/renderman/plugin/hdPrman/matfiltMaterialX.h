@@ -23,6 +23,7 @@ class HdMaterialNetworkInterface;
 void
 MatfiltMaterialX(
     HdMaterialNetworkInterface *netInterface,
+    bool enableImplementationGraph,
     std::vector<std::string> *outputErrorMessages);
 
 PXR_NAMESPACE_CLOSE_SCOPE

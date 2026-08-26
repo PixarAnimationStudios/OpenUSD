@@ -164,7 +164,9 @@
 //             HdRendererCreateArgsSchema.
 //             Removing HdRenderSettingsTokens->renderCreateArgs.
 // 103 -> 104: Added elementSize to HdPrimvarDescriptor.
-#define HD_API_VERSION 104
+// 104 -> 105: Added HdLegacyRenderControlInterface::RemoveTaskContextData and
+//             ClearTaskContextData().
+#define HD_API_VERSION 105
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 // 2  ->  3: Use GetLightCount() instead of NUM_LIGHTS to get light count.

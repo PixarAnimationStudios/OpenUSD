@@ -785,6 +785,24 @@
                         "default": 1, 
                         "type": "timecode"
                     },
+                    "duration_shaped": {
+                        "type": "duration[]"
+                    }, 
+                    "duration_shaped_default": {
+                        "default": [
+                            1.0, 
+                            1.5, 
+                            2.0
+                        ], 
+                        "type": "duration[]"
+                    }, 
+                    "duration_single": {
+                        "type": "duration"
+                    }, 
+                    "duration_single_default": {
+                        "default": 1, 
+                        "type": "duration"
+                    },
                     "pathExpression_shaped": {
                         "type": "pathExpression[]"
                     }, 

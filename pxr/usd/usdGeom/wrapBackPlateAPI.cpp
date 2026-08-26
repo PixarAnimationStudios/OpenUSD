@@ -97,23 +97,23 @@ _CreateDepthCameraSpaceOffsetAttr(UsdGeomBackPlateAPI &self,
 }
         
 static UsdAttribute
-_CreateLumaGainAttr(UsdGeomBackPlateAPI &self,
+_CreateLumaSlopeAttr(UsdGeomBackPlateAPI &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateLumaGainAttr(
+    return self.CreateLumaSlopeAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3), writeSparsely);
 }
         
 static UsdAttribute
-_CreateLumaLiftAttr(UsdGeomBackPlateAPI &self,
+_CreateLumaOffsetAttr(UsdGeomBackPlateAPI &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateLumaLiftAttr(
+    return self.CreateLumaOffsetAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3), writeSparsely);
 }
         
 static UsdAttribute
-_CreateLumaGammaAttr(UsdGeomBackPlateAPI &self,
+_CreateLumaPowerAttr(UsdGeomBackPlateAPI &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateLumaGammaAttr(
+    return self.CreateLumaPowerAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float3), writeSparsely);
 }
         
@@ -279,24 +279,24 @@ void wrapUsdGeomBackPlateAPI()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetLumaGainAttr",
-             &This::GetLumaGainAttr)
-        .def("CreateLumaGainAttr",
-             &_CreateLumaGainAttr,
+        .def("GetLumaSlopeAttr",
+             &This::GetLumaSlopeAttr)
+        .def("CreateLumaSlopeAttr",
+             &_CreateLumaSlopeAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetLumaLiftAttr",
-             &This::GetLumaLiftAttr)
-        .def("CreateLumaLiftAttr",
-             &_CreateLumaLiftAttr,
+        .def("GetLumaOffsetAttr",
+             &This::GetLumaOffsetAttr)
+        .def("CreateLumaOffsetAttr",
+             &_CreateLumaOffsetAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetLumaGammaAttr",
-             &This::GetLumaGammaAttr)
-        .def("CreateLumaGammaAttr",
-             &_CreateLumaGammaAttr,
+        .def("GetLumaPowerAttr",
+             &This::GetLumaPowerAttr)
+        .def("CreateLumaPowerAttr",
+             &_CreateLumaPowerAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

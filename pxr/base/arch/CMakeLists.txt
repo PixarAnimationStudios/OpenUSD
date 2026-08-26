@@ -56,6 +56,7 @@ pxr_library(arch
         inttypes.h
         math.h
         pragmas.h
+        prefetch.h
 
     PRIVATE_HEADERS
         testArchAbi.h
@@ -71,7 +72,7 @@ pxr_library(arch
         overview.dox
 )
 
-pxr_build_test_shared_lib(testArchAbiPlugin
+pxr_build_test_plugin(testArchAbiPlugin
     CPPFILES
         testenv/testArchAbiPlugin.cpp
 )
@@ -130,6 +131,12 @@ pxr_build_test(testArchPRead
         arch
     CPPFILES
         testenv/testArchPRead.cpp
+)
+pxr_build_test(testArchPrefetch
+    LIBRARIES
+        arch
+    CPPFILES
+        testenv/testPrefetch.cpp
 )
 pxr_build_test(testArchStackTrace
     LIBRARIES
@@ -221,6 +228,14 @@ pxr_register_test(testArchErrno
 )
 pxr_register_test(testArchFunction
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchFunction"
+)
+pxr_register_test(testArchMath
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchMath"
+)
+# Note: testArchPRead is not registered here intentionally: it's a manual test
+# program requiring external test files.
+pxr_register_test(testArchPrefetch
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchPrefetch"
 )
 pxr_register_test(testArchTiming
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchTiming"

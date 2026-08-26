@@ -10,12 +10,12 @@
 
 exr_result_t
 internal_coding_fill_channel_info (
-    exr_coding_channel_info_t**         channels,
-    int16_t*                            num_chans,
-    exr_coding_channel_info_t*          builtinextras,
-    const exr_chunk_info_t*             cinfo,
-    const struct _internal_exr_context* pctxt,
-    const struct _internal_exr_part*    part)
+    exr_coding_channel_info_t** channels,
+    int16_t*                    num_chans,
+    exr_coding_channel_info_t*  builtinextras,
+    const exr_chunk_info_t*     cinfo,
+    exr_const_context_t         ctxt,
+    exr_const_priv_part_t       part)
 {
     int                        chans;
     exr_attr_chlist_t*         chanlist;
@@ -26,10 +26,10 @@ internal_coding_fill_channel_info (
     if (chans <= 5) { chanfill = builtinextras; }
     else
     {
-        chanfill = pctxt->alloc_fn (
+        chanfill = ctxt->alloc_fn (
             (size_t) (chans) * sizeof (exr_coding_channel_info_t));
         if (chanfill == NULL)
-            return pctxt->standard_error (pctxt, EXR_ERR_OUT_OF_MEMORY);
+            return ctxt->standard_error (ctxt, EXR_ERR_OUT_OF_MEMORY);
         memset (
             chanfill, 0, (size_t) (chans) * sizeof (exr_coding_channel_info_t));
     }
@@ -69,11 +69,11 @@ internal_coding_fill_channel_info (
 
 exr_result_t
 internal_coding_update_channel_info (
-    exr_coding_channel_info_t*          channels,
-    int16_t                             num_chans,
-    const exr_chunk_info_t*             cinfo,
-    const struct _internal_exr_context* pctxt,
-    const struct _internal_exr_part*    part)
+    exr_coding_channel_info_t* channels,
+    int16_t                    num_chans,
+    const exr_chunk_info_t*    cinfo,
+    exr_const_context_t        ctxt,
+    exr_const_priv_part_t      part)
 {
     int                chans;
     exr_attr_chlist_t* chanlist;
@@ -82,8 +82,8 @@ internal_coding_update_channel_info (
     chans    = chanlist->num_channels;
 
     if (num_chans != chans)
-        return pctxt->print_error (
-            pctxt,
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Mismatch in channel counts: stored %d, incoming %d",
             num_chans,
@@ -131,10 +131,10 @@ internal_encode_free_buffer (
                 encode->free_fn (bufid, curbuf);
             else
             {
-                EXR_PROMOTE_CONST_CONTEXT_OR_ERROR_NO_PART_NO_LOCK (
-                    encode->context, encode->part_index);
+                exr_const_context_t ctxt = encode->context;
+                EXR_CHECK_CONTEXT_AND_PART (encode->part_index);
 
-                pctxt->free_fn (curbuf);
+                ctxt->free_fn (curbuf);
             }
         }
         *buf = NULL;
@@ -154,11 +154,11 @@ internal_encode_alloc_buffer (
     void* curbuf = *buf;
     if (newsz == 0)
     {
-        EXR_PROMOTE_CONST_CONTEXT_OR_ERROR_NO_PART_NO_LOCK (
-            encode->context, encode->part_index);
+        exr_const_context_t ctxt = encode->context;
+        EXR_CHECK_CONTEXT_AND_PART (encode->part_index);
 
-        return pctxt->print_error (
-            pctxt,
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Attempt to allocate 0 byte buffer for transcode buffer %d",
             (int) bufid);
@@ -172,19 +172,19 @@ internal_encode_alloc_buffer (
             curbuf = encode->alloc_fn (bufid, newsz);
         else
         {
-            EXR_PROMOTE_CONST_CONTEXT_OR_ERROR_NO_PART_NO_LOCK (
-                encode->context, encode->part_index);
+            exr_const_context_t ctxt = encode->context;
+            EXR_CHECK_CONTEXT_AND_PART (encode->part_index);
 
-            curbuf = pctxt->alloc_fn (newsz);
+            curbuf = ctxt->alloc_fn (newsz);
         }
 
         if (curbuf == NULL)
         {
-            EXR_PROMOTE_CONST_CONTEXT_OR_ERROR_NO_PART_NO_LOCK (
-                encode->context, encode->part_index);
+            exr_const_context_t ctxt = encode->context;
+            EXR_CHECK_CONTEXT_AND_PART (encode->part_index);
 
-            return pctxt->print_error (
-                pctxt,
+            return ctxt->print_error (
+                ctxt,
                 EXR_ERR_OUT_OF_MEMORY,
                 "Unable to allocate %" PRIu64 " bytes",
                 (uint64_t) newsz);
@@ -213,10 +213,10 @@ internal_decode_free_buffer (
                 decode->free_fn (bufid, curbuf);
             else
             {
-                EXR_PROMOTE_CONST_CONTEXT_OR_ERROR_NO_PART_NO_LOCK (
-                    decode->context, decode->part_index);
+                exr_const_context_t ctxt = decode->context;
+                EXR_CHECK_CONTEXT_AND_PART (decode->part_index);
 
-                pctxt->free_fn (curbuf);
+                ctxt->free_fn (curbuf);
             }
         }
         *buf = NULL;
@@ -250,19 +250,19 @@ internal_decode_alloc_buffer (
             curbuf = decode->alloc_fn (bufid, newsz);
         else
         {
-            EXR_PROMOTE_CONST_CONTEXT_OR_ERROR_NO_PART_NO_LOCK (
-                decode->context, decode->part_index);
+            exr_const_context_t ctxt = decode->context;
+            EXR_CHECK_CONTEXT_AND_PART (decode->part_index);
 
-            curbuf = pctxt->alloc_fn (newsz);
+            curbuf = ctxt->alloc_fn (newsz);
         }
 
         if (curbuf == NULL)
         {
-            EXR_PROMOTE_CONST_CONTEXT_OR_ERROR_NO_PART_NO_LOCK (
-                decode->context, decode->part_index);
+            exr_const_context_t ctxt = decode->context;
+            EXR_CHECK_CONTEXT_AND_PART (decode->part_index);
 
-            return pctxt->print_error (
-                pctxt,
+            return ctxt->print_error (
+                ctxt,
                 EXR_ERR_OUT_OF_MEMORY,
                 "Unable to allocate %" PRIu64 " bytes",
                 (uint64_t) newsz);

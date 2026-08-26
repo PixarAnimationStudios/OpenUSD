@@ -918,7 +918,7 @@ public:
 
         if (name == HdDependenciesSchemaTokens->__dependencies) {
             return
-                HdOverlayContainerDataSource::OverlayedContainerDataSources(
+                HdCreateOverlayContainerDataSource(
                     _BuildDependenciesDataSource(_inputPrimDs),
                     HdContainerDataSource::Cast(result));
         }

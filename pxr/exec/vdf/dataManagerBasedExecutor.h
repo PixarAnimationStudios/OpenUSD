@@ -127,7 +127,7 @@ protected:
             output, _dataManager.GetDataHandle(output.GetId()));
     }
 
-    /// Clears the data for a specific output on this executor.
+    /// Clears the buffer data for a specific output on this executor.
     /// 
     void _ClearDataForOutput(
         const VdfId outputId, const VdfId nodeId) override {

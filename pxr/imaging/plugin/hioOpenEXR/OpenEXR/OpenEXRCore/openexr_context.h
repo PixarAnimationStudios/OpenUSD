@@ -19,7 +19,7 @@ extern "C" {
 
 /** @file */
 
-/** 
+/**
  * @defgroup Context Context related definitions
  *
  * A context is a single instance of an OpenEXR file or stream. Beyond
@@ -42,7 +42,7 @@ extern "C" {
 typedef struct _priv_exr_context_t*       exr_context_t;
 typedef const struct _priv_exr_context_t* exr_const_context_t;
 
-/** 
+/**
  * @defgroup ContextFunctions OpenEXR Context Stream/File Functions
  *
  * @brief These are a group of function interfaces used to customize
@@ -125,6 +125,9 @@ typedef int64_t (*exr_query_size_func_ptr_t) (
  * truly a stream, it is up to the provider to implement appropriate
  * caching of data to give the appearance of being able to seek/read
  * atomically.
+ *
+ * TODO: This does not handle the ability to mmap a file and get to
+ * zero copy
  */
 typedef int64_t (*exr_read_func_ptr_t) (
     exr_const_context_t         ctxt,
@@ -358,6 +361,13 @@ typedef struct _exr_context_initializer_v3
 /** @brief Check the magic number of the file and report
  * `EXR_ERR_SUCCESS` if the file appears to be a valid file (or at least
  * has the correct magic number and can be read).
+ *
+ * The filename is assumed to be a UTF-8 encoded
+ * filename, as is standard on current Unix filesystems. Under
+ * windows, this will be widened to be a wchar_t. If the user provides
+ * custom I/O routines, the responsibility passes to the user for that
+ * behavior.
+ *
  */
 EXR_EXPORT exr_result_t exr_test_file_header (
     const char* filename, const exr_context_initializer_t* ctxtdata);
@@ -376,6 +386,12 @@ EXR_EXPORT exr_result_t exr_finish (exr_context_t* ctxt);
  * informational purposes only, the system assumes the user has
  * previously opened a stream, file, or whatever and placed relevant
  * data in userdata to access that.
+ *
+ * In the default case, the filename is assumed to be a UTF-8 encoded
+ * filename, as is standard on current Unix filesystems. Under
+ * windows, this will be widened to be a wchar_t. If the user provides
+ * custom I/O routines, the responsibility passes to the user for that
+ * behavior.
  *
  * One notable attribute of the context is that once it has been
  * created and returned a successful code, it has parsed all the
@@ -404,13 +420,19 @@ typedef enum exr_default_write_mode
         1 /**< Create a temporary file, renaming it upon successful write, leaving original upon error */
 } exr_default_write_mode_t;
 
-/** @brief Create and initialize a write-only context. 
+/** @brief Create and initialize a write-only context.
  *
  * If a custom write function is provided, the filename is for
  * informational purposes only, and the @p default_mode parameter will be
  * ignored. As such, the system assumes the user has previously opened
  * a stream, file, or whatever and placed relevant data in userdata to
  * access that.
+ *
+ * In the default case, the filename is assumed to be a UTF-8 encoded
+ * filename, as is standard on current Unix filesystems. Under
+ * windows, this will be widened to be a wchar_t. If the user provides
+ * custom I/O routines, the responsibility passes to the user for that
+ * behavior.
  *
  * Multi-Threading: To avoid issues with creating multi-part EXR
  * files, the library approaches writing as a multi-step process, so
@@ -463,6 +485,26 @@ EXR_EXPORT exr_result_t exr_start_inplace_header_update (
     const char*                      filename,
     const exr_context_initializer_t* ctxtdata);
 
+/** @brief Create a new context for temporary use in memory.
+ *
+ * This is a custom mode that does not supporting writing actual image
+ * data, but one can create one of these, manipulate attributes,
+ * define additional parts, run validation, etc. without any
+ * requirement of actual file i/o.
+ *
+ * Note that this creates an defines an initial part for use, so one
+ * can immediately start defining attributes into part index 0.
+ *
+ * See the initializer context documentation \ref
+ * exr_context_initializer_t to be able to provide allocation
+ * overrides or other controls. The @p ctxtdata parameter is optional,
+ * if `NULL`, default values will be used.
+ */
+EXR_EXPORT exr_result_t exr_start_temporary_context (
+    exr_context_t*                   ctxt,
+    const char*                      context_name,
+    const exr_context_initializer_t* ctxtdata);
+
 /** @brief Retrieve the file name the context is for as provided
  * during the start routine.
  *
@@ -470,6 +512,12 @@ EXR_EXPORT exr_result_t exr_start_inplace_header_update (
  */
 EXR_EXPORT exr_result_t
 exr_get_file_name (exr_const_context_t ctxt, const char** name);
+
+/** @brief Retrieve the file version and flags the context is for as
+ * parsed during the start routine.
+ */
+EXR_EXPORT exr_result_t
+exr_get_file_version_and_flags (exr_const_context_t ctxt, uint32_t* ver);
 
 /** @brief Query the user data the context was constructed with. This
  * is perhaps useful in the error handler callback to jump back into
@@ -524,7 +572,7 @@ exr_set_longname_support (exr_context_t ctxt, int onoff);
  * metadata up front, prior to calling the above exr_start_write(),
  * allow the data to be set, then once this is called, it switches
  * into a mode where the library assumes the data is now valid.
- * 
+ *
  * It will recompute the number of chunks that will be written, and
  * reset the chunk offsets. If you modify file attributes or part
  * information after a call to this, it will error.

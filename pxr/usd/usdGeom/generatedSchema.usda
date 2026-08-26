@@ -2722,9 +2722,9 @@ class "BackPlateAPI" (
         textures."""
         }
     )
-    float3 backPlate:__INSTANCE_NAME__:luma:gain = (1, 1, 1)
-    float3 backPlate:__INSTANCE_NAME__:luma:gamma = (1, 1, 1)
-    float3 backPlate:__INSTANCE_NAME__:luma:lift = (0, 0, 0)
+    float3 backPlate:__INSTANCE_NAME__:luma:offset = (0, 0, 0)
+    float3 backPlate:__INSTANCE_NAME__:luma:power = (1, 1, 1)
+    float3 backPlate:__INSTANCE_NAME__:luma:slope = (1, 1, 1)
     token backPlate:__INSTANCE_NAME__:plateVisibility = "solo" (
         allowedTokens = ["all", "solo", "mute"]
         customData = {

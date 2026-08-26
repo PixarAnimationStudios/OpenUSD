@@ -48,6 +48,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (materialBindingPurposes) \
     (renderingColorSpace) \
     (unionedSamplingInterval) \
+    (useForLegacyRenderDelegateSettings) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsSchemaTokens, HD_API,
     HD_RENDER_SETTINGS_SCHEMA_TOKENS);
@@ -124,7 +125,23 @@ public:
     /// close times and is expected to span the union of the shutter intervals
     /// of cameras used in generating the render artifacts.
     HD_API
-    HdVec2dDataSourceHandle GetUnionedSamplingInterval() const; 
+    HdVec2dDataSourceHandle GetUnionedSamplingInterval() const;
+
+    /// A temporary field to transition to in-band render settings. This field
+    /// will not exist in a pure Hydra 2.0 world since render settings are
+    /// always communicated in-band through the scene index. It mitigates the
+    /// risk for HdRenderDelegate's implementing both in-band render settings
+    /// and the legacy HdRenderDelegate::SetRenderSettings and those
+    /// implementations interact in complicated ways. That is, applications
+    /// can use, for example, an env var to switch between the new mechanism
+    /// and direct calls to HdRenderDelegate::SetRenderSettings to revert to
+    /// the old behavior while we address fall-out. This field changes the
+    /// emulation layer HdRenderDelegateAdapterRenderer, to set the legacy
+    /// render settings on the legacy render delegate using
+    /// HdRenderDelegate::SetRenderSetting with the values provided by this
+    /// schema.
+    HD_API
+    HdBoolDataSourceHandle GetUseForLegacyRenderDelegateSettings() const; 
 
     /// @}
 
@@ -191,6 +208,10 @@ public:
     /// Prim-level relative data source locator to locate unionedSamplingInterval.
     HD_API
     static const HdDataSourceLocator &GetUnionedSamplingIntervalLocator();
+
+    /// Prim-level relative data source locator to locate useForLegacyRenderDelegateSettings.
+    HD_API
+    static const HdDataSourceLocator &GetUseForLegacyRenderDelegateSettingsLocator();
     /// @} 
 
     /// \name Schema construction
@@ -215,7 +236,8 @@ public:
         const HdTokenArrayDataSourceHandle &includedPurposes,
         const HdTokenArrayDataSourceHandle &materialBindingPurposes,
         const HdTokenDataSourceHandle &renderingColorSpace,
-        const HdVec2dDataSourceHandle &unionedSamplingInterval
+        const HdVec2dDataSourceHandle &unionedSamplingInterval,
+        const HdBoolDataSourceHandle &useForLegacyRenderDelegateSettings
     );
 
     /// \class HdRenderSettingsSchema::Builder
@@ -257,6 +279,9 @@ public:
         HD_API
         Builder &SetUnionedSamplingInterval(
             const HdVec2dDataSourceHandle &unionedSamplingInterval);
+        HD_API
+        Builder &SetUseForLegacyRenderDelegateSettings(
+            const HdBoolDataSourceHandle &useForLegacyRenderDelegateSettings);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -273,6 +298,7 @@ public:
         HdTokenArrayDataSourceHandle _materialBindingPurposes;
         HdTokenDataSourceHandle _renderingColorSpace;
         HdVec2dDataSourceHandle _unionedSamplingInterval;
+        HdBoolDataSourceHandle _useForLegacyRenderDelegateSettings;
 
     };
 

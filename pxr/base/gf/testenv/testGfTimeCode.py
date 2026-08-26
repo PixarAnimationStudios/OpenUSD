@@ -5,7 +5,6 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 
-from __future__ import division
 from pxr import Gf, Tf
 import itertools, unittest
 
@@ -122,25 +121,33 @@ class TestGfTimeCode(unittest.TestCase):
         timeCode2 = Gf.TimeCode(3.0)
         timeCode3 = Gf.TimeCode(-2.5)
 
+        duration1 = Gf.Duration(1.0)
+
         self.assertEqual(timeCode2 + timeCode3, Gf.TimeCode(0.5))
         self.assertEqual(timeCode3 + timeCode2, Gf.TimeCode(0.5))
+        self.assertEqual(timeCode2 + duration1, Gf.TimeCode(4.0))
+        self.assertEqual(duration1 + timeCode2, Gf.TimeCode(4.0))
         self.assertEqual(timeCode2 + 5.0, Gf.TimeCode(8.0))
         self.assertEqual(5.0 + timeCode2, Gf.TimeCode(8.0))
 
-        self.assertEqual(timeCode2 - timeCode3, Gf.TimeCode(5.5))
-        self.assertEqual(timeCode3 - timeCode2, Gf.TimeCode(-5.5))
+        self.assertEqual(timeCode2 - timeCode3, Gf.Duration(5.5))
+        self.assertEqual(timeCode3 - timeCode2, Gf.Duration(-5.5))
+        self.assertEqual(timeCode2 - duration1, Gf.TimeCode(2.0))
+        self.assertEqual(duration1 - timeCode2, Gf.TimeCode(-2.0))
         self.assertEqual(timeCode2 - 5.0, Gf.TimeCode(-2.0))
         self.assertEqual(5.0 - timeCode2, Gf.TimeCode(2.0))
 
-        self.assertEqual(timeCode2 * timeCode3, Gf.TimeCode(-7.5))
-        self.assertEqual(timeCode3 * timeCode2, Gf.TimeCode(-7.5))
+        with self.assertRaises(
+                TypeError, msg = "Gf.TimeCode * Gf.TimeCode should be illegal"):
+            _ = timeCode2 * timeCode3
         self.assertEqual(timeCode2 * 5.0, Gf.TimeCode(15.0))
         self.assertEqual(5.0 * timeCode2, Gf.TimeCode(15.0))
 
-        self.assertEqual(timeCode2 / Gf.TimeCode(2), Gf.TimeCode(1.5))
-        self.assertEqual(Gf.TimeCode(6.0) / timeCode2, Gf.TimeCode(2.0))
+        self.assertEqual(timeCode2 / Gf.TimeCode(2), 1.5)
         self.assertEqual(timeCode2 / 5.0, Gf.TimeCode(0.6))
-        self.assertEqual(6.0 / timeCode2, Gf.TimeCode(2.0))
+        with self.assertRaises(
+                TypeError, msg = "float / Gf.TimeCode should be illegal"):
+            _ = 6.0 / timeCode2
 
 
 if __name__ == "__main__":

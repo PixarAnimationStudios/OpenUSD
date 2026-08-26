@@ -204,11 +204,11 @@ class TestUsdGeomCamera(unittest.TestCase):
         self.assertEqual(                                                   \
             backPlate.GetTranslateTweakAttr().Get(1.0),Gf.Vec3f(0.0,0.0,0.0) )
         self.assertEqual(                                                   \
-            backPlate.GetLumaGainAttr().Get(1.0), Gf.Vec3f(1.0,1.0,1.0))
+            backPlate.GetLumaSlopeAttr().Get(1.0), Gf.Vec3f(1.0,1.0,1.0))
         self.assertEqual(                                                   \
-            backPlate.GetLumaGammaAttr().Get(1.0), Gf.Vec3f(1.0,1.0,1.0))
+            backPlate.GetLumaPowerAttr().Get(1.0), Gf.Vec3f(1.0,1.0,1.0))
         self.assertEqual(                                                   \
-            backPlate.GetLumaLiftAttr().Get(1.0), Gf.Vec3f(0.0,0.0,0.0))
+            backPlate.GetLumaOffsetAttr().Get(1.0), Gf.Vec3f(0.0,0.0,0.0))
         self.assertEqual(                                                   \
             backPlate.GetPlateVisibilityAttr().Get(1.0), "solo")
         self.assertEqual(backPlate.GetDepthMinOffsetAttr().Get(1.0), 0.0)
@@ -221,9 +221,9 @@ class TestUsdGeomCamera(unittest.TestCase):
         backPlate.GetScaleTweakAttr().Set(Gf.Vec2f(2.0, 3.0))
         backPlate.GetRotateXYZTweakAttr().Set(Gf.Vec3f(2.0, 2.0, 6.0))
         backPlate.GetTranslateTweakAttr().Set(Gf.Vec3f(3.0, -2.0, -1.0))
-        backPlate.GetLumaGainAttr().Set(Gf.Vec3f(2.0, 1.0, 0.5))
-        backPlate.GetLumaGammaAttr().Set(Gf.Vec3f(3.0, 2.0, 0.5))
-        backPlate.GetLumaLiftAttr().Set(Gf.Vec3f(1.0,0.0,0.5))
+        backPlate.GetLumaSlopeAttr().Set(Gf.Vec3f(2.0, 1.0, 0.5))
+        backPlate.GetLumaPowerAttr().Set(Gf.Vec3f(3.0, 2.0, 0.5))
+        backPlate.GetLumaOffsetAttr().Set(Gf.Vec3f(1.0,0.0,0.5))
         backPlate.GetDepthMinOffsetAttr().Set(2.0)
         backPlate.GetDepthNormalizingFactorAttr().Set(2.0)
         backPlate.GetDepthCameraSpaceOffsetAttr().Set(6.0)
@@ -235,11 +235,11 @@ class TestUsdGeomCamera(unittest.TestCase):
         self.assertEqual(backPlate.GetTranslateTweakAttr().Get(1.0),        \
                          Gf.Vec3f(3.0, -2.0, -1.0))
         self.assertEqual(                                                   \
-            backPlate.GetLumaGainAttr().Get(1.0), Gf.Vec3f(2.0, 1.0, 0.5))
+            backPlate.GetLumaSlopeAttr().Get(1.0), Gf.Vec3f(2.0, 1.0, 0.5))
         self.assertEqual(                                                   \
-            backPlate.GetLumaGammaAttr().Get(1.0), Gf.Vec3f(3.0, 2.0, 0.5))
+            backPlate.GetLumaPowerAttr().Get(1.0), Gf.Vec3f(3.0, 2.0, 0.5))
         self.assertEqual(                                                   \
-            backPlate.GetLumaLiftAttr().Get(1.0), Gf.Vec3f(1.0,0.0,0.5))
+            backPlate.GetLumaOffsetAttr().Get(1.0), Gf.Vec3f(1.0,0.0,0.5))
         self.assertEqual(backPlate.GetDepthMinOffsetAttr().Get(1.0), 2.0)
         self.assertEqual(                                                   \
             backPlate.GetDepthNormalizingFactorAttr().Get(1.0), 2.0)

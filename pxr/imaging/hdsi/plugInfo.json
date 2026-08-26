@@ -8,6 +8,20 @@
                         "loadWithRenderer": "",
                         "priority": 0,
                         "displayName": "Add debugging scene index if corresponding env var is set."
+                    },
+                    "HdsiPrimIdSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "",
+                        "loadWithApps": "",
+                        "priority": 0,
+                        "displayName": "Add prim id scene index if corresponding env var is set.",
+
+                        # Make it run as one the last scene indices.
+                        "tags": ["hdsi:primId"],
+                        "ordering": {
+                            "after": ["hd:sceneAssembly", "hd:sceneGlobals"],
+                            "position": "lastBefore"
+                        }
                     }
                 }
             },

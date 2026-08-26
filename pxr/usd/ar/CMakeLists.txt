@@ -84,7 +84,7 @@ pxr_test_scripts(
     testenv/testArTimestamp.py
 )
 
-pxr_build_test_shared_lib(TestArAdvancedAPI
+pxr_build_test_plugin(TestArAdvancedAPI
     INSTALL_PREFIX ArPlugins
     LIBRARIES
         tf
@@ -93,7 +93,7 @@ pxr_build_test_shared_lib(TestArAdvancedAPI
         testenv/TestArAdvancedAPI_plugin.cpp
 ) 
 
-pxr_build_test_shared_lib(TestArPackageResolver
+pxr_build_test_plugin(TestArPackageResolver
     INSTALL_PREFIX ArPlugins
     LIBRARIES
         tf
@@ -102,7 +102,7 @@ pxr_build_test_shared_lib(TestArPackageResolver
         testenv/TestArPackageResolver_plugin.cpp
 ) 
 
-pxr_build_test_shared_lib(TestArOptionalImplementation
+pxr_build_test_plugin(TestArOptionalImplementation
     INSTALL_PREFIX ArPlugins
     LIBRARIES
         tf
@@ -159,7 +159,7 @@ pxr_register_test(testArOptionalImplementation_5
 # The build system currently doesn't support this for static library
 # builds, so we only enable this test on shared library builds.
 if (BUILD_SHARED_LIBS)
-    pxr_build_test_shared_lib(TestArURIResolver
+    pxr_build_test_plugin(TestArURIResolver
         INSTALL_PREFIX ArPlugins
         LIBRARIES
             tf

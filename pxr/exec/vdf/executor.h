@@ -81,9 +81,11 @@ private:
         const VdfRequest &computeRequest,
         VdfExecutorErrorLogger *errorLogger) override;
 
-    // Causes the DataManager to clear its temporary execution buffers.
+    // Causes the data manager to clear its temporary execution buffers.
     //
-    virtual void _ClearData() override;
+    virtual void _ClearData() override {
+        Base::_dataManager.Clear();
+    }
 
 private:
 
@@ -118,13 +120,6 @@ VdfExecutor<EngineType, DataManagerType>::_Run(
     TfAutoMallocTag2 tag("Ef", "VdfExecutor::Run");
 
     _engine.RunSchedule(schedule, computeRequest, errorLogger);
-}
-
-template <template <typename> class EngineType, typename DataManagerType>
-void
-VdfExecutor<EngineType, DataManagerType>::_ClearData()
-{
-    Base::_dataManager.Clear();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

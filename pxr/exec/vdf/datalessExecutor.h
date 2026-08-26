@@ -97,19 +97,6 @@ protected:
         return NULL;
     }
 
-    /// Clears the data for a specific output on this executor.
-    ///
-    /// This has no effect on this type of executor.
-    ///
-    void _ClearDataForOutput(
-        const VdfId outputId, const VdfId nodeId) override {}
-
-    /// Clears all the data caches associated with any output in the network.
-    ///
-    /// This has no effect on this type of executor.
-    ///
-    virtual void _ClearData() override {}
-
     /// Called before invalidation begins to update the timestamp that will be
     /// written for every VdfOutput visited during invalidation.  This timestamp
     /// is later used to identify outputs for mung buffer locking.

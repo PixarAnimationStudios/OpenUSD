@@ -15,19 +15,21 @@
 /// \ingroup group_gf_LinearAlgebra
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/api.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/hash.h"
 
 #include <cstddef>
+#include <type_traits>
 
 #include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class GfVec4i;
+class GfVec2i;
+class GfVec3i;
 
 template <>
 struct GfIsGfVec<class GfVec4i> { static const bool value = true; };
@@ -47,47 +49,63 @@ public:
     typedef int ScalarType;
     static const size_t dimension = 4;
 
+    /// \name Vector Components
+    ///
+    /// The vector's components, which are also its storage.  These are public
+    /// and directly readable and writable.
+    ///
+    /// The components are contiguous and in declaration order, so \c &x points
+    /// to \c dimension values.  See data() and operator[]().
+    ///
+    /// For multi-component access see the swizzle accessors below, which return
+    /// a new vector by value.
+    /// @{
+    int x, y, z, w;
+    /// @}
+
     /// GfVec4i value-initializes to zero and performs no default
     /// initialization, like float or double.
     GfVec4i() = default;
 
     /// Initialize all elements to a single value.
     constexpr explicit GfVec4i(int value)
-        : _data{ value, value, value, value }
+        : x(value), y(value), z(value), w(value)
     {
     }
 
     /// Initialize all elements with explicit arguments.
     constexpr GfVec4i(int s0, int s1, int s2, int s3)
-        : _data{ s0, s1, s2, s3 }
+        : x(s0), y(s1), z(s2), w(s3)
     {
     }
 
     /// Construct with pointer to values.
     template <class Scl>
     constexpr explicit GfVec4i(Scl const *p)
-        : _data{ p[0], p[1], p[2], p[3] }
+        : x(p[0]), y(p[1]), z(p[2]), w(p[3])
     {
     }
- 
     /// Create a unit vector along the X-axis.
     static GfVec4i XAxis() {
         GfVec4i result(0);
         result[0] = 1;
         return result;
     }
+
     /// Create a unit vector along the Y-axis.
     static GfVec4i YAxis() {
         GfVec4i result(0);
         result[1] = 1;
         return result;
     }
+
     /// Create a unit vector along the Z-axis.
     static GfVec4i ZAxis() {
         GfVec4i result(0);
         result[2] = 1;
         return result;
     }
+
     /// Create a unit vector along the W-axis.
     static GfVec4i WAxis() {
         GfVec4i result(0);
@@ -106,10 +124,10 @@ public:
 
     /// Set all elements with passed arguments.
     GfVec4i &Set(int s0, int s1, int s2, int s3) {
-        _data[0] = s0;
-        _data[1] = s1;
-        _data[2] = s2;
-        _data[3] = s3;
+        x = s0;
+        y = s1;
+        z = s2;
+        w = s3;
         return *this;
     }
 
@@ -119,25 +137,29 @@ public:
     }
 
     /// Direct data access.
-    int const *data() const { return _data; }
-    int *data() { return _data; }
+    ///
+    /// data() is the only member that relies on the components being
+    /// contiguous; every other member either names them directly or goes
+    /// through here.
+    int const *data() const { return &x; }
+    int *data() { return &x; }
     int const *GetArray() const { return data(); }
 
     /// Indexing.
-    int const &operator[](size_t i) const { return _data[i]; }
-    int &operator[](size_t i) { return _data[i]; }
+    int const &operator[](size_t i) const { return data()[i]; }
+    int &operator[](size_t i) { return data()[i]; }
 
     /// Hash.
     friend inline size_t hash_value(GfVec4i const &vec) {
-        return TfHash::Combine(vec[0], vec[1], vec[2], vec[3]);
+        return TfHash::Combine(vec.x, vec.y, vec.z, vec.w);
     }
 
     /// Equality comparison.
     bool operator==(GfVec4i const &other) const {
-        return _data[0] == other[0] &&
-               _data[1] == other[1] &&
-               _data[2] == other[2] &&
-               _data[3] == other[3];
+        return x == other.x &&
+               y == other.y &&
+               z == other.z &&
+               w == other.w;
     }
     bool operator!=(GfVec4i const &other) const {
         return !(*this == other);
@@ -156,15 +178,15 @@ public:
     
     /// Create a vec with negated elements.
     GfVec4i operator-() const {
-        return GfVec4i(-_data[0], -_data[1], -_data[2], -_data[3]);
+        return GfVec4i(-x, -y, -z, -w);
     }
 
     /// Addition.
     GfVec4i &operator+=(GfVec4i const &other) {
-        _data[0] += other[0];
-        _data[1] += other[1];
-        _data[2] += other[2];
-        _data[3] += other[3];
+        x += other.x;
+        y += other.y;
+        z += other.z;
+        w += other.w;
         return *this;
     }
     friend GfVec4i operator+(GfVec4i const &l, GfVec4i const &r) {
@@ -173,10 +195,10 @@ public:
 
     /// Subtraction.
     GfVec4i &operator-=(GfVec4i const &other) {
-        _data[0] -= other[0];
-        _data[1] -= other[1];
-        _data[2] -= other[2];
-        _data[3] -= other[3];
+        x -= other.x;
+        y -= other.y;
+        z -= other.z;
+        w -= other.w;
         return *this;
     }
     friend GfVec4i operator-(GfVec4i const &l, GfVec4i const &r) {
@@ -185,10 +207,10 @@ public:
 
     /// Multiplication by scalar.
     GfVec4i &operator*=(double s) {
-        _data[0] *= s;
-        _data[1] *= s;
-        _data[2] *= s;
-        _data[3] *= s;
+        x *= s;
+        y *= s;
+        z *= s;
+        w *= s;
         return *this;
     }
     GfVec4i operator*(double s) const {
@@ -200,10 +222,10 @@ public:
 
         /// Division by scalar.
     GfVec4i &operator/=(int s) {
-        _data[0] /= s;
-        _data[1] /= s;
-        _data[2] /= s;
-        _data[3] /= s;
+        x /= s;
+        y /= s;
+        z /= s;
+        w /= s;
         return *this;
     }
     GfVec4i operator/(int s) const {
@@ -212,7 +234,7 @@ public:
     
     /// See GfDot().
     int operator*(GfVec4i const &v) const {
-        return _data[0] * v[0] + _data[1] * v[1] + _data[2] * v[2] + _data[3] * v[3];
+        return x * v.x + y * v.y + z * v.z + w * v.w;
     }
 
     /// Returns the projection of \p this onto \p v. That is:
@@ -238,23 +260,654 @@ public:
     }
 
  
-private:
-    int _data[4];
-};
+    /// \name Swizzles
+    ///
+    /// Each accessor returns a new vector built from this one's components, in
+    /// the order named.  For example wzyx() returns
+    /// GfVec4i(w, z, y, x).
+    ///
+    /// Every permutation of 2 to 4 of the 4 components is
+    /// available.  Repeated components (\c xx, \c xyy) are not; nor are
+    /// single-component swizzles, which are just the components themselves.
+    ///
+    /// The results are ordinary GfVecs, so all the usual operators, GfDot() and
+    /// so on apply to them.  They are values, not references into this vector,
+    /// so they cannot be assigned through.
+    ///
+    /// @{
+#if defined (doxygen)
+    constexpr GfVec2i xy() const;
+    constexpr GfVec2i xz() const;
+    constexpr GfVec2i xw() const;
+    constexpr GfVec2i yx() const;
+    constexpr GfVec2i yz() const;
+    constexpr GfVec2i yw() const;
+    constexpr GfVec2i zx() const;
+    constexpr GfVec2i zy() const;
+    constexpr GfVec2i zw() const;
+    constexpr GfVec2i wx() const;
+    constexpr GfVec2i wy() const;
+    constexpr GfVec2i wz() const;
+    constexpr GfVec3i xyz() const;
+    constexpr GfVec3i xyw() const;
+    constexpr GfVec3i xzy() const;
+    constexpr GfVec3i xzw() const;
+    constexpr GfVec3i xwy() const;
+    constexpr GfVec3i xwz() const;
+    constexpr GfVec3i yxz() const;
+    constexpr GfVec3i yxw() const;
+    constexpr GfVec3i yzx() const;
+    constexpr GfVec3i yzw() const;
+    constexpr GfVec3i ywx() const;
+    constexpr GfVec3i ywz() const;
+    constexpr GfVec3i zxy() const;
+    constexpr GfVec3i zxw() const;
+    constexpr GfVec3i zyx() const;
+    constexpr GfVec3i zyw() const;
+    constexpr GfVec3i zwx() const;
+    constexpr GfVec3i zwy() const;
+    constexpr GfVec3i wxy() const;
+    constexpr GfVec3i wxz() const;
+    constexpr GfVec3i wyx() const;
+    constexpr GfVec3i wyz() const;
+    constexpr GfVec3i wzx() const;
+    constexpr GfVec3i wzy() const;
+    constexpr GfVec4i xyzw() const;
+    constexpr GfVec4i xywz() const;
+    constexpr GfVec4i xzyw() const;
+    constexpr GfVec4i xzwy() const;
+    constexpr GfVec4i xwyz() const;
+    constexpr GfVec4i xwzy() const;
+    constexpr GfVec4i yxzw() const;
+    constexpr GfVec4i yxwz() const;
+    constexpr GfVec4i yzxw() const;
+    constexpr GfVec4i yzwx() const;
+    constexpr GfVec4i ywxz() const;
+    constexpr GfVec4i ywzx() const;
+    constexpr GfVec4i zxyw() const;
+    constexpr GfVec4i zxwy() const;
+    constexpr GfVec4i zyxw() const;
+    constexpr GfVec4i zywx() const;
+    constexpr GfVec4i zwxy() const;
+    constexpr GfVec4i zwyx() const;
+    constexpr GfVec4i wxyz() const;
+    constexpr GfVec4i wxzy() const;
+    constexpr GfVec4i wyxz() const;
+    constexpr GfVec4i wyzx() const;
+    constexpr GfVec4i wzxy() const;
+    constexpr GfVec4i wzyx() const;
+    /// @}
+#else // !doxygen
+    // Note that these are templated on their own return type so that the
+    // declarations cost nothing in compile time & debug info unless they are
+    // actually called in a TU.  Naming a different type is an error and
+    // static_assert()ed against.
+    template <class Vec = GfVec2i> constexpr Vec xy() const;
+    template <class Vec = GfVec2i> constexpr Vec xz() const;
+    template <class Vec = GfVec2i> constexpr Vec xw() const;
+    template <class Vec = GfVec2i> constexpr Vec yx() const;
+    template <class Vec = GfVec2i> constexpr Vec yz() const;
+    template <class Vec = GfVec2i> constexpr Vec yw() const;
+    template <class Vec = GfVec2i> constexpr Vec zx() const;
+    template <class Vec = GfVec2i> constexpr Vec zy() const;
+    template <class Vec = GfVec2i> constexpr Vec zw() const;
+    template <class Vec = GfVec2i> constexpr Vec wx() const;
+    template <class Vec = GfVec2i> constexpr Vec wy() const;
+    template <class Vec = GfVec2i> constexpr Vec wz() const;
+    template <class Vec = GfVec3i> constexpr Vec xyz() const;
+    template <class Vec = GfVec3i> constexpr Vec xyw() const;
+    template <class Vec = GfVec3i> constexpr Vec xzy() const;
+    template <class Vec = GfVec3i> constexpr Vec xzw() const;
+    template <class Vec = GfVec3i> constexpr Vec xwy() const;
+    template <class Vec = GfVec3i> constexpr Vec xwz() const;
+    template <class Vec = GfVec3i> constexpr Vec yxz() const;
+    template <class Vec = GfVec3i> constexpr Vec yxw() const;
+    template <class Vec = GfVec3i> constexpr Vec yzx() const;
+    template <class Vec = GfVec3i> constexpr Vec yzw() const;
+    template <class Vec = GfVec3i> constexpr Vec ywx() const;
+    template <class Vec = GfVec3i> constexpr Vec ywz() const;
+    template <class Vec = GfVec3i> constexpr Vec zxy() const;
+    template <class Vec = GfVec3i> constexpr Vec zxw() const;
+    template <class Vec = GfVec3i> constexpr Vec zyx() const;
+    template <class Vec = GfVec3i> constexpr Vec zyw() const;
+    template <class Vec = GfVec3i> constexpr Vec zwx() const;
+    template <class Vec = GfVec3i> constexpr Vec zwy() const;
+    template <class Vec = GfVec3i> constexpr Vec wxy() const;
+    template <class Vec = GfVec3i> constexpr Vec wxz() const;
+    template <class Vec = GfVec3i> constexpr Vec wyx() const;
+    template <class Vec = GfVec3i> constexpr Vec wyz() const;
+    template <class Vec = GfVec3i> constexpr Vec wzx() const;
+    template <class Vec = GfVec3i> constexpr Vec wzy() const;
+    template <class Vec = GfVec4i> constexpr Vec xyzw() const;
+    template <class Vec = GfVec4i> constexpr Vec xywz() const;
+    template <class Vec = GfVec4i> constexpr Vec xzyw() const;
+    template <class Vec = GfVec4i> constexpr Vec xzwy() const;
+    template <class Vec = GfVec4i> constexpr Vec xwyz() const;
+    template <class Vec = GfVec4i> constexpr Vec xwzy() const;
+    template <class Vec = GfVec4i> constexpr Vec yxzw() const;
+    template <class Vec = GfVec4i> constexpr Vec yxwz() const;
+    template <class Vec = GfVec4i> constexpr Vec yzxw() const;
+    template <class Vec = GfVec4i> constexpr Vec yzwx() const;
+    template <class Vec = GfVec4i> constexpr Vec ywxz() const;
+    template <class Vec = GfVec4i> constexpr Vec ywzx() const;
+    template <class Vec = GfVec4i> constexpr Vec zxyw() const;
+    template <class Vec = GfVec4i> constexpr Vec zxwy() const;
+    template <class Vec = GfVec4i> constexpr Vec zyxw() const;
+    template <class Vec = GfVec4i> constexpr Vec zywx() const;
+    template <class Vec = GfVec4i> constexpr Vec zwxy() const;
+    template <class Vec = GfVec4i> constexpr Vec zwyx() const;
+    template <class Vec = GfVec4i> constexpr Vec wxyz() const;
+    template <class Vec = GfVec4i> constexpr Vec wxzy() const;
+    template <class Vec = GfVec4i> constexpr Vec wyxz() const;
+    template <class Vec = GfVec4i> constexpr Vec wyzx() const;
+    template <class Vec = GfVec4i> constexpr Vec wzxy() const;
+    template <class Vec = GfVec4i> constexpr Vec wzyx() const;
+#endif // doxygen
+ };
 
 /// Output a GfVec4i.
 /// \ingroup group_gf_DebuggingOutput
 GF_API std::ostream& operator<<(std::ostream &, GfVec4i const &);
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+// Lower dimensions of the same scalar type, for the swizzles above.  Note that
+// lower dimensions never include higher ones, so this introduces no cycle.
+#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec3i.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+template <class Vec>
+constexpr Vec
+GfVec4i::xy() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(x, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::xz() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(x, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::xw() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(x, w);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::yx() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(y, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::yz() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(y, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::yw() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(y, w);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::zx() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(z, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::zy() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(z, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::zw() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(z, w);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::wx() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(w, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::wy() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(w, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::wz() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(w, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::xyz() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(x, y, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::xyw() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(x, y, w);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::xzy() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(x, z, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::xzw() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(x, z, w);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::xwy() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(x, w, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::xwz() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(x, w, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::yxz() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(y, x, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::yxw() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(y, x, w);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::yzx() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(y, z, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::yzw() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(y, z, w);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::ywx() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(y, w, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::ywz() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(y, w, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::zxy() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(z, x, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::zxw() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(z, x, w);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::zyx() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(z, y, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::zyw() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(z, y, w);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::zwx() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(z, w, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::zwy() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(z, w, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::wxy() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(w, x, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::wxz() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(w, x, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::wyx() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(w, y, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::wyz() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(w, y, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::wzx() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(w, z, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::wzy() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(w, z, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::xyzw() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(x, y, z, w);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::xywz() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(x, y, w, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::xzyw() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(x, z, y, w);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::xzwy() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(x, z, w, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::xwyz() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(x, w, y, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::xwzy() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(x, w, z, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::yxzw() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(y, x, z, w);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::yxwz() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(y, x, w, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::yzxw() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(y, z, x, w);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::yzwx() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(y, z, w, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::ywxz() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(y, w, x, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::ywzx() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(y, w, z, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::zxyw() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(z, x, y, w);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::zxwy() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(z, x, w, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::zyxw() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(z, y, x, w);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::zywx() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(z, y, w, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::zwxy() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(z, w, x, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::zwyx() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(z, w, y, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::wxyz() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(w, x, y, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::wxzy() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(w, x, z, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::wyxz() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(w, y, x, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::wyzx() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(w, y, z, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::wzxy() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(w, z, x, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec4i::wzyx() const
+{
+    static_assert(std::is_same<Vec, GfVec4i>::value);
+    return Vec(w, z, y, x);
+}
 
 
 /// Returns component-wise multiplication of vectors \p v1 and \p v2.
 inline GfVec4i
 GfCompMult(GfVec4i const &v1, GfVec4i const &v2) {
     return GfVec4i(
-        v1[0] * v2[0],
-        v1[1] * v2[1],
-        v1[2] * v2[2],
-        v1[3] * v2[3]
+        v1.x * v2.x,
+        v1.y * v2.y,
+        v1.z * v2.z,
+        v1.w * v2.w
         );
 }
 
@@ -262,10 +915,10 @@ GfCompMult(GfVec4i const &v1, GfVec4i const &v2) {
 inline GfVec4i
 GfCompDiv(GfVec4i const &v1, GfVec4i const &v2) {
     return GfVec4i(
-        v1[0] / v2[0],
-        v1[1] / v2[1],
-        v1[2] / v2[2],
-        v1[3] / v2[3]
+        v1.x / v2.x,
+        v1.y / v2.y,
+        v1.z / v2.z,
+        v1.w / v2.w
         );
 }
 

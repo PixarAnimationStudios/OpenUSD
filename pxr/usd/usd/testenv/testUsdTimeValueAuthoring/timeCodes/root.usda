@@ -6,9 +6,13 @@
     customLayerData = {
         timecode timeCode = 10.0
         timecode[] timeCodeArray = [10.0, 20.0]
+        duration durationVal = 10.0
+        duration[] durationArray = [10.0, 20.0]
         dictionary subDict = {
             timecode timeCode = 10.0
             timecode[] timeCodeArray = [10.0, 20.0]
-        }    
+            duration durationVal = 10.0
+            duration[] durationArray = [10.0, 20.0]
+        }
     }
 )

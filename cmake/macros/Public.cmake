@@ -544,7 +544,11 @@ function (pxr_create_test_module MODULE_NAME)
     endif()
 endfunction() # pxr_create_test_module
 
-function(pxr_build_test_shared_lib LIBRARY_NAME)
+# Builds a test-only shared library that does not provide public headers, and
+# therefore symbols must be loaded from the library by a plugin mechanism
+# (e.g. TfType). These plugins can provide a plugInfo.json file to register
+# their contents.
+function(pxr_build_test_plugin LIBRARY_NAME)
     if (NOT PXR_BUILD_TESTS)
         return()
     endif()
@@ -576,9 +580,10 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
     )
 
     # Find libraries under the install prefix, which has the core USD
-    # libraries.
+    # libraries. Also find test-only libraries under the install prefix.
     _pxr_init_rpath(rpath "tests/lib")
     _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/tests/lib")
     _pxr_install_rpath(rpath ${LIBRARY_NAME})
 
     if (NOT bt_SOURCE_DIR)
@@ -625,7 +630,87 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
         ARCHIVE DESTINATION "tests/lib"
         RUNTIME DESTINATION "tests/lib"
     )
-endfunction() # pxr_build_test_shared_lib
+endfunction() # pxr_build_test_plugin
+
+# Builds a test-only library that can be be directly linked to unit-test
+# executables. Those executables can consume public headers from the test-only
+# library.
+function(pxr_build_test_library LIBRARY_NAME)
+    set(multiValueArgs
+        LIBRARIES
+        CPPFILES
+        PUBLIC_HEADERS
+        PRIVATE_HEADERS
+        PUBLIC_CLASSES
+        PRIVATE_CLASSES)
+    cmake_parse_arguments(args
+        "${options}"
+        "${oneValueArgs}"
+        "${multiValueArgs}"
+        ${ARGN}
+    )
+
+    # Get list of cpp files
+    set(cppFiles ${args_CPPFILES})
+    foreach(className IN LISTS args_PUBLIC_CLASSES args_PRIVATE_CLASSES)
+        list(APPEND cppFiles ${className}.cpp)
+    endforeach()
+
+    add_library(${LIBRARY_NAME}
+        SHARED
+        ${cppFiles}
+    )
+
+    _pxr_target_link_libraries(${LIBRARY_NAME}
+        ${args_LIBRARIES}
+    )
+
+    _get_folder("tests/lib" folder)
+    set_target_properties(${LIBRARY_NAME}
+        PROPERTIES 
+            FOLDER "${folder}"
+    )
+
+    # Add include paths available to all libraries.
+    target_include_directories(${LIBRARY_NAME}
+        PRIVATE
+            "${PROJECT_BINARY_DIR}/include"
+            "${PROJECT_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include"
+    )
+
+    # Copy all public and private headers to the build directory. This is also
+    # the case for core libraries. Clients linking to an installed tree should
+    # not find test-only headers, so the public headers are not installed.
+    set(headers ${args_PUBLIC_HEADERS} ${args_PRIVATE_HEADERS})
+    foreach(className IN LISTS args_PUBLIC_CLASSES args_PRIVATE_CLASSES)
+        list(APPEND headers ${className}.h)
+    endforeach()
+    _copy_headers(${LIBRARY_NAME}
+        FILES ${headers}
+        PREFIX ${PXR_PREFIX}
+    )
+
+    # Define macros for api.h
+    string(TOUPPER ${LIBRARY_NAME} uppercaseName)
+    target_compile_definitions(${LIBRARY_NAME}
+        PRIVATE ${uppercaseName}_EXPORTS=1
+    )
+
+    # Find libraries under the install prefix, which has the core USD
+    # libraries. Also find test-only libraries under the install prefix.
+    _pxr_init_rpath(rpath "tests/lib")
+    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/tests/lib")
+    _pxr_install_rpath(rpath ${LIBRARY_NAME})
+
+    # XXX -- We shouldn't have to install to run tests.
+    install(
+        TARGETS ${LIBRARY_NAME}
+        LIBRARY DESTINATION "tests/lib"
+        ARCHIVE DESTINATION "tests/lib"
+        RUNTIME DESTINATION "tests/lib"
+    )
+endfunction() # pxr_build_test_library
 
 function(pxr_build_test TEST_NAME)
     if (NOT PXR_BUILD_TESTS)
@@ -664,9 +749,10 @@ function(pxr_build_test TEST_NAME)
     )
 
     # Find libraries under the install prefix, which has the core USD
-    # libraries.
+    # libraries. Also find test-only libraries under the install prefix.
     _pxr_init_rpath(rpath "tests")
     _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/tests/lib")
     _pxr_install_rpath(rpath ${TEST_NAME})
 
     # XXX -- We shouldn't have to install to run tests.
@@ -980,6 +1066,19 @@ function(pxr_register_test TEST_NAME)
     # Set this first, so that env vars passed to pxr_register_test can turn off
     # TF_FATAL_VERIFY where desired.
     set(testWrapperCmd ${testWrapperCmd} --env-var=TF_FATAL_VERIFY=1)
+
+    # If building on Windows, the tests need to add directories containing DLLs
+    # to the PATH. This includes directories for core libraries, plugins, and
+    # test-only libraries. On non-Windows platforms, this is handled by the
+    # RPATH embedded in the test executable. Note this is a best-effort to add
+    # the appropriate DLL paths, but the user may still be responsible for
+    # modifying the PATH to find 3rd party DLLs from outside the tree.
+    if (WIN32)
+        set(testWrapperCmd ${testWrapperCmd}
+            "--pre-path=${CMAKE_INSTALL_PREFIX}/lib"
+            "--pre-path=${CMAKE_INSTALL_PREFIX}/plugin/usd"
+            "--pre-path=${CMAKE_INSTALL_PREFIX}/tests/lib")
+    endif()
 
     # Allow env vars to be set via a global variable to make it easier
     # to affect a set of tests (e.g., all tests in a library). Set

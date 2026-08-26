@@ -34,6 +34,7 @@ class SdfPath;
 class SdfPayload;
 class SdfReference;
 class Sdf_ValueTypeRegistry;
+class VtValueRef;
 
 TF_DECLARE_WEAK_PTRS(PlugPlugin);
 
@@ -74,37 +75,10 @@ public:
         /// the registered validator or if no validator has been set.
         /// @{
         
-        template <class T>
-        SdfAllowed IsValidValue(const T& value) const
-        {
-            return (_valueValidator ? 
-                    _valueValidator(_schema, VtValue(value)) : 
-                    SdfAllowed(true));
-        }
-
-        template <class T>
-        SdfAllowed IsValidListValue(const T& value) const
-        {
-            return (_listValueValidator ? 
-                    _listValueValidator(_schema, VtValue(value)) : 
-                    SdfAllowed(true));
-        }
-
-        template <class T>
-        SdfAllowed IsValidMapKey(const T& value) const
-        {
-            return (_mapKeyValidator ? 
-                    _mapKeyValidator(_schema, VtValue(value)) : 
-                    SdfAllowed(true));
-        }
-
-        template <class T>
-        SdfAllowed IsValidMapValue(const T& value) const
-        {
-            return (_mapValueValidator ? 
-                    _mapValueValidator(_schema, VtValue(value)) : 
-                    SdfAllowed(true));
-        }
+        SDF_API SdfAllowed IsValidValue(const VtValueRef& value) const;
+        SDF_API SdfAllowed IsValidListValue(const VtValueRef& value) const;
+        SDF_API SdfAllowed IsValidMapKey(const VtValueRef& value) const;
+        SDF_API SdfAllowed IsValidMapValue(const VtValueRef& value) const;
 
         /// @}
 
@@ -119,7 +93,7 @@ public:
         FieldDefinition& AddInfo(const TfToken& tok, const JsValue& val);
 
         using Validator =
-            SdfAllowed (*) (const SdfSchemaBase&, const VtValue&);
+            SdfAllowed (*) (const SdfSchemaBase&, const VtValueRef&);
         FieldDefinition& ValueValidator(Validator v);
         FieldDefinition& ListValueValidator(Validator v);
         FieldDefinition& MapKeyValidator(Validator v);

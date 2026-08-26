@@ -2607,6 +2607,218 @@ class TestUsdNamespaceEditorTargetPathFixup(unittest.TestCase):
             stage.GetAttributeAtPath("/Root/Moved_C.c_attr").GetConnections(),
             ["/Root/Moved_B.b_attr"])
 
+    def test_LocalVariant(self):
+        def _VerifyAndApplyEdits(editor):
+            result = editor.CanApplyEdits()
+            self.assertTrue(result)
+            self.assertTrue(len(result.warnings) == 0)
+            self.assertTrue(editor.ApplyEdits())
+
+        # Test path expression fixup within a local variant
+        varLayer = Sdf.Layer.CreateAnonymous()
+        varLayerImportString = '''#usda 1.0
+        def "Root"
+        {
+            def "A" (
+                variantSets = ["v"]
+            )
+            {
+                variantSet "v" = {
+                    "x" {
+                        custom int conn
+                        prepend int conn.connect = [</Root/B.attr>]  
+
+                        custom rel rel
+                        prepend rel rel = [</Root/B>, </Root/B.attr>]
+                    }
+                }
+            }
+
+            def "B" ()
+            {
+                custom int attr
+            }
+        }'''
+
+        varLayer.ImportFromString(varLayerImportString)
+
+        # The session layer sets the variant selection for varLayer
+        sessionLayer  = Sdf.Layer.CreateAnonymous("session.usda")
+        sessionLayer.ImportFromString('''#usda 1.0
+            over "Root" () {
+                over "A" ( 
+                    variants = { string v = "x" }
+                ) { }
+            }
+        ''')
+
+        varStage = Usd.Stage.Open(varLayer, sessionLayer)
+        editor = Usd.NamespaceEditor(varStage)
+
+        # Property rename
+        editor.MovePropertyAtPath("/Root/B.attr", "/Root/B.renamed")
+        _VerifyAndApplyEdits(editor)
+        self.assertEqual(
+            varStage.GetAttributeAtPath('/Root/A.conn').GetConnections(),
+            ['/Root/B.renamed'])
+        self.assertEqual(
+            varStage.GetRelationshipAtPath('/Root/A.rel').GetTargets(),
+            ['/Root/B', '/Root/B.renamed'])
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.conn').GetInfo(
+                Sdf.AttributeSpec.ConnectionPathsKey),
+            Sdf.PathListOp.Create(prependedItems = ['/Root/B.renamed']))
+        self.assertEqual(
+            varLayer.GetRelationshipAtPath('/Root/A{v=x}.rel').GetInfo(
+                Sdf.RelationshipSpec.TargetsKey),
+            Sdf.PathListOp.Create(prependedItems = ['/Root/B', '/Root/B.renamed']))
+
+        # Prim rename
+        editor.MovePrimAtPath("/Root/B", "/Root/Renamed")
+        _VerifyAndApplyEdits(editor)
+        self.assertEqual(
+            varStage.GetAttributeAtPath('/Root/A.conn').GetConnections(),
+            ['/Root/Renamed.renamed'])
+        self.assertEqual(
+            varStage.GetRelationshipAtPath('/Root/A.rel').GetTargets(),
+            ['/Root/Renamed', '/Root/Renamed.renamed'])
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.conn').GetInfo(
+                Sdf.AttributeSpec.ConnectionPathsKey),
+            Sdf.PathListOp.Create(prependedItems = ['/Root/Renamed.renamed']))
+        self.assertEqual(
+            varLayer.GetRelationshipAtPath('/Root/A{v=x}.rel').GetInfo(
+                Sdf.RelationshipSpec.TargetsKey),
+            Sdf.PathListOp.Create(prependedItems = ['/Root/Renamed', '/Root/Renamed.renamed']))
+
+         # Property reparent
+        editor.MovePropertyAtPath("/Root/Renamed.renamed", "/Root.moved")
+        _VerifyAndApplyEdits(editor)
+        self.assertEqual(
+            varStage.GetAttributeAtPath('/Root/A.conn').GetConnections(),
+            ['/Root.moved'])
+        self.assertEqual(
+            varStage.GetRelationshipAtPath('/Root/A.rel').GetTargets(),
+            ['/Root/Renamed', '/Root.moved'])
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.conn').GetInfo(
+                Sdf.AttributeSpec.ConnectionPathsKey),
+            Sdf.PathListOp.Create(prependedItems = ['/Root.moved']))
+        self.assertEqual(
+            varLayer.GetRelationshipAtPath('/Root/A{v=x}.rel').GetInfo(
+                Sdf.RelationshipSpec.TargetsKey),
+            Sdf.PathListOp.Create(prependedItems = ['/Root/Renamed', '/Root.moved']))
+
+        # Prim reparent
+        editor.MovePrimAtPath("/Root/Renamed", "/Moved")
+        _VerifyAndApplyEdits(editor)
+        self.assertEqual(
+            varStage.GetAttributeAtPath('/Root/A.conn').GetConnections(),
+            ['/Root.moved'])
+        self.assertEqual(
+            varStage.GetRelationshipAtPath('/Root/A.rel').GetTargets(),
+            ['/Moved', '/Root.moved'])
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.conn').GetInfo(
+                Sdf.AttributeSpec.ConnectionPathsKey),
+            Sdf.PathListOp.Create(prependedItems = ['/Root.moved']))
+        self.assertEqual(
+            varLayer.GetRelationshipAtPath('/Root/A{v=x}.rel').GetInfo(
+                Sdf.RelationshipSpec.TargetsKey),
+            Sdf.PathListOp.Create(prependedItems = ['/Moved', '/Root.moved']))
+
+        # Property delete
+        editor.DeletePropertyAtPath("/Root.moved")
+        _VerifyAndApplyEdits(editor)
+        self.assertEqual(
+            varStage.GetAttributeAtPath('/Root/A.conn').GetConnections(),
+            [])
+        self.assertEqual(
+            varStage.GetRelationshipAtPath('/Root/A.rel').GetTargets(),
+            ['/Moved'])
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.conn').GetInfo(
+                Sdf.AttributeSpec.ConnectionPathsKey),
+            Sdf.PathListOp.Create())
+        self.assertEqual(
+            varLayer.GetRelationshipAtPath('/Root/A{v=x}.rel').GetInfo(
+                Sdf.RelationshipSpec.TargetsKey),
+            Sdf.PathListOp.Create(prependedItems = ['/Moved']))
+        
+        # Prim delete
+        editor.DeletePrimAtPath("/Moved")
+        _VerifyAndApplyEdits(editor)
+        self.assertEqual(
+            varStage.GetAttributeAtPath('/Root/A.conn').GetConnections(),
+            [])
+        self.assertEqual(
+            varStage.GetRelationshipAtPath('/Root/A.rel').GetTargets(),
+            [])
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.conn').GetInfo(
+                Sdf.AttributeSpec.ConnectionPathsKey),
+            Sdf.PathListOp.Create())
+        self.assertEqual(
+            varLayer.GetRelationshipAtPath('/Root/A{v=x}.rel').GetInfo(
+                Sdf.RelationshipSpec.TargetsKey),
+            Sdf.PathListOp.Create())
+
+        # Reset varLayer for the next test case and then mute varStage's 
+        # session layer. This will remove the variant selection so that we can 
+        # test the effects of namespace edits on variants that are not selected.
+        with Sdf.ChangeBlock():
+            varLayer.ImportFromString(varLayerImportString)
+        varStage.MuteLayer(sessionLayer.identifier)
+
+        # Verify the conns/rels have returned to their original value, but
+        # no longer compose onto the stage.
+        self.assertFalse(varStage.GetAttributeAtPath('/Root/A.conn'))
+        self.assertFalse(varStage.GetRelationshipAtPath('/Root/A.rel'))
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.conn').GetInfo(
+                Sdf.AttributeSpec.ConnectionPathsKey),
+            Sdf.PathListOp.Create(prependedItems = ['/Root/B.attr']))
+        self.assertEqual(
+            varLayer.GetRelationshipAtPath('/Root/A{v=x}.rel').GetInfo(
+                Sdf.RelationshipSpec.TargetsKey),
+            Sdf.PathListOp.Create(prependedItems = ['/Root/B', '/Root/B.attr']))
+
+        # Do a rename
+        editor.MovePrimAtPath("/Root/B", "/Root/Renamed")
+        _VerifyAndApplyEdits(editor)
+
+        # Verify that the conn and rel were not updated.
+        self.assertFalse(varStage.GetAttributeAtPath('/Root/A.conn'))
+        self.assertFalse(varStage.GetRelationshipAtPath('/Root/A.rel'))
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.conn').GetInfo(
+                Sdf.AttributeSpec.ConnectionPathsKey),
+            Sdf.PathListOp.Create(prependedItems = ['/Root/B.attr']))
+        self.assertEqual(
+            varLayer.GetRelationshipAtPath('/Root/A{v=x}.rel').GetInfo(
+                Sdf.RelationshipSpec.TargetsKey),
+            Sdf.PathListOp.Create(prependedItems = ['/Root/B', '/Root/B.attr']))
+
+        # Unmute the session layer to restore the variant selection.
+        varStage.UnmuteLayer(sessionLayer.identifier)
+
+        # Verify that the conn and rel are still unchanged on both the layer 
+        # and the stage.
+        self.assertEqual(
+            varStage.GetAttributeAtPath('/Root/A.conn').GetConnections(),
+            ['/Root/B.attr'])
+        self.assertEqual(
+            varStage.GetRelationshipAtPath('/Root/A.rel').GetTargets(),
+            ['/Root/B', '/Root/B.attr'])
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.conn').GetInfo(
+                Sdf.AttributeSpec.ConnectionPathsKey),
+            Sdf.PathListOp.Create(prependedItems = ['/Root/B.attr']))
+        self.assertEqual(
+            varLayer.GetRelationshipAtPath('/Root/A{v=x}.rel').GetInfo(
+                Sdf.RelationshipSpec.TargetsKey),
+            Sdf.PathListOp.Create(prependedItems = ['/Root/B', '/Root/B.attr']))
+        
     def test_NonDefaultPrims(self):
         # The goal of this test is to verify that relationships and attribute 
         # connections located on prims that are abstract, undefined, unloaded, 

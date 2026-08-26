@@ -3418,7 +3418,7 @@ spline for all times after the clip set.
     #usda 1.0
     (
         startTimeCode = -50
-        endTimeCode = 150
+        endTimeCode = 80
     )
 
     def "PrimA" (

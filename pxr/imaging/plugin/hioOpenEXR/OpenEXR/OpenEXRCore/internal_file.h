@@ -19,22 +19,27 @@
      EXR_MULTI_PART_FLAG)
 
 /* in openexr_parse_header.c, just checks the magic number and header */
-EXR_INTERNAL exr_result_t internal_exr_check_magic (struct _internal_exr_context* ctxt);
+exr_result_t internal_exr_check_magic (exr_context_t ctxt);
 /* in openexr_parse_header.c, reads the header and populates the file structure */
-EXR_INTERNAL exr_result_t internal_exr_parse_header (struct _internal_exr_context* ctxt);
-EXR_INTERNAL exr_result_t internal_exr_compute_tile_information (
-    struct _internal_exr_context* ctxt,
-    struct _internal_exr_part*    curpart,
-    int                           rebuild);
-EXR_INTERNAL int32_t
-internal_exr_compute_chunk_offset_size (struct _internal_exr_part* curpart);
+exr_result_t internal_exr_parse_header (exr_context_t ctxt);
+exr_result_t internal_exr_compute_tile_information (
+    exr_context_t ctxt, exr_priv_part_t curpart, int rebuild);
+int32_t internal_exr_compute_chunk_offset_size (exr_priv_part_t curpart);
 
-EXR_INTERNAL exr_result_t internal_exr_write_header (struct _internal_exr_context* ctxt);
+exr_result_t internal_exr_calc_header_version_flags (exr_const_context_t ctxt, uint32_t *flags);
+exr_result_t internal_exr_write_header (exr_context_t ctxt);
 
 /* in openexr_validate.c, functions to validate the header during read / pre-write */
-EXR_INTERNAL exr_result_t internal_exr_validate_read_part (
-    struct _internal_exr_context* ctxt, struct _internal_exr_part* curpart);
-EXR_INTERNAL exr_result_t internal_exr_validate_write_part (
-    struct _internal_exr_context* ctxt, struct _internal_exr_part* curpart);
+exr_result_t
+internal_exr_validate_read_part (exr_context_t ctxt, exr_priv_part_t curpart);
+exr_result_t
+internal_exr_validate_shared_attrs (exr_context_t ctxt,
+                                    exr_priv_part_t basepart,
+                                    exr_priv_part_t curpart,
+                                    int curpartidx,
+                                    const char **mismatchattr,
+                                    int *mismatchcount);
+exr_result_t
+internal_exr_validate_write_part (exr_context_t ctxt, exr_priv_part_t curpart);
 
 #endif /* OPENEXR_PRIVATE_FILE_UTIL_H */

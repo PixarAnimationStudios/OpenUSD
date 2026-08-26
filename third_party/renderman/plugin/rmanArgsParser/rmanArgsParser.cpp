@@ -113,6 +113,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((tagAttr, "tag"))
     ((vstructmemberAttr, "vstructmember"))
     ((sdrDefinitionNameAttr, "sdrDefinitionName"))
+    ((sdrDefinitionArrayIndexAttr, "sdrDefinitionArrayIndex"))
     ((sdrUsdDefaultAttr, "sdrUsdDefault"))
 );
 
@@ -291,15 +292,17 @@ static TfToken
 _GetSdrContextFromShaderType(const TfToken &shaderType)
 {
     static const std::unordered_map<TfToken, TfToken, TfHash> contextMapping({
+#if PXR_VERSION >= 2308
         { TfToken("displayfilter"), SdrNodeContext->DisplayFilter },
+#endif
+#if PXR_VERSION >= 2608
         { TfToken("energyfilter"), SdrNodeContext->EnergyFilter },
+#endif
         { TfToken("lightfilter"), SdrNodeContext->LightFilter },
         { TfToken("pixelfilter"), SdrNodeContext->PixelFilter },
         { TfToken("samplefilter"), SdrNodeContext->SampleFilter },
-#if USD_RI_PXR_IMAGING_API_VERSION >= 3
+#if PXR_VERSION >= 2608
         { TfToken("volumefilter"), SdrNodeContext->VolumeFilter }
-#else
-        { TfToken("volumefilter"), TfToken("volumeFilter") }
 #endif
     });
 
@@ -319,15 +322,9 @@ _CollectMetadata(
     SdrShaderNodeMetadata metadataObject = legacyMetadata;
 
     if (!shaderRepresentation.departments.empty()) {
-        metadataObject.SetDepartments(SdrTokenVec(
-            shaderRepresentation.departments.begin(),
-            shaderRepresentation.departments.end()));
-    }
-
-    if (!shaderRepresentation.pages.empty()) {
-        metadataObject.SetPages(SdrTokenVec(
-            shaderRepresentation.pages.begin(),
-            shaderRepresentation.pages.end()));
+        metadataObject.SetItem(TfToken(departmentsStr),
+            SdrTokenVec(shaderRepresentation.departments.begin(),
+                        shaderRepresentation.departments.end()));
     }
 
     if (!shaderRepresentation.openPages.empty()) {
@@ -1196,9 +1193,20 @@ _CreateProperty(
     if (attributes.count(_xmlAttributeNames->sdrDefinitionNameAttr)) {
         TfToken definitionName =
             TfToken(attributes.at(_xmlAttributeNames->sdrDefinitionNameAttr));
-        
+
         attributes[SdrPropertyMetadata->ImplementationName] = propName;
-        propName = definitionName;
+
+        // Handle sdrDefinitionArrayIndex to support mapping from array elements
+        // to individual parameters (e.g., roughness[0] -> roughnessU)
+        if (attributes.count(_xmlAttributeNames->sdrDefinitionArrayIndexAttr)) {
+            std::string arrayIndexStr =
+                attributes.at(_xmlAttributeNames->sdrDefinitionArrayIndexAttr);
+            // Append array index notation to the definition name
+            propName = TfToken(definitionName.GetString() + "[" + arrayIndexStr + "]");
+            attributes.erase(_xmlAttributeNames->sdrDefinitionArrayIndexAttr);
+        } else {
+            propName = definitionName;
+        }
         attributes.erase(_xmlAttributeNames->sdrDefinitionNameAttr);
     } else if (!shaderRep.sdrDefinitionNameFallbackPrefix.IsEmpty()) {
         // Args files author should have placed such sdr node metadata before

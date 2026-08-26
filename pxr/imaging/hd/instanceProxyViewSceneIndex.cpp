@@ -594,7 +594,7 @@ HdInstanceProxyViewSceneIndex::GetPrim(
 
             return {
                 primInPrototype.primType,
-                HdOverlayContainerDataSource::OverlayedContainerDataSources(
+                HdCreateOverlayContainerDataSource(
                     primInPrototype.dataSource,
                     _BuildInstanceProxyDataSource(*optCtx))
             };

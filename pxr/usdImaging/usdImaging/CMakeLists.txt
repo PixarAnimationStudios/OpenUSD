@@ -72,6 +72,7 @@ pxr_library(usdImaging
         resolvedAttributeCache
         instancerContext
         stageSceneIndex
+        stageSceneIndexInterface
         selectionSceneIndex
         tokens
         apiSchemaAdapter

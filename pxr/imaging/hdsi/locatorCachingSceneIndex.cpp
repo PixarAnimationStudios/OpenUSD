@@ -8,6 +8,7 @@
 
 #include "pxr/imaging/hd/containerDataSourceEditor.h"
 #include "pxr/imaging/hd/dependencyForwardingSceneIndex.h"
+#include "pxr/imaging/hd/systemMessages.h"
 #include "pxr/imaging/hf/perfLog.h"
 #include "pxr/base/tf/denseHashMap.h"
 #include "pxr/base/tf/envSetting.h"
@@ -260,6 +261,17 @@ HdsiLocatorCachingSceneIndex::_PrimsDirtied(
     }
 
     _SendPrimsDirtied(entries);
+}
+
+void
+HdsiLocatorCachingSceneIndex::_SystemMessage(
+    const TfToken& messageType,
+    const HdDataSourceBaseHandle& args)
+{
+    if (messageType == HdSystemMessageTokens->dropCaches) {
+        std::lock_guard<std::mutex> lock(_cacheMutex);
+        TfReset(_primDsCache);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

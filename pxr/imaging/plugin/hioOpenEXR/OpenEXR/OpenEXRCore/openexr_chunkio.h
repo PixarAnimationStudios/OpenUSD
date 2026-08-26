@@ -16,6 +16,11 @@ extern "C" {
 
 /** @file */
 
+/** @brief Retrieve the chunk table offset for the part in question.
+ */
+EXR_EXPORT exr_result_t exr_get_chunk_table_offset (
+    exr_const_context_t ctxt, int part_index, uint64_t* chunk_offset_out);
+
 /**
  * Struct describing raw data information about a chunk.
  *
@@ -47,6 +52,25 @@ typedef struct
     uint64_t sample_count_data_offset;
     uint64_t sample_count_table_size;
 } exr_chunk_info_t;
+
+/**************************************/
+
+/** initialize chunk info with the default values from the specified part
+ *
+ * The 'x' and 'y' parameters are used to indicate the starting position
+ * of the chunk being initialized. This does not perform any I/O to validate
+ * and so the values are only indicative. (but can be used to do things
+ * like compress / decompress a chunk without having a file to actually
+ * read
+ */
+EXR_EXPORT
+exr_result_t exr_chunk_default_initialize (
+    exr_context_t ctxt, int part_index,
+    const exr_attr_box2i_t *box,
+    int levelx, int levely,
+    exr_chunk_info_t* cinfo);
+
+/**************************************/
 
 EXR_EXPORT
 exr_result_t exr_read_scanline_chunk_info (

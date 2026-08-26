@@ -5,6 +5,8 @@
 
 #include "openexr_decode.h"
 
+#include "openexr_compression.h"
+
 #include "internal_coding.h"
 #include "internal_decompress.h"
 #include "internal_structs.h"
@@ -24,12 +26,14 @@ update_pack_unpack_ptrs (exr_decode_pipeline_t* decode)
     if (stortype == EXR_STORAGE_DEEP_SCANLINE ||
         stortype == EXR_STORAGE_DEEP_TILED)
     {
-        size_t sampsize =
-            (((size_t) decode->chunk.width) * ((size_t) decode->chunk.height));
+        uint64_t sampsize64 =
+            ((uint64_t) decode->chunk.width) * ((uint64_t) decode->chunk.height);
 
         if ((decode->decode_flags & EXR_DECODE_SAMPLE_COUNTS_AS_INDIVIDUAL))
-            sampsize += 1;
-        sampsize *= sizeof (int32_t);
+            sampsize64 += 1;
+        sampsize64 *= sizeof (int32_t);
+        if (sampsize64 != (size_t) sampsize64) return EXR_ERR_OUT_OF_MEMORY;
+        size_t sampsize = (size_t) sampsize64;
 
         if (decode->chunk.sample_count_table_size == sampsize)
         {
@@ -70,12 +74,14 @@ update_pack_unpack_ptrs (exr_decode_pipeline_t* decode)
     }
     else
     {
+        if (decode->chunk.unpacked_size != (size_t) decode->chunk.unpacked_size)
+            return EXR_ERR_OUT_OF_MEMORY;
         rv = internal_decode_alloc_buffer (
             decode,
             EXR_TRANSCODE_BUFFER_UNPACKED,
             &(decode->unpacked_buffer),
             &(decode->unpacked_alloc_size),
-            decode->chunk.unpacked_size);
+            (size_t) decode->chunk.unpacked_size);
     }
 
     return rv;
@@ -84,12 +90,21 @@ update_pack_unpack_ptrs (exr_decode_pipeline_t* decode)
 static exr_result_t
 read_uncompressed_direct (exr_decode_pipeline_t* decode)
 {
-    exr_result_t rv;
-    int          height, start_y;
-    uint64_t     dataoffset, toread;
-    uint8_t*     cdata;
-    EXR_PROMOTE_READ_CONST_CONTEXT_OR_ERROR_NO_PART (
-        decode->context, decode->part_index);
+    exr_result_t        rv;
+    int                 height, start_y;
+    uint64_t            dataoffset, toread;
+    uint8_t*            cdata;
+    exr_const_context_t ctxt = decode->context;
+
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
+    if (ctxt->mode != EXR_CONTEXT_READ)
+        return ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_READ);
+    if (decode->part_index < 0 || decode->part_index >= ctxt->num_parts)
+        return ctxt->print_error (
+            ctxt,
+            EXR_ERR_ARGUMENT_OUT_OF_RANGE,
+            "Part index (%d) out of range",
+            decode->part_index);
 
     dataoffset = decode->chunk.data_offset;
 
@@ -117,8 +132,8 @@ read_uncompressed_direct (exr_decode_pipeline_t* decode)
             else { cdata += (uint64_t) y * (uint64_t) decc->user_line_stride; }
 
             /* actual read into the output pointer */
-            rv = pctxt->do_read (
-                pctxt, cdata, toread, &dataoffset, NULL, EXR_MUST_READ_ALL);
+            rv = ctxt->do_read (
+                ctxt, cdata, toread, &dataoffset, NULL, EXR_MUST_READ_ALL);
             if (rv != EXR_ERR_SUCCESS) return rv;
 
             // need to swab them to native
@@ -135,16 +150,17 @@ read_uncompressed_direct (exr_decode_pipeline_t* decode)
 static exr_result_t
 default_read_chunk (exr_decode_pipeline_t* decode)
 {
-    exr_result_t rv;
-    EXR_PROMOTE_READ_CONST_CONTEXT_AND_PART_OR_ERROR (
-        decode->context, decode->part_index);
+    exr_result_t        rv;
+    exr_const_context_t ctxt = decode->context;
+    EXR_READONLY_AND_DEFINE_PART (decode->part_index);
 
     if (decode->unpacked_buffer == decode->packed_buffer &&
         decode->unpacked_alloc_size == 0)
         decode->unpacked_buffer = NULL;
 
-    if (part->storage_mode == EXR_STORAGE_DEEP_SCANLINE ||
-        part->storage_mode == EXR_STORAGE_DEEP_TILED)
+    if ((part->storage_mode == EXR_STORAGE_DEEP_SCANLINE ||
+         part->storage_mode == EXR_STORAGE_DEEP_TILED) &&
+        decode->chunk.sample_count_table_size > 0)
     {
         rv = internal_decode_alloc_buffer (
             decode,
@@ -157,7 +173,7 @@ default_read_chunk (exr_decode_pipeline_t* decode)
         if ((decode->decode_flags & EXR_DECODE_SAMPLE_DATA_ONLY))
         {
             rv = exr_read_deep_chunk (
-                decode->context,
+                ctxt,
                 decode->part_index,
                 &(decode->chunk),
                 NULL,
@@ -174,14 +190,14 @@ default_read_chunk (exr_decode_pipeline_t* decode)
             if (rv != EXR_ERR_SUCCESS) return rv;
 
             rv = exr_read_deep_chunk (
-                decode->context,
+                ctxt,
                 decode->part_index,
                 &(decode->chunk),
                 decode->packed_buffer,
                 decode->packed_sample_count_table);
         }
     }
-    else
+    else if (decode->chunk.packed_size > 0)
     {
         rv = internal_decode_alloc_buffer (
             decode,
@@ -191,158 +207,20 @@ default_read_chunk (exr_decode_pipeline_t* decode)
             decode->chunk.packed_size);
         if (rv != EXR_ERR_SUCCESS) return rv;
         rv = exr_read_chunk (
-            decode->context,
-            decode->part_index,
-            &(decode->chunk),
-            decode->packed_buffer);
+            ctxt, decode->part_index, &(decode->chunk), decode->packed_buffer);
     }
+    else
+        rv = EXR_ERR_SUCCESS;
 
     return rv;
 }
 
 static exr_result_t
-decompress_data (
-    const struct _internal_exr_context* pctxt,
-    const exr_compression_t             ctype,
-    exr_decode_pipeline_t*              decode,
-    void*                               packbufptr,
-    size_t                              packsz,
-    void*                               unpackbufptr,
-    size_t                              unpacksz)
-{
-    exr_result_t rv;
-
-    if (packsz == 0) return EXR_ERR_SUCCESS;
-
-    if (packsz == unpacksz && ctype != EXR_COMPRESSION_B44 &&
-        ctype != EXR_COMPRESSION_B44A)
-    {
-        if (unpackbufptr != packbufptr)
-            memcpy (unpackbufptr, packbufptr, unpacksz);
-        return EXR_ERR_SUCCESS;
-    }
-
-    switch (ctype)
-    {
-        case EXR_COMPRESSION_NONE:
-            return pctxt->report_error (
-                pctxt,
-                EXR_ERR_INVALID_ARGUMENT,
-                "no compression set but still trying to decompress");
-
-        case EXR_COMPRESSION_RLE:
-            rv = internal_exr_undo_rle (
-                decode, packbufptr, packsz, unpackbufptr, unpacksz);
-            break;
-        case EXR_COMPRESSION_ZIP:
-        case EXR_COMPRESSION_ZIPS:
-            rv = internal_exr_undo_zip (
-                decode, packbufptr, packsz, unpackbufptr, unpacksz);
-            break;
-        case EXR_COMPRESSION_PIZ:
-            rv = internal_exr_undo_piz (
-                decode, packbufptr, packsz, unpackbufptr, unpacksz);
-            break;
-        case EXR_COMPRESSION_PXR24:
-            rv = internal_exr_undo_pxr24 (
-                decode, packbufptr, packsz, unpackbufptr, unpacksz);
-            break;
-        case EXR_COMPRESSION_B44:
-            rv = internal_exr_undo_b44 (
-                decode, packbufptr, packsz, unpackbufptr, unpacksz);
-            break;
-        case EXR_COMPRESSION_B44A:
-            rv = internal_exr_undo_b44a (
-                decode, packbufptr, packsz, unpackbufptr, unpacksz);
-            break;
-        case EXR_COMPRESSION_DWAA:
-            rv = internal_exr_undo_dwaa (
-                decode, packbufptr, packsz, unpackbufptr, unpacksz);
-            break;
-        case EXR_COMPRESSION_DWAB:
-            rv = internal_exr_undo_dwab (
-                decode, packbufptr, packsz, unpackbufptr, unpacksz);
-            break;
-        case EXR_COMPRESSION_LAST_TYPE:
-        default:
-            return pctxt->print_error (
-                pctxt,
-                EXR_ERR_INVALID_ARGUMENT,
-                "Compression technique 0x%02X invalid",
-                ctype);
-    }
-
-    return rv;
-}
-
-static exr_result_t
-default_decompress_chunk (exr_decode_pipeline_t* decode)
-{
-    exr_result_t rv = EXR_ERR_SUCCESS;
-    EXR_PROMOTE_READ_CONST_CONTEXT_AND_PART_OR_ERROR (
-        decode->context, decode->part_index);
-
-    if (part->storage_mode == EXR_STORAGE_DEEP_SCANLINE ||
-        part->storage_mode == EXR_STORAGE_DEEP_TILED)
-    {
-        uint64_t sampsize =
-            (((uint64_t) decode->chunk.width) *
-             ((uint64_t) decode->chunk.height));
-
-        if ((decode->decode_flags & EXR_DECODE_SAMPLE_COUNTS_AS_INDIVIDUAL))
-            sampsize += 1;
-        sampsize *= sizeof (int32_t);
-
-        rv = decompress_data (
-            pctxt,
-            part->comp_type,
-            decode,
-            decode->packed_sample_count_table,
-            decode->chunk.sample_count_table_size,
-            decode->sample_count_table,
-            sampsize);
-
-        if (rv != EXR_ERR_SUCCESS)
-        {
-            return pctxt->print_error (
-                pctxt,
-                rv,
-                "Unable to decompress sample table %" PRIu64 " -> %" PRIu64,
-                decode->chunk.sample_count_table_size,
-                (uint64_t) sampsize);
-        }
-        if ((decode->decode_flags & EXR_DECODE_SAMPLE_DATA_ONLY)) return rv;
-    }
-
-    if (rv == EXR_ERR_SUCCESS)
-        rv = decompress_data (
-            pctxt,
-            part->comp_type,
-            decode,
-            decode->packed_buffer,
-            decode->chunk.packed_size,
-            decode->unpacked_buffer,
-            decode->chunk.unpacked_size);
-
-    if (rv != EXR_ERR_SUCCESS)
-    {
-        return pctxt->print_error (
-            pctxt,
-            rv,
-            "Unable to decompress image data %" PRIu64 " -> %" PRIu64,
-            decode->chunk.packed_size,
-            decode->chunk.unpacked_size);
-    }
-    return rv;
-}
-
-static exr_result_t
-unpack_sample_table (
-    const struct _internal_exr_context* pctxt, exr_decode_pipeline_t* decode)
+unpack_sample_table (exr_const_context_t ctxt, exr_decode_pipeline_t* decode)
 {
     exr_result_t rv           = EXR_ERR_SUCCESS;
-    int32_t      w            = decode->chunk.width;
-    int32_t      h            = decode->chunk.height;
+    int64_t      w            = decode->chunk.width;
+    int64_t      h            = decode->chunk.height;
     uint64_t     totsamp      = 0;
     int32_t*     samptable    = decode->sample_count_table;
     size_t       combSampSize = 0;
@@ -352,50 +230,52 @@ unpack_sample_table (
 
     if ((decode->decode_flags & EXR_DECODE_SAMPLE_COUNTS_AS_INDIVIDUAL))
     {
-        for (int32_t y = 0; y < h; ++y)
+        for (int64_t y = 0; y < h; ++y)
         {
-            int32_t *cursampline = samptable + y * w;
-            int32_t prevsamp = 0;
+            int32_t* cursampline = samptable + y * w;
+            int32_t  prevsamp    = 0;
             for (int32_t x = 0; x < w; ++x)
             {
                 int32_t nsamps =
                     (int32_t) one_to_native32 ((uint32_t) cursampline[x]);
+                // not monotonic, violation
                 if (nsamps < prevsamp) return EXR_ERR_INVALID_SAMPLE_DATA;
-
                 cursampline[x] = nsamps - prevsamp;
                 prevsamp       = nsamps;
             }
-            totsamp += (uint64_t)prevsamp;
+            totsamp += (uint64_t) prevsamp;
         }
-        if (totsamp >= (uint64_t)INT32_MAX)
-            return EXR_ERR_INVALID_SAMPLE_DATA;
-        samptable[w * h] = (int32_t)totsamp;
+        if (totsamp >= (uint64_t) INT32_MAX) return EXR_ERR_INVALID_SAMPLE_DATA;
+        samptable[w * h] = (int32_t) totsamp;
     }
     else
     {
-        for (int32_t y = 0; y < h; ++y)
+        for (int64_t y = 0; y < h; ++y)
         {
-            int32_t *cursampline = samptable + y * w;
-            int32_t prevsamp = 0;
+            int32_t* cursampline = samptable + y * w;
+            int32_t  prevsamp    = 0;
             for (int32_t x = 0; x < w; ++x)
             {
                 int32_t nsamps =
                     (int32_t) one_to_native32 ((uint32_t) cursampline[x]);
+                // not monotonic, violation
                 if (nsamps < prevsamp) return EXR_ERR_INVALID_SAMPLE_DATA;
 
                 cursampline[x] = nsamps;
-                prevsamp = nsamps;
+                prevsamp       = nsamps;
             }
 
-            totsamp += (uint64_t)prevsamp;
+            totsamp += (uint64_t) prevsamp;
         }
+        if (totsamp >= (uint64_t) INT32_MAX) return EXR_ERR_INVALID_SAMPLE_DATA;
     }
 
     if ((totsamp * combSampSize) > decode->chunk.unpacked_size)
     {
-        rv = pctxt->report_error (
-            pctxt, EXR_ERR_INVALID_SAMPLE_DATA, "Corrupt sample count table");
+        rv = ctxt->report_error (
+            ctxt, EXR_ERR_INVALID_SAMPLE_DATA, "Corrupt sample count table");
     }
+
     return rv;
 }
 
@@ -410,19 +290,46 @@ exr_decoding_initialize (
 {
     exr_result_t          rv;
     exr_decode_pipeline_t nil = {0};
+    exr_const_priv_part_t part;
 
-    EXR_PROMOTE_READ_CONST_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
+
     if (!cinfo || !decode)
-        return pctxt->standard_error (pctxt, EXR_ERR_INVALID_ARGUMENT);
+        return ctxt->standard_error (ctxt, EXR_ERR_INVALID_ARGUMENT);
+
+    if (part_index < 0 || part_index >= ctxt->num_parts)
+        return EXR_ERR_ARGUMENT_OUT_OF_RANGE;
+
+    part = ctxt->parts[part_index];
 
     *decode = nil;
+
+    if (part->storage_mode == EXR_STORAGE_DEEP_SCANLINE ||
+        part->storage_mode == EXR_STORAGE_DEEP_TILED)
+    {
+        if (part->version && part->version->i != 1)
+        {
+            return ctxt->print_error (
+                ctxt,
+                EXR_ERR_INVALID_ATTR,
+                "Version %d not supported for deepscanline images in this version of the library",
+                part->version->i);
+        }
+    }
+
+    /* will have already been reported during header parse, but just
+     * stop the file from being read
+     */
+    if (!part->channels || part->channels->type != EXR_ATTR_CHLIST ||
+        part->channels->chlist->num_channels <= 0)
+        return EXR_ERR_INVALID_ATTR;
 
     rv = internal_coding_fill_channel_info (
         &(decode->channels),
         &(decode->channel_count),
         decode->_quick_chan_store,
         cinfo,
-        pctxt,
+        ctxt,
         part);
 
     if (rv == EXR_ERR_SUCCESS)
@@ -443,12 +350,12 @@ exr_decoding_choose_default_routines (
             hastypechange = 0, simpinterleave = 0, simpinterleaverev = 0,
             simplineoff = 0, sameoutinc = 0;
     uint8_t* interleaveptr = NULL;
-    EXR_PROMOTE_READ_CONST_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
-    if (!decode) return pctxt->standard_error (pctxt, EXR_ERR_INVALID_ARGUMENT);
+    EXR_READONLY_AND_DEFINE_PART (part_index);
+    if (!decode) return ctxt->standard_error (ctxt, EXR_ERR_INVALID_ARGUMENT);
 
     if (decode->context != ctxt || decode->part_index != part_index)
-        return pctxt->print_error (
-            pctxt,
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Cross-wired request for default routines from different context / part");
 
@@ -463,6 +370,8 @@ exr_decoding_choose_default_routines (
 
         if (decc->height == 0 || !decc->decode_to_ptr) continue;
 
+        if (isdeep) continue;
+
         /*
          * if a user specifies a bad pixel stride / line stride
          * we can't know this realistically, and they may want to
@@ -471,8 +380,8 @@ exr_decoding_choose_default_routines (
          */
         if (decc->user_bytes_per_element != 2 &&
             decc->user_bytes_per_element != 4)
-            return pctxt->print_error (
-                pctxt,
+            return ctxt->print_error (
+                ctxt,
                 EXR_ERR_INVALID_ARGUMENT,
                 "Invalid / unsupported output bytes per element (%d) for channel %c (%s)",
                 (int) decc->user_bytes_per_element,
@@ -482,8 +391,8 @@ exr_decoding_choose_default_routines (
         if (decc->user_data_type != (uint16_t) (EXR_PIXEL_HALF) &&
             decc->user_data_type != (uint16_t) (EXR_PIXEL_FLOAT) &&
             decc->user_data_type != (uint16_t) (EXR_PIXEL_UINT))
-            return pctxt->print_error (
-                pctxt,
+            return ctxt->print_error (
+                ctxt,
                 EXR_ERR_INVALID_ARGUMENT,
                 "Invalid / unsupported output data type (%d) for channel %c (%s)",
                 (int) decc->user_data_type,
@@ -569,7 +478,7 @@ exr_decoding_choose_default_routines (
     }
     decode->read_fn = &default_read_chunk;
     if (part->comp_type != EXR_COMPRESSION_NONE)
-        decode->decompress_fn = &default_decompress_chunk;
+        decode->decompress_fn = &exr_uncompress_chunk;
 
     decode->unpack_and_convert_fn = internal_exr_match_decode (
         decode,
@@ -588,8 +497,8 @@ exr_decoding_choose_default_routines (
         simplineoff);
 
     if (!decode->unpack_and_convert_fn)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_ARGUMENT_OUT_OF_RANGE,
             "Unable to choose valid unpack routine");
 
@@ -606,18 +515,26 @@ exr_decoding_update (
     exr_decode_pipeline_t*  decode)
 {
     exr_result_t rv;
-    EXR_PROMOTE_READ_CONST_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+
+    exr_const_priv_part_t part;
+
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
+    if (part_index < 0 || part_index >= ctxt->num_parts)
+        return EXR_ERR_ARGUMENT_OUT_OF_RANGE;
+
     if (!cinfo || !decode)
-        return pctxt->standard_error (pctxt, EXR_ERR_INVALID_ARGUMENT);
+        return ctxt->standard_error (ctxt, EXR_ERR_INVALID_ARGUMENT);
+
+    part = ctxt->parts[part_index];
 
     if (decode->context != ctxt || decode->part_index != part_index)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid request for decoding update from different context / part");
 
     rv = internal_coding_update_channel_info (
-        decode->channels, decode->channel_count, cinfo, pctxt, part);
+        decode->channels, decode->channel_count, cinfo, ctxt, part);
     decode->chunk = *cinfo;
 
     return rv;
@@ -630,64 +547,147 @@ exr_decoding_run (
     exr_const_context_t ctxt, int part_index, exr_decode_pipeline_t* decode)
 {
     exr_result_t rv;
-    EXR_PROMOTE_READ_CONST_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    exr_const_priv_part_t part;
 
-    if (!decode) return pctxt->standard_error (pctxt, EXR_ERR_INVALID_ARGUMENT);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
+    if (part_index < 0 || part_index >= ctxt->num_parts)
+        return EXR_ERR_ARGUMENT_OUT_OF_RANGE;
+
+    part = ctxt->parts[part_index];
+
+    if (!decode) return ctxt->standard_error (ctxt, EXR_ERR_INVALID_ARGUMENT);
+
     if (decode->context != ctxt || decode->part_index != part_index)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid request for decoding update from different context / part");
 
     if (!decode->read_fn)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Decode pipeline has no read_fn declared");
     rv = decode->read_fn (decode);
     if (rv != EXR_ERR_SUCCESS)
-        return pctxt->report_error (
-            pctxt, rv, "Unable to read pixel data block from context");
+        return ctxt->report_error (
+            ctxt, rv, "Unable to read pixel data block from context");
 
     if (rv == EXR_ERR_SUCCESS) rv = update_pack_unpack_ptrs (decode);
     if (rv != EXR_ERR_SUCCESS)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             rv,
             "Decode pipeline unable to update pack / unpack pointers");
 
     if (rv == EXR_ERR_SUCCESS && decode->decompress_fn)
         rv = decode->decompress_fn (decode);
     if (rv != EXR_ERR_SUCCESS)
-        return pctxt->report_error (
-            pctxt, rv, "Decode pipeline unable to decompress data");
+        return ctxt->report_error (
+            ctxt, rv, "Decode pipeline unable to decompress data");
 
     if (rv == EXR_ERR_SUCCESS &&
         (part->storage_mode == EXR_STORAGE_DEEP_SCANLINE ||
          part->storage_mode == EXR_STORAGE_DEEP_TILED))
     {
-        rv = unpack_sample_table (pctxt, decode);
+        if (part->comp_type != EXR_COMPRESSION_NONE &&
+            decode->packed_sample_count_table == NULL &&
+            decode->sample_count_table != NULL)
+        {
+            /* A compressed deep chunk declared a zero-length (absent)
+             * packed sample-count table, so decompress_data() above was
+             * never invoked and decode->sample_count_table, which was
+             * allocated to hold the full decompressed table, was left
+             * uninitialized. Treat an absent table as all-zero sample
+             * counts instead of reading uninitialized heap memory in
+             * unpack_sample_table().
+             */
+            memset (
+                decode->sample_count_table,
+                0,
+                decode->sample_count_alloc_size);
+        }
+        else if (
+            part->comp_type == EXR_COMPRESSION_NONE &&
+            decode->sample_count_table != decode->packed_sample_count_table)
+        {
+            /* Check that uncompressed data can be copied in safely.
+             *
+             * underflow potentially happens when we're requested to
+             * pack to 'individual' mode
+             *
+             * also occurs when working with deep tiled images, and
+             * the tile size is smaller than the defined base tile
+             * width / height. The way the data was written is in a
+             * packed form, but the old writers would write a full
+             * tile-size block of data. (compressed would be fine)
+             */
+            size_t sampsize =
+                (((size_t) decode->chunk.width) * ((size_t) decode->chunk.height));
+            sampsize *= sizeof (int32_t);
+
+            if (decode->sample_count_alloc_size <
+                decode->chunk.sample_count_table_size &&
+                decode->sample_count_alloc_size < sampsize)
+            {
+                return EXR_ERR_OUT_OF_MEMORY;
+            }
+
+            if (decode->chunk.sample_count_table_size > 0)
+            {
+                if (decode->chunk.sample_count_table_size < sampsize)
+                {
+                    memcpy (
+                        decode->sample_count_table,
+                        decode->packed_sample_count_table,
+                        decode->chunk.sample_count_table_size);
+                    memset (
+                        decode->sample_count_table + (decode->chunk.sample_count_table_size / sizeof(int32_t)),
+                        0,
+                        sampsize - decode->chunk.sample_count_table_size);
+                }
+                else
+                {
+                    memcpy (
+                        decode->sample_count_table,
+                        decode->packed_sample_count_table,
+                        sampsize);
+                }
+            }
+            else
+            {
+                memset (
+                    decode->sample_count_table,
+                    0,
+                    decode->sample_count_alloc_size);
+            }
+        }
+
+        rv = unpack_sample_table (ctxt, decode);
 
         if ((decode->decode_flags & EXR_DECODE_SAMPLE_DATA_ONLY)) return rv;
-    }
 
-    if (rv != EXR_ERR_SUCCESS)
-        return pctxt->report_error (
-            pctxt, rv, "Decode pipeline unable to unpack deep sample table");
+        if (rv != EXR_ERR_SUCCESS)
+            return ctxt->report_error (
+                ctxt, rv, "Decode pipeline unable to unpack deep sample table");
+    }
 
     if (rv == EXR_ERR_SUCCESS && decode->realloc_nonimage_data_fn)
         rv = decode->realloc_nonimage_data_fn (decode);
     if (rv != EXR_ERR_SUCCESS)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             rv,
             "Decode pipeline unable to realloc deep sample table info");
 
-    if (rv == EXR_ERR_SUCCESS && decode->unpack_and_convert_fn)
-        rv = decode->unpack_and_convert_fn (decode);
-    if (rv != EXR_ERR_SUCCESS)
-        return pctxt->report_error (
-            pctxt, rv, "Decode pipeline unable to unpack and convert data");
+    if (decode->chunk.unpacked_size > 0)
+    {
+        if (rv == EXR_ERR_SUCCESS && decode->unpack_and_convert_fn)
+            rv = decode->unpack_and_convert_fn (decode);
+        if (rv != EXR_ERR_SUCCESS)
+            return ctxt->report_error (
+                ctxt, rv, "Decode pipeline unable to unpack and convert data");
+    }
 
     return rv;
 }
@@ -697,16 +697,21 @@ exr_decoding_run (
 exr_result_t
 exr_decoding_destroy (exr_const_context_t ctxt, exr_decode_pipeline_t* decode)
 {
-    INTERN_EXR_PROMOTE_CONST_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
+
     if (decode)
     {
         exr_decode_pipeline_t nil = {0};
         if (decode->channels != decode->_quick_chan_store)
-            pctxt->free_fn (decode->channels);
+            ctxt->free_fn (decode->channels);
 
         if (decode->unpacked_buffer == decode->packed_buffer &&
             decode->unpacked_alloc_size == 0)
             decode->unpacked_buffer = NULL;
+
+        if (decode->sample_count_table == decode->packed_sample_count_table &&
+            decode->sample_count_alloc_size == 0)
+            decode->sample_count_table = NULL;
 
         internal_decode_free_buffer (
             decode,
@@ -728,16 +733,17 @@ exr_decoding_destroy (exr_const_context_t ctxt, exr_decode_pipeline_t* decode)
             EXR_TRANSCODE_BUFFER_SCRATCH2,
             &(decode->scratch_buffer_2),
             &(decode->scratch_alloc_size_2));
-        internal_decode_free_buffer (
-            decode,
-            EXR_TRANSCODE_BUFFER_PACKED_SAMPLES,
-            &(decode->packed_sample_count_table),
-            &(decode->packed_sample_count_alloc_size));
+
         internal_decode_free_buffer (
             decode,
             EXR_TRANSCODE_BUFFER_SAMPLES,
             (void**) &(decode->sample_count_table),
             &(decode->sample_count_alloc_size));
+        internal_decode_free_buffer (
+            decode,
+            EXR_TRANSCODE_BUFFER_PACKED_SAMPLES,
+            &(decode->packed_sample_count_table),
+            &(decode->packed_sample_count_alloc_size));
         *decode = nil;
     }
     return EXR_ERR_SUCCESS;

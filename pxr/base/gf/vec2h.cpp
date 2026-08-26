@@ -42,20 +42,20 @@ operator<<(std::ostream &out, GfVec2h const &v)
 bool
 GfVec2h::operator==(GfVec2d const &other) const
 {
-    return _data[0] == other[0] &&
-           _data[1] == other[1];
+    return x == other.x &&
+           y == other.y;
 }
 bool
 GfVec2h::operator==(GfVec2f const &other) const
 {
-    return _data[0] == other[0] &&
-           _data[1] == other[1];
+    return x == other.x &&
+           y == other.y;
 }
 bool
 GfVec2h::operator==(GfVec2i const &other) const
 {
-    return _data[0] == other[0] &&
-           _data[1] == other[1];
+    return x == other.x &&
+           y == other.y;
 }
 
 

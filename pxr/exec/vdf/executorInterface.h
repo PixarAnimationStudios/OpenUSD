@@ -192,7 +192,7 @@ public:
     /// Invalidate all state depending on network topology. This must be
     /// called after changes to the network have been made.
     ///
-    /// XXX:exec
+    /// TODO:
     /// I believe that we should not have this kind of API exposed.  Clients
     /// should not have to know about the internal state kept in the 
     /// executors.  This is very similiar to schedules and perhaps should be
@@ -202,7 +202,10 @@ public:
     VDF_API
     void InvalidateTopologicalState();
 
-    /// Clears the executors buffers
+    /// Clears the executor buffers.
+    ///
+    /// Note that derived classes may also clear other data, including
+    /// topological state.
     ///
     VDF_API
     void ClearData();
@@ -370,14 +373,18 @@ protected:
     ///
     virtual void _UpdateInvalidationTimestamp() = 0;
 
-    /// Virtual implementation of the ClearData call. This may be
-    /// overridden by classes, which derive from VdfExecutorInterface.
+    /// Virtual implementation of ClearData, which can optionally be overridden
+    /// by derived classes.
+    ///
+    /// The default implementation is a no-op.
     ///
     VDF_API
     virtual void _ClearData();
 
-    /// Virtual implementation of the ClearDataForOutput call. This may be
-    /// overridden by classes, which derive from VdfExecutorInterface.
+    /// Virtual implementation of ClearDataForOutput, which can optionally be
+    /// overridden by derived classes.
+    ///
+    /// The default implementation is a no-op.
     ///
     VDF_API
     virtual void _ClearDataForOutput(const VdfId outputId, const VdfId nodeId);

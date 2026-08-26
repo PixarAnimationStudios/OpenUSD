@@ -56,7 +56,8 @@ enum PcpErrorType {
     PcpErrorType_SublayerCycle,
     PcpErrorType_TargetPermissionDenied,
     PcpErrorType_UnresolvedPrimPath,
-    PcpErrorType_VariableExpressionError
+    PcpErrorType_VariableExpressionError,
+    PcpErrorType_InvalidSublayerAndOffsetCount
 };
 
 // Forward declarations:
@@ -590,6 +591,35 @@ public:
 private:
     /// Constructor is private. Use New() instead.
     PcpErrorInvalidSublayerOffset();
+};
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Forward declarations:
+class PcpErrorInvalidSublayerAndOffsetCount;
+typedef std::shared_ptr<PcpErrorInvalidSublayerAndOffsetCount>
+    PcpErrorInvalidSublayerAndOffsetCountPtr;
+
+/// \class PcpErrorInvalidSublayerAndOffsetCount
+///
+/// Invalid sublayer and offset counts in a layer stack.
+///
+class PcpErrorInvalidSublayerAndOffsetCount : public PcpErrorBase {
+public:
+    /// Returns a new error object.
+    static PcpErrorInvalidSublayerAndOffsetCountPtr New();
+    /// Destructor.
+    PCP_API ~PcpErrorInvalidSublayerAndOffsetCount() override;
+    /// Converts error to string message.
+    PCP_API std::string ToString() const override;
+    
+    SdfLayerHandle layer;
+    size_t sublayerCount = 0;
+    size_t offsetCount = 0;
+
+private:
+    /// Constructor is private. Use New() instead.
+    PcpErrorInvalidSublayerAndOffsetCount();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

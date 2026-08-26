@@ -166,6 +166,7 @@ public:
     Usd_ClipRefPtr manifestClip;
     Usd_ClipRefPtrVector valueClips;
     bool interpolateMissingClipValues;
+    SdfLayerOffset toStageOffset;
 
 private:
     Usd_ClipSet(

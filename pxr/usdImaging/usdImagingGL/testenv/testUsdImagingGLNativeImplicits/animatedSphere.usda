@@ -3,6 +3,7 @@
     defaultPrim = "world"
     startTimeCode = 1
     endTimeCode = 3
+    upAxis = "Z"
 )
 
 def Camera "main_cam"

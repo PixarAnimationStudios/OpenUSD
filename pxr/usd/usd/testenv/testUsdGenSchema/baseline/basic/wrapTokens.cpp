@@ -110,6 +110,10 @@ void wrapUsdContrivedTokens()
     _ADD_TOKEN(cls, point3fArray);
     _ADD_TOKEN(cls, point3h);
     _ADD_TOKEN(cls, point3hArray);
+    _ADD_TOKEN(cls, public_);
+    _ADD_TOKEN(cls, public_MultipleApplyTemplate_);
+    _ADD_TOKEN(cls, public_MultipleApplyTemplate_TestAttrOne);
+    _ADD_TOKEN(cls, public_MultipleApplyTemplate_TestAttrTwo);
     _ADD_TOKEN(cls, quatd);
     _ADD_TOKEN(cls, quatdArray);
     _ADD_TOKEN(cls, quatf);
@@ -138,10 +142,6 @@ void wrapUsdContrivedTokens()
     _ADD_TOKEN(cls, testNewVersion);
     _ADD_TOKEN(cls, testNewVersion_MultipleApplyTemplate_TestAttrOne);
     _ADD_TOKEN(cls, testNewVersion_MultipleApplyTemplate_TestAttrTwo);
-    _ADD_TOKEN(cls, testo);
-    _ADD_TOKEN(cls, testo_MultipleApplyTemplate_);
-    _ADD_TOKEN(cls, testo_MultipleApplyTemplate_TestAttrOne);
-    _ADD_TOKEN(cls, testo_MultipleApplyTemplate_TestAttrTwo);
     _ADD_TOKEN(cls, testRelDuplicate);
     _ADD_TOKEN(cls, testRelExternal);
     _ADD_TOKEN(cls, testRelInternal);

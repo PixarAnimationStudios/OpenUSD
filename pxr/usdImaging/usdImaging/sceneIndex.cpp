@@ -13,13 +13,32 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// Bind sceneIndexCreateArgs into the given callback to produce the (deprecated) single-
+// argument callback that UsdImagingCreateSceneIndices expects.
+static
+UsdImagingSceneIndexAppendCallback
+_BindSceneIndexCreateArgs(
+    const UsdImagingSceneIndex::SceneIndexAppendCallback &callback,
+    HdContainerDataSourceHandle const &sceneIndexCreateArgs)
+{
+    if (!callback) {
+        return {};
+    }
+    return [callback, sceneIndexCreateArgs](
+        HdSceneIndexBaseRefPtr const &inputScene) {
+            return callback(inputScene, sceneIndexCreateArgs);
+    };
+}
+
 UsdImagingSceneIndex::UsdImagingSceneIndex(
-    HdContainerDataSourceHandle const &createArgs,
-    const UsdImagingSceneIndexAppendCallback &overridesSceneIndexCallback)
+    HdContainerDataSourceHandle const &sceneIndexCreateArgs,
+    const SceneIndexAppendCallbacks &sceneIndexAppendCallbacks)
  : UsdImagingSceneIndex(
      UsdImagingCreateSceneIndices(
-         createArgs,
-         overridesSceneIndexCallback))
+         sceneIndexCreateArgs,
+         _BindSceneIndexCreateArgs(
+             sceneIndexAppendCallbacks.overridesSceneIndexCallback,
+             sceneIndexCreateArgs)))
 {
 }
 

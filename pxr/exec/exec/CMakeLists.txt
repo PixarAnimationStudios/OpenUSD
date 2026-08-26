@@ -97,7 +97,7 @@ pxr_library(exec
 
 # Build test plugins
 
-pxr_build_test_shared_lib(TestExecPluginComputation
+pxr_build_test_plugin(TestExecPluginComputation
     INSTALL_PREFIX ExecPlugins
     LIBRARIES
         tf
@@ -107,7 +107,7 @@ pxr_build_test_shared_lib(TestExecPluginComputation
         testenv/TestExecPluginComputation.cpp
 )
 
-pxr_build_test_shared_lib(TestExecConflictingPluginRegistration1
+pxr_build_test_plugin(TestExecConflictingPluginRegistration1
     INSTALL_PREFIX ExecPlugins
     LIBRARIES
         tf
@@ -117,7 +117,7 @@ pxr_build_test_shared_lib(TestExecConflictingPluginRegistration1
         testenv/TestExecConflictingPluginRegistration1.cpp
 )
 
-pxr_build_test_shared_lib(TestExecConflictingPluginRegistration2
+pxr_build_test_plugin(TestExecConflictingPluginRegistration2
     INSTALL_PREFIX ExecPlugins
     LIBRARIES
         tf
@@ -137,6 +137,7 @@ if (BUILD_SHARED_LIBS)
             esf
             esfUsd
             exec
+            execTest
             plug
             sdf
             tf

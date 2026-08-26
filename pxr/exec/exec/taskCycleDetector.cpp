@@ -122,7 +122,7 @@ Exec_TaskCycleDetector::EndThreadBusy()
     TF_VERIFY(!wasCycleAlreadyDetected);
 
     TF_ERROR(ExecValidationErrorType::DataDependencyCycle,
-        "Interrupting exec compilation due to one or more data depencency "
+        "Interrupting exec compilation due to one or more data dependency "
         "cycles. Computed values may not be accurate until the cycles are "
         "resolved.");
     _compilationState->GetInterruptState().Interrupt();

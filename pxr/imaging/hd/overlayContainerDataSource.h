@@ -29,6 +29,9 @@ public:
     /// Creates HdOverlayContainerDataSource from sources, but only
     /// if needed. If one of given handles is null, the other handle
     /// is returned instead.
+    ///
+    /// \deprecated Use HdCreateOverlayContainerDataSource.
+    ///    
     HD_API
     static
     HdContainerDataSourceHandle
@@ -44,12 +47,17 @@ public:
 private:
     HD_API
     HdOverlayContainerDataSource(
-        std::initializer_list<HdContainerDataSourceHandle> sources);
+        const std::initializer_list<HdContainerDataSourceHandle> &sources);
 
     HD_API
     HdOverlayContainerDataSource(
         size_t count,
-        HdContainerDataSourceHandle *containers);
+        HdContainerDataSourceHandle *sources);
+
+    using _ContainerVector = TfSmallVector<HdContainerDataSourceHandle, 8>;
+    HD_API
+    HdOverlayContainerDataSource(
+        _ContainerVector &&sources);
 
     HD_API
     HdOverlayContainerDataSource(
@@ -62,11 +70,36 @@ private:
         const HdContainerDataSourceHandle &src2,
         const HdContainerDataSourceHandle &src3);
 
-    using _ContainerVector = TfSmallVector<HdContainerDataSourceHandle, 8>;
-    _ContainerVector _containers;
+    _ContainerVector _sources;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(HdOverlayContainerDataSource);
+
+/// Filters out any null handles. If more than one remain, creates
+/// a new HdOverlayContainerDataSource. Otherwise, returns the
+/// unique non-null handle or null.
+///
+HD_API
+HdContainerDataSourceHandle
+HdCreateOverlayContainerDataSource(
+        size_t count,
+        HdContainerDataSourceHandle *containers);
+
+/// Filters out any null handles. If more than one remain, creates
+/// a new HdOverlayContainerDataSource. Otherwise, returns the
+/// unique non-null handle or null.
+///
+HD_API
+HdContainerDataSourceHandle
+HdCreateOverlayContainerDataSource(
+    const std::initializer_list<HdContainerDataSourceHandle> &sources);
+
+/// Specialization for two data source handles.
+HD_API
+HdContainerDataSourceHandle
+HdCreateOverlayContainerDataSource(
+    const HdContainerDataSourceHandle &src1,
+    const HdContainerDataSourceHandle &src2);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

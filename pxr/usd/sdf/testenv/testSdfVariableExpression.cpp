@@ -37,6 +37,32 @@ _TestMakeVariable()
     _TestExpression(
         SdfVariableExpression::MakeVariable("FOO"), 
         {{"FOO", VtValue(1)}}, int64_t(1));
+
+    // Literal fallback values
+    _TestExpression(
+        SdfVariableExpression::MakeVariable("FOO", 
+            SdfVariableExpression::MakeLiteral(int64_t(1))), 
+        {}, int64_t(1));
+    _TestExpression(
+        SdfVariableExpression::MakeVariable("FOO", 
+            SdfVariableExpression::MakeLiteral(true)), 
+        {}, true);
+    _TestExpression(
+        SdfVariableExpression::MakeVariable("FOO",
+            SdfVariableExpression::MakeLiteral("usd")),
+        {}, "usd");
+
+    // List fallback values
+    _TestExpression(
+        SdfVariableExpression::MakeVariable("FOO",
+            SdfVariableExpression(SdfVariableExpression::MakeListOfLiterals(
+                std::vector<int64_t>{1, 2, 3}))),
+        {}, VtInt64Array{1, 2, 3});
+    _TestExpression(
+        SdfVariableExpression::MakeVariable("FOO",
+            SdfVariableExpression(SdfVariableExpression::MakeListOfLiterals(
+                std::vector<std::string>{"a", "b", "c"}))),
+        {}, VtStringArray{"a", "b", "c"});
 }
 
 static void

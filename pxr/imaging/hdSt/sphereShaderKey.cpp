@@ -40,6 +40,11 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // instancing       
     ((instancing,               "Instancing.Transform"))
+
+    // utils       
+    ((transformUtils,           "CoordUtils.Transform"))
+    ((projectionUtils,          "CoordUtils.Projection"))
+    ((depthUtils,               "CoordUtils.Depth"))
 );
 
 namespace {
@@ -79,6 +84,8 @@ HdSt_SphereShaderKey::HdSt_SphereShaderKey(
     , vertexCount(vertexCount)
     , glslfx(_tokens->baseGLSLFX)
     , VS{ _tokens->instancing,
+          _tokens->transformUtils,
+          _tokens->depthUtils,
           _tokens->mainVS,
           _tokens->pointIdNoneVS,
           TfToken() }
@@ -86,6 +93,9 @@ HdSt_SphereShaderKey::HdSt_SphereShaderKey(
           _tokens->edgeIdNoneFS,
           _tokens->surfaceFS,
           _tokens->noScalarOverrideFS,
+          _tokens->transformUtils,
+          _tokens->projectionUtils,
+          _tokens->depthUtils,
           _tokens->instancing,
           _NormalsToken(doubleSided),
           _CullStyleToken(cullStyle, doubleSided),

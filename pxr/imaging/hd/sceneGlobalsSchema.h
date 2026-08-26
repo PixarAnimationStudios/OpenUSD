@@ -27,11 +27,13 @@
 // --(BEGIN CUSTOM CODE: Includes)--
 #include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/vectorSchema.h"
 // --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 // --(BEGIN CUSTOM CODE: Declares)--
+using HdPathVectorSchema = HdTypedVectorSchema<HdPathDataSource>;
 // --(END CUSTOM CODE: Declares)--
 
 #define HD_SCENE_GLOBALS_SCHEMA_TOKENS \
@@ -44,6 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (timeCodesPerSecond) \
     (currentFrame) \
     (sceneStateId) \
+    (primIdToPath) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdSceneGlobalsSchemaTokens, HD_API,
     HD_SCENE_GLOBALS_SCHEMA_TOKENS);
@@ -133,7 +136,11 @@ public:
     HdDoubleDataSourceHandle GetCurrentFrame() const;
 
     HD_API
-    HdIntDataSourceHandle GetSceneStateId() const; 
+    HdIntDataSourceHandle GetSceneStateId() const;
+
+    /// Maps id's from PrimId schema to prim paths.
+    HD_API
+    HdPathVectorSchema GetPrimIdToPath() const; 
 
     /// @}
 
@@ -192,6 +199,10 @@ public:
     /// Prim-level relative data source locator to locate sceneStateId.
     HD_API
     static const HdDataSourceLocator &GetSceneStateIdLocator();
+
+    /// Prim-level relative data source locator to locate primIdToPath.
+    HD_API
+    static const HdDataSourceLocator &GetPrimIdToPathLocator();
     /// @} 
 
     /// \name Schema construction
@@ -214,7 +225,8 @@ public:
         const HdDoubleDataSourceHandle &endTimeCode,
         const HdDoubleDataSourceHandle &timeCodesPerSecond,
         const HdDoubleDataSourceHandle &currentFrame,
-        const HdIntDataSourceHandle &sceneStateId
+        const HdIntDataSourceHandle &sceneStateId,
+        const HdVectorDataSourceHandle &primIdToPath
     );
 
     /// \class HdSceneGlobalsSchema::Builder
@@ -250,6 +262,9 @@ public:
         HD_API
         Builder &SetSceneStateId(
             const HdIntDataSourceHandle &sceneStateId);
+        HD_API
+        Builder &SetPrimIdToPath(
+            const HdVectorDataSourceHandle &primIdToPath);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -264,6 +279,7 @@ public:
         HdDoubleDataSourceHandle _timeCodesPerSecond;
         HdDoubleDataSourceHandle _currentFrame;
         HdIntDataSourceHandle _sceneStateId;
+        HdVectorDataSourceHandle _primIdToPath;
 
     };
 

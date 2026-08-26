@@ -12,6 +12,8 @@
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/shaderKey.h"
+#include "pxr/imaging/hgi/tokens.h"
+#include "pxr/base/tf/smallVector.h"
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -33,6 +35,10 @@ struct HdSt_SphereShaderKey : public HdSt_ShaderKey
 
     uint32_t GetVertexCountFallback() const override { return vertexCount; }
 
+    const TfToken GetDepthQualifier() const override {
+        return HgiShaderKeywordTokens->hdDepthGreater;
+    }
+
     HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const override {
         return HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES; 
     }
@@ -42,13 +48,13 @@ struct HdSt_SphereShaderKey : public HdSt_ShaderKey
     const uint32_t vertexCount;
 
     TfToken const &GetGlslfxFilename() const override { return glslfx; }
-    TfToken const *GetVS() const override { return VS; }
+    TfToken const *GetVS() const override { return VS.data(); }
     // Skip TCS, TES and GS stages
-    TfToken const *GetFS() const override { return FS; }
+    TfToken const *GetFS() const override { return FS.data(); }
 
     TfToken glslfx;
-    TfToken VS[4];
-    TfToken FS[10];
+    TfSmallVector<TfToken, 6> VS;
+    TfSmallVector<TfToken, 13> FS;
 };
 
 

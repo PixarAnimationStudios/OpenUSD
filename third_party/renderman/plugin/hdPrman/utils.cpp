@@ -1002,7 +1002,6 @@ PruneBatchOnlyOptions(
     // XXX We use an explicit list here, but would it be better
     // to do a prefix-check instead?
     static std::vector<RtUString> const _batchOnlyRileyOptions = {
-        RixStr.k_hider_type,
         RixStr.k_checkpoint,
         RixStr.k_checkpoint_asfinal,
         RixStr.k_checkpoint_command,

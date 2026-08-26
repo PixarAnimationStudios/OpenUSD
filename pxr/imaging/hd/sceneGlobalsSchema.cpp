@@ -103,6 +103,13 @@ HdSceneGlobalsSchema::GetSceneStateId() const
         HdSceneGlobalsSchemaTokens->sceneStateId);
 }
 
+HdPathVectorSchema
+HdSceneGlobalsSchema::GetPrimIdToPath() const
+{
+    return HdPathVectorSchema(_GetTypedDataSource<HdVectorDataSource>(
+        HdSceneGlobalsSchemaTokens->primIdToPath));
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdSceneGlobalsSchema::BuildRetained(
@@ -113,11 +120,12 @@ HdSceneGlobalsSchema::BuildRetained(
         const HdDoubleDataSourceHandle &endTimeCode,
         const HdDoubleDataSourceHandle &timeCodesPerSecond,
         const HdDoubleDataSourceHandle &currentFrame,
-        const HdIntDataSourceHandle &sceneStateId
+        const HdIntDataSourceHandle &sceneStateId,
+        const HdVectorDataSourceHandle &primIdToPath
 )
 {
-    TfToken _names[8];
-    HdDataSourceBaseHandle _values[8];
+    TfToken _names[9];
+    HdDataSourceBaseHandle _values[9];
 
     size_t _count = 0;
 
@@ -159,6 +167,11 @@ HdSceneGlobalsSchema::BuildRetained(
     if (sceneStateId) {
         _names[_count] = HdSceneGlobalsSchemaTokens->sceneStateId;
         _values[_count++] = sceneStateId;
+    }
+
+    if (primIdToPath) {
+        _names[_count] = HdSceneGlobalsSchemaTokens->primIdToPath;
+        _values[_count++] = primIdToPath;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -227,6 +240,14 @@ HdSceneGlobalsSchema::Builder::SetSceneStateId(
     return *this;
 }
 
+HdSceneGlobalsSchema::Builder &
+HdSceneGlobalsSchema::Builder::SetPrimIdToPath(
+    const HdVectorDataSourceHandle &primIdToPath)
+{
+    _primIdToPath = primIdToPath;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdSceneGlobalsSchema::Builder::Build()
 {
@@ -238,7 +259,8 @@ HdSceneGlobalsSchema::Builder::Build()
         _endTimeCode,
         _timeCodesPerSecond,
         _currentFrame,
-        _sceneStateId
+        _sceneStateId,
+        _primIdToPath
     );
 }
 
@@ -346,6 +368,16 @@ HdSceneGlobalsSchema::GetSceneStateIdLocator()
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
             HdSceneGlobalsSchemaTokens->sceneStateId);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdSceneGlobalsSchema::GetPrimIdToPathLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdSceneGlobalsSchemaTokens->primIdToPath);
     return locator;
 } 
 

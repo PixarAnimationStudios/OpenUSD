@@ -207,4 +207,25 @@ SdfVariableExpression::MakeVariable(const std::string& name)
     return Builder("${" + name + "}");
 }
 
+SdfVariableExpression::Builder
+SdfVariableExpression::MakeVariable(
+    const std::string& name,
+    const Builder& fallbackValue)
+{
+    return Builder("${" + name + ":" + fallbackValue._expr + "}");
+}
+
+SdfVariableExpression::Builder
+SdfVariableExpression::MakeVariable(
+    const std::string& name,
+    const SdfVariableExpression& fallbackValue)
+{
+    // Expression strings returned by SdfVariableExpression are bracketed by
+    // "`" characters.
+    const std::string& e = fallbackValue.GetString();
+    const std::string fallbackExpr =
+        IsExpression(e) ? e.substr(1, e.size() - 2) : e;
+    return Builder("${" + name + ":" + fallbackExpr + "}");
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

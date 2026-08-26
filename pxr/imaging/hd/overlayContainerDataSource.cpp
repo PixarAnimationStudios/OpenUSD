@@ -11,26 +11,32 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdOverlayContainerDataSource::HdOverlayContainerDataSource(
-    std::initializer_list<HdContainerDataSourceHandle> sources)
-    : _containers(sources.begin(), sources.end())
+    const std::initializer_list<HdContainerDataSourceHandle> &sources)
+ : _sources(sources.begin(), sources.end())
 {
 }
 
 HdOverlayContainerDataSource::HdOverlayContainerDataSource(
-    size_t count,
-    HdContainerDataSourceHandle *containers)
+    const size_t count,
+    HdContainerDataSourceHandle * const sources)
 {
-    _containers.reserve(count);
+    _sources.reserve(count);
     for (size_t i = 0; i < count; ++i) {
-        _containers.push_back(containers[i]);
+        _sources.push_back(sources[i]);
     }
+}
+
+HdOverlayContainerDataSource::HdOverlayContainerDataSource(
+    _ContainerVector &&sources)
+ : _sources(std::move(sources))
+{
 }
 
 HdOverlayContainerDataSource::HdOverlayContainerDataSource(
     const HdContainerDataSourceHandle &src1,
     const HdContainerDataSourceHandle &src2)
 {
-    _containers = { src1, src2 };
+    _sources = { src1, src2 };
 }
 
 HdOverlayContainerDataSource::HdOverlayContainerDataSource(
@@ -38,7 +44,7 @@ HdOverlayContainerDataSource::HdOverlayContainerDataSource(
     const HdContainerDataSourceHandle &src2,
     const HdContainerDataSourceHandle &src3)
 {
-    _containers = { src1, src2, src3 };
+    _sources = { src1, src2, src3 };
 }
 
 HdContainerDataSourceHandle
@@ -46,21 +52,14 @@ HdOverlayContainerDataSource::OverlayedContainerDataSources(
         const HdContainerDataSourceHandle &src1,
         const HdContainerDataSourceHandle &src2)
 {
-    if (!src1) {
-        return src2;
-    }
-    if (!src2) {
-        return src1;
-    }
-    return HdOverlayContainerDataSource::New(src1, src2);
+    return HdCreateOverlayContainerDataSource(src1, src2);
 }
-
 
 TfTokenVector
 HdOverlayContainerDataSource::GetNames()
 {
     TfDenseHashSet<TfToken, TfToken::HashFunctor> usedNames;
-    for (HdContainerDataSourceHandle &c : _containers) {
+    for (HdContainerDataSourceHandle const &c : _sources) {
         if (c) {
             for (const TfToken &name : c->GetNames()) {
                 usedNames.insert(name);
@@ -75,19 +74,19 @@ HdDataSourceBaseHandle
 HdOverlayContainerDataSource::Get(
     const TfToken &name)
 {
-    TfSmallVector<HdContainerDataSourceHandle, 8> childContainers;
+    TfSmallVector<HdContainerDataSourceHandle, 8> childSources;
 
-    for (HdContainerDataSourceHandle const &c : _containers) {
+    for (HdContainerDataSourceHandle const &c : _sources) {
         if (c) {
             if (HdDataSourceBaseHandle child = c->Get(name)) {
                 if (auto childContainer = HdContainerDataSource::Cast(child)) {
-                    childContainers.push_back(childContainer);
+                    childSources.push_back(childContainer);
                 } else {
 
-                    // if there are already containers to our left, we should
+                    // if there are already sources to our left, we should
                     // return those rather than replace it with a non-container
                     // value
-                    if (!childContainers.empty()) {
+                    if (!childSources.empty()) {
                         break;
                     }
 
@@ -101,15 +100,81 @@ HdOverlayContainerDataSource::Get(
         }
     }
 
-    switch (childContainers.size())
+    switch (childSources.size())
     {
     case 0:
         return nullptr;
     case 1:
-        return childContainers[0];
+        return childSources[0];
     default:
-        return New(childContainers.size(), childContainers.data());
+        return New(std::move(childSources));
     }
+}
+
+namespace
+{
+
+// Avoid making HdOverlayContainerDataSource::_ContainerVector public
+// or adding friends by simply repeating it here:
+using _ContainerVector = TfSmallVector<HdContainerDataSourceHandle, 8>;
+    
+}
+
+HdContainerDataSourceHandle
+HdCreateOverlayContainerDataSource(
+    const size_t count,
+    HdContainerDataSourceHandle * const sources)
+{
+    _ContainerVector nonNullSources;
+    nonNullSources.reserve(count);
+    for (size_t i = 0; i < count; ++i) {
+        if (sources[i]) {
+            nonNullSources.push_back(sources[i]);
+        }
+    }
+    switch (nonNullSources.size()) {
+    case 0:
+        return nullptr;
+    case 1:
+        return nonNullSources[0];
+    default:
+        return HdOverlayContainerDataSource::New(std::move(nonNullSources));
+    }
+}
+
+HdContainerDataSourceHandle
+HdCreateOverlayContainerDataSource(
+    const std::initializer_list<HdContainerDataSourceHandle> &sources)
+{
+    _ContainerVector nonNullSources;
+    nonNullSources.reserve(sources.size());
+    for (HdContainerDataSourceHandle const &source : sources) {
+        if (source) {
+            nonNullSources.push_back(source);
+        }
+    }
+    switch (nonNullSources.size()) {
+    case 0:
+        return nullptr;
+    case 1:
+        return nonNullSources[0];
+    default:
+        return HdOverlayContainerDataSource::New(std::move(nonNullSources));
+    }
+}
+
+HdContainerDataSourceHandle
+HdCreateOverlayContainerDataSource(
+    const HdContainerDataSourceHandle &src1,
+    const HdContainerDataSourceHandle &src2)
+{
+    if (!src1) {
+        return src2;
+    }
+    if (!src2) {
+        return src1;
+    }
+    return HdOverlayContainerDataSource::New(src1, src2);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

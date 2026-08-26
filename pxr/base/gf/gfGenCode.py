@@ -6,16 +6,14 @@
 # https://openusd.org/license.
 #
 
-########################################################################
-# Code generation script for GfVec, GfRange, GfQuat, GfDualQuat
-# (and in future, GfMatrix) classes.
+##############################################################################
+# Code generation script for the various flavors of GfVec, GfMatrix, GfRange,
+# GfQuat, GfDualQuat classes.
 #
 # Run this script manually to update the source code that's checked in.  Run
 # with --validate to compare what would be generated with the existing code.  If
 # it differs, this script will print a diff and error out.
 #
-
-from __future__ import print_function
 
 import os, sys, itertools
 from argparse import ArgumentParser
@@ -64,10 +62,16 @@ def AllowImplicitConversion(src, dst):
     # floating point types.
     return RankScalar(src) <= RankScalar(dst)
 
+def Component(i):
+    # Return the name of the i'th vector component, or the empty string if
+    # there is no name for it.  Only vectors (dimension <= 4) name their
+    # components; this is unused by the other templates.
+    return 'xyzw'[i] if i < 4 else ''
+
 def MakeListFn(defaultN):
     def List(fmt, sep=', ', num=None):
         num = num if num is not None else defaultN
-        return sep.join([fmt % {'i': i} for i in range(num)])
+        return sep.join([fmt % {'i': i, 'c': Component(i)} for i in range(num)])
     return List
 
 def MakeMatrixFn(defaultN):
@@ -112,6 +116,33 @@ def VecName(dim, scl):
 def Eps(scl):
     return '0.001' if scl == 'GfHalf' else 'GF_MIN_VECTOR_LENGTH'
 
+def MakeSwizzles(dim):
+    # Return the set of multi-component swizzles for a vector of dimension
+    # 'dim': every permutation, without repeats, of length 2 through dim.  That
+    # is 2, 12 and 60 names for dimensions 2, 3 and 4 respectively.
+    #
+    # Single-component swizzles are not included -- those are the vector's
+    # named components ('x', 'y', ...), which are plain data members.
+    #
+    # Repeated components ('xx', 'yxy') are deliberately excluded.  Including
+    # them would mean 336 names for a 4-dimensional vector rather than 60,
+    # which measurably slows compilation and inflates debug information for
+    # every translation unit that uses a vector.
+    #
+    # Each entry is a dict describing one swizzle:
+    #   NAME    the swizzle, and the accessor's name, e.g. 'xzy'
+    #   ARGS    the components in order, ready for a constructor call, 'x, z, y'
+    #   RETDIM  the dimension of the result, e.g. 3
+    #   IDXS    the component indexes, e.g. [0, 2, 1]
+    ret = []
+    for swizLen in range(2, dim+1):
+        for p in itertools.permutations(range(dim), swizLen):
+            ret.append(dict(NAME=''.join([Component(n) for n in p]),
+                            ARGS=', '.join([Component(n) for n in p]),
+                            RETDIM=len(p),
+                            IDXS=list(p)))
+    return ret
+
 ########################################################################
 # GfVec
 def GetVecSpecs():
@@ -126,7 +157,8 @@ def GetVecSpecs():
               LIST=MakeListFn(dim),
               VECNAME=VecName,
               SCALAR_SUFFIX=ScalarSuffix,
-              SCALARS=scalarTypes)
+              SCALARS=scalarTypes,
+              SWIZZLES=MakeSwizzles(dim))
          for scl, dim in itertools.product(scalarTypes, dimensions)],
         key=lambda d: RankScalar(d['SCL']))
 

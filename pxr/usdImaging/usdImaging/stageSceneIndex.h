@@ -11,6 +11,7 @@
 
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
+#include "pxr/usdImaging/usdImaging/stageSceneIndexInterface.h"
 #include "pxr/usdImaging/usdImaging/types.h"
 
 #include "pxr/imaging/hd/sceneIndex.h"
@@ -37,7 +38,7 @@ TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
 /// instances. Use UsdImagingSceneIndex to get a chain
 /// of scene indices to resolve those.
 ///
-class UsdImagingStageSceneIndex : public HdSceneIndexBase
+class UsdImagingStageSceneIndex : public UsdImagingStageSceneIndexInterface
 {
 public:
     static UsdImagingStageSceneIndexRefPtr New(
@@ -64,18 +65,24 @@ public:
     /// scene index prims and reset stage global data.
     ///
     USDIMAGING_API
-    void SetStage(UsdStageRefPtr stage);
+    void SetStage(UsdStageRefPtr stage) override;
+
+    /// Set the time, and call PrimsDirtied for any time-varying attributes.
+    ///
+    /// PrimsDirtied is only called if the time is different from the last call.
+    USDIMAGING_API
+    void SetTime(UsdTimeCode time) override;
 
     /// Set the time, and call PrimsDirtied for any time-varying attributes.
     ///
     /// PrimsDirtied is only called if the time is different from the last call
     /// or forceDirtyingTimeDeps is true.
     USDIMAGING_API
-    void SetTime(UsdTimeCode time, bool forceDirtyingTimeDeps = false);
+    void SetTime(UsdTimeCode time, bool forceDirtyingTimeDeps);
 
     /// Return the current time.
     USDIMAGING_API
-    UsdTimeCode GetTime() const;
+    UsdTimeCode GetTime() const override;
 
     /// Apply queued stage edits to imaging scene.
     /// If the USD stage is edited while the scene index is pulling from it,
@@ -83,7 +90,7 @@ public:
     /// turn resync requests into PrimsAdded/PrimsRemoved, and property changes
     /// into PrimsDirtied.
     USDIMAGING_API
-    void ApplyPendingUpdates();
+    void ApplyPendingUpdates() override;
 
     /// @}
 
@@ -150,6 +157,8 @@ private:
 
     UsdStageRefPtr _stage;
     _StageGlobals _stageGlobals;
+
+    void _SetTime(UsdTimeCode time);
 
     // Population
     void _Populate();
