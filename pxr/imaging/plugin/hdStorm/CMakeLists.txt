@@ -21,7 +21,7 @@ pxr_plugin(hdStorm
     INCLUDE_DIRS
         ${OPENSUBDIV_INCLUDE_DIR}
 
-    PUBLIC_CLASSES
+    PRIVATE_CLASSES
         rendererPlugin
 
     RESOURCE_FILES

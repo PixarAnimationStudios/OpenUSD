@@ -18,8 +18,10 @@ pxr_plugin(hdEmbree
         hio
         Embree::embree
 
-    PUBLIC_CLASSES
+    PRIVATE_CLASSES
         config
+        debugCodes
+        implicitSurfaceSceneIndexPlugin
         instancer
         light
         lightSamplers
@@ -34,14 +36,10 @@ pxr_plugin(hdEmbree
         renderPass
         sampler
 
-    PUBLIC_HEADERS
+    PRIVATE_HEADERS
         context.h
         renderParam.h
         pxrPbrt/pbrtUtils.h
-
-    PRIVATE_CLASSES
-        debugCodes
-        implicitSurfaceSceneIndexPlugin
 
     RESOURCE_FILES
         plugInfo.json
