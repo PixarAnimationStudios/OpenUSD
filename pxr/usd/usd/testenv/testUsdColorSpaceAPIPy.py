@@ -168,11 +168,16 @@ class TestUsdColorSpaceAPI(unittest.TestCase):
         acesCGBlueChromaAttr = testACEScgDefAPI.CreateBlueChromaAttr(blueChroma)
         acesCGWhitePointAttr = testACEScgDefAPI.CreateWhitePointAttr(whitePoint)
 
-        # verify that the color space is computed correctly
-        assert testACEScgDefAPI.ComputeColorSpaceFromDefinitionAttributes() == acesCG
+        # Color space equality is name sensitive, so we build a comparison space
+        # with an equivalent name.
+        expectedACEScg = Gf.ColorSpace(testACEScg,
+                                       redChroma, greenChroma, blueChroma, whitePoint,
+                                       acesCG.GetGamma(), acesCG.GetLinearBias())
+
+        assert testACEScgDefAPI.ComputeColorSpaceFromDefinitionAttributes() == expectedACEScg
 
         # verify it again, vs childDefPrim.
-        assert Usd.ColorSpaceAPI.ComputeColorSpace(childDefPrim, cache) == acesCG
+        assert Usd.ColorSpaceAPI.ComputeColorSpace(childDefPrim, cache) == expectedACEScg
 
         print("UsdColorSpaceAPI and UsdColorSpaceDefinitionAPI tests passed")
 
