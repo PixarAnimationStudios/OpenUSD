@@ -194,6 +194,7 @@ pxr_plugin(${PXR_PACKAGE}
         motionBlurSceneIndexPlugin
         particleFieldConversionSceneIndexPlugin
         pinnedCurveExpandingSceneIndexPlugin
+        pxr/imaging/hdsi/pinnedCurveExpandingSceneIndex
         previewSurfacePrimvarsSceneIndexPlugin
         renderBuffer
         renderParam
@@ -235,6 +236,7 @@ pxr_plugin(${PXR_PACKAGE}
         updateObjectSettingsSceneIndexPlugin
         utils
         velocityMotionResolvingSceneIndexPlugin
+        pxr/imaging/hdsi/velocityMotionResolvingSceneIndex
         virtualStructResolvingSceneIndex
 
     PUBLIC_HEADERS

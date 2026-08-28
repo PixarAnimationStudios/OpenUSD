@@ -80,6 +80,8 @@ TF_DECLARE_REF_PTRS(HdsiLocatorCachingSceneIndex);
 /// Scene index plugins should insert HdsiLocatorCachingSceneIndex instances,
 /// configured appropriately, based on the known structure of their
 /// computations: either caching input dependencies or their outputs.
+/// By default all children of the targetted datasource will also be cached.
+/// This can be disabled using the "cacheDescendants" argument.
 ///
 /// For computations that pull on upstream prims from scene-defined paths,
 /// such as material bindings, it may be appropriate to insert a caching
@@ -149,7 +151,8 @@ public:
     AddDependencyForwardingAndCache(
         HdSceneIndexBaseRefPtr const& inputScene,
         HdDataSourceLocator const& locatorToCache,
-        TfToken const& primTypeToCache);
+        TfToken const& primTypeToCache,
+        bool const& cacheDescendants = true);
 
     /// Creates a new HdsiLocatorCachingSceneIndex.
     ///
@@ -167,7 +170,8 @@ public:
     static HdsiLocatorCachingSceneIndexRefPtr
     New(HdSceneIndexBaseRefPtr const& inputScene,
         HdDataSourceLocator const& locatorToCache,
-        TfToken const& primTypeToCache);
+        TfToken const& primTypeToCache,
+        bool const& cacheDescendants = true);
 
     HD_API
     ~HdsiLocatorCachingSceneIndex() override;
@@ -183,7 +187,8 @@ protected:
     HdsiLocatorCachingSceneIndex(
         HdSceneIndexBaseRefPtr const& inputScene,
         HdDataSourceLocator const& locatorToCache,
-        TfToken const& primTypeToCache);
+        TfToken const& primTypeToCache,
+        bool const& cacheDescendants);
 
     void _PrimsAdded(
         const HdSceneIndexBase &sender,
@@ -241,6 +246,7 @@ private: // data
     // Cache strategy parameters.
     const HdDataSourceLocator _locatorToCache;
     const TfToken _primTypeToCache;
+    const bool _cacheDescendants;
 
     // Cache contents.
     mutable _PrimCache _primDsCache;

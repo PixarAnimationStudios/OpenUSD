@@ -231,6 +231,7 @@ pxr_library(hd
 
     PUBLIC_HEADERS
         api.h
+        cachingSampledDataSource.h
         dataSourceTypeDefs.h
         driver.h
         invalidatableContainerDataSource.h

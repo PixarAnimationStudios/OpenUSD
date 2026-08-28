@@ -1,12 +1,19 @@
 //
-// Copyright 2024 Pixar
+// Copyright 2026 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/imaging/hdsi/velocityMotionResolvingSceneIndex.h"
+#include "pxr/imaging/hd/version.h"
+#if HD_API_VERSION < 106
 
+#include "velocityMotionResolvingSceneIndex.h"
+
+#if HD_API_VERSION >= 106
 #include "pxr/imaging/hd/cachingSampledDataSource.h"
+#else
+#include "hdPrman/pxr/imaging/hd/cachingSampledDataSource.h"
+#endif
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
 #include "pxr/imaging/hd/dependenciesSchema.h"
@@ -19,7 +26,6 @@
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/sceneGlobalsSchema.h"
 #include "pxr/imaging/hd/sceneIndexObserver.h"
-#include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -49,24 +55,61 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDSI_VELOCITY_MOTION, "Velocity-based motion");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_VELOCITY_MOTION, "Velocity-based motion");
 }
 
-TF_DEFINE_PUBLIC_TOKENS(HdsiVelocityMotionResolvingSceneIndexTokens,
-    HDSI_VELOCITY_MOTION_RESOLVING_SCENE_INDEX_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HdPrmanVelocityMotionResolvingSceneIndexTokens,
+    HDPRMAN_VELOCITY_MOTION_RESOLVING_SCENE_INDEX_TOKENS);
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (fps)
+
+    // Remove after dropping support for USD < 24.06
+    (angularVelocities)
+
+);
 
 namespace {
 
+#if PXR_VERSION >= 2505
 const double _fallbackTimeCodesPerSecond = 24.0f;
+#else
+static float _fallbackFps = 24.f;
+
+float _GetFps(const HdContainerDataSourceHandle& inputArgs)
+{
+    if (!inputArgs) {
+        return _fallbackFps;
+    }
+    const auto source = HdSampledDataSource::Cast(inputArgs->Get(_tokens->fps));
+    if (!source) {
+        return _fallbackFps;
+    }
+    const VtValue &value = source->GetValue(0.0f);
+    if (!value.IsHolding<float>()) {
+        return _fallbackFps;
+    }
+    return value.UncheckedGet<float>();
+}
+#endif
 
 bool
 _PrimvarAffectedByVelocity(const TfToken& primvar)
 {
     static const TfToken::Set primvars {
-        HdPrimvarsSchemaTokens->points,
-        HdInstancerTokens->instanceTranslations,
-        HdInstancerTokens->instanceRotations,
-        HdInstancerTokens->instanceScales };
+        HdPrimvarsSchemaTokens->points
+#if HD_API_VERSION < 67
+        , HdInstancerTokens->translate
+        , HdInstancerTokens->rotate
+        , HdInstancerTokens->scale
+#endif
+#if HD_API_VERSION >= 56
+        , HdInstancerTokens->instanceTranslations
+        , HdInstancerTokens->instanceRotations
+        , HdInstancerTokens->instanceScales
+#endif
+    };
     return primvars.count(primvar) > 0;
 }
 
@@ -122,12 +165,20 @@ public:
         const HdSampledDataSourceHandle& source,
         const SdfPath& primPath,
         const HdContainerDataSourceHandle& primSource,
+#if PXR_VERSION >= 2505
         const HdSceneIndexBasePtr& inputSceneIndex)
+#else
+        const HdContainerDataSourceHandle& inputArgs)
+#endif
       : _name(name)
       , _source(HdCachingSampledDataSource::New(source))
       , _primPath(primPath)
       , _primSource(primSource)
+#if PXR_VERSION >= 2505
       , _inputSceneIndex(inputSceneIndex)
+#else
+      , _inputArgs(inputArgs)
+#endif
     { }
 
 protected:
@@ -138,9 +189,9 @@ protected:
         std::vector<Time>* const outSampleTimes)
     {
         const TfToken mode = _GetMode();
-        if (mode == HdsiVelocityMotionResolvingSceneIndexTokens->ignore) {
+        if (mode == HdPrmanVelocityMotionResolvingSceneIndexTokens->ignore) {
             // velocity-based motion is ignored; defer to source
-            TF_DEBUG(HDSI_VELOCITY_MOTION).Msg(
+            TF_DEBUG(HDPRMAN_VELOCITY_MOTION).Msg(
                 "<%s.%s>: Ignoring velocity-based motion (mode)\n",
                 _primPath.GetText(), _name.GetText());
             return _source->GetContributingSampleTimesForInterval(
@@ -159,9 +210,9 @@ protected:
         // velocity-based motion is valid
 
         // XXX: These next two are handled separately to make nice debug
-        if (mode == HdsiVelocityMotionResolvingSceneIndexTokens->disable) {
+        if (mode == HdPrmanVelocityMotionResolvingSceneIndexTokens->disable) {
             // velocity-based motion is disabled
-            TF_DEBUG(HDSI_VELOCITY_MOTION).Msg(
+            TF_DEBUG(HDPRMAN_VELOCITY_MOTION).Msg(
                 "<%s.%s>: Velocity-based motion disabled (mode)\n",
                 _primPath.GetText(), _name.GetText());
             outSampleTimes->clear();
@@ -169,8 +220,17 @@ protected:
         }
 
         // Instance scales are always frozen when doing velocity motion.
-        if (_name == HdInstancerTokens->instanceScales) {
-            TF_DEBUG(HDSI_VELOCITY_MOTION).Msg(
+        if (
+#if HD_API_VERSION < 56
+            _name == HdInstancerTokens->scale
+#elif HD_API_VERSION < 67
+            _name == HdInstancerTokens->scale ||
+            _name == HdInstancerTokens->instanceScales
+#else
+            _name == HdInstancerTokens->instanceScales
+#endif
+            ) {
+            TF_DEBUG(HDPRMAN_VELOCITY_MOTION).Msg(
                 "<%s.%s>: Frozen\n", _primPath.GetText(), _name.GetText());
             outSampleTimes->clear();
             return false;
@@ -180,8 +240,16 @@ protected:
 
         // Check for non-linear motion and insert any additional required sample
         // times according to nonlinearSampleCount.
-        if (_name == HdInstancerTokens->instanceRotations ||
-            (mode == HdsiVelocityMotionResolvingSceneIndexTokens->enable &&
+        if (
+#if HD_API_VERSION < 56
+            _name == HdInstancerTokens->rotate ||
+#elif HD_API_VERSION < 67
+            _name == HdInstancerTokens->rotate ||
+            _name == HdInstancerTokens->instanceRotations ||
+#else
+            _name == HdInstancerTokens->instanceRotations ||
+#endif
+            (mode == HdPrmanVelocityMotionResolvingSceneIndexTokens->enable &&
                 _GetAccelerations(sampleTime).size()
                     >= sourceValue.GetArraySize())) {
             const int n = std::max(3, _GetNonlinearSampleCount()) - 1;
@@ -190,7 +258,7 @@ protected:
                     startTime + float(k) / float(n) * (endTime - startTime));
             }
         }
-        if (TfDebug::IsEnabled(HDSI_VELOCITY_MOTION)) {
+        if (TfDebug::IsEnabled(HDPRMAN_VELOCITY_MOTION)) {
             std::string s;
             for (const Time& t : *outSampleTimes) {
                 if (!s.empty()) {
@@ -198,7 +266,7 @@ protected:
                 }
                 s += TfStringPrintf("%f", t);
             }
-            TF_DEBUG(HDSI_VELOCITY_MOTION).Msg(
+            TF_DEBUG(HDPRMAN_VELOCITY_MOTION).Msg(
                 "<%s.%s>: Sample times: [%s]\n",
                 _primPath.GetText(), _name.GetText(), s.c_str());
         }
@@ -209,7 +277,7 @@ protected:
     _GetValue(Time shutterOffset)
     {
         const TfToken mode = _GetMode();
-        if (mode == HdsiVelocityMotionResolvingSceneIndexTokens->ignore) {
+        if (mode == HdPrmanVelocityMotionResolvingSceneIndexTokens->ignore) {
             // velocity-based motion is ignored; defer to source
             return _source->GetValue(shutterOffset);
         }
@@ -226,18 +294,40 @@ protected:
 
         // when velocity motion is disabled, or when handling instancer
         // scales, freeze to left-bracketing time sample
-        if (mode == HdsiVelocityMotionResolvingSceneIndexTokens->disable ||
-            _name == HdInstancerTokens->instanceScales) {
+        if (mode == HdPrmanVelocityMotionResolvingSceneIndexTokens->disable ||
+#if HD_API_VERSION < 56
+            _name == HdInstancerTokens->scale
+#elif HD_API_VERSION < 67
+            _name == HdInstancerTokens->scale ||
+            _name == HdInstancerTokens->instanceScales
+#else
+            _name == HdInstancerTokens->instanceScales
+#endif
+            ) {
             return _source->GetValue(sampleTime);
         }
 
+#if PXR_VERSION >= 2505
         // USD defines timeCodesPerSecond as double; convert to float.
         const auto timeCodesPerSecond = float(_GetTimeCodesPerSecond());
         const Time scaledTime =
             (shutterOffset - sampleTime) / timeCodesPerSecond;
+#else
+        const float fps = _GetFps(_inputArgs);
+        const Time scaledTime = (shutterOffset - sampleTime) / fps;
+#endif
 
         // rotations
-        if (_name == HdInstancerTokens->instanceRotations) {
+        if (
+#if HD_API_VERSION < 56
+            _name == HdInstancerTokens->rotate
+#elif HD_API_VERSION < 67
+            _name == HdInstancerTokens->rotate ||
+            _name == HdInstancerTokens->instanceRotations
+#else
+            _name == HdInstancerTokens->instanceRotations
+#endif
+        ) {
             return _ApplyAngularVelocities(sourceVal, velocities, scaledTime);
         }
 
@@ -247,7 +337,7 @@ protected:
         // check for accelerations
         VtVec3fArray accelerations { };
         bool useAccelerations = mode !=
-            HdsiVelocityMotionResolvingSceneIndexTokens->noAcceleration;
+            HdPrmanVelocityMotionResolvingSceneIndexTokens->noAcceleration;
         if (useAccelerations) {
             accelerations = _GetAccelerations(sampleTime);
             useAccelerations = accelerations.size() >= positions.size();
@@ -272,6 +362,7 @@ protected:
     }
 
 private:
+#if PXR_VERSION >= 2505
     // Gets timeCodesPerSecond with the following priority (first found wins):
     //  - From HdSceneGlobalsSchema
     //  - From the static fallback defined in this file
@@ -287,6 +378,7 @@ private:
 
         return _fallbackTimeCodesPerSecond;
     }
+#endif
 
     // Retrieves the value of the accelerations primvar for the current frame,
     // if present. If not present, or incorrect type, or the contributing sample
@@ -298,7 +390,11 @@ private:
     {
         static const VtVec3fArray empty { };
         static const HdDataSourceLocator accelerationsLocator {
+#if PXR_VERSION < 2306
+            HdPrimvarsSchemaTokens->primvars,
+#else
             HdPrimvarsSchema::GetSchemaToken(),
+#endif
             HdTokens->accelerations,
             HdPrimvarSchemaTokens->primvarValue };
         std::call_once(_loadedAccelerations, [&]{
@@ -359,9 +455,24 @@ private:
         Time* outSampleTime = nullptr)
     {
         const HdDataSourceLocator velocitiesLocator {
+#if PXR_VERSION < 2306
+            HdPrimvarsSchemaTokens->primvars,
+#else
             HdPrimvarsSchema::GetSchemaToken(),
-            _name == HdInstancerTokens->instanceRotations
+#endif
+#if HD_API_VERSION < 56
+            _name == HdInstancerTokens->rotate
+#elif HD_API_VERSION < 67
+            (_name == HdInstancerTokens->rotate ||
+            _name == HdInstancerTokens->instanceRotations)
+#else
+            (_name == HdInstancerTokens->instanceRotations)
+#endif
+#if PXR_VERSION < 2406
+              ? _tokens->angularVelocities
+#else
               ? HdTokens->angularVelocities
+#endif
               : HdTokens->velocities,
             HdPrimvarSchemaTokens->primvarValue };
         std::call_once(_loadedVelocities, [&]{
@@ -373,7 +484,7 @@ private:
         });
         if (!_velocitiesDs) {
             // velocities not present
-            TF_DEBUG(HDSI_VELOCITY_MOTION).Msg(
+            TF_DEBUG(HDPRMAN_VELOCITY_MOTION).Msg(
                 "<%s.%s>: No velocities\n",
                 _primPath.GetText(), _name.GetText());
             return false;
@@ -411,7 +522,7 @@ private:
         if (times[1][0] != times[0][0]) {
             // Source and velocities do not share a common frame-relative
             // left-bracketing sample time
-            TF_DEBUG(HDSI_VELOCITY_MOTION).Msg(
+            TF_DEBUG(HDPRMAN_VELOCITY_MOTION).Msg(
                 "<%s.%s>: Time sample ordinality mismatch (src: %f != vel: %f)\n",
                 _primPath.GetText(), _name.GetText(),
                 times[0].front(), times[1].front());
@@ -420,7 +531,7 @@ private:
         const Time sampleTime = times[0][0];
         const VtValue velocitiesVal = _velocitiesDs->GetValue(sampleTime);
         if (!velocitiesVal.IsHolding<VtVec3fArray>()) {
-            TF_DEBUG(HDSI_VELOCITY_MOTION).Msg(
+            TF_DEBUG(HDPRMAN_VELOCITY_MOTION).Msg(
                 "<%s.%s>: Velocities wrong type\n",
                 _primPath.GetText(), _name.GetText());
             return false;
@@ -428,23 +539,32 @@ private:
         const VtValue sourceVal = _source->GetValue(sampleTime);
         if (sourceVal.GetArraySize() > velocitiesVal.GetArraySize()) {
             // not enough velocities
-            TF_DEBUG(HDSI_VELOCITY_MOTION).Msg(
+            TF_DEBUG(HDPRMAN_VELOCITY_MOTION).Msg(
                 "<%s.%s>: Fewer velocities than source\n",
                 _primPath.GetText(), _name.GetText());
             return false;
         }
-        if (_name == HdInstancerTokens->instanceRotations) {
+        if (
+#if HD_API_VERSION < 56
+            _name == HdInstancerTokens->rotate
+#elif HD_API_VERSION < 67
+            (_name == HdInstancerTokens->rotate ||
+            _name == HdInstancerTokens->instanceRotations)
+#else
+            (_name == HdInstancerTokens->instanceRotations)
+#endif
+        ) {
             if (!(sourceVal.IsHolding<VtQuathArray>() ||
                 sourceVal.IsHolding<VtQuatfArray>())) {
                 // source rotations are wrong type
-                TF_DEBUG(HDSI_VELOCITY_MOTION).Msg(
+                TF_DEBUG(HDPRMAN_VELOCITY_MOTION).Msg(
                     "<%s.%s>: Source rotations wrong type\n",
                     _primPath.GetText(), _name.GetText());
                 return false;
             }
         } else if (!sourceVal.IsHolding<VtVec3fArray>()) {
             // source points/positions or scales are wrong type
-            TF_DEBUG(HDSI_VELOCITY_MOTION).Msg(
+            TF_DEBUG(HDPRMAN_VELOCITY_MOTION).Msg(
                 "<%s.%s>: Source positions/scales wrong type\n",
                 _primPath.GetText(), _name.GetText());
             return false;
@@ -458,7 +578,7 @@ private:
         if (outSampleTime != nullptr) {
             *outSampleTime = sampleTime;
         }
-        TF_DEBUG(HDSI_VELOCITY_MOTION).Msg(
+        TF_DEBUG(HDPRMAN_VELOCITY_MOTION).Msg(
             "<%s.%s>: Valid velocity-based motion\n",
             _primPath.GetText(), _name.GetText());
         return true;
@@ -469,7 +589,11 @@ private:
     {
         static const int defaultValue = 3; // From UsdGeomMotionAPI
         static const HdDataSourceLocator locator = {
+#if PXR_VERSION < 2306
+            HdPrimvarsSchemaTokens->primvars,
+#else
             HdPrimvarsSchema::GetSchemaToken(),
+#endif
             HdTokens->nonlinearSampleCount,
             HdPrimvarSchemaTokens->primvarValue };
         const auto ds = HdSampledDataSource::Cast(HdContainerDataSource::Get(
@@ -484,14 +608,14 @@ private:
     _GetMode()
     {
         static const HdDataSourceLocator locator(
-            HdsiVelocityMotionResolvingSceneIndexTokens->velocityMotionMode);
+            HdPrmanVelocityMotionResolvingSceneIndexTokens->velocityMotionMode);
         static const TfToken::Set validModes = {
-            HdsiVelocityMotionResolvingSceneIndexTokens->enable,
-            HdsiVelocityMotionResolvingSceneIndexTokens->disable,
-            HdsiVelocityMotionResolvingSceneIndexTokens->noAcceleration,
-            HdsiVelocityMotionResolvingSceneIndexTokens->ignore };
+            HdPrmanVelocityMotionResolvingSceneIndexTokens->enable,
+            HdPrmanVelocityMotionResolvingSceneIndexTokens->disable,
+            HdPrmanVelocityMotionResolvingSceneIndexTokens->noAcceleration,
+            HdPrmanVelocityMotionResolvingSceneIndexTokens->ignore };
         static const TfToken defaultMode =
-            HdsiVelocityMotionResolvingSceneIndexTokens->enable;
+            HdPrmanVelocityMotionResolvingSceneIndexTokens->enable;
         const auto ds = HdSampledDataSource::Cast(HdContainerDataSource::Get(
             _primSource, locator));
         if (!ds) {
@@ -499,7 +623,7 @@ private:
         }
         TfToken value = ds->GetValue(0.0).GetWithDefault(defaultMode);
         if (validModes.count(value) == 0) {
-            TF_DEBUG(HDSI_VELOCITY_MOTION).Msg(
+            TF_DEBUG(HDPRMAN_VELOCITY_MOTION).Msg(
                 "<%s.%s>: Unrecognized velocity motion mode token '%s'; "
                 "assuming 'enable'\n", _primPath.GetText(), _name.GetText(),
                 value.GetText());
@@ -515,7 +639,11 @@ private:
     HdSampledDataSourceHandle _source;
     SdfPath _primPath;
     HdContainerDataSourceHandle _primSource;
+#if PXR_VERSION >= 2505
     HdSceneIndexBasePtr _inputSceneIndex;
+#else
+    HdContainerDataSourceHandle _inputArgs;
+#endif
     HdSampledDataSourceHandle _velocitiesDs, _accelerationsDs;
     std::once_flag _loadedVelocities, _loadedAccelerations;
 };
@@ -536,9 +664,14 @@ public:
         const HdSampledDataSourceHandle& source,
         const SdfPath& primPath,
         const HdContainerDataSourceHandle& primSource,
+#if PXR_VERSION >= 2505
         const HdSceneIndexBasePtr& inputSceneIndex)
       : _VelocityHelper(
             name, source, primPath, primSource, inputSceneIndex)
+#else
+        const HdContainerDataSourceHandle& inputArgs)
+      : _VelocityHelper(name, source, primPath, primSource, inputArgs)
+#endif
     { }
 
     VtValue
@@ -601,10 +734,53 @@ private:
         const HdSampledDataSourceHandle& source,
         const SdfPath& primPath,
         const HdContainerDataSourceHandle& primSource,
+#if PXR_VERSION >= 2505
         const HdSceneIndexBasePtr& inputSceneIndex)
       : _VelocityHelper(name, source, primPath, primSource, inputSceneIndex)
+#else
+        const HdContainerDataSourceHandle& inputArgs)
+      : _VelocityHelper(name, source, primPath, primSource, inputArgs)
+#endif
     { }
 };
+
+#if HD_API_VERSION < 96
+struct _PrimvarSourceTypeVisitor
+{
+    const TfToken name;
+    const HdSampledDataSourceHandle source;
+    const SdfPath& primPath;
+    const HdContainerDataSourceHandle primSource;
+#if PXR_VERSION >= 2505
+    const HdSceneIndexBasePtr inputSceneIndex;
+#else
+    const HdContainerDataSourceHandle inputArgs;
+#endif
+
+    template <typename T>
+    HdDataSourceBaseHandle
+    operator()(const T&)
+    {
+        return _TypedValueDataSource<T>::New(
+#if PXR_VERSION >= 2505
+            name, source, primPath, primSource, inputSceneIndex);
+#else
+            name, source, primPath, primSource, inputArgs);
+#endif
+    }
+
+    HdDataSourceBaseHandle
+    operator()(const VtValue&)
+    {
+        return _UntypedValueDataSource::New(
+#if PXR_VERSION >= 2505
+            name, source, primPath, primSource, inputSceneIndex);
+#else
+            name, source, primPath, primSource, inputArgs);
+#endif
+    }
+};
+#endif
 
 // -----------------------------------------------------------------------------
 
@@ -619,12 +795,20 @@ public:
         const HdContainerDataSourceHandle& source,
         const SdfPath& primPath,
         const HdContainerDataSourceHandle& primSource,
+#if PXR_VERSION >= 2505
         const HdSceneIndexBasePtr& inputSceneIndex)
+#else
+        const HdContainerDataSourceHandle& inputArgs)
+#endif
       : _name(name)
       , _source(source)
       , _primPath(primPath)
       , _primSource(primSource)
+#if PXR_VERSION >= 2505
       , _inputSceneIndex(inputSceneIndex)
+#else
+      , _inputArgs(inputArgs)
+#endif
     { }
 
     TfTokenVector
@@ -646,21 +830,57 @@ public:
         HdDataSourceBaseHandle ds = _source->Get(name);
         if (ds && name == HdPrimvarSchemaTokens->primvarValue) {
             if (const auto source = HdSampledDataSource::Cast(ds)) {
+#if HD_API_VERSION >= 96
                 return HdCopySampledDataSourceType<
                     _TypedValueDataSource, _UntypedValueDataSource>(
-                    source, _name, source, _primPath, _primSource,
-                    _inputSceneIndex);
+#if PXR_VERSION >= 2505
+                    source, _name, source, _primPath, _primSource, _inputSceneIndex);
+#else
+                    source, _name, source, _primPath, _primSource, _inputArgs);
+#endif
+#else
+                if (_name == HdPrimvarsSchemaTokens->points) {
+                    return _TypedValueDataSource<VtVec3fArray>::New(
+#if PXR_VERSION >= 2505
+                        _name, source, _primPath, _primSource, _inputSceneIndex);
+#else
+                        _name, source, _primPath, _primSource, _inputArgs);
+#endif
+                } else {
+                    // XXX: source is sampled at time 0 only to determine its type
+                    return VtVisitValue(
+                        source->GetValue(0.0f),
+                        _PrimvarSourceTypeVisitor {
+#if PXR_VERSION >= 2505
+                            _name, source, _primPath, _primSource, _inputSceneIndex });
+#else
+                            _name, source, _primPath, _primSource, _inputArgs });
+#endif
+                }
+#endif
             }
         }
         return ds;
     }
+
+#if PXR_VERSION < 2301
+    bool Has(const TfToken &name) override
+    {
+        const TfTokenVector names = GetNames();
+        return std::find(names.begin(), names.end(), name) != names.end();
+    }
+#endif
 
 private:
     TfToken _name;
     HdContainerDataSourceHandle _source;
     SdfPath _primPath;
     HdContainerDataSourceHandle _primSource;
+#if PXR_VERSION >= 2505
     HdSceneIndexBasePtr _inputSceneIndex;
+#else
+    HdContainerDataSourceHandle _inputArgs;
+#endif
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(_PrimvarDataSource);
@@ -677,11 +897,19 @@ public:
         const HdContainerDataSourceHandle& source,
         const SdfPath& primPath,
         const HdContainerDataSourceHandle& primSource,
+#if PXR_VERSION >= 2505
         const HdSceneIndexBasePtr& inputSceneIndex)
+#else
+        const HdContainerDataSourceHandle& inputArgs)
+#endif
       : _source(source)
       , _primPath(primPath)
       , _primSource(primSource)
+#if PXR_VERSION >= 2505
       , _inputSceneIndex(inputSceneIndex)
+#else
+      , _inputArgs(inputArgs)
+#endif
     { }
 
     TfTokenVector
@@ -703,15 +931,32 @@ public:
         if (ds && _PrimvarAffectedByVelocity(name)) {
             return _PrimvarDataSource::New(
                 name, HdContainerDataSource::Cast(ds),
+#if PXR_VERSION >= 2505
                 _primPath, _primSource, _inputSceneIndex);
+#else
+                _primPath, _primSource, _inputArgs);
+#endif
         }
         return ds;
     }
+
+#if PXR_VERSION < 2301
+    bool Has(const TfToken &name) override
+    {
+        const TfTokenVector names = GetNames();
+        return std::find(names.begin(), names.end(), name) != names.end();
+    }
+#endif
+
 private:
     HdContainerDataSourceHandle _source;
     SdfPath _primPath;
     HdContainerDataSourceHandle _primSource;
+#if PXR_VERSION >= 2505
     HdSceneIndexBasePtr _inputSceneIndex;
+#else
+    HdContainerDataSourceHandle _inputArgs;
+#endif
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(_PrimvarsDataSource);
@@ -727,10 +972,18 @@ public:
     _PrimDataSource(
         const SdfPath& primPath,
         const HdContainerDataSourceHandle& primSource,
+#if PXR_VERSION >= 2505
         const HdSceneIndexBasePtr& inputSceneIndex)
+#else
+        const HdContainerDataSourceHandle& inputArgs)
+#endif
       : _primPath(primPath)
       , _primSource(primSource)
+#if PXR_VERSION >= 2505
       , _inputSceneIndex(inputSceneIndex)
+#else
+      , _inputArgs(inputArgs)
+#endif
     { }
 
     TfTokenVector
@@ -752,74 +1005,113 @@ public:
         if (!ds) {
             return nullptr;
         }
-        if (name == HdPrimvarsSchema::GetSchemaToken()) {
+        if (
+#if PXR_VERSION < 2306
+            name == HdPrimvarsSchemaTokens->primvars
+#else
+            name == HdPrimvarsSchema::GetSchemaToken()
+#endif
+        ) {
             return _PrimvarsDataSource::New(
                 HdContainerDataSource::Cast(ds),
+#if PXR_VERSION >= 2505
                 _primPath, _primSource, _inputSceneIndex);
+#else
+                _primPath, _primSource, _inputArgs);
+#endif
         }
         return ds;
     }
+
+#if PXR_VERSION < 2301
+    bool Has(const TfToken &name) override
+    {
+        const TfTokenVector names = GetNames();
+        return std::find(names.begin(), names.end(), name) != names.end();
+    }
+#endif
+
 private:
     SdfPath _primPath;
     HdContainerDataSourceHandle _primSource;
+#if PXR_VERSION >= 2505
     HdSceneIndexBasePtr _inputSceneIndex;
+#else
+    HdContainerDataSourceHandle _inputArgs;
+#endif
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(_PrimDataSource);
 
 } // anonymous namespace
 
-HdsiVelocityMotionResolvingSceneIndexRefPtr
-HdsiVelocityMotionResolvingSceneIndex::New(
+HdPrmanVelocityMotionResolvingSceneIndexRefPtr
+HdPrmanVelocityMotionResolvingSceneIndex::New(
     const HdSceneIndexBaseRefPtr& inputSceneIndex,
-    const HdContainerDataSourceHandle& /* inputArgs */)
+    const HdContainerDataSourceHandle& inputArgs)
 {
+#if PXR_VERSION >= 2505
     return TfCreateRefPtr(
-        new HdsiVelocityMotionResolvingSceneIndex(inputSceneIndex));
+        new HdPrmanVelocityMotionResolvingSceneIndex(inputSceneIndex));
+#else
+    return TfCreateRefPtr(
+        new HdPrmanVelocityMotionResolvingSceneIndex(inputSceneIndex, inputArgs));
+#endif
 }
 
-HdsiVelocityMotionResolvingSceneIndex::HdsiVelocityMotionResolvingSceneIndex(
+HdPrmanVelocityMotionResolvingSceneIndex::HdPrmanVelocityMotionResolvingSceneIndex(
     const HdSceneIndexBaseRefPtr& inputSceneIndex,
-    const HdContainerDataSourceHandle& /* inputArgs */)
+    const HdContainerDataSourceHandle& inputArgs)
   : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
+#if PXR_VERSION < 2505
+  , _inputArgs(inputArgs)
+#endif
 { }
 
 bool
-HdsiVelocityMotionResolvingSceneIndex::PrimTypeSupportsVelocityMotion(
+HdPrmanVelocityMotionResolvingSceneIndex::PrimTypeSupportsVelocityMotion(
     const TfToken& primType)
 {
     static const TfToken::Set types {
         HdPrimTypeTokens->points,
         HdPrimTypeTokens->basisCurves,
+#if PXR_VERSION >= 2306
         HdPrimTypeTokens->nurbsCurves,
         HdPrimTypeTokens->nurbsPatch,
+#endif
+#if PXR_VERSION >= 2404
         HdPrimTypeTokens->tetMesh,
+#endif
         HdPrimTypeTokens->mesh,
         HdPrimTypeTokens->instancer };
     return types.count(primType) > 0;
 }
 
 HdSceneIndexPrim
-HdsiVelocityMotionResolvingSceneIndex::GetPrim(
+HdPrmanVelocityMotionResolvingSceneIndex::GetPrim(
     const SdfPath& primPath) const
 {
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
     if (PrimTypeSupportsVelocityMotion(prim.primType)) {
         prim.dataSource = _PrimDataSource::New(
+#if PXR_VERSION >= 2505
             primPath, prim.dataSource, _GetInputSceneIndex());
+#else
+            primPath, prim.dataSource, _inputArgs);
+#endif
     }
     return prim;
 }
 
 SdfPathVector
-HdsiVelocityMotionResolvingSceneIndex::GetChildPrimPaths(
+HdPrmanVelocityMotionResolvingSceneIndex::GetChildPrimPaths(
     const SdfPath& primPath) const
 {
     return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
 }
 
 void
-HdsiVelocityMotionResolvingSceneIndex::_PrimsAdded(
+HdPrmanVelocityMotionResolvingSceneIndex::_PrimsAdded(
     const HdSceneIndexBase&  /*sender*/,
     const HdSceneIndexObserver::AddedPrimEntries& entries)
 {
@@ -827,7 +1119,7 @@ HdsiVelocityMotionResolvingSceneIndex::_PrimsAdded(
 }
 
 void
-HdsiVelocityMotionResolvingSceneIndex::_PrimsRemoved(
+HdPrmanVelocityMotionResolvingSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase&  /*sender*/,
     const HdSceneIndexObserver::RemovedPrimEntries& entries)
 {
@@ -835,7 +1127,7 @@ HdsiVelocityMotionResolvingSceneIndex::_PrimsRemoved(
 }
 
 void
-HdsiVelocityMotionResolvingSceneIndex::_PrimsDirtied(
+HdPrmanVelocityMotionResolvingSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase&  /*sender*/,
     const HdSceneIndexObserver::DirtiedPrimEntries& entries)
 {
@@ -844,16 +1136,37 @@ HdsiVelocityMotionResolvingSceneIndex::_PrimsDirtied(
     // Scales-freezing depends on whether velocity-based motion is valid, so
     // if either positions or rotations is dirty, we will dirty scales as well.
     static const HdDataSourceLocatorSet positionsLocators {
-        HdPrimvarsSchema::GetPointsLocator(),
-        HdPrimvarsSchema::GetDefaultLocator()
-            .Append(HdInstancerTokens->instanceTranslations),
-        HdPrimvarsSchema::GetDefaultLocator()
-            .Append(HdInstancerTokens->instanceScales) };
+        HdPrimvarsSchema::GetPointsLocator()
+#if HD_API_VERSION < 67
+        , HdPrimvarsSchema::GetDefaultLocator()
+            .Append(HdInstancerTokens->translate)
+        , HdPrimvarsSchema::GetDefaultLocator()
+            .Append(HdInstancerTokens->scale)
+#endif
+#if HD_API_VERSION >= 56
+        , HdPrimvarsSchema::GetDefaultLocator()
+            .Append(HdInstancerTokens->instanceTranslations)
+        , HdPrimvarsSchema::GetDefaultLocator()
+            .Append(HdInstancerTokens->instanceScales)
+#endif
+    };
     static const HdDataSourceLocatorSet rotationsLocators {
+#if HD_API_VERSION < 67
         HdPrimvarsSchema::GetDefaultLocator()
-            .Append(HdInstancerTokens->instanceRotations),
+            .Append(HdInstancerTokens->rotate)
+        , HdPrimvarsSchema::GetDefaultLocator()
+            .Append(HdInstancerTokens->scale)
+#endif
+#if HD_API_VERSION >= 56
+#if HD_API_VERSION < 67
+        ,
+#endif
         HdPrimvarsSchema::GetDefaultLocator()
-            .Append(HdInstancerTokens->instanceScales) };
+            .Append(HdInstancerTokens->instanceRotations)
+        , HdPrimvarsSchema::GetDefaultLocator()
+            .Append(HdInstancerTokens->instanceScales)
+#endif
+    };
     static const HdDataSourceLocatorSet positionsAffectingLocators {
         HdPrimvarsSchema::GetDefaultLocator()
             .Append(HdTokens->velocities),
@@ -862,15 +1175,22 @@ HdsiVelocityMotionResolvingSceneIndex::_PrimsDirtied(
         HdPrimvarsSchema::GetDefaultLocator()
             .Append(HdTokens->nonlinearSampleCount),
         HdDataSourceLocator(
-            HdsiVelocityMotionResolvingSceneIndexTokens->velocityMotionMode) };
+            HdPrmanVelocityMotionResolvingSceneIndexTokens->velocityMotionMode) };
     static const HdDataSourceLocatorSet rotationsAffectingLocators {
         HdPrimvarsSchema::GetDefaultLocator()
-            .Append(HdTokens->angularVelocities),
+            .Append(
+#if PXR_VERSION < 2406
+                _tokens->angularVelocities
+#else
+                HdTokens->angularVelocities
+#endif
+            ),
         HdPrimvarsSchema::GetDefaultLocator()
             .Append(HdTokens->nonlinearSampleCount),
         HdDataSourceLocator(
-            HdsiVelocityMotionResolvingSceneIndexTokens->velocityMotionMode) };
+            HdPrmanVelocityMotionResolvingSceneIndexTokens->velocityMotionMode) };
 
+#if PXR_VERSION >= 2603
     bool timeCodesPerSecondDirtied = false;
 
     size_t i = 0;
@@ -931,6 +1251,23 @@ HdsiVelocityMotionResolvingSceneIndex::_PrimsDirtied(
     }
 
     return _SendPrimsDirtied(newEntries);
+#else
+    // TODO: Avoid copying entries where possible
+    HdSceneIndexObserver::DirtiedPrimEntries newEntries;
+    for (const auto& entry : entries) {
+        HdSceneIndexObserver::DirtiedPrimEntry newEntry(entry);
+        if (entry.dirtyLocators.Intersects(positionsAffectingLocators)) {
+            newEntry.dirtyLocators.insert(positionsLocators);
+        }
+        if (entry.dirtyLocators.Intersects(rotationsAffectingLocators)) {
+            newEntry.dirtyLocators.insert(rotationsLocators);
+        }
+        newEntries.push_back(newEntry);
+    }
+    return _SendPrimsDirtied(newEntries);
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // HD_API_VERSION < 106
