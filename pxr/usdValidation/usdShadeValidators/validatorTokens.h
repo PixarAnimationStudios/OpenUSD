@@ -60,7 +60,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((nonCompliantBiasAndScale, "NonCompliantBiasAndScale"))                   \
     ((nonCompliantScale, "NonCompliantScaleValues"))                           \
     ((nonCompliantBias, "NonCompliantBiasValues"))                             \
-    ((invalidFamilyType, "InvalidFamilyType"))
+    ((invalidFamilyType, "InvalidFamilyType"))                             \
+    ((shaderInputConnectedToSiblingInput,                                  \
+      "ShaderInputConnectedToSiblingInput"))
 
 /// \def USD_SHADE_VALIDATOR_NAME_TOKENS
 /// Tokens representing validator names. Note that for plugin provided
