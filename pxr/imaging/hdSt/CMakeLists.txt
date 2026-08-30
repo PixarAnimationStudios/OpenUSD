@@ -471,16 +471,6 @@ pxr_build_test(testHdStInstancingUnbalanced
     CPPFILES
         testenv/testHdStInstancingUnbalanced.cpp
 )
-if (${PXR_ENABLE_MATERIALX_SUPPORT})
-pxr_build_test(testHdStMaterialXShaderGen
-    LIBRARIES
-        hdSt
-        hdMtlx
-        tf
-    CPPFILES
-        testenv/testHdStMaterialXShaderGen.cpp
-)
-endif()
 pxr_build_test(testHdStMeshTopology
     LIBRARIES
         hdSt
@@ -603,6 +593,22 @@ pxr_build_test(testHdStSubResourceRegistry
         vt
     CPPFILES
         testenv/testHdStSubResourceRegistry.cpp
+)
+endif()
+
+if (${PXR_ENABLE_MATERIALX_SUPPORT})
+pxr_build_test(testHdStMaterialXShaderGen
+    LIBRARIES
+        hdSt
+        hdMtlx
+        tf
+    CPPFILES
+        testenv/testHdStMaterialXShaderGen.cpp
+)
+pxr_register_test(testHdStMaterialXShaderGen_intGeomprop
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename integer_geomprop.mtlx --primvarMap body_textureIdx:integer"
+    EXPECTED_RETURN_CODE 0
+    TESTENV testenv/testHdStMaterialXShaderGen
 )
 endif()
 

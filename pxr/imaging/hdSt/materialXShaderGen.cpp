@@ -730,6 +730,23 @@ HdStMaterialXShaderGen<Base>::emitVariableDeclarations(
             Base::emitVariableDeclaration(variable, mx::EMPTY_STRING,
                                     context, stage, false /* assignValue */);
         }
+        // The MaterialX GLSL generators add a 'flat' interpolation qualifier
+        // to the declarations of variables whose names start with a
+        // HW::T_IN_GEOMPROP prefix and have an integer base type. It is valid
+        // in their own output, where the vertex data block is a VS->FS
+        // interface block, but Storm reuses this same block to emit the
+        // mxVertexData struct. 'flat' on a plain struct member is illegal GLSL
+        // and fails to compile (error C7561), so emit these members ourselves
+        // without it.
+        else if (qualifier.empty() && !assignValue &&
+                 varType.getBaseType() == mx::TypeDesc::BASETYPE_INTEGER &&
+                 variable->getName().compare(
+                    0, mx::HW::T_IN_GEOMPROP.size(), mx::HW::T_IN_GEOMPROP) == 0) {
+            TF_VERIFY(variable->getSemantic().empty());
+            TF_VERIFY(!variable->getType().isArray());
+            Base::emitString(Base::_syntax->getTypeName(variable->getType()) +
+                               " " + variable->getVariable(), stage);
+        }
         // Otherwise assign the value from MaterialX
         else {
             Base::emitVariableDeclaration(variable, qualifier,
