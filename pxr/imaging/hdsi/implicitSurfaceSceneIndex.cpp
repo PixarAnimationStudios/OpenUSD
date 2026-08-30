@@ -143,11 +143,15 @@ namespace _CubeToMesh
 {
 
 HdContainerDataSourceHandle
-_ComputeMeshDataSource()
+_ComputeMeshDataSource(const HdContainerDataSourceHandle &primDataSource)
 {
     static const PxOsdMeshTopology topology = 
         GeomUtilCuboidMeshGenerator::GenerateTopology();
-
+    static const HdDataSourceLocator doubleSidedLocator =
+        HdCubeSchema::GetDefaultLocator().Append(
+            HdCubeSchemaTokens->doubleSided);
+    HdBoolDataSourceHandle doubleSidedDs = HdBoolDataSource::Cast(
+        HdContainerDataSource::Get(primDataSource, doubleSidedLocator));
     return
         HdMeshSchema::Builder()
             .SetTopology(
@@ -165,8 +169,7 @@ _ComputeMeshDataSource()
             .SetSubdivisionScheme(
                 HdRetainedTypedSampledDataSource<TfToken>::New(
                     topology.GetScheme()))
-            .SetDoubleSided(
-                HdRetainedTypedSampledDataSource<bool>::New(false))
+            .SetDoubleSided(doubleSidedDs)
             .Build();
 }
 
@@ -263,8 +266,8 @@ _ComputePrimDataSource(
 {
     static HdDataSourceBaseHandle const cubeDataSource =
         HdBlockDataSource::New();
-    static HdDataSourceBaseHandle const meshDataSource =
-        _ComputeMeshDataSource();
+    HdDataSourceBaseHandle const meshDataSource =
+        _ComputeMeshDataSource(primDataSource);
     HdDataSourceBaseHandle const primvarsDataSource =
         _ComputePrimvarsDataSource(primDataSource);
     HdDataSourceBaseHandle const dependenciesDataSource =
@@ -295,11 +298,15 @@ namespace _ConeToMesh
 static constexpr size_t numRadial = 10;
 
 HdContainerDataSourceHandle
-_ComputeMeshDataSource()
+_ComputeMeshDataSource(const HdContainerDataSourceHandle &primDataSource)
 {
     static const PxOsdMeshTopology topology =
         GeomUtilConeMeshGenerator::GenerateTopology(numRadial);
-
+    static const HdDataSourceLocator doubleSidedLocator =
+        HdConeSchema::GetDefaultLocator().Append(
+            HdConeSchemaTokens->doubleSided);
+    HdBoolDataSourceHandle doubleSidedDs = HdBoolDataSource::Cast(
+        HdContainerDataSource::Get(primDataSource, doubleSidedLocator));
     return
         HdMeshSchema::Builder()
             .SetTopology(
@@ -317,8 +324,7 @@ _ComputeMeshDataSource()
             .SetSubdivisionScheme(
                 HdRetainedTypedSampledDataSource<TfToken>::New(
                     topology.GetScheme()))
-            .SetDoubleSided(
-                HdRetainedTypedSampledDataSource<bool>::New(false))
+            .SetDoubleSided(doubleSidedDs)
             .Build();
 }
 
@@ -448,8 +454,8 @@ _ComputePrimDataSource(
 {
     static HdDataSourceBaseHandle const coneDataSource =
         HdBlockDataSource::New();
-    static HdDataSourceBaseHandle const meshDataSource =
-        _ComputeMeshDataSource();
+    HdDataSourceBaseHandle const meshDataSource =
+        _ComputeMeshDataSource(primDataSource);
     HdDataSourceBaseHandle const primvarsDataSource =
         _ComputePrimvarsDataSource(primDataSource);
     HdDataSourceBaseHandle const dependenciesDataSource =
@@ -480,11 +486,15 @@ namespace _CylinderToMesh
 static constexpr size_t numRadial = 10;
 
 HdContainerDataSourceHandle
-_ComputeMeshDataSource()
+_ComputeMeshDataSource(const HdContainerDataSourceHandle &primDataSource)
 {
     static const PxOsdMeshTopology topology =
         GeomUtilCylinderMeshGenerator::GenerateTopology(numRadial);
-
+    static const HdDataSourceLocator doubleSidedLocator =
+        HdCylinderSchema::GetDefaultLocator().Append(
+            HdCylinderSchemaTokens->doubleSided);
+    HdBoolDataSourceHandle doubleSidedDs = HdBoolDataSource::Cast(
+        HdContainerDataSource::Get(primDataSource, doubleSidedLocator));
     return
         HdMeshSchema::Builder()
             .SetTopology(
@@ -502,8 +512,7 @@ _ComputeMeshDataSource()
             .SetSubdivisionScheme(
                 HdRetainedTypedSampledDataSource<TfToken>::New(
                     topology.GetScheme()))
-            .SetDoubleSided(
-                HdRetainedTypedSampledDataSource<bool>::New(false))
+            .SetDoubleSided(doubleSidedDs)
             .Build();
 }
 
@@ -676,8 +685,8 @@ _ComputePrimDataSource(
 {
     static HdDataSourceBaseHandle const cylinderDataSource =
         HdBlockDataSource::New();
-    static HdDataSourceBaseHandle const meshDataSource =
-        _ComputeMeshDataSource();
+    HdDataSourceBaseHandle const meshDataSource =
+        _ComputeMeshDataSource(primDataSource);
     HdDataSourceBaseHandle const primvarsDataSource =
         _ComputePrimvarsDataSource(primDataSource);
     HdDataSourceBaseHandle const dependenciesDataSource =
@@ -709,11 +718,15 @@ static constexpr size_t numRadial = 10;
 static constexpr size_t numAxial  = 10;
 
 HdContainerDataSourceHandle
-_ComputeMeshDataSource()
+_ComputeMeshDataSource(const HdContainerDataSourceHandle &primDataSource)
 {
     static const PxOsdMeshTopology topology =
         GeomUtilSphereMeshGenerator::GenerateTopology(numRadial, numAxial);
-
+    static const HdDataSourceLocator doubleSidedLocator =
+        HdSphereSchema::GetDefaultLocator().Append(
+            HdSphereSchemaTokens->doubleSided);
+    HdBoolDataSourceHandle doubleSidedDs = HdBoolDataSource::Cast(
+        HdContainerDataSource::Get(primDataSource, doubleSidedLocator));
     return
         HdMeshSchema::Builder()
             .SetTopology(
@@ -731,8 +744,7 @@ _ComputeMeshDataSource()
             .SetSubdivisionScheme(
                 HdRetainedTypedSampledDataSource<TfToken>::New(
                     topology.GetScheme()))
-            .SetDoubleSided(
-                HdRetainedTypedSampledDataSource<bool>::New(false))
+            .SetDoubleSided(doubleSidedDs)
             .Build();
 }
 
@@ -830,8 +842,8 @@ _ComputePrimDataSource(
 {
     static HdDataSourceBaseHandle const sphereDataSource =
         HdBlockDataSource::New();
-    static HdDataSourceBaseHandle const meshDataSource =
-        _ComputeMeshDataSource();
+    HdDataSourceBaseHandle const meshDataSource =
+        _ComputeMeshDataSource(primDataSource);
     HdDataSourceBaseHandle const primvarsDataSource =
         _ComputePrimvarsDataSource(primDataSource);
     HdDataSourceBaseHandle const dependenciesDataSource =
@@ -865,11 +877,15 @@ static constexpr size_t numRadial = 10;
 static constexpr size_t numCapAxial = 4;
 
 HdContainerDataSourceHandle
-_ComputeMeshDataSource()
+_ComputeMeshDataSource(const HdContainerDataSourceHandle &primDataSource)
 {
     static const PxOsdMeshTopology topology =
         GeomUtilCapsuleMeshGenerator::GenerateTopology(numRadial, numCapAxial);
-
+    static const HdDataSourceLocator doubleSidedLocator =
+        HdCapsuleSchema::GetDefaultLocator().Append(
+            HdCapsuleSchemaTokens->doubleSided);
+    HdBoolDataSourceHandle doubleSidedDs = HdBoolDataSource::Cast(
+        HdContainerDataSource::Get(primDataSource, doubleSidedLocator));
     return
         HdMeshSchema::Builder()
             .SetTopology(
@@ -887,8 +903,7 @@ _ComputeMeshDataSource()
             .SetSubdivisionScheme(
                 HdRetainedTypedSampledDataSource<TfToken>::New(
                     topology.GetScheme()))
-            .SetDoubleSided(
-                HdRetainedTypedSampledDataSource<bool>::New(false))
+            .SetDoubleSided(doubleSidedDs)
             .Build();
 }
 
@@ -1062,8 +1077,8 @@ _ComputePrimDataSource(
 {
     static HdDataSourceBaseHandle const capsuleDataSource =
         HdBlockDataSource::New();
-    static HdDataSourceBaseHandle const meshDataSource =
-        _ComputeMeshDataSource();
+    HdDataSourceBaseHandle const meshDataSource =
+        _ComputeMeshDataSource(primDataSource);
     HdDataSourceBaseHandle const primvarsDataSource =
         _ComputePrimvarsDataSource(primDataSource);
     HdDataSourceBaseHandle const dependenciesDataSource =

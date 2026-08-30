@@ -32,6 +32,13 @@ TF_DEFINE_PUBLIC_TOKENS(HdCylinderSchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
+HdBoolDataSourceHandle
+HdCylinderSchema::GetDoubleSided() const
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        HdCylinderSchemaTokens->doubleSided);
+}
+
 HdDoubleDataSourceHandle
 HdCylinderSchema::GetHeight() const
 {
@@ -70,6 +77,7 @@ HdCylinderSchema::GetAxis() const
 /*static*/
 HdContainerDataSourceHandle
 HdCylinderSchema::BuildRetained(
+        const HdBoolDataSourceHandle &doubleSided,
         const HdDoubleDataSourceHandle &height,
         const HdDoubleDataSourceHandle &radius,
         const HdDoubleDataSourceHandle &radiusTop,
@@ -77,10 +85,15 @@ HdCylinderSchema::BuildRetained(
         const HdTokenDataSourceHandle &axis
 )
 {
-    TfToken _names[5];
-    HdDataSourceBaseHandle _values[5];
+    TfToken _names[6];
+    HdDataSourceBaseHandle _values[6];
 
     size_t _count = 0;
+
+    if (doubleSided) {
+        _names[_count] = HdCylinderSchemaTokens->doubleSided;
+        _values[_count++] = doubleSided;
+    }
 
     if (height) {
         _names[_count] = HdCylinderSchemaTokens->height;
@@ -107,6 +120,14 @@ HdCylinderSchema::BuildRetained(
         _values[_count++] = axis;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
+}
+
+HdCylinderSchema::Builder &
+HdCylinderSchema::Builder::SetDoubleSided(
+    const HdBoolDataSourceHandle &doubleSided)
+{
+    _doubleSided = doubleSided;
+    return *this;
 }
 
 HdCylinderSchema::Builder &
@@ -153,6 +174,7 @@ HdContainerDataSourceHandle
 HdCylinderSchema::Builder::Build()
 {
     return HdCylinderSchema::BuildRetained(
+        _doubleSided,
         _height,
         _radius,
         _radiusTop,
