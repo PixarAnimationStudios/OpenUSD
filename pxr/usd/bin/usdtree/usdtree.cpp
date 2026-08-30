@@ -28,6 +28,66 @@ using namespace pxr_CLI;
 namespace
 {
 
+enum Pipes{
+    PipeVert,
+    PipeJunc,
+    PipeEnd,
+    PipeJuncAttr,
+    PipeEndAttr
+};
+
+static const std::unordered_map<std::string, std::string> IconMap {
+    {"default",        "\033[38;0;90m "},   // grey
+    {"active",         "\033[38;0;37m 󰈈"},  // light-grey
+    {"inactive",       "\033[38;0;37m 󰈉"},  // light-grey
+    {"def",            "\033[38;0;250m 󰏭"}, // light-grey
+    {"class",          "\033[38;0;90m 󰧾"},  // grey
+    {"over",           "\033[38;0;90m 󰌨"},  // grey
+    {"assembly",       "\033[38;5;39m 󱗾"},  // blue
+    {"group",          "\033[38;5;39m 󰇘"},  // blue
+    {"component",      "\033[38;5;219m 󰯲"}, // pink
+    {"subcomponent",   "\033[38;5;219m 󰊰"}, // pink
+    {"Xform",          "\033[38;0;92m "},  // bright-green
+    {"Scope",          "\033[38;5;250m 󱢖"}, // light-grey
+    {"Camera",         "\033[38;5;27m "},  // blue
+    {"RectLight",      "\033[38;5;226m 󱍖"}, // yellow
+    {"SphereLight",    "\033[38;5;226m 󰛨"}, // yellow
+    {"DomeLight",      "\033[38;5;226m 󰞏"}, // yellow
+    {"DomeLight_1",    "\033[38;5;226m 󰞏"}, // yellow
+    {"GeometryLight",  "\033[38;5;226m 󰟕"}, // yellow
+    {"CylinderLight",  "\033[38;5;226m 󱠄"}, // yellow
+    {"DiskLight",      "\033[38;5;226m 󱞛"}, // yellow
+    {"DistantLight",   "\033[38;5;226m 󰖨"}, // yellow
+    {"PortalLight",    "\033[38;5;226m 󱇛"}, // yellow
+    {"Material",       "\033[38;5;208m 󰬯"}, // orange
+    {"Shader",         "\033[38;5;130m 󰥶"}, // dark-orange
+    {"Mesh",           "\033[38;5;81m 󰆧"},  // light-blue
+    {"GeomSubset",     "\033[38;5;214m 󰠱"}, // orange
+    {"NodeGraph",      "\033[38;5;208m 󰦮"}, // orange
+    {"Points",         "\033[38;5;250m 󱥸"}, // light-grey
+    {"PointInstancer", "\033[38;5;250m 󱗿"}, // light-grey
+    {"BasisCurves",    "\033[38;5;250m 󰕙"}, // light-grey
+    {"NurbsCurves",    "\033[38;5;250m 󰕙"}, // light-grey
+    {"HermiteCurves",  "\033[38;5;250m 󰾧"}, // light-grey
+    {"SkelRoot",       "\033[38;5;250m "}, // light-grey
+    {"Skeleton",       "\033[38;5;250m 󰂹"}, // light-grey
+    {"SkelAnimation",  "\033[38;5;250m 󱓨"}, // light-grey
+    {"RenderProduct",  "\033[38;5;218m "}, // pink 
+    {"RenderVar",      "\033[38;5;176m 󰲎"}, // dark-pink
+    {"RenderSettings", "\033[38;5;218m 󰋱"}, // pink
+    {"Volume",         "\033[38;5;141m 󰅟"}, // purple
+    {"OpenVDBAsset",   "\033[38;5;1m 󰛤"},   // red
+    {"Backdrop",       "\033[38;5;250m "}, // light-grey
+    {"BlendShape",     "\033[38;5;250m 󱖳"}, // light-grey
+    {"Capsule",        "\033[38;5;81m "},  // light-blue
+    {"Capsule_1",      "\033[38;5;81m "},  // light-blue
+    {"Cone",           "\033[38;5;81m 󱥌"},  // light-blue
+    {"Cube",           "\033[38;5;81m 󰆦"},  // light-blue
+    {"Cylinder",       "\033[38;5;81m 󱥎"},  // light-blue
+    {"Plane",          "\033[38;5;81m "},  // light-blue
+    {"TetMesh",        "\033[38;5;81m 󱥒"}   // light-blue
+};
+
 struct Args {
     std::string inputPath;
     bool unloaded = false;
@@ -37,6 +97,10 @@ struct Args {
     bool flatten = false;
     bool flattenLayerStack = false;
     std::string populationMask;
+    int indent = 2;
+    bool icons = false;
+    bool colors = false;
+    std::string pipes[4];
 };
 
 void Configure(CLI::App *app, Args &args) {
@@ -69,6 +133,16 @@ void Configure(CLI::App *app, Args &args) {
         "spaces, or quote the argument and separate paths by commas "
         "and/or spaces. Requires --flatten.")
         ->option_text("PRIMPATH[,PRIMPATH...]");
+    app->add_option(
+        "-i,--indent", args.indent, "Specify indentation size of display.")
+        ->check(CLI::Range(1, 20));
+    app->add_flag(
+        "-p,--icons", args.icons,
+        "Display icons instead of type, specifier, kind or active state values. "
+        "Requires icon font.");
+    app->add_flag(
+        "-c,--colors", args.colors,
+        "Colorize the display.");
 }
 
 UsdPrimSiblingRange GetChildren(const UsdPrim &prim) {
@@ -157,34 +231,127 @@ std::vector<TfToken> GetPropertyNames(const SdfPrimSpecHandle &prim) {
     return buffer;
 }
 
+std::array<std::string, 2> GetColorAndIcon(const std::string &key) {
+    std::string value;
+
+    auto it = IconMap.find(key);
+    if (it == IconMap.end()) {
+        value = IconMap.at("default") + key;
+    } else {
+        value = it->second;
+    }
+
+    size_t pos = value.find(' ');
+     return { value.substr(0, pos), value.substr(pos + 1) };
+}
+
 template<typename PrimType>
-std::string GetPrimLabel(const PrimType &prim) {
+std::string GetPrimLabel(const Args &args, const PrimType &prim) {
+    const std::string name = GetName(prim);
+    
+    // Return just the primname as simple label
+    if (args.simple) {
+        return name;
+    }
+
     // The display name of specifiers are known to be ASCII only.
     const std::string spec = TfStringToLowerAscii(GetSpecifier(prim));
     const std::string typeName = GetTypeName(prim);
-    std::string definition = spec;
-    if (!typeName.empty()) {
-        definition += " " + typeName;
-    }
-
-    std::string label = GetName(prim) + " [" + definition + "]";
-
-    std::vector<std::string> shortMetadata;
-    if (!IsActive(prim)) {
-        shortMetadata.emplace_back("active = false");
-    } else if (HasAuthoredActive(prim)) {
-        shortMetadata.emplace_back("active = true");
-    }
-
     const std::string kind = GetKind(prim);
-    if (!kind.empty()) {
-        shortMetadata.emplace_back("kind = " + kind);
+
+    std::string label;
+    std::string color;
+    std::string colorEnd = "";
+    std::string icon = "";
+
+    if (args.icons || args.colors) {
+        if ( spec == "over" || spec == "class" ||
+            (spec == "def" && typeName.empty())) {
+            auto [specColor, specIcon] = GetColorAndIcon(spec);
+            color = specColor;
+            icon = specIcon;
+        } else if (!typeName.empty()) {
+            auto [typeColor, typeIcon] = GetColorAndIcon(typeName);
+            color = typeColor;
+            icon = typeIcon;
+        }
     }
 
-    if (!shortMetadata.empty()) {
-        label += " (" + TfStringJoin(shortMetadata, ", ") + ")";
+    if (!args.colors) {
+        color = "";
+    } else {
+        colorEnd = "\033[m";
     }
 
+    if (!args.icons) {
+        // Build regular label
+        std::string typeColor = color;
+
+        std::string definition = spec;
+        if (!typeName.empty()) {
+            definition += " " + typeName;
+        }
+
+
+        std::vector<std::string> shortMetadata;
+        if (!IsActive(prim)) {
+            shortMetadata.emplace_back("active = false");
+        } else if (HasAuthoredActive(prim)) {
+            shortMetadata.emplace_back("active = true");
+        }
+
+        if (!kind.empty()) {
+            shortMetadata.emplace_back("kind = " + kind);
+            if (args.colors) {
+                color = GetColorAndIcon(kind)[0];
+            }
+        }
+
+        label = color + name + colorEnd +
+            " [" + typeColor + definition + colorEnd + "]";
+
+        if (!shortMetadata.empty()) {
+            label += " (" + TfStringJoin(shortMetadata, ", ") + ")";
+        }
+    } else {
+        // Build icon label
+        std::string nameColor = "";
+
+        if (!kind.empty()) {
+            // Kind icon overrides type icon but name keeps type colour
+            auto [kindColor, kindIcon] = GetColorAndIcon(kind);
+            icon = kindIcon;
+            nameColor = color;
+            color = kindColor;
+        }
+
+        if (!args.colors){
+            color = "";
+            nameColor = "";
+        }
+
+        label = color + icon + " " + nameColor + name;
+
+        // Append in/active icon
+        if (!IsActive(prim)) {
+            auto [inactiveColor, inactiveIcon] = GetColorAndIcon("inactive");
+            if (args.colors) {
+                label += inactiveColor;
+            }
+
+            label += " " + inactiveIcon;
+        } else if (HasAuthoredActive(prim)) {
+            auto [activeColor, activeIcon] = GetColorAndIcon("active");
+            if (args.colors) {
+                label += activeColor;
+            }
+
+            label += " " + activeIcon;
+        }
+
+    }
+
+    label += colorEnd;  // Clear color
     return label;
 }
 
@@ -198,23 +365,23 @@ void PrintPrim(
     std::string attrStep;
 
     if (!isLast) {
-        lastStep = " |--";
+        lastStep = args.pipes[PipeJunc];
         if (hasChildren) {
-            attrStep = " |   |";
+            attrStep = args.pipes[PipeVert] + std::string(args.indent - 1, ' ')
+                + args.pipes[PipeVert];
         } else {
-            attrStep = " |    ";
+            attrStep = args.pipes[PipeVert] + std::string(args.indent + 1, ' ');
         }
     } else {
-        lastStep = " `--";
+        lastStep = args.pipes[PipeEnd];
         if (hasChildren) {
-            attrStep = "     |";
+            attrStep = std::string(args.indent + 1, ' ') + args.pipes[PipeVert];
         } else {
-            attrStep = "      ";
+            attrStep = std::string(args.indent + 3, ' ');
         }
     }
 
-    const std::string label = 
-        args.simple ? GetName(prim) : GetPrimLabel(prim);
+    const std::string label = GetPrimLabel(args, prim);
 
     std::cout << prefix << lastStep << label << "\n";
 
@@ -245,9 +412,9 @@ void PrintPrim(
     for (auto it = attrs.begin(); it != attrs.end(); ++it) {
         std::cout << prefix << attrStep;
         if (std::next(it) != attrs.end()) {
-            std::cout << " :--";
+            std::cout << args.pipes[PipeJuncAttr];
         } else {
-            std::cout << " `--";
+            std::cout << args.pipes[PipeEndAttr];
         }
 
         std::cout << *it << "\n";
@@ -263,10 +430,13 @@ void PrintChildren(
     for (auto child = children.begin(); child != children.end(); ++child) {
         if (std::next(child) != children.end()) {
             PrintPrim(args, *child, prefix, false);
-            PrintChildren(args, *child, prefix + " |  ");
+            PrintChildren(
+                args, *child,
+                prefix + args.pipes[PipeVert] + std::string(args.indent-1, ' '));
         } else {
             PrintPrim(args, *child, prefix, true);
-            PrintChildren(args, *child, prefix + "    ");
+            PrintChildren(
+                args, *child, prefix + std::string(args.indent + 1, ' '));
         }
     }
 }
@@ -305,11 +475,11 @@ void PrintTree(const Args &args, const ArResolvedPath& resolved) {
                 stage = UsdStage::Open(resolved);
             }
         }
-        
+
         if (!m.IsClean() || !stage) {
             return;
         }
-        
+
         PrintTree(args, stage);
     } else if (args.flattenLayerStack) {
         UsdStageRefPtr stage = UsdStage::Open(resolved, UsdStage::LoadNone);
@@ -381,6 +551,27 @@ int main(int argc, char const *argv[]) {
     Args args;
     Configure(&app, args);
     CLI11_PARSE(app, argc, argv);
+
+    std::string pipeColor = args.colors ? GetColorAndIcon("default")[0] : "";
+
+    if (!args.icons) {
+        std::string bar(args.indent, '-');
+        args.pipes[PipeVert] =      pipeColor + " |";
+        args.pipes[PipeJunc] =      pipeColor + " |" + bar;
+        args.pipes[PipeEnd] =       pipeColor + " `" + bar;
+        args.pipes[PipeJuncAttr] = pipeColor + " :" + bar;
+        args.pipes[PipeEndAttr] =  pipeColor + " `" + bar;
+    } else {
+        std::string bar = "";
+        for (int i=1; i<args.indent; i++){
+            bar += "─";
+        }
+        args.pipes[PipeVert] =      pipeColor + " │";
+        args.pipes[PipeJunc] =      pipeColor + " ├" + bar + " ";
+        args.pipes[PipeEnd] =       pipeColor + " └" + bar + " ";
+        args.pipes[PipeJuncAttr] = pipeColor + " ├" + bar;
+        args.pipes[PipeEndAttr] =  pipeColor + " └" + bar;
+    }
 
     return USDTree(args);
 }
