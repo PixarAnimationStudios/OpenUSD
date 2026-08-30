@@ -188,6 +188,8 @@ private:
     int _cullInstanceCountOffset;
 
     bool _needsTextureResourceRebinding;
+
+    uint32_t _vao;
 };
 
 

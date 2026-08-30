@@ -45,6 +45,7 @@ private:
     uint32_t _fsDepth;
     uint32_t _prgNoDepth;
     uint32_t _prgDepth;
+    uint32_t _vao;
     uint32_t _vertexBuffer;
 };
 
