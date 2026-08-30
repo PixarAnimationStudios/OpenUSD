@@ -17,6 +17,7 @@
 
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
 
@@ -260,6 +261,16 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
         _translucentPassShader->UpdateAovInputTextures(
                 _translucentPassState->GetAovInputBindings(),
                 renderIndex);
+        // The commit phase, which would create the texture and sampler objects
+        // backing the handles allocated above, runs between Prepare() and
+        // Execute(), so it has already happened by now. Commit the new
+        // handles here, otherwise they reach the texture binder without a
+        // sampler object and the depth readback binding is dropped.
+        if (auto* const stResourceRegistry =
+                dynamic_cast<HdStResourceRegistry*>(
+                    renderIndex->GetResourceRegistry().get())) {
+            stResourceRegistry->CommitTextures();
+        }
     }
 
     // Ensure OIT buffer bindings are registered with the shader
