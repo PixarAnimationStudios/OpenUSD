@@ -11,6 +11,25 @@
 --- #import $TOOLS/hdSt/shaders/terminals.glslfx
 
 --- --------------------------------------------------------------------------
+-- glsl TessEval.CustomDisplacement
+vec3 DisplacementTerminal(int i0, int i1, int i2, int i3, vec3 Peye, vec3 Neye, vec4 basis, vec2 uv)
+{
+    vec2 t0 = HdGet_st(i0);
+    vec2 t1 = HdGet_st(i1);
+    vec2 t2 = HdGet_st(i2);
+    vec2 t3 = HdGet_st(i3);
+    vec2 t = InterpolatePrimvar(t0, t1, t2, t3, basis, uv);
+    return Peye + Neye * HdGet_displacement(t);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl TessEval.NoCustomDisplacement
+vec3 DisplacementTerminal(int i0, int i1, int i2, int i3, vec3 Peye, vec3 Neye, vec4 basis, vec2 uv)
+{
+    return Peye;
+}
+
+--- --------------------------------------------------------------------------
 -- glsl Geometry.CustomDisplacement
 
 FORWARD_DECL(

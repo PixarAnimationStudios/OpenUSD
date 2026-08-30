@@ -213,6 +213,7 @@ HdSt_CodeGen::HdSt_CodeGen(
     , _hasCS(false)
     , _hasPTCS(false)
     , _hasPTVS(false)
+    , _hasTESWithNoGS(false)
     , _hasClipPlanes(false)
 {
     TF_VERIFY(geometricShader);
@@ -259,6 +260,7 @@ HdSt_CodeGen::HdSt_CodeGen(
     , _hasCS(false)
     , _hasPTCS(false)
     , _hasPTVS(false)
+    , _hasTESWithNoGS(false)
     , _hasClipPlanes(false)
 {
     TF_VERIFY(_metaData,
@@ -2090,6 +2092,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _hasGS  = (!geometryShader.empty()) && !metalTessellationEnabled;
     _hasFS  = (!fragmentShader.empty());
     _hasCS  = (!computeShader.empty());
+    _hasTESWithNoGS = _hasTES && !_hasGS;
 
     // Initialize source buckets
     _genDefines.str(""); _genDecl.str(""); _genAccessors.str("");
@@ -2421,13 +2424,14 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         }
     }
 
-    // We plumb the evaluated position in patch from PTVS to FS since this
+    // We plumb the evaluated position in patch from PTVS or TES to FS since this
     // is more consistent than using built-in barycentric coords and can be
     // used even when builtin barycentric coords are not available. We pass
     // only the first two components between stages and provide an accessor
     // which can reconstruct the full three component barycentric form.
-    if (_hasPTVS) {
-        _AddInterstageElement(&_resPTVS,
+    if (_hasPTVS || _hasTESWithNoGS) {
+        auto& resTess = _hasPTVS ? _resPTVS : _resTES;
+        _AddInterstageElement(&resTess,
             HioGlslfxResourceLayout::InOut::STAGE_OUT,
             /*name=*/_tokens->hd_tessCoord,
             /*dataType=*/_tokens->vec2);
@@ -2561,8 +2565,9 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         }
     }
 
-    if (_hasPTVS) {
-        _procPTVSOut << "  hd_tessCoord = gl_TessCoord.xy;\n";
+    if (_hasPTVS || _hasTESWithNoGS) {
+        auto& procTess = _hasPTVS ? _procPTVSOut : _procTES;
+        procTess << "  hd_tessCoord = gl_TessCoord.xy;\n";
     }
 
     if (requiresPrimitiveIdEmulation) {
@@ -2610,6 +2615,9 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         }
         if (_hasTES) {
             _genTES << shader->GetSource(HdShaderTokens->tessEvalShader);
+            if (_hasTESWithNoGS) {
+                _genTES << shader->GetSource(HdShaderTokens->displacementShader);
+            }
         }
         if (_hasPTCS) {
             _genPTCS << shader->GetSource(
@@ -2925,6 +2933,14 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         resourceGen._GenerateGLSLResources(&desc, resDecl,
             HdShaderTokens->tessEvalShader, _resTES, _GetMetaData());
 
+        // material in TES
+        if (_hasTESWithNoGS) {
+            resourceGen._GenerateGLSLResources(&desc, resDecl,
+                HdShaderTokens->tessEvalShader, _resMaterial, _GetMetaData());
+            resourceGen._GenerateGLSLTextureResources(resDecl,
+                HdShaderTokens->tessEvalShader, _resTextures, _GetMetaData());
+        }
+
         std::string const declarations =
             _genDefines.str() + _osd.str();
         std::string const source =
@@ -3159,6 +3175,14 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HdShaderTokens->tessEvalShader, _resCommon, _GetMetaData());
         resourceGen._GenerateHgiResources(registry->GetHgi(), &tesDesc,
             HdShaderTokens->tessEvalShader, _resTES, _GetMetaData());
+
+        // material in TES
+        if (_hasTESWithNoGS) {
+            resourceGen._GenerateHgiResources(registry->GetHgi(), &tesDesc,
+                HdShaderTokens->tessEvalShader, _resMaterial, _GetMetaData());
+            resourceGen._GenerateHgiTextureResources(&tesDesc,
+                HdShaderTokens->tessEvalShader, _resTextures, _GetMetaData());
+        }
 
         std::string const declarations =
             _genDefines.str() + _genDecl.str() + _osd.str();
@@ -7116,6 +7140,9 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
 
     _genGS << accessors.str();
     _genFS << accessors.str();
+    if (_hasTESWithNoGS) {
+        _genTES << accessors.str();
+    }
     _genPTCS << accessors.str();
     _genPTVS << accessors.str();
 }

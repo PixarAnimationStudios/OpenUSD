@@ -93,8 +93,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainPatchCommonTCS,          "Mesh.TessControl.PatchCommon"))
     ((mainBSplineQuadTCS,          "Mesh.TessControl.BSplineQuad"))
     ((mainBezierQuadTES,           "Mesh.TessEval.BezierQuad"))
+    ((mainBezierQuadNoGSTES,       "Mesh.TessEval.BezierQuadNoGS"))
     ((mainBoxSplineTriangleTCS,    "Mesh.TessControl.BoxSplineTriangle"))
     ((mainBezierTriangleTES,       "Mesh.TessEval.BezierTriangle"))
+    ((mainBezierTriangleNoGSTES,   "Mesh.TessEval.BezierTriangleNoGS"))
     ((mainVaryingInterpTES,        "Mesh.TessEval.VaryingInterpolation"))
     ((mainTrianglePTVS,            "Mesh.PostTessVertex.Triangle"))
     ((mainQuadPTVS,                "Mesh.PostTessVertex.Quad"))
@@ -126,6 +128,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((skinning,                    "Vertex.SkinPoints"))
 
     // terminals
+    ((customDisplacementTES,       "TessEval.CustomDisplacement"))
+    ((noCustomDisplacementTES,     "TessEval.NoCustomDisplacement"))
     ((customDisplacementGS,        "Geometry.CustomDisplacement"))
     ((noCustomDisplacementGS,      "Geometry.NoCustomDisplacement"))
     ((commonFS,                    "Fragment.CommonTerminals"))
@@ -363,27 +367,81 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     }
 
     bool const ptvsStageEnabled = !PTVS[0].IsEmpty();
+    bool finalTesStageEnabled = false;
 
-    // tessellation control shader
     if (isPrimTypePatches && !ptvsStageEnabled) {
-        TCS[0] = _tokens->instancing;
-        TCS[1] = _tokens->mainPatchCommonTCS;
-        TCS[2] = isPrimTypePatchesBSpline
+
+        // Tessellation control shader.
+        uint8_t tcsIndex = 0;
+        TCS[tcsIndex++] = _tokens->instancing;
+        TCS[tcsIndex++] = _tokens->mainPatchCommonTCS;
+        TCS[tcsIndex++] = isPrimTypePatchesBSpline
                      ? _tokens->mainBSplineQuadTCS
                      : _tokens->mainBoxSplineTriangleTCS;
-        TCS[3] = TfToken();
+        TCS[tcsIndex++] = TfToken();
 
-        // tessellation evaluation shader
-        TES[0] = _tokens->instancing;
-        TES[1] = isPrimTypePatchesBSpline
-                     ? _tokens->mainBezierQuadTES
-                     : _tokens->mainBezierTriangleTES;
-        TES[2] = _tokens->mainVaryingInterpTES;
-        TES[3] = TfToken();
+        // Tessellation evaluation shader
+        uint8_t tesIndex = 0;
+        TES[tesIndex++] = _tokens->instancing;
+
+        if (geomStyle == HdMeshGeomStyleEdgeOnSurf) {
+
+            // TES configuration with a geometry shader.
+            TES[tesIndex++] = isPrimTypePatchesBSpline ? _tokens->mainBezierQuadTES
+                                                       : _tokens->mainBezierTriangleTES;
+            TES[tesIndex++] = _tokens->mainVaryingInterpTES;
+            TES[tesIndex++] = TfToken();
+        }
+        else {
+
+            // TES configuration without a geometry shader.
+            if (ptvsGeometricNormals) {
+                TES[tesIndex++] = _tokens->normalsGeometryFlat;
+            }
+            else {
+                TES[tesIndex++] = _tokens->normalsGeometryNoFlat;
+            }
+
+            // Now handle the vs style normals
+            if (normalsSource == NormalSourceFlat) {
+                TES[tesIndex++] = _tokens->normalsFlat;
+            }
+            else if (normalsSource == NormalSourceSmooth) {
+                TES[tesIndex++] = _tokens->normalsSmooth;
+            }
+            else if (vsSceneNormals) {
+                TES[tesIndex++] = _tokens->normalsScene;
+            }
+            else if (gsSceneNormals && isPrimTypePatches) {
+                TES[tesIndex++] = _tokens->normalsScenePatches;
+            }
+            else {
+                TES[tesIndex++] = _tokens->normalsPass;
+            }
+
+            TES[tesIndex++] = _tokens->mainVaryingInterpTES;
+
+            if (hasCustomDisplacement) {
+                TES[tesIndex++] = _tokens->customDisplacementTES;
+            }
+            else {
+                TES[tesIndex++] = _tokens->noCustomDisplacementTES;
+            }
+
+            TES[tesIndex++] = isPrimTypePatchesBSpline
+                ? _tokens->mainBezierQuadNoGSTES
+                : _tokens->mainBezierTriangleNoGSTES;
+            TES[tesIndex++] = TfToken();
+            finalTesStageEnabled = true;
+        }
+
     } else {
+ 
         TCS[0] = TfToken();
         TES[0] = TfToken();
     }
+
+    bool const tessOnlyEnabled = finalTesStageEnabled || ptvsStageEnabled;
 
     // geometry shader
     uint8_t gsIndex = 0;
@@ -415,7 +473,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // Optimization : See if we can skip the geometry shader.
     bool const canSkipGS =
-            ptvsStageEnabled ||
+            tessOnlyEnabled ||
             // Whether we can skip executing the displacement shading terminal
             (!hasCustomDisplacement
             && (normalsSource != NormalSourceLimit)
@@ -627,7 +685,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         FS[fsIndex++] = _tokens->mainPatchCoordTriQuadFS;
 
     // Patches
-    } else if (isPrimTypePatches && ptvsStageEnabled) {
+    } else if (isPrimTypePatches && tessOnlyEnabled) {
         FS[fsIndex++] = _tokens->mainPatchCoordTessFS;
     // Points/No GS
     } else if (isPrimTypePoints || canSkipGS) {

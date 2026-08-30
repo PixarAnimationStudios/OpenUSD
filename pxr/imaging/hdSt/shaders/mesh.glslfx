@@ -428,6 +428,67 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Mesh.TessEval.BezierQuadNoGS
+
+# XXX: due to NVIDIA shader compiler bug (filed as 1687344)
+# we can't put patchCoord into interface block.
+[
+    ["in", "quads"],
+    ["in", "vec4", "tessOuterLo", "patch"],
+    ["in", "vec4", "tessOuterHi", "patch"],
+    ["in block array", "VertexDataTess", "inpt", "gl_MaxPatchVertices",
+        ["OsdPerPatchVertexBezier", "v"]
+    ],
+    ["out block", "VertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out", "vec4", "tesPatchCoord"],
+    ["out", "vec2", "tesTessCoord"]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.TessEval.BezierQuadNoGS
+
+void main(void)
+{
+    OsdPerPatchVertexBezier cv[16];
+    for (int i = 0; i < 16; ++i) {
+        cv[i] = inpt[i].v;
+    }
+    vec2 UV = OsdGetTessParameterization(gl_TessCoord.xy,
+                                         tessOuterLo,
+                                         tessOuterHi);
+
+    vec3 P = vec3(0), dPu = vec3(0), dPv = vec3(0);
+    vec3 N = vec3(0), dNu = vec3(0), dNv = vec3(0);
+
+    ivec3 patchParam = inpt[0].v.patchParam;
+    OsdEvalPatchBezier(patchParam, UV, cv, P, dPu, dPv, N, dNu, dNv);
+
+    tesPatchCoord = OsdInterpolatePatchCoord(UV, patchParam);
+    tesTessCoord = UV;
+
+    // Bilinear basis
+    vec4 basis = vec4(
+        (1.0-UV.x) * (1.0-UV.y), UV.x * (1.0-UV.y),
+        (1.0-UV.x) * UV.y, UV.x * UV.y );
+
+    bool isFlipped = IsFlipped(); // consider handedness AND negative-scale
+    vec3 Neye = isFlipped ? -N : N;
+
+    vec3 point = DisplacementTerminal(5, 6, 9, 10, P, Neye, basis, UV);
+
+    outData.Peye = vec4(point, 1.0);
+    outData.Neye = Neye; // normalized
+
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    ApplyClipPlanes(outData.Peye);
+
+    ProcessPrimvarsOut(basis, 5, 6, 9, 10, UV);
+}
+
+--- --------------------------------------------------------------------------
 -- layout Mesh.TessControl.BoxSplineTriangle
 
 [
@@ -538,6 +599,67 @@ void main(void)
 
     ProcessPrimvarsOut(basis, 4, 5, 8, 0, UV);
 }
+
+--- --------------------------------------------------------------------------
+-- layout Mesh.TessEval.BezierTriangleNoGS
+
+# XXX: due to NVIDIA shader compiler bug (filed as 1687344)
+# we can't put patchCoord into interface block.
+[
+    ["in", "triangles"],
+    ["in", "vec4", "tessOuterLo", "patch"],
+    ["in", "vec4", "tessOuterHi", "patch"],
+    ["in block array", "VertexDataTess", "inpt", "gl_MaxPatchVertices",
+        ["OsdPerPatchVertexBezier", "v"]
+    ],
+    ["out block", "VertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out", "vec4", "tesPatchCoord"],
+    ["out", "vec2", "tesTessCoord"]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.TessEval.BezierTriangleNoGS
+
+void main(void)
+{
+    OsdPerPatchVertexBezier cv[15];
+    for (int i = 0; i < 15; ++i) {
+        cv[i] = inpt[i].v;
+    }
+    vec2 UV = OsdGetTessParameterizationTriangle(gl_TessCoord.xyz,
+                                                 tessOuterLo,
+                                                 tessOuterHi);
+
+    vec3 P = vec3(0), dPu = vec3(0), dPv = vec3(0);
+    vec3 N = vec3(0), dNu = vec3(0), dNv = vec3(0);
+
+    ivec3 patchParam = inpt[0].v.patchParam;
+    OsdEvalPatchBezierTriangle(patchParam, UV, cv, P, dPu, dPv, N, dNu, dNv);
+
+    tesPatchCoord = OsdInterpolatePatchCoordTriangle(UV, patchParam);
+    tesTessCoord = UV;
+
+    // Barycentric basis
+    vec4 basis = vec4(
+        (1.0f-UV.x-UV.y), UV.x, UV.y, 0.0f);
+
+    bool isFlipped = IsFlipped(); // consider handedness AND negative-scale
+    vec3 Neye = isFlipped ? -N : N;
+
+    vec3 point = DisplacementTerminal(4, 5, 8, 0, P, Neye, basis, UV);
+
+    outData.Peye = vec4(P, 1);
+    outData.Neye = Neye; // normalized
+
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    ApplyClipPlanes(outData.Peye);
+
+    ProcessPrimvarsOut(basis, 4, 5, 8, 0, UV);
+}
+
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.PostTessControl.PatchCommon
