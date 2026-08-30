@@ -1,0 +1,622 @@
+#usda 1.0
+(
+    "This file describes the UsdGeom geometry schemata for code generation."
+    subLayers = [    
+        # Sublayer "parent" user doc to get user doc for inherited properties.
+        #@../../usdGeom/userDoc/schemaUserDoc.usda@,        
+        # Sublayer domain schema.usda to get proper schema inheritance structure 
+        # and property fallback values. User doc is added as overs to schema 
+        # class metadata. 
+        @../schema.usda@    
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName  = "usdGeom"
+        string userDocTitle = "Geometry"
+    }
+)
+{
+}
+
+over "Sphere" (
+    customData = {
+        string userDocBrief = """A spherical primitive centered at the origin.""" 
+        string userDoc = """The Sphere schema represents a spherical primitive centered at the origin. It's one of the basic geometric primitives in UsdGeom, useful for creating simple spherical shapes, defining volumes for lighting effects, or setting up colliders for physics simulations.
+
+## Common Use Cases
+
+1. **Basic Shapes**: Creating simple spherical objects in a scene
+2. **Light Volumes**: Defining spherical areas for lighting effects
+3. **Physics Colliders**: Setting up spherical collision volumes
+4. **Proxy Geometry**: Creating simplified representations of complex objects
+5. **Bounding Volumes**: Defining spherical bounds for other geometry
+
+## Examples
+
+### Basic Sphere
+This is the most basic sphere, with a radius of 1.0 from the Sphere schema's fallback value.
+```{code-block} usda
+#usda 1.0
+
+def Sphere "BasicSphere"
+{    
+}
+```
+```{note}
+A Sphere prim represents a mathematically perfect sphere, but may not be rendered as such in 3D applications. For example, in usdview, the sphere's level of detail is controlled by **Display -> Complexity** in the viewport menu.
+```
+`````{grid} 1 2 2 2
+
+````{grid-item}
+```{figure} ./basic_sphere.png
+Sphere rendered with low complexity.
+```
+````
+````{grid-item}
+```{figure} ./basic_sphere_high.png
+Sphere rendered with high complexity.
+```
+````
+`````
+
+### Transformed Sphere
+Spheres are Xformable, so they can be transformed using xformOp attributes.
+```{code-block} usda
+#usda 1.0
+
+def Sphere "TransformedSphere"
+{
+    double radius = 2.0
+    float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+    double3 xformOp:translate = (2, 3, 4)
+    double3 xformOp:rotateXYZ = (45, 30, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+}
+```
+
+### Sphere with Purpose
+This sphere is meant to be used as a guide while working a 3D scene. It will only render when the guide purpose is turned on.
+```{code-block} usda
+#usda 1.0
+
+def Sphere "GuideSphere"
+{
+    double radius = 3.0
+    float3[] extent = [(-3, -3, -3), (3, 3, 3)]
+    token purpose = "guide"  
+    color3f[] primvars:displayColor = [(1.0, 0.0, 0.0)] (
+        interpolation = "constant"
+    )
+}
+```
+
+![A guide sphere in usdview.](./guide_sphere.png)
+
+
+## Best Practices
+
+1. **Radius**: 
+   - Keep radius values positive
+   - Consider the scale of your scene when setting radius
+   - Remember that radius is in the same units as your stage
+
+2. **Transforms**:
+   - Apply transforms in a logical order (translate, rotate, scale)
+   - Be aware that non-uniform scaling will make the sphere elliptical
+
+3. **Purpose**:
+   - Use "proxy" purpose for lightweight preview geometry
+   - Use "render" purpose for final quality geometry
+   - Use "guide" purpose for helper/visualization geometry
+
+4. **Performance**:
+   - Use spheres for simple shapes rather than complex, data-heavy meshes
+   - Consider using spheres as proxy geometry for complex objects
+   
+5. **Extents**
+   - Remember to update the extents attribute when you set the radius of the sphere. 
+"""
+    }
+)
+{
+    double radius (
+        customData = {
+            string userDocBrief = """Specifies the radius of the sphere."""
+            string userDoc = """The radius of the sphere in stage linear units. This determines the size of the sphere, with the sphere being centered at the origin. A radius of 1.0 creates a sphere with a diameter of 2.0 units."""
+        }
+    )
+
+}
+
+over "Imageable" (
+    customData = {
+        string userDocBrief = """Base class for all prims that can be rendered or displayed in a 3D scene.""" 
+        string userDoc = """The Imageable schema is the base class for all prims that can be rendered or displayed in a 3D scene. It provides common properties for controlling visibility and purpose, which determine how geometry should be included in rendering and other computations.
+
+## Common Use Cases
+
+1. **Visibility Control**: Managing which prims are visible in renders and viewports
+2. **Purpose Classification**: Organizing geometry into categories (render, proxy, guide, default)
+3. **Proxy Relationships**: Linking high-detail render geometry to lightweight proxy representations
+4. **Rendering Optimization**: Enabling renderers to filter and optimize based on purpose
+
+## Examples
+
+### Render and Proxy Setup
+```{code-block} usda
+#usda 1.0
+
+def Mesh "HighDetailMesh"
+{
+    token purpose = "render"
+    rel proxyPrim = </ProxySphere>
+    # ... mesh data ...
+}
+
+def Sphere "ProxySphere"
+{
+    token purpose = "proxy"
+    double radius = 1.0
+}
+```
+
+### Visibility Animation
+```{code-block} usda
+#usda 1.0
+(
+    startTimeCode = 1
+    endTimeCode = 48
+    timeCodesPerSecond = 24
+)
+def Plane "AnimatedVisibility"
+{
+    token visibility.timeSamples = {
+        0: "inherited",
+        24: "invisible",
+        48: "inherited"
+    }
+}
+```
+
+### Guide Geometry
+This sphere is meant to be used as a guide while working a 3D scene. It will only render when the guide purpose is turned on.
+```{code-block} usda
+#usda 1.0
+
+def Sphere "GuideSphere"
+{
+    double radius = 3.0
+    float3[] extent = [(-3, -3, -3), (3, 3, 3)]
+    token purpose = "guide"  
+    color3f[] primvars:displayColor = [(1.0, 0.0, 0.0)] (
+        interpolation = "constant"
+    )
+}
+```
+
+![A guide sphere in usdview.](./guide_sphere.png)
+
+## Best Practices
+
+1. **Visibility**:
+   - Use "inherited" for normal visibility behavior
+   - Use "invisible" to hide prims and their children
+   - Remember that invisible prims are still available for inspection and positioning
+
+2. **Purpose**:
+   - Use "default" for general-purpose geometry
+   - Use "render" for final quality geometry
+   - Use "proxy" for lightweight interactive representations
+   - Use "guide" for helper/visualization geometry
+
+3. **Proxy Relationships**:
+   - Only create proxyPrim relationships on prims with purpose="render"
+   - Use proxyPrim to link render geometry to its proxy representation
+   - This enables efficient switching between detail levels
+
+4. **Performance**:
+   - Use purpose filtering to optimize rendering performance
+   - Consider using proxy representations for complex scenes
+   - Leverage visibility for culling and optimization
+"""
+    }
+)
+{
+    token visibility (
+        customData = {
+            string userDocBrief = """Controls whether the prim and its subtree should be rendered."""
+            string userDoc = """Visibility is the simplest way to control whether geometry is shown or hidden. It can be animated, allowing a sub-tree of geometry to appear and disappear over time. Unlike deactivating geometry, invisible geometry is still available for inspection, positioning, and defining volumes.
+
+Allowed values:
+- "inherited" (default): Inherits visibility from parent prims
+- "invisible": Hides the prim and all its children from rendering
+"""
+        }
+    )
+    
+    uniform token purpose (
+        customData = {
+            string userDocBrief = """Classification of geometry into categories for selective inclusion in traversals."""
+            string userDoc = """Purpose classifies geometry into categories that can each be independently included or excluded from different operations, such as rendering or bounding-box computation.
+
+Allowed values:
+- "default": No special purpose, included in all traversals
+- "render": For final quality renders
+- "proxy": For lightweight interactive renders
+- "guide": For helper/visualization geometry
+"""
+        }
+    )
+    
+    rel proxyPrim (
+        customData = {
+            string userDocBrief = """Links a render prim to its proxy representation."""
+            string userDoc = """The proxyPrim relationship allows linking a prim whose purpose is "render" to its (single target) purpose="proxy" prim. This is useful for:
+
+- Pipeline complexity management through pruning
+- DCC optimizations for interactive processing
+- Hydra-based selection mapping
+
+Note: Only valid to author on prims whose purpose is "render".
+"""
+        }
+    )
+}
+
+over "Xformable" (
+    customData = {
+        string userDocBrief = """Base class for all prims that can be positioned, rotated, and scaled in 3D space.""" 
+        string userDoc = """The Xformable schema is the base class for all prims that can be positioned, rotated, and scaled in 3D space. It allows encoding sequences of transformations (translate, rotate, scale, etc.) as ordered operations that are applied in a specific sequence.
+
+## Common Use Cases
+
+1. **3D Positioning**: Placing objects at specific locations in 3D space
+2. **Animation**: Creating animated transformations over time
+3. **Hierarchical Transforms**: Building complex transform hierarchies
+4. **Asset Assembly**: Positioning and orienting referenced assets
+5. **Coordinate System Management**: Handling different coordinate systems and up axes
+
+## Examples
+
+### Basic Transformation
+```{code-block} usda
+#usda 1.0
+
+def Cube "MyCube"
+{
+    double3 xformOp:translate = (10, 5, 0)
+    double3 xformOp:rotateXYZ = (0, 45, 0)
+    double3 xformOp:scale = (2, 2, 2)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+}
+```
+
+### Animated Transformations
+```{code-block} usda
+#usda 1.0
+(
+    startTimeCode = 1
+    endTimeCode = 48
+    timeCodesPerSecond = 24
+)
+def Cylinder "AnimatedTransformations"
+{
+    double3 xformOp:translate.timeSamples = {
+        0: (0, 0, 0),
+        24: (10, 0, 0),
+        48: (0, 0, 0)
+    }
+    double3 xformOp:rotateXYZ.timeSamples = {
+        0: (0, 0, 0),
+        24: (0, 180, 0),
+        48: (0, 360, 0)
+    }
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+}
+```
+
+### Real-world Transformation Example
+Here is an example involving multiple hierarchical transformations.
+```{code-block} usda
+#usda 1.0
+
+def Xform "Car"
+{
+    # Car body transform
+    double3 xformOp:translate = (0, 0, 0)
+    double3 xformOp:rotateXYZ = (0, 0, 0)
+    double3 xformOp:scale = (1, 1, 1)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+    
+    # Wheel 1
+    def Xform "Wheel1"
+    {
+        double3 xformOp:translate = (1.5, -0.5, 1.0)
+        double3 xformOp:rotateXYZ = (0, 0, 0)
+        double3 xformOp:scale = (0.5, 0.5, 0.5)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        
+        def Cylinder "WheelGeometry"
+        {
+            double radius = 1.0
+            double height = 0.3
+        }
+    }
+}
+```
+
+## Best Practices
+
+1. **Transform Order**:
+   - Apply transforms in logical order: translate, rotate, scale
+   - Use xformOpOrder to ensure correct evaluation sequence
+   - Remember that operations are applied in reverse order (last in array is applied first)
+
+2. **Performance**:
+   - Use UsdGeomXformCommonAPI for standard Scale-Rotate-Translate operations
+   - Consider using matrix transforms for complex, non-decomposable transformations
+   - Cache transform results when possible for performance-critical applications
+
+3. **Precision**:
+   - Use double precision for translations in large coordinate spaces
+   - Use float precision for rotations and scales to save memory
+   - Consider the precision requirements of your target applications
+
+4. **Animation**:
+   - Use timeSamples for animated transforms
+
+5. **Hierarchy**:
+   - Apply transforms at the appropriate level in the hierarchy
+   - Consider the impact of parent transforms on child prims
+"""
+    }
+)
+{
+    uniform token[] xformOpOrder (
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the order they should be applied."""
+            string userDoc = """The xformOpOrder attribute contains the names of transform operation attributes in the precise sequence they should be applied. This ensures transforms are evaluated in the correct order, which is opposite to what you might expect from matrix algebra.
+
+Special tokens:
+- "!resetXformStack!": Indicates this prim should not inherit parent transforms
+- "!invert!<opName>": Indicates an inverted operation (e.g., for pivot points)
+"""
+        }
+    )
+}
+
+over "Gprim" (
+    customData = {
+        string userDocBrief = """Base class for all geometric primitives that directly define renderable 3D shapes.""" 
+        string userDoc = """The Gprim schema is the base class for all geometric primitives in USD. Gprims are primitives that can have bounding boxes, be transformed, and directly define renderable 3D shapes. They encode basic graphical properties and provide primvars for display color and opacity that can be used as shader overrides.
+
+## Common Use Cases
+
+1. **Basic Geometry**: Creating fundamental geometric shapes (spheres, cubes, cylinders, etc.)
+2. **Mesh Geometry**: Defining complex polygonal surfaces and subdivision surfaces
+3. **Curve Geometry**: Creating NURBS curves and basis curves for splines and paths
+4. **Point Clouds**: Representing particle systems and point-based data
+5. **Display Properties**: Setting visual properties like color, opacity, and orientation
+
+## Examples
+
+### Basic Gprim with Display Properties
+```{code-block} usda
+#usda 1.0
+
+def Sphere "MySphere"
+{
+    double radius = 2.0
+    color3f[] primvars:displayColor = [(1, 0, 0)] (
+        interpolation = "constant"
+    )
+    float[] primvars:displayOpacity = [0.4] (
+        interpolation = "constant"
+    )
+    bool doubleSided = true
+}
+```
+![transparent sphere in usdview](./transparent_sphere.png)
+
+### Gprim with Animated Display Color
+```{code-block} usda
+#usda 1.0
+(
+    startTimeCode = 1
+    endTimeCode = 72
+    timeCodesPerSecond = 24
+)
+def Cube "AnimatedColor"
+{
+    color3f[] primvars:displayColor.timeSamples = {
+        0: [(1, 0, 0)],
+        24: [(0, 1, 0)],
+        48: [(0, 0, 1)],
+        72: [(1, 0, 0)]
+    }
+}
+```
+![animated displayColor in usdview](./animated_display_color.gif)
+
+## Best Practices
+1. **Extent Management**:
+   - Always provide authored extents to avoid expensive runtime extent computation.
+   - Update extents when geometry properties change
+   - Use ComputeExtent() for dynamic extent calculation
+2. **Display Properties**:
+   - Use displayColor and displayOpacity for viewport visualization
+   - Set appropriate interpolation for primvars
+   - Consider using these as shader overrides
+3. **Orientation**:
+   - Use "rightHanded" for standard USD geometry
+   - Use "leftHanded" for geometry from left-handed coordinate systems
+   - Be aware that transforms can flip orientation
+4. **Double-Sided Rendering**:
+   - Set doubleSided=true for thin objects like paper, cloth, or leaves
+   - Use doubleSided=false for solid objects to enable backface culling
+   - Consider performance implications of double-sided rendering
+5. **Performance**:
+   - Use appropriate level of detail for your use case
+   - Consider using proxy representations for complex geometry
+"""
+    }
+)
+{
+    color3f[] primvars:displayColor (
+        customData = {
+            string userDocBrief = """Official color set for display and modeling purposes."""
+            string userDoc = """DisplayColor provides an "official" color set that can be used for display or modeling purposes, even in the absence of any specified shader. Because it's a UsdGeomPrimvar, it can also be used as a gprim override for any shader that consumes a displayColor parameter.
+
+This is typically used for viewport visualization and can serve as a fallback when no material is assigned.
+"""
+        }
+    )
+    
+    float[] primvars:displayOpacity (
+        customData = {
+            string userDocBrief = """Companion to displayColor that specifies opacity independently."""
+            string userDoc = """DisplayOpacity is the companion to displayColor that specifies opacity as an independent attribute rather than an rgba color. This allows each to be independently overridden and is more compatible with shaders that rarely consume rgba parameters.
+
+Use this for viewport visualization and as a fallback when no material is assigned.
+"""
+        }
+    )
+    
+    uniform bool doubleSided (
+        customData = {
+            string userDocBrief = """Controls whether the surface should be rendered from both sides."""
+            string userDoc = """The doubleSided attribute controls whether the gprim should be rendered from both sides. When false (default), renderers can perform backface culling optimizations. When true, the surface should be visible from both sides, which is useful for thin objects like paper, cloth, or leaves.
+
+Note: Not all renderers support double-sided rendering, but the USD reference GL renderer does.
+"""
+        }
+    )
+    
+    uniform token orientation (
+        customData = {
+            string userDocBrief = """Specifies the winding order for surface normal computation."""
+            string userDoc = """Orientation specifies whether the gprim's surface normal should be computed using the right hand rule or left hand rule. This affects how surface normals are calculated and can impact lighting and culling behavior.
+
+Allowed values:
+- "rightHanded" (default): Use right-hand rule for normal computation
+- "leftHanded": Use left-hand rule for normal computation
+
+Note: Transforms with odd numbers of negative scales can flip the effective orientation.
+"""
+        }
+    )
+}
+
+over "Boundable" (
+    customData = {
+        string userDocBrief = """Base class for prims that can have bounding boxes (extents) calculated and cached.""" 
+        string userDoc = """The Boundable schema is the base class for all prims that can have bounding boxes calculated and stored. This is essential for performance optimization, as it allows renderers and other tools to quickly determine the spatial extent of geometry without having to compute it every time.
+
+## What is an Extent?
+
+An **extent** is a bounding box that describes the spatial bounds of a prim in its local coordinate space. Think of it as a rectangular box that completely contains the geometry.
+
+- **Rectilinear**: The bounding box is axis-aligned (not rotated)
+- **Local-space**: The extent is defined in the prim's own coordinate system, before any transforms are applied
+- **Cached**: The extent is stored as an attribute so it doesn't need to be recalculated every time
+
+## Bounds vs Extents
+
+Every 3D object needs to know its size and position in space. UsdGeom uses two related but different concepts:
+
+- **Extents**: Authored bounding box data stored as an attribute on geometry prims. This is a rectilinear (box-shaped) volume in local space that contains the geometry.
+- **Bounds**: Computed bounding boxes that can be calculated at runtime, often combining multiple extents or computing them dynamically.
+
+**Why both?** Extents provide fast, pre-computed bounding information for performance, while bounds can be calculated on-demand for more complex scenarios. For animated geometry, extents should be authored using timeSamples.
+
+```{seealso}
+For more details, see the [USD Boundable API documentation](https://openusd.org/release/api/class_usd_geom_boundable.html#UsdGeom_Boundable_Extent).
+```
+
+## Common Use Cases
+
+1. **Frustum Culling**: Quickly determining if geometry is visible in a camera's view
+2. **Collision Detection**: Fast initial checks for object intersections
+3. **Level of Detail**: Deciding which geometry to load based on distance
+4. **Spatial Queries**: Finding objects within a certain area
+5. **Rendering Optimization**: Avoiding unnecessary work on hidden geometry
+
+## Examples
+
+### Basic Extent Usage
+```{code-block} usda
+#usda 1.0
+
+def Sphere "MySphere"
+{
+    double radius = 2.0
+    float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+}
+```
+
+### Animated Extent
+```{code-block} usda
+#usda 1.0
+
+def Sphere "AnimatedSphere"
+{
+    double radius.timeSamples = {
+        0: 1.0,
+        24: 3.0
+    }
+    float3[] extent.timeSamples = {
+        0: [(-1, -1, -1), (1, 1, 1)],
+        24: [(-3, -3, -3), (3, 3, 3)]
+    }
+}
+```
+
+### Setting Extents
+
+```{code-block} python
+from pxr import Usd, UsdGeom
+
+stage = Usd.Stage.CreateInMemory()
+sphere = UsdGeom.Sphere.Define(stage, "/MySphere")
+
+# Set the sphere's radius
+sphere.CreateRadiusAttr(5)
+
+# Calculate and set the extent (bounding box)
+sphere.CreateExtentAttr(UsdGeom.Boundable.ComputeExtentFromPlugins(sphere, Usd.TimeCode.Default()))
+
+stage.Save()
+```
+
+## Best Practices
+
+1. **Always Author Extents**: To avoid expensive runtime extent computation.
+2. **Update When Needed**: When geometry properties change, update the extent accordingly
+3. **Use ComputeExtent()**: For dynamic extent calculation, use the appropriate ComputeExtent() methods
+"""
+    }
+)
+{
+    float3[] extent (
+        customData = {
+            string userDocBrief = """Specifies the bounding box of the prim in local space."""
+            string userDoc = """The extent attribute defines a bounding box for the prim in its local coordinate space. It consists of two points: the minimum corner and maximum corner of the bounding box.
+
+The extent is stored as an array of two float3 values:
+- First element: minimum corner (xmin, ymin, zmin)
+- Second element: maximum corner (xmax, ymax, zmax)
+
+For animated geometry, the extent should be authored using timeSamples to capture the changing bounds over time. This allows renderers to efficiently cull geometry without having to compute the bounds at runtime.
+
+Example:
+```usda
+float3[] extent = [(-1, -1, -1), (1, 1, 1)]  # Unit cube
+```
+"""
+        }
+    )
+}
+
+
