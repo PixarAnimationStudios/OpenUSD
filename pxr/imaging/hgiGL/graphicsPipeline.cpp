@@ -105,10 +105,14 @@ HgiGLGraphicsPipeline::BindPipeline()
 
     if (_descriptor.depthState.depthBiasEnabled) {
         glEnable(GL_POLYGON_OFFSET_FILL);
+        glEnable(GL_POLYGON_OFFSET_LINE);
+        glEnable(GL_POLYGON_OFFSET_POINT);
         glPolygonOffset(_descriptor.depthState.depthBiasSlopeFactor,
                         _descriptor.depthState.depthBiasConstantFactor);
     } else {
         glDisable(GL_POLYGON_OFFSET_FILL);
+        glDisable(GL_POLYGON_OFFSET_LINE);
+        glDisable(GL_POLYGON_OFFSET_POINT);
     }
 
     glDepthMask(_descriptor.depthState.depthWriteEnabled ? GL_TRUE : GL_FALSE);

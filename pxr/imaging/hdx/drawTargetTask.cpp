@@ -521,9 +521,13 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
     if (!_depthBiasUseDefault) {
         if (_depthBiasEnable) {
             glEnable(GL_POLYGON_OFFSET_FILL);
+            glEnable(GL_POLYGON_OFFSET_LINE);
+            glEnable(GL_POLYGON_OFFSET_POINT);
             glPolygonOffset(_depthBiasSlopeFactor, _depthBiasConstantFactor);
         } else {
             glDisable(GL_POLYGON_OFFSET_FILL);
+            glDisable(GL_POLYGON_OFFSET_LINE);
+            glDisable(GL_POLYGON_OFFSET_POINT);
         }
     }
 
@@ -557,6 +561,8 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
     glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
     glDisable(GL_PROGRAM_POINT_SIZE);
     glDisable(GL_POLYGON_OFFSET_FILL);
+    glDisable(GL_POLYGON_OFFSET_LINE);
+    glDisable(GL_POLYGON_OFFSET_POINT);
     glFrontFace(GL_CCW);
 }
 

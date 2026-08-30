@@ -66,6 +66,8 @@ public:
     ///   glEnable(GL_BLEND);
     ///   glEnable(GL_CULL_FACE);
     ///   glEnable(GL_POLYGON_OFFSET_FILL)
+    ///   glEnable(GL_POLYGON_OFFSET_LINE);
+    ///   glEnable(GL_POLYGON_OFFSET_POINT);
     ///   glEnable(GL_PROGRAM_POINT_SIZE);
     ///   glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE)
     ///   glEnable(GL_DEPTH_TEST);

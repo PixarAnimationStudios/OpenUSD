@@ -680,9 +680,13 @@ HdStRenderPassState::Bind(HgiCapabilities const &hgiCapabilities)
     if (!GetDepthBiasUseDefault()) {
         if (GetDepthBiasEnabled()) {
             glEnable(GL_POLYGON_OFFSET_FILL);
+            glEnable(GL_POLYGON_OFFSET_LINE);
+            glEnable(GL_POLYGON_OFFSET_POINT);
             glPolygonOffset(_depthBiasSlopeFactor, _depthBiasConstantFactor);
         } else {
             glDisable(GL_POLYGON_OFFSET_FILL);
+            glDisable(GL_POLYGON_OFFSET_LINE);
+            glDisable(GL_POLYGON_OFFSET_POINT);
         }
     }
 
@@ -800,6 +804,8 @@ HdStRenderPassState::Unbind(HgiCapabilities const &hgiCapabilities)
 
     if (!GetDepthBiasUseDefault()) {
         glDisable(GL_POLYGON_OFFSET_FILL);
+        glDisable(GL_POLYGON_OFFSET_LINE);
+        glDisable(GL_POLYGON_OFFSET_POINT);
         glPolygonOffset(0, 0);
     }
 
