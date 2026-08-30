@@ -2766,7 +2766,7 @@ vec3 GetEdgeParamTriangle()
 vec3 GetEdgeDistanceTriangle()
 {
     vec3 param = GetEdgeParamTriangle();
-    return max(vec3(0.0), param / fwidth(param));
+    return max(vec3(0.0), param / max(fwidth(param), 1e-6));
 }
 
 vec4 GetEdgeParamQuad()
@@ -2782,7 +2782,7 @@ vec4 GetEdgeParamQuad()
 vec4 GetEdgeDistanceQuad()
 {
     vec4 param = GetEdgeParamQuad();
-    return max(vec4(0.0), param / fwidth(param));
+    return max(vec4(0.0), param / max(fwidth(param), 1e-6));
 }
 
 
@@ -5942,7 +5942,7 @@ vec3 GetEdgeParamTriangle()
 vec3 GetEdgeDistanceTriangle()
 {
     vec3 param = GetEdgeParamTriangle();
-    return max(vec3(0.0), param / fwidth(param));
+    return max(vec3(0.0), param / max(fwidth(param), 1e-6));
 }
 
 vec4 GetEdgeParamQuad()
@@ -5958,7 +5958,7 @@ vec4 GetEdgeParamQuad()
 vec4 GetEdgeDistanceQuad()
 {
     vec4 param = GetEdgeParamQuad();
-    return max(vec4(0.0), param / fwidth(param));
+    return max(vec4(0.0), param / max(fwidth(param), 1e-6));
 }
 
 
