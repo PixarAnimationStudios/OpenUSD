@@ -52,8 +52,7 @@ _GetSelectedInstances(HdSelectionSharedPtr const& sel,
         HdSelection::PrimSelectionState const* primSelState =
             sel->GetPrimSelectionState(mode, path);
 
-        TF_VERIFY(primSelState);
-        if (!primSelState->instanceIndices.empty()) {
+        if (TF_VERIFY(primSelState) && !primSelState->instanceIndices.empty()) {
             selInstances[path] = primSelState->instanceIndices;
         }
     }
@@ -367,8 +366,9 @@ My_TestGLDrawing::OffscreenTest()
     _selTracker->SetSelection(selection);
     DrawScene();
     _driver->WriteToFile("color", "color2_select.png");
-    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
-    TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
+    if (TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1)) {
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube2"));
+    }
 
     // select cube1, /protoTop:1, /protoTop:2, /protoBottom:1, /protoBottom:2
     selection = _Pick(GfVec2i(105,62), GfVec2i(328,288), mode);
@@ -380,19 +380,23 @@ My_TestGLDrawing::OffscreenTest()
     // prims with non-empty instance indices {protoTop, protoBottom}
     InstanceMap selInstances = _GetSelectedInstances(selection, mode);
     TF_VERIFY(selInstances.size() == 2);
+    if (const auto iter = selInstances.find(SdfPath("/protoTop"));
+        iter != selInstances.end())
     {
-        std::vector<VtIntArray> const& indices
-            = selInstances[SdfPath("/protoTop")];
-        TF_VERIFY(indices.size() == 2);
-        TF_VERIFY(indices[0][0] == 1 || indices[0][0] == 2);
-        TF_VERIFY(indices[1][0] == 1 || indices[1][0] == 2);
+        const auto& indices = iter->second;
+        if (TF_VERIFY(indices.size() == 2)) {
+            TF_VERIFY(indices[0][0] == 1 || indices[0][0] == 2);
+            TF_VERIFY(indices[1][0] == 1 || indices[1][0] == 2);
+        }
     }
+    if (const auto iter = selInstances.find(SdfPath("/protoBottom"));
+        iter != selInstances.end())
     {
-        std::vector<VtIntArray> const& indices
-            = selInstances[SdfPath("/protoBottom")];
-        TF_VERIFY(indices.size() == 2);
-        TF_VERIFY(indices[0][0] == 1 || indices[0][0] == 2);
-        TF_VERIFY(indices[1][0] == 1 || indices[1][0] == 2);
+        const auto& indices = iter->second;
+        if (TF_VERIFY(indices.size() == 2)) {
+            TF_VERIFY(indices[0][0] == 1 || indices[0][0] == 2);
+            TF_VERIFY(indices[1][0] == 1 || indices[1][0] == 2);
+        }
     }
 
     // --------------------- locate (rollover) selection -----------------------
@@ -402,8 +406,9 @@ My_TestGLDrawing::OffscreenTest()
     _selTracker->SetSelection(selection);
     DrawScene();
     _driver->WriteToFile("color", "color4_locate.png");
-    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
-    TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube0"));
+    if (TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1)) {
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube0"));
+    }
 
     // select cube3, /protoBottom:0
     selection = _Pick(GfVec2i(408,246), GfVec2i(546,420), mode);
@@ -413,11 +418,13 @@ My_TestGLDrawing::OffscreenTest()
     TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 2);
     selInstances = _GetSelectedInstances(selection, mode);
     TF_VERIFY(selInstances.size() == 1);
+    if (const auto iter = selInstances.find(SdfPath("/protoBottom"));
+        iter != selInstances.end())
     {
-        std::vector<VtIntArray> const& indices
-            = selInstances[SdfPath("/protoBottom")];
-        TF_VERIFY(indices.size() == 1);
-        TF_VERIFY(indices[0][0] == 0);
+        const auto& indices = iter->second;
+        if (TF_VERIFY(indices.size() == 1)) {
+            TF_VERIFY(indices[0][0] == 0);
+        }
     }
 
     // deselect
@@ -531,4 +538,3 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 }
-

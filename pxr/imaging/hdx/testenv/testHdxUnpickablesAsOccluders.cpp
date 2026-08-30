@@ -266,8 +266,9 @@ My_TestGLDrawing::OffscreenTest()
     _driver->WriteToFile("color", "color2_cube0_pickable.png");
     HdSelection::HighlightMode mode = HdSelection::HighlightModeSelect;
 
-    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
-    TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube0"));
+    if (TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1)) {
+        TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] == SdfPath("/cube0"));
+    }
 
     // make cube0 unpickable; it should not let us pick cube1 since it occludes
     _driver->SetUnpickable({ SdfPath("/cube0") });

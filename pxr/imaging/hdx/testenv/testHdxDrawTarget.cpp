@@ -59,7 +59,9 @@ int main(int argc, char *argv[])
     HdStRenderDelegate renderDelegate;
     std::unique_ptr<HdRenderIndex> index(
         HdRenderIndex::New(&renderDelegate, {&driver}));
-    TF_VERIFY(index);
+    if (!index) {
+        TF_FATAL_ERROR("Failed to create HdRenderIndex");
+    }
     std::unique_ptr<Hdx_UnitTestDelegate> delegate =
         std::make_unique<Hdx_UnitTestDelegate>(index.get());
     HdEngine engine;
