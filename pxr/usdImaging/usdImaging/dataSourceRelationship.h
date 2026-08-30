@@ -55,7 +55,7 @@ private:
 
 private:
     UsdRelationship _usdRel;
-    const UsdImagingDataSourceStageGlobals & _stageGlobals;
+    [[maybe_unused]] const UsdImagingDataSourceStageGlobals & _stageGlobals;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceRelationship);
