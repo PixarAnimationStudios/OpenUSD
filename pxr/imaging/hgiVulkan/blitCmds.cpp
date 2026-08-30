@@ -59,19 +59,20 @@ HgiVulkanBlitCmds::InsertDebugMarker(
 
 static
 VkImageAspectFlags
-_GetImageAspectMaskForCopy(HgiTextureUsage textureUsage)
+_GetImageAspectMaskForCopy(
+    HgiTextureUsage textureUsage,
+    bool stencilOnly = false)
 {
-    // XXX: Vulkan validation demands that only one flag at a time be used 
-    // during the copy operation. Both depth and stencil flags cannot be 
-    // simultaneously passed as aspects to copy.
-    // So, we assume that the user wants to copy depth when the texture is a 
-    // depthStencil texture. If need arises, this part of the implementation 
-    // needs to be re-written such that an aspect flag is passed to this copy 
-    // operation to resolve the discrepancy.
+    // Vulkan validation requires copies of combined depth-stencil textures
+    // to specify exactly one aspect (depth or stencil). Default to depth,
+    // unless the caller explicitly asked for stencil.
     VkImageAspectFlags aspectFlags =
         HgiVulkanConversions::GetImageAspectFlag(textureUsage);
-    if (aspectFlags & VK_IMAGE_ASPECT_DEPTH_BIT) {
-        aspectFlags = VK_IMAGE_ASPECT_DEPTH_BIT;
+    if (aspectFlags &
+        (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) {
+        aspectFlags = stencilOnly
+            ? VK_IMAGE_ASPECT_STENCIL_BIT
+            : VK_IMAGE_ASPECT_DEPTH_BIT;
     }
     return aspectFlags;
 }
@@ -139,7 +140,8 @@ HgiVulkanBlitCmds::CopyTextureGpuToCpu(
     imageSub.baseArrayLayer = isTexArray ? copyOp.sourceTexelOffset[2] : 0;
     imageSub.layerCount = 1;
     imageSub.mipLevel = copyOp.mipLevel;
-    imageSub.aspectMask = _GetImageAspectMaskForCopy(texDesc.usage);
+    imageSub.aspectMask = _GetImageAspectMaskForCopy(
+        texDesc.usage, copyOp.stencilOnly);
 
     // See vulkan docs: Copying Data Between Buffers and Images
     VkBufferImageCopy region;

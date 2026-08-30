@@ -39,7 +39,7 @@ HgiVulkanSampler::HgiVulkanSampler(
     // Eg. Percentage-closer filtering
     sampler.compareEnable = desc.enableCompare ? VK_TRUE : VK_FALSE;
     sampler.compareOp = 
-        HgiVulkanConversions::GetDepthCompareFunction(desc.compareFunction);
+        HgiVulkanConversions::GetCompareFunction(desc.compareFunction);
 
     sampler.borderColor = 
         HgiVulkanConversions::GetBorderColor(desc.borderColor);

@@ -349,6 +349,15 @@ pxr_build_test(testHdStDepthBias
     CPPFILES
         testenv/testHdStDepthBias.cpp
 )
+pxr_build_test(testHdStStencil
+    LIBRARIES
+        hdSt
+        hd
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStStencil.cpp
+)
 pxr_build_test(testHdStDisplayStyle
     LIBRARIES
         hdSt
@@ -2454,6 +2463,35 @@ pxr_register_test(testHdStDepthBias
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
+set(_stencilTests
+    "decrement|--clearStencil 128 --writeOp decrement --readCompare equal --readRef 127"
+    "decrementWrap|--clearStencil 0 --writeOp decrementWrap --readCompare equal --readRef 255"
+    "disabled|--noStencil"
+    "increment|--clearStencil 128 --writeOp increment --readCompare equal --readRef 129"
+    "incrementWrap|--clearStencil 255 --writeOp incrementWrap --readCompare equal --readRef 0"
+    "invert|--clearStencil 170 --writeOp invert --readCompare equal --readRef 85"
+    "keep|--clearStencil 128 --writeOp keep --readCompare equal --readRef 128"
+    "replace|--clearStencil 0 --writeOp replace --writeRef 42 --readCompare equal --readRef 42"
+    "replaceNotEqual|--clearStencil 0 --writeOp replace --writeRef 42 --readCompare notEqual --readRef 42"
+    "zero|--clearStencil 128 --writeOp zero --readCompare equal --readRef 0"
+)
+foreach(_test IN LISTS _stencilTests)
+    string(REPLACE "|" ";" _testParts ${_test})
+    list(GET _testParts 0 _testName)
+    list(GET _testParts 1 _testArgs)
+    pxr_register_test(testHdStStencil_${_testName}
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStStencil --offscreen ${_testArgs} --write testHdStStencil_${_testName}.png --writeStencil testHdStStencil_${_testName}Stencil.png"
+        EXPECTED_RETURN_CODE 0
+        IMAGE_DIFF_COMPARE
+            testHdStStencil_${_testName}.png
+            testHdStStencil_${_testName}Stencil.png
+        FAIL 0.01
+        FAIL_PERCENT 1
+        TESTENV testenv/testHdStStencil
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+    )
+endforeach()
 pxr_register_test(testHdStDrawBatching
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStDrawBatching"
     EXPECTED_RETURN_CODE 0

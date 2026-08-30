@@ -45,6 +45,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   The byte offset in destination buffer where to start copying the data to.</li>
 /// <li>destinationBufferByteSize:
 ///   Size of the destination buffer (in bytes)</li>
+/// <li>stencilOnly:
+///   When copying from a combined depth-stencil texture, selects the stencil
+///   aspect instead of the default depth aspect. The destination buffer must
+///   be sized for the stencil bytes only. Ignored for non-depth-stencil
+///   textures.</li>
 /// </ul>
 ///
 struct HgiTextureGpuToCpuOp
@@ -56,6 +61,7 @@ struct HgiTextureGpuToCpuOp
     , cpuDestinationBuffer(nullptr)
     , destinationByteOffset(0)
     , destinationBufferByteSize(0)
+    , stencilOnly(false)
     {}
 
     HgiTextureHandle gpuSourceTexture;
@@ -64,6 +70,7 @@ struct HgiTextureGpuToCpuOp
     void* cpuDestinationBuffer;
     size_t destinationByteOffset;
     size_t destinationBufferByteSize;
+    bool stencilOnly;
 };
 
 //// \struct HgiTextureCpuToGpuOp

@@ -566,11 +566,45 @@ HdStTextureUtils::ReadAndConvertImage(
     return true;
 }
 
-HdStTextureUtils::AlignedBuffer<uint8_t>
-HdStTextureUtils::HgiTextureReadback(
+static
+HgiTextureGpuToCpuOp _HgiTextureReadback(
     Hgi * const hgi,
     HgiTextureHandle const & texture,
-    size_t * bufferSize)
+    size_t * bufferSize,
+    bool stencilOnly = false)
+{
+    const HgiTextureDesc& textureDesc = texture.Get()->GetDescriptor();
+    const auto [formatSize, stencilSize] =
+        HgiGetDataSizesOfCombinedStencilFormat(textureDesc.format);
+    const size_t formatByteSize = stencilOnly ? stencilSize : formatSize;
+    const size_t width = textureDesc.dimensions[0];
+    const size_t height = textureDesc.dimensions[1];
+    const size_t dataByteSize = width * height * formatByteSize;
+
+    // For Metal the CPU buffer has to be rounded up to a multiple of the page
+    // size.
+    const size_t alignment = hgi->GetCapabilities()->GetPageSizeAlignment();
+    const size_t bitMask = alignment - 1;
+    *bufferSize = (dataByteSize + bitMask) & (~bitMask);
+
+    auto rawBuffer = (uint8_t*)ArchAlignedAlloc(alignment, *bufferSize);
+
+    HgiTextureGpuToCpuOp copyOp;
+    copyOp.gpuSourceTexture = texture;
+    copyOp.sourceTexelOffset = GfVec3i(0);
+    copyOp.mipLevel = 0;
+    copyOp.cpuDestinationBuffer = rawBuffer;
+    copyOp.destinationByteOffset = 0;
+    copyOp.destinationBufferByteSize = *bufferSize;
+    copyOp.stencilOnly = stencilOnly;
+    return copyOp;
+}
+
+HdStTextureUtils::AlignedBuffer<uint8_t>
+HdStTextureUtils::HgiTextureReadback(
+    Hgi *const hgi,
+    HgiTextureHandle const &texture,
+    size_t *bufferSize)
 {
     if (!bufferSize) {
         return AlignedBuffer<uint8_t>();
@@ -582,33 +616,41 @@ HdStTextureUtils::HgiTextureReadback(
         return AlignedBuffer<uint8_t>();
     }
 
-    const HgiTextureDesc& textureDesc = texture.Get()->GetDescriptor();
-    const size_t formatByteSize = HgiGetDataSizeOfFormat(textureDesc.format);
-    const size_t width = textureDesc.dimensions[0];
-    const size_t height = textureDesc.dimensions[1];
-    const size_t dataByteSize = width * height * formatByteSize;
+    HgiTextureGpuToCpuOp copyOp = _HgiTextureReadback(hgi, texture, bufferSize);
+    if (copyOp.destinationBufferByteSize == 0) {
+        return AlignedBuffer<uint8_t>();
+    }
+    AlignedBuffer<uint8_t> buffer((uint8_t*)copyOp.cpuDestinationBuffer);
+    HgiBlitCmdsUniquePtr const blitCmds = hgi->CreateBlitCmds();
+    blitCmds->CopyTextureGpuToCpu(copyOp);
+    hgi->SubmitCmds(blitCmds.get(), HgiSubmitWaitTypeWaitUntilCompleted);
 
-    if (dataByteSize == 0) {
+    return buffer;
+}
+
+HdStTextureUtils::AlignedBuffer<uint8_t>
+HdStTextureUtils::HgiStencilReadback(
+    Hgi *const hgi,
+    HgiTextureHandle const &texture,
+    size_t *bufferSize)
+{
+    if (!bufferSize) {
         return AlignedBuffer<uint8_t>();
     }
 
-    // For Metal the CPU buffer has to be rounded up to a multiple of the page
-    // size.
-    const size_t alignment = hgi->GetCapabilities()->GetPageSizeAlignment();
-    const size_t bitMask = alignment - 1;
-    *bufferSize = (dataByteSize + bitMask) & (~bitMask);
+    *bufferSize = 0;
 
-    uint8_t* rawBuffer = (uint8_t*)ArchAlignedAlloc(alignment, *bufferSize);
-    AlignedBuffer<uint8_t> buffer(rawBuffer);
+    if (!texture) {
+        return AlignedBuffer<uint8_t>();
+    }
 
+    HgiTextureGpuToCpuOp copyOp =
+        _HgiTextureReadback(hgi, texture, bufferSize, /*stencilOnly=*/true);
+    if (copyOp.destinationBufferByteSize == 0) {
+        return AlignedBuffer<uint8_t>();
+    }
+    AlignedBuffer<uint8_t> buffer((uint8_t*)copyOp.cpuDestinationBuffer);
     HgiBlitCmdsUniquePtr const blitCmds = hgi->CreateBlitCmds();
-    HgiTextureGpuToCpuOp copyOp;
-    copyOp.gpuSourceTexture = texture;
-    copyOp.sourceTexelOffset = GfVec3i(0);
-    copyOp.mipLevel = 0;
-    copyOp.cpuDestinationBuffer = rawBuffer;
-    copyOp.destinationByteOffset = 0;
-    copyOp.destinationBufferByteSize = *bufferSize;
     blitCmds->CopyTextureGpuToCpu(copyOp);
     hgi->SubmitCmds(blitCmds.get(), HgiSubmitWaitTypeWaitUntilCompleted);
 

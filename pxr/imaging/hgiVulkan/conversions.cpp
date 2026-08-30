@@ -241,6 +241,20 @@ _CompareOpTable[HgiCompareFunctionCount][2] =
 static_assert(HgiCompareFunctionCount==8, "");
 
 static const uint32_t
+_StencilOpTable[HgiStencilOpCount][2] =
+{
+    {HgiStencilOpKeep,           VK_STENCIL_OP_KEEP},
+    {HgiStencilOpZero,           VK_STENCIL_OP_ZERO},
+    {HgiStencilOpReplace,        VK_STENCIL_OP_REPLACE},
+    {HgiStencilOpIncrementClamp, VK_STENCIL_OP_INCREMENT_AND_CLAMP},
+    {HgiStencilOpDecrementClamp, VK_STENCIL_OP_DECREMENT_AND_CLAMP},
+    {HgiStencilOpInvert,         VK_STENCIL_OP_INVERT},
+    {HgiStencilOpIncrementWrap,  VK_STENCIL_OP_INCREMENT_AND_WRAP},
+    {HgiStencilOpDecrementWrap,  VK_STENCIL_OP_DECREMENT_AND_WRAP}
+};
+static_assert(HgiStencilOpCount==8, "");
+
+static const uint32_t
 _textureTypeTable[HgiTextureTypeCount][2] =
 {
     {HgiTextureType1D,      VK_IMAGE_TYPE_1D},
@@ -548,9 +562,15 @@ HgiVulkanConversions::GetBlendEquation(HgiBlendOp bo)
 }
 
 VkCompareOp
-HgiVulkanConversions::GetDepthCompareFunction(HgiCompareFunction cf)
+HgiVulkanConversions::GetCompareFunction(HgiCompareFunction cf)
 {
     return VkCompareOp(_CompareOpTable[cf][1]);
+}
+
+VkStencilOp
+HgiVulkanConversions::GetStencilOp(HgiStencilOp op)
+{
+    return VkStencilOp(_StencilOpTable[op][1]);
 }
 
 VkImageType

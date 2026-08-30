@@ -18,8 +18,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HgiAttachmentDescConstPtrVector = std::vector<HgiAttachmentDesc const*>;
+namespace
+{
+VkStencilOpState
+_CreateStencilOpState(const HgiStencilState& stencilState)
+{
+    VkStencilOpState stencilOp{};
+    stencilOp.failOp = HgiVulkanConversions::GetStencilOp(stencilState.stencilFailOp);
+    stencilOp.passOp = HgiVulkanConversions::GetStencilOp(stencilState.depthStencilPassOp);
+    stencilOp.depthFailOp = HgiVulkanConversions::GetStencilOp(stencilState.depthFailOp);
+    stencilOp.compareOp = HgiVulkanConversions::GetCompareFunction(stencilState.compareFn);
+    stencilOp.compareMask = stencilState.readMask;
+    stencilOp.writeMask = stencilState.writeMask;
+    stencilOp.reference = stencilState.referenceValue;
+    return stencilOp;
+}
+}
 
+using HgiAttachmentDescConstPtrVector = std::vector<HgiAttachmentDesc const*>;
 
 HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     HgiVulkanDevice* device,
@@ -258,27 +274,16 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     depthStencilState.depthWriteEnable = desc.depthState.depthWriteEnabled;
 
     depthStencilState.depthCompareOp =
-        HgiVulkanConversions::GetDepthCompareFunction(
+        HgiVulkanConversions::GetCompareFunction(
             desc.depthState.depthCompareFn);
 
-    depthStencilState.depthBoundsTestEnable = VK_FALSE;
-    depthStencilState.minDepthBounds = 0;
-    depthStencilState.maxDepthBounds = 0;
-
-    depthStencilState.stencilTestEnable =
-        desc.depthState.stencilTestEnabled;
-
     if (desc.depthState.stencilTestEnabled) {
-        TF_CODING_ERROR("Missing implementation stencil mask enabled");
+       depthStencilState.stencilTestEnable = true;
+       depthStencilState.front = _CreateStencilOpState(desc.depthState.stencilFront);
+       depthStencilState.back = _CreateStencilOpState(desc.depthState.stencilBack);
     } else {
-        depthStencilState.back.failOp = VK_STENCIL_OP_KEEP;
-        depthStencilState.back.passOp = VK_STENCIL_OP_KEEP;
-        depthStencilState.back.compareOp = VK_COMPARE_OP_ALWAYS;
-        depthStencilState.back.compareMask = 0;
-        depthStencilState.back.reference = 0;
-        depthStencilState.back.depthFailOp = VK_STENCIL_OP_KEEP;
-        depthStencilState.back.writeMask = 0;
-        depthStencilState.front = depthStencilState.back;
+        depthStencilState.front.compareOp = VK_COMPARE_OP_ALWAYS;
+        depthStencilState.back = depthStencilState.front;
     }
 
     pipeCreateInfo.pDepthStencilState = &depthStencilState;

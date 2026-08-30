@@ -949,11 +949,13 @@ HdStRenderPassState::_InitAttachmentDesc(
             renderBuffer->GetFormat());
     }
 
-    if (HdAovHasDepthSemantic(binding.aovName)) {
-        attachmentDesc.usage = HgiTextureUsageBitsDepthTarget;
-    } else if (HdAovHasDepthStencilSemantic(binding.aovName)) {
+    // Check depthStencil before depth: HdAovHasDepthSemantic also matches
+    // "depthStencil" because that name starts with "depth".
+    if (HdAovHasDepthStencilSemantic(binding.aovName)) {
         attachmentDesc.usage = HgiTextureUsageBitsStencilTarget |
                                HgiTextureUsageBitsDepthTarget;
+    } else if (HdAovHasDepthSemantic(binding.aovName)) {
+        attachmentDesc.usage = HgiTextureUsageBitsDepthTarget;
     } else {
         attachmentDesc.usage = HgiTextureUsageBitsColorTarget;
 

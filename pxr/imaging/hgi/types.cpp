@@ -252,6 +252,17 @@ HgiIsCompressed(const HgiFormat f)
     }
 }
 
+std::pair<size_t, size_t>
+HgiGetDataSizesOfCombinedStencilFormat(const HgiFormat f)
+{
+    switch (f) {
+    case HgiFormatFloat32UInt8:
+        return {4, 1};
+    default:
+        return {HgiGetDataSizeOfFormat(f), 0};
+    }
+}
+
 size_t
 HgiGetDataSize(
     const HgiFormat format,

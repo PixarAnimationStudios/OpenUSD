@@ -119,19 +119,18 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
 
     HgiTextureDesc const& texDesc = srcTexture->GetDescriptor();
 
-    MTLPixelFormat metalFormat = HgiMetalConversions::GetPixelFormat(
-        texDesc.format, texDesc.usage);
-    
-    if (metalFormat == MTLPixelFormatDepth32Float_Stencil8) {
-        TF_WARN("Cannot read back depth stencil on Metal.");
-        return;
-    }
+    const auto [formatSize, stencilSize] =
+        HgiGetDataSizesOfCombinedStencilFormat(texDesc.format);
+    const bool isDepthStencil = stencilSize > 0;
 
     id<MTLDevice> device = _hgi->GetPrimaryDevice();
 
     MTLResourceOptions options = _hgi->GetCapabilities()->defaultStorageMode;
 
-    size_t bytesPerPixel = HgiGetDataSizeOfFormat(texDesc.format);
+    // For a combined depth-stencil format the destination buffer is sized
+    // for the selected aspect only.
+    const size_t bytesPerPixel = isDepthStencil && copyOp.stencilOnly ?
+        stencilSize : formatSize;
     id<MTLBuffer> cpuBuffer =
         [device newBufferWithBytesNoCopy:copyOp.cpuDestinationBuffer
                                   length:copyOp.destinationBufferByteSize
@@ -149,8 +148,13 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
         texDesc.dimensions[0] - copyOp.sourceTexelOffset[0],
         texDesc.dimensions[1] - copyOp.sourceTexelOffset[1],
         texDesc.dimensions[2] - depthOffset);
-    
+
     MTLBlitOption blitOptions = MTLBlitOptionNone;
+    if (isDepthStencil) {
+        blitOptions = copyOp.stencilOnly
+            ? MTLBlitOptionStencilFromDepthStencil
+            : MTLBlitOptionDepthFromDepthStencil;
+    }
 
     _CreateEncoder();
 

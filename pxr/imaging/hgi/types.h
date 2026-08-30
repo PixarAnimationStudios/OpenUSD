@@ -10,9 +10,10 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec3i.h"
 #include "pxr/imaging/hgi/api.h"
-#include <vector>
 #include <limits>
 #include <stdlib.h>
+#include <utility>
+#include <vector>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -143,6 +144,15 @@ size_t HgiGetDataSizeOfFormat(
     HgiFormat f,
     size_t *blockWidth = nullptr,
     size_t *blockHeight = nullptr);
+
+/// Returns the individual sizes of a single element for the depth and stencil
+/// parts of a depth or depth-stencil format, as a (depth, stencil) pair.
+/// Differs from HgiGetDataSizeOfFormat() for combined depth-stencil formats,
+/// where the underlying texel may include padding bytes. Returns
+/// (HgiGetDataSizeOfFormat(), 0) for formats that don't have a stencil.
+HGI_API
+std::pair<size_t, size_t>
+HgiGetDataSizesOfCombinedStencilFormat(HgiFormat f);
 
 /// Return whether the given format uses compression.
 HGI_API
