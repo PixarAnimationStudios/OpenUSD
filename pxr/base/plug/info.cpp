@@ -692,13 +692,20 @@ Plug_ReadPlugInfo(
     const AddPluginCallback& addPlugin,
     Plug_TaskArena* taskArena)
 {
-    if (TfDebug::IsEnabled(PLUG_INFO_SEARCH)) {
+    const bool usdPlugInfoSearchDebugCodeActive =
+        TfDebug::IsEnabled(PLUG_INFO_SEARCH);
+
+    if (usdPlugInfoSearchDebugCodeActive) {
         TF_DEBUG(PLUG_INFO_SEARCH).Msg(
             "Will check plugin info paths:\n    %s\n",
             TfStringJoin(pathnames, "\n    ").c_str());
     }
+
+    // Debug timing info
     TfStopwatch stopwatch;
-    stopwatch.Start();
+    if (usdPlugInfoSearchDebugCodeActive) {
+        stopwatch.Start();
+    }
 
     _ReadContext context(*taskArena, addVisitedPath, addPlugin);
     for (const auto& pathname : pathnames) {
@@ -730,10 +737,14 @@ Plug_ReadPlugInfo(
     if (!pathsAreOrdered) {
         context.taskArena.Wait();
     }
-    stopwatch.Stop();
-    TF_DEBUG(PLUG_INFO_SEARCH).
-        Msg(" Did check plugin info paths in %f seconds\n", 
-            stopwatch.GetSeconds());
+
+    // Debug timing info
+    if (usdPlugInfoSearchDebugCodeActive) {
+       stopwatch.Stop();
+       TF_DEBUG(PLUG_INFO_SEARCH).
+           Msg(" Did check plugin info paths in %f seconds\n", 
+               stopwatch.GetSeconds());
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
