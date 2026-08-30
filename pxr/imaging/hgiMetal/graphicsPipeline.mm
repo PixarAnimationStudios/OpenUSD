@@ -439,9 +439,14 @@ HgiMetalGraphicsPipeline::BindPipeline(id<MTLRenderCommandEncoder> renderEncoder
     //
     HgiDepthStencilState const & dsState = _descriptor.depthState;
     if (_descriptor.depthState.depthBiasEnabled) {
+        // A point has no depth gradient, so a slope scaled bias should have no
+        // effect, but instead it causes randomly broken depth values.
+        const float slopeScale =
+            (_descriptor.primitiveType == HgiPrimitiveTypePointList)
+                ? 0.0f : dsState.depthBiasSlopeFactor;
         [renderEncoder
             setDepthBias: dsState.depthBiasConstantFactor
-              slopeScale: dsState.depthBiasSlopeFactor
+              slopeScale: slopeScale
                    clamp: 0.0f];
     }
 
