@@ -33,6 +33,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(HGIVULKAN_THREAD_CONSISTENCY_CHECK, true,
+   "Check that end frame and command submission are called from the same "
+   "thread which created the HgiVulkan instance");
+
+static bool
+_IsThreadConsistencyCheckEnabled()
+{
+   static bool enabled = TfGetEnvSetting(HGIVULKAN_THREAD_CONSISTENCY_CHECK);
+   return enabled;
+}
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -318,10 +328,13 @@ HgiVulkan::EndFrame()
 void
 HgiVulkan::GarbageCollect()
 {
-    if (ARCH_UNLIKELY(_threadId != std::this_thread::get_id())) {
-        TF_CODING_ERROR("Secondary thread violation");
-        return;
+    if (_IsThreadConsistencyCheckEnabled()) {
+        if (ARCH_UNLIKELY(_threadId != std::this_thread::get_id())) {
+            TF_CODING_ERROR("Secondary thread violation");
+            return;
+        }
     }
+
     HgiVulkanDevice* device = GetPrimaryDevice();
 
     // Perform garbage collection for each device.
@@ -360,9 +373,11 @@ HgiVulkan::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
     // However, since we currently call garbage collection here and because
     // we only have one resource command buffer, we cannot support submitting
     // cmds from secondary threads until those issues are resolved.
-    if (ARCH_UNLIKELY(_threadId != std::this_thread::get_id())) {
-        TF_CODING_ERROR("Secondary threads should not submit cmds");
-        return false;
+    if (_IsThreadConsistencyCheckEnabled()) {
+        if (ARCH_UNLIKELY(_threadId != std::this_thread::get_id())) {
+            TF_CODING_ERROR("Secondary threads should not submit cmds");
+            return false;
+        }
     }
 
     // Submit Cmds work
@@ -387,9 +402,11 @@ HgiVulkan::_EndFrameSync()
 {
     // The garbage collector and command buffer reset must happen on the
     // main-thread when no threads are recording.
-    if (ARCH_UNLIKELY(_threadId != std::this_thread::get_id())) {
-        TF_CODING_ERROR("Secondary thread violation");
-        return;
+    if (_IsThreadConsistencyCheckEnabled()) {
+        if (ARCH_UNLIKELY(_threadId != std::this_thread::get_id())) {
+            TF_CODING_ERROR("Secondary thread violation");
+            return;
+        }
     }
 
     HgiVulkanDevice* device = GetPrimaryDevice();
