@@ -171,6 +171,10 @@ UsdUtils_LocalizationContext::_ProcessLayer(
         SdfPrimSpecHandle curr = dfs.top();
         dfs.pop();
 
+        if (!curr) {
+            continue;
+        }
+
         // Metadata is processed even on the pseudoroot, which ensures
         // we process layer metadata properly.
         _ProcessMetadata(layer, expressionVariablesIndex, curr);
