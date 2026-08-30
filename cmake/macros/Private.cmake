@@ -1354,10 +1354,33 @@ function(_pxr_library NAME)
         PROPERTIES
             FOLDER "${folder}"
             POSITION_INDEPENDENT_CODE ON
-            IMPORT_PREFIX "${args_PREFIX}"            
+            IMPORT_PREFIX "${args_PREFIX}"
             PREFIX "${args_PREFIX}"
             SUFFIX "${args_SUFFIX}"
     )
+
+    # Embed Windows VERSIONINFO resource into shared libraries and plugins so
+    # that File Properties (version, company, description) are visible in
+    # Windows Explorer, debuggers, and tools like Dependency Walker.
+    # Only applies to DLL targets (SHARED and PLUGIN); skips STATIC and OBJECT.
+    if(WIN32 AND NOT isObject AND NOT args_TYPE STREQUAL "STATIC")
+        # InternalName: module name without extension (e.g. "usd_gf")
+        set(_PXR_RC_INTERNAL_NAME "${args_PREFIX}${NAME}")
+        # OriginalFilename: full DLL name on disk (e.g. "usd_gf.dll")
+        set(_PXR_RC_DLL_NAME "${libraryFilename}")
+        set(_PXR_RC_FILE_DESCRIPTION
+            "Universal Scene Description: ${_PXR_RC_DLL_NAME}")
+        configure_file(
+            "${PROJECT_SOURCE_DIR}/cmake/macros/WindowsVersionInfo.rc.in"
+            "${CMAKE_CURRENT_BINARY_DIR}/${NAME}_version.rc"
+            @ONLY
+        )
+        target_sources(${NAME}
+            PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/${NAME}_version.rc")
+        unset(_PXR_RC_INTERNAL_NAME)
+        unset(_PXR_RC_DLL_NAME)
+        unset(_PXR_RC_FILE_DESCRIPTION)
+    endif()
 
     target_compile_definitions(${NAME}
         PUBLIC
