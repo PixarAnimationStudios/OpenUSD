@@ -94,7 +94,7 @@ bool nanoexr_Gaussian_resample(const nanoexr_ImageData_t* src,
     const int dstHeight = dst->height;
     if (srcWidth == dstWidth && srcHeight == dstHeight) {
         memcpy(dst->data, src->data, 
-               src->channelCount * srcWidth * srcHeight * sizeof(float));
+               (size_t) src->channelCount * (size_t) srcWidth * (size_t) srcHeight * sizeof(float));
         return true;
     }
     
@@ -162,7 +162,7 @@ bool nanoexr_Gaussian_resample(const nanoexr_ImageData_t* src,
     // first pass: resize horizontally
     int srcFloatsPerLine = src->channelCount * srcWidth;
     int dstFloatsPerLine = src->channelCount * dstWidth;
-    float* firstPass = (float*)malloc(dstWidth * src->channelCount * srcHeight * sizeof(float));
+    float* firstPass = (float*)malloc((size_t) dstWidth * (size_t) src->channelCount * (size_t) srcHeight * sizeof(float));
     for (int y = 0; y < srcHeight; ++y) {
         for (int x = 0; x < dstWidth; ++x) {
             for (int c = 0; c < src->channelCount; ++c) {
@@ -828,7 +828,7 @@ exr_result_t nanoexr_read_scanline_exr(exr_context_t exr,
                 if (rv != EXR_ERR_SUCCESS)
                     break;
             }
-            uint8_t* start = img->data + (chunky - img->dataWindowMinY) * img->width * pixelbytes;
+            uint8_t* start = img->data + (size_t)(chunky - img->dataWindowMinY) * (size_t) img->width * (size_t) pixelbytes;
             for (int c = 0; c < decoder.channel_count; ++c) {
                 decoder.channels[c].decode_to_ptr = NULL;
                 for (int i = 0; i < 4; ++i) {
@@ -857,8 +857,8 @@ void fill_channel_u16(nanoexr_ImageData_t* img, int channel, uint16_t value) {
     for (int y = 0; y < img->height; ++y) {
         for (int x = 0; x < img->width; ++x) {
             uint8_t* curpixel = img->data + 
-                y * img->width * img->channelCount * 2 + 
-                x * img->channelCount * 2 + channel * 2;
+                (size_t) y * (size_t) img->width * (size_t) (img->channelCount * 2) + 
+                (size_t) x * (size_t) (img->channelCount * 2) + (size_t) (channel * 2);
             *(uint16_t*) curpixel = value;
         }
     }
@@ -868,8 +868,8 @@ void fill_channel_u32(nanoexr_ImageData_t* img, int channel, uint32_t value) {
     for (int y = 0; y < img->height; ++y) {
         for (int x = 0; x < img->width; ++x) {
             uint8_t* curpixel = img->data + 
-                y * img->width * img->channelCount * 4 + 
-                x * img->channelCount * 4 + channel * 4;
+                (size_t) y * (size_t) img->width * (size_t) (img->channelCount * 4) + 
+                (size_t) x * (size_t) (img->channelCount * 4) + (size_t) (channel * 4);
             *(uint32_t*) curpixel = value;
         }
     }
@@ -879,22 +879,22 @@ void fill_channel_float(nanoexr_ImageData_t* img, int channel, float value) {
     for (int y = 0; y < img->height; ++y) {
         for (int x = 0; x < img->width; ++x) {
             uint8_t* curpixel = img->data + 
-                y * img->width * img->channelCount * 4 + 
-                x * img->channelCount * 4 + channel * 4;
+                (size_t) y * (size_t) img->width * (size_t) (img->channelCount * 4) + 
+                (size_t) x * (size_t) (img->channelCount * 4) + (size_t) (channel * 4);
             *(float*) curpixel = value;
         }
     }
 }
 
 void copy_channel_u16(nanoexr_ImageData_t* img, uint8_t* dst_data, uint8_t* src_data, int dst_channel, int src_channel) {
-    int dst_off = dst_channel * 2;
-    int src_off = src_channel * 2;
+    size_t dst_off = dst_channel * 2;
+    size_t src_off = src_channel * 2;
     for (int y = 0; y < img->height; ++y) {
-        int y_off = y * img->width * img->channelCount * 2;
+        size_t y_off = (size_t) y * (size_t) img->width * (size_t) (img->channelCount * 2);
         uint8_t* dst_line_start = dst_data + y_off + dst_off;
         uint8_t* src_line_start = src_data + y_off + src_off;
         for (int x = 0; x < img->width; ++x) {
-            int x_off = x * img->channelCount * 2;
+            size_t x_off = (size_t) x * (size_t) (img->channelCount * 2);
             uint8_t* dstpixel = dst_line_start + x_off;
             uint8_t* srcpixel = src_line_start + x_off;
             *(uint16_t*) dstpixel = *(uint16_t*) srcpixel;
@@ -905,12 +905,10 @@ void copy_channel_u16(nanoexr_ImageData_t* img, uint8_t* dst_data, uint8_t* src_
 void copy_channel_u32(nanoexr_ImageData_t* img, uint8_t* dst_data, uint8_t* src_data, int dst_channel, int src_channel) {
     for (int y = 0; y < img->height; ++y) {
         for (int x = 0; x < img->width; ++x) {
-            uint8_t* curpixel = src_data +
-                y * img->width * img->channelCount * 4 +
-                x * img->channelCount * 4 + src_channel * 4;
-            uint8_t* topixel = dst_data +
-                y * img->width * img->channelCount * 4 +
-                x * img->channelCount * 4 + dst_channel * 4;
+            size_t y_off = (size_t) y * (size_t) img->width * (size_t) (img->channelCount * 4);
+            size_t x_off = (size_t) x * (size_t) (img->channelCount * 4);
+            uint8_t* curpixel = src_data + y_off + x_off + (size_t) (src_channel * 4);
+            uint8_t* topixel = dst_data + y_off + x_off + (size_t) (dst_channel * 4);
             *(uint32_t*) topixel = *(uint32_t*) curpixel;
         }
     }
@@ -919,12 +917,10 @@ void copy_channel_u32(nanoexr_ImageData_t* img, uint8_t* dst_data, uint8_t* src_
 void copy_channel_float(nanoexr_ImageData_t* img, uint8_t* dst_data, uint8_t* src_data, int dst_channel, int src_channel) {
     for (int y = 0; y < img->height; ++y) {
         for (int x = 0; x < img->width; ++x) {
-            uint8_t* curpixel = src_data +
-                y * img->width * img->channelCount * 4 +
-                x * img->channelCount * 4 + src_channel * 4;
-            uint8_t* topixel = dst_data +
-                y * img->width * img->channelCount * 4 +
-                x * img->channelCount * 4 + dst_channel * 4;
+            size_t y_off = (size_t) y * (size_t) img->width * (size_t) (img->channelCount * 4);
+            size_t x_off = (size_t) x * (size_t) (img->channelCount * 4);
+            uint8_t* curpixel = src_data + y_off + x_off + (size_t) (src_channel * 4);
+            uint8_t* topixel = dst_data + y_off + x_off + (size_t) (dst_channel * 4);
             *(float*) topixel = *(float*) curpixel;
         }
     }
@@ -1030,7 +1026,7 @@ exr_result_t nanoexr_read_exr(const char* filename,
     img->channelCount = numChannelsToRead;
     img->width = width;
     img->height = height;
-    img->dataSize = width * height * img->channelCount * bytesPerChannel;
+    img->dataSize = (size_t) width * (size_t) height * (size_t) (img->channelCount * bytesPerChannel);
     img->pixelType = pixelType;
     img->dataWindowMinY = datawin.min.y >> mipLevel;
     img->dataWindowMaxY = (datawin.max.y+1) >> mipLevel;
