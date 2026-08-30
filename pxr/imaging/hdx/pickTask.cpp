@@ -55,6 +55,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (PickBufferBinding)
     (Picking)
 
+    (withDeepSelect)
+    (noDeepSelect)
+
     (overlayDepthStencil)
 );
 
@@ -73,19 +76,32 @@ static const int PICK_BUFFER_HEADER_SIZE = 8;
 static const int PICK_BUFFER_SUBBUFFER_CAPACITY = 32;
 static const int PICK_BUFFER_ENTRY_SIZE = 3;
 
+static HdStRenderPassShaderSharedPtr
+_CreatePickingShader(bool deepSelect)
+{
+    HioGlslfxSharedPtr glslfx = std::make_shared<HioGlslfx>(
+        HdxPackageRenderPassPickingShader(), 
+        deepSelect ? _tokens->withDeepSelect : _tokens->noDeepSelect);
+    return std::make_shared<HdStRenderPassShader>(glslfx);
+}
+
+static void
+_UpdateRenderPassStateShader(HdRenderPassStateSharedPtr const& rps, 
+                             bool deepSelect)
+{
+    if (HdStRenderPassState* extendedState =
+            dynamic_cast<HdStRenderPassState*>(rps.get())) {
+        extendedState->SetRenderPassShader(_CreatePickingShader(deepSelect));
+    }
+}
+
 static HdRenderPassStateSharedPtr
-_InitIdRenderPassState(HdRenderIndex *index)
+_InitIdRenderPassState(HdRenderIndex *index, bool deepSelect)
 {
     HdRenderPassStateSharedPtr rps =
         index->GetRenderDelegate()->CreateRenderPassState();
 
-    if (HdStRenderPassState* extendedState =
-            dynamic_cast<HdStRenderPassState*>(
-                rps.get())) {
-        extendedState->SetRenderPassShader(
-            std::make_shared<HdStRenderPassShader>(
-                HdxPackageRenderPassPickingShader()));
-    }
+    _UpdateRenderPassStateShader(rps, deepSelect);
 
     return rps;
 }
@@ -115,6 +131,7 @@ HdxPickTask::HdxPickTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdTask(id)
     , _renderTags()
     , _useOverlayPass(false)
+    , _useDeepSelection(false)
     , _index(nullptr)
     , _hgi(nullptr)
     , _pickableDepthIndex(0)
@@ -130,10 +147,13 @@ HdxPickTask::~HdxPickTask()
 void
 HdxPickTask::_InitIfNeeded()
 {
+    const bool deepSelectionIsDirty =
+        (_contextParams.resolveMode == HdxPickTokens->resolveDeep) != _useDeepSelection;
+    _useDeepSelection = _contextParams.resolveMode == HdxPickTokens->resolveDeep;
     // Init pick buffer
-    if (!_pickBuffer) {
+    if (!_pickBuffer && _useDeepSelection) {
         HdStResourceRegistrySharedPtr const& hdStResourceRegistry =
-            std::dynamic_pointer_cast<HdStResourceRegistry>(
+            std::dynamic_pointer_cast<HdStResourceRegistry >(
                 _index->GetResourceRegistry());
 
         if (hdStResourceRegistry) {
@@ -146,6 +166,8 @@ HdxPickTask::_InitIfNeeded()
                         _tokens->Picking, 
                         bufferSpecs, HdBufferArrayUsageHintBitsStorage);
         }
+    } else if (_pickBuffer && !_useDeepSelection) {
+        _pickBuffer = nullptr;
     }
 
     if (_pickableAovBuffers.empty()) {
@@ -172,10 +194,11 @@ HdxPickTask::_InitIfNeeded()
         _overlayRenderPass = 
             _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
 
+        // Initialize _useDeepSelection based on current context params
         // initialize renderPassStates with ID render shader
-        _pickableRenderPassState = _InitIdRenderPassState(_index);
-        _occluderRenderPassState = _InitIdRenderPassState(_index);
-        _overlayRenderPassState = _InitIdRenderPassState(_index);
+        _pickableRenderPassState = _InitIdRenderPassState(_index, _useDeepSelection);
+        _occluderRenderPassState = _InitIdRenderPassState(_index, _useDeepSelection);
+        _overlayRenderPassState = _InitIdRenderPassState(_index, _useDeepSelection);
         // Turn off color writes for the occluders, wherein we want to only
         // condition the depth buffer and not write out any IDs.
         // XXX: This is a hacky alternative to using a different shader mixin
@@ -183,6 +206,17 @@ HdxPickTask::_InitIfNeeded()
         _occluderRenderPassState->SetColorMaskUseDefault(false);
         _occluderRenderPassState->SetColorMasks(
             {HdRenderPassState::ColorMaskNone});
+    }
+
+    if (deepSelectionIsDirty) {
+        if (_pickableRenderPassState && _occluderRenderPassState && _overlayRenderPassState) {
+            _UpdateRenderPassStateShader(_pickableRenderPassState, 
+                                         _useDeepSelection);
+            _UpdateRenderPassStateShader(_occluderRenderPassState, 
+                                         _useDeepSelection);
+            _UpdateRenderPassStateShader(_overlayRenderPassState, 
+                                         _useDeepSelection);
+        }
     }
 }
 
@@ -668,7 +702,7 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
         extendedState ? extendedState->GetRenderPassShader() : nullptr;
 
     if (renderPassShader) {
-        if (_pickBuffer) {
+        if (_pickBuffer && _useDeepSelection) {
             renderPassShader->AddBufferBinding(
                 HdStBindingRequest(
                     HdStBinding::SSBO,

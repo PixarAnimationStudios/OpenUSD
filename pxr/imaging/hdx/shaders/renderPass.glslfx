@@ -176,59 +176,14 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     }
 }
 
--- layout HdxRenderPass.RenderPick
+-- layout HdxRenderPass.RenderPickDeepSelect
 
 [
-    ["out", "int", "primIdOut"],
-    ["out", "int", "instanceIdOut"],
-    ["out", "int", "elementIdOut"],
-    ["out", "int", "edgeIdOut"],
-    ["out", "int", "pointIdOut"],
-    ["out", "vec4", "neyeOut"],
     ["buffer readWrite", "CounterBuffer", "PickBuffer", ["atomic_int", "PickBuffer"]]
 ]
 
--- glsl HdxRenderPass.RenderPick
+-- glsl HdxRenderPass.RenderPickDeepSelect
 
-vec4 IntToVec4(int id)
-{
-    return vec4(((id >>  0) & 0xff) / 255.0,
-                ((id >>  8) & 0xff) / 255.0,
-                ((id >> 16) & 0xff) / 255.0,
-                ((id >> 24) & 0xff) / 255.0);
-}
-
-// Fwd declare necessary methods to determine the subprim id of a fragment.
-FORWARD_DECL(int GetElementID()); // generated via codeGen
-FORWARD_DECL(int GetPrimitiveEdgeId()); // defined in edgeId.glslfx, or generated via codeGen
-FORWARD_DECL(int GetPointId()); // defined in pointId.glslfx
-
-// Declared below.
-#if defined(HD_HAS_PickBuffer)
-FORWARD_DECL(void RenderDeepPicks(int primId, int instanceId, int elementId, int edgeId, int pointId));
-#endif
-
-void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
-{
-    primIdOut = HdGet_primID();
-
-    // instanceIndex is a tuple of integers (num nested levels).
-    // for picking, we store global instanceId (instanceIndex[0]) in the
-    // selection framebuffer and then reconstruct the tuple in postprocess.
-    instanceIdOut = GetDrawingCoord().instanceIndex[0];
-
-    elementIdOut = GetElementID();
-    edgeIdOut = GetPrimitiveEdgeId();
-    pointIdOut = GetPointId();
-    
-    neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
-
-#if defined(HD_HAS_PickBuffer)
-    RenderDeepPicks(primIdOut, instanceIdOut, elementIdOut, edgeIdOut, pointIdOut);
-#endif
-}
-
-#if defined(HD_HAS_PickBuffer)
 int cantor(int a, int b) {
    return (a + b + 1) * (a + b) / 2 + b;
 }
@@ -369,7 +324,57 @@ void RenderDeepPicks(int primId, int instanceId, int elementId,
     }
     while (bufferNumber != subBufferNumber);
 }
-#endif // HD_HAS_PickBuffer
+
+-- layout HdxRenderPass.RenderPick
+
+[
+    ["out", "int", "primIdOut"],
+    ["out", "int", "instanceIdOut"],
+    ["out", "int", "elementIdOut"],
+    ["out", "int", "edgeIdOut"],
+    ["out", "int", "pointIdOut"],
+    ["out", "vec4", "neyeOut"]
+]
+
+-- glsl HdxRenderPass.RenderPick
+
+vec4 IntToVec4(int id)
+{
+    return vec4(((id >>  0) & 0xff) / 255.0,
+                ((id >>  8) & 0xff) / 255.0,
+                ((id >> 16) & 0xff) / 255.0,
+                ((id >> 24) & 0xff) / 255.0);
+}
+
+// Fwd declare necessary methods to determine the subprim id of a fragment.
+FORWARD_DECL(int GetElementID()); // generated via codeGen
+FORWARD_DECL(int GetPrimitiveEdgeId()); // defined in edgeId.glslfx, or generated via codeGen
+FORWARD_DECL(int GetPointId()); // defined in pointId.glslfx
+
+// Declared below.
+#if defined(HD_HAS_PickBuffer)
+FORWARD_DECL(void RenderDeepPicks(int primId, int instanceId, int elementId, int edgeId, int pointId));
+#endif
+
+void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    primIdOut = HdGet_primID();
+
+    // instanceIndex is a tuple of integers (num nested levels).
+    // for picking, we store global instanceId (instanceIndex[0]) in the
+    // selection framebuffer and then reconstruct the tuple in postprocess.
+    instanceIdOut = GetDrawingCoord().instanceIndex[0];
+
+    elementIdOut = GetElementID();
+    edgeIdOut = GetPrimitiveEdgeId();
+    pointIdOut = GetPointId();
+    
+    neyeOut = IntToVec4(hd_vec4_2_10_10_10_set(vec4(Neye,0)));
+
+#if defined(HD_HAS_PickBuffer)
+    RenderDeepPicks(primIdOut, instanceIdOut, elementIdOut, edgeIdOut, pointIdOut);
+#endif
+}
 
 -- layout HdxRenderPass.RenderColorAndSelection
 
