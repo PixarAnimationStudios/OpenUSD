@@ -505,41 +505,42 @@ HgiInteropVulkan::HgiInteropVulkan(Hgi* hgiVulkan)
 
     // Only supporting single and matching device interop between GL and VK to
     // satisfy semaphore interop requirements in GL_EXT_external_objects.
-    bool onSameDevice = true;
-    GLint uuidSize = 0;
-    glGetIntegerv(GL_NUM_DEVICE_UUIDS_EXT, &uuidSize);
-    if (uuidSize != 1) {
-        onSameDevice = false;
-    } else if (_hgiVulkan->GetCapabilities()->supportsNativeInterop) {
-        GLubyte uuidDeviceGL[GL_UUID_SIZE_EXT];
-        glGetUnsignedBytei_vEXT(GL_DEVICE_UUID_EXT, 0, uuidDeviceGL);
-        GLubyte uuidDriverGL[GL_UUID_SIZE_EXT];
-        glGetUnsignedBytevEXT(GL_DRIVER_UUID_EXT, uuidDriverGL);
+    bool onSameDevice = GARCH_GLAPI_HAS(EXT_memory_object);
+    if (onSameDevice) {
+        GLint uuidSize = 0;
+        glGetIntegerv(GL_NUM_DEVICE_UUIDS_EXT, &uuidSize);
+        if (uuidSize != 1) {
+            onSameDevice = false;
+        } else if (_hgiVulkan->GetCapabilities()->supportsNativeInterop) {
+            GLubyte uuidDeviceGL[GL_UUID_SIZE_EXT];
+            glGetUnsignedBytei_vEXT(GL_DEVICE_UUID_EXT, 0, uuidDeviceGL);
+            GLubyte uuidDriverGL[GL_UUID_SIZE_EXT];
+            glGetUnsignedBytevEXT(GL_DRIVER_UUID_EXT, uuidDriverGL);
 
-        const VkPhysicalDeviceIDPropertiesKHR& vkPhysicalDeviceIdProperties =
-            _hgiVulkan->GetCapabilities()->vkPhysicalDeviceIdProperties;
+            const VkPhysicalDeviceIDPropertiesKHR& vkPhysicalDeviceIdProperties =
+                _hgiVulkan->GetCapabilities()->vkPhysicalDeviceIdProperties;
 
-        onSameDevice = memcmp(uuidDeviceGL,
-            vkPhysicalDeviceIdProperties.deviceUUID, VK_UUID_SIZE) == 0
-            && memcmp(uuidDriverGL,
-            vkPhysicalDeviceIdProperties.driverUUID, VK_UUID_SIZE) == 0;
+            onSameDevice = memcmp(uuidDeviceGL,
+                vkPhysicalDeviceIdProperties.deviceUUID, VK_UUID_SIZE) == 0
+                && memcmp(uuidDriverGL,
+                vkPhysicalDeviceIdProperties.driverUUID, VK_UUID_SIZE) == 0;
+        }
     }
 
-    if (onSameDevice
-        && _hgiVulkan->GetCapabilities()->supportsNativeInterop
-        && GARCH_GLAPI_HAS(EXT_memory_object)
-        && GARCH_GLAPI_HAS(EXT_semaphore)
+    if (onSameDevice && _hgiVulkan->GetCapabilities()->supportsNativeInterop &&
+        GARCH_GLAPI_HAS(EXT_semaphore) &&
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
-        && GARCH_GLAPI_HAS(EXT_memory_object_win32)
-        && GARCH_GLAPI_HAS(EXT_semaphore_win32)) {
+        GARCH_GLAPI_HAS(EXT_memory_object_win32) &&
+        GARCH_GLAPI_HAS(EXT_semaphore_win32)
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
-        && GARCH_GLAPI_HAS(EXT_memory_object_fd)
-        && GARCH_GLAPI_HAS(EXT_semaphore_fd)) {
+        GARCH_GLAPI_HAS(EXT_memory_object_fd) &&
+        GARCH_GLAPI_HAS(EXT_semaphore_fd))
 #elif defined(VK_USE_PLATFORM_METAL_EXT)
         // To be added, either through MoltenVK adding GL interop,
         // or a later change if necessary
-        && false) {
+        false
 #endif
+    ) {
         _vkComplete = std::make_unique<InteropSemaphore>(_hgiVulkan);
         _glComplete = std::make_unique<InteropSemaphore>(_hgiVulkan);
         _colorTex = std::make_unique<InteropTexNative>();
