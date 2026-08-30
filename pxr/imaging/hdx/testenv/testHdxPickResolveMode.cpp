@@ -11,6 +11,8 @@
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/selection.h"
 
+#include "pxr/imaging/hgi/capabilities.h"
+
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 #include "pxr/imaging/hdSt/unitTestHelper.h"
 
@@ -257,10 +259,10 @@ My_TestGLDrawing::_InitScene()
 {
     Hdx_UnitTestDelegate &delegate = _driver->GetDelegate();
 
-    delegate.AddCube(SdfPath("/cube0"), _GetTranslate( 5, 0, 5));
-    delegate.AddCube(SdfPath("/cube1"), _GetTranslate(-5, 0, 5));
-    delegate.AddCube(SdfPath("/cube2"), _GetTranslate(-5, 0,-5));
-    delegate.AddCube(SdfPath("/cube3"), _GetTranslate( 5, 0,-5));
+    delegate.AddCube(SdfPath("/cube0"), _GetTranslate( 5, 0.1, 5));
+    delegate.AddCube(SdfPath("/cube1"), _GetTranslate(-5, 0.1, 5));
+    delegate.AddCube(SdfPath("/cube2"), _GetTranslate(-5, 0.1,-5));
+    delegate.AddCube(SdfPath("/cube3"), _GetTranslate( 5, 0.1,-5));
 
     {
         delegate.AddInstancer(SdfPath("/instancerTop"));
@@ -390,23 +392,34 @@ My_TestGLDrawing::OffscreenTest()
                   == SdfPath("/protoBottom"));
     }
 
+    const auto conservativeRaster = _driver->GetHgi()->GetCapabilities()->
+        IsSet(HgiDeviceCapabilitiesBitsConservativeRaster);
     // 3. Unique
     {
         // The pick target influences what a "unique" hit is, so cycle through
         // all the supported pickTarget, and verify that a different number of
         // hits is returned each time.
-        TfTokenVector pickTargets = {
+        const TfTokenVector pickTargets = {
             HdxPickTokens->pickPrimsAndInstances,
             HdxPickTokens->pickFaces,
             HdxPickTokens->pickEdges,
             HdxPickTokens->pickPoints
         };
-        size_t expectedHitCount[] = {
+        const size_t expectedHitCountConventional[] = {
             6  /*primsAndInstances*/,
-            69 /*faces*/,
-           135 /*edges*/,
-            39 /*points*/};
-        
+            35 /*faces*/,
+            114 /*edges*/,
+            42 /*points*/
+        };
+        const size_t expectedHitCountConservative[] = {
+            6  /*primsAndInstances*/,
+            63 /*faces*/,
+            135 /*edges*/,
+            41 /*points*/
+        };
+        const auto expectedHitCount = conservativeRaster ?
+            expectedHitCountConservative : expectedHitCountConventional;
+
         for (size_t i = 0; i < pickTargets.size(); i++) {
             allHits.clear();
             HdSelectionSharedPtr selection = _Pick(pickStartPos, pickEndPos,
@@ -427,9 +440,7 @@ My_TestGLDrawing::OffscreenTest()
             HdxPickTokens->pickPrimsAndInstances,
             HdxPickTokens->resolveAll,
             &allHits);
-        const size_t expectedHitCount = 
-            _driver->GetHgi()->GetAPIName() == HgiTokens->Vulkan ?  22440 :
-            22438;
+        const size_t expectedHitCount = conservativeRaster ? 22558 : 21914;
         std::cout << "allHits: " << allHits.size()
                   << " expectedHitCount:  " << expectedHitCount
                   << std::endl;
@@ -537,4 +548,3 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 }
-

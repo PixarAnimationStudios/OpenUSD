@@ -405,28 +405,33 @@ pxr_register_test(testHdxNoResourceBindings
 # Certain tests use plugins that require shared libraries.
 if (TARGET shared_libs)
 
-pxr_build_test(testHdxDrawTarget
-    LIBRARIES
-        hdx
-        hd
-        sdf
-        glf
-        arch
-        tf
-    CPPFILES
-        testenv/testHdxDrawTarget.cpp
-)
-pxr_register_test(testHdxDrawTarget
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxDrawTarget"
-    TESTENV testenv/testHdxDrawTarget
-    EXPECTED_RETURN_CODE 0
-    IMAGE_DIFF_COMPARE
-        color1.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-)
+    # HdxDrawTargetTask::Execute has OpenGL calls
+    if (PXR_ENABLE_GL_SUPPORT AND X11_FOUND)
+        pxr_build_test(testHdxDrawTarget
+            LIBRARIES
+                hdx
+                hd
+                sdf
+                glf
+                arch
+                tf
+            CPPFILES
+                testenv/testHdxDrawTarget.cpp
+        )
+        pxr_register_test(testHdxDrawTarget
+            COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxDrawTarget"
+            TESTENV testenv/testHdxDrawTarget
+            EXPECTED_RETURN_CODE 0
+            IMAGE_DIFF_COMPARE
+                color1.png
+            FAIL 1
+            FAIL_PERCENT 1
+            PERCEPTUAL
+            ENV
+                TF_DEBUG=HD_SAFE_MODE
+                HGI_ENABLE_VULKAN=0
+                HGI_ENABLE_WEBGPU=0
+        )
+    endif()
 
 endif() # TARGET shared_libs

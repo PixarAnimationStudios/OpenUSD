@@ -1379,7 +1379,10 @@ HdxPickResult::_IsValidHit(int index) const
     if (_GetPrimId(index) == -1) {
         return false;
     }
-    if (_pickTarget == HdxPickTokens->pickEdges) {
+
+    if (_pickTarget == HdxPickTokens->pickFaces) {
+        return (_GetElementId(index) != -1);
+    } else if (_pickTarget == HdxPickTokens->pickEdges) {
         return (_GetEdgeId(index) != -1);
     } else if (_pickTarget == HdxPickTokens->pickPoints) {
         return (_GetPointId(index) != -1);
