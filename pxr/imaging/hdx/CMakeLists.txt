@@ -241,6 +241,20 @@ pxr_build_test(testHdxPickResolveMode
         unitTestUtils.cpp
         testenv/testHdxPickResolveMode.cpp
 )
+pxr_build_test(testHdxDeepPicking
+    LIBRARIES
+        hdx
+        hd
+        hdSt
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        unitTestUtils.cpp
+        testenv/testHdxDeepPicking.cpp
+)
 endif()
 
 if (${PXR_HEADLESS_TEST_MODE})
@@ -310,6 +324,14 @@ pxr_register_test(testHdxPickResolveMode
     EXPECTED_RETURN_CODE 0
     ENV
         TF_DEBUG="HDX_SELECTION_SETUP HD_SELECTION_UPDATE"
+)
+pxr_register_test(testHdxDeepPicking
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxDeepPicking --offscreen"
+    EXPECTED_RETURN_CODE 0
+)
+pxr_register_test(testHdxDeepPickingInstanced
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxDeepPicking --offscreen --instanced --count 100000"
+    EXPECTED_RETURN_CODE 0
 )
 pxr_register_test(testHdxPickTarget
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxPickTarget --offscreen"

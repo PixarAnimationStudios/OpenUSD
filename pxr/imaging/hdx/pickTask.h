@@ -273,6 +273,7 @@ struct HdxPickTaskContextParams
     HdxPickTaskContextParams()
         : resolution(128, 128)
         , maxNumDeepEntries(32000)
+        , deepPickDepthRange(0, 1)
         , pickTarget(HdxPickTokens->pickPrimsAndInstances)
         , resolveMode(HdxPickTokens->resolveNearestToCamera)
         , doUnpickablesOcclude(false)
@@ -292,6 +293,10 @@ struct HdxPickTaskContextParams
 
     GfVec2i resolution;
     int maxNumDeepEntries;
+    /// Normalized depth range [min, max] for deep picking, with min <= max.
+    /// Fragments whose gl_FragCoord.z falls outside this range are skipped.
+    /// Defaults to [0, 1] (all depths).
+    GfVec2f deepPickDepthRange;
     TfToken pickTarget;
     TfToken resolveMode;
     bool doUnpickablesOcclude;

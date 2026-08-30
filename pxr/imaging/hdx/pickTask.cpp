@@ -38,6 +38,7 @@
 
 #include "pxr/base/tf/hash.h"
 
+#include <cstring>
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -69,9 +70,10 @@ namespace {
     };
 };
 
-static const int PICK_BUFFER_HEADER_SIZE = 8;
-static const int PICK_BUFFER_SUBBUFFER_CAPACITY = 32;
-static const int PICK_BUFFER_ENTRY_SIZE = 3;
+static constexpr int32_t PICK_BUFFER_HEADER_SIZE = 10;
+static constexpr int32_t PICK_BUFFER_SUBBUFFER_CAPACITY = 32;
+static constexpr int32_t PICK_BUFFER_ENTRY_SIZE = 3;
+static constexpr uint32_t PICK_BUFFER_EMPTY_SLOT = static_cast<uint32_t>(-9);
 
 static HdRenderPassStateSharedPtr
 _InitIdRenderPassState(HdRenderIndex *index)
@@ -139,7 +141,7 @@ HdxPickTask::_InitIfNeeded()
         if (hdStResourceRegistry) {
 
             HdBufferSpecVector bufferSpecs {
-                { _tokens->PickBuffer, HdTupleType{ HdTypeInt32, 1 } }       
+                { _tokens->PickBuffer, HdTupleType{ HdTypeUInt32, 1 } }
             };
 
             _pickBuffer = hdStResourceRegistry->AllocateSingleBufferArrayRange(
@@ -700,15 +702,14 @@ HdxPickTask::_ClearPickBuffer()
     }
 
     // populate pick buffer source array
-    VtIntArray pickBufferInit;
-    if (_contextParams.resolveMode == HdxPickTokens->resolveDeep)
-    {
-        const int numSubBuffers =
+    VtUIntArray pickBufferInit;
+    if (_contextParams.resolveMode == HdxPickTokens->resolveDeep) {
+        const uint32_t numSubBuffers =
             _contextParams.maxNumDeepEntries / PICK_BUFFER_SUBBUFFER_CAPACITY;
-        const int entryStorageOffset =
+        const uint32_t entryStorageOffset =
             PICK_BUFFER_HEADER_SIZE + numSubBuffers;
-        const int entryStorageSize =
-            numSubBuffers * PICK_BUFFER_SUBBUFFER_CAPACITY * PICK_BUFFER_ENTRY_SIZE;
+        const uint32_t entryStorageSize = numSubBuffers *
+            PICK_BUFFER_SUBBUFFER_CAPACITY * PICK_BUFFER_ENTRY_SIZE;
 
         pickBufferInit.reserve(entryStorageOffset + entryStorageSize);
 
@@ -719,25 +720,38 @@ HdxPickTask::_ClearPickBuffer()
         pickBufferInit.push_back(entryStorageOffset);
 
         pickBufferInit.push_back(
-            _contextParams.pickTarget == HdxPickTokens->pickFaces ? 1 : 0);
+            _contextParams.pickTarget == HdxPickTokens->pickFaces ? 1u : 0u);
         pickBufferInit.push_back(
-            _contextParams.pickTarget == HdxPickTokens->pickEdges ? 1 : 0);
+            _contextParams.pickTarget == HdxPickTokens->pickEdges ? 1u : 0u);
         pickBufferInit.push_back(
-            _contextParams.pickTarget == HdxPickTokens->pickPoints ? 1 : 0);
-        pickBufferInit.push_back(0);
+            _contextParams.pickTarget == HdxPickTokens->pickPoints ? 1u : 0u);
+        pickBufferInit.push_back(0u); // [7] padding
+
+        const GfVec2f& depthRange = _contextParams.deepPickDepthRange;
+        if (depthRange[0] > depthRange[1]) {
+            TF_CODING_ERROR("deepPickDepthRange min (%f) must be <= max (%f)",
+                depthRange[0], depthRange[1]);
+        }
+        uint32_t minDepthBits{}, maxDepthBits{};
+        std::memcpy(&minDepthBits, &depthRange[0], sizeof(uint32_t));
+        std::memcpy(&maxDepthBits, &depthRange[1], sizeof(uint32_t));
+        pickBufferInit.push_back(minDepthBits);
+        pickBufferInit.push_back(maxDepthBits);
 
         // populate pick buffer's sub-buffer size table with zeros
-        pickBufferInit.resize(pickBufferInit.size() + numSubBuffers, 
-            [](int* b, int* e) { std::uninitialized_fill(b, e, 0); });
+        pickBufferInit.resize(pickBufferInit.size() + numSubBuffers,
+            [](uint32_t* b, uint32_t* e) {
+                std::uninitialized_fill(b, e, 0u);
+            });
 
         // populate pick buffer's entry storage with -9s, meaning uninitialized
         pickBufferInit.resize(pickBufferInit.size() + entryStorageSize,
-            [](int* b, int* e) { std::uninitialized_fill(b, e, -9); });
-    }
-    else
-    {
+            [](uint32_t* b, uint32_t* e) {
+                std::uninitialized_fill(b, e, PICK_BUFFER_EMPTY_SLOT);
+            });
+    } else {
         // set pick buffer to invalid state
-        pickBufferInit.push_back(0);
+        pickBufferInit.push_back(0u);
     }
 
     // set the source to the pick buffer
@@ -880,53 +894,56 @@ void HdxPickTask::_ResolveDeep()
         return;
     }
 
-    const auto& data = pickData.Get<VtIntArray>();
+    const auto& data = pickData.Get<VtUIntArray>();
 
-    const int numSubBuffers =
+    const int32_t numSubBuffers =
         _contextParams.maxNumDeepEntries / PICK_BUFFER_SUBBUFFER_CAPACITY;
-    const int entryStorageOffset =
-        PICK_BUFFER_HEADER_SIZE + numSubBuffers;
+    const int32_t entryStorageOffset = PICK_BUFFER_HEADER_SIZE + numSubBuffers;
 
-    // loop through all the sub-buffers, populating outHits
-    for (int subBuffer = 0; subBuffer < numSubBuffers; ++subBuffer)
-    {
-        const int sizeOffset = PICK_BUFFER_HEADER_SIZE + subBuffer;
-        const int numEntries = data[sizeOffset];
-        const int subBufferOffset =
-            entryStorageOffset + 
+   // loop through all the sub-buffers, populating outHits
+    for (int32_t subBuffer = 0; subBuffer < numSubBuffers; ++subBuffer) {
+        const int32_t sizeOffset = PICK_BUFFER_HEADER_SIZE + subBuffer;
+        const int32_t numEntries = static_cast<int32_t>(data[sizeOffset]);
+        if (numEntries > PICK_BUFFER_SUBBUFFER_CAPACITY) {
+            TF_RUNTIME_ERROR("Sub-buffer entry count exceeds capacity");
+            continue;
+        }
+
+        const int32_t subBufferOffset = entryStorageOffset +
             subBuffer * PICK_BUFFER_SUBBUFFER_CAPACITY * PICK_BUFFER_ENTRY_SIZE;
 
         // loop through sub-buffer entries
-        for (int j = 0; j < numEntries; ++j)
-        {
-            int entryOffset = subBufferOffset + (j * PICK_BUFFER_ENTRY_SIZE);
+        for (int32_t j = 0; j < numEntries; ++j) {
+            int32_t entryOffset =
+                subBufferOffset + (j * PICK_BUFFER_ENTRY_SIZE);
 
             HdxPickHit hit;
 
-            int primId = data[entryOffset];
+            int32_t primId = static_cast<int32_t>(data[entryOffset]);
             hit.objectId = _index->GetRprimPathFromPrimId(primId);
             if (hit.objectId.IsEmpty()) {
                 continue;
             }
 
             _index->GetSceneDelegateAndInstancerIds(
-                    hit.objectId,
-                    &(hit.delegateId),
-                    &(hit.instancerId));
+                hit.objectId, &(hit.delegateId), &(hit.instancerId));
 
-            int partIndex = data[entryOffset + 2];
-            hit.instanceIndex = data[entryOffset + 1];
-            hit.elementIndex = 
-                _contextParams.pickTarget == HdxPickTokens->pickFaces ? 
-                partIndex : -1;
+            int32_t partIndex = static_cast<int32_t>(data[entryOffset + 2]);
+            hit.instanceIndex = static_cast<int32_t>(data[entryOffset + 1]);
+            hit.elementIndex =
+                _contextParams.pickTarget == HdxPickTokens->pickFaces ?
+                partIndex :
+                -1;
             hit.edgeIndex =
                 _contextParams.pickTarget == HdxPickTokens->pickEdges ?
-                partIndex : -1;
-            hit.pointIndex = 
+                partIndex :
+                -1;
+            hit.pointIndex =
                 (_contextParams.pickTarget == HdxPickTokens->pickPoints ||
-                 _contextParams.pickTarget ==
-                    HdxPickTokens->pickPointsAndInstances) ?
-                partIndex : -1;
+                    _contextParams.pickTarget ==
+                        HdxPickTokens->pickPointsAndInstances) ?
+                partIndex :
+                -1;
 
             // the following data is skipped in deep selection
             hit.worldSpaceHitPoint = GfVec3f(0.f, 0.f, 0.f);
@@ -1675,6 +1692,8 @@ operator==(HdxPickTaskContextParams const& lhs,
         rhsDepthMaskPtr ? *rhsDepthMaskPtr : nullptr;
 
     return lhs.resolution == rhs.resolution
+        && lhs.maxNumDeepEntries == rhs.maxNumDeepEntries
+        && lhs.deepPickDepthRange == rhs.deepPickDepthRange
         && lhs.pickTarget == rhs.pickTarget
         && lhs.resolveMode == rhs.resolveMode
         && lhs.doUnpickablesOcclude == rhs.doUnpickablesOcclude
