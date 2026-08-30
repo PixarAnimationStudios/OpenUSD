@@ -489,7 +489,7 @@ public:
     /// only valid until the HgiComputeCmds has been submitted.
     HDST_API
     HgiComputeCmds* GetGlobalComputeCmds(
-        HgiComputeDispatch dispatchMethod = HgiComputeDispatchSerial);
+        HgiComputeDispatch dispatchMethod = HgiComputeDispatchSerial, bool forceCreate = true);
 
     /// Submits blit work queued in global blit cmds for GPU execution.
     /// We can call this when we want to submit some work to the GPU.

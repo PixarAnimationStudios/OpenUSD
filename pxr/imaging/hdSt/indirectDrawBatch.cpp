@@ -950,13 +950,14 @@ HdSt_IndirectDrawBatch::PrepareDraw(
     }
 }
 
-void
+bool
 HdSt_IndirectDrawBatch::EncodeDraw(
     HdStRenderPassStateSharedPtr const & renderPassState,
     HdStResourceRegistrySharedPtr const & resourceRegistry,
     bool /*firstDrawBatch*/)
 {
     // No implementation.
+    return false;
 }
 
 ////////////////////////////////////////////////////////////
