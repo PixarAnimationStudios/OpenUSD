@@ -87,7 +87,7 @@ def GetWasmCompilerFlags(buildTarget):
     if buildTarget == TARGET_WASM64:
         compileFlags += ' -sMEMORY64=1'
         linkerFlags += ' -sMEMORY64=1'
-    
+
     return (compileFlags, linkerFlags)
 
 def GetBuildTargetDefault():
@@ -412,8 +412,8 @@ def GetCMakeCacheValue(buildDir, variable):
             return m.group(1).strip()
     return None
 
-def RunCMake(context, force, extraArgs = None, installDir = None):
-    """Invoke CMake to configure, build, and install a library whose
+def RunCMake(context, force, extraArgs = None, installDir = None, buildDirName=None, target="install"):
+    """Invoke CMake to configure, build, and install a library whose 
     source code is located in the current working directory."""
     # Create a directory for out-of-source builds in the build directory
     # using the name of the current working directory.
@@ -428,7 +428,8 @@ def RunCMake(context, force, extraArgs = None, installDir = None):
     if context.cmakeBuildArgs:
         extraArgs.insert(0, context.cmakeBuildArgs)
     srcDir = os.getcwd()
-    buildDir = os.path.join(context.buildDir, os.path.split(srcDir)[1])
+    buildDir = os.path.join(context.buildDir, buildDirName if buildDirName
+                            else os.path.split(srcDir)[1])
     if force and os.path.isdir(buildDir):
         shutil.rmtree(buildDir)
 
@@ -454,7 +455,7 @@ def RunCMake(context, force, extraArgs = None, installDir = None):
         generator = '-G "{gen}"'.format(gen=generator)
 
     # Note - don't want to add -A (architecture flag) if generator is, ie, Ninja
-    if IsVisualStudio2019OrGreater() and "Visual Studio" in generator:
+    if not context.targetWasm and IsVisualStudio2019OrGreater() and "Visual Studio" in generator:
         generator = generator + " -A " + GetWindowsHostArch()
 
     toolset = context.cmakeToolset
@@ -522,8 +523,9 @@ def RunCMake(context, force, extraArgs = None, installDir = None):
         # specifying the number of parallel build jobs, forwarding it to the
         # underlying native build tool.
         Run(('{} '.format('emmake.bat' if Windows() else 'emmake') if context.targetWasm else '') +
-            "cmake --build . --config {config} --target install -j {numJobs}"
-            .format(config=config, numJobs=context.numJobs))
+            "cmake --build . --config {config} --target {target} -j {numJobs}"
+            .format(config=config, target=target, numJobs=context.numJobs))
+        return buildDir
 
 def GetCMakeVersion():
     """
@@ -1589,10 +1591,12 @@ def InstallOpenSubdiv(context, force, buildArgs):
         if context.targetWasm:
             compileFlags, _ = GetWasmCompilerFlags(context.buildTarget)
 
-            extraArgs.append('-DBUILD_SHARED_LIB=OFF')
-            extraArgs.append('-DCMAKE_CXX_FLAGS="{}"'.format(compileFlags))
-            extraArgs.append('-DCMAKE_C_FLAGS="{}"'.format(compileFlags))
+            extraArgs.append('-DBUILD_SHARED_LIBS=OFF')
+            win32Macros = '-DNOMINMAX -D_USE_MATH_DEFINES'
+            extraArgs.append('-DCMAKE_CXX_FLAGS="' + win32Macros + ' ' + compileFlags + '"')
+            extraArgs.append('-DCMAKE_C_FLAGS="' + win32Macros + ' ' + compileFlags + ' "')
             extraArgs.append('-DNO_METAL=ON')
+            extraArgs.append('-DOSD_GPU=OFF')
 
         # Enable GLSL shader source so it is available for Vulkan, etc
         # even when OpenGL is disabled.
@@ -1601,7 +1605,8 @@ def InstallOpenSubdiv(context, force, buildArgs):
         )
 
         # Enable MSL shader source for Apple systems and disable OpenGL.
-        if MacOS():
+        # Skip when cross-compiling for WASM since Metal is not available.
+        if MacOS() and not context.targetWasm:
             extraArgs.extend([
                 '-DNO_OPENGL=ON',
                 '-DOSD_PATCH_SHADER_SOURCE_MSL=ON',
@@ -1736,6 +1741,221 @@ def InstallMaterialX(context, force, buildArgs):
         RunCMake(context, force, cmakeOptions)
 
 MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Library.h")
+
+############################################################
+# DAWN and 3rd parties
+DAWN_REPO = "https://dawn.googlesource.com/dawn"
+DAWN_CHROMIUM_VERSION = "7888"
+
+DAWN_CMAKE_OPTIONS = [
+    '-DTINT_BUILD_WGSL_WRITER=ON',
+    '-DTINT_BUILD_TESTS=OFF',
+    '-DTINT_BUILD_CMD_TOOLS=OFF',
+    '-DTINT_BUILD_BENCHMARKS=OFF',
+    '-DDAWN_BUILD_TESTS=OFF',
+    '-DDAWN_BUILD_SAMPLES=OFF',
+    '-DDAWN_USE_GLFW=OFF',
+    '-DDAWN_FETCH_DEPENDENCIES=ON',
+    '-DDAWN_BUILD_PROTOBUF=OFF',
+    '-DTINT_BUILD_IR_BINARY=OFF',
+]
+
+def PrepareDawn(context, force):
+    with CurrentWorkingDirectory(context.srcDir):
+        srcDir = os.path.join(os.getcwd(), "dawn")
+        if force and os.path.isdir(srcDir):
+            shutil.rmtree(srcDir)
+
+        if not os.path.isdir(srcDir):
+            Run("git clone " + DAWN_REPO + " --branch chromium/" + DAWN_CHROMIUM_VERSION + " --depth 1 --single-branch")
+
+        with CurrentWorkingDirectory(srcDir):
+
+            PatchFile("third_party/CMakeLists.txt",
+                [('    set(SPIRV_HEADERS_SKIP_INSTALL ON CACHE BOOL "" FORCE)\n',
+                '    set(SPIRV_HEADERS_ENABLE_INSTALL ON CACHE BOOL "" FORCE)\n'),
+                ('    add_subdirectory(${DAWN_SPIRV_HEADERS_DIR} "${CMAKE_CURRENT_BINARY_DIR}/spirv-headers" EXCLUDE_FROM_ALL)\n',
+                '    add_subdirectory(${DAWN_SPIRV_HEADERS_DIR} "${CMAKE_CURRENT_BINARY_DIR}/spirv-headers")\n'),
+                ('    set(SKIP_SPIRV_TOOLS_INSTALL ON CACHE BOOL "" FORCE)\n',
+                '    set(SKIP_SPIRV_TOOLS_INSTALL OFF CACHE BOOL "" FORCE)\n'),
+                ('    add_subdirectory(${DAWN_SPIRV_TOOLS_DIR} "${CMAKE_CURRENT_BINARY_DIR}/spirv-tools" EXCLUDE_FROM_ALL)\n',
+                '    add_subdirectory(${DAWN_SPIRV_TOOLS_DIR} "${CMAKE_CURRENT_BINARY_DIR}/spirv-tools")\n')
+                ])
+
+            if Windows():
+                # Dawn native cmake needs revise for DX12
+                PatchFile("src/dawn/native/CMakeLists.txt",
+                          [('    target_link_libraries(dawn_native PRIVATE dxguid.lib)\n',
+                            '    target_include_directories(dawn_native PRIVATE ${DAWN_THIRD_PARTY_DIR}/dxheaders/include/directx)\n' +
+                            '    target_link_libraries(dawn_native PRIVATE dxguid.lib)\n')])
+
+
+def InstallDawn(context, force, buildArgs):
+    PrepareDawn(context, force)
+    with CurrentWorkingDirectory(context.srcDir):
+        srcDir = os.path.join(os.getcwd(), "dawn")
+        with CurrentWorkingDirectory(srcDir):
+            cmakeOptions = [
+                '-DDAWN_ENABLE_INSTALL=ON',
+                '-DABSL_ENABLE_INSTALL=ON',
+                '-DDAWN_BUILD_MONOLITHIC_LIBRARY=STATIC'
+            ]
+
+            cmakeOptions += DAWN_CMAKE_OPTIONS
+            cmakeOptions += ['-DTINT_BUILD_SPV_READER=ON']
+            cmakeOptions += buildArgs
+            buildDir = RunCMake(context, force, cmakeOptions)
+
+    # installation scripts are missing in dawn. Doing it manually until addressed
+    with CurrentWorkingDirectory(srcDir):
+        CopyDirectory(context, "include/tint", "include/tint")
+        CopyDirectory(context, "src/tint", "include/src/tint")
+        CopyFiles(context, "src/utils/compiler.h", "include/src/utils/")
+
+    with CurrentWorkingDirectory(buildDir):
+
+        # Simply copy headers and pre-built binaries to the appropriate location.
+        # For Windows, Dawn has Release or Debug folders; For macOS, there is not
+        if Windows() and context.cmakeGenerator != 'Ninja':
+            buildConfigFolder = "Debug/" if context.buildDebug else "RelWithDebInfo/" if context.buildRelWithDebug else "Release/"
+        else:
+            buildConfigFolder = ''
+
+        # Lib files
+        CopyFiles(context, "third_party/spirv-tools/source/{buildConfig}*SPIRV-Tools.*".format(buildConfig=buildConfigFolder), "lib")
+        CopyFiles(context, "third_party/spirv-tools/source/opt/{buildConfig}*SPIRV-Tools-opt.*".format(buildConfig=buildConfigFolder), "lib")
+        CopyFiles(context, "src/tint/{buildConfig}*.*".format(buildConfig=buildConfigFolder), "lib")
+
+
+DAWN = Dependency("Dawn", InstallDawn, "include/dawn/webgpu_cpp.h")
+
+def InstallDawnHeaders(context, force, buildArgs):
+    PrepareDawn(context, force)
+
+    with CurrentWorkingDirectory(context.srcDir):
+        srcDir = os.path.join(os.getcwd(), "dawn")
+        with CurrentWorkingDirectory(srcDir):
+            compileFlags, linkFlags = GetWasmCompilerFlags(context.buildTarget)
+            cmakeOptions = DAWN_CMAKE_OPTIONS
+            cmakeOptions += [
+                '-DCMAKE_CXX_FLAGS="{} "'.format(compileFlags),
+                '-DCMAKE_C_FLAGS="{} "'.format(compileFlags),
+                '-DCMAKE_EXE_LINKER_FLAGS="{} "'.format(linkFlags),
+                '-DCMAKE_NO_SYSTEM_FROM_IMPORTED=TRUE'
+            ]
+            cmakeOptions += buildArgs
+            buildDir = RunCMake(context, force, cmakeOptions, target="emdawnwebgpu_pkg")
+
+        with CurrentWorkingDirectory(buildDir):
+            CopyDirectory(context, "emdawnwebgpu_pkg", "ports/emdawnwebgpu_pkg")
+            Run('{} --force {} build {}'.format(
+                'embuilder.bat' if Windows() else 'embuilder',
+                '--wasm64' if context.targetWasm64 else '',
+                os.path.normpath(os.path.join(context.instDir, "ports", "emdawnwebgpu_pkg", "emdawnwebgpu.port.py")).replace(os.sep, '/')
+            ))
+
+DAWN_HEADERS = Dependency("DawnHeaders", InstallDawnHeaders, "ports/emdawnwebgpu_pkg/README.md")
+
+
+############################################################
+# glslang
+
+def InstallGlslang(context, force, buildArgs):
+    with CurrentWorkingDirectory(context.srcDir):
+        srcDir = os.path.join(os.getcwd(), "dawn", "third_party", "glslang", "src")
+
+        if not os.path.isdir(srcDir):
+            raise RuntimeError("glslang not found at " + srcDir + ". This is probably because dawn or " +
+                               "tint installation was not executed firts")
+
+        with CurrentWorkingDirectory(srcDir):
+            if context.buildDebug:
+                PatchFile("CMakeLists.txt", [('set(CMAKE_DEBUG_POSTFIX "d")','set(CMAKE_DEBUG_POSTFIX "")')])
+
+            cmakeOptions = [
+                '-DALLOW_EXTERNAL_SPIRV_TOOLS=ON',
+                '-DENABLE_GLSLANG_BINARIES=OFF',
+                '-DENABLE_HLSL=OFF',
+                '-DENABLE_CTEST=OFF',
+            ]
+            if context.targetWasm:
+                compileFlags, linkFlags = GetWasmCompilerFlags(context.buildTarget)
+                cmakeOptions += [
+                    '-DCMAKE_CXX_FLAGS="{}"'.format(compileFlags),
+                    '-DCMAKE_C_FLAGS="{} "'.format(compileFlags),
+                    '-DCMAKE_EXE_LINKER_FLAGS="{}"'.format(linkFlags),
+                    '-DBUILD_SHARED_LIBS=OFF',
+                    '-DSPIRV-Tools-opt_DIR="{instDir}/lib/cmake/SPIRV-Tools-opt"'.format(instDir=context.instDir),
+                    '-DSPIRV-Tools_DIR="{instDir}/lib/cmake/SPIRV-Tools"'.format(instDir=context.instDir)
+                ]
+            cmakeOptions += buildArgs
+            RunCMake(context, force, cmakeOptions, buildDirName='glslang')
+
+GLSLANG = Dependency("glslang", InstallGlslang, "include/glslang/SPIRV/GlslangToSpv.h")
+
+############################################################
+# Tint
+
+def InstallTint(context, force, buildArgs):
+    PrepareDawn(context, force)
+    with CurrentWorkingDirectory(context.srcDir):
+        srcDir = os.path.join(os.getcwd(), "dawn")
+
+        with CurrentWorkingDirectory(srcDir):
+            # We need to resolve spirv dependencies even when dawn is disabled, so we skip the return() statement
+            PatchFile("third_party/CMakeLists.txt",[('    return()','    #return()')])
+            # If we are building for wasm, we only want to build tint. Currently, there is no way to build tint
+            # as a standalone library, so we disable it by skipping the dawn folder through a patch
+            PatchFile("CMakeLists.txt",
+                      [('if (DAWN_ENABLE_D3D11 OR DAWN_ENABLE_D3D12 OR DAWN_ENABLE_METAL OR DAWN_ENABLE_NULL OR DAWN_ENABLE_DESKTOP_GL OR DAWN_ENABLE_OPENGLES OR DAWN_ENABLE_VULKAN OR EMSCRIPTEN)',
+                        'if (False)')])
+            # This will allow us to install the already built spirv-tools library
+            PatchFile("third_party/spirv-headers/src/CMakeLists.txt", [
+                ('if (PROJECT_IS_TOP_LEVEL)\n','if (TRUE)\n')
+            ])
+            compileFlags, linkFlags = GetWasmCompilerFlags(context.buildTarget)
+            cmakeOptions = [
+                '-DCMAKE_CXX_FLAGS="-Wno-unsafe-buffer-usage -Wno-disabled-macro-expansion -Wno-#warnings -Wno-error -Wno-switch-default {} "'.format(compileFlags),
+                '-DCMAKE_C_FLAGS="{} "'.format(compileFlags),
+                '-DCMAKE_EXE_LINKER_FLAGS="{} "'.format(linkFlags),
+                '-DBUILD_SHARED_LIBS=OFF',
+                '-DCMAKE_NO_SYSTEM_FROM_IMPORTED=TRUE'
+            ]
+            cmakeOptions += buildArgs
+            cmakeOptions += DAWN_CMAKE_OPTIONS
+            cmakeOptions += ['-DTINT_BUILD_SPV_READER=ON']
+            # In the case of the desktop build, we need to let tint specify the value of the readers and writers for
+            # the current platform, so that it also matches the corresponding Dawn backend (e.g. Metal).
+            # In contrast, the emscripten build just needs to process the glsl to wgsl and the browser implementation
+            # of WebGPU is the one responsible to interpret the wgsl shader code.
+            cmakeOptions += [
+                '-DTINT_BUILD_WGSL_READER=OFF',
+                '-DTINT_BUILD_GLSL_WRITER=OFF',
+                '-DTINT_BUILD_HLSL_WRITER=OFF',
+                '-DTINT_BUILD_MSL_WRITER=OFF',
+                '-DTINT_BUILD_SPV_WRITER=OFF',
+            ]
+
+            # There is a weird issue with the current tint build that, with some features off, it will not generate
+            # the tint libraries when using the "install" target. As we still want to install some of the SPIRV
+            # libraries, we first build with the "install" target
+            RunCMake(context, force, cmakeOptions)
+            buildDir = RunCMake(context, force, cmakeOptions, target="tint_api")
+
+        # installation scripts are missing in tint. Doing it manually until addressed
+        with CurrentWorkingDirectory(srcDir):
+            CopyDirectory(context, "include/tint", "include/tint")
+            CopyDirectory(context, "src/tint", "include/src/tint")
+            CopyFiles(context, "src/utils/compiler.h", "include/src/utils/")
+
+        with CurrentWorkingDirectory(buildDir):
+            # Lib files
+            CopyFiles(context, "third_party/spirv-tools/source/*SPIRV-Tools.*", "lib")
+            CopyFiles(context, "third_party/spirv-tools/source/opt/*SPIRV-Tools-opt.*", "lib")
+            CopyFiles(context, "src/tint/*.*", "lib")
+
+
+TINT = Dependency("Tint", InstallTint, "include/tint/tint.h")
 
 ############################################################
 # Embree
@@ -2002,7 +2222,10 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DCMAKE_C_FLAGS="{}"'.format(compileFlags))
             extraArgs.append('-DCMAKE_EXE_LINKER_FLAGS="{}"'.format(linkFlags))
 
-        RunCMake(context, force, extraArgs, context.usdInstDir)
+        if context.buildWebGPU:
+            extraArgs.append('-DPXR_ENABLE_WEBGPU_SUPPORT=ON')
+
+        RunCMake(context, force, extraArgs, installDir=context.usdInstDir)
 
 USD = Dependency("USD", InstallUSD, "include/pxr/pxr.h")
 
@@ -2184,6 +2407,9 @@ if MacOS():
     group.add_argument("--codesign-id", dest="macos_codesign_id", type=str,
                        help=("A specific code-sign ID to use. If not provided, "
                              "the build will try and find one or use '-'"))
+
+group.add_argument("--webgpu", dest="buildWebGPU", action="store_true",
+                    help="Build WebGPU Hgi")
 
 if Linux():
     group.add_argument("--use-cxx11-abi", type=int, choices=[0, 1],
@@ -2475,8 +2701,9 @@ class InstallContext:
 
         self.ignorePaths = args.ignore_paths or []
         # Build target and code signing
-        self.targetWasm = (args.build_target == TARGET_WASM or 
+        self.targetWasm = (args.build_target == TARGET_WASM or
                            args.build_target == TARGET_WASM64)
+        self.targetWasm64 = (args.build_target == TARGET_WASM64)
         self.buildTarget = args.build_target
         if MacOS():
             apple_utils.SetTarget(self)
@@ -2500,6 +2727,8 @@ class InstallContext:
             self.buildTarget = ""
             self.buildAppleFramework = False
 
+        # WebGPU is the default graphics API for wasm
+        self.buildWebGPU = args.buildWebGPU or self.targetWasm
         self.useCXX11ABI = \
             (args.use_cxx11_abi if hasattr(args, "use_cxx11_abi") else None)
         self.safetyFirst = args.safety_first
@@ -2548,8 +2777,7 @@ class InstallContext:
                               and not embedded)
 
         # - USD Imaging
-        self.buildUsdImaging = (args.build_imaging == USD_IMAGING and 
-                                not self.targetWasm)
+        self.buildUsdImaging = (args.build_imaging == USD_IMAGING)
 
         # - usdview
         self.buildUsdview = (self.buildUsdImaging and 
@@ -2636,7 +2864,17 @@ if context.buildDraco:
 if context.buildMaterialX:
     requiredDependencies += [MATERIALX]
 
+if context.buildWebGPU:
+    if context.targetWasm:
+        # Same as above, please keep the dependencies order.
+        requiredDependencies += [DAWN_HEADERS, TINT, GLSLANG]
+    else:
+        # Please keep the dependencies order as glslang is a
+        # dependency of Dawn and, it is downloaded when building it.
+        requiredDependencies += [DAWN, GLSLANG]
+
 if context.buildImaging:
+
     if context.enablePtex:
         requiredDependencies += [ZLIB, PTEX]
 
@@ -2908,6 +3146,7 @@ summaryMsg += """\
     Tests                       {buildTests}
     Examples                    {buildExamples}
     Tutorials                   {buildTutorials}
+    WebGPU                      {buildWebGPU}
     Tools                       {buildTools}
     Alembic Plugin              {buildAlembic}
     Draco Plugin                {buildDraco}
@@ -2992,6 +3231,7 @@ summaryMsg = summaryMsg.format(
     buildAlembic=("On" if context.buildAlembic else "Off"),
     buildDraco=("On" if context.buildDraco else "Off"),
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
+    buildWebGPU=("On" if context.buildWebGPU else "Off"),
     omittedSchemaGenScripts=(", ".join(omittedSchemaGenScripts)))
 
 Print(summaryMsg)
