@@ -1195,10 +1195,16 @@ UsdGeomPointInstancer::_ComputeExtentFromTransforms(
     std::vector<GfBBox3d> protoUntransformedBounds;
     protoUntransformedBounds.reserve(protoPaths.size());
 
-    UsdGeomBBoxCache bboxCache(time, 
-        /*purposes*/ {UsdGeomTokens->default_, 
-                      UsdGeomTokens->proxy, 
-                      UsdGeomTokens->render });
+    // Use a custom predicate for prototypes as they may not be defined
+    // since they can be under an over ancestor. This allows use to
+    // properly compute their bbox in this case.
+    UsdGeomBBoxCache bboxCache(time,
+        /*purposes*/  {UsdGeomTokens->default_,
+                       UsdGeomTokens->proxy,
+                       UsdGeomTokens->render},
+        /*predicate*/ (UsdPrimIsActive &&
+                       UsdPrimHasDefiningSpecifier &&
+                       !UsdPrimIsAbstract));
     for (size_t protoId = 0 ; protoId < protoPaths.size() ; ++protoId) {
         const SdfPath& protoPath = protoPaths[protoId];
         const UsdPrim& protoPrim = stage->GetPrimAtPath(protoPath);
