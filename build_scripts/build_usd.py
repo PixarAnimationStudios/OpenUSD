@@ -2848,9 +2848,9 @@ if PYSIDE in requiredDependencies:
     # The USD build will skip building usdview if pyside6-uic or pyside2-uic is
     # not found, so check for it here to avoid confusing users. This list of 
     # PySide executable names comes from cmake/modules/FindPySide.cmake
-    pyside6Uic = ["pyside6-uic"]
+    pyside6Uic = ["pyside6-uic", "uic"]
     found_pyside6Uic = any([which(p) for p in pyside6Uic])
-    pyside2Uic = ["pyside2-uic"]
+    pyside2Uic = ["pyside2-uic", "uic"]
     found_pyside2Uic = any([which(p) for p in pyside2Uic])
     if not given_pysideUic and not found_pyside2Uic and not found_pyside6Uic:
         PrintError("PySide's user interface compiler was not found -- please"
