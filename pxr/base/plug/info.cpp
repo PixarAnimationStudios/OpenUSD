@@ -407,6 +407,18 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
                              dirname.c_str(), pattern.c_str(),
                              !pattern.empty() && *pattern.rbegin() == '/'
                              ? _Tokens->PlugInfoName.GetText() : "");
+// Add support for long file paths on Windows
+#if defined(ARCH_OS_WINDOWS)
+    // If the pattern starts with the long path prefix, update the regex pattern to handle it.
+    constexpr std::string_view kRegexLongPath = "//\\?/";
+    constexpr std::string_view kPrefixLongPath = "//?/";
+    constexpr int kPrefixLength = kPrefixLongPath.length();
+    if (pattern.rfind(kPrefixLongPath, 0) == 0) {
+        pattern = TfStringPrintf("%s%s",
+            kRegexLongPath.data(),
+            pattern.substr(kPrefixLength, pattern.length() - kPrefixLength).c_str());
+    }
+#endif
 
     std::shared_ptr<std::regex> re;
     try {
