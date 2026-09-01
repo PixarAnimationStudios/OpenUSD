@@ -409,6 +409,8 @@ pxr_register_test(testUsdImagingStageSceneIndex
 pxr_register_test(testUsdImagingStageSceneIndexContents
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingStageSceneIndexContents basic.usda basic.txt"
     TESTENV testenv/testUsdImagingStageSceneIndexContents
+    ENV
+        USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE
         basic.txt
