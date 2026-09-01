@@ -15,6 +15,7 @@
 #include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyUtils.h"
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/def.hpp"
@@ -31,9 +32,8 @@ namespace
 // ---------------------------------------------------------------------------
 // Python callable → C++ fixer function wrappers
 //
-// These follow the same GIL-safety pattern as the validator task function
-// wrappers in wrapRegistry.cpp: the Python callable is stored in a
-// TfPyObjWrapper, and the GIL is acquired before invoking it.
+// The Python callable is stored in a TfPyObjWrapper and the GIL is acquired
+// before invoking it.
 //
 // FixerImplFn and FixerCanApplyFn share the same signature
 // (UsdValidationError, UsdEditTarget, UsdTimeCode) -> bool, so a single
@@ -75,6 +75,11 @@ _MakeValidationFixer(const TfToken &name,
                      const TfTokenVector &keywords,
                      const TfToken &errorName)
 {
+    if (!PyCallable_Check(fixerImplFn.ptr()) ||
+        !PyCallable_Check(canApplyFn.ptr())) {
+        TfPyThrowTypeError("fixerImplFn and canApplyFn must be callable");
+    }
+
     return new UsdValidationFixer(
         name, description,
         _WrapFixerFn(fixerImplFn),

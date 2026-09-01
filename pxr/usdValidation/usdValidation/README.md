@@ -335,8 +335,12 @@ previously shown utility function, might look something like the following.
 registry.RegisterPluginValidator(validatorName, stageTaskFn, _ValidatorFixers());
 ```
 
-Note that UsdValidationRegistry does not manage fixers directly, and these are 
+Note that UsdValidationRegistry does not manage fixers directly, and these are
 held by their respective UsdValidationValidator(s).
+
+UsdValidationFixer::ApplyFix() calls `editTarget.GetLayer()->Save()` internally
+on success. The target layer must be
+file-backed (not anonymous).
 
 ## Listening for Validator Registration  {#listening_for_registration}
 
@@ -749,12 +753,9 @@ registry.RegisterValidatorSuite(
 ### Adding Fixers in Python
 
 Fixers can be created in Python and passed to any registration method
-via the optional `fixers` parameter. Each fixer requires two callables:
-
-| Callable | Signature | Purpose |
-|---|---|---|
-| `fixerImplFn` | `(error: ValidationError, editTarget: Usd.EditTarget, timeCode: Usd.TimeCode) -> bool` | Apply the fix; return `True` on success |
-| `canApplyFn` | `(error: ValidationError, editTarget: Usd.EditTarget, timeCode: Usd.TimeCode) -> bool` | Return whether the fix is applicable |
+via the optional `fixers` parameter. See [Adding Fixers](#adding-fixers)
+for the shared fixer concepts, including the `fixerImplFn` and `canApplyFn`
+callables.
 
 ```python
 from pxr import Sdf, Usd, UsdValidation
@@ -793,24 +794,23 @@ metadata = UsdValidation.ValidatorMetadata(
 )
 
 def _CheckDocumentation(prim, timeRange):
-    if prim.IsPseudoRoot():
+    if prim.GetDocumentation() or prim.IsPseudoRoot():
         return []
-    if not prim.GetDocumentation():
-        return [
-            UsdValidation.ValidationError(
-                "MissingDocumentation",
-                UsdValidation.ValidationErrorType.Warn,
-                [UsdValidation.ValidationErrorSite(
-                    prim.GetStage(), prim.GetPath())],
-                f"Prim '{prim.GetPath()}' has no documentation.",
-            )
-        ]
-    return []
+    return [
+        UsdValidation.ValidationError(
+            "MissingDocumentation",
+            UsdValidation.ValidationErrorType.Warn,
+            [UsdValidation.ValidationErrorSite(
+                prim.GetStage(), prim.GetPath())],
+            f"Prim '{prim.GetPath()}' has no documentation.",
+        )
+    ]
 
 registry.RegisterPrimValidator(metadata, _CheckDocumentation, fixers=[fixer])
 ```
 
-After validation, retrieve and apply fixers:
+After validation, retrieve and apply fixers. Validator-level lookup APIs can be
+used to populate UIs with available fixers:
 
 ```python
 validator = registry.GetOrLoadValidatorByName(
@@ -833,8 +833,9 @@ for error in errors:
             f.ApplyFix(error, editTarget)
 ```
 
-Note that `ApplyFix` calls `editTarget.GetLayer()->Save()` internally
-on success. The target layer must be file-backed (not anonymous).
+If `fixerImplFn` or `canApplyFn` raises, Python callers see the original
+Python exception. If a Python-backed fixer is invoked from C++, the exception is
+converted to a TfError and the fixer call returns false.
 
 ### Notes
 

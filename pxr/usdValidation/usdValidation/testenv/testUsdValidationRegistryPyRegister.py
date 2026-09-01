@@ -181,6 +181,33 @@ class TestUsdValidationRegistryPyRegister(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertEqual(errors[0].GetName(), "PrimError")
 
+    def test_RegisterValidatorRequiresCallableFunctions(self):
+        registry = UsdValidation.ValidationRegistry()
+
+        layer_metadata = UsdValidation.ValidatorMetadata(
+            name="testPyRegister:LayerValidatorNonCallable",
+            doc="Layer validator with non-callable task function",
+            keywords=["testPyRegister"],
+        )
+        with self.assertRaisesRegex(TypeError, "layerTaskFn must be callable"):
+            registry.RegisterLayerValidator(layer_metadata, object())
+
+        stage_metadata = UsdValidation.ValidatorMetadata(
+            name="testPyRegister:StageValidatorNonCallable",
+            doc="Stage validator with non-callable task function",
+            keywords=["testPyRegister"],
+        )
+        with self.assertRaisesRegex(TypeError, "stageTaskFn must be callable"):
+            registry.RegisterStageValidator(stage_metadata, object())
+
+        prim_metadata = UsdValidation.ValidatorMetadata(
+            name="testPyRegister:PrimValidatorNonCallable",
+            doc="Prim validator with non-callable task function",
+            keywords=["testPyRegister"],
+        )
+        with self.assertRaisesRegex(TypeError, "primTaskFn must be callable"):
+            registry.RegisterPrimValidator(prim_metadata, object())
+
     def test_RegisterValidatorSuite(self):
         # RegisterValidatorSuite groups existing validators under a single
         # named suite.  Suites can be retrieved and inspected for their

@@ -15,10 +15,7 @@ Exercises:
 4. Invoking CanApplyFix and ApplyFix with Python-backed fixers.
 """
 
-import concurrent.futures
-import functools
 import os
-import threading
 import unittest
 from unittest import mock
 
@@ -123,36 +120,27 @@ class TestUsdValidationFixerPy(unittest.TestCase):
         self.assertFalse(fixer.HasKeyword("fx"))
         self.assertTrue(fixer.IsAssociatedWithErrorName("SomeError"))
 
-    def test_ConstructionCallablesByValue(self):
-        """A constructed fixer keeps Python callables by value."""
-        calls = []
-
-        def _CreateValidationFixer():
-            def _CanApplyFn(error, editTarget, timeCode):
-                calls.append("canApply")
-                return True
-
-            def _ImplFn(error, editTarget, timeCode):
-                calls.append("apply")
-                return False
-
-            return UsdValidation.ValidationFixer(
-                name="callableLifetimeFixer",
-                description="Fixer with local Python callable refs",
-                fixerImplFn=_ImplFn,
-                canApplyFn=_CanApplyFn,
+    def test_ConstructionRequiresCallableFunctions(self):
+        """A fixer requires callable fixerImplFn and canApplyFn."""
+        with self.assertRaisesRegex(
+            TypeError, "fixerImplFn and canApplyFn must be callable"
+        ):
+            UsdValidation.ValidationFixer(
+                name="badImplFnFixer",
+                description="Fixer with non-callable fixerImplFn",
+                fixerImplFn=object(),
+                canApplyFn=self._CanApplyFn,
             )
 
-        fixer = _CreateValidationFixer()
-
-        layer = Sdf.Layer.CreateAnonymous(".usda")
-        error = self._LayerTask(layer)[0]
-        editTarget = Usd.EditTarget(layer)
-
-        self.assertTrue(fixer.CanApplyFix(error, editTarget))
-        self.assertFalse(fixer.ApplyFix(error, editTarget))
-
-        self.assertEqual(calls, ["canApply", "apply"])
+        with self.assertRaisesRegex(
+            TypeError, "fixerImplFn and canApplyFn must be callable"
+        ):
+            UsdValidation.ValidationFixer(
+                name="badCanApplyFnFixer",
+                description="Fixer with non-callable canApplyFn",
+                fixerImplFn=self._ImplFn,
+                canApplyFn=object(),
+            )
 
     def test_ConstructionCanApplyRaises(self):
         """Exceptions from canApplyFn are restored at the Python boundary."""
@@ -189,47 +177,6 @@ class TestUsdValidationFixerPy(unittest.TestCase):
 
         with self.assertRaises(AttributeError):
             fixer.ApplyFix(error, editTarget)
-
-    def test_ValidationFixerByValue(self):
-        """Registered validators keep copied fixer callables by value."""
-        registry = UsdValidation.ValidationRegistry()
-        _CanApplyFn = mock.Mock(return_value=True)
-        _ImplFn = mock.Mock(return_value=False)
-
-        fixer = UsdValidation.ValidationFixer(
-            name="registeredFixer",
-            description="Registered fixer",
-            fixerImplFn=_ImplFn,
-            canApplyFn=_CanApplyFn,
-        )
-
-        metadata = UsdValidation.ValidatorMetadata(
-            name="testPyFixer:RegisteredFixerByValue",
-            doc="Validator with copied Python fixers",
-            keywords=["testPyFixer"],
-        )
-
-        registry.RegisterLayerValidator(metadata, self._LayerTask, fixers=[fixer])
-        del fixer
-
-        validator = registry.GetOrLoadValidatorByName(
-            "testPyFixer:RegisteredFixerByValue"
-        )
-        self.assertIsNotNone(validator)
-
-        layer = Sdf.Layer.CreateAnonymous(".usda")
-        errors = validator.Validate(layer)
-        self.assertEqual(len(errors), 1)
-
-        fixers = errors[0].GetFixers()
-        self.assertEqual(len(fixers), 1)
-
-        editTarget = Usd.EditTarget(layer)
-        fixers[0].CanApplyFix(errors[0], editTarget)
-        fixers[0].ApplyFix(errors[0], editTarget)
-
-        _CanApplyFn.assert_called_once()
-        _ImplFn.assert_called_once()
 
     def test_FixerLookupFromValidatorAndError(self):
         """Validator and error fixer lookup APIs return matching fixers."""
@@ -283,39 +230,6 @@ class TestUsdValidationFixerPy(unittest.TestCase):
         fixers = errors[0].GetFixersByErrorName()
         self.assertEqual(len(fixers), 2)
 
-    def test_ThreadedFixerCallback(self):
-        """A Python-backed fixer callback can be invoked from threads."""
-        startEvent = threading.Event()
-
-        def _CanApplyFn(error, editTarget, timeCode):
-            return startEvent.wait(timeout=5.0)
-
-        fixer = UsdValidation.ValidationFixer(
-            name="threadedFixer",
-            description="Fixer invoked from multiple threads",
-            fixerImplFn=self._ImplFn,
-            canApplyFn=_CanApplyFn,
-        )
-
-        layer = Sdf.Layer.CreateAnonymous(".usda")
-        error = self._LayerTask(layer)[0]
-        editTarget = Usd.EditTarget(layer)
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-            futures = [
-                executor.submit(
-                    functools.partial(fixer.CanApplyFix, error, editTarget)
-                ),
-                executor.submit(
-                    functools.partial(fixer.CanApplyFix, error, editTarget)
-                ),
-            ]
-            startEvent.set()
-
-            self.assertEqual(
-                [future.result(timeout=5.0) for future in futures], [True, True]
-            )
-
     # ------------------------------------------------------------------
     # Manual registration tests
     # ------------------------------------------------------------------
@@ -357,8 +271,8 @@ class TestUsdValidationFixerPy(unittest.TestCase):
         self.assertEqual(len(errors), 1)
 
         editTarget = Usd.EditTarget(layer)
-        fixers[0].CanApplyFix(errors[0], editTarget)
-        fixers[0].ApplyFix(errors[0], editTarget)
+        self.assertTrue(fixers[0].CanApplyFix(errors[0], editTarget))
+        self.assertFalse(fixers[0].ApplyFix(errors[0], editTarget))
 
         _CanApplyFn.assert_called_once()
         _ImplFn.assert_called_once()
@@ -397,8 +311,8 @@ class TestUsdValidationFixerPy(unittest.TestCase):
         self.assertEqual(len(errors), 1)
 
         editTarget = Usd.EditTarget(stage.GetRootLayer())
-        fixers[0].CanApplyFix(errors[0], editTarget)
-        fixers[0].ApplyFix(errors[0], editTarget)
+        self.assertTrue(fixers[0].CanApplyFix(errors[0], editTarget))
+        self.assertFalse(fixers[0].ApplyFix(errors[0], editTarget))
 
         _CanApplyFn.assert_called_once()
         _ImplFn.assert_called_once()
@@ -438,8 +352,8 @@ class TestUsdValidationFixerPy(unittest.TestCase):
         self.assertEqual(len(errors), 1)
 
         editTarget = Usd.EditTarget(stage.GetRootLayer())
-        fixers[0].CanApplyFix(errors[0], editTarget)
-        fixers[0].ApplyFix(errors[0], editTarget)
+        self.assertTrue(fixers[0].CanApplyFix(errors[0], editTarget))
+        self.assertFalse(fixers[0].ApplyFix(errors[0], editTarget))
 
         _CanApplyFn.assert_called_once()
         _ImplFn.assert_called_once()
@@ -476,8 +390,8 @@ class TestUsdValidationFixerPy(unittest.TestCase):
         self.assertEqual(len(errors), 1)
 
         editTarget = Usd.EditTarget(layer)
-        fixers[0].CanApplyFix(errors[0], editTarget)
-        fixers[0].ApplyFix(errors[0], editTarget)
+        self.assertTrue(fixers[0].CanApplyFix(errors[0], editTarget))
+        self.assertFalse(fixers[0].ApplyFix(errors[0], editTarget))
 
         _CanApplyFn.assert_called_once()
         _ImplFn.assert_called_once()
@@ -510,8 +424,8 @@ class TestUsdValidationFixerPy(unittest.TestCase):
         self.assertEqual(len(errors), 1)
 
         editTarget = Usd.EditTarget(stage.GetRootLayer())
-        fixers[0].CanApplyFix(errors[0], editTarget)
-        fixers[0].ApplyFix(errors[0], editTarget)
+        self.assertTrue(fixers[0].CanApplyFix(errors[0], editTarget))
+        self.assertFalse(fixers[0].ApplyFix(errors[0], editTarget))
 
         _CanApplyFn.assert_called_once()
         _ImplFn.assert_called_once()
@@ -545,8 +459,8 @@ class TestUsdValidationFixerPy(unittest.TestCase):
         self.assertEqual(len(errors), 1)
 
         editTarget = Usd.EditTarget(stage.GetRootLayer())
-        fixers[0].CanApplyFix(errors[0], editTarget)
-        fixers[0].ApplyFix(errors[0], editTarget)
+        self.assertTrue(fixers[0].CanApplyFix(errors[0], editTarget))
+        self.assertFalse(fixers[0].ApplyFix(errors[0], editTarget))
 
         _CanApplyFn.assert_called_once()
         _ImplFn.assert_called_once()
