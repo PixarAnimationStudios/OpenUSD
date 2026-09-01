@@ -640,7 +640,7 @@ function(pxr_build_test TEST_NAME)
 
     cmake_parse_arguments(bt
         "" ""
-        "LIBRARIES;CPPFILES"
+        "LIBRARIES;CPPFILES;RPATHS"
         ${ARGN}
     )
 
@@ -664,9 +664,13 @@ function(pxr_build_test TEST_NAME)
     )
 
     # Find libraries under the install prefix, which has the core USD
-    # libraries.
+    # libraries. RPATHS handles exceptional targets, such as tests that link
+    # directly to plugins installed outside the core library directory.
     _pxr_init_rpath(rpath "tests")
     _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    foreach(path IN LISTS bt_RPATHS)
+        _pxr_add_rpath(rpath "${path}")
+    endforeach()
     _pxr_install_rpath(rpath ${TEST_NAME})
 
     # XXX -- We shouldn't have to install to run tests.

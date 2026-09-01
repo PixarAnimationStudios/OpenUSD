@@ -58,6 +58,11 @@ pxr_plugin(hdEmbree
 )
 
 if (X11_FOUND OR APPLE)
+set(testHdEmbreePluginInstallDir "plugin/usd")
+if(PXR_INSTALL_SUBDIR)
+    set(testHdEmbreePluginInstallDir "${PXR_INSTALL_SUBDIR}/plugin")
+endif()
+
 pxr_build_test(testHdEmbree
     LIBRARIES
         arch
@@ -68,5 +73,7 @@ pxr_build_test(testHdEmbree
         hio
     CPPFILES
         testenv/testHdEmbree.cpp
+    RPATHS
+        "${CMAKE_INSTALL_PREFIX}/${testHdEmbreePluginInstallDir}"
 )
 endif()

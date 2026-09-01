@@ -615,6 +615,17 @@ There are four ways to link USD controlled by the following options:
 | PXR_BUILD_MONOLITHIC   | `OFF`     | Build single or several libraries         |
 | PXR_MONOLITHIC_IMPORT  |           | CMake file defining usd_m import library  |
 
+By default, installed binaries and plugins use origin-relative runtime paths
+to find libraries in the USD install layout. Dependencies installed elsewhere
+must be discoverable through the platform's normal library search mechanism.
+Set `CMAKE_INSTALL_RPATH_USE_LINK_PATH=ON` for compatibility with builds that
+require CMake to add external linker search directories to installed runtime
+paths. This compatibility mode may add absolute paths and make the install
+specific to the machine or dependency layout where it was built. The
+`build_usd.py` script enables this compatibility mode by default; pass
+`--no-use-link-path-rpath` to produce an install containing only the configured
+origin-relative runtime paths.
+
 ##### Shared Libraries
 
 The default creates several shared libraries.  This option allows loading

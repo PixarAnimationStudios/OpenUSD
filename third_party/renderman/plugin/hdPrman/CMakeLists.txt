@@ -252,6 +252,11 @@ if(WIN32 AND NOT BUILD_SHARED_LIBS)
     # XXX: Temporarily disable this test on static Windows builds
     #      due to symbol visibility issues.
 else()
+    set(testHdPrmanPluginInstallDir "plugin/usd")
+    if(PXR_INSTALL_SUBDIR)
+        set(testHdPrmanPluginInstallDir "${PXR_INSTALL_SUBDIR}/plugin")
+    endif()
+
     pxr_build_test(testHdPrman
         LIBRARIES
             cameraUtil
@@ -264,5 +269,7 @@ else()
             ${PRMAN_LIBRARY}
         CPPFILES
             testenv/testHdPrman.cpp
+        RPATHS
+            "${CMAKE_INSTALL_PREFIX}/${testHdPrmanPluginInstallDir}"
     )
 endif()
