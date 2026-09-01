@@ -617,34 +617,47 @@ _ValidateIsMultipleApplyAPI(
     return true;
 }
 
-// Determines whether the given prim type can have the given API schema applied 
-// to it based on a list of types the API "can only be applied to". If the 
-// list is empty, this always returns true, otherwise the prim type must be in 
-// the list or derived from a type in the list.
+// Determines whether the given prim is a valid target for applying the given
+// API schema, per the API's "can only be applied to" list. The list may name
+// typed schemas and / or applied API schemas and means "any of": valid if the
+// prim's type is (or derives from) a listed typed schema, or the prim has a
+// listed API schema applied. An empty list allows any prim.
 static bool 
-_IsPrimTypeValidApplyToTarget(const TfType &primType, 
-                              const TfToken &apiSchemaTypeName,
-                              const TfToken &instanceName,
-                              std::string *whyNot)
+_IsPrimValidApplyToTarget(
+    const UsdPrim &prim, 
+    const TfToken &apiSchemaTypeName,
+    const TfToken &instanceName,
+    std::string *whyNot)
 {
-    // Get the list of prim types this API "can only apply to" if any.
-    const TfTokenVector &canOnlyApplyToTypes =
+    // Get the list of prim types and API Schemas this API "can only apply to" 
+    // if any.
+    const TfTokenVector &canOnlyApplyToNames =
         UsdSchemaRegistry::GetAPISchemaCanOnlyApplyToTypeNames(
             apiSchemaTypeName, instanceName);
 
     // If no "can only apply to" types are found, the schema can be 
     // applied to any prim type (including empty or invalid prims types)
-    if (canOnlyApplyToTypes.empty()) {
+    if (canOnlyApplyToNames.empty()) {
         return true;
     }
 
-    // If the prim type or any of its ancestor types are in the list, then it's
-    // valid!
-    if (!primType.IsUnknown()) {
-        for (const TfToken &allowedPrimTypeName : canOnlyApplyToTypes) {
+    const TfType primType = prim.GetPrimTypeInfo().GetSchemaType();
+    for (const TfToken &allowedName : canOnlyApplyToNames) {
+        // We can have API Schemas applied on a type-less prim, so no check for
+        // unknown prim type here. But we must check for typed schema check, 
+        // in the else branch below.
+        const std::pair<TfToken, TfToken> typeAndInstance =
+            UsdSchemaRegistry::GetTypeNameAndInstance(allowedName);
+        if (UsdSchemaRegistry::IsAppliedAPISchema(typeAndInstance.first)) {
+            const bool hasAPI = typeAndInstance.second.IsEmpty() ?
+                prim.HasAPI(typeAndInstance.first) :
+                prim.HasAPI(typeAndInstance.first, typeAndInstance.second);
+            if (hasAPI) {
+                return true;
+            }
+        } else if (!primType.IsUnknown()) {
             const TfType allowedPrimType = 
-                UsdSchemaRegistry::GetTypeFromSchemaTypeName(
-                    allowedPrimTypeName);
+                UsdSchemaRegistry::GetTypeFromSchemaTypeName(allowedName);
             if (primType.IsA(allowedPrimType)) {
                 return true;
             }
@@ -654,11 +667,11 @@ _IsPrimTypeValidApplyToTarget(const TfType &primType,
     // Otherwise, it wasn't in the list and can't be applied to.
     if (whyNot) {
         *whyNot = TfStringPrintf(
-            "API schema '%s' can only be applied to prims of the following "
-            "types: %s.", 
+            "API schema '%s' can only be applied to prims that are of "
+            "following type, or have following API schema applied: %s.", 
             SdfPath::JoinIdentifier(apiSchemaTypeName, instanceName).c_str(), 
-            TfStringJoin(canOnlyApplyToTypes.begin(),
-                         canOnlyApplyToTypes.end(), ", ").c_str());
+            TfStringJoin(canOnlyApplyToNames.begin(),
+                         canOnlyApplyToNames.end(), ", ").c_str());
     }
     return false;
 }
@@ -680,10 +693,10 @@ UsdPrim::_CanApplySingleApplyAPI(
         return false;
     }
 
-    // Return whether this prim's type is a valid target for applying the given
+    // Return whether this prim is a valid target for applying the given
     // API schema.
-    return _IsPrimTypeValidApplyToTarget(
-        GetPrimTypeInfo().GetSchemaType(), 
+    return _IsPrimValidApplyToTarget(
+        *this,
         schemaInfo.identifier,
         /*instanceName=*/ TfToken(),
         whyNot);
@@ -729,10 +742,10 @@ UsdPrim::_CanApplyMultipleApplyAPI(
         return false;
     }
 
-    // Return whether this prim's type is a valid target for applying the given
+    // Return whether this prim is a valid target for applying the given
     // API schema and instance name.
-    return _IsPrimTypeValidApplyToTarget(
-        GetPrimTypeInfo().GetSchemaType(), 
+    return _IsPrimValidApplyToTarget(
+        *this,
         schemaInfo.identifier,
         instanceName,
         whyNot);

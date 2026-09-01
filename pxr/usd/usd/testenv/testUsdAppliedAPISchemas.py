@@ -23,6 +23,10 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestMultiApplyAPI")
         cls.ComposeMetadataAPIType = \
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestComposeMetadataAPI")
+        cls.APISchemaForCanOnlyApplyToAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestAPISchemaForCanOnlyApplyToAPI")
+        cls.MultiAPISchemaForCanOnlyApplyToAPIType = \
+            Tf.Type(Usd.SchemaBase).FindDerivedByName("TestMultiAPISchemaForCanOnlyApplyToAPI")
         cls.SingleCanApplyAPIType = \
             Tf.Type(Usd.SchemaBase).FindDerivedByName("TestSingleCanApplyAPI")
         cls.MultiCanApplyAPIType = \
@@ -1114,6 +1118,38 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "/Prim4", "TestDerivedTypedSchemaForAutoApplyConcreteBase")
         prim5 = stage.DefinePrim(
             "/Prim5", "TestDerivedTypedSchemaForAutoApplyAbstractBase")
+        prim6 = stage.DefinePrim(
+            "/Prim6")
+        # Prim with TestAPISchemaForCanOnlyApplyToAPI applied to it. This API
+        # schema should allow TestSingleCanApplyAPI to be applied to this prim.
+        prim6.ApplyAPI(self.APISchemaForCanOnlyApplyToAPIType)
+        prim7 = stage.DefinePrim(
+            "/Prim7")
+        # Prim with TestMultiAPISchemaForCanOnlyApplyToAPI applied to it. This
+        # API schema should allow TestSingleCanApplyAPI to be applied to this
+        # prim, but not TestMultiCanApplyAPI since the latter allows only a
+        # specific instance name for TestMultiAPISchemaForCanOnlyApplyToAPI to
+        # be applied to it.
+        prim7.ApplyAPI(self.MultiAPISchemaForCanOnlyApplyToAPIType, 
+                       "anyInstanceName")
+        prim8 = stage.DefinePrim(
+            "/Prim8")
+        # Prim with TestMultiAPISchemaForCanOnlyApplyToAPI applied to it, with
+        # specificInstanceName as the instance name. This API schema should
+        # allow TestSingleCanApplyAPI to be applied to this prim, and also allow
+        # TestMultiCanApplyAPI to be applied to this prim as it has the
+        # specificInstanceName instance name.
+        prim8.ApplyAPI(self.MultiAPISchemaForCanOnlyApplyToAPIType,
+                       "specificInstanceName")
+        prim9 = stage.DefinePrim(
+            "/Prim9")
+        # Prim with TestMultiAPISchemaForCanOnlyApplyToAPI applied to it, with
+        # foo as the instance name. This API schema should
+        # allow TestSingleCanApplyAPI to be applied to this prim, and also allow
+        # TestMultiCanApplyAPI:foo (but not other instances) to be applied to 
+        # this prim as it has the foo instance name.
+        prim9.ApplyAPI(self.MultiAPISchemaForCanOnlyApplyToAPIType,
+                       "foo")
 
         # Single apply schema with no specified "apiSchemaCanOnlyApplyTo" 
         # metadata. Can apply to all prims.
@@ -1124,6 +1160,19 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertTrue(prim3.CanApplyAPI(self.SingleApplyAPIType))
         self.assertTrue(prim4.CanApplyAPI(self.SingleApplyAPIType))
         self.assertTrue(prim5.CanApplyAPI(self.SingleApplyAPIType))
+
+        # Following should be allowed as TestAPISchemaForCanOnlyApplyToAPI is
+        # applied to prim6.
+        self.assertTrue(prim6.CanApplyAPI(self.SingleApplyAPIType))
+        # Following should be allowed as TestMultiAPISchemaForCanOnlyApplyToAPI 
+        # is applied to prim7 irrespective of the instance name.
+        self.assertTrue(prim7.CanApplyAPI(self.SingleApplyAPIType))
+        # Following should be allowed as TestMultiAPISchemaForCanOnlyApplyToAPI 
+        # is applied to prim8 irrespective of the instance name.
+        self.assertTrue(prim8.CanApplyAPI(self.SingleApplyAPIType))
+        # Following should be allowed as TestMultiAPISchemaForCanOnlyApplyToAPI 
+        # is applied to prim9 irrespective of the instance name.
+        self.assertTrue(prim9.CanApplyAPI(self.SingleApplyAPIType))
 
         # Multiple apply schema with no specified "apiSchemaCanOnlyApplyTo" 
         # metadata and no "allowedInstanceNames". Can apply to all prims with 
@@ -1138,6 +1187,28 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertTrue(prim3.CanApplyAPI(self.MultiApplyAPIType, "foo"))
         self.assertTrue(prim4.CanApplyAPI(self.MultiApplyAPIType, "foo"))
         self.assertTrue(prim5.CanApplyAPI(self.MultiApplyAPIType, "foo"))
+
+        # Following shouldn't be allowed as TestSingleCanApplyAPI (which is what
+        # prim6 has applied) is not in the "apiSchemaCanOnlyApplyTo" list for 
+        # TestMultiCanApplyAPI.
+        self.assertFalse(prim6.CanApplyAPI(self.MultiCanApplyAPIType, "baz"))
+        # Following shouldn't be allowed as TestMultiCanApplyAPI:anyInstanceName
+        # (which is what prim7 has applied) is not in the
+        # "apiSchemaCanOnlyApplyTo" list for TestMultiCanApplyAPI.
+        self.assertFalse(prim7.CanApplyAPI(self.MultiCanApplyAPIType, "baz"))
+        # Following should be allowed as
+        # TestMultiCanApplyAPI:specificInstanceName (which is what prim8 has
+        # applied) is in the "apiSchemaCanOnlyApplyTo" list for
+        # TestMultiCanApplyAPI.
+        self.assertTrue(prim8.CanApplyAPI(self.MultiCanApplyAPIType, "baz"))
+        # Following shouldn't be allowed as TestMultiCanApplyAPI:bar doesn't
+        # list TestMultiAPISchemaForCanOnlyApplyToAPI:specificInstanceName in
+        # its "apiSchemaCanOnlyApplyTo" list, which is what prim8 has applied.
+        self.assertFalse(prim8.CanApplyAPI(self.MultiCanApplyAPIType, "bar"))
+        # Following should be allowed as TestMultiCanApplyAPI:foo lists
+        # TestMultiAPISchemaForCanOnlyApplyToAPI:foo in its 
+        # "apiSchemaCanOnlyApplyTo" list, which is what prim9 has applied.
+        self.assertTrue(prim9.CanApplyAPI(self.MultiCanApplyAPIType, "foo"))
 
         self.assertEqual(Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
             "TestMultiApplyAPI", "bar"), [])
@@ -1203,7 +1274,9 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
             "TestSingleCanApplyAPI"), 
             ["TestTypedSchemaForAutoApply", 
-             "TestTypedSchemaForAutoApplyConcreteBase"])
+             "TestTypedSchemaForAutoApplyConcreteBase",
+             "TestAPISchemaForCanOnlyApplyToAPI",
+             "TestMultiAPISchemaForCanOnlyApplyToAPI"])
         self.assertFalse(prim.CanApplyAPI(self.SingleCanApplyAPIType))
         self.assertFalse(prim2.CanApplyAPI(self.SingleCanApplyAPIType))
         self.assertTrue(prim3.CanApplyAPI(self.SingleCanApplyAPIType))
@@ -1237,7 +1310,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
             "TestMultiCanApplyAPI", "baz"), 
             ["TestTypedSchemaForAutoApply", 
-             "TestTypedSchemaForAutoApplyAbstractBase"])
+             "TestTypedSchemaForAutoApplyAbstractBase",
+             "TestMultiAPISchemaForCanOnlyApplyToAPI:specificInstanceName"])
         self.assertEqual(
             Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
                 "TestMultiCanApplyAPI", "baz"), 
@@ -1259,7 +1333,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
             "TestMultiCanApplyAPI", "foo"), 
             ["TestTypedSchemaForAutoApply", 
-             "TestTypedSchemaForAutoApplyConcreteBase"])
+             "TestTypedSchemaForAutoApplyConcreteBase",
+             "TestMultiAPISchemaForCanOnlyApplyToAPI:foo"])
         self.assertNotEqual(
             Usd.SchemaRegistry.GetAPISchemaCanOnlyApplyToTypeNames(
                 "TestMultiCanApplyAPI", "foo"), 
@@ -1323,7 +1398,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertFalse(result)
         self.assertEqual(result.whyNot, 
                          "API schema 'TestMultiCanApplyAPI:bar' can only be "
-                         "applied to prims of the following types: "
+                         "applied to prims that are of following type, or "
+                         "have following API schema applied: "
                          "TestTypedSchemaForAutoApplyAbstractBase, "
                          "TestTypedSchemaForAutoApplyConcreteBase.")
 
