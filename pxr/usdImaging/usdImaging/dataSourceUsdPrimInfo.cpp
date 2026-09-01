@@ -7,9 +7,12 @@
 
 #include "pxr/usdImaging/usdImaging/dataSourceUsdPrimInfo.h"
 
+#include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/variantSets.h"
+#include "pxr/usd/usdHydra/primAPI.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -68,7 +71,9 @@ UsdImagingDataSourceUsdPrimInfo::GetNames()
         UsdImagingUsdPrimInfoSchemaTokens->variantSelections,
     };
 
-    if (_usdPrim.IsInstance()) {
+    // If an instance is tagged for expansion, don't provide niPrototypePath.
+    if (_usdPrim.IsInstance()
+        && !UsdHydraPrimAPI::ShouldExpandInstancesForPrim(_usdPrim)) {
         result.push_back(UsdImagingUsdPrimInfoSchemaTokens->niPrototypePath);
     }
 
@@ -129,7 +134,8 @@ UsdImagingDataSourceUsdPrimInfo::Get(const TfToken &name)
             names.size(), names.data(), values.data());
     }
     if (name == UsdImagingUsdPrimInfoSchemaTokens->niPrototypePath) {
-        if (!_usdPrim.IsInstance()) {
+        if (!_usdPrim.IsInstance()
+            || UsdHydraPrimAPI::ShouldExpandInstancesForPrim(_usdPrim)) {
             return nullptr;
         }
         const UsdPrim prototype(_usdPrim.GetPrototype());

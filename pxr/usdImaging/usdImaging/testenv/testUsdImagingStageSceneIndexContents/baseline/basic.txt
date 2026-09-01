@@ -328,3 +328,250 @@
 	[primOrigin]
 		[scenePath]
 			HdPrimOriginSchema::OriginPath(/Materials/MyMaterial)
+</NestedNativeInstances> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+		[typeName]
+			Xform
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/NestedNativeInstances)
+</NestedNativeInstances/NestedSpheres> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[niPrototypePath]
+			/__Prototype_1
+		[specifier]
+			def
+		[typeName]
+			Xform
+	[geomXformVectors]
+		[pivot]
+			(0, 0, 0)
+		[rotation]
+			(0, 0, 0)
+		[rotationOrder]
+			RotationOrderXYZ
+		[scale]
+			(1, 1, 1)
+		[translation]
+			(0, 0, 0)
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/NestedNativeInstances/NestedSpheres)
+	[xform]
+		[matrix]
+			( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+		[resetXformStack]
+			0
+</NestedNativeInstances/NestedSpheres_Expanded> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+		[typeName]
+			Xform
+	[geomXformVectors]
+		[pivot]
+			(0, 0, 0)
+		[rotation]
+			(0, 0, 0)
+		[rotationOrder]
+			RotationOrderXYZ
+		[scale]
+			(1, 1, 1)
+		[translation]
+			(0, 1, 0)
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/NestedNativeInstances/NestedSpheres_Expanded)
+	[xform]
+		[matrix]
+			( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 1, 0, 1) )
+		[resetXformStack]
+			0
+</NestedNativeInstances/NestedSpheres_Expanded/SphereInstance_1> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+		[typeName]
+			Xform
+	[geomXformVectors]
+		[pivot]
+			(0, 0, 0)
+		[rotation]
+			(0, 0, 0)
+		[rotationOrder]
+			RotationOrderXYZ
+		[scale]
+			(0.5, 0.5, 0.5)
+		[translation]
+			(-0.1, -0.1, 0)
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/NestedNativeInstances/NestedSpheres_Expanded/SphereInstance_1)
+	[xform]
+		[matrix]
+			( (0.5, 0, 0, 0), (0, 0.5, 0, 0), (0, 0, 0.5, 0), (-0.1, -0.1, 0, 1) )
+		[resetXformStack]
+			0
+</NestedNativeInstances/NestedSpheres_Expanded/SphereInstance_1/Geom> type = sphere
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+		[typeName]
+			Sphere
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/NestedNativeInstances/NestedSpheres_Expanded/SphereInstance_1/Geom)
+	[sphere]
+		[radius]
+			1
+</NestedNativeInstances/NestedSpheres_Expanded/SphereInstance_2> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+		[typeName]
+			Xform
+	[geomXformVectors]
+		[pivot]
+			(0, 0, 0)
+		[rotation]
+			(0, 0, 0)
+		[rotationOrder]
+			RotationOrderXYZ
+		[scale]
+			(0.5, 0.5, 0.5)
+		[translation]
+			(0.1, -0.1, 0)
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/NestedNativeInstances/NestedSpheres_Expanded/SphereInstance_2)
+	[xform]
+		[matrix]
+			( (0.5, 0, 0, 0), (0, 0.5, 0, 0), (0, 0, 0.5, 0), (0.1, -0.1, 0, 1) )
+		[resetXformStack]
+			0
+</NestedNativeInstances/NestedSpheres_Expanded/SphereInstance_2/Geom> type = sphere
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+		[typeName]
+			Sphere
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(/NestedNativeInstances/NestedSpheres_Expanded/SphereInstance_2/Geom)
+	[sphere]
+		[radius]
+			1
+</__Prototype_1> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[isNiPrototype]
+			1
+		[specifier]
+			def
+		[typeName]
+			
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(.)
+</__Prototype_1/SphereInstance_1> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[niPrototypePath]
+			/__Prototype_2
+		[specifier]
+			def
+		[typeName]
+			Xform
+	[geomXformVectors]
+		[pivot]
+			(0, 0, 0)
+		[rotation]
+			(0, 0, 0)
+		[rotationOrder]
+			RotationOrderXYZ
+		[scale]
+			(0.5, 0.5, 0.5)
+		[translation]
+			(-0.1, -0.1, 0)
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(SphereInstance_1)
+	[xform]
+		[matrix]
+			( (0.5, 0, 0, 0), (0, 0.5, 0, 0), (0, 0, 0.5, 0), (-0.1, -0.1, 0, 1) )
+		[resetXformStack]
+			0
+</__Prototype_1/SphereInstance_2> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[niPrototypePath]
+			/__Prototype_2
+		[specifier]
+			def
+		[typeName]
+			Xform
+	[geomXformVectors]
+		[pivot]
+			(0, 0, 0)
+		[rotation]
+			(0, 0, 0)
+		[rotationOrder]
+			RotationOrderXYZ
+		[scale]
+			(0.5, 0.5, 0.5)
+		[translation]
+			(0.1, -0.1, 0)
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(SphereInstance_2)
+	[xform]
+		[matrix]
+			( (0.5, 0, 0, 0), (0, 0.5, 0, 0), (0, 0, 0.5, 0), (0.1, -0.1, 0, 1) )
+		[resetXformStack]
+			0
+</__Prototype_2> type = 
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[isNiPrototype]
+			1
+		[specifier]
+			def
+		[typeName]
+			
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(.)
+</__Prototype_2/Geom> type = sphere
+	[__usdPrimInfo]
+		[isLoaded]
+			1
+		[specifier]
+			def
+		[typeName]
+			Sphere
+	[primOrigin]
+		[scenePath]
+			HdPrimOriginSchema::OriginPath(Geom)
+	[sphere]
+		[radius]
+			1
