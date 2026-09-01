@@ -2240,7 +2240,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             }
 
             if (dbIt->name == HdShaderTokens->clipPlanes) {
-                _hasClipPlanes = true;
+                _hasClipPlanes = _geometricShader &&
+                    _geometricShader->GetUseHardwareClipPlanes();
             }
         }
 

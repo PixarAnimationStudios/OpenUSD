@@ -36,7 +36,8 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
                                        SdfPath const &debugId,
                                        float lineWidth,
                                        uint32_t vertexCountFallback,
-                                       TfToken const &depthQualifier)
+                                       TfToken const &depthQualifier,
+                                       bool useHardwareClipPlanes)
     : HdStShaderCode()
     , _primType(primType)
     , _cullStyle(cullStyle)
@@ -48,6 +49,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
     , _lineWidth(lineWidth)
     , _vertexCountFallback(vertexCountFallback)
     , _depthQualifier(depthQualifier)
+    , _useHardwareClipPlanes(useHardwareClipPlanes)
     , _frustumCullingPass(cullingPass)
     , _fvarPatchType(fvarPatchType)
     , _hash(0)
@@ -366,7 +368,8 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
                 /*debugId=*/SdfPath(),
                 shaderKey.GetLineWidth(),
                 shaderKey.GetVertexCountFallback(),
-                shaderKey.GetDepthQualifier()));
+                shaderKey.GetDepthQualifier(),
+                shaderKey.UseHardwareClipPlanes()));
     }
     return geometricShaderInstance.GetValue();
 }

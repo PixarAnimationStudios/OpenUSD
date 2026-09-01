@@ -39,6 +39,13 @@ struct HdSt_SphereShaderKey : public HdSt_ShaderKey
         return HgiShaderKeywordTokens->hdDepthGreater;
     }
 
+    // We need to manually handle user-defined clip planes in the FS for
+    // native implicits since that's where the actual value of Peye is
+    // calculated.
+    bool UseHardwareClipPlanes() const override {
+        return false;
+    }
+
     HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const override {
         return HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES; 
     }

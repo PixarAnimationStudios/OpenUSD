@@ -1264,7 +1264,9 @@ HdStRenderPassState::_InitRasterizationState(
 
     rasterizationState->conservativeRaster = _conservativeRasterizationEnabled;
 
-    rasterizationState->numClipDistances = GetClipPlanes().size();
+    rasterizationState->numClipDistances =
+        geometricShader->GetUseHardwareClipPlanes()
+            ? GetClipPlanes().size() : 0;
 }
 
 void

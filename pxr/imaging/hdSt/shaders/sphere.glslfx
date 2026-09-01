@@ -195,11 +195,40 @@ vec2 IntersectObjSpace(vec3 rayOrigin, vec3 rayDir)
     return vec2(t1, t2)/a;
 }
 
+bool ShouldDiscardByClipPlanes(vec3 Peye)
+{
+#if defined(HD_HAS_numClipPlanes) && defined(HD_HAS_clipPlanes)
+    for (int i=0; i<HdGet_numClipPlanes(); ++i) {
+        if (dot(HdGet_clipPlanes(i), vec4(Peye, 1.0)) < 0.0) {
+            return true;
+        }
+    }
+#endif
+
+    return false;
+}
+
+struct PointPosition
+{
+    vec3 objSpace;
+    vec3 eyeSpace;
+};
+
+PointPosition ComputeHitPoint(
+        float dist, vec3 rayOriginObj, vec3 rayDirObj, MAT4 instanceModelView)
+{
+    PointPosition hitPoint;
+    hitPoint.objSpace = rayOriginObj + dist * rayDirObj;
+    hitPoint.eyeSpace = TransformPoint(instanceModelView, hitPoint.objSpace);
+    return hitPoint;
+}
+
 void main(void)
 {
-    const MAT4 instanceModelView = GetWorldToViewMatrix() * ApplyInstanceTransform(HdGet_transform());
+    const MAT4 instanceModelView = GetWorldToViewMatrix() *
+                                    ApplyInstanceTransform(HdGet_transform());
 
-    const MAT4 instanceModelViewInverse = ApplyInstanceTransformInverse(HdGet_transformInverse()) * 
+    const MAT4 instanceModelViewInverse = ApplyInstanceTransformInverse(HdGet_transformInverse()) *
                                             GetWorldToViewInverseMatrix();
 
     const vec3 rayDirEye = ComputeRayDirectionEye(inData.Peye);
@@ -210,30 +239,50 @@ void main(void)
 
     const vec2 hitDists = IntersectObjSpace(rayOriginObj, rayDirObj);
 
-    const bool frontFacing = hitDists.x >= 0.0;
-
-    const float dist = frontFacing ? hitDists.x : hitDists.y;
-
-    if (dist < 0.0) {
+    if (hitDists.y < 0.0) {
         discard;
         // Explicit return needed for MSL version < 2.4
         return;
     }
 
-    DiscardBasedOnShading(frontFacing);
+    bool frontFacing;
+    PointPosition hitPoint;
 
-    const vec3 intersectionPointObj = rayOriginObj + dist * rayDirObj;
+    if (hitDists.x < 0.0) {
+        frontFacing = false;
+    } else {
+        hitPoint = ComputeHitPoint(
+                    hitDists.x,
+                    rayOriginObj,
+                    rayDirObj,
+                    instanceModelView);
+        frontFacing = !ShouldDiscardByClipPlanes(hitPoint.eyeSpace);
+    }
+
+    // If the front-facing intersection is clipped away by a user-defined
+    // clip plane (or the near plane), check the back-face
+    if (!frontFacing) {
+        hitPoint = ComputeHitPoint(
+                    hitDists.y,
+                    rayOriginObj,
+                    rayDirObj,
+                    instanceModelView);
+       if (ShouldDiscardByClipPlanes(hitPoint.eyeSpace)) {
+            discard;
+            return;
+       }
+    }
+
+    DiscardBasedOnShading(frontFacing);
 
     const mat3 matrixForNormal = transpose(Mat4ToMat3(instanceModelViewInverse));
 
-    vec3 Neye = normalize(matrixForNormal * intersectionPointObj);
+    vec3 Neye = normalize(matrixForNormal * hitPoint.objSpace);
 
     // We get -Neye if this is a backface and the sphere is double-sided
     Neye = GetShadingNormal(Neye, frontFacing);
 
-    const vec3 Peye = TransformPoint(instanceModelView, intersectionPointObj);
-
-    const vec3 ndc = TransformPoint(GetProjectionMatrix(), Peye);
+    const vec3 ndc = TransformPoint(GetProjectionMatrix(), hitPoint.eyeSpace);
 
     const float depth = NDCToWindowDepth(ndc.z);
 
@@ -258,7 +307,7 @@ void main(void)
     // hard code patchCoord since the entire implicit surface is one "patch"
     const vec4 patchCoord = vec4(0, 0.5, 0, 0);
 
-    color = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord);
+    color = ShadingTerminal(vec4(hitPoint.eyeSpace, 1), Neye, color, patchCoord);
 
 #ifdef HD_MATERIAL_TAG_MASKED   
     if (ShouldDiscardByAlpha(color)) {
@@ -267,5 +316,5 @@ void main(void)
     }
 #endif
 
-    RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
+    RenderOutput(vec4(hitPoint.eyeSpace, 1), Neye, color, patchCoord);
 }
