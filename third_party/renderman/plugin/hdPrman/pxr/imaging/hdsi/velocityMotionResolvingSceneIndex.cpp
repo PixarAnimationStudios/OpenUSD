@@ -24,6 +24,7 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/sceneGlobalsSchema.h"
 #include "pxr/imaging/hd/sceneIndexObserver.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -1131,8 +1132,6 @@ HdPrmanVelocityMotionResolvingSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase&  /*sender*/,
     const HdSceneIndexObserver::DirtiedPrimEntries& entries)
 {
-    TRACE_FUNCTION();
-
     // Scales-freezing depends on whether velocity-based motion is valid, so
     // if either positions or rotations is dirty, we will dirty scales as well.
     static const HdDataSourceLocatorSet positionsLocators {

@@ -79,14 +79,14 @@ public:
             const TfToken& vblur = vblurDs->GetValue(shutterOffset)
                 .GetWithDefault<TfToken>(_tokens->vblur_enable);
             if (vblur == _tokens->vblur_ignore) {
-#if HD_API_VERSION >= 96 
+#if HD_API_VERSION >= 106 
                 return HdsiVelocityMotionResolvingSceneIndexTokens->ignore;
 #else
                 return HdPrmanVelocityMotionResolvingSceneIndexTokens->ignore;
 #endif
             }
             if (vblur == _tokens->vblur_noAcceleration) {
-#if HD_API_VERSION >= 96 
+#if HD_API_VERSION >= 106 
                 return HdsiVelocityMotionResolvingSceneIndexTokens->noAcceleration;
 #else
                 return HdPrmanVelocityMotionResolvingSceneIndexTokens->noAcceleration;
@@ -94,7 +94,7 @@ public:
             }
         }
         static const auto modeLocator = HdDataSourceLocator(
-#if HD_API_VERSION >= 96 
+#if HD_API_VERSION >= 106 
             HdsiVelocityMotionResolvingSceneIndexTokens->velocityMotionMode);
 #else
             HdPrmanVelocityMotionResolvingSceneIndexTokens->velocityMotionMode);
@@ -103,7 +103,7 @@ public:
             HdContainerDataSource::Get(_primSource, modeLocator))) {
             return modeDS->GetTypedValue(shutterOffset);
         }
-#if HD_API_VERSION >= 96
+#if HD_API_VERSION >= 106
         return HdsiVelocityMotionResolvingSceneIndexTokens->enable;
 #else
         return HdPrmanVelocityMotionResolvingSceneIndexTokens->enable;
@@ -139,7 +139,7 @@ public:
     GetPrim(const SdfPath& primPath) const override
     {
         HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
-#if HD_API_VERSION >= 96 
+#if HD_API_VERSION >= 106 
         if (HdsiVelocityMotionResolvingSceneIndex::
             PrimTypeSupportsVelocityMotion(prim.primType)) {
 #else
@@ -149,7 +149,7 @@ public:
 #if PXR_VERSION < 2302
             std::vector<HdContainerDataSourceHandle> sources {
                 HdRetainedContainerDataSource::New(
-#if HD_API_VERSION >= 96 
+#if HD_API_VERSION >= 106 
                     HdsiVelocityMotionResolvingSceneIndexTokens->velocityMotionMode,
 #else
                     HdPrmanVelocityMotionResolvingSceneIndexTokens->velocityMotionMode,
@@ -161,7 +161,7 @@ public:
 #else
             prim.dataSource = HdOverlayContainerDataSource::New(
                 HdRetainedContainerDataSource::New(
-#if HD_API_VERSION >= 96 
+#if HD_API_VERSION >= 106 
                     HdsiVelocityMotionResolvingSceneIndexTokens->velocityMotionMode,
 #else
                     HdPrmanVelocityMotionResolvingSceneIndexTokens->velocityMotionMode,
@@ -210,7 +210,7 @@ protected:
             HdPrimvarsSchema::GetDefaultLocator()
                 .Append(_tokens->vblur) };
         static const HdDataSourceLocator modeLocator {
-#if HD_API_VERSION >= 96
+#if HD_API_VERSION >= 106
             HdsiVelocityMotionResolvingSceneIndexTokens->velocityMotionMode
 #else
             HdPrmanVelocityMotionResolvingSceneIndexTokens->velocityMotionMode
@@ -287,7 +287,7 @@ HdPrman_VelocityMotionResolvingSceneIndexPlugin::_AppendSceneIndex(
             HdRetainedTypedSampledDataSource<float>::New(
                 _fallbackFps));
 
-#if HD_API_VERSION >= 96 
+#if HD_API_VERSION >= 106 
     si = HdsiVelocityMotionResolvingSceneIndex::New(si, localInputArgs);
 #else
     si = HdPrmanVelocityMotionResolvingSceneIndex::New(si, localInputArgs);
