@@ -220,10 +220,6 @@ public:
                               RtParamList& camParamsOverride,
                               RtParamList& projParams) const;
 
-    float GetDofAspect() const {
-        return _dofAspect;
-    }
-
     float GetApertureAngle() const {
         return _apertureAngle;
     }
@@ -314,7 +310,6 @@ private:
     ///
     ShutterCurve _shutterCurve;
 
-    float _dofAspect;
     float _apertureAngle;
     float _apertureDensity;
     int _apertureNSides;
