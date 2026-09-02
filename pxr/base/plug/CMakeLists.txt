@@ -182,4 +182,5 @@ endif()
 pxr_register_test(testPlug
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPlug"
+    TESTENV testenv/testPlug
 )

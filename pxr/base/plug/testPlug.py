@@ -117,6 +117,41 @@ class TestPlug(unittest.TestCase):
         allPlugins = Plug.Registry().GetAllPlugins()
         self.assertTrue(len(allPlugins) >= 8)
 
+    def test_RegexCharsInPath(self):
+        """Verify that regex special characters that appear in valid file paths
+        are correctly escaped."""
+
+        def _assertPluginRegistrationStatus(registered, notRegistered):
+            plugins = set(p.name for p in Plug.Registry().GetAllPlugins())
+
+            for p in registered:
+                self.assertIn(p, plugins)
+            for p in notRegistered:
+                self.assertNotIn(p, plugins)
+
+        pluginRoot = os.path.join(os.getcwd(), 'RegexCharsInPath')
+        self.assertTrue(os.path.isdir(pluginRoot))
+
+        plugRegistry = Plug.Registry()
+
+        # regex special char in the fixed prefix (before the '**').
+        plugRegistry.RegisterPlugins(pluginRoot + '/foo(bar)/**/')
+        _assertPluginRegistrationStatus(
+            ['TestPlugParenPrefix'], 
+            ['TestPlugParenTail', 'TestPlugParenWildcard'])
+        
+        # regex special char in the wildcard tail (after the '**').
+        plugRegistry.RegisterPlugins(pluginRoot + '/**/TestParen(1)/')
+        _assertPluginRegistrationStatus(
+            ['TestPlugParenPrefix', 'TestPlugParenTail'], 
+            ['TestPlugParenWildcard'])
+
+        # regex special char discovered during wildcard search (in the **)
+        plugRegistry.RegisterPlugins(pluginRoot + '/charInWildcard/**/')
+        _assertPluginRegistrationStatus(
+            ['TestPlugParenPrefix', 'TestPlugParenTail', 
+             'TestPlugParenWildcard'], [])
+
     def test_ManufacturingCppDerivedClasses(self):
         # Construct and verify an instance of _TestPlugBase<1>
         tb1 = Plug._TestPlugBase1()
