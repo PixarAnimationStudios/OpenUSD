@@ -84,13 +84,34 @@ public:
         return _ForEachImpl(-1, -1, std::forward<Fn>(fn));
     }
         
-    // Invoke fn(Op, arg1, arg2) for each instruction as-is, with no index
-    // normalization or range checking, and passing mutable references for arg1
-    // and arg2 to fn().  This lets fn() modify indexes if desired.  Note that
-    // for single-argument Ops, modifications to arg2 are ignored.
-    template <class Fn>
-    void ModifyEach(Fn &&fn) {
-        return _ModifyImpl(std::forward<Fn>(fn));
+    // Add `offset` to every literal index in these ops.  This is used when
+    // composing edits, where the weaker edit's literals are placed ahead of the
+    // stronger edit's, shifting the stronger edit's indexes.
+    //
+    // Note that the write and insert ops's first args indexes the literals,
+    // while the size-fill ops' second args do.  The switch below deliberately
+    // enumerates every op rather than using a `default` label, so that adding
+    // an op that may reference a literal draws a warning here.
+    void OffsetLiteralIndexes(int64_t offset) {
+        _ModifyImpl([offset](Op op, int64_t &a1, int64_t &a2) {
+            switch (op) {
+            case OpWriteLiteral:
+            case OpInsertLiteral:
+                a1 += offset;
+                break;
+            case OpMinSizeFill:
+            case OpSetSizeFill:
+                a2 += offset;
+                break;
+            case OpWriteRef:
+            case OpInsertRef:
+            case OpEraseRef:
+            case OpMinSize:
+            case OpSetSize:
+            case OpMaxSize:
+                break;
+            };
+        });
     }
 
     // Return true if there are no ops, else false.
@@ -311,6 +332,11 @@ private:
         }
     }
 
+    // Invoke fn(Op, arg1, arg2) for each instruction as-is, with no index
+    // normalization or range checking, passing mutable references for arg1 and
+    // arg2 so fn() can modify indexes.  Note that single-argument ops have no
+    // arg2 in the instruction stream, so arg2 refers to a scratch value for
+    // those and modifications to it are discarded.
     template <class Fn>
     void _ModifyImpl(Fn &&fn) {
 
