@@ -14,20 +14,21 @@
 #include "pxr/base/tf/hashmap.h"
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfDenseHashSet
 ///
-/// This is a space efficient container that mimics the TfHashSet API that
-/// uses a vector for storage when the size of the set is small.
+/// A hash set with contiguous storage, suitable for use with TfSpan, e.g.
 ///
-/// When the set gets bigger than \p Threshold a TfHashMap is allocated
-/// that is used to accelerate lookup in the vector.
+/// When the number of elements in the set is small, search operations are done
+/// by linear search. When the size surpassees \p Threshold, a hash table is
+/// allocated and used to accelerate lookup.
 ///
-/// \warning This differs from a TfHashSet in so far that inserting and
-/// removing elements invalidate all iterators of the container.
+/// \note
+/// Inserting and removing elements invalidates iterators.
 ///
 template <
     class    Element,
@@ -39,7 +40,9 @@ class TfDenseHashSet
 {
 public:
 
-    typedef Element value_type;
+    using value_type = Element;
+    using pointer = value_type*;
+    using const_pointer = const value_type*;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -174,16 +177,46 @@ public:
         return _vec().size();
     }
 
-    /// Returns an const_iterator pointing to the beginning of the set.
+    /// Returns a const_iterator pointing to the beginning of the set.
     ///
     const_iterator begin() const {
         return _vec().begin();
     }
     
-    /// Returns an const_iterator pointing to the end of the set.
+    /// Returns a const_iterator pointing to the end of the set.
     ///
     const_iterator end() const {
         return _vec().end();
+    }
+
+    /// Returns a const_iterator pointing to the beginning of the set.
+    ///
+    const_iterator cbegin() const {
+        return _vec().cbegin();
+    }
+    
+    /// Returns a const_iterator pointing to the end of the set.
+    ///
+    const_iterator cend() const {
+        return _vec().cend();
+    }
+
+    /// Returns a pointer to the set's data.
+    ///
+    pointer data() {
+        return _vec().empty() ? nullptr : &_vec().front();
+    }
+
+    /// Returns a const pointer to the set's data.
+    ///
+    const_pointer data() const {
+        return _vec().empty() ? nullptr : &_vec().front();
+    }
+
+    /// Returns a const pointer to the set's data.
+    ///
+    const_pointer cdata() const {
+        return _vec().empty() ? nullptr : &_vec().front();
     }
 
     /// Finds the element with key \p k.
@@ -319,7 +352,7 @@ public:
 
         if (_h) {
             for(const_iterator iter = i0; iter != i1; ++iter)
-                _h->erase(iter->first);
+                _h->erase(*iter);
         }
 
         const_iterator vremain = _vec().erase(i0, i1);
