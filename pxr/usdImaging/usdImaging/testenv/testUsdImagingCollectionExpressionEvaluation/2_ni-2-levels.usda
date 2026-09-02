@@ -1,0 +1,128 @@
+#usda 1.0
+(
+    doc = """
+    Test asset copied from testHdPrman_LightLinking.
+    Two-level nested native instancing of a humanoid model, with some lights and a camera.
+    """
+    upAxis = "Y"
+)
+
+def Xform "Lights"
+{
+    # Lights emit along -Z (the camera look direction).
+    # When framed, their backfaces will face the camera, so they won't be
+    # visible, but that's ok.
+
+    def DiskLight "Red"
+    {
+        color3f inputs:color = (1, 0, 0)
+
+        float inputs:intensity = 5
+        float inputs:exposure = 5
+        float inputs:radius = 0.75
+        double3 xformOp:translate = (-5, 5, 5)
+        double3 xformOp:rotateXYZ = (-45, -30, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def DiskLight "Green"
+    {
+        color3f inputs:color = (0, 1, 0)
+
+        float inputs:intensity = 5
+        float inputs:exposure = 5
+        # Use the fallback radius of 0.5 units.
+        double3 xformOp:translate = (0, 5, 5)
+        double3 xformOp:rotateXYZ = (-45, 0, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def DiskLight "Blue"
+    {
+        color3f inputs:color = (0, 0, 1)
+
+        float inputs:intensity = 5
+        float inputs:exposure = 5
+        float inputs:radius = 0.75
+        double3 xformOp:translate = (5, 5, 5)
+        double3 xformOp:rotateXYZ = (-45, 30, 0)
+        token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+}
+
+def Camera "Cam"
+{
+    double3 xformOp:translate = (0, 3, 65)
+    token[] xformOpOrder = ["xformOp:translate"]
+}
+
+# Two-level nested instancing, producing 2 (outer) instances with 3 (inner)
+# instances of the humanoid model.
+#
+def Xform "World"
+{
+    double3 xformOp:translate = (0, 0, -3)
+    token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "Chars"
+    {
+        class "Humanoids_Group"
+        {
+            # The "inner" instances
+            over "I1" (
+                instanceable = true
+                references = @humanoid.usda@</HumanoidGroup>
+            )
+            {
+                float3 xformOp:translate = (-4, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            over "I2" (
+                instanceable = true
+                references = @humanoid.usda@</HumanoidGroup>
+            )
+            {
+                float3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            over "I3" (
+                instanceable = true
+                references = @humanoid.usda@</HumanoidGroup>
+            )
+            {
+                float3 xformOp:translate = (4, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Xform "Group_1"
+        {
+            double3 xformOp:translate = (-5, 0, 3)
+            double3 xformOp:rotateXYZ = (0, 45, 0)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+
+            # Outer instance
+            def Xform "Humanoids" (
+                instanceable = true
+                references = </World/Chars/Humanoids_Group>)
+            {
+            }
+        }
+
+        def Xform "Group_2"
+        {
+            double3 xformOp:translate = (5, 0, 3)
+            double3 xformOp:rotateXYZ = (0, -45, 0)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+
+            # Outer instance
+            def Xform "Humanoids" (
+                instanceable = true
+                references = </World/Chars/Humanoids_Group>)
+            {
+            }
+        }
+    }
+}

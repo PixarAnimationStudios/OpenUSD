@@ -102,6 +102,7 @@ pxr_library(hd
         instanceRegistry
         instancerTopologySchema
         instanceProxyViewSceneIndex
+        instancingAwareCollectionExpressionEvaluator
         instanceSchema
         integratorSchema
         lazyContainerDataSource
