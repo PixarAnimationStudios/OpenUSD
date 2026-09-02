@@ -213,7 +213,7 @@ HdSt_CodeGen::HdSt_CodeGen(
     , _hasCS(false)
     , _hasPTCS(false)
     , _hasPTVS(false)
-    , _hasClipPlanes(false)
+    , _generateClipDistances(false)
 {
     TF_VERIFY(geometricShader);
     TF_VERIFY(_metaData,
@@ -259,7 +259,7 @@ HdSt_CodeGen::HdSt_CodeGen(
     , _hasCS(false)
     , _hasPTCS(false)
     , _hasPTVS(false)
-    , _hasClipPlanes(false)
+    , _generateClipDistances(false)
 {
     TF_VERIFY(_metaData,
               "Invalid MetaData ptr passed in as constructor arg.");
@@ -2063,6 +2063,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     bool const useHgiResourceGeneration =
         IsEnabledHgiResourceGeneration(registry->GetHgi());
 
+    const bool useHardwareClipping = _geometricShader->GetUseHardwareClipPlanes();
+
     // shader sources
     // geometric shader owns main()
     std::string vertexShader =
@@ -2127,6 +2129,10 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
 
     if (minusOneToOneDepth) {
         _genDefines << "#define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE\n";
+    }
+
+    if (useHardwareClipping) {
+        _genDefines << "#define HD_USE_HARDWARE_CLIPPING\n";
     }
 
     // a trick to tightly pack unaligned data (vec3, etc) into SSBO/UBO.
@@ -2240,8 +2246,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             }
 
             if (dbIt->name == HdShaderTokens->clipPlanes) {
-                _hasClipPlanes = _geometricShader &&
-                    _geometricShader->GetUseHardwareClipPlanes();
+                _generateClipDistances = useHardwareClipping;
             }
         }
 
@@ -2883,7 +2888,7 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
             &desc, "hd_BaseInstance", "uint",
             HgiShaderKeywordTokens->hdBaseInstance);
 
-        if (_hasClipPlanes) {
+        if (_generateClipDistances) {
             HgiShaderFunctionAddStageOutput(
                 &desc, "gl_ClipDistance", "float",
                 "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
@@ -2937,7 +2942,7 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         desc.shaderCode = source.c_str();
         desc.generatedShaderCodeOut = &_tesSource;
 
-        if (_hasClipPlanes) {
+        if (_generateClipDistances) {
             HgiShaderFunctionAddStageOutput(
                 &desc, "gl_ClipDistance", "float",
                 "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
@@ -2973,7 +2978,7 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         desc.shaderCode = source.c_str();
         desc.generatedShaderCodeOut = &_gsSource;
 
-        if (_hasClipPlanes) {
+        if (_generateClipDistances) {
             HgiShaderFunctionAddStageOutput(
                 &desc, "gl_ClipDistance", "float",
                 "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
@@ -3113,7 +3118,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 &vsDesc, "gl_PointSize", "float", pointRole);
         }
 
-        if (_hasClipPlanes) {
+        if (_generateClipDistances) {
             HgiShaderFunctionAddStageOutput(
                 &vsDesc, "gl_ClipDistance", "float",
                 "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
@@ -3169,7 +3174,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         tesDesc.shaderCode = source.c_str();
         tesDesc.generatedShaderCodeOut = &_tesSource;
 
-        if (_hasClipPlanes) {
+        if (_generateClipDistances) {
             HgiShaderFunctionAddStageOutput(
                 &tesDesc, "gl_ClipDistance", "float",
                 "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
@@ -3357,7 +3362,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             &ptvsDesc, "gl_PointSize", "float",
                 pointRole);
 
-        if (_hasClipPlanes) {
+        if (_generateClipDistances) {
             HgiShaderFunctionAddStageOutput(
                 &ptvsDesc, "gl_ClipDistance", "float",
                 "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
@@ -3394,7 +3399,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         gsDesc.shaderCode = source.c_str();
         gsDesc.generatedShaderCodeOut = &_gsSource;
 
-        if (_hasClipPlanes) {
+        if (_generateClipDistances) {
             HgiShaderFunctionAddStageOutput(
                 &gsDesc, "gl_ClipDistance", "float",
                 "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");

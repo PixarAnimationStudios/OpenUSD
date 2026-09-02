@@ -60,6 +60,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 #define HD_SHADER_API 3
 #define MAT4 mat4
 #define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -466,6 +467,7 @@ vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
 
 
 
+#ifdef HD_USE_HARDWARE_CLIPPING
 void ApplyClipPlanes(vec4 Peye)
 {
 #if defined(HD_HAS_numClipPlanes)
@@ -483,6 +485,7 @@ void ApplyClipPlanes(vec4 Peye)
 #endif
 #endif
 }
+#endif
 
 
 
@@ -1078,6 +1081,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 #define HD_SHADER_API 3
 #define MAT4 mat4
 #define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -1554,6 +1558,7 @@ vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
 
 
 
+#ifdef HD_USE_HARDWARE_CLIPPING
 void ApplyClipPlanes(vec4 Peye)
 {
 #if defined(HD_HAS_numClipPlanes)
@@ -1571,6 +1576,7 @@ void ApplyClipPlanes(vec4 Peye)
 #endif
 #endif
 }
+#endif
 
 
 
@@ -1957,6 +1963,7 @@ vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspNV;
 #define HD_SHADER_API 3
 #define MAT4 mat4
 #define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -3225,6 +3232,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 #define HD_SHADER_API 3
 #define MAT4 mat4
 #define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -3631,6 +3639,7 @@ vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
 
 
 
+#ifdef HD_USE_HARDWARE_CLIPPING
 void ApplyClipPlanes(vec4 Peye)
 {
 #if defined(HD_HAS_numClipPlanes)
@@ -3648,6 +3657,7 @@ void ApplyClipPlanes(vec4 Peye)
 #endif
 #endif
 }
+#endif
 
 
 
@@ -4243,6 +4253,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 #define HD_SHADER_API 3
 #define MAT4 mat4
 #define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -4719,6 +4730,7 @@ vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
 
 
 
+#ifdef HD_USE_HARDWARE_CLIPPING
 void ApplyClipPlanes(vec4 Peye)
 {
 #if defined(HD_HAS_numClipPlanes)
@@ -4736,6 +4748,7 @@ void ApplyClipPlanes(vec4 Peye)
 #endif
 #endif
 }
+#endif
 
 
 
@@ -5151,6 +5164,7 @@ vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspNV;
 #define HD_SHADER_API 3
 #define MAT4 mat4
 #define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
