@@ -43,6 +43,7 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/pxrTslRobinMap/robin_set.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/safeOutputFile.h"
@@ -154,10 +155,17 @@ TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<Sdf_CrateFile::TimeSamples>();
 }
 
-#define OLDEST_SUPPORTED_VERSION "0.4.0" // versions prior are unsupported
+// The oldest file version this software supports.  Versions prior are
+// unsupported.  Overriding this may produce a build with known security risks.
+#ifndef PXR_USDC_OLDEST_SUPPORTED_VERSION
+#define PXR_USDC_OLDEST_SUPPORTED_VERSION 0.4.0
+#endif
+
+#define OLDEST_SUPPORTED_VERSION                        \
+    TF_PP_STRINGIZE(PXR_USDC_OLDEST_SUPPORTED_VERSION)
+
 #define OLDEST_CURRENT_VERSION   "0.8.0" // versions prior until
                                          // oldest-supported are deprecated
-
 #define DEFAULT_NEW_VERSION      "0.8.0" // default version for new files
 
 TF_DEFINE_ENV_SETTING(
@@ -3467,7 +3475,7 @@ CrateFile::_ReadStructuralSections(Reader reader, int64_t fileSize)
         Version::FromString(OLDEST_SUPPORTED_VERSION);
     if (assetVersion < oldestSupportedVersion) {
         TF_RUNTIME_ERROR(
-            "Cannot read asset @%s@ with obsolete version '%s'. The oldest "
+            "Cannot read asset @%s@ with obsolete version %s. The oldest "
             "version this software supports is " OLDEST_SUPPORTED_VERSION ". "
             "See the OpenUSD FAQ for information about handling obsolete "
             "assets. https://openusd.org/release/usdfaq.html",
@@ -3481,7 +3489,7 @@ CrateFile::_ReadStructuralSections(Reader reader, int64_t fileSize)
     if (assetVersion < oldestCurrentVersion &&
         TfGetEnvSetting(PXR_USDC_EMIT_DEPRECATION_WARNINGS)) {
         TF_WARN(
-            "Asset @%s@ has deprecated version '%s'. Future versions of USD "
+            "Asset @%s@ has deprecated version %s. Future versions of USD "
             "will not be able to read it. See the OpenUSD FAQ for information "
             "about handling deprecated assets. "
             "https://openusd.org/release/usdfaq.html  Disable this warning by "
