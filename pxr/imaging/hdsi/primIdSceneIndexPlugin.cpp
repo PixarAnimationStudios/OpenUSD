@@ -19,7 +19,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HDSI_ENABLE_PRIM_ID_SCENE_INDEX,
-                      true,
+                      false,
                       "Append the HdsiPrimIdSceneIndex as one of the last "
                       "filtering scene indices for every renderer.");
 
