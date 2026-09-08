@@ -1772,6 +1772,24 @@ EMBREE = Dependency("Embree", InstallEmbree,
                     "include/embree4/rtcore.h")
 
 ############################################################
+############################################################
+# PMC
+
+PMC_URL = "https://gitlab.com/AOMediaVVM/reference-software/aomedia-pmc/-/archive/v18.0/aomedia-pmc-v18.0.zip"
+
+def InstallPmc(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(PMC_URL, context, force)):
+        cmakeOptions = [
+            '-DPMC_LIB_ONLY=TRUE',
+            '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
+        ]
+        cmakeOptions += buildArgs
+        RunCMake(context, force, cmakeOptions)
+
+PMC = Dependency("Pmc", InstallPmc, "include/pmc/pmDecoder.hpp")
+
+
+############################################################
 # USD
 
 def InstallUSD(context, force, buildArgs):
@@ -1953,6 +1971,11 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=ON')
         else:
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
+
+        if context.buildPmc:
+            extraArgs.append('-DPXR_BUILD_USDPMC=ON')
+        else:
+            extraArgs.append('-DPXR_BUILD_USDPMC=OFF')
 
         if Windows() and not context.targetWasm:
             # Increase the precompiled header buffer limit.
@@ -2394,6 +2417,14 @@ subgroup.add_argument("--onetbb", dest="build_onetbb", action="store_true",
 subgroup.add_argument("--no-onetbb", dest="build_onetbb", action="store_false",
                       help="Build using TBB (default)")
 
+group = parser.add_argument_group(title="AOMedia Polygonal Mesh Coding Options")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--pmc", dest="build_pmc", action="store_true",
+                      default=True,
+                      help="Build PMC library for USD (default)")
+subgroup.add_argument("--no-pmc", dest="build_pmc", action="store_false",
+                      help="Do not build PMC library for USD")
+
 args = parser.parse_args()
 
 class InstallContext:
@@ -2586,6 +2617,9 @@ class InstallContext:
         # Note: wasm build requires requires building oneTBB
         self.buildOneTBB = args.build_onetbb or self.targetWasm
 
+        # - AOMedia Polygonal Mesh Coding
+        self.buildPmc = args.build_pmc
+
     def GetBuildArguments(self, dep):
         return self.buildArgs.get(dep.name.lower(), [])
        
@@ -2659,7 +2693,10 @@ if context.buildImaging:
 if context.buildUsdview:
     requiredDependencies += [PYOPENGL, PYSIDE]
 
-# Wasm, Linux and MacOS provide zlib. Skipping it here avoids issues where a host 
+if context.buildPmc:
+    requiredDependencies += [PMC]
+
+# Wasm, Linux and MacOS provide zlib. Skipping it here avoids issues where a host
 # application loads a different version of zlib than the one we build against.
 # Building zlib is the default when a dependency requires it, although OpenUSD
 # itself does not require it. The --no-zlib flag can be passed to the build
@@ -2886,31 +2923,32 @@ if MacOS():
 """
 
 summaryMsg += """\
-    Variant                     {buildVariant}
-    Target                      {buildTarget}
-    UsdValidation               {buildUsdValidation}
-    Imaging                     {buildImaging}
-      Ptex support:             {enablePtex}
-      OpenVDB support:          {enableOpenVDB}
-      ImageIO support:          {buildImageIO}
-      OpenImageIO support:      {buildOIIO} 
-      OpenColorIO support:      {buildOCIO} 
-      Embree support:           {buildEmbree}
-      PRMan support:            {buildPrman}
-      Vulkan support:           {enableVulkan}
-    UsdImaging                  {buildUsdImaging}
-      usdview:                  {buildUsdview}
-    MaterialX support           {buildMaterialX}
-    Python support              {buildPython}
-      Python Debug:             {debugPython}
-      Python docs:              {buildPythonDocs}
-    Documentation               {buildHtmlDocs}
-    Tests                       {buildTests}
-    Examples                    {buildExamples}
-    Tutorials                   {buildTutorials}
-    Tools                       {buildTools}
-    Alembic Plugin              {buildAlembic}
-    Draco Plugin                {buildDraco}
+    Variant                          {buildVariant}
+    Target                           {buildTarget}
+    UsdValidation                    {buildUsdValidation}
+    Imaging                          {buildImaging}
+      Ptex support:                  {enablePtex}
+      OpenVDB support:               {enableOpenVDB}
+      ImageIO support:               {buildImageIO}
+      OpenImageIO support:           {buildOIIO}
+      OpenColorIO support:           {buildOCIO}
+      Embree support:                {buildEmbree}
+      PRMan support:                 {buildPrman}
+      Vulkan support:                {enableVulkan}
+    UsdImaging                       {buildUsdImaging}
+      usdview:                       {buildUsdview}
+    MaterialX support                {buildMaterialX}
+    Python support                   {buildPython}
+      Python Debug:                  {debugPython}
+      Python docs:                   {buildPythonDocs}
+    Documentation                    {buildHtmlDocs}
+    Tests                            {buildTests}
+    Examples                         {buildExamples}
+    Tutorials                        {buildTutorials}
+    Tools                            {buildTools}
+    Alembic Plugin                   {buildAlembic}
+    Draco Plugin                     {buildDraco}
+    AOMedia Polygonal Mesh Coding    {buildPmc}
 
   Dependencies                  {dependencies}"""
 
@@ -2991,6 +3029,7 @@ summaryMsg = summaryMsg.format(
     buildUsdValidation=("On" if context.buildUsdValidation else "Off"),
     buildAlembic=("On" if context.buildAlembic else "Off"),
     buildDraco=("On" if context.buildDraco else "Off"),
+    buildPmc=("On" if context.buildPmc else "Off"),
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
     omittedSchemaGenScripts=(", ".join(omittedSchemaGenScripts)))
 

@@ -1,0 +1,28 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "UsdPmcFileFormat": {
+                        "bases": [
+                            "SdfFileFormat"
+                        ],
+                        "displayName": "USD integration of the PMC compression (AOM)",
+                        "extensions": [
+                            "pmc"
+                        ],
+                        "formatId": "pmc",
+                        "primary": true,
+                        "supportsWriting": false,
+                        "target": "usd"
+                    }
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "usdPmc",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

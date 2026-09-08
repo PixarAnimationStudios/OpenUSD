@@ -414,6 +414,18 @@ when invoking cmake. This plugin is compatible with Draco 1.3.4. The additional 
 | ------------------ |----------------------------------------  | ------- |
 | DRACO_ROOT         | The root path to a Draco SDK install.    | 1.3.4   |
 
+##### AOMedia Polygonal Mesh Coding
+
+Enable the [AOMedia](https://aomedia.org/) Polygonal Mesh Coding (PMC) library in the build by specifying the cmake flag `PXR_BUILD_USDPMC=TRUE`
+when invoking cmake. This library provides support for compressed mesh data using the AOMedia Polygonal Mesh Coding compression algorithm.
+
+The additional dependencies that must be supplied when invoking cmake are:
+
+| Dependency Name    | Description                              |
+| ------------------ |----------------------------------------  |
+| PMC_ROOT           | The root path to a PMC SDK install.     |
+
+
 ## Tests
 
 Tests are built by default but can be disabled by specifying the cmake flag 
