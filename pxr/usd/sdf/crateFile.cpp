@@ -3716,9 +3716,10 @@ CrateFile::_ReadSpecs(Reader reader)
             // Check for valid-looking specs (no empty paths, no repeated paths,
             // valid SdfSpecType enum values...)
             SdfPath const &specPath = GetPath(spec.pathIndex);
+
             if (specPath.IsEmpty()) {
                 messages.push_back(
-                    TfStringPrintf("spec at index %zu has empty path",
+                    TfStringPrintf("spec at index %zu has empty path in its namespaces",
                                    std::distance(&_specs.front(), &spec))); 
                 // Mark for removal. 
                 spec.specType = SdfSpecTypeUnknown;
