@@ -63,6 +63,7 @@ public:
     /// characters, issue an error and set this reference's asset path to the
     /// empty asset path.
     ///
+    /// customData dictionary values that are empty VtValue are invalid.
     SDF_API SdfReference(
         const std::string &assetPath = std::string(),
         const SdfPath &primPath = SdfPath(),
@@ -123,6 +124,7 @@ public:
 
     /// Sets the custom data associated with the reference.
     ///
+    /// Dictionary values that are empty VtValue are invalid.
     void SetCustomData(const VtDictionary &customData) {
         _customData = customData;
     }

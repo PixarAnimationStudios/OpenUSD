@@ -568,6 +568,8 @@ pxr_register_test(testUsdUtilsUpdateSchemaWithSdrNode
     DIFF_COMPARE duplicateProp.usda
     DIFF_COMPARE duplicatePropTypeMisMatch.usda
     DIFF_COMPARE schemaConcrete.usda
+    DIFF_COMPARE resultInfoId.usda
+    DIFF_COMPARE resultInfoIdOverride.usda
     DIFF_COMPARE testSdrNodeNonShaderNamespacePrefixResult.usda
     DIFF_COMPARE testSdrNodeShaderNamespacePrefixResult.usda
     EXPECTED_RETURN_CODE 0

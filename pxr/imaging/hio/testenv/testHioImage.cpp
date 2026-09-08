@@ -228,7 +228,6 @@ main(int argc, char *argv[])
         }
     }
 
-#ifndef ARCH_OS_WINDOWS
     // do a lossless comparison for exr and float32
     {
         const std::vector<float>& rgbFloatValues = GetRgbFloatValues();
@@ -292,7 +291,6 @@ main(int argc, char *argv[])
             }
         }
     }
-#endif
 
     // read the test.png as float32, which is expected to fail
     {
@@ -332,7 +330,6 @@ main(int argc, char *argv[])
         TF_AXIOM(!image->Read(readSpec));
     }
 
-#ifndef ARCH_OS_WINDOWS
     // read the exr file as float32 rgba, and verify that the pixels are the
     // same and that the alpha channel is full of ones.
     {
@@ -379,7 +376,6 @@ main(int argc, char *argv[])
         readSpec.data = readback.data();
         TF_AXIOM(!image->Read(readSpec));
     }
-#endif
 
     printf("OK\n");
     return 0;

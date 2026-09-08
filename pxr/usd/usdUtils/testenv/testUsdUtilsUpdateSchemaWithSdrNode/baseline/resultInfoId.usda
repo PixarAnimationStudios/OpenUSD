@@ -1,0 +1,24 @@
+#usda 1.0
+
+class TestSchemaInfoId "TestSchemaInfoId" (
+    customData = {
+        string className = "TestInfoId"
+    }
+    inherits = </Shader>
+)
+{
+    uniform token info:id = "TestSchemaInfoId"
+    float inputs:intensity = 1 (
+        customData = {
+            string userDoc = "Intensity"
+            string userDocBrief = "Intensity"
+        }
+        displayGroup = "Basic"
+        displayName = "Intensity"
+        uiHints = {
+            string displayGroup = "Basic"
+            string displayName = "Intensity"
+        }
+    )
+}
+

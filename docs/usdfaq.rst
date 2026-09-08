@@ -929,5 +929,5 @@ version.
 
    * - Obsolete Crate File Version
      - Last Supporting OpenUSD Release
-   * - (none yet)
-     - --
+   * - 0.3.0 and prior
+     - 26.08

@@ -804,6 +804,8 @@ public:
     /// opinions. Overrides occur per-entry rather than the dictionary as a
     /// whole.
     ///
+    /// Dictionary values that are empty VtValue are invalid.
+    ///
     /// \sa GetSoftLimits(), GetHardLimits() for more convenient validation,
     /// editing, and look-up API
     USD_API

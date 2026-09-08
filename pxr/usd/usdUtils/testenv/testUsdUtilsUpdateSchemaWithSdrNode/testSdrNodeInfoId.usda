@@ -1,0 +1,23 @@
+#usda 1.0
+
+# Input USD file to test that an info:id attrSpec is populated when the
+# schemaBase's prim definition has UsdShadeNodeDefAPI applied.
+
+def Shader "TestSchemaInfoId" (
+    sdrMetadata = {
+        token schemaName = "TestSchemaInfoId"
+        token tfTypeNameSuffix = "TestInfoId"
+        token schemaBase = "Shader"
+    }
+)
+{
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @testDummy.glslfx@
+
+    float inputs:intensity = 1.0 (
+        sdrMetadata = {
+            token label = "Intensity"
+            token page = "Basic"
+        }
+    )
+}

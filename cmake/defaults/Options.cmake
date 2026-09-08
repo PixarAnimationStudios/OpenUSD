@@ -240,11 +240,6 @@ if (${PXR_BUILD_EMBREE_PLUGIN})
         message(STATUS
             "Setting PXR_BUILD_EMBREE_PLUGIN=OFF because PXR_BUILD_IMAGING=OFF")
         set(PXR_BUILD_EMBREE_PLUGIN "OFF" CACHE BOOL "" FORCE)
-    elseif (NOT ${PXR_BUILD_GPU_SUPPORT})
-        message(STATUS
-            "Setting PXR_BUILD_EMBREE_PLUGIN=OFF because "
-            "PXR_BUILD_GPU_SUPPORT=OFF")
-        set(PXR_BUILD_EMBREE_PLUGIN "OFF" CACHE BOOL "" FORCE)
     endif()
 endif()
 

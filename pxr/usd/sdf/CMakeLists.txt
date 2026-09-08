@@ -317,6 +317,15 @@ pxr_build_test(testSdfBooleanExpression
         testenv/testSdfBooleanExpression.cpp
 )
 
+pxr_build_test(testSdfDictionaryAuthoring
+    LIBRARIES
+        sdf
+        tf
+        vt
+    CPPFILES
+        testenv/testSdfDictionaryAuthoring.cpp
+)
+
 pxr_build_test(testSdfGlobPattern
     LIBRARIES
         sdf
@@ -549,6 +558,10 @@ pxr_register_test(testSdfDetachedLayerEnvVar2
         SDF_LAYER_INCLUDE_IN_MEMORY=foo,bar
         SDF_LAYER_EXCLUDE_IN_MEMORY=baz,garply
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfDetachedLayer"
+)
+
+pxr_register_test(testSdfDictionaryAuthoring
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfDictionaryAuthoring"
 )
 
 pxr_register_test(testSdfGlobPattern

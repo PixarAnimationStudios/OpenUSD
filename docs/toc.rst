@@ -52,6 +52,7 @@
 
    Source Code @ GitHub <https://github.com/PixarAnimationStudios/OpenUSD>
    OpenUSD Forum <https://forum.openusd.org>
+   Slack Channels <slack_channels>
    Contributing <contributing_to_usd>
    Contributors <contributors>
    Release Schedule <release_schedule>

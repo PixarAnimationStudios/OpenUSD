@@ -872,6 +872,18 @@ Sdf_FileIOUtility::_WriteDictionary(
     Sdf_FileIOUtility::_OrderedDictionary &dictionary,
     bool stringValuesOnly)
 {
+    for (auto it = dictionary.begin(); it != dictionary.end(); ) {
+        if (it->second->IsEmpty()) {
+            TF_WARN(
+                "Skipping dictionary entry '%s' because its value is empty",
+                it->first->c_str());
+            it = dictionary.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
     Puts(out, 0, multiLine ? "{\n" : "{ ");
     size_t counter = dictionary.size();
     TF_FOR_ALL(i, dictionary) {
@@ -891,8 +903,8 @@ Sdf_FileIOUtility::_WriteDictionary(
             } else {
                 // CODE_COVERAGE_OFF
                 // This is not possible to hit with the current public API.
-                TF_RUNTIME_ERROR("Dictionary has a non-string value under key "
-                                 "\"%s\"; skipping", i->first->c_str());
+                TF_CODING_ERROR("Dictionary has a non-string value under key "
+                                "\"%s\"; skipping", i->first->c_str());
                 // CODE_COVERAGE_ON
             }
         } else {

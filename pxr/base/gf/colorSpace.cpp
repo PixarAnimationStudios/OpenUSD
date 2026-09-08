@@ -144,6 +144,11 @@ TfToken GfColorSpace::GetName() const
     return TfToken(desc.shortName);
 }
 
+bool GfColorSpace::IsData() const
+{
+    return NcIsDataColorSpace(_data->colorSpace);
+}
+
 GfMatrix3f GfColorSpace::GetRGBToXYZ() const
 {
     NcColorSpaceM33Descriptor desc;
@@ -158,9 +163,14 @@ GfMatrix3f GfColorSpace::GetRGBToXYZ() const
  
 GfMatrix3f GfColorSpace::GetRGBToRGB(const GfColorSpace& srcColorSpace) const 
 {
-    const GfMatrix3f A = srcColorSpace.GetRGBToXYZ();
-    const GfMatrix3f B_inv = GetRGBToXYZ().GetInverse();
-    return B_inv * A;
+    // Delegate to NcGetRGBToRGBMatrix rather than combining GetRGBToXYZ()
+    // matrices directly, so this respects Nanocolor's no-op handling of
+    // the Raw/Data placeholder color spaces.
+    NcM33f m = NcGetRGBToRGBMatrix(srcColorSpace._data->colorSpace,
+                                   _data->colorSpace);
+    return GfMatrix3f(m.m[0], m.m[1], m.m[2],
+                      m.m[3], m.m[4], m.m[5],
+                      m.m[6], m.m[7], m.m[8]);
 }
 
 float GfColorSpace::GetLinearBias() const
