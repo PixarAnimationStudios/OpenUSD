@@ -197,6 +197,7 @@ This command takes an optional list of targets to build, but will otherwise buil
 ```
 > python OpenUSD/build_scripts/apple_utils.py xcframework /path/to/my_usd_install_dir
 ```
+See [Advanced building on Mac](BUILDING_MAC.md) for building with Xcode and debugging
 
 ##### Windows:
 
