@@ -565,6 +565,41 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         self.assertTrue(rigidbody_found)
         self.assertTrue(cube_found)
 
+    def test_rigidbody_disabled_body_only_collision_parse(self):
+        """With no enabled rigid body above it, a collider below a disabled
+        body is still reported as belonging to that body. It is present but not
+        simulating, which is distinct from a static collision.
+        """
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        UsdPhysics.Scene.Define(stage, '/physicsScene')
+
+        disabled_body = UsdGeom.Xform.Define(stage, "/disabledBody")
+        disabled_body_api = UsdPhysics.RigidBodyAPI.Apply(
+            disabled_body.GetPrim())
+        disabled_body_api.GetRigidBodyEnabledAttr().Set(False)
+
+        cube = UsdGeom.Cube.Define(stage, "/disabledBody/cube")
+        UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+
+        ret_dict = UsdPhysics.UsdPhysicsLoadStageFromPrimRange(stage, ["/"])
+
+        cube_found = False
+
+        for key, value in ret_dict.items():
+            prim_paths, descs = value
+            if key == UsdPhysics.ObjectType.CubeShape:
+                for prim_path, desc in zip(prim_paths, descs):
+                    cube_found = True
+                    self.assertTrue(prim_path == cube.GetPrim().GetPrimPath())
+                    # The nearest disabled body is reported rather than an
+                    # empty path, which would make this a static collision.
+                    self.assertTrue(desc.rigidBody ==
+                                    disabled_body.GetPrim().GetPrimPath())
+
+        self.assertTrue(cube_found)
+
     def test_joint_disabled_body_rel_parse(self):
         """A joint body relationship resolves to the nearest enabled rigid body
         above its target. A disabled body is treated as though the API were not

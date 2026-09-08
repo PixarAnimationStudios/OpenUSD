@@ -1644,7 +1644,7 @@ bool _HasDynamicBodyParent(const UsdPrim& usdPrim, const RigidBodyMap& bodyMap,
 {
     bool physicsAPIFound = false;
     UsdPrim parent = usdPrim;
-    UsdPrim disabledBodyPrim = UsdPrim();
+    UsdPrim disabledBodyPrim;
     while (parent != usdPrim.GetStage()->GetPseudoRoot())
     {
         if (_IsDynamicBody(parent, bodyMap, &physicsAPIFound))
@@ -1660,7 +1660,7 @@ bool _HasDynamicBodyParent(const UsdPrim& usdPrim, const RigidBodyMap& bodyMap,
             // disabled body may still have an enabled body above it, which
             // this prim belongs to. Remember the nearest disabled body so it
             // can still be reported if no enabled body is found at all.
-            if (disabledBodyPrim)
+            if (!disabledBodyPrim)
             {
                 disabledBodyPrim = parent;
             }
@@ -1672,7 +1672,7 @@ bool _HasDynamicBodyParent(const UsdPrim& usdPrim, const RigidBodyMap& bodyMap,
     // No enabled body above this prim. Report the nearest disabled body, if
     // any, so it is still recognized as belonging to a body that is present
     // but not simulating rather than as a static collision.
-    if (!disabledBodyPrim)
+    if (disabledBodyPrim)
     {
         *outBodyPrimPath = disabledBodyPrim;
     }
