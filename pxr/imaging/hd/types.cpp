@@ -6,6 +6,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/types.h"
+#include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
@@ -30,6 +31,8 @@
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/quatd.h"
 
+#include <ostream>
+#include <string>
 #include <unordered_map>
 #include <typeinfo>
 #include <typeindex>
@@ -100,6 +103,22 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(HdFormatInt32Vec3);
     TF_ADD_ENUM_NAME(HdFormatInt32Vec4);
     TF_ADD_ENUM_NAME(HdFormatFloat32UInt8);
+}
+
+std::ostream&
+operator<<(std::ostream& out, const HdTupleType& tupleType)
+{
+    // Prefer the registered enum name (e.g. "HdTypeFloatVec3"); fall back to
+    // the integer value when the type is unregistered so output is never empty.
+    const std::string typeName = TfEnum::GetName(tupleType.type);
+    out << "HdTupleType(";
+    if (typeName.empty()) {
+        out << static_cast<int>(tupleType.type);
+    } else {
+        out << typeName;
+    }
+    out << ", " << tupleType.count << ")";
+    return out;
 }
 
 HdSamplerParameters::HdSamplerParameters()

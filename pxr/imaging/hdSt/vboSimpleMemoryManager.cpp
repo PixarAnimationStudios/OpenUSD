@@ -10,6 +10,8 @@
 
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/bufferUtils.h"
+#include "pxr/imaging/hdSt/extGpuBufferSource.h"
+#include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
@@ -456,6 +458,50 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
         TF_WARN("%s: size %ld is larger than the range (%ld)",
                 bufferSource->GetName().GetText(), srcSize, dstSize);
         srcSize = dstSize;
+    }
+
+    if (auto const *extSrc = dynamic_cast<HdStExtGpuBufferSource const *>(
+            bufferSource.get())) {
+        auto const &desc = extSrc->GetDescriptor();
+
+        size_t const elemSize = HdDataSizeOfTupleType(
+            bufferSource->GetTupleType());
+        size_t const stride = (desc.byteStride > elemSize)
+            ? desc.byteStride : 0;
+
+        HD_PERF_COUNTER_INCR(HdStPerfTokens->copyBufferGpuToGpu);
+        HD_PERF_COUNTER_INCR(HdStPerfTokens->extGpuBufferCopyCount);
+
+        HgiBlitCmds *blitCmds = GetResourceRegistry()->GetGlobalBlitCmds();
+
+        if (stride == 0) {
+            HgiBufferGpuToGpuOp copyOp;
+            copyOp.gpuSourceBuffer       = desc.cachedHgiHandle;
+            copyOp.sourceByteOffset      = desc.byteOffset;
+            copyOp.byteSize              = srcSize;
+            copyOp.gpuDestinationBuffer  = VBO->GetHandle();
+            copyOp.destinationByteOffset = 0;
+
+            HD_PERF_COUNTER_ADD(HdStPerfTokens->extGpuBufferCopyBytes,
+                                (double)srcSize);
+            blitCmds->CopyBufferGpuToGpu(copyOp);
+        } else {
+            size_t const numElems = bufferSource->GetNumElements();
+            size_t const totalCopy = numElems * elemSize;
+            HD_PERF_COUNTER_ADD(HdStPerfTokens->extGpuBufferCopyBytes,
+                                (double)totalCopy);
+            for (size_t e = 0; e < numElems; ++e) {
+                HgiBufferGpuToGpuOp copyOp;
+                copyOp.gpuSourceBuffer       = desc.cachedHgiHandle;
+                copyOp.sourceByteOffset      = desc.byteOffset
+                                             + e * stride;
+                copyOp.byteSize              = elemSize;
+                copyOp.gpuDestinationBuffer  = VBO->GetHandle();
+                copyOp.destinationByteOffset = e * elemSize;
+                blitCmds->CopyBufferGpuToGpu(copyOp);
+            }
+        }
+        return;
     }
 
     HD_PERF_COUNTER_INCR(HdStPerfTokens->copyBufferCpuToGpu);

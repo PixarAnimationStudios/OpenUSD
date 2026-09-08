@@ -7,6 +7,7 @@
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/bufferUtils.h"
+#include "pxr/imaging/hdSt/extGpuBufferSource.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/stagingBuffer.h"
 #include "pxr/imaging/hdSt/tokens.h"
@@ -732,6 +733,37 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     size_t const sourceDataSize =
         HdDataSizeOfTupleType(bufferSource->GetTupleType());
     size_t const elementStride = _stripedBuffer->GetElementStride();
+
+    if (auto const *extSrc = dynamic_cast<HdStExtGpuBufferSource const *>(
+            bufferSource.get())) {
+        auto const &desc = extSrc->GetDescriptor();
+
+        size_t const srcStride = (desc.byteStride > 0)
+            ? desc.byteStride
+            : HdDataSizeOfTupleType(desc.tupleType);
+        size_t const elemSize = std::min(sourceDataSize, vboDataSize);
+
+        HgiBlitCmds *blitCmds =
+            GetResourceRegistry()->GetGlobalBlitCmds();
+
+        for (size_t i = 0; i < _numElements; ++i) {
+            HgiBufferGpuToGpuOp copyOp;
+            copyOp.gpuSourceBuffer      = desc.cachedHgiHandle;
+            copyOp.sourceByteOffset     = desc.byteOffset + i * srcStride;
+            copyOp.byteSize             = elemSize;
+            copyOp.gpuDestinationBuffer = VBO->GetHandle();
+            copyOp.destinationByteOffset = vboOffset + i * elementStride;
+
+            blitCmds->CopyBufferGpuToGpu(copyOp);
+        }
+
+        HD_PERF_COUNTER_ADD(HdStPerfTokens->copyBufferGpuToGpu,
+                            (double)_numElements);
+        HD_PERF_COUNTER_INCR(HdStPerfTokens->extGpuBufferCopyCount);
+        HD_PERF_COUNTER_ADD(HdStPerfTokens->extGpuBufferCopyBytes,
+                            (double)(_numElements * elemSize));
+        return;
+    }
 
     const unsigned char *data =
         (const unsigned char*)bufferSource->GetData();

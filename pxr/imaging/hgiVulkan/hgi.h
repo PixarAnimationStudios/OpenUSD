@@ -74,6 +74,43 @@ public:
     void DestroyBuffer(HgiBufferHandle* bufHandle) override;
 
     HGIVULKAN_API
+    HgiBufferHandle CreateExternalBuffer(
+        uint64_t rawHandle, size_t byteSize, HgiBufferUsage usage) override;
+
+    HGIVULKAN_API
+    HgiBufferHandle CreateInteropBuffer(
+        size_t byteSize, HgiBufferUsage usage,
+        HgiInteropBufferInfo* outInfo) override;
+
+    HGIVULKAN_API
+    HgiBufferHandle CreateBufferFromExternalMemory(
+        HgiExternalMemoryBufferDesc const& desc) override;
+
+    HGIVULKAN_API
+    uint64_t CreateExternalSemaphore(uint64_t* outExternalHandle) override;
+
+    HGIVULKAN_API
+    uint64_t ImportExternalSemaphore(
+        uint64_t externalHandle,
+        HgiExternalHandleType handleType,
+        HgiSemaphoreKind kind) override;
+
+    HGIVULKAN_API
+    std::string GetDeviceUuid() const override;
+
+    HGIVULKAN_API
+    uint64_t GetLogicalDeviceId() const override;
+
+    HGIVULKAN_API
+    void DestroyExternalSemaphore(uint64_t semaphore) override;
+
+    HGIVULKAN_API
+    void QueueWaitExternalSemaphore(uint64_t semaphore) override;
+
+    HGIVULKAN_API
+    void QueueSignalExternalSemaphore(uint64_t semaphore) override;
+
+    HGIVULKAN_API
     HgiShaderFunctionHandle CreateShaderFunction(
         HgiShaderFunctionDesc const& desc) override;
 
@@ -191,6 +228,11 @@ private:
     HgiVulkanDevice* _device;
     HgiVulkanGarbageCollector* _garbageCollector;
     std::thread::id _threadId;
+    // Names _device's handle namespace to anyone comparing against a published
+    // logicalDeviceId. Drawn from a monotonic counter rather than derived from
+    // the VkDevice pointer, so a destroyed device's id is never handed out
+    // again and a stale published id cannot appear to match a live device.
+    uint64_t _logicalDeviceId;
     int _frameDepth;
 };
 

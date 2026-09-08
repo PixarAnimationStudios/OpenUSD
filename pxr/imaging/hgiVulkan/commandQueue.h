@@ -107,6 +107,34 @@ public:
         HgiSubmitWaitType wait,
         TfSpan<const std::pair<VkSemaphore, uint64_t>> signalSemaphores = {});
 
+    /// Make the NEXT queue submission (Flush) wait on \p semaphore before its
+    /// commands execute. Used for cross-API interop: a producer in another API
+    /// signals \p semaphore after writing a shared buffer, so the consuming
+    /// draw does not read it early (RAW). The pending waits are consumed and
+    /// cleared by the next Flush.
+    HGIVULKAN_API
+    void AddPendingWaitSemaphore(VkSemaphore semaphore);
+
+    /// Make the NEXT queue submission (Flush) signal \p semaphore after its
+    /// commands complete. Used for cross-API interop (WAR): the consuming draw
+    /// signals \p semaphore when it finishes reading a shared buffer, so a
+    /// producer in another API may wait on it before overwriting the buffer.
+    /// The pending signals are consumed and cleared by the next Flush.
+    HGIVULKAN_API
+    void AddPendingSignalSemaphore(VkSemaphore semaphore);
+
+    /// Record, at the next submission, a queue-family ownership acquire that
+    /// transfers \p buffer from VK_QUEUE_FAMILY_EXTERNAL to this device's
+    /// graphics family. Required before first use of a buffer bound to memory
+    /// another device wrote, since interop buffers are VK_SHARING_MODE_EXCLUSIVE.
+    ///
+    /// Thread safety: This call is thread safe, which is the reason it exists.
+    /// Recording the barrier needs the resource command buffer and therefore the
+    /// main thread, but imported buffers are created during the consumer's Sync,
+    /// which runs in parallel -- so the buffer cannot record its own barrier.
+    HGIVULKAN_API
+    void AddPendingQueueFamilyAcquire(VkBuffer buffer);
+
     /// Checks if the timeline semaphore has passed the desiredValue,
     /// and can optionally force a wait on this. This may cause a flush.
     HGIVULKAN_API
@@ -126,6 +154,12 @@ private:
     // resource commands not encapsulated by HgiCmds are submitted before
     // HgiCmds and are included in calls to 'Flush'.
     void _FlushResourceCommandBuffer();
+
+    // Records the barriers queued by AddPendingQueueFamilyAcquire into the
+    // resource command buffer and clears the queue. Must run on the main thread,
+    // and before the command buffer that reads the imported buffers is queued --
+    // see the call sites.
+    void _FlushPendingQueueFamilyAcquires();
 
     // Returns an id-bit that uniquely identifies the cmd buffer amongst all
     // in-flight cmd buffers. Returns an empty result if all bits have been
@@ -154,6 +188,22 @@ private:
     VkSemaphore _timelineSemaphore;
     uint64_t _timelineNextVal;
     uint64_t _timelineCachedVal;
+
+    // External (interop) binary semaphores the next Flush must wait on before
+    // executing; consumed and cleared each Flush. Guarded by its own mutex
+    // since producers may add from another thread.
+    std::vector<VkSemaphore> _pendingWaitSemaphores;
+    std::mutex _pendingWaitSemaphoresMutex;
+
+    // External (interop) binary semaphores the next Flush must signal after its
+    // commands complete (WAR); consumed and cleared each Flush.
+    std::vector<VkSemaphore> _pendingSignalSemaphores;
+    std::mutex _pendingSignalSemaphoresMutex;
+
+    // Buffers imported from foreign memory that still need a queue-family
+    // ownership acquire recorded; drained at the next submission.
+    std::vector<VkBuffer> _pendingQueueFamilyAcquires;
+    std::mutex _pendingQueueFamilyAcquiresMutex;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -75,6 +75,260 @@
     ),
 
     #--------------------------------------------------------------------------
+    # extGpuBuffer
+    dict(
+        SCHEMA_NAME = 'ExtGpuBuffer',
+        SCHEMA_TOKEN = 'extGpuBuffer',
+        DOC = '''
+            Describes an externally-owned GPU buffer that a producer publishes
+            on a primvar so a renderer can consume it directly instead of the
+            CPU staging round trip.
+
+            A producer names the buffer in one of two ways, and may use both:
+            "rawHandle" for a consumer sharing its context or logical device,
+            and the foreign-memory import cluster ("externalMemoryHandle" and
+            friends) for everyone else.
+
+            Lifetime. A consumer retains the data source carrying whichever
+            handle it bound, for as long as it might bind that buffer, and
+            releases it once no submitted GPU work can still name it. A producer
+            that needs to know when it may free or recycle the allocation can
+            use this: publish a data source that owns the allocation instead of
+            a plain retained value, and the last release tells you both that the
+            consumer has let go and that the GPU is done with it. Nothing is
+            asked of a producer that manages lifetime some other way.
+
+            Because retention follows the published value, a filter that
+            substitutes a different handle releases the allocation the old one
+            named, which is the correct outcome -- the substituted buffer is
+            what gets bound. The converse is the limit worth knowing: a filter
+            that copies the value into a data source of its own breaks the
+            chain, so this is a convention a producer opts into with its
+            consumers, not a guarantee the scene description enforces.
+            ''',
+        MEMBERS = [
+            ('backendApi',        T_TOKEN,
+             dict(DOC = '''
+                Graphics API that owns the handle ("GL"/"Vulkan"/"Metal"). A
+                consumer compares it to its active Hgi backend and falls back
+                to CPU on mismatch.
+                ''')),
+            ('rawHandle',         T_UINT64,
+             dict(DOC = '''
+                The opaque native buffer handle (GLuint / VkBuffer / MTLBuffer)
+                cast to uint64. Interpreted per backendApi; the resource to
+                bind directly.
+
+                A native handle only means something inside the context or
+                logical device that created it: backendApi and deviceUuid
+                together do not pin that down, since two logical devices on one
+                physical GPU hand out unrelated handles. Publish
+                logicalDeviceId alongside it to say which namespace the value
+                belongs to, and a consumer elsewhere will import instead of
+                binding an object it cannot interpret. A producer that cannot
+                report a logical device id must publish the import cluster
+                alone.
+
+                This is the data source a consumer retains for lifetime when it
+                adopts the handle; see the schema-level note.
+                ''')),
+            ('rawHandleByteSize', T_SIZET,
+             dict(DOC = '''
+                Total size of the underlying native buffer. Optional (0 =
+                unknown); when set, it is the authoritative size for bounds
+                checks and byteSize.
+                ''')),
+            ('numElements',       T_SIZET,
+             dict(DOC = '''
+                Number of tuples (vertices / elements) in this stream.
+                ''')),
+            ('elementType',       T_TUPLE,
+             dict(DOC = '''
+                Element type + tuple count (e.g. Float/Vec3), stored as an
+                HdTupleType.
+                ''')),
+            ('byteOffset',        T_SIZET,
+             dict(DOC = '''
+                Byte offset to the first element within the native buffer.
+                Non-zero means this stream is a sub-allocation of a larger
+                (pooled) buffer.
+                ''')),
+            ('byteStride',        T_SIZET,
+             dict(DOC = '''
+                Bytes between consecutive elements. 0 or == elemSize means
+                tightly packed (directly aliasable); otherwise interleaved
+                (strided copy).
+                ''')),
+            ('directBindable',    T_BOOL,
+             dict(DOC = '''
+                True if the consumer may bind the buffer directly (zero-copy).
+                ''')),
+            # Foreign-memory import cluster: describes the OS-shareable memory
+            # allocation the buffer is bound into, so a consumer on a different
+            # device (or API) can import it instead of adopting rawHandle.
+            ('externalMemoryHandle', T_UINT64,
+             dict(DOC = '''
+                OS-shareable handle (Win32 NT handle / fd, cast to uint64)
+                naming the memory ALLOCATION this buffer is bound into -- not
+                the buffer object. A consumer on another device imports it and
+                builds its own buffer. Independent of rawHandle: a producer may
+                publish both, letting a same-device consumer adopt and everyone
+                else import.
+
+                This is the data source a consumer retains for lifetime when it
+                imports the memory; see the schema-level note.
+                ''')),
+            ('externalHandleType',   T_TOKEN,
+             dict(DOC = '''
+                How to interpret externalMemoryHandle
+                ("opaqueWin32"/"opaqueFd"). Required whenever
+                externalMemoryHandle is set; the handle kind is never inferred
+                from the value, which can collide with a native rawHandle.
+                ''')),
+            ('memoryBlockSize',      T_SIZET,
+             dict(DOC = '''
+                Total size of the memory block externalMemoryHandle refers to.
+                The importer must allocate the full block, not just byteSize.
+                ''')),
+            ('memoryOffset',         T_SIZET,
+             dict(DOC = '''
+                The buffer's offset WITHIN that memory block. Distinct from
+                byteOffset, which is this stream's offset within the buffer;
+                both may be non-zero at once.
+                ''')),
+            ('dedicated',            T_BOOL,
+             dict(DOC = '''
+                True if the allocation is a dedicated memory object; the
+                importer must match this or the import fails.
+                ''')),
+            ('deviceUuid',           T_TOKEN,
+             dict(DOC = '''
+                Physical device that owns the memory, as a 32-character
+                lowercase hex encoding of the 16-byte device UUID. Opaque
+                handles are only importable on the same physical device, so a
+                consumer compares this against its own device before adopting
+                or importing. Absent means "unknown" and is treated as a match
+                for backward compatibility.
+                ''')),
+            ('logicalDeviceId',      T_UINT64,
+             dict(DOC = '''
+                Identifies the handle namespace rawHandle was minted in: the
+                logical device (Vulkan VkDevice, Metal MTLDevice) that created
+                it, as a value unique within this process. Where deviceUuid
+                says which GPU the memory lives on, this says which device
+                object can interpret the native handle -- the two differ
+                exactly when a producer and consumer drive one GPU through
+                separate logical devices, and that is the case where adopting
+                rawHandle would bind an unrelated object.
+
+                A consumer compares it against its own
+                Hgi::GetLogicalDeviceId() and only adopts rawHandle when they
+                agree, importing instead when they do not. 0/absent means
+                "unknown" and is treated as a match, both for backward
+                compatibility and for backends like GL that have no logical
+                device to name; a producer that cannot report one should
+                publish the import cluster alone rather than an unqualified
+                rawHandle.
+                ''')),
+        ],
+
+        STATIC_TOKEN_DATASOURCE_BUILDERS = [
+            ('backendApi', ['GL', 'Vulkan', 'Metal']),
+            ('externalHandleType', ['opaqueWin32', 'opaqueFd']),
+        ],
+
+        ADD_DEFAULT_LOCATOR = True,
+    ),
+
+    #--------------------------------------------------------------------------
+    # extGpuSync
+    dict(
+        SCHEMA_NAME = 'ExtGpuSync',
+        SCHEMA_TOKEN = 'sync',
+        DOC = '''
+            Describes external GPU synchronization semaphores for an
+            externally-owned GPU buffer, so a consumer can order the producer's
+            writes before its own reads (RAW) and signal when its reads
+            complete (WAR). Nested as the "sync" child of
+            HdExtGpuBufferSchema. Optional: absent means the consumer falls
+            back to whatever implicit coherence the producer provides.
+            ''',
+        MEMBERS = [
+            ('backendApi', T_TOKEN,
+             dict(DOC = '''
+                GPU API that created the semaphores (matches
+                Hgi::GetAPIName()). A consumer ignores the sync objects if
+                this does not match its active backend.
+                ''')),
+            ('writeSemaphore', T_UINT64,
+             dict(DOC = '''
+                Native handle of the semaphore the producer signals after
+                writing the buffer; the consumer waits on it before reading
+                (RAW). 0/absent = none. Only usable when the producer and
+                consumer share a device -- see externalWriteSemaphore for the
+                cross-device form.
+                ''')),
+            ('readSemaphore', T_UINT64,
+             dict(DOC = '''
+                Native handle of the semaphore the consumer signals after
+                reading the buffer; the producer waits on it before
+                overwriting in place (WAR). 0/absent = none.
+                ''')),
+            ('externalWriteSemaphore', T_UINT64,
+             dict(DOC = '''
+                OS-shareable handle (Win32 NT handle / fd) for the write
+                semaphore, so a consumer on a different device can import it.
+                Independent of writeSemaphore: a producer may publish both,
+                letting a same-device consumer use the native handle and
+                everyone else import.
+                ''')),
+            ('externalReadSemaphore', T_UINT64,
+             dict(DOC = '''
+                OS-shareable handle for the read semaphore (WAR), for import.
+                ''')),
+            ('handleType', T_TOKEN,
+             dict(DOC = '''
+                How to interpret the external semaphore handles ("opaqueWin32"
+                / "opaqueFd"). Required whenever either external handle is
+                set.
+                ''')),
+            ('kind', T_TOKEN,
+             dict(DOC = '''
+                Semaphore flavour: "binary" or "timeline". Absent means
+                binary. A consumer that cannot honor the stated kind must
+                ignore the sync container rather than guess.
+                ''')),
+            ('deviceUuid', T_TOKEN,
+             dict(DOC = '''
+                Physical device that owns the semaphores, as a 32-character
+                lowercase hex encoding of the 16-byte device UUID. Absent
+                means "unknown" and is treated as a match. Compared the same
+                way as the buffer schema's deviceUuid: equal means the native
+                handles are usable directly, unequal means the external
+                handles must be imported.
+                ''')),
+            ('logicalDeviceId', T_UINT64,
+             dict(DOC = '''
+                Logical device that created the semaphores, unique within this
+                process. A native semaphore handle is namespaced exactly like a
+                native buffer handle, so this is compared the same way as the
+                buffer schema's logicalDeviceId: writeSemaphore and
+                readSemaphore are only usable when it matches the consumer's
+                own, and the external handles must be imported when it does
+                not. 0/absent means "unknown" and is treated as a match.
+                ''')),
+        ],
+
+        STATIC_TOKEN_DATASOURCE_BUILDERS = [
+            ('backendApi', ['GL', 'Vulkan', 'Metal']),
+            ('handleType', ['opaqueWin32', 'opaqueFd']),
+            ('kind', ['binary', 'timeline']),
+        ],
+
+        ADD_DEFAULT_LOCATOR = True,
+    ),
+
+    #--------------------------------------------------------------------------
     # mesh
     dict(
         SCHEMA_NAME = 'Mesh',

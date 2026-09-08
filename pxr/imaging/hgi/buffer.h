@@ -7,6 +7,7 @@
 #ifndef PXR_IMAGING_HGI_BUFFER_H
 #define PXR_IMAGING_HGI_BUFFER_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -119,11 +120,40 @@ public:
     HGI_API
     virtual void* GetCPUStagingAddress() = 0;
 
+    /// Attach an opaque reference that this buffer holds for as long as it
+    /// exists, and releases when it is destroyed.  Hgi never interprets it.
+    ///
+    /// The point is lifetime, for buffers that alias memory somebody else
+    /// allocated (see Hgi::CreateExternalBuffer and
+    /// CreateBufferFromExternalMemory).  Such a producer cannot tell when it is
+    /// safe to free or recycle its allocation: it needs to know both that the
+    /// consumer has let go and that no submitted GPU work still reads it.
+    /// A reference released here answers both at once, because backends destroy
+    /// buffers through their garbage collector, which defers destruction until
+    /// the command buffers that could name the buffer have retired.  So the
+    /// producer can hand over a shared_ptr whose deleter frees or pools the
+    /// allocation, and stop guessing.
+    ///
+    /// Two caveats. Backends that destroy buffers immediately rather than
+    /// deferring give only the "consumer has let go" half. And the deleter runs
+    /// on whichever thread drops the last reference, usually during garbage
+    /// collection, so it must be thread-safe and should enqueue rather than call
+    /// GPU APIs inline.
+    HGI_API
+    void SetKeepalive(std::shared_ptr<void> const& keepalive);
+
+    /// The reference attached by SetKeepalive, or null.
+    HGI_API
+    std::shared_ptr<void> const& GetKeepalive() const;
+
 protected:
     HGI_API
     HgiBuffer(HgiBufferDesc const& desc);
 
     HgiBufferDesc _descriptor;
+
+    // Released when this buffer is destroyed. See SetKeepalive.
+    std::shared_ptr<void> _keepalive;
 
 private:
     HgiBuffer() = delete;

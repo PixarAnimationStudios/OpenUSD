@@ -31,6 +31,8 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/imaging/hgiVulkan/debugCodes.h"
 
+#include <atomic>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -40,11 +42,33 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory<HgiFactory<HgiVulkan>>();
 }
 
+// The only external handle type this platform's VK_EXTERNAL_MEMORY_HANDLE_AUTO
+// resolves to; imports of any other type are rejected rather than reinterpreted.
+static HgiExternalHandleType
+_PlatformExternalHandleType()
+{
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    return HgiExternalHandleTypeOpaqueWin32;
+#else
+    return HgiExternalHandleTypeOpaqueFd;
+#endif
+}
+
+// Hands out the process-unique ids GetLogicalDeviceId reports. Starts at 1 so
+// no live device is ever numbered 0, which callers read as "unknown".
+static uint64_t
+_AllocateLogicalDeviceId()
+{
+    static std::atomic<uint64_t> counter{1};
+    return counter.fetch_add(1, std::memory_order_relaxed);
+}
+
 HgiVulkan::HgiVulkan()
     : _instance(new HgiVulkanInstance())
     , _device(new HgiVulkanDevice(_instance))
     , _garbageCollector(new HgiVulkanGarbageCollector(this))
     , _threadId(std::this_thread::get_id())
+    , _logicalDeviceId(_AllocateLogicalDeviceId())
     , _frameDepth(0)
 {
 }
@@ -187,6 +211,250 @@ HgiVulkan::_CreateBuffer(HgiBufferDesc const & desc)
     return HgiBufferHandle(
         new HgiVulkanBuffer(this, desc),
         GetUniqueId());
+}
+
+HgiBufferHandle
+HgiVulkan::CreateExternalBuffer(
+    uint64_t rawHandle, size_t byteSize, HgiBufferUsage usage)
+{
+    // Adopt an externally-owned VkBuffer non-owningly so Storm can bind it.
+    VkBuffer vkBuffer =
+        reinterpret_cast<VkBuffer>(static_cast<uintptr_t>(rawHandle));
+    return HgiBufferHandle(
+        new HgiVulkanBuffer(this, vkBuffer, byteSize, usage),
+        GetUniqueId());
+}
+
+HgiBufferHandle
+HgiVulkan::CreateInteropBuffer(
+    size_t byteSize, HgiBufferUsage usage, HgiInteropBufferInfo* outInfo)
+{
+    HgiBufferDesc desc;
+    desc.byteSize = byteSize;
+    desc.usage = usage;
+    desc.debugName = "ExtGpuInteropBuffer";
+
+    auto* buf = new HgiVulkanBuffer(this, desc, /*interop=*/true);
+
+    if (outInfo) {
+        *outInfo = HgiInteropBufferInfo();
+
+        HgiVulkanDevice* device = GetPrimaryDevice();
+        VmaAllocationInfo2 ai2 = {};
+        vmaGetAllocationInfo2(
+            device->GetVulkanMemoryAllocator(),
+            buf->GetVulkanMemoryAllocation(),
+            &ai2);
+
+        outInfo->memoryBlockSize = ai2.blockSize;
+        outInfo->memoryOffset = ai2.allocationInfo.offset;
+        outInfo->dedicated = ai2.dedicatedMemory;
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+        outInfo->externalHandle = static_cast<uint64_t>(
+            reinterpret_cast<uintptr_t>(device->GetWin32HandleForMemory(
+                ai2.allocationInfo.deviceMemory)));
+#endif
+    }
+
+    return HgiBufferHandle(buf, GetUniqueId());
+}
+
+HgiBufferHandle
+HgiVulkan::CreateBufferFromExternalMemory(
+    HgiExternalMemoryBufferDesc const& desc)
+{
+    if (!GetPrimaryDevice()->GetDeviceCapabilities().supportsNativeInterop) {
+        return HgiBufferHandle();
+    }
+    if (desc.handleType != _PlatformExternalHandleType()) {
+        TF_WARN("HgiVulkan cannot import external handle type %d on this "
+                "platform", static_cast<int>(desc.handleType));
+        return HgiBufferHandle();
+    }
+    if (!desc.externalHandle || !desc.byteSize || !desc.memoryBlockSize) {
+        TF_WARN("Incomplete HgiExternalMemoryBufferDesc: handle=%llu "
+                "byteSize=%zu memoryBlockSize=%zu",
+                static_cast<unsigned long long>(desc.externalHandle),
+                desc.byteSize, desc.memoryBlockSize);
+        return HgiBufferHandle();
+    }
+
+    auto* buf = new HgiVulkanBuffer(this, desc);
+    if (!buf->GetVulkanBuffer()) {
+        delete buf;
+        return HgiBufferHandle();
+    }
+    return HgiBufferHandle(buf, GetUniqueId());
+}
+
+uint64_t
+HgiVulkan::CreateExternalSemaphore(uint64_t* outExternalHandle)
+{
+    if (outExternalHandle) {
+        *outExternalHandle = 0;
+    }
+
+    HgiVulkanDevice* device = GetPrimaryDevice();
+
+    VkExportSemaphoreCreateInfo exportInfo =
+        { VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO };
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    exportInfo.handleTypes = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
+    exportInfo.handleTypes = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT;
+#endif
+
+    VkSemaphoreCreateInfo createInfo;
+    createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    createInfo.flags = 0;
+    createInfo.pNext = &exportInfo;
+    VkSemaphore vkSem = VK_NULL_HANDLE;
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vkCreateSemaphore(device->GetVulkanDevice(), &createInfo,
+            nullptr, &vkSem));
+
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    if (outExternalHandle) {
+        VkSemaphoreGetWin32HandleInfoKHR getInfo =
+            { VK_STRUCTURE_TYPE_SEMAPHORE_GET_WIN32_HANDLE_INFO_KHR };
+        getInfo.semaphore = vkSem;
+        getInfo.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+        HANDLE handle = nullptr;
+        device->vkGetSemaphoreWin32HandleKHR(
+            device->GetVulkanDevice(), &getInfo, &handle);
+        *outExternalHandle =
+            static_cast<uint64_t>(reinterpret_cast<uintptr_t>(handle));
+    }
+#endif
+
+    return static_cast<uint64_t>(reinterpret_cast<uintptr_t>(vkSem));
+}
+
+uint64_t
+HgiVulkan::ImportExternalSemaphore(
+    uint64_t externalHandle,
+    HgiExternalHandleType handleType,
+    HgiSemaphoreKind kind)
+{
+    if (!externalHandle) {
+        return 0;
+    }
+    if (handleType != _PlatformExternalHandleType()) {
+        TF_WARN("HgiVulkan cannot import external semaphore handle type %d on "
+                "this platform", static_cast<int>(handleType));
+        return 0;
+    }
+    // Timeline import would additionally need per-submission wait/read values,
+    // which the command queue's binary signal/wait lists do not carry.
+    if (kind != HgiSemaphoreKindBinary) {
+        TF_WARN("HgiVulkan can only import binary external semaphores");
+        return 0;
+    }
+
+    HgiVulkanDevice* device = GetPrimaryDevice();
+    if (!device->GetDeviceCapabilities().supportsNativeInterop) {
+        return 0;
+    }
+
+    VkSemaphoreCreateInfo createInfo =
+        { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+    VkSemaphore vkSem = VK_NULL_HANDLE;
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vkCreateSemaphore(device->GetVulkanDevice(), &createInfo,
+            HgiVulkanAllocator(), &vkSem));
+
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    VkImportSemaphoreWin32HandleInfoKHR importInfo =
+        { VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR };
+    importInfo.semaphore = vkSem;
+    importInfo.handleType =
+        VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+    importInfo.handle =
+        reinterpret_cast<HANDLE>(static_cast<uintptr_t>(externalHandle));
+    const VkResult res = device->vkImportSemaphoreWin32HandleKHR
+        ? device->vkImportSemaphoreWin32HandleKHR(
+              device->GetVulkanDevice(), &importInfo)
+        : VK_ERROR_EXTENSION_NOT_PRESENT;
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
+    VkImportSemaphoreFdInfoKHR importInfo =
+        { VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR };
+    importInfo.semaphore = vkSem;
+    importInfo.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT;
+    importInfo.fd = static_cast<int>(externalHandle);
+    const VkResult res = device->vkImportSemaphoreFdKHR
+        ? device->vkImportSemaphoreFdKHR(
+              device->GetVulkanDevice(), &importInfo)
+        : VK_ERROR_EXTENSION_NOT_PRESENT;
+#else
+    const VkResult res = VK_ERROR_EXTENSION_NOT_PRESENT;
+#endif
+
+    if (res != VK_SUCCESS) {
+        TF_WARN("Failed to import external semaphore (VkResult %d)",
+                static_cast<int>(res));
+        vkDestroySemaphore(device->GetVulkanDevice(), vkSem,
+            HgiVulkanAllocator());
+        return 0;
+    }
+
+    return static_cast<uint64_t>(reinterpret_cast<uintptr_t>(vkSem));
+}
+
+std::string
+HgiVulkan::GetDeviceUuid() const
+{
+    const uint8_t* uuid = GetPrimaryDevice()->GetDeviceCapabilities()
+        .vkPhysicalDeviceIdProperties.deviceUUID;
+
+    static const char* kHex = "0123456789abcdef";
+    std::string out;
+    out.reserve(VK_UUID_SIZE * 2);
+    for (size_t i = 0; i < VK_UUID_SIZE; ++i) {
+        out.push_back(kHex[uuid[i] >> 4]);
+        out.push_back(kHex[uuid[i] & 0xf]);
+    }
+    return out;
+}
+
+uint64_t
+HgiVulkan::GetLogicalDeviceId() const
+{
+    return _logicalDeviceId;
+}
+
+void
+HgiVulkan::DestroyExternalSemaphore(uint64_t semaphore)
+{
+    if (!semaphore) {
+        return;
+    }
+    VkSemaphore vkSem =
+        reinterpret_cast<VkSemaphore>(static_cast<uintptr_t>(semaphore));
+    HgiVulkanDevice* device = GetPrimaryDevice();
+    device->WaitForIdle();
+    vkDestroySemaphore(device->GetVulkanDevice(), vkSem, nullptr);
+}
+
+void
+HgiVulkan::QueueWaitExternalSemaphore(uint64_t semaphore)
+{
+    if (!semaphore) {
+        return;
+    }
+    VkSemaphore vkSem =
+        reinterpret_cast<VkSemaphore>(static_cast<uintptr_t>(semaphore));
+    GetPrimaryDevice()->GetCommandQueue()->AddPendingWaitSemaphore(vkSem);
+}
+
+void
+HgiVulkan::QueueSignalExternalSemaphore(uint64_t semaphore)
+{
+    if (!semaphore) {
+        return;
+    }
+    VkSemaphore vkSem =
+        reinterpret_cast<VkSemaphore>(static_cast<uintptr_t>(semaphore));
+    GetPrimaryDevice()->GetCommandQueue()->AddPendingSignalSemaphore(vkSem);
 }
 
 /* Multi threaded */

@@ -8,6 +8,9 @@
 
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
+#include "pxr/imaging/hdSt/extGpuBufferConsumer.h"
+
+#include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/instancer.h"
 #include "pxr/imaging/hdSt/material.h"
@@ -284,12 +287,32 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         &separateComputationSources,
         &computations);
 
+    // Resolve the prim's data source once for the per-primvar external-GPU
+    // lookups below, instead of re-traversing the terminal scene index per
+    // primvar name.
+    const HdContainerDataSourceHandle extPrimDs =
+        HdSt_GetPrimDataSource(sceneDelegate, id);
     for (HdPrimvarDescriptor const& primvar: primvars) {
         if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name)) {
             continue;
         }
 
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
+
+        // External GPU buffer fast path: consume the shared handle directly
+        // (the CPU value is intentionally empty in that mode) and skip the CPU
+        // read + validity check.
+        if (HdBufferSourceSharedPtr ext = HdSt_TryCreateExtGpuBufferSource(
+                primvar.name,
+                HdSt_GetExtGpuBufferSchema(extPrimDs, primvar.name),
+                resourceRegistry.get())) {
+            sources.push_back(std::move(ext));
+            if (primvar.name == HdTokens->displayOpacity) {
+                _displayOpacityFromPrimvars = true;
+            }
+            continue;
+        }
+
         if (!HdStIsPrimvarValidForDrawItem(drawItem, primvar.name, value)) {
             continue;
         }
@@ -323,11 +346,28 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             internallyGeneratedPrimvars, id);
     }
 
+    // Zero-copy direct-bind path: if every source is a direct-bindable external
+    // GPU buffer and there are no GPU computations, bind the external handles
+    // directly instead of allocating/aggregating a VBO.
+    if (computations.empty()) {
+        if (HdBufferArrayRangeSharedPtr aliasBAR =
+                HdSt_TryCreateExtGpuBufferAliasBAR(
+                    sources, resourceRegistry.get(), bar)) {
+            HdStUpdateDrawItemBAR(
+                aliasBAR,
+                drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(),
+                &_sharedData,
+                renderParam,
+                &(sceneDelegate->GetRenderIndex().GetChangeTracker()));
+            return;
+        }
+    }
+
     HdBufferSpecVector bufferSpecs;
     HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
     HdBufferSpec::GetBufferSpecs(reserveOnlySources, &bufferSpecs);
     HdStGetBufferSpecsFromCompuations(computations, &bufferSpecs);
-    
+
     HdBufferArrayUsageHint usageHint =
         HdBufferArrayUsageHintBitsVertex;
     if (!computations.empty()) {

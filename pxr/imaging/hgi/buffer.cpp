@@ -21,6 +21,18 @@ HgiBuffer::GetDescriptor() const
     return _descriptor;
 }
 
+void
+HgiBuffer::SetKeepalive(std::shared_ptr<void> const& keepalive)
+{
+    _keepalive = keepalive;
+}
+
+std::shared_ptr<void> const&
+HgiBuffer::GetKeepalive() const
+{
+    return _keepalive;
+}
+
 bool operator==(
     const HgiBufferDesc& lhs,
     const HgiBufferDesc& rhs)
