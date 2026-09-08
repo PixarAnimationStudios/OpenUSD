@@ -154,7 +154,7 @@ TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<Sdf_CrateFile::TimeSamples>();
 }
 
-#define OLDEST_SUPPORTED_VERSION "0.0.1" // versions prior are unsupported
+#define OLDEST_SUPPORTED_VERSION "0.4.0" // versions prior are unsupported
 #define OLDEST_CURRENT_VERSION   "0.8.0" // versions prior until
                                          // oldest-supported are deprecated
 

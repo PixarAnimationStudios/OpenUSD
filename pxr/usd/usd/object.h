@@ -474,6 +474,8 @@ public:
 
     /// Author this object's customData dictionary to \p customData at
     /// the current EditTarget.
+    ///
+    /// Dictionary values that are empty VtValue are invalid.
     USD_API
     void SetCustomData(const VtDictionary &customData) const;
 
@@ -546,6 +548,8 @@ public:
 
     /// Author this object's assetInfo dictionary to \p assetInfo at
     /// the current EditTarget.
+    ///
+    /// Dictionary values that are empty VtValue are invalid.
     USD_API
     void SetAssetInfo(const VtDictionary &customData) const;
 

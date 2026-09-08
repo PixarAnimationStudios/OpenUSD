@@ -54,7 +54,6 @@ pxr_library(hdSt
         ${optionalLibs}
 
     INCLUDE_DIRS
-        ${OPENSUBDIV_INCLUDE_DIR}
         ${optionalIncludeDirs}
 
     PUBLIC_CLASSES

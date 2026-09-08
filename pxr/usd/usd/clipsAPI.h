@@ -190,6 +190,9 @@ public:
     bool GetClips(VtDictionary* clips) const;
 
     /// Set the clips dictionary for this prim.
+    ///
+    /// Dictionary values that are empty VtValue are invalid.
+    ///
     /// \sa GetClips
     USD_API
     bool SetClips(const VtDictionary& clips);

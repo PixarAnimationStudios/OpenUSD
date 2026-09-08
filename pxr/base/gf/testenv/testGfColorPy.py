@@ -95,5 +95,28 @@ class TestGfColor(unittest.TestCase):
         self.assertEqual(c1.GetColorSpace(), c2.GetColorSpace())
         self.assertTrue(colorApproxEq(c1, c2))
 
+    def test_IsData(self):
+        # Raw and Data are non-colorimetric placeholder color spaces, and
+        # must report IsData() == True.
+        for name in (Gf.ColorSpaceNames.Raw, Gf.ColorSpaceNames.Data):
+            self.assertTrue(Gf.ColorSpace(name).IsData())
+
+        # Regular colorimetric color spaces must report IsData() == False.
+        for cs in (self.csSRGB, self.csLinearRec709, self.csAp0,
+                   self.csSRGBP3, self.csLinearRec2020):
+            self.assertFalse(cs.IsData())
+
+        # Conversions to/from a data color space must be a no-op, regardless
+        # of the other color space's matrix or transfer curve.
+        csRaw = Gf.ColorSpace(Gf.ColorSpaceNames.Raw)
+        rgb = Gf.Vec3f(0.2, 0.4, 0.8)
+        cRegular = Gf.Color(rgb, self.csSRGB)
+        # Convert a regular color space to a raw color space.
+        cRaw = Gf.Color(cRegular, csRaw)
+        self.assertEqual(cRaw.GetRGB(), rgb)
+        # Convert a raw color space to a regular color space.
+        cBack = Gf.Color(cRaw, self.csSRGB)
+        self.assertEqual(cBack.GetRGB(), rgb)
+
 if __name__ == '__main__':
     unittest.main()

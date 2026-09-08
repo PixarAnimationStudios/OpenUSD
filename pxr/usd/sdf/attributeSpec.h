@@ -110,6 +110,8 @@ public:
     VtDictionary GetLimits() const;
 
     /// Sets the limits dictionary for this attribute.
+    ///
+    /// Dictionary values that are empty VtValue are invalid.
     SDF_API
     void SetLimits(const VtDictionary& limits);
 

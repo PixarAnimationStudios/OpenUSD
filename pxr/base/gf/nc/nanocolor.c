@@ -32,6 +32,10 @@ struct NcColorSpace {
     NcColorSpaceDescriptor desc;
     float K0, phi;
     NcM33f rgbToXYZ;
+    // True for non-colorimetric placeholder spaces (such as Raw and Data).
+    // Conversions to or from these spaces must leave RGB values unchanged
+    // rather than being treated as a transform through the rgbToXYZ matrix.
+    bool isData;
 };
 
 static void _InitColorSpace(NcColorSpace* cs);
@@ -60,6 +64,10 @@ NCAPI const char* NcGetDescription(const NcColorSpace* cs) {
 // White point chromaticities.
 #define _WpD65 { 0.3127f, 0.3290f }
 #define _WpACES { 0.32168f, 0.33767f }
+
+// Please note that adding color spaces to this list has implications that extend beyond
+// OpenUSD. New additions should be discussed with the ASWF Color Interop Forum to ensure
+// all projects stay in sync.
 
 static NcColorSpace _colorSpaces[] = {
     {
@@ -140,7 +148,11 @@ static NcColorSpace _colorSpaces[] = {
          1.0,
          0.0},
         0, 0,
-        { 0,0,0, 0,0,0, 0,0,0 }
+        // Define this color space using the rgbToXYZ matrix since it should be equal to
+        // the CIE XYZ connection space. The usual NPM calculation from RP 177 is not
+        // satisfactory since a D65 neutral should have an XYZ of [0.95046, 1., 1.08906]
+        // rather than [1., 1., 1].
+        { 1.,0.,0., 0.,1.,0., 0.,0.,1. }
     },
     {
         {"sRGB Encoded Rec.709 (sRGB)", "srgb_rec709_scene",
@@ -225,54 +237,60 @@ static NcColorSpace _colorSpaces[] = {
          { 0.21, 0.71 },
          { 0.15, 0.06 },
          _WpD65,
-         2.2,
+        // The specified gamma is approximately 2.199.
+        // https://en.wikipedia.org/wiki/Adobe_RGB_color_space
+         563.f / 256.f,
          0.0},
         0, 0,
         { 0,0,0, 0,0,0, 0,0,0 }
     },
     {
         {"Data", "data",
-         { 1.0, 0.0 }, // these chromaticities generate identity
+         { 1.0, 0.0 },
          { 0.0, 1.0 },
          { 0.0, 0.0 },
          { 1.0/3.0, 1.0/3.0 },
          1.0,
          0.0},
         0, 0,
-        { 1,0,0, 0,1,0, 0,0,1 } // initialized as identity
+        { 1,0,0, 0,1,0, 0,0,1 },
+        true // data/no-op color space: conversions don't modify RGB values
     },
     {
         {"Identity", "identity",
-         { 1.0, 0.0 }, // these chromaticities generate identity
+         { 1.0, 0.0 },
          { 0.0, 1.0 },
          { 0.0, 0.0 },
          { 1.0/3.0, 1.0/3.0 },
          1.0,
          0.0},
         0, 0,
-        { 1,0,0, 0,1,0, 0,0,1 } // initialized as identity
+        { 1,0,0, 0,1,0, 0,0,1 },
+        true // data/no-op color space: conversions don't modify RGB values
     },
     {
         {"Raw", "raw",
-         { 1.0, 0.0 }, // these chromaticities generate identity
+         { 1.0, 0.0 },
          { 0.0, 1.0 },
          { 0.0, 0.0 },
          { 1.0/3.0, 1.0/3.0 },
          1.0,
          0.0},
         0, 0,
-        { 1,0,0, 0,1,0, 0,0,1 } // initialized as identity
+        { 1,0,0, 0,1,0, 0,0,1 },
+        true // data/no-op color space: conversions don't modify RGB values
     },
     {
         {"Unknown", "unknown",
-         { 1.0, 0.0 }, // these chromaticities generate identity
+         { 1.0, 0.0 },
          { 0.0, 1.0 },
          { 0.0, 0.0 },
          { 1.0/3.0, 1.0/3.0 },
          1.0,
          0.0},
         0, 0,
-        { 1,0,0, 0,1,0, 0,0,1 } // initialized as identity
+        { 1,0,0, 0,1,0, 0,0,1 },
+        true // data/no-op color space: conversions don't modify RGB values
     }
 };
 
@@ -285,7 +303,11 @@ bool NcColorSpaceEqual(const NcColorSpace* cs1, const NcColorSpace* cs2) {
         return false;
     }
 
-    if (strcmp(cs1->desc.shortName, cs1->desc.shortName) != 0) {
+    if (strcmp(cs1->desc.shortName, cs2->desc.shortName) != 0) {
+        return false;
+    }
+
+    if (cs1->isData != cs2->isData) {
         return false;
     }
 
@@ -302,6 +324,10 @@ bool NcColorSpaceEqual(const NcColorSpace* cs1, const NcColorSpace* cs2) {
         return false;
     }
     return true;
+}
+
+bool NcIsDataColorSpace(const NcColorSpace* cs) {
+    return cs && cs->isData;
 }
 
 static NcM33f _M3ffInvert(NcM33f m) {
@@ -338,12 +364,15 @@ static NcM33f _M33fMultiply(NcM33f lh, NcM33f rh) {
 }
 
 static void _InitColorSpace(NcColorSpace* cs) {
-    if (!cs || cs->rgbToXYZ.m[8] != 0.0)
+    if (!cs)
         return;
 
     const float a = cs->desc.linearBias;
     const float gamma = cs->desc.gamma;
 
+    // Always initialise K0 and phi from the transfer function parameters.
+    // These are needed by _ToLinear/_FromLinear regardless of whether the
+    // color space was constructed from chromaticities or a matrix directly.
     if (gamma == 1.f) {
         cs->K0 = 1.e9f;
         cs->phi = 1.f;
@@ -361,6 +390,14 @@ static void _InitColorSpace(NcColorSpace* cs) {
                        (gamma - 1.f);
         }
     }
+
+    // If the matrix is already set, skip the chromaticity-to-matrix
+    // computation below. This handles two cases:
+    //   1. NcCreateColorSpaceM33: matrix supplied directly by the caller.
+    //   2. Re-initialisation guard: built-in spaces whose matrix has already
+    //      been computed by a prior _InitColorSpace call.
+    if (cs->rgbToXYZ.m[8] != 0.0)
+        return;
 
     // if the primaries are zero, the color space was defined by the 3x3 matrix,
     if (cs->desc.whitePoint.x == 0.f)
@@ -527,6 +564,13 @@ NcM33f NcGetRGBToRGBMatrix(const NcColorSpace* src, const NcColorSpace* dst) {
         return (NcM33f){1,0,0,0,1,0,0,0,1};
     }
 
+    // Raw/Data/Identity/Unknown are non-colorimetric placeholder spaces;
+    // a conversion involving one of them must be a no-op, not a transform
+    // through their (identity) rgbToXYZ matrix.
+    if (src->isData || dst->isData) {
+        return (NcM33f){1,0,0,0,1,0,0,0,1};
+    }
+
     NcM33f toXYZ = NcGetRGBToXYZMatrix(src);
     NcM33f fromXYZ = NcGetXYZToRGBMatrix(dst);
     NcM33f tx = _M33fMultiply(fromXYZ, toXYZ);
@@ -536,6 +580,9 @@ NcM33f NcGetRGBToRGBMatrix(const NcColorSpace* src, const NcColorSpace* dst) {
 
 NcRGB NcTransformColor(const NcColorSpace* dst, const NcColorSpace* src, NcRGB rgb) {
     if (!dst || !src) {
+        return rgb;
+    }
+    if (src->isData || dst->isData) {
         return rgb;
     }
 
@@ -562,6 +609,9 @@ void NcTransformColorsRef(const NcColorSpace* dst, const NcColorSpace* src, NcRG
 {
     if (!dst || !src || !rgb || count == 0)
         return;
+    if (src->isData || dst->isData) {
+        return;
+    }
 
     NcM33f tx = _M33fMultiply(NcGetRGBToXYZMatrix(src),
                                NcGetXYZToRGBMatrix(dst));
@@ -602,6 +652,9 @@ void NcTransformColorsWithAlphRef(const NcColorSpace* dst, const NcColorSpace* s
 {
     if (!dst || !src || !rgba || count == 0)
         return;
+    if (src->isData || dst->isData) {
+        return;
+    }
 
     NcM33f tx = NcGetRGBToRGBMatrix(src, dst);
 
@@ -639,6 +692,9 @@ void NcTransformColors(const NcColorSpace* dst, const NcColorSpace* src, NcRGB* 
 {
     if (!dst || !src || !rgb || count == 0)
         return;
+    if (src->isData || dst->isData) {
+        return;
+    }
 
     NcM33f tx = NcGetRGBToRGBMatrix(src, dst);
 
@@ -753,6 +809,9 @@ void NcTransformColorsWithAlpha(const NcColorSpace* dst, const NcColorSpace* src
 {
     if (!dst || !src || !rgba || count == 0)
         return;
+    if (src->isData || dst->isData) {
+        return;
+    }
 
     NcM33f tx = NcGetRGBToRGBMatrix(src, dst);
 
@@ -998,32 +1057,9 @@ NcYxy NcKelvinToYxy(float T, float luminance) {
     return _NcYuv2Yxy((NcYuvPrime) {luminance, u, 3.f * v / 2.f });
 }
 
-static NcYxy _NormalizeYxy(NcYxy c) {
-    return (NcYxy) {
-        c.Y,
-        c.Y * c.x / c.y,
-        c.Y * (1.f - c.x - c.y) / c.y
-    };
-}
-
-static inline float _SignOf(float x) {
-    return x > 0 ? 1.f : (x < 0) ? -1.f : 0.f;
-}
-
 NcRGB NcYxyToRGB(const NcColorSpace* cs, NcYxy c) {
-    NcYxy cYxy = _NormalizeYxy(c);
-    NcRGB rgb = NcXYZToRGB(cs, (NcXYZ) { cYxy.x, cYxy.Y, cYxy.y });
-    NcRGB magRgb = {
-        fabsf(rgb.r),
-        fabsf(rgb.g),
-        fabsf(rgb.b) };
+    NcXYZ cXYZ = NcYxyToXYZ(c);
+    NcRGB rgb = NcXYZToRGB(cs, cXYZ);
 
-    float maxc = (magRgb.r > magRgb.g) ? magRgb.r : magRgb.g;
-    maxc = maxc > magRgb.b ? maxc : magRgb.b;
-    NcRGB ret = (NcRGB) {
-        _SignOf(rgb.r) * rgb.r / maxc,
-        _SignOf(rgb.g) * rgb.g / maxc,
-        _SignOf(rgb.b) * rgb.b / maxc };
-    return ret;
+    return rgb;
 }
-

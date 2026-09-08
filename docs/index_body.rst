@@ -71,6 +71,7 @@ USD Home
       - :doc:`Terms and Concepts <glossary>`
       - `API Documentation <api/index.html>`_
       - `OpenUSD Forum <https://forum.openusd.org>`_
+      - :doc:`Slack Channels <slack_channels>`
       - :doc:`Specifications <spec>`
       - :doc:`Proposals <wp>`
    

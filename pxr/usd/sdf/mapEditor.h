@@ -11,68 +11,136 @@
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/spec.h"
 
+#include "pxr/base/vt/value.h"
+#include "pxr/base/tf/diagnosticLite.h"
+#include "pxr/base/tf/token.h"
+
 #include <memory>
 #include <string>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class TfToken;
+class VtValueRef;
+
+/// \class Sdf_MapEditorBase
+///
+/// Non-template base for Sdf_MapEditor<T> holding the type-independent
+/// owner/field state and operations.
+///
+class Sdf_MapEditorBase {
+public:
+    /// Returns a string describing the location of the map being edited.
+    /// Used for debugging and error messages.
+    SDF_API std::string GetLocation() const;
+
+    /// Returns owner of the map being edited.
+    SDF_API SdfSpecHandle GetOwner() const;
+
+    /// Returns true if the map being edited is expired, false otherwise.
+    SDF_API bool IsExpired() const;
+
+protected:
+    SDF_API Sdf_MapEditorBase(const SdfSpecHandle& owner, const TfToken& field);
+
+    SDF_API SdfAllowed _IsValidKey(const VtValueRef& key) const;
+    SDF_API SdfAllowed _IsValidValue(const VtValueRef& value) const;
+    SDF_API void _WriteToSpec(const VtValueRef& value);
+
+    SdfSpecHandle _owner;
+    TfToken _field;
+};
 
 /// \class Sdf_MapEditor
 ///
-/// Interface for private implementations used by SdfMapEditProxy.
+/// Private implementation used by SdfMapEditProxy.
 ///
 template <class MapType>
-class Sdf_MapEditor {
+class Sdf_MapEditor : public Sdf_MapEditorBase {
 public:
     typedef typename MapType::key_type    key_type;
     typedef typename MapType::mapped_type mapped_type;
     typedef typename MapType::value_type  value_type;
     typedef typename MapType::iterator    iterator;
 
-    virtual ~Sdf_MapEditor() noexcept;
+    Sdf_MapEditor(const SdfSpecHandle& owner, const TfToken& field)
+        : Sdf_MapEditorBase(owner, field)
+    {
+        const VtValue& dataVal = _owner->GetField(_field);
+        if (!dataVal.IsEmpty()) {
+            if (dataVal.IsHolding<MapType>()) {
+                _data = dataVal.Get<MapType>();
+            }
+            else {
+                TF_CODING_ERROR("%s does not hold value of expected type.",
+                                GetLocation().c_str());
+            }
+        }
+    }
 
-    /// Returns a string describing the location of the map being edited.
-    /// This is used for debugging and error messages.
-    virtual std::string GetLocation() const = 0;
+    const MapType* GetData() const { return &_data; }
+    MapType* GetData()             { return &_data; }
 
-    /// Returns owner of the map being edited.
-    virtual SdfSpecHandle GetOwner() const = 0;
-
-    /// Returns true if the map being edited is expired, false otherwise.
-    virtual bool IsExpired() const = 0;
-
-    /// Returns const pointer to map being edited.
-    virtual const MapType* GetData() const = 0;
-
-    /// Returns non-const pointer to map being edited. 
-    /// All edits to the map should be done using the editing functions below.
-    /// This function is primarily here for convenience. Ideally, only the
-    /// const version of this function would exist.
-    virtual MapType* GetData() = 0;
-    
     /// \name Editing Operations
     /// @{
 
-    virtual void Copy(const MapType& other) = 0;
-    virtual void Set(const key_type& key, const mapped_type& other) = 0;
-    virtual std::pair<iterator, bool> Insert(const value_type& value) = 0;
-    virtual bool Erase(const key_type& key) = 0;
+    void Copy(const MapType& other)
+    {
+        _data = other;
+        _UpdateDataInSpec();
+    }
 
-    virtual SdfAllowed IsValidKey(const key_type& key) const = 0;
-    virtual SdfAllowed IsValidValue(const mapped_type& value) const = 0;
+    void Set(const key_type& key, const mapped_type& other)
+    {
+        _data[key] = other;
+        _UpdateDataInSpec();
+    }
+
+    std::pair<iterator, bool> Insert(const value_type& value)
+    {
+        const std::pair<iterator, bool> insertStatus = _data.insert(value);
+        if (insertStatus.second) {
+            _UpdateDataInSpec();
+        }
+        return insertStatus;
+    }
+
+    bool Erase(const key_type& key)
+    {
+        const bool didErase = (_data.erase(key) != 0);
+        if (didErase) {
+            _UpdateDataInSpec();
+        }
+        return didErase;
+    }
+
+    SdfAllowed IsValidKey(const key_type& key) const
+    {
+        return _IsValidKey(VtValueRef(key));
+    }
+
+    SdfAllowed IsValidValue(const mapped_type& value) const
+    {
+        return _IsValidValue(VtValueRef(value));
+    }
 
     /// @}
 
-protected:
-    Sdf_MapEditor();
+private:
+    void _UpdateDataInSpec()
+    {
+        _WriteToSpec(_data.empty() ? VtValueRef() : VtValueRef(_data));
+    }
 
+    MapType _data;
 };
 
 template <class T>
-std::unique_ptr<Sdf_MapEditor<T> > 
-Sdf_CreateMapEditor(const SdfSpecHandle& owner, const TfToken& field);
+std::unique_ptr<Sdf_MapEditor<T>>
+Sdf_CreateMapEditor(const SdfSpecHandle& owner, const TfToken& field)
+{
+    return std::make_unique<Sdf_MapEditor<T>>(owner, field);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

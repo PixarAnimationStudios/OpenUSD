@@ -820,7 +820,9 @@ _UpdateNetwork(
     mx::DocumentPtr const &mxDoc,
     mx::FileSearchPath const &searchPath,
     std::set<TfToken> nodesToKeep,
-    std::set<TfToken> nodesToRemove)
+    std::set<TfToken> nodesToRemove,
+    // Held on entry and on return; released only around the oslc compile.
+    std::unique_lock<std::mutex> &mtlxLock)
 {
     // Cache for deduplicating MaterialXSeparate2 nodes
     // Maps (upstreamNodeName, upstreamOutputName) to separate2 node name
@@ -920,7 +922,8 @@ _UpdateNetwork(
                 TfStringEndsWith(nodeType.GetText(), _tokens->vdf) ||
                 nodeType == _tokens->ND_surface) {
                 _UpdateNetwork(netInterface, upstreamNodeName, mxDoc,
-                               searchPath, nodesToKeep, nodesToRemove);
+                               searchPath, nodesToKeep, nodesToRemove,
+                               mtlxLock);
 
                 // Convert node type from ND_ to MaterialX* type
                 TfToken bsdfNodeType = _GetMaterialBsdfNodeType(
@@ -958,9 +961,13 @@ _UpdateNetwork(
                 continue;
             }
 
-            // Compile the oslSource
+            // Compile the oslSource.  oslc runs out of process and doesn't
+            // touch MaterialX, so don't hold the lock while it runs.
+            mtlxLock.unlock();
             std::string compiledShaderPath =
                 _CompileOslSource(shaderName, oslSource, searchPath);
+            mtlxLock.lock();
+
             if (compiledShaderPath.empty()) {
                 continue;
             }
@@ -2268,14 +2275,17 @@ MatfiltMaterialX(
         // Or, for XPU, we may need to expand terminal node
         // even if it doesn't have connections.
         if (!cNames.empty() || expandImplementationGraph) {
-            // Serialize MaterialX usage to avoid crashes.
+            // Serialize MaterialX usage. stdLibraries below and
+            // HdMtlxStdLibraries() are shared across SyncAll worker threads,
+            // and MaterialX does not lock its element tree:
+            // Element keeps  children and attributes in plain
+            // unordered_maps, so a write on one thread can rehash a map that
+            // another is reading.
             //
-            // XXX It may be the case that a finer-grained locking
-            //     pattern can be used here.  Starting with a coarse
-            //     lock to establish a basic level of safety.
-            //
+            // _UpdateNetwork() releases this lock around the out-of-process
+            // oslc compile, so use unique_lock rather than lock_guard.
             static std::mutex materialXMutex;
-            std::lock_guard<std::mutex> lock(materialXMutex);
+            std::unique_lock<std::mutex> mtlxLock(materialXMutex);
 
             // Get Standard Libraries and SearchPaths (for mxDoc and 
             // mxShaderGen)
@@ -2344,7 +2354,7 @@ MatfiltMaterialX(
             // Update nodes directly connected to the terminal node with
             // MX generated shaders that capture the rest of the nodegraph
             _UpdateNetwork(netInterface, newTerminalNodeName, mxDoc, searchPaths,
-                           nodesToKeep, nodesToRemove);
+                           nodesToKeep, nodesToRemove, mtlxLock);
 
             // Ensure the terminal node gets converted if it's a bsdf
             TfToken terminalNodeType = netInterface->GetNodeType(newTerminalNodeName);

@@ -417,10 +417,11 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
 
     overrideIdentifier parameter is the identifier which should be used when 
     the identifier of the node being processed differs from the one Sdr will 
-    discover at runtime, such as when this function is def a node constructed 
-    from an explicit asset path. This should only be used when clients know the 
-    identifier being passed is the true identifier which sdr Runtime will 
-    provide when querying using GetShaderNodeByIdentifierAndType, etc.
+    discover at runtime, such as when this function is called on a node 
+    constructed from an explicit asset path. This should only be used when 
+    clients know the identifier being passed is the true identifier which sdr 
+    Runtime will provide when querying using GetShaderNodeByIdentifierAndType, 
+    etc.
 
     It consumes the following attributes (that manifest as Sdr 
     metadata) in addition to many of the standard Sdr metadata
@@ -866,6 +867,12 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
             infoIdAttrSpec = Sdf.AttributeSpec(primSpec, \
                     UsdShade.Tokens.infoId, Sdf.ValueTypeNames.Token, \
                     Sdf.VariabilityUniform)
-            infoIdAttrSpec.default = nodeIdentifier
+
+            # Use the identifier if explicitly provided (the node may have been
+            # constructed from an explicit asset path, in which case its own
+            # identifier is synthesized and will not resolve at runtime), else
+            # use sdrNode's registered identifier.
+            infoIdAttrSpec.default = overrideIdentifier if overrideIdentifier \
+                    else sdrNode.GetIdentifier()
 
     schemaLayer.Save()

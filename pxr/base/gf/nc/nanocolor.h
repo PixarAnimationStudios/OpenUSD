@@ -167,6 +167,7 @@ found in documents naming color spaces.
 #define NcGetRGBToXYZMatrix          NCCONCAT(NCNAMESPACE, GetRGBtoXYZMatrix)
 #define NcGetXYZToRGBMatrix          NCCONCAT(NCNAMESPACE, GetXYZtoRGBMatrix)
 #define NcInitColorSpaceLibrary      NCCONCAT(NCNAMESPACE, InitColorSpaceLibrary)
+#define NcIsDataColorSpace           NCCONCAT(NCNAMESPACE, IsDataColorSpace)
 #define NcKelvinToYxy                NCCONCAT(NCNAMESPACE, KelvinToYxy)
 #define NcMatchLinearColorSpace      NCCONCAT(NCNAMESPACE, MatchLinearColorSpace)
 #define NcRGBToXYZ                   NCCONCAT(NCNAMESPACE, RGBToXYZ)
@@ -357,7 +358,7 @@ NCAPI NcXYZ NcYxyToXYZ(NcYxy Yxy);
  *
  * @param cs The color space.
  * @param c The Yxy color coordinate.
- * @return The RGB color coordinate.
+ * @return The RGB color coordinate, with the scaling determined by Y.
  */
 NCAPI NcRGB NcYxyToRGB(const NcColorSpace* cs, NcYxy c);
 
@@ -369,6 +370,18 @@ NCAPI NcRGB NcYxyToRGB(const NcColorSpace* cs, NcYxy c);
  * @return True if the color space objects are equal, false otherwise.
  */
 NCAPI bool NcColorSpaceEqual(const NcColorSpace* cs1, const NcColorSpace* cs2);
+
+/**
+ * @brief Checks whether a color space is a non-colorimetric data space.
+ *
+ * Data color spaces (such as Raw and Data in the built-in library) do
+ * not represent a colorimetric transform; conversions to or from a data
+ * color space always leave RGB values unchanged.
+ *
+ * @param cs Pointer to the color space object.
+ * @return True if the color space is a data color space, false otherwise.
+ */
+NCAPI bool NcIsDataColorSpace(const NcColorSpace* cs);
 
 /**
  * @brief Retrieves the color space descriptor.
