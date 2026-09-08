@@ -16,6 +16,10 @@
 #include "pxr/imaging/hgiInterop/vulkan.h"
 #endif
 
+#if defined(PXR_WEBGPU_SUPPORT_ENABLED)
+#include "pxr/imaging/hgiInterop/webgpu.h"
+#endif
+
 #if defined(PXR_METAL_SUPPORT_ENABLED)
 #include "pxr/imaging/hgiMetal/hgi.h"
 #if defined(ARCH_OS_OSX)
@@ -32,6 +36,9 @@ struct HgiInteropImpl
 #endif
 #if defined(PXR_VULKAN_SUPPORT_ENABLED)
     std::unique_ptr<HgiInteropVulkan> _vulkanToOpenGL;
+#endif
+#if defined(PXR_WEBGPU_SUPPORT_ENABLED)
+    std::unique_ptr<HgiInteropWebGPU> _webgpuToOpenGL;
 #endif
 #if defined(PXR_METAL_SUPPORT_ENABLED) && !defined(ARCH_OS_IPHONE)
     std::unique_ptr<HgiInteropMetal> _metalToOpenGL;
@@ -84,6 +91,17 @@ void HgiInterop::TransferToApp(
                 std::make_unique<HgiInteropVulkan>(srcHgi);
         }
         return _hgiInteropImpl->_vulkanToOpenGL->CompositeToInterop(
+            srcColor, srcDepth, dstFramebuffer, dstRegion);
+    }
+#endif
+
+#if defined(PXR_WEBGPU_SUPPORT_ENABLED)
+    if (srcApi==HgiTokens->WebGPU) {
+        if (!_hgiInteropImpl->_webgpuToOpenGL) {
+            _hgiInteropImpl->_webgpuToOpenGL =
+                std::make_unique<HgiInteropWebGPU>(srcHgi);
+        }
+        return _hgiInteropImpl->_webgpuToOpenGL->CompositeToInterop(
             srcColor, srcDepth, dstFramebuffer, dstRegion);
     }
 #endif

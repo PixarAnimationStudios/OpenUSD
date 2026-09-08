@@ -75,6 +75,10 @@ FrustumCullIsTinyPrim(vec4 bboxMin, vec4 bboxMax, vec2 drawRangeNDC)
 --- --------------------------------------------------------------------------
 -- glsl ViewFrustumCull.IsVisible
 
+#ifndef FLT_MAX
+#define FLT_MAX 3.402823466e+38F
+#endif
+
 bool
 FrustumCullIsVisible(MAT4 toClip, vec4 localMin, vec4 localMax, vec2 drawRangeNDC)
 {
@@ -82,11 +86,16 @@ FrustumCullIsVisible(MAT4 toClip, vec4 localMin, vec4 localMax, vec2 drawRangeND
     // (a) BBox is empty. An empty bbox defaults to [FLT_MAX, -FLT_MAX]), so
     //     min > max.
     // (b) Bounds are infinite.
-    if (any(greaterThan(localMin, localMax)) || 
-        any(isinf(localMin)) || any(isinf(localMax))) {
+    if (any(greaterThan(localMin, localMax)) ||
+#if HGI_HAS_IEEE_FLOAT_SPECIAL_VALUES
+        any(isinf(localMin)) || any(isinf(localMax)))
+#else
+        any(lessThanEqual(localMin,vec4(-FLT_MAX))) || any(greaterThanEqual(localMax,vec4(FLT_MAX))))
+#endif
+    {
         return true;
     }
-    
+
     // Transform the corners of the bounding box to clipping space.
     vec4 p[8];
     p[0] = vec4(toClip * vec4(localMin.x, localMin.y, localMin.z, 1));

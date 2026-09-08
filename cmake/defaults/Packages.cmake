@@ -238,6 +238,59 @@ if (PXR_BUILD_IMAGING)
             message(FATAL_ERROR "VULKAN_SDK not valid")
         endif()
     endif()
+    # --WebGPU
+    if (PXR_ENABLE_WEBGPU_SUPPORT)
+        add_definitions(-DPXR_WEBGPU_SUPPORT_ENABLED)
+
+        if (NOT EMSCRIPTEN)
+            find_package(Dawn REQUIRED)
+        endif ()
+        set(TINT_COMPONENTS
+            lang_spirv_reader
+            lang_spirv_reader_lower
+            lang_spirv_reader_parser
+            lang_spirv_validate
+        )
+        if (WIN32)
+            list(APPEND TINT_COMPONENTS
+                lang_hlsl
+                lang_hlsl_intrinsic
+                lang_hlsl_ir
+                lang_hlsl_type
+                lang_hlsl_writer
+                lang_hlsl_writer_ast_raise
+                lang_hlsl_writer_common
+                lang_hlsl_writer_printer
+                lang_hlsl_writer_raise
+            )
+        elseif (APPLE)
+            list(APPEND TINT_COMPONENTS
+                lang_msl
+                lang_msl_intrinsic
+                lang_msl_ir
+                lang_msl_writer
+                lang_msl_writer_printer
+                lang_msl_writer_raise
+            )
+        else()
+            # TODO: This has not been validated with the correct platform
+            list(APPEND TINT_COMPONENTS
+                lang_glsl_writer
+            )
+        endif ()
+
+        find_package(Tint REQUIRED COMPONENTS ${TINT_COMPONENTS} QUIET)
+        find_package(SPIRV-Tools REQUIRED NO_CMAKE_FIND_ROOT_PATH)
+        find_package(SPIRV-Tools-opt REQUIRED NO_CMAKE_FIND_ROOT_PATH)
+        find_package(glslang REQUIRED NO_CMAKE_FIND_ROOT_PATH)
+
+        # glslangConfig.cmake defined INTERFACE_INCLUDE_DIRECTORIES incorrectly
+        # so we need to override the property
+        get_target_property(GLSLANG_INCLUDE_DIRECTORY glslang::glslang INTERFACE_INCLUDE_DIRECTORIES)
+        set_target_properties(glslang::SPIRV PROPERTIES
+                INTERFACE_INCLUDE_DIRECTORIES "${GLSLANG_INCLUDE_DIRECTORY}")
+        find_package(SPIRV-Headers REQUIRED NO_CMAKE_FIND_ROOT_PATH)
+    endif ()
     # --Opensubdiv
     find_package(OpenSubdiv 3.6...<4 REQUIRED CONFIG)
     # First check the shared, then the static library, just like find_library() in FindOpenSubdiv.cmake.

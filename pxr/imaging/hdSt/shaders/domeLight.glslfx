@@ -108,9 +108,11 @@ vec3 GetCubemapVec(ivec3 coords)
 
 float SanitizeValue(float value)
 {
+#if HGI_HAS_IEEE_FLOAT_SPECIAL_VALUES
     if (isnan(value) || isinf(value)) {
         return 0;
     }
+#endif
     return value;
 }
 
