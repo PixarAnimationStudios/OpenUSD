@@ -14,6 +14,7 @@
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/primIndex_Graph.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/base/tf/staticTokens.h"
 
 #include <string>
 #include <unordered_set>
@@ -24,6 +25,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class PcpExpressionVariables;
 class VtDictionary;
+
+// Tokens for fields that have been removed from Sdf but still need to be
+// accessed by Pcp for backwards compatibility or legacy reasons.
+#define PCP_FIELD_TOKENS \
+    ((primRelocates, "relocates"))
+
+TF_DECLARE_PUBLIC_TOKENS(Pcp_Fields, PCP_FIELD_TOKENS);
 
 // Returns the result of evaluating the variable expression \p expression using
 // the variables \p expressionVars. Variables that are used during evaluation

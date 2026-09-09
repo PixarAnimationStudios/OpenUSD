@@ -598,7 +598,6 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
     ((PrefixSubstitutions, "prefixSubstitutions"))           \
     ((PropertyOrder, "propertyOrder"))                       \
     ((References, "references"))                             \
-    ((Relocates, "relocates"))                               \
     ((SessionOwner, "sessionOwner"))                         \
     ((Specializes, "specializes"))                           \
     ((Specifier, "specifier"))                               \

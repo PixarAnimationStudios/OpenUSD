@@ -401,7 +401,7 @@ Pcp_PrimSpecOrDescendantHasRelocates(const SdfLayerHandle& layer,
 {
     TRACE_FUNCTION();
 
-    if (layer->HasField(primPath, SdfFieldKeys->Relocates)) {
+    if (layer->HasField(primPath, Pcp_Fields->primRelocates)) {
         return true;
     }
 
@@ -1090,7 +1090,7 @@ PcpChanges::DidChange(const PcpCache* cache,
                     }
                 }
                 
-                if (entry.HasInfoChange(SdfFieldKeys->Relocates)) {
+                if (entry.HasInfoChange(Pcp_Fields->primRelocates)) {
                     layerStackChangeMask |= LayerStackRelocatesChange;
                 }
             }

@@ -6,8 +6,6 @@
 over Prim "Foo" (
     inherits = None
     references = None
-    relocates = {
-    }
 )
 {
     double x1.connect = None

@@ -78,7 +78,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 ((SdfFieldKeys->SessionOwner,            std::string))                   \
 ((SdfFieldKeys->TargetPaths,             SdfPathListOp))                 \
 ((SdfFieldKeys->TimeSamples,             SdfTimeSampleMap))              \
-((SdfFieldKeys->Relocates,               SdfRelocatesMap))               \
 ((SdfFieldKeys->Specializes,             SdfPathListOp))                 \
 ((SdfFieldKeys->Specifier,               SdfSpecifier))                  \
 ((SdfFieldKeys->Spline,                  TsSpline))                      \

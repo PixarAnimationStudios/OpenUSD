@@ -684,21 +684,6 @@ class TestSdfCopyUtils(unittest.TestCase):
             layer.GetPrimAtPath("/ChildCopy").GetInfo("payload"), 
             expectedListOp)
 
-    def test_Relocates(self):
-        """Tests that relocates are remapped to destination prim on copy"""
-        layer = Sdf.Layer.CreateAnonymous()
-        srcPrimSpec = Sdf.PrimSpec(layer, "Root", Sdf.SpecifierOver)
-        srcPrimSpec.relocates = { Sdf.Path("/Root/A") : Sdf.Path("/Root/B") }
-
-        self.assertTrue(Sdf.CopySpec(layer, "/Root", layer, "/Copy"))
-        self._VerifyExpectedData(
-            layer, expected = {
-                "/Copy" : {
-                    "relocates" : { Sdf.Path("/Copy/A") : Sdf.Path("/Copy/B") },
-                    "specifier" : Sdf.SpecifierOver
-                }
-            })
-
     def test_Overlapping(self):
         """Tests cases where src & dst overlap in the same layer."""
         initialState = textwrap.dedent("""\

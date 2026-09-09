@@ -414,8 +414,6 @@ SDF_VALIDATE_WRAPPER(InheritPath, SdfPath);
 SDF_VALIDATE_WRAPPER(Payload, SdfPayload);
 SDF_VALIDATE_WRAPPER(Reference, SdfReference);
 SDF_VALIDATE_WRAPPER(RelationshipTargetPath, SdfPath);
-SDF_VALIDATE_WRAPPER(RelocatesSourcePath, SdfPath);
-SDF_VALIDATE_WRAPPER(RelocatesTargetPath, SdfPath);
 SDF_VALIDATE_WRAPPER(Relocate, SdfRelocate);
 SDF_VALIDATE_WRAPPER(SpecializesPath, SdfPath);
 SDF_VALIDATE_WRAPPER(SubLayer, std::string);
@@ -815,9 +813,6 @@ SdfSchemaBase::_RegisterStandardFields()
 
     _DoRegisterField(SdfFieldKeys->LayerRelocates, SdfRelocates())
         .ListValueValidator(&_ValidateRelocate);
-    _DoRegisterField(SdfFieldKeys->Relocates, SdfRelocatesMap())
-        .MapKeyValidator(&_ValidateRelocatesSourcePath)
-        .MapValueValidator(&_ValidateRelocatesTargetPath);
     _DoRegisterField(SdfFieldKeys->Specifier, SdfSpecifierOver);
     _DoRegisterField(SdfFieldKeys->StartFrame, 0.0);
     _DoRegisterField(SdfFieldKeys->StartTimeCode, 0.0);
@@ -909,7 +904,6 @@ SdfSchemaBase::_RegisterStandardFields()
         .Field(SdfChildrenKeys->PropertyChildren)
         .Field(SdfFieldKeys->PropertyOrder)
         .Field(SdfFieldKeys->References)
-        .Field(SdfFieldKeys->Relocates)
         .Field(SdfFieldKeys->VariantSelection)
         .Field(SdfChildrenKeys->VariantSetChildren)
         .Field(SdfFieldKeys->VariantSetNames)

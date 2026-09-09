@@ -116,7 +116,6 @@ _GetIntroducingRelocatesLayer(const UsdPrimCompositionQueryArc &arc,
     // We ask the introduced node for its GetIntroPath which gets its parent's
     // path when it introduced this node.
     const SdfPath &path = arc.GetTargetNode().GetIntroPath();
-    static const TfToken field = SdfFieldKeys->Relocates;
 
     TF_FOR_ALL(layer, layerStack->GetLayers()) {
         SdfRelocates relocates = (*layer)->GetRelocates();
