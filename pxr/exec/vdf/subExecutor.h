@@ -92,8 +92,8 @@ protected:
 
 private:
     
-    /// Clears the data in the data manager.
-    ///
+    // Clears the buffer data AND invalidation state.
+    //
     virtual void _ClearData() override;
 
     // The factory shared amongst executors of this type.

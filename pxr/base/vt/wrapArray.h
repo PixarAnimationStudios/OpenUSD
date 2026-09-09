@@ -402,10 +402,10 @@ static std::string _VtStr(T const &self)
 }
 
 template <typename T>
-void VtWrapArray()
+pxr_boost::python::class_<T> VtWrapArray()
 {
     using namespace Vt_WrapArray;
-    
+
     typedef T This;
     typedef typename This::ElementType Type;
 
@@ -488,6 +488,8 @@ void VtWrapArray()
     // Wrap implicit conversions from VtArray to TfSpan.
     implicitly_convertible<This, TfSpan<Type> >();
     implicitly_convertible<This, TfSpan<const Type> >();
+
+    return selfCls;
 }
 
 template <class Array>

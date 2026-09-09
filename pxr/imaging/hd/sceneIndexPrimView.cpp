@@ -19,6 +19,9 @@ HdSceneIndexPrimView::const_iterator::operator++()
         SdfPathVector children =
             _inputSceneIndex->GetChildPrimPaths(**this);
         if (!children.empty()) {
+            if (_order == Lexicographic) {
+                std::sort(children.begin(), children.end());
+            }
             _stack.push_back({std::move(children), 0});
             return *this;
         }
@@ -38,31 +41,38 @@ HdSceneIndexPrimView::const_iterator::operator++()
 
 HdSceneIndexPrimView::const_iterator::const_iterator(
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
-        const SdfPath &root)
+        const SdfPath &root,
+        const Order order)
   : _inputSceneIndex(inputSceneIndex)
   , _stack{{{root},0}}
   , _skipDescendants(false)
+  , _order(order)
 {
 }
 
 HdSceneIndexPrimView::const_iterator::const_iterator(
-        HdSceneIndexBaseRefPtr const &inputSceneIndex)
+    HdSceneIndexBaseRefPtr const &inputSceneIndex,
+    const Order order)
   : _inputSceneIndex(inputSceneIndex)
   , _skipDescendants(false)
-{
-}
-
-HdSceneIndexPrimView::HdSceneIndexPrimView(
-        HdSceneIndexBaseRefPtr const &inputSceneIndex)
-  : HdSceneIndexPrimView(inputSceneIndex, SdfPath::AbsoluteRootPath())
+  , _order(order)
 {
 }
 
 HdSceneIndexPrimView::HdSceneIndexPrimView(
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
-        const SdfPath &root)
-  : _begin(inputSceneIndex, root)
-  , _end(inputSceneIndex)
+        const Order order)
+  : HdSceneIndexPrimView(
+      inputSceneIndex, SdfPath::AbsoluteRootPath(), order)
+{
+}
+
+HdSceneIndexPrimView::HdSceneIndexPrimView(
+        HdSceneIndexBaseRefPtr const &inputSceneIndex,
+        const SdfPath &root,
+        const Order order)
+  : _begin(inputSceneIndex, root, order)
+  , _end(inputSceneIndex, order)
 {
 }
 

@@ -49,7 +49,7 @@ public:
     /// UsdContrivedPublicMultipleApplyAPI::Get(
     ///    prim.GetStage(),
     ///    prim.GetPath().AppendProperty(
-    ///        "testo:name"));
+    ///        "public:name"));
     ///
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
@@ -96,7 +96,7 @@ public:
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  \p path must be of the format
-    /// <path>.testo:name .
+    /// <path>.public:name .
     ///
     /// This is shorthand for the following:
     ///

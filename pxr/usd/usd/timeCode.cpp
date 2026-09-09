@@ -93,6 +93,17 @@ std::istream& operator>>(std::istream& is, UsdTimeCode& time)
     return is;
 }
 
+UsdTimeCode operator*(const SdfLayerOffset& offset, const UsdTimeCode& time)
+{
+    if (time.IsEarliestTime()) {
+        return time;
+    }
+
+    const double offsetTime = offset * time.GetValue();
+    return time.IsPreTime() ? UsdTimeCode::PreTime(offsetTime)
+                            : UsdTimeCode(offsetTime);
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

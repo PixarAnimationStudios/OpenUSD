@@ -45,6 +45,9 @@ TF_DECLARE_PUBLIC_TOKENS(HgiTokens, HGI_API, HGI_TOKENS);
     (hdBaryCoordNoPersp)  \
     (hdSampleMaskIn) \
     (hdSampleMask) \
+    (hdDepthAny) \
+    (hdDepthGreater) \
+    (hdDepthLess) \
 
 TF_DECLARE_PUBLIC_TOKENS(
     HgiShaderKeywordTokens, HGI_API, HGI_SHADER_KEYWORD_TOKENS);

@@ -4,7 +4,7 @@
 #
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
-from pxr import UsdUtils, Sdf, Usd
+from pxr import UsdUtils, Sdf, Tf, Usd
 import unittest
 
 class TestUsdUtilsAuthoring(unittest.TestCase):
@@ -43,6 +43,53 @@ class TestUsdUtilsAuthoring(unittest.TestCase):
         self.assertEqual(colorConfigFallbacks,
             (cpyNoSublayers.pseudoRoot.GetInfo(Sdf.Layer.ColorConfigurationKey), 
              cpyNoSublayers.pseudoRoot.GetInfo(Sdf.Layer.ColorManagementSystemKey)))
+
+    def test_CopyLayerMetadataToLiveStage(self):
+        # Copying metadata into the root layer of an open stage must not let
+        # the stage observe the subLayers and subLayerOffsets fields out of
+        # sync with each other. Those two fields are correlated by index, so
+        # UsdUtilsCopyLayerMetadata batches all of its writes into a single
+        # change block; otherwise each SetInfo sends its own change
+        # notification and the stage recomposes against an inconsistent layer.
+        # We check this by looking for number of notices sent during the copy,
+        # and by checking that the two correlated fields agree with the source
+        # after the copy.
+
+        # A source layer with a sublayer and a non-identity offset, so that
+        # both of the correlated fields are copied.
+        sublayer = Sdf.Layer.CreateAnonymous('.usda')
+
+        source = Sdf.Layer.CreateAnonymous('.usda')
+        source.subLayerPaths.append(sublayer.identifier)
+        source.subLayerOffsets[0] = Sdf.LayerOffset(10.0, 2.0)
+        # Even though no prim is required for this test, adding another layer
+        # metadata field in the mix along with subLayers and subLayersOffsets
+        source.defaultPrim = 'main'
+
+        # The destination must be the root layer of an open stage, so that
+        # something is listening for change notices.
+        stage = Usd.Stage.CreateInMemory()
+        dest = stage.GetRootLayer()
+
+        numNotices = 0
+        def _OnLayersDidChange(notice, sender):
+            nonlocal numNotices
+            numNotices += 1
+
+        key = Tf.Notice.RegisterGlobally(Sdf.Notice.LayersDidChange,
+                                         _OnLayersDidChange)
+        try:
+            UsdUtils.CopyLayerMetadata(source, dest)
+        finally:
+            del key
+
+        # All of the metadata writes must arrive as a single notice. Without
+        # the change block this is one notice per metadata field.
+        self.assertEqual(numNotices, 1)
+
+        # The two correlated fields must agree with the source.
+        self.assertEqual(source.subLayerPaths, dest.subLayerPaths)
+        self.assertEqual(source.subLayerOffsets, dest.subLayerOffsets)
 
     def test_ComputeCollectionIncludesAndExcludes(self):
         stage = Usd.Stage.Open("collections.usda")

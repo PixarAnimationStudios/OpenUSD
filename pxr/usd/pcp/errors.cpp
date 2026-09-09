@@ -46,6 +46,7 @@ TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(PcpErrorType_TargetPermissionDenied);
     TF_ADD_ENUM_NAME(PcpErrorType_UnresolvedPrimPath);
     TF_ADD_ENUM_NAME(PcpErrorType_VariableExpressionError);
+    TF_ADD_ENUM_NAME(PcpErrorType_InvalidSublayerAndOffsetCount);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -636,6 +637,36 @@ PcpErrorInvalidSublayerOffset::ToString() const
                           TfStringify(offset).c_str(), 
                           sublayer->GetIdentifier().c_str(), 
                           layer->GetIdentifier().c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PcpErrorInvalidSublayerAndOffsetCountPtr
+PcpErrorInvalidSublayerAndOffsetCount::New()
+{
+    return PcpErrorInvalidSublayerAndOffsetCountPtr(
+        new PcpErrorInvalidSublayerAndOffsetCount);
+}
+
+PcpErrorInvalidSublayerAndOffsetCount::PcpErrorInvalidSublayerAndOffsetCount() :
+    PcpErrorBase(PcpErrorType_InvalidSublayerAndOffsetCount)
+{
+}
+
+PcpErrorInvalidSublayerAndOffsetCount::~PcpErrorInvalidSublayerAndOffsetCount()
+{
+}
+
+// virtual
+std::string
+PcpErrorInvalidSublayerAndOffsetCount::ToString() const
+{
+    return TfStringPrintf("Layer @%s@ has %zu sublayers and %zu offsets, but "
+                          "these counts must be equal. Using an identity offset "
+                          "for all sublayers instead.",
+                          layer->GetIdentifier().c_str(),
+                          sublayerCount,
+                          offsetCount);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -77,6 +77,22 @@ UsdImaging_DataSourceRelocatingSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase& sender,
     const HdSceneIndexObserver::DirtiedPrimEntries& entries) 
 {
+    // Fast path: if no entry dirties the source locator, there is nothing to
+    // remap, so forward the batch unchanged and avoid copying it. Transform /
+    // visibility invalidations (the common case, e.g. from an interactive
+    // activate) never touch the source locator, so they hit this path.
+    bool anyMatch = false;
+    for (const HdSceneIndexObserver::DirtiedPrimEntry& entry : entries) {
+        if (entry.dirtyLocators.Contains(_srcLocator)) {
+            anyMatch = true;
+            break;
+        }
+    }
+    if (!anyMatch) {
+        _SendPrimsDirtied(entries);
+        return;
+    }
+
     HdSceneIndexObserver::DirtiedPrimEntries newDirtiedEntries;
     for (const HdSceneIndexObserver::DirtiedPrimEntry& entry : entries) {
         if (entry.dirtyLocators.Contains(_srcLocator)) {

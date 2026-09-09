@@ -53,6 +53,11 @@ class SdfAssetPath;
 /// controllers can be ganged together to switch between two different rigs.    
 /// 
 ///
+/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
+/// that are text/tokens, the actual token is published and defined in \ref ExecIrTokens.
+/// So to set an attribute to the value "rightHanded", use ExecIrTokens->rightHanded
+/// as the value.
+///
 class ExecIrSwitchController : public ExecIrController
 {
 public:
@@ -146,6 +151,32 @@ private:
     // override SchemaBase virtuals.
     EXECIR_API
     const TfType &_GetTfType() const override;
+
+public:
+    // --------------------------------------------------------------------- //
+    // SWITCH 
+    // --------------------------------------------------------------------- //
+    /// 
+    /// The value of this attribute determines which rig is selected at any
+    /// given time.
+    /// 
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token switch = "rig1"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref ExecIrTokens "Allowed Values" | rig1, rig2 |
+    EXECIR_API
+    UsdAttribute GetSwitchAttr() const;
+
+    /// See GetSwitchAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    EXECIR_API
+    UsdAttribute CreateSwitchAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

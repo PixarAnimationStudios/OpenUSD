@@ -21,4 +21,12 @@ def "Model" (
         15: 15.0,
         20: 20.0
     }
+
+    duration dur = 1.0
+    duration dur.timeSamples = {
+        5: 5.0,
+        10: 10.0,
+        15: 15.0,
+        20: 20.0
+    }
 }

@@ -69,7 +69,11 @@ UsdImagingBackPlateAPIAdapter::GetImagingSubprimData(
                         HdBackPlateSchemaTokens->translateTweak))) 
             .SetImage(
                 UsdImagingDataSourceAttribute<SdfAssetPath>::New(
-                    backPlate.GetImageAttr(), stageGlobals))
+                    backPlate.GetImageAttr(), 
+                    stageGlobals,
+                    prim.GetPath(),
+                    plateLocator.Append(
+                        HdBackPlateSchemaTokens->image)))
             .SetAlphaImage(
                 UsdImagingDataSourceAttribute<SdfAssetPath>::New(
                     backPlate.GetAlphaImageAttr(), stageGlobals))
@@ -85,15 +89,27 @@ UsdImagingBackPlateAPIAdapter::GetImagingSubprimData(
             .SetDepthCameraSpaceOffset(
                 UsdImagingDataSourceAttribute<float>::New(
                     backPlate.GetDepthCameraSpaceOffsetAttr(), stageGlobals))
-            .SetLumaGain(
+            .SetLumaSlope(
                UsdImagingDataSourceAttribute<GfVec3f>::New(
-                    backPlate.GetLumaGainAttr(), stageGlobals))
-            .SetLumaGamma(
+                    backPlate.GetLumaSlopeAttr(), 
+                    stageGlobals,
+                    prim.GetPath(),
+                    plateLocator.Append(
+                        HdBackPlateSchemaTokens->lumaSlope)))
+            .SetLumaPower(
                 UsdImagingDataSourceAttribute<GfVec3f>::New(
-                    backPlate.GetLumaGammaAttr(), stageGlobals))
-            .SetLumaLift(
+                    backPlate.GetLumaPowerAttr(), 
+                    stageGlobals,
+                    prim.GetPath(),
+                    plateLocator.Append(
+                        HdBackPlateSchemaTokens->lumaPower))) 
+            .SetLumaOffset(
                 UsdImagingDataSourceAttribute<GfVec3f>::New(
-                    backPlate.GetLumaLiftAttr(), stageGlobals))
+                    backPlate.GetLumaOffsetAttr(), 
+                    stageGlobals,
+                    prim.GetPath(),
+                    plateLocator.Append(
+                        HdBackPlateSchemaTokens->lumaOffset))) 
             .SetPlateVisibility(
                 HdBackPlateSchema::BuildPlateVisibilityDataSource(plateVisibility))
             .Build();
@@ -118,7 +134,7 @@ UsdImagingBackPlateAPIAdapter::InvalidateImagingSubprim(
         return HdDataSourceLocatorSet();
     }
     const std::string prefix = TfStringPrintf(
-        "backplate:%s:", appliedInstanceName.data());
+        "backPlate:%s:", appliedInstanceName.data());
 
     for (const TfToken &propertyName : properties) {
         if (TfStringStartsWith(propertyName.GetString(), prefix)) {

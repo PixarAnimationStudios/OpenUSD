@@ -83,26 +83,26 @@ TestOpenAsset()
 
     testAsset(
         "test.usdz[file_1.usdc]", "src/file_1.usdc",
-        /* expectedSize = */ 680, /* expectedOffset = */ 64);
+        /* expectedSize = */ 683, /* expectedOffset = */ 64);
     testAsset(
         "test.usdz[nested.usdz]", "src/nested.usdz",
-        /* expectedSize = */ 2376, /* expectedOffset = */ 832);
+        /* expectedSize = */ 2478, /* expectedOffset = */ 1536);
     testAsset(
         "test.usdz[nested.usdz[file_1.usdc]]", "src/file_1.usdc",
-        /* expectedSize = */ 680, /* expectedOffset = */ 896);
+        /* expectedSize = */ 683, /* expectedOffset = */ 1600);
     testAsset(
         "test.usdz[nested.usdz[file_2.usdc]]", "src/file_2.usdc",
-        /* expectedSize = */ 621, /* expectedOffset = */ 1664);
+        /* expectedSize = */ 625, /* expectedOffset = */ 2368);
     testAsset(
         "test.usdz[nested.usdz[subdir/file_3.usdc]]", 
         "src/subdir/file_3.usdc",
-        /* expectedSize = */ 640, /* expectedOffset = */ 2368);
+        /* expectedSize = */ 644, /* expectedOffset = */ 3072);
     testAsset(
         "test.usdz[file_2.usdc]", "src/file_2.usdc",
-        /* expectedSize = */ 621, /* expectedOffset = */ 3264);
+        /* expectedSize = */ 625, /* expectedOffset = */ 832);
     testAsset(
         "test.usdz[subdir/file_3.usdc]", "src/subdir/file_3.usdc",
-        /* expectedSize = */ 640, /* expectedOffset = */ 3968);
+        /* expectedSize = */ 644, /* expectedOffset = */ 4096);
 
 
 }

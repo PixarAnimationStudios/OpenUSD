@@ -420,6 +420,16 @@ void GetInfo<GfTimeCode>(VtArray<GfTimeCode> *array, string *name)
 }
 
 template <>
+void GetInfo<GfDuration>(VtArray<GfDuration> *array, string *name)
+{
+    *name = "duration";
+    *array = VtArray<GfDuration>(3);
+    (*array)[0] = GfDuration(1.0);
+    (*array)[1] = GfDuration(1.5);
+    (*array)[2] = GfDuration(2.0);
+}
+
+template <>
 void GetInfo<GfVec2d>(VtArray<GfVec2d> *array, string *name)
 {
     *name = "double2";

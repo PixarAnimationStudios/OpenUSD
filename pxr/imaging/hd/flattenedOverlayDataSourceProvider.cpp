@@ -15,7 +15,7 @@ HdFlattenedOverlayDataSourceProvider::GetFlattenedDataSource(
     const Context &ctx) const
 {
     return
-        HdOverlayContainerDataSource::OverlayedContainerDataSources(
+        HdCreateOverlayContainerDataSource(
             ctx.GetInputDataSource(),
             ctx.GetFlattenedDataSourceFromParentPrim());
 }

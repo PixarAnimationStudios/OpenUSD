@@ -68,7 +68,8 @@ void TsDispatchToStorageValueTypeTemplate(
 {
 TF_PP_SEQ_FOR_EACH(_MAKE_CLAUSE, ~, TS_SPLINE_STORAGE_VALUE_TYPES)
 
-    if (valueType == Ts_GetType<GfTimeCode>())
+    if (valueType == Ts_GetType<GfTimeCode>() ||
+        valueType == Ts_GetType<GfDuration>())
     {
         Cls<double>()(std::forward<Args>(args)...);
         return;

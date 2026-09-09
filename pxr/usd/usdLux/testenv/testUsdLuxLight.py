@@ -506,19 +506,18 @@ class TestUsdLuxLight(unittest.TestCase):
 
             # Every concrete light type and some API schemas (with appropriate
             # shaderId as sdr Identifier) in usdLux domain will have an 
-            # SdrShaderNode with source type 'USD' registered for it under its 
-            # USD schema type name. 
+            # SdrShaderNode with shading system 'USD' registered for it
+            # under its USD schema type name. 
             node = Sdr.Registry().GetShaderNodeByIdentifier(
                 sdrIdentifier, ['USD'])
             self.assertTrue(node is not None)
             self.assertIn(sdrIdentifier, expectedLightNodes)
 
-            # Names, identifier, and role for the node all match the USD schema
+            # Names, identifier for the node all match the USD schema
             # type name
             self.assertEqual(node.GetIdentifier(), sdrIdentifier)
             self.assertEqual(node.GetName(), sdrIdentifier)
             self.assertEqual(node.GetImplementationName(), sdrIdentifier)
-            self.assertEqual(node.GetRole(), sdrIdentifier)
             self.assertTrue(node.GetInfoString().startswith(sdrIdentifier))
 
             # The context is always 'light' for lights. 
@@ -536,9 +535,8 @@ class TestUsdLuxLight(unittest.TestCase):
             self.assertFalse(node.GetResolvedDefinitionURI())
             self.assertFalse(node.GetResolvedImplementationURI())
 
-            # Other classifications are left empty.
-            self.assertFalse(node.GetCategory())
-            self.assertFalse(node.GetDepartments())
+            self.assertNotIn('category', node.GetMetadata())
+            self.assertNotIn('departments', node.GetMetadata())
             self.assertFalse(node.GetFunction())
             self.assertFalse(node.GetLabel())
             self.assertFalse(node.GetShaderVersion())

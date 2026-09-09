@@ -208,7 +208,7 @@ ExecSystem::_ParallelForEachRequest(
     _requestTracker->ParallelForEachRequest(f);
 }
 
-std::vector<VdfMaskedOutput>
+std::pair<std::vector<VdfMaskedOutput>, std::vector<const EfLeafNode*>>
 ExecSystem::_Compile(TfSpan<const ExecValueKey> valueKeys)
 {
     Exec_Compiler compiler(_stage, _program.get(), _runtime.get());

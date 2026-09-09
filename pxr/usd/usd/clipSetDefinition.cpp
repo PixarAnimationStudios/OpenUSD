@@ -18,7 +18,6 @@
 #include "pxr/usd/pcp/mapExpression.h"
 #include "pxr/usd/pcp/primIndex.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/layerUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -67,16 +66,31 @@ _GetLayerOffsetToRoot(
 }
 
 static void
-_ApplyLayerOffsetToExternalTimes(
-    const SdfLayerOffset& layerOffset,
+_ApplyOffsetToTimes(
+    const SdfLayerOffset& offset,
+    const SdfLayerOffset& timesOffset,
     VtVec2dArray* array)
 {
-    if (layerOffset.IsIdentity()) {
+    if (!array) {
+        return;
+    }
+
+    // When an attribute backed by a clip is queried, the stage
+    // transforms the query time with the clipSet's layer offset.
+    // In very rare scenarios, the clip times may be authored with
+    // a different layer offset from the clipSet's layer offset.
+    // To ensure the desired offset transformation to clip times is
+    // accurately applied, we bake in a layer offset of
+    // `timesOffset * offset.inverse`. Note that:
+    //
+    // timesOffset * clipTimes =
+    //     offset * (timesOffset * offset.inverse) * clipTimes
+    if (offset == timesOffset) {
         return;
     }
 
     for (auto& time : *array) {
-        time[0] = layerOffset * time[0]; 
+        time[0] = timesOffset * offset.GetInverse() * time[0]; 
     }
 }
 
@@ -297,12 +311,29 @@ namespace
 struct _ClipSet {
     explicit _ClipSet(const std::string& name_) : name(name_) { }
 
+    // This info is anchored to the layer contributing clip asset paths
+    // unless otherwise specified.
     struct _AnchorInfo {
         PcpLayerStackPtr layerStack;
         SdfPath primPath;
         size_t layerIndex;
         size_t layerStackOrder;
+
+        // The layer index from which the base offset for this clipset is
+        // computed.
+        size_t offsetLayerIndex;
+        // The layer index from which the offset to clipTimes is computed.
+        // This may or may not exist, and may or may not differ from
+        // offsetLayerIndex.
+        size_t timesOffsetLayerIndex;
+
+        // `offset` stores the offset to the layer expressing the strongest
+        // clip assetPaths if the clip is templated, or the strongest clip
+        // active if the clip is not.
         SdfLayerOffset offset;
+        // `timesOffset` stores the offset to the layer expressing the
+        // strongest clip times if it is expressed at all.
+        SdfLayerOffset timesOffset;
     };
     _AnchorInfo anchorInfo;
     VtDictionary clipInfo;
@@ -344,26 +375,31 @@ _RecordAnchorInfo(
 
         const SdfPath& path = node.GetPath();
         const PcpLayerStackRefPtr& layerStack = node.GetLayerStack();
-        const SdfLayerRefPtr& layer = layerStack->GetLayers()[layerIdx];
         clipSet->anchorInfo = _ClipSet::_AnchorInfo {
             layerStack, path, layerIdx, 0, // This will get filled in later
-            _GetLayerOffsetToRoot(node, layer)
+            layerIdx, layerIdx,
+            SdfLayerOffset(), SdfLayerOffset() // Offsets are computed later
         };
     }
-}
 
-static void
-_ApplyLayerOffsetToClipInfo(
-    const PcpNodeRef& node, const SdfLayerRefPtr& layer,
-    const TfToken& infoKey, VtDictionary* clipInfo)
-{
-    VtValue* v = TfMapLookupPtr(*clipInfo, infoKey);
-    if (v && v->IsHolding<VtVec2dArray>()) {
-        VtVec2dArray value;
-        v->Swap(value);
-        _ApplyLayerOffsetToExternalTimes(
-            _GetLayerOffsetToRoot(node, layer), &value);
-        v->Swap(value);
+    // The layer offset of non-templated clips is recorded relative to the
+    // strongest authored clip active metadata. Record the layer index at
+    // which active is found. Note that the offsetLayerIndex for
+    // templated clips is the layer index at which templateAssetPath was
+    // found above.
+    if (_GetInfo<VtVec2dArray>(clipInfo, UsdClipsAPIInfoKeys->active) &&
+        !_GetInfo<std::string>(clipSet->clipInfo,
+            UsdClipsAPIInfoKeys->templateAssetPath)) {
+
+        clipSet->anchorInfo.offsetLayerIndex = layerIdx;
+    }
+
+    // The layer offset to the strongest authored clip times metadata
+    // is in very uncommon circumstances different from the offset to the
+    // clip active/assetPaths metadata for non-templated and templated clips
+    // respectively. Record the layer index at which times was found.
+    if (_GetInfo<VtVec2dArray>(clipInfo, UsdClipsAPIInfoKeys->times)) {
+        clipSet->anchorInfo.timesOffsetLayerIndex = layerIdx;
     }
 }
 
@@ -423,11 +459,6 @@ _ResolveClipSetsInNode(
 
                 _RecordAnchorInfo(node, i, clipInfoForLayer, &clipSet);
 
-                _ApplyLayerOffsetToClipInfo(
-                    node, layer, UsdClipsAPIInfoKeys->active, &clipInfoForLayer);
-                _ApplyLayerOffsetToClipInfo(
-                    node, layer, UsdClipsAPIInfoKeys->times, &clipInfoForLayer);
-
                 VtDictionaryOverRecursive(&clipInfoForLayer, clipSet.clipInfo);
                 clipSet.clipInfo.swap(clipInfoForLayer);
 
@@ -453,23 +484,49 @@ _ResolveClipSetsInNode(
         }
     }
 
-    // Filter out composed clip sets that aren't in the addedClipSets list.
-    // This could be because they were deleted via the clipSets list op.
     for (auto it = clipSetsInNode.begin(); it != clipSetsInNode.end(); ) {
+        // Filter out composed clip sets that aren't in the addedClipSets list.
+        // This could be because they were deleted via the clipSets list op.
         auto addedIt = std::find(
             addedClipSets.begin(), addedClipSets.end(), it->first);
         if (addedIt == addedClipSets.end()) {
             it = clipSetsInNode.erase(it);
+            continue;
         }
-        else {
-            // If no anchor info is found, this clip set will be removed
-            // later on.
-            if (it->second.anchorInfo.layerStack) {
-                it->second.anchorInfo.layerStackOrder = 
-                    std::distance(addedClipSets.begin(), addedIt);
-            }
+
+        _ClipSet::_AnchorInfo& info = it->second.anchorInfo;
+
+        // If no anchor info is found, this clip set will be removed
+        // later on.
+        if (!info.layerStack) {
             ++it;
+            continue;
         }
+        info.layerStackOrder =
+            std::distance(addedClipSets.begin(), addedIt);
+
+        // Compute the base layer offset only once, after the entire
+        // stack has been traversed.
+        info.offset = _GetLayerOffsetToRoot(
+            node, info.layerStack->GetLayers()[info.offsetLayerIndex]);
+
+        // In the rare case that the clip times metadata has a different
+        // layer offset than the clipset's offset, transform clip times.
+        VtValue* v = TfMapLookupPtr(it->second.clipInfo,
+                                    UsdClipsAPIInfoKeys->times);
+        if (v && v->IsHolding<VtVec2dArray>() &&
+                info.offsetLayerIndex
+                != info.timesOffsetLayerIndex)
+        {
+            VtVec2dArray clipTimes;
+            v->Swap(clipTimes);
+            info.timesOffset = _GetLayerOffsetToRoot(
+                node,
+                info.layerStack->GetLayers()[info.timesOffsetLayerIndex]);
+            _ApplyOffsetToTimes(info.offset, info.timesOffset, &clipTimes);
+            v->Swap(clipTimes);
+        }
+        ++it;
     }
 
     result->swap(clipSetsInNode);
@@ -553,6 +610,7 @@ Usd_ComputeClipSetDefinitionsForPrimIndex(
         out.sourceLayerStack = clipSet.anchorInfo.layerStack;
         out.sourcePrimPath = clipSet.anchorInfo.primPath;
         out.indexOfLayerWhereAssetPathsFound = clipSet.anchorInfo.layerIndex;
+        out.toStageOffset = clipSet.anchorInfo.offset;
 
         const VtDictionary& clipInfo = clipSet.clipInfo;
         _SetInfo(clipInfo, UsdClipsAPIInfoKeys->primPath, &out.clipPrimPath);
@@ -592,21 +650,27 @@ Usd_ComputeClipSetDefinitionsForPrimIndex(
                 auto sourceLayer = out.sourceLayerStack->GetLayers()[
                     out.indexOfLayerWhereAssetPathsFound];
 
-                // Apply layer offsets to clipActive and clipTimes afterwards
+                // Apply layer offsets to clipTimes afterwards
                 // so that they don't affect the derived asset paths. Consumers
                 // expect offsets to affect what clip is being used at a given
                 // time, not the set of clips that are available.
                 //
-                // We use the layer offset for the layer where the template
-                // asset path pattern was found. Although the start/end/stride
-                // values may be authored on different layers with different
-                // offsets, this is an uncommon situation -- consumers usually
-                // author all clip metadata in the same layer -- and it's not
-                // clear what the desired result in that case would be anyway.
-                _ApplyLayerOffsetToExternalTimes(
-                    clipSet.anchorInfo.offset, &*out.clipTimes);
-                _ApplyLayerOffsetToExternalTimes(
-                    clipSet.anchorInfo.offset, &*out.clipActive);
+                // As a basis, we use the layer offset for the layer where the
+                // template asset path pattern was found. Although the
+                // start/end/stride values may be authored on different layers
+                // with different offsets, this is an uncommon situation --
+                // consumers usually author all clip metadata in the same layer
+                // -- and it's not clear what the desired result in that case
+                // would be anyway.
+                if (out.clipTimes.has_value() &&
+                        clipSet.anchorInfo.offsetLayerIndex
+                        != clipSet.anchorInfo.timesOffsetLayerIndex)
+                {
+
+                    _ApplyOffsetToTimes(clipSet.anchorInfo.offset,
+                                        clipSet.anchorInfo.timesOffset,
+                                        &*out.clipTimes);
+                }
             }
         }
     }

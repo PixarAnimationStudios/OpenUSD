@@ -37,21 +37,55 @@ class UsdImagingSceneIndex
             : public HdSceneIndexBase, public HdEncapsulatingSceneIndexBase
 {
 public:
+    /// A callback to insert additional scene indices into the UsdImaging chain.
+    using SceneIndexAppendCallback = std::function<
+        HdSceneIndexBaseRefPtr(
+            HdSceneIndexBaseRefPtr const &,
+            HdContainerDataSourceHandle const &sceneIndexCreateArgs)>;
+
+    /// Callbacks a client can use to insert scene indices at specific points
+    /// in the UsdImaging chain.
+    ///
+    /// Note that these callbacks cannot be in sceneIndexCreateArgs since
+    /// HdSampledDataSource::GetValue() returns a VtValue which requires an
+    /// object of a class having an operator==.
+    ///
+    struct SceneIndexAppendCallbacks
+    {
+        /// Inserts scene indices right after the stage scene index (and its
+        /// material caching scene index).
+        SceneIndexAppendCallback overridesSceneIndexCallback;
+    };
+
     /// Create the chain of scene indices.
     ///
-    /// Note that UsdImagingSceneIndexAppendCallback cannot be part of the
-    /// UsdImagingUsdSceneIndexInputArgsSchema since std::function is not a
-    /// value type (no operator==) and, thus, cannot be returned by an
-    /// HdTypedSampledDataSource. We might revisit the mechanism for clients
-    /// to specify the callback (through, e.g., registration) later.
+    /// The sceneIndexCreateArgs is cast to UsdImagingSceneIndexCreateArgsSchema
+    /// when configuring the usdImaging scene indices.
     ///
     static UsdImagingSceneIndexRefPtr New(
-            HdContainerDataSourceHandle const &inputArgs,
-            const UsdImagingSceneIndexAppendCallback &
-                overridesSceneIndexCallback) {
+            HdContainerDataSourceHandle const &sceneIndexCreateArgs,
+            const SceneIndexAppendCallbacks &sceneIndexAppendCallbacks = {})
+    {
         return TfCreateRefPtr(
             new UsdImagingSceneIndex(
-                inputArgs, overridesSceneIndexCallback));
+                sceneIndexCreateArgs, sceneIndexAppendCallbacks));
+    }
+
+    /// \deprecated Use the overload taking SceneIndexAppendCallbacks.
+    static UsdImagingSceneIndexRefPtr New(
+            HdContainerDataSourceHandle const &sceneIndexCreateArgs,
+            const UsdImagingSceneIndexAppendCallback &
+                overridesSceneIndexCallback) {
+        SceneIndexAppendCallbacks callbacks;
+        if (overridesSceneIndexCallback) {
+            callbacks.overridesSceneIndexCallback =
+                [overridesSceneIndexCallback](
+                    HdSceneIndexBaseRefPtr const &inputScene,
+                    HdContainerDataSourceHandle const &) {
+                    return overridesSceneIndexCallback(inputScene);
+                };
+        }
+        return New(sceneIndexCreateArgs, callbacks);
     }
 
     USDIMAGING_API
@@ -153,8 +187,8 @@ private:
 
     USDIMAGING_API
     UsdImagingSceneIndex(
-        HdContainerDataSourceHandle const &inputArgs,
-        const UsdImagingSceneIndexAppendCallback &overridesSceneIndexCallback);
+        HdContainerDataSourceHandle const &sceneIndexCreateArgs,
+        const SceneIndexAppendCallbacks &sceneIndexAppendCallbacks);
 
     USDIMAGING_API
     UsdImagingSceneIndex(

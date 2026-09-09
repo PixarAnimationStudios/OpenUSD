@@ -6,9 +6,14 @@
 //
 #include "hdPrman/pinnedCurveExpandingSceneIndexPlugin.h"
 #include "hdPrman/tokens.h"
-
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+
+#include "pxr/imaging/hd/version.h"
+#if HD_API_VERSION < 96
+#include "hdPrman/pxr/imaging/hdsi/pinnedCurveExpandingSceneIndex.h"
+#else
 #include "pxr/imaging/hdsi/pinnedCurveExpandingSceneIndex.h"
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -62,7 +67,11 @@ HdPrman_PinnedCurveExpandingSceneIndexPlugin::_AppendSceneIndex(
     const HdContainerDataSourceHandle &inputArgs)
 {
     TF_UNUSED(inputArgs);
+#if HD_API_VERSION < 96
+    return HdPrmanPinnedCurveExpandingSceneIndex::New(inputScene);
+#else
     return HdsiPinnedCurveExpandingSceneIndex::New(inputScene);
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

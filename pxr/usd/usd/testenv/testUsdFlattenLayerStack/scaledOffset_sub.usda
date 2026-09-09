@@ -1,0 +1,20 @@
+#usda 1.0
+
+def Xform "ScaledTimeTest"
+{
+    double Double = 10
+    double Double.timeSamples = {
+        0: 10,
+        1: 20,
+    }
+    timecode TimeCode = 10
+    timecode TimeCode.timeSamples = {
+        0: 10,
+        1: 20,
+    }
+    duration Duration = 10
+    duration Duration.timeSamples = {
+        0: 10,
+        1: 20,
+    }
+}

@@ -1423,7 +1423,8 @@ HdSceneIndexPluginRegistry::AppendSceneIndicesForRenderer(
     const std::string &rendererDisplayName,
     const HdSceneIndexBaseRefPtr &inputScene,
     const std::string &renderInstanceId,
-    const std::string &appName)
+    const std::string &appName,
+    const HdContainerDataSourceHandle &sceneIndexCreateArgs)
 {
     // We've only discovered scene index plugins (from their plugInfo entries)
     // and collected their metadata at this point.
@@ -1449,10 +1450,10 @@ HdSceneIndexPluginRegistry::AppendSceneIndicesForRenderer(
 
     for (const auto &entry : orderedEntries) {
         HdSceneIndexBaseRefPtr input = result;
-        HdContainerDataSourceHandle args =
-            HdOverlayContainerDataSource::OverlayedContainerDataSources(
-                entry.args, underlayArgs);
-        
+        HdContainerDataSourceHandle const args =
+            HdCreateOverlayContainerDataSource(
+                { entry.args, sceneIndexCreateArgs, underlayArgs} );
+
         if (entry.callback) {
             result = entry.callback(renderInstanceId, input, args);
         } else {

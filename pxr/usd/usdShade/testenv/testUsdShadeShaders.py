@@ -223,8 +223,8 @@ class TestUsdShadeShaders(unittest.TestCase):
         classPale.SetSdrMetadata(baseSdrMetadata)
 
         self.assertEqual(pale.GetSdrMetadata(), baseSdrMetadata)
-        paleSdrMetadata = {Sdr.NodeMetadata.Departments : "anim|layout",
-                              Sdr.NodeMetadata.Category : "preview"}
+        paleSdrMetadata = {"departments" : "anim|layout",
+                           "category" : "preview"}
         for i,j in paleSdrMetadata.items():
             pale.SetSdrMetadataByKey(i, j)
 

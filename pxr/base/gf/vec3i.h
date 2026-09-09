@@ -15,19 +15,20 @@
 /// \ingroup group_gf_LinearAlgebra
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/api.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/hash.h"
 
 #include <cstddef>
+#include <type_traits>
 
 #include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class GfVec3i;
+class GfVec2i;
 
 template <>
 struct GfIsGfVec<class GfVec3i> { static const bool value = true; };
@@ -47,41 +48,56 @@ public:
     typedef int ScalarType;
     static const size_t dimension = 3;
 
+    /// \name Vector Components
+    ///
+    /// The vector's components, which are also its storage.  These are public
+    /// and directly readable and writable.
+    ///
+    /// The components are contiguous and in declaration order, so \c &x points
+    /// to \c dimension values.  See data() and operator[]().
+    ///
+    /// For multi-component access see the swizzle accessors below, which return
+    /// a new vector by value.
+    /// @{
+    int x, y, z;
+    /// @}
+
     /// GfVec3i value-initializes to zero and performs no default
     /// initialization, like float or double.
     GfVec3i() = default;
 
     /// Initialize all elements to a single value.
     constexpr explicit GfVec3i(int value)
-        : _data{ value, value, value }
+        : x(value), y(value), z(value)
     {
     }
 
     /// Initialize all elements with explicit arguments.
     constexpr GfVec3i(int s0, int s1, int s2)
-        : _data{ s0, s1, s2 }
+        : x(s0), y(s1), z(s2)
     {
     }
 
     /// Construct with pointer to values.
     template <class Scl>
     constexpr explicit GfVec3i(Scl const *p)
-        : _data{ p[0], p[1], p[2] }
+        : x(p[0]), y(p[1]), z(p[2])
     {
     }
- 
     /// Create a unit vector along the X-axis.
     static GfVec3i XAxis() {
         GfVec3i result(0);
         result[0] = 1;
         return result;
     }
+
     /// Create a unit vector along the Y-axis.
     static GfVec3i YAxis() {
         GfVec3i result(0);
         result[1] = 1;
         return result;
     }
+
     /// Create a unit vector along the Z-axis.
     static GfVec3i ZAxis() {
         GfVec3i result(0);
@@ -100,9 +116,9 @@ public:
 
     /// Set all elements with passed arguments.
     GfVec3i &Set(int s0, int s1, int s2) {
-        _data[0] = s0;
-        _data[1] = s1;
-        _data[2] = s2;
+        x = s0;
+        y = s1;
+        z = s2;
         return *this;
     }
 
@@ -112,24 +128,28 @@ public:
     }
 
     /// Direct data access.
-    int const *data() const { return _data; }
-    int *data() { return _data; }
+    ///
+    /// data() is the only member that relies on the components being
+    /// contiguous; every other member either names them directly or goes
+    /// through here.
+    int const *data() const { return &x; }
+    int *data() { return &x; }
     int const *GetArray() const { return data(); }
 
     /// Indexing.
-    int const &operator[](size_t i) const { return _data[i]; }
-    int &operator[](size_t i) { return _data[i]; }
+    int const &operator[](size_t i) const { return data()[i]; }
+    int &operator[](size_t i) { return data()[i]; }
 
     /// Hash.
     friend inline size_t hash_value(GfVec3i const &vec) {
-        return TfHash::Combine(vec[0], vec[1], vec[2]);
+        return TfHash::Combine(vec.x, vec.y, vec.z);
     }
 
     /// Equality comparison.
     bool operator==(GfVec3i const &other) const {
-        return _data[0] == other[0] &&
-               _data[1] == other[1] &&
-               _data[2] == other[2];
+        return x == other.x &&
+               y == other.y &&
+               z == other.z;
     }
     bool operator!=(GfVec3i const &other) const {
         return !(*this == other);
@@ -148,14 +168,14 @@ public:
     
     /// Create a vec with negated elements.
     GfVec3i operator-() const {
-        return GfVec3i(-_data[0], -_data[1], -_data[2]);
+        return GfVec3i(-x, -y, -z);
     }
 
     /// Addition.
     GfVec3i &operator+=(GfVec3i const &other) {
-        _data[0] += other[0];
-        _data[1] += other[1];
-        _data[2] += other[2];
+        x += other.x;
+        y += other.y;
+        z += other.z;
         return *this;
     }
     friend GfVec3i operator+(GfVec3i const &l, GfVec3i const &r) {
@@ -164,9 +184,9 @@ public:
 
     /// Subtraction.
     GfVec3i &operator-=(GfVec3i const &other) {
-        _data[0] -= other[0];
-        _data[1] -= other[1];
-        _data[2] -= other[2];
+        x -= other.x;
+        y -= other.y;
+        z -= other.z;
         return *this;
     }
     friend GfVec3i operator-(GfVec3i const &l, GfVec3i const &r) {
@@ -175,9 +195,9 @@ public:
 
     /// Multiplication by scalar.
     GfVec3i &operator*=(double s) {
-        _data[0] *= s;
-        _data[1] *= s;
-        _data[2] *= s;
+        x *= s;
+        y *= s;
+        z *= s;
         return *this;
     }
     GfVec3i operator*(double s) const {
@@ -189,9 +209,9 @@ public:
 
         /// Division by scalar.
     GfVec3i &operator/=(int s) {
-        _data[0] /= s;
-        _data[1] /= s;
-        _data[2] /= s;
+        x /= s;
+        y /= s;
+        z /= s;
         return *this;
     }
     GfVec3i operator/(int s) const {
@@ -200,7 +220,7 @@ public:
     
     /// See GfDot().
     int operator*(GfVec3i const &v) const {
-        return _data[0] * v[0] + _data[1] * v[1] + _data[2] * v[2];
+        return x * v.x + y * v.y + z * v.z;
     }
 
     /// Returns the projection of \p this onto \p v. That is:
@@ -226,22 +246,172 @@ public:
     }
 
  
-private:
-    int _data[3];
-};
+    /// \name Swizzles
+    ///
+    /// Each accessor returns a new vector built from this one's components, in
+    /// the order named.  For example zyx() returns
+    /// GfVec3i(z, y, x).
+    ///
+    /// Every permutation of 2 to 3 of the 3 components is
+    /// available.  Repeated components (\c xx, \c xyy) are not; nor are
+    /// single-component swizzles, which are just the components themselves.
+    ///
+    /// The results are ordinary GfVecs, so all the usual operators, GfDot() and
+    /// so on apply to them.  They are values, not references into this vector,
+    /// so they cannot be assigned through.
+    ///
+    /// @{
+#if defined (doxygen)
+    constexpr GfVec2i xy() const;
+    constexpr GfVec2i xz() const;
+    constexpr GfVec2i yx() const;
+    constexpr GfVec2i yz() const;
+    constexpr GfVec2i zx() const;
+    constexpr GfVec2i zy() const;
+    constexpr GfVec3i xyz() const;
+    constexpr GfVec3i xzy() const;
+    constexpr GfVec3i yxz() const;
+    constexpr GfVec3i yzx() const;
+    constexpr GfVec3i zxy() const;
+    constexpr GfVec3i zyx() const;
+    /// @}
+#else // !doxygen
+    // Note that these are templated on their own return type so that the
+    // declarations cost nothing in compile time & debug info unless they are
+    // actually called in a TU.  Naming a different type is an error and
+    // static_assert()ed against.
+    template <class Vec = GfVec2i> constexpr Vec xy() const;
+    template <class Vec = GfVec2i> constexpr Vec xz() const;
+    template <class Vec = GfVec2i> constexpr Vec yx() const;
+    template <class Vec = GfVec2i> constexpr Vec yz() const;
+    template <class Vec = GfVec2i> constexpr Vec zx() const;
+    template <class Vec = GfVec2i> constexpr Vec zy() const;
+    template <class Vec = GfVec3i> constexpr Vec xyz() const;
+    template <class Vec = GfVec3i> constexpr Vec xzy() const;
+    template <class Vec = GfVec3i> constexpr Vec yxz() const;
+    template <class Vec = GfVec3i> constexpr Vec yzx() const;
+    template <class Vec = GfVec3i> constexpr Vec zxy() const;
+    template <class Vec = GfVec3i> constexpr Vec zyx() const;
+#endif // doxygen
+ };
 
 /// Output a GfVec3i.
 /// \ingroup group_gf_DebuggingOutput
 GF_API std::ostream& operator<<(std::ostream &, GfVec3i const &);
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+// Lower dimensions of the same scalar type, for the swizzles above.  Note that
+// lower dimensions never include higher ones, so this introduces no cycle.
+#include "pxr/base/gf/vec2i.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+
+template <class Vec>
+constexpr Vec
+GfVec3i::xy() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(x, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec3i::xz() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(x, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec3i::yx() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(y, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec3i::yz() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(y, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec3i::zx() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(z, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec3i::zy() const
+{
+    static_assert(std::is_same<Vec, GfVec2i>::value);
+    return Vec(z, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec3i::xyz() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(x, y, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec3i::xzy() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(x, z, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec3i::yxz() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(y, x, z);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec3i::yzx() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(y, z, x);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec3i::zxy() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(z, x, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec3i::zyx() const
+{
+    static_assert(std::is_same<Vec, GfVec3i>::value);
+    return Vec(z, y, x);
+}
 
 
 /// Returns component-wise multiplication of vectors \p v1 and \p v2.
 inline GfVec3i
 GfCompMult(GfVec3i const &v1, GfVec3i const &v2) {
     return GfVec3i(
-        v1[0] * v2[0],
-        v1[1] * v2[1],
-        v1[2] * v2[2]
+        v1.x * v2.x,
+        v1.y * v2.y,
+        v1.z * v2.z
         );
 }
 
@@ -249,9 +419,9 @@ GfCompMult(GfVec3i const &v1, GfVec3i const &v2) {
 inline GfVec3i
 GfCompDiv(GfVec3i const &v1, GfVec3i const &v2) {
     return GfVec3i(
-        v1[0] / v2[0],
-        v1[1] / v2[1],
-        v1[2] / v2[2]
+        v1.x / v2.x,
+        v1.y / v2.y,
+        v1.z / v2.z
         );
 }
 

@@ -39,6 +39,7 @@ void VtWrapArrayEdit()
              +[](ArrayEdit const &self) {
                  return TfHash{}(self);
              })
+        .def(self_ns::str(self_ns::self))
         .def("IsIdentity", &ArrayEdit::IsIdentity)
         .def("ComposeOver",
              +[](ArrayEdit const &self, ArrayEdit const &weaker) {

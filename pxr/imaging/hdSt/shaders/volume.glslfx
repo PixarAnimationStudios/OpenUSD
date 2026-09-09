@@ -10,6 +10,7 @@
 --- This is what an import might look like.
 --- #import $TOOLS/hdSt/shaders/volume.glslfx
 
+#import $TOOLS/hdSt/shaders/coordUtils.glslfx
 #import $TOOLS/hdSt/shaders/instancing.glslfx
 #import $TOOLS/hdSt/shaders/pointId.glslfx
 
@@ -80,40 +81,6 @@ float resolvedStepSizeEye;
 float resolvedStepSizeEyeLighting;
 float resolvedStepSizeWorld;
 float resolvedStepSizeWorldLighting;
-
-// Transform a point by a 4x4 matrix
-vec3
-transformPoint(mat4 m, vec3 point)
-{
-    const vec4 result = vec4(m * vec4(point, 1.0));
-    return result.xyz / result.w;
-}
-
-#ifdef HD_SHADER_SUPPORTS_DOUBLE_PRECISION   
-vec3
-transformPoint(dmat4 m, vec3 point)
-{
-    const vec4 result = vec4(m * vec4(point, 1.0));
-    return result.xyz / result.w;
-}
-#endif
-
-// Transform a direction by a 4x4 matrix
-vec3
-transformDir(mat4 m, vec3 dir)
-{
-    const vec4 result = vec4(m * vec4(dir, 0.0));
-    return result.xyz;
-}
-
-#ifdef HD_SHADER_SUPPORTS_DOUBLE_PRECISION   
-vec3
-transformDir(dmat4 m, vec3 dir)
-{
-    const vec4 result = vec4(m * vec4(dir, 0.0));
-    return result.xyz;
-}
-#endif
 
 // Compute time when a ray starting at pos with direction dir
 // exits the axis-aligned box with vertices lMin and lMax.
@@ -194,8 +161,8 @@ float
 timeRayExitsVolume(vec3 rayStartEye, vec3 rayDirectionEye)
 {
     // Transform ray to volume bounding box space
-    const vec3 rayStartBBox     = transformPoint(eyeToBBox, rayStartEye);
-    const vec3 rayDirectionBBox = transformDir  (eyeToBBox, rayDirectionEye);
+    const vec3 rayStartBBox     = TransformPoint(eyeToBBox, rayStartEye);
+    const vec3 rayDirectionBBox = TransformDir  (eyeToBBox, rayDirectionEye);
 
     // Compute when ray is leaving the volume bounding box
     return timeRayExitsBox(rayStartBBox,
@@ -219,7 +186,7 @@ timeRayEnteredVolume(vec3 rayEndEye, vec3 rayDirectionEye)
 vec3
 coordsToLocalVolumeSpace(vec3 coords)
 {
-    return transformPoint(instanceModelViewInverse, coords);
+    return TransformPoint(instanceModelViewInverse, coords);
 }
 
 #if NUM_LIGHTS == 0
@@ -385,71 +352,6 @@ volumeIntegrator(vec3 rayStartEye, vec3 rayDirectionEye, float rayLength)
     return result;
 }
 
-// Is camera orthographic?
-bool
-isCameraOrthographic()
-{
-    return abs(GetProjectionMatrix()[3][3] - 1.0) < 1e-5;
-}
-
-// Convert depth value z in [-1,1] to depth in eye space [-near, -far].
-float
-NDCtoEyeZ(float z)
-{
-    const MAT4 m = inverse(GetProjectionMatrix());
-    return float((m[2][2] * z + m[3][2]) / (m[2][3] * z + m[3][3]));
-}
-
-// Compute the z-value of the near clipping plane in eye space.
-float
-computeNearZ()
-{
-#ifdef HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
-    return NDCtoEyeZ(-1.0);
-#else
-    return NDCtoEyeZ(0.0);
-#endif
-}
-
-// Compute the near clipping distance. Always returns a positive value.
-float
-computeNearDistance()
-{
-    return abs(computeNearZ());
-}
-
-// Consider the ray from the eye to a given point in eye space.
-// Computes the direction of this ray in both cases where the
-// camera is orthographic or perspective.
-vec3
-computeRayDirectionEye(vec3 rayPointEye)
-{
-    // In NDC space, the ray is always pointing into the z-direction (0,0,1).
-    // In clip space, this corresponds to (0,0,1,0).
-    // We need to multiply (0,0,1,0) by the inverse projection matrix to
-    // get to homogeneous eye space.
-    // Or alternatively, we can get the direction in homogeneous eye space
-    // by taking the respective column of the inverse projection matrix:
-    const vec4 dir = vec4(inverse(GetProjectionMatrix())[2]);
-
-    // To compute the corresponding direction in non-homogeneous eye space,
-    // compute the position of the ray after time dt << 1:
-    //     vec4 pHomogeneous = vec4(rayPointEye, 1.0) + dt * dir;
-    //     vec3 p = pHomogeneous.xyz / pHomogeneous.w;
-    //
-    // Or equivalently:
-    //     vec3 p = (rayPointEye + dt * dir.xyz) / (1.0 + dir.w * dt);
-    // And since dt << 1, we have
-    //     vec3 p = (rayPointEye + dt * dir.xyz) * (1.0 - dir.w * dt);
-    // And dropping higher order terms:
-    //     vec3 p = rayPointEye + dt * (dir.xyz - rayPointEye * dir.w);
-    // So the new direction is given by:
-    //     vec3 d = dir.xyz - rayPointEye * dir.w;
-
-    // Normalize direction in eye space.
-    return normalize(dir.xyz - rayPointEye * dir.w);
-}
-
 // Given where the ray is about to leave the volume, compute where we
 // should start ray marching: this is either the point where the ray
 // would have entered the volume or the intersection with the near
@@ -461,10 +363,10 @@ computeRayStartEye(vec3 rayEndEye, vec3 rayDirectionEye)
     // Time where ray would have entered volume (negative).
     const float startTime = timeRayEnteredVolume(rayEndEye, rayDirectionEye);
 
-    if (isCameraOrthographic()) {
+    if (IsCameraOrthographic()) {
         // Time where ray would have intersected near plane
         const float nearTime =
-            (computeNearZ() - rayEndEye.z)
+            (ComputeNearZ() - rayEndEye.z)
             / rayDirectionEye.z;
         // Take the latter of the two times for getting the start point
         return rayEndEye + max(startTime, nearTime) * rayDirectionEye;
@@ -488,35 +390,12 @@ computeRayStartEye(vec3 rayEndEye, vec3 rayDirectionEye)
     // Compute point where ray would have entered volume
     const vec3 rayStartEye = rayEndEye + startTime * rayDirectionEye;
     // If this point is behind the eye or in the sphere about the eye, ...
-    if (rayStartEye.z > 0.0 || length(rayStartEye) < computeNearDistance()) {
+    if (rayStartEye.z > 0.0 || length(rayStartEye) < ComputeNearDistance()) {
         // ... use point on sphere.
-        return normalize(rayDirectionEye) * computeNearDistance();
+        return normalize(rayDirectionEye) * ComputeNearDistance();
     }
 
     return rayStartEye;
-}
-
-// The depth at which we hit opaque geometry in eye space (negative
-// value by OpenGL convention).
-float
-sampleZBuffer(vec2 fragcoord)
-{
-#ifdef HD_HAS_depthReadback
-    // Sample the z-Buffer at the frag coordinate.
-    const float bufferVal = texelFetch(HdGetSampler_depthReadback(),
-                                       ivec2(fragcoord),
-                                       /* lod = */ 0).x;
-#else
-    // Assume far-plane if we cannot sample the z-Buffer.
-    const float bufferVal = 1.0;
-#endif
-
-#ifdef HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
-    // Convert from [0, 1] to [-1, 1] to if necessary
-    return NDCtoEyeZ(2.0 * bufferVal - 1.0);
-#else
-    return NDCtoEyeZ(bufferVal);
-#endif
 }
 
 // Compute how much length we need to ray march.
@@ -536,32 +415,6 @@ computeRayLength(vec3 rayStartEye, vec3 rayDirectionEye, vec3 rayEndEye,
     // point.
     const float rayEndZ = max(opaqueZ, rayEndEye.z);
     return (rayEndZ - rayStartEye.z) / rayDirectionEye.z;
-}
-
-float
-computeMax3(float a, float b, float c)
-{
-    return max(a, max(b, c));
-}
-
-// Computes the inverse of the scaling of an affine transform.
-// Approximately - since most transforms have uniform scaling
-// and no shear, this is fine.
-float
-scaleOfMatrix(MAT4 m)
-{
-    // Take the maximum of the lengths of the images of the x, y
-    // and z vector.
-    //
-    // A more general, coordinate independent implementation would take
-    // the minimum singular value from the singular value decomposition.
-    //
-    const mat3 affinePart = mat3(m[0][0], m[0][1], m[0][2], 
-                                 m[1][0], m[1][1], m[1][2],
-                                 m[2][0], m[2][1], m[2][2]);
-    return computeMax3(length(affinePart[0]),
-                       length(affinePart[1]),
-                       length(affinePart[2]));
 }
 
 #ifdef HD_HAS_integrateLights
@@ -587,9 +440,9 @@ void main(void)
 
     const float halfWorldSampleDistance =
         0.5 * float(HdGet_sampleDistance())
-            / scaleOfMatrix(instanceModelViewInverse);
+            / ScaleOfMatrix(instanceModelViewInverse);
 
-    const float viewScale = scaleOfMatrix(GetWorldToViewInverseMatrix());
+    const float viewScale = ScaleOfMatrix(GetWorldToViewInverseMatrix());
 
     resolvedStepSizeEye =
         HdGet_stepSize() * halfWorldSampleDistance;
@@ -611,11 +464,11 @@ void main(void)
     const vec3 Neye = vec3(0, 0, 1);
 
     // compute ray for ray marching
-    const vec3 rayDirectionEye = computeRayDirectionEye(inData.Peye);
+    const vec3 rayDirectionEye = normalize(ComputeRayDirectionEye(inData.Peye));
     const vec3 rayStartEye = computeRayStartEye(inData.Peye, rayDirectionEye);
 
     // Use z-value from depth buffer to compute length for ray marching
-    const float opaqueZ = sampleZBuffer(gl_FragCoord.xy);
+    const float opaqueZ = SampleZBuffer(gl_FragCoord.xy);
     const float rayLength = computeRayLength(
         rayStartEye, rayDirectionEye, inData.Peye, opaqueZ);
 

@@ -96,24 +96,24 @@ HdBackPlateSchema::GetDepthCameraSpaceOffset() const
 }
 
 HdVec3fDataSourceHandle
-HdBackPlateSchema::GetLumaGain() const
+HdBackPlateSchema::GetLumaSlope() const
 {
     return _GetTypedDataSource<HdVec3fDataSource>(
-        HdBackPlateSchemaTokens->lumaGain);
+        HdBackPlateSchemaTokens->lumaSlope);
 }
 
 HdVec3fDataSourceHandle
-HdBackPlateSchema::GetLumaGamma() const
+HdBackPlateSchema::GetLumaOffset() const
 {
     return _GetTypedDataSource<HdVec3fDataSource>(
-        HdBackPlateSchemaTokens->lumaGamma);
+        HdBackPlateSchemaTokens->lumaOffset);
 }
 
 HdVec3fDataSourceHandle
-HdBackPlateSchema::GetLumaLift() const
+HdBackPlateSchema::GetLumaPower() const
 {
     return _GetTypedDataSource<HdVec3fDataSource>(
-        HdBackPlateSchemaTokens->lumaLift);
+        HdBackPlateSchemaTokens->lumaPower);
 }
 
 HdTokenDataSourceHandle
@@ -135,9 +135,9 @@ HdBackPlateSchema::BuildRetained(
         const HdFloatDataSourceHandle &depthMinOffset,
         const HdFloatDataSourceHandle &depthNormalizingFactor,
         const HdFloatDataSourceHandle &depthCameraSpaceOffset,
-        const HdVec3fDataSourceHandle &lumaGain,
-        const HdVec3fDataSourceHandle &lumaGamma,
-        const HdVec3fDataSourceHandle &lumaLift,
+        const HdVec3fDataSourceHandle &lumaSlope,
+        const HdVec3fDataSourceHandle &lumaOffset,
+        const HdVec3fDataSourceHandle &lumaPower,
         const HdTokenDataSourceHandle &plateVisibility
 )
 {
@@ -191,19 +191,19 @@ HdBackPlateSchema::BuildRetained(
         _values[_count++] = depthCameraSpaceOffset;
     }
 
-    if (lumaGain) {
-        _names[_count] = HdBackPlateSchemaTokens->lumaGain;
-        _values[_count++] = lumaGain;
+    if (lumaSlope) {
+        _names[_count] = HdBackPlateSchemaTokens->lumaSlope;
+        _values[_count++] = lumaSlope;
     }
 
-    if (lumaGamma) {
-        _names[_count] = HdBackPlateSchemaTokens->lumaGamma;
-        _values[_count++] = lumaGamma;
+    if (lumaOffset) {
+        _names[_count] = HdBackPlateSchemaTokens->lumaOffset;
+        _values[_count++] = lumaOffset;
     }
 
-    if (lumaLift) {
-        _names[_count] = HdBackPlateSchemaTokens->lumaLift;
-        _values[_count++] = lumaLift;
+    if (lumaPower) {
+        _names[_count] = HdBackPlateSchemaTokens->lumaPower;
+        _values[_count++] = lumaPower;
     }
 
     if (plateVisibility) {
@@ -286,26 +286,26 @@ HdBackPlateSchema::Builder::SetDepthCameraSpaceOffset(
 }
 
 HdBackPlateSchema::Builder &
-HdBackPlateSchema::Builder::SetLumaGain(
-    const HdVec3fDataSourceHandle &lumaGain)
+HdBackPlateSchema::Builder::SetLumaSlope(
+    const HdVec3fDataSourceHandle &lumaSlope)
 {
-    _lumaGain = lumaGain;
+    _lumaSlope = lumaSlope;
     return *this;
 }
 
 HdBackPlateSchema::Builder &
-HdBackPlateSchema::Builder::SetLumaGamma(
-    const HdVec3fDataSourceHandle &lumaGamma)
+HdBackPlateSchema::Builder::SetLumaOffset(
+    const HdVec3fDataSourceHandle &lumaOffset)
 {
-    _lumaGamma = lumaGamma;
+    _lumaOffset = lumaOffset;
     return *this;
 }
 
 HdBackPlateSchema::Builder &
-HdBackPlateSchema::Builder::SetLumaLift(
-    const HdVec3fDataSourceHandle &lumaLift)
+HdBackPlateSchema::Builder::SetLumaPower(
+    const HdVec3fDataSourceHandle &lumaPower)
 {
-    _lumaLift = lumaLift;
+    _lumaPower = lumaPower;
     return *this;
 }
 
@@ -330,9 +330,9 @@ HdBackPlateSchema::Builder::Build()
         _depthMinOffset,
         _depthNormalizingFactor,
         _depthCameraSpaceOffset,
-        _lumaGain,
-        _lumaGamma,
-        _lumaLift,
+        _lumaSlope,
+        _lumaOffset,
+        _lumaPower,
         _plateVisibility
     );
 }

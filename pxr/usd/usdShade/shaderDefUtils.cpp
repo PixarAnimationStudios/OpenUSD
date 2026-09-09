@@ -33,6 +33,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (primvarProperty)
     (defaultInput)
     (implementationName)
+    (options)
 );
 
 /* static */
@@ -319,10 +320,10 @@ _CreateSdrShaderProperty(
 
     // look for sdrMetadata options field first (which overrides a schema's
     // allowedTokens list)
-    auto optionsMetadata = shaderMetadata.find(SdrPropertyMetadata->Options);
+    auto optionsMetadata = shaderMetadata.find(_tokens->options);
     if (optionsMetadata != shaderMetadata.end()) {
         options = ShaderMetadataHelpers::OptionVecVal(
-                shaderMetadata.at(SdrPropertyMetadata->Options));
+                shaderMetadata.at(_tokens->options));
     }
 
     if (options.empty()) {
@@ -398,12 +399,19 @@ UsdShadeShaderDefUtils::GetProperties(
     }
 
     for (auto &shaderOutput : shaderDef.GetOutputs(/* onlyAuthored */ false)) {
+        SdrTokenMap metadata = shaderOutput.GetSdrMetadata();
+        auto implementationName = metadata.find(_tokens->implementationName);
+        if (implementationName != metadata.end()) {
+            metadata[SdrPropertyMetadata->ImplementationName] =
+                implementationName->second;
+            metadata.erase(implementationName);
+        }
         result.emplace_back(
             _CreateSdrShaderProperty(
                 /* shaderProperty */ shaderOutput,
                 /* isOutput */ true,
-                /* shaderDefaultValue */ VtValue() ,
-                /* shaderMetadata */ shaderOutput.GetSdrMetadata()));
+                /* shaderDefaultValue */ VtValue(),
+                /* shaderMetadata */ metadata));
     }
 
     return result;

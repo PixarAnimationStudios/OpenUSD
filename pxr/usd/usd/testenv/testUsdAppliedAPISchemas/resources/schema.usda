@@ -125,6 +125,30 @@ class "TestComposeMetadataAPI"
     )
 }
 
+class "TestAPISchemaForCanOnlyApplyToAPI"
+(
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "APISchemaForCanOnlyApplyToAPI"
+    }
+)
+{
+    string someProp = "foo"
+}
+
+class "TestMultiAPISchemaForCanOnlyApplyToAPI"
+(
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "MultiAPISchemaForCanOnlyApplyToAPI"
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "multi"
+    }
+)
+{
+    string someMultiProp = "foo"
+}
+
 class "TestSingleCanApplyAPI"
 (
     inherits = </APISchemaBase>
@@ -133,6 +157,8 @@ class "TestSingleCanApplyAPI"
         token[] apiSchemaCanOnlyApplyTo = [
             "TestTypedSchemaForAutoApply", 
             "TestTypedSchemaForAutoApplyConcreteBase", 
+            "TestAPISchemaForCanOnlyApplyToAPI",
+            "TestMultiAPISchemaForCanOnlyApplyToAPI"
         ] 
     }
     doc = """Test single apply API schema with canOnlyApplyTo restrictions"""
@@ -161,13 +187,15 @@ class "TestMultiCanApplyAPI"
         token[] apiSchemaAllowedInstanceNames = ["foo", "bar", "baz"]
         token[] apiSchemaCanOnlyApplyTo = [
             "TestTypedSchemaForAutoApply", 
-            "TestTypedSchemaForAutoApplyAbstractBase"
+            "TestTypedSchemaForAutoApplyAbstractBase",
+            "TestMultiAPISchemaForCanOnlyApplyToAPI:specificInstanceName"
         ] 
         dictionary apiSchemaInstances = {
             dictionary foo = {
                 token[] apiSchemaCanOnlyApplyTo = [
                     "TestTypedSchemaForAutoApply", 
-                    "TestTypedSchemaForAutoApplyConcreteBase"
+                    "TestTypedSchemaForAutoApplyConcreteBase",
+                    "TestMultiAPISchemaForCanOnlyApplyToAPI:foo"
                 ] 
             }
             dictionary bar = {

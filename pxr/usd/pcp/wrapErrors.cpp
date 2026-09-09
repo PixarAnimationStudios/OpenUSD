@@ -133,6 +133,11 @@ wrapErrors()
         ("ErrorInvalidSublayerOffset", "", no_init)
         ;
 
+    class_<PcpErrorInvalidSublayerAndOffsetCount, bases<PcpErrorBase>,
+        PcpErrorInvalidSublayerAndOffsetCountPtr>
+        ("ErrorInvalidSublayerAndOffsetCount", "", no_init)
+        ;
+
     class_<PcpErrorInvalidReferenceOffset, bases<PcpErrorBase>,
         PcpErrorInvalidReferenceOffsetPtr>
         ("ErrorInvalidReferenceOffset", "", no_init)

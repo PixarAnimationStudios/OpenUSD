@@ -13,6 +13,12 @@
                     },
                     "timeCodeArrayTest": {
                         "type": "timecode[]"
+                    },
+                    "durationTest": {
+                        "type": "duration"
+                    },
+                    "durationArrayTest": {
+                        "type": "duration[]"
                     }
                 }
             }

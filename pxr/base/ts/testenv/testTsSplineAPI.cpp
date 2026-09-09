@@ -281,11 +281,13 @@ int main()
     TestKnotIO<float>();
     TestKnotIO<GfHalf>();
     TestKnotIO<GfTimeCode>();
+    TestKnotIO<GfDuration>();
 
     TestSplineIO<double>();
     TestSplineIO<float>();
     TestSplineIO<GfHalf>();
     TestSplineIO<GfTimeCode>();
+    TestSplineIO<GfDuration>();
 
     return 0;
 }

@@ -776,7 +776,11 @@ HdMtlxPrmanCreateMtlxDocumentFromHdMaterialNetworkInterface(
 
     // Initialize a MaterialX Document
     mx::DocumentPtr mxDoc = mx::createDocument();
+#if MTLX_COMBINED_VERSION >= 13900
+    mxDoc->setDataLibrary(libraries);
+#else
     mxDoc->importLibrary(libraries);
+#endif
 
     // Get the version of the MaterialX document if specified, otherwise
     // default to v1.38. Note that we should always default to 1.38 to handle 

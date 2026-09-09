@@ -73,7 +73,7 @@ HdPrman_RenderViewContext::CreateRenderView(
                 outputDesc.relativePixelVariance,
                 outputDesc.params));
     }
-    
+
     const riley::Extent rtResolution = {
         static_cast<uint32_t>(desc.resolution[0]),
         static_cast<uint32_t>(desc.resolution[1]),
@@ -120,7 +120,7 @@ HdPrman_RenderViewContext::CreateRenderView(
                   displayRenderOutputIds.data()},
                 displayDesc.params));
     }
-    
+
     _renderViewId =
         riley->CreateRenderView(
             riley::UserId(stats::AddDataLocation("/renderView").GetValue()),
@@ -145,7 +145,7 @@ HdPrman_RenderViewContext::DeleteRenderView(
         riley->DeleteDisplay(id);
     }
     _displayIds.clear();
-    
+
     if (_renderTargetId != riley::RenderTargetId::InvalidId()) {
         riley->DeleteRenderTarget(_renderTargetId);
         _renderTargetId = riley::RenderTargetId::InvalidId();
@@ -165,9 +165,22 @@ HdPrman_RenderViewContext::SetIntegratorId(
     if (_renderViewId == riley::RenderViewId::InvalidId()) {
         return;
     }
-    
+
     riley->ModifyRenderView(
-        _renderViewId, nullptr, nullptr, &id, nullptr, nullptr, nullptr);        
+        _renderViewId, nullptr, nullptr, &id, nullptr, nullptr, nullptr);
+}
+
+void
+HdPrman_RenderViewContext::SetCameraId(
+    const riley::CameraId id,
+    riley::Riley* const riley)
+{
+    if (_renderViewId == riley::RenderViewId::InvalidId()) {
+        return;
+    }
+
+    riley->ModifyRenderView(
+        _renderViewId, nullptr, &id, nullptr, nullptr, nullptr, nullptr);
 }
 
 void

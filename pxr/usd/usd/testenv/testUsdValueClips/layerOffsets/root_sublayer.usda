@@ -35,3 +35,65 @@ def "Model_3" (
 )
 {
 }
+
+def "Model_4" (
+    references = @./ref2.usda@</Model> (offset = 10; scale = 2)
+)
+{
+}
+
+def "Model_5" (
+    references = @./ref.usda@</Model>
+
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./clip.usda@]
+            string primPath = "/Model"
+            double2[] active = [(0.0, 0)]
+        }
+    }
+)
+{
+}
+
+def "Model_6" (
+    references = @./ref.usda@</Model>
+
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./clip.usda@]
+            string primPath = "/Model"
+            double2[] active = [(0.0, 0)]
+            double2[] times = [(-10.0, -10.0), (0.0, 10.0)]    
+        }
+    }
+)
+{
+}
+
+def "Model_7" (
+    references = @./ref.usda@</Model>
+
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./clip.usda@]
+            string primPath = "/Model"
+        }
+    }
+)
+{
+}
+
+def "Model_8" (
+    references = @./ref.usda@</Model>
+
+    clips = {
+        dictionary default = {
+            asset[] assetPaths = [@./clip.usda@]
+            string primPath = "/Model"
+            double2[] times = [(0.0, 0.0), (20.0, 20.0)]
+        }
+    }
+)
+{
+}

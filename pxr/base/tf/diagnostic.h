@@ -21,6 +21,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/function.h"
 #include "pxr/base/tf/diagnosticLite.h"
+#include "pxr/base/tf/eternalString.h"
 #include "pxr/base/tf/api.h"
 
 #if defined(__cplusplus) || defined (doxygen)
@@ -273,15 +274,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #if defined(__cplusplus) || defined(doxygen)
 
-/// Get the name of the current function as a \c std::string.
+/// Get the name of the current function as a \c TfEternalString.
 ///
-/// This macro will return the name of the current function, nicely
-/// formatted, as an \c std::string.  This is meant primarily for
-/// diagnostics.  Code should not rely on a specific format, because it
-/// may change in the future or vary across architectures.  For example,
+/// This macro will return the name of the current function, nicely formatted,
+/// as a \c TfEternalString.  This is meant primarily for diagnostics.  Code
+/// should not rely on a specific format, because it may change in the future or
+/// vary across architectures.  For example,
 /// \code
 /// void YourClass::SomeMethod(int x) {
-///     cout << "Debugging info about function " << TF_FUNC_NAME() << "." << endl;
+///     cout << "Debugging info about function " << TF_FUNC_NAME() << ".\n";
 ///     ...
 /// }
 /// \endcode
@@ -289,8 +290,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// "Debugging info about function YourClass::SomeMethod."
 ///
 /// \hideinitializer
-#define TF_FUNC_NAME()                                 \
-    ArchGetPrettierFunctionName(__ARCH_FUNCTION__, __ARCH_PRETTY_FUNCTION__)
+#define TF_FUNC_NAME()                                                         \
+    ([](char const *f, char const *pf) -> TfEternalString {                    \
+        static TfEternalString const n =                                       \
+            TfEternalString::Immortalize(ArchGetPrettierFunctionName(f, pf));  \
+        return n;                                                              \
+    }(__ARCH_FUNCTION__, __ARCH_PRETTY_FUNCTION__))
+
 
 void Tf_TerminateHandler();
 

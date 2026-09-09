@@ -82,8 +82,10 @@ Exec_LeafCompilationTask::_Compile(
         // If a leaf node is already compiled for this value key, then
         // compilation is done. This happens when requests are recompiled, in
         // which case the only purpose of LeafCompilationTask is to resolve the
-        // new leaf output.
-        if (compilationState.GetProgram()->GetCompiledLeafNode(_valueKey)) {
+        // new leaf output and return the leaf node.
+        if (const EfLeafNode *const leafNode =
+            compilationState.GetProgram()->GetCompiledLeafNode(_valueKey)) {
+            *_leafNode = leafNode;
             return;
         }
 
@@ -103,6 +105,9 @@ Exec_LeafCompilationTask::_Compile(
         // Value keys are not durable across scene changes so their debug name
         // must be collected eagerly.
         leafNode->SetDebugName(_valueKey.GetDebugName());
+
+        // Return the compiled leaf node.
+        *_leafNode = leafNode;
 
         // Make a copy of the stored input key to inform input recompilation 
         // along with the resolved result type. 

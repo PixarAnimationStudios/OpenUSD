@@ -20,16 +20,16 @@
 #else  // NUM_SHADOWS == 0
 
 struct ShadowMatrix {
-    mat4 eyeToShadowMatrix;
-    mat4 shadowToEyeMatrix;
+    MAT4 eyeToShadowMatrix;
+    MAT4 shadowToEyeMatrix;
     float blur;
     float bias;
     float padding0;
     float padding1;
 };
 
-FORWARD_DECL(mat4 GetWorldToViewMatrix());
-FORWARD_DECL(mat4 GetWorldToViewInverseMatrix());
+FORWARD_DECL(MAT4 GetWorldToViewMatrix());
+FORWARD_DECL(MAT4 GetWorldToViewInverseMatrix());
 
 ShadowMatrix GetShadow(int shadowIndex) {
     ShadowMatrix shadowMat;
@@ -74,8 +74,8 @@ computeShadowFilterWidth(vec4 Peye)
         ShadowMatrix shadowMat = GetShadow(i);
         FShadowFilterWidth[i] =
             vec2(shadowMat.blur) /
-            vec2(shadowTangentLength(shadowMat.shadowToEyeMatrix[0], Peye),
-                 shadowTangentLength(shadowMat.shadowToEyeMatrix[1], Peye));
+            vec2(shadowTangentLength(vec4(shadowMat.shadowToEyeMatrix[0]), Peye),
+                 shadowTangentLength(vec4(shadowMat.shadowToEyeMatrix[1]), Peye));
     }
 }
 
@@ -107,7 +107,7 @@ struct LightSource {
     vec4 spotDirection;
     vec4 spotCutoffAndFalloff;
     vec4 attenuation;
-    mat4 worldToLightTransform;
+    MAT4 worldToLightTransform;
     int shadowIndexStart;
     int shadowIndexEnd;
     bool hasShadow;
@@ -115,8 +115,8 @@ struct LightSource {
 };
 
 struct ShadowMatrix {
-    mat4 eyeToShadowMatrix;
-    mat4 shadowToEyeMatrix;
+    MAT4 eyeToShadowMatrix;
+    MAT4 shadowToEyeMatrix;
     float blur;
     float bias;
     float padding0;
@@ -155,18 +155,18 @@ bool GetUseColorMaterialDiffuse() {
     return HdGet_useColorMaterialDiffuse();
 }
 
-FORWARD_DECL(mat4 GetWorldToViewMatrix());
-FORWARD_DECL(mat4 GetWorldToViewInverseMatrix());
+FORWARD_DECL(MAT4 GetWorldToViewMatrix());
+FORWARD_DECL(MAT4 GetWorldToViewInverseMatrix());
 
 LightSource GetLightSource(int lightIndex) {
     LightSource light;
-    light.position = GetWorldToViewMatrix() * 
-        HdGet_lightSource_position(lightIndex);
+    light.position = vec4(GetWorldToViewMatrix() *
+        HdGet_lightSource_position(lightIndex));
     light.ambient = HdGet_lightSource_ambient(lightIndex);
     light.diffuse = HdGet_lightSource_diffuse(lightIndex);
     light.specular = HdGet_lightSource_specular(lightIndex);
-    light.spotDirection = GetWorldToViewMatrix() * 
-        vec4(HdGet_lightSource_spotDirection(lightIndex), 0);
+    light.spotDirection = vec4(GetWorldToViewMatrix() *
+        vec4(HdGet_lightSource_spotDirection(lightIndex), 0));
     light.spotCutoffAndFalloff = vec4(HdGet_lightSource_spotCutoff(lightIndex),
         HdGet_lightSource_spotFalloff(lightIndex), 0, 0);
     light.attenuation = vec4(HdGet_lightSource_attenuation(lightIndex), 0);
@@ -208,8 +208,8 @@ computeShadowFilterWidth(int index, vec4 Peye)
     ShadowMatrix shadowMat = GetShadow(index);
     return
         vec2(shadowMat.blur) /
-        vec2(shadowTangentLength(shadowMat.shadowToEyeMatrix[0], Peye),
-             shadowTangentLength(shadowMat.shadowToEyeMatrix[1], Peye));
+        vec2(shadowTangentLength(vec4(shadowMat.shadowToEyeMatrix[0]), Peye),
+             shadowTangentLength(vec4(shadowMat.shadowToEyeMatrix[1]), Peye));
 }
 
 #endif  // NUM_SHADOWS == 0
@@ -278,7 +278,7 @@ shadowing(int lightIndex, vec4 Peye)
          shadowIndex <= GetLightSource(lightIndex).shadowIndexEnd;
          ++shadowIndex) {
 
-        vec4 coord = GetShadow(shadowIndex).eyeToShadowMatrix * Peye;
+        vec4 coord = vec4(GetShadow(shadowIndex).eyeToShadowMatrix * Peye);
 
         // If the point-to-be-lit isn't covered by this cascade, skip to
         // the next one...
@@ -349,11 +349,11 @@ evaluateIndirectLight(vec3 Neye, vec3 Reye, float NdotE, float EdotH,
     const float fresnel = schlickFresnel(EdotH);
     const vec3 F = mix(F0, F90, fresnel);
 
-    mat4 transformationMatrix = 
+    MAT4 transformationMatrix = 
         GetLightSource(i).worldToLightTransform * GetWorldToViewInverseMatrix();
 
     // Diffuse Component
-    vec3 dir = normalize((transformationMatrix * vec4(Neye,0.0)).xyz);
+    vec3 dir = vec3(normalize((transformationMatrix * vec4(Neye,0.0)).xyz));
     vec3 diffuse = HdGet_domeLightIrradiance(dir).rgb;
 
     // Specular Component 
@@ -361,7 +361,7 @@ evaluateIndirectLight(vec3 Neye, vec3 Reye, float NdotE, float EdotH,
         textureQueryLevels(HdGetSampler_domeLightPrefilter());
     const float roughness = props.roughness;
     const float lod = roughness * MAX_REFLECTION_LOD;
-    vec3 Rdir = normalize((transformationMatrix * vec4(Reye,0.0)).xyz);
+    vec3 Rdir = vec3(normalize((transformationMatrix * vec4(Reye,0.0)).xyz));
     vec3 prefilter = HdTextureLod_domeLightPrefilter(Rdir, lod).rgb;
     vec2 brdf = HdGet_domeLightBRDF(vec2(NdotE, roughness)).rg;
     vec3 specular = prefilter * (F * brdf.x + brdf.y);

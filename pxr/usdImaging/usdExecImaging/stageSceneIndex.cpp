@@ -7,8 +7,22 @@
 #include "pxr/usdImaging/usdExecImaging/stageSceneIndex.h"
 
 #include "pxr/base/tf/refPtr.h"
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/type.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    // Register a factory for UsdExecImaging_StageSceneIndex, so that an
+    // instance can be manufactured from another library without explicitly
+    // linking against usdExecImaging.
+    using Type = UsdExecImaging_StageSceneIndex;
+    using Base = UsdImagingStageSceneIndexInterface;
+    using Factory = UsdImagingStageSceneIndexInterfaceFactory<Type>;
+    TfType type = TfType::Define<Type, TfType::Bases<Base>>();
+    type.SetFactory<Factory>();
+}
 
 UsdExecImaging_StageSceneIndexRefPtr
 UsdExecImaging_StageSceneIndex::New()
@@ -54,10 +68,17 @@ void
 UsdExecImaging_StageSceneIndex::SetTime(UsdTimeCode time)
 {
     if (_request) {
+        _time = time;
         _request->SetTime(time);
         _request->Refresh();
         _SendPrimsDirtied(_request->TakeDirtiedPrimEntries());
     }
+}
+
+UsdTimeCode
+UsdExecImaging_StageSceneIndex::GetTime() const
+{
+    return _time;
 }
 
 void

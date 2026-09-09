@@ -34,12 +34,6 @@ jobs:
           - NAME: aarch64
             RUNNER: ubuntu-22.04-arm
         PYTHON:
-          - TAG: cp39
-            INTERPRETER: /opt/python/cp39-cp39/bin/python
-            VERSION_SPEC: '3.9'
-          - TAG: cp310
-            INTERPRETER: /opt/python/cp310-cp310/bin/python
-            VERSION_SPEC: '3.10'
           - TAG: cp311
             INTERPRETER: /opt/python/cp311-cp311/bin/python
             VERSION_SPEC: '3.11'
@@ -118,12 +112,6 @@ jobs:
     strategy:
       matrix:
         PYTHON:
-          - VERSION_SPEC: '3.9'
-            INTERPRETER: python3.9
-            TAG: cp39
-          - VERSION_SPEC: '3.10'
-            INTERPRETER: python3.10
-            TAG: cp310
           - VERSION_SPEC: '3.11'
             INTERPRETER: python3.11
             TAG: cp311
@@ -200,10 +188,6 @@ jobs:
     strategy:
       matrix:
         PYTHON:
-          - VERSION_SPEC: '3.9'
-            TAG: cp39
-          - VERSION_SPEC: '3.10'
-            TAG: cp310
           - VERSION_SPEC: '3.11'
             TAG: cp311
           - VERSION_SPEC: '3.12'
@@ -286,14 +270,6 @@ jobs:
     strategy:
       matrix:
         BUILD_CONFIG:
-          - NAME: Linux_Python39
-            PYTHON_VERSION_SPEC: '3.9'
-            IMAGE: ubuntu-22.04
-            PYTHON_INTERPRETER: python3
-          - NAME: Linux_Python310
-            PYTHON_VERSION_SPEC: '3.10'
-            IMAGE: ubuntu-22.04
-            PYTHON_INTERPRETER: python3
           - NAME: Linux_Python311
             PYTHON_VERSION_SPEC: '3.11'
             IMAGE: ubuntu-22.04
@@ -357,14 +333,6 @@ jobs:
           - NAME: Mac_Python314
             PYTHON_VERSION_SPEC: '3.14.3'
             IMAGE: macos-15
-            PYTHON_INTERPRETER: python3
-          - NAME: Windows_Python39
-            PYTHON_VERSION_SPEC: '3.9'
-            IMAGE: windows-2022
-            PYTHON_INTERPRETER: python3
-          - NAME: Windows_Python310
-            PYTHON_VERSION_SPEC: '3.10'
-            IMAGE: windows-2022
             PYTHON_INTERPRETER: python3
           - NAME: Windows_Python311
             PYTHON_VERSION_SPEC: '3.11'

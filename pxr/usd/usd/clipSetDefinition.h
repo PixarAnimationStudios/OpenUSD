@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/usd/sdf/assetPath.h"
+#include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/gf/vec2d.h"
@@ -102,6 +103,10 @@ public:
     PcpLayerStackPtr sourceLayerStack;
     SdfPath sourcePrimPath;
     size_t indexOfLayerWhereAssetPathsFound;
+
+    // Store offset separately. Offset is derived from clip assetPaths or
+    // active, depending on whether the clip is templated or not respectively
+    SdfLayerOffset toStageOffset;
 };
 
 /// Computes clip set definitions for the given \p primIndex and returns

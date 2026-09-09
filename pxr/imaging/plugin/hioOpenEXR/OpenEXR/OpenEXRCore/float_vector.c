@@ -19,32 +19,36 @@ exr_attr_float_vector_init (
     exr_attr_float_vector_t nil   = {0};
     size_t                  bytes = (size_t) (nent) * sizeof (float);
 
-    INTERN_EXR_PROMOTE_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
 
-    if (nent < 0)
-        return pctxt->print_error (
-            pctxt,
-            EXR_ERR_INVALID_ARGUMENT,
-            "Received request to allocate negative sized float vector (%d entries)",
-            nent);
-    if (bytes > (size_t) INT32_MAX)
-        return pctxt->print_error (
-            pctxt,
-            EXR_ERR_INVALID_ARGUMENT,
-            "Invalid too large size for float vector (%d entries)",
-            nent);
     if (!fv)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid reference to float vector object to initialize");
 
     *fv = nil;
-    if (bytes > 0)
+
+    if (nent < 0)
+        return ctxt->print_error (
+            ctxt,
+            EXR_ERR_INVALID_ARGUMENT,
+            "Received request to allocate negative sized float vector (%d entries)",
+            nent);
+
+    if (bytes > (size_t) INT32_MAX)
     {
-        fv->arr = (float*) pctxt->alloc_fn (bytes);
+        return ctxt->print_error (
+            ctxt,
+            EXR_ERR_INVALID_ARGUMENT,
+            "Invalid too large size for float vector (%d entries)",
+            nent);
+    }
+    else if (bytes > 0)
+    {
+        fv->arr = (float*) ctxt->alloc_fn (bytes);
         if (fv->arr == NULL)
-            return pctxt->standard_error (pctxt, EXR_ERR_OUT_OF_MEMORY);
+            return ctxt->standard_error (ctxt, EXR_ERR_OUT_OF_MEMORY);
         fv->length     = nent;
         fv->alloc_size = nent;
     }
@@ -63,22 +67,22 @@ exr_attr_float_vector_init_static (
 {
     exr_attr_float_vector_t nil = {0};
 
-    INTERN_EXR_PROMOTE_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
 
     if (nent < 0)
-        return pctxt->print_error (
-            pctxt,
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Received request to allocate negative sized float vector (%d entries)",
             nent);
     if (!fv)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid reference to float vector object to initialize");
     if (!arr)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid reference to float array object to initialize");
 
@@ -99,20 +103,26 @@ exr_attr_float_vector_create (
     int32_t                  nent)
 {
     exr_result_t rv = EXR_ERR_UNKNOWN;
-    INTERN_EXR_PROMOTE_CONTEXT_OR_ERROR (ctxt);
+
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
 
     if (!fv || !arr)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid (NULL) arguments to float vector create");
 
     rv = exr_attr_float_vector_init (ctxt, fv, nent);
     if (rv == EXR_ERR_SUCCESS && nent > 0)
-        memcpy (
-            EXR_CONST_CAST (float*, fv->arr),
-            arr,
-            (size_t) (nent) * sizeof (float));
+    {
+        size_t bytes = (size_t) (nent) * sizeof (float);
+        if (bytes <= (size_t) INT32_MAX)
+        {
+            float* outp = EXR_CONST_CAST (float*, fv->arr);
+            memcpy (outp, arr, bytes);
+        }
+    }
+
     return rv;
 }
 
@@ -121,12 +131,12 @@ exr_attr_float_vector_create (
 exr_result_t
 exr_attr_float_vector_destroy (exr_context_t ctxt, exr_attr_float_vector_t* fv)
 {
-    INTERN_EXR_PROMOTE_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
     if (fv)
     {
         exr_attr_float_vector_t nil = {0};
         if (fv->arr && fv->alloc_size > 0)
-            pctxt->free_fn (EXR_CONST_CAST (void*, fv->arr));
+            ctxt->free_fn (EXR_CONST_CAST (void*, fv->arr));
         *fv = nil;
     }
     return EXR_ERR_SUCCESS;

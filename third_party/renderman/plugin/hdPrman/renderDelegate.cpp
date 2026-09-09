@@ -877,8 +877,8 @@ HdPrmanRenderDelegate::SetRenderSetting(TfToken const &key,
         // the shutter of the active camera can be passed to riley,
         // prior to handling any geometry.
         SdfPath camPath = value.UncheckedGet<SdfPath>();
-        _renderParam->GetCameraContext().SetCameraPath(camPath);
-        _renderParam->GetCameraContext().MarkCameraInvalid(camPath);
+        _renderParam->GetCameraContext().SetActiveCameraPath(camPath);
+        _renderParam->GetCameraContext().MarkCameraInvalidIfActive(camPath);
         HdRenderIndex *renderIndex = GetRenderIndex();
         if(renderIndex) {
             // Needed to trigger call to

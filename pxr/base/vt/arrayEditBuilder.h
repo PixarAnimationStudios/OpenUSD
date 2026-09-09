@@ -267,18 +267,25 @@ VtArrayEditBuilder<ELEM>::Optimize(VtArrayEdit<ELEM> &&in)
     in._literals.clear();
     in._ops = {};
     
+    // Return the literal at `index`, or null if `index` is out of range.
+    // Out-of-range literal indexes can only arise from malformed serialization
+    // data; _ApplyEdits() skips the ops that carry them, so drop those ops here
+    // to match.
+    auto getLiteral = [&](int64_t index) -> ElementType const * {
+        return index >= 0 && static_cast<size_t>(index) < numLiterals ?
+            &literals[index] : nullptr;
+    };
+
     ops.ForEach([&](Ops::Op op, int64_t a1, int64_t a2) {
         switch (op) {
         case Ops::OpWriteLiteral:
-            // Ignore out-of-range literal indexes.
-            if (a1 >= 0 && static_cast<size_t>(a1) < numLiterals) {
-                builder.Write(literals[a1], a2);
+            if (ElementType const *elem = getLiteral(a1)) {
+                builder.Write(*elem, a2);
             }
             break;
         case Ops::OpInsertLiteral:
-            // Ignore out-of-range literal indexes.
-            if (a1 >= 0 && static_cast<size_t>(a1) < numLiterals) {
-                builder.Insert(literals[a1], a2);
+            if (ElementType const *elem = getLiteral(a1)) {
+                builder.Insert(*elem, a2);
             }
             break;
         case Ops::OpWriteRef:  builder.WriteRef(a1, a2);  break;
@@ -288,15 +295,13 @@ VtArrayEditBuilder<ELEM>::Optimize(VtArrayEdit<ELEM> &&in)
         case Ops::OpSetSize:   builder.SetSize(a1);       break;
         case Ops::OpMaxSize:   builder.MaxSize(a1);       break;
         case Ops::OpMinSizeFill:
-            // Ignore out-of-range literal indexes.
-            if (a1 >= 0 && static_cast<size_t>(a1) < numLiterals) {
-                builder.MinSize(a1, literals[a2]);
+            if (ElementType const *fill = getLiteral(a2)) {
+                builder.MinSize(a1, *fill);
             }
             break;
         case Ops::OpSetSizeFill:
-            // Ignore out-of-range literal indexes.
-            if (a1 >= 0 && static_cast<size_t>(a1) < numLiterals) {
-                builder.SetSize(a1, literals[a2]);
+            if (ElementType const *fill = getLiteral(a2)) {
+                builder.SetSize(a1, *fill);
             }
             break;
         };

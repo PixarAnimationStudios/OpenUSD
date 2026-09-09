@@ -41,6 +41,8 @@
 class RixRiCtl;
 
 namespace stats {
+class Listener;
+class ListenerFactory;
 class Session;
 };
 
@@ -490,6 +492,15 @@ public:
     // Set Riley scene options by composing opinion sources.
     void SetRileyOptions();
 
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+    /// Activate or deactivate the light path listener from scene description.
+    /// Safe to call multiple times; updates the listener in place when options change.
+    void SetLightPathListenerOptions(bool enable,
+                                     const std::string& outputFilename,
+                                     int sampleRate,
+                                     int maxPerPixel);
+#endif
+
     // Returns true if the render delegate in interactive mode (as opposed to
     // batched/offline mode).
     bool IsInteractive() const;
@@ -586,6 +597,16 @@ private:
     // Roz stats session
     stats::Session *_statsSession;
     HdPrmanStatsListener*    _statsListener;     // Listener to receive metric data from Renderer
+
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+    // Light path listener (DCC-owned; activated from scene description)
+    std::unique_ptr<stats::Listener> _lightPathListener;
+    struct _LightPathFactoryDeleter {
+        void operator()(stats::ListenerFactory*) const;
+    };
+    std::unique_ptr<stats::ListenerFactory, _LightPathFactoryDeleter>
+        _lightPathFactory;
+#endif
     int _progressMode;
     uint64_t _startTime;
     uint64_t _stopTime;

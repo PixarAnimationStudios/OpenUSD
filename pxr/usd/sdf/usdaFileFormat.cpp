@@ -64,6 +64,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 // Version history
+// 1.4: Support for GfDuration values.
 // 1.3: Support for loopBoundaryTime-delimited spline extrapolation loops.
 // 1.2: Support for VtArrayEdit values.
 // 1.1: Support for splines with tangent algorithms None, Custom, or AutoEase.
@@ -72,7 +73,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 // Current version of usda that can be read/written
 constexpr uint8_t USDA_MAJOR = 1;
-constexpr uint8_t USDA_MINOR = 3;
+constexpr uint8_t USDA_MINOR = 4;
 constexpr uint8_t USDA_PATCH = 0;
 
 // Caveat developer!
@@ -179,24 +180,78 @@ namespace
 {
 
 bool
+_CheckBOM(
+    const char* bufferRead, size_t bufferSize, std::string* whyNot)
+{
+    // Check for UTF-8 BOM (EF BB BF)
+    if (bufferSize >= 3 &&
+        static_cast<unsigned char>(bufferRead[0]) == 0xEF &&
+        static_cast<unsigned char>(bufferRead[1]) == 0xBB &&
+        static_cast<unsigned char>(bufferRead[2]) == 0xBF) {
+        *whyNot = "Asset starts with UTF-8 BOM which is not supported, "
+                  "please convert the file to UTF-8 without the BOM.";
+        return false;
+    }
+
+    // Check for UTF-16 BOM markers (FE FF or FF FE)
+    if (bufferSize >= 2 &&
+        ((static_cast<unsigned char>(bufferRead[0]) == 0xFE &&
+         static_cast<unsigned char>(bufferRead[1]) == 0xFF) ||
+        (static_cast<unsigned char>(bufferRead[0]) == 0xFF &&
+         static_cast<unsigned char>(bufferRead[1]) == 0xFE))) {
+        *whyNot = "Asset starts with UTF-16 BOM marker which is not supported, "
+                  "please convert the file to UTF-8 without the BOM.";
+        return false;
+    }
+
+    // Check for UTF-32 BOM markers (00 00 FE FF or FF FE 00 00)
+    if (bufferSize >= 4 &&
+        ((static_cast<unsigned char>(bufferRead[0]) == 0x00 &&
+         static_cast<unsigned char>(bufferRead[1]) == 0x00 &&
+         static_cast<unsigned char>(bufferRead[2]) == 0xFE &&
+         static_cast<unsigned char>(bufferRead[3]) == 0xFF) ||
+        (static_cast<unsigned char>(bufferRead[0]) == 0xFF &&
+         static_cast<unsigned char>(bufferRead[1]) == 0xFE &&
+         static_cast<unsigned char>(bufferRead[2]) == 0x00 &&
+         static_cast<unsigned char>(bufferRead[3]) == 0x00))) {
+        *whyNot = "Asset starts with UTF-32 BOM marker which is not supported, "
+                  "please convert the file to UTF-8 without the BOM.";
+        return false;
+    }
+
+    return true;
+}
+
+bool
 _CanReadImpl(const std::shared_ptr<ArAsset>& asset,
-             const std::string& cookie)
+             const std::string& cookie,
+             std::string* whyNot = nullptr)
 {
     TfErrorMark mark;
 
+    constexpr size_t BOM_CHECK_SIZE = 4;
     constexpr size_t COOKIE_BUFFER_SIZE = 512;
     char local[COOKIE_BUFFER_SIZE];
     std::unique_ptr<char []> remote;
     char *buf = local;
     size_t cookieLength = cookie.length();
-    if (cookieLength > COOKIE_BUFFER_SIZE - 1) {
-        remote.reset(new char[cookieLength + 1]);
+    if (BOM_CHECK_SIZE + cookieLength > COOKIE_BUFFER_SIZE - 1) {
+        remote = std::make_unique<char[]>(cookieLength + BOM_CHECK_SIZE + 1);
         buf = remote.get();
     }
-    if (asset->Read(buf, cookieLength, /* offset = */ 0) != cookieLength) {
+    // Maximum 4 bytes are needed to check for BOM markers.
+    size_t bytesRead = asset->Read(buf, BOM_CHECK_SIZE + cookieLength, /* offset = */ 0);
+    // At least the cookie length is needed to check for the cookie.
+    if (bytesRead < cookieLength) {
         return false;
     }
 
+    // Check BOM markers if the caller wants a specific failure reason.
+    if (whyNot && !_CheckBOM(buf, bytesRead, whyNot)) {
+        return false;
+    }
+
+    // It doesn't have BOM markers, so we can check the cookie.
     buf[cookieLength] = '\0';
 
     // Don't allow errors to escape this function, since this function is
@@ -262,10 +317,18 @@ SdfUsdaFileFormat::_ReadFromAsset(
 {
     // Quick check to see if the file has the magic cookie before spinning up
     // the parser.
-    if (!_CanReadImpl(asset, GetFileCookie())) {
-        TF_RUNTIME_ERROR("<%s> is not a valid %s layer",
-                         resolvedPath.c_str(),
-                         GetFormatId().GetText());
+    std::string whyNot;
+    if (!_CanReadImpl(asset, GetFileCookie(), &whyNot)) {
+        if (whyNot.empty()) {
+            TF_RUNTIME_ERROR("<%s> is not a valid %s layer",
+                             resolvedPath.c_str(),
+                             GetFormatId().GetText());
+        } else {
+            TF_RUNTIME_ERROR("<%s> is not a valid %s layer: %s",
+                             resolvedPath.c_str(),
+                             GetFormatId().GetText(),
+                             whyNot.c_str());
+        }
         return false;
     }
 

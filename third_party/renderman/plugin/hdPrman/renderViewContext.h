@@ -10,10 +10,11 @@
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
 
-#include "Riley.h"
-
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec2f.h"
+
+#include <Riley.h>
+#include <RileyIds.h>
 
 #include <vector>
 
@@ -80,6 +81,11 @@ public:
     void SetIntegratorId(
         riley::IntegratorId id,
         riley::Riley * riley);
+
+    HDPRMAN_API
+    void SetCameraId(
+        riley::CameraId id,
+        riley::Riley* riley);
 
     HDPRMAN_API
     void SetResolution(

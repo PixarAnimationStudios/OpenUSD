@@ -404,6 +404,7 @@ Usd_ClipSet::Usd_ClipSet(
             clipDef.indexOfLayerWhereAssetPathsFound])
     , clipPrimPath(SdfPath(*clipDef.clipPrimPath))
     , interpolateMissingClipValues(false)
+    , toStageOffset(clipDef.toStageOffset)
 {
     // NOTE: Assumes definition has already been validated
 
@@ -456,11 +457,37 @@ Usd_ClipSet::Usd_ClipSet(
             }
         }
 
+        // Clean up the times array. The input from the USD file could contain
+        // multiple entries with the same external time creating multiple, contiguous
+        // jump discontinuities.
+        //    [..., (10, 10), (10, 20), (10, 30), ...]
+        // The above would be converted to:
+        //    [...,
+        //     (9.999..., 10, isJumpDiscontinuity=true),
+        //     (9.999..., 20, isJumpDiscontinuity=true),
+        //     (10,       30, isJumpDiscontinuity=false),
+        //     ...]
+        // The middle entry needs to be removed.
+        //
+        // Similarly, the first entry cannot be a jump discontinuity and must
+        // also be removed if it is.
+        {
+            bool prevJump = true;
+            auto iter = times->begin();
+            while (iter != times->end()) {
+                if (prevJump && iter->isJumpDiscontinuity) {
+                    iter = times->erase(iter);
+                } else {
+                    prevJump = iter->isJumpDiscontinuity;
+                    ++iter;
+                }
+            }
+        }
+
         // Add sentinel values to the beginning and end for convenience.
         times->insert(times->begin(), times->front());
         times->insert(times->end(), times->back());
     }
-
 
     // Build up the final vector of clips.
     const _TimeToClipMap::const_iterator itBegin = startTimeToClip.begin();

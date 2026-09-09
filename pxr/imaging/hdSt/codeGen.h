@@ -237,7 +237,7 @@ private:
     bool _hasPTCS;
     bool _hasPTVS;
 
-    bool _hasClipPlanes;
+    bool _generateClipDistances;
 };
 
 

@@ -195,6 +195,14 @@ public:
     GF_API
     GfColor Convert(const GfColorSpace& srcColorSpace, const GfVec3f& rgb) const;
 
+    /// Check if the color space is a non-colorimetric data color space
+    /// (such as the built-in Raw and Data color spaces). Conversions to
+    /// or from a data color space always leave RGB values unchanged.
+    ///
+    /// \return True if the color space is a data (no-op) color space.
+    GF_API
+    bool IsData() const;
+
     /// Get the RGB to XYZ conversion matrix.
     ///
     /// \return The RGB to XYZ conversion matrix.

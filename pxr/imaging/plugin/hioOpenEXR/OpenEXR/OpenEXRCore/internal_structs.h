@@ -9,7 +9,7 @@
 #include "openexr_config.h"
 #include "internal_attr.h"
 
-#ifdef ILMTHREAD_THREADING_ENABLED
+#if ILMTHREAD_THREADING_ENABLED
 #    ifdef _WIN32
 #        include <windows.h>
 #        include <synchapi.h>
@@ -53,16 +53,42 @@ using atomic_uintptr_t = std::atomic_uintptr_t;
 #        include <stdatomic.h>
 #    elif defined(_MSC_VER)
 /* msvc w/ c11 support is only very new, until we know what the preprocessor checks are, provide defaults */
+#        include <stdint.h>
 #        include <windows.h>
-/* yeah, yeah, might be a 32-bit pointer, but if we make it the same, we
- * can write less since we know support is coming (eventually) */
-typedef uint64_t atomic_uintptr_t;
+typedef uintptr_t volatile atomic_uintptr_t;
+
+static inline uintptr_t
+atomic_load (
+    uintptr_t volatile* object)
+{
+#        if UINTPTR_MAX == 0xFFFFFFFF
+    return (uintptr_t) InterlockedOr (object, 0);
+#        else
+    return (uintptr_t) InterlockedOr64 (object, 0);
+#        endif
+}
+
+static inline int
+atomic_compare_exchange_strong (
+    uintptr_t volatile* object, uintptr_t* expected, uintptr_t desired)
+{
+#        if UINTPTR_MAX == 0xFFFFFFFF
+    uintptr_t prev =
+        (uintptr_t) InterlockedCompareExchange (object, desired, *expected);
+#        else
+    uintptr_t prev =
+        (uintptr_t) InterlockedCompareExchange64 (object, desired, *expected);
+#        endif
+    if (prev == *expected) return 1;
+    *expected = prev;
+    return 0;
+}
 #    else
 #        error OS unimplemented support for atomics
 #    endif
 #endif
 
-struct _internal_exr_part
+struct _priv_exr_part_t
 {
     int part_index;
     exr_storage_t
@@ -116,6 +142,9 @@ struct _internal_exr_part
     atomic_uintptr_t chunk_table;
 };
 
+typedef struct _priv_exr_part_t*       exr_priv_part_t;
+typedef const struct _priv_exr_part_t* exr_const_priv_part_t;
+
 enum _INTERNAL_EXR_READ_MODE
 {
     EXR_MUST_READ_ALL    = 0,
@@ -128,10 +157,11 @@ enum _INTERNAL_EXR_CONTEXT_MODE
     EXR_CONTEXT_WRITE         = 1,
     EXR_CONTEXT_UPDATE_HEADER = 2,
     EXR_CONTEXT_WRITING_DATA  = 3,
+    EXR_CONTEXT_TEMPORARY     = 4,
     EXR_CONTEXT_WRITE_FINISHED
 };
 
-struct _internal_exr_context
+struct _priv_exr_context_t
 {
     uint8_t mode;
     uint8_t version;
@@ -148,26 +178,22 @@ struct _internal_exr_context
     exr_attr_string_t tmp_filename;
 
     exr_result_t (*do_read) (
-        const struct _internal_exr_context* file,
+        exr_const_context_t file,
         void*,
         uint64_t,
         uint64_t*,
         int64_t*,
         enum _INTERNAL_EXR_READ_MODE);
     exr_result_t (*do_write) (
-        struct _internal_exr_context* file, const void*, uint64_t, uint64_t*);
+        exr_context_t file, const void*, uint64_t, uint64_t*);
 
     exr_result_t (*standard_error) (
-        const struct _internal_exr_context* ctxt, exr_result_t code);
+        exr_const_context_t ctxt, exr_result_t code);
     exr_result_t (*report_error) (
-        const struct _internal_exr_context* ctxt,
-        exr_result_t                        code,
-        const char*                         msg);
+        exr_const_context_t ctxt, exr_result_t code, const char* msg);
     exr_result_t (*print_error) (
-        const struct _internal_exr_context* ctxt,
-        exr_result_t                        code,
-        const char*                         msg,
-        ...) EXR_PRINTF_FUNC_ATTRIBUTE;
+        exr_const_context_t ctxt, exr_result_t code, const char* msg, ...)
+        EXR_PRINTF_FUNC_ATTRIBUTE;
 
     exr_error_handler_cb_t error_handler_fn;
 
@@ -199,16 +225,16 @@ struct _internal_exr_context
     /** all files have at least one part */
     int num_parts;
 
-    struct _internal_exr_part first_part;
+    struct _priv_exr_part_t first_part;
     /* cheap array of one */
-    struct _internal_exr_part*  init_part;
-    struct _internal_exr_part** parts;
+    exr_priv_part_t  init_part;
+    exr_priv_part_t* parts;
 
     exr_attribute_list_t custom_handlers;
 
     /* mostly needed for writing, but used during read to ensure
      * custom attribute handlers are safe */
-#ifdef ILMTHREAD_THREADING_ENABLED
+#if ILMTHREAD_THREADING_ENABLED
 #    ifdef _WIN32
     CRITICAL_SECTION mutex;
 #    else
@@ -217,20 +243,17 @@ struct _internal_exr_context
 #endif
     uint8_t disable_chunk_reconstruct;
     uint8_t legacy_header;
-    uint8_t _pad[6];
+    uint8_t _pad[2];
+    uint32_t orig_version_and_flags;
 };
-
-#define EXR_CTXT(c) ((struct _internal_exr_context*) (c))
-#define EXR_CCTXT(c) ((const struct _internal_exr_context*) (c))
 
 #define EXR_CONST_CAST(t, v) ((t) (uintptr_t) v)
 
 static inline void
-internal_exr_lock (const struct _internal_exr_context* c)
+internal_exr_lock (exr_const_context_t c)
 {
-#ifdef ILMTHREAD_THREADING_ENABLED
-    struct _internal_exr_context* nonc =
-        EXR_CONST_CAST (struct _internal_exr_context*, c);
+#if ILMTHREAD_THREADING_ENABLED
+    exr_context_t nonc = EXR_CONST_CAST (exr_context_t, c);
 #    ifdef _WIN32
     EnterCriticalSection (&nonc->mutex);
 #    else
@@ -240,11 +263,10 @@ internal_exr_lock (const struct _internal_exr_context* c)
 }
 
 static inline void
-internal_exr_unlock (const struct _internal_exr_context* c)
+internal_exr_unlock (exr_const_context_t c)
 {
-#ifdef ILMTHREAD_THREADING_ENABLED
-    struct _internal_exr_context* nonc =
-        EXR_CONST_CAST (struct _internal_exr_context*, c);
+#if ILMTHREAD_THREADING_ENABLED
+    exr_context_t nonc = EXR_CONST_CAST (exr_context_t, c);
 #    ifdef _WIN32
     LeaveCriticalSection (&nonc->mutex);
 #    else
@@ -253,135 +275,79 @@ internal_exr_unlock (const struct _internal_exr_context* c)
 #endif
 }
 
-#define EXR_LOCK(c) internal_exr_lock ((const struct _internal_exr_context*) c)
-#define EXR_UNLOCK(c)                                                          \
-    internal_exr_unlock ((const struct _internal_exr_context*) c)
+#define EXR_UNLOCK_AND_RETURN(v) ((void) (internal_exr_unlock (ctxt)), v)
+#define EXR_UNLOCK_WRITE_AND_RETURN(v)                                         \
+    ((void) ((ctxt->mode == EXR_CONTEXT_WRITE) ? internal_exr_unlock (ctxt)    \
+                                               : ((void) 0)),                  \
+     v)
 
-#define EXR_LOCK_WRITE(c)                                                      \
-    if (c->mode == EXR_CONTEXT_WRITE) internal_exr_lock (c)
-
-#define EXR_UNLOCK_WRITE(c)                                                    \
-    if (c->mode == EXR_CONTEXT_WRITE) internal_exr_unlock (c)
-
-#define EXR_RETURN_WRITE(c)                                                    \
-    ((c->mode == EXR_CONTEXT_WRITE) ? internal_exr_unlock (c) : ((void) 0))
-
-#define EXR_UNLOCK_AND_RETURN_PCTXT(v) ((void) (EXR_UNLOCK (pctxt)), v)
-#define EXR_UNLOCK_WRITE_AND_RETURN_PCTXT(v)                                   \
-    ((void) (EXR_RETURN_WRITE (pctxt)), v)
-
-#define INTERN_EXR_PROMOTE_CONTEXT_OR_ERROR(c)                                 \
-    struct _internal_exr_context* pctxt = EXR_CTXT (c);                        \
-    if (!pctxt) return EXR_ERR_MISSING_CONTEXT_ARG
-
-#define INTERN_EXR_PROMOTE_CONST_CONTEXT_OR_ERROR(c)                           \
-    const struct _internal_exr_context* pctxt = EXR_CCTXT (c);                 \
-    if (!pctxt) return EXR_ERR_MISSING_CONTEXT_ARG
-
-#define EXR_PROMOTE_LOCKED_CONTEXT_OR_ERROR(c)                                 \
-    INTERN_EXR_PROMOTE_CONTEXT_OR_ERROR (c);                                   \
-    EXR_LOCK (c)
-
-#define EXR_PROMOTE_CONST_CONTEXT_OR_ERROR(c)                                  \
-    INTERN_EXR_PROMOTE_CONST_CONTEXT_OR_ERROR (c);                             \
-    EXR_LOCK_WRITE (pctxt)
-
-#define EXR_PROMOTE_LOCKED_CONTEXT_AND_PART_OR_ERROR(c, pi)                    \
-    struct _internal_exr_context* pctxt = EXR_CTXT (c);                        \
-    struct _internal_exr_part*    part;                                        \
-    if (!pctxt) return EXR_ERR_MISSING_CONTEXT_ARG;                            \
-    EXR_LOCK (pctxt);                                                          \
-    if (pi < 0 || pi >= pctxt->num_parts)                                      \
-        return (                                                               \
-            (void) (EXR_UNLOCK (pctxt)),                                       \
-            pctxt->print_error (                                               \
-                pctxt,                                                         \
-                EXR_ERR_ARGUMENT_OUT_OF_RANGE,                                 \
-                "Part index (%d) out of range",                                \
-                pi));                                                          \
-    part = pctxt->parts[pi]
-
-#define EXR_PROMOTE_CONST_CONTEXT_AND_PART_OR_ERROR(c, pi)                     \
-    const struct _internal_exr_context* pctxt = EXR_CCTXT (c);                 \
-    const struct _internal_exr_part*    part;                                  \
-    if (!pctxt) return EXR_ERR_MISSING_CONTEXT_ARG;                            \
-    EXR_LOCK_WRITE (pctxt);                                                    \
-    if (pi < 0 || pi >= pctxt->num_parts)                                      \
-        return (                                                               \
-            (void) (EXR_RETURN_WRITE (pctxt)),                                 \
-            pctxt->print_error (                                               \
-                pctxt,                                                         \
-                EXR_ERR_ARGUMENT_OUT_OF_RANGE,                                 \
-                "Part index (%d) out of range",                                \
-                pi));                                                          \
-    part = pctxt->parts[pi]
-
-#define EXR_PROMOTE_CONST_CONTEXT_AND_PART_OR_ERROR_NO_LOCK(c, pi)             \
-    const struct _internal_exr_context* pctxt = EXR_CCTXT (c);                 \
-    const struct _internal_exr_part*    part;                                  \
-    if (!pctxt) return EXR_ERR_MISSING_CONTEXT_ARG;                            \
-    if (pi < 0 || pi >= pctxt->num_parts)                                      \
-        return (                                                               \
-            (void) (EXR_RETURN_WRITE (pctxt)),                                 \
-            pctxt->print_error (                                               \
-                pctxt,                                                         \
-                EXR_ERR_ARGUMENT_OUT_OF_RANGE,                                 \
-                "Part index (%d) out of range",                                \
-                pi));                                                          \
-    part = pctxt->parts[pi]
-
-#define EXR_PROMOTE_CONST_CONTEXT_OR_ERROR_NO_PART_NO_LOCK(c, pi)              \
-    const struct _internal_exr_context* pctxt = EXR_CCTXT (c);                 \
-    if (!pctxt) return EXR_ERR_MISSING_CONTEXT_ARG;                            \
-    if (pi < 0 || pi >= pctxt->num_parts)                                      \
-    return (                                                                   \
-        (void) (EXR_RETURN_WRITE (pctxt)),                                     \
-        pctxt->print_error (                                                   \
-            pctxt,                                                             \
-            EXR_ERR_ARGUMENT_OUT_OF_RANGE,                                     \
-            "Part index (%d) out of range",                                    \
-            pi))
-
-#define EXR_PROMOTE_READ_CONST_CONTEXT_AND_PART_OR_ERROR(c, pi)                \
-    const struct _internal_exr_context* pctxt = EXR_CCTXT (c);                 \
-    const struct _internal_exr_part*    part;                                  \
-    if (!pctxt) return EXR_ERR_MISSING_CONTEXT_ARG;                            \
-    if (pctxt->mode != EXR_CONTEXT_READ)                                       \
-        return pctxt->standard_error (pctxt, EXR_ERR_NOT_OPEN_READ);           \
-    if (pi < 0 || pi >= pctxt->num_parts)                                      \
-        return pctxt->print_error (                                            \
-            pctxt,                                                             \
+#define EXR_LOCK_AND_DEFINE_PART(pi)                                           \
+    exr_priv_part_t part;                                                      \
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;                             \
+    internal_exr_lock (ctxt);                                                  \
+    if (pi < 0 || pi >= ctxt->num_parts)                                       \
+    {                                                                          \
+        internal_exr_unlock (ctxt);                                            \
+        return ctxt->print_error (                                             \
+            ctxt,                                                              \
             EXR_ERR_ARGUMENT_OUT_OF_RANGE,                                     \
             "Part index (%d) out of range",                                    \
             pi);                                                               \
-    part = pctxt->parts[pi]
+    }                                                                          \
+    part = ctxt->parts[pi]
 
-#define EXR_PROMOTE_READ_CONST_CONTEXT_OR_ERROR_NO_PART(c, pi)                 \
-    const struct _internal_exr_context* pctxt = EXR_CCTXT (c);                 \
-    if (!pctxt) return EXR_ERR_MISSING_CONTEXT_ARG;                            \
-    if (pctxt->mode != EXR_CONTEXT_READ)                                       \
-        return pctxt->standard_error (pctxt, EXR_ERR_NOT_OPEN_READ);           \
-    if (pi < 0 || pi >= pctxt->num_parts)                                      \
-    return pctxt->print_error (                                                \
-        pctxt,                                                                 \
+#define EXR_LOCK_WRITE_AND_DEFINE_PART(pi)                                     \
+    exr_const_priv_part_t part;                                                \
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;                             \
+    if (ctxt->mode == EXR_CONTEXT_WRITE) internal_exr_lock (ctxt);             \
+    if (pi < 0 || pi >= ctxt->num_parts)                                       \
+    {                                                                          \
+        if (ctxt->mode == EXR_CONTEXT_WRITE) internal_exr_unlock (ctxt);       \
+        return ctxt->print_error (                                             \
+            ctxt,                                                              \
+            EXR_ERR_ARGUMENT_OUT_OF_RANGE,                                     \
+            "Part index (%d) out of range",                                    \
+            pi);                                                               \
+    }                                                                          \
+    part = ctxt->parts[pi]
+
+#define EXR_CHECK_CONTEXT_AND_PART(pi)                                         \
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;                             \
+    if (pi < 0 || pi >= ctxt->num_parts)                                       \
+    return ctxt->print_error (                                                 \
+        ctxt,                                                                  \
         EXR_ERR_ARGUMENT_OUT_OF_RANGE,                                         \
         "Part index (%d) out of range",                                        \
         pi)
 
-EXR_INTERNAL void internal_exr_update_default_handlers (exr_context_initializer_t* inits);
+#define EXR_READONLY_AND_DEFINE_PART(pi)                                       \
+    exr_const_priv_part_t part;                                                \
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;                             \
+    if (ctxt->mode != EXR_CONTEXT_READ)                                        \
+        return ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_READ);             \
+    if (pi < 0 || pi >= ctxt->num_parts)                                       \
+        return ctxt->print_error (                                             \
+            ctxt,                                                              \
+            EXR_ERR_ARGUMENT_OUT_OF_RANGE,                                     \
+            "Part index (%d) out of range",                                    \
+            pi);                                                               \
+    part = ctxt->parts[pi]
 
-EXR_INTERNAL exr_result_t internal_exr_add_part (
-    struct _internal_exr_context*, struct _internal_exr_part**, int* new_index);
-EXR_INTERNAL void internal_exr_revert_add_part (
-    struct _internal_exr_context*, struct _internal_exr_part**, int* new_index);
+void internal_exr_update_default_handlers (exr_context_initializer_t* inits);
 
-EXR_INTERNAL exr_result_t internal_exr_context_restore_handlers (
-    struct _internal_exr_context* ctxt, exr_result_t rv);
-EXR_INTERNAL exr_result_t internal_exr_alloc_context (
-    struct _internal_exr_context**   out,
+exr_result_t internal_exr_add_part (
+    exr_context_t ctxt, exr_priv_part_t* outpart, int* new_index);
+void internal_exr_revert_add_part (
+    exr_context_t ctxt, exr_priv_part_t* outpart, int* new_index);
+
+exr_result_t
+internal_exr_context_restore_handlers (exr_context_t ctxt, exr_result_t rv);
+
+exr_result_t internal_exr_alloc_context (
+    exr_context_t*                   out,
     const exr_context_initializer_t* initializers,
     enum _INTERNAL_EXR_CONTEXT_MODE  mode,
     size_t                           extra_data);
-EXR_INTERNAL void internal_exr_destroy_context (struct _internal_exr_context* ctxt);
+void internal_exr_destroy_context (exr_context_t ctxt);
 
 #endif /* OPENEXR_PRIVATE_STRUCTS_H */

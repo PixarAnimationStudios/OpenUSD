@@ -40,3 +40,18 @@ class "HydraRenderPassAPI" (
     )
 }
 
+class "HydraPrimAPI" (
+    customData = {
+        string userDocBrief = "Provides Hydra-specific prim settings."
+    }
+)
+{
+    uniform bool hydra:expandInstances = 0 (
+        customData = {
+            string userDocBrief = """This property can be used to de-instance the Hydra scene
+        index representation of prims that were otherwise instanceable
+        in the USD scenegraph."""
+        }
+    )
+}
+

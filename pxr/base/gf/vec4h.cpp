@@ -44,26 +44,26 @@ operator<<(std::ostream &out, GfVec4h const &v)
 bool
 GfVec4h::operator==(GfVec4d const &other) const
 {
-    return _data[0] == other[0] &&
-           _data[1] == other[1] &&
-           _data[2] == other[2] &&
-           _data[3] == other[3];
+    return x == other.x &&
+           y == other.y &&
+           z == other.z &&
+           w == other.w;
 }
 bool
 GfVec4h::operator==(GfVec4f const &other) const
 {
-    return _data[0] == other[0] &&
-           _data[1] == other[1] &&
-           _data[2] == other[2] &&
-           _data[3] == other[3];
+    return x == other.x &&
+           y == other.y &&
+           z == other.z &&
+           w == other.w;
 }
 bool
 GfVec4h::operator==(GfVec4i const &other) const
 {
-    return _data[0] == other[0] &&
-           _data[1] == other[1] &&
-           _data[2] == other[2] &&
-           _data[3] == other[3];
+    return x == other.x &&
+           y == other.y &&
+           z == other.z &&
+           w == other.w;
 }
 
 

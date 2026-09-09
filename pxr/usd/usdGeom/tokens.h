@@ -89,18 +89,18 @@ struct UsdGeomTokensType {
     /// 
     /// UsdGeomBackPlateAPI
     const TfToken backPlate_MultipleApplyTemplate_Image;
-    /// \brief "backPlate:__INSTANCE_NAME__:luma:gain"
+    /// \brief "backPlate:__INSTANCE_NAME__:luma:offset"
     /// 
     /// UsdGeomBackPlateAPI
-    const TfToken backPlate_MultipleApplyTemplate_LumaGain;
-    /// \brief "backPlate:__INSTANCE_NAME__:luma:gamma"
+    const TfToken backPlate_MultipleApplyTemplate_LumaOffset;
+    /// \brief "backPlate:__INSTANCE_NAME__:luma:power"
     /// 
     /// UsdGeomBackPlateAPI
-    const TfToken backPlate_MultipleApplyTemplate_LumaGamma;
-    /// \brief "backPlate:__INSTANCE_NAME__:luma:lift"
+    const TfToken backPlate_MultipleApplyTemplate_LumaPower;
+    /// \brief "backPlate:__INSTANCE_NAME__:luma:slope"
     /// 
     /// UsdGeomBackPlateAPI
-    const TfToken backPlate_MultipleApplyTemplate_LumaLift;
+    const TfToken backPlate_MultipleApplyTemplate_LumaSlope;
     /// \brief "backPlate:__INSTANCE_NAME__:plateVisibility"
     /// 
     /// UsdGeomBackPlateAPI

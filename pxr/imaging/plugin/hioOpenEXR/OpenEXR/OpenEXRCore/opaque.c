@@ -18,17 +18,17 @@ exr_attr_opaquedata_init (
 {
     exr_attr_opaquedata_t nil = {0};
 
-    INTERN_EXR_PROMOTE_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
 
     if (!u)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid reference to opaque data object to initialize");
 
     if (b > (size_t) INT32_MAX)
-        return pctxt->print_error (
-            pctxt,
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid size for opaque data (%" PRIu64
             " bytes, must be <= INT32_MAX)",
@@ -38,9 +38,9 @@ exr_attr_opaquedata_init (
     if (b > 0)
     {
 
-        u->packed_data = pctxt->alloc_fn (b);
+        u->packed_data = ctxt->alloc_fn (b);
         if (!u->packed_data)
-            return pctxt->standard_error (pctxt, EXR_ERR_OUT_OF_MEMORY);
+            return ctxt->standard_error (ctxt, EXR_ERR_OUT_OF_MEMORY);
     }
     u->size              = (int32_t) b;
     u->packed_alloc_size = (int32_t) b;
@@ -67,13 +67,13 @@ exr_attr_opaquedata_create (
 exr_result_t
 exr_attr_opaquedata_destroy (exr_context_t ctxt, exr_attr_opaquedata_t* ud)
 {
-    INTERN_EXR_PROMOTE_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
 
     if (ud)
     {
         exr_attr_opaquedata_t nil = {0};
         if (ud->packed_data && ud->packed_alloc_size > 0)
-            pctxt->free_fn (ud->packed_data);
+            ctxt->free_fn (ud->packed_data);
 
         if (ud->unpacked_data && ud->destroy_unpacked_func_ptr)
             ud->destroy_unpacked_func_ptr (
@@ -113,14 +113,14 @@ exr_attr_opaquedata_unpack (
     int32_t      tmpusz;
     void*        tmpuptr;
 
-    INTERN_EXR_PROMOTE_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
 
     if (sz) *sz = 0;
     if (unpacked) *unpacked = NULL;
 
     if (!u)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid reference to opaque data object to initialize");
 
@@ -132,8 +132,8 @@ exr_attr_opaquedata_unpack (
     }
 
     if (!u->unpack_func_ptr)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "No unpack provider specified for opaque data");
     rv = u->unpack_func_ptr (
@@ -159,14 +159,14 @@ exr_attr_opaquedata_pack (
     int32_t      nsize  = 0;
     void*        tmpptr = NULL;
 
-    INTERN_EXR_PROMOTE_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
 
     if (sz) *sz = 0;
     if (packed) *packed = NULL;
 
     if (!u)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid reference to opaque data object to initialize");
 
@@ -178,25 +178,25 @@ exr_attr_opaquedata_pack (
     }
 
     if (!u->pack_func_ptr)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "No pack provider specified for opaque data");
 
     rv = u->pack_func_ptr (
         ctxt, u->unpacked_data, u->unpacked_size, &nsize, NULL);
     if (rv != EXR_ERR_SUCCESS)
-        return pctxt->print_error (
-            pctxt,
+        return ctxt->print_error (
+            ctxt,
             rv,
             "Pack function failed finding pack buffer size, unpacked size %d",
             u->unpacked_size);
 
     if (nsize > 0)
     {
-        tmpptr = pctxt->alloc_fn ((size_t) nsize);
+        tmpptr = ctxt->alloc_fn ((size_t) nsize);
         if (tmpptr == NULL)
-            return pctxt->standard_error (pctxt, EXR_ERR_OUT_OF_MEMORY);
+            return ctxt->standard_error (ctxt, EXR_ERR_OUT_OF_MEMORY);
 
         u->packed_alloc_size = nsize;
 
@@ -204,11 +204,11 @@ exr_attr_opaquedata_pack (
             ctxt, u->unpacked_data, u->unpacked_size, &nsize, tmpptr);
         if (rv != EXR_ERR_SUCCESS)
         {
-            pctxt->free_fn (tmpptr);
+            ctxt->free_fn (tmpptr);
             nsize                = u->packed_alloc_size;
             u->packed_alloc_size = 0;
-            return pctxt->print_error (
-                pctxt,
+            return ctxt->print_error (
+                ctxt,
                 rv,
                 "Pack function failed to pack data, unpacked size %d, packed buffer size %d",
                 u->unpacked_size,
@@ -234,14 +234,14 @@ exr_result_t
 exr_attr_opaquedata_set_unpacked (
     exr_context_t ctxt, exr_attr_opaquedata_t* u, void* unpacked, int32_t sz)
 {
-    INTERN_EXR_PROMOTE_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
 
-    if (!u) return pctxt->standard_error (pctxt, EXR_ERR_INVALID_ARGUMENT);
+    if (!u) return ctxt->standard_error (ctxt, EXR_ERR_INVALID_ARGUMENT);
 
     /* TODO: do we care if the incoming unpacked data is null? */
     if (sz < 0)
-        return pctxt->print_error (
-            pctxt,
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Opaque data given invalid negative size (%d)",
             sz);
@@ -257,7 +257,7 @@ exr_attr_opaquedata_set_unpacked (
 
     if (u->packed_data)
     {
-        if (u->packed_alloc_size > 0) pctxt->free_fn (u->packed_data);
+        if (u->packed_alloc_size > 0) ctxt->free_fn (u->packed_data);
         u->packed_data       = NULL;
         u->size              = 0;
         u->packed_alloc_size = 0;
@@ -275,20 +275,20 @@ exr_attr_opaquedata_set_packed (
     int32_t                sz)
 {
     void* nmem;
-    INTERN_EXR_PROMOTE_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
 
-    if (!u) return pctxt->standard_error (pctxt, EXR_ERR_INVALID_ARGUMENT);
+    if (!u) return ctxt->standard_error (ctxt, EXR_ERR_INVALID_ARGUMENT);
 
     /* TODO: do we care if the incoming unpacked data is null? */
     if (sz < 0)
-        return pctxt->print_error (
-            pctxt,
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Opaque data given invalid negative size (%d)",
             sz);
 
-    nmem = pctxt->alloc_fn ((size_t) sz);
-    if (!nmem) return pctxt->standard_error (pctxt, EXR_ERR_OUT_OF_MEMORY);
+    nmem = ctxt->alloc_fn ((size_t) sz);
+    if (!nmem) return ctxt->standard_error (ctxt, EXR_ERR_OUT_OF_MEMORY);
 
     if (u->unpacked_data)
     {
@@ -301,7 +301,7 @@ exr_attr_opaquedata_set_packed (
 
     if (u->packed_data)
     {
-        if (u->packed_alloc_size > 0) pctxt->free_fn (u->packed_data);
+        if (u->packed_alloc_size > 0) ctxt->free_fn (u->packed_data);
         u->packed_data       = NULL;
         u->size              = 0;
         u->packed_alloc_size = 0;

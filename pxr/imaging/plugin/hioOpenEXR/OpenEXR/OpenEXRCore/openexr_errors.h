@@ -16,7 +16,7 @@ extern "C" {
 
 /** @file */
 
-/** 
+/**
  * @defgroup ErrorCodes Error Handling
  * @brief These are a group of definitions related to error handling.
  *
@@ -54,6 +54,7 @@ typedef enum
     EXR_ERR_ALREADY_WROTE_ATTRS,
     EXR_ERR_BAD_CHUNK_LEADER,
     EXR_ERR_CORRUPT_CHUNK,
+    EXR_ERR_INCOMPLETE_CHUNK_TABLE,
     EXR_ERR_INCORRECT_PART,
     EXR_ERR_INCORRECT_CHUNK,
     EXR_ERR_USE_SCAN_DEEP_WRITE,

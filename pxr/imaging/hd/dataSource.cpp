@@ -126,9 +126,8 @@ HdDebugPrintDataSource(
 {
     if (HdContainerDataSourceHandle handle =
             HdContainerDataSource::Cast(dataSource)) {
-        TfTokenVector names = handle->GetNames();
-        std::sort(names.begin(), names.end(), std::less<TfToken>());
-
+        TfTokenVector nameVec(handle->GetNames());
+        std::set<TfToken> names(nameVec.begin(), nameVec.end());
         for (TfToken const &name : names) {
             // null children from a container should be treated as not present
             if (HdDataSourceBaseHandle childhandle = handle->Get(name)) {

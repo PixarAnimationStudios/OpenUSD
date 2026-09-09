@@ -1,7 +1,15 @@
 {
     "Plugins": [
         {
-            "Info": {},
+            "Info": {
+                "Types": {
+                    "UsdExecImaging_StageSceneIndex": {
+                        "bases": [
+                            "UsdImagingStageSceneIndexInterface"
+                        ]
+                    }
+                }
+            },
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
             "Name": "usdExecImaging",
             "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",

@@ -76,14 +76,25 @@ void wrapTimeCode()
         .def( self >= self )
         .def( double() >= self )
 
-        .def( self * self )
         .def( double() * self )
+        .def( self * double() )
+
+        .def( self / double() )
         .def( self / self )
-        .def( double() / self )
+
         .def( self + self )
+        .def( self + GfDuration() )
+        .def( self + double() )
+        .def( GfDuration() + self )
         .def( double() + self )
+
         .def( self - self )
+        .def( self - GfDuration() )
+        .def( GfDuration() - self )
         .def( double() - self )
+        .def( self - double() )
+
+        .def( -self )
         ;
 
     implicitly_convertible<double, This>();

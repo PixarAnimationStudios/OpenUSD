@@ -81,6 +81,10 @@ struct UsdHydraTokensType {
     /// 
     /// The id value of a UvTexture shader.
     const TfToken HwUvTexture_1;
+    /// \brief "hydra:expandInstances"
+    /// 
+    /// UsdHydraPrimAPI
+    const TfToken hydraExpandInstances;
     /// \brief "hydraGenerativeProcedural"
     /// 
     /// Fallback value for UsdHydraGenerativeProceduralAPI::GetProceduralSystemAttr()
@@ -169,6 +173,10 @@ struct UsdHydraTokensType {
     /// 
     /// Schema identifer and family for UsdHydraGenerativeProceduralAPI
     const TfToken HydraGenerativeProceduralAPI;
+    /// \brief "HydraPrimAPI"
+    /// 
+    /// Schema identifer and family for UsdHydraPrimAPI
+    const TfToken HydraPrimAPI;
     /// \brief "HydraRenderPassAPI"
     /// 
     /// Schema identifer and family for UsdHydraRenderPassAPI

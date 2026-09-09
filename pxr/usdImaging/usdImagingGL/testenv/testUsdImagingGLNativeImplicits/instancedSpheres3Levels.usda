@@ -1,0 +1,56 @@
+#usda 1.0
+(
+    defaultPrim = "world"
+    upAxis = "Z"
+)
+
+def Camera "main_cam"
+{
+    float4[] clippingPlanes = []
+    float2 clippingRange = (1, 2000000)
+    float focalLength = 34.2608
+    float focusDistance = 103.705246
+    float fStop = 0
+    float horizontalAperture = 33.17875
+    float horizontalApertureOffset = 0
+    token projection = "perspective"
+    float verticalAperture = 20.955
+    float verticalApertureOffset = 0
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 2.220446049250313e-16, 1, 0), (0, -1, 2.220446049250313e-16, 0), (0, -103.7052431950508, 2.3027189753899346e-14, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Xform "world"
+{
+    def PointInstancer "L1"
+    {
+        point3f[] positions = [(0, 0, -17), (0, 0, 0), (0, 0, 17)]
+        int[] protoIndices = [0, 0, 0]
+        rel prototypes = [
+            </world/L1/L2>
+        ]
+
+        def PointInstancer "L2"
+        {
+            point3f[] positions = [(0, -17, 0), (0, 0, 0), (0, 17, 0)]
+            int[] protoIndices = [0, 0, 0]
+            rel prototypes = [
+                </world/L1/L2/L3>
+            ]
+
+            def PointInstancer "L3"
+            {
+                point3f[] positions = [(-17, 0, 0), (0, 0, 0), (17, 0, 0)]
+                int[] protoIndices = [0, 0, 0]
+                rel prototypes = [
+                    </world/L1/L2/L3/Ball>
+                ]
+
+                def Sphere "Ball"
+                {
+                    double radius = 5.0
+                }
+            }
+        }
+    }
+}

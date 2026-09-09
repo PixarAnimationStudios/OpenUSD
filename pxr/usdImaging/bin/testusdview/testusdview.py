@@ -134,6 +134,11 @@ AppController._processEvents = _processEvents
 def _takeShot(self, fileName, iterations=10, waitForConvergence=False,
               cropToAspectRatio=False):
     self._processEvents(iterations, waitForConvergence)
+    # Force a synchronous repaint, because it's not guaranteed it will always
+    # happen before the shot. This mostly seems to be a Windows issue.
+    if self._stageView:
+        self._stageView.updateSelection()
+        self._stageView.repaint()
     viewportShot = self.GrabViewportShot(cropToAspectRatio=cropToAspectRatio)
     viewportShot.save(fileName, "PNG")
 

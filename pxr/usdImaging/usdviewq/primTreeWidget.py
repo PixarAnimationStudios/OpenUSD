@@ -464,9 +464,11 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
         use over calling setSelected directly on PrimViewItems."""
         with SelectionEnabler(self._selectionModel):
             for item in added:
-                item.setSelected(True)
+                if item is not None:
+                    item.setSelected(True)
             for item in removed:
-                item.setSelected(False)
+                if item is not None:
+                    item.setSelected(False)
         self._refreshAncestorsOfSelected()
         # This is a big hammer... if we instead built up a list of the
         # ModelIndices of all the changed ancestors, we could instead make
@@ -481,9 +483,11 @@ class PrimTreeWidget(QtWidgets.QTreeWidget):
 
     # Refresh the list of ancestors of selected prims
     def _refreshAncestorsOfSelected(self):
-        selectedItems = [
-            self._appController._getItemAtPath(prim.GetPath())
-            for prim in self._appController._dataModel.selection.getPrims()]
+        selectedItems = []
+        for prim in self._appController._dataModel.selection.getPrims():
+            item = self._appController._getItemAtPath(prim.GetPath())
+            if item is not None:
+                selectedItems.append(item)
 
         self._resetAncestorsOfSelected()
 

@@ -16,11 +16,11 @@ extern "C" {
  */
 
 /** @brief initialize a channel list with a number of channels to be added later */
-EXR_INTERNAL exr_result_t
+exr_result_t
 exr_attr_chlist_init (exr_context_t ctxt, exr_attr_chlist_t* chl, int nchans);
 
 /** @brief Add a channel to the channel list */
-EXR_INTERNAL exr_result_t exr_attr_chlist_add (
+exr_result_t exr_attr_chlist_add (
     exr_context_t              ctxt,
     exr_attr_chlist_t*         chl,
     const char*                name,
@@ -29,7 +29,7 @@ EXR_INTERNAL exr_result_t exr_attr_chlist_add (
     int32_t                    xsamp,
     int32_t                    ysamp);
 /** @brief Add a channel to the channel list */
-EXR_INTERNAL exr_result_t exr_attr_chlist_add_with_length (
+exr_result_t exr_attr_chlist_add_with_length (
     exr_context_t              ctxt,
     exr_attr_chlist_t*         chl,
     const char*                name,
@@ -40,13 +40,13 @@ EXR_INTERNAL exr_result_t exr_attr_chlist_add_with_length (
     int32_t                    ysamp);
 
 /** @brief initializes a channel list and duplicates from the source */
-EXR_INTERNAL exr_result_t exr_attr_chlist_duplicate (
+exr_result_t exr_attr_chlist_duplicate (
     exr_context_t            ctxt,
     exr_attr_chlist_t*       chl,
     const exr_attr_chlist_t* srcchl);
 
 /** @brief Frees memory for the channel list and all channels inside */
-EXR_INTERNAL exr_result_t exr_attr_chlist_destroy (exr_context_t ctxt, exr_attr_chlist_t*);
+exr_result_t exr_attr_chlist_destroy (exr_context_t ctxt, exr_attr_chlist_t*);
 
 /** @} */
 

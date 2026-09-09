@@ -11,16 +11,16 @@
 #if defined(__GNUC__) || defined(__clang__)
 __attribute__ ((malloc))
 #endif
-EXR_INTERNAL void*
+void*
 internal_exr_alloc (size_t bytes);
 
 #if defined(__GNUC__) || defined(__clang__)
 __attribute__ ((malloc))
 #endif
-EXR_INTERNAL void*
+void*
 internal_exr_alloc_aligned (
     void* (*alloc_fn) (size_t), void** tofreeptr, size_t bytes, size_t align);
 
-EXR_INTERNAL void internal_exr_free (void* ptr);
+void internal_exr_free (void* ptr);
 
 #endif /* OPENEXR_PRIVATE_MEMORY_H */

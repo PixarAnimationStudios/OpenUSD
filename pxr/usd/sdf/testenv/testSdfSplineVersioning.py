@@ -5,7 +5,7 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 
-from pxr import Ts, Sdf
+from pxr import Gf, Ts, Sdf
 
 import re
 import unittest
@@ -61,6 +61,13 @@ class TestSdfSplineVersioning(unittest.TestCase):
         splineVersions = self._CheckVersions()
         self.assertEqual(splineVersions, ('0.12.0', '1.0', '0.12.0'))
 
+        # Verify that clearing the spline resets the exported (but not saved)
+        # versions.
+        self.attr.ClearSpline()
+        
+        clearVersions = self._CheckVersions()
+        self.assertEqual(clearVersions, ('0.12.0', '1.0', '0.8.0'))
+
         # Now add a tangent algorithm to the spline.
         spline.SetKnot(Ts.Knot(time=0.0, value=0.0, nextInterp=Ts.InterpCurve,
                                postTanAlgorithm=Ts.TangentAlgorithmAutoEase))
@@ -75,28 +82,36 @@ class TestSdfSplineVersioning(unittest.TestCase):
         spline.SetPreExtrapolation(extrap)
         self.attr.SetSpline(spline)
 
-        algorithmVersions = self._CheckVersions()
-        self.assertEqual(algorithmVersions, ('0.15.0', '1.3', '0.15.0'))
+        loopBoundaryVersions = self._CheckVersions()
+        self.assertEqual(loopBoundaryVersions, ('0.15.0', '1.3', '0.15.0'))
+
+        # Reset the attr's spline
+        self.attr.ClearSpline()
+
+        clearVersions = self._CheckVersions()
+        self.assertEqual(clearVersions, ('0.15.0', '1.0', '0.8.0'))
 
         # Create a spline with GfTimeCode as the value type
         spline = Ts.Spline("timecode")
-        self.attr = Sdf.CreatePrimAttributeInLayer(self.layer,
-                                                   '/Prim.timeValue',
-                                                   Sdf.ValueTypeNames.TimeCode)
-        self.attr.SetSpline(spline)
-        print("spline type name", Ts.Spline("timecode").GetValueTypeName())
-        algorithmVersions = self._CheckVersions()
-        self.assertEqual(algorithmVersions, ('0.15.0', '1.3', '0.15.0'))
+        self.attr2 = Sdf.CreatePrimAttributeInLayer(self.layer,
+                                                    '/Prim.timeValue',
+                                                    Sdf.ValueTypeNames.TimeCode)
+        self.attr2.SetSpline(spline)
+        timeCodeVersions = self._CheckVersions()
+        self.assertEqual(timeCodeVersions, ('0.15.0', '1.0', '0.15.0'))
 
-        # Confirm that resetting the spline brings us back to the minimum
-        # spline version
-        spline = Ts.Spline()
+        self.attr2.ClearSpline()
+        clearVersions = self._CheckVersions()
+        self.assertEqual(clearVersions, ('0.15.0', '1.0', '0.8.0'))
+
+        # Create a GfDuration attribute
         self.attr = Sdf.CreatePrimAttributeInLayer(self.layer,
-                                                   '/Prim.origValue',
-                                                   Sdf.ValueTypeNames.Double)
-        self.attr.SetSpline(spline)
-        algorithmVersions = self._CheckVersions()
-        self.assertEqual(splineVersions, ('0.12.0', '1.0', '0.12.0'))
+                                                   '/Prim.durationValue',
+                                                   Sdf.ValueTypeNames.Duration)
+        self.attr.default = Gf.Duration(1.0)
+        durationVersions = self._CheckVersions()
+        self.assertEqual(durationVersions, ('0.16.0', '1.4', '0.16.0'))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -23,7 +23,9 @@
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+#if PXR_VERSION >= 2505
 #include "pxr/imaging/hd/sceneIndexUtil.h"
+#endif
 #include "pxr/imaging/hd/tokens.h"
 #if HD_API_VERSION >= 76
 #include "pxr/imaging/hdsi/nodeIdentifierResolvingSceneIndex.h"
@@ -55,10 +57,16 @@ TF_REGISTRY_FUNCTION(TfType)
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
     for (auto const& rendererDisplayName : HdPrman_GetPluginDisplayNames()) {
+        bool isXPU =
+            (rendererDisplayName != HdPrmanDisplayNamesTokens->RenderManRIS);
+        const HdContainerDataSourceHandle inputXPU = HdRetainedContainerDataSource::New(
+            HdPrmanDisplayNamesTokens->RenderManXPU, 
+            HdRetainedTypedSampledDataSource<bool>::New(true)
+            );
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
             rendererDisplayName,
             _tokens->pluginName,
-            nullptr, // no argument data necessary
+            isXPU ? inputXPU : nullptr,
             HdPrman_MatFiltSceneIndexPlugin::GetInsertionPhase(),
             HdSceneIndexPluginRegistry::InsertionOrderAtStart);
     }
@@ -121,7 +129,23 @@ _TransformMaterialXNetwork(
     HdMaterialNetworkInterface *networkInterface)
 {
     std::vector<std::string> errors;
-    MatfiltMaterialX(networkInterface, &errors);
+    bool isXPU = false;
+    MatfiltMaterialX(networkInterface, isXPU, &errors);
+    if (!errors.empty()) {
+        TF_RUNTIME_ERROR(
+            "Error filtering preview material network for prim %s: %s\n",
+                networkInterface->GetMaterialPrimPath().GetText(),
+                TfStringJoin(errors).c_str());
+    }
+}
+
+void
+_TransformMaterialXNetworkXPU(
+    HdMaterialNetworkInterface *networkInterface)
+{
+    std::vector<std::string> errors;
+    bool isXPU = true;
+    MatfiltMaterialX(networkInterface, isXPU, &errors);
     if (!errors.empty()) {
         TF_RUNTIME_ERROR(
             "Error filtering preview material network for prim %s: %s\n",
@@ -138,23 +162,32 @@ class _MaterialXFilteringSceneIndex :
 public:
 
     static _MaterialXFilteringSceneIndexRefPtr New(
-        const HdSceneIndexBaseRefPtr &inputScene) 
+        const HdSceneIndexBaseRefPtr &inputScene,
+        bool isXPU) 
     {
         return TfCreateRefPtr(
-            new _MaterialXFilteringSceneIndex(inputScene));
+            new _MaterialXFilteringSceneIndex(inputScene, isXPU));
     }
 
 protected:
     _MaterialXFilteringSceneIndex(
-        const HdSceneIndexBaseRefPtr &inputSceneIndex)
-    : HdMaterialFilteringSceneIndexBase(inputSceneIndex)
+        const HdSceneIndexBaseRefPtr &inputSceneIndex,
+        bool isXPU)
+        : HdMaterialFilteringSceneIndexBase(inputSceneIndex),
+          _isXPU(isXPU)
     {
     }
 
     FilteringFnc _GetFilteringFunction() const override
     {
-        return _TransformMaterialXNetwork;
+        if(_isXPU) {
+            return _TransformMaterialXNetworkXPU;
+        } else {
+            return _TransformMaterialXNetwork;
+        }
     }
+private:
+    bool _isXPU;
 };
 
 #endif
@@ -214,7 +247,6 @@ HdPrman_MatFiltSceneIndexPlugin::_AppendSceneIndex(
             HdPrimTypeTokens->material);
     }
 #endif
-
      // XXX: Hardcoded for now to match the legacy matfilt logic.
     static const bool _resolveVstructsWithConditionals = true;
     si = HdPrman_VirtualStructResolvingSceneIndex::New(
@@ -222,17 +254,25 @@ HdPrman_MatFiltSceneIndexPlugin::_AppendSceneIndex(
     
     si = _PreviewMaterialFilteringSceneIndex::New(si);
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
-    si = _MaterialXFilteringSceneIndex::New(si);
+    bool isXPU = false;
+    if (HdBoolDataSourceHandle val = HdBoolDataSource::Cast(
+            inputArgs->Get(HdPrmanDisplayNamesTokens->RenderManXPU))) {
+        isXPU = val->GetTypedValue(0.0f);
+    }
+
+    si = _MaterialXFilteringSceneIndex::New(si, isXPU);
 #endif
 #if HD_API_VERSION >= 76
     si = HdSiNodeIdentifierResolvingSceneIndex::New(
         si, /* sourceType */_tokens->OSL);
 #endif
 
+#if PXR_VERSION >= 2505
     if (TfGetEnvSetting<bool>(HD_USE_ENCAPSULATING_SCENE_INDICES)) {
         si = HdMakeEncapsulatingSceneIndex({inputScene}, si);
         si->SetDisplayName("HdPrman MatFilt Scene Indices");
     }
+#endif
 
     return si;
 }

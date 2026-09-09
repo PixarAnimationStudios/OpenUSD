@@ -26,6 +26,9 @@ PXR_NAMESPACE_OPEN_SCOPE
      * work.
      */                                                                        \
    (asyncPoll)                                                                 \
+   /* A hint that scene indexes may drop internal caches, to save memory
+      after scene population is complete. */                                   \
+   (dropCaches)
 
 TF_DECLARE_PUBLIC_TOKENS(HdSystemMessageTokens, HD_API,
     HD_SYSTEM_MESSAGE_TOKENS);

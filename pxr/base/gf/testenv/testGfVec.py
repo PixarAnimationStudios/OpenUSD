@@ -7,7 +7,7 @@
 #
 from __future__ import division
 
-import sys, math, unittest
+import itertools, sys, math, unittest
 from pxr import Gf
 
 vecIntTypes = [ Gf.Vec2i, Gf.Vec3i, Gf.Vec4i ]
@@ -515,6 +515,79 @@ class TestGfVec(unittest.TestCase):
                 v3 = Gf.Slerp(1, v1, v2)
                 self.assertTrue(Gf.IsClose(v3, v2, eps))
 
+    def SwizzleTest(self, Vec):
+        dim = Vec.dimension
+        comps = 'xyzw'[:dim]
+        vals = [i + 1 for i in range(dim)]
+
+        # The vector type of a given dimension with this one's scalar type,
+        # which is what a swizzle of that length returns.  'Vec4f' -> 'f'.
+        scalarSuffix = Vec.__name__[-1]
+        def vecOfDim(d):
+            return getattr(Gf, f'Vec{d}{scalarSuffix}')
+
+        # Named components read back, and agree with indexing.
+        v = Vec(*vals)
+        for i, c in enumerate(comps):
+            self.assertEqual(getattr(v, c), vals[i])
+            self.assertEqual(getattr(v, c), v[i])
+
+        # Named components are writable, and alias the same storage as indexing
+        # does.
+        v = Vec(*vals)
+        for i, c in enumerate(comps):
+            setattr(v, c, vals[i] * 10)
+            self.assertEqual(v[i], vals[i] * 10)
+            v[i] = vals[i]
+            self.assertEqual(getattr(v, c), vals[i])
+
+        # Every swizzle: 2 names for a 2-vector, 12 for a 3-vector, 60 for a
+        # 4-vector.  Each is checked for result type, length, and the components
+        # its name names.
+        v = Vec(*vals)
+        names = []
+        for length in range(2, dim + 1):
+            for perm in itertools.permutations(range(dim), length):
+                name = ''.join(comps[i] for i in perm)
+                names.append(name)
+                result = getattr(v, name)
+                self.assertEqual(type(result), vecOfDim(length))
+                self.assertEqual(len(result), length)
+                self.assertEqual(result.dimension, length)
+                for k, i in enumerate(perm):
+                    self.assertEqual(result[k], vals[i])
+        self.assertEqual(len(names), {2: 2, 3: 12, 4: 60}[dim])
+        self.assertEqual(len(names), len(set(names)))
+
+        # Unlike C++, where swizzles are read-only, Python allows assigning
+        # through them.  The setter writes the components its name names and
+        # leaves the others alone.
+        for length in range(2, dim + 1):
+            for perm in itertools.permutations(range(dim), length):
+                name = ''.join(comps[i] for i in perm)
+                target = Vec(*vals)
+                newVals = [(k + 1) * 100 for k in range(length)]
+                setattr(target, name, vecOfDim(length)(*newVals))
+                for k, i in enumerate(perm):
+                    self.assertEqual(target[i], newVals[k])
+                for i in set(range(dim)) - set(perm):
+                    self.assertEqual(target[i], vals[i])
+
+        # Augmented assignment works, because Python rewrites 'v.xy += a' as a
+        # get followed by a set.  Every vector has at least x and y.
+        v = Vec(*vals)
+        v.xy += v.xy
+        self.assertEqual(v[0], vals[0] * 2)
+        self.assertEqual(v[1], vals[1] * 2)
+        for i in range(2, dim):
+            self.assertEqual(v[i], vals[i])
+
+        # Assigning the wrong dimension through a swizzle is an error.
+        if dim != 2:
+            v = Vec(*vals)
+            with self.assertRaises(TypeError):
+                v.xy = Vec(*vals)
+
     def test_Types(self):
         vecTypes = [Gf.Vec2d,
                     Gf.Vec2f,
@@ -534,6 +607,7 @@ class TestGfVec(unittest.TestCase):
             self.OperatorsTest( Vec )
             self.MethodsTest( Vec )
             self.HashTest( Vec )
+            self.SwizzleTest( Vec )
 
 
     def test_TupleToVec(self):

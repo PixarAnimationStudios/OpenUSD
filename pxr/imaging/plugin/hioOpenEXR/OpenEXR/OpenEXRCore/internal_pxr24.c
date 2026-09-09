@@ -281,7 +281,7 @@ undo_pxr24_impl (
         compressed_data,
         comp_buf_size,
         scratch_data,
-        uncompressed_size,
+        scratch_size,
         &outSize);
 
     if (rstat != EXR_ERR_SUCCESS) return rstat;
@@ -301,7 +301,8 @@ undo_pxr24_impl (
                 (curc->y_samples > 1 && (cury % curc->y_samples) != 0))
                 continue;
 
-            if (nOut + nBytes > uncompressed_size) return EXR_ERR_OUT_OF_MEMORY;
+            if (nOut + nBytes > uncompressed_size)
+                return EXR_ERR_OUT_OF_MEMORY;
 
             switch (curc->data_type)
             {
@@ -319,7 +320,8 @@ undo_pxr24_impl (
                     ptr[3] = lastIn;
                     lastIn += w;
 
-                    if (nDec + nBytes > outSize) return EXR_ERR_CORRUPT_CHUNK;
+                    if (nDec + nBytes > outSize)
+                        return EXR_ERR_CORRUPT_CHUNK;
 
                     for (int x = 0; x < w; ++x)
                     {
@@ -345,7 +347,8 @@ undo_pxr24_impl (
                     ptr[1] = lastIn;
                     lastIn += w;
 
-                    if (nDec + nBytes > outSize) return EXR_ERR_CORRUPT_CHUNK;
+                    if (nDec + nBytes > outSize)
+                        return EXR_ERR_CORRUPT_CHUNK;
 
                     for (int x = 0; x < w; ++x)
                     {
@@ -393,6 +396,7 @@ undo_pxr24_impl (
             nOut += nBytes;
         }
     }
+    decode->bytes_decompressed = nOut;
     return EXR_ERR_SUCCESS;
 }
 
@@ -410,7 +414,7 @@ internal_exr_undo_pxr24 (
         EXR_TRANSCODE_BUFFER_SCRATCH1,
         &(decode->scratch_buffer_1),
         &(decode->scratch_alloc_size_1),
-        uncompressed_size);
+        exr_compress_max_buffer_size (uncompressed_size));
     if (rv != EXR_ERR_SUCCESS) return rv;
     return undo_pxr24_impl (
         decode,

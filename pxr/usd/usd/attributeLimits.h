@@ -298,6 +298,8 @@ public:
     ///
     /// The types of encoded minimum and maximum values must match the value
     /// type of the attribute.
+    ///
+    /// Dictionary values that are empty VtValue are invalid.
     USD_API
     bool Set(const VtDictionary& subDict);
 

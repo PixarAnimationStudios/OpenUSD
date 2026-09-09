@@ -143,12 +143,12 @@ class "LightAPI" (
         The default shaderId for the intrinsic UsdLux lights (RectLight, 
         DistantLight, etc.) are set to default to the light's type name. For 
         each intrinsic UsdLux light, we will always register an SdrShaderNode in
-        the SdrRegistry, with the identifier matching the type name and the 
-        source type "USD", that corresponds to the light's inputs.
+        the SdrRegistry, with the identifier matching the type name and the
+        shading system "USD", that corresponds to the light's inputs.
         \\see GetShaderId
         \\see GetShaderIdAttrForRenderContext
         \\see SdrRegistry::GetShaderNodeByIdentifier
-        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
+        \\see SdrRegistry::GetShaderNodeByIdentifierAndSystem
         """
         customData = {
             token apiName = "shaderId"
@@ -1043,7 +1043,7 @@ class LightFilter "LightFilter" (
         \\see GetShaderId
         \\see GetShaderIdAttrForRenderContext
         \\see SdrRegistry::GetShaderNodeByIdentifier
-        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
+        \\see SdrRegistry::GetShaderNodeByIdentifierAndSystem
         """
         customData = {
             token apiName = "shaderId"

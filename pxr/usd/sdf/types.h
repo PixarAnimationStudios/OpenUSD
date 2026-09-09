@@ -23,6 +23,7 @@
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/arch/pragmas.h"
+#include "pxr/base/gf/duration.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -30,6 +31,7 @@
 #include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/quath.h"
+#include "pxr/base/gf/timeCode.h"
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec2h.h"
@@ -347,6 +349,7 @@ SDF_API TfToken SdfGetRoleNameForValueTypeName(TfToken const &typeName);
     ((Float,          float,          float,             () )) \
     ((Double,         double,         double,            () )) \
     ((TimeCode,       timecode,       GfTimeCode,        () )) \
+    ((Duration,       duration,       GfDuration,        () )) \
     ((String,         string,         std::string,       () )) \
     ((Token,          token,          TfToken,           () )) \
     ((Asset,          asset,          SdfAssetPath,      () )) \
@@ -535,7 +538,8 @@ class Sdf_ValueTypeNamesType {
 public:
     SdfValueTypeName Bool;
     SdfValueTypeName UChar, Int, UInt, Int64, UInt64;
-    SdfValueTypeName Half, Float, Double, TimeCode;
+    SdfValueTypeName Half, Float, Double;
+    SdfValueTypeName TimeCode, Duration;
     SdfValueTypeName String, Token, Asset;
     SdfValueTypeName Int2,     Int3,     Int4;
     SdfValueTypeName Half2,    Half3,    Half4;
@@ -557,7 +561,8 @@ public:
 
     SdfValueTypeName BoolArray;
     SdfValueTypeName UCharArray, IntArray, UIntArray, Int64Array, UInt64Array;
-    SdfValueTypeName HalfArray, FloatArray, DoubleArray, TimeCodeArray;
+    SdfValueTypeName HalfArray, FloatArray, DoubleArray;
+    SdfValueTypeName TimeCodeArray, DurationArray;
     SdfValueTypeName StringArray, TokenArray, AssetArray;
     SdfValueTypeName Int2Array,     Int3Array,     Int4Array;
     SdfValueTypeName Half2Array,    Half3Array,    Half4Array;

@@ -39,6 +39,10 @@ TfType Ts_GetTypeFromTypeName(const std::string &typeName)
     {
         return Ts_GetType<GfTimeCode>();
     }
+    if (typeName == "duration")
+    {
+        return Ts_GetType<GfDuration>();
+    }
     return TfType();
 }
 
@@ -60,6 +64,10 @@ std::string Ts_GetTypeNameFromType(const TfType valueType)
     {
         return "timecode";
     }
+    if (valueType == Ts_GetType<GfDuration>())
+    {
+        return "duration";
+    }
     return "";
 }
 
@@ -71,6 +79,12 @@ bool Ts_IsFinite(const GfHalf value)
 
 template <>
 bool Ts_IsFinite(const GfTimeCode value)
+{
+    return std::isfinite(value.GetValue());
+}
+
+template <>
+bool Ts_IsFinite(const GfDuration value)
 {
     return std::isfinite(value.GetValue());
 }

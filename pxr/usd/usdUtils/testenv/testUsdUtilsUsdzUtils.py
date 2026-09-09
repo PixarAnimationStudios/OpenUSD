@@ -323,18 +323,72 @@ class TestUsdUtilsUsdzUtils(unittest.TestCase):
                                 "expected absolute path, got %r" % p)
                 self.assertTrue(os.path.isfile(p))
 
-    @unittest.skipIf(os.name == 'nt', "preserveAttrs is POSIX-only")
-    def test_UsdzUpdateIterator_preserveAttrs(self):
+    @unittest.skipIf(os.name == 'nt', "the preserve flags are POSIX-only")
+    def test_UsdzUpdateIterator_preserveAll(self):
         usdz = self._BuildSimpleUsdz('attrs.usdz')
         os.chmod(usdz, 0o640)
         before = os.stat(usdz)
-        with UsdUtils.UsdzUpdateIterator(usdz, preserveAttrs=True) as upd:
+        with UsdUtils.UsdzUpdateIterator(usdz, preserveMode=True,
+                                         preserveGroup=True,
+                                         preserveOwner=True) as upd:
             for _ in upd.AllAssets():
                 pass
         after = os.stat(usdz)
         self.assertEqual(before.st_mode, after.st_mode)
         self.assertEqual(before.st_uid, after.st_uid)
         self.assertEqual(before.st_gid, after.st_gid)
+
+    @unittest.skipIf(os.name == 'nt', "the preserve flags are POSIX-only")
+    def test_UsdzUpdateIterator_noPreserve(self):
+        """With every preserve flag off, the rewrite lands with the mode a
+        freshly written package gets, not the original's."""
+        usdz = self._BuildSimpleUsdz('no_attrs.usdz')
+        control = self._BuildSimpleUsdz('no_attrs_control.usdz')
+        os.chmod(usdz, 0o600)
+        with UsdUtils.UsdzUpdateIterator(usdz) as upd:
+            for _ in upd.AllAssets():
+                pass
+        # Compare against the control rather than a literal: both went through
+        # ZipFileWriter under the same umask, so this holds whatever it is.
+        self.assertEqual(os.stat(usdz).st_mode & 0o7777,
+                         os.stat(control).st_mode & 0o7777)
+
+    @unittest.skipIf(os.name == 'nt', "the preserve flags are POSIX-only")
+    def test_UsdzUpdateIterator_preserveGroupWithoutOwner(self):
+        """Mode and group are preservable without root; owner is not.  Asking
+        for mode+group only must succeed and leave the rewrite owned by the
+        running user, which is what an unprivileged bulk update needs."""
+        usdz = self._BuildSimpleUsdz('group_only.usdz')
+        # Needs a group other than the default to observe anything, and one we
+        # can actually chown to: inside a user namespace, a gid we belong to may
+        # still be unmapped, which fails with EINVAL rather than EPERM.
+        for gid in sorted(set(os.getgroups())):
+            if gid == os.getgid():
+                continue
+            try:
+                os.chown(usdz, -1, gid)
+            except OSError:
+                continue
+            altGid = gid
+            break
+        else:
+            raise unittest.SkipTest(
+                "no secondary group this process can chown to, so a preserved "
+                "group is indistinguishable from the default")
+
+        os.chmod(usdz, 0o640)
+        before = os.stat(usdz)
+        self.assertEqual(before.st_gid, altGid)
+
+        with UsdUtils.UsdzUpdateIterator(usdz, preserveMode=True,
+                                         preserveGroup=True) as upd:
+            for _ in upd.AllAssets():
+                pass
+
+        after = os.stat(usdz)
+        self.assertEqual(after.st_mode & 0o7777, 0o640)
+        self.assertEqual(after.st_gid, altGid)
+        self.assertEqual(after.st_uid, os.geteuid())
 
     def test_UsdzUpdateIterator_tagInTempNames(self):
         """When tag= is set, the extract dir and rewrite temp file names
@@ -405,13 +459,16 @@ class TestUsdUtilsUsdzUtils(unittest.TestCase):
             # Just check the tag form isn't present.
             self.assertNotIn('.mycampaign.', n)
 
-    def test_UsdzUpdateIterator_rejectsPreserveAttrsOnWindows(self):
+    def test_UsdzUpdateIterator_rejectsPreserveFlagsOnWindows(self):
         usdz = self._BuildSimpleUsdz('nt_reject.usdz')
         realName = os.name
         os.name = 'nt' # sneaky, but just for a test...
         try:
-            with self.assertRaises(ValueError):
-                UsdUtils.UsdzUpdateIterator(usdz, preserveAttrs=True)
+            for flag in ('preserveMode', 'preserveGroup', 'preserveOwner'):
+                with self.assertRaises(ValueError):
+                    UsdUtils.UsdzUpdateIterator(usdz, **{flag: True})
+            # All flags off stays legal on Windows.
+            UsdUtils.UsdzUpdateIterator(usdz)
         finally:
             os.name = realName
 

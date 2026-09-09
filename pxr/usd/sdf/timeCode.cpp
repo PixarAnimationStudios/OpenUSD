@@ -22,6 +22,11 @@ TF_REGISTRY_FUNCTION(VtValue)
         +[](GfTimeCode const &timeCode, SdfLayerOffset const &offset) {
             return offset * timeCode;
         });
+
+    VtRegisterTransform(
+        +[](GfDuration const &duration, SdfLayerOffset const &offset) {
+            return offset * duration;
+        });
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

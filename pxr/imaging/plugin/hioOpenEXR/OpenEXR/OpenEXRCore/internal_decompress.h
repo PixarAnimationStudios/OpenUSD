@@ -14,63 +14,76 @@
  * pointers
  */
 
-EXR_INTERNAL uint64_t internal_rle_decompress (
+uint64_t internal_rle_decompress (
     uint8_t* out, uint64_t outbytes, const uint8_t* src, uint64_t srcbytes);
 
-EXR_INTERNAL exr_result_t internal_exr_undo_rle (
+exr_result_t internal_exr_undo_rle (
     exr_decode_pipeline_t* decode,
     const void*            compressed_data,
     uint64_t               comp_buf_size,
     void*                  uncompressed_data,
     uint64_t               uncompressed_size);
 
-EXR_INTERNAL exr_result_t internal_exr_undo_zip (
+exr_result_t internal_exr_undo_zip (
     exr_decode_pipeline_t* decode,
     const void*            compressed_data,
     uint64_t               comp_buf_size,
     void*                  uncompressed_data,
     uint64_t               uncompressed_size);
 
-EXR_INTERNAL exr_result_t internal_exr_undo_piz (
+exr_result_t internal_exr_undo_piz (
     exr_decode_pipeline_t* decode,
     const void*            compressed_data,
     uint64_t               comp_buf_size,
     void*                  uncompressed_data,
     uint64_t               uncompressed_size);
 
-EXR_INTERNAL exr_result_t internal_exr_undo_pxr24 (
+exr_result_t internal_exr_undo_pxr24 (
     exr_decode_pipeline_t* decode,
     const void*            compressed_data,
     uint64_t               comp_buf_size,
     void*                  uncompressed_data,
     uint64_t               uncompressed_size);
 
-EXR_INTERNAL exr_result_t internal_exr_undo_b44 (
+exr_result_t internal_exr_undo_b44 (
     exr_decode_pipeline_t* decode,
     const void*            compressed_data,
     uint64_t               comp_buf_size,
     void*                  uncompressed_data,
     uint64_t               uncompressed_size);
 
-EXR_INTERNAL exr_result_t internal_exr_undo_b44a (
+exr_result_t internal_exr_undo_b44a (
     exr_decode_pipeline_t* decode,
     const void*            compressed_data,
     uint64_t               comp_buf_size,
     void*                  uncompressed_data,
     uint64_t               uncompressed_size);
 
-EXR_INTERNAL exr_result_t internal_exr_undo_dwaa (
+exr_result_t internal_exr_undo_dwaa (
     exr_decode_pipeline_t* decode,
     const void*            compressed_data,
     uint64_t               comp_buf_size,
     void*                  uncompressed_data,
     uint64_t               uncompressed_size);
 
-EXR_INTERNAL exr_result_t internal_exr_undo_dwab (
+exr_result_t internal_exr_undo_dwab (
     exr_decode_pipeline_t* decode,
     const void*            compressed_data,
     uint64_t               comp_buf_size,
     void*                  uncompressed_data,
     uint64_t               uncompressed_size);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+exr_result_t internal_exr_undo_ht (
+    exr_decode_pipeline_t* decode,
+    const void*            compressed_data,
+    uint64_t               comp_buf_size,
+    void*                  uncompressed_data,
+    uint64_t               uncompressed_size);
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* OPENEXR_CORE_DECOMPRESS_H */

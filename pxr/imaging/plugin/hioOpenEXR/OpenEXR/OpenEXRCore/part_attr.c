@@ -5,6 +5,8 @@
 
 #include "openexr_part.h"
 
+#include "openexr_compression.h"
+
 #include "internal_attr.h"
 #include "internal_constants.h"
 #include "internal_file.h"
@@ -20,11 +22,11 @@ exr_get_attribute_count (
     exr_const_context_t ctxt, int part_index, int32_t* count)
 {
     int32_t cnt;
-    EXR_PROMOTE_CONST_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    EXR_LOCK_WRITE_AND_DEFINE_PART (part_index);
     cnt = part->attributes.num_attributes;
-    EXR_UNLOCK_WRITE (pctxt);
+    if (ctxt->mode == EXR_CONTEXT_WRITE) internal_exr_unlock (ctxt);
 
-    if (!count) return pctxt->standard_error (pctxt, EXR_ERR_INVALID_ARGUMENT);
+    if (!count) return ctxt->standard_error (ctxt, EXR_ERR_INVALID_ARGUMENT);
     *count = cnt;
     return EXR_ERR_SUCCESS;
 }
@@ -40,26 +42,26 @@ exr_get_attribute_by_index (
     const exr_attribute_t**     outattr)
 {
     exr_attribute_t** srclist;
-    EXR_PROMOTE_CONST_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    EXR_LOCK_WRITE_AND_DEFINE_PART (part_index);
 
     if (!outattr)
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_INVALID_ARGUMENT));
+        return EXR_UNLOCK_WRITE_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_INVALID_ARGUMENT));
 
     if (idx < 0 || idx >= part->attributes.num_attributes)
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_ARGUMENT_OUT_OF_RANGE));
+        return EXR_UNLOCK_WRITE_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_ARGUMENT_OUT_OF_RANGE));
 
     if (mode == EXR_ATTR_LIST_SORTED_ORDER)
         srclist = part->attributes.sorted_entries;
     else if (mode == EXR_ATTR_LIST_FILE_ORDER)
         srclist = part->attributes.entries;
     else
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_INVALID_ARGUMENT));
+        return EXR_UNLOCK_WRITE_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_INVALID_ARGUMENT));
 
     *outattr = srclist[idx];
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (EXR_ERR_SUCCESS);
+    return EXR_UNLOCK_WRITE_AND_RETURN (EXR_ERR_SUCCESS);
 }
 
 /**************************************/
@@ -71,13 +73,13 @@ exr_get_attribute_by_name (
     const char*             name,
     const exr_attribute_t** outattr)
 {
-    exr_attribute_t* tmpptr = NULL;
+    exr_attribute_t* tmpptr;
     exr_result_t     rv;
-    EXR_PROMOTE_CONST_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    EXR_LOCK_WRITE_AND_DEFINE_PART (part_index);
 
     if (!outattr)
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_INVALID_ARGUMENT));
+        return EXR_UNLOCK_WRITE_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_INVALID_ARGUMENT));
 
     rv = exr_attr_list_find_by_name (
         EXR_CONST_CAST (exr_context_t, ctxt),
@@ -85,7 +87,7 @@ exr_get_attribute_by_name (
         name,
         &tmpptr);
     if (rv == EXR_ERR_SUCCESS) *outattr = tmpptr;
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_WRITE_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -99,19 +101,19 @@ exr_get_attribute_list (
     const exr_attribute_t**     outlist)
 {
     exr_attribute_t** srclist;
-    EXR_PROMOTE_CONST_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    EXR_LOCK_WRITE_AND_DEFINE_PART (part_index);
 
     if (!count)
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_INVALID_ARGUMENT));
+        return EXR_UNLOCK_WRITE_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_INVALID_ARGUMENT));
 
     if (mode == EXR_ATTR_LIST_SORTED_ORDER)
         srclist = part->attributes.sorted_entries;
     else if (mode == EXR_ATTR_LIST_FILE_ORDER)
         srclist = part->attributes.entries;
     else
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_INVALID_ARGUMENT));
+        return EXR_UNLOCK_WRITE_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_INVALID_ARGUMENT));
 
     if (outlist && *count >= part->attributes.num_attributes)
         memcpy (
@@ -120,7 +122,7 @@ exr_get_attribute_list (
             sizeof (exr_attribute_t*) *
                 (size_t) part->attributes.num_attributes);
     *count = part->attributes.num_attributes;
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (EXR_ERR_SUCCESS);
+    return EXR_UNLOCK_WRITE_AND_RETURN (EXR_ERR_SUCCESS);
 }
 
 /**************************************/
@@ -134,15 +136,15 @@ exr_attr_declare_by_type (
     exr_attribute_t** outattr)
 {
     exr_result_t rv;
-    EXR_PROMOTE_LOCKED_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    EXR_LOCK_AND_DEFINE_PART (part_index);
 
-    if (pctxt->mode != EXR_CONTEXT_WRITE)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_NOT_OPEN_WRITE));
+    if (ctxt->mode != EXR_CONTEXT_WRITE && ctxt->mode != EXR_CONTEXT_TEMPORARY)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_WRITE));
 
     rv = exr_attr_list_add_by_type (
         ctxt, &(part->attributes), name, type, 0, NULL, outattr);
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -156,15 +158,15 @@ exr_attr_declare (
     exr_attribute_t**    outattr)
 {
     exr_result_t rv;
-    EXR_PROMOTE_LOCKED_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    EXR_LOCK_AND_DEFINE_PART (part_index);
 
-    if (pctxt->mode != EXR_CONTEXT_WRITE)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_NOT_OPEN_WRITE));
+    if (ctxt->mode != EXR_CONTEXT_WRITE && ctxt->mode != EXR_CONTEXT_TEMPORARY)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_WRITE));
 
     rv = exr_attr_list_add (
         ctxt, &(part->attributes), name, type, 0, NULL, outattr);
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -228,11 +230,10 @@ exr_initialize_required_attr_simple (
 
 static exr_result_t
 copy_attr (
-    exr_context_t                 ctxt,
-    struct _internal_exr_context* pctxt,
-    struct _internal_exr_part*    part,
-    const exr_attribute_t*        srca,
-    int*                          update_tiles)
+    exr_context_t          ctxt,
+    exr_priv_part_t        part,
+    const exr_attribute_t* srca,
+    int*                   update_tiles)
 {
     exr_result_t         rv    = EXR_ERR_UNKNOWN;
     const char*          aname = srca->name;
@@ -436,6 +437,9 @@ copy_attr (
     {
         case EXR_ATTR_BOX2I: *(attr->box2i) = *(srca->box2i); break;
         case EXR_ATTR_BOX2F: *(attr->box2f) = *(srca->box2f); break;
+        case EXR_ATTR_BYTES:
+            rv = exr_attr_bytes_copy (ctxt, attr->bytes, srca->bytes);
+            break;
         case EXR_ATTR_CHLIST:
             rv = exr_attr_chlist_duplicate (ctxt, attr->chlist, srca->chlist);
             break;
@@ -490,9 +494,7 @@ copy_attr (
             break;
         case EXR_ATTR_UNKNOWN:
         case EXR_ATTR_LAST_KNOWN_TYPE:
-        default:
-            rv = pctxt->standard_error (pctxt, EXR_ERR_INVALID_ATTR);
-            break;
+        default: rv = ctxt->standard_error (ctxt, EXR_ERR_INVALID_ATTR); break;
     }
 
     if (rv != EXR_ERR_SUCCESS)
@@ -510,27 +512,25 @@ exr_copy_unset_attributes (
     exr_const_context_t source,
     int                 src_part_index)
 {
-    exr_result_t                        rv;
-    const struct _internal_exr_context* srcctxt = EXR_CCTXT (source);
-    struct _internal_exr_part*          srcpart;
-    int                                 update_tiles = 0;
-    EXR_PROMOTE_LOCKED_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    exr_result_t    rv;
+    exr_priv_part_t srcpart;
+    int             update_tiles = 0;
+    EXR_LOCK_AND_DEFINE_PART (part_index);
 
-    if (!srcctxt)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (EXR_ERR_MISSING_CONTEXT_ARG);
-    if (srcctxt != pctxt) EXR_LOCK (srcctxt);
+    if (!source) return EXR_UNLOCK_AND_RETURN (EXR_ERR_MISSING_CONTEXT_ARG);
+    if (source != ctxt) internal_exr_lock (source);
 
-    if (src_part_index < 0 || src_part_index >= srcctxt->num_parts)
+    if (src_part_index < 0 || src_part_index >= source->num_parts)
     {
-        if (srcctxt != pctxt) EXR_UNLOCK (srcctxt);
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt,
+        if (source != ctxt) internal_exr_unlock (source);
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+            ctxt,
             EXR_ERR_ARGUMENT_OUT_OF_RANGE,
             "Source part index (%d) out of range",
             src_part_index));
     }
 
-    srcpart = srcctxt->parts[src_part_index];
+    srcpart = source->parts[src_part_index];
 
     rv = EXR_ERR_SUCCESS;
     for (int a = 0;
@@ -547,76 +547,76 @@ exr_copy_unset_attributes (
             &attr);
         if (rv == EXR_ERR_NO_ATTR_BY_NAME)
         {
-            rv = copy_attr (ctxt, pctxt, part, srca, &update_tiles);
+            rv = copy_attr (ctxt, part, srca, &update_tiles);
         }
         else { rv = EXR_ERR_SUCCESS; }
     }
 
     if (update_tiles)
-        rv = internal_exr_compute_tile_information (pctxt, part, 1);
+        rv = internal_exr_compute_tile_information (ctxt, part, 1);
 
-    if (srcctxt != pctxt) EXR_UNLOCK (srcctxt);
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    if (source != ctxt) internal_exr_unlock (source);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
 
 #define REQ_ATTR_GET_IMPL(name, entry, t)                                      \
-    EXR_PROMOTE_CONST_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);            \
+    EXR_LOCK_WRITE_AND_DEFINE_PART (part_index);                               \
     if (!out)                                                                  \
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (pctxt->print_error (         \
-            pctxt, EXR_ERR_INVALID_ARGUMENT, "NULL output for '%s'", #name));  \
+        return EXR_UNLOCK_WRITE_AND_RETURN (ctxt->print_error (                \
+            ctxt, EXR_ERR_INVALID_ARGUMENT, "NULL output for '%s'", #name));   \
     if (part->name)                                                            \
     {                                                                          \
         if (part->name->type != t)                                             \
-            return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (pctxt->print_error (     \
-                pctxt,                                                         \
+            return EXR_UNLOCK_WRITE_AND_RETURN (ctxt->print_error (            \
+                ctxt,                                                          \
                 EXR_ERR_FILE_BAD_HEADER,                                       \
                 "Invalid required attribute type '%s' for '%s'",               \
                 part->name->type_name,                                         \
                 #name));                                                       \
         *out = part->name->entry;                                              \
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (EXR_ERR_SUCCESS);            \
+        return EXR_UNLOCK_WRITE_AND_RETURN (EXR_ERR_SUCCESS);                  \
     }                                                                          \
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (EXR_ERR_NO_ATTR_BY_NAME)
+    return EXR_UNLOCK_WRITE_AND_RETURN (EXR_ERR_NO_ATTR_BY_NAME)
 
 #define REQ_ATTR_GET_IMPL_DEREF(name, entry, t)                                \
-    EXR_PROMOTE_CONST_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);            \
+    EXR_LOCK_WRITE_AND_DEFINE_PART (part_index);                               \
     if (!out)                                                                  \
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (pctxt->print_error (         \
-            pctxt, EXR_ERR_INVALID_ARGUMENT, "NULL output for '%s'", #name));  \
+        return EXR_UNLOCK_WRITE_AND_RETURN (ctxt->print_error (                \
+            ctxt, EXR_ERR_INVALID_ARGUMENT, "NULL output for '%s'", #name));   \
     if (part->name)                                                            \
     {                                                                          \
         if (part->name->type != t)                                             \
-            return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (pctxt->print_error (     \
-                pctxt,                                                         \
+            return EXR_UNLOCK_WRITE_AND_RETURN (ctxt->print_error (            \
+                ctxt,                                                          \
                 EXR_ERR_FILE_BAD_HEADER,                                       \
                 "Invalid required attribute type '%s' for '%s'",               \
                 part->name->type_name,                                         \
                 #name));                                                       \
         *out = *(part->name->entry);                                           \
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (EXR_ERR_SUCCESS);            \
+        return EXR_UNLOCK_WRITE_AND_RETURN (EXR_ERR_SUCCESS);                  \
     }                                                                          \
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (EXR_ERR_NO_ATTR_BY_NAME)
+    return EXR_UNLOCK_WRITE_AND_RETURN (EXR_ERR_NO_ATTR_BY_NAME)
 
 #define REQ_ATTR_FIND_CREATE(name, t)                                          \
     exr_attribute_t* attr = NULL;                                              \
     exr_result_t     rv   = EXR_ERR_SUCCESS;                                   \
-    EXR_PROMOTE_LOCKED_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);           \
-    if (pctxt->mode == EXR_CONTEXT_READ)                                       \
-        return EXR_UNLOCK_AND_RETURN_PCTXT (                                   \
-            pctxt->standard_error (pctxt, EXR_ERR_NOT_OPEN_WRITE));            \
-    if (pctxt->mode == EXR_CONTEXT_WRITING_DATA)                               \
-        return EXR_UNLOCK_AND_RETURN_PCTXT (                                   \
-            pctxt->standard_error (pctxt, EXR_ERR_ALREADY_WROTE_ATTRS));       \
+    EXR_LOCK_AND_DEFINE_PART (part_index);                                     \
+    if (ctxt->mode == EXR_CONTEXT_READ)                                        \
+        return EXR_UNLOCK_AND_RETURN (                                         \
+            ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_WRITE));              \
+    if (ctxt->mode == EXR_CONTEXT_WRITING_DATA)                                \
+        return EXR_UNLOCK_AND_RETURN (                                         \
+            ctxt->standard_error (ctxt, EXR_ERR_ALREADY_WROTE_ATTRS));         \
     if (!part->name)                                                           \
     {                                                                          \
         rv = exr_attr_list_add (                                               \
             ctxt, &(part->attributes), #name, t, 0, NULL, &(part->name));      \
     }                                                                          \
     else if (part->name->type != t)                                            \
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (               \
-            pctxt,                                                             \
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (                      \
+            ctxt,                                                              \
             EXR_ERR_FILE_BAD_HEADER,                                           \
             "Invalid required attribute type '%s' for '%s'",                   \
             part->name->type_name,                                             \
@@ -650,7 +650,7 @@ exr_add_channel (
         rv = exr_attr_chlist_add (
             ctxt, attr->chlist, name, ptype, islinear, xsamp, ysamp);
     }
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -660,8 +660,8 @@ exr_set_channels (
     exr_context_t ctxt, int part_index, const exr_attr_chlist_t* channels)
 {
     if (!channels)
-        return EXR_CTXT (ctxt)->report_error (
-            EXR_CTXT (ctxt),
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "No channels provided for channel list");
 
@@ -672,12 +672,12 @@ exr_set_channels (
             exr_attr_chlist_t clist;
 
             rv = exr_attr_chlist_duplicate (ctxt, &clist, channels);
-            if (rv != EXR_ERR_SUCCESS) return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+            if (rv != EXR_ERR_SUCCESS) return EXR_UNLOCK_AND_RETURN (rv);
 
             exr_attr_chlist_destroy (ctxt, attr->chlist);
             *(attr->chlist) = clist;
         }
-        return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+        return EXR_UNLOCK_AND_RETURN (rv);
     }
 }
 
@@ -701,8 +701,10 @@ exr_set_compression (
     {
         attr->uc        = (uint8_t) ctype;
         part->comp_type = ctype;
+        part->lines_per_chunk =
+            ((int16_t) exr_compression_lines_per_chunk (part->comp_type));
     }
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -721,8 +723,8 @@ exr_set_data_window (
     exr_context_t ctxt, int part_index, const exr_attr_box2i_t* dw)
 {
     if (!dw)
-        return EXR_CTXT (ctxt)->report_error (
-            EXR_CTXT (ctxt),
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Missing value for data window assignment");
 
@@ -734,10 +736,10 @@ exr_set_data_window (
             *(attr->box2i)    = *dw;
             part->data_window = *dw;
 
-            rv = internal_exr_compute_tile_information (pctxt, part, 1);
+            rv = internal_exr_compute_tile_information (ctxt, part, 1);
         }
 
-        return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+        return EXR_UNLOCK_AND_RETURN (rv);
     }
 }
 
@@ -757,8 +759,8 @@ exr_set_display_window (
     exr_context_t ctxt, int part_index, const exr_attr_box2i_t* dw)
 {
     if (!dw)
-        return EXR_CTXT (ctxt)->report_error (
-            EXR_CTXT (ctxt),
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Missing value for data window assignment");
 
@@ -770,7 +772,7 @@ exr_set_display_window (
             part->display_window = *dw;
         }
 
-        return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+        return EXR_UNLOCK_AND_RETURN (rv);
     }
 }
 
@@ -789,8 +791,8 @@ exr_result_t
 exr_set_lineorder (exr_context_t ctxt, int part_index, exr_lineorder_t lo)
 {
     if (lo >= EXR_LINEORDER_LAST_TYPE)
-        return EXR_CTXT (ctxt)->print_error (
-            EXR_CTXT (ctxt),
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_ARGUMENT_OUT_OF_RANGE,
             "'lineOrder' value for line order (%d) out of range (%d - %d)",
             (int) lo,
@@ -805,7 +807,7 @@ exr_set_lineorder (exr_context_t ctxt, int part_index, exr_lineorder_t lo)
             part->lineorder = lo;
         }
 
-        return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+        return EXR_UNLOCK_AND_RETURN (rv);
     }
 }
 
@@ -825,7 +827,7 @@ exr_set_pixel_aspect_ratio (exr_context_t ctxt, int part_index, float par)
 {
     REQ_ATTR_FIND_CREATE (pixelAspectRatio, EXR_ATTR_FLOAT);
     if (rv == EXR_ERR_SUCCESS) attr->f = par;
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -844,16 +846,16 @@ exr_set_screen_window_center (
     exr_context_t ctxt, int part_index, const exr_attr_v2f_t* swc)
 {
     REQ_ATTR_FIND_CREATE (screenWindowCenter, EXR_ATTR_V2F);
-    if (rv != EXR_ERR_SUCCESS) return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    if (rv != EXR_ERR_SUCCESS) return EXR_UNLOCK_AND_RETURN (rv);
     if (!swc)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->report_error (
-            pctxt,
+        return EXR_UNLOCK_AND_RETURN (ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Missing value for data window assignment"));
 
     attr->v2f->x = swc->x;
     attr->v2f->y = swc->y;
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -872,7 +874,7 @@ exr_set_screen_window_width (exr_context_t ctxt, int part_index, float ssw)
 {
     REQ_ATTR_FIND_CREATE (screenWindowWidth, EXR_ATTR_FLOAT);
     if (rv == EXR_ERR_SUCCESS) attr->f = ssw;
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -886,15 +888,15 @@ exr_get_tile_descriptor (
     exr_tile_level_mode_t* level,
     exr_tile_round_mode_t* round)
 {
-    EXR_PROMOTE_CONST_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    EXR_LOCK_WRITE_AND_DEFINE_PART (part_index);
 
     if (part->tiles)
     {
         const exr_attr_tiledesc_t* out = part->tiles->tiledesc;
 
         if (part->tiles->type != EXR_ATTR_TILEDESC)
-            return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (pctxt->print_error (
-                pctxt,
+            return EXR_UNLOCK_WRITE_AND_RETURN (ctxt->print_error (
+                ctxt,
                 EXR_ERR_FILE_BAD_HEADER,
                 "Invalid required attribute type '%s' for 'tiles'",
                 part->tiles->type_name));
@@ -903,9 +905,9 @@ exr_get_tile_descriptor (
         if (ysize) *ysize = out->y_size;
         if (level) *level = EXR_GET_TILE_LEVEL_MODE (*out);
         if (round) *round = EXR_GET_TILE_ROUND_MODE (*out);
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (EXR_ERR_SUCCESS);
+        return EXR_UNLOCK_WRITE_AND_RETURN (EXR_ERR_SUCCESS);
     }
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (EXR_ERR_NO_ATTR_BY_NAME);
+    return EXR_UNLOCK_WRITE_AND_RETURN (EXR_ERR_NO_ATTR_BY_NAME);
 }
 
 /**************************************/
@@ -921,17 +923,17 @@ exr_set_tile_descriptor (
 {
     exr_result_t     rv   = EXR_ERR_SUCCESS;
     exr_attribute_t* attr = NULL;
-    EXR_PROMOTE_LOCKED_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
-    if (pctxt->mode == EXR_CONTEXT_READ)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_NOT_OPEN_WRITE));
-    if (pctxt->mode == EXR_CONTEXT_WRITING_DATA)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_ALREADY_WROTE_ATTRS));
+    EXR_LOCK_AND_DEFINE_PART (part_index);
+    if (ctxt->mode == EXR_CONTEXT_READ)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_WRITE));
+    if (ctxt->mode == EXR_CONTEXT_WRITING_DATA)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_ALREADY_WROTE_ATTRS));
     if (part->storage_mode == EXR_STORAGE_SCANLINE ||
         part->storage_mode == EXR_STORAGE_DEEP_SCANLINE)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->report_error (
-            pctxt,
+        return EXR_UNLOCK_AND_RETURN (ctxt->report_error (
+            ctxt,
             EXR_ERR_TILE_SCAN_MIXEDAPI,
             "Attempt to set tile descriptor on scanline part"));
 
@@ -948,8 +950,8 @@ exr_set_tile_descriptor (
     }
     else if (part->tiles->type != EXR_ATTR_TILEDESC)
     {
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt,
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+            ctxt,
             EXR_ERR_FILE_BAD_HEADER,
             "Invalid required attribute type '%s' for '%s'",
             part->tiles->type_name,
@@ -965,10 +967,10 @@ exr_set_tile_descriptor (
         attr->tiledesc->level_and_round =
             EXR_PACK_TILE_LEVEL_ROUND (level_mode, round_mode);
 
-        rv = internal_exr_compute_tile_information (pctxt, part, 1);
+        rv = internal_exr_compute_tile_information (ctxt, part, 1);
     }
 
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -976,23 +978,23 @@ exr_set_tile_descriptor (
 exr_result_t
 exr_get_name (exr_const_context_t ctxt, int part_index, const char** out)
 {
-    EXR_PROMOTE_CONST_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    EXR_LOCK_WRITE_AND_DEFINE_PART (part_index);
     if (!out)
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt, EXR_ERR_INVALID_ARGUMENT, "NULL output for 'name'"));
+        return EXR_UNLOCK_WRITE_AND_RETURN (ctxt->print_error (
+            ctxt, EXR_ERR_INVALID_ARGUMENT, "NULL output for 'name'"));
 
     if (part->name)
     {
         if (part->name->type != EXR_ATTR_STRING)
-            return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (pctxt->print_error (
-                pctxt,
+            return EXR_UNLOCK_WRITE_AND_RETURN (ctxt->print_error (
+                ctxt,
                 EXR_ERR_FILE_BAD_HEADER,
                 "Invalid required attribute type '%s' for 'name'",
                 part->name->type_name));
         *out = part->name->string->str;
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (EXR_ERR_SUCCESS);
+        return EXR_UNLOCK_WRITE_AND_RETURN (EXR_ERR_SUCCESS);
     }
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (EXR_ERR_NO_ATTR_BY_NAME);
+    return EXR_UNLOCK_WRITE_AND_RETURN (EXR_ERR_NO_ATTR_BY_NAME);
 }
 
 exr_result_t
@@ -1001,33 +1003,64 @@ exr_set_name (exr_context_t ctxt, int part_index, const char* val)
     size_t bytes;
     REQ_ATTR_FIND_CREATE (name, EXR_ATTR_STRING);
 
-    if (!val || val[0] == '\0')
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->report_error (
-            pctxt,
+    /* old library allowed an empty string :(, but ensure not null */
+    if (!val)
+        return EXR_UNLOCK_AND_RETURN (ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid string passed trying to set 'name'"));
 
     bytes = strlen (val);
 
     if (bytes >= (size_t) INT32_MAX)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt,
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "String too large to store (%" PRIu64 " bytes) into 'name'",
             (uint64_t) bytes));
 
     if (rv == EXR_ERR_SUCCESS)
     {
+        if (ctxt->num_parts > 1)
+        {
+            for ( int pidx = 0; pidx < ctxt->num_parts; ++pidx )
+            {
+                const exr_attribute_t* pname;
+
+                if (pidx == part_index)
+                    continue;
+                pname = ctxt->parts[pidx]->name;
+                if (!pname)
+                {
+                    return EXR_UNLOCK_AND_RETURN (
+                        ctxt->print_error (
+                            ctxt,
+                            EXR_ERR_INVALID_ARGUMENT,
+                            "Part %d missing required attribute 'name' for multi-part file",
+                            pidx));
+                }
+                if (!strcmp (val, pname->string->str))
+                {
+                    return EXR_UNLOCK_AND_RETURN (
+                        ctxt->print_error (
+                            ctxt,
+                            EXR_ERR_INVALID_ARGUMENT,
+                            "Each part should have a unique name, part %d and %d attempting to have same name '%s'",
+                            pidx, part_index, val));
+                }
+            }
+        }
+
         if (attr->string->length == (int32_t) bytes &&
             attr->string->alloc_size > 0)
         {
             /* we own the string... */
             memcpy (EXR_CONST_CAST (void*, attr->string->str), val, bytes);
         }
-        else if (pctxt->mode != EXR_CONTEXT_WRITE)
+        else if (ctxt->mode != EXR_CONTEXT_WRITE && ctxt->mode != EXR_CONTEXT_TEMPORARY)
         {
-            return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-                pctxt,
+            return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                ctxt,
                 EXR_ERR_MODIFY_SIZE_CHANGE,
                 "Existing string 'name' has length %d, requested %d, unable to change",
                 attr->string->length,
@@ -1040,7 +1073,7 @@ exr_set_name (exr_context_t ctxt, int part_index, const char* val)
         }
     }
 
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -1062,7 +1095,7 @@ exr_set_version (exr_context_t ctxt, int part_index, int32_t val)
     {
         REQ_ATTR_FIND_CREATE (version, EXR_ATTR_INT);
         if (rv == EXR_ERR_SUCCESS) { attr->i = val; }
-        return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+        return EXR_UNLOCK_AND_RETURN (rv);
     }
 }
 
@@ -1077,7 +1110,7 @@ exr_set_chunk_count (exr_context_t ctxt, int part_index, int32_t val)
         attr->i           = val;
         part->chunk_count = val;
     }
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -1085,10 +1118,10 @@ exr_set_chunk_count (exr_context_t ctxt, int part_index, int32_t val)
 #define ATTR_FIND_ATTR(t, entry)                                               \
     exr_attribute_t* attr;                                                     \
     exr_result_t     rv;                                                       \
-    EXR_PROMOTE_CONST_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);            \
+    EXR_LOCK_WRITE_AND_DEFINE_PART (part_index);                               \
     if (!name || name[0] == '\0')                                              \
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (pctxt->report_error (        \
-            pctxt,                                                             \
+        return EXR_UNLOCK_WRITE_AND_RETURN (ctxt->report_error (               \
+            ctxt,                                                              \
             EXR_ERR_INVALID_ARGUMENT,                                          \
             "Invalid name for " #entry " attribute query"));                   \
     rv = exr_attr_list_find_by_name (                                          \
@@ -1096,10 +1129,10 @@ exr_set_chunk_count (exr_context_t ctxt, int part_index, int32_t val)
         EXR_CONST_CAST (exr_attribute_list_t*, &(part->attributes)),           \
         name,                                                                  \
         &attr);                                                                \
-    if (rv != EXR_ERR_SUCCESS) return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (rv);  \
+    if (rv != EXR_ERR_SUCCESS) return EXR_UNLOCK_WRITE_AND_RETURN (rv);        \
     if (attr->type != t)                                                       \
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (pctxt->print_error (             \
-        pctxt,                                                                 \
+    return EXR_UNLOCK_WRITE_AND_RETURN (ctxt->print_error (                    \
+        ctxt,                                                                  \
         EXR_ERR_ATTR_TYPE_MISMATCH,                                            \
         "'%s' requested type '" #entry                                         \
         "', but stored attributes is type '%s'",                               \
@@ -1109,35 +1142,36 @@ exr_set_chunk_count (exr_context_t ctxt, int part_index, int32_t val)
 #define ATTR_GET_IMPL(t, entry)                                                \
     ATTR_FIND_ATTR (t, entry);                                                 \
     if (!out)                                                                  \
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (pctxt->print_error (         \
-            pctxt, EXR_ERR_INVALID_ARGUMENT, "NULL output for '%s'", name));   \
+        return EXR_UNLOCK_WRITE_AND_RETURN (ctxt->print_error (                \
+            ctxt, EXR_ERR_INVALID_ARGUMENT, "NULL output for '%s'", name));    \
     *out = attr->entry;                                                        \
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (rv)
+    return EXR_UNLOCK_WRITE_AND_RETURN (rv)
 
 #define ATTR_GET_IMPL_DEREF(t, entry)                                          \
     ATTR_FIND_ATTR (t, entry);                                                 \
     if (!out)                                                                  \
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (pctxt->print_error (         \
-            pctxt, EXR_ERR_INVALID_ARGUMENT, "NULL output for '%s'", name));   \
+        return EXR_UNLOCK_WRITE_AND_RETURN (ctxt->print_error (                \
+            ctxt, EXR_ERR_INVALID_ARGUMENT, "NULL output for '%s'", name));    \
     *out = *(attr->entry);                                                     \
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (rv)
+    return EXR_UNLOCK_WRITE_AND_RETURN (rv)
 
 #define ATTR_FIND_CREATE(t, entry)                                             \
     exr_attribute_t* attr = NULL;                                              \
     exr_result_t     rv   = EXR_ERR_SUCCESS;                                   \
-    EXR_PROMOTE_LOCKED_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);           \
-    if (pctxt->mode == EXR_CONTEXT_READ)                                       \
-        return EXR_UNLOCK_AND_RETURN_PCTXT (                                   \
-            pctxt->standard_error (pctxt, EXR_ERR_NOT_OPEN_WRITE));            \
-    if (pctxt->mode == EXR_CONTEXT_WRITING_DATA)                               \
-        return EXR_UNLOCK_AND_RETURN_PCTXT (                                   \
-            pctxt->standard_error (pctxt, EXR_ERR_ALREADY_WROTE_ATTRS));       \
+    EXR_LOCK_AND_DEFINE_PART (part_index);                                     \
+    if (ctxt->mode == EXR_CONTEXT_READ)                                        \
+        return EXR_UNLOCK_AND_RETURN (                                         \
+            ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_WRITE));              \
+    if (ctxt->mode == EXR_CONTEXT_WRITING_DATA)                                \
+        return EXR_UNLOCK_AND_RETURN (                                         \
+            ctxt->standard_error (ctxt, EXR_ERR_ALREADY_WROTE_ATTRS));         \
     rv = exr_attr_list_find_by_name (                                          \
         ctxt, (exr_attribute_list_t*) &(part->attributes), name, &attr);       \
     if (rv == EXR_ERR_NO_ATTR_BY_NAME)                                         \
     {                                                                          \
-        if (pctxt->mode != EXR_CONTEXT_WRITE)                                  \
-            return EXR_UNLOCK_AND_RETURN_PCTXT (rv);                           \
+        if (ctxt->mode != EXR_CONTEXT_WRITE &&                                 \
+            ctxt->mode != EXR_CONTEXT_TEMPORARY)                               \
+            return EXR_UNLOCK_AND_RETURN (rv);                                 \
                                                                                \
         rv = exr_attr_list_add (                                               \
             ctxt, &(part->attributes), name, t, 0, NULL, &(attr));             \
@@ -1145,8 +1179,8 @@ exr_set_chunk_count (exr_context_t ctxt, int part_index, int32_t val)
     else if (rv == EXR_ERR_SUCCESS)                                            \
     {                                                                          \
         if (attr->type != t)                                                   \
-            return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (           \
-                pctxt,                                                         \
+            return EXR_UNLOCK_AND_RETURN (ctxt->print_error (                  \
+                ctxt,                                                          \
                 EXR_ERR_ATTR_TYPE_MISMATCH,                                    \
                 "'%s' requested type '" #entry                                 \
                 "', but stored attributes is type '%s'",                       \
@@ -1154,24 +1188,24 @@ exr_set_chunk_count (exr_context_t ctxt, int part_index, int32_t val)
                 attr->type_name));                                             \
     }                                                                          \
     else                                                                       \
-        return EXR_UNLOCK_AND_RETURN_PCTXT (rv)
+        return EXR_UNLOCK_AND_RETURN (rv)
 
 #define ATTR_SET_IMPL(t, entry)                                                \
     ATTR_FIND_CREATE (t, entry);                                               \
     if (rv == EXR_ERR_SUCCESS) attr->entry = val;                              \
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv)
+    return EXR_UNLOCK_AND_RETURN (rv)
 
 #define ATTR_SET_IMPL_DEREF(t, entry)                                          \
     ATTR_FIND_CREATE (t, entry);                                               \
     if (!val)                                                                  \
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (               \
-            pctxt,                                                             \
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (                      \
+            ctxt,                                                              \
             EXR_ERR_INVALID_ARGUMENT,                                          \
             "No input value for setting '%s', type '%s'",                      \
             name,                                                              \
             #entry));                                                          \
     if (rv == EXR_ERR_SUCCESS) *(attr->entry) = *val;                          \
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv)
+    return EXR_UNLOCK_AND_RETURN (rv)
 
 /**************************************/
 
@@ -1227,6 +1261,129 @@ exr_attr_set_box2f (
 /**************************************/
 
 exr_result_t
+exr_attr_get_bytes (
+    exr_const_context_t ctxt,
+    int                 part_index,
+    const char*         name,
+    exr_attr_bytes_t*   out)
+{
+    ATTR_GET_IMPL_DEREF (EXR_ATTR_BYTES, bytes);
+}
+
+exr_result_t
+exr_attr_set_bytes (
+    exr_context_t               ctxt,
+    int                         part_index,
+    const char*                 name,
+    const exr_attr_bytes_t*     val)
+{
+    exr_attribute_t* attr = NULL;
+    exr_result_t     rv   = EXR_ERR_SUCCESS;
+
+    EXR_LOCK_AND_DEFINE_PART (part_index);
+
+    if (ctxt->mode == EXR_CONTEXT_READ)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_WRITE));
+    if (ctxt->mode == EXR_CONTEXT_WRITING_DATA)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_ALREADY_WROTE_ATTRS));
+
+    if (!val)
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+            ctxt,
+            EXR_ERR_INVALID_ARGUMENT,
+            "No input value for setting '%s', type 'bytes'",
+            name));
+
+    rv = exr_attr_list_find_by_name (
+        ctxt, (exr_attribute_list_t*) &(part->attributes), name, &attr);
+
+    if (rv == EXR_ERR_NO_ATTR_BY_NAME)
+    {
+        if (ctxt->mode != EXR_CONTEXT_WRITE && ctxt->mode != EXR_CONTEXT_TEMPORARY) return EXR_UNLOCK_AND_RETURN (rv);
+
+        rv = exr_attr_list_add (
+            ctxt,
+            &(part->attributes),
+            name,
+            EXR_ATTR_BYTES,
+            0,
+            NULL,
+            &(attr));
+        if (rv == EXR_ERR_SUCCESS)
+            rv = exr_attr_bytes_create (
+                ctxt,
+                attr->bytes,
+                val->hint_length,
+                val->size,
+                val->type_hint,
+                val->data);
+    }
+    else if (rv == EXR_ERR_SUCCESS)
+    {
+        if (attr->type != EXR_ATTR_BYTES)
+            return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                ctxt,
+                EXR_ERR_ATTR_TYPE_MISMATCH,
+                "'%s' requested type 'bytes', but attribute is type '%s'",
+                name,
+                attr->type_name));
+
+        if (attr->bytes->size == val->size &&
+            attr->bytes->hint_length == val->hint_length)
+        {
+            if (val->hint_length > 0 && !val->type_hint)
+                return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                    ctxt,
+                    EXR_ERR_INVALID_ARGUMENT,
+                    "Invalid NULL type hint for setting '%s'",
+                    name));
+            if (val->size > 0 && !val->data)
+                return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                    ctxt,
+                    EXR_ERR_INVALID_ARGUMENT,
+                    "Invalid NULL bytes data for setting '%s'",
+                    name));
+            if (val->hint_length > 0)
+                memcpy (
+                    EXR_CONST_CAST (void*, attr->bytes->type_hint),
+                    val->type_hint,
+                    val->hint_length);
+            if (val->size > 0)
+                memcpy (
+                    EXR_CONST_CAST (void*, attr->bytes->data),
+                    val->data,
+                    val->size);
+        }
+        else if (ctxt->mode != EXR_CONTEXT_WRITE && ctxt->mode != EXR_CONTEXT_TEMPORARY)
+        {
+            return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                ctxt,
+                EXR_ERR_MODIFY_SIZE_CHANGE,
+                "Existing bytes '%s' is %zu, requested is %zu, unable to change",
+                name,
+                attr->bytes->size,
+                val->size));
+        }
+        else
+        {
+            exr_attr_bytes_destroy (ctxt, attr->bytes);
+            rv = exr_attr_bytes_create (
+                ctxt,
+                attr->bytes,
+                val->hint_length,
+                val->size,
+                val->type_hint,
+                val->data);
+        }
+    }
+    return EXR_UNLOCK_AND_RETURN (rv);
+}
+
+/**************************************/
+
+exr_result_t
 exr_attr_get_channels (
     exr_const_context_t       ctxt,
     int                       part_index,
@@ -1246,20 +1403,20 @@ exr_attr_set_channels (
     exr_attribute_t* attr = NULL;
     exr_result_t     rv   = EXR_ERR_SUCCESS;
 
-    EXR_PROMOTE_LOCKED_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    EXR_LOCK_AND_DEFINE_PART (part_index);
 
     if (name && 0 == strcmp (name, EXR_REQ_CHANNELS_STR))
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
+        return EXR_UNLOCK_AND_RETURN (
             exr_set_channels (ctxt, part_index, channels));
 
     /* do not support updating channels during update operation... */
-    if (pctxt->mode != EXR_CONTEXT_WRITE)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_NOT_OPEN_WRITE));
+    if (ctxt->mode != EXR_CONTEXT_WRITE && ctxt->mode != EXR_CONTEXT_TEMPORARY)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_WRITE));
 
     if (!channels)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt,
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "No input values for setting '%s', type 'chlist'",
             name));
@@ -1276,42 +1433,14 @@ exr_attr_set_channels (
     if (rv == EXR_ERR_SUCCESS)
     {
         exr_attr_chlist_t clist;
-        int               numchans;
 
-        if (!channels)
-            return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->report_error (
-                pctxt,
-                EXR_ERR_INVALID_ARGUMENT,
-                "No channels provided for channel list"));
-
-        numchans = channels->num_channels;
-        rv       = exr_attr_chlist_init (ctxt, &clist, numchans);
-        if (rv != EXR_ERR_SUCCESS) return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
-
-        for (int c = 0; c < numchans; ++c)
-        {
-            const exr_attr_chlist_entry_t* cur = channels->entries + c;
-
-            rv = exr_attr_chlist_add_with_length (
-                ctxt,
-                &clist,
-                cur->name.str,
-                cur->name.length,
-                cur->pixel_type,
-                cur->p_linear,
-                cur->x_sampling,
-                cur->y_sampling);
-            if (rv != EXR_ERR_SUCCESS)
-            {
-                exr_attr_chlist_destroy (ctxt, &clist);
-                return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
-            }
-        }
+        rv = exr_attr_chlist_duplicate (ctxt, &clist, channels);
+        if (rv != EXR_ERR_SUCCESS) return EXR_UNLOCK_AND_RETURN (rv);
 
         exr_attr_chlist_destroy (ctxt, attr->chlist);
         *(attr->chlist) = clist;
     }
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -1357,8 +1486,8 @@ exr_attr_set_compression (
 {
     uint8_t val = (uint8_t) cval;
     if (cval >= EXR_COMPRESSION_LAST_TYPE)
-        return EXR_CTXT (ctxt)->print_error (
-            EXR_CTXT (ctxt),
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_ARGUMENT_OUT_OF_RANGE,
             "'%s' value for compression type (%d) out of range (%d - %d)",
             name,
@@ -1408,8 +1537,8 @@ exr_attr_set_envmap (
 {
     uint8_t val = (uint8_t) eval;
     if (eval >= EXR_ENVMAP_LAST_TYPE)
-        return EXR_CTXT (ctxt)->print_error (
-            EXR_CTXT (ctxt),
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_ARGUMENT_OUT_OF_RANGE,
             "'%s' value for envmap (%d) out of range (%d - %d)",
             name,
@@ -1456,7 +1585,7 @@ exr_attr_get_float_vector (
     ATTR_FIND_ATTR (EXR_ATTR_FLOAT_VECTOR, floatvector);
     if (sz) *sz = attr->floatvector->length;
     if (out) *out = attr->floatvector->arr;
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_WRITE_AND_RETURN (rv);
 }
 
 exr_result_t
@@ -1471,26 +1600,26 @@ exr_attr_set_float_vector (
     exr_result_t     rv    = EXR_ERR_SUCCESS;
     size_t           bytes = (size_t) sz * sizeof (float);
 
-    EXR_PROMOTE_LOCKED_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    EXR_LOCK_AND_DEFINE_PART (part_index);
 
-    if (pctxt->mode == EXR_CONTEXT_READ)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_NOT_OPEN_WRITE));
-    if (pctxt->mode == EXR_CONTEXT_WRITING_DATA)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_ALREADY_WROTE_ATTRS));
+    if (ctxt->mode == EXR_CONTEXT_READ)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_WRITE));
+    if (ctxt->mode == EXR_CONTEXT_WRITING_DATA)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_ALREADY_WROTE_ATTRS));
 
     if (sz < 0 || bytes > (size_t) INT32_MAX)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt,
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid size (%d) for float vector '%s'",
             sz,
             name));
 
     if (!val)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt,
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "No input values for setting '%s', type 'floatvector'",
             name));
@@ -1500,8 +1629,8 @@ exr_attr_set_float_vector (
 
     if (rv == EXR_ERR_NO_ATTR_BY_NAME)
     {
-        if (pctxt->mode != EXR_CONTEXT_WRITE)
-            return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+        if (ctxt->mode != EXR_CONTEXT_WRITE && ctxt->mode != EXR_CONTEXT_TEMPORARY)
+            return EXR_UNLOCK_AND_RETURN (rv);
 
         rv = exr_attr_list_add (
             ctxt,
@@ -1518,8 +1647,8 @@ exr_attr_set_float_vector (
     else if (rv == EXR_ERR_SUCCESS)
     {
         if (attr->type != EXR_ATTR_FLOAT_VECTOR)
-            return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-                pctxt,
+            return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                ctxt,
                 EXR_ERR_ATTR_TYPE_MISMATCH,
                 "'%s' requested type 'floatvector', but attribute is type '%s'",
                 name,
@@ -1529,10 +1658,10 @@ exr_attr_set_float_vector (
         {
             memcpy (EXR_CONST_CAST (void*, attr->floatvector->arr), val, bytes);
         }
-        else if (pctxt->mode != EXR_CONTEXT_WRITE)
+        else if (ctxt->mode != EXR_CONTEXT_WRITE && ctxt->mode != EXR_CONTEXT_TEMPORARY)
         {
-            return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-                pctxt,
+            return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                ctxt,
                 EXR_ERR_MODIFY_SIZE_CHANGE,
                 "Existing float vector '%s' has %d, requested %d, unable to change",
                 name,
@@ -1546,7 +1675,7 @@ exr_attr_set_float_vector (
                 exr_attr_float_vector_create (ctxt, attr->floatvector, val, sz);
         }
     }
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -1612,8 +1741,8 @@ exr_attr_set_lineorder (
 {
     uint8_t val = (uint8_t) lval;
     if (lval >= EXR_LINEORDER_LAST_TYPE)
-        return EXR_CTXT (ctxt)->print_error (
-            EXR_CTXT (ctxt),
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_ARGUMENT_OUT_OF_RANGE,
             "'%s' value for line order enum (%d) out of range (%d - %d)",
             name,
@@ -1739,29 +1868,28 @@ exr_attr_set_preview (
     exr_attribute_t* attr = NULL;
     exr_result_t     rv   = EXR_ERR_SUCCESS;
 
-    EXR_PROMOTE_LOCKED_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    EXR_LOCK_AND_DEFINE_PART (part_index);
 
-    if (pctxt->mode == EXR_CONTEXT_READ)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_NOT_OPEN_WRITE));
-    if (pctxt->mode == EXR_CONTEXT_WRITING_DATA)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_ALREADY_WROTE_ATTRS));
+    if (ctxt->mode == EXR_CONTEXT_READ)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_WRITE));
+    if (ctxt->mode == EXR_CONTEXT_WRITING_DATA)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_ALREADY_WROTE_ATTRS));
 
     rv = exr_attr_list_find_by_name (
         ctxt, (exr_attribute_list_t*) &(part->attributes), name, &attr);
 
     if (!val)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt,
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "No input value for setting '%s', type 'preview'",
             name));
 
     if (rv == EXR_ERR_NO_ATTR_BY_NAME)
     {
-        if (pctxt->mode != EXR_CONTEXT_WRITE)
-            return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+        if (ctxt->mode != EXR_CONTEXT_WRITE && ctxt->mode != EXR_CONTEXT_TEMPORARY) return EXR_UNLOCK_AND_RETURN (rv);
 
         rv = exr_attr_list_add (
             ctxt,
@@ -1778,8 +1906,8 @@ exr_attr_set_preview (
     else if (rv == EXR_ERR_SUCCESS)
     {
         if (attr->type != EXR_ATTR_PREVIEW)
-            return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-                pctxt,
+            return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                ctxt,
                 EXR_ERR_ATTR_TYPE_MISMATCH,
                 "'%s' requested type 'preview', but attribute is type '%s'",
                 name,
@@ -1789,16 +1917,23 @@ exr_attr_set_preview (
             attr->preview->height == val->height &&
             attr->preview->alloc_size > 0)
         {
-            size_t copybytes = val->width * val->height * 4;
+            size_t copybytes =
+                (size_t) val->width * (size_t) val->height * (size_t) 4;
+            if (copybytes > 0 && !val->rgba)
+                return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                    ctxt,
+                    EXR_ERR_INVALID_ARGUMENT,
+                    "Invalid NULL preview rgba data for setting '%s'",
+                    name));
             memcpy (
                 EXR_CONST_CAST (void*, attr->preview->rgba),
                 val->rgba,
                 copybytes);
         }
-        else if (pctxt->mode != EXR_CONTEXT_WRITE)
+        else if (ctxt->mode != EXR_CONTEXT_WRITE && ctxt->mode != EXR_CONTEXT_TEMPORARY)
         {
-            return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-                pctxt,
+            return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                ctxt,
                 EXR_ERR_MODIFY_SIZE_CHANGE,
                 "Existing preview '%s' is %u x %u, requested is %u x %u, unable to change",
                 name,
@@ -1814,7 +1949,7 @@ exr_attr_set_preview (
                 ctxt, attr->preview, val->width, val->height, val->rgba);
         }
     }
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -1852,7 +1987,7 @@ exr_attr_get_string (
     ATTR_FIND_ATTR (EXR_ATTR_STRING, string);
     if (length) *length = attr->string->length;
     if (out) *out = attr->string->str;
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_WRITE_AND_RETURN (rv);
 }
 
 exr_result_t
@@ -1863,24 +1998,50 @@ exr_attr_set_string (
     exr_attribute_t* attr = NULL;
     exr_result_t     rv   = EXR_ERR_SUCCESS;
 
-    EXR_PROMOTE_LOCKED_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    EXR_LOCK_AND_DEFINE_PART (part_index);
 
     if (name && !strcmp (name, EXR_REQ_NAME_STR))
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            exr_set_name (ctxt, part_index, name));
+        return EXR_UNLOCK_AND_RETURN (exr_set_name (ctxt, part_index, val));
 
     if (name && !strcmp (name, EXR_REQ_TYPE_STR))
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt,
-            EXR_ERR_INVALID_ARGUMENT,
-            "Part type attribute must be implicitly only when adding a part"));
+    {
+        if (ctxt->mode == EXR_CONTEXT_TEMPORARY)
+        {
+            if (!val)
+            {
+                return EXR_UNLOCK_AND_RETURN (
+                    ctxt->print_error (
+                        ctxt,
+                        EXR_ERR_INVALID_ARGUMENT,
+                        "Part type attribute must be set to valid value"));
+            }
+            if (!strcmp (val, "scanlineimage"))
+                part->storage_mode = EXR_STORAGE_SCANLINE;
+            else if (!strcmp (val, "tiledimage"))
+                part->storage_mode = EXR_STORAGE_TILED;
+            else if (!strcmp (val, "deepscanline"))
+                part->storage_mode = EXR_STORAGE_DEEP_SCANLINE;
+            else if (!strcmp (val, "deeptile"))
+                part->storage_mode = EXR_STORAGE_DEEP_TILED;
+            else
+                part->storage_mode = EXR_STORAGE_UNKNOWN;
+        }
+        else
+        {
+            return EXR_UNLOCK_AND_RETURN (
+                ctxt->print_error (
+                    ctxt,
+                    EXR_ERR_INVALID_ARGUMENT,
+                    "Part type attribute must be implicitly only when adding a part"));
+        }
+    }
 
-    if (pctxt->mode == EXR_CONTEXT_READ)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_NOT_OPEN_WRITE));
-    if (pctxt->mode == EXR_CONTEXT_WRITING_DATA)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_ALREADY_WROTE_ATTRS));
+    if (ctxt->mode == EXR_CONTEXT_READ)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_WRITE));
+    if (ctxt->mode == EXR_CONTEXT_WRITING_DATA)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_ALREADY_WROTE_ATTRS));
 
     rv = exr_attr_list_find_by_name (
         ctxt, (exr_attribute_list_t*) &(part->attributes), name, &attr);
@@ -1888,8 +2049,8 @@ exr_attr_set_string (
     bytes = val ? strlen (val) : 0;
 
     if (bytes > (size_t) INT32_MAX)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt,
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "String too large to store (%" PRIu64 " bytes) into '%s'",
             (uint64_t) bytes,
@@ -1897,8 +2058,8 @@ exr_attr_set_string (
 
     if (rv == EXR_ERR_NO_ATTR_BY_NAME)
     {
-        if (pctxt->mode != EXR_CONTEXT_WRITE)
-            return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+        if (ctxt->mode != EXR_CONTEXT_WRITE && ctxt->mode != EXR_CONTEXT_TEMPORARY)
+            return EXR_UNLOCK_AND_RETURN (rv);
 
         rv = exr_attr_list_add (
             ctxt, &(part->attributes), name, EXR_ATTR_STRING, 0, NULL, &(attr));
@@ -1909,8 +2070,8 @@ exr_attr_set_string (
     else if (rv == EXR_ERR_SUCCESS)
     {
         if (attr->type != EXR_ATTR_STRING)
-            return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-                pctxt,
+            return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                ctxt,
                 EXR_ERR_ATTR_TYPE_MISMATCH,
                 "'%s' requested type 'string', but attribute is type '%s'",
                 name,
@@ -1921,10 +2082,10 @@ exr_attr_set_string (
             if (val)
                 memcpy (EXR_CONST_CAST (void*, attr->string->str), val, bytes);
         }
-        else if (pctxt->mode != EXR_CONTEXT_WRITE)
+        else if (ctxt->mode != EXR_CONTEXT_WRITE && ctxt->mode != EXR_CONTEXT_TEMPORARY)
         {
-            return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-                pctxt,
+            return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                ctxt,
                 EXR_ERR_MODIFY_SIZE_CHANGE,
                 "Existing string '%s' has length %d, requested %d, unable to change",
                 name,
@@ -1937,7 +2098,7 @@ exr_attr_set_string (
                 ctxt, attr->string, val, (int32_t) bytes);
         }
     }
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 exr_result_t
@@ -1950,15 +2111,15 @@ exr_attr_get_string_vector (
 {
     ATTR_FIND_ATTR (EXR_ATTR_STRING_VECTOR, stringvector);
     if (!size)
-        return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (pctxt->report_error (
-            pctxt,
+        return EXR_UNLOCK_WRITE_AND_RETURN (ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "size parameter required to query stringvector"));
     if (out)
     {
         if (*size < attr->stringvector->n_strings)
-            return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (pctxt->print_error (
-                pctxt,
+            return EXR_UNLOCK_WRITE_AND_RETURN (ctxt->print_error (
+                ctxt,
                 EXR_ERR_INVALID_ARGUMENT,
                 "'%s' array buffer too small (%d) to hold string values (%d)",
                 name,
@@ -1968,7 +2129,7 @@ exr_attr_get_string_vector (
             out[i] = attr->stringvector->strings[i].str;
     }
     *size = attr->stringvector->n_strings;
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_WRITE_AND_RETURN (rv);
 }
 
 exr_result_t
@@ -1982,26 +2143,26 @@ exr_attr_set_string_vector (
     exr_attribute_t* attr = NULL;
     exr_result_t     rv   = EXR_ERR_SUCCESS;
 
-    EXR_PROMOTE_LOCKED_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
+    EXR_LOCK_AND_DEFINE_PART (part_index);
 
-    if (pctxt->mode == EXR_CONTEXT_READ)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_NOT_OPEN_WRITE));
-    if (pctxt->mode == EXR_CONTEXT_WRITING_DATA)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_ALREADY_WROTE_ATTRS));
+    if (ctxt->mode == EXR_CONTEXT_READ)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_WRITE));
+    if (ctxt->mode == EXR_CONTEXT_WRITING_DATA)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_ALREADY_WROTE_ATTRS));
 
     if (size < 0)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt,
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid size (%d) for string vector '%s'",
             size,
             name));
 
     if (!val)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-            pctxt,
+        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "No input string values for setting '%s', type 'stringvector'",
             name));
@@ -2011,8 +2172,7 @@ exr_attr_set_string_vector (
 
     if (rv == EXR_ERR_NO_ATTR_BY_NAME)
     {
-        if (pctxt->mode != EXR_CONTEXT_WRITE)
-            return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+        if (ctxt->mode != EXR_CONTEXT_WRITE) return EXR_UNLOCK_AND_RETURN (rv);
 
         rv = exr_attr_list_add (
             ctxt,
@@ -2031,8 +2191,8 @@ exr_attr_set_string_vector (
     else if (rv == EXR_ERR_SUCCESS)
     {
         if (attr->type != EXR_ATTR_STRING_VECTOR)
-            return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-                pctxt,
+            return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                ctxt,
                 EXR_ERR_ATTR_TYPE_MISMATCH,
                 "'%s' requested type 'stringvector', but attribute is type '%s'",
                 name,
@@ -2040,14 +2200,14 @@ exr_attr_set_string_vector (
         if (attr->stringvector->n_strings == size &&
             attr->stringvector->alloc_size > 0)
         {
-            if (pctxt->mode != EXR_CONTEXT_WRITE)
+            if (ctxt->mode != EXR_CONTEXT_WRITE)
             {
                 for (int32_t i = 0; rv == EXR_ERR_SUCCESS && i < size; ++i)
                 {
                     size_t curlen;
                     if (!val[i])
-                        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-                            pctxt,
+                        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                            ctxt,
                             EXR_ERR_INVALID_ARGUMENT,
                             "'%s' received NULL string in string vector",
                             name));
@@ -2055,8 +2215,8 @@ exr_attr_set_string_vector (
                     curlen = strlen (val[i]);
                     if (curlen !=
                         (size_t) attr->stringvector->strings[i].length)
-                        return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-                            pctxt,
+                        return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                            ctxt,
                             EXR_ERR_INVALID_ARGUMENT,
                             "'%s' string %d in string vector is different size (old %d new %d), unable to update",
                             name,
@@ -2075,10 +2235,10 @@ exr_attr_set_string_vector (
                         ctxt, attr->stringvector, i, val[i]);
             }
         }
-        else if (pctxt->mode != EXR_CONTEXT_WRITE)
+        else if (ctxt->mode != EXR_CONTEXT_WRITE)
         {
-            return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-                pctxt,
+            return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                ctxt,
                 EXR_ERR_MODIFY_SIZE_CHANGE,
                 "Existing string vector '%s' has %d strings, but given %d, unable to change",
                 name,
@@ -2092,7 +2252,7 @@ exr_attr_set_string_vector (
                     ctxt, attr->stringvector, i, val[i]);
         }
     }
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }
 
 /**************************************/
@@ -2319,7 +2479,7 @@ exr_attr_get_user (
         }
     }
 
-    return EXR_UNLOCK_WRITE_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_WRITE_AND_RETURN (rv);
 }
 
 exr_result_t
@@ -2334,27 +2494,26 @@ exr_attr_set_user (
     exr_attr_opaquedata_t* opq;
     exr_attribute_t*       attr = NULL;
     exr_result_t           rv   = EXR_ERR_SUCCESS;
-    EXR_PROMOTE_LOCKED_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
-    if (pctxt->mode == EXR_CONTEXT_READ)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_NOT_OPEN_WRITE));
-    if (pctxt->mode == EXR_CONTEXT_WRITING_DATA)
-        return EXR_UNLOCK_AND_RETURN_PCTXT (
-            pctxt->standard_error (pctxt, EXR_ERR_ALREADY_WROTE_ATTRS));
+    EXR_LOCK_AND_DEFINE_PART (part_index);
+    if (ctxt->mode == EXR_CONTEXT_READ)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_NOT_OPEN_WRITE));
+    if (ctxt->mode == EXR_CONTEXT_WRITING_DATA)
+        return EXR_UNLOCK_AND_RETURN (
+            ctxt->standard_error (ctxt, EXR_ERR_ALREADY_WROTE_ATTRS));
     rv = exr_attr_list_find_by_name (
         ctxt, (exr_attribute_list_t*) &(part->attributes), name, &attr);
     if (rv == EXR_ERR_NO_ATTR_BY_NAME)
     {
-        if (pctxt->mode != EXR_CONTEXT_WRITE)
-            return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+        if (ctxt->mode != EXR_CONTEXT_WRITE) return EXR_UNLOCK_AND_RETURN (rv);
         rv = exr_attr_list_add_by_type (
             ctxt, &(part->attributes), name, type, 0, NULL, &(attr));
     }
     else if (rv == EXR_ERR_SUCCESS)
     {
         if (attr->type != EXR_ATTR_OPAQUE)
-            return EXR_UNLOCK_AND_RETURN_PCTXT (pctxt->print_error (
-                pctxt,
+            return EXR_UNLOCK_AND_RETURN (ctxt->print_error (
+                ctxt,
                 EXR_ERR_ATTR_TYPE_MISMATCH,
                 "'%s' requested type '%s', but stored attributes is type '%s'",
                 name,
@@ -2362,7 +2521,7 @@ exr_attr_set_user (
                 attr->type_name));
     }
     else
-        return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+        return EXR_UNLOCK_AND_RETURN (rv);
 
     opq = attr->opaque;
     if (opq->pack_func_ptr)
@@ -2374,5 +2533,5 @@ exr_attr_set_user (
     }
     else
         rv = exr_attr_opaquedata_set_packed (ctxt, attr->opaque, out, size);
-    return EXR_UNLOCK_AND_RETURN_PCTXT (rv);
+    return EXR_UNLOCK_AND_RETURN (rv);
 }

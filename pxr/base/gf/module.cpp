@@ -18,6 +18,7 @@ TF_WRAP_MODULE
     TF_WRAP( DualQuatd );
     TF_WRAP( DualQuatf );
     TF_WRAP( DualQuath );
+    TF_WRAP( Duration );
     TF_WRAP( Frustum );
     TF_WRAP( Gamma );
     TF_WRAP( Half );

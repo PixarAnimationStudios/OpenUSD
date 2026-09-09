@@ -90,6 +90,8 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
             # Test attribute metadata resolution
             attr = prim.GetAttribute("TimeCode")
             arrayAttr = prim.GetAttribute("TimeCodeArray")
+            durAttr = prim.GetAttribute("Duration")
+            durArrayAttr = prim.GetAttribute("DurationArray")
             doubleAttr = prim.GetAttribute("Double")
 
             # Attribute timeSamples metadata.
@@ -99,30 +101,46 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
             self.assertEqual(arrayAttr.GetMetadata("timeSamples"),
                              {0.0 : Vt.TimeCodeArray([10.0, 30.0]),
                               1.0 : Vt.TimeCodeArray([20.0, 40.0])})
+            self.assertEqual(durAttr.GetMetadata("timeSamples"),
+                             {0.0 : Gf.Duration(10.0),
+                              1.0 : Gf.Duration(20.0)})
+            self.assertEqual(durArrayAttr.GetMetadata("timeSamples"),
+                             {0.0 : Vt.DurationArray([10.0, 30.0]),
+                              1.0 : Vt.DurationArray([20.0, 40.0])})
             self.assertEqual(doubleAttr.GetMetadata("timeSamples"),
                              {0.0 : 10.0,
                               1.0 : 20.0})
 
             # Attribute default metadata.
             self.assertEqual(attr.GetMetadata("default").GetValue(), 10.0)
-            self.assertEqual(arrayAttr.GetMetadata("default"), 
+            self.assertEqual(arrayAttr.GetMetadata("default"),
                              Vt.TimeCodeArray([10.0, 20.0]))
+            self.assertEqual(durAttr.GetMetadata("default").GetValue(), 10.0)
+            self.assertEqual(durArrayAttr.GetMetadata("default"),
+                             Vt.DurationArray([10.0, 20.0]))
             self.assertEqual(doubleAttr.GetMetadata("default"), 10.0)
 
             # Test prim metadata resolution
             self.assertEqual(prim.GetMetadata("timeCodeTest"), 10.0)
-            self.assertEqual(prim.GetMetadata("timeCodeArrayTest"), 
+            self.assertEqual(prim.GetMetadata("timeCodeArrayTest"),
                              Vt.TimeCodeArray([10.0, 20.0]))
+            self.assertEqual(prim.GetMetadata("durationTest"), 10.0)
+            self.assertEqual(prim.GetMetadata("durationArrayTest"),
+                             Vt.DurationArray([10.0, 20.0]))
             self.assertEqual(prim.GetMetadata("doubleTest"), 10.0)
 
             # Prim customData retrieved as the full dictionary
             expectedCustomData = {
                 "timeCode" : Gf.TimeCode(10.0),
                 "timeCodeArray" : Vt.TimeCodeArray([10.0, 20.0]),
+                "durationVal" : Gf.Duration(10.0),
+                "durationArray" : Vt.DurationArray([10.0, 20.0]),
                 "doubleVal": 10.0,
                 "subDict" : {
                     "timeCode" : Gf.TimeCode(10.0),
                     "timeCodeArray" : Vt.TimeCodeArray([10.0, 20.0]),
+                    "durationVal" : Gf.Duration(10.0),
+                    "durationArray" : Vt.DurationArray([10.0, 20.0]),
                     "doubleVal" : 10.0
                 }
             }
@@ -132,18 +150,29 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
             self.assertEqual(
                 prim.GetMetadataByDictKey("customData", "timeCode"), 10.0)
             self.assertEqual(
-                prim.GetMetadataByDictKey("customData", "timeCodeArray"), 
+                prim.GetMetadataByDictKey("customData", "timeCodeArray"),
                 Vt.TimeCodeArray(2, (10.0, 20.0)))
+            self.assertEqual(
+                prim.GetMetadataByDictKey("customData", "durationVal"), 10.0)
+            self.assertEqual(
+                prim.GetMetadataByDictKey("customData", "durationArray"),
+                Vt.DurationArray(2, (10.0, 20.0)))
             self.assertEqual(
                 prim.GetMetadataByDictKey("customData", "doubleVal"), 10.0)
             self.assertEqual(
-                prim.GetMetadataByDictKey("customData", "subDict:timeCode"), 
+                prim.GetMetadataByDictKey("customData", "subDict:timeCode"),
                 10.0)
             self.assertEqual(
-                prim.GetMetadataByDictKey("customData", "subDict:timeCodeArray"), 
+                prim.GetMetadataByDictKey("customData", "subDict:timeCodeArray"),
                 Vt.TimeCodeArray(2, (10.0, 20.0)))
             self.assertEqual(
-                prim.GetMetadataByDictKey("customData", "subDict:doubleVal"), 
+                prim.GetMetadataByDictKey("customData", "subDict:durationVal"),
+                10.0)
+            self.assertEqual(
+                prim.GetMetadataByDictKey("customData", "subDict:durationArray"),
+                Vt.DurationArray(2, (10.0, 20.0)))
+            self.assertEqual(
+                prim.GetMetadataByDictKey("customData", "subDict:doubleVal"),
                 10.0)
         
     def test_GetMetaDataWithLayerOffsets(self):
@@ -169,45 +198,66 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
             # Test attribute metadata resolution
             attr = prim.GetAttribute("TimeCode")
             arrayAttr = prim.GetAttribute("TimeCodeArray")
+            durAttr = prim.GetAttribute("Duration")
+            durArrayAttr = prim.GetAttribute("DurationArray")
             doubleAttr = prim.GetAttribute("Double")
 
             # Attribute timeSamples metadata. The Gf.TimeCode valued attribute
             # has offsets applied to both the time sample keys and the value itself.
-            # The double value attribute is only offset by the time sample keys, the
-            # values remains as authored.
+            # The Gf.Duration valued attribute has the scale applied to its values
+            # but not the offset, while its time sample keys still receive the full
+            # offset. The double value attribute is only offset by the time sample
+            # keys, the values remains as authored.
             self.assertEqual(attr.GetMetadata("timeSamples"),
                              {3.0 : Gf.TimeCode(23.0),
                               5.0 : Gf.TimeCode(43.0)})
             self.assertEqual(arrayAttr.GetMetadata("timeSamples"),
                              {3.0 : Vt.TimeCodeArray([23.0, 63.0]),
                               5.0 : Vt.TimeCodeArray([43.0, 83.0])})
+            self.assertEqual(durAttr.GetMetadata("timeSamples"),
+                             {3.0 : Gf.Duration(20.0),
+                              5.0 : Gf.Duration(40.0)})
+            self.assertEqual(durArrayAttr.GetMetadata("timeSamples"),
+                             {3.0 : Vt.DurationArray([20.0, 60.0]),
+                              5.0 : Vt.DurationArray([40.0, 80.0])})
             self.assertEqual(doubleAttr.GetMetadata("timeSamples"),
                              {3.0 : 10.0,
                               5.0 : 20.0})
 
             # Attribute default metadata. Time code values are resolved by layer
-            # offsets, double values are not.
+            # offsets, duration values are scaled but not offset, double values
+            # are not resolved at all.
             self.assertEqual(attr.GetMetadata("default").GetValue(), 23.0)
-            self.assertEqual(arrayAttr.GetMetadata("default"), 
+            self.assertEqual(arrayAttr.GetMetadata("default"),
                              Vt.TimeCodeArray(2, (23.0, 43.0)))
+            self.assertEqual(durAttr.GetMetadata("default").GetValue(), 20.0)
+            self.assertEqual(durArrayAttr.GetMetadata("default"),
+                             Vt.DurationArray(2, (20.0, 40.0)))
             self.assertEqual(doubleAttr.GetMetadata("default"), 10.0)
 
-            # Test prim metadata resolution. All time code values are offset, 
-            # doubles are not. This applies even when the values are contained
-            # within dictionaries.
+            # Test prim metadata resolution. Time code values are offset, duration
+            # values are scaled but not offset, doubles are not resolved. This
+            # applies even when the values are contained within dictionaries.
             self.assertEqual(prim.GetMetadata("timeCodeTest"), 23.0)
-            self.assertEqual(prim.GetMetadata("timeCodeArrayTest"), 
+            self.assertEqual(prim.GetMetadata("timeCodeArrayTest"),
                              Vt.TimeCodeArray([23.0, 43.0]))
+            self.assertEqual(prim.GetMetadata("durationTest"), 20.0)
+            self.assertEqual(prim.GetMetadata("durationArrayTest"),
+                             Vt.DurationArray([20.0, 40.0]))
             self.assertEqual(prim.GetMetadata("doubleTest"), 10.0)
 
             # Prim customData retrieved as the full dictionary
             expectedCustomData = {
                 "timeCode" : Gf.TimeCode(23.0),
                 "timeCodeArray" : Vt.TimeCodeArray([23.0, 43.0]),
+                "durationVal" : Gf.Duration(20.0),
+                "durationArray" : Vt.DurationArray([20.0, 40.0]),
                 "doubleVal": 10.0,
                 "subDict" : {
                     "timeCode" : Gf.TimeCode(23.0),
                     "timeCodeArray" : Vt.TimeCodeArray([23.0, 43.0]),
+                    "durationVal" : Gf.Duration(20.0),
+                    "durationArray" : Vt.DurationArray([20.0, 40.0]),
                     "doubleVal" : 10.0
                 }
             }
@@ -217,32 +267,49 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
             self.assertEqual(
                 prim.GetMetadataByDictKey("customData", "timeCode"), 23.0)
             self.assertEqual(
-                prim.GetMetadataByDictKey("customData", "timeCodeArray"), 
+                prim.GetMetadataByDictKey("customData", "timeCodeArray"),
                 Vt.TimeCodeArray(2, (23.0, 43.0)))
+            self.assertEqual(
+                prim.GetMetadataByDictKey("customData", "durationVal"), 20.0)
+            self.assertEqual(
+                prim.GetMetadataByDictKey("customData", "durationArray"),
+                Vt.DurationArray(2, (20.0, 40.0)))
             self.assertEqual(
                 prim.GetMetadataByDictKey("customData", "doubleVal"), 10.0)
             self.assertEqual(
-                prim.GetMetadataByDictKey("customData", "subDict:timeCode"), 
+                prim.GetMetadataByDictKey("customData", "subDict:timeCode"),
                 23.0)
             self.assertEqual(
-                prim.GetMetadataByDictKey("customData", "subDict:timeCodeArray"), 
+                prim.GetMetadataByDictKey("customData", "subDict:timeCodeArray"),
                 Vt.TimeCodeArray(2, (23.0, 43.0)))
             self.assertEqual(
-                prim.GetMetadataByDictKey("customData", "subDict:doubleVal"), 
+                prim.GetMetadataByDictKey("customData", "subDict:durationVal"),
+                20.0)
+            self.assertEqual(
+                prim.GetMetadataByDictKey("customData", "subDict:durationArray"),
+                Vt.DurationArray(2, (20.0, 40.0)))
+            self.assertEqual(
+                prim.GetMetadataByDictKey("customData", "subDict:doubleVal"),
                 10.0)
 
-            # Test stage level metadata resolution. Stage metadata is always 
-            # defined on the root layer so there are never any layer offsets to 
+            # Test stage level metadata resolution. Stage metadata is always
+            # defined on the root layer so there are never any layer offsets to
             # apply to this metadata.
             metadataDict = stage.GetMetadata("customLayerData")
             self.assertEqual(metadataDict["timeCode"].GetValue(), 10.0)
-            self.assertEqual(metadataDict["timeCodeArray"], 
+            self.assertEqual(metadataDict["timeCodeArray"],
                              Vt.TimeCodeArray(2, (10.0, 20.0)))
+            self.assertEqual(metadataDict["durationVal"].GetValue(), 10.0)
+            self.assertEqual(metadataDict["durationArray"],
+                             Vt.DurationArray(2, (10.0, 20.0)))
 
             metadataDict = metadataDict["subDict"]
             self.assertEqual(metadataDict["timeCode"].GetValue(), 10.0)
-            self.assertEqual(metadataDict["timeCodeArray"], 
+            self.assertEqual(metadataDict["timeCodeArray"],
                              Vt.TimeCodeArray(2, (10.0, 20.0)))
+            self.assertEqual(metadataDict["durationVal"].GetValue(), 10.0)
+            self.assertEqual(metadataDict["durationArray"],
+                             Vt.DurationArray(2, (10.0, 20.0)))
 
     def test_SetMetaDataWithEditTarget(self):
         """Test the SetMetadata API on UsdObjects for time code valued metadata
@@ -258,6 +325,8 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
         prim = stage.GetPrimAtPath("/TimeCodeTest")
         attr = prim.GetAttribute("TimeCode")
         arrayAttr = prim.GetAttribute("TimeCodeArray")
+        durAttr = prim.GetAttribute("Duration")
+        durArrayAttr = prim.GetAttribute("DurationArray")
         doubleAttr = prim.GetAttribute("Double")
 
         # Get an edit target for each of our layers. These will each have a
@@ -342,30 +411,50 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
              Gf.TimeCode(14.0),
              Gf.TimeCode(50.0),
              Gf.TimeCode(25.0)])
-        _SetMetadataWithEachEditTarget(prim, "timeCodeArrayTest", 
-                                       Vt.TimeCodeArray([25.0, 45.0]), 
-            [Vt.TimeCodeArray([11.0, 21.0]), 
-             Vt.TimeCodeArray([14.0, 24.0]), 
-             Vt.TimeCodeArray([50.0, 90.0]), 
+        _SetMetadataWithEachEditTarget(prim, "timeCodeArrayTest",
+                                       Vt.TimeCodeArray([25.0, 45.0]),
+            [Vt.TimeCodeArray([11.0, 21.0]),
+             Vt.TimeCodeArray([14.0, 24.0]),
+             Vt.TimeCodeArray([50.0, 90.0]),
              Vt.TimeCodeArray([25.0, 45.0])])
+
+        # Set Gf.Duration and Vt.DurationArray metadata on prim. Each edit
+        # target resolves against a different composed layer offset, but only
+        # the scale is applied to duration values, never the offset (so the
+        # refSub and ref layers, both scale = 2, yield the same authored value).
+        _SetMetadataWithEachEditTarget(prim, "durationTest", 25.0,
+            [Gf.Duration(12.5),
+             Gf.Duration(12.5),
+             Gf.Duration(50.0),
+             Gf.Duration(25.0)])
+        _SetMetadataWithEachEditTarget(prim, "durationArrayTest",
+                                       Vt.DurationArray([25.0, 45.0]),
+            [Vt.DurationArray([12.5, 22.5]),
+             Vt.DurationArray([12.5, 22.5]),
+             Vt.DurationArray([50.0, 90.0]),
+             Vt.DurationArray([25.0, 45.0])])
 
         # Set double value metadata on prim. Values are not resolved over
         # edit target offsets.
         _SetMetadataWithEachEditTarget(prim, "doubleTest", 25.0,
                                        [25.0, 25.0, 25.0, 25.0])
 
-        # For the customData dictionary tests, the weakest layer has the 
-        # original authored value dictionary. We'll need to compare the 
+        # For the customData dictionary tests, the weakest layer has the
+        # original authored value dictionary. We'll need to compare the
         # expected authored value for that layer against the whole dictionary
         # for that edit target.
         authoredCustomData = {
             "timeCode" : Gf.TimeCode(10.0),
             "timeCodeArray" : Vt.TimeCodeArray([10,20]),
+            "durationVal" : Gf.Duration(10.0),
+            "durationArray" : Vt.DurationArray([10,20]),
             "doubleVal" : 10.0,
-            "subDict" : 
+            "subDict" :
             {
                 "timeCode" : Gf.TimeCode(10),
                 "timeCodeArray" : Vt.TimeCodeArray([10,20]),
+                "durationVal" : Gf.Duration(10),
+                "durationArray" : Vt.DurationArray([10,20]),
                 "doubleVal" : 10.0
             }
         }
@@ -392,20 +481,54 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
              {"timeCode" : Gf.TimeCode(6.0),
               "subDict" : {"timeCode" : Gf.TimeCode(11)}}])
 
-        # Set double value metadata by key in the prim's customData metadata. 
+        # Set double value metadata by key in the prim's customData metadata.
         # The double values are not resolved over edit target offsets.
         authoredCustomData["subDict"]["doubleVal"] = 11.0
         _SetMetadataByKeyWithEachEditTarget(
-            prim, "customData", "subDict:doubleVal", 11.0, 
-            [authoredCustomData, 
+            prim, "customData", "subDict:doubleVal", 11.0,
+            [authoredCustomData,
              {"timeCode" : Gf.TimeCode(4.5),
-              "subDict" : {"timeCode" : Gf.TimeCode(7), "doubleVal" : 11.0}}, 
+              "subDict" : {"timeCode" : Gf.TimeCode(7), "doubleVal" : 11.0}},
              {"timeCode" : Gf.TimeCode(12.0),
-              "subDict" : {"timeCode" : Gf.TimeCode(22), "doubleVal" : 11.0}}, 
+              "subDict" : {"timeCode" : Gf.TimeCode(22), "doubleVal" : 11.0}},
              {"timeCode" : Gf.TimeCode(6.0),
               "subDict" : {"timeCode" : Gf.TimeCode(11), "doubleVal" : 11.0}}])
 
-        # Currently, it's impossible to set the "timeSamples" metadata field 
+        # Set Gf.Duration metadata by key in the prim's customData metadata.
+        # Only the scale is applied to duration values, never the offset (so
+        # the refSub and ref layers, both scale = 2, agree).
+        authoredCustomData["durationVal"] = Gf.Duration(3.0)
+        _SetMetadataByKeyWithEachEditTarget(
+            prim, "customData", "durationVal", Gf.Duration(6.0),
+            [authoredCustomData,
+             {"timeCode" : Gf.TimeCode(4.5),
+              "durationVal" : Gf.Duration(3.0),
+              "subDict" : {"timeCode" : Gf.TimeCode(7), "doubleVal" : 11.0}},
+             {"timeCode" : Gf.TimeCode(12.0),
+              "durationVal" : Gf.Duration(12.0),
+              "subDict" : {"timeCode" : Gf.TimeCode(22), "doubleVal" : 11.0}},
+             {"timeCode" : Gf.TimeCode(6.0),
+              "durationVal" : Gf.Duration(6.0),
+              "subDict" : {"timeCode" : Gf.TimeCode(11), "doubleVal" : 11.0}}])
+
+        authoredCustomData["subDict"]["durationVal"] = Gf.Duration(5.5)
+        _SetMetadataByKeyWithEachEditTarget(
+            prim, "customData", "subDict:durationVal", Gf.Duration(11.0),
+            [authoredCustomData,
+             {"timeCode" : Gf.TimeCode(4.5),
+              "durationVal" : Gf.Duration(3.0),
+              "subDict" : {"timeCode" : Gf.TimeCode(7), "doubleVal" : 11.0,
+                           "durationVal" : Gf.Duration(5.5)}},
+             {"timeCode" : Gf.TimeCode(12.0),
+              "durationVal" : Gf.Duration(12.0),
+              "subDict" : {"timeCode" : Gf.TimeCode(22), "doubleVal" : 11.0,
+                           "durationVal" : Gf.Duration(22)}},
+             {"timeCode" : Gf.TimeCode(6.0),
+              "durationVal" : Gf.Duration(6.0),
+              "subDict" : {"timeCode" : Gf.TimeCode(11), "doubleVal" : 11.0,
+                           "durationVal" : Gf.Duration(11)}}])
+
+        # Currently, it's impossible to set the "timeSamples" metadata field
         # directly through SetMetadata in python as there is no wrapping for
         # conversion SdfTimeSampleMap. If this is ever added we should add a 
         # test case here. This case is tested in testUsdTimeValueAuthoring.cpp
@@ -440,9 +563,27 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
              Vt.TimeCodeArray([38.0, -22.0]),
              Vt.TimeCodeArray([19.0, -11.0])])
 
-        # Set double value default metadata on the double valued attribute. 
+        # Set Gf.Duration and Vt.DurationArray default value metadata on the
+        # duration valued attributes. As with the timecode case above, an
+        # explicit Gf.Duration must be passed so the value is cast and the
+        # layer offset applied. Only the scale is applied to duration values,
+        # never the offset (so refSub and ref, both scale = 2, agree).
+        _SetMetadataWithEachEditTarget(
+            durAttr, "default", Gf.Duration(19.0),
+            [Gf.Duration(9.5),
+             Gf.Duration(9.5),
+             Gf.Duration(38.0),
+             Gf.Duration(19.0)])
+        _SetMetadataWithEachEditTarget(
+            durArrayAttr, "default", Vt.DurationArray([19.0, -11]),
+            [Vt.DurationArray([9.5, -5.5]),
+             Vt.DurationArray([9.5, -5.5]),
+             Vt.DurationArray([38.0, -22.0]),
+             Vt.DurationArray([19.0, -11.0])])
+
+        # Set double value default metadata on the double valued attribute.
         # Values are not resolved over edit target offsets.
-        _SetMetadataWithEachEditTarget(doubleAttr, "default", 19.0, 
+        _SetMetadataWithEachEditTarget(doubleAttr, "default", 19.0,
                                        [19.0, 19.0, 19.0, 19.0])
 
     def test_SetAttrValueWithEditTarget(self):
@@ -459,12 +600,14 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
         prim = stage.GetPrimAtPath("/TimeCodeTest")
         attr = prim.GetAttribute("TimeCode")
         arrayAttr = prim.GetAttribute("TimeCodeArray")
+        durAttr = prim.GetAttribute("Duration")
+        durArrayAttr = prim.GetAttribute("DurationArray")
         doubleAttr = prim.GetAttribute("Double")
 
         rootEditTarget, rootSubEditTarget, refEditTarget, refSubEditTarget = \
             self._GetEditTargets(prim)
 
-        # Sets the value at time for an attribute using the given edit target 
+        # Sets the value at time for an attribute using the given edit target
         # and verifies the resolved and authored values. 
         def _SetTimeSampleWithEditTarget(editTarget, attr, time, resolvedValue, 
                                          expectedAuthoredValue):
@@ -579,6 +722,40 @@ class TestUsdTimeValueAuthoring(unittest.TestCase):
              Vt.TimeCodeArray([11.0, 7.5]),
              Vt.TimeCodeArray([38.0, 24.0]),
              Vt.TimeCodeArray([19.0, 12.0])])
+
+        # Set Gf.Duration and Vt.DurationArray values at times and at default.
+        # The time sample keys are resolved with the full composed offset (like
+        # the timecode case), but only the scale is applied to the duration
+        # values themselves.
+        _SetTimeSampleWithEachEditTarget(durAttr, 12.0, Gf.Duration(19.0),
+            [{0.0 : Gf.Duration(10.0),
+              1.0 : Gf.Duration(20.0),
+              4.5 : Gf.Duration(9.5)},
+             {7.5 : Gf.Duration(9.5)},
+             {24.0 : Gf.Duration(38.0)},
+             {12.0 : Gf.Duration(19.0)}])
+
+        _SetDefaultWithEachEditTarget(durAttr, Gf.Duration(19.0),
+            [Gf.Duration(9.5),
+             Gf.Duration(9.5),
+             Gf.Duration(38.0),
+             Gf.Duration(19.0)])
+
+        _SetTimeSampleWithEachEditTarget(durArrayAttr, 12.0,
+                                         Vt.DurationArray([19.0, 12.0]),
+            [{0.0 : Vt.DurationArray([10.0, 30.0]),
+              1.0 : Vt.DurationArray([20.0, 40.0]),
+              4.5 : Vt.DurationArray([9.5, 6.0])},
+             {7.5 : Vt.DurationArray([9.5, 6.0])},
+             {24.0 : Vt.DurationArray([38.0, 24.0])},
+             {12.0 : Vt.DurationArray([19.0, 12.0])}])
+
+        _SetDefaultWithEachEditTarget(durArrayAttr,
+                                      Vt.DurationArray([19.0, 12.0]),
+            [Vt.DurationArray([9.5, 6.0]),
+             Vt.DurationArray([9.5, 6.0]),
+             Vt.DurationArray([38.0, 24.0]),
+             Vt.DurationArray([19.0, 12.0])])
 
         # Set double values at times and at default. Time sample keys are
         # resolved against each edit target's offset, but none of the values

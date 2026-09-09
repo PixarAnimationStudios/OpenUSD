@@ -15,21 +15,21 @@
 /// \ingroup group_gf_LinearAlgebra
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/api.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
 #include "pxr/base/gf/math.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/hash.h"
 
 #include <cstddef>
+#include <type_traits>
 #include <cmath>
 
 #include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class GfVec2f;
 
 template <>
 struct GfIsGfVec<class GfVec2f> { static const bool value = true; };
@@ -49,26 +49,40 @@ public:
     typedef float ScalarType;
     static const size_t dimension = 2;
 
+    /// \name Vector Components
+    ///
+    /// The vector's components, which are also its storage.  These are public
+    /// and directly readable and writable.
+    ///
+    /// The components are contiguous and in declaration order, so \c &x points
+    /// to \c dimension values.  See data() and operator[]().
+    ///
+    /// For multi-component access see the swizzle accessors below, which return
+    /// a new vector by value.
+    /// @{
+    float x, y;
+    /// @}
+
     /// GfVec2f value-initializes to zero and performs no default
     /// initialization, like float or double.
     GfVec2f() = default;
 
     /// Initialize all elements to a single value.
     constexpr explicit GfVec2f(float value)
-        : _data{ value, value }
+        : x(value), y(value)
     {
     }
 
     /// Initialize all elements with explicit arguments.
     constexpr GfVec2f(float s0, float s1)
-        : _data{ s0, s1 }
+        : x(s0), y(s1)
     {
     }
 
     /// Construct with pointer to values.
     template <class Scl>
     constexpr explicit GfVec2f(Scl const *p)
-        : _data{ p[0], p[1] }
+        : x(p[0]), y(p[1])
     {
     }
 
@@ -80,13 +94,13 @@ public:
 
     /// Implicitly convert from GfVec2i.
     GfVec2f(class GfVec2i const &other);
- 
     /// Create a unit vector along the X-axis.
     static GfVec2f XAxis() {
         GfVec2f result(0);
         result[0] = 1;
         return result;
     }
+
     /// Create a unit vector along the Y-axis.
     static GfVec2f YAxis() {
         GfVec2f result(0);
@@ -105,8 +119,8 @@ public:
 
     /// Set all elements with passed arguments.
     GfVec2f &Set(float s0, float s1) {
-        _data[0] = s0;
-        _data[1] = s1;
+        x = s0;
+        y = s1;
         return *this;
     }
 
@@ -116,23 +130,27 @@ public:
     }
 
     /// Direct data access.
-    float const *data() const { return _data; }
-    float *data() { return _data; }
+    ///
+    /// data() is the only member that relies on the components being
+    /// contiguous; every other member either names them directly or goes
+    /// through here.
+    float const *data() const { return &x; }
+    float *data() { return &x; }
     float const *GetArray() const { return data(); }
 
     /// Indexing.
-    float const &operator[](size_t i) const { return _data[i]; }
-    float &operator[](size_t i) { return _data[i]; }
+    float const &operator[](size_t i) const { return data()[i]; }
+    float &operator[](size_t i) { return data()[i]; }
 
     /// Hash.
     friend inline size_t hash_value(GfVec2f const &vec) {
-        return TfHash::Combine(vec[0], vec[1]);
+        return TfHash::Combine(vec.x, vec.y);
     }
 
     /// Equality comparison.
     bool operator==(GfVec2f const &other) const {
-        return _data[0] == other[0] &&
-               _data[1] == other[1];
+        return x == other.x &&
+               y == other.y;
     }
     bool operator!=(GfVec2f const &other) const {
         return !(*this == other);
@@ -151,13 +169,13 @@ public:
     
     /// Create a vec with negated elements.
     GfVec2f operator-() const {
-        return GfVec2f(-_data[0], -_data[1]);
+        return GfVec2f(-x, -y);
     }
 
     /// Addition.
     GfVec2f &operator+=(GfVec2f const &other) {
-        _data[0] += other[0];
-        _data[1] += other[1];
+        x += other.x;
+        y += other.y;
         return *this;
     }
     friend GfVec2f operator+(GfVec2f const &l, GfVec2f const &r) {
@@ -166,8 +184,8 @@ public:
 
     /// Subtraction.
     GfVec2f &operator-=(GfVec2f const &other) {
-        _data[0] -= other[0];
-        _data[1] -= other[1];
+        x -= other.x;
+        y -= other.y;
         return *this;
     }
     friend GfVec2f operator-(GfVec2f const &l, GfVec2f const &r) {
@@ -176,8 +194,8 @@ public:
 
     /// Multiplication by scalar.
     GfVec2f &operator*=(double s) {
-        _data[0] *= s;
-        _data[1] *= s;
+        x *= s;
+        y *= s;
         return *this;
     }
     GfVec2f operator*(double s) const {
@@ -201,7 +219,7 @@ public:
     
     /// See GfDot().
     float operator*(GfVec2f const &v) const {
-        return _data[0] * v[0] + _data[1] * v[1];
+        return x * v.x + y * v.y;
     }
 
     /// Returns the projection of \p this onto \p v. That is:
@@ -254,17 +272,42 @@ public:
     }
 
   
-private:
-    float _data[2];
-};
+    /// \name Swizzles
+    ///
+    /// Each accessor returns a new vector built from this one's components, in
+    /// the order named.  For example yx() returns
+    /// GfVec2f(y, x).
+    ///
+    /// Every permutation of 2 to 2 of the 2 components is
+    /// available.  Repeated components (\c xx, \c xyy) are not; nor are
+    /// single-component swizzles, which are just the components themselves.
+    ///
+    /// The results are ordinary GfVecs, so all the usual operators, GfDot() and
+    /// so on apply to them.  They are values, not references into this vector,
+    /// so they cannot be assigned through.
+    ///
+    /// @{
+#if defined (doxygen)
+    constexpr GfVec2f xy() const;
+    constexpr GfVec2f yx() const;
+    /// @}
+#else // !doxygen
+    // Note that these are templated on their own return type so that the
+    // declarations cost nothing in compile time & debug info unless they are
+    // actually called in a TU.  Naming a different type is an error and
+    // static_assert()ed against.
+    template <class Vec = GfVec2f> constexpr Vec xy() const;
+    template <class Vec = GfVec2f> constexpr Vec yx() const;
+#endif // doxygen
+ };
 
 /// Output a GfVec2f.
 /// \ingroup group_gf_DebuggingOutput
 GF_API std::ostream& operator<<(std::ostream &, GfVec2f const &);
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
+// Other scalar types of the same dimension, for the conversions above.
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2h.h"
 #include "pxr/base/gf/vec2i.h"
@@ -274,28 +317,45 @@ PXR_NAMESPACE_OPEN_SCOPE
 inline
 GfVec2f::GfVec2f(class GfVec2d const &other)
 {
-    _data[0] = other[0];
-    _data[1] = other[1];
+    x = other.x;
+    y = other.y;
 }
 inline
 GfVec2f::GfVec2f(class GfVec2h const &other)
 {
-    _data[0] = other[0];
-    _data[1] = other[1];
+    x = other.x;
+    y = other.y;
 }
 inline
 GfVec2f::GfVec2f(class GfVec2i const &other)
 {
-    _data[0] = other[0];
-    _data[1] = other[1];
+    x = other.x;
+    y = other.y;
 }
+
+template <class Vec>
+constexpr Vec
+GfVec2f::xy() const
+{
+    static_assert(std::is_same<Vec, GfVec2f>::value);
+    return Vec(x, y);
+}
+
+template <class Vec>
+constexpr Vec
+GfVec2f::yx() const
+{
+    static_assert(std::is_same<Vec, GfVec2f>::value);
+    return Vec(y, x);
+}
+
 
 /// Returns component-wise multiplication of vectors \p v1 and \p v2.
 inline GfVec2f
 GfCompMult(GfVec2f const &v1, GfVec2f const &v2) {
     return GfVec2f(
-        v1[0] * v2[0],
-        v1[1] * v2[1]
+        v1.x * v2.x,
+        v1.y * v2.y
         );
 }
 
@@ -303,8 +363,8 @@ GfCompMult(GfVec2f const &v1, GfVec2f const &v2) {
 inline GfVec2f
 GfCompDiv(GfVec2f const &v1, GfVec2f const &v2) {
     return GfVec2f(
-        v1[0] / v2[0],
-        v1[1] / v2[1]
+        v1.x / v2.x,
+        v1.y / v2.y
         );
 }
 

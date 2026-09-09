@@ -10,8 +10,6 @@
 #include "pxr/imaging/hd/primvarSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 
-#include <tbb/concurrent_hash_map.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -72,45 +70,18 @@ private:
     _PrimvarsDataSource(HdContainerDataSourceHandle const &primvarsDataSource,
                         Handle const &parentDataSource);
 
-    // Get the names of the constant primvars (including inherited
-    // ones)
-    std::shared_ptr<std::set<TfToken>> _GetConstantPrimvarNames();
-    std::set<TfToken> _GetConstantPrimvarNamesUncached();
+    using _PrimvarDsMap =
+        std::unordered_map<TfToken, HdContainerDataSourceHandle,
+                           TfToken::HashFunctor>;
 
-    // Uncached version of _Get implementing the logic
-    // to check the parent data source for the primvar being
-    // constant.
-    HdContainerDataSourceHandle _GetUncached(const TfToken &name);
+    // Get the the constant primvars (including inherited ones)
+    std::shared_ptr<_PrimvarDsMap> _GetConstantPrimvars();
 
     HdContainerDataSourceHandle const _primvarsDataSource;
     Handle const _parentDataSource;
 
-    struct _TokenHashCompare {
-        static bool equal(const TfToken &a,
-                          const TfToken &b) {
-            return a == b;
-        }
-        static size_t hash(const TfToken &a) {
-            return hash_value(a);
-        }
-    };
-    using _NameToPrimvarDataSource = 
-        tbb::concurrent_hash_map<
-            TfToken,
-            HdDataSourceBaseAtomicHandle,
-            _TokenHashCompare>;
-    // Cached data sources.
-    //
-    // We store a base rather than a container so we can
-    // distinguish between the absence of a cached value
-    // (nullptr) and a cached value that might be indicating
-    // that the primvar might exist (can cast to
-    // HdContainerDataSource) not exist (stored as bool
-    // data source).
-    _NameToPrimvarDataSource _nameToPrimvarDataSource;
-
-    // Cached constant primvar names
-    std::shared_ptr<std::set<TfToken>> _constantPrimvarNames;
+    // Cached constant primvars, including those from parent
+    std::shared_ptr<_PrimvarDsMap> _constantPrimvars;
 };
 
 _PrimvarsDataSource::_PrimvarsDataSource(
@@ -121,47 +92,50 @@ _PrimvarsDataSource::_PrimvarsDataSource(
 {
 }
 
-std::shared_ptr<std::set<TfToken>>
-_PrimvarsDataSource::_GetConstantPrimvarNames()
+std::shared_ptr<_PrimvarsDataSource::_PrimvarDsMap>
+_PrimvarsDataSource::_GetConstantPrimvars()
 {
-    std::shared_ptr<std::set<TfToken>> result =
-        std::atomic_load(&_constantPrimvarNames);
+    std::shared_ptr<_PrimvarDsMap> result =
+        std::atomic_load(&_constantPrimvars);
 
     if (!result) {
         // Cache miss
-        result = std::make_shared<std::set<TfToken>>(
-            _GetConstantPrimvarNamesUncached());
-        std::atomic_store(&_constantPrimvarNames, result);
-    }
 
-    return result;
-}
+        // Get constant primvars from flattened primvars data source from
+        // parent prim.
+        bool primvarMapIsUnique = false;
+        if (_parentDataSource) {
+            result = _parentDataSource->_GetConstantPrimvars();
+        } else {
+            result.reset(new _PrimvarDsMap);
+            primvarMapIsUnique = true;
+        }
 
-std::set<TfToken>
-_PrimvarsDataSource::_GetConstantPrimvarNamesUncached()
-{
-    std::set<TfToken> result;
-
-    // Get constant primvars from flattened primvars data source from
-    // parent prim.
-    if (_parentDataSource) {
-        result = *_parentDataSource->_GetConstantPrimvarNames();
-    }
-
-    // Add constant primvars from this prim.
-    if (_primvarsDataSource) {
-        for (const TfToken &name : _primvarsDataSource->GetNames()) {
-            if (_IsConstantPrimvar(
-                    HdContainerDataSource::Cast(
-                        _primvarsDataSource->Get(name)))) {
-                result.insert(name);
+        // Add constant primvars from this prim.
+        if (_primvarsDataSource) {
+            for (const TfToken &name : _primvarsDataSource->GetNames()) {
+                HdContainerDataSourceHandle primvarDs =
+                    HdContainerDataSource::Cast(_primvarsDataSource->Get(name));
+                if (_IsConstantPrimvar(primvarDs)) {
+                    // We can no longer share result with the parent.
+                    if (!primvarMapIsUnique) {
+                        result.reset(new _PrimvarDsMap(*result));
+                        primvarMapIsUnique = true;
+                    }
+                    // Add (or replace inherited) data source for this key.
+                    (*result)[name] = primvarDs;
+                }
             }
         }
+
+        // It is possible for another thread to race this one and
+        // have stored a result in the meantime.  The results will
+        // be equivalent.
+        std::atomic_store(&_constantPrimvars, result);
     }
 
     return result;
 }
-
 
 TfTokenVector
 _PrimvarsDataSource::GetNames()
@@ -172,34 +146,27 @@ _PrimvarsDataSource::GetNames()
         result = _primvarsDataSource->GetNames();
     }
 
-    if (!_parentDataSource) {
-        return result;
-    }
-
     // Get constant primvars from parent prim's flattened
     // primvar source.
-    std::set<TfToken> constantPrimvars =
-        *(_parentDataSource->_GetConstantPrimvarNames());
-    if (constantPrimvars.empty()) {
-        return result;
+    if (_parentDataSource) {
+        if (std::shared_ptr<_PrimvarDsMap> parentConstantPrimvars =
+            _parentDataSource->_GetConstantPrimvars()) {
+            for (const auto& entry: *parentConstantPrimvars) {
+                // Add primvar name if not already in result.
+                // O(N^2) but we expect small N.
+                if (std::find(result.begin(), result.end(),
+                              entry.first) == result.end()) {
+                    result.push_back(entry.first);
+                }
+            }
+        }
     }
-
-    // To avoid duplicates, erase this prim's primvars
-    // from constant primvars.
-    for (const TfToken &name : result) {
-        constantPrimvars.erase(name);
-    }
-
-    // And add the constant primvars not already in the
-    // result to the result.
-    result.insert(result.end(),
-                  constantPrimvars.begin(), constantPrimvars.end());
     
     return result;
 }
 
-HdContainerDataSourceHandle
-_PrimvarsDataSource::_GetUncached(const TfToken &name)
+HdDataSourceBaseHandle
+_PrimvarsDataSource::Get(const TfToken &name)
 {
     // Check whether this prim has this primvar.
     if (_primvarsDataSource) {
@@ -209,42 +176,18 @@ _PrimvarsDataSource::_GetUncached(const TfToken &name)
         }
     }
 
-    // Otherwise, check the flattened data source of
-    // the parent prim for the primvar and make sure it is
-    // constant.
+    // Otherwise, check inherited constant primvars.
     if (_parentDataSource) {
-        HdContainerDataSourceHandle const result =
-            HdContainerDataSource::Cast(_parentDataSource->Get(name));
-        if (_IsConstantPrimvar(result)) {
-            return result;
+        if (std::shared_ptr<_PrimvarDsMap> parentConstantPrimvars =
+            _parentDataSource->_GetConstantPrimvars()) {
+            const auto it = parentConstantPrimvars->find(name);
+            if (it != parentConstantPrimvars->end()) {
+                return it->second;
+            }
         }
     }
 
     return nullptr;
-}
-
-HdDataSourceBaseHandle
-_PrimvarsDataSource::Get(const TfToken &name)
-{
-    _NameToPrimvarDataSource::accessor a;
-    _nameToPrimvarDataSource.insert(a, name);
-
-    if (HdDataSourceBaseHandle const ds =
-            HdDataSourceBase::AtomicLoad(a->second)) {
-        // Cache hit.
-        return HdContainerDataSource::Cast(ds);
-    }
-
-    // Cache miss.
-    HdContainerDataSourceHandle const result = _GetUncached(name);
-    if (result) {
-        HdDataSourceBase::AtomicStore(
-            a->second, result);
-    } else {
-        HdDataSourceBase::AtomicStore(
-            a->second, HdRetainedTypedSampledDataSource<bool>::New(false));
-    }
-    return result;
 }
 
 bool
@@ -253,7 +196,6 @@ _PrimvarsDataSource::Invalidate(
 {
     bool anyDirtied = false;
 
-    // Iterate through all locators starting with "primvars".
     for (const HdDataSourceLocator &locator : locators) {
         if (_DoesLocatorIntersectInterpolation(locator)) {
             // This path should not be hit because
@@ -263,15 +205,9 @@ _PrimvarsDataSource::Invalidate(
             //
             // The HdFlatteningSceneIndex is then supposed to
             // drop the data source rather than invalidate it.
-            _nameToPrimvarDataSource.clear();
-            _constantPrimvarNames.reset();
+            _constantPrimvars.reset();
             anyDirtied = true;
             break;
-        }
-        
-        const TfToken &primvarName = locator.GetFirstElement();
-        if (_nameToPrimvarDataSource.erase(primvarName)) {
-            anyDirtied = true;
         }
     }
 

@@ -2897,20 +2897,22 @@ class "BackPlateAPI" (
     float depth:cameraSpaceOffset = 0.0 (
         doc = """Offset to shift the depth into camera space if needed."""
     )
-    float3 luma:gain = (1.0,1.0,1.0) (
+    float3 luma:slope = (1.0,1.0,1.0) (
         doc = """Scales the per-channel upper bound of the normalized signal 
-        before gamma, analogous to per-channel exposure or slope. It is applied 
-        in the order of `colorValue = (value*(gain-lift)+lift)^(1/gamma)`."""
+        , analogous to per-channel exposure or slope. In older literature this 
+        property is often referred to as gain. It is applied in the 
+        order of `output = (input*slope+offset)^(power)`."""
     )
-    float3 luma:lift = (0.0,0.0,0.0) (
+    float3 luma:offset = (0.0,0.0,0.0) (
         doc = """Raises or lowers the signal floor (black level) of the 
-        normalized value prior to the gain and gamma stages. It is applied
-        in the order of `colorValue = (value*(gain-lift)+lift)^(1/gamma)`."""
+        normalized value. In older literature this property is often referred 
+        to as lift. It is applied in the order of 
+        `output = (input*slope+offset)^(power)`."""
     )
-    float3 luma:gamma = (1.0,1.0,1.0) (
-        doc = """Per-channel power applied to the normalized RGB signal after 
-        lift and gain. Must be > 0. It is applied
-        in the order of `colorValue = (value*(gain-lift)+lift)^(1/gamma)`."""
+    float3 luma:power = (1.0,1.0,1.0) (
+        doc = """Per-channel power applied to the normalized RGB signal. In 
+        older literature this property is often referred to as gamma. It 
+        is applied in the order of `output = (input*slope+offset)^(power)`."""
     )
     token plateVisibility = "solo" (
         allowedTokens = ["all", "solo", "mute"]

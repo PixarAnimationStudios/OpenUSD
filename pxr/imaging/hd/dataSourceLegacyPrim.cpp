@@ -2282,11 +2282,7 @@ public:
             }
         }
 
-        // Note: Skip 'active' and 'shutterInterval' fields which are computed
-        //       by a downstream scene index.
-
-        return HdSampledDataSourceHandle(
-            Hd_GenericGetSampledDataSource::New(_sceneDelegate, _id, name));
+        return nullptr;
     }
 
 private:

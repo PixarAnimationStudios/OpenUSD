@@ -63,10 +63,11 @@ TF_DECLARE_REF_PTRS(HdCachingSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiLegacyDisplayStyleOverrideSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiPrimTypeAndPathPruningSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiSceneGlobalsSceneIndex);
+TF_DECLARE_REF_PTRS(HdsiApplicationRenderSettingsSceneIndex);
 TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 TF_DECLARE_REF_PTRS(HdMergingSceneIndex);
 TF_DECLARE_REF_PTRS(HdxTaskControllerSceneIndex);
-TF_DECLARE_REF_PTRS(UsdExecImagingStageSceneIndexInterface);
+TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndexInterface);
 
 using UsdStageWeakPtr = TfWeakPtr<class UsdStage>;
 
@@ -872,11 +873,23 @@ private:
 
     HdLegacyRenderControlInterface * _GetLegacyRenderControl() const;
 
+    // The application-managed render settings scene index, if the renderer
+    // advertised render setting descriptors (the Hydra 2.0 path). Null
+    // otherwise (in which case callers fall back to the legacy render control).
+    HdsiApplicationRenderSettingsSceneIndexRefPtr
+    _GetApplicationRenderSettingsSceneIndex() const;
+
+    SdfPath _GetSceneIndexPrimPathFromPrimId(int primId) const;
+
     HdSceneIndexBaseRefPtr
     _AppendOverridesSceneIndices(
-        const HdSceneIndexBaseRefPtr &inputScene);
+        HdSceneIndexBaseRefPtr const &inputScene,
+        HdContainerDataSourceHandle const &sceneIndexCreateArgs);
 
     UsdImagingGLEngine_Impl::_AppSceneIndicesSharedPtr _appSceneIndices;
+
+    HdSceneIndexBaseRefPtr
+    _CreateExecSceneIndices(const HdSceneIndexBaseRefPtr &inputScene);
 
     bool _CreateSceneIndicesAndRenderer(
         HdRendererPluginHandle const &plugin,
@@ -888,7 +901,7 @@ private:
 
     // Note that we'll only ever use one of _sceneIndex/_sceneDelegate
     // at a time.
-    UsdExecImagingStageSceneIndexInterfaceRefPtr _execStageSceneIndex;
+    UsdImagingStageSceneIndexInterfaceRefPtr _execStageSceneIndex;
     HdNoticeBatchingSceneIndexRefPtr _noticeBatchingStageSceneIndex;
     UsdImagingRootOverridesSceneIndexRefPtr _rootOverridesSceneIndex;
     UsdImagingLegacyRenderSettingsSceneIndexRefPtr _legacyRenderSettingsSceneIndex;
@@ -903,11 +916,31 @@ private:
     HdCachingSceneIndexRefPtr _cachingSceneIndex;
     HdSceneIndexBaseRefPtr _terminalSceneIndex;
 
+    // Create-args container data source returned by the renderer plugin
+    // (see HdRendererPlugin::GetSceneIndexCreateArgs). Retained so that
+    // GetRendererSettingsList() can source the render settings from it.
+    HdContainerDataSourceHandle _sceneIndexCreateArgs;
+
     /* Hydra 1.0 */
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
 
     bool _allowAsynchronousSceneProcessing = false;
     bool _enableUsdDrawModes = true;
+
+    /* Hydra 1.0 */
+    // A flag indicating whether the active render pass prim path
+    // on the scene globals scene index was set.
+    //
+    // Explanation: The active render passs prim path can be set by a
+    // client of UsdImagingGLEngine through SetActiveRenderSettingsPrimPath
+    // and or by reading the stage metadata when using the UsdImagingDelegate.
+    //
+    // Thus, we could get into a situation where a user explicitly sets it
+    // through the UsdImagingGLEngine API first and then we wrongfully change
+    // it later by reading the stage metadata.
+    //
+    // This flag is here to prevent this.
+    bool _setActiveRenderSettingsPrimPathCalled = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

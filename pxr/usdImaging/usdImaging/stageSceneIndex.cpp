@@ -19,7 +19,10 @@
 
 #include "pxr/base/tf/hash.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/primFlags.h"
 #include "pxr/usd/usd/primRange.h"
+#include "pxr/usd/usdHydra/primAPI.h"
 
 #include "pxr/base/tf/denseHashSet.h"
 
@@ -262,7 +265,10 @@ UsdImagingStageSceneIndex::GetPrim(const SdfPath &path) const
     if (!prim) {
         return s_emptyPrim;
     }
-    if (prim.IsInstanceProxy()) {
+    if (prim.IsInstanceProxy()
+        && !UsdHydraPrimAPI::ShouldExpandInstancesForPrim(prim)) {
+        // Instance proxy prims are not reflected into the scene index
+        // unless hydra:expandInstances=1 is set on an ancestor.
         return s_emptyPrim;
     }
     if (!_GetPrimPredicate()(prim)) {
@@ -312,13 +318,16 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
         return {};
     }
 
-    // _GetPrimPredicate() is configured to not traverse under instances.
-    // However, when the starting prim path is beneath an instance (i.e. an
-    // instance proxy prim path), GetFilteredChildren below will traverse its
-    // children (see Usd_CreatePredicateForTraversal).
-    // So, we explictly bail early here.
+    // Determine if we need to expand instances at this path.
+    bool expandInstances = false;
     if (prim.IsInstance() || prim.IsInstanceProxy()) {
-        return {};
+        expandInstances = UsdHydraPrimAPI::ShouldExpandInstancesForPrim(prim);
+        if (!expandInstances) {
+            // This is an instance or instance proxy, but we are not
+            // expanding the instance, so there are no children in the
+            // Hydra scene index.
+            return {};
+        }
     }
 
     SdfPathVector result;
@@ -336,8 +345,11 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
     if (!(entry.primAdapter &&
             entry.primAdapter->GetPopulationMode() ==
                 UsdImagingPrimAdapter::RepresentsSelfAndDescendents)) {
-        UsdPrimSiblingRange range =
-            prim.GetFilteredChildren(_GetPrimPredicate());
+        Usd_PrimFlagsPredicate predicate = _GetPrimPredicate();
+        if (expandInstances) {
+            predicate.TraverseInstanceProxies(true);
+        }
+        UsdPrimSiblingRange range = prim.GetFilteredChildren(predicate);
         for (const UsdPrim &child: range) {
             result.push_back(child.GetPath());
         }
@@ -362,20 +374,19 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
 
 // ---------------------------------------------------------------------------
 
+void UsdImagingStageSceneIndex::SetTime(UsdTimeCode time)
+{
+    if (_stageGlobals.GetTime() != time) {
+        _SetTime(time);
+    }
+}
+
 void UsdImagingStageSceneIndex::SetTime(
     UsdTimeCode time,
     const bool forceDirtyingTimeDeps)
 {
-    TRACE_FUNCTION();
-
-    if (_stageGlobals.GetTime() == time && !forceDirtyingTimeDeps) {
-        return;
-    }
-
-    HdSceneIndexObserver::DirtiedPrimEntries dirtied;
-    _stageGlobals.SetTime(time, &dirtied);
-    if (!dirtied.empty()) {
-        _SendPrimsDirtied(dirtied);
+    if (_stageGlobals.GetTime() != time || forceDirtyingTimeDeps) {
+        _SetTime(time);
     }
 }
 
@@ -410,6 +421,17 @@ void UsdImagingStageSceneIndex::SetStage(UsdStageRefPtr stage)
     }
 
     _Populate();
+}
+
+void UsdImagingStageSceneIndex::_SetTime(UsdTimeCode time)
+{
+    TRACE_FUNCTION();
+
+    HdSceneIndexObserver::DirtiedPrimEntries dirtied;
+    _stageGlobals.SetTime(time, &dirtied);
+    if (!dirtied.empty()) {
+        _SendPrimsDirtied(dirtied);
+    }
 }
 
 void UsdImagingStageSceneIndex::_Populate()
@@ -453,7 +475,14 @@ void UsdImagingStageSceneIndex::_PopulateSubtree(
         return;
     }
 
-    UsdPrimRange range(subtreeRoot, _GetPrimPredicate());
+    UsdPrimRange range(
+        subtreeRoot, UsdTraverseInstanceProxies(_GetPrimPredicate()));
+
+    // During traversal, keep track of whether we are expanding an instance.
+    // This will hold the root path of the instance being expanded, or
+    // otherwise hold an empty path.  This is used to minimize calls
+    // to ShouldExpandInstancesForPrim() during traversal.
+    SdfPath instanceExpansionRoot;
 
     for (auto it = range.begin(); it != range.end(); ++it) {
         const UsdPrim &prim = *it;
@@ -462,6 +491,39 @@ void UsdImagingStageSceneIndex::_PopulateSubtree(
             // path is "added"
             addedPrims->emplace_back(SdfPath::AbsoluteRootPath(), TfToken());
             continue;
+        }
+
+        // Instance traversal.
+        if (!instanceExpansionRoot.IsEmpty()) {
+            // We have been expanding an instance.
+            // Check if we are still under the same instance root.
+            if (prim.GetPath().HasPrefix(instanceExpansionRoot)) {
+                // Still expanding the same instance.
+                // Continue traversing its proxy prims.
+            } else {
+                // No longer under the same instance.
+                // Reset instance root, and check below if we have
+                // entered a new instnace.
+                instanceExpansionRoot = SdfPath::EmptyPath();
+            }
+        }
+        // Check if we have reached a new instance to expand.
+        if (instanceExpansionRoot.IsEmpty() && prim.IsInstance()) {
+            // We do not need to includeAncestors when checking this prim
+            // for Hydra-expansion state because we are already keeping
+            // track of that in our recursive namespace traversal.
+            constexpr bool includeAncestors = false;
+            if (UsdHydraPrimAPI::ShouldExpandInstancesForPrim(
+                    prim, includeAncestors)) {
+                // We have reached a new instance and it is marked
+                // for expansion.
+                instanceExpansionRoot = prim.GetPath();
+            } else {
+                // We have reached a new instance but it is not marked
+                // for expansion, so skip its children.  Note that
+                // this is the expected common case for instances.
+                it.PruneChildren();
+            }
         }
 
         const UsdImaging_AdapterManager::AdaptersEntry &entry =
@@ -548,6 +610,11 @@ UsdImagingStageSceneIndex::_OnUsdObjectsChanged(
             TF_DEBUG(USDIMAGING_CHANGES).Msg(
                     " - Property resync queued: %s\n",
                     it->GetText());
+            if (it->GetNameToken() == UsdHydraTokens->hydraExpandInstances) {
+                // Toggling hydra:expandInstances changes the topology of the
+                // scene index, so repopulate the affected subtree.
+                _usdPrimsToResync.push_back(it->GetPrimPath());
+            }
         }
 
         // Clear out recorded asset path dependencies since they are
@@ -584,6 +651,14 @@ UsdImagingStageSceneIndex::_OnUsdObjectsChanged(
                 }
             }
         } else if (it->IsPropertyPath()) {
+            if (it->GetNameToken() == UsdHydraTokens->hydraExpandInstances) {
+                // Toggling hydra:expandInstances changes the topology of the
+                // scene index, so repopulate the affected subtree.
+                _usdPrimsToResync.push_back(it->GetPrimPath());
+                TF_DEBUG(USDIMAGING_CHANGES).Msg(
+                        " - Resync queued due to expandInstances change: %s\n",
+                        it->GetText());
+            }
             _usdPropertiesToUpdate[it->GetPrimPath()]
                 .push_back(it->GetNameToken());
             TF_DEBUG(USDIMAGING_CHANGES).Msg(" - Property update queued: %s\n",

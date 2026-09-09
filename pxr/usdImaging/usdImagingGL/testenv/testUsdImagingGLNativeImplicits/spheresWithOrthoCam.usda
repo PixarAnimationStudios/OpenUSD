@@ -1,0 +1,166 @@
+#usda 1.0
+(
+    defaultPrim = "Spheres"
+    upAxis = "Z"
+)
+
+def Camera "main_cam"
+{
+    token projection = "orthographic"
+
+    float horizontalAperture = 240
+    float horizontalApertureOffset = 60
+    float verticalAperture = 180
+    float verticalApertureOffset = -20
+
+    double3 xformOp:translate = (0, 2, 30)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "Lights"
+{
+    def SphereLight "Left"
+    {
+        float inputs:exposure = 2.0
+        float inputs:radius = 40.0
+        float inputs:intensity = 1.0
+        color3f inputs:color = (1.0, 1.0, 1.0)
+
+        double3 xformOp:scale = (1.0, 1.0, 1.0)
+        double3 xformOp:translate = (10, 10, 40)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+    }
+}
+
+def Scope "Spheres"
+{
+    def Sphere "TopRight"
+    {
+        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        double size = 1
+        color3f[] primvars:displayColor (interpolation = "constant")
+        color3f[] primvars:displayColor = [(0,1,0)]
+        double3 xformOp:translate = (17.5, 8.5, -0.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "TopRightOutside"
+    {
+        float3[] extent = [(-1.5, -1.5, -1.5), (1.5, 1.5, 1.5)]
+        double size = 3
+        color3f[] primvars:displayColor (interpolation = "constant")
+        color3f[] primvars:displayColor = [(1,0,0)]
+        double3 xformOp:translate = (19.5, 10.5, -1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "BottomRight"
+    {
+        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        double size = 1
+        color3f[] primvars:displayColor (interpolation = "constant")
+        color3f[] primvars:displayColor = [(0,1,0)]
+        double3 xformOp:translate = (17.5, -8.5, -0.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "BottomRightOutside"
+    {
+        float3[] extent = [(-1.5, -1.5, -1.5), (1.5, 1.5, 1.5)]
+        double size = 3
+        color3f[] primvars:displayColor (interpolation = "constant")
+        color3f[] primvars:displayColor = [(1,0,0)]
+        double3 xformOp:translate = (19.5, -10.5, -1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "TopLeft"
+    {
+        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        double size = 1
+        color3f[] primvars:displayColor (interpolation = "constant")
+        color3f[] primvars:displayColor = [(0,1,0)]
+        double3 xformOp:translate = (-5.5, 8.5, -0.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "TopLeftOutside"
+    {
+        float3[] extent = [(-1.5, -1.5, -1.5), (1.5, 1.5, 1.5)]
+        double size = 3
+        color3f[] primvars:displayColor (interpolation = "constant")
+        color3f[] primvars:displayColor = [(1,0,0)]
+        double3 xformOp:translate = (-7.5, 10.5, -1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "BottomLeft"
+    {
+        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        double size = 1
+        color3f[] primvars:displayColor (interpolation = "constant")
+        color3f[] primvars:displayColor = [(0,1,0)]
+        double3 xformOp:translate = (-5.5, -8.5, -0.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "BottomLeftOutside"
+    {
+        float3[] extent = [(-1.5, -1.5, -1.5), (1.5, 1.5, 1.5)]
+        double size = 3
+        color3f[] primvars:displayColor (interpolation = "constant")
+        color3f[] primvars:displayColor = [(1,0,0)]
+        double3 xformOp:translate = (-7.5, -10.5, -1.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "A"
+    {
+        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        double size = 1
+        color3f[] primvars:displayColor (interpolation = "constant")
+        color3f[] primvars:displayColor = [(0,1,0)]
+        double3 xformOp:translate = (-0.5, -4.5, -0.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "B"
+    {
+        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        double size = 1
+        color3f[] primvars:displayColor (interpolation = "constant")
+        color3f[] primvars:displayColor = [(1,1,0)]
+        double3 xformOp:translate = (-2.5, -0.5, -0.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "C"
+    {
+        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        double size = 1
+        color3f[] primvars:displayColor (interpolation = "constant")
+        color3f[] primvars:displayColor = [(0,0,1)]
+        double3 xformOp:translate = (3.5, -3.5, -0.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "D"
+    {
+        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        double size = 1
+        color3f[] primvars:displayColor (interpolation = "constant")
+        color3f[] primvars:displayColor = [(0,0.5,0.5)]
+        double3 xformOp:translate = (1.5, 4.5, -0.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "E"
+    {
+        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+        double size = 1
+        color3f[] primvars:displayColor (interpolation = "constant")
+        color3f[] primvars:displayColor = [(1,0,1)]
+        double3 xformOp:translate = (5.5, 5.5, -0.5)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

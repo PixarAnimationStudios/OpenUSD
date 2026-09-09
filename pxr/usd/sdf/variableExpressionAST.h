@@ -158,7 +158,9 @@ private:
 
 /// \class VariableNode
 /// Abstract syntax tree node representing a raw variable reference,
-/// i.e. ${FOO}. 
+/// i.e. ${FOO}. Variables may also have a fallback value.  When evaluating
+/// a variable, if a fallback value is specified, it will be returned if
+/// the variable is not defined in the current context.
 /// 
 /// This does not include variable references within quoted strings, 
 /// i.e. "FOO_${BAR}". See LiteralNode.
@@ -172,17 +174,39 @@ public:
     void SetName(const std::string& name) { _name = name; }
     /// @}
 
+    /// \name Fallback Value
+    /// @{
+
+    /// Returns the fallback value for this variable. If no fallback value
+    /// is set, this value will be nullptr.
+    Node* GetFallbackValue() { return _fallbackValue.get(); }
+
+    /// \overload
+    const Node* GetFallbackValue() const { return _fallbackValue.get(); }
+
+    /// Sets the fallback value for this node. \p node must be a LiteralNode
+    /// or a ListNode. If \p node is not one of the allowed types a coding
+    /// error will be emitted and no changes will be made.
+    SDF_API void SetFallbackValue(const Node& node);
+
+    /// Clears any set fallback value
+    void ClearFallbackValue() { _fallbackValue = nullptr; }
+    /// @}
+
 private:
     friend class _NodeCreator;
 
-    VariableNode(std::string&& varName) :
-        _name(std::move(varName))
+    VariableNode(std::string&& varName, 
+                 std::unique_ptr<Node>&& fallbackValue) 
+        : _name(std::move(varName)),
+          _fallbackValue(std::move(fallbackValue))
     { }
 
     Node* _Clone() const final;
     SdfVariableExpression::Builder _GetExpressionBuilder() const final;
 
     std::string _name;
+    std::unique_ptr<Node> _fallbackValue;
 };
 
 /// \class ListNode

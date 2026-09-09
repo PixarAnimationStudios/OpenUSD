@@ -110,7 +110,8 @@ class TestUsdShadeShaderDef(unittest.TestCase):
 
             self.assertEqual(assetIdentifierInputNames[0], 'primvarFile')
             self.assertEqual(n.GetMetadata(), 
-                    {'domain': 'rendering',
+                    {'context': 'usda',
+                     'domain': 'rendering',
                      'primvars': '$primvarName',
                      'role': 'primvar',
                      'sdrUsdEncodingVersion': '-1'})
@@ -119,11 +120,11 @@ class TestUsdShadeShaderDef(unittest.TestCase):
                  'float4Val', 'int2Val', 'int3Val', 'int4Val', 'normalVector', 
                  'primvarFile', 'primvarName', 'someColor', 'someVector'])
             self.assertEqual(n.GetShaderOutputNames(), ['result', 'result2'])
-            if n.GetSourceType() == "OSL":
+            if n.GetShadingSystem() == "OSL":
                 self.assertEqual(
                     os.path.normcase(n.GetResolvedImplementationURI()),
                     os.path.normcase(osoPath))
-            elif n.GetSourceType() == "glslfx":
+            elif n.GetShadingSystem() == "glslfx":
                 self.assertEqual(
                     os.path.normcase(n.GetResolvedImplementationURI()),
                     os.path.normcase(glslfxPath))

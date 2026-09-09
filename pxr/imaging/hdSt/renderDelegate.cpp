@@ -204,8 +204,15 @@ HdStRenderDelegate::HdStRenderDelegate(HdRenderSettingsMap const& settingsMap)
     , _renderParam(std::make_unique<HdStRenderParam>())
     , _drawItemsCache(std::make_unique<HdSt_DrawItemsCache>())
 {
-    // Initialize the settings and settings descriptors.
-    _settingDescriptors = {
+    // Initialize the settings.
+    _PopulateDefaultSettings(
+        GetRenderSettingDescriptorsForPlugin());
+}
+
+const HdRenderSettingDescriptorList &
+HdStRenderDelegate::GetRenderSettingDescriptorsForPlugin()
+{
+    static const HdRenderSettingDescriptorList descriptors{
         HdRenderSettingDescriptor{
             "Enable Tiny Prim Culling",
             HdStRenderSettingsTokens->enableTinyPrimCulling,
@@ -242,14 +249,13 @@ HdStRenderDelegate::HdStRenderDelegate(HdRenderSettingsMap const& settingsMap)
             HdRenderSettingsTokens->enableExposureCompensation,
             VtValue(true) }
     };
-
-    _PopulateDefaultSettings(_settingDescriptors);
+    return descriptors;
 }
 
 HdRenderSettingDescriptorList
 HdStRenderDelegate::GetRenderSettingDescriptors() const
 {
-    return _settingDescriptors;
+    return GetRenderSettingDescriptorsForPlugin();
 }
 
 VtDictionary 

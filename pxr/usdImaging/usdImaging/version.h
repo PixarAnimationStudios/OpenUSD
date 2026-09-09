@@ -53,8 +53,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 //              UsdImagingSceneIndexCreateArgsSchema.
 // Version 26 - Added UsdImagingRenderPassPruneSceneIndexPlugin that is
 //              registered for all renderers.
+// Version 27 - Added UsdImagingSceneIndex::SceneIndexAppendCallbacks.
 
-#define USD_IMAGING_API_VERSION 26
+#define USD_IMAGING_API_VERSION 27
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

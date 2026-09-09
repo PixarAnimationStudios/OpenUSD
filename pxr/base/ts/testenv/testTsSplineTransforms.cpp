@@ -589,6 +589,84 @@ bool TestGetTimeScaled()
 
         TF_AXIOM(TsKnotMap({k3, k2, k1}) == tNegScaled.GetKnots());
     }
+
+    const TsSpline durSpline = GetTestSpline<GfDuration>();
+    const TsExtrapolation durPreExtrap = durSpline.GetPreExtrapolation();
+    const TsExtrapolation durPostExtrap = durSpline.GetPostExtrapolation();
+
+    // Check positive scale and offset of GfDuration spline
+    const TsSpline durScaled = durSpline.GetTimeScaled(scaleFactor,
+                                                       scaleOffset);
+    {
+        // Check scaled extrapolation
+        const TsExtrapolation pre = durScaled.GetPreExtrapolation();
+        const TsExtrapolation post = durScaled.GetPostExtrapolation();
+        TF_AXIOM(pre == durPreExtrap);
+        TF_AXIOM(post.mode == durPostExtrap.mode);
+        TF_AXIOM(post.loopBoundaryTime.value() ==
+                 durPostExtrap.loopBoundaryTime.value()
+                 * scaleFactor + scaleOffset);
+    }
+    {
+        // Check knots
+        TsKnotMap expectedKnots;
+        for (const TsKnot& durKnot : durSpline.GetKnots()) {
+            TsKnot expected = durKnot;
+            expected.SetTime(durKnot.GetTime() * scaleFactor + scaleOffset);
+            expected.SetPreTanWidth(durKnot.GetPreTanWidth() * scaleFactor);
+            expected.SetPostTanWidth(durKnot.GetPostTanWidth() * scaleFactor);
+
+            GfDuration value;
+            TF_AXIOM(durKnot.GetValue(&value));
+            expected.SetValue(value * scaleFactor);
+            if (durKnot.IsDualValued()) {
+                TF_AXIOM(durKnot.GetPreValue(&value));
+                expected.SetPreValue(value * scaleFactor);
+            }
+
+            expectedKnots.insert(expected);
+        }
+        TF_AXIOM(expectedKnots == durScaled.GetKnots());
+    }
+
+    // Check negative scale and offset of GfDuration spline
+    const TsSpline durNegScaled = durSpline.GetTimeScaled(-scaleFactor,
+                                                      scaleOffset);
+    {
+        // Check negative scaled extrapolation
+        const TsExtrapolation pre = durNegScaled.GetPreExtrapolation();
+        const TsExtrapolation post = durNegScaled.GetPostExtrapolation();
+        TF_AXIOM(pre.mode == durPostExtrap.mode);
+        TF_AXIOM(pre.loopBoundaryTime.value() ==
+                 durPostExtrap.loopBoundaryTime.value()
+                 * (-scaleFactor) + scaleOffset);
+        TF_AXIOM(post == durPreExtrap);
+    }
+    {
+        // Build expected knots and check them
+        const TfType t = Ts_GetType<GfDuration>();
+        TsKnot k1(t);
+        TsKnot k2(t);
+        TsKnot k3(t);
+
+        k3.SetTime(4.0 * (-scaleFactor) + scaleOffset);
+        k3.SetValue(GfDuration(2.0 * (-scaleFactor)));
+        k3.SetNextInterpolation(TsInterpLinear);
+
+        k2.SetTime(2.0 * (-scaleFactor) + scaleOffset);
+        k2.SetValue(GfDuration(3.0 * (-scaleFactor)));
+        k2.SetPreValue(GfDuration(4.0 * (-scaleFactor)));
+        k2.SetPostTanWidth(0.5 * scaleFactor);
+        k2.SetPostTanSlope(GfDuration(-0.5));
+        k2.SetNextInterpolation(TsInterpCurve);
+
+        k1.SetTime(scaleOffset);
+        k1.SetValue(GfDuration(2.0 * (-scaleFactor)));
+        k1.SetPreTanWidth(0.25 * scaleFactor);
+        k1.SetPreTanSlope(GfDuration(+0.5));
+
+        TF_AXIOM(TsKnotMap({k3, k2, k1}) == durNegScaled.GetKnots());
+    }
     return true;
 }
 

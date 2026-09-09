@@ -7,45 +7,74 @@
 #include "hdPrman/cameraContext.h"
 
 #include "hdPrman/camera.h"
+#include "hdPrman/renderParam.h"
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/utils.h"
 
-#include "Riley.h"
-#include "RixShadingUtils.h"
-
+#include "pxr/imaging/cameraUtil/conformWindow.h"
+#include "pxr/imaging/cameraUtil/framing.h"
 #include "pxr/imaging/hd/camera.h"
-#include "pxr/base/gf/math.h"
-#include "pxr/base/tf/envSetting.h"
+#include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/gf/rect2i.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/staticData.h"
+
+#include "pxr/pxr.h"
+
+#include <Riley.h>
+#include <RileyIds.h>
+#include <RiTypesHelper.h>
+#include <RixShadingUtils.h>
+#include <stats/Roz.h>
 
 #include <cmath>
+#include <mutex>
+#include <optional>
+#include <shared_mutex>
+#include <string>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static const RtUString s_projectionNodeName("cam_projection");
+static constexpr float f_fallbackFov = 60.f;
 
-HdPrman_CameraContext::HdPrman_CameraContext()
-  : _policy(CameraUtilFit)
+HdPrman_CameraContext::HdPrman_CameraContext(
+    HdPrman_RenderParam* const renderParam)
+  : _renderParam(renderParam)
+  , _policy(CameraUtilFit)
   , _disableDepthOfField(false)
   , _invalid(false)
 {
+    // Seed the cached params hash from the (empty) initial value, so that
+    // SetProjectionOverride's compare-and-set sees no change when it is first
+    // called with an absent/empty override. Hashing a hard-coded 0 instead would
+    // make that first call invalidate spuriously on every render.
+    _projectionParamsOverrideHash = _projectionParamsOverride.Hash();
 }
 
 void
-HdPrman_CameraContext::MarkCameraInvalid(const SdfPath &path)
+HdPrman_CameraContext::MarkCameraInvalidIfActive(const SdfPath &path)
 {
     // No need to invalidate if camera that is not the active camera
-    // changed.
-    if (path == _cameraPath) {
+    // changed. Compared against the requested path, so a camera nominated
+    // before it exists in the render index still invalidates.
+    if (path == _requestedActiveCameraPath) {
         _invalid = true;
     }
 }
 
 void
-HdPrman_CameraContext::SetCameraPath(const SdfPath &path)
+HdPrman_CameraContext::SetActiveCameraPath(const SdfPath &path)
 {
-    if (_cameraPath != path) {
+    if (_requestedActiveCameraPath != path) {
         _invalid = true;
-        _cameraPath = path;
+        _requestedActiveCameraPath = path;
     }
 }
 
@@ -83,617 +112,304 @@ HdPrman_CameraContext::IsInvalid() const
     return _invalid;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// Screen window space: imagine a plane at in front of the camera (and parallel
-// to the camera) with coordinates such that the square [-1,1]^2 spans a pyramid
-// with angle being the (horizontal) FOV. This is the screen window space and is
-// used to parametrize the rays from the camera.
-//
-// Image space: coordinates of the pixels in the rendered image with the top
-// left pixel having coordinate (0,0), i.e., y-down.
-// The display window from the camera framing is in image space as well
-// as the width and height of the render buffer.
-//
-// We want to map the screen window space to the image space such that the
-// conformed camera frustum from the scene delegate maps to the display window
-// of the CameraUtilFraming. This is achieved by the following code.
-//
-// Compute screen window for given camera.
-//
-static
-GfRange2d
-_GetScreenWindow(const HdCamera * const cam)
+HdPrman_CameraContext::ActiveCameraOverlay
+HdPrman_CameraContext::GetActiveCameraOverlay(
+    const std::optional<GfVec2i> renderBufferSize) const
 {
-    const GfVec2d size(
-        cam->GetHorizontalAperture(),       cam->GetVerticalAperture());
-    const GfVec2d offset(
-        cam->GetHorizontalApertureOffset(), cam->GetVerticalApertureOffset());
-        
-    const GfRange2d filmbackPlane(-0.5 * size + offset, +0.5 * size + offset);
-
-    if (cam->GetProjection() == HdCamera::Orthographic) {
-        return filmbackPlane;
-    }
-
-    if (cam->GetFocalLength() == 0.0f || cam->GetHorizontalAperture() == 0.0f) {
-        return filmbackPlane;
-    }
-
-    // Note that for perspective projection and with no horizontal aperture,
-    // our screen widndow's x-coordinate are in [-1, 1].
-    // Divide by appropriate factor to get to this.
-    return filmbackPlane / double(0.5 * cam->GetHorizontalAperture());
-}
-
-// Compute the screen window we need to give to RenderMan. This screen
-// window is mapped to the entire render buffer (in image space) by
-// RenderMan.
-//
-// The input is the screenWindowForDisplayWindow: the screen window
-// corresponding to the camera from the scene delegate conformed to match
-// the aspect ratio of the display window.
-//
-// Together with the displayWindow, this input establishes how screen
-// window space is mapped to image space. We know need to take the
-// render buffer rect in image space and convert it to screen window
-// space.
-// 
-static
-GfRange2d
-_ConvertScreenWindowForDisplayWindowToRenderBuffer(
-    const GfRange2d &screenWindowForDisplayWindow,
-    const GfRange2f &displayWindow,
-    const GfVec2i &renderBufferSize)
-{
-    // Scaling factors to go from image space to screen window space.
-    const double screenWindowWidthPerPixel =
-        screenWindowForDisplayWindow.GetSize()[0] /
-        displayWindow.GetSize()[0];
-        
-    const double screenWindowHeightPerPixel =
-        screenWindowForDisplayWindow.GetSize()[1] /
-        displayWindow.GetSize()[1];
-
-    // Assuming an affine mapping between screen window space
-    // and image space, compute what (0,0) corresponds to in
-    // screen window space.
-    const GfVec2d screenWindowMin(
-        screenWindowForDisplayWindow.GetMin()[0]
-        - screenWindowWidthPerPixel * displayWindow.GetMin()[0],
-        // Note that image space is y-Down and screen window
-        // space is y-Up, so this is a bit tricky...
-        screenWindowForDisplayWindow.GetMax()[1]
-        + screenWindowHeightPerPixel * (
-            displayWindow.GetMin()[1] - renderBufferSize[1]));
-        
-    const GfVec2d screenWindowSize(
-        screenWindowWidthPerPixel * renderBufferSize[0],
-        screenWindowHeightPerPixel * renderBufferSize[1]);
-    
-    return GfRange2d(screenWindowMin, screenWindowMin + screenWindowSize);
-}
-
-static
-double
-_SafeDiv(const double a, const double b)
-{
-    if (b == 0) {
-        TF_CODING_ERROR(
-            "Invalid display window in render pass state for hdPrman");
-        return 1.0;
-    }
-    return a / b;
-}
-
-// Compute the aspect ratio of the display window taking the
-// pixel aspect ratio into account.
-static
-double
-_GetDisplayWindowAspect(const CameraUtilFraming &framing)
-{
-    const GfVec2f &size = framing.displayWindow.GetSize();
-    return framing.pixelAspectRatio * _SafeDiv(size[0], size[1]);
-}
-
-// Convert a window into the format expected by RenderMan
-// (xmin, xmax, ymin, ymax).
-static
-GfVec4f
-_ToVec4f(const GfRange2d &window)
-{
-    return { float(window.GetMin()[0]), float(window.GetMax()[0]),
-             float(window.GetMin()[1]), float(window.GetMax()[1]) };
-}
-
-// Get respective projection shader name for projection.
-static
-const RtUString&
-_ComputeProjectionShader(const HdCamera::Projection projection,
-                         const RtUString& projectionOverride)
-{
-    static const RtUString us_PxrCamera("PxrCamera");
-    static const RtUString us_PxrOrthographic("PxrOrthographic");
-
-    // Use projection override if it is not default perspective,
-    // otherwise defer to camera to decide on orthographic vs perspective.
-    // PxrPerspective here matches default of _projection in HdPrman_RenderPass,
-    // which matches default in Solaris render settings.
-    static const RtUString us_PxrPerspective("PxrPerspective");
-    if(!projectionOverride.Empty() && projectionOverride != us_PxrPerspective) {
-        return projectionOverride;
-    }
-
-    switch (projection) {
-    case HdCamera::Perspective:
-        return us_PxrCamera;
-    case HdCamera::Orthographic:
-        return us_PxrOrthographic;
-    }
-
-    // Make compiler happy.
-    return us_PxrCamera;
-}
-
-// Compute parameters for the camera riley::ShadingNode for perspective camera
-RtParamList
-_ComputePerspectiveNodeParams(
-    const HdPrmanCamera * const camera, bool disableDepthOfField)
-{
-    RtParamList result;
-
-    static const RtUString us_lensType("lensType");
-    // lensType values in PxrProjection.
-    constexpr int lensTypeLensWarp = 2;
-
-    // Pick a PxrProjection lens type that supports depth of field
-    // and lens distortion.
-    result.SetInteger(us_lensType, lensTypeLensWarp);
-
-    // FOV settings.
-    const float focalLength = camera->GetFocalLength();
-    if (focalLength > 0) {
-        result.SetFloat(RixStr.k_focalLength, focalLength);
-        const float r = camera->GetHorizontalAperture() / focalLength;
-        const float fov = 2.0f * GfRadiansToDegrees(std::atan(0.5f * r));
-        result.SetFloat(RixStr.k_fov, fov);
-    } else {
-        // If focal length is bogus, don't set it.
-        // Fallback to sane FOV.
-        result.SetFloat(RixStr.k_fov, 90.0f);
-    }
-
-    // Depth of field settings.
-    const float focusDistance = camera->GetFocusDistance();
-    if (focusDistance > 0.0f) {
-        result.SetFloat(RixStr.k_focalDistance, focusDistance);
-    } else {
-        // If value is bogus, set to sane value.
-        result.SetFloat(RixStr.k_focalDistance, 1000.0f);
-    }
-
-    const float fStop = camera->GetFStop();
-    if (disableDepthOfField || fStop <= 0.0f || focusDistance <= 0.0f) {
-        // If depth of field is disabled or the values are bogus, 
-        // disable depth of field by setting f-Stop to infinity, 
-        // and a sane value for focalDistance. 
-        result.SetFloat(RixStr.k_fStop, RI_INFINITY);
-    } else {
-        result.SetFloat(RixStr.k_fStop, fStop);
-    }
-
-    // Not setting fov frame begin/end - thus we do not support motion blur
-    // due to changing FOV.
-
-    // Some of these names might need to change when switching to PxrCamera.
-    static const RtUString us_radial1("radial1");
-    static const RtUString us_radial2("radial2");
-    static const RtUString us_distortionCtr("distortionCtr");
-    static const RtUString us_lensSqueeze("lensSqueeze");
-    static const RtUString us_lensAsymmetryX("lensAsymmetryX");
-    static const RtUString us_lensAsymmetryY("lensAsymmetryY");
-    static const RtUString us_lensScale("lensScale");
-
-    static const RtUString us_dofMult("dofMult");
-
-    result.SetFloat(
-        us_radial1,
-        camera->GetLensDistortionK1());
-    result.SetFloat(
-        us_radial2,
-        camera->GetLensDistortionK2());
-    result.SetFloatArray(
-        us_distortionCtr,
-        camera->GetLensDistortionCenter().data(),
-        2);
-    result.SetFloat(
-        us_lensSqueeze,
-        camera->GetLensDistortionAnaSq());
-    result.SetFloat(
-        us_lensAsymmetryX,
-        camera->GetLensDistortionAsym()[0]);
-    result.SetFloat(
-        us_lensAsymmetryY,
-        camera->GetLensDistortionAsym()[1]);
-    result.SetFloat(
-        us_lensScale,
-        camera->GetLensDistortionScale());
-
-    result.SetFloat(
-        us_dofMult,
-        camera->GetDofMult());
-
-    return result;
-}
-
-// Compute parameters for the camera riley::ShadingNode for orthographic camera
-RtParamList
-_ComputeOrthographicNodeParams(const HdPrmanCamera * const camera)
-{
-    return {};
-}
-
-// Compute parameters for the camera riley::ShadingNode
-static
-RtParamList
-_ComputeNodeParams(const HdPrmanCamera * const camera, bool disableDepthOfField, const RtUString& projectionOverride)
-{
-    static const RtUString us_PxrPerspective("PxrPerspective");
-    static const RtUString us_PxrCamera("PxrCamera");
-    if(!projectionOverride.Empty() && (projectionOverride != us_PxrPerspective && projectionOverride != us_PxrCamera)) {
-        return {};
-    }
-
-    switch(camera->GetProjection()) {
-    case HdCamera::Perspective:
-        return _ComputePerspectiveNodeParams(camera, disableDepthOfField);
-    case HdCamera::Orthographic:
-        return _ComputeOrthographicNodeParams(camera);
-    }
-
-    // Make compiler happy
-    return _ComputePerspectiveNodeParams(camera, disableDepthOfField);
-}
-
-// Compute params given to Riley::ModifyCamera
-RtParamList
-HdPrman_CameraContext::_ComputeCameraParams(
-    const GfRange2d &screenWindow,
-    const HdCamera * const camera) const
-{
-    RtParamList result;
-
-    // Following parameters are currently set on the Riley camera:
-    // 'nearClip' (float): near clipping distance
-    // 'farClip' (float): near clipping distance
-    // 'shutterOpenTime' (float): beginning of normalized shutter interval
-    // 'shutterCloseTime' (float): end of normalized shutter interval
-
-    // Parameters that are not handled (and use their defaults):
-    // 'focusregion' (float):
-    // 'dofaspect' (float): dof aspect ratio
-    // 'apertureNSides' (int):
-    // 'apertureAngle' (float):
-    // 'apertureRoundness' (float):
-    // 'apertureDensity' (float):
-
-    // Parameter that is handled during Riley camera creation:
-    // Rix::k_shutteropening (float[8] [c1 c2 d1 d2 e1 e2 f1 f2): additional
-    // control points
-
-    // Do not use clipping range if scene delegate did not provide one.
-    // Note that we do a sanity check slightly stronger than
-    // GfRange1f::IsEmpty() in that we do not allow the range to contain
-    // only exactly one point.
-    const GfRange1f &clippingRange = camera->GetClippingRange();
-    if (clippingRange.GetMin() < clippingRange.GetMax()) {
-        result.SetFloat(RixStr.k_nearClip, clippingRange.GetMin());
-        result.SetFloat(RixStr.k_farClip, clippingRange.GetMax());
-    }
-
-    const HdPrmanCamera * const hdPrmanCamera =
-        dynamic_cast<const HdPrmanCamera * const>(camera);
-    const HdPrmanCamera::ShutterCurve &shutterCurve
-        = hdPrmanCamera->GetShutterCurve();
-
-    if (shutterCurve.shutterOpenTime) {
-        result.SetFloat(
-            RixStr.k_shutterOpenTime, *shutterCurve.shutterOpenTime);
-    }
-    if (shutterCurve.shutterCloseTime) {
-        result.SetFloat(
-            RixStr.k_shutterCloseTime, *shutterCurve.shutterCloseTime);
-    }
-    if (shutterCurve.shutteropening) {
-        result.SetFloatArray(
-            RixStr.k_shutteropening,
-            shutterCurve.shutteropening->data(),
-            shutterCurve.shutteropening->size());
-    }
-
-    result.SetFloat(RixStr.k_dofaspect,
-                    hdPrmanCamera->GetDofAspect());
-    result.SetFloat(RixStr.k_apertureAngle,
-                    hdPrmanCamera->GetApertureAngle());
-    result.SetFloat(RixStr.k_apertureDensity,
-                    hdPrmanCamera->GetApertureDensity());
-    result.SetInteger(RixStr.k_apertureNSides,
-                      hdPrmanCamera->GetApertureNSides());
-    result.SetFloat(RixStr.k_apertureRoundness,
-                    hdPrmanCamera->GetApertureRoundness());
-
-    const GfVec4f s = _ToVec4f(screenWindow);
-    result.SetFloatArray(RixStr.k_Ri_ScreenWindow, s.data(), 4);
-
-    return result;
-}
-
-// Convert Hydra time sampled matrices to renderman matrices.
-// Optionally flip z-direction.
-static
-TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>
-_ToRtMatrices(
-    const HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> &samples,
-    const bool flipZ = false)
-{
-    using _RtMatrices = TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>;
-    _RtMatrices matrices(samples.count);
-
-    static const GfMatrix4d flipZMatrix(GfVec4d(1.0, 1.0, -1.0, 1.0));
-    
-    for (size_t i = 0; i < samples.count; ++i) {
-        matrices[i] = HdPrman_Utils::GfMatrixToRtMatrix(
-            flipZ
-                ? flipZMatrix * samples.values[i]
-                : samples.values[i]);
-    }
-
-    return matrices;
-}
-
-GfRange2d
-HdPrman_CameraContext::_ComputeConformedScreenWindow(
-    const HdCamera * const camera) const
-{
-    return
-        CameraUtilConformedWindow(
-            _GetScreenWindow(camera),
-            _policy,
-            _GetDisplayWindowAspect(_framing));
+    return ActiveCameraOverlay{
+        _framing,
+        _policy,
+        _projectionNameOverride,
+        _projectionParamsOverride,
+        _disableDepthOfField,
+        renderBufferSize };
 }
 
 void
-HdPrman_CameraContext::UpdateRileyCameraAndClipPlanes(
-    riley::Riley * const riley,
-    const HdRenderIndex * const renderIndex)
+HdPrman_CameraContext::UpdateActiveCamera(
+    const HdRenderIndex* const renderIndex,
+    const std::optional<GfVec2i> renderBufferSize)
 {
-    const HdPrmanCamera * const camera =
-        GetCamera(renderIndex);
-    if (!camera) {
-        // Bail if no camera.
-        return;
+    if (!_renderParam || !renderIndex) { return; }
+    HdPrmanCamera* const camera =
+        GetActiveCamera(renderIndex);
+
+    const ActiveCameraOverlay overlay =
+        GetActiveCameraOverlay(renderBufferSize);
+    // Remember what we applied so ReapplyActiveCamera can replay it after a
+    // Riley::SetOptions.
+    _lastAppliedOverlay = overlay;
+
+    if (camera) {
+        camera->UpdateRileyCameraForActive(_renderParam, overlay);
+        _UpdateActiveCameraIds(camera);
+    } else {
+        // Use the fallback camera instead. Note this resets only the resolved
+        // identity; _requestedActiveCameraPath is left alone so a camera
+        // nominated before its Sprim appeared is still recognized when it does.
+        _ApplyFallbackOverlay(overlay);
+        _activeCamera = _fallbackCamera;
     }
 
-    const GfRange2d conformedScreenWindow =
-        _ComputeConformedScreenWindow(camera);
-
-    _UpdateRileyCamera(
-        riley,
-        conformedScreenWindow,
-        camera);
-    _UpdateClipPlanes(
-        riley,
-        camera);
+    _BindActiveCamera(renderIndex);
 }
 
 void
-HdPrman_CameraContext::UpdateRileyCameraAndClipPlanesInteractive(
-    riley::Riley * const riley,
-    const HdRenderIndex * const renderIndex,
-    const GfVec2i &renderBufferSize)
+HdPrman_CameraContext::_BindActiveCamera(const HdRenderIndex* const renderIndex)
 {
-    const HdPrmanCamera * const camera =
-        GetCamera(renderIndex);
-    if (!camera) {
-        // Bail if no camera.
+    if (!_renderParam) { return; }
+
+    if (_activeCamera.id == _overlayCamera.id &&
+        _activeCamera.path == _overlayCamera.path) {
         return;
     }
 
-    // The screen window we would need to use if we were targeting
-    // the display window.
-    const GfRange2d conformedScreenWindow =
-        _ComputeConformedScreenWindow(camera);
-
-    // But instead, we target the rect of pixels in the render
-    // buffer baking the AOVs, so we need to convert the
-    // screen window.
-    _UpdateRileyCamera(
-        riley,
-        _ConvertScreenWindowForDisplayWindowToRenderBuffer(
-            conformedScreenWindow,
-            _framing.displayWindow,
-            renderBufferSize),
-        camera);
-    _UpdateClipPlanes(
-        riley,
-        camera);
+    _RevertPrevious(renderIndex, _activeCamera.path);
+    if (riley::Riley* const riley = _renderParam->AcquireRiley()) {
+        riley->SetDefaultDicingCamera(_activeCamera.id);
+        _renderParam->GetRenderViewContext()
+            .SetCameraId(_activeCamera.id, riley);
+    }
+    _overlayCamera = _activeCamera;
 }
 
 void
-HdPrman_CameraContext::_UpdateRileyCamera(
-    riley::Riley * const riley,
-    const GfRange2d &screenWindow,
-    const HdPrmanCamera * const camera)
+HdPrman_CameraContext::CommitActiveCameraDuringSync(
+    const HdRenderIndex* const renderIndex,
+    HdPrmanCamera* const camera)
 {
-    // The riley camera should have been created before we get here.
-    if (!TF_VERIFY(_cameraId != riley::CameraId::InvalidId())) {
-        return;
-    }
+    if (!_renderParam || !camera) { return; }
 
-    RtParamList params = _ComputeCameraParams(screenWindow, camera);
-
-    // This method does backward compatibility for older USD versions
-    // as well as support for some camera settings not supported by
-    // the studio hdprman.
-    // The camera params are split into groups indicating how they're inherited:
-    //  customParams: defer to those computed above via _ComputeCameraParams
-    //                This allows the newer way of specifying them to win.
-    //  customParamsOverride: certain params are available with custom names
-    //                in Solaris, and we want those to override any hardcoded
-    //                values from _ComputeCameraParams (eg. shutteropening)
-    RtParamList customParams;
-    RtParamList customParamsOverride;
-    RtParamList customNodeParams;
-    camera->SetRileyCameraParams(customParams,
-                                 customParamsOverride,
-                                 customNodeParams);
-    // If any duplicates, the ones in params win
-    params.Inherit(customParams);
-    // If any duplicates, the ones in customParamsOverride win
-    params.Update(customParamsOverride);
-
-    // Favor ri:projection over _projectionNameOverride
-    riley::ShadingNode node = camera->GetProjectionNode();
-
-    if (node.type != riley::ShadingNode::Type::k_Invalid) {
-        RtParamList cameraNodeParams = _ComputeNodeParams(camera, _disableDepthOfField, node.name);
-        node.params.Inherit(cameraNodeParams);
-    }
-    else {
-        node = {
-            riley::ShadingNode::Type::k_Projection,
-            _ComputeProjectionShader(camera->GetProjection(),
-                                     _projectionNameOverride),
-            s_projectionNodeName,
-            _ComputeNodeParams(camera, _disableDepthOfField, _projectionNameOverride)
-        };
-        static const RtUString us_PxrPerspective("PxrPerspective");
-        static const RtUString us_PxrCamera("PxrCamera");
-        if (!_projectionNameOverride.Empty() && (_projectionNameOverride == us_PxrPerspective || _projectionNameOverride == us_PxrCamera)) {
-            node.params.Inherit(customNodeParams);
-        }
-        node.params.Update(_projectionParamsOverride);
-    }
-
-    // Coordinate system notes.
+    // Riley requires, before any geometry prototype is created, that the active
+    // camera already exist with its real transform (including motion samples)
+    // and already be bound as the scene's default dicing camera -- dicing
+    // happens at prototype creation and reads the dicing camera's projection and
+    // transform, so re-binding afterwards cannot retroactively fix it.
     //
-    // # Hydra & USD are right-handed
-    // - Camera space is always Y-up, looking along -Z.
-    // - World space may be either Y-up or Z-up, based on stage metadata.
-    // - Individual prims may be marked to be left-handed, which
-    //   does not affect spatial coordinates, it only flips the
-    //   winding order of polygons.
-    //
-    // # Prman is left-handed
-    // - World is Y-up
-    // - Camera looks along +Z.
+    // HdRenderIndex::SyncAll syncs all Sprims before any Rprim, so the active
+    // camera's own Sync is the last point that reliably precedes all geometry.
+    // That is why this runs here rather than from the render pass.
+    const ActiveCameraOverlay overlay = GetActiveCameraOverlay();
 
-    using _HdTimeSamples =
-        HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES>;
-    using _RtMatrices =
-        TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>;    
-
-    // Use time sampled transforms authored on the scene camera.
-    const _HdTimeSamples &sampleXforms = camera->GetTimeSampleXforms();
-
-    // Riley camera xform is "move the camera", aka viewToWorld.
-    // Convert right-handed Y-up camera space (USD, Hydra) to
-    // left-handed Y-up (Prman) coordinates.  This just amounts to
-    // flipping the Z axis.
-    const _RtMatrices rtMatrices =
-        _ToRtMatrices(sampleXforms, /* flipZ = */ true);
-
-    const riley::Transform transform{
-        unsigned(sampleXforms.count),
-        rtMatrices.data(),
-        sampleXforms.times.data() };
-
-    // Commit camera.
-    riley->ModifyCamera(
-        _cameraId, 
-        &node,
-        &transform,
-        &params);
-}
-
-// Hydra expresses clipping planes as a plane equation
-// in the camera object space.
-// Riley API expresses clipping planes in terms of a
-// time-sampled transform, a normal, and a point.
-static
-bool
-_ToClipPlaneParams(const GfVec4d &plane, RtParamList * const params)
-{
-    static const RtUString us_planeNormal("planeNormal");
-    static const RtUString us_planeOrigin("planeOrigin");
-    
-    const GfVec3f direction(plane[0], plane[1], plane[2]);
-    const float directionLength = direction.GetLength();
-    if (directionLength == 0.0f) {
-        return false;
+    if (overlay.framing.IsValid()) {
+        _lastAppliedOverlay = overlay;
+        camera->UpdateRileyCameraForActive(_renderParam, overlay);
+    } else {
+        // The framing is not resolved until the render pass runs, and conforming
+        // against an invalid framing would divide by a zero-sized display
+        // window. Commit the camera's intrinsic screen window for now -- what
+        // matters here is that the camera exists with the right transform and
+        // projection; the render pass corrects the screen window via
+        // ModifyCamera once the framing is known.
+        camera->UpdateRileyCameraForInactive(_renderParam);
     }
-    // Riley API expects a unit-length normal.
-    const GfVec3f norm = direction / directionLength;
-    params->SetNormal(us_planeNormal,
-                      RtNormal3(norm[0], norm[1], norm[2]));
-    // Determine the distance along the normal
-    // to the plane.
-    const float distance = -plane[3] / directionLength;
-    // The origin can be any point on the plane.
-    const RtPoint3 origin(norm[0] * distance,
-                          norm[1] * distance,
-                          norm[2] * distance);
-    params->SetPoint(us_planeOrigin, origin);
 
-    return true;
+    _UpdateActiveCameraIds(camera);
+    _BindActiveCamera(renderIndex);
 }
 
 void
-HdPrman_CameraContext::_UpdateClipPlanes(
-    riley::Riley * const riley,
-    const HdPrmanCamera * const camera)
+HdPrman_CameraContext::ReapplyActiveCamera(
+    const HdRenderIndex* const renderIndex)
 {
-    _DeleteClipPlanes(riley);
+    if (!_renderParam) { return; }
 
-    // Create clipping planes
-    const std::vector<GfVec4d> &clipPlanes = camera->GetClipPlanes();
-    if (clipPlanes.empty()) {
+    // Nothing has been committed yet, so there is nothing to re-assert. This is
+    // the case for the very first SetOptions, issued from
+    // HdPrman_RenderParam::Begin before _CreateInternalPrims has created even
+    // the fallback camera.
+    if (!_lastAppliedOverlay) { return; }
+
+    // An empty active path means the fallback camera is active (both
+    // ActivateFallbackCamera and UpdateActiveCamera's else-branch assign
+    // _activeCamera = _fallbackCamera, whose path is never set).
+    if (_activeCamera.path.IsEmpty()) {
+        _ApplyFallbackOverlay(*_lastAppliedOverlay);
         return;
     }
 
-    using _HdTimeSamples =
-        HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES>;
-    using _RtMatrices =
-        TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>;
+    // Re-resolve the camera from the render index by path on every call rather
+    // than caching the pointer: the camera Sprim can be dropped between two
+    // SetOptions calls, and a stale pointer here would outlive it.
+    if (!renderIndex) { return; }
+    HdPrmanCamera* const camera = GetActiveCamera(renderIndex);
+    if (!camera) { return; }
 
-    // Use time sampled transforms authored on the scene camera.
-    const _HdTimeSamples &sampleXforms = camera->GetTimeSampleXforms();
-    const _RtMatrices rtMatrices = _ToRtMatrices(sampleXforms);
+    // Only re-commit a camera that riley already knows about.
+    // HdPrmanCamera::_CommitToRiley creates the riley camera when its id is
+    // still invalid, and this hook is reached from paths where that has not
+    // happened yet -- notably from within HdPrmanCamera::Sync itself, via
+    // SetRileyShutterIntervalFromCameraContextCameraPath, which runs before the
+    // DirtyTransform block has sampled any transform. Creating there would
+    // register the camera with zero motion samples.
+    if (_activeCamera.id == riley::CameraId::InvalidId()) { return; }
 
-    const riley::Transform transform {
-        unsigned(sampleXforms.count),
-        rtMatrices.data(),
-        sampleXforms.times.data() };
+    // Deliberately narrower than UpdateActiveCamera: this republishes only the
+    // camera's parameters. SetOptions does not disturb the default dicing
+    // camera or the render view's camera binding, so the transition work done on
+    // an identity change is not repeated, and RecommitRileyCameraForActive
+    // leaves the clipping planes and the camera-name registry alone.
+    camera->RecommitRileyCameraForActive(_renderParam, *_lastAppliedOverlay);
+}
 
-    for (const GfVec4d &plane: clipPlanes) {
-        RtParamList params;
-        if (_ToClipPlaneParams(plane, &params)) {
-            _clipPlaneIds.push_back(
-                riley->CreateClippingPlane(transform, params));
+void
+HdPrman_CameraContext::_UpdateActiveCameraIds(
+    const HdPrmanCamera* const camera)
+{
+    _activeCamera.id = camera->GetRileyCameraId();
+    _activeCamera.name = camera->GetRileyCameraName();
+    _activeCamera.path = camera->GetId();
+}
+
+void
+HdPrman_CameraContext::_RevertPrevious(
+    const HdRenderIndex* const renderIndex,
+    const SdfPath& newActivePath)
+{
+    if (_overlayCamera.id == riley::CameraId::InvalidId()) { return; }
+
+    const SdfPath prevPath = _overlayCamera.path;
+    if (prevPath.IsEmpty()) {
+        _RevertFallback();
+        return;
+    }
+    if (prevPath == newActivePath) { return; }
+
+    auto* const prevCamera = static_cast<HdPrmanCamera*>(
+        renderIndex->GetSprim(HdPrimTypeTokens->camera, prevPath));
+    if (!prevCamera) {
+        return;
+    }
+
+    if (!_renderParam) { return; }
+    prevCamera->UpdateRileyCameraForInactive(_renderParam);
+}
+
+void
+HdPrman_CameraContext::ActivateFallbackCamera()
+{
+    _activeCamera = _fallbackCamera;
+
+    const ActiveCameraOverlay overlay = GetActiveCameraOverlay();
+    _lastAppliedOverlay = overlay;
+    _ApplyFallbackOverlay(overlay);
+
+    _overlayCamera = _fallbackCamera;
+
+    if (!_renderParam) { return; }
+
+    if (riley::Riley* const riley = _renderParam->AcquireRiley()) {
+        riley->SetDefaultDicingCamera(_fallbackCamera.id);
+        _renderParam->GetRenderViewContext()
+            .SetCameraId(_fallbackCamera.id, riley);
+    }
+}
+
+void
+HdPrman_CameraContext::_ApplyFallbackOverlay(
+    const ActiveCameraOverlay& overlay)
+{
+    if (_fallbackCamera.id == riley::CameraId::InvalidId()) { return; }
+    if (!_renderParam) { return; }
+    riley::Riley* const riley = _renderParam->AcquireRiley();
+    if (!riley) { return; }
+
+    RtParamList nodeParams;
+    nodeParams.SetFloat(RixStr.k_fov, f_fallbackFov);
+    riley::ShadingNode node{
+        riley::ShadingNode::Type::k_Projection,
+        HdPrmanCamera::ComputeProjectionShader(
+            HdCamera::Perspective, overlay.projectionNameOverride),
+        HdPrmanCamera::ProjectionNodeName(),
+        nodeParams };
+    node.params.Update(overlay.projectionParamsOverride);
+    riley->ModifyCamera(_fallbackCamera.id, &node, nullptr, nullptr);
+}
+
+void
+HdPrman_CameraContext::_RevertFallback()
+{
+    if (_fallbackCamera.id == riley::CameraId::InvalidId()) { return; }
+    if (!_renderParam) { return; }
+    riley::Riley* const riley = _renderParam->AcquireRiley();
+    if (!riley) { return; }
+
+    static const RtUString us_PxrPerspective("PxrPerspective");
+    RtParamList nodeParams;
+    nodeParams.SetFloat(RixStr.k_fov, f_fallbackFov);
+    const riley::ShadingNode node{
+        riley::ShadingNode::Type::k_Projection,
+        HdPrmanCamera::ComputeProjectionShader(
+            HdCamera::Perspective, us_PxrPerspective),
+        HdPrmanCamera::ProjectionNodeName(),
+        nodeParams };
+    riley->ModifyCamera(_fallbackCamera.id, &node, nullptr, nullptr);
+}
+
+void
+HdPrman_CameraContext::RegisterCameraName(
+    const SdfPath& cameraPath,
+    const RtUString& rileyName)
+{
+    std::unique_lock<std::shared_mutex> lock(_cameraNameTableMutex);
+    _cameraNameTable[cameraPath] = rileyName;
+}
+
+void
+HdPrman_CameraContext::UnregisterCameraName(const SdfPath& cameraPath)
+{
+    std::unique_lock<std::shared_mutex> lock(_cameraNameTableMutex);
+    _cameraNameTable.erase(cameraPath);
+}
+
+RtUString
+HdPrman_CameraContext::ResolveCameraName(
+    const std::string& authored) const
+{
+    if (authored.empty()) {
+        return RtUString();
+    }
+
+    std::shared_lock<std::shared_mutex> lock(_cameraNameTableMutex);
+
+    // (1) Exact Hydra path match. Each HdPrmanCamera registered its riley
+    // camera name under its Hydra path, so the canonical name is that entry.
+    if (SdfPath::IsValidPathString(authored)) {
+        const auto it = _cameraNameTable.find(SdfPath(authored));
+        if (it != _cameraNameTable.end()) {
+            return it->second;
         }
     }
+
+    // (2) Unique terminal-token ("name") match.
+    const TfToken authoredToken(authored);
+    const RtUString* tokenMatch = nullptr;
+    bool tokenAmbiguous = false;
+    for (const auto& entry : _cameraNameTable) {
+        if (entry.first.GetNameToken() != authoredToken) {
+            continue;
+        }
+        if (tokenMatch) {
+            tokenAmbiguous = true;
+            break;
+        }
+        tokenMatch = &entry.second;
+    }
+    if (tokenAmbiguous) {
+        TF_WARN("'%s' matches more than one camera by name; ignoring.",
+            authored.c_str());
+        return RtUString();
+    }
+    if (tokenMatch) {
+        return *tokenMatch;
+    }
+
+    TF_WARN("'%s' does not resolve to a registered camera; ignoring.",
+        authored.c_str());
+    return RtUString();
 }
 
-void
-HdPrman_CameraContext::_DeleteClipPlanes(
-    riley::Riley * const riley)
-{
-    for (riley::ClippingPlaneId const& id: _clipPlaneIds) {
-        riley->DeleteClippingPlane(id);
-    }
-    _clipPlaneIds.clear();
-}
-    
+
 // The crop window for RenderMan.
 //
 // Computed from data window and render buffer size.
@@ -822,8 +538,29 @@ void
 HdPrman_CameraContext::SetProjectionOverride(const RtUString& projection,
                                             const RtParamList& projectionParams)
 {
+    // The projection override is part of ActiveCameraOverlay, so a change to it
+    // MUST invalidate: the drive loops re-commit the active camera only while
+    // the context is invalid (renderPass.cpp's camChanged latch,
+    // renderSettings.cpp's IsInvalid() gate). Without this, a projection-only
+    // edit was stashed and applied on some later frame that happened to
+    // invalidate for another reason -- and never at all for a single-frame
+    // offline render.
+    //
+    // Compare-and-set rather than invalidating unconditionally, to match the
+    // other overlay setters. RtParamList (pxrcore::ParamList) has no
+    // operator==, and its Hash() is non-const and re-sorts, so the params half
+    // is compared via a cached hash taken from a local copy.
+    RtParamList newParams = projectionParams;
+    const uint32_t newParamsHash = newParams.Hash();
+    if (_projectionNameOverride == projection &&
+        _projectionParamsOverrideHash == newParamsHash) {
+        return;
+    }
+
+    _invalid = true;
     _projectionNameOverride = projection;
     _projectionParamsOverride = projectionParams;
+    _projectionParamsOverrideHash = newParamsHash;
 }
 
 void
@@ -833,68 +570,77 @@ HdPrman_CameraContext::MarkValid()
 }
 
 void
-HdPrman_CameraContext::CreateRileyCamera(
-    riley::Riley * const riley,
-    const RtUString &cameraName)
+HdPrman_CameraContext::CreateFallbackCamera()
 {
+    if (!_renderParam) { return; }
+    riley::Riley* const riley = _renderParam->AcquireRiley();
+    if (!riley) { return; }
+
     static const RtUString us_PxrPerspective("PxrPerspective");
 
-    _cameraName = cameraName;
+    _fallbackCamera.name = GetFallbackCameraName();
 
     RtParamList nodeParams;
-    nodeParams.SetFloat(RixStr.k_fov, 60.0f);
+    nodeParams.SetFloat(RixStr.k_fov, f_fallbackFov);
 
     // Projection
     const riley::ShadingNode node = riley::ShadingNode {
         riley::ShadingNode::Type::k_Projection,
-        _ComputeProjectionShader(HdCamera::Perspective, us_PxrPerspective),
-        s_projectionNodeName,
-        nodeParams
-    };
+        HdPrmanCamera::ComputeProjectionShader(
+            HdCamera::Perspective, us_PxrPerspective),
+        HdPrmanCamera::ProjectionNodeName(),
+        nodeParams };
 
     // Camera params
     RtParamList params;
 
     // Transform
-    float const zerotime[] = { 0.0f };
-    RtMatrix4x4 matrix[] = {RixConstants::k_IdentityMatrix};
-    matrix[0].Translate(0.f, 0.f, -10.0f);
-    const riley::Transform transform = { 1, matrix, zerotime };
-        
-    _cameraId = riley->CreateCamera(
+    static const std::vector<float> zerotime { 0.f };
+    static const std::vector<RtMatrix4x4> matrix { {
+        1.f, 0.f,   0.f, 0.f,
+        0.f, 1.f,   0.f, 0.f,
+        0.f, 0.f,   1.f, 0.f,
+        0.f, 0.f, -10.f, 1.f } };
+    static const riley::Transform transform = {
+        1, matrix.data(), zerotime.data() };
+
+    _fallbackCamera.id = riley->CreateCamera(
         riley::UserId(
-            stats::AddDataLocation(_cameraName.CStr()).GetValue()),
-        _cameraName,
+            stats::AddDataLocation(_fallbackCamera.name.CStr()).GetValue()),
+        _fallbackCamera.name,
         node,
         transform,
         params);
 
-    // Dicing Camera
-    // XXX This should be moved out if/when we support multiple camera contexts.
-    riley->SetDefaultDicingCamera(_cameraId);
+    if (_requestedActiveCameraPath == SdfPath::EmptyPath()) {
+        ActivateFallbackCamera();
+    }
+
+    // NOTE: The default dicing camera is now set (and re-issued on active-
+    // camera change) by the render param / render pass against the active
+    // camera; it is intentionally not bound here. See _CreateInternalPrims.
 }
 
 void
-HdPrman_CameraContext::DeleteRileyCameraAndClipPlanes(
-    riley::Riley * const riley)
+HdPrman_CameraContext::DeleteFallbackCamera()
 {
-    if (_cameraId != riley::CameraId::InvalidId()) {
-        riley->DeleteCamera(_cameraId);
-        _cameraId = riley::CameraId::InvalidId();
-    }
+    if (!_renderParam) { return; }
+    riley::Riley* const riley = _renderParam->AcquireRiley();
+    if (!riley) { return; }
 
-    _DeleteClipPlanes(riley);
+    if (_fallbackCamera.id != riley::CameraId::InvalidId()) {
+        riley->DeleteCamera(_fallbackCamera.id);
+        _fallbackCamera.id = riley::CameraId::InvalidId();
+    }
 }
 
-const HdPrmanCamera *
-HdPrman_CameraContext::GetCamera(
+HdPrmanCamera*
+HdPrman_CameraContext::GetActiveCamera(
     const HdRenderIndex * const renderIndex) const
 {
-    return
-        static_cast<const HdPrmanCamera*>(
-            renderIndex->GetSprim(
-                HdPrimTypeTokens->camera,
-                _cameraPath));
+    return static_cast<HdPrmanCamera*>(
+        renderIndex->GetSprim(
+            HdPrimTypeTokens->camera, _requestedActiveCameraPath));
 }
 
 const CameraUtilFraming &
@@ -905,9 +651,9 @@ HdPrman_CameraContext::GetFraming() const
 
 /* static */
 RtUString
-HdPrman_CameraContext::GetDefaultReferenceCameraName()
+HdPrman_CameraContext::GetFallbackCameraName()
 {
-    static const RtUString name("main_cam");
+    static const RtUString name("__hdPrman_fallback_camera");
     return name;
 }
 

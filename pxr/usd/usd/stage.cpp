@@ -459,10 +459,9 @@ class _FieldValueToStageXf
     const PcpNodeRef *_node;
     mutable const SdfLayerRefPtr *_layer;
     const SdfPath *_specPath;
-    const bool _forFlattening;
-    
+    const bool _forFlattening;    
     std::optional<TfFunctionRef<SdfLayerRefPtr ()>> _getLayer;
-    
+
     // Lazily computed.
     mutable std::optional<SdfLayerOffset> _layerOffset;
     mutable SdfLayerRefPtr _lazyLayer;
@@ -476,13 +475,16 @@ public:
                          const PcpNodeRef *node,
                          const SdfLayerRefPtr *layer,
                          const SdfPath *specPath,
-                         bool forFlattening)
+                         bool forFlattening,
+                         const SdfLayerOffset* offset = nullptr)
         : _stage(stage)
         , _object(object)
         , _node(node)
         , _layer(layer)
         , _specPath(specPath)
         , _forFlattening(forFlattening)
+        , _layerOffset(offset ? std::optional<SdfLayerOffset>(*offset)
+                              : std::nullopt)
         {}
 
     // This ctor is used for clips, which have more work to do to come up with
@@ -492,7 +494,8 @@ public:
                          const PcpNodeRef *node,
                          TfFunctionRef<SdfLayerRefPtr ()> getLayer,
                          const SdfPath *specPath,
-                         bool forFlattening)
+                         bool forFlattening,
+                         const SdfLayerOffset* offset = nullptr)
         : _stage(stage)
         , _object(object)
         , _node(node)
@@ -500,6 +503,8 @@ public:
         , _specPath(specPath)
         , _forFlattening(forFlattening)
         , _getLayer(getLayer)
+        , _layerOffset(offset ? std::optional<SdfLayerOffset>(*offset)
+                              : std::nullopt)
         {}
 
     UsdStage const &GetStage() const {
@@ -682,6 +687,13 @@ _TransformTimeCode(GfTimeCode const &timeCode, Xf const &xf)
     return xf.GetLayerOffset() * timeCode;
 }
 
+template <class Xf>
+GfDuration
+_TransformDuration(GfDuration const &duration, Xf const &xf)
+{
+    return xf.GetLayerOffset() * duration;
+}
+
 } // anon
 
 TF_REGISTRY_FUNCTION(VtValue)
@@ -692,6 +704,8 @@ TF_REGISTRY_FUNCTION(VtValue)
     VtRegisterTransform(_TransformSpline<_StageValueToFieldXf>);
     VtRegisterTransform(_TransformTimeCode<_FieldValueToStageXf>);
     VtRegisterTransform(_TransformTimeCode<_StageValueToFieldXf>);
+    VtRegisterTransform(_TransformDuration<_FieldValueToStageXf>);
+    VtRegisterTransform(_TransformDuration<_StageValueToFieldXf>);
     VtRegisterTransform(_PathExprToStage);
     VtRegisterTransform(_PathExprToField);
     VtRegisterTransform(_AssetPathToStage);
@@ -7383,73 +7397,62 @@ public:
         return false;
     }
 
-    template <class T>
     static bool _GetSplineValue(
-        UsdTimeCode time, const UsdAttribute& attr,
-        const UsdResolveInfo &info, T *result)
+        UsdTimeCode time,
+        const UsdResolveInfo& info,
+        const SdfPath& specPath,
+        VtValue *result)
     {
-        const SdfPath specPath =
-            info._primPathInLayerStack.AppendProperty(attr.GetName());
         const SdfLayerHandle& layer = info._layer;
-        const double localTime =
-            info._layerToStageOffset.GetInverse() * time.GetValue();
+        const UsdTimeCode layerTime =
+            info._layerToStageOffset.GetInverse() * time;
 
         TF_DEBUG(USD_VALUE_RESOLUTION).Msg(
-            "RESOLVE: reading field %s:%s from @%s@, "
-            "with requested time = %.3f (local time = %.3f)\n",
+            "RESOLVE: reading field %s:spline from @%s@, "
+            "with requested time = %.3f (layer time = %.3f)\n",
             specPath.GetText(),
-            SdfFieldKeys->Spline.GetText(),
             layer->GetIdentifier().c_str(),
             time.GetValue(),
-            localTime);
+            layerTime.GetValue()
+        );
 
         const TsSpline& spline = *(info._spline);
-        const UsdTimeCode localTimeCode = time.IsPreTime() ?
-            UsdTimeCode::PreTime(localTime) : UsdTimeCode(localTime);
-
-        return Usd_QuerySpline(spline, localTimeCode,
-                               info._layerToStageOffset, result);
+        return Usd_QuerySpline(spline, layerTime, result);
     }
 
-    template <class T>
     static bool _GetClipsSplineValue(
-        UsdTimeCode time, const UsdAttribute& attr,
-        const UsdResolveInfo &info,
-        const Usd_ClipSetRefPtr &clipSet, 
-        T *result)
+        UsdTimeCode time,
+        const UsdResolveInfo& info,
+        const Usd_ClipSetRefPtr& clipSet,
+        const SdfPath& specPath,
+        VtValue *result)
     {
-        const SdfPath path =
-            info._primPathInLayerStack.AppendProperty(attr.GetName());
-            
-        const double localTime = time.GetValue();
+        const SdfLayerHandle& layer = clipSet->sourceLayer;
+        const UsdTimeCode layerTime =
+            info._layerToStageOffset.GetInverse() * time;
+
         TF_DEBUG(USD_VALUE_RESOLUTION).Msg(
-            "RESOLVE: reading field %s:%s from clip set %s, "
-            "with requested time = %.3f \n",
-            path.GetText(),
-            SdfFieldKeys->Spline.GetText(),
-            clipSet->name.c_str(),
-            localTime);
+            "RESOLVE: reading field %s:spline from @%s@, "
+            "with requested time = %.3f (layer time = %.3f)\n",
+            specPath.GetText(),
+            layer->GetIdentifier().c_str(),
+            time.GetValue(),
+            layerTime.GetValue()
+        );
         
-        return clipSet->QuerySpline(path, time, result);
+        // Note that source == UsdResolveInfoSourceValueClips
+        return clipSet->QuerySpline(specPath, layerTime, result);
     }
 
     static bool _GetInterpolatingClipSamples(
-        UsdTimeCode time, const UsdAttribute& attr,
+        UsdTimeCode time, const double layerTime, const UsdAttribute& attr,
+        const SdfPath &specPath,
         const UsdResolveInfo &info,
         const Usd_ClipSetRefPtr &clipSet, 
         const double *lowerHint, const double *upperHint,
         Usd_Interpolator const &interpolator,
         Usd_InterpolationSampleSeries *result)
     {
-        const SdfPath specPath =
-            info._primPathInLayerStack.AppendProperty(attr.GetName());
-
-        // Note that we do not apply layer offsets to the time.
-        // Because clip metadata may be authored in different 
-        // layers in the LayerStack, each with their own 
-        // layer offsets, it is simpler to bake the effects of 
-        // those offsets into Usd_Clip.
-        const double localTime = time.GetValue();
         double upper = 0.0;
         double lower = 0.0;
 
@@ -7458,17 +7461,18 @@ public:
             upper = *upperHint;
         }
         else {
-            _HasTimeSamples(clipSet, specPath, &localTime, &lower, &upper);
+            _HasTimeSamples(clipSet, specPath, &layerTime, &lower, &upper);
         }
 
         TF_DEBUG(USD_VALUE_RESOLUTION).Msg(
             "RESOLVE: reading field %s:%s from clip set %s, "
-            "with requested time = %.3f "
+            "with requested time = %.3f (layer time = %.3f)"
             "reading from sample %.3f \n",
             specPath.GetText(),
             SdfFieldKeys->TimeSamples.GetText(),
             clipSet->name.c_str(),
-            localTime,
+            time.GetValue(),
+            layerTime,
             lower);
 
         if (time.IsPreTime() && lower == upper) {
@@ -7487,14 +7491,21 @@ public:
             // We should update our lower and upper to represent the previous
             // time sample segment, upper is already set to lower.
             if (!clipSet->GetPreviousTimeSampleForPath(
-                    specPath, localTime, &lower)) {
+                    specPath, layerTime, &lower)) {
                 // Trying to access a previous sample before the first sample.
                 lower = upper;
             }
         }
 
-        return interpolator.GetInterpolatingSamples(
-            clipSet, specPath, localTime, lower, upper, result);
+        if (interpolator.GetInterpolatingSamples(
+                clipSet, specPath, time.GetValue(), lower, upper, result)) {
+            // Map sample times back to the stage.
+            for (Usd_ValueTimeSample &sample: *result) {
+                sample.time = info._layerToStageOffset * sample.time;
+            }
+            return true;
+        }
+        return false;
     }
 };
 
@@ -7796,18 +7807,14 @@ UsdStage::_GetValueFromResolveInfoImpl(
     // `optSpecPath` for potential reuse.
     auto xfValueToStage = [this, &attrAsObj, &curResolveInfo](
         VtValue &val,
-        SdfPath *optSpecPath=nullptr,
+        const SdfPath &specPath,
         std::optional<
-            TfFunctionRef<SdfLayerRefPtr ()>> makeLayer = std::nullopt) {
+            TfFunctionRef<SdfLayerRefPtr ()>> makeLayer = std::nullopt)
+    {
         if (!val.CanTransform()) {
             return;
         }
-        SdfPath localSpecPath;
-        SdfPath &specPath = optSpecPath ? *optSpecPath : localSpecPath;
-        if (specPath.IsEmpty()) {
-            specPath = curResolveInfo->
-                _primPathInLayerStack.AppendProperty(attrAsObj.GetName());
-        }
+
         // Need lvalue references, since _FieldValueToStageXf holds
         // by-pointer.
         SdfLayerRefPtr layerRefPtr = curResolveInfo->_layer;
@@ -7816,10 +7823,12 @@ UsdStage::_GetValueFromResolveInfoImpl(
             makeLayer
             ? VtValueTryTransform(val, _FieldValueToStageXf {
                     this, &attrAsObj, &curResolveInfo->_node, *makeLayer,
-                    &specPath, /*forFlattening=*/false })
+                    &specPath, /*forFlattening=*/false,
+                    &curResolveInfo->_layerToStageOffset })
             : VtValueTryTransform(val, _FieldValueToStageXf {
                     this, &attrAsObj, &curResolveInfo->_node, &layerRefPtr,
-                    &specPath, /*forFlattening=*/false });
+                    &specPath, /*forFlattening=*/false,
+                    &curResolveInfo->_layerToStageOffset});
         
         if (!xformed.IsEmpty()) {
             val = std::move(xformed);
@@ -7909,20 +7918,43 @@ UsdStage::_GetValueFromResolveInfoImpl(
         curSamples->clear();
 
         if (curResolveInfo->_source == UsdResolveInfoSourceSpline) {
-            // Spline evaluation maps time-valued splines to the stage's time
-            // automatically.  Splines never participate in composing value
-            // types (they are single float-values).
-            return UsdStage_ResolveInfoAccess::_GetSplineValue(
-                time, attr, *curResolveInfo, result);
-        }
+            curSamples->resize(1);
+            const SdfPath specPath =
+                curResolveInfo->_primPathInLayerStack.AppendProperty(
+                    attr.GetName());
+            if (!UsdStage_ResolveInfoAccess::_GetSplineValue(
+                    time, *curResolveInfo, specPath,
+                    &curSamples->back().value))
+            {
+                return false;
+            }
 
-        if (curResolveInfo->_source == UsdResolveInfoSourceValueClips &&
-            curResolveInfo->_clipsSourceFormat ==
-                UsdResolveInfo::_ValueClipsSourceFormat::Spline)
+            xfValueToStage(curSamples->back().value, specPath);
+
+            // Splines never participate in composing value types.
+            anyFinalSamplesMightCompose = false;
+            break;
+        }
+        else if (curResolveInfo->_source == UsdResolveInfoSourceValueClips
+                 && curResolveInfo->_clipsSourceFormat ==
+                        UsdResolveInfo::_ValueClipsSourceFormat::Spline)
         {
-            return UsdStage_ResolveInfoAccess::_GetClipsSplineValue(
-                time, attr, *curResolveInfo, curExtraResolveInfo->clipSet,
-                result);
+            curSamples->resize(1);
+            const SdfPath specPath =
+                curResolveInfo->_primPathInLayerStack.AppendProperty(
+                    attr.GetName());
+            if (!UsdStage_ResolveInfoAccess::_GetClipsSplineValue(
+                    time, *curResolveInfo, extraResolveInfo.clipSet, specPath,
+                    &curSamples->back().value))
+            {
+                return false;
+            }
+
+            xfValueToStage(curSamples->back().value, specPath);
+
+            // Splines never participate in composing value types.
+            anyFinalSamplesMightCompose = false;
+            break;
         }
         else if (curResolveInfo->_source == UsdResolveInfoSourceTimeSamples ||
             (curResolveInfo->_source == UsdResolveInfoSourceValueClips &&
@@ -7931,20 +7963,29 @@ UsdStage::_GetValueFromResolveInfoImpl(
         {
             // Fetch the sample values from either time samples or clips.
             if (curResolveInfo->_source == UsdResolveInfoSourceTimeSamples) {
+                const SdfPath specPath =
+                    curResolveInfo->_primPathInLayerStack.AppendProperty(
+                        attr.GetName());
                 UsdStage_ResolveInfoAccess::_GetInterpolatingTimeSamples(
                     time, attr, *curResolveInfo,
                     &curExtraResolveInfo->lowerSample,
                     &curExtraResolveInfo->upperSample,
                     interpolator, curSamples);
                 // Translate the values to the stage's namespace and timespace.
-                SdfPath specPath;
                 for (Usd_ValueTimeSample &sample: *curSamples) {
-                    xfValueToStage(sample.value, &specPath);
+                    xfValueToStage(sample.value, specPath);
                 }
             }
             else { // _source == UsdResolveInfoSourceValueClips
+                const UsdTimeCode layerTime =
+                    curResolveInfo->_layerToStageOffset * time;
+                const SdfPath specPath =
+                    curResolveInfo->_primPathInLayerStack.AppendProperty(
+                        attr.GetName());
                 UsdStage_ResolveInfoAccess::_GetInterpolatingClipSamples(
-                    time, attr, *curResolveInfo, curExtraResolveInfo->clipSet,
+                    time, layerTime.GetValue(), attr, specPath,
+                    *curResolveInfo,
+                    curExtraResolveInfo->clipSet,
                     &curExtraResolveInfo->lowerSample,
                     &curExtraResolveInfo->upperSample,
                     interpolator, curSamples);
@@ -7956,24 +7997,13 @@ UsdStage::_GetValueFromResolveInfoImpl(
                 auto getClipLayer = [&]() {
                     return _GetClipLayer(
                         curExtraResolveInfo->clipSet,
-                        time, curResolveInfo->_primPathInLayerStack
-                        .AppendProperty(attrAsObj.GetName()),
+                        layerTime, specPath,
                         &curExtraResolveInfo->lowerSample,
                         &curExtraResolveInfo->upperSample);
                 };
-                
-                SdfPath specPath;
+                // Translate the values to the stage's namespace and timespace.
                 for (Usd_ValueTimeSample &sample: *curSamples) {
-                    // XXX Clips automatically transform time values to the
-                    // stage's time, so skip transforming time-valued values.
-                    // WBN to refactor to avoid this hacky bit.
-                    std::type_info const &timeCodeType = typeid(GfTimeCode);
-                    const bool isTimeValued =
-                        sample.value.GetTypeid() == timeCodeType ||
-                        sample.value.GetElementTypeid() == timeCodeType;
-                    if (!isTimeValued) {
-                        xfValueToStage(sample.value, &specPath, getClipLayer);
-                    }
+                    xfValueToStage(sample.value, specPath, getClipLayer);
                 }
             }
 
@@ -8000,7 +8030,7 @@ UsdStage::_GetValueFromResolveInfoImpl(
                           "Resolve info source default has no default value");
             }
             // Translate to the stage.
-            xfValueToStage(curSamples->front().value, &specPath);
+            xfValueToStage(curSamples->front().value, specPath);
             // Compose samples over.
             curSamples->front().time = -inf;
             composeSamples(std::move(*curSamples),
@@ -8152,7 +8182,7 @@ struct UsdStage::_PropertyStackResolver {
                     // source layer of the clip set.
                     propertyStackWithLayerOffsets.emplace_back(
                         propertySpec,
-                        _GetLayerToStageOffset(node, clipSet->sourceLayer)); 
+                        clipSet->toStageOffset);
                 } else {
                     propertyStack.push_back(propertySpec);
                 }
@@ -8360,17 +8390,22 @@ struct UsdStage::_BracketingSamplesResolver
             return true;
         }
 
-        // Clips operate in stage time.
+        const SdfLayerOffset layerToStageOffset = clipSet->toStageOffset;
         const double stageTime = time->GetValue();
-        const double clipTime = stageTime;
+        double layerTime = layerToStageOffset.GetInverse() * stageTime;
+
         double lower, upper;
-        if (!_HasTimeSamples(clipSet, specPath, &clipTime, &lower, &upper)) {
+        if (!_HasTimeSamples(clipSet, specPath, &layerTime, &lower, &upper)) {
             return false;
         }
         _hasAnyValue = true;
 
+        // Translate back to stage time.
+        lower = layerToStageOffset * lower;
+        upper = layerToStageOffset * upper;
+
         const bool lowerUpdated = _UpdateBounds(lower, upper, stageTime);
-            
+
         // Stop (return true) if we updated lower and new lower doesn't
         // compose.  We don't need to consider upper's composability since
         // if we find a non-composing lower then the upper sample must be at
@@ -8570,9 +8605,14 @@ struct UsdStage::_SamplesInIntervalResolver
             return false;
         }
 
+        const SdfLayerOffset layerToStage = clipSet->toStageOffset;
+        const SdfLayerOffset stageToLayer = layerToStage.GetInverse();
+        const GfInterval layerInterval =
+            _interval * stageToLayer.GetScale() + stageToLayer.GetOffset();
+
         // Clips operate in stage time.
         std::vector<double> clipTimes =
-            clipSet->GetTimeSamplesInInterval(specPath, _interval);
+            clipSet->GetTimeSamplesInInterval(specPath, layerInterval);
 
         // If there are no samples in the interval, call
         // GetBracketingTimeSamples on the interval min.  If the lower time's
@@ -8581,7 +8621,7 @@ struct UsdStage::_SamplesInIntervalResolver
         if (clipTimes.empty()) {
             double low, up;
             if (!TF_VERIFY(clipSet->GetBracketingTimeSamplesForPath(
-                               specPath, _interval.GetMin(), &low, &up))) {
+                               specPath, layerInterval.GetMin(), &low, &up))) {
                 return true; // error - no bracketing samples despite having
                              // samples.
             }
@@ -8596,7 +8636,7 @@ struct UsdStage::_SamplesInIntervalResolver
         weaker.reserve(clipTimes.size());
         for (double time: clipTimes) {
             weaker.push_back(
-                { time, VtValueTypeCanComposeOver(
+                { layerToStage * time, VtValueTypeCanComposeOver(
                         clipSet->QueryTimeSampleTypeid(specPath, time)) });
         }
 
@@ -8613,13 +8653,13 @@ struct UsdStage::_SamplesInIntervalResolver
             !_partial.empty() &&
             _partial.front().canCompose &&
             _interval.GetMin() != _partial.front().time) {
-            double clipTime = _partial.front().time;
+            double clipTime = stageToLayer * _partial.front().time;
             double prevClipTime;
             if (clipSet->GetPreviousTimeSampleForPath(
                     specPath, clipTime, &prevClipTime) &&
                 !VtValueTypeCanComposeOver(
                     clipSet->QueryTimeSampleTypeid(specPath, prevClipTime))) {
-                _interval.SetMin(prevClipTime);
+                _interval.SetMin(layerToStage * prevClipTime);
                 _overrodeInterval = true;
             }
         }            
@@ -8794,17 +8834,12 @@ struct UsdStage::_TimeSampleMapResolver
             return false;
         }
 
-        // Clips operate in stage time.
         const std::set<double>
             clipTimes = clipSet->ListTimeSamplesForPath(specPath);
 
         // Get all values and transform to stage name & time space.
         SdfTimeSampleMap sampleMap;
         for (double clipTime: clipTimes) {
-            // XXX Clips automatically transform time values to the
-            // stage's time, so skip transforming time-valued values.
-            // WBN to refactor to avoid this hacky bit.
-            std::type_info const &timeCodeType = typeid(GfTimeCode);
             VtValue clipValue;
             if (!clipSet->QueryTimeSample(
                     specPath, clipTime,
@@ -8812,20 +8847,22 @@ struct UsdStage::_TimeSampleMapResolver
                     &clipValue)) {
                 clipValue = SdfValueBlock {};
             }
-            const bool isTimeValued =
-                clipValue.GetTypeid() == timeCodeType ||
-                clipValue.GetElementTypeid() == timeCodeType;
             VtValue xformed;
-            if (!isTimeValued) {
-                auto getClipLayer = [&]() {
-                    return _GetClipLayer(clipSet, clipTime, specPath);
-                };
-                _FieldValueToStageXf fieldToStageXf {
-                    _stage, _attr, &node,
-                    getClipLayer, &specPath, _forFlattening
-                };
-                xformed = VtValueTryTransform(clipValue, fieldToStageXf);
-            }
+            auto getClipLayer = [&]() {
+                return _GetClipLayer(clipSet, clipTime, specPath);
+            };
+
+            // Set the layer offset explicitly, because the layer provided by
+            // `getClipLayer` may be a clip and therefore irrelevant to layer
+            // offset calculation.
+            const SdfLayerOffset offset = clipSet->toStageOffset;
+            _FieldValueToStageXf fieldToStageXf {
+                _stage, _attr, &node,
+                getClipLayer, &specPath, _forFlattening, &offset
+            };
+            xformed = VtValueTryTransform(clipValue, fieldToStageXf);
+
+            clipTime = offset * clipTime;
             sampleMap.emplace_hint(sampleMap.end(), clipTime, xformed.IsEmpty()
                                    ? std::move(clipValue)
                                    : std::move(xformed));
@@ -9162,9 +9199,10 @@ struct UsdStage::_ResolveInfoResolver
             return false;
         }
 
+        const SdfLayerOffset offset = clipSet->toStageOffset;
         std::optional<double> localTime;
         if (time) {
-            localTime = time->GetValue();
+            localTime = offset.GetInverse() * time->GetValue();
         }
 
         const bool hasSpline = clipSet->ContainsSplineForAttribute(specPath);
@@ -9194,6 +9232,7 @@ struct UsdStage::_ResolveInfoResolver
             _resolveInfo->_layerStack = node.GetLayerStack();
             _resolveInfo->_primPathInLayerStack = node.GetPath();
             _resolveInfo->_node = node;
+            _resolveInfo->_layerToStageOffset = offset;
         }
 
         // If we're working at a time, check if the samples are composing types,
@@ -9629,9 +9668,6 @@ UsdStage::_GetSplineFromResolveInfo(
         }
         *spline = *info._spline;
 
-        if (!info._layerToStageOffset.IsIdentity()) {
-            Usd_ApplyLayerOffsetToValue(spline, info._layerToStageOffset);
-        }
     } else if (info.GetSource() == UsdResolveInfoSourceValueClips &&
         info._clipsSourceFormat ==
             UsdResolveInfo::_ValueClipsSourceFormat::Spline)
@@ -9656,6 +9692,10 @@ UsdStage::_GetSplineFromResolveInfo(
         if (!extraInfo.clipSet->BuildSpline(specPath, spline)) {
             return false;
         }
+    }
+
+    if (!info._layerToStageOffset.IsIdentity()) {
+        Usd_ApplyLayerOffsetToValue(spline, info._layerToStageOffset);
     }
 
     return true;

@@ -14,13 +14,17 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
+// Per-op helpers with auto return so the result type is deduced from the
+// element operation.  This enables heterogeneous results for list/tuple
+// operands (e.g. __sub__ on a TimeCode array produces a Duration array).
+// The bool specialization preserves existing Hyrum's-Law behavior.
 template <class T>
 struct _ArrayPyOpHelp {
-    static T __add__(T l, T r) { return l + r; }
-    static T __sub__(T l, T r) { return l - r; }
-    static T __mul__(T l, T r) { return l * r; }
-    static T __div__(T l, T r) { return l / r; }
-    static T __mod__(T l, T r) { return l % r; }
+    static auto __add__(T l, T r) { return l + r; }
+    static auto __sub__(T l, T r) { return l - r; }
+    static auto __mul__(T l, T r) { return l * r; }
+    static auto __div__(T l, T r) { return l / r; }
+    static auto __mod__(T l, T r) { return l % r; }
 };
 
 // These operations on bool-arrays are highly questionable, but this preserves
@@ -42,17 +46,24 @@ struct _ArrayPyOpHelp<bool> {
 // These will define the operator to work with tuples and lists from Python.
 
 // base macro called by wrapping layers below for various operators, python
-// types (lists and tuples), and special methods
+// types (lists and tuples), and special methods.
+// The return type is deduced from _ArrayPyOpHelp<T>::op so that heterogeneous
+// results work correctly (e.g. __sub__ on a TimeCode array returns a Duration
+// array).  Elements are extracted as T and the op result is stored in
+// VtArray<RetElem>.
 #define VTOPERATOR_WRAP_PYTYPE_BASE(op, method, pytype, isRightVer)          \
     template <typename T> static                                             \
-    VtArray<T> method##pytype(VtArray<T> vec, pytype obj) {                  \
+    auto method##pytype(VtArray<T> vec, pytype obj)                          \
+    {                                                                        \
+        using RetElem = decltype(                                            \
+            _ArrayPyOpHelp<T>:: op (std::declval<T>(), std::declval<T>()));  \
         size_t length = len(obj);                                            \
         if (length != vec.size()) {                                          \
             TfPyThrowValueError("Non-conforming inputs for operator "        \
                                 #method);                                    \
-            return VtArray<T>();                                             \
+            return VtArray<RetElem>();                                       \
         }                                                                    \
-        VtArray<T> ret(vec.size());                                          \
+        VtArray<RetElem> ret(vec.size());                                    \
         for (size_t i = 0; i < length; ++i) {                                \
             if (!extract<T>(obj[i]).check())                                 \
                 TfPyThrowValueError("Element is of incorrect type.");        \

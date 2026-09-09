@@ -45,6 +45,7 @@ pxr_library(vt
         module.cpp
         wrapArrayBase.cpp
         wrapArrayDualQuaternion.cpp
+        wrapArrayDuration.cpp
         wrapArrayFloat.cpp
         wrapArrayIntegral.cpp
         wrapArrayMatrix.cpp

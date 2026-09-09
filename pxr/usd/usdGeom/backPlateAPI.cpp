@@ -87,11 +87,11 @@ UsdGeomBackPlateAPI::IsSchemaPropertyBaseName(const TfToken &baseName)
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
             UsdGeomTokens->backPlate_MultipleApplyTemplate_DepthCameraSpaceOffset),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
-            UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaGain),
+            UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaSlope),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
-            UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaLift),
+            UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaOffset),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
-            UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaGamma),
+            UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaPower),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
             UsdGeomTokens->backPlate_MultipleApplyTemplate_PlateVisibility),
     };
@@ -395,21 +395,21 @@ UsdGeomBackPlateAPI::CreateDepthCameraSpaceOffsetAttr(VtValue const &defaultValu
 }
 
 UsdAttribute
-UsdGeomBackPlateAPI::GetLumaGainAttr() const
+UsdGeomBackPlateAPI::GetLumaSlopeAttr() const
 {
     return GetPrim().GetAttribute(
         _GetNamespacedPropertyName(
             GetName(),
-            UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaGain));
+            UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaSlope));
 }
 
 UsdAttribute
-UsdGeomBackPlateAPI::CreateLumaGainAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomBackPlateAPI::CreateLumaSlopeAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
                        _GetNamespacedPropertyName(
                             GetName(),
-                           UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaGain),
+                           UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaSlope),
                        SdfValueTypeNames->Float3,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -418,21 +418,21 @@ UsdGeomBackPlateAPI::CreateLumaGainAttr(VtValue const &defaultValue, bool writeS
 }
 
 UsdAttribute
-UsdGeomBackPlateAPI::GetLumaLiftAttr() const
+UsdGeomBackPlateAPI::GetLumaOffsetAttr() const
 {
     return GetPrim().GetAttribute(
         _GetNamespacedPropertyName(
             GetName(),
-            UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaLift));
+            UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaOffset));
 }
 
 UsdAttribute
-UsdGeomBackPlateAPI::CreateLumaLiftAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomBackPlateAPI::CreateLumaOffsetAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
                        _GetNamespacedPropertyName(
                             GetName(),
-                           UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaLift),
+                           UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaOffset),
                        SdfValueTypeNames->Float3,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -441,21 +441,21 @@ UsdGeomBackPlateAPI::CreateLumaLiftAttr(VtValue const &defaultValue, bool writeS
 }
 
 UsdAttribute
-UsdGeomBackPlateAPI::GetLumaGammaAttr() const
+UsdGeomBackPlateAPI::GetLumaPowerAttr() const
 {
     return GetPrim().GetAttribute(
         _GetNamespacedPropertyName(
             GetName(),
-            UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaGamma));
+            UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaPower));
 }
 
 UsdAttribute
-UsdGeomBackPlateAPI::CreateLumaGammaAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdGeomBackPlateAPI::CreateLumaPowerAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
                        _GetNamespacedPropertyName(
                             GetName(),
-                           UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaGamma),
+                           UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaPower),
                        SdfValueTypeNames->Float3,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -512,9 +512,9 @@ UsdGeomBackPlateAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->backPlate_MultipleApplyTemplate_DepthMinOffset,
         UsdGeomTokens->backPlate_MultipleApplyTemplate_DepthNormalizingFactor,
         UsdGeomTokens->backPlate_MultipleApplyTemplate_DepthCameraSpaceOffset,
-        UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaGain,
-        UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaLift,
-        UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaGamma,
+        UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaSlope,
+        UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaOffset,
+        UsdGeomTokens->backPlate_MultipleApplyTemplate_LumaPower,
         UsdGeomTokens->backPlate_MultipleApplyTemplate_PlateVisibility,
     };
     static TfTokenVector allNames =

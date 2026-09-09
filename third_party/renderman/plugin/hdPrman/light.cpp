@@ -709,6 +709,20 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
 
         _lightShaderType = lightNodes.back().name;
 
+#if HD_API_VERSION < 46
+        if (_hdLightType == HdPrmanTokens->meshLight) {
+#else
+        if (_hdLightType == HdPrimTypeTokens->meshLight) {
+#endif
+            if(_lightShaderType != us_PxrMeshLight) {
+                // Prman can crash if a mesh light
+                // is given a light shader type other than PxrMeshLight,
+                // so enforce that here.
+                lightNodes.back().name = us_PxrMeshLight;
+                _lightShaderType = lightNodes.back().name;
+            }
+        }
+
         TF_DEBUG(HDPRMAN_LIGHT_LIST).Msg("HdPrman: Light <%s> lightType '%s', "
             "shader '%s'\n",
             id.GetText(), _hdLightType.GetText(), _lightShaderType.CStr());

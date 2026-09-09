@@ -165,6 +165,7 @@ vec2 HorizontallyNormalizedFilmbackCoordinates()
 
 -- glsl RenderPass.ApplyClipPlanes
 
+#ifdef HD_USE_HARDWARE_CLIPPING
 void ApplyClipPlanes(vec4 Peye)
 {
 #if defined(HD_HAS_numClipPlanes)
@@ -182,6 +183,7 @@ void ApplyClipPlanes(vec4 Peye)
 #endif
 #endif
 }
+#endif
 
 -- glsl RenderPass.NoColorOverrides
 

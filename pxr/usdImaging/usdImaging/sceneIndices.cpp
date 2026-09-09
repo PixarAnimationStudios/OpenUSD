@@ -200,7 +200,7 @@ UsdImagingCreateSceneIndices(
     
     sceneIndex = result.stageSceneIndex =
         UsdImagingStageSceneIndex::New(
-            HdOverlayContainerDataSource::OverlayedContainerDataSources(
+            HdCreateOverlayContainerDataSource(
                 _AdditionalStageSceneIndexCreateArgs(
                     createInfo.displayUnloadedPrimsWithBounds),
                 createInfo.stageSceneIndexInputArgs));

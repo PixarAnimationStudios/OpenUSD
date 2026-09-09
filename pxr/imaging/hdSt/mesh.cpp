@@ -799,9 +799,21 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
         // Normal case
         if (geomSubsets.empty() || desc.geomStyle == HdMeshGeomStylePoints) {
 
+            // Set up the usage hints to mark topology as varying if
+            // there is a previously set range
+            HdBufferArrayUsageHint usageHint = 
+                HdBufferArrayUsageHintBitsIndex |
+                HdBufferArrayUsageHintBitsStorage;
+            if (drawItem->GetTopologyRange()) {
+                usageHint |= HdBufferArrayUsageHintBitsSizeVarying;
+            }
+
             // ask again registry if there's a shareable buffer range for the topology
+            HdTopology::ID rangeId = _topologyId;
+            rangeId = ArchHash64((const char*)&usageHint, sizeof(usageHint),
+                rangeId);
             HdInstance<HdBufferArrayRangeSharedPtr> rangeInstance =
-                resourceRegistry->RegisterMeshIndexRange(_topologyId, indexToken);
+                resourceRegistry->RegisterMeshIndexRange(rangeId, indexToken);
 
             if (rangeInstance.IsFirstInstance()) {
                 // if not exists, update actual topology buffer to range.
@@ -849,15 +861,6 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                 //   * fvarPatchParam (optional)
                 HdBufferSpecVector bufferSpecs;
                 HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
-
-                // Set up the usage hints to mark topology as varying if
-                // there is a previously set range
-                HdBufferArrayUsageHint usageHint = 
-                    HdBufferArrayUsageHintBitsIndex |
-                    HdBufferArrayUsageHintBitsStorage;
-                if (drawItem->GetTopologyRange()) {
-                    usageHint |= HdBufferArrayUsageHintBitsSizeVarying;
-                }
 
                 // allocate new range
                 HdBufferArrayRangeSharedPtr range =
@@ -992,9 +995,20 @@ void HdStMesh::_CreateTopologyRangeForGeomSubset(
         (const char*)faceIndices.cdata(),
         sizeof(int)*faceIndices.size(), _topologyId);
 
+    // Set up the usage hints to mark topology as varying if there is a 
+    // previously set range
+    HdBufferArrayUsageHint usageHint =
+        HdBufferArrayUsageHintBitsIndex | HdBufferArrayUsageHintBitsStorage;
+    if (drawItem->GetTopologyRange()) {
+        usageHint |= HdBufferArrayUsageHintBitsSizeVarying;
+    }
+
     // ask registry if there's a shareable buffer range for the topology
+    HdTopology::ID rangeId = subsetTopologyId;
+    rangeId = ArchHash64((const char*)&usageHint, sizeof(usageHint),
+            rangeId);
     HdInstance<HdBufferArrayRangeSharedPtr> rangeInstance =
-        resourceRegistry->RegisterMeshIndexRange(subsetTopologyId, indexToken);
+        resourceRegistry->RegisterMeshIndexRange(rangeId, indexToken);
 
     if (rangeInstance.IsFirstInstance()) {
         // if not exists, update actual topology buffer to range.
@@ -1037,14 +1051,6 @@ void HdStMesh::_CreateTopologyRangeForGeomSubset(
         //   * fvarPatchParam (optional)
         HdBufferSpecVector bufferSpecs;
         HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
-
-        // Set up the usage hints to mark topology as varying if there is a 
-        // previously set range
-        HdBufferArrayUsageHint usageHint =
-            HdBufferArrayUsageHintBitsIndex | HdBufferArrayUsageHintBitsStorage;
-        if (drawItem->GetTopologyRange()) {
-            usageHint |= HdBufferArrayUsageHintBitsSizeVarying;
-        }
 
         // allocate new range
         HdBufferArrayRangeSharedPtr range =

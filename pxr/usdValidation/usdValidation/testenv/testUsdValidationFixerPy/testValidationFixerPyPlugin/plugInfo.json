@@ -1,0 +1,27 @@
+{
+    "Plugins": [
+        {
+            "Type": "resource",
+            "Name": "testValidationFixerPyPlugin",
+            "Info": {
+                "Validators": {
+                    "PyPluginLayerValidatorWithFixer": {
+                        "doc": "Layer validator with Python fixer.",
+                        "keywords": ["testPyFixer"],
+                        "isSuite": false
+                    },
+                    "PyPluginStageValidatorWithFixer": {
+                        "doc": "Stage validator with Python fixer.",
+                        "keywords": ["testPyFixer"],
+                        "isSuite": false
+                    },
+                    "PyPluginPrimValidatorWithFixer": {
+                        "doc": "Prim validator with Python fixer.",
+                        "keywords": ["testPyFixer"],
+                        "isSuite": false
+                    }
+                }
+            }
+        }
+    ]
+}

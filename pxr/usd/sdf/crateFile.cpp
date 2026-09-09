@@ -43,6 +43,7 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/pxrTslRobinMap/robin_set.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/safeOutputFile.h"
@@ -154,10 +155,17 @@ TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<Sdf_CrateFile::TimeSamples>();
 }
 
-#define OLDEST_SUPPORTED_VERSION "0.0.1" // versions prior are unsupported
+// The oldest file version this software supports.  Versions prior are
+// unsupported.  Overriding this may produce a build with known security risks.
+#ifndef PXR_USDC_OLDEST_SUPPORTED_VERSION
+#define PXR_USDC_OLDEST_SUPPORTED_VERSION 0.4.0
+#endif
+
+#define OLDEST_SUPPORTED_VERSION                        \
+    TF_PP_STRINGIZE(PXR_USDC_OLDEST_SUPPORTED_VERSION)
+
 #define OLDEST_CURRENT_VERSION   "0.8.0" // versions prior until
                                          // oldest-supported are deprecated
-
 #define DEFAULT_NEW_VERSION      "0.8.0" // default version for new files
 
 TF_DEFINE_ENV_SETTING(
@@ -382,6 +390,7 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
+// 0.16.0: Added support for GfDuration values.
 // 0.15.0: Added support for loopBoundaryTime-delimited spline extrapolation
 //         loops and GfTimeCode-native splines.
 // 0.14.0: Added support for ArrayEdits.
@@ -403,7 +412,7 @@ using std::vector;
 //         See _PathItemHeader_0_0_1.
 //  0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 15;
+constexpr uint8_t USDC_MINOR = 16;
 constexpr uint8_t USDC_PATCH = 0;
 
 constexpr CrateFile::Version
@@ -1258,6 +1267,9 @@ public:
         else if constexpr (std::is_same_v<T, GfTimeCode>) {
             return GfTimeCode(Read<double>());
         }
+        else if constexpr (std::is_same_v<T, GfDuration>) {
+            return GfDuration(Read<double>());
+        }
         else if constexpr (std::is_same_v<T, SdfUnregisteredValue>) {
             VtValue val = Read<VtValue>();
             if (val.IsHolding<string>())
@@ -1513,9 +1525,16 @@ public:
             "crate version 0.9.0.");
         Write(tc.GetValue()); 
     }
+    void Write(GfDuration const &dur) { 
+        crate->_packCtx->RequestWriteVersionUpgrade(
+            Version(0, 16, 0),
+            "A duration or duration[] value type was detected which requires "
+            "crate version 0.16.0.");
+        Write(dur.GetValue()); 
+    }
     void Write(SdfPathExpression const &pathExpr) {
         crate->_packCtx->RequestWriteVersionUpgrade(
-            Version(0,10,0),
+            Version(0, 10, 0),
             "A pathExpression value type was detected which requires crate "
             "version 0.10.0.");
         Write(pathExpr.GetText());
@@ -1633,6 +1652,7 @@ public:
                 "A spline tangent algorithm was detected which requires crate"
                 " version 0.13.0.");
             break;
+
           case 3: // looped extrapolation with loopBoundaryTime set
                   // or GfTimeCode-native spline
             crate->_packCtx->RequestWriteVersionUpgrade(
@@ -1640,6 +1660,13 @@ public:
                 "A spline loopBoundaryTime parameter on looping extrapolation "
                 "or GfTimeCode-native spline was detected which requires "
                 "crate version 0.15.0.");
+            break;
+
+          case 4: // GfDuration valued spline.
+            crate->_packCtx->RequestWriteVersionUpgrade(
+                Version(0,16,0),
+                "A GfDuration spline was detected which requires "
+                "crate version 0.16.0.");
             break;
 
           default:
@@ -3448,7 +3475,7 @@ CrateFile::_ReadStructuralSections(Reader reader, int64_t fileSize)
         Version::FromString(OLDEST_SUPPORTED_VERSION);
     if (assetVersion < oldestSupportedVersion) {
         TF_RUNTIME_ERROR(
-            "Cannot read asset @%s@ with obsolete version '%s'. The oldest "
+            "Cannot read asset @%s@ with obsolete version %s. The oldest "
             "version this software supports is " OLDEST_SUPPORTED_VERSION ". "
             "See the OpenUSD FAQ for information about handling obsolete "
             "assets. https://openusd.org/release/usdfaq.html",
@@ -3462,7 +3489,7 @@ CrateFile::_ReadStructuralSections(Reader reader, int64_t fileSize)
     if (assetVersion < oldestCurrentVersion &&
         TfGetEnvSetting(PXR_USDC_EMIT_DEPRECATION_WARNINGS)) {
         TF_WARN(
-            "Asset @%s@ has deprecated version '%s'. Future versions of USD "
+            "Asset @%s@ has deprecated version %s. Future versions of USD "
             "will not be able to read it. See the OpenUSD FAQ for information "
             "about handling deprecated assets. "
             "https://openusd.org/release/usdfaq.html  Disable this warning by "

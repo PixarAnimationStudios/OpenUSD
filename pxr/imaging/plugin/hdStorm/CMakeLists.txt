@@ -18,10 +18,7 @@ pxr_plugin(hdStorm
         hdSt
         ${OPENSUBDIV_LIBRARIES}
 
-    INCLUDE_DIRS
-        ${OPENSUBDIV_INCLUDE_DIR}
-
-    PUBLIC_CLASSES
+    PRIVATE_CLASSES
         rendererPlugin
 
     RESOURCE_FILES

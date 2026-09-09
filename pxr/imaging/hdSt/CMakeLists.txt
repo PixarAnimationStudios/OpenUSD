@@ -54,7 +54,6 @@ pxr_library(hdSt
         ${optionalLibs}
 
     INCLUDE_DIRS
-        ${OPENSUBDIV_INCLUDE_DIR}
         ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
@@ -192,6 +191,7 @@ pxr_library(hdSt
         plugInfo.json
         shaders/basisCurves.glslfx
         shaders/compute.glslfx
+        shaders/coordUtils.glslfx
         shaders/domeLight.glslfx
         shaders/edgeId.glslfx
         shaders/fallbackLighting.glslfx

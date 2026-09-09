@@ -43,23 +43,23 @@ operator<<(std::ostream &out, GfVec3h const &v)
 bool
 GfVec3h::operator==(GfVec3d const &other) const
 {
-    return _data[0] == other[0] &&
-           _data[1] == other[1] &&
-           _data[2] == other[2];
+    return x == other.x &&
+           y == other.y &&
+           z == other.z;
 }
 bool
 GfVec3h::operator==(GfVec3f const &other) const
 {
-    return _data[0] == other[0] &&
-           _data[1] == other[1] &&
-           _data[2] == other[2];
+    return x == other.x &&
+           y == other.y &&
+           z == other.z;
 }
 bool
 GfVec3h::operator==(GfVec3i const &other) const
 {
-    return _data[0] == other[0] &&
-           _data[1] == other[1] &&
-           _data[2] == other[2];
+    return x == other.x &&
+           y == other.y &&
+           z == other.z;
 }
 
 

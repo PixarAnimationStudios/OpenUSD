@@ -11,6 +11,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
+#include "pxr/base/gf/duration.h"
 #include "pxr/base/gf/timeCode.h"
 
 #include <iosfwd>
@@ -149,13 +150,20 @@ public:
     SDF_API
     SdfLayerOffset operator*(const SdfLayerOffset &rhs) const;
 
-    /// Applies the offset to the given value.
+    /// Applies the layer offset to the given value. The double value is scaled
+    /// and offset in the same manner as a GfTimeCode value.
     SDF_API
     double operator*(double rhs) const;
 
-    /// Applies the offset to the given value.
+    /// Applies the layer offset to the given GfTimeCode value. This will
+    /// scale and then offset the value.
     SDF_API
     GfTimeCode operator*(const GfTimeCode &rhs) const;
+
+    /// Applies the layer offset to the given GfDuration value. This will
+    /// scale the value but not apply any offset.
+    SDF_API
+    GfDuration operator*(const GfDuration &rhs) const;
 
     /// @}
 

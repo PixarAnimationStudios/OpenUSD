@@ -107,6 +107,98 @@ class TestSdfVariableExpressionAST(unittest.TestCase):
         ast.GetRoot().SetName("BAR")
         _testVariableAST(ast, "BAR")
 
+    def testVariableFallback(self):
+        def _testVariableFallbackAST(ast, expectedName, expectedFallback):
+            self.assertValidAST(ast)
+            
+            varNode = ast.GetRoot()
+            self.assertIsInstance(varNode, ASTNodes.VariableNode)
+            self.assertEqual(varNode.GetName(), expectedName)
+            self.assertEqualExpression(
+                ast.GetExpression(), 
+                Sdf.VariableExpression.MakeVariable(expectedName, expectedFallback))
+
+        expr = Sdf.VariableExpression.MakeVariable("FOO", "BAR")
+        ast = Sdf.VariableExpressionAST(expr)
+        _testVariableFallbackAST(ast, "FOO", "BAR")
+
+        expr = Sdf.VariableExpression.MakeVariable("FOO", True)
+        ast = Sdf.VariableExpressionAST(expr)
+        _testVariableFallbackAST(ast, "FOO", True)
+
+        expr = Sdf.VariableExpression.MakeVariable("FOO", 42)
+        ast = Sdf.VariableExpressionAST(expr)
+        _testVariableFallbackAST(ast, "FOO", 42)
+
+        expr = Sdf.VariableExpression.MakeVariable("FOO", [1, 2, 3])
+        ast = Sdf.VariableExpressionAST(expr)
+        _testVariableFallbackAST(ast, "FOO", [1, 2, 3])
+
+        with self.assertRaises(TypeError):
+            Sdf.VariableExpression.MakeVariable("FOO", 3.14)
+
+        # Functions are not supported as fallback values.
+        funcFallback = Sdf.VariableExpression.MakeFunction(
+            "if", Sdf.VariableExpression.MakeLiteral(True),
+            Sdf.VariableExpression.MakeLiteral(10),
+            Sdf.VariableExpression.MakeLiteral(20))
+        self.assertFalse(
+            Sdf.VariableExpression.MakeVariable("FOO", funcFallback))
+
+        # Inline variable references are not allowed within a fallback string,
+        self.assertInvalidAST(
+            Sdf.VariableExpressionAST("`${FOO:'${BAR}'}`"),
+            expectedErrors=[
+                "Variable references are not allowed in fallback string "
+                "values at character 8"])
+
+    def testVariableFallbackAccessors(self):
+        ast = Sdf.VariableExpressionAST(
+            Sdf.VariableExpression.MakeVariable("FOO"))
+        varNode = ast.GetRoot()
+        self.assertIsNone(varNode.GetFallbackValue())
+
+        ast = Sdf.VariableExpressionAST(
+            Sdf.VariableExpression.MakeVariable("FOO", 42))
+        varNode = ast.GetRoot()
+        fallback = varNode.GetFallbackValue()
+        self.assertIsInstance(fallback, ASTNodes.LiteralNode)
+        self.assertEqual(fallback.GetValue(), 42)
+
+        varNode.SetFallbackValue(Sdf.VariableExpressionAST(
+            Sdf.VariableExpression.MakeLiteral("usd")).GetRoot())
+        self.assertIsInstance(
+            varNode.GetFallbackValue(), ASTNodes.LiteralNode)
+        self.assertEqualExpression(
+            ast.GetExpression(),
+            Sdf.VariableExpression.MakeVariable("FOO", "usd"))
+
+        varNode.SetFallbackValue(Sdf.VariableExpressionAST(
+            Sdf.VariableExpression.MakeList(
+                Sdf.VariableExpression.MakeLiteral(1),
+                Sdf.VariableExpression.MakeLiteral(2))).GetRoot())
+        self.assertIsInstance(varNode.GetFallbackValue(), ASTNodes.ListNode)
+
+        varNode.ClearFallbackValue()
+        self.assertIsNone(varNode.GetFallbackValue())
+        self.assertEqualExpression(
+            ast.GetExpression(),
+            Sdf.VariableExpression.MakeVariable("FOO"))
+
+        with self.assertRaises(Tf.ErrorException):
+            varNode.SetFallbackValue(Sdf.VariableExpressionAST(
+                Sdf.VariableExpression.MakeVariable("BAR")).GetRoot())
+        with self.assertRaises(Tf.ErrorException):
+            varNode.SetFallbackValue(Sdf.VariableExpressionAST(
+                Sdf.VariableExpression.MakeNone()).GetRoot())
+        # Functions are not supported as fallback values.
+        with self.assertRaises(Tf.ErrorException):
+            varNode.SetFallbackValue(Sdf.VariableExpressionAST(
+                Sdf.VariableExpression.MakeFunction(
+                    "if", Sdf.VariableExpression.MakeLiteral(True),
+                    Sdf.VariableExpression.MakeLiteral(10),
+                    Sdf.VariableExpression.MakeLiteral(20))).GetRoot())
+
     def checkNodeList(self, getNodeListFromAST, makeExprForAST):
         def _testNodeList(ast, expectedExprs):
             self.assertExpectedNodeList(

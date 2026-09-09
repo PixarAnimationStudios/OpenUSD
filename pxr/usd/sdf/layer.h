@@ -1066,6 +1066,8 @@ public:
     VtDictionary GetCustomLayerData() const;
 
     /// Sets the CustomLayerData dictionary associated with this layer.
+    ///
+    /// Dictionary values that are empty VtValue are invalid.
     SDF_API
     void SetCustomLayerData(const VtDictionary& value);
 
@@ -1083,6 +1085,8 @@ public:
     VtDictionary GetExpressionVariables() const;
     
     /// Sets the expression variables dictionary for this layer.
+    ///
+    /// Dictionary values that are empty VtValue are invalid.
     SDF_API
     void SetExpressionVariables(const VtDictionary& expressionVars);
 

@@ -49,6 +49,10 @@ _ComputeExpandedValue(
     const size_t numRepeat,
     const TfToken &name)
 {
+    if (input.empty()) {
+        return input;
+    }
+
     // Build cumulative sum arrays to help index into the authored and expanded
     // values per curve.
     const size_t numCurves = perCurveCounts.size();
@@ -148,20 +152,55 @@ public:
     }
 };
 
+struct _ComputeExpandedValueVisitor
+{
+    const VtIntArray _perCurveCounts;
+    const size_t _numExtraEnds;
+    const TfToken _primvarName;
 
-// Typed sampled data source override that expands the contents of the array
+    template <typename T>
+    VtValue operator()(const VtArray<T>& array)
+    {
+        return VtValue(_ComputeExpandedValue<T>(
+            array, _perCurveCounts, _numExtraEnds, _primvarName
+        ));
+    }
+
+    VtValue operator()(const VtValue& value)
+    {
+        return value;
+    }
+};
+
+VtValue _ComputeExpandedValue(
+    const VtValue& value, 
+    const VtIntArray& _perCurveCounts, 
+    const size_t _numExtraEnds,
+    const TfToken& _primvarName)
+{
+    return VtVisitValue(
+        value,
+        _ComputeExpandedValueVisitor { 
+            _perCurveCounts, _numExtraEnds, _primvarName
+        }
+    );
+}
+
+// Sampled data source override that expands the contents of the array
 // produced by the input data source.
-template <typename T>
-class _ExpandedDataSource final : public HdTypedSampledDataSource<VtArray<T>>
+class _UntypedExpandedDataSource final : public HdSampledDataSource
 {
 public:
     using Time = HdSampledDataSource::Time;
 
-    HD_DECLARE_DATASOURCE(_ExpandedDataSource<T>);
+    HD_DECLARE_DATASOURCE(_UntypedExpandedDataSource);
 
     VtValue GetValue(Time shutterOffset) override
     {
-        return VtValue(GetTypedValue(shutterOffset));
+        return _ComputeExpandedValue(
+            _input->GetValue(shutterOffset), 
+            _perCurveCounts, _numExtraEnds, _primvarName
+        );
     }
 
     bool GetContributingSampleTimesForInterval(
@@ -173,24 +212,8 @@ public:
             startTime, endTime, outSampleTimes);
     }
 
-    VtArray<T> GetTypedValue(Time shutterOffset) override
-    {
-        const VtValue& v = _input->GetValue(shutterOffset);
-        if (v.IsHolding<VtArray<T>>()) {
-            const VtArray<T> array = v.UncheckedGet<VtArray<T>>();
-            if (array.empty()) {
-                return array;
-            }
-
-            return _ComputeExpandedValue<T>(
-                array, _perCurveCounts, _numExtraEnds, _primvarName);
-        }
-        return VtArray<T>();
-    }
-
 private:
-    /// input: the original data source
-    _ExpandedDataSource(
+    _UntypedExpandedDataSource(
         const HdSampledDataSourceHandle& input,
         const TfToken &primvarName,
         const VtIntArray& perCurveCounts,
@@ -208,34 +231,88 @@ private:
     size_t _numExtraEnds;
 };
 
-
-// Visitor that returns a contents-expanding data source wrapping the given
-// input data source if it produced a VtArray, or returns the input data source
-// otherwise.  The latter case is considered an error, as the caller will have
-// already handled data sources expected to hold non-array values (e.g.
-// 'constant' primvars or empty index buffers).
-struct _Visitor
+// Typed sampled data source override that expands the contents of the array
+// produced by the input data source.
+template <typename T>
+class _TypedExpandedDataSource final : public HdTypedSampledDataSource<VtArray<T>>
 {
+public:
+    using Time = HdSampledDataSource::Time;
+
+    HD_DECLARE_DATASOURCE(_TypedExpandedDataSource<T>);
+
+    VtValue GetValue(Time shutterOffset) override
+    {
+        return _ComputeExpandedValue(
+            _input->GetValue(shutterOffset),
+            _perCurveCounts, _numExtraEnds, _primvarName
+        );
+    }
+
+    bool GetContributingSampleTimesForInterval(
+        Time startTime,
+        Time endTime,
+        std::vector<Time>* outSampleTimes) override
+    {
+        return _input->GetContributingSampleTimesForInterval(
+            startTime, endTime, outSampleTimes);
+    }
+
+    VtArray<T> GetTypedValue(Time shutterOffset) override
+    {
+        VtValue v = _input->GetValue(shutterOffset);
+
+        if (v.IsHolding<VtArray<T>>()) {
+            return _ComputeExpandedValue<T>(
+                v.UncheckedGet<VtArray<T>>(), 
+                _perCurveCounts, 
+                _numExtraEnds,
+                _primvarName
+            );
+        }
+
+        return VtArray<T>();
+    }
+
+private:
+    _TypedExpandedDataSource(
+        const HdSampledDataSourceHandle& input,
+        const TfToken &primvarName,
+        const VtIntArray& perCurveCounts,
+        const size_t numExtraEnds)
+        : _input(input)
+        , _primvarName(primvarName)
+        , _perCurveCounts(perCurveCounts)
+        , _numExtraEnds(numExtraEnds)
+    {
+    }
+
     HdSampledDataSourceHandle _input;
     const TfToken _primvarName;
-    const VtIntArray& _perCurveCounts;
+    const VtIntArray _perCurveCounts;
     size_t _numExtraEnds;
-
-    template <typename T>
-    HdDataSourceBaseHandle operator()(const VtArray<T>& array)
-    {
-        return _ExpandedDataSource<T>::New(
-            _input, _primvarName, _perCurveCounts, _numExtraEnds);
-    }
-
-    HdDataSourceBaseHandle operator()(const VtValue& value)
-    {
-        TF_WARN(
-            "Unsupported type for expansion %s", value.GetTypeName().c_str());
-        return _input;
-    }
 };
 
+template <
+    typename T,
+    template <typename...> class DataSource,
+    class UntypedDataSource>
+struct _ExpandedDataSourceVisitor 
+{
+    template <class ...Args>
+    static HdDataSourceBaseHandle Visit(Args&&... args) 
+    {
+        if constexpr (std::is_same_v<T, VtValue>) {
+            return UntypedDataSource::New(std::forward<Args>(args)...);
+        } 
+        else if constexpr (VtIsArray<T>::value) {
+            return DataSource<typename T::ElementType>::New(std::forward<Args>(args)...);
+        } 
+        else {
+            return UntypedDataSource::New(std::forward<Args>(args)...);
+        }
+    }
+};
 
 // Primvar schema data source override that expands primvar values or indexed
 // primvar indices for vertex- and varying-interpolation primvars.  If the
@@ -358,10 +435,12 @@ public:
                 // for the two.
                 if (const HdSampledDataSourceHandle sds =
                     HdSampledDataSource::Cast(result)) {
-                    return VtVisitValue(
-                        sds->GetValue(0.0f),
-                        _Visitor { sds, _primvarName, _curveVertexCounts,
-                                   expansionSize });
+                    return HdVisitSampledDataSourceType<
+                        _ExpandedDataSourceVisitor,
+                        _TypedExpandedDataSource, 
+                        _UntypedExpandedDataSource>(
+                            sds, sds, _primvarName, _curveVertexCounts, expansionSize
+                    );
                 }
             }
         }

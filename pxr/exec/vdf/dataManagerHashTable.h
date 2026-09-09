@@ -240,7 +240,7 @@ public:
         return wasTouched;
     }
 
-    /// Clears the executor data for a specific output
+    /// Clears the buffer data for a specific output
     /// 
     void ClearDataForOutput(const VdfId outputId) {
         _outputData.erase(outputId);

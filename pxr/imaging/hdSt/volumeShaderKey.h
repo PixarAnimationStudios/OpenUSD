@@ -31,7 +31,7 @@ struct HdSt_VolumeShaderKey : public HdSt_ShaderKey
 
     TfToken glslfx;
     TfToken VS[3];
-    TfToken FS[4];
+    TfToken FS[7];
 };
 
 

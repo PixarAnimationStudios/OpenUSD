@@ -2384,6 +2384,146 @@ class TestUsdNamespaceEditorPathExpressionFixup(unittest.TestCase):
                 '/Root/Moved_C.test').Get(),
             Sdf.PathExpression('/Root/Moved_B'))
 
+    def test_LocalVariant(self):
+        def _VerifyAndApplyEdits(editor):
+            result = editor.CanApplyEdits()
+            self.assertTrue(result)
+            self.assertTrue(len(result.warnings) == 0)
+            self.assertTrue(editor.ApplyEdits())
+
+        # Test path expression fixup within a local variant
+        varLayer = Sdf.Layer.CreateAnonymous()
+        varLayerImportString = '''#usda 1.0
+        def "Root"
+        {
+            def "A" (
+                variantSets = ["v"]
+            )
+            {
+                variantSet "v" = {
+                    "x" {
+                        pathExpression expr = "/Root/B /Root/B.attr"                        
+                    }
+                }
+            }
+
+            def "B" ()
+            {
+                custom int attr
+            }
+        }'''
+
+        varLayer.ImportFromString(varLayerImportString)
+
+        # The session layer sets the variant selection for varLayer
+        sessionLayer  = Sdf.Layer.CreateAnonymous("session.usda")
+        sessionLayer.ImportFromString('''#usda 1.0
+            over "Root" () {
+                over "A" ( 
+                    variants = { string v = "x" }
+                ) { }
+            }
+        ''')
+
+        varStage = Usd.Stage.Open(varLayer, sessionLayer)
+        editor = Usd.NamespaceEditor(varStage)
+
+         # Property rename
+        editor.MovePropertyAtPath("/Root/B.attr", "/Root/B.renamed")
+        _VerifyAndApplyEdits(editor)
+        self.assertEqual(
+            varStage.GetAttributeAtPath('/Root/A.expr').Get(),
+            Sdf.PathExpression('/Root/B /Root/B.renamed'))
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.expr').default,
+            Sdf.PathExpression('/Root/B /Root/B.renamed'))
+
+        # Prim rename
+        editor.MovePrimAtPath("/Root/B", "/Root/Renamed")
+        _VerifyAndApplyEdits(editor)
+        self.assertEqual(
+            varStage.GetAttributeAtPath('/Root/A.expr').Get(),
+            Sdf.PathExpression('/Root/Renamed /Root/Renamed.renamed'))
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.expr').default,
+            Sdf.PathExpression('/Root/Renamed /Root/Renamed.renamed'))
+
+        # Property reparent
+        editor.MovePropertyAtPath("/Root/Renamed.renamed", "/Root.moved")
+        _VerifyAndApplyEdits(editor)
+        self.assertEqual(
+            varStage.GetAttributeAtPath('/Root/A.expr').Get(),
+            Sdf.PathExpression('/Root/Renamed /Root.moved'))
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.expr').default,
+            Sdf.PathExpression('/Root/Renamed /Root.moved'))
+
+        # Prim reparent
+        editor.MovePrimAtPath("/Root/Renamed", "/Moved")
+        _VerifyAndApplyEdits(editor)
+        self.assertEqual(
+            varStage.GetAttributeAtPath('/Root/A.expr').Get(),
+            Sdf.PathExpression('/Moved /Root.moved'))
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.expr').default,
+            Sdf.PathExpression('/Moved /Root.moved'))
+
+        # Property delete
+        editor.DeletePropertyAtPath("/Root.moved")
+        _VerifyAndApplyEdits(editor)
+        self.assertEqual(
+            varStage.GetAttributeAtPath('/Root/A.expr').Get(),
+            Sdf.PathExpression('/Moved'))
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.expr').default,
+            Sdf.PathExpression('/Moved'))
+        
+        # Prim delete
+        editor.DeletePrimAtPath("/Moved")
+        _VerifyAndApplyEdits(editor)
+        self.assertEqual(
+            varStage.GetAttributeAtPath('/Root/A.expr').Get(),
+            Sdf.PathExpression.Nothing())
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.expr').default,
+            Sdf.PathExpression.Nothing())
+
+        # Reset varLayer for the next test case and then mute varStage's 
+        # session layer. This will remove the variant selection so that we can 
+        # test the effects of namespace edits on variants that are not selected.
+        with Sdf.ChangeBlock():
+            varLayer.ImportFromString(varLayerImportString)
+        varStage.MuteLayer(sessionLayer.identifier)
+
+        # Verify the path expression has returned to its original value, but
+        # no longer composes onto the stage.
+        self.assertFalse(varStage.GetAttributeAtPath('/Root/A.expr'))
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.expr').default,
+            Sdf.PathExpression('/Root/B /Root/B.attr'))
+
+        # Do a rename
+        editor.MovePrimAtPath("/Root/B", "/Root/Renamed")
+        _VerifyAndApplyEdits(editor)
+
+        # Verify that the path expression was not updated.
+        self.assertFalse(varStage.GetAttributeAtPath('/Root/A.expr'))
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.expr').default,
+            Sdf.PathExpression('/Root/B /Root/B.attr'))
+
+        # Unmute the session layer to restore the variant selection.
+        varStage.UnmuteLayer(sessionLayer.identifier)
+
+        # Verify that the path expression is still unchanged on both the layer 
+        # and the stage.
+        self.assertEqual(
+            varStage.GetAttributeAtPath('/Root/A.expr').Get(),
+            Sdf.PathExpression('/Root/B /Root/B.attr'))
+        self.assertEqual(
+            varLayer.GetObjectAtPath('/Root/A{v=x}.expr').default,
+            Sdf.PathExpression('/Root/B /Root/B.attr'))
+
     def test_NonDefaultPrims(self):
         """Verify that path expression fixup works on undefined (over),
         abstract (class), inactive, and unloaded prims."""

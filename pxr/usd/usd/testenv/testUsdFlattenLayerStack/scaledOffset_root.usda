@@ -1,0 +1,6 @@
+#usda 1.0
+(
+    subLayers = [
+        @./scaledOffset_sub.usda@ (offset = 10; scale = 2)
+    ]
+)

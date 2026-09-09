@@ -8,6 +8,7 @@
 
 #include "pxr/imaging/hd/containerDataSourceEditor.h"
 #include "pxr/imaging/hd/dependencyForwardingSceneIndex.h"
+#include "pxr/imaging/hd/systemMessages.h"
 #include "pxr/imaging/hf/perfLog.h"
 #include "pxr/base/tf/denseHashMap.h"
 #include "pxr/base/tf/envSetting.h"
@@ -19,18 +20,20 @@ HdSceneIndexBaseRefPtr
 HdsiLocatorCachingSceneIndex::AddDependencyForwardingAndCache(
     HdSceneIndexBaseRefPtr const& inputScene,
     HdDataSourceLocator const& locatorToCache,
-    TfToken const& primTypeToCache)
+    TfToken const& primTypeToCache,
+    bool const& cacheDescendants)
 {
     return HdsiLocatorCachingSceneIndex::New(
         HdDependencyForwardingSceneIndex::New(inputScene),
-        locatorToCache, primTypeToCache);
+        locatorToCache, primTypeToCache, cacheDescendants);
 }
 
 HdsiLocatorCachingSceneIndexRefPtr
 HdsiLocatorCachingSceneIndex::New(
     HdSceneIndexBaseRefPtr const& inputScene,
     HdDataSourceLocator const& locatorToCache,
-    TfToken const& primTypeToCache)
+    TfToken const& primTypeToCache,
+    bool const& cacheDescendants)
 {
     if (locatorToCache.IsEmpty()) {
         // This scene index is not intended for prim-level caching.
@@ -40,7 +43,9 @@ HdsiLocatorCachingSceneIndex::New(
     }
     return TfCreateRefPtr(
         new HdsiLocatorCachingSceneIndex(
-            inputScene, locatorToCache, primTypeToCache));
+            inputScene, locatorToCache, primTypeToCache, 
+            cacheDescendants
+    ));
 }
 
 HdsiLocatorCachingSceneIndex::_DataSource::_DataSource(
@@ -85,7 +90,8 @@ HdsiLocatorCachingSceneIndex::_GetWithCache(
     TfToken const& name = locator.GetLastElement();
 
     // Are we caching this locator?
-    if (locator.HasPrefix(_locatorToCache)) {
+    if ((_cacheDescendants && locator.HasPrefix(_locatorToCache)) 
+       || locator == _locatorToCache) {
         // Yes.  Check the cache.
         {
             std::lock_guard<std::mutex> lock(_cacheMutex);
@@ -113,9 +119,11 @@ HdsiLocatorCachingSceneIndex::_GetWithCache(
         // that we are intending to cache.
         HdDataSourceBaseHandle ds = inputDataSource->Get(name);
         // Recursively wrap containers.
-        if (HdContainerDataSourceHandle containerDs =
-            HdContainerDataSource::Cast(ds)) {
-            ds = _DataSource::New(this, primPath, locator, containerDs);
+        if (_cacheDescendants) {
+            if (HdContainerDataSourceHandle containerDs =
+                HdContainerDataSource::Cast(ds)) {
+                ds = _DataSource::New(this, primPath, locator, containerDs);
+            }
         }
         // Store result in cache.
         if (ds) {
@@ -145,10 +153,12 @@ HdsiLocatorCachingSceneIndex::_GetWithCache(
 HdsiLocatorCachingSceneIndex::HdsiLocatorCachingSceneIndex(
         HdSceneIndexBaseRefPtr const& inputScene,
         HdDataSourceLocator const& locatorToCache,
-        TfToken const& primTypeToCache)
+        TfToken const& primTypeToCache,
+        bool const& cacheDescendants)
   : HdSingleInputFilteringSceneIndexBase(inputScene)
   , _locatorToCache(locatorToCache)
   , _primTypeToCache(primTypeToCache)
+  , _cacheDescendants(cacheDescendants)
 {
     // Convenience name for recognizing caches in Hydra Scene Debugger.
     std::string displayName =
@@ -260,6 +270,17 @@ HdsiLocatorCachingSceneIndex::_PrimsDirtied(
     }
 
     _SendPrimsDirtied(entries);
+}
+
+void
+HdsiLocatorCachingSceneIndex::_SystemMessage(
+    const TfToken& messageType,
+    const HdDataSourceBaseHandle& args)
+{
+    if (messageType == HdSystemMessageTokens->dropCaches) {
+        std::lock_guard<std::mutex> lock(_cacheMutex);
+        TfReset(_primDsCache);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -11,7 +11,9 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/tf/mallocTag.h"
 
+#include "hdPrman/cameraContext.h"
 #include "hdPrman/gprimbase.h"
 #include "hdPrman/idMap.h"
 #include "hdPrman/renderParam.h"
@@ -21,6 +23,7 @@
 #include "hdPrman/utils.h"
 
 #include "Riley.h"
+#include <RiTypesHelper.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -149,6 +152,27 @@ protected:
         return empty;
     }
 
+    static
+    void
+    _ResolveDicingCamera(
+        const HdPrman_CameraContext& context,
+        RtPrimVarList* primvars)
+    {
+        // NB: We do not allow motion samples on dice:referencecamera
+        RtUString authored;
+        if (primvars->GetString(RixStr.k_dice_referencecamera, authored) &&
+            !authored.Empty()) {
+            const RtUString& resolved = context.ResolveCameraName(
+                authored.CStr());
+            if (resolved.Empty()) {
+                // A generic warning was already issued by ResolveCameraName()
+                primvars->Remove(RixStr.k_dice_referencecamera);
+            } else {
+                primvars->SetString(RixStr.k_dice_referencecamera, resolved);
+            }
+        }
+    }
+
     // This class does not support copying.
     HdPrman_Gprim(const HdPrman_Gprim&)             = delete;
     HdPrman_Gprim &operator =(const HdPrman_Gprim&) = delete;
@@ -163,7 +187,6 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                           TfToken const    &reprToken)
 {
     HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
     TF_UNUSED(reprToken);
 
     // Check if there are any relevant dirtyBits.
@@ -278,6 +301,8 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     std::vector<riley::MaterialId> subsetMaterialIds;
     std::vector<SdfPath> subsetPaths;
     {
+        TfAutoMallocTag mallocTag("hdPrman", "Geometry Prototypes");
+
         RtUString primType;
         RtPrimVarList primvars;
         HdGeomSubsets geomSubsets;
@@ -318,6 +343,17 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
             }
             _prototypeIds.resize(newCount,
                               riley::GeometryPrototypeId::InvalidId());
+        }
+
+        const HdPrman_CameraContext& cameraContext = param->GetCameraContext();
+        _ResolveDicingCamera(cameraContext, &primvars);
+        for (RtPrimVarList& subsetPrimvars : geomSubsetPrimvars) {
+            // XXX: geom subsets can, theoretically, have different dicing
+            // cameras since they're implemented as separate geometry
+            // prototypes, but even if they couldn't this is important to
+            // ensure they all get set correctly if the parent geometry
+            // specifies a dicing camera.
+            _ResolveDicingCamera(cameraContext, &subsetPrimvars);
         }
 
         _AddPrimvars(&primvars);
@@ -411,6 +447,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     //
     // Create or modify Riley geometry instances.
     //
+    TfAutoMallocTag mallocTag("hdPrman", "Geometry Instances");
 
     // Resolve attributes.
     RtParamList attrs = param->ConvertAttributes(sceneDelegate, id, true);

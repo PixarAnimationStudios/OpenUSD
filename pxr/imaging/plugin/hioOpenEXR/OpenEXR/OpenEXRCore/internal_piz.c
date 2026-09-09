@@ -67,8 +67,18 @@ forwardLutFromBitmap (const uint8_t* bitmap, uint16_t* lut)
     return k - 1;
 }
 
+#ifndef __cplusplus
+// msvc does not seem to properly enable restrict in C compiling. /sigh
+#    ifndef _MSC_VER
+#        define NO_ALIAS restrict
+#    endif
+#endif
+#ifndef NO_ALIAS
+#    define NO_ALIAS
+#endif
+
 static inline uint16_t
-reverseLutFromBitmap (const uint8_t* bitmap, uint16_t* lut)
+reverseLutFromBitmap (const uint8_t* NO_ALIAS bitmap, uint16_t* NO_ALIAS lut)
 {
     uint32_t n, k = 0;
 
@@ -87,8 +97,20 @@ reverseLutFromBitmap (const uint8_t* bitmap, uint16_t* lut)
 }
 
 static inline void
-applyLut (const uint16_t* lut, uint16_t* data, uint64_t nData)
+applyLut (const uint16_t lut[NO_ALIAS USHORT_RANGE], uint16_t* NO_ALIAS data, uint64_t nData)
 {
+    /* partially unrolling is noticeably faster */
+    uint16_t dvals[8];
+    while ( nData > 8 )
+    {
+        memcpy (dvals, data, sizeof(uint16_t)*8);
+        for ( int i = 0; i < 8; ++i )
+            dvals[i] = lut[dvals[i]];
+        memcpy (data, dvals, sizeof(uint16_t)*8);
+        data += 8;
+        nData -= 8;
+    }
+
     for (uint64_t i = 0; i < nData; ++i)
         data[i] = lut[data[i]];
 }
@@ -115,13 +137,52 @@ wenc14 (uint16_t a, uint16_t b, uint16_t* l, uint16_t* h)
 }
 
 static inline void
+wdec14_4 (uint16_t* px, uint16_t* p01, uint16_t* p10, uint16_t* p11)
+{
+    /* pre swap
+     * px, p01, p10, p11
+     * px -> a
+     * p10 -> b
+     * p01 -> c
+     * p11 -> d
+     * */
+    int16_t a = (int16_t) *px;
+    int16_t b = (int16_t) *p10;
+    int16_t c = (int16_t) *p01;
+    int16_t d = (int16_t) *p11;
+
+    int ai = (int) a;
+    int bi = (int) b;
+    int ci = (int) c;
+    int di = (int) d;
+
+    int i00 = ai + (bi & 1) + (bi >> 1);
+    int i10 = i00 - bi;
+    int i01 = ci + (di & 1) + (di >> 1);
+    int i11 = i01 - di;
+
+    ai = i00 + (i01 & 1) + (i01 >> 1);
+    bi = ai - i01;
+    ci = i10 + (i11 & 1) + (i11 >> 1);
+    di = ci - i11;
+
+    /* different output order */
+    /* px, p01, p10, p11 */
+    *px  = (uint16_t) ai;
+    *p01 = (uint16_t) bi;
+    *p10 = (uint16_t) ci;
+    *p11 = (uint16_t) di;
+}
+
+static inline void
 wdec14 (uint16_t l, uint16_t h, uint16_t* a, uint16_t* b)
 {
     int16_t ls = (int16_t) l;
     int16_t hs = (int16_t) h;
 
-    int hi = hs;
-    int ai = ls + (hi & 1) + (hi >> 1);
+    int hi = (int) hs;
+    int li = (int) ls;
+    int ai = li + (hi & 1) + (hi >> 1);
 
     int16_t as = (int16_t) ai;
     int16_t bs = (int16_t) (ai - hi);
@@ -342,10 +403,7 @@ wav_2D_decode (
 
                 if (w14)
                 {
-                    wdec14 (*px, *p10, &i00, &i10);
-                    wdec14 (*p01, *p11, &i01, &i11);
-                    wdec14 (i00, i01, px, p01);
-                    wdec14 (i10, i11, p10, p11);
+                    wdec14_4 (px, p01, p10, p11);
                 }
                 else
                 {
@@ -427,7 +485,7 @@ internal_exr_apply_piz (exr_encode_pipeline_t* encode)
         EXR_TRANSCODE_BUFFER_SCRATCH1,
         &(encode->scratch_buffer_1),
         &(encode->scratch_alloc_size_1),
-        packedbytes);
+        encode->chunk.unpacked_size);
     if (rv != EXR_ERR_SUCCESS) return rv;
 
     rv = internal_encode_alloc_buffer (
@@ -482,6 +540,9 @@ internal_exr_apply_piz (exr_encode_pipeline_t* encode)
 
     applyLut (lut, encode->scratch_buffer_1, ndata);
 
+    if (4 > encode->compressed_alloc_size)
+        return EXR_ERR_OUT_OF_MEMORY;
+
     nOut = 0;
     unaligned_store16 (out, minNonZero);
     out += 2;
@@ -492,6 +553,9 @@ internal_exr_apply_piz (exr_encode_pipeline_t* encode)
     if (minNonZero <= maxNonZero)
     {
         bpl = (uint64_t) (maxNonZero - minNonZero + 1);
+        if ((nOut + bpl) > encode->compressed_alloc_size)
+            return EXR_ERR_OUT_OF_MEMORY;
+
         memcpy (out, bitmap + minNonZero, bpl);
         out += bpl;
         nOut += bpl;
@@ -518,6 +582,9 @@ internal_exr_apply_piz (exr_encode_pipeline_t* encode)
     lengthptr = (uint32_t*) out;
     out += sizeof (uint32_t);
     nOut += sizeof (uint32_t);
+    if (nOut > encode->compressed_alloc_size)
+        return EXR_ERR_OUT_OF_MEMORY;
+
     rv = internal_huf_compress (
         &nBytes,
         out,
@@ -583,7 +650,7 @@ internal_exr_undo_piz (
         EXR_TRANSCODE_BUFFER_SCRATCH1,
         &(decode->scratch_buffer_1),
         &(decode->scratch_alloc_size_1),
-        outsz);
+        outsz + hufSpareBytes);
     if (rv != EXR_ERR_SUCCESS) return rv;
 
     rv = internal_decode_alloc_buffer (
@@ -714,6 +781,6 @@ internal_exr_undo_piz (
         }
     }
 
-    if (nOut != outsz) return EXR_ERR_CORRUPT_CHUNK;
-    return EXR_ERR_SUCCESS;
+    decode->bytes_decompressed = nOut;
+    return (nOut == outsz) ? EXR_ERR_SUCCESS : EXR_ERR_CORRUPT_CHUNK;
 }

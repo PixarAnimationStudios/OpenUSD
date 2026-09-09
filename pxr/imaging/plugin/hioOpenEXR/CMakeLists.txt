@@ -16,6 +16,7 @@ pxr_plugin(hioOpenEXR
     CPPFILES
         OpenEXR/openexr-c.c
         OpenEXRImage.cpp
+        OpenEXR/OpenEXRCore/internal_ht_common.cpp
 
     RESOURCE_FILES
         plugInfo.json
@@ -44,4 +45,3 @@ if (BUILD_SHARED_LIBS)
         EXPECTED_RETURN_CODE 0
     )
 endif()
-

@@ -121,8 +121,6 @@ pxr_library(tf
         compressedBits
         debug
         debugNotice
-        denseHashMap
-        denseHashSet
         diagnostic
         diagnosticBase
         diagnosticContainer
@@ -135,6 +133,7 @@ pxr_library(tf
         error
         errorMark
         errorTransport
+        eternalString
         exception
         expiryNotifier
         fastCompression
@@ -217,6 +216,8 @@ pxr_library(tf
         cxxCast.h
         declarePtrs.h
         delegatedCountPtr.h
+        denseHashMap.h
+        denseHashSet.h
         diagnosticLite.h
         diagnosticTransport.h
         functionTraits.h
@@ -258,6 +259,7 @@ pxr_library(tf
         pyErrorInternal
 
     PRIVATE_HEADERS
+        buffer.h
         scopeDescriptionPrivate.h
         pxrDoubleConversion/ieee.h
         pxrDoubleConversion/utils.h
@@ -400,12 +402,12 @@ pxr_build_test(testTfSIGSEGV
         testenv/SIGSEGV.cpp
 )
 
-pxr_build_test_shared_lib(TestTfDl
+pxr_build_test_plugin(TestTfDl
     CPPFILES
         testenv/TestTfDl.cpp
 )
 
-pxr_build_test_shared_lib(TestTfRegistryFunctionPlugin
+pxr_build_test_plugin(TestTfRegistryFunctionPlugin
     LIBRARIES
         tf
     CPPFILES
@@ -444,14 +446,17 @@ pxr_build_test(testTf
         testenv/atomicOfstreamWrapper.cpp
         testenv/bits.cpp
         testenv/bitUtils.cpp
+        testenv/buffer.cpp
         testenv/compressedBits.cpp
         testenv/debug.cpp
         testenv/denseHashMap.cpp
+        testenv/denseHashSet.cpp
         testenv/delegate.cpp
         testenv/dl.cpp
         testenv/enum.cpp
         testenv/error.cpp
         testenv/envSetting.cpp
+        testenv/eternalString.cpp
         testenv/exception.cpp
         testenv/fastCompression.cpp
         testenv/fileUtils.cpp
@@ -565,6 +570,9 @@ pxr_register_test(TfBits
 pxr_register_test(TfBitUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfBitUtils"
 )
+pxr_register_test(Tf_Buffer
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf Tf_Buffer"
+)
 pxr_register_test(TfCompressedBits
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfCompressedBits"
 )
@@ -603,6 +611,9 @@ pxr_register_test(TfDebugTestEnvHelp
 pxr_register_test(TfDenseHashMap
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDenseHashMap"
 )
+pxr_register_test(TfDenseHashSet
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDenseHashSet"
+)
 pxr_register_test(TfDelegate
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDelegateAddRemove"
     STDOUT_REDIRECT output.txt 
@@ -629,6 +640,9 @@ pxr_register_test(TfErrorAndDiagnosticTransportLogText
 )
 pxr_register_test(TfErrorThreadTransport
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfErrorThreadTransport"
+)
+pxr_register_test(TfEternalString
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfEternalString"
 )
 pxr_register_test(TfFileUtils_Python
     PYTHON

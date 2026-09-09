@@ -35,9 +35,9 @@ class "PublicMultipleApplyAPI" (
     apiSchemas = ["MultiApplyAPI:__INSTANCE_NAME__", "BuiltinMultiApplyAPI:__INSTANCE_NAME__:builtin"]
 )
 {
-    opaque testo:__INSTANCE_NAME__
-    int testo:__INSTANCE_NAME__:testAttrOne
-    double testo:__INSTANCE_NAME__:testAttrTwo
+    opaque public:__INSTANCE_NAME__
+    int public:__INSTANCE_NAME__:testAttrOne
+    double public:__INSTANCE_NAME__:testAttrTwo
 }
 
 class "Base" (

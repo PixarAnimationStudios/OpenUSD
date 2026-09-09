@@ -21,6 +21,7 @@
 /// \file
 
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/schemaTypeDefs.h"
 
 #include "pxr/imaging/hd/schema.h"
 
@@ -40,6 +41,7 @@ using HdRenderDelegateInfoDataSourceHandle = HdRenderDelegateInfoDataSource::Han
     (motionBlurSupport) \
     (cameraMotionBlurSupport) \
     (legacyRenderDelegateInfo) \
+    (renderSettingDescriptors) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdSceneIndexCreateArgsSchemaTokens, HD_API,
     HD_SCENE_INDEX_CREATE_ARGS_SCHEMA_TOKENS);
@@ -100,7 +102,11 @@ public:
     /// information to resolve, for example, the material render contexts
     /// correctly.
     HD_API
-    HdRenderDelegateInfoDataSourceHandle GetLegacyRenderDelegateInfo() const; 
+    HdRenderDelegateInfoDataSourceHandle GetLegacyRenderDelegateInfo() const;
+
+    /// Render settings advertised by rendererer.
+    HD_API
+    HdRenderSettingDescriptorContainerSchema GetRenderSettingDescriptors() const; 
 
     /// @} 
 
@@ -119,7 +125,8 @@ public:
     BuildRetained(
         const HdBoolDataSourceHandle &motionBlurSupport,
         const HdBoolDataSourceHandle &cameraMotionBlurSupport,
-        const HdRenderDelegateInfoDataSourceHandle &legacyRenderDelegateInfo
+        const HdRenderDelegateInfoDataSourceHandle &legacyRenderDelegateInfo,
+        const HdContainerDataSourceHandle &renderSettingDescriptors
     );
 
     /// \class HdSceneIndexCreateArgsSchema::Builder
@@ -140,6 +147,9 @@ public:
         HD_API
         Builder &SetLegacyRenderDelegateInfo(
             const HdRenderDelegateInfoDataSourceHandle &legacyRenderDelegateInfo);
+        HD_API
+        Builder &SetRenderSettingDescriptors(
+            const HdContainerDataSourceHandle &renderSettingDescriptors);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -149,6 +159,7 @@ public:
         HdBoolDataSourceHandle _motionBlurSupport;
         HdBoolDataSourceHandle _cameraMotionBlurSupport;
         HdRenderDelegateInfoDataSourceHandle _legacyRenderDelegateInfo;
+        HdContainerDataSourceHandle _renderSettingDescriptors;
 
     };
 

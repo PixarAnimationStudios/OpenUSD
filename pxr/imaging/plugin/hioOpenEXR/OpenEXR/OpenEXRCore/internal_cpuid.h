@@ -8,7 +8,8 @@
 
 #include "OpenEXRConfigInternal.h"
 
-#if defined(i386) || defined(__i386__) || defined(__i386) || defined(_M_X86) || defined(__x86_64__) || defined(_M_X64)
+#if defined(i386) || defined(__i386__) || defined(__i386) ||                   \
+    defined(_M_X86) || defined(__x86_64__) || (defined(_M_X64) && !defined(_M_ARM64EC))
 #    define OPENEXR_ENABLE_X86_SIMD_CHECK 1
 #else
 #    define OPENEXR_ENABLE_X86_SIMD_CHECK 0
@@ -51,15 +52,15 @@ check_for_x86_simd (int* f16c, int* avx, int* sse2)
 
 #elif OPENEXR_ENABLE_X86_SIMD_CHECK
 
-#   if defined(_WIN32)
-    int regs[4]={0}, osxsave;
+#    if defined(_WIN32)
+    int regs[4] = {0}, osxsave;
 
     __cpuid (regs, 0);
     if (regs[0] >= 1) { __cpuidex (regs, 1, 0); }
     else
         regs[2] = 0;
-#   else
-    unsigned int regs[4]={0}, osxsave;
+#    else
+    unsigned int regs[4] = {0}, osxsave;
     __get_cpuid (0, &regs[0], &regs[1], &regs[2], &regs[3]);
     if (regs[0] >= 1)
     {
@@ -67,7 +68,7 @@ check_for_x86_simd (int* f16c, int* avx, int* sse2)
     }
     else
         regs[2] = 0;
-#   endif
+#    endif
 
     /*
      * linux cpuid.h for x86 has defines but not consistent cross platform
@@ -77,8 +78,8 @@ check_for_x86_simd (int* f16c, int* avx, int* sse2)
 
     osxsave = (regs[2] & (1 << 27)) ? 1 : 0;
     /* AVX is indicated by bit 28, F16C by 29 of ECX (reg 2) */
-    *avx    = (regs[2] & (1 << 28)) ? 1 : 0;
-    *f16c   = (regs[2] & (1 << 29)) ? 1 : 0;
+    *avx  = (regs[2] & (1 << 28)) ? 1 : 0;
+    *f16c = (regs[2] & (1 << 29)) ? 1 : 0;
     /* sse2 is in EDX bit 26 */
     *sse2 = (regs[3] & (1 << 26)) ? 1 : 0;
 
@@ -94,7 +95,7 @@ check_for_x86_simd (int* f16c, int* avx, int* sse2)
 #        if defined(_MSC_VER)
         /* TODO: remove the following disablement once we can do inline msvc */
 #            if defined(OPENEXR_IMF_HAVE_GCC_INLINE_ASM_AVX)
-        regs[0] = _xgetbv(0);
+        regs[0] = _xgetbv (0);
 #            else
         regs[0] = 0;
 #            endif
@@ -111,8 +112,8 @@ check_for_x86_simd (int* f16c, int* avx, int* sse2)
             *f16c = 0;
         }
 #    else
-        *avx    = 0;
-        *f16c   = 0;
+        *avx  = 0;
+        *f16c = 0;
 #    endif
     }
 
@@ -122,7 +123,6 @@ check_for_x86_simd (int* f16c, int* avx, int* sse2)
     *avx  = 0;
     *sse2 = 0;
 #endif
-
 }
 
 static inline int
@@ -132,7 +132,7 @@ has_native_half (void)
     int sse2, avx, f16c;
     check_for_x86_simd (&f16c, &avx, &sse2);
     return avx && f16c;
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC)
     return 1;
 #else
     return 0;
@@ -141,4 +141,3 @@ has_native_half (void)
 
 #undef OPENEXR_ENABLE_X86_SIMD_CHECK
 #endif
-

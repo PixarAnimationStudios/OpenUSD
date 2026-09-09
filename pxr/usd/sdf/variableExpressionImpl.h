@@ -121,6 +121,7 @@ public:
     {
         std::string content;
         bool isVariable = false;
+        std::unique_ptr<Node> fallback;
     };
 
     StringNode(std::vector<Part>&& parts);
@@ -136,11 +137,12 @@ class VariableNode
     : public Node
 {
 public:
-    VariableNode(std::string&& var);
+    VariableNode(std::string&& var, std::unique_ptr<Node>&& fallback);
     EvalResult Evaluate(EvalContext* ctx) const override;
 
 private:
     std::string _var;
+    std::unique_ptr<Node> _fallback;
 };
 
 /// \class ConstantNode

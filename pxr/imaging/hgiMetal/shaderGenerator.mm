@@ -194,6 +194,9 @@ _GetBuiltinOutputKeyword(HgiShaderFunctionParamDesc const &param,
     // Map from descriptor to Metal
     const static std::unordered_map<std::string, std::string> roleIndexM {
        {HgiShaderKeywordTokens->hdSampleMask, "sample_mask"},
+       {HgiShaderKeywordTokens->hdDepthAny, "depth(any)"},
+       {HgiShaderKeywordTokens->hdDepthGreater, "depth(greater)"},
+       {HgiShaderKeywordTokens->hdDepthLess, "depth(less)"}
     };
 
     //check if has a role
@@ -328,6 +331,13 @@ _GetDeclarationDefinitions()
         "    } return expected; }\n"
         "#define ATOMIC_COMP_SWAP(a, expected, desired)"
         " atomicCompSwap(&a, expected, desired)\n"
+
+        // Control flow attributes
+        "#define HGI_COMPILER_ATTR_UNROLL _Pragma(\"clang loop unroll(full)\")\n"
+        "#define HGI_COMPILER_ATTR_DONT_UNROLL _Pragma(\"clang loop unroll(disable)\")\n"
+        // MSL does not have control flow attributes for branches
+        "#define HGI_COMPILER_ATTR_FLATTEN\n"
+        "#define HGI_COMPILER_ATTR_DONT_FLATTEN\n"
         "\n";
 }
 

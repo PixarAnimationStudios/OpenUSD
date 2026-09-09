@@ -226,9 +226,9 @@ _UpdateCameraContextFromProduct(
         _MultiplyAndRound(dataWindowNDC.GetMin(), resolution),
         _MultiplyAndRound(dataWindowNDC.GetMax(), resolution) - GfVec2i(1));
 
-    // Set the camera path to allow UpdateRileyCameraAndClipPlanes to fetch
+    // Set the camera path to allow UpdateActiveCamera to fetch
     // necessary data from the camera Sprim.
-    cameraContext->SetCameraPath(product.cameraPath);
+    cameraContext->SetActiveCameraPath(product.cameraPath);
     cameraContext->SetFraming(
         CameraUtilFraming(
             displayWindow, dataWindow, product.pixelAspectRatio));
@@ -247,7 +247,6 @@ _UpdateCameraContextFromProduct(
 // camera context.
 void
 _UpdateRileyCamera(
-    riley::Riley *riley,
     const HdRenderIndex *renderIndex,
     const SdfPath &cameraPathFromProduct,
     HdPrman_CameraContext *cameraContext)
@@ -255,10 +254,14 @@ _UpdateRileyCamera(
     if (cameraContext->IsInvalid()) {
         TF_DEBUG(HDPRMAN_RENDER_PASS).Msg(
             "Updating riley camera %u using camera prim %s\n",
-            cameraContext->GetCameraId().AsUInt32(),
-            cameraContext->GetCameraPath().GetText());
+            cameraContext->GetActiveCameraId().AsUInt32(),
+            cameraContext->GetActiveCameraPath().GetText());
 
-        cameraContext->UpdateRileyCameraAndClipPlanes(riley, renderIndex);
+        // Apply the active camera's overlay and, if the active-camera identity
+        // changed, run the transition (revert previous + re-issue the default
+        // dicing camera), all consolidated inside UpdateActiveCamera.
+        cameraContext->UpdateActiveCamera(renderIndex);
+
         cameraContext->MarkValid();
     }
 }
@@ -318,7 +321,7 @@ _ResolveShutterInterval(
 
     GfVec2f shutter(0.0f, 0.5f); // fallback 180' shutter.
     if (const HdCamera * const camera =
-            cameraContext.GetCamera(renderIndex)) {
+            cameraContext.GetActiveCamera(renderIndex)) {
         shutter[0] = camera->GetShutterOpen();
         shutter[1] = camera->GetShutterClose();
     }
@@ -394,7 +397,7 @@ HdPrman_RenderSettings::DriveRenderPass(
     //
     // 2. The hdPrman test harness where the task does not have AOV bindings.
     //
-    // 3. RenderServer, which, like usdrecord, enables 
+    // 3. RenderServer, which, like usdrecord, enables
     //    HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS but needs to render
     //    in a non-main thread as if it were interactive so the render
     //    can be stopped and restarted asynchronously.
@@ -479,7 +482,6 @@ HdPrman_RenderSettings::UpdateAndRender(
         // This _cannot_ be moved to Sync since the camera Sprim wouldn't have
         // been updated.
         _UpdateRileyCamera(
-            param->AcquireRiley(),
             renderIndex,
             product.cameraPath,
             &cameraContext);
@@ -540,6 +542,11 @@ void HdPrman_RenderSettings::Finalize(HdRenderParam *renderParam)
         //     renderParam->SetDrivingRenderSettingsPrimPath(
         //         HdsiRenderSettingsFilteringSceneIndex::GetFallbackPrimPath());
         // }
+
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+        // Tear down the light path listener when the driving prim is finalized.
+        param->SetLightPathListenerOptions(false, {}, 0, 0);
+#endif
 
         // For now, just reset to an empty path.
         param->SetDrivingRenderSettingsPrimPath(SdfPath::EmptyPath());
@@ -686,6 +693,33 @@ void HdPrman_RenderSettings::_Sync(
             param->SetRenderSettingsPrimOptions(_settingsOptions);
             param->SetRileyOptions();
         }
+
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+        // Activate or deactivate the light path listener.
+        // Re-evaluate on DirtyActive so that switching the driving prim
+        // tears down a listener that the new prim doesn't request.
+        if (*dirtyBits & (HdRenderSettings::DirtyNamespacedSettings |
+                          HdRenderSettings::DirtyActive)) {
+            static const TfToken lightPathEnable(
+                "ri:statistics:lightPath:enable");
+            static const TfToken lightPathFilename(
+                "ri:statistics:lightPath:outputFilename");
+            static const TfToken lightPathSampleRate(
+                "ri:statistics:lightPath:sampleRate");
+            static const TfToken lightPathMaxPerPixel(
+                "ri:statistics:lightPath:maxPerPixel");
+            param->SetLightPathListenerOptions(
+                VtDictionaryGet<bool>(namespacedSettings, lightPathEnable,
+                    VtDefault = false),
+                VtDictionaryGet<std::string>(namespacedSettings,
+                    lightPathFilename,
+                    VtDefault = std::string("./lightPaths.json")),
+                VtDictionaryGet<int>(namespacedSettings, lightPathSampleRate,
+                    VtDefault = 1),
+                VtDictionaryGet<int>(namespacedSettings, lightPathMaxPerPixel,
+                    VtDefault = 0));
+        }
+#endif
 
         // ... and connections.
         if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
@@ -875,7 +909,7 @@ HdPrman_RenderSettings::_ProcessRenderProducts(HdPrman_RenderParam *param)
         // interval. See SetRileyShutterIntervalFromCameraContextCameraPath
         // for additional context.
         const SdfPath &cameraPath = GetRenderProducts().at(0).cameraPath;
-        param->GetCameraContext().SetCameraPath(cameraPath);
+        param->GetCameraContext().SetActiveCameraPath(cameraPath);
     }
 
 #if HD_API_VERSION >= 64

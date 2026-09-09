@@ -18,6 +18,7 @@ pxr_library(usdImaging
         sdf
         usd
         usdGeom
+        usdHydra
         usdLux
         usdRender
         usdShade
@@ -72,6 +73,7 @@ pxr_library(usdImaging
         resolvedAttributeCache
         instancerContext
         stageSceneIndex
+        stageSceneIndexInterface
         selectionSceneIndex
         tokens
         apiSchemaAdapter
@@ -326,6 +328,15 @@ pxr_build_test(testUsdImagingInstanceProxyTraversal
     CPPFILES
         testenv/testUsdImagingInstanceProxyTraversal.cpp
 )
+pxr_build_test(testUsdImagingCollectionExpressionEvaluation
+    LIBRARIES
+        usdImaging
+        hd
+        usd
+        sdf
+    CPPFILES
+        testenv/testUsdImagingCollectionExpressionEvaluation.cpp
+)
 pxr_build_test(testUsdImagingCollectionPredicateLibrary
     LIBRARIES
         usdImaging
@@ -407,6 +418,8 @@ pxr_register_test(testUsdImagingStageSceneIndex
 pxr_register_test(testUsdImagingStageSceneIndexContents
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingStageSceneIndexContents basic.usda basic.txt"
     TESTENV testenv/testUsdImagingStageSceneIndexContents
+    ENV
+        USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
     EXPECTED_RETURN_CODE 0
     DIFF_COMPARE
         basic.txt
@@ -430,6 +443,24 @@ pxr_register_test(testUsdImagingInstanceProxyTraversal_2
         2_ni-2-levels_usdTraversal.txt
         2_ni-2-levels_sceneIndexTraversal.txt
         2_ni-2-levels_sceneIndexInstanceProxyTraversal.txt
+    ENV
+        USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
+)
+pxr_register_test(testUsdImagingCollectionExpressionEvaluation_1
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingCollectionExpressionEvaluation 1_simple.usda // //Trunk /World/InstanceA /World/InstanceB// //{isa:Sphere}"
+    TESTENV testenv/testUsdImagingCollectionExpressionEvaluation
+    EXPECTED_RETURN_CODE 0
+    DIFF_COMPARE
+        1_simple_collectionExpressionEvaluation.txt
+    ENV
+        USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
+)
+pxr_register_test(testUsdImagingCollectionExpressionEvaluation_2
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingCollectionExpressionEvaluation 2_ni-2-levels.usda // /World/Chars/Group_1/Humanoids /World/Chars/Group_2/Humanoids// /World/Chars/Group_2/Humanoids/I1 /World/Chars//Cylinder* //Group_1//{isa:Cone}"
+    TESTENV testenv/testUsdImagingCollectionExpressionEvaluation
+    EXPECTED_RETURN_CODE 0
+    DIFF_COMPARE
+        2_ni-2-levels_collectionExpressionEvaluation.txt
     ENV
         USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
 )

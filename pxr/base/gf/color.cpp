@@ -84,13 +84,31 @@ GfVec2f GfColor::_GetChromaticity() const {
     return GfVec2f(chroma.x, chroma.y);
 }
 
-// Set the color from a CIEXY coordinate in the chromaticity chart.
+// Set the color from a CIEXY coordinate in the chromaticity chart,
+// normalized such that the max RGB value is 1.0.
 // For use in testing.
 GF_API
 void GfColor::_SetFromChromaticity(const GfVec2f& xy) {
+    // Arbitrarily initialize the luminance to 1.
     NcYxy c = { 1.f, xy[0], xy[1] };
     NcRGB rgb = NcYxyToRGB(_colorSpace._data->colorSpace, c);
-    _rgb = GfVec3f(rgb.r, rgb.g, rgb.b);
+
+    // The expectation is that the max RGB of the result is 1.
+    NcRGB magRgb = {
+        fabsf(rgb.r),
+        fabsf(rgb.g),
+        fabsf(rgb.b) };
+    const float maxc = std::max({ magRgb.r, magRgb.g, magRgb.b });
+    if (maxc == 0.f) {
+        _rgb = GfVec3f(0, 0, 0);
+        return;
+    }
+    NcRGB normRgb = NcRGB {
+        rgb.r / maxc,
+        rgb.g / maxc,
+        rgb.b / maxc };
+
+    _rgb = GfVec3f(normRgb.r, normRgb.g, normRgb.b);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

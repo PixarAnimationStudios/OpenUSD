@@ -1411,12 +1411,15 @@ if MacOS():
 
 def InstallBLOSC(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(BLOSC_URL, context, force)):
-        # MacOS we can use the built in Zlib instead of the external one.
-        macArgs = ["-DPREFER_EXTERNAL_ZLIB=ON"]
+        # c-blosc's CMakeLists declares a cmake_minimum_required below 3.5,
+        # which is incompatible with CMake 4.x.
+        extraArgs = ["-DCMAKE_POLICY_VERSION_MINIMUM=3.5"]
+        # Prefer external zlib.
+        extraArgs += ["-DPREFER_EXTERNAL_ZLIB=ON"]
         if MacOS() and apple_utils.IsTargetArm(context):
             # Need to disable SSE for macOS ARM targets.
-            macArgs += ["-DDEACTIVATE_SSE2=ON"]
-        RunCMake(context, force, buildArgs + macArgs)
+            extraArgs += ["-DDEACTIVATE_SSE2=ON"]
+        RunCMake(context, force, buildArgs + extraArgs)
 
 BLOSC = Dependency("Blosc", InstallBLOSC, "include/blosc.h")
 

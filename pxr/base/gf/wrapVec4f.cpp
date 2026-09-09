@@ -9,7 +9,19 @@
 // wrapVec.template.cpp file to make changes.
 
 #include "pxr/pxr.h"
+
+#include "pxr/base/gf/vec2d.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec2h.h"
+#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec3d.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec3h.h"
+#include "pxr/base/gf/vec3i.h"
+#include "pxr/base/gf/vec4d.h"
 #include "pxr/base/gf/vec4f.h"
+#include "pxr/base/gf/vec4h.h"
+#include "pxr/base/gf/vec4i.h"
 
 #include "pxr/base/gf/pyBufferUtils.h"
 
@@ -18,12 +30,6 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
-
-// Include headers for other vec types to support wrapping conversions and
-// operators.
-#include "pxr/base/gf/vec4d.h"
-#include "pxr/base/gf/vec4h.h"
-#include "pxr/base/gf/vec4i.h"
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/def.hpp"
@@ -429,6 +435,466 @@ void wrapVec4f()
 
         .def("__repr__", __repr__)
         .def("__hash__", __hash__)
+
+        // Named components, readable and writable.
+        //
+        // These are by-value accessors rather than def_readwrite() because
+        // def_readwrite() hands out a reference to the member, which requires a
+        // registered Python class for the member's type.  GfHalf deliberately
+        // has none -- it converts to and from a Python float by value, see
+        // wrapHalf.cpp -- so no reference can be formed.  By value also matches
+        // __getitem__, so v.x and v[0] yield the same Python type.
+        .add_property("x",
+            +[](Vec const &self) { return self.x; },
+            +[](Vec &self, Scalar value) { self.x = value; })
+        .add_property("y",
+            +[](Vec const &self) { return self.y; },
+            +[](Vec &self, Scalar value) { self.y = value; })
+        .add_property("z",
+            +[](Vec const &self) { return self.z; },
+            +[](Vec &self, Scalar value) { self.z = value; })
+        .add_property("w",
+            +[](Vec const &self) { return self.w; },
+            +[](Vec &self, Scalar value) { self.w = value; })
+
+        // Swizzles.  The getter returns a new vector by value; the setter
+        // writes the components the name names.  Unlike C++, where swizzles are
+        // read-only, Python permits assigning through them -- 'v.xy = a', and
+        // 'v.xy += a' too, since Python rewrites that as a get followed by a
+        // set.  No proxy is involved either way; values are copied in and out.
+        .add_property("xy",
+            +[](Vec const &self) { return self.xy(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.x = in[0];
+                self.y = in[1];
+            })
+        .add_property("xz",
+            +[](Vec const &self) { return self.xz(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.x = in[0];
+                self.z = in[1];
+            })
+        .add_property("xw",
+            +[](Vec const &self) { return self.xw(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.x = in[0];
+                self.w = in[1];
+            })
+        .add_property("yx",
+            +[](Vec const &self) { return self.yx(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.y = in[0];
+                self.x = in[1];
+            })
+        .add_property("yz",
+            +[](Vec const &self) { return self.yz(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.y = in[0];
+                self.z = in[1];
+            })
+        .add_property("yw",
+            +[](Vec const &self) { return self.yw(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.y = in[0];
+                self.w = in[1];
+            })
+        .add_property("zx",
+            +[](Vec const &self) { return self.zx(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.z = in[0];
+                self.x = in[1];
+            })
+        .add_property("zy",
+            +[](Vec const &self) { return self.zy(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.z = in[0];
+                self.y = in[1];
+            })
+        .add_property("zw",
+            +[](Vec const &self) { return self.zw(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.z = in[0];
+                self.w = in[1];
+            })
+        .add_property("wx",
+            +[](Vec const &self) { return self.wx(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.w = in[0];
+                self.x = in[1];
+            })
+        .add_property("wy",
+            +[](Vec const &self) { return self.wy(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.w = in[0];
+                self.y = in[1];
+            })
+        .add_property("wz",
+            +[](Vec const &self) { return self.wz(); },
+            +[](Vec &self, GfVec2f const &in) {
+                self.w = in[0];
+                self.z = in[1];
+            })
+        .add_property("xyz",
+            +[](Vec const &self) { return self.xyz(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.x = in[0];
+                self.y = in[1];
+                self.z = in[2];
+            })
+        .add_property("xyw",
+            +[](Vec const &self) { return self.xyw(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.x = in[0];
+                self.y = in[1];
+                self.w = in[2];
+            })
+        .add_property("xzy",
+            +[](Vec const &self) { return self.xzy(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.x = in[0];
+                self.z = in[1];
+                self.y = in[2];
+            })
+        .add_property("xzw",
+            +[](Vec const &self) { return self.xzw(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.x = in[0];
+                self.z = in[1];
+                self.w = in[2];
+            })
+        .add_property("xwy",
+            +[](Vec const &self) { return self.xwy(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.x = in[0];
+                self.w = in[1];
+                self.y = in[2];
+            })
+        .add_property("xwz",
+            +[](Vec const &self) { return self.xwz(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.x = in[0];
+                self.w = in[1];
+                self.z = in[2];
+            })
+        .add_property("yxz",
+            +[](Vec const &self) { return self.yxz(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.y = in[0];
+                self.x = in[1];
+                self.z = in[2];
+            })
+        .add_property("yxw",
+            +[](Vec const &self) { return self.yxw(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.y = in[0];
+                self.x = in[1];
+                self.w = in[2];
+            })
+        .add_property("yzx",
+            +[](Vec const &self) { return self.yzx(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.y = in[0];
+                self.z = in[1];
+                self.x = in[2];
+            })
+        .add_property("yzw",
+            +[](Vec const &self) { return self.yzw(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.y = in[0];
+                self.z = in[1];
+                self.w = in[2];
+            })
+        .add_property("ywx",
+            +[](Vec const &self) { return self.ywx(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.y = in[0];
+                self.w = in[1];
+                self.x = in[2];
+            })
+        .add_property("ywz",
+            +[](Vec const &self) { return self.ywz(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.y = in[0];
+                self.w = in[1];
+                self.z = in[2];
+            })
+        .add_property("zxy",
+            +[](Vec const &self) { return self.zxy(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.z = in[0];
+                self.x = in[1];
+                self.y = in[2];
+            })
+        .add_property("zxw",
+            +[](Vec const &self) { return self.zxw(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.z = in[0];
+                self.x = in[1];
+                self.w = in[2];
+            })
+        .add_property("zyx",
+            +[](Vec const &self) { return self.zyx(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.z = in[0];
+                self.y = in[1];
+                self.x = in[2];
+            })
+        .add_property("zyw",
+            +[](Vec const &self) { return self.zyw(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.z = in[0];
+                self.y = in[1];
+                self.w = in[2];
+            })
+        .add_property("zwx",
+            +[](Vec const &self) { return self.zwx(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.z = in[0];
+                self.w = in[1];
+                self.x = in[2];
+            })
+        .add_property("zwy",
+            +[](Vec const &self) { return self.zwy(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.z = in[0];
+                self.w = in[1];
+                self.y = in[2];
+            })
+        .add_property("wxy",
+            +[](Vec const &self) { return self.wxy(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.w = in[0];
+                self.x = in[1];
+                self.y = in[2];
+            })
+        .add_property("wxz",
+            +[](Vec const &self) { return self.wxz(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.w = in[0];
+                self.x = in[1];
+                self.z = in[2];
+            })
+        .add_property("wyx",
+            +[](Vec const &self) { return self.wyx(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.w = in[0];
+                self.y = in[1];
+                self.x = in[2];
+            })
+        .add_property("wyz",
+            +[](Vec const &self) { return self.wyz(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.w = in[0];
+                self.y = in[1];
+                self.z = in[2];
+            })
+        .add_property("wzx",
+            +[](Vec const &self) { return self.wzx(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.w = in[0];
+                self.z = in[1];
+                self.x = in[2];
+            })
+        .add_property("wzy",
+            +[](Vec const &self) { return self.wzy(); },
+            +[](Vec &self, GfVec3f const &in) {
+                self.w = in[0];
+                self.z = in[1];
+                self.y = in[2];
+            })
+        .add_property("xyzw",
+            +[](Vec const &self) { return self.xyzw(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.x = in[0];
+                self.y = in[1];
+                self.z = in[2];
+                self.w = in[3];
+            })
+        .add_property("xywz",
+            +[](Vec const &self) { return self.xywz(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.x = in[0];
+                self.y = in[1];
+                self.w = in[2];
+                self.z = in[3];
+            })
+        .add_property("xzyw",
+            +[](Vec const &self) { return self.xzyw(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.x = in[0];
+                self.z = in[1];
+                self.y = in[2];
+                self.w = in[3];
+            })
+        .add_property("xzwy",
+            +[](Vec const &self) { return self.xzwy(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.x = in[0];
+                self.z = in[1];
+                self.w = in[2];
+                self.y = in[3];
+            })
+        .add_property("xwyz",
+            +[](Vec const &self) { return self.xwyz(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.x = in[0];
+                self.w = in[1];
+                self.y = in[2];
+                self.z = in[3];
+            })
+        .add_property("xwzy",
+            +[](Vec const &self) { return self.xwzy(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.x = in[0];
+                self.w = in[1];
+                self.z = in[2];
+                self.y = in[3];
+            })
+        .add_property("yxzw",
+            +[](Vec const &self) { return self.yxzw(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.y = in[0];
+                self.x = in[1];
+                self.z = in[2];
+                self.w = in[3];
+            })
+        .add_property("yxwz",
+            +[](Vec const &self) { return self.yxwz(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.y = in[0];
+                self.x = in[1];
+                self.w = in[2];
+                self.z = in[3];
+            })
+        .add_property("yzxw",
+            +[](Vec const &self) { return self.yzxw(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.y = in[0];
+                self.z = in[1];
+                self.x = in[2];
+                self.w = in[3];
+            })
+        .add_property("yzwx",
+            +[](Vec const &self) { return self.yzwx(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.y = in[0];
+                self.z = in[1];
+                self.w = in[2];
+                self.x = in[3];
+            })
+        .add_property("ywxz",
+            +[](Vec const &self) { return self.ywxz(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.y = in[0];
+                self.w = in[1];
+                self.x = in[2];
+                self.z = in[3];
+            })
+        .add_property("ywzx",
+            +[](Vec const &self) { return self.ywzx(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.y = in[0];
+                self.w = in[1];
+                self.z = in[2];
+                self.x = in[3];
+            })
+        .add_property("zxyw",
+            +[](Vec const &self) { return self.zxyw(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.z = in[0];
+                self.x = in[1];
+                self.y = in[2];
+                self.w = in[3];
+            })
+        .add_property("zxwy",
+            +[](Vec const &self) { return self.zxwy(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.z = in[0];
+                self.x = in[1];
+                self.w = in[2];
+                self.y = in[3];
+            })
+        .add_property("zyxw",
+            +[](Vec const &self) { return self.zyxw(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.z = in[0];
+                self.y = in[1];
+                self.x = in[2];
+                self.w = in[3];
+            })
+        .add_property("zywx",
+            +[](Vec const &self) { return self.zywx(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.z = in[0];
+                self.y = in[1];
+                self.w = in[2];
+                self.x = in[3];
+            })
+        .add_property("zwxy",
+            +[](Vec const &self) { return self.zwxy(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.z = in[0];
+                self.w = in[1];
+                self.x = in[2];
+                self.y = in[3];
+            })
+        .add_property("zwyx",
+            +[](Vec const &self) { return self.zwyx(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.z = in[0];
+                self.w = in[1];
+                self.y = in[2];
+                self.x = in[3];
+            })
+        .add_property("wxyz",
+            +[](Vec const &self) { return self.wxyz(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.w = in[0];
+                self.x = in[1];
+                self.y = in[2];
+                self.z = in[3];
+            })
+        .add_property("wxzy",
+            +[](Vec const &self) { return self.wxzy(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.w = in[0];
+                self.x = in[1];
+                self.z = in[2];
+                self.y = in[3];
+            })
+        .add_property("wyxz",
+            +[](Vec const &self) { return self.wyxz(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.w = in[0];
+                self.y = in[1];
+                self.x = in[2];
+                self.z = in[3];
+            })
+        .add_property("wyzx",
+            +[](Vec const &self) { return self.wyzx(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.w = in[0];
+                self.y = in[1];
+                self.z = in[2];
+                self.x = in[3];
+            })
+        .add_property("wzxy",
+            +[](Vec const &self) { return self.wzxy(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.w = in[0];
+                self.z = in[1];
+                self.x = in[2];
+                self.y = in[3];
+            })
+        .add_property("wzyx",
+            +[](Vec const &self) { return self.wzyx(); },
+            +[](Vec &self, GfVec4f const &in) {
+                self.w = in[0];
+                self.z = in[1];
+                self.y = in[2];
+                self.x = in[3];
+            })
+
         ;
     to_python_converter<std::vector<GfVec4f>,
         TfPySequenceToPython<std::vector<GfVec4f> > >();

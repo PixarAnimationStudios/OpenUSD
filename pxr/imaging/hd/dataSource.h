@@ -36,14 +36,14 @@ struct HdDataSourceAllocator
     struct rebind { using other = HdDataSourceAllocator<V>; };
     HdDataSourceAllocator() = default;
     template <typename V>
-    HdDataSourceAllocator(const HdDataSourceAllocator<V>&) noexcept { }
+    HdDataSourceAllocator(const HdDataSourceAllocator<V>&) { }
     U* allocate(size_t n) { return std::allocator<U>{ }.allocate(n); }
-    void deallocate(U* p, size_t n) noexcept
+    void deallocate(U* p, size_t n)
     { std::allocator<U>{ }.deallocate(p, n); }
     template <typename... Args>
     void construct(U*p, Args&&... args)
     { ::new(static_cast<void*>(p)) U(std::forward<Args>(args)...); }
-    void destroy(U* p) noexcept { p->~U(); }
+    void destroy(U* p) { p->~U(); }
 };
 
 // XXX: clang is strict about qualified friend declarations, and will not

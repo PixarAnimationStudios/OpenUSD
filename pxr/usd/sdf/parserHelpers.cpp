@@ -9,6 +9,7 @@
 #include "pxr/usd/sdf/opaqueValue.h"
 #include "pxr/usd/sdf/parserHelpers.h"
 #include "pxr/usd/sdf/schema.h"
+#include "pxr/base/gf/duration.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -16,6 +17,7 @@
 #include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/quath.h"
+#include "pxr/base/gf/timeCode.h"
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec2h.h"
@@ -91,6 +93,13 @@ MakeScalarValueImpl(
     GfTimeCode *out, vector<Value> const &vars, size_t &index) {
     CHECK_BOUNDS(1, "timecode");
     *out = GfTimeCode(vars[index++].Get<double>());
+}
+
+inline void
+MakeScalarValueImpl(
+    GfDuration *out, vector<Value> const &vars, size_t &index) {
+    CHECK_BOUNDS(1, "duration");
+    *out = GfDuration(vars[index++].Get<double>());
 }
 
 template <class Int>
@@ -511,6 +520,7 @@ TF_MAKE_STATIC_DATA(_ValueFactoryMap, _valueFactories) {
     builder.Add<float>(SdfValueTypeNames->Float);
     builder.Add<double>(SdfValueTypeNames->Double);
     builder.Add<GfTimeCode>(SdfValueTypeNames->TimeCode);
+    builder.Add<GfDuration>(SdfValueTypeNames->Duration);
     builder.Add<std::string>(SdfValueTypeNames->String);
     builder.Add<TfToken>(SdfValueTypeNames->Token);
     builder.Add<SdfAssetPath>(SdfValueTypeNames->Asset);

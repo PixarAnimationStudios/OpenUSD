@@ -102,6 +102,7 @@ pxr_library(hd
         instanceRegistry
         instancerTopologySchema
         instanceProxyViewSceneIndex
+        instancingAwareCollectionExpressionEvaluator
         instanceSchema
         integratorSchema
         lazyContainerDataSource
@@ -148,6 +149,7 @@ pxr_library(hd
         points
         prefixingSceneIndex
         primGather
+        primIdSchema
         primOriginSchema
         primTypeIndex
         primvarSchema
@@ -170,6 +172,7 @@ pxr_library(hd
         renderPassSchema
         renderPassState
         renderProductSchema
+        renderSettingDescriptorSchema
         renderSettings
         renderSettingsSchema
         renderVarSchema
@@ -229,6 +232,7 @@ pxr_library(hd
 
     PUBLIC_HEADERS
         api.h
+        cachingSampledDataSource.h
         dataSourceTypeDefs.h
         driver.h
         invalidatableContainerDataSource.h

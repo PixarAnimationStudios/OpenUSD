@@ -714,9 +714,22 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
     }
 
     {
+        HdBufferArrayUsageHint usageHint =
+            HdBufferArrayUsageHintBitsIndex |
+            HdBufferArrayUsageHintBitsStorage;
+        // Set up the usage hints to mark topology as varying if
+        // there is a previously set range.
+        if (drawItem->GetTopologyRange()) {
+            usageHint |= HdBufferArrayUsageHintBitsSizeVarying;
+        }
+
+        HdTopology::ID rangeId = _topologyId;
+        rangeId = ArchHash64((const char*)&usageHint, sizeof(usageHint),
+            rangeId);
+
         HdInstance<HdBufferArrayRangeSharedPtr> rangeInstance =
             resourceRegistry->RegisterBasisCurvesIndexRange(
-                                                _topologyId, indexToken);
+                                                rangeId, indexToken);
 
         if(rangeInstance.IsFirstInstance()) {
             HdBufferSourceSharedPtrVector sources;
@@ -731,15 +744,6 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             }
 
             HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
-
-            HdBufferArrayUsageHint usageHint =
-                HdBufferArrayUsageHintBitsIndex |
-                HdBufferArrayUsageHintBitsStorage;
-            // Set up the usage hints to mark topology as varying if
-            // there is a previously set range.
-            if (drawItem->GetTopologyRange()) {
-                usageHint |= HdBufferArrayUsageHintBitsSizeVarying;
-            }
 
             // allocate new range
             HdBufferArrayRangeSharedPtr range

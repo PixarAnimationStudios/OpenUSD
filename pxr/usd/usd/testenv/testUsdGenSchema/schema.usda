@@ -98,7 +98,7 @@ class "PublicMultipleApplyAPI" (
     prepend apiSchemas = ["MultiApplyAPI", "BuiltinMultiApplyAPI:builtin"]
     customData = {
         token apiSchemaType = "multipleApply"
-        token propertyNamespacePrefix  = "testo"
+        token propertyNamespacePrefix  = "public"
     }
 )
 {

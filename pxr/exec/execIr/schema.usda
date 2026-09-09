@@ -182,17 +182,6 @@ class IrSwitchController "IrSwitchController" (
         The value of this attribute determines which rig is selected at any
         given time.
         """
-
-        customData = {
-            # TODO: The switch must be disabled from code generation, because
-            # there is a bug in usdGenSchema. 'switch' is a reserved C++
-            # keyword. While usdGenSchema properly fixes the token name to
-            # 'ExecIrTokens->switch_', the generated schema class continues to
-            # refer to the token by the unfixed name 'ExecIrTokens->switch'.
-            # By setting apiName to the empty string, we disable generation of
-            # schema methods for this attribute, which sidesteps the bug.
-            string apiName = ""
-        }
     )
 
     matrix4d rig1:space = (

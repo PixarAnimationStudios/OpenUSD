@@ -90,6 +90,7 @@
 #include <RixInterfaces.h>
 #include <RixRiCtl.h>
 #include <RixShadingUtils.h>
+#include <stats/Listener.h>
 #include <stats/Logger.h>
 #include <stats/Roz.h>
 #include <stats/Session.h>
@@ -251,6 +252,7 @@ HdPrman_RenderParam::HdPrman_RenderParam(
     _idMap(new HdPrman_IdMap()),
     _sceneLightCount(0),
     _fallbackLightEnabled(false),
+    _cameraContext(this),
     _shutterInterval(HDPRMAN_SHUTTEROPEN_DEFAULT, HDPRMAN_SHUTTERCLOSE_DEFAULT),
     _initRileyOptions(false),
     _sampleFiltersId(riley::SampleFilterId::InvalidId()),
@@ -2687,7 +2689,7 @@ HdPrman_RenderParam::CreateRenderViewFromRenderSpec(
     const HdPrman_RenderViewDesc renderViewDesc =
         _ComputeRenderViewDesc(
             renderSpec,
-            GetCameraContext().GetCameraId(),
+            GetCameraContext().GetActiveCameraId(),
             GetActiveIntegratorId(),
             GetSampleFilterList(),
             GetDisplayFilterList(),
@@ -2711,7 +2713,7 @@ HdPrman_RenderParam::CreateRenderViewFromRenderSettingsProducts(
     const HdPrman_RenderViewDesc renderViewDesc =
         _ComputeRenderViewDesc(
             products,
-            GetCameraContext().GetCameraId(),
+            GetCameraContext().GetActiveCameraId(),
             GetActiveIntegratorId(),
             GetSampleFilterList(),
             GetDisplayFilterList(),
@@ -2764,6 +2766,15 @@ HdPrman_RenderParam::_DestroyRiley()
 #if _PRMANAPI_VERSION_MAJOR_ >= 26
     if (_statsSession)
     {
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+        // Tear down light path listener before removing the session
+        if (_lightPathListener) {
+            _statsSession->DetachListener(_lightPathListener.get());
+            _lightPathListener.reset();
+        }
+        _lightPathFactory.reset();
+#endif
+
         // We own the session, it's our responsibility to tell Roz to remove
         // its reference and free the memory
         stats::RemoveSession(*_statsSession);
@@ -2811,6 +2822,64 @@ HdPrman_RenderParam::_DestroyStatsSession(void)
         _statsSession = nullptr;
     }
 }
+
+#if _PRMANAPI_VERSION_MAJOR_ >= 27
+void
+HdPrman_RenderParam::_LightPathFactoryDeleter::operator()(
+    stats::ListenerFactory* f) const
+{
+    if (f) stats::ReleasePluginListenerFactory(f);
+}
+
+void
+HdPrman_RenderParam::SetLightPathListenerOptions(
+    bool enable,
+    const std::string& outputFilename,
+    int sampleRate,
+    int maxPerPixel)
+{
+    if (!_statsSession) return;
+
+    // Disable: tear down existing listener
+    if (!enable) {
+        if (_lightPathListener) {
+            _statsSession->DetachListener(_lightPathListener.get());
+            _lightPathListener.reset();
+        }
+        _lightPathFactory.reset();
+        return;
+    }
+
+    stats::ListenerConfig cfg;
+    cfg.type    = "lightPath";
+    cfg.name    = "light-path-recorder";
+    cfg.enabled = true;
+    cfg.options["outputFilename"] = outputFilename;
+    cfg.options["sampleRate"]     = std::to_string(sampleRate);
+    cfg.options["maxPerPixel"]    = std::to_string(maxPerPixel);
+
+    // Update existing listener in place if already running
+    if (_lightPathListener) {
+        _lightPathListener->UpdateConfigCallback(cfg);
+        return;
+    }
+
+    // First-time creation
+    _lightPathFactory.reset(stats::GetPluginListenerFactory("lightPath"));
+    if (!_lightPathFactory) {
+        TF_WARN("HdPrman: could not load lightPath listener plugin");
+        return;
+    }
+
+    _lightPathListener.reset(_lightPathFactory->MakeListener(cfg));
+    if (_lightPathListener) {
+        _statsSession->AttachListener(_lightPathListener.get());
+    } else {
+        TF_WARN("HdPrman: could not create lightPath listener");
+        _lightPathFactory.reset();
+    }
+}
+#endif // _PRMANAPI_VERSION_MAJOR_ >= 27
 
 static
 RtParamList
@@ -3115,7 +3184,7 @@ HdPrman_RenderParam::UpdateIntegrator(const HdRenderIndex * const renderIndex)
 
     const riley::ShadingNode node = _ComputeIntegratorNode(
         renderIndex->GetRenderDelegate(),
-        _cameraContext.GetCamera(renderIndex));
+        _cameraContext.GetActiveCamera(renderIndex));
 
     AcquireRiley()->ModifyIntegrator(_integratorId, &node);
 }
@@ -3127,12 +3196,8 @@ HdPrman_RenderParam::_RenderThreadCallback()
     static RtUString const US_INTERACTIVE = RtUString("interactive");
     static RtUString const US_PROGRESSMODE = RtUString("progressMode");
 
-    // Note: this is currently hard-coded because hdprman currently
-    // creates only one single camera (via the camera context).
-    // When this changes, we will need to make sure
-    // the correct name is used here.
     RtUString const &defaultReferenceCamera =
-        GetCameraContext().GetCameraName();
+        GetCameraContext().GetActiveCameraName();
 
     RtParamList renderOptions;
     renderOptions.SetString(US_RENDERMODE, US_INTERACTIVE);
@@ -3189,11 +3254,11 @@ HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
             renderDelegate->GetRenderSetting<VtDictionary>(
                 HdPrmanRenderSettingsTokens->experimentalRenderSpec,
                 VtDictionary());
-        SdfPath cameraPath = VtDictionaryGet<SdfPath>(
+        auto cameraPath = VtDictionaryGet<SdfPath>(
             renderSpec,
             HdPrmanExperimentalRenderSpecTokens->camera,
             VtDefault = SdfPath());
-        GetCameraContext().SetCameraPath(cameraPath);
+        GetCameraContext().SetActiveCameraPath(cameraPath);
 
         if(cameraPath.IsEmpty())
         {
@@ -3203,9 +3268,9 @@ HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
                 renderDelegate->GetRenderSettingsMap();
             auto it = renderSettings.find(_tokens->renderCameraPath);
             if(it != renderSettings.end()) {
-                std::string renderCameraPath =
-                    it->second.UncheckedGet<std::string>();
-                GetCameraContext().SetCameraPath(SdfPath(renderCameraPath));
+                const SdfPath renderCameraPath {
+                    it->second.UncheckedGet<std::string>() };
+                GetCameraContext().SetActiveCameraPath(renderCameraPath);
             }
         }
     }
@@ -3221,8 +3286,9 @@ HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
 void
 HdPrman_RenderParam::_CreateInternalPrims()
 {
-    GetCameraContext().CreateRileyCamera(
-        AcquireRiley(), HdPrman_CameraContext::GetDefaultReferenceCameraName());
+    // Create the fallback camera of last resort and make it active if there is
+    // no other active camera set.
+    GetCameraContext().CreateFallbackCamera();
 
 #ifdef DO_FALLBACK_LIGHTS
     _CreateFallbackLight();
@@ -3289,7 +3355,7 @@ HdPrman_RenderParam::_DeleteInternalPrims()
 
     // Renderview has a handle to the camera, so delete it first.
     GetRenderViewContext().DeleteRenderView(riley);
-    GetCameraContext().DeleteRileyCameraAndClipPlanes(riley);
+    GetCameraContext().DeleteFallbackCamera();
 
     _DeleteAndResetMaterial(riley, &_fallbackMaterialId);
     _DeleteAndResetMaterial(riley, &_fallbackVolumeMaterialId);
@@ -3427,6 +3493,15 @@ HdPrman_RenderParam::SetRileyOptions()
 
         riley::Riley * const riley = AcquireRiley();
         riley->SetOptions(prunedOptions);
+
+        // Re-assert the active camera. RenderMan requires the active camera
+        // to be the last-modified camera. In XPU, which has more extensive
+        // support for multiple cameras than RIS, the last-modified rule still
+        // affects OSL shader evaluation when shaders access camera params,
+        // which XPU currently treats as global render options. XPU will add
+        // official OSL §7.11 camera parameter access in a future release,
+        // which should remove the last-modified requirement under XPU.
+        _cameraContext.ReapplyActiveCamera(_renderDelegate->GetRenderIndex());
 
         TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
             "SetOptions called on the composed param list:\n  %s\n",
@@ -4100,7 +4175,7 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
                             displayParams,
                             IsXpu());
 
-        renderViewDesc.cameraId = GetCameraContext().GetCameraId();
+        renderViewDesc.cameraId = GetCameraContext().GetActiveCameraId();
         renderViewDesc.integratorId = GetActiveIntegratorId();
         renderViewDesc.sampleFilterList = GetSampleFilterList();
         renderViewDesc.displayFilterList = GetDisplayFilterList();
@@ -4375,7 +4450,7 @@ HdPrman_RenderParam::CreateRenderViewFromLegacyProducts(
         ++idx;
     }
 
-    renderViewDesc.cameraId = GetCameraContext().GetCameraId();
+    renderViewDesc.cameraId = GetCameraContext().GetActiveCameraId();
     renderViewDesc.integratorId = GetActiveIntegratorId();
     renderViewDesc.resolution = GetResolution();
     renderViewDesc.sampleFilterList = GetSampleFilterList();
@@ -4495,7 +4570,7 @@ HdPrman_RenderParam::UpdateQuickIntegrator(
         const riley::ShadingNode node =
             _ComputeQuickIntegratorNode(
                 renderIndex->GetRenderDelegate(),
-                _cameraContext.GetCamera(renderIndex));
+                _cameraContext.GetActiveCamera(renderIndex));
 
         AcquireRiley()->ModifyIntegrator(
             _quickIntegratorId,
@@ -4565,7 +4640,7 @@ HdPrman_RenderParam::SetRileyShutterIntervalFromCameraContextCameraPath(
         // to the times the shutter begins to open and fully closes
         // respectively.
         if (const HdCamera * const camera =
-                _cameraContext.GetCamera(renderIndex)) {
+                _cameraContext.GetActiveCamera(renderIndex)) {
             shutterInterval[0] = camera->GetShutterOpen();
             shutterInterval[1] = camera->GetShutterClose();
         }

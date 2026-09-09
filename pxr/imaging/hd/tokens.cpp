@@ -7,6 +7,7 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/tf/token.h"
+#include "pxr/base/trace/trace.h"
 
 #include <algorithm>
 
@@ -71,10 +72,34 @@ TF_DEFINE_PUBLIC_TOKENS(HdSkinningSkelInputTokens,
 
 bool HdPrimTypeIsGprim(TfToken const& primType)
 {
-    return (primType == HdPrimTypeTokens->mesh ||
-            primType == HdPrimTypeTokens->basisCurves ||
-            primType == HdPrimTypeTokens->points ||
-            primType == HdPrimTypeTokens->volume);
+    TRACE_FUNCTION();
+
+    // Performance optimzation.
+    if (primType.IsEmpty()) {
+        return false;
+    }
+    for (const TfToken &t : {
+            // Most frequent ones on top
+            HdPrimTypeTokens->mesh,
+            HdPrimTypeTokens->basisCurves,
+            HdPrimTypeTokens->points,
+            HdPrimTypeTokens->nurbsPatch,
+            HdPrimTypeTokens->nurbsCurves,
+            HdPrimTypeTokens->volume,
+            HdPrimTypeTokens->tetMesh,
+            HdPrimTypeTokens->plane,
+
+            HdPrimTypeTokens->capsule,
+            HdPrimTypeTokens->cone,
+            HdPrimTypeTokens->cube,
+            HdPrimTypeTokens->cylinder,
+            HdPrimTypeTokens->sphere }) {
+        if (primType == t) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 const TfTokenVector &HdLightPrimTypeTokens()

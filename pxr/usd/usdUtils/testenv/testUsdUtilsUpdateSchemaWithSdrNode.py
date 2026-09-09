@@ -122,6 +122,38 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
             "./resultPropertyOrderMultipleApplySchema.usda")
         UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
+    def test_InfoId(self):
+        # An info:id attrSpec is populated when the schemaBase has NodeDefAPI
+        # applied, defaulting to the node's registered identifier
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.");
+            return
+        sdrNode = self._GetSdrNode("testSdrNodeInfoId.usda",
+                "/TestSchemaInfoId")
+        self.assertTrue(sdrNode)
+        resultLayer = Sdf.Layer.CreateNew("./resultInfoId.usda")
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
+        infoIdAttr = resultLayer.GetAttributeAtPath("/TestSchemaInfoId.info:id")
+        self.assertTrue(infoIdAttr)
+        self.assertEqual(infoIdAttr.default, sdrNode.GetIdentifier())
+
+    def test_InfoIdOverrideIdentifier(self):
+        # An explicitly provided overrideIdentifier takes precedence over the
+        # node's own identifier, which is synthesized for nodes constructed
+        # from an explicit asset path
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.");
+            return
+        sdrNode = self._GetSdrNode("testSdrNodeInfoId.usda",
+                "/TestSchemaInfoId")
+        self.assertTrue(sdrNode)
+        resultLayer = Sdf.Layer.CreateNew("./resultInfoIdOverride.usda")
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode,
+                "myRenderContext", "myOverrideIdentifier")
+        infoIdAttr = resultLayer.GetAttributeAtPath("/TestSchemaInfoId.info:id")
+        self.assertTrue(infoIdAttr)
+        self.assertEqual(infoIdAttr.default, "myOverrideIdentifier")
+
     def test_rmanConcreteSchema(self):
         if self.ErrorHandlingTest:
             self.skipTest("Running Error Handling Test, skipping.");

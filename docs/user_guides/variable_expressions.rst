@@ -242,6 +242,35 @@ a reference path.
 
     references = @`${ASSET_DIRECTORY}/${CHARACTERS_DIRECTORY}/CharSetA.usda`@
 
+Variables used in an expression may optionally include a fallback value.
+Setting a fallback value for a variable reference uses the
+${variableName:fallbackValue} format. The fallback value may be a literal
+(bool, integer, or string) or a list of literals. Variable references and
+functions are not supported within a fallback value. String typed fallback
+values (including a string inside a list fallback) may not contain an inline
+variable reference. A literal "${" can be written in a fallback string by
+escaping it as "\${".
+
+In the event that the specified variable is not defined when the expression is
+evaluated, the fallback value will be used in its place. In the example below,
+the variables are all undefined and when the expression is evaluated, their
+fallback values will be used.
+
+.. code-block:: usda
+
+    `${RENDER_PURPOSE:'render'}` # evaluates to the string "render".
+    `${ASSET_IDS:[1, 2, 3]}` # evaluates to the list [1, 2, 3].
+
+Fallback values may also be used for variable references embedded within a
+quoted string, such as an asset path. In this case the fallback should resolve
+to a string, since only string values can be substituted into a string.
+
+.. code-block:: usda
+
+    references = @`"${SHOT_DIRECTORY:'/shots'}/shot.usda"`@
+    references = @`"${ASSET_ROOT:'/assets'}/${ASSET_NAME}.usda"`@
+    references = @`if(${DEBUG_MODE:false}, "debug.usda", "release.usda")`@
+
 When mixing expression variables and string content, you might need to escape 
 special characters. The following examples show different ways of escaping 
 characters.

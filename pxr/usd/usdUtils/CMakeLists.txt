@@ -96,7 +96,7 @@ pxr_test_scripts(
     testenv/testUsdUtilsVarSelsSessionLayer.py
 )
 
-pxr_build_test_shared_lib(TestUsdUtilsCustomFilesystemResolver
+pxr_build_test_plugin(TestUsdUtilsCustomFilesystemResolver
     INSTALL_PREFIX UsdUtilsPlugins
     LIBRARIES
         ar
@@ -107,7 +107,7 @@ pxr_build_test_shared_lib(TestUsdUtilsCustomFilesystemResolver
         testenv/TestUsdUtilsCustomFilesystemResolver_plugin.cpp
 )
 
-pxr_build_test_shared_lib(TestUsdUtilsDependenciesCustomResolver
+pxr_build_test_plugin(TestUsdUtilsDependenciesCustomResolver
     INSTALL_PREFIX UsdUtilsPlugins
     LIBRARIES
         ar
@@ -118,7 +118,7 @@ pxr_build_test_shared_lib(TestUsdUtilsDependenciesCustomResolver
         testenv/TestUsdUtilsDependenciesCustomResolver_plugin.cpp
 )
 
-pxr_build_test_shared_lib(TestUsdUtilsLocalizeExternalAssetDependencies
+pxr_build_test_plugin(TestUsdUtilsLocalizeExternalAssetDependencies
     INSTALL_PREFIX UsdUtilsPlugins
     LIBRARIES
         ar
@@ -568,6 +568,8 @@ pxr_register_test(testUsdUtilsUpdateSchemaWithSdrNode
     DIFF_COMPARE duplicateProp.usda
     DIFF_COMPARE duplicatePropTypeMisMatch.usda
     DIFF_COMPARE schemaConcrete.usda
+    DIFF_COMPARE resultInfoId.usda
+    DIFF_COMPARE resultInfoIdOverride.usda
     DIFF_COMPARE testSdrNodeNonShaderNamespacePrefixResult.usda
     DIFF_COMPARE testSdrNodeShaderNamespacePrefixResult.usda
     EXPECTED_RETURN_CODE 0

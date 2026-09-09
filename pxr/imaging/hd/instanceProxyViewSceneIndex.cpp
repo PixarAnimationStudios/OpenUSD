@@ -108,7 +108,11 @@ struct HdInstanceProxyViewSceneIndex::_Impl
     void UpdateTracking(const SdfPath &instancerPath);
 
     void RemoveTracking(const SdfPath &instancerPath);
-    
+
+    const SdfPathSet &GetOutermostInstancePrimPaths() const {
+        return _outerInstancePrimPaths;
+    }
+
 private:
     // ------------------------------------------------------------------------
     // Private API
@@ -564,6 +568,12 @@ HdInstanceProxyViewSceneIndex::IsOutermostInstance(const SdfPath &primPath) cons
     return _impl->IsOutermostInstance(primPath);
 }
 
+const SdfPathSet &
+HdInstanceProxyViewSceneIndex::GetAllOutermostInstancePrimPaths() const
+{
+    return _impl->GetOutermostInstancePrimPaths();
+}
+
 bool
 HdInstanceProxyViewSceneIndex::IsInstanceProxy(const SdfPath &primPath) const
 {
@@ -594,7 +604,7 @@ HdInstanceProxyViewSceneIndex::GetPrim(
 
             return {
                 primInPrototype.primType,
-                HdOverlayContainerDataSource::OverlayedContainerDataSources(
+                HdCreateOverlayContainerDataSource(
                     primInPrototype.dataSource,
                     _BuildInstanceProxyDataSource(*optCtx))
             };

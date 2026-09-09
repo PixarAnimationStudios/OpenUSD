@@ -90,7 +90,7 @@ pxr_register_test(testSdrShaderNodeQuery
 )
 
 
-pxr_build_test_shared_lib(TestSdrRegistry
+pxr_build_test_plugin(TestSdrRegistry
     INSTALL_PREFIX SdrPlugins
     LIBRARIES
         tf

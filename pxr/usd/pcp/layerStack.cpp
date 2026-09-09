@@ -1696,8 +1696,27 @@ PcpLayerStack::_BuildLayerStack(
         
     // Recurse over sublayers to build subtrees.
     vector<string> sublayers = layer->GetSubLayerPaths();
-    const SdfLayerOffsetVector &sublayerOffsets = layer->GetSubLayerOffsets();
+    SdfLayerOffsetVector sublayerOffsets = layer->GetSubLayerOffsets();
     const size_t numSublayers = sublayers.size();
+
+    // We should report a composition error if the number of sublayers is not
+    // equal to the number of offsets, these must be of the same size, else the
+    // following code will be out-of-bounds. This is an illegal scenario and we
+    // report these as PcpErrorInvalidSublayerAndOffsetCount errors. We will
+    // also update the sublayerOffsets to identity offsets to avoid
+    // out-of-bounds.
+    if (numSublayers != sublayerOffsets.size()) {
+        PcpErrorInvalidSublayerAndOffsetCountPtr err =
+            PcpErrorInvalidSublayerAndOffsetCount::New();
+        err->rootSite = PcpSite(_identifier, SdfPath::AbsoluteRootPath());
+        err->layer = layer;
+        err->sublayerCount = numSublayers;
+        err->offsetCount = sublayerOffsets.size();
+        errors->push_back(std::move(err));
+        // need to update sublayerOffsets to identity offsets to avoid
+        // out-of-bounds access below
+        sublayerOffsets.assign(numSublayers, SdfLayerOffset());
+    }
 
     // Evaluate expressions and compute mutedness first.
     for(size_t i=0; i != numSublayers; ++i) {

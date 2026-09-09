@@ -11,10 +11,12 @@
 
 #include "pxr/exec/exec/api.h"
 
+#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class EfLeafNode;
 class EsfStage;
 class Exec_CompiledOutputCache;
 class Exec_Program;
@@ -34,10 +36,12 @@ public:
         Exec_Program *program,
         Exec_Runtime *runtime);
 
-    /// Returns a vector of leaf masked outputs whose entries correspond to
-    /// the value key at the same index in \p valueKeys.
+    /// Returns a vector of leaf masked outputs and a vector of leaf nodes, both
+    /// containing entries that correspond to the value key at the same index in
+    /// \p valueKeys.
     /// 
-    std::vector<VdfMaskedOutput> Compile(TfSpan<const ExecValueKey> valueKeys);
+    std::pair<std::vector<VdfMaskedOutput>, std::vector<const EfLeafNode*>>
+    Compile(TfSpan<const ExecValueKey> valueKeys);
 
 private:
     const EsfStage &_stage;

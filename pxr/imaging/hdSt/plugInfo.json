@@ -74,7 +74,7 @@
                         "displayName": "Scene Index to resolve nodeIdentifier from glslfx sourceAsset.",
 
                         # phase=0, InsertionOrderAtStart
-                        "tags": ["hdSt:phase0"],
+                        "tags": ["hdSt:phase0", "hdSt:NodeIdentifierResolving"],
                         "ordering": {
                             "after": "hd:sceneAssembly",
                             "position": "firstAfter"
@@ -151,11 +151,11 @@
                         "priority": 0,
                         "displayName": "Scene index to convert back plates to meshes and materials",
 
-                        # phase=4, InsertionOrderAtStart
-                        "tags": ["hdSt:phase4", "hdSt:backPlate"],
+                        # phase=0, InsertionOrderAtStart
+                        "tags": ["hdSt:phase0", "hdSt:backPlate"],
                         "ordering": {
-                            "before": "hdSt:dependencyForwarding",
-                            "after": ["hdSt:phase3", "hdGp:proceduralResolution", "hd:sceneGlobals"],
+                            "after": "hd:sceneAssembly",
+                            "before": ["hdSt:NodeIdentifierResolving", "hdSt:dependencyForwarding"],
                             "position": "firstAfter"
                         }
                     },

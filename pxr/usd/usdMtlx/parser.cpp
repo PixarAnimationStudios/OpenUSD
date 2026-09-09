@@ -34,6 +34,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (mtlx)
 
+    (category)
     (defaultgeomprop)
     (defaultinput)
     (doc)
@@ -43,6 +44,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (nodecategory)
     (nodegroup)
     (target)
+    ((sdrTarget, "__SDR__target"))
     (uifolder)
     (uimax)
     (uimin)
@@ -286,7 +288,7 @@ ShaderBuilder::AddProperty(
     if (!isOutput) {
         const auto& target = element->getAttribute(_tokens->target);
         if (!target.empty()) {
-            metadata.emplace(SdrPropertyMetadata->Target, target);
+            metadata.emplace(_tokens->sdrTarget, target);
         }
     }
 
@@ -462,11 +464,11 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
 
     // NOTE: Category will be removed in an upcoming release in favor of mtlx
     // custom metadata "mtlxNodeType"
-    builder->metadata[SdrNodeMetadata->Category] = nodeDef->getType();
+    builder->metadata[_tokens->category] = nodeDef->getType();
     builder->metadata[_tokens->mtlxNodeType] = nodeDef->getType();
 
     ParseMetadata(builder, SdrNodeMetadata->Help, nodeDef, _tokens->doc);
-    ParseMetadata(builder, SdrNodeMetadata->Target, nodeDef, _tokens->target);
+    ParseMetadata(builder, _tokens->sdrTarget, nodeDef, _tokens->target);
     ParseMetadata(builder, SdrNodeMetadata->Role, nodeDef, _tokens->nodegroup);
 
     // XXX -- version

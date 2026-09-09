@@ -466,75 +466,77 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
-    // LUMAGAIN 
+    // LUMASLOPE 
     // --------------------------------------------------------------------- //
     /// Scales the per-channel upper bound of the normalized signal 
-    /// before gamma, analogous to per-channel exposure or slope. It is applied 
-    /// in the order of `colorValue = (value*(gain-lift)+lift)^(1/gamma)`.
+    /// , analogous to per-channel exposure or slope. In older literature this 
+    /// property is often referred to as gain. It is applied in the 
+    /// order of `output = (input*slope+offset)^(power)`.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float3 luma:gain = (1, 1, 1)` |
+    /// | Declaration | `float3 luma:slope = (1, 1, 1)` |
     /// | C++ Type | GfVec3f |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3 |
     USDGEOM_API
-    UsdAttribute GetLumaGainAttr() const;
+    UsdAttribute GetLumaSlopeAttr() const;
 
-    /// See GetLumaGainAttr(), and also 
+    /// See GetLumaSlopeAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
-    UsdAttribute CreateLumaGainAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateLumaSlopeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // LUMALIFT 
+    // LUMAOFFSET 
     // --------------------------------------------------------------------- //
     /// Raises or lowers the signal floor (black level) of the 
-    /// normalized value prior to the gain and gamma stages. It is applied
-    /// in the order of `colorValue = (value*(gain-lift)+lift)^(1/gamma)`.
+    /// normalized value. In older literature this property is often referred 
+    /// to as lift. It is applied in the order of 
+    /// `output = (input*slope+offset)^(power)`.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float3 luma:lift = (0, 0, 0)` |
+    /// | Declaration | `float3 luma:offset = (0, 0, 0)` |
     /// | C++ Type | GfVec3f |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3 |
     USDGEOM_API
-    UsdAttribute GetLumaLiftAttr() const;
+    UsdAttribute GetLumaOffsetAttr() const;
 
-    /// See GetLumaLiftAttr(), and also 
+    /// See GetLumaOffsetAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
-    UsdAttribute CreateLumaLiftAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateLumaOffsetAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // LUMAGAMMA 
+    // LUMAPOWER 
     // --------------------------------------------------------------------- //
-    /// Per-channel power applied to the normalized RGB signal after 
-    /// lift and gain. Must be > 0. It is applied
-    /// in the order of `colorValue = (value*(gain-lift)+lift)^(1/gamma)`.
+    /// Per-channel power applied to the normalized RGB signal. In 
+    /// older literature this property is often referred to as gamma. It 
+    /// is applied in the order of `output = (input*slope+offset)^(power)`.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float3 luma:gamma = (1, 1, 1)` |
+    /// | Declaration | `float3 luma:power = (1, 1, 1)` |
     /// | C++ Type | GfVec3f |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3 |
     USDGEOM_API
-    UsdAttribute GetLumaGammaAttr() const;
+    UsdAttribute GetLumaPowerAttr() const;
 
-    /// See GetLumaGammaAttr(), and also 
+    /// See GetLumaPowerAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
-    UsdAttribute CreateLumaGammaAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateLumaPowerAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

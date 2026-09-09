@@ -55,6 +55,12 @@ extern "C" {
  */
 typedef struct _exr_encode_pipeline
 {
+    /** Used for versioning the decode pipeline in the future
+     *
+     * \ref EXR_ENCODE_PIPELINE_INITIALIZER
+     */
+    size_t pipe_size;
+
     /** The output channel information for this chunk.
      *
      * User is expected to fill the channel pointers for the input
@@ -274,9 +280,9 @@ typedef struct _exr_encode_pipeline
 } exr_encode_pipeline_t;
 
 /** @brief Simple macro to initialize an empty decode pipeline. */
-#define EXR_ENCODE_PIPELINE_INITIALIZER                                        \
-    {                                                                          \
-        0                                                                      \
+#define EXR_ENCODE_PIPELINE_INITIALIZER                                 \
+    {                                                                   \
+        sizeof(exr_encode_pipeline_t), 0                                \
     }
 
 /** Initialize the encoding pipeline structure with the channel info

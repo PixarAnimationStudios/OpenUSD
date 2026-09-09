@@ -274,6 +274,9 @@ SdrGlslfxParserPlugin::ParseShaderNode(
         metadata[SdrNodeMetadata->Primvars] = TfStringJoin(primvarNames, "|");
     }
 
+    // NOTE: Context = "glslfx" will be removed in an upcoming release.
+    metadata[SdrNodeMetadata->Context] = _tokens->shadingSystem;
+
     // XXX: Add support for reading metadata from glslfx and converting
     //      to node metadata
 
@@ -282,8 +285,6 @@ SdrGlslfxParserPlugin::ParseShaderNode(
         discoveryResult.version,
         discoveryResult.name,
         discoveryResult.function,
-        // NOTE: Context = "glslfx" will be removed in an upcoming release.
-        _tokens->shadingSystem, /* context */
         _tokens->shadingSystem,
         discoveryResult.resolvedUri,
         discoveryResult.resolvedUri,

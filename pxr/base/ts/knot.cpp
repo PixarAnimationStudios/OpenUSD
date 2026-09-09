@@ -501,13 +501,19 @@ VtValue TsKnot::_ToStorage(const VtValue& value) const
     if (_proxy->valueType == Ts_GetType<GfTimeCode>()) {
         const GfTimeCode& tc = value.UncheckedGet<GfTimeCode>();
         return VtValue(double(tc));
+    } else if (_proxy->valueType == Ts_GetType<GfDuration>()) {
+        const GfDuration& dur = value.UncheckedGet<GfDuration>();
+        return VtValue(double(dur));
     }
+
     return value;
 }
 
 VtValue TsKnot::_FromStorage(const VtValue& value) const
 {
-    if (_proxy->valueType == Ts_GetType<GfTimeCode>()) {
+    if (_proxy->valueType == Ts_GetType<GfTimeCode>() ||
+        _proxy->valueType == Ts_GetType<GfDuration>())
+    {
         if (!TF_VERIFY(value.IsHolding<double>(),
                        "Time valued knots must have underlying "
                        "stored doubles"))
@@ -516,8 +522,13 @@ VtValue TsKnot::_FromStorage(const VtValue& value) const
         }
 
         const double& d = value.UncheckedGet<double>();
-        return VtValue(GfTimeCode(d));
+        if (_proxy->valueType == Ts_GetType<GfTimeCode>()) {
+            return VtValue(GfTimeCode(d));
+        } else {
+            return VtValue(GfDuration(d));
+        }
     }
+
     return value;
 }
 

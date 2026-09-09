@@ -490,7 +490,7 @@ UsdSkelImagingDataSourceResolvedPointsBasedPrim::Get(const TfToken &name)
 
     if (name == HdExtComputationPrimvarsSchema::GetSchemaToken()) {
         return
-            HdOverlayContainerDataSource::OverlayedContainerDataSources(
+            HdCreateOverlayContainerDataSource(
                 _ExtComputationPrimvars(
                     _primPath,
                     HasNormalsExtComputations(),

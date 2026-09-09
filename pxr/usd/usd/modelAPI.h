@@ -286,6 +286,7 @@ public:
     /// Sets the model's assetInfo dictionary to \p info in the current edit 
     /// target.
     /// 
+    /// Dictionary values that are empty VtValue are invalid.
     USD_API
     void SetAssetInfo(const VtDictionary &info) const;
 

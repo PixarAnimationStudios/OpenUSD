@@ -247,7 +247,7 @@ public:
         return _data->Untouch(handle);
     }
 
-    /// Clears the executor data for a specific output
+    /// Clears the buffer data for a specific output.
     /// 
     void ClearDataForOutput(const VdfId outputId);
 

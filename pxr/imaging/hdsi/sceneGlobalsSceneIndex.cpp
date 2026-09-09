@@ -13,6 +13,9 @@
 #include "pxr/imaging/hd/sceneGlobalsSchema.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include <cmath>
+#include <optional>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Checks whether t0 and t1 are equal when interpreted as time codes (similar
@@ -32,12 +35,13 @@ bool _IsEqualTimeCode(const double t0, const double t1)
 }
 
 // -----------------------------------------------------------------------------
-// _SceneGlobalsDataSource
+// HdsiSceneGlobalsSceneIndex::_SceneGlobalsSchemaDataSource
 // -----------------------------------------------------------------------------
-class _SceneGlobalsDataSource : public HdContainerDataSource
+class HdsiSceneGlobalsSceneIndex::_SceneGlobalsSchemaDataSource
+    : public HdContainerDataSource
 {
 public:
-    HD_DECLARE_DATASOURCE(_SceneGlobalsDataSource);
+    HD_DECLARE_DATASOURCE(_SceneGlobalsSchemaDataSource);
 
     TfTokenVector
     GetNames() override;
@@ -46,14 +50,21 @@ public:
     Get(const TfToken &name) override;
 
 private:
-    _SceneGlobalsDataSource(HdsiSceneGlobalsSceneIndex const * const si)
-    : _si(si) {}
+    _SceneGlobalsSchemaDataSource() = default;
 
-    const HdsiSceneGlobalsSceneIndex * const  _si;
+    // The scene index owns this data source and mutates its state directly.
+    friend class HdsiSceneGlobalsSceneIndex;
+
+    std::optional<SdfPath> _activeRenderPassPrim;
+    std::optional<SdfPath> _activeRenderSettingsPrim;
+    std::optional<SdfPath> _primaryCameraPrim;
+    std::optional<double> _currentFrame;
+    std::optional<double> _timeCodesPerSecond;
+    std::optional<int> _sceneStateId;
 };
 
 TfTokenVector
-_SceneGlobalsDataSource::GetNames()
+HdsiSceneGlobalsSceneIndex::_SceneGlobalsSchemaDataSource::GetNames()
 {
     static const TfTokenVector names = {
         HdSceneGlobalsSchemaTokens->activeRenderPassPrim,
@@ -80,25 +91,25 @@ _OptionalToRetainedDataSource(const std::optional<T> &value)
 }
 
 HdDataSourceBaseHandle
-_SceneGlobalsDataSource::Get(const TfToken &name)
+HdsiSceneGlobalsSceneIndex::_SceneGlobalsSchemaDataSource::Get(const TfToken &name)
 {
     if (name == HdSceneGlobalsSchemaTokens->activeRenderPassPrim) {
-        return _OptionalToRetainedDataSource(_si->_activeRenderPassPrim);
+        return _OptionalToRetainedDataSource(_activeRenderPassPrim);
     }
     if (name == HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim) {
-        return _OptionalToRetainedDataSource(_si->_activeRenderSettingsPrim);
+        return _OptionalToRetainedDataSource(_activeRenderSettingsPrim);
     }
     if (name == HdSceneGlobalsSchemaTokens->primaryCameraPrim) {
-        return _OptionalToRetainedDataSource(_si->_primaryCameraPrim);
+        return _OptionalToRetainedDataSource(_primaryCameraPrim);
     }
     if (name == HdSceneGlobalsSchemaTokens->currentFrame) {
-        return _OptionalToRetainedDataSource(_si->_currentFrame);
+        return _OptionalToRetainedDataSource(_currentFrame);
     }
     if (name == HdSceneGlobalsSchemaTokens->timeCodesPerSecond) {
-        return _OptionalToRetainedDataSource(_si->_timeCodesPerSecond);
+        return _OptionalToRetainedDataSource(_timeCodesPerSecond);
     }
     if (name == HdSceneGlobalsSchemaTokens->sceneStateId) {
-        return _OptionalToRetainedDataSource(_si->_sceneStateId);
+        return _OptionalToRetainedDataSource(_sceneStateId);
     }
 
     return nullptr;
@@ -122,7 +133,7 @@ void
 HdsiSceneGlobalsSceneIndex::SetActiveRenderPassPrimPath(
     const SdfPath &path)
 {
-    if (_activeRenderPassPrim == path) {
+    if (_sceneGlobalsSchemaDataSource->_activeRenderPassPrim == path) {
         return;
     }
 
@@ -130,7 +141,7 @@ HdsiSceneGlobalsSceneIndex::SetActiveRenderPassPrimPath(
     // sceneGlobals.activeRenderSettingsPrim locator (if the render pass points
     // to a valid render settings prim).
     // We keep things simple in this scene index.
-    _activeRenderPassPrim = path;
+    _sceneGlobalsSchemaDataSource->_activeRenderPassPrim = path;
 
     if (_IsObserved()) {
         _SendPrimsDirtied({{
@@ -143,11 +154,11 @@ void
 HdsiSceneGlobalsSceneIndex::SetActiveRenderSettingsPrimPath(
     const SdfPath &path)
 {
-    if (_activeRenderSettingsPrim == path) {
+    if (_sceneGlobalsSchemaDataSource->_activeRenderSettingsPrim == path) {
         return;
     }
 
-    _activeRenderSettingsPrim = path;
+    _sceneGlobalsSchemaDataSource->_activeRenderSettingsPrim = path;
 
     if (_IsObserved()) {
         _SendPrimsDirtied({{
@@ -160,11 +171,11 @@ void
 HdsiSceneGlobalsSceneIndex::SetPrimaryCameraPrimPath(
     const SdfPath &path)
 {
-    if (_primaryCameraPrim == path) {
+    if (_sceneGlobalsSchemaDataSource->_primaryCameraPrim == path) {
         return;
     }
 
-    _primaryCameraPrim = path;
+    _sceneGlobalsSchemaDataSource->_primaryCameraPrim = path;
 
     if (_IsObserved()) {
         _SendPrimsDirtied({{
@@ -178,11 +189,12 @@ HdsiSceneGlobalsSceneIndex::SetCurrentFrame(double currentFrame)
 {
     // XXX We might need to add a flag to force dirtying of the Frame locator 
     // even if the time has not changed 
-    if (_currentFrame && _IsEqualTimeCode(*_currentFrame, currentFrame)) {
+    if (_sceneGlobalsSchemaDataSource->_currentFrame &&
+        _IsEqualTimeCode(*_sceneGlobalsSchemaDataSource->_currentFrame, currentFrame)) {
         return;
     }
 
-    _currentFrame = currentFrame;
+    _sceneGlobalsSchemaDataSource->_currentFrame = currentFrame;
 
     if (_IsObserved()) {
         _SendPrimsDirtied({{
@@ -194,11 +206,11 @@ HdsiSceneGlobalsSceneIndex::SetCurrentFrame(double currentFrame)
 void
 HdsiSceneGlobalsSceneIndex::SetTimeCodesPerSecond(double timeCodesPerSecond)
 {
-    if (_timeCodesPerSecond == timeCodesPerSecond) {
+    if (_sceneGlobalsSchemaDataSource->_timeCodesPerSecond == timeCodesPerSecond) {
         return;
     }
 
-    _timeCodesPerSecond = timeCodesPerSecond;
+    _sceneGlobalsSchemaDataSource->_timeCodesPerSecond = timeCodesPerSecond;
 
     if (_IsObserved()) {
         _SendPrimsDirtied({{
@@ -210,11 +222,11 @@ HdsiSceneGlobalsSceneIndex::SetTimeCodesPerSecond(double timeCodesPerSecond)
 void
 HdsiSceneGlobalsSceneIndex::SetSceneStateId(int id)
 {
-    if (_sceneStateId == id) {
+    if (_sceneGlobalsSchemaDataSource->_sceneStateId == id) {
         return;
     }
 
-    _sceneStateId = id;
+    _sceneGlobalsSchemaDataSource->_sceneStateId = id;
 
     if (_IsObserved()) {
         _SendPrimsDirtied({{
@@ -230,17 +242,12 @@ HdsiSceneGlobalsSceneIndex::GetPrim(const SdfPath &primPath) const
 
     // Overlay a data source at the scene globals locator for the default prim.
     if (primPath == HdSceneGlobalsSchema::GetDefaultPrimPath()) {
-        HdContainerDataSourceHandle sceneGlobalsContainerDS =
-            HdRetainedContainerDataSource::New(
-                HdSceneGlobalsSchemaTokens->sceneGlobals,
-                _SceneGlobalsDataSource::New(this));
-
-        if (prim.dataSource) {
-            prim.dataSource = HdOverlayContainerDataSource::New(
-                sceneGlobalsContainerDS, prim.dataSource);
-        } else {
-            prim.dataSource = sceneGlobalsContainerDS;
-        }
+        prim.dataSource =
+            HdCreateOverlayContainerDataSource(
+                HdRetainedContainerDataSource::New(
+                    HdSceneGlobalsSchemaTokens->sceneGlobals,
+                    _sceneGlobalsSchemaDataSource),
+                prim.dataSource);
     }
 
     return prim;
@@ -255,7 +262,8 @@ HdsiSceneGlobalsSceneIndex::GetChildPrimPaths(
 
 HdsiSceneGlobalsSceneIndex::HdsiSceneGlobalsSceneIndex(
     const HdSceneIndexBaseRefPtr &inputSceneIndex)
-: HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
+  : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
+  , _sceneGlobalsSchemaDataSource(_SceneGlobalsSchemaDataSource::New())
 {}
 
 void

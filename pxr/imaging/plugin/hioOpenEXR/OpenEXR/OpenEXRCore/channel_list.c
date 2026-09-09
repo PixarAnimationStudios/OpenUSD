@@ -18,17 +18,17 @@ exr_attr_chlist_init (exr_context_t ctxt, exr_attr_chlist_t* clist, int nchans)
     exr_attr_chlist_t        nil = {0};
     exr_attr_chlist_entry_t* nlist;
 
-    INTERN_EXR_PROMOTE_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
 
     if (!clist)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid channel list pointer to chlist_add_with_length");
 
     if (nchans < 0)
-        return pctxt->print_error (
-            pctxt,
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Negative number of channels requested (%d)",
             nchans);
@@ -37,10 +37,10 @@ exr_attr_chlist_init (exr_context_t ctxt, exr_attr_chlist_t* clist, int nchans)
 
     if (nchans > 0)
     {
-        nlist = (exr_attr_chlist_entry_t*) pctxt->alloc_fn (
+        nlist = (exr_attr_chlist_entry_t*) ctxt->alloc_fn (
             sizeof (*nlist) * (size_t) nchans);
         if (nlist == NULL)
-            return pctxt->standard_error (pctxt, EXR_ERR_OUT_OF_MEMORY);
+            return ctxt->standard_error (ctxt, EXR_ERR_OUT_OF_MEMORY);
     }
     else
         nlist = NULL;
@@ -80,32 +80,32 @@ exr_attr_chlist_add_with_length (
     int32_t                    xsamp,
     int32_t                    ysamp)
 {
-    exr_attr_chlist_entry_t  nent = {0};
+    exr_attr_chlist_entry_t  nent = {{0}};
     exr_attr_chlist_entry_t *nlist, *olist;
     int                      newcount, insertpos;
     int32_t                  maxlen;
     exr_result_t             rv;
 
-    INTERN_EXR_PROMOTE_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
 
-    maxlen = pctxt->max_name_length;
+    maxlen = ctxt->max_name_length;
 
     if (!clist)
-        return pctxt->report_error (
-            pctxt,
+        return ctxt->report_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid channel list pointer to chlist_add_with_length");
 
     if (!name || name[0] == '\0' || namelen == 0)
-        return pctxt->print_error (
-            pctxt,
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Channel name must not be empty, received '%s'",
             (name ? name : "<NULL>"));
 
     if (namelen > maxlen)
-        return pctxt->print_error (
-            pctxt,
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_NAME_TOO_LONG,
             "Channel name must shorter than length allowed by file (%d), received '%s' (%d)",
             maxlen,
@@ -114,8 +114,8 @@ exr_attr_chlist_add_with_length (
 
     if (ptype != EXR_PIXEL_UINT && ptype != EXR_PIXEL_HALF &&
         ptype != EXR_PIXEL_FLOAT)
-        return pctxt->print_error (
-            pctxt,
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid pixel type specified (%d) adding channel '%s' to list",
             (int) ptype,
@@ -123,16 +123,16 @@ exr_attr_chlist_add_with_length (
 
     if (islinear != EXR_PERCEPTUALLY_LOGARITHMIC &&
         islinear != EXR_PERCEPTUALLY_LINEAR)
-        return pctxt->print_error (
-            pctxt,
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid perceptual linear flag value (%d) adding channel '%s' to list",
             (int) islinear,
             name);
 
     if (xsamp <= 0 || ysamp <= 0)
-        return pctxt->print_error (
-            pctxt,
+        return ctxt->print_error (
+            ctxt,
             EXR_ERR_INVALID_ARGUMENT,
             "Invalid pixel sampling (x %d y %d) adding channel '%s' to list",
             xsamp,
@@ -151,8 +151,8 @@ exr_attr_chlist_add_with_length (
         }
         else if (ord == 0)
         {
-            return pctxt->print_error (
-                pctxt,
+            return ctxt->print_error (
+                ctxt,
                 EXR_ERR_INVALID_ARGUMENT,
                 "Attempt to add duplicate channel '%s' to channel list",
                 name);
@@ -175,12 +175,12 @@ exr_attr_chlist_add_with_length (
     {
         int nsz = clist->num_alloced * 2;
         if (newcount > nsz) nsz = newcount + 1;
-        nlist = (exr_attr_chlist_entry_t*) pctxt->alloc_fn (
+        nlist = (exr_attr_chlist_entry_t*) ctxt->alloc_fn (
             sizeof (*nlist) * (size_t) nsz);
         if (nlist == NULL)
         {
             exr_attr_string_destroy (ctxt, &(nent.name));
-            return pctxt->standard_error (pctxt, EXR_ERR_OUT_OF_MEMORY);
+            return ctxt->standard_error (ctxt, EXR_ERR_OUT_OF_MEMORY);
         }
         clist->num_alloced = nsz;
     }
@@ -195,15 +195,17 @@ exr_attr_chlist_add_with_length (
     for (int i = newcount - 1; i > insertpos; --i)
         nlist[i] = olist[i - 1];
     nlist[insertpos] = nent;
-    if (nlist != olist)
+    if (olist && nlist != olist)
     {
         for (int i = 0; i < insertpos; ++i)
             nlist[i] = olist[i];
+
+        ctxt->free_fn (olist);
     }
 
     clist->num_channels = newcount;
     clist->entries      = nlist;
-    if (nlist != olist) pctxt->free_fn (olist);
+
     return EXR_ERR_SUCCESS;
 }
 
@@ -219,6 +221,13 @@ exr_attr_chlist_duplicate (
     if (!chl || !srcchl) return EXR_ERR_INVALID_ARGUMENT;
 
     numchans = srcchl->num_channels;
+    if (numchans > 0 && !srcchl->entries)
+        return ctxt->print_error (
+            ctxt,
+            EXR_ERR_INVALID_ARGUMENT,
+            "Invalid NULL channel list entries with %d channels",
+            numchans);
+
     rv       = exr_attr_chlist_init (ctxt, chl, numchans);
     if (rv != EXR_ERR_SUCCESS) return rv;
 
@@ -249,7 +258,7 @@ exr_attr_chlist_duplicate (
 exr_result_t
 exr_attr_chlist_destroy (exr_context_t ctxt, exr_attr_chlist_t* clist)
 {
-    INTERN_EXR_PROMOTE_CONTEXT_OR_ERROR (ctxt);
+    if (!ctxt) return EXR_ERR_MISSING_CONTEXT_ARG;
 
     if (clist)
     {
@@ -260,7 +269,7 @@ exr_attr_chlist_destroy (exr_context_t ctxt, exr_attr_chlist_t* clist)
 
         for (int i = 0; i < nc; ++i)
             exr_attr_string_destroy (ctxt, &(entries[i].name));
-        if (entries) pctxt->free_fn (entries);
+        if (entries) ctxt->free_fn (entries);
         *clist = nil;
     }
     return EXR_ERR_SUCCESS;

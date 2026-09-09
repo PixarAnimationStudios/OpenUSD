@@ -384,9 +384,11 @@ def main() -> int:
     frameRecorder.SetDomeLightVisibility(args.domeLightVisibility)
     frameRecorder.SetPrimaryCameraPrimPath(usdCamera.GetPath())
 
-    _Msg('Camera: %s' % usdCamera.GetPath().pathString)
-    _Msg('Renderer plugin: %s' % frameRecorder.GetCurrentRendererId())
+    # XXX Disabled to reduce noise.
+    # _Msg('Camera: %s' % usdCamera.GetPath().pathString)
+    # _Msg('Renderer plugin: %s' % frameRecorder.GetCurrentRendererId())
 
+    # Record requested frames.
     for timeCode in args.frames:
         _Msg('Recording time code: %f' % timeCode)
         outputImagePath = args.outputImagePath.format(frame=timeCode)
@@ -401,10 +403,6 @@ def main() -> int:
                 # By default just print the errors and contine.
                 _Msg("Errors encountered at time code {0}: "
                      "{1}".format(timeCode, str(e)))
-
-    # Release our reference to the frame recorder so it can be deleted before
-    # the Qt stuff.
-    frameRecorder = None
 
     # End tracing and report results.
     if traceCollector:
@@ -421,6 +419,10 @@ def main() -> int:
                     args.traceFormat)
     if args.memstats:
         _DumpMallocTags(usdStage, programName)
+
+    # Release our reference to the frame recorder so it can be deleted before
+    # the Qt stuff.
+    frameRecorder = None
 
     return 0
 

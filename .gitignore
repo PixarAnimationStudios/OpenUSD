@@ -1,4 +1,5 @@
 .p4*
 .DS_Store
 .AppleDouble
+/CMakeUserPresets.json
 

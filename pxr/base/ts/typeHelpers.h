@@ -60,9 +60,10 @@ std::string Ts_GetTypeNameFromType(TfType valueType);
 
 template <class T>
 using Ts_StorageType =
-    std::conditional_t<std::is_same_v<T, GfTimeCode>, double, T>;
+    std::conditional_t<std::is_same_v<T, GfTimeCode> ||
+                       std::is_same_v<T, GfDuration>, double, T>;
 
-// GfHalf, GfTimeCode don't have an overload for std::isfinite, so we
+// No std::isfinite overloads for GfHalf, GfTimeCode, or GfDuration, so we
 // provide adapters.
 //
 template <typename T>
@@ -73,6 +74,9 @@ TS_API bool Ts_IsFinite(const GfHalf value);
 
 template <>
 TS_API bool Ts_IsFinite(const GfTimeCode value);
+
+template <>
+TS_API bool Ts_IsFinite(const GfDuration value);
 
 template <typename T>
 bool Ts_IsFinite(const T value)

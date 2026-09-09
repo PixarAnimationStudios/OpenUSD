@@ -32,6 +32,7 @@ public:
     // 3: added loopBoundaryTime to delimit spline extrapolation loop regions,
     //    and repurposed the time-valued header bit to denote a GfTimeCode
     //    value type
+    // 4: added GfDuration valued splines.
     TS_API
     static uint8_t GetBinaryFormatVersion(const TsSpline& spline);
 
@@ -50,7 +51,7 @@ public:
         std::unordered_map<TsTime, VtDictionary> &&customData);
 
 private:
-    static TsSpline _ParseV1_3(
+    static TsSpline _ParseV1_4(
         uint8_t version,
         const std::vector<uint8_t> &buf,
         std::unordered_map<TsTime, VtDictionary> &&customData);

@@ -17,21 +17,13 @@ struct _EvalSplineFunctor
 {
     template <typename T>
     void operator()(const TsSpline& spline, UsdTimeCode localTime,
-                    const SdfLayerOffset& layerToStageOffset, T* result,
-                    bool* successOut)
+                    T* result, bool* successOut)
     {
         S val;
         auto evalFunc = !localTime.IsPreTime() ?
                             &TsSpline::Eval<S> : &TsSpline::EvalPreValue<S>;
         if (!(spline.*evalFunc)(localTime.GetValue(), &val)) {
             return;
-        }
-        if (spline.IsTimeValued()) {
-            if constexpr (std::is_same_v<S, double> ||
-                          std::is_same_v<S, GfTimeCode>)
-            {
-                val = layerToStageOffset * val;
-            }
         }
         *successOut = Usd_SetValue(result, val);
     }
@@ -79,6 +71,10 @@ Usd_ApplyLayerOffsetToValue(VtValue *value, const SdfLayerOffset &offset)
     // Try applying the offset for each of our supported value types.
     _TryApplyLayerOffsetToValue<GfTimeCode>(value, offset) ||
     _TryApplyLayerOffsetToValue<VtArray<GfTimeCode>>(value, offset) ||
+    _TryApplyLayerOffsetToValue<VtArrayEdit<GfTimeCode>>(value, offset) ||
+    _TryApplyLayerOffsetToValue<GfDuration>(value, offset) ||
+    _TryApplyLayerOffsetToValue<VtArray<GfDuration>>(value, offset) ||
+    _TryApplyLayerOffsetToValue<VtArrayEdit<GfDuration>>(value, offset) ||
     _TryApplyLayerOffsetToValue<VtDictionary>(value, offset) ||
     _TryApplyLayerOffsetToValue<SdfTimeSampleMap>(value, offset);
 }
@@ -88,14 +84,13 @@ bool
 Usd_QuerySpline(
     const TsSpline& spline,
     UsdTimeCode timeCode,
-    const SdfLayerOffset& layerToStageOffset,
     T* result)
 {
     bool success = false;
     // Use the spline's value type to dispatch to the appropriate evaluator.
     TsDispatchToValueTypeTemplate<_EvalSplineFunctor>(
         spline.GetValueType(), spline, timeCode,
-        layerToStageOffset, result, &success);
+        result, &success);
 
     return success;
 }
@@ -103,7 +98,6 @@ Usd_QuerySpline(
 #define _INSTANTIATE_QUERY_SPLINE(unused, elem)                 \
     template bool Usd_QuerySpline(                              \
         const TsSpline&, UsdTimeCode,                           \
-        const SdfLayerOffset&,                                  \
         TS_SPLINE_VALUE_CPP_TYPE(elem)*);
 
 TF_PP_SEQ_FOR_EACH(_INSTANTIATE_QUERY_SPLINE, ~, TS_SPLINE_SUPPORTED_VALUE_TYPES)
@@ -111,11 +105,9 @@ TF_PP_SEQ_FOR_EACH(_INSTANTIATE_QUERY_SPLINE, ~, TS_SPLINE_SUPPORTED_VALUE_TYPES
 
 template bool Usd_QuerySpline(
     const TsSpline&, UsdTimeCode,
-    const SdfLayerOffset&,
     SdfAbstractDataValue*);
 template bool Usd_QuerySpline(
     const TsSpline&, UsdTimeCode,
-    const SdfLayerOffset&,
     VtValue*);
 
 PXR_NAMESPACE_CLOSE_SCOPE

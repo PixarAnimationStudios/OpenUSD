@@ -7,8 +7,10 @@
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
-#include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/arch/demangle.h"
+#include "pxr/base/tf/instantiateSingleton.h"
+#include "pxr/base/tf/denseHashSet.h"
+#include "pxr/base/trace/trace.h"
 
 #include <typeinfo>
 
@@ -183,19 +185,56 @@ HdSceneIndexBase::SystemMessage(
     const TfToken &messageType,
     const HdDataSourceBaseHandle &args)
 {
-    // give input scene indices an opportunity first
-    if (const HdFilteringSceneIndexBase * const fsi =
-            dynamic_cast<const HdFilteringSceneIndexBase*>(this)) {
-        for (const HdSceneIndexBaseRefPtr &isi : fsi->GetInputScenes()) {
-            isi->SystemMessage(messageType, args);
+    TRACE_FUNCTION();
+
+    // Build a depth-first traversal order of the scene index graph.
+    // The graph may branch widely and re-converge, so avoid visiting
+    // nodes multiple times through different paths.
+    //
+    // XXX Graph structure changes infrequently, so consider caching
+    // this traversal order.  We would need a way to invalidate it
+    // when the graph structure changes.
+    //
+    TfSmallVector<HdSceneIndexBase*, 128> order;
+    TfDenseHashSet<HdSceneIndexBase*, TfHash> visitedSet;
+    order.push_back(this);
+    for (size_t i=0; i < order.size(); ++i) {
+        HdSceneIndexBase *si = order[i];
+
+        // Visit inputs of filtering scene indexes.
+        if (const HdFilteringSceneIndexBase * const fsi =
+                dynamic_cast<const HdFilteringSceneIndexBase*>(si)) {
+            for (const auto &si : fsi->GetInputScenes()) {
+                HdSceneIndexBase* siPtr = si.operator->();
+                if (visitedSet.insert(siPtr).second) {
+                    order.push_back(siPtr);
+                }
+            }
+        }
+        
+        // Visit scene indexes inside encapsulating scenes.
+        if (const HdEncapsulatingSceneIndexBase * const esi =
+                dynamic_cast<const HdEncapsulatingSceneIndexBase*>(si)) {
+            for (const auto &si: esi->GetEncapsulatedScenes()) {
+                HdSceneIndexBase* siPtr = si.operator->();
+                if (visitedSet.insert(siPtr).second) {
+                    order.push_back(siPtr);
+                }
+            }
         }
     }
 
-    _SystemMessage(messageType, args);
+    // Dispatch system message to each scene index.
+    //
+    // XXX Unsure whether order matters here; maybe system messages were
+    // intended to be idempotent?  Preserving existing behavior for now,
+    // i.e. upstream scene indexes before downstream observers.
+    for (size_t i=0; i < order.size(); ++i) {
+        order[order.size()-1-i]->_SystemMessage(messageType, args);
+    }
 }
 
-void
-HdSceneIndexBase::_SystemMessage(
+void HdSceneIndexBase::_SystemMessage(
     const TfToken &messageType,
     const HdDataSourceBaseHandle &args)
 {

@@ -17,6 +17,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdRenderIndex;
 class HdEngine;
 class HdDriver;
+class HdSceneIndexObserver;
 TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 
 ///
@@ -58,6 +59,11 @@ private:
 
     class _LegacyRenderControl;
     std::unique_ptr<_LegacyRenderControl> const _legacyRenderControl;
+
+    // Observes the terminal scene index and pushes the active render settings
+    // prim's opinions to the render delegate via SetRenderSetting.
+    class _RenderSettingsObserver;
+    std::unique_ptr<HdSceneIndexObserver> const _renderSettingsObserver;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -4,7 +4,7 @@
 */
 
 /* implementation for unix-like file io routines (used in context.c) */
-#include "openexr_config.h" 
+#include "openexr_config.h"
 
 #include <errno.h>
 
@@ -13,7 +13,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#ifdef ILMTHREAD_THREADING_ENABLED
+#if ILMTHREAD_THREADING_ENABLED
 #    include <pthread.h>
 #endif
 #include <stdarg.h>
@@ -36,8 +36,8 @@ struct _internal_exr_filehandle
 #else
 struct _internal_exr_filehandle
 {
-    int             fd;
-#    ifdef ILMTHREAD_THREADING_ENABLED
+    int fd;
+#    if ILMTHREAD_THREADING_ENABLED
     pthread_mutex_t mutex;
 #    endif
 };
@@ -54,7 +54,7 @@ default_shutdown (exr_const_context_t c, void* userdata, int failed)
     {
         if (fh->fd >= 0) close (fh->fd);
 #if !CAN_USE_PREAD
-#    ifdef ILMTHREAD_THREADING_ENABLED
+#    if ILMTHREAD_THREADING_ENABLED
         pthread_mutex_destroy (&(fh->mutex));
 #    endif
 #endif
@@ -66,7 +66,7 @@ default_shutdown (exr_const_context_t c, void* userdata, int failed)
 /**************************************/
 
 static exr_result_t
-finalize_write (struct _internal_exr_context* pf, int failed)
+finalize_write (exr_context_t pf, int failed)
 {
     exr_result_t rv = EXR_ERR_SUCCESS;
 
@@ -141,7 +141,7 @@ default_read_func (
     }
 
 #if !CAN_USE_PREAD
-#    ifdef ILMTHREAD_THREADING_ENABLED
+#    if ILMTHREAD_THREADING_ENABLED
     pthread_mutex_lock (&(fh->mutex));
 #    endif
     {
@@ -152,7 +152,7 @@ default_read_func (
 #    endif
         if (spos != offset)
         {
-#    ifdef ILMTHREAD_THREADING_ENABLED
+#    if ILMTHREAD_THREADING_ENABLED
             pthread_mutex_unlock (&(fh->mutex));
 #    endif
             if (error_cb)
@@ -193,7 +193,7 @@ default_read_func (
     } while (retsz < (int64_t) sz);
 
 #if !CAN_USE_PREAD
-#    ifdef ILMTHREAD_THREADING_ENABLED
+#    if ILMTHREAD_THREADING_ENABLED
     pthread_mutex_unlock (&(fh->mutex));
 #    endif
 #endif
@@ -255,7 +255,7 @@ default_write_func (
     }
 
 #if !CAN_USE_PREAD
-#    ifdef ILMTHREAD_THREADING_ENABLED
+#    if ILMTHREAD_THREADING_ENABLED
     pthread_mutex_lock (&(fh->mutex));
 #    endif
     {
@@ -266,7 +266,7 @@ default_write_func (
 #    endif
         if (spos != offset)
         {
-#    ifdef ILMTHREAD_THREADING_ENABLED
+#    if ILMTHREAD_THREADING_ENABLED
             pthread_mutex_unlock (&(fh->mutex));
 #    endif
             if (error_cb)
@@ -306,7 +306,7 @@ default_write_func (
     } while (retsz < (int64_t) sz);
 
 #if !CAN_USE_PREAD
-#    ifdef ILMTHREAD_THREADING_ENABLED
+#    if ILMTHREAD_THREADING_ENABLED
     pthread_mutex_unlock (&(fh->mutex));
 #    endif
 #endif
@@ -325,14 +325,14 @@ default_write_func (
 /**************************************/
 
 static exr_result_t
-default_init_read_file (struct _internal_exr_context* file)
+default_init_read_file (exr_context_t file)
 {
     int                              fd;
     struct _internal_exr_filehandle* fh = file->user_data;
 
     fh->fd = -1;
 #if !CAN_USE_PREAD
-#    ifdef ILMTHREAD_THREADING_ENABLED
+#    if ILMTHREAD_THREADING_ENABLED
     fd = pthread_mutex_init (&(fh->mutex), NULL);
     if (fd != 0)
         return file->print_error (
@@ -361,7 +361,7 @@ default_init_read_file (struct _internal_exr_context* file)
 /**************************************/
 
 static exr_result_t
-default_init_write_file (struct _internal_exr_context* file)
+default_init_write_file (exr_context_t file)
 {
     int                              fd;
     struct _internal_exr_filehandle* fh    = file->user_data;
@@ -369,7 +369,7 @@ default_init_write_file (struct _internal_exr_context* file)
     if (outfn == NULL) outfn = file->filename.str;
 
 #if !CAN_USE_PREAD
-#    ifdef ILMTHREAD_THREADING_ENABLED
+#    if ILMTHREAD_THREADING_ENABLED
     fd = pthread_mutex_init (&(fh->mutex), NULL);
     if (fd != 0)
         return file->print_error (
@@ -421,7 +421,7 @@ default_query_size_func (exr_const_context_t ctxt, void* userdata)
 /**************************************/
 
 static exr_result_t
-make_temp_filename (struct _internal_exr_context* ret)
+make_temp_filename (exr_context_t ret)
 {
     /* we checked the pointers we care about before calling */
     char        tmproot[32];
@@ -453,9 +453,9 @@ make_temp_filename (struct _internal_exr_context* ret)
         if (lastslash)
         {
             uint64_t nPrev = (uintptr_t) lastslash - (uintptr_t) srcfile + 1;
-            strncpy (tmpname, srcfile, nPrev);
-            strncpy (tmpname + nPrev, tmproot, tlen);
-            strncpy (
+            memcpy (tmpname, srcfile, nPrev);
+            memcpy (tmpname + nPrev, tmproot, tlen);
+            memcpy (
                 tmpname + nPrev + tlen,
                 srcfile + nPrev,
                 (uint64_t) (ret->filename.length) - nPrev);
@@ -463,8 +463,8 @@ make_temp_filename (struct _internal_exr_context* ret)
         }
         else
         {
-            strncpy (tmpname, tmproot, tlen);
-            strncpy (tmpname + tlen, srcfile, (size_t) ret->filename.length);
+            memcpy (tmpname, tmproot, tlen);
+            memcpy (tmpname + tlen, srcfile, (size_t) ret->filename.length);
             tmpname[newlen] = '\0';
         }
     }

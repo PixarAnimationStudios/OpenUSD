@@ -58,6 +58,7 @@ xx(Matrix4d,       15, GfMatrix4d,        true)
 // value must be last.
 // xx(TimeCode,       56, GfTimeCode,        true)   
 // xx(PathExpression, 57, SdfPathExpression, true)
+// xx(Duration,       61, GfDuration,        true)   
 
 
 // Non-array types.
@@ -95,7 +96,7 @@ xx(UnregisteredValue,       53, SdfUnregisteredValue,        false)
 xx(UnregisteredValueListOp, 54, SdfUnregisteredValueListOp,  false)
 xx(PayloadListOp,           55, SdfPayloadListOp,            false)
 
-// These array types appear here since the greatest enumerant value must be
+// These types appear "out of order" here since the greatest enumerant value must be
 // last.
 xx(TimeCode,                56, GfTimeCode,                  true)
 xx(PathExpression,          57, SdfPathExpression,           true)
@@ -105,3 +106,4 @@ xx(Spline,                  59, TsSpline,                    false)
 
 xx(AnimationBlock,          60, SdfAnimationBlock,           false)
 
+xx(Duration,                61, GfDuration,                  true)   

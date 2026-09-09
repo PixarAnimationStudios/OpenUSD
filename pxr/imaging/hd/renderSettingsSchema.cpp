@@ -117,6 +117,13 @@ HdRenderSettingsSchema::GetUnionedSamplingInterval() const
         HdRenderSettingsSchemaTokens->unionedSamplingInterval);
 }
 
+HdBoolDataSourceHandle
+HdRenderSettingsSchema::GetUseForLegacyRenderDelegateSettings() const
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        HdRenderSettingsSchemaTokens->useForLegacyRenderDelegateSettings);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdRenderSettingsSchema::BuildRetained(
@@ -129,11 +136,12 @@ HdRenderSettingsSchema::BuildRetained(
         const HdTokenArrayDataSourceHandle &includedPurposes,
         const HdTokenArrayDataSourceHandle &materialBindingPurposes,
         const HdTokenDataSourceHandle &renderingColorSpace,
-        const HdVec2dDataSourceHandle &unionedSamplingInterval
+        const HdVec2dDataSourceHandle &unionedSamplingInterval,
+        const HdBoolDataSourceHandle &useForLegacyRenderDelegateSettings
 )
 {
-    TfToken _names[10];
-    HdDataSourceBaseHandle _values[10];
+    TfToken _names[11];
+    HdDataSourceBaseHandle _values[11];
 
     size_t _count = 0;
 
@@ -185,6 +193,11 @@ HdRenderSettingsSchema::BuildRetained(
     if (unionedSamplingInterval) {
         _names[_count] = HdRenderSettingsSchemaTokens->unionedSamplingInterval;
         _values[_count++] = unionedSamplingInterval;
+    }
+
+    if (useForLegacyRenderDelegateSettings) {
+        _names[_count] = HdRenderSettingsSchemaTokens->useForLegacyRenderDelegateSettings;
+        _values[_count++] = useForLegacyRenderDelegateSettings;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -269,6 +282,14 @@ HdRenderSettingsSchema::Builder::SetUnionedSamplingInterval(
     return *this;
 }
 
+HdRenderSettingsSchema::Builder &
+HdRenderSettingsSchema::Builder::SetUseForLegacyRenderDelegateSettings(
+    const HdBoolDataSourceHandle &useForLegacyRenderDelegateSettings)
+{
+    _useForLegacyRenderDelegateSettings = useForLegacyRenderDelegateSettings;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdRenderSettingsSchema::Builder::Build()
 {
@@ -282,7 +303,8 @@ HdRenderSettingsSchema::Builder::Build()
         _includedPurposes,
         _materialBindingPurposes,
         _renderingColorSpace,
-        _unionedSamplingInterval
+        _unionedSamplingInterval,
+        _useForLegacyRenderDelegateSettings
     );
 }
 
@@ -410,6 +432,16 @@ HdRenderSettingsSchema::GetUnionedSamplingIntervalLocator()
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
             HdRenderSettingsSchemaTokens->unionedSamplingInterval);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetUseForLegacyRenderDelegateSettingsLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdRenderSettingsSchemaTokens->useForLegacyRenderDelegateSettings);
     return locator;
 } 
 

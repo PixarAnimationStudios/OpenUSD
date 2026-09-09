@@ -8,6 +8,7 @@
 #include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/base/tf/hashset.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/utils.h"
@@ -50,7 +51,7 @@ HdDependencyForwardingSceneIndex::GetPrim(const SdfPath &primPath) const
                 HdDependenciesSchema::GetSchemaToken(),
                 HdBlockDataSource::New());
         prim.dataSource =
-            HdOverlayContainerDataSource::OverlayedContainerDataSources(
+            HdCreateOverlayContainerDataSource(
                 blockDeps, prim.dataSource);
     }
 
@@ -188,9 +189,65 @@ HdDependencyForwardingSceneIndex::_PrimsRemoved(
     _AdditionalDirtiedVector additionalDirtied;
     _PathSet rebuildDependencies;
 
+    // For performance, if the PrimsRemoved vector is really large we add the
+    // entries to a hash set; we can check a prim by iterating up-hierarchy and
+    // checking against the hash set.  This tells us whether a prim has been
+    // removed in O(max scene depth) time.
+    //
+    // If the vector is small, checking against PrimsRemoved entries is still
+    // faster, as this is O(notice size).
+    //
+    // We're mainly trying to avoid accidentally quadratic behavior as the size
+    // of the notice approaches the size of the scene, so we use the hash set
+    // if the notice vector is bigger than our size threshold, chosen because
+    // it's small for a for loop but large for a scene namespace depth.
+    static constexpr size_t HashsetThreshold = 30;
+
+    std::function<bool(SdfPath const&)> hasBeenRemoved;
+    TfHashSet<SdfPath, SdfPath::Hash> removedEntriesHashSet;
+
+    if (entries.size() > HashsetThreshold) {
+        // Create a hashset of entries
+        removedEntriesHashSet.reserve(entries.size());
+        for (const HdSceneIndexObserver::RemovedPrimEntry& entry : entries) {
+            removedEntriesHashSet.insert(entry.primPath);
+        }
+
+        // Function to quickly check if a prim (including any parent prim) has
+        // been removed.
+        // (When a parent prim is removed, all child prims are also removed).
+        hasBeenRemoved = [&removedEntriesHashSet](const SdfPath& primToCheck)
+        {
+            // Check if the prim has been removed, or if a parent of the prim
+            for (SdfPath path = primToCheck; !path.IsEmpty();
+                 path = path.GetParentPath())
+            {
+                if (removedEntriesHashSet.find(path) !=
+                    removedEntriesHashSet.end())
+                {
+                    return true;
+                }
+                if (path.IsAbsoluteRootPath())
+                {
+                    break;
+                }
+            }
+            return false;
+        };
+    } else {
+        hasBeenRemoved = [&entries](const SdfPath& primToCheck)
+        {
+            for (const auto& entry : entries) {
+                if (primToCheck.HasPrefix(entry.primPath)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+    }
+
     // Because of the recursive nature of remove notices, we need to iterate the
-    // whole dependency map, which is (hopefully) bigger than the notice vector,
-    // so we iterate the map as the outer loop.
+    // whole dependency map.
     //
     // Iterate _affectedPrimToDependsOnPathsMap looking for:
     // - Affected prims that are descendants of primPath.
@@ -199,15 +256,9 @@ HdDependencyForwardingSceneIndex::_PrimsRemoved(
     [&](const _AffectedPrimToDependsOnPathsEntryMap::range_type& range) {
     for (auto it = range.begin(); it != range.end(); ++it) {
         _AffectedPrimToDependsOnPathsEntryMap::value_type& pair = *it;
-        for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
-            // Note: if this loop becomes a bottleneck, we could sort
-            // entries by path and do a binary search to slightly bend the
-            // O(n) time, but on current scenes it doesn't seem worth it.
-            if (pair.first.HasPrefix(entry.primPath)) {
-                pair.second.flaggedForDeletion = true;
-                _potentiallyDeletedAffectedPaths.insert(pair.first);
-                break;
-            }
+        if (hasBeenRemoved(pair.first)) {
+            pair.second.flaggedForDeletion = true;
+            _potentiallyDeletedAffectedPaths.insert(pair.first);
         }
     }});
 
@@ -233,50 +284,55 @@ HdDependencyForwardingSceneIndex::_PrimsRemoved(
         _DependedOnPrimsAffectedPrimsMap::value_type& depPair = *it;
         WorkParallelForTBBRange(depPair.second.range(),
         [&](const _AffectedPrimsDependencyMap::range_type& range) {
+
+        // Note: these are scoped to the parallel range (rather than the whole
+        // depPair) so that they stay thread-local; depPair.first is constant
+        // across the inner loop, so caching within the range is still a win.
+        bool dependedOnChecked = false;
+        bool dependedOnRemoved = false;
+
         for (auto it = range.begin(); it != range.end(); ++it) {
             _AffectedPrimsDependencyMap::value_type& affPair = *it;
 
-            for (const HdSceneIndexObserver::RemovedPrimEntry &entry :
-                    entries) {
-                // Note: if this loop becomes a bottleneck, we could sort
-                // entries by path and do a binary search to slightly bend the
-                // O(n) time, but on current scenes it doesn't seem worth it.
-
-                // If the affected prim was deleted, mark the
-                // dependedOnPrim->affectedPrim entry for deletion.
-                if (affPair.first.HasPrefix(entry.primPath)) {
-                    affPair.second.flaggedForDeletion = true;
-                    _potentiallyDeletedDependedOnPaths.insert(depPair.first);
-                    break;
-                }
+            if (hasBeenRemoved(affPair.first))
+            {
+                affPair.second.flaggedForDeletion = true;
+                _potentiallyDeletedDependedOnPaths.insert(depPair.first);
             }
 
+            // We keep this condition separate, in case this has already been flagged for deletion
+            // from elsewhere.
             if (affPair.second.flaggedForDeletion) {
                 continue;
             }
 
+            // Only check ONCE per "depPair.first" if the "depended on" was removed. This is either
+            // true or false for all items in the inner loop.
+            // Note: This could be moved out of the inner loop for the sake of simplicity, but it
+            // is more optimal to do it here, after the early out, in case this code is not even
+            // reached.
+            if (!dependedOnChecked)
+            {
+                dependedOnRemoved = hasBeenRemoved(depPair.first);
+                dependedOnChecked = true;
+            }
+
             // Otherwise, if the affected prim remains but the depended on
             // prim was deleted, send dirty notices.
-            for (const HdSceneIndexObserver::RemovedPrimEntry &entry :
-                    entries) {
-                // Note: if this loop becomes a bottleneck, we could sort
-                // entries by path and do a binary search to slightly bend the
-                // O(n) time, but on current scenes it doesn't seem worth it.
-                if (depPair.first.HasPrefix(entry.primPath)) {
-                    HdDataSourceLocatorSet affectedLocators;
-                    for (const auto &keyEntryPair :
-                            affPair.second.locatorsEntryMap) {
-                        const _LocatorsEntry &entry = keyEntryPair.second;
-                        affectedLocators.insert(
-                            entry.affectedDataSourceLocator);
-                    }
+            if (dependedOnRemoved) {
+                HdDataSourceLocatorSet affectedLocators;
+                for (const auto &keyEntryPair :
+                        affPair.second.locatorsEntryMap) {
+                    const _LocatorsEntry &entry = keyEntryPair.second;
+                    affectedLocators.insert(
+                        entry.affectedDataSourceLocator);
+                }
 
-                    if (!affectedLocators.IsEmpty()) {
-                        additionalDirtied.emplace_back(affPair.first,
-                            affectedLocators);
-                        _PrimDirtied(affPair.first, affectedLocators,
-                            &visited, &additionalDirtied, &rebuildDependencies);
-                    }
+                if (!affectedLocators.IsEmpty()) {
+                    additionalDirtied.emplace_back(affPair.first,
+                        affectedLocators);
+                    _PrimDirtied(affPair.first, affectedLocators,
+                        &visited, &additionalDirtied, &rebuildDependencies);
                 }
             }
         }});

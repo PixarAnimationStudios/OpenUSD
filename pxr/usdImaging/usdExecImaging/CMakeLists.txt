@@ -1,46 +1,25 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdExecImaging)
 
-# usdExecImaging is always built when PXR_BUILD_USD_IMAGING=ON. However, when
-# PXR_BUILD_EXEC=OFF, the library does not link to any exec libraries.
-
-if (PXR_BUILD_EXEC)
-    set(USDEXECIMAGING_LIBRARIES
-        execGeom
-        execIr
-        execUsd)
-
-    set(USDEXECIMAGING_PRIVATE_CLASSES
-        adapterRegistry
-        debugCodes
-        geomXformablePrimAdapter
-        irXformablePrimAdapter
-        request
-        requestBuilder
-        stageSceneIndex)
-
-    set(USDEXECIMAGING_PRIVATE_HEADERS
-        valueKeyMap.h)
-
-    set(USDEXECIMAGING_CPPFILES
-        stageSceneIndexFactory_execOn.cpp)
-else()
+# usdExecImaging requires exec.
+if(NOT PXR_BUILD_EXEC)
     message(STATUS
-        "Building a minimal ${PXR_PACKAGE} because PXR_BUILD_EXEC is OFF")
-
-    set(USDEXECIMAGING_CPPFILES
-        stageSceneIndexFactory_execOff.cpp)
+        "Skipping building usdExecImaging because PXR_BUILD_EXEC is OFF")
+    return()
 endif()
 
 pxr_library(usdExecImaging
     LIBRARIES
-        ${USDEXECIMAGING_LIBRARIES}
+        execGeom
+        execIr
+        execUsd
         hd
         sdf
         tf
         trace
         usd
         usdGeom
+        usdImaging
         vt
 
     PUBLIC_CLASSES
@@ -48,21 +27,22 @@ pxr_library(usdExecImaging
         primAdapterInterface
         requestAccessorInterface
         requestBuilderInterface
-        stageSceneIndexInterface
 
     PUBLIC_HEADERS
         api.h
-        stageSceneIndexFactory.h
         valueKey.h
 
     PRIVATE_CLASSES
-        ${USDEXECIMAGING_PRIVATE_CLASSES}
+        adapterRegistry
+        debugCodes
+        geomXformablePrimAdapter
+        irXformablePrimAdapter
+        request
+        requestBuilder
+        stageSceneIndex
 
     PRIVATE_HEADERS
-        ${USDEXECIMAGING_PRIVATE_HEADERS}
-
-    CPPFILES
-        ${USDEXECIMAGING_CPPFILES}
+        valueKeyMap.h
 
     RESOURCE_FILES
         plugInfo.json

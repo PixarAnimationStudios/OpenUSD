@@ -54,6 +54,13 @@
 
 /* #undef OPENEXR_MISSING_ARM_VLD1 */
 
+// pxr begin
+#define OPENEXR_USE_INTERNAL_DEFLATE 1
+#define ILMTHREAD_THREADING_ENABLED 1
+#define OPENEXR_C_STANDALONE 1
+//#define OPENEXR_CORE_FUNCTIONS_EMBEDDED 1
+// pxr end
+// 
 // clang-format on
 
 #endif // INCLUDED_OPENEXR_INTERNAL_CONFIG_H
