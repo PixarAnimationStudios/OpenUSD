@@ -63,23 +63,28 @@ class SdfAssetPath;
 /// 
 /// \section UsdGeom_CameraUnits Units of Measure for Camera Properties
 /// 
-/// Despite the familiarity of millimeters for specifying some physical
-/// camera properties, UsdGeomCamera opts for greater consistency with all
-/// other UsdGeom schemas, which measure geometric properties in scene units,
-/// as determined by UsdGeomGetStageMetersPerUnit().  We do make a
-/// concession, however, in that lens and filmback properties are measured in
-/// __tenths of a scene unit__ rather than "raw" scene units.  This means
-/// that with the fallback value of .01 for _metersPerUnit_ - i.e. scene unit
-/// of centimeters - then these "tenth of scene unit" properties are
-/// effectively millimeters.
+/// UsdGeomCamera offers two modes for specifying camera geometry, controlled by
+/// the \ref UsdGeomCamera::GetUnitsAttr() "units attribute"
 /// 
-/// \note If one adds a Camera prim to a UsdStage whose scene unit is not
-/// centimeters, the fallback values for filmback properties will be
-/// incorrect (or at the least, unexpected) in an absolute sense; however,
-/// proper imaging through a "default camera" with focusing disabled depends
-/// only on ratios of the other properties, so the camera is still usable.
-/// However, it follows that if even one property is authored in the correct
-/// scene units, then they all must be.
+/// The default, legacy behavior is to specify the units for 
+/// \ref UsdGeomCamera::GetHorizontalApertureAttr() "horizontalAperture", 
+/// \ref UsdGeomCamera::GetVerticalApertureAttr() "verticalAperture", 
+/// \ref UsdGeomCamera::GetHorizontalApertureOffsetAttr() "horizontalApertureOffset", 
+/// \ref UsdGeomCamera::GetVerticalApertureOffsetAttr() "verticalApertureOffset", 
+/// and \ref UsdGeomCamera::GetFocalLengthAttr() "focalLength", in "sceneTenths",
+/// i.e. tenths of a scene unit. This has the advantage of being congruent with 
+/// millimeters (the generally expected unit of measure for camera geometry) with
+/// the USD default unit of centimeters, while also allowing the camera geometry
+/// to scale automatically with a scaling XformOp applied to the Camera prim in 
+/// some renderers.
+/// 
+/// In some workflows where mixing scene units between layers is common, this 
+/// unit choice can cause confusion and pipeline issues, for which the 
+/// \ref UsdGeomCamera::GetUnitsAttr() "units attribute" can be set to "millimeters"
+/// to force the unit of measure for the camera geometry regardless of the stage's
+/// metersPerUnit. In this case it is the responsibility of the renderer or any other
+/// dependent system to calculate the correct conversion factors depending on the 
+/// stage's metersPerUnit.
 /// 
 /// \section UsdGeom_CameraExposure Camera Exposure Model
 /// 
@@ -247,7 +252,7 @@ public:
     // --------------------------------------------------------------------- //
     // HORIZONTALAPERTURE 
     // --------------------------------------------------------------------- //
-    /// Horizontal aperture in tenths of a scene unit; see 
+    /// Horizontal aperture in units according to the units attribute; see 
     /// \ref UsdGeom_CameraUnits . Default is the equivalent of 
     /// the standard 35mm spherical projector aperture.
     ///
@@ -271,7 +276,7 @@ public:
     // --------------------------------------------------------------------- //
     // VERTICALAPERTURE 
     // --------------------------------------------------------------------- //
-    /// Vertical aperture in tenths of a scene unit; see 
+    /// Vertical aperture in units according to the units attribute; see 
     /// \ref UsdGeom_CameraUnits . Default is the equivalent of 
     /// the standard 35mm spherical projector aperture.
     ///
@@ -341,7 +346,7 @@ public:
     // --------------------------------------------------------------------- //
     // FOCALLENGTH 
     // --------------------------------------------------------------------- //
-    /// Perspective focal length in tenths of a scene unit; see 
+    /// Perspective focal length in units according to the units attribute; see 
     /// \ref UsdGeom_CameraUnits .
     ///
     /// | ||
@@ -407,6 +412,30 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
     UsdAttribute CreateClippingPlanesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // UNITS 
+    // --------------------------------------------------------------------- //
+    /// Sets the units for horizontalAperture, verticalAperture, 
+    /// horizontalApertureOffset, verticalApertureOffset, and focalLength.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `token units = "sceneTenths"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref UsdGeomTokens "Allowed Values" | sceneTenths, millimeters |
+    USDGEOM_API
+    UsdAttribute GetUnitsAttr() const;
+
+    /// See GetUnitsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateUnitsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
