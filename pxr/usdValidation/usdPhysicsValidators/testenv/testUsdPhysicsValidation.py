@@ -229,6 +229,151 @@ class TestUsdPhysicsValidation(unittest.TestCase):
         self.assertTrue(len(errors) == 1)
         self.assertTrue(errors[0].GetName() == "JointNoEnabledRigidBody")
 
+    def test_physics_joint_enabled_rigid_body_on_ancestor(self):
+        validationRegistry = UsdValidation.ValidationRegistry()
+        validator = validationRegistry.GetOrLoadValidatorByName(
+            "usdPhysicsValidators:PhysicsJointChecker"
+        )
+
+        self.assertTrue(validator)
+
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        # A body relationship may target any UsdGeomXformable. Joint parsing
+        # resolves a target to its closest ancestor body, so a collider below
+        # an enabled body is a valid target.
+        body0 = UsdGeom.Xform.Define(stage, "/body0")
+        UsdPhysics.RigidBodyAPI.Apply(body0.GetPrim())
+        collider0 = UsdGeom.Cube.Define(stage, "/body0/collider")
+        UsdPhysics.CollisionAPI.Apply(collider0.GetPrim())
+
+        body1 = UsdGeom.Xform.Define(stage, "/body1")
+        rbo1 = UsdPhysics.RigidBodyAPI.Apply(body1.GetPrim())
+        collider1 = UsdGeom.Cube.Define(stage, "/body1/collider")
+        UsdPhysics.CollisionAPI.Apply(collider1.GetPrim())
+
+        physicsJoint = UsdPhysics.Joint.Define(stage, "/joint")
+        physicsJoint.GetBody0Rel().AddTarget("/body0/collider")
+        physicsJoint.GetBody1Rel().AddTarget("/body1/collider")
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # Disabling the only enabled ancestor body fails the check
+        rbo0 = UsdPhysics.RigidBodyAPI(body0.GetPrim())
+        rbo0.GetRigidBodyEnabledAttr().Set(False)
+        rbo1.GetRigidBodyEnabledAttr().Set(False)
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "JointNoEnabledRigidBody")
+
+        # Re-enabling either one of the bodies satisfies the check
+        rbo0.GetRigidBodyEnabledAttr().Set(True)
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        rbo0.GetRigidBodyEnabledAttr().Set(False)
+        rbo1.GetRigidBodyEnabledAttr().Set(True)
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # An ancestor collider without any body in the hierarchy is not a body
+        stage = Usd.Stage.CreateInMemory()
+        group = UsdGeom.Xform.Define(stage, "/group")
+        collider = UsdGeom.Cube.Define(stage, "/group/collider")
+        UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+
+        physicsJoint = UsdPhysics.Joint.Define(stage, "/joint")
+        physicsJoint.GetBody0Rel().AddTarget("/group/collider")
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "JointNoEnabledRigidBody")
+
+    def test_physics_joint_enabled_rigid_body_nested(self):
+        validationRegistry = UsdValidation.ValidationRegistry()
+        validator = validationRegistry.GetOrLoadValidatorByName(
+            "usdPhysicsValidators:PhysicsJointChecker"
+        )
+
+        self.assertTrue(validator)
+
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        # Nested bodies: a disabled body is treated as though the API were not
+        # applied at all, so the search continues past it to an enabled
+        # ancestor body, matching joint and collider parsing
+        outerBody = UsdGeom.Xform.Define(stage, "/outer")
+        outerRbo = UsdPhysics.RigidBodyAPI.Apply(outerBody.GetPrim())
+        innerBody = UsdGeom.Xform.Define(stage, "/outer/inner")
+        innerRbo = UsdPhysics.RigidBodyAPI.Apply(innerBody.GetPrim())
+        collider = UsdGeom.Cube.Define(stage, "/outer/inner/collider")
+        UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+
+        physicsJoint = UsdPhysics.Joint.Define(stage, "/joint")
+        physicsJoint.GetBody0Rel().AddTarget("/outer/inner/collider")
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # Disabling the closest body still leaves the enabled outer body
+        innerRbo.GetRigidBodyEnabledAttr().Set(False)
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # Removing the disabled body entirely is equivalent
+        innerBody.GetPrim().RemoveAPI(UsdPhysics.RigidBodyAPI)
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # Only when no enabled body remains anywhere above does it fail
+        UsdPhysics.RigidBodyAPI.Apply(
+            innerBody.GetPrim()).GetRigidBodyEnabledAttr().Set(False)
+        outerRbo.GetRigidBodyEnabledAttr().Set(False)
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "JointNoEnabledRigidBody")
+
+    def test_physics_joint_enabled_rigid_body_non_body_rel(self):
+        validationRegistry = UsdValidation.ValidationRegistry()
+        validator = validationRegistry.GetOrLoadValidatorByName(
+            "usdPhysicsValidators:PhysicsJointChecker"
+        )
+
+        self.assertTrue(validator)
+
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        # Only one body relationship needs to reach an enabled body. The other
+        # may target a prim that is neither the world nor a body, such as an
+        # asset root prim.
+        assetRoot = UsdGeom.Xform.Define(stage, "/asset")
+        body = UsdGeom.Xform.Define(stage, "/asset/body")
+        rbo = UsdPhysics.RigidBodyAPI.Apply(body.GetPrim())
+
+        physicsJoint = UsdPhysics.Joint.Define(stage, "/asset/joint")
+        physicsJoint.GetBody0Rel().AddTarget(assetRoot.GetPath())
+        physicsJoint.GetBody1Rel().AddTarget(body.GetPath())
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 0)
+
+        # ... but it cannot stand in for one, so disabling the only body fails
+        rbo.GetRigidBodyEnabledAttr().Set(False)
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "JointNoEnabledRigidBody")
+
     def test_physics_joint_multiple_rels(self):
         validationRegistry = UsdValidation.ValidationRegistry()
         validator = validationRegistry.GetOrLoadValidatorByName(

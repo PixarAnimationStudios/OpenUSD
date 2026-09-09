@@ -28,6 +28,8 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
+#include <vector>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfAssetPath;
@@ -321,6 +323,24 @@ public:
     USDPHYSICS_API
     float ComputeMassProperties(GfVec3f* diagonalInertia, GfVec3f* com, GfQuatf* principalAxes, 
         const MassInformationFn& massInfoFn) const;
+
+    /// Gather the collider prims that belong to this rigid body.
+    ///
+    /// Starting at this rigid body's prim, the subtree is traversed (including
+    /// instance proxies) and every prim with UsdPhysicsCollisionAPI applied is
+    /// collected, with two exceptions:
+    ///  - a collider whose physics:collisionEnabled resolves to false is
+    ///    skipped, since a disabled collider takes no part in simulation; and
+    ///  - the subtree rooted at a nested prim with an enabled
+    ///    UsdPhysicsRigidBodyAPI is pruned, since those colliders belong to
+    ///    that other rigid body rather than to this one. A nested body whose
+    ///    physics:rigidBodyEnabled resolves to false takes no part in
+    ///    simulation and so owns no colliders; its subtree is traversed and
+    ///    the enabled colliders below it belong to this body.
+    ///
+    /// \return The enabled collider prims belonging to this rigid body.
+    USDPHYSICS_API
+    std::vector<UsdPrim> GetCollisionPrims() const;
 
 };
 
