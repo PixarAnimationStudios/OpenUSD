@@ -5,7 +5,6 @@
 // https://openusd.org/license.
 //
 
-#include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/glf/testGLContext.h"
 #include "pxr/base/gf/frustum.h"
 

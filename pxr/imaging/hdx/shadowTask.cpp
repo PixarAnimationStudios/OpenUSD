@@ -24,7 +24,6 @@
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/glf/simpleLightingContext.h"
-#include "pxr/imaging/glf/diagnostic.h"
 
 #include "pxr/imaging/hio/image.h"
 #include "pxr/base/arch/fileSystem.h"
@@ -58,7 +57,6 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     if (!renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)) {
@@ -349,7 +347,6 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
     // Extract the lighting context information from the task context
     GlfSimpleLightingContextRefPtr lightingContext;

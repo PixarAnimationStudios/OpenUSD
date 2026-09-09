@@ -6,8 +6,6 @@
 //
 #include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/glf/diagnostic.h"
-
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
@@ -233,7 +231,6 @@ HdStRenderPassState::Prepare(
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
     HdRenderPassState::Prepare(resourceRegistry);
 
@@ -671,8 +668,6 @@ HdStRenderPassState::ApplyStateFromCamera()
 void
 HdStRenderPassState::Bind(HgiCapabilities const &hgiCapabilities)
 {
-    GLF_GROUP_FUNCTION();
-
     // when adding another GL state change here, please document
     // which states to be altered at the comment in the header file
 
@@ -795,7 +790,6 @@ HdStRenderPassState::Bind(HgiCapabilities const &hgiCapabilities)
 void
 HdStRenderPassState::Unbind(HgiCapabilities const &hgiCapabilities)
 {
-    GLF_GROUP_FUNCTION();
     // restore back to the GL defaults
 
     if (!GetDepthBiasUseDefault()) {
