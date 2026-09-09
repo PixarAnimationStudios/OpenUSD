@@ -492,6 +492,17 @@ pxr_build_test(testHdStMeshTopology
     CPPFILES
         testenv/testHdStMeshTopology.cpp
 )
+pxr_build_test(testHdStPackedNormals
+    LIBRARIES
+        hdSt
+        hd
+        sdf
+        glf
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStPackedNormals.cpp
+)
 pxr_build_test(testHdStMultipleFvarTopologies
     LIBRARIES
         hdSt
@@ -2323,6 +2334,16 @@ function(register_codegen_tests suffix hgi_env)
             TF_DEBUG=HD_SAFE_MODE
             ${hgi_env}
     )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_PackedNormals
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --packedNormals"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_packedNormals.out
+        DIFF_COMPARE codegen_mesh_packedNormals.out
+        TESTENV testenv/testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
     pxr_register_test(testHdStCodeGen${suffix}_Curves_Indirect
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --curves"
         EXPECTED_RETURN_CODE 0
@@ -2824,6 +2845,26 @@ pxr_register_test(testHdStMeshTopology
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
+
+pxr_register_test(testHdStPackedNormals
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStPackedNormals --offscreen"
+    EXPECTED_RETURN_CODE 0
+    IMAGE_DIFF_COMPARE
+        testHdStPackedNormals_comparison.png
+        testHdStPackedNormals_fvar.png
+        testHdStPackedNormals_packed.png
+        testHdStPackedNormals_update_fvar_after.png
+        testHdStPackedNormals_update_fvar_before.png
+        testHdStPackedNormals_update_uniform_after.png
+        testHdStPackedNormals_update_uniform_before.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    TESTENV testenv/testHdStPackedNormals
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
 pxr_register_test(testHdStMultipleFvarTopologies
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMultipleFvarTopologies --offscreen --repr refinedWireOnSurf --refineLevel 1"
     EXPECTED_RETURN_CODE 0

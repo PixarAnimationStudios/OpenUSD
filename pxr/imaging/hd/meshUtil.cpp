@@ -366,6 +366,9 @@ HdMeshUtil::ComputeTriangulatedFaceVaryingPrimvar(void const* source,
     case HdTypeDoubleVec4:
         return _TriangulateFaceVarying<GfVec4d>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
+    case HdTypeInt32_2_10_10_10_REV:
+        return _TriangulateFaceVarying<HdVec4f_2_10_10_10_REV>(_id, faceVertexCounts, holeFaces, flip,
+                source, numElements, triangulated);
     default:
         TF_CODING_ERROR("Unsupported primvar type for triangulation [%s]",
                         _id.GetText());

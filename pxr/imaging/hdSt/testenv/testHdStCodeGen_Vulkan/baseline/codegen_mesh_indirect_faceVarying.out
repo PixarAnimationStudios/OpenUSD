@@ -1328,7 +1328,7 @@ void ProcessPrimvarsOut(int index) {
   gs_interstageDrawingCoord2[1] = dc.instanceIndex[0];
   outPrimvars.points = inPrimvars[index].points;
   outPrimvars.normals = inPrimvars[index].normals;
-  outPrimvars.dispTextureCoord = HdGet_dispTextureCoord(index);
+  outPrimvars.dispTextureCoord = vec2(HdGet_dispTextureCoord(index));
 }
 
 // ---------------------------------------------------------------------------
@@ -4383,7 +4383,7 @@ void ProcessPrimvarsOut(int index) {
   gs_interstageDrawingCoord2[1] = dc.instanceIndex[0];
   outPrimvars.points = inPrimvars[index].points;
   outPrimvars.normals = inPrimvars[index].normals;
-  outPrimvars.dispTextureCoord = HdGet_dispTextureCoord(index);
+  outPrimvars.dispTextureCoord = vec2(HdGet_dispTextureCoord(index));
 }
 
 // ---------------------------------------------------------------------------

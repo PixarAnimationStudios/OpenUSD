@@ -6335,10 +6335,12 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
                 _geometricShader->GetFvarPatchType() ==
                 HdSt_GeometricShader::FvarPatchType::PATCH_BOXSPLINETRIANGLE) {
                     _procGS << "  outPrimvars." << name
-                            << " = HdGet_" << name << "(index, localST);\n";
+                            << " = " << _GetPackedTypeMutator(_ConvertBoolType(dataType), false)
+                            << "(HdGet_" << name << "(index, localST));\n";
             } else {
                 _procGS << "  outPrimvars." << name
-                        << " = HdGet_" << name << "(index);\n";
+                        << " = " << _GetPackedTypeMutator(_ConvertBoolType(dataType), false)
+                        << "(HdGet_" << name << "(index));\n";
             }
         } else if (!_geometricShader->IsPrimTypePoints()) {
             _EmitDeclaration(&_resMaterial, name, dataType, binding);

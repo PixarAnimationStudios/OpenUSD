@@ -30,6 +30,9 @@ TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_REBAR, false,
                       "Use Vulkan with ReBAR (if device supports)");
 TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_HOST_IMAGE_COPY, true,
                       "Use Vulkan direct image copy from host");
+TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_PACKED_INT_1010102_VERTICES, true,
+                      "Enable PackedInt1010102 for vertex buffers (if device "
+                      "supports)");
 
 static HgiVulkanFormatInfo
 _CreateFormatInfo(HgiVulkanDevice* hgi, HgiTextureType type, HgiFormat format,
@@ -371,12 +374,23 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         barycentricExtSupported &&
         vkBarycentricFeatures.fragmentShaderBarycentric;
 
+    VkFormatProperties packedIntFormatProperties{};
+    vkGetPhysicalDeviceFormatProperties(
+        physicalDevice,
+        HgiVulkanConversions::GetFormat(HgiFormatPackedInt1010102),
+        &packedIntFormatProperties);
+    bool packedInt1010102 = packedIntFormatProperties.bufferFeatures &
+        VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT;
+
     // Check Hgi env settings
     if (!TfGetEnvSetting(HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT)) {
         multiDrawIndirectEnabled = false;
     }
     if (!TfGetEnvSetting(HGIVULKAN_ENABLE_BUILTIN_BARYCENTRICS)) {
         builtinBarycentricsEnabled = false;
+    }
+    if (!TfGetEnvSetting(HGIVULKAN_ENABLE_PACKED_INT_1010102_VERTICES)) {
+        packedInt1010102 = false;
     }
 
     supportsHostImageCopy = hostImageCopyExtAvailable 
@@ -398,6 +412,8 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
      _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect,
         multiDrawIndirectEnabled);
     _SetFlag(HgiDeviceCapabilitiesForceEarlyFragmentTest, true);
+    _SetFlag(HgiDeviceCapabilitiesBitsPackedInt1010102Vertices,
+        packedInt1010102);
 }
 
 HgiVulkanCapabilities::~HgiVulkanCapabilities() = default;
