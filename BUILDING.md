@@ -387,21 +387,12 @@ The additional dependencies that must be supplied when invoking cmake are:
 | Dependency Name                   | Description                                       |
 | ----------------------------------|-------------------------------------------------- |
 | ALEMBIC_DIR                       | The location of [Alembic](https://https://github.com/alembic/alembic)   | 
-| OPENEXR_LOCATION                  | The location of [OpenEXR](http://www.openexr.com) |
-| Imath_DIR (If not using OpenEXR)  | Path to the CMake package config of a Imath SDK install. (With OpenEXR 3+, Imath can be used explicitly instead of OpenEXR.)|
-
-Either OpenEXR or Imath is required depending on which library is used by the
-Alembic library specified in ALEMBIC_DIR.
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 
 Support for Alembic files using the HDF5 backend can be enabled by specifying
-the cmake flag `PXR_ENABLE_HDF5_SUPPORT=TRUE`. HDF5 support requires the
-following dependencies:
-
-| Dependency Name    | Description     |
-| ------------------ |---------------- |
-| HDF5_LOCATION      | The location of [HDF5](https://www.hdfgroup.org/HDF5/) |
+the cmake flag `PXR_ENABLE_HDF5_SUPPORT=TRUE`. Support requires that Alembic was built with
+HDF5 enabled.
 
 For further information see the documentation on the Alembic plugin [here](http://openusd.org/docs/Alembic-USD-Plugin.html).
 

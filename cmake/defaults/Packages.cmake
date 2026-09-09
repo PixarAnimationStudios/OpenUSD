@@ -261,7 +261,6 @@ if (PXR_BUILD_IMAGING)
     endif()
     # --OpenVDB
     if (PXR_ENABLE_OPENVDB_SUPPORT)
-        set(REQUIRES_Imath TRUE)
         find_package(OpenVDB REQUIRED)
         add_definitions(-DPXR_OPENVDB_SUPPORT_ENABLED)
     endif()
@@ -291,8 +290,7 @@ if (PXR_BUILD_PRMAN_PLUGIN)
 endif()
 
 if (PXR_BUILD_ALEMBIC_PLUGIN)
-    find_package(Alembic REQUIRED)
-    set(REQUIRES_Imath TRUE)
+    find_package(Alembic 1.8.9...<1.9 REQUIRED CONFIG)
     if (PXR_ENABLE_HDF5_SUPPORT)
         find_package(HDF5 REQUIRED
             COMPONENTS
@@ -317,17 +315,10 @@ if(PXR_ENABLE_OSL_SUPPORT)
     add_definitions(-DPXR_OSL_SUPPORT_ENABLED)
 endif()
 
-# ----------------------------------------------
-
-# Try and find Imath or fallback to OpenEXR
-# Use ImathConfig.cmake, 
-# Refer: https://github.com/AcademySoftwareFoundation/Imath/blob/main/docs/PortingGuide2-3.md#openexrimath-3x-only
+# Try and find Imath
+# Use ImathConfig.cmake
 if(REQUIRES_Imath)
-    find_package(Imath CONFIG)
-    if (NOT Imath_FOUND)
-        MESSAGE(STATUS "Imath not found. Looking for OpenEXR instead.")
-        find_package(OpenEXR REQUIRED)
-    endif()
+    find_package(Imath CONFIG REQUIRED)
 endif()
 
 set(BUILD_SHARED_LIBS "${build_shared_libs}")
