@@ -22,7 +22,6 @@
 #include "pxr/imaging/hd/points.h"
 #include "pxr/imaging/hd/prefixingSceneIndex.h"
 #include "pxr/imaging/hd/primGather.h"
-#include "pxr/imaging/hd/primIdSchema.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
@@ -81,27 +80,6 @@ _SceneIndexHasPrimIds(HdSceneIndexBaseRefPtr const &sceneIndex)
         sceneIndex &&
         HdSceneGlobalsSchema::GetFromSceneIndex(sceneIndex)
             .GetPrimIdToPath();
-}
-
-static
-int32_t
-_GetPrimIdFromSceneIndex(
-    HdSceneIndexBaseRefPtr const &sceneIndex,
-    SdfPath const &rprimId)
-{
-    TRACE_FUNCTION();
-
-    HdSceneIndexPrim const prim =
-        sceneIndex->GetPrim(rprimId);
-    HdPrimIdDataSourceHandle const ds =
-        HdPrimIdSchema::GetFromParent(prim.dataSource).GetPrimId();
-    if (!ds) {
-        TF_WARN(
-            "No prim id for prim <%s> of type '%s' from terminal scene index.",
-            rprimId.GetText(), prim.primType.GetText());
-        return -1;
-    }
-    return static_cast<int32_t>(ds->GetTypedValue(0.0f));
 }
 
 // -------------------------------------------------------------------------- //
@@ -518,15 +496,11 @@ HdRenderIndex::_InsertRprim(TfToken const& typeId,
     // Force an initial "renderTag" sync.  We add the bit here since the
     // render index manages render tags, rather than the rprim implementation.
     _tracker.RprimInserted(rprimId, rprim->GetInitialDirtyBitsMask() |
-                                    HdChangeTracker::DirtyRenderTag);
+                                    HdChangeTracker::DirtyRenderTag |
+                                    HdChangeTracker::DirtyPrimID);
     if (_rprimPrimIdMap) {
         // Prim ids are assigned by this HdRenderIndex.
         _AllocatePrimId(rprim);
-    } else {
-        // Prim ids are read from the terminal scene index.
-        rprim->SetPrimId(
-            _GetPrimIdFromSceneIndex(
-                _terminalSceneIndex, rprimId));
     }
 
     _RprimInfo info = {
@@ -1357,17 +1331,20 @@ namespace {
         _CollectionReprSpecVector const &_reprSpecs;
         HdChangeTracker &_tracker;
         HdRenderParam *_renderParam;
+        bool _syncPrimIds;
     public:
         _SyncRPrims( HdSceneDelegate *sceneDelegate,
                      _RprimSyncRequestVector& r,
                      _CollectionReprSpecVector const &reprSpecs,
                      HdChangeTracker &tracker,
-                     HdRenderParam *renderParam)
+                     HdRenderParam *renderParam,
+                     bool syncPrimIds)
          : _sceneDelegate(sceneDelegate)
          , _r(r)
          , _reprSpecs(reprSpecs)
          , _tracker(tracker)
          , _renderParam(renderParam)
+         , _syncPrimIds(syncPrimIds)
         {
         }
 
@@ -1379,6 +1356,13 @@ namespace {
                 HdRprim &rprim = *_r.rprims[i];
 
                 HdDirtyBits dirtyBits = _r.request.dirtyBits[i];
+
+                if (_syncPrimIds) {
+                    if (dirtyBits & HdChangeTracker::DirtyPrimID) {
+                        rprim.SetPrimId(
+                            _sceneDelegate->GetPrimId(rprim.GetId()));
+                    }
+                }
 
                 TfTokenVector reprsSynced;
                 for (const _CollectionReprSpec& spec : _reprSpecs) {
@@ -1888,7 +1872,8 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
 
             {
                 _SyncRPrims workerState(
-                    sceneDelegate, r, reprSpecs, _tracker, renderParam);
+                    sceneDelegate, r, reprSpecs, _tracker, renderParam,
+                    /* syncPrimIds = */ !_rprimPrimIdMap);
 
                 if (!TfDebug::IsEnabled(HD_DISABLE_MULTITHREADED_RPRIM_SYNC) &&
                     sceneDelegate->IsEnabled(

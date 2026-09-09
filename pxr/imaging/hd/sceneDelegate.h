@@ -1004,6 +1004,12 @@ public:
     HD_API
     virtual TfTokenVector GetTaskRenderTags(SdfPath const& taskId);
 
+    // -----------------------------------------------------------------------//
+    /// \name Prim Id - for plumbing prim id from HdsiPrimIdSceneIndex to rprim.
+    // -----------------------------------------------------------------------//
+    HD_API
+    virtual int32_t GetPrimId(SdfPath const &id);
+
 private:
     HdRenderIndex *_index;
     SdfPath _delegateID;

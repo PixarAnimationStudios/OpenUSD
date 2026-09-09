@@ -15,8 +15,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 HdRprim::HdRprim(SdfPath const& id)
-    : _instancerId()
-    , _materialId()
+    : _primId(-1)
     , _sharedData(HdDrawingCoord::DefaultNumSlots,
                   /*visible=*/true)
 {
