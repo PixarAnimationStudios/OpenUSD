@@ -68,19 +68,12 @@ HdStRenderPassState::HdStRenderPassState(
     , _renderPassShader(renderPassShader)
     , _fallbackLightingShader(std::make_shared<HdSt_FallbackLightingShader>())
     , _clipPlanesBufferSize(0)
-    , _alphaThresholdCurrent(0)
     , _resolveMultiSampleAov(true)
 {
     _lightingShader = _fallbackLightingShader;
 }
 
 HdStRenderPassState::~HdStRenderPassState() = default;
-
-bool
-HdStRenderPassState::_UseAlphaMask() const
-{
-    return (_alphaThreshold > 0.0f);
-}
 
 unsigned int
 HdStRenderPassState::_GetFramebufferHeight() const
@@ -253,8 +246,7 @@ HdStRenderPassState::Prepare(
 
     // allocate bar if it does not exist
     if (!_renderPassStateBar ||
-        _clipPlanesBufferSize < clipPlanes.size() ||
-        _alphaThresholdCurrent != _alphaThreshold) {
+        _clipPlanesBufferSize < clipPlanes.size()) {
         HdBufferSpecVector bufferSpecs;
 
         // note: InterleavedMemoryManager computes the offsets in the packed
@@ -317,12 +309,9 @@ HdStRenderPassState::Prepare(
             HdShaderTokens->multisampleCount,
             HdTupleType{HdTypeUInt32, 1});
 
-        if (_UseAlphaMask()) {
-            bufferSpecs.emplace_back(
-                HdShaderTokens->alphaThreshold,
-                HdTupleType{HdTypeFloat, 1});
-        }
-        _alphaThresholdCurrent = _alphaThreshold;
+        bufferSpecs.emplace_back(
+            HdShaderTokens->alphaThreshold,
+            HdTupleType{HdTypeFloat, 1});
 
         bufferSpecs.emplace_back(
             HdShaderTokens->tessLevel,
@@ -470,12 +459,10 @@ HdStRenderPassState::Prepare(
             HdShaderTokens->multisampleCount,
             VtValue(multisampleCount)));
 
-    if (_UseAlphaMask()) {
-        sources.push_back(
-            std::make_shared<HdVtBufferSource>(
-                HdShaderTokens->alphaThreshold,
-                VtValue(_alphaThreshold)));
-    }
+    sources.push_back(
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->alphaThreshold,
+            VtValue(_alphaThreshold)));
 
     sources.push_back(
         std::make_shared<HdVtBufferSource>(
@@ -863,8 +850,7 @@ HdStRenderPassState::GetShaderHash() const
     // used.
     return TfHash::Combine(
         hash,
-        _clipPlanesBufferSize,
-        _UseAlphaMask()
+        _clipPlanesBufferSize
     );
 }
 
@@ -1410,7 +1396,6 @@ HdStRenderPassState::CopyAllExceptShaderFrom(
     _lightingShader = other._lightingShader;
     _renderPassStateBar = other._renderPassStateBar;
     _clipPlanesBufferSize = other._clipPlanesBufferSize;
-    _alphaThresholdCurrent = other._alphaThresholdCurrent;
     _resolveMultiSampleAov = other._resolveMultiSampleAov;
 }
 
