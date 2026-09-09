@@ -7,6 +7,7 @@ set(DIRS
     usdVolImaging
     usdIrImaging
     usdAppUtils
+    usdNoodles
     usdviewq
     bin
     plugin

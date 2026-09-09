@@ -1771,6 +1771,66 @@ def InstallEmbree(context, force, buildArgs):
 EMBREE = Dependency("Embree", InstallEmbree,
                     "include/embree4/rtcore.h")
 
+
+############################################################
+# Noodles
+
+# Pinned to a specific noodles commit for reproducibility, matching the
+# versioning pattern used by every other dep in this file. Bump this
+# when noodles ships an API change; the wrap*.cpp files under
+# pxr/usdImaging/usdNoodles/bindings/ are the coupling point.
+NOODLES_COMMIT = "ff5d473f10e8c37ceaf0da11ea7cb80805bc8314"
+NOODLES_URL = "https://github.com/facebookexperimental/noodles/archive/{}.zip".format(NOODLES_COMMIT)
+
+def GetNoodlesIncludeDir(context):
+    return os.path.join(context.instDir, "include", "noodles")
+
+def GetNoodlesHeaderPath(context):
+    return os.path.join(GetNoodlesIncludeDir(context), "core", "api.h")
+
+def _GetNoodlesLibraryCandidates(context):
+    libDir = os.path.join(context.instDir, "lib")
+    if Windows():
+        return [
+            os.path.join(libDir, "noodles.lib"),
+        ]
+    elif MacOS():
+        return [
+            os.path.join(libDir, "libnoodles.dylib"),
+            os.path.join(libDir, "libnoodles.a"),
+        ]
+    else:
+        return [
+            os.path.join(libDir, "libnoodles.so"),
+            os.path.join(libDir, "libnoodles.a"),
+        ]
+
+def GetNoodlesLibraryPath(context):
+    candidates = _GetNoodlesLibraryCandidates(context)
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    raise RuntimeError(
+        "Noodles library not found; looked for: {}".format(
+            ", ".join(candidates)))
+
+def InstallNoodles(context, force, buildArgs):
+    if context.noodlesSourceDir:
+        sourceDir = context.noodlesSourceDir
+    else:
+        sourceDir = DownloadURL(
+            NOODLES_URL, context, force, destFileName="noodles-main.zip")
+
+    with CurrentWorkingDirectory(sourceDir):
+        RunCMake(context, force, buildArgs)
+
+class NoodlesDependency(Dependency):
+    def Exists(self, context):
+        return os.path.isfile(GetNoodlesHeaderPath(context)) and any(
+            os.path.isfile(path) for path in _GetNoodlesLibraryCandidates(context))
+
+NOODLES = NoodlesDependency("Noodles", InstallNoodles, "include/noodles/core/api.h")
+
 ############################################################
 # USD
 
@@ -1953,6 +2013,15 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=ON')
         else:
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
+
+        if context.buildNoodles:
+            extraArgs.append('-DPXR_BUILD_USD_NOODLES=ON')
+            extraArgs.append('-DNOODLES_INCLUDE_DIR="{includeDir}"'
+                             .format(includeDir=GetNoodlesIncludeDir(context)))
+            extraArgs.append('-DNOODLES_LIBRARY="{library}"'
+                             .format(library=GetNoodlesLibraryPath(context)))
+        else:
+            extraArgs.append('-DPXR_BUILD_USD_NOODLES=OFF')
 
         if Windows() and not context.targetWasm:
             # Increase the precompiled header buffer limit.
@@ -2386,6 +2455,16 @@ subgroup.add_argument("--materialx", dest="build_materialx", action="store_true"
 subgroup.add_argument("--no-materialx", dest="build_materialx", action="store_false",
                       help="Disable MaterialX support")
 
+group = parser.add_argument_group(title="Noodles Options")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--build-noodles", dest="build_noodles", action="store_true",
+                      default=True,
+                      help="Build Noodles dependency for usdNoodles (default)")
+subgroup.add_argument("--no-noodles", dest="build_noodles", action="store_false",
+                      help="Do not build usdNoodles")
+group.add_argument("--noodles-source-dir", type=str,
+                   help="Directory containing a local Noodles checkout.")
+
 group = parser.add_argument_group(title="TBB Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--onetbb", dest="build_onetbb", action="store_true",
@@ -2582,6 +2661,13 @@ class InstallContext:
         # - MaterialX
         self.buildMaterialX = args.build_materialx and not self.targetWasm
 
+        # - Noodles
+        self.noodlesSourceDir = (os.path.abspath(args.noodles_source_dir)
+                                 if args.noodles_source_dir else None)
+        self.buildNoodles = (args.build_noodles
+                             and self.buildUsdview
+                             and not self.targetWasm)
+
         # - TBB
         # Note: wasm build requires requires building oneTBB
         self.buildOneTBB = args.build_onetbb or self.targetWasm
@@ -2635,6 +2721,9 @@ if context.buildDraco:
 
 if context.buildMaterialX:
     requiredDependencies += [MATERIALX]
+
+if context.buildNoodles:
+    requiredDependencies += [NOODLES]
 
 if context.buildImaging:
     if context.enablePtex:
@@ -2901,6 +2990,7 @@ summaryMsg += """\
     UsdImaging                  {buildUsdImaging}
       usdview:                  {buildUsdview}
     MaterialX support           {buildMaterialX}
+    Noodles support             {buildNoodles}
     Python support              {buildPython}
       Python Debug:             {debugPython}
       Python docs:              {buildPythonDocs}
@@ -2992,6 +3082,7 @@ summaryMsg = summaryMsg.format(
     buildAlembic=("On" if context.buildAlembic else "Off"),
     buildDraco=("On" if context.buildDraco else "Off"),
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
+    buildNoodles=("On" if context.buildNoodles else "Off"),
     omittedSchemaGenScripts=(", ".join(omittedSchemaGenScripts)))
 
 Print(summaryMsg)
