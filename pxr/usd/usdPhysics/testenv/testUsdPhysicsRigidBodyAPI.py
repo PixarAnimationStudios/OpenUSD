@@ -115,6 +115,117 @@ class TestUsdPhysicsRigidBodyAPI(unittest.TestCase):
                         
         self.compare_mass_information(rigidBodyAPI, 1000.0, expectedCoM=Gf.Vec3f(0.0), expectedInertia=Gf.Vec3f(166.667))
 
+    def test_mass_blocked_attributes(self):
+        self.setup_scene()
+        body = UsdGeom.Xform.Define(self.stage, "/body")
+        body.AddScaleOp().Set(Gf.Vec3f(2.0))
+        rigidBodyAPI = UsdPhysics.RigidBodyAPI.Apply(body.GetPrim())
+        bodyMassAPI = UsdPhysics.MassAPI.Apply(body.GetPrim())
+        cube = UsdGeom.Cube.Define(self.stage, "/body/cube")
+        cube.GetSizeAttr().Set(1.0)
+        cube.AddTranslateOp().Set(Gf.Vec3f(0.5, -0.25, 0.75))
+        cube.AddRotateZOp().Set(30.0)
+        cube.AddScaleOp().Set(Gf.Vec3f(0.2, 0.3, 0.4))
+        UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+        colliderMassAPI = UsdPhysics.MassAPI.Apply(cube.GetPrim())
+
+        # The scaled box has sides (0.4, 0.6, 0.8), volume 0.192,
+        # and unit-density inertia V/12 * (y*y+z*z, x*x+z*z, x*x+y*y).
+        volume = 0.192
+        unitInertia = Gf.Matrix3f(0.016, 0, 0,
+                                0, 0.0128, 0, 0, 0, 0.00832)
+        position = Gf.Vec3f(1.0, -0.5, 1.5)
+        rotation = Gf.Quatf(Gf.Rotation(Gf.Vec3d(0, 0, 1), 30).GetQuat())
+        rotationMatrix = Gf.Matrix3f(rotation)
+
+        def mass_info(prim):
+            self.assertEqual(prim, cube.GetPrim())
+            info = UsdPhysics.RigidBodyAPI.MassInformation()
+            info.volume = volume
+            info.inertia = unitInertia
+            info.centerOfMass = Gf.Vec3f(0.0)
+            info.localPos = position
+            info.localRot = rotation
+            return info
+
+        def check(expectedMass, expectedInertia, expectedCoM):
+            mass, diagonal, com, axes = rigidBodyAPI.ComputeMassProperties(
+                mass_info)
+            self.assertAlmostEqual(mass, expectedMass, delta=0.0001)
+            self.assertTrue(Gf.IsClose(com, expectedCoM, 0.0001))
+            # Compare the represented tensor; equivalent principal-axis
+            # permutations and quaternion signs are equally valid.
+            matrix = Gf.Matrix3f(axes)
+            tensor = matrix.GetTranspose() * Gf.Matrix3f(diagonal) * matrix
+            self.assertTrue(Gf.IsClose(tensor, expectedInertia, 0.0001))
+
+        computedInertia = (rotationMatrix.GetTranspose() * unitInertia *
+                           rotationMatrix * 1000.0)
+        names = ("mass", "diagonalInertia", "principalAxes", "centerOfMass")
+        authoredAxes = Gf.Quatf(
+            Gf.Rotation(Gf.Vec3d(1, 0, 0), 40).GetQuat())
+        authoredValues = (7.0, Gf.Vec3f(0.7, 1.1, 1.3), authoredAxes,
+                          Gf.Vec3f(0.1, 0.2, 0.3))
+        authoredMatrix = Gf.Matrix3f(authoredAxes)
+        authoredInertia = (authoredMatrix.GetTranspose() *
+                           Gf.Matrix3f(authoredValues[1]) * authoredMatrix)
+
+        for massAPI in (bodyMassAPI, colliderMassAPI):
+            prim = massAPI.GetPrim()
+            attrs = [prim.GetAttribute("physics:" + name) for name in names]
+            fallbacks = [attr.Get() for attr in attrs]
+            self.assertEqual(fallbacks[:3],
+                             [0.0, Gf.Vec3f(0.0), Gf.Quatf(0.0)])
+            self.assertEqual(fallbacks[3], Gf.Vec3f(float("-inf")))
+            with self.subTest(prim=prim.GetPath(), attributes="unauthored"):
+                check(192.0, computedInertia, position)
+
+            for blocked in [(attr,) for attr in attrs] + [tuple(attrs)]:
+                with self.subTest(prim=prim.GetPath(),
+                                  attributes=[a.GetName() for a in blocked]):
+                    for attr in blocked:
+                        attr.Block()
+                        self.assertIsNone(attr.Get())
+                    check(192.0, computedInertia, position)
+                for attr in blocked:
+                    attr.Clear()
+
+            with self.subTest(prim=prim.GetPath(), attributes="authored"):
+                for attr, value in zip(attrs, authoredValues):
+                    attr.Set(value)
+                if prim == body.GetPrim():
+                    check(7.0, authoredInertia, Gf.Vec3f(0.2, 0.4, 0.6))
+                else:
+                    # Collider CoM is scaled, rotated and translated into
+                    # body space; authored inertia is rotated into body space.
+                    check(7.0, rotationMatrix.GetTranspose() *
+                          authoredInertia * rotationMatrix,
+                          position + rotation.Transform(
+                              Gf.Vec3f(0.04, 0.12, 0.24)))
+            for attr in attrs:
+                attr.Clear()
+
+        # Block all four attributes on both prims while exercising density
+        # precedence: collider, body, material, then the default density.
+        for prim in (body.GetPrim(), cube.GetPrim()):
+            for name in names:
+                prim.GetAttribute("physics:" + name).Block()
+        material = UsdShade.Material.Define(self.stage, "/material")
+        materialAPI = UsdPhysics.MaterialAPI.Apply(material.GetPrim())
+        UsdShade.MaterialBindingAPI.Apply(cube.GetPrim()).Bind(
+            material, UsdShade.Tokens.weakerThanDescendants, "physics")
+        densities = [colliderMassAPI.GetDensityAttr(),
+                     bodyMassAPI.GetDensityAttr(), materialAPI.GetDensityAttr()]
+        for attr, density in zip(densities, (300.0, 200.0, 100.0)):
+            attr.Set(density)
+        for density, attr in zip((300.0, 200.0, 100.0, 1000.0),
+                                 densities + [None]):
+            with self.subTest(density=density):
+                check(volume * density, computedInertia * (density / 1000.0),
+                      position)
+            if attr:
+                attr.Block()
+
     # density tests
 
     # density test, applied density to a body
