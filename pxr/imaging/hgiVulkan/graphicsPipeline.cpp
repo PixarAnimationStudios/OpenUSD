@@ -109,6 +109,13 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
             vibDivisor.divisor = _device->GetDeviceCapabilities().
                 vkVertexAttributeDivisorProperties.maxVertexAttribDivisor;
             vertBindingDivisors.push_back(std::move(vibDivisor));
+        } else if(HgiVertexBufferStepFunctionPerInstance) {
+            vib.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
+
+            VkVertexInputBindingDivisorDescriptionEXT vibDivisor;
+            vibDivisor.binding = vbo.bindingIndex;
+            vibDivisor.divisor = 1;
+            vertBindingDivisors.push_back(std::move(vibDivisor));
         } else {
             vib.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
         }
