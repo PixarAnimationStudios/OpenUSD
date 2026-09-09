@@ -22,7 +22,7 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
-#include "pxr/imaging/glf/testGLContext.h"
+#include "pxr/imaging/garch/glDebugWindow.h"
 
 #include "pxr/imaging/hgi/tokens.h"
 
@@ -999,8 +999,8 @@ InvalidTopologyTest(HdStResourceRegistrySharedPtr const &registry)
 
 int main()
 {
-    GlfTestGLContext::RegisterGLContextCallbacks();
-    GlfSharedGLContextScopeHolder sharedContext;
+    GarchGLDebugWindow window("Hd Test", 512, 512);
+    window.Init();
 
     TfErrorMark mark;
 
