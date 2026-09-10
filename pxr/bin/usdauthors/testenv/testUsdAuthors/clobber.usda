@@ -1,0 +1,17 @@
+#usda 1.0
+(
+    """The same instance name is authored in both layers, so composition keeps
+    one record and only the strongest value for each field. --deep reports one
+    entry per contributing spec, which is how that becomes visible."""
+    subLayers = [
+        @./clobber_weak.usda@
+    ]
+)
+
+def Mesh "Bunny" (
+    prepend apiSchemas = ["AuthorshipAPI:blender"]
+)
+{
+    uniform string authorship:blender:softwarePackage = "org.blender"
+    uniform string authorship:blender:softwareVersion = "4.2"
+}

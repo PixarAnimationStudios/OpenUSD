@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    defaultPrim = "Inner"
+)
+
+def Mesh "Inner" (
+    prepend apiSchemas = ["AuthorshipAPI:payloaded"]
+)
+{
+    uniform string authorship:payloaded:softwarePackage = "com.example.payloadtool"
+    uniform string authorship:payloaded:softwareVersion = "1.0"
+}

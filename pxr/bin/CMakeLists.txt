@@ -1,4 +1,5 @@
 set(DIRS
+    usdauthors
     usdfixbrokenpixarschemas
     usdzip
 )

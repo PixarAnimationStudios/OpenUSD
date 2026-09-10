@@ -1,0 +1,51 @@
+/Malformed
+  brokentool
+      prompt:inputs   = (malformed: 2 name(s) but 1 value(s)) names=["prompt", "seed"] values=["A fluffy bunny"]
+      softwarePackage = "com.example.brokentool"
+      softwareVersion = "0.1"
+
+/OlderBlender
+  blender_4_1
+      digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/digitalCreation"
+      softwarePackage   = "org.blender"
+      softwareVersion   = "4.1"
+
+/ScannedProp
+  rcapture
+      creator           = ["Acme Studio"]
+      digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicMedia"
+      softwarePackage   = "com.capturingreality.rcapture"
+      softwareVersion   = "1.4"
+
+/Set
+  worldgen
+      created           = "2025-02-16T12:03:17+01:00"
+      digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"
+      softwarePackage   = "com.example.worldgen"
+      softwareVersion   = "0.9"
+
+/Set/Bunny
+  blender
+      contact           = ["jane@example.com"]
+      copyrightOwner    = ["Acme Studios LLC"]
+      creator           = ["Jane Doe"]
+      digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/digitalCreation"
+      softwarePackage   = "org.blender"
+      softwareVersion   = "4.2"
+  hunyuan3d
+      creator           = ["Trellis Hunyuan 3D", "John Doe"]
+      digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"
+      instanceID        = "6530a534-ca8f-487c-8968-0fecd8e717a6"
+      prompt:inputs     = prompt="A fluffy bunny", image="./refs/bunny_front.png", seed="1234567"
+      softwarePackage   = "net.trellis3d.hunyuan3d"
+      softwareVersion   = "2.1"
+      usageTerms        = "CC-BY-SA-4.0"
+
+/Set/TeaCup
+  jane
+      creator         = ["Jane Doe"]
+      softwarePackage = "org.blender"
+      softwareVersion = "4.2"
+  layout
+      softwarePackage = "com.example.layouttool"
+      softwareVersion = "1.0"

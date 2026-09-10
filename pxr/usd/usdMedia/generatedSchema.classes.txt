@@ -2,12 +2,14 @@
 
 # Public Classes
 assetPreviewsAPI
+authorshipAPI
 spatialAudio
 tokens
 
 # Python Module Files
 module.cpp
 wrapAssetPreviewsAPI.cpp
+wrapAuthorshipAPI.cpp
 wrapSpatialAudio.cpp
 wrapTokens.cpp
 

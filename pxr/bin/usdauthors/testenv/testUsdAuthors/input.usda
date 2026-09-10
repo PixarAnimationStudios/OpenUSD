@@ -1,0 +1,87 @@
+#usda 1.0
+(
+    """A scene with a few authorship records, including one that an explicit
+    apiSchemas list hides from the composed prim so that --deep has something
+    to recover."""
+)
+
+def Xform "Set" (
+    prepend apiSchemas = ["AuthorshipAPI:worldgen"]
+)
+{
+    uniform string authorship:worldgen:softwarePackage = "com.example.worldgen"
+    uniform string authorship:worldgen:softwareVersion = "0.9"
+    uniform string authorship:worldgen:digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"
+    uniform string authorship:worldgen:created = "2025-02-16T12:03:17+01:00"
+
+    def Mesh "Bunny" (
+        prepend apiSchemas = ["AuthorshipAPI:hunyuan3d", "AuthorshipAPI:blender"]
+    )
+    {
+        uniform string authorship:hunyuan3d:softwarePackage = "net.trellis3d.hunyuan3d"
+        uniform string authorship:hunyuan3d:softwareVersion = "2.1"
+        uniform string authorship:hunyuan3d:digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"
+        uniform string[] authorship:hunyuan3d:creator = ["Trellis Hunyuan 3D", "John Doe"]
+        uniform string[] authorship:hunyuan3d:prompt:inputNames = ["prompt", "image", "seed"]
+        uniform string[] authorship:hunyuan3d:prompt:inputValues = ["A fluffy bunny", "./refs/bunny_front.png", "1234567"]
+        uniform string authorship:hunyuan3d:instanceID = "6530a534-ca8f-487c-8968-0fecd8e717a6"
+        uniform string authorship:hunyuan3d:usageTerms = "CC-BY-SA-4.0"
+
+        uniform string authorship:blender:softwarePackage = "org.blender"
+        uniform string authorship:blender:softwareVersion = "4.2"
+        uniform string authorship:blender:digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/digitalCreation"
+        uniform string[] authorship:blender:creator = ["Jane Doe"]
+        uniform string[] authorship:blender:copyrightOwner = ["Acme Studios LLC"]
+        uniform string[] authorship:blender:contact = ["jane@example.com"]
+    }
+
+    def Mesh "TeaCup" (
+        apiSchemas = ["AuthorshipAPI:layout"]
+    )
+    {
+        # The explicit apiSchemas list above omits "AuthorshipAPI:jane", so the
+        # composed prim does not report that record even though its properties
+        # compose and remain readable. Only --deep finds it.
+        uniform string authorship:layout:softwarePackage = "com.example.layouttool"
+        uniform string authorship:layout:softwareVersion = "1.0"
+
+        uniform string authorship:jane:softwarePackage = "org.blender"
+        uniform string authorship:jane:softwareVersion = "4.2"
+        uniform string[] authorship:jane:creator = ["Jane Doe"]
+    }
+}
+
+def Mesh "ScannedProp" (
+    prepend apiSchemas = ["AuthorshipAPI:rcapture"]
+)
+{
+    uniform string authorship:rcapture:softwarePackage = "com.capturingreality.rcapture"
+    uniform string authorship:rcapture:softwareVersion = "1.4"
+    uniform string authorship:rcapture:digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicMedia"
+    uniform string[] authorship:rcapture:creator = ["Acme Studio"]
+}
+
+def Mesh "Malformed" (
+    prepend apiSchemas = ["AuthorshipAPI:brokentool"]
+)
+{
+    # prompt:inputNames and prompt:inputValues must be index-matched. They are
+    # not here, so the record should be reported as malformed rather than
+    # mispaired.
+    uniform string authorship:brokentool:softwarePackage = "com.example.brokentool"
+    uniform string authorship:brokentool:softwareVersion = "0.1"
+    uniform string[] authorship:brokentool:prompt:inputNames = ["prompt", "seed"]
+    uniform string[] authorship:brokentool:prompt:inputValues = ["A fluffy bunny"]
+}
+
+def Mesh "OlderBlender" (
+    prepend apiSchemas = ["AuthorshipAPI:blender_4_1"]
+)
+{
+    # Same softwarePackage as /Set/Bunny at an older version, which --summary
+    # tallies separately since two versions of one tool can behave very
+    # differently.
+    uniform string authorship:blender_4_1:softwarePackage = "org.blender"
+    uniform string authorship:blender_4_1:softwareVersion = "4.1"
+    uniform string authorship:blender_4_1:digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/digitalCreation"
+}

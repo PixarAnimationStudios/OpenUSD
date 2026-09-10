@@ -93,3 +93,71 @@ previews for assets."""
 {
 }
 
+class "AuthorshipAPI" (
+    customData = {
+        string userDocBrief = "Records who or what authored a prim."
+    }
+)
+{
+    uniform string[] authorship:__INSTANCE_NAME__:contact (
+        customData = {
+            string userDocBrief = """Contact information for inquiries about this asset, such as
+        an email address, a support URL, or a licensing page."""
+        }
+    )
+    uniform string[] authorship:__INSTANCE_NAME__:copyrightOwner (
+        customData = {
+            string userDocBrief = """The entities that hold copyright for this content, which may 
+        be different from the creators (e.g., a studio owning an artist's 
+        work)."""
+        }
+    )
+    uniform string authorship:__INSTANCE_NAME__:created (
+        customData = {
+            string userDocBrief = """The date and time this specific authoring step occurred, 
+        formatted as an ISO 8601 timestamp (e.g., '2025-02-16T12:03:17+01:00')."""
+        }
+    )
+    uniform string[] authorship:__INSTANCE_NAME__:creator (
+        customData = {
+            string userDocBrief = """A list of human-friendly names for the artists, studios, or 
+        services that contributed to this authoring step."""
+        }
+    )
+    uniform string authorship:__INSTANCE_NAME__:description (
+        customData = {
+            string userDocBrief = "A free-form description of how the prim was created."
+        }
+    )
+    uniform string authorship:__INSTANCE_NAME__:digitalSourceType (
+        customData = {
+            string userDocBrief = """A URI describing the nature of the creative process, for
+        example whether it was human-made or AI-generated."""
+        }
+    )
+    uniform string authorship:__INSTANCE_NAME__:instanceID (
+        customData = {
+            string userDocBrief = """A unique ID for this specific run's output, like a single
+        generative AI result."""
+        }
+    )
+    uniform string[] authorship:__INSTANCE_NAME__:prompt:inputNames
+    uniform string[] authorship:__INSTANCE_NAME__:prompt:inputValues
+    uniform string authorship:__INSTANCE_NAME__:softwarePackage (
+        customData = {
+            string userDocBrief = """The tool or system that most directly wrote the USD data for
+        this prim."""
+        }
+    )
+    uniform string authorship:__INSTANCE_NAME__:softwareVersion (
+        customData = {
+            string userDocBrief = "The version of the softwarePackage that created this record."
+        }
+    )
+    uniform string authorship:__INSTANCE_NAME__:usageTerms (
+        customData = {
+            string userDocBrief = "The license or usage terms for this asset."
+        }
+    )
+}
+

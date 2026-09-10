@@ -1,0 +1,10 @@
+#usda 1.0
+
+def Xform "Outer" (
+    prepend apiSchemas = ["AuthorshipAPI:outer"]
+    prepend payload = @./payload_source.usda@
+)
+{
+    uniform string authorship:outer:softwarePackage = "com.example.outertool"
+    uniform string authorship:outer:softwareVersion = "2.0"
+}

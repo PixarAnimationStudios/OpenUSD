@@ -18,6 +18,19 @@ void wrapUsdMediaTokens()
     pxr_boost::python::class_<UsdMediaTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, auralMode);
+    _ADD_TOKEN(cls, authorship);
+    _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_Contact);
+    _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_CopyrightOwner);
+    _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_Created);
+    _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_Creator);
+    _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_Description);
+    _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_DigitalSourceType);
+    _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_InstanceID);
+    _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_PromptInputNames);
+    _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_PromptInputValues);
+    _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_SoftwarePackage);
+    _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_SoftwareVersion);
+    _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_UsageTerms);
     _ADD_TOKEN(cls, defaultImage);
     _ADD_TOKEN(cls, endTime);
     _ADD_TOKEN(cls, filePath);
@@ -37,5 +50,6 @@ void wrapUsdMediaTokens()
     _ADD_TOKEN(cls, startTime);
     _ADD_TOKEN(cls, thumbnails);
     _ADD_TOKEN(cls, AssetPreviewsAPI);
+    _ADD_TOKEN(cls, AuthorshipAPI);
     _ADD_TOKEN(cls, SpatialAudio);
 }

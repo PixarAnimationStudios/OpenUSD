@@ -49,6 +49,58 @@ struct UsdMediaTokensType {
     /// 
     /// UsdMediaSpatialAudio
     const TfToken auralMode;
+    /// \brief "authorship"
+    /// 
+    /// Property namespace prefix for the UsdMediaAuthorshipAPI schema.
+    const TfToken authorship;
+    /// \brief "authorship:__INSTANCE_NAME__:contact"
+    /// 
+    /// UsdMediaAuthorshipAPI
+    const TfToken authorship_MultipleApplyTemplate_Contact;
+    /// \brief "authorship:__INSTANCE_NAME__:copyrightOwner"
+    /// 
+    /// UsdMediaAuthorshipAPI
+    const TfToken authorship_MultipleApplyTemplate_CopyrightOwner;
+    /// \brief "authorship:__INSTANCE_NAME__:created"
+    /// 
+    /// UsdMediaAuthorshipAPI
+    const TfToken authorship_MultipleApplyTemplate_Created;
+    /// \brief "authorship:__INSTANCE_NAME__:creator"
+    /// 
+    /// UsdMediaAuthorshipAPI
+    const TfToken authorship_MultipleApplyTemplate_Creator;
+    /// \brief "authorship:__INSTANCE_NAME__:description"
+    /// 
+    /// UsdMediaAuthorshipAPI
+    const TfToken authorship_MultipleApplyTemplate_Description;
+    /// \brief "authorship:__INSTANCE_NAME__:digitalSourceType"
+    /// 
+    /// UsdMediaAuthorshipAPI
+    const TfToken authorship_MultipleApplyTemplate_DigitalSourceType;
+    /// \brief "authorship:__INSTANCE_NAME__:instanceID"
+    /// 
+    /// UsdMediaAuthorshipAPI
+    const TfToken authorship_MultipleApplyTemplate_InstanceID;
+    /// \brief "authorship:__INSTANCE_NAME__:prompt:inputNames"
+    /// 
+    /// UsdMediaAuthorshipAPI
+    const TfToken authorship_MultipleApplyTemplate_PromptInputNames;
+    /// \brief "authorship:__INSTANCE_NAME__:prompt:inputValues"
+    /// 
+    /// UsdMediaAuthorshipAPI
+    const TfToken authorship_MultipleApplyTemplate_PromptInputValues;
+    /// \brief "authorship:__INSTANCE_NAME__:softwarePackage"
+    /// 
+    /// UsdMediaAuthorshipAPI
+    const TfToken authorship_MultipleApplyTemplate_SoftwarePackage;
+    /// \brief "authorship:__INSTANCE_NAME__:softwareVersion"
+    /// 
+    /// UsdMediaAuthorshipAPI
+    const TfToken authorship_MultipleApplyTemplate_SoftwareVersion;
+    /// \brief "authorship:__INSTANCE_NAME__:usageTerms"
+    /// 
+    /// UsdMediaAuthorshipAPI
+    const TfToken authorship_MultipleApplyTemplate_UsageTerms;
     /// \brief "defaultImage"
     /// 
     /// Dictionary key in a Thumbnails dictionary for the default thumbnail image. 
@@ -125,6 +177,10 @@ struct UsdMediaTokensType {
     /// 
     /// Schema identifer and family for UsdMediaAssetPreviewsAPI
     const TfToken AssetPreviewsAPI;
+    /// \brief "AuthorshipAPI"
+    /// 
+    /// Schema identifer and family for UsdMediaAuthorshipAPI
+    const TfToken AuthorshipAPI;
     /// \brief "SpatialAudio"
     /// 
     /// Schema identifer and family for UsdMediaSpatialAudio
