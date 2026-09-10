@@ -15,6 +15,7 @@
 #include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/extComputation.h"
+#include "pxr/imaging/hd/implicitSurface.h"
 #include "pxr/imaging/hd/instancer.h"
 #include "pxr/imaging/hd/legacyGeomSubsetSceneIndex.h"
 #include "pxr/imaging/hd/mesh.h"
@@ -1113,6 +1114,71 @@ HdRenderIndex::_ConfigureReprs()
                             HdPointsGeomStylePoints);
     HdPoints::ConfigureRepr(HdReprTokens->points,
                             HdPointsGeomStylePoints);
+
+    HdImplicitSurface::ConfigureRepr(HdReprTokens->hull,
+                            HdImplicitSurfaceReprDesc(
+                                HdImplicitSurfaceGeomStyleSurf,
+                                HdCullStyleDontCare,
+                                HdImplicitSurfaceReprDescTokens->surfaceShader,
+                                /*blendWireframeColor=*/false));
+    HdImplicitSurface::ConfigureRepr(HdReprTokens->smoothHull,
+                            HdImplicitSurfaceReprDesc(
+                                HdImplicitSurfaceGeomStyleSurf,
+                                HdCullStyleDontCare,
+                                HdImplicitSurfaceReprDescTokens->surfaceShader,
+                                /*blendWireframeColor=*/false));
+    HdImplicitSurface::ConfigureRepr(HdReprTokens->wire,
+                            HdImplicitSurfaceReprDesc(
+                                HdImplicitSurfaceGeomStyleRingsOnly,
+                                HdCullStyleDontCare,
+                                HdImplicitSurfaceReprDescTokens->surfaceShader,
+                                /*blendWireframeColor=*/true));
+    HdImplicitSurface::ConfigureRepr(HdReprTokens->wireOnSurf,
+                            HdImplicitSurfaceReprDesc(
+                                HdImplicitSurfaceGeomStyleRingsOnSurf,
+                                HdCullStyleDontCare,
+                                HdImplicitSurfaceReprDescTokens->surfaceShader,
+                                /*blendWireframeColor=*/true,
+                                /*forceOpaqueRings=*/false));
+    HdImplicitSurface::ConfigureRepr(HdReprTokens->solidWireOnSurf,
+                            HdImplicitSurfaceReprDesc(
+                                HdImplicitSurfaceGeomStyleRingsOnSurf,
+                                HdCullStyleDontCare,
+                                HdImplicitSurfaceReprDescTokens->surfaceShader,
+                                /*blendWireframeColor=*/true,
+                                /*forceOpaqueRings=*/true));
+    HdImplicitSurface::ConfigureRepr(HdReprTokens->refined,
+                            HdImplicitSurfaceReprDesc(
+                                HdImplicitSurfaceGeomStyleSurf,
+                                HdCullStyleDontCare,
+                                HdImplicitSurfaceReprDescTokens->surfaceShader,
+                                /*blendWireframeColor=*/false));
+    HdImplicitSurface::ConfigureRepr(HdReprTokens->refinedWire,
+                            HdImplicitSurfaceReprDesc(
+                                HdImplicitSurfaceGeomStyleRingsOnly,
+                                HdCullStyleDontCare,
+                                HdImplicitSurfaceReprDescTokens->surfaceShader,
+                                /*blendWireframeColor=*/true));
+    HdImplicitSurface::ConfigureRepr(HdReprTokens->refinedWireOnSurf,
+                            HdImplicitSurfaceReprDesc(
+                                HdImplicitSurfaceGeomStyleRingsOnSurf,
+                                HdCullStyleDontCare,
+                                HdImplicitSurfaceReprDescTokens->surfaceShader,
+                                /*blendWireframeColor=*/true,
+                                /*forceOpaqueRings=*/false));
+    HdImplicitSurface::ConfigureRepr(HdReprTokens->refinedSolidWireOnSurf,
+                            HdImplicitSurfaceReprDesc(
+                                HdImplicitSurfaceGeomStyleRingsOnSurf,
+                                HdCullStyleDontCare,
+                                HdImplicitSurfaceReprDescTokens->surfaceShader,
+                                /*blendWireframeColor=*/true,
+                                /*forceOpaqueRings=*/true));
+    HdImplicitSurface::ConfigureRepr(HdReprTokens->points,
+                            HdImplicitSurfaceReprDesc(
+                                HdImplicitSurfaceGeomStylePoints,
+                                HdCullStyleDontCare,
+                                HdImplicitSurfaceReprDescTokens->surfaceShader,
+                                /*blendWireframeColor=*/false));
 }
 // -------------------------------------------------------------------------- //
 /// \name Draw Item Handling

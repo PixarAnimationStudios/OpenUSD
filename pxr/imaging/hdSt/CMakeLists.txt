@@ -94,6 +94,7 @@ pxr_library(hdSt
         hgiConversions
         hioConversions
         imageShaderRenderPass
+        implicitSurface
         implicitSurfaceSceneIndexPlugin
         nurbsApproximatingSceneIndexPlugin
         instancer
@@ -163,6 +164,7 @@ pxr_library(hdSt
         extCompSceneInputSource
         fieldTextureCpuData
         imageShaderShaderKey
+        implicitSurfaceShaderKey
         indirectDrawBatch
         materialNetworkShader
         materialBindingResolvingSceneIndexPlugin
@@ -178,7 +180,6 @@ pxr_library(hdSt
         renderPassShaderKey
         resourceBinder
         shaderKey
-        sphereShaderKey
         subdivision
         triangulate
         unitTestHelper
@@ -200,6 +201,9 @@ pxr_library(hdSt
         shaders/fallbackVolume.glslfx
         shaders/frustumCull.glslfx
         shaders/imageShader.glslfx
+        shaders/implicitSurface.glslfx
+        shaders/implicitSurfaceFaceCull.glslfx
+        shaders/implicitSurfaceNormal.glslfx
         shaders/instancing.glslfx
         shaders/invalidMaterialNetwork.glslfx
         shaders/mesh.glslfx
@@ -216,8 +220,6 @@ pxr_library(hdSt
         shaders/simpleLightingShader.glslfx
         shaders/skinning.glslfx
         shaders/sphere.glslfx
-        shaders/sphereFaceCull.glslfx
-        shaders/sphereNormal.glslfx
         shaders/surfaceHelpers.glslfx
         shaders/terminals.glslfx
         shaders/visibility.glslfx

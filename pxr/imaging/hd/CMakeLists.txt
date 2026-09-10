@@ -94,6 +94,7 @@ pxr_library(hd
         geomSubsetSchema
         imageShader
         imageShaderSchema
+        implicitSurface
         instanceCategoriesSchema
         instancedBySchema
         instanceIndicesSchema

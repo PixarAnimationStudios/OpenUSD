@@ -8,18 +8,18 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/hdSt/shaders/sphereFaceCull.glslfx
+--- #import $TOOLS/hdSt/shaders/implicitSurfaceFaceCull.glslfx
 
 
 --- --------------------------------------------------------------------------
--- glsl SphereFaceCull.Fragment.None
+-- glsl ImplicitSurfaceFaceCull.Fragment.None
 
 void DiscardBasedOnShading(bool frontFacing)
 {
 }
 
 --- --------------------------------------------------------------------------
--- glsl SphereFaceCull.Fragment.FrontFacing
+-- glsl ImplicitSurfaceFaceCull.Fragment.FrontFacing
 
 void DiscardBasedOnShading(bool frontFacing)
 {
@@ -29,7 +29,7 @@ void DiscardBasedOnShading(bool frontFacing)
 }
 
 --- --------------------------------------------------------------------------
--- glsl SphereFaceCull.Fragment.BackFacing
+-- glsl ImplicitSurfaceFaceCull.Fragment.BackFacing
 
 void DiscardBasedOnShading(bool frontFacing)
 {
