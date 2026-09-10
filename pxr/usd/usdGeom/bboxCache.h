@@ -95,6 +95,10 @@ public:
     USDGEOM_API
     UsdGeomBBoxCache(UsdGeomBBoxCache const &other);
 
+    /// Default constructor
+    USDGEOM_API
+    UsdGeomBBoxCache();
+
     /// Destructor
     USDGEOM_API
     ~UsdGeomBBoxCache();
