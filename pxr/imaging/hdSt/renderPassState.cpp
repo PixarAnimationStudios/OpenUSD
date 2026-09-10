@@ -1374,7 +1374,7 @@ HdStRenderPassState::CopyAllExceptShaderFrom(
     _blendColorDstFactor = other._blendColorDstFactor;
     _blendAlphaOp = other._blendAlphaOp;
     _blendAlphaSrcFactor = other._blendAlphaSrcFactor;
-    _blendAlphaDstFactor = other._blendColorDstFactor;
+    _blendAlphaDstFactor = other._blendAlphaDstFactor;
     _blendConstantColor = other._blendConstantColor;
     _blendEnabled = other._blendEnabled;
     _alphaToCoverageEnabled = other._alphaToCoverageEnabled;

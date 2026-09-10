@@ -263,6 +263,8 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
     oitBufferAccessor.AddOitBufferBindings(_translucentPassShader);
     // Ensure RenderPassState buffer binding is registered with the shader
     stTranslucentPassState->SetRenderPassShader(_translucentPassShader);
+    // Ensure selection highlight bindings are registered with the shader
+    _SetHdStSelectionBindings(ctx, _translucentPassShader);
 
     // Translucent pass state overrides
     _translucentPassState->SetEnableDepthMask(false);
