@@ -193,9 +193,10 @@ endif()
 if (PXR_BUILD_IMAGING)
     # --OpenImageIO
     if (PXR_BUILD_OPENIMAGEIO_PLUGIN)
-        set(REQUIRES_Imath TRUE)
-        find_package(OpenImageIO REQUIRED)
+        find_package(OpenImageIO REQUIRED CONFIG)
         add_definitions(-DPXR_OIIO_PLUGIN_ENABLED)
+        # TODO: Request `idiff` be an exported target so this
+        # can be converted to if (TARGET OpenImageIO::idiff)
         if (OIIO_idiff_BINARY)
             set(IMAGE_DIFF_TOOL ${OIIO_idiff_BINARY} CACHE STRING "Uses idiff for image diffing")
         endif()
@@ -261,7 +262,6 @@ if (PXR_BUILD_IMAGING)
     endif()
     # --OpenVDB
     if (PXR_ENABLE_OPENVDB_SUPPORT)
-        set(REQUIRES_Imath TRUE)
         find_package(OpenVDB REQUIRED)
         add_definitions(-DPXR_OPENVDB_SUPPORT_ENABLED)
     endif()
@@ -317,17 +317,10 @@ if(PXR_ENABLE_OSL_SUPPORT)
     add_definitions(-DPXR_OSL_SUPPORT_ENABLED)
 endif()
 
-# ----------------------------------------------
-
-# Try and find Imath or fallback to OpenEXR
-# Use ImathConfig.cmake, 
-# Refer: https://github.com/AcademySoftwareFoundation/Imath/blob/main/docs/PortingGuide2-3.md#openexrimath-3x-only
+# Try and find Imath
+# Use ImathConfig.cmake
 if(REQUIRES_Imath)
-    find_package(Imath CONFIG)
-    if (NOT Imath_FOUND)
-        MESSAGE(STATUS "Imath not found. Looking for OpenEXR instead.")
-        find_package(OpenEXR REQUIRED)
-    endif()
+    find_package(Imath CONFIG REQUIRED)
 endif()
 
 set(BUILD_SHARED_LIBS "${build_shared_libs}")
