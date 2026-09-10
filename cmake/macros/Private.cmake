@@ -6,60 +6,6 @@
 #
 include(Version)
 
-# Copy headers to the build tree.  Under pxr/ the include paths match the
-# source tree paths but elsewhere they do not. Instead we use include
-# paths like rmanArgsParser/rmanArgsParser.h.  So if /pxr/ is not in the
-# source tree path then copy the headers (public and private) into the
-# build tree under paths of the latter scheme.
-function(_copy_headers LIBRARY_NAME)
-    set(options  "")
-    set(oneValueArgs PREFIX)
-    set(multiValueArgs FILES)
-    cmake_parse_arguments(_args
-        "${options}"
-        "${oneValueArgs}"
-        "${multiValueArgs}"
-        ${ARGN}
-    )
-
-    set(files_copied "")
-    set(hpath "${_args_PREFIX}/${LIBRARY_NAME}")
-    if ("${CMAKE_CURRENT_SOURCE_DIR}" MATCHES ".*/pxr/.*")
-        # Include paths under pxr/ match the source path.
-        file(RELATIVE_PATH hpath "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-    endif()
-    set(header_dest_dir "${PROJECT_BINARY_DIR}/${PXR_INSTALL_SUBDIR}/include/${hpath}")
-    if( NOT "${_args_FILES}" STREQUAL "")
-        set(files_copied "")
-        foreach (f ${_args_FILES})
-            set(infile "${CMAKE_CURRENT_SOURCE_DIR}/${f}")
-            set(outfile "${header_dest_dir}/${f}")
-            get_filename_component(dir_to_create "${outfile}" PATH)
-            add_custom_command(
-                OUTPUT ${outfile}
-                COMMAND ${CMAKE_COMMAND} -E make_directory ${dir_to_create}
-                COMMAND ${CMAKE_COMMAND} -Dinfile=${infile} -Doutfile=${outfile} -P "${PROJECT_SOURCE_DIR}/cmake/macros/copyHeaderForBuild.cmake"
-                MAIN_DEPENDENCY ${infile}
-                COMMENT "Copying ${f} ..."
-                VERBATIM
-            )
-            list(APPEND files_copied ${outfile})
-        endforeach()
-    endif()
-
-    # Add a headers target.
-    add_custom_target(${LIBRARY_NAME}_headerfiles
-        DEPENDS ${files_copied}
-    )
-    set_target_properties(${LIBRARY_NAME}_headerfiles
-        PROPERTIES
-            FOLDER "headerfiles"
-    )
-
-    # Make sure headers are installed before building the library.
-    add_dependencies(${LIBRARY_NAME} ${LIBRARY_NAME}_headerfiles)
-endfunction() # _copy_headers
-
 # Copy doxygen files for documentation builds to the build tree. Doxygen
 # files can be .dox files, C++ source with doxygen comments, or 
 # resource files (images, etc). Files will get copied to a parallel structure 
@@ -1236,8 +1182,6 @@ function(_pxr_library NAME)
         add_library(${NAME}
             OBJECT
             ${args_CPPFILES}
-            ${args_PUBLIC_HEADERS}
-            ${args_PRIVATE_HEADERS}
         )
 
     elseif(args_TYPE STREQUAL "STATIC")
@@ -1245,8 +1189,6 @@ function(_pxr_library NAME)
         add_library(${NAME}
             STATIC
             ${args_CPPFILES}
-            ${args_PUBLIC_HEADERS}
-            ${args_PRIVATE_HEADERS}
         )
 
     else()
@@ -1254,8 +1196,6 @@ function(_pxr_library NAME)
         add_library(${NAME}
             SHARED
             ${args_CPPFILES}
-            ${args_PUBLIC_HEADERS}
-            ${args_PRIVATE_HEADERS}
         )
         if(PXR_PY_UNDEFINED_DYNAMIC_LOOKUP)
             # When not explicitly linking to the python lib we need to allow
@@ -1372,16 +1312,50 @@ function(_pxr_library NAME)
             ${apiPrivate}
     )
 
-    # Copy headers to the build directory and include from there and from
-    # external packages.
-    _copy_headers(${NAME}
-        FILES
-            ${args_PUBLIC_HEADERS}
-            ${args_PRIVATE_HEADERS}
-        PREFIX
-            ${PXR_PREFIX}
+    # Most library's headers directory structure should be reflected into the
+    # include directory
+    #
+    # This structure and matching logic is historical and adapted from a now
+    # removed function _copy_headers which generated the desired header layout
+    # in the cmake build directory.
+    #
+    # Original _copy_headers documentation:
+    # > Under pxr/ the include paths match the
+    # > source tree paths but elsewhere they do not. Instead we use include
+    # > paths like rmanArgsParser/rmanArgsParser.h.  So if /pxr/ is not in the
+    # > source tree path then copy the headers (public and private) into the
+    # > build tree under paths of the latter scheme.
+    if ("${CMAKE_CURRENT_SOURCE_DIR}" MATCHES ".*/pxr/.*")
+        set(headerBaseDir ${PROJECT_SOURCE_DIR})
+        set(publicHeaderInstallPath "include")
+    else()
+        set(headerBaseDir ${CMAKE_CURRENT_SOURCE_DIR})
+        set(publicHeaderInstallPath
+            "${PXR_INSTALL_SUBDIR}/include/${PXR_PREFIX}/${NAME}")
+    endif()
+
+    # Create cmake managed header file sets associated with the library.
+    # cmake will make these available in the include path when compiling
+    # the library. The public_header FILE_SET will be installed with the
+    # library target below.
+    target_sources(${NAME}
+        PUBLIC
+            FILE_SET public_headers
+            TYPE HEADERS
+            BASE_DIRS
+                ${headerBaseDir}
+            FILES ${args_PUBLIC_HEADERS}
+    )
+    target_sources(${NAME}
+        PRIVATE
+            FILE_SET private_headers
+            TYPE HEADERS
+            BASE_DIRS
+                ${headerBaseDir}
+            FILES ${args_PRIVATE_HEADERS}
     )
 
+    # Include generated headers
     target_include_directories(${NAME}
         PRIVATE
             "${PROJECT_BINARY_DIR}/include"
@@ -1430,34 +1404,6 @@ function(_pxr_library NAME)
     #
     # Set up the install.
     #
-
-    # Install public headers. 
-    #
-    # This would typically be done via:
-    #
-    # install(TARGETS ... PUBLIC_HEADER DESTINATION ${headerInstallPrefix})
-    #
-    # However, that command does not preserve subdirectory structure, so if a
-    # public header were specified as subdir/header.h, it would just be
-    # installed in ${headerInstallPrefix}/header.h. So we need to roll our own
-    # loop that parses out the subdirectory and manually appends it to the
-    # include directory.
-    if(args_PUBLIC_HEADERS)
-        foreach(header ${args_PUBLIC_HEADERS})
-            set(headerDestination "${headerInstallPrefix}")
-
-            get_filename_component(headerSubdir ${header} DIRECTORY)
-            if (headerSubdir)
-                set(headerDestination "${headerDestination}/${headerSubdir}")
-            endif()
-
-            install(
-                FILES ${header}
-                DESTINATION ${headerDestination}
-            )
-        endforeach()
-    endif()
-
     if(isObject)
         # Despite not producing any install outputs, we still want to include
         # object libraries in the export set so that their properties (such as
@@ -1470,11 +1416,13 @@ function(_pxr_library NAME)
     else()
         # Do not include plugins libs in externally linkable targets
         if(isPlugin)
+            # Note some plugins have public headers.
             install(
                 TARGETS ${NAME}
                 LIBRARY DESTINATION ${libInstallPrefix}
                 ARCHIVE DESTINATION ${libInstallPrefix}
                 RUNTIME DESTINATION ${libInstallPrefix}
+                FILE_SET public_headers DESTINATION ${publicHeaderInstallPath}
             )
             if(WIN32)
                 install(
@@ -1490,6 +1438,7 @@ function(_pxr_library NAME)
                 LIBRARY DESTINATION ${libInstallPrefix}
                 ARCHIVE DESTINATION ${libInstallPrefix}
                 RUNTIME DESTINATION ${libInstallPrefix}
+                FILE_SET public_headers DESTINATION ${publicHeaderInstallPath}
             )
             if(WIN32)
                 install(
@@ -1506,6 +1455,7 @@ function(_pxr_library NAME)
                 LIBRARY DESTINATION ${libInstallPrefix}
                 ARCHIVE DESTINATION ${libInstallPrefix}
                 RUNTIME DESTINATION ${libInstallPrefix}
+                FILE_SET public_headers DESTINATION ${publicHeaderInstallPath}
             )
         endif()
     
