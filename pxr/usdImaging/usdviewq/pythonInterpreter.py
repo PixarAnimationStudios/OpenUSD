@@ -16,7 +16,7 @@ from .qt import QtCore, QtGui, QtWidgets
 from .usdviewApi import UsdviewApi
 
 from code import InteractiveInterpreter
-import os, sys, keyword
+import os, sys, keyword, textwrap
 
 # just a handy debugging method
 def _PrintToErr(line):
@@ -295,14 +295,14 @@ class Controller(QtCore.QObject):
         # various startup scripts, so that they can access the location from
         # which they are being run.
         # also, update the globals dict after we exec the file (bug 9529)
-        self.interpreter.runsource( 
-            'g = dict(globals());' 
-            'g["__file__"] = "{0}";'
-            'f = open("{0}", "rb");'
-            'exec(compile(f.read(), "{0}", "exec"), g);'
-            'f.close();'
-            'del g["__file__"];'
-            'globals().update(g);'.format(path))
+        path_literal = repr(str(path))
+        self.interpreter.runsource(textwrap.dedent(f"""\
+            g = dict(globals())
+            g["__file__"] = {path_literal}
+            with open({path_literal}, "rb") as f:
+                exec(compile(f.read(), {path_literal}, "exec"), g)
+            del g["__file__"]
+            globals().update(g)"""), symbol="exec")
         self.SetInputStart()
         self.lines = []
 
