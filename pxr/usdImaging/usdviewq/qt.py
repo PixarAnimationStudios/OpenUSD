@@ -60,6 +60,10 @@ if PySideModule == 'PySide2':
 
     QGLWidget.InitQGLWidget = initQGLWidget
 
+    # QGLFormat has the alpha channel disabled by default. Note that
+    # setAlphaBufferSize() would implicitly *enable* it, so use setAlpha().
+    QGLFormat.DisableAlphaBuffer = lambda self: self.setAlpha(False)
+
 elif PySideModule == 'PySide6':
     from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGL
     from PySide6.QtOpenGLWidgets import QOpenGLWidget as QGLWidget
@@ -96,6 +100,11 @@ elif PySideModule == 'PySide6':
         self.setFormat(glFormat)
 
     QGLWidget.InitQGLWidget = initQGLWidget
+
+    # QSurfaceFormat leaves the alpha buffer size unspecified (-1), which lets
+    # the platform pick a pixel format that has one; Windows does, which makes
+    # the grabbed framebuffer RGBA instead of RGB. Request none explicitly.
+    QGLFormat.DisableAlphaBuffer = lambda self: self.setAlphaBufferSize(0)
 
 else:
     raise ImportError('Unrecognized PySide module "{}"'.format(PySideModule))
