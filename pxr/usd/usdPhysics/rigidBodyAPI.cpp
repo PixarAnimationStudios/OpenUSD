@@ -490,14 +490,33 @@ float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia,
             if (collisionPrim && collisionPrim != usdPrim && 
                 collisionPrim.HasAPI<UsdPhysicsRigidBodyAPI>())
             {
-                it.PruneChildren(); // Skip the subtree rooted at this prim, 
-                                    // the colliders belong to a different rigid 
-                                    // body
-                continue;
+                // A nested rigid body only forms the root of its own subtree
+                // while it is enabled. A disabled body takes no part in 
+                // simulation, so it does not own colliders; its subtree still 
+                // belongs to this body and must be traversed, otherwise the 
+                // colliders below it would contribute mass to no body at all.
+                const UsdPhysicsRigidBodyAPI nestedBodyAPI(collisionPrim);
+                bool nestedBodyEnabled = true;
+                nestedBodyAPI.GetRigidBodyEnabledAttr().Get(&nestedBodyEnabled);
+                if (nestedBodyEnabled)
+                {
+                    it.PruneChildren(); // Skip the subtree rooted at this prim, 
+                                        // the colliders belong to a different 
+                                        // rigid body
+                    continue;
+                }
             }
 
             if (collisionPrim && collisionPrim.HasAPI<UsdPhysicsCollisionAPI>())
             {
+                const UsdPhysicsCollisionAPI collisionAPI(collisionPrim);
+                bool collisionEnabled = true;
+                collisionAPI.GetCollisionEnabledAttr().Get(&collisionEnabled);
+                if (!collisionEnabled)
+                {
+                    continue;
+                }
+
                 collisionPrims.push_back(std::move(collisionPrim));
             }
         }
