@@ -84,7 +84,7 @@ bool IsDynamicBody(const UsdPrim& usdPrim, bool* outPhysicsAPIFound)
     if (rboAPI)
     {
         {
-            bool isAPISchemaEnabled = false;
+            bool isAPISchemaEnabled = true;
             rboAPI.GetRigidBodyEnabledAttr().Get(&isAPISchemaEnabled);
 
             // Prim is dynamic body off PhysicsAPI is present and enabled
