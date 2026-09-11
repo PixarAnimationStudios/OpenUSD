@@ -27,6 +27,8 @@ class UsdRiPxrImagingEnergyFilterAdapter : public UsdImagingPrimAdapter
 public:
     using BaseAdapter = UsdImagingPrimAdapter;
 
+#if PXR_VERSION >= 2608
+
     UsdRiPxrImagingEnergyFilterAdapter()
         : UsdImagingPrimAdapter()
     {}
@@ -63,11 +65,15 @@ public:
     /// \name Initialization
     // ---------------------------------------------------------------------- //
 
+#endif
+
     USDRIPXRIMAGING_API
     SdfPath Populate(UsdPrim const& prim,
                      UsdImagingIndexProxy* index,
                      UsdImagingInstancerContext const*
                      instancerContext = nullptr) override;
+
+#if PXR_VERSION >= 2608
 
     USDRIPXRIMAGING_API
     bool IsSupported(UsdImagingIndexProxy const* index) const override;
@@ -75,6 +81,8 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //
+
+#endif
 
     USDRIPXRIMAGING_API
     void TrackVariability(UsdPrim const& prim,
@@ -110,12 +118,16 @@ public:
     /// \name Data access
     // ---------------------------------------------------------------------- //
 
+#if PXR_VERSION >= 2608
+
     USDRIPXRIMAGING_API
     VtValue Get(UsdPrim const& prim,
                 SdfPath const& cachePath,
                 TfToken const& key,
                 UsdTimeCode time,
                 VtIntArray *outIndices) const override;
+
+#endif
 
 protected:
     USDRIPXRIMAGING_API

@@ -28,6 +28,8 @@ class UsdRiPxrImagingVolumeFilterAdapter : public UsdImagingPrimAdapter {
 public:
     typedef UsdImagingPrimAdapter BaseAdapter;
 
+#if PXR_VERSION >= 2605
+
     UsdRiPxrImagingVolumeFilterAdapter()
         : UsdImagingPrimAdapter()
     {}
@@ -140,6 +142,8 @@ protected:
     USDRIPXRIMAGING_API
     void _RemovePrim(SdfPath const& cachePath,
                      UsdImagingIndexProxy* index) override;
+
+#endif // PXR_VERSION >= 2605
 
 };
 

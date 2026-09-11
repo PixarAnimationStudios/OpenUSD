@@ -9,7 +9,9 @@
 #include "usdRiPxrImaging/dataSourcePxrRenderTerminalPrims.h"
 #include "usdRiPxrImaging/pxrRenderTerminalHelper.h"
 
+#if PXR_VERSION >= 2608
 #include "pxr/imaging/hd/energyFilterSchema.h"
+#endif
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -37,6 +39,8 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
+
+#if PXR_VERSION >= 2608
 
 UsdRiPxrImagingEnergyFilterAdapter::
 ~UsdRiPxrImagingEnergyFilterAdapter() = default;
@@ -133,12 +137,15 @@ UsdRiPxrImagingEnergyFilterAdapter::IsSupported(
     return index->IsSprimTypeSupported(HdPrimTypeTokens->energyFilter);
 }
 
+#endif
+
 SdfPath
 UsdRiPxrImagingEnergyFilterAdapter::Populate(
     UsdPrim const& prim,
     UsdImagingIndexProxy* index,
     UsdImagingInstancerContext const* instancerContext)
 {
+#if PXR_VERSION >= 2608
     SdfPath cachePath = prim.GetPath();
     if (index->IsPopulated(cachePath)) {
         return cachePath;
@@ -148,6 +155,9 @@ UsdRiPxrImagingEnergyFilterAdapter::Populate(
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     return cachePath;
+#else
+    return SdfPath();
+#endif
 }
 
 void
@@ -155,7 +165,9 @@ UsdRiPxrImagingEnergyFilterAdapter::_RemovePrim(
     SdfPath const& cachePath,
     UsdImagingIndexProxy* index)
 {
+#if PXR_VERSION >= 2608
     index->RemoveSprim(HdPrimTypeTokens->energyFilter, cachePath);
+#endif
 }
 
 void
@@ -165,6 +177,7 @@ UsdRiPxrImagingEnergyFilterAdapter::TrackVariability(
     HdDirtyBits* timeVaryingBits,
     UsdImagingInstancerContext const* instancerContext) const
 {
+#if PXR_VERSION >= 2608
     const std::vector<UsdAttribute> &attrs = prim.GetAttributes();
     TF_FOR_ALL(attrIter, attrs) {
         const UsdAttribute& attr = *attrIter;
@@ -172,6 +185,7 @@ UsdRiPxrImagingEnergyFilterAdapter::TrackVariability(
             *timeVaryingBits |= HdChangeTracker::DirtyParams;
         }
     }
+#endif
 }
 
 void
@@ -200,8 +214,12 @@ UsdRiPxrImagingEnergyFilterAdapter::MarkDirty(
     HdDirtyBits dirty,
     UsdImagingIndexProxy* index)
 {
+#if PXR_VERSION >= 2608
     index->MarkSprimDirty(cachePath, dirty);
+#endif
 }
+
+#if PXR_VERSION >= 2608
 
 VtValue
 UsdRiPxrImagingEnergyFilterAdapter::Get(
@@ -232,5 +250,7 @@ UsdRiPxrImagingEnergyFilterAdapter::Get(
         key.GetText(), cachePath.GetText());
     return VtValue();
 }
+
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
