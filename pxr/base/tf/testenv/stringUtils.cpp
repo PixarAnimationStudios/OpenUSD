@@ -16,6 +16,7 @@
 #include <sstream>
 #include <stdio.h>
 #include <locale>
+#include <limits>
 
 using namespace std;
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -82,6 +83,27 @@ TestNumbers()
     TF_AXIOM(strcmp(buffer, "-1.1111111111111113e-308") == 0);
     TF_AXIOM(
         !TfDoubleToString(-1.1111111111111113e-308, buffer, 24, true));
+
+    TF_AXIOM(
+        TfDoubleToString(std::numeric_limits<double>::infinity(), buffer, bufferSize, true));
+    TF_AXIOM(strcmp(buffer, "inf") == 0);
+    TF_AXIOM(
+        TfDoubleToString(-std::numeric_limits<double>::infinity(), buffer, bufferSize, true));
+    TF_AXIOM(strcmp(buffer, "-inf") == 0);
+    TF_AXIOM(
+        TfDoubleToString(std::numeric_limits<double>::quiet_NaN(), buffer, bufferSize, true));
+    TF_AXIOM(strcmp(buffer, "nan") == 0);
+
+    TF_AXIOM(
+        TfDoubleToString(std::numeric_limits<double>::infinity(), buffer, bufferSize, true, "Infinity", "NaN"));
+    TF_AXIOM(strcmp(buffer, "Infinity") == 0);
+    TF_AXIOM(
+        TfDoubleToString(-std::numeric_limits<double>::infinity(), buffer, bufferSize, true, "Infinity", "NaN"));
+    TF_AXIOM(strcmp(buffer, "-Infinity") == 0);
+    TF_AXIOM(
+        TfDoubleToString(std::numeric_limits<double>::quiet_NaN(), buffer, bufferSize, true, "Infinity", "NaN"));
+    TF_AXIOM(strcmp(buffer, "NaN") == 0);
+
 
     return true;
 }
