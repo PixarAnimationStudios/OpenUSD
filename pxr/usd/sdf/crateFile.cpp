@@ -58,6 +58,7 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/dispatcher.h"
+#include "pxr/base/work/isolatingDispatcher.h"
 #include "pxr/base/work/singularTask.h"
 #include "pxr/base/work/utils.h"
 #include "pxr/base/work/withScopedParallelism.h"
@@ -974,7 +975,7 @@ private:
     // Queue of pending write operations.
     tbb::concurrent_queue<_WriteOp> _writeQueue;
 
-    WorkDispatcher _dispatcher;
+    WorkIsolatingDispatcher _dispatcher;
     WorkSingularTask _writeTask;
 };
 
