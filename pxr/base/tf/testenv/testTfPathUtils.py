@@ -48,12 +48,12 @@ class TestPathUtils(unittest.TestCase):
                 self.assertEqual(os.path.abspath('subdir/e/f/g/h'),
                              Tf.RealPath('d/e/f/g/h', True))
                 self.log.info('symlinks through to broken link')
-                self.assertEqual('', Tf.RealPath('g', True))
-
-                self.log.info('symlinks through to broken link, '
-                              'raiseOnError=True')
+                # Note that Tf.RealPath differs in behavior from realpath in that considers
+                # a broken symlink to be inaccessible and will not resolve it.
+                self.assertEqual(f"{os.path.realpath(os.getcwd())}/g", Tf.RealPath('g', True))
+                self.log.info('child of broken symlink, raiseOnError=True')
                 with self.assertRaises(RuntimeError):
-                    Tf.RealPath('g', True, raiseOnError=True)
+                    Tf.RealPath('g', False, raiseOnError=True)
 
                 if platform.system() == 'Windows':
                     try:
