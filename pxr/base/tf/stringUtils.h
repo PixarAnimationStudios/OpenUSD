@@ -588,7 +588,8 @@ TF_API std::string TfStringify(double);
 /// values can be represented.
 /// Returns whether the conversion was successful.
 TF_API bool TfDoubleToString(
-    double d, char* buffer, int len, bool emitTrailingZero);
+    double d, char* buffer, int len, bool emitTrailingZero,
+    const char* infinitySymbol = "inf", const char* nanSymbol = "nan");
 
 /// \struct TfStreamFloat
 /// 
