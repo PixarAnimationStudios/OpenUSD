@@ -268,7 +268,16 @@ function(pxr_library NAME)
 
         if(libraryRequiresPython)
             list(APPEND args_LIBRARIES ${PYTHON_LIBRARIES} python)
-            list(APPEND args_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS})
+            if(PXR_PY_UNDEFINED_DYNAMIC_LOOKUP)
+                # if PXR_PY_UNDEFINED_DYNAMIC_LOOKUP is defined
+                # the Python3::Python target won't get added
+                # hence the INTERFACE_INCLUDE_DIRECTORIES for that
+                # target won't be available, so we add the Python
+                # includes explicitly here, otherwise don't add
+                # them so they are picked up via the cmake target's
+                # interface includes
+                list(APPEND args_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS})
+            endif()
         endif()
     endif()
 
