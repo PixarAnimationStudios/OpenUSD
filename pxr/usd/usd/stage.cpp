@@ -891,7 +891,7 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
     , _editTargetIsLocalLayer(true)
     , _cache(new PcpCache(PcpLayerStackIdentifier(
                               _rootLayer, _sessionLayer, pathResolverContext),
-                          SdfUsdFileFormatTokens->Target,
+                          /*fileFormatTarget=*/std::string(),
                           /*usdMode=*/true))
     , _clipCache(new Usd_ClipCache)
     , _instanceCache(new Usd_InstanceCache)
@@ -1271,11 +1271,7 @@ _OpenLayer(
     if (!resolverContext.IsEmpty())
         binder.emplace(resolverContext);
 
-    SdfLayer::FileFormatArguments args;
-    args[SdfFileFormatTokens->TargetArg] =
-        SdfUsdFileFormatTokens->Target.GetString();
-
-    return SdfLayer::FindOrOpen(filePath, args);
+    return SdfLayer::FindOrOpen(filePath);
 }
 
 /* static */
@@ -3688,8 +3684,7 @@ UsdStage::IsSupportedFile(const std::string& filePath)
     }
 
     // if the extension is valid we'll get a non null FileFormatPtr
-    return SdfFileFormat::FindByExtension(fileExtension, 
-                                          SdfUsdFileFormatTokens->Target);
+    return SdfFileFormat::FindByExtension(fileExtension);
 }
 
 namespace {
