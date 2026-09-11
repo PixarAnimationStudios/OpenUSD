@@ -1,0 +1,65 @@
+#usda 1.0
+
+# Test file provided with
+# https://github.com/PixarAnimationStudios/OpenUSD/issues/4104
+#
+# An undefined cube "asset" with a collection-based material binding
+# that is referenced twice, instanced and not instanced.
+# 
+# Both cubes should look identical (green).
+#
+# Collections are transported to hydra as path expressions.
+# Because UsdImaging 2's instancing implementation reroots the prototype
+# hierarchy, the transported expression needs to be adjusted accordingly.
+#
+
+def "instanced" (
+    instanceable = true
+    prepend references = </lib/asset>
+)
+{
+    double3 xformOp:translate = (2, 0, 0)
+}
+
+def "not_instanced" (
+    prepend references = </lib/asset>
+)
+{
+    double3 xformOp:translate = (-2, 0, 0)
+}
+
+over "lib"
+{
+    def Xform "asset"
+    {
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Scope "geo" (
+            prepend apiSchemas = ["CollectionAPI:cube", "MaterialBindingAPI"]
+        )
+        {
+            rel collection:cube:includes = </lib/asset/geo/cube>
+            rel material:binding:collection:cube = [
+                </lib/asset/geo.collection:cube>,
+                </lib/asset/green>,
+            ]
+
+            def Cube "cube"
+            {
+            }
+        }
+
+        def Material "green"
+        {
+            token outputs:surface.connect = </lib/asset/green/surface.outputs:surface>
+
+            def Shader "surface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 1, 0)
+                token outputs:surface
+            }
+        }
+    }
+}
+

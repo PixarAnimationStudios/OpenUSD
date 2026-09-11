@@ -371,9 +371,16 @@ pxr_register_test(testUsdImagingExcluded
 # Tests that rely on plugins aren't currently supported in static builds.
 if (BUILD_SHARED_LIBS)
     pxr_register_test(testUsdImagingMaterialBinding
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingMaterialBinding"
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingMaterialBinding -stage model.usda -validateBindingsFor /Model/Geom/Parent/mesh"
         TESTENV testenv/testUsdImagingMaterialBinding
         EXPECTED_RETURN_CODE 0
+    )
+    pxr_register_test(testUsdImagingMaterialBindingNI
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingMaterialBinding -stage ni-collection-material-binding.usda -validateBindingsFor /not_instanced/geo/cube /instanced/geo/cube"
+        TESTENV testenv/testUsdImagingMaterialBinding
+        EXPECTED_RETURN_CODE 0
+        ENV
+            USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
     )
     pxr_register_test(testUsdImagingColorSpace
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingColorSpace"
