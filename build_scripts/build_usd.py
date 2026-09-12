@@ -2143,8 +2143,12 @@ if MacOS():
     if apple_utils.IsHostArm():
         # Intel Homebrew stores packages in /usr/local which unfortunately can
         # be where a lot of other things are too. So we only add this flag on arm macs.
-        group.add_argument("--ignore-homebrew", action="store_true",
-                           help="Specify that CMake should ignore Homebrew packages.")
+        subgroup = group.add_mutually_exclusive_group()
+        # Provided to avoid breaking automation scripts that may have specified it.
+        subgroup.add_argument("--ignore-homebrew", action="store_true", dest="ignore_homebrew",
+                           help="Specify that CMake should ignore Homebrew packages.", default=True)
+        subgroup.add_argument("--allow-homebrew", action="store_false", dest="ignore_homebrew",
+                           help="Specify that CMake should allow searching Homebrew packages.")
 
 group.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Custom arguments to pass to build system when "
