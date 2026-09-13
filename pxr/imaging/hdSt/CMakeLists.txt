@@ -2344,6 +2344,16 @@ function(register_codegen_tests suffix hgi_env)
             TF_DEBUG=HD_SAFE_MODE
             ${hgi_env}
     )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_PackedNormals_FaceVarying
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --packedNormals --faceVarying"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_packedNormals_faceVarying.out
+        DIFF_COMPARE codegen_mesh_packedNormals_faceVarying.out
+        TESTENV testenv/testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
     pxr_register_test(testHdStCodeGen${suffix}_Curves_Indirect
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --curves"
         EXPECTED_RETURN_CODE 0

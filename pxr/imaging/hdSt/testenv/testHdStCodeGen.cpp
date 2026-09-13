@@ -78,7 +78,8 @@ DumpShaderSource(const std::string& source)
 
 static bool
 CodeGenTest(HdStResourceRegistrySharedPtr const &registry,
-    HdSt_ShaderKey const &key, bool instance, bool smoothNormals, bool packedNormals)
+    HdSt_ShaderKey const &key, bool instance, bool smoothNormals, bool packedNormals,
+    bool faceVarying)
 {
     TfErrorMark mark;
 
@@ -186,8 +187,11 @@ CodeGenTest(HdStResourceRegistrySharedPtr const &registry,
             bufferSpecs.emplace_back( _tokens->smoothNormals,
                                       HdTupleType { HdTypeFloatVec3, 1 });
         } else if (packedNormals) {
-            bufferSpecs.emplace_back( _tokens->normals,
-                                      HdTupleType { HdTypeInt32_2_10_10_10_REV, 1 });
+            // With faceVarying, packed normals go in the fvar BAR instead.
+            if (!faceVarying) {
+                bufferSpecs.emplace_back( _tokens->normals,
+                                          HdTupleType { HdTypeInt32_2_10_10_10_REV, 1 });
+            }
         } else {
             bufferSpecs.emplace_back( _tokens->normals,
                                       HdTupleType { HdTypeFloatVec3, 1 });
@@ -208,6 +212,11 @@ CodeGenTest(HdStResourceRegistrySharedPtr const &registry,
         HdBufferSpecVector bufferSpecs;
         bufferSpecs.emplace_back( _tokens->dispTextureCoord,
                                   HdTupleType { HdTypeFloatVec2, 1 });
+
+        if (packedNormals && faceVarying) {
+            bufferSpecs.emplace_back( _tokens->normals,
+                                      HdTupleType { HdTypeInt32_2_10_10_10_REV, 1 });
+        }
 
         HdBufferArrayRangeSharedPtr range =
             registry->AllocateNonUniformBufferArrayRange(
@@ -318,10 +327,12 @@ CodeGenTest(HdStResourceRegistrySharedPtr const &registry,
 
 bool
 TestShader(HdStResourceRegistrySharedPtr const &registry,
-    HdSt_ShaderKey const &key, bool instance, bool smoothNormals, bool packedNormals)
+    HdSt_ShaderKey const &key, bool instance, bool smoothNormals, bool packedNormals,
+    bool faceVarying = false)
 {
     bool success = true;
-    success &= CodeGenTest(registry, key, instance, smoothNormals, packedNormals);
+    success &= CodeGenTest(registry, key, instance, smoothNormals, packedNormals,
+                           faceVarying);
     return success;
 }
 
@@ -370,6 +381,8 @@ int main(int argc, char *argv[])
         }
     }
 
+    const bool packedFaceVaryingNormals = packedNormals && faceVarying;
+
     HgiUniquePtr const hgi = Hgi::CreatePlatformDefaultHgi();
     HdDriver driver{HgiTokens->renderDriver, VtValue(hgi.get())};
     HdStRenderDelegate renderDelegate;
@@ -389,7 +402,8 @@ int main(int argc, char *argv[])
                 smoothNormals ? HdSt_MeshShaderKey::NormalSourceSmooth :
                     (packedNormals ? HdSt_MeshShaderKey::NormalSourceScene :
                     HdSt_MeshShaderKey::NormalSourceFlat),
-                HdInterpolationVertex,
+                packedFaceVaryingNormals ? HdInterpolationFaceVarying
+                                         : HdInterpolationVertex,
                 HdCullStyleNothing,
                 geomStyle,
                 HdSt_GeometricShader::FvarPatchType::PATCH_COARSE_TRIANGLES,
@@ -408,7 +422,7 @@ int main(int argc, char *argv[])
                 /* forceOpaqueEdges */ true,
                 /* surfaceEdgeIds */ true,
                 /* nativeRoundPoints */ true),
-                 instance, smoothNormals, packedNormals);
+                 instance, smoothNormals, packedNormals, faceVarying);
         success &= TestShader(
             registry,
             HdSt_MeshShaderKey(
@@ -417,7 +431,8 @@ int main(int argc, char *argv[])
                 smoothNormals ? HdSt_MeshShaderKey::NormalSourceSmooth :
                     (packedNormals ? HdSt_MeshShaderKey::NormalSourceScene :
                     HdSt_MeshShaderKey::NormalSourceFlat),
-                HdInterpolationVertex,
+                packedFaceVaryingNormals ? HdInterpolationFaceVarying
+                                         : HdInterpolationVertex,
                 HdCullStyleNothing,
                 geomStyle,
                 HdSt_GeometricShader::FvarPatchType::PATCH_COARSE_QUADS,
@@ -435,7 +450,7 @@ int main(int argc, char *argv[])
                 /* forceOpaqueEdges */ true,
                 /* surfaceEdgeIds */ true,
                 /* nativeRoundPoints */ true),
-                 instance, smoothNormals, packedNormals);
+                 instance, smoothNormals, packedNormals, faceVarying);
     }
 
     // curves

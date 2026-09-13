@@ -100,6 +100,7 @@ public:
             : dataType(dataType)
             , name(name)
             , arraySize(arraySize)
+            , qualifiers(qualifiers)
             { }
         TfToken dataType;
         TfToken name;
