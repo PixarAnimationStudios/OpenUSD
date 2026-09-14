@@ -258,10 +258,8 @@ VtArrayEdit<ELEM>::_ApplyEdits(Array &&weaker) const
 
     // Each insert and erase below shifts the elements that follow it, so an
     // edit containing k of them costs O(k * n).  Writes and insert & erase at
-    // the end are cheap.  Measured on a 100k-element array with 1000 inserts at
-    // index 0: about 7 ms for int elements and about 220 ms for 128-byte
-    // elements.  With k in the tens it is well under a millisecond even for
-    // large arrays, so this has not been worth addressing yet.
+    // the end are cheap.  With k in the tens it is still relatively inexpensive
+    // even for large arrays, so this has not been worth addressing yet.
     //
     // Two approaches were considered.  Batching a run of inserts or erases into
     // a single pass only works when the indexes within the run are monotone,
