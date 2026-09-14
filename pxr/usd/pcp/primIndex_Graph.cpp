@@ -326,26 +326,57 @@ PcpPrimIndex_Graph::Finalize()
         return;
     }
 
-    // We want to store the nodes in the node pool in strong-to-weak order.
-    // In particular, this allows strength-order iteration over the nodes in 
-    // the graph to be a simple traversal of the pool. So, we compute the
-    // strength ordering of our nodes and reorder the pool if needed.
-    std::vector<size_t> nodeIndexToStrengthOrder;
-    const bool nodeOrderMatchesStrengthOrder = 
-        _ComputeStrengthOrderIndexMapping(&nodeIndexToStrengthOrder);
-    if (!nodeOrderMatchesStrengthOrder) {
-        _ApplyNodeIndexMapping(nodeIndexToStrengthOrder);
-    }
+    // We want to arrange the nodes in the node pool in strong-to-weak order, so
+    // that strength-order iteration is a simple forward traversal.  We also
+    // erase nodes that culling determined contribute nothing.  Both are just
+    // permutations/removals over the node pool.  To minimize reference-count
+    // operations, we build a single old-index -> new-index mapping that
+    // performs both the reorder and removal and apply it once.
+    // _ApplyNodeIndexMapping then materializes only the surviving nodes, so we
+    // never reference-count nodes that culling is about to discard.
 
-    // There may be nodes in the pool that have been marked for culling that
-    // can be erased from the node pool. Compute and apply the necessary
-    // transformation.
+    // Strength ordering: nodeIndexToStrengthOrder[i] is the strength rank of
+    // the node currently at index i.  Always filled; the bool return reports
+    // whether the pool is already in strength order.
+    std::vector<size_t> nodeIndexToStrengthOrder;
+    const bool nodeOrderMatchesStrengthOrder =
+        _ComputeStrengthOrderIndexMapping(&nodeIndexToStrengthOrder);
+
+    // Culling: culledNodeMapping[i] == _invalidNodeIndex marks node i erasable.
+    // The erasable set is structural (origin/parent chains), independent of the
+    // node ordering, so it is valid to compute it here on the pre-reorder pool.
     std::vector<size_t> culledNodeMapping;
     const bool hasNodesToCull =
         _ComputeEraseCulledNodeIndexMapping(&culledNodeMapping);
-    if (hasNodesToCull) {
-        _ApplyNodeIndexMapping(culledNodeMapping);
+
+    // Nothing to do if the pool is already ordered and nothing is culled.
+    if (nodeOrderMatchesStrengthOrder && !hasNodesToCull) {
+        _finalized = true;
+        return;
     }
+
+    // Compose the two transforms into one mapping over original indices.  The
+    // new order is strength order restricted to the surviving nodes; erased
+    // nodes map to _invalidNodeIndex.
+    const size_t numNodes = _GetNumNodes();
+    std::vector<size_t> nodeIndexMap(numNodes);
+    {
+        // Invert the strength mapping: strength position -> original index.
+        std::vector<size_t> origAtStrengthPos(numNodes);
+        for (size_t i = 0; i < numNodes; ++i) {
+            origAtStrengthPos[nodeIndexToStrengthOrder[i]] = i;
+        }
+        // Walk survivors in strength order, assigning dense new indices.
+        size_t next = 0;
+        for (size_t pos = 0; pos < numNodes; ++pos) {
+            const size_t orig = origAtStrengthPos[pos];
+            const bool culled = hasNodesToCull &&
+                culledNodeMapping[orig] == _Node::_invalidNodeIndex;
+            nodeIndexMap[orig] = culled ? _Node::_invalidNodeIndex : next++;
+        }
+    }
+
+    _ApplyNodeIndexMapping(nodeIndexMap);
 
     _finalized = true;
 }
@@ -359,124 +390,134 @@ PcpPrimIndex_Graph::Finalize()
 #define NEXT_SIBLING(node) node.indexes.nextSiblingIndex
 #define PREV_SIBLING(node) node.indexes.prevSiblingIndex
 
-void 
+void
 PcpPrimIndex_Graph::_ApplyNodeIndexMapping(
     const std::vector<size_t>& nodeIndexMap)
 {
-    // Ensure this node pool is unshared first.
-    _DetachSharedNodePool();
+    // Note: this builds a fresh node pool containing only the surviving nodes
+    // and then reassigns _nodes to it (rather than calling
+    // _DetachSharedNodePool()).  The source pool is only read (never mutated),
+    // so a pool shared with another graph (e.g. the ancestral prim index this
+    // one was cloned from) is left untouched.  This lets us reference-count
+    // only the survivors instead of copy-constructing and bumping counts on the
+    // whole pool and then dropping counts destroying the culled nodes after.
+
+    const size_t InvalidIdx = _Node::_invalidNodeIndex;
     
-    _NodePool& oldNodes = *_nodes;
+    _NodePool const            &oldNodes    = *_nodes;
     std::vector<_UnsharedData> &oldUnshared = _unshared;
 
     TF_VERIFY(oldNodes.size() == oldUnshared.size());
     TF_VERIFY(nodeIndexMap.size() == oldNodes.size());
 
-    const size_t numNodesToErase = 
-        std::count(nodeIndexMap.begin(), nodeIndexMap.end(), 
-                   _Node::_invalidNodeIndex);
-
+    const size_t numNodesToErase = std::count(
+        nodeIndexMap.begin(), nodeIndexMap.end(), InvalidIdx);
     const size_t oldNumNodes = oldNodes.size();
     const size_t newNumNodes = oldNumNodes - numNodesToErase;
     TF_VERIFY(newNumNodes <= oldNumNodes);
 
-    struct _ConvertOldToNewIndex {
-        _ConvertOldToNewIndex(const std::vector<size_t>& table,
-                              size_t numNewNodes) : _table(table)
-        {
-            for (size_t i = 0, n = _table.size(); i != n; ++i) {
-                TF_VERIFY(_table[i] < numNewNodes || 
-                          _table[i] == _Node::_invalidNodeIndex);
-            }
-        }
-
-        size_t operator()(size_t oldIndex) const
-        {
-            if (oldIndex != _Node::_invalidNodeIndex) {
-                return _table[oldIndex];
-            }
-            else {
-                return oldIndex;
-            }
-        }
-        const std::vector<size_t>& _table;
-
+    // Get the new index for oldIndex -- nodeIndexMap[oldIndex] or InvalidIdx if
+    // erased.  This helper passes InvalidIdx through unchanged so it can be
+    // applied to a node's parent/child/sibling links directly.
+    auto getNewIndex = [&nodeIndexMap](size_t oldIndex) -> size_t {
+        return (oldIndex == InvalidIdx) ? InvalidIdx : nodeIndexMap[oldIndex];
     };
 
-    const _ConvertOldToNewIndex convertToNewIndex(nodeIndexMap, newNumNodes);
+    // Copy the per-node link indexes into a scratch buffer we can mutate
+    // freely.  These are small integers with no reference counts, so splicing
+    // erased nodes out of the sibling/child lists here touches neither the
+    // reference-counted node handles nor the (possibly shared) source pool.
+    std::vector<_Node::_Indexes> links(oldNumNodes);
+    for (size_t i = 0; i < oldNumNodes; ++i) {
+        links[i] = oldNodes[i].indexes;
+    }
 
-    // If this mapping causes nodes to be erased, it's much more convenient
-    // to fix up node indices to accommodate those erasures in the old node
-    // pool before moving nodes to their new position. 
+    // If this mapping erases nodes, splice each erased node out of its sibling
+    // list and fix up its parent's first/last child links, operating on the
+    // scratch links buffer.
     if (numNodesToErase > 0) {
-        _NodePool &nodes = *_nodes;
         for (size_t i = 0; i < oldNumNodes; ++i) {
-            const size_t oldNodeIndex = i;
-            const size_t newNodeIndex = convertToNewIndex(oldNodeIndex);
+            _Node::_Indexes &nodeLinks = links[i];
 
-            _Node& node = nodes[oldNodeIndex];
-
-            // Sanity-check: If this node isn't going to be erased, its parent
-            // can't be erased either.
-            const bool nodeWillBeErased = 
-                (newNodeIndex == _Node::_invalidNodeIndex);
-            if (!nodeWillBeErased) {
-                const bool parentWillBeErased = 
-                    PARENT(node) != _Node::_invalidNodeIndex &&
-                    convertToNewIndex(PARENT(node)) == _Node::_invalidNodeIndex;
-                TF_VERIFY(!parentWillBeErased);
+            // Skip nodes that survive.
+            if (getNewIndex(i) != InvalidIdx) {
+                // Sanity-check: if this node survives (and isn't the root), its
+                // parent must survive too.
+                const bool parentSurvives =
+                    nodeLinks.arcParentIndex == InvalidIdx ||
+                    getNewIndex(nodeLinks.arcParentIndex) != InvalidIdx;
+                TF_VERIFY(parentSurvives);
                 continue;
             }
 
-            if (PREV_SIBLING(node) != _Node::_invalidNodeIndex) {
-                _Node& prevNode = nodes[PREV_SIBLING(node)];
-                NEXT_SIBLING(prevNode) = NEXT_SIBLING(node);
+            if (nodeLinks.prevSiblingIndex != InvalidIdx) {
+                links[nodeLinks.prevSiblingIndex]
+                    .nextSiblingIndex = nodeLinks.nextSiblingIndex;
             }
-            if (NEXT_SIBLING(node) != _Node::_invalidNodeIndex) {
-                _Node& nextNode = nodes[NEXT_SIBLING(node)];
-                PREV_SIBLING(nextNode) = PREV_SIBLING(node);
+            if (nodeLinks.nextSiblingIndex != InvalidIdx) {
+                links[nodeLinks.nextSiblingIndex]
+                    .prevSiblingIndex = nodeLinks.prevSiblingIndex;
             }
 
-            _Node& parentNode = nodes[PARENT(node)];
-            if (FIRST_CHILD(parentNode) == oldNodeIndex) {
-                FIRST_CHILD(parentNode) = NEXT_SIBLING(node);
+            _Node::_Indexes &parentNodeLinks = links[nodeLinks.arcParentIndex];
+            if (parentNodeLinks.firstChildIndex == i) {
+                parentNodeLinks.firstChildIndex = nodeLinks.nextSiblingIndex;
             }
-            if (LAST_CHILD(parentNode) == oldNodeIndex) {
-                LAST_CHILD(parentNode) = PREV_SIBLING(node);
+            if (parentNodeLinks.lastChildIndex == i) {
+                parentNodeLinks.lastChildIndex = nodeLinks.prevSiblingIndex;
             }
         }
     }
 
-    // Swap nodes into their new position.
-    _NodePool nodesAfterMapping(newNumNodes);
-    std::vector<_UnsharedData> unsharedAfterMapping(newNumNodes);
+    // Build the new node pool with only the surviving nodes.  If the source
+    // pool is uniquely owned we move each survivor's handles (no reference-
+    // count traffic).  If it is shared we must copy, which reference-counts
+    // only the surviors.  Note that _nodes cannot _gain_ use-counts
+    // concurrently here; that can only happen after the graph is finalized and
+    // published.  So if we start unique, we'll stay unique throughout.  It's
+    // possible that we could _lose_ use-counts concurrently and become unique.
+    // That's fine -- we just take the copy path in that case.
+    const bool sharedPool = (_nodes.use_count() != 1);
 
-    for (size_t i = 0; i < oldNumNodes; ++i) {
-        const size_t oldNodeIndex = i;
-        const size_t newNodeIndex = convertToNewIndex(oldNodeIndex);
-        if (newNodeIndex == _Node::_invalidNodeIndex) {
+    auto newNodes = std::make_shared<_NodePool>(newNumNodes);
+    std::vector<_UnsharedData> newUnshared(newNumNodes);
+
+    for (size_t oldNodeIndex = 0; oldNodeIndex < oldNumNodes; ++oldNodeIndex) {
+        const size_t newNodeIndex = getNewIndex(oldNodeIndex);
+        if (newNodeIndex == InvalidIdx) {
             continue;
         }
 
-        // Swap the node from the old node pool into the new node pool at
-        // the desired location.
-        _Node& oldNode = oldNodes[oldNodeIndex];
-        _Node& newNode = nodesAfterMapping[newNodeIndex];
-        newNode.Swap(oldNode);
+        _Node const &oldNode =   oldNodes [oldNodeIndex];
+        _Node       &newNode = (*newNodes)[newNodeIndex];
 
-        PARENT(newNode)       = convertToNewIndex(PARENT(newNode));
-        ORIGIN(newNode)       = convertToNewIndex(ORIGIN(newNode));
-        FIRST_CHILD(newNode)  = convertToNewIndex(FIRST_CHILD(newNode));
-        LAST_CHILD(newNode)   = convertToNewIndex(LAST_CHILD(newNode));
-        PREV_SIBLING(newNode) = convertToNewIndex(PREV_SIBLING(newNode));
-        NEXT_SIBLING(newNode) = convertToNewIndex(NEXT_SIBLING(newNode));
+        if (sharedPool) {
+            newNode.layerStack  = oldNode.layerStack;
+            newNode.mapToRoot   = oldNode.mapToRoot;
+            newNode.mapToParent = oldNode.mapToParent;
+            newNode.smallInts   = oldNode.smallInts;
+        }
+        else {
+            // Cast away constness just here to move the references.
+            _Node &mutOldNode = const_cast<_Node &>(oldNode);
+            newNode.Swap(mutOldNode);
+        }
 
-        // Copy the corresponding unshared data.
-        unsharedAfterMapping[newNodeIndex] = oldUnshared[oldNodeIndex];
+        // Remap this node's links from the (spliced) scratch buffer.
+        _Node::_Indexes const &oldLinks = links[oldNodeIndex];
+        _Node::_Indexes       &newLinks = newNode.indexes;
+        newLinks.arcParentIndex   = getNewIndex(oldLinks.arcParentIndex);
+        newLinks.arcOriginIndex   = getNewIndex(oldLinks.arcOriginIndex);
+        newLinks.firstChildIndex  = getNewIndex(oldLinks.firstChildIndex);
+        newLinks.lastChildIndex   = getNewIndex(oldLinks.lastChildIndex);
+        newLinks.prevSiblingIndex = getNewIndex(oldLinks.prevSiblingIndex);
+        newLinks.nextSiblingIndex = getNewIndex(oldLinks.nextSiblingIndex);
+
+        newUnshared[newNodeIndex] = std::move(oldUnshared[oldNodeIndex]);
     }
 
-    _nodes->swap(nodesAfterMapping);
-    _unshared.swap(unsharedAfterMapping);
+    _nodes    = std::move(newNodes);
+    _unshared = std::move(newUnshared);
 }
     
 void 
