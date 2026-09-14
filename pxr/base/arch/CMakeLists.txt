@@ -169,6 +169,12 @@ pxr_build_test(testArchTiming
     CPPFILES
         testenv/testTiming.cpp
 )
+pxr_build_test(testArchVirtualMemory
+    LIBRARIES
+        arch
+    CPPFILES
+        testenv/testVirtualMemory.cpp
+)
 pxr_build_test(testArchVsnprintf
     LIBRARIES
         arch
@@ -242,6 +248,9 @@ pxr_register_test(testArchTiming
 )
 pxr_register_test(testArchThreads
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchThreads"
+)
+pxr_register_test(testArchVirtualMemory
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchVirtualMemory"
 )
 pxr_register_test(testArchVsnprintf
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArchVsnprintf"
