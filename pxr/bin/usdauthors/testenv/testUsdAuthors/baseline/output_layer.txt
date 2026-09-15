@@ -1,6 +1,6 @@
 /Malformed
   brokentool
-      prompt:inputs   = (malformed: 2 name(s) but 1 value(s)) names=["prompt", "seed"] values=["A fluffy bunny"]
+      inputs          = (malformed: 2 name(s) but 1 value(s)) names=["prompt", "seed"] values=["A fluffy bunny"]
       softwarePackage = "com.example.brokentool"
       softwareVersion = "0.1"
 
@@ -35,17 +35,13 @@
   hunyuan3d
       creator           = ["Trellis Hunyuan 3D", "John Doe"]
       digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"
+      inputs            = prompt="A fluffy bunny", image="./refs/bunny_front.png", seed="1234567"
       instanceID        = "6530a534-ca8f-487c-8968-0fecd8e717a6"
-      prompt:inputs     = prompt="A fluffy bunny", image="./refs/bunny_front.png", seed="1234567"
       softwarePackage   = "net.trellis3d.hunyuan3d"
       softwareVersion   = "2.1"
       usageTerms        = "CC-BY-SA-4.0"
 
 /Set/TeaCup
-  jane
-      creator         = ["Jane Doe"]
-      softwarePackage = "org.blender"
-      softwareVersion = "4.2"
   layout
       softwarePackage = "com.example.layouttool"
       softwareVersion = "1.0"

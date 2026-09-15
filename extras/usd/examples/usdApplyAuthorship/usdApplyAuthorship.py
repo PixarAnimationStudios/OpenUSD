@@ -70,8 +70,8 @@ def ResolveDigitalSourceType(value):
 def ParseInput(text):
     """Parses a --input name=value pair, splitting on the first '=' only.
 
-    Values are stored in the index-matched prompt:inputNames and
-    prompt:inputValues arrays, not as 'name=value' strings.
+    Values are stored in the index-matched inputNames and
+    inputValues arrays, not as 'name=value' strings.
     """
     name, separator, value = text.partition('=')
     if not separator or not name:
@@ -127,8 +127,7 @@ def GetArgs():
                         help='An input that shaped this step, e.g. '
                              'prompt="A fluffy bunny" or seed=1234567. '
                              'Repeatable. Stored as index-matched '
-                             'prompt:inputNames and prompt:inputValues '
-                             'arrays.')
+                             'inputNames and inputValues arrays.')
     record.add_argument('--usage-terms', default=None,
                         help='License or usage terms. An SPDX identifier such '
                              'as CC-BY-SA-4.0 is preferred, else a URL, else '
@@ -212,8 +211,8 @@ def ApplyRecord(prim, args, created, instanceId):
         api.CreateDescriptionAttr(args.description)
     if args.input:
         # Index-matched, so always authored together and in the same layer.
-        api.CreatePromptInputNamesAttr([name for name, _ in args.input])
-        api.CreatePromptInputValuesAttr([value for _, value in args.input])
+        api.CreateInputNamesAttr([name for name, _ in args.input])
+        api.CreateInputValuesAttr([value for _, value in args.input])
     if created:
         api.CreateCreatedAttr(created)
     if instanceId:

@@ -22,8 +22,8 @@ def Xform "Set" (
         uniform string authorship:hunyuan3d:softwareVersion = "2.1"
         uniform string authorship:hunyuan3d:digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"
         uniform string[] authorship:hunyuan3d:creator = ["Trellis Hunyuan 3D", "John Doe"]
-        uniform string[] authorship:hunyuan3d:prompt:inputNames = ["prompt", "image", "seed"]
-        uniform string[] authorship:hunyuan3d:prompt:inputValues = ["A fluffy bunny", "./refs/bunny_front.png", "1234567"]
+        uniform string[] authorship:hunyuan3d:inputNames = ["prompt", "image", "seed"]
+        uniform string[] authorship:hunyuan3d:inputValues = ["A fluffy bunny", "./refs/bunny_front.png", "1234567"]
         uniform string authorship:hunyuan3d:instanceID = "6530a534-ca8f-487c-8968-0fecd8e717a6"
         uniform string authorship:hunyuan3d:usageTerms = "CC-BY-SA-4.0"
 
@@ -37,17 +37,15 @@ def Xform "Set" (
 
     def Mesh "TeaCup" (
         apiSchemas = ["AuthorshipAPI:layout"]
+        prepend references = @./teacup_jane_source.usda@
     )
     {
-        # The explicit apiSchemas list above omits "AuthorshipAPI:jane", so the
-        # composed prim does not report that record even though its properties
-        # compose and remain readable. Only --deep finds it.
+        # The reference applies "AuthorshipAPI:jane" for real, in a weaker
+        # layer. The explicit apiSchemas list above omits it, so the composed
+        # prim does not report that record even though its properties compose
+        # and remain readable. Only --deep finds it.
         uniform string authorship:layout:softwarePackage = "com.example.layouttool"
         uniform string authorship:layout:softwareVersion = "1.0"
-
-        uniform string authorship:jane:softwarePackage = "org.blender"
-        uniform string authorship:jane:softwareVersion = "4.2"
-        uniform string[] authorship:jane:creator = ["Jane Doe"]
     }
 }
 
@@ -65,13 +63,13 @@ def Mesh "Malformed" (
     prepend apiSchemas = ["AuthorshipAPI:brokentool"]
 )
 {
-    # prompt:inputNames and prompt:inputValues must be index-matched. They are
+    # inputNames and inputValues must be index-matched. They are
     # not here, so the record should be reported as malformed rather than
     # mispaired.
     uniform string authorship:brokentool:softwarePackage = "com.example.brokentool"
     uniform string authorship:brokentool:softwareVersion = "0.1"
-    uniform string[] authorship:brokentool:prompt:inputNames = ["prompt", "seed"]
-    uniform string[] authorship:brokentool:prompt:inputValues = ["A fluffy bunny"]
+    uniform string[] authorship:brokentool:inputNames = ["prompt", "seed"]
+    uniform string[] authorship:brokentool:inputValues = ["A fluffy bunny"]
 }
 
 def Mesh "OlderBlender" (

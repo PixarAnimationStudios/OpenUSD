@@ -48,22 +48,22 @@ void Configure(CLI::App *app, Args &args) {
         ->required();
     app->add_flag(
         "-d,--deep", args.deep,
-        "Gather records from every prim spec instead of the composed prim. "
+        "Gathers records from every prim spec instead of the composed prim. "
         "Finds records shadowed by an explicit apiSchemas list in a stronger "
-        "layer, records authored without applying the schema, and records "
-        "clobbered by the same instance name in another layer. Slower.");
+        "layer, and records clobbered by the same instance name in another "
+        "layer. Slower.");
     app->add_flag(
         "--unloaded", args.unloaded, "Do not load payloads.");
     app->add_flag(
         "-s,--summary", args.summary,
-        "Print only a summary: how many records were found, and the tally of "
-        "software packages and digital source types.");
+        "Prints a summary of found records, including software package and "
+        "digital source type tallies.");
     app->add_flag(
         "-l,--layer", args.layer,
-        "Read the input as a single layer and compose nothing, reporting only "
-        "what that layer authors. Reaches specs no stage reports, including "
-        "those inside variants that are not selected. Ignores --deep and "
-        "--unloaded, which are about composition.");
+        "Inspects a single layer without composition. Reaches specs "
+        "unreachable via composed stages, such as those inside unselected "
+        "variants. Ignores --deep and --unloaded, which are about "
+        "composition.");
 }
 
 // Arrays are joined so a field stays on one line.
@@ -109,8 +109,8 @@ GetStringArray(const UsdAttribute &attr)
     return array;
 }
 
-// Pairs the index-matched inputNames and inputValues. A length mismatch means
-// the record is malformed, so say so rather than mispairing.
+// Pairs the index-matched names and values. A length mismatch means the
+// record is malformed, so say so rather than mispairing.
 std::string
 GetDisplayInputs(const VtArray<std::string> &names,
                  const VtArray<std::string> &values)
@@ -134,8 +134,8 @@ GetDisplayInputs(const VtArray<std::string> &names,
 std::string
 GetDisplayInputs(const UsdMediaAuthorshipAPI &record)
 {
-    return GetDisplayInputs(GetStringArray(record.GetPromptInputNamesAttr()),
-                            GetStringArray(record.GetPromptInputValuesAttr()));
+    return GetDisplayInputs(GetStringArray(record.GetInputNamesAttr()),
+                            GetStringArray(record.GetInputValuesAttr()));
 }
 
 // The authored fields of one record. Read generically from the property
@@ -165,8 +165,8 @@ GetAuthoredFields(const UsdMediaAuthorshipAPI &record)
         }
 
         // The two input arrays are reported together, below.
-        if (baseName == "prompt:inputNames" ||
-                baseName == "prompt:inputValues") {
+        if (baseName == "inputNames" ||
+                baseName == "inputValues") {
             continue;
         }
 
@@ -177,9 +177,9 @@ GetAuthoredFields(const UsdMediaAuthorshipAPI &record)
         fields.emplace_back(baseName.GetString(), value);
     }
 
-    if (record.GetPromptInputNamesAttr().HasAuthoredValue() ||
-            record.GetPromptInputValuesAttr().HasAuthoredValue()) {
-        fields.emplace_back("prompt:inputs", GetDisplayInputs(record));
+    if (record.GetInputNamesAttr().HasAuthoredValue() ||
+            record.GetInputValuesAttr().HasAuthoredValue()) {
+        fields.emplace_back("inputs", GetDisplayInputs(record));
     }
 
     std::sort(fields.begin(), fields.end());
@@ -331,11 +331,11 @@ GetAuthoredFieldsInLayer(const SdfLayerHandle &layer,
                 SdfPath::JoinIdentifier(
                     UsdMediaTokens->authorship, instanceName)).first;
 
-        if (baseName == "prompt:inputNames") {
+        if (baseName == "inputNames") {
             if (value.IsHolding<VtArray<std::string>>()) {
                 inputNames = value.UncheckedGet<VtArray<std::string>>();
             }
-        } else if (baseName == "prompt:inputValues") {
+        } else if (baseName == "inputValues") {
             if (value.IsHolding<VtArray<std::string>>()) {
                 inputValues = value.UncheckedGet<VtArray<std::string>>();
             }
@@ -345,7 +345,7 @@ GetAuthoredFieldsInLayer(const SdfLayerHandle &layer,
     }
 
     if (!inputNames.empty() || !inputValues.empty()) {
-        fields.emplace_back("prompt:inputs",
+        fields.emplace_back("inputs",
                             GetDisplayInputs(inputNames, inputValues));
     }
 
@@ -424,8 +424,9 @@ int USDAuthors(const Args &args) {
             : UsdStage::Open(resolved);
 
         if (errMark.IsClean() && stage) {
-            const std::vector<UsdMediaAuthorshipAPI> records =
-                UsdMediaAuthorshipAPI::GetAllOnStage(stage, args.deep);
+            const std::vector<UsdMediaAuthorshipAPI> records = args.deep
+                ? UsdMediaAuthorshipAPI::GetAllInPrimStacks(stage)
+                : UsdMediaAuthorshipAPI::GetAllOnStage(stage);
 
             if (args.summary) {
                 PrintSummary(records);
@@ -454,13 +455,13 @@ int USDAuthors(const Args &args) {
 
 int main(int argc, char const *argv[]) {
     CLI::App app(
-        "usdauthors : Lists the authorship records in a USD file, grouped by\n"
-        "the prims they apply to. Each record describes one authoring step,\n"
-        "such as a generation run, an export, or a cleanup session.\n"
+        "usdauthors : Lists authorship records in a USD file, grouped by\n"
+        "prim. Each record represents a single authoring step (e.g.,\n"
+        "generation, export, or manual cleanup).\n"
         "\n"
-        "Records are read from the composed stage. Use --deep to read them from\n"
-        "every contributing prim spec instead, which also reveals records that\n"
-        "composition hid or collapsed, or --layer to report only what a single\n"
+        "Records are read from the composed stage. Use --deep to read from\n"
+        "every contributing prim spec instead, revealing records hidden or\n"
+        "collapsed by composition, or --layer to report only what a single\n"
         "layer authors.\n",
         "usdauthors");
 

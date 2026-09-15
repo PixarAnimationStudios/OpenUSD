@@ -37,17 +37,22 @@ class SdfAssetPath;
 ///
 /// Records who or what authored a prim.
 /// 
-/// Each record describes a single authoring step, like a generative AI run,
-/// an export from a DCC, or a manual cleanup session. Because multiple
-/// records can be applied, a prim can carry its full history of contributors
-/// without them clobbering each other.
+/// Each record describes one authoring step, such as a generative AI run,
+/// an export from a DCC, or a manual cleanup session. A prim can carry
+/// its full history of contributors, provided that each step is recorded
+/// with a unique-to-the-prim schema instance name.
 /// 
-/// This schema provides a way to record authorship but does not verify or
-/// sign it. It relies on the honor system to help with regulatory
-/// compliance and artist credit. copyrightOwner records an ownership claim;
-/// it does not establish one.
+/// The schema may also be applied to any of a prim's ancestors.
+/// Authorship aggregates down the namespace hierarchy. A prim's own
+/// records add to, rather than override, its ancestors' records.
+/// 
+/// Provides a standardized, unverified record of authorship. This is not
+/// a cryptographic signature, and `copyrightOwner` represents a claim
+/// rather than a legal guarantee.
 /// 
 /// \sa UsdMediaAuthorshipAPI::GetAllOnStage()
+/// \sa UsdMediaAuthorshipAPI::ComputeAccumulatedRecords()
+/// \sa UsdMediaAuthorshipAPI::GetAllInPrimStacks()
 /// 
 ///
 class UsdMediaAuthorshipAPI : public UsdAPISchemaBase
@@ -216,14 +221,16 @@ public:
     // --------------------------------------------------------------------- //
     // SOFTWAREPACKAGE 
     // --------------------------------------------------------------------- //
-    /// The tool or system that most directly wrote the USD data for
-    /// this prim. This is always a tool, like 'org.blender', not a person.
-    /// People go in 'creator'. If an AI model runs inside another tool,
-    /// this should name the model.
+    /// The tool or system that most directly wrote the USD data
+    /// for this prim. Must be a tool (e.g., `org.blender`), not a
+    /// person; human contributors belong in `creator`. If an AI model
+    /// runs inside a host application, name the model itself. If someone
+    /// authored the data directly with the OpenUSD API in an unnamed
+    /// script, the softwarePackage would be `OpenUSD`.
     /// 
-    /// We recommend using reverse domain notation (e.g., 'net.trellis3d.hunyuan3d')
-    /// to avoid name conflicts. No network lookup or validation is performed;
-    /// it is just a unique identifier. Compare values case-insensitively.
+    /// Reverse domain notation is recommended (e.g.,
+    /// `net.trellis3d.hunyuan3d`) to minimize name conflicts. Values are
+    /// unvalidated and compared case-insensitively.
     ///
     /// | ||
     /// | -- | -- |
@@ -246,11 +253,10 @@ public:
     // --------------------------------------------------------------------- //
     // SOFTWAREVERSION 
     // --------------------------------------------------------------------- //
-    /// The version of the softwarePackage that created this record.
-    /// It versions the tool itself, not the asset. For hosted services
-    /// without a stable version, use whatever label they provide, like a
-    /// build hash. Rely on the 'created' timestamp to pin down which
-    /// iteration was used.
+    /// The version of the softwarePackage that created this
+    /// record, not of the asset. If a hosted service provides no stable
+    /// version, use the provided build label or hash, and rely on
+    /// `created` to pin down the iteration's ordering.
     ///
     /// | ||
     /// | -- | -- |
@@ -273,14 +279,13 @@ public:
     // --------------------------------------------------------------------- //
     // DIGITALSOURCETYPE 
     // --------------------------------------------------------------------- //
-    /// A URI describing the nature of the creative process, for
-    /// example whether it was human-made or AI-generated.
+    /// A URI describing the nature of the creative process, such
+    /// as whether the content is human-made or AI-generated.
     /// 
-    /// We recommend using the IPTC Digital Source Type vocabulary (e.g., 
-    /// 'trainedAlgorithmicMedia'). This is the main field tools should 
-    /// check to identify AI content. Tools should 'fail safe': if no 
-    /// record in the hierarchy specifies an AI source, the content should 
-    /// not be assumed to be AI-generated.
+    /// The IPTC Digital Source Type vocabulary is recommended (e.g.,
+    /// `trainedAlgorithmicMedia`). Tools evaluating AI content should
+    /// check this field across the prim's accumulated ancestry and default
+    /// to assuming non-AI generation if an AI source type is absent.
     ///
     /// | ||
     /// | -- | -- |
@@ -303,9 +308,9 @@ public:
     // --------------------------------------------------------------------- //
     // CREATOR 
     // --------------------------------------------------------------------- //
-    /// A list of human-friendly names for the artists, studios, or 
-    /// services that contributed to this authoring step. This is intended 
-    /// for display and corresponds to 'dc:creator'.
+    /// Human-readable names of the artists, studios, or
+    /// services that contributed to this authoring step. Intended for
+    /// display. Corresponds to `dc:creator`.
     ///
     /// | ||
     /// | -- | -- |
@@ -328,10 +333,10 @@ public:
     // --------------------------------------------------------------------- //
     // DESCRIPTION 
     // --------------------------------------------------------------------- //
-    /// A free-form description of how the prim was created. 
-    /// For AI content, use 'prompt:inputNames' and 'prompt:inputValues' 
-    /// for the specific generation inputs instead. This field is best for 
-    /// technique notes, reference material, or historical context.
+    /// Free-form description of how the prim was created. Better
+    /// suited to technique notes, reference material, or history. For
+    /// specific, itemized inputs, prefer `inputNames` and `inputValues`
+    /// instead.
     ///
     /// | ||
     /// | -- | -- |
@@ -352,67 +357,68 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
-    // PROMPTINPUTNAMES 
+    // INPUTNAMES 
     // --------------------------------------------------------------------- //
-    /// Names of the specific inputs that shaped an AI or algorithmic 
-    /// generation, like 'prompt', 'seed', or 'guidance'. 
+    /// Names of the inputs that shaped this authoring step, e.g.,
+    /// `prompt`, `seed`, `guidance`, or `referenceImage`. Not specific to
+    /// generative AI; a human authoring step can record its reference
+    /// art, schematics, or design specs the same way.
     /// 
-    /// These are index-matched with 'prompt:inputValues'. Both arrays
-    /// must be the same length. Author them together in the same layer,
-    /// since composition could otherwise pull them out of alignment.
-    /// Treat a length mismatch as a malformed record.
+    /// Must be index-matched with `inputValues` and authored in the same
+    /// layer to ensure composition aligns them correctly. Length
+    /// mismatches invalidate the record; readers should not attempt to
+    /// guess the pairing.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `uniform string[] prompt:inputNames` |
+    /// | Declaration | `uniform string[] inputNames` |
     /// | C++ Type | VtArray<std::string> |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->StringArray |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDMEDIA_API
-    UsdAttribute GetPromptInputNamesAttr() const;
+    UsdAttribute GetInputNamesAttr() const;
 
-    /// See GetPromptInputNamesAttr(), and also 
+    /// See GetInputNamesAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDMEDIA_API
-    UsdAttribute CreatePromptInputNamesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateInputNamesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // PROMPTINPUTVALUES 
+    // INPUTVALUES 
     // --------------------------------------------------------------------- //
-    /// Values for the inputs named in 'prompt:inputNames'. 
-    /// These are simple strings and not 'asset' paths, so that reference 
-    /// images or other inputs aren't accidentally resolved or packaged 
-    /// along with the asset.
+    /// Values for the inputs named in `inputNames`,
+    /// matched by index. Authored as plain strings rather than `asset`
+    /// paths to prevent reference images or local files from being
+    /// resolved or packaged with the asset.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `uniform string[] prompt:inputValues` |
+    /// | Declaration | `uniform string[] inputValues` |
     /// | C++ Type | VtArray<std::string> |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->StringArray |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDMEDIA_API
-    UsdAttribute GetPromptInputValuesAttr() const;
+    UsdAttribute GetInputValuesAttr() const;
 
-    /// See GetPromptInputValuesAttr(), and also 
+    /// See GetInputValuesAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDMEDIA_API
-    UsdAttribute CreatePromptInputValuesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateInputValuesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
     // CREATED 
     // --------------------------------------------------------------------- //
-    /// The date and time this specific authoring step occurred, 
-    /// formatted as an ISO 8601 timestamp (e.g., '2025-02-16T12:03:17+01:00'). 
-    /// It tracks this iteration, not necessarily when the asset was 
-    /// first ever created.
+    /// An ISO 8601 timestamp indicating when this authoring step
+    /// occurred (e.g., `2025-02-16T12:03:17+01:00`), which may differ from
+    /// the original creation time of the asset.
     ///
     /// | ||
     /// | -- | -- |
@@ -435,23 +441,19 @@ public:
     // --------------------------------------------------------------------- //
     // INSTANCEID 
     // --------------------------------------------------------------------- //
-    /// A unique ID for this specific run's output, like a single
-    /// generative AI result. We recommend using a UUID4.
+    /// A unique identifier for this run's output, such as a
+    /// single generative AI result. A UUID4 is recommended. Do not encode
+    /// personal author information.
     /// 
-    /// This is unrelated to USD native instancing. It is also unrelated to
-    /// this schema's own applied-API instance name. It should not contain
-    /// personal information about the author.
+    /// Unrelated to USD native instancing and unrelated to this schema's
+    /// applied instance name.
     /// 
-    /// This identifies a run's output, not a reproducible recipe: the same
-    /// inputs are not guaranteed to produce an identical result again. It is
-    /// also not globally unique. No claim is made that it won't coincide
-    /// with an asset identifier, a database key, an XMP DocumentID, or any
-    /// other identifier in a pipeline.
-    /// 
-    /// Named after xmpMM:InstanceID, but broader in scope: XMP's identifies
-    /// one rendition of one resource, while this one identifies an
-    /// authoring step's output, which may span several prims. Don't treat
-    /// the two as equivalent when round-tripping.
+    /// Identifies an output, not a reproducible recipe; identical inputs
+    /// do not guarantee identical results. Uniqueness is not guaranteed
+    /// across external pipelines. Named after `xmpMM:InstanceID` but
+    /// identifies an authoring step's output (which may span several
+    /// prims) rather than a single resource rendition. Not directly
+    /// equivalent when round-tripping.
     ///
     /// | ||
     /// | -- | -- |
@@ -476,11 +478,11 @@ public:
     // --------------------------------------------------------------------- //
     /// The license or usage terms for this asset.
     /// 
-    /// We recommend using an SPDX identifier (e.g., 'CC-BY-4.0' or 'MIT')
-    /// whenever possible. If the license isn't in the SPDX list, a URL to
-    /// the license text is next best. Full text inline is the last resort.
-    /// If no terms are provided, no specific license should be assumed.
-    /// Corresponds to 'xmpRights:UsageTerms'.
+    /// SPDX identifiers are preferred (e.g., `CC-BY-4.0` or `MIT`) to
+    /// allow programmatic evaluation. Otherwise, provide a URL to the
+    /// license text, or the full text as a fallback. If unauthored, no
+    /// specific license or rights should be assumed. Corresponds to
+    /// `xmpRights:UsageTerms`.
     ///
     /// | ||
     /// | -- | -- |
@@ -503,9 +505,9 @@ public:
     // --------------------------------------------------------------------- //
     // COPYRIGHTOWNER 
     // --------------------------------------------------------------------- //
-    /// The entities that hold copyright for this content, which may 
-    /// be different from the creators (e.g., a studio owning an artist's 
-    /// work). Corresponds to 'xmpRights:Owner'.
+    /// Entities holding copyright in this content, which may
+    /// differ from `creator` (e.g., a studio owning an artist's work).
+    /// Corresponds to `xmpRights:Owner`.
     ///
     /// | ||
     /// | -- | -- |
@@ -528,8 +530,8 @@ public:
     // --------------------------------------------------------------------- //
     // CONTACT 
     // --------------------------------------------------------------------- //
-    /// Contact information for inquiries about this asset, such as
-    /// an email address, a support URL, or a licensing page.
+    /// Contact information for inquiries about this asset, such
+    /// as an email address, support URL, or licensing page.
     ///
     /// | ||
     /// | -- | -- |
@@ -561,91 +563,89 @@ public:
     // --(BEGIN CUSTOM CODE)--
 
     /// Returns every authorship record on \p stage, sorted by prim path then
-    /// instance name. Prims beneath native instances are reached through the
-    /// stage's prototypes, so a record inside a prototype is reported against
-    /// the prototype rather than once per instance. Inactive and abstract prims
-    /// are included. Note that descendants of an inactive prim are not
-    /// composed onto the stage at all, so their records cannot be reported.
+    /// instance name. Records inside a native instance's prototype are
+    /// reported once, against the prototype, not once per instance.
+    /// Inactive and abstract prims are included, but an inactive prim's
+    /// descendants are not (they aren't composed at all). Reflects the
+    /// stage's current load state and variant selections.
     ///
-    /// If \p searchPrimStack is \c false (the default), records are those the
-    /// composed prim reports through UsdPrim::GetAppliedSchemas().
-    ///
-    /// If \p searchPrimStack is \c true, records are gathered from every
-    /// SdfPrimSpec contributing to each prim instead. Nothing is deduplicated.
-    /// A record authored in three layers is returned three times, in
-    /// strongest-to-weakest order, so that callers can see what composition
-    /// collapsed. Resolving those opinions is composition's job, not this
-    /// method's. This search covers cases the composed prim cannot report:
-    ///
-    /// - A stronger layer authoring an \em explicit \em apiSchemas list can
-    ///   shadow an application coming from a weaker layer such as a reference.
-    ///   The record's properties still compose onto the prim and remain
-    ///   readable, but the schema no longer counts as applied.
-    /// - Authorship properties authored without the schema ever having been
-    ///   applied, which some tools emit.
-    /// - The same instance name authored in several layers, where composition
-    ///   keeps only the strongest opinion for each field.
-    ///
-    /// A returned schema object always reads composed property values, so
-    /// repeated entries read alike. They record that several specs contribute,
-    /// not what each one said. UsdPrim::HasAPI() may report \c false for them.
-    /// Unselected variants are not part of a prim's spec stack, so records
-    /// inside them are not found either way. This search visits every layer
-    /// contributing to every prim and is considerably slower.
+    /// Reports applied schemas as seen by UsdPrim::GetAppliedSchemas() on
+    /// composed prims. \sa GetAllInPrimStacks() for a diagnostic search
+    /// that also finds shadowed or clobbered records.
     USDMEDIA_API
     static std::vector<UsdMediaAuthorshipAPI>
-    GetAllOnStage(const UsdStagePtr &stage, bool searchPrimStack = false);
+    GetAllOnStage(const UsdStagePtr &stage);
 
-    /// Returns the records that apply to \p prim, meaning its own plus those it
-    /// accumulates from its ancestors, sorted by prim path so ancestors come
-    /// first. Compare a record's prim against \p prim to tell an inherited
+    /// Returns the records that apply to \p prim: its own plus those
+    /// accumulated from its ancestors, sorted so ancestors come first.
+    /// Compare a record's prim against \p prim to distinguish an inherited
     /// record from one the prim declared itself.
     ///
-    /// This proposal's convention is that a prim's children accumulate the
-    /// authorship of their ancestors: a child may add its own records but does
-    /// not erase the ones above it. So a hand-modelled prim under an
-    /// AI-authored group carries both records. A tool should surface the mix
-    /// rather than flattening it into a single label.
+    /// A prim's children accumulate their ancestors' authorship without
+    /// erasing it, so a hand-modelled prim under an AI-authored group
+    /// carries both records. Records are never merged, even when they
+    /// share an instance name across prims.
     ///
-    /// Nothing is merged or resolved. Records from different prims stay
-    /// distinct even when they share an instance name, since they describe
-    /// different authoring steps.
-    ///
-    /// \p searchPrimStack behaves as it does for GetAllOnStage().
+    /// Only consults the composed stage; does not accumulate records
+    /// shadowed by explicit `apiSchemas` list-ops. \sa GetAllInPrimStacks().
     USDMEDIA_API
     static std::vector<UsdMediaAuthorshipAPI>
-    ComputeAccumulatedRecords(const UsdPrim &prim,
-                              bool searchPrimStack = false);
+    ComputeAccumulatedRecords(const UsdPrim &prim);
 
-    /// Returns the records on \p prim and everything beneath it, sorted by prim
-    /// path then instance name.
+    /// Returns the records on \p prim and everything beneath it, sorted by
+    /// prim path then instance name. Includes \p prim itself. Prims
+    /// beneath a native instance are skipped; their records live on the
+    /// prototype (see GetAllOnStage()).
     ///
-    /// \p prim itself is included, matching UsdPrimRange. Prims beneath a
-    /// native instance are not visited, since their records live on the
-    /// prototype; use GetAllOnStage() to reach those, or query the prototype
-    /// directly.
-    ///
-    /// \p searchPrimStack behaves as it does for GetAllOnStage().
+    /// Only consults the composed stage. \sa GetAllInPrimStacks().
     USDMEDIA_API
     static std::vector<UsdMediaAuthorshipAPI>
-    GetAllUnder(const UsdPrim &prim, bool searchPrimStack = false);
+    GetAllUnder(const UsdPrim &prim);
+
+    /// Performs a diagnostic search for records unreachable via composed
+    /// views, such as an application shadowed by an explicit apiSchemas
+    /// list in a stronger layer, or the same instance name authored in
+    /// several layers (composition keeps only the strongest opinion).
+    ///
+    /// Scans every SdfPrimSpec on \p stage instead of the composed prim.
+    /// Nothing is deduplicated: a record in three layers is returned
+    /// three times, strongest-to-weakest, so callers can see what
+    /// composition dropped.
+    ///
+    /// Only apiSchemas metadata is scanned, not authored properties, so a
+    /// record whose schema was never applied anywhere is not found.
+    /// Instance names and base names can both be namespaced, so a property
+    /// name alone can't be split back into the two. Repeated entries read
+    /// the same composed values; HasAPI() may report false for them.
+    /// Unselected variants aren't in a prim's prim stack
+    /// (UsdPrim::GetPrimStack()) and aren't found either; use
+    /// GetAllInLayer() for those.
+    ///
+    /// Considerably slower than GetAllOnStage(), ComputeAccumulatedRecords(),
+    /// and GetAllUnder(). Intended for debugging and validation, not
+    /// general use.
+    USDMEDIA_API
+    static std::vector<UsdMediaAuthorshipAPI>
+    GetAllInPrimStacks(const UsdStagePtr &stage);
 
     /// Returns the path of every authorship record authored in \p layer, sorted,
     /// in the <tt><primPath>.authorship:instanceName</tt> form that
-    /// Get(const UsdStagePtr&, const SdfPath&) accepts and
     /// IsAuthorshipAPIPath() parses.
     ///
-    /// This inspects one layer's scene description directly and composes
-    /// nothing, so records in its sublayers and reference targets are not
-    /// included. Use it to ask what a particular layer contributes, for example
-    /// to check a DCC's export. Because it does not compose, it reaches specs
-    /// that no stage would report, including those inside variants that are not
-    /// selected.
+    /// Inspects a single layer's scene description without composition.
+    /// Records in sublayers and reference targets are not included. Use
+    /// this to identify what a specific layer contributes on its own.
+    /// Reaches specs unreachable via composed stages, such as those inside
+    /// unselected variants.
     ///
     /// Paths are returned rather than schema objects because a record found
-    /// this way may have no composed prim to attach one to. Values can be read
-    /// from the layer's specs, or the paths can be passed to
-    /// Get(const UsdStagePtr&, const SdfPath&) once a stage is at hand.
+    /// this way may have no corresponding prim on any stage: it may sit
+    /// beneath a deactivated prim, behind a variant selection nothing
+    /// resolves to, or the layer itself may only be a fragment of a larger
+    /// scene assembled through references or sublayers that carry records
+    /// of their own. There is no guarantee of correspondence between what
+    /// this method reports for a layer and what GetAllOnStage() finds on a
+    /// stage built from it.
     USDMEDIA_API
     static SdfPathVector
     GetAllInLayer(const SdfLayerHandle &layer);

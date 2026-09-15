@@ -77,18 +77,18 @@ struct UsdMediaTokensType {
     /// 
     /// UsdMediaAuthorshipAPI
     const TfToken authorship_MultipleApplyTemplate_DigitalSourceType;
+    /// \brief "authorship:__INSTANCE_NAME__:inputNames"
+    /// 
+    /// UsdMediaAuthorshipAPI
+    const TfToken authorship_MultipleApplyTemplate_InputNames;
+    /// \brief "authorship:__INSTANCE_NAME__:inputValues"
+    /// 
+    /// UsdMediaAuthorshipAPI
+    const TfToken authorship_MultipleApplyTemplate_InputValues;
     /// \brief "authorship:__INSTANCE_NAME__:instanceID"
     /// 
     /// UsdMediaAuthorshipAPI
     const TfToken authorship_MultipleApplyTemplate_InstanceID;
-    /// \brief "authorship:__INSTANCE_NAME__:prompt:inputNames"
-    /// 
-    /// UsdMediaAuthorshipAPI
-    const TfToken authorship_MultipleApplyTemplate_PromptInputNames;
-    /// \brief "authorship:__INSTANCE_NAME__:prompt:inputValues"
-    /// 
-    /// UsdMediaAuthorshipAPI
-    const TfToken authorship_MultipleApplyTemplate_PromptInputValues;
     /// \brief "authorship:__INSTANCE_NAME__:softwarePackage"
     /// 
     /// UsdMediaAuthorshipAPI

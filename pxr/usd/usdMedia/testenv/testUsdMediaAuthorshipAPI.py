@@ -46,8 +46,8 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
             'authorship:hunyuan3d:digitalSourceType',
             'authorship:hunyuan3d:creator',
             'authorship:hunyuan3d:description',
-            'authorship:hunyuan3d:prompt:inputNames',
-            'authorship:hunyuan3d:prompt:inputValues',
+            'authorship:hunyuan3d:inputNames',
+            'authorship:hunyuan3d:inputValues',
             'authorship:hunyuan3d:created',
             'authorship:hunyuan3d:instanceID',
             'authorship:hunyuan3d:usageTerms',
@@ -71,8 +71,8 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
             'trainedAlgorithmicMedia')
         api.CreateCreatorAttr(['Trellis Hunyuan 3D', 'John Doe'])
         api.CreateDescriptionAttr('Generated, then decimated.')
-        api.CreatePromptInputNamesAttr(['prompt', 'image', 'seed'])
-        api.CreatePromptInputValuesAttr(
+        api.CreateInputNamesAttr(['prompt', 'image', 'seed'])
+        api.CreateInputValuesAttr(
             ['A fluffy bunny', './refs/bunny_front.png', '1234567'])
         api.CreateCreatedAttr('2025-02-16T12:03:17+01:00')
         api.CreateInstanceIDAttr('6530a534-ca8f-487c-8968-0fecd8e717a6')
@@ -91,9 +91,9 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
                          ['Trellis Hunyuan 3D', 'John Doe'])
         self.assertEqual(api.GetDescriptionAttr().Get(),
                          'Generated, then decimated.')
-        self.assertEqual(list(api.GetPromptInputNamesAttr().Get()),
+        self.assertEqual(list(api.GetInputNamesAttr().Get()),
                          ['prompt', 'image', 'seed'])
-        self.assertEqual(list(api.GetPromptInputValuesAttr().Get()),
+        self.assertEqual(list(api.GetInputValuesAttr().Get()),
                          ['A fluffy bunny', './refs/bunny_front.png',
                           '1234567'])
         self.assertEqual(api.GetCreatedAttr().Get(),
@@ -167,7 +167,7 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         stage.DefinePrim('/NoRecords', 'Xform')
         self.assertEqual(UsdMedia.AuthorshipAPI.GetAllOnStage(stage), [])
         self.assertEqual(
-            UsdMedia.AuthorshipAPI.GetAllOnStage(stage, True), [])
+            UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage), [])
 
     def test_GetAllOnStageIncludesInactivePrims(self):
         """A record is worth reporting whether or not its prim is currently
@@ -180,9 +180,13 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         self.assertEqual(_RecordIds(UsdMedia.AuthorshipAPI.GetAllOnStage(stage)),
                          [('/Hidden', 'worldgen')])
 
-    def test_DeepSearchFindsUnappliedProperties(self):
-        """Some tools author the properties without ever applying the schema.
-        The composed prim cannot report those, but the deeper search can."""
+    def test_DeepSearchDoesNotFindNeverAppliedProperties(self):
+        """A property's instance name cannot be split back out of its name
+        reliably: both the instance name and a property's base name may
+        themselves be namespaced, so no fixed token count distinguishes
+        them without already knowing which instance produced the property.
+        A property authored without the schema ever having been applied
+        anywhere is therefore not found, even by the deeper search."""
         layer = Sdf.Layer.CreateAnonymous('.usda')
         spec = Sdf.CreatePrimInLayer(layer, '/Orphan')
         spec.specifier = Sdf.SpecifierDef
@@ -196,26 +200,23 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         self.assertFalse(prim.HasAPI(UsdMedia.AuthorshipAPI, 'ghost'))
 
         self.assertEqual(UsdMedia.AuthorshipAPI.GetAllOnStage(stage), [])
-
-        deep = UsdMedia.AuthorshipAPI.GetAllOnStage(stage, True)
-        self.assertEqual(_RecordIds(deep), [('/Orphan', 'ghost')])
-        # The record reads composed values normally even though the schema was
-        # never applied.
-        self.assertEqual(deep[0].GetSoftwarePackageAttr().Get(), 'com.example.ghost')
-
-    def test_DeepSearchIgnoresUnrelatedProperties(self):
-        layer = Sdf.Layer.CreateAnonymous('.usda')
-        spec = Sdf.CreatePrimInLayer(layer, '/Decoy')
-        spec.specifier = Sdf.SpecifierDef
-        for name in ['authorship', 'authorship:nofield',
-                     'authorship:inst:notAField', 'notauthorship:inst:softwarePackage']:
-            attr = Sdf.AttributeSpec(spec, name, Sdf.ValueTypeNames.String,
-                                     Sdf.VariabilityUniform)
-            attr.default = 'x'
-
-        stage = Usd.Stage.Open(layer)
         self.assertEqual(
-            UsdMedia.AuthorshipAPI.GetAllOnStage(stage, True), [])
+            UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage), [])
+
+    def test_NamespacedInstanceName(self):
+        """Instance names may themselves be namespaced."""
+        stage = Usd.Stage.CreateInMemory()
+        prim = UsdGeom.Mesh.Define(stage, '/World/Bunny').GetPrim()
+        api = UsdMedia.AuthorshipAPI.Apply(prim, 'studio:tool')
+        api.CreateSoftwarePackageAttr('com.example.tool')
+
+        self.assertEqual(api.GetName(), 'studio:tool')
+        self.assertTrue(prim.HasAPI(UsdMedia.AuthorshipAPI, 'studio:tool'))
+        self.assertEqual(api.GetSoftwarePackageAttr().GetName(),
+                         'authorship:studio:tool:softwarePackage')
+        self.assertEqual(
+            [r.GetName() for r in UsdMedia.AuthorshipAPI.GetAllOnStage(stage)],
+            ['studio:tool'])
 
     def test_DeepSearchRecoversShadowedApplication(self):
         """An explicit apiSchemas list in a stronger layer can shadow an
@@ -254,7 +255,7 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
             ['layout'])
         self.assertEqual(
             sorted(r.GetName()
-                   for r in UsdMedia.AuthorshipAPI.GetAllOnStage(stage, True)),
+                   for r in UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage)),
             ['layout', 'rockmaker'])
 
     def test_DeepSearchOneSpecReportedOnce(self):
@@ -263,12 +264,11 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         UsdMedia.AuthorshipAPI.Apply(prim, 'hunyuan3d') \
             .CreateSoftwarePackageAttr('net.trellis3d.hunyuan3d')
 
-        # A record declared in one spec both by apiSchemas and by its
-        # properties is one contribution, not two.
+        # One spec applying one instance is one contribution, not two.
         self.assertEqual(_RecordIds(UsdMedia.AuthorshipAPI.GetAllOnStage(stage)),
                          [('/World/Bunny', 'hunyuan3d')])
         self.assertEqual(
-            _RecordIds(UsdMedia.AuthorshipAPI.GetAllOnStage(stage, True)),
+            _RecordIds(UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage)),
             [('/World/Bunny', 'hunyuan3d')])
 
     def test_DeepSearchReportsClobberedRecordPerSpec(self):
@@ -299,7 +299,7 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
             'com.example.other')
 
         # Two specs contribute, so the deeper search returns two entries.
-        deep = UsdMedia.AuthorshipAPI.GetAllOnStage(stage, True)
+        deep = UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage)
         self.assertEqual(_RecordIds(deep),
                          [('/Bunny', 'blender'), ('/Bunny', 'blender')])
         # Both read composed values; they record that two specs contribute, not
@@ -310,50 +310,6 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
             [spec.attributes['authorship:blender:softwarePackage'].default
              for spec in prim.GetPrimStack()],
             ['com.example.other', 'org.blender'])
-
-    def test_DeepSearchFindsNamespacedInstanceNames(self):
-        """Instance names may themselves be namespaced."""
-        layer = Sdf.Layer.CreateAnonymous('.usda')
-        spec = Sdf.CreatePrimInLayer(layer, '/Prim')
-        spec.specifier = Sdf.SpecifierDef
-        attr = Sdf.AttributeSpec(spec, 'authorship:studio:tool:softwarePackage',
-                                 Sdf.ValueTypeNames.String,
-                                 Sdf.VariabilityUniform)
-        attr.default = 'com.example.tool'
-
-        stage = Usd.Stage.Open(layer)
-        deep = UsdMedia.AuthorshipAPI.GetAllOnStage(stage, True)
-        self.assertEqual(_RecordIds(deep), [('/Prim', 'studio:tool')])
-        self.assertEqual(deep[0].GetSoftwarePackageAttr().Get(), 'com.example.tool')
-
-    def test_DeepSearchFindsNamespacedBaseName(self):
-        """A property base name may itself be namespaced (prompt:inputNames),
-        so the deeper search must not mistake its last segment for the whole
-        base name when locating the instance name ahead of it."""
-        layer = Sdf.Layer.CreateAnonymous('.usda')
-        spec = Sdf.CreatePrimInLayer(layer, '/Prim')
-        spec.specifier = Sdf.SpecifierDef
-        attr = Sdf.AttributeSpec(spec, 'authorship:hunyuan3d:prompt:inputNames',
-                                 Sdf.ValueTypeNames.StringArray,
-                                 Sdf.VariabilityUniform)
-        attr.default = ['prompt']
-
-        stage = Usd.Stage.Open(layer)
-        deep = UsdMedia.AuthorshipAPI.GetAllOnStage(stage, True)
-        self.assertEqual(_RecordIds(deep), [('/Prim', 'hunyuan3d')])
-        self.assertEqual(list(deep[0].GetPromptInputNamesAttr().Get()),
-                         ['prompt'])
-
-        # Combined with a namespaced instance name too.
-        attr2 = Sdf.AttributeSpec(
-            spec, 'authorship:studio:tool:prompt:inputValues',
-            Sdf.ValueTypeNames.StringArray, Sdf.VariabilityUniform)
-        attr2.default = ['A fluffy bunny']
-
-        deep = UsdMedia.AuthorshipAPI.GetAllOnStage(stage, True)
-        self.assertEqual(
-            sorted(_RecordIds(deep)),
-            [('/Prim', 'hunyuan3d'), ('/Prim', 'studio:tool')])
 
     def test_DeepSearchScansEveryListOpType(self):
         """A record is found however its application was list-edited."""
@@ -372,7 +328,7 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
             spec.SetInfo('apiSchemas', MakeListOp(field, name))
 
             stage = Usd.Stage.Open(layer)
-            deep = UsdMedia.AuthorshipAPI.GetAllOnStage(stage, True)
+            deep = UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage)
             self.assertEqual(_RecordIds(deep), [('/Prim', name)],
                              'failed for %s' % field)
 
@@ -442,9 +398,10 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             UsdMedia.AuthorshipAPI.ComputeAccumulatedRecords(Usd.Prim())
 
-    def test_ComputeAccumulatedRecordsDeep(self):
-        """The deeper search applies to every prim in the chain, so a record an
-        ancestor hid is still accumulated."""
+    def test_ComputeAccumulatedRecordsDoesNotFindShadowedAncestors(self):
+        """ComputeAccumulatedRecords() only sees the composed view, so a
+        record an ancestor's explicit apiSchemas list shadows is not
+        accumulated. GetAllInPrimStacks() finds it instead."""
         asset = Sdf.Layer.CreateAnonymous('asset.usda')
         assetStage = Usd.Stage.Open(asset)
         group = assetStage.DefinePrim('/Group', 'Xform')
@@ -467,9 +424,9 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
             _RecordIds(UsdMedia.AuthorshipAPI.ComputeAccumulatedRecords(child)),
             [('/World/Child', 'own')])
         self.assertEqual(
-            _RecordIds(UsdMedia.AuthorshipAPI.ComputeAccumulatedRecords(
-                child, True)),
-            [('/World', 'hidden'), ('/World/Child', 'own')])
+            sorted(r.GetName()
+                   for r in UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage)),
+            ['hidden', 'own'])
 
     def test_GetAllUnder(self):
         stage = Usd.Stage.CreateInMemory()
@@ -498,20 +455,28 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             UsdMedia.AuthorshipAPI.GetAllUnder(Usd.Prim())
 
-    def test_GetAllUnderDeep(self):
-        layer = Sdf.Layer.CreateAnonymous('.usda')
-        spec = Sdf.CreatePrimInLayer(layer, '/Root/Child')
-        spec.specifier = Sdf.SpecifierDef
-        attr = Sdf.AttributeSpec(spec, 'authorship:ghost:softwarePackage',
-                                 Sdf.ValueTypeNames.String,
-                                 Sdf.VariabilityUniform)
-        attr.default = 'com.example.ghost'
+    def test_GetAllUnderDoesNotFindShadowedRecords(self):
+        """GetAllUnder() only sees the composed view, so a record an explicit
+        apiSchemas list shadows is not found this way. GetAllInPrimStacks()
+        finds it instead."""
+        asset = Sdf.Layer.CreateAnonymous('asset.usda')
+        assetStage = Usd.Stage.Open(asset)
+        ghost = assetStage.DefinePrim('/Ghost', 'Xform')
+        UsdMedia.AuthorshipAPI.Apply(ghost, 'ghost') \
+            .CreateSoftwarePackageAttr('com.example.ghost')
+        assetStage.SetDefaultPrim(ghost)
 
-        stage = Usd.Stage.Open(layer)
-        root = stage.GetPrimAtPath('/Root')
-        self.assertEqual(UsdMedia.AuthorshipAPI.GetAllUnder(root), [])
+        root = Sdf.Layer.CreateAnonymous('scene.usda')
+        stage = Usd.Stage.Open(root)
+        child = stage.DefinePrim('/Root/Child', 'Xform')
+        child.GetReferences().AddReference(asset.identifier)
+        root.GetPrimAtPath('/Root/Child').SetInfo(
+            'apiSchemas', Sdf.TokenListOp.CreateExplicit([]))
+
+        rootPrim = stage.GetPrimAtPath('/Root')
+        self.assertEqual(UsdMedia.AuthorshipAPI.GetAllUnder(rootPrim), [])
         self.assertEqual(
-            _RecordIds(UsdMedia.AuthorshipAPI.GetAllUnder(root, True)),
+            _RecordIds(UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage)),
             [('/Root/Child', 'ghost')])
 
     def test_GetAllInLayerScopedToThatLayer(self):
@@ -542,7 +507,7 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
             ['inroot', 'inweak'])
 
     def test_GetAllInLayerFindsUnselectedVariants(self):
-        """Specs inside an unselected variant are not part of any prim's spec
+        """Specs inside an unselected variant are not part of any prim's prim
         stack, so no stage can report them. A layer query can."""
         layer = Sdf.Layer.CreateAnonymous('variants.usda')
         stage = Usd.Stage.Open(layer)
@@ -558,7 +523,7 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
 
         self.assertEqual(UsdMedia.AuthorshipAPI.GetAllOnStage(stage), [])
         self.assertEqual(
-            UsdMedia.AuthorshipAPI.GetAllOnStage(stage, True), [])
+            UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage), [])
         self.assertEqual([str(p) for p in
                           UsdMedia.AuthorshipAPI.GetAllInLayer(layer)],
                          ['/Prim{v=on}.authorship:invariant'])
@@ -589,6 +554,8 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
     def test_InvalidStage(self):
         with self.assertRaises(Tf.ErrorException):
             UsdMedia.AuthorshipAPI.GetAllOnStage(None)
+        with self.assertRaises(Tf.ErrorException):
+            UsdMedia.AuthorshipAPI.GetAllInPrimStacks(None)
 
 
 if __name__ == '__main__':

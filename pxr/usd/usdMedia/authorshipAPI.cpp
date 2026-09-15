@@ -79,9 +79,9 @@ UsdMediaAuthorshipAPI::IsSchemaPropertyBaseName(const TfToken &baseName)
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
             UsdMediaTokens->authorship_MultipleApplyTemplate_Description),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
-            UsdMediaTokens->authorship_MultipleApplyTemplate_PromptInputNames),
+            UsdMediaTokens->authorship_MultipleApplyTemplate_InputNames),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
-            UsdMediaTokens->authorship_MultipleApplyTemplate_PromptInputValues),
+            UsdMediaTokens->authorship_MultipleApplyTemplate_InputValues),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
             UsdMediaTokens->authorship_MultipleApplyTemplate_Created),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
@@ -301,21 +301,21 @@ UsdMediaAuthorshipAPI::CreateDescriptionAttr(VtValue const &defaultValue, bool w
 }
 
 UsdAttribute
-UsdMediaAuthorshipAPI::GetPromptInputNamesAttr() const
+UsdMediaAuthorshipAPI::GetInputNamesAttr() const
 {
     return GetPrim().GetAttribute(
         _GetNamespacedPropertyName(
             GetName(),
-            UsdMediaTokens->authorship_MultipleApplyTemplate_PromptInputNames));
+            UsdMediaTokens->authorship_MultipleApplyTemplate_InputNames));
 }
 
 UsdAttribute
-UsdMediaAuthorshipAPI::CreatePromptInputNamesAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdMediaAuthorshipAPI::CreateInputNamesAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
                        _GetNamespacedPropertyName(
                             GetName(),
-                           UsdMediaTokens->authorship_MultipleApplyTemplate_PromptInputNames),
+                           UsdMediaTokens->authorship_MultipleApplyTemplate_InputNames),
                        SdfValueTypeNames->StringArray,
                        /* custom = */ false,
                        SdfVariabilityUniform,
@@ -324,21 +324,21 @@ UsdMediaAuthorshipAPI::CreatePromptInputNamesAttr(VtValue const &defaultValue, b
 }
 
 UsdAttribute
-UsdMediaAuthorshipAPI::GetPromptInputValuesAttr() const
+UsdMediaAuthorshipAPI::GetInputValuesAttr() const
 {
     return GetPrim().GetAttribute(
         _GetNamespacedPropertyName(
             GetName(),
-            UsdMediaTokens->authorship_MultipleApplyTemplate_PromptInputValues));
+            UsdMediaTokens->authorship_MultipleApplyTemplate_InputValues));
 }
 
 UsdAttribute
-UsdMediaAuthorshipAPI::CreatePromptInputValuesAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdMediaAuthorshipAPI::CreateInputValuesAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
                        _GetNamespacedPropertyName(
                             GetName(),
-                           UsdMediaTokens->authorship_MultipleApplyTemplate_PromptInputValues),
+                           UsdMediaTokens->authorship_MultipleApplyTemplate_InputValues),
                        SdfValueTypeNames->StringArray,
                        /* custom = */ false,
                        SdfVariabilityUniform,
@@ -483,8 +483,8 @@ UsdMediaAuthorshipAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdMediaTokens->authorship_MultipleApplyTemplate_DigitalSourceType,
         UsdMediaTokens->authorship_MultipleApplyTemplate_Creator,
         UsdMediaTokens->authorship_MultipleApplyTemplate_Description,
-        UsdMediaTokens->authorship_MultipleApplyTemplate_PromptInputNames,
-        UsdMediaTokens->authorship_MultipleApplyTemplate_PromptInputValues,
+        UsdMediaTokens->authorship_MultipleApplyTemplate_InputNames,
+        UsdMediaTokens->authorship_MultipleApplyTemplate_InputValues,
         UsdMediaTokens->authorship_MultipleApplyTemplate_Created,
         UsdMediaTokens->authorship_MultipleApplyTemplate_InstanceID,
         UsdMediaTokens->authorship_MultipleApplyTemplate_UsageTerms,
@@ -554,8 +554,8 @@ _GetSchemaIdentifier()
     return identifier;
 }
 
-// Returns the instance name from e.g. "AuthorshipAPI:hunyuan3d", or an empty
-// token if \p apiSchemaName is not this schema.
+// Instance name from e.g. "AuthorshipAPI:hunyuan3d", or empty if not this
+// schema.
 static TfToken
 _GetInstanceNameFromAPISchemaName(const TfToken &apiSchemaName)
 {
@@ -567,86 +567,38 @@ _GetInstanceNameFromAPISchemaName(const TfToken &apiSchemaName)
     return typeNameAndInstance.second;
 }
 
-// Returns the instance name from e.g. "authorship:hunyuan3d:softwarePackage"
-// or "authorship:hunyuan3d:prompt:inputNames", or an empty token if
-// \p propertyName is not one of this schema's properties.
-static TfToken
-_GetInstanceNameFromPropertyName(const std::string &propertyName)
-{
-    const TfTokenVector tokens =
-        SdfPath::TokenizeIdentifierAsTokens(propertyName);
-
-    // We need at least the namespace prefix, an instance name, and a property
-    // base name belonging to this schema.
-    if (tokens.size() < 3 || tokens.front() != UsdMediaTokens->authorship) {
-        return TfToken();
-    }
-
-    // A property base name can itself be namespaced (e.g. prompt:inputNames),
-    // so try the longest possible base name first: whichever trailing run of
-    // tokens matches a known property, the tokens between the namespace
-    // prefix and that run are the instance name, which may itself be
-    // namespaced too.
-    for (size_t baseNameLen = tokens.size() - 2; ; --baseNameLen) {
-        const TfTokenVector baseNameTokens(
-            tokens.end() - baseNameLen, tokens.end());
-        const TfToken baseName(SdfPath::JoinIdentifier(baseNameTokens));
-
-        if (UsdMediaAuthorshipAPI::IsSchemaPropertyBaseName(baseName)) {
-            const TfTokenVector instanceNameTokens(
-                tokens.begin() + 1, tokens.end() - baseNameLen);
-            return TfToken(SdfPath::JoinIdentifier(instanceNameTokens));
-        }
-
-        if (baseNameLen == 1) {
-            break;
-        }
-    }
-
-    return TfToken();
-}
-
-// Appends the instance name of every record \p spec contributes, sorted. A spec
-// usually declares a record both in apiSchemas and as properties, which is one
-// contribution, so names are unique per spec.
+// Appends the instance name of every record \p spec applies. Only scans
+// apiSchemas, since a bare property name can't be split back into
+// instance and base name reliably (both can be namespaced).
 static void
 _AppendInstanceNamesInSpec(const SdfPrimSpecHandle &spec,
                            std::vector<TfToken> *instanceNames)
 {
-    std::set<TfToken> found;
-
-    // We scan every operation rather than the applied result, since an opinion
-    // shadowed during composition is exactly what this search is for.
-    if (spec->HasInfo(UsdTokens->apiSchemas)) {
-        const VtValue value = spec->GetInfo(UsdTokens->apiSchemas);
-        if (value.IsHolding<SdfTokenListOp>()) {
-            const SdfTokenListOp &listOp =
-                value.UncheckedGet<SdfTokenListOp>();
-            for (const SdfListOpType listOpType :
-                    {SdfListOpTypeExplicit, SdfListOpTypeAdded,
-                     SdfListOpTypeOrdered, SdfListOpTypePrepended,
-                     SdfListOpTypeAppended}) {
-                for (const TfToken &apiSchemaName :
-                        listOp.GetItems(listOpType)) {
-                    const TfToken instanceName =
-                        _GetInstanceNameFromAPISchemaName(apiSchemaName);
-                    if (!instanceName.IsEmpty()) {
-                        found.insert(instanceName);
-                    }
-                }
-            }
-        }
+    if (!spec->HasInfo(UsdTokens->apiSchemas)) {
+        return;
+    }
+    const VtValue value = spec->GetInfo(UsdTokens->apiSchemas);
+    if (!value.IsHolding<SdfTokenListOp>()) {
+        return;
     }
 
-    // Properties authored without the schema ever having been applied.
-    for (const SdfPropertySpecHandle &propertySpec : spec->GetProperties()) {
-        if (!propertySpec) {
-            continue;
-        }
-        const TfToken instanceName =
-            _GetInstanceNameFromPropertyName(propertySpec->GetName());
-        if (!instanceName.IsEmpty()) {
-            found.insert(instanceName);
+    // A token could appear in more than one list-op field, so dedup with a
+    // set.
+    std::set<TfToken> found;
+    const SdfTokenListOp &listOp = value.UncheckedGet<SdfTokenListOp>();
+
+    // Scan every op, not just the applied result: shadowed opinions are
+    // exactly what this search is for.
+    for (const SdfListOpType listOpType :
+            {SdfListOpTypeExplicit, SdfListOpTypeAdded,
+             SdfListOpTypeOrdered, SdfListOpTypePrepended,
+             SdfListOpTypeAppended}) {
+        for (const TfToken &apiSchemaName : listOp.GetItems(listOpType)) {
+            const TfToken instanceName =
+                _GetInstanceNameFromAPISchemaName(apiSchemaName);
+            if (!instanceName.IsEmpty()) {
+                found.insert(instanceName);
+            }
         }
     }
 
@@ -654,21 +606,21 @@ _AppendInstanceNamesInSpec(const SdfPrimSpecHandle &spec,
 }
 
 static void
-_AppendRecordsForPrim(const UsdPrim &prim,
-                      bool searchPrimStack,
-                      std::vector<UsdMediaAuthorshipAPI> *result)
+_AppendComposedRecordsForPrim(const UsdPrim &prim,
+                              std::vector<UsdMediaAuthorshipAPI> *result)
 {
-    if (!searchPrimStack) {
-        for (const UsdMediaAuthorshipAPI &record :
-                UsdMediaAuthorshipAPI::GetAll(prim)) {
-            result->push_back(record);
-        }
-        return;
+    for (const UsdMediaAuthorshipAPI &record :
+            UsdMediaAuthorshipAPI::GetAll(prim)) {
+        result->push_back(record);
     }
+}
 
-    // The prim stack runs strongest to weakest, and we do not deduplicate, so
-    // a record authored in several layers is reported once per layer in that
-    // order.
+static void
+_AppendPrimStackRecordsForPrim(const UsdPrim &prim,
+                               std::vector<UsdMediaAuthorshipAPI> *result)
+{
+    // Strongest to weakest, not deduplicated: a record in several layers
+    // is reported once per layer, in that order.
     for (const SdfPrimSpecHandle &spec : prim.GetPrimStack()) {
         if (!spec) {
             continue;
@@ -681,8 +633,8 @@ _AppendRecordsForPrim(const UsdPrim &prim,
     }
 }
 
-// SdfPath's ordering puts a prim before its descendants, so sorting by path
-// also puts ancestors first.
+// SdfPath orders a prim before its descendants, so sorting by path also
+// sorts ancestors first.
 static bool
 _RecordLess(const UsdMediaAuthorshipAPI &lhs, const UsdMediaAuthorshipAPI &rhs)
 {
@@ -694,10 +646,13 @@ _RecordLess(const UsdMediaAuthorshipAPI &lhs, const UsdMediaAuthorshipAPI &rhs)
     return lhs.GetName() < rhs.GetName();
 }
 
-/* static */
-std::vector<UsdMediaAuthorshipAPI>
-UsdMediaAuthorshipAPI::GetAllOnStage(const UsdStagePtr &stage,
-                                     bool searchPrimStack)
+// Shared by GetAllOnStage() and GetAllInPrimStacks(); they differ only in
+// how they gather records per prim.
+static std::vector<UsdMediaAuthorshipAPI>
+_GetAllOnStageImpl(
+    const UsdStagePtr &stage,
+    void (*appendForPrim)(const UsdPrim &,
+                          std::vector<UsdMediaAuthorshipAPI> *))
 {
     std::vector<UsdMediaAuthorshipAPI> result;
 
@@ -708,7 +663,7 @@ UsdMediaAuthorshipAPI::GetAllOnStage(const UsdStagePtr &stage,
 
     // TraverseAll() includes inactive and abstract prims.
     for (const UsdPrim &prim : stage->TraverseAll()) {
-        _AppendRecordsForPrim(prim, searchPrimStack, &result);
+        appendForPrim(prim, &result);
     }
 
     // Prims beneath a native instance are not visited above, so walk the
@@ -716,7 +671,7 @@ UsdMediaAuthorshipAPI::GetAllOnStage(const UsdStagePtr &stage,
     for (const UsdPrim &prototype : stage->GetPrototypes()) {
         for (const UsdPrim &prim :
                 UsdPrimRange(prototype, UsdPrimAllPrimsPredicate)) {
-            _AppendRecordsForPrim(prim, searchPrimStack, &result);
+            appendForPrim(prim, &result);
         }
     }
 
@@ -728,8 +683,21 @@ UsdMediaAuthorshipAPI::GetAllOnStage(const UsdStagePtr &stage,
 
 /* static */
 std::vector<UsdMediaAuthorshipAPI>
-UsdMediaAuthorshipAPI::ComputeAccumulatedRecords(const UsdPrim &prim,
-                                                bool searchPrimStack)
+UsdMediaAuthorshipAPI::GetAllOnStage(const UsdStagePtr &stage)
+{
+    return _GetAllOnStageImpl(stage, _AppendComposedRecordsForPrim);
+}
+
+/* static */
+std::vector<UsdMediaAuthorshipAPI>
+UsdMediaAuthorshipAPI::GetAllInPrimStacks(const UsdStagePtr &stage)
+{
+    return _GetAllOnStageImpl(stage, _AppendPrimStackRecordsForPrim);
+}
+
+/* static */
+std::vector<UsdMediaAuthorshipAPI>
+UsdMediaAuthorshipAPI::ComputeAccumulatedRecords(const UsdPrim &prim)
 {
     std::vector<UsdMediaAuthorshipAPI> result;
 
@@ -739,7 +707,7 @@ UsdMediaAuthorshipAPI::ComputeAccumulatedRecords(const UsdPrim &prim,
     }
 
     for (UsdPrim p = prim; p && !p.IsPseudoRoot(); p = p.GetParent()) {
-        _AppendRecordsForPrim(p, searchPrimStack, &result);
+        _AppendComposedRecordsForPrim(p, &result);
     }
 
     std::stable_sort(result.begin(), result.end(), _RecordLess);
@@ -749,7 +717,7 @@ UsdMediaAuthorshipAPI::ComputeAccumulatedRecords(const UsdPrim &prim,
 
 /* static */
 std::vector<UsdMediaAuthorshipAPI>
-UsdMediaAuthorshipAPI::GetAllUnder(const UsdPrim &prim, bool searchPrimStack)
+UsdMediaAuthorshipAPI::GetAllUnder(const UsdPrim &prim)
 {
     std::vector<UsdMediaAuthorshipAPI> result;
 
@@ -759,7 +727,7 @@ UsdMediaAuthorshipAPI::GetAllUnder(const UsdPrim &prim, bool searchPrimStack)
     }
 
     for (const UsdPrim &p : UsdPrimRange(prim, UsdPrimAllPrimsPredicate)) {
-        _AppendRecordsForPrim(p, searchPrimStack, &result);
+        _AppendComposedRecordsForPrim(p, &result);
     }
 
     std::stable_sort(result.begin(), result.end(), _RecordLess);

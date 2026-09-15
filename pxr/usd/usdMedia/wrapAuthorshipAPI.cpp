@@ -69,16 +69,16 @@ _CreateDescriptionAttr(UsdMediaAuthorshipAPI &self,
 }
         
 static UsdAttribute
-_CreatePromptInputNamesAttr(UsdMediaAuthorshipAPI &self,
+_CreateInputNamesAttr(UsdMediaAuthorshipAPI &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreatePromptInputNamesAttr(
+    return self.CreateInputNamesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->StringArray), writeSparsely);
 }
         
 static UsdAttribute
-_CreatePromptInputValuesAttr(UsdMediaAuthorshipAPI &self,
+_CreateInputValuesAttr(UsdMediaAuthorshipAPI &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreatePromptInputValuesAttr(
+    return self.CreateInputValuesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->StringArray), writeSparsely);
 }
         
@@ -244,17 +244,17 @@ void wrapUsdMediaAuthorshipAPI()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetPromptInputNamesAttr",
-             &This::GetPromptInputNamesAttr)
-        .def("CreatePromptInputNamesAttr",
-             &_CreatePromptInputNamesAttr,
+        .def("GetInputNamesAttr",
+             &This::GetInputNamesAttr)
+        .def("CreateInputNamesAttr",
+             &_CreateInputNamesAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetPromptInputValuesAttr",
-             &This::GetPromptInputValuesAttr)
-        .def("CreatePromptInputValuesAttr",
-             &_CreatePromptInputValuesAttr,
+        .def("GetInputValuesAttr",
+             &This::GetInputValuesAttr)
+        .def("CreateInputValuesAttr",
+             &_CreateInputValuesAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
@@ -328,20 +328,22 @@ WRAP_CUSTOM {
     _class
         .def("GetName", &This::GetName)
 
-        .def("GetAllOnStage", &This::GetAllOnStage,
-             (arg("stage"), arg("searchPrimStack") = false),
+        .def("GetAllOnStage", &This::GetAllOnStage, arg("stage"),
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetAllOnStage")
 
         .def("ComputeAccumulatedRecords", &This::ComputeAccumulatedRecords,
-             (arg("prim"), arg("searchPrimStack") = false),
+             arg("prim"),
              return_value_policy<TfPySequenceToList>())
         .staticmethod("ComputeAccumulatedRecords")
 
-        .def("GetAllUnder", &This::GetAllUnder,
-             (arg("prim"), arg("searchPrimStack") = false),
+        .def("GetAllUnder", &This::GetAllUnder, arg("prim"),
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetAllUnder")
+
+        .def("GetAllInPrimStacks", &This::GetAllInPrimStacks, arg("stage"),
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetAllInPrimStacks")
 
         .def("GetAllInLayer", &This::GetAllInLayer, arg("layer"),
              return_value_policy<TfPySequenceToList>())
