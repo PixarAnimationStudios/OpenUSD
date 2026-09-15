@@ -14,6 +14,8 @@
 #include <shaderc/shaderc.hpp>
 
 #include <unordered_map>
+#include <string>
+#include <sstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -75,7 +77,20 @@ HgiVulkanCompileGLSL(
         compiler.CompileGlslToSpv(source, kind, name, options);
 
     if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
-        *errors = result.GetErrorMessage();
+        *errors = std::string();
+        *errors += "#### Source\n";
+        {
+            std::stringstream stream(source);
+            size_t indexLine = 1;
+
+            std::string line;
+            while(std::getline(stream, line)) {
+                *errors += std::to_string(indexLine) + ":" + line + "\n";
+                indexLine += 1;
+            }
+        }
+        *errors += "#### Errors\n";
+        *errors += result.GetErrorMessage();
         return false;
     }
 
