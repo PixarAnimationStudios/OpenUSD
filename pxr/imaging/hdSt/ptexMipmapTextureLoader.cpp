@@ -5,6 +5,7 @@
 // https://openusd.org/license.
 //
 #include "pxr/imaging/hdSt/ptexMipmapTextureLoader.h"
+#include "ptexMipmapTextureLoaderSizing.h"
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -1044,17 +1045,32 @@ HdStPtexMipmapTextureLoader::generateBuffers()
     //     uint8_t  height log2;
     // };
 
-    int numFaces = (int)_blocks.size();
-    int numPages = (int)_pages.size();
+    const int numFaces = (int)_blocks.size();
+    const size_t numPages = _pages.size();
 
     // populate the texels
-    int pageStride = _bpp * _pageWidth * _pageHeight;
+    size_t pageStride = 0;
+    size_t texelBufferSize = 0;
+    const HdStPtexBufferSizeResult sizeResult =
+        HdStComputePtexBufferSize(
+            _bpp, _pageWidth, _pageHeight, numPages,
+            &pageStride, &texelBufferSize);
+    if (sizeResult != HdStPtexBufferSizeResult::Success) {
+        TF_RUNTIME_ERROR(
+            "Ptex texel buffer size is unsupported: bytesPerPixel=%d, "
+            "pageWidth=%d, pageHeight=%d, numPages=%zu, "
+            "pageStride=%zu, totalBytes=%zu, reason=%s",
+            _bpp, _pageWidth, _pageHeight, numPages,
+            pageStride, texelBufferSize,
+            HdStGetPtexBufferSizeResultName(sizeResult));
+        return;
+    }
 
-    _texelBuffer = new unsigned char[pageStride * numPages];
-    _memoryUsage = pageStride * numPages;
-    memset(_texelBuffer, 0, pageStride * numPages);
+    _texelBuffer = new unsigned char[texelBufferSize];
+    _memoryUsage = texelBufferSize;
+    memset(_texelBuffer, 0, texelBufferSize);
 
-    for (int i = 0; i < numPages; ++i) {
+    for (size_t i = 0; i < numPages; ++i) {
         _pages[i]->Generate(this, _ptex, _texelBuffer + pageStride * i,
                             _bpp, _pageWidth, _maxLevels);
     }
@@ -1062,7 +1078,7 @@ HdStPtexMipmapTextureLoader::generateBuffers()
     // populate the layout texture buffer
     _layoutBuffer = new unsigned char[numFaces * sizeof(uint16_t) * 6];
     _memoryUsage += numFaces * sizeof(uint16_t) * 6;
-    for (int i = 0; i < numPages; ++i) {
+    for (size_t i = 0; i < numPages; ++i) {
         Page *page = _pages[i];
         for (Page::BlockList::const_iterator it = page->GetBlocks().begin();
              it != page->GetBlocks().end(); ++it) {
@@ -1099,4 +1115,3 @@ HdStPtexMipmapTextureLoader::generateBuffers()
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
