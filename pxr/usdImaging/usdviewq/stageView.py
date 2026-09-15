@@ -833,9 +833,12 @@ class StageView(QGLWidget):
         self._allowAsync = bool(value)
 
     def __init__(self, parent=None, dataModel=None, makeTimer=Timer):
-        # Note: The default format *disables* the alpha component and so the
-        # default backbuffer uses GL_RGB.
+        # Note: we disable the alpha component so that the backbuffer uses
+        # GL_RGB. Without this, the platform is free to pick a pixel format
+        # that has an alpha channel, which makes grabbed framebuffers RGBA on
+        # some platforms and RGB on others.
         glFormat = QGLFormat()
+        glFormat.DisableAlphaBuffer()
         msaa = os.getenv("USDVIEW_ENABLE_MSAA", "1")
         if msaa == "1":
             glFormat.setSampleBuffers(True)
