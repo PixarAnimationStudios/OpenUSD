@@ -174,6 +174,46 @@ _EncapsulationValidator(const UsdPrim &usdPrim,
         _VerifyValidAncestor(parentPrim.GetParent());
     }
 
+    // For UsdShadeShader prims, check that no input is connected to an
+    // input of a sibling UsdShadeShader prim. Such connections are not
+    // meaningful in a shader network; inputs should only be connected to
+    // outputs of sibling shaders or inputs of the enclosing container.
+    // See: https://github.com/PixarAnimationStudios/OpenUSD/issues/3957
+    if (usdPrim.IsA<UsdShadeShader>()) {
+        const UsdShadeConnectableAPI connAPI(usdPrim);
+        for (const UsdShadeInput &input : connAPI.GetInputs()) {
+            for (const UsdShadeConnectionSourceInfo &srcInfo :
+                     input.GetConnectedSources()) {
+                // Only flag input-to-input connections
+                if (srcInfo.sourceType != UsdShadeAttributeType::Input) {
+                    continue;
+                }
+                const UsdPrim &sourcePrim = srcInfo.source.GetPrim();
+                // Flag if source is a sibling UsdShadeShader
+                if (sourcePrim.IsA<UsdShadeShader>() &&
+                    sourcePrim.GetPath().GetParentPath() ==
+                        usdPrim.GetPath().GetParentPath()) {
+                    errors.emplace_back(
+                        UsdShadeValidationErrorNameTokens
+                            ->shaderInputConnectedToSiblingInput,
+                        UsdValidationErrorType::Error,
+                        UsdValidationErrorSites {
+                            UsdValidationErrorSite(
+                                usdPrim.GetStage(),
+                                input.GetAttr().GetPath()) },
+                        TfStringPrintf(
+                            "Shader input <%s> is connected to input <%s> "
+                            "of sibling Shader <%s>. Shader inputs may only "
+                            "be connected to outputs of sibling shaders or "
+                            "inputs of the enclosing container.",
+                            input.GetAttr().GetPath().GetText(),
+                            srcInfo.sourceName.GetText(),
+                            sourcePrim.GetPath().GetText()));
+                }
+            }
+        }
+    }
+
     return errors;
 }
 
