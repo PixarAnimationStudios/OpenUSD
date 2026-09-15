@@ -24,6 +24,10 @@ set(DIRS
     plugin
 )
 
+if (${PXR_BUILD_USDPMC})
+    list(APPEND DIRS usdPmc)
+endif()
+
 foreach(d ${DIRS})
     add_subdirectory(${d})
 endforeach()
