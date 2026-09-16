@@ -786,6 +786,72 @@ pxr_register_test(testUsdImagingGLNativeImplicits_clippedSphere
         HDST_ENABLE_NATIVE_SPHERES=1
 )
 
+pxr_register_test(testUsdImagingGLNativeImplicits_simpleCapsule
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage simpleCapsule.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_simpleCapsule.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_simpleCapsule.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_CAPSULES=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_simpleCapsuleWithXAxis
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage simpleCapsuleWithXAxis.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_simpleCapsuleWithXAxis.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_simpleCapsuleWithXAxis.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_CAPSULES=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_simpleCapsuleWithYAxis
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage simpleCapsuleWithYAxis.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_simpleCapsuleWithYAxis.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_simpleCapsuleWithYAxis.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_CAPSULES=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_transformedCapsule
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage transformedCapsule.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_transformedCapsule.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_transformedCapsule.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_CAPSULES=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_intersectingCapsules
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage intersectingCapsules.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_intersectingCapsules.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_intersectingCapsules.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_CAPSULES=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_capsuleInsideCapsule
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage capsuleInsideCapsule.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_capsuleInsideCapsule.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_capsuleInsideCapsule.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_CAPSULES=1
+)
+
 pxr_register_test(testUsdImagingGLHoleFaces
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage holeFaces.usda -write testUsdImagingGLHoleFaces.png"
     IMAGE_DIFF_COMPARE

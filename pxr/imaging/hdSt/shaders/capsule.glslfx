@@ -1,0 +1,348 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2026 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/capsule.glslfx
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.TypeDef.Capsule
+
+const float CAPSULE_EPS = 1e-8;
+const int CAPSULE_AXIS_X = 0;
+const int CAPSULE_AXIS_Y = 1;
+const int CAPSULE_HIT_NONE = -1;
+const int CAPSULE_HIT_BODY = 0;
+const int CAPSULE_HIT_BOTTOM = 1;
+const int CAPSULE_HIT_TOP = 2;
+
+struct CapsuleHit
+{
+    float dist;
+    int kind;
+};
+
+struct CapsuleHits
+{
+    CapsuleHit nearHit;
+    CapsuleHit farHit;
+};
+
+vec3 ToCapsuleSpace(vec3 value, int axis)
+{
+    if (axis == CAPSULE_AXIS_X) {
+        return value.yzx;
+    }
+    if (axis == CAPSULE_AXIS_Y) {
+        return value.xzy;
+    }
+    return value;
+}
+
+vec3 FromCapsuleSpace(vec3 value, int axis)
+{
+    if (axis == CAPSULE_AXIS_X) {
+        return value.zxy;
+    }
+    if (axis == CAPSULE_AXIS_Y) {
+        return value.xzy;
+    }
+    return value;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Bounds.Capsule
+
+Bbox ComputeCapsuleBboxEye(
+    const vec3 center, const vec3 halfExtent, const MAT4 instanceModelView)
+{
+    const vec3 centerEye = TransformPoint(instanceModelView, center);
+    const mat3 instanceModelView3 = Mat4ToMat3(instanceModelView);
+    const vec3 bboxSizeEye = mat3(
+        abs(instanceModelView3[0]),
+        abs(instanceModelView3[1]),
+        abs(instanceModelView3[2])) * halfExtent;
+
+    Bbox bboxEye;
+    bboxEye.minBound = centerEye - bboxSizeEye;
+    bboxEye.maxBound = centerEye + bboxSizeEye;
+    return bboxEye;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Vertex.Capsule
+
+Bbox ComputeBboxEye()
+{
+    const MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+    const MAT4 instanceModelView = GetWorldToViewMatrix() * transform;
+
+    const float height = max(0.0, HdGet_height());
+    const float halfHeight = 0.5 * height;
+    const float radiusBottom = max(0.0, HdGet_radiusBottom());
+    const float radiusTop = max(0.0, HdGet_radiusTop());
+    const float slope = height > 1e-7
+        ? (radiusBottom - radiusTop) / height : 0.0;
+    const float capScale = sqrt(1.0 + slope * slope);
+    const float bottomCapRadius = radiusBottom * capScale;
+    const float topCapRadius = radiusTop * capScale;
+    const float bottomCapCenter = -halfHeight - slope * radiusBottom;
+    const float topCapCenter = halfHeight - slope * radiusTop;
+    const float boundsMin = bottomCapCenter - bottomCapRadius;
+    const float boundsMax = topCapCenter + topCapRadius;
+    const float boundsCenter = 0.5 * (boundsMin + boundsMax);
+    const float maxRadius = max(
+        max(radiusBottom, radiusTop),
+        max(bottomCapRadius, topCapRadius));
+
+    const vec3 center = FromCapsuleSpace(
+        vec3(0.0, 0.0, boundsCenter), HdGet_axis());
+    const vec3 halfExtent = FromCapsuleSpace(
+        vec3(maxRadius, maxRadius, 0.5 * (boundsMax - boundsMin)),
+        HdGet_axis());
+
+    return ComputeCapsuleBboxEye(center, halfExtent, instanceModelView);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Intersection.Capsule
+
+void AddCapsuleHit(CapsuleHit hit, inout CapsuleHits hits)
+{
+    if (hit.kind == CAPSULE_HIT_NONE) {
+        return;
+    }
+
+    const float tolerance = 1e-5;
+
+    if (hits.nearHit.kind != CAPSULE_HIT_NONE &&
+        abs(hit.dist - hits.nearHit.dist) <= tolerance) {
+        return;
+    } else if (hits.farHit.kind != CAPSULE_HIT_NONE &&
+               abs(hit.dist - hits.farHit.dist) <= tolerance) {
+        return;
+    } else if (hits.nearHit.kind == CAPSULE_HIT_NONE ||
+               hit.dist < hits.nearHit.dist) {
+        hits.farHit = hits.nearHit;
+        hits.nearHit = hit;
+    } else if (hits.farHit.kind == CAPSULE_HIT_NONE ||
+               hit.dist < hits.farHit.dist) {
+        hits.farHit = hit;
+    }
+}
+
+CapsuleHits IntersectLateral(
+    vec3 rayOrigin,
+    vec3 rayDir,
+    float height,
+    float radiusBottom,
+    float radiusTop)
+{
+    CapsuleHits hits = CapsuleHits(
+        CapsuleHit(0.0, CAPSULE_HIT_NONE),
+        CapsuleHit(0.0, CAPSULE_HIT_NONE));
+
+    if (height <= 0.0) {
+        return hits;
+    }
+
+    const float halfHeight = 0.5 * height;
+    const float slope = (radiusTop - radiusBottom) / height;
+    const float radiusAtOrigin = 0.5 * (radiusTop + radiusBottom);
+    const float radialOriginSquared = dot(rayOrigin.xy, rayOrigin.xy);
+    const float radialDirSquared = dot(rayDir.xy, rayDir.xy);
+    const float radiusAlongOrigin = slope * rayOrigin.z + radiusAtOrigin;
+    const float radiusAlongDir = slope * rayDir.z;
+
+    const float a = radialDirSquared - radiusAlongDir * radiusAlongDir;
+    const float halfB = dot(rayOrigin.xy, rayDir.xy) -
+        radiusAlongOrigin * radiusAlongDir;
+    const float c = radialOriginSquared -
+        radiusAlongOrigin * radiusAlongOrigin;
+
+    if (abs(a) < CAPSULE_EPS) {
+        if (abs(halfB) <= CAPSULE_EPS) {
+            return hits;
+        }
+
+        const float t = -c / (2.0 * halfB);
+        const float z = rayOrigin.z + t * rayDir.z;
+        if (z >= -halfHeight && z <= halfHeight) {
+            AddCapsuleHit(CapsuleHit(t, CAPSULE_HIT_BODY), hits);
+        }
+        return hits;
+    }
+
+    const float quarterDiscriminant = halfB * halfB - a * c;
+    if (quarterDiscriminant < 0.0) {
+        return hits;
+    }
+
+    const float root = sqrt(quarterDiscriminant);
+    const float t0 = (-halfB - root) / a;
+    const float t1 = (-halfB + root) / a;
+    const float z0 = rayOrigin.z + t0 * rayDir.z;
+    const float z1 = rayOrigin.z + t1 * rayDir.z;
+    if (z0 >= -halfHeight && z0 <= halfHeight) {
+        AddCapsuleHit(CapsuleHit(t0, CAPSULE_HIT_BODY), hits);
+    }
+    if (z1 >= -halfHeight && z1 <= halfHeight) {
+        AddCapsuleHit(CapsuleHit(t1, CAPSULE_HIT_BODY), hits);
+    }
+
+    return hits;
+}
+
+CapsuleHits IntersectSphereCap(
+    vec3 rayOrigin,
+    vec3 rayDir,
+    float centerZ,
+    float radius,
+    float transitionZ,
+    bool bottomCap,
+    int kind)
+{
+    CapsuleHits hits = CapsuleHits(
+        CapsuleHit(0.0, CAPSULE_HIT_NONE),
+        CapsuleHit(0.0, CAPSULE_HIT_NONE));
+    const vec3 relativeOrigin = rayOrigin - vec3(0.0, 0.0, centerZ);
+    const float a = dot(rayDir, rayDir);
+    const float halfB = dot(relativeOrigin, rayDir);
+    const float c = dot(relativeOrigin, relativeOrigin) - radius * radius;
+    const float quarterDiscriminant = halfB * halfB - a * c;
+
+    if (quarterDiscriminant < 0.0 || a < 1e-12) {
+        return hits;
+    }
+
+    const float root = sqrt(quarterDiscriminant);
+    const float t0 = (-halfB - root) / a;
+    const float t1 = (-halfB + root) / a;
+    const float z0 = rayOrigin.z + t0 * rayDir.z;
+    const float z1 = rayOrigin.z + t1 * rayDir.z;
+    const float tolerance = 1e-5 * max(1.0, abs(transitionZ));
+
+    if ((bottomCap && z0 <= transitionZ + tolerance) ||
+        (!bottomCap && z0 >= transitionZ - tolerance)) {
+        AddCapsuleHit(CapsuleHit(t0, kind), hits);
+    }
+    if ((bottomCap && z1 <= transitionZ + tolerance) ||
+        (!bottomCap && z1 >= transitionZ - tolerance)) {
+        AddCapsuleHit(CapsuleHit(t1, kind), hits);
+    }
+
+    return hits;
+}
+
+CapsuleHits IntersectCapsule(vec3 rayOrigin, vec3 rayDir)
+{
+    const float height = max(0.0, HdGet_height());
+    const float halfHeight = 0.5 * height;
+    const float radiusBottom = max(0.0, HdGet_radiusBottom());
+    const float radiusTop = max(0.0, HdGet_radiusTop());
+    const float capSlope = height > 0.0
+        ? (radiusBottom - radiusTop) / height : 0.0;
+    const float capScale = sqrt(1.0 + capSlope * capSlope);
+    const float bottomCapRadius = radiusBottom * capScale;
+    const float topCapRadius = radiusTop * capScale;
+    const float bottomCapCenter = -halfHeight - capSlope * radiusBottom;
+    const float topCapCenter = halfHeight - capSlope * radiusTop;
+
+    CapsuleHits hits = CapsuleHits(
+        CapsuleHit(0.0, CAPSULE_HIT_NONE),
+        CapsuleHit(0.0, CAPSULE_HIT_NONE));
+    const CapsuleHits bodyHits = IntersectLateral(
+        rayOrigin, rayDir, height, radiusBottom, radiusTop);
+    const CapsuleHits bottomHits = IntersectSphereCap(
+        rayOrigin, rayDir, bottomCapCenter, bottomCapRadius,
+        -halfHeight, true, CAPSULE_HIT_BOTTOM);
+    const CapsuleHits topHits = IntersectSphereCap(
+        rayOrigin, rayDir, topCapCenter, topCapRadius,
+        halfHeight, false, CAPSULE_HIT_TOP);
+
+    AddCapsuleHit(bodyHits.nearHit, hits);
+    AddCapsuleHit(bodyHits.farHit, hits);
+    AddCapsuleHit(bottomHits.nearHit, hits);
+    AddCapsuleHit(bottomHits.farHit, hits);
+    AddCapsuleHit(topHits.nearHit, hits);
+    AddCapsuleHit(topHits.farHit, hits);
+
+    if (hits.nearHit.kind != CAPSULE_HIT_NONE &&
+        hits.farHit.kind == CAPSULE_HIT_NONE) {
+        hits.farHit = hits.nearHit;
+    }
+
+    return hits;
+}
+
+vec3 ComputeCapsuleNormal(vec3 point, int hitKind)
+{
+    const float height = max(0.0, HdGet_height());
+    const float halfHeight = 0.5 * height;
+    const float radiusBottom = max(0.0, HdGet_radiusBottom());
+    const float radiusTop = max(0.0, HdGet_radiusTop());
+    const float capSlope = height > 0.0
+        ? (radiusBottom - radiusTop) / height : 0.0;
+
+    if (hitKind == CAPSULE_HIT_BOTTOM) {
+        const float center = -halfHeight - capSlope * radiusBottom;
+        return normalize(point - vec3(0.0, 0.0, center));
+    }
+    if (hitKind == CAPSULE_HIT_TOP) {
+        const float center = halfHeight - capSlope * radiusTop;
+        return normalize(point - vec3(0.0, 0.0, center));
+    }
+
+    const float bodySlope = (radiusTop - radiusBottom) / height;
+    const float radius = bodySlope * point.z +
+        0.5 * (radiusTop + radiusBottom);
+    return normalize(vec3(point.xy, -bodySlope * radius));
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Fragment.Capsule
+
+HitPoints ComputeHitPointsObj(Ray rayObj)
+{
+    const int axis = HdGet_axis();
+    const vec3 rayOriginCapsule = ToCapsuleSpace(rayObj.origin, axis);
+    const vec3 rayDirCapsule = ToCapsuleSpace(rayObj.dir, axis);
+    const CapsuleHits capsuleHits =
+        IntersectCapsule(rayOriginCapsule, rayDirCapsule);
+
+    HitPoints hits;
+    hits.near.visible = capsuleHits.nearHit.kind != CAPSULE_HIT_NONE &&
+                        capsuleHits.nearHit.dist >= 0.0;
+    hits.far.visible = capsuleHits.farHit.kind != CAPSULE_HIT_NONE &&
+                       capsuleHits.farHit.dist >= 0.0;
+
+    if (hits.near.visible) {
+        const vec3 positionCapsule = rayOriginCapsule +
+            capsuleHits.nearHit.dist * rayDirCapsule;
+        hits.near.point.position = FromCapsuleSpace(positionCapsule, axis);
+        hits.near.point.segment = uint(capsuleHits.nearHit.kind);
+    }
+
+    if (hits.far.visible) {
+        const vec3 positionCapsule = rayOriginCapsule +
+            capsuleHits.farHit.dist * rayDirCapsule;
+        hits.far.point.position = FromCapsuleSpace(positionCapsule, axis);
+        hits.far.point.segment = uint(capsuleHits.farHit.kind);
+    }
+
+    return hits;
+}
+
+vec3 ComputeNormalObj(const Point point)
+{
+    const int axis = HdGet_axis();
+    const vec3 pointCapsule = ToCapsuleSpace(point.position, axis);
+    const vec3 normalCapsule =
+        ComputeCapsuleNormal(pointCapsule, int(point.segment));
+    return FromCapsuleSpace(normalCapsule, axis);
+}
