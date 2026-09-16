@@ -8,6 +8,7 @@
 #define PXR_IMAGING_HGIVULKAN_BUFFER_H
 
 #include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgiVulkan/api.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 
@@ -121,6 +122,33 @@ protected:
         HgiVulkan* hgi,
         HgiBufferDesc const& desc);
 
+    // Constructor that adopts an externally-owned VkBuffer non-owningly.
+    // The underlying VkBuffer/memory is NOT destroyed by this object.
+    HGIVULKAN_API
+    HgiVulkanBuffer(
+        HgiVulkan* hgi,
+        VkBuffer existingBuffer,
+        size_t byteSize,
+        HgiBufferUsage usage);
+
+    // Constructor that allocates an interop buffer whose memory is exportable
+    // to other GPU APIs (owning: it frees the VkBuffer/memory on destruction).
+    HGIVULKAN_API
+    HgiVulkanBuffer(
+        HgiVulkan* hgi,
+        HgiBufferDesc const& desc,
+        bool interop);
+
+    // Constructor that IMPORTS a memory allocation owned by another device (or
+    // API) and binds a new VkBuffer into it. Owning, but with no VmaAllocation:
+    // it frees its own VkBuffer and its imported VkDeviceMemory reference,
+    // which does not free the producer's underlying allocation. Leaves
+    // GetVulkanBuffer() null if the import fails.
+    HGIVULKAN_API
+    HgiVulkanBuffer(
+        HgiVulkan* hgi,
+        HgiExternalMemoryBufferDesc const& desc);
+
 private:
     HgiVulkanBuffer() = delete;
     HgiVulkanBuffer & operator=(const HgiVulkanBuffer&) = delete;
@@ -133,6 +161,13 @@ private:
     std::unique_ptr<HgiVulkanBuffer> _stagingBuffer;
     HgiVulkanMappedBufferUniquePointer _cpuStagingAddress;
     bool _mappable;
+    // True when this object wraps an externally-owned VkBuffer (adopted); its
+    // destructor must not free the underlying resource.
+    bool _isExternal = false;
+    // Non-null only for imported buffers: memory allocated by vkAllocateMemory
+    // with an import chain rather than by VMA, so it must be released with
+    // vkFreeMemory instead of vmaDestroyBuffer.
+    VkDeviceMemory _vkImportedMemory = VK_NULL_HANDLE;
 };
 
 

@@ -79,6 +79,8 @@ pxr_library(hd
         extComputationSchema
         extComputationUtils
         extentSchema
+        extGpuBufferSchema
+        extGpuSyncSchema
         field
         filteringSceneIndex
         flattenedDataSourceProvider

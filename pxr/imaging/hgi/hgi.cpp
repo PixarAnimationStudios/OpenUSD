@@ -96,6 +96,81 @@ Hgi::CreateBuffer(HgiBufferDesc const& desc)
     return _CreateBuffer(desc);
 }
 
+HgiBufferHandle
+Hgi::CreateExternalBuffer(uint64_t /*rawHandle*/, size_t /*byteSize*/,
+                          HgiBufferUsage /*usage*/)
+{
+    // Backends that support adopting a foreign native handle override this.
+    return HgiBufferHandle();
+}
+
+HgiBufferHandle
+Hgi::CreateInteropBuffer(size_t /*byteSize*/, HgiBufferUsage /*usage*/,
+                         HgiInteropBufferInfo* outInfo)
+{
+    // Backends that support exportable interop allocations override this.
+    if (outInfo) {
+        *outInfo = HgiInteropBufferInfo();
+    }
+    return HgiBufferHandle();
+}
+
+HgiBufferHandle
+Hgi::CreateBufferFromExternalMemory(
+    HgiExternalMemoryBufferDesc const& /*desc*/)
+{
+    // Backends that can import foreign memory allocations override this.
+    return HgiBufferHandle();
+}
+
+uint64_t
+Hgi::ImportExternalSemaphore(uint64_t /*externalHandle*/,
+                             HgiExternalHandleType /*handleType*/,
+                             HgiSemaphoreKind /*kind*/)
+{
+    // Backends that can import foreign semaphores override this.
+    return 0;
+}
+
+std::string
+Hgi::GetDeviceUuid() const
+{
+    // Backends with a queryable physical-device identity override this.
+    return std::string();
+}
+
+uint64_t
+Hgi::GetLogicalDeviceId() const
+{
+    // Backends that own a logical device object override this.
+    return 0;
+}
+
+uint64_t
+Hgi::CreateExternalSemaphore(uint64_t* outExternalHandle)
+{
+    // Backends that support external (interop) semaphores override this.
+    if (outExternalHandle) {
+        *outExternalHandle = 0;
+    }
+    return 0;
+}
+
+void
+Hgi::DestroyExternalSemaphore(uint64_t /*semaphore*/)
+{
+}
+
+void
+Hgi::QueueWaitExternalSemaphore(uint64_t /*semaphore*/)
+{
+}
+
+void
+Hgi::QueueSignalExternalSemaphore(uint64_t /*semaphore*/)
+{
+}
+
 HgiResourceBindingsHandle
 Hgi::CreateResourceBindings(HgiResourceBindingsDesc const& desc)
 {

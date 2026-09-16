@@ -16,6 +16,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -362,6 +363,13 @@ TfHashAppend(HashState &h, HdTupleType const &tt)
 {
     h.Append(tt.type, tt.count);
 }
+
+/// Stream output for HdTupleType, e.g. "HdTupleType(HdTypeFloatVec3, 1)".
+/// Provided so that a VtValue holding an HdTupleType (for instance the
+/// element type published in HdExtGpuBufferSchema) streams to a readable
+/// value instead of falling back to Vt_StreamOutGeneric's "<'type' @ addr>".
+HD_API
+std::ostream& operator<<(std::ostream& out, const HdTupleType& tupleType);
 
 /// Returns a direct pointer to the data held by a VtValue.
 /// Returns nullptr if the VtValue is empty or holds a type unknown to Hd.

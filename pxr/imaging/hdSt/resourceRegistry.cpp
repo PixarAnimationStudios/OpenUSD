@@ -6,9 +6,11 @@
 //
 #include "pxr/base/work/loops.h"
 
+#include "pxr/imaging/hd/extGpuSyncSchema.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdSt/copyComputation.h"
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
+#include "pxr/imaging/hdSt/extBufferDesc.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
@@ -25,6 +27,7 @@
 #include "pxr/imaging/hgi/capabilities.h"
 #include "pxr/imaging/hgi/computeCmdsDesc.h"
 
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/hash.h"
 
@@ -144,11 +147,153 @@ HdStResourceRegistry::HdStResourceRegistry(Hgi * const hgi)
 
 HdStResourceRegistry::~HdStResourceRegistry()
 {
+    // Imported buffers are refcounted, so in a well-behaved shutdown every one
+    // of them is already gone: the last range referencing it released it. Any
+    // that are still alive have a holder outliving the renderer, so detach them
+    // -- they must not erase from a cache that is about to die -- and let them
+    // release through the Hgi, which we do not own and which therefore outlives
+    // us.
+    size_t numOutliving = 0;
+    for (auto const &entry : _extGpuImportedBuffers) {
+        if (HdSt_ImportedExtGpuBufferSharedPtr const buffer =
+                entry.second.lock()) {
+            buffer->DetachFromRegistry();
+            ++numOutliving;
+        }
+    }
+    if (numOutliving > 0) {
+        TF_WARN("%zu imported external GPU buffer(s) outlived the resource "
+                "registry; they will be released when their last holder is.",
+                numOutliving);
+    }
+    _extGpuImportedBuffers.clear();
+
+    for (auto const &entry : _extGpuImportedSemaphores) {
+        _hgi->DestroyExternalSemaphore(entry.second);
+    }
+    _extGpuImportedSemaphores.clear();
+
     // XXX Ideally all the HdInstanceRegistry would get destroy here and
     // they cleanup all GPU resources. Since that mechanism isn't in place
     // yet, we call GarbageCollect to emulate this behavior.
     GarbageCollect();
     _hgi->GarbageCollect();
+}
+
+HdSt_ImportedExtGpuBufferSharedPtr
+HdStResourceRegistry::GetOrCreateImportedExtGpuBuffer(
+    HdStExtGpuBufferDesc const &desc)
+{
+    if (!_hgi || !desc.CanImport()) {
+        return nullptr;
+    }
+
+    const size_t byteSize = desc.rawHandleByteSize > 0
+        ? desc.rawHandleByteSize
+        : desc.numElements * HdDataSizeOfTupleType(desc.tupleType);
+
+    const HdSt_ImportedExtGpuBuffer::Key key(
+        desc.deviceUuid, desc.externalHandleType,
+        desc.memoryOffset, byteSize, desc.externalMemoryHandle);
+
+    std::lock_guard<std::mutex> lock(_extGpuImportMutex);
+
+    const auto it = _extGpuImportedBuffers.find(key);
+    if (it != _extGpuImportedBuffers.end()) {
+        if (HdSt_ImportedExtGpuBufferSharedPtr const cached =
+                it->second.lock()) {
+            return cached;
+        }
+        // Expired but not yet erased: its holder let go on another thread and
+        // its destructor has not reached _EraseImportedExtGpuBuffer. Import
+        // again and overwrite the entry below; the erase will see an entry that
+        // is no longer expired and leave it alone.
+    }
+
+    HgiExternalMemoryBufferDesc importDesc;
+    importDesc.externalHandle = desc.externalMemoryHandle;
+    importDesc.handleType =
+        desc.externalHandleType == HdExtGpuBufferSchemaTokens->opaqueFd
+            ? HgiExternalHandleTypeOpaqueFd
+            : HgiExternalHandleTypeOpaqueWin32;
+    importDesc.memoryBlockSize = desc.memoryBlockSize;
+    importDesc.memoryOffset = desc.memoryOffset;
+    importDesc.byteSize = byteSize;
+    importDesc.dedicated = desc.dedicated;
+    importDesc.usage = HgiBufferUsageVertex | HgiBufferUsageStorage;
+    importDesc.debugName = "ExtGpuImportedBuffer";
+
+    HgiBufferHandle imported = _hgi->CreateBufferFromExternalMemory(importDesc);
+    if (!imported) {
+        return nullptr;
+    }
+
+    // Hold the producer's allocation for as long as this buffer can be bound.
+    // Set once here rather than per caller: the buffer is shared by every prim
+    // naming this allocation, and they all resolve the same keepalive.
+    imported->SetKeepalive(desc.producerKeepalive);
+
+    HdSt_ImportedExtGpuBufferSharedPtr const buffer =
+        std::make_shared<HdSt_ImportedExtGpuBuffer>(imported, key, _hgi, this);
+    _extGpuImportedBuffers[key] = buffer;
+    return buffer;
+}
+
+void
+HdStResourceRegistry::_EraseImportedExtGpuBuffer(
+    HdSt_ImportedExtGpuBuffer::Key const &key)
+{
+    std::lock_guard<std::mutex> lock(_extGpuImportMutex);
+
+    const auto it = _extGpuImportedBuffers.find(key);
+    // Only an expired entry is the caller's to erase: if this allocation was
+    // imported again while the caller was being destroyed, the entry names that
+    // newer buffer and must be left alone.
+    if (it != _extGpuImportedBuffers.end() && it->second.expired()) {
+        _extGpuImportedBuffers.erase(it);
+    }
+}
+
+uint64_t
+HdStResourceRegistry::GetOrCreateImportedExtGpuSemaphore(
+    uint64_t externalHandle,
+    TfToken const &handleType,
+    TfToken const &kind)
+{
+    if (!_hgi || !externalHandle || handleType.IsEmpty()) {
+        return 0;
+    }
+    // Absent kind means binary; anything else must be honored exactly, so
+    // leave it to Hgi to accept or reject.
+    if (!kind.IsEmpty() &&
+        kind != HdExtGpuSyncSchemaTokens->binary &&
+        kind != HdExtGpuSyncSchemaTokens->timeline) {
+        return 0;
+    }
+
+    const _ExtGpuSemaphoreKey key(handleType, kind, externalHandle);
+
+    std::lock_guard<std::mutex> lock(_extGpuImportMutex);
+
+    const auto it = _extGpuImportedSemaphores.find(key);
+    if (it != _extGpuImportedSemaphores.end()) {
+        return it->second;
+    }
+
+    const uint64_t semaphore = _hgi->ImportExternalSemaphore(
+        externalHandle,
+        handleType == HdExtGpuSyncSchemaTokens->opaqueFd
+            ? HgiExternalHandleTypeOpaqueFd
+            : HgiExternalHandleTypeOpaqueWin32,
+        kind == HdExtGpuSyncSchemaTokens->timeline
+            ? HgiSemaphoreKindTimeline
+            : HgiSemaphoreKindBinary);
+    if (!semaphore) {
+        return 0;
+    }
+
+    _extGpuImportedSemaphores.emplace(key, semaphore);
+    return semaphore;
 }
 
 void HdStResourceRegistry::InvalidateShaderRegistry()

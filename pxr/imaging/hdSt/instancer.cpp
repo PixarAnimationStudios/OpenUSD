@@ -7,6 +7,7 @@
 #include "pxr/imaging/hdSt/instancer.h"
 
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/extGpuBufferConsumer.h"
 #include "pxr/imaging/hdSt/primUtils.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hd/debugCodes.h"
@@ -103,10 +104,30 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
     _hasDisplayOpacity = false;
     _hasNormals = false;
 
+    // Resolve the instancer's data source once for the per-primvar external-GPU
+    // lookups below, instead of re-traversing the terminal scene index per
+    // primvar name.
+    const HdContainerDataSourceHandle extPrimDs =
+        HdSt_GetPrimDataSource(sceneDelegate, instancerId);
     for (HdPrimvarDescriptor const& primvar: primvars) {
-        VtValue value = sceneDelegate->Get(instancerId, primvar.name);
-        if (!value.IsEmpty()) {
-            HdBufferSourceSharedPtr source;
+        // External GPU buffer fast path: consume the producer's shared handle
+        // directly, bypassing the CPU value pull and (for instanceTransforms)
+        // the matrix conversion below. The producer must publish
+        // numElements == the instance count and, for transforms, the renderer's
+        // expected matrix layout/precision (the GPU path does no double->float
+        // conversion). Both ext and CPU sources then share the tail below so
+        // the instance-count latch and hasNormals/hasDisplayOpacity flags apply
+        // uniformly.
+        HdBufferSourceSharedPtr source = HdSt_TryCreateExtGpuBufferSource(
+            primvar.name,
+            HdSt_GetExtGpuBufferSchema(extPrimDs, primvar.name),
+            resourceRegistry.get());
+
+        if (!source) {
+            VtValue value = sceneDelegate->Get(instancerId, primvar.name);
+            if (value.IsEmpty()) {
+                continue;
+            }
             if (primvar.name == HdInstancerTokens->instanceTransforms) {
                 if (value.IsHolding<VtArray<GfMatrix4d>>()) {
                     // Explicitly invoke the c'tor taking a
@@ -133,50 +154,66 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
             else {
                 source.reset(new HdVtBufferSource(primvar.name, value));
             }
-
-            // This is a defensive check, but ideally we would not be sent
-            // empty arrays from the client. Once UsdImaging can fulfill
-            // this contract efficiently, this check should emit a coding
-            // error.
-            if (source->GetNumElements() == 0) {
-                continue;
-            }
-
-            // Latch onto the first numElements we see.
-            size_t numElements = source->GetNumElements();
-            if (_instancePrimvarNumElements== 0) {
-                _instancePrimvarNumElements = numElements;
-            }
-
-            if (numElements != _instancePrimvarNumElements) {
-                // This primvar buffer is in a bad state; we can't have
-                // different numbers of instances per primvar.  Trim to the
-                // lower value.  Note: later on, we also trim the instance
-                // indices to be in this smaller range.
-                //
-                // This is recovery code; the scene delegate shouldn't let
-                // us get here...
-                TF_WARN("Inconsistent number of '%s' values "
-                        "(%zu vs %zu) for <%s>.",
-                        primvar.name.GetText(),
-                        source->GetNumElements(),
-                        _instancePrimvarNumElements,
-                        instancerId.GetText());
-                _instancePrimvarNumElements
-                    = std::min(numElements, _instancePrimvarNumElements);
-            }
-
-            sources.push_back(source);
-
-            _hasDisplayOpacity = _hasDisplayOpacity ||
-                (primvar.name == HdTokens->displayOpacity);
-            _hasNormals = _hasNormals ||
-                (primvar.name == HdTokens->normals);
         }
+
+        // This is a defensive check, but ideally we would not be sent
+        // empty arrays from the client. Once UsdImaging can fulfill
+        // this contract efficiently, this check should emit a coding
+        // error. (Also guards a null source, e.g. an instanceTransforms
+        // value that held neither GfMatrix4d nor GfMatrix4f.)
+        if (!source || source->GetNumElements() == 0) {
+            continue;
+        }
+
+        // Latch onto the first numElements we see.
+        size_t numElements = source->GetNumElements();
+        if (_instancePrimvarNumElements== 0) {
+            _instancePrimvarNumElements = numElements;
+        }
+
+        if (numElements != _instancePrimvarNumElements) {
+            // This primvar buffer is in a bad state; we can't have
+            // different numbers of instances per primvar.  Trim to the
+            // lower value.  Note: later on, we also trim the instance
+            // indices to be in this smaller range.
+            //
+            // This is recovery code; the scene delegate shouldn't let
+            // us get here...
+            TF_WARN("Inconsistent number of '%s' values "
+                    "(%zu vs %zu) for <%s>.",
+                    primvar.name.GetText(),
+                    source->GetNumElements(),
+                    _instancePrimvarNumElements,
+                    instancerId.GetText());
+            _instancePrimvarNumElements
+                = std::min(numElements, _instancePrimvarNumElements);
+        }
+
+        sources.push_back(source);
+
+        _hasDisplayOpacity = _hasDisplayOpacity ||
+            (primvar.name == HdTokens->displayOpacity);
+        _hasNormals = _hasNormals ||
+            (primvar.name == HdTokens->normals);
     }
 
     if (!HdStCanSkipBARAllocationOrUpdate(
          sources, _instancePrimvarRange, *dirtyBits)) {
+
+        // Zero-copy direct-bind path: if every source is a direct-bindable
+        // external GPU buffer, alias the external handles in place instead of
+        // allocating/uploading a range. Reusing the existing range pointer
+        // avoids the instance-index rebuild + draw-batch invalidation that a
+        // pointer swap would trigger in HdStUpdateInstancerData. Batch-mode /
+        // mixed / CPU sources fall through to the normal path below, where the
+        // aggregation strategy's CopyData blits any external sources.
+        if (HdBufferArrayRangeSharedPtr aliasBAR =
+                HdSt_TryCreateExtGpuBufferAliasBAR(
+                    sources, resourceRegistry.get(), _instancePrimvarRange)) {
+            _instancePrimvarRange = aliasBAR;
+            return;
+        }
+
         // XXX: This should be based off the DirtyPrimvarDesc bit.
         bool hasDirtyPrimvarDesc = (*dirtyBits & HdChangeTracker::DirtyPrimvar);
         HdBufferSpecVector bufferSpecs;

@@ -412,12 +412,19 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
 
         vkGetSemaphoreWin32HandleKHR = (PFN_vkGetSemaphoreWin32HandleKHR)
             vkGetDeviceProcAddr(_vkDevice, "vkGetSemaphoreWin32HandleKHR");
+
+        vkImportSemaphoreWin32HandleKHR =
+            (PFN_vkImportSemaphoreWin32HandleKHR)vkGetDeviceProcAddr(
+                _vkDevice, "vkImportSemaphoreWin32HandleKHR");
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
         vkGetMemoryFdKHR = (PFN_vkGetMemoryFdKHR)
             vkGetDeviceProcAddr(_vkDevice, "vkGetMemoryFdKHR");
 
         vkGetSemaphoreFdKHR = (PFN_vkGetSemaphoreFdKHR)
             vkGetDeviceProcAddr(_vkDevice, "vkGetSemaphoreFdKHR");
+
+        vkImportSemaphoreFdKHR = (PFN_vkImportSemaphoreFdKHR)
+            vkGetDeviceProcAddr(_vkDevice, "vkImportSemaphoreFdKHR");
 #elif defined(VK_USE_PLATFORM_METAL_EXT)
 #endif
     }
@@ -523,7 +530,41 @@ HgiVulkanDevice::GetVMAPoolForInterop(VkImageCreateInfo imageInfo)
         HGIVULKAN_VERIFY_VK_RESULT(
             vmaCreatePool(
                 _vmaAllocator,
-                &poolInfo, 
+                &poolInfo,
+                &pool));
+        iter = _vmaInteropPoolsForMemoryType.insert({ memoryTypeIndex, pool }).first;
+    }
+    return iter->second;
+}
+
+VmaPool
+HgiVulkanDevice::GetVMAPoolForInterop(VkBufferCreateInfo bufferInfo)
+{
+    TF_VERIFY(_capabilities->supportsNativeInterop,
+        "Device doesn't support native interop!");
+    VmaAllocationCreateInfo allocInfo = {};
+    allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+    uint32_t memoryTypeIndex;
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vmaFindMemoryTypeIndexForBufferInfo(
+        GetVulkanMemoryAllocator(),
+        &bufferInfo,
+        &allocInfo,
+        &memoryTypeIndex));
+
+    std::lock_guard<std::mutex> lock(_vmaInteropPoolsLock);
+    auto iter = _vmaInteropPoolsForMemoryType.find(memoryTypeIndex);
+    if (iter == _vmaInteropPoolsForMemoryType.end()) {
+        VmaPoolCreateInfo poolInfo = {};
+        poolInfo.pMemoryAllocateNext = &_exportInfo;
+        poolInfo.memoryTypeIndex = memoryTypeIndex;
+
+        VmaPool pool;
+        HGIVULKAN_VERIFY_VK_RESULT(
+            vmaCreatePool(
+                _vmaAllocator,
+                &poolInfo,
                 &pool));
         iter = _vmaInteropPoolsForMemoryType.insert({ memoryTypeIndex, pool }).first;
     }
