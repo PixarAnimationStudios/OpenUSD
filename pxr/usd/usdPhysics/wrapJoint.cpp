@@ -6,6 +6,7 @@
 //
 #include "pxr/usd/usdPhysics/joint.h"
 #include "pxr/usd/usd/schemaBase.h"
+#include "pxr/usd/usdGeom/xformCache.h"
 
 #include "pxr/usd/sdf/primSpec.h"
 
@@ -237,10 +238,34 @@ void wrapUsdPhysicsJoint()
 
 namespace {
 
+static tuple
+_GetLocalPose0(const UsdPhysicsJoint& self, UsdGeomXformCache* cache)
+{
+    GfVec3f position;
+    GfQuatf orientation;
+    return self.GetLocalPose0(&position, &orientation, cache)
+        ? make_tuple(position, orientation)
+        : tuple();
+}
+
+static tuple
+_GetLocalPose1(const UsdPhysicsJoint& self, UsdGeomXformCache* cache)
+{
+    GfVec3f position;
+    GfQuatf orientation;
+    return self.GetLocalPose1(&position, &orientation, cache)
+        ? make_tuple(position, orientation)
+        : tuple();
+}
+
 WRAP_CUSTOM {
     _class
         .def("GetBody0", &UsdPhysicsJoint::GetBody0)
         .def("GetBody1", &UsdPhysicsJoint::GetBody1)
+        .def("GetLocalPose0", &_GetLocalPose0,
+             (arg("xformCache") = object()))
+        .def("GetLocalPose1", &_GetLocalPose1,
+             (arg("xformCache") = object()))
     ;
 }
 
