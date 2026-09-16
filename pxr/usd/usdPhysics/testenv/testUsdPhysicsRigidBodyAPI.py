@@ -710,6 +710,111 @@ class TestUsdPhysicsRigidBodyAPI(unittest.TestCase):
         self.assertNotIn(disabled.GetPrim().GetPath(), collisionPaths)
         self.assertNotIn(nestedCollider.GetPrim().GetPath(), collisionPaths)
 
+    def test_collider_get_body(self):
+        self.setup_scene()
+
+        # A rigid body with a collider nested a couple of levels below it. The
+        # collider is not itself a body; GetBody walks the ancestors and
+        # reports the owning body.
+        body = UsdGeom.Xform.Define(self.stage, "/body")
+        UsdPhysics.RigidBodyAPI.Apply(body.GetPrim())
+        collider = UsdGeom.Cube.Define(self.stage, "/body/geo/collider")
+        colliderAPI = UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+        self.assertEqual(colliderAPI.GetBody().GetPath(),
+                         body.GetPrim().GetPath())
+
+        # A collider below a DISABLED nested body. The disabled body takes no
+        # part in simulation, so the collider is owned by the nearest enabled
+        # body above it, not by the disabled one.
+        outer = UsdGeom.Xform.Define(self.stage, "/outer")
+        UsdPhysics.RigidBodyAPI.Apply(outer.GetPrim())
+        disabledBody = UsdGeom.Xform.Define(self.stage, "/outer/disabledBody")
+        disabledBodyAPI = UsdPhysics.RigidBodyAPI.Apply(disabledBody.GetPrim())
+        disabledBodyAPI.GetRigidBodyEnabledAttr().Set(False)
+        colliderBelowDisabled = UsdGeom.Cube.Define(
+            self.stage, "/outer/disabledBody/collider")
+        colliderBelowDisabledAPI = UsdPhysics.CollisionAPI.Apply(
+            colliderBelowDisabled.GetPrim())
+        self.assertEqual(colliderBelowDisabledAPI.GetBody().GetPath(),
+                         outer.GetPrim().GetPath())
+
+        # A collider whose only body ancestor is disabled has no enabled owner,
+        # so GetBody returns an invalid prim.
+        lone = UsdGeom.Xform.Define(self.stage, "/lone")
+        loneAPI = UsdPhysics.RigidBodyAPI.Apply(lone.GetPrim())
+        loneAPI.GetRigidBodyEnabledAttr().Set(False)
+        loneCollider = UsdGeom.Cube.Define(self.stage, "/lone/collider")
+        loneColliderAPI = UsdPhysics.CollisionAPI.Apply(loneCollider.GetPrim())
+        self.assertFalse(loneColliderAPI.GetBody())
+
+        # A collider with no body in its ancestry returns an invalid prim.
+        orphan = UsdGeom.Cube.Define(self.stage, "/orphan")
+        orphanAPI = UsdPhysics.CollisionAPI.Apply(orphan.GetPrim())
+        self.assertFalse(orphanAPI.GetBody())
+
+        # A collider that is itself the rigid body reports itself.
+        selfBody = UsdGeom.Cube.Define(self.stage, "/selfBody")
+        UsdPhysics.RigidBodyAPI.Apply(selfBody.GetPrim())
+        selfBodyAPI = UsdPhysics.CollisionAPI.Apply(selfBody.GetPrim())
+        self.assertEqual(selfBodyAPI.GetBody().GetPath(),
+                         selfBody.GetPrim().GetPath())
+
+    def test_collider_get_body_matches_parser(self):
+        """CollisionAPI.GetBody and the physics parser resolve a collider to
+        the same owning body, in both the simple case and the disabled-body
+        cases. The parser is scope aware and GetBody is a plain ancestor walk,
+        but they agree when the whole stage is parsed.
+        """
+        self.setup_scene()
+        UsdPhysics.Scene.Define(self.stage, "/physicsScene")
+
+        # Simple case: collider nested below an enabled body.
+        body = UsdGeom.Xform.Define(self.stage, "/body")
+        UsdPhysics.RigidBodyAPI.Apply(body.GetPrim())
+        collider = UsdGeom.Cube.Define(self.stage, "/body/geo/collider")
+        UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+
+        # Problem case: collider below a disabled body that has an enabled body
+        # above it. Resolves to the enabled body.
+        outer = UsdGeom.Xform.Define(self.stage, "/outer")
+        UsdPhysics.RigidBodyAPI.Apply(outer.GetPrim())
+        disabledBody = UsdGeom.Xform.Define(self.stage, "/outer/disabledBody")
+        disabledBodyAPI = UsdPhysics.RigidBodyAPI.Apply(disabledBody.GetPrim())
+        disabledBodyAPI.GetRigidBodyEnabledAttr().Set(False)
+        UsdPhysics.CollisionAPI.Apply(
+            UsdGeom.Cube.Define(
+                self.stage, "/outer/disabledBody/collider").GetPrim())
+
+        # Problem case: collider below a lone disabled body. Resolves to no
+        # body, so it is a static collision.
+        lone = UsdGeom.Xform.Define(self.stage, "/lone")
+        loneAPI = UsdPhysics.RigidBodyAPI.Apply(lone.GetPrim())
+        loneAPI.GetRigidBodyEnabledAttr().Set(False)
+        UsdPhysics.CollisionAPI.Apply(
+            UsdGeom.Cube.Define(self.stage, "/lone/collider").GetPrim())
+
+        # Collect the parser's owning body for every parsed collider.
+        ret_dict = UsdPhysics.UsdPhysicsLoadStageFromPrimRange(
+            self.stage, ["/"])
+        parser_body = {}
+        for key, value in ret_dict.items():
+            prim_paths, descs = value
+            if key == UsdPhysics.ObjectType.CubeShape:
+                for prim_path, desc in zip(prim_paths, descs):
+                    parser_body[prim_path] = desc.rigidBody
+
+        # Every collider the parser reported must resolve to the same body via
+        # GetBody. GetBody returns an invalid prim for a static collision,
+        # which the parser reports as an empty body path.
+        self.assertTrue(parser_body)
+        for collider_path, parser_path in parser_body.items():
+            colliderAPI = UsdPhysics.CollisionAPI(
+                self.stage.GetPrimAtPath(collider_path))
+            getter_body = colliderAPI.GetBody()
+            getter_path = (getter_body.GetPath() if getter_body
+                           else Sdf.Path())
+            self.assertEqual(getter_path, parser_path)
+
     def test_mass_rigid_body_nested(self):
         self.setup_scene()
 

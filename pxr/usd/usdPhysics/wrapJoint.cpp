@@ -238,6 +238,10 @@ void wrapUsdPhysicsJoint()
 namespace {
 
 WRAP_CUSTOM {
+    _class
+        .def("GetBody0", &UsdPhysicsJoint::GetBody0)
+        .def("GetBody1", &UsdPhysicsJoint::GetBody1)
+    ;
 }
 
 }
