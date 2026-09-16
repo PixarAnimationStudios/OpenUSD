@@ -378,6 +378,31 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Get the rigid body driven by this joint's body0 relationship.
+    ///
+    /// The relationship target need not itself be a rigid body: it may point at
+    /// a collider or other prim, in which case the owning body is the nearest
+    /// ancestor (or the target itself) with an enabled UsdPhysicsRigidBodyAPI.
+    /// A body whose physics:rigidBodyEnabled resolves to false takes no part in
+    /// simulation and is skipped, so the search continues to the nearest
+    /// enabled body above it. When body0 has no target, an invalid prim is
+    /// returned (a joint with an unset body attaches to the simulation world).
+    ///
+    /// \return The enabled rigid body prim resolved from body0, or an invalid
+    /// prim when body0 is unset or no enabled body exists in its ancestry.
+    USDPHYSICS_API
+    UsdPrim GetBody0() const;
+
+    /// Get the rigid body driven by this joint's body1 relationship.
+    ///
+    /// See GetBody0() for how the relationship target is resolved to an enabled
+    /// rigid body.
+    ///
+    /// \return The enabled rigid body prim resolved from body1, or an invalid
+    /// prim when body1 is unset or no enabled body exists in its ancestry.
+    USDPHYSICS_API
+    UsdPrim GetBody1() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
