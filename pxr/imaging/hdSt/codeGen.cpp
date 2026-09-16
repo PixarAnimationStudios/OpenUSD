@@ -511,6 +511,25 @@ _GetPackedType(TfToken const &token, bool packedAlignment)
 }
 
 static TfToken const &
+_GetInterstageIntegerQualifier(TfToken const &interstageType)
+{
+    static const TfToken noQualifier;
+    if (interstageType == _tokens->_int    ||
+        interstageType == _tokens->_uint   ||
+        interstageType == _tokens->_bool   ||
+        interstageType == _tokens->ivec2   ||
+        interstageType == _tokens->ivec3   ||
+        interstageType == _tokens->ivec4   ||
+        interstageType == _tokens->uvec2   ||
+        interstageType == _tokens->uvec3   ||
+        interstageType == _tokens->uvec4   ||
+        interstageType == _tokens->hd_ivec3) {
+        return _tokens->flat;
+    }
+    return noQualifier;
+}
+
+static TfToken const &
 _GetUnpackedType(TfToken const &token, bool packedAlignment)
 {
     if (token == _tokens->packed_2_10_10_10) {
@@ -6066,7 +6085,10 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
         // in interleaved buffer.
         _EmitDeclaration(&_resAttrib, name, dataType, binding);
 
-        interstagePrimvar.emplace_back(_GetPackedType(dataType, false), name);
+        const TfToken vertexInterstageType = _GetPackedType(dataType, false);
+        interstagePrimvar.emplace_back(
+            vertexInterstageType, name, /*arraySize=*/TfToken(),
+            _GetInterstageIntegerQualifier(vertexInterstageType));
 
         // primvar accessors
         _EmitAccessor(accessorsVS, name, dataType, binding);
@@ -6165,7 +6187,10 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
 
         _EmitDeclaration(&_resAttrib, name, dataType, binding);
 
-        interstagePrimvar.emplace_back(_GetPackedType(dataType, false), name);
+        const TfToken varyingInterstageType = _GetPackedType(dataType, false);
+        interstagePrimvar.emplace_back(
+            varyingInterstageType, name, /*arraySize=*/TfToken(),
+            _GetInterstageIntegerQualifier(varyingInterstageType));
 
         // primvar accessors
         _EmitBufferAccessor(accessorsVS, name, dataType,
@@ -6317,8 +6342,10 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
         if (_hasGS) {
             _EmitDeclaration(&_resMaterial, name, dataType, binding);
 
+            const TfToken fvarInterstageType = _GetPackedType(dataType, false);
             interstagePrimvarFVar.emplace_back(
-                _GetPackedType(dataType, false), name);
+                fvarInterstageType, name, /*arraySize=*/TfToken(),
+                _GetInterstageIntegerQualifier(fvarInterstageType));
 
             // primvar accessors (only in GS and FS)
             _EmitFVarAccessor(_hasGS, accessorsGS, name, dataType, binding,
@@ -6335,10 +6362,12 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
                 _geometricShader->GetFvarPatchType() ==
                 HdSt_GeometricShader::FvarPatchType::PATCH_BOXSPLINETRIANGLE) {
                     _procGS << "  outPrimvars." << name
-                            << " = HdGet_" << name << "(index, localST);\n";
+                            << " = " << _GetPackedTypeMutator(_ConvertBoolType(dataType), false)
+                            << "(HdGet_" << name << "(index, localST));\n";
             } else {
                 _procGS << "  outPrimvars." << name
-                        << " = HdGet_" << name << "(index);\n";
+                        << " = " << _GetPackedTypeMutator(_ConvertBoolType(dataType), false)
+                        << "(HdGet_" << name << "(index));\n";
             }
         } else if (!_geometricShader->IsPrimTypePoints()) {
             _EmitDeclaration(&_resMaterial, name, dataType, binding);

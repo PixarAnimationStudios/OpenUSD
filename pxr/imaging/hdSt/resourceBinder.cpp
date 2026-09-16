@@ -315,10 +315,16 @@ HdSt_ResourceBinder::ResolveBindings(
             _bindingMap[name] = vertexPrimvarBinding;
 
             HdTupleType valueType = it->second->GetTupleType();
-            // Special case: VBOs have intrinsic support for packed types,
-            // so expand them out to their target type for the shader binding.
+            // Packed vertex types need to be expanded to their target float
+            // type when the hardware unpacks automatically.
+            // When HgiDeviceCapabilitiesBitsPackedInt1010102Vertices is false,
+            // the data stays as packed_2_10_10_10 so the shader uses
+            // hd_vec4_2_10_10_10_get to unpack the raw data.
             if (valueType.type == HdTypeInt32_2_10_10_10_REV) {
-                valueType.type = HdTypeFloatVec4;
+                if (capabilities->IsSet(
+                        HgiDeviceCapabilitiesBitsPackedInt1010102Vertices)) {
+                    valueType.type = HdTypeFloatVec4;
+                }
             } else if (valueType.type == HdTypeHalfFloatVec2) {
                 valueType.type = HdTypeFloatVec2;
             } else if (valueType.type == HdTypeHalfFloatVec4) {
