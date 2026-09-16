@@ -5,6 +5,7 @@
 // https://openusd.org/license.
 //
 #include "pxr/usd/usdPhysics/joint.h"
+#include "pxr/usd/usdPhysics/rigidBodyAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -313,3 +314,58 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+// Resolve a joint body relationship to the rigid body it drives. The target
+// need not be a body itself; walk from the target up the ancestor hierarchy
+// and return the nearest prim with an enabled UsdPhysicsRigidBodyAPI. A
+// disabled body takes no part in simulation and is skipped.
+static UsdPrim
+_ResolveJointBody(const UsdRelationship& bodyRel)
+{
+    if (!bodyRel)
+    {
+        return UsdPrim();
+    }
+
+    SdfPathVector targets;
+    bodyRel.GetTargets(&targets);
+    if (targets.empty())
+    {
+        return UsdPrim();
+    }
+
+    const UsdStagePtr stage = bodyRel.GetPrim().GetStage();
+    UsdPrim prim = stage->GetPrimAtPath(targets.front());
+    while (prim && !prim.IsPseudoRoot())
+    {
+        const UsdPhysicsRigidBodyAPI rigidBodyAPI(prim);
+        if (rigidBodyAPI)
+        {
+            bool rigidBodyEnabled = true;
+            rigidBodyAPI.GetRigidBodyEnabledAttr().Get(&rigidBodyEnabled);
+            if (rigidBodyEnabled)
+            {
+                return prim;
+            }
+        }
+        prim = prim.GetParent();
+    }
+
+    return UsdPrim();
+}
+
+UsdPrim
+UsdPhysicsJoint::GetBody0() const
+{
+    return _ResolveJointBody(GetBody0Rel());
+}
+
+UsdPrim
+UsdPhysicsJoint::GetBody1() const
+{
+    return _ResolveJointBody(GetBody1Rel());
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
