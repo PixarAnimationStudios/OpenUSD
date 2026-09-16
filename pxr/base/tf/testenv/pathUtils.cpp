@@ -93,7 +93,7 @@ TestTfRealPath()
         // Symlinks through to nonexistent dirs
         TF_AXIOM(TfRealPath("d/e/f/g/h", true) == TfAbsPath("subdir/e/f/g/h"));
         // Symlinks through to broken link
-        TF_AXIOM(TfRealPath("g", true) == "");
+        TF_AXIOM(TfRealPath("g", true) == TfAbsPath("g"));
     }
 
     // Empty
