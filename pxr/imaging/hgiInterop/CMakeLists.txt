@@ -25,6 +25,12 @@ if (PXR_ENABLE_VULKAN_SUPPORT)
     list(APPEND optionalPrivateHeaders vulkan.h)
 endif()
 
+if (PXR_ENABLE_WEBGPU_SUPPORT)
+    list(APPEND optionalLibraries hgiWebGPU)
+    list(APPEND optionalCppFiles webgpu.cpp)
+    list(APPEND optionalPrivateHeaders webgpu.h)
+endif()
+
 if (PXR_ENABLE_METAL_SUPPORT)
     add_compile_options(-x objective-c++)
     list(APPEND optionalLibraries hgiMetal)
@@ -56,3 +62,16 @@ pxr_library(hgiInterop
         hgiInterop.cpp
         ${optionalCppFiles}
 )
+
+if (PXR_ENABLE_WEBGPU_SUPPORT)
+    # webgpu.cpp transitively includes Dawn/emdawnwebgpu headers that require C++20.
+    if (EMSCRIPTEN)
+        set(_hgiInteropTarget hgiInterop_internal)
+    else()
+        set(_hgiInteropTarget hgiInterop)
+    endif()
+    set_target_properties(${_hgiInteropTarget} PROPERTIES
+        CXX_STANDARD 20
+        CXX_STANDARD_REQUIRED ON
+    )
+endif()

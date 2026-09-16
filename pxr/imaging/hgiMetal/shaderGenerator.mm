@@ -489,6 +489,10 @@ _ComputeHeader(id<MTLDevice> device, HgiShaderStage stage)
     // XXX: this macro is still used in GlobalUniform.
     header  << "#define MAT4 mat4\n";
 
+    // Advertise to shader code that we have IEEE float special values
+    // and IEEE float special values (NaN, +-Inf).
+    header  << "#define HGI_HAS_IEEE_FLOAT_SPECIAL_VALUES 1\n";
+
     // macros to help with declarations
     header  << _GetDeclarationDefinitions();
 

@@ -5,6 +5,7 @@ add_executable(wasmFetchResolver
 
 target_link_options(wasmFetchResolver PRIVATE "SHELL:-sFETCH=1")
 target_link_options(wasmFetchResolver PRIVATE "SHELL:-sASYNCIFY=1")
+target_link_options(wasmFetchResolver PRIVATE "SHELL:-sINITIAL_MEMORY=128MB")
 target_link_options(wasmFetchResolver PRIVATE --no-entry)
 target_link_options(wasmFetchResolver PRIVATE --bind)
 
