@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <nodegraph name="wrapper_nodegraph">
+    <geompropvalue name="textureIdx" type="integer">
+      <input name="geomprop" type="string" value="body_textureIdx" />
+      <input name="default" type="integer" value="2" />
+    </geompropvalue>
+    <switch name="switchTexture" type="color3">
+      <input name="in1" type="color3" value="1.0, 0.0, 0.0" />
+      <input name="in2" type="color3" value="0.0, 1.0, 0.0" />
+      <input name="in3" type="color3" value="0.0, 0.0, 1.0" />
+      <input name="which" type="integer" nodename="textureIdx" />
+    </switch>
+    <output name="diffuse_output" type="color3" nodename="switchTexture" />
+  </nodegraph>
+  <UsdPreviewSurface name="Surface" type="surfaceshader">
+    <input name="diffuseColor" type="color3" output="diffuse_output" nodegraph="wrapper_nodegraph" />
+    <input name="roughness" type="float" value="0.25" />
+  </UsdPreviewSurface>
+  <surfacematerial name="surface_material_node" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="Surface" />
+  </surfacematerial>
+</materialx>

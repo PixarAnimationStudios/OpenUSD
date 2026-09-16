@@ -87,6 +87,34 @@ _GetMaterialTag(mx::DocumentPtr const& mxDoc)
     return HdStMaterialTagTokens->defaultMaterialTag;
 }
 
+// 'flat' is a vertex-stage interpolation qualifier that is only legal on
+// interstage (in/out) variables, not on a plain struct member. Storm emits
+// MaterialX's vertex data block as a local 'mxVertexData' struct, so an integer
+// geomprop member must NOT carry a 'flat' qualifier or the shader fails to
+// compile (error C7561). Verify the generated struct stays clean.
+static void
+_VerifyNoFlatInVertexDataStruct(const std::string& sourceCode)
+{
+    const size_t structPos = sourceCode.find("struct mxVertexData");
+    if (structPos == std::string::npos) {
+        return;
+    }
+    const size_t open = sourceCode.find('{', structPos);
+    const size_t close = sourceCode.find('}', open);
+    if (open == std::string::npos || close == std::string::npos) {
+        TF_FATAL_ERROR("Found 'struct mxVertexData' but could not find "
+            "its brace-delimited body in the generated shader.");
+        return;
+    }
+    const std::string structBody = sourceCode.substr(open, close - open);
+    if (structBody.find("flat") != std::string::npos) {
+        TF_FATAL_ERROR(
+            "Found an illegal 'flat' qualifier on a member of the mxVertexData "
+            "struct in the generated GLSL. 'flat' is not allowed on struct "
+            "members and will fail to compile (error C7561).");
+    }
+}
+
 void TestShaderGen(
     const mx::FilePath& mtlxFilename, 
     HdSt_MxShaderGenInfo* mxHdInfo)
@@ -126,7 +154,10 @@ void TestShaderGen(
     // Generate the HdSt MaterialX Shader
     mx::ShaderPtr glslfx = HdSt_GenMaterialXShader(
         mxDoc, stdLibraries, searchPaths, *mxHdInfo, HgiTokens->OpenGL);
-    std::cout << glslfx->getSourceCode(mx::Stage::PIXEL);
+    const std::string sourceCode = glslfx->getSourceCode(mx::Stage::PIXEL);
+    std::cout << sourceCode;
+
+    _VerifyNoFlatInVertexDataStruct(sourceCode);
 }
 
 int main(int argc, char *argv[])
