@@ -564,8 +564,9 @@ _ConvertNodes(
         SdrShaderPropertyConstPtr downstreamProp =
             sdrEntry->GetShaderInput(connEntry.first);
         if (!downstreamProp) {
-            TF_WARN("Unknown downstream property %s in <%s>",
-                    connEntry.first.data(), id.GetText());
+            TF_WARN("Unknown downstream property %s.%s (%s) in <%s>",
+                    nodePath.GetText(), connEntry.first.data(), 
+                    sdrEntry->GetName().c_str(), id.GetText());
             continue;
         }
         RtUString name(downstreamProp->GetImplementationName().c_str());
