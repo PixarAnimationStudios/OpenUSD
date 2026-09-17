@@ -7,6 +7,7 @@
 #include "dataSourceTreeWidget.h"
 
 #include "pxr/base/tf/denseHashSet.h"
+#include "pxr/imaging/hd/dataSourceLocator.h"
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/materialBindingsSchema.h"
 
@@ -313,26 +314,28 @@ HduiDataSourceTreeWidget::HduiDataSourceTreeWidget(QWidget *parent)
     });
 
     connect(this,  &QTreeWidget::itemSelectionChanged, [this]() {
-
         QList<QTreeWidgetItem *> items = this->selectedItems();
         if (items.empty()) {
-            return;
+            _selectedLocator = HdDataSourceLocator::EmptyLocator();
+            Q_EMIT DataSourceSelected(nullptr);
         }
-
-        if (Hdui_DataSourceTreeWidgetItem * dsItem =
+        else if (Hdui_DataSourceTreeWidgetItem * dsItem =
                 dynamic_cast<Hdui_DataSourceTreeWidgetItem *>(items[0])) {
+            _selectedLocator = dsItem->GetLocator();
             Q_EMIT DataSourceSelected(dsItem->GetDataSource());
         }
     });
-
-
 }
 
 void
 HduiDataSourceTreeWidget::SetPrimDataSource(const SdfPath &primPath,
         HdContainerDataSourceHandle const &dataSource)
 {
+    // This results in itemSelectionChanged to fire which will reset the selection.
+    // We save it here so we can restore it.
+    HdDataSourceLocator selectedLocator = _selectedLocator;
     clear();
+    _selectedLocator = selectedLocator;
 
     if (dataSource) {
         if (HdContainerDataSourceHandle container =
@@ -360,6 +363,13 @@ HduiDataSourceTreeWidget::SetPrimDataSource(const SdfPath &primPath,
                     dataSource);
             item->setText(0, primPath.GetName().c_str());
         }
+    }
+
+    // Try to expand/select.
+    if (auto* item = dynamic_cast<Hdui_DataSourceTreeWidgetItem*>(
+            _Expand(_selectedLocator));
+        item && item->GetLocator() == _selectedLocator) {
+        item->setSelected(true);
     }
 }
 
@@ -416,7 +426,7 @@ HduiDataSourceTreeWidget::PrimDirtied(
         if (Hdui_DataSourceTreeWidgetItem * dsItem =
                 dynamic_cast<Hdui_DataSourceTreeWidgetItem *>(items[0])) {
             if (locators.Intersects(dsItem->GetLocator())) {
-                Q_EMIT itemSelectionChanged();
+                Q_EMIT DataSourceSelected(dsItem->GetDataSource());
             }
         }
     }
@@ -461,6 +471,43 @@ HduiDataSourceTreeWidget::contextMenuEvent(QContextMenuEvent *event)
     dumpToFile->setEnabled(enable);
 
     menu.exec(event->globalPos());
+}
+
+
+QTreeWidgetItem*
+HduiDataSourceTreeWidget::_Expand(const HdDataSourceLocator& locator)
+{
+    std::vector<QTreeWidgetItem*> queue = {};
+    {
+        QTreeWidgetItem* root = invisibleRootItem();
+        for (int i = 0, e = root->childCount(); i < e; ++i) {
+            queue.push_back(root->child(i));
+        }
+    }
+
+    Hdui_DataSourceTreeWidgetItem* deepestItem = nullptr;
+    while (!queue.empty()) {
+        QTreeWidgetItem* qi = queue.back();
+        queue.pop_back();
+        if (auto* dsqi = dynamic_cast<Hdui_DataSourceTreeWidgetItem*>(qi)) {
+            const HdDataSourceLocator itemLoc = dsqi->GetLocator();
+            if (!locator.HasPrefix(itemLoc)) {
+                continue;
+            }
+            deepestItem = dsqi;
+
+            if (itemLoc == locator) {
+                break;
+            }
+
+            dsqi->setExpanded(true);
+            for (int i = 0, e = qi->childCount(); i < e; ++i) {
+                queue.push_back(qi->child(i));
+            }
+        }
+    }
+
+    return deepestItem;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
