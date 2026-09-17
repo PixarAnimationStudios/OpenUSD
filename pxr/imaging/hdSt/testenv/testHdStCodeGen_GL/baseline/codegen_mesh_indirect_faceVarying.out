@@ -60,6 +60,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 #define HD_SHADER_API 3
 #define MAT4 mat4
 #define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -416,6 +417,7 @@ vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
 
 
 
+#ifdef HD_USE_HARDWARE_CLIPPING
 void ApplyClipPlanes(vec4 Peye)
 {
 #if defined(HD_HAS_numClipPlanes)
@@ -433,6 +435,7 @@ void ApplyClipPlanes(vec4 Peye)
 #endif
 #endif
 }
+#endif
 
 
 
@@ -565,6 +568,7 @@ MAT4 GetInstanceTransform()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = GetInstanceTransform(i) * m;
 #ifdef HD_HAS_instancerTransform
@@ -579,6 +583,7 @@ MAT4 GetInstanceTransformInverse()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = m * GetInstanceTransformInverse(i);
 #ifdef HD_HAS_instancerTransformInverse
@@ -613,11 +618,13 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceScales
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_hydra_instanceScales(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
     }
 #elif defined(HD_HAS_INSTANCE_scale)
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
@@ -625,11 +632,13 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceTransforms
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_hydra_instanceTransforms(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
     }
 #elif defined(HD_HAS_INSTANCE_instanceTransform)
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
@@ -1022,6 +1031,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 #define HD_SHADER_API 3
 #define MAT4 mat4
 #define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -1471,6 +1481,7 @@ vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
 
 
 
+#ifdef HD_USE_HARDWARE_CLIPPING
 void ApplyClipPlanes(vec4 Peye)
 {
 #if defined(HD_HAS_numClipPlanes)
@@ -1488,6 +1499,7 @@ void ApplyClipPlanes(vec4 Peye)
 #endif
 #endif
 }
+#endif
 
 
 
@@ -1626,6 +1638,7 @@ MAT4 GetInstanceTransform()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = GetInstanceTransform(i) * m;
 #ifdef HD_HAS_instancerTransform
@@ -1640,6 +1653,7 @@ MAT4 GetInstanceTransformInverse()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = m * GetInstanceTransformInverse(i);
 #ifdef HD_HAS_instancerTransformInverse
@@ -1674,11 +1688,13 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceScales
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_hydra_instanceScales(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
     }
 #elif defined(HD_HAS_INSTANCE_scale)
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
@@ -1686,11 +1702,13 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceTransforms
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_hydra_instanceTransforms(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
     }
 #elif defined(HD_HAS_INSTANCE_instanceTransform)
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
@@ -1868,6 +1886,7 @@ vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspNV;
 #define HD_SHADER_API 3
 #define MAT4 mat4
 #define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -2536,6 +2555,7 @@ MAT4 GetInstanceTransform()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = GetInstanceTransform(i) * m;
 #ifdef HD_HAS_instancerTransform
@@ -2550,6 +2570,7 @@ MAT4 GetInstanceTransformInverse()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = m * GetInstanceTransformInverse(i);
 #ifdef HD_HAS_instancerTransformInverse
@@ -2584,11 +2605,13 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceScales
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_hydra_instanceScales(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
     }
 #elif defined(HD_HAS_INSTANCE_scale)
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
@@ -2596,11 +2619,13 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceTransforms
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_hydra_instanceTransforms(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
     }
 #elif defined(HD_HAS_INSTANCE_instanceTransform)
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
@@ -3106,6 +3131,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 #define HD_SHADER_API 3
 #define MAT4 mat4
 #define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -3462,6 +3488,7 @@ vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
 
 
 
+#ifdef HD_USE_HARDWARE_CLIPPING
 void ApplyClipPlanes(vec4 Peye)
 {
 #if defined(HD_HAS_numClipPlanes)
@@ -3479,6 +3506,7 @@ void ApplyClipPlanes(vec4 Peye)
 #endif
 #endif
 }
+#endif
 
 
 
@@ -3611,6 +3639,7 @@ MAT4 GetInstanceTransform()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = GetInstanceTransform(i) * m;
 #ifdef HD_HAS_instancerTransform
@@ -3625,6 +3654,7 @@ MAT4 GetInstanceTransformInverse()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = m * GetInstanceTransformInverse(i);
 #ifdef HD_HAS_instancerTransformInverse
@@ -3659,11 +3689,13 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceScales
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_hydra_instanceScales(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
     }
 #elif defined(HD_HAS_INSTANCE_scale)
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
@@ -3671,11 +3703,13 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceTransforms
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_hydra_instanceTransforms(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
     }
 #elif defined(HD_HAS_INSTANCE_instanceTransform)
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
@@ -4068,6 +4102,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 #define HD_SHADER_API 3
 #define MAT4 mat4
 #define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -4517,6 +4552,7 @@ vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
 
 
 
+#ifdef HD_USE_HARDWARE_CLIPPING
 void ApplyClipPlanes(vec4 Peye)
 {
 #if defined(HD_HAS_numClipPlanes)
@@ -4534,6 +4570,7 @@ void ApplyClipPlanes(vec4 Peye)
 #endif
 #endif
 }
+#endif
 
 
 
@@ -4672,6 +4709,7 @@ MAT4 GetInstanceTransform()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = GetInstanceTransform(i) * m;
 #ifdef HD_HAS_instancerTransform
@@ -4686,6 +4724,7 @@ MAT4 GetInstanceTransformInverse()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = m * GetInstanceTransformInverse(i);
 #ifdef HD_HAS_instancerTransformInverse
@@ -4720,11 +4759,13 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceScales
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_hydra_instanceScales(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
     }
 #elif defined(HD_HAS_INSTANCE_scale)
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
@@ -4732,11 +4773,13 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceTransforms
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_hydra_instanceTransforms(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
     }
 #elif defined(HD_HAS_INSTANCE_instanceTransform)
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
@@ -4943,6 +4986,7 @@ vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspNV;
 #define HD_SHADER_API 3
 #define MAT4 mat4
 #define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
+#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -5611,6 +5655,7 @@ MAT4 GetInstanceTransform()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = GetInstanceTransform(i) * m;
 #ifdef HD_HAS_instancerTransform
@@ -5625,6 +5670,7 @@ MAT4 GetInstanceTransformInverse()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = m * GetInstanceTransformInverse(i);
 #ifdef HD_HAS_instancerTransformInverse
@@ -5659,11 +5705,13 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceScales
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_hydra_instanceScales(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
     }
 #elif defined(HD_HAS_INSTANCE_scale)
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
@@ -5671,11 +5719,13 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceTransforms
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_hydra_instanceTransforms(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
     }
 #elif defined(HD_HAS_INSTANCE_instanceTransform)
+    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);

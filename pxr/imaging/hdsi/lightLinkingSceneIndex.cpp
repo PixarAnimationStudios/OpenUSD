@@ -1140,6 +1140,7 @@ HdsiLightLinkingSceneIndex::HdsiLightLinkingSceneIndex(
         HdsiLightLinkingSceneIndexTokens->geometryPrimTypes,
         GEOMETRY_PRIM_TYPES))
   , _predicateLibrary(predicateLibrary)
+  , _wasPopulated(false)
 {
 }
 

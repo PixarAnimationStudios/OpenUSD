@@ -8,7 +8,6 @@
 #include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
-#include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/garch/glDebugWindow.h"
 
 #include "pxr/base/gf/frustum.h"
@@ -69,7 +68,6 @@ void
 HdSt_UnitTestWindow::OnInitializeGL()
 {
     GarchGLApiLoad();
-    GlfRegisterDefaultDebugOutputMessageCallback();
 
     std::cout << glGetString(GL_VENDOR) << "\n";
     std::cout << glGetString(GL_RENDERER) << "\n";

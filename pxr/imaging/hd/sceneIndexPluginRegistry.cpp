@@ -1140,7 +1140,10 @@ HdSceneIndexPluginRegistry::_Impl::IsPluginRelevantForApp(
         return true;
     }
     const std::set<std::string>& apps = preloadAppsIt->second;
-    return apps.empty() || apps.count(appName) > 0;
+
+    return apps.empty()
+        || apps.count(HdSceneIndexPluginRegistryTokens->allApps) > 0
+        || apps.count(appName) > 0;
 }
 
 //------------------------------------------------------------------------------
@@ -1237,6 +1240,10 @@ _BuildStringVector(const JsValue &value)
         return value.GetArrayOf<std::string>();
     }
     if (value.GetType() == JsValue::StringType) {
+        // Note: Don't skip the empty ("") string entry.
+        // It is a valid key in the preloadsForRenderers (renderer -> pluginIds)
+        // map and a vaid value in the preloadAppsForPlugins (pluginId -> apps)
+        // map.
         return { value.GetString() };
     }
     return {};

@@ -6,7 +6,7 @@
 //
 #include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/glf/testGLContext.h"
+#include "pxr/imaging/garch/glDebugWindow.h"
 #include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/errorMark.h"
@@ -153,9 +153,9 @@ int main(int argc, char **argv)
 {
     TfErrorMark mark;
 
-    GlfTestGLContext::RegisterGLContextCallbacks();
+    GarchGLDebugWindow window("Hd Test", 512, 512);
+    window.Init();
     GarchGLApiLoad();
-    GlfSharedGLContextScopeHolder sharedContext;
 
     if (argc != 3) {
         std::cout << "Usage: " << argv[0] << " <glslfx> <entry>\n";

@@ -7,7 +7,6 @@
 #include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
-#include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdx/drawTargetTask.h"
 #include "pxr/imaging/hdx/tokens.h"
@@ -514,7 +513,6 @@ HdxDrawTargetTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
     // Apply polygon offset to whole pass.
     // XXX TODO: Move to an appropriate home

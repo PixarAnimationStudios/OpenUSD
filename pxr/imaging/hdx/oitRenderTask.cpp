@@ -18,8 +18,6 @@
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 
-#include "pxr/imaging/glf/diagnostic.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 static const HioGlslfxSharedPtr &
@@ -166,7 +164,6 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
     if (!_isOitEnabled || !HdxRenderTask::_HasDrawItems()) {
         return;
@@ -266,6 +263,8 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
     oitBufferAccessor.AddOitBufferBindings(_translucentPassShader);
     // Ensure RenderPassState buffer binding is registered with the shader
     stTranslucentPassState->SetRenderPassShader(_translucentPassShader);
+    // Ensure selection highlight bindings are registered with the shader
+    _SetHdStSelectionBindings(ctx, _translucentPassShader);
 
     // Translucent pass state overrides
     _translucentPassState->SetEnableDepthMask(false);

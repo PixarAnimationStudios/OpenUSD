@@ -216,3 +216,28 @@ class "HydraRenderPassAPI" (
         provides a way to specify renderer selection in a USD-based pipeline."""
     )
 }
+
+class "HydraPrimAPI" (
+    inherits = </APISchemaBase>
+    doc = """Provides Hydra-specific prim settings."""
+    customData = {
+        string className = "PrimAPI"
+    }
+) {
+    uniform bool hydra:expandInstances = 0 (
+        doc = """This property can be used to de-instance the Hydra scene
+        index representation of prims that were otherwise instanceable
+        in the USD scenegraph.  If the USD prim was not instanceable,
+        this has no effect.
+
+        If a prim has hydra:expandInstances=1, it and all its namespace
+        descendants will be unrolled in the scene index using the USD
+        proxy prim API.
+
+        This can be used to facilitate Hydra scene index filtering
+        transformations which cannot be easily expressed when the
+        structure uses instancing.  For example, some operations
+        require unique modifications to an instance of what would
+        otherwise be a shareable prototype."""
+    )
+}

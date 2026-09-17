@@ -2,12 +2,7 @@
 (
     framePrecision = 3
     framesPerSecond = 24
-)
-
-def MfScope "TestPrim" (
     relocates = {
     }
 )
-{
-}
 

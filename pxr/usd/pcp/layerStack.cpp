@@ -472,7 +472,8 @@ private:
     {
         // Check for relocations on this prim.
         SdfRelocatesMap relocates;
-        if (!layer->HasField(primPath, SdfFieldKeys->Relocates, &relocates)) {
+        if (!layer->HasField(primPath, Pcp_Fields->primRelocates,
+                             &relocates)) {
             return false;
         }
 

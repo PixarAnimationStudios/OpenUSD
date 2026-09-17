@@ -16,6 +16,7 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/reference.h"
 
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
 
@@ -714,6 +715,15 @@ SdfCopySpec(
 
 // ------------------------------------------------------------
 
+// XXX:
+// This is here for backwards compatibility with legacy code and
+// assets with prim-level relocates. This should be removed as support
+// for that feature is phased out.
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((Relocates, "relocates"))
+);
+
 template <class T>
 static T 
 _FixInternalSubrootPaths(
@@ -792,7 +802,7 @@ SdfShouldCopyValue(
                 *valueToCopy = VtValue::Take(payloadListOp);
             }
         }
-        else if (field == SdfFieldKeys->Relocates) {
+        else if (field == _tokens->Relocates) {
             SdfRelocatesMap relocates;
             if (srcLayer->HasField(srcPath, field, &relocates)) {
                 const SdfPath& srcPrefix = 

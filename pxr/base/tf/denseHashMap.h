@@ -14,20 +14,22 @@
 #include "pxr/base/tf/hashmap.h"
 
 #include <memory>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfDenseHashMap
 ///
-/// This is a space efficient container that mimics the TfHashMap API that
-/// uses a vector for storage when the size of the map is small.
+/// A hash map with contiguous storage, suitable for use with TfSpan, e.g.
 ///
-/// When the map gets bigger than \p Threshold a TfHashMap is allocated
-/// that is used to accelerate lookup in the vector.
+/// When the number of elements in the map is small, search operations are done
+/// by linear search. When the size surpassees \p Threshold, a hash table is
+/// allocated and used to accelerate lookup.
 ///
-/// \warning This differs from a TfHashMap in so far that inserting and
-/// removing elements invalidate all iterators of the container.
+/// \note
+/// Inserting and removing elements invalidates iterators.
 ///
 template <
     class    Key,
@@ -41,9 +43,11 @@ class TfDenseHashMap
 {
 public:
 
-    typedef std::pair<const Key, Data> value_type;
-    typedef Key                        key_type;
-    typedef Data                       mapped_type;
+    using key_type = Key;
+    using mapped_type = Data;
+    using value_type = std::pair<const Key, Data>;
+    using pointer = value_type*;
+    using const_pointer = const value_type*;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -339,28 +343,58 @@ public:
         return _vec().size();
     }
 
-    /// Returns an const_iterator pointing to the beginning of the map.
+    /// Returns an iterator pointing to the beginning of the map.
     ///
     iterator begin() {
         return _vec().begin();
     }
 
-    /// Returns an const_iterator pointing to the end of the map.
+    /// Returns an iterator pointing to the end of the map.
     ///
     iterator end() {
         return _vec().end();
     }
 
-    /// Returns an const_iterator pointing to the beginning of the map.
+    /// Returns a const_iterator pointing to the beginning of the map.
     ///
     const_iterator begin() const {
         return _vec().begin();
     }
     
-    /// Returns an const_iterator pointing to the end of the map.
+    /// Returns a const_iterator pointing to the end of the map.
     ///
     const_iterator end() const {
         return _vec().end();
+    }
+
+    /// Returns a const_iterator pointing to the beginning of the map.
+    ///
+    const_iterator cbegin() const {
+        return _vec().cbegin();
+    }
+    
+    /// Returns a const_iterator pointing to the end of the map.
+    ///
+    const_iterator cend() const {
+        return _vec().cbegin();
+    }
+
+    /// Returns a pointer to the map's data.
+    ///
+    pointer data() {
+        return _vec().empty() ? nullptr : &_vec().front().GetValue();
+    }
+
+    /// Returns a const pointer to the map's data.
+    ///
+    const_pointer data() const {
+        return _vec().empty() ? nullptr : &_vec().front().GetValue();
+    }
+
+    /// Returns a const pointer to the map's data.
+    ///
+    const_pointer cdata() const {
+        return _vec().empty() ? nullptr : &_vec().front().GetValue();
     }
 
     /// Finds the element with key \p k.

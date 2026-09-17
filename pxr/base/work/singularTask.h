@@ -17,13 +17,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class WorkDispatcher;
-
 /// \class WorkSingularTask
 ///
-/// A WorkSingularTask runs a task in a WorkDispatcher, but never concurrently
+/// A WorkSingularTask runs a task in a work dispatcher, but never concurrently
 /// with itself.  That is, the function provided to the WorkSingularTask runs
-/// concurrently with other tasks in the WorkDispatcher, but never with another
+/// concurrently with other tasks in the dispatcher, but never with another
 /// invocation of itself.
 ///
 /// This is useful if there is single-threaded work to do that can be overlapped
@@ -51,16 +49,19 @@ public:
     /// A singular task is one that will not run concurrently with itself.  See
     /// the WorkSingularTask doc for more details.
     ///
+    /// The \p Dispatcher type may be WorkDispatcher or
+    /// WorkIsolatingDispatcher.
+    ///
     /// After constructing a WorkSingularTask, call Wake() to ensure that the
     /// task runs at least once.
-    template <class Callable, class A1, class A2, ... class AN>
-    WorkSingularTask(WorkDispatcher &dispatcher,
+    template <class Dispatcher, class Callable, class A1, class A2, ... class AN>
+    WorkSingularTask(Dispatcher &dispatcher,
                      Callable &&c, A1 &&a1, A2 &&a2, ... AN &&aN);
 
 #else // doxygen
 
-    template <class Callable, class... Args>
-    WorkSingularTask(WorkDispatcher &d, Callable &&c, Args&&... args)
+    template <class Dispatcher, class Callable, class... Args>
+    WorkSingularTask(Dispatcher &d, Callable &&c, Args&&... args)
         : _waker(_MakeWaker(d, std::bind(std::forward<Callable>(c),
                                          std::forward<Args>(args)...)))
         , _count(0) {}

@@ -1,0 +1,389 @@
+1. Evaluating expression "//"
+
+(Hydra) Matched non-instance prim paths:
+	/
+	/Cam
+	/Lights
+	/Lights/Blue
+	/Lights/Green
+	/Lights/Red
+	/UsdNiPropagatedPrototypes
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer/UsdNiPrototype
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer/UsdNiPrototype/I1
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer/UsdNiPrototype/I2
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer/UsdNiPrototype/I3
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer/UsdNiPrototype/UsdNiPropagatedPrototypes
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer/UsdNiPrototype/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer/UsdNiPrototype/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_2
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer/UsdNiPrototype/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_2/UsdNiInstancer
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer/UsdNiPrototype/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_2/UsdNiInstancer/UsdNiPrototype
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer/UsdNiPrototype/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_2/UsdNiInstancer/UsdNiPrototype/Implicits
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer/UsdNiPrototype/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_2/UsdNiInstancer/UsdNiPrototype/Implicits/Box
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer/UsdNiPrototype/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_2/UsdNiInstancer/UsdNiPrototype/Implicits/Cone
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer/UsdNiPrototype/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_2/UsdNiInstancer/UsdNiPrototype/Implicits/CylinderL
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer/UsdNiPrototype/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_2/UsdNiInstancer/UsdNiPrototype/Implicits/CylinderR
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_1/UsdNiInstancer/UsdNiPrototype/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisd827b8678191286/__Prototype_2/UsdNiInstancer/UsdNiPrototype/Implicits/Sphere
+	/World
+	/World/Chars
+	/World/Chars/Group_1
+	/World/Chars/Group_2
+
+(Hydra) Fully matched instance prim paths:
+	/World/Chars/Group_1/Humanoids
+	/World/Chars/Group_2/Humanoids
+
+(Hydra) Partially matched instance prim paths:
+
+(Hydra) Matched instance proxy prim paths:
+	/World/Chars/Group_1/Humanoids/I1
+	/World/Chars/Group_1/Humanoids/I1/Implicits
+	/World/Chars/Group_1/Humanoids/I1/Implicits/Box
+	/World/Chars/Group_1/Humanoids/I1/Implicits/Cone
+	/World/Chars/Group_1/Humanoids/I1/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I1/Implicits/CylinderR
+	/World/Chars/Group_1/Humanoids/I1/Implicits/Sphere
+	/World/Chars/Group_1/Humanoids/I2
+	/World/Chars/Group_1/Humanoids/I2/Implicits
+	/World/Chars/Group_1/Humanoids/I2/Implicits/Box
+	/World/Chars/Group_1/Humanoids/I2/Implicits/Cone
+	/World/Chars/Group_1/Humanoids/I2/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I2/Implicits/CylinderR
+	/World/Chars/Group_1/Humanoids/I2/Implicits/Sphere
+	/World/Chars/Group_1/Humanoids/I3
+	/World/Chars/Group_1/Humanoids/I3/Implicits
+	/World/Chars/Group_1/Humanoids/I3/Implicits/Box
+	/World/Chars/Group_1/Humanoids/I3/Implicits/Cone
+	/World/Chars/Group_1/Humanoids/I3/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I3/Implicits/CylinderR
+	/World/Chars/Group_1/Humanoids/I3/Implicits/Sphere
+	/World/Chars/Group_2/Humanoids/I1
+	/World/Chars/Group_2/Humanoids/I1/Implicits
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Sphere
+	/World/Chars/Group_2/Humanoids/I2
+	/World/Chars/Group_2/Humanoids/I2/Implicits
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Sphere
+	/World/Chars/Group_2/Humanoids/I3
+	/World/Chars/Group_2/Humanoids/I3/Implicits
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Sphere
+
+All (non-internal) matched prim paths w/ Hydra (count = 54):
+	/
+	/Cam
+	/Lights
+	/Lights/Blue
+	/Lights/Green
+	/Lights/Red
+	/World
+	/World/Chars
+	/World/Chars/Group_1
+	/World/Chars/Group_1/Humanoids
+	/World/Chars/Group_1/Humanoids/I1
+	/World/Chars/Group_1/Humanoids/I1/Implicits
+	/World/Chars/Group_1/Humanoids/I1/Implicits/Box
+	/World/Chars/Group_1/Humanoids/I1/Implicits/Cone
+	/World/Chars/Group_1/Humanoids/I1/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I1/Implicits/CylinderR
+	/World/Chars/Group_1/Humanoids/I1/Implicits/Sphere
+	/World/Chars/Group_1/Humanoids/I2
+	/World/Chars/Group_1/Humanoids/I2/Implicits
+	/World/Chars/Group_1/Humanoids/I2/Implicits/Box
+	/World/Chars/Group_1/Humanoids/I2/Implicits/Cone
+	/World/Chars/Group_1/Humanoids/I2/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I2/Implicits/CylinderR
+	/World/Chars/Group_1/Humanoids/I2/Implicits/Sphere
+	/World/Chars/Group_1/Humanoids/I3
+	/World/Chars/Group_1/Humanoids/I3/Implicits
+	/World/Chars/Group_1/Humanoids/I3/Implicits/Box
+	/World/Chars/Group_1/Humanoids/I3/Implicits/Cone
+	/World/Chars/Group_1/Humanoids/I3/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I3/Implicits/CylinderR
+	/World/Chars/Group_1/Humanoids/I3/Implicits/Sphere
+	/World/Chars/Group_2
+	/World/Chars/Group_2/Humanoids
+	/World/Chars/Group_2/Humanoids/I1
+	/World/Chars/Group_2/Humanoids/I1/Implicits
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Sphere
+	/World/Chars/Group_2/Humanoids/I2
+	/World/Chars/Group_2/Humanoids/I2/Implicits
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Sphere
+	/World/Chars/Group_2/Humanoids/I3
+	/World/Chars/Group_2/Humanoids/I3/Implicits
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Sphere
+
+All matched prim paths w/ USD (count = 53):
+	/Cam
+	/Lights
+	/Lights/Blue
+	/Lights/Green
+	/Lights/Red
+	/World
+	/World/Chars
+	/World/Chars/Group_1
+	/World/Chars/Group_1/Humanoids
+	/World/Chars/Group_1/Humanoids/I1
+	/World/Chars/Group_1/Humanoids/I1/Implicits
+	/World/Chars/Group_1/Humanoids/I1/Implicits/Box
+	/World/Chars/Group_1/Humanoids/I1/Implicits/Cone
+	/World/Chars/Group_1/Humanoids/I1/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I1/Implicits/CylinderR
+	/World/Chars/Group_1/Humanoids/I1/Implicits/Sphere
+	/World/Chars/Group_1/Humanoids/I2
+	/World/Chars/Group_1/Humanoids/I2/Implicits
+	/World/Chars/Group_1/Humanoids/I2/Implicits/Box
+	/World/Chars/Group_1/Humanoids/I2/Implicits/Cone
+	/World/Chars/Group_1/Humanoids/I2/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I2/Implicits/CylinderR
+	/World/Chars/Group_1/Humanoids/I2/Implicits/Sphere
+	/World/Chars/Group_1/Humanoids/I3
+	/World/Chars/Group_1/Humanoids/I3/Implicits
+	/World/Chars/Group_1/Humanoids/I3/Implicits/Box
+	/World/Chars/Group_1/Humanoids/I3/Implicits/Cone
+	/World/Chars/Group_1/Humanoids/I3/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I3/Implicits/CylinderR
+	/World/Chars/Group_1/Humanoids/I3/Implicits/Sphere
+	/World/Chars/Group_2
+	/World/Chars/Group_2/Humanoids
+	/World/Chars/Group_2/Humanoids/I1
+	/World/Chars/Group_2/Humanoids/I1/Implicits
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Sphere
+	/World/Chars/Group_2/Humanoids/I2
+	/World/Chars/Group_2/Humanoids/I2/Implicits
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Sphere
+	/World/Chars/Group_2/Humanoids/I3
+	/World/Chars/Group_2/Humanoids/I3/Implicits
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Sphere
+
+-----------------------------------------------------
+2. Evaluating expression "/World/Chars/Group_1/Humanoids"
+
+(Hydra) Matched non-instance prim paths:
+
+(Hydra) Fully matched instance prim paths:
+
+(Hydra) Partially matched instance prim paths:
+
+(Hydra) Matched instance proxy prim paths:
+
+All (non-internal) matched prim paths w/ Hydra (count = 0):
+
+All matched prim paths w/ USD (count = 1):
+	/World/Chars/Group_1/Humanoids
+
+-----------------------------------------------------
+3. Evaluating expression "/World/Chars/Group_2/Humanoids//"
+
+(Hydra) Matched non-instance prim paths:
+
+(Hydra) Fully matched instance prim paths:
+	/World/Chars/Group_2/Humanoids
+
+(Hydra) Partially matched instance prim paths:
+
+(Hydra) Matched instance proxy prim paths:
+	/World/Chars/Group_2/Humanoids/I1
+	/World/Chars/Group_2/Humanoids/I1/Implicits
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Sphere
+	/World/Chars/Group_2/Humanoids/I2
+	/World/Chars/Group_2/Humanoids/I2/Implicits
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Sphere
+	/World/Chars/Group_2/Humanoids/I3
+	/World/Chars/Group_2/Humanoids/I3/Implicits
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Sphere
+
+All (non-internal) matched prim paths w/ Hydra (count = 22):
+	/World/Chars/Group_2/Humanoids
+	/World/Chars/Group_2/Humanoids/I1
+	/World/Chars/Group_2/Humanoids/I1/Implicits
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Sphere
+	/World/Chars/Group_2/Humanoids/I2
+	/World/Chars/Group_2/Humanoids/I2/Implicits
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Sphere
+	/World/Chars/Group_2/Humanoids/I3
+	/World/Chars/Group_2/Humanoids/I3/Implicits
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Sphere
+
+All matched prim paths w/ USD (count = 22):
+	/World/Chars/Group_2/Humanoids
+	/World/Chars/Group_2/Humanoids/I1
+	/World/Chars/Group_2/Humanoids/I1/Implicits
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I1/Implicits/Sphere
+	/World/Chars/Group_2/Humanoids/I2
+	/World/Chars/Group_2/Humanoids/I2/Implicits
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I2/Implicits/Sphere
+	/World/Chars/Group_2/Humanoids/I3
+	/World/Chars/Group_2/Humanoids/I3/Implicits
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Box
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Cone
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I3/Implicits/Sphere
+
+-----------------------------------------------------
+4. Evaluating expression "/World/Chars/Group_2/Humanoids/I1"
+
+(Hydra) Matched non-instance prim paths:
+
+(Hydra) Fully matched instance prim paths:
+
+(Hydra) Partially matched instance prim paths:
+	/World/Chars/Group_2/Humanoids
+
+(Hydra) Matched instance proxy prim paths:
+	/World/Chars/Group_2/Humanoids/I1
+
+All (non-internal) matched prim paths w/ Hydra (count = 1):
+	/World/Chars/Group_2/Humanoids/I1
+
+All matched prim paths w/ USD (count = 1):
+	/World/Chars/Group_2/Humanoids/I1
+
+-----------------------------------------------------
+5. Evaluating expression "/World/Chars//Cylinder*"
+
+(Hydra) Matched non-instance prim paths:
+
+(Hydra) Fully matched instance prim paths:
+
+(Hydra) Partially matched instance prim paths:
+	/World/Chars/Group_1/Humanoids
+	/World/Chars/Group_2/Humanoids
+
+(Hydra) Matched instance proxy prim paths:
+	/World/Chars/Group_1/Humanoids/I1/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I1/Implicits/CylinderR
+	/World/Chars/Group_1/Humanoids/I2/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I2/Implicits/CylinderR
+	/World/Chars/Group_1/Humanoids/I3/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I3/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderR
+
+All (non-internal) matched prim paths w/ Hydra (count = 12):
+	/World/Chars/Group_1/Humanoids/I1/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I1/Implicits/CylinderR
+	/World/Chars/Group_1/Humanoids/I2/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I2/Implicits/CylinderR
+	/World/Chars/Group_1/Humanoids/I3/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I3/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderR
+
+All matched prim paths w/ USD (count = 12):
+	/World/Chars/Group_1/Humanoids/I1/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I1/Implicits/CylinderR
+	/World/Chars/Group_1/Humanoids/I2/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I2/Implicits/CylinderR
+	/World/Chars/Group_1/Humanoids/I3/Implicits/CylinderL
+	/World/Chars/Group_1/Humanoids/I3/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I1/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I2/Implicits/CylinderR
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderL
+	/World/Chars/Group_2/Humanoids/I3/Implicits/CylinderR
+
+-----------------------------------------------------
+6. Evaluating expression "//Group_1//{isa:"Cone"}"
+
+(Hydra) Matched non-instance prim paths:
+
+(Hydra) Fully matched instance prim paths:
+
+(Hydra) Partially matched instance prim paths:
+	/World/Chars/Group_1/Humanoids
+
+(Hydra) Matched instance proxy prim paths:
+	/World/Chars/Group_1/Humanoids/I1/Implicits/Cone
+	/World/Chars/Group_1/Humanoids/I2/Implicits/Cone
+	/World/Chars/Group_1/Humanoids/I3/Implicits/Cone
+
+All (non-internal) matched prim paths w/ Hydra (count = 3):
+	/World/Chars/Group_1/Humanoids/I1/Implicits/Cone
+	/World/Chars/Group_1/Humanoids/I2/Implicits/Cone
+	/World/Chars/Group_1/Humanoids/I3/Implicits/Cone
+
+All matched prim paths w/ USD (count = 3):
+	/World/Chars/Group_1/Humanoids/I1/Implicits/Cone
+	/World/Chars/Group_1/Humanoids/I2/Implicits/Cone
+	/World/Chars/Group_1/Humanoids/I3/Implicits/Cone
+
+-----------------------------------------------------

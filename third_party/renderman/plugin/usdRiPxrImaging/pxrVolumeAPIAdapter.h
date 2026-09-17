@@ -20,6 +20,8 @@ class UsdRiPxrImagingVolumeAPIAdapter : public UsdImagingAPISchemaAdapter
 public:
     using BaseAdapter = UsdImagingAPISchemaAdapter;
 
+#if PXR_VERSION >= 2605
+
     USDRIPXRIMAGING_API
     TfToken GetImagingSubprimType(
         UsdPrim const& prim,
@@ -40,6 +42,8 @@ public:
         TfToken const& appliedInstanceName,
         TfTokenVector const& properties,
         UsdImagingPropertyInvalidationType invalidationType) override;
+
+#endif // PXR_VERSION >= 2605
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

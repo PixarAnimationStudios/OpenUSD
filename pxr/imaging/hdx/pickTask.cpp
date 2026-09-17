@@ -34,7 +34,6 @@
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/tokens.h"
 #include "pxr/imaging/hgiGL/graphicsCmds.h"
-#include "pxr/imaging/glf/diagnostic.h"
 
 #include "pxr/base/tf/hash.h"
 
@@ -387,8 +386,6 @@ HdxPickTask::_ConditionStencilWithGLCallback(
             glFrontFace(GL_CCW);
             glDisable(GL_STENCIL_TEST);
         }
-
-        GLF_POST_PENDING_GL_ERRORS();
     };
 
     glGfxCmds->InsertFunctionOp(executeMaskCallback);
@@ -465,8 +462,6 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
                   HdTaskContext* ctx,
                   HdDirtyBits* dirtyBits)
 {
-    GLF_GROUP_FUNCTION();
-
     if (!_IsStormRenderer( delegate->GetRenderIndex().GetRenderDelegate() )) {
         return;
     }
@@ -752,8 +747,6 @@ HdxPickTask::_ClearPickBuffer()
 void
 HdxPickTask::Execute(HdTaskContext* ctx)
 {
-    GLF_GROUP_FUNCTION();
-
     // Check if the overlay pass is actually needed, which should only be
     // called during Prepare or Execute.
     _UpdateUseOverlayPass();

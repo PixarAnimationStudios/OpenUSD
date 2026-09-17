@@ -92,10 +92,6 @@ public:
                 size_t indent, bool multiLine,
                 const SdfRelocates &relocates);
 
-    static bool WriteRelocates(Sdf_TextOutput &out,
-                size_t indent, bool multiLine,
-                const SdfRelocatesMap &reloMap);
-
     static void WriteDictionary(Sdf_TextOutput &out,
                 size_t indent, bool multiLine,
                 const VtDictionary &dictionary,
@@ -331,7 +327,6 @@ struct Sdf_IsPrimMetadataField : public Sdf_IsMetadataField
         return (Sdf_IsMetadataField::operator()(field) ||
             field == SdfFieldKeys->Payload             ||
             field == SdfFieldKeys->References          ||
-            field == SdfFieldKeys->Relocates           ||
             field == SdfFieldKeys->InheritPaths        ||
             field == SdfFieldKeys->Specializes         ||
             field == SdfFieldKeys->VariantSetNames     ||
@@ -475,22 +470,6 @@ Sdf_WritePrimMetadata(
                     "'%s' field holding unexpected type '%s'",
                     field.GetText(), v.GetTypeName().c_str());
             }
-        }
-        else if (field == SdfFieldKeys->Relocates) {
-
-            // Relativize all paths in the relocates.
-            SdfRelocatesMap result;
-            SdfPath primPath = prim.GetPath();
-            
-            SdfRelocatesMap finalRelocates;
-            const SdfRelocatesMapProxy relocates = prim.GetRelocates();
-            TF_FOR_ALL(mapIt, relocates) {
-                finalRelocates[mapIt->first.MakeRelativePath(primPath)] =
-                    mapIt->second.MakeRelativePath(primPath);
-            }
-
-            Sdf_FileIOUtility::WriteRelocates(
-                out, indent+1, multiLine, finalRelocates);
         }
         else if (field == SdfFieldKeys->PrefixSubstitutions) {
             VtDictionary prefixSubstitutions = prim.GetPrefixSubstitutions();

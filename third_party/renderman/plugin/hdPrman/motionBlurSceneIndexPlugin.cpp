@@ -93,7 +93,6 @@ public:
     /// primPath: path of sampleSource's parent prim (for diagnostics)
     /// primType: type of sampleSource's parent prim
     /// primvarsSource: data source for sampleSource's parent prim's primvars
-    /// inputArgs: data source from scene index plugin
     _MotionBlurHelper(
         const HdSampledDataSourceHandle& samplesSource,
         const TfToken& key,
@@ -747,6 +746,30 @@ _PrimvarsDataSource::Get(const TfToken &name)
 
     HdDataSourceBaseHandle result = _primvarsSource->Get(name);
 
+#if HD_API_VERSION < 96
+    // Only affect blurrable primvars until HdCopySampledDataSourceType is 
+    // added to avoid excess GetValue calls.
+    static const TfTokenSet blurables = {
+        HdPrimvarsSchemaTokens->points
+#if HD_API_VERSION < 67
+        , HdInstancerTokens->translate
+        , HdInstancerTokens->rotate
+        , HdInstancerTokens->scale
+        , HdInstancerTokens->instanceTransform
+#endif
+#if HD_API_VERSION >= 56
+        , HdInstancerTokens->instanceTranslations
+        , HdInstancerTokens->instanceRotations
+        , HdInstancerTokens->instanceScales
+        , HdInstancerTokens->instanceTransforms
+#endif
+    };
+
+    if (blurables.find(name) == blurables.end()) {
+        return result;
+    }
+#endif
+
     // All primvars need to be handled, not just the blurable ones, because any
     // primvar might have authored time samples, and we need to make sure
     // that only a single time sample (at offset 0) makes it downstream when
@@ -1007,7 +1030,6 @@ private:
         // XXX: renderSettings and integrator prim types currently leak
         // through a transformable check, so we also filter out those
         // specific prim types
-#if PXR_VERSION >= 2208
         if (prim.primType == HdPrimTypeTokens->renderSettings
 #if PXR_VERSION >= 2308
             || prim.primType == HdPrimTypeTokens->integrator
@@ -1015,7 +1037,6 @@ private:
         ) {
             return false;
         }
-#endif
         return bool(HdXformSchema::GetFromParent(prim.dataSource));
     };
 };

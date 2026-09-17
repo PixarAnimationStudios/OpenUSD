@@ -3725,25 +3725,12 @@ struct TextParserAction<RelocatesMapClose>
     template <class Input>
     static void apply(const Input& in, Sdf_TextParserContext& context)
     {
-        // are we in a prim or a layer context?
         // relocates metadata is top of the stack
         // below it would be metadata and then the
         // entity we want
         Sdf_TextParserCurrentParsingContext specContext =
                 context.parsingContext.rbegin()[2];
         if (specContext ==
-            Sdf_TextParserCurrentParsingContext::PrimSpec)
-        {
-            SdfRelocatesMap relocatesParsingMap(
-                std::make_move_iterator(context.relocatesParsing.begin()),
-                std::make_move_iterator(context.relocatesParsing.end()));
-            
-            context.data->Set(
-                context.path,
-                SdfFieldKeys->Relocates,
-                VtValue(relocatesParsingMap));
-        }
-        else if (specContext ==
             Sdf_TextParserCurrentParsingContext::LayerSpec)
         {
             context.data->Set(

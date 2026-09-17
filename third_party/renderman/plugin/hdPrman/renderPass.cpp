@@ -752,6 +752,7 @@ HdPrman_RenderPass::_Execute(
     // resolution used for the render target. For the latter, we specifically
     // update the resolution on the render view context below.
     //
+    bool reassertRenderViewResolution = false;
     if (hasLegacyProducts) {
         // Use RenderProducts from the RenderSettingsMap (Solaris)
 
@@ -789,6 +790,7 @@ HdPrman_RenderPass::_Execute(
 
             if (createRenderView) {
                 _renderParam->CreateRenderViewFromRenderSpec(legacyRenderSpec);
+                reassertRenderViewResolution = true;
             }
         } else {
             TF_WARN("Could not create render view because the render pass "
@@ -815,7 +817,7 @@ HdPrman_RenderPass::_Execute(
         return;
     }
 
-    if (resolutionChanged) {
+    if (resolutionChanged || reassertRenderViewResolution) {
         rvCtx.SetResolution(resolution, _renderParam->AcquireRiley());
     }
     //

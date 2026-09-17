@@ -10,9 +10,6 @@ pxr_plugin(sdrGlslfx
     PRIVATE_CLASSES
         parserPlugin
 
-    PYMODULE_FILES
-        __init__.py
-
     RESOURCE_FILES
         plugInfo.json
 

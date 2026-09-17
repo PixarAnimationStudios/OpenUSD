@@ -279,7 +279,7 @@ schema types) before the validator is loaded, use plugin registration.
 If the validator is created dynamically or is only used by the code
 that creates it, explicit registration is simpler.
 
-### Adding Fixers
+### Adding Fixers {#adding_fixers}
 
 UsdValidationRegistry::RegisterPluginValidator() and 
 UsdValidationRegistry::RegisterValidator() can optionally take a vector of
@@ -335,8 +335,11 @@ previously shown utility function, might look something like the following.
 registry.RegisterPluginValidator(validatorName, stageTaskFn, _ValidatorFixers());
 ```
 
-Note that UsdValidationRegistry does not manage fixers directly, and these are 
+Note that UsdValidationRegistry does not manage fixers directly, and these are
 held by their respective UsdValidationValidator(s).
+
+UsdValidationFixer::ApplyFix() calls `editTarget.GetLayer()->Save()` internally
+on success. The target layer must be file-backed (not anonymous).
 
 ## Listening for Validator Registration  {#listening_for_registration}
 
@@ -745,6 +748,93 @@ registry.RegisterValidatorSuite(
     suite_metadata, [stage_validator, prim_validator]
 )
 ```
+
+### Adding Fixers in Python
+
+Fixers can be created in Python and passed to any registration method
+via the optional `fixers` parameter. See [Adding Fixers](#adding_fixers)
+for the shared fixer concepts, including the `fixerImplFn` and `canApplyFn`
+callables.
+
+```python
+from pxr import Sdf, Usd, UsdValidation
+
+registry = UsdValidation.ValidationRegistry()
+
+# Define fixer callables.
+def _CanFixMissingDoc(error, editTarget, timeCode):
+    layer = editTarget.GetLayer()
+    prim_spec = layer.GetPrimAtPath(error.GetSites()[0].GetPrim().GetPath())
+    return prim_spec is not None and not prim_spec.documentation
+
+def _FixMissingDoc(error, editTarget, timeCode):
+    layer = editTarget.GetLayer()
+    prim_spec = layer.GetPrimAtPath(error.GetSites()[0].GetPrim().GetPath())
+    if prim_spec is None:
+        return False
+    prim_spec.documentation = "TODO: add documentation"
+    return True
+
+# Create the fixer.
+fixer = UsdValidation.ValidationFixer(
+    name="AddPlaceholderDoc",
+    description="Add a placeholder documentation string.",
+    fixerImplFn=_FixMissingDoc,
+    canApplyFn=_CanFixMissingDoc,
+    errorName="MissingDocumentation",       # optional; omit to match any error
+    keywords=["pipeline"],                  # optional
+)
+
+# Register a validator with the fixer attached.
+metadata = UsdValidation.ValidatorMetadata(
+    name="myPackage:RequiresDocumentation",
+    doc="Warn when a prim has no documentation.",
+    keywords=["myPackage"],
+)
+
+def _CheckDocumentation(prim, timeRange):
+    if prim.GetDocumentation() or prim.IsPseudoRoot():
+        return []
+    return [
+        UsdValidation.ValidationError(
+            "MissingDocumentation",
+            UsdValidation.ValidationErrorType.Warn,
+            [UsdValidation.ValidationErrorSite(
+                prim.GetStage(), prim.GetPath())],
+            f"Prim '{prim.GetPath()}' has no documentation.",
+        )
+    ]
+
+registry.RegisterPrimValidator(metadata, _CheckDocumentation, fixers=[fixer])
+```
+
+After validation, retrieve and apply fixers. Validator-level lookup APIs can be
+used to populate UIs with available fixers:
+
+```python
+validator = registry.GetOrLoadValidatorByName(
+    "myPackage:RequiresDocumentation"
+)
+
+# Fixers are accessible from the validator or from individual errors.
+fixers = validator.GetFixers()
+fixer = validator.GetFixerByName("AddPlaceholderDoc")
+
+# After running validation:
+stage = Usd.Stage.Open("asset.usda")
+prim = stage.GetPrimAtPath("/MyPrim")
+errors = validator.Validate(prim)
+
+for error in errors:
+    for f in error.GetFixersByErrorName():
+        editTarget = Usd.EditTarget(stage.GetRootLayer())
+        if f.CanApplyFix(error, editTarget):
+            f.ApplyFix(error, editTarget)
+```
+
+If `fixerImplFn` or `canApplyFn` raises, Python callers see the original
+Python exception. If a Python-backed fixer is invoked from C++, the exception is
+converted to a TfError and the fixer call returns false.
 
 ### Notes
 

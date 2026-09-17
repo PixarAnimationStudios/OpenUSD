@@ -31,6 +31,10 @@ protected:
     HdSceneIndexBaseRefPtr _AppendSceneIndex(
         const HdSceneIndexBaseRefPtr &inputScene,
         const HdContainerDataSourceHandle &inputArgs) override;
+    
+    HDSI_API
+    bool _IsEnabled(
+        const HdContainerDataSourceHandle &inputArgs) const override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

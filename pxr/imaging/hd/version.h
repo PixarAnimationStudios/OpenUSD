@@ -166,7 +166,8 @@
 // 103 -> 104: Added elementSize to HdPrimvarDescriptor.
 // 104 -> 105: Added HdLegacyRenderControlInterface::RemoveTaskContextData and
 //             ClearTaskContextData().
-#define HD_API_VERSION 105
+// 105 -> 106: Add HdCachingSampledDataSource and HdCachingTypedSampledDataSource
+#define HD_API_VERSION 106
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 // 2  ->  3: Use GetLightCount() instead of NUM_LIGHTS to get light count.

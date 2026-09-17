@@ -4,15 +4,22 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
+
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/garch/glDebugWindow.h"
 
+#include "pxr/imaging/hd/aov.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/selection.h"
+#include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 #include "pxr/imaging/hdSt/unitTestHelper.h"
 
+#include "pxr/imaging/hdx/oitRenderTask.h"
+#include "pxr/imaging/hdx/oitResolveTask.h"
 #include "pxr/imaging/hdx/selectionTask.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/tokens.h"
@@ -20,12 +27,25 @@
 #include "pxr/imaging/hdx/unitTestDelegate.h"
 #include "pxr/imaging/hdx/unitTestUtils.h"
 
+#include "pxr/imaging/hio/glslfx.h"
+
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdr/declare.h"
+#include "pxr/usd/sdr/registry.h"
+#include "pxr/usd/sdr/shaderNode.h"
+
+#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/value.h"
 
 #include <iostream>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <memory>
+#include <utility>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -68,11 +88,11 @@ class Hdx_TestDriver : public HdSt_TestDriverBase<Hdx_UnitTestDelegate>
 public:
     Hdx_TestDriver(TfToken const &reprName);
 
-    void DrawWithSelection(GfVec4d const &viewport, 
+    void DrawWithSelection(GfVec4d const &viewport,
         HdxSelectionTrackerSharedPtr selTracker);
 
     HdSelectionSharedPtr Pick(GfVec2i const &startPos, GfVec2i const& endPos,
-        HdSelection::HighlightMode mode, int width, int height, 
+        HdSelection::HighlightMode mode, int width, int height,
         GfFrustum const &frustum, GfMatrix4d const &viewMatrix);
 
 protected:
@@ -89,9 +109,9 @@ Hdx_TestDriver::Hdx_TestDriver(TfToken const &reprName)
 
 void
 Hdx_TestDriver::_Init(HdReprSelector const &reprSelector)
-{   
+{
     _SetupSceneDelegate();
-    
+
     Hdx_UnitTestDelegate & delegate = GetDelegate();
 
     // prepare render task
@@ -109,8 +129,33 @@ Hdx_TestDriver::_Init(HdReprSelector const &reprSelector)
     HdxRenderTaskParams param = vParam.Get<HdxRenderTaskParams>();
     param.enableLighting = true; // use default lighting
     delegate.SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
+    // Scope the pass above to the opaque prims, so that the translucent prim
+    // added by _AddTranslucentCube is left to the OIT tasks.
     delegate.SetTaskParam(renderTask, HdTokens->collection,
-        VtValue(HdRprimCollection(HdTokens->geometry, reprSelector)));
+        VtValue(HdRprimCollection(HdTokens->geometry, reprSelector,
+                                  /*forcedRepr*/ false,
+                                  HdStMaterialTagTokens->masked)));
+
+    // Translucent prims will get drawn by the OIT tasks. OIT tasks get their
+    // own setup task rather than params of their own, both to exercise that
+    // method of task setup and so we can drop the AOV clear values..
+    SdfPath oitSetupTask("/oitSetupTask");
+    SdfPath oitRenderTask("/oitRenderTask");
+    SdfPath oitResolveTask("/oitResolveTask");
+    HdRenderIndex &renderIndex = delegate.GetRenderIndex();
+    delegate.AddRenderSetupTask(oitSetupTask);
+    renderIndex.InsertTask<HdxOitRenderTask>(&delegate, oitRenderTask);
+    renderIndex.InsertTask<HdxOitResolveTask>(&delegate, oitResolveTask);
+    delegate.SetTaskParam(oitSetupTask, HdTokens->params, VtValue(param));
+    delegate.SetTaskParam(oitRenderTask, HdTokens->collection,
+        VtValue(HdRprimCollection(HdTokens->geometry, reprSelector,
+                                  /*forcedRepr*/ false,
+                                  HdStMaterialTagTokens->translucent)));
+
+    delegate.SetTaskParam(oitRenderTask, HdTokens->renderTags,
+        VtValue(TfTokenVector()));
+    delegate.SetTaskParam(oitResolveTask, HdTokens->params,
+        VtValue(HdxOitResolveTaskParams()));
 
     HdxSelectionTaskParams selParam;
     selParam.enableSelectionHighlight = true;
@@ -120,7 +165,7 @@ Hdx_TestDriver::_Init(HdReprSelector const &reprSelector)
     delegate.SetTaskParam(selectionTask, HdTokens->params, VtValue(selParam));
 
     // picking
-    _pickablesCol = HdRprimCollection(_tokens->pickables, 
+    _pickablesCol = HdRprimCollection(_tokens->pickables,
         HdReprSelector(HdReprTokens->refined));
     // We have to unfortunately explictly add collections besides 'geometry'
     // See HdRenderIndex constructor.
@@ -129,11 +174,14 @@ Hdx_TestDriver::_Init(HdReprSelector const &reprSelector)
 }
 
 void
-Hdx_TestDriver::DrawWithSelection(GfVec4d const &viewport, 
+Hdx_TestDriver::DrawWithSelection(GfVec4d const &viewport,
     HdxSelectionTrackerSharedPtr selTracker)
 {
     SdfPath renderSetupTask("/renderSetupTask");
     SdfPath renderTask("/renderTask");
+    SdfPath oitSetupTask("/oitSetupTask");
+    SdfPath oitRenderTask("/oitRenderTask");
+    SdfPath oitResolveTask("/oitResolveTask");
     SdfPath selectionTask("/selectionTask");
 
     HdxRenderTaskParams param = GetDelegate().GetTaskParam(
@@ -143,9 +191,21 @@ Hdx_TestDriver::DrawWithSelection(GfVec4d const &viewport,
     GetDelegate().SetTaskParam(
         renderSetupTask, HdTokens->params, VtValue(param));
 
+    // The OIT passes draw into the buffers the previous pass filled, so their
+    // setup task drops the clear values.
+    HdxRenderTaskParams oitParam = param;
+    for (HdRenderPassAovBinding &aovBinding : oitParam.aovBindings) {
+        aovBinding.clearValue = VtValue();
+    }
+    GetDelegate().SetTaskParam(
+        oitSetupTask, HdTokens->params, VtValue(oitParam));
+
     HdTaskSharedPtrVector tasks;
     tasks.push_back(GetDelegate().GetRenderIndex().GetTask(renderSetupTask));
     tasks.push_back(GetDelegate().GetRenderIndex().GetTask(renderTask));
+    tasks.push_back(GetDelegate().GetRenderIndex().GetTask(oitSetupTask));
+    tasks.push_back(GetDelegate().GetRenderIndex().GetTask(oitRenderTask));
+    tasks.push_back(GetDelegate().GetRenderIndex().GetTask(oitResolveTask));
     tasks.push_back(GetDelegate().GetRenderIndex().GetTask(selectionTask));
 
     _GetEngine()->SetTaskContextData(
@@ -155,7 +215,7 @@ Hdx_TestDriver::DrawWithSelection(GfVec4d const &viewport,
 
 HdSelectionSharedPtr
 Hdx_TestDriver::Pick(GfVec2i const &startPos, GfVec2i const &endPos,
-    HdSelection::HighlightMode mode, int width, int height, 
+    HdSelection::HighlightMode mode, int width, int height,
     GfFrustum const &frustum, GfMatrix4d const &viewMatrix)
 {
     HdxPickHitVector allHits;
@@ -185,7 +245,7 @@ Hdx_TestDriver::Pick(GfVec2i const &startPos, GfVec2i const &endPos,
 class My_TestGLDrawing : public HdSt_UnitTestGLDrawing
 {
 public:
-    My_TestGLDrawing() 
+    My_TestGLDrawing()
     {
         SetCameraRotate(0, 0);
         SetCameraTranslate(GfVec3f(0));
@@ -195,7 +255,7 @@ public:
 
     void DrawScene();
     void DrawMarquee();
-    
+
     // HdSt_UnitTestGLDrawing overrides
     void InitTest() override;
     void UninitTest() override;
@@ -209,6 +269,7 @@ public:
 protected:
     void ParseArgs(int argc, char *argv[]) override;
     void _InitScene();
+    void _AddTranslucentCube();
     HdSelectionSharedPtr _Pick(
         GfVec2i const& startPos, GfVec2i const& endPos,
         HdSelection::HighlightMode mode);
@@ -238,7 +299,7 @@ void
 My_TestGLDrawing::InitTest()
 {
     _driver = std::make_unique<Hdx_TestDriver>(_reprName);
-    
+
     _driver->GetDelegate().SetRefineLevel(_refineLevel);
     _selTracker.reset(new HdxSelectionTracker);
 
@@ -337,11 +398,69 @@ My_TestGLDrawing::_InitScene()
     }
 }
 
+void
+My_TestGLDrawing::_AddTranslucentCube()
+{
+    Hdx_UnitTestDelegate& delegate = _driver->GetDelegate();
+
+    const std::string source(
+        "-- glslfx version 0.1 \n"
+        "-- configuration \n"
+        "{\n"
+            "\"techniques\": {\n"
+            "    \"default\": {\n"
+            "        \"surfaceShader\": {\n"
+            "            \"source\": [ \"testHdxPickAndHighlight.Surface\" ]\n"
+            "        }\n"
+            "    }\n"
+            "},\n"
+            "\"metadata\": {\n"
+            "    \"materialTag\": \"translucent\"\n"
+            "}\n"
+        "}\n"
+
+        "-- glsl testHdxPickAndHighlight.Surface \n\n"
+
+        "vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)\n"
+        "{\n"
+        "    const float opacity = 0.5;\n"
+        "    vec3 lit = FallbackLighting(Peye.xyz, Neye, vec3(0.2, 0.6, 1));\n"
+        "    vec4 overridden = ApplyColorOverrides(vec4(lit, opacity));\n"
+        "    return vec4(overridden.rgb * overridden.a, overridden.a);\n"
+        "}\n"
+    );
+
+    SdrRegistry& shaderReg = SdrRegistry::GetInstance();
+    SdrShaderNodeConstPtr sdrSurfaceNode =
+        shaderReg.GetShaderNodeFromSourceCode(
+            source,
+            HioGlslfxTokens->glslfx,
+            SdrTokenMap()); // metadata
+    if (!TF_VERIFY(sdrSurfaceNode)) {
+        return;
+    }
+
+    SdfPath const materialId("/translucentMaterial");
+    HdMaterialNetworkMap material;
+    HdMaterialNetwork &network =
+        material.map[HdMaterialTerminalTokens->surface];
+    HdMaterialNode terminal;
+    terminal.path = materialId.AppendChild(TfToken("Shader"));
+    terminal.identifier = sdrSurfaceNode->GetIdentifier();
+    material.terminals.push_back(terminal.path);
+    network.nodes.push_back(std::move(terminal));
+    delegate.AddMaterialResource(materialId, VtValue(material));
+
+    SdfPath const cubeId("/translucentCube");
+    delegate.BindMaterial(cubeId, materialId);
+    delegate.AddCube(cubeId, _GetTranslate(0, -5, 0));
+}
+
 HdSelectionSharedPtr
 My_TestGLDrawing::_Pick(GfVec2i const& startPos, GfVec2i const& endPos,
                         HdSelection::HighlightMode mode)
 {
-    return _driver->Pick(startPos, endPos, mode, GetWidth(), GetHeight(), 
+    return _driver->Pick(startPos, endPos, mode, GetWidth(), GetHeight(),
         GetFrustum(), GetViewMatrix());
 }
 
@@ -434,6 +553,22 @@ My_TestGLDrawing::OffscreenTest()
     DrawScene();
     // Expect to see earlier selection as well as all instances of protoTop
     _driver->WriteToFile("color", "color6_select_all_instances.png");
+
+    // Exercise highlighting of translucent object
+    _AddTranslucentCube();
+    mode = HdSelection::HighlightModeLocate;
+    selection = _Pick(GfVec2i(0,0), GfVec2i(0,0), mode);
+    _selTracker->SetSelection(selection);
+    DrawScene();
+    _driver->WriteToFile("color", "color7_translucent_unselected.png");
+
+    selection = _Pick(GfVec2i(320, 240), GfVec2i(321, 241), mode);
+    _selTracker->SetSelection(selection);
+    DrawScene();
+    _driver->WriteToFile("color", "color8_translucent_locate.png");
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
+    TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] ==
+              SdfPath("/translucentCube"));
 }
 
 void
@@ -448,7 +583,7 @@ My_TestGLDrawing::DrawScene()
 
     GfMatrix4d projMatrix = frustum.ComputeProjectionMatrix();
     _driver->GetDelegate().SetCamera(viewMatrix, projMatrix);
-    
+
     _driver->UpdateAovDimensions(width, height);
 
     _driver->DrawWithSelection(viewport, _selTracker);

@@ -762,43 +762,6 @@ SdfPrimSpec::BlockVariantSelection(const std::string& variantSetName)
 }
 
 //
-// Relocates
-//
-
-SdfRelocatesMapProxy
-SdfPrimSpec::GetRelocates() const
-{
-    if (!_IsPseudoRoot()) {
-        return SdfRelocatesMapProxy(
-            SdfCreateHandle(this), SdfFieldKeys->Relocates);
-    } else {
-        return SdfRelocatesMapProxy();
-    }
-}
-
-void
-SdfPrimSpec::SetRelocates(const SdfRelocatesMap& newMap)
-{
-    if (_ValidateEdit(SdfFieldKeys->Relocates)) {
-        GetRelocates() = newMap;
-    }
-}
-
-bool
-SdfPrimSpec::HasRelocates() const
-{
-    return HasField(SdfFieldKeys->Relocates);
-}
-
-void
-SdfPrimSpec::ClearRelocates()
-{
-    if (_ValidateEdit(SdfFieldKeys->Relocates)) {
-        ClearField(SdfFieldKeys->Relocates);
-    }
-}
-
-//
 // ClipSets
 //
 SdfNameEditorProxy

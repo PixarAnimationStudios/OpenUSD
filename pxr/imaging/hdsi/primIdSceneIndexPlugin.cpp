@@ -57,11 +57,18 @@ HdsiPrimIdSceneIndexPlugin::_AppendSceneIndex(
     const HdContainerDataSourceHandle &inputArgs)
 {
     // This function shouldn't be called if the plugin isn't enabled.
-    if (!TfGetEnvSetting(HDSI_ENABLE_PRIM_ID_SCENE_INDEX)) {
+    if (!TF_VERIFY(_IsEnabled(inputArgs))) {
         return inputScene;
     }
 
     return HdsiPrimIdSceneIndex::New(inputScene);
+}
+
+bool
+HdsiPrimIdSceneIndexPlugin::_IsEnabled(
+    const HdContainerDataSourceHandle& inputArgs) const
+{
+    return TfGetEnvSetting(HDSI_ENABLE_PRIM_ID_SCENE_INDEX);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

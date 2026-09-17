@@ -94,6 +94,7 @@ pxr_library(hd
         geomSubsetSchema
         imageShader
         imageShaderSchema
+        implicitSurface
         instanceCategoriesSchema
         instancedBySchema
         instanceIndicesSchema
@@ -102,6 +103,7 @@ pxr_library(hd
         instanceRegistry
         instancerTopologySchema
         instanceProxyViewSceneIndex
+        instancingAwareCollectionExpressionEvaluator
         instanceSchema
         integratorSchema
         lazyContainerDataSource
@@ -231,6 +233,7 @@ pxr_library(hd
 
     PUBLIC_HEADERS
         api.h
+        cachingSampledDataSource.h
         dataSourceTypeDefs.h
         driver.h
         invalidatableContainerDataSource.h

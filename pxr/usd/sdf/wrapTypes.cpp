@@ -387,7 +387,6 @@ void wrapTypes()
 
     SdfPyWrapMapEditProxy<SdfDictionaryProxy>();
     SdfPyWrapMapEditProxy<SdfVariantSelectionProxy>();
-    SdfPyWrapMapEditProxy<SdfRelocatesMapProxy>();
 
     SdfPyWrapListOp<SdfPathListOp>("PathListOp");
     SdfPyWrapListOp<SdfPayloadListOp>("PayloadListOp");

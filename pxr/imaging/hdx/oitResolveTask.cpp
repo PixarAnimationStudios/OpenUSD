@@ -26,8 +26,6 @@
 
 #include "pxr/imaging/hdx/oitBufferAccessor.h"
 
-#include "pxr/imaging/glf/diagnostic.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HdBufferSourceSharedPtrVector = std::vector<HdBufferSourceSharedPtr>;
@@ -410,8 +408,6 @@ HdxOitResolveTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-
-    GLF_GROUP_FUNCTION();
 
     // Check whether the request flag was set and delete it so that for the
     // next iteration the request flag is not set unless an OIT render task

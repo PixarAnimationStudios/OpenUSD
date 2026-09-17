@@ -19,6 +19,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PUBLIC_TOKENS(Pcp_Fields, PCP_FIELD_TOKENS);
+
 std::string
 Pcp_EvaluateVariableExpression(
     const std::string& expression,
