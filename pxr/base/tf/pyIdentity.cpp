@@ -124,7 +124,8 @@ void Tf_PyIdHandle::Acquire() const {
     }
     TfPyLock lock;
     // The reference returned here becomes the acquired reference.
-    if (!(_acquired = GetRef())) {
+    _acquired = GetRef();
+    if (!_acquired) {
         // CODE_COVERAGE_OFF Can only get here if there's a bug.
         TF_CODING_ERROR("Acquiring Python identity with expired Python "
                         "object!");
