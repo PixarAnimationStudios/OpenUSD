@@ -9,17 +9,29 @@
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
+
 #include "pxr/imaging/hd/concatenatedVectorDataSource.h"
+#include "pxr/imaging/hd/instanceIndicesSchema.h"
 #include "pxr/imaging/hd/instanceSchema.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
-#include "pxr/imaging/hd/instanceIndicesSchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/selectionSchema.h"
 #include "pxr/imaging/hd/selectionsSchema.h"
 #include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/usd/sdf/path.h"
+
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/vt/types.h"
+#include "pxr/base/work/loops.h"
+
+#include <cstddef>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -178,7 +190,7 @@ public:
         if (name != HdSelectionsSchema::GetSchemaToken()) {
             return inputSrc;
         }
-        
+
         auto it = _selectionInfo->primToSelections.find(_primPath);
         if (it == _selectionInfo->primToSelections.end()) {
             return inputSrc;
@@ -260,7 +272,7 @@ _GetInstanceIndicesForPrototype(
     if (!ds) {
         return {};
     }
-    return ds->GetTypedValue(0.0f);    
+    return ds->GetTypedValue(0.0f);
 }
 
 // If the prim in the scene index at prototypePath is a prototype,
@@ -272,7 +284,7 @@ _GetInstanceIndicesForPrototype(
 // identifies an instancer (that is a prim with an instancer topology
 // data source) and the instancer's prototype paths includes the prim
 // itself.
-// 
+//
 _InstanceIndices
 _ComputeAllInstanceIndicesForPrototype(
     const SdfPath &prototypePath,
@@ -488,7 +500,7 @@ _TranslatePathToNiPrototype(
         _ComputeNiPrototypePathAndInstanceIndices(
             primSource,
             sceneIndex);
-    
+
     if (prototypePath.IsEmpty()) {
         return false;
     }
@@ -496,7 +508,7 @@ _TranslatePathToNiPrototype(
     TF_DEBUG(USDIMAGING_SELECTION).Msg(
         "            Prim is USD native instance of prototype %s\n",
         prototypePath.GetText());
-    
+
     // If we hit an instance, we need to replace the path to
     // the prototype (in the scene index) that this instance
     // is instancing. More precisely, the prototype that
@@ -522,7 +534,7 @@ _TranslatePathToNiPrototype(
     TF_DEBUG(USDIMAGING_SELECTION).Msg(
         "            New path: %s\n",
         primAndInstanceIndices->prim.GetText());
- 
+
     return true;
 }
 
@@ -564,8 +576,8 @@ _AddPiPropagatedPrototypes(
             { propagatedPathAndIndices.prim,
               _Concat(oldIndices,
                       propagatedPathAndIndices.nestedInstanceIndices)});
-    }             
-}       
+    }
+}
 
 // Given the instancing information to select a prim at
 // primAndInstanceIndices.prim, compute the information to select
@@ -684,7 +696,7 @@ _AppendNameToSceneIndexPrimsAndInstanceIndices(
 //         prototypeIndex: 0
 //         instance indices: [ 0, 1 ]
 //       ]
-// 
+//
 //
 // Example 2:
 //
@@ -812,6 +824,133 @@ _ComputeSceneIndexPrimsAndInstanceIndices(
     return result;
 }
 
+
+struct _Node
+{
+    SdfPath prim;
+    bool skipped = false;
+    SdfPath niPrototype;
+    SdfPath niInstancer;
+    int niPrototypeIndex = 0;
+    VtIntArray niInstanceIndices;
+    bool isGprim = false;
+    std::vector<_PrimAndNestedInstanceIndices> piPropagatedSeeds;
+    SdfPathVector childPrims;
+    size_t childBegin = 0;
+    size_t childEnd = 0;
+};
+
+void
+_ClassifyNodes(
+    const size_t begin,
+    const size_t end,
+    const _PrimAndNestedInstanceIndices& seed,
+    const HdSceneIndexBaseRefPtr& sceneIndex,
+    std::vector<_Node>* const nodes)
+{
+    for (size_t i = begin; i < end; ++i) {
+        _Node& node = (*nodes)[i];
+
+        if (node.prim.GetNameToken() ==
+            UsdImagingTokens->niPropagatedPrototypesScope) {
+            //
+            // Do not descend into the NI propagated prototypes here.
+            //
+            // That is: the fact that the user selects a namespace ancestor
+            // of a NI propagated prototype is accidental. The relevant
+            // information for populating the selection schema of the
+            // geometry in a NI propagated prototype is which corresponding
+            // instances are selected. See HYD-3646.
+            //
+            node.skipped = true;
+            continue;
+        }
+
+        const HdSceneIndexPrim prim = sceneIndex->GetPrim(node.prim);
+
+        SdfPath prototypePath;
+        _InstanceIndices instanceIndices;
+        std::tie(prototypePath, instanceIndices) =
+            _ComputeNiPrototypePathAndInstanceIndices(
+                prim.dataSource,
+                sceneIndex);
+        const bool isNativeInstance = !prototypePath.IsEmpty();
+
+        if (isNativeInstance) {
+            node.niPrototype = std::move(prototypePath);
+            node.niInstancer = std::move(instanceIndices.instancer);
+            node.niPrototypeIndex = instanceIndices.prototypeIndex;
+            node.niInstanceIndices = std::move(instanceIndices.instanceIndices);
+        } else {
+            _PrimAndNestedInstanceIndices primAndNestedInstanceIndices = seed;
+            primAndNestedInstanceIndices.prim = node.prim;
+
+            // Check if this prim is the prototype of a point instancer.
+            // If yes, note the corresponding propagated prototype to add to
+            // the seeds below.
+            _AddPiPropagatedPrototypes(
+                prim.dataSource,
+                sceneIndex,
+                primAndNestedInstanceIndices,
+                &node.piPropagatedSeeds);
+
+            node.isGprim = HdPrimTypeIsGprim(prim.primType);
+        }
+
+        node.childPrims = sceneIndex->GetChildPrimPaths(node.prim);
+    }
+}
+
+static const size_t _grainSize = 32;
+
+std::vector<_Node>
+_TraverseDescendants(
+    const _PrimAndNestedInstanceIndices& seed,
+    const HdSceneIndexBaseRefPtr& sceneIndex)
+{
+    TRACE_FUNCTION();
+
+    std::vector<_Node> nodes(1);
+    nodes[0].prim = seed.prim;
+
+    size_t levelBegin = 0;
+    size_t levelEnd = nodes.size();
+
+    while (levelBegin < levelEnd) {
+        if (levelEnd - levelBegin < _grainSize) {
+            // Too few prims to be worth spawning tasks for.
+            _ClassifyNodes(levelBegin, levelEnd, seed, sceneIndex, &nodes);
+        } else {
+            WorkParallelForN(
+                levelEnd - levelBegin,
+                [&](const size_t begin, const size_t end) {
+                    _ClassifyNodes(
+                        levelBegin + begin, levelBegin + end,
+                        seed, sceneIndex, &nodes);
+                },
+                _grainSize);
+        }
+
+        for (size_t i = levelBegin; i < levelEnd; ++i) {
+            const SdfPathVector childPrims = std::move(nodes[i].childPrims);
+            nodes[i].childPrims = SdfPathVector();
+
+            const size_t childBegin = nodes.size();
+            for (const SdfPath& childPrim : childPrims) {
+                nodes.emplace_back();
+                nodes.back().prim = childPrim;
+            }
+            nodes[i].childBegin = childBegin;
+            nodes[i].childEnd = nodes.size();
+        }
+
+        levelBegin = levelEnd;
+        levelEnd = nodes.size();
+    }
+
+    return nodes;
+}
+
 // For each seed, traverses the name space children and collects them
 // recursively as follows:
 // - If it is just a normal prim, add it to the result.
@@ -820,6 +959,9 @@ _ComputeSceneIndexPrimsAndInstanceIndices(
 // - If it is a native instance, aggregate them by prototype and instancer
 //   and add the prototype to the result with the respective instance indices.
 //
+// Traversal is wavefront (serial in depth, parallel in breadth). This allows
+// us to parallelize while still skipping descending into propagated native
+// prototypes.
 std::vector<_PrimAndNestedInstanceIndices>
 _ExpandToDescendants(
     std::vector<_PrimAndNestedInstanceIndices> &&seeds,
@@ -837,7 +979,7 @@ _ExpandToDescendants(
                 SdfPath, // Propagated native prototype
                 SdfPath, // Instancer
                 int>; // Prototype index
-        
+
         std::map<NiInstanceSignature, VtIntArray>
             niInstanceSignatureToInstanceIndices;
 
@@ -845,72 +987,54 @@ _ExpandToDescendants(
             "        Processing seed %s\n",
             seeds[i].prim.GetText());
 
-        HdSceneIndexPrimView view(sceneIndex, seeds[i].prim);
+        const _PrimAndNestedInstanceIndices seed = seeds[i];
+        std::vector<_Node> nodes = _TraverseDescendants(seed, sceneIndex);
+        std::vector<size_t> stack;
+        stack.push_back(0);
 
-        for (auto it = view.begin(); it != view.end(); ++it) {
-            const SdfPath &descendant = *it;
+        while (!stack.empty()) {
+            _Node& node = nodes[stack.back()];
+            stack.pop_back();
 
-            if (descendant.GetNameToken() ==
-                            UsdImagingTokens->niPropagatedPrototypesScope) {
-                //
-                // Do not descend into the NI propagated prototypes here.
-                //
-                // That is: the fact that the user selects a namespace ancestor
-                // of a NI propagated prototype is accidental. The relevant
-                // information for populating the selection schema of the
-                // geometry in a NI propagated prototype is which corresponding
-                // instances are selected. See HYD-3646.
-                //
-                it.SkipDescendants();
+            for (size_t ci = node.childEnd; ci > node.childBegin; --ci) {
+                stack.push_back(ci - 1);
+            }
+
+            if (node.skipped) {
                 continue;
             }
 
-            const HdSceneIndexPrim prim =
-                sceneIndex->GetPrim(descendant);
-
-            SdfPath prototypePath;
-            _InstanceIndices instanceIndices;
-            std::tie(prototypePath, instanceIndices) =
-                _ComputeNiPrototypePathAndInstanceIndices(
-                    prim.dataSource,
-                    sceneIndex);
-            const bool isNativeInstance = !prototypePath.IsEmpty();
-
-            if (isNativeInstance) {
+            if (!node.niPrototype.IsEmpty()) {
                 // Aggregate native instances.
                 const NiInstanceSignature sig{
-                    std::move(prototypePath),
-                    std::move(instanceIndices.instancer),
-                    instanceIndices.prototypeIndex};
+                    std::move(node.niPrototype),
+                    std::move(node.niInstancer),
+                    node.niPrototypeIndex};
 
                 VtIntArray &indices =
                     niInstanceSignatureToInstanceIndices[sig];
-                for (const int i : instanceIndices.instanceIndices) {
-                    indices.push_back(i);
+                for (const int index : node.niInstanceIndices) {
+                    indices.push_back(index);
                 }
-            } else {
+                continue;
+            }
+
+            for (_PrimAndNestedInstanceIndices& piPropagatedSeed :
+                node.piPropagatedSeeds) {
+                seeds.push_back(std::move(piPropagatedSeed));
+            }
+
+            if (node.isGprim) {
                 _PrimAndNestedInstanceIndices
-                    primAndNestedInstanceIndices = seeds[i];
-                primAndNestedInstanceIndices.prim = descendant;
-
-                // Check if this prim is the prototype of a point instancer.
-                // If yes, add corresponding propagated prototype to seeds.
-                _AddPiPropagatedPrototypes(
-                    prim.dataSource,
-                    sceneIndex,
-                    primAndNestedInstanceIndices,
-                    &seeds);
-
-                if (HdPrimTypeIsGprim(prim.primType)) {
-                    result.push_back(std::move(primAndNestedInstanceIndices));
-                }
+                    primAndNestedInstanceIndices = seed;
+                primAndNestedInstanceIndices.prim = std::move(node.prim);
+                result.push_back(std::move(primAndNestedInstanceIndices));
             }
         }
 
         // Process aggregated native instances.
         for (const auto &it : niInstanceSignatureToInstanceIndices) {
-            _PrimAndNestedInstanceIndices
-                primAndNestedInstanceIndices = seeds[i];
+            _PrimAndNestedInstanceIndices primAndNestedInstanceIndices = seed;
             const SdfPath &niPropagatedPrototype = std::get<0>(it.first);
             const SdfPath &instancer = std::get<1>(it.first);
             const int &prototypeIndex = std::get<2>(it.first);
@@ -921,7 +1045,7 @@ _ExpandToDescendants(
                   prototypeIndex,
                   /* instanceIndices = */ std::move(it.second) });
 
-            seeds.push_back(primAndNestedInstanceIndices);            
+            seeds.push_back(primAndNestedInstanceIndices);
         }
 
         ++i;
@@ -985,7 +1109,7 @@ UsdImagingSelectionSceneIndex::AddSelection(
         "UsdImagingSelectionSceneInedx::AddSelection(usdPath = %s)\n",
         usdPath.GetText());
 
-    // From the USD path, compute the corresponding selections for 
+    // From the USD path, compute the corresponding selections for
     // the paths in the scene index - taking into account, e.g.,
     // that selecting a native instance in USD should translate into
     // selecting the prototype and its descendants and add to the
@@ -996,10 +1120,10 @@ UsdImagingSelectionSceneIndex::AddSelection(
                 usdPath,
                 _GetInputSceneIndex()),
             _GetInputSceneIndex());
-            
+
 
     SdfPathSet dirtiedPrims;
-    
+
     for (const _PrimAndNestedInstanceIndices &primAndIndices : primsAndIndices) {
         const SdfPath &prim = primAndIndices.prim;
         _Selections &selections = _selectionInfo->primToSelections[prim];
@@ -1010,7 +1134,7 @@ UsdImagingSelectionSceneIndex::AddSelection(
     if (dirtiedPrims.empty()) {
         return;
     }
-    
+
     HdSceneIndexObserver::DirtiedPrimEntries entries;
     entries.reserve(dirtiedPrims.size());
     for (const SdfPath &dirtiedPrim : dirtiedPrims) {
