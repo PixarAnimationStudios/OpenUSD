@@ -27,24 +27,24 @@
 extern "C" {
 #endif
 
-int nanoexr_get_attribute_count(exr_const_context_t, int part_index);
+int32_t nanoexr_get_attribute_count(exr_const_context_t, int32_t part_index);
 void nanoexr_attr_set_string(
-    exr_context_t ctxt, int part_index, const char* name, const char* s);
+    exr_context_t ctxt, int32_t part_index, const char* name, const char* s);
 void nanoexr_attr_set_int(
-    exr_context_t ctxt, int part_index, const char* name, int v);
+    exr_context_t ctxt, int32_t part_index, const char* name, int32_t v);
 void nanoexr_attr_set_float(
-    exr_context_t ctxt, int part_index, const char* name, float v);
+    exr_context_t ctxt, int32_t part_index, const char* name, float v);
 void nanoexr_attr_set_double(
-    exr_context_t ctxt, int part_index, const char* name, double v);
+    exr_context_t ctxt, int32_t part_index, const char* name, double v);
 void nanoexr_attr_set_m44f(
-    exr_context_t ctxt, int part_index, const char* name, const float* v);
+    exr_context_t ctxt, int32_t part_index, const char* name, const float* v);
 void nanoexr_attr_set_m44d(
-    exr_context_t ctxt, int part_index, const char* name, const double* v);
+    exr_context_t ctxt, int32_t part_index, const char* name, const double* v);
 
 exr_result_t nanoexr_get_attribute_by_index(
     exr_const_context_t     ctxt,
-    int                     part_index,
-    int                     i,
+    int32_t                 part_index,
+    int32_t                 i,
     const exr_attribute_t** outattr);
 
 // structure to hold image data that is read from an EXR file
@@ -52,9 +52,9 @@ typedef struct {
     uint8_t* data;
     size_t dataSize;
     exr_pixel_type_t pixelType;
-    int channelCount; // 1 for luminance, 3 for RGB, 4 for RGBA
-    int width, height;
-    int dataWindowMinY, dataWindowMaxY;
+    int32_t channelCount; // 1 for luminance, 3 for RGB, 4 for RGBA
+    int32_t width, height;
+    int32_t dataWindowMinY, dataWindowMaxY;
 } nanoexr_ImageData_t;
 
 typedef enum {
@@ -68,18 +68,42 @@ typedef enum {
 typedef struct {
     char* filename;
     bool isScanline;
-    int partIndex;
+    int32_t partIndex;
     exr_pixel_type_t pixelType;
-    int channelCount;
-    int width, height;
-    int tileLevelCount;
+    int32_t channelCount;
+    int32_t width, height;
+    int32_t tileLevelCount;
     nanoexr_WrapMode wrapMode;
-    int numMipLevels;
-    int exrSDKVersionMajor;
-    int exrSDKVersionMinor;
-    int exrSDKVersionPatch;
+    int32_t numMipLevels;
+    int32_t exrSDKVersionMajor;
+    int32_t exrSDKVersionMinor;
+    int32_t exrSDKVersionPatch;
     const char* exrSDKExtraInfo;
 } nanoexr_Reader_t;
+
+typedef enum {
+    NANOEXR_READ_HEADER,
+    NANOEXR_START_READ,
+    NANOEXR_GET_DATA_WINDOW,
+    NANOEXR_GET_STORAGE,
+    NANOEXR_GET_TILE_LEVELS,
+    NANOEXR_GET_CHANNELS,
+
+    NANOEXR_START_WRITE,
+    NANOEXR_ADD_CHANNEL,
+    NANOEXR_ADD_PART,
+    NANOEXR_SET_COMPRESSION,
+    NANOEXR_ADD_ATTR,
+    NANOEXR_ADD_HEADER,
+    NANOEXR_ENCODE,
+} nanoexr_AuxCode_t;
+
+typedef struct {
+    nanoexr_AuxCode_t nanoexrAuxCode;
+    exr_error_code_t  exrErrorCode;
+} nanoexr_ErrorCode_t;
+
+const char* nanoexr_get_default_aux_message(nanoexr_AuxCode_t);
 
 // given a filename and a reader, set up defaults in the reader
 void nanoexr_set_defaults(const char* filename, nanoexr_Reader_t* reader);
@@ -88,7 +112,22 @@ void nanoexr_set_defaults(const char* filename, nanoexr_Reader_t* reader);
 void nanoexr_free_storage(nanoexr_Reader_t* reader);
 
 const char* nanoexr_get_error_code_as_string(exr_result_t code);
-int         nanoexr_getPixelTypeSize(exr_pixel_type_t t);
+const char* nanoexr_get_default_error_message(exr_result_t code);
+int32_t     nanoexr_getPixelTypeSize(exr_pixel_type_t t);
+
+// callback to allow a user to process attributes as desired at a
+// point when the context is available during header reading
+typedef void (*nanoexr_attrRead)(void*, exr_context_t);
+
+// Read an OpenEXR file hader, and process any attributes
+// encountered in the header.
+
+nanoexr_ErrorCode_t 
+nanoexr_read_header(nanoexr_Reader_t* reader, 
+                    exr_read_func_ptr_t,
+                    nanoexr_attrRead, void* callback_userData,
+                    int32_t partIndex);
+
 
 // reads an entire tiled image into memory
 // returns any exr_result_t error code encountered upon reading
@@ -100,33 +139,24 @@ int         nanoexr_getPixelTypeSize(exr_pixel_type_t t);
 // the size of the data in bytes.  The caller is responsible for
 // freeing the data pointer when it is no longer needed.
 
-// callback to allow a user to process attributes as desired at a
-// point when the context is available during header reading
-typedef void (*nanoexr_attrRead)(void*, exr_context_t);
-
-exr_result_t nanoexr_read_header(nanoexr_Reader_t* reader, 
-                                 exr_read_func_ptr_t,
-                                 nanoexr_attrRead, void* callback_userData,
-                                 int partIndex);
-
 exr_result_t nanoexr_read_exr(const char* filename,
                               exr_read_func_ptr_t readfn,
                               void* callback_userData,
                               nanoexr_ImageData_t* img,
                               const char* layerName,
-                              int numChannelsToRead,
-                              int partIndex,
-                              int level);
+                              int32_t numChannelsToRead,
+                              int32_t partIndex,
+                              int32_t level);
 
 // callback to allow a user to add attributes to a context as desired
 typedef void (*nanoexr_attrsAdd)(void*, exr_context_t);
 
 // simplified write for the most basic case of a single part file containing
 // rgb data in half format.
-exr_result_t nanoexr_write_exr(
+nanoexr_ErrorCode_t nanoexr_write_exr(
                const char* filename,
                nanoexr_attrsAdd, void* attrsAdd_userData,
-               int width, int height, bool flipped,
+               int32_t width, int32_t height, bool flipped,
                exr_pixel_type_t pixel_type,
                uint8_t* red,   int32_t redPixelStride,   int32_t redLineStride,
                uint8_t* green, int32_t greenPixelStride, int32_t greenLineStride,

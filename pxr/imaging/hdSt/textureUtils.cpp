@@ -428,9 +428,11 @@ HdStTextureUtils::GetAllMipImages(
 
     // Ignoring image->GetNumMipLevels() since it can be unreliable.
     for (int mip = 0; mip < maxMipReads; ++mip) {
+        constexpr bool suppressErrors = true;
+        constexpr int subimage = 0;
         HioImageSharedPtr const image =
             HioImage::OpenForReading(
-                filePath, /* subimage = */ 0, mip, sourceColorSpace);
+                filePath, subimage, mip, sourceColorSpace, suppressErrors);
 
         if (!image) {
             break;
