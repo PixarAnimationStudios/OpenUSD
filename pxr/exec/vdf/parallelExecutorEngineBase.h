@@ -30,6 +30,7 @@
 
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/errorTransport.h"
+#include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/isolatingDispatcher.h"
@@ -651,7 +652,8 @@ VdfParallelExecutorEngineBase<Derived, DataManager>::RunSchedule(
     VdfExecutorErrorLogger *errorLogger,
     Callback &&callback)
 {
-    TRACE_SCOPE("VdfParallelExecutorEngineBase::RunSchedule");
+    TRACE_FUNCTION();
+    TfAutoMallocTag tag("VdfParallelExecutorEngineBase::RunSchedule");
 
     // Release the python GIL before creating and running parallel work. 
     TF_PY_ALLOW_THREADS_IN_SCOPE();

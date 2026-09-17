@@ -18,7 +18,6 @@
 #include "pxr/imaging/hgi/capabilities.h"
 
 #include "pxr/imaging/garch/glDebugWindow.h"
-#include "pxr/imaging/glf/testGLContext.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 

@@ -8,11 +8,11 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/hdSt/shaders/sphereNormal.glslfx
+--- #import $TOOLS/hdSt/shaders/implicitSurfaceNormal.glslfx
 
 
 --- --------------------------------------------------------------------------
--- glsl SphereNormal.Fragment.SingleSided
+-- glsl ImplicitSurfaceNormal.Fragment.SingleSided
 
 vec3 GetShadingNormal(vec3 N, bool frontFacing)
 {
@@ -20,7 +20,7 @@ vec3 GetShadingNormal(vec3 N, bool frontFacing)
 }
 
 --- --------------------------------------------------------------------------
--- glsl SphereNormal.Fragment.DoubleSided
+-- glsl ImplicitSurfaceNormal.Fragment.DoubleSided
 
 vec3 GetShadingNormal(vec3 N, bool frontFacing)
 {

@@ -1,0 +1,142 @@
+1. Evaluating expression "//"
+
+(Hydra) Matched non-instance prim paths:
+	/
+	/UsdNiPropagatedPrototypes
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisc5a1cb23cb33294e
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisc5a1cb23cb33294e/__Prototype_1
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisc5a1cb23cb33294e/__Prototype_1/UsdNiInstancer
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisc5a1cb23cb33294e/__Prototype_1/UsdNiInstancer/UsdNiPrototype
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisc5a1cb23cb33294e/__Prototype_1/UsdNiInstancer/UsdNiPrototype/Crown
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisc5a1cb23cb33294e/__Prototype_1/UsdNiInstancer/UsdNiPrototype/Trunk
+	/World
+
+(Hydra) Fully matched instance prim paths:
+	/World/InstanceA
+	/World/InstanceB
+
+(Hydra) Partially matched instance prim paths:
+
+(Hydra) Matched instance proxy prim paths:
+	/World/InstanceA/Crown
+	/World/InstanceA/Trunk
+	/World/InstanceB/Crown
+	/World/InstanceB/Trunk
+
+All (non-internal) matched prim paths w/ Hydra (count = 8):
+	/
+	/World
+	/World/InstanceA
+	/World/InstanceA/Crown
+	/World/InstanceA/Trunk
+	/World/InstanceB
+	/World/InstanceB/Crown
+	/World/InstanceB/Trunk
+
+All matched prim paths w/ USD (count = 7):
+	/World
+	/World/InstanceA
+	/World/InstanceA/Crown
+	/World/InstanceA/Trunk
+	/World/InstanceB
+	/World/InstanceB/Crown
+	/World/InstanceB/Trunk
+
+-----------------------------------------------------
+2. Evaluating expression "//Trunk"
+
+(Hydra) Matched non-instance prim paths:
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisc5a1cb23cb33294e/__Prototype_1/UsdNiInstancer/UsdNiPrototype/Trunk
+
+(Hydra) Fully matched instance prim paths:
+
+(Hydra) Partially matched instance prim paths:
+	/World/InstanceA
+	/World/InstanceB
+
+(Hydra) Matched instance proxy prim paths:
+	/World/InstanceA/Trunk
+	/World/InstanceB/Trunk
+
+All (non-internal) matched prim paths w/ Hydra (count = 2):
+	/World/InstanceA/Trunk
+	/World/InstanceB/Trunk
+
+All matched prim paths w/ USD (count = 2):
+	/World/InstanceA/Trunk
+	/World/InstanceB/Trunk
+
+-----------------------------------------------------
+3. Evaluating expression "/World/InstanceA"
+
+(Hydra) Matched non-instance prim paths:
+
+(Hydra) Fully matched instance prim paths:
+
+(Hydra) Partially matched instance prim paths:
+
+(Hydra) Matched instance proxy prim paths:
+
+All (non-internal) matched prim paths w/ Hydra (count = 0):
+
+All matched prim paths w/ USD (count = 1):
+	/World/InstanceA
+
+-----------------------------------------------------
+4. Evaluating expression "/World/InstanceB//"
+
+(Hydra) Matched non-instance prim paths:
+
+(Hydra) Fully matched instance prim paths:
+	/World/InstanceB
+
+(Hydra) Partially matched instance prim paths:
+
+(Hydra) Matched instance proxy prim paths:
+	/World/InstanceB/Crown
+	/World/InstanceB/Trunk
+
+All (non-internal) matched prim paths w/ Hydra (count = 3):
+	/World/InstanceB
+	/World/InstanceB/Crown
+	/World/InstanceB/Trunk
+
+All matched prim paths w/ USD (count = 3):
+	/World/InstanceB
+	/World/InstanceB/Crown
+	/World/InstanceB/Trunk
+
+-----------------------------------------------------
+5. Evaluating expression "//{isa:"Sphere"}"
+
+(Hydra) Matched non-instance prim paths:
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisc5a1cb23cb33294e/__Prototype_1/UsdNiInstancer/UsdNiPrototype/Crown
+	/UsdNiPropagatedPrototypes/NoPrimvars___usdUpAxisc5a1cb23cb33294e/__Prototype_1/UsdNiInstancer/UsdNiPrototype/Trunk
+
+(Hydra) Fully matched instance prim paths:
+	/World/InstanceA
+	/World/InstanceB
+
+(Hydra) Partially matched instance prim paths:
+
+(Hydra) Matched instance proxy prim paths:
+	/World/InstanceA/Crown
+	/World/InstanceA/Trunk
+	/World/InstanceB/Crown
+	/World/InstanceB/Trunk
+
+All (non-internal) matched prim paths w/ Hydra (count = 6):
+	/World/InstanceA
+	/World/InstanceA/Crown
+	/World/InstanceA/Trunk
+	/World/InstanceB
+	/World/InstanceB/Crown
+	/World/InstanceB/Trunk
+
+All matched prim paths w/ USD (count = 4):
+	/World/InstanceA/Crown
+	/World/InstanceA/Trunk
+	/World/InstanceB/Crown
+	/World/InstanceB/Trunk
+
+-----------------------------------------------------

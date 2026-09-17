@@ -673,28 +673,33 @@ SdfLayer::_CreateNew(
             return TfNullPtr;
         }
 
-        if (saveLayer) {
-            // Stash away the existing layer hints.  The call to _Save below
-            // will invalidate them but they should still be good.
-            SdfLayerHints hints = layer->_hints;
+        // The layer is now in the registry with _initializationComplete set to
+        // false.  Other threads that find it via FindOrOpen will wait on
+        // _WaitForInitializationAndCheckIfSuccessful until we call
+        // _FinishInitialization below.  Release the registry lock before
+        // calling _Save() which is a virtual function invoking arbitrary plugin
+        // code that could possibly reenter here.
+    }
 
-            // XXX 2011-08-19 Newly created layers should not be
-            // saved to disk automatically.
-            //
-            // Force the save here to ensure this new layer overwrites any
-            // existing layer on disk.
-            if (!layer->_Save(/* force = */ true)) {
-                // Dropping the layer reference will destroy it, and
-                // the destructor will remove it from the registry.
-                return TfNullPtr;
-            }
+    if (saveLayer) {
+        // Stash away the existing layer hints.  The call to _Save below will
+        // invalidate them but they should still be good.
+        SdfLayerHints hints = layer->_hints;
 
-            layer->_hints = hints;
+        // XXX 2011-08-19 Newly created layers should not be saved to disk
+        // automatically.
+        //
+        // Force the save here to ensure this new layer overwrites any existing
+        // layer on disk.
+        if (!layer->_Save(/* force = */ true)) {
+            layer->_FinishInitialization(/* success = */ false);
+            return TfNullPtr;
         }
 
-        // Once we have saved the layer, initialization is complete.
-        layer->_FinishInitialization(/* success = */ true);
+        layer->_hints = hints;
     }
+
+    layer->_FinishInitialization(/* success = */ true);
 
     return layer;
 }

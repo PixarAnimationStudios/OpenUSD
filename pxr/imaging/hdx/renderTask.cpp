@@ -158,7 +158,7 @@ HdxRenderTask::GetRenderTags() const
     return _renderTags;
 }
 
-HdRenderPassStateSharedPtr 
+HdRenderPassStateSharedPtr
 HdxRenderTask::_GetRenderPassState(HdTaskContext *ctx) const
 {
     if (_setupTask) {
@@ -203,15 +203,20 @@ HdxRenderTask::_SetHdStRenderPassState(HdTaskContext *ctx,
         renderPassState->SetLightingShader(
             lightingShader.Get<HdStLightingShaderSharedPtr>());
     }
+    // Register selection highlight bindings with the shader
+    _SetHdStSelectionBindings(ctx, renderPassState->GetRenderPassShader());
+}
 
+void
+HdxRenderTask::_SetHdStSelectionBindings(
+    HdTaskContext* ctx,
+    const HdStRenderPassShaderSharedPtr& renderPassShader)
+{
     // Selection Setup
     // Note that selectionTask comes after renderTask, so that
     // it can access rprimIDs populated in RenderTask::_Sync.
     VtValue vo = (*ctx)[HdxTokens->selectionOffsets];
     VtValue vu = (*ctx)[HdxTokens->selectionUniforms];
-
-    HdStRenderPassShaderSharedPtr renderPassShader
-        = renderPassState->GetRenderPassShader();
 
     if (!vo.IsEmpty() && !vu.IsEmpty()) {
         HdBufferArrayRangeSharedPtr obar

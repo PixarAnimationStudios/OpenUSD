@@ -121,8 +121,6 @@ pxr_library(tf
         compressedBits
         debug
         debugNotice
-        denseHashMap
-        denseHashSet
         diagnostic
         diagnosticBase
         diagnosticContainer
@@ -218,6 +216,8 @@ pxr_library(tf
         cxxCast.h
         declarePtrs.h
         delegatedCountPtr.h
+        denseHashMap.h
+        denseHashSet.h
         diagnosticLite.h
         diagnosticTransport.h
         functionTraits.h
@@ -274,6 +274,7 @@ pxr_library(tf
         pxrDoubleConversion/string-to-double.h
         pxrDoubleConversion/strtod.h
         pxrLZ4/lz4.h
+        pxrTslExt.h
         pyWeakObject.h
 
     CPPFILES
@@ -450,6 +451,7 @@ pxr_build_test(testTf
         testenv/compressedBits.cpp
         testenv/debug.cpp
         testenv/denseHashMap.cpp
+        testenv/denseHashSet.cpp
         testenv/delegate.cpp
         testenv/dl.cpp
         testenv/enum.cpp
@@ -609,6 +611,9 @@ pxr_register_test(TfDebugTestEnvHelp
 )
 pxr_register_test(TfDenseHashMap
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDenseHashMap"
+)
+pxr_register_test(TfDenseHashSet
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDenseHashSet"
 )
 pxr_register_test(TfDelegate
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDelegateAddRemove"

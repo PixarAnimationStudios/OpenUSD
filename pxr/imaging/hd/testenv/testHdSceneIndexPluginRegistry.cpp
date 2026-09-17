@@ -166,7 +166,7 @@ _CompareValue(
     if (value == expected) {
         std::cout << msg << " matches." << std::endl;
     } else {
-        std::cerr << msg << " doesn't match. Expecting " << expected
+        std::cerr << msg << " doesn't match. \nExpecting " << expected
                   << " got " << value << std::endl;
         return false;
     }
@@ -175,15 +175,23 @@ _CompareValue(
 
 static
 bool
-_TestValidOrdering(HdSceneIndexPluginRegistry::PluginOrderingPolicy policy)
+_TestValidOrdering(
+    const std::string &renderer,
+    const std::string &app,
+    HdSceneIndexPluginRegistry::PluginOrderingPolicy policy)
 {
     auto &registry = HdSceneIndexPluginRegistry::GetInstance();
     registry.SetPluginOrderingPolicy(policy);
     
     std::vector<TfToken> pluginIds = registry.LoadAndGetSceneIndexPluginIds(
-        HdSceneIndexPluginRegistryTokens->allRenderers.GetString(),
-        {/*empty app name*/});
+        renderer, app);
     
+    // Plugins above are registered for all renderers in both the C++
+    // registration and the JSON metadata.
+    // The JSON metadata's "loadWithApps" field is set to "", indicating that it
+    // should be loaded for all apps. So, we expect the same ordering for any
+    // renderer and app combination in the test scenarios below.
+    //
     const TfTokenVector expectedPluginOrder = {
         // Plugins with the same (phase, order) are sorted lexicographically.
         // "prep" phase plugins:
@@ -206,8 +214,9 @@ _TestValidOrdering(HdSceneIndexPluginRegistry::PluginOrderingPolicy policy)
     };
 
     std::stringstream ss;
-    ss << "Ordered scene index plugin IDs with policy \'" 
-       << TfEnum::GetName(policy) << "\' ";
+    ss << "Ordered scene index plugin IDs for renderer '"
+       << renderer << "' , app '" << app << "' and policy '"
+       << TfEnum::GetName(policy) << "'";
     return _CompareValue(ss.str().c_str(), pluginIds, expectedPluginOrder);
 }
 
@@ -234,6 +243,11 @@ TestValidOrdering()
     // we extend this test to cover more scenarios (e.g. invalid ordering,
     // missing plugins, etc.).
 
+    const auto rendererAndAppPairs = {
+        std::pair<std::string, std::string>("", ""),
+        std::pair<std::string, std::string>("foo", "bar")
+    };
+
     const auto orderingPolicies = {
         HdSceneIndexPluginRegistry::PluginOrderingPolicy::CppRegistrationOnly,
         HdSceneIndexPluginRegistry::PluginOrderingPolicy::JsonMetadataOnly,
@@ -241,14 +255,18 @@ TestValidOrdering()
     };
 
     bool success = true;
-    for (const auto& policy : orderingPolicies) {
-        std::cout << "Testing plugin ordering with policy: "
-                  << TfEnum::GetName(policy) << std::endl;
+    for (const auto& [renderer, app] : rendererAndAppPairs) {
+        for (const auto& policy : orderingPolicies) {
+            std::cout << "Testing plugin ordering for renderer '"
+                  << renderer << "' and app '"
+                  << app << "' with policy '"
+                  << TfEnum::GetName(policy) << "'" << std::endl;
 
-        const bool result = _TestValidOrdering(policy);
+            const bool result = _TestValidOrdering(renderer, app, policy);
 
-        std::cout << "Result: " << (result ? "PASS" : "FAIL") << std::endl;
-        success &= result;
+            std::cout << "Result: " << (result ? "PASS" : "FAIL") << std::endl;
+            success &= result;
+        }
     }
 
     return success;

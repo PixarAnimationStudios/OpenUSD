@@ -287,6 +287,16 @@ _TranslateWildcardToRegex(const std::string& wildcard)
         case '.':
         case '[':
         case ']':
+        case '(':
+        case ')':
+        case '{':
+        case '}':
+        case '+':
+        case '?':
+        case '|':
+        case '^':
+        case '$':
+        case '\\':
             // Escaped literal.
             result.push_back('\\');
             result.push_back(c);
@@ -312,6 +322,21 @@ _TranslateWildcardToRegex(const std::string& wildcard)
         }
     }
 
+    return result;
+}
+
+std::string
+_EscapeRegexCharacters(const std::string& s)
+{
+    static const std::string specialCharacters(".^$|?*+()[]{}\\");
+    std::string result;
+    result.reserve(2 * s.size());
+    for (char c : s) {
+        if (specialCharacters.find(c) != std::string::npos) {
+            result.push_back('\\');
+        }
+        result.push_back(c);
+    }
     return result;
 }
 
@@ -402,9 +427,12 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
     // Convert to regex.
     pattern = _TranslateWildcardToRegex(pattern);
 
-    // Append implied filename and build full regex string.
+    // Append implied filename and build full regex string. Note: we want to
+    // escape any special characters that are present in dirname to ensure
+    // it is not altered when converted into a regex below.
+    const std::string escapedDirname = _EscapeRegexCharacters(dirname);
     pattern = TfStringPrintf("%s/%s%s",
-                             dirname.c_str(), pattern.c_str(),
+                             escapedDirname.c_str(), pattern.c_str(),
                              !pattern.empty() && *pattern.rbegin() == '/'
                              ? _Tokens->PlugInfoName.GetText() : "");
 

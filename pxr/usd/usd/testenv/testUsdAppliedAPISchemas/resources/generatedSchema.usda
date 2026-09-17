@@ -111,6 +111,16 @@ class "TestComposeMetadataAPI" (
     )
 }
 
+class "TestAPISchemaForCanOnlyApplyToAPI"
+{
+    string someProp = "foo"
+}
+
+class "TestMultiAPISchemaForCanOnlyApplyToAPI"
+{
+    string multi:__INSTANCE_NAME__:someMultiProp = "foo"
+}
+
 class "TestSingleCanApplyAPI" (
     customData = {
         string userDocBrief = "Test single apply API schema with canOnlyApplyTo restrictions."

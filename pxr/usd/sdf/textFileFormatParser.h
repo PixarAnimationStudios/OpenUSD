@@ -1408,7 +1408,6 @@ struct PrefixOrSuffixSubstitutionsMetadata : PEGTL_NS::if_must<
 // 			          InheritsMetadata /
 // 			          SpecializesMetadata /
 // 			          ReferencesMetadata /
-// 			          RelocatesMetadata /
 // 			          VariantsMetadata /
 // 			          VariantSetsMetadata /
 //                    PrefixOrSuffixSubstitutionsMetadata /
@@ -1423,7 +1422,6 @@ struct PrimMetadataItem : PEGTL_NS::sor<
     VariantSetsMetadata,
     InheritsMetadata,
     SpecializesMetadata,
-    RelocatesMetadata,
     PEGTL_NS::if_must<
         ListOpKeyword,
         TokenSeparator,

@@ -85,6 +85,19 @@ layout (std430, binding=3) buffer mval { mat4  mvalues[]; };
 #define TEST_FAIL       {result = false; return;}
 #define VERIFY(x)       {if (!(x)) { result=false; return; }}
 
+#if defined(GL_EXT_control_flow_attributes)
+    #extension GL_EXT_control_flow_attributes: require
+    #define HGI_COMPILER_ATTR_UNROLL [[unroll]]
+    #define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
+    #define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
+    #define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
+#else
+    #define HGI_COMPILER_ATTR_UNROLL
+    #define HGI_COMPILER_ATTR_DONT_UNROLL
+    #define HGI_COMPILER_ATTR_FLATTEN
+    #define HGI_COMPILER_ATTR_DONT_FLATTEN
+#endif
+
 -- glsl Test.InstanceTransform.Common
 #define HD_HAS_instancerTransform
 #define HD_HAS_instancerTransformInverse

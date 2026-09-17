@@ -224,7 +224,7 @@ EfPageCacheBasedExecutor<EngineType, DataManagerType>::_Run(
     }
 
     TRACE_FUNCTION();
-    TfAutoMallocTag2 tag("Ef", "EfPageCacheBasedExecutor::Run");
+    TfAutoMallocTag tag("Ef", "EfPageCacheBasedExecutor::_Run");
 
     // Make sure the lofted node references array is sufficiently large.
     _loftedOutputs.Resize(*schedule.GetNetwork());

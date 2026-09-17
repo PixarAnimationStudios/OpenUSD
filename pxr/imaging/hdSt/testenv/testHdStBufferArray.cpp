@@ -14,7 +14,7 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
-#include "pxr/imaging/glf/testGLContext.h"
+#include "pxr/imaging/garch/glDebugWindow.h"
 
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/iterator.h"
@@ -330,8 +330,8 @@ BarShareTest(HdSt_TestDriver & driver)
 
 int main()
 {
-    GlfTestGLContext::RegisterGLContextCallbacks();
-    GlfSharedGLContextScopeHolder sharedContext;
+    GarchGLDebugWindow window("Hd Test", 512, 512);
+    window.Init();
 
     TfErrorMark mark;
 

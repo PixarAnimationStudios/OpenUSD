@@ -198,17 +198,25 @@ _ComputeProjectedExtentSize(const GfFrustum& frustum,
                     (b[1] - a[1]) * (c[0] - a[0]));
         };
 
-    // Order the points left to right.
-    std::sort(&outputPoints[0], &outputPoints[outputSize], _PointLess);
+    // Note: despite the standard stating that std::array::operator[]() does not
+    // check bounds, MSVC in debug mode does. Sometimes outputSize equals
+    // ouputPoints.size(), so we avoid the check with pointer math instead of
+    // operator[].
+    {
+        GfVec2d* pointsBegin = outputPoints.data();
+        GfVec2d* pointsEnd = pointsBegin + outputSize;
 
-    // Remove duplicates
-    GfVec2d* endPtr = std::unique(&outputPoints[0], &outputPoints[outputSize],
-                                  _PointEq);
-    outputSize = std::distance(&outputPoints[0], endPtr);
+        // Order the points left to right.
+        std::sort(pointsBegin, pointsEnd, _PointLess);
+
+        // Remove duplicates
+        pointsEnd = std::unique(pointsBegin, pointsEnd, _PointEq);
+        outputSize = pointsEnd - pointsBegin;
+    }
 
     // Now construct the convex hull. Build a counter-clockwise polygon by
     // starting at the leftmost point and keeping only points that do not create
-    // right turns. The first and last point in the hull are duplicates, so it
+    // right turns. The last point is a duplicate of the first, so the hull
     // could be one larger than outputPoints.
     std::array<GfVec2d, outputPoints.size() + 1> hull;
     int hullSize = 0;

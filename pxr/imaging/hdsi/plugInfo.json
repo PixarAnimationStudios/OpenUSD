@@ -12,7 +12,6 @@
                     "HdsiPrimIdSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": "",
-                        "loadWithApps": "",
                         "priority": 0,
                         "displayName": "Add prim id scene index if corresponding env var is set.",
 

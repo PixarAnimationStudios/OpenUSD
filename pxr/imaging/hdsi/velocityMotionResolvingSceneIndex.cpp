@@ -6,6 +6,7 @@
 //
 #include "pxr/imaging/hdsi/velocityMotionResolvingSceneIndex.h"
 
+#include "pxr/imaging/hd/cachingSampledDataSource.h"
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
 #include "pxr/imaging/hd/dependenciesSchema.h"
@@ -42,6 +43,7 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -122,7 +124,7 @@ public:
         const HdContainerDataSourceHandle& primSource,
         const HdSceneIndexBasePtr& inputSceneIndex)
       : _name(name)
-      , _source(source)
+      , _source(HdCachingSampledDataSource::New(source))
       , _primPath(primPath)
       , _primSource(primSource)
       , _inputSceneIndex(inputSceneIndex)
@@ -292,22 +294,26 @@ private:
     // Caller still needs to check that there are enough accelerations
     // values to cover all the positions needing transformation.
     VtVec3fArray
-    _GetAccelerations(
-        const Time sampleTime) const
+    _GetAccelerations(const Time sampleTime)
     {
         static const VtVec3fArray empty { };
         static const HdDataSourceLocator accelerationsLocator {
             HdPrimvarsSchema::GetSchemaToken(),
             HdTokens->accelerations,
             HdPrimvarSchemaTokens->primvarValue };
-        const auto accelerationsDs = HdSampledDataSource::Cast(
-            HdContainerDataSource::Get(_primSource, accelerationsLocator));
-        if (!accelerationsDs) {
+        std::call_once(_loadedAccelerations, [&]{
+            _accelerationsDs = HdSampledDataSource::Cast(HdContainerDataSource::Get(
+                _primSource, accelerationsLocator));
+            if (_accelerationsDs) {
+                _accelerationsDs = HdCachingSampledDataSource::New(_accelerationsDs);
+            }
+        });
+        if (!_accelerationsDs) {
             // accelerations not present
             return empty;
         }
         std::vector<Time> times;
-        if (!accelerationsDs->GetContributingSampleTimesForInterval(
+        if (!_accelerationsDs->GetContributingSampleTimesForInterval(
             0.0, 0.0, &times)) {
             // accelerations has constant value across all time; sample timing
             // does not matter
@@ -318,7 +324,7 @@ private:
             // accelerations not authored at same starting time as source
             return empty;
         }
-        const VtValue accelerationsVal = accelerationsDs->GetValue(times.front());
+        const VtValue accelerationsVal = _accelerationsDs->GetValue(times.front());
         if (!accelerationsVal.IsHolding<VtVec3fArray>()) {
             // accelerations are wrong type
             return empty;
@@ -350,7 +356,7 @@ private:
     _VelocityMotionValidForCurrentFrame(
         VtValue* srcValue = nullptr,
         VtVec3fArray* velocities = nullptr,
-        Time* outSampleTime = nullptr) const
+        Time* outSampleTime = nullptr)
     {
         const HdDataSourceLocator velocitiesLocator {
             HdPrimvarsSchema::GetSchemaToken(),
@@ -358,10 +364,14 @@ private:
               ? HdTokens->angularVelocities
               : HdTokens->velocities,
             HdPrimvarSchemaTokens->primvarValue };
-        const HdSampledDataSourceHandle velocitiesDs =
-            HdSampledDataSource::Cast(HdContainerDataSource::Get(
+        std::call_once(_loadedVelocities, [&]{
+            _velocitiesDs = HdSampledDataSource::Cast(HdContainerDataSource::Get(
                 _primSource, velocitiesLocator));
-        if (!velocitiesDs) {
+            if (_velocitiesDs) {
+                _velocitiesDs = HdCachingSampledDataSource::New(_velocitiesDs);
+            }
+        });
+        if (!_velocitiesDs) {
             // velocities not present
             TF_DEBUG(HDSI_VELOCITY_MOTION).Msg(
                 "<%s.%s>: No velocities\n",
@@ -391,7 +401,7 @@ private:
             times[0].resize(1);
             times[0][0] = 0.f;
         }
-        if (!velocitiesDs->GetContributingSampleTimesForInterval(
+        if (!_velocitiesDs->GetContributingSampleTimesForInterval(
                 0.f, 0.f, &times[1])) {
             // Velocities has no time samples, so has the same value at every
             // time. The frame-relative left-bracketing sample time is 0.
@@ -408,7 +418,7 @@ private:
             return false;
         }
         const Time sampleTime = times[0][0];
-        const VtValue velocitiesVal = velocitiesDs->GetValue(sampleTime);
+        const VtValue velocitiesVal = _velocitiesDs->GetValue(sampleTime);
         if (!velocitiesVal.IsHolding<VtVec3fArray>()) {
             TF_DEBUG(HDSI_VELOCITY_MOTION).Msg(
                 "<%s.%s>: Velocities wrong type\n",
@@ -506,6 +516,8 @@ private:
     SdfPath _primPath;
     HdContainerDataSourceHandle _primSource;
     HdSceneIndexBasePtr _inputSceneIndex;
+    HdSampledDataSourceHandle _velocitiesDs, _accelerationsDs;
+    std::once_flag _loadedVelocities, _loadedAccelerations;
 };
 
 // -----------------------------------------------------------------------------

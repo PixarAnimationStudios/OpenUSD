@@ -961,7 +961,8 @@ TfStringify(float val)
 
 bool
 TfDoubleToString(
-    double val, char* buffer, int bufferSize, bool emitTrailingZero)
+    double val, char* buffer, int bufferSize, bool emitTrailingZero,
+    const char* infinitySymbol /*="inf"*/, const char* nanSymbol /*="nan"*/)
 {
     if (bufferSize < 25) {
         return false;
@@ -974,8 +975,8 @@ TfDoubleToString(
     }
     const DSC conv(
         flags,
-        "inf", 
-        "nan",
+        infinitySymbol,
+        nanSymbol,
         'e',
         /* decimal_in_shortest_low */ -6,
         /* decimal_in_shortest_high */ 15,

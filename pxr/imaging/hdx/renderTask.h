@@ -8,6 +8,7 @@
 #define PXR_IMAGING_HDX_RENDER_TASK_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/version.h"
 #include "pxr/imaging/hdx/task.h"
@@ -49,7 +50,7 @@ class HdxRenderTask : public HdxTask
 {
 public:
     using TaskParams = HdxRenderTaskParams;
-    
+
     HDX_API
     HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id);
 
@@ -87,13 +88,21 @@ protected:
     // While HdDrawItem is currently a core-Hydra concept, it'll be moved
     // to Storm. Until then, allow querying the render pass to know if there's
     // draw submission work.
-
+    //
     // Returns whether the render pass has any draw items to submit.
     // For non-Storm backends, this returns true.
     // When using with Storm tasks, make sure to call it after
     // HdxRenderTask::Prepare().
     HDX_API
     bool _HasDrawItems() const;
+
+    // XXX: Storm specific API
+    // Binds the selection highlight buffers published by HdxSelectionTask onto
+    // the given render pass shader.
+    HDX_API
+    void _SetHdStSelectionBindings(
+        HdTaskContext* ctx,
+        const HdStRenderPassShaderSharedPtr& renderPassShader);
 
 private:
     HdRenderPassSharedPtr _pass;
@@ -106,7 +115,7 @@ private:
     // Setup additional state that HdStRenderPassState requires.
     void _SetHdStRenderPassState(HdTaskContext *ctx,
                                  HdStRenderPassState *renderPassState);
-    
+
     // Inspect the AOV bindings to determine if any of them need to be cleared.
     bool _NeedToClearAovs(HdRenderPassStateSharedPtr const &renderPassState)
         const;

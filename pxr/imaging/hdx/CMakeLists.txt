@@ -160,20 +160,6 @@ pxr_build_test(testHdxIdRender
     CPPFILES
         testenv/testHdxIdRender.cpp
 )
-pxr_build_test(testHdxPickAndHighlight
-    LIBRARIES
-        hdx
-        hd
-        hdSt
-        sdf
-        glf
-        garch
-        arch
-        tf
-    CPPFILES
-        unitTestUtils.cpp
-        testenv/testHdxPickAndHighlight.cpp
-)
 pxr_build_test(testHdxCameraAndLight
     LIBRARIES
         hdx
@@ -289,21 +275,6 @@ pxr_register_test(testHdxLightAndShadow
     PERCEPTUAL
     ENV
         TF_DEBUG=HD_SAFE_MODE
-)
-pxr_register_test(testHdxPickAndHighlight
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxPickAndHighlight --offscreen"
-    TESTENV testenv/testHdxPickAndHighlight
-    EXPECTED_RETURN_CODE 0
-    IMAGE_DIFF_COMPARE
-        color1_unselected.png
-        color2_select.png
-        color3_select.png
-        color4_locate.png
-        color5_locate.png
-        color6_select_all_instances.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
 )
 pxr_register_test(testHdxPickResolveMode
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxPickResolveMode --offscreen"
@@ -427,6 +398,41 @@ pxr_register_test(testHdxDrawTarget
     PERCEPTUAL
     ENV
         TF_DEBUG=HD_SAFE_MODE
+)
+
+# testHdxPickAndHighlight needs SdrGlslfxParserPlugin
+pxr_build_test(testHdxPickAndHighlight
+    LIBRARIES
+        hdx
+        hd
+        hdSt
+        hio
+        sdr
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        unitTestUtils.cpp
+        testenv/testHdxPickAndHighlight.cpp
+)
+pxr_register_test(testHdxPickAndHighlight
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxPickAndHighlight --offscreen"
+    TESTENV testenv/testHdxPickAndHighlight
+    EXPECTED_RETURN_CODE 0
+    IMAGE_DIFF_COMPARE
+        color1_unselected.png
+        color2_select.png
+        color3_select.png
+        color4_locate.png
+        color5_locate.png
+        color6_select_all_instances.png
+        color7_translucent_unselected.png
+        color8_translucent_locate.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
 )
 
 endif() # TARGET shared_libs

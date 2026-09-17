@@ -277,6 +277,13 @@ HdSt_ShaderKey::GetDepthQualifier() const
     return TfToken();
 }
 
+/*virtual*/
+bool
+HdSt_ShaderKey::UseHardwareClipPlanes() const
+{
+    return true;
+}
+
 
 /*virtual*/
 HdSt_GeometricShader::FvarPatchType 

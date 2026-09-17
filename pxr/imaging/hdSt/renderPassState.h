@@ -203,7 +203,6 @@ public:
     CopyAllExceptShaderFrom(const HdStRenderPassState& other);
 
 private:
-    bool _UseAlphaMask() const;
     unsigned int _GetFramebufferHeight() const;
     GfRange2f _ComputeFlippedFilmbackWindow() const;
 
@@ -245,7 +244,6 @@ private:
 
     HdBufferArrayRangeSharedPtr _renderPassStateBar;
     size_t _clipPlanesBufferSize;
-    float _alphaThresholdCurrent;
     bool _resolveMultiSampleAov;
 };
 

@@ -4,14 +4,13 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_PXR_IMAGING_HDSI_PINNED_CURVE_EXPANDING_SCENE_INDEX_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_PXR_IMAGING_HDSI_PINNED_CURVE_EXPANDING_SCENE_INDEX_H
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_PXR_IMAGING_HDSI_PINNED_CURVE_EXPANDING_SCENE_INDEX_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_PXR_IMAGING_HDSI_PINNED_CURVE_EXPANDING_SCENE_INDEX_H
 
-// XXX: Delete this file after hdPrman drops support for USD versions
-// older than 22.11.
+// XXX: Delete this file after hdPrman drops support for HD_API_VERSION versions  older than 96.
 
-#include "pxr/pxr.h" // PXR_VERSION
-#if PXR_VERSION >= 2211
+#include "pxr/imaging/hd/version.h"
+#if HD_API_VERSION >= 96
 #include <pxr/imaging/hdsi/pinnedCurveExpandingSceneIndex.h> // IWYU pragma: export
 #else
 
@@ -19,9 +18,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_WEAK_AND_REF_PTRS(HdsiPinnedCurveExpandingSceneIndex);
+TF_DECLARE_WEAK_AND_REF_PTRS(HdPrmanPinnedCurveExpandingSceneIndex);
 
-/// \class HdsiPinnedCurveExpandingSceneIndex
+/// \class HdPrmanPinnedCurveExpandingSceneIndex
 ///
 /// Pinned curves are a special case of non-periodic cubic curves (relevant only
 /// for BSpline and CatmullRom basis) where the authored intent is for each
@@ -42,11 +41,11 @@ TF_DECLARE_WEAK_AND_REF_PTRS(HdsiPinnedCurveExpandingSceneIndex);
 /// \note This scene index does not convert indexed curves (i.e., with authored
 ///       curve indices) into non-indexed curves.
 ///
-class HdsiPinnedCurveExpandingSceneIndex :
+class HdPrmanPinnedCurveExpandingSceneIndex :
     public HdSingleInputFilteringSceneIndexBase
 {
 public:
-    static HdsiPinnedCurveExpandingSceneIndexRefPtr
+    static HdPrmanPinnedCurveExpandingSceneIndexRefPtr
     New(const HdSceneIndexBaseRefPtr &inputSceneIndex);
 
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override final;
@@ -66,13 +65,13 @@ protected:
         const HdSceneIndexBase &sender,
         const HdSceneIndexObserver::DirtiedPrimEntries &entries) override final;
 
-    HdsiPinnedCurveExpandingSceneIndex(
+    HdPrmanPinnedCurveExpandingSceneIndex(
         const HdSceneIndexBaseRefPtr &inputSceneIndex);
 
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_VERSION >= 2211
+#endif // HD_API_VERSION >= 96
 
-#endif //EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_PXR_IMAGING_HDSI_PINNED_CURVE_EXPANDING_SCENE_INDEX_H
+#endif //EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_PXR_IMAGING_HDSI_PINNED_CURVE_EXPANDING_SCENE_INDEX_H

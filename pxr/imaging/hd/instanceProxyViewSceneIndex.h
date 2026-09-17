@@ -68,6 +68,10 @@ public:
     HD_API
     bool IsOutermostInstance(const SdfPath &primPath) const;
 
+    /// Returns the set of all tracked outermost instance prim paths.
+    HD_API
+    const SdfPathSet &GetAllOutermostInstancePrimPaths() const;
+
     // ------------------------------------------------------------------------
     // HdSceneIndex overrides.
     //

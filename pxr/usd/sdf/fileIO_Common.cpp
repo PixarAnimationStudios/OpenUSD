@@ -858,14 +858,6 @@ Sdf_FileIOUtility::WriteRelocates(
     return _WriteRelocates(out, indent, multiLine, relocates);
 }
 
-bool 
-Sdf_FileIOUtility::WriteRelocates(
-    Sdf_TextOutput &out, size_t indent, bool multiLine,
-    const SdfRelocatesMap &reloMap)
-{
-    return _WriteRelocates(out, indent, multiLine, reloMap);
-}
-
 void
 Sdf_FileIOUtility::_WriteDictionary(
     Sdf_TextOutput &out, size_t indent, bool multiLine,

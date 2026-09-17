@@ -772,6 +772,47 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
             }
         }
 
+#if _PRMANAPI_VERSION_MAJOR_ >= 28
+        if (_hdLightType == HdPrimTypeTokens->distantLight) {
+            // We need to use different normalization math by default for the UsdLux Schema 
+            // (if the user doesn't explicitly author sphericalAreaNormalization).
+            static const RtUString k_sphericalAreaNormalization("sphericalAreaNormalization");
+            int sphericalAreaNormalization = -1;
+            if (!lightNode.params.GetInteger(k_sphericalAreaNormalization, sphericalAreaNormalization)) {
+                lightNode.params.SetInteger(k_sphericalAreaNormalization, 1);
+            }
+            // If angle is 0 set area normalization on to mimic a "perfectly parallel light source"
+            // as described by the UsdLux Schema
+            static const RtUString k_angleExtent("angleExtent");
+            float angleExtent = 0.53f;
+            if (lightNode.params.GetFloat(k_angleExtent, angleExtent) && angleExtent <= 0.f) {
+                static const RtUString k_areaNormalize("areaNormalize");
+                lightNode.params.SetInteger(k_areaNormalize, 1);
+            }
+        }
+
+        if (_hdLightType == HdPrimTypeTokens->diskLight
+        || _hdLightType == HdPrimTypeTokens->rectLight
+        || _hdLightType == HdPrimTypeTokens->sphereLight
+        || _hdLightType == HdPrimTypeTokens->cylinderLight) {
+            // If cone angle is not present make sure we set 180 degrees for double sided 
+            // lights (sphere and cylinder) which will produce a cone with the default 90 degrees
+            static const RtUString k_coneAngle("coneAngle");
+            float coneAngle = 90.f;
+            if (!lightNode.params.GetFloat(k_coneAngle, coneAngle)) {
+                lightNode.params.SetFloat(k_coneAngle, 180.f);
+            }
+
+            // We need to use different cone attenuation math by default for the UsdLux Schema 
+            // (if the user doesn't explicitly author directionalConeAttenuation).
+            static const RtUString k_directionalConeAttenuation("directionalConeAttenuation");
+            int directionalConeAttenuation = -1;
+            if (!lightNode.params.GetInteger(k_directionalConeAttenuation, directionalConeAttenuation)) {
+                lightNode.params.SetInteger(k_directionalConeAttenuation, 1);
+            }
+        }
+#endif
+
         // Shadow linking
         VtValue shadowLinkVal =
             sceneDelegate->GetLightParamValue(id, HdTokens->shadowLink);

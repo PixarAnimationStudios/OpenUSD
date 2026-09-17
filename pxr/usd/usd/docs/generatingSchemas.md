@@ -790,7 +790,8 @@ Here's a short description of each datum in the per-class customData dictionary:
     apply API schemas. This is a token array value that, when specified, is used
     by UsdPrim::CanApplyAPI and the schema's generated CanApply function to 
     limit the prims to which this API schema can be validly applied to only the 
-    schema types whose names are in this list.
+    prims which derive from named types in this list or which have the named API
+    schemas in this list applied to them.
     
   - \b apiSchemaAllowedInstanceNames - must only be specified on multiple apply 
     API schemas. This is a token array value that, when specified, is used by 
@@ -995,10 +996,12 @@ class "MyParamsAPI" (
         # This is an example of specifying typed schemas that this single apply
         # API can only be applied to. Specifying this means that the generated 
         # MyParamsAPI::CanApply(prim) and prim.CanApplyAPI<MyParamsAPI>()
-        # will only return true if the prim is one of these listed types.
+        # will only return true if the prim type is derived from one of these 
+        # listed types or has one of the listed API schemas applied to it.
         token[] apiSchemaCanOnlyApplyTo = ["MyCustomPrim", 
                                            "OutsidePluginCustomPrim", 
-                                           "AnotherCustomPrim"]
+                                           "AnotherCustomPrim",
+                                           "SomeCustomAPI"]
     }
 )
 {
@@ -1045,18 +1048,23 @@ class "GridCrittersAPI" (
         #    if instanceName is anything but "insect" or "rodent" because of
         #    apiSchemaAllowedInstanceNames.
         # 2. GridCrittersAPI::CanApply(prim, "insect") will only return true
-        #    if prim.IsA<MyCustomPrim>() because this is specified in 
-        #    apiSchemaInstances
+        #    if prim.IsA<MyCustomPrim>() or if prim has 
+        #    SomeCustomAPI:specificInstance multi apply API applied to it 
+        #    because these are specified in apiSchemaCanOnlyApplyTo for the
+        #    "insect" instance specifically.
         # 3. GridCrittersAPI::CanApply(prim, "rodent") will only return true
-        #    if prim.IsA<MyCustomPrim>() or prim.IsA<AnotherCustomPrim>() 
-        #    because this is specified in apiSchemaCanOnlyApplyTo and there is
-        #    no override in apiSchemaInstances
+        #    if prim.IsA<MyCustomPrim>() or prim.IsA<AnotherCustomPrim>() or
+        #    prim.HasAPI<SomeCustomAPI>() because this is specified in 
+        #    apiSchemaCanOnlyApplyTo and there is no override in 
+        #    apiSchemaInstances
         token[] apiSchemaAllowedInstanceNames = ["insect", "rodent"]
         token[] apiSchemaCanOnlyApplyTo = ["MyCustomPrim", 
-                                           "AnotherCustomPrim"]
+                                           "AnotherCustomPrim",
+                                           "SomeCustomAPI"]
         dictionary apiSchemaInstances = {
             dictionary insect = {
-                token[] apiSchemaCanOnlyApplyTo = ["MyCustomPrim"]
+                token[] apiSchemaCanOnlyApplyTo = ["MyCustomPrim", 
+                                                   "SomeCustomAPI:specificInstance"]
             }
         }
     }

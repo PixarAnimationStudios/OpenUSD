@@ -10,6 +10,7 @@
 #include "pxr/usd/pcp/debugCodes.h"
 #include "pxr/usd/pcp/dependencies.h"
 #include "pxr/usd/pcp/layerStack.h"
+#include "pxr/usd/pcp/utils.h"
 #include "pxr/base/trace/trace.h"
 
 #include <algorithm>
@@ -56,7 +57,7 @@ _GetLayerStackSitesForEdit(
 
 static bool
 _RelocatesMapContainsPrimOrDescendant(
-    const SdfRelocatesMapProxy& reloMap,
+    const SdfRelocatesMap& reloMap,
     const SdfPath& primPath)
 {
     TF_FOR_ALL(it, reloMap) {
@@ -83,6 +84,9 @@ _AddRelocateEditsForLayerStack(
 
     // Record a relocates edit for each layer stack site if any prim spec
     // at that site has a relocates statement that contains oldRelocatePath.
+    //
+    // XXX: Note that this code only supports prim relocates, which have
+    //      been deprecated in favor of layer relocates.
     // 
     // XXX: If this is a performance issue, PcpLayerStack could keep track 
     //      of a finer-grained table to avoid scanning through every prim 
@@ -96,12 +100,14 @@ _AddRelocateEditsForLayerStack(
             // doesn't necessarily mean there is a spec with a relocate
             // in every layer.  Skip layers that don't have a spec with
             // a relocate.
-            if (!prim || !prim->HasRelocates()) {
+            SdfRelocatesMap primRelocates;
+            if (!prim || !prim->HasField(
+                    Pcp_Fields->primRelocates, &primRelocates)) {
                 continue;
             }
 
             if (_RelocatesMapContainsPrimOrDescendant(
-                    prim->GetRelocates(), oldRelocatePath)) {
+                    primRelocates, oldRelocatePath)) {
 
                 PcpNamespaceEdits::LayerStackSites& layerStackSites = 
                     _GetLayerStackSitesForEdit(

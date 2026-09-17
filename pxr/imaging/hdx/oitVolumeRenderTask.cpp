@@ -18,8 +18,6 @@
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/volume.h"
 
-#include "pxr/imaging/glf/diagnostic.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 static const HioGlslfxSharedPtr &
@@ -94,8 +92,6 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-
-    GLF_GROUP_FUNCTION();
 
     if (!_isOitEnabled || !HdxRenderTask::_HasDrawItems()) {
         return;

@@ -29,7 +29,7 @@ pxr_plugin(sdrOsl
         ${OIIO_INCLUDE_DIRS}
         ${__OSL_IMATH_INCLUDE}
 
-    PUBLIC_CLASSES
+    PRIVATE_CLASSES
         oslParser
 
     PRIVATE_HEADERS

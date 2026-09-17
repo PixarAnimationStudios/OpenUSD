@@ -7,9 +7,8 @@
 #include "hdPrman/meshLightResolvingSceneIndex.h"
 
 #include "hdPrman/debugCodes.h"
+#include "hdPrman/meshLightResolvingSceneIndexPlugin.h"
 #include "hdPrman/tokens.h"
-
-#include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hd/categoriesSchema.h"
 #include "pxr/imaging/hd/containerDataSourceEditor.h"
@@ -25,6 +24,7 @@
 #else
 #include "pxr/imaging/hd/materialBindingSchema.h"
 #endif
+#include "pxr/imaging/hd/materialNetworkInterface.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/meshSchema.h"
@@ -33,6 +33,7 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/schema.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
@@ -43,10 +44,18 @@
 
 #include "pxr/usd/usdLux/tokens.h"
 
+#include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/vt/value.h"
 #include "pxr/base/work/loops.h"
+
+#include "pxr/pxr.h"
+
 #include <mutex>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -381,28 +390,54 @@ _BuildLightShaderDataSource(
     const HdDataSourceMaterialNetworkInterface srcMatNI(matPath, matDS,
                                                         originPrim.dataSource);
 #endif
-    // look up the surface/volume terminal connection
-    const auto& terminalConn = srcMatNI.GetTerminalConnection(terminalToken);
-    if (!terminalConn.first) {
-        // no surface/volume terminal connection; return unmodified
-        TF_DEBUG(HDPRMAN_MESHLIGHT).Msg("Could not locate %s terminal "
-            "connection; shader for %s light <%s> will not be modified\n",
-            terminalToken.GetText(), originPrim.primType.GetText(),
-            originPath.GetText());
-        return originalShaderDS;
+
+    // Extract the source material's glow
+    HdDataSourceMaterialNetworkInterface::InputConnectionVector glowIC;
+    VtValue glowIV;
+    // check the callbacks first; callbacks only support connection and will
+    // provide a node and output name (to be connected to textureColor).
+    {
+        const auto result = HdPrman_MeshLightResolvingSceneIndexPlugin
+            ::ExtractMaterialGlowConnection(
+                matPath, matPrim.dataSource, srcMatNI);
+        if (result.first) {
+            glowIC.push_back(result.second);
+        }
     }
+    if (glowIC.empty()) {
+        // look up the surface/volume terminal connection
+        const auto& terminalConn = srcMatNI.GetTerminalConnection(terminalToken);
+        if (!terminalConn.first) {
+            // no surface/volume terminal connection; return unmodified
+            TF_DEBUG(HDPRMAN_MESHLIGHT).Msg("Could not locate %s terminal "
+                "connection; shader for %s light <%s> will not be modified\n",
+                terminalToken.GetText(), originPrim.primType.GetText(),
+                originPath.GetText());
+            return originalShaderDS;
+        }
 
-    // check the terminal's upstream node is of a supported type
-    const TfToken& nodeType = srcMatNI.GetNodeType(
-        terminalConn.second.upstreamNodeName);
+        // check the terminal's upstream node is of a supported type
+        const TfToken& nodeType = srcMatNI.GetNodeType(
+            terminalConn.second.upstreamNodeName);
 
-    if (nodeType != expectedShader) {
-        // unsupported node type; return unmodified
-        TF_DEBUG(HDPRMAN_MESHLIGHT).Msg("%s terminal upstream node is not "
-            "%s; shader for %s light <%s> will not be modified\n",
-            terminalToken.GetText(), expectedShader.GetText(),
-            originPrim.primType.GetText(), originPath.GetText());
-        return originalShaderDS;
+        if (nodeType != expectedShader) {
+            // unsupported node type; return unmodified
+            TF_DEBUG(HDPRMAN_MESHLIGHT).Msg("%s terminal upstream node is not "
+                "%s; shader for %s light <%s> will not be modified\n",
+                terminalToken.GetText(), expectedShader.GetText(),
+                originPrim.primType.GetText(), originPath.GetText());
+            return originalShaderDS;
+        }
+
+        // get the connection
+        glowIC = srcMatNI.GetNodeInputConnection(
+            terminalConn.second.upstreamNodeName, glowParam);
+
+        // if no connection, try for an explicit value
+        if (glowIC.empty()) {
+            glowIV = srcMatNI.GetNodeParameterValue(
+                terminalConn.second.upstreamNodeName, glowParam);
+        }
     }
 
     // interface with the original light shader network
@@ -416,9 +451,7 @@ _BuildLightShaderDataSource(
     const auto lightTC = shaderNI.GetTerminalConnection(
         HdMaterialTerminalTokens->light);
 
-    // try for material's glow input connection
-    const auto glowIC = srcMatNI.GetNodeInputConnection(
-        terminalConn.second.upstreamNodeName, glowParam);
+    // if connection, connect to textureColor
     if (!glowIC.empty()) {
         // glow input connection exists; set as textureColor on
         // light terminal's upstream node
@@ -451,8 +484,6 @@ _BuildLightShaderDataSource(
 #endif
     }
     // No glow input connection; try for param value instead
-    const VtValue glowIV = srcMatNI.GetNodeParameterValue(
-        terminalConn.second.upstreamNodeName, glowParam);
     if (glowIV.IsHolding<GfVec3f>()) {
         // glow param value exists; set as textureColor on
         // light terminal's upstream node
@@ -837,7 +868,7 @@ public:
     }
 
     bool GetContributingSampleTimesForInterval(
-        Time startTime, 
+        Time startTime,
         Time endTime,
         std::vector<Time> * outSampleTimes) override
     {
@@ -957,7 +988,7 @@ class _MotionBlurBlockingPrimDataSource : public HdContainerDataSource
                     // up by our motion blur scene index.
                     HdOverlayContainerDataSource::New(
                         HdRetainedContainerDataSource::New(
-                            HdTokens->velocities, HdBlockDataSource::New(), 
+                            HdTokens->velocities, HdBlockDataSource::New(),
                             HdTokens->accelerations, HdBlockDataSource::New()
                         ),
                         primvars.GetContainer()
@@ -1006,7 +1037,7 @@ _BuildSourceDataSource(
 
     HdContainerDataSourceHandle handles[2] = {
         HdRetainedContainerDataSource::New(names.size(), names.data(), sources.data()),
-        disableDeformationMotionBlur ? 
+        disableDeformationMotionBlur ?
             _MotionBlurBlockingPrimDataSource::New(originDS) :
             originDS
     };

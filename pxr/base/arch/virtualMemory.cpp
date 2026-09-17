@@ -7,22 +7,41 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/virtualMemory.h"
 #include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/error.h"
 #include "pxr/base/arch/systemInfo.h"
 
 #include <cstdint>
 #if defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
-#include <Memoryapi.h>
+#include <memoryapi.h>
 #else // Assume POSIX
 #include <sys/mman.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-template <class T>
-static inline T *RoundToPageAddr(T *addr) {
-    static uint64_t PAGEMASK = ~(static_cast<uint64_t>(ArchGetPageSize())-1);
-    return reinterpret_cast<T *>(reinterpret_cast<uintptr_t>(addr) & PAGEMASK);
+static uintptr_t
+GetPageMask()
+{
+    const int pageSize = ArchGetPageSize();
+    // Every address computation below derives from this mask, so a value that
+    // is not a positive power of two would silently produce wrong addresses
+    // rather than fail visibly.  ArchGetPageSize() documents power-of-two, but
+    // it returns sysconf(_SC_PAGE_SIZE) narrowed to int on POSIX, which would
+    // be -1 if sysconf() ever failed -- yielding a mask of 1.
+    if (pageSize <= 0 || (pageSize & (pageSize - 1)) != 0) {
+        ARCH_ERROR("ArchGetPageSize() is not a positive power of two");
+    }
+    return ~static_cast<uintptr_t>(pageSize - 1);
+}
+
+// Round \p addr down to the start of the page containing it.
+static inline void *
+RoundToPageAddr(void *addr)
+{
+    static const uintptr_t pageMask = GetPageMask();
+    return reinterpret_cast<void *>(
+        reinterpret_cast<uintptr_t>(addr) & pageMask);
 }
 
 #if defined (ARCH_OS_WINDOWS)
@@ -42,6 +61,7 @@ ArchCommitVirtualMemoryRange(void *start, size_t numBytes)
 bool
 ArchFreeVirtualMemory(void *start, size_t /*numBytes*/)
 {
+    // MEM_RELEASE requires a size of 0 and releases the whole reservation.
     return VirtualFree(start, 0, MEM_RELEASE);
 }
 
@@ -56,8 +76,9 @@ ArchSetMemoryProtection(void const *start, size_t numBytes,
     DWORD protXlat[] = {
         PAGE_NOACCESS,
         PAGE_READONLY,
-        PAGE_READWRITE, // Unclear what the difference is btw
-        PAGE_WRITECOPY  // READWRITE & WRITECOPY for private mappings...
+        PAGE_READWRITE,
+        PAGE_WRITECOPY  // Private file-backed mappings only; see the note on
+                        // ArchMemoryProtection in virtualMemory.h.
     };
 
     DWORD oldProtect;
@@ -71,9 +92,7 @@ ArchReserveVirtualMemory(size_t numBytes)
 {
     void *addr = mmap(NULL, numBytes, PROT_NONE,
                       MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (!addr || addr == MAP_FAILED)
-        return nullptr;
-    return addr;
+    return addr == MAP_FAILED ? nullptr : addr;
 }
 
 bool
@@ -104,9 +123,9 @@ ArchSetMemoryProtection(void const *start, size_t numBytes,
         PROT_NONE,
         PROT_READ,
         PROT_READ | PROT_WRITE, // Yes these are the same on POSIX
-        PROT_READ | PROT_WRITE  //                                
+        PROT_READ | PROT_WRITE  //
     };
-    
+
     int result = mprotect(pageStart, len, protXlat[protection]);
     return result == 0;
 }

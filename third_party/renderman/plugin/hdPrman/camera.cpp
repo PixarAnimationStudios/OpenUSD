@@ -444,18 +444,18 @@ HdPrmanCamera::_ComputeCameraParams(const GfRange2d & screenWindow) const
     // 'farClip' (float): near clipping distance
     // 'shutterOpenTime' (float): beginning of normalized shutter interval
     // 'shutterCloseTime' (float): end of normalized shutter interval
+    // 'dofaspect' (float): dof aspect ratio
+    // 'apertureAngle' (float): aperture angle (bokeh)
+    // 'apertureDensity' (float): aperture density (bokeh)
+    // 'apertureNSides' (int): number of aperture sides (bokeh)
+    // 'apertureRoundness' (float): aperture roundess (bokeh)
 
     // Parameters that are not handled (and use their defaults):
     // 'focusregion' (float):
-    // 'dofaspect' (float): dof aspect ratio
-    // 'apertureNSides' (int):
-    // 'apertureAngle' (float):
-    // 'apertureRoundness' (float):
-    // 'apertureDensity' (float):
 
-    // Parameter that is handled during Riley camera creation:
+    // Parameter that is handled during Riley camera creation (not here!):
     // Rix::k_shutteropening (float[8] [c1 c2 d1 d2 e1 e2 f1 f2): additional
-    // control points
+    //     control points
 
     // Do not use clipping range if scene delegate did not provide one.
     // Note that we do a sanity check slightly stronger than
@@ -489,6 +489,10 @@ HdPrmanCamera::_ComputeCameraParams(const GfRange2d & screenWindow) const
     result.SetInteger(RixStr.k_apertureNSides, GetApertureNSides());
     result.SetFloat(RixStr.k_apertureRoundness, GetApertureRoundness());
 
+    // TODO: Remove this hack. RenderMan globalizes all camera parameters as
+    // though they are scene-level options, so this is a backdoor way to set
+    // Ri:ScreenWindow without calling SetOptions. Need to determine whether
+    // this is still required and, if so, try to eliminate it.
     const GfVec4f s = _RangeToVec4(screenWindow);
     result.SetFloatArray(RixStr.k_Ri_ScreenWindow, s.data(), 4);
 
@@ -683,7 +687,6 @@ HdPrmanCamera::HdPrmanCamera(SdfPath const& id)
   , _lensDistortionAsym(0.0f)
   , _lensDistortionScale(1.0f)
 #endif
-  , _dofAspect(1.0f)
   , _apertureAngle(0.0f)
   , _apertureDensity(0.0f)
   , _apertureNSides(0)
@@ -947,9 +950,13 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
             sceneDelegate->GetCameraParamValue(id, _tokens->shutteropening);
         _shutterCurve.shutteropening = _ToOptionalFloat8(vShutteropening);
 
-        _dofAspect =
-            sceneDelegate->GetCameraParamValue(id, _tokens->dofAspect)
-                         .GetWithDefault<float>(1.0f);
+        // if dofAspect is specified as "ri:dofaspect" instead of the usual
+        // HdCameraSchema "dofAspect", it should take precedence over the latter
+        const VtValue vRiDofAspect =
+            sceneDelegate->GetCameraParamValue(id, _tokens->dofAspect);
+        if (vRiDofAspect.IsHolding<float>()) {
+            _dofAspect = vRiDofAspect.UncheckedGet<float>();
+        }
         _apertureAngle =
             sceneDelegate->GetCameraParamValue(id, _tokens->apertureAngle)
                          .GetWithDefault<float>(0.0f);

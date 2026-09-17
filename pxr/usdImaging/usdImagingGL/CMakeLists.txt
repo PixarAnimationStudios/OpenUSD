@@ -771,6 +771,21 @@ pxr_register_test(testUsdImagingGLNativeImplicits_spheresWithOrthoCam
         HDST_ENABLE_NATIVE_SPHERES=1
 )
 
+pxr_register_test(testUsdImagingGLNativeImplicits_clippedSphere
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -times 1 2 3 4 5 -stage clippedSphere.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_clippedSphere.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_clippedSphere_001.png
+        testUsdImagingGLNativeImplicits_clippedSphere_002.png
+        testUsdImagingGLNativeImplicits_clippedSphere_003.png
+        testUsdImagingGLNativeImplicits_clippedSphere_004.png
+        testUsdImagingGLNativeImplicits_clippedSphere_005.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_SPHERES=1
+)
+
 pxr_register_test(testUsdImagingGLHoleFaces
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage holeFaces.usda -write testUsdImagingGLHoleFaces.png"
     IMAGE_DIFF_COMPARE

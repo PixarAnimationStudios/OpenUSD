@@ -326,6 +326,7 @@ VdfPullBasedExecutorEngine<DataManagerType>::RunSchedule(
     F &&callback)
 {
     TRACE_FUNCTION();
+    TfAutoMallocTag tag("VdfPullBasedExecutorEngine::RunSchedule");
 
     // Make sure the data manager is appropriately sized.
     _dataManager->Resize(*schedule.GetNetwork());

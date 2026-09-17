@@ -383,13 +383,14 @@ public:
         const TfToken &apiSchemaName,
         const TfToken &instanceName);
 
-    /// Returns a list of prim type names that the given \p apiSchemaName can
-    /// only be applied to. 
-    /// 
-    /// A non-empty list indicates that the API schema can only be applied to 
-    /// prim that are or derive from prim type names in the list. If the list
-    /// is empty, the API schema can be applied to prims of any type.
-    /// 
+    /// Returns a list of typed and/or applied API schema names that
+    /// \p apiSchemaName requires in order to be applied.
+    ///
+    /// A non-empty list indicates that the API schema can only be applied to
+    /// prims that derive from one or more typed schemas in the list, or have
+    /// one or more of the API schemas in the list applied. If the list is
+    /// empty, the API schema can be applied to any prim.
+    ///
     /// If a non-empty \p instanceName is provided, this will first look for
     /// a list of "can only apply to" names specific to that instance of the API
     /// schema and return that if found. If a list is not found for the specific

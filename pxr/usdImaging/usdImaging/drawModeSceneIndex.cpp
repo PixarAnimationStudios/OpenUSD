@@ -8,6 +8,7 @@
 
 #include "pxr/usdImaging/usdImaging/drawModeStandin.h"
 #include "pxr/usdImaging/usdImaging/geomModelSchema.h"
+#include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/sceneIndexObserver.h"
 #include "pxr/imaging/hf/perfLog.h"
@@ -36,9 +37,16 @@ namespace
 // Default draw mode can be expressed by either the empty token
 // or UsdGeomTokens->default_.
 TfToken
-_GetDrawMode(const HdSceneIndexPrim &prim)
+_GetDrawMode(const SdfPath &path, const HdSceneIndexPrim &prim)
 {
     static const TfToken empty;
+
+    if (path.GetParentPath().GetNameToken() ==
+        UsdImagingTokens->niPropagatedPrototypesScope) {
+        // Instance aggregation copies the instance's geomModel onto this
+        // grouping prim to hash it; the prim itself is not a model.
+        return empty;
+    }
 
     UsdImagingGeomModelSchema geomModelSchema =
         UsdImagingGeomModelSchema::GetFromParent(prim.dataSource);
@@ -178,7 +186,7 @@ UsdImagingDrawModeSceneIndex::UsdImagingDrawModeSceneIndex(
 
     const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(rootPath);
 
-    _RecursePrims(_GetDrawMode(prim), rootPath, prim, nullptr);
+    _RecursePrims(_GetDrawMode(rootPath, prim), rootPath, prim, nullptr);
 }
 
 UsdImagingDrawModeSceneIndex::~UsdImagingDrawModeSceneIndex() = default;
@@ -279,7 +287,8 @@ UsdImagingDrawModeSceneIndex::_RecursePrims(
         const HdSceneIndexBaseRefPtr &s = _GetInputSceneIndex();
         for (const SdfPath &childPath : s->GetChildPrimPaths(path)) {
             const HdSceneIndexPrim prim = s->GetPrim(childPath);
-            _RecursePrims(_GetDrawMode(prim), childPath, prim, entries);
+            _RecursePrims(
+                _GetDrawMode(childPath, prim), childPath, prim, entries);
         }
     }
 }
@@ -357,7 +366,7 @@ UsdImagingDrawModeSceneIndex::_PrimsAdded(
             }
         }
 
-        const TfToken drawMode = _GetDrawMode(prim);
+        const TfToken drawMode = _GetDrawMode(path, prim);
 
         if (UsdImaging_DrawModeStandinSharedPtr standin =
             UsdImaging_GetDrawModeStandin(
@@ -526,7 +535,7 @@ UsdImagingDrawModeSceneIndex::_PrimsDirtied(
 
             // Determine new draw mode.
             const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(path);
-            const TfToken drawMode = _GetDrawMode(prim);
+            const TfToken drawMode = _GetDrawMode(path, prim);
 
             const auto it = _prims.find(path);
             if (it == _prims.end()) {

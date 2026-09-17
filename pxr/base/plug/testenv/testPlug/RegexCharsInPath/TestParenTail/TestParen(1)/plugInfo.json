@@ -1,0 +1,9 @@
+{
+    "Plugins": [
+        {
+            "Type": "resource",
+            "Name": "TestPlugParenTail",
+            "Info": {}
+        }
+    ]
+}

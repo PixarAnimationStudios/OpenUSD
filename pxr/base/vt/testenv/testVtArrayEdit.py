@@ -86,5 +86,63 @@ class TestVtArrayEdit(unittest.TestCase):
         self.assertEqual(size7Fill3.ComposeOver([]), [3]*7)
         self.assertEqual(size7Fill3.ComposeOver([9]*27), [9]*7)
 
+    def test_ComposeFillLiterals(self):
+        # The MinSizeFill and SetSizeFill ops hold their literal index in a
+        # different argument slot than the write and insert ops, so composing a
+        # fill-bearing edit over an edit that also has literals exercises the
+        # literal index rebasing.
+        builder = Vt.IntArrayEditBuilder()
+
+        minSize5Fill7 = builder.MinSize(5, fill=7).FinalizeAndReset()
+        prepend3 = builder.Prepend(3).FinalizeAndReset()
+
+        # Prepend 3 to the empty array giving [3], then grow to size 5 with 7s.
+        self.assertEqual(
+            minSize5Fill7.ComposeOver(prepend3).ComposeOver([]),
+            [3, 7, 7, 7, 7])
+
+        size4Fill8 = builder.SetSize(4, fill=8).FinalizeAndReset()
+        prepend2 = builder.Prepend(2).FinalizeAndReset()
+
+        self.assertEqual(
+            size4Fill8.ComposeOver(prepend2).ComposeOver([]),
+            [2, 8, 8, 8])
+
+    def test_Optimize(self):
+        # Optimize() may change an edit's representation but never its
+        # behavior.
+        builder = Vt.IntArrayEditBuilder()
+        Optimize = Vt.IntArrayEditBuilder.Optimize
+
+        inputs = [[], [1], [1,2,3], list(range(1,11)), [5]*20]
+
+        def checkEquivalent(edit):
+            opt = Optimize(edit)
+            for input in inputs:
+                self.assertEqual(edit.ComposeOver(Vt.IntArray(input)),
+                                 opt.ComposeOver(Vt.IntArray(input)),
+                                 msg='edit %s, optimized %s, input %s' %
+                                 (edit, opt, input))
+
+        checkEquivalent(Vt.IntArrayEdit())
+        checkEquivalent(builder.Prepend(0).Append(9).FinalizeAndReset())
+        checkEquivalent(builder.MinSize(10).FinalizeAndReset())
+        checkEquivalent(builder.MaxSize(15).FinalizeAndReset())
+        checkEquivalent(builder.SetSize(7).FinalizeAndReset())
+        checkEquivalent(builder.MinSize(10, fill=9).FinalizeAndReset())
+        checkEquivalent(builder.SetSize(7, fill=3).FinalizeAndReset())
+
+        zeroNine = builder.Prepend(0).Append(9).FinalizeAndReset()
+        fill7 = builder.MinSize(5, fill=7).FinalizeAndReset()
+
+        checkEquivalent(zeroNine.ComposeOver(zeroNine))
+        checkEquivalent(fill7.ComposeOver(zeroNine))
+        checkEquivalent(zeroNine.ComposeOver(fill7))
+
+        # Optimizing a non-identity edit must not produce the identity.
+        minSize10Fill9 = builder.MinSize(10, fill=9).FinalizeAndReset()
+        self.assertFalse(minSize10Fill9.IsIdentity())
+        self.assertFalse(Optimize(minSize10Fill9).IsIdentity())
+
 if __name__ == '__main__':
     unittest.main()
