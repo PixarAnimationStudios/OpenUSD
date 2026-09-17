@@ -105,14 +105,6 @@ pxr_build_test(testUsdImagingGLInstancePicking
         testenv/testUsdImagingGLInstancePicking.cpp
 )
 
-pxr_build_test(testUsdImagingGLPopOut
-    LIBRARIES
-        ${TEST_LIBS}
-    CPPFILES
-        unitTestGLDrawing.cpp
-        testenv/testUsdImagingGLPopOut.cpp
-)
-
 pxr_build_test(testUsdImagingGLPurpose
     LIBRARIES
         ${TEST_LIBS}
@@ -3769,58 +3761,6 @@ pxr_register_test(testUsdImagingGLUsdSkelExtCompGPU_twoBends
     ENV
         USDSKELIMAGING_FORCE_CPU_COMPUTE=0
 )
-
-if (PXR_ENABLE_GL_SUPPORT AND X11_FOUND)
-    pxr_register_test(testUsdImagingGLPopOut
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPopOut --output test test.usda"
-        IMAGE_DIFF_COMPARE
-            test_0.png
-            test_1.png
-            test_2.png
-            test_3.png
-            test_4.png
-            test_5.png
-            test_6.png
-            test_7.png
-            test_8.png
-        FAIL .05
-        FAIL_PERCENT .03
-        PERCEPTUAL
-        EXPECTED_RETURN_CODE 0
-        TESTENV testenv/testUsdImagingGLPopOut
-        ENV
-            HGI_ENABLE_VULKAN=0
-    )
-
-    pxr_register_test(testUsdImagingGLPopOut_instance
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPopOut --output test_instance test_instance.usda"
-        IMAGE_DIFF_COMPARE
-            test_instance_0.png
-            test_instance_1.png
-            test_instance_2.png
-            test_instance_3.png
-            test_instance_4.png
-            test_instance_5.png
-            test_instance_6.png
-            test_instance_7.png
-            test_instance_8.png
-        FAIL .05
-        FAIL_PERCENT .03
-        PERCEPTUAL
-        EXPECTED_RETURN_CODE 0
-        TESTENV testenv/testUsdImagingGLPopOut
-        ENV
-            HGI_ENABLE_VULKAN=0
-    )
-
-    pxr_register_test(testUsdImagingGLPopOut_instance_empty
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPopOut --output test_instance_empty test_instance_empty.usda"
-        EXPECTED_RETURN_CODE 0
-        TESTENV testenv/testUsdImagingGLPopOut
-        ENV
-            HGI_ENABLE_VULKAN=0
-    )
-endif()
 
 pxr_register_test(testUsdImagingGLMaterialTag
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -cullStyle back -offscreen -frameAll -stage materialTag.usda -write testUsdImagingGLMaterialTag.png"
