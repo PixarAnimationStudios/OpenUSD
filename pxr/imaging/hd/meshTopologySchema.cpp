@@ -168,6 +168,46 @@ HdMeshTopologySchema::GetDefaultLocator()
     return locator;
 }
 
+/* static */
+const HdDataSourceLocator &
+HdMeshTopologySchema::GetFaceVertexCountsLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdMeshTopologySchemaTokens->faceVertexCounts);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdMeshTopologySchema::GetFaceVertexIndicesLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdMeshTopologySchemaTokens->faceVertexIndices);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdMeshTopologySchema::GetHoleIndicesLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdMeshTopologySchemaTokens->holeIndices);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdMeshTopologySchema::GetOrientationLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdMeshTopologySchemaTokens->orientation);
+    return locator;
+}
+
 /*static*/
 HdTokenDataSourceHandle
 HdMeshTopologySchema::BuildOrientationDataSource(
