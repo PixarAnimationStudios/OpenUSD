@@ -11,6 +11,7 @@
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/tf/scoped.h"
 #include "pxr/base/tf/scriptModuleLoader.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -49,56 +50,55 @@ TfPyInitialize()
     std::lock_guard<std::recursive_mutex> lock(mutex);
 
     if (!Py_IsInitialized()) {
-
-        // Starting with Python 3.7, the GIL is initialized as part of
-        // Py_Initialize(). Python 3.9 deprecated explicit GIL initialization.
-#if PY_VERSION_HEX < 0x03070000
-        if (!ArchIsMainThread() && !PyEval_ThreadsInitialized()) {
-            // Python claims that PyEval_InitThreads "should be called in the
-            // main thread before creating a second thread or engaging in any
-            // other thread operations."  So we'll issue a warning here.
-            TF_WARN("Calling PyEval_InitThreads() for the first time outside "
-                    "the 'main thread'.  Python doc says not to do this.");
-        }
-#endif
-
-        const std::string s = ArchGetExecutablePath();
-
-        // Setting the program name is necessary in order for python to 
-        // find the correct built-in modules. 
-        static std::wstring programName(s.begin(), s.end());
-        Py_SetProgramName(const_cast<wchar_t*>(programName.c_str()));
-
         // We're here when this is a C++ program initializing python (i.e. this
         // is a case of "embedding" a python interpreter, as opposed to
         // "extending" python with extension modules).
-        //
+        // XXX: We may want to explore using PyConfig_InitIsolatedConfig
+        // instead since that's intended for applications embedding Python.
+        PyConfig config;
+        PyConfig_InitPythonConfig(&config);
+
+        TfScoped<> cleanupConfig([&config]() { PyConfig_Clear(&config); });
+
+        // Match legacy Py_Initialize() stdio behavior.
+        config.configure_c_stdio = 0;
+
+        // Setting the program name is necessary in order for python to
+        // find the correct built-in modules.
+        const std::string s = ArchGetExecutablePath();
+        const std::wstring programName(s.begin(), s.end());
+        PyStatus status = PyConfig_SetString(&config, &config.program_name,
+                                             programName.c_str());
+        if (PyStatus_Exception(status)) {
+            TF_FATAL_ERROR("Failed to set Python program name: %s",
+                status.err_msg ? status.err_msg : "unknown error");
+        }
+
+        // Disable the interpreter's argv parsing; sys.argv defaults to [''].
+        config.parse_argv = 0;
+
         // In this case we don't want python to change the sigint handler.  Save
-        // it before calling Py_Initialize and restore it after.
+        // it before calling Py_InitializeFromConfig and restore it after.
+        // Another approach is setting config.install_signal_handlers = 0, but
+        // that would result in all of Python's signal handlers being disabled.
+        // That could lead to unexpected behavior such as other signals
+        // not being handled as they were before.
+         
 #if !defined(ARCH_OS_WINDOWS)
         struct sigaction origSigintHandler;
         sigaction(SIGINT, NULL, &origSigintHandler);
 #endif
-        Py_Initialize();
+
+        status = Py_InitializeFromConfig(&config);
+        if (PyStatus_Exception(status)) {
+            TF_FATAL_ERROR("Failed to initialize Python: %s",
+                           status.err_msg ? status.err_msg : "unknown error");
+        }
 
 #if !defined(ARCH_OS_WINDOWS)
         // Restore original sigint handler.
         sigaction(SIGINT, &origSigintHandler, NULL);
 #endif
-
-#if PY_MAJOR_VERSION == 3 && PY_VERSION_HEX < 0x03070000
-        // In Python 3 (before 3.7), PyEval_InitThreads must be called
-        // after Py_Initialize().
-        // see https://docs.python.org/3/c-api/init.html#c.PyEval_InitThreads
-        //
-        // Initialize Python threading.  This grabs the GIL.  We'll release it
-        // at the end of this function.
-        PyEval_InitThreads();
-#endif
-
-        wchar_t emptyArg[] = { '\0' };
-        wchar_t *empty[] = { emptyArg };
-        PySys_SetArgv(1, empty);
 
         // Kick the module loading mechanism for any loaded libs that have
         // corresponding python binding modules.  We do this after we've
