@@ -360,27 +360,6 @@ _PopulateLightFilterNodes(
     }
 }
 
-static riley::Transform
-_GetTransform(
-    HdSceneDelegate *sceneDelegate,
-    const SdfPath &id,
-    HdPrman_RenderParam *param)
-{
-    HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
-    sceneDelegate->SampleTransform(id,
-#if HD_API_VERSION >= 68
-                                   param->GetShutterInterval()[0],
-                                   param->GetShutterInterval()[1],
-#endif
-                                   &xf);
-    TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES> xf_rt_values(xf.count);
-    for (size_t i = 0; i < xf.count; ++i) {
-        xf_rt_values[i] = HdPrman_Utils::GfMatrixToRtMatrix(xf.values[i]);
-    }
-    return riley::Transform{
-        unsigned(xf.count), xf_rt_values.data(), xf.times.data()};
-}
-
 /* virtual */
 void
 HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
@@ -872,11 +851,27 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
             RtParamList attrs;
             attrs.SetString(RixStr.k_name, RtUString(coordSysName));
 
+            // Evaluate time-sampled transform.
+            HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
+            sceneDelegate->SampleTransform(id,
+#if HD_API_VERSION >= 68
+                                           param->GetShutterInterval()[0],
+                                           param->GetShutterInterval()[1],
+#endif
+                                           &xf);
+            TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>
+                xf_rt_values(xf.count);
+            for (size_t i = 0; i < xf.count; ++i) {
+                xf_rt_values[i] =
+                    HdPrman_Utils::GfMatrixToRtMatrix(xf.values[i]);
+            }
+            riley::Transform rileyXf{
+                unsigned(xf.count), xf_rt_values.data(), xf.times.data()};
+
             _lightFilterParentCoordSysId =
                 riley->CreateCoordinateSystem(
                     riley::UserId(stats::AddDataLocation(coordSysName).GetValue()),
-                    _GetTransform(sceneDelegate, id, param),
-                    attrs);
+                    rileyXf, attrs);
         }
 
         // _PopulateLightFilterNodes also gives us the coordinate systems.
