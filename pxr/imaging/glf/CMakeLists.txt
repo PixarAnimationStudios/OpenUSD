@@ -60,8 +60,6 @@ pxr_library(glf
 
     RESOURCE_FILES
         plugInfo.json
-        shaders/pcfShader.glslfx
-        shaders/simpleLighting.glslfx
 
     DOXYGEN_FILES
         overview.dox

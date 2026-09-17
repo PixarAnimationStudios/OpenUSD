@@ -211,12 +211,14 @@ pxr_library(hdSt
         shaders/meshNormal.glslfx
         shaders/meshWire.glslfx
         shaders/overlayShader.glslfx
+        shaders/pcfShader.glslfx
         shaders/points.glslfx
         shaders/pointId.glslfx
         shaders/pointDisk.glslfx
         shaders/ptexTexture.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
+        shaders/simpleLighting.glslfx
         shaders/simpleLightingShader.glslfx
         shaders/skinning.glslfx
         shaders/sphere.glslfx
