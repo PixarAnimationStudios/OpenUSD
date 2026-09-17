@@ -23,13 +23,13 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/token.h"
 
+#include "pxr/base/vt/array.h"
+
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DECLARE_WEAK_AND_REF_PTRS(GlfBindingMap);
-TF_DECLARE_WEAK_AND_REF_PTRS(GlfUniformBlock);
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleShadowArray);
 
@@ -89,19 +89,6 @@ public:
     bool GetUseColorMaterialDiffuse() const;
 
     GLF_API
-    void InitUniformBlockBindings(GlfBindingMapPtr const &bindingMap) const;
-    GLF_API
-    void InitSamplerUnitBindings(GlfBindingMapPtr const &bindingMap) const;
-
-    GLF_API
-    void BindUniformBlocks(GlfBindingMapPtr const &bindingMap);
-    GLF_API
-    void BindSamplers(GlfBindingMapPtr const &bindingMap);
-
-    GLF_API
-    void UnbindSamplers(GlfBindingMapPtr const &bindingMap);
-
-    GLF_API
     void SetStateFromOpenGL();
 
     /// \name Post Surface Lighting
@@ -127,9 +114,7 @@ protected:
     ~GlfSimpleLightingContext();
 
     void _ComputePostSurfaceShaderState();
-    void _BindPostSurfaceShaderParams(GlfBindingMapPtr const &bindingMap);
 
-private:
     GlfSimpleLightVector _lights;
     GlfSimpleShadowArrayRefPtr _shadows;
 
@@ -143,12 +128,33 @@ private:
     bool _useShadows;
     bool _useColorMaterialDiffuse;
 
-    GlfUniformBlockRefPtr _lightingUniformBlock;
-    GlfUniformBlockRefPtr _shadowUniformBlock;
-    GlfUniformBlockRefPtr _materialUniformBlock;
-    GlfUniformBlockRefPtr _bindlessShadowlUniformBlock;
+    class _PostSurfaceShaderState {
+    public:
+        _PostSurfaceShaderState(size_t hash, GlfSimpleLightVector const & lights)
+            : _hash(hash)
+        {
+            _Init(lights);
+        }
 
-    class _PostSurfaceShaderState;
+        std::string const & GetShaderSource() const {
+            return _shaderSource;
+        }
+
+        VtUCharArray const & GetUniformData() const {
+            return _uniformData;
+        }
+
+        size_t GetHash() const {
+            return _hash;
+        }
+
+    private:
+        void _Init(GlfSimpleLightVector const & lights);
+
+        std::string _shaderSource;
+        VtUCharArray _uniformData;
+        size_t _hash;
+    };
     std::unique_ptr<_PostSurfaceShaderState> _postSurfaceShaderState;
 
     bool _lightingUniformBlockValid;
