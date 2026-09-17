@@ -651,8 +651,45 @@ class TestUsdPhysicsParsing(unittest.TestCase):
             if key == UsdPhysics.ObjectType.FixedJoint:
                 for prim_path, desc in zip(prim_paths, descs):
                     joint_found = True
-                    self.assertTrue(desc.body0 !=
-                                    rigidbody.GetPrim().GetPrimPath())
+                    self.assertEqual(desc.body0, Sdf.Path())
+
+        self.assertTrue(joint_found)
+
+
+    def test_joint_dangling_body_rel_passes_authored_pose(self):
+        """A joint side whose body relationship targets a path that does not
+        resolve to a prim on the stage keeps the authored local pose. There is
+        no body to resolve, so body0 is empty, but the authored localPos0 /
+        localRot0 are passed through unchanged rather than zeroed.
+        """
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        UsdPhysics.Scene.Define(stage, '/physicsScene')
+
+        authored_pos = Gf.Vec3f(7.0, 8.0, 9.0)
+        authored_rot = Gf.Quatf(0.70710678, Gf.Vec3f(0.70710678, 0.0, 0.0))
+
+        joint = UsdPhysics.FixedJoint.Define(stage, "/joint")
+        joint.GetBody0Rel().AddTarget(Sdf.Path("/does/not/exist"))
+        joint.CreateLocalPos0Attr().Set(authored_pos)
+        joint.CreateLocalRot0Attr().Set(authored_rot)
+
+        ret_dict = UsdPhysics.UsdPhysicsLoadStageFromPrimRange(stage, ["/"])
+
+        joint_found = False
+        for key, value in ret_dict.items():
+            prim_paths, descs = value
+            if key == UsdPhysics.ObjectType.FixedJoint:
+                for prim_path, desc in zip(prim_paths, descs):
+                    joint_found = True
+                    self.assertEqual(desc.body0, Sdf.Path())
+                    self.assertEqual(desc.localPose0Position, authored_pos)
+                    self.assertTrue(Gf.IsClose(
+                        Gf.Vec4f(desc.localPose0Orientation.real,
+                                 *desc.localPose0Orientation.imaginary),
+                        Gf.Vec4f(authored_rot.real, *authored_rot.imaginary),
+                        1e-6))
 
         self.assertTrue(joint_found)
 
