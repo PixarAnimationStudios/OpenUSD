@@ -349,6 +349,19 @@
                             "position": "firstAfter"
                         }
                     },
+                    "HdPrman_FallbackMaterialsSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
+                        "priority": 0,
+                        "displayName": "Prman Fallback Materials Scene Index",
+
+                        # phase=5, InsertionOrderAtStart
+                        "tags": ["hdPrman:phase5", "hdPrman:fallbackMaterials"],
+                        "ordering": {
+                            "after": ["hdPrman:phase4"],
+                            "before": ["hdPrman:colorSpace"]
+                        }
+                    },
                     "HdPrman_RenderingColorSpaceSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],

@@ -650,6 +650,10 @@ private:
 
     // A fallback material to use for any geometry that
     // does not have a bound material.
+    //
+    // XXX This is superceded by the newer fallback material defined
+    // in HdPrman_FallbackMaterialsSceneIndexPlugin, and can soon
+    // be removed.
     riley::MaterialId _fallbackMaterialId;
 
     // Fallback material for volumes that don't have materials.
