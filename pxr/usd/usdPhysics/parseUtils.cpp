@@ -1644,7 +1644,6 @@ bool _HasDynamicBodyParent(const UsdPrim& usdPrim, const RigidBodyMap& bodyMap,
 {
     bool physicsAPIFound = false;
     UsdPrim parent = usdPrim;
-    UsdPrim disabledBodyPrim;
     while (parent != usdPrim.GetStage()->GetPseudoRoot())
     {
         if (_IsDynamicBody(parent, bodyMap, &physicsAPIFound))
@@ -1655,27 +1654,18 @@ bool _HasDynamicBodyParent(const UsdPrim& usdPrim, const RigidBodyMap& bodyMap,
 
         if (physicsAPIFound)
         {
-            // A disabled rigid body takes no part in simulation, so it does
-            // not own this prim. Keep searching the ancestors: a nested
-            // disabled body may still have an enabled body above it, which
-            // this prim belongs to. Remember the nearest disabled body so it
-            // can still be reported if no enabled body is found at all.
-            if (!disabledBodyPrim)
-            {
-                disabledBodyPrim = parent;
-            }
+            // A disabled rigid body takes no part in simulation and owns no
+            // colliders. Keep searching the ancestors: a nested disabled body
+            // may still have an enabled body above it, which this prim
+            // belongs to.
+            parent = parent.GetParent();
+            continue;
         }
 
         parent = parent.GetParent();
     }
 
-    // No enabled body above this prim. Report the nearest disabled body, if
-    // any, so it is still recognized as belonging to a body that is present
-    // but not simulating rather than as a static collision.
-    if (disabledBodyPrim)
-    {
-        *outBodyPrimPath = disabledBodyPrim;
-    }
+    // No enabled body above this prim, so it is a static collision.
     return false;
 }
 
@@ -1933,19 +1923,9 @@ SdfPath _GetRigidBody(const UsdPrim& usdPrim, const RigidBodyMap& bodyMap)
     {
         return bodyPrim.GetPrimPath();
     }
-    else
-    {
-        // collision does not have a dynamic body parent, it is considered a 
-        // static collision        
-        if (bodyPrim == UsdPrim())
-        {
-            return SdfPath();
-        }
-        else
-        {
-            return bodyPrim.GetPrimPath();
-        }
-    }
+
+    // No enabled body above the collision, so it is a static collision.
+    return SdfPath();
 }
 
 // Compute the relative pose between the collision and the rigid body

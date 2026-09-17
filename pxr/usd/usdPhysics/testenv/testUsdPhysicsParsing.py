@@ -566,9 +566,9 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         self.assertTrue(cube_found)
 
     def test_rigidbody_disabled_body_only_collision_parse(self):
-        """With no enabled rigid body above it, a collider below a disabled
-        body is still reported as belonging to that body. It is present but not
-        simulating, which is distinct from a static collision.
+        """A disabled rigid body owns no colliders. With no enabled rigid body
+        above it, a collider below a disabled body is a static collision, so it
+        resolves to an empty body path.
         """
         stage = Usd.Stage.CreateInMemory()
         self.assertTrue(stage)
@@ -592,11 +592,10 @@ class TestUsdPhysicsParsing(unittest.TestCase):
             if key == UsdPhysics.ObjectType.CubeShape:
                 for prim_path, desc in zip(prim_paths, descs):
                     cube_found = True
-                    self.assertTrue(prim_path == cube.GetPrim().GetPrimPath())
-                    # The nearest disabled body is reported rather than an
-                    # empty path, which would make this a static collision.
-                    self.assertTrue(desc.rigidBody ==
-                                    disabled_body.GetPrim().GetPrimPath())
+                    self.assertEqual(prim_path, cube.GetPrim().GetPrimPath())
+                    # The disabled body owns no colliders, so the cube is a
+                    # static collision with no owning body.
+                    self.assertEqual(desc.rigidBody, Sdf.Path())
 
         self.assertTrue(cube_found)
 
