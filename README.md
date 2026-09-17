@@ -260,3 +260,5 @@ documentation for more information.
 Dummy extra commit #1.
 
 Dummy extra commit #2.
+
+Dummy extra commit #3.
