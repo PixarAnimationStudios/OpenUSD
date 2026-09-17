@@ -3576,6 +3576,8 @@ HdPrman_RenderParam::End()
     StopRender(true);
     DeleteRenderThread();
     _framebuffer.reset();
+    _denoisedFramebuffer.reset();
+    _denoisedAovIndices.clear();
     _idMap->Clear();
     _DestroyRiley();
 }
@@ -3837,6 +3839,17 @@ _GetOutputParamsAndUpdateRmanNames(
     return params;
 }
 
+static std::string _GetHdPrmanPath() {
+    if (PlugPluginPtr const plugin =
+        PlugRegistry::GetInstance().GetPluginWithName("hdPrman")) {
+        const std::string path = TfGetPathName(plugin->GetPath());
+        if (!path.empty()) {
+            return TfStringCatPaths(path, "hdPrman" ARCH_LIBRARY_SUFFIX);
+        }
+    }
+    return {};
+}
+
 void
 HdPrman_RenderParam::_CreateRileyDisplay(
     const RtUString& productName, const RtUString& productType,
@@ -3845,17 +3858,14 @@ HdPrman_RenderParam::_CreateRileyDisplay(
     RtParamList& displayParams, bool isXpu)
 {
     RtUString driver = productType;
+    RtUString displayName = productName;
+
     if(isXpu) {
         // XPU loads hdPrman as the display plug-in
-        if (productName == RixStr.k_framebuffer) {
-            std::string hdPrmanPath;
-            if (PlugPluginPtr const plugin =
-                PlugRegistry::GetInstance().GetPluginWithName("hdPrman")) {
-                const std::string path = TfGetPathName(plugin->GetPath());
-                if (!path.empty()) {
-                    hdPrmanPath =
-                        TfStringCatPaths(path, "hdPrman" ARCH_LIBRARY_SUFFIX);
-                }
+        static const RtUString us_hydra("hydra");
+        if (driver == us_hydra) {
+            std::string hdPrmanPath = _GetHdPrmanPath();
+            if (!hdPrmanPath.empty()) {
                 driver = RtUString(hdPrmanPath.c_str());
             } else {
                 TF_WARN("Failed to load xpu display plugin\n");
@@ -3864,40 +3874,11 @@ HdPrman_RenderParam::_CreateRileyDisplay(
 
         displayParams.SetString(RixStr.k_Ri_name, productName);
         displayParams.SetString(RixStr.k_Ri_type, productType);
-        if(_framebuffer) {
-            std::lock_guard<std::mutex> lock(_framebuffer->mutex);
-            static const RtUString us_bufferID("bufferID");
-            displayParams.SetInteger(us_bufferID, _framebuffer->id);
-        }
     }
 
     {
         HdPrman_RenderViewDesc::DisplayDesc displayDesc;
-        displayDesc.name = productName;
-        if ((productName == RixStr.k_framebuffer) && _useQN)
-        {
-            // interactive denoiser is turned on
-            std::string hdPrmanPath;
-            if (PlugPluginPtr const plugin =
-                PlugRegistry::GetInstance().GetPluginWithName("hdPrman")) {
-                const std::string path = TfGetPathName(plugin->GetPath());
-                if (!path.empty()) {
-                    hdPrmanPath =
-                        TfStringCatPaths(path, "hdPrman" ARCH_LIBRARY_SUFFIX);
-                }
-                driver = RtUString("quicklyNoiseless");
-                displayParams.SetString(RtUString("dspyDSOPath"), RtUString(hdPrmanPath.c_str()));
-                displayParams.SetInteger(RtUString("cheapPass"), (int) _qnCheapPass);
-                displayParams.SetInteger(RtUString("minSamples"), _qnMinSamples);
-                displayParams.SetInteger(RtUString("interval"), _qnInterval);
-                displayParams.SetInteger(RtUString("normalAsColor"), 1);
-                displayParams.SetInteger(RtUString("immediateClose"), 1);
-            }
-            else
-            {
-                TF_WARN("Failed to load display plugin\n");
-            }
-        }
+        displayDesc.name = displayName;
         displayDesc.driver = driver;
         displayDesc.params = displayParams;
         displayDesc.renderOutputIndices = renderOutputIndices;
@@ -4046,6 +4027,36 @@ _GetAsRtUString(const HdAovSettingsMap & m, const TfToken & key)
     return RtUString(v.GetString().c_str());
 }
 
+static bool _IsDenoiserAov(const RtUString& rmanAovName)
+{
+    // AOVs the quicklyNoiseless denoiser needs as input.
+    // Must match INPUT_CHANNEL_MAP in denoiser code.
+    static const std::set<std::string> denoiserAovs = {
+        "Ci",
+        "mse",
+        "a",
+        "a_mse",
+        "sampleCount",
+        "diffuse",
+        "diffuse_mse",
+        "specular",
+        "specular_mse",
+        "albedo",
+        "albedo_mse",
+        "normal",
+        "normal_mse",
+        "dn_diff",
+        "dn_diff_mse",
+        "dn_spec",
+        "dn_spec_mse",
+        "dn_albedo",
+        "dn_albedo_mse",
+        "dn_normals",
+        "dn_normals_mse",
+    };
+    return denoiserAovs.count(rmanAovName.CStr()) > 0;
+}
+
 void
 HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
 #if PXR_VERSION >= 2308
@@ -4107,10 +4118,15 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
     // Process AOV bindings.
     {
         std::vector<size_t> renderOutputIndices;
+        std::vector<size_t> denoiserOutputIndices;
         HdPrmanFramebuffer::AovDescVector aovDescs;
+        HdPrmanFramebuffer::AovDescVector denoisedAovDescs;
+        _denoisedAovIndices.clear();
 
         std::unordered_map<TfToken, RtUString, TfToken::HashFunctor> sourceNames;
-        for (const HdRenderPassAovBinding &aovBinding : aovBindings) {
+        for (size_t i = 0; i < aovBindings.size(); ++i) {
+            const HdRenderPassAovBinding &aovBinding = aovBindings[i];
+
             TfToken dataType;
             std::string sourceType;
             RtUString rmanAovName(aovBinding.aovName.GetText());
@@ -4138,6 +4154,7 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
                 }
             }
 
+            size_t prevRenderOutputCount = renderOutputIndices.size();
             RtUString rule = _AddRenderOutput(rmanAovName,
                                               dataType,
                                               aovFormat,
@@ -4147,33 +4164,101 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
                                               &renderViewDesc.renderOutputDescs,
                                               &renderOutputIndices);
 
+            // Add to denoiser indices if a denoiser AOV
+            if (_useQN && _IsDenoiserAov(rmanAovName)) {
+                // Use a loop because _AddRenderOutput may add 2 indices
+                // for Float4 Color (RGB + auto-alpha, e.g. Ci)
+                for (size_t j = prevRenderOutputCount; j < renderOutputIndices.size(); ++j) {
+                    denoiserOutputIndices.push_back(renderOutputIndices[j]);
+                }
+            }
+
+            // Raw framebuffer AOV desc (all AOVs)
             {
                 HdPrmanFramebuffer::AovDesc aovDesc;
                 aovDesc.name = aovBinding.aovName;
                 aovDesc.format = aovFormat;
                 aovDesc.clearValue = aovBinding.clearValue;
                 aovDesc.rule = HdPrmanFramebuffer::ToAccumulationRule(rule);
-
                 aovDescs.push_back(std::move(aovDesc));
             }
+
+            // Denoised framebuffer AOV desc (Ci only)
+            if (_useQN && rmanAovName == RixStr.k_Ci) {
+                HdPrmanFramebuffer::AovDesc aovDesc;
+                aovDesc.name = aovBinding.aovName;
+                aovDesc.format = aovFormat;
+                aovDesc.clearValue = aovBinding.clearValue;
+                aovDesc.rule = HdPrmanFramebuffer::ToAccumulationRule(rule);
+                denoisedAovDescs.push_back(std::move(aovDesc));
+                _denoisedAovIndices.insert(i);
+            }
         }
+
+        // Raw framebuffer
         {
             std::lock_guard<std::mutex> lock(_framebuffer->mutex);
             _framebuffer->CreateAovBuffers(aovDescs);
         }
+
+        // Raw display
         // RMAN-23141: We do NOT want to lock the following call to CreateRileyDisplay since the
         // renderer might want to schedule this display call either immediately or defer to a later
         // time. In the case, it wants to call the display API immediately, holding on to the
         // framebuffer lock will cause issues in case the display API within this thread also wants
         // to do the same.
-        RtParamList displayParams;
+        static const RtUString us_bufferID("bufferID");
+        RtParamList rawDisplayParams;
+        rawDisplayParams.SetInteger(us_bufferID, _framebuffer->id);
         static const RtUString us_hydra("hydra");
         _CreateRileyDisplay(RixStr.k_framebuffer,
                             us_hydra,
                             renderViewDesc,
                             renderOutputIndices,
-                            displayParams,
+                            rawDisplayParams,
                             IsXpu());
+
+        // Interactive denoiser
+        if (_useQN && !denoiserOutputIndices.empty()) {
+            if (!_denoisedFramebuffer) {
+                _denoisedFramebuffer = std::make_unique<HdPrmanFramebuffer>(GetIdMap());
+            }
+            // Denoised framebuffer
+            {
+                std::lock_guard<std::mutex> lock(_denoisedFramebuffer->mutex);
+                _denoisedFramebuffer->CreateAovBuffers(denoisedAovDescs);
+            }
+
+            // Denoised display
+            RtParamList denoiseDisplayParams;
+            denoiseDisplayParams.SetInteger(us_bufferID, _denoisedFramebuffer->id);
+
+            RtUString denoiseDriver;
+            std::string hdPrmanPath = _GetHdPrmanPath();
+            if (!hdPrmanPath.empty()) {
+                denoiseDriver = RtUString("quicklyNoiseless");
+                denoiseDisplayParams.SetString(RtUString("dspyDSOPath"), RtUString(hdPrmanPath.c_str()));
+                denoiseDisplayParams.SetInteger(RtUString("cheapPass"), (int) _qnCheapPass);
+                denoiseDisplayParams.SetInteger(RtUString("minSamples"), _qnMinSamples);
+                denoiseDisplayParams.SetInteger(RtUString("interval"), _qnInterval);
+                denoiseDisplayParams.SetInteger(RtUString("normalAsColor"), 1);
+                denoiseDisplayParams.SetInteger(RtUString("immediateClose"), 1);
+            } else {
+                TF_WARN("Failed to load display plugin\n");
+                _denoisedFramebuffer.reset();
+                _denoisedAovIndices.clear();
+            }
+
+            if (!denoiseDriver.Empty()) {
+                static const RtUString us_denoisedFramebuffer("denoised_framebuffer");
+                _CreateRileyDisplay(us_denoisedFramebuffer,
+                                    denoiseDriver,
+                                    renderViewDesc,
+                                    denoiserOutputIndices,  // only denoiser AOVs
+                                    denoiseDisplayParams,
+                                    IsXpu());
+            }
+        }
 
         renderViewDesc.cameraId = GetCameraContext().GetActiveCameraId();
         renderViewDesc.integratorId = GetActiveIntegratorId();
@@ -4466,6 +4551,8 @@ HdPrman_RenderParam::DeleteFramebuffer()
 {
     if (_framebuffer) {
         _framebuffer.reset();
+        _denoisedFramebuffer.reset();
+        _denoisedAovIndices.clear();
         return true;
     }
     return false;
@@ -5154,6 +5241,12 @@ bool
 HdPrman_RenderParam::IsInteractive() const
 {
     return _renderDelegate->IsInteractive();
+}
+
+bool
+HdPrman_RenderParam::UsingHusk() const
+{
+    return _usingHusk;
 }
 
 #if HD_API_VERSION >= 76

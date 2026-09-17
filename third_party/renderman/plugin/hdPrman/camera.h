@@ -264,7 +264,8 @@ private:
     void _DeleteClipPlanes(riley::Riley* riley);
 
     GfRange2d
-    _GetScreenWindow() const;
+    _GetScreenWindow(const GfVec4f &dataWindowOverride =
+                         GfVec4f(0.f, 0.f, 1.f, 1.f)) const;
 
     // This camera's intrinsic screen window, conformed to the framing and
     // window policy carried by the active camera overlay. The camera
