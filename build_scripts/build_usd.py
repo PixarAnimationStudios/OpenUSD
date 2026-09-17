@@ -1435,9 +1435,6 @@ def InstallOpenVDB(context, force, buildArgs):
                          .format(instDir=context.instDir))
         extraArgs.append('-DTBB_ROOT="{instDir}"'
                          .format(instDir=context.instDir))
-        # OpenVDB needs Half type from IlmBase
-        extraArgs.append('-DILMBASE_ROOT="{instDir}"'
-                         .format(instDir=context.instDir))
 
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
@@ -2610,7 +2607,7 @@ if context.buildImaging:
     requiredDependencies += [OPENSUBDIV]
 
     if context.enableOpenVDB:
-        requiredDependencies += [ZLIB, TBB, BLOSC, BOOST, OPENEXR, OPENVDB]
+        requiredDependencies += [ZLIB, TBB, BLOSC, BOOST, OPENVDB]
     
     # When OCIO is required, we need to make sure it's built before OIIO, since
     # OIIO is dependent on OCIO.

@@ -387,11 +387,7 @@ The additional dependencies that must be supplied when invoking cmake are:
 | Dependency Name                   | Description                                       |
 | ----------------------------------|-------------------------------------------------- |
 | ALEMBIC_DIR                       | The location of [Alembic](https://https://github.com/alembic/alembic)   | 
-| OPENEXR_LOCATION                  | The location of [OpenEXR](http://www.openexr.com) |
-| Imath_DIR (If not using OpenEXR)  | Path to the CMake package config of a Imath SDK install. (With OpenEXR 3+, Imath can be used explicitly instead of OpenEXR.)|
-
-Either OpenEXR or Imath is required depending on which library is used by the
-Alembic library specified in ALEMBIC_DIR.
+| Imath_DIR                         | Path to the CMake package config of a Imath SDK install. |
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 
