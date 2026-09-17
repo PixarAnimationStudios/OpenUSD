@@ -71,7 +71,7 @@ def SkelRoot "JointInfluences" (
             int[] primvars:skel:jointIndices = [] (
                 elementSize = 3
             )
-            flaot[] primvars:skel:jointWeights = [] (
+            float[] primvars:skel:jointWeights = [] (
                 elementSize = 4
             )
         }
@@ -83,7 +83,7 @@ def SkelRoot "JointInfluences" (
             int[] primvars:skel:jointIndices = [] (
                 elementSize = -1
             )
-            flaot[] primvars:skel:jointWeights = [] (
+            float[] primvars:skel:jointWeights = [] (
                 elementSize = -1
             )
         }
