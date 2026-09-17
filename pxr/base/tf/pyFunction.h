@@ -49,11 +49,12 @@ struct TfPyFunctionFromPython<Ret (Args...)>
             using namespace pxr_boost::python;
             // Attempt to get the referenced callable object.
             TfPyLock lock;
-            object callable(handle<>(borrowed(PyWeakref_GetObject(weak.ptr()))));
-            if (TfPyIsNone(callable)) {
+            PyObject *callablePtr;
+            if (Tf_PyWeakrefGetRef(weak.ptr(), &callablePtr) != 1) {
                 TF_WARN("Tried to call an expired python callback");
                 return Ret();
             }
+            object callable { handle<> { callablePtr } };
             return TfPyCall<Ret>(callable)(args...);
         }
     };
@@ -68,12 +69,13 @@ struct TfPyFunctionFromPython<Ret (Args...)>
             // Attempt to get the referenced self parameter, then build a new
             // instance method and call it.
             TfPyLock lock;
-            PyObject *self = PyWeakref_GetObject(weakSelf.ptr());
-            if (self == Py_None) {
+            PyObject *selfPtr;
+            if (Tf_PyWeakrefGetRef(weakSelf.ptr(), &selfPtr) != 1) {
                 TF_WARN("Tried to call a method on an expired python instance");
                 return Ret();
             }
-            object method(handle<>(PyMethod_New(func.ptr(), self)));
+            object self { handle<> { selfPtr } };
+            object method { handle<> { PyMethod_New(func.ptr(), self.ptr()) } };
             return TfPyCall<Ret>(method)(args...);
         }
     };

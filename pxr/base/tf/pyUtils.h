@@ -117,6 +117,48 @@ TF_API bool TfPyIsNone(pxr_boost::python::object const &obj);
 /// Return true iff \a obj is None.
 TF_API bool TfPyIsNone(pxr_boost::python::handle<> const &obj);
 
+/// Get a strong reference to the object referred to by the weak reference
+/// \a ref.
+///
+/// This behaves exactly like PyWeakref_GetRef, which was added in Python 3.13:
+/// on success, store a new strong reference to the referent in \p *pobj and
+/// return 1; if the reference is dead, store null in \p *pobj and return 0; on
+/// error, raise an exception and return -1.  Callers must hold the GIL.
+///
+/// As with PyWeakref_GetRef, \p *pobj is unspecified when this returns -1.
+/// Callers must consult the return value and must not inspect \p *pobj unless
+/// it returned 1 or 0.
+///
+/// PyWeakref_GetRef supersedes PyWeakref_GetObject, which is deprecated in 3.13
+/// and slated for removal in 3.15.  This function exists only to provide
+/// PyWeakref_GetRef on Python versions before 3.13.  Once the minimum supported
+/// Python is 3.13, every call can be replaced with a direct call to
+/// PyWeakref_GetRef and this function deleted.
+inline int
+Tf_PyWeakrefGetRef(PyObject *ref, PyObject **pobj)
+{
+#if PY_VERSION_HEX >= 0x030D0000
+    return PyWeakref_GetRef(ref, pobj);
+#else
+    PyObject *obj = PyWeakref_GetObject(ref);
+    if (!obj) {
+        // Not a weak reference; PyWeakref_GetObject has set an exception.
+        // Leave *pobj alone: PyWeakref_GetRef does not specify its value on
+        // error, so neither do we.
+        return -1;
+    }
+    if (obj == Py_None) {
+        // The referent has expired.  None itself is not weak-referenceable, so
+        // this cannot be a live referent.
+        *pobj = nullptr;
+        return 0;
+    }
+    Py_INCREF(obj);
+    *pobj = obj;
+    return 1;
+#endif
+}
+
 // Helper for \c TfPyObject().
 TF_API void Tf_PyObjectError(bool printError);
 

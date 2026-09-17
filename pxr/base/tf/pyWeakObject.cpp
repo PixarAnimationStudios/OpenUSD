@@ -115,32 +115,38 @@ Tf_PyWeakObject::GetOrCreate(pxr_boost::python::object const &obj)
 pxr_boost::python::object
 Tf_PyWeakObject::GetObject() const
 {
-    return pxr_boost::python::object
-        (pxr_boost::python::handle<>
-         (pxr_boost::python::borrowed(PyWeakref_GetObject(_weakRef.get()))));
+    PyObject *obj;
+    if (Tf_PyWeakrefGetRef(_weakRef.get(), &obj) != 1) {
+        // The referent has expired; report it as None.
+        return pxr_boost::python::object();
+    }
+    return pxr_boost::python::object(pxr_boost::python::handle<>(obj));
 }
 
 void
 Tf_PyWeakObject::Delete()
 {
-    Tf_PyWeakObjectRegistry::GetInstance().Remove(GetObject().ptr());
+    // Use the cached key rather than GetObject(): our weak reference has
+    // already been cleared by the time this callback runs.
+    Tf_PyWeakObjectRegistry::GetInstance().Remove(_refObjKey);
     delete this;
 }
-    
+
 Tf_PyWeakObject::Tf_PyWeakObject(pxr_boost::python::object const &obj)
     : _weakRef(
         PyWeakref_NewRef(
             obj.ptr(), pxr_boost::python::
             object(Tf_PyWeakObjectDeleter(TfCreateWeakPtr(this))).ptr()))
+    , _refObjKey(obj.ptr())
 {
     Tf_PyWeakObjectPtr self(this);
-    
+
     // Set our python identity, but release it immediately, since we are a weak
     // reference and will expire as soon as the python object does.
-    Tf_PyReleasePythonIdentity(self, GetObject().ptr());
-    
+    Tf_PyReleasePythonIdentity(self, _refObjKey);
+
     // Install us in the registry.
-    Tf_PyWeakObjectRegistry::GetInstance().Insert(GetObject().ptr(), self);
+    Tf_PyWeakObjectRegistry::GetInstance().Insert(_refObjKey, self);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
