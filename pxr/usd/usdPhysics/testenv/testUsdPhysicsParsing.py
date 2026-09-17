@@ -512,6 +512,187 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         self.assertTrue(rigidbody_found)
         self.assertTrue(cube_found)
 
+    def test_rigidbody_disabled_nested_body_collision_parse(self):
+        """A nested rigid body only owns colliders while it is enabled. A
+        collider below a disabled nested body must be reported as belonging to
+        the nearest enabled rigid body above it, matching the subtree that
+        UsdPhysicsRigidBodyAPI::ComputeMassProperties aggregates.
+        """
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        UsdPhysics.Scene.Define(stage, '/physicsScene')
+
+        rigidbody = UsdGeom.Xform.Define(stage, "/rigidBody")
+        UsdPhysics.RigidBodyAPI.Apply(rigidbody.GetPrim())
+
+        # Disabled nested rigid body: it takes no part in simulation, so it
+        # does not form the root of its own subtree.
+        disabled_body = UsdGeom.Xform.Define(stage, "/rigidBody/disabledBody")
+        disabled_body_api = UsdPhysics.RigidBodyAPI.Apply(
+            disabled_body.GetPrim())
+        disabled_body_api.GetRigidBodyEnabledAttr().Set(False)
+
+        cube = UsdGeom.Cube.Define(stage, "/rigidBody/disabledBody/cube")
+        UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+
+        ret_dict = UsdPhysics.UsdPhysicsLoadStageFromPrimRange(stage, ["/"])
+
+        rigidbody_found = False
+        cube_found = False
+
+        for key, value in ret_dict.items():
+            prim_paths, descs = value
+            if key == UsdPhysics.ObjectType.RigidBody:
+                for prim_path, desc in zip(prim_paths, descs):
+                    if prim_path == rigidbody.GetPrim().GetPrimPath():
+                        rigidbody_found = True
+                        # The collider below the disabled nested body belongs
+                        # to the enabled body above it.
+                        self.assertTrue(len(desc.collisions) == 1)
+                        self.assertTrue(desc.collisions[0] ==
+                                        cube.GetPrim().GetPrimPath())
+                    elif prim_path == disabled_body.GetPrim().GetPrimPath():
+                        # The disabled body owns no colliders.
+                        self.assertTrue(len(desc.collisions) == 0)
+            elif key == UsdPhysics.ObjectType.CubeShape:
+                for prim_path, desc in zip(prim_paths, descs):
+                    cube_found = True
+                    self.assertTrue(prim_path == cube.GetPrim().GetPrimPath())
+                    self.assertTrue(desc.rigidBody ==
+                                    rigidbody.GetPrim().GetPrimPath())
+
+        self.assertTrue(rigidbody_found)
+        self.assertTrue(cube_found)
+
+    def test_rigidbody_disabled_body_only_collision_parse(self):
+        """A disabled rigid body owns no colliders. With no enabled rigid body
+        above it, a collider below a disabled body is a static collision, so it
+        resolves to an empty body path.
+        """
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        UsdPhysics.Scene.Define(stage, '/physicsScene')
+
+        disabled_body = UsdGeom.Xform.Define(stage, "/disabledBody")
+        disabled_body_api = UsdPhysics.RigidBodyAPI.Apply(
+            disabled_body.GetPrim())
+        disabled_body_api.GetRigidBodyEnabledAttr().Set(False)
+
+        cube = UsdGeom.Cube.Define(stage, "/disabledBody/cube")
+        UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+
+        ret_dict = UsdPhysics.UsdPhysicsLoadStageFromPrimRange(stage, ["/"])
+
+        cube_found = False
+
+        for key, value in ret_dict.items():
+            prim_paths, descs = value
+            if key == UsdPhysics.ObjectType.CubeShape:
+                for prim_path, desc in zip(prim_paths, descs):
+                    cube_found = True
+                    self.assertEqual(prim_path, cube.GetPrim().GetPrimPath())
+                    # The disabled body owns no colliders, so the cube is a
+                    # static collision with no owning body.
+                    self.assertEqual(desc.rigidBody, Sdf.Path())
+
+        self.assertTrue(cube_found)
+
+    def test_joint_disabled_body_rel_parse(self):
+        """A joint body relationship resolves to the nearest enabled rigid body
+        above its target. A disabled body is treated as though the API were not
+        applied at all, so it is skipped in favour of an enabled body above it.
+        """
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        UsdPhysics.Scene.Define(stage, '/physicsScene')
+
+        rigidbody = UsdGeom.Xform.Define(stage, "/rigidBody")
+        UsdPhysics.RigidBodyAPI.Apply(rigidbody.GetPrim())
+
+        disabled_body = UsdGeom.Xform.Define(stage, "/rigidBody/disabledBody")
+        disabled_body_api = UsdPhysics.RigidBodyAPI.Apply(
+            disabled_body.GetPrim())
+        disabled_body_api.GetRigidBodyEnabledAttr().Set(False)
+
+        cube = UsdGeom.Cube.Define(stage, "/rigidBody/disabledBody/cube")
+        UsdPhysics.CollisionAPI.Apply(cube.GetPrim())
+
+        joint = UsdPhysics.FixedJoint.Define(stage, "/joint")
+        joint.GetBody0Rel().AddTarget(cube.GetPrim().GetPrimPath())
+
+        ret_dict = UsdPhysics.UsdPhysicsLoadStageFromPrimRange(stage, ["/"])
+
+        joint_found = False
+        for key, value in ret_dict.items():
+            prim_paths, descs = value
+            if key == UsdPhysics.ObjectType.FixedJoint:
+                for prim_path, desc in zip(prim_paths, descs):
+                    joint_found = True
+                    # The disabled body is skipped, so the relationship
+                    # resolves to the enabled body above it.
+                    self.assertTrue(desc.body0 ==
+                                    rigidbody.GetPrim().GetPrimPath())
+
+        self.assertTrue(joint_found)
+
+        # With no enabled body above the target, the relationship no longer
+        # resolves to a body.
+        UsdPhysics.RigidBodyAPI(
+            rigidbody.GetPrim()).GetRigidBodyEnabledAttr().Set(False)
+
+        ret_dict = UsdPhysics.UsdPhysicsLoadStageFromPrimRange(stage, ["/"])
+
+        joint_found = False
+        for key, value in ret_dict.items():
+            prim_paths, descs = value
+            if key == UsdPhysics.ObjectType.FixedJoint:
+                for prim_path, desc in zip(prim_paths, descs):
+                    joint_found = True
+                    self.assertEqual(desc.body0, Sdf.Path())
+
+        self.assertTrue(joint_found)
+
+
+    def test_joint_dangling_body_rel_passes_authored_pose(self):
+        """A joint side whose body relationship targets a path that does not
+        resolve to a prim on the stage keeps the authored local pose. There is
+        no body to resolve, so body0 is empty, but the authored localPos0 /
+        localRot0 are passed through unchanged rather than zeroed.
+        """
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        UsdPhysics.Scene.Define(stage, '/physicsScene')
+
+        authored_pos = Gf.Vec3f(7.0, 8.0, 9.0)
+        authored_rot = Gf.Quatf(0.70710678, Gf.Vec3f(0.70710678, 0.0, 0.0))
+
+        joint = UsdPhysics.FixedJoint.Define(stage, "/joint")
+        joint.GetBody0Rel().AddTarget(Sdf.Path("/does/not/exist"))
+        joint.CreateLocalPos0Attr().Set(authored_pos)
+        joint.CreateLocalRot0Attr().Set(authored_rot)
+
+        ret_dict = UsdPhysics.UsdPhysicsLoadStageFromPrimRange(stage, ["/"])
+
+        joint_found = False
+        for key, value in ret_dict.items():
+            prim_paths, descs = value
+            if key == UsdPhysics.ObjectType.FixedJoint:
+                for prim_path, desc in zip(prim_paths, descs):
+                    joint_found = True
+                    self.assertEqual(desc.body0, Sdf.Path())
+                    self.assertEqual(desc.localPose0Position, authored_pos)
+                    self.assertTrue(Gf.IsClose(
+                        Gf.Vec4f(desc.localPose0Orientation.real,
+                                 *desc.localPose0Orientation.imaginary),
+                        Gf.Vec4f(authored_rot.real, *authored_rot.imaginary),
+                        1e-6))
+
+        self.assertTrue(joint_found)
+
     def test_rigidbody_collision_multithreading_parse(self):
         """Check that if a single rigid body has many collision objects, the
         multithreaded parsing works correctly.

@@ -560,6 +560,261 @@ class TestUsdPhysicsRigidBodyAPI(unittest.TestCase):
                                 
         self.compare_mass_information(rigidBodyAPI, 1000.0 * 2.0, expectedCoM=Gf.Vec3f(0.0))
 
+    # A collider with physics:collisionEnabled = false is not enabled and
+    # takes no part in simulation, so it must not contribute to the aggregated
+    # mass. A body whose only enabled collider is a unit cube should report the
+    # same mass, center of mass, and inertia as if the disabled collider were
+    # absent.
+    def test_mass_rigid_body_cube_disabled_collider(self):
+        self.setup_scene()
+
+        # top level xform - rigid body
+        self.xform = UsdGeom.Xform.Define(self.stage, "/xform")
+        rigidBodyAPI = UsdPhysics.RigidBodyAPI.Apply(self.xform.GetPrim())
+
+        # Enabled collider cube0 at the origin.
+        self.cube = UsdGeom.Cube.Define(self.stage, "/xform/cube0")
+        self.cube.GetSizeAttr().Set(1.0)
+        UsdPhysics.CollisionAPI.Apply(self.cube.GetPrim())
+
+        # Disabled collider cube1, offset so that if it were (incorrectly)
+        # included it would both change the mass and shift the center of mass.
+        self.cube2 = UsdGeom.Cube.Define(self.stage, "/xform/cube1")
+        self.cube2.GetSizeAttr().Set(1.0)
+        disabledCollisionAPI = UsdPhysics.CollisionAPI.Apply(self.cube2.GetPrim())
+        disabledCollisionAPI.GetCollisionEnabledAttr().Set(False)
+        self.cube2.AddTranslateOp().Set(Gf.Vec3f(0, 0, 4.0))
+
+        self.rigidBodyWorldTransform = UsdGeom.Xformable(self.xform.GetPrim()).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        self.rigidBodyPrim = self.xform.GetPrim()
+
+        # Only the single enabled unit cube (default density 1000) contributes.
+        self.compare_mass_information(rigidBodyAPI, 1000.0, expectedCoM=Gf.Vec3f(0.0), expectedInertia=Gf.Vec3f(166.667))
+
+    # A nested rigid body only forms the root of its own subtree while it is
+    # enabled. A nested body whose physics:rigidBodyEnabled is false takes no
+    # part in simulation and therefore owns no colliders, so the enabled
+    # colliders below it still belong to the nearest enabled body above it and
+    # must still contribute their mass to it. Were the disabled body's subtree
+    # pruned instead, that mass would be attributed to no body at all.
+    def test_mass_rigid_body_disabled_nested_body(self):
+        self.setup_scene()
+
+        # top level xform - enabled rigid body
+        self.xform = UsdGeom.Xform.Define(self.stage, "/xform")
+        rigidBodyAPI = UsdPhysics.RigidBodyAPI.Apply(self.xform.GetPrim())
+
+        # Enabled collider cube0, owned directly by the top level body.
+        self.cube = UsdGeom.Cube.Define(self.stage, "/xform/cube0")
+        self.cube.GetSizeAttr().Set(1.0)
+        UsdPhysics.CollisionAPI.Apply(self.cube.GetPrim())
+        self.cube.AddTranslateOp().Set(Gf.Vec3f(0, 0, -2.0))
+
+        # Disabled nested rigid body, offset from the top level body.
+        disabledBodyXform = UsdGeom.Xform.Define(self.stage, "/xform/disabledBody")
+        disabledBodyAPI = UsdPhysics.RigidBodyAPI.Apply(disabledBodyXform.GetPrim())
+        disabledBodyAPI.GetRigidBodyEnabledAttr().Set(False)
+        disabledBodyXform.AddTranslateOp().Set(Gf.Vec3f(0, 0, 2.0))
+
+        # Enabled collider cube1, below the disabled nested body.
+        self.cube2 = UsdGeom.Cube.Define(self.stage, "/xform/disabledBody/cube1")
+        self.cube2.GetSizeAttr().Set(1.0)
+        UsdPhysics.CollisionAPI.Apply(self.cube2.GetPrim())
+
+        self.rigidBodyWorldTransform = UsdGeom.Xformable(self.xform.GetPrim()).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        self.rigidBodyPrim = self.xform.GetPrim()
+
+        # Both unit cubes (default density 1000) contribute, and they are
+        # placed symmetrically about the top level body's origin. This matches
+        # test_mass_rigid_body_cube_compound, where the same two colliders are
+        # owned directly by the body.
+        self.compare_mass_information(rigidBodyAPI, 1000.0 * 2.0, expectedCoM=Gf.Vec3f(0.0))
+
+    # A disabled nested rigid body must not shadow an enabled body above it for
+    # colliders that sit even deeper in the hierarchy, and an enabled body below
+    # a disabled one must still own its own colliders.
+    def test_mass_rigid_body_disabled_nested_body_deep(self):
+        self.setup_scene()
+
+        # top level xform - enabled rigid body
+        self.xform = UsdGeom.Xform.Define(self.stage, "/xform")
+        rigidBodyAPI = UsdPhysics.RigidBodyAPI.Apply(self.xform.GetPrim())
+
+        # Disabled nested rigid body.
+        disabledBodyXform = UsdGeom.Xform.Define(self.stage, "/xform/disabledBody")
+        disabledBodyAPI = UsdPhysics.RigidBodyAPI.Apply(disabledBodyXform.GetPrim())
+        disabledBodyAPI.GetRigidBodyEnabledAttr().Set(False)
+
+        # Enabled collider nested under an intermediate Xform below the
+        # disabled body, so the traversal has to continue past both.
+        UsdGeom.Xform.Define(self.stage, "/xform/disabledBody/group")
+        self.cube = UsdGeom.Cube.Define(self.stage, "/xform/disabledBody/group/cube0")
+        self.cube.GetSizeAttr().Set(1.0)
+        UsdPhysics.CollisionAPI.Apply(self.cube.GetPrim())
+
+        # An enabled nested body below the disabled one still forms the root of
+        # its own subtree, so its collider belongs to it and not to /xform.
+        enabledBodyXform = UsdGeom.Xform.Define(self.stage, "/xform/disabledBody/enabledBody")
+        UsdPhysics.RigidBodyAPI.Apply(enabledBodyXform.GetPrim())
+        enabledBodyXform.AddTranslateOp().Set(Gf.Vec3f(0, 0, 4.0))
+        self.cube2 = UsdGeom.Cube.Define(self.stage, "/xform/disabledBody/enabledBody/cube1")
+        self.cube2.GetSizeAttr().Set(1.0)
+        UsdPhysics.CollisionAPI.Apply(self.cube2.GetPrim())
+
+        self.rigidBodyWorldTransform = UsdGeom.Xformable(self.xform.GetPrim()).ComputeLocalToWorldTransform(Usd.TimeCode.Default())
+        self.rigidBodyPrim = self.xform.GetPrim()
+
+        # Only cube0 contributes to /xform: cube1 belongs to the enabled
+        # nested body, whose subtree is still pruned.
+        self.compare_mass_information(rigidBodyAPI, 1000.0, expectedCoM=Gf.Vec3f(0.0), expectedInertia=Gf.Vec3f(166.667))
+
+    def test_get_collision_prims(self):
+        self.setup_scene()
+
+        # top level xform - rigid body
+        self.xform = UsdGeom.Xform.Define(self.stage, "/xform")
+        rigidBodyAPI = UsdPhysics.RigidBodyAPI.Apply(self.xform.GetPrim())
+
+        # Enabled collider - should be returned.
+        enabled = UsdGeom.Cube.Define(self.stage, "/xform/enabled")
+        UsdPhysics.CollisionAPI.Apply(enabled.GetPrim())
+
+        # Disabled collider - should be excluded.
+        disabled = UsdGeom.Cube.Define(self.stage, "/xform/disabled")
+        disabledCollisionAPI = UsdPhysics.CollisionAPI.Apply(disabled.GetPrim())
+        disabledCollisionAPI.GetCollisionEnabledAttr().Set(False)
+
+        # A collider owned by a nested rigid body - should be pruned, since it
+        # belongs to the nested body, not to this one.
+        nestedBody = UsdGeom.Xform.Define(self.stage, "/xform/nestedBody")
+        UsdPhysics.RigidBodyAPI.Apply(nestedBody.GetPrim())
+        nestedCollider = UsdGeom.Cube.Define(self.stage, "/xform/nestedBody/collider")
+        UsdPhysics.CollisionAPI.Apply(nestedCollider.GetPrim())
+
+        # A collider below a DISABLED nested rigid body - should be returned.
+        # A disabled body takes no part in simulation and so owns no colliders;
+        # its subtree still belongs to this body.
+        disabledBody = UsdGeom.Xform.Define(self.stage, "/xform/disabledBody")
+        disabledBodyAPI = UsdPhysics.RigidBodyAPI.Apply(disabledBody.GetPrim())
+        disabledBodyAPI.GetRigidBodyEnabledAttr().Set(False)
+        colliderBelowDisabledBody = UsdGeom.Cube.Define(self.stage, "/xform/disabledBody/collider")
+        UsdPhysics.CollisionAPI.Apply(colliderBelowDisabledBody.GetPrim())
+
+        collisionPrims = rigidBodyAPI.GetCollisionPrims()
+        collisionPaths = set(p.GetPath() for p in collisionPrims)
+
+        # Only the enabled colliders that this body owns are returned.
+        self.assertEqual(collisionPaths,
+                         {enabled.GetPrim().GetPath(),
+                          colliderBelowDisabledBody.GetPrim().GetPath()})
+        self.assertNotIn(disabled.GetPrim().GetPath(), collisionPaths)
+        self.assertNotIn(nestedCollider.GetPrim().GetPath(), collisionPaths)
+
+    def test_collider_get_body(self):
+        self.setup_scene()
+
+        # A rigid body with a collider nested a couple of levels below it. The
+        # collider is not itself a body; GetBody walks the ancestors and
+        # reports the owning body.
+        body = UsdGeom.Xform.Define(self.stage, "/body")
+        UsdPhysics.RigidBodyAPI.Apply(body.GetPrim())
+        collider = UsdGeom.Cube.Define(self.stage, "/body/geo/collider")
+        colliderAPI = UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+        self.assertEqual(colliderAPI.GetBody().GetPath(),
+                         body.GetPrim().GetPath())
+
+        # A collider below a DISABLED nested body. The disabled body takes no
+        # part in simulation, so the collider is owned by the nearest enabled
+        # body above it, not by the disabled one.
+        outer = UsdGeom.Xform.Define(self.stage, "/outer")
+        UsdPhysics.RigidBodyAPI.Apply(outer.GetPrim())
+        disabledBody = UsdGeom.Xform.Define(self.stage, "/outer/disabledBody")
+        disabledBodyAPI = UsdPhysics.RigidBodyAPI.Apply(disabledBody.GetPrim())
+        disabledBodyAPI.GetRigidBodyEnabledAttr().Set(False)
+        colliderBelowDisabled = UsdGeom.Cube.Define(
+            self.stage, "/outer/disabledBody/collider")
+        colliderBelowDisabledAPI = UsdPhysics.CollisionAPI.Apply(
+            colliderBelowDisabled.GetPrim())
+        self.assertEqual(colliderBelowDisabledAPI.GetBody().GetPath(),
+                         outer.GetPrim().GetPath())
+
+        # A collider whose only body ancestor is disabled has no enabled owner,
+        # so GetBody returns an invalid prim.
+        lone = UsdGeom.Xform.Define(self.stage, "/lone")
+        loneAPI = UsdPhysics.RigidBodyAPI.Apply(lone.GetPrim())
+        loneAPI.GetRigidBodyEnabledAttr().Set(False)
+        loneCollider = UsdGeom.Cube.Define(self.stage, "/lone/collider")
+        loneColliderAPI = UsdPhysics.CollisionAPI.Apply(loneCollider.GetPrim())
+        self.assertFalse(loneColliderAPI.GetBody())
+
+        # A collider with no body in its ancestry returns an invalid prim.
+        orphan = UsdGeom.Cube.Define(self.stage, "/orphan")
+        orphanAPI = UsdPhysics.CollisionAPI.Apply(orphan.GetPrim())
+        self.assertFalse(orphanAPI.GetBody())
+
+        # A collider that is itself the rigid body reports itself.
+        selfBody = UsdGeom.Cube.Define(self.stage, "/selfBody")
+        UsdPhysics.RigidBodyAPI.Apply(selfBody.GetPrim())
+        selfBodyAPI = UsdPhysics.CollisionAPI.Apply(selfBody.GetPrim())
+        self.assertEqual(selfBodyAPI.GetBody().GetPath(),
+                         selfBody.GetPrim().GetPath())
+
+    def test_collider_get_body_matches_parser(self):
+        """CollisionAPI.GetBody and the physics parser resolve a collider to
+        the same owning body, in both the simple case and the disabled-body
+        cases. The parser is scope aware and GetBody is a plain ancestor walk,
+        but they agree when the whole stage is parsed.
+        """
+        self.setup_scene()
+        UsdPhysics.Scene.Define(self.stage, "/physicsScene")
+
+        # Simple case: collider nested below an enabled body.
+        body = UsdGeom.Xform.Define(self.stage, "/body")
+        UsdPhysics.RigidBodyAPI.Apply(body.GetPrim())
+        collider = UsdGeom.Cube.Define(self.stage, "/body/geo/collider")
+        UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+
+        # Problem case: collider below a disabled body that has an enabled body
+        # above it. Resolves to the enabled body.
+        outer = UsdGeom.Xform.Define(self.stage, "/outer")
+        UsdPhysics.RigidBodyAPI.Apply(outer.GetPrim())
+        disabledBody = UsdGeom.Xform.Define(self.stage, "/outer/disabledBody")
+        disabledBodyAPI = UsdPhysics.RigidBodyAPI.Apply(disabledBody.GetPrim())
+        disabledBodyAPI.GetRigidBodyEnabledAttr().Set(False)
+        UsdPhysics.CollisionAPI.Apply(
+            UsdGeom.Cube.Define(
+                self.stage, "/outer/disabledBody/collider").GetPrim())
+
+        # Problem case: collider below a lone disabled body. Resolves to no
+        # body, so it is a static collision.
+        lone = UsdGeom.Xform.Define(self.stage, "/lone")
+        loneAPI = UsdPhysics.RigidBodyAPI.Apply(lone.GetPrim())
+        loneAPI.GetRigidBodyEnabledAttr().Set(False)
+        UsdPhysics.CollisionAPI.Apply(
+            UsdGeom.Cube.Define(self.stage, "/lone/collider").GetPrim())
+
+        # Collect the parser's owning body for every parsed collider.
+        ret_dict = UsdPhysics.UsdPhysicsLoadStageFromPrimRange(
+            self.stage, ["/"])
+        parser_body = {}
+        for key, value in ret_dict.items():
+            prim_paths, descs = value
+            if key == UsdPhysics.ObjectType.CubeShape:
+                for prim_path, desc in zip(prim_paths, descs):
+                    parser_body[prim_path] = desc.rigidBody
+
+        # Every collider the parser reported must resolve to the same body via
+        # GetBody. GetBody returns an invalid prim for a static collision,
+        # which the parser reports as an empty body path.
+        self.assertTrue(parser_body)
+        for collider_path, parser_path in parser_body.items():
+            colliderAPI = UsdPhysics.CollisionAPI(
+                self.stage.GetPrimAtPath(collider_path))
+            getter_body = colliderAPI.GetBody()
+            getter_path = (getter_body.GetPath() if getter_body
+                           else Sdf.Path())
+            self.assertEqual(getter_path, parser_path)
+
     def test_mass_rigid_body_nested(self):
         self.setup_scene()
 

@@ -935,118 +935,35 @@ SdfPath _GetRel(const UsdRelationship& ref, const UsdPrim& jointPrim)
     return targets.at(0);
 }
 
-// Get body for a given path, the body can be on a parent prim
-UsdPrim _GetBodyPrim(UsdStageWeakPtr stage, const SdfPath& relPath, 
-                    UsdPrim& relPrim)
-{
-    UsdPrim parent = stage->GetPrimAtPath(relPath);
-    relPrim = parent;
-    UsdPrim collisionPrim = UsdPrim();
-    while (parent && parent != stage->GetPseudoRoot())
-    {
-        if (parent.HasAPI<UsdPhysicsRigidBodyAPI>())
-        {
-            return parent;
-        }
-        if (parent.HasAPI<UsdPhysicsCollisionAPI>())
-        {
-            collisionPrim = parent;
-        }
-        parent = parent.GetParent();
-    }
-
-    return collisionPrim;
-}
-
-// Get joint local pose base on provided body rel path
-SdfPath _GetLocalPose(UsdStageWeakPtr stage, const SdfPath& relPath, GfVec3f* outT,
-    GfQuatf* outQ)
-{
-    UsdPrim relPrim;
-    const UsdPrim body = _GetBodyPrim(stage, relPath, relPrim);
-
-    // get scale and apply it into localPositions vectors
-    const UsdGeomXformable xform(relPrim);
-    const GfMatrix4d worldRel = relPrim ? xform.ComputeLocalToWorldTransform(
-        UsdTimeCode::Default()) : GfMatrix4d(1.0);
-
-    // we need to apply scale to the localPose, the scale comes from the rigid 
-    // body
-    GfVec3f sc;
-    // if we had a rel not to rigid body, we need to recompute the localPose
-    if (relPrim != body)
-    {
-        GfMatrix4d localAnchor;
-        localAnchor.SetIdentity();
-        localAnchor.SetTranslate(GfVec3d(*outT));
-        localAnchor.SetRotateOnly(GfQuatd(*outQ));
-
-        GfMatrix4d bodyMat;
-        if (body)
-        {
-            bodyMat = UsdGeomXformable(body).ComputeLocalToWorldTransform(
-                UsdTimeCode::Default());
-        }
-        else
-        {
-            bodyMat.SetIdentity();
-        }
-
-        const GfMatrix4d worldAnchor = localAnchor * worldRel;
-        GfMatrix4d bodyLocalAnchor = worldAnchor * bodyMat.GetInverse();
-        bodyLocalAnchor = bodyLocalAnchor.RemoveScaleShear();
-
-        *outT = GfVec3f(bodyLocalAnchor.ExtractTranslation());
-        *outQ = GfQuatf(bodyLocalAnchor.ExtractRotationQuat());
-        outQ->Normalize();
-
-        const GfTransform tr(bodyMat);
-        sc = GfVec3f(tr.GetScale());
-    }
-    else
-    {
-        const GfTransform tr(worldRel);
-        sc = GfVec3f(tr.GetScale());
-    }
-
-    // apply the scale, this is not obvious, but in physics there is no scale, 
-    // so we need to apply it before its send to physics
-    for (int i = 0; i < 3; i++)
-    {
-        (*outT)[i] *= sc[i];
-    }
-
-    return body ? body.GetPrimPath() : SdfPath();
-}
-
 // Finalize joint desc
 void _FinalizeJoint(const UsdPhysicsJoint& jointPrim, 
                    UsdPhysicsJointDesc* outJointDesc)
 {
-    // joint bodies anchor point local transforms    
+    // Resolve each side's owning body and the joint-local anchor pose in that
+    // body's frame. The public getters are the single source of this logic
+    // (see UsdPhysicsJoint::GetBody0 / GetLocalPose0); the parser routes through
+    // them so the resolution cannot drift from what consumers see.
     GfVec3f t0(0.f);
     GfVec3f t1(0.f);
     GfQuatf q0(1.f);
     GfQuatf q1(1.f);
-    jointPrim.GetLocalPos0Attr().Get(&t0);
-    jointPrim.GetLocalRot0Attr().Get(&q0);
-    jointPrim.GetLocalPos1Attr().Get(&t1);
-    jointPrim.GetLocalRot1Attr().Get(&q1);
 
-    q0.Normalize();
-    q1.Normalize();
-
-    UsdStageWeakPtr stage = jointPrim.GetPrim().GetStage();
-
-    // get scale and apply it into localPositions vectors
     if (outJointDesc->rel0 != SdfPath())
     {
-        outJointDesc->body0 = _GetLocalPose(stage, outJointDesc->rel0, &t0, &q0);
+        const UsdPrim body0 = jointPrim.GetBody0();
+        outJointDesc->body0 = body0 ? body0.GetPrimPath() : SdfPath();
+        // GetLocalPose0 always writes a pose. On a dangling relationship it
+        // returns false and passes the authored local pose through unchanged;
+        // the return value is not needed here since the body is reported
+        // separately above.
+        jointPrim.GetLocalPose0(&t0, &q0);
     }
 
     if (outJointDesc->rel1 != SdfPath())
     {
-        outJointDesc->body1 = _GetLocalPose(stage, outJointDesc->rel1, &t1, &q1);
+        const UsdPrim body1 = jointPrim.GetBody1();
+        outJointDesc->body1 = body1 ? body1.GetPrimPath() : SdfPath();
+        jointPrim.GetLocalPose1(&t1, &q1);
     }
 
     outJointDesc->localPose0Position = t0;
@@ -1645,12 +1562,18 @@ bool _HasDynamicBodyParent(const UsdPrim& usdPrim, const RigidBodyMap& bodyMap,
 
         if (physicsAPIFound)
         {
-            *outBodyPrimPath = parent;
-            return false;
+            // A disabled rigid body takes no part in simulation and owns no
+            // colliders. Keep searching the ancestors: a nested disabled body
+            // may still have an enabled body above it, which this prim
+            // belongs to.
+            parent = parent.GetParent();
+            continue;
         }
 
         parent = parent.GetParent();
     }
+
+    // No enabled body above this prim, so it is a static collision.
     return false;
 }
 
@@ -1908,19 +1831,9 @@ SdfPath _GetRigidBody(const UsdPrim& usdPrim, const RigidBodyMap& bodyMap)
     {
         return bodyPrim.GetPrimPath();
     }
-    else
-    {
-        // collision does not have a dynamic body parent, it is considered a 
-        // static collision        
-        if (bodyPrim == UsdPrim())
-        {
-            return SdfPath();
-        }
-        else
-        {
-            return bodyPrim.GetPrimPath();
-        }
-    }
+
+    // No enabled body above the collision, so it is a static collision.
+    return SdfPath();
 }
 
 // Compute the relative pose between the collision and the rigid body
