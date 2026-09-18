@@ -59,7 +59,7 @@ struct UsdProfilesTokensType {
     const TfToken soft;
     /// \brief "ClaimsAPI"
     /// 
-    /// Schema identifer and family for UsdProfilesClaimsAPI
+    /// Schema identifier and family for UsdProfilesClaimsAPI
     const TfToken ClaimsAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

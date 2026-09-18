@@ -295,87 +295,87 @@ struct UsdLuxTokensType {
     const TfToken Z;
     /// \brief "BoundableLightBase"
     /// 
-    /// Schema identifer and family for UsdLuxBoundableLightBase
+    /// Schema identifier and family for UsdLuxBoundableLightBase
     const TfToken BoundableLightBase;
     /// \brief "CylinderLight"
     /// 
-    /// Schema identifer and family for UsdLuxCylinderLight, Fallback value for UsdLuxCylinderLight schema attribute light:shaderId
+    /// Schema identifier and family for UsdLuxCylinderLight, Fallback value for UsdLuxCylinderLight schema attribute light:shaderId
     const TfToken CylinderLight;
     /// \brief "DiskLight"
     /// 
-    /// Schema identifer and family for UsdLuxDiskLight, Fallback value for UsdLuxDiskLight schema attribute light:shaderId
+    /// Schema identifier and family for UsdLuxDiskLight, Fallback value for UsdLuxDiskLight schema attribute light:shaderId
     const TfToken DiskLight;
     /// \brief "DistantLight"
     /// 
-    /// Schema identifer and family for UsdLuxDistantLight, Fallback value for UsdLuxDistantLight schema attribute light:shaderId
+    /// Schema identifier and family for UsdLuxDistantLight, Fallback value for UsdLuxDistantLight schema attribute light:shaderId
     const TfToken DistantLight;
     /// \brief "DomeLight"
     /// 
-    /// Schema identifer and family for UsdLuxDomeLight, Schema family for UsdLuxDomeLight_1, Fallback value for UsdLuxDomeLight schema attribute light:shaderId, Fallback value for UsdLuxDomeLight_1 schema attribute light:shaderId
+    /// Schema identifier and family for UsdLuxDomeLight, Schema family for UsdLuxDomeLight_1, Fallback value for UsdLuxDomeLight schema attribute light:shaderId, Fallback value for UsdLuxDomeLight_1 schema attribute light:shaderId
     const TfToken DomeLight;
     /// \brief "DomeLight_1"
     /// 
-    /// Schema identifer for UsdLuxDomeLight_1
+    /// Schema identifier for UsdLuxDomeLight_1
     const TfToken DomeLight_1;
     /// \brief "GeometryLight"
     /// 
-    /// Schema identifer and family for UsdLuxGeometryLight, Fallback value for UsdLuxGeometryLight schema attribute light:shaderId
+    /// Schema identifier and family for UsdLuxGeometryLight, Fallback value for UsdLuxGeometryLight schema attribute light:shaderId
     const TfToken GeometryLight;
     /// \brief "LightAPI"
     /// 
-    /// Schema identifer and family for UsdLuxLightAPI
+    /// Schema identifier and family for UsdLuxLightAPI
     const TfToken LightAPI;
     /// \brief "LightFilter"
     /// 
-    /// Schema identifer and family for UsdLuxLightFilter
+    /// Schema identifier and family for UsdLuxLightFilter
     const TfToken LightFilter;
     /// \brief "LightListAPI"
     /// 
-    /// Schema identifer and family for UsdLuxLightListAPI
+    /// Schema identifier and family for UsdLuxLightListAPI
     const TfToken LightListAPI;
     /// \brief "ListAPI"
     /// 
-    /// Schema identifer and family for UsdLuxListAPI
+    /// Schema identifier and family for UsdLuxListAPI
     const TfToken ListAPI;
     /// \brief "MeshLightAPI"
     /// 
-    /// Schema identifer and family for UsdLuxMeshLightAPI
+    /// Schema identifier and family for UsdLuxMeshLightAPI
     const TfToken MeshLightAPI;
     /// \brief "NonboundableLightBase"
     /// 
-    /// Schema identifer and family for UsdLuxNonboundableLightBase
+    /// Schema identifier and family for UsdLuxNonboundableLightBase
     const TfToken NonboundableLightBase;
     /// \brief "PluginLight"
     /// 
-    /// Schema identifer and family for UsdLuxPluginLight
+    /// Schema identifier and family for UsdLuxPluginLight
     const TfToken PluginLight;
     /// \brief "PluginLightFilter"
     /// 
-    /// Schema identifer and family for UsdLuxPluginLightFilter
+    /// Schema identifier and family for UsdLuxPluginLightFilter
     const TfToken PluginLightFilter;
     /// \brief "PortalLight"
     /// 
-    /// Schema identifer and family for UsdLuxPortalLight, Fallback value for UsdLuxPortalLight schema attribute light:shaderId
+    /// Schema identifier and family for UsdLuxPortalLight, Fallback value for UsdLuxPortalLight schema attribute light:shaderId
     const TfToken PortalLight;
     /// \brief "RectLight"
     /// 
-    /// Schema identifer and family for UsdLuxRectLight, Fallback value for UsdLuxRectLight schema attribute light:shaderId
+    /// Schema identifier and family for UsdLuxRectLight, Fallback value for UsdLuxRectLight schema attribute light:shaderId
     const TfToken RectLight;
     /// \brief "ShadowAPI"
     /// 
-    /// Schema identifer and family for UsdLuxShadowAPI
+    /// Schema identifier and family for UsdLuxShadowAPI
     const TfToken ShadowAPI;
     /// \brief "ShapingAPI"
     /// 
-    /// Schema identifer and family for UsdLuxShapingAPI
+    /// Schema identifier and family for UsdLuxShapingAPI
     const TfToken ShapingAPI;
     /// \brief "SphereLight"
     /// 
-    /// Schema identifer and family for UsdLuxSphereLight, Fallback value for UsdLuxSphereLight schema attribute light:shaderId
+    /// Schema identifier and family for UsdLuxSphereLight, Fallback value for UsdLuxSphereLight schema attribute light:shaderId
     const TfToken SphereLight;
     /// \brief "VolumeLightAPI"
     /// 
-    /// Schema identifer and family for UsdLuxVolumeLightAPI
+    /// Schema identifier and family for UsdLuxVolumeLightAPI
     const TfToken VolumeLightAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
