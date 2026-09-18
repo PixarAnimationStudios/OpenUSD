@@ -55,7 +55,8 @@ def Scope "materials"
         def Shader "usduvtexture1"
         {
             uniform token info:id = "UsdUVTexture"
-            asset[] inputs:file.timeSamples = {
+            asset[] testAssetArrayAttr = []
+            asset[] testAssetArrayAttr.timeSamples = {
                 1: [@/home/mtucker/USD/pxr/usd/usdUtils/testenv/textures/clr.1.png@, @/home/mtucker/USD/pxr/usd/usdUtils/testenv/textures/clr.1.png@],
                 2: [@/home/mtucker/USD/pxr/usd/usdUtils/testenv/textures/clr.2.png@, @/home/mtucker/USD/pxr/usd/usdUtils/testenv/textures/clr.2.png@],
             }

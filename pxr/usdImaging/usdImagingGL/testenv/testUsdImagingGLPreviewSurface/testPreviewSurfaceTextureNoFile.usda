@@ -50,7 +50,7 @@ def Scope "Scene" (
                 uniform token info:id = "UsdUVTexture"
                 # This used to cause a crash
                 #asset inputs:file = @Env_StinsonBesach.jpg@
-                float3 inputs:fallback = (0, 0, 1)
+                float4 inputs:fallback = (0, 0, 1, 1)
                 float2 inputs:st.connect = </Scene/Looks/MainMaterial/Primvar.outputs:result>
                 token inputs:wrapS = "mirror"
                 token inputs:wrapT = "repeat"

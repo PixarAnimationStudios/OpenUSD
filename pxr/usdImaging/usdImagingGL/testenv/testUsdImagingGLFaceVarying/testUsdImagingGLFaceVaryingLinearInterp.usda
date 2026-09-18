@@ -47,7 +47,7 @@ def Scope "Scene"
                 color3f inputs:emissiveColor = (0, 0, 0)
                 float inputs:ior = 1.5
                 float inputs:metallic = 0
-                float3 inputs:normal = (0, 1, 0)
+                normal3f inputs:normal = (0, 1, 0)
                 float inputs:occlusion = 1
                 float inputs:opacity = 1
                 float inputs:roughness = 1.0

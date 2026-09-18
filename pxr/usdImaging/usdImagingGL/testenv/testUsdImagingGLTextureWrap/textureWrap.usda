@@ -274,8 +274,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/HwUvTexture_1/Shader/Clamp/Tex.outputs:color>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/HwUvTexture_1/Shader/Clamp/Tex.outputs:color>
                     token outputs:surface
                 }
 
@@ -292,7 +292,7 @@ def Scope "Materials"
                 def Shader "Primvar"
                 {
                     uniform token info:id = "HwPrimvar_1"
-                    uniform token inputs:varname = "uv"
+                    uniform string inputs:varname = "uv"
                     float2 outputs:result
                 }
             }
@@ -305,8 +305,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/HwUvTexture_1/Shader/Repeat/Tex.outputs:color>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/HwUvTexture_1/Shader/Repeat/Tex.outputs:color>
                     token outputs:surface
                 }
 
@@ -323,7 +323,7 @@ def Scope "Materials"
                 def Shader "Primvar"
                 {
                     uniform token info:id = "HwPrimvar_1"
-                    uniform token inputs:varname = "uv"
+                    uniform string inputs:varname = "uv"
                     float2 outputs:result
                 }
             }
@@ -336,8 +336,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/HwUvTexture_1/Shader/Black/Tex.outputs:color>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/HwUvTexture_1/Shader/Black/Tex.outputs:color>
                     token outputs:surface
                 }
 
@@ -354,7 +354,7 @@ def Scope "Materials"
                 def Shader "Primvar"
                 {
                     uniform token info:id = "HwPrimvar_1"
-                    uniform token inputs:varname = "uv"
+                    uniform string inputs:varname = "uv"
                     float2 outputs:result
                 }
             }
@@ -367,8 +367,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/HwUvTexture_1/Shader/Mirror/Tex.outputs:color>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/HwUvTexture_1/Shader/Mirror/Tex.outputs:color>
                     token outputs:surface
                 }
 
@@ -385,7 +385,7 @@ def Scope "Materials"
                 def Shader "Primvar"
                 {
                     uniform token info:id = "HwPrimvar_1"
-                    uniform token inputs:varname = "uv"
+                    uniform string inputs:varname = "uv"
                     float2 outputs:result
                 }
             }
@@ -401,8 +401,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/HwUvTexture_1/TextureWrap/Clamp/Tex.outputs:color>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/HwUvTexture_1/TextureWrap/Clamp/Tex.outputs:color>
                     token outputs:surface
                 }
 
@@ -417,7 +417,7 @@ def Scope "Materials"
                 def Shader "Primvar"
                 {
                     uniform token info:id = "HwPrimvar_1"
-                    uniform token inputs:varname = "uv"
+                    uniform string inputs:varname = "uv"
                     float2 outputs:result
                 }
             }
@@ -430,8 +430,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/HwUvTexture_1/TextureWrap/Repeat/Tex.outputs:color>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/HwUvTexture_1/TextureWrap/Repeat/Tex.outputs:color>
                     token outputs:surface
                 }
 
@@ -446,7 +446,7 @@ def Scope "Materials"
                 def Shader "Primvar"
                 {
                     uniform token info:id = "HwPrimvar_1"
-                    uniform token inputs:varname = "uv"
+                    uniform string inputs:varname = "uv"
                     float2 outputs:result
                 }
             }
@@ -459,8 +459,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/HwUvTexture_1/TextureWrap/Black/Tex.outputs:color>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/HwUvTexture_1/TextureWrap/Black/Tex.outputs:color>
                     token outputs:surface
                 }
 
@@ -475,7 +475,7 @@ def Scope "Materials"
                 def Shader "Primvar"
                 {
                     uniform token info:id = "HwPrimvar_1"
-                    uniform token inputs:varname = "uv"
+                    uniform string inputs:varname = "uv"
                     float2 outputs:result
                 }
             }
@@ -488,8 +488,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/HwUvTexture_1/TextureWrap/Mirror/Tex.outputs:color>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/HwUvTexture_1/TextureWrap/Mirror/Tex.outputs:color>
                     token outputs:surface
                 }
 
@@ -504,7 +504,7 @@ def Scope "Materials"
                 def Shader "Primvar"
                 {
                     uniform token info:id = "HwPrimvar_1"
-                    uniform token inputs:varname = "uv"
+                    uniform string inputs:varname = "uv"
                     float2 outputs:result
                 }
             }
@@ -518,8 +518,8 @@ def Scope "Materials"
             {
                 uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                 uniform token info:implementationSource = "sourceAsset"
-                uniform float3 inputs:diffuseColor = (1, 0, 0)
-                add uniform float3 inputs:diffuseColor.connect = </Materials/HwUvTexture_1/Fallback/Tex.outputs:color>
+                uniform color3f inputs:diffuseColor = (1, 0, 0)
+                add uniform color3f inputs:diffuseColor.connect = </Materials/HwUvTexture_1/Fallback/Tex.outputs:color>
                 token outputs:surface
             }
 
@@ -534,7 +534,7 @@ def Scope "Materials"
             def Shader "Primvar"
             {
                 uniform token info:id = "HwPrimvar_1"
-                uniform token inputs:varname = "uv"
+                uniform string inputs:varname = "uv"
                 float2 outputs:result
             }
         }
@@ -552,8 +552,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/UsdUVTexture/Shader/Clamp/Tex.outputs:rgb>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/UsdUVTexture/Shader/Clamp/Tex.outputs:rgb>
                     token outputs:surface
                 }
 
@@ -583,8 +583,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/UsdUVTexture/Shader/Repeat/Tex.outputs:rgb>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/UsdUVTexture/Shader/Repeat/Tex.outputs:rgb>
                     token outputs:surface
                 }
 
@@ -614,8 +614,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/UsdUVTexture/Shader/Black/Tex.outputs:rgb>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/UsdUVTexture/Shader/Black/Tex.outputs:rgb>
                     token outputs:surface
                 }
 
@@ -645,8 +645,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/UsdUVTexture/Shader/Mirror/Tex.outputs:rgb>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/UsdUVTexture/Shader/Mirror/Tex.outputs:rgb>
                     token outputs:surface
                 }
 
@@ -679,8 +679,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/UsdUVTexture/TextureWrap/Clamp/Tex.outputs:rgb>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/UsdUVTexture/TextureWrap/Clamp/Tex.outputs:rgb>
                     token outputs:surface
                 }
 
@@ -708,8 +708,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/UsdUVTexture/TextureWrap/Repeat/Tex.outputs:rgb>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/UsdUVTexture/TextureWrap/Repeat/Tex.outputs:rgb>
                     token outputs:surface
                 }
 
@@ -737,8 +737,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/UsdUVTexture/TextureWrap/Black/Tex.outputs:rgb>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/UsdUVTexture/TextureWrap/Black/Tex.outputs:rgb>
                     token outputs:surface
                 }
 
@@ -766,8 +766,8 @@ def Scope "Materials"
                 {
                     uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                     uniform token info:implementationSource = "sourceAsset"
-                    uniform float3 inputs:diffuseColor = (1, 0, 0)
-                    add uniform float3 inputs:diffuseColor.connect = </Materials/UsdUVTexture/TextureWrap/Mirror/Tex.outputs:rgb>
+                    uniform color3f inputs:diffuseColor = (1, 0, 0)
+                    add uniform color3f inputs:diffuseColor.connect = </Materials/UsdUVTexture/TextureWrap/Mirror/Tex.outputs:rgb>
                     token outputs:surface
                 }
 
@@ -796,8 +796,8 @@ def Scope "Materials"
             {
                 uniform asset info:glslfx:sourceAsset = @surface_shader.glslfx@
                 uniform token info:implementationSource = "sourceAsset"
-                uniform float3 inputs:diffuseColor = (1, 0, 0)
-                add uniform float3 inputs:diffuseColor.connect = </Materials/UsdUVTexture/Fallback/Tex.outputs:rgb>
+                uniform color3f inputs:diffuseColor = (1, 0, 0)
+                add uniform color3f inputs:diffuseColor.connect = </Materials/UsdUVTexture/Fallback/Tex.outputs:rgb>
                 token outputs:surface
             }
 

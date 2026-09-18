@@ -27,7 +27,7 @@ def Xform "TexModel" (
 
     def Material "boardMat"
     {
-        token inputs:frame:stPrimvarName = "st"
+        string inputs:frame:stPrimvarName = "st"
         token outputs:surface.connect = </TexModel/boardMat/PBRShader.outputs:surface>
 
         def Shader "PBRShader"
@@ -42,7 +42,7 @@ def Xform "TexModel" (
         def Shader "stReader"
         {
             uniform token info:id = "UsdPrimvarReader_float2"
-            token inputs:varname.connect = </TexModel/boardMat.inputs:frame:stPrimvarName>
+            string inputs:varname.connect = </TexModel/boardMat.inputs:frame:stPrimvarName>
             float2 outputs:result
         }
 
