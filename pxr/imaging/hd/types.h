@@ -365,9 +365,6 @@ TfHashAppend(HashState &h, HdTupleType const &tt)
 }
 
 /// Stream output for HdTupleType, e.g. "HdTupleType(HdTypeFloatVec3, 1)".
-/// Provided so that a VtValue holding an HdTupleType (for instance the
-/// element type published in HdExtGpuBufferSchema) streams to a readable
-/// value instead of falling back to Vt_StreamOutGeneric's "<'type' @ addr>".
 HD_API
 std::ostream& operator<<(std::ostream& out, const HdTupleType& tupleType);
 

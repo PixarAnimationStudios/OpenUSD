@@ -5,39 +5,24 @@
 // https://openusd.org/license.
 //
 #include "pxr/imaging/hdSt/extGpuBufferSource.h"
-#include "pxr/imaging/hdSt/extGpuBuffer.h"
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/hash.h"
 
-#include <atomic>
+#include <cstdint>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStExtGpuBufferSource::HdStExtGpuBufferSource(
     TfToken const &name,
-    HdStExtGpuBufferDesc const &hdDesc)
+    HdStExtGpuBufferDesc const &desc)
     : _name(name)
+    , _descriptor(desc)
 {
-    _descriptor = hdDesc;
-
-    if (hdDesc.importedBuffer) {
-        // Imported route: routing already resolved a real backend buffer
-        // aliasing the producer's memory, so there is nothing to wrap. The
-        // descriptor copied above shares ownership of it, which is what keeps
-        // it alive until it reaches a buffer array range.
-        _descriptor.cachedHgiHandle = hdDesc.GetImportedHandle();
-        return;
-    }
-
-    size_t byteSize = hdDesc.rawHandleByteSize > 0
-        ? hdDesc.rawHandleByteSize
-        : hdDesc.numElements * HdDataSizeOfTupleType(hdDesc.tupleType);
-
-    _ownedExternalGpuBuffer = std::make_unique<HdStExtGpuBuffer>(
-        hdDesc.rawHandle, byteSize);
-
-    _descriptor.cachedHgiHandle = HgiBufferHandle(
-        _ownedExternalGpuBuffer.get(), HdSt_GetNextExtGpuBufferHandleId());
+    // Nothing to build. The descriptor already holds a strong reference to the
+    // buffer and the buffer already owns its Hgi resource, so there is no
+    // wrapper to construct here and no handle id to mint -- both used to be
+    // this constructor's job.
 }
 
 HdStExtGpuBufferSource::~HdStExtGpuBufferSource() = default;
@@ -69,35 +54,42 @@ HdStExtGpuBufferSource::Resolve()
 size_t
 HdStExtGpuBufferSource::ComputeHash() const
 {
-    // The default HdBufferSource::ComputeHash hashes GetData() bytes, which
-    // dereferences nullptr for external GPU sources (no CPU payload).  Hash
-    // the GPU-side identity instead.  This is intentionally stable across
-    // animation frames -- HdStMesh::_PopulateVertexPrimvars transitions the
-    // BAR to mutable on the second dirty frame and resets the immutable
-    // share key, so this hash only gates first-time cross-rprim sharing.
+    // HdBufferSource::ComputeHash hashes the bytes at GetData(), which is null
+    // here, so hash the GPU-side identity instead: which buffer, and where in
+    // it this stream sits.
+    //
+    // The buffer's address stands in for its identity. That is sound because
+    // the descriptor holds a strong reference, so the object cannot be
+    // destroyed and a new one land at the same address while this hash is
+    // live.
+    //
+    // Deliberately stable across animation frames: HdStMesh's primvar
+    // population moves the range to mutable on the second dirty frame and
+    // resets the immutable share key, so this hash only gates first-time
+    // cross-rprim sharing.
     return TfHash::Combine(
         _name,
         _descriptor.tupleType,
         _descriptor.numElements,
         _descriptor.byteOffset,
         _descriptor.byteStride,
-        _descriptor.rawHandle,
-        // An import-only producer leaves rawHandle at 0, so the memory identity
-        // is what distinguishes its streams from each other.
-        _descriptor.externalMemoryHandle,
-        _descriptor.memoryOffset);
+        reinterpret_cast<uintptr_t>(_descriptor.externalBuffer.get()));
 }
 
 void const *
 HdStExtGpuBufferSource::GetData() const
 {
-    // External GPU buffers have no CPU-side data.
-    // CopyData callers must detect this source (dynamic_cast) first.
-    TF_CODING_ERROR("GetData() called on HdStExtGpuBufferSource '%s'. "
-                    "External GPU buffer sources have no CPU data; "
-                    "CopyData must use the GPU-to-GPU path.",
+    TF_CODING_ERROR("GetData() called on HdStExtGpuBufferSource '%s'. A "
+                    "GPU-backed source has no CPU data; check IsGpuBacked() "
+                    "and take the GPU-to-GPU path.",
                     _name.GetText());
     return nullptr;
+}
+
+bool
+HdStExtGpuBufferSource::IsGpuBacked() const
+{
+    return true;
 }
 
 HdTupleType
@@ -115,9 +107,21 @@ HdStExtGpuBufferSource::GetNumElements() const
 bool
 HdStExtGpuBufferSource::_CheckValid() const
 {
-    return (_descriptor.rawHandle != 0 || _descriptor.importedBuffer)
+    return _descriptor.externalBuffer
+        && _descriptor.externalBuffer->GetBuffer()
         && _descriptor.numElements > 0
         && _descriptor.tupleType.type != HdTypeInvalid;
+}
+
+HdStExtGpuBufferSource const *
+HdSt_GetExtGpuBufferSource(HdBufferSourceSharedPtr const &source)
+{
+    if (!source || !source->IsGpuBacked()) {
+        return nullptr;
+    }
+    // IsGpuBacked() is Storm's own signal and this is the only Storm source
+    // that sets it, so the type is known rather than guessed.
+    return static_cast<HdStExtGpuBufferSource const *>(source.get());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -6,7 +6,6 @@
 //
 #include "pxr/base/work/loops.h"
 
-#include "pxr/imaging/hd/extGpuSyncSchema.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdSt/copyComputation.h"
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
@@ -30,6 +29,8 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/hash.h"
+
+#include <algorithm>
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include <MaterialXGenShader/Shader.h>
@@ -147,32 +148,6 @@ HdStResourceRegistry::HdStResourceRegistry(Hgi * const hgi)
 
 HdStResourceRegistry::~HdStResourceRegistry()
 {
-    // Imported buffers are refcounted, so in a well-behaved shutdown every one
-    // of them is already gone: the last range referencing it released it. Any
-    // that are still alive have a holder outliving the renderer, so detach them
-    // -- they must not erase from a cache that is about to die -- and let them
-    // release through the Hgi, which we do not own and which therefore outlives
-    // us.
-    size_t numOutliving = 0;
-    for (auto const &entry : _extGpuImportedBuffers) {
-        if (HdSt_ImportedExtGpuBufferSharedPtr const buffer =
-                entry.second.lock()) {
-            buffer->DetachFromRegistry();
-            ++numOutliving;
-        }
-    }
-    if (numOutliving > 0) {
-        TF_WARN("%zu imported external GPU buffer(s) outlived the resource "
-                "registry; they will be released when their last holder is.",
-                numOutliving);
-    }
-    _extGpuImportedBuffers.clear();
-
-    for (auto const &entry : _extGpuImportedSemaphores) {
-        _hgi->DestroyExternalSemaphore(entry.second);
-    }
-    _extGpuImportedSemaphores.clear();
-
     // XXX Ideally all the HdInstanceRegistry would get destroy here and
     // they cleanup all GPU resources. Since that mechanism isn't in place
     // yet, we call GarbageCollect to emulate this behavior.
@@ -180,120 +155,62 @@ HdStResourceRegistry::~HdStResourceRegistry()
     _hgi->GarbageCollect();
 }
 
-HdSt_ImportedExtGpuBufferSharedPtr
-HdStResourceRegistry::GetOrCreateImportedExtGpuBuffer(
-    HdStExtGpuBufferDesc const &desc)
+void
+HdStResourceRegistry::RegisterExtGpuBufferArena(
+    HgiExternalBufferArena *arena)
 {
-    if (!_hgi || !desc.CanImport()) {
-        return nullptr;
+    if (!arena) {
+        return;
     }
-
-    const size_t byteSize = desc.rawHandleByteSize > 0
-        ? desc.rawHandleByteSize
-        : desc.numElements * HdDataSizeOfTupleType(desc.tupleType);
-
-    const HdSt_ImportedExtGpuBuffer::Key key(
-        desc.deviceUuid, desc.externalHandleType,
-        desc.memoryOffset, byteSize, desc.externalMemoryHandle);
-
-    std::lock_guard<std::mutex> lock(_extGpuImportMutex);
-
-    const auto it = _extGpuImportedBuffers.find(key);
-    if (it != _extGpuImportedBuffers.end()) {
-        if (HdSt_ImportedExtGpuBufferSharedPtr const cached =
-                it->second.lock()) {
-            return cached;
-        }
-        // Expired but not yet erased: its holder let go on another thread and
-        // its destructor has not reached _EraseImportedExtGpuBuffer. Import
-        // again and overwrite the entry below; the erase will see an entry that
-        // is no longer expired and leave it alone.
+    // Called while routing a prim's primvars, which happens during Sync and
+    // therefore in parallel, hence the lock. The list is short -- one entry per
+    // application device sharing buffers, which in practice is one.
+    std::lock_guard<std::mutex> lock(_extGpuArenaMutex);
+    if (std::find(_extGpuArenas.begin(), _extGpuArenas.end(), arena) ==
+            _extGpuArenas.end()) {
+        _extGpuArenas.push_back(arena);
     }
-
-    HgiExternalMemoryBufferDesc importDesc;
-    importDesc.externalHandle = desc.externalMemoryHandle;
-    importDesc.handleType =
-        desc.externalHandleType == HdExtGpuBufferSchemaTokens->opaqueFd
-            ? HgiExternalHandleTypeOpaqueFd
-            : HgiExternalHandleTypeOpaqueWin32;
-    importDesc.memoryBlockSize = desc.memoryBlockSize;
-    importDesc.memoryOffset = desc.memoryOffset;
-    importDesc.byteSize = byteSize;
-    importDesc.dedicated = desc.dedicated;
-    importDesc.usage = HgiBufferUsageVertex | HgiBufferUsageStorage;
-    importDesc.debugName = "ExtGpuImportedBuffer";
-
-    HgiBufferHandle imported = _hgi->CreateBufferFromExternalMemory(importDesc);
-    if (!imported) {
-        return nullptr;
-    }
-
-    // Hold the producer's allocation for as long as this buffer can be bound.
-    // Set once here rather than per caller: the buffer is shared by every prim
-    // naming this allocation, and they all resolve the same keepalive.
-    imported->SetKeepalive(desc.producerKeepalive);
-
-    HdSt_ImportedExtGpuBufferSharedPtr const buffer =
-        std::make_shared<HdSt_ImportedExtGpuBuffer>(imported, key, _hgi, this);
-    _extGpuImportedBuffers[key] = buffer;
-    return buffer;
 }
 
 void
-HdStResourceRegistry::_EraseImportedExtGpuBuffer(
-    HdSt_ImportedExtGpuBuffer::Key const &key)
+HdStResourceRegistry::_EncodeExtGpuBufferWaits()
 {
-    std::lock_guard<std::mutex> lock(_extGpuImportMutex);
-
-    const auto it = _extGpuImportedBuffers.find(key);
-    // Only an expired entry is the caller's to erase: if this allocation was
-    // imported again while the caller was being destroyed, the entry names that
-    // newer buffer and must be left alone.
-    if (it != _extGpuImportedBuffers.end() && it->second.expired()) {
-        _extGpuImportedBuffers.erase(it);
+    // Order the producer's writes before anything we are about to do that
+    // reads its buffers: the imports and GPU-to-GPU copies this commit will
+    // issue, and the draws that will bind them.
+    //
+    // Here rather than in Hgi::StartFrame, which is optional, is driven by
+    // whichever hdx tasks a client happens to assemble, and is emitted more
+    // than once per application frame by a client that runs several render
+    // passes. A commit, by contrast, happens exactly when Storm is about to
+    // touch these buffers. The arena collapses repeat calls, so several
+    // commits in one application frame produce one wait, and an application
+    // that published nothing produces none -- which matters, because waiting
+    // on a binary semaphore nobody will signal hangs the frame.
+    std::lock_guard<std::mutex> lock(_extGpuArenaMutex);
+    for (HgiExternalBufferArena *arena : _extGpuArenas) {
+        arena->EncodeAppDoneWait();
     }
 }
 
-uint64_t
-HdStResourceRegistry::GetOrCreateImportedExtGpuSemaphore(
-    uint64_t externalHandle,
-    TfToken const &handleType,
-    TfToken const &kind)
+void
+HdStResourceRegistry::_EncodeExtGpuBufferSignals()
 {
-    if (!_hgi || !externalHandle || handleType.IsEmpty()) {
-        return 0;
+    // Tell the producer we are done reading. For a buffer we copied out of,
+    // that is exactly true: the copy was issued above and nothing else reads
+    // it.
+    //
+    // For a directly bound buffer it means less, and deliberately so: such a
+    // buffer stays bound and is re-read by every draw until the scene replaces
+    // it, so there is no per-frame moment when Storm has finished with it. A
+    // producer that wants to overwrite a directly bound buffer in place cannot
+    // get that guarantee from a semaphore and should write into a different
+    // buffer instead; what makes a buffer safe to reclaim is the arena letting
+    // go of it after the GPU retires, not this signal.
+    std::lock_guard<std::mutex> lock(_extGpuArenaMutex);
+    for (HgiExternalBufferArena *arena : _extGpuArenas) {
+        arena->EncodeHgiDoneSignal();
     }
-    // Absent kind means binary; anything else must be honored exactly, so
-    // leave it to Hgi to accept or reject.
-    if (!kind.IsEmpty() &&
-        kind != HdExtGpuSyncSchemaTokens->binary &&
-        kind != HdExtGpuSyncSchemaTokens->timeline) {
-        return 0;
-    }
-
-    const _ExtGpuSemaphoreKey key(handleType, kind, externalHandle);
-
-    std::lock_guard<std::mutex> lock(_extGpuImportMutex);
-
-    const auto it = _extGpuImportedSemaphores.find(key);
-    if (it != _extGpuImportedSemaphores.end()) {
-        return it->second;
-    }
-
-    const uint64_t semaphore = _hgi->ImportExternalSemaphore(
-        externalHandle,
-        handleType == HdExtGpuSyncSchemaTokens->opaqueFd
-            ? HgiExternalHandleTypeOpaqueFd
-            : HgiExternalHandleTypeOpaqueWin32,
-        kind == HdExtGpuSyncSchemaTokens->timeline
-            ? HgiSemaphoreKindTimeline
-            : HgiSemaphoreKindBinary);
-    if (!semaphore) {
-        return 0;
-    }
-
-    _extGpuImportedSemaphores.emplace(key, semaphore);
-    return semaphore;
 }
 
 void HdStResourceRegistry::InvalidateShaderRegistry()
@@ -1013,6 +930,10 @@ HdStResourceRegistry::_Commit()
     // handles (for bindless textures).
     _CommitTextures();
 
+    // Before anything that reads an application-shared buffer -- the imports
+    // and GPU-to-GPU copies below, and the draws that follow this commit.
+    _EncodeExtGpuBufferWaits();
+
     {
         HD_TRACE_SCOPE("Resolve");
         // 1a. resolve phase:
@@ -1236,6 +1157,9 @@ HdStResourceRegistry::_Commit()
     for (_PendingComputationList& compVec : _pendingComputations) {
         compVec.clear();
     }
+
+    // After the copies out of the application's buffers have been issued.
+    _EncodeExtGpuBufferSignals();
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->committed);
 }

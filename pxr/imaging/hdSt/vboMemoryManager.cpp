@@ -669,8 +669,9 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
     }
     size_t vboOffset = bytesPerElement * _elementOffset;
 
-    if (auto const *extSrc = dynamic_cast<HdStExtGpuBufferSource const *>(
-            bufferSource.get())) {
+    // GPU-backed source: no CPU payload to upload, so copy buffer to buffer.
+    // Asked through the virtual rather than sniffed with RTTI.
+    if (auto const *extSrc = HdSt_GetExtGpuBufferSource(bufferSource)) {
         auto const &desc = extSrc->GetDescriptor();
 
         size_t const elemSize = HdDataSizeOfTupleType(
@@ -685,7 +686,7 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
 
         if (stride == 0) {
             HgiBufferGpuToGpuOp copyOp;
-            copyOp.gpuSourceBuffer       = desc.cachedHgiHandle;
+            copyOp.gpuSourceBuffer       = desc.GetHandle();
             copyOp.sourceByteOffset      = desc.byteOffset;
             copyOp.byteSize              = srcSize;
             copyOp.gpuDestinationBuffer  = VBO->GetHandle();
@@ -701,7 +702,7 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
                                 (double)totalCopy);
             for (size_t e = 0; e < numElems; ++e) {
                 HgiBufferGpuToGpuOp copyOp;
-                copyOp.gpuSourceBuffer       = desc.cachedHgiHandle;
+                copyOp.gpuSourceBuffer       = desc.GetHandle();
                 copyOp.sourceByteOffset      = desc.byteOffset
                                              + e * stride;
                 copyOp.byteSize              = elemSize;

@@ -108,8 +108,8 @@ TF_REGISTRY_FUNCTION(TfEnum)
 std::ostream&
 operator<<(std::ostream& out, const HdTupleType& tupleType)
 {
-    // Prefer the registered enum name (e.g. "HdTypeFloatVec3"); fall back to
-    // the integer value when the type is unregistered so output is never empty.
+    // Fall back to the integer value for an unregistered type, so the output
+    // is never empty.
     const std::string typeName = TfEnum::GetName(tupleType.type);
     out << "HdTupleType(";
     if (typeName.empty()) {

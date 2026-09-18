@@ -56,6 +56,13 @@ public:
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
     HGIVULKAN_API
     HANDLE GetWin32HandleForMemory(VkDeviceMemory memory);
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
+    /// Exports \p memory as a POSIX file descriptor another API can import,
+    /// or -1 on failure. Each call returns a NEW fd -- vkGetMemoryFdKHR
+    /// transfers ownership -- so the caller closes it, or hands it to an
+    /// import that takes it over.
+    HGIVULKAN_API
+    int GetFdForMemory(VkDeviceMemory memory);
 #endif
 
     /// Returns the command queue which manages command buffers submission.

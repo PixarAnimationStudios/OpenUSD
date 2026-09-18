@@ -14,6 +14,8 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/trace/trace.h"
 
+#include <vector>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define NOT_EMPTY_NAME(s) ((s).empty() ? "UNNAMED" : (s).c_str())
@@ -94,81 +96,6 @@ Hgi::CreateBuffer(HgiBufferDesc const& desc)
         "%s: vertex buffers must provide stride!",
             NOT_EMPTY_NAME(desc.debugName));
     return _CreateBuffer(desc);
-}
-
-HgiBufferHandle
-Hgi::CreateExternalBuffer(uint64_t /*rawHandle*/, size_t /*byteSize*/,
-                          HgiBufferUsage /*usage*/)
-{
-    // Backends that support adopting a foreign native handle override this.
-    return HgiBufferHandle();
-}
-
-HgiBufferHandle
-Hgi::CreateInteropBuffer(size_t /*byteSize*/, HgiBufferUsage /*usage*/,
-                         HgiInteropBufferInfo* outInfo)
-{
-    // Backends that support exportable interop allocations override this.
-    if (outInfo) {
-        *outInfo = HgiInteropBufferInfo();
-    }
-    return HgiBufferHandle();
-}
-
-HgiBufferHandle
-Hgi::CreateBufferFromExternalMemory(
-    HgiExternalMemoryBufferDesc const& /*desc*/)
-{
-    // Backends that can import foreign memory allocations override this.
-    return HgiBufferHandle();
-}
-
-uint64_t
-Hgi::ImportExternalSemaphore(uint64_t /*externalHandle*/,
-                             HgiExternalHandleType /*handleType*/,
-                             HgiSemaphoreKind /*kind*/)
-{
-    // Backends that can import foreign semaphores override this.
-    return 0;
-}
-
-std::string
-Hgi::GetDeviceUuid() const
-{
-    // Backends with a queryable physical-device identity override this.
-    return std::string();
-}
-
-uint64_t
-Hgi::GetLogicalDeviceId() const
-{
-    // Backends that own a logical device object override this.
-    return 0;
-}
-
-uint64_t
-Hgi::CreateExternalSemaphore(uint64_t* outExternalHandle)
-{
-    // Backends that support external (interop) semaphores override this.
-    if (outExternalHandle) {
-        *outExternalHandle = 0;
-    }
-    return 0;
-}
-
-void
-Hgi::DestroyExternalSemaphore(uint64_t /*semaphore*/)
-{
-}
-
-void
-Hgi::QueueWaitExternalSemaphore(uint64_t /*semaphore*/)
-{
-}
-
-void
-Hgi::QueueSignalExternalSemaphore(uint64_t /*semaphore*/)
-{
 }
 
 HgiResourceBindingsHandle
@@ -451,6 +378,40 @@ uint64_t
 Hgi::GetUniqueId()
 {
     return _uniqueIdCounter.fetch_add(1);
+}
+
+void
+Hgi::_GarbageCollectExternalBufferArenas()
+{
+    // Collect the arenas under the lock but sweep outside it: a sweep runs
+    // buffer destructors, and those have no business reentering Hgi to ask for
+    // an arena while we hold the registry mutex.
+    std::vector<HgiExternalBufferArenaSharedPtr> arenas;
+    {
+        std::lock_guard<std::mutex> lock(_externalBufferArenasMutex);
+        arenas.reserve(_externalBufferArenas.size());
+        for (auto const& entry : _externalBufferArenas) {
+            arenas.push_back(entry.second);
+        }
+    }
+    for (HgiExternalBufferArenaSharedPtr const& arena : arenas) {
+        arena->GarbageCollect();
+    }
+}
+
+void
+Hgi::_DestroyExternalBufferArenas()
+{
+    std::map<_ExternalBufferArenaKey, HgiExternalBufferArenaSharedPtr> arenas;
+    {
+        std::lock_guard<std::mutex> lock(_externalBufferArenasMutex);
+        arenas.swap(_externalBufferArenas);
+    }
+    // One last sweep each, so buffers whose work has retired are released
+    // through the normal path before the arena takes the rest down with it.
+    for (auto const& entry : arenas) {
+        entry.second->GarbageCollect();
+    }
 }
 
 bool

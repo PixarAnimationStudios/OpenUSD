@@ -201,7 +201,7 @@ HgiVulkanBuffer::HgiVulkanBuffer(
 
 // Picks a memory type that the buffer accepts and that is device local. For
 // imported memory this must be a type the exporting allocation also used;
-// requesting DEVICE_LOCAL matches how CreateInteropBuffer allocates
+// requesting DEVICE_LOCAL matches how the exportable allocation is made
 // (VMA_MEMORY_USAGE_GPU_ONLY), so the compatible-type sets intersect.
 static uint32_t
 _SelectDeviceLocalMemoryType(HgiVulkanDevice* device, uint32_t typeBits)
@@ -228,7 +228,7 @@ _SelectDeviceLocalMemoryType(HgiVulkanDevice* device, uint32_t typeBits)
 
 HgiVulkanBuffer::HgiVulkanBuffer(
     HgiVulkan* hgi,
-    HgiExternalMemoryBufferDesc const& desc)
+    HgiVulkanImportBufferDesc const& desc)
     : HgiBuffer(HgiBufferDesc())
     , _hgi(hgi)
     , _vkBuffer(nullptr)

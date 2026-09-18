@@ -68,6 +68,9 @@ HgiGL::HgiGL()
 
 HgiGL::~HgiGL()
 {
+    // Before the device goes: an arena owns GL objects, and the GL context
+    // that can delete them is current now and may not be later.
+    _DestroyExternalBufferArenas();
     _garbageCollector.PerformGarbageCollection();
     delete _device;
 }
@@ -279,6 +282,12 @@ HgiGL::EndFrame()
         _garbageCollector.PerformGarbageCollection();
         _device->GarbageCollect();
 
+        // Sweep external buffers on the same cadence as everything else.
+        // Doing it only in GarbageCollect() would mean nothing reclaims them
+        // in normal operation: Storm calls that just once, from its resource
+        // registry's destructor.
+        _GarbageCollectExternalBufferArenas();
+
         // End Full Frame debug label
         #if defined(GL_KHR_debug)
         if (GARCH_GLAPI_HAS(KHR_debug)) {
@@ -300,6 +309,9 @@ HgiGL::GarbageCollect()
 
     _garbageCollector.PerformGarbageCollection();
     _device->GarbageCollect();
+    // External buffers nobody references any more, once the GPU has retired
+    // the work that named them.
+    _GarbageCollectExternalBufferArenas();
 
     #if defined(GL_KHR_debug)
     if (GARCH_GLAPI_HAS(KHR_debug)) {

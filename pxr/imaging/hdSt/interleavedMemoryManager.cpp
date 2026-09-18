@@ -734,8 +734,9 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
         HdDataSizeOfTupleType(bufferSource->GetTupleType());
     size_t const elementStride = _stripedBuffer->GetElementStride();
 
-    if (auto const *extSrc = dynamic_cast<HdStExtGpuBufferSource const *>(
-            bufferSource.get())) {
+    // GPU-backed source: no CPU payload to upload, so copy buffer to buffer.
+    // Asked through the virtual rather than sniffed with RTTI.
+    if (auto const *extSrc = HdSt_GetExtGpuBufferSource(bufferSource)) {
         auto const &desc = extSrc->GetDescriptor();
 
         size_t const srcStride = (desc.byteStride > 0)
@@ -748,7 +749,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
 
         for (size_t i = 0; i < _numElements; ++i) {
             HgiBufferGpuToGpuOp copyOp;
-            copyOp.gpuSourceBuffer      = desc.cachedHgiHandle;
+            copyOp.gpuSourceBuffer      = desc.GetHandle();
             copyOp.sourceByteOffset     = desc.byteOffset + i * srcStride;
             copyOp.byteSize             = elemSize;
             copyOp.gpuDestinationBuffer = VBO->GetHandle();

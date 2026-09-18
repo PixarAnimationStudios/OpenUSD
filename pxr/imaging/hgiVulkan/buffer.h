@@ -8,11 +8,54 @@
 #define PXR_IMAGING_HGIVULKAN_BUFFER_H
 
 #include "pxr/imaging/hgi/buffer.h"
-#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/enums.h"
+#include "pxr/imaging/hgi/externalBuffer.h"
 #include "pxr/imaging/hgiVulkan/api.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+/// \struct HgiVulkanImportBufferDesc
+///
+/// A foreign memory allocation to import on this device and bind a new
+/// VkBuffer into, so HgiVulkan can read memory another device -- or another
+/// API -- allocated.
+///
+/// This names the *allocation*, not a buffer object, and it has to: Vulkan
+/// offers no way to ask a VkBuffer which memory it is bound to, so a caller
+/// sharing a buffer for import must supply the allocation's identity itself.
+/// A VkBuffer on the same logical device needs none of this and goes through
+/// HgiVulkanExternalBufferArena::RegisterBuffer instead.
+struct HgiVulkanImportBufferDesc
+{
+    /// OS-shareable handle naming the memory allocation. On Windows the caller
+    /// keeps ownership; on Linux the import takes over the fd, so pass a
+    /// dup() if it is needed again.
+    uint64_t externalHandle = 0;
+
+    /// How to interpret externalHandle. Never inferred from the value.
+    HgiExternalHandleType handleType = HgiExternalHandleTypeOpaqueWin32;
+
+    /// Size of the whole memory block the handle names. The import covers the
+    /// entire block even when only a window of it is used here.
+    size_t memoryBlockSize = 0;
+
+    /// Offset of the buffer within that block. Distinct from any offset a
+    /// consumer applies within the buffer.
+    size_t memoryOffset = 0;
+
+    /// Size of the buffer to bind at memoryOffset.
+    size_t byteSize = 0;
+
+    /// Whether the producer made a dedicated allocation. Must match, or the
+    /// import fails.
+    bool dedicated = false;
+
+    /// What the consumer may bind the resulting buffer for.
+    HgiBufferUsage usage = 0;
+
+    std::string debugName;
+};
 
 class HgiVulkan;
 class HgiVulkanCommandBuffer;
@@ -115,6 +158,9 @@ public:
 
 protected:
     friend class HgiVulkan;
+    // Builds the register/import/exportable variants below on behalf of
+    // HgiVulkanExternalBufferArena.
+    friend class HgiVulkanExternalBuffer;
 
     // Constructor for making buffers
     HGIVULKAN_API
@@ -147,7 +193,7 @@ protected:
     HGIVULKAN_API
     HgiVulkanBuffer(
         HgiVulkan* hgi,
-        HgiExternalMemoryBufferDesc const& desc);
+        HgiVulkanImportBufferDesc const& desc);
 
 private:
     HgiVulkanBuffer() = delete;

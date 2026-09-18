@@ -16,6 +16,7 @@
 #include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/computeCmds.h"
 #include "pxr/imaging/hgi/computeCmdsDesc.h"
+#include "pxr/imaging/hgi/externalBufferArena.h"
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/graphicsPipeline.h"
@@ -28,7 +29,11 @@
 #include "pxr/imaging/hgi/version.h"
 
 #include <atomic>
+#include <map>
 #include <memory>
+#include <mutex>
+#include <typeindex>
+#include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,73 +41,6 @@ class HgiCapabilities;
 class HgiIndirectCommandEncoder;
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
-
-/// \enum HgiExternalHandleType
-///
-/// How an OS-shareable handle to external memory or an external semaphore
-/// should be interpreted. The kind is never inferred from the handle value --
-/// a Win32 NT handle and a POSIX fd are both small integers.
-enum HgiExternalHandleType
-{
-    HgiExternalHandleTypeOpaqueWin32 = 0,
-    HgiExternalHandleTypeOpaqueFd,
-};
-
-/// \enum HgiSemaphoreKind
-///
-/// Flavour of an external semaphore. OpenGL can only import binary
-/// semaphores, so binary is the interop lowest common denominator.
-enum HgiSemaphoreKind
-{
-    HgiSemaphoreKindBinary = 0,
-    HgiSemaphoreKindTimeline,
-};
-
-/// \struct HgiInteropBufferInfo
-///
-/// Describes an interop-allocated buffer's external memory so another GPU API
-/// (e.g. OpenGL via GL_EXT_memory_object) can import and alias the same memory.
-/// Returned by Hgi::CreateInteropBuffer.
-struct HgiInteropBufferInfo
-{
-    // OS-shareable handle to the memory (a Win32 NT handle cast to uint64, or an
-    // fd). 0 if interop is unsupported. The importer owns/closes it per platform
-    // convention (fd: importer takes ownership; Win32: caller should close).
-    uint64_t externalHandle = 0;
-    // Total size of the memory block the handle refers to, and the buffer's
-    // offset within it -- both required to import the memory in the other API.
-    size_t   memoryBlockSize = 0;
-    size_t   memoryOffset = 0;
-    // Whether the allocation is a dedicated memory object.
-    bool     dedicated = false;
-};
-
-/// \struct HgiExternalMemoryBufferDesc
-///
-/// Describes a foreign memory allocation to import and wrap in a buffer of this
-/// backend, so the backend can read memory another device allocated. The
-/// producer-side counterpart is HgiInteropBufferInfo.
-struct HgiExternalMemoryBufferDesc
-{
-    // OS-shareable handle naming the memory ALLOCATION (not a buffer object).
-    // The caller retains ownership on Win32; on Linux the import takes over the
-    // fd, so pass a dup() if the handle is needed again.
-    uint64_t externalHandle = 0;
-    // How to interpret externalHandle. Callers must set this explicitly.
-    HgiExternalHandleType handleType = HgiExternalHandleTypeOpaqueWin32;
-    // Size of the whole memory block the handle refers to. The import allocates
-    // the full block even when only byteSize of it is used here.
-    size_t memoryBlockSize = 0;
-    // Offset of the buffer within that block.
-    size_t memoryOffset = 0;
-    // Size of the buffer to create at memoryOffset.
-    size_t byteSize = 0;
-    // Must match how the producer allocated the memory or the import fails.
-    bool dedicated = false;
-    HgiBufferUsage usage = 0;
-    std::string debugName;
-};
-
 
 /// \class Hgi
 ///
@@ -294,92 +232,6 @@ public:
     HGI_API
     HgiBufferHandle CreateBuffer(HgiBufferDesc const & desc);
 
-    /// Wrap an externally-owned native GPU buffer in a NON-OWNING HgiBuffer so
-    /// this backend can bind it without copying. \p rawHandle is interpreted per
-    /// backend (a GL buffer name, a VkBuffer, ...). The returned handle must NOT
-    /// free the underlying native resource when destroyed via DestroyBuffer.
-    /// Backends that cannot adopt a foreign handle return an empty handle; the
-    /// caller then falls back to its own generic wrapper. Default: empty handle.
-    HGI_API
-    virtual HgiBufferHandle CreateExternalBuffer(
-        uint64_t rawHandle, size_t byteSize, HgiBufferUsage usage);
-
-    /// Allocate a buffer whose memory is EXPORTABLE to other GPU APIs (interop).
-    /// Returns a real, owning HgiBuffer and, in \p outInfo, the external-memory
-    /// description another API can import to alias the same memory. Backends
-    /// without interop support return an empty handle and leave \p outInfo at
-    /// its defaults. Default: unsupported.
-    HGI_API
-    virtual HgiBufferHandle CreateInteropBuffer(
-        size_t byteSize, HgiBufferUsage usage, HgiInteropBufferInfo* outInfo);
-
-    /// IMPORT memory another device (or API) allocated as exportable, and wrap
-    /// it in a real, OWNING buffer of this backend: the returned handle owns the
-    /// buffer object and the imported memory reference, but not the underlying
-    /// allocation, which stays alive as long as any importer holds it. Use this
-    /// when the producer's memory does not live on this backend's device, so
-    /// CreateExternalBuffer's adopt path is not available. Backends that cannot
-    /// import return an empty handle. Default: unsupported.
-    HGI_API
-    virtual HgiBufferHandle CreateBufferFromExternalMemory(
-        HgiExternalMemoryBufferDesc const& desc);
-
-    /// IMPORT a semaphore created by another device (or API) from its OS handle,
-    /// returning a backend-native handle usable with QueueWait/QueueSignal and
-    /// DestroyExternalSemaphore, or 0 if unsupported. This is the cross-device
-    /// counterpart of CreateExternalSemaphore, which creates one locally.
-    /// \p externalHandle ownership follows the platform convention (fd: taken;
-    /// Win32: retained by the caller). Default: unsupported.
-    HGI_API
-    virtual uint64_t ImportExternalSemaphore(
-        uint64_t externalHandle,
-        HgiExternalHandleType handleType,
-        HgiSemaphoreKind kind);
-
-    /// Returns the physical device this backend renders on, as a 32-character
-    /// lowercase hex encoding of its 16-byte UUID; empty when the backend has no
-    /// such identity. Opaque external handles are only importable on the device
-    /// that exported them, so producers and consumers compare this to decide
-    /// between adopting a native handle, importing, and giving up.
-    HGI_API
-    virtual std::string GetDeviceUuid() const;
-
-    /// Returns an id for the LOGICAL device this backend renders through --
-    /// unique within this process, 0 when the backend has no such object. Where
-    /// GetDeviceUuid names the GPU, this names the device object whose handle
-    /// namespace a native resource handle belongs to; the two differ when two
-    /// logical devices drive one GPU, and that is exactly when adopting a
-    /// foreign native handle would bind an unrelated object. Backends without a
-    /// logical device (GL, whose namespace is the context share group) return 0,
-    /// which callers treat as "unknown". Default: 0.
-    HGI_API
-    virtual uint64_t GetLogicalDeviceId() const;
-
-    /// Create a binary semaphore whose signal state is EXPORTABLE to other GPU
-    /// APIs. Returns a backend-native handle (0 if unsupported) and, in
-    /// \p outExternalHandle, an OS handle (Win32 NT handle / fd) the other API
-    /// imports. Used to order a producer's writes in another API against this
-    /// backend's reads of a shared buffer. Default: unsupported.
-    HGI_API
-    virtual uint64_t CreateExternalSemaphore(uint64_t* outExternalHandle);
-
-    /// Destroy a semaphore returned by CreateExternalSemaphore.
-    HGI_API
-    virtual void DestroyExternalSemaphore(uint64_t semaphore);
-
-    /// Make this backend's NEXT queue submission wait on \p semaphore (a native
-    /// handle from CreateExternalSemaphore) before its commands execute, so a
-    /// draw does not read a buffer the producer has not finished writing (RAW).
-    /// Default: no-op.
-    HGI_API
-    virtual void QueueWaitExternalSemaphore(uint64_t semaphore);
-
-    /// Make this backend's NEXT queue submission signal \p semaphore after its
-    /// commands complete, so a producer in another API may wait on it before
-    /// overwriting a shared buffer this backend just read (WAR). Default: no-op.
-    HGI_API
-    virtual void QueueSignalExternalSemaphore(uint64_t semaphore);
-
     /// Destroy a buffer in rendering backend.
     /// Thread safety: Destruction must happen on main thread. See notes above.
     HGI_API
@@ -485,7 +337,65 @@ public:
     HGI_API
     virtual void GarbageCollect() = 0;
 
+    /// Get, creating on first use, the external buffer arena of type \p T for
+    /// the application device or context \p rawSourceDevice -- through which an
+    /// application shares GPU buffers it allocated with this Hgi. See
+    /// HgiExternalBufferArena.
+    ///
+    /// \p T is a backend arena type, e.g. HgiGLExternalBufferArena for buffers
+    /// an application allocated in OpenGL. Returns null when this Hgi cannot
+    /// interop with \p T -- asking a Vulkan Hgi to consume OpenGL buffers, for
+    /// instance, which is not merely unimplemented but impossible, since GL
+    /// cannot export its allocations. Callers must handle null by falling back
+    /// to their own copy; that null is also where an application and Hgi settle
+    /// on an interop format, once, instead of rediscovering per frame whether
+    /// sharing will work.
+    ///
+    /// \p rawSourceDevice is a uint64 cast of the application's device or
+    /// context pointer (a VkDevice, or the GL share context). Arenas are keyed
+    /// on it together with \p T, so handles minted by two devices never land in
+    /// one arena -- pointer identity being the only thing that actually decides
+    /// whether a native handle means anything here. Any further \p args are
+    /// forwarded to T's constructor after the Hgi and the device key.
+    ///
+    /// Thread safety: This call is thread safe.
+    template <typename T, typename... Args>
+    std::shared_ptr<T> GetExternalBufferArena(
+        uint64_t rawSourceDevice, Args&&... args)
+    {
+        const _ExternalBufferArenaKey key(
+            std::type_index(typeid(T)), rawSourceDevice);
+
+        std::lock_guard<std::mutex> lock(_externalBufferArenasMutex);
+        const auto it = _externalBufferArenas.find(key);
+        if (it != _externalBufferArenas.end()) {
+            return std::static_pointer_cast<T>(it->second);
+        }
+        // Capability gate. Ask before allocating anything, so an unsupported
+        // combination costs a query rather than an allocation to unwind.
+        if (!T::IsSupportedBy(this)) {
+            return nullptr;
+        }
+        std::shared_ptr<T> arena = std::make_shared<T>(
+            this, rawSourceDevice, std::forward<Args>(args)...);
+        _externalBufferArenas.emplace(key, arena);
+        return arena;
+    }
+
 protected:
+    /// Garbage collect every external buffer arena created through
+    /// GetExternalBufferArena. Backends that support external buffers call this
+    /// from their GarbageCollect(); see HgiExternalBufferArena::GarbageCollect
+    /// for why reclamation has to be deferred rather than immediate.
+    HGI_API
+    void _GarbageCollectExternalBufferArenas();
+
+    /// Destroy every external buffer arena. Backends call this while their
+    /// device -- and, for OpenGL, the context that owns the interop objects --
+    /// is still current, since an arena's teardown releases GPU resources.
+    HGI_API
+    void _DestroyExternalBufferArenas();
+
     // Returns a unique id for handle creation.
     // Thread safety: Thread-safe atomic increment.
     HGI_API
@@ -516,7 +426,21 @@ private:
     Hgi & operator=(const Hgi&) = delete;
     Hgi(const Hgi&) = delete;
 
+    // Arenas mint handles for the buffers they wrap, and those ids have to
+    // come from the same counter as Hgi's own: HgiHandle equality is id-only,
+    // so a second counter would hand out ids that make two distinct buffers
+    // compare equal in a renderer's binding and aggregation caches.
+    friend class HgiExternalBufferArena;
+
+    // Arenas are identified by their type together with the application device
+    // they draw buffers from; see GetExternalBufferArena.
+    using _ExternalBufferArenaKey = std::pair<std::type_index, uint64_t>;
+
     std::atomic<uint64_t> _uniqueIdCounter;
+
+    std::map<_ExternalBufferArenaKey, HgiExternalBufferArenaSharedPtr>
+        _externalBufferArenas;
+    std::mutex _externalBufferArenasMutex;
 };
 
 

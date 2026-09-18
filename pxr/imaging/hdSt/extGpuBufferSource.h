@@ -16,21 +16,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdStExtGpuBuffer;
-
 /// \class HdStExtGpuBufferSource
 ///
-/// An HdBufferSource subclass that wraps an externally-owned GPU buffer
-/// (described by an HdStExtGpuBufferDesc).
+/// An HdBufferSource for a stream that already lives in a GPU buffer an
+/// application shared (see HdExtGpuBufferSchema).
 ///
-/// Unlike HdVtBufferSource, this source does not hold CPU data.
-/// \c GetData() returns nullptr; downstream \c CopyData() implementations
-/// must detect this source type via a \c dynamic_cast to
-/// HdStExtGpuBufferSource and issue a GPU-to-GPU copy instead of a
-/// CPU-to-GPU upload.
-///
-/// Owns the non-owning HgiBuffer wrapper (HdStExtGpuBuffer) that
-/// allows CopyData to reference the external raw GPU handle via Hgi blit ops.
+/// Unlike HdVtBufferSource it holds no CPU data, so GetData() returns null and
+/// IsGpuBacked() returns true. Consumers ask the latter and then take the
+/// GPU-to-GPU path, reading the resource through GetDescriptor(); nothing needs
+/// to probe the concrete type with RTTI to find out what kind of source this
+/// is.
 ///
 class HdStExtGpuBufferSource final : public HdBufferSource
 {
@@ -38,7 +33,7 @@ public:
     HDST_API
     HdStExtGpuBufferSource(
         TfToken const &name,
-        HdStExtGpuBufferDesc const &hdDesc);
+        HdStExtGpuBufferDesc const &desc);
 
     HDST_API
     ~HdStExtGpuBufferSource() override;
@@ -51,11 +46,14 @@ public:
     HDST_API size_t ComputeHash() const override;
 
     HDST_API void const *GetData() const override;
+    HDST_API bool IsGpuBacked() const override;
     HDST_API HdTupleType GetTupleType() const override;
     HDST_API size_t GetNumElements() const override;
 
     // --- External-buffer-specific accessors ---
 
+    /// The layout and the buffer this stream lives in. A consumer that has
+    /// established IsGpuBacked() reads the GPU resource through here.
     HdStExtGpuBufferDesc const &GetDescriptor() const {
         return _descriptor;
     }
@@ -66,8 +64,19 @@ protected:
 private:
     TfToken _name;
     HdStExtGpuBufferDesc _descriptor;
-    std::unique_ptr<HdStExtGpuBuffer> _ownedExternalGpuBuffer;
 };
+
+using HdStExtGpuBufferSourceSharedPtr =
+    std::shared_ptr<HdStExtGpuBufferSource>;
+
+/// If \p source is a GPU-backed Storm source, the source; otherwise null.
+///
+/// The one place the cast happens, guarded by the virtual predicate rather
+/// than by RTTI. Generic Storm code -- the memory managers, the alias-BAR
+/// builder -- goes through this instead of testing types itself.
+HDST_API
+HdStExtGpuBufferSource const *
+HdSt_GetExtGpuBufferSource(HdBufferSourceSharedPtr const &source);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

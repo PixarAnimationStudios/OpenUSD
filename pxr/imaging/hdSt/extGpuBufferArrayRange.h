@@ -13,27 +13,34 @@
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/extBufferDesc.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/externalBuffer.h"
 
 #include <atomic>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdStExtGpuBuffer;
-
 /// \class HdStExtGpuBufferArrayRange
 ///
-/// A lightweight HdStBufferArrayRange that wraps externally-owned GPU
-/// buffers for zero-copy direct binding.  Instead of copying data into
-/// a Storm-managed buffer, Storm's draw dispatch binds the external
-/// HgiBufferHandle directly.
+/// An HdStBufferArrayRange that binds application-owned GPU buffers directly,
+/// with no copy: Storm's draw dispatch reads the producer's buffers where they
+/// already are.
 ///
-/// This BAR does not own the underlying GPU memory — the producer
-/// manages its lifetime.  On the import route it does share ownership of the
-/// consumer-side buffer aliasing that memory, since the import consumes a
-/// device-memory reference that has to be returned when nobody is bound to it
-/// any more.
+/// It holds a strong reference to each buffer for as long as it is bound --
+/// which is until the scene updates and replaces it -- and owns nothing else.
+/// The GPU memory belongs to the producer or to the arena that allocated it;
+/// see HgiExternalBuffer.
+///
+/// \section Not a real range
+///
+/// Most of the HdBufferArrayRange contract assumes the range owns storage it
+/// can grow and write into. This one owns none, so the operations that would
+/// mutate storage -- Resize, CopyData, SetBufferArray -- are coding errors
+/// rather than silent no-ops. Reaching them means a caller aggregated an
+/// external source together with an ordinary one, or handed this range to a
+/// memory manager, and the aggregation path is supposed to make that
+/// impossible; a silent no-op would leave data quietly unwritten instead of
+/// saying so.
 ///
 class HdStExtGpuBufferArrayRange final : public HdStBufferArrayRange
 {
@@ -45,39 +52,35 @@ public:
     HDST_API
     ~HdStExtGpuBufferArrayRange() override;
 
-    /// Bind an external buffer resource by primvar name, using whichever route
-    /// the consumer's routing step resolved: the buffer it imported from the
-    /// producer's memory, a backend buffer adopting the producer's native
-    /// handle, or a plain non-owning wrapper around it.
+    /// Bind the buffer described by \p desc under \p name, appending a new
+    /// resource.
     HDST_API
     void SetExternalResource(
         TfToken const &name,
         HdStExtGpuBufferDesc const &desc);
 
-    /// Reset all external resources and prepare for re-population via
-    /// SetExternalResource.
+    /// Drop every bound resource, releasing this range's references to the
+    /// buffers.
     HDST_API
     void ReleaseExternalResources();
 
-    /// Update existing external resources in-place when the resource names
-    /// and count match.  Avoids heap allocation by reusing existing
-    /// HdStExtGpuBuffer and HdStBufferResource objects.
-    /// Returns true if in-place update succeeded, false if a full rebuild
-    /// (Release + Set) is needed.
+    /// Rebind \p sources in place, reusing the existing HdStBufferResource
+    /// objects so that draw batches are not invalidated.
+    ///
+    /// Updates a resource whose name is already bound and appends one that is
+    /// not, leaving bound resources absent from \p sources alone. Returns
+    /// false when a source cannot be applied in place at all -- an immutable
+    /// property such as the tuple type or the element offset changed -- in
+    /// which case the caller rebuilds the range from scratch.
     HDST_API
     bool UpdateExternalResources(
         HdBufferSourceSharedPtrVector const &sources);
 
-    /// Merge a subset of external resources into this BAR.
-    /// For each source, if a resource with the same name already exists,
-    /// update it in-place; otherwise append it as a new resource.
-    /// Unlike UpdateExternalResources, this does not require the source
-    /// count or names to match exactly — existing resources not present
-    /// in \p sources are preserved unchanged.
-    /// Returns true if all sources were successfully merged.
+    /// The distinct arenas the currently bound buffers came from, appended to
+    /// \p arenas. Storm brackets its access to these with the arenas'
+    /// semaphores at commit time; see HdStResourceRegistry.
     HDST_API
-    bool MergeExternalResources(
-        HdBufferSourceSharedPtrVector const &sources);
+    void GetArenas(std::vector<HgiExternalBufferArena *> *arenas) const;
 
     // ---- HdBufferArrayRange pure virtuals ----
 
@@ -109,29 +112,17 @@ protected:
     HDST_API const void *_GetAggregation() const override;
 
 private:
-    // One wrapper per external resource. Exactly one field is set, and the
-    // field says who frees it:
-    //  - generic:  GL path -- a plain non-owning HgiBuffer we `delete` on
-    //    release (bound via the resource binder's generic GetRawResource path).
-    //  - native:   a real backend buffer adopted via Hgi (e.g. Vulkan, whose
-    //    vertex binding downcasts to the concrete HgiBuffer); freed via the
-    //    resource registry's Hgi->DestroyBuffer.
-    //  - imported: a real backend buffer aliasing memory imported from a
-    //    foreign device, shared with any other range naming the same producer
-    //    allocation (imports are too expensive to redo per Sync). Refcounted:
-    //    releasing this reference frees the buffer if we were its last holder.
-    struct _OwnedExtBuffer {
-        HdStExtGpuBuffer *generic = nullptr;
-        HgiBufferHandle   native;
-        HdSt_ImportedExtGpuBufferSharedPtr imported;
-    };
+    // Index of the resource bound under \p name, or -1.
+    int _FindResource(TfToken const &name) const;
 
-    // Release every owned wrapper (generic via delete, native via Hgi,
-    // imported by dropping our share of it) and clear.
-    void _DestroyOwnedBuffers();
+    // Rebind the resource at \p index to \p desc, or return false if an
+    // immutable property of the HdStBufferResource would have to change.
+    bool _UpdateResource(size_t index, HdStExtGpuBufferDesc const &desc);
 
     HdStBufferResourceNamedList _resources;
-    std::vector<_OwnedExtBuffer> _ownedExternalGpuBuffers;
+    // One strong reference per entry in _resources, same order: what keeps the
+    // bound buffers alive for as long as they are bound.
+    std::vector<HgiExternalBufferSharedPtr> _externalBuffers;
     size_t _numElements;
     std::atomic<size_t> _version;
     bool _valid;

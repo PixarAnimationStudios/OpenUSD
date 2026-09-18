@@ -18,6 +18,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Represents an OpenGL GPU buffer resource.
 ///
+/// Usually HgiGL creates and owns the underlying GL buffer name. It can also
+/// wrap a name somebody else created -- an application sharing one of its own
+/// buffers with Hydra -- in which case this object binds and reads it but
+/// leaves deletion to its owner. See the adopting constructor and
+/// HgiGLExternalBuffer. Either way the object is a full HgiGLBuffer, so every
+/// path that expects one (the blit ops, the resource bindings) works unchanged.
+///
 class HgiGLBuffer final : public HgiBuffer
 {
 public:
@@ -41,9 +48,18 @@ public:
 
 protected:
     friend class HgiGL;
+    friend class HgiGLExternalBuffer;
 
     HGIGL_API
     HgiGLBuffer(HgiBufferDesc const & desc);
+
+    /// Wrap the existing GL buffer name \p bufferId WITHOUT taking ownership:
+    /// the destructor does not delete it, and CPU staging is refused, since
+    /// there is no telling what its owner is doing with the contents. Used for
+    /// buffers an application allocated and shares with Hgi; \p desc supplies
+    /// the byte size and the usage the consumer may bind it for.
+    HGIGL_API
+    HgiGLBuffer(HgiBufferDesc const & desc, uint32_t bufferId);
 
 private:
     HgiGLBuffer() = delete;
@@ -53,6 +69,10 @@ private:
     uint32_t _bufferId;
     void* _cpuStaging;
     uint64_t _bindlessGPUAddress;
+    // False when _bufferId belongs to somebody else; see the adopting
+    // constructor. Destroying such a buffer through Hgi::DestroyBuffer is
+    // safe and expected -- it tears down this wrapper only.
+    bool _ownsBufferId;
 };
 
 

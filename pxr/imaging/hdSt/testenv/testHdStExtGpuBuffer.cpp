@@ -18,27 +18,37 @@
 //     primvar).
 //
 // Three producer topologies, orthogonal to the scene workflow:
-//   * default: the buffer is allocated by the consumer's own Hgi. No interop.
-//   * --vulkanSync: a Vulkan producer allocates the buffer on the CONSUMER's own
-//     device but writes it as its own work, in an independent command buffer it
-//     submits itself on the device's graphics queue. No import is needed (Storm
-//     adopts the VkBuffer, the adopt route, since the logical device matches),
-//     but the producer's write and the consumer's read are now distinct
-//     submissions that need ordering, so the producer publishes a RAW/WAR native
-//     binary-semaphore pair that Storm's draw waits on and signals.
-//   * --vulkanInterop: a SECOND Vulkan device stands in for a
-//     producer with its own device. It allocates the exportable memory, GL
-//     imports it and writes the geometry, and Storm imports the OS memory
-//     handle into its own device (the import route). The producer's VkBuffer
-//     and native semaphores are deliberately NOT published: they belong to
-//     another logical device, so only the OS handles are meaningful.
+//   * default: the application creates its own GL buffer and REGISTERS it with
+//     the consumer's GL arena, which binds it and never deletes it. This is
+//     the shape a GL-based viewport sharing buffers with Storm actually has,
+//     and the arena needs no semaphores because one context orders the two.
+//   * --vulkanSync: a Vulkan producer allocates on the CONSUMER's own device
+//     and writes it as its own work, in an independent command buffer it
+//     submits itself. The buffer is registered rather than imported -- same
+//     logical device -- but the write and the read are now separate
+//     submissions, ordered by the arena's semaphore pair: the producer signals
+//     app-done, Storm's commit waits on it and signals hgi-done.
+//   * --vulkanInterop: a SECOND Vulkan device stands in for a producer with its
+//     own device. It allocates exportable memory out of its own arena; the
+//     consumer's GL arena imports that allocation, and the producer writes the
+//     geometry through the imported GL buffer. Nothing native is shared: a
+//     VkBuffer from another logical device would mean nothing here, which is
+//     why the arena is keyed on the producing device in the first place.
 //
-// Orthogonal to the producer topology, --copy publishes directBindable=false,
-// which flips the consumption strategy from zero-copy direct bind to a GPU->GPU
-// blit into Storm's aggregated vertex buffer. Combined with --vulkanInterop it
-// is the interesting case: the buffer is IMPORTED from a foreign logical device
-// and then blitted (rather than aliased), exercising the import + blit path that
-// the adopt-route default and the direct-bind interop test do not.
+// Orthogonal to the producer topology, --copy publishes allowDirectBind=false,
+// which flips the consumption strategy from zero-copy direct bind to a
+// GPU-to-GPU blit into Storm's aggregated vertex buffer. Combined with
+// --vulkanInterop it is the interesting case: the buffer is IMPORTED from a
+// foreign logical device and then blitted rather than aliased, exercising the
+// import-then-blit path that neither the default nor the direct-bind interop
+// test covers.
+//
+// Lifetime, which the test deliberately models the way a real producer must:
+// the scene description carries only a WEAK reference to each shared buffer, so
+// the test holds the strong one for the duration of the run. Buffers the
+// application created itself are deleted by the application; buffers the arena
+// allocated or imported are reclaimed by the arena, once nothing references
+// them and the GPU has retired the work that named them.
 //
 // The geometry is published through a HdRetainedSceneIndex inserted into the
 // render index, because the schema lives as a data-source *child* of the
@@ -59,7 +69,7 @@
 
 #include "pxr/imaging/hd/extentSchema.h"
 #include "pxr/imaging/hd/extGpuBufferSchema.h"
-#include "pxr/imaging/hd/extGpuSyncSchema.h"
+#include "pxr/imaging/hd/externalBuffer.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
 #include "pxr/imaging/hd/meshSchema.h"
@@ -70,13 +80,18 @@
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/retainedSceneIndex.h"
+#include "pxr/imaging/hd/sceneIndexObserver.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/xformSchema.h"
 
 #include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/externalBuffer.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
+
+#include "pxr/imaging/hgiGL/externalBuffer.h"
+#include "pxr/imaging/hgiGL/externalBufferArena.h"
 
 // The --vulkanSync producer records and submits its own command buffer on the
 // consumer's Vulkan device, which needs the concrete HgiVulkan types (there is
@@ -85,7 +100,10 @@
 #if defined(PXR_VULKAN_SUPPORT_ENABLED)
 #include "pxr/imaging/hgiVulkan/buffer.h"
 #include "pxr/imaging/hgiVulkan/device.h"
+#include "pxr/imaging/hgiVulkan/externalBuffer.h"
+#include "pxr/imaging/hgiVulkan/externalBufferArena.h"
 #include "pxr/imaging/hgiVulkan/hgi.h"
+#include "pxr/imaging/hgiVulkan/semaphore.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 #endif
 
@@ -93,6 +111,7 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/errorMark.h"
 
 #include <cstdint>
@@ -124,42 +143,33 @@ using _IntArrayDs   = HdRetainedTypedSampledDataSource<VtIntArray>;
 // The AOV path the driver uses for color (see HdSt_TestDriverBase::_GetAovPath).
 const SdfPath _colorAovId("/testDriver/aov_color");
 
-// Everything a producer publishes about one shared buffer: how the consumer can
-// reach the memory, and the semaphores ordering access to it. Which fields are
-// set depends on the producer topology -- a producer on the consumer's own
-// device offers native handles, one on its own device offers OS handles.
-struct _SharedBuffer
-{
-    uint64_t rawHandle = 0;
+// What a producer hands the consumer: the shared buffer itself. Everything the
+// consumer used to be told separately -- native handle, OS memory handle, block
+// size and offset, dedicated-ness, device UUID, logical device id, and a
+// semaphore pair -- is now a detail of this object and of the arena that made
+// it.
+using _SharedBuffer = HgiExternalBufferSharedPtr;
 
-    uint64_t externalMemoryHandle = 0;
-    size_t   memoryBlockSize = 0;
-    size_t   memoryOffset = 0;
-    bool     dedicated = false;
-
-    uint64_t writeSemaphore = 0;
-    uint64_t readSemaphore = 0;
-    uint64_t externalWriteSemaphore = 0;
-    uint64_t externalReadSemaphore = 0;
-
-    // The producer's physical device; empty when it is the consumer's own.
-    std::string deviceUuid;
-
-    // The logical device the producer minted its native handles in. Published
-    // whether or not it is the consumer's own: that is the whole point of the
-    // field, since a consumer cannot otherwise tell the two cases apart.
-    uint64_t logicalDeviceId = 0;
-};
-
-// The external handle flavour this platform's Vulkan/GL interop uses.
-TfToken
-_ExternalHandleTypeToken()
+// The external handle flavour this platform's interop uses. Never inferred
+// from a handle value, which is why it travels alongside it.
+HgiExternalHandleType
+_PlatformHandleType()
 {
 #if defined(_WIN32)
-    return HdExtGpuBufferSchemaTokens->opaqueWin32;
+    return HgiExternalHandleTypeOpaqueWin32;
 #else
-    return HdExtGpuBufferSchemaTokens->opaqueFd;
+    return HgiExternalHandleTypeOpaqueFd;
 #endif
+}
+
+// A stable key standing for the GL context the application shares buffers from.
+// An arena is keyed on the producing device or context; this test has a single
+// context for its whole run, so any stable value will do.
+uint64_t
+_GlContextKey()
+{
+    static const int marker = 0;
+    return reinterpret_cast<uint64_t>(&marker);
 }
 
 } // anonymous namespace
@@ -184,53 +194,87 @@ protected:
 private:
     // Build the scene into `scene`. When `gpuShare` is true the cube points
     // (and, for the instancing workflow, the instance transforms) are published
-    // as external GPU buffers created from `driver`'s Hgi and appended to
-    // `buffers` (so the caller can free them); otherwise they are CPU primvars.
+    // as buffers shared through an arena; otherwise they are CPU primvars.
     void _BuildScene(HdSt_TestDriver *driver,
                      HdRetainedSceneIndexRefPtr &scene,
-                     std::vector<HgiBufferHandle> &buffers,
                      bool gpuShare);
 
     // Build the cube primvars container (points + constant displayColor).
     HdContainerDataSourceHandle _BuildCubePrimvars(
         HdSt_TestDriver *driver,
-        std::vector<HgiBufferHandle> &buffers,
         bool gpuShare);
 
+    // Produce a buffer holding `data` by whichever topology the flags select,
+    // and return it. Null on failure, which the caller reports.
     _SharedBuffer _MakeGpuBuffer(HdSt_TestDriver *driver,
-                                 std::vector<HgiBufferHandle> &buffers,
                                  const void *data, size_t byteSize,
                                  uint32_t stride);
 
-    // Allocate exportable memory on `producerHgi` (a second Vulkan device
-    // standing in for a foreign-device producer), have GL import it and write
-    // `data` into it, and create the RAW/WAR semaphore pair. The returned
-    // descriptor offers the OS memory + semaphore handles for the consumer to
-    // import, since the producer's VkBuffer is not interpretable on the
-    // consumer's logical device.
-    _SharedBuffer _MakeInteropBuffer(Hgi *producerHgi,
-                                     std::vector<HgiBufferHandle> &buffers,
-                                     std::vector<uint64_t> &semaphores,
+    // Default topology: the application allocates on the CONSUMER's own device
+    // and REGISTERS the buffer, so the arena binds it and never deletes it.
+    // Which API that is follows the consumer's backend -- a native handle only
+    // means something to the API that minted it.
+    _SharedBuffer _MakeNativeRegisteredBuffer(HdSt_TestDriver *driver,
+                                              const void *data,
+                                              size_t byteSize,
+                                              uint32_t stride);
+
+    // --vulkanInterop: a second Vulkan device stands in for a producer with
+    // its own device. It allocates exportable memory out of its own arena and
+    // writes the geometry there, and the consumer imports that allocation
+    // through whichever arena matches its own backend.
+    _SharedBuffer _MakeInteropBuffer(HdSt_TestDriver *driver,
                                      const void *data, size_t byteSize);
 
-    // --vulkanSync producer: allocate the buffer on the consumer's own Vulkan
-    // device, then write it by copying from a staging buffer in its own command
-    // buffer, submitted independently on the device's graphics queue, signalling
-    // a native WRITE semaphore. Storm adopts the VkBuffer (adopt route) and
-    // orders its read against the producer's write through the RAW/WAR semaphore
-    // pair. Only meaningful in Vulkan builds.
+    // --vulkanSync: the producer allocates on the CONSUMER's own Vulkan device
+    // and writes it in its own independent submission, signalling the arena's
+    // app-done semaphore. Storm registers the VkBuffer -- no import, the device
+    // matches -- and its commit waits on that semaphore.
     _SharedBuffer _MakeVulkanSyncBuffer(HdSt_TestDriver *driver,
-                                        std::vector<HgiBufferHandle> &buffers,
                                         const void *data, size_t byteSize,
                                         uint32_t stride);
 
-    // Import `info`'s allocation into GL and write `data` into it through a
-    // staging buffer. Returns the GL buffer aliasing the shared memory.
-    uint32_t _GlImportAndWrite(const HgiInteropBufferInfo &info,
-                               const void *data, size_t byteSize);
+    bool _ConsumerIsVulkan(HdSt_TestDriver *driver) const;
 
-    // Import an OS semaphore handle into GL. Returns 0 if `osHandle` is 0.
-    uint32_t _GlImportSemaphore(uint64_t osHandle);
+    // Check the arena's reclaim contract: the buffer outlives the last outside
+    // reference, and only collection releases it. Called while the driver and
+    // arena are still alive, so the arena's own reference is the only thing
+    // the assertions can be observing.
+    void _CheckArenaReclaim(HdSt_TestDriver *driver,
+                            HdRetainedSceneIndexRefPtr const &scene);
+
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+    // Have the producer create its exportable semaphore pair and the consumer
+    // import it, once per run. Returns false when either side cannot, which
+    // is not a failure -- the caller then orders the write on the host
+    // instead.
+    bool _ShareInteropSemaphores(
+        HgiVulkanExternalBufferArena *producerArena,
+        HgiExternalBufferArena *consumerArena);
+
+    // WAR check: wait, on the GPU, for the hgi-done semaphore the consumer
+    // signals when it has finished reading -- the point at which a real
+    // producer would be free to overwrite the buffer. Bounded, because a
+    // consumer that never signals would otherwise hang the test rather than
+    // fail it.
+    void _VerifyHgiDoneSignal();
+#endif
+
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+    // Get-or-create the Vulkan arena for \p hgi, cached in \p slot. Used for
+    // both the consumer's device and the producer's.
+    HgiVulkanExternalBufferArena *_GetVulkanArena(
+        Hgi *hgi,
+        std::shared_ptr<HgiVulkanExternalBufferArena> *slot);
+
+    // Write \p data into \p dst as the producer's own work on \p hgi's
+    // device, optionally signalling \p signalSemaphore when it completes.
+    bool _VulkanUpload(Hgi *hgi, VkBuffer dst,
+                       const void *data, size_t byteSize,
+                       VkSemaphore signalSemaphore);
+#endif
+
+    HgiGLExternalBufferArena *_GetGlArena(HdSt_TestDriver *driver);
 
     // Create the second (producer) Vulkan device for --vulkanInterop
     // and verify it resolves to the same physical device as the consumer's.
@@ -251,10 +295,6 @@ private:
                          int &width, int &height,
                          const std::string &writePath);
 
-    // Free any GL interop objects (memory objects + alias buffers) created by
-    // the --vulkanInterop producer path.
-    void _ReleaseGlInterop();
-
     GfVec3f _CameraTranslate() const {
         // Frame the single cube up close, the grid pulled back.
         return _instancing ? GfVec3f(0.0f, 0.0f, -30.0f)
@@ -264,7 +304,6 @@ private:
     // Interactive-mode driver (created lazily; not used by --offscreen).
     std::unique_ptr<HdSt_TestDriver> _driver;
     HdRetainedSceneIndexRefPtr _driverScene;
-    std::vector<HgiBufferHandle> _driverBuffers;
 
     // Geometry parameters.
     bool _instancing = false;   // --instancing: grid of instanced cubes
@@ -272,217 +311,202 @@ private:
     float _halfSize = 1.0f;
     float _spacing = 3.0f;
 
-    // --vulkanSync: a Vulkan producer allocates the buffer on the CONSUMER's own
-    // device and writes it in its own independent submission, signalling a native
-    // WRITE semaphore. Storm adopts the VkBuffer (adopt route, logical device
-    // matches) and its draw waits on that semaphore. Requires a Vulkan Hgi (run
-    // with HGI_ENABLE_VULKAN=1).
+    // --vulkanSync: a Vulkan producer allocates the buffer on the CONSUMER's
+    // own device and writes it in its own independent submission, signalling
+    // the arena's app-done semaphore. Storm registers the VkBuffer -- nothing
+    // is imported, the device matches -- and its commit waits on that
+    // semaphore. Requires a Vulkan Hgi (run with HGI_ENABLE_VULKAN=1).
     bool _vulkanSync = false;
 
-    // --vulkanInterop: the memory is allocated on a second Vulkan device standing
-    // in for a producer that owns its own device, so Storm has to import the OS
-    // handle rather than adopt a VkBuffer.
+    // --vulkanInterop: the memory is allocated on a second Vulkan device
+    // standing in for a producer that owns its own device, so the consumer has
+    // to import the OS memory handle rather than share a native handle.
     bool _vulkanInterop = false;
 
-    // --copy: publish directBindable=false so the consumer copies (GPU->GPU
+    // --copy: publish allowDirectBind=false so the consumer copies (a GPU-to-GPU
     // blit) the shared buffer into its own aggregated VBO instead of binding it
-    // zero-copy. With --vulkanInterop this drives the import + blit path.
-    bool _directBindable = true;
+    // zero-copy. With --vulkanInterop this drives the import-then-blit path.
+    bool _allowDirectBind = true;
 
+    // The consumer's arena for application-shared buffers, created on first
+    // use. Held so the buffers registered in it stay reachable.
+    std::shared_ptr<HgiGLExternalBufferArena> _glArena;
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+    std::shared_ptr<HgiVulkanExternalBufferArena> _vkArena;
+#endif
+
+    // Strong references to everything shared this run. This is the producer's
+    // job: the scene description carries only weak references, so without
+    // these the buffers would be reclaimed out from under the renderer.
+    std::vector<HgiExternalBufferSharedPtr> _sharedBuffers;
+
+    // Buffers the application itself created and therefore must delete: the
+    // arena only registered them.
+    std::vector<uint32_t> _appGlBuffers;
+    std::vector<HgiBufferHandle> _appVkBuffers;
+
+    // The second Vulkan device standing in for a producer that owns its own
+    // device (--vulkanInterop), and what it allocated.
     HgiUniquePtr _producerHgi;
-    std::vector<HgiBufferHandle> _producerBuffers;
-    std::vector<uint64_t> _producerSemaphores;
-
-    std::vector<uint32_t> _glInteropMemObjects;  // GL memory objects to delete
-    std::vector<uint32_t> _glInteropBuffers;     // GL alias buffers to delete
-    std::vector<uint32_t> _glInteropSemaphores;  // GL write semaphores to delete
-    std::vector<uint32_t> _glReadSemaphores;     // GL read semaphores (WAR)
-    std::vector<uint64_t> _extSemaphores;        // consumer-owned semaphores
+    std::vector<HgiExternalBufferSharedPtr> _producerBuffers;
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+    std::shared_ptr<HgiVulkanExternalBufferArena> _producerArena;
+    // The semaphore pair is per arena, so it is set up once per run. When the
+    // import succeeds the producer signals app-done in its own submission and
+    // the consumer's commit waits on it; when it does not, the producer orders
+    // its write on the host instead and the test still checks the buffer
+    // sharing itself.
+    bool _interopSemaphoresShared = false;
+    bool _interopSemaphoresActive = false;
+    // A binary semaphore may carry only one pending signal, so exactly one
+    // write signals it however many buffers are shared. The others are
+    // ordered by the host fence every upload already waits on, which is the
+    // real guarantee here; the semaphore is what exercises the handshake.
+    bool _appDoneSignalled = false;
+    // The pair, natively, from whichever side created it, plus that side's
+    // Hgi -- the device whose queue the WAR check submits on.
+    VkSemaphore _appDoneVkSemaphore = VK_NULL_HANDLE;
+    VkSemaphore _hgiDoneVkSemaphore = VK_NULL_HANDLE;
+    Hgi *_semaphoreOwnerHgi = nullptr;
+#endif
 
     std::string _outputFilePath;  // --write: writes the GPU-shared image
     bool _writeCpu = false;       // --writeCpu: --write writes the CPU image
 };
 
-uint32_t
-My_TestGLDrawing::_GlImportAndWrite(const HgiInteropBufferInfo &info,
-                                    const void *data, size_t byteSize)
+HgiGLExternalBufferArena *
+My_TestGLDrawing::_GetGlArena(HdSt_TestDriver *driver)
 {
-    // Import the Vulkan allocation into GL as a memory object + alias buffer
-    // (see hgiInterop/vulkan.cpp for the reference recipe).
-    GLuint memObj = 0;
-    glCreateMemoryObjectsEXT(1, &memObj);
-    GLint dedicated = info.dedicated ? GL_TRUE : GL_FALSE;
-    glMemoryObjectParameterivEXT(
-        memObj, GL_DEDICATED_MEMORY_OBJECT_EXT, &dedicated);
-    glImportMemoryWin32HandleEXT(
-        memObj, info.memoryBlockSize, GL_HANDLE_TYPE_OPAQUE_WIN32_EXT,
-        reinterpret_cast<void *>(
-            static_cast<uintptr_t>(info.externalHandle)));
+    // Keyed on the producer's GL context. Everything here shares one context,
+    // so the current one is the key -- and that also means the arena needs no
+    // semaphores: commands run in order, which is all a semaphore would have
+    // established.
+    if (driver->GetHgi()->GetAPIName() != HgiTokens->OpenGL) {
+        return nullptr;
+    }
+    if (!_glArena) {
+        _glArena = driver->GetHgi()
+            ->GetExternalBufferArena<HgiGLExternalBufferArena>(
+                _GlContextKey());
+    }
+    return _glArena.get();
+}
 
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+HgiVulkanExternalBufferArena *
+My_TestGLDrawing::_GetVulkanArena(Hgi *hgi,
+                                  std::shared_ptr<HgiVulkanExternalBufferArena> *slot)
+{
+    if (!hgi || hgi->GetAPIName() != HgiTokens->Vulkan) {
+        return nullptr;
+    }
+    if (!*slot) {
+        HgiVulkanDevice *device =
+            static_cast<HgiVulkan *>(hgi)->GetPrimaryDevice();
+        *slot = hgi->GetExternalBufferArena<HgiVulkanExternalBufferArena>(
+            reinterpret_cast<uint64_t>(device->GetVulkanDevice()));
+    }
+    return slot->get();
+}
+#endif
+
+bool
+My_TestGLDrawing::_ConsumerIsVulkan(HdSt_TestDriver *driver) const
+{
+    return driver->GetHgi()->GetAPIName() == HgiTokens->Vulkan;
+}
+
+_SharedBuffer
+My_TestGLDrawing::_MakeNativeRegisteredBuffer(HdSt_TestDriver *driver,
+                                              const void *data,
+                                              size_t byteSize,
+                                              uint32_t stride)
+{
+    // The plain case: the application allocates on the consumer's own device
+    // and REGISTERS the buffer, so the arena binds and reads it but never
+    // deletes it. Which arena that is follows the consumer's backend -- a
+    // native handle only means something to the API that minted it, and there
+    // is no arena that could bridge a GL name to a Vulkan consumer, because
+    // OpenGL cannot export an allocation for another API to import.
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+    if (_ConsumerIsVulkan(driver)) {
+        Hgi *hgi = driver->GetHgi();
+        HgiVulkanExternalBufferArena *arena =
+            _GetVulkanArena(hgi, &_vkArena);
+        if (!arena) {
+            TF_RUNTIME_ERROR("This Vulkan device has no external memory "
+                             "support");
+            return nullptr;
+        }
+
+        HgiBufferDesc desc;
+        desc.usage = HgiBufferUsageVertex;
+        desc.byteSize = byteSize;
+        desc.vertexStride = stride;
+        desc.initialData = data;
+        desc.debugName = "app vertex buffer";
+        HgiBufferHandle buffer = hgi->CreateBuffer(desc);
+        VkBuffer vkBuffer =
+            static_cast<HgiVulkanBuffer *>(buffer.Get())->GetVulkanBuffer();
+
+        // The handle keeps the application's buffer alive; the arena only
+        // borrows it.
+        _appVkBuffers.push_back(buffer);
+        return arena->RegisterBuffer(
+            vkBuffer, byteSize, HgiBufferUsageVertex | HgiBufferUsageStorage);
+    }
+#endif
+
+    HgiGLExternalBufferArena *arena = _GetGlArena(driver);
+    if (!arena) {
+        TF_RUNTIME_ERROR("This Hgi cannot consume OpenGL buffers");
+        return nullptr;
+    }
+
+    // The application's own GL buffer, created and owned by the application.
     GLuint glBuf = 0;
     glCreateBuffers(1, &glBuf);
-    glNamedBufferStorageMemEXT(glBuf, byteSize, memObj, info.memoryOffset);
+    glNamedBufferData(glBuf, byteSize, data, GL_STATIC_DRAW);
+    _appGlBuffers.push_back(glBuf);
 
-    // The producer writes the geometry via GL into the shared memory. The
-    // external-memory buffer has immutable storage (no client-write flags), so
-    // upload through a staging buffer + GPU-side copy rather than
-    // glNamedBufferSubData.
-    GLuint staging = 0;
-    glCreateBuffers(1, &staging);
-    glNamedBufferStorage(staging, byteSize, data, 0);
-    glCopyNamedBufferSubData(staging, glBuf, 0, 0, byteSize);
-    glDeleteBuffers(1, &staging);
-
-    _glInteropMemObjects.push_back(memObj);
-    _glInteropBuffers.push_back(glBuf);
-    return glBuf;
+    return arena->RegisterBuffer(
+        glBuf, byteSize, HgiBufferUsageVertex | HgiBufferUsageStorage);
 }
 
-uint32_t
-My_TestGLDrawing::_GlImportSemaphore(uint64_t osHandle)
-{
-    if (!osHandle) {
-        return 0;
-    }
-    GLuint glSem = 0;
-    glGenSemaphoresEXT(1, &glSem);
-    glImportSemaphoreWin32HandleEXT(
-        glSem, GL_HANDLE_TYPE_OPAQUE_WIN32_EXT,
-        reinterpret_cast<void *>(static_cast<uintptr_t>(osHandle)));
-    return glSem;
-}
-
-_SharedBuffer
-My_TestGLDrawing::_MakeInteropBuffer(Hgi *producerHgi,
-                                     std::vector<HgiBufferHandle> &buffers,
-                                     std::vector<uint64_t> &semaphores,
-                                     const void *data, size_t byteSize)
-{
-    _SharedBuffer shared;
-    shared.logicalDeviceId = producerHgi->GetLogicalDeviceId();
-
-    HgiInteropBufferInfo info;
-    HgiBufferHandle vkBuf = producerHgi->CreateInteropBuffer(
-        byteSize, HgiBufferUsageVertex | HgiBufferUsageStorage, &info);
-    if (!vkBuf || info.externalHandle == 0) {
-        TF_RUNTIME_ERROR("The --vulkanInterop mode needs a Vulkan Hgi with "
-                         "external memory support (run with "
-                         "HGI_ENABLE_VULKAN=1)");
-        return shared;
-    }
-
-    // The VkBuffer belongs to the producer's logical device, so it is
-    // meaningless to the consumer even though both resolve to the same physical
-    // device. The OS-shareable allocation is the only route.
-    //
-    // On Win32 neither glImportMemoryWin32HandleEXT nor
-    // VkImportMemoryWin32HandleInfoKHR takes ownership of an OPAQUE_WIN32
-    // handle, so this one handle can serve both importers. (On Linux the fd
-    // import DOES transfer ownership, so that would need a dup().)
-    shared.externalMemoryHandle = info.externalHandle;
-    shared.memoryBlockSize = info.memoryBlockSize;
-    shared.memoryOffset = info.memoryOffset;
-    shared.dedicated = info.dedicated;
-    shared.deviceUuid = producerHgi->GetDeviceUuid();
-
-    const GLuint glBuf = _GlImportAndWrite(info, data, byteSize);
-
-    // Two exportable binary semaphores: a WRITE semaphore (the producer signals
-    // it after the GL write, Storm waits before reading -- RAW) and a READ
-    // semaphore (Storm signals it after reading, the producer waits before
-    // overwriting -- WAR).
-    uint64_t writeOsHandle = 0, readOsHandle = 0;
-    const uint64_t writeSem =
-        producerHgi->CreateExternalSemaphore(&writeOsHandle);
-    const uint64_t readSem =
-        producerHgi->CreateExternalSemaphore(&readOsHandle);
-    if (writeSem) {
-        semaphores.push_back(writeSem);
-    }
-    if (readSem) {
-        semaphores.push_back(readSem);
-    }
-    const GLuint glWriteSem = _GlImportSemaphore(writeOsHandle);
-    const GLuint glReadSem = _GlImportSemaphore(readOsHandle);
-
-    if (glWriteSem) {
-        // RAW: signal after the write (with a buffer barrier making the writes
-        // available). Storm's consumer reads this from the schema and makes its
-        // draw submit wait on it -- a GPU-side handshake.
-        glSignalSemaphoreEXT(glWriteSem, 1, &glBuf, 0, nullptr, nullptr);
-        glFlush();  // ensure the GL signal is submitted
-        _glInteropSemaphores.push_back(glWriteSem);
-        shared.externalWriteSemaphore = writeOsHandle;
-    } else {
-        // No external semaphore available: fall back to a coarse CPU sync.
-        glFinish();
-    }
-    if (glReadSem) {
-        _glReadSemaphores.push_back(glReadSem);
-        shared.externalReadSemaphore = readOsHandle;
-    }
-
-    buffers.push_back(std::move(vkBuf));
-    return shared;
-}
-
-_SharedBuffer
-My_TestGLDrawing::_MakeVulkanSyncBuffer(HdSt_TestDriver *driver,
-                                        std::vector<HgiBufferHandle> &buffers,
-                                        const void *data, size_t byteSize,
-                                        uint32_t stride)
-{
-    _SharedBuffer shared;
 #if defined(PXR_VULKAN_SUPPORT_ENABLED)
-    Hgi *hgi = driver->GetHgi();
-    if (hgi->GetAPIName() != HgiTokens->Vulkan) {
-        TF_RUNTIME_ERROR("--vulkanSync needs a Vulkan Hgi (run with "
-                         "HGI_ENABLE_VULKAN=1)");
-        return shared;
-    }
-    HgiVulkan *hgiVk = static_cast<HgiVulkan *>(hgi);
-    HgiVulkanDevice *device = hgiVk->GetPrimaryDevice();
+bool
+My_TestGLDrawing::_VulkanUpload(Hgi *hgi, VkBuffer dst,
+                                const void *data, size_t byteSize,
+                                VkSemaphore signalSemaphore)
+{
+    HgiVulkanDevice *device =
+        static_cast<HgiVulkan *>(hgi)->GetPrimaryDevice();
     VkDevice vkDevice = device->GetVulkanDevice();
     const uint32_t family = device->GetGfxQueueFamilyIndex();
 
-    // HgiVulkan creates a single graphics queue and we deliberately do not change
-    // that just for a test, so the producer records its OWN command buffer and
-    // submits it independently on that same queue (index 0). The producer's write
-    // and the consumer's read are still separate submissions ordered by the
-    // semaphore below -- exactly what a real separate-queue producer would need.
-    // (The submit is serialized on the main thread here, so sharing the queue
-    // Hgi owns is safe.)
+    // HgiVulkan creates a single graphics queue and we deliberately do not
+    // change that just for a test, so the producer records its OWN command
+    // buffer and submits it independently on that same queue. The write and the
+    // consumer's read are still separate submissions -- exactly what a real
+    // separate-queue producer has. (The submit is serialized on the main
+    // thread, so sharing Hgi's queue is safe.)
     VkQueue producerQueue = VK_NULL_HANDLE;
     vkGetDeviceQueue(vkDevice, family, 0, &producerQueue);
 
-    // Destination vertex buffer on the consumer's own device. Storm adopts this
-    // VkBuffer directly through rawHandle (the logical device matches), so no
-    // memory import is involved -- only the write ordering matters.
-    HgiBufferDesc dstDesc;
-    dstDesc.usage = HgiBufferUsageVertex;
-    dstDesc.byteSize = byteSize;
-    dstDesc.vertexStride = stride;
-    dstDesc.debugName = "vulkanSync dst";
-    HgiBufferHandle dst = hgi->CreateBuffer(dstDesc);
-    VkBuffer vkDst =
-        static_cast<HgiVulkanBuffer *>(dst.Get())->GetVulkanBuffer();
-    shared.rawHandle = dst->GetRawResource();
-
-    // Host-visible staging buffer holding the geometry; the producer copies it
-    // into the device-local vertex buffer on its own queue.
     HgiBufferDesc stgDesc;
     stgDesc.usage = HgiBufferUsageUpload;
     stgDesc.byteSize = byteSize;
     stgDesc.initialData = data;
-    stgDesc.debugName = "vulkanSync staging";
+    stgDesc.debugName = "producer staging";
     HgiBufferHandle staging = hgi->CreateBuffer(stgDesc);
     VkBuffer vkStaging =
         static_cast<HgiVulkanBuffer *>(staging.Get())->GetVulkanBuffer();
 
-    // Transient command pool/buffer recording the producer's copy. Buffers are
-    // VK_SHARING_MODE_EXCLUSIVE on the graphics family, but because the producer
-    // submits on that same family no queue-family ownership transfer is needed;
-    // the signal/wait semaphore alone makes the write available and visible.
+    // Transient pool and command buffer for the copy. Buffers are
+    // VK_SHARING_MODE_EXCLUSIVE on the graphics family and the producer submits
+    // on that same family, so no queue-family ownership transfer is needed
+    // here; for an imported buffer the consumer's import records its own
+    // acquire from VK_QUEUE_FAMILY_EXTERNAL.
     VkCommandPool pool = VK_NULL_HANDLE;
     VkCommandPoolCreateInfo pci = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
     pci.queueFamilyIndex = family;
@@ -503,36 +527,22 @@ My_TestGLDrawing::_MakeVulkanSyncBuffer(HdSt_TestDriver *driver,
     vkBeginCommandBuffer(cb, &bbi);
     VkBufferCopy region = {};
     region.size = byteSize;
-    vkCmdCopyBuffer(cb, vkStaging, vkDst, 1, &region);
+    vkCmdCopyBuffer(cb, vkStaging, dst, 1, &region);
     vkEndCommandBuffer(cb);
 
-    // RAW/WAR binary semaphores, native to this device. Producer and consumer
-    // share one logical device, so the raw VkSemaphore handles travel through
-    // the schema unchanged (no export). Encoded the same way HgiVulkan decodes
-    // them, so the existing DestroyExternalSemaphore cleanup applies.
-    VkSemaphoreCreateInfo sci = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-    VkSemaphore vkWriteSem = VK_NULL_HANDLE;
-    VkSemaphore vkReadSem = VK_NULL_HANDLE;
-    vkCreateSemaphore(vkDevice, &sci, nullptr, &vkWriteSem);
-    vkCreateSemaphore(vkDevice, &sci, nullptr, &vkReadSem);
-    shared.writeSemaphore =
-        static_cast<uint64_t>(reinterpret_cast<uintptr_t>(vkWriteSem));
-    shared.readSemaphore =
-        static_cast<uint64_t>(reinterpret_cast<uintptr_t>(vkReadSem));
-    shared.logicalDeviceId = hgi->GetLogicalDeviceId();
-    _extSemaphores.push_back(shared.writeSemaphore);
-    _extSemaphores.push_back(shared.readSemaphore);
-
-    // Submit the copy on the producer's queue, signalling the WRITE semaphore;
-    // Storm's draw waits on it before reading (RAW). The host fence wait only
-    // lets us reclaim the transient pool + staging buffer -- it does NOT consume
-    // the binary semaphore, so the consumer still gets a genuine GPU handshake.
     VkSubmitInfo si = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
     si.commandBufferCount = 1;
     si.pCommandBuffers = &cb;
-    si.signalSemaphoreCount = 1;
-    si.pSignalSemaphores = &vkWriteSem;
+    if (signalSemaphore != VK_NULL_HANDLE) {
+        si.signalSemaphoreCount = 1;
+        si.pSignalSemaphores = &signalSemaphore;
+    }
 
+    // The host fence wait lets us reclaim the transient pool and the staging
+    // buffer. It does NOT consume a binary semaphore, so a consumer that waits
+    // on signalSemaphore still gets a real GPU handshake; and where no
+    // semaphore is passed, the wait is itself the ordering -- the write is
+    // complete before the consumer is even told about the buffer.
     VkFence fence = VK_NULL_HANDLE;
     VkFenceCreateInfo fci = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
     vkCreateFence(vkDevice, &fci, nullptr, &fence);
@@ -541,19 +551,342 @@ My_TestGLDrawing::_MakeVulkanSyncBuffer(HdSt_TestDriver *driver,
     vkDestroyFence(vkDevice, fence, nullptr);
     vkDestroyCommandPool(vkDevice, pool, nullptr);  // frees cb
     hgi->DestroyBuffer(&staging);
+    return true;
+}
+#endif
 
-    // Storm adopts vkDst; keep the owning handle alive until teardown.
-    buffers.push_back(std::move(dst));
-    (void)vkDst;
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+bool
+My_TestGLDrawing::_ShareInteropSemaphores(
+    HgiVulkanExternalBufferArena *producerArena,
+    HgiExternalBufferArena *consumerArena)
+{
+    // One pair per arena, shared by every buffer in it, so this is done once
+    // per run rather than per buffer.
+    if (_interopSemaphoresShared) {
+        return true;
+    }
+    _interopSemaphoresShared = true;
+
+    // The PRODUCER creates the pair, because it is the one that can export:
+    // it hands back OS handles, and the consumer imports them. That is the
+    // opposite direction from --vulkanSync, where Hgi owns the semaphores and
+    // the application uses them natively -- between the two tests both
+    // directions of the contract are covered.
+    uint64_t appDoneHandle = 0;
+    uint64_t hgiDoneHandle = 0;
+    if (!producerArena->CreateExportableSemaphores(
+            HgiSemaphoreKindBinary, &appDoneHandle, &hgiDoneHandle)) {
+        std::cout << "[extGpuBuffer] producer cannot export semaphores; "
+                     "falling back to a host wait\n";
+        return false;
+    }
+
+    // Binary only: OpenGL has no timeline form, and the consumer here may be
+    // OpenGL. An import that cannot be done is not a failure of the test --
+    // GL_EXT_semaphore may simply be absent -- so fall back to ordering the
+    // write on the host instead.
+    if (!consumerArena->ImportSemaphores(
+            appDoneHandle, hgiDoneHandle,
+            _PlatformHandleType(), HgiSemaphoreKindBinary)) {
+        std::cout << "[extGpuBuffer] consumer cannot import semaphores; "
+                     "falling back to a host wait\n";
+        return false;
+    }
+
+    // The producer created them, so it holds them natively and is the side
+    // that can wait on hgi-done.
+    _appDoneVkSemaphore = static_cast<HgiVulkanSemaphore *>(
+        producerArena->GetAppDoneSemaphore().get())->GetVulkanSemaphore();
+    _hgiDoneVkSemaphore = static_cast<HgiVulkanSemaphore *>(
+        producerArena->GetHgiDoneSemaphore().get())->GetVulkanSemaphore();
+    _semaphoreOwnerHgi = _producerHgi.get();
+    _interopSemaphoresActive = true;
+    std::cout << "[extGpuBuffer] semaphore pair shared producer -> consumer\n";
+    return true;
+}
+#endif
+
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+void
+My_TestGLDrawing::_VerifyHgiDoneSignal()
+{
+    if (_hgiDoneVkSemaphore == VK_NULL_HANDLE || !_semaphoreOwnerHgi) {
+        return;
+    }
+
+    // Wait on the GPU for the signal the consumer emits when it has finished
+    // reading -- the moment a real producer becomes free to overwrite the
+    // buffer in place. Nothing else in the test covers that half of the
+    // bracket: the app-done wait is verified by the image coming out right,
+    // but a consumer that never signalled hgi-done would look identical.
+    //
+    // An empty submission is enough. All it does is wait, so the fence tells
+    // us the semaphore was signalled and nothing more.
+    HgiVulkanDevice *device =
+        static_cast<HgiVulkan *>(_semaphoreOwnerHgi)->GetPrimaryDevice();
+    VkDevice vkDevice = device->GetVulkanDevice();
+
+    VkQueue queue = VK_NULL_HANDLE;
+    vkGetDeviceQueue(vkDevice, device->GetGfxQueueFamilyIndex(), 0, &queue);
+
+    const VkPipelineStageFlags waitStage =
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    VkSubmitInfo si = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    si.waitSemaphoreCount = 1;
+    si.pWaitSemaphores = &_hgiDoneVkSemaphore;
+    si.pWaitDstStageMask = &waitStage;
+
+    VkFence fence = VK_NULL_HANDLE;
+    VkFenceCreateInfo fci = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+    vkCreateFence(vkDevice, &fci, nullptr, &fence);
+    vkQueueSubmit(queue, 1, &si, fence);
+
+    // Bounded, deliberately. An unsignalled binary semaphore would block for
+    // ever, and a test that hangs says far less than one that fails.
+    const uint64_t timeoutNs = 5ull * 1000ull * 1000ull * 1000ull;
+    const VkResult res =
+        vkWaitForFences(vkDevice, 1, &fence, VK_TRUE, timeoutNs);
+
+    if (res == VK_SUCCESS) {
+        vkDestroyFence(vkDevice, fence, nullptr);
+        std::cout << "[extGpuBuffer] hgi-done signal observed (WAR ok)\n";
+        _hgiDoneVkSemaphore = VK_NULL_HANDLE;
+        return;
+    }
+
+    // Fatal rather than a reported error: the submission above is still
+    // pending on a wait that will never complete, so ordinary teardown would
+    // block in vkDeviceWaitIdle while destroying the semaphore. There is no
+    // way to cancel a Vulkan submission, so the only honest options are to
+    // hang or to stop here -- and this is a real deadlock in the consumer's
+    // half of the bracket, not a flake worth recovering from.
+    TF_FATAL_ERROR("The consumer never signalled the arena's hgi-done "
+                   "semaphore (waited %.1fs). Storm's commit is expected to "
+                   "encode that signal after reading the shared buffers.",
+                   double(timeoutNs) / 1e9);
+}
+#endif
+
+_SharedBuffer
+My_TestGLDrawing::_MakeInteropBuffer(HdSt_TestDriver *driver,
+                                     const void *data, size_t byteSize)
+{
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+    if (!_EnsureProducerHgi(driver)) {
+        return nullptr;
+    }
+
+    // The producer allocates out of its OWN arena, which allocates exportable
+    // and hands back everything an importer needs. Its VkBuffer is deliberately
+    // not shared: it belongs to another logical device, so only the memory is
+    // meaningful to anyone else.
+    HgiVulkanExternalBufferArena *producerArena =
+        _GetVulkanArena(_producerHgi.get(), &_producerArena);
+    if (!producerArena) {
+        TF_RUNTIME_ERROR("--vulkanInterop needs a Vulkan producer with "
+                         "external memory support (run with "
+                         "HGI_ENABLE_VULKAN=1)");
+        return nullptr;
+    }
+
+    HgiExternalBufferSharedPtr producerBuffer =
+        producerArena->AllocateBuffer(
+            byteSize, HgiBufferUsageVertex | HgiBufferUsageStorage,
+            "interop producer");
+    if (!producerBuffer) {
+        TF_RUNTIME_ERROR("--vulkanInterop could not allocate exportable "
+                         "memory on the producer's device");
+        return nullptr;
+    }
+    // Held for the run: the producer remains the owner of this allocation.
+    _producerBuffers.push_back(producerBuffer);
+
+    HgiVulkanExternalBuffer *producerVkBuffer =
+        static_cast<HgiVulkanExternalBuffer *>(producerBuffer.get());
+    HgiVulkanExternalBufferExportInfo const &info =
+        producerVkBuffer->GetExportInfo();
+    if (!info.externalHandle) {
+        TF_RUNTIME_ERROR("--vulkanInterop producer could not export its "
+                         "allocation");
+        return nullptr;
+    }
+
+    // Resolve the consumer's arena before writing: it is both the import
+    // target and the side that has to import the semaphore pair, and the write
+    // below signals a semaphore only if that succeeded.
+    //
+    // Which arena it is is the whole point of the two-device topology: a
+    // native VkBuffer from the producer's logical device would mean nothing
+    // here, so what crosses is the memory.
+    HgiExternalBufferArena *consumerArena = _ConsumerIsVulkan(driver)
+        ? static_cast<HgiExternalBufferArena *>(
+              _GetVulkanArena(driver->GetHgi(), &_vkArena))
+        : static_cast<HgiExternalBufferArena *>(_GetGlArena(driver));
+    if (!consumerArena) {
+        TF_RUNTIME_ERROR("--vulkanInterop consumer has no arena to import "
+                         "into");
+        return nullptr;
+    }
+
+    // The producer creates the semaphore pair and exports it; the consumer
+    // imports it. When that works the producer's write signals app-done and
+    // the consumer's commit waits on it -- a real GPU handshake across devices,
+    // and across APIs when the consumer is OpenGL. When it does not, the host
+    // fence in _VulkanUpload orders the write instead, and the rest of the
+    // test is unaffected.
+    _ShareInteropSemaphores(producerArena, consumerArena);
+
+    const bool signalAppDone =
+        _interopSemaphoresActive && !_appDoneSignalled;
+    if (!_VulkanUpload(_producerHgi.get(), producerVkBuffer->GetVulkanBuffer(),
+                       data, byteSize,
+                       signalAppDone ? _appDoneVkSemaphore : VK_NULL_HANDLE)) {
+        return nullptr;
+    }
+    if (signalAppDone) {
+        _appDoneSignalled = true;
+        // Tell the consumer's arena there is a signal to wait on. Without it
+        // the arena assumes the application is idle and skips the wait, which
+        // is the right default but not what we are here to exercise.
+        consumerArena->NotifyAppDone();
+    }
+
+    if (_ConsumerIsVulkan(driver)) {
+        HgiVulkanExternalBufferArena *arena =
+            static_cast<HgiVulkanExternalBufferArena *>(consumerArena);
+        HgiVulkanImportBufferDesc importDesc;
+        importDesc.externalHandle = info.externalHandle;
+        importDesc.handleType = info.handleType;
+        importDesc.memoryBlockSize = info.memoryBlockSize;
+        importDesc.memoryOffset = info.memoryOffset;
+        importDesc.byteSize = byteSize;
+        importDesc.dedicated = info.dedicated;
+        importDesc.usage = HgiBufferUsageVertex | HgiBufferUsageStorage;
+        importDesc.debugName = "interop consumer";
+
+        HgiExternalBufferSharedPtr imported = arena->ImportBuffer(importDesc);
+        if (!imported) {
+            TF_RUNTIME_ERROR("--vulkanInterop could not import the producer's "
+                             "allocation into the consumer's device");
+        }
+        return imported;
+    }
+
+    HgiGLExternalBufferArena *glArena =
+        static_cast<HgiGLExternalBufferArena *>(consumerArena);
+    HgiGLImportBufferDesc importDesc;
+    importDesc.externalHandle = info.externalHandle;
+    importDesc.handleType = info.handleType;
+    importDesc.memoryBlockSize = info.memoryBlockSize;
+    importDesc.memoryOffset = info.memoryOffset;
+    importDesc.byteSize = byteSize;
+    importDesc.dedicated = info.dedicated;
+    importDesc.usage = HgiBufferUsageVertex | HgiBufferUsageStorage;
+    importDesc.debugName = "interop consumer";
+
+    HgiExternalBufferSharedPtr imported = glArena->ImportBuffer(importDesc);
+    if (!imported) {
+        TF_RUNTIME_ERROR("--vulkanInterop could not import the producer's "
+                         "allocation into OpenGL");
+    }
+    return imported;
 #else
     (void)driver;
-    (void)buffers;
+    (void)data;
+    (void)byteSize;
+    TF_RUNTIME_ERROR("--vulkanInterop requires a Vulkan-enabled build");
+    return nullptr;
+#endif
+}
+
+_SharedBuffer
+My_TestGLDrawing::_MakeVulkanSyncBuffer(HdSt_TestDriver *driver,
+                                        const void *data, size_t byteSize,
+                                        uint32_t stride)
+{
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+    Hgi *hgi = driver->GetHgi();
+    if (!_ConsumerIsVulkan(driver)) {
+        TF_RUNTIME_ERROR("--vulkanSync needs a Vulkan Hgi (run with "
+                         "HGI_ENABLE_VULKAN=1)");
+        return nullptr;
+    }
+    HgiVulkanExternalBufferArena *arena = _GetVulkanArena(hgi, &_vkArena);
+    if (!arena) {
+        TF_RUNTIME_ERROR("--vulkanSync needs a Vulkan device with external "
+                         "memory support");
+        return nullptr;
+    }
+
+    // Destination vertex buffer on the consumer's own device, which Storm binds
+    // directly: same logical device, so nothing is imported and only the write
+    // ordering matters.
+    HgiBufferDesc dstDesc;
+    dstDesc.usage = HgiBufferUsageVertex;
+    dstDesc.byteSize = byteSize;
+    dstDesc.vertexStride = stride;
+    dstDesc.debugName = "vulkanSync dst";
+    HgiBufferHandle dst = hgi->CreateBuffer(dstDesc);
+    VkBuffer vkDst =
+        static_cast<HgiVulkanBuffer *>(dst.Get())->GetVulkanBuffer();
+
+    // One semaphore pair for the whole arena rather than one per buffer. Both
+    // sides are on this device, so the producer reads the native VkSemaphore
+    // straight off the arena instead of exporting and re-importing it.
+    // The pair belongs to the arena, not to a buffer, so create it once even
+    // when several buffers are shared -- and a binary semaphore may carry only
+    // one pending signal, so exactly one write signals it.
+    if (!_interopSemaphoresShared) {
+        _interopSemaphoresShared = true;
+        uint64_t appDoneHandle = 0, hgiDoneHandle = 0;
+        if (!arena->CreateExportableSemaphores(
+                HgiSemaphoreKindBinary, &appDoneHandle, &hgiDoneHandle)) {
+            TF_RUNTIME_ERROR("--vulkanSync could not create the arena's "
+                             "semaphore pair");
+            return nullptr;
+        }
+        // Here Hgi owns the pair and the application uses it natively, which
+        // is the opposite direction from the interop test's import.
+        _appDoneVkSemaphore = static_cast<HgiVulkanSemaphore *>(
+            arena->GetAppDoneSemaphore().get())->GetVulkanSemaphore();
+        _hgiDoneVkSemaphore = static_cast<HgiVulkanSemaphore *>(
+            arena->GetHgiDoneSemaphore().get())->GetVulkanSemaphore();
+        _semaphoreOwnerHgi = hgi;
+        _interopSemaphoresActive = true;
+    }
+
+    // Write it as the producer's own work, signalling app-done; Storm's commit
+    // waits on that before reading (RAW).
+    const bool signalAppDone =
+        _interopSemaphoresActive && !_appDoneSignalled;
+    if (!_VulkanUpload(hgi, vkDst, data, byteSize,
+                       signalAppDone ? _appDoneVkSemaphore : VK_NULL_HANDLE)) {
+        return nullptr;
+    }
+
+    if (signalAppDone) {
+        _appDoneSignalled = true;
+        // Tell the arena there is a signal to wait on. Without this it cannot
+        // tell "the application published something" from "the application is
+        // idle", and has to assume idle -- rightly, since waiting on a binary
+        // semaphore nobody will signal hangs the frame.
+        arena->NotifyAppDone();
+    }
+
+    // Registered rather than adopted: this VkBuffer is the test's, and the
+    // handle below keeps it alive until teardown.
+    _appVkBuffers.push_back(dst);
+    return arena->RegisterBuffer(
+        vkDst, byteSize, HgiBufferUsageVertex | HgiBufferUsageStorage);
+#else
+    (void)driver;
     (void)data;
     (void)byteSize;
     (void)stride;
     TF_RUNTIME_ERROR("--vulkanSync requires a Vulkan-enabled build");
+    return nullptr;
 #endif
-    return shared;
 }
 
 bool
@@ -565,97 +898,39 @@ My_TestGLDrawing::_EnsureProducerHgi(HdSt_TestDriver *driver)
 
     _producerHgi = Hgi::CreateNamedHgi(HgiTokens->Vulkan);
     if (!_producerHgi) {
-        TF_RUNTIME_ERROR("--vulkanInterop could not create a second "
-                         "Vulkan Hgi to stand in for the producer's device");
+        TF_RUNTIME_ERROR("--vulkanInterop could not create a second Vulkan "
+                         "Hgi to stand in for the producer's device");
         return false;
     }
-
-    // The point of the two-device topology: opaque external handles are only
-    // importable on the physical device that exported them, so a producer that
-    // picked a different GPU must fail loudly instead of rendering garbage.
-    const std::string producerUuid = _producerHgi->GetDeviceUuid();
-    const std::string consumerUuid = driver->GetHgi()->GetDeviceUuid();
-    std::cout << "[extGpuBuffer] producer device = " << producerUuid
-              << "\n[extGpuBuffer] consumer device = " << consumerUuid
-              << std::endl;
-    if (producerUuid.empty() || producerUuid != consumerUuid) {
-        TF_RUNTIME_ERROR("--vulkanInterop requires both Vulkan "
-                         "devices to resolve to the same physical device "
-                         "(producer '%s' vs consumer '%s')",
-                         producerUuid.c_str(), consumerUuid.c_str());
-        _producerHgi.reset();
-        return false;
-    }
+    (void)driver;
     return true;
 }
 
 void
 My_TestGLDrawing::_ReleaseProducer()
 {
-    if (_producerHgi) {
-        for (HgiBufferHandle &b : _producerBuffers) {
-            _producerHgi->DestroyBuffer(&b);
-        }
-        for (uint64_t sem : _producerSemaphores) {
-            _producerHgi->DestroyExternalSemaphore(sem);
-        }
-    }
+    // Dropping the references is the whole of it. Each arena reclaims its own
+    // buffers once nothing holds them and the GPU has retired the work that
+    // named them, and the arena itself goes before the Hgi that owns it.
     _producerBuffers.clear();
-    _producerSemaphores.clear();
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+    _producerArena.reset();
+#endif
     _producerHgi.reset();
 }
 
 _SharedBuffer
 My_TestGLDrawing::_MakeGpuBuffer(HdSt_TestDriver *driver,
-                                 std::vector<HgiBufferHandle> &buffers,
                                  const void *data, size_t byteSize,
                                  uint32_t stride)
 {
     if (_vulkanInterop) {
-        if (!_EnsureProducerHgi(driver)) {
-            return _SharedBuffer();
-        }
-        return _MakeInteropBuffer(_producerHgi.get(), _producerBuffers,
-                                  _producerSemaphores, data, byteSize);
+        return _MakeInteropBuffer(driver, data, byteSize);
     }
     if (_vulkanSync) {
-        return _MakeVulkanSyncBuffer(driver, buffers, data, byteSize, stride);
+        return _MakeVulkanSyncBuffer(driver, data, byteSize, stride);
     }
-
-    HgiBufferDesc desc;
-    desc.usage = HgiBufferUsageVertex;
-    desc.byteSize = byteSize;
-    desc.vertexStride = stride;   // Hgi requires this for vertex buffers
-    desc.initialData = data;
-
-    HgiBufferHandle buffer = driver->GetHgi()->CreateBuffer(desc);
-
-    _SharedBuffer shared;
-    shared.rawHandle = buffer->GetRawResource();
-    shared.logicalDeviceId = driver->GetHgi()->GetLogicalDeviceId();
-    buffers.push_back(std::move(buffer));
-    return shared;
-}
-
-void
-My_TestGLDrawing::_ReleaseGlInterop()
-{
-    for (uint32_t s : _glInteropSemaphores) {
-        glDeleteSemaphoresEXT(1, &s);
-    }
-    for (uint32_t s : _glReadSemaphores) {
-        glDeleteSemaphoresEXT(1, &s);
-    }
-    for (uint32_t b : _glInteropBuffers) {
-        glDeleteBuffers(1, &b);
-    }
-    for (uint32_t m : _glInteropMemObjects) {
-        glDeleteMemoryObjectsEXT(1, &m);
-    }
-    _glInteropSemaphores.clear();
-    _glReadSemaphores.clear();
-    _glInteropBuffers.clear();
-    _glInteropMemObjects.clear();
+    return _MakeNativeRegisteredBuffer(driver, data, byteSize, stride);
 }
 
 HdContainerDataSourceHandle
@@ -665,100 +940,35 @@ My_TestGLDrawing::_WithExtGpuBuffer(
     const _SharedBuffer &shared, size_t byteSize,
     HdTupleType elementType, size_t numElements)
 {
-    using _U64Ds  = HdRetainedTypedSampledDataSource<uint64_t>;
     using _SizeDs = HdRetainedTypedSampledDataSource<size_t>;
     using _BoolDs = HdRetainedTypedSampledDataSource<bool>;
-    using _TokenDs = HdRetainedTypedSampledDataSource<TfToken>;
+    using _ResourceDs =
+        HdRetainedTypedSampledDataSource<HdExternalBufferPtr>;
 
-    // backendApi must equal the consumer's Hgi->GetAPIName() (HgiTokens->OpenGL
-    // for HgiGL) -- that is exactly what a real producer's _GetCurrentBackendApi
-    // publishes.
+    (void)driver;
+    (void)byteSize;
+
+    // One value names the buffer, and it is WEAK: the scene description must
+    // not be what keeps GPU memory alive. The test holds its own strong
+    // reference for the duration of the run, which is the producer's job.
     HdExtGpuBufferSchema::Builder builder;
     builder
-        .SetBackendApi(_TokenDs::New(driver->GetHgi()->GetAPIName()))
-        .SetRawHandleByteSize(_SizeDs::New(byteSize))
+        .SetExternalResource(_ResourceDs::New(HdExternalBufferPtr(shared)))
         .SetNumElements(_SizeDs::New(numElements))
         .SetElementType(
             HdRetainedTypedSampledDataSource<HdTupleType>::New(elementType))
         .SetByteOffset(_SizeDs::New(0))
         .SetByteStride(_SizeDs::New(0))
-        .SetDirectBindable(_BoolDs::New(_directBindable));
-
-    if (shared.rawHandle) {
-        builder.SetRawHandle(_U64Ds::New(shared.rawHandle));
-    }
-    if (shared.externalMemoryHandle) {
-        builder
-            .SetExternalMemoryHandle(_U64Ds::New(shared.externalMemoryHandle))
-            .SetExternalHandleType(
-                HdExtGpuBufferSchema::BuildExternalHandleTypeDataSource(
-                    _ExternalHandleTypeToken()))
-            .SetMemoryBlockSize(_SizeDs::New(shared.memoryBlockSize))
-            .SetMemoryOffset(_SizeDs::New(shared.memoryOffset))
-            .SetDedicated(_BoolDs::New(shared.dedicated));
-    }
-    if (!shared.deviceUuid.empty()) {
-        builder.SetDeviceUuid(_TokenDs::New(TfToken(shared.deviceUuid)));
-    }
-    if (shared.logicalDeviceId) {
-        builder.SetLogicalDeviceId(_U64Ds::New(shared.logicalDeviceId));
-    }
-    HdContainerDataSourceHandle extGpuBuffer = builder.Build();
-
-    // If the producer created sync semaphores for this buffer, publish them as
-    // the extGpuBuffer's "sync" child so Storm's consumer orders the producer's
-    // write before its read (RAW, write semaphore) and signals when its read
-    // completes (WAR, read semaphore).
-    const bool hasExternalSem = shared.externalWriteSemaphore ||
-                                shared.externalReadSemaphore;
-    if (shared.writeSemaphore || shared.readSemaphore || hasExternalSem) {
-        HdExtGpuSyncSchema::Builder syncBuilder;
-        syncBuilder.SetBackendApi(
-            _TokenDs::New(driver->GetHgi()->GetAPIName()));
-        if (shared.writeSemaphore) {
-            syncBuilder.SetWriteSemaphore(_U64Ds::New(shared.writeSemaphore));
-        }
-        if (shared.readSemaphore) {
-            syncBuilder.SetReadSemaphore(_U64Ds::New(shared.readSemaphore));
-        }
-        if (shared.externalWriteSemaphore) {
-            syncBuilder.SetExternalWriteSemaphore(
-                _U64Ds::New(shared.externalWriteSemaphore));
-        }
-        if (shared.externalReadSemaphore) {
-            syncBuilder.SetExternalReadSemaphore(
-                _U64Ds::New(shared.externalReadSemaphore));
-        }
-        // The implementation only supports binary semaphores; state it
-        // explicitly rather than relying on the "absent means binary" default.
-        syncBuilder.SetKind(_TokenDs::New(HdExtGpuSyncSchemaTokens->binary));
-        if (hasExternalSem) {
-            // External handles need their kind spelled out for the importer.
-            syncBuilder.SetHandleType(_TokenDs::New(_ExternalHandleTypeToken()));
-        }
-        if (!shared.deviceUuid.empty()) {
-            syncBuilder.SetDeviceUuid(
-                _TokenDs::New(TfToken(shared.deviceUuid)));
-        }
-        if (shared.logicalDeviceId) {
-            syncBuilder.SetLogicalDeviceId(
-                _U64Ds::New(shared.logicalDeviceId));
-        }
-        extGpuBuffer = HdOverlayContainerDataSource::New(
-            extGpuBuffer,
-            HdRetainedContainerDataSource::New(
-                HdExtGpuSyncSchema::GetSchemaToken(), syncBuilder.Build()));
-    }
+        .SetAllowDirectBind(_BoolDs::New(_allowDirectBind));
 
     return HdOverlayContainerDataSource::New(
         primvar,
         HdRetainedContainerDataSource::New(
-            HdExtGpuBufferSchema::GetSchemaToken(), extGpuBuffer));
+            HdExtGpuBufferSchema::GetSchemaToken(), builder.Build()));
 }
 
 HdContainerDataSourceHandle
 My_TestGLDrawing::_BuildCubePrimvars(HdSt_TestDriver *driver,
-                                     std::vector<HgiBufferHandle> &buffers,
                                      bool gpuShare)
 {
     const VtVec3fArray points = _CubePoints(_halfSize);
@@ -769,8 +979,14 @@ My_TestGLDrawing::_BuildCubePrimvars(HdSt_TestDriver *driver,
         // GL buffer holding the 8 cube corners.
         const size_t byteSize = points.size() * sizeof(GfVec3f);
         const _SharedBuffer shared =
-            _MakeGpuBuffer(driver, buffers, points.cdata(), byteSize,
+            _MakeGpuBuffer(driver, points.cdata(), byteSize,
                            sizeof(GfVec3f));
+        if (!shared) {
+            TF_RUNTIME_ERROR("Could not share the cube points");
+            return nullptr;
+        }
+        // The producer's strong reference. Everything downstream is weak.
+        _sharedBuffers.push_back(shared);
         HdContainerDataSourceHandle emptyValue =
             HdPrimvarSchema::Builder()
                 .SetPrimvarValue(_PointArrayDs::New(VtVec3fArray()))
@@ -811,7 +1027,6 @@ My_TestGLDrawing::_BuildCubePrimvars(HdSt_TestDriver *driver,
 void
 My_TestGLDrawing::_BuildScene(HdSt_TestDriver *driver,
                               HdRetainedSceneIndexRefPtr &scene,
-                              std::vector<HgiBufferHandle> &buffers,
                               bool gpuShare)
 {
     scene = HdRetainedSceneIndex::New();
@@ -820,7 +1035,7 @@ My_TestGLDrawing::_BuildScene(HdSt_TestDriver *driver,
     const SdfPath instancerPath("/instancer");
 
     HdContainerDataSourceHandle primvarsDs =
-        _BuildCubePrimvars(driver, buffers, gpuShare);
+        _BuildCubePrimvars(driver, gpuShare);
 
     HdContainerDataSourceHandle meshDs =
         HdMeshSchema::Builder()
@@ -916,8 +1131,13 @@ My_TestGLDrawing::_BuildScene(HdSt_TestDriver *driver,
     if (gpuShare) {
         const size_t byteSize = numInstances * sizeof(GfMatrix4f);
         const _SharedBuffer shared =
-            _MakeGpuBuffer(driver, buffers, matricesF.data(), byteSize,
+            _MakeGpuBuffer(driver, matricesF.data(), byteSize,
                            sizeof(GfMatrix4f));
+        if (!shared) {
+            TF_RUNTIME_ERROR("Could not share the instance transforms");
+            return;
+        }
+        _sharedBuffers.push_back(shared);
         HdContainerDataSourceHandle emptyValue =
             HdPrimvarSchema::Builder()
                 .SetPrimvarValue(
@@ -955,11 +1175,106 @@ My_TestGLDrawing::_BuildScene(HdSt_TestDriver *driver,
 }
 
 void
+My_TestGLDrawing::_CheckArenaReclaim(HdSt_TestDriver *driver,
+                                     HdRetainedSceneIndexRefPtr const &scene)
+{
+    if (_sharedBuffers.empty()) {
+        return;
+    }
+    const HgiExternalBufferWeakPtr weak = _sharedBuffers.front();
+
+    // Make Storm let go first, while we still hold our own reference. Order
+    // matters: a collection triggered by this render must find the buffer
+    // still referenced, so that the only thing the assertions below can be
+    // observing is the arena's own reference.
+    HdSceneIndexObserver::RemovedPrimEntries removed;
+    removed.emplace_back(SdfPath("/cube"));
+    if (_instancing) {
+        removed.emplace_back(SdfPath("/instancer"));
+    }
+    scene->RemovePrims(removed);
+    driver->Draw();
+
+    // Now the producer lets go too. Nothing outside the arena references the
+    // buffer, and nothing has been collected since.
+    _sharedBuffers.clear();
+    _producerBuffers.clear();
+
+    // A reference count reaching zero is NOT what frees an external buffer.
+    // If it were, a producer could not tell "the renderer has let go" from
+    // "the GPU is finished", and recycling on the former is a use-after-free.
+    if (weak.expired()) {
+        TF_RUNTIME_ERROR("The shared buffer was destroyed as soon as the last "
+                         "outside reference dropped. The arena is supposed to "
+                         "hold its own until GarbageCollect, so that expiry "
+                         "means the GPU is done with it too.");
+        return;
+    }
+
+    // Collection releases it. A frame per iteration as well as a collect,
+    // because an application reclaims as it renders and that is the behaviour
+    // worth asserting -- and because this driver's task list has no
+    // HdxAovInputTask or HdxPresentTask, so Hgi::StartFrame/EndFrame are never
+    // called here at all. Reclamation must not depend on hooks a client may
+    // never invoke.
+    //
+    // Bounded: lagging a few frames is the safe direction, never releasing is
+    // a leak.
+    Hgi *hgi = driver->GetHgi();
+    const int maxFrames = 8;
+    int frames = 0;
+    for (; frames < maxFrames && !weak.expired(); ++frames) {
+        driver->Draw();
+        hgi->GarbageCollect();
+    }
+
+    if (!weak.expired()) {
+        // Which of the two it is comes straight off the arena: a buffer that
+        // reached the pending list was stamped and is waiting on the retire
+        // test; one still counted as live was never a candidate, so something
+        // is holding a reference.
+        HgiExternalBufferArena *arena = nullptr;
+        if (_glArena) {
+            arena = _glArena.get();
+        }
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+        if (_vkArena) {
+            arena = _vkArena.get();
+        }
+#endif
+        const HgiExternalBufferArenaUsage usage =
+            arena ? arena->GetUsage() : HgiExternalBufferArenaUsage();
+        TF_RUNTIME_ERROR("The shared buffer was still alive after %d frames "
+                         "with nothing referencing it. arena live=%zu "
+                         "pending=%zu, buffer use_count=%ld. pending>0 means "
+                         "the retire test never passes; live>0 means something "
+                         "still holds a reference.",
+                         maxFrames, usage.numBuffers, usage.numPendingDestroy,
+                         long(weak.use_count()));
+        return;
+    }
+
+    std::cout << "[extGpuBuffer] arena reclaimed the buffer after "
+              << frames << " frame(s)\n";
+}
+
+void
 My_TestGLDrawing::_RenderToPixels(bool gpuShare, std::vector<uint8_t> &out,
                                   int &width, int &height,
                                   const std::string &writePath)
 {
     const int w = GetWidth(), h = GetHeight();
+
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+    // Each pass builds its own driver, hence its own arena and its own
+    // semaphore pair; the CPU pass shares nothing and sets none of this.
+    _interopSemaphoresShared = false;
+    _interopSemaphoresActive = false;
+    _appDoneSignalled = false;
+    _appDoneVkSemaphore = VK_NULL_HANDLE;
+    _hgiDoneVkSemaphore = VK_NULL_HANDLE;
+    _semaphoreOwnerHgi = nullptr;
+#endif
 
     auto driver = std::make_unique<HdSt_TestDriver>(HdReprTokens->hull);
 
@@ -971,8 +1286,7 @@ My_TestGLDrawing::_RenderToPixels(bool gpuShare, std::vector<uint8_t> &out,
     }
 
     HdRetainedSceneIndexRefPtr scene;
-    std::vector<HgiBufferHandle> buffers;
-    _BuildScene(driver.get(), scene, buffers, gpuShare);
+    _BuildScene(driver.get(), scene, gpuShare);
 
     // Feed the geometry through a scene index so the extGpuBuffer child
     // survives to the terminal scene index the consumer reads from.
@@ -985,9 +1299,8 @@ My_TestGLDrawing::_RenderToPixels(bool gpuShare, std::vector<uint8_t> &out,
     driver->SetCamera(GetViewMatrix(), GetProjectionMatrix(),
                       CameraUtilFraming(GfRect2i(GfVec2i(0, 0), w, h)));
 
-    // RAW ordering is now driven by the schema: Storm's consumer reads the
-    // extGpuBuffer's "sync" child and enqueues the wait during Sync, so the
-    // test no longer calls QueueWaitExternalSemaphore itself.
+    // RAW ordering needs nothing from the test: Storm's commit encodes the
+    // arena's wait before it reads any shared buffer, and its signal after.
     driver->Draw();
 
     if (!writePath.empty()) {
@@ -1009,38 +1322,49 @@ My_TestGLDrawing::_RenderToPixels(bool gpuShare, std::vector<uint8_t> &out,
         rb->Unmap();
     }
 
-    // WAR verification: the producer waits (on the GPU) for each read semaphore
-    // the consumer signalled after its read, then finishes -- this is where a
-    // real producer would gate its next overwrite of the shared buffer. A
-    // missing consumer signal (broken WAR wiring) would hang glFinish.
-    if (!_glReadSemaphores.empty()) {
-        for (uint32_t glReadSem : _glReadSemaphores) {
-            glWaitSemaphoreEXT(
-                glReadSem,
-                static_cast<uint32_t>(_glInteropBuffers.size()),
-                _glInteropBuffers.data(), 0, nullptr, nullptr);
-        }
-        glFinish();
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+    // Now that the frame has been rendered and read back, the consumer must
+    // have signalled that it is finished reading.
+    _VerifyHgiDoneSignal();
+#endif
+
+    // With the image already compared, the shared buffers are free to go --
+    // which is the point at which the arena's reclaim contract is observable.
+    if (gpuShare) {
+        _CheckArenaReclaim(driver.get(), scene);
     }
 
-    // Release the GL alias objects (which reference the shared memory) BEFORE
-    // destroying the Vulkan buffer that owns that memory.
-    _ReleaseGlInterop();
+    // Let go of everything shared this run, in the order the ownership rules
+    // require.
+    //
+    // The consumer's references go first (with the driver, below). Ours go
+    // here: dropping them is all a producer has to do -- no arena call, no Hgi
+    // call. The arena notices the count fall on its next sweep and reclaims
+    // each buffer once the GPU has retired the work that named it, which is
+    // the only point at which reclaiming is safe.
+    _sharedBuffers.clear();
 
-    // The external GPU buffers are non-owning in Storm; free the real GPU
-    // resources we allocated (before this driver's Hgi is destroyed).
+    // Buffers the application created itself are the application's to delete;
+    // the arena only registered them and never would. This is the contract a
+    // pooled viewport buffer needs, and getting it wrong is a double free.
+    for (uint32_t glBuf : _appGlBuffers) {
+        glDeleteBuffers(1, &glBuf);
+    }
+    _appGlBuffers.clear();
+
     Hgi *hgi = driver->GetHgi();
-    for (HgiBufferHandle &b : buffers) {
+    for (HgiBufferHandle &b : _appVkBuffers) {
         hgi->DestroyBuffer(&b);
     }
-    for (uint64_t sem : _extSemaphores) {
-        hgi->DestroyExternalSemaphore(sem);
-    }
-    _extSemaphores.clear();
+    _appVkBuffers.clear();
 
-    // The consumer's resource registry holds the buffers it imported from the
-    // producer's memory, so drop the whole consumer before the producer device
-    // that allocated that memory.
+    // The consumer imported the producer's memory, so drop the whole consumer
+    // -- and with it its arena, which owns those imports -- before the
+    // producer device that allocated the memory.
+    _glArena.reset();
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+    _vkArena.reset();
+#endif
     driver.reset();
     _ReleaseProducer();
 }
@@ -1107,7 +1431,7 @@ My_TestGLDrawing::DrawTest()
     if (!_driver) {
         SetCameraTranslate(_CameraTranslate());
         _driver = std::make_unique<HdSt_TestDriver>(HdReprTokens->hull);
-        _BuildScene(_driver.get(), _driverScene, _driverBuffers,
+        _BuildScene(_driver.get(), _driverScene,
                     /*gpuShare*/true);
         _driver->GetDelegate().GetRenderIndex().InsertSceneIndex(
             _driverScene, SdfPath::AbsoluteRootPath());
@@ -1126,20 +1450,24 @@ My_TestGLDrawing::DrawTest()
 void
 My_TestGLDrawing::UninitTest()
 {
-    _ReleaseGlInterop();
+    _sharedBuffers.clear();
+    for (uint32_t glBuf : _appGlBuffers) {
+        glDeleteBuffers(1, &glBuf);
+    }
+    _appGlBuffers.clear();
     if (_driver) {
         Hgi *hgi = _driver->GetHgi();
-        for (HgiBufferHandle &b : _driverBuffers) {
+        for (HgiBufferHandle &b : _appVkBuffers) {
             hgi->DestroyBuffer(&b);
         }
-        for (uint64_t sem : _extSemaphores) {
-            hgi->DestroyExternalSemaphore(sem);
-        }
     }
-    _driverBuffers.clear();
-    _extSemaphores.clear();
+    _appVkBuffers.clear();
     // Same ordering rule as _RenderToPixels: the consumer's imports reference
     // the producer's memory, so the consumer goes first.
+    _glArena.reset();
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+    _vkArena.reset();
+#endif
     _driver.reset();
     _ReleaseProducer();
 }
@@ -1168,7 +1496,7 @@ My_TestGLDrawing::ParseArgs(int argc, char *argv[])
         } else if (arg == "--vulkanInterop") {
             _vulkanInterop = true;
         } else if (arg == "--copy") {
-            _directBindable = false;
+            _allowDirectBind = false;
         } else if (arg == "--writeCpu") {
             _writeCpu = true;   // --write emits the CPU image instead of GPU
         }

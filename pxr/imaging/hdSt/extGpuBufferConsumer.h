@@ -26,13 +26,13 @@ class HdStResourceRegistry;
 ///
 /// Storm-internal helpers, shared by HdStMesh / HdStPoints / HdStBasisCurves,
 /// that turn a producer-published HdExtGpuBufferSchema on a primvar into a
-/// Storm buffer source / zero-copy alias BAR. See external_gpu_buffer_proposal.
+/// Storm buffer source, and a set of such sources into a zero-copy range.
 
 /// Resolve the prim \p id's container data source from the terminal scene
-/// index. Hoist this out of per-primvar loops (it does the one scene-index
-/// traversal) and feed the result to the overload below, so a prim with N dirty
-/// primvars pays for one GetPrim instead of N. Returns null when there is no
-/// terminal scene index.
+/// index. Hoist this out of per-primvar loops -- it does the one scene-index
+/// traversal -- and feed the result to the overload below, so a prim with N
+/// dirty primvars pays for one GetPrim instead of N. Returns null when there
+/// is no terminal scene index.
 HDST_API
 HdContainerDataSourceHandle
 HdSt_GetPrimDataSource(
@@ -42,7 +42,7 @@ HdSt_GetPrimDataSource(
 /// Fetch the HdExtGpuBufferSchema (if any) for primvar \p name off an already
 /// resolved prim \p primDataSource (see HdSt_GetPrimDataSource). Returns an
 /// undefined schema when the prim / primvar / extGpuBuffer child is absent (a
-/// null \p primDataSource included) — the caller treats that as "no external
+/// null \p primDataSource included) -- which the caller treats as "no external
 /// buffer, use the CPU path".
 HDST_API
 HdExtGpuBufferSchema
@@ -51,8 +51,8 @@ HdSt_GetExtGpuBufferSchema(
     TfToken const &name);
 
 /// Convenience overload that resolves the prim data source itself. Prefer the
-/// two-argument form inside loops over a prim's primvars to avoid re-traversing
-/// the terminal scene index per primvar name.
+/// two-argument form inside loops over a prim's primvars, to avoid
+/// re-traversing the terminal scene index per primvar name.
 HDST_API
 HdExtGpuBufferSchema
 HdSt_GetExtGpuBufferSchema(
@@ -60,10 +60,16 @@ HdSt_GetExtGpuBufferSchema(
     SdfPath const &id,
     TfToken const &name);
 
-/// Try to create an HdStExtGpuBufferSource (a buffer source with no CPU
-/// payload) from \p schema. Returns nullptr if the schema is absent/incomplete
-/// or enrichment fails (backend mismatch, out-of-bounds), in which case the
-/// caller should fall through to its existing CPU path.
+/// Try to build an HdStExtGpuBufferSource (a source with no CPU payload) from
+/// \p schema, for a primvar whose elements are bound at \p usage.
+///
+/// Returns nullptr -- and the caller falls through to its CPU path -- when the
+/// schema is incomplete, when the producer has withdrawn the buffer, when the
+/// buffer belongs to another Hgi, or when it does not fit the described
+/// layout. All of those are ordinary, expected outcomes rather than errors.
+///
+/// Also records the buffer's arena with \p registry, so the commit that reads
+/// it is bracketed by that arena's synchronization.
 HDST_API
 HdBufferSourceSharedPtr
 HdSt_TryCreateExtGpuBufferSource(
@@ -71,11 +77,12 @@ HdSt_TryCreateExtGpuBufferSource(
     HdExtGpuBufferSchema const &schema,
     HdStResourceRegistry *registry);
 
-/// If every source in \p sources is a direct-bindable external GPU source,
-/// return a zero-copy alias BAR wrapping the external handles; otherwise
-/// nullptr. When \p existingBar is already an HdStExtGpuBufferArrayRange it is
-/// updated in place and returned (same pointer), so HdStUpdateDrawItemBAR does
-/// not mark draw batches dirty.
+/// If every source in \p sources is a GPU-backed source the producer allows
+/// binding directly, return a zero-copy range over them; otherwise nullptr, so
+/// the caller aggregates through a memory manager as usual.
+///
+/// When \p existingBar is already an external-buffer range it is rebound in
+/// place and returned (the same pointer), so draw batches are not invalidated.
 HDST_API
 HdBufferArrayRangeSharedPtr
 HdSt_TryCreateExtGpuBufferAliasBAR(

@@ -35,11 +35,11 @@ TF_DEFINE_PUBLIC_TOKENS(HdExtGpuBufferSchemaTokens,
 bool
 HdExtGpuBufferSchema::IsComplete() const
 {
-    const HdTokenDataSourceHandle api = GetBackendApi();
+    const HdExternalBufferDataSourceHandle resource = GetExternalResource();
     const HdSizetDataSourceHandle count = GetNumElements();
     const HdTupleTypeDataSourceHandle elementType = GetElementType();
 
-    if (!api || !count || !elementType) {
+    if (!resource || !count || !elementType) {
         return false;
     }
     if (count->GetTypedValue(0.0f) == 0) {
@@ -49,42 +49,20 @@ HdExtGpuBufferSchema::IsComplete() const
         return false;
     }
 
-    // The buffer must be reachable by at least one route. A native rawHandle
-    // is only usable by a consumer on the same API and device; the import
-    // cluster works for anyone who can import the memory. Producers may
-    // publish both.
-    const HdUInt64DataSourceHandle rawHandle = GetRawHandle();
-    if (rawHandle && rawHandle->GetTypedValue(0.0f) != 0) {
-        return true;
-    }
-    const HdUInt64DataSourceHandle memHandle = GetExternalMemoryHandle();
-    const HdTokenDataSourceHandle handleType = GetExternalHandleType();
-    return memHandle && handleType &&
-           memHandle->GetTypedValue(0.0f) != 0 &&
-           !handleType->GetTypedValue(0.0f).IsEmpty();
+    // An expired reference is not incomplete -- the producer described the
+    // buffer correctly and it has since gone away. Completeness is about the
+    // description, so leave that to the consumer, which has to handle a buffer
+    // disappearing between Sync and commit regardless.
+    return true;
 }
 
 // --(END CUSTOM CODE: Schema Methods)--
 
-HdTokenDataSourceHandle
-HdExtGpuBufferSchema::GetBackendApi() const
+HdExternalBufferDataSourceHandle
+HdExtGpuBufferSchema::GetExternalResource() const
 {
-    return _GetTypedDataSource<HdTokenDataSource>(
-        HdExtGpuBufferSchemaTokens->backendApi);
-}
-
-HdUInt64DataSourceHandle
-HdExtGpuBufferSchema::GetRawHandle() const
-{
-    return _GetTypedDataSource<HdUInt64DataSource>(
-        HdExtGpuBufferSchemaTokens->rawHandle);
-}
-
-HdSizetDataSourceHandle
-HdExtGpuBufferSchema::GetRawHandleByteSize() const
-{
-    return _GetTypedDataSource<HdSizetDataSource>(
-        HdExtGpuBufferSchemaTokens->rawHandleByteSize);
+    return _GetTypedDataSource<HdExternalBufferDataSource>(
+        HdExtGpuBufferSchemaTokens->externalResource);
 }
 
 HdSizetDataSourceHandle
@@ -116,99 +94,31 @@ HdExtGpuBufferSchema::GetByteStride() const
 }
 
 HdBoolDataSourceHandle
-HdExtGpuBufferSchema::GetDirectBindable() const
+HdExtGpuBufferSchema::GetAllowDirectBind() const
 {
     return _GetTypedDataSource<HdBoolDataSource>(
-        HdExtGpuBufferSchemaTokens->directBindable);
-}
-
-HdUInt64DataSourceHandle
-HdExtGpuBufferSchema::GetExternalMemoryHandle() const
-{
-    return _GetTypedDataSource<HdUInt64DataSource>(
-        HdExtGpuBufferSchemaTokens->externalMemoryHandle);
-}
-
-HdTokenDataSourceHandle
-HdExtGpuBufferSchema::GetExternalHandleType() const
-{
-    return _GetTypedDataSource<HdTokenDataSource>(
-        HdExtGpuBufferSchemaTokens->externalHandleType);
-}
-
-HdSizetDataSourceHandle
-HdExtGpuBufferSchema::GetMemoryBlockSize() const
-{
-    return _GetTypedDataSource<HdSizetDataSource>(
-        HdExtGpuBufferSchemaTokens->memoryBlockSize);
-}
-
-HdSizetDataSourceHandle
-HdExtGpuBufferSchema::GetMemoryOffset() const
-{
-    return _GetTypedDataSource<HdSizetDataSource>(
-        HdExtGpuBufferSchemaTokens->memoryOffset);
-}
-
-HdBoolDataSourceHandle
-HdExtGpuBufferSchema::GetDedicated() const
-{
-    return _GetTypedDataSource<HdBoolDataSource>(
-        HdExtGpuBufferSchemaTokens->dedicated);
-}
-
-HdTokenDataSourceHandle
-HdExtGpuBufferSchema::GetDeviceUuid() const
-{
-    return _GetTypedDataSource<HdTokenDataSource>(
-        HdExtGpuBufferSchemaTokens->deviceUuid);
-}
-
-HdUInt64DataSourceHandle
-HdExtGpuBufferSchema::GetLogicalDeviceId() const
-{
-    return _GetTypedDataSource<HdUInt64DataSource>(
-        HdExtGpuBufferSchemaTokens->logicalDeviceId);
+        HdExtGpuBufferSchemaTokens->allowDirectBind);
 }
 
 /*static*/
 HdContainerDataSourceHandle
 HdExtGpuBufferSchema::BuildRetained(
-        const HdTokenDataSourceHandle &backendApi,
-        const HdUInt64DataSourceHandle &rawHandle,
-        const HdSizetDataSourceHandle &rawHandleByteSize,
+        const HdExternalBufferDataSourceHandle &externalResource,
         const HdSizetDataSourceHandle &numElements,
         const HdTupleTypeDataSourceHandle &elementType,
         const HdSizetDataSourceHandle &byteOffset,
         const HdSizetDataSourceHandle &byteStride,
-        const HdBoolDataSourceHandle &directBindable,
-        const HdUInt64DataSourceHandle &externalMemoryHandle,
-        const HdTokenDataSourceHandle &externalHandleType,
-        const HdSizetDataSourceHandle &memoryBlockSize,
-        const HdSizetDataSourceHandle &memoryOffset,
-        const HdBoolDataSourceHandle &dedicated,
-        const HdTokenDataSourceHandle &deviceUuid,
-        const HdUInt64DataSourceHandle &logicalDeviceId
+        const HdBoolDataSourceHandle &allowDirectBind
 )
 {
-    TfToken _names[15];
-    HdDataSourceBaseHandle _values[15];
+    TfToken _names[6];
+    HdDataSourceBaseHandle _values[6];
 
     size_t _count = 0;
 
-    if (backendApi) {
-        _names[_count] = HdExtGpuBufferSchemaTokens->backendApi;
-        _values[_count++] = backendApi;
-    }
-
-    if (rawHandle) {
-        _names[_count] = HdExtGpuBufferSchemaTokens->rawHandle;
-        _values[_count++] = rawHandle;
-    }
-
-    if (rawHandleByteSize) {
-        _names[_count] = HdExtGpuBufferSchemaTokens->rawHandleByteSize;
-        _values[_count++] = rawHandleByteSize;
+    if (externalResource) {
+        _names[_count] = HdExtGpuBufferSchemaTokens->externalResource;
+        _values[_count++] = externalResource;
     }
 
     if (numElements) {
@@ -231,69 +141,18 @@ HdExtGpuBufferSchema::BuildRetained(
         _values[_count++] = byteStride;
     }
 
-    if (directBindable) {
-        _names[_count] = HdExtGpuBufferSchemaTokens->directBindable;
-        _values[_count++] = directBindable;
-    }
-
-    if (externalMemoryHandle) {
-        _names[_count] = HdExtGpuBufferSchemaTokens->externalMemoryHandle;
-        _values[_count++] = externalMemoryHandle;
-    }
-
-    if (externalHandleType) {
-        _names[_count] = HdExtGpuBufferSchemaTokens->externalHandleType;
-        _values[_count++] = externalHandleType;
-    }
-
-    if (memoryBlockSize) {
-        _names[_count] = HdExtGpuBufferSchemaTokens->memoryBlockSize;
-        _values[_count++] = memoryBlockSize;
-    }
-
-    if (memoryOffset) {
-        _names[_count] = HdExtGpuBufferSchemaTokens->memoryOffset;
-        _values[_count++] = memoryOffset;
-    }
-
-    if (dedicated) {
-        _names[_count] = HdExtGpuBufferSchemaTokens->dedicated;
-        _values[_count++] = dedicated;
-    }
-
-    if (deviceUuid) {
-        _names[_count] = HdExtGpuBufferSchemaTokens->deviceUuid;
-        _values[_count++] = deviceUuid;
-    }
-
-    if (logicalDeviceId) {
-        _names[_count] = HdExtGpuBufferSchemaTokens->logicalDeviceId;
-        _values[_count++] = logicalDeviceId;
+    if (allowDirectBind) {
+        _names[_count] = HdExtGpuBufferSchemaTokens->allowDirectBind;
+        _values[_count++] = allowDirectBind;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
 
 HdExtGpuBufferSchema::Builder &
-HdExtGpuBufferSchema::Builder::SetBackendApi(
-    const HdTokenDataSourceHandle &backendApi)
+HdExtGpuBufferSchema::Builder::SetExternalResource(
+    const HdExternalBufferDataSourceHandle &externalResource)
 {
-    _backendApi = backendApi;
-    return *this;
-}
-
-HdExtGpuBufferSchema::Builder &
-HdExtGpuBufferSchema::Builder::SetRawHandle(
-    const HdUInt64DataSourceHandle &rawHandle)
-{
-    _rawHandle = rawHandle;
-    return *this;
-}
-
-HdExtGpuBufferSchema::Builder &
-HdExtGpuBufferSchema::Builder::SetRawHandleByteSize(
-    const HdSizetDataSourceHandle &rawHandleByteSize)
-{
-    _rawHandleByteSize = rawHandleByteSize;
+    _externalResource = externalResource;
     return *this;
 }
 
@@ -330,66 +189,10 @@ HdExtGpuBufferSchema::Builder::SetByteStride(
 }
 
 HdExtGpuBufferSchema::Builder &
-HdExtGpuBufferSchema::Builder::SetDirectBindable(
-    const HdBoolDataSourceHandle &directBindable)
+HdExtGpuBufferSchema::Builder::SetAllowDirectBind(
+    const HdBoolDataSourceHandle &allowDirectBind)
 {
-    _directBindable = directBindable;
-    return *this;
-}
-
-HdExtGpuBufferSchema::Builder &
-HdExtGpuBufferSchema::Builder::SetExternalMemoryHandle(
-    const HdUInt64DataSourceHandle &externalMemoryHandle)
-{
-    _externalMemoryHandle = externalMemoryHandle;
-    return *this;
-}
-
-HdExtGpuBufferSchema::Builder &
-HdExtGpuBufferSchema::Builder::SetExternalHandleType(
-    const HdTokenDataSourceHandle &externalHandleType)
-{
-    _externalHandleType = externalHandleType;
-    return *this;
-}
-
-HdExtGpuBufferSchema::Builder &
-HdExtGpuBufferSchema::Builder::SetMemoryBlockSize(
-    const HdSizetDataSourceHandle &memoryBlockSize)
-{
-    _memoryBlockSize = memoryBlockSize;
-    return *this;
-}
-
-HdExtGpuBufferSchema::Builder &
-HdExtGpuBufferSchema::Builder::SetMemoryOffset(
-    const HdSizetDataSourceHandle &memoryOffset)
-{
-    _memoryOffset = memoryOffset;
-    return *this;
-}
-
-HdExtGpuBufferSchema::Builder &
-HdExtGpuBufferSchema::Builder::SetDedicated(
-    const HdBoolDataSourceHandle &dedicated)
-{
-    _dedicated = dedicated;
-    return *this;
-}
-
-HdExtGpuBufferSchema::Builder &
-HdExtGpuBufferSchema::Builder::SetDeviceUuid(
-    const HdTokenDataSourceHandle &deviceUuid)
-{
-    _deviceUuid = deviceUuid;
-    return *this;
-}
-
-HdExtGpuBufferSchema::Builder &
-HdExtGpuBufferSchema::Builder::SetLogicalDeviceId(
-    const HdUInt64DataSourceHandle &logicalDeviceId)
-{
-    _logicalDeviceId = logicalDeviceId;
+    _allowDirectBind = allowDirectBind;
     return *this;
 }
 
@@ -397,21 +200,12 @@ HdContainerDataSourceHandle
 HdExtGpuBufferSchema::Builder::Build()
 {
     return HdExtGpuBufferSchema::BuildRetained(
-        _backendApi,
-        _rawHandle,
-        _rawHandleByteSize,
+        _externalResource,
         _numElements,
         _elementType,
         _byteOffset,
         _byteStride,
-        _directBindable,
-        _externalMemoryHandle,
-        _externalHandleType,
-        _memoryBlockSize,
-        _memoryOffset,
-        _dedicated,
-        _deviceUuid,
-        _logicalDeviceId
+        _allowDirectBind
     );
 }
 
@@ -440,51 +234,6 @@ HdExtGpuBufferSchema::GetDefaultLocator()
 {
     static const HdDataSourceLocator locator(GetSchemaToken());
     return locator;
-}
-
-/*static*/
-HdTokenDataSourceHandle
-HdExtGpuBufferSchema::BuildBackendApiDataSource(
-    const TfToken &backendApi)
-{
-
-    if (backendApi == HdExtGpuBufferSchemaTokens->GL) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(backendApi);
-        return ds;
-    }
-    if (backendApi == HdExtGpuBufferSchemaTokens->Vulkan) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(backendApi);
-        return ds;
-    }
-    if (backendApi == HdExtGpuBufferSchemaTokens->Metal) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(backendApi);
-        return ds;
-    }
-    // fallback for unknown token
-    return HdRetainedTypedSampledDataSource<TfToken>::New(backendApi);
-}
-
-/*static*/
-HdTokenDataSourceHandle
-HdExtGpuBufferSchema::BuildExternalHandleTypeDataSource(
-    const TfToken &externalHandleType)
-{
-
-    if (externalHandleType == HdExtGpuBufferSchemaTokens->opaqueWin32) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(externalHandleType);
-        return ds;
-    }
-    if (externalHandleType == HdExtGpuBufferSchemaTokens->opaqueFd) {
-        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
-            HdRetainedTypedSampledDataSource<TfToken>::New(externalHandleType);
-        return ds;
-    }
-    // fallback for unknown token
-    return HdRetainedTypedSampledDataSource<TfToken>::New(externalHandleType);
 } 
 
 PXR_NAMESPACE_CLOSE_SCOPE

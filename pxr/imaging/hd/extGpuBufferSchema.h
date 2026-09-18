@@ -21,6 +21,7 @@
 /// \file
 
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/externalBuffer.h"
 
 #include "pxr/imaging/hd/schema.h"
 
@@ -34,26 +35,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_EXT_GPU_BUFFER_SCHEMA_TOKENS \
     (extGpuBuffer) \
-    (backendApi) \
-    (rawHandle) \
-    (rawHandleByteSize) \
+    (externalResource) \
     (numElements) \
     (elementType) \
     (byteOffset) \
     (byteStride) \
-    (directBindable) \
-    (externalMemoryHandle) \
-    (externalHandleType) \
-    (memoryBlockSize) \
-    (memoryOffset) \
-    (dedicated) \
-    (deviceUuid) \
-    (logicalDeviceId) \
-    (GL) \
-    (Vulkan) \
-    (Metal) \
-    (opaqueWin32) \
-    (opaqueFd) \
+    (allowDirectBind) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdExtGpuBufferSchemaTokens, HD_API,
     HD_EXT_GPU_BUFFER_SCHEMA_TOKENS);
@@ -63,29 +50,30 @@ TF_DECLARE_PUBLIC_TOKENS(HdExtGpuBufferSchemaTokens, HD_API,
 
 /// \class HdExtGpuBufferSchema
 ///
-/// Describes an externally-owned GPU buffer that a producer publishes on a
-/// primvar so a renderer can consume it directly instead of the CPU staging
-/// round trip.
+/// Describes a GPU buffer an application allocated and is sharing on a
+/// primvar, so a renderer can read it directly instead of taking the CPU
+/// staging round trip.
 ///
-/// A producer names the buffer in one of two ways, and may use both:
-/// "rawHandle" for a consumer sharing its context or logical device, and the
-/// foreign-memory import cluster ("externalMemoryHandle" and friends) for
-/// everyone else.
+/// The buffer itself is one value: "externalResource", a weak reference to an
+/// HgiExternalBuffer. Everything about *how* the sharing works -- which native
+/// handle, which device, which OS memory handle, which synchronization objects
+/// -- belongs to that object and to the HgiExternalBufferArena that created
+/// it, and appears nowhere here. So this container describes only layout:
+/// where the stream sits in the buffer and what its elements are.
 ///
-/// Lifetime. A consumer retains the data source carrying whichever handle it
-/// bound, for as long as it might bind that buffer, and releases it once no
-/// submitted GPU work can still name it. A producer that needs to know when it
-/// may free or recycle the allocation can use this: publish a data source that
-/// owns the allocation instead of a plain retained value, and the last release
-/// tells you both that the consumer has let go and that the GPU is done with
-/// it. Nothing is asked of a producer that manages lifetime some other way.
+/// Lifetime. The reference is weak deliberately: scene indices cache, flatten
+/// and copy the containers they pass along, and a strong reference here would
+/// let a forgotten cache entry pin GPU memory for the life of the renderer.
+/// What keeps a buffer alive is its arena, plus whatever strong reference a
+/// renderer takes while it is actually consuming. An expired reference means
+/// the buffer is gone and the renderer should fall back to the CPU primvar,
+/// which is also the correct outcome when a producer withdraws a buffer.
 ///
-/// Because retention follows the published value, a filter that substitutes a
-/// different handle releases the allocation the old one named, which is the
-/// correct outcome -- the substituted buffer is what gets bound. The converse
-/// is the limit worth knowing: a filter that copies the value into a data
-/// source of its own breaks the chain, so this is a convention a producer opts
-/// into with its consumers, not a guarantee the scene description enforces.
+/// Synchronization is per arena, not per buffer, and is likewise not described
+/// here. See HgiExternalBufferArena: the application signals when its writes
+/// are done, the renderer waits before reading and signals when it is
+/// finished, and the two agree on the semaphore format once when the arena is
+/// created rather than per frame.
 ///
 class HdExtGpuBufferSchema : public HdSchema
 {
@@ -124,30 +112,12 @@ public:
     /// \name Member accessor
     /// @{
 
-    /// Graphics API that owns the handle ("GL"/"Vulkan"/"Metal"). A consumer
-    /// compares it to its active Hgi backend and falls back to CPU on
-    /// mismatch.
+    /// A weak reference to the HgiExternalBuffer being shared. The renderer
+    /// checks that it comes from its own Hgi -- several renderers can consume
+    /// one scene index, and a buffer from another one names an object on a
+    /// different device -- and otherwise copies instead of binding.
     HD_API
-    HdTokenDataSourceHandle GetBackendApi() const;
-
-    /// The opaque native buffer handle (GLuint / VkBuffer / MTLBuffer) cast
-    /// to uint64. Interpreted per backendApi; the resource to bind directly.
-    /// A native handle only means something inside the context or logical
-    /// device that created it: backendApi and deviceUuid together do not pin
-    /// that down, since two logical devices on one physical GPU hand out
-    /// unrelated handles. Publish logicalDeviceId alongside it to say which
-    /// namespace the value belongs to, and a consumer elsewhere will import
-    /// instead of binding an object it cannot interpret. A producer that
-    /// cannot report a logical device id must publish the import cluster
-    /// alone. This is the data source a consumer retains for lifetime when it
-    /// adopts the handle; see the schema-level note.
-    HD_API
-    HdUInt64DataSourceHandle GetRawHandle() const;
-
-    /// Total size of the underlying native buffer. Optional (0 = unknown);
-    /// when set, it is the authoritative size for bounds checks and byteSize.
-    HD_API
-    HdSizetDataSourceHandle GetRawHandleByteSize() const;
+    HdExternalBufferDataSourceHandle GetExternalResource() const;
 
     /// Number of tuples (vertices / elements) in this stream.
     HD_API
@@ -158,76 +128,26 @@ public:
     HD_API
     HdTupleTypeDataSourceHandle GetElementType() const;
 
-    /// Byte offset to the first element within the native buffer. Non-zero
-    /// means this stream is a sub-allocation of a larger (pooled) buffer.
+    /// Byte offset to the first element within the buffer. Non-zero means
+    /// this stream is a sub-allocation of a larger (pooled) buffer, which is
+    /// the usual case for a producer that packs several primvars into one
+    /// allocation.
     HD_API
     HdSizetDataSourceHandle GetByteOffset() const;
 
-    /// Bytes between consecutive elements. 0 or == elemSize means tightly
-    /// packed (directly aliasable); otherwise interleaved (strided copy).
+    /// Bytes between consecutive elements. 0 or == the element size means
+    /// tightly packed and directly aliasable; anything else is interleaved
+    /// and needs a strided copy.
     HD_API
     HdSizetDataSourceHandle GetByteStride() const;
 
-    /// True if the consumer may bind the buffer directly (zero-copy).
+    /// Whether the renderer MAY bind the buffer directly, zero-copy.
+    /// Permission, not instruction: a renderer is free to copy anyway --
+    /// because the layout does not suit direct binding, because the buffer
+    /// belongs to another device, or because aggregating with other primvars
+    /// is faster -- and a producer must not assume which it chose.
     HD_API
-    HdBoolDataSourceHandle GetDirectBindable() const;
-
-    /// OS-shareable handle (Win32 NT handle / fd, cast to uint64) naming the
-    /// memory ALLOCATION this buffer is bound into -- not the buffer object.
-    /// A consumer on another device imports it and builds its own buffer.
-    /// Independent of rawHandle: a producer may publish both, letting a same-
-    /// device consumer adopt and everyone else import. This is the data
-    /// source a consumer retains for lifetime when it imports the memory; see
-    /// the schema-level note.
-    HD_API
-    HdUInt64DataSourceHandle GetExternalMemoryHandle() const;
-
-    /// How to interpret externalMemoryHandle ("opaqueWin32"/"opaqueFd").
-    /// Required whenever externalMemoryHandle is set; the handle kind is
-    /// never inferred from the value, which can collide with a native
-    /// rawHandle.
-    HD_API
-    HdTokenDataSourceHandle GetExternalHandleType() const;
-
-    /// Total size of the memory block externalMemoryHandle refers to. The
-    /// importer must allocate the full block, not just byteSize.
-    HD_API
-    HdSizetDataSourceHandle GetMemoryBlockSize() const;
-
-    /// The buffer's offset WITHIN that memory block. Distinct from
-    /// byteOffset, which is this stream's offset within the buffer; both may
-    /// be non-zero at once.
-    HD_API
-    HdSizetDataSourceHandle GetMemoryOffset() const;
-
-    /// True if the allocation is a dedicated memory object; the importer must
-    /// match this or the import fails.
-    HD_API
-    HdBoolDataSourceHandle GetDedicated() const;
-
-    /// Physical device that owns the memory, as a 32-character lowercase hex
-    /// encoding of the 16-byte device UUID. Opaque handles are only
-    /// importable on the same physical device, so a consumer compares this
-    /// against its own device before adopting or importing. Absent means
-    /// "unknown" and is treated as a match for backward compatibility.
-    HD_API
-    HdTokenDataSourceHandle GetDeviceUuid() const;
-
-    /// Identifies the handle namespace rawHandle was minted in: the logical
-    /// device (Vulkan VkDevice, Metal MTLDevice) that created it, as a value
-    /// unique within this process. Where deviceUuid says which GPU the memory
-    /// lives on, this says which device object can interpret the native
-    /// handle -- the two differ exactly when a producer and consumer drive
-    /// one GPU through separate logical devices, and that is the case where
-    /// adopting rawHandle would bind an unrelated object. A consumer compares
-    /// it against its own Hgi::GetLogicalDeviceId() and only adopts rawHandle
-    /// when they agree, importing instead when they do not. 0/absent means
-    /// "unknown" and is treated as a match, both for backward compatibility
-    /// and for backends like GL that have no logical device to name; a
-    /// producer that cannot report one should publish the import cluster
-    /// alone rather than an unqualified rawHandle.
-    HD_API
-    HdUInt64DataSourceHandle GetLogicalDeviceId() const; 
+    HdBoolDataSourceHandle GetAllowDirectBind() const; 
 
     /// @}
 
@@ -259,21 +179,12 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdTokenDataSourceHandle &backendApi,
-        const HdUInt64DataSourceHandle &rawHandle,
-        const HdSizetDataSourceHandle &rawHandleByteSize,
+        const HdExternalBufferDataSourceHandle &externalResource,
         const HdSizetDataSourceHandle &numElements,
         const HdTupleTypeDataSourceHandle &elementType,
         const HdSizetDataSourceHandle &byteOffset,
         const HdSizetDataSourceHandle &byteStride,
-        const HdBoolDataSourceHandle &directBindable,
-        const HdUInt64DataSourceHandle &externalMemoryHandle,
-        const HdTokenDataSourceHandle &externalHandleType,
-        const HdSizetDataSourceHandle &memoryBlockSize,
-        const HdSizetDataSourceHandle &memoryOffset,
-        const HdBoolDataSourceHandle &dedicated,
-        const HdTokenDataSourceHandle &deviceUuid,
-        const HdUInt64DataSourceHandle &logicalDeviceId
+        const HdBoolDataSourceHandle &allowDirectBind
     );
 
     /// \class HdExtGpuBufferSchema::Builder
@@ -286,14 +197,8 @@ public:
     {
     public:
         HD_API
-        Builder &SetBackendApi(
-            const HdTokenDataSourceHandle &backendApi);
-        HD_API
-        Builder &SetRawHandle(
-            const HdUInt64DataSourceHandle &rawHandle);
-        HD_API
-        Builder &SetRawHandleByteSize(
-            const HdSizetDataSourceHandle &rawHandleByteSize);
+        Builder &SetExternalResource(
+            const HdExternalBufferDataSourceHandle &externalResource);
         HD_API
         Builder &SetNumElements(
             const HdSizetDataSourceHandle &numElements);
@@ -307,73 +212,22 @@ public:
         Builder &SetByteStride(
             const HdSizetDataSourceHandle &byteStride);
         HD_API
-        Builder &SetDirectBindable(
-            const HdBoolDataSourceHandle &directBindable);
-        HD_API
-        Builder &SetExternalMemoryHandle(
-            const HdUInt64DataSourceHandle &externalMemoryHandle);
-        HD_API
-        Builder &SetExternalHandleType(
-            const HdTokenDataSourceHandle &externalHandleType);
-        HD_API
-        Builder &SetMemoryBlockSize(
-            const HdSizetDataSourceHandle &memoryBlockSize);
-        HD_API
-        Builder &SetMemoryOffset(
-            const HdSizetDataSourceHandle &memoryOffset);
-        HD_API
-        Builder &SetDedicated(
-            const HdBoolDataSourceHandle &dedicated);
-        HD_API
-        Builder &SetDeviceUuid(
-            const HdTokenDataSourceHandle &deviceUuid);
-        HD_API
-        Builder &SetLogicalDeviceId(
-            const HdUInt64DataSourceHandle &logicalDeviceId);
+        Builder &SetAllowDirectBind(
+            const HdBoolDataSourceHandle &allowDirectBind);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
         HdContainerDataSourceHandle Build();
 
     private:
-        HdTokenDataSourceHandle _backendApi;
-        HdUInt64DataSourceHandle _rawHandle;
-        HdSizetDataSourceHandle _rawHandleByteSize;
+        HdExternalBufferDataSourceHandle _externalResource;
         HdSizetDataSourceHandle _numElements;
         HdTupleTypeDataSourceHandle _elementType;
         HdSizetDataSourceHandle _byteOffset;
         HdSizetDataSourceHandle _byteStride;
-        HdBoolDataSourceHandle _directBindable;
-        HdUInt64DataSourceHandle _externalMemoryHandle;
-        HdTokenDataSourceHandle _externalHandleType;
-        HdSizetDataSourceHandle _memoryBlockSize;
-        HdSizetDataSourceHandle _memoryOffset;
-        HdBoolDataSourceHandle _dedicated;
-        HdTokenDataSourceHandle _deviceUuid;
-        HdUInt64DataSourceHandle _logicalDeviceId;
+        HdBoolDataSourceHandle _allowDirectBind;
 
     };
-
-    /// Returns token data source for use as backendApi value.
-    ///
-    /// The following values will be stored statically and reused for future
-    /// calls:
-    /// - HdExtGpuBufferSchemaTokens->GL
-    /// - HdExtGpuBufferSchemaTokens->Vulkan
-    /// - HdExtGpuBufferSchemaTokens->Metal
-    HD_API
-    static HdTokenDataSourceHandle BuildBackendApiDataSource(
-        const TfToken &backendApi);
-
-    /// Returns token data source for use as externalHandleType value.
-    ///
-    /// The following values will be stored statically and reused for future
-    /// calls:
-    /// - HdExtGpuBufferSchemaTokens->opaqueWin32
-    /// - HdExtGpuBufferSchemaTokens->opaqueFd
-    HD_API
-    static HdTokenDataSourceHandle BuildExternalHandleTypeDataSource(
-        const TfToken &externalHandleType);
 
     /// @}
 };

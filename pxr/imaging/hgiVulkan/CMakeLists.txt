@@ -27,6 +27,8 @@ pxr_library(hgiVulkan
         descriptorSetLayouts
         device
         diagnostic
+        externalBuffer
+        externalBufferArena
         garbageCollector
         graphicsCmds
         graphicsPipeline
@@ -35,6 +37,7 @@ pxr_library(hgiVulkan
         pipelineCache
         resourceBindings
         sampler
+        semaphore
         shaderCompiler
         shaderFunction
         shaderGenerator

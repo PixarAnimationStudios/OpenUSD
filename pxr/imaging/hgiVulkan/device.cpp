@@ -601,6 +601,24 @@ HgiVulkanDevice::GetWin32HandleForMemory(VkDeviceMemory memory)
     }
     return duplicateHandle;
 }
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
+int
+HgiVulkanDevice::GetFdForMemory(VkDeviceMemory memory)
+{
+    if (!vkGetMemoryFdKHR) {
+        return -1;
+    }
+    VkMemoryGetFdInfoKHR getInfo { VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR };
+    getInfo.memory = memory;
+    getInfo.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
+
+    // Unlike the Win32 handle, an exported fd is a fresh reference every call,
+    // so there is nothing to cache and nothing to duplicate.
+    int fd = -1;
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vkGetMemoryFdKHR(GetVulkanDevice(), &getInfo, &fd));
+    return fd;
+}
 #endif
 
 HgiVulkanCommandQueue*

@@ -13,7 +13,6 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/bufferArrayRegistry.h"
 #include "pxr/imaging/hdSt/enums.h"
-#include "pxr/imaging/hdSt/extGpuImportedBuffer.h"
 #include "pxr/imaging/hdSt/renderBufferPool.h"
 
 #include "pxr/imaging/hgi/hgi.h"
@@ -30,7 +29,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
-#include <tuple>
+#include <vector>
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include <MaterialXCore/Library.h>
@@ -78,7 +77,6 @@ using HgiComputePipelineSharedPtr =
 class HdStTextureIdentifier;
 class HdSamplerParameters;
 class HdStStagingBuffer;
-struct HdStExtGpuBufferDesc;
 
 /// \enum HdStComputeQueue
 ///
@@ -516,47 +514,21 @@ public:
     HdStStagingBuffer* GetStagingBuffer();
 
     /// ------------------------------------------------------------------------
-    /// External GPU buffer import
+    /// External GPU buffers
     /// ------------------------------------------------------------------------
 
-    /// Import the foreign memory allocation described by \p desc into this
-    /// registry's Hgi and return a shared owner of a buffer aliasing it, or
-    /// null when the backend cannot import it.
+    /// Note that Storm is consuming buffers from \p arena this frame, so that
+    /// Commit() brackets its access with the arena's semaphores: a wait before
+    /// the imports, copies and draws that read them, a signal after.
     ///
-    /// The result is cached and shared between callers naming the same
-    /// allocation, which is what makes this callable from Sync: importing is a
-    /// vkAllocateMemory-class operation, and each import also consumes a
-    /// device-memory reference that only destruction returns.  The registry's
-    /// cache entry is weak, so the buffer is released once the last caller
-    /// lets go of it rather than at renderer teardown; see
-    /// HdSt_ImportedExtGpuBuffer.
+    /// Called while routing a prim's primvars, which happens during Sync.
+    /// Registering an arena whose buffers are subsequently dropped is
+    /// harmless -- the arena ignores a wait for an epoch the application never
+    /// opened.
     ///
-    /// The cache key is the producer-stable allocation identity, not the
-    /// buffer's contents, so re-publishing the same allocation is free.  A
-    /// producer that re-exports a fresh OS handle for the same allocation
-    /// every frame instead of exporting once will miss the cache and grow it;
-    /// see HdExtGpuBufferSchema's externalMemoryHandle documentation.
+    /// Thread safety: This call is thread safe.
     HDST_API
-    HdSt_ImportedExtGpuBufferSharedPtr GetOrCreateImportedExtGpuBuffer(
-        HdStExtGpuBufferDesc const &desc);
-
-    /// Import the external semaphore \p externalHandle (as described by an
-    /// HdExtGpuSyncSchema) into this registry's Hgi and return the resulting
-    /// backend-native handle, or 0 when the backend cannot import it.
-    ///
-    /// Cached and OWNED by the registry, released only when it is destroyed,
-    /// so callers must not destroy the returned semaphore.  Unlike imported
-    /// buffers this ownership is not refcounted, because nothing in Storm holds
-    /// a semaphore long enough to refcount: the consumer resolves it during
-    /// Sync, hands it to Hgi as a pending wait or signal, and drops it, so the
-    /// last reference would go away before the submission that names it.
-    /// Refcounting these needs the command queue's pending lists to hold a
-    /// reference first.
-    HDST_API
-    uint64_t GetOrCreateImportedExtGpuSemaphore(
-        uint64_t externalHandle,
-        TfToken const &handleType,
-        TfToken const &kind);
+    void RegisterExtGpuBufferArena(HgiExternalBufferArena *arena);
 
 public:
     //
@@ -663,38 +635,18 @@ private:
 
     Hgi* _hgi;
 
-    // Imported external GPU buffers, keyed on the producer's allocation
-    // identity (see HdSt_ImportedExtGpuBuffer::Key).  The OS handle alone is
-    // not an identity -- exporting the same allocation twice yields two
-    // different values -- but it is needed in the key because the rest can
-    // legitimately coincide between two distinct dedicated allocations, and
-    // returning the wrong buffer is worse than missing the cache.
-    //
-    // Entries are weak: an imported buffer lives as long as some descriptor,
-    // buffer source or buffer array range still references it, and takes its
-    // own entry out of this map on the way down.
-    std::map<HdSt_ImportedExtGpuBuffer::Key,
-             std::weak_ptr<HdSt_ImportedExtGpuBuffer>> _extGpuImportedBuffers;
+    // The external buffer arenas Storm is consuming from, whose semaphores
+    // bracket its access to them; see RegisterExtGpuBufferArena. Raw pointers
+    // because an arena lives as long as the Hgi that owns it, which outlives
+    // this registry.
+    std::vector<HgiExternalBufferArena *> _extGpuArenas;
+    std::mutex _extGpuArenaMutex;
 
-    // Drop the cache entry for \p key, called by HdSt_ImportedExtGpuBuffer as
-    // it is destroyed.
-    friend class HdSt_ImportedExtGpuBuffer;
-    void _EraseImportedExtGpuBuffer(
-        HdSt_ImportedExtGpuBuffer::Key const &key);
-
-    // Imported external semaphores, keyed on (handle type, kind, OS handle).
-    // Unlike memory, a semaphore is exported once when it is created, so the
-    // handle value is a usable identity here.
-    using _ExtGpuSemaphoreKey = std::tuple<TfToken, TfToken, uint64_t>;
-    std::map<_ExtGpuSemaphoreKey, uint64_t> _extGpuImportedSemaphores;
-
-    // Guards both maps above.  Imports are resolved while routing a prim's
-    // primvars, which happens during Sync and therefore in parallel across
-    // prims, so these lookups are genuinely concurrent -- unlike the rest of
-    // this registry, which either uses a concurrent container or is only touched
-    // during Commit.  Also serializes the Hgi import calls themselves, which is
-    // free here since two prims naming the same allocation only import once.
-    std::mutex _extGpuImportMutex;
+    // Encode the arenas' wait and signal around this commit's reads of their
+    // buffers. See the definitions for why a commit, rather than
+    // Hgi::StartFrame, is the anchor.
+    void _EncodeExtGpuBufferWaits();
+    void _EncodeExtGpuBufferSignals();
 
     using _PendingSourceList =
         tbb::concurrent_vector<_PendingSource>;
