@@ -290,8 +290,7 @@ if (PXR_BUILD_PRMAN_PLUGIN)
 endif()
 
 if (PXR_BUILD_ALEMBIC_PLUGIN)
-    find_package(Alembic REQUIRED)
-    set(REQUIRES_Imath TRUE)
+    find_package(Alembic 1.8.9...<1.9 REQUIRED CONFIG)
     if (PXR_ENABLE_HDF5_SUPPORT)
         find_package(HDF5 REQUIRED
             COMPONENTS
