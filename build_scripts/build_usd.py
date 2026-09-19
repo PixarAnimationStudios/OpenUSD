@@ -2718,6 +2718,14 @@ if "--usdview" in sys.argv:
         PrintError("Cannot build usdview when Python support is disabled.")
         sys.exit(1)
 
+# usdzip (built as part of --tools) depends on usdValidation. Error out here
+# with a clear message instead of letting the build reach a confusing
+# "pxr/usdValidation/usdValidation/context.h: No such file or directory"
+# failure from usdzip.cpp partway through the C++ build.
+if "--tools" in sys.argv and not context.buildUsdValidation:
+    PrintError("Cannot build tools when usdValidation is disabled.")
+    sys.exit(1)
+
 dependenciesToBuild = []
 for dep in requiredDependencies:
     if context.ForceBuildDependency(dep) or not dep.Exists(context):
