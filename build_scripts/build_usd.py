@@ -2609,9 +2609,10 @@ if context.buildImaging:
     if context.enableOpenVDB:
         requiredDependencies += [ZLIB, TBB, BLOSC, BOOST, OPENVDB]
     
-    # When OCIO is required, we need to make sure it's built before OIIO, since
-    # OIIO is dependent on OCIO.
-    if context.buildOCIO:
+    # OIIO itself depends on OCIO (independent of whether USD's own OpenColorIO
+    # plugin is requested), so OCIO must always be built before OIIO. We need
+    # to make sure it's built before OIIO, since OIIO is dependent on OCIO.
+    if context.buildOCIO or context.buildOIIO:
         requiredDependencies += [ZLIB, OPENCOLORIO]
 
     if context.buildOIIO:
