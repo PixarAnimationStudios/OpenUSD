@@ -778,6 +778,72 @@ pxr_register_test(testUsdImagingGLNativeImplicits_clippedSphere
         HDST_ENABLE_NATIVE_SPHERES=1
 )
 
+pxr_register_test(testUsdImagingGLNativeImplicits_simpleCylinder
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage simpleCylinder.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_simpleCylinder.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_simpleCylinder.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_CYLINDERS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_simpleCylinderWithXAxis
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage simpleCylinderWithXAxis.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_simpleCylinderWithXAxis.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_simpleCylinderWithXAxis.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_CYLINDERS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_simpleCylinderWithYAxis
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage simpleCylinderWithYAxis.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_simpleCylinderWithYAxis.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_simpleCylinderWithYAxis.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_CYLINDERS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_transformedCylinder
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage transformedCylinder.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_transformedCylinder.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_transformedCylinder.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_CYLINDERS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_intersectingCylinder
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage intersectingCylinder.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_intersectingCylinder.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_intersectingCylinder.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_CYLINDERS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_cylinderInsideCylinder
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage cylinderInsideCylinder.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_cylinderInsideCylinder.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_cylinderInsideCylinder.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_CYLINDERS=1
+)
+
 pxr_register_test(testUsdImagingGLHoleFaces
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage holeFaces.usda -write testUsdImagingGLHoleFaces.png"
     IMAGE_DIFF_COMPARE

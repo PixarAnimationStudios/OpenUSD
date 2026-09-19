@@ -8,6 +8,7 @@
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
 #include "pxr/imaging/hdSt/basisCurves.h"
+#include "pxr/imaging/hdSt/cylinder.h"
 #include "pxr/imaging/hdSt/drawItemsCache.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/extComputation.h"
@@ -64,6 +65,10 @@ TF_DEFINE_ENV_SETTING(HDST_ENABLE_NATIVE_SPHERES, false,
     "Enable native rendering of sphere primitives in Storm instead of "
     "converting them to meshes via the implicit surface scene index.");
 
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_NATIVE_CYLINDERS, false,
+    "Enable native rendering of cylinder primitives in Storm instead of "
+    "converting them to meshes via the implicit surface scene index.");
+
 namespace {
 const TfTokenVector _SupportedRprimTypes()
 {
@@ -76,6 +81,9 @@ const TfTokenVector _SupportedRprimTypes()
 
     if (TfGetEnvSetting(HDST_ENABLE_NATIVE_SPHERES)) {
         supportedTypes.emplace_back(HdPrimTypeTokens->sphere);
+    }
+    if (TfGetEnvSetting(HDST_ENABLE_NATIVE_CYLINDERS)) {
+        supportedTypes.emplace_back(HdPrimTypeTokens->cylinder);
     }
 
     return supportedTypes;
@@ -430,6 +438,8 @@ HdStRenderDelegate::CreateRprim(TfToken const& typeId,
         return new HdStVolume(rprimId);
     } else  if (typeId == HdPrimTypeTokens->sphere) {
         return new HdStSphere(rprimId);
+    } else  if (typeId == HdPrimTypeTokens->cylinder) {
+        return new HdStCylinder(rprimId);
     } else {
         TF_CODING_ERROR("Unknown Rprim Type %s", typeId.GetText());
     }
@@ -728,6 +738,12 @@ bool
 HdStRenderDelegate::IsEnabledNativeSphereRenderingSupport()
 {
     return TfGetEnvSetting(HDST_ENABLE_NATIVE_SPHERES);
+}
+
+bool
+HdStRenderDelegate::IsEnabledNativeCylinderRenderingSupport()
+{
+    return TfGetEnvSetting(HDST_ENABLE_NATIVE_CYLINDERS);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
