@@ -15,5 +15,10 @@ UsdMedia currently provides the following media types:
 - UsdMediaSpatialAudio, which encodes both spatial and non-spatial audio as
   UsdGeomXformable-derived prims in a scene.
 
+UsdMedia also provides:
+- UsdMediaAuthorshipAPI, which records who or what authored a prim. It is a
+  multiple-apply schema, so a prim can carry one record per authoring step that
+  contributed to it.
+
 
 */

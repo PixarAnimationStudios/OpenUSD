@@ -1,0 +1,21 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Validators": {
+                    "ShadowedOrClobberedAuthorship": {
+                        "doc": "Diagnostic check for authorship records the composed stage can't report: an application shadowed by a stronger, explicit apiSchemas list, or the same instance name authored in several layers where composition keeps only the strongest opinion."
+                    },
+                    "keywords": [
+                        "UsdMediaValidators"
+                    ]
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "usdMediaValidators",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

@@ -1,0 +1,16 @@
+7 record(s)
+
+Software packages:
+  1  com.capturingreality.rcapture 1.4
+  1  com.example.brokentool 0.1
+  1  com.example.layouttool 1.0
+  1  com.example.worldgen 0.9
+  1  net.trellis3d.hunyuan3d 2.1
+  1  org.blender 4.1
+  1  org.blender 4.2
+
+Digital source types:
+  2  (unspecified)
+  1  http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicMedia
+  2  http://cv.iptc.org/newscodes/digitalsourcetype/digitalCreation
+  2  http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia
