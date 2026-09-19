@@ -211,23 +211,23 @@ struct UsdRenderTokensType {
     const TfToken sourceType;
     /// \brief "RenderPass"
     /// 
-    /// Schema identifer and family for UsdRenderPass
+    /// Schema identifier and family for UsdRenderPass
     const TfToken RenderPass;
     /// \brief "RenderProduct"
     /// 
-    /// Schema identifer and family for UsdRenderProduct
+    /// Schema identifier and family for UsdRenderProduct
     const TfToken RenderProduct;
     /// \brief "RenderSettings"
     /// 
-    /// Schema identifer and family for UsdRenderSettings
+    /// Schema identifier and family for UsdRenderSettings
     const TfToken RenderSettings;
     /// \brief "RenderSettingsBase"
     /// 
-    /// Schema identifer and family for UsdRenderSettingsBase
+    /// Schema identifier and family for UsdRenderSettingsBase
     const TfToken RenderSettingsBase;
     /// \brief "RenderVar"
     /// 
-    /// Schema identifer and family for UsdRenderVar
+    /// Schema identifier and family for UsdRenderVar
     const TfToken RenderVar;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

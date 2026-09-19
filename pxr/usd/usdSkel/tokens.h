@@ -143,23 +143,23 @@ struct UsdSkelTokensType {
     const TfToken weight;
     /// \brief "BlendShape"
     /// 
-    /// Schema identifer and family for UsdSkelBlendShape
+    /// Schema identifier and family for UsdSkelBlendShape
     const TfToken BlendShape;
     /// \brief "SkelAnimation"
     /// 
-    /// Schema identifer and family for UsdSkelAnimation
+    /// Schema identifier and family for UsdSkelAnimation
     const TfToken SkelAnimation;
     /// \brief "SkelBindingAPI"
     /// 
-    /// Schema identifer and family for UsdSkelBindingAPI
+    /// Schema identifier and family for UsdSkelBindingAPI
     const TfToken SkelBindingAPI;
     /// \brief "Skeleton"
     /// 
-    /// Schema identifer and family for UsdSkelSkeleton
+    /// Schema identifier and family for UsdSkelSkeleton
     const TfToken Skeleton;
     /// \brief "SkelRoot"
     /// 
-    /// Schema identifer and family for UsdSkelRoot
+    /// Schema identifier and family for UsdSkelRoot
     const TfToken SkelRoot;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

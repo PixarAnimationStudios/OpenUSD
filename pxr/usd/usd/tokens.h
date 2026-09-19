@@ -163,31 +163,31 @@ struct UsdTokensType {
     const TfToken relationship;
     /// \brief "APISchemaBase"
     /// 
-    /// Schema identifer and family for UsdAPISchemaBase
+    /// Schema identifier and family for UsdAPISchemaBase
     const TfToken APISchemaBase;
     /// \brief "ClipsAPI"
     /// 
-    /// Schema identifer and family for UsdClipsAPI
+    /// Schema identifier and family for UsdClipsAPI
     const TfToken ClipsAPI;
     /// \brief "CollectionAPI"
     /// 
-    /// Schema identifer and family for UsdCollectionAPI
+    /// Schema identifier and family for UsdCollectionAPI
     const TfToken CollectionAPI;
     /// \brief "ColorSpaceAPI"
     /// 
-    /// Schema identifer and family for UsdColorSpaceAPI
+    /// Schema identifier and family for UsdColorSpaceAPI
     const TfToken ColorSpaceAPI;
     /// \brief "ColorSpaceDefinitionAPI"
     /// 
-    /// Schema identifer and family for UsdColorSpaceDefinitionAPI
+    /// Schema identifier and family for UsdColorSpaceDefinitionAPI
     const TfToken ColorSpaceDefinitionAPI;
     /// \brief "ModelAPI"
     /// 
-    /// Schema identifer and family for UsdModelAPI
+    /// Schema identifier and family for UsdModelAPI
     const TfToken ModelAPI;
     /// \brief "Typed"
     /// 
-    /// Schema identifer and family for UsdTyped
+    /// Schema identifier and family for UsdTyped
     const TfToken Typed;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
