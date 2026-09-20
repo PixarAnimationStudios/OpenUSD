@@ -444,6 +444,7 @@ HdxColorCorrectionTask::_CreateOpenColorIOResourcesImpl(
 
         // Sampler description
         HgiSamplerDesc sampDesc;
+        sampDesc.debugName = samplerName;
         sampDesc.magFilter =
             interpolation == OCIO::Interpolation::INTERP_NEAREST ?
                 HgiSamplerFilterNearest : HgiSamplerFilterLinear;
@@ -453,9 +454,14 @@ HdxColorCorrectionTask::_CreateOpenColorIOResourcesImpl(
         sampDesc.addressModeU = HgiSamplerAddressModeClampToEdge;
         sampDesc.addressModeV = HgiSamplerAddressModeClampToEdge;
 
+        std::vector<float> lutVector = std::vector<float>(
+            lutValues,
+            lutValues + valueCount
+        );
+
         result->luts.emplace_back(
             _TextureSamplerDesc{
-                texDesc, sampDesc, float4AdaptedLutValues});
+                texDesc, sampDesc, lutVector});
     }
 
     //
