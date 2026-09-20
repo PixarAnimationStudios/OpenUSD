@@ -66,7 +66,7 @@ _Repr(const UsdUIAccessibilityAPI &self)
     std::string primRepr = TfPyRepr(self.GetPrim());
     std::string instanceName = TfPyRepr(self.GetName());
     return TfStringPrintf(
-        "UsdUI.AccessibilityAPI(%s, '%s')",
+        "UsdUI.AccessibilityAPI(%s, %s)",
         primRepr.c_str(), instanceName.c_str());
 }
 

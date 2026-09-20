@@ -45,7 +45,7 @@ _Repr(const UsdShadeCoordSysAPI &self)
     std::string primRepr = TfPyRepr(self.GetPrim());
     std::string instanceName = TfPyRepr(self.GetName());
     return TfStringPrintf(
-        "UsdShade.CoordSysAPI(%s, '%s')",
+        "UsdShade.CoordSysAPI(%s, %s)",
         primRepr.c_str(), instanceName.c_str());
 }
 
