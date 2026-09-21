@@ -33,6 +33,22 @@ struct CylinderHits
     CylinderHit farHit;
 };
 
+CylinderHit MakeCylinderHit(float dist, int kind)
+{
+    CylinderHit hit;
+    hit.dist = dist;
+    hit.kind = kind;
+    return hit;
+}
+
+CylinderHits MakeEmptyCylinderHits()
+{
+    CylinderHits hits;
+    hits.nearHit = MakeCylinderHit(0.0, CYLINDER_HIT_NONE);
+    hits.farHit = MakeCylinderHit(0.0, CYLINDER_HIT_NONE);
+    return hits;
+}
+
 vec3 ToCylinderSpace(vec3 value, int axis)
 {
     if (axis == CYLINDER_AXIS_X) {
@@ -95,7 +111,7 @@ Bbox ComputeBboxEye()
 --- --------------------------------------------------------------------------
 -- glsl ImplicitSurface.Intersection.Cylinder
 
-void AddCylinderHit(CylinderHit hit, inout CylinderHits hits)
+void AddCylinderHit(CylinderHit hit, REF(thread, CylinderHits) hits)
 {
     if (hit.kind == CYLINDER_HIT_NONE) {
         return;
@@ -126,9 +142,7 @@ CylinderHits IntersectLateral(
     float radiusBottom,
     float radiusTop)
 {
-    CylinderHits hits = CylinderHits(
-        CylinderHit(0.0, CYLINDER_HIT_NONE),
-        CylinderHit(0.0, CYLINDER_HIT_NONE));
+    CylinderHits hits = MakeEmptyCylinderHits();
 
     if (height <= 0.0) {
         return hits;
@@ -156,7 +170,7 @@ CylinderHits IntersectLateral(
         const float t = -c / (2.0 * halfB);
         const float z = rayOrigin.z + t * rayDir.z;
         if (z >= -halfHeight && z <= halfHeight) {
-            AddCylinderHit(CylinderHit(t, CYLINDER_HIT_SIDE), hits);
+            AddCylinderHit(MakeCylinderHit(t, CYLINDER_HIT_SIDE), hits);
         }
         return hits;
     }
@@ -172,10 +186,10 @@ CylinderHits IntersectLateral(
     const float z0 = rayOrigin.z + t0 * rayDir.z;
     const float z1 = rayOrigin.z + t1 * rayDir.z;
     if (z0 >= -halfHeight && z0 <= halfHeight) {
-        AddCylinderHit(CylinderHit(t0, CYLINDER_HIT_SIDE), hits);
+        AddCylinderHit(MakeCylinderHit(t0, CYLINDER_HIT_SIDE), hits);
     }
     if (z1 >= -halfHeight && z1 <= halfHeight) {
-        AddCylinderHit(CylinderHit(t1, CYLINDER_HIT_SIDE), hits);
+        AddCylinderHit(MakeCylinderHit(t1, CYLINDER_HIT_SIDE), hits);
     }
 
     return hits;
@@ -189,16 +203,16 @@ CylinderHit IntersectCap(
     int kind)
 {
     if (abs(rayDir.z) <= CYLINDER_EPS) {
-        return CylinderHit(0.0, CYLINDER_HIT_NONE);
+        return MakeCylinderHit(0.0, CYLINDER_HIT_NONE);
     }
 
     const float t = (z - rayOrigin.z) / rayDir.z;
     const vec2 point = rayOrigin.xy + t * rayDir.xy;
     if (dot(point, point) <= radius * radius) {
-        return CylinderHit(t, kind);
+        return MakeCylinderHit(t, kind);
     }
 
-    return CylinderHit(0.0, CYLINDER_HIT_NONE);
+    return MakeCylinderHit(0.0, CYLINDER_HIT_NONE);
 }
 
 CylinderHits IntersectCylinder(vec3 rayOrigin, vec3 rayDir)
@@ -208,9 +222,7 @@ CylinderHits IntersectCylinder(vec3 rayOrigin, vec3 rayDir)
     const float radiusBottom = max(0.0, HdGet_radiusBottom());
     const float radiusTop = max(0.0, HdGet_radiusTop());
 
-    CylinderHits hits = CylinderHits(
-        CylinderHit(0.0, CYLINDER_HIT_NONE),
-        CylinderHit(0.0, CYLINDER_HIT_NONE));
+    CylinderHits hits = MakeEmptyCylinderHits();
     const CylinderHits lateralHits = IntersectLateral(
         rayOrigin, rayDir, height, radiusBottom, radiusTop);
     const CylinderHit bottomHit = IntersectCap(
@@ -256,7 +268,8 @@ HitPoints ComputeHitPointsObj(Ray rayObj)
 {
     const int axis = HdGet_axis();
     const vec3 rayOriginCylinder = ToCylinderSpace(rayObj.origin, axis);
-    const vec3 rayDirCylinder = ToCylinderSpace(rayObj.dir, axis);
+    const vec3 rayDirCylinder = normalize(
+        ToCylinderSpace(rayObj.dir, axis));
     const CylinderHits cylinderHits =
         IntersectCylinder(rayOriginCylinder, rayDirCylinder);
 
