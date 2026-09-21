@@ -88,8 +88,19 @@ if windows():
 # appended to this file for the windows PyPI package
 import os, sys
 dllPath = os.path.split(os.path.realpath(__file__))[0]
+
+def _PrependDllPath(paths):
+    normalizedPath = os.path.normcase(os.path.normpath(dllPath))
+    return os.pathsep.join([dllPath] + [
+        path for path in paths.split(os.pathsep)
+        if path and os.path.normcase(os.path.normpath(path)) != normalizedPath
+    ])
+
 if sys.version_info >= (3, 8, 0):
-    os.environ['PXR_USD_WINDOWS_DLL_PATH'] = dllPath
+    # Preserve the caller's override, or the PATH fallback used by Tf.
+    importPaths = os.environ.get('PXR_USD_WINDOWS_DLL_PATH',
+                                 os.environ.get('PATH', ''))
+    os.environ['PXR_USD_WINDOWS_DLL_PATH'] = _PrependDllPath(importPaths)
 # Note that we ALWAYS modify the PATH, even for python-3.8+. This is because:
 #    - Anaconda python interpreters are modified to use the old, pre-3.8, PATH-
 #      based method of loading dlls
@@ -98,7 +109,9 @@ if sys.version_info >= (3, 8, 0):
 #    - similarly, adding the extra PATH entry shouldn't hurt standard python
 #      interpreters
 #    - there's no canonical/bulletproof way to check for an anaconda interpreter
-os.environ['PATH'] = dllPath + os.pathsep + os.environ['PATH']
+#    - the native Plug loader also uses PATH for lazy plugin dependencies
+os.environ['PATH'] = _PrependDllPath(os.environ.get('PATH', ''))
+del _PrependDllPath
 ''')
 
 # Get the readme text
