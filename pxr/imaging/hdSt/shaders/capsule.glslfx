@@ -33,6 +33,22 @@ struct CapsuleHits
     CapsuleHit farHit;
 };
 
+CapsuleHit MakeCapsuleHit(float dist, int kind)
+{
+    CapsuleHit hit;
+    hit.dist = dist;
+    hit.kind = kind;
+    return hit;
+}
+
+CapsuleHits MakeEmptyCapsuleHits()
+{
+    CapsuleHits hits;
+    hits.nearHit = MakeCapsuleHit(0.0, CAPSULE_HIT_NONE);
+    hits.farHit = MakeCapsuleHit(0.0, CAPSULE_HIT_NONE);
+    return hits;
+}
+
 vec3 ToCapsuleSpace(vec3 value, int axis)
 {
     if (axis == CAPSULE_AXIS_X) {
@@ -112,7 +128,7 @@ Bbox ComputeBboxEye()
 --- --------------------------------------------------------------------------
 -- glsl ImplicitSurface.Intersection.Capsule
 
-void AddCapsuleHit(CapsuleHit hit, inout CapsuleHits hits)
+void AddCapsuleHit(CapsuleHit hit, REF(thread, CapsuleHits) hits)
 {
     if (hit.kind == CAPSULE_HIT_NONE) {
         return;
@@ -143,9 +159,7 @@ CapsuleHits IntersectLateral(
     float radiusBottom,
     float radiusTop)
 {
-    CapsuleHits hits = CapsuleHits(
-        CapsuleHit(0.0, CAPSULE_HIT_NONE),
-        CapsuleHit(0.0, CAPSULE_HIT_NONE));
+    CapsuleHits hits = MakeEmptyCapsuleHits();
 
     if (height <= 0.0) {
         return hits;
@@ -173,7 +187,7 @@ CapsuleHits IntersectLateral(
         const float t = -c / (2.0 * halfB);
         const float z = rayOrigin.z + t * rayDir.z;
         if (z >= -halfHeight && z <= halfHeight) {
-            AddCapsuleHit(CapsuleHit(t, CAPSULE_HIT_BODY), hits);
+            AddCapsuleHit(MakeCapsuleHit(t, CAPSULE_HIT_BODY), hits);
         }
         return hits;
     }
@@ -189,10 +203,10 @@ CapsuleHits IntersectLateral(
     const float z0 = rayOrigin.z + t0 * rayDir.z;
     const float z1 = rayOrigin.z + t1 * rayDir.z;
     if (z0 >= -halfHeight && z0 <= halfHeight) {
-        AddCapsuleHit(CapsuleHit(t0, CAPSULE_HIT_BODY), hits);
+        AddCapsuleHit(MakeCapsuleHit(t0, CAPSULE_HIT_BODY), hits);
     }
     if (z1 >= -halfHeight && z1 <= halfHeight) {
-        AddCapsuleHit(CapsuleHit(t1, CAPSULE_HIT_BODY), hits);
+        AddCapsuleHit(MakeCapsuleHit(t1, CAPSULE_HIT_BODY), hits);
     }
 
     return hits;
@@ -207,9 +221,7 @@ CapsuleHits IntersectSphereCap(
     bool bottomCap,
     int kind)
 {
-    CapsuleHits hits = CapsuleHits(
-        CapsuleHit(0.0, CAPSULE_HIT_NONE),
-        CapsuleHit(0.0, CAPSULE_HIT_NONE));
+    CapsuleHits hits = MakeEmptyCapsuleHits();
     const vec3 relativeOrigin = rayOrigin - vec3(0.0, 0.0, centerZ);
     const float a = dot(rayDir, rayDir);
     const float halfB = dot(relativeOrigin, rayDir);
@@ -229,11 +241,11 @@ CapsuleHits IntersectSphereCap(
 
     if ((bottomCap && z0 <= transitionZ + tolerance) ||
         (!bottomCap && z0 >= transitionZ - tolerance)) {
-        AddCapsuleHit(CapsuleHit(t0, kind), hits);
+        AddCapsuleHit(MakeCapsuleHit(t0, kind), hits);
     }
     if ((bottomCap && z1 <= transitionZ + tolerance) ||
         (!bottomCap && z1 >= transitionZ - tolerance)) {
-        AddCapsuleHit(CapsuleHit(t1, kind), hits);
+        AddCapsuleHit(MakeCapsuleHit(t1, kind), hits);
     }
 
     return hits;
@@ -253,9 +265,7 @@ CapsuleHits IntersectCapsule(vec3 rayOrigin, vec3 rayDir)
     const float bottomCapCenter = -halfHeight - capSlope * radiusBottom;
     const float topCapCenter = halfHeight - capSlope * radiusTop;
 
-    CapsuleHits hits = CapsuleHits(
-        CapsuleHit(0.0, CAPSULE_HIT_NONE),
-        CapsuleHit(0.0, CAPSULE_HIT_NONE));
+    CapsuleHits hits = MakeEmptyCapsuleHits();
     const CapsuleHits bodyHits = IntersectLateral(
         rayOrigin, rayDir, height, radiusBottom, radiusTop);
     const CapsuleHits bottomHits = IntersectSphereCap(
@@ -311,7 +321,8 @@ HitPoints ComputeHitPointsObj(Ray rayObj)
 {
     const int axis = HdGet_axis();
     const vec3 rayOriginCapsule = ToCapsuleSpace(rayObj.origin, axis);
-    const vec3 rayDirCapsule = ToCapsuleSpace(rayObj.dir, axis);
+    const vec3 rayDirCapsule = normalize(
+        ToCapsuleSpace(rayObj.dir, axis));
     const CapsuleHits capsuleHits =
         IntersectCapsule(rayOriginCapsule, rayDirCapsule);
 
