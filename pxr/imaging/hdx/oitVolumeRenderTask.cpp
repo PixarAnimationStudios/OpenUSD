@@ -146,6 +146,7 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
     //
     extendedState->SetRenderPassShader(_oitVolumeRenderPassShader);
     renderPassState->SetEnableDepthMask(false);
+    renderPassState->SetColorMaskUseDefault(false);
     renderPassState->SetColorMasks({HdRenderPassState::ColorMaskNone});
 
     // Transition depth texture (if it exists) to shader read layout.
