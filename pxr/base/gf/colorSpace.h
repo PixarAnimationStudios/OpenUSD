@@ -49,6 +49,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Linear AdobeRGB: lin_adobergb_scene
 /// CIE XYZ-D65 - Scene-referred: lin_ciexyzd65_scene
 /// sRGB Encoded Rec.709 (sRGB): srgb_rec709_scene
+/// sRGB Encoded Rec.709 (sRGB) - Display-referred: srgb_rec709_display
 /// Gamma 2.4 Encoded Rec.709: g24_rec709_scene
 /// Gamma 2.2 Encoded Rec.709: g22_rec709_scene
 /// Gamma 1.8 Encoded Rec.709: g18_rec709_scene
@@ -62,6 +63,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// `lin_ciexyzd65_scene` bears some additional explanation. The `d65` component
 /// in the name is meant to indicate that values transformed to this color space
 /// should be adapted to the D65 white point.
+///
+/// `srgb_rec709_display` is a defined token, but it is a marker only and there
+/// is no canonical behavior associated with it. It is application and renderer
+/// defined how you treat it. If an application or renderer has no special
+/// treatment it is to be understood as being identical to
+/// `srgb_rec709_scene` for purposes of transforming to other color spaces.
 ///
 /// In addition the `data` and `unknown` color space names, `raw` and `identity`
 /// are provided for compatibility with existing production assets. The CIEXYZ
@@ -80,6 +87,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((LinearAdobeRGB, "lin_adobergb_scene"))     \
     ((LinearCIEXYZD65, "lin_ciexyzd65_scene"))   \
     ((SRGBRec709, "srgb_rec709_scene"))          \
+    ((SRGBRec709Display, "srgb_rec709_display")) \
     ((G24Rec709, "g24_rec709_scene"))            \
     ((G22Rec709, "g22_rec709_scene"))            \
     ((G18Rec709, "g18_rec709_scene"))            \
