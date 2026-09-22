@@ -20,10 +20,19 @@ class HgiExternalBuffer;
 
 /// \enum HgiSemaphoreKind
 ///
-/// Flavour of a cross-queue synchronization primitive.  OpenGL can only
-/// create or import binary semaphores (GL_EXT_semaphore has no timeline
-/// form), so binary is the interop lowest common denominator and timeline is
-/// available only where every participant is Vulkan.
+/// Flavour of a cross-queue synchronization primitive.
+///
+/// Binary is the interop lowest common denominator: OpenGL can only create or
+/// import binary semaphores, because GL_EXT_semaphore has no timeline form.
+///
+/// Timeline is currently NOT IMPLEMENTED by any backend, including Vulkan.
+/// The enumerator exists because the interface -- and
+/// HgiExternalBufferArena's value bookkeeping behind it -- is designed for it,
+/// but HgiVulkanSemaphore encodes through the command queue's pending wait and
+/// signal lists, and those carry no values.  Every creation and import path
+/// therefore refuses a timeline kind rather than returning a semaphore that
+/// cannot be submitted correctly.  Supporting it means teaching the queue to
+/// carry values, not changing anything here.
 enum HgiSemaphoreKind
 {
     HgiSemaphoreKindBinary = 0,

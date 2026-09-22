@@ -45,8 +45,18 @@ struct HgiExternalBufferArenaUsage
 /// and returns null when this Hgi cannot interop with the requested arena
 /// type.  That null *is* the negotiation step: the application and Hgi settle
 /// on an interop format once, when the arena is created, rather than
-/// rediscovering per frame whether a given buffer can be shared.  A source
-/// device gets its own arena, so handles from two devices never mix.
+/// rediscovering per frame whether a given buffer can be shared.
+///
+/// There is one arena per type per Hgi, which makes ONE PRODUCER PER ARENA a
+/// requirement rather than a convention.  Two independent producers sharing an
+/// arena share its semaphore pair and its epoch counter, and the epoch counter
+/// does not distinguish them: producer A's publish can be consumed by the wait
+/// raised on B's behalf, and the signal that follows zeroes the state for
+/// both.  On a binary semaphore two publishes against one wait also leave it
+/// signalled, so the next frame's wait consumes a stale signal and neither
+/// producer is ordered against Hgi at all.  None of this is detected or
+/// reported.  An application with two genuinely independent producers needs
+/// two Hgis, or has to serialize them into one producer itself.
 ///
 /// \section Sync
 ///
@@ -59,12 +69,55 @@ struct HgiExternalBufferArenaUsage
 /// even buffers Hgi never looked at.  That costs some overlap and buys a great
 /// deal of simplicity.
 ///
-/// The wait and signal are encoded by the *consumer's commit*, not by
-/// Hgi::StartFrame() / EndFrame().  Those are documented as optional, are
-/// driven by whichever hdx tasks happen to be in the task list, and are
-/// emitted more than once per application frame by clients that run several
-/// render passes or a pick pass -- so a mandatory wait placed there either
-/// never runs or runs more times than the application signalled.
+/// That bracket is four operations, and only two of them are the arena's to
+/// perform:
+///
+/// |        | app-done semaphore  | hgi-done semaphore    |
+/// | ------ | ------------------- | --------------------- |
+/// | signal | the application     | EncodeHgiDoneSignal() |
+/// | wait   | EncodeAppDoneWait() | the application       |
+///
+/// Hgi encodes its two from Hgi::StartFrame() and Hgi::EndFrame()
+/// respectively.  The application does its two in its own submission, and
+/// reports the signal afterwards with NotifyAppDone().
+///
+/// The diagonal is the whole explanation: this arena can only encode onto the
+/// CONSUMER's queue.  It has no access to the application's, so the two cells
+/// on the other diagonal are things the application does for itself, with the
+/// semaphores it takes from GetAppDoneHgiSemaphore() /
+/// GetHgiDoneHgiSemaphore() or from a backend's native accessors.
+///
+/// Hence the shape of the API, which is otherwise easy to read as an
+/// oversight.  NotifyAppDone() exists because the arena cannot see the
+/// application's signal and must not guess: without it there is no way to tell
+/// "the application published" from "the application is idle".  There is no
+/// counterpart for the application's wait, because nothing here depends on
+/// knowing it happened -- and no EncodeHgiDoneWait(), because the arena could
+/// not encode one if it wanted to.
+///
+/// Neither the application nor the consuming renderer encodes the two Hgi
+/// cells; both are protected, with Hgi a friend.  Calling them from
+/// application code would not fail loudly -- it would consume an epoch, and
+/// the frame that needed it would go silently unsynchronized.
+///
+/// The application's wait is not optional even though nothing here observes
+/// it.  Hgi signals hgi-done once per epoch, and a binary semaphore signalled
+/// twice with no intervening wait is invalid, so an application that publishes
+/// again without waiting corrupts the semaphore's state on top of whatever it
+/// does to the buffer.
+///
+/// Encoding from the frame hooks puts a real obligation on the host in turn:
+/// a client that shares buffers must call both, once per application frame,
+/// with StartFrame ahead of everything that reads a shared buffer and EndFrame
+/// after all of it has been submitted.  A client that does not gets no
+/// synchronization whatsoever, and no diagnostic saying so -- the check that
+/// would report a missing signal lives inside the wait, which is itself in
+/// the hook that was not called.
+///
+/// A corollary for producers: publish BEFORE StartFrame.  NotifyAppDone()
+/// called after it opens an epoch this frame will not wait for, and an epoch
+/// that was not waited for is not signalled at EndFrame either, so the
+/// producer's next wait for hgi-done slips to the following frame.
 ///
 /// Repetition is handled here rather than being left to the application to get
 /// right.  NotifyAppDone() opens an epoch; EncodeAppDoneWait() encodes a wait
@@ -84,16 +137,6 @@ public:
         return _hgi;
     }
 
-    /// The application-side device or context this arena's buffers come from,
-    /// as a uint64 cast of the native device or context pointer.  This is the
-    /// arena's identity along with its type: pointer identity is what actually
-    /// decides whether a native handle means anything here, which a physical
-    /// device UUID cannot -- two logical devices on one GPU share a UUID and
-    /// hand out unrelated handles.
-    uint64_t GetRawSourceDevice() const {
-        return _rawSourceDevice;
-    }
-
     /// Allocate a buffer out of this arena.  The arena owns and frees it; the
     /// returned reference co-owns it.  Use this when Hgi, rather than the
     /// application, should own the allocation -- it sidesteps the question of
@@ -108,14 +151,25 @@ public:
     /// Hgi waits on.  Null when this arena needs no sync -- the usual case when
     /// the application and Hgi share one context, where command order already
     /// sequences the accesses.
-    HgiSemaphoreSharedPtr const &GetAppDoneSemaphore() const {
+    ///
+    /// Hgi-typed, hence the name: a backend arena may also offer the same
+    /// object in its own type system, where the application can use it
+    /// directly (HgiVulkanExternalBufferArena::GetAppDoneVkSemaphore).  An
+    /// application on the consumer's own device wants that one; this one is
+    /// for code that must stay backend-agnostic.
+    HgiSemaphoreSharedPtr const &GetAppDoneHgiSemaphore() const {
         return _appDoneSemaphore;
     }
 
     /// The semaphore Hgi signals when it has finished reading, and the
     /// application waits on before overwriting shared memory.  Null when this
     /// arena needs no sync.
-    HgiSemaphoreSharedPtr const &GetHgiDoneSemaphore() const {
+    ///
+    /// Hgi-typed; see GetAppDoneHgiSemaphore for the native counterpart.  Note
+    /// that Hgi never encodes the application's wait on this -- it has no
+    /// access to the application's queue -- so there is deliberately no
+    /// EncodeHgiDoneWait().  The application waits in its own submission.
+    HgiSemaphoreSharedPtr const &GetHgiDoneHgiSemaphore() const {
         return _hgiDoneSemaphore;
     }
 
@@ -127,9 +181,9 @@ public:
     /// This is where the application and Hgi settle on a synchronization
     /// format, once, rather than rediscovering per frame whether it will work.
     /// Returns false -- and leaves the arena unsynchronized -- when this
-    /// backend cannot import them, which includes a timeline semaphore handed
-    /// to an OpenGL consumer, since GL_EXT_semaphore is binary only. A caller
-    /// that cannot proceed unsynchronized should read false as "copy instead".
+    /// backend cannot import them, which includes any timeline semaphore, on
+    /// every backend; see HgiSemaphoreKind. A caller that cannot proceed
+    /// unsynchronized should read false as "copy instead".
     ///
     /// Default: unsupported.
     HGI_API
@@ -149,22 +203,6 @@ public:
     /// Thread safety: safe to call from any thread.
     HGI_API
     void NotifyAppDone(uint64_t value = 0);
-
-    /// Encode a wait on the app-done semaphore ahead of the commands the
-    /// consumer is about to record.  Call this from the consumer's commit,
-    /// before importing, copying out of, or drawing with any buffer from this
-    /// arena.  Does nothing when there is no semaphore, or when the current
-    /// epoch has already been waited for (see the class documentation).
-    HGI_API
-    void EncodeAppDoneWait();
-
-    /// Encode a signal on the hgi-done semaphore after the commands the
-    /// consumer just recorded.  Call this from the consumer's commit, after
-    /// the import / copy / draw.  Does nothing when there is no semaphore, or
-    /// when this epoch was not waited for -- signalling a binary semaphore
-    /// twice with no intervening wait is not meaningful.
-    HGI_API
-    void EncodeHgiDoneSignal();
 
     /// Reclaim buffers nobody is using any more.
     ///
@@ -191,8 +229,46 @@ public:
     HgiExternalBufferArenaUsage GetUsage() const;
 
 protected:
+    // Hgi's half of the bracket. Not public, and not application API: an
+    // application signals and waits on its own queue, with the semaphores it
+    // gets from GetAppDoneHgiSemaphore() / GetHgiDoneHgiSemaphore(). These two
+    // encode onto the CONSUMER's queue, which only Hgi is in a position to do
+    // correctly, because only Hgi knows where the frame starts and ends.
+    //
+    // Calling either from application code would not fail loudly. It would
+    // consume an epoch, and the frame that needed it would then silently go
+    // unsynchronized -- which is why this is enforced by the compiler rather
+    // than by the comment that used to sit here.
+
+    /// Encode a wait on the app-done semaphore ahead of the commands the
+    /// consumer is about to record.  Hgi calls this on every arena it owns
+    /// from StartFrame(), which is ahead of everything in the frame that
+    /// imports, copies out of, or draws with a buffer from this arena.  Does
+    /// nothing when there is no semaphore, or when the current epoch has
+    /// already been waited for (see the class documentation).
     HGI_API
-    HgiExternalBufferArena(Hgi *hgi, uint64_t rawSourceDevice);
+    void EncodeAppDoneWait();
+
+    /// Encode a signal on the hgi-done semaphore telling the application the
+    /// consumer has finished reading this arena's buffers.
+    ///
+    /// Hgi calls this from EndFrame(), after the frame's drawing has been
+    /// submitted. It cannot be encoded any earlier. A directly bound buffer's
+    /// reads ARE the draws, and at commit time those have not been recorded
+    /// yet, so a signal there claims the reads are finished before they exist.
+    /// Nothing inside the consuming renderer can do better: several render
+    /// passes run per frame and none of them knows it issued the last one.
+    ///
+    /// Does nothing when there is no semaphore, or when this epoch was not
+    /// waited for -- signalling a binary semaphore twice with no intervening
+    /// wait is not meaningful. Returns true only when a signal was actually
+    /// encoded, so a caller can skip backend work -- a queue flush, say --
+    /// that an application sharing nothing should not pay for every frame.
+    HGI_API
+    bool EncodeHgiDoneSignal();
+
+    HGI_API
+    HgiExternalBufferArena(Hgi *hgi);
 
     /// Take ownership of \p buffer and return the caller's co-owning
     /// reference.  Subclasses call this from AllocateBuffer and from their own
@@ -230,6 +306,10 @@ protected:
     virtual bool _IsSubmissionRetired(uint64_t stamp) = 0;
 
 private:
+    // Encodes the bracket from StartFrame/EndFrame. The reverse friendship
+    // already exists in hgi.h, so the two classes were coupled before this.
+    friend class Hgi;
+
     HgiExternalBufferArena() = delete;
     HgiExternalBufferArena(const HgiExternalBufferArena &) = delete;
     HgiExternalBufferArena & operator=(
@@ -250,19 +330,41 @@ private:
     };
 
     Hgi *_hgi;
-    uint64_t _rawSourceDevice;
 
     HgiSemaphoreSharedPtr _appDoneSemaphore;
     HgiSemaphoreSharedPtr _hgiDoneSemaphore;
 
-    // The epoch the application last published, the epoch Hgi last waited
-    // for, and the value Hgi last signalled. Guarded by _syncMutex because
-    // NotifyAppDone comes from the application's thread while the encodes
-    // happen on the consumer's.
+    // How many times the application has published, bumped by
+    // NotifyAppDone(). Only ever compared against _waitedEpoch, never read as
+    // a count: together they answer the wait side's one question, is there an
+    // unconsumed publish?
     uint64_t _appDoneEpoch = 0;
+
+    // The value the application signalled for the current epoch, carried from
+    // NotifyAppDone() through to EncodeWait(). Meaningful for a timeline
+    // semaphore; a binary one has no value and ignores it.
     uint64_t _appDoneValue = 0;
+
+    // The epoch EncodeAppDoneWait() last encoded a wait for. Below
+    // _appDoneEpoch means a wait is due; equal means the publish has been
+    // consumed and a signal is owed.
+    //
+    // Both this and _appDoneEpoch are zeroed when a signal is emitted, which
+    // is what lets "_waitedEpoch != 0 on entry to a wait" mean, precisely,
+    // that the previous publish was consumed and never signalled.
     uint64_t _waitedEpoch = 0;
+
+    // The value last signalled on the hgi-done semaphore, incremented per
+    // signal so a timeline waiter can tell one frame's signal from the next.
+    // Ignored by a binary semaphore.
     uint64_t _hgiDoneValue = 0;
+
+    // One-shot latch for the "nobody signalled hgi-done" diagnostic. Without
+    // it the warning would repeat every frame for the life of the arena.
+    bool _warnedMissingSignal = false;
+
+    // Guards everything above: NotifyAppDone() is called from the
+    // application's thread while the encodes happen on the consumer's.
     mutable std::mutex _syncMutex;
 
     // Every buffer this arena owns, and those waiting on the GPU before they

@@ -8,6 +8,7 @@
 #define PXR_IMAGING_HGI_EXTERNAL_BUFFER_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/defines.h"
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/buffer.h"
 
@@ -31,6 +32,29 @@ enum HgiExternalHandleType
     HgiExternalHandleTypeOpaqueWin32 = 0,
     HgiExternalHandleTypeOpaqueFd,
 };
+
+/// The handle type this platform's graphics APIs mint and accept: a Win32 NT
+/// handle on Windows, a POSIX fd everywhere else.
+///
+/// Descriptors default their handle type to this rather than to a fixed
+/// enumerator, because the failure mode of the alternative is silent.  Both
+/// forms are small integers, so a descriptor left saying "Win32" on Linux
+/// does not look wrong -- it reaches an import that refuses a handle type it
+/// cannot use, on one platform only, and the caller is told nothing about
+/// which field was at fault.
+///
+/// Note that the two also differ in ownership, which is why the type cannot
+/// just be inferred late: an imported fd is CONSUMED by the import, while an
+/// imported Win32 handle is not, and the exporter must close its own copy.
+constexpr HgiExternalHandleType
+HgiGetPlatformExternalHandleType()
+{
+#if defined(ARCH_OS_WINDOWS)
+    return HgiExternalHandleTypeOpaqueWin32;
+#else
+    return HgiExternalHandleTypeOpaqueFd;
+#endif
+}
 
 /// \class HgiExternalBuffer
 ///

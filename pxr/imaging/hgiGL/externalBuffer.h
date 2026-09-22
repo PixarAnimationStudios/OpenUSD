@@ -39,7 +39,7 @@ struct HgiGLImportBufferDesc
 
     /// How to interpret externalHandle. Never inferred from the value -- a
     /// Win32 NT handle and an fd are both small integers.
-    HgiExternalHandleType handleType = HgiExternalHandleTypeOpaqueWin32;
+    HgiExternalHandleType handleType = HgiGetPlatformExternalHandleType();
 
     /// Size of the whole memory block the handle names. GL imports the block
     /// entire, even when only a window of it is used here.

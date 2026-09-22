@@ -162,16 +162,6 @@ _PlatformHandleType()
 #endif
 }
 
-// A stable key standing for the GL context the application shares buffers from.
-// An arena is keyed on the producing device or context; this test has a single
-// context for its whole run, so any stable value will do.
-uint64_t
-_GlContextKey()
-{
-    static const int marker = 0;
-    return reinterpret_cast<uint64_t>(&marker);
-}
-
 } // anonymous namespace
 
 class My_TestGLDrawing : public HdSt_UnitTestGLDrawing
@@ -195,9 +185,14 @@ private:
     // Build the scene into `scene`. When `gpuShare` is true the cube points
     // (and, for the instancing workflow, the instance transforms) are published
     // as buffers shared through an arena; otherwise they are CPU primvars.
+    // \p reuseExisting republishes into the scene index already inserted in
+    // the render index, instead of making a new one. Required for frame 2 on
+    // the CPU path: a fresh index would never be inserted, so the render
+    // index would keep drawing frame 1 and the baseline would be stale.
     void _BuildScene(HdSt_TestDriver *driver,
                      HdRetainedSceneIndexRefPtr &scene,
-                     bool gpuShare);
+                     bool gpuShare,
+                     bool reuseExisting = false);
 
     // Build the cube primvars container (points + constant displayColor).
     HdContainerDataSourceHandle _BuildCubePrimvars(
@@ -234,6 +229,55 @@ private:
                                         const void *data, size_t byteSize,
                                         uint32_t stride);
 
+    // ---- Frame 2: overwrite an already-shared buffer IN PLACE ----
+    //
+    // In place rather than republished, deliberately. A producer that
+    // allocates a second buffer and publishes that has no write-after-read
+    // hazard at all, because nothing ever rewrites bytes a submitted draw may
+    // still be reading -- it is safe by construction and proves nothing.
+    // Overwriting is what a viewport actually does for deforming geometry,
+    // and the case the arena's hgi-done signal exists to make safe.
+    //
+    // \p stream indexes _producerStreams in creation order. Returns false on
+    // failure; the ordering each topology can express differs, see below.
+    bool _UpdateGpuBuffer(HdSt_TestDriver *driver, size_t stream,
+                          const void *data, size_t byteSize);
+
+    // GL producer: rewrites its own buffer on the context it shares with
+    // Storm, where GL's in-order command stream orders the write after the
+    // draw that read it, with no synchronization primitive at all.
+    bool _UpdateNativeRegisteredBuffer(size_t stream,
+                                       const void *data, size_t byteSize);
+
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+    // Vulkan producer: rewrites the VkBuffer in its own submission. Waits on
+    // the arena's hgi-done semaphore first, which is the whole point -- that
+    // signal is the producer's only evidence Storm has finished reading, and
+    // whether it is emitted before or after the draws is what these frames
+    // are here to find out.
+    bool _UpdateVulkanBuffer(HdSt_TestDriver *driver, size_t stream,
+                             const void *data, size_t byteSize);
+#endif
+
+    // What the producer needs to rewrite a stream it already shared, parallel
+    // to _sharedBuffers by construction order.
+    //
+    // Deliberately holds NO strong reference to the arena wrapper: the reclaim
+    // test watches use_count, so a second owner here would mask exactly the
+    // transition it asserts on.
+    struct _ProducerStream
+    {
+        size_t   byteSize = 0;
+        uint32_t glBuffer = 0;            // GL producer's own name
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+        VkBuffer vkBuffer = VK_NULL_HANDLE;  // Vulkan producer's own buffer
+        Hgi     *vkOwner  = nullptr;         // the Hgi whose device minted it
+#endif
+        // The CONSUMER's arena, whose epoch the producer opens after writing.
+        HgiExternalBufferArena *consumerArena = nullptr;
+    };
+    std::vector<_ProducerStream> _producerStreams;
+
     bool _ConsumerIsVulkan(HdSt_TestDriver *driver) const;
 
     // Check the arena's reclaim contract: the buffer outlives the last outside
@@ -252,12 +296,6 @@ private:
         HgiVulkanExternalBufferArena *producerArena,
         HgiExternalBufferArena *consumerArena);
 
-    // WAR check: wait, on the GPU, for the hgi-done semaphore the consumer
-    // signals when it has finished reading -- the point at which a real
-    // producer would be free to overwrite the buffer. Bounded, because a
-    // consumer that never signals would otherwise hang the test rather than
-    // fail it.
-    void _VerifyHgiDoneSignal();
 #endif
 
 #if defined(PXR_VULKAN_SUPPORT_ENABLED)
@@ -269,12 +307,39 @@ private:
 
     // Write \p data into \p dst as the producer's own work on \p hgi's
     // device, optionally signalling \p signalSemaphore when it completes.
+    // \p waitSemaphore, when given, is waited on by the copy submission --
+    // the write-after-read half of the bracket. \p signalSemaphore is signalled
+    // after it, the read-after-write half.
     bool _VulkanUpload(Hgi *hgi, VkBuffer dst,
                        const void *data, size_t byteSize,
-                       VkSemaphore signalSemaphore);
+                       VkSemaphore signalSemaphore,
+                       VkSemaphore waitSemaphore = VK_NULL_HANDLE);
 #endif
 
     HgiGLExternalBufferArena *_GetGlArena(HdSt_TestDriver *driver);
+
+    // Record that this build, platform or device cannot do what the requested
+    // mode needs, and let the run unwind quietly.
+    //
+    // Deliberately not an error. External-memory interop is a capability, not
+    // a correctness property: a machine whose driver lacks
+    // VK_KHR_external_memory_fd, or a GL stack without GL_EXT_memory_object_fd,
+    // is simply not a machine this feature applies to, and failing there would
+    // make the suite red for something no change to the code under test could
+    // fix. A skip that says why is the honest result.
+    //
+    // Only the first reason is kept: everything after it is a consequence.
+    //
+    // The risk this accepts is that a genuine regression which happens to
+    // present as "no arena" reads as a skip. That is why the sites calling
+    // this are only the ones that answer "is the capability there", never the
+    // ones that answer "did the operation work".
+    void _MarkUnsupported(std::string const &why) {
+        if (_unsupported.empty()) {
+            _unsupported = why;
+        }
+    }
+    std::string _unsupported;
 
     // Create the second (producer) Vulkan device for --vulkanInterop
     // and verify it resolves to the same physical device as the consumer's.
@@ -289,11 +354,22 @@ private:
         const _SharedBuffer &shared, size_t byteSize,
         HdTupleType elementType, size_t numElements);
 
-    // Render the scene once (fresh driver) and read the color AOV back into
-    // `out`. Optionally also writes the image to `writePath`.
-    void _RenderToPixels(bool gpuShare, std::vector<uint8_t> &out,
+    // Render TWO frames with different cube geometry and return both images.
+    //
+    // Two frames rather than one because sharing exists to be updated: a
+    // buffer written once and never touched again has no write-after-read
+    // hazard, needs no hgi-done signal to be correct, and is indistinguishable
+    // from an ordinary Storm-owned VBO. Frame 2 overwrites the SAME buffer in
+    // place, which is what a viewport does for deforming geometry.
+    void _RenderToPixels(bool gpuShare,
+                         std::vector<uint8_t> &frame1,
+                         std::vector<uint8_t> &frame2,
                          int &width, int &height,
                          const std::string &writePath);
+
+    // Read the color AOV into \p out. Forces a GPU sync.
+    void _ReadColorAov(HdSt_TestDriver *driver, std::vector<uint8_t> &out,
+                       int &width, int &height);
 
     GfVec3f _CameraTranslate() const {
         // Frame the single cube up close, the grid pulled back.
@@ -309,6 +385,16 @@ private:
     bool _instancing = false;   // --instancing: grid of instanced cubes
     int _div = 3;               // grid is _div x _div cubes (instancing only)
     float _halfSize = 1.0f;
+
+    // Frame 2's cube. Smaller on purpose: the extent published in frame 1 is
+    // built from _halfSize and is not republished for the GPU path (only the
+    // buffer contents change), so a frame 2 that grew could be clipped by a
+    // stale extent and we would be debugging culling instead of ordering.
+    float _halfSize2 = 0.6f;
+
+    // The prim carrying the points primvar -- the cube, or the prototype when
+    // instancing. Recorded by _BuildScene so frame 2 can dirty it.
+    SdfPath _meshPrimPath;
     float _spacing = 3.0f;
 
     // --vulkanSync: a Vulkan producer allocates the buffer on the CONSUMER's
@@ -386,8 +472,7 @@ My_TestGLDrawing::_GetGlArena(HdSt_TestDriver *driver)
     }
     if (!_glArena) {
         _glArena = driver->GetHgi()
-            ->GetExternalBufferArena<HgiGLExternalBufferArena>(
-                _GlContextKey());
+            ->GetExternalBufferArena<HgiGLExternalBufferArena>();
     }
     return _glArena.get();
 }
@@ -401,10 +486,7 @@ My_TestGLDrawing::_GetVulkanArena(Hgi *hgi,
         return nullptr;
     }
     if (!*slot) {
-        HgiVulkanDevice *device =
-            static_cast<HgiVulkan *>(hgi)->GetPrimaryDevice();
-        *slot = hgi->GetExternalBufferArena<HgiVulkanExternalBufferArena>(
-            reinterpret_cast<uint64_t>(device->GetVulkanDevice()));
+        *slot = hgi->GetExternalBufferArena<HgiVulkanExternalBufferArena>();
     }
     return slot->get();
 }
@@ -420,46 +502,29 @@ _SharedBuffer
 My_TestGLDrawing::_MakeNativeRegisteredBuffer(HdSt_TestDriver *driver,
                                               const void *data,
                                               size_t byteSize,
-                                              uint32_t stride)
+                                              uint32_t /*stride*/)
 {
-    // The plain case: the application allocates on the consumer's own device
-    // and REGISTERS the buffer, so the arena binds and reads it but never
-    // deletes it. Which arena that is follows the consumer's backend -- a
-    // native handle only means something to the API that minted it, and there
-    // is no arena that could bridge a GL name to a Vulkan consumer, because
-    // OpenGL cannot export an allocation for another API to import.
-#if defined(PXR_VULKAN_SUPPORT_ENABLED)
-    if (_ConsumerIsVulkan(driver)) {
-        Hgi *hgi = driver->GetHgi();
-        HgiVulkanExternalBufferArena *arena =
-            _GetVulkanArena(hgi, &_vkArena);
-        if (!arena) {
-            TF_RUNTIME_ERROR("This Vulkan device has no external memory "
-                             "support");
-            return nullptr;
-        }
-
-        HgiBufferDesc desc;
-        desc.usage = HgiBufferUsageVertex;
-        desc.byteSize = byteSize;
-        desc.vertexStride = stride;
-        desc.initialData = data;
-        desc.debugName = "app vertex buffer";
-        HgiBufferHandle buffer = hgi->CreateBuffer(desc);
-        VkBuffer vkBuffer =
-            static_cast<HgiVulkanBuffer *>(buffer.Get())->GetVulkanBuffer();
-
-        // The handle keeps the application's buffer alive; the arena only
-        // borrows it.
-        _appVkBuffers.push_back(buffer);
-        return arena->RegisterBuffer(
-            vkBuffer, byteSize, HgiBufferUsageVertex | HgiBufferUsageStorage);
-    }
-#endif
-
+    // The GL producer: the application creates its own GL buffer on the
+    // consumer's context and REGISTERS it, so the arena binds and reads it but
+    // never deletes it.
+    //
+    // GL only, deliberately. A Vulkan consumer used to be handled here as
+    // well, by letting Hgi upload through HgiBufferDesc::initialData and
+    // registering the resulting VkBuffer. That made Hgi the writer, so Hgi's
+    // own staging barrier ordered the write and nothing ever overwrote the
+    // buffer afterwards -- it exercised registration and binding while proving
+    // nothing about a producer, and Vulkan orders nothing implicitly even on
+    // one queue. Use --vulkanSync instead, where the producer submits its own
+    // command buffer and the only thing ordering it against Storm's read is
+    // the arena's semaphore pair.
     HgiGLExternalBufferArena *arena = _GetGlArena(driver);
     if (!arena) {
-        TF_RUNTIME_ERROR("This Hgi cannot consume OpenGL buffers");
+        TF_RUNTIME_ERROR(
+            "This Hgi cannot consume OpenGL buffers. A Vulkan consumer "
+            "needs --vulkanSync or --vulkanInterop; the default path is a "
+            "GL producer, and no arena can bridge a GL name to a Vulkan "
+            "consumer because OpenGL cannot export an allocation for "
+            "another API to import.");
         return nullptr;
     }
 
@@ -469,15 +534,105 @@ My_TestGLDrawing::_MakeNativeRegisteredBuffer(HdSt_TestDriver *driver,
     glNamedBufferData(glBuf, byteSize, data, GL_STATIC_DRAW);
     _appGlBuffers.push_back(glBuf);
 
-    return arena->RegisterBuffer(
+    _SharedBuffer shared = arena->RegisterBuffer(
         glBuf, byteSize, HgiBufferUsageVertex | HgiBufferUsageStorage);
+    if (shared) {
+        // Recorded only on success, so _producerStreams stays index-aligned
+        // with _sharedBuffers, which the caller pushes only on success too.
+        _ProducerStream rec;
+        rec.byteSize = byteSize;
+        rec.glBuffer = glBuf;
+        _producerStreams.push_back(rec);
+    }
+    return shared;
 }
+
+bool
+My_TestGLDrawing::_UpdateNativeRegisteredBuffer(size_t stream,
+                                                const void *data,
+                                                size_t byteSize)
+{
+    if (stream >= _producerStreams.size()) {
+        TF_RUNTIME_ERROR("No producer stream %zu to update", stream);
+        return false;
+    }
+    const _ProducerStream &s = _producerStreams[stream];
+    if (s.glBuffer == 0) {
+        TF_RUNTIME_ERROR("Producer stream %zu is not a GL buffer", stream);
+        return false;
+    }
+    if (byteSize != s.byteSize) {
+        // Resizing would be a republish, not an overwrite, and a republished
+        // buffer has no write-after-read hazard to expose.
+        TF_RUNTIME_ERROR("Frame 2 must overwrite stream %zu in place "
+                         "(%zu bytes), not resize it to %zu",
+                         stream, s.byteSize, byteSize);
+        return false;
+    }
+
+    // No synchronization, and none is required. This is the application's own
+    // buffer on the very context Storm draws in, and GL processes a single
+    // context's commands in order -- so this write is ordered after the draw
+    // that read the previous contents, with no primitive involved. That
+    // guarantee is exactly why a GL arena defaults to having no semaphores,
+    // and why this topology cannot exhibit the write-after-read hazard the
+    // Vulkan producers below are here to probe.
+    glNamedBufferSubData(s.glBuffer, 0, GLsizeiptr(byteSize), data);
+    return true;
+}
+
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+bool
+My_TestGLDrawing::_UpdateVulkanBuffer(HdSt_TestDriver *driver, size_t stream,
+                                      const void *data, size_t byteSize)
+{
+    (void)driver;
+    if (stream >= _producerStreams.size()) {
+        TF_RUNTIME_ERROR("No producer stream %zu to update", stream);
+        return false;
+    }
+    const _ProducerStream &s = _producerStreams[stream];
+    if (s.vkBuffer == VK_NULL_HANDLE || !s.vkOwner) {
+        TF_RUNTIME_ERROR("Producer stream %zu is not a VkBuffer", stream);
+        return false;
+    }
+    if (byteSize != s.byteSize) {
+        TF_RUNTIME_ERROR("Frame 2 must overwrite stream %zu in place "
+                         "(%zu bytes), not resize it to %zu",
+                         stream, s.byteSize, byteSize);
+        return false;
+    }
+
+    // The bracket, in the order the API documents it: WAIT for hgi-done, then
+    // write, then signal app-done.
+    //
+    // The wait is the whole experiment. hgi-done is the producer's only
+    // evidence that the consumer has finished reading what it drew last
+    // frame, so a correct signal makes this wait block until those draws
+    // complete. A signal emitted before the draws are even submitted makes it
+    // return immediately, and the overwrite below lands in a buffer those
+    // draws are still reading. Nothing here departs from the documented
+    // protocol -- which is the point: the producer does everything right.
+    if (!_VulkanUpload(s.vkOwner, s.vkBuffer, data, byteSize,
+                       _appDoneVkSemaphore, _hgiDoneVkSemaphore)) {
+        return false;
+    }
+
+    // Open the next epoch so the consumer's commit encodes a wait for this
+    // write rather than assuming the producer is idle.
+    if (_appDoneVkSemaphore != VK_NULL_HANDLE && s.consumerArena) {
+        s.consumerArena->NotifyAppDone();
+    }
+    return true;
+}
+#endif
 
 #if defined(PXR_VULKAN_SUPPORT_ENABLED)
 bool
 My_TestGLDrawing::_VulkanUpload(Hgi *hgi, VkBuffer dst,
                                 const void *data, size_t byteSize,
-                                VkSemaphore signalSemaphore)
+                                VkSemaphore signalSemaphore,
+                                VkSemaphore waitSemaphore)
 {
     HgiVulkanDevice *device =
         static_cast<HgiVulkan *>(hgi)->GetPrimaryDevice();
@@ -537,6 +692,15 @@ My_TestGLDrawing::_VulkanUpload(Hgi *hgi, VkBuffer dst,
         si.signalSemaphoreCount = 1;
         si.pSignalSemaphores = &signalSemaphore;
     }
+    // Gate the copy on the GPU rather than the host, so the overwrite becomes
+    // runnable the instant the consumer claims it has finished reading. That
+    // is the moment under test.
+    const VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    if (waitSemaphore != VK_NULL_HANDLE) {
+        si.waitSemaphoreCount = 1;
+        si.pWaitSemaphores = &waitSemaphore;
+        si.pWaitDstStageMask = &waitStage;
+    }
 
     // The host fence wait lets us reclaim the transient pool and the staging
     // buffer. It does NOT consume a binary semaphore, so a consumer that waits
@@ -547,7 +711,25 @@ My_TestGLDrawing::_VulkanUpload(Hgi *hgi, VkBuffer dst,
     VkFenceCreateInfo fci = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
     vkCreateFence(vkDevice, &fci, nullptr, &fence);
     vkQueueSubmit(producerQueue, 1, &si, fence);
-    vkWaitForFences(vkDevice, 1, &fence, VK_TRUE, UINT64_MAX);
+
+    // Bounded only when we gated on a semaphore. Unbounded is right for an
+    // ungated upload -- it always completes -- but a gated one is waiting on
+    // the consumer, and a consumer that signals late or never must fail the
+    // test rather than hang it. Fatal rather than reported: the submission
+    // is still pending on a wait that may never complete, so teardown would
+    // block in vkDeviceWaitIdle, and a Vulkan submission cannot be cancelled.
+    const uint64_t timeoutNs = (waitSemaphore != VK_NULL_HANDLE)
+        ? 5ull * 1000ull * 1000ull * 1000ull
+        : UINT64_MAX;
+    if (vkWaitForFences(vkDevice, 1, &fence, VK_TRUE, timeoutNs)
+            != VK_SUCCESS) {
+        TF_FATAL_ERROR(
+            "The producer's write never became runnable (waited %.1fs on the "
+            "arena's hgi-done semaphore). Either the consumer never signalled "
+            "it, or it signalled too late for a producer that waits before "
+            "writing -- which is where the API documents the wait belongs.",
+            double(timeoutNs) / 1e9);
+    }
     vkDestroyFence(vkDevice, fence, nullptr);
     vkDestroyCommandPool(vkDevice, pool, nullptr);  // frees cb
     hgi->DestroyBuffer(&staging);
@@ -596,75 +778,12 @@ My_TestGLDrawing::_ShareInteropSemaphores(
 
     // The producer created them, so it holds them natively and is the side
     // that can wait on hgi-done.
-    _appDoneVkSemaphore = static_cast<HgiVulkanSemaphore *>(
-        producerArena->GetAppDoneSemaphore().get())->GetVulkanSemaphore();
-    _hgiDoneVkSemaphore = static_cast<HgiVulkanSemaphore *>(
-        producerArena->GetHgiDoneSemaphore().get())->GetVulkanSemaphore();
+    _appDoneVkSemaphore = producerArena->GetAppDoneVkSemaphore();
+    _hgiDoneVkSemaphore = producerArena->GetHgiDoneVkSemaphore();
     _semaphoreOwnerHgi = _producerHgi.get();
     _interopSemaphoresActive = true;
     std::cout << "[extGpuBuffer] semaphore pair shared producer -> consumer\n";
     return true;
-}
-#endif
-
-#if defined(PXR_VULKAN_SUPPORT_ENABLED)
-void
-My_TestGLDrawing::_VerifyHgiDoneSignal()
-{
-    if (_hgiDoneVkSemaphore == VK_NULL_HANDLE || !_semaphoreOwnerHgi) {
-        return;
-    }
-
-    // Wait on the GPU for the signal the consumer emits when it has finished
-    // reading -- the moment a real producer becomes free to overwrite the
-    // buffer in place. Nothing else in the test covers that half of the
-    // bracket: the app-done wait is verified by the image coming out right,
-    // but a consumer that never signalled hgi-done would look identical.
-    //
-    // An empty submission is enough. All it does is wait, so the fence tells
-    // us the semaphore was signalled and nothing more.
-    HgiVulkanDevice *device =
-        static_cast<HgiVulkan *>(_semaphoreOwnerHgi)->GetPrimaryDevice();
-    VkDevice vkDevice = device->GetVulkanDevice();
-
-    VkQueue queue = VK_NULL_HANDLE;
-    vkGetDeviceQueue(vkDevice, device->GetGfxQueueFamilyIndex(), 0, &queue);
-
-    const VkPipelineStageFlags waitStage =
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-    VkSubmitInfo si = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
-    si.waitSemaphoreCount = 1;
-    si.pWaitSemaphores = &_hgiDoneVkSemaphore;
-    si.pWaitDstStageMask = &waitStage;
-
-    VkFence fence = VK_NULL_HANDLE;
-    VkFenceCreateInfo fci = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
-    vkCreateFence(vkDevice, &fci, nullptr, &fence);
-    vkQueueSubmit(queue, 1, &si, fence);
-
-    // Bounded, deliberately. An unsignalled binary semaphore would block for
-    // ever, and a test that hangs says far less than one that fails.
-    const uint64_t timeoutNs = 5ull * 1000ull * 1000ull * 1000ull;
-    const VkResult res =
-        vkWaitForFences(vkDevice, 1, &fence, VK_TRUE, timeoutNs);
-
-    if (res == VK_SUCCESS) {
-        vkDestroyFence(vkDevice, fence, nullptr);
-        std::cout << "[extGpuBuffer] hgi-done signal observed (WAR ok)\n";
-        _hgiDoneVkSemaphore = VK_NULL_HANDLE;
-        return;
-    }
-
-    // Fatal rather than a reported error: the submission above is still
-    // pending on a wait that will never complete, so ordinary teardown would
-    // block in vkDeviceWaitIdle while destroying the semaphore. There is no
-    // way to cancel a Vulkan submission, so the only honest options are to
-    // hang or to stop here -- and this is a real deadlock in the consumer's
-    // half of the bracket, not a flake worth recovering from.
-    TF_FATAL_ERROR("The consumer never signalled the arena's hgi-done "
-                   "semaphore (waited %.1fs). Storm's commit is expected to "
-                   "encode that signal after reading the shared buffers.",
-                   double(timeoutNs) / 1e9);
 }
 #endif
 
@@ -684,9 +803,9 @@ My_TestGLDrawing::_MakeInteropBuffer(HdSt_TestDriver *driver,
     HgiVulkanExternalBufferArena *producerArena =
         _GetVulkanArena(_producerHgi.get(), &_producerArena);
     if (!producerArena) {
-        TF_RUNTIME_ERROR("--vulkanInterop needs a Vulkan producer with "
-                         "external memory support (run with "
-                         "HGI_ENABLE_VULKAN=1)");
+        _MarkUnsupported("--vulkanInterop needs a Vulkan producer with "
+                         "external memory support "
+                         "(VK_KHR_external_memory_fd / _win32)");
         return nullptr;
     }
 
@@ -724,7 +843,7 @@ My_TestGLDrawing::_MakeInteropBuffer(HdSt_TestDriver *driver,
               _GetVulkanArena(driver->GetHgi(), &_vkArena))
         : static_cast<HgiExternalBufferArena *>(_GetGlArena(driver));
     if (!consumerArena) {
-        TF_RUNTIME_ERROR("--vulkanInterop consumer has no arena to import "
+        _MarkUnsupported("--vulkanInterop consumer has no arena to import "
                          "into");
         return nullptr;
     }
@@ -752,6 +871,23 @@ My_TestGLDrawing::_MakeInteropBuffer(HdSt_TestDriver *driver,
         consumerArena->NotifyAppDone();
     }
 
+    // Recorded on success only, so _producerStreams stays index-aligned with
+    // _sharedBuffers. What frame 2 rewrites is the PRODUCER's own VkBuffer --
+    // the consumer's imported buffer is a different object aliasing the same
+    // memory, and writing through it would be the consumer overwriting its
+    // own input rather than a producer doing so.
+    auto recordStream = [&](_SharedBuffer const &b) -> _SharedBuffer {
+        if (b) {
+            _ProducerStream rec;
+            rec.byteSize = byteSize;
+            rec.vkBuffer = producerVkBuffer->GetVulkanBuffer();
+            rec.vkOwner = _producerHgi.get();
+            rec.consumerArena = consumerArena;
+            _producerStreams.push_back(rec);
+        }
+        return b;
+    };
+
     if (_ConsumerIsVulkan(driver)) {
         HgiVulkanExternalBufferArena *arena =
             static_cast<HgiVulkanExternalBufferArena *>(consumerArena);
@@ -767,10 +903,10 @@ My_TestGLDrawing::_MakeInteropBuffer(HdSt_TestDriver *driver,
 
         HgiExternalBufferSharedPtr imported = arena->ImportBuffer(importDesc);
         if (!imported) {
-            TF_RUNTIME_ERROR("--vulkanInterop could not import the producer's "
+            _MarkUnsupported("--vulkanInterop could not import the producer's "
                              "allocation into the consumer's device");
         }
-        return imported;
+        return recordStream(imported);
     }
 
     HgiGLExternalBufferArena *glArena =
@@ -787,15 +923,18 @@ My_TestGLDrawing::_MakeInteropBuffer(HdSt_TestDriver *driver,
 
     HgiExternalBufferSharedPtr imported = glArena->ImportBuffer(importDesc);
     if (!imported) {
-        TF_RUNTIME_ERROR("--vulkanInterop could not import the producer's "
-                         "allocation into OpenGL");
+        // The GL side of the capability question, which no Vulkan check can
+        // answer: GL_EXT_memory_object_fd / _win32 may simply be absent.
+        _MarkUnsupported("--vulkanInterop could not import the producer's "
+                         "allocation into OpenGL (GL_EXT_memory_object_fd / "
+                         "_win32 unavailable?)");
     }
-    return imported;
+    return recordStream(imported);
 #else
     (void)driver;
     (void)data;
     (void)byteSize;
-    TF_RUNTIME_ERROR("--vulkanInterop requires a Vulkan-enabled build");
+    _MarkUnsupported("--vulkanInterop requires a Vulkan-enabled build");
     return nullptr;
 #endif
 }
@@ -808,13 +947,13 @@ My_TestGLDrawing::_MakeVulkanSyncBuffer(HdSt_TestDriver *driver,
 #if defined(PXR_VULKAN_SUPPORT_ENABLED)
     Hgi *hgi = driver->GetHgi();
     if (!_ConsumerIsVulkan(driver)) {
-        TF_RUNTIME_ERROR("--vulkanSync needs a Vulkan Hgi (run with "
+        _MarkUnsupported("--vulkanSync needs a Vulkan Hgi (run with "
                          "HGI_ENABLE_VULKAN=1)");
         return nullptr;
     }
     HgiVulkanExternalBufferArena *arena = _GetVulkanArena(hgi, &_vkArena);
     if (!arena) {
-        TF_RUNTIME_ERROR("--vulkanSync needs a Vulkan device with external "
+        _MarkUnsupported("--vulkanSync needs a Vulkan device with external "
                          "memory support");
         return nullptr;
     }
@@ -839,19 +978,20 @@ My_TestGLDrawing::_MakeVulkanSyncBuffer(HdSt_TestDriver *driver,
     // one pending signal, so exactly one write signals it.
     if (!_interopSemaphoresShared) {
         _interopSemaphoresShared = true;
-        uint64_t appDoneHandle = 0, hgiDoneHandle = 0;
-        if (!arena->CreateExportableSemaphores(
-                HgiSemaphoreKindBinary, &appDoneHandle, &hgiDoneHandle)) {
+        // Not exportable: the producer is on the consumer's own logical
+        // device, so it reads the pair natively and no OS handle is needed.
+        // Asking for exportable semaphores here would mint two handles and
+        // throw them away.
+        if (!arena->CreateSemaphores(HgiSemaphoreKindBinary)) {
             TF_RUNTIME_ERROR("--vulkanSync could not create the arena's "
                              "semaphore pair");
             return nullptr;
         }
-        // Here Hgi owns the pair and the application uses it natively, which
-        // is the opposite direction from the interop test's import.
-        _appDoneVkSemaphore = static_cast<HgiVulkanSemaphore *>(
-            arena->GetAppDoneSemaphore().get())->GetVulkanSemaphore();
-        _hgiDoneVkSemaphore = static_cast<HgiVulkanSemaphore *>(
-            arena->GetHgiDoneSemaphore().get())->GetVulkanSemaphore();
+        // Hgi owns the pair and the application uses it natively -- the
+        // opposite direction from the interop cases, where the producer
+        // creates and exports and the consumer imports.
+        _appDoneVkSemaphore = arena->GetAppDoneVkSemaphore();
+        _hgiDoneVkSemaphore = arena->GetHgiDoneVkSemaphore();
         _semaphoreOwnerHgi = hgi;
         _interopSemaphoresActive = true;
     }
@@ -877,14 +1017,23 @@ My_TestGLDrawing::_MakeVulkanSyncBuffer(HdSt_TestDriver *driver,
     // Registered rather than adopted: this VkBuffer is the test's, and the
     // handle below keeps it alive until teardown.
     _appVkBuffers.push_back(dst);
-    return arena->RegisterBuffer(
+    _SharedBuffer shared = arena->RegisterBuffer(
         vkDst, byteSize, HgiBufferUsageVertex | HgiBufferUsageStorage);
+    if (shared) {
+        _ProducerStream rec;
+        rec.byteSize = byteSize;
+        rec.vkBuffer = vkDst;
+        rec.vkOwner = hgi;
+        rec.consumerArena = arena;
+        _producerStreams.push_back(rec);
+    }
+    return shared;
 #else
     (void)driver;
     (void)data;
     (void)byteSize;
     (void)stride;
-    TF_RUNTIME_ERROR("--vulkanSync requires a Vulkan-enabled build");
+    _MarkUnsupported("--vulkanSync requires a Vulkan-enabled build");
     return nullptr;
 #endif
 }
@@ -898,7 +1047,7 @@ My_TestGLDrawing::_EnsureProducerHgi(HdSt_TestDriver *driver)
 
     _producerHgi = Hgi::CreateNamedHgi(HgiTokens->Vulkan);
     if (!_producerHgi) {
-        TF_RUNTIME_ERROR("--vulkanInterop could not create a second Vulkan "
+        _MarkUnsupported("--vulkanInterop could not create a second Vulkan "
                          "Hgi to stand in for the producer's device");
         return false;
     }
@@ -931,6 +1080,18 @@ My_TestGLDrawing::_MakeGpuBuffer(HdSt_TestDriver *driver,
         return _MakeVulkanSyncBuffer(driver, data, byteSize, stride);
     }
     return _MakeNativeRegisteredBuffer(driver, data, byteSize, stride);
+}
+
+bool
+My_TestGLDrawing::_UpdateGpuBuffer(HdSt_TestDriver *driver, size_t stream,
+                                   const void *data, size_t byteSize)
+{
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+    if (_vulkanInterop || _vulkanSync) {
+        return _UpdateVulkanBuffer(driver, stream, data, byteSize);
+    }
+#endif
+    return _UpdateNativeRegisteredBuffer(stream, data, byteSize);
 }
 
 HdContainerDataSourceHandle
@@ -982,7 +1143,11 @@ My_TestGLDrawing::_BuildCubePrimvars(HdSt_TestDriver *driver,
             _MakeGpuBuffer(driver, points.cdata(), byteSize,
                            sizeof(GfVec3f));
         if (!shared) {
-            TF_RUNTIME_ERROR("Could not share the cube points");
+            // Silent when the mode was already found unsupported: the null is
+            // that verdict propagating, not a second, independent failure.
+            if (_unsupported.empty()) {
+                TF_RUNTIME_ERROR("Could not share the cube points");
+            }
             return nullptr;
         }
         // The producer's strong reference. Everything downstream is weak.
@@ -1027,9 +1192,12 @@ My_TestGLDrawing::_BuildCubePrimvars(HdSt_TestDriver *driver,
 void
 My_TestGLDrawing::_BuildScene(HdSt_TestDriver *driver,
                               HdRetainedSceneIndexRefPtr &scene,
-                              bool gpuShare)
+                              bool gpuShare,
+                              bool reuseExisting)
 {
-    scene = HdRetainedSceneIndex::New();
+    if (!reuseExisting || !scene) {
+        scene = HdRetainedSceneIndex::New();
+    }
 
     const SdfPath cubePath("/cube");
     const SdfPath instancerPath("/instancer");
@@ -1068,6 +1236,7 @@ My_TestGLDrawing::_BuildScene(HdSt_TestDriver *driver,
                 HdMeshSchemaTokens->mesh, meshDs,
                 HdPrimvarsSchemaTokens->primvars, primvarsDs);
         scene->AddPrims({{cubePath, HdPrimTypeTokens->mesh, cubeDs}});
+        _meshPrimPath = cubePath;
         return;
     }
 
@@ -1134,7 +1303,9 @@ My_TestGLDrawing::_BuildScene(HdSt_TestDriver *driver,
             _MakeGpuBuffer(driver, matricesF.data(), byteSize,
                            sizeof(GfMatrix4f));
         if (!shared) {
-            TF_RUNTIME_ERROR("Could not share the instance transforms");
+            if (_unsupported.empty()) {
+                TF_RUNTIME_ERROR("Could not share the instance transforms");
+            }
             return;
         }
         _sharedBuffers.push_back(shared);
@@ -1172,6 +1343,8 @@ My_TestGLDrawing::_BuildScene(HdSt_TestDriver *driver,
     scene->AddPrims({
         {cubePath, HdPrimTypeTokens->mesh, cubeDs},
         {instancerPath, HdInstancerTokens->instancer, instancerDs}});
+    // The prototype is what carries the points primvar frame 2 rewrites.
+    _meshPrimPath = cubePath;
 }
 
 void
@@ -1193,7 +1366,9 @@ My_TestGLDrawing::_CheckArenaReclaim(HdSt_TestDriver *driver,
         removed.emplace_back(SdfPath("/instancer"));
     }
     scene->RemovePrims(removed);
+    driver->GetHgi()->StartFrame();
     driver->Draw();
+    driver->GetHgi()->EndFrame();
 
     // Now the producer lets go too. Nothing outside the arena references the
     // buffer, and nothing has been collected since.
@@ -1211,12 +1386,14 @@ My_TestGLDrawing::_CheckArenaReclaim(HdSt_TestDriver *driver,
         return;
     }
 
-    // Collection releases it. A frame per iteration as well as a collect,
-    // because an application reclaims as it renders and that is the behaviour
-    // worth asserting -- and because this driver's task list has no
-    // HdxAovInputTask or HdxPresentTask, so Hgi::StartFrame/EndFrame are never
-    // called here at all. Reclamation must not depend on hooks a client may
-    // never invoke.
+    // Collection releases it. A full frame per iteration as well as an
+    // explicit collect, because an application reclaims as it renders and
+    // that is the behaviour worth asserting.
+    //
+    // The explicit GarbageCollect() is not redundant with EndFrame, which also
+    // sweeps the arenas. It is the assertion that reclamation does not *only*
+    // happen on the frame hooks: a client that drives Hydra with its own task
+    // list and calls GarbageCollect alone must still get its buffers back.
     //
     // Bounded: lagging a few frames is the safe direction, never releasing is
     // a leak.
@@ -1224,7 +1401,9 @@ My_TestGLDrawing::_CheckArenaReclaim(HdSt_TestDriver *driver,
     const int maxFrames = 8;
     int frames = 0;
     for (; frames < maxFrames && !weak.expired(); ++frames) {
+        hgi->StartFrame();
         driver->Draw();
+        hgi->EndFrame();
         hgi->GarbageCollect();
     }
 
@@ -1259,7 +1438,29 @@ My_TestGLDrawing::_CheckArenaReclaim(HdSt_TestDriver *driver,
 }
 
 void
-My_TestGLDrawing::_RenderToPixels(bool gpuShare, std::vector<uint8_t> &out,
+My_TestGLDrawing::_ReadColorAov(HdSt_TestDriver *driver,
+                                std::vector<uint8_t> &out,
+                                int &width, int &height)
+{
+    HdRenderBuffer *rb = dynamic_cast<HdRenderBuffer *>(
+        driver->GetDelegate().GetRenderIndex().GetBprim(
+            HdPrimTypeTokens->renderBuffer, _colorAovId));
+    if (!rb) {
+        TF_RUNTIME_ERROR("No color render buffer to read back");
+        return;
+    }
+    width = rb->GetWidth();
+    height = rb->GetHeight();
+    const size_t bpp = HdDataSizeOfFormat(rb->GetFormat());
+    const uint8_t *data = static_cast<const uint8_t *>(rb->Map());
+    out.assign(data, data + size_t(width) * height * bpp);
+    rb->Unmap();
+}
+
+void
+My_TestGLDrawing::_RenderToPixels(bool gpuShare,
+                                  std::vector<uint8_t> &frame1,
+                                  std::vector<uint8_t> &frame2,
                                   int &width, int &height,
                                   const std::string &writePath)
 {
@@ -1299,34 +1500,88 @@ My_TestGLDrawing::_RenderToPixels(bool gpuShare, std::vector<uint8_t> &out,
     driver->SetCamera(GetViewMatrix(), GetProjectionMatrix(),
                       CameraUtilFraming(GfRect2i(GfVec2i(0, 0), w, h)));
 
-    // RAW ordering needs nothing from the test: Storm's commit encodes the
-    // arena's wait before it reads any shared buffer, and its signal after.
+    // ---- Frame 1 ----
+    //
+    // Both halves of the bracket are ours to declare, because we are the host.
+    // HdSt_TestDriver's task list has no HdxAovInputTask or HdxPresentTask, so
+    // nothing emits these hooks for us -- which is how a real application is
+    // supposed to drive Hgi anyway.
+    //
+    // StartFrame encodes the arena's app-done wait, ordering the producer's
+    // writes ahead of the draws below. EndFrame encodes the hgi-done signal,
+    // and it must come after Draw(): the reads of a directly bound buffer ARE
+    // the draws, so a signal ahead of them would tell the producer the frame
+    // had finished reading bytes it had not yet touched.
+    driver->GetHgi()->StartFrame();
     driver->Draw();
+    driver->GetHgi()->EndFrame();
+
+    // ---- The producer overwrites, BEFORE frame 1 is read back ----
+    //
+    // Ordering here is the whole experiment, so it is worth being explicit
+    // about why these two statements are in this order.
+    //
+    // Draw() does not wait for the GPU. It submits, and returns while frame
+    // 1's draws may still be executing. The producer then does exactly what
+    // the API documents: waits for hgi-done -- its only evidence that the
+    // consumer has finished reading -- and overwrites the buffer. Reading the
+    // AOV back afterwards forces the sync, so whatever the draws actually saw
+    // is what lands in `frame1`.
+    //
+    // Put the readback first and the hazard disappears, because the readback
+    // would drain frame 1 before the producer touched anything. That would be
+    // a test that cannot fail rather than one that passes.
+    if (gpuShare && !_producerStreams.empty()) {
+        const VtVec3fArray pts2 = _CubePoints(_halfSize2);
+        _UpdateGpuBuffer(driver.get(), /*stream*/0, pts2.cdata(),
+                         pts2.size() * sizeof(GfVec3f));
+    }
 
     if (!writePath.empty()) {
         driver->WriteToFile("color", writePath);
     }
+    _ReadColorAov(driver.get(), frame1, width, height);
 
-    // Read the color AOV back into `out`.
-    HdRenderBuffer *rb = dynamic_cast<HdRenderBuffer *>(
-        driver->GetDelegate().GetRenderIndex().GetBprim(
-            HdPrimTypeTokens->renderBuffer, _colorAovId));
-    if (!rb) {
-        TF_RUNTIME_ERROR("No color render buffer to read back");
+    // ---- Frame 2 ----
+    //
+    // The GPU path publishes nothing new: same buffer, same element count,
+    // only different bytes. Dirtying the points locator is what makes Storm
+    // re-read it, which the copy topologies need in order to re-blit. Under
+    // direct binding it is redundant -- the range already points at this
+    // buffer -- and that redundancy is itself worth having, because if frame
+    // 2 came out wrong without it we would know the binding was not direct.
+    if (gpuShare) {
+        if (!_meshPrimPath.IsEmpty()) {
+            scene->DirtyPrims({{_meshPrimPath,
+                HdDataSourceLocatorSet(HdDataSourceLocator(
+                    HdPrimvarsSchemaTokens->primvars,
+                    HdPrimvarsSchemaTokens->points))}});
+        }
     } else {
-        width = rb->GetWidth();
-        height = rb->GetHeight();
-        const size_t bpp = HdDataSizeOfFormat(rb->GetFormat());
-        const uint8_t *data = static_cast<const uint8_t *>(rb->Map());
-        out.assign(data, data + size_t(width) * height * bpp);
-        rb->Unmap();
+        // The CPU baseline shares nothing, so republishing with the frame 2
+        // geometry is the cheapest way to get an image to compare against.
+        //
+        // Into the SAME scene index, not a new one: only the index inserted
+        // into the render index back at setup is ever drawn, so a fresh one
+        // would leave the baseline showing frame 1 while the GPU path moved
+        // on -- which looks exactly like a GPU bug and is not one.
+        const float saved = _halfSize;
+        _halfSize = _halfSize2;
+        _BuildScene(driver.get(), scene, /*gpuShare*/false,
+                    /*reuseExisting*/true);
+        _halfSize = saved;
+        if (!_meshPrimPath.IsEmpty()) {
+            scene->DirtyPrims({{_meshPrimPath,
+                HdDataSourceLocatorSet(HdDataSourceLocator(
+                    HdPrimvarsSchemaTokens->primvars,
+                    HdPrimvarsSchemaTokens->points))}});
+        }
     }
 
-#if defined(PXR_VULKAN_SUPPORT_ENABLED)
-    // Now that the frame has been rendered and read back, the consumer must
-    // have signalled that it is finished reading.
-    _VerifyHgiDoneSignal();
-#endif
+    driver->GetHgi()->StartFrame();
+    driver->Draw();
+    driver->GetHgi()->EndFrame();
+    _ReadColorAov(driver.get(), frame2, width, height);
 
     // With the image already compared, the shared buffers are free to go --
     // which is the point at which the arena's reclaim contract is observable.
@@ -1374,53 +1629,82 @@ My_TestGLDrawing::OffscreenTest()
 {
     SetCameraTranslate(_CameraTranslate());
 
-    std::vector<uint8_t> cpuPixels, gpuPixels;
+    std::vector<uint8_t> cpu1, cpu2, gpu1, gpu2;
     int cw = 0, ch = 0, gw = 0, gh = 0;
 
-    _RenderToPixels(/*gpuShare*/false, cpuPixels, cw, ch,
+    _RenderToPixels(/*gpuShare*/false, cpu1, cpu2, cw, ch,
                     _writeCpu ? _outputFilePath : std::string());
-    _RenderToPixels(/*gpuShare*/true, gpuPixels, gw, gh,
+    _RenderToPixels(/*gpuShare*/true, gpu1, gpu2, gw, gh,
                     _writeCpu ? std::string() : _outputFilePath);
 
-    if (cpuPixels.empty() || gpuPixels.empty()) {
-        TF_RUNTIME_ERROR("Readback produced no pixels (cpu=%zu gpu=%zu)",
-                         cpuPixels.size(), gpuPixels.size());
-        return;
-    }
-    if (cw != gw || ch != gh || cpuPixels.size() != gpuPixels.size()) {
-        TF_RUNTIME_ERROR("CPU/GPU image dimensions differ: "
-                         "%dx%d (%zu) vs %dx%d (%zu)",
-                         cw, ch, cpuPixels.size(), gw, gh, gpuPixels.size());
+    // Checked before any comparison, and that order matters. When sharing is
+    // unavailable the GPU run silently falls back to CPU primvars, so the two
+    // images match and the comparison below would PASS -- reporting success
+    // for a run that exercised nothing. The skip has to pre-empt it.
+    if (!_unsupported.empty()) {
+        std::cout << "SKIPPED: " << _unsupported << std::endl;
         return;
     }
 
-    // Both images come from the same GPU in the same run, so a correct GPU
-    // path is bit-identical. Allow a tiny per-channel slack only to be safe.
-    const int kTolerance = 2;
-    size_t diffBytes = 0;
-    int maxDiff = 0;
-    for (size_t i = 0; i < gpuPixels.size(); ++i) {
-        const int d = std::abs(int(gpuPixels[i]) - int(cpuPixels[i]));
-        if (d > maxDiff) {
-            maxDiff = d;
-        }
-        if (d > kTolerance) {
-            ++diffBytes;
-        }
+    if (cw != gw || ch != gh) {
+        TF_RUNTIME_ERROR("CPU/GPU image dimensions differ: %dx%d vs %dx%d",
+                         cw, ch, gw, gh);
+        return;
     }
 
-    const double diffFraction = double(diffBytes) / double(gpuPixels.size());
-    std::cout << (_instancing ? "[instancing] " : "[basic] ")
-              << "CPU vs GPU: maxDiff=" << maxDiff
-              << " diffBytes=" << diffBytes
-              << " (" << (diffFraction * 100.0) << "%)\n";
+    // Frame 1 is the interesting one. If the consumer signalled hgi-done
+    // before the draws that read the buffer, the producer's frame 2 overwrite
+    // landed underneath those draws and frame 1 renders frame 2's geometry --
+    // which is a large, unmistakable divergence rather than a subtle one,
+    // because the two cubes differ in size.
+    //
+    // Frame 2 diverging instead would mean something else: either the update
+    // never reached the consumer, or it was not re-read.
+    struct _Pair { const char *name;
+                   std::vector<uint8_t> const *cpu, *gpu; };
+    const _Pair pairs[2] = { {"frame1", &cpu1, &gpu1},
+                             {"frame2", &cpu2, &gpu2} };
 
-    // Any GPU-shared image that meaningfully diverges from the CPU render is a
-    // failure (a silent fallback renders blank -> ~100% divergence).
-    if (diffFraction > 0.001) {
-        TF_RUNTIME_ERROR("GPU-shared render differs from CPU baseline: "
-                         "%zu bytes (%.3f%%) exceed tolerance, maxDiff=%d",
-                         diffBytes, diffFraction * 100.0, maxDiff);
+    for (_Pair const &pr : pairs) {
+        if (pr.cpu->empty() || pr.gpu->empty() ||
+                pr.cpu->size() != pr.gpu->size()) {
+            TF_RUNTIME_ERROR("%s: readback produced no comparable pixels "
+                             "(cpu=%zu gpu=%zu)",
+                             pr.name, pr.cpu->size(), pr.gpu->size());
+            continue;
+        }
+
+        // Both images come from the same GPU in the same run, so a correct
+        // GPU path is bit-identical. Allow a tiny per-channel slack only to
+        // be safe.
+        const int kTolerance = 2;
+        size_t diffBytes = 0;
+        int maxDiff = 0;
+        for (size_t i = 0; i < pr.gpu->size(); ++i) {
+            const int diff =
+                std::abs(int((*pr.gpu)[i]) - int((*pr.cpu)[i]));
+            if (diff > maxDiff) {
+                maxDiff = diff;
+            }
+            if (diff > kTolerance) {
+                ++diffBytes;
+            }
+        }
+
+        const double diffFraction =
+            double(diffBytes) / double(pr.gpu->size());
+        std::cout << (_instancing ? "[instancing] " : "[basic] ")
+                  << pr.name << " CPU vs GPU: maxDiff=" << maxDiff
+                  << " diffBytes=" << diffBytes
+                  << " (" << (diffFraction * 100.0) << "%)\n";
+
+        if (diffFraction > 0.001) {
+            TF_RUNTIME_ERROR("%s: GPU-shared render differs from the CPU "
+                             "baseline: %zu bytes (%.3f%%) exceed tolerance, "
+                             "maxDiff=%d",
+                             pr.name, diffBytes, diffFraction * 100.0,
+                             maxDiff);
+        }
     }
 }
 
@@ -1444,7 +1728,9 @@ My_TestGLDrawing::DrawTest()
                        CameraUtilFraming(
                            GfRect2i(GfVec2i(0, 0), GetWidth(), GetHeight())));
     _driver->UpdateAovDimensions(GetWidth(), GetHeight());
+    _driver->GetHgi()->StartFrame();
     _driver->Draw();
+    _driver->GetHgi()->EndFrame();
 }
 
 void

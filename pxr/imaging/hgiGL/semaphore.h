@@ -18,7 +18,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class HgiGLSemaphore
+/// \class HgiGLImportedSemaphore
 ///
 /// A GL semaphore object (GL_EXT_semaphore) imported from another API's
 /// semaphore, and the GL objects that import created.
@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// that is how the extension establishes coherency for imported memory; the
 /// arena passes its own buffers. glSignalSemaphoreEXT also implies a flush.
 ///
-class HgiGLSemaphore final : public HgiSemaphore
+class HgiGLImportedSemaphore final : public HgiSemaphore
 {
 public:
     /// Import the semaphore named by the OS handle \p externalHandle, which
@@ -49,13 +49,13 @@ public:
     /// Handle ownership follows the platform convention: an fd is taken over
     /// by the import, a Win32 handle stays the caller's to close.
     HGIGL_API
-    static std::shared_ptr<HgiGLSemaphore> Import(
+    static std::shared_ptr<HgiGLImportedSemaphore> Import(
         uint64_t externalHandle,
         HgiExternalHandleType handleType,
         HgiSemaphoreKind kind);
 
     HGIGL_API
-    ~HgiGLSemaphore() override;
+    ~HgiGLImportedSemaphore() override;
 
     HGIGL_API
     void EncodeWait(
@@ -73,7 +73,7 @@ public:
     }
 
 private:
-    explicit HgiGLSemaphore(uint32_t semaphoreId);
+    explicit HgiGLImportedSemaphore(uint32_t semaphoreId);
 
     // The GL buffer names of \p buffers, which the wait and signal barrier
     // lists are built from. Buffers with no usable GL resource are skipped.
@@ -83,7 +83,7 @@ private:
     uint32_t _semaphoreId;
 };
 
-using HgiGLSemaphoreSharedPtr = std::shared_ptr<HgiGLSemaphore>;
+using HgiGLImportedSemaphoreSharedPtr = std::shared_ptr<HgiGLImportedSemaphore>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -43,6 +43,18 @@ public:
     /// Hgi. Returns null when the device has no external-semaphore support.
     /// GetExternalHandle() is the OS handle to hand the other API.
     HGIVULKAN_API
+    /// Create a semaphore for use on \p device only.
+    ///
+    /// Nothing crosses a device or API boundary, so this needs no external
+    /// handle and no interop support -- which is the whole difference from
+    /// CreateExportable(). Use it when the application shares the consumer's
+    /// logical device and can therefore wait on the VkSemaphore directly.
+    HGIVULKAN_API
+    static std::shared_ptr<HgiVulkanSemaphore> Create(
+        HgiVulkanDevice *device,
+        HgiSemaphoreKind kind);
+
+    HGIVULKAN_API
     static std::shared_ptr<HgiVulkanSemaphore> CreateExportable(
         HgiVulkanDevice *device,
         HgiSemaphoreKind kind);

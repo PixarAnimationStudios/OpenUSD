@@ -21,10 +21,8 @@ HgiGLExternalBufferArena::IsSupportedBy(Hgi *hgi)
     return hgi && hgi->GetAPIName() == HgiTokens->OpenGL;
 }
 
-HgiGLExternalBufferArena::HgiGLExternalBufferArena(
-    Hgi *hgi,
-    uint64_t rawSourceDevice)
-    : HgiExternalBufferArena(hgi, rawSourceDevice)
+HgiGLExternalBufferArena::HgiGLExternalBufferArena(Hgi *hgi)
+    : HgiExternalBufferArena(hgi)
 {
     // No semaphores by default: the common case is a producer sharing our GL
     // context, where command order already sequences the accesses. A producer
@@ -84,13 +82,13 @@ HgiGLExternalBufferArena::ImportSemaphores(
     HgiSemaphoreSharedPtr hgiDone;
 
     if (appDoneHandle) {
-        appDone = HgiGLSemaphore::Import(appDoneHandle, handleType, kind);
+        appDone = HgiGLImportedSemaphore::Import(appDoneHandle, handleType, kind);
         if (!appDone) {
             return false;
         }
     }
     if (hgiDoneHandle) {
-        hgiDone = HgiGLSemaphore::Import(hgiDoneHandle, handleType, kind);
+        hgiDone = HgiGLImportedSemaphore::Import(hgiDoneHandle, handleType, kind);
         if (!hgiDone) {
             return false;
         }

@@ -39,7 +39,7 @@ struct HgiVulkanExternalBufferExportInfo
     uint64_t externalHandle = 0;
 
     /// How to interpret externalHandle.
-    HgiExternalHandleType handleType = HgiExternalHandleTypeOpaqueWin32;
+    HgiExternalHandleType handleType = HgiGetPlatformExternalHandleType();
 
     /// Size of the whole memory block, and the buffer's offset within it --
     /// both needed to import the memory elsewhere.

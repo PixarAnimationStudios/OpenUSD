@@ -31,13 +31,22 @@ class HdStResourceRegistry;
 /// Resolve the prim \p id's container data source from the terminal scene
 /// index. Hoist this out of per-primvar loops -- it does the one scene-index
 /// traversal -- and feed the result to the overload below, so a prim with N
-/// dirty primvars pays for one GetPrim instead of N. Returns null when there
-/// is no terminal scene index.
+/// dirty primvars pays for one GetPrim instead of N.
+///
+/// Returns null when there is no terminal scene index, and -- the case that
+/// decides what this feature costs everyone else -- when \p registry's Hgi
+/// has no external buffer arena at all. Nothing can be shared before an
+/// application asks for an arena, so that one check answers the question for
+/// the whole prim without touching the scene index, and the null it returns
+/// turns every lookup downstream into a null test. Without it an application
+/// that shares nothing still pays a GetPrim per prim per Sync, in perpetuity,
+/// for a feature it does not use.
 HDST_API
 HdContainerDataSourceHandle
 HdSt_GetPrimDataSource(
     HdSceneDelegate *sceneDelegate,
-    SdfPath const &id);
+    SdfPath const &id,
+    HdStResourceRegistry *registry);
 
 /// Fetch the HdExtGpuBufferSchema (if any) for primvar \p name off an already
 /// resolved prim \p primDataSource (see HdSt_GetPrimDataSource). Returns an
@@ -48,16 +57,6 @@ HDST_API
 HdExtGpuBufferSchema
 HdSt_GetExtGpuBufferSchema(
     HdContainerDataSourceHandle const &primDataSource,
-    TfToken const &name);
-
-/// Convenience overload that resolves the prim data source itself. Prefer the
-/// two-argument form inside loops over a prim's primvars, to avoid
-/// re-traversing the terminal scene index per primvar name.
-HDST_API
-HdExtGpuBufferSchema
-HdSt_GetExtGpuBufferSchema(
-    HdSceneDelegate *sceneDelegate,
-    SdfPath const &id,
     TfToken const &name);
 
 /// Try to build an HdStExtGpuBufferSource (a source with no CPU payload) from

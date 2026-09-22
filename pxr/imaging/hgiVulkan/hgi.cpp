@@ -8,6 +8,7 @@
 #include "pxr/imaging/hgiVulkan/blitCmds.h"
 #include "pxr/imaging/hgiVulkan/buffer.h"
 #include "pxr/imaging/hgiVulkan/capabilities.h"
+#include "pxr/imaging/hgiVulkan/commandBuffer.h"
 #include "pxr/imaging/hgiVulkan/commandQueue.h"
 #include "pxr/imaging/hgiVulkan/computeCmds.h"
 #include "pxr/imaging/hgiVulkan/computePipeline.h"
@@ -304,6 +305,11 @@ HgiVulkan::StartFrame()
 
     if (_frameDepth++ == 0) {
         HgiVulkanBeginQueueLabel(GetPrimaryDevice(), "Full Hydra Frame");
+
+        // Order the application's writes ahead of everything this frame is
+        // about to do that reads a shared buffer. The wait rides the next
+        // submission on this queue, which is the frame's own work.
+        _EncodeExternalBufferAppDoneWaits();
     }
 }
 
@@ -314,6 +320,14 @@ HgiVulkan::EndFrame()
     // Please read important usage limitations for Hgi::EndFrame
 
     if (--_frameDepth == 0) {
+        // Tell the application this frame has finished reading its shared
+        // buffers. Before _EndFrameSync(), for two reasons: that call resets
+        // consumed command buffers, and the flush inside this sweep acquires
+        // one and submits it, which belongs to the frame now ending; and
+        // _EndFrameSync() also reclaims external buffers, which must not
+        // happen before the signal that releases them.
+        _EncodeExternalBufferHgiDoneSignals();
+
         _EndFrameSync();
         HgiVulkanEndQueueLabel(GetPrimaryDevice());
     }
@@ -404,6 +418,52 @@ HgiVulkan::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
 }
 
 /* Single threaded */
+void
+HgiVulkan::_FlushSemaphoreSignals()
+{
+    HgiVulkanDevice* device = GetPrimaryDevice();
+    HgiVulkanCommandQueue* queue = device->GetCommandQueue();
+
+    // Record a full barrier ahead of the signal.
+    //
+    // Without it this is a submission carrying a semaphore signal and no
+    // commands, and nothing then orders that signal after the draws submitted
+    // earlier: submission order is not itself an execution dependency in
+    // Vulkan, so the signal could fire while the draws are still reading the
+    // shared buffer -- the very hazard the signal exists to prevent, moved
+    // rather than fixed.
+    //
+    // A pipeline barrier is what supplies the dependency. Its first
+    // synchronization scope is every command submitted earlier in submission
+    // order on this queue, INCLUDING earlier submissions, so the barrier
+    // happens-after the draws; the signal then happens-after the barrier
+    // because it belongs to this submission. ALL_COMMANDS on both sides
+    // because the reads we are ordering against are whatever the frame drew.
+    //
+    // It passed on one NVIDIA driver without this, which is not evidence it
+    // was correct -- only that that driver happened to schedule the way we
+    // hoped.
+    HgiVulkanCommandBuffer* cb = queue->AcquireResourceCommandBuffer();
+    VkMemoryBarrier barrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER};
+    barrier.srcAccessMask =
+        VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+    barrier.dstAccessMask =
+        VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+    vkCmdPipelineBarrier(
+        cb->GetVulkanCommandBuffer(),
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        0,
+        1, &barrier,
+        0, nullptr,
+        0, nullptr);
+
+    // Flush() is what actually calls vkQueueSubmit. It appends the resource
+    // command buffer we just recorded into, and consumes the pending signal
+    // list, so the barrier and the signal ride the same submission.
+    queue->Flush(HgiSubmitWaitTypeNoWait);
+}
+
 void
 HgiVulkan::_EndFrameSync()
 {

@@ -1466,7 +1466,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         // lookup reads children off it, rather than re-traversing the terminal
         // scene index for every primvar name.
         const HdContainerDataSourceHandle extPrimDs =
-            HdSt_GetPrimDataSource(sceneDelegate, id);
+            HdSt_GetPrimDataSource(sceneDelegate, id, resourceRegistry.get());
         for (HdPrimvarDescriptor const& primvar: primvars) {
             if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name)) {
                 continue;
@@ -2143,7 +2143,7 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
     // lookups below, instead of re-traversing the terminal scene index per
     // primvar name.
     const HdContainerDataSourceHandle extPrimDs =
-        HdSt_GetPrimDataSource(sceneDelegate, id);
+        HdSt_GetPrimDataSource(sceneDelegate, id, resourceRegistry.get());
     for (HdPrimvarDescriptor const& primvar: primvars) {
         if (primvar.name == HdTokens->points) {
             HF_VALIDATION_WARN(id, "facevarying-interpolation points!");
@@ -2371,7 +2371,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         // lookups below, instead of re-traversing the terminal scene index per
         // primvar name.
         const HdContainerDataSourceHandle extPrimDs =
-            HdSt_GetPrimDataSource(sceneDelegate, id);
+            HdSt_GetPrimDataSource(sceneDelegate, id, resourceRegistry.get());
         for (HdPrimvarDescriptor const& primvar: primvars) {
             if (primvar.name == HdTokens->points) {
                 HF_VALIDATION_WARN(id, "uniform-interpolation points!");

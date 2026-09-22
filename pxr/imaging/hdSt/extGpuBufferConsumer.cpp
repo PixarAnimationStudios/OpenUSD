@@ -28,8 +28,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdContainerDataSourceHandle
 HdSt_GetPrimDataSource(
     HdSceneDelegate *sceneDelegate,
-    SdfPath const &id)
+    SdfPath const &id,
+    HdStResourceRegistry *registry)
 {
+    // The whole feature switched off in one atomic load, for every
+    // application that never shares a buffer. An arena has to exist before a
+    // producer can publish into one, so no arena means no prim can be
+    // carrying one -- and the GetPrim below would be pure cost, once per
+    // prim, per Sync, in perpetuity.
+    Hgi *hgi = registry ? registry->GetHgi() : nullptr;
+    if (!hgi || !hgi->HasExternalBufferArenas()) {
+        return nullptr;
+    }
+
     HdSceneIndexBaseRefPtr si =
         sceneDelegate->GetRenderIndex().GetTerminalSceneIndex();
     if (!si) {
@@ -49,16 +60,6 @@ HdSt_GetExtGpuBufferSchema(
     const HdPrimvarSchema pv =
         HdPrimvarsSchema::GetFromParent(primDataSource).GetPrimvar(name);
     return HdExtGpuBufferSchema::GetFromParent(pv.GetContainer());
-}
-
-HdExtGpuBufferSchema
-HdSt_GetExtGpuBufferSchema(
-    HdSceneDelegate *sceneDelegate,
-    SdfPath const &id,
-    TfToken const &name)
-{
-    return HdSt_GetExtGpuBufferSchema(
-        HdSt_GetPrimDataSource(sceneDelegate, id), name);
 }
 
 HdBufferSourceSharedPtr
@@ -88,13 +89,10 @@ HdSt_TryCreateExtGpuBufferSource(
         return nullptr;
     }
 
-    // Storm is about to read this arena's buffers, so its synchronization has
-    // to bracket the commit that does so. Recorded here, at the one routing
-    // choke point; issued in HdStResourceRegistry::Commit, which is where the
-    // reads actually happen -- Sync is much too early, since nothing has been
-    // recorded yet for a wait to sit in front of.
-    registry->RegisterExtGpuBufferArena(desc->GetArena());
-
+    // No arena registration here. Storm no longer brackets its own access:
+    // the wait and the signal are encoded by Hgi from StartFrame/EndFrame,
+    // over every arena it owns, so there is nothing for this routing choke
+    // point to record.
     return std::make_shared<HdStExtGpuBufferSource>(name, *desc);
 }
 

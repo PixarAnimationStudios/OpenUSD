@@ -364,7 +364,8 @@ TfHashAppend(HashState &h, HdTupleType const &tt)
     h.Append(tt.type, tt.count);
 }
 
-/// Stream output for HdTupleType, e.g. "HdTupleType(HdTypeFloatVec3, 1)".
+/// Return a stream with a readable form of \p tupleType written to it.
+/// For example, "HdTupleType(HdTypeFloatVec3, 1)".
 HD_API
 std::ostream& operator<<(std::ostream& out, const HdTupleType& tupleType);
 

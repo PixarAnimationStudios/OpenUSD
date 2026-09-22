@@ -268,10 +268,16 @@ HgiGL::StartFrame()
         // Start Full Frame debug label
         #if defined(GL_KHR_debug)
         if (GARCH_GLAPI_HAS(KHR_debug)) {
-            glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, 
+            glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1,
                 "Full Hydra Frame");
         }
         #endif
+
+        // Order the application's writes ahead of everything this frame is
+        // about to do that reads a shared buffer. glWaitSemaphoreEXT is a
+        // command stream operation, so this has to happen with the context
+        // current -- which the main-thread contract on this hook provides.
+        _EncodeExternalBufferAppDoneWaits();
     }
 }
 
@@ -279,6 +285,12 @@ void
 HgiGL::EndFrame()
 {
     if (--_frameDepth == 0) {
+        // Tell the application this frame has finished reading its shared
+        // buffers, so it may overwrite them. Before the collection below:
+        // encoding a signal walks the arena's buffer list, and reclaiming
+        // first would be signalling on behalf of buffers already retired.
+        _EncodeExternalBufferHgiDoneSignals();
+
         _garbageCollector.PerformGarbageCollection();
         _device->GarbageCollect();
 

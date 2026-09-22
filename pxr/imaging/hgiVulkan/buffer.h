@@ -34,7 +34,7 @@ struct HgiVulkanImportBufferDesc
     uint64_t externalHandle = 0;
 
     /// How to interpret externalHandle. Never inferred from the value.
-    HgiExternalHandleType handleType = HgiExternalHandleTypeOpaqueWin32;
+    HgiExternalHandleType handleType = HgiGetPlatformExternalHandleType();
 
     /// Size of the whole memory block the handle names. The import covers the
     /// entire block even when only a window of it is used here.

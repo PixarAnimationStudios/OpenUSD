@@ -7,16 +7,15 @@
 #include "pxr/imaging/hgi/externalBufferArena.h"
 #include "pxr/imaging/hgi/hgi.h"
 
+#include "pxr/base/tf/diagnostic.h"
+
 #include <algorithm>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiExternalBufferArena::HgiExternalBufferArena(
-    Hgi *hgi,
-    uint64_t rawSourceDevice)
+HgiExternalBufferArena::HgiExternalBufferArena(Hgi *hgi)
     : _hgi(hgi)
-    , _rawSourceDevice(rawSourceDevice)
 {
 }
 
@@ -86,6 +85,7 @@ HgiExternalBufferArena::EncodeAppDoneWait()
     }
 
     uint64_t value = 0;
+    bool previousEpochWentUnsignalled = false;
     {
         std::lock_guard<std::mutex> lock(_syncMutex);
         // Nothing new published since the last wait: either the application is
@@ -94,18 +94,39 @@ HgiExternalBufferArena::EncodeAppDoneWait()
         if (_appDoneEpoch == _waitedEpoch) {
             return;
         }
+        // A successful hgi-done signal zeroes both counters, so a non-zero
+        // _waitedEpoch here means exactly one thing: we waited for an earlier
+        // publish and nothing ever signalled that we had finished reading it.
+        // Worth saying out loud, because the symptom is a producer that
+        // silently blocks -- and the cause is a missing call in the host,
+        // which no amount of looking at the producer will reveal.
+        if (_waitedEpoch != 0 && !_warnedMissingSignal) {
+            _warnedMissingSignal = true;
+            previousEpochWentUnsignalled = true;
+        }
         _waitedEpoch = _appDoneEpoch;
         value = _appDoneValue;
+    }
+
+    // Outside the lock: a diagnostic can run arbitrary delegate code, which
+    // has no business reentering the arena while we hold its mutex.
+    if (previousEpochWentUnsignalled) {
+        TF_WARN("External buffer arena: the consumer read a shared buffer but "
+                "nothing signalled hgi-done for the previous publish, so the "
+                "producer will block waiting for it. The host must call "
+                "Hgi::EndFrame() once per application frame, after that "
+                "frame's drawing has been submitted, and it is reaching this "
+                "wait without having done so. Warned once per arena.");
     }
 
     _appDoneSemaphore->EncodeWait(value, _GetBufferBarrierList());
 }
 
-void
+bool
 HgiExternalBufferArena::EncodeHgiDoneSignal()
 {
     if (!_hgiDoneSemaphore) {
-        return;
+        return false;
     }
 
     uint64_t value = 0;
@@ -116,7 +137,7 @@ HgiExternalBufferArena::EncodeHgiDoneSignal()
         // intervening wait says nothing useful, and the application is waiting
         // for one signal per publish.
         if (_appDoneEpoch == 0 || _waitedEpoch != _appDoneEpoch) {
-            return;
+            return false;
         }
         // Consume the epoch so a second pass in the same frame does not
         // re-signal. A later NotifyAppDone opens the next one.
@@ -125,6 +146,7 @@ HgiExternalBufferArena::EncodeHgiDoneSignal()
     }
 
     _hgiDoneSemaphore->EncodeSignal(value, _GetBufferBarrierList());
+    return true;
 }
 
 void

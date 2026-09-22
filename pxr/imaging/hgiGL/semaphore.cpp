@@ -14,8 +14,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-std::shared_ptr<HgiGLSemaphore>
-HgiGLSemaphore::Import(
+std::shared_ptr<HgiGLImportedSemaphore>
+HgiGLImportedSemaphore::Import(
     uint64_t externalHandle,
     HgiExternalHandleType handleType,
     HgiSemaphoreKind kind)
@@ -84,16 +84,16 @@ HgiGLSemaphore::Import(
 
     HGIGL_POST_PENDING_GL_ERRORS();
 
-    return std::shared_ptr<HgiGLSemaphore>(new HgiGLSemaphore(semaphoreId));
+    return std::shared_ptr<HgiGLImportedSemaphore>(new HgiGLImportedSemaphore(semaphoreId));
 }
 
-HgiGLSemaphore::HgiGLSemaphore(uint32_t semaphoreId)
+HgiGLImportedSemaphore::HgiGLImportedSemaphore(uint32_t semaphoreId)
     : HgiSemaphore(HgiSemaphoreKindBinary)
     , _semaphoreId(semaphoreId)
 {
 }
 
-HgiGLSemaphore::~HgiGLSemaphore()
+HgiGLImportedSemaphore::~HgiGLImportedSemaphore()
 {
     if (_semaphoreId && glDeleteSemaphoresEXT) {
         GLuint semaphoreId = _semaphoreId;
@@ -104,7 +104,7 @@ HgiGLSemaphore::~HgiGLSemaphore()
 }
 
 std::vector<uint32_t>
-HgiGLSemaphore::_GetGLBufferIds(
+HgiGLImportedSemaphore::_GetGLBufferIds(
     std::vector<HgiExternalBuffer *> const &buffers)
 {
     std::vector<uint32_t> bufferIds;
@@ -125,7 +125,7 @@ HgiGLSemaphore::_GetGLBufferIds(
 }
 
 void
-HgiGLSemaphore::EncodeWait(
+HgiGLImportedSemaphore::EncodeWait(
     uint64_t /*value*/,
     std::vector<HgiExternalBuffer *> const &buffers)
 {
@@ -147,7 +147,7 @@ HgiGLSemaphore::EncodeWait(
 }
 
 void
-HgiGLSemaphore::EncodeSignal(
+HgiGLImportedSemaphore::EncodeSignal(
     uint64_t /*value*/,
     std::vector<HgiExternalBuffer *> const &buffers)
 {

@@ -27,16 +27,14 @@ class HgiVulkanDevice;
 /// HgiVulkan consumer. Obtain one from Hgi::GetExternalBufferArena:
 ///
 /// \code
-///     auto arena = hgi->GetExternalBufferArena<HgiVulkanExternalBufferArena>(
-///         uint64_t(myVkDevice));
+///     auto arena = hgi->GetExternalBufferArena<HgiVulkanExternalBufferArena>();
 ///     if (!arena) { /* interop unavailable -- copy instead */ }
 /// \endcode
 ///
 /// \section Direction
 ///
-/// An arena belongs to the *consuming* backend and is keyed on the
-/// *producing* device, which is what keeps hgiVulkan and hgiGL independent of
-/// each other. The routes a Vulkan consumer has:
+/// An arena belongs to the *consuming* backend, which is what keeps hgiVulkan
+/// and hgiGL independent of each other. The routes a Vulkan consumer has:
 ///
 /// | producer | how | notes |
 /// | -------- | --- | ----- |
@@ -44,12 +42,12 @@ class HgiVulkanDevice;
 /// | Vulkan, another device | ImportBuffer | imports the exported allocation |
 /// | OpenGL | -- | impossible; GL cannot export |
 ///
-/// Passing a VkBuffer from a *different* VkDevice to RegisterBuffer is the
-/// hazard this arena's key exists to prevent: the handle would be interpreted
-/// in the wrong namespace and bind an unrelated object. Ask for the arena
-/// belonging to the device that minted the handle and the question cannot
-/// arise. Use ImportBuffer across devices, which shares memory rather than
-/// handles.
+/// RegisterBuffer and AdoptBuffer take the handle at face value and bind it on
+/// the consumer's device, so the VkBuffer must have been minted by that same
+/// logical device. Passing one from a different VkDevice interprets the handle
+/// in the wrong namespace and binds an unrelated object -- nothing here can
+/// detect it, because a VkBuffer carries no evidence of which device made it.
+/// Use ImportBuffer across devices, which shares memory rather than handles.
 ///
 /// An OpenGL producer cannot feed a Vulkan consumer at all, and no entry point
 /// here pretends otherwise: OpenGL has no way to export an allocation for
@@ -75,11 +73,9 @@ public:
     HGIVULKAN_API
     static bool IsSupportedBy(Hgi *hgi);
 
-    /// Constructed by Hgi::GetExternalBufferArena; \p rawSourceDevice is a
-    /// uint64 cast of the producer's VkDevice (or of its device object, for a
-    /// producer in another API whose memory we import).
+    /// Constructed by Hgi::GetExternalBufferArena.
     HGIVULKAN_API
-    HgiVulkanExternalBufferArena(Hgi *hgi, uint64_t rawSourceDevice);
+    HgiVulkanExternalBufferArena(Hgi *hgi);
 
     HGIVULKAN_API
     ~HgiVulkanExternalBufferArena() override;
@@ -119,19 +115,42 @@ public:
     HgiExternalBufferSharedPtr ImportBuffer(
         HgiVulkanImportBufferDesc const &desc);
 
+    /// Create the arena's semaphore pair for use on this device only, and
+    /// nowhere else. For an application that shares the consumer's logical
+    /// device: it reads the pair through GetAppDoneVkSemaphore() /
+    /// GetHgiDoneVkSemaphore() and uses it natively, so nothing needs
+    /// exporting and no interop handles are minted.
+    ///
+    /// Prefer this over CreateExportableSemaphores() when nothing crosses a
+    /// device or API boundary -- an exportable semaphore whose OS handle is
+    /// never used is a handle leaked for no reason.
+    ///
+    /// \p kind must be HgiSemaphoreKindBinary. Timeline is refused, and the
+    /// reason is HgiVulkanSemaphore rather than the device: it encodes through
+    /// the command queue's pending wait and signal lists, which carry no
+    /// values, so a timeline semaphore would reach vkQueueSubmit without a
+    /// VkTimelineSemaphoreSubmitInfo. Nothing is lost by this today -- the
+    /// arena's epoch guard already collapses several render passes in one
+    /// frame into a single wait and a single signal, which is what a timeline
+    /// semaphore would otherwise have been wanted for.
+    ///
+    /// Returns false, leaving the arena unsynchronized, if the semaphores
+    /// cannot be created or \p kind is not binary.
+    HGIVULKAN_API
+    bool CreateSemaphores(HgiSemaphoreKind kind);
+
     /// Create the arena's semaphore pair as EXPORTABLE Vulkan semaphores and
     /// return their OS handles in \p outAppDoneHandle and
     /// \p outHgiDoneHandle, for the application to import. Use this when Hgi
     /// should own the semaphores; use ImportSemaphores when the application
     /// already has its own.
     ///
-    /// Prefer HgiSemaphoreKindTimeline when the application is also Vulkan: a
-    /// timeline wait can be satisfied more than once, so several render passes
-    /// in one application frame do not each need a separate signal. An
-    /// application on OpenGL must take binary, which is all GL can import.
+    /// \p kind must be HgiSemaphoreKindBinary; see CreateSemaphores for why.
+    /// That is also all an OpenGL application could import in any case --
+    /// GL_EXT_semaphore has no timeline form.
     ///
     /// Returns false and leaves the arena unsynchronized if the device cannot
-    /// create exportable semaphores.
+    /// create exportable semaphores, or \p kind is not binary.
     HGIVULKAN_API
     bool CreateExportableSemaphores(
         HgiSemaphoreKind kind,
@@ -149,7 +168,40 @@ public:
         HgiExternalHandleType handleType,
         HgiSemaphoreKind kind) override;
 
+    /// The arena's semaphore pair as native VkSemaphores, or VK_NULL_HANDLE
+    /// when this arena has none.
+    ///
+    /// The application's half of the bracket is its own API call -- Hgi has no
+    /// access to the application's queue and so cannot encode a wait on its
+    /// behalf. There is deliberately no EncodeHgiDoneWait() for that reason;
+    /// these accessors are what the application needs instead.
+    ///
+    /// Contract: signal app-done after finishing a write and before calling
+    /// into Hgi, then NotifyAppDone(); wait on hgi-done before overwriting a
+    /// shared buffer.
+    ///
+    /// For a producer on THIS logical device, which is the case these are for.
+    /// A producer on another device, or in another API, cannot use a
+    /// VkSemaphore at all -- a semaphore is namespaced to the device that
+    /// created it -- and wants CreateExportableSemaphores() or
+    /// ImportSemaphores(), which trade in OS handles.
+    HGIVULKAN_API
+    VkSemaphore GetAppDoneVkSemaphore() const;
+
+    HGIVULKAN_API
+    VkSemaphore GetHgiDoneVkSemaphore() const;
+
 protected:
+    /// Shared by CreateSemaphores and CreateExportableSemaphores; the only
+    /// difference between them is whether the pair is exportable and whether
+    /// the caller wants the handles back.
+    HGIVULKAN_API
+    bool _CreateSemaphorePair(
+        HgiSemaphoreKind kind,
+        bool exportable,
+        uint64_t *outAppDoneHandle,
+        uint64_t *outHgiDoneHandle);
+
     HGIVULKAN_API
     uint64_t _CaptureSubmissionStamp() override;
 

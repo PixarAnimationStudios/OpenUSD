@@ -15,16 +15,38 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// The only external handle type this platform resolves to; an import of any
-// other type is rejected rather than reinterpreted.
-static HgiExternalHandleType
-_PlatformExternalHandleType()
+std::shared_ptr<HgiVulkanSemaphore>
+HgiVulkanSemaphore::Create(
+    HgiVulkanDevice *device,
+    HgiSemaphoreKind kind)
 {
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
-    return HgiExternalHandleTypeOpaqueWin32;
-#else
-    return HgiExternalHandleTypeOpaqueFd;
-#endif
+    if (!device) {
+        return nullptr;
+    }
+
+    // No VkExportSemaphoreCreateInfo, and no supportsNativeInterop check: a
+    // semaphore nobody outside this device will name needs neither.
+    VkSemaphoreTypeCreateInfo typeInfo =
+        { VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO };
+    typeInfo.semaphoreType = (kind == HgiSemaphoreKindTimeline)
+        ? VK_SEMAPHORE_TYPE_TIMELINE : VK_SEMAPHORE_TYPE_BINARY;
+    typeInfo.initialValue = 0;
+
+    VkSemaphoreCreateInfo createInfo =
+        { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+    createInfo.flags = 0;
+    createInfo.pNext = &typeInfo;
+
+    VkSemaphore vkSemaphore = VK_NULL_HANDLE;
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vkCreateSemaphore(device->GetVulkanDevice(), &createInfo,
+            HgiVulkanAllocator(), &vkSemaphore));
+    if (vkSemaphore == VK_NULL_HANDLE) {
+        return nullptr;
+    }
+
+    return std::shared_ptr<HgiVulkanSemaphore>(new HgiVulkanSemaphore(
+        device, vkSemaphore, kind, /*externalHandle*/ 0));
 }
 
 std::shared_ptr<HgiVulkanSemaphore>
@@ -122,7 +144,7 @@ HgiVulkanSemaphore::Import(
     if (!device->GetDeviceCapabilities().supportsNativeInterop) {
         return nullptr;
     }
-    if (handleType != _PlatformExternalHandleType()) {
+    if (handleType != HgiGetPlatformExternalHandleType()) {
         TF_WARN("HgiVulkan cannot import external semaphore handle type %d on "
                 "this platform", static_cast<int>(handleType));
         return nullptr;

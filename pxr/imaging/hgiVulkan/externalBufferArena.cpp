@@ -13,6 +13,8 @@
 
 #include "pxr/imaging/hgi/tokens.h"
 
+#include "pxr/base/tf/diagnostic.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 bool
@@ -27,10 +29,8 @@ HgiVulkanExternalBufferArena::IsSupportedBy(Hgi *hgi)
         device->GetDeviceCapabilities().supportsNativeInterop;
 }
 
-HgiVulkanExternalBufferArena::HgiVulkanExternalBufferArena(
-    Hgi *hgi,
-    uint64_t rawSourceDevice)
-    : HgiExternalBufferArena(hgi, rawSourceDevice)
+HgiVulkanExternalBufferArena::HgiVulkanExternalBufferArena(Hgi *hgi)
+    : HgiExternalBufferArena(hgi)
 {
     // No semaphores by default. A producer on this same device and queue is
     // already ordered by submission order; one that needs more calls
@@ -86,8 +86,25 @@ HgiVulkanExternalBufferArena::ImportBuffer(
 }
 
 bool
+HgiVulkanExternalBufferArena::CreateSemaphores(HgiSemaphoreKind kind)
+{
+    return _CreateSemaphorePair(kind, /*exportable*/ false, nullptr, nullptr);
+}
+
+bool
 HgiVulkanExternalBufferArena::CreateExportableSemaphores(
     HgiSemaphoreKind kind,
+    uint64_t *outAppDoneHandle,
+    uint64_t *outHgiDoneHandle)
+{
+    return _CreateSemaphorePair(
+        kind, /*exportable*/ true, outAppDoneHandle, outHgiDoneHandle);
+}
+
+bool
+HgiVulkanExternalBufferArena::_CreateSemaphorePair(
+    HgiSemaphoreKind kind,
+    bool exportable,
     uint64_t *outAppDoneHandle,
     uint64_t *outHgiDoneHandle)
 {
@@ -98,14 +115,37 @@ HgiVulkanExternalBufferArena::CreateExportableSemaphores(
         *outHgiDoneHandle = 0;
     }
 
+    // Binary only, and not because Vulkan cannot do better. HgiVulkanSemaphore
+    // encodes through the command queue's pending wait and signal lists, and
+    // those carry no values, so a timeline semaphore would reach vkQueueSubmit
+    // with no VkTimelineSemaphoreSubmitInfo -- invalid usage, not merely a
+    // timeline treated as binary. ImportSemaphore refuses for the same reason
+    // (hgiVulkan/semaphore.cpp); refusing here as well keeps all three
+    // creation paths consistent, rather than returning success and an object
+    // that cannot be used correctly.
+    //
+    // The arena's own value bookkeeping -- NotifyAppDone's value carried
+    // through to EncodeWait, and an increasing value per signal -- is complete
+    // and would not need to change if the queue ever learned to carry values.
+    if (kind != HgiSemaphoreKindBinary) {
+        TF_WARN("HgiVulkanExternalBufferArena can only create binary "
+                "semaphores; the command queue's pending wait and signal "
+                "lists carry no timeline values");
+        return false;
+    }
+
     HgiVulkanDevice *device = _GetDevice();
-    HgiVulkanSemaphoreSharedPtr appDone =
-        HgiVulkanSemaphore::CreateExportable(device, kind);
+    auto make = [device, kind, exportable]() {
+        return exportable
+            ? HgiVulkanSemaphore::CreateExportable(device, kind)
+            : HgiVulkanSemaphore::Create(device, kind);
+    };
+
+    HgiVulkanSemaphoreSharedPtr appDone = make();
     if (!appDone) {
         return false;
     }
-    HgiVulkanSemaphoreSharedPtr hgiDone =
-        HgiVulkanSemaphore::CreateExportable(device, kind);
+    HgiVulkanSemaphoreSharedPtr hgiDone = make();
     if (!hgiDone) {
         return false;
     }
@@ -119,6 +159,29 @@ HgiVulkanExternalBufferArena::CreateExportableSemaphores(
 
     _SetSemaphores(std::move(appDone), std::move(hgiDone));
     return true;
+}
+
+VkSemaphore
+HgiVulkanExternalBufferArena::GetAppDoneVkSemaphore() const
+{
+    // The static_cast is sound rather than hopeful: this arena's semaphores
+    // are only ever installed by CreateExportableSemaphores or
+    // ImportSemaphores below, both of which build HgiVulkanSemaphores.
+    HgiSemaphoreSharedPtr const &semaphore = GetAppDoneHgiSemaphore();
+    return semaphore
+        ? static_cast<HgiVulkanSemaphore *>(semaphore.get())
+              ->GetVulkanSemaphore()
+        : VK_NULL_HANDLE;
+}
+
+VkSemaphore
+HgiVulkanExternalBufferArena::GetHgiDoneVkSemaphore() const
+{
+    HgiSemaphoreSharedPtr const &semaphore = GetHgiDoneHgiSemaphore();
+    return semaphore
+        ? static_cast<HgiVulkanSemaphore *>(semaphore.get())
+              ->GetVulkanSemaphore()
+        : VK_NULL_HANDLE;
 }
 
 bool

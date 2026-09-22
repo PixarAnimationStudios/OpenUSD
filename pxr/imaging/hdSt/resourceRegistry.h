@@ -513,23 +513,6 @@ public:
     HDST_API
     HdStStagingBuffer* GetStagingBuffer();
 
-    /// ------------------------------------------------------------------------
-    /// External GPU buffers
-    /// ------------------------------------------------------------------------
-
-    /// Note that Storm is consuming buffers from \p arena this frame, so that
-    /// Commit() brackets its access with the arena's semaphores: a wait before
-    /// the imports, copies and draws that read them, a signal after.
-    ///
-    /// Called while routing a prim's primvars, which happens during Sync.
-    /// Registering an arena whose buffers are subsequently dropped is
-    /// harmless -- the arena ignores a wait for an epoch the application never
-    /// opened.
-    ///
-    /// Thread safety: This call is thread safe.
-    HDST_API
-    void RegisterExtGpuBufferArena(HgiExternalBufferArena *arena);
-
 public:
     //
     // Unit test API
@@ -634,19 +617,6 @@ private:
     };
 
     Hgi* _hgi;
-
-    // The external buffer arenas Storm is consuming from, whose semaphores
-    // bracket its access to them; see RegisterExtGpuBufferArena. Raw pointers
-    // because an arena lives as long as the Hgi that owns it, which outlives
-    // this registry.
-    std::vector<HgiExternalBufferArena *> _extGpuArenas;
-    std::mutex _extGpuArenaMutex;
-
-    // Encode the arenas' wait and signal around this commit's reads of their
-    // buffers. See the definitions for why a commit, rather than
-    // Hgi::StartFrame, is the anchor.
-    void _EncodeExtGpuBufferWaits();
-    void _EncodeExtGpuBufferSignals();
 
     using _PendingSourceList =
         tbb::concurrent_vector<_PendingSource>;

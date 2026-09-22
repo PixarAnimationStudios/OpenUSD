@@ -25,16 +25,15 @@ class Hgi;
 /// consumer. Obtain one from Hgi::GetExternalBufferArena:
 ///
 /// \code
-///     auto arena = hgi->GetExternalBufferArena<HgiGLExternalBufferArena>(
-///         uint64_t(myGLShareContext));
+///     auto arena = hgi->GetExternalBufferArena<HgiGLExternalBufferArena>();
 ///     if (!arena) { /* interop unavailable -- copy instead */ }
 /// \endcode
 ///
 /// \section Direction
 ///
-/// An arena belongs to the *consuming* backend and is keyed on the
-/// *producing* device, which is what keeps hgiGL and hgiVulkan independent of
-/// each other. So this one class covers both sources GL can consume:
+/// An arena belongs to the *consuming* backend, which is what keeps hgiGL and
+/// hgiVulkan independent of each other. So this one class covers both sources
+/// GL can consume:
 ///
 /// | producer | how | notes |
 /// | -------- | --- | ----- |
@@ -88,11 +87,9 @@ public:
     HGIGL_API
     static bool IsSupportedBy(Hgi *hgi);
 
-    /// Constructed by Hgi::GetExternalBufferArena; \p rawSourceDevice is a
-    /// uint64 cast of the producer's GL context (or its share context) for a
-    /// GL producer, or of its device object for a producer in another API.
+    /// Constructed by Hgi::GetExternalBufferArena.
     HGIGL_API
-    HgiGLExternalBufferArena(Hgi *hgi, uint64_t rawSourceDevice);
+    HgiGLExternalBufferArena(Hgi *hgi);
 
     HGIGL_API
     ~HgiGLExternalBufferArena() override;

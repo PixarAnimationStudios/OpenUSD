@@ -155,64 +155,6 @@ HdStResourceRegistry::~HdStResourceRegistry()
     _hgi->GarbageCollect();
 }
 
-void
-HdStResourceRegistry::RegisterExtGpuBufferArena(
-    HgiExternalBufferArena *arena)
-{
-    if (!arena) {
-        return;
-    }
-    // Called while routing a prim's primvars, which happens during Sync and
-    // therefore in parallel, hence the lock. The list is short -- one entry per
-    // application device sharing buffers, which in practice is one.
-    std::lock_guard<std::mutex> lock(_extGpuArenaMutex);
-    if (std::find(_extGpuArenas.begin(), _extGpuArenas.end(), arena) ==
-            _extGpuArenas.end()) {
-        _extGpuArenas.push_back(arena);
-    }
-}
-
-void
-HdStResourceRegistry::_EncodeExtGpuBufferWaits()
-{
-    // Order the producer's writes before anything we are about to do that
-    // reads its buffers: the imports and GPU-to-GPU copies this commit will
-    // issue, and the draws that will bind them.
-    //
-    // Here rather than in Hgi::StartFrame, which is optional, is driven by
-    // whichever hdx tasks a client happens to assemble, and is emitted more
-    // than once per application frame by a client that runs several render
-    // passes. A commit, by contrast, happens exactly when Storm is about to
-    // touch these buffers. The arena collapses repeat calls, so several
-    // commits in one application frame produce one wait, and an application
-    // that published nothing produces none -- which matters, because waiting
-    // on a binary semaphore nobody will signal hangs the frame.
-    std::lock_guard<std::mutex> lock(_extGpuArenaMutex);
-    for (HgiExternalBufferArena *arena : _extGpuArenas) {
-        arena->EncodeAppDoneWait();
-    }
-}
-
-void
-HdStResourceRegistry::_EncodeExtGpuBufferSignals()
-{
-    // Tell the producer we are done reading. For a buffer we copied out of,
-    // that is exactly true: the copy was issued above and nothing else reads
-    // it.
-    //
-    // For a directly bound buffer it means less, and deliberately so: such a
-    // buffer stays bound and is re-read by every draw until the scene replaces
-    // it, so there is no per-frame moment when Storm has finished with it. A
-    // producer that wants to overwrite a directly bound buffer in place cannot
-    // get that guarantee from a semaphore and should write into a different
-    // buffer instead; what makes a buffer safe to reclaim is the arena letting
-    // go of it after the GPU retires, not this signal.
-    std::lock_guard<std::mutex> lock(_extGpuArenaMutex);
-    for (HgiExternalBufferArena *arena : _extGpuArenas) {
-        arena->EncodeHgiDoneSignal();
-    }
-}
-
 void HdStResourceRegistry::InvalidateShaderRegistry()
 {
     _geometricShaderRegistry.Invalidate();
@@ -930,10 +872,6 @@ HdStResourceRegistry::_Commit()
     // handles (for bindless textures).
     _CommitTextures();
 
-    // Before anything that reads an application-shared buffer -- the imports
-    // and GPU-to-GPU copies below, and the draws that follow this commit.
-    _EncodeExtGpuBufferWaits();
-
     {
         HD_TRACE_SCOPE("Resolve");
         // 1a. resolve phase:
@@ -1158,8 +1096,21 @@ HdStResourceRegistry::_Commit()
         compVec.clear();
     }
 
-    // After the copies out of the application's buffers have been issued.
-    _EncodeExtGpuBufferSignals();
+    // Neither half of the external-buffer bracket is encoded here.
+    //
+    // The hgi-done signal used to be, which is exact for a buffer we COPIED
+    // out of -- the blit was the only read and it was issued above -- but
+    // wrong for a directly bound one, whose reads are the draws, and those
+    // have not been submitted yet. A producer that waited on it, exactly
+    // where the API documents the wait belongs, was told "finished reading"
+    // before a single draw existed, and overwrote bytes the frame was about
+    // to read. testHdStExtGpuBuffer_VK_GL rendered frame 2 data into frame 1,
+    // 5 runs out of 5.
+    //
+    // The app-done wait used to be encoded at the top of this function, which
+    // was correct but redundant. Both now come from Hgi, which sweeps every
+    // arena it owns from StartFrame() and EndFrame() -- the only points that
+    // bracket an application frame rather than one commit of many.
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->committed);
 }

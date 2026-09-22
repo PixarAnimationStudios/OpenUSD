@@ -681,7 +681,7 @@ get_filename_component(_hdSt_pyRuntimeDir "${Python3_EXECUTABLE}" DIRECTORY)
 # Registered on Linux (X11) and Windows only, matching the build gate above; macOS
 # is excluded because the external-GPU-buffer path is not yet supported there.
 if (X11_FOUND OR WIN32)
-pxr_register_test(testHdStExtGpuBuffer
+pxr_register_test(testHdStExtGpuBuffer_GL_GL
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen"
     EXPECTED_RETURN_CODE 0
     PRE_PATH
@@ -689,7 +689,7 @@ pxr_register_test(testHdStExtGpuBuffer
         ${CMAKE_INSTALL_PREFIX}/bin
         ${_hdSt_pyRuntimeDir}
 )
-pxr_register_test(testHdStExtGpuBuffer_Instancing
+pxr_register_test(testHdStExtGpuBuffer_GL_GL_Instancing
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --instancing"
     EXPECTED_RETURN_CODE 0
     PRE_PATH
@@ -703,7 +703,7 @@ pxr_register_test(testHdStExtGpuBuffer_Instancing
 # HgiGLBuffer and read GetBufferId() -- which is sound only because an adopted
 # buffer IS an HgiGLBuffer, through the non-owning constructor. Nothing else
 # covers that.
-pxr_register_test(testHdStExtGpuBuffer_Copy
+pxr_register_test(testHdStExtGpuBuffer_GL_GL_Copy
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --copy"
     EXPECTED_RETURN_CODE 0
     PRE_PATH
@@ -712,33 +712,9 @@ pxr_register_test(testHdStExtGpuBuffer_Copy
         ${_hdSt_pyRuntimeDir}
 )
 
-# Same scenes, but Storm runs on Vulkan (HGI_ENABLE_VULKAN=1). Only meaningful
-# when Vulkan is actually built (else CreatePlatformDefaultHgi falls back to GL
-# and this just re-runs the GL case).
+# Vulkan cases. Only meaningful when Vulkan is actually built (else
+# CreatePlatformDefaultHgi falls back to GL and these just re-run the GL case).
 if (PXR_ENABLE_VULKAN_SUPPORT)
-pxr_register_test(testHdStExtGpuBuffer_Vulkan
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen"
-    EXPECTED_RETURN_CODE 0
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/lib
-        ${CMAKE_INSTALL_PREFIX}/bin
-        ${_hdSt_pyRuntimeDir}
-    ENV
-        HGI_ENABLE_VULKAN=1
-)
-# Vulkan producer and consumer on one device, allowDirectBind=false: the blit
-# source is a registered, application-owned VkBuffer rather than an imported or
-# Hgi-allocated one.
-pxr_register_test(testHdStExtGpuBuffer_Vulkan_Copy
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --copy"
-    EXPECTED_RETURN_CODE 0
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/lib
-        ${CMAKE_INSTALL_PREFIX}/bin
-        ${_hdSt_pyRuntimeDir}
-    ENV
-        HGI_ENABLE_VULKAN=1
-)
 
 # Sync: a Vulkan producer allocates the buffer on the CONSUMER's own device but
 # writes it as its own work, in an independent command buffer it submits itself
@@ -746,8 +722,24 @@ pxr_register_test(testHdStExtGpuBuffer_Vulkan_Copy
 # Vulkan arena -- same logical device, so nothing is imported -- and the
 # producer's write is ordered against Storm's read by the arena's semaphore
 # pair, which Storm's commit waits on and signals.
-if (WIN32)
-pxr_register_test(testHdStExtGpuBuffer_Vulkan_Sync
+#
+# These two are the same-device Vulkan coverage. They replace an earlier pair
+# that let Hgi upload the data itself through HgiBufferDesc::initialData. That
+# arrangement needed no synchronization at all -- Hgi was the writer, ordering
+# its own staging copy with its own pipeline barrier, and nothing ever
+# overwrote the buffer afterwards -- so it exercised registration and binding
+# while proving nothing about a producer. Vulkan gives no implicit execution
+# ordering between submissions even on a single queue, so a real producer
+# always needs an explicit dependency, and a case without one cannot stand in
+# for it.
+#
+# Unlike the four below, these two share nothing across a boundary: both sides
+# are on one device and the producer reads the VkSemaphore natively off the
+# arena, so no OS handle is exported or imported and no interop extension is
+# involved. They still need supportsNativeInterop today, because
+# HgiVulkanExternalBufferArena::IsSupportedBy gates on it for every case --
+# which is stricter than this case requires, and worth revisiting.
+pxr_register_test(testHdStExtGpuBuffer_VK_VK
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --vulkanSync"
     EXPECTED_RETURN_CODE 0
     PRE_PATH
@@ -757,13 +749,58 @@ pxr_register_test(testHdStExtGpuBuffer_Vulkan_Sync
     ENV
         HGI_ENABLE_VULKAN=1
 )
+# The same producer with allowDirectBind=false, so Storm blits rather than
+# binding. That makes the blit source a registered, application-owned VkBuffer
+# -- HgiVulkanExternalBuffer::_CreateAdopted(takeOwnership=false) -- which
+# nothing else covers: _VK_VK_Import_Copy blits from an imported buffer,
+# which is a different subtype reached by a different path.
+pxr_register_test(testHdStExtGpuBuffer_VK_VK_Copy
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --vulkanSync --copy"
+    EXPECTED_RETURN_CODE 0
+    PRE_PATH
+        ${CMAKE_INSTALL_PREFIX}/lib
+        ${CMAKE_INSTALL_PREFIX}/bin
+        ${_hdSt_pyRuntimeDir}
+    ENV
+        HGI_ENABLE_VULKAN=1
+)
+
+# These four cross a device or an API boundary, so an OS handle for the memory
+# -- and for the semaphores -- has to be exported by one side and imported by
+# the other. That is a Win32 NT handle on Windows and a POSIX fd on Linux, and
+# both are implemented: see the VK_USE_PLATFORM_XLIB_KHR branches in
+# hgiVulkan/device.cpp (GetFdForMemory), hgiVulkan/buffer.cpp
+# (VkImportMemoryFdInfoKHR), hgiVulkan/semaphore.cpp (vkImportSemaphoreFdKHR),
+# hgiGL/externalBuffer.cpp (glImportMemoryFdEXT) and hgiGL/semaphore.cpp
+# (glImportSemaphoreFdEXT).
+#
+# They were Windows-only for a while, which read as "the fd path is missing".
+# It is not; what was missing was a way to come out green on a machine that
+# cannot do interop at all. A runner with llvmpipe, or no Vulkan ICD, or a GL
+# stack without GL_EXT_memory_object_fd, has no business failing over a
+# capability it does not have -- so the test now reports SKIPPED with the
+# reason instead, and these run everywhere the build does.
 # "Two devices" -- a second VkDevice stands in for a producer that owns its own
 # device. It allocates exportable memory out of its own arena and writes the
 # geometry there; the consumer imports that allocation rather than sharing a
 # native handle, which would mean nothing across logical devices. Here the
 # consumer is Vulkan too, so the import is VK-to-VK across devices.
-pxr_register_test(testHdStExtGpuBuffer_Vulkan_Interop
+pxr_register_test(testHdStExtGpuBuffer_VK_VK_Import
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --vulkanInterop"
+    EXPECTED_RETURN_CODE 0
+    PRE_PATH
+        ${CMAKE_INSTALL_PREFIX}/lib
+        ${CMAKE_INSTALL_PREFIX}/bin
+        ${_hdSt_pyRuntimeDir}
+    ENV
+        HGI_ENABLE_VULKAN=1
+)
+# Same two-device import topology, but with allowDirectBind=false (--copy): the
+# consumer imports the foreign allocation and then GPU-to-GPU blits it into its
+# aggregated VBO rather than binding it zero-copy. Covers the import-then-blit
+# path, which the direct-bind interop test above does not.
+pxr_register_test(testHdStExtGpuBuffer_VK_VK_Import_Copy
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --vulkanInterop --copy"
     EXPECTED_RETURN_CODE 0
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/lib
@@ -779,7 +816,7 @@ pxr_register_test(testHdStExtGpuBuffer_Vulkan_Interop
 # only one where the two APIs actually differ; the reverse (a GL producer
 # feeding a Vulkan consumer) is impossible, since GL cannot export an
 # allocation, and has no entry point to test.
-pxr_register_test(testHdStExtGpuBuffer_GL_Interop
+pxr_register_test(testHdStExtGpuBuffer_VK_GL
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --vulkanInterop"
     EXPECTED_RETURN_CODE 0
     PRE_PATH
@@ -790,7 +827,7 @@ pxr_register_test(testHdStExtGpuBuffer_GL_Interop
 # The VK-to-GL import, copied rather than bound: a GL buffer over imported
 # Vulkan memory as the blit source. This is the combination a GL-based viewport
 # hits when a Vulkan producer's layout does not suit direct binding.
-pxr_register_test(testHdStExtGpuBuffer_GL_Interop_Copy
+pxr_register_test(testHdStExtGpuBuffer_VK_GL_Copy
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --vulkanInterop --copy"
     EXPECTED_RETURN_CODE 0
     PRE_PATH
@@ -798,22 +835,6 @@ pxr_register_test(testHdStExtGpuBuffer_GL_Interop_Copy
         ${CMAKE_INSTALL_PREFIX}/bin
         ${_hdSt_pyRuntimeDir}
 )
-
-# Same two-device import topology, but with allowDirectBind=false (--copy): the
-# consumer imports the foreign allocation and then GPU-to-GPU blits it into its
-# aggregated VBO rather than binding it zero-copy. Covers the import-then-blit
-# path, which the direct-bind interop test above does not.
-pxr_register_test(testHdStExtGpuBuffer_Vulkan_Interop_Copy
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --vulkanInterop --copy"
-    EXPECTED_RETURN_CODE 0
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/lib
-        ${CMAKE_INSTALL_PREFIX}/bin
-        ${_hdSt_pyRuntimeDir}
-    ENV
-        HGI_ENABLE_VULKAN=1
-)
-endif()
 endif()
 endif()
 

@@ -291,7 +291,7 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     // lookups below, instead of re-traversing the terminal scene index per
     // primvar name.
     const HdContainerDataSourceHandle extPrimDs =
-        HdSt_GetPrimDataSource(sceneDelegate, id);
+        HdSt_GetPrimDataSource(sceneDelegate, id, resourceRegistry.get());
     for (HdPrimvarDescriptor const& primvar: primvars) {
         if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name)) {
             continue;
