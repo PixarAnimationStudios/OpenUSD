@@ -258,6 +258,38 @@ class TestUsdPhysicsValidation(unittest.TestCase):
         self.assertTrue(len(errors) == 1)
         self.assertTrue(errors[0].GetName() == "JointMultiplePrimsRel")
 
+    def test_physics_joint_rel_to_collider_below_body(self):
+        validationRegistry = UsdValidation.ValidationRegistry()
+        validator = validationRegistry.GetOrLoadValidatorByName(
+            "usdPhysicsValidators:PhysicsJointChecker"
+        )
+
+        self.assertTrue(validator)
+
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        # A body relationship may target a collider below the body rather than
+        # the body prim itself. Joint validation must search up the tree to
+        # find the owning rigid body, so such a target is valid.
+        body = UsdGeom.Xform.Define(stage, "/body")
+        rbo = UsdPhysics.RigidBodyAPI.Apply(body.GetPrim())
+        collider = UsdGeom.Cube.Define(stage, "/body/collider")
+        UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+
+        physicsJoint = UsdPhysics.Joint.Define(stage, "/joint")
+        physicsJoint.GetBody0Rel().AddTarget("/body/collider")
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertEqual(len(errors), 0)
+
+        # With the owning body disabled, the joint has no enabled rigid body.
+        rbo.GetRigidBodyEnabledAttr().Set(False)
+
+        errors = validator.Validate(physicsJoint.GetPrim())
+        self.assertEqual(len(errors), 1)
+        self.assertTrue(errors[0].GetName() == "JointNoEnabledRigidBody")
+
     def test_collider_non_uniform_scale(self):
         validationRegistry = UsdValidation.ValidationRegistry()
         validator = validationRegistry.GetOrLoadValidatorByName(

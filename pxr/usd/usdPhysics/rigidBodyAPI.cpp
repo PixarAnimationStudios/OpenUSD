@@ -498,6 +498,16 @@ float UsdPhysicsRigidBodyAPI::ComputeMassProperties(GfVec3f* _diagonalInertia,
 
             if (collisionPrim && collisionPrim.HasAPI<UsdPhysicsCollisionAPI>())
             {
+                // A disabled collider takes no part in simulation and must
+                // not contribute to the body's mass.
+                const UsdPhysicsCollisionAPI collisionAPI(collisionPrim);
+                bool collisionEnabled = true;
+                collisionAPI.GetCollisionEnabledAttr().Get(&collisionEnabled);
+                if (!collisionEnabled)
+                {
+                    continue;
+                }
+
                 collisionPrims.push_back(std::move(collisionPrim));
             }
         }

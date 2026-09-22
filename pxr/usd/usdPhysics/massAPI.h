@@ -37,7 +37,8 @@ class SdfAssetPath;
 ///
 /// Defines explicit mass properties (mass, density, inertia etc.).        
 /// MassAPI can be applied to any object that has a PhysicsCollisionAPI or
-/// a PhysicsRigidBodyAPI.
+/// a PhysicsRigidBodyAPI. A collider whose physics:collisionEnabled is false
+/// takes no part in simulation and does not contribute its mass.
 ///
 class UsdPhysicsMassAPI : public UsdAPISchemaBase
 {

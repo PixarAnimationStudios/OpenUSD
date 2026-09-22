@@ -84,7 +84,7 @@ bool IsDynamicBody(const UsdPrim& usdPrim, bool* outPhysicsAPIFound)
     if (rboAPI)
     {
         {
-            bool isAPISchemaEnabled = false;
+            bool isAPISchemaEnabled = true;
             rboAPI.GetRigidBodyEnabledAttr().Get(&isAPISchemaEnabled);
 
             // Prim is dynamic body off PhysicsAPI is present and enabled
@@ -583,8 +583,10 @@ bool HasEnabledRigidBody(const SdfPath& relPath, const UsdPrim& jointPrim)
         return false;
     }
 
-    bool physicsAPIFound = false;
-    return IsDynamicBody(relPrim, &physicsAPIFound);
+    // A body relationship may target a collider below the body rather than
+    // the body prim itself, so search up the tree for the owning rigid body.
+    UsdPrim bodyPrim;
+    return HasDynamicBodyParent(relPrim, &bodyPrim);
 }
 
 
