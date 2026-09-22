@@ -16,6 +16,8 @@
 #include <dlfcn.h>
 #endif
 
+#include <filesystem>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 #if defined(ARCH_OS_WINDOWS)
@@ -31,10 +33,24 @@ void* ArchLibraryOpen(const std::string &filename, int flag)
     if (void* result = LoadLibraryW(std::filesystem::u8path(filename).c_str())) {
         return result;
     }
-    else {
+
+    arch_lastLibraryError = GetLastError();
+
+    // If library failed to load because the path is too long
+    // try to use a UNC file name, this helps work around windows MAX_PATH issues
+    if (ERROR_FILENAME_EXCED_RANGE == arch_lastLibraryError) {
+        std::filesystem::path uncpath("\\\\?\\");
+        uncpath += std::filesystem::absolute(filename);
+
+        if (void* result = LoadLibrary(uncpath.string().c_str())) {
+            arch_lastLibraryError = 0;
+            return result;
+        }
+
         arch_lastLibraryError = GetLastError();
-        return nullptr;
     }
+
+    return nullptr;
 #else
     // Clear any unchecked error first.
     (void)dlerror();
