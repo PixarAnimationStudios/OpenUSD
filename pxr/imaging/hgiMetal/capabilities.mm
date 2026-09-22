@@ -75,6 +75,8 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne, false);
 
     _SetFlag(HgiDeviceCapabilitiesBitsCppShaderPadding, true);
+
+    _SetFlag(HgiDeviceCapabilitiesBitsStencilReadback, true);
     
     _SetFlag(HgiDeviceCapabilitiesBitsMetalTessellation, true);
 

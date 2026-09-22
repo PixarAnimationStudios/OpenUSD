@@ -138,6 +138,15 @@ public:
                        HgiTextureHandle const & texture,
                        size_t * bufferSize);
 
+    /// Returns the stencil aspect of a depth-stencil \p texture as one
+    /// unsigned byte per texel.
+    HDST_API
+    static
+    AlignedBuffer<uint8_t>
+    HgiStencilReadback(Hgi * const hgi,
+                       HgiTextureHandle const & texture,
+                       size_t * bufferSize);
+
     /// Returns a buffer with data of type T read back from \p texture.
     template <typename T>
     static

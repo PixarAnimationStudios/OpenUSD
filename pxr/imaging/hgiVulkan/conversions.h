@@ -73,7 +73,10 @@ public:
     static VkBlendOp GetBlendEquation(HgiBlendOp bo);
 
     HGIVULKAN_API
-    static VkCompareOp GetDepthCompareFunction(HgiCompareFunction cf);
+    static VkCompareOp GetCompareFunction(HgiCompareFunction cf);
+
+    HGIVULKAN_API
+    static VkStencilOp GetStencilOp(HgiStencilOp op);
 
     HGIVULKAN_API
     static VkImageType GetTextureType(HgiTextureType tt);
