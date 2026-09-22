@@ -20,7 +20,7 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/unitTestHelper.h"
 
-#include "pxr/imaging/glf/testGLContext.h"
+#include "pxr/imaging/garch/glDebugWindow.h"
 
 #include "pxr/base/tf/errorMark.h"
 
@@ -200,8 +200,8 @@ int main()
 {
     TfErrorMark mark;
 
-    GlfTestGLContext::RegisterGLContextCallbacks();
-    GlfSharedGLContextScopeHolder sharedContext;
+    GarchGLDebugWindow window("Hd Test", 512, 512);
+    window.Init();
 
     bool success = SetRprimCollectionTest();
 

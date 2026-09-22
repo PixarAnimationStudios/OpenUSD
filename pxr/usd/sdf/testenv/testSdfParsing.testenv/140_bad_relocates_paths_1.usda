@@ -2,15 +2,9 @@
 (
     framesPerSecond = 24
     framePrecision = 3
-)
-
-# Note: This is testing parsing syntax only, not allowable semantics.
-
-def MfScope "TestPrim" (
     relocates = {
         </> : </target>
     }
 )
-{
-}
 
+# Note: This is testing parsing syntax only, not allowable semantics.

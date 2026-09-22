@@ -16,6 +16,7 @@
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/smallVector.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -326,25 +327,43 @@ PcpPrimIndex_Graph::Finalize()
         return;
     }
 
-    // We want to store the nodes in the node pool in strong-to-weak order.
-    // In particular, this allows strength-order iteration over the nodes in 
-    // the graph to be a simple traversal of the pool. So, we compute the
-    // strength ordering of our nodes and reorder the pool if needed.
-    std::vector<size_t> nodeIndexToStrengthOrder;
-    const bool nodeOrderMatchesStrengthOrder = 
-        _ComputeStrengthOrderIndexMapping(&nodeIndexToStrengthOrder);
-    if (!nodeOrderMatchesStrengthOrder) {
-        _ApplyNodeIndexMapping(nodeIndexToStrengthOrder);
-    }
+    // We want to arrange the nodes in the node pool in strong-to-weak order, so
+    // that strength-order iteration is a simple forward traversal.  We also
+    // erase nodes that culling determined contribute nothing.  Both are just
+    // permutations/removals over the node pool, so we build a single old-index
+    // -> new-index mapping that performs both and apply it once.
+    // _ApplyNodeIndexMapping then materializes only the surviving nodes, so we
+    // never reference-count nodes that culling is about to discard.
+    //
+    // The eventual mapping is the only working space: one array of node
+    // indexes, built in two passes over the same storage.  First we mark which
+    // nodes are erasable, then the strength-order traversal overwrites each
+    // mark with that node's new index.  Local capacity covers typical graph
+    // sizes so we can avoid a heap allocation in the common case.
+    //
+    // DefaultInit leaves the elements uninitialized.
+    // _ComputeEraseableNodeMarks seeds every element before reading any.  The
+    // value-initializing constructor zero-fills first and gcc 11 for one
+    // doesn't dead-store-eliminate it.
+    using _NodeIndexData = TfSmallVector<_NodeIndexType, 64>;
 
-    // There may be nodes in the pool that have been marked for culling that
-    // can be erased from the node pool. Compute and apply the necessary
-    // transformation.
-    std::vector<size_t> culledNodeMapping;
-    const bool hasNodesToCull =
-        _ComputeEraseCulledNodeIndexMapping(&culledNodeMapping);
-    if (hasNodesToCull) {
-        _ApplyNodeIndexMapping(culledNodeMapping);
+    const size_t numNodes = _GetNumNodes();
+    _NodeIndexData nodeIndexMapData(numNodes, _NodeIndexData::DefaultInit);
+    const TfSpan<_NodeIndexType> nodeIndexMap(nodeIndexMapData);
+
+    // Culling: nodeIndexMap[i] == _erasedIndex marks node i erasable.  The
+    // erasable set is structural (origin/parent chains), independent of the
+    // node ordering, so it is valid to compute it here on the pre-reorder pool.
+    _ComputeErasableNodeMarks(nodeIndexMap);
+
+    // Assign each surviving node its new index in strength order, rewriting the
+    // erasure marks in place.
+    size_t newNumNodes = 0;
+    const bool isIdentity = _ComputeNewNodeIndexes(nodeIndexMap, &newNumNodes);
+
+    // If there's mapping to do, apply it now.
+    if (!isIdentity) {
+        _ApplyNodeIndexMapping(nodeIndexMap, newNumNodes);
     }
 
     _finalized = true;
@@ -359,124 +378,123 @@ PcpPrimIndex_Graph::Finalize()
 #define NEXT_SIBLING(node) node.indexes.nextSiblingIndex
 #define PREV_SIBLING(node) node.indexes.prevSiblingIndex
 
-void 
+void
 PcpPrimIndex_Graph::_ApplyNodeIndexMapping(
-    const std::vector<size_t>& nodeIndexMap)
+    TfSpan<const _NodeIndexType> nodeIndexMap, size_t newNumNodes)
 {
-    // Ensure this node pool is unshared first.
-    _DetachSharedNodePool();
-    
-    _NodePool& oldNodes = *_nodes;
+    // Note: this builds a fresh node pool containing only the surviving nodes
+    // and then reassigns _nodes to it (rather than calling
+    // _DetachSharedNodePool()).  The source pool is only read (never mutated),
+    // so a pool shared with another graph (e.g. the ancestral prim index this
+    // one was cloned from) is left untouched.  This lets us reference-count
+    // only the survivors instead of copy-constructing and bumping counts on the
+    // whole pool and then dropping counts destroying the culled nodes after.
+
+    const size_t InvalidIdx = _Node::_invalidNodeIndex;
+
+    _NodePool const            &oldNodes    = *_nodes;
     std::vector<_UnsharedData> &oldUnshared = _unshared;
 
-    TF_VERIFY(oldNodes.size() == oldUnshared.size());
-    TF_VERIFY(nodeIndexMap.size() == oldNodes.size());
-
-    const size_t numNodesToErase = 
-        std::count(nodeIndexMap.begin(), nodeIndexMap.end(), 
-                   _Node::_invalidNodeIndex);
-
     const size_t oldNumNodes = oldNodes.size();
-    const size_t newNumNodes = oldNumNodes - numNodesToErase;
+
+    TF_VERIFY(oldNumNodes == oldUnshared.size());
+    TF_VERIFY(nodeIndexMap.size() == oldNumNodes);
     TF_VERIFY(newNumNodes <= oldNumNodes);
 
-    struct _ConvertOldToNewIndex {
-        _ConvertOldToNewIndex(const std::vector<size_t>& table,
-                              size_t numNewNodes) : _table(table)
-        {
-            for (size_t i = 0, n = _table.size(); i != n; ++i) {
-                TF_VERIFY(_table[i] < numNewNodes || 
-                          _table[i] == _Node::_invalidNodeIndex);
-            }
-        }
-
-        size_t operator()(size_t oldIndex) const
-        {
-            if (oldIndex != _Node::_invalidNodeIndex) {
-                return _table[oldIndex];
-            }
-            else {
-                return oldIndex;
-            }
-        }
-        const std::vector<size_t>& _table;
-
+    // Get the new index for oldIndex -- nodeIndexMap[oldIndex] or InvalidIdx if
+    // erased.  This helper passes InvalidIdx through unchanged so it can be
+    // applied to a node's parent/origin links directly.
+    auto getNewIndex = [&nodeIndexMap](size_t oldIndex) -> _NodeIndexType {
+        return (oldIndex == InvalidIdx) ? InvalidIdx : nodeIndexMap[oldIndex];
     };
 
-    const _ConvertOldToNewIndex convertToNewIndex(nodeIndexMap, newNumNodes);
+    // Build the new node pool with only the surviving nodes.  If the source
+    // pool is uniquely owned we move each survivor's handles (no reference-
+    // count traffic).  If it is shared we must copy, which reference-counts
+    // only the surviors.  Note that _nodes cannot _gain_ use-counts
+    // concurrently here; that can only happen after the graph is finalized and
+    // published.  So if we start unique, we'll stay unique throughout.  It's
+    // possible that we could _lose_ use-counts concurrently and become unique.
+    // That's fine -- we just take the copy path in that case.
+    const bool sharedPool = (_nodes.use_count() != 1);
 
-    // If this mapping causes nodes to be erased, it's much more convenient
-    // to fix up node indices to accommodate those erasures in the old node
-    // pool before moving nodes to their new position. 
-    if (numNodesToErase > 0) {
-        _NodePool &nodes = *_nodes;
-        for (size_t i = 0; i < oldNumNodes; ++i) {
-            const size_t oldNodeIndex = i;
-            const size_t newNodeIndex = convertToNewIndex(oldNodeIndex);
+    auto newNodesPtr = std::make_shared<_NodePool>(newNumNodes);
+    _NodePool &newNodes = *newNodesPtr;
+    std::vector<_UnsharedData> newUnshared(newNumNodes);
 
-            _Node& node = nodes[oldNodeIndex];
-
-            // Sanity-check: If this node isn't going to be erased, its parent
-            // can't be erased either.
-            const bool nodeWillBeErased = 
-                (newNodeIndex == _Node::_invalidNodeIndex);
-            if (!nodeWillBeErased) {
-                const bool parentWillBeErased = 
-                    PARENT(node) != _Node::_invalidNodeIndex &&
-                    convertToNewIndex(PARENT(node)) == _Node::_invalidNodeIndex;
-                TF_VERIFY(!parentWillBeErased);
-                continue;
-            }
-
-            if (PREV_SIBLING(node) != _Node::_invalidNodeIndex) {
-                _Node& prevNode = nodes[PREV_SIBLING(node)];
-                NEXT_SIBLING(prevNode) = NEXT_SIBLING(node);
-            }
-            if (NEXT_SIBLING(node) != _Node::_invalidNodeIndex) {
-                _Node& nextNode = nodes[NEXT_SIBLING(node)];
-                PREV_SIBLING(nextNode) = PREV_SIBLING(node);
-            }
-
-            _Node& parentNode = nodes[PARENT(node)];
-            if (FIRST_CHILD(parentNode) == oldNodeIndex) {
-                FIRST_CHILD(parentNode) = NEXT_SIBLING(node);
-            }
-            if (LAST_CHILD(parentNode) == oldNodeIndex) {
-                LAST_CHILD(parentNode) = PREV_SIBLING(node);
-            }
-        }
-    }
-
-    // Swap nodes into their new position.
-    _NodePool nodesAfterMapping(newNumNodes);
-    std::vector<_UnsharedData> unsharedAfterMapping(newNumNodes);
-
-    for (size_t i = 0; i < oldNumNodes; ++i) {
-        const size_t oldNodeIndex = i;
-        const size_t newNodeIndex = convertToNewIndex(oldNodeIndex);
-        if (newNodeIndex == _Node::_invalidNodeIndex) {
+    for (size_t oldNodeIndex = 0; oldNodeIndex < oldNumNodes; ++oldNodeIndex) {
+        const _NodeIndexType newNodeIndex = nodeIndexMap[oldNodeIndex];
+        if (newNodeIndex == InvalidIdx) {
             continue;
         }
 
-        // Swap the node from the old node pool into the new node pool at
-        // the desired location.
-        _Node& oldNode = oldNodes[oldNodeIndex];
-        _Node& newNode = nodesAfterMapping[newNodeIndex];
-        newNode.Swap(oldNode);
+        _Node const &oldNode = oldNodes[oldNodeIndex];
+        _Node       &newNode = newNodes[newNodeIndex];
 
-        PARENT(newNode)       = convertToNewIndex(PARENT(newNode));
-        ORIGIN(newNode)       = convertToNewIndex(ORIGIN(newNode));
-        FIRST_CHILD(newNode)  = convertToNewIndex(FIRST_CHILD(newNode));
-        LAST_CHILD(newNode)   = convertToNewIndex(LAST_CHILD(newNode));
-        PREV_SIBLING(newNode) = convertToNewIndex(PREV_SIBLING(newNode));
-        NEXT_SIBLING(newNode) = convertToNewIndex(NEXT_SIBLING(newNode));
+        // Copy this node's links out first.  The Swap() below exchanges indexes
+        // with the new node, so after oldNode.indexes holds the new node's
+        // (default) links rather than the original ones.  These are six small
+        // integers, so taking them by value is cheap.
+        const _Node::_Indexes oldLinks = oldNode.indexes;
 
-        // Copy the corresponding unshared data.
-        unsharedAfterMapping[newNodeIndex] = oldUnshared[oldNodeIndex];
+        if (sharedPool) {
+            newNode.layerStack  = oldNode.layerStack;
+            newNode.mapToRoot   = oldNode.mapToRoot;
+            newNode.mapToParent = oldNode.mapToParent;
+            newNode.smallInts   = oldNode.smallInts;
+        }
+        else {
+            // Cast away constness just here to move the references.
+            _Node &mutOldNode = const_cast<_Node &>(oldNode);
+            newNode.Swap(mutOldNode);
+        }
+
+        // Remap the parent and origin links.  The child and sibling lists are
+        // rebuilt below rather than remapped, so clear them here -- the Swap
+        // above carries over the old node's links.
+        _Node::_Indexes &newLinks = newNode.indexes;
+        newLinks.arcParentIndex   = getNewIndex(oldLinks.arcParentIndex);
+        newLinks.arcOriginIndex   = getNewIndex(oldLinks.arcOriginIndex);
+        newLinks.firstChildIndex  = InvalidIdx;
+        newLinks.lastChildIndex   = InvalidIdx;
+        newLinks.prevSiblingIndex = InvalidIdx;
+        newLinks.nextSiblingIndex = InvalidIdx;
+
+        // A surviving node's parent must itself survive, so remapping the
+        // parent only yields InvalidIdx for the root.  An origin link may point
+        // to an erased node only if this node is erased too, which
+        // _ComputeEraseCulledNodeMarks guarantees, so the same holds there.
+        TF_VERIFY(newLinks.arcParentIndex != InvalidIdx || newNodeIndex == 0);
+        TF_VERIFY(newLinks.arcOriginIndex != InvalidIdx ||
+                  oldLinks.arcOriginIndex == InvalidIdx);
+
+        newUnshared[newNodeIndex] = std::move(oldUnshared[oldNodeIndex]);
     }
 
-    _nodes->swap(nodesAfterMapping);
-    _unshared.swap(unsharedAfterMapping);
+    // Rebuild the child and sibling lists.  The new pool is in strength order,
+    // which is a preorder traversal of those lists, so a node's children appear
+    // after it in ascending order, and appending each node to its parent's list
+    // in ascending index order reproduces the original sibling order.  Erased
+    // nodes are simply never appended, splicing them out implicitly.
+    for (size_t i = 1; i < newNumNodes; ++i) {
+        _Node::_Indexes &
+            childLinks = newNodes[i].indexes;
+        _Node::_Indexes &
+            parentLinks = newNodes[childLinks.arcParentIndex].indexes;
+
+        if (parentLinks.firstChildIndex == InvalidIdx) {
+            parentLinks.firstChildIndex = static_cast<_NodeIndexType>(i);
+        }
+        else {
+            childLinks.prevSiblingIndex = parentLinks.lastChildIndex;
+            newNodes[parentLinks.lastChildIndex]
+                .indexes.nextSiblingIndex = static_cast<_NodeIndexType>(i);
+        }
+        parentLinks.lastChildIndex = static_cast<_NodeIndexType>(i);
+    }
+
+    _nodes    = std::move(newNodesPtr);
+    _unshared = std::move(newUnshared);
 }
     
 void 
@@ -769,144 +787,127 @@ PcpPrimIndex_Graph::_GetWriteableNode(const PcpNodeRef& node)
 }
 
 bool
-PcpPrimIndex_Graph::_ComputeStrengthOrderIndexMapping(
-    std::vector<size_t>* nodeIndexToStrengthOrder) const
+PcpPrimIndex_Graph::_ComputeNewNodeIndexes(
+    TfSpan<_NodeIndexType> nodeIndexMap, size_t *numSurvivors) const
 {
     TRACE_FUNCTION();
 
-    nodeIndexToStrengthOrder->resize(_GetNumNodes());
-
-    const size_t rootNodeIdx = 0;
-    size_t strengthIdx = 0;
-    return _ComputeStrengthOrderIndexMappingRecursively(
-        rootNodeIdx, &strengthIdx, nodeIndexToStrengthOrder);
-}
-
-bool
-PcpPrimIndex_Graph::_ComputeStrengthOrderIndexMappingRecursively(
-    size_t nodeIdx, 
-    size_t* strengthIdx,
-    std::vector<size_t>* nodeIndexToStrengthOrder) const
-{
-    bool nodeOrderMatchesStrengthOrder = true;
-
-    (*nodeIndexToStrengthOrder)[nodeIdx] = *strengthIdx;
-    nodeOrderMatchesStrengthOrder &= (nodeIdx == *strengthIdx);
-
-    // Recurse down.
-    _Node::_Indexes const &indexes = _GetNode(nodeIdx).indexes;
-    size_t index = indexes.firstChildIndex;
-    if (index != _Node::_invalidNodeIndex) {
-        (*strengthIdx)++;
-
-        const bool nodeOrderMatchesStrengthOrderInSubtree =
-            _ComputeStrengthOrderIndexMappingRecursively(
-                index, strengthIdx, nodeIndexToStrengthOrder);
-
-        nodeOrderMatchesStrengthOrder &= nodeOrderMatchesStrengthOrderInSubtree;
-    }
-
-    // Recurse across.
-    index = indexes.nextSiblingIndex;
-    if (index != _Node::_invalidNodeIndex) {
-        (*strengthIdx)++;
-
-        const bool nodeOrderMatchesStrengthOrderInSubtree =
-            _ComputeStrengthOrderIndexMappingRecursively(
-                index, strengthIdx, nodeIndexToStrengthOrder);
-
-        nodeOrderMatchesStrengthOrder &= nodeOrderMatchesStrengthOrderInSubtree;
-    }
-
-    return nodeOrderMatchesStrengthOrder;
-}
-
-bool
-PcpPrimIndex_Graph::_ComputeEraseCulledNodeIndexMapping(
-    std::vector<size_t>* erasedIndexMapping) const
-{
-    TRACE_FUNCTION();
-
-    // Figure out which of the nodes that are marked for culling can
-    // actually be erased from the node pool.
-    const size_t numNodes = _GetNumNodes();
-    std::vector<bool> nodeCanBeErased(_unshared.size());
-    for (size_t i = 0; i != _unshared.size(); ++i) {
-        nodeCanBeErased[i] = _unshared[i].culled;
-    }
-
-    // If a node is marked for culling, but serves as the origin node for a 
-    // node that is *not* culled, we can't erase it from the graph. Doing so
-    // would break the chain of origins Pcp relies on for strength ordering.
-    // So, we iterate through the nodes to detect this situation and mark
-    // the appropriate nodes as un-erasable.
+    // Strength order is a preorder traversal of the child lists starting at the
+    // root, so walking the graph that way and handing out ascending indexes
+    // assigns each surviving node its strength-ordered position.
     //
-    // XXX: This has some O(N^2) behavior, as we wind up visiting the nodes
-    //      in the chain of origins multiple times. We could keep track of
-    //      nodes we've already visited to avoid re-processing them.
-    auto processOriginChain = [&](size_t nIdx, auto&& processOriginChain) -> void {
-        // Follow origin chain until we find the first non-culled node.
-        // All subsequent nodes in the chain cannot be erased. This also
-        // means that the parents of those nodes cannot be erased.
-        bool subsequentOriginsCannotBeCulled = false;
-        for (;; nIdx = ORIGIN(_GetNode(nIdx))) {
-            const bool nodeIsCulled = nodeCanBeErased[nIdx];
-            if (!nodeIsCulled) {
-                subsequentOriginsCannotBeCulled = true;
-            }
-            else if (nodeIsCulled && subsequentOriginsCannotBeCulled) {
-                for (size_t pIdx = nIdx; 
-                     pIdx != _Node::_invalidNodeIndex &&
-                         nodeCanBeErased[pIdx];
-                     pIdx = PARENT(_GetNode(pIdx))) {
-                    nodeCanBeErased[pIdx] = false;
+    // We can traverse without recursion or a stack by relying on the existing
+    // parent links.  The walk descends the first child chain, and on reaching a
+    // node with no children takes its next sibling, climbing parent links until
+    // it finds a node that has one.
+    _NodeIndexType nodeIdx = 0, nextIndex = 0;
+    bool isIdentity = true;
 
-                    // Since the node at pIdx is no longer being erased,
-                    // we need to ensure that all of its origins are also
-                    // not erased. See testPcpPrimIndex test case
-                    // test_PrimIndexCulling_SpecializesAncestralCulling2 for
-                    // an example where this matters.
-                    if (pIdx != nIdx) {
-                        processOriginChain(pIdx, processOriginChain);
-                    }
-                }
-            }
-
-            if (ORIGIN(_GetNode(nIdx)) == PARENT(_GetNode(nIdx))) {
-                break;
-            }
+    while (true) {
+        // Write the new index for every kept node.  Reading and then
+        // overwriting the node's own slot is safe because each node is visited
+        // exactly once and no other node's slot is consulted here.
+        if (nodeIndexMap[nodeIdx] != _erasedIndex) {
+            isIdentity &= (nodeIdx == nextIndex);
+            nodeIndexMap[nodeIdx] = nextIndex++;
         }
 
-    };
+        _Node::_Indexes const *indexes = &_GetNode(nodeIdx).indexes;
 
-    for (size_t i = 0; i < numNodes; ++i) {
-        if (ORIGIN(_GetNode(i)) == _Node::_invalidNodeIndex) {
+        // Descend.
+        if (indexes->firstChildIndex != _Node::_invalidNodeIndex) {
+            nodeIdx = indexes->firstChildIndex;
             continue;
         }
-        processOriginChain(i, processOriginChain);
-    }
 
-    // Now that we've determined which nodes can and can't be erased,
-    // create the node index mapping.
-    const size_t numNodesToCull = 
-        std::count(nodeCanBeErased.begin(), nodeCanBeErased.end(), true);
-    if (numNodesToCull == 0) {
-        return false;
-    }
+        // This node has no children so its subtree is done.  Climb until a node
+        // with an unvisited sibling turns up and go there.  Running out of
+        // parents at the root means the whole graph is done.
+        while (indexes->nextSiblingIndex == _Node::_invalidNodeIndex) {
+            if (nodeIdx == 0) {  // reached the root.
+                *numSurvivors = nextIndex;
 
-    size_t numCulledNodes = 0;
-    erasedIndexMapping->resize(numNodes);
+                // The mapping is only the identity if it also erases nothing;
+                // otherwise the pool has to shrink even when the surviving
+                // nodes keep their indexes.
+                return isIdentity && nextIndex == nodeIndexMap.size();
+            }
+            nodeIdx = indexes->arcParentIndex;
+            indexes = &_GetNode(nodeIdx).indexes;
+        }
+        nodeIdx = indexes->nextSiblingIndex;
+    }
+}
+
+void
+PcpPrimIndex_Graph
+::_ComputeErasableNodeMarks(TfSpan<_NodeIndexType> cullMarks) const
+{
+    TRACE_FUNCTION();
+
+    // A surviving node's parent and origin must themselves survive: Pcp relies
+    // on the chain of origins for strength ordering, so the keep-set is the
+    // closure of the non-culled nodes under the two rules:
+    //
+    //     X kept -> parent(X) kept
+    //     X kept -> origin(X) kept
+    //
+    // This function computes that closure, which is the smallest set satisfying
+    // them -- every node in it is forced by some non-culled node.
+    //
+    // Parent links always point to a smaller index, so a descending pass
+    // propagates the parent rule completely.  Origin links do not: they point
+    // forward for a quarter to a half of all nodes in measured workloads, and a
+    // forward write lands at an index the current sweep has already passed.  We
+    // detect that case and sweep again, which keeps the pass free of any
+    // assumption about link direction.  Nearly all graphs settle in one sweep.
+    //
+    // The repeated sweep is quadratic in the worst case -- as was the
+    // origin-chain walk it replaced.  If a workload ever shows high sweep
+    // counts, the cheap fix is to alternate the sweep direction once the first
+    // few sweeps have not converged: an ascending sweep propagates forward
+    // origin links in one pass, and only the already-passed test changes (idx >
+    // i becomes idx < i).
+
+    // Initialize every element before any reads -- callers may pass
+    // uninitialized memory.  _erasedIndex = erasable, 0 = non-erasable.
+    const size_t numNodes = _GetNumNodes();
+
+    bool anyCulled = false;
     for (size_t i = 0; i < numNodes; ++i) {
-        if (nodeCanBeErased[i]) {
-            (*erasedIndexMapping)[i] = _Node::_invalidNodeIndex;
-            ++numCulledNodes;
-        }
-        else {
-            (*erasedIndexMapping)[i] = i - numCulledNodes;
-        }
+        const bool culled = _unshared[i].culled;
+        anyCulled = anyCulled || culled;
+        cullMarks[i] = culled ? _erasedIndex : 0;
     }
 
-    return true;
+    // With nothing culled there is nothing to erase and nothing to propagate.
+    if (!anyCulled) {
+        return;
+    }
+
+    // Keep a node's parent and origin, reporting whether that flipped a mark at
+    // an index this sweep has already passed.
+    auto keep = [&cullMarks](size_t idx, size_t curIdx) {
+        if (idx == _erasedIndex || cullMarks[idx] != _erasedIndex) {
+            return false;
+        }
+        cullMarks[idx] = 0;
+        return idx > curIdx;
+    };
+
+    bool wroteVisited;
+    do {
+        wroteVisited = false;
+        for (size_t i = numNodes; i-- > 0; ) {
+            if (cullMarks[i] == _erasedIndex) {
+                continue;
+            }
+            _Node::_Indexes const &indexes = _GetNode(i).indexes;
+            // Don't replace with ||.  A short-circuit skips the second call.
+            wroteVisited |= keep(indexes.arcParentIndex, i);
+            wroteVisited |= keep(indexes.arcOriginIndex, i);
+        }
+    } while (wroteVisited);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

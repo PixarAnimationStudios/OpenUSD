@@ -19,6 +19,7 @@
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/refBase.h"
+#include "pxr/base/tf/span.h"
 
 #include <memory>
 #include <utility>
@@ -160,6 +161,18 @@ private:
     struct _ArcStrengthOrder;
     struct _Node;
 
+    // Type used to store a node index.  Node indexes are stored in the
+    // narrowest type that can hold them so that _Node packs tightly; the
+    // maximum node count is bounded by _Node::_invalidNodeIndex.  Declared here
+    // rather than in _Node so the private helpers below can name it.
+    using _NodeIndexType = uint16_t;
+
+    // Sentinel used in the node index mapping built during Finalize to mark a
+    // node that is being erased.  This is the same value as
+    // _Node::_invalidNodeIndex; node capacity is limited so that this is never
+    // a valid node index.
+    static constexpr _NodeIndexType _erasedIndex = _NodeIndexType(~0);
+
     // Private constructors -- use New instead.
     PcpPrimIndex_Graph(const PcpLayerStackSite& rootSite, bool usd);
     PcpPrimIndex_Graph(const PcpPrimIndex_Graph& rhs) = default;
@@ -182,36 +195,37 @@ private:
     template <class Predicate>
     std::pair<size_t, size_t> _FindRootChildRange(const Predicate& p) const;
 
-    // Helper functions to compute a mapping between node indexes and 
-    // the strength order of the corresponding node. 
-    //
-    // Returns: 
-    // True if the order of nodes in the node pool is the same as strength
-    // ordering, false otherwise.
-    // 
-    // nodeIndexToStrengthOrder[i] => strength order of node at index i.
-    bool _ComputeStrengthOrderIndexMapping(
-        std::vector<size_t>* nodeIndexToStrengthOrder) const;
-    bool _ComputeStrengthOrderIndexMappingRecursively(
-        size_t nodeIdx, size_t* strengthIdx,
-        std::vector<size_t>* nodeIndexToStrengthOrder) const;
+    // Helper function to mark which culled nodes can be erased from the graph.
+    // Writes every element of \p nodeIndexMap before reading any (callers may
+    // pass uninitialized memory).  On return, nodeIndexMap[i] == _erasedIndex
+    // marks node i as erasable; any other value means it must be kept.
+    void _ComputeErasableNodeMarks(TfSpan<_NodeIndexType> nodeIndexMap) const;
 
-    // Helper function to compute a node index mapping that erases nodes
-    // that have been marked for culling.
+    // Assigns each surviving node its new index, in strength order.  Walks the
+    // graph in strength order (a preorder traversal of the child lists) and
+    // hands out dense, ascending indexes to the nodes not marked erased by
+    // _ComputeErasableNodeMarks, rewriting \p nodeIndexMap in place:
+    // on input nodeIndexMap[i] is the erasure mark for node i, on output it is
+    // that node's new index, or _erasedIndex if it is being erased.
+    //
+    // \p numSurvivors is set to the number of nodes that survive.
     //
     // Returns:
-    // True if any nodes marked for culling can be erased, false otherwise.
-    // culledNodeMapping[i] => index of node i after culled nodes are erased.
-    bool _ComputeEraseCulledNodeIndexMapping(
-        std::vector<size_t>* culledNodeMapping) const;
+    // True if the mapping is the identity -- the pool is already in strength
+    // order and nothing is erased -- false otherwise.
+    bool _ComputeNewNodeIndexes(
+        TfSpan<_NodeIndexType> nodeIndexMap, size_t *numSurvivors) const;
 
-    // Transforms the node pool by applying the given node index mapping.
-    // References to to other nodes in the pool are fixed up appropriately.
+    // Transforms the node pool by applying the given node index mapping,
+    // producing a pool ordered strong-to-weak containing only the surviving
+    // nodes.  References to other nodes in the pool are fixed up appropriately.
     //
-    // \p nodeIndexMap is a vector of the same size as the node pool, where
-    // \p nodeIndexMap[i] => new position of node i. 
-    // If \p nodeIndexMap[i] == _invalidNodeIndex, that node will be erased.
-    void _ApplyNodeIndexMapping(const std::vector<size_t>& nodeIndexMap);
+    // \p nodeIndexMap has the same size as the node pool, where
+    // \p nodeIndexMap[i] => new position of node i.
+    // If \p nodeIndexMap[i] == _erasedIndex, that node will be erased.
+    // \p newNumNodes is the number of surviving nodes.
+    void _ApplyNodeIndexMapping(
+        TfSpan<const _NodeIndexType> nodeIndexMap, size_t newNumNodes);
 
 private:
     // PcpNodeRef is allowed to reach directly into the node pool to get/set
@@ -258,7 +272,7 @@ private:
         static const size_t _depthSize     = 16;
         // These types should be just large enough to hold the above sizes.
         // This allows this structure to be packed into less space.
-        using _NodeIndexType = uint16_t;
+        using _NodeIndexType = PcpPrimIndex_Graph::_NodeIndexType;
         using _DepthSizeType = uint16_t;
 
         // Index used to represent an invalid node.

@@ -579,9 +579,10 @@ def PatchFile(filename, patches, multiLineMatches=False):
 def DownloadFileWithCurl(url, outputFilename):
     # Don't log command output so that curl's progress
     # meter doesn't get written to the log file.
+    # Only use curl's progress-bar meter (-#) on an interactive terminal.
     Run("curl {progress} -L -o {filename} {url}".format(
-        progress="-#" if verbosity >= 2 else "-s",
-        filename=outputFilename, url=url), 
+        progress="-#" if verbosity >= 2 and sys.stdout.isatty() else "-s",
+        filename=outputFilename, url=url),
         logCommandOutput=False)
 
 def DownloadFileWithPowershell(url, outputFilename):
@@ -938,14 +939,6 @@ def InstallBoost_Helper(context, force, buildArgs):
             '--with-regex'
         ]
 
-        if context.buildOIIO:
-            b2_settings.append("--with-date_time")
-
-        if context.buildOIIO or context.enableOpenVDB:
-            b2_settings.append("--with-chrono")
-            b2_settings.append("--with-system")
-            b2_settings.append("--with-thread")
-
         if context.enableOpenVDB:
             b2_settings.append("--with-iostreams")
 
@@ -961,9 +954,6 @@ def InstallBoost_Helper(context, force, buildArgs):
             # exclude the bzip2 compression from boost_iostreams (note that
             # OpenVDB uses blosc compression).
             b2_settings.append("-sNO_BZIP2=1")
-
-        if context.buildOIIO:
-            b2_settings.append("--with-filesystem")
 
         if force:
             b2_settings.append("-a")
@@ -1426,28 +1416,15 @@ BLOSC = Dependency("Blosc", InstallBLOSC, "include/blosc.h")
 ############################################################
 # OpenVDB
 
-OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v10.1.0.zip"
+OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v12.1.1.zip"
 
 def InstallOpenVDB(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OPENVDB_URL, context, force)):
-        # Back-port patch from OpenVDB PR #1977 to avoid errors when building
-        # with Xcode 16.3+. This fix is anticipated to be part of an OpenVDB
-        # 12.x release, which is in the VFX Reference Platform CY2025 and is
-        # several major versions ahead of what we currently use.
-        PatchFile("openvdb/openvdb/tree/NodeManager.h",
-                  [("OpT::template eval", "OpT::eval")])
-
-        # Replace BOOST_STATIC_ASSERT to workaround an "identifier not found"
-        # build failure on Windows with Visual Studio 2022. This change already
-        # exists upstream in OpenVDB 11.0.0+.
-        PatchFile("openvdb/openvdb/tools/VelocityFields.h",
-                  [("BOOST_STATIC_ASSERT(OrderRK <= 4);",
-                    "static_assert(OrderRK <= 4);")])
-
         extraArgs = [
             '-DOPENVDB_BUILD_PYTHON_MODULE=OFF',
             '-DOPENVDB_BUILD_BINARIES=OFF',
-            '-DOPENVDB_BUILD_UNITTESTS=OFF'
+            '-DOPENVDB_BUILD_UNITTESTS=OFF',
+            '-DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON',
         ]
 
         # Make sure to use boost installed by the build script and not any
@@ -1457,9 +1434,6 @@ def InstallOpenVDB(context, force, buildArgs):
         extraArgs.append('-DBLOSC_ROOT="{instDir}"'
                          .format(instDir=context.instDir))
         extraArgs.append('-DTBB_ROOT="{instDir}"'
-                         .format(instDir=context.instDir))
-        # OpenVDB needs Half type from IlmBase
-        extraArgs.append('-DILMBASE_ROOT="{instDir}"'
                          .format(instDir=context.instDir))
 
         # Add on any user-specified extra arguments.
@@ -1472,7 +1446,7 @@ OPENVDB = Dependency("OpenVDB", InstallOpenVDB, "include/openvdb/openvdb.h")
 ############################################################
 # OpenImageIO
 
-OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/refs/tags/v2.5.16.0.zip"
+OIIO_URL = "https://github.com/AcademySoftwareFoundation/OpenImageIO/archive/refs/tags/v3.1.8.0.zip"
 
 def InstallOpenImageIO(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
@@ -1504,13 +1478,6 @@ def InstallOpenImageIO(context, force, buildArgs):
         if not context.enablePtex:
             extraArgs.append('-DUSE_PTEX=OFF')
 
-        # Make sure to use boost installed by the build script and not any
-        # system installed boost
-        extraArgs.append('-DBoost_NO_SYSTEM_PATHS=ON')
-        # OIIO 2.5.16 requires Boost_NO_BOOST_CMAKE to be explicitly defined,
-        # else it sets it to ON.
-        extraArgs.append('-DBoost_NO_BOOST_CMAKE=OFF')
-
         # OpenImageIO 2.3.5 changed the default postfix for debug library
         # names from "" to "_d". USD's build system currently does not support
         # finding the library under this name, so as an interim workaround
@@ -1533,10 +1500,7 @@ OPENIMAGEIO = Dependency("OpenImageIO", InstallOpenImageIO,
 ############################################################
 # OpenColorIO
 
-if MacOS():
-    OCIO_URL = "https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v2.4.2.zip"
-else:
-    OCIO_URL = "https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v2.2.1.zip"
+OCIO_URL = "https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v2.4.2.zip"
 
 def InstallOpenColorIO(context, force, buildArgs):
     # build ocio dest file name based on the OCIO_URL version
@@ -1674,7 +1638,7 @@ PYSIDE = PythonDependency("PySide", GetPySideInstructions,
 ############################################################
 # Alembic
 
-ALEMBIC_URL = "https://github.com/alembic/alembic/archive/refs/tags/1.8.5.zip"
+ALEMBIC_URL = "https://github.com/alembic/alembic/archive/refs/tags/1.8.10.zip"
 
 def InstallAlembic(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ALEMBIC_URL, context, force)):
@@ -2389,7 +2353,7 @@ subgroup.add_argument("--no-materialx", dest="build_materialx", action="store_fa
 group = parser.add_argument_group(title="TBB Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--onetbb", dest="build_onetbb", action="store_true",
-                      default=False,
+                      default=True,
                       help="Build using oneTBB instead of TBB")
 subgroup.add_argument("--no-onetbb", dest="build_onetbb", action="store_false",
                       help="Build using TBB (default)")
@@ -2643,7 +2607,7 @@ if context.buildImaging:
     requiredDependencies += [OPENSUBDIV]
 
     if context.enableOpenVDB:
-        requiredDependencies += [ZLIB, TBB, BLOSC, BOOST, OPENEXR, OPENVDB]
+        requiredDependencies += [ZLIB, TBB, BLOSC, BOOST, OPENVDB]
     
     # When OCIO is required, we need to make sure it's built before OIIO, since
     # OIIO is dependent on OCIO.
@@ -2651,7 +2615,7 @@ if context.buildImaging:
         requiredDependencies += [ZLIB, OPENCOLORIO]
 
     if context.buildOIIO:
-        requiredDependencies += [ZLIB, BOOST, JPEG, TIFF, PNG, OPENEXR, OPENIMAGEIO]
+        requiredDependencies += [ZLIB, JPEG, TIFF, PNG, OPENEXR, OPENIMAGEIO]
 
     if context.buildEmbree:
         requiredDependencies += [TBB, EMBREE]

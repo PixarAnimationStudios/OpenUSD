@@ -7,7 +7,7 @@
 
 #include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/glf/testGLContext.h"
+#include "pxr/imaging/garch/glDebugWindow.h"
 
 #include "pxr/base/tf/errorMark.h"
 #include <iostream>
@@ -98,9 +98,9 @@ int main(int argc, char **argv)
 {
     TfErrorMark mark;
 
-    GlfTestGLContext::RegisterGLContextCallbacks();
+    GarchGLDebugWindow window("Hd Test", 512, 512);
+    window.Init();
     GarchGLApiLoad();
-    GlfSharedGLContextScopeHolder sharedContext;
 
     TestAttribStack();
 

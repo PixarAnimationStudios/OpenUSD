@@ -187,6 +187,7 @@ pxr_plugin(${PXR_PACKAGE}
         cameraContext
         debugUtil
         extComputationPrimvarPruningSceneIndexPlugin
+        fallbackMaterialsSceneIndexPlugin
         framebuffer
         idSceneIndexPlugin
         implicitSurfaceSceneIndexPlugin
@@ -194,6 +195,7 @@ pxr_plugin(${PXR_PACKAGE}
         motionBlurSceneIndexPlugin
         particleFieldConversionSceneIndexPlugin
         pinnedCurveExpandingSceneIndexPlugin
+        pxr/imaging/hdsi/pinnedCurveExpandingSceneIndex
         previewSurfacePrimvarsSceneIndexPlugin
         renderBuffer
         renderParam
@@ -235,6 +237,7 @@ pxr_plugin(${PXR_PACKAGE}
         updateObjectSettingsSceneIndexPlugin
         utils
         velocityMotionResolvingSceneIndexPlugin
+        pxr/imaging/hdsi/velocityMotionResolvingSceneIndex
         virtualStructResolvingSceneIndex
 
     PUBLIC_HEADERS

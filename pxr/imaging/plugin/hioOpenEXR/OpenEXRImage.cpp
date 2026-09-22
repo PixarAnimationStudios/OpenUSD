@@ -11,8 +11,13 @@
 // symbols themselves are declared static for inclusion within Hio.
 // Therefore, the unused function warning is suppressed as the messages are
 // not useful for development, as it is expected that many functions are
-// defined but not referenced or exported.
+// defined but not referenced or exported. This pragma must be applied before
+// including the OpenEXR headers, because clang attributes the
+// -Wunused-function diagnostic to the declaration site in those headers.
 ARCH_PRAGMA_UNUSED_FUNCTION
+
+#include "OpenEXR/OpenEXRCore/openexr_errors.h"
+#include <new>
 
 #include "pxr/imaging/hio/image.h"
 #include "pxr/imaging/hio/types.h"
@@ -186,10 +191,11 @@ namespace {
     {
     public:
         // Flip the image in-place.
-        static void FlipImage(T* buffer, int width, int height, int channelCount)
+        static void FlipImage(T* buffer, uint64_t width, uint64_t height, 
+                              int channelCount)
         {
             // use std::swap_ranges to flip the image in-place
-            for (int y = 0; y < height / 2; ++y) {
+            for (uint64_t y = 0; y < height / 2; ++y) {
                 std::swap_ranges(
                                  buffer + y * width * channelCount,
                                  buffer + (y + 1) * width * channelCount,
@@ -199,20 +205,22 @@ namespace {
         
         // Crop the image in-place.
         static void CropImage(T* buffer, 
-                              int width, int height, int channelCount,
+                              uint64_t width, uint64_t height, 
+                              int channelCount,
                               int cropTop, int cropBottom,
                               int cropLeft, int cropRight)
         {
-            int newWidth = width - cropLeft - cropRight;
-            int newHeight = height - cropTop - cropBottom;
-            
-            if (newWidth <= 0 || newHeight <= 0
+            int64_t newWidthS = width - cropLeft - cropRight;
+            int64_t newHeightS = height - cropTop - cropBottom;
+            uint64_t newWidth = static_cast<uint64_t>(newWidthS);
+            uint64_t newHeight = static_cast<uint64_t>(newHeightS);
+            if (newWidthS <= 0 || newHeightS <= 0
                 || (newWidth == width && newHeight == height)) {
                 return;
             }
             
-            for (int y = 0; y < newHeight; ++y) {
-                for (int x = 0; x < newWidth; ++x) {
+            for (uint64_t y = 0; y < newHeight; ++y) {
+                for (uint64_t x = 0; x < newWidth; ++x) {
                     for (int c = 0; c < channelCount; ++c) {
                         buffer[(y * newWidth + x) * channelCount + c] =
                         buffer[((y + cropTop) * width + x + cropLeft)
@@ -223,25 +231,27 @@ namespace {
         }
         
         static void HalfToFloat(GfHalf* buffer, float* outBuffer,
-                                int width, int height, int channelCount)
+                                uint64_t width, uint64_t height, 
+                                int channelCount)
         {
             if (!buffer || !outBuffer) {
                 return;
             }
             
-            for (int i = 0; i < width * height * channelCount; ++i) {
+            for (uint64_t i = 0; i < width * height * channelCount; ++i) {
                 outBuffer[i] = buffer[i];
             }
         }
         
         static void FloatToHalf(float* buffer, GfHalf* outBuffer,
-                                int width, int height, int channelCount)
+                                uint64_t width, uint64_t height, 
+                                int channelCount)
         {
             if (!buffer || !outBuffer) {
                 return;
             }
             
-            for (int i = 0; i < width * height * channelCount; ++i) {
+            for (uint64_t i = 0; i < width * height * channelCount; ++i) {
                 outBuffer[i] = buffer[i];
             }
         }
@@ -264,50 +274,90 @@ bool Hio_OpenEXRImage::ReadCropped(
     }
 
     // cache values for the read/crop/resize pipeline
+    // after range checking
 
-    int fileWidth =  _exrReader.width;
-    int fileHeight = _exrReader.height;
-    int fileChannelCount = _exrReader.channelCount;
+    // test zero and negative limits
+    if (_exrReader.width <= 0 || _exrReader.height <= 0 ||
+        _exrReader.channelCount <= 0) {
+        TF_RUNTIME_ERROR("All EXR dimensions must be greater than zero (%d, %d / %d): %s",
+                          _exrReader.width, _exrReader.height, 
+                          _exrReader.channelCount, _exrReader.filename);
+        return false;
+    }
+    
+    const uint64_t fileWidth = static_cast<uint64_t>(_exrReader.width);
+    const uint64_t fileHeight = static_cast<uint64_t>(_exrReader.height);
+    const uint64_t fileChannelCount = static_cast<uint64_t>(_exrReader.channelCount);
+
+    // OpenEXR files should not exceed this dimension in width or height,
+    // 32 bit EXR readers and writers are common.
+    constexpr uint64_t maxPixelExtent = 1ULL << 32;  
+    constexpr uint64_t maxFileChannelCount = 1ULL << 32;
+
+    // test dimension limits
+    if (fileWidth >= maxPixelExtent || fileHeight >= maxPixelExtent) {
+        TF_RUNTIME_ERROR("EXR dimensions are greater than 32 bit limits (%"
+                          PRIu64 ", %" PRIu64 "): %s",
+                          fileWidth, fileHeight, _exrReader.filename);
+        return false;
+    }
+    if (fileChannelCount >= maxFileChannelCount) {
+        TF_RUNTIME_ERROR("EXR channel count requires more than 32 bits to "
+                         "represent %" PRIu64 ": %s",
+                         fileChannelCount, _exrReader.filename);
+        return false;
+    }
+
     exr_pixel_type_t filePixelType = _exrReader.pixelType;
+    bool inputIsHalf =  filePixelType == EXR_PIXEL_HALF;
+    bool inputIsFloat = filePixelType == EXR_PIXEL_FLOAT;
+    bool inputIsUInt =  filePixelType == EXR_PIXEL_UINT;
+    
+    uint64_t outWidth =  storage.width;
+    uint64_t outHeight = storage.height;
+    uint32_t outChannelCount = HioGetComponentCount(storage.format);
 
-    int outWidth =  storage.width;
-    int outHeight = storage.height;
-    int outChannelCount = HioGetComponentCount(storage.format);
-
-    bool inputIsHalf =   filePixelType == EXR_PIXEL_HALF;
-    bool inputIsFloat =  filePixelType == EXR_PIXEL_FLOAT;
-    bool inputIsUInt =    filePixelType == EXR_PIXEL_UINT;
     bool outputIsFloat = HioGetHioType(storage.format) == HioTypeFloat;
     bool outputIsHalf =  HioGetHioType(storage.format) == HioTypeHalfFloat;
     bool outputIsUInt =  HioGetHioType(storage.format) == HioTypeUnsignedInt;
 
     // no conversion to anything except these formats
     if (!(outputIsHalf || outputIsFloat || outputIsUInt)) {
+        TF_RUNTIME_ERROR("EXR images can only be converted to half, float or uint: %s",
+                         _exrReader.filename);
         return false;
     }
 
     // no conversion to uint from non uint
     if (outputIsUInt && !inputIsUInt) {
+        TF_RUNTIME_ERROR("EXR cannot convert to uint from a float format: %s",
+                         _exrReader.filename);
         return false;
     }
 
     // no coversion of non float to float
     if (outputIsFloat && !(inputIsFloat || inputIsHalf)) {
+        TF_RUNTIME_ERROR("EXR cannot to float from uint: %s",
+                         _exrReader.filename);
         return false;
     }
 
     int outputBytesPerPixel = 
 	    (int) HioGetDataSizeOfType(storage.format) * outChannelCount;
 
-    int readWidth = fileWidth - cropLeft - cropRight;
-    int readHeight = fileHeight - cropTop - cropBottom;
-    if (readHeight <= 0 || readWidth <= 0) {
+    if (fileWidth <= (uint64_t) (cropLeft + cropRight) ||
+        fileHeight <= (uint64_t) (cropTop + cropBottom)) {
+        // if the image is completely cropped, just clear the output buffer.
         memset(storage.data, 0, outWidth * outHeight * outputBytesPerPixel);
         return true;
-    }
+    } 
+
+    uint64_t readWidth = fileWidth - cropLeft - cropRight;
+    uint64_t readHeight = fileHeight - cropTop - cropBottom;
     bool resizing = (readWidth != outWidth) || (readHeight != outHeight);
     if (outputIsUInt && resizing) {
-        // resizing is not supported for uint types.
+        TF_RUNTIME_ERROR("Cannot resize uint image target to read %s",
+                         _exrReader.filename);
         return false;
     }
     
@@ -323,6 +373,9 @@ bool Hio_OpenEXRImage::ReadCropped(
                                            outChannelCount,
                                            partIndex, _mip);
         if (rv != EXR_ERR_SUCCESS) {
+            nanoexr_release_image_data(&img);
+            TF_RUNTIME_ERROR("EXR could not read (%s) because %s",
+                _exrReader.filename, nanoexr_get_default_error_message(rv));
             return false;
         }
         ImageProcessor<uint32_t>::CropImage(reinterpret_cast<uint32_t*>(img.data),
@@ -345,14 +398,29 @@ bool Hio_OpenEXRImage::ReadCropped(
 
     // ensure there's enough memory for the greater of input and output channel
     // count, for in place conversions.
-    int maxChannelCount = std::max(fileChannelCount, outChannelCount);
+    uint32_t maxChannelCount = std::max((uint32_t) fileChannelCount, outChannelCount);
     std::vector<GfHalf> halfInputBuffer;
     if (inputIsHalf) {
-        halfInputBuffer.resize(fileWidth * fileHeight * maxChannelCount);
+        try {
+            halfInputBuffer.resize(fileWidth * fileHeight * maxChannelCount);
+        } catch (const std::exception& e) {
+            TF_RUNTIME_ERROR("Could not allocate memory to convert: %s "
+                             "because: %s", _exrReader.filename, e.what());
+
+            return false;
+        }
     }
+
     std::vector<float> floatInputBuffer;
     if (inputIsFloat || (inputIsHalf && (resizing || outputIsFloat))) {
-        floatInputBuffer.resize(fileWidth * fileHeight * maxChannelCount);
+        try {
+            floatInputBuffer.resize(fileWidth * fileHeight * maxChannelCount);
+        } catch (const std::exception& e) {
+            TF_RUNTIME_ERROR("Could not allocate memory to convert: %s "
+                             "because: %s", _exrReader.filename, e.what());
+
+            return false;
+        }
     }
 
     {
@@ -363,6 +431,8 @@ bool Hio_OpenEXRImage::ReadCropped(
                                            &img, nullptr, 
                                            outChannelCount, partIndex, _mip);
         if (rv != EXR_ERR_SUCCESS) {
+            TF_RUNTIME_ERROR("EXR could not read (%s) because %s",
+                _exrReader.filename, nanoexr_get_default_error_message(rv));
             return false;
         }
 
@@ -405,8 +475,8 @@ bool Hio_OpenEXRImage::ReadCropped(
     }
 
     if (!resizing) {
-        uint32_t outSize = outWidth * outHeight * outputBytesPerPixel;
-        uint32_t outCount = outWidth * outHeight * outChannelCount;
+        uint64_t outSize = outWidth * outHeight * outputBytesPerPixel;
+        uint64_t outCount = outWidth * outHeight * outChannelCount;
         if (inputIsHalf && outputIsHalf) {
             memcpy(reinterpret_cast<void*>(storage.data),
                halfInputBuffer.data(), outSize);
@@ -418,13 +488,13 @@ bool Hio_OpenEXRImage::ReadCropped(
         else if (outputIsFloat) {
             GfHalf* src = halfInputBuffer.data();
             float* dst = reinterpret_cast<float*>(storage.data);
-            for (size_t i = 0; i < outCount; ++i)
+            for (uint64_t i = 0; i < outCount; ++i)
                 dst[i] = src[i];
         }
         else {
             float* src = floatInputBuffer.data();
             GfHalf* dst = reinterpret_cast<GfHalf*>(storage.data);
-            for (size_t i = 0; i < outCount; ++i)
+            for (uint64_t i = 0; i < outCount; ++i)
                 dst[i] = src[i];
         }
         return true;
@@ -445,14 +515,14 @@ bool Hio_OpenEXRImage::ReadCropped(
     nanoexr_ImageData_t src = { 0 };
     src.data = reinterpret_cast<uint8_t*>(&floatInputBuffer[0]);
     src.channelCount = fileChannelCount;
-    src.dataSize = readWidth * readHeight * GetBytesPerPixel();
+    src.dataSize = (size_t) readWidth * readHeight * GetBytesPerPixel();
     src.pixelType = EXR_PIXEL_FLOAT;
     src.width = readWidth;
     src.height = readHeight;
 
     nanoexr_ImageData_t dst = { 0 };
     dst.channelCount = outChannelCount;
-    dst.dataSize = outWidth * outHeight * outChannelCount * sizeof(float);
+    dst.dataSize = (size_t) outWidth * outHeight * outChannelCount * sizeof(float);
     dst.pixelType = EXR_PIXEL_FLOAT;
     dst.width = outWidth;
     dst.height = outHeight;
@@ -741,10 +811,13 @@ void Hio_OpenEXRImage::_AttributeReadCallback(void* self_, exr_context_t exr) {
 bool Hio_OpenEXRImage::_OpenForReading(std::string const &filename,
                                        int subimage, int mip,
                                        SourceColorSpace sourceColorSpace,
-                                       bool /*suppressErrors*/)
+                                       bool suppressErrors)
 {
     _asset = ArGetResolver().OpenAsset(ArResolvedPath(filename));
     if (!_asset) {
+        if (!suppressErrors) {
+            TF_RUNTIME_ERROR("Asset resolver cannot find %s", filename.c_str());
+        }
         return false;
     }
 
@@ -755,16 +828,25 @@ bool Hio_OpenEXRImage::_OpenForReading(std::string const &filename,
 
     nanoexr_set_defaults(_filename.c_str(), &_exrReader);
 
-    int rv = nanoexr_read_header(&_exrReader, exr_AssetRead_Func,
+    nanoexr_ErrorCode_t rv = nanoexr_read_header(&_exrReader, exr_AssetRead_Func,
                                  _AttributeReadCallback, this,
                                  _subimage);
-    if (rv != 0) {
-        TF_DIAGNOSTIC_WARNING("Cannot open image \"%s\" for reading, %s",
-                        filename.c_str(), nanoexr_get_error_code_as_string(rv));
+    if (rv.exrErrorCode != 0) {
+        if (!suppressErrors) {
+            TF_RUNTIME_ERROR("Cannot open image \"%s\" for reading, "
+                             " operation: %s. result: %s",
+                             filename.c_str(), 
+                             nanoexr_get_default_aux_message(rv.nanoexrAuxCode),
+                             nanoexr_get_error_code_as_string(rv.exrErrorCode));
+        }
         return false;
     }
 
     if (_exrReader.numMipLevels <= mip) {
+        if (!suppressErrors) {
+            TF_RUNTIME_ERROR("Image \"%s\" has only %d mips, but %d were requested",
+                             filename.c_str(), _exrReader.numMipLevels, mip);
+        }
         return false;
     }
     
@@ -835,7 +917,6 @@ bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
                              VtDictionary const &metadata)
 {
     _callbackDict = &metadata;
-    exr_result_t rv;
     const HioType type = HioGetHioType(storage.format);
     int32_t pxsize = type == HioTypeFloat ? sizeof(float) : sizeof(GfHalf);
     int32_t ch = HioGetComponentCount(storage.format);
@@ -845,13 +926,15 @@ bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
         // glf will attempt to write 8 bit unsigned frame buffer data to exr
         // files, so promote the pixels to float16.
         int32_t ch = HioGetComponentCount(storage.format);
-        std::vector<GfHalf> pixels(storage.width * storage.height * ch);
+        uint64_t w = static_cast<uint64_t>(storage.width);
+        uint64_t h = static_cast<uint64_t>(storage.height);
+        std::vector<GfHalf> pixels(w * h * ch);
         const uint8_t* src = reinterpret_cast<const uint8_t*>(storage.data);
         GfHalf* dst = pixels.data();
-        for (int i = 0; i < storage.width * storage.height * ch; ++i) {
+        for (uint64_t i = 0; i < w * h * ch; ++i) {
             *dst++ = GfHalf(*src++) / 255.0f;
         }
-        int pixMul = 0;
+        uint64_t pixMul = 0;
         uint8_t* red = nullptr;
         uint8_t* green = nullptr;
         uint8_t* blue = nullptr;
@@ -872,7 +955,7 @@ bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
             alpha = (uint8_t*) pixels.data() + (pxsize * pixMul);
             ++pixMul;
         }
-        rv = nanoexr_write_exr(
+        auto rv = nanoexr_write_exr(
                 _filename.c_str(),
                 _AttributeWriteCallback, this,
                 storage.width, storage.height, storage.flipped,
@@ -882,7 +965,15 @@ bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
                 (uint8_t*) blue,  pixelStride, lineStride,
                 (uint8_t*) alpha, pixelStride, lineStride);
         _callbackDict = nullptr;
-        return rv == EXR_ERR_SUCCESS;
+
+        if (rv.exrErrorCode != EXR_ERR_SUCCESS) {
+            TF_RUNTIME_ERROR("Could not write EXR file, %s, %s",
+                nanoexr_get_default_aux_message(rv.nanoexrAuxCode),
+                nanoexr_get_default_error_message(rv.exrErrorCode));
+            return false;
+        }
+        
+        return true;
     }
     else if (type != HioTypeFloat && type != HioTypeHalfFloat) {
         TF_CODING_ERROR("Unsupported pixel type %d", type);
@@ -891,7 +982,7 @@ bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
     }
 
     uint8_t* pixels = reinterpret_cast<uint8_t*>(storage.data);
-    int pixMul = 0;
+    uint64_t pixMul = 0;
     uint8_t* red = nullptr;
     uint8_t* green = nullptr;
     uint8_t* blue = nullptr;
@@ -913,6 +1004,7 @@ bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
         ++pixMul;
     }
 
+    nanoexr_ErrorCode_t rv;
     if (type == HioTypeFloat) {
         rv = nanoexr_write_exr(
                 _filename.c_str(),
@@ -937,7 +1029,14 @@ bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
     }
 
     _callbackDict = nullptr;
-    return rv == EXR_ERR_SUCCESS;
+    if (rv.exrErrorCode != EXR_ERR_SUCCESS) {
+        TF_RUNTIME_ERROR("Could not write EXR file, %s, %s",
+            nanoexr_get_default_aux_message(rv.nanoexrAuxCode),
+            nanoexr_get_default_error_message(rv.exrErrorCode));
+        return false;
+    }
+    
+    return true;
 }
 
 bool Hio_OpenEXRImage::_OpenForWriting(std::string const &filename)

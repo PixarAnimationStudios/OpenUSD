@@ -95,6 +95,10 @@ struct HdSt_ShaderKey {
     virtual uint32_t GetVertexCountFallback() const;
     HDST_API
     virtual const TfToken GetDepthQualifier() const;
+    // Returns whether hardware user-defined clip planes (gl_ClipDistance)
+    // handling should be enabled.
+    HDST_API
+    virtual bool UseHardwareClipPlanes() const;
     // Returns the face-varying patch type used in code gen during creation
     // of the face-varying primvar accessors. Only relevant for mesh prims with 
     // face-varying primvars.

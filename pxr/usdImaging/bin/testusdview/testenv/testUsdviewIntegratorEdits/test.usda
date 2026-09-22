@@ -90,7 +90,7 @@ def Scope "Material"
         def Shader "Texture"
         {
             uniform token info:id = "PxrTexture"
-            token inputs:filename = "grid_t"
+            asset inputs:filename = @grid_t@
             color3f outputs:resultRGB
         }
     }

@@ -16,19 +16,19 @@ Our test machines have the following software versions installed.
 | OS             | AlmaLinux 9.5        | 15.4.1                       | Windows 11                     |
 | C++ Compiler   | gcc 11.5.0           | Apple clang 16.0.0 (Xcode 16)| Visual Studio 2022 17.14       |
 | CMake          | 3.30.4               | 3.27.9                       | 3.27.9                         |
-| Python         | 3.9.16               | 3.9.13                       | 3.9.13                         |
+| Python         | 3.11.11              | 3.11.9                       | 3.11.9                         |
 | Intel TBB      | 2020.3               | 2020.3                       | 2020.3                         |
-| OneTBB         | 2021.9               | 2021.9                       | 2021.9                         |
+| OneTBB         | 2021.12.0            | 2021.12.0                    | 2021.12.0                      |
 | OpenSubdiv     | 3.6.1                | 3.6.1                        | 3.6.1                          |
-| OpenImageIO    | 2.5.16.0             | 2.5.16.0                     | 2.5.16.0                       |
-| OpenColorIO    | 2.2.1                | 2.4.2                        | 2.2.1                          |
+| OpenImageIO    | 3.1.8.0              | 3.1.8.0                      | 3.1.8.0                        |
+| OpenColorIO    | 2.4.2                | 2.4.2                        | 2.4.2                          |
 | OSL            | 1.13.11              |                              |                                |
 | Ptex           | 2.4.2                | 2.4.2                        | 2.4.2                          |
-| Qt for Python  | PySide2 5.15.2.1     | PySide6 6.3.1                | PySide2 5.15.2.1               |
+| Qt for Python  | PySide6 6.11.2       | PySide6 6.11.2               | PySide6 6.11.2                 |
 | PyOpenGL       | 3.1.5                | 3.1.5                        | 3.1.5                          |
 | Embree         | 4.3.3                | 4.3.3                        | 4.3.3                          |
 | RenderMan      | 26.3, 27.0           | 26.3, 27.0                   | 26.3, 27.0                     |
-| Alembic        | 1.8.5                | 1.8.5                        | 1.8.5                          |
+| Alembic        | 1.8.10               | 1.8.10                       | 1.8.10                         |
 | OpenEXR        | 3.1.13               | 3.1.13                       | 3.1.13                         |
 | MaterialX      | 1.39.5               | 1.39.5                       | 1.39.5                         |
 | Jinja2         | 3.1.2                |                              |                                |
@@ -36,7 +36,7 @@ Our test machines have the following software versions installed.
 | Bison          | 2.4.1                |                              |                                |
 | Doxygen        | 1.9.6                |                              |                                |
 | GraphViz       | 2.40.1               |                              |                                |
-| OpenVDB        | 10.1.0               | 10.1.0                       | 10.1.0                         |
+| OpenVDB        | 12.1.1               | 12.1.1                       | 12.1.1                         |
 | Vulkan SDK     | 1.4.321.0            | 1.4.321.0                    | 1.4.321.0                      |
 | Draco          | 1.5.6                | 1.5.6                        | 1.5.6                          |
 | Emscripten SDK | 5.0.7                |                              |                                |

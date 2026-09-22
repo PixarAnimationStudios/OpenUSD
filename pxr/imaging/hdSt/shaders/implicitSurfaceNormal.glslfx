@@ -1,0 +1,28 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2026 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/implicitSurfaceNormal.glslfx
+
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurfaceNormal.Fragment.SingleSided
+
+vec3 GetShadingNormal(vec3 N, bool frontFacing)
+{
+    return N;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurfaceNormal.Fragment.DoubleSided
+
+vec3 GetShadingNormal(vec3 N, bool frontFacing)
+{
+    return frontFacing ? N : -N;
+}

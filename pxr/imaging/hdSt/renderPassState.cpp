@@ -6,8 +6,6 @@
 //
 #include "pxr/imaging/garch/glApi.h"
 
-#include "pxr/imaging/glf/diagnostic.h"
-
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
@@ -70,19 +68,12 @@ HdStRenderPassState::HdStRenderPassState(
     , _renderPassShader(renderPassShader)
     , _fallbackLightingShader(std::make_shared<HdSt_FallbackLightingShader>())
     , _clipPlanesBufferSize(0)
-    , _alphaThresholdCurrent(0)
     , _resolveMultiSampleAov(true)
 {
     _lightingShader = _fallbackLightingShader;
 }
 
 HdStRenderPassState::~HdStRenderPassState() = default;
-
-bool
-HdStRenderPassState::_UseAlphaMask() const
-{
-    return (_alphaThreshold > 0.0f);
-}
 
 unsigned int
 HdStRenderPassState::_GetFramebufferHeight() const
@@ -233,7 +224,6 @@ HdStRenderPassState::Prepare(
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
     HdRenderPassState::Prepare(resourceRegistry);
 
@@ -256,8 +246,7 @@ HdStRenderPassState::Prepare(
 
     // allocate bar if it does not exist
     if (!_renderPassStateBar ||
-        _clipPlanesBufferSize < clipPlanes.size() ||
-        _alphaThresholdCurrent != _alphaThreshold) {
+        _clipPlanesBufferSize < clipPlanes.size()) {
         HdBufferSpecVector bufferSpecs;
 
         // note: InterleavedMemoryManager computes the offsets in the packed
@@ -320,12 +309,9 @@ HdStRenderPassState::Prepare(
             HdShaderTokens->multisampleCount,
             HdTupleType{HdTypeUInt32, 1});
 
-        if (_UseAlphaMask()) {
-            bufferSpecs.emplace_back(
-                HdShaderTokens->alphaThreshold,
-                HdTupleType{HdTypeFloat, 1});
-        }
-        _alphaThresholdCurrent = _alphaThreshold;
+        bufferSpecs.emplace_back(
+            HdShaderTokens->alphaThreshold,
+            HdTupleType{HdTypeFloat, 1});
 
         bufferSpecs.emplace_back(
             HdShaderTokens->tessLevel,
@@ -473,12 +459,10 @@ HdStRenderPassState::Prepare(
             HdShaderTokens->multisampleCount,
             VtValue(multisampleCount)));
 
-    if (_UseAlphaMask()) {
-        sources.push_back(
-            std::make_shared<HdVtBufferSource>(
-                HdShaderTokens->alphaThreshold,
-                VtValue(_alphaThreshold)));
-    }
+    sources.push_back(
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->alphaThreshold,
+            VtValue(_alphaThreshold)));
 
     sources.push_back(
         std::make_shared<HdVtBufferSource>(
@@ -671,8 +655,6 @@ HdStRenderPassState::ApplyStateFromCamera()
 void
 HdStRenderPassState::Bind(HgiCapabilities const &hgiCapabilities)
 {
-    GLF_GROUP_FUNCTION();
-
     // when adding another GL state change here, please document
     // which states to be altered at the comment in the header file
 
@@ -795,7 +777,6 @@ HdStRenderPassState::Bind(HgiCapabilities const &hgiCapabilities)
 void
 HdStRenderPassState::Unbind(HgiCapabilities const &hgiCapabilities)
 {
-    GLF_GROUP_FUNCTION();
     // restore back to the GL defaults
 
     if (!GetDepthBiasUseDefault()) {
@@ -869,8 +850,7 @@ HdStRenderPassState::GetShaderHash() const
     // used.
     return TfHash::Combine(
         hash,
-        _clipPlanesBufferSize,
-        _UseAlphaMask()
+        _clipPlanesBufferSize
     );
 }
 
@@ -1264,7 +1244,9 @@ HdStRenderPassState::_InitRasterizationState(
 
     rasterizationState->conservativeRaster = _conservativeRasterizationEnabled;
 
-    rasterizationState->numClipDistances = GetClipPlanes().size();
+    rasterizationState->numClipDistances =
+        geometricShader->GetUseHardwareClipPlanes()
+            ? GetClipPlanes().size() : 0;
 }
 
 void
@@ -1392,7 +1374,7 @@ HdStRenderPassState::CopyAllExceptShaderFrom(
     _blendColorDstFactor = other._blendColorDstFactor;
     _blendAlphaOp = other._blendAlphaOp;
     _blendAlphaSrcFactor = other._blendAlphaSrcFactor;
-    _blendAlphaDstFactor = other._blendColorDstFactor;
+    _blendAlphaDstFactor = other._blendAlphaDstFactor;
     _blendConstantColor = other._blendConstantColor;
     _blendEnabled = other._blendEnabled;
     _alphaToCoverageEnabled = other._alphaToCoverageEnabled;
@@ -1414,7 +1396,6 @@ HdStRenderPassState::CopyAllExceptShaderFrom(
     _lightingShader = other._lightingShader;
     _renderPassStateBar = other._renderPassStateBar;
     _clipPlanesBufferSize = other._clipPlanesBufferSize;
-    _alphaThresholdCurrent = other._alphaThresholdCurrent;
     _resolveMultiSampleAov = other._resolveMultiSampleAov;
 }
 

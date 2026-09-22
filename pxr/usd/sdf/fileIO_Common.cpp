@@ -242,17 +242,6 @@ _StringFromVtValueHelper(string* valueStr, const VtValue& value,
     return false;
 }
 
-template <class T>
-static bool
-_StringFromVtValueHelper(Sdf_TextOutput &out,
-                         string* valueStr, const VtValue& value)
-{
-    return _StringFromVtValueHelper<T>(
-        valueStr, value, [&out](SdfFileVersion ver, char const *msg) {
-            out.RequestWriteVersionUpgrade(ver, msg);
-        });
-}
-
 // ------------------------------------------------------------
 // Helpers functions for writing SdfListOp<T>. Consumers can
 // specialize the _ListOpWriter struct for custom behavior based
@@ -858,14 +847,6 @@ Sdf_FileIOUtility::WriteRelocates(
     return _WriteRelocates(out, indent, multiLine, relocates);
 }
 
-bool 
-Sdf_FileIOUtility::WriteRelocates(
-    Sdf_TextOutput &out, size_t indent, bool multiLine,
-    const SdfRelocatesMap &reloMap)
-{
-    return _WriteRelocates(out, indent, multiLine, reloMap);
-}
-
 void
 Sdf_FileIOUtility::_WriteDictionary(
     Sdf_TextOutput &out, size_t indent, bool multiLine,
@@ -930,17 +911,7 @@ Sdf_FileIOUtility::_WriteDictionary(
                 Write(out, multiLine ? indent+1 : 0, "%s %s = ",
                       typeName.GetText(), keyName.c_str());
 
-                // XXX: The logic here is very similar to that in
-                //      WriteDefaultValue. WBN to refactor.
-                string str;
-                if (_StringFromVtValueHelper<string>(out, &str, value) || 
-                    _StringFromVtValueHelper<TfToken>(out, &str, value) ||
-                    _StringFromVtValueHelper<SdfAssetPath>(out, &str, value) ||
-                    _StringFromVtValueHelper<GfDuration>(out, &str, value)) {
-                    Puts(out, 0, str);
-                } else {
-                    Puts(out, 0, TfStringify(value));
-                }
+                Puts(out, 0, StringFromVtValue(value, out));
                 if (multiLine) {
                     Puts(out, 0, "\n");
                 }

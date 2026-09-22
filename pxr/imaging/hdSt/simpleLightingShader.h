@@ -15,7 +15,6 @@
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/glf/simpleLightingContext.h"
-#include "pxr/base/tf/declarePtrs.h"
 
 #include <memory>
 #include <string>
@@ -30,8 +29,6 @@ struct HdRenderPassAovBinding;
 using HdStSimpleLightingShaderSharedPtr =
     std::shared_ptr<class HdStSimpleLightingShader>;
 using HdRenderPassAovBindingVector = std::vector<HdRenderPassAovBinding>;
-
-TF_DECLARE_REF_PTRS(GlfBindingMap);
 
 /// \class HdStSimpleLightingShader
 ///

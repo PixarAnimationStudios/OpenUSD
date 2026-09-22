@@ -82,6 +82,22 @@ HgiGLGraphicsPipeline::BindPipeline()
                         _vao,
                         vbo.bindingIndex,
                         std::numeric_limits<GLint>::max());
+                } else if (vbo.vertexStepFunction ==
+                                HgiVertexBufferStepFunctionPerInstance) {
+                    // Set the divisor such that the attribute index will
+                    // advance per instance
+                    glVertexArrayBindingDivisor(
+                        _vao,
+                        vbo.bindingIndex,
+                        1);
+                }
+                else {
+                    // Set the divisor such that the attribute index will
+                    // advance per vertex
+                    glVertexArrayBindingDivisor(
+                        _vao,
+                        vbo.bindingIndex,
+                        0);
                 }
             }
         }

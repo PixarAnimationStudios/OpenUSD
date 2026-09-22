@@ -33,8 +33,6 @@
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 
-#include "pxr/imaging/glf/diagnostic.h"
-
 #include "pxr/base/gf/matrix4f.h"
 
 #include "pxr/base/tf/diagnostic.h"
@@ -1152,7 +1150,6 @@ HdSt_IndirectDrawBatch::_ExecuteDraw(
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     TRACE_FUNCTION();
-    GLF_GROUP_FUNCTION();
 
     if (!TF_VERIFY(!_drawItemInstances.empty())) return;
 
@@ -1259,7 +1256,6 @@ HdSt_IndirectDrawBatch::_ExecuteDrawIndirect(
             0, drawCount,
             stride);
     }
-    GLF_POST_PENDING_GL_ERRORS();
 }
 
 void
@@ -1354,7 +1350,6 @@ HdSt_IndirectDrawBatch::_ExecuteDrawImmediate(
                 cmd->baseInstance);
         }
     }
-    GLF_POST_PENDING_GL_ERRORS();
 }
 
 ////////////////////////////////////////////////////////////

@@ -6,6 +6,8 @@
 //
 #include "usdRiPxrImaging/pxrVolumeAPIAdapter.h"
 
+#include "pxr/pxr.h"
+
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -32,6 +34,8 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingAPISchemaAdapterFactory<Adapter> >();
 }
+
+#if PXR_VERSION >= 2605
 
 namespace
 {
@@ -149,5 +153,7 @@ UsdRiPxrImagingVolumeAPIAdapter::InvalidateImagingSubprim(
     }
     return result;
 }
+
+#endif // PXR_VERSION >= 2605
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -26,7 +26,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDSCENEINDEXPLUGINREGISTRY_TOKENS \
     ((rendererDisplayName, "__rendererDisplayName")) \
-    ((allRenderers, ""))
+    ((allRenderers, "")) \
+    ((allApps, ""))
 
 TF_DECLARE_PUBLIC_TOKENS(HdSceneIndexPluginRegistryTokens, HD_API,
     HDSCENEINDEXPLUGINREGISTRY_TOKENS);

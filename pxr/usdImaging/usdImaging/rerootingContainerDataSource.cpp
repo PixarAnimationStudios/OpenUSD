@@ -123,6 +123,60 @@ private:
 
 // ----------------------------------------------------------------------------
 
+class _RerootingPathExpressionDataSource : public HdPathExpressionDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_RerootingPathExpressionDataSource)
+
+    VtValue GetValue(const Time shutterOffset) override
+    {
+        return VtValue(GetTypedValue(shutterOffset));
+    }
+
+    bool GetContributingSampleTimesForInterval(
+        const Time startTime,
+        const Time endTime,
+        std::vector<Time>*  const outSampleTimes) override
+    {
+        if (!_inputDataSource) {
+            return false;
+        }
+
+        return _inputDataSource->GetContributingSampleTimesForInterval(
+            startTime, endTime, outSampleTimes);
+    }
+
+    SdfPathExpression GetTypedValue(const Time shutterOffset) override
+    {
+        if (!_inputDataSource) {
+            return {};
+        }
+        const SdfPathExpression srcExpr =
+            _inputDataSource->GetTypedValue(shutterOffset);
+
+        // Apply the path mapping to the expression. Iterate over each
+        // source→target mapping and apply ReplacePrefix.
+        SdfPathExpression result = srcExpr;
+        for (auto const &[src, tgt] : _mapFn.GetSourceToTargetMap()) {
+            result = result.ReplacePrefix(src, tgt);
+        }
+        return result;
+    }
+
+private:
+    _RerootingPathExpressionDataSource(
+        HdPathExpressionDataSourceHandle inputDataSource,
+        PcpMapFunction const& mapFn)
+    : _inputDataSource(std::move(inputDataSource))
+    , _mapFn(mapFn) {}
+
+    HdPathExpressionDataSourceHandle _inputDataSource;
+    PcpMapFunction _mapFn;
+};
+
+// ----------------------------------------------------------------------------
+
+// fwd decl
 HdDataSourceBaseHandle
 _RerootingCreateDataSource(
     HdDataSourceBaseHandle const &inputDataSource,
@@ -187,6 +241,12 @@ _RerootingCreateDataSource(
             HdTypedSampledDataSource<VtArray<SdfPath>>::Cast(inputDataSource)) {
         return _RerootingPathArrayDataSource::New(
             std::move(pathArrayDataSource),mapFn);
+    }
+
+    if (auto pathExprDataSource =
+            HdTypedSampledDataSource<SdfPathExpression>::Cast(inputDataSource)) {
+        return _RerootingPathExpressionDataSource::New(
+            std::move(pathExprDataSource), mapFn);
     }
 
     return inputDataSource;

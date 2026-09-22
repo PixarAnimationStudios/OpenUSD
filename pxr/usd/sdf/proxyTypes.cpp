@@ -26,7 +26,6 @@ TF_REGISTRY_FUNCTION(TfType)
     // Other.
     TfType::Define<SdfDictionaryProxy>();
     TfType::Define<SdfVariantSelectionProxy>();
-    TfType::Define<SdfRelocatesMapProxy>();
 
     TfType::Define<SdfInheritsProxy>()
         .Alias(TfType::GetRoot(), "SdfInheritsProxy")

@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <limits>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -24,7 +25,11 @@ void TestStreamInterface(const double d)
     std::cout << sstr.str() << std::endl;
     JsValue v2 = JsParseStream(sstr);
     TF_AXIOM(v2.IsReal());
-    TF_AXIOM(v2.GetReal() == d);
+    if (std::isnan(d)) {
+        TF_AXIOM(std::isnan(v2.GetReal()));
+    } else {
+        TF_AXIOM(v2.GetReal() == d);
+    }
 }
 
 void TestWriterInterface(const double d)
@@ -35,7 +40,11 @@ void TestWriterInterface(const double d)
     std::cout << sstr.str() << std::endl;
     JsValue v2 = JsParseStream(sstr);
     TF_AXIOM(v2.IsReal());
-    TF_AXIOM(v2.GetReal() == d);
+    if (std::isnan(d)) {
+        TF_AXIOM(std::isnan(v2.GetReal()));
+    } else {
+        TF_AXIOM(v2.GetReal() == d);
+    }
 }
 
 int main(int argc, char const *argv[])
@@ -43,4 +52,12 @@ int main(int argc, char const *argv[])
     const double d = 0.42745098039215684;
     TestStreamInterface(d);
     TestWriterInterface(d);
+
+    using limits = std::numeric_limits<double>;
+    TestStreamInterface(limits::infinity());
+    TestWriterInterface(limits::infinity());
+    TestStreamInterface(-limits::infinity());
+    TestWriterInterface(-limits::infinity());
+    TestStreamInterface(limits::quiet_NaN());
+    TestWriterInterface(limits::quiet_NaN());
 }

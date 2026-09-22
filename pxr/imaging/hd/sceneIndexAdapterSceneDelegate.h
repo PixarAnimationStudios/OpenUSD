@@ -213,6 +213,8 @@ public:
                               HdExtComputationContext *context) override;
 
     TfTokenVector GetTaskRenderTags(SdfPath const &taskId) override;
+
+    int32_t GetPrimId(SdfPath const &id) override;
     
     void Sync(HdSyncRequestVector* request) override;
     void PostSyncCleanup() override;

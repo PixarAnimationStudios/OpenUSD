@@ -17,7 +17,7 @@ def Material "VolumeParameterMaterial" (
     {
         uniform asset info:glslfx:sourceAsset = @volumeShaderParameter.glslfx@
         uniform token info:implementationSource = "sourceAsset"
-        float3 inputs:emissionColor.connect = </VolumeParameterMaterial/Volume/EmissionColorReader.outputs:result>
+        color3f inputs:emissionColor.connect = </VolumeParameterMaterial/Volume/EmissionColorReader.outputs:result>
         float inputs:extinctionScale.connect = </VolumeParameterMaterial/Volume/ExtinctionScaleReader.outputs:result>
         float inputs:scatteringScale.connect = </VolumeParameterMaterial/Volume/ScatteringScaleReader.outputs:result>
         token outputs:volume

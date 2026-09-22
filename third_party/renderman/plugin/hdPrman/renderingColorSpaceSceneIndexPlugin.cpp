@@ -75,6 +75,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Types of materials or terminals that we do not want to filter
     (mtlx)
+
+    (PxrSurface)
+    (PxrPrimvar)
 );
 
 TF_MAKE_STATIC_DATA(
@@ -522,24 +525,31 @@ _ConvertLightNodeColors(
 ////////////////////////////////////////////////////////////////////////////////
 // Material Conversion Functions
 
-
-static TfToken
-_CreateColorTransformNode(
-    HdMaterialNetworkInterface *interface,
-    TfToken const& paramName,
-    const GfColorSpace& sourceColorSpace,
-    const GfColorSpace& renderingColorSpace)
+// Splices in a UsdTransformColor node.
+//
+// Rewires the network data flow from:
+// UpstreamNode.output -> DownstreamNode.input
+// to:
+// UpstreamNode.output -> ColorTransformNode -> DownstreamNode.input
+//
+static void
+_InsertColorTransform(
+    HdMaterialNetworkInterface *material,
+    GfColorSpace const& sourceColorSpace,
+    GfColorSpace const& renderingColorSpace,
+    TfToken const& upstreamNodeName,
+    TfToken const& upstreamOutputName,
+    TfToken const& downstreamNodeName,
+    TfToken const& downstreamInputName)
 {
-    std::string prefix("__TransColor_2_");
-    prefix += sourceColorSpace.GetName().GetString() + "_";
-    prefix += renderingColorSpace.GetName().GetString();
-
     // Create a UsdTransformColor node
-    const TfToken tNode(TfStringPrintf("%s_%s_%s",
-        prefix.c_str(),
-        interface->GetMaterialPrimPath().GetName().c_str(),
-        paramName.GetText()));
-    interface->SetNodeType(tNode, _tokens->UsdTransformColor);
+    const TfToken tNode(TfStringPrintf(
+        "HdPrman_TransformColor_%s_%s_from_%s_to_%s",
+        upstreamNodeName.GetText(),
+        upstreamOutputName.GetText(),
+        sourceColorSpace.GetName().GetString().c_str(),
+        renderingColorSpace.GetName().GetString().c_str()));
+    material->SetNodeType(tNode, _tokens->UsdTransformColor);
 
     // Source Color Space Inputs
     auto [srcK0, srcPhi] = sourceColorSpace.GetTransferFunctionParams();
@@ -556,20 +566,42 @@ _CreateColorTransformNode(
     const GfVec3f tRow3 = tMatrix.GetRow(2);
 
     // Set variables on UsdTransformColor node
-    interface->SetNodeParameterValue(tNode, _tokens->srcK0, VtValue(srcK0));
-    interface->SetNodeParameterValue(tNode, _tokens->srcPhi, VtValue(srcPhi));
-    interface->SetNodeParameterValue(tNode, _tokens->srcGamma, VtValue(srcGamma));
-    interface->SetNodeParameterValue(
+    material->SetNodeParameterValue(tNode, _tokens->srcK0, VtValue(srcK0));
+    material->SetNodeParameterValue(tNode, _tokens->srcPhi, VtValue(srcPhi));
+    material->SetNodeParameterValue(tNode,
+        _tokens->srcGamma, VtValue(srcGamma));
+    material->SetNodeParameterValue(
         tNode, _tokens->srcLinearBias, VtValue(srcLinearBasis));
-    interface->SetNodeParameterValue(tNode, _tokens->dstK0, VtValue(dstK0));
-    interface->SetNodeParameterValue(tNode, _tokens->dstPhi, VtValue(dstPhi));
-    interface->SetNodeParameterValue(tNode, _tokens->dstGamma, VtValue(dstGamma));
-    interface->SetNodeParameterValue(
+    material->SetNodeParameterValue(tNode, _tokens->dstK0, VtValue(dstK0));
+    material->SetNodeParameterValue(tNode, _tokens->dstPhi, VtValue(dstPhi));
+    material->SetNodeParameterValue(tNode,  
+        _tokens->dstGamma, VtValue(dstGamma));
+    material->SetNodeParameterValue(
         tNode, _tokens->dstLinearBias, VtValue(dstLinearBasis));
-    interface->SetNodeParameterValue(tNode, _tokens->tRow1, VtValue(tRow1));
-    interface->SetNodeParameterValue(tNode, _tokens->tRow2, VtValue(tRow2));
-    interface->SetNodeParameterValue(tNode, _tokens->tRow3, VtValue(tRow3));
-    return tNode;
+    material->SetNodeParameterValue(tNode, _tokens->tRow1, VtValue(tRow1));
+    material->SetNodeParameterValue(tNode, _tokens->tRow2, VtValue(tRow2));
+    material->SetNodeParameterValue(tNode, _tokens->tRow3, VtValue(tRow3));
+
+    // Connect the transform node's input to the upstream output.
+    material->SetNodeInputConnection(
+        tNode, _tokens->ColorIn,
+        {{upstreamNodeName, upstreamOutputName}});
+
+    // Connect the downstream node's input to the transform node's output.
+    // Note that the input may have multiple connections, so check
+    // specifically for the one that was previously connected the the
+    // upstream node's output.
+    HdMaterialNetworkInterface::InputConnectionVector updatedConns =
+        material->GetNodeInputConnection(
+            downstreamNodeName, downstreamInputName);
+    for (auto& conn : updatedConns) {
+        if (conn.upstreamNodeName == upstreamNodeName &&
+            conn.upstreamOutputName == upstreamOutputName) {
+            conn = {tNode, _tokens->ResultColor};
+        }
+    }
+    material->SetNodeInputConnection(
+        downstreamNodeName, downstreamInputName, updatedConns);
 }
 
 static
@@ -597,109 +629,104 @@ _GetSdrInputType(const TfToken& nodeType, const TfToken& inputName)
 // from textures - connections to a node with an asset input.
 static void
 _FilterMaterial(
-    HdMaterialNetworkInterface *interface,
+    HdMaterialNetworkInterface *material,
     const GfColorSpace& renderingColorSpace)
 {
-    // Rewire all color parameters connected to assets
-    for (const TfToken& nodeName : interface->GetNodeNames()) {
+    // Rewire all color inputs connected to assets or PxrPrimvar nodes
+    for (const TfToken& nodeName : material->GetNodeNames()) {
+        const TfToken& nodeType = material->GetNodeType(nodeName);
 
-        const TfToken& nodeType = interface->GetNodeType(nodeName);
-        const auto& conns = interface->GetNodeInputConnectionNames(nodeName);
-        for (const TfToken& connName : conns) {
+        for (const TfToken& inputName :
+             material->GetNodeInputConnectionNames(nodeName)) {
 
             // Only adjust the color inputs
-            const TfToken inputType = _GetSdrInputType(nodeType, connName);
+            const TfToken inputType = _GetSdrInputType(nodeType, inputName);
             if (inputType != SdrPropertyTypes->Color) {
                 continue;
             }
 
-            // Traverse the connection to get the node containing the asset.
-            const auto& nodeConns =
-                interface->GetNodeInputConnection(nodeName, connName);
-            for (auto item : nodeConns) {
+            for (const auto& conn :
+                 material->GetNodeInputConnection(nodeName, inputName)) {
+                const TfToken& upstreamNodeName = conn.upstreamNodeName;
+                const TfToken& upstreamOutputName = conn.upstreamOutputName;
 
-                TfToken upstreamNode = item.upstreamNodeName;
-                TfToken upstreamOutputName = item.upstreamOutputName;
-
-                // Find Authored asset parameter
-                for (auto upstreamParamName :
-                    interface->GetAuthoredNodeParameterNames(upstreamNode)) {
-
-                    auto upstreamParamData = interface->GetNodeParameterData(
-                        upstreamNode, upstreamParamName);
-                    if (upstreamParamData.typeName != SdfValueTypeNames->Asset) {
+                // Check the upstream node for an authored asset parameter.
+                //
+                // Note that the asset parameter is not the same as the
+                // upstream output, which has type color.  We consult the
+                // asset parameter data colorspace to determine the colorspace
+                // of the color output.
+                for (const auto& paramName :
+                     material->GetAuthoredNodeParameterNames(upstreamNodeName)) {
+                    const auto paramData = material->GetNodeParameterData(
+                        upstreamNodeName, paramName);
+                    if (paramData.typeName != SdfValueTypeNames->Asset) {
                         continue;
                     }
 
-                    // Get the source color space for the asset param
+                    // We found an asset parameter on the upstream node.
+                    // Consult it for the source colorspace.
                     const GfColorSpace sourceColorSpace =
                         _GetSourceColorSpace(
-                            upstreamParamName, upstreamNode,
-                            upstreamParamData.colorSpace);
-
+                            upstreamNodeName, upstreamOutputName,
+                            paramData.colorSpace);
                     if (_SkipColorTransform(
                             sourceColorSpace, renderingColorSpace)) {
                         continue;
                     }
-                    // Create Color Transform node to convert from the asset's
-                    // source color space to the rendering color space
-                    const TfToken transformNode = _CreateColorTransformNode(
-                        interface, upstreamParamName,
-                        sourceColorSpace, renderingColorSpace);
 
-                    // Rewire the network from:
-                    // UpstreamNode (asset) -> NodeName
-                    // to:
-                    // UpstreamNode (asset) -> TransformNode -> NodeName
+                    _InsertColorTransform(
+                        material, sourceColorSpace, renderingColorSpace,
+                        upstreamNodeName, upstreamOutputName,
+                        nodeName, inputName);
 
-                    // Connect UpstreamNode to Transform Node's input
-                    interface->SetNodeInputConnection(
-                        transformNode, _tokens->ColorIn,
-                        {{upstreamNode, upstreamOutputName}});
-
-                    // We may have multiple connections so replace the
-                    // connection to the UpstreamNode for the one to the
-                    // TransformNode.
-                    HdMaterialNetworkInterface::InputConnectionVector conns;
-                    const auto& nodeConns = interface->GetNodeInputConnection(
-                        nodeName, connName);
-                    for (auto conn : nodeConns) {
-                        if (conn.upstreamNodeName == upstreamNode &&
-                            conn.upstreamOutputName == upstreamOutputName) {
-                            conns.push_back(
-                                {transformNode, _tokens->ResultColor});
-                        }
-                        else {
-                            conns.push_back(conn);
-                        }
-                    }
-                    interface->SetNodeInputConnection(nodeName, connName, conns);
-
-                    // Update the asset param data to have the raw color space
-                    // this is to ensure that no more color space translations
-                    // happen
+                    // Update the asset param data with the raw colorspace.
+                    // This ensures that no further colorspace transformation
+                    // happens.
+                    //
+                    // XXX Is this correct?  What if there are multiple
+                    // downstream nodes connected to this one output?
+                    //
                     // XXX Revisit this to make sure we should put this color
                     // space vs the rendering color space
-
+                    //
                     // Create new ParamData in the Rendering Color Space
                     HdMaterialNetworkInterface::NodeParamData newParamData;
-                    newParamData.typeName = upstreamParamData.typeName;
+                    newParamData.typeName = paramData.typeName;
+                    newParamData.value = paramData.value;
                     newParamData.colorSpace = GfColorSpaceNames->Raw;
-                    newParamData.value = upstreamParamData.value;
-                    // Update the interface with the new parameter data.
-                    interface->SetNodeParameterData(
-                        upstreamNode, upstreamParamName, newParamData);
+                    material->SetNodeParameterData(
+                        upstreamNodeName, paramName, newParamData);
+                }
+
+                // Check for connections to PxrPrimvar color outputs
+                const TfToken& upstreamNodeType =
+                    material->GetNodeType(upstreamNodeName);
+                if (upstreamNodeType == _tokens->PxrPrimvar) {
+                    // XXX Currently there is nowhere to specify the
+                    // colorspace on a PxrPrimvar, so assume rec709,
+                    // as elsewhere
+                    const GfColorSpace sourceColorSpace(
+                        GfColorSpaceNames->LinearRec709);
+                    if (_SkipColorTransform(
+                            sourceColorSpace, renderingColorSpace)) {
+                        continue;
+                    }
+                    _InsertColorTransform(
+                        material, sourceColorSpace, renderingColorSpace,
+                        upstreamNodeName, upstreamOutputName,
+                        nodeName, inputName);
                 }
             }
         }
     }
 
     // Adjust the authored color parameters
-    for (const TfToken &nodeName : interface->GetNodeNames()) {
+    for (const TfToken &nodeName : material->GetNodeNames()) {
         for (const TfToken& paramName :
-                    interface->GetAuthoredNodeParameterNames(nodeName)) {
+                    material->GetAuthoredNodeParameterNames(nodeName)) {
             const auto paramData =
-                interface->GetNodeParameterData(nodeName, paramName);
+                material->GetNodeParameterData(nodeName, paramName);
 
             // Only convert color parameters
             if (paramData.typeName != SdfValueTypeNames->Color3f) {
@@ -723,8 +750,8 @@ _FilterMaterial(
             newParamData.typeName = paramData.typeName;
             newParamData.colorSpace = renderingColorSpace.GetName();
             newParamData.value = VtValue(convertedColor);
-            // Update the interface with the new parameter data.
-            interface->SetNodeParameterData(nodeName, paramName, newParamData);
+            // Update the material with the new parameter data.
+            material->SetNodeParameterData(nodeName, paramName, newParamData);
         }
     }
 }

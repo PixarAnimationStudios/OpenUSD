@@ -111,7 +111,7 @@ def Xform "NormalMapTest"
                 uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
                 color3f inputs:diffuseColor = (1, 1, 1)
                 float inputs:metallic = 1
-                float3 inputs:normal.connect = </NormalMapTest/Looks/MxPS_NormalMap/NormalMap.outputs:out>
+                normal3f inputs:normal.connect = </NormalMapTest/Looks/MxPS_NormalMap/NormalMap.outputs:out>
                 float inputs:roughness = 0.001
                 token outputs:out
             }
@@ -146,7 +146,7 @@ def Xform "NormalMapTest"
                 uniform token info:id = "ND_standard_surface_surfaceshader"
                 color3f inputs:base_color = (1, 1, 1)
                 float inputs:metalness = 1
-                float3 inputs:normal.connect = </NormalMapTest/Looks/MxSS_NormalMap/NormalMap.outputs:out>
+                normal3f inputs:normal.connect = </NormalMapTest/Looks/MxSS_NormalMap/NormalMap.outputs:out>
                 float inputs:specular_roughness = 0.001
                 token outputs:out
             }

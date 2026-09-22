@@ -196,31 +196,6 @@ public:
     }
 };
 
-/// \class SdfRelocatesMapProxyValuePolicy
-///
-/// Map edit proxy value policy for relocates maps.  This absolutizes all
-/// paths.
-///
-class SdfRelocatesMapProxyValuePolicy {
-public:
-    typedef std::map<SdfPath, SdfPath> Type;
-    typedef Type::key_type key_type;
-    typedef Type::mapped_type mapped_type;
-    typedef Type::value_type value_type;
-
-    SDF_API
-    static Type CanonicalizeType(const SdfSpecHandle& v, const Type& x);
-    SDF_API
-    static key_type CanonicalizeKey(const SdfSpecHandle& v,
-                                    const key_type& x);
-    SDF_API
-    static mapped_type CanonicalizeValue(const SdfSpecHandle& v,
-                                         const mapped_type& x);
-    SDF_API
-    static value_type CanonicalizePair(const SdfSpecHandle& v,
-                                       const value_type& x);
-};
-
 /// \class SdfGenericSpecViewPredicate
 ///
 /// Predicate for viewing properties.

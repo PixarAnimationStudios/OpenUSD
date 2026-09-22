@@ -56,17 +56,20 @@ public:
     /// Constructor that takes a path expansion rule map.  The map is scanned
     /// for 'excludes' when the Usd_CollectionMembershipQueryBase object is
     /// constructed.
+    USD_API
     Usd_CollectionMembershipQueryBase(
         const PathExpansionRuleMap& pathExpansionRuleMap,
         const SdfPathSet& includedCollections);
 
-    /// Constructor that takes a path expansion rule map as an rvalue reference
+    /// Constructor that takes a path expansion rule map as an rvalue reference.
+    USD_API
     Usd_CollectionMembershipQueryBase(
         PathExpansionRuleMap&& pathExpansionRuleMap,
         SdfPathSet&& includedCollections);
 
     /// Constructor that additionally takes an additional expression evaluator
     /// and a top-level expansion rule.
+    USD_API
     Usd_CollectionMembershipQueryBase(
         const PathExpansionRuleMap& pathExpansionRuleMap,
         const SdfPathSet& includedCollections,
@@ -74,6 +77,7 @@ public:
 
     /// Constructor that additionally takes an additional expression evaluator
     /// as an rvalue reference and a top-level expansion rule.
+    USD_API
     Usd_CollectionMembershipQueryBase(
         PathExpansionRuleMap&& pathExpansionRuleMap,
         SdfPathSet&& includedCollections,
@@ -85,7 +89,6 @@ public:
     bool HasExcludes() const {
         return _hasExcludes;
     }
-    
 
     /// Returns a raw map of the paths included or excluded in the
     /// collection along with the expansion rules for the included

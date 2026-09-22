@@ -196,8 +196,48 @@ UsdImagingDataSourceCamera::UsdImagingDataSourceCamera(
 TfTokenVector
 UsdImagingDataSourceCamera::GetNames()
 {
-    return
-        UsdGeomCamera::GetSchemaAttributeNames(/* includeInherited = */ false);
+    TfTokenVector result;
+
+    // XXX Currently Get() will retrieve any attribute on the camera prim,
+    // mapping certain camera attributes to Hydra camera schema equivalents.
+    //
+    // To ensure the Hydra Scene Debugger reflects an accurate view
+    // of the data source, we match this behavior here.  If in the future
+    // we restrict this data source to only UsdGeomCamera schema attributes,
+    // we should revise this back to
+    //
+    // UsdGeomCamera::GetSchemaAttributeNames(
+    //     /* includeInherited = */ false);
+    //
+    // ... along with the remapping to HdCameraSchema equivalents.
+    //
+    // For now, we pull in all USD attributes.
+    const std::vector<UsdAttribute> attrs =
+        _usdCamera.GetPrim().GetAttributes();
+    result.reserve(attrs.size() + 1 /* linearExposureScale */);
+    for (UsdAttribute const& attr: attrs) {
+        TfToken name = attr.GetName();
+        if (name == UsdGeomTokens->shutterOpen) {
+            name = HdCameraSchemaTokens->shutterOpen;
+        } else if (name == UsdGeomTokens->shutterClose) {
+            name = HdCameraSchemaTokens->shutterClose;
+        } else if (name == UsdGeomTokens->exposureTime) {
+            name = HdCameraSchemaTokens->exposureTime;
+        } else if (name == UsdGeomTokens->exposureIso) {
+            name = HdCameraSchemaTokens->exposureIso;
+        } else if (name == UsdGeomTokens->exposureFStop) {
+            name = HdCameraSchemaTokens->exposureFStop;
+        } else if (name == UsdGeomTokens->exposureResponsivity) {
+            name = HdCameraSchemaTokens->exposureResponsivity;
+        }
+        result.push_back(name);
+    }
+
+    // linearExposureScale is synthesized by Get() and has no corresponding
+    // USD attribute in the camera schema.
+    result.push_back(HdCameraSchemaTokens->linearExposureScale);
+
+    return result;
 }
 
 HdDataSourceBaseHandle

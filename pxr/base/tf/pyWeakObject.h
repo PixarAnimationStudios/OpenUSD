@@ -38,8 +38,14 @@ public:
     
 private:
     explicit Tf_PyWeakObject(pxr_boost::python::object const &obj);
-    
+
     pxr_boost::python::handle<> _weakRef;
+
+    // The address of the referent, cached at construction for use as the
+    // registry key.  A weak reference is cleared before its callback runs, so
+    // the referent cannot be recovered from _weakRef by the time Delete() runs.
+    // Used only as a key; never dereferenced.
+    PyObject *_refObjKey;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

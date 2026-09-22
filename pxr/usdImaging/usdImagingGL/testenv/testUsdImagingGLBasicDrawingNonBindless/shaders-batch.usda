@@ -15,8 +15,8 @@ def Scope "Looks"
         {
             uniform asset info:glslfx:sourceAsset = @shader1.glslfx@
             uniform token info:implementationSource = "sourceAsset"
-            uniform float3 inputs:diffuseColor = (1, 0, 1)
-            add uniform float3 inputs:diffuseColor.connect = </Looks/UvLook1/Tex.outputs:color>
+            uniform color3f inputs:diffuseColor = (1, 0, 1)
+            add uniform color3f inputs:diffuseColor.connect = </Looks/UvLook1/Tex.outputs:color>
             token outputs:surface
         }
 
@@ -31,7 +31,7 @@ def Scope "Looks"
         def Shader "Primvar"
         {
             uniform token info:id = "HwPrimvar_1"
-            uniform token inputs:varname = "map1_uv"
+            uniform string inputs:varname = "map1_uv"
             float2 outputs:result
         }
     }
@@ -44,8 +44,8 @@ def Scope "Looks"
         {
             uniform asset info:glslfx:sourceAsset = @shader1.glslfx@
             uniform token info:implementationSource = "sourceAsset"
-            uniform float3 inputs:diffuseColor = (1, 0, 1)
-            add uniform float3 inputs:diffuseColor.connect = </Looks/UvLook2/Tex.outputs:color>
+            uniform color3f inputs:diffuseColor = (1, 0, 1)
+            add uniform color3f inputs:diffuseColor.connect = </Looks/UvLook2/Tex.outputs:color>
             token outputs:surface
         }
 
@@ -60,7 +60,7 @@ def Scope "Looks"
         def Shader "Primvar"
         {
             uniform token info:id = "HwPrimvar_1"
-            uniform token inputs:varname = "map1_uv"
+            uniform string inputs:varname = "map1_uv"
             float2 outputs:result
         }
     }
@@ -73,8 +73,8 @@ def Scope "Looks"
         {
             uniform asset info:glslfx:sourceAsset = @shader1.glslfx@
             uniform token info:implementationSource = "sourceAsset"
-            uniform float3 inputs:diffuseColor = (1, 0, 1)
-            add uniform float3 inputs:diffuseColor.connect = </Looks/UvLook3/Tex.outputs:color>
+            uniform color3f inputs:diffuseColor = (1, 0, 1)
+            add uniform color3f inputs:diffuseColor.connect = </Looks/UvLook3/Tex.outputs:color>
             token outputs:surface
         }
 
@@ -89,7 +89,7 @@ def Scope "Looks"
         def Shader "Primvar"
         {
             uniform token info:id = "HwPrimvar_1"
-            uniform token inputs:varname = "map1_uv"
+            uniform string inputs:varname = "map1_uv"
             float2 outputs:result
         }
     }

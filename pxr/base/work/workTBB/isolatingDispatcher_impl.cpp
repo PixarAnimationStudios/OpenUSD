@@ -83,10 +83,8 @@ WorkImpl_IsolatingDispatcher::Wait()
     // submitted to that arena. This will also give the calling thread a chance
     // to join the arena (if it can) and thus "help" complete any pending tasks.
     //
-    // Note that it is not harmful to call Wait() without executing it in the
-    // arena. That would just mean that the calling thread cannot migrate into
-    // the arena, and can therefore not do any work from that arena, while it
-    // is waiting.
+    // It should also ensure that this waiting thread cannot steal unrelated
+    // tasks, which would defeat the isolation.
 
     _arena->execute([&dispatcher = _dispatcher](){
         dispatcher.Wait();

@@ -1129,9 +1129,6 @@ TestPrimMetadata()
         "specializes = [\n];append specializes = [</prim/path/p1.property>, "
         "\n</prim/path/p2>]\n\n\n  reorder specializes = [</another/prim/"
         "path.with_property>])",
-        "(  relocates = {}; relocates = {\n\n   }  ;relocates={\n\n</prim/"
-        "path/p1.property>  :   </another/prim/path.with_property>, \n\n</"
-        "another/prim/path.with_property> : <prim/path/p1.property>})",
         "(  variants = {\n\n  float3[] add = (8.3, 0.5,\n  6.7)\n\nstring "
         "shadingVariant = \"red\";})",
         "(\n\tvariants = {\n\t\tstring shadingVariant = \"green\"\n\t}\n\t"

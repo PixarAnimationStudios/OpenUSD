@@ -22,6 +22,9 @@
 #ifndef ILMTHREAD_THREADING_ENABLED
 #define ILMTHREAD_THREADING_ENABLED 1
 #endif
+#ifndef OPENEXR_CORE_FUNCTIONS_EMBEDDED
+#define OPENEXR_CORE_FUNCTIONS_EMBEDDED 1
+#endif
 // pxr end
 
 /// \addtogroup ExportMacros

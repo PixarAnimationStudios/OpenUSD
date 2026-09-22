@@ -444,18 +444,18 @@ HdPrmanCamera::_ComputeCameraParams(const GfRange2d & screenWindow) const
     // 'farClip' (float): near clipping distance
     // 'shutterOpenTime' (float): beginning of normalized shutter interval
     // 'shutterCloseTime' (float): end of normalized shutter interval
+    // 'dofaspect' (float): dof aspect ratio
+    // 'apertureAngle' (float): aperture angle (bokeh)
+    // 'apertureDensity' (float): aperture density (bokeh)
+    // 'apertureNSides' (int): number of aperture sides (bokeh)
+    // 'apertureRoundness' (float): aperture roundess (bokeh)
 
     // Parameters that are not handled (and use their defaults):
     // 'focusregion' (float):
-    // 'dofaspect' (float): dof aspect ratio
-    // 'apertureNSides' (int):
-    // 'apertureAngle' (float):
-    // 'apertureRoundness' (float):
-    // 'apertureDensity' (float):
 
-    // Parameter that is handled during Riley camera creation:
+    // Parameter that is handled during Riley camera creation (not here!):
     // Rix::k_shutteropening (float[8] [c1 c2 d1 d2 e1 e2 f1 f2): additional
-    // control points
+    //     control points
 
     // Do not use clipping range if scene delegate did not provide one.
     // Note that we do a sanity check slightly stronger than
@@ -489,6 +489,10 @@ HdPrmanCamera::_ComputeCameraParams(const GfRange2d & screenWindow) const
     result.SetInteger(RixStr.k_apertureNSides, GetApertureNSides());
     result.SetFloat(RixStr.k_apertureRoundness, GetApertureRoundness());
 
+    // TODO: Remove this hack. RenderMan globalizes all camera parameters as
+    // though they are scene-level options, so this is a backdoor way to set
+    // Ri:ScreenWindow without calling SetOptions. Need to determine whether
+    // this is still required and, if so, try to eliminate it.
     const GfVec4f s = _RangeToVec4(screenWindow);
     result.SetFloatArray(RixStr.k_Ri_ScreenWindow, s.data(), 4);
 
@@ -649,13 +653,24 @@ HdPrmanCamera::_DeleteClipPlanes(riley::Riley* const riley)
 // conformed camera frustum from the scene delegate maps to the display window
 // of the CameraUtilFraming. This is achieved by the following code.
 GfRange2d
-HdPrmanCamera::_GetScreenWindow() const
+HdPrmanCamera::_GetScreenWindow(const GfVec4f &dataWindowOverride) const
 {
     static const double half = 0.5;
 
-    const GfVec2d size(GetHorizontalAperture(), GetVerticalAperture());
+    // Crop-aware aperture.
+    // Scales and offsets the aperture so the camera sees only the crop region.
+    // Reduces to the original expression for (0,0,1,1).
+    const double ha = GetHorizontalAperture();
+    const double va = GetVerticalAperture();
+    const double dwW = dataWindowOverride[2] - dataWindowOverride[0];
+    const double dwH = dataWindowOverride[3] - dataWindowOverride[1];
+
+    const GfVec2d size(ha * dwW, va * dwH);
     const GfVec2d offset(
-        GetHorizontalApertureOffset(), GetVerticalApertureOffset());
+        GetHorizontalApertureOffset()
+            + ha * (dataWindowOverride[0] + half * (dwW - 1.0)),
+        GetVerticalApertureOffset()
+            + va * (dataWindowOverride[1] + half * (dwH - 1.0)));
 
     const GfRange2d filmbackPlane(-half * size + offset, +half * size + offset);
 
@@ -663,14 +678,12 @@ HdPrmanCamera::_GetScreenWindow() const
         return filmbackPlane;
     }
 
-    if (GetFocalLength() == 0.f || size[0] == 0.f) {
+    if (GetFocalLength() == 0.f || ha == 0.) {
         return filmbackPlane;
     }
 
-    // Note that for perspective projection and with no horizontal aperture,
-    // our screen widndow's x-coordinate are in [-1, 1].
-    // Divide by appropriate factor to get to this.
-    return filmbackPlane / (half * size[0]);
+    // Divide by the full aperture, not the cropped size.
+    return filmbackPlane / (half * ha);
 }
 
 HdPrmanCamera::HdPrmanCamera(SdfPath const& id)
@@ -683,7 +696,6 @@ HdPrmanCamera::HdPrmanCamera(SdfPath const& id)
   , _lensDistortionAsym(0.0f)
   , _lensDistortionScale(1.0f)
 #endif
-  , _dofAspect(1.0f)
   , _apertureAngle(0.0f)
   , _apertureDensity(0.0f)
   , _apertureNSides(0)
@@ -800,11 +812,44 @@ GfRange2d
 HdPrmanCamera::_ConformScreenWindow(
     const HdPrman_CameraContext::ActiveCameraOverlay& overlay) const
 {
-    const GfRange2d conformedScreenWindow =
-        CameraUtilConformedWindow(
-            _GetScreenWindow(),
-            overlay.windowPolicy,
-            _GetDisplayWindowAspect(overlay.framing));
+    // Conforms to crop region's own aspect ratio instead of display window's
+    const GfVec4f &dwo = overlay.dataWindowOverride;
+    const float cropWidth = dwo[2] - dwo[0];
+    const float cropHeight = dwo[3] - dwo[1];
+    double targetAspect;
+    if (overlay.fullResolution[0] > 0 && overlay.fullResolution[1] > 0 &&
+        cropWidth > 0 && cropHeight > 0) {
+        targetAspect = overlay.framing.pixelAspectRatio *
+            (double(overlay.fullResolution[0]) * cropWidth) /
+            (double(overlay.fullResolution[1]) * cropHeight);
+    } else {
+        targetAspect = _GetDisplayWindowAspect(overlay.framing);
+    }
+
+    const GfRange2d screenWindow = _GetScreenWindow(overlay.dataWindowOverride);
+
+    static const GfVec4f fullFrame(0.f, 0.f, 1.f, 1.f);
+    const bool hasCrop = (overlay.dataWindowOverride != fullFrame);
+    const GfRange2d conformedScreenWindow = [&]() {
+        if (hasCrop) {
+            // Crop: scale about origin to preserve the crop's position
+            // relative to the camera's optical axis.
+            const GfVec2d conformedSize = CameraUtilConformedWindow(
+                screenWindow.GetSize(),
+                overlay.windowPolicy,
+                targetAspect);
+            const double scaleX = conformedSize[0] / screenWindow.GetSize()[0];
+            const double scaleY = conformedSize[1] / screenWindow.GetSize()[1];
+            return GfRange2d(
+                GfVec2d(screenWindow.GetMin()[0] * scaleX,
+                        screenWindow.GetMin()[1] * scaleY),
+                GfVec2d(screenWindow.GetMax()[0] * scaleX,
+                        screenWindow.GetMax()[1] * scaleY));
+        }
+        // No crop: conform about center, preserving aperture offset.
+        return CameraUtilConformedWindow(
+            screenWindow, overlay.windowPolicy, targetAspect);
+    }();
 
     return overlay.renderBufferSize
         ? _ConvertScreenWindowForDisplayWindowToRenderBuffer(
@@ -947,9 +992,13 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
             sceneDelegate->GetCameraParamValue(id, _tokens->shutteropening);
         _shutterCurve.shutteropening = _ToOptionalFloat8(vShutteropening);
 
-        _dofAspect =
-            sceneDelegate->GetCameraParamValue(id, _tokens->dofAspect)
-                         .GetWithDefault<float>(1.0f);
+        // if dofAspect is specified as "ri:dofaspect" instead of the usual
+        // HdCameraSchema "dofAspect", it should take precedence over the latter
+        const VtValue vRiDofAspect =
+            sceneDelegate->GetCameraParamValue(id, _tokens->dofAspect);
+        if (vRiDofAspect.IsHolding<float>()) {
+            _dofAspect = vRiDofAspect.UncheckedGet<float>();
+        }
         _apertureAngle =
             sceneDelegate->GetCameraParamValue(id, _tokens->apertureAngle)
                          .GetWithDefault<float>(0.0f);

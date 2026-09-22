@@ -45,6 +45,8 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
+#if PXR_VERSION >= 2605
+
 namespace {
 
 TfToken
@@ -361,5 +363,7 @@ UsdRiPxrImagingVolumeFilterAdapter::InvalidateImagingSubprimFromDescendent(
 
     return result;
 }
+
+#endif // PXR_VERSION >= 2605
 
 PXR_NAMESPACE_CLOSE_SCOPE

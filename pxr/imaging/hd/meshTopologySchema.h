@@ -103,6 +103,32 @@ public:
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
+    /// @}
+
+    /// \name Data source locators for members
+    ///
+    /// The following methods return an HdDataSourceLocator (relative to the
+    /// prim-level data source) where the data source for a member can be found.
+    ///
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    /// @{
+
+    /// Prim-level relative data source locator to locate faceVertexCounts.
+    HD_API
+    static const HdDataSourceLocator &GetFaceVertexCountsLocator();
+
+    /// Prim-level relative data source locator to locate faceVertexIndices.
+    HD_API
+    static const HdDataSourceLocator &GetFaceVertexIndicesLocator();
+
+    /// Prim-level relative data source locator to locate holeIndices.
+    HD_API
+    static const HdDataSourceLocator &GetHoleIndicesLocator();
+
+    /// Prim-level relative data source locator to locate orientation.
+    HD_API
+    static const HdDataSourceLocator &GetOrientationLocator();
     /// @} 
 
     /// \name Schema construction

@@ -41,7 +41,6 @@
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
-#include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/envSetting.h"
@@ -562,8 +561,7 @@ void
 HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
 {
     TF_UNUSED(tracker);
-    GLF_GROUP_FUNCTION();
-    
+
     _ApplyTextureSettings();
 
     // --------------------------------------------------------------------- //

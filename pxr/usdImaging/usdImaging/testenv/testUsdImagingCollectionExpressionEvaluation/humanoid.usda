@@ -1,0 +1,47 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Xform "HumanoidGroup"
+{
+    def Xform "Implicits"
+    {
+        def Cylinder "CylinderL"
+        {
+            config token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+            double3 xformOp:translate = (-0.5, 0, 0)
+            float3 xformOp:rotateXYZ = (-90, 0, 0)
+            double radius = 0.4
+        }
+        def Cylinder "CylinderR"
+        {
+            config token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+            double3 xformOp:translate = (0.5, 0, 0)
+            float3 xformOp:rotateXYZ = (-90, 0, 0)
+            double radius = 0.4
+        }
+
+        def Cube "Box"
+        {
+            config token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+            double3 xformOp:translate = (0, 2, 0)
+            float3 xformOp:rotateXYZ = (0, 0, 0)
+        }
+
+        def Sphere "Sphere"
+        {
+            config token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+            double3 xformOp:translate = (0, 4, 0)
+            float3 xformOp:rotateXYZ = (-90, 0, 0)
+        }
+
+        def Cone "Cone"
+        {
+            config token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+            double3 xformOp:translate = (0, 6, 0)
+            float3 xformOp:rotateXYZ = (-90, 0, 0)
+        }
+
+    }
+}

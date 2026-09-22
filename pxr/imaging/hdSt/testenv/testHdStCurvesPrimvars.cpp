@@ -13,7 +13,7 @@
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/glf/testGLContext.h"
+#include "pxr/imaging/garch/glDebugWindow.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -331,8 +331,8 @@ TopologyWithIndicesTest(HdStResourceRegistrySharedPtr const & registry)
 
 int main()
 {
-    GlfTestGLContext::RegisterGLContextCallbacks();
-    GlfSharedGLContextScopeHolder sharedContext;
+    GarchGLDebugWindow window("Hd Test", 512, 512);
+    window.Init();
 
     TfErrorMark mark;
 

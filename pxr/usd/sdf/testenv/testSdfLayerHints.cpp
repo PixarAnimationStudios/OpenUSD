@@ -46,8 +46,7 @@ TestSdfLayerHintsMaybeHasRelocates()
             "testSdfLayerHints.testenv/without_relocates.usda");
         TF_AXIOM(!layer->GetHints().mightHaveRelocates);
 
-        SdfPrimSpecHandle prim = layer->GetPrimAtPath(SdfPath("/Prim"));
-        prim->SetRelocates({{ SdfPath("Prim"), SdfPath("Prim") }});
+        layer->SetRelocates({{ SdfPath("/Prim"), SdfPath("/Prim") }});
         TF_AXIOM(layer->GetHints().mightHaveRelocates);
     }
 
@@ -111,9 +110,7 @@ TestSdfLayerHintsMaybeHasRelocates()
         SdfLayerRefPtr layer = SdfLayer::CreateNew(
             ArchMakeTmpFileName("testSdfLayerHints_", ".usda"));
         TF_AXIOM(!layer->GetHints().mightHaveRelocates);
-        SdfPrimSpecHandle prim = SdfCreatePrimInLayer(layer, SdfPath("Prim"));
-        TF_AXIOM(prim);
-        prim->SetRelocates({{ SdfPath("Prim"), SdfPath("Prim") }});
+        layer->SetRelocates({{ SdfPath("/Prim"), SdfPath("/Prim") }});
         TF_AXIOM(layer->GetHints().mightHaveRelocates);
         layer->Save();
         TF_AXIOM(layer->GetHints().mightHaveRelocates);
@@ -124,9 +121,7 @@ TestSdfLayerHintsMaybeHasRelocates()
     {
         SdfLayerRefPtr layer = SdfLayer::CreateAnonymous();
         TF_AXIOM(!layer->GetHints().mightHaveRelocates);
-        SdfPrimSpecHandle prim = SdfCreatePrimInLayer(layer, SdfPath("Prim"));
-        TF_AXIOM(prim);
-        prim->SetRelocates({{ SdfPath("Prim"), SdfPath("Prim") }});
+        layer->SetRelocates({{ SdfPath("/Prim"), SdfPath("/Prim") }});
         TF_AXIOM(layer->GetHints().mightHaveRelocates);
         {
             TfErrorMark m;

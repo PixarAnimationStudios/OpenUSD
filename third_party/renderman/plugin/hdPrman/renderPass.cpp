@@ -40,6 +40,7 @@
 #endif
 
 #include <Riley.h>
+#include <display/display.h> // needed to define DISPLAY_INTERFACE_VERSION
 #include <RiTypesHelper.h>
 
 #include <string>
@@ -98,7 +99,18 @@ _DiffTimeToNow(std::chrono::steady_clock::time_point const &then)
 }
 
 void
+_BlitFrom(HdPrmanRenderBuffer * rb, const HdPrmanFramebuffer * fb, size_t idx)
+{
+    rb->Blit(fb->aovBuffers[idx].desc.format,
+             fb->w,
+             fb->h,
+             reinterpret_cast<const uint8_t*>(fb->aovBuffers[idx].pixels.data()));
+} 
+
+void
 _Blit(HdPrmanFramebuffer * const framebuffer,
+      HdPrmanFramebuffer * const denoisedFramebuffer,
+      const std::set<size_t>& denoisedAovIndices,
       HdRenderPassAovBindingVector const &aovBindings,
       const bool converged)
 {
@@ -106,25 +118,47 @@ _Blit(HdPrmanFramebuffer * const framebuffer,
     // Lock the framebuffer when reading so we don't overlap
     // with RenderMan's resize/writing.
     std::lock_guard<std::mutex> lock(framebuffer->mutex);
+    const bool newData = framebuffer->ConsumeNewData();
 
-    const bool newData = framebuffer->newData.exchange(false);
+    // Check denoised framebuffer for new data
+    bool newDenoisedData = false;
+    std::unique_lock<std::mutex> denoisedLock;
+    if (denoisedFramebuffer) {
+        denoisedLock = std::unique_lock<std::mutex>(denoisedFramebuffer->mutex);
+        newDenoisedData = denoisedFramebuffer->ConsumeNewData();
+    }
 
+    size_t denoisedAovIdx = 0;
     for(size_t aov = 0; aov < aovBindings.size(); ++aov) {
         HdPrmanRenderBuffer *const rb =
             static_cast<HdPrmanRenderBuffer*>(
                 aovBindings[aov].renderBuffer);
 
-        if(!TF_VERIFY(rb)) {
+        if (!TF_VERIFY(rb)) {
             continue;
         }
 
-        if (newData) {
-            rb->Blit(framebuffer->aovBuffers[aov].desc.format,
-                     framebuffer->w,
-                     framebuffer->h,
-                     reinterpret_cast<uint8_t*>(
-                         framebuffer->aovBuffers[aov].pixels.data()));
+        bool useDenoised = denoisedFramebuffer
+                           && denoisedAovIndices.count(aov) > 0;
+
+        if (useDenoised) {
+            if(newDenoisedData) {
+                // Read from denoised framebuffer
+                _BlitFrom(rb, denoisedFramebuffer, denoisedAovIdx);
+            } else if (!denoisedFramebuffer->HasData() && newData) {
+                // Denoiser hasn't fired yet — show raw data
+                _BlitFrom(rb, framebuffer, aov);
+            }
+            // else: do nothing, keep last denoised result
+        } else if (newData) {
+            // Read from raw framebuffer
+            _BlitFrom(rb, framebuffer, aov);
         }
+
+        if (useDenoised) {
+            denoisedAovIdx++;
+        }
+
         // Forward convergence state to the render buffers...
         rb->SetConverged(converged);
     }
@@ -273,13 +307,19 @@ _ComputeCameraFramingFromSettings(
     const GfVec2i renderBufferSize)
 {
     // Get the resolution
-    GfVec2i resolution = renderDelegate->GetRenderSetting<GfVec2i>(
+    GfVec2i resolution = renderBufferSize;
+    if(!renderProducts.empty()) {
+        resolution = renderDelegate->GetRenderSetting<GfVec2i>(
         HdPrmanRenderSettingsTokens->resolution, renderBufferSize);
+    }
 
     // Get the data window NDC
     static const GfVec4f dataWindowDefault(0.0, 0.0, 1.0, 1.0);
-    GfVec4f dataWindow = renderDelegate->GetRenderSetting<GfVec4f>(
-        HdPrmanRenderSettingsTokens->dataWindowNDC, dataWindowDefault);
+    GfVec4f dataWindow = dataWindowDefault;
+    if(!renderProducts.empty()) {
+        dataWindow = renderDelegate->GetRenderSetting<GfVec4f>(
+            HdPrmanRenderSettingsTokens->dataWindowNDC, dataWindowDefault);
+    }
 
     // Get the pixel aspect ratio
     static const float pixelAspectRatioDefault(1.0);
@@ -448,6 +488,8 @@ HdPrman_RenderPass::_UpdateCameraFramingAndWindowPolicy(
     if (renderPassState->GetFraming().IsValid()) {
         // For new clients setting the camera framing.
         cameraContext->SetFraming(renderPassState->GetFraming());
+        // Client-provided framing already reflects the intended crop.
+        cameraContext->SetFullResolution(GfVec2i(0, 0));
         cameraContext->SetWindowPolicy(renderPassState->GetWindowPolicy());
     } else {
         // Note, commenting this out; it leads to prman crashing in Houdini 19.5
@@ -470,8 +512,30 @@ HdPrman_RenderPass::_UpdateCameraFramingAndWindowPolicy(
             resolution[1] = vp[3];
         }
 
-        if (renderProducts.empty()) {
+        if(renderDelegate->IsInteractive() && renderProducts.empty()) {
+            // This deals with render regions for Solaris for both
+            // interactive renders and "raster" mode batch renders,
+            // which both use the hydra display driver.
+            // The dataWindowNDC setting is needed by the camera context
+            // for the Ri:ScreenWindow computation.
+            GfVec4f defaultDataWindow(0,0,1,1);
+            GfVec4f dataWindow =
+                renderDelegate->GetRenderSetting<GfVec4f>(
+                    HdPrmanRenderSettingsTokens->dataWindowNDC, defaultDataWindow);
+            // Round to whole pixels so Ri:ScreenWindow and Ri:CropWindow match
+            const GfVec2i fullRes = renderDelegate->GetRenderSetting<GfVec2i>(
+                HdPrmanRenderSettingsTokens->resolution, resolution);
+                dataWindow = GfVec4f(
+                    ceilf(fullRes[0] * dataWindow[0]) / fullRes[0],
+                    ceilf(fullRes[1] * dataWindow[1]) / fullRes[1],
+                    ceilf(fullRes[0] * dataWindow[2]) / fullRes[0],
+                    ceilf(fullRes[1] * dataWindow[3]) / fullRes[1]);
+            cameraContext->SetDataWindowOverride(dataWindow);
+        }
+
+        if (renderProducts.empty() && !_renderParam->UsingHusk()) {
             const GfVec4f &vp = renderPassState->GetViewport();
+
             cameraContext->SetFraming(
                 CameraUtilFraming(
                     GfRect2i(
@@ -479,6 +543,11 @@ HdPrman_RenderPass::_UpdateCameraFramingAndWindowPolicy(
                         // but the camera framing is y-Down, so converting here.
                         GfVec2i(vp[0], resolution[1] - (vp[1] + vp[3])),
                         vp[2], vp[3])));
+
+            // Give the full resolution so the crop conforms to its own aspect ratio.
+            const GfVec2i fullRes = renderDelegate->GetRenderSetting<GfVec2i>(
+                HdPrmanRenderSettingsTokens->resolution, resolution);
+            cameraContext->SetFullResolution(fullRes);
 
             // Get the aspect ratio conform policy from render settings (Solaris)
             // otherwise get it from render pass state (studio's hdprman)
@@ -502,6 +571,8 @@ HdPrman_RenderPass::_UpdateCameraFramingAndWindowPolicy(
             _ComputeCameraFramingFromSettings(
                 renderPassState, renderDelegate, renderProducts, resolution);
             cameraContext->SetFraming(renderPassState->GetFraming());
+            // Settings/husk framing already bakes the crop into the display window.
+            cameraContext->SetFullResolution(GfVec2i(0, 0));
             cameraContext->SetWindowPolicy(renderPassState->GetWindowPolicy());
         }
     }
@@ -752,6 +823,7 @@ HdPrman_RenderPass::_Execute(
     // resolution used for the render target. For the latter, we specifically
     // update the resolution on the render view context below.
     //
+    bool reassertRenderViewResolution = false;
     if (hasLegacyProducts) {
         // Use RenderProducts from the RenderSettingsMap (Solaris)
 
@@ -789,6 +861,7 @@ HdPrman_RenderPass::_Execute(
 
             if (createRenderView) {
                 _renderParam->CreateRenderViewFromRenderSpec(legacyRenderSpec);
+                reassertRenderViewResolution = true;
             }
         } else {
             TF_WARN("Could not create render view because the render pass "
@@ -815,7 +888,7 @@ HdPrman_RenderPass::_Execute(
         return;
     }
 
-    if (resolutionChanged) {
+    if (resolutionChanged || reassertRenderViewResolution) {
         rvCtx.SetResolution(resolution, _renderParam->AcquireRiley());
     }
     //
@@ -864,7 +937,7 @@ HdPrman_RenderPass::_Execute(
         // identity changed, run the transition (revert previous + re-issue the
         // default dicing camera + repoint the render view) -- all consolidated
         // inside UpdateActiveCamera.
-        if (aovBindings.empty() || hasLegacyProducts) {
+        if (aovBindings.empty() || hasLegacyProducts || _renderParam->UsingHusk()) {
             cameraContext.UpdateActiveCamera(GetRenderIndex());
         } else {
             // When using AOV-bindings, we setup the camera slightly
@@ -952,7 +1025,11 @@ HdPrman_RenderPass::_Execute(
 
     if (HdPrmanFramebuffer * const framebuffer =
             _renderParam->GetFramebuffer()) {
-        _Blit(framebuffer, aovBindings, _converged);
+        _Blit(framebuffer,
+              _renderParam->GetDenoisedFramebuffer(),
+              _renderParam->GetDenoisedAovIndices(),
+              aovBindings,
+              _converged);
     }
 }
 

@@ -227,7 +227,7 @@ def Scope "Scene" (
                 color3f inputs:emissiveColor = (0, 0, 0)
                 float  inputs:displacement = 0
                 float  inputs:occlusion = 1
-                float3 inputs:normal = (0, 1, 0)
+                normal3f inputs:normal = (0, 1, 0)
                 float  inputs:ior = 1.5
 
                 color3f inputs:diffuseColor.connect = </Scene/Looks/Material/Diffuse.outputs:rgb>

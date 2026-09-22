@@ -24,7 +24,7 @@ def Material "EllipsoidalVolumeMaterial" (
     {
         uniform asset info:glslfx:sourceAsset = @ellipsoidalVolume.glslfx@
         uniform token info:implementationSource = "sourceAsset"
-        float3 inputs:emissionColor = (0, 0, 0.3)
+        color3f inputs:emissionColor = (0, 0, 0.3)
         token outputs:volume
     }
 }

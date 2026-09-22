@@ -5,7 +5,7 @@
 // https://openusd.org/license.
 //
 
-#include "pxr/imaging/glf/testGLContext.h"
+#include "pxr/imaging/garch/glDebugWindow.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -86,8 +86,8 @@ int main()
 {
     TfErrorMark mark;
 
-    GlfTestGLContext::RegisterGLContextCallbacks();
-    GlfSharedGLContextScopeHolder sharedContext;
+    GarchGLDebugWindow window("Hd Test", 512, 512);
+    window.Init();
 
     HgiUniquePtr const hgi = Hgi::CreatePlatformDefaultHgi();
     HdDriver driver{HgiTokens->renderDriver, VtValue(hgi.get())};

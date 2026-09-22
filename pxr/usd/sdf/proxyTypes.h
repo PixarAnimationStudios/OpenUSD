@@ -51,9 +51,6 @@ typedef SdfNameEditorProxy SdfVariantSetNamesProxy;
 
 typedef SdfMapEditProxy<VtDictionary> SdfDictionaryProxy;
 typedef SdfMapEditProxy<SdfVariantSelectionMap> SdfVariantSelectionProxy;
-typedef SdfMapEditProxy<SdfRelocatesMap,
-                        SdfRelocatesMapProxyValuePolicy> SdfRelocatesMapProxy;
-
 
 /// Returns a name list editor proxy for the name list op in the given
 /// \p nameField on \p spec.  If the value doesn't exist or \p spec is 

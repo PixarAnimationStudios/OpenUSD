@@ -30,7 +30,7 @@
 
 #include "pxr/imaging/hgi/tokens.h"
 
-#include "pxr/imaging/glf/testGLContext.h"
+#include "pxr/imaging/garch/glDebugWindow.h"
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -324,8 +324,8 @@ TestShader(HdStResourceRegistrySharedPtr const &registry,
 
 int main(int argc, char *argv[])
 {
-    GlfTestGLContext::RegisterGLContextCallbacks();
-    GlfSharedGLContextScopeHolder sharedContext;
+    GarchGLDebugWindow window("Hd Test", 512, 512);
+    window.Init();
 
     bool success = true;
 

@@ -10,8 +10,6 @@ over Prim "Foo" (
     ]
     inherits = [
     ]
-    relocates = {
-    }
 )
 {
     double x1.connect = [ ]

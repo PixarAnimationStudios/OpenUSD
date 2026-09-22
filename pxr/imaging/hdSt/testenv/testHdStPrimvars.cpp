@@ -13,7 +13,7 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/imaging/glf/testGLContext.h"
+#include "pxr/imaging/garch/glDebugWindow.h"
 
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/gf/vec3f.h"
@@ -227,8 +227,8 @@ PrimvarsTest()
 
 int main()
 {
-    GlfTestGLContext::RegisterGLContextCallbacks();
-    GlfSharedGLContextScopeHolder sharedContext;
+    GarchGLDebugWindow window("Hd Test", 512, 512);
+    window.Init();
 
     TfErrorMark mark;
 

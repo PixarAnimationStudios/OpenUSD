@@ -10,6 +10,7 @@
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/regTest.h"
+#include "pxr/base/tf/span.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <cstdio>
@@ -199,7 +200,7 @@ static void Run()
     TF_AXIOM(_map.empty());
     TF_AXIOM(_map.size() == 0);
 
-    printf("exerise initialize_list ctor / assignment.\n");
+    printf("exercise initialize_list ctor / assignment.\n");
     _Map init {
         { 100, "this" },
         { 110, "can" },
@@ -368,11 +369,89 @@ TestMoveOperations()
     TF_AXIOM(smallMap6.find(35000)->second == "35000");
 }
 
+/// Test contiguous storage by using TfSpan to access TfDenseHashMap data.
+static void
+TestContiguousStorage()
+{
+    // Build a TfDenseHashMap and then delete elements from the middle.
+    using Map = TfDenseHashMap<size_t, std::string, TfHash>;
+    Map map;
+
+    printf("Inserting numbers to 10000\n");
+    for (size_t i=0; i<=10000; ++i) {
+        map.insert({i, TfStringify(i)});
+    }
+
+    printf("Removing numbers 2500 to 5000\n");
+    for (size_t i=2500; i<=5000; ++i) {
+        map.erase(i);
+    }
+
+    printf("Verify by iterating over contents.\n");
+    for (auto it=map.begin(); it!=map.end(); ++it) {
+        TF_AXIOM(it->second == TfStringify(it->first));
+        TF_AXIOM(it->first < 2500 || it->first > 5000);
+    }
+
+    // Iterate using cbegin/cend over a const copy of the map.
+    const Map constMap(map);
+    for (auto it=constMap.cbegin(); it!=constMap.cend(); ++it) {
+        TF_AXIOM(it->second == TfStringify(it->first));
+        TF_AXIOM(it->first < 2500 || it->first > 5000);
+    }
+
+    // Iterate using data/size.
+    {
+        Map::value_type *data = map.data();
+        for (size_t i=0; i<map.size(); ++i, ++data) {
+            TF_AXIOM(data->second == TfStringify(data->first));
+            TF_AXIOM(data->first < 2500 || data->first > 5000);
+        }
+    }
+
+    // Iterate using cdata/size.
+    {
+        const Map::value_type *data = constMap.cdata();
+        for (size_t i=0; i<constMap.size(); ++i, ++data) {
+            TF_AXIOM(data->second == TfStringify(data->first));
+            TF_AXIOM(data->first < 2500 || data->first > 5000);
+        }
+    }
+
+    printf("Verify contents using TfSpan\n");
+
+    auto verifySpan = [](TfSpan<const Map::value_type> span) {
+        TF_AXIOM(span.size() == 7500);
+        for (const auto &entry : span) {
+            TF_AXIOM(entry.second == TfStringify(entry.first));
+            TF_AXIOM(entry.first < 2500 || entry.first > 5000);
+        }
+    };
+
+    // Implicitly convert a map to a span.
+    verifySpan(map);
+
+    // Explicitly construct a const span.
+    verifySpan(TfMakeConstSpan(map));
+
+    printf("Test TfSpan with an empty map.\n");
+    Map emptyMap;
+    for (const auto &entry : TfMakeSpan(emptyMap)) {
+        TF_UNUSED(entry);
+        TF_AXIOM(false);
+    }
+    for (const auto &entry : TfMakeConstSpan(emptyMap)) {
+        TF_UNUSED(entry);
+        TF_AXIOM(false);
+    }
+}
+
 static bool
 Test_TfDenseHashMap()
 {
     Run();
     TestMoveOperations();
+    TestContiguousStorage();
     return true;
 }
 

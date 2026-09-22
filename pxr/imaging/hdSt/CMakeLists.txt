@@ -97,6 +97,7 @@ pxr_library(hdSt
         hgiConversions
         hioConversions
         imageShaderRenderPass
+        implicitSurface
         implicitSurfaceSceneIndexPlugin
         nurbsApproximatingSceneIndexPlugin
         instancer
@@ -167,6 +168,7 @@ pxr_library(hdSt
         extCompSceneInputSource
         fieldTextureCpuData
         imageShaderShaderKey
+        implicitSurfaceShaderKey
         indirectDrawBatch
         materialNetworkShader
         materialBindingResolvingSceneIndexPlugin
@@ -182,7 +184,6 @@ pxr_library(hdSt
         renderPassShaderKey
         resourceBinder
         shaderKey
-        sphereShaderKey
         subdivision
         triangulate
         unitTestHelper
@@ -204,6 +205,9 @@ pxr_library(hdSt
         shaders/fallbackVolume.glslfx
         shaders/frustumCull.glslfx
         shaders/imageShader.glslfx
+        shaders/implicitSurface.glslfx
+        shaders/implicitSurfaceFaceCull.glslfx
+        shaders/implicitSurfaceNormal.glslfx
         shaders/instancing.glslfx
         shaders/invalidMaterialNetwork.glslfx
         shaders/mesh.glslfx
@@ -211,17 +215,17 @@ pxr_library(hdSt
         shaders/meshNormal.glslfx
         shaders/meshWire.glslfx
         shaders/overlayShader.glslfx
+        shaders/pcfShader.glslfx
         shaders/points.glslfx
         shaders/pointId.glslfx
         shaders/pointDisk.glslfx
         shaders/ptexTexture.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx
+        shaders/simpleLighting.glslfx
         shaders/simpleLightingShader.glslfx
         shaders/skinning.glslfx
         shaders/sphere.glslfx
-        shaders/sphereFaceCull.glslfx
-        shaders/sphereNormal.glslfx
         shaders/surfaceHelpers.glslfx
         shaders/terminals.glslfx
         shaders/visibility.glslfx
@@ -270,7 +274,6 @@ pxr_build_test(testHdStBufferAggregation
         hd
         hgi
         garch
-        glf
         vt
         tf
         gf
@@ -281,7 +284,7 @@ pxr_build_test(testHdStBufferArray
     LIBRARIES
         hdSt
         hd
-        glf
+        garch
         tf
         gf
     CPPFILES
@@ -300,7 +303,7 @@ pxr_build_test(testHdStBufferSourceDependency
     LIBRARIES
         hdSt
         hd
-        glf
+        garch
         tf
     CPPFILES
         testenv/testHdStBufferSourceDependency.cpp
@@ -310,7 +313,7 @@ pxr_build_test(testHdStCodeGen
         hdSt
         hd
         hio
-        glf
+        garch
         tf
     CPPFILES
         testenv/testHdStCodeGen.cpp
@@ -337,7 +340,7 @@ pxr_build_test(testHdStCurvesPrimvars
     LIBRARIES
         hdSt
         hd
-        glf
+        garch
         sdf
         tf
         gf
@@ -367,7 +370,7 @@ pxr_build_test(testHdStDrawBatching
         hdSt
         hd
         hio
-        glf
+        garch
         tf
         gf
     CPPFILES
@@ -418,7 +421,6 @@ pxr_build_test(testHdStFrustumCulling
 pxr_build_test(testHdStGL
     LIBRARIES
         garch
-        glf
         tf
     CPPFILES
         testenv/testHdStGL.cpp
@@ -426,7 +428,6 @@ pxr_build_test(testHdStGL
 pxr_build_test(testHdStGLSL
     LIBRARIES
         hio
-        glf
         garch
         tf
     CPPFILES
@@ -436,7 +437,7 @@ pxr_build_test(testHdStHWFaceCulling
     LIBRARIES
         hdSt
         hd
-        glf
+        garch
         tf
         gf
     CPPFILES
@@ -445,7 +446,7 @@ pxr_build_test(testHdStHWFaceCulling
 pxr_build_test(testHdStIndirectDrawBatchCulling
     LIBRARIES
         hdSt
-        glf
+        garch
         tf
     CPPFILES
         testenv/testHdStIndirectDrawBatchCulling.cpp
@@ -490,7 +491,7 @@ pxr_build_test(testHdStMeshTopology
         hdSt
         hd
         sdf
-        glf
+        garch
         tf
         gf
     CPPFILES
@@ -518,7 +519,7 @@ pxr_build_test(testHdStPrimitiveParam
         hdSt
         hd
         hgi
-        glf
+        garch
         sdf
         tf
     CPPFILES
@@ -528,7 +529,7 @@ pxr_build_test(testHdStPrimvars
     LIBRARIES
         hdSt
         hd
-        glf
+        garch
         sdf
         tf
         gf
@@ -539,7 +540,7 @@ pxr_build_test(testHdStQuadrangulation
     LIBRARIES
         hdSt
         hd
-        glf
+        garch
         tf
         gf
     CPPFILES
@@ -549,7 +550,7 @@ pxr_build_test(testHdStRenderPass
     LIBRARIES
         hdSt
         hd
-        glf
+        garch
         tf
     CPPFILES
         testenv/testHdStRenderPass.cpp
@@ -567,7 +568,7 @@ pxr_build_test(testHdStSubdivision
         hd
         pxOsd
         hgi
-        glf
+        garch
         tf
         gf
     CPPFILES
