@@ -165,6 +165,16 @@ public:
         /// AddResourcesFromTextures.
         HdStShaderCodePtr const &shaderCode);
 
+    /// Commit any texture handles allocated since the last commit,
+    /// creating their GPU texture and sampler resources.
+    ///
+    /// This is normally driven by the commit phase, which runs between the
+    /// tasks' Prepare() and Execute() phases. Call this only when a texture
+    /// handle has to be allocated during Execute(), which would otherwise
+    /// leave it without a sampler object until the next frame's commit.
+    HDST_API
+    void CommitTextures();
+
     /// Allocate texture object.
     ///
     /// The actual allocation of the associated GPU texture and
@@ -564,7 +574,6 @@ protected:
     void _GarbageCollect() override;
 
 private:
-    void _CommitTextures();
     // Wrapper function for BAR allocation
     HdBufferArrayRangeSharedPtr _AllocateBufferArrayRange(
         HdStAggregationStrategy *strategy,
