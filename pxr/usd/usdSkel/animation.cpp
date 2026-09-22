@@ -265,8 +265,8 @@ UsdSkelAnimation::SetTransforms(const VtMatrix4dArray& xforms,
     VtVec3hArray scales;
     if (UsdSkelDecomposeTransforms(xforms, &translations,
                                    &rotations, &scales)) {
-        return GetTranslationsAttr().Set(translations, time) &
-               GetRotationsAttr().Set(rotations, time) &
+        return GetTranslationsAttr().Set(translations, time) &&
+               GetRotationsAttr().Set(rotations, time) &&
                GetScalesAttr().Set(scales, time);
     }
     return false;
