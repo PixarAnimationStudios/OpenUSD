@@ -507,7 +507,20 @@ _ComputeHeader(id<MTLDevice> device, HgiShaderStage stage)
               "#define greaterThanEqual(a, b) ((a) >= (b))\n"
               "#define equal(a, b) ((a) == (b))\n"
               "#define notEqual(a, b) ((a) != (b))\n"
-    
+
+              "float intBitsToFloat(int x) { return as_type<float>(x); }\n"
+              "float uintBitsToFloat(uint x) { return as_type<float>(x); }\n"
+              "int floatBitsToInt(float x) { return as_type<int>(x); }\n"
+              "uint floatBitsToUint(float x) { return as_type<uint>(x); }\n"
+              "template <int N> vec<float, N> intBitsToFloat(vec<int, N> x) "
+              "{ return as_type<vec<float, N>>(x); }\n"
+              "template <int N> vec<float, N> uintBitsToFloat(vec<uint, N> x) "
+              "{ return as_type<vec<float, N>>(x); }\n"
+              "template <int N> vec<int, N> floatBitsToInt(vec<float, N> x) "
+              "{ return as_type<vec<int, N>>(x); }\n"
+              "template <int N> vec<uint, N> floatBitsToUint(vec<float, N> x) "
+              "{ return as_type<vec<uint, N>>(x); }\n"
+
               "union HgiPackedf16 { uint i; half2 h; };\n"
               "vec2 unpackHalf2x16(uint val)\n"
               "{\n"
