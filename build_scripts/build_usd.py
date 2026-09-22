@@ -13,7 +13,6 @@ if sys.version_info.major == 2:
              "of Python 3 instead.")
 
 import argparse
-import codecs
 import contextlib
 import ctypes
 import datetime
@@ -289,7 +288,7 @@ def Run(cmd, logCommandOutput = True, env = None):
     """Run the specified command in a subprocess."""
     PrintInfo('Running "{cmd}"'.format(cmd=cmd))
 
-    with codecs.open("log.txt", "a", "utf-8") as logfile:
+    with open("log.txt", "a", encoding="utf-8") as logfile:
         logfile.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
         logfile.write("\n")
         logfile.write(cmd)
