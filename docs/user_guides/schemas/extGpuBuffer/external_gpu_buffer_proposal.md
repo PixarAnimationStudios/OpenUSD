@@ -1,7 +1,17 @@
 External GPU Buffer Sharing
 ===========================
 
-Version 2 - August 13, 2026
+Version 3 - September 22, 2026
+
+> **What changed since Version 2.** V2 described a flat schema that published
+> native handles directly: `backendApi`, `rawHandle`, `externalMemoryHandle`,
+> `deviceUuid`, `logicalDeviceId`, and a nested `HdExtGpuSyncSchema` carrying
+> semaphore handles. Review of PR #4207 replaced all of it with two Hgi objects,
+> `HgiExternalBuffer` and `HgiExternalBufferArena`, and reduced the schema to a
+> weak reference plus layout. Every field V2 enumerated is now a detail of the
+> arena, and every negotiation V2 performed per buffer now happens once, when
+> the arena is created. Synchronization moved with it: there is no sync schema,
+> and the bracket is encoded by Hgi from `StartFrame`/`EndFrame`.
 
 ## Contents
 
@@ -25,340 +35,208 @@ round-tripping data that never needed to leave the device. For animated
 geometry this cost is paid every frame, and the readback tends to serialize the
 GPU pipeline.
 
-This proposal lets a producer hand Hydra a *handle* to a GPU buffer it already
-owns, so the render delegate can bind or copy it on-device and skip the round
-trip entirely.
+This proposal lets a producer hand Hydra a *reference* to a GPU buffer it
+already owns, so the render delegate can bind or copy it on-device and skip the
+round trip entirely.
 
 ## What it is
 
-`HdExtGpuBufferSchema` is a typed container data source that a producer overlays
-as a child of a primvar, under the token `extGpuBuffer`, describing an
-**externally-owned GPU buffer** that backs that primvar. When it is present, it
-becomes an alternative source of truth for the primvar's value: a render
-delegate that understands it may consume the GPU buffer directly and never
-require the CPU `VtArray`.
+Two objects, on opposite sides of a deliberate line.
 
-It sits as a child of the ordinary primvar container, alongside the value,
-interpolation, and role:
+**`HgiExternalBufferArena`** (in `hgi`) is where an application and a renderer
+agree, once, on how they will share memory. The application asks Hgi for an
+arena, hands it buffers, and gets back `HgiExternalBuffer` objects. Everything
+API-specific lives here: native handles, OS memory handles, device identity,
+semaphores, and reclamation.
+
+**`HdExtGpuBufferSchema`** (in `hd`) is a typed container data source a producer
+overlays as a child of a primvar, under the token `extGpuBuffer`. It carries a
+**weak reference** to one `HgiExternalBuffer` plus the layout of the stream
+inside it — and nothing else. It is renderer- and API-agnostic because it
+describes no API.
 
 ```
 primvars/points:
   primvarValue:  <empty or lazy VtArray>
   interpolation: vertex
   role:          point
-  extGpuBuffer:                          # HdExtGpuBufferSchema
-    backendApi, numElements, elementType, byteOffset, byteStride, directBindable
-    rawHandle, rawHandleByteSize                       # adopt route
-    externalMemoryHandle, externalHandleType,          # import route
-      memoryBlockSize, memoryOffset, dedicated
-    deviceUuid, logicalDeviceId                        # who owns it
-    sync:                                # HdExtGpuSyncSchema (optional)
-      backendApi, deviceUuid, logicalDeviceId, handleType, kind
-      writeSemaphore, readSemaphore                    # adopt route
-      externalWriteSemaphore, externalReadSemaphore    # import route
+  extGpuBuffer:                    # HdExtGpuBufferSchema
+    externalResource               # weak ref to an HgiExternalBuffer
+    numElements, elementType
+    byteOffset, byteStride
+    allowDirectBind
 ```
-
-The schema describes the buffer, not how to bind it, so it stays **renderer- and
-API-agnostic**:
 
 | Member | Type | Meaning |
 | --- | --- | --- |
-| `backendApi` | `TfToken` | GPU API the handle belongs to — the same token Hgi reports via `Hgi::GetAPIName()` (`HgiTokens->OpenGL` / `Vulkan` / `Metal`). A consumer ignores `rawHandle` if it does not match the active backend. |
-| `numElements` | `size_t` | Number of elements (e.g. vertices) the primvar addresses. |
+| `externalResource` | `HdExternalBufferDataSource` | A **weak** reference to the `HgiExternalBuffer` being shared. |
+| `numElements` | `size_t` | Number of tuples (vertices / elements) in this stream. |
 | `elementType` | `HdTupleType` | Element type and tuple arity (e.g. `Float32`×3 for points). |
-| `byteOffset` | `size_t` (optional) | Offset to the first element within the buffer. |
-| `byteStride` | `size_t` (optional) | Byte stride between consecutive elements (`0` = tightly packed). |
-| `directBindable` | `bool` | Hint: `true` = the buffer may be bound directly (zero-copy); `false` = the consumer should copy it into its own storage. |
-| `deviceUuid` | `TfToken` (optional) | Physical device owning the memory, as 32 lowercase hex chars. Absent = "unknown", treated as a match. |
-| `logicalDeviceId` | `uint64` (optional) | The logical device (`VkDevice`, `MTLDevice`) whose handle namespace `rawHandle` was minted in, unique within the process. `0`/absent = "unknown", treated as a match. |
+| `byteOffset` | `size_t` | Offset to the first element within the buffer. Non-zero means this stream is a sub-allocation of a larger pooled buffer. |
+| `byteStride` | `size_t` | Bytes between consecutive elements. `0`, or equal to the element size, means tightly packed and directly aliasable. |
+| `allowDirectBind` | `bool` | Permission, not instruction: whether the renderer *may* bind zero-copy. It is free to copy anyway. |
 
-### Naming the buffer: two routes
+That is the whole schema. There is no `backendApi`, because the buffer knows its
+own Hgi. No `rawHandle` or `externalMemoryHandle`, because which native route
+was used was settled when the arena was created. No `deviceUuid` or
+`logicalDeviceId`, because a buffer from the wrong device cannot be in this
+arena. No `sync` child, because synchronization is per arena, not per buffer.
 
-A buffer can be named two ways, and the difference is not cosmetic — it decides
-whether the consumer can bind the producer's object or has to build its own.
+**The reference is weak on purpose.** Scene indices cache, flatten and copy the
+containers they pass along, and any of those caches may outlive the geometry it
+described. A strong reference in the scene description would let a forgotten
+cache entry pin GPU memory for the life of the renderer. What keeps a buffer
+alive is its arena, plus whatever strong reference a renderer takes while it is
+actually consuming. An expired reference means "that buffer is gone, fall back
+to the CPU primvar" — which is also exactly the right behaviour when a producer
+withdraws a buffer.
 
-**Adopt route** — for a consumer that shares the producer's context or logical
-device:
+`HdExternalBufferPtr` is a struct wrapping `std::weak_ptr<HgiExternalBuffer>`
+rather than the bare `weak_ptr`, because `VtValue` requires equality and
+streaming operators that `weak_ptr` does not have. Its equality is
+ownership-based, so two references to the same buffer compare equal even after
+both expire. Note that `hd` **forward-declares** `HgiExternalBuffer` and neither
+includes nor links `hgi`: only a producer and the consuming renderer ever
+dereference it, and both live above the boundary where `hgi` is available. In
+between the value is transported opaquely, which is what keeps this from
+becoming an hd-on-hgi dependency.
 
-| Member | Type | Meaning |
-| --- | --- | --- |
-| `rawHandle` | `uint64` | The native GPU buffer handle (GL buffer id, `VkBuffer`, `MTLBuffer`, …). |
-| `rawHandleByteSize` | `size_t` (optional) | Total byte size of the underlying allocation; enables a bounds check. |
+### Getting an arena
 
-**Import route** — for a consumer on a different device or a different API, which
-imports the underlying memory allocation and wraps it in a buffer of its own:
-
-| Member | Type | Meaning |
-| --- | --- | --- |
-| `externalMemoryHandle` | `uint64` | OS-shareable handle (Win32 NT handle / fd) naming the memory **allocation**, not the buffer object. |
-| `externalHandleType` | `TfToken` | `opaqueWin32` or `opaqueFd`. Required whenever `externalMemoryHandle` is set — never inferred, since a handle value can collide with a native `rawHandle`. |
-| `memoryBlockSize` | `size_t` | Size of the whole memory block; the importer must allocate all of it, not just the bytes it uses. |
-| `memoryOffset` | `size_t` | The buffer's offset **within that block** — distinct from `byteOffset`, which is this stream's offset within the buffer. Both may be non-zero. |
-| `dedicated` | `bool` | Whether the allocation is a dedicated memory object; the importer must match or the import fails. |
-
-The two routes are independent, and publishing both is the recommended default:
-one publish then serves a consumer that shares the producer's device and one that
-does not, without the producer having to know which it got.
-
-**Two identities, because a handle has two ways of being foreign.** What makes
-publishing both safe is that the consumer can tell whether `rawHandle` means
-anything to it, and that takes two separate comparisons:
-
-| Field | Answers | Governs |
-| --- | --- | --- |
-| `deviceUuid` | *Which GPU is the memory on?* | Whether the memory is reachable at all — an opaque handle only imports on the device that exported it, so a mismatch rules out **both** routes. |
-| `logicalDeviceId` | *Which device object minted `rawHandle`?* | Whether the native handle is interpretable — a mismatch rules out **adopt only**, and the consumer imports instead. |
-
-The second is not implied by the first. Two logical Vulkan devices on one physical
-GPU report the *same* `deviceUuid` and hand out completely unrelated `VkBuffer`
-values, so `backendApi` plus `deviceUuid` agreeing is not enough to justify
-binding a foreign handle. Without a way to say which device object a handle came
-from, that case is indistinguishable from a genuine same-device producer, and the
-consumer binds an arbitrary object — which is why the field exists.
-
-`logicalDeviceId` comes from `Hgi::GetLogicalDeviceId()`, a process-unique id
-`HgiVulkan` draws from a monotonic counter at device creation. It is deliberately
-opaque and process-local: it is an identity to compare, never a handle to use, and
-nothing is serialized or shared across processes. Backends with no logical device
-to name report `0`, as does GL, whose handle namespace is the context share group
-rather than a device object.
-
-`0`/absent therefore means "unknown" and is treated as a match, which keeps
-producers written before the field working exactly as they did. That backward
-compatibility is also the field's one sharp edge: **a producer that publishes
-`rawHandle` without a `logicalDeviceId` is asserting it allocated on the
-consumer's own device.** A producer that cannot report an id and cannot make that
-promise should publish the import cluster alone.
-
-Because it is an ordinary data source living under an ordinary primvar, it flows
-through scene indices unchanged and is discoverable with `GetFromParent`. It
-carries no dependency on any particular producer, and a consumer that does not
-understand it simply reads the CPU value as before.
-
-### Worked examples: the minimum, then every field
-
-The four publishes below describe the same thing — the 8 corners of a cube as a
-`points` primvar, `Float32`×3, 96 bytes — and differ in who allocated the buffer
-and how much the producer chooses to say about it. They escalate: the least a
-producer can publish, the same shape on Vulkan, then ordering, then reachability
-from a foreign device. Values are illustrative.
-
-**Minimal example — GL producer, GL consumer, nothing optional filled in.** This is the
-entire schema a producer needs when it allocates in the same GL context the
-renderer draws into:
-
-```
-primvars/points:
-  primvarValue:  <empty VtVec3fArray>
-  interpolation: vertex
-  role:          point
-  extGpuBuffer:
-    backendApi:   "OpenGL"
-    numElements:  8
-    elementType:  {Float32, 3}
-    rawHandle:    12               # a GL buffer name
+```cpp
+auto arena = hgi->GetExternalBufferArena<HgiGLExternalBufferArena>();
+if (!arena) { /* interop unavailable -- copy through the CPU instead */ }
 ```
 
-Four members, which is exactly what `IsComplete()` demands: `backendApi`, a
-non-zero `numElements`, a non-degenerate `elementType`, and one of the two routes.
-The consequences of leaving the rest out are worth spelling out, because none of
-them is quite neutral.
+Get-or-create, one arena per type per Hgi. The template parameter names a
+backend arena type, and **the arena belongs to the consuming backend** — asking
+for `HgiGLExternalBufferArena` means "can this renderer consume OpenGL-produced
+buffers?"
 
-**`backendApi` is `"OpenGL"`, not `"GL"`.** It has to be spelled the way
-`Hgi::GetAPIName()` spells it, since the consumer compares the two verbatim. The
-schema's convenience builder `BuildBackendApiDataSource()` also accepts a shorter
-`GL` token that no consumer matches, so publish `HgiTokens->OpenGL` and ignore it.
+**Null is the entire negotiation, and it is settled once.** A Vulkan-backed
+Storm asked for a GL arena gets null, because OpenGL cannot export an allocation
+for another API to import — impossible rather than unimplemented, so no arena
+type for GL→Vulkan exists or can exist. The caller handles null by falling back
+to its own copy. This replaces V2's per-buffer comparison of backend tokens,
+device UUIDs and logical device ids with one question asked at setup.
 
-**Omitting `directBindable` opts out of zero-copy.** It defaults to `false`, which
-selects the *copy* strategy: Storm adopts the handle as a blit source and copies
-into its own aggregated vertex buffer, one GPU-to-GPU blit per dirty primvar per
-frame. That is a reasonable default — the geometry stays inside Storm's
-indirect-draw batches — but a producer that wants its buffer bound directly has to
-ask for it. Omitting `rawHandleByteSize` similarly forfeits the bounds check:
-`0` means unknown, so there is nothing for Storm to validate `byteOffset` and
-`byteStride` against, and an overrunning descriptor is discovered by the GPU
-instead of rejected.
+The gate is `T::IsSupportedBy(hgi)`, checked before anything is allocated:
 
-**The absent identity fields are an assertion, not a shrug.** Missing
-`deviceUuid` and `logicalDeviceId` both read as "unknown", which is treated as a
-match, so this publish is implicitly promising that `12` is a valid buffer name in
-the consumer's namespace. That promise holds here by construction, because `HgiGL`
-issues into whatever GL context is current — the producer's own — but it is a
-promise, and it is the reason a foreign-device producer cannot publish this
-shape.
-
-**There is no sync child, and it is optional here.** With a GL producer and a GL
-consumer sharing one context, commands execute in submission order, so if the
-producer records its write before Storm records its read the ordering is
-implicit — no published semaphore, and nothing more for the producer to do. The
-sync child earns its keep only when the two sides are *distinct* submissions that
-GL cannot order for free — a separate producer queue, or a foreign-device /
-foreign-API producer — which is what the Vulkan examples below add.
-
-What this publish cannot do is serve a Vulkan consumer. Storm on Vulkan sees a
-`backendApi` it does not match, finds no import cluster to fall back to, and reads
-the CPU value instead. The rest of the examples are Vulkan-consumer publishes,
-each adding what the one before it lacks.
-
-**Minimal example — Vulkan producer, Vulkan consumer, same logical device and queue.** The
-producer records its writes into the same Hgi the consumer draws with. This is what
-`testHdStExtGpuBuffer_Vulkan` does: allocate through `Hgi::CreateBuffer` with
-`initialData`, so the upload rides that Hgi's own command queue.
-
-```
-primvars/points:
-  primvarValue:  <empty VtVec3fArray>
-  interpolation: vertex
-  role:          point
-  extGpuBuffer:
-    backendApi:         "Vulkan"
-    numElements:        8
-    elementType:        {Float32, 3}
-    directBindable:     true
-    rawHandle:          0x1f4a2c00       # a VkBuffer of device #1
-    rawHandleByteSize:  96
-    logicalDeviceId:    1                # == the consumer's
-```
-
-**There is no `sync` child, and that is correct here.** This is the one arrangement
-where leaving it out is sound rather than optimistic. `HgiVulkan` has a single
-`VkQueue` per device, so a producer recording into that same Hgi shares the
-consumer's queue, submission order does the sequencing, and the memory dependency it
-still needs is a `vkCmdPipelineBarrier` at the end of its own recording — something
-the producer issues directly, not something scene description can carry. Disturb any
-part of that and semaphores become mandatory: a second queue, a second device, or
-writes issued through another API all break the single-stream assumption, and the
-next two examples are exactly those cases.
-
-**`logicalDeviceId` is published even though omitting it would also work.** In the
-GL example above, absent identity fields were an implicit promise; here the same
-promise is stated, so the consumer verifies it instead of trusting it. `deviceUuid`
-is left out because a matching logical device id already implies the same physical
-GPU — the converse does not hold, which is why the interop example needs both.
-Everything else optional follows the reasoning from the GL example: `directBindable`
-buys the zero-copy bind, `rawHandleByteSize` buys the bounds check.
-
-**Sync example — Vulkan producer, Vulkan consumer, same logical device but different queues.** 
-Same device as before, but the producer submits its own command buffers instead of 
-recording into the consumer's Hgi: the buffer still needs no import, yet the accesses 
-now need ordering.
-
-```
-primvars/points:
-  primvarValue:  <empty VtVec3fArray>
-  interpolation: vertex
-  role:          point
-  extGpuBuffer:
-    backendApi:         "Vulkan"
-    numElements:        8
-    elementType:        {Float32, 3}
-    directBindable:     true
-    rawHandle:          0x1f4a2c00       # a VkBuffer of the consumer's device #1
-    rawHandleByteSize:  96
-    logicalDeviceId:    1                # == the consumer's, so adopt is safe
-    sync:                                # the only addition to the publish above
-      backendApi:       "Vulkan"
-      logicalDeviceId:  1                # == the consumer's: native handles work
-      kind:             binary
-      writeSemaphore:   0x1f4a3100       # a VkSemaphore of device #1
-      readSemaphore:    0x1f4a3180
-```
-
-**The queue, not the device, is what changed.** Nothing about the buffer differs
-from the previous example; the producer merely submits its own command buffers, so
-its writes and the consumer's reads are now independent streams, and Vulkan orders
-nothing across streams. That makes the semaphores mandatory even though producer
-and consumer share one logical device. This is what `--vulkanSync`
-(`testHdStExtGpuBuffer_Vulkan_Sync`) exercises.
-
-**No `handleType`, and no external semaphore fields.** That is what the matching
-`logicalDeviceId` buys. The `VkSemaphore` handles mean something to the consumer as
-they stand, so nothing is exported and nothing is imported; `handleType` is
-required only when an external handle is actually present.
-
-**The missing import cluster is the cost of this shape.** A consumer on a second
-logical device, or on another GPU, has no route to this buffer at all and falls
-back to the CPU value. Closing that gap is what the last example does.
-
-**Interop example — producer allocated a Vulkan-exportable GL buffer on its own logical
-device, same GPU.** This is the topology that actually reaches a Vulkan consumer
-from a GL writer, and the one `--vulkanInterop`
-(`testHdStExtGpuBuffer_Vulkan_Interop`) exercises. The producer
-owns Vulkan device #7, allocates exportable memory there, has GL import that
-allocation and writes the cube through it, and publishes everything:
-
-```
-primvars/points:
-  primvarValue:  <empty VtVec3fArray>
-  interpolation: vertex
-  role:          point
-  extGpuBuffer:
-    backendApi:             "Vulkan"         # what rawHandle IS, not who writes
-    numElements:            8
-    elementType:            {Float32, 3}
-    byteOffset:             0
-    byteStride:             0                # tightly packed
-    directBindable:         true
-    rawHandle:              0x2b91d400       # a VkBuffer of the producer's #7
-    rawHandleByteSize:      96
-    deviceUuid:             "5d2c...a7"      # the consumer's GPU too
-    logicalDeviceId:        7                # ...but not the consumer's device
-    externalMemoryHandle:   0x000003b0       # the allocation GL imported and
-    externalHandleType:     opaqueWin32      #   wrote through -- the route every
-    memoryBlockSize:        65536            #   other consumer has to this data
-    memoryOffset:           0
-    dedicated:              false
-    sync:
-      backendApi:             "Vulkan"       # the semaphores are VkSemaphores
-      deviceUuid:             "5d2c...a7"
-      logicalDeviceId:        7
-      kind:                   binary         # forced: GL has no timelines
-      handleType:             opaqueWin32
-      writeSemaphore:         0x2b91e900     # VkSemaphores of device #7
-      readSemaphore:          0x2b91e980
-      externalWriteSemaphore: 0x000003b4     # the same two, as OS handles
-      externalReadSemaphore:  0x000003b8
-```
-
-Three things about this publish are easy to get wrong.
-
-**`backendApi` is `"Vulkan"` even though GL does the writing.** The field describes
-what `rawHandle` *is*, not who produces the data. Vulkan allocated the memory
-because it must — `GL_EXT_memory_object` is import-only, so GL can never be the
-exporter — and the GL buffer that aliases it is not published at all. It could not
-usefully be: a GL buffer name is scoped to its context share group, the producer's
-share group is not the consumer's, and no field in the schema qualifies a GL
-namespace the way `logicalDeviceId` qualifies a Vulkan one.
-
-**`rawHandle` is published even though almost nobody can use it.** Before
-`logicalDeviceId` existed it had to be withheld, because a consumer had no way to
-distinguish this publish from one made on its own device and would have bound
-`0x2b91d400` as if it were its own. Labelled with device #7 it can be offered
-honestly: a second consumer that happens to share the producer's device gets the
-zero-copy adopt, and everyone else is steered to the import cluster.
-
-**The semaphores are Vulkan objects that GL signals.** The producer creates them on
-device #7, exports OS handles, and GL imports those to signal after its write —
-which is why `sync.backendApi` is `"Vulkan"` rather than `"OpenGL"`, and why `kind`
-is `binary`: GL has no timeline semaphores, so the writer's capability constrains
-the whole handshake.
-
-**What each consumer does with it.** The buffer route and the semaphore route are
-decided by the same two comparisons, applied independently:
-
-| Consumer | Outcome |
+| Arena | Supported when |
 | --- | --- |
-| Vulkan, logical device **#7** — the producer's own | **adopt** `rawHandle`; use the native semaphores |
-| Vulkan, logical device **#1**, same GPU | ids differ → **import** the memory and the semaphores |
-| Vulkan, **different GPU** | `deviceUuid` differs → **CPU fallback**; the memory is not reachable at all |
-| GL | `backendApi` differs → attempts import, which `HgiGL` does not implement → **CPU fallback** |
+| `HgiGLExternalBufferArena` | `hgi->GetAPIName() == OpenGL` |
+| `HgiVulkanExternalBufferArena` | Vulkan **and** the device reports `supportsNativeInterop` |
 
-Two details the table compresses. The `deviceUuid` mismatch in row three rules out
-both routes, not just adopt, because an opaque handle is only importable on the
-device that exported it — so unlike a `logicalDeviceId` mismatch, there is nothing
-to fall back to but the CPU value. And the whole `sync` container is honored only
-when `sync.backendApi` matches the consumer's backend, so the GL row ignores the
-semaphores entirely rather than importing them.
+**One producer per arena.** Because there is one arena per type per Hgi, two
+independent producers would share its semaphore pair and its epoch counter, and
+the epoch counter does not distinguish them: producer A's publish can be
+consumed by the wait raised for B, and the signal that follows zeroes the state
+for both. On a binary semaphore, two publishes against one wait also leave it
+signalled, so the next frame consumes a stale signal and neither producer is
+ordered at all. None of this is detected. An application with two genuinely
+independent producers needs two Hgis, or must serialize them into one producer.
+
+### The four routes
+
+How a buffer gets into an arena depends on who allocated it and who may destroy
+it. The split matters: getting it wrong is a double free or a leak, not a
+degradation.
+
+| Route | Who allocates | Who destroys | Use when |
+| --- | --- | --- | --- |
+| `AllocateBuffer` | Hgi | Hgi | Hgi should own the memory; the application imports the description and writes into it |
+| `RegisterBuffer` | application | **application** | the application still uses and recycles the buffer on its own schedule |
+| `AdoptBuffer` | application | Hgi | the application is genuinely handing the buffer over and will never touch it again |
+| `ImportBuffer` | another device / another API | Hgi (its own wrapper) | the memory crosses a device or API boundary and is named by an OS handle |
+
+`AllocateBuffer` is the **only route on the base class**, and that is structural
+rather than incidental: it is the only one whose signature carries no native
+handle. `RegisterBuffer(GLuint)` and `RegisterBuffer(VkBuffer)` cannot be
+unified without erasing the handle, which is precisely the type safety this
+redesign was for. A producer that wants to stay backend-agnostic can use
+`AllocateBuffer` through an `HgiExternalBufferArena*`; anything else names a
+concrete arena type.
+
+Which arena type to ask for is decided by **the producer's API, not the
+renderer's** — a GL producer asks for the GL arena because that is what its
+handles are.
+
+### Worked examples
+
+The three publishes below describe the same thing: the 8 corners of a cube as a
+`points` primvar, `Float32`×3, 96 bytes. They differ only in how the producer
+got the buffer into an arena. Notice that the *schema* is nearly identical in
+all three — that is the point of the redesign.
+
+**GL producer, GL consumer.** A viewport that allocates its own vertex buffers
+in the same GL context the renderer draws into, and recycles them itself.
+
+```cpp
+auto arena = hgi->GetExternalBufferArena<HgiGLExternalBufferArena>();
+if (!arena) { return false; }                      // Vulkan Storm -> CPU path
+
+HgiExternalBufferSharedPtr buffer = arena->RegisterBuffer(
+    myGlBufferName, /*byteSize*/ 96,
+    HgiBufferUsageVertex | HgiBufferUsageStorage);
+```
+
+```
+extGpuBuffer:
+  externalResource: <weak ref to buffer>
+  numElements:      8
+  elementType:      {Float32, 3}
+  byteOffset:       0
+  byteStride:       0            # tightly packed
+  allowDirectBind:  true
+```
+
+`RegisterBuffer`, not `AdoptBuffer`, because the viewport still owns the GL
+name: deleting it from Hgi would be a double free, and GL may hand the freed
+name back out for an unrelated allocation.
+
+**Vulkan producer, Vulkan consumer, same logical device.** The producer writes
+in its own submission on the consumer's device.
+
+```cpp
+auto arena = hgi->GetExternalBufferArena<HgiVulkanExternalBufferArena>();
+arena->CreateSemaphores(HgiSemaphoreKindBinary);   // one device, no export
+HgiExternalBufferSharedPtr buffer = arena->RegisterBuffer(
+    myVkBuffer, 96, HgiBufferUsageVertex | HgiBufferUsageStorage);
+
+// ... the producer signals arena->GetAppDoneVkSemaphore() in its own submit,
+//     then:
+arena->NotifyAppDone();
+```
+
+The schema is the same shape as the GL case. The `VkBuffer` must come from the
+consumer's own logical device — `RegisterBuffer` binds the handle directly, and
+a handle from another device names an unrelated object. Nothing can detect that,
+because a `VkBuffer` carries no evidence of which device minted it; use
+`ImportBuffer` across devices, which shares memory rather than handles.
+
+**Vulkan producer on its own device, any consumer.** The realistic topology for
+a producer whose allocation must not depend on the renderer's device.
+
+```cpp
+// Producer side, its own Hgi:
+auto producerArena =
+    producerHgi->GetExternalBufferArena<HgiVulkanExternalBufferArena>();
+auto produced = producerArena->AllocateBuffer(96, usage, "producer");
+auto const &info =
+    static_cast<HgiVulkanExternalBuffer *>(produced.get())->GetExportInfo();
+
+// Consumer side, the renderer's Hgi -- Vulkan or GL, same code shape:
+HgiVulkanImportBufferDesc desc;
+desc.externalHandle  = info.externalHandle;
+desc.handleType      = info.handleType;      // OpaqueWin32 or OpaqueFd
+desc.memoryBlockSize = info.memoryBlockSize;
+desc.memoryOffset    = info.memoryOffset;
+desc.byteSize        = 96;
+HgiExternalBufferSharedPtr buffer = consumerArena->ImportBuffer(desc);
+```
+
+Again the published schema is unchanged — the consumer's arena decided which
+native mechanism applies, and the scene description never learns which.
 
 ## How it works
 
@@ -370,180 +248,172 @@ baseline first.
 A producer publishes a primvar as a container data source under
 `primvars/<name>`, holding the value, its `interpolation`, and its `role`. The
 value is a `HdSampledDataSource` whose `GetValue()` returns a `VtValue` wrapping
-a `VtArray<T>` — e.g. `VtArray<GfVec3f>` for points — that owns N elements of
-CPU data. This container flows through the scene indices unchanged and is read
-by the render delegate at the emulation boundary.
+a `VtArray<T>` — e.g. `VtArray<GfVec3f>` for points.
 
-Note that `VtArray<T>` is a **convention, not a schema rule**. `GetPrimvarValue()`
-returns an `HdSampledDataSource` and `GetValue()` returns a type-erased `VtValue`;
-the schema places no constraint on the held type. What imposes the array shape is
-the *interpolation* together with *consumer code*: every renderer reads the value
-with `value.Get<VtArray<T>>()` and expects the length to match the interpolation
-(`vertex` → one per point, `uniform` → one per face, `faceVarying` → one per
-face-vertex, `instance` → one per instance; `constant` being the loose case — a
-single value or a one-element array). So a `VtArray<T>` of the right length is
-required *because that is what consumers pull*, not because anything validates it.
-This is precisely why the GPU handle rides in the `extGpuBuffer` child rather than
-the value slot (see *Alternatives considered*): the value slot stays a real —
-possibly empty, or lazily materialized — `VtArray<T>` so existing `Get<VtArray<T>>`
+Note that `VtArray<T>` is a **convention, not a schema rule**.
+`GetPrimvarValue()` returns an `HdSampledDataSource` and `GetValue()` returns a
+type-erased `VtValue`; the schema places no constraint on the held type. What
+imposes the array shape is the *interpolation* together with *consumer code*:
+every renderer reads the value with `value.Get<VtArray<T>>()` and expects the
+length to match the interpolation. So a `VtArray<T>` of the right length is
+required *because that is what consumers pull*, not because anything validates
+it. This is precisely why the GPU reference rides in the `extGpuBuffer` child
+rather than the value slot (see *Alternatives considered*): the value slot stays
+a real — possibly empty, or lazily materialized — `VtArray<T>` so existing
 consumers keep working, while the GPU description stays additive and ignorable.
 
 The render delegate then turns that `VtArray` into its own draw resources. In
 Storm the steps are:
 
-- **Buffer source** — the array is wrapped in an `HdVtBufferSource`, an
-  `HdBufferSource` that *holds the CPU bytes* and knows its element type and
-  count. This is the type the external-GPU source (`HdStExtGpuBufferSource`)
-  substitutes for.
-- **Aggregation** — the source is registered with the resource registry, which
-  places it in a **buffer array range (BAR)** — a sub-allocation inside a larger
-  aggregated vertex buffer (VBO) shared with other prims of compatible layout,
-  so many prims draw from few buffers.
+- **Buffer source** — the array is wrapped in an `HdVtBufferSource`, which
+  *holds the CPU bytes*. This is the type `HdStExtGpuBufferSource` substitutes
+  for.
+- **Aggregation** — the source is placed in a **buffer array range (BAR)**, a
+  sub-allocation inside a larger aggregated VBO shared with other prims.
 - **Upload** — on commit, the registry copies the source's CPU bytes into that
-  VBO region (**CPU → GPU**). On a `DirtyPoints`, the producer republishes the
-  `VtArray`, and the delegate re-runs the upload to refresh the region.
+  VBO region (**CPU → GPU**).
 
 So the CPU array is copied at least twice on the way to the GPU: once when the
-producer materializes it (often itself a **GPU → CPU** readback if the data was
-computed on-device), and again on the delegate's upload. The GPU buffer path
-replaces the `HdVtBufferSource` with a source that carries a handle instead of
-bytes, and either aliases that handle as its own BAR (direct bind) or blits it
-GPU → GPU into the aggregated VBO — removing both copies.
+producer materializes it (often itself a **GPU → CPU** readback), and again on
+the delegate's upload. The GPU buffer path replaces the `HdVtBufferSource` with
+a source that carries a reference instead of bytes, and either aliases it as its
+own BAR (direct bind) or blits GPU → GPU into the aggregated VBO — removing both
+copies.
 
 ### Producer side
 
-A producer publishes the schema as the `extGpuBuffer` child of a primvar
-container, alongside the usual primvar descriptor. The CPU value may be left
-empty when a valid GPU buffer is published. The producer keeps the buffer alive
-and coherent while it is published, and dirties the primvar when the buffer's
-identity or contents change.
+Three steps, of which only the third recurs:
 
-If the buffer is to be shared across APIs, the producer allocates it as
-exportable — `Hgi::CreateInteropBuffer` returns both an owning `HgiBuffer` and an
-`HgiInteropBufferInfo` describing the memory another API can import — and
-publishes that description in the import cluster. It also creates the semaphore
-pair with `Hgi::CreateExternalSemaphore` and publishes the handles under `sync`.
-Both are one-time setup: only the per-frame signal recurs.
+1. **Ask for an arena.** Null means this renderer cannot consume what you
+   produce; fall back to the CPU primvar and stop.
+2. **Put the buffer in it** via one of the four routes, and hold the returned
+   `HgiExternalBufferSharedPtr` for as long as the buffer is published. This is
+   the *only* strong reference outside the arena.
+3. **Per frame:** write the buffer, signal the app-done semaphore in your own
+   submission, then call `arena->NotifyAppDone()`.
+
+The CPU value may be left empty when a valid GPU buffer is published — see
+*Fallback and capability negotiation* for why a lazy value is better than either
+an empty one or a full one.
+
+An arena with **no semaphores** is the common case and skips step 3 entirely: a
+producer sharing the consumer's own context or queue is already ordered by
+command order. `CreateSemaphores` / `CreateExportableSemaphores` /
+`ImportSemaphores` are opt-in, and an arena without them never encodes a wait or
+a signal.
 
 ### Consumer side
 
-Storm is used here as the example consumer; another render delegate would follow
-the same shape, and the concrete `HdSt*` types below are its reference
-implementation rather than part of the schema contract.
+Storm is the reference consumer; another render delegate would follow the same
+shape, and the concrete `HdSt*` types are its implementation rather than part of
+the schema contract.
 
-The render delegate reads the schema at the emulation boundary
-(`GetRenderIndex().GetTerminalSceneIndex()->GetPrim(id).dataSource`), decodes it
-once into a renderer-private descriptor, and turns it into a buffer source that
-carries **no CPU payload**. In Storm this is three pieces:
+```
+HdSt_GetPrimDataSource(sceneDelegate, id, registry)   // once per prim
+  -> HdSt_GetExtGpuBufferSchema(primDs, name)         // per dirty primvar
+    -> HdSt_TryCreateExtGpuBufferSource(name, schema, registry)
+      -> HdStExtGpuBufferDesc::FromSchema(schema, hgi)
+```
 
-- `HdStExtGpuBufferDesc` — the decoded, flattened descriptor (`FromSchema`).
-- `HdStExtGpuBuffer` — a **non-owning** `HgiBuffer` wrapper around `rawHandle`;
-  its destructor does not free the resource.
+- `HdStExtGpuBufferDesc` — the decoded descriptor, holding a **strong**
+  reference upgraded from the schema's weak one, for as long as Storm is
+  consuming.
 - `HdStExtGpuBufferSource` — an `HdBufferSource` whose CPU `GetData()` is never
-  called; consumers detect it (via `dynamic_cast`) and take a GPU path.
+  called; consumers detect it and take a GPU path.
+- `HdStExtGpuBufferArrayRange` — a BAR that *aliases* the producer's buffer
+  instead of owning storage.
 
-`HdStMesh::_PopulateVertexPrimvars` (and the face-varying / element equivalents)
-try to build an `HdStExtGpuBufferSource` from the schema **before** falling back
-to the CPU `HdVtBufferSource`.
+`HdStMesh::_PopulateVertexPrimvars` (and the face-varying / element equivalents,
+plus `HdStBasisCurves`, `HdStPoints` and `HdStInstancer`) try to build an
+`HdStExtGpuBufferSource` **before** falling back to the CPU `HdVtBufferSource`.
 
-**Choosing a route.** Before deciding *how* to consume the buffer, the consumer
-decides *whether* it can reach it at all. `HdSt_TryCreateExtGpuBufferSource`
-picks one of three outcomes:
+There is no route selection left in Storm. V2 chose between adopt, import and
+fallback by comparing backend tokens and device identities per buffer; that
+decision now happened when the arena was created, and what remains is one check:
 
-1. **Adopt** — `backendApi` matches the active Hgi, both the physical device and
-   the logical device match, and `rawHandle` is set. Storm wraps the handle
-   non-owningly and binds it.
-2. **Import** — otherwise, if the physical device matches and the import
-   cluster is present, Storm calls `Hgi::CreateBufferFromExternalMemory` to
-   build its own buffer over the producer's allocation. This serves both
-   consumption strategies: a `directBindable` stream is bound zero-copy, and a
-   non-`directBindable` one is GPU→GPU blitted from the imported buffer into
-   the aggregated VBO. Either way the CPU round trip is avoided, which for a
-   foreign-device producer — one with no cheap CPU copy of its own — is cheaper
-   than the CPU fallback, not more expensive.
-3. **Fall back** — neither route is open; bump
-   `HdStPerfTokens->extGpuBufferFallbackCount` and return null, so the caller
-   reads the CPU primvar.
+```cpp
+if (d.externalBuffer->GetHgi() != hgi) { return std::nullopt; }
+```
 
-Imported buffers are **owned and cached by `HdStResourceRegistry`**, not by the
-buffer array range, and are released when the registry is destroyed. Caching is
-mandatory rather than an optimization: importing per Sync would allocate a
-`VkDeviceMemory` every frame. The cache key is the device UUID, handle type,
-memory offset, byte size, *and* the handle value — the handle has to be part of
-it, because two dedicated allocations both report `memoryOffset` 0 and would
-otherwise collide, handing back a buffer over the wrong memory.
+Several renderers can consume one scene index — two viewports, or Storm plus a
+path tracer — and a buffer from another renderer's arena is a valid-looking
+object naming something on a different device. "Not from my Hgi" means copy
+through the CPU instead.
 
-Once a route is chosen, the `directBindable` hint selects the consumption
-strategy:
+Once a descriptor is built, `allowDirectBind` selects the strategy:
 
-**Direct bind (zero-copy) — `directBindable = true`.** The source goes into an
-`HdStExtGpuBufferArrayRange`, a buffer array range that *aliases* the producer's
-GPU buffer instead of owning storage; Storm binds the external handle directly.
-A byte-only update (producer overwrites the same handle in place) is seen at the
-next draw with no work; a change of handle or element count is applied as an
-in-place range update that keeps the range pointer stable and avoids draw-batch
-invalidation. This path is not aggregatable — each buffer is its own binding.
+**Direct bind (zero-copy).** The source goes into an `HdStExtGpuBufferArrayRange`
+and Storm binds the external buffer directly. A byte-only update — the producer
+overwriting the same buffer in place — is seen at the next draw with no work; a
+change of buffer or element count is applied as an in-place range update that
+keeps the range pointer stable and avoids draw-batch invalidation. This path is
+not aggregatable: each buffer is its own binding.
 
-**Copy into aggregated storage — `directBindable = false`.** The source is
-aggregated normally, and the aggregation strategy's `CopyData` detects the
-external source and performs a **GPU → GPU blit** into Storm's own vertex
-buffer, instead of a CPU upload. The blit source is whatever the route
-resolved — the adopted handle on the adopt route, or the imported buffer on the
-import route — so this strategy works for both; `CopyData` reads a single
-resolved `HgiBuffer` and does not care how it was named. The geometry stays
-inside Storm's indirect-draw batches, at the cost of one blit per dirty primvar
-per frame for animating geometry.
+**Copy into aggregated storage.** The source is aggregated normally, and the
+aggregation strategy's `CopyData` detects it and performs a **GPU → GPU blit**
+into Storm's own vertex buffer. The geometry stays inside Storm's indirect-draw
+batches, at the cost of one blit per dirty primvar per frame.
+
+`HdSt_TryCreateExtGpuBufferAliasBAR` requires that *every* source in a set be
+directly bindable; a single ordinary source, or one the producer only permitted
+Storm to copy, sends the whole set through the usual aggregation path. Mixing
+the two in one range is what the alias range's coding errors exist to catch.
 
 ```mermaid
 flowchart TD
   P["Producer<br/>(scene index / scene delegate)"]
+
+  subgraph setup["Once, at setup"]
+    direction TB
+    G["Hgi::GetExternalBufferArena&lt;T&gt;()"] --> N{"null?"}
+    N -->|yes| CPU1["this renderer cannot consume<br/>what we produce -- CPU path"]
+    N -->|no| RT["Allocate / Register / Adopt / Import"]
+  end
 
   subgraph old["CPU path (today)"]
     direction TB
     P1["primvar value = VtArray (CPU)"] --> U["render delegate:<br/>CPU to GPU upload"] --> B1["vertex range (owned VBO)"]
   end
 
-  subgraph new["GPU buffer sharing (this proposal)"]
+  subgraph new["GPU buffer sharing"]
     direction TB
-    S["primvar/extGpuBuffer =<br/>HdExtGpuBufferSchema"]
-    S --> R{"route?"}
-    R -->|"same physical +<br/>logical device,<br/>rawHandle set"| A["adopt handle<br/>(non-owning wrapper)"]
-    R -->|"foreign logical device,<br/>import cluster set"| I["import memory<br/>(registry-owned buffer)"]
-    R -->|"neither"| F["fall back to CPU value"]
-    A --> D2{"directBindable?"}
-    I --> D2
-    D2 -->|true| D["alias range<br/>binds buffer — no copy"]
+    S["primvar/extGpuBuffer =<br/>weak ref + layout"]
+    S --> V{"resolves?<br/>(live, our Hgi,<br/>fits the layout)"}
+    V -->|no| F["fall back to CPU value"]
+    V -->|yes| D2{"allowDirectBind?"}
+    D2 -->|true| D["alias range<br/>binds buffer -- no copy"]
     D2 -->|false| C["GPU to GPU blit<br/>into aggregated VBO"]
   end
 
   P --> P1
+  RT --> S
   P --> S
 ```
 
 ### Validation and fallback
 
-The GPU path is an optimization that always degrades safely to the CPU path:
+The GPU path is an optimization that always degrades safely to the CPU path.
+`HdStExtGpuBufferDesc::FromSchema` returns `std::nullopt` — and Storm bumps
+`HdStPerfTokens->extGpuBufferFallbackCount` and reads the CPU primvar — for any
+of:
 
-- **Backend match** — if `backendApi` does not match the active backend, the
-  consumer will not adopt `rawHandle`. It may still take the import route, which
-  is API-neutral: imported memory is memory, whoever allocated it.
-- **Device match** — an opaque external handle is only importable on the physical
-  device that exported it, so a `deviceUuid` that disagrees with the consumer's
-  own device rules out both routes. An absent UUID on either side means "unknown"
-  and is treated as a match, so producers predating the import cluster keep
-  taking the adopt path.
-- **Handle namespace match** — a `logicalDeviceId` that disagrees with
-  `Hgi::GetLogicalDeviceId()` rules out *adopt* while leaving import open, since
-  the memory is still reachable even though the producer's buffer object is not
-  interpretable. `0` on either side means "unknown" and is treated as a match.
-- **Completeness / bounds** — `IsComplete()` requires `backendApi`,
-  `numElements`, `elementType`, and at least one of the two routes (a
-  `rawHandle`, or `externalMemoryHandle` together with `externalHandleType`). A
-  schema whose `byteOffset + numElements * stride` exceeds `rawHandleByteSize`
-  is rejected, and the bounds check runs *before* any import, so a bad
-  descriptor never allocates device memory.
-- **No CPU coupling** — the schema is a child of the primvar, so a consumer that
-  does not implement it falls through to the CPU value automatically.
+- **Incomplete.** `IsComplete()` requires an `externalResource`, a non-zero
+  `numElements`, and a valid `elementType`.
+- **Expired.** The weak reference no longer resolves. Deliberately *not* treated
+  as incomplete: the producer described the buffer correctly and it has since
+  gone away. A producer is entitled to withdraw a buffer between publishing it
+  and Storm getting there.
+- **Another renderer's.** `GetHgi() != hgi`, as above.
+- **Does not fit.** `byteOffset + numElements * stride` must lie within the
+  registered byte size. The arena can check this because the registration
+  carried a size, and it runs before anything is bound.
+- **No support at all.** A consumer that does not implement `extGpuBuffer` never
+  descends into the child and reads the value slot as before.
+
+> **Producer note.** The bounds check is the one that most often surprises. A
+> producer that under-reports its buffer's byte size at registration gets
+> **silent** CPU fallback, not an error, because an under-sized registration is
+> indistinguishable from an overrunning descriptor.
 
 ### Synchronization
 
@@ -552,271 +422,239 @@ producer has not finished writing, and the producer must not overwrite bytes the
 consumer is still reading. Two ordering edges, in both directions:
 
 - **RAW (read-after-write)** — the consumer's read must not begin before the
-  producer's write completes, so a draw never samples a half-written buffer.
-- **WAR (write-after-read)** — the producer must not overwrite in place (or free)
-  before the consumer's read completes. Deallocation is the terminal WAR case.
+  producer's write completes.
+- **WAR (write-after-read)** — the producer must not overwrite in place before
+  the consumer's read completes.
 
-A CPU-side refcount cannot express either edge. It answers "may I deallocate?", a
+A CPU-side refcount cannot express either. It answers "may I deallocate?", a
 lifetime question, whereas RAW and WAR are about the relative ordering of
-*in-flight GPU work* on the GPU timeline. So they need queue-level wait/signal.
+*in-flight GPU work*. So they need queue-level wait/signal.
 
-The converse is equally true and easier to miss: **a semaphore cannot express
-lifetime either, so calling deallocation the terminal WAR case understates it.**
-Freeing needs two independent facts — that submitted work has finished, which is
-the WAR edge, and that no *new* work can be created that reads the buffer, which no
-queue primitive can report because the consumer still holds the buffer and a clean
-frame re-binds it without re-running Sync. That second half is a reference
-question, and it is why *Lifetime* below is a separate mechanism rather than part
-of synchronization.
+**One semaphore pair per arena, not per buffer.** The granularity is therefore
+the whole arena: the application cannot touch *any* buffer in it until Hgi is
+done, even buffers Hgi never looked at. That costs some overlap and buys a great
+deal of simplicity.
 
-`HdExtGpuSyncSchema` carries these as an optional `sync` child *inside*
-`extGpuBuffer` — the sync objects are 1:1 with the buffer they guard, so nesting
-keeps the association explicit and preserves graceful degradation at both levels:
-a consumer that implements `extGpuBuffer` but not `sync` ignores the child and
-falls back to implicit ordering; one that implements neither never descends into
-it.
+The bracket is four operations, and only two of them are the arena's to perform:
 
-| Member | Type | Meaning |
-| --- | --- | --- |
-| `backendApi` | `TfToken` | API that created the semaphores. A consumer ignores the whole container if this does not match its active backend. |
-| `writeSemaphore` | `uint64` | Native handle the producer signals after writing; the consumer waits on it (RAW). Same logical device only. |
-| `readSemaphore` | `uint64` | Native handle the consumer signals after reading; the producer waits on it before overwriting (WAR). Same logical device only. |
-| `externalWriteSemaphore` | `uint64` | OS-shareable handle for the write semaphore, so a consumer on another device can import it. |
-| `externalReadSemaphore` | `uint64` | OS-shareable handle for the read semaphore. |
-| `handleType` | `TfToken` | `opaqueWin32` / `opaqueFd`. Required whenever either external handle is set. |
-| `kind` | `TfToken` | `binary` or `timeline`. Absent means binary. A consumer that cannot honor the stated kind must ignore the container rather than guess. |
-| `deviceUuid` | `TfToken` | Physical device owning the semaphores, compared exactly as the buffer's. |
-| `logicalDeviceId` | `uint64` | Logical device that created the semaphores, compared exactly as the buffer's. A native `VkSemaphore` is namespaced like a native `VkBuffer`, so it takes the same check. |
+|        | app-done semaphore  | hgi-done semaphore      |
+| ------ | ------------------- | ----------------------- |
+| signal | the application     | `EncodeHgiDoneSignal()` |
+| wait   | `EncodeAppDoneWait()` | the application       |
 
-The native/external split mirrors the buffer's adopt/import split, and the
-consumer resolves each semaphore the same way: prefer the native handle when the
-producer shares both its physical and its logical device, otherwise import the OS
-handle via `Hgi::ImportExternalSemaphore` (cached on the resource registry, like
-imported buffers).
+Hgi encodes its two from `Hgi::StartFrame()` and `Hgi::EndFrame()`, sweeping
+every arena it owns. The application does its two in its own submission, and
+reports the signal afterwards with `NotifyAppDone()`.
 
-**As shipped, the semaphores are binary, not timeline.** A timeline semaphore is
-the more natural primitive, since a monotonic 64-bit value avoids per-frame object
-churn on an edge that recurs every frame. The implementation uses binary
-semaphores instead, for one reason: OpenGL cannot do better.
-`GL_EXT_semaphore` can import an external semaphore but can only wait and signal
-it as **binary**, with no value — and a GL producer is the motivating case. Since
-a binary-only participant forces binary on the whole handshake, the timeline path
-would have been dead code until a Vulkan-to-Vulkan producer appeared. The `kind`
-field records which flavour is in play so a timeline path can be added without a
-schema change.
+**The diagonal is the whole explanation:** the arena can only encode onto the
+*consumer's* queue. It has no access to the application's, so the two cells on
+the other diagonal are things the application does for itself, with the
+semaphores from `GetAppDoneHgiSemaphore()` / `GetHgiDoneHgiSemaphore()` or a
+backend's native accessors. `NotifyAppDone()` exists because the arena cannot
+see the application's signal and must not guess: without it there is no way to
+tell "the application published" from "the application is idle". There is no
+counterpart for the application's wait, because nothing depends on knowing it
+happened — and no `EncodeHgiDoneWait()`, because the arena could not encode one
+if it wanted to.
 
-The consequence is that the per-frame *values* problem disappears along with the
-timeline: there is nothing to advance, so no runtime handshake object is needed to
-carry them. The schema alone is sufficient, and everything stays in data sources.
+`EncodeAppDoneWait()` and `EncodeHgiDoneSignal()` are **protected**, with `Hgi`
+a friend. Calling them from application code would not fail loudly: it would
+consume an epoch, and the frame that needed it would go silently unsynchronized.
 
-**Hgi surface.** Four methods carry the whole contract, all defaulting to no-op
-or "unsupported" so backends opt in:
+**Why the frame hooks, and not the renderer's commit.** A directly bound
+buffer's reads *are* the draws. At commit time those have not been recorded yet,
+so a signal there claims the reads are finished before they exist — and the
+application then overwrites bytes a draw is about to read. This is not
+hypothetical: it was the behaviour through most of development, and
+`testHdStExtGpuBuffer_VK_GL` reproduced it 5 runs out of 5, rendering frame 2's
+geometry into frame 1. Nothing inside the renderer can do better, because
+several render passes run per frame and none of them knows it issued the last
+one. Only the host that assembled the frame knows where it ends.
 
-```cpp
-// Producer side: create a semaphore whose signal state is exportable, returning
-// a backend-native handle plus an OS handle for the other API to import.
-uint64_t CreateExternalSemaphore(uint64_t* outExternalHandle);
-void     DestroyExternalSemaphore(uint64_t semaphore);
+**Repetition is the arena's problem, not the application's.** `NotifyAppDone()`
+opens an epoch; `EncodeAppDoneWait()` encodes a wait only for an epoch it has
+not waited for yet, and `EncodeHgiDoneSignal()` signals only for an epoch that
+was actually waited for. So N render passes in one application frame produce one
+wait and one signal, and an idle application that published nothing produces
+neither — which matters, because waiting on a binary semaphore nobody is going
+to signal hangs the frame.
 
-// Consumer side: make the NEXT queue submission wait on / signal a semaphore.
-void QueueWaitExternalSemaphore(uint64_t semaphore);    // RAW
-void QueueSignalExternalSemaphore(uint64_t semaphore);  // WAR
-```
+Two obligations follow, and both are real:
 
-Note that `QueueWait`/`QueueSignal` attach to the *next* submission rather than
-taking a command buffer. The consumer discovers the sync container during Sync,
-which is well before the draw is submitted, so the pending wait is recorded and
-rides along on whatever submission the draw ends up in.
-
-**How the calls interleave.** The producer creates the semaphores once and
-signals per frame; Hydra only transports handles and never touches a queue; the
-consumer waits and signals around its draw:
+- **The host must call both hooks**, once per application frame, with
+  `StartFrame` ahead of everything that reads a shared buffer and `EndFrame`
+  after all of it has been submitted. A host that does not gets no
+  synchronization at all *and no diagnostic saying so* — the check that would
+  report a missing signal lives inside the wait, which is itself in the hook
+  that was not called.
+- **Producers must publish before `StartFrame`.** `NotifyAppDone()` called after
+  it opens an epoch this frame will not wait for, and an epoch that was not
+  waited for is not signalled at `EndFrame` either, so the producer's next wait
+  for hgi-done slips to the following frame. The publish is delayed, never lost.
 
 ```mermaid
 sequenceDiagram
-    participant Prod as Producer
-    participant Hd as Hydra (scene index)
-    participant Cons as Consumer (Storm)
+    participant App as Application
+    participant Hgi as Hgi (consumer)
     participant GPU as GPU queues
 
-    Note over Prod: once, at buffer creation
-    Prod->>Prod: CreateInteropBuffer(...) -> buffer + HgiInteropBufferInfo
-    Prod->>Prod: CreateExternalSemaphore() x2 -> write, read (+ OS handles)
+    Note over App: once, at setup
+    App->>Hgi: GetExternalBufferArena<T>()
+    App->>Hgi: Register / Adopt / Import / Allocate
+    App->>Hgi: CreateSemaphores / ImportSemaphores (if needed)
 
-    Note over Prod,Cons: per frame
-    Prod->>GPU: write buffer
-    Prod->>GPU: signal write semaphore
-    Prod->>Hd: publish extGpuBuffer + sync child (handles only)
+    Note over App,Hgi: per frame
+    App->>GPU: write buffer, signal app-done in its own submit
+    App->>Hgi: arena->NotifyAppDone()
 
-    Hd->>Cons: Sync: read primvar data source
-    Cons->>Cons: route: adopt or import buffer
-    Cons->>Cons: resolve semaphores (native, or import OS handle)
-    Cons->>GPU: QueueWaitExternalSemaphore(write)
-    Cons->>GPU: QueueSignalExternalSemaphore(read)
+    App->>Hgi: StartFrame()
+    Hgi->>GPU: EncodeAppDoneWait() on every arena
+    Note over Hgi: HdEngine::Execute -- Sync, Commit, draws
+    App->>Hgi: EndFrame()
+    Hgi->>GPU: EncodeHgiDoneSignal(), then flush if anything signalled
 
-    Note over Cons,GPU: at draw submit
-    GPU-->>GPU: wait(write) -> draw reads buffer -> signal(read)
-
-    Prod->>GPU: wait read semaphore before overwriting in place
+    App->>GPU: wait hgi-done before overwriting in place
 ```
 
-The asymmetry is worth naming: the consumer's two calls are *enqueued* during
-Sync but *execute* at submit, so both edges are resolved on the GPU timeline with
-no CPU stall on either side.
+**Binary semaphores only.** Timeline is declared in `HgiSemaphoreKind` but
+implemented by no backend, and every creation and import path refuses it rather
+than returning a semaphore that cannot be submitted correctly. See *Future
+Considerations*.
 
-**Binary semaphores impose a counting discipline.** Each wait consumes exactly
-one signal. If the consumer's Sync runs more than once between submissions, it
-would enqueue two waits against a single signal, and the second never completes —
-a hang rather than a visible failure. This is the sharpest edge in the current
-design and the first thing to suspect if a shared-buffer frame stops advancing.
+**Vulkan needs a flush.** A Vulkan signal attaches to the *next* queue
+submission, and at a frame boundary there is no next submission coming. So the
+signal sweep is followed by `Hgi::_FlushSemaphoreSignals()`, which `HgiVulkan`
+overrides to record an `ALL_COMMANDS` pipeline barrier and submit. The barrier
+is not decoration: without it the flush is a `vkQueueSubmit` carrying a signal
+and no commands, with nothing ordering it after the draws. It runs only when
+something was actually signalled, so an application sharing nothing does not pay
+a queue submission per frame. OpenGL needs none of this —
+`glSignalSemaphoreEXT` is a command stream operation at the call site and
+implies a flush.
 
-**Lighter-weight alternatives** remain valid where they apply. Within one API and
-one context or share group, no external semaphore is needed at all — a `GLsync`
-plus a producer-side flush covers ordering, and the test harness falls back to
-`glFinish` when semaphore import is unavailable. Where memory allows,
+**Lighter-weight alternatives remain valid.** Within one API and one context or
+share group no semaphores are needed at all, which is why an arena's pair is
+optional and why the common configuration has none. Where memory allows,
 **N-buffering** beats a tight WAR handshake: the producer writes buffer *i+1*
 while the consumer reads *i*, which the alias range already expresses since the
-handle may change per frame, converting per-frame WAR stalls into "do not recycle
-buffer *i* until its read completes."
+buffer may change per frame.
 
 ### Lifetime
 
-Synchronization orders work; it cannot tell the producer when the allocation is
-unreferenced. That is a separate mechanism, and it is deliberately not a schema
-member.
+Synchronization orders work; it cannot say when an allocation is unreferenced.
+That is a separate mechanism with a separate guarantee.
 
-**The consumer retains the data source carrying whichever handle it bound** — the
-one naming the memory, so `rawHandle` on the adopt route and
-`externalMemoryHandle` on the import route — and hands it to the buffer that binds
-it, as an opaque `std::shared_ptr<void>` on `HgiBuffer` that Hgi never interprets.
-A producer wanting lifetime tracking publishes a data source that *owns* the
-allocation rather than a plain retained value, and learns from its release that the
-buffer is free. No new schema member, no out-of-band object, and nothing asked of a
-producer that manages lifetime some other way.
+**The arena releases its own reference only after a two-stage retire.**
+`GarbageCollect()` first moves any buffer whose only remaining reference is the
+arena's onto a pending list, stamped with the GPU work in flight at that moment.
+A later pass destroys it, once that work has retired. A reference count reaching
+zero says only that the CPU let go; destroying a buffer a submitted draw still
+names is a use-after-free.
 
-Retention deliberately follows the published *value*. A filter that substitutes a
-different handle releases the allocation the old one named, which is correct — the
-substituted buffer is what gets bound.
+The payoff is a property a producer can rely on: **the moment a weak reference
+expires is the moment the buffer is genuinely safe to recycle.** That would not
+be true if the arena dropped its reference as soon as the count fell.
 
-**Anchoring the reference to the `HgiBuffer` rather than to the consumer's buffer
-array range is what makes one signal sufficient.** Backends destroy buffers through
-a garbage collector that records which command buffers were in flight when the
-object was trashed and deletes only once those have retired. So the reference drops
-only when both facts hold: the consumer let go, *and* no submission that could name
-the buffer is outstanding. The producer needs neither a fence nor a pumped frame.
+Everything retired in one pass shares one stamp — those buffers stopped being
+referenced at the same moment, so the work that could still name them is the
+same work. On OpenGL each stamp is a `glFenceSync`, so per-buffer stamping would
+be correct but wasteful. A buffer nobody has released is never stamped at all.
 
-```
-range released ──▶ Hgi::DestroyBuffer ──▶ trashed, inflight bits recorded
-                                                │
-                        command buffers retire ──┘
-                                                ▼
-                        HgiBuffer destroyed ──▶ keepalive released
-                                                ▼
-                                    producer frees or recycles
+**Keepalive** covers the case where the producer's own object must outlive Hgi's
+use of it. `HgiExternalBuffer::SetKeepalive(std::shared_ptr<void>)` attaches an
+opaque reference that Hgi never interprets and releases when the buffer is
+destroyed — which, because of the retire test above, is after the GPU is done:
+
+```cpp
+auto raw = std::shared_ptr<MyGlBuffer>(...);       // producer's own, refcounted
+auto shared = arena->RegisterBuffer(raw->name, byteSize, usage);
+shared->SetKeepalive(raw);
 ```
 
-Inside the renderer the same idea covers the consumer's own resources: an imported
-buffer is shared by every prim naming that allocation and released when the last
-range lets go, rather than pinned until renderer teardown.
+The producer may now drop `raw` whenever it likes — object destroyed, scene
+cleared, node deleted mid-frame — and the allocation survives until the GPU has
+finished with draws that named it. The same mechanism drives a **pool**: make
+the deleter recycle rather than delete, and a buffer returns to the free list
+only after retire.
 
-Three limits worth stating rather than implying uniformity. Storm's generic OpenGL
-wrapper is deleted directly rather than collected, so on that path the reference is
-released when the range goes away and the GPU half is inherited from GL's own
-deferred object deletion instead of provided here. A filter that *copies* the handle
-value into a data source of its own breaks the chain while still using the
-allocation, which is why this is a convention a producer opts into rather than
-something the scene description enforces. And the deleter runs on whichever thread
-drops the last reference — usually during garbage collection — so it must be
-thread-safe, must enqueue rather than call GPU APIs inline, and a producer must not
-*block* waiting for release on the thread that drives the frame, since collection
-happens at frame end and the wait would deadlock against it.
+Three limits worth stating rather than implying:
 
-Note what this does not cover: overwriting in place. There the count never reaches
-zero, because the consumer legitimately holds the buffer across frames, so
-recycling still needs the WAR edge above.
+- **It does not cover overwrite.** Keeping an object alive does not stop its
+  owner overwriting the bytes a submitted draw still reads. That is the WAR
+  edge, and it needs the semaphore.
+- **It fires only at end of life** — once the consumer drops the buffer *and*
+  the work retires. A producer that waited on it to pace per-frame reuse would
+  wait forever, because a consumer legitimately holds the buffer across frames.
+- **It needs something refcounted to hand over.** A producer whose buffers are
+  owned by something it cannot refcount or defer — a pooled viewport buffer the
+  host application recycles on its own schedule — cannot use it, and is back to
+  the unenforced promise that the registered buffer outlives Hgi's use of it.
+
+The deleter runs on whichever thread drops the last reference, which is the
+thread that runs `GarbageCollect()`, so it must be thread-safe and should
+enqueue rather than call GPU APIs inline. It *may* reenter the arena:
+`GarbageCollect` deliberately drops the references outside its own mutex for
+exactly that reason.
 
 ### Cross-API memory interop
 
-The import route above rests on a fact that inverts the obvious ownership model:
+The import route rests on a fact that inverts the obvious ownership model:
 **OpenGL cannot export memory.** `GL_EXT_memory_object` is import-only, so a
-buffer GL allocated natively can never be handed to Vulkan zero-copy, no matter
-what the schema says. Sharing therefore requires that the **Vulkan side
-allocate** exportable memory and GL import it — even when GL is conceptually the
-producer that writes the data.
+buffer GL allocated natively can never be handed to Vulkan zero-copy. Sharing
+across APIs therefore requires that the **Vulkan side allocate** exportable
+memory and GL import it — even when GL is conceptually the producer.
 
-That leaves two viable topologies, and the schema serves both:
+This is why the arena matrix is asymmetric rather than merely incomplete:
 
-| Topology | Who allocates | What the producer publishes | Consumer route |
-| --- | --- | --- | --- |
-| **Same-device** | The consumer's own Vulkan device | `rawHandle` + its `logicalDeviceId` | adopt |
-| **Foreign-device** | The producer's own Vulkan device | the import cluster + external semaphore handles, and optionally `rawHandle` labelled with its own `logicalDeviceId` | import |
+| Consumer arena | OpenGL producer | Vulkan producer |
+| --- | --- | --- |
+| `HgiGLExternalBufferArena` | `RegisterBuffer` / `AdoptBuffer` (passthrough) | `ImportBuffer` |
+| `HgiVulkanExternalBufferArena` | **impossible** — GL cannot export | `RegisterBuffer` (same device) / `ImportBuffer` (across devices) |
 
-The foreign-device topology is the realistic one for a producer whose buffer
-allocation must not depend on the renderer being loaded, on a particular backend,
-or on the consumer's device outliving the buffer. A producer that owns its own
-Vulkan device cannot hand a bindable `VkBuffer` to a consumer on a *different*
-logical device even on the same physical GPU, so what the consumer binds is its
-own buffer over the same allocation. It can still publish the `VkBuffer`
-alongside, since `logicalDeviceId` tells the consumer whether the handle is
-interpretable, and a second consumer that happens to share the producer's device
-then gets the adopt route from the same publish.
+A GL producer feeding a Vulkan consumer has no entry point and never will. Such
+an application must either let Hgi own the memory (`AllocateBuffer`, which
+allocates exportable and hands back the import description) or copy through the
+CPU.
 
-Two constraints follow from the platform mechanisms rather than from the design:
+Two platform constraints follow from the mechanisms rather than the design:
 
-- **Same physical device.** Opaque handles (`opaqueWin32` / `opaqueFd`) are only
-  importable on the device that exported them. A mismatch between the producer's
-  device, the consumer's device, and the GL context's device is a hard import
-  failure, which is why `deviceUuid` is compared before either route is taken.
-- **Handle ownership differs by platform.** On Win32, neither
-  `glImportMemoryWin32HandleEXT` nor `VkImportMemoryWin32HandleInfoKHR` takes
-  ownership, so one handle can serve several importers and the app closes it. On
-  Linux, fd import *transfers* ownership, so each importer needs its own `dup()`.
-  Getting this wrong leaks or double-closes rather than failing visibly.
-
-On the consumer side, an imported buffer owns its `VkBuffer` and its memory
-*reference*, but not the allocation, which stays alive as long as any importer
-holds it. Because interop buffers are allocated `VK_SHARING_MODE_EXCLUSIVE`, the
-import also issues a one-time acquire barrier from `VK_QUEUE_FAMILY_EXTERNAL` to
-make the producer's writes visible. It is emitted once at import rather than per
-frame, since re-acquiring a buffer the device already owns is pointless. The
-matching producer-side *release* barrier is not emitted for a GL producer,
-because `GL_EXT_memory_object` offers no way to express one; a Vulkan producer
-should release to `VK_QUEUE_FAMILY_EXTERNAL`.
+- **Same physical device.** Opaque handles are only importable on the device
+  that exported them.
+- **Handle ownership differs by platform.** On Win32 the importer does not take
+  ownership, so the exporter must close its own copy; `vkGetMemoryWin32HandleKHR`
+  is also invalid to call twice for the same memory and handle type, so
+  `HgiVulkanDevice` caches per allocation and `DuplicateHandle`s per call. On
+  Linux an exported fd is a fresh reference every call and the import
+  **consumes** it, so there is nothing to cache and nothing to duplicate. Both
+  are implemented; getting this wrong leaks or double-closes rather than failing
+  visibly.
 
 ### Fallback and capability negotiation
 
 The mechanism above is safe — a consumer that does not understand `extGpuBuffer`
-simply reads the primvar value — but whether that fallback actually *renders*
-depends on what the producer left in the value slot. A producer that publishes
-GPU-only (empty `VtArray` + `extGpuBuffer`) avoids the readback the proposal
-exists to remove, but a non-supporting consumer then reads an empty array and
-the prim disappears. Publishing both a full CPU `VtArray` and the schema is
-always fallback-correct, but pays the GPU → CPU readback every frame — defeating
-the optimization. So the producer is otherwise forced to choose between "fast"
-and "portable."
+reads the primvar value — but whether that fallback actually *renders* depends
+on what the producer left in the value slot. Publishing GPU-only (empty
+`VtArray` + `extGpuBuffer`) avoids the readback the proposal exists to remove,
+but a non-supporting consumer then reads an empty array and the prim disappears.
+Publishing a full CPU `VtArray` as well is always fallback-correct but pays the
+readback every frame, defeating the optimization.
 
-The robust way out is a **lazy CPU value**: the producer publishes the
-`extGpuBuffer` child alongside a value data source whose `GetValue()`
-materializes the CPU array *only if it is actually pulled*.
+The way out is a **lazy CPU value**: publish the `extGpuBuffer` child alongside a
+value data source whose `GetValue()` materializes the CPU array *only if it is
+actually pulled*.
 
 - A GPU-aware consumer reads the child and never pulls the value → no readback.
 - A non-supporting consumer pulls the value → the readback runs on demand →
   correct fallback.
 
-Because Hydra is pull-based, this needs no negotiation and scales to multiple
-simultaneous consumers (e.g. two viewports, or Storm plus a path tracer):
-whichever consumer needs CPU data triggers the readback; the others never do.
-The cost is that the fallback readback then happens mid-frame on the consuming
-thread, which is acceptable for a correctness path that only fires when needed.
-
-Concretely, the lazy value is **not** a `VtArray` of placeholder data — the
-primvar value slot is a *data source*, so it is a custom `HdSampledDataSource`
-that holds no CPU copy and does the readback inside `GetValue()`:
+Because Hydra is pull-based this needs no negotiation and scales to multiple
+simultaneous consumers: whichever consumer needs CPU data triggers the readback;
+the others never do.
 
 ```cpp
 // Sits in the primvar's `primvarValue` slot in place of a retained VtArray.
-// Holds only a handle/closure for the producer's GPU buffer plus its element
-// count; the GPU -> CPU readback runs only if GetValue() is actually pulled.
+// Holds only a closure for the producer's GPU buffer plus its element count;
+// the GPU -> CPU readback runs only if GetValue() is actually pulled.
 class _LazyReadbackDataSource final : public HdSampledDataSource
 {
 public:
@@ -825,11 +663,8 @@ public:
     VtValue GetValue(Time /*shutterOffset*/) override {
         std::call_once(_once, [this] {
             VtVec3fArray pts(_numElements);
-            // Producer owns the buffer, so the readback lives producer-side:
-            // map/copy device memory (glGetBufferSubData, a staging copy,
-            // clEnqueueReadBuffer, ...) into pts.
             _readBack(pts.data(), _numElements * sizeof(GfVec3f));
-            _cached = VtValue(pts);        // cache: only the first pull pays
+            _cached = VtValue(pts);        // only the first pull pays
         });
         return _cached;
     }
@@ -838,9 +673,6 @@ public:
         Time, Time, std::vector<Time>*) override { return false; }
 
 private:
-    _LazyReadbackDataSource(ReadFn readBack, size_t numElements)
-        : _readBack(std::move(readBack)), _numElements(numElements) {}
-
     ReadFn _readBack;                      // producer-supplied GPU->CPU copy
     size_t _numElements;
     mutable std::once_flag _once;
@@ -848,347 +680,244 @@ private:
 };
 ```
 
-The producer publishes it exactly where the CPU array goes today, with the
-schema overlaid on the same primvar:
+The readback logic lives **producer-side** — it owns and knows how to map its
+buffer; the schema and consumers never learn to read foreign memory. And
+invalidation follows the ordinary Hydra model: data sources are immutable, so a
+producer that changes the buffer contents dirties the primvar and republishes a
+fresh instance rather than mutating the cache.
 
-```cpp
-HdPrimvarSchema::Builder()
-    .SetPrimvarValue(_LazyReadbackDataSource::New(readFn, numPoints))  // lazy
-    .SetInterpolation(vertex).SetRole(point).Build();
-// + overlay { extGpuBuffer: HdExtGpuBufferSchema(...) } on the same primvar
-```
+A separate renderer-capability query was considered and rejected: support is
+per-primvar rather than per-renderer, so a renderer-wide boolean cannot tell a
+producer what to do for any given prim, and with multiple consumers it would
+have to be combined as an intersection. The lazy value resolves this at the
+right granularity with no negotiation.
 
-Two consequences worth noting. The readback logic lives **producer-side** (it
-owns and knows how to map its buffer); the schema and consumers never learn to
-read foreign memory. And invalidation follows the ordinary Hydra model: data
-sources are immutable, so rather than mutate the cache, a producer that changes
-the buffer contents **dirties `primvars/points` and republishes a fresh data
-source instance** — the new instance re-reads on its next pull, the stale one is
-dropped.
-
-Providing the GPU buffer plus a lazy CPU value is enough on its own, and is the
-recommended approach. A separate renderer-capability query — e.g. a new
-`HdRenderDelegate::IsExtGpuBufferSharingSupported()` — was considered as a way to
-let the producer skip wiring up the lazy readback entirely, but it turns out to
-add little:
-
-- **Support is per-primvar, not per-renderer.** In practice a scene mixes CPU-
-  and GPU-backed primvars within a single renderer, so a renderer-wide boolean
-  cannot tell the producer what to do for any given prim. The lazy value already
-  resolves this at the right granularity, one primvar at a time, with no query.
-- **It would only avoid setting up the lazy path**, not change correctness —
-  and the lazy path costs nothing until it is pulled. With multiple active
-  consumers the flag would also have to be combined as an intersection (drop CPU
-  only if *every* delegate supports sharing), adding negotiation logic for a
-  marginal saving.
-
-So the capability check stays out of the schema contract; publishing the GPU
-buffer with a lazy CPU value is both sufficient and correct.
+> **A caution on laziness.** A lazy value must snapshot at a moment the data is
+> known good. If the producer's buffer is recycled or overwritten by something
+> on its own schedule — a DCC viewport, say — reading it at pull time reads
+> whatever is there *then*, which is the same write-after-read hazard the GPU
+> path needs a semaphore for, with no semaphore available. Such a producer
+> should copy eagerly at publish time instead.
 
 ### Dirtying
 
 Updating shared geometry uses the ordinary primvar dirtying model: the producer
-dirties the primvar's locator (e.g. `primvars/points`), which maps to
-`HdChangeTracker::DirtyPoints`, and the render delegate re-reads. The cost now
-depends on the mode:
+dirties the primvar's locator, which maps to `HdChangeTracker::DirtyPoints`, and
+the render delegate re-reads.
 
-- **Direct bind, stable handle** — re-reading rebinds the same handle in place,
+- **Direct bind, stable buffer** — re-reading rebinds the same buffer in place,
   no copy. For a pure byte-only deformation the dirty is largely redundant: the
-  alias already exposes the new bytes at the next draw, so it can be elided
-  except where the delegate must recompute derived data (e.g. smooth normals)
-  from the moved points.
-- **Copy into aggregated storage** — `DirtyPoints` drives the GPU → GPU blit that
-  refreshes the aggregated buffer, and is required each frame the data changes.
+  alias already exposes the new bytes at the next draw, except where the
+  delegate must recompute derived data (e.g. smooth normals) from the moved
+  points.
+- **Copy into aggregated storage** — `DirtyPoints` drives the GPU → GPU blit and
+  is required each frame the data changes.
 
-A static mesh can therefore aggregate and batch from the first frame, while an
-animating mesh backed by a stable GPU handle can reach a near-zero per-frame
-publish cost.
-
-On the import route the same reasoning holds, with one addition: a change of
-`externalMemoryHandle` (or of the allocation's size or offset) is a different
-cache key, so the consumer imports afresh rather than reusing the previous
-buffer. In-place byte updates to the same allocation stay free, so a producer
-that wants the cheap path should keep its allocation stable and overwrite it —
-which is exactly the case the WAR edge exists to make safe.
+So a static mesh aggregates and batches from the first frame, while an animating
+mesh backed by a stable shared buffer can reach a near-zero per-frame publish
+cost.
 
 ### Instancing
 
 Instancing meets buffer sharing on two independent axes, matching Hydra's split
 between a prototype rprim and its instancer.
 
-**Prototype primvars.** A prototype's geometry (points/normals/uv) is stored
-once and drawn N times by an instanced draw — instances inherently refer to that
-single buffer. So an external GPU buffer on a prototype primvar needs no
-instancing-specific handling: it is the same prototype vertex buffer, bound once
-and drawn N times, whether direct-bound or copied. A zero-copy alias range is
-compatible with instanced draws because the draw reads each item's base offset
-and element count independently of the instance count. (The only nuance is batch
-aggregation — a direct-bound prototype forms its own draw batch instead of
-aggregating with normally-uploaded prototypes; a cost/parallelism trade-off, not
-a correctness issue.) `numElements` here is the prototype's vertex count, exactly
-as in the non-instanced case.
+**Prototype primvars.** A prototype's geometry is stored once and drawn N times,
+so an external GPU buffer on a prototype primvar needs no instancing-specific
+handling. A zero-copy alias range is compatible with instanced draws because the
+draw reads each item's base offset and element count independently of the
+instance count. `numElements` is the prototype's vertex count, exactly as in the
+non-instanced case.
 
-**Instancer primvars.** The per-instance data an instancer carries (instance
-transforms, or translate/rotate/scale) is a *separate* buffer published on the
-**instancer** prim, not the prototype. When a producer computes this on the GPU
-(a GPU/particle instancer), it can publish `extGpuBuffer` on the instance primvar
-exactly as for geometry, with `numElements` equal to the **instance count**. The
-consumer builds the source in its instance-primvar population step and
-direct-binds or copies it as usual. This is often the higher-value share: for
-large, animating instance counts the transform buffer dominates, and sharing it
-avoids reading back and re-uploading one transform per instance every frame,
+**Instancer primvars.** The per-instance data an instancer carries is a separate
+buffer published on the **instancer** prim. A GPU particle system can publish
+`extGpuBuffer` on the instance primvar exactly as for geometry, with
+`numElements` equal to the **instance count**. This is often the higher-value
+share: for large animating instance counts the transform buffer dominates,
 whereas the prototype geometry is bound once regardless.
 
-A single GPU buffer can even back several per-instance streams at once: each
-primvar publishes its own schema pointing at the same buffer (the same
-`rawHandle`, or the same `externalMemoryHandle` and `memoryOffset`), with
-`byteOffset`/`byteStride` selecting its region. So both layouts work:
-
-- **AoS** (each instance = `{mat4 xform, vec4 color, …}`): xform → offset 0,
-  stride = struct size; color → offset 64, stride = struct size.
-- **SoA** (all transforms, then all colors): xform → offset 0, stride 64;
-  color → offset = transforms-region size, stride 16.
-
-Nested instancing needs no special handling — each nesting level is its own
-instancer with its own instance-primvar buffer, so the same per-instancer
-consumption applies at every level.
+A single GPU buffer can back several per-instance streams at once — each primvar
+publishes its own schema referencing the same `HgiExternalBuffer`, with
+`byteOffset`/`byteStride` selecting its region. So both AoS and SoA layouts
+work. Nested instancing needs no special handling: each level is its own
+instancer with its own buffer.
 
 Two considerations are specific to instancer primvars: `numElements` must be the
-instance count (the consumer uses it to bound instance indices), and a shared
-instance-transform buffer must already be in the renderer's expected matrix
-layout/precision, since the GPU path skips the CPU matrix conversion the value
-path would otherwise perform (sharing plain translate/rotate/scale vectors avoids
-that).
+instance count, and a shared instance-transform buffer must already be in the
+renderer's expected matrix layout and precision, since the GPU path skips the
+CPU matrix conversion the value path would perform.
+
+### What it costs when nothing is shared
+
+Most applications will never share a buffer, and the feature is gated so they do
+not pay for it.
+
+**Hgi** — `StartFrame`/`EndFrame` each take the arena registry's mutex and sweep
+an empty map. Two uncontended lock/unlock pairs per frame. The Vulkan queue
+flush is skipped entirely, because `EncodeHgiDoneSignal` reports whether it
+signalled and the flush is conditional on that.
+
+**Storm** — gated on one relaxed atomic load. `Hgi::HasExternalBufferArenas()`
+is false until an application asks for an arena, and `HdSt_GetPrimDataSource`
+returns null immediately when it is:
+
+```cpp
+Hgi *hgi = registry ? registry->GetHgi() : nullptr;
+if (!hgi || !hgi->HasExternalBufferArenas()) {
+    return nullptr;
+}
+```
+
+That null short-circuits everything downstream — `HdSt_GetExtGpuBufferSchema`
+tests it first, and `FromSchema` tests the resulting null schema. Without the
+gate, every prim of every frame in every application would pay a
+`GetTerminalSceneIndex()->GetPrim(id)` (up to three times per mesh, for the
+vertex, element and face-varying primvar populations) plus three container
+lookups per dirty primvar.
+
+The flag is sound to gate on because it only ever goes false→true while an Hgi
+is in use: an arena must exist before a producer can publish a buffer belonging
+to it, and arenas are never removed once created.
 
 ### Alternatives considered
 
-**Carry the GPU buffer in the primvar value itself.** Rather than add a schema,
-the GPU handle could ride in the same value slot that holds CPU data — either as
-a custom struct wrapped in a `VtValue`, or stuffed into a `VtArray`. It is
-tempting because the primvar value plumbing already exists, but it was rejected:
+**Carry the GPU buffer in the primvar value itself.** Rejected for three
+reasons:
 
-- **It is not an array.** A GPU buffer is one opaque descriptor of a dozen-odd
-  heterogeneous fields (handle, backend, offset, stride, type, count, external
-  memory handle, device UUID, …), not N elements of vertex data. A `VtArray` holds a single typed array, so it can
-  carry at most the handle; the remaining fields would need sibling data sources
-  anyway — a hand-rolled schema without the type safety. Wrapping the descriptor
-  as a struct in a `VtValue` is the other option, but that is exactly the older
-  POD-in-`VtValue` design this schema replaced.
+- **It is not an array.** A `VtArray` holds a single typed array; a buffer
+  reference plus its layout is not that shape. Wrapping a descriptor as a struct
+  in a `VtValue` is the other option, and that is exactly the POD-in-`VtValue`
+  design this schema replaced.
 - **It breaks un-updated consumers.** Every reader of a primvar does
-  `value.Get<VtArray<GfVec3f>>()` / `IsHolding<…>()` — extent and bounds
-  computation, CPU fallback, refinement, picking, other render delegates. If the
-  value slot holds a GPU descriptor instead of points, those either read empty or
-  misinterpret it. Keeping the GPU info in a *separate child* leaves the value
-  slot legitimately empty, so a consumer that does not understand the child falls
-  through to the CPU value automatically.
+  `value.Get<VtArray<GfVec3f>>()` — extent and bounds computation, CPU fallback,
+  refinement, picking, other render delegates. Keeping the GPU info in a
+  *separate child* leaves the value slot legitimately empty, so a consumer that
+  does not understand the child falls through automatically.
 - **Value semantics fight GPU ownership.** `VtArray` is copy-on-write and freely
-  copied, detached, and mutated; the shared handle is non-owning and must not be.
-  A container built for value-semantic CPU arrays is the wrong home for it.
+  copied, detached and mutated. A container built for value-semantic CPU arrays
+  is the wrong home for a reference to device memory.
 
-The child-schema overlay avoids all three: it is discoverable and introspectable,
-gives typed accessors plus an `IsComplete()` check, composes onto the existing
-primvar without disturbing its value, and follows the same idiom as
-`HdPrimvarSchema` and `HdExtComputationSchema`.
+**Extend a polymorphic `HdBuffer` type and carry it in the value.** The
+abstraction is sound, but its placement is wrong: it already exists one layer
+down as Storm's buffer-source layer, and pushing it up into the primvar value
+leaks device concepts into the scene description while forcing every render
+delegate and value-inspecting filter to migrate. It also converges with the lazy
+value anyway, since a CPU consumer's "give me bytes" accessor would have to read
+back on demand.
 
-**Extend a polymorphic `HdBuffer` type and carry it in the value.** A refinement
-of the above: define a buffer type that can be either CPU- or GPU-backed (ask it
-for bytes or for a handle) and return it as the primvar value, so one type serves
-both consumers. The abstraction is sound, but its placement is wrong:
-
-- **It already exists one layer down.** The render delegate's buffer-source layer
-  is exactly this abstraction — `HdBufferSource` (base), `HdVtBufferSource` (CPU
-  bytes), `HdStExtGpuBufferSource` (GPU handle, no CPU payload). GPU concepts
-  belong *inside* the delegate; the scene index above it is deliberately renderer-
-  and API-agnostic, and pushing a GPU-capable buffer up into the primvar value
-  leaks device concepts into the scene description.
-- **It changes the universal value contract.** Every render delegate and every
-  value-inspecting scene-index filter is written to "`GetValue()` returns a
-  `VtValue` holding `VtArray<T>`." Redefining the value to "an `HdBuffer`" forces
-  all of them to migrate, whereas the additive child schema leaves old code
-  untouched. `VtArray` also remains the wrong container — a length-1 array of one
-  buffer object is a category error against consumers that expect
-  `value.size() == numElements`.
-- **It converges with the lazy value anyway.** For a CPU consumer such a buffer's
-  "give me bytes" accessor would have to read back from the GPU on demand — which
-  is exactly the lazy CPU value described under *Fallback*. So the same "one thing
-  serves both consumers" benefit is available without touching the value contract:
-  the `extGpuBuffer` child carries the handle, and a lazy value data source
-  supplies bytes only if pulled.
-
-If a single scene-level source of truth were genuinely wanted instead of "child
-schema + lazy value," it would have to be a **new data-source type**, not an
-`HdBuffer` smuggled through the legacy `VtArray` value slot — a large breaking
-change for little gain over the additive schema.
+**Publish native handles in the schema (Version 2).** The design this replaces.
+It worked, but every consumer had to re-derive the same negotiation per buffer
+from `backendApi`, `deviceUuid` and `logicalDeviceId`, and each comparison was a
+place to get it wrong: a mismatch that should have selected the import route
+instead adopting a handle from the wrong namespace is undefined behaviour rather
+than a clean error. Moving the negotiation into arena creation makes the wrong
+combinations unrepresentable — a buffer in your arena is consumable by
+construction — and deletes ten schema members and an entire nested sync schema.
+The cost is that the scene description no longer describes the sharing
+mechanism, so it is no longer inspectable or recordable from the scene index
+alone.
 
 ## Implementation status
 
-Both schemas (`HdExtGpuBufferSchema`, `HdExtGpuSyncSchema`) are generated from
-`hdSchemaDefs.py`. Storm is the reference consumer; `HgiVulkan` is the only
-backend implementing the interop surface.
+All green as of 2026-09-22.
 
 | Piece | Status |
 | --- | --- |
-| Core schema, adopt route, direct-bind and blit strategies | Landed |
-| Binary RAW/WAR semaphores, native and imported | Landed |
-| Foreign-memory import route | Landed |
-| Import + blit for non-`directBindable` foreign producers | Landed — the blit is route-agnostic, reading the imported buffer with no new plumbing; covered by `testHdStExtGpuBuffer_Vulkan_Interop_Copy` |
-| Imported-buffer cache, refcounted — released when the last consumer range lets go, not at renderer teardown | Landed |
-| Imported-semaphore cache | Landed, but registry-owned for the whole session; refcounting it needs the command queue's pending wait/signal lists to hold a reference first |
-| Producer-observable allocation lifetime — keepalive on `HgiBuffer`, retained from the data source carrying the bound handle | Landed |
-| `HgiVulkan` interop surface (create/import buffer, create/import semaphore, device UUID, logical device id) | Landed |
-| `logicalDeviceId` on both schemas, gating adopt for buffers and native semaphores | Landed |
-| `HgiGL` | Adopt only — GL cannot export memory or own an exportable semaphore |
-| `HgiMetal` | **Not implemented, and not merely missing:** its generic buffer wrapper would misinterpret a foreign handle, so a consumer should reject `backendApi=Metal` until a real Metal path exists |
-| Timeline semaphores | Not implemented; see below |
-| Linux / `opaqueFd` | Schema and Hgi surface allow it; only Win32 is exercised |
+| `HdExtGpuBufferSchema` (6 members), generated from `hdSchemaDefs.py` | Landed |
+| `HgiExternalBuffer` / `HgiExternalBufferArena` | Landed |
+| `HgiGLExternalBufferArena` — register / adopt / allocate / import-from-Vulkan | Landed |
+| `HgiVulkanExternalBufferArena` — register / adopt / allocate / import | Landed |
+| Direct-bind alias range and GPU→GPU blit strategies | Landed |
+| Per-arena binary semaphore pair with epoch guard | Landed |
+| Bracket encoded from `Hgi::StartFrame` / `EndFrame` | Landed |
+| Two-stage retire; weak-through-Hydra lifetime; keepalive | Landed |
+| Win32 and Linux (fd) interop | Landed, both tested |
+| Zero-cost gate for applications that share nothing | Landed |
+| Timeline semaphores | Declared, **not implemented**, refused by every path |
+| `HgiMetal` | No arena — the path does not exist yet |
+| Post-retire release signal for pooled producers | Not implemented; see below |
 
-Coverage comes from `testHdStExtGpuBuffer`, which renders the same cube (and an
-instanced grid) through the CPU primvar path and the shared-buffer path and
-compares pixels, in these producer topologies and consumption strategies:
+**Tests.** `testHdStExtGpuBuffer` renders the same cube (and an instanced grid)
+twice — once through the CPU primvar path, once shared — and compares pixels.
+Every case is **two frames with changing geometry**, which is what makes the WAR
+edge observable: a buffer written once and never touched again has no hazard and
+is indistinguishable from an ordinary VBO.
 
-- default — Storm's own `Hgi` allocates a plain buffer; adopt route.
-- `--vulkanSync` (`testHdStExtGpuBuffer_Vulkan_Sync`) — a Vulkan producer
-  allocates the buffer on the consumer's own device and writes it in its own
-  independent submission; adopt route with native RAW/WAR semaphores.
-- `--vulkanInterop` (`testHdStExtGpuBuffer_Vulkan_Interop`) — a
-  *second* `HgiVulkan` stands in for a producer with its own device; import route
-  with imported semaphores. This is the acceptance case, since the single-device
-  topology cannot by construction catch device-mismatch or UUID-negotiation bugs.
-  It publishes `directBindable = true`, so it covers import + zero-copy alias.
-- `--vulkanInterop --copy` (`testHdStExtGpuBuffer_Vulkan_Interop_Copy`) — the
-  same two-device import topology, but publishing `directBindable = false`, so
-  Storm imports the foreign allocation and then GPU → GPU blits it into its
-  aggregated VBO. This covers the import + blit path that the direct-bind interop
-  test does not.
+| Test | Topology |
+| --- | --- |
+| `_GL_GL` | GL producer, GL consumer, direct bind |
+| `_GL_GL_Instancing` | as above, instance transforms |
+| `_GL_GL_Copy` | as above, blit instead of bind |
+| `_VK_VK` | Vulkan producer on the consumer's device, own submission, native semaphores |
+| `_VK_VK_Copy` | as above, blit |
+| `_VK_VK_Import` | second `VkDevice` as producer; import route |
+| `_VK_VK_Import_Copy` | as above, import then blit |
+| `_VK_GL` | Vulkan producer, GL consumer — the cross-API direction |
+| `_VK_GL_Copy` | as above, import then blit |
 
-All of them publish `logicalDeviceId`, so the matching path is exercised, but
-none yet publishes a `rawHandle` from a *foreign* logical device — the case the
-gate exists for. Covering it means having the two-device producer offer both handles
-and asserting the import route is still taken, which is worth adding since the
-failure it guards against is an adopted handle from the wrong namespace: undefined
-behaviour rather than a clean error.
+All nine now register on Linux as well as Windows. A machine that cannot do
+interop reports `SKIPPED` with the reason rather than failing, since a missing
+`VK_KHR_external_memory_fd` or `GL_EXT_memory_object_fd` is not something the
+code under test can fix.
+
+`testHgiExternalBufferArena` covers the arena's CPU bookkeeping with no GPU at
+all, by stubbing the retire clock and the semaphores: five cases for reclaim
+ordering, six for the synchronization contract — including that a publish
+arriving after `StartFrame` is delayed to the next frame rather than lost.
 
 ## Future Considerations
 
 ### Timeline semaphores
 
-Binary semaphores are what ship, because GL forces them (see *Synchronization*).
-A Vulkan-to-Vulkan producer has no such constraint, and for it a timeline
-semaphore is the better primitive: one monotonic 64-bit value instead of per-frame
-object churn, and no exposure to the wait/signal counting hazard that binary
-semaphores carry. The `kind` field already distinguishes the two, so this is an
-additive change. It is a trade rather than a free upgrade, though, for the reason
-developed below.
+`HgiSemaphoreKind` declares `HgiSemaphoreKindTimeline`, and **no backend
+implements it.** Every path now refuses it rather than returning a semaphore
+that cannot be submitted correctly:
 
-What makes it more than a drop-in is that per-frame **values** come back. A binary
-semaphore is just "signalled or not", so the schema holds the whole story in a
-handle that never changes. A timeline wait or signal is a *pair* — the semaphore
-plus a 64-bit value — and the value advances every frame. So each frame the
-consumer must learn which value to wait for, and the producer must learn which
-value the consumer will signal when its read completes.
+- `HgiGLImportedSemaphore` — `GL_EXT_semaphore` has no timeline form.
+- `HgiVulkanSemaphore::ImportSemaphore` — refuses.
+- `HgiVulkanExternalBufferArena::CreateSemaphores` /
+  `CreateExportableSemaphores` — refuse, as of this version. They previously
+  succeeded and installed a timeline semaphore that the encode path then treated
+  as binary, which is worse than unsupported: a timeline semaphore in
+  `pSignalSemaphores` without a `VkTimelineSemaphoreSubmitInfo` is invalid
+  usage, not merely wrong.
 
-Those values cannot live in a data source. Data sources are immutable, so changing
-a published value means building a new instance and dirtying the locator, which
-pushes change notification through every downstream scene index and can force the
-prim to re-Sync. That is a fair price for "the points moved" and an absurd one for
-"increment a counter", which is otherwise a single atomic add.
+The reason is one layer down. `HgiVulkanSemaphore::EncodeWait`/`EncodeSignal`
+discard the value, because the command queue's pending wait and signal lists
+carry no values. Implementing timeline means teaching the queue to carry them
+through to `VkTimelineSemaphoreSubmitInfo` — not changing the arena, whose value
+bookkeeping is complete and is held correct by a unit test.
 
-The alternative is to pass the values through a small **runtime handshake object**
-that producer and consumer both hold a pointer to, handed over out-of-band at
-setup rather than carried as scene data. It is a handshake because it is
-bidirectional: the producer publishes the write value it just signalled (RAW), and
-the consumer registers the read value it promises to signal (WAR).
+**The motivation has also weakened.** The original argument for timeline was
+that a wait can be satisfied more than once, so several render passes in one
+frame would not each need a signal. The epoch guard now collapses that case to
+one wait and one signal regardless. What timeline would still buy is removal of
+the binary counting discipline and the ability to *poll* progress, neither of
+which is currently a live problem.
 
-```cpp
-class HdExtGpuBufferSync {
-public:
-    // RAW: producer's latest write completion the consumer must wait for.
-    virtual HgiSemaphoreSubmit GetWriteCompleteWait() = 0;
-    // WAR: consumer registers the read-completion it will signal; the producer
-    // waits on this value before overwriting/freeing the buffer.
-    virtual HgiSemaphoreSubmit AcquireReadCompleteSignal() = 0;
-};
-```
-
-This would be **the one non-serializable handle in the design**, and the
-distinction is worth stating precisely. Everything else in the schema —
-`rawHandle`, `externalMemoryHandle`, sizes, tokens — is plain data: values that can
-be written into a data source, printed, diffed, or recorded. They are
-process-scoped in the sense that a GL buffer id means nothing elsewhere, but they
-remain numbers a consumer interprets by documented API rules. A C++ interface
-pointer differs in kind: it is a live vtable pointer to an object with *behaviour*,
-meaningful only inside the address space that built it and only to code compiled
-against the same ABI. It is the single place the design would stop being "scene
-description is data."
-
-The coupling that introduces is acceptable because it is **not a new
-restriction**. Buffer sharing already requires producer and consumer to share a
-process — they share a device or context, and the handles are only interpretable
-there — so requiring the handshake object to be in-process forbids nothing that
-was otherwise possible.
-
-The real cost is **observability**, not portability. A value travelling through an
-opaque pointer is invisible to scene-index filters: a filter that reroutes or
-copies prims passes it along with no way to inspect or intercept it, and
-record-and-replay tooling cannot reproduce the frame. This is the sense in which
-the binary design is better than it first appears — with no values to advance,
-nothing travels out-of-band and the entire contract stays inside data sources. So
-the timeline upgrade is worth it for a Vulkan-to-Vulkan producer that would
-otherwise hit the counting hazard, and not otherwise.
-
-**A timeline does not solve deallocation, and is not even needed for it.** Worth
-settling explicitly, since framing deallocation as the terminal WAR case invites
-the opposite conclusion. What a timeline genuinely fixes is four things about the
-shipped path: a wait no longer consumes a signal, so the counting hazard goes away;
-the CPU can *poll* progress with `vkGetSemaphoreCounterValue`, where a binary
-semaphore offers no query at all and can only be waited on — a deadlock on the
-frame thread; values name which submission completed, so a signal that rode an
-unrelated `Flush` becomes detectable rather than silently early; and
-wait-before-signal is legal, so correctness stops depending on setup order.
-
-All four are about *ordering*. None tells the producer that no future submission
-will name the allocation, which is the other half of freeing. That half is answered
-by the keepalive in *Lifetime*, which also supplies the ordering half for free:
-`Hgi::DestroyBuffer` on the backends that matter does not delete but trashes,
-recording the command buffers in flight at that moment and deleting only after they
-retire. So the reference is released only when both facts hold — conservatively, by
-construction, with no agreed value semantics and no out-of-band handshake object.
-Which also means it does not depend on timeline support, and therefore already
-works for the GL producer that motivates the whole design.
-
-The two mechanisms partition rather than compete. Refcounting covers teardown,
-freeing and handle-swap; a timeline covers the case refcounting cannot touch,
-overwriting in place at frame rate, where the count never reaches zero because the
-consumer legitimately holds the buffer across frames.
-
-The backend capabilities that shape this:
-
-| API | Buffer sharing | Sync primitive | Timeline values | External handle |
-| --- | --- | --- | --- | --- |
-| **Vulkan** | `VK_KHR_external_memory_{fd,win32}` | `VkSemaphore` | Yes (`VK_KHR_timeline_semaphore`) | `VK_KHR_external_semaphore_{fd,win32}` |
-| **Metal** | shared `MTLBuffer` / `IOSurface` / heap | `MTLSharedEvent` | Yes (monotonic value) | shared event (same process) |
-| **OpenGL** | `GL_EXT_external_objects` (import only) | `GLsync`, or imported semaphore via `GL_EXT_semaphore` | No — GL semaphores are binary only | `GL_EXT_semaphore_{fd,win32}` (import only) |
+A second gap would need closing too: `_hgiDoneValue` has no accessor, so an
+application could not learn which value to wait for.
 
 ### Metal
 
-Metal is the remaining backend gap, and the interesting question is not the
-plumbing but which topology applies. `MTLBuffer` can be shared within a process
-and `MTLSharedEvent` is timeline-capable, so a same-device adopt route is
-plausible; the cross-API story is different from Win32's, since `IOSurface` and
-shared heaps replace opaque NT handles. The schema's `externalHandleType` is a
-token precisely so a Metal-native form can be added without changing the shape.
+Metal has no arena, so the path does not exist rather than being incomplete.
+`MTLBuffer` can be shared within a process and `MTLSharedEvent` is
+timeline-capable, so a same-device route is plausible; the cross-API story
+differs from Win32's, since `IOSurface` and shared heaps replace opaque NT
+handles. `HgiExternalHandleType` is an enum precisely so a Metal-native form can
+be added without changing anything above it.
 
-### Linux and fd handles
+### Relaxing the Vulkan interop gate for the same-device case
 
-`opaqueFd` is expressible everywhere but untested. The one materially different
-behaviour is ownership: fd import *transfers* ownership, unlike Win32, so every
-importer needs its own `dup()`. This affects producers most — a producer handing
-one allocation to both a GL importer and a Vulkan importer must export twice.
+`HgiVulkanExternalBufferArena::IsSupportedBy` requires `supportsNativeInterop`
+for every case, including a producer on the consumer's own device that exports
+nothing and imports nothing. That is stricter than the case requires, and it
+means `_VK_VK` depends on external-memory extensions it never uses.
 
 ### Other external resources
 
-If external sharing grows beyond buffers — an external texture, or whole-prim
-sync — `HdExtGpuSyncSchema` would be promoted from a child of `extGpuBuffer` to a
-standalone schema that both it and the new resource reference. For now buffers
-are the only shared resource, so nesting is the right call, and the promotion
-path stays clean because the sync container never refers to the buffer it guards.
+If external sharing grows beyond buffers — an external texture, say — the arena
+generalizes naturally, since synchronization already lives on the arena rather
+than on the buffer and would cover a mixed set of resources unchanged. The
+schema would gain a sibling carrying a weak reference to the new resource type,
+with the same shape.
