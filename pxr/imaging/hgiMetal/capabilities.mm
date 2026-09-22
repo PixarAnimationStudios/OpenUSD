@@ -85,6 +85,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     _SetFlag(HgiDeviceCapabilitiesBitsSingleSlotResourceArrays, true);
 
     _SetFlag(HgiDeviceCapabilitiesForceEarlyFragmentTest, true);
+    _SetFlag(HgiDeviceCapabilitiesBitsPackedInt1010102Vertices, true);
 
     // This is done to decide whether to use a workaround for post tess
     // patch primitive ID lookup. The bug causes the firstPatch offset

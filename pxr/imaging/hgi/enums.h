@@ -88,6 +88,7 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsRoundPoints              = 1 << 18,
     HgiDeviceCapabilitiesBitsSingleSlotResourceArrays = 1 << 19,
     HgiDeviceCapabilitiesForceEarlyFragmentTest       = 1 << 20,
+    HgiDeviceCapabilitiesBitsPackedInt1010102Vertices = 1 << 21,
 };
 
 using HgiDeviceCapabilities = HgiBits;

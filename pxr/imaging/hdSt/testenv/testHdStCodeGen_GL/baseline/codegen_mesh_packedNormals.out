@@ -3,46 +3,36 @@
 #import $TOOLS/hdSt/shaders/mesh.glslfx
 -- configuration
 {"techniques": {"default": {
-"vertexShader" : { "source" : ["Instancing.Transform", "Vertex.SkinPoints", "MeshNormal.Pass", "PointId.Vertex.None", "PointDisk.Vertex.None", "Mesh.Vertex"] }
-, "geometryShader" : { "source" : ["Instancing.Transform", "MeshNormal.Flat", "MeshNormal.Geometry.NoFlat", "Geometry.NoCustomDisplacement", "Mesh.Geometry.Triangle"] }
-, "fragmentShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "MeshNormal.Fragment.SingleSided", "MeshFaceCull.Fragment.None", "MeshWire.Fragment.EdgeCoord.Barycentric", "MeshWire.Fragment.EdgeMaskTriangle", "MeshWire.Fragment.EdgeCommon", "MeshWire.Fragment.EdgeParam", "MeshWire.Fragment.FinalEdgeOpacityForce", "MeshWire.Fragment.EdgeOnlyBlendColor", "Fragment.CommonTerminals", "Fragment.Surface", "Fragment.ScalarOverride", "EdgeId.Fragment.Common", "EdgeId.Fragment.TriangleLines", "EdgeId.Fragment.TriangleParam", "PointId.Fragment.Fallback", "PointDisk.Fragment.None", "Visibility.Fragment.Fallback", "Mesh.Fragment.PatchCoord", "Mesh.Fragment"] }
+"vertexShader" : { "source" : ["Instancing.Transform", "SecondaryGraphics.Vertex.Transform", "MeshNormal.Scene", "PointId.Vertex.None", "PointDisk.Vertex.None", "Mesh.Vertex"] }
+, "geometryShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "MeshNormal.Geometry.NoFlat", "Geometry.NoCustomDisplacement", "Mesh.Geometry.Triangle", "Mesh.Geometry.Triangle.GSMain"] }
+, "fragmentShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "MeshNormal.Fragment.SingleSided", "MeshFaceCull.Fragment.None", "MeshWire.Fragment.NoEdge", "MeshWire.Fragment.EdgeParam", "Fragment.CommonTerminals", "Fragment.Surface", "Fragment.ScalarOverride", "EdgeId.Fragment.Common", "EdgeId.Fragment.TriangleSurface", "EdgeId.Fragment.TriangleParam", "PointId.Fragment.Fallback", "PointDisk.Fragment.None", "Visibility.Fragment.Fallback", "Mesh.Fragment.PatchCoord", "Mesh.Fragment"] }
 }}}
 -------------------------------------------------------
 =======================================================
   VERTEX SHADER                                        
 =======================================================
 #version 450
-#if defined(GL_EXT_control_flow_attributes)
-	#extension GL_EXT_control_flow_attributes: require
-	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
-	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
-	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
-	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
-#else
-	#define HGI_COMPILER_ATTR_UNROLL
-	#define HGI_COMPILER_ATTR_DONT_UNROLL
-	#define HGI_COMPILER_ATTR_FLATTEN
-	#define HGI_COMPILER_ATTR_DONT_FLATTEN
-#endif
+#extension GL_NV_shader_buffer_load : require
+#extension GL_NV_gpu_shader5 : require
+#extension GL_ARB_bindless_texture : require
 #extension GL_ARB_shader_draw_parameters : require
 int HgiGetBaseVertex() {
   return gl_BaseVertexARB;
 }
-int HgiGetBaseInstance() {
-  return gl_BaseInstanceARB;
-}
 #define REF(space,type) inout type
-#define FORWARD_DECL(func_decl) func_decl
+#define FORWARD_DECL(func_decl) func_decl;
 #define ATOMIC_LOAD(a) (a)
 #define ATOMIC_STORE(a, v) (a) = (v)
 #define ATOMIC_ADD(a, v) atomicAdd(a, v)
 #define ATOMIC_EXCHANGE(a, v) atomicExchange(a, v)
+#define ATOMIC_COMPARE_EXCHANGE(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
 #define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
+#define HGI_HAS_IEEE_FLOAT_SPECIAL_VALUES 1
 
 
 struct hgi_ivec3 { int    x, y, z; };
@@ -55,10 +45,10 @@ struct hgi_dmat3 { double m00, m01, m02,
                           m10, m11, m12,
                           m20, m21, m22; };
 
+
 // //////// Codegen Defines //////// 
-#define HD_SHADER_API 3
+#define HD_SHADER_API 2
 #define MAT4 mat4
-#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -94,6 +84,8 @@ hd_dmat3 hd_dmat3_set(hd_dmat3 v) { return v; }
 hd_dmat3 hd_dmat3_set(dmat3 v)    { return hd_dmat3(v[0][0], v[0][1], v[0][2],
                                                     v[1][0], v[1][1], v[1][2],
                                                     v[2][0], v[2][1], v[2][2]); }
+mat4 MAT4Init(float x) {
+   return mat4(x,0,0,0, 0,x,0,0, 0,0,x,0, 0,0,0,x); }
 int hd_int_get(int v)          { return v; }
 int hd_int_get(ivec2 v)        { return v.x; }
 int hd_int_get(ivec3 v)        { return v.x; }
@@ -119,6 +111,7 @@ vec4 hd_half4_get(uvec2 v) {
     return vec4(unpackHalf2x16(v.x), unpackHalf2x16(v.y)); }
 uvec2 hd_half4_set(vec4 v) {
     return uvec2(packHalf2x16(v.xy), packHalf2x16(v.zw)); }
+// End alias hgi vec and matrix types to hd.
 #define HD_NUM_PRIMITIVE_VERTS 3
 #define HD_HAS_transform 1
 #define HD_HAS_transformInverse 1
@@ -127,10 +120,26 @@ uvec2 hd_half4_set(vec4 v) {
 #define HD_HAS_widths 1
 #define HD_INSTANCER_NUM_LEVELS 0
 #define HD_INSTANCE_INDEX_WIDTH 1
+#define HD_INDEXED_PRIMVAR_COUNT 0
 #define HD_HAS_faceVisibility 1
 #define HD_HAS_dispTextureCoord 1
 #define HD_HAS_points 1
 #define HD_HAS_normals 1
+
+
+// //////// Global Includes ////////
+
+// //////// Global Macros ////////
+
+// //////// Global Structs ////////
+
+// //////// Global Member Declarations ////////
+uint hd_VertexID = gl_VertexID;
+uint hd_InstanceID = gl_InstanceID;
+uint hd_BaseInstance = 0;
+
+// //////// Global Function Definitions ////////
+
 
 // //////// Codegen Decl //////// 
 struct hd_drawingCoord {                       
@@ -149,7 +158,7 @@ struct hd_drawingCoord {
 FORWARD_DECL(hd_drawingCoord GetDrawingCoord());
 FORWARD_DECL(int HgiGetBaseVertex());
 struct hd_instanceIndex { int indices[HD_INSTANCE_INDEX_WIDTH]; };
-struct ConstantData7 {
+struct ConstantData10 {
   mat4 transform;
   mat4 transformInverse;
   vec4 color;
@@ -160,40 +169,26 @@ FORWARD_DECL(int GetElementID());
 FORWARD_DECL(int GetAggregatedElementID());
 FORWARD_DECL(int GetPrimitiveEdgeId());
 FORWARD_DECL(float GetSelectedEdgeOpacity());
-
-// //////// Global Includes ////////
-
-// //////// Global Macros ////////
-
-// //////// Global Structs ////////
-
-// //////// Global Member Declarations ////////
-layout(std430, binding = 0) readonly buffer ssbo_constantPrimvars { ConstantData7 constantPrimvars[]; };
-layout(std430, binding = 1) readonly buffer ssbo_primitiveParam { int primitiveParam[]; };
-layout(std430, binding = 2) readonly buffer ssbo_edgeIndices { int edgeIndices[]; };
-layout(std430, binding = 3) readonly buffer ssbo_faceVisibility { float faceVisibility[]; };
-layout(location = 2) in ivec4 drawingCoord0;
-layout(location = 3) in ivec4 drawingCoord1;
-layout(location = 4) in ivec2 drawingCoord2;
-layout(location = 0) in vec3 points;
-layout(location = 1) in vec3 normals;
-uint hd_VertexID = gl_VertexIndex;
-uint hd_InstanceID = gl_InstanceIndex;
-uint hd_BaseInstance = HgiGetBaseInstance();
-flat layout(location = 0) out ivec4 vs_interstageDrawingCoord0;
-flat layout(location = 1) out ivec4 vs_interstageDrawingCoord1;
-flat layout(location = 2) out ivec4 vs_interstageDrawingCoord2;
-layout(location = 3) out VertexData {
-  vec4 Peye;
-  vec3 Neye;
+out flat ivec4 vs_interstageDrawingCoord0;
+out flat ivec4 vs_interstageDrawingCoord1;
+out flat ivec4 vs_interstageDrawingCoord2;
+layout (location = 2) in ivec4 drawingCoord0;
+layout (location = 3) in ivec4 drawingCoord1;
+layout (location = 4) in ivec2 drawingCoord2;
+layout (location = 0) in vec3 points;
+layout (location = 1) in vec4 normals;
+layout(location = 0) uniform ConstantData10 *constantPrimvars;
+layout(location = 1) uniform int *primitiveParam;
+layout(location = 2) uniform int *edgeIndices;
+layout(location = 3) uniform float *faceVisibility;
+out VertexData {
+    vec4 Peye;
+    vec3 Neye;
 } outData;
-layout(location = 5) out PrimvarData {
-  vec3 points;
-  vec3 normals;
+out PrimvarData {
+    vec3 points;
+    vec4 normals;
 } outPrimvars;
-
-// //////// Global Function Definitions ////////
-
 
 // //////// Codegen Accessors //////// 
 mat4 HdGet_transform(int localIndex) {
@@ -229,6 +224,7 @@ float HdGetScalar_widths(int localIndex) { return HdGet_widths(localIndex); }
 float HdGetScalar_widths() { return HdGet_widths(0); }
 
 // //////// Codegen VS Source //////// 
+#define HD_BINDLESS_BUFFERS_ENABLED
 int GetBaseVertexOffset() {
   return HgiGetBaseVertex();
 }
@@ -251,8 +247,8 @@ vec3 HdGet_points(int localIndex) { return hd_vec3_get(points);}
 vec3 HdGet_points() { return HdGet_points(0); }
 float HdGetScalar_points(int localIndex) { return HdGet_points(localIndex).x; }
 float HdGetScalar_points() { return HdGet_points(0).x; }
-vec3 HdGet_normals(int localIndex) { return hd_vec3_get(normals);}
-vec3 HdGet_normals() { return HdGet_normals(0); }
+vec4 HdGet_normals(int localIndex) { return vec4(normals);}
+vec4 HdGet_normals() { return HdGet_normals(0); }
 float HdGetScalar_normals(int localIndex) { return HdGet_normals(localIndex).x; }
 float HdGetScalar_normals() { return HdGet_normals(0).x; }
 
@@ -306,13 +302,6 @@ MAT4  GetWorldToViewInverseMatrix() {
 MAT4  GetProjectionMatrix() {
 #if defined(HD_HAS_projectionMatrix)
     return MAT4(HdGet_projectionMatrix());
-#else
-    return MAT4(1);
-#endif
-}
-MAT4  GetProjectionInverseMatrix() {
-#if defined(HD_HAS_projectionInverseMatrix)
-    return MAT4(HdGet_projectionInverseMatrix());
 #else
     return MAT4(1);
 #endif
@@ -396,6 +385,15 @@ vec4  GetIndicatorColor() {
 #endif
 }
 
+float GetDepthPriority() {
+#if defined(HD_HAS_depthPriority)
+    // How much to bias it forward toward the eye. 1048576 = 2^24 / 16.
+    return HdGet_depthPriority() / 1048576.0;
+#else
+    return 0;
+#endif
+}
+
 bool ShouldDiscardByAlpha(vec4 color)
 {
 #if defined(HD_HAS_alphaThreshold)
@@ -411,9 +409,19 @@ vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
     return t.xy * pt + t.zw;
 }
 
+vec3 GetVec3(vec3 pt)
+{
+    return pt;
+}
+
+vec3 GetVec3(vec2 pt)
+{
+    return vec3(pt.x, pt.y, 0.0);
+}
 
 
-#ifdef HD_USE_HARDWARE_CLIPPING
+
+
 void ApplyClipPlanes(vec4 Peye)
 {
 #if defined(HD_HAS_numClipPlanes)
@@ -423,15 +431,16 @@ void ApplyClipPlanes(vec4 Peye)
         // gl_ClipDistance[HD_NUM_clipPlanes], since we need to know the array
         // size at compile time. To avoid having any uninitialized values in
         // that array, we initialize them all to zero first.
-        gl_ClipDistance[i] = 0;
+        float fClip = 0;
         if (i < HdGet_numClipPlanes()) {
-            gl_ClipDistance[i] = dot(HdGet_clipPlanes(i), Peye);
+            fClip = dot(HdGet_clipPlanes(i), Peye);
         }
+
+        gl_ClipDistance[i] = fClip;
     }
 #endif
 #endif
 }
-#endif
 
 
 
@@ -564,7 +573,6 @@ MAT4 GetInstanceTransform()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = GetInstanceTransform(i) * m;
 #ifdef HD_HAS_instancerTransform
@@ -579,7 +587,6 @@ MAT4 GetInstanceTransformInverse()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = m * GetInstanceTransformInverse(i);
 #ifdef HD_HAS_instancerTransformInverse
@@ -614,13 +621,11 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceScales
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_hydra_instanceScales(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
     }
 #elif defined(HD_HAS_INSTANCE_scale)
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
@@ -628,13 +633,11 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceTransforms
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_hydra_instanceTransforms(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
     }
 #elif defined(HD_HAS_INSTANCE_instanceTransform)
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
@@ -645,276 +648,118 @@ bool IsFlipped()
 }
 
 
-const float EPS = 1e-5;
-
-vec3 ApplySkinningLBS(vec3 restP)
+float pixelToModelScale(MAT4 screenToWorld, MAT4 transform, vec3 scenter, float mpixels)
 {
-#if defined(HD_HAS_skel_geomBindTransform) && \
-    defined(HD_HAS_hydra_numInfluencesPerComponent) && \
-    defined(HD_HAS_hydra_hasConstantInfluences) && \
-    defined(HD_HAS_hydra_influences) && \
-    defined(HD_HAS_hydra_skinningXforms) && \
-    defined(HD_HAS_hydra_primWorldToLocal) && \
-    defined(HD_HAS_hydra_skelLocalToWorld) && \
-    defined(HD_HAS_hydra_numJoints)
+    MAT4 invT = inverse(transform);
+    MAT4 worldToScreen = inverse(screenToWorld);
 
-    int numInfluencesPerComponent = HdGet_hydra_numInfluencesPerComponent();
-    if (numInfluencesPerComponent > 0) {
-        const int index = int(hd_VertexID) - GetBaseVertexOffset();
-        const int instanceOffset =
-            GetDrawingCoord().instanceIndex[0] * HdGet_hydra_numJoints();
+    // To compute scale (corresponding to mpixels) in modelspace about scenter as pivot.
 
-        // model space -> bind space
-        mat4 geomBindXform = HdGet_skel_geomBindTransform();
-        vec4 initP = geomBindXform * vec4(restP, 1);
+    //1. Map scenter from object -> world -> Screen as devPt.
+    vec4 sc4 = vec4(scenter, 1.0);
+    vec4 devPt = vec4(worldToScreen*transform*sc4);
+    devPt /= devPt.w;
 
-        vec3 p = vec3(0, 0, 0);
+    //2. Advance by reqd pixels along X axis
+    devPt.x += mpixels;
 
-        bool constantPointInfluence = HdGet_hydra_hasConstantInfluences();
-        int offset = constantPointInfluence ? 0 :
-            numInfluencesPerComponent * index;
+    //3.  devPt -> World -> Object as modPt
+    vec4 modPt = vec4(screenToWorld*devPt);
+    modPt /= modPt.w;
+    modPt = vec4(invT*modPt);
 
-        for (int i = 0; i < numInfluencesPerComponent; i++) {
-            vec2 influence = HdGet_hydra_influences(offset + i);
-            float jointWeight = influence.y;
-            // float jointWeight = HdGet_skel_jointWeights(i);
+    // scale factor in modelspace.
+    float modelScale = length(modPt.xyz - sc4.xyz);
 
-            if (jointWeight > EPS) {
-                // HYD-3510
-                // we have to do multiple mem fetch to compute jointIdx here.
-                // potentially causing vertex implementation to be much slower
-                // than extComputation compute shader.
-                int jointIdx = int(influence.x) + instanceOffset;
-                // int jointIdx = HdGet_skel_jointIndices(i) + instanceOffset;
-                mat4 skinningXform = HdGet_hydra_skinningXforms(jointIdx);
+    return modelScale;
+}
 
-                p += ((skinningXform * initP) * jointWeight).xyz;
-            }
+MAT4 pixelScaleTransform(MAT4 screenToWorld, MAT4 transform, vec3 spivot, float mpixels)
+{
+    const float pixelScale =
+        pixelToModelScale(screenToWorld, transform, spivot, mpixels);
+
+    // scale about spivot
+    MAT4 scaleMat = MAT4(pixelScale, 0, 0, 0,
+                            0, pixelScale, 0, 0,
+                            0, 0, pixelScale, 0,
+                            0, 0, 0, 1);
+    MAT4 preTMat = MAT4(1.);
+    preTMat[3] = vec4(-spivot.x,-spivot.y,-spivot.z,1.0);
+
+    MAT4 postTMat = MAT4(1.);
+    postTMat[3] = vec4(spivot.xyz,1.0);
+
+    MAT4 scaleTxfrm  = postTMat * scaleMat * preTMat;
+    return scaleTxfrm;
+}
+
+
+
+MAT4 axialConstraint(MAT4 worldToViewMatrix, MAT4 transform)
+{
+    // axis-constrained: rotate around local y-axis to face camera as best as possible
+    // VM = View-Model
+    const MAT4 VM = worldToViewMatrix * transform;
+
+    const float a = float(VM[1][0] * VM[0][0] + VM[1][1] * VM[0][1]);
+    const float b = float(VM[1][0] * VM[2][0] + VM[1][1] * VM[2][1]);
+    const float theta = atan(a/b);
+    const float cosTheta = cos(theta);
+    const float sinTheta = sin(theta);
+
+    return MAT4(
+        cosTheta, 0, -sinTheta, 0,
+        0, 1, 0, 0,
+        sinTheta, 0, cosTheta, 0,
+        0, 0, 0, 1);
+}
+
+MAT4 billboardConstraint(MAT4 worldToViewMatrix, MAT4 transform)
+{
+    // billboard-constrained: rotate so that local x- and y-axes
+    // align to view x and y.
+    // VM = View-Model
+    const MAT4 invVM = inverse(worldToViewMatrix * transform);
+    const vec4 x = vec4(normalize(invVM[0]));
+    const vec4 y = vec4(normalize(invVM[1]));
+    const vec4 z = vec4(normalize(cross(x.xyz, y.xyz)), 0);
+    const vec4 w = vec4(0, 0, 0, 1);
+
+    return MAT4(x, y, z, w);
+}
+
+MAT4 transformConstraint(int constraintType, MAT4 worldToViewMatrix, MAT4 transform)
+{
+    switch (constraintType) {
+        case 0:
+        {
+            return axialConstraint(worldToViewMatrix, transform);
         }
-
-        // skel space -> world space -> model space
-        // XXX: Casts to mat4 below are necessary because the matrices passed
-        // down use doubles and not floats.
-        mat4 skelToPrimLocal = mat4( HdGet_hydra_primWorldToLocal() ) *
-                               mat4( HdGet_hydra_skelLocalToWorld() );
-        p = (skelToPrimLocal * vec4(p, 1)).xyz;
-        return p;
-    }
-#endif
-    return restP;
-}
-
-// ---------------------------------------------------------------------------
-
-const float NORM_EPS = 1e-10;
-
-vec4 GetPivotQuaternion(
-    int numInfluencesPerComponent, int offset, int instanceOffset)
-{
-    vec4 pivotQuat = vec4(0);
-
-#if defined(HD_HAS_hydra_influences) && \
-    defined(HD_HAS_hydra_skinningDualQuats)
-
-    int pivotIdx = -1;
-    float maxw = -1;
-    for (int i = 0; i < numInfluencesPerComponent; i++) {
-        vec2 influence = HdGet_hydra_influences(offset + i);
-        float jointWeight = influence.y;
-        if (pivotIdx < 0 || maxw < jointWeight) {
-            int jointIdx = int(influence.x) + instanceOffset;
-            maxw = jointWeight;
-            pivotIdx = jointIdx;
-        }
-    }
-    if (pivotIdx >= 0) {
-        pivotQuat = HdGet_hydra_skinningDualQuats(pivotIdx*2);
-    }
-#endif
-
-    return pivotQuat;
-}
-
-vec3 TransformByQuaternion(vec4 quat, vec3 vec)
-{
-    // See GfQuat::Transform() for algorithm
-
-    float r1 = quat.w;
-    vec3  i1 = quat.xyz;
-
-    vec3  i2 = vec3(r1 * vec[0] + (i1[1] * vec[2] - i1[2] * vec[1]),
-                    r1 * vec[1] + (i1[2] * vec[0] - i1[0] * vec[2]),
-                    r1 * vec[2] + (i1[0] * vec[1] - i1[1] * vec[0]));
-
-    return vec3(vec[0] + 2.0 * (i1[1] * i2[2] - i1[2] * i2[1]),
-                vec[1] + 2.0 * (i1[2] * i2[0] - i1[0] * i2[2]),
-                vec[2] + 2.0 * (i1[0] * i2[1] - i1[1] * i2[0]));
-}
-
-vec3 GetDualQuaternionTranslation(vec4 real, vec4 dual)
-{
-    // See GfDualQuat::GetTranslation() for algorithm
-
-    float scale = -2.0;
-
-    float rw = real.w;
-    vec3  ri = real.xyz;
-
-    float dw = dual.w;
-    vec3  di = dual.xyz;
-
-    return vec3( (dw*ri[0] - rw*di[0] + di[1]*ri[2] - di[2]*ri[1])*scale,
-                 (dw*ri[1] - rw*di[1] + di[2]*ri[0] - di[0]*ri[2])*scale,
-                 (dw*ri[2] - rw*di[2] + di[0]*ri[1] - di[1]*ri[0])*scale );
-}
-
-vec3 ApplySkinningDQS(vec3 restP)
-{
-#if defined(HD_HAS_skel_geomBindTransform) && \
-    defined(HD_HAS_hydra_numInfluencesPerComponent) && \
-    defined(HD_HAS_hydra_hasConstantInfluences) && \
-    defined(HD_HAS_hydra_influences) && \
-    defined(HD_HAS_hydra_skinningDualQuats) && \
-    defined(HD_HAS_hydra_primWorldToLocal) && \
-    defined(HD_HAS_hydra_skelLocalToWorld) && \
-    defined(HD_HAS_hydra_numJoints)
-
-    vec3 p;
-    int numInfluencesPerComponent = HdGet_hydra_numInfluencesPerComponent();
-    if (numInfluencesPerComponent > 0) {
-        const int index = int(hd_VertexID) - GetBaseVertexOffset();
-        const int instanceOffset =
-            GetDrawingCoord().instanceIndex[0] * HdGet_hydra_numJoints();
-
-        // model space -> bind space
-        mat4 geomBindXform = HdGet_skel_geomBindTransform();
-        vec3 initP = (geomBindXform * vec4(restP, 1)).xyz;
-
-#ifdef HD_HAS_hydra_skinningScaleXforms
-        vec3 scaledP = vec3(0, 0, 0);
-#endif
-
-        bool constantPointInfluence = HdGet_hydra_hasConstantInfluences();
-        int offset = constantPointInfluence ? 0 :
-            numInfluencesPerComponent * index;
-
-        // find the pivot quaternion
-        vec4 pivotQuat = GetPivotQuaternion(
-            numInfluencesPerComponent, offset, instanceOffset);
-
-        // find the weighted sum dual quaternion
-        vec4 weightedSumDQReal = vec4(0);
-        vec4 weightedSumDQDual = vec4(0);
-
-        for (int i = 0; i < numInfluencesPerComponent; i++) {
-            vec2 influence = HdGet_hydra_influences(offset + i);
-            float jointWeight = influence.y;
-
-            if (jointWeight > EPS) {
-                int jointIdx = int(influence.x) + instanceOffset;
-
-#ifdef HD_HAS_hydra_skinningScaleXforms
-                // Apply scale using LBS, if any of the skinning xforms has scales
-                mat3 scaleXform = HdGet_hydra_skinningScaleXforms(jointIdx);
-                scaledP += ((scaleXform * initP) * jointWeight);
-#endif
-
-                // Apply rotation & translation using DQS
-                vec4 skinningDQReal = HdGet_hydra_skinningDualQuats(jointIdx*2);
-                vec4 skinningDQDual = HdGet_hydra_skinningDualQuats(jointIdx*2+1);
-                // Flip the dual quaternion, if necessary, to make it
-                // on the same hemisphere as the pivotQuat.
-                if (dot(skinningDQReal, pivotQuat) < 0.0) {
-                   jointWeight = -jointWeight;
-                }
-
-                weightedSumDQReal += (skinningDQReal * jointWeight);
-                weightedSumDQDual += (skinningDQDual * jointWeight);
-            }
-        }
-
-        // normalize weightedSumDQ
-        float realLength = length(weightedSumDQReal);
-        if (realLength < NORM_EPS) {
-            weightedSumDQReal = vec4(0, 0, 0, 1);  // identity quaternion
-            weightedSumDQDual = vec4(0);           // zero quaternion
-        } else {
-            float inverseRealLength = 1.0 / realLength;
-            // rotation normalization
-            weightedSumDQReal *= inverseRealLength;
-            weightedSumDQDual *= inverseRealLength;
-            // plucker normalization
-            weightedSumDQDual -=
-                (dot(weightedSumDQReal, weightedSumDQDual) * weightedSumDQReal);
-        }
-
-#ifdef HD_HAS_hydra_skinningScaleXforms
-        // transform scaledP by weightedSumDQ
-        p = TransformByQuaternion(weightedSumDQReal, scaledP)
-            + GetDualQuaternionTranslation(weightedSumDQReal, weightedSumDQDual);
-#else
-        // transform initP by weightedSumDQ
-        p = TransformByQuaternion(weightedSumDQReal, initP)
-            + GetDualQuaternionTranslation(weightedSumDQReal, weightedSumDQDual);
-#endif
-
-        // skel space -> world space -> model space
-        // XXX: Casts to mat4 below are necessary because the matrices passed
-        // down use doubles and not floats.
-        mat4 skelToPrimLocal = mat4(HdGet_hydra_primWorldToLocal()) *
-                               mat4(HdGet_hydra_skelLocalToWorld());
-        p = (skelToPrimLocal * vec4(p, 1)).xyz;
-        return p;
-    }
-#endif
-    return restP;
-}
-
-// ---------------------------------------------------------------------------
-
-vec3 ApplyBlendShapes(vec3 restP)
-{
-#if defined(HD_HAS_hydra_numBlendShapeOffsetRanges) && \
-    defined(HD_HAS_hydra_blendShapeOffsetRanges) && \
-    defined(HD_HAS_hydra_blendShapeOffsets) && \
-    defined(HD_HAS_hydra_numBlendShapeWeights) && \
-    defined(HD_HAS_hydra_blendShapeWeights)
-
-    const int index = int(hd_VertexID) - GetBaseVertexOffset();
-    const int instanceOffset =
-        GetDrawingCoord().instanceIndex[0] * HdGet_hydra_numBlendShapeWeights();
-
-    const int numBlendShapeOffsetRanges = HdGet_hydra_numBlendShapeOffsetRanges();
-    if (index < numBlendShapeOffsetRanges) {
-        ivec2 blendShapeOffsetRange = HdGet_hydra_blendShapeOffsetRanges(index);
-        for (int i = blendShapeOffsetRange.x; i < blendShapeOffsetRange.y; ++i) {
-            const vec4 offset = HdGet_hydra_blendShapeOffsets(i);
-            const int shapeIndex = instanceOffset + int(offset.w);
-            const float weight = HdGet_hydra_blendShapeWeights(shapeIndex);
-            restP += offset.xyz * weight;
+        case 1:
+        {
+            return billboardConstraint(worldToViewMatrix, transform);
         }
     }
-#endif
-    return restP;
-}
 
-vec3 ApplySkinning(vec3 restP)
-{
-    vec3 p = ApplyBlendShapes(restP);
-
-#ifdef HD_HAS_hydra_numSkinningMethod
-    const int skinningMethod = HdGet_hydra_numSkinningMethod();
-    if (skinningMethod == 1) {
-        return ApplySkinningDQS(p);
-    }
-#endif
-    return ApplySkinningLBS(p);
+    return MAT4(1);
 }
 
 
 vec3 GetNormal(vec3 Neye, int index)
 {
-    return Neye;
+    vec3 normal = vec3(0);
+#if defined(HD_HAS_normals)
+    normal = vec3(HdGet_normals(index).xyz);
+#endif
+
+    MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
+    normal = vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
+                  vec4(normal,0)).xyz;
+
+    if (length(normal) > 0.0)
+        normal = normalize(normal);
+    return normal;
 }
 
 vec3 GetNormal(vec3 Neye, int index, vec2 localST)
@@ -958,10 +803,26 @@ void main(void)
 {
     ProcessPrimvarsIn();
 
-    MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
-    vec4 point        = vec4(ApplySkinning(HdGet_points().xyz), 1);
-    outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+    const MAT4 worldToViewMatrix = GetWorldToViewMatrix();
+    const MAT4 projectionMatrix = GetProjectionMatrix();
+    MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+    vec4 pt = vec4(GetVec3(HdGet_points()), 1);
 
+#if defined(HD_HAS_pixelScale)
+    if (HdGet_pixelScale())
+    {
+        MAT4 screenToWorld = HdGet_imageToWorldMatrix();
+        MAT4 psTrf = pixelScaleTransform( screenToWorld , transform, HdGet_scaleCenter(), HdGet_screenSpaceSize()/HdGet_modelSpaceSize());
+        transform = transform * psTrf;
+    }
+#endif
+
+#if defined(HD_HAS_cameraFacing)
+    transform = transform *
+        transformConstraint(HdGet_cameraFacing(), worldToViewMatrix, transform);
+#endif
+
+    outData.Peye = vec4(worldToViewMatrix * transform * pt);
     outData.Neye = GetNormal(vec3(0), 0); // normalized
 
     int pointId = GetPointId();
@@ -969,6 +830,7 @@ void main(void)
     ProcessPointId(pointId);
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    gl_Position.z -= gl_Position.w * 2.0 * GetDepthPriority();
     ApplyClipPlanes(outData.Peye);
 }
 
@@ -983,30 +845,23 @@ void main(void)
   GEOMETRY SHADER                                      
 =======================================================
 #version 450
-#if defined(GL_EXT_control_flow_attributes)
-	#extension GL_EXT_control_flow_attributes: require
-	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
-	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
-	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
-	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
-#else
-	#define HGI_COMPILER_ATTR_UNROLL
-	#define HGI_COMPILER_ATTR_DONT_UNROLL
-	#define HGI_COMPILER_ATTR_FLATTEN
-	#define HGI_COMPILER_ATTR_DONT_FLATTEN
-#endif
+#extension GL_NV_shader_buffer_load : require
+#extension GL_NV_gpu_shader5 : require
+#extension GL_ARB_bindless_texture : require
 #define REF(space,type) inout type
-#define FORWARD_DECL(func_decl) func_decl
+#define FORWARD_DECL(func_decl) func_decl;
 #define ATOMIC_LOAD(a) (a)
 #define ATOMIC_STORE(a, v) (a) = (v)
 #define ATOMIC_ADD(a, v) atomicAdd(a, v)
 #define ATOMIC_EXCHANGE(a, v) atomicExchange(a, v)
+#define ATOMIC_COMPARE_EXCHANGE(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
 #define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
+#define HGI_HAS_IEEE_FLOAT_SPECIAL_VALUES 1
 
 
 struct hgi_ivec3 { int    x, y, z; };
@@ -1019,10 +874,10 @@ struct hgi_dmat3 { double m00, m01, m02,
                           m10, m11, m12,
                           m20, m21, m22; };
 
+
 // //////// Codegen Defines //////// 
-#define HD_SHADER_API 3
+#define HD_SHADER_API 2
 #define MAT4 mat4
-#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -1058,6 +913,8 @@ hd_dmat3 hd_dmat3_set(hd_dmat3 v) { return v; }
 hd_dmat3 hd_dmat3_set(dmat3 v)    { return hd_dmat3(v[0][0], v[0][1], v[0][2],
                                                     v[1][0], v[1][1], v[1][2],
                                                     v[2][0], v[2][1], v[2][2]); }
+mat4 MAT4Init(float x) {
+   return mat4(x,0,0,0, 0,x,0,0, 0,0,x,0, 0,0,0,x); }
 int hd_int_get(int v)          { return v; }
 int hd_int_get(ivec2 v)        { return v.x; }
 int hd_int_get(ivec3 v)        { return v.x; }
@@ -1083,6 +940,7 @@ vec4 hd_half4_get(uvec2 v) {
     return vec4(unpackHalf2x16(v.x), unpackHalf2x16(v.y)); }
 uvec2 hd_half4_set(vec4 v) {
     return uvec2(packHalf2x16(v.xy), packHalf2x16(v.zw)); }
+// End alias hgi vec and matrix types to hd.
 #define HD_NUM_PRIMITIVE_VERTS 3
 #define HD_HAS_transform 1
 #define HD_HAS_transformInverse 1
@@ -1091,10 +949,34 @@ uvec2 hd_half4_set(vec4 v) {
 #define HD_HAS_widths 1
 #define HD_INSTANCER_NUM_LEVELS 0
 #define HD_INSTANCE_INDEX_WIDTH 1
+#define HD_INDEXED_PRIMVAR_COUNT 0
 #define HD_HAS_faceVisibility 1
 #define HD_HAS_dispTextureCoord 1
 #define HD_HAS_points 1
 #define HD_HAS_normals 1
+vec4 InterpolatePatchCoord(vec2 uv, ivec3 patchParam)
+{
+    // add 0.5 to integer values for more robust interpolation
+    return vec4(uv.x, uv.y, 0, patchParam.x+0.5f);
+}
+vec4 InterpolatePatchCoordTriangle(vec2 uv, ivec3 patchParam)
+{
+    return InterpolatePatchCoord(uv, patchParam);
+}
+
+layout (triangles) in;
+layout (triangle_strip, max_vertices = 3) out;
+
+// //////// Global Includes ////////
+
+// //////// Global Macros ////////
+
+// //////// Global Structs ////////
+
+// //////// Global Member Declarations ////////
+
+// //////// Global Function Definitions ////////
+
 
 // //////// Codegen Decl //////// 
 struct hd_drawingCoord {                       
@@ -1113,7 +995,7 @@ struct hd_drawingCoord {
 FORWARD_DECL(hd_drawingCoord GetDrawingCoord());
 FORWARD_DECL(int HgiGetBaseVertex());
 struct hd_instanceIndex { int indices[HD_INSTANCE_INDEX_WIDTH]; };
-struct ConstantData7 {
+struct ConstantData10 {
   mat4 transform;
   mat4 transformInverse;
   vec4 color;
@@ -1124,57 +1006,36 @@ FORWARD_DECL(int GetElementID());
 FORWARD_DECL(int GetAggregatedElementID());
 FORWARD_DECL(int GetPrimitiveEdgeId());
 FORWARD_DECL(float GetSelectedEdgeOpacity());
-vec4 InterpolatePatchCoord(vec2 uv, ivec3 patchParam)
-{
-    // add 0.5 to integer values for more robust interpolation
-    return vec4(uv.x, uv.y, 0, patchParam.x+0.5f);
-}
-vec4 InterpolatePatchCoordTriangle(vec2 uv, ivec3 patchParam)
-{
-    return InterpolatePatchCoord(uv, patchParam);
-}
-layout (triangles) in;
-layout (triangle_strip, max_vertices = 3) out;
-
-// //////// Global Includes ////////
-
-// //////// Global Macros ////////
-
-// //////// Global Structs ////////
-
-// //////// Global Member Declarations ////////
-layout(std430, binding = 0) readonly buffer ssbo_constantPrimvars { ConstantData7 constantPrimvars[]; };
-layout(std430, binding = 1) readonly buffer ssbo_primitiveParam { int primitiveParam[]; };
-layout(std430, binding = 2) readonly buffer ssbo_edgeIndices { int edgeIndices[]; };
-layout(std430, binding = 3) readonly buffer ssbo_faceVisibility { float faceVisibility[]; };
-layout(std430, binding = 4) readonly buffer ssbo_dispTextureCoord { vec2 dispTextureCoord[]; };
-flat layout(location = 0) in ivec4 vs_interstageDrawingCoord0[HD_NUM_PRIMITIVE_VERTS];
-flat layout(location = 1) in ivec4 vs_interstageDrawingCoord1[HD_NUM_PRIMITIVE_VERTS];
-flat layout(location = 2) in ivec4 vs_interstageDrawingCoord2[HD_NUM_PRIMITIVE_VERTS];
-layout(location = 3) in VertexData {
-  vec4 Peye;
-  vec3 Neye;
+layout(location = 0) uniform ConstantData10 *constantPrimvars;
+layout(location = 1) uniform int *primitiveParam;
+layout(location = 2) uniform int *edgeIndices;
+layout(location = 3) uniform float *faceVisibility;
+in VertexData {
+    vec4 Peye;
+    vec3 Neye;
 } inData[3];
-layout(location = 5) in PrimvarData {
-  vec3 points;
-  vec3 normals;
-} inPrimvars[HD_NUM_PRIMITIVE_VERTS];
-layout(location = 2) out vec4 gsPatchCoord;
-flat layout(location = 3) out ivec4 gs_interstageDrawingCoord0;
-flat layout(location = 4) out ivec4 gs_interstageDrawingCoord1;
-flat layout(location = 5) out ivec4 gs_interstageDrawingCoord2;
-layout(location = 0) out VertexData {
-  vec4 Peye;
-  vec3 Neye;
+out VertexData {
+    vec4 Peye;
+    vec3 Neye;
 } outData;
-layout(location = 6) out PrimvarData {
-  vec3 points;
-  vec3 normals;
-  vec2 dispTextureCoord;
+out vec4 gsPatchCoord;
+out noperspective vec3 hd_barycentricCoord;
+in flat ivec4 vs_interstageDrawingCoord0[HD_NUM_PRIMITIVE_VERTS];
+out flat ivec4 gs_interstageDrawingCoord0;
+in flat ivec4 vs_interstageDrawingCoord1[HD_NUM_PRIMITIVE_VERTS];
+out flat ivec4 gs_interstageDrawingCoord1;
+in flat ivec4 vs_interstageDrawingCoord2[HD_NUM_PRIMITIVE_VERTS];
+out flat ivec4 gs_interstageDrawingCoord2;
+in PrimvarData {
+    vec3 points;
+    vec4 normals;
+} inPrimvars[HD_NUM_PRIMITIVE_VERTS];
+out PrimvarData {
+    vec3 points;
+    vec4 normals;
+    vec2 dispTextureCoord;
 } outPrimvars;
-
-// //////// Global Function Definitions ////////
-
+layout(location = 4) uniform vec2 *dispTextureCoord;
 
 // //////// Codegen Accessors //////// 
 mat4 HdGet_transform(int localIndex) {
@@ -1286,11 +1147,11 @@ vec3 HdGet_points(int localIndex) {
 vec3 HdGet_points() { return HdGet_points(0); }
 float HdGetScalar_points(int localIndex) { return HdGet_points(localIndex).x; }
 float HdGetScalar_points() { return HdGet_points(0).x; }
-vec3 HdGet_normals(int localIndex) {
+vec4 HdGet_normals(int localIndex) {
   int index = localIndex;
-  return vec3(inPrimvars[index].normals);
+  return vec4(inPrimvars[index].normals);
 }
-vec3 HdGet_normals() { return HdGet_normals(0); }
+vec4 HdGet_normals() { return HdGet_normals(0); }
 float HdGetScalar_normals(int localIndex) { return HdGet_normals(localIndex).x; }
 float HdGetScalar_normals() { return HdGet_normals(0).x; }
 vec2 HdGet_dispTextureCoord_Coarse(int localIndex) {
@@ -1315,6 +1176,10 @@ void ProcessSamplingTransforms(MAT4 instanceModelViewInverse) {
 FORWARD_DECL(vec4 GetPatchCoord(int index));
 void ProcessPrimvarsOut(int index) {
   vec2 localST = GetPatchCoord(index).xy;
+  const vec3 coords[3] = vec3[](
+   vec3(1,0,0), vec3(0,1,0), vec3(0,0,1)
+  );
+  hd_barycentricCoord = coords[index];
   hd_drawingCoord dc = GetDrawingCoord();
   gs_interstageDrawingCoord0[0] = dc.modelCoord;
   gs_interstageDrawingCoord0[1] = dc.constantCoord;
@@ -1364,13 +1229,6 @@ MAT4  GetWorldToViewInverseMatrix() {
 MAT4  GetProjectionMatrix() {
 #if defined(HD_HAS_projectionMatrix)
     return MAT4(HdGet_projectionMatrix());
-#else
-    return MAT4(1);
-#endif
-}
-MAT4  GetProjectionInverseMatrix() {
-#if defined(HD_HAS_projectionInverseMatrix)
-    return MAT4(HdGet_projectionInverseMatrix());
 #else
     return MAT4(1);
 #endif
@@ -1454,6 +1312,15 @@ vec4  GetIndicatorColor() {
 #endif
 }
 
+float GetDepthPriority() {
+#if defined(HD_HAS_depthPriority)
+    // How much to bias it forward toward the eye. 1048576 = 2^24 / 16.
+    return HdGet_depthPriority() / 1048576.0;
+#else
+    return 0;
+#endif
+}
+
 bool ShouldDiscardByAlpha(vec4 color)
 {
 #if defined(HD_HAS_alphaThreshold)
@@ -1469,9 +1336,19 @@ vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
     return t.xy * pt + t.zw;
 }
 
+vec3 GetVec3(vec3 pt)
+{
+    return pt;
+}
+
+vec3 GetVec3(vec2 pt)
+{
+    return vec3(pt.x, pt.y, 0.0);
+}
 
 
-#ifdef HD_USE_HARDWARE_CLIPPING
+
+
 void ApplyClipPlanes(vec4 Peye)
 {
 #if defined(HD_HAS_numClipPlanes)
@@ -1481,15 +1358,16 @@ void ApplyClipPlanes(vec4 Peye)
         // gl_ClipDistance[HD_NUM_clipPlanes], since we need to know the array
         // size at compile time. To avoid having any uninitialized values in
         // that array, we initialize them all to zero first.
-        gl_ClipDistance[i] = 0;
+        float fClip = 0;
         if (i < HdGet_numClipPlanes()) {
-            gl_ClipDistance[i] = dot(HdGet_clipPlanes(i), Peye);
+            fClip = dot(HdGet_clipPlanes(i), Peye);
         }
+
+        gl_ClipDistance[i] = fClip;
     }
 #endif
 #endif
 }
-#endif
 
 
 
@@ -1628,7 +1506,6 @@ MAT4 GetInstanceTransform()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = GetInstanceTransform(i) * m;
 #ifdef HD_HAS_instancerTransform
@@ -1643,7 +1520,6 @@ MAT4 GetInstanceTransformInverse()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = m * GetInstanceTransformInverse(i);
 #ifdef HD_HAS_instancerTransformInverse
@@ -1678,13 +1554,11 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceScales
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_hydra_instanceScales(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
     }
 #elif defined(HD_HAS_INSTANCE_scale)
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
@@ -1692,13 +1566,11 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceTransforms
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_hydra_instanceTransforms(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
     }
 #elif defined(HD_HAS_INSTANCE_instanceTransform)
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
@@ -1711,20 +1583,7 @@ bool IsFlipped()
 
 vec3 GetNormal(vec3 Neye, int index)
 {
-    vec3 normal = vec3(0);
-#if defined(HD_HAS_flatNormals)
-    normal = vec3(HdGet_flatNormals(index).xyz);
-#elif defined(HD_HAS_packedFlatNormals)
-    normal = vec3(HdGet_packedFlatNormals(index).xyz);
-#endif
-
-    MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
-    normal = vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
-                  vec4(normal,0)).xyz;
-
-    if (length(normal) > 0.0)
-        normal = normalize(normal);
-    return normal;
+    return Neye;
 }
 
 vec3 GetNormal(vec3 Neye, int index, vec2 localST)
@@ -1775,12 +1634,15 @@ void emit(int index, vec4 Peye, vec3 Neye)
     gsPatchCoord = GetPatchCoord(index);
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    gl_Position.z -= gl_Position.w * 2.0 * GetDepthPriority();
     ApplyClipPlanes(outData.Peye);
 
     ProcessPrimvarsOut(index);
 
     EmitVertex();
 }
+
+
 
 void main(void)
 {
@@ -1818,31 +1680,23 @@ void main(void)
   FRAGMENT SHADER                                      
 =======================================================
 #version 450
-#if defined(GL_EXT_control_flow_attributes)
-	#extension GL_EXT_control_flow_attributes: require
-	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
-	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
-	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
-	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
-#else
-	#define HGI_COMPILER_ATTR_UNROLL
-	#define HGI_COMPILER_ATTR_DONT_UNROLL
-	#define HGI_COMPILER_ATTR_FLATTEN
-	#define HGI_COMPILER_ATTR_DONT_FLATTEN
-#endif
-#extension GL_EXT_fragment_shader_barycentric: require
+#extension GL_NV_shader_buffer_load : require
+#extension GL_NV_gpu_shader5 : require
+#extension GL_ARB_bindless_texture : require
 #define REF(space,type) inout type
-#define FORWARD_DECL(func_decl) func_decl
+#define FORWARD_DECL(func_decl) func_decl;
 #define ATOMIC_LOAD(a) (a)
 #define ATOMIC_STORE(a, v) (a) = (v)
 #define ATOMIC_ADD(a, v) atomicAdd(a, v)
 #define ATOMIC_EXCHANGE(a, v) atomicExchange(a, v)
+#define ATOMIC_COMPARE_EXCHANGE(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
 #define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
+#define HGI_HAS_IEEE_FLOAT_SPECIAL_VALUES 1
 
 
 struct hgi_ivec3 { int    x, y, z; };
@@ -1855,10 +1709,22 @@ struct hgi_dmat3 { double m00, m01, m02,
                           m10, m11, m12,
                           m20, m21, m22; };
 
+
+
+// //////// Global Includes ////////
+
+// //////// Global Macros ////////
+
+// //////// Global Structs ////////
+
+// //////// Global Member Declarations ////////
+
+// //////// Global Function Definitions ////////
+
+
 // //////// Codegen Defines //////// 
-#define HD_SHADER_API 3
+#define HD_SHADER_API 2
 #define MAT4 mat4
-#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -1894,6 +1760,8 @@ hd_dmat3 hd_dmat3_set(hd_dmat3 v) { return v; }
 hd_dmat3 hd_dmat3_set(dmat3 v)    { return hd_dmat3(v[0][0], v[0][1], v[0][2],
                                                     v[1][0], v[1][1], v[1][2],
                                                     v[2][0], v[2][1], v[2][2]); }
+mat4 MAT4Init(float x) {
+   return mat4(x,0,0,0, 0,x,0,0, 0,0,x,0, 0,0,0,x); }
 int hd_int_get(int v)          { return v; }
 int hd_int_get(ivec2 v)        { return v.x; }
 int hd_int_get(ivec3 v)        { return v.x; }
@@ -1919,6 +1787,7 @@ vec4 hd_half4_get(uvec2 v) {
     return vec4(unpackHalf2x16(v.x), unpackHalf2x16(v.y)); }
 uvec2 hd_half4_set(vec4 v) {
     return uvec2(packHalf2x16(v.xy), packHalf2x16(v.zw)); }
+// End alias hgi vec and matrix types to hd.
 #define HD_NUM_PRIMITIVE_VERTS 3
 #define HD_HAS_transform 1
 #define HD_HAS_transformInverse 1
@@ -1927,6 +1796,7 @@ uvec2 hd_half4_set(vec4 v) {
 #define HD_HAS_widths 1
 #define HD_INSTANCER_NUM_LEVELS 0
 #define HD_INSTANCE_INDEX_WIDTH 1
+#define HD_INDEXED_PRIMVAR_COUNT 0
 #define HD_HAS_faceVisibility 1
 #define HD_HAS_dispTextureCoord 1
 #define HD_HAS_points 1
@@ -1949,7 +1819,7 @@ struct hd_drawingCoord {
 FORWARD_DECL(hd_drawingCoord GetDrawingCoord());
 FORWARD_DECL(int HgiGetBaseVertex());
 struct hd_instanceIndex { int indices[HD_INSTANCE_INDEX_WIDTH]; };
-struct ConstantData7 {
+struct ConstantData10 {
   mat4 transform;
   mat4 transformInverse;
   vec4 color;
@@ -1960,6 +1830,26 @@ FORWARD_DECL(int GetElementID());
 FORWARD_DECL(int GetAggregatedElementID());
 FORWARD_DECL(int GetPrimitiveEdgeId());
 FORWARD_DECL(float GetSelectedEdgeOpacity());
+layout(location = 0) uniform ConstantData10 *constantPrimvars;
+layout(location = 1) uniform int *primitiveParam;
+layout(location = 2) uniform int *edgeIndices;
+layout(location = 3) uniform float *faceVisibility;
+in vec4 gsPatchCoord;
+in VertexData {
+    vec4 Peye;
+    vec3 Neye;
+} inData;
+layout (location = 0) out vec4 colorOut;
+in noperspective vec3 hd_barycentricCoord;
+in flat ivec4 gs_interstageDrawingCoord0;
+in flat ivec4 gs_interstageDrawingCoord1;
+in flat ivec4 gs_interstageDrawingCoord2;
+in PrimvarData {
+    vec3 points;
+    vec4 normals;
+    vec2 dispTextureCoord;
+} inPrimvars;
+layout(location = 4) uniform vec2 *dispTextureCoord;
 vec4 InterpolatePatchCoord(vec2 uv, ivec3 patchParam)
 {
     // add 0.5 to integer values for more robust interpolation
@@ -1969,37 +1859,6 @@ vec4 InterpolatePatchCoordTriangle(vec2 uv, ivec3 patchParam)
 {
     return InterpolatePatchCoord(uv, patchParam);
 }
-
-// //////// Global Includes ////////
-
-// //////// Global Macros ////////
-
-// //////// Global Structs ////////
-
-// //////// Global Member Declarations ////////
-layout(std430, binding = 0) readonly buffer ssbo_constantPrimvars { ConstantData7 constantPrimvars[]; };
-layout(std430, binding = 1) readonly buffer ssbo_primitiveParam { int primitiveParam[]; };
-layout(std430, binding = 2) readonly buffer ssbo_edgeIndices { int edgeIndices[]; };
-layout(std430, binding = 3) readonly buffer ssbo_faceVisibility { float faceVisibility[]; };
-layout(std430, binding = 4) readonly buffer ssbo_dispTextureCoord { vec2 dispTextureCoord[]; };
-layout(location = 2) in vec4 gsPatchCoord;
-flat layout(location = 3) in ivec4 gs_interstageDrawingCoord0;
-flat layout(location = 4) in ivec4 gs_interstageDrawingCoord1;
-flat layout(location = 5) in ivec4 gs_interstageDrawingCoord2;
-vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspEXT;
-layout(location = 0) in VertexData {
-  vec4 Peye;
-  vec3 Neye;
-} inData;
-layout(location = 6) in PrimvarData {
-  vec3 points;
-  vec3 normals;
-  vec2 dispTextureCoord;
-} inPrimvars;
-layout(location = 0) out vec4 colorOut;
-
-// //////// Global Function Definitions ////////
-
 
 // //////// Codegen Accessors //////// 
 mat4 HdGet_transform(int localIndex) {
@@ -2036,8 +1895,9 @@ float HdGetScalar_widths() { return HdGet_widths(0); }
 
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
+#define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
 vec3 GetBarycentricCoord() {
-  return hd_BaryCoordNoPersp;
+  return hd_barycentricCoord;
 }
 int GetPrimitiveID() {
   return gl_PrimitiveID;
@@ -2112,8 +1972,8 @@ vec3 HdGet_points(int localIndex) { return vec3(inPrimvars.points);}
 vec3 HdGet_points() { return HdGet_points(0); }
 float HdGetScalar_points(int localIndex) { return HdGet_points(localIndex).x; }
 float HdGetScalar_points() { return HdGet_points(0).x; }
-vec3 HdGet_normals(int localIndex) { return vec3(inPrimvars.normals);}
-vec3 HdGet_normals() { return HdGet_normals(0); }
+vec4 HdGet_normals(int localIndex) { return vec4(inPrimvars.normals);}
+vec4 HdGet_normals() { return HdGet_normals(0); }
 float HdGetScalar_normals(int localIndex) { return HdGet_normals(localIndex).x; }
 float HdGetScalar_normals() { return HdGet_normals(0).x; }
 vec2 HdGet_dispTextureCoord(int localIndex) { return vec2(inPrimvars.dispTextureCoord);}
@@ -2157,13 +2017,6 @@ MAT4  GetWorldToViewInverseMatrix() {
 MAT4  GetProjectionMatrix() {
 #if defined(HD_HAS_projectionMatrix)
     return MAT4(HdGet_projectionMatrix());
-#else
-    return MAT4(1);
-#endif
-}
-MAT4  GetProjectionInverseMatrix() {
-#if defined(HD_HAS_projectionInverseMatrix)
-    return MAT4(HdGet_projectionInverseMatrix());
 #else
     return MAT4(1);
 #endif
@@ -2247,6 +2100,15 @@ vec4  GetIndicatorColor() {
 #endif
 }
 
+float GetDepthPriority() {
+#if defined(HD_HAS_depthPriority)
+    // How much to bias it forward toward the eye. 1048576 = 2^24 / 16.
+    return HdGet_depthPriority() / 1048576.0;
+#else
+    return 0;
+#endif
+}
+
 bool ShouldDiscardByAlpha(vec4 color)
 {
 #if defined(HD_HAS_alphaThreshold)
@@ -2261,6 +2123,17 @@ vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
 {
     return t.xy * pt + t.zw;
 }
+
+vec3 GetVec3(vec3 pt)
+{
+    return pt;
+}
+
+vec3 GetVec3(vec2 pt)
+{
+    return vec3(pt.x, pt.y, 0.0);
+}
+
 
 
 
@@ -2373,7 +2246,8 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
     vec3 n = normalize(Neye);
 
     LightingContribution result;
-    result.diffuse = vec3(dot(n, vec3(0,0,1)));
+    float fDiffuse = dot(n, vec3(0,0,1));
+    result.diffuse = vec3(fDiffuse, fDiffuse, fDiffuse);
 
     return result;
 }
@@ -2539,7 +2413,6 @@ MAT4 GetInstanceTransform()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = GetInstanceTransform(i) * m;
 #ifdef HD_HAS_instancerTransform
@@ -2554,7 +2427,6 @@ MAT4 GetInstanceTransformInverse()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = m * GetInstanceTransformInverse(i);
 #ifdef HD_HAS_instancerTransformInverse
@@ -2589,13 +2461,11 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceScales
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_hydra_instanceScales(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
     }
 #elif defined(HD_HAS_INSTANCE_scale)
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
@@ -2603,13 +2473,11 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceTransforms
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_hydra_instanceTransforms(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
     }
 #elif defined(HD_HAS_INSTANCE_instanceTransform)
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
@@ -2648,41 +2516,15 @@ void DiscardBasedOnShading(bool frontFacing, bool isFlipped)
 
 
 
-vec3 GetEdgeCoord()
+vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
-    return GetBarycentricCoord();
+    return Cfill;
 }
 
-
-
-vec3 GetPrimitiveEdgeMask()
-{
-    // A value of one in this mask hides the corresponding edge.
-    // (See hd/meshUtil.cpp)
-    return vec3(0, GetEdgeFlag() & 1, GetEdgeFlag() & 2);
-}
-
-
-
-// Returns the distance of the current fragment (in viewport pixel units) from
-// the nearest edge.
+// Return a large value, signifying that the fragment isn't near an edge.
 float GetMinEdgeDistance()
 {
-    // Hide triangle edges by adding edge mask.
-    vec3 param = GetEdgeCoord() + GetPrimitiveEdgeMask();
-    vec3 edgeDistance = max(vec3(0.0), param / fwidth(param));
-    return min(edgeDistance.x,
-               min(edgeDistance.y,
-                   edgeDistance.z));
-}
-
-// Use edge distance to compute a smooth opacity falloff for good looking edges.
-float GetEdgeFalloff(float d) {
-    return exp2(-4 * d * d);
-}
-
-float GetEdgeOpacity() {
-    return GetEdgeFalloff(GetMinEdgeDistance());
+    return 1000.0;
 }
 
 
@@ -2717,32 +2559,6 @@ vec4 GetEdgeDistanceQuad()
 {
     vec4 param = GetEdgeParamQuad();
     return max(vec4(0.0), param / fwidth(param));
-}
-
-
-
-vec4 ApplyFinalEdgeOpacity(vec4 Cfill, float p)
-{
-    Cfill.a = mix(Cfill.a, 1, p);
-    return Cfill;
-}
-
-
-
-vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
-{
-    float p = GetEdgeOpacity();
-    if (p < 0.5) {
-        discard;
-    }
-
-    vec4 wireColor = GetWireframeColor();
-
-    // If wireColor is unset (zero), ignore it altogether
-
-    Cfill.rgb = mix(Cfill.rgb, wireColor.rgb, wireColor.a);
-
-    return ApplyFinalEdgeOpacity(Cfill, p);
 }
 
 
@@ -2918,21 +2734,16 @@ float SelectedEdgeFalloff(float d) {
 
 
 
+FORWARD_DECL(vec3 GetEdgeDistanceTriangle());
+
 vec3 ComputeBaseFaceEdgeDistanceTriangle()
 {
-    // Use parametric distance since we can't use surface derivatives for lines
-    vec3 param = GetEdgeParamTriangle();
-    bvec3 nearEdge = lessThan(param, vec3(edgePickParametricRadius));
-    return vec3(edgePickRadius) * vec3(not(nearEdge));
+    return GetEdgeDistanceTriangle();
 }
 
 bool SelectWireframeFaceEdges()
 {
-    // Make sure that edges of selected faces are highlighted correctly for
-    // wireframe lines, i.e. if an edge of an adjacent non-selected face
-    // draws over an edge of a selected face that the edge is drawn using
-    // the correct selection color.
-    return true;
+    return false;
 }
 
 
@@ -3058,6 +2869,17 @@ void main(void)
 {
     ApplyDiskSampleMask();
 
+#ifdef HD_HAS_depthReadback
+    // Sample the z-Buffer at the frag coordinate.
+    const float bufferVal = texelFetch(HdGetSampler_depthReadback(),
+                                       ivec2(gl_FragCoord.xy),
+                                       /* lod = */ 0).x;
+    // reject fragments behind opaque objects
+    if (gl_FragCoord.z >= bufferVal) {
+      discard;
+    }
+#endif
+
     bool isFlipped = IsFlipped();
 
     DiscardBasedOnShading(gl_FrontFacing, isFlipped);
@@ -3087,17 +2909,6 @@ void main(void)
     vec4 patchCoord = GetPatchCoord();
     color = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord);
 
-#if defined(HD_HAS_depthReadback) && defined(HD_EARLY_FRAGMENT_TESTS)
-    // This section needs to come after ShadingTerminal to avoid possible
-    // non-uniform paths when sampling textures required for shading
-    const float bufferVal = texelFetch(HdGetSampler_depthReadback(),
-                                       ivec2(gl_FragCoord.xy),
-                                       /* lod = */ 0).x;
-    if (gl_FragCoord.z >= bufferVal) {
-      discard;
-    }
-#endif
-
     color = ApplyEdgeColor(color, patchCoord);
 
 #ifdef HD_MATERIAL_TAG_MASKED
@@ -3115,46 +2926,36 @@ void main(void)
 #import $TOOLS/hdSt/shaders/mesh.glslfx
 -- configuration
 {"techniques": {"default": {
-"vertexShader" : { "source" : ["Instancing.Transform", "Vertex.SkinPoints", "MeshNormal.Pass", "PointId.Vertex.None", "PointDisk.Vertex.None", "Mesh.Vertex"] }
-, "geometryShader" : { "source" : ["Instancing.Transform", "MeshNormal.Flat", "MeshNormal.Geometry.NoFlat", "Geometry.NoCustomDisplacement", "Mesh.Geometry.Quad"] }
-, "fragmentShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "MeshNormal.Fragment.SingleSided", "MeshFaceCull.Fragment.None", "MeshWire.Fragment.EdgeCoord.Barycentric", "MeshWire.Fragment.EdgeMaskQuad", "MeshWire.Fragment.EdgeCommon", "MeshWire.Fragment.EdgeParam", "MeshWire.Fragment.FinalEdgeOpacityForce", "MeshWire.Fragment.EdgeOnlyBlendColor", "Fragment.CommonTerminals", "Fragment.Surface", "Fragment.ScalarOverride", "EdgeId.Fragment.Common", "EdgeId.Fragment.QuadLines", "EdgeId.Fragment.QuadParam", "PointId.Fragment.Fallback", "PointDisk.Fragment.None", "Visibility.Fragment.Fallback", "Mesh.Fragment.PatchCoord", "Mesh.Fragment"] }
+"vertexShader" : { "source" : ["Instancing.Transform", "SecondaryGraphics.Vertex.Transform", "MeshNormal.Scene", "PointId.Vertex.None", "PointDisk.Vertex.None", "Mesh.Vertex"] }
+, "geometryShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "MeshNormal.Geometry.NoFlat", "Geometry.NoCustomDisplacement", "Mesh.Geometry.Quad", "Mesh.Geometry.Quad.GSMain"] }
+, "fragmentShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "MeshNormal.Fragment.SingleSided", "MeshFaceCull.Fragment.None", "MeshWire.Fragment.NoEdge", "MeshWire.Fragment.EdgeParam", "Fragment.CommonTerminals", "Fragment.Surface", "Fragment.ScalarOverride", "EdgeId.Fragment.Common", "EdgeId.Fragment.QuadSurface", "EdgeId.Fragment.QuadParam", "PointId.Fragment.Fallback", "PointDisk.Fragment.None", "Visibility.Fragment.Fallback", "Mesh.Fragment.PatchCoord", "Mesh.Fragment"] }
 }}}
 -------------------------------------------------------
 =======================================================
   VERTEX SHADER                                        
 =======================================================
 #version 450
-#if defined(GL_EXT_control_flow_attributes)
-	#extension GL_EXT_control_flow_attributes: require
-	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
-	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
-	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
-	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
-#else
-	#define HGI_COMPILER_ATTR_UNROLL
-	#define HGI_COMPILER_ATTR_DONT_UNROLL
-	#define HGI_COMPILER_ATTR_FLATTEN
-	#define HGI_COMPILER_ATTR_DONT_FLATTEN
-#endif
+#extension GL_NV_shader_buffer_load : require
+#extension GL_NV_gpu_shader5 : require
+#extension GL_ARB_bindless_texture : require
 #extension GL_ARB_shader_draw_parameters : require
 int HgiGetBaseVertex() {
   return gl_BaseVertexARB;
 }
-int HgiGetBaseInstance() {
-  return gl_BaseInstanceARB;
-}
 #define REF(space,type) inout type
-#define FORWARD_DECL(func_decl) func_decl
+#define FORWARD_DECL(func_decl) func_decl;
 #define ATOMIC_LOAD(a) (a)
 #define ATOMIC_STORE(a, v) (a) = (v)
 #define ATOMIC_ADD(a, v) atomicAdd(a, v)
 #define ATOMIC_EXCHANGE(a, v) atomicExchange(a, v)
+#define ATOMIC_COMPARE_EXCHANGE(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
 #define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
+#define HGI_HAS_IEEE_FLOAT_SPECIAL_VALUES 1
 
 
 struct hgi_ivec3 { int    x, y, z; };
@@ -3167,10 +2968,10 @@ struct hgi_dmat3 { double m00, m01, m02,
                           m10, m11, m12,
                           m20, m21, m22; };
 
+
 // //////// Codegen Defines //////// 
-#define HD_SHADER_API 3
+#define HD_SHADER_API 2
 #define MAT4 mat4
-#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -3206,6 +3007,8 @@ hd_dmat3 hd_dmat3_set(hd_dmat3 v) { return v; }
 hd_dmat3 hd_dmat3_set(dmat3 v)    { return hd_dmat3(v[0][0], v[0][1], v[0][2],
                                                     v[1][0], v[1][1], v[1][2],
                                                     v[2][0], v[2][1], v[2][2]); }
+mat4 MAT4Init(float x) {
+   return mat4(x,0,0,0, 0,x,0,0, 0,0,x,0, 0,0,0,x); }
 int hd_int_get(int v)          { return v; }
 int hd_int_get(ivec2 v)        { return v.x; }
 int hd_int_get(ivec3 v)        { return v.x; }
@@ -3231,6 +3034,7 @@ vec4 hd_half4_get(uvec2 v) {
     return vec4(unpackHalf2x16(v.x), unpackHalf2x16(v.y)); }
 uvec2 hd_half4_set(vec4 v) {
     return uvec2(packHalf2x16(v.xy), packHalf2x16(v.zw)); }
+// End alias hgi vec and matrix types to hd.
 #define HD_NUM_PRIMITIVE_VERTS 4
 #define HD_HAS_transform 1
 #define HD_HAS_transformInverse 1
@@ -3239,10 +3043,26 @@ uvec2 hd_half4_set(vec4 v) {
 #define HD_HAS_widths 1
 #define HD_INSTANCER_NUM_LEVELS 0
 #define HD_INSTANCE_INDEX_WIDTH 1
+#define HD_INDEXED_PRIMVAR_COUNT 0
 #define HD_HAS_faceVisibility 1
 #define HD_HAS_dispTextureCoord 1
 #define HD_HAS_points 1
 #define HD_HAS_normals 1
+
+
+// //////// Global Includes ////////
+
+// //////// Global Macros ////////
+
+// //////// Global Structs ////////
+
+// //////// Global Member Declarations ////////
+uint hd_VertexID = gl_VertexID;
+uint hd_InstanceID = gl_InstanceID;
+uint hd_BaseInstance = 0;
+
+// //////// Global Function Definitions ////////
+
 
 // //////// Codegen Decl //////// 
 struct hd_drawingCoord {                       
@@ -3261,7 +3081,7 @@ struct hd_drawingCoord {
 FORWARD_DECL(hd_drawingCoord GetDrawingCoord());
 FORWARD_DECL(int HgiGetBaseVertex());
 struct hd_instanceIndex { int indices[HD_INSTANCE_INDEX_WIDTH]; };
-struct ConstantData7 {
+struct ConstantData10 {
   mat4 transform;
   mat4 transformInverse;
   vec4 color;
@@ -3272,40 +3092,26 @@ FORWARD_DECL(int GetElementID());
 FORWARD_DECL(int GetAggregatedElementID());
 FORWARD_DECL(int GetPrimitiveEdgeId());
 FORWARD_DECL(float GetSelectedEdgeOpacity());
-
-// //////// Global Includes ////////
-
-// //////// Global Macros ////////
-
-// //////// Global Structs ////////
-
-// //////// Global Member Declarations ////////
-layout(std430, binding = 0) readonly buffer ssbo_constantPrimvars { ConstantData7 constantPrimvars[]; };
-layout(std430, binding = 1) readonly buffer ssbo_primitiveParam { int primitiveParam[]; };
-layout(std430, binding = 2) readonly buffer ssbo_edgeIndices { ivec2 edgeIndices[]; };
-layout(std430, binding = 3) readonly buffer ssbo_faceVisibility { float faceVisibility[]; };
-layout(location = 2) in ivec4 drawingCoord0;
-layout(location = 3) in ivec4 drawingCoord1;
-layout(location = 4) in ivec2 drawingCoord2;
-layout(location = 0) in vec3 points;
-layout(location = 1) in vec3 normals;
-uint hd_VertexID = gl_VertexIndex;
-uint hd_InstanceID = gl_InstanceIndex;
-uint hd_BaseInstance = HgiGetBaseInstance();
-flat layout(location = 0) out ivec4 vs_interstageDrawingCoord0;
-flat layout(location = 1) out ivec4 vs_interstageDrawingCoord1;
-flat layout(location = 2) out ivec4 vs_interstageDrawingCoord2;
-layout(location = 3) out VertexData {
-  vec4 Peye;
-  vec3 Neye;
+out flat ivec4 vs_interstageDrawingCoord0;
+out flat ivec4 vs_interstageDrawingCoord1;
+out flat ivec4 vs_interstageDrawingCoord2;
+layout (location = 2) in ivec4 drawingCoord0;
+layout (location = 3) in ivec4 drawingCoord1;
+layout (location = 4) in ivec2 drawingCoord2;
+layout (location = 0) in vec3 points;
+layout (location = 1) in vec4 normals;
+layout(location = 0) uniform ConstantData10 *constantPrimvars;
+layout(location = 1) uniform int *primitiveParam;
+layout(location = 2) uniform ivec2 *edgeIndices;
+layout(location = 3) uniform float *faceVisibility;
+out VertexData {
+    vec4 Peye;
+    vec3 Neye;
 } outData;
-layout(location = 5) out PrimvarData {
-  vec3 points;
-  vec3 normals;
+out PrimvarData {
+    vec3 points;
+    vec4 normals;
 } outPrimvars;
-
-// //////// Global Function Definitions ////////
-
 
 // //////// Codegen Accessors //////// 
 mat4 HdGet_transform(int localIndex) {
@@ -3341,6 +3147,7 @@ float HdGetScalar_widths(int localIndex) { return HdGet_widths(localIndex); }
 float HdGetScalar_widths() { return HdGet_widths(0); }
 
 // //////// Codegen VS Source //////// 
+#define HD_BINDLESS_BUFFERS_ENABLED
 int GetBaseVertexOffset() {
   return HgiGetBaseVertex();
 }
@@ -3363,8 +3170,8 @@ vec3 HdGet_points(int localIndex) { return hd_vec3_get(points);}
 vec3 HdGet_points() { return HdGet_points(0); }
 float HdGetScalar_points(int localIndex) { return HdGet_points(localIndex).x; }
 float HdGetScalar_points() { return HdGet_points(0).x; }
-vec3 HdGet_normals(int localIndex) { return hd_vec3_get(normals);}
-vec3 HdGet_normals() { return HdGet_normals(0); }
+vec4 HdGet_normals(int localIndex) { return vec4(normals);}
+vec4 HdGet_normals() { return HdGet_normals(0); }
 float HdGetScalar_normals(int localIndex) { return HdGet_normals(localIndex).x; }
 float HdGetScalar_normals() { return HdGet_normals(0).x; }
 
@@ -3418,13 +3225,6 @@ MAT4  GetWorldToViewInverseMatrix() {
 MAT4  GetProjectionMatrix() {
 #if defined(HD_HAS_projectionMatrix)
     return MAT4(HdGet_projectionMatrix());
-#else
-    return MAT4(1);
-#endif
-}
-MAT4  GetProjectionInverseMatrix() {
-#if defined(HD_HAS_projectionInverseMatrix)
-    return MAT4(HdGet_projectionInverseMatrix());
 #else
     return MAT4(1);
 #endif
@@ -3508,6 +3308,15 @@ vec4  GetIndicatorColor() {
 #endif
 }
 
+float GetDepthPriority() {
+#if defined(HD_HAS_depthPriority)
+    // How much to bias it forward toward the eye. 1048576 = 2^24 / 16.
+    return HdGet_depthPriority() / 1048576.0;
+#else
+    return 0;
+#endif
+}
+
 bool ShouldDiscardByAlpha(vec4 color)
 {
 #if defined(HD_HAS_alphaThreshold)
@@ -3523,9 +3332,19 @@ vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
     return t.xy * pt + t.zw;
 }
 
+vec3 GetVec3(vec3 pt)
+{
+    return pt;
+}
+
+vec3 GetVec3(vec2 pt)
+{
+    return vec3(pt.x, pt.y, 0.0);
+}
 
 
-#ifdef HD_USE_HARDWARE_CLIPPING
+
+
 void ApplyClipPlanes(vec4 Peye)
 {
 #if defined(HD_HAS_numClipPlanes)
@@ -3535,15 +3354,16 @@ void ApplyClipPlanes(vec4 Peye)
         // gl_ClipDistance[HD_NUM_clipPlanes], since we need to know the array
         // size at compile time. To avoid having any uninitialized values in
         // that array, we initialize them all to zero first.
-        gl_ClipDistance[i] = 0;
+        float fClip = 0;
         if (i < HdGet_numClipPlanes()) {
-            gl_ClipDistance[i] = dot(HdGet_clipPlanes(i), Peye);
+            fClip = dot(HdGet_clipPlanes(i), Peye);
         }
+
+        gl_ClipDistance[i] = fClip;
     }
 #endif
 #endif
 }
-#endif
 
 
 
@@ -3676,7 +3496,6 @@ MAT4 GetInstanceTransform()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = GetInstanceTransform(i) * m;
 #ifdef HD_HAS_instancerTransform
@@ -3691,7 +3510,6 @@ MAT4 GetInstanceTransformInverse()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = m * GetInstanceTransformInverse(i);
 #ifdef HD_HAS_instancerTransformInverse
@@ -3726,13 +3544,11 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceScales
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_hydra_instanceScales(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
     }
 #elif defined(HD_HAS_INSTANCE_scale)
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
@@ -3740,13 +3556,11 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceTransforms
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_hydra_instanceTransforms(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
     }
 #elif defined(HD_HAS_INSTANCE_instanceTransform)
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
@@ -3757,276 +3571,118 @@ bool IsFlipped()
 }
 
 
-const float EPS = 1e-5;
-
-vec3 ApplySkinningLBS(vec3 restP)
+float pixelToModelScale(MAT4 screenToWorld, MAT4 transform, vec3 scenter, float mpixels)
 {
-#if defined(HD_HAS_skel_geomBindTransform) && \
-    defined(HD_HAS_hydra_numInfluencesPerComponent) && \
-    defined(HD_HAS_hydra_hasConstantInfluences) && \
-    defined(HD_HAS_hydra_influences) && \
-    defined(HD_HAS_hydra_skinningXforms) && \
-    defined(HD_HAS_hydra_primWorldToLocal) && \
-    defined(HD_HAS_hydra_skelLocalToWorld) && \
-    defined(HD_HAS_hydra_numJoints)
+    MAT4 invT = inverse(transform);
+    MAT4 worldToScreen = inverse(screenToWorld);
 
-    int numInfluencesPerComponent = HdGet_hydra_numInfluencesPerComponent();
-    if (numInfluencesPerComponent > 0) {
-        const int index = int(hd_VertexID) - GetBaseVertexOffset();
-        const int instanceOffset =
-            GetDrawingCoord().instanceIndex[0] * HdGet_hydra_numJoints();
+    // To compute scale (corresponding to mpixels) in modelspace about scenter as pivot.
 
-        // model space -> bind space
-        mat4 geomBindXform = HdGet_skel_geomBindTransform();
-        vec4 initP = geomBindXform * vec4(restP, 1);
+    //1. Map scenter from object -> world -> Screen as devPt.
+    vec4 sc4 = vec4(scenter, 1.0);
+    vec4 devPt = vec4(worldToScreen*transform*sc4);
+    devPt /= devPt.w;
 
-        vec3 p = vec3(0, 0, 0);
+    //2. Advance by reqd pixels along X axis
+    devPt.x += mpixels;
 
-        bool constantPointInfluence = HdGet_hydra_hasConstantInfluences();
-        int offset = constantPointInfluence ? 0 :
-            numInfluencesPerComponent * index;
+    //3.  devPt -> World -> Object as modPt
+    vec4 modPt = vec4(screenToWorld*devPt);
+    modPt /= modPt.w;
+    modPt = vec4(invT*modPt);
 
-        for (int i = 0; i < numInfluencesPerComponent; i++) {
-            vec2 influence = HdGet_hydra_influences(offset + i);
-            float jointWeight = influence.y;
-            // float jointWeight = HdGet_skel_jointWeights(i);
+    // scale factor in modelspace.
+    float modelScale = length(modPt.xyz - sc4.xyz);
 
-            if (jointWeight > EPS) {
-                // HYD-3510
-                // we have to do multiple mem fetch to compute jointIdx here.
-                // potentially causing vertex implementation to be much slower
-                // than extComputation compute shader.
-                int jointIdx = int(influence.x) + instanceOffset;
-                // int jointIdx = HdGet_skel_jointIndices(i) + instanceOffset;
-                mat4 skinningXform = HdGet_hydra_skinningXforms(jointIdx);
+    return modelScale;
+}
 
-                p += ((skinningXform * initP) * jointWeight).xyz;
-            }
+MAT4 pixelScaleTransform(MAT4 screenToWorld, MAT4 transform, vec3 spivot, float mpixels)
+{
+    const float pixelScale =
+        pixelToModelScale(screenToWorld, transform, spivot, mpixels);
+
+    // scale about spivot
+    MAT4 scaleMat = MAT4(pixelScale, 0, 0, 0,
+                            0, pixelScale, 0, 0,
+                            0, 0, pixelScale, 0,
+                            0, 0, 0, 1);
+    MAT4 preTMat = MAT4(1.);
+    preTMat[3] = vec4(-spivot.x,-spivot.y,-spivot.z,1.0);
+
+    MAT4 postTMat = MAT4(1.);
+    postTMat[3] = vec4(spivot.xyz,1.0);
+
+    MAT4 scaleTxfrm  = postTMat * scaleMat * preTMat;
+    return scaleTxfrm;
+}
+
+
+
+MAT4 axialConstraint(MAT4 worldToViewMatrix, MAT4 transform)
+{
+    // axis-constrained: rotate around local y-axis to face camera as best as possible
+    // VM = View-Model
+    const MAT4 VM = worldToViewMatrix * transform;
+
+    const float a = float(VM[1][0] * VM[0][0] + VM[1][1] * VM[0][1]);
+    const float b = float(VM[1][0] * VM[2][0] + VM[1][1] * VM[2][1]);
+    const float theta = atan(a/b);
+    const float cosTheta = cos(theta);
+    const float sinTheta = sin(theta);
+
+    return MAT4(
+        cosTheta, 0, -sinTheta, 0,
+        0, 1, 0, 0,
+        sinTheta, 0, cosTheta, 0,
+        0, 0, 0, 1);
+}
+
+MAT4 billboardConstraint(MAT4 worldToViewMatrix, MAT4 transform)
+{
+    // billboard-constrained: rotate so that local x- and y-axes
+    // align to view x and y.
+    // VM = View-Model
+    const MAT4 invVM = inverse(worldToViewMatrix * transform);
+    const vec4 x = vec4(normalize(invVM[0]));
+    const vec4 y = vec4(normalize(invVM[1]));
+    const vec4 z = vec4(normalize(cross(x.xyz, y.xyz)), 0);
+    const vec4 w = vec4(0, 0, 0, 1);
+
+    return MAT4(x, y, z, w);
+}
+
+MAT4 transformConstraint(int constraintType, MAT4 worldToViewMatrix, MAT4 transform)
+{
+    switch (constraintType) {
+        case 0:
+        {
+            return axialConstraint(worldToViewMatrix, transform);
         }
-
-        // skel space -> world space -> model space
-        // XXX: Casts to mat4 below are necessary because the matrices passed
-        // down use doubles and not floats.
-        mat4 skelToPrimLocal = mat4( HdGet_hydra_primWorldToLocal() ) *
-                               mat4( HdGet_hydra_skelLocalToWorld() );
-        p = (skelToPrimLocal * vec4(p, 1)).xyz;
-        return p;
-    }
-#endif
-    return restP;
-}
-
-// ---------------------------------------------------------------------------
-
-const float NORM_EPS = 1e-10;
-
-vec4 GetPivotQuaternion(
-    int numInfluencesPerComponent, int offset, int instanceOffset)
-{
-    vec4 pivotQuat = vec4(0);
-
-#if defined(HD_HAS_hydra_influences) && \
-    defined(HD_HAS_hydra_skinningDualQuats)
-
-    int pivotIdx = -1;
-    float maxw = -1;
-    for (int i = 0; i < numInfluencesPerComponent; i++) {
-        vec2 influence = HdGet_hydra_influences(offset + i);
-        float jointWeight = influence.y;
-        if (pivotIdx < 0 || maxw < jointWeight) {
-            int jointIdx = int(influence.x) + instanceOffset;
-            maxw = jointWeight;
-            pivotIdx = jointIdx;
-        }
-    }
-    if (pivotIdx >= 0) {
-        pivotQuat = HdGet_hydra_skinningDualQuats(pivotIdx*2);
-    }
-#endif
-
-    return pivotQuat;
-}
-
-vec3 TransformByQuaternion(vec4 quat, vec3 vec)
-{
-    // See GfQuat::Transform() for algorithm
-
-    float r1 = quat.w;
-    vec3  i1 = quat.xyz;
-
-    vec3  i2 = vec3(r1 * vec[0] + (i1[1] * vec[2] - i1[2] * vec[1]),
-                    r1 * vec[1] + (i1[2] * vec[0] - i1[0] * vec[2]),
-                    r1 * vec[2] + (i1[0] * vec[1] - i1[1] * vec[0]));
-
-    return vec3(vec[0] + 2.0 * (i1[1] * i2[2] - i1[2] * i2[1]),
-                vec[1] + 2.0 * (i1[2] * i2[0] - i1[0] * i2[2]),
-                vec[2] + 2.0 * (i1[0] * i2[1] - i1[1] * i2[0]));
-}
-
-vec3 GetDualQuaternionTranslation(vec4 real, vec4 dual)
-{
-    // See GfDualQuat::GetTranslation() for algorithm
-
-    float scale = -2.0;
-
-    float rw = real.w;
-    vec3  ri = real.xyz;
-
-    float dw = dual.w;
-    vec3  di = dual.xyz;
-
-    return vec3( (dw*ri[0] - rw*di[0] + di[1]*ri[2] - di[2]*ri[1])*scale,
-                 (dw*ri[1] - rw*di[1] + di[2]*ri[0] - di[0]*ri[2])*scale,
-                 (dw*ri[2] - rw*di[2] + di[0]*ri[1] - di[1]*ri[0])*scale );
-}
-
-vec3 ApplySkinningDQS(vec3 restP)
-{
-#if defined(HD_HAS_skel_geomBindTransform) && \
-    defined(HD_HAS_hydra_numInfluencesPerComponent) && \
-    defined(HD_HAS_hydra_hasConstantInfluences) && \
-    defined(HD_HAS_hydra_influences) && \
-    defined(HD_HAS_hydra_skinningDualQuats) && \
-    defined(HD_HAS_hydra_primWorldToLocal) && \
-    defined(HD_HAS_hydra_skelLocalToWorld) && \
-    defined(HD_HAS_hydra_numJoints)
-
-    vec3 p;
-    int numInfluencesPerComponent = HdGet_hydra_numInfluencesPerComponent();
-    if (numInfluencesPerComponent > 0) {
-        const int index = int(hd_VertexID) - GetBaseVertexOffset();
-        const int instanceOffset =
-            GetDrawingCoord().instanceIndex[0] * HdGet_hydra_numJoints();
-
-        // model space -> bind space
-        mat4 geomBindXform = HdGet_skel_geomBindTransform();
-        vec3 initP = (geomBindXform * vec4(restP, 1)).xyz;
-
-#ifdef HD_HAS_hydra_skinningScaleXforms
-        vec3 scaledP = vec3(0, 0, 0);
-#endif
-
-        bool constantPointInfluence = HdGet_hydra_hasConstantInfluences();
-        int offset = constantPointInfluence ? 0 :
-            numInfluencesPerComponent * index;
-
-        // find the pivot quaternion
-        vec4 pivotQuat = GetPivotQuaternion(
-            numInfluencesPerComponent, offset, instanceOffset);
-
-        // find the weighted sum dual quaternion
-        vec4 weightedSumDQReal = vec4(0);
-        vec4 weightedSumDQDual = vec4(0);
-
-        for (int i = 0; i < numInfluencesPerComponent; i++) {
-            vec2 influence = HdGet_hydra_influences(offset + i);
-            float jointWeight = influence.y;
-
-            if (jointWeight > EPS) {
-                int jointIdx = int(influence.x) + instanceOffset;
-
-#ifdef HD_HAS_hydra_skinningScaleXforms
-                // Apply scale using LBS, if any of the skinning xforms has scales
-                mat3 scaleXform = HdGet_hydra_skinningScaleXforms(jointIdx);
-                scaledP += ((scaleXform * initP) * jointWeight);
-#endif
-
-                // Apply rotation & translation using DQS
-                vec4 skinningDQReal = HdGet_hydra_skinningDualQuats(jointIdx*2);
-                vec4 skinningDQDual = HdGet_hydra_skinningDualQuats(jointIdx*2+1);
-                // Flip the dual quaternion, if necessary, to make it
-                // on the same hemisphere as the pivotQuat.
-                if (dot(skinningDQReal, pivotQuat) < 0.0) {
-                   jointWeight = -jointWeight;
-                }
-
-                weightedSumDQReal += (skinningDQReal * jointWeight);
-                weightedSumDQDual += (skinningDQDual * jointWeight);
-            }
-        }
-
-        // normalize weightedSumDQ
-        float realLength = length(weightedSumDQReal);
-        if (realLength < NORM_EPS) {
-            weightedSumDQReal = vec4(0, 0, 0, 1);  // identity quaternion
-            weightedSumDQDual = vec4(0);           // zero quaternion
-        } else {
-            float inverseRealLength = 1.0 / realLength;
-            // rotation normalization
-            weightedSumDQReal *= inverseRealLength;
-            weightedSumDQDual *= inverseRealLength;
-            // plucker normalization
-            weightedSumDQDual -=
-                (dot(weightedSumDQReal, weightedSumDQDual) * weightedSumDQReal);
-        }
-
-#ifdef HD_HAS_hydra_skinningScaleXforms
-        // transform scaledP by weightedSumDQ
-        p = TransformByQuaternion(weightedSumDQReal, scaledP)
-            + GetDualQuaternionTranslation(weightedSumDQReal, weightedSumDQDual);
-#else
-        // transform initP by weightedSumDQ
-        p = TransformByQuaternion(weightedSumDQReal, initP)
-            + GetDualQuaternionTranslation(weightedSumDQReal, weightedSumDQDual);
-#endif
-
-        // skel space -> world space -> model space
-        // XXX: Casts to mat4 below are necessary because the matrices passed
-        // down use doubles and not floats.
-        mat4 skelToPrimLocal = mat4(HdGet_hydra_primWorldToLocal()) *
-                               mat4(HdGet_hydra_skelLocalToWorld());
-        p = (skelToPrimLocal * vec4(p, 1)).xyz;
-        return p;
-    }
-#endif
-    return restP;
-}
-
-// ---------------------------------------------------------------------------
-
-vec3 ApplyBlendShapes(vec3 restP)
-{
-#if defined(HD_HAS_hydra_numBlendShapeOffsetRanges) && \
-    defined(HD_HAS_hydra_blendShapeOffsetRanges) && \
-    defined(HD_HAS_hydra_blendShapeOffsets) && \
-    defined(HD_HAS_hydra_numBlendShapeWeights) && \
-    defined(HD_HAS_hydra_blendShapeWeights)
-
-    const int index = int(hd_VertexID) - GetBaseVertexOffset();
-    const int instanceOffset =
-        GetDrawingCoord().instanceIndex[0] * HdGet_hydra_numBlendShapeWeights();
-
-    const int numBlendShapeOffsetRanges = HdGet_hydra_numBlendShapeOffsetRanges();
-    if (index < numBlendShapeOffsetRanges) {
-        ivec2 blendShapeOffsetRange = HdGet_hydra_blendShapeOffsetRanges(index);
-        for (int i = blendShapeOffsetRange.x; i < blendShapeOffsetRange.y; ++i) {
-            const vec4 offset = HdGet_hydra_blendShapeOffsets(i);
-            const int shapeIndex = instanceOffset + int(offset.w);
-            const float weight = HdGet_hydra_blendShapeWeights(shapeIndex);
-            restP += offset.xyz * weight;
+        case 1:
+        {
+            return billboardConstraint(worldToViewMatrix, transform);
         }
     }
-#endif
-    return restP;
-}
 
-vec3 ApplySkinning(vec3 restP)
-{
-    vec3 p = ApplyBlendShapes(restP);
-
-#ifdef HD_HAS_hydra_numSkinningMethod
-    const int skinningMethod = HdGet_hydra_numSkinningMethod();
-    if (skinningMethod == 1) {
-        return ApplySkinningDQS(p);
-    }
-#endif
-    return ApplySkinningLBS(p);
+    return MAT4(1);
 }
 
 
 vec3 GetNormal(vec3 Neye, int index)
 {
-    return Neye;
+    vec3 normal = vec3(0);
+#if defined(HD_HAS_normals)
+    normal = vec3(HdGet_normals(index).xyz);
+#endif
+
+    MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
+    normal = vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
+                  vec4(normal,0)).xyz;
+
+    if (length(normal) > 0.0)
+        normal = normalize(normal);
+    return normal;
 }
 
 vec3 GetNormal(vec3 Neye, int index, vec2 localST)
@@ -4070,10 +3726,26 @@ void main(void)
 {
     ProcessPrimvarsIn();
 
-    MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
-    vec4 point        = vec4(ApplySkinning(HdGet_points().xyz), 1);
-    outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+    const MAT4 worldToViewMatrix = GetWorldToViewMatrix();
+    const MAT4 projectionMatrix = GetProjectionMatrix();
+    MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+    vec4 pt = vec4(GetVec3(HdGet_points()), 1);
 
+#if defined(HD_HAS_pixelScale)
+    if (HdGet_pixelScale())
+    {
+        MAT4 screenToWorld = HdGet_imageToWorldMatrix();
+        MAT4 psTrf = pixelScaleTransform( screenToWorld , transform, HdGet_scaleCenter(), HdGet_screenSpaceSize()/HdGet_modelSpaceSize());
+        transform = transform * psTrf;
+    }
+#endif
+
+#if defined(HD_HAS_cameraFacing)
+    transform = transform *
+        transformConstraint(HdGet_cameraFacing(), worldToViewMatrix, transform);
+#endif
+
+    outData.Peye = vec4(worldToViewMatrix * transform * pt);
     outData.Neye = GetNormal(vec3(0), 0); // normalized
 
     int pointId = GetPointId();
@@ -4081,6 +3753,7 @@ void main(void)
     ProcessPointId(pointId);
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    gl_Position.z -= gl_Position.w * 2.0 * GetDepthPriority();
     ApplyClipPlanes(outData.Peye);
 }
 
@@ -4095,30 +3768,23 @@ void main(void)
   GEOMETRY SHADER                                      
 =======================================================
 #version 450
-#if defined(GL_EXT_control_flow_attributes)
-	#extension GL_EXT_control_flow_attributes: require
-	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
-	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
-	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
-	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
-#else
-	#define HGI_COMPILER_ATTR_UNROLL
-	#define HGI_COMPILER_ATTR_DONT_UNROLL
-	#define HGI_COMPILER_ATTR_FLATTEN
-	#define HGI_COMPILER_ATTR_DONT_FLATTEN
-#endif
+#extension GL_NV_shader_buffer_load : require
+#extension GL_NV_gpu_shader5 : require
+#extension GL_ARB_bindless_texture : require
 #define REF(space,type) inout type
-#define FORWARD_DECL(func_decl) func_decl
+#define FORWARD_DECL(func_decl) func_decl;
 #define ATOMIC_LOAD(a) (a)
 #define ATOMIC_STORE(a, v) (a) = (v)
 #define ATOMIC_ADD(a, v) atomicAdd(a, v)
 #define ATOMIC_EXCHANGE(a, v) atomicExchange(a, v)
+#define ATOMIC_COMPARE_EXCHANGE(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
 #define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
+#define HGI_HAS_IEEE_FLOAT_SPECIAL_VALUES 1
 
 
 struct hgi_ivec3 { int    x, y, z; };
@@ -4131,10 +3797,10 @@ struct hgi_dmat3 { double m00, m01, m02,
                           m10, m11, m12,
                           m20, m21, m22; };
 
+
 // //////// Codegen Defines //////// 
-#define HD_SHADER_API 3
+#define HD_SHADER_API 2
 #define MAT4 mat4
-#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -4170,6 +3836,8 @@ hd_dmat3 hd_dmat3_set(hd_dmat3 v) { return v; }
 hd_dmat3 hd_dmat3_set(dmat3 v)    { return hd_dmat3(v[0][0], v[0][1], v[0][2],
                                                     v[1][0], v[1][1], v[1][2],
                                                     v[2][0], v[2][1], v[2][2]); }
+mat4 MAT4Init(float x) {
+   return mat4(x,0,0,0, 0,x,0,0, 0,0,x,0, 0,0,0,x); }
 int hd_int_get(int v)          { return v; }
 int hd_int_get(ivec2 v)        { return v.x; }
 int hd_int_get(ivec3 v)        { return v.x; }
@@ -4195,6 +3863,7 @@ vec4 hd_half4_get(uvec2 v) {
     return vec4(unpackHalf2x16(v.x), unpackHalf2x16(v.y)); }
 uvec2 hd_half4_set(vec4 v) {
     return uvec2(packHalf2x16(v.xy), packHalf2x16(v.zw)); }
+// End alias hgi vec and matrix types to hd.
 #define HD_NUM_PRIMITIVE_VERTS 4
 #define HD_HAS_transform 1
 #define HD_HAS_transformInverse 1
@@ -4203,10 +3872,34 @@ uvec2 hd_half4_set(vec4 v) {
 #define HD_HAS_widths 1
 #define HD_INSTANCER_NUM_LEVELS 0
 #define HD_INSTANCE_INDEX_WIDTH 1
+#define HD_INDEXED_PRIMVAR_COUNT 0
 #define HD_HAS_faceVisibility 1
 #define HD_HAS_dispTextureCoord 1
 #define HD_HAS_points 1
 #define HD_HAS_normals 1
+vec4 InterpolatePatchCoord(vec2 uv, ivec3 patchParam)
+{
+    // add 0.5 to integer values for more robust interpolation
+    return vec4(uv.x, uv.y, 0, patchParam.x+0.5f);
+}
+vec4 InterpolatePatchCoordTriangle(vec2 uv, ivec3 patchParam)
+{
+    return InterpolatePatchCoord(uv, patchParam);
+}
+
+layout (lines_adjacency) in;
+layout (triangle_strip, max_vertices = 6) out;
+
+// //////// Global Includes ////////
+
+// //////// Global Macros ////////
+
+// //////// Global Structs ////////
+
+// //////// Global Member Declarations ////////
+
+// //////// Global Function Definitions ////////
+
 
 // //////// Codegen Decl //////// 
 struct hd_drawingCoord {                       
@@ -4225,7 +3918,7 @@ struct hd_drawingCoord {
 FORWARD_DECL(hd_drawingCoord GetDrawingCoord());
 FORWARD_DECL(int HgiGetBaseVertex());
 struct hd_instanceIndex { int indices[HD_INSTANCE_INDEX_WIDTH]; };
-struct ConstantData7 {
+struct ConstantData10 {
   mat4 transform;
   mat4 transformInverse;
   vec4 color;
@@ -4236,57 +3929,36 @@ FORWARD_DECL(int GetElementID());
 FORWARD_DECL(int GetAggregatedElementID());
 FORWARD_DECL(int GetPrimitiveEdgeId());
 FORWARD_DECL(float GetSelectedEdgeOpacity());
-vec4 InterpolatePatchCoord(vec2 uv, ivec3 patchParam)
-{
-    // add 0.5 to integer values for more robust interpolation
-    return vec4(uv.x, uv.y, 0, patchParam.x+0.5f);
-}
-vec4 InterpolatePatchCoordTriangle(vec2 uv, ivec3 patchParam)
-{
-    return InterpolatePatchCoord(uv, patchParam);
-}
-layout (lines_adjacency) in;
-layout (triangle_strip, max_vertices = 6) out;
-
-// //////// Global Includes ////////
-
-// //////// Global Macros ////////
-
-// //////// Global Structs ////////
-
-// //////// Global Member Declarations ////////
-layout(std430, binding = 0) readonly buffer ssbo_constantPrimvars { ConstantData7 constantPrimvars[]; };
-layout(std430, binding = 1) readonly buffer ssbo_primitiveParam { int primitiveParam[]; };
-layout(std430, binding = 2) readonly buffer ssbo_edgeIndices { ivec2 edgeIndices[]; };
-layout(std430, binding = 3) readonly buffer ssbo_faceVisibility { float faceVisibility[]; };
-layout(std430, binding = 4) readonly buffer ssbo_dispTextureCoord { vec2 dispTextureCoord[]; };
-flat layout(location = 0) in ivec4 vs_interstageDrawingCoord0[HD_NUM_PRIMITIVE_VERTS];
-flat layout(location = 1) in ivec4 vs_interstageDrawingCoord1[HD_NUM_PRIMITIVE_VERTS];
-flat layout(location = 2) in ivec4 vs_interstageDrawingCoord2[HD_NUM_PRIMITIVE_VERTS];
-layout(location = 3) in VertexData {
-  vec4 Peye;
-  vec3 Neye;
+layout(location = 0) uniform ConstantData10 *constantPrimvars;
+layout(location = 1) uniform int *primitiveParam;
+layout(location = 2) uniform ivec2 *edgeIndices;
+layout(location = 3) uniform float *faceVisibility;
+in VertexData {
+    vec4 Peye;
+    vec3 Neye;
 } inData[4];
-layout(location = 5) in PrimvarData {
-  vec3 points;
-  vec3 normals;
-} inPrimvars[HD_NUM_PRIMITIVE_VERTS];
-layout(location = 2) out vec4 gsPatchCoord;
-flat layout(location = 3) out ivec4 gs_interstageDrawingCoord0;
-flat layout(location = 4) out ivec4 gs_interstageDrawingCoord1;
-flat layout(location = 5) out ivec4 gs_interstageDrawingCoord2;
-layout(location = 0) out VertexData {
-  vec4 Peye;
-  vec3 Neye;
+out VertexData {
+    vec4 Peye;
+    vec3 Neye;
 } outData;
-layout(location = 6) out PrimvarData {
-  vec3 points;
-  vec3 normals;
-  vec2 dispTextureCoord;
+out vec4 gsPatchCoord;
+out noperspective vec3 hd_barycentricCoord;
+in flat ivec4 vs_interstageDrawingCoord0[HD_NUM_PRIMITIVE_VERTS];
+out flat ivec4 gs_interstageDrawingCoord0;
+in flat ivec4 vs_interstageDrawingCoord1[HD_NUM_PRIMITIVE_VERTS];
+out flat ivec4 gs_interstageDrawingCoord1;
+in flat ivec4 vs_interstageDrawingCoord2[HD_NUM_PRIMITIVE_VERTS];
+out flat ivec4 gs_interstageDrawingCoord2;
+in PrimvarData {
+    vec3 points;
+    vec4 normals;
+} inPrimvars[HD_NUM_PRIMITIVE_VERTS];
+out PrimvarData {
+    vec3 points;
+    vec4 normals;
+    vec2 dispTextureCoord;
 } outPrimvars;
-
-// //////// Global Function Definitions ////////
-
+layout(location = 4) uniform vec2 *dispTextureCoord;
 
 // //////// Codegen Accessors //////// 
 mat4 HdGet_transform(int localIndex) {
@@ -4398,11 +4070,11 @@ vec3 HdGet_points(int localIndex) {
 vec3 HdGet_points() { return HdGet_points(0); }
 float HdGetScalar_points(int localIndex) { return HdGet_points(localIndex).x; }
 float HdGetScalar_points() { return HdGet_points(0).x; }
-vec3 HdGet_normals(int localIndex) {
+vec4 HdGet_normals(int localIndex) {
   int index = localIndex;
-  return vec3(inPrimvars[index].normals);
+  return vec4(inPrimvars[index].normals);
 }
-vec3 HdGet_normals() { return HdGet_normals(0); }
+vec4 HdGet_normals() { return HdGet_normals(0); }
 float HdGetScalar_normals(int localIndex) { return HdGet_normals(localIndex).x; }
 float HdGetScalar_normals() { return HdGet_normals(0).x; }
 vec2 HdGet_dispTextureCoord_Coarse(int localIndex) {
@@ -4427,6 +4099,10 @@ void ProcessSamplingTransforms(MAT4 instanceModelViewInverse) {
 FORWARD_DECL(vec4 GetPatchCoord(int index));
 void ProcessPrimvarsOut(int index) {
   vec2 localST = GetPatchCoord(index).xy;
+  const vec3 coords[4] = vec3[](
+   vec3(1,0,0), vec3(0,1,0), vec3(0,0,1), vec3(0,1,0)
+  );
+  hd_barycentricCoord = coords[index];
   hd_drawingCoord dc = GetDrawingCoord();
   gs_interstageDrawingCoord0[0] = dc.modelCoord;
   gs_interstageDrawingCoord0[1] = dc.constantCoord;
@@ -4476,13 +4152,6 @@ MAT4  GetWorldToViewInverseMatrix() {
 MAT4  GetProjectionMatrix() {
 #if defined(HD_HAS_projectionMatrix)
     return MAT4(HdGet_projectionMatrix());
-#else
-    return MAT4(1);
-#endif
-}
-MAT4  GetProjectionInverseMatrix() {
-#if defined(HD_HAS_projectionInverseMatrix)
-    return MAT4(HdGet_projectionInverseMatrix());
 #else
     return MAT4(1);
 #endif
@@ -4566,6 +4235,15 @@ vec4  GetIndicatorColor() {
 #endif
 }
 
+float GetDepthPriority() {
+#if defined(HD_HAS_depthPriority)
+    // How much to bias it forward toward the eye. 1048576 = 2^24 / 16.
+    return HdGet_depthPriority() / 1048576.0;
+#else
+    return 0;
+#endif
+}
+
 bool ShouldDiscardByAlpha(vec4 color)
 {
 #if defined(HD_HAS_alphaThreshold)
@@ -4581,9 +4259,19 @@ vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
     return t.xy * pt + t.zw;
 }
 
+vec3 GetVec3(vec3 pt)
+{
+    return pt;
+}
+
+vec3 GetVec3(vec2 pt)
+{
+    return vec3(pt.x, pt.y, 0.0);
+}
 
 
-#ifdef HD_USE_HARDWARE_CLIPPING
+
+
 void ApplyClipPlanes(vec4 Peye)
 {
 #if defined(HD_HAS_numClipPlanes)
@@ -4593,15 +4281,16 @@ void ApplyClipPlanes(vec4 Peye)
         // gl_ClipDistance[HD_NUM_clipPlanes], since we need to know the array
         // size at compile time. To avoid having any uninitialized values in
         // that array, we initialize them all to zero first.
-        gl_ClipDistance[i] = 0;
+        float fClip = 0;
         if (i < HdGet_numClipPlanes()) {
-            gl_ClipDistance[i] = dot(HdGet_clipPlanes(i), Peye);
+            fClip = dot(HdGet_clipPlanes(i), Peye);
         }
+
+        gl_ClipDistance[i] = fClip;
     }
 #endif
 #endif
 }
-#endif
 
 
 
@@ -4740,7 +4429,6 @@ MAT4 GetInstanceTransform()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = GetInstanceTransform(i) * m;
 #ifdef HD_HAS_instancerTransform
@@ -4755,7 +4443,6 @@ MAT4 GetInstanceTransformInverse()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = m * GetInstanceTransformInverse(i);
 #ifdef HD_HAS_instancerTransformInverse
@@ -4790,13 +4477,11 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceScales
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_hydra_instanceScales(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
     }
 #elif defined(HD_HAS_INSTANCE_scale)
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
@@ -4804,13 +4489,11 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceTransforms
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_hydra_instanceTransforms(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
     }
 #elif defined(HD_HAS_INSTANCE_instanceTransform)
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
@@ -4823,20 +4506,7 @@ bool IsFlipped()
 
 vec3 GetNormal(vec3 Neye, int index)
 {
-    vec3 normal = vec3(0);
-#if defined(HD_HAS_flatNormals)
-    normal = vec3(HdGet_flatNormals(index).xyz);
-#elif defined(HD_HAS_packedFlatNormals)
-    normal = vec3(HdGet_packedFlatNormals(index).xyz);
-#endif
-
-    MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
-    normal = vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
-                  vec4(normal,0)).xyz;
-
-    if (length(normal) > 0.0)
-        normal = normalize(normal);
-    return normal;
+    return Neye;
 }
 
 vec3 GetNormal(vec3 Neye, int index, vec2 localST)
@@ -4888,12 +4558,15 @@ void emit(int index, vec4 Peye, vec3 Neye)
     gsPatchCoord = GetPatchCoord(index);
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    gl_Position.z -= gl_Position.w * 2.0 * GetDepthPriority();
     ApplyClipPlanes(outData.Peye);
 
     ProcessPrimvarsOut(index);
 
     EmitVertex();
 }
+
+
 
 void main(void)
 {
@@ -4959,31 +4632,23 @@ void main(void)
   FRAGMENT SHADER                                      
 =======================================================
 #version 450
-#if defined(GL_EXT_control_flow_attributes)
-	#extension GL_EXT_control_flow_attributes: require
-	#define HGI_COMPILER_ATTR_UNROLL [[unroll]]
-	#define HGI_COMPILER_ATTR_DONT_UNROLL [[dont_unroll]]
-	#define HGI_COMPILER_ATTR_FLATTEN [[flatten]]
-	#define HGI_COMPILER_ATTR_DONT_FLATTEN [[dont_flatten]]
-#else
-	#define HGI_COMPILER_ATTR_UNROLL
-	#define HGI_COMPILER_ATTR_DONT_UNROLL
-	#define HGI_COMPILER_ATTR_FLATTEN
-	#define HGI_COMPILER_ATTR_DONT_FLATTEN
-#endif
-#extension GL_EXT_fragment_shader_barycentric: require
+#extension GL_NV_shader_buffer_load : require
+#extension GL_NV_gpu_shader5 : require
+#extension GL_ARB_bindless_texture : require
 #define REF(space,type) inout type
-#define FORWARD_DECL(func_decl) func_decl
+#define FORWARD_DECL(func_decl) func_decl;
 #define ATOMIC_LOAD(a) (a)
 #define ATOMIC_STORE(a, v) (a) = (v)
 #define ATOMIC_ADD(a, v) atomicAdd(a, v)
 #define ATOMIC_EXCHANGE(a, v) atomicExchange(a, v)
+#define ATOMIC_COMPARE_EXCHANGE(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
 #define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
+#define HGI_HAS_IEEE_FLOAT_SPECIAL_VALUES 1
 
 
 struct hgi_ivec3 { int    x, y, z; };
@@ -4996,10 +4661,22 @@ struct hgi_dmat3 { double m00, m01, m02,
                           m10, m11, m12,
                           m20, m21, m22; };
 
+
+
+// //////// Global Includes ////////
+
+// //////// Global Macros ////////
+
+// //////// Global Structs ////////
+
+// //////// Global Member Declarations ////////
+
+// //////// Global Function Definitions ////////
+
+
 // //////// Codegen Defines //////// 
-#define HD_SHADER_API 3
+#define HD_SHADER_API 2
 #define MAT4 mat4
-#define HD_USE_HARDWARE_CLIPPING
 // Alias hgi vec and matrix types to hd.
 #define hd_ivec3 hgi_ivec3
 #define hd_vec3 hgi_vec3
@@ -5035,6 +4712,8 @@ hd_dmat3 hd_dmat3_set(hd_dmat3 v) { return v; }
 hd_dmat3 hd_dmat3_set(dmat3 v)    { return hd_dmat3(v[0][0], v[0][1], v[0][2],
                                                     v[1][0], v[1][1], v[1][2],
                                                     v[2][0], v[2][1], v[2][2]); }
+mat4 MAT4Init(float x) {
+   return mat4(x,0,0,0, 0,x,0,0, 0,0,x,0, 0,0,0,x); }
 int hd_int_get(int v)          { return v; }
 int hd_int_get(ivec2 v)        { return v.x; }
 int hd_int_get(ivec3 v)        { return v.x; }
@@ -5060,6 +4739,7 @@ vec4 hd_half4_get(uvec2 v) {
     return vec4(unpackHalf2x16(v.x), unpackHalf2x16(v.y)); }
 uvec2 hd_half4_set(vec4 v) {
     return uvec2(packHalf2x16(v.xy), packHalf2x16(v.zw)); }
+// End alias hgi vec and matrix types to hd.
 #define HD_NUM_PRIMITIVE_VERTS 4
 #define HD_HAS_transform 1
 #define HD_HAS_transformInverse 1
@@ -5068,6 +4748,7 @@ uvec2 hd_half4_set(vec4 v) {
 #define HD_HAS_widths 1
 #define HD_INSTANCER_NUM_LEVELS 0
 #define HD_INSTANCE_INDEX_WIDTH 1
+#define HD_INDEXED_PRIMVAR_COUNT 0
 #define HD_HAS_faceVisibility 1
 #define HD_HAS_dispTextureCoord 1
 #define HD_HAS_points 1
@@ -5090,7 +4771,7 @@ struct hd_drawingCoord {
 FORWARD_DECL(hd_drawingCoord GetDrawingCoord());
 FORWARD_DECL(int HgiGetBaseVertex());
 struct hd_instanceIndex { int indices[HD_INSTANCE_INDEX_WIDTH]; };
-struct ConstantData7 {
+struct ConstantData10 {
   mat4 transform;
   mat4 transformInverse;
   vec4 color;
@@ -5101,6 +4782,26 @@ FORWARD_DECL(int GetElementID());
 FORWARD_DECL(int GetAggregatedElementID());
 FORWARD_DECL(int GetPrimitiveEdgeId());
 FORWARD_DECL(float GetSelectedEdgeOpacity());
+layout(location = 0) uniform ConstantData10 *constantPrimvars;
+layout(location = 1) uniform int *primitiveParam;
+layout(location = 2) uniform ivec2 *edgeIndices;
+layout(location = 3) uniform float *faceVisibility;
+in vec4 gsPatchCoord;
+in VertexData {
+    vec4 Peye;
+    vec3 Neye;
+} inData;
+layout (location = 0) out vec4 colorOut;
+in noperspective vec3 hd_barycentricCoord;
+in flat ivec4 gs_interstageDrawingCoord0;
+in flat ivec4 gs_interstageDrawingCoord1;
+in flat ivec4 gs_interstageDrawingCoord2;
+in PrimvarData {
+    vec3 points;
+    vec4 normals;
+    vec2 dispTextureCoord;
+} inPrimvars;
+layout(location = 4) uniform vec2 *dispTextureCoord;
 vec4 InterpolatePatchCoord(vec2 uv, ivec3 patchParam)
 {
     // add 0.5 to integer values for more robust interpolation
@@ -5110,37 +4811,6 @@ vec4 InterpolatePatchCoordTriangle(vec2 uv, ivec3 patchParam)
 {
     return InterpolatePatchCoord(uv, patchParam);
 }
-
-// //////// Global Includes ////////
-
-// //////// Global Macros ////////
-
-// //////// Global Structs ////////
-
-// //////// Global Member Declarations ////////
-layout(std430, binding = 0) readonly buffer ssbo_constantPrimvars { ConstantData7 constantPrimvars[]; };
-layout(std430, binding = 1) readonly buffer ssbo_primitiveParam { int primitiveParam[]; };
-layout(std430, binding = 2) readonly buffer ssbo_edgeIndices { ivec2 edgeIndices[]; };
-layout(std430, binding = 3) readonly buffer ssbo_faceVisibility { float faceVisibility[]; };
-layout(std430, binding = 4) readonly buffer ssbo_dispTextureCoord { vec2 dispTextureCoord[]; };
-layout(location = 2) in vec4 gsPatchCoord;
-flat layout(location = 3) in ivec4 gs_interstageDrawingCoord0;
-flat layout(location = 4) in ivec4 gs_interstageDrawingCoord1;
-flat layout(location = 5) in ivec4 gs_interstageDrawingCoord2;
-vec3 hd_BaryCoordNoPersp = gl_BaryCoordNoPerspEXT;
-layout(location = 0) in VertexData {
-  vec4 Peye;
-  vec3 Neye;
-} inData;
-layout(location = 6) in PrimvarData {
-  vec3 points;
-  vec3 normals;
-  vec2 dispTextureCoord;
-} inPrimvars;
-layout(location = 0) out vec4 colorOut;
-
-// //////// Global Function Definitions ////////
-
 
 // //////// Codegen Accessors //////// 
 mat4 HdGet_transform(int localIndex) {
@@ -5177,8 +4847,9 @@ float HdGetScalar_widths() { return HdGet_widths(0); }
 
 // //////// Codegen FS Source //////// 
 #define HD_SHADER_SUPPORTS_DOUBLE_PRECISION
+#define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE
 vec3 GetBarycentricCoord() {
-  return hd_BaryCoordNoPersp;
+  return hd_barycentricCoord;
 }
 int GetPrimitiveID() {
   return gl_PrimitiveID;
@@ -5253,8 +4924,8 @@ vec3 HdGet_points(int localIndex) { return vec3(inPrimvars.points);}
 vec3 HdGet_points() { return HdGet_points(0); }
 float HdGetScalar_points(int localIndex) { return HdGet_points(localIndex).x; }
 float HdGetScalar_points() { return HdGet_points(0).x; }
-vec3 HdGet_normals(int localIndex) { return vec3(inPrimvars.normals);}
-vec3 HdGet_normals() { return HdGet_normals(0); }
+vec4 HdGet_normals(int localIndex) { return vec4(inPrimvars.normals);}
+vec4 HdGet_normals() { return HdGet_normals(0); }
 float HdGetScalar_normals(int localIndex) { return HdGet_normals(localIndex).x; }
 float HdGetScalar_normals() { return HdGet_normals(0).x; }
 vec2 HdGet_dispTextureCoord(int localIndex) { return vec2(inPrimvars.dispTextureCoord);}
@@ -5298,13 +4969,6 @@ MAT4  GetWorldToViewInverseMatrix() {
 MAT4  GetProjectionMatrix() {
 #if defined(HD_HAS_projectionMatrix)
     return MAT4(HdGet_projectionMatrix());
-#else
-    return MAT4(1);
-#endif
-}
-MAT4  GetProjectionInverseMatrix() {
-#if defined(HD_HAS_projectionInverseMatrix)
-    return MAT4(HdGet_projectionInverseMatrix());
 #else
     return MAT4(1);
 #endif
@@ -5388,6 +5052,15 @@ vec4  GetIndicatorColor() {
 #endif
 }
 
+float GetDepthPriority() {
+#if defined(HD_HAS_depthPriority)
+    // How much to bias it forward toward the eye. 1048576 = 2^24 / 16.
+    return HdGet_depthPriority() / 1048576.0;
+#else
+    return 0;
+#endif
+}
+
 bool ShouldDiscardByAlpha(vec4 color)
 {
 #if defined(HD_HAS_alphaThreshold)
@@ -5402,6 +5075,17 @@ vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
 {
     return t.xy * pt + t.zw;
 }
+
+vec3 GetVec3(vec3 pt)
+{
+    return pt;
+}
+
+vec3 GetVec3(vec2 pt)
+{
+    return vec3(pt.x, pt.y, 0.0);
+}
+
 
 
 
@@ -5514,7 +5198,8 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
     vec3 n = normalize(Neye);
 
     LightingContribution result;
-    result.diffuse = vec3(dot(n, vec3(0,0,1)));
+    float fDiffuse = dot(n, vec3(0,0,1));
+    result.diffuse = vec3(fDiffuse, fDiffuse, fDiffuse);
 
     return result;
 }
@@ -5680,7 +5365,6 @@ MAT4 GetInstanceTransform()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = GetInstanceTransform(i) * m;
 #ifdef HD_HAS_instancerTransform
@@ -5695,7 +5379,6 @@ MAT4 GetInstanceTransformInverse()
 {
     MAT4 m = MAT4(1);
 #ifdef HD_INSTANCER_NUM_LEVELS
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         m = m * GetInstanceTransformInverse(i);
 #ifdef HD_HAS_instancerTransformInverse
@@ -5730,13 +5413,11 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceScales
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_hydra_instanceScales(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
     }
 #elif defined(HD_HAS_INSTANCE_scale)
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         vec3 scale = HdGetInstance_scale(i, /*default=*/vec3(1));
         flip = flip != ((sign(scale.x) * sign(scale.y) * sign(scale.z)) < 0);
@@ -5744,13 +5425,11 @@ bool IsFlipped()
 #endif
 
 #ifdef HD_HAS_INSTANCE_hydra_instanceTransforms
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_hydra_instanceTransforms(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
     }
 #elif defined(HD_HAS_INSTANCE_instanceTransform)
-    HGI_COMPILER_ATTR_UNROLL
     for (int i = 0; i < HD_INSTANCER_NUM_LEVELS; ++i) {
         MAT4 m = HdGetInstance_instanceTransform(i, MAT4(1));
         flip = flip != (determinant(m) < 0.0);
@@ -5789,41 +5468,15 @@ void DiscardBasedOnShading(bool frontFacing, bool isFlipped)
 
 
 
-vec3 GetEdgeCoord()
+vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
 {
-    return GetBarycentricCoord();
+    return Cfill;
 }
 
-
-
-vec3 GetPrimitiveEdgeMask()
-{
-    // A value of one in this mask hides the corresponding edge.
-    // (See hd/meshUtil.cpp)
-    return vec3(GetEdgeFlag() != 0, 1, 0);
-}
-
-
-
-// Returns the distance of the current fragment (in viewport pixel units) from
-// the nearest edge.
+// Return a large value, signifying that the fragment isn't near an edge.
 float GetMinEdgeDistance()
 {
-    // Hide triangle edges by adding edge mask.
-    vec3 param = GetEdgeCoord() + GetPrimitiveEdgeMask();
-    vec3 edgeDistance = max(vec3(0.0), param / fwidth(param));
-    return min(edgeDistance.x,
-               min(edgeDistance.y,
-                   edgeDistance.z));
-}
-
-// Use edge distance to compute a smooth opacity falloff for good looking edges.
-float GetEdgeFalloff(float d) {
-    return exp2(-4 * d * d);
-}
-
-float GetEdgeOpacity() {
-    return GetEdgeFalloff(GetMinEdgeDistance());
+    return 1000.0;
 }
 
 
@@ -5858,32 +5511,6 @@ vec4 GetEdgeDistanceQuad()
 {
     vec4 param = GetEdgeParamQuad();
     return max(vec4(0.0), param / fwidth(param));
-}
-
-
-
-vec4 ApplyFinalEdgeOpacity(vec4 Cfill, float p)
-{
-    Cfill.a = mix(Cfill.a, 1, p);
-    return Cfill;
-}
-
-
-
-vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
-{
-    float p = GetEdgeOpacity();
-    if (p < 0.5) {
-        discard;
-    }
-
-    vec4 wireColor = GetWireframeColor();
-
-    // If wireColor is unset (zero), ignore it altogether
-
-    Cfill.rgb = mix(Cfill.rgb, wireColor.rgb, wireColor.a);
-
-    return ApplyFinalEdgeOpacity(Cfill, p);
 }
 
 
@@ -6061,19 +5688,12 @@ float SelectedEdgeFalloff(float d) {
 
 vec4 ComputeBaseFaceEdgeDistanceQuad()
 {
-    // Use parametric distance since we can't use surface derivatives for lines
-    vec4 param = GetEdgeParamQuad();
-    bvec4 nearEdge = lessThan(param, vec4(edgePickParametricRadius));
-    return vec4(edgePickRadius) * vec4(not(nearEdge));
+    return GetEdgeDistanceQuad();
 }
 
 bool SelectWireframeFaceEdges()
 {
-    // Make sure that edges of selected faces are highlighted correctly for
-    // wireframe lines, i.e. if an edge of an adjacent non-selected face
-    // draws over an edge of a selected face that the edge is drawn using
-    // the correct selection color.
-    return true;
+    return false;
 }
 
 
@@ -6204,6 +5824,17 @@ void main(void)
 {
     ApplyDiskSampleMask();
 
+#ifdef HD_HAS_depthReadback
+    // Sample the z-Buffer at the frag coordinate.
+    const float bufferVal = texelFetch(HdGetSampler_depthReadback(),
+                                       ivec2(gl_FragCoord.xy),
+                                       /* lod = */ 0).x;
+    // reject fragments behind opaque objects
+    if (gl_FragCoord.z >= bufferVal) {
+      discard;
+    }
+#endif
+
     bool isFlipped = IsFlipped();
 
     DiscardBasedOnShading(gl_FrontFacing, isFlipped);
@@ -6232,17 +5863,6 @@ void main(void)
 
     vec4 patchCoord = GetPatchCoord();
     color = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord);
-
-#if defined(HD_HAS_depthReadback) && defined(HD_EARLY_FRAGMENT_TESTS)
-    // This section needs to come after ShadingTerminal to avoid possible
-    // non-uniform paths when sampling textures required for shading
-    const float bufferVal = texelFetch(HdGetSampler_depthReadback(),
-                                       ivec2(gl_FragCoord.xy),
-                                       /* lod = */ 0).x;
-    if (gl_FragCoord.z >= bufferVal) {
-      discard;
-    }
-#endif
 
     color = ApplyEdgeColor(color, patchCoord);
 
