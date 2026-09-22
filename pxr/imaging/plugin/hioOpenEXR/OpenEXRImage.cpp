@@ -279,9 +279,9 @@ bool Hio_OpenEXRImage::ReadCropped(
     // test zero and negative limits
     if (_exrReader.width <= 0 || _exrReader.height <= 0 ||
         _exrReader.channelCount <= 0) {
-        TF_RUNTIME_ERROR("All EXR dimensions must be greater than zero (%d, %d / %d): %s",
-                          _exrReader.width, _exrReader.height, 
-                          _exrReader.channelCount, _exrReader.filename);
+        TF_WARN("All EXR dimensions must be greater than zero (%d, %d / %d): %s",
+                _exrReader.width, _exrReader.height, 
+                _exrReader.channelCount, _exrReader.filename);
         return false;
     }
     
@@ -296,15 +296,15 @@ bool Hio_OpenEXRImage::ReadCropped(
 
     // test dimension limits
     if (fileWidth >= maxPixelExtent || fileHeight >= maxPixelExtent) {
-        TF_RUNTIME_ERROR("EXR dimensions are greater than 32 bit limits (%"
-                          PRIu64 ", %" PRIu64 "): %s",
-                          fileWidth, fileHeight, _exrReader.filename);
+        TF_WARN("EXR dimensions are greater than 32 bit limits (%"
+                PRIu64 ", %" PRIu64 "): %s",
+                fileWidth, fileHeight, _exrReader.filename);
         return false;
     }
     if (fileChannelCount >= maxFileChannelCount) {
-        TF_RUNTIME_ERROR("EXR channel count requires more than 32 bits to "
-                         "represent %" PRIu64 ": %s",
-                         fileChannelCount, _exrReader.filename);
+        TF_WARN("EXR channel count requires more than 32 bits to "
+                "represent %" PRIu64 ": %s",
+                fileChannelCount, _exrReader.filename);
         return false;
     }
 
@@ -323,22 +323,22 @@ bool Hio_OpenEXRImage::ReadCropped(
 
     // no conversion to anything except these formats
     if (!(outputIsHalf || outputIsFloat || outputIsUInt)) {
-        TF_RUNTIME_ERROR("EXR images can only be converted to half, float or uint: %s",
-                         _exrReader.filename);
+        TF_WARN("EXR images can only be converted to half, float or uint: %s",
+                _exrReader.filename);
         return false;
     }
 
     // no conversion to uint from non uint
     if (outputIsUInt && !inputIsUInt) {
-        TF_RUNTIME_ERROR("EXR cannot convert to uint from a float format: %s",
-                         _exrReader.filename);
+        TF_WARN("EXR cannot convert to uint from a float format: %s",
+                _exrReader.filename);
         return false;
     }
 
     // no coversion of non float to float
     if (outputIsFloat && !(inputIsFloat || inputIsHalf)) {
-        TF_RUNTIME_ERROR("EXR cannot to float from uint: %s",
-                         _exrReader.filename);
+        TF_WARN("EXR cannot to float from uint: %s",
+                _exrReader.filename);
         return false;
     }
 
@@ -356,8 +356,8 @@ bool Hio_OpenEXRImage::ReadCropped(
     uint64_t readHeight = fileHeight - cropTop - cropBottom;
     bool resizing = (readWidth != outWidth) || (readHeight != outHeight);
     if (outputIsUInt && resizing) {
-        TF_RUNTIME_ERROR("Cannot resize uint image target to read %s",
-                         _exrReader.filename);
+        TF_WARN("Cannot resize uint image target to read %s",
+                _exrReader.filename);
         return false;
     }
     
@@ -374,8 +374,8 @@ bool Hio_OpenEXRImage::ReadCropped(
                                            partIndex, _mip);
         if (rv != EXR_ERR_SUCCESS) {
             nanoexr_release_image_data(&img);
-            TF_RUNTIME_ERROR("EXR could not read (%s) because %s",
-                _exrReader.filename, nanoexr_get_default_error_message(rv));
+            TF_WARN("EXR could not read (%s) because %s",
+                    _exrReader.filename, nanoexr_get_default_error_message(rv));
             return false;
         }
         ImageProcessor<uint32_t>::CropImage(reinterpret_cast<uint32_t*>(img.data),
@@ -404,8 +404,8 @@ bool Hio_OpenEXRImage::ReadCropped(
         try {
             halfInputBuffer.resize(fileWidth * fileHeight * maxChannelCount);
         } catch (const std::exception& e) {
-            TF_RUNTIME_ERROR("Could not allocate memory to convert: %s "
-                             "because: %s", _exrReader.filename, e.what());
+            TF_WARN("Could not allocate memory to convert: %s "
+                    "because: %s", _exrReader.filename, e.what());
 
             return false;
         }
@@ -416,8 +416,8 @@ bool Hio_OpenEXRImage::ReadCropped(
         try {
             floatInputBuffer.resize(fileWidth * fileHeight * maxChannelCount);
         } catch (const std::exception& e) {
-            TF_RUNTIME_ERROR("Could not allocate memory to convert: %s "
-                             "because: %s", _exrReader.filename, e.what());
+            TF_WARN("Could not allocate memory to convert: %s "
+                    "because: %s", _exrReader.filename, e.what());
 
             return false;
         }
@@ -431,8 +431,8 @@ bool Hio_OpenEXRImage::ReadCropped(
                                            &img, nullptr, 
                                            outChannelCount, partIndex, _mip);
         if (rv != EXR_ERR_SUCCESS) {
-            TF_RUNTIME_ERROR("EXR could not read (%s) because %s",
-                _exrReader.filename, nanoexr_get_default_error_message(rv));
+            TF_WARN("EXR could not read (%s) because %s",
+                    _exrReader.filename, nanoexr_get_default_error_message(rv));
             return false;
         }
 
@@ -816,7 +816,7 @@ bool Hio_OpenEXRImage::_OpenForReading(std::string const &filename,
     _asset = ArGetResolver().OpenAsset(ArResolvedPath(filename));
     if (!_asset) {
         if (!suppressErrors) {
-            TF_RUNTIME_ERROR("Asset resolver cannot find %s", filename.c_str());
+            TF_WARN("Asset resolver cannot find %s", filename.c_str());
         }
         return false;
     }
@@ -833,19 +833,19 @@ bool Hio_OpenEXRImage::_OpenForReading(std::string const &filename,
                                  _subimage);
     if (rv.exrErrorCode != 0) {
         if (!suppressErrors) {
-            TF_RUNTIME_ERROR("Cannot open image \"%s\" for reading, "
-                             " operation: %s. result: %s",
-                             filename.c_str(), 
-                             nanoexr_get_default_aux_message(rv.nanoexrAuxCode),
-                             nanoexr_get_error_code_as_string(rv.exrErrorCode));
+            TF_WARN("Cannot open image \"%s\" for reading, "
+                    " operation: %s. result: %s",
+                    filename.c_str(), 
+                    nanoexr_get_default_aux_message(rv.nanoexrAuxCode),
+                    nanoexr_get_error_code_as_string(rv.exrErrorCode));
         }
         return false;
     }
 
     if (_exrReader.numMipLevels <= mip) {
         if (!suppressErrors) {
-            TF_RUNTIME_ERROR("Image \"%s\" has only %d mips, but %d were requested",
-                             filename.c_str(), _exrReader.numMipLevels, mip);
+            TF_WARN("Image \"%s\" has only %d mips, but %d were requested",
+                    filename.c_str(), _exrReader.numMipLevels, mip);
         }
         return false;
     }
@@ -967,9 +967,9 @@ bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
         _callbackDict = nullptr;
 
         if (rv.exrErrorCode != EXR_ERR_SUCCESS) {
-            TF_RUNTIME_ERROR("Could not write EXR file, %s, %s",
-                nanoexr_get_default_aux_message(rv.nanoexrAuxCode),
-                nanoexr_get_default_error_message(rv.exrErrorCode));
+            TF_WARN("Could not write EXR file, %s, %s",
+                    nanoexr_get_default_aux_message(rv.nanoexrAuxCode),
+                    nanoexr_get_default_error_message(rv.exrErrorCode));
             return false;
         }
         
@@ -1030,9 +1030,9 @@ bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
 
     _callbackDict = nullptr;
     if (rv.exrErrorCode != EXR_ERR_SUCCESS) {
-        TF_RUNTIME_ERROR("Could not write EXR file, %s, %s",
-            nanoexr_get_default_aux_message(rv.nanoexrAuxCode),
-            nanoexr_get_default_error_message(rv.exrErrorCode));
+        TF_WARN("Could not write EXR file, %s, %s",
+                nanoexr_get_default_aux_message(rv.nanoexrAuxCode),
+                nanoexr_get_default_error_message(rv.exrErrorCode));
         return false;
     }
     
