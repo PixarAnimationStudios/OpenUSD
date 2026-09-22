@@ -83,12 +83,18 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((stormMsaaSampleCount, "storm:msaaSampleCount"))
 
 #define HDST_RENDER_SETTINGS_TOKENS             \
+    (defaultTransparencyMode)                   \
     (enableTinyPrimCulling)                     \
     (volumeRaymarchingStepSize)                 \
     (volumeRaymarchingStepSizeLighting)         \
     (volumeMaxTextureMemoryPerField)            \
     (maxLights)                                 \
     (domeLightCubemapTargetMemory)
+
+#define HDST_DEFAULT_TRANSPARENCY_MODE_TOKENS   \
+    (screenDoor)                                \
+    (additive)                                  \
+    (oit)
 
 // Material tags help bucket prims into different queues for draw submission.
 // The tags supported by Storm are:
@@ -132,6 +138,9 @@ TF_DECLARE_PUBLIC_TOKENS(HdStRenderBufferTokens, HDST_API,
 
 TF_DECLARE_PUBLIC_TOKENS(HdStRenderSettingsTokens, HDST_API,
                          HDST_RENDER_SETTINGS_TOKENS);
+
+TF_DECLARE_PUBLIC_TOKENS(HdStDefaultTransparencyModeTokens, HDST_API,
+                         HDST_DEFAULT_TRANSPARENCY_MODE_TOKENS);
 
 TF_DECLARE_PUBLIC_TOKENS(HdStMaterialTagTokens, HDST_API,
                          HDST_MATERIAL_TAG_TOKENS);
