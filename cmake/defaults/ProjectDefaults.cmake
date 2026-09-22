@@ -30,7 +30,7 @@ endif()
 if(EMSCRIPTEN)
     set(EMSCRIPTEN_COMPILE_FLAGS "-fexceptions")
     add_compile_options("SHELL:${EMSCRIPTEN_COMPILE_FLAGS}")
-    add_link_options("SHELL:${EMSCRIPTEN_COMPILE_FLAGS} -sALLOW_MEMORY_GROWTH=1")
+    add_link_options("SHELL:${EMSCRIPTEN_COMPILE_FLAGS} -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB")
 endif()
 
 # Allow local includes from source directory.

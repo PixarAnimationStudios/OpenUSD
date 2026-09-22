@@ -811,6 +811,8 @@ enum HgiStorageType
 ///   Indicates an array texture.</li>
 /// <li>HgiShaderTextureTypeCubemapTexture:
 ///   Indicates a cubemap texture.</li>
+/// <li>HgiShaderTextureTypeDepth:
+///   Indicates a depth texture.</li>
 /// </ul>
 ///
 enum HgiShaderTextureType
@@ -818,7 +820,8 @@ enum HgiShaderTextureType
     HgiShaderTextureTypeTexture = 0,
     HgiShaderTextureTypeShadowTexture,
     HgiShaderTextureTypeArrayTexture,
-    HgiShaderTextureTypeCubemapTexture
+    HgiShaderTextureTypeCubemapTexture,
+    HgiShaderTextureTypeDepth
 };
 
 /// \enum HgiComputeDispatch

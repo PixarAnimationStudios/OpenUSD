@@ -1,0 +1,817 @@
+//
+// Copyright 2026 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+#include "pxr/imaging/hgiWebGPU/conversions.h"
+#include "pxr/base/tf/iterator.h"
+#include "pxr/imaging/hgiWebGPU/api.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+//
+// HgiFormat
+//
+static const wgpu::TextureFormat _PIXEL_FORMAT_DESC[] =
+{
+    wgpu::TextureFormat::R8Unorm,          // HgiFormatUNorm8,
+    wgpu::TextureFormat::RG8Unorm,         // HgiFormatUNorm8Vec2,
+    wgpu::TextureFormat::RGBA8Unorm,       // HgiFormatUNorm8Vec4,
+
+    wgpu::TextureFormat::R8Snorm,          // HgiFormatSNorm8,
+    wgpu::TextureFormat::RG8Snorm,         // HgiFormatSNorm8Vec2,
+    wgpu::TextureFormat::RGBA8Snorm,       // HgiFormatSNorm8Vec4,
+
+    wgpu::TextureFormat::R16Float,         // HgiFormatFloat16,
+    wgpu::TextureFormat::RG16Float,        // HgiFormatFloat16Vec2,
+    wgpu::TextureFormat::Undefined,        // Unsupported by WebGPU HgiFormatFloat16Vec3
+    wgpu::TextureFormat::RGBA16Float,      // HgiFormatFloat16Vec4,
+
+    wgpu::TextureFormat::R32Float,         // HgiFormatFloat32,
+    wgpu::TextureFormat::RG32Float,        // HgiFormatFloat32Vec2,
+    wgpu::TextureFormat::Undefined,        // Unsupported by WebGPU HgiFormatFloat32Vec3
+    wgpu::TextureFormat::RGBA32Float,      // HgiFormatFloat32Vec4,
+
+    wgpu::TextureFormat::R16Sint,          // HgiFormatInt16,
+    wgpu::TextureFormat::RG16Sint,         // HgiFormatInt16Vec2,
+    wgpu::TextureFormat::Undefined,        // Unsupported by WebGPU HgiFormatInt16Vec3
+    wgpu::TextureFormat::RGBA16Sint,       // HgiFormatInt16Vec4,
+
+    wgpu::TextureFormat::R16Uint,          // HgiFormatUInt16,
+    wgpu::TextureFormat::RG16Uint,         // HgiFormatUInt16Vec2,
+    wgpu::TextureFormat::Undefined,        // Unsupported by WebGPU HgiFormatUInt16Vec3
+    wgpu::TextureFormat::RGBA16Uint,       // HgiFormatUInt16Vec4,
+
+    wgpu::TextureFormat::R32Sint,          // HgiFormatInt32,
+    wgpu::TextureFormat::RG32Sint,         // HgiFormatInt32Vec2,
+    wgpu::TextureFormat::Undefined,        // Unsupported by WebGPU HgiFormatInt32Vec3
+    wgpu::TextureFormat::RGBA32Sint,       // HgiFormatInt32Vec4,
+    
+    wgpu::TextureFormat::RGBA8UnormSrgb,   // HgiFormatUNorm8Vec4srgb,
+
+    wgpu::TextureFormat::BC6HRGBFloat,     // HgiFormatBC6FloatVec3
+    wgpu::TextureFormat::BC6HRGBUfloat,    // HgiFormatBC6UFloatVec3
+    wgpu::TextureFormat::BC7RGBAUnorm,     // HgiFormatBC7UNorm8Vec4
+    wgpu::TextureFormat::BC7RGBAUnormSrgb, // HgiFormatBC7UNorm8Vec4srgb
+    wgpu::TextureFormat::BC1RGBAUnorm,     // HgiFormatBC1UNorm8Vec4
+    wgpu::TextureFormat::BC3RGBAUnorm,     // HgiFormatBC3UNorm8Vec4
+
+    wgpu::TextureFormat::Depth32FloatStencil8, // HgiFormatFloat32UInt8
+    wgpu::TextureFormat::RGB10A2Unorm,// HgiFormatPackedInt1010102
+};
+
+// A few random format validations to make sure out table stays aligned with the HgiFormat table
+constexpr bool _CompileTimeValidateHgiFormatTable() {
+    return (TfArraySize(_PIXEL_FORMAT_DESC) == HgiFormatCount &&
+            HgiFormatUNorm8 == 0 &&
+            HgiFormatFloat16Vec4 == 9 &&
+            HgiFormatFloat32Vec4 == 13 &&
+            HgiFormatUInt16Vec4 == 21 &&
+            HgiFormatUNorm8Vec4srgb == 26 &&
+            HgiFormatBC3UNorm8Vec4 == 32) ? true : false;
+}
+
+static_assert(_CompileTimeValidateHgiFormatTable(),
+              "_PIXEL_FORMAT_DESC array out of sync with HgiFormat enum");
+
+//
+// wgpu::VertexFormat
+//
+struct {
+    HgiFormat hgiFormat;
+    wgpu::VertexFormat webGPUVertexFormat;
+} static const _formatTable[] =
+    {
+            {HgiFormatUNorm8,           wgpu::VertexFormat::Unorm8x2},  // Not supported by WebGPU
+            {HgiFormatUNorm8Vec2,       wgpu::VertexFormat::Unorm8x2},
+            {HgiFormatUNorm8Vec4,       wgpu::VertexFormat::Unorm8x4},
+
+            {HgiFormatSNorm8,           wgpu::VertexFormat::Snorm8x2},
+            {HgiFormatSNorm8Vec2,       wgpu::VertexFormat::Snorm8x2},
+            {HgiFormatSNorm8Vec4,       wgpu::VertexFormat::Snorm8x4},
+
+            {HgiFormatFloat16,          wgpu::VertexFormat::Float16x2},  // Not supported by WebGPU
+            {HgiFormatFloat16Vec2,      wgpu::VertexFormat::Float16x2},
+            {HgiFormatFloat16Vec3,      wgpu::VertexFormat::Float16x4},  // Not supported by WebGPU
+            {HgiFormatFloat16Vec4,      wgpu::VertexFormat::Float16x4},
+
+            {HgiFormatFloat32,          wgpu::VertexFormat::Float32},
+            {HgiFormatFloat32Vec2,      wgpu::VertexFormat::Float32x2},
+            {HgiFormatFloat32Vec3,      wgpu::VertexFormat::Float32x3},
+            {HgiFormatFloat32Vec4,      wgpu::VertexFormat::Float32x4},
+
+            {HgiFormatInt16,            wgpu::VertexFormat::Uint16x2},   // Not supported by WebGPU
+            {HgiFormatInt16Vec2,        wgpu::VertexFormat::Uint16x2},   // Not supported by WebGPU
+            {HgiFormatInt16Vec3,        wgpu::VertexFormat::Uint16x4},   // Not supported by WebGPU
+            {HgiFormatInt16Vec4,        wgpu::VertexFormat::Uint16x4},   // Not supported by WebGPU
+
+            {HgiFormatUInt16,           wgpu::VertexFormat::Uint16x2},   // Not supported by WebGPU
+            {HgiFormatUInt16Vec2,       wgpu::VertexFormat::Uint16x2},
+            {HgiFormatUInt16Vec3,       wgpu::VertexFormat::Uint16x4},   // Not supported by WebGPU
+            {HgiFormatUInt16Vec4,       wgpu::VertexFormat::Uint16x4},
+
+            {HgiFormatInt32,            wgpu::VertexFormat::Sint32},
+            {HgiFormatInt32Vec2,        wgpu::VertexFormat::Sint32x2},
+            {HgiFormatInt32Vec3,        wgpu::VertexFormat::Sint32x3},
+            {HgiFormatInt32Vec4,        wgpu::VertexFormat::Sint32x4},
+
+            {HgiFormatUNorm8Vec4srgb,   wgpu::VertexFormat::Unorm8x4},
+
+            {HgiFormatBC6FloatVec3,     wgpu::VertexFormat::Float32x4},  // Not supported by WebGPU
+            {HgiFormatBC6UFloatVec3,    wgpu::VertexFormat::Float32x4},  // Not supported by WebGPU
+            {HgiFormatBC7UNorm8Vec4,    wgpu::VertexFormat::Float32x4},  // Not supported by WebGPU
+            {HgiFormatBC7UNorm8Vec4srgb,wgpu::VertexFormat::Float32x4},  // Not supported by WebGPU
+            {HgiFormatBC1UNorm8Vec4,    wgpu::VertexFormat::Float32x4},  // Not supported by WebGPU
+            {HgiFormatBC3UNorm8Vec4,    wgpu::VertexFormat::Float32x4},  // Not supported by WebGPU
+
+            {HgiFormatFloat32UInt8,     wgpu::VertexFormat::Float32x2},
+            {HgiFormatPackedInt1010102, wgpu::VertexFormat::Unorm10_10_10_2},
+    };
+
+static_assert(TfArraySize(_formatTable) == HgiFormatCount,
+              "_formatTable array out of sync with HgiFormat enum");
+
+//
+// wgpu::VertexFormat
+//
+struct {
+    HgiFormat hgiFormat;
+    wgpu::TextureSampleType webGPUTextureSampleType;
+} static const _textureSampleTypeTable[] =
+    {
+            {HgiFormatUNorm8,           wgpu::TextureSampleType::Float},
+            {HgiFormatUNorm8Vec2,       wgpu::TextureSampleType::Float},
+            {HgiFormatUNorm8Vec4,       wgpu::TextureSampleType::Float},
+
+            {HgiFormatSNorm8,           wgpu::TextureSampleType::Float},
+            {HgiFormatSNorm8Vec2,       wgpu::TextureSampleType::Float},
+            {HgiFormatSNorm8Vec4,       wgpu::TextureSampleType::Float},
+
+            {HgiFormatFloat16,          wgpu::TextureSampleType::Float},
+            {HgiFormatFloat16Vec2,      wgpu::TextureSampleType::Float},
+            {HgiFormatFloat16Vec3,      wgpu::TextureSampleType::Float},
+            {HgiFormatFloat16Vec4,      wgpu::TextureSampleType::Float},
+
+            {HgiFormatFloat32,          wgpu::TextureSampleType::Float},
+            {HgiFormatFloat32Vec2,      wgpu::TextureSampleType::Float},
+            {HgiFormatFloat32Vec3,      wgpu::TextureSampleType::Float},
+            {HgiFormatFloat32Vec4,      wgpu::TextureSampleType::Float},
+
+            {HgiFormatInt16,            wgpu::TextureSampleType::Sint},
+            {HgiFormatInt16Vec2,        wgpu::TextureSampleType::Sint},
+            {HgiFormatInt16Vec3,        wgpu::TextureSampleType::Sint},
+            {HgiFormatInt16Vec4,        wgpu::TextureSampleType::Sint},
+
+            {HgiFormatUInt16,           wgpu::TextureSampleType::Uint},
+            {HgiFormatUInt16Vec2,       wgpu::TextureSampleType::Uint},
+            {HgiFormatUInt16Vec3,       wgpu::TextureSampleType::Uint},
+            {HgiFormatUInt16Vec4,       wgpu::TextureSampleType::Uint},
+
+            {HgiFormatInt32,            wgpu::TextureSampleType::Sint},
+            {HgiFormatInt32Vec2,        wgpu::TextureSampleType::Sint},
+            {HgiFormatInt32Vec3,        wgpu::TextureSampleType::Sint},
+            {HgiFormatInt32Vec4,        wgpu::TextureSampleType::Sint},
+
+            {HgiFormatUNorm8Vec4srgb,   wgpu::TextureSampleType::Float},
+
+            {HgiFormatBC6FloatVec3,     wgpu::TextureSampleType::Float},
+            {HgiFormatBC6UFloatVec3,    wgpu::TextureSampleType::Float},
+            {HgiFormatBC7UNorm8Vec4,    wgpu::TextureSampleType::Float},
+            {HgiFormatBC7UNorm8Vec4srgb,wgpu::TextureSampleType::Float},
+            {HgiFormatBC1UNorm8Vec4,    wgpu::TextureSampleType::Float},
+            {HgiFormatBC3UNorm8Vec4,    wgpu::TextureSampleType::Float},
+
+            {HgiFormatFloat32UInt8,     wgpu::TextureSampleType::UnfilterableFloat},
+
+            {HgiFormatPackedInt1010102, wgpu::TextureSampleType::Sint},
+    };
+
+static_assert(TfArraySize(_textureSampleTypeTable) == HgiFormatCount,
+              "_textureSampleTypeTable array out of sync with HgiFormat enum");
+
+struct {
+    HgiBufferUsage hgiBufferUsage;
+    wgpu::BufferUsage webGPUBufferUsage;
+} static const _BufferUsageTable[] =
+        {
+    {HgiBufferUsageUniform, wgpu::BufferUsage::Uniform},
+    {HgiBufferUsageIndex32, wgpu::BufferUsage::Index},
+    {HgiBufferUsageVertex,  wgpu::BufferUsage::Vertex},
+    {HgiBufferUsageStorage, wgpu::BufferUsage::Storage},
+    {HgiBufferUsageIndirect, wgpu::BufferUsage::Indirect},
+    {HgiBufferUsageUpload, wgpu::BufferUsage::CopySrc}
+};
+
+struct {
+    HgiBindResourceType hgiBindResourceType;
+    wgpu::BufferBindingType webGPUBindingType;
+} static const _bufferBindResourceTypeTable[] =
+{
+    {HgiBindResourceTypeSampler, wgpu::BufferBindingType::Undefined},
+    {HgiBindResourceTypeSampledImage, wgpu::BufferBindingType::Undefined},
+    {HgiBindResourceTypeCombinedSamplerImage, wgpu::BufferBindingType::Undefined},
+    {HgiBindResourceTypeStorageImage, wgpu::BufferBindingType::Undefined},
+    {HgiBindResourceTypeUniformBuffer, wgpu::BufferBindingType::Uniform},
+    {HgiBindResourceTypeStorageBuffer, wgpu::BufferBindingType::Storage},
+    {HgiBindResourceTypeTessFactors, wgpu::BufferBindingType::Undefined},
+};
+
+static_assert(TfArraySize(_bufferBindResourceTypeTable) == HgiBindResourceTypeCount,
+              "_bufferBindResourceTypeTable array out of sync with HgiBindResourceType enum");
+
+struct {
+    HgiShaderStage hgiShaderStage;
+    wgpu::ShaderStage webGPUShaderStage;
+} static const _shaderStageTable[] =
+{
+    {HgiShaderStageVertex, wgpu::ShaderStage::Vertex},
+    {HgiShaderStageFragment, wgpu::ShaderStage::Fragment},
+    {HgiShaderStageCompute, wgpu::ShaderStage::Compute},
+    {HgiShaderStageTessellationControl, wgpu::ShaderStage::None},
+    {HgiShaderStageTessellationEval, wgpu::ShaderStage::None},
+    {HgiShaderStageGeometry, wgpu::ShaderStage::None},
+    {HgiShaderStagePostTessellationControl, wgpu::ShaderStage::None},
+    {HgiShaderStagePostTessellationVertex, wgpu::ShaderStage::None},
+    {HgiShaderStageCustomBitsBegin, wgpu::ShaderStage::None},
+};
+
+//
+// HgiCullMode
+//
+struct {
+    HgiCullMode hgiCullMode;
+    wgpu::CullMode webGPUCullMode;
+} static const _CullModeTable[] =
+{
+    {HgiCullModeNone,         wgpu::CullMode::None},
+    {HgiCullModeFront,        wgpu::CullMode::Front},
+    {HgiCullModeBack,         wgpu::CullMode::Back},
+    {HgiCullModeFrontAndBack, wgpu::CullMode::None} // Unsupported
+};
+
+static_assert(TfArraySize(_CullModeTable) == HgiCullModeCount,
+              "_CullModeTable array out of sync with HgiFormat enum");
+
+//
+// HgiBlendOp
+//
+struct {
+    HgiBlendOp hgiBlendOp;
+    wgpu::BlendOperation webGPUBlendOp;
+} static const _blendEquationTable[] =
+{
+    {HgiBlendOpAdd,             wgpu::BlendOperation::Add},
+    {HgiBlendOpSubtract,        wgpu::BlendOperation::Subtract},
+    {HgiBlendOpReverseSubtract, wgpu::BlendOperation::ReverseSubtract},
+    {HgiBlendOpMin,             wgpu::BlendOperation::Min},
+    {HgiBlendOpMax,             wgpu::BlendOperation::Max},
+};
+
+static_assert(TfArraySize(_blendEquationTable) == HgiBlendOpCount,
+              "_blendEquationTable array out of sync with HgiBlendOp enum");
+
+//
+// HgiBlendFactor
+//
+struct {
+    HgiBlendFactor hgiBlendFactor;
+    wgpu::BlendFactor webGPUBlendFactor;
+} static const _blendFactorTable[] =
+{
+    {HgiBlendFactorZero,                wgpu::BlendFactor::Zero},
+    {HgiBlendFactorOne,                 wgpu::BlendFactor::One},
+    {HgiBlendFactorSrcColor,            wgpu::BlendFactor::Src},
+    {HgiBlendFactorOneMinusSrcColor,    wgpu::BlendFactor::OneMinusSrc},
+    {HgiBlendFactorDstColor,            wgpu::BlendFactor::Dst},
+    {HgiBlendFactorOneMinusDstColor,    wgpu::BlendFactor::OneMinusDst},
+    {HgiBlendFactorSrcAlpha,            wgpu::BlendFactor::SrcAlpha},
+    {HgiBlendFactorOneMinusSrcAlpha,    wgpu::BlendFactor::OneMinusSrcAlpha},
+    {HgiBlendFactorDstAlpha,            wgpu::BlendFactor::DstAlpha},
+    {HgiBlendFactorOneMinusDstAlpha,    wgpu::BlendFactor::OneMinusDstAlpha},
+    {HgiBlendFactorConstantColor,       wgpu::BlendFactor::Zero},      // Unsupported
+    {HgiBlendFactorOneMinusConstantColor, wgpu::BlendFactor::Zero},    // Unsupported
+    {HgiBlendFactorConstantAlpha,       wgpu::BlendFactor::Zero},      // Unsupported
+    {HgiBlendFactorOneMinusConstantAlpha, wgpu::BlendFactor::Zero},    // Unsupported
+    {HgiBlendFactorSrcAlphaSaturate,    wgpu::BlendFactor::SrcAlphaSaturated},
+    {HgiBlendFactorSrc1Color,           wgpu::BlendFactor::Src},
+    {HgiBlendFactorOneMinusSrc1Color,   wgpu::BlendFactor::OneMinusSrcAlpha},
+    {HgiBlendFactorSrc1Alpha,           wgpu::BlendFactor::SrcAlpha},
+    {HgiBlendFactorOneMinusSrc1Alpha,   wgpu::BlendFactor::OneMinusSrc},
+};
+
+static_assert(TfArraySize(_blendFactorTable) == HgiBlendFactorCount,
+              "_blendFactorTable array out of sync with HgiBlendFactor enum");
+
+//
+// HgiWinding
+//
+struct {
+    HgiWinding hgiWinding;
+    wgpu::FrontFace webGPUWinding;
+} static const _windingTable[] =
+{
+    // We flip the winding order like in HgiMetal. See HgiWebGPUCompileGLSL().
+    {HgiWindingClockwise,           wgpu::FrontFace::CCW},
+    {HgiWindingCounterClockwise,    wgpu::FrontFace::CW},
+};
+
+static_assert(TfArraySize(_windingTable) == HgiWindingCount,
+              "_windingTable array out of sync with HgiWinding enum");
+
+//
+// HgiAttachmentLoadOp
+//
+struct {
+    HgiAttachmentLoadOp hgiAttachmentLoadOp;
+    wgpu::LoadOp webGPULoadOp;
+} static const _attachmentLoadOpTable[] =
+{
+    {HgiAttachmentLoadOpDontCare,   wgpu::LoadOp::Clear},
+    {HgiAttachmentLoadOpClear,      wgpu::LoadOp::Clear},
+    {HgiAttachmentLoadOpLoad,       wgpu::LoadOp::Load},
+};
+
+static_assert(TfArraySize(_attachmentLoadOpTable) == HgiAttachmentLoadOpCount,
+              "_attachmentLoadOpTable array out of sync with HgiAttachmentLoadOp enum");
+
+//
+// HgiAttachmentStoreOp
+//
+struct {
+    HgiAttachmentStoreOp hgiAttachmentStoreOp;
+    wgpu::StoreOp webGPUStoreOp;
+} static const _attachmentStoreOpTable[] =
+{
+    {HgiAttachmentStoreOpDontCare,   wgpu::StoreOp::Discard},
+    {HgiAttachmentStoreOpStore,      wgpu::StoreOp::Store},
+};
+
+static_assert(TfArraySize(_attachmentStoreOpTable) == HgiAttachmentStoreOpCount,
+              "_attachmentStoreOpTable array out of sync with HgiFormat enum");
+
+//
+// HgiCompareFunction
+//
+struct {
+    HgiCompareFunction hgiCompareFunction;
+    wgpu::CompareFunction webGPUCF;
+} static const _compareFnTable[] =
+{
+    {HgiCompareFunctionNever,       wgpu::CompareFunction::Never},
+    {HgiCompareFunctionLess,        wgpu::CompareFunction::Less},
+    {HgiCompareFunctionEqual,       wgpu::CompareFunction::Equal},
+    {HgiCompareFunctionLEqual,      wgpu::CompareFunction::LessEqual},
+    {HgiCompareFunctionGreater,     wgpu::CompareFunction::Greater},
+    {HgiCompareFunctionNotEqual,    wgpu::CompareFunction::NotEqual},
+    {HgiCompareFunctionGEqual,      wgpu::CompareFunction::GreaterEqual},
+    {HgiCompareFunctionAlways,      wgpu::CompareFunction::Always},
+};
+
+static_assert(TfArraySize(_compareFnTable) == HgiCompareFunctionCount,
+              "_compareFnTable array out of sync with HgiCompareFunction enum");
+
+struct {
+    HgiTextureType hgiTextureType;
+    wgpu::TextureDimension webGPUTT;
+} static const _textureTypeTable[HgiTextureTypeCount] =
+{
+    {HgiTextureType1D,           wgpu::TextureDimension::e1D},
+    {HgiTextureType2D,           wgpu::TextureDimension::e2D},
+    {HgiTextureType3D,           wgpu::TextureDimension::e3D},
+    {HgiTextureTypeCubemap,      wgpu::TextureDimension::e2D},
+    {HgiTextureType1DArray,      wgpu::TextureDimension::e1D},
+    {HgiTextureType2DArray,      wgpu::TextureDimension::e2D},
+};
+
+static_assert(TfArraySize(_textureTypeTable) == HgiTextureTypeCount,
+              "_textureTypeTable array out of sync with HgiTextureType enum");
+
+struct {
+    HgiSamplerAddressMode hgiAddressMode;
+    wgpu::AddressMode webGPUAM;
+} static const _samplerAddressModeTable[HgiSamplerAddressModeCount] =
+{
+    {HgiSamplerAddressModeClampToEdge,        wgpu::AddressMode::ClampToEdge},
+    {HgiSamplerAddressModeMirrorClampToEdge,  wgpu::AddressMode::ClampToEdge},
+    {HgiSamplerAddressModeRepeat,             wgpu::AddressMode::Repeat},
+    {HgiSamplerAddressModeMirrorRepeat,       wgpu::AddressMode::MirrorRepeat},
+    {HgiSamplerAddressModeClampToBorderColor, wgpu::AddressMode::ClampToEdge}
+};
+
+struct {
+    HgiSamplerFilter hgiSamplerFilter;
+    wgpu::FilterMode webGPUSF;
+} static const _samplerFilterTable[HgiSamplerFilterCount] =
+{
+    {HgiSamplerFilterNearest, wgpu::FilterMode::Nearest},
+    {HgiSamplerFilterLinear,  wgpu::FilterMode::Linear}
+};
+
+struct {
+    HgiMipFilter hgiMipFilter;
+    wgpu::MipmapFilterMode webGPUMF;
+} static const _mipFilterTable[HgiMipFilterCount] =
+{
+    {HgiMipFilterNotMipmapped, wgpu::MipmapFilterMode::Linear}, // TODO: no correct correspondence
+    {HgiMipFilterNearest,      wgpu::MipmapFilterMode::Nearest},
+    {HgiMipFilterLinear,       wgpu::MipmapFilterMode::Linear}
+};
+
+struct {
+    HgiStencilOp hgiStencilOp;
+    wgpu::StencilOperation webGPUStencilOp;
+} static const _stencilOpTable[HgiStencilOpCount] =
+{
+        {HgiStencilOpKeep,    wgpu::StencilOperation::Keep},
+        {HgiStencilOpZero,     wgpu::StencilOperation::Zero},
+        {HgiStencilOpReplace,    wgpu::StencilOperation::Replace},
+        {HgiStencilOpIncrementClamp, wgpu::StencilOperation::IncrementClamp},
+        {HgiStencilOpDecrementClamp,    wgpu::StencilOperation::DecrementClamp},
+        {HgiStencilOpInvert,    wgpu::StencilOperation::Invert},
+        {HgiStencilOpIncrementWrap,    wgpu::StencilOperation::IncrementWrap},
+        {HgiStencilOpDecrementWrap,    wgpu::StencilOperation::DecrementWrap},
+};
+
+static_assert(TfArraySize(_stencilOpTable) == HgiStencilOpCount,
+              "_stencilOpTable array out of sync with HgiStencilOp enum");
+
+struct {
+    HgiPrimitiveType hgiPrimitiveType;
+    wgpu::PrimitiveTopology webGPUPrimitiveTopology;
+} static const _primitiveTopologyTable[HgiPrimitiveTypeCount] =
+{
+        {HgiPrimitiveTypePointList,                 wgpu::PrimitiveTopology::PointList},
+        {HgiPrimitiveTypeLineList,                  wgpu::PrimitiveTopology::LineList},
+        {HgiPrimitiveTypeLineStrip,                 wgpu::PrimitiveTopology::LineStrip},
+        {HgiPrimitiveTypeTriangleList,              wgpu::PrimitiveTopology::TriangleList},
+        // These are unsupported and most likely never will.
+        {HgiPrimitiveTypePatchList,                 wgpu::PrimitiveTopology::TriangleList},
+        {HgiPrimitiveTypeLineListWithAdjacency,     wgpu::PrimitiveTopology::LineList}
+};
+
+static_assert(TfArraySize(_primitiveTopologyTable) == HgiPrimitiveTypeCount,
+              "_primitiveTopologyTable array out of sync with HgiPrimitiveType enum");
+
+struct {
+    HgiComponentSwizzle hgiComponentSwizzle;
+    wgpu::ComponentSwizzle webGPUComponentSwizzle;
+} static const _componentSwizzleTable[HgiComponentSwizzleCount] =
+{
+    {HgiComponentSwizzleZero, wgpu::ComponentSwizzle::Zero},
+    {HgiComponentSwizzleOne,  wgpu::ComponentSwizzle::One},
+    {HgiComponentSwizzleR,    wgpu::ComponentSwizzle::R},
+    {HgiComponentSwizzleG,    wgpu::ComponentSwizzle::G},
+    {HgiComponentSwizzleB,    wgpu::ComponentSwizzle::B},
+    {HgiComponentSwizzleA,    wgpu::ComponentSwizzle::A},
+};
+
+static_assert(TfArraySize(_componentSwizzleTable) == HgiComponentSwizzleCount,
+              "_componentSwizzleTable array out of sync with HgiComponentSwizzle enum");
+
+struct {
+    HgiTextureType hgiTextureType;
+    wgpu::TextureViewDimension webGPUTextureViewDimension;
+} static const _textureViewDimensionTable[HgiTextureTypeCount] =
+{
+    {HgiTextureType1D, wgpu::TextureViewDimension::e1D},
+    {HgiTextureType2D, wgpu::TextureViewDimension::e2D},
+    {HgiTextureType3D, wgpu::TextureViewDimension::e3D},
+    {HgiTextureTypeCubemap, wgpu::TextureViewDimension::Cube},
+    {HgiTextureType1DArray, wgpu::TextureViewDimension::e2DArray},
+    {HgiTextureType2DArray, wgpu::TextureViewDimension::e2DArray},
+};
+
+static_assert(TfArraySize(_textureViewDimensionTable) == HgiTextureTypeCount,
+              "_textureViewDimensionTable array out of sync with HgiTextureType enum");
+
+wgpu::TextureFormat
+HgiWebGPUConversions::GetPixelFormat(HgiFormat inFormat)
+{
+    if (inFormat == HgiFormatInvalid) {
+        return wgpu::TextureFormat::Undefined;
+    }
+
+    if ((inFormat < 0) || (inFormat >= HgiFormatCount))
+    {
+        TF_CODING_ERROR("Unexpected HgiFormat %d", inFormat);
+        return wgpu::TextureFormat::RGBA8Unorm;
+    }
+
+    auto outFormat = _PIXEL_FORMAT_DESC[inFormat];
+    if (outFormat == wgpu::TextureFormat::Undefined)
+    {
+        TF_CODING_ERROR("Unsupported HgiFormat %d", inFormat);
+        return wgpu::TextureFormat::RGBA8Unorm;
+    }
+    return outFormat;
+}
+
+wgpu::VertexFormat
+HgiWebGPUConversions::GetVertexFormat(HgiFormat inFormat)
+{
+    if ((inFormat < 0) || (inFormat >= HgiFormatCount))
+    {
+        TF_CODING_ERROR("Unexpected HgiFormat %d", inFormat);
+        return wgpu::VertexFormat::Float32x4;
+    }
+
+    return _formatTable[inFormat].webGPUVertexFormat;;
+}
+
+wgpu::CullMode
+HgiWebGPUConversions::GetCullMode(HgiCullMode cm)
+{
+    return _CullModeTable[cm].webGPUCullMode;
+}
+
+wgpu::BlendFactor
+HgiWebGPUConversions::GetBlendFactor(HgiBlendFactor bf)
+{
+    return _blendFactorTable[bf].webGPUBlendFactor;
+}
+
+wgpu::BlendOperation
+HgiWebGPUConversions::GetBlendEquation(HgiBlendOp bo)
+{
+    return _blendEquationTable[bo].webGPUBlendOp;
+}
+
+wgpu::FrontFace
+HgiWebGPUConversions::GetWinding(HgiWinding winding)
+{
+    return _windingTable[winding].webGPUWinding;
+}
+
+wgpu::LoadOp
+HgiWebGPUConversions::GetAttachmentLoadOp(HgiAttachmentLoadOp loadOp)
+{
+    return _attachmentLoadOpTable[loadOp].webGPULoadOp;
+}
+
+wgpu::StoreOp
+HgiWebGPUConversions::GetAttachmentStoreOp(HgiAttachmentStoreOp storeOp)
+{
+    return _attachmentStoreOpTable[storeOp].webGPUStoreOp;
+}
+
+wgpu::CompareFunction
+HgiWebGPUConversions::GetCompareFunction(HgiCompareFunction cf)
+{
+    return _compareFnTable[cf].webGPUCF;
+}
+
+wgpu::TextureDimension
+HgiWebGPUConversions::GetTextureType(HgiTextureType tt)
+{
+    return _textureTypeTable[tt].webGPUTT;
+}
+
+wgpu::AddressMode
+HgiWebGPUConversions::GetSamplerAddressMode(HgiSamplerAddressMode a)
+{
+    return _samplerAddressModeTable[a].webGPUAM;
+}
+
+wgpu::FilterMode
+HgiWebGPUConversions::GetMinMagFilter(HgiSamplerFilter mf)
+{
+    return _samplerFilterTable[mf].webGPUSF;
+}
+
+wgpu::MipmapFilterMode
+HgiWebGPUConversions::GetMipFilter(HgiMipFilter mf)
+{
+    return _mipFilterTable[mf].webGPUMF;
+}
+
+wgpu::BufferUsage
+HgiWebGPUConversions::GetBufferUsage(HgiBufferUsage usage)
+{
+    wgpu::BufferUsage wgpuFlags = wgpu::BufferUsage::None;
+
+    for (const auto& f : _BufferUsageTable) {
+        if (usage & f.hgiBufferUsage) {
+            wgpuFlags |= f.webGPUBufferUsage;
+        }
+    }
+
+    if (wgpuFlags==wgpu::BufferUsage::None) {
+        TF_CODING_ERROR("Missing buffer usage table entry");
+    }
+    return wgpuFlags;
+}
+
+wgpu::BufferBindingType
+HgiWebGPUConversions::GetBindResourceType(HgiBindResourceType type)
+{
+    wgpu::BufferBindingType bindingType = _bufferBindResourceTypeTable[type].webGPUBindingType;;
+    if (bindingType==wgpu::BufferBindingType::Undefined) {
+        TF_CODING_ERROR("Missing binding type usage table entry");
+    }
+    return bindingType;
+}
+
+wgpu::BufferBindingType
+HgiWebGPUConversions::GetBufferBindingType(HgiBindingType type, bool isWritable)
+{
+    switch (type) {
+        case HgiBindingTypePointer:
+        case HgiBindingTypeValue:
+        case HgiBindingTypeArray:
+            if (isWritable) {
+                return wgpu::BufferBindingType::Storage;
+            } else {
+                return wgpu::BufferBindingType::ReadOnlyStorage;
+            }
+            break;
+        case HgiBindingTypeUniformArray:
+        case HgiBindingTypeUniformValue:
+            return wgpu::BufferBindingType::Uniform;
+        default:
+            TF_CODING_ERROR("Unsupported HgiBindingType");
+            return wgpu::BufferBindingType::Undefined;
+    }
+}
+
+wgpu::ShaderStage
+HgiWebGPUConversions::GetShaderStages(HgiShaderStage stage)
+{
+    wgpu::ShaderStage wgpuFlags = wgpu::ShaderStage::None;
+
+    for (const auto& f : _shaderStageTable) {
+        if (stage & f.hgiShaderStage) {
+            wgpuFlags |= f.webGPUShaderStage;
+        }
+    }
+
+    if (wgpuFlags == wgpu::ShaderStage::None) {
+        TF_CODING_ERROR("Missing shader stage table entry");
+    }
+    return wgpuFlags;
+}
+
+wgpu::TextureFormat
+HgiWebGPUConversions::GetDepthOrStencilTextureFormat(HgiTextureUsage usage, HgiFormat format)
+{
+    if (usage & HgiTextureUsageBitsDepthTarget && usage & HgiTextureUsageBitsStencilTarget) {
+        if (format == HgiFormatFloat32UInt8) {
+            return wgpu::TextureFormat::Depth32FloatStencil8;
+        } else if (format == HgiFormatFloat32) {
+            TF_WARN("depth24plus-stencil8 has limited copying capabilities");
+            return wgpu::TextureFormat::Depth24PlusStencil8;
+        }
+    } else if (usage & HgiTextureUsageBitsDepthTarget) {
+        if (format == HgiFormatUInt16) {
+            return wgpu::TextureFormat::Depth16Unorm;
+        } else if (format == HgiFormatFloat32) {
+            return wgpu::TextureFormat::Depth32Float;
+        } else if (format == HgiFormatFloat32UInt8) {
+            TF_WARN("depth24plus has limited copying capabilities");
+            return wgpu::TextureFormat::Depth24Plus;
+        }
+    } else if (usage & HgiTextureUsageBitsStencilTarget) {
+        if (format == HgiFormatUNorm8) {
+            return wgpu::TextureFormat::Stencil8;
+        }
+    }
+    TF_CODING_ERROR("Unsupported depth-or-stencil format");
+    return wgpu::TextureFormat::Undefined;
+}
+
+wgpu::StencilOperation
+HgiWebGPUConversions::GetStencilOp(HgiStencilOp op)
+{
+    return _stencilOpTable[op].webGPUStencilOp;
+}
+
+wgpu::PrimitiveTopology
+HgiWebGPUConversions::GetPrimitiveTopology(HgiPrimitiveType const &type)
+{
+    return _primitiveTopologyTable[type].webGPUPrimitiveTopology;
+}
+
+wgpu::TextureViewDimension
+HgiWebGPUConversions::GetTextureViewDimension(HgiTextureType type)
+{
+    return _textureViewDimensionTable[type].webGPUTextureViewDimension;
+}
+
+wgpu::TextureViewDimension
+HgiWebGPUConversions::GetTextureViewDimension(
+    uint32_t dimensions, HgiShaderTextureType type)
+{
+    if (dimensions < 1 || dimensions > 3) {
+        TF_CODING_ERROR(
+            "Invalid TextureViewDimension " + std::to_string(dimensions));
+        return wgpu::TextureViewDimension::Undefined;
+    }
+
+    if (type == HgiShaderTextureTypeCubemapTexture) {
+        return wgpu::TextureViewDimension::Cube;
+    }
+
+    switch (dimensions) {
+    case 1:
+        return type == HgiShaderTextureTypeArrayTexture ?
+            wgpu::TextureViewDimension::e2DArray :
+            wgpu::TextureViewDimension::e1D;
+    case 2:
+        return type == HgiShaderTextureTypeArrayTexture ?
+            wgpu::TextureViewDimension::e2DArray :
+            wgpu::TextureViewDimension::e2D;
+    case 3:
+        if (type != HgiShaderTextureTypeArrayTexture) {
+            return wgpu::TextureViewDimension::e3D;
+        }
+        [[fallthrough]];
+    default:
+        return wgpu::TextureViewDimension::Undefined;
+    }
+}
+
+wgpu::ComponentSwizzle
+HgiWebGPUConversions::GetComponentSwizzle(HgiComponentSwizzle cs)
+{
+    return _componentSwizzleTable[cs].webGPUComponentSwizzle;
+}
+
+wgpu::TextureSampleType
+HgiWebGPUConversions::GetTextureSampleType(HgiFormat const &type)
+{
+    wgpu::TextureSampleType textureSampleType = _textureSampleTypeTable[type].webGPUTextureSampleType;
+    if (textureSampleType == wgpu::TextureSampleType::Undefined) {
+        TF_CODING_ERROR("Missing texture sample type entry");
+    }
+    return textureSampleType;
+}
+
+wgpu::ColorWriteMask
+HgiWebGPUConversions::GetColorWriteMask(HgiColorMask const &mask)
+{
+    wgpu::ColorWriteMask wgpuMask;
+
+    wgpuMask = ((mask & HgiColorMaskRed) ? wgpu::ColorWriteMask::Red : wgpu::ColorWriteMask::None)
+              | ((mask & HgiColorMaskGreen) ? wgpu::ColorWriteMask::Green : wgpu::ColorWriteMask::None)
+              | ((mask & HgiColorMaskBlue) ? wgpu::ColorWriteMask::Blue : wgpu::ColorWriteMask::None)
+              | ((mask & HgiColorMaskAlpha) ? wgpu::ColorWriteMask::Alpha : wgpu::ColorWriteMask::None);
+
+    return wgpuMask;
+}
+
+// The GLSL image layout format qualifier for each HgiFormat. hgiWebGPU
+// generates GLSL (later compiled to SPIR-V then WGSL), so it needs the same
+// qualifiers hgiGL uses; the table is duplicated here to keep hgiWebGPU
+// independent of hgiGL.
+static const std::string
+_imageLayoutFormatTable[HgiFormatCount][2] =
+{
+    {"HgiFormatUNorm8",            "r8"},
+    {"HgiFormatUNorm8Vec2",        "rg8"},
+    {"HgiFormatUNorm8Vec4",        "rgba8"},
+    {"HgiFormatSNorm8",            "r8_snorm"},
+    {"HgiFormatSNorm8Vec2",        "rg8_snorm"},
+    {"HgiFormatSNorm8Vec4",        "rgba8_snorm"},
+    {"HgiFormatFloat16",           "r16f"},
+    {"HgiFormatFloat16Vec2",       "rg16f"},
+    {"HgiFormatFloat16Vec3",       ""},
+    {"HgiFormatFloat16Vec4",       "rgba16f"},
+    {"HgiFormatFloat32",           "r32f"},
+    {"HgiFormatFloat32Vec2",       "rg32f"},
+    {"HgiFormatFloat32Vec3",       ""},
+    {"HgiFormatFloat32Vec4",       "rgba32f" },
+    {"HgiFormatInt16",             "r16i"},
+    {"HgiFormatInt16Vec2",         "rg16i"},
+    {"HgiFormatInt16Vec3",         ""},
+    {"HgiFormatInt16Vec4",         "rgba16i"},
+    {"HgiFormatUInt16",            "r16ui"},
+    {"HgiFormatUInt16Vec2",        "rg16ui"},
+    {"HgiFormatUInt16Vec3",        ""},
+    {"HgiFormatUInt16Vec4",        "rgba16ui"},
+    {"HgiFormatInt32",             "r32i"},
+    {"HgiFormatInt32Vec2",         "rg32i"},
+    {"HgiFormatInt32Vec3",         ""},
+    {"HgiFormatInt32Vec4",         "rgba32i"},
+    {"HgiFormatUNorm8Vec4srgb",    ""},
+    {"HgiFormatBC6FloatVec3",      ""},
+    {"HgiFormatBC6UFloatVec3",     ""},
+    {"HgiFormatBC7UNorm8Vec4",     ""},
+    {"HgiFormatBC7UNorm8Vec4srgb", ""},
+    {"HgiFormatBC1UNorm8Vec4",     ""},
+    {"HgiFormatBC3UNorm8Vec4",     ""},
+    {"HgiFormatFloat32UInt8",      ""},
+};
+
+std::string
+HgiWebGPUConversions::GetImageLayoutFormatQualifier(HgiFormat inFormat)
+{
+    const std::string layoutQualifier = _imageLayoutFormatTable[inFormat][1];
+    if (layoutQualifier.empty()) {
+        TF_WARN("Given HgiFormat is not a supported image unit format, "
+                "defaulting to rgba16f");
+        return _imageLayoutFormatTable[9][1];
+    }
+    return layoutQualifier;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

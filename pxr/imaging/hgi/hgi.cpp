@@ -23,6 +23,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HGI_ENABLE_VULKAN, 0,
                       "Enable Vulkan as platform default Hgi backend (WIP)");
+TF_DEFINE_ENV_SETTING(HGI_ENABLE_WEBGPU, 0,
+                      "Enable WebGPU as platform default Hgi backend (WIP)");
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -193,8 +195,10 @@ _MakeNewPlatformDefaultHgi()
             "HgiMetal";
         #elif defined(ARCH_OS_WINDOWS)
             "HgiGL";
+        #elif defined(ARCH_OS_WASM_VM)
+            "HgiWebGPU";
         #else
-            ""; 
+            "";
             #error Unknown Platform
             return nullptr;
         #endif
@@ -205,6 +209,15 @@ _MakeNewPlatformDefaultHgi()
         #else
             TF_CODING_ERROR(
                 "Build requires PXR_VULKAN_SUPPORT_ENABLED=true to use Vulkan");
+        #endif
+    }
+
+    if (TfGetEnvSetting(HGI_ENABLE_WEBGPU)) {
+        #if defined(PXR_WEBGPU_SUPPORT_ENABLED)
+                hgiType = "HgiWebGPU";
+        #else
+                TF_CODING_ERROR(
+                        "Build requires PXR_WEBGPU_SUPPORT_ENABLED=true to use WebGPU");
         #endif
     }
 
