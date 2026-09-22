@@ -63,11 +63,11 @@ following file types:
  +-------------+----------------------------------------+
  | Kind        | Allowed File Types                     |
  +=============+========================================+
- | USD         | **usda**, **usdc**, **usd**            |
+ | USD         | **usda**, **usdc**, **usd**, **usdz**  |
  +-------------+----------------------------------------+
  | Image       | **png**, **jpeg**, **exr**, **avif**   |
  +-------------+----------------------------------------+
- | Audio       | **M4A**, **MP3**, **WAV**              |
+ | Audio       | **m4a**, **mp3**, **wav**              |
  +-------------+----------------------------------------+
 
 The rest of the section goes into more detail about the specification.
@@ -169,7 +169,7 @@ Clients wishing to deliver "streamable content" `may wish to consider other layo
     to SdfLayer::FindOrOpen("package.usdz"), and therefore also the root layer
     when the package is placed on a UsdStage, or when referenced or sublayered
     as a whole.  Given that, due to alignment considerations, we will need to
-    provide packaging utilities more sophisiticated than "zip", we can always
+    provide packaging utilities more sophisticated than "zip", we can always
     allow you to specify what the Default Layer should be, as a command option.
     However, to make the packaging process as simple as possible - particularly
     focusing on the workflow for "editing" a package, in which we must unpack a
@@ -207,16 +207,14 @@ USD runtime via mmap, pointer to memory, or threadsafe access to a FILE * (i.e.
 solely pread-like access). This excludes, for example, Alembic files,
 currently. Allowable file types are currently: 
 
-    * **usda, usdc, usd** files (Apple's current usdz implementation allows 
-      only a single usdc file, but this restriction will be lifted in future 
-      OS updates)  
+    * **usda, usdc, usd, usdz** files
 
     * **png**, **jpeg** (any of the multiple common extensions for 
       jpeg), **OpenEXR** and **AV1 Image (AVIF)** files for images/textures. 
       See :ref:`Working With Image File Formats<image_file_formats>` for more 
       details on supported image file formats.
 
-    * **M4A, MP3, WAV** files for embedded audio (given in order of preferred 
+    * **m4a, mp3, wav** files for embedded audio (given in order of preferred 
       format)
 
 .. dropdown:: Rationale
