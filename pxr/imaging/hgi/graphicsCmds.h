@@ -193,6 +193,10 @@ public:
     HGI_API
     virtual void InsertMemoryBarrier(HgiMemoryBarrier barrier) = 0;
 
+    /// Enable or disable parallel encoder
+    HGI_API
+    virtual void EnableParallelEncoder(bool enable);
+
 protected:
     HGI_API
     HgiGraphicsCmds();
