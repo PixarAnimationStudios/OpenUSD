@@ -1,0 +1,22 @@
+#usda 1.0
+(
+    defaultPrim = "Instancer"
+    upAxis = "Z"
+)
+
+def PointInstancer "Instancer"
+{
+    rel prototypes = [</Instancer/Prototypes/cube>]
+    int[] protoIndices = [0, 0, 0, 0]
+    point3f[] positions = [(2, 2, 2), (2, -2, -2), (-2, 2, 2), (-2, -2, -2)]
+
+    over "Prototypes"
+    {
+        def "cube" (
+            prepend references = @./CubeModel.usda@
+        )
+        {
+        }
+    }
+}
+

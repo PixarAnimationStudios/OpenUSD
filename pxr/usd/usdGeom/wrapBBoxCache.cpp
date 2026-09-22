@@ -107,6 +107,10 @@ void wrapUsdGeomBBoxCache()
         init<UsdTimeCode, TfTokenVector, optional<bool, bool> >(
             (arg("time"), arg("includedPurposes"),
              arg("useExtentsHint"), arg("ignoreVisibility"))))
+        .def(init<UsdTimeCode, TfTokenVector, const Usd_PrimFlagsPredicate &,
+                  optional<bool, bool>>(
+            (arg("time"), arg("includedPurposes"), arg("predicate"),
+             arg("useExtentsHint"), arg("ignoreVisibility"))))
         .def("ComputeWorldBound", &BBoxCache::ComputeWorldBound, arg("prim"))
         .def("ComputeWorldBoundWithOverrides",
              &BBoxCache::ComputeWorldBoundWithOverrides,

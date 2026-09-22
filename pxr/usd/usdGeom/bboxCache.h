@@ -12,6 +12,7 @@
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usdGeom/pointInstancer.h"
 #include "pxr/usd/usd/attributeQuery.h"
+#include "pxr/usd/usd/primFlags.h"
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
@@ -89,6 +90,15 @@ public:
     ///
     USDGEOM_API
     UsdGeomBBoxCache(UsdTimeCode time, TfTokenVector includedPurposes,
+                     bool useExtentsHint=false, bool ignoreVisibility=false);
+
+    /// Overload to pass in a custom prim traversal predicate.
+    ///
+    /// This prim predicate will be used instead of the default when traversing
+    /// prims to compute extents.
+    USDGEOM_API
+    UsdGeomBBoxCache(UsdTimeCode time, TfTokenVector includedPurposes,
+                     const Usd_PrimFlagsPredicate &predicate,
                      bool useExtentsHint=false, bool ignoreVisibility=false);
 
     /// Copy constructor.
@@ -561,6 +571,7 @@ private:
     TfTokenVector _includedPurposes;
     UsdGeomXformCache _ctmCache;
     _PrimBBoxHashMap _bboxCache;
+    Usd_PrimFlagsPredicate _primPredicate;
     bool _useExtentsHint;
     bool _ignoreVisibility;
 };
