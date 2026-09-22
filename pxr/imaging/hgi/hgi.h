@@ -16,6 +16,7 @@
 #include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/computeCmds.h"
 #include "pxr/imaging/hgi/computeCmdsDesc.h"
+#include "pxr/imaging/hgi/externalBufferArena.h"
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/graphicsPipeline.h"
@@ -28,7 +29,11 @@
 #include "pxr/imaging/hgi/version.h"
 
 #include <atomic>
+#include <map>
 #include <memory>
+#include <mutex>
+#include <typeindex>
+#include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,7 +41,6 @@ class HgiCapabilities;
 class HgiIndirectCommandEncoder;
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
-
 
 /// \class Hgi
 ///
@@ -333,7 +337,128 @@ public:
     HGI_API
     virtual void GarbageCollect() = 0;
 
+    /// Get, creating on first use, the external buffer arena of type \p T --
+    /// through which an application shares GPU buffers it allocated with this
+    /// Hgi. See HgiExternalBufferArena.
+    ///
+    /// \p T is a backend arena type, e.g. HgiGLExternalBufferArena for buffers
+    /// an application allocated in OpenGL. Returns null when this Hgi cannot
+    /// interop with \p T -- asking a Vulkan Hgi to consume OpenGL buffers, for
+    /// instance, which is not merely unimplemented but impossible, since GL
+    /// cannot export its allocations. Callers must handle null by falling back
+    /// to their own copy; that null is also where an application and Hgi settle
+    /// on an interop format, once, instead of rediscovering per frame whether
+    /// sharing will work.
+    ///
+    /// There is at most ONE arena per type per Hgi, so all of an application's
+    /// sharing of a given flavour flows through a single arena and a single
+    /// semaphore pair. That is a constraint on the application, not merely an
+    /// implementation detail: see HgiExternalBufferArena for why two
+    /// independent producers must not share one arena. Any \p args are
+    /// forwarded to T's constructor after the Hgi.
+    ///
+    /// Thread safety: This call is thread safe.
+    template <typename T, typename... Args>
+    std::shared_ptr<T> GetExternalBufferArena(Args&&... args)
+    {
+        const std::type_index key(typeid(T));
+
+        std::lock_guard<std::mutex> lock(_externalBufferArenasMutex);
+        const auto it = _externalBufferArenas.find(key);
+        if (it != _externalBufferArenas.end()) {
+            return std::static_pointer_cast<T>(it->second);
+        }
+        // Capability gate. Ask before allocating anything, so an unsupported
+        // combination costs a query rather than an allocation to unwind.
+        if (!T::IsSupportedBy(this)) {
+            return nullptr;
+        }
+        std::shared_ptr<T> arena = std::make_shared<T>(
+            this, std::forward<Args>(args)...);
+        _externalBufferArenas.emplace(key, arena);
+        // Released so a consumer that sees this flag also sees the arena.
+        _hasExternalBufferArenas.store(true, std::memory_order_release);
+        return arena;
+    }
+
+    /// True once any external buffer arena has been created through
+    /// GetExternalBufferArena, and until this Hgi is torn down.
+    ///
+    /// False is a cheap, conservative "no application is sharing GPU buffers
+    /// with this Hgi". A consumer uses it to skip the per-prim scene-index
+    /// lookups that find shared buffers -- work that otherwise runs for every
+    /// prim of every frame in every application, including the overwhelming
+    /// majority that never share anything.
+    ///
+    /// It is sound to gate on because it only ever goes false->true while an
+    /// Hgi is in use: an arena must exist before a producer can publish a
+    /// buffer belonging to it, so "false" genuinely means no data source can
+    /// be carrying one. Arenas are never removed once created -- they live
+    /// until _DestroyExternalBufferArenas at teardown.
+    ///
+    /// Thread safety: This call is thread safe. Deliberately lock free: it is
+    /// read from Sync, which is parallel and hot.
+    bool HasExternalBufferArenas() const {
+        return _hasExternalBufferArenas.load(std::memory_order_acquire);
+    }
+
 protected:
+    /// Encode, on every external buffer arena, the wait that orders the
+    /// application's writes ahead of this Hgi's reads of them. Backends call
+    /// this from StartFrame(), before anything in the frame reads a shared
+    /// buffer.
+    ///
+    /// Does nothing for an arena with no semaphores, or one whose producer has
+    /// published nothing since the last wait -- waiting on a binary semaphore
+    /// nobody is going to signal would hang the frame.
+    ///
+    /// A producer that publishes AFTER this runs does not get a wait this
+    /// frame, and therefore gets no hgi-done signal at the end of it either;
+    /// its next wait for that signal slips to the following frame. Producers
+    /// must publish before StartFrame.
+    HGI_API
+    void _EncodeExternalBufferAppDoneWaits();
+
+    /// Encode, on every external buffer arena, the signal that tells the
+    /// application this Hgi has finished reading its buffers. Backends call
+    /// this from EndFrame(), after the frame's drawing has been submitted and
+    /// before they reclaim anything.
+    ///
+    /// It cannot be moved earlier. A directly bound buffer's reads ARE the
+    /// draws, so a signal encoded at commit time claims the reads are finished
+    /// before they have been recorded, and the application overwrites the
+    /// buffer underneath a draw that has not run yet.
+    ///
+    /// Flushes through _FlushSemaphoreSignals(), but only when something was
+    /// actually signalled: an application sharing nothing should not pay a
+    /// queue submission per frame.
+    HGI_API
+    void _EncodeExternalBufferHgiDoneSignals();
+
+    /// Get any semaphore signals the backend has queued but not yet submitted
+    /// onto the device queue. Called at the end of
+    /// _EncodeExternalBufferHgiDoneSignals(); the default does nothing.
+    ///
+    /// OpenGL needs nothing: glSignalSemaphoreEXT is a command stream
+    /// operation at the call site and implies a flush. Vulkan attaches a
+    /// signal to its NEXT queue submission, and at a frame boundary there is
+    /// no next submission coming, so it must force one.
+    HGI_API
+    virtual void _FlushSemaphoreSignals();
+
+    /// Garbage collect every external buffer arena created through
+    /// GetExternalBufferArena. Backends that support external buffers call this
+    /// from their GarbageCollect(); see HgiExternalBufferArena::GarbageCollect
+    /// for why reclamation has to be deferred rather than immediate.
+    HGI_API
+    void _GarbageCollectExternalBufferArenas();
+
+    /// Destroy every external buffer arena. Backends call this while their
+    /// device -- and, for OpenGL, the context that owns the interop objects --
+    /// is still current, since an arena's teardown releases GPU resources.
+    HGI_API
+    void _DestroyExternalBufferArenas();
+
     // Returns a unique id for handle creation.
     // Thread safety: Thread-safe atomic increment.
     HGI_API
@@ -364,7 +489,22 @@ private:
     Hgi & operator=(const Hgi&) = delete;
     Hgi(const Hgi&) = delete;
 
+    // Arenas mint handles for the buffers they wrap, and those ids have to
+    // come from the same counter as Hgi's own: HgiHandle equality is id-only,
+    // so a second counter would hand out ids that make two distinct buffers
+    // compare equal in a renderer's binding and aggregation caches.
+    friend class HgiExternalBufferArena;
+
     std::atomic<uint64_t> _uniqueIdCounter;
+
+    // Arenas are identified by their type alone; see GetExternalBufferArena.
+    std::map<std::type_index, HgiExternalBufferArenaSharedPtr>
+        _externalBufferArenas;
+    std::mutex _externalBufferArenasMutex;
+
+    // Mirrors "_externalBufferArenas is non-empty" so that the common answer
+    // costs an atomic load rather than a mutex; see HasExternalBufferArenas.
+    std::atomic<bool> _hasExternalBufferArenas{false};
 };
 
 

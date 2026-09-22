@@ -75,6 +75,85 @@
     ),
 
     #--------------------------------------------------------------------------
+    # extGpuBuffer
+    dict(
+        SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/externalBuffer'],
+        SCHEMA_NAME = 'ExtGpuBuffer',
+        SCHEMA_TOKEN = 'extGpuBuffer',
+        DOC = '''
+            Describes a GPU buffer an application allocated and is sharing on a
+            primvar, so a renderer can read it directly instead of taking the
+            CPU staging round trip.
+
+            The buffer itself is one value: "externalResource", a weak
+            reference to an HgiExternalBuffer. Everything about *how* the
+            sharing works -- which native handle, which device, which OS memory
+            handle, which synchronization objects -- belongs to that object and
+            to the HgiExternalBufferArena that created it, and appears nowhere
+            here. So this container describes only layout: where the stream
+            sits in the buffer and what its elements are.
+
+            Lifetime. The reference is weak deliberately: scene indices cache,
+            flatten and copy the containers they pass along, and a strong
+            reference here would let a forgotten cache entry pin GPU memory for
+            the life of the renderer. What keeps a buffer alive is its arena,
+            plus whatever strong reference a renderer takes while it is
+            actually consuming. An expired reference means the buffer is gone
+            and the renderer should fall back to the CPU primvar, which is also
+            the correct outcome when a producer withdraws a buffer.
+
+            Synchronization is per arena, not per buffer, and is likewise not
+            described here. See HgiExternalBufferArena: the application signals
+            when its writes are done, the renderer waits before reading and
+            signals when it is finished, and the two agree on the semaphore
+            format once when the arena is created rather than per frame.
+            ''',
+        MEMBERS = [
+            ('externalResource',  'HdExternalBufferDataSource',
+             dict(DOC = '''
+                A weak reference to the HgiExternalBuffer being shared. The
+                renderer checks that it comes from its own Hgi -- several
+                renderers can consume one scene index, and a buffer from
+                another one names an object on a different device -- and
+                otherwise copies instead of binding.
+                ''')),
+            ('numElements',       T_SIZET,
+             dict(DOC = '''
+                Number of tuples (vertices / elements) in this stream.
+                ''')),
+            ('elementType',       T_TUPLE,
+             dict(DOC = '''
+                Element type + tuple count (e.g. Float/Vec3), stored as an
+                HdTupleType.
+                ''')),
+            ('byteOffset',        T_SIZET,
+             dict(DOC = '''
+                Byte offset to the first element within the buffer. Non-zero
+                means this stream is a sub-allocation of a larger (pooled)
+                buffer, which is the usual case for a producer that packs
+                several primvars into one allocation.
+                ''')),
+            ('byteStride',        T_SIZET,
+             dict(DOC = '''
+                Bytes between consecutive elements. 0 or == the element size
+                means tightly packed and directly aliasable; anything else is
+                interleaved and needs a strided copy.
+                ''')),
+            ('allowDirectBind',   T_BOOL,
+             dict(DOC = '''
+                Whether the renderer MAY bind the buffer directly, zero-copy.
+                Permission, not instruction: a renderer is free to copy anyway
+                -- because the layout does not suit direct binding, because the
+                buffer belongs to another device, or because aggregating with
+                other primvars is faster -- and a producer must not assume
+                which it chose.
+                ''')),
+        ],
+
+        ADD_DEFAULT_LOCATOR = True,
+    ),
+
+    #--------------------------------------------------------------------------
     # mesh
     dict(
         SCHEMA_NAME = 'Mesh',

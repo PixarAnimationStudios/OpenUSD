@@ -69,6 +69,24 @@ public:
     /// Returns the raw pointer to the underlying data.
     virtual void const* GetData() const = 0;
 
+    /// Whether this source's payload already lives in GPU memory.
+    ///
+    /// GetData() returns null for such a source: there is no CPU copy to
+    /// upload. A consumer must instead move it with a GPU-to-GPU copy, or bind
+    /// it where it already is. Generic code holding only an
+    /// HdBufferSourceSharedPtr asks this before deciding how to consume it,
+    /// which is the point -- the alternative is sniffing the concrete type
+    /// with RTTI, and which source types are GPU backed is a renderer's
+    /// business rather than this base class's.
+    ///
+    /// Reaching the GPU resource itself needs the renderer's own types -- an
+    /// HgiBufferHandle is not something hd can name -- so a renderer whose
+    /// source returns true here exposes that accessor on the concrete type.
+    ///
+    /// Default false.
+    HD_API
+    virtual bool IsGpuBacked() const;
+
     /// Returns the data type and count (array size) for this buffer source.
     virtual HdTupleType GetTupleType() const = 0;
 

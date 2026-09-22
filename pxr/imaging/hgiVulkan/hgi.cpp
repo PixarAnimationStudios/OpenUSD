@@ -8,6 +8,7 @@
 #include "pxr/imaging/hgiVulkan/blitCmds.h"
 #include "pxr/imaging/hgiVulkan/buffer.h"
 #include "pxr/imaging/hgiVulkan/capabilities.h"
+#include "pxr/imaging/hgiVulkan/commandBuffer.h"
 #include "pxr/imaging/hgiVulkan/commandQueue.h"
 #include "pxr/imaging/hgiVulkan/computeCmds.h"
 #include "pxr/imaging/hgiVulkan/computePipeline.h"
@@ -51,6 +52,10 @@ HgiVulkan::HgiVulkan()
 
 HgiVulkan::~HgiVulkan()
 {
+    // Before the device idles and goes: an arena owns Vulkan objects, and its
+    // teardown wants a live device to destroy them through.
+    _DestroyExternalBufferArenas();
+
     if (HgiVulkanCommandQueue* queue = _device->GetCommandQueue()) {
         // Wait for command buffers to complete, then reset command buffers for
         // each device's queue.
@@ -300,6 +305,11 @@ HgiVulkan::StartFrame()
 
     if (_frameDepth++ == 0) {
         HgiVulkanBeginQueueLabel(GetPrimaryDevice(), "Full Hydra Frame");
+
+        // Order the application's writes ahead of everything this frame is
+        // about to do that reads a shared buffer. The wait rides the next
+        // submission on this queue, which is the frame's own work.
+        _EncodeExternalBufferAppDoneWaits();
     }
 }
 
@@ -310,6 +320,14 @@ HgiVulkan::EndFrame()
     // Please read important usage limitations for Hgi::EndFrame
 
     if (--_frameDepth == 0) {
+        // Tell the application this frame has finished reading its shared
+        // buffers. Before _EndFrameSync(), for two reasons: that call resets
+        // consumed command buffers, and the flush inside this sweep acquires
+        // one and submits it, which belongs to the frame now ending; and
+        // _EndFrameSync() also reclaims external buffers, which must not
+        // happen before the signal that releases them.
+        _EncodeExternalBufferHgiDoneSignals();
+
         _EndFrameSync();
         HgiVulkanEndQueueLabel(GetPrimaryDevice());
     }
@@ -324,8 +342,26 @@ HgiVulkan::GarbageCollect()
     }
     HgiVulkanDevice* device = GetPrimaryDevice();
 
+    // Advance what "retired" means before asking anything whether it has.
+    // Whether an object may be deleted is decided by which command buffers are
+    // still in flight, and those bits are only cleared here -- so without this
+    // GarbageCollect() cannot free a single thing, its own trashed objects
+    // included. That matters because EndFrame is optional: a client driving
+    // Hydra with its own task list may never call it (Storm's own unit test
+    // driver does not), and would then accumulate every deferred deletion for
+    // the lifetime of the device.
+    //
+    // Safe here: this is main-thread-only, which GarbageCollect already
+    // requires, and the default is non-blocking -- it reclaims only command
+    // buffers the GPU has already finished with.
+    device->GetCommandQueue()->ResetConsumedCommandBuffers();
+
     // Perform garbage collection for each device.
     _garbageCollector->PerformGarbageCollection(device);
+
+    // External buffers nobody references any more, once the GPU has retired
+    // the work that named them.
+    _GarbageCollectExternalBufferArenas();
 }
 
 /* Multi threaded */
@@ -383,6 +419,52 @@ HgiVulkan::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
 
 /* Single threaded */
 void
+HgiVulkan::_FlushSemaphoreSignals()
+{
+    HgiVulkanDevice* device = GetPrimaryDevice();
+    HgiVulkanCommandQueue* queue = device->GetCommandQueue();
+
+    // Record a full barrier ahead of the signal.
+    //
+    // Without it this is a submission carrying a semaphore signal and no
+    // commands, and nothing then orders that signal after the draws submitted
+    // earlier: submission order is not itself an execution dependency in
+    // Vulkan, so the signal could fire while the draws are still reading the
+    // shared buffer -- the very hazard the signal exists to prevent, moved
+    // rather than fixed.
+    //
+    // A pipeline barrier is what supplies the dependency. Its first
+    // synchronization scope is every command submitted earlier in submission
+    // order on this queue, INCLUDING earlier submissions, so the barrier
+    // happens-after the draws; the signal then happens-after the barrier
+    // because it belongs to this submission. ALL_COMMANDS on both sides
+    // because the reads we are ordering against are whatever the frame drew.
+    //
+    // It passed on one NVIDIA driver without this, which is not evidence it
+    // was correct -- only that that driver happened to schedule the way we
+    // hoped.
+    HgiVulkanCommandBuffer* cb = queue->AcquireResourceCommandBuffer();
+    VkMemoryBarrier barrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER};
+    barrier.srcAccessMask =
+        VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+    barrier.dstAccessMask =
+        VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+    vkCmdPipelineBarrier(
+        cb->GetVulkanCommandBuffer(),
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        0,
+        1, &barrier,
+        0, nullptr,
+        0, nullptr);
+
+    // Flush() is what actually calls vkQueueSubmit. It appends the resource
+    // command buffer we just recorded into, and consumes the pending signal
+    // list, so the barrier and the signal ride the same submission.
+    queue->Flush(HgiSubmitWaitTypeNoWait);
+}
+
+void
 HgiVulkan::_EndFrameSync()
 {
     // The garbage collector and command buffer reset must happen on the
@@ -400,6 +482,13 @@ HgiVulkan::_EndFrameSync()
 
     // Perform garbage collection for each device.
     _garbageCollector->PerformGarbageCollection(device);
+
+    // External buffers retire on the same predicate as every other Vulkan
+    // resource -- which command buffers are still in flight -- so they have to
+    // be swept where those bits have just been cleared. Sweeping only from
+    // GarbageCollect() would mean nothing reclaims them in normal operation:
+    // Storm calls that just once, from its resource registry's destructor.
+    _GarbageCollectExternalBufferArenas();
 
     if (TfDebug::IsEnabled(HGIVULKAN_DUMP_VMA_STATS)) {
         TfDebug::Disable(HGIVULKAN_DUMP_VMA_STATS);

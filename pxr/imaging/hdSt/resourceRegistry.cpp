@@ -9,6 +9,7 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdSt/copyComputation.h"
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
+#include "pxr/imaging/hdSt/extBufferDesc.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
@@ -25,8 +26,11 @@
 #include "pxr/imaging/hgi/capabilities.h"
 #include "pxr/imaging/hgi/computeCmdsDesc.h"
 
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/hash.h"
+
+#include <algorithm>
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include <MaterialXGenShader/Shader.h>
@@ -1091,6 +1095,22 @@ HdStResourceRegistry::_Commit()
     for (_PendingComputationList& compVec : _pendingComputations) {
         compVec.clear();
     }
+
+    // Neither half of the external-buffer bracket is encoded here.
+    //
+    // The hgi-done signal used to be, which is exact for a buffer we COPIED
+    // out of -- the blit was the only read and it was issued above -- but
+    // wrong for a directly bound one, whose reads are the draws, and those
+    // have not been submitted yet. A producer that waited on it, exactly
+    // where the API documents the wait belongs, was told "finished reading"
+    // before a single draw existed, and overwrote bytes the frame was about
+    // to read. testHdStExtGpuBuffer_VK_GL rendered frame 2 data into frame 1,
+    // 5 runs out of 5.
+    //
+    // The app-done wait used to be encoded at the top of this function, which
+    // was correct but redundant. Both now come from Hgi, which sweeps every
+    // arena it owns from StartFrame() and EndFrame() -- the only points that
+    // bracket an application frame rather than one commit of many.
 
     HD_PERF_COUNTER_INCR(HdPerfTokens->committed);
 }

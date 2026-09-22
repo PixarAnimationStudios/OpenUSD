@@ -14,6 +14,8 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/trace/trace.h"
 
+#include <vector>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define NOT_EMPTY_NAME(s) ((s).empty() ? "UNNAMED" : (s).c_str())
@@ -376,6 +378,100 @@ uint64_t
 Hgi::GetUniqueId()
 {
     return _uniqueIdCounter.fetch_add(1);
+}
+
+void
+Hgi::_EncodeExternalBufferAppDoneWaits()
+{
+    // Same collect-then-act shape as the sweeps below, and for the same
+    // reason: encoding a wait calls into a backend, which must not happen
+    // while we hold the registry mutex.
+    std::vector<HgiExternalBufferArenaSharedPtr> arenas;
+    {
+        std::lock_guard<std::mutex> lock(_externalBufferArenasMutex);
+        arenas.reserve(_externalBufferArenas.size());
+        for (auto const& entry : _externalBufferArenas) {
+            arenas.push_back(entry.second);
+        }
+    }
+    for (HgiExternalBufferArenaSharedPtr const& arena : arenas) {
+        arena->EncodeAppDoneWait();
+    }
+
+    // No flush counterpart. A wait is consumed by the submission that follows
+    // it, and the frame's own work is that submission.
+}
+
+void
+Hgi::_EncodeExternalBufferHgiDoneSignals()
+{
+    // Same collect-then-act shape as the sweep below, and for the same
+    // reason: encoding a signal calls into a backend, which must not happen
+    // while we hold the registry mutex.
+    std::vector<HgiExternalBufferArenaSharedPtr> arenas;
+    {
+        std::lock_guard<std::mutex> lock(_externalBufferArenasMutex);
+        arenas.reserve(_externalBufferArenas.size());
+        for (auto const& entry : _externalBufferArenas) {
+            arenas.push_back(entry.second);
+        }
+    }
+    bool signalled = false;
+    for (HgiExternalBufferArenaSharedPtr const& arena : arenas) {
+        signalled |= arena->EncodeHgiDoneSignal();
+    }
+
+    // Get the signals onto the queue. A backend that defers them to its next
+    // submission would otherwise leave them sitting here until the following
+    // frame -- which is after the producer needs them, and never at all if the
+    // application stops drawing.
+    //
+    // Only when something was actually signalled: the Vulkan flush costs a
+    // queue submission, and an application that shares no buffers should not
+    // pay one per frame for a call it makes unconditionally.
+    if (signalled) {
+        _FlushSemaphoreSignals();
+    }
+}
+
+void
+Hgi::_FlushSemaphoreSignals()
+{
+}
+
+void
+Hgi::_GarbageCollectExternalBufferArenas()
+{
+    // Collect the arenas under the lock but sweep outside it: a sweep runs
+    // buffer destructors, and those have no business reentering Hgi to ask for
+    // an arena while we hold the registry mutex.
+    std::vector<HgiExternalBufferArenaSharedPtr> arenas;
+    {
+        std::lock_guard<std::mutex> lock(_externalBufferArenasMutex);
+        arenas.reserve(_externalBufferArenas.size());
+        for (auto const& entry : _externalBufferArenas) {
+            arenas.push_back(entry.second);
+        }
+    }
+    for (HgiExternalBufferArenaSharedPtr const& arena : arenas) {
+        arena->GarbageCollect();
+    }
+}
+
+void
+Hgi::_DestroyExternalBufferArenas()
+{
+    std::map<std::type_index, HgiExternalBufferArenaSharedPtr> arenas;
+    {
+        std::lock_guard<std::mutex> lock(_externalBufferArenasMutex);
+        arenas.swap(_externalBufferArenas);
+        _hasExternalBufferArenas.store(false, std::memory_order_release);
+    }
+    // One last sweep each, so buffers whose work has retired are released
+    // through the normal path before the arena takes the rest down with it.
+    for (auto const& entry : arenas) {
+        entry.second->GarbageCollect();
+    }
 }
 
 bool

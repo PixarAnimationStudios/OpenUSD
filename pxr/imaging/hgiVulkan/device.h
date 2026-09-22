@@ -49,9 +49,20 @@ public:
     HGIVULKAN_API
     VmaPool GetVMAPoolForInterop(VkImageCreateInfo imageInfo);
 
+    /// Returns a VMA pool for buffers that use API Interop.
+    HGIVULKAN_API
+    VmaPool GetVMAPoolForInterop(VkBufferCreateInfo bufferInfo);
+
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
     HGIVULKAN_API
     HANDLE GetWin32HandleForMemory(VkDeviceMemory memory);
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
+    /// Exports \p memory as a POSIX file descriptor another API can import,
+    /// or -1 on failure. Each call returns a NEW fd -- vkGetMemoryFdKHR
+    /// transfers ownership -- so the caller closes it, or hands it to an
+    /// import that takes it over.
+    HGIVULKAN_API
+    int GetFdForMemory(VkDeviceMemory memory);
 #endif
 
     /// Returns the command queue which manages command buffers submission.
@@ -93,9 +104,12 @@ public:
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
     PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR = nullptr;
     PFN_vkGetSemaphoreWin32HandleKHR vkGetSemaphoreWin32HandleKHR = nullptr;
+    PFN_vkImportSemaphoreWin32HandleKHR
+        vkImportSemaphoreWin32HandleKHR = nullptr;
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
     PFN_vkGetMemoryFdKHR vkGetMemoryFdKHR = nullptr;
     PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR = nullptr;
+    PFN_vkImportSemaphoreFdKHR vkImportSemaphoreFdKHR = nullptr;
 #elif defined(VK_USE_PLATFORM_METAL_EXT)
 #endif
     PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT = nullptr;

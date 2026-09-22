@@ -187,6 +187,10 @@ private:
     // Thread safety: No. Must be called from main thread.
     void _EndFrameSync();
 
+    /// Force pending signal semaphores onto the queue; see
+    /// Hgi::_FlushSemaphoreSignals.
+    void _FlushSemaphoreSignals() override;
+
     HgiVulkanInstance* _instance;
     HgiVulkanDevice* _device;
     HgiVulkanGarbageCollector* _garbageCollector;
