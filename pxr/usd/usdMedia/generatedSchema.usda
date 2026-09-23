@@ -93,3 +93,82 @@ previews for assets."""
 {
 }
 
+class "AuthorshipAPI" (
+    customData = {
+        string userDocBrief = "Records who or what authored a prim."
+    }
+)
+{
+    uniform string[] authorship:__INSTANCE_NAME__:contact (
+        customData = {
+            string userDocBrief = """Contact information for inquiries about this asset, such
+        as an email address, support URL, or licensing page."""
+        }
+    )
+    uniform string[] authorship:__INSTANCE_NAME__:copyrightOwner (
+        customData = {
+            string userDocBrief = """Entities holding copyright in this content, which may
+        differ from `creator` (e.g., a studio owning an artist's work)."""
+        }
+    )
+    uniform string authorship:__INSTANCE_NAME__:created (
+        customData = {
+            string userDocBrief = """An ISO 8601 timestamp indicating when this authoring step
+        occurred (e.g., `2025-02-16T12:03:17+01:00`), which may differ from
+        the original creation time of the asset."""
+        }
+    )
+    uniform string[] authorship:__INSTANCE_NAME__:creator (
+        customData = {
+            string userDocBrief = """Human-readable names of the artists, studios, or
+        services that contributed to this authoring step."""
+        }
+    )
+    uniform string authorship:__INSTANCE_NAME__:description (
+        customData = {
+            string userDocBrief = "Free-form description of how the prim was created."
+        }
+    )
+    uniform string authorship:__INSTANCE_NAME__:digitalSourceType (
+        customData = {
+            string userDocBrief = """A URI describing the nature of the creative process, such
+        as whether the content is human-made or AI-generated."""
+        }
+    )
+    uniform string[] authorship:__INSTANCE_NAME__:inputNames (
+        customData = {
+            string userDocBrief = """Names of the inputs that shaped this authoring step, e.g.,
+        `prompt`, `seed`, `guidance`, or `referenceImage`."""
+        }
+    )
+    uniform string[] authorship:__INSTANCE_NAME__:inputValues (
+        customData = {
+            string userDocBrief = """Values for the inputs named in `inputNames`,
+        matched by index."""
+        }
+    )
+    uniform string authorship:__INSTANCE_NAME__:instanceID (
+        customData = {
+            string userDocBrief = """A unique identifier for this run's output, such as a
+        single generative AI result."""
+        }
+    )
+    uniform string authorship:__INSTANCE_NAME__:softwarePackage (
+        customData = {
+            string userDocBrief = """The tool or system that most directly wrote the USD data
+        for this prim."""
+        }
+    )
+    uniform string authorship:__INSTANCE_NAME__:softwareVersion (
+        customData = {
+            string userDocBrief = """The version of the softwarePackage that created this
+        record, not of the asset."""
+        }
+    )
+    uniform string authorship:__INSTANCE_NAME__:usageTerms (
+        customData = {
+            string userDocBrief = "The license or usage terms for this asset."
+        }
+    )
+}
+

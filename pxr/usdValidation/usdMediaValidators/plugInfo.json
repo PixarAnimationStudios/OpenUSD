@@ -1,0 +1,24 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Validators": {
+                    "ShadowedOrDuplicateAuthorship": {
+                        "doc": "Warns about authorship records the composed prim can't report: an application shadowed by a stronger, explicit apiSchemas list, or an application authored in more than one prim spec, where composition keeps only the strongest opinion for each field."
+                    },
+                    "AuthorshipInputsPaired": {
+                        "doc": "inputNames and inputValues on an authorship record must be authored together, have the same length, and resolve from the same spec."
+                    },
+                    "keywords": [
+                        "UsdMediaValidators"
+                    ]
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "usdMediaValidators",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

@@ -23,12 +23,19 @@ pxr_library(usdMedia
 
 pxr_test_scripts(
     testenv/testUsdMediaAssetPreviewsAPI.py
+    testenv/testUsdMediaAuthorshipAPI.py
     testenv/testUsdMediaSpatialAudio.py
 )
 
 pxr_register_test(testUsdMediaAssetPreviewsAPI
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMediaAssetPreviewsAPI"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdMediaAuthorshipAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMediaAuthorshipAPI"
     EXPECTED_RETURN_CODE 0
 )
 

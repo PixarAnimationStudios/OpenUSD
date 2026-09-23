@@ -212,3 +212,137 @@ class "AssetPreviewsAPI" (
 {
     # no properties!
 }
+
+class "AuthorshipAPI" (
+    inherits = </APISchemaBase>
+    doc = """Records who or what authored a prim.
+
+    Each record describes one authoring step, such as a generative AI run,
+    an export from a DCC, or a manual cleanup session. A prim can carry
+    its full history of contributors, provided that each step is recorded
+    with a unique-to-the-prim schema instance name.
+
+    The schema may also be applied to any of a prim's ancestors.
+    Authorship aggregates down the namespace hierarchy. A prim's own
+    records add to, rather than override, its ancestors' records.
+
+    Provides a standardized, unverified record of authorship. This is not
+    a cryptographic signature, and `copyrightOwner` represents a claim
+    rather than a legal guarantee.
+
+    \\sa UsdMediaAuthorshipAPI::GetAllOnStage()
+    \\sa UsdMediaAuthorshipAPI::ComputeAccumulatedRecords()
+    \\sa UsdMediaAuthorshipAPI::GetAllShadowed()
+    \\sa UsdMediaAuthorshipAPI::GetAllDuplicates()
+    """
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix = "authorship"
+    }
+)
+{
+    uniform string softwarePackage (
+        doc = """The tool or system that most directly wrote the USD data
+        for this prim. Must be a tool (e.g., `org.blender`), not a
+        person; human contributors belong in `creator`. If an AI model
+        runs inside a host application, name the model itself. If someone
+        authored the data directly with the OpenUSD API in an unnamed
+        script, the softwarePackage would be `OpenUSD`.
+
+        Reverse domain notation is recommended (e.g.,
+        `net.trellis3d.hunyuan3d`) to minimize name conflicts. Values are
+        unvalidated and compared case-insensitively."""
+    )
+
+    uniform string softwareVersion (
+        doc = """The version of the softwarePackage that created this
+        record, not of the asset. If a hosted service provides no stable
+        version, use the provided build label or hash, and rely on
+        `created` to pin down the iteration's ordering."""
+    )
+
+    uniform string digitalSourceType (
+        doc = """A URI describing the nature of the creative process, such
+        as whether the content is human-made or AI-generated.
+
+        The IPTC Digital Source Type vocabulary is recommended (e.g.,
+        `trainedAlgorithmicMedia`). Tools evaluating AI content should
+        check this field across the prim's accumulated ancestry and default
+        to assuming non-AI generation if an AI source type is absent."""
+    )
+
+    uniform string[] creator (
+        doc = """Human-readable names of the artists, studios, or
+        services that contributed to this authoring step. Intended for
+        display. Corresponds to `dc:creator`."""
+    )
+
+    uniform string description (
+        doc = """Free-form description of how the prim was created. Better
+        suited to technique notes, reference material, or history. For
+        specific, itemized inputs, prefer `inputNames` and `inputValues`
+        instead."""
+    )
+
+    uniform string[] inputNames (
+        doc = """Names of the inputs that shaped this authoring step, e.g.,
+        `prompt`, `seed`, `guidance`, or `referenceImage`. Not specific to
+        generative AI; a human authoring step can record its reference
+        art, schematics, or design specs the same way.
+
+        Must be index-matched with `inputValues` and authored in the same
+        layer to ensure composition aligns them correctly. Length
+        mismatches invalidate the record; readers should not attempt to
+        guess the pairing."""
+    )
+
+    uniform string[] inputValues (
+        doc = """Values for the inputs named in `inputNames`,
+        matched by index. Authored as plain strings rather than `asset`
+        paths to prevent reference images or local files from being
+        resolved or packaged with the asset."""
+    )
+
+    uniform string created (
+        doc = """An ISO 8601 timestamp indicating when this authoring step
+        occurred (e.g., `2025-02-16T12:03:17+01:00`), which may differ from
+        the original creation time of the asset."""
+    )
+
+    uniform string instanceID (
+        doc = """A unique identifier for this run's output, such as a
+        single generative AI result. A UUID4 is recommended. Do not encode
+        personal author information.
+
+        Unrelated to USD native instancing and unrelated to this schema's
+        applied instance name.
+
+        Identifies an output, not a reproducible recipe; identical inputs
+        do not guarantee identical results. Uniqueness is not guaranteed
+        across external pipelines. Named after `xmpMM:InstanceID` but
+        identifies an authoring step's output (which may span several
+        prims) rather than a single resource rendition. Not directly
+        equivalent when round-tripping."""
+    )
+
+    uniform string usageTerms (
+        doc = """The license or usage terms for this asset.
+
+        SPDX identifiers are preferred (e.g., `CC-BY-4.0` or `MIT`) to
+        allow programmatic evaluation. Otherwise, provide a URL to the
+        license text, or the full text as a fallback. If unauthored, no
+        specific license or rights should be assumed. Corresponds to
+        `xmpRights:UsageTerms`."""
+    )
+
+    uniform string[] copyrightOwner (
+        doc = """Entities holding copyright in this content, which may
+        differ from `creator` (e.g., a studio owning an artist's work).
+        Corresponds to `xmpRights:Owner`."""
+    )
+
+    uniform string[] contact (
+        doc = """Contact information for inquiries about this asset, such
+        as an email address, support URL, or licensing page."""
+    )
+}

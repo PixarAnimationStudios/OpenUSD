@@ -1,0 +1,11 @@
+#usda 1.0
+(
+    """A scene with no authorship records at all."""
+)
+
+def Xform "World"
+{
+    def Mesh "Plain"
+    {
+    }
+}
