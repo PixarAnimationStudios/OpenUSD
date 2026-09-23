@@ -1,0 +1,62 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {"major": 3, "minor": 26, "patch": 0},
+    "include" : [
+        "CMakePresets.flavors.json"
+    ],
+    "configurePresets": [
+        {
+            "name": "linux",
+            "hidden": true,
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            }
+        },
+        {
+            "name": "minimal-shared-linux-x86-release",
+            "inherits": ["linux", "minimal", "shared", "default"],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        }
+    ],
+    "buildPresets" : [
+        {
+            "name": "linux",
+            "hidden": true,
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            }
+        },
+        {
+            "name": "minimal-shared-linux-x86-release",
+            "configurePreset": "minimal-shared-linux-x86-release",
+            "inherits": ["linux", "default"]
+        }
+    ],
+    "testPresets" : [
+        {
+            "name": "linux",
+            "hidden": true,
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            }
+        },
+        {
+            "name": "minimal-shared-linux-x86-release-stable",
+            "configurePreset": "minimal-shared-linux-x86-release",
+            "inherits": ["linux", "stable", "default"]
+        },
+        {
+            "name": "minimal-shared-linux-x86-release-flaky",
+            "configurePreset": "minimal-shared-linux-x86-release",
+            "inherits": ["linux", "flaky", "default"]
+        }
+    ]
+}

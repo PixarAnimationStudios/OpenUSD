@@ -13,12 +13,23 @@ set(build_shared_libs "${BUILD_SHARED_LIBS}")
 # Core USD Package Requirements 
 # ----------------------------------------------
 
+include(FetchContent)
+
 # Threads.  Save the libraries needed in PXR_THREAD_LIBS;  we may modify
 # them later.  We need the threads package because some platforms require
 # it when using C++ functions from #include <thread>.
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
 set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
+
+if (PXR_ALLOW_FETCH_CONTENT)
+    FetchContent_Declare(
+        onetbb
+        URL https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.12.0.zip
+        URL_HASH SHA256=fe6ca052b5bdd2c6e0616b360c9b0dcbcc46e01bbd0aa8fd0517c17fc58931db
+        FIND_PACKAGE_ARGS NAMES TBB 2021.12...2022 COMPONENTS tbb CONFIG
+    )
+endif()
 
 if(PXR_ENABLE_OPENVDB_SUPPORT)
     # Find Boost package before getting any boost specific components as we need to
@@ -128,7 +139,18 @@ if(WIN32)
 endif()
 
 # --TBB
-if (DEFINED PXR_FIND_TBB_IN_CONFIG)
+if (PXR_ALLOW_FETCH_CONTENT)
+    if (DEFINED PXR_FIND_TBB_IN_CONFIG AND NOT PXR_FIND_TBB_IN_CONFIG)
+        message(WARNING "PXR_FIND_TBB_IN_CONFIG may not be disabled when PXR_ALLOW_FETCH_CONTENT is enabled.")
+    endif()
+    message(STATUS "Resolving OneTBB Via FetchContent")
+    block()
+        set(CMAKE_INCLUDE_CURRENT_DIR OFF)
+        set(TBB_STRICT OFF CACHE INTERNAL "" FORCE)
+        set(TBB_TEST OFF CACHE INTERNAL "" FORCE)
+        FetchContent_MakeAvailable(onetbb)
+    endblock()
+elseif (DEFINED PXR_FIND_TBB_IN_CONFIG)
     if (PXR_FIND_TBB_IN_CONFIG)
         find_package(TBB CONFIG REQUIRED COMPONENTS tbb)
     else()
