@@ -1,0 +1,31 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "pxr.UsdNoodles",
+            "ResourcePath": ".",
+            "Info": {
+                "Types": {
+                    "pxr.UsdNoodles.NoodlesPluginContainer": {
+                        "bases": [
+                            "pxr.Usdviewq.plugin.PluginContainer"
+                        ],
+                        "displayName": "Noodles Editor"
+                    },
+                    "pxr.UsdNoodles.nodeLibs.usdTypedPrimBase.UsdTypedPrimLibraryBase": {
+                        "bases": [
+                            "pxr.UsdNoodles.nodeLibraries.NodeLibrary"
+                        ]
+                    },
+                    "pxr.UsdNoodles.nodeLibs.usdPrimLibrary.UsdPrimLibrary": {
+                        "bases": [
+                            "pxr.UsdNoodles.nodeLibs.usdTypedPrimBase.UsdTypedPrimLibraryBase"
+                        ],
+                        "displayName": "USD Prims",
+                        "priority": 1000
+                    }
+                }
+            }
+        }
+    ]
+}
