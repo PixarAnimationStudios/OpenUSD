@@ -156,7 +156,7 @@ Network::GetNodeName(const VdfId nodeId)
             return n.first;
         }
     }
-    return NULL;
+    return std::string();
 }
 
 VdfConnection *
