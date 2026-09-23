@@ -1,7 +1,7 @@
 #usda 1.0
 (
     """A scene with a few authorship records, including one that an explicit
-    apiSchemas list hides from the composed prim so that --deep has something
+    apiSchemas list hides from the composed prim so that --debug has something
     to recover."""
 )
 
@@ -43,7 +43,7 @@ def Xform "Set" (
         # The reference applies "AuthorshipAPI:jane" for real, in a weaker
         # layer. The explicit apiSchemas list above omits it, so the composed
         # prim does not report that record even though its properties compose
-        # and remain readable. Only --deep finds it.
+        # and remain readable. Only --debug finds it.
         uniform string authorship:layout:softwarePackage = "com.example.layouttool"
         uniform string authorship:layout:softwareVersion = "1.0"
     }

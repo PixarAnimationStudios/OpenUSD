@@ -540,6 +540,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/sdf/primSpec.h"
 
 #include <algorithm>
+#include <map>
 #include <set>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -571,7 +572,7 @@ _GetInstanceNameFromAPISchemaName(const TfToken &apiSchemaName)
 // apiSchemas, since a bare property name can't be split back into
 // instance and base name reliably (both can be namespaced).
 static void
-_AppendInstanceNamesInSpec(const SdfPrimSpecHandle &spec,
+_AppendInstanceNamesInSpec(const SdfSpecHandle &spec,
                            std::vector<TfToken> *instanceNames)
 {
     if (!spec->HasInfo(UsdTokens->apiSchemas)) {
@@ -587,12 +588,12 @@ _AppendInstanceNamesInSpec(const SdfPrimSpecHandle &spec,
     std::set<TfToken> found;
     const SdfTokenListOp &listOp = value.UncheckedGet<SdfTokenListOp>();
 
-    // Scan every op, not just the applied result: shadowed opinions are
-    // exactly what this search is for.
+    // Scan every op that adds the schema, not just the applied result:
+    // shadowed opinions are exactly what the diagnostics look for. Ordered
+    // items only reorder, so they don't indicate presence.
     for (const SdfListOpType listOpType :
             {SdfListOpTypeExplicit, SdfListOpTypeAdded,
-             SdfListOpTypeOrdered, SdfListOpTypePrepended,
-             SdfListOpTypeAppended}) {
+             SdfListOpTypePrepended, SdfListOpTypeAppended}) {
         for (const TfToken &apiSchemaName : listOp.GetItems(listOpType)) {
             const TfToken instanceName =
                 _GetInstanceNameFromAPISchemaName(apiSchemaName);
@@ -603,6 +604,24 @@ _AppendInstanceNamesInSpec(const SdfPrimSpecHandle &spec,
     }
 
     instanceNames->insert(instanceNames->end(), found.begin(), found.end());
+}
+
+// How many specs in \p prim's prim stack apply each instance.
+static std::map<TfToken, size_t>
+_CountApplicationsInPrimStack(const UsdPrim &prim)
+{
+    std::map<TfToken, size_t> counts;
+    for (const SdfPrimSpecHandle &spec : prim.GetPrimStack()) {
+        if (!spec) {
+            continue;
+        }
+        std::vector<TfToken> instanceNames;
+        _AppendInstanceNamesInSpec(spec, &instanceNames);
+        for (const TfToken &instanceName : instanceNames) {
+            ++counts[instanceName];
+        }
+    }
+    return counts;
 }
 
 static void
@@ -616,19 +635,35 @@ _AppendComposedRecordsForPrim(const UsdPrim &prim,
 }
 
 static void
-_AppendPrimStackRecordsForPrim(const UsdPrim &prim,
+_AppendShadowedRecordsForPrim(const UsdPrim &prim,
+                              std::vector<UsdMediaAuthorshipAPI> *result)
+{
+    const std::map<TfToken, size_t> counts =
+        _CountApplicationsInPrimStack(prim);
+    if (counts.empty()) {
+        return;
+    }
+
+    std::set<TfToken> composed;
+    for (const UsdMediaAuthorshipAPI &record :
+            UsdMediaAuthorshipAPI::GetAll(prim)) {
+        composed.insert(record.GetName());
+    }
+
+    for (const auto &entry : counts) {
+        if (composed.count(entry.first) == 0) {
+            result->emplace_back(prim, entry.first);
+        }
+    }
+}
+
+static void
+_AppendDuplicateRecordsForPrim(const UsdPrim &prim,
                                std::vector<UsdMediaAuthorshipAPI> *result)
 {
-    // Strongest to weakest, not deduplicated: a record in several layers
-    // is reported once per layer, in that order.
-    for (const SdfPrimSpecHandle &spec : prim.GetPrimStack()) {
-        if (!spec) {
-            continue;
-        }
-        std::vector<TfToken> instanceNames;
-        _AppendInstanceNamesInSpec(spec, &instanceNames);
-        for (const TfToken &instanceName : instanceNames) {
-            result->emplace_back(prim, instanceName);
+    for (const auto &entry : _CountApplicationsInPrimStack(prim)) {
+        if (entry.second > 1) {
+            result->emplace_back(prim, entry.first);
         }
     }
 }
@@ -646,13 +681,11 @@ _RecordLess(const UsdMediaAuthorshipAPI &lhs, const UsdMediaAuthorshipAPI &rhs)
     return lhs.GetName() < rhs.GetName();
 }
 
-// Shared by GetAllOnStage() and GetAllInPrimStacks(); they differ only in
-// how they gather records per prim.
+using _AppendForPrimFn =
+    void (*)(const UsdPrim &, std::vector<UsdMediaAuthorshipAPI> *);
+
 static std::vector<UsdMediaAuthorshipAPI>
-_GetAllOnStageImpl(
-    const UsdStagePtr &stage,
-    void (*appendForPrim)(const UsdPrim &,
-                          std::vector<UsdMediaAuthorshipAPI> *))
+_GetAllOnStageImpl(const UsdStagePtr &stage, _AppendForPrimFn appendForPrim)
 {
     std::vector<UsdMediaAuthorshipAPI> result;
 
@@ -675,9 +708,22 @@ _GetAllOnStageImpl(
         }
     }
 
-    // Stable, so that repeated records stay in strongest-to-weakest order.
-    std::stable_sort(result.begin(), result.end(), _RecordLess);
+    std::sort(result.begin(), result.end(), _RecordLess);
 
+    return result;
+}
+
+static std::vector<UsdMediaAuthorshipAPI>
+_GetForPrimImpl(const UsdPrim &prim, _AppendForPrimFn appendForPrim)
+{
+    std::vector<UsdMediaAuthorshipAPI> result;
+
+    if (!prim) {
+        TF_CODING_ERROR("Invalid prim");
+        return result;
+    }
+
+    appendForPrim(prim, &result);
     return result;
 }
 
@@ -690,9 +736,30 @@ UsdMediaAuthorshipAPI::GetAllOnStage(const UsdStagePtr &stage)
 
 /* static */
 std::vector<UsdMediaAuthorshipAPI>
-UsdMediaAuthorshipAPI::GetAllInPrimStacks(const UsdStagePtr &stage)
+UsdMediaAuthorshipAPI::GetShadowed(const UsdPrim &prim)
 {
-    return _GetAllOnStageImpl(stage, _AppendPrimStackRecordsForPrim);
+    return _GetForPrimImpl(prim, _AppendShadowedRecordsForPrim);
+}
+
+/* static */
+std::vector<UsdMediaAuthorshipAPI>
+UsdMediaAuthorshipAPI::GetDuplicates(const UsdPrim &prim)
+{
+    return _GetForPrimImpl(prim, _AppendDuplicateRecordsForPrim);
+}
+
+/* static */
+std::vector<UsdMediaAuthorshipAPI>
+UsdMediaAuthorshipAPI::GetAllShadowed(const UsdStagePtr &stage)
+{
+    return _GetAllOnStageImpl(stage, _AppendShadowedRecordsForPrim);
+}
+
+/* static */
+std::vector<UsdMediaAuthorshipAPI>
+UsdMediaAuthorshipAPI::GetAllDuplicates(const UsdStagePtr &stage)
+{
+    return _GetAllOnStageImpl(stage, _AppendDuplicateRecordsForPrim);
 }
 
 /* static */
@@ -710,7 +777,7 @@ UsdMediaAuthorshipAPI::ComputeAccumulatedRecords(const UsdPrim &prim)
         _AppendComposedRecordsForPrim(p, &result);
     }
 
-    std::stable_sort(result.begin(), result.end(), _RecordLess);
+    std::sort(result.begin(), result.end(), _RecordLess);
 
     return result;
 }
@@ -730,7 +797,7 @@ UsdMediaAuthorshipAPI::GetAllUnder(const UsdPrim &prim)
         _AppendComposedRecordsForPrim(p, &result);
     }
 
-    std::stable_sort(result.begin(), result.end(), _RecordLess);
+    std::sort(result.begin(), result.end(), _RecordLess);
 
     return result;
 }
@@ -748,8 +815,10 @@ UsdMediaAuthorshipAPI::GetAllInLayer(const SdfLayerHandle &layer)
 
     layer->Traverse(SdfPath::AbsoluteRootPath(),
                     [&layer, &result](const SdfPath &path) {
-        const SdfPrimSpecHandle spec = layer->GetPrimAtPath(path);
-        if (!spec) {
+        // Variant specs aren't prim specs, so look up the generic spec.
+        const SdfSpecHandle spec = layer->GetObjectAtPath(path);
+        if (!spec || (spec->GetSpecType() != SdfSpecTypePrim &&
+                      spec->GetSpecType() != SdfSpecTypeVariant)) {
             return;
         }
         std::vector<TfToken> instanceNames;

@@ -176,51 +176,6 @@ Prints to terminal a unixtree-like summary of a USD layer or composition.
    :start-after: ==== usdtree start ====
    :end-before: ==== usdtree end ====
 
-**********
-usdauthors
-**********
-
-Lists authorship records in a USD file, grouped by prim. Each record represents
-an applied instance of :usdcpp:`UsdMediaAuthorshipAPI`, documenting an
-authoring step (e.g., generation, export, or manual cleanup).
-
-.. literalinclude:: toolset.help
-   :language: none
-   :start-after: ==== usdauthors start ====
-   :end-before: ==== usdauthors end ====
-
-**Notes:**
-
-    * Records are read from the composed stage. The :option:`--deep` option
-      instead gathers them from every prim spec contributing to each prim,
-      which finds one thing the composed prim cannot report: an application
-      shadowed by an explicit :code:`apiSchemas` list in a stronger layer.
-      Such a record is marked in the output, and its values are still
-      readable because the properties compose normally. Records inside
-      unselected variants are not found either way, since those specs are
-      not part of a prim's prim stack (see :usdcpp:`UsdPrim::GetPrimStack`).
-
-    * :option:`--deep` also reveals clobbering. Nothing is deduplicated, so a
-      record whose instance name was authored in several layers is reported once
-      per contributing spec, and the output notes how many. Composition keeps
-      only the strongest opinion for each field, so this is the only way to see
-      that weaker values were dropped.
-
-    * :option:`--layer` reads the input as a single layer and composes nothing,
-      reporting only what that layer authors rather than what a stage built from
-      it resolves to. This is the way to check what a particular layer
-      contributes on its own; there is no guarantee of correspondence with what
-      a composed stage using this layer would report, since that layer may
-      reference, or be referenced by, others with records of their own. It is
-      also the only mode that reaches records inside variants that are not
-      selected.
-
-    * :option:`--summary` tallies software packages and digital source types
-      across all records instead of listing them. Software packages are
-      counted per :code:`softwareVersion`, since two versions of one tool can
-      produce very different results. The tally counts records rather than
-      prims, so a prim carrying two records contributes twice.
-
 ******
 usdzip
 ******
@@ -252,7 +207,7 @@ usdfixbrokenpixarschemas
 ************************
 
 :program:`usdfixbrokenpixarschemas` attempts to fix usd(a|c|z) layers for any
-updates introduced by newer Pixar schema revisions. Note that this does not
+updates introduced by newer Pixar schema revisions. Note that this does not 
 provide a fixing mechanism for all validation tests listed in `usdchecker`_.
 
 .. literalinclude:: toolset.help
@@ -433,13 +388,13 @@ large array data.
 usdmeasureperformance
 *********************
 
-Helper script to measure :program:`usdview` asset performance. Recommended usage
+Helper script to measure :program:`usdview` asset performance. Recommended usage 
 is ``usdmeasureperformance <asset.usd> -i 10 --agg min -o <metrics.yaml>``.
-If there exists a file ending in :filename:`overrides.usda` in the same
-directory as the given asset file, the file will be supplied as
-``--sessionLayer`` to :program:`usdview` and :program:`testusdview` invocations.
-This allows provision of specific variant selections, for example. The first
-file found by os.listdir will be used. Ensure there is only one file ending in
+If there exists a file ending in :filename:`overrides.usda` in the same 
+directory as the given asset file, the file will be supplied as 
+``--sessionLayer`` to :program:`usdview` and :program:`testusdview` invocations. 
+This allows provision of specific variant selections, for example. The first 
+file found by os.listdir will be used. Ensure there is only one file ending in 
 :filename:`overrides.usda` in the asset directory to remove ambiguity.
 
 .. literalinclude:: toolset.help
@@ -453,27 +408,27 @@ file found by os.listdir will be used. Ensure there is only one file ending in
 usdGenSchema
 ************
 
-USD provides a code generator script :program:`usdGenSchema` for creating new
-schema classes. The script is driven by a USD layer (typically named
+USD provides a code generator script :program:`usdGenSchema` for creating new 
+schema classes. The script is driven by a USD layer (typically named 
 :filename:`schema.usda`) and generates the necessary C++ classes and supporting
-Python code for all the schema classes defined in it.
+Python code for all the schema classes defined in it. 
 
-Run ``usdGenSchema`` to generate code in the current directory for the schema
-classes defined in :filename:`schema.usda`. :program:`usdGenSchema` will update
-any pre-existing files in the current directory if it detects any differences
-with the code it generates. Make sure these files are editable before running
+Run ``usdGenSchema`` to generate code in the current directory for the schema 
+classes defined in :filename:`schema.usda`. :program:`usdGenSchema` will update 
+any pre-existing files in the current directory if it detects any differences 
+with the code it generates. Make sure these files are editable before running 
 :program:`usdGenSchema`.
 
 If you used :ref:`toolset_usdinitschema` to create your schema module, schema
-:filename:`CMakeLists.txt` and :filename:`module.cpp` files will be kept up to
-date as you add new schema classes and run :program:`usdGenSchema`, except for
-any added tests, which must be manually added to CMakeLists.txt. If you created
-:filename:`CMakeLists.txt` or :filename:`module.cpp` by hand and/or did *not*
-originally use :program:`usdInitSchema`, :program:`usdGenSchema` will not update
-these files, and you will need to manually update these files when you add new
+:filename:`CMakeLists.txt` and :filename:`module.cpp` files will be kept up to 
+date as you add new schema classes and run :program:`usdGenSchema`, except for 
+any added tests, which must be manually added to CMakeLists.txt. If you created 
+:filename:`CMakeLists.txt` or :filename:`module.cpp` by hand and/or did *not* 
+originally use :program:`usdInitSchema`, :program:`usdGenSchema` will not update 
+these files, and you will need to manually update these files when you add new 
 schema classes.
 
-For more details on developing schemas, see
+For more details on developing schemas, see 
 `Creating New Schema Classes with usdGenSchema <api/_usd__page__generating_schemas.html>`__.
 
 .. literalinclude:: toolset.help
@@ -486,11 +441,11 @@ usdgenschemafromsdr
 *******************
 
 Use :program:`usdgenschemafromsdr` to generate :filename:`schema.usda`,
-:filename:`generatedSchema.usda`, and :filename:`plugInfo.json` files for
-sdrNodes (shaders, etc.) provided in a JSON config file (by default
+:filename:`generatedSchema.usda`, and :filename:`plugInfo.json` files for 
+sdrNodes (shaders, etc.) provided in a JSON config file (by default 
 :filename:`schemaConfig.json`).
 
-:program:`usdgenschemafromsdr` generates codeless schemas by default, but the
+:program:`usdgenschemafromsdr` generates codeless schemas by default, but the 
 option to generate schema API code can be enabled in the JSON config file.
 
 .. literalinclude:: toolset.help
@@ -516,22 +471,22 @@ generates templates for:
 Example usage for creating a new :filename:`pxr/usd/testModule` schema module:
 
 - Run ``usdInitSchema testModule pxr/usd/testModule pxr/usd``
-- Fill in the created :filename:`schema.usda` with schema classes. Update the
+- Fill in the created :filename:`schema.usda` with schema classes. Update the 
   :filename:`userDoc/schemaUserDoc.usda` with schema class user documentation
   (see docs/README.md for more information on schema user documentation).
-- Run :ref:`usdGenSchema <toolset_usdgenschema>` in the new module directory to
+- Run :ref:`usdGenSchema <toolset_usdgenschema>` in the new module directory to 
   generate code as-needed for the new schema classes.
-- In :filename:`CMakeLists.txt`, list dependency libraries under "LIBRARIES".
-  If there are any non-schema code classes, add them under "CPPFILES". Schema
+- In :filename:`CMakeLists.txt`, list dependency libraries under "LIBRARIES". 
+  If there are any non-schema code classes, add them under "CPPFILES". Schema 
   classes and generated files will be automatically built.
-- If there are non-schema classes, list them in :filename:`module.cpp` in the
+- If there are non-schema classes, list them in :filename:`module.cpp` in the 
   format ``TF_WRAP(CPP_class_name);``
-- If using the OpenUSD build system, add ``testModule`` to the list of DIRS in
+- If using the OpenUSD build system, add ``testModule`` to the list of DIRS in 
   the parent directory.
 
 Note: If not using the OpenUSD build system, :filename:`moduleDeps.cpp` might be
-needed. If so, run :program:`usdInitSchema` with the ``--genModuleDeps`` flag.
-The :filename:`moduleDeps.cpp` file will then need to be kept manually updated
+needed. If so, run :program:`usdInitSchema` with the ``--genModuleDeps`` flag. 
+The :filename:`moduleDeps.cpp` file will then need to be kept manually updated 
 with the module dependencies.
 
 .. literalinclude:: toolset.help
@@ -543,11 +498,11 @@ with the module dependencies.
 usdupdatecrate
 **************
 
-Use :program:`usdupdatecrate` to find and update OpenUSD crate (.usd/.usdc)
+Use :program:`usdupdatecrate` to find and update OpenUSD crate (.usd/.usdc) 
 files older than a given version. :program:`usdupdatecrate` identifies and
-optionally updates binary crate files whose version is older than a threshold,
-including files packaged inside .usdz archives. See "How Do I Update Deprecated
-and Obsolete USD Assets?" in the :doc:`usdfaq` for examples using
+optionally updates binary crate files whose version is older than a threshold, 
+including files packaged inside .usdz archives. See "How Do I Update Deprecated 
+and Obsolete USD Assets?" in the :doc:`usdfaq` for examples using 
 :program:`usdupdatecrate` to update crate files.
 
 .. literalinclude:: toolset.help

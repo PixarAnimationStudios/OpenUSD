@@ -24,6 +24,7 @@
 #include <iostream>
 #include <algorithm>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -36,7 +37,7 @@ namespace
 
 struct Args {
     std::string inputPath;
-    bool deep = false;
+    bool debug = false;
     bool unloaded = false;
     bool summary = false;
     bool layer = false;
@@ -47,11 +48,11 @@ void Configure(CLI::App *app, Args &args) {
         "inputPath", args.inputPath, "The input file to process")
         ->required();
     app->add_flag(
-        "-d,--deep", args.deep,
-        "Gathers records from every prim spec instead of the composed prim. "
-        "Finds records shadowed by an explicit apiSchemas list in a stronger "
-        "layer, and records clobbered by the same instance name in another "
-        "layer. Slower.");
+        "-d,--debug", args.debug,
+        "Also examine every prim spec contributing to each prim, flagging "
+        "records shadowed by an explicit apiSchemas list in a stronger layer "
+        "and records applied in more than one prim spec. Slower; for "
+        "debugging.");
     app->add_flag(
         "--unloaded", args.unloaded, "Do not load payloads.");
     app->add_flag(
@@ -62,7 +63,7 @@ void Configure(CLI::App *app, Args &args) {
         "-l,--layer", args.layer,
         "Inspects a single layer without composition. Reaches specs "
         "unreachable via composed stages, such as those inside unselected "
-        "variants. Ignores --deep and --unloaded, which are about "
+        "variants. Ignores --debug and --unloaded, which are about "
         "composition.");
 }
 
@@ -187,13 +188,21 @@ GetAuthoredFields(const UsdMediaAuthorshipAPI &record)
     return fields;
 }
 
+using RecordId = std::pair<SdfPath, TfToken>;
+
+RecordId
+GetRecordId(const UsdMediaAuthorshipAPI &record)
+{
+    return RecordId(record.GetPrim().GetPath(), record.GetName());
+}
+
 void
-PrintRecords(const std::vector<UsdMediaAuthorshipAPI> &records)
+PrintRecords(const std::vector<UsdMediaAuthorshipAPI> &records,
+             const std::set<RecordId> &duplicates)
 {
     SdfPath currentPrimPath;
 
-    for (size_t i = 0; i < records.size(); ) {
-        const UsdMediaAuthorshipAPI &record = records[i];
+    for (const UsdMediaAuthorshipAPI &record : records) {
         const SdfPath primPath = record.GetPrim().GetPath();
 
         // Records arrive sorted by prim path, so group them under one heading.
@@ -212,26 +221,14 @@ PrintRecords(const std::vector<UsdMediaAuthorshipAPI> &records)
             std::cout << "\n";
         }
 
-        // With --deep the same record is returned once per contributing spec,
-        // which is how a clobbered record shows up. Report it once, with a
-        // count, since every copy reads the same composed values.
-        size_t occurrences = 1;
-        while (i + occurrences < records.size() &&
-               records[i + occurrences].GetPrim().GetPath() == primPath &&
-               records[i + occurrences].GetName() == record.GetName()) {
-            ++occurrences;
-        }
-        i += occurrences;
-
         std::cout << "  " << record.GetName().GetString();
         if (!record.GetPrim().HasAPI<UsdMediaAuthorshipAPI>(record.GetName())) {
-            // Only reachable with --deep.
-            std::cout << "  (not applied; found in prim stack)";
+            std::cout << "  (shadowed: not applied on the composed prim)";
         }
-        if (occurrences > 1) {
-            std::cout << "  (authored in " << occurrences
-                      << " prim specs; only the strongest opinion for each "
-                         "field survives composition)";
+        if (duplicates.count(GetRecordId(record))) {
+            std::cout << "  (applied in more than one prim spec; only the "
+                         "strongest opinion for each field survives "
+                         "composition)";
         }
         std::cout << "\n";
 
@@ -424,16 +421,31 @@ int USDAuthors(const Args &args) {
             : UsdStage::Open(resolved);
 
         if (errMark.IsClean() && stage) {
-            const std::vector<UsdMediaAuthorshipAPI> records = args.deep
-                ? UsdMediaAuthorshipAPI::GetAllInPrimStacks(stage)
-                : UsdMediaAuthorshipAPI::GetAllOnStage(stage);
+            std::vector<UsdMediaAuthorshipAPI> records =
+                UsdMediaAuthorshipAPI::GetAllOnStage(stage);
+            std::set<RecordId> duplicates;
+
+            if (args.debug) {
+                const std::vector<UsdMediaAuthorshipAPI> shadowed =
+                    UsdMediaAuthorshipAPI::GetAllShadowed(stage);
+                records.insert(records.end(), shadowed.begin(), shadowed.end());
+                std::sort(records.begin(), records.end(),
+                          [](const UsdMediaAuthorshipAPI &lhs,
+                             const UsdMediaAuthorshipAPI &rhs) {
+                              return GetRecordId(lhs) < GetRecordId(rhs);
+                          });
+                for (const UsdMediaAuthorshipAPI &record :
+                        UsdMediaAuthorshipAPI::GetAllDuplicates(stage)) {
+                    duplicates.insert(GetRecordId(record));
+                }
+            }
 
             if (args.summary) {
                 PrintSummary(records);
             } else if (records.empty()) {
                 std::cout << "No authorship records found.\n";
             } else {
-                PrintRecords(records);
+                PrintRecords(records, duplicates);
             }
         }
     }
@@ -459,10 +471,9 @@ int main(int argc, char const *argv[]) {
         "prim. Each record represents a single authoring step (e.g.,\n"
         "generation, export, or manual cleanup).\n"
         "\n"
-        "Records are read from the composed stage. Use --deep to read from\n"
-        "every contributing prim spec instead, revealing records hidden or\n"
-        "collapsed by composition, or --layer to report only what a single\n"
-        "layer authors.\n",
+        "Records are read from the composed stage. Use --debug to also flag\n"
+        "records hidden or collapsed by composition, or --layer to report\n"
+        "only what a single layer authors.\n",
         "usdauthors");
 
     Args args;

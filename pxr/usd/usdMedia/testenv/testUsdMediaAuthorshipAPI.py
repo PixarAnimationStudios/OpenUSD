@@ -166,8 +166,8 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         stage = Usd.Stage.CreateInMemory()
         stage.DefinePrim('/NoRecords', 'Xform')
         self.assertEqual(UsdMedia.AuthorshipAPI.GetAllOnStage(stage), [])
-        self.assertEqual(
-            UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage), [])
+        self.assertEqual(UsdMedia.AuthorshipAPI.GetAllShadowed(stage), [])
+        self.assertEqual(UsdMedia.AuthorshipAPI.GetAllDuplicates(stage), [])
 
     def test_GetAllOnStageIncludesInactivePrims(self):
         """A record is worth reporting whether or not its prim is currently
@@ -180,13 +180,11 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         self.assertEqual(_RecordIds(UsdMedia.AuthorshipAPI.GetAllOnStage(stage)),
                          [('/Hidden', 'worldgen')])
 
-    def test_DeepSearchDoesNotFindNeverAppliedProperties(self):
+    def test_DiagnosticsIgnoreNeverAppliedProperties(self):
         """A property's instance name cannot be split back out of its name
         reliably: both the instance name and a property's base name may
-        themselves be namespaced, so no fixed token count distinguishes
-        them without already knowing which instance produced the property.
-        A property authored without the schema ever having been applied
-        anywhere is therefore not found, even by the deeper search."""
+        themselves be namespaced. A property authored without the schema ever
+        having been applied anywhere is therefore not reported."""
         layer = Sdf.Layer.CreateAnonymous('.usda')
         spec = Sdf.CreatePrimInLayer(layer, '/Orphan')
         spec.specifier = Sdf.SpecifierDef
@@ -198,10 +196,9 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         stage = Usd.Stage.Open(layer)
         prim = stage.GetPrimAtPath('/Orphan')
         self.assertFalse(prim.HasAPI(UsdMedia.AuthorshipAPI, 'ghost'))
-
         self.assertEqual(UsdMedia.AuthorshipAPI.GetAllOnStage(stage), [])
-        self.assertEqual(
-            UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage), [])
+        self.assertEqual(UsdMedia.AuthorshipAPI.GetAllShadowed(stage), [])
+        self.assertEqual(UsdMedia.AuthorshipAPI.GetAllDuplicates(stage), [])
 
     def test_NamespacedInstanceName(self):
         """Instance names may themselves be namespaced."""
@@ -218,7 +215,7 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
             [r.GetName() for r in UsdMedia.AuthorshipAPI.GetAllOnStage(stage)],
             ['studio:tool'])
 
-    def test_DeepSearchRecoversShadowedApplication(self):
+    def test_GetShadowed(self):
         """An explicit apiSchemas list in a stronger layer can shadow an
         application coming from a reference. The properties still compose, so
         the record is still readable, but the composed prim no longer reports
@@ -234,103 +231,91 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         stage = Usd.Stage.Open(root)
         referencing = stage.DefinePrim('/World/Rock_1', 'Xform')
         referencing.GetReferences().AddReference(asset.identifier)
-        self.assertEqual(referencing.GetAppliedSchemas(),
-                         ['AuthorshipAPI:rockmaker'])
+        self.assertEqual(UsdMedia.AuthorshipAPI.GetShadowed(referencing), [])
 
-        primSpec = root.GetPrimAtPath('/World/Rock_1')
-        primSpec.SetInfo('apiSchemas',
-                         Sdf.TokenListOp.CreateExplicit(
-                             ['AuthorshipAPI:layout']))
+        root.GetPrimAtPath('/World/Rock_1').SetInfo(
+            'apiSchemas',
+            Sdf.TokenListOp.CreateExplicit(['AuthorshipAPI:layout']))
 
         self.assertEqual(referencing.GetAppliedSchemas(),
                          ['AuthorshipAPI:layout'])
+        shadowed = UsdMedia.AuthorshipAPI.GetShadowed(referencing)
+        self.assertEqual(_RecordIds(shadowed), [('/World/Rock_1', 'rockmaker')])
         # The shadowed record's value is still readable.
-        self.assertEqual(
-            referencing.GetAttribute('authorship:rockmaker:softwarePackage').Get(),
-            'com.example.rocktool')
+        self.assertEqual(shadowed[0].GetSoftwarePackageAttr().Get(),
+                         'com.example.rocktool')
 
         self.assertEqual(
-            sorted(r.GetName()
-                   for r in UsdMedia.AuthorshipAPI.GetAllOnStage(stage)),
-            ['layout'])
-        self.assertEqual(
-            sorted(r.GetName()
-                   for r in UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage)),
-            ['layout', 'rockmaker'])
+            _RecordIds(UsdMedia.AuthorshipAPI.GetAllShadowed(stage)),
+            [('/World/Rock_1', 'rockmaker')])
+        self.assertEqual(UsdMedia.AuthorshipAPI.GetAllDuplicates(stage), [])
 
-    def test_DeepSearchOneSpecReportedOnce(self):
+    def test_SingleApplicationIsNotDuplicate(self):
         stage = Usd.Stage.CreateInMemory()
         prim = stage.DefinePrim('/World/Bunny', 'Mesh')
         UsdMedia.AuthorshipAPI.Apply(prim, 'hunyuan3d') \
             .CreateSoftwarePackageAttr('net.trellis3d.hunyuan3d')
 
-        # One spec applying one instance is one contribution, not two.
-        self.assertEqual(_RecordIds(UsdMedia.AuthorshipAPI.GetAllOnStage(stage)),
-                         [('/World/Bunny', 'hunyuan3d')])
-        self.assertEqual(
-            _RecordIds(UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage)),
-            [('/World/Bunny', 'hunyuan3d')])
+        self.assertEqual(UsdMedia.AuthorshipAPI.GetDuplicates(prim), [])
+        self.assertEqual(UsdMedia.AuthorshipAPI.GetShadowed(prim), [])
 
-    def test_DeepSearchReportsClobberedRecordPerSpec(self):
-        """The same instance name in two layers is one composed record, so
-        composition silently drops the weaker values. The deeper search reports
-        one entry per contributing spec, which is how that becomes visible."""
+    def test_GetDuplicates(self):
+        """The same instance applied in two layers is one composed record, so
+        composition silently drops the weaker values. It is reported once."""
         weak = Sdf.Layer.CreateAnonymous('weak.usda')
         weakStage = Usd.Stage.Open(weak)
-        weakPrim = weakStage.DefinePrim('/Bunny', 'Mesh')
-        weakApi = UsdMedia.AuthorshipAPI.Apply(weakPrim, 'blender')
+        weakApi = UsdMedia.AuthorshipAPI.Apply(
+            weakStage.DefinePrim('/Bunny', 'Mesh'), 'blender')
         weakApi.CreateSoftwarePackageAttr('org.blender')
-        weakApi.CreateSoftwareVersionAttr('4.1')
 
         strong = Sdf.Layer.CreateAnonymous('strong.usda')
         strong.subLayerPaths.append(weak.identifier)
         stage = Usd.Stage.Open(strong)
         prim = stage.GetPrimAtPath('/Bunny')
-        strongApi = UsdMedia.AuthorshipAPI.Apply(prim, 'blender')
-        strongApi.CreateSoftwarePackageAttr('com.example.other')
-        strongApi.CreateSoftwareVersionAttr('9.9')
+        UsdMedia.AuthorshipAPI.Apply(prim, 'blender') \
+            .CreateSoftwarePackageAttr('com.example.other')
 
-        # Composition keeps one record, and only the strongest values.
         self.assertEqual(prim.GetAppliedSchemas(), ['AuthorshipAPI:blender'])
-        self.assertEqual(_RecordIds(UsdMedia.AuthorshipAPI.GetAllOnStage(stage)),
-                         [('/Bunny', 'blender')])
         self.assertEqual(
             prim.GetAttribute('authorship:blender:softwarePackage').Get(),
             'com.example.other')
 
-        # Two specs contribute, so the deeper search returns two entries.
-        deep = UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage)
-        self.assertEqual(_RecordIds(deep),
-                         [('/Bunny', 'blender'), ('/Bunny', 'blender')])
-        # Both read composed values; they record that two specs contribute, not
-        # what each one said. The clobbered value is still in the prim stack.
-        self.assertEqual([r.GetSoftwarePackageAttr().Get() for r in deep],
-                         ['com.example.other', 'com.example.other'])
         self.assertEqual(
-            [spec.attributes['authorship:blender:softwarePackage'].default
-             for spec in prim.GetPrimStack()],
-            ['com.example.other', 'org.blender'])
+            _RecordIds(UsdMedia.AuthorshipAPI.GetDuplicates(prim)),
+            [('/Bunny', 'blender')])
+        self.assertEqual(
+            _RecordIds(UsdMedia.AuthorshipAPI.GetAllDuplicates(stage)),
+            [('/Bunny', 'blender')])
+        self.assertEqual(UsdMedia.AuthorshipAPI.GetAllShadowed(stage), [])
 
-    def test_DeepSearchScansEveryListOpType(self):
-        """A record is found however its application was list-edited."""
-        def MakeListOp(field, name):
+    def test_DiagnosticsScanListOpsThatAddItems(self):
+        """An application counts however it was list-edited, except for
+        ordered items, which only reorder and don't indicate presence."""
+        def MakeListOp(field):
             listOp = Sdf.TokenListOp()
-            setattr(listOp, field, ['AuthorshipAPI:' + name])
+            setattr(listOp, field, ['AuthorshipAPI:gen'])
             return listOp
 
-        cases = [('explicitItems', 'a'), ('prependedItems', 'b'),
-                 ('appendedItems', 'c'), ('orderedItems', 'd'),
-                 ('addedItems', 'e')]
-        for field, name in cases:
-            layer = Sdf.Layer.CreateAnonymous('.usda')
-            spec = Sdf.CreatePrimInLayer(layer, '/Prim')
+        for field, counted in [('explicitItems', True),
+                               ('prependedItems', True),
+                               ('appendedItems', True),
+                               ('addedItems', True),
+                               ('orderedItems', False)]:
+            weak = Sdf.Layer.CreateAnonymous('weak.usda')
+            spec = Sdf.CreatePrimInLayer(weak, '/Prim')
             spec.specifier = Sdf.SpecifierDef
-            spec.SetInfo('apiSchemas', MakeListOp(field, name))
+            spec.SetInfo('apiSchemas', MakeListOp(field))
 
-            stage = Usd.Stage.Open(layer)
-            deep = UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage)
-            self.assertEqual(_RecordIds(deep), [('/Prim', name)],
-                             'failed for %s' % field)
+            strong = Sdf.Layer.CreateAnonymous('strong.usda')
+            strong.subLayerPaths.append(weak.identifier)
+            stage = Usd.Stage.Open(strong)
+            prim = stage.GetPrimAtPath('/Prim')
+            UsdMedia.AuthorshipAPI.Apply(prim, 'gen')
+
+            expected = [('/Prim', 'gen')] if counted else []
+            self.assertEqual(
+                _RecordIds(UsdMedia.AuthorshipAPI.GetDuplicates(prim)),
+                expected, 'failed for %s' % field)
 
     def test_RecordsInsidePrototypes(self):
         """Authorship inside a native instance is shared through the prototype,
@@ -401,7 +386,7 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
     def test_ComputeAccumulatedRecordsDoesNotFindShadowedAncestors(self):
         """ComputeAccumulatedRecords() only sees the composed view, so a
         record an ancestor's explicit apiSchemas list shadows is not
-        accumulated. GetAllInPrimStacks() finds it instead."""
+        accumulated. GetShadowed() finds it instead."""
         asset = Sdf.Layer.CreateAnonymous('asset.usda')
         assetStage = Usd.Stage.Open(asset)
         group = assetStage.DefinePrim('/Group', 'Xform')
@@ -424,9 +409,8 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
             _RecordIds(UsdMedia.AuthorshipAPI.ComputeAccumulatedRecords(child)),
             [('/World/Child', 'own')])
         self.assertEqual(
-            sorted(r.GetName()
-                   for r in UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage)),
-            ['hidden', 'own'])
+            _RecordIds(UsdMedia.AuthorshipAPI.GetShadowed(referencing)),
+            [('/World', 'hidden')])
 
     def test_GetAllUnder(self):
         stage = Usd.Stage.CreateInMemory()
@@ -457,8 +441,8 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
 
     def test_GetAllUnderDoesNotFindShadowedRecords(self):
         """GetAllUnder() only sees the composed view, so a record an explicit
-        apiSchemas list shadows is not found this way. GetAllInPrimStacks()
-        finds it instead."""
+        apiSchemas list shadows is not found this way. GetAllShadowed() finds
+        it instead."""
         asset = Sdf.Layer.CreateAnonymous('asset.usda')
         assetStage = Usd.Stage.Open(asset)
         ghost = assetStage.DefinePrim('/Ghost', 'Xform')
@@ -476,7 +460,7 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         rootPrim = stage.GetPrimAtPath('/Root')
         self.assertEqual(UsdMedia.AuthorshipAPI.GetAllUnder(rootPrim), [])
         self.assertEqual(
-            _RecordIds(UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage)),
+            _RecordIds(UsdMedia.AuthorshipAPI.GetAllShadowed(stage)),
             [('/Root/Child', 'ghost')])
 
     def test_GetAllInLayerScopedToThatLayer(self):
@@ -522,11 +506,22 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         variantSet.SetVariantSelection('off')
 
         self.assertEqual(UsdMedia.AuthorshipAPI.GetAllOnStage(stage), [])
-        self.assertEqual(
-            UsdMedia.AuthorshipAPI.GetAllInPrimStacks(stage), [])
+        self.assertEqual(UsdMedia.AuthorshipAPI.GetAllShadowed(stage), [])
         self.assertEqual([str(p) for p in
                           UsdMedia.AuthorshipAPI.GetAllInLayer(layer)],
                          ['/Prim{v=on}.authorship:invariant'])
+
+    def test_GetAllInLayerFindsNestedVariants(self):
+        """Records authored directly on a variant spec nested inside another
+        variant are found too."""
+        layer = Sdf.Layer.CreateAnonymous('nested.usda')
+        spec = Sdf.CreatePrimInLayer(layer, '/Prim{a=x}{b=y}')
+        spec.SetInfo('apiSchemas', Sdf.TokenListOp.Create(
+            prependedItems=['AuthorshipAPI:nested']))
+
+        self.assertEqual([str(p) for p in
+                          UsdMedia.AuthorshipAPI.GetAllInLayer(layer)],
+                         ['/Prim{a=x}{b=y}.authorship:nested'])
 
     def test_GetAllInLayerPathsRoundTrip(self):
         """Returned paths are in the form Get() and IsAuthorshipAPIPath()
@@ -551,11 +546,16 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             UsdMedia.AuthorshipAPI.GetAllInLayer(None)
 
-    def test_InvalidStage(self):
-        with self.assertRaises(Tf.ErrorException):
-            UsdMedia.AuthorshipAPI.GetAllOnStage(None)
-        with self.assertRaises(Tf.ErrorException):
-            UsdMedia.AuthorshipAPI.GetAllInPrimStacks(None)
+    def test_InvalidInputs(self):
+        for method in [UsdMedia.AuthorshipAPI.GetAllOnStage,
+                       UsdMedia.AuthorshipAPI.GetAllShadowed,
+                       UsdMedia.AuthorshipAPI.GetAllDuplicates]:
+            with self.assertRaises(Tf.ErrorException):
+                method(None)
+        for method in [UsdMedia.AuthorshipAPI.GetShadowed,
+                       UsdMedia.AuthorshipAPI.GetDuplicates]:
+            with self.assertRaises(Tf.ErrorException):
+                method(Usd.Prim())
 
 
 if __name__ == '__main__':

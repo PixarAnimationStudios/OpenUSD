@@ -3,8 +3,11 @@
         {
             "Info": {
                 "Validators": {
-                    "ShadowedOrClobberedAuthorship": {
-                        "doc": "Diagnostic check for authorship records the composed stage can't report: an application shadowed by a stronger, explicit apiSchemas list, or the same instance name authored in several layers where composition keeps only the strongest opinion."
+                    "ShadowedOrDuplicateAuthorship": {
+                        "doc": "Warns about authorship records the composed prim can't report: an application shadowed by a stronger, explicit apiSchemas list, or an application authored in more than one prim spec, where composition keeps only the strongest opinion for each field."
+                    },
+                    "AuthorshipInputsPaired": {
+                        "doc": "inputNames and inputValues on an authorship record must be authored together, have the same length, and resolve from the same spec."
                     },
                     "keywords": [
                         "UsdMediaValidators"

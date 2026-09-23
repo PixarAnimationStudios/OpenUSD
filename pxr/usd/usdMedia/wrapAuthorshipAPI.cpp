@@ -341,9 +341,21 @@ WRAP_CUSTOM {
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetAllUnder")
 
-        .def("GetAllInPrimStacks", &This::GetAllInPrimStacks, arg("stage"),
+        .def("GetShadowed", &This::GetShadowed, arg("prim"),
              return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetAllInPrimStacks")
+        .staticmethod("GetShadowed")
+
+        .def("GetDuplicates", &This::GetDuplicates, arg("prim"),
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetDuplicates")
+
+        .def("GetAllShadowed", &This::GetAllShadowed, arg("stage"),
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetAllShadowed")
+
+        .def("GetAllDuplicates", &This::GetAllDuplicates, arg("stage"),
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetAllDuplicates")
 
         .def("GetAllInLayer", &This::GetAllInLayer, arg("layer"),
              return_value_policy<TfPySequenceToList>())

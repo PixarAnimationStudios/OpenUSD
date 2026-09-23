@@ -1,4 +1,4 @@
 /Bunny
-  blender  (authored in 2 prim specs; only the strongest opinion for each field survives composition)
+  blender  (applied in more than one prim spec; only the strongest opinion for each field survives composition)
       softwarePackage = "org.blender"
       softwareVersion = "4.2"

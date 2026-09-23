@@ -42,7 +42,7 @@
       usageTerms        = "CC-BY-SA-4.0"
 
 /Set/TeaCup
-  jane  (not applied; found in prim stack)
+  jane  (shadowed: not applied on the composed prim)
       creator         = ["Jane Doe"]
       softwarePackage = "org.blender"
       softwareVersion = "4.2"

@@ -52,7 +52,8 @@ class SdfAssetPath;
 /// 
 /// \sa UsdMediaAuthorshipAPI::GetAllOnStage()
 /// \sa UsdMediaAuthorshipAPI::ComputeAccumulatedRecords()
-/// \sa UsdMediaAuthorshipAPI::GetAllInPrimStacks()
+/// \sa UsdMediaAuthorshipAPI::GetAllShadowed()
+/// \sa UsdMediaAuthorshipAPI::GetAllDuplicates()
 /// 
 ///
 class UsdMediaAuthorshipAPI : public UsdAPISchemaBase
@@ -563,15 +564,19 @@ public:
     // --(BEGIN CUSTOM CODE)--
 
     /// Returns every authorship record on \p stage, sorted by prim path then
-    /// instance name. Records inside a native instance's prototype are
-    /// reported once, against the prototype, not once per instance.
-    /// Inactive and abstract prims are included, but an inactive prim's
-    /// descendants are not (they aren't composed at all). Reflects the
-    /// stage's current load state and variant selections.
+    /// instance name. Records on descendant prims of a native instance's
+    /// prototype are reported once, against the prototype, not once per
+    /// instance. Inactive and abstract prims are included, but an inactive
+    /// prim's descendants are not (they aren't composed at all). Reflects
+    /// the stage's current load state and variant selections.
     ///
     /// Reports applied schemas as seen by UsdPrim::GetAppliedSchemas() on
-    /// composed prims. \sa GetAllInPrimStacks() for a diagnostic search
-    /// that also finds shadowed or clobbered records.
+    /// composed prims.
+    ///
+    /// \sa GetAllShadowed() and GetAllDuplicates() for diagnostics on
+    /// records that composition hides or collapses.
+    /// \sa GetAllInLayer() for a per-layer view that includes unselected
+    /// variants and inactive prim specs.
     USDMEDIA_API
     static std::vector<UsdMediaAuthorshipAPI>
     GetAllOnStage(const UsdStagePtr &stage);
@@ -587,7 +592,7 @@ public:
     /// share an instance name across prims.
     ///
     /// Only consults the composed stage; does not accumulate records
-    /// shadowed by explicit `apiSchemas` list-ops. \sa GetAllInPrimStacks().
+    /// shadowed by explicit `apiSchemas` list-ops. \sa GetShadowed().
     USDMEDIA_API
     static std::vector<UsdMediaAuthorshipAPI>
     ComputeAccumulatedRecords(const UsdPrim &prim);
@@ -597,40 +602,69 @@ public:
     /// beneath a native instance are skipped; their records live on the
     /// prototype (see GetAllOnStage()).
     ///
-    /// Only consults the composed stage. \sa GetAllInPrimStacks().
+    /// Only consults the composed stage. \sa GetShadowed().
     USDMEDIA_API
     static std::vector<UsdMediaAuthorshipAPI>
     GetAllUnder(const UsdPrim &prim);
 
-    /// Performs a diagnostic search for records unreachable via composed
-    /// views, such as an application shadowed by an explicit apiSchemas
-    /// list in a stronger layer, or the same instance name authored in
-    /// several layers (composition keeps only the strongest opinion).
+    /// \name Diagnostics
     ///
-    /// Scans every SdfPrimSpec on \p stage instead of the composed prim.
-    /// Nothing is deduplicated: a record in three layers is returned
-    /// three times, strongest-to-weakest, so callers can see what
-    /// composition dropped.
+    /// These examine every SdfPrimSpec in a prim's prim stack
+    /// (UsdPrim::GetPrimStack()) rather than the composed prim, and report
+    /// only records that composition hides or collapses. On a stage with
+    /// neither, they return nothing. Intended for debugging and validation,
+    /// not general use, and considerably slower than GetAllOnStage().
     ///
-    /// Only apiSchemas metadata is scanned, not authored properties, so a
-    /// record whose schema was never applied anywhere is not found.
-    /// Instance names and base names can both be namespaced, so a property
-    /// name alone can't be split back into the two. Repeated entries read
-    /// the same composed values; HasAPI() may report false for them.
-    /// Unselected variants aren't in a prim's prim stack
-    /// (UsdPrim::GetPrimStack()) and aren't found either; use
-    /// GetAllInLayer() for those.
+    /// Only apiSchemas metadata is examined, not authored properties, so a
+    /// record whose schema was never applied anywhere is not found. Instance
+    /// names and base names can both be namespaced, so a property name alone
+    /// can't be split back into the two.
     ///
-    /// Considerably slower than GetAllOnStage(), ComputeAccumulatedRecords(),
-    /// and GetAllUnder(). Intended for debugging and validation, not
-    /// general use.
+    /// @{
+
+    /// Returns the records applied in some spec of \p prim's prim stack
+    /// that the composed prim does not report, sorted by instance name.
+    /// This happens when a stronger layer authors an explicit apiSchemas
+    /// list that omits them. Their properties still compose and remain
+    /// readable, but UsdPrim::HasAPI() reports \c false for them.
     USDMEDIA_API
     static std::vector<UsdMediaAuthorshipAPI>
-    GetAllInPrimStacks(const UsdStagePtr &stage);
+    GetShadowed(const UsdPrim &prim);
 
-    /// Returns the path of every authorship record authored in \p layer, sorted,
-    /// in the <tt><primPath>.authorship:instanceName</tt> form that
-    /// IsAuthorshipAPIPath() parses.
+    /// Returns the records whose application is authored in more than one
+    /// spec of \p prim's prim stack, once each, sorted by instance name.
+    /// Composition keeps only the strongest opinion for each of their
+    /// fields, so weaker values are dropped.
+    USDMEDIA_API
+    static std::vector<UsdMediaAuthorshipAPI>
+    GetDuplicates(const UsdPrim &prim);
+
+    /// Returns GetShadowed() for every prim on \p stage, sorted by prim path
+    /// then instance name. Visits prims the same way as GetAllOnStage().
+    ///
+    /// \sa GetAllInLayer() for a per-layer view that includes unselected
+    /// variants and inactive prim specs.
+    USDMEDIA_API
+    static std::vector<UsdMediaAuthorshipAPI>
+    GetAllShadowed(const UsdStagePtr &stage);
+
+    /// Returns GetDuplicates() for every prim on \p stage, sorted by prim
+    /// path then instance name. Visits prims the same way as
+    /// GetAllOnStage().
+    ///
+    /// \sa GetAllInLayer() for a per-layer view that includes unselected
+    /// variants and inactive prim specs.
+    USDMEDIA_API
+    static std::vector<UsdMediaAuthorshipAPI>
+    GetAllDuplicates(const UsdStagePtr &stage);
+
+    /// @}
+
+    /// Returns the path of every authorship record authored in \p layer,
+    /// sorted, in the <tt><specPath>.authorship:instanceName</tt> form that
+    /// IsAuthorshipAPIPath() parses. For records authored inside a variant,
+    /// the spec path includes the variant selections, e.g.
+    /// <tt>/Prim{v=on}.authorship:instanceName</tt>.
     ///
     /// Inspects a single layer's scene description without composition.
     /// Records in sublayers and reference targets are not included. Use

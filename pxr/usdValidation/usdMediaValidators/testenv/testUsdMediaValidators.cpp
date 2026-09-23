@@ -11,6 +11,7 @@
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/primSpec.h"
+#include "pxr/usd/usd/editContext.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/references.h"
 #include "pxr/usd/usd/stage.h"
@@ -23,6 +24,7 @@
 
 #include <cstdlib>
 #include <set>
+#include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -30,37 +32,48 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
     ((usdMediaValidatorsPlugin, "usdMediaValidators"))
 );
 
-// Verify the expected validator is registered for this plugin.
-void
-TestUsdMediaValidatorsRegistered()
+static const UsdValidationValidator *
+_GetValidator(const TfToken &name)
 {
-    const UsdValidationRegistry &registry
-        = UsdValidationRegistry::GetInstance();
+    const UsdValidationValidator *validator =
+        UsdValidationRegistry::GetInstance().GetOrLoadValidatorByName(name);
+    TF_AXIOM(validator);
+    return validator;
+}
 
-    const UsdValidationValidatorMetadataVector metadata
-        = registry.GetValidatorMetadataForPlugin(
-            _tokens->usdMediaValidatorsPlugin);
-
-    TF_AXIOM(metadata.size() == 1);
-    TF_AXIOM(metadata[0].name ==
-             UsdMediaValidatorNameTokens->shadowedOrClobberedAuthorship);
+static TfToken
+_ErrorId(const TfToken &validatorName, const TfToken &errorName)
+{
+    return TfToken(validatorName.GetString() + "." + errorName.GetString());
 }
 
 void
-TestCleanStageHasNoErrors()
+TestUsdMediaValidatorsRegistered()
 {
-    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
-    const UsdValidationValidator *validator
-        = registry.GetOrLoadValidatorByName(
-            UsdMediaValidatorNameTokens->shadowedOrClobberedAuthorship);
-    TF_AXIOM(validator);
+    const UsdValidationValidatorMetadataVector metadata =
+        UsdValidationRegistry::GetInstance().GetValidatorMetadataForPlugin(
+            _tokens->usdMediaValidatorsPlugin);
+
+    std::set<TfToken> names;
+    for (const UsdValidationValidatorMetadata &m : metadata) {
+        names.insert(m.name);
+    }
+    TF_AXIOM(names == std::set<TfToken>({
+        UsdMediaValidatorNameTokens->shadowedOrDuplicateAuthorship,
+        UsdMediaValidatorNameTokens->authorshipInputsPaired }));
+}
+
+void
+TestShadowedOrDuplicateCleanPrim()
+{
+    const UsdValidationValidator *validator = _GetValidator(
+        UsdMediaValidatorNameTokens->shadowedOrDuplicateAuthorship);
 
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     UsdPrim prim = stage->DefinePrim(SdfPath("/Bunny"));
     UsdMediaAuthorshipAPI::Apply(prim, TfToken("hunyuan3d"));
 
-    const UsdValidationErrorVector errors = validator->Validate(stage);
-    TF_AXIOM(errors.empty());
+    TF_AXIOM(validator->Validate(prim).empty());
 }
 
 // An explicit apiSchemas list on a referencing prim can shadow an
@@ -68,11 +81,8 @@ TestCleanStageHasNoErrors()
 void
 TestShadowedApplicationIsFlagged()
 {
-    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
-    const UsdValidationValidator *validator
-        = registry.GetOrLoadValidatorByName(
-            UsdMediaValidatorNameTokens->shadowedOrClobberedAuthorship);
-    TF_AXIOM(validator);
+    const UsdValidationValidator *validator = _GetValidator(
+        UsdMediaValidatorNameTokens->shadowedOrDuplicateAuthorship);
 
     SdfLayerRefPtr asset = SdfLayer::CreateAnonymous("asset.usda");
     UsdStageRefPtr assetStage = UsdStage::Open(asset);
@@ -85,37 +95,31 @@ TestShadowedApplicationIsFlagged()
     UsdPrim referencing = stage->DefinePrim(SdfPath("/World/Rock_1"));
     referencing.GetReferences().AddReference(asset->GetIdentifier());
 
-    const SdfPrimSpecHandle primSpec =
-        root->GetPrimAtPath(SdfPath("/World/Rock_1"));
-    primSpec->SetInfo(
+    root->GetPrimAtPath(SdfPath("/World/Rock_1"))->SetInfo(
         UsdTokens->apiSchemas,
         VtValue(SdfTokenListOp::CreateExplicit(
             { TfToken("AuthorshipAPI:layout") })));
 
-    const UsdValidationErrorVector errors = validator->Validate(stage);
+    const UsdValidationErrorVector errors = validator->Validate(referencing);
     TF_AXIOM(errors.size() == 1u);
-    const TfToken expectedId(
-        "usdMediaValidators:ShadowedOrClobberedAuthorship"
-        ".ShadowedAuthorshipApplication");
-    TF_AXIOM(errors[0].GetIdentifier() == expectedId);
+    TF_AXIOM(errors[0].GetIdentifier() == _ErrorId(
+        UsdMediaValidatorNameTokens->shadowedOrDuplicateAuthorship,
+        UsdMediaValidationErrorNameTokens->shadowedAuthorshipApplication));
     TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Warn);
 }
 
-// The same instance name authored in two contributing layers is one
-// composed record, but two contributing specs.
+// The same instance applied in two contributing layers is one composed
+// record, but two contributing specs.
 void
-TestClobberedInstanceNameIsFlagged()
+TestDuplicateApplicationIsFlagged()
 {
-    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
-    const UsdValidationValidator *validator
-        = registry.GetOrLoadValidatorByName(
-            UsdMediaValidatorNameTokens->shadowedOrClobberedAuthorship);
-    TF_AXIOM(validator);
+    const UsdValidationValidator *validator = _GetValidator(
+        UsdMediaValidatorNameTokens->shadowedOrDuplicateAuthorship);
 
     SdfLayerRefPtr weak = SdfLayer::CreateAnonymous("weak.usda");
     UsdStageRefPtr weakStage = UsdStage::Open(weak);
-    UsdPrim weakPrim = weakStage->DefinePrim(SdfPath("/Bunny"));
-    UsdMediaAuthorshipAPI::Apply(weakPrim, TfToken("blender"));
+    UsdMediaAuthorshipAPI::Apply(
+        weakStage->DefinePrim(SdfPath("/Bunny")), TfToken("blender"));
 
     SdfLayerRefPtr strong = SdfLayer::CreateAnonymous("strong.usda");
     strong->InsertSubLayerPath(weak->GetIdentifier());
@@ -123,21 +127,92 @@ TestClobberedInstanceNameIsFlagged()
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/Bunny"));
     UsdMediaAuthorshipAPI::Apply(prim, TfToken("blender"));
 
-    const UsdValidationErrorVector errors = validator->Validate(stage);
+    const UsdValidationErrorVector errors = validator->Validate(prim);
     TF_AXIOM(errors.size() == 1u);
-    const TfToken expectedId(
-        "usdMediaValidators:ShadowedOrClobberedAuthorship"
-        ".ClobberedAuthorshipInstanceName");
-    TF_AXIOM(errors[0].GetIdentifier() == expectedId);
+    TF_AXIOM(errors[0].GetIdentifier() == _ErrorId(
+        UsdMediaValidatorNameTokens->shadowedOrDuplicateAuthorship,
+        UsdMediaValidationErrorNameTokens->duplicateAuthorshipApplication));
+}
+
+void
+TestInputsPaired()
+{
+    const UsdValidationValidator *validator = _GetValidator(
+        UsdMediaValidatorNameTokens->authorshipInputsPaired);
+    const TfToken &name = UsdMediaValidatorNameTokens->authorshipInputsPaired;
+
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    UsdPrim prim = stage->DefinePrim(SdfPath("/Bunny"));
+    UsdMediaAuthorshipAPI record =
+        UsdMediaAuthorshipAPI::Apply(prim, TfToken("gen"));
+
+    // Neither authored.
+    TF_AXIOM(validator->Validate(prim).empty());
+
+    // Names without values.
+    record.CreateInputNamesAttr(VtValue(VtStringArray({"prompt", "seed"})));
+    {
+        const UsdValidationErrorVector errors = validator->Validate(prim);
+        TF_AXIOM(errors.size() == 1u);
+        TF_AXIOM(errors[0].GetIdentifier() == _ErrorId(name,
+            UsdMediaValidationErrorNameTokens->unpairedAuthorshipInputs));
+        TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+    }
+
+    // Mismatched lengths.
+    record.CreateInputValuesAttr(VtValue(VtStringArray({"A fluffy bunny"})));
+    {
+        const UsdValidationErrorVector errors = validator->Validate(prim);
+        TF_AXIOM(errors.size() == 1u);
+        TF_AXIOM(errors[0].GetIdentifier() == _ErrorId(name,
+            UsdMediaValidationErrorNameTokens->mismatchedAuthorshipInputs));
+    }
+
+    // Matched, in the same spec.
+    record.GetInputValuesAttr().Set(
+        VtStringArray({"A fluffy bunny", "1234"}));
+    TF_AXIOM(validator->Validate(prim).empty());
+}
+
+// Matching lengths resolved from different layers can still be misaligned.
+void
+TestInputsFromDifferentLayers()
+{
+    const UsdValidationValidator *validator = _GetValidator(
+        UsdMediaValidatorNameTokens->authorshipInputsPaired);
+
+    SdfLayerRefPtr weak = SdfLayer::CreateAnonymous("weak.usda");
+    UsdStageRefPtr weakStage = UsdStage::Open(weak);
+    UsdMediaAuthorshipAPI weakRecord = UsdMediaAuthorshipAPI::Apply(
+        weakStage->DefinePrim(SdfPath("/Bunny")), TfToken("gen"));
+    weakRecord.CreateInputNamesAttr(VtValue(VtStringArray({"prompt"})));
+    weakRecord.CreateInputValuesAttr(VtValue(VtStringArray({"a bunny"})));
+
+    SdfLayerRefPtr strong = SdfLayer::CreateAnonymous("strong.usda");
+    strong->InsertSubLayerPath(weak->GetIdentifier());
+    UsdStageRefPtr stage = UsdStage::Open(strong);
+    UsdPrim prim = stage->GetPrimAtPath(SdfPath("/Bunny"));
+    UsdMediaAuthorshipAPI(prim, TfToken("gen"))
+        .CreateInputNamesAttr(VtValue(VtStringArray({"seed"})));
+
+    const UsdValidationErrorVector errors = validator->Validate(prim);
+    TF_AXIOM(errors.size() == 1u);
+    TF_AXIOM(errors[0].GetIdentifier() == _ErrorId(
+        UsdMediaValidatorNameTokens->authorshipInputsPaired,
+        UsdMediaValidationErrorNameTokens
+            ->authorshipInputsFromDifferentSpecs));
+    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Warn);
 }
 
 int
 main()
 {
     TestUsdMediaValidatorsRegistered();
-    TestCleanStageHasNoErrors();
+    TestShadowedOrDuplicateCleanPrim();
     TestShadowedApplicationIsFlagged();
-    TestClobberedInstanceNameIsFlagged();
+    TestDuplicateApplicationIsFlagged();
+    TestInputsPaired();
+    TestInputsFromDifferentLayers();
 
     return EXIT_SUCCESS;
 }

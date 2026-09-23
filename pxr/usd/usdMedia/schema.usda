@@ -232,7 +232,8 @@ class "AuthorshipAPI" (
 
     \\sa UsdMediaAuthorshipAPI::GetAllOnStage()
     \\sa UsdMediaAuthorshipAPI::ComputeAccumulatedRecords()
-    \\sa UsdMediaAuthorshipAPI::GetAllInPrimStacks()
+    \\sa UsdMediaAuthorshipAPI::GetAllShadowed()
+    \\sa UsdMediaAuthorshipAPI::GetAllDuplicates()
     """
     customData = {
         token apiSchemaType = "multipleApply"

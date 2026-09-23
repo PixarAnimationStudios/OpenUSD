@@ -18,11 +18,11 @@ pxr_register_test(testUsdAuthors
     EXPECTED_RETURN_CODE 0
 )
 
-pxr_register_test(testUsdAuthorsDeep
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdauthors --deep input.usda"
+pxr_register_test(testUsdAuthorsDebug
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdauthors --debug input.usda"
     TESTENV testenv/testUsdAuthors
-    STDOUT_REDIRECT output_deep.txt
-    DIFF_COMPARE output_deep.txt
+    STDOUT_REDIRECT output_debug.txt
+    DIFF_COMPARE output_debug.txt
     EXPECTED_RETURN_CODE 0
 )
 
@@ -35,7 +35,7 @@ pxr_register_test(testUsdAuthorsSummary
 )
 
 pxr_register_test(testUsdAuthorsClobbered
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdauthors --deep clobber.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdauthors --debug clobber.usda"
     TESTENV testenv/testUsdAuthors
     STDOUT_REDIRECT output_clobber.txt
     DIFF_COMPARE output_clobber.txt
@@ -67,10 +67,10 @@ pxr_register_test(testUsdAuthorsLayerVariants
 )
 
 pxr_register_test(testUsdAuthorsVariantsComposed
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdauthors --deep variants.usda"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdauthors --debug variants.usda"
     TESTENV testenv/testUsdAuthors
-    STDOUT_REDIRECT output_variants_deep.txt
-    DIFF_COMPARE output_variants_deep.txt
+    STDOUT_REDIRECT output_variants_debug.txt
+    DIFF_COMPARE output_variants_debug.txt
     EXPECTED_RETURN_CODE 0
 )
 
