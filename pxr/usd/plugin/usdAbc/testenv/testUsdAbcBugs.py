@@ -5,7 +5,7 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 
-from pxr import Sdf, Usd, UsdAbc
+from pxr import Sdf, Usd
 import unittest
 
 class TestUsdAbcBugs(unittest.TestCase):
