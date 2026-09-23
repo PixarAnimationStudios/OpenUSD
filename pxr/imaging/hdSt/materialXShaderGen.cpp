@@ -6,6 +6,7 @@
 //
 #include "pxr/imaging/hdSt/materialXShaderGen.h"
 #include "pxr/imaging/hdSt/materialXFilter.h"
+#include "pxr/imaging/hdSt/materialXLobePruner.h"
 #include "pxr/imaging/hdMtlx/combinedMtlxVersion.h"
 #include "pxr/base/tf/stringUtils.h"
 
@@ -1070,6 +1071,14 @@ HdStMaterialXShaderGenGlsl::HdStMaterialXShaderGenGlsl(
     // Register the customized version of the Surface node generator
     registerImplementation("IM_surface_" + this->getTarget(),
         HdStMaterialXSurfaceNodeGenGlsl::create);
+
+    // Register LobePruner custom nodes:
+    registerImplementation(
+        HdSt_GetDarkBaseImplementationName(),
+        HdStDarkClosureNode::create);
+    registerImplementation(
+        HdSt_GetDarkLayerImplementationName(),
+        HdStDarkClosureNode::create);
 }
 
 // ----------------------------------------------------------------------------
@@ -1112,6 +1121,14 @@ HdStMaterialXShaderGenVkGlsl::HdStMaterialXShaderGenVkGlsl(
     // Register the customized version of the Surface node generator
     registerImplementation("IM_surface_" + this->getTarget(),
         HdStMaterialXSurfaceNodeGenVkGlsl::create);
+
+    // Register LobePruner custom nodes:
+    registerImplementation(
+        HdSt_GetDarkBaseImplementationName(),
+        HdStDarkClosureNode::create);
+    registerImplementation(
+        HdSt_GetDarkLayerImplementationName(),
+        HdStDarkClosureNode::create);
 }
 
 #ifdef PXR_METAL_SUPPORT_ENABLED
@@ -1193,6 +1210,14 @@ HdStMaterialXShaderGenMsl::HdStMaterialXShaderGenMsl(
     // Register the customized version of the Surface node generator
     registerImplementation("IM_surface_" + this->getTarget(),
         HdStMaterialXSurfaceNodeGenMsl::create);
+
+    // Register LobePruner custom nodes:
+    registerImplementation(
+        HdSt_GetDarkBaseImplementationName(),
+        HdStDarkClosureNode::create);
+    registerImplementation(
+        HdSt_GetDarkLayerImplementationName(),
+        HdStDarkClosureNode::create);
 }
 
 // Based on MslShaderGenerator::generate()
