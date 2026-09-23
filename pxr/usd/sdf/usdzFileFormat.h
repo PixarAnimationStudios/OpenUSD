@@ -46,7 +46,7 @@ public:
     InitData(const FileFormatArguments& args) const override;
 
     SDF_API
-    virtual bool CanRead(const std::string &file) const override;
+    virtual bool CanRead(const std::string &resolvedPath) const override;
 
     SDF_API
     virtual bool Read(
