@@ -45,6 +45,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sphereVertex,             "ImplicitSurface.Vertex.Sphere"))
     ((sphereFragment,           "ImplicitSurface.Fragment.Sphere"))
 
+    ((cylinderTypeDef,          "ImplicitSurface.TypeDef.Cylinder"))
+    ((cylinderBounds,           "ImplicitSurface.Bounds.Cylinder"))
+    ((cylinderIntersection,     "ImplicitSurface.Intersection.Cylinder"))
+    ((cylinderVertex,           "ImplicitSurface.Vertex.Cylinder"))
+    ((cylinderFragment,         "ImplicitSurface.Fragment.Cylinder"))
+
     // main for all the shader stages
     ((mainVS,                   "ImplicitSurface.Vertex"))
     ((mainFS,                   "ImplicitSurface.Fragment"))
@@ -108,7 +114,13 @@ const _ShapeSections &_GetShapeSections(TfToken const &primType)
             _tokens->sphereBounds,
             _tokens->sphereIntersection,
             _tokens->sphereVertex,
-            _tokens->sphereFragment } }
+            _tokens->sphereFragment } },
+        { HdPrimTypeTokens->cylinder,
+          { _tokens->cylinderTypeDef,
+            _tokens->cylinderBounds,
+            _tokens->cylinderIntersection,
+            _tokens->cylinderVertex,
+            _tokens->cylinderFragment } }
     };
 
     for (auto const &entry : shapeTable) {

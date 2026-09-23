@@ -1,0 +1,306 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2026 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/cylinder.glslfx
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.TypeDef.Cylinder
+
+const float CYLINDER_EPS = 1e-8;
+const int CYLINDER_AXIS_X = 0;
+const int CYLINDER_AXIS_Y = 1;
+const int CYLINDER_HIT_NONE = -1;
+const int CYLINDER_HIT_SIDE = 0;
+const int CYLINDER_HIT_BOTTOM = 1;
+const int CYLINDER_HIT_TOP = 2;
+
+struct CylinderHit
+{
+    float dist;
+    int kind;
+};
+
+struct CylinderHits
+{
+    CylinderHit nearHit;
+    CylinderHit farHit;
+};
+
+CylinderHit MakeCylinderHit(float dist, int kind)
+{
+    CylinderHit hit;
+    hit.dist = dist;
+    hit.kind = kind;
+    return hit;
+}
+
+CylinderHits MakeEmptyCylinderHits()
+{
+    CylinderHits hits;
+    hits.nearHit = MakeCylinderHit(0.0, CYLINDER_HIT_NONE);
+    hits.farHit = MakeCylinderHit(0.0, CYLINDER_HIT_NONE);
+    return hits;
+}
+
+vec3 ToCylinderSpace(vec3 value, int axis)
+{
+    if (axis == CYLINDER_AXIS_X) {
+        return value.yzx;
+    }
+    if (axis == CYLINDER_AXIS_Y) {
+        return value.xzy;
+    }
+    return value;
+}
+
+vec3 FromCylinderSpace(vec3 value, int axis)
+{
+    if (axis == CYLINDER_AXIS_X) {
+        return value.zxy;
+    }
+    if (axis == CYLINDER_AXIS_Y) {
+        return value.xzy;
+    }
+    return value;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Bounds.Cylinder
+
+Bbox ComputeCylinderBboxEye(
+    const vec3 halfExtent, const MAT4 instanceModelView)
+{
+    const vec3 centerEye = TransformPoint(instanceModelView, vec3(0.0));
+    const mat3 instanceModelView3 = Mat4ToMat3(instanceModelView);
+    const vec3 bboxSizeEye = mat3(
+        abs(instanceModelView3[0]),
+        abs(instanceModelView3[1]),
+        abs(instanceModelView3[2])) * halfExtent;
+
+    Bbox bboxEye;
+    bboxEye.minBound = centerEye - bboxSizeEye;
+    bboxEye.maxBound = centerEye + bboxSizeEye;
+    return bboxEye;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Vertex.Cylinder
+
+Bbox ComputeBboxEye()
+{
+    const MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+    const MAT4 instanceModelView = GetWorldToViewMatrix() * transform;
+
+    const float radiusTop = max(0.0, HdGet_radiusTop());
+    const float radiusBottom = max(0.0, HdGet_radiusBottom());
+    const float height = max(0.0, HdGet_height());
+    const float maxRadius = max(radiusTop, radiusBottom);
+    const vec3 halfExtent = FromCylinderSpace(
+        vec3(maxRadius, maxRadius, 0.5 * height), HdGet_axis());
+
+    return ComputeCylinderBboxEye(halfExtent, instanceModelView);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Intersection.Cylinder
+
+void AddCylinderHit(CylinderHit hit, REF(thread, CylinderHits) hits)
+{
+    if (hit.kind == CYLINDER_HIT_NONE) {
+        return;
+    }
+
+    const float tolerance = 1e-5;
+
+    if (hits.nearHit.kind != CYLINDER_HIT_NONE &&
+        abs(hit.dist - hits.nearHit.dist) <= tolerance) {
+        return;
+    } else if (hits.farHit.kind != CYLINDER_HIT_NONE &&
+               abs(hit.dist - hits.farHit.dist) <= tolerance) {
+        return;
+    } else if (hits.nearHit.kind == CYLINDER_HIT_NONE ||
+               hit.dist < hits.nearHit.dist) {
+        hits.farHit = hits.nearHit;
+        hits.nearHit = hit;
+    } else if (hits.farHit.kind == CYLINDER_HIT_NONE ||
+               hit.dist < hits.farHit.dist) {
+        hits.farHit = hit;
+    }
+}
+
+CylinderHits IntersectLateral(
+    vec3 rayOrigin,
+    vec3 rayDir,
+    float height,
+    float radiusBottom,
+    float radiusTop)
+{
+    CylinderHits hits = MakeEmptyCylinderHits();
+
+    if (height <= 0.0) {
+        return hits;
+    }
+
+    const float halfHeight = 0.5 * height;
+    const float slope = (radiusTop - radiusBottom) / height;
+    const float radiusAtOrigin = 0.5 * (radiusTop + radiusBottom);
+    const float radialOriginSquared = dot(rayOrigin.xy, rayOrigin.xy);
+    const float radialDirSquared = dot(rayDir.xy, rayDir.xy);
+    const float radiusAlongOrigin = slope * rayOrigin.z + radiusAtOrigin;
+    const float radiusAlongDir = slope * rayDir.z;
+
+    const float a = radialDirSquared - radiusAlongDir * radiusAlongDir;
+    const float halfB = dot(rayOrigin.xy, rayDir.xy) -
+        radiusAlongOrigin * radiusAlongDir;
+    const float c = radialOriginSquared -
+        radiusAlongOrigin * radiusAlongOrigin;
+
+    if (abs(a) < CYLINDER_EPS) {
+        if (abs(halfB) <= CYLINDER_EPS) {
+            return hits;
+        }
+
+        const float t = -c / (2.0 * halfB);
+        const float z = rayOrigin.z + t * rayDir.z;
+        if (z >= -halfHeight && z <= halfHeight) {
+            AddCylinderHit(MakeCylinderHit(t, CYLINDER_HIT_SIDE), hits);
+        }
+        return hits;
+    }
+
+    const float quarterDiscriminant = halfB * halfB - a * c;
+    if (quarterDiscriminant < 0.0) {
+        return hits;
+    }
+
+    const float root = sqrt(quarterDiscriminant);
+    const float t0 = (-halfB - root) / a;
+    const float t1 = (-halfB + root) / a;
+    const float z0 = rayOrigin.z + t0 * rayDir.z;
+    const float z1 = rayOrigin.z + t1 * rayDir.z;
+    if (z0 >= -halfHeight && z0 <= halfHeight) {
+        AddCylinderHit(MakeCylinderHit(t0, CYLINDER_HIT_SIDE), hits);
+    }
+    if (z1 >= -halfHeight && z1 <= halfHeight) {
+        AddCylinderHit(MakeCylinderHit(t1, CYLINDER_HIT_SIDE), hits);
+    }
+
+    return hits;
+}
+
+CylinderHit IntersectCap(
+    vec3 rayOrigin,
+    vec3 rayDir,
+    float z,
+    float radius,
+    int kind)
+{
+    if (abs(rayDir.z) <= CYLINDER_EPS) {
+        return MakeCylinderHit(0.0, CYLINDER_HIT_NONE);
+    }
+
+    const float t = (z - rayOrigin.z) / rayDir.z;
+    const vec2 point = rayOrigin.xy + t * rayDir.xy;
+    if (dot(point, point) <= radius * radius) {
+        return MakeCylinderHit(t, kind);
+    }
+
+    return MakeCylinderHit(0.0, CYLINDER_HIT_NONE);
+}
+
+CylinderHits IntersectCylinder(vec3 rayOrigin, vec3 rayDir)
+{
+    const float height = max(0.0, HdGet_height());
+    const float halfHeight = 0.5 * height;
+    const float radiusBottom = max(0.0, HdGet_radiusBottom());
+    const float radiusTop = max(0.0, HdGet_radiusTop());
+
+    CylinderHits hits = MakeEmptyCylinderHits();
+    const CylinderHits lateralHits = IntersectLateral(
+        rayOrigin, rayDir, height, radiusBottom, radiusTop);
+    const CylinderHit bottomHit = IntersectCap(
+        rayOrigin, rayDir, -halfHeight, radiusBottom, CYLINDER_HIT_BOTTOM);
+    const CylinderHit topHit = IntersectCap(
+        rayOrigin, rayDir, halfHeight, radiusTop, CYLINDER_HIT_TOP);
+
+    AddCylinderHit(lateralHits.nearHit, hits);
+    AddCylinderHit(lateralHits.farHit, hits);
+    AddCylinderHit(bottomHit, hits);
+    AddCylinderHit(topHit, hits);
+
+    if (hits.nearHit.kind != CYLINDER_HIT_NONE &&
+        hits.farHit.kind == CYLINDER_HIT_NONE) {
+        hits.farHit = hits.nearHit;
+    }
+
+    return hits;
+}
+
+vec3 ComputeCylinderNormal(vec3 point, int hitKind)
+{
+    if (hitKind == CYLINDER_HIT_BOTTOM) {
+        return vec3(0.0, 0.0, -1.0);
+    }
+    if (hitKind == CYLINDER_HIT_TOP) {
+        return vec3(0.0, 0.0, 1.0);
+    }
+
+    const float height = max(0.0, HdGet_height());
+    const float radiusBottom = max(0.0, HdGet_radiusBottom());
+    const float radiusTop = max(0.0, HdGet_radiusTop());
+    const float slope = (radiusTop - radiusBottom) / height;
+    const float radius = slope * point.z +
+        0.5 * (radiusTop + radiusBottom);
+    return normalize(vec3(point.xy, -slope * radius));
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Fragment.Cylinder
+
+HitPoints ComputeHitPointsObj(Ray rayObj)
+{
+    const int axis = HdGet_axis();
+    const vec3 rayOriginCylinder = ToCylinderSpace(rayObj.origin, axis);
+    const vec3 rayDirCylinder = normalize(
+        ToCylinderSpace(rayObj.dir, axis));
+    const CylinderHits cylinderHits =
+        IntersectCylinder(rayOriginCylinder, rayDirCylinder);
+
+    HitPoints hits;
+    hits.near.visible = cylinderHits.nearHit.kind != CYLINDER_HIT_NONE &&
+                        cylinderHits.nearHit.dist >= 0.0;
+    hits.far.visible = cylinderHits.farHit.kind != CYLINDER_HIT_NONE &&
+                       cylinderHits.farHit.dist >= 0.0;
+
+    if (hits.near.visible) {
+        const vec3 positionCylinder = rayOriginCylinder +
+            cylinderHits.nearHit.dist * rayDirCylinder;
+        hits.near.point.position = FromCylinderSpace(positionCylinder, axis);
+        hits.near.point.segment = uint(cylinderHits.nearHit.kind);
+    }
+
+    if (hits.far.visible) {
+        const vec3 positionCylinder = rayOriginCylinder +
+            cylinderHits.farHit.dist * rayDirCylinder;
+        hits.far.point.position = FromCylinderSpace(positionCylinder, axis);
+        hits.far.point.segment = uint(cylinderHits.farHit.kind);
+    }
+
+    return hits;
+}
+
+vec3 ComputeNormalObj(const Point point)
+{
+    const int axis = HdGet_axis();
+    const vec3 pointCylinder = ToCylinderSpace(point.position, axis);
+    const vec3 normalCylinder =
+        ComputeCylinderNormal(pointCylinder, int(point.segment));
+    return FromCylinderSpace(normalCylinder, axis);
+}
