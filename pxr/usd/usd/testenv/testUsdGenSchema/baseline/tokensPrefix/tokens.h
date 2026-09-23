@@ -127,7 +127,7 @@ struct ContrivedTokensPrefixTokensType {
     const TfToken variableTokenDefault;
     /// \brief "Base"
     /// 
-    /// Schema identifer and family for UsdContrivedBase
+    /// Schema identifier and family for UsdContrivedBase
     const TfToken Base;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

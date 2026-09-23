@@ -123,11 +123,11 @@ struct UsdMediaTokensType {
     const TfToken thumbnails;
     /// \brief "AssetPreviewsAPI"
     /// 
-    /// Schema identifer and family for UsdMediaAssetPreviewsAPI
+    /// Schema identifier and family for UsdMediaAssetPreviewsAPI
     const TfToken AssetPreviewsAPI;
     /// \brief "SpatialAudio"
     /// 
-    /// Schema identifer and family for UsdMediaSpatialAudio
+    /// Schema identifier and family for UsdMediaSpatialAudio
     const TfToken SpatialAudio;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
