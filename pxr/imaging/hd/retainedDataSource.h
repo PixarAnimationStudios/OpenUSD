@@ -232,7 +232,7 @@ public:
     static Handle New(const bool& value);
 
 protected:
-    HdRetainedTypedSampledDataSource<bool>(const bool& value)
+    HdRetainedTypedSampledDataSource(const bool& value)
       : _value(value) { }
 
     bool _value;
