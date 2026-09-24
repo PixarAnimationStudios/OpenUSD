@@ -14,6 +14,8 @@
 #include "pxr/base/tf/diagnostic.h"
 
 #include <unordered_map>
+#include <string>
+#include <sstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -78,7 +80,19 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
         _shaderId = [library newFunctionWithName:entryPoint];
         if (!_shaderId) {
             NSString *err = [error localizedDescription];
-            _errors = [err UTF8String];
+            _errors = "#### Source\n";
+            {
+                std::stringstream stream(shaderCode);
+                size_t indexLine = 1;
+
+                std::string line;
+                while(std::getline(stream, line)) {
+                    _errors += std::to_string(indexLine) + ":" + line + "\n";
+                    indexLine += 1;
+                }
+            }
+            _errors += "#### Errors\n";
+            _errors += [err UTF8String];
         }
         else {
             HGIMETAL_DEBUG_LABEL(_shaderId, _descriptor.debugName.c_str());
