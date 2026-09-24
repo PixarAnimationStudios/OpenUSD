@@ -24,11 +24,21 @@ include(Packages)
 
 # This has to be defined after Packages is included, because it relies on the
 # discovered path to the python executable.
-set(PXR_PYTHON_SHEBANG "${PYTHON_EXECUTABLE}" 
-    CACHE 
-    STRING
-    "Replacement path for Python #! line."
-)
+if (NOT PXR_PYTHON_SHEBANG)
+    set(PXR_PYTHON_SHEBANG "${PYTHON_EXECUTABLE}"
+        CACHE
+        STRING
+        "Replacement path for Python #! line."
+    )
+endif()
+
+if (NOT PYTHON_COMMAND_NAME)
+    set(PYTHON_COMMAND_NAME  "python"
+        CACHE
+        STRING
+        "Python command to launch usd tools (e.g. usdview) with."
+    )
+endif()
 
 # CXXDefaults will set a variety of variables for the project.
 # Consume them here. This is an effort to keep the most common
