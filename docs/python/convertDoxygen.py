@@ -37,6 +37,13 @@ python_path = GetArgValue(['--pythonPath'])
 dll_path = GetArgValue(['--dllPath'])
 use_cached_parsing = GetArg(['--cacheParsing', '-c'])
 
+# Support staged installs (DESTDIR) on UNIX platforms.
+# https://www.gnu.org/prep/standards/html_node/DESTDIR.html
+destdir = os.environ.get('DESTDIR', '')
+if destdir and os.name == 'posix':
+    output_file = destdir + output_file
+    python_path = destdir + python_path
+
 SetDebugMode(GetArg(['--debug', '-d']))
 
 if not (xml_file or xml_index_file) or not output_file or GetArg(['--help', '-h']):
