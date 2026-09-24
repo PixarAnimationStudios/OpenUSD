@@ -12,6 +12,9 @@
                     "AttributeTypeMismatch": {
                         "doc": "Validator that checks for attribute type mismatch with the schema definition."
                     },
+                    "AttributeValueTypeMismatch": {
+                        "doc": "Authored default and time sample values of an attribute must hold the value type declared by that attribute's typeName."
+                    },
                     "keywords": [
                         "UsdCoreValidators"
                     ]
