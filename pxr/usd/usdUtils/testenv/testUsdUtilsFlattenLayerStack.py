@@ -181,7 +181,9 @@ class TestUsdUtilsFlattenLayerStack(unittest.TestCase):
 
         prim = result_stage.GetPrimAtPath(
             '/materials/usdpreviewsurface1/usduvtexture1')
-        attr = prim.GetAttribute('inputs:file')
+        # We do not use inputs:file here because it has type asset,
+        # not asset[].
+        attr = prim.GetAttribute('testAssetArrayAttr')
         time_samples = attr.GetTimeSamples()
         for time_sample in time_samples:
             time_sample_array_value = attr.Get(Usd.TimeCode(time_sample))

@@ -1,0 +1,25 @@
+#usda 1.0
+
+# Path expressions in dictionaries must be written quoted.  The dictionary
+# writer previously fell back to streaming the expression, which emitted
+# unquoted text that would not parse back.  See Sdf_FileIOUtility::
+# _WriteDictionary.
+
+def MfScope "Root"
+{
+    custom double attr (
+        customData = {
+            pathExpression pexpr = "/foo//bar"
+            pathExpression pexprComplement = "~/foo/bar"
+            pathExpression pexprMulti = "/a//b /c/d"
+            pathExpression pexprRelative = "foo ../bar baz//qux"
+            pathExpression[] pexprArray = ["/a//b", "~/c", "/d /e"]
+            string str = "plain"
+            token tok = "atoken"
+            asset assetPath = @/some/asset.usda@
+            dictionary nested = {
+                pathExpression nestedPexpr = "/nested//expr"
+            }
+        }
+    )
+}

@@ -380,6 +380,12 @@ public:
     HdPrmanFramebuffer * GetFramebuffer() const {
         return _framebuffer.get();
     }
+    HdPrmanFramebuffer * GetDenoisedFramebuffer() const {
+        return _denoisedFramebuffer.get();
+    }
+    const std::set<size_t>& GetDenoisedAovIndices() const {
+        return _denoisedAovIndices;
+    }
 
     HdPrman_IdMap* GetIdMap() const {
         return _idMap.get();
@@ -505,6 +511,8 @@ public:
     // batched/offline mode).
     bool IsInteractive() const;
 
+    bool UsingHusk() const;
+
 #if HD_API_VERSION >= 76
     /// HdRenderParam overrides.
     bool HasArbitraryValue(const TfToken& key) const override;
@@ -623,6 +631,8 @@ private:
 
     std::unique_ptr<class HdRenderThread> _renderThread;
     std::unique_ptr<HdPrmanFramebuffer> _framebuffer;
+    std::unique_ptr<HdPrmanFramebuffer> _denoisedFramebuffer;
+    std::set<size_t> _denoisedAovIndices;
     std::unique_ptr<HdPrman_IdMap> _idMap;
 
     int _sceneLightCount;
@@ -650,6 +660,10 @@ private:
 
     // A fallback material to use for any geometry that
     // does not have a bound material.
+    //
+    // XXX This is superceded by the newer fallback material defined
+    // in HdPrman_FallbackMaterialsSceneIndexPlugin, and can soon
+    // be removed.
     riley::MaterialId _fallbackMaterialId;
 
     // Fallback material for volumes that don't have materials.

@@ -17,7 +17,7 @@ TF_DECLARE_REF_PTRS(UsdImagingPiPrototypePropagatingSceneIndex);
 
 namespace UsdImagingPiPrototypePropagatingSceneIndex_Impl
 {
-using _ContextSharedPtr = std::shared_ptr<struct _Context>;
+using _ContextSharedPtr = std::shared_ptr<class _Context>;
 using _InstancerObserverUniquePtr = std::unique_ptr<class _InstancerObserver>;
 }
 
@@ -356,6 +356,9 @@ public:
         HdSceneIndexBaseRefPtr const &inputSceneIndex);
 
     USDIMAGING_API
+    ~UsdImagingPiPrototypePropagatingSceneIndex() override;
+
+    USDIMAGING_API
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
 
     USDIMAGING_API
@@ -401,7 +404,7 @@ private:
     _MergingSceneIndexObserver _mergingSceneIndexObserver;
 
     UsdImagingPiPrototypePropagatingSceneIndex_Impl::
-    _InstancerObserverUniquePtr const _instancerObserver;
+    _InstancerObserverUniquePtr _instancerObserver;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

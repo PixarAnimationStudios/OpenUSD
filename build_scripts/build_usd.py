@@ -13,7 +13,6 @@ if sys.version_info.major == 2:
              "of Python 3 instead.")
 
 import argparse
-import codecs
 import contextlib
 import ctypes
 import datetime
@@ -289,7 +288,7 @@ def Run(cmd, logCommandOutput = True, env = None):
     """Run the specified command in a subprocess."""
     PrintInfo('Running "{cmd}"'.format(cmd=cmd))
 
-    with codecs.open("log.txt", "a", "utf-8") as logfile:
+    with open("log.txt", "a", encoding="utf-8") as logfile:
         logfile.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
         logfile.write("\n")
         logfile.write(cmd)
@@ -1434,9 +1433,6 @@ def InstallOpenVDB(context, force, buildArgs):
         extraArgs.append('-DBLOSC_ROOT="{instDir}"'
                          .format(instDir=context.instDir))
         extraArgs.append('-DTBB_ROOT="{instDir}"'
-                         .format(instDir=context.instDir))
-        # OpenVDB needs Half type from IlmBase
-        extraArgs.append('-DILMBASE_ROOT="{instDir}"'
                          .format(instDir=context.instDir))
 
         # Add on any user-specified extra arguments.
@@ -2610,7 +2606,7 @@ if context.buildImaging:
     requiredDependencies += [OPENSUBDIV]
 
     if context.enableOpenVDB:
-        requiredDependencies += [ZLIB, TBB, BLOSC, BOOST, OPENEXR, OPENVDB]
+        requiredDependencies += [ZLIB, TBB, BLOSC, BOOST, OPENVDB]
     
     # When OCIO is required, we need to make sure it's built before OIIO, since
     # OIIO is dependent on OCIO.
@@ -2618,7 +2614,7 @@ if context.buildImaging:
         requiredDependencies += [ZLIB, OPENCOLORIO]
 
     if context.buildOIIO:
-        requiredDependencies += [ZLIB, JPEG, TIFF, PNG, OPENEXR, OPENIMAGEIO]
+        requiredDependencies += [ZLIB, JPEG, TIFF, PNG, OPENEXR, OPENCOLORIO, OPENIMAGEIO]
 
     if context.buildEmbree:
         requiredDependencies += [TBB, EMBREE]

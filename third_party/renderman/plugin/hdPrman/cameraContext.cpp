@@ -49,6 +49,8 @@ HdPrman_CameraContext::HdPrman_CameraContext(
   : _renderParam(renderParam)
   , _policy(CameraUtilFit)
   , _disableDepthOfField(false)
+  , _dataWindowOverride(0,0,1,1)
+  , _fullResolution(0, 0)
   , _invalid(false)
 {
     // Seed the cached params hash from the (empty) initial value, so that
@@ -88,6 +90,24 @@ HdPrman_CameraContext::SetFraming(const CameraUtilFraming &framing)
 }
 
 void
+HdPrman_CameraContext::SetFullResolution(const GfVec2i &fullResolution)
+{
+    if (_fullResolution != fullResolution) {
+        _fullResolution = fullResolution;
+        _invalid = true;
+    }
+}
+
+void
+HdPrman_CameraContext::SetDataWindowOverride(const GfVec4f &dataWindow)
+{
+    if (_dataWindowOverride != dataWindow) {
+        _dataWindowOverride = dataWindow;
+        _invalid = true;
+    }
+}
+
+void
 HdPrman_CameraContext::SetWindowPolicy(
     const CameraUtilConformWindowPolicy policy)
 {
@@ -122,7 +142,9 @@ HdPrman_CameraContext::GetActiveCameraOverlay(
         _projectionNameOverride,
         _projectionParamsOverride,
         _disableDepthOfField,
-        renderBufferSize };
+        renderBufferSize,
+        _dataWindowOverride,
+        _fullResolution };
 }
 
 void

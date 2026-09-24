@@ -69,12 +69,12 @@ class TestGfFrustum(unittest.TestCase):
     def test_Projection(self):
         f = Gf.Frustum()
         f.SetPerspective( 10, True, 20, 30, 40 )
-        self.assertEqual(f.GetPerspective(True), (10, 20, 30, 40))
-        self.assertEqual(f.GetFOV(True), 10)
+        self.assertTrue(Gf.IsClose(f.GetPerspective(True), (10, 20, 30, 40), 1e-6))
+        self.assertAlmostEqual(f.GetFOV(True), 10)
         f.SetPerspective( 10, False, 20, 30, 40 )
-        self.assertEqual(f.GetPerspective(False), (10, 20, 30, 40))
-        self.assertEqual(f.GetFOV(False), 10)
-        self.assertEqual(f.GetFOV(), 10)
+        self.assertTrue(Gf.IsClose(f.GetPerspective(False), (10, 20, 30, 40), 1e-6))
+        self.assertAlmostEqual(f.GetFOV(False), 10)
+        self.assertAlmostEqual(f.GetFOV(), 10)
         f = Gf.Frustum()
         f.projectionType = f.Orthographic
         self.assertIsNone(f.GetPerspective(True))

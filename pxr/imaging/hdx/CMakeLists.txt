@@ -146,7 +146,7 @@ pxr_build_test(testHdxNoResourceBindings
 )
 endif()
 
-if (X11_FOUND)
+if (X11_FOUND OR APPLE)
 pxr_build_test(testHdxIdRender
     LIBRARIES
         hdx
@@ -234,11 +234,6 @@ if (${PXR_HEADLESS_TEST_MODE})
     return()
 endif()
 
-if (APPLE)
-    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
-    return()
-endif()
-
 if (WIN32)
     message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
     return()
@@ -261,6 +256,7 @@ pxr_register_test(testHdxIdRender_Refined
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxIdRender --offscreen --repr refined --refineLevel 2"
     EXPECTED_RETURN_CODE 0
 )
+if (NOT APPLE)
 pxr_register_test(testHdxLightAndShadow
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxLightAndShadow"
     TESTENV testenv/testHdxLightAndShadow
@@ -276,12 +272,15 @@ pxr_register_test(testHdxLightAndShadow
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
+endif()
+if (NOT APPLE)
 pxr_register_test(testHdxPickResolveMode
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxPickResolveMode --offscreen"
     EXPECTED_RETURN_CODE 0
     ENV
         TF_DEBUG="HDX_SELECTION_SETUP HD_SELECTION_UPDATE"
 )
+endif()
 pxr_register_test(testHdxPickTarget
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxPickTarget --offscreen"
     TESTENV testenv/testHdxPickTarget
@@ -352,6 +351,7 @@ pxr_register_test(testHdxOitShaderRetention
     ENV
         HDX_ENABLE_OIT=1
 )
+if (NOT APPLE)
 pxr_register_test(testHdxUnpickablesAsOccluders
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxUnpickablesAsOccluders --offscreen"
     TESTENV testenv/testHdxUnpickablesAsOccluders
@@ -364,6 +364,7 @@ pxr_register_test(testHdxUnpickablesAsOccluders
     FAIL_PERCENT 1
     PERCEPTUAL
 )
+endif()
 pxr_register_test(testHdxNoResourceBindings
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxNoResourceBindings"
     TESTENV testenv/testHdxNoResourceBindings
@@ -387,6 +388,7 @@ pxr_build_test(testHdxDrawTarget
     CPPFILES
         testenv/testHdxDrawTarget.cpp
 )
+if (NOT APPLE)
 pxr_register_test(testHdxDrawTarget
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxDrawTarget"
     TESTENV testenv/testHdxDrawTarget
@@ -399,6 +401,7 @@ pxr_register_test(testHdxDrawTarget
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
+endif()
 
 # testHdxPickAndHighlight needs SdrGlslfxParserPlugin
 pxr_build_test(testHdxPickAndHighlight

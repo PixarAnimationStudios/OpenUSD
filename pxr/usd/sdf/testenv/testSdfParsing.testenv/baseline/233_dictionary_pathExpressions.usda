@@ -1,0 +1,21 @@
+#usda 1.0
+
+def MfScope "Root"
+{
+    custom double attr (
+        customData = {
+            asset assetPath = @/some/asset.usda@
+            dictionary nested = {
+                pathExpression nestedPexpr = "/nested//expr"
+            }
+            pathExpression pexpr = "/foo//bar"
+            pathExpression[] pexprArray = ["/a//b", "~/c", "/d /e"]
+            pathExpression pexprComplement = "~/foo/bar"
+            pathExpression pexprMulti = "/a//b /c/d"
+            pathExpression pexprRelative = "foo ../bar baz//qux"
+            string str = "plain"
+            token tok = "atoken"
+        }
+    )
+}
+

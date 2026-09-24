@@ -187,6 +187,7 @@ pxr_plugin(${PXR_PACKAGE}
         cameraContext
         debugUtil
         extComputationPrimvarPruningSceneIndexPlugin
+        fallbackMaterialsSceneIndexPlugin
         framebuffer
         idSceneIndexPlugin
         implicitSurfaceSceneIndexPlugin

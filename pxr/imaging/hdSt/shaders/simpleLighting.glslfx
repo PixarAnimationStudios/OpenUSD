@@ -8,7 +8,7 @@
 //
 
 --- This is what an import might look like.
---- #import $TOOLS/glf/shaders/simpleLighting.glslfx
+--- #import $TOOLS/hdSt/shaders/simpleLighting.glslfx
 
 -- glsl SimpleLighting.GeometryInjection
 #ifndef NUM_SHADOWS

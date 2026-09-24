@@ -11,6 +11,7 @@
 
 #include "pxr/imaging/cameraUtil/conformWindow.h"
 #include "pxr/imaging/cameraUtil/framing.h"
+#include "pxr/base/gf/vec4f.h"
 
 #include "pxr/usd/sdf/path.h"
 
@@ -55,6 +56,14 @@ public:
     /// is different from what it used to be.
     HDPRMAN_API
     void SetFraming(const CameraUtilFraming &framing);
+
+    /// Full resolution, used to conform to the crop region's own aspect
+    /// ratio (width/height). Pass (0,0) to use the display-window aspect.
+    HDPRMAN_API
+    void SetFullResolution(const GfVec2i &fullResolution);
+
+    HDPRMAN_API
+    void SetDataWindowOverride(const GfVec4f &dataWindow);
 
     /// Set window policy. Same comments as for SetFraming apply.
     HDPRMAN_API
@@ -136,6 +145,8 @@ public:
         RtParamList projectionParamsOverride;
         bool disableDepthOfField;
         std::optional<GfVec2i> renderBufferSize;
+        GfVec4f dataWindowOverride;
+        GfVec2i fullResolution;
     };
 
     /// Assemble the overlay opinions the active camera should apply.
@@ -266,6 +277,9 @@ private:
     CameraUtilFraming _framing;
     CameraUtilConformWindowPolicy _policy;
     bool _disableDepthOfField;
+    GfVec4f _dataWindowOverride;
+    // Full resolution for crop aspect; (0,0) = use display window.
+    GfVec2i _fullResolution;
 
     std::optional<ActiveCameraOverlay> _lastAppliedOverlay;
 

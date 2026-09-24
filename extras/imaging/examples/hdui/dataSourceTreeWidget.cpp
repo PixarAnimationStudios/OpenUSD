@@ -7,6 +7,7 @@
 #include "dataSourceTreeWidget.h"
 
 #include "pxr/base/tf/denseHashSet.h"
+#include "pxr/imaging/hd/dataSourceLocator.h"
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/materialBindingsSchema.h"
 
@@ -313,26 +314,28 @@ HduiDataSourceTreeWidget::HduiDataSourceTreeWidget(QWidget *parent)
     });
 
     connect(this,  &QTreeWidget::itemSelectionChanged, [this]() {
-
         QList<QTreeWidgetItem *> items = this->selectedItems();
         if (items.empty()) {
-            return;
+            _selectedLocator = HdDataSourceLocator::EmptyLocator();
+            Q_EMIT DataSourceSelected(nullptr);
         }
-
-        if (Hdui_DataSourceTreeWidgetItem * dsItem =
+        else if (Hdui_DataSourceTreeWidgetItem * dsItem =
                 dynamic_cast<Hdui_DataSourceTreeWidgetItem *>(items[0])) {
+            _selectedLocator = dsItem->GetLocator();
             Q_EMIT DataSourceSelected(dsItem->GetDataSource());
         }
     });
-
-
 }
 
 void
 HduiDataSourceTreeWidget::SetPrimDataSource(const SdfPath &primPath,
         HdContainerDataSourceHandle const &dataSource)
 {
+    // This results in itemSelectionChanged to fire which will reset the selection.
+    // We save it here so we can restore it.
+    HdDataSourceLocator selectedLocator = _selectedLocator;
     clear();
+    _selectedLocator = selectedLocator;
 
     if (dataSource) {
         if (HdContainerDataSourceHandle container =
@@ -361,7 +364,83 @@ HduiDataSourceTreeWidget::SetPrimDataSource(const SdfPath &primPath,
             item->setText(0, primPath.GetName().c_str());
         }
     }
+
+    // Try to expand/select.
+    if (auto* item = dynamic_cast<Hdui_DataSourceTreeWidgetItem*>(
+            _Expand(_selectedLocator));
+        item && item->GetLocator() == _selectedLocator) {
+        item->setSelected(true);
+    }
 }
+
+
+static
+QTreeWidgetItem*
+_Find(QTreeWidgetItem* root, const HdDataSourceLocator& locator)
+{
+    QTreeWidgetItem* deepestItem = root;
+    std::vector<QTreeWidgetItem*> queue = { root };
+    while (!queue.empty()) {
+        QTreeWidgetItem* qi = queue.back();
+        queue.pop_back();
+        if (auto* dsqi = dynamic_cast<Hdui_DataSourceTreeWidgetItem*>(qi)) {
+            const HdDataSourceLocator itemLoc = dsqi->GetLocator();
+            if (!locator.HasPrefix(itemLoc)) {
+                continue;
+            }
+            deepestItem = dsqi;
+            if (itemLoc == locator) {
+                break;
+            }
+        }
+        for (int i = 0, e = qi->childCount(); i < e; ++i) {
+            queue.push_back(qi->child(i));
+        }
+    }
+    return deepestItem;
+}
+
+// Searches the tree widget for the longest prefix of \p locator.  Will return
+// `(item, unmatchedLocator)` where `item` corresponds to `locator` and
+// `unmatchedLocator` is the first prefix of \p locator that was not found.
+static
+std::optional<std::pair<QTreeWidgetItem*, HdDataSourceLocator>>
+_FindLongestPrefix(QTreeWidgetItem* root, const HdDataSourceLocator& locator)
+{
+    // Not valid to call this with an empty locator
+    if (!TF_VERIFY(!locator.IsEmpty())) {
+        return std::nullopt;
+    }
+
+    // If locator = "a/b/c", foundLocator will be "", "a" or "a/b".
+    QTreeWidgetItem* item = _Find(root, locator);
+    HdDataSourceLocator foundLocator =  std::invoke([&item]() {
+        if (auto* dsItem = dynamic_cast<Hdui_DataSourceTreeWidgetItem*>(item)) {
+            return dsItem->GetLocator();
+        }
+        return HdDataSourceLocator::EmptyLocator();
+    });
+
+    // If the foundLocator is empty, make sure the item is root.
+    if (!TF_VERIFY(!foundLocator.IsEmpty() || item == root)) {
+        return std::nullopt;
+    }
+
+    // unmatchedLoc is the first locator that is not present.  So if
+    // foundLocator is ="a", unmatchedLoc = "a/b".
+    const HdDataSourceLocator unmatchedLoc =
+        std::invoke([&foundLocator, &locator]() {
+            HdDataSourceLocator unmatchedLoc = locator;
+            while (unmatchedLoc.GetElementCount() >
+                   foundLocator.GetElementCount() + 1) {
+                unmatchedLoc = unmatchedLoc.RemoveLastElement();
+            }
+            return unmatchedLoc;
+        });
+
+    return std::make_pair(item, unmatchedLoc);
+}
+
 
 void
 HduiDataSourceTreeWidget::PrimDirtied(
@@ -369,6 +448,10 @@ HduiDataSourceTreeWidget::PrimDirtied(
     const HdContainerDataSourceHandle &primDataSource,
     const HdDataSourceLocatorSet &locators)
 {
+    // We track which locators are unhandled as we may need to add them.
+    std::vector<HdDataSourceLocator> unhandledLocators(
+        locators.begin(), locators.end());
+
     // loop over existing items to determine which require data source updates
 
     std::vector<QTreeWidgetItem *> taskQueue = {
@@ -392,8 +475,24 @@ HduiDataSourceTreeWidget::PrimDirtied(
                 if (locators.Contains(loc)) {
                     // dirty here, we'll need a new data source
                     // no need to add children as SetDirty will handle that
-                    dsItem->SetDirty(
-                        HdContainerDataSource::Get(primDataSource, loc));
+                    if (auto dataSource =
+                        HdContainerDataSource::Get(primDataSource, loc)) {
+                        dsItem->SetDirty(dataSource);
+                    }
+                    else {
+                        // dirty indicator is letting us know the item has been
+                        // removed.  delete the item if so.
+                        delete dsItem;
+                    }
+
+                    // update unhandled locators
+                    unhandledLocators.erase(
+                        std::remove_if(
+                            unhandledLocators.begin(), unhandledLocators.end(),
+                            [&loc](const HdDataSourceLocator& unhandledLoc) {
+                                return loc.HasPrefix(unhandledLoc);
+                            }),
+                        unhandledLocators.end());
                     continue;
                 }
                 if (!locators.Intersects(loc)) {
@@ -409,6 +508,36 @@ HduiDataSourceTreeWidget::PrimDirtied(
         }
     }
 
+    // Process unhandled locators.
+    //
+    // These locators were part of the dirtyLocators notice but did not have
+    // a corresponding dataSource in our tree.  This may mean the dataSource is new
+    // so we add it here if that is the case.
+    for (const HdDataSourceLocator& loc : unhandledLocators) {
+        if (const std::optional<std::pair<
+                QTreeWidgetItem*, HdDataSourceLocator>> maybeItemAndLoc =
+                _FindLongestPrefix(invisibleRootItem(), loc)) {
+            const auto& [item, unmatchedLoc] = maybeItemAndLoc.value();
+            if (HdDataSourceBaseHandle dataSource =
+                    HdContainerDataSource::Get(primDataSource, unmatchedLoc)) {
+                Hdui_DataSourceTreeWidgetItem* newChild =
+                    new Hdui_DataSourceTreeWidgetItem(
+                        unmatchedLoc, nullptr, dataSource);
+                const int insertIdx = std::invoke([&item, &newChild]() {
+                    int e = item->childCount();
+                    for (int i = 0; i < e; i++) {
+                        const QTreeWidgetItem* childItem = item->child(i);
+                        if (newChild->text(0) < childItem->text(0)) {
+                            return i;
+                        }
+                    }
+                    return e;
+                });
+                item->insertChild(insertIdx, newChild);
+            }
+        }
+    }
+
     // Force a selection change on the current item so that the value column
     // re-pulls on the data source
     QList<QTreeWidgetItem *> items = this->selectedItems();
@@ -416,7 +545,7 @@ HduiDataSourceTreeWidget::PrimDirtied(
         if (Hdui_DataSourceTreeWidgetItem * dsItem =
                 dynamic_cast<Hdui_DataSourceTreeWidgetItem *>(items[0])) {
             if (locators.Intersects(dsItem->GetLocator())) {
-                Q_EMIT itemSelectionChanged();
+                Q_EMIT DataSourceSelected(dsItem->GetDataSource());
             }
         }
     }
@@ -461,6 +590,44 @@ HduiDataSourceTreeWidget::contextMenuEvent(QContextMenuEvent *event)
     dumpToFile->setEnabled(enable);
 
     menu.exec(event->globalPos());
+}
+
+
+QTreeWidgetItem*
+HduiDataSourceTreeWidget::_Expand(const HdDataSourceLocator& locator)
+{
+
+    std::vector<QTreeWidgetItem*> queue = {};
+    {
+        QTreeWidgetItem* root = invisibleRootItem();
+        for (int i = 0, e = root->childCount(); i < e; ++i) {
+            queue.push_back(root->child(i));
+        }
+    }
+
+    Hdui_DataSourceTreeWidgetItem* deepestItem = nullptr;
+    while (!queue.empty()) {
+        QTreeWidgetItem* qi = queue.back();
+        queue.pop_back();
+        if (auto* dsqi = dynamic_cast<Hdui_DataSourceTreeWidgetItem*>(qi)) {
+            const HdDataSourceLocator itemLoc = dsqi->GetLocator();
+            if (!locator.HasPrefix(itemLoc)) {
+                continue;
+            }
+            deepestItem = dsqi;
+
+            if (itemLoc == locator) {
+                break;
+            }
+
+            dsqi->setExpanded(true);
+            for (int i = 0, e = qi->childCount(); i < e; ++i) {
+                queue.push_back(qi->child(i));
+            }
+        }
+    }
+
+    return deepestItem;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -149,6 +149,18 @@ Usd_InstanceCache::ProcessChanges(Usd_InstanceChanges* changes)
         // determines the name of the prototype prims assigned to instances.
         // We need to iterate over the hash map in a fixed ordering to
         // ensure we have a consistent assignment of instances to prototypes.
+        //
+        // We order the keys by the minimum prim index path registered for
+        // each key. Using the minimum (rather than the arbitrary first-
+        // registered index, which depends on non-deterministic multithreaded
+        // composition order) gives a repeatable ordering for a fixed set of
+        // instances. It is also robust for nested instancing: a nested key's
+        // prim indexes are always descendants of the prim index that was
+        // selected as the source of the enclosing prototype, so the enclosing
+        // prototype's minimum path always sorts before the nested prototype's
+        // minimum path. This guarantees enclosing prototypes are numbered
+        // before the prototypes nested within them, regardless of which
+        // instance was composed as the enclosing prototype's source.
         typedef std::map<SdfPath, Usd_InstanceKey> _PrimIndexPathToKey;
         std::map<SdfPath, Usd_InstanceKey> keysToProcess;
         for (_InstanceKeyToPrimIndexesMap::value_type& v:
@@ -156,8 +168,9 @@ Usd_InstanceCache::ProcessChanges(Usd_InstanceChanges* changes)
             const Usd_InstanceKey& key = v.first;
             const _PrimIndexPaths& primIndexes = v.second;
             if (TF_VERIFY(!primIndexes.empty())) {
-                TF_VERIFY(
-                    keysToProcess.emplace(primIndexes.front(), key).second);
+                const SdfPath& selectedPrimIndex = *std::min_element(
+                    primIndexes.begin(), primIndexes.end());
+                TF_VERIFY(keysToProcess.emplace(selectedPrimIndex, key).second);
             }
         }
 

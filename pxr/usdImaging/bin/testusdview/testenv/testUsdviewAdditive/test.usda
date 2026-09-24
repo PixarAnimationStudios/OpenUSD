@@ -20,7 +20,7 @@ def Scope "Scene" (
             {
                 uniform asset info:glslfx:sourceAsset = @shader1.glslfx@
                 uniform token info:implementationSource = "sourceAsset"
-                uniform float3 inputs:diffuseColor = (1, 0, 1)
+                uniform color3f inputs:diffuseColor = (1, 0, 1)
                 token outputs:surface
             }
         }

@@ -29,10 +29,6 @@ public:
         return _initialized;
     }
 
-#if !defined(doxygen)
-    typedef void* Plug_StaticInterfaceBase::*UnspecifiedBoolType;
-#endif
-
 protected:
     PLUG_API
     void _LoadAndInstantiate(const std::type_info& type) const;
@@ -151,16 +147,9 @@ public:
 
     /// Load and instantiate then return \c true if the interface is valid,
     /// \c false otherwise.
-    operator UnspecifiedBoolType() const
+    explicit operator bool() const
     {
-        return _GetPtr() ? &This::_ptr : nullptr;
-    }
-
-    /// Load and instantiate then return \c false if the interface is valid,
-    /// \c true otherwise.
-    bool operator!() const
-    {
-        return !*this;
+        return static_cast<bool>(_GetPtr());
     }
 
     /// Returns the interface pointer, loading the plugin if necessary.

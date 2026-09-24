@@ -21,7 +21,7 @@ def Scope "Looks"
         def Shader "uvReader_st"
         {
             uniform token info:id = "UsdPrimvarReader_float2"
-            token inputs:varname = "st"
+            string inputs:varname = "st"
             float2 inputs:fallback = (0.0, 0.0)
             float2 outputs:result
         }

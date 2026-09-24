@@ -47,7 +47,6 @@ pxr_library(sdf
         listEditorProxy
         listOp
         mapEditProxy
-        mapEditor
         namespaceEdit
         notice
         opaqueValue

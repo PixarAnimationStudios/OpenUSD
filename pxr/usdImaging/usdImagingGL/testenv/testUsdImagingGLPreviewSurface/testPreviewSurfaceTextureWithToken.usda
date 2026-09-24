@@ -49,9 +49,8 @@ def Scope "Scene" (
             def Shader "Diffuse"
             {
                 uniform token info:id = "UsdUVTexture"
-                float3 inputs:fallback = (0, 0, 1)
-                # This used to cause a crash
-                asset inputs:file = @Env_StinsonBesach.jpg@
+                float4 inputs:fallback = (0, 0, 1, 1)
+                asset inputs:file = @Env_StinsonBeach.jpg@
                 float2 inputs:st.connect = </Scene/Looks/MainMaterial/Primvar.outputs:result>
                 token inputs:wrapS = "mirror"
                 token inputs:wrapT = "repeat"

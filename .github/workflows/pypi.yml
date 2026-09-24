@@ -95,7 +95,7 @@ jobs:
           docker exec -w /opt/USD/packaging usdmanylinux ${{ matrix.PYTHON.INTERPRETER }} setup.py ${{ env.POST_RELEASE_TAG }} bdist_wheel --python-tag ${{ matrix.PYTHON.TAG }}
       - name: Running auditwheel repair (moves .so files into package)
         run: |
-          docker exec usdmanylinux /bin/bash -c 'PYTHONPATH=/opt/USD/packaging/pypi/lib/python LD_LIBRARY_PATH=/opt/USD/packaging/pypi/lib:$LD_LIBRARY_PATH auditwheel repair packaging/dist/*.whl'
+          docker exec usdmanylinux /bin/bash -c 'PYTHONPATH=/opt/USD/packaging/pypi/lib/python LD_LIBRARY_PATH=/opt/USD/inst/lib:/opt/USD/inst/lib64:/opt/USD/packaging/pypi/lib:$LD_LIBRARY_PATH auditwheel repair packaging/dist/*.whl'
       - name: Updating pluginfo paths
         run: |
           WHEEL_PACKAGE_NAME=`docker exec usdmanylinux ls wheelhouse`
