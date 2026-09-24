@@ -36,6 +36,7 @@ class Pcp_MutedLayers;
 class PcpExpressionVariables;
 class PcpLayerStackChanges;
 class PcpLifeboat;
+class SdfSchemaBase;
 
 /// \class PcpLayerStack
 ///
@@ -100,6 +101,11 @@ public:
     /// layer stack. Returns NULL if the offset is the identity.
     PCP_API
     const SdfLayerOffset* GetLayerOffsetForLayer(size_t layerIdx) const;
+
+    /// Return pointer to an SdfSchemaBase if all layers in the layer stack
+    /// use that schema, or NULL otherwise.
+    PCP_API
+    const SdfSchemaBase* GetSchemaForAllLayers() const;
 
     /// Returns the set of layers that were muted in this layer
     /// stack.
@@ -329,6 +335,10 @@ private:
 
     /// Set of expression variables this layer stack depends on.
     std::unordered_set<std::string> _expressionVariableDependencies;
+
+    /// Pointer to schema shared by all layers, or nullptr if layers
+    /// have different schema.
+    const SdfSchemaBase* _schemaForAllLayers;
 
     bool _isUsd;
 };

@@ -226,6 +226,13 @@ of a rigid body that are not parts of other rigid bodies. Multiple rigid bodies
 in a subtree move completely independently, even if their transforms are stored
 relative to one another.  
 
+This exception applies only while the prim to which UsdPhysicsRigidBodyAPI is
+applied has physics:rigidBodyEnabled enabled.
+A nested rigid body whose physics:rigidBodyEnabled is false takes no part in
+simulation and therefore does not create a separate rigid body, so it does not
+form the root of its own subtree; the prims below it remain part of the nearest
+enabled rigid body above it in the hierarchy.
+
 If aggregate properties of the entire rigid body must be computed, such as
 total mass or the entirety of its collision volume, then the contents of the
 entire subtree are considered, taking care to exclude the contents of any
@@ -313,7 +320,15 @@ a prim higher in the tree, overrides any density specified via a material
 times the locally effective density.
 
 \li Implicit mass of a rigid body is the total implicit mass of all children in
-the subtree belonging to the rigid body.
+the subtree belonging to the rigid body. Only enabled colliders count toward
+that total. A collider whose physics:collisionEnabled is false is not simulated,
+and any UsdPhysicsMassAPI applied to it is ignored, as is a UsdPhysicsMassAPI
+applied to a rigid body whose physics:rigidBodyEnabled is false.
+
+\li A rigid body whose physics:rigidBodyEnabled is false does not, however,
+exclude the colliders beneath it. It owns no colliders while it is disabled, so
+those colliders belong to the nearest enabled rigid body above it and contribute
+that body's mass.
 
 \li Density is assumed to be 1000.0 kg/m3 (approximately the density of water) 
 for volume computation when no other density is specified locally, or in bound 

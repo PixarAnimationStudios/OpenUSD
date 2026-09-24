@@ -289,6 +289,25 @@ HdStSetMaterialTag(HdRenderParam * const renderParam,
     HdStMarkMaterialTagsDirty(renderParam);
 }
 
+static
+TfToken
+_GetDisplayOpacityMaterialTag(HdSceneDelegate * const delegate)
+{
+    const TfToken mode =
+        delegate->GetRenderIndex().GetRenderDelegate()
+            ->GetRenderSetting<TfToken>(
+                HdStRenderSettingsTokens->defaultTransparencyMode,
+                HdStDefaultTransparencyModeTokens->screenDoor);
+
+    if (mode == HdStDefaultTransparencyModeTokens->oit) {
+        return HdStMaterialTagTokens->translucent;
+    }
+    if (mode == HdStDefaultTransparencyModeTokens->additive) {
+        return HdStMaterialTagTokens->additive;
+    }
+    return HdStMaterialTagTokens->masked;
+}
+
 // Opinion precedence:
 //   Display In Overlay >
 //     Show occluded selection >
@@ -320,7 +339,7 @@ _ComputeMaterialTag(HdSceneDelegate * const delegate,
     }
 
     if (hasDisplayOpacityPrimvar) {
-        return HdStMaterialTagTokens->masked;
+        return _GetDisplayOpacityMaterialTag(delegate);
     }
 
     return HdMaterialTagTokens->defaultMaterialTag;

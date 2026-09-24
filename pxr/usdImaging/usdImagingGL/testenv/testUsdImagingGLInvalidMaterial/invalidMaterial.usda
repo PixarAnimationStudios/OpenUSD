@@ -53,7 +53,7 @@ def Scope "Materials"
         {
             uniform asset info:glslfx:sourceAsset = @buggyShader.glslfx@
             uniform token info:implementationSource = "sourceAsset"
-            uniform float3 inputs:diffuseColor = (1, 0, 1)
+            uniform color3f inputs:diffuseColor = (1, 0, 1)
             token outputs:surface
         }
     }

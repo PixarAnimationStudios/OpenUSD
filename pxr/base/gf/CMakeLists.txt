@@ -250,12 +250,10 @@ pxr_register_test(testGfDuration
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfDuration"
 )
-if (NOT APPLE)
-    pxr_register_test(testGfFrustum
-        PYTHON
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfFrustum"
-    )
-endif()
+pxr_register_test(testGfFrustum
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfFrustum"
+)
 pxr_register_test(testGfGamma
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testGfGamma"

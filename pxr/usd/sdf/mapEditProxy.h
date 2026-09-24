@@ -13,21 +13,42 @@
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/declareHandles.h"
-#include "pxr/usd/sdf/mapEditor.h"
 #include "pxr/usd/sdf/spec.h"
 
 #include "pxr/base/vt/value.h"  // for Vt_DefaultValueFactory
+#include "pxr/base/vt/valueRef.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/iterator.h"
-#include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/token.h"
 #include <iterator>
+#include <string>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class TfToken;
-
 SDF_DECLARE_HANDLES(SdfSpec);
+
+/// \class SdfMapEditProxyBase
+///
+/// Non-template base for SdfMapEditProxy<T> holding the type-independent
+/// owner/field state and operations.
+///
+class SdfMapEditProxyBase {
+protected:
+    SdfMapEditProxyBase() = default;
+
+    SDF_API
+    SdfMapEditProxyBase(const SdfSpecHandle& owner, const TfToken& field);
+
+    SDF_API bool _IsExpired() const;
+    SDF_API std::string _Location() const;
+    SDF_API SdfAllowed _IsValidKey(const VtValueRef& key) const;
+    SDF_API SdfAllowed _IsValidValue(const VtValueRef& value) const;
+    SDF_API void _WriteToSpec(const VtValueRef& value);
+
+    SdfSpecHandle _owner;
+    TfToken _field;
+};
 
 /// \class SdfIdentityMapEditProxyValuePolicy
 ///
@@ -98,7 +119,7 @@ public:
 /// \sa SdfIdentityMapEditProxyValuePolicy
 ///
 template <class T, class _ValuePolicy = SdfIdentityMapEditProxyValuePolicy<T> >
-class SdfMapEditProxy {
+class SdfMapEditProxy : private SdfMapEditProxyBase {
 public:
     typedef T Type;
     typedef _ValuePolicy ValuePolicy;
@@ -349,16 +370,20 @@ public:
     typedef Tf_ProxyReferenceReverseIterator<iterator> reverse_iterator;
     typedef Tf_ProxyReferenceReverseIterator<const_iterator> const_reverse_iterator;
 
-    explicit SdfMapEditProxy(const SdfSpecHandle& owner, const TfToken& field) :
-        _editor(Sdf_CreateMapEditor<T>(owner, field))
+    explicit SdfMapEditProxy(const SdfSpecHandle& owner, const TfToken& field)
+        : SdfMapEditProxyBase(owner, field)
     {
-        // Do nothing
+        const VtValue& dataVal = _owner->GetField(_field);
+        if (dataVal.IsHolding<T>()) {
+            _data = dataVal.UncheckedGet<T>();
+        }
+        else if (!dataVal.IsEmpty()) {
+            TF_CODING_ERROR("%s does not hold value of expected type.",
+                            _Location().c_str());
+        }
     }
 
-    SdfMapEditProxy()
-    {
-        // Do nothing
-    }
+    SdfMapEditProxy() = default;
 
     This& operator=(const This& other)
     {
@@ -463,8 +488,8 @@ public:
                 const value_type& v = 
                     ValuePolicy::CanonicalizePair(_Owner(), *first);
 
-                if (_ValidateInsert(v)) {
-                    _editor->Insert(v);
+                if (_ValidateInsert(v) && _data.insert(v).second) {
+                    _UpdateDataInSpec();
                 }
             }
         }
@@ -481,8 +506,9 @@ public:
     {
         if (_Validate()) {
             const key_type& k = ValuePolicy::CanonicalizeKey(_Owner(), key);
-            if (_ValidateErase(k)) {
-                return _editor->Erase(k) ? 1 : 0;
+            if (_ValidateErase(k) && _data.erase(k) != 0) {
+                _UpdateDataInSpec();
+                return 1;
             }
         }
         return 0;
@@ -495,8 +521,8 @@ public:
             while (first != last) {
                 const key_type& key = first->first;
                 ++first;
-                if (_ValidateErase(key)) {
-                    _editor->Erase(key);
+                if (_ValidateErase(key) && _data.erase(key) != 0) {
+                    _UpdateDataInSpec();
                 }
             }
         }
@@ -724,7 +750,7 @@ public:
     /// MapEditProxy is considered to be invalid but *not* expired.
     bool IsExpired() const
     {
-        return _editor && _editor->IsExpired();
+        return _IsExpired();
     }
 
     /// Explicit bool conversion operator. Returns \c true if the value is 
@@ -759,22 +785,17 @@ private:
 
     Type* _Data()
     {
-        return _editor ? _editor->GetData() : NULL;
+        return _owner ? &_data : nullptr;
     }
 
     const Type* _ConstData() const
     {
-        return _editor ? _editor->GetData() : NULL;
+        return _owner ? &_data : nullptr;
     }
 
     SdfSpecHandle _Owner() const
     {
-        return _editor ? _editor->GetOwner() : SdfSpecHandle();
-    }
-
-    std::string _Location() const
-    {
-        return _editor ? _editor->GetLocation() : std::string();
+        return _owner;
     }
 
     bool _CompareEqual(const Type& other) const
@@ -878,7 +899,8 @@ private:
             }
 
             if (_ValidateCopy(canonicalOther)) {
-                _editor->Copy(canonicalOther);
+                _data = canonicalOther;
+                _UpdateDataInSpec();
             }
         }
     }
@@ -912,7 +934,8 @@ private:
             const mapped_type& x =
                 ValuePolicy::CanonicalizeValue(_Owner(), value);
             if (_ValidateSet(i->first, x)) {
-                _editor->Set(i->first, x);
+                _data[i->first] = x;
+                _UpdateDataInSpec();
             }
         }
     }
@@ -926,7 +949,7 @@ private:
             return false;
         }
 
-        if (SdfAllowed allowed = _editor->IsValidValue(value)) {
+        if (SdfAllowed allowed = _IsValidValue(VtValueRef(value))) {
             // Do nothing
         }
         else {
@@ -944,7 +967,10 @@ private:
         if (_Validate()) {
             const value_type& v = ValuePolicy::CanonicalizePair(_Owner(), value);
             if (_ValidateInsert(v)) {
-                std::pair<inner_iterator, bool> status = _editor->Insert(v);
+                std::pair<inner_iterator, bool> status = _data.insert(v);
+                if (status.second) {
+                    _UpdateDataInSpec();
+                }
                 return std::make_pair(iterator(this, _Data(), status.first),
                                       status.second);
             }
@@ -964,7 +990,7 @@ private:
             return false;
         }
 
-        if (SdfAllowed allowed = _editor->IsValidKey(value.first)) {
+        if (SdfAllowed allowed = _IsValidKey(VtValueRef(value.first))) {
             // Do nothing
         }
         else {
@@ -974,7 +1000,7 @@ private:
             return false;
         }
 
-        if (SdfAllowed allowed = _editor->IsValidValue(value.second)) {
+        if (SdfAllowed allowed = _IsValidValue(VtValueRef(value.second))) {
             // Do nothing
         }
         else {
@@ -989,8 +1015,8 @@ private:
 
     void _Erase(const key_type& key)
     {
-        if (_Validate() && _ValidateErase(key)) {
-            _editor->Erase(key);
+        if (_Validate() && _ValidateErase(key) && _data.erase(key) != 0) {
+            _UpdateDataInSpec();
         }
     }
 
@@ -1006,10 +1032,15 @@ private:
         return true;
     }
 
+    void _UpdateDataInSpec()
+    {
+        _WriteToSpec(_data.empty() ? VtValueRef() : VtValueRef(_data));
+    }
+
 private:
     template <class ProxyT> friend class SdfPyWrapMapEditProxy;
 
-    std::shared_ptr<Sdf_MapEditor<T> > _editor;
+    Type _data;
 };
 
 // Cannot get from a VtValue except as the correct type.

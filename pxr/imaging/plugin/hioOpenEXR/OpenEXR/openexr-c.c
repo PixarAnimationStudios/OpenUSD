@@ -19,51 +19,73 @@ ARCH_PRAGMA_UNUSED_FUNCTION
 #include <ctype.h>
 #include <math.h>
 
+static const char* nanoexrAuxNames[] = {
+    "nanoexr_read_header",
+    "nanoexr_start_read",
+    "nanoexr_get_data_window",
+    "nanoexr_get_storage",
+    "nanoexr_get_tile_levels",
+    "nanoexr_get_channels",
+    "nanoexr_start_write",
+    "nanoexr_add_channel",
+    "nanoexr_add_part",
+    "nanoexr_set_compression",
+    "nanoexr_add_attr",
+    "nanoexr_encode"
+};
+
+const char* nanoexr_get_default_aux_message(nanoexr_AuxCode_t code_) {
+    size_t code = (size_t) code_;
+    if (code < 0 || code > NANOEXR_ENCODE) 
+        return "Invalid nanoexr_AuxCode_t";
+    return nanoexrAuxNames[code];
+}
+
 // re-export the statically hidden exr_ functions as required
 // for visibility from C++
 
 exr_result_t nanoexr_get_attribute_by_index(
     exr_const_context_t     ctxt,
-    int                     part_index,
-    int                     i,
+    int32_t                 part_index,
+    int32_t                 i,
     const exr_attribute_t** outattr)
 {
     return exr_get_attribute_by_index(ctxt, part_index, 
                                       EXR_ATTR_LIST_SORTED_ORDER, i, outattr);
 }
 
-int nanoexr_get_attribute_count(exr_const_context_t ctxt, int part_index) {
-    int count = 0;
+int32_t nanoexr_get_attribute_count(exr_const_context_t ctxt, int32_t part_index) {
+    int32_t count = 0;
     exr_get_attribute_count(ctxt, part_index, &count);
     return count;
 }
 
-void nanoexr_attr_set_string(exr_context_t ctxt, int part_index, 
+void nanoexr_attr_set_string(exr_context_t ctxt, int32_t part_index, 
                              const char* name, const char* s) {
     exr_attr_set_string(ctxt, part_index, name, s);
 }
 
-void nanoexr_attr_set_int(exr_context_t ctxt, int part_index, 
-                          const char* name, int v) {
+void nanoexr_attr_set_int(exr_context_t ctxt, int32_t part_index, 
+                          const char* name, int32_t v) {
     exr_attr_set_int(ctxt, part_index, name, v);
 }
 
-void nanoexr_attr_set_float(exr_context_t ctxt, int part_index, 
+void nanoexr_attr_set_float(exr_context_t ctxt, int32_t part_index, 
                             const char* name, float v) {
     exr_attr_set_float(ctxt, part_index, name, v);
 }
 
-void nanoexr_attr_set_double(exr_context_t ctxt, int part_index, 
+void nanoexr_attr_set_double(exr_context_t ctxt, int32_t part_index, 
                              const char* name, double v) {
     exr_attr_set_double(ctxt, part_index, name, v);
 }
 
-void nanoexr_attr_set_m44f(exr_context_t ctxt, int part_index, 
+void nanoexr_attr_set_m44f(exr_context_t ctxt, int32_t part_index, 
                            const char* name, const float* v) {
     exr_attr_set_m44f(ctxt, part_index, name, (exr_attr_m44f_t*) v);
 }
 
-void nanoexr_attr_set_m44d(exr_context_t ctxt, int part_index, 
+void nanoexr_attr_set_m44d(exr_context_t ctxt, int32_t part_index, 
                            const char* name, const double* v) {
     exr_attr_set_m44d(ctxt, part_index, name, (exr_attr_m44d_t*) v);
 }
@@ -71,6 +93,11 @@ void nanoexr_attr_set_m44d(exr_context_t ctxt, int part_index,
 const char* nanoexr_get_error_code_as_string (exr_result_t code)
 {
     return exr_get_error_code_as_string(code);
+}
+
+const char* nanoexr_get_default_error_message (exr_result_t code)
+{
+    return exr_get_default_error_message(code);
 }
 
 static float integrate_gaussian(float x, float sigma)
@@ -87,21 +114,29 @@ bool nanoexr_Gaussian_resample(const nanoexr_ImageData_t* src,
         return false;
     if (src->channelCount != dst->channelCount)
         return false;
-    
-    const int srcWidth  = src->width;
-    const int dstWidth  = dst->width;
-    const int srcHeight = src->height;
-    const int dstHeight = dst->height;
+
+    // these values are all int 32 and have already been
+    // checked against negative and zero values.
+    const uint64_t srcWidth  = (uint64_t) src->width;
+    const uint64_t dstWidth  = (uint64_t) dst->width;
+    const uint64_t srcHeight = (uint64_t) src->height;
+    const uint64_t dstHeight = (uint64_t) dst->height;
+
+    // the number of pixels fits into uint64_t.
+    const uint64_t srcPixelCount = (uint64_t) srcWidth * (uint64_t) srcHeight;
+
+    // Note that dst must already have been allocated to a sufficient size.
+    // This is not a published API, so further checking is not provided.
     if (srcWidth == dstWidth && srcHeight == dstHeight) {
         memcpy(dst->data, src->data, 
-               src->channelCount * srcWidth * srcHeight * sizeof(float));
+               src->channelCount * srcPixelCount * sizeof(float));
         return true;
     }
     
     float* srcData = (float*)src->data;
     float* dstData = (float*)dst->data;
 
-    // two pass image resize using a Gaussian filter per:
+    // Two pass image resize using a Gaussian filter per:
     // https://bartwronski.com/2021/10/31/practical-gaussian-filter-binomial-filter-and-small-sigma-gaussians
     // chose sigma to suppress high frequencies that can't be represented 
     // in the downsampled image
@@ -162,14 +197,15 @@ bool nanoexr_Gaussian_resample(const nanoexr_ImageData_t* src,
     // first pass: resize horizontally
     int srcFloatsPerLine = src->channelCount * srcWidth;
     int dstFloatsPerLine = src->channelCount * dstWidth;
+    
     float* firstPass = (float*)malloc(dstWidth * src->channelCount * srcHeight * sizeof(float));
-    for (int y = 0; y < srcHeight; ++y) {
-        for (int x = 0; x < dstWidth; ++x) {
-            for (int c = 0; c < src->channelCount; ++c) {
+    for (uint64_t y = 0; y < srcHeight; ++y) {
+        for (uint64_t x = 0; x < dstWidth; ++x) {
+            for (uint32_t c = 0; c < (uint32_t) src->channelCount; ++c) {
                 float sum = 0.0f;
                 for (int i = 0; i < fullFilterSize_w; ++i) {
-                    int srcX = (int)((x + 0.5f) / ratio_w - 0.5f) + i - filterSize_w;
-                    if (srcX < 0 || srcX >= srcWidth)
+                    int64_t srcX = (int)((x + 0.5f) / ratio_w - 0.5f) + i - filterSize_w;
+                    if (srcX < 0 || (uint64_t) srcX >= srcWidth)
                         continue;
                     int idx = y * srcFloatsPerLine + (srcX * src->channelCount) + c;
                     sum += srcData[idx] * filter_w[i];
@@ -181,13 +217,13 @@ bool nanoexr_Gaussian_resample(const nanoexr_ImageData_t* src,
 
     // second pass: resize vertically
     float* secondPass = dstData;
-    for (int y = 0; y < dstHeight; ++y) {
-        for (int x = 0; x < dstWidth; ++x) {
-            for (int c = 0; c < src->channelCount; ++c) {
+    for (uint64_t y = 0; y < dstHeight; ++y) {
+        for (uint64_t x = 0; x < dstWidth; ++x) {
+            for (uint32_t c = 0; c < (uint32_t) src->channelCount; ++c) {
                 float sum = 0.0f;
                 for (int i = 0; i < fullFilterSize_h; ++i) {
                     int srcY = (int)((y + 0.5f) / ratio_h - 0.5f) + i - filterSize_h;
-                    if (srcY < 0 || srcY >= srcHeight)
+                    if (srcY < 0 || srcY >= (int64_t) srcHeight)
                         continue;
                     int idx = src->channelCount * srcY * dstWidth + (x * src->channelCount) + c;
                     sum += firstPass[idx] * filter_h[i];
@@ -233,28 +269,31 @@ void nanoexr_free_storage(nanoexr_Reader_t* reader) {
     free(reader->filename);
 }
 
-int nanoexr_read_header(nanoexr_Reader_t* reader, exr_read_func_ptr_t readFn,
-                        nanoexr_attrRead attrRead, void* callback_userData,
-                        int partIndex) {
+nanoexr_ErrorCode_t
+nanoexr_read_header(nanoexr_Reader_t* reader, exr_read_func_ptr_t readFn,
+                    nanoexr_attrRead attrRead, void* callback_userData,
+                    int32_t partIndex) {
     if (!reader)
-        return EXR_ERR_INVALID_ARGUMENT;
+        return (nanoexr_ErrorCode_t) { 
+            NANOEXR_READ_HEADER, EXR_ERR_INVALID_ARGUMENT };
     
     exr_context_t exr;
     exr_context_initializer_t init = EXR_DEFAULT_CONTEXT_INITIALIZER;
     init.read_fn = readFn;
     init.user_data = callback_userData;
-    int rv = exr_start_read(&exr, reader->filename, &init);
+    exr_result_t rv = exr_start_read(&exr, reader->filename, &init);
     if (rv != EXR_ERR_SUCCESS) {
         exr_finish(&exr);
-        return rv;
+        return (nanoexr_ErrorCode_t) { NANOEXR_START_READ, rv };
     }
 
     exr_attr_box2i_t datawin;
     rv = exr_get_data_window(exr, partIndex, &datawin);
     if (rv != EXR_ERR_SUCCESS) {
         exr_finish(&exr);
-        return rv;
+        return (nanoexr_ErrorCode_t) { NANOEXR_GET_DATA_WINDOW, rv };
     }
+
     reader->partIndex = partIndex;
     reader->width = datawin.max.x - datawin.min.x + 1;
     reader->height = datawin.max.y - datawin.min.y + 1;
@@ -263,7 +302,7 @@ int nanoexr_read_header(nanoexr_Reader_t* reader, exr_read_func_ptr_t readFn,
     rv = exr_get_storage(exr, partIndex, &storage);
     if (rv != EXR_ERR_SUCCESS) {
         exr_finish(&exr);
-        return rv;
+        return (nanoexr_ErrorCode_t) { NANOEXR_GET_STORAGE, rv };
     }
     reader->isScanline = (storage == EXR_STORAGE_SCANLINE);
 
@@ -275,7 +314,7 @@ int nanoexr_read_header(nanoexr_Reader_t* reader, exr_read_func_ptr_t readFn,
         rv = exr_get_tile_levels(exr, partIndex, &numMipLevelsX, &numMipLevelsY);
         if (rv != EXR_ERR_SUCCESS) {
             exr_finish(&exr);
-            return rv;
+            return (nanoexr_ErrorCode_t) { NANOEXR_GET_TILE_LEVELS, rv };
         }
     }
     if (numMipLevelsX != numMipLevelsY) {
@@ -289,8 +328,9 @@ int nanoexr_read_header(nanoexr_Reader_t* reader, exr_read_func_ptr_t readFn,
     rv = exr_get_channels(exr, partIndex, &chlist);
     if (rv != EXR_ERR_SUCCESS) {
         exr_finish(&exr);
-        return rv;
+        return (nanoexr_ErrorCode_t) { NANOEXR_GET_CHANNELS, rv };
     }
+    
     reader->channelCount = chlist->num_channels;
     reader->pixelType = chlist->entries[0].pixel_type;
 
@@ -308,17 +348,18 @@ int nanoexr_read_header(nanoexr_Reader_t* reader, exr_read_func_ptr_t readFn,
             reader->wrapMode = nanoexr_WrapModeMirrorRepeat;
     }
 
-    if (attrRead)
+    if (attrRead) {
         attrRead(callback_userData, exr);
+    }
 
     exr_finish(&exr);
-    return rv;
+    return (nanoexr_ErrorCode_t) { NANOEXR_READ_HEADER, rv };
 }
 
-exr_result_t nanoexr_write_exr(
+nanoexr_ErrorCode_t nanoexr_write_exr(
     const char* filename,
     nanoexr_attrsAdd attrsAdd, void* attrsAdd_userData,
-    int width, int height, bool flipped,
+    int32_t width, int32_t height, bool flipped,
     exr_pixel_type_t pixel_type,
     uint8_t* red,   int32_t redPixelStride,   int32_t redLineStride,
     uint8_t* green, int32_t greenPixelStride, int32_t greenLineStride,
@@ -326,15 +367,16 @@ exr_result_t nanoexr_write_exr(
     uint8_t* alpha, int32_t alphaPixelStride, int32_t alphaLineStride)
 {
 
-    int channelCount = red ? 1 : 0;
+    int32_t channelCount = red ? 1 : 0;
     channelCount += blue ? 1 : 0;
     channelCount += green ? 1 : 0;
     channelCount += alpha ? 1 : 0;
     if (!channelCount) {
-        return EXR_ERR_INVALID_ARGUMENT;
+        return (nanoexr_ErrorCode_t) { NANOEXR_START_WRITE, 
+                                       EXR_ERR_INVALID_ARGUMENT };
     }
 
-    int partidx = 0;
+    int32_t partidx = 0;
     exr_context_t exr;
     exr_context_initializer_t init = EXR_DEFAULT_CONTEXT_INITIALIZER;
 
@@ -343,12 +385,16 @@ exr_result_t nanoexr_write_exr(
     exr_result_t result = exr_start_write(
                                 &exr, filename, EXR_WRITE_FILE_DIRECTLY, &init);
     if (result != EXR_ERR_SUCCESS) {
-        return result;
+        return (nanoexr_ErrorCode_t) { NANOEXR_START_WRITE, 
+                                       result };
+        return (nanoexr_ErrorCode_t) { NANOEXR_START_WRITE, 
+                                       EXR_ERR_INVALID_ARGUMENT };
     }
 
     result = exr_add_part(exr, "beauty", EXR_STORAGE_SCANLINE, &partidx);
     if (result != EXR_ERR_SUCCESS) {
-        return result;
+        return (nanoexr_ErrorCode_t) { NANOEXR_ADD_PART, 
+                                       result };
     }
 
     // modern exr should support long names
@@ -357,7 +403,8 @@ exr_result_t nanoexr_write_exr(
     /// XXX In the future Hio may be able to specify compression levels
     result = exr_set_zip_compression_level(exr, 0, 4);
     if (result != EXR_ERR_SUCCESS) {
-        return result;
+        return (nanoexr_ErrorCode_t) { NANOEXR_SET_COMPRESSION, 
+                                       result };
     }
 
     exr_attr_box2i_t dataw = {0, 0, width - 1, height - 1};
@@ -374,7 +421,8 @@ exr_result_t nanoexr_write_exr(
         EXR_LINEORDER_INCREASING_Y,
         EXR_COMPRESSION_ZIPS); // one line per chunk, ZIP is 16
     if (result != EXR_ERR_SUCCESS) {
-        return result;
+        return (nanoexr_ErrorCode_t) { NANOEXR_ADD_ATTR, 
+                                       result };
     }
 
     if (alpha) {
@@ -386,7 +434,8 @@ exr_result_t nanoexr_write_exr(
                      EXR_PERCEPTUALLY_LOGARITHMIC,
                      1, 1); // x & y sampling rate
         if (result != EXR_ERR_SUCCESS) {
-            return result;
+            return (nanoexr_ErrorCode_t) { NANOEXR_ADD_CHANNEL, 
+                                           result };
         }
     }
     
@@ -399,7 +448,8 @@ exr_result_t nanoexr_write_exr(
                      EXR_PERCEPTUALLY_LOGARITHMIC,
                      1, 1); // x & y sampling rate
         if (result != EXR_ERR_SUCCESS) {
-            return result;
+            return (nanoexr_ErrorCode_t) { NANOEXR_ADD_CHANNEL, 
+                                           result };
         }
     }
 
@@ -412,7 +462,8 @@ exr_result_t nanoexr_write_exr(
                      EXR_PERCEPTUALLY_LOGARITHMIC,
                      1, 1); // x & y sampling rate
         if (result != EXR_ERR_SUCCESS) {
-            return result;
+            return (nanoexr_ErrorCode_t) { NANOEXR_ADD_CHANNEL, 
+                                           result };
         }
     }
     
@@ -425,7 +476,8 @@ exr_result_t nanoexr_write_exr(
                      EXR_PERCEPTUALLY_LOGARITHMIC, // hint that data is an image
                      1, 1); // x & y sampling rate
         if (result != EXR_ERR_SUCCESS) {
-            return result;
+            return (nanoexr_ErrorCode_t) { NANOEXR_ADD_CHANNEL, 
+                                           result };
         }
     }
 
@@ -439,7 +491,8 @@ exr_result_t nanoexr_write_exr(
         0.3127f, 0.3290f}; // white
     result = exr_attr_set_chromaticities(exr, partidx, "chromaticities", &chroma);
     if (result != EXR_ERR_SUCCESS) {
-        return result;
+        return (nanoexr_ErrorCode_t) { NANOEXR_ADD_ATTR, 
+                                       result };
     }
 
     if (attrsAdd) {
@@ -448,7 +501,8 @@ exr_result_t nanoexr_write_exr(
 
     result = exr_write_header(exr);
     if (result != EXR_ERR_SUCCESS) {
-        return result;
+        return (nanoexr_ErrorCode_t) { NANOEXR_ADD_HEADER, 
+                                       result };
     }
     
     exr_encode_pipeline_t encoder;
@@ -479,19 +533,25 @@ exr_result_t nanoexr_write_exr(
     for (int y = dataw.min.y; y <= dataw.max.y; y += scansperchunk, ++chunkInfoIndex) {
         result = exr_write_scanline_chunk_info(exr, partidx, y, &cinfo);
         if (result != EXR_ERR_SUCCESS) {
-            return result;
+            return (nanoexr_ErrorCode_t) { NANOEXR_ENCODE, 
+                                           result };
         }
 
         if (first)
         {
             result = exr_encoding_initialize(exr, partidx, &cinfo, &encoder);
             if (result != EXR_ERR_SUCCESS) {
-                return result;
+                return (nanoexr_ErrorCode_t) { NANOEXR_ENCODE, 
+                                               result };
             }
         }
         else
         {
             result = exr_encoding_update(exr, partidx, &cinfo, &encoder);
+            if (result != EXR_ERR_SUCCESS) {
+                return (nanoexr_ErrorCode_t) { NANOEXR_ENCODE, 
+                                               result };
+            }
         }
         
         int c = 0;
@@ -532,13 +592,15 @@ exr_result_t nanoexr_write_exr(
         if (first) {
             result = exr_encoding_choose_default_routines(exr, partidx, &encoder);
             if (result != EXR_ERR_SUCCESS) {
-                return result;
+                return (nanoexr_ErrorCode_t) { NANOEXR_ENCODE, 
+                                               result };
             }
         }
 
         result = exr_encoding_run(exr, partidx, &encoder);
         if (result != EXR_ERR_SUCCESS) {
-            return result;
+            return (nanoexr_ErrorCode_t) { NANOEXR_ENCODE, 
+                                           result };
         }
 
         first = false;
@@ -558,11 +620,13 @@ exr_result_t nanoexr_write_exr(
 
     result = exr_encoding_destroy(exr, &encoder);
     if (result != EXR_ERR_SUCCESS) {
-        return result;
+        return (nanoexr_ErrorCode_t) { NANOEXR_ENCODE, 
+                                       result };
     }
 
     result = exr_finish(&exr);
-    return result;
+    return (nanoexr_ErrorCode_t) { NANOEXR_ENCODE, 
+                                   result };
 }
 
 
@@ -640,7 +704,7 @@ static exr_result_t _nanoexr_rgba_decoding_initialize(
     exr_context_t exr,
     nanoexr_ImageData_t* img,
     const char* layerName,
-    int partIndex, exr_chunk_info_t* cinfo, exr_decode_pipeline_t* decoder,
+    int32_t partIndex, exr_chunk_info_t* cinfo, exr_decode_pipeline_t* decoder,
     int* rgba)
 {
     exr_result_t rv = EXR_ERR_SUCCESS;
@@ -686,8 +750,8 @@ static exr_result_t _nanoexr_rgba_decoding_initialize(
 exr_result_t nanoexr_read_tiled_exr(exr_context_t exr,
                                     nanoexr_ImageData_t* img,
                                     const char* layerName,
-                                    int partIndex,
-                                    int mipLevel,
+                                    int32_t partIndex,
+                                    int32_t mipLevel,
                                     int* rgbaIndex)
 {
     exr_decode_pipeline_t decoder = EXR_DECODE_PIPELINE_INITIALIZER;
@@ -828,7 +892,8 @@ exr_result_t nanoexr_read_scanline_exr(exr_context_t exr,
                 if (rv != EXR_ERR_SUCCESS)
                     break;
             }
-            uint8_t* start = img->data + (chunky - img->dataWindowMinY) * img->width * pixelbytes;
+            // Note that width has already been sanity checked as greater than zero
+            uint8_t* start = img->data + (chunky - img->dataWindowMinY) * (uint64_t) img->width * pixelbytes;
             for (int c = 0; c < decoder.channel_count; ++c) {
                 decoder.channels[c].decode_to_ptr = NULL;
                 for (int i = 0; i < 4; ++i) {
@@ -853,48 +918,68 @@ exr_result_t nanoexr_read_scanline_exr(exr_context_t exr,
     return rv;
 }
 
+static
 void fill_channel_u16(nanoexr_ImageData_t* img, int channel, uint16_t value) {
-    for (int y = 0; y < img->height; ++y) {
-        for (int x = 0; x < img->width; ++x) {
+    // note that img dimensions have already been validated > zero
+    uint64_t h = (uint64_t) img->height;
+    uint64_t w = (uint64_t) img->width;
+    for (uint64_t y = 0; y < h; ++y) {
+        for (uint64_t x = 0; x < w; ++x) {
+            // note that img->width has already been validated > zero
             uint8_t* curpixel = img->data + 
-                y * img->width * img->channelCount * 2 + 
+                y * w * img->channelCount * 2 + 
                 x * img->channelCount * 2 + channel * 2;
             *(uint16_t*) curpixel = value;
         }
     }
 }
 
+static
 void fill_channel_u32(nanoexr_ImageData_t* img, int channel, uint32_t value) {
-    for (int y = 0; y < img->height; ++y) {
-        for (int x = 0; x < img->width; ++x) {
+    // note that img dimensions have already been validated > zero
+    uint64_t h = (uint64_t) img->height;
+    uint64_t w = (uint64_t) img->width;
+    for (uint64_t y = 0; y < h; ++y) {
+        for (uint64_t x = 0; x < w; ++x) {
+            // note that img->width has already been validated > zero
             uint8_t* curpixel = img->data + 
-                y * img->width * img->channelCount * 4 + 
+                y * w * img->channelCount * 4 + 
                 x * img->channelCount * 4 + channel * 4;
             *(uint32_t*) curpixel = value;
         }
     }
 }
 
+static
 void fill_channel_float(nanoexr_ImageData_t* img, int channel, float value) {
-    for (int y = 0; y < img->height; ++y) {
-        for (int x = 0; x < img->width; ++x) {
+    // note that img dimensions have already been validated > zero
+    uint64_t h = (uint64_t) img->height;
+    uint64_t w = (uint64_t) img->width;
+    for (uint64_t y = 0; y < h; ++y) {
+        for (uint64_t x = 0; x < w; ++x) {
             uint8_t* curpixel = img->data + 
-                y * img->width * img->channelCount * 4 + 
+                y * w * img->channelCount * 4 + 
                 x * img->channelCount * 4 + channel * 4;
             *(float*) curpixel = value;
         }
     }
 }
 
+static
 void copy_channel_u16(nanoexr_ImageData_t* img, uint8_t* dst_data, uint8_t* src_data, int dst_channel, int src_channel) {
-    int dst_off = dst_channel * 2;
-    int src_off = src_channel * 2;
-    for (int y = 0; y < img->height; ++y) {
-        int y_off = y * img->width * img->channelCount * 2;
+    // note that img dimensions have already been validated > zero
+    uint64_t h = (uint64_t) img->height;
+    uint64_t w = (uint64_t) img->width;
+
+    int64_t dst_off = dst_channel * 2;
+    int64_t src_off = src_channel * 2;
+    for (uint64_t y = 0; y < h; ++y) {
+        int64_t y_off = y * w * img->channelCount * 2;
         uint8_t* dst_line_start = dst_data + y_off + dst_off;
         uint8_t* src_line_start = src_data + y_off + src_off;
-        for (int x = 0; x < img->width; ++x) {
-            int x_off = x * img->channelCount * 2;
+        // note that img->width has already been validated > zero
+        for (uint64_t x = 0; x < w; ++x) {
+            int64_t x_off = x * img->channelCount * 2;
             uint8_t* dstpixel = dst_line_start + x_off;
             uint8_t* srcpixel = src_line_start + x_off;
             *(uint16_t*) dstpixel = *(uint16_t*) srcpixel;
@@ -902,23 +987,33 @@ void copy_channel_u16(nanoexr_ImageData_t* img, uint8_t* dst_data, uint8_t* src_
     }
 }
 
+static
 void copy_channel_u32(nanoexr_ImageData_t* img, uint8_t* dst_data, uint8_t* src_data, int dst_channel, int src_channel) {
-    for (int y = 0; y < img->height; ++y) {
-        for (int x = 0; x < img->width; ++x) {
+    // note that img dimensions have already been validated > zero
+    uint64_t h = (uint64_t) img->height;
+    uint64_t w = (uint64_t) img->width;
+
+    for (uint64_t y = 0; y < h; ++y) {
+        for (uint64_t x = 0; x < w; ++x) {
             uint8_t* curpixel = src_data +
-                y * img->width * img->channelCount * 4 +
+                y * w * img->channelCount * 4 +
                 x * img->channelCount * 4 + src_channel * 4;
             uint8_t* topixel = dst_data +
-                y * img->width * img->channelCount * 4 +
+                y * w * img->channelCount * 4 +
                 x * img->channelCount * 4 + dst_channel * 4;
             *(uint32_t*) topixel = *(uint32_t*) curpixel;
         }
     }
 }
 
+static
 void copy_channel_float(nanoexr_ImageData_t* img, uint8_t* dst_data, uint8_t* src_data, int dst_channel, int src_channel) {
-    for (int y = 0; y < img->height; ++y) {
-        for (int x = 0; x < img->width; ++x) {
+    // note that img dimensions have already been validated > zero
+    uint64_t h = (uint64_t) img->height;
+    uint64_t w = (uint64_t) img->width;
+
+    for (uint64_t y = 0; y < h; ++y) {
+        for (uint64_t x = 0; x < w; ++x) {
             uint8_t* curpixel = src_data +
                 y * img->width * img->channelCount * 4 +
                 x * img->channelCount * 4 + src_channel * 4;
@@ -1005,8 +1100,13 @@ exr_result_t nanoexr_read_exr(const char* filename,
         return rv;
     }
 
-    int width = datawin.max.x - datawin.min.x + 1;
-    int height = datawin.max.y - datawin.min.y + 1;
+    int64_t width = datawin.max.x - datawin.min.x + 1;
+    int64_t height = datawin.max.y - datawin.min.y + 1;
+    if (width <= 0 || (uint64_t) width > (1ull << 31) ||
+        height <= 0 || (uint64_t) height > (1ull << 31)) {
+        exr_finish(&exr);
+        return EXR_ERR_FILE_BAD_HEADER;
+    }
 
     const exr_attr_chlist_t* chlist = NULL;
     rv = exr_get_channels(exr, partIndex, &chlist);
@@ -1028,9 +1128,9 @@ exr_result_t nanoexr_read_exr(const char* filename,
     width >>= mipLevel;
     height >>= mipLevel;
     img->channelCount = numChannelsToRead;
-    img->width = width;
-    img->height = height;
-    img->dataSize = width * height * img->channelCount * bytesPerChannel;
+    img->width = (int32_t) width;
+    img->height = (int32_t) height;
+    img->dataSize = (size_t) width * height * img->channelCount * bytesPerChannel;
     img->pixelType = pixelType;
     img->dataWindowMinY = datawin.min.y >> mipLevel;
     img->dataWindowMaxY = (datawin.max.y+1) >> mipLevel;

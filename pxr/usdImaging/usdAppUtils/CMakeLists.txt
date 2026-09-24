@@ -69,7 +69,7 @@ pxr_register_test(testUsdAppUtilsComplexity
     EXPECTED_RETURN_CODE 0
 )
 
-if (NOT PXR_HEADLESS_TEST_MODE AND NOT WIN32 AND NOT APPLE)
+if (NOT PXR_HEADLESS_TEST_MODE AND NOT WIN32)
     pxr_register_test(testUsdAppUtilsFrameRecorder
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAppUtilsFrameRecorder"

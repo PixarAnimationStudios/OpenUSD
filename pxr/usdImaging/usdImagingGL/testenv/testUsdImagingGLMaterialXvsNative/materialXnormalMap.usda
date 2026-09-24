@@ -97,7 +97,7 @@ def Scope "MxMaterials"
         {
             uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
             color3f inputs:diffuseColor = (0.2, 0.2, 0.2)
-            float3 inputs:normal.connect = </MxMaterials/USD_NormalMap/NG_NormalMap.outputs:out_normal>
+            normal3f inputs:normal.connect = </MxMaterials/USD_NormalMap/NG_NormalMap.outputs:out_normal>
             float inputs:roughness = 0.2
             token outputs:surface
         }

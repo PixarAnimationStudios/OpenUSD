@@ -617,9 +617,11 @@ HioOIIO_Image::_OpenForReading(std::string const & filename, int subimage,
         return false;
     }
 
-    if (!imageInput->seek_subimage(subimage, mip, _imagespec)) {
+    if (!imageInput->seek_subimage(subimage, mip)) {
         return false;
     }
+
+    _imagespec = imageInput->spec();
 
     return true;
 }
@@ -687,8 +689,7 @@ HioOIIO_Image::ReadCropped(int const cropTop,
     }
 
     //// seek subimage
-    ImageSpec spec = imageInput->spec();
-    if (!imageInput->seek_subimage(_subimage, _miplevel, spec)){
+    if (!imageInput->seek_subimage(_subimage, _miplevel)){
         imageInput->close();
         TF_CODING_ERROR("Unable to seek subimage");
         return false;

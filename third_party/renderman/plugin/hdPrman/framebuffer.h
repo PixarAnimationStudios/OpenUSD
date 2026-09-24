@@ -87,6 +87,22 @@ public:
 
     void Clear();
 
+    void SetNewData() {
+        dataState.store(DataState::NewData);
+    }
+
+    // Atomically consume new data.
+    // If NewData state, switch to HasData and return true.
+    // Otherwise, keep state and return false.
+    bool ConsumeNewData() {
+        DataState expected = DataState::NewData;
+        return dataState.compare_exchange_strong(expected, DataState::HasData);
+    }
+
+    bool HasData() const {
+        return dataState.load() != DataState::NoData;
+    }
+
     // Post-process the id and id2 attribute AOV buffers back to
     // Hydra's primId and instanceId AOV values. 
     void ConvertRmanIdAOVsToHydra(
@@ -111,7 +127,9 @@ public: // data
     // Clear functionality.
     bool pendingClear;
 
-    std::atomic<bool> newData;
+private:
+    enum class DataState { NoData, HasData, NewData};
+    std::atomic<DataState> dataState;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

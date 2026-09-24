@@ -66,8 +66,8 @@ def Xform "Parent" (
             {
                 uniform asset info:glslfx:sourceAsset = @shaders-surface.glslfx@
                 uniform token info:implementationSource = "sourceAsset"
-                uniform float3 inputs:diffuseColor = (1, 1, 1)
-                add uniform float3 inputs:diffuseColor.connect = </Parent/Materials/UvMat/Tex.outputs:color>
+                uniform color3f inputs:diffuseColor = (1, 1, 1)
+                add uniform color3f inputs:diffuseColor.connect = </Parent/Materials/UvMat/Tex.outputs:color>
                 token outputs:surface
             }
 
@@ -82,7 +82,7 @@ def Xform "Parent" (
             def Shader "Primvar"
             {
                 uniform token info:id = "HwPrimvar_1"
-                uniform token inputs:varname = "map1_uv"
+                uniform string inputs:varname = "map1_uv"
                 float2 outputs:result
             }
         }
@@ -95,7 +95,7 @@ def Xform "Parent" (
             {
                 uniform asset info:glslfx:sourceAsset = @shaders-surface.glslfx@
                 uniform token info:implementationSource = "sourceAsset"
-                uniform float3 inputs:diffuseColor = (1, 0, 1)
+                uniform color3f inputs:diffuseColor = (1, 0, 1)
                 token outputs:surface
             }
         }

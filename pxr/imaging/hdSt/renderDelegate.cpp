@@ -213,6 +213,10 @@ HdStRenderDelegate::GetRenderSettingDescriptorsForPlugin()
 {
     static const HdRenderSettingDescriptorList descriptors{
         HdRenderSettingDescriptor{
+            "Default transparency mode for displayOpacity",
+            HdStRenderSettingsTokens->defaultTransparencyMode,
+            VtValue(HdStDefaultTransparencyModeTokens->screenDoor) },
+        HdRenderSettingDescriptor{
             "Enable Tiny Prim Culling",
             HdStRenderSettingsTokens->enableTinyPrimCulling,
             VtValue(bool(TfGetEnvSetting(HD_ENABLE_GPU_TINY_PRIM_CULLING))) },

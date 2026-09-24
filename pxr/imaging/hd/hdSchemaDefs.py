@@ -102,6 +102,7 @@
         SCHEMA_TOKEN = 'topology',
         SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/subdivisionTagsSchema'],
         MEMBERS = [
+            ('ALL_MEMBERS', '', dict(ADD_LOCATOR = True)),
             ('faceVertexCounts', T_INTARRAY, {}),
             ('faceVertexIndices', T_INTARRAY, {}),
             ('holeIndices', T_INTARRAY, {}),

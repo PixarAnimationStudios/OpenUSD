@@ -21,7 +21,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanLoaderTokens, HDPRMANLOADER_API, HDPRMAN_LOADER_TOKENS);
 
-class HdPrmanLoaderRendererPlugin : public HdRendererPlugin 
+class HDPRMANLOADER_API_TYPE HdPrmanLoaderRendererPlugin : public HdRendererPlugin 
 {
 public:
     HDPRMANLOADER_API

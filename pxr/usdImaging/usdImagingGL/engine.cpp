@@ -2599,7 +2599,6 @@ UsdImagingGLEngine::_UpdateHydraCollection(
 
     // choose repr
     HdReprSelector reprSelector = HdReprSelector(HdReprTokens->smoothHull);
-    const bool refined = params.complexity > 1.0;
 
     if (params.drawMode == UsdImagingGLDrawMode::DRAW_POINTS) {
         reprSelector = HdReprSelector(HdReprTokens->points);
@@ -2610,16 +2609,13 @@ UsdImagingGLEngine::_UpdateHydraCollection(
     } else if (
         params.drawMode == UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE) {
         // Wireframe on surface
-        reprSelector = HdReprSelector(refined ?
-            HdReprTokens->refinedWireOnSurf : HdReprTokens->wireOnSurf);
+        reprSelector = HdReprSelector(HdReprTokens->refinedWireOnSurf);
     } else if (params.drawMode == UsdImagingGLDrawMode::DRAW_WIREFRAME) {
         // Wireframe
-        reprSelector = HdReprSelector(refined ?
-            HdReprTokens->refinedWire : HdReprTokens->wire);
+        reprSelector = HdReprSelector(HdReprTokens->refinedWire);
     } else {
         // Smooth shading
-        reprSelector = HdReprSelector(refined ?
-            HdReprTokens->refined : HdReprTokens->smoothHull);
+        reprSelector = HdReprSelector(HdReprTokens->refined);
     }
 
     // By default our main collection will be called geometry

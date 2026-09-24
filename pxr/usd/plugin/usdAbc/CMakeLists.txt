@@ -15,22 +15,6 @@ if (PXR_ENABLE_HDF5_SUPPORT)
    list(APPEND optionalIncludeDirs ${HDF5_INCLUDE_DIRS})
 endif()
 
-# Use the import targets set by Imath's package config
-# Note that the ImathConfig target must also be included to insure the
-# Imath directory is part of the include paths when compiling this
-# library. This is needed to accommodate Alembic headers that include
-# <half.h> instead of <Imath/half.h>
-if (Imath_FOUND)
-    set(__ALEMBIC_IMATH_LIBS "Imath::ImathConfig;Imath::Imath")
-else()
-    set(__ALEMBIC_IMATH_INCLUDES ${OPENEXR_INCLUDE_DIRS})
-    LIST(APPEND __ALEMBIC_IMATH_LIBS ${OPENEXR_Half_LIBRARY})
-    LIST(APPEND __ALEMBIC_IMATH_LIBS ${OPENEXR_Imath_LIBRARY})
-    LIST(APPEND __ALEMBIC_IMATH_LIBS ${OPENEXR_Iex_LIBRARY})
-    LIST(APPEND __ALEMBIC_IMATH_LIBS ${OPENEXR_IexMath_LIBRARY})
-endif()
-
-
 pxr_plugin(usdAbc
     LIBRARIES
         tf
@@ -39,12 +23,11 @@ pxr_plugin(usdAbc
         usd
         usdGeom
         ${ALEMBIC_LIBRARIES}
-        ${__ALEMBIC_IMATH_LIBS}
+        Imath::Imath
         ${optionalLibs}
 
     INCLUDE_DIRS
         ${ALEMBIC_INCLUDE_DIR}
-        ${__ALEMBIC_IMATH_INCLUDES}
         ${optionalIncludeDirs}
 
     PRIVATE_CLASSES

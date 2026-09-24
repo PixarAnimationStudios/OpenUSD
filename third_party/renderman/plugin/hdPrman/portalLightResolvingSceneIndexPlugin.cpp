@@ -73,11 +73,11 @@ TF_DEFINE_PRIVATE_TOKENS(
 TF_DEFINE_PRIVATE_TOKENS(
     _inheritedAttrTokens,
 
-    (colorEnableTemperature)
     ((colorMapGamma,           "ri:light:colorMapGamma"))
     ((colorMapSaturation,      "ri:light:colorMapSaturation"))
     (colorTemperature)
     (diffuse)
+    (enableColorTemperature)
     ((importanceMultiplier,    "ri:light:importanceMultiplier"))
     ((shadowColor,             "shadow:color"))
     ((shadowDistance,          "shadow:distance"))

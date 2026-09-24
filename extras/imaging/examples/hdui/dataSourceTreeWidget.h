@@ -38,6 +38,13 @@ public Q_SLOTS:
 
 Q_SIGNALS:
     void DataSourceSelected(HdDataSourceBaseHandle dataSource);
+
+private:
+    /// Expands the prim data source to reveal as much of the \p locator as
+    /// possible. Returns the deepest item that is expanded.
+    QTreeWidgetItem* _Expand(const HdDataSourceLocator& locator);
+
+    HdDataSourceLocator _selectedLocator;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

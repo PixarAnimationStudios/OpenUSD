@@ -238,7 +238,7 @@ PtDspyError DspyImageData(
         xmin_plusorigin, xmax_plusorigin,
         ymin_plusorigin, ymax_plusorigin);
 
-    buf->newData = true;
+    buf->SetNewData();
 
     return PkDspyErrorNone;
 }
@@ -322,7 +322,7 @@ HdPrmanFramebuffer::HdPrmanFramebuffer(HdPrman_IdMap *idMap)
   , cropOrigin{0,0}
   , cropRes{0,0}
   , pendingClear(true)
-  , newData(false)
+  , dataState(DataState::NoData)
 {
     // Add this buffer to the registry, assigning an id.
     _BufferRegistry& registry = *_bufferRegistry;
@@ -393,7 +393,7 @@ HdPrmanFramebuffer::Resize(int width, int height,
         cropOrigin[0] = cropXMin;
         cropOrigin[1] = cropYMin;
         pendingClear = true;
-        newData = true;
+        SetNewData();
 
         for(HdPrmanFramebuffer::AovBuffer &aovBuffer : aovBuffers) {
             const int cc = HdGetComponentCount(aovBuffer.desc.format);
@@ -656,7 +656,7 @@ public:
         // Copy planar data into buffer
         std::lock_guard<std::mutex> lock(m_buf->mutex);
 
-        m_buf->newData = true;
+        m_buf->SetNewData();
 
         if (m_buf->pendingClear) {
             m_buf->pendingClear = false;

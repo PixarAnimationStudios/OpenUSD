@@ -21,6 +21,8 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/stringUtils.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(USDIMAGING_SHOW_POINT_PROTOTYPE_SCENE_INDICES, false,
@@ -117,7 +119,7 @@ private:
     _PropagatedPrototypesSourceHandle _GetOrCreateDataSource(
         const SdfPath &prototype);
 };
-    
+
 _PropagatedPrototypesSourceHandle
 _UsdPrimInfoSceneIndex::_GetDataSource(
     const SdfPath &prototype)
@@ -159,7 +161,7 @@ _UsdPrimInfoSceneIndex::_GetOrCreateDataSource(
         return _CreateDataSource(prototype);
     }
 }
-    
+
 void
 _UsdPrimInfoSceneIndex::AddPropagatedPrototype(
     const SdfPath &prototype,
@@ -192,8 +194,9 @@ _UsdPrimInfoSceneIndex::RemovePropagatedPrototype(
     }
 }
 
-struct _Context
+class _Context
 {
+public:
     _Context(
         HdSceneIndexBaseRefPtr const &inputSceneIndex)
       : inputSceneIndex(inputSceneIndex)
@@ -207,6 +210,36 @@ struct _Context
             usdPrimInfoSceneIndex, SdfPath::AbsoluteRootPath());
     }
 
+    void AddInputScene(
+        const HdSceneIndexBaseRefPtr& scene,
+        const SdfPath& sceneRoot)
+    {
+        if (_batchDepth == 0) {
+            mergingSceneIndex->AddInputScene(scene, sceneRoot);
+            return;
+        }
+        _pendingInserts.push_back({ scene, sceneRoot });
+    }
+
+    void RemoveInputScene(const HdSceneIndexBaseRefPtr& scene)
+    {
+        if (_batchDepth == 0) {
+            mergingSceneIndex->RemoveInputScene(scene);
+            return;
+        }
+
+        const auto it = std::find_if(
+            _pendingInserts.begin(), _pendingInserts.end(),
+            [&scene](const HdMergingSceneIndex::InputScene& inputScene) {
+                return inputScene.scene == scene;
+            });
+        if (it != _pendingInserts.end()) {
+            _pendingInserts.erase(it);
+            return;
+        }
+        _pendingRemovals.push_back(scene);
+    }
+
     HdSceneIndexBaseRefPtr const inputSceneIndex;
     /// Scene index used to override the instancerTopology::prototypes
     /// data sources of instancers to account for the re-rooting.
@@ -216,6 +249,47 @@ struct _Context
     _UsdPrimInfoSceneIndexRefPtr const usdPrimInfoSceneIndex;
     /// Our "output" scene index.
     HdMergingSceneIndexRefPtr const mergingSceneIndex;
+
+    class BatchScope
+    {
+    public:
+        explicit BatchScope(const _ContextSharedPtr& context)
+          : _context(context)
+        {
+            if (_context) {
+                ++_context->_batchDepth;
+            }
+        }
+
+        ~BatchScope()
+        {
+            if (_context && --_context->_batchDepth == 0) {
+                _context->_FlushInputScenes();
+            }
+        }
+
+        BatchScope(const BatchScope&) = delete;
+        BatchScope& operator=(const BatchScope&) = delete;
+    private:
+        _ContextSharedPtr _context;
+    };
+
+private:
+    void _FlushInputScenes()
+    {
+        if (!_pendingRemovals.empty()) {
+            mergingSceneIndex->RemoveInputScenes(_pendingRemovals);
+            _pendingRemovals.clear();
+        }
+        if (!_pendingInserts.empty()) {
+            mergingSceneIndex->InsertInputScenes(_pendingInserts);
+            _pendingInserts.clear();
+        }
+    }
+
+    size_t _batchDepth = 0;
+    std::vector<HdMergingSceneIndex::InputScene> _pendingInserts;
+    std::vector<HdSceneIndexBaseRefPtr> _pendingRemovals;
 };
 
 /// \class _InstancerObserver
@@ -363,8 +437,8 @@ _InstancerObserver::_InstancerObserver(
       _RerootingSceneIndex(
           _prototypeSceneIndex,
           prototype, propagatedPrototype))
-{    
-    _context->mergingSceneIndex->AddInputScene(
+{
+    _context->AddInputScene(
         _rerootingSceneIndex,
         propagatedPrototype);
 
@@ -382,7 +456,7 @@ _InstancerObserver::~_InstancerObserver()
     if (!_subinstancerObservers.empty()) {
         HdSceneIndexObserver::RemovedPrimEntries removedInstancers;
         removedInstancers.reserve(_subinstancerObservers.size());
-        
+
         for (const auto &instancerAndObserver : _subinstancerObservers) {
             const SdfPath &instancer = instancerAndObserver.first;
             removedInstancers.emplace_back(_RerootedPath(instancer));
@@ -394,7 +468,7 @@ _InstancerObserver::~_InstancerObserver()
     }
     // We remove the scene indices in the order opposite to how we
     // added them.
-    _context->mergingSceneIndex->RemoveInputScene(_rerootingSceneIndex);
+    _context->RemoveInputScene(_rerootingSceneIndex);
 }
 
 SdfPath
@@ -428,7 +502,7 @@ _InstancerObserver::_InstancerHash(const SdfPath &instancer) const
     const size_t h = TfHash::Combine(
         instancer.GetString(),
         _propagatedPrototype.GetString());
-    
+
     return TfToken(TfStringPrintf("ForInstancer%zx", h));
 }
 
@@ -443,7 +517,7 @@ _InstancerTopology(const VtArray<SdfPath> &prototypes)
                     HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
                         prototypes))
                 .Build());
-    
+
 }
 
 void
@@ -585,7 +659,7 @@ _InstancerObserver::PrimsAdded(const HdSceneIndexBase &sender,
                     const AddedPrimEntries &entries)
 {
     TRACE_FUNCTION();
-
+    _Context::BatchScope batch(_context);
     for (const AddedPrimEntry &entry : entries) {
         const SdfPath &path = entry.primPath;
         if (entry.primType == HdPrimTypeTokens->instancer) {
@@ -614,7 +688,7 @@ _InstancerObserver::PrimsDirtied(const HdSceneIndexBase &sender,
     static const HdDataSourceLocator locator =
         HdInstancerTopologySchema::GetDefaultLocator().Append(
             HdInstancerTopologySchemaTokens->prototypes);
-
+    _Context::BatchScope batch(_context);
     for (const DirtiedPrimEntry &entry : entries) {
         const SdfPath &path = entry.primPath;
         if (!entry.dirtyLocators.Contains(locator)) {
@@ -639,7 +713,7 @@ _InstancerObserver::PrimsRemoved(const HdSceneIndexBase &sender,
     }
 
     HdSceneIndexObserver::RemovedPrimEntries removedInstancers;
-
+    _Context::BatchScope batch(_context);
     for (const RemovedPrimEntry &entry : entries) {
         const SdfPath &path = entry.primPath;
         // Find all instancers that are namespace descendants of
@@ -685,6 +759,13 @@ UsdImagingPiPrototypePropagatingSceneIndex(
   , _mergingSceneIndexObserver(this)
   , _instancerObserver(std::make_unique<_InstancerObserver>(_context))
 {
+}
+
+UsdImagingPiPrototypePropagatingSceneIndex::
+~UsdImagingPiPrototypePropagatingSceneIndex()
+{
+    _Context::BatchScope batch(_context);
+    _instancerObserver.reset();
 }
 
 std::vector<HdSceneIndexBaseRefPtr>
