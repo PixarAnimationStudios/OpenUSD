@@ -363,6 +363,7 @@ private:
     HdxPickTaskContextParams _contextParams;
     TfTokenVector _renderTags;
     bool _useOverlayPass;
+    bool _useDeepSelection;
 
     // We need to cache a pointer to the render index so Execute() can
     // map prim ID to paths.
