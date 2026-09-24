@@ -70,7 +70,7 @@ float GetMinEdgeDistance()
 {
     // Hide triangle edges by adding edge mask.
     vec3 param = GetEdgeCoord() + GetPrimitiveEdgeMask();
-    vec3 edgeDistance = max(vec3(0.0), param / fwidth(param));
+    vec3 edgeDistance = max(vec3(0.0), param / max(fwidth(param), 1e-6));
     return min(edgeDistance.x,
                min(edgeDistance.y,
                    edgeDistance.z));
@@ -96,7 +96,7 @@ float GetMinEdgeDistance()
     vec2 rightTop = vec2(1.0) - leftBottom;
 
     vec4 param = vec4(leftBottom.y, rightTop.x, rightTop.y, leftBottom.x);
-    vec4 edgeDistance = max(vec4(0.0), param / fwidth(param));
+    vec4 edgeDistance = max(vec4(0.0), param / max(fwidth(param), 1e-6));
 
     // Hide internal edges introduced by quadrangulation
     if (GetEdgeFlag() != 0) edgeDistance.yz += vec2(2.0);
@@ -130,7 +130,7 @@ vec3 GetEdgeParamTriangle()
 vec3 GetEdgeDistanceTriangle()
 {
     vec3 param = GetEdgeParamTriangle();
-    return max(vec3(0.0), param / fwidth(param));
+    return max(vec3(0.0), param / max(fwidth(param), 1e-6));
 }
 
 vec4 GetEdgeParamQuad()
@@ -146,7 +146,7 @@ vec4 GetEdgeParamQuad()
 vec4 GetEdgeDistanceQuad()
 {
     vec4 param = GetEdgeParamQuad();
-    return max(vec4(0.0), param / fwidth(param));
+    return max(vec4(0.0), param / max(fwidth(param), 1e-6));
 }
 
 --- --------------------------------------------------------------------------
