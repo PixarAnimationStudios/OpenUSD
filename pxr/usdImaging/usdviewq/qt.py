@@ -40,21 +40,6 @@ if PySideModule == 'PySide2':
     
     QGLWidget.isContextInitialised = isContextInitialised
 
-    def bindTexture(self, qimage):
-        from OpenGL import GL
-        tex = self.bindTexture(qimage, GL.GL_TEXTURE_2D, GL.GL_RGBA,
-                               QtOpenGL.QGLContext.NoBindOption)
-        GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
-
-        return tex
-
-    def releaseTexture(self, tex):
-        from OpenGL import GL
-        GL.glDeleteTextures(tex)
-
-    QGLWidget.BindTexture = bindTexture
-    QGLWidget.ReleaseTexture = releaseTexture
-
     def initQGLWidget(self, glFormat, parent):
         QGLWidget.__init__(self, glFormat, parent)
 
@@ -75,18 +60,6 @@ elif PySideModule == 'PySide6':
 
     if not hasattr(QGLWidget, 'grabFrameBuffer'):
         QGLWidget.grabFrameBuffer = QGLWidget.grabFramebuffer
-
-    def bindTexture(self, qimage):
-        tex = QtOpenGL.QOpenGLTexture(qimage)
-        tex.bind()
-        return tex
-
-    def releaseTexture(self, tex):
-        tex.release()
-        tex.destroy()
-
-    QGLWidget.BindTexture = bindTexture
-    QGLWidget.ReleaseTexture = releaseTexture
 
     if not hasattr(QGLFormat, 'setSampleBuffers'):
         QGLFormat.setSampleBuffers = lambda self, _: None

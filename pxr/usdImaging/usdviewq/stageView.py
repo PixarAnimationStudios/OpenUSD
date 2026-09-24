@@ -133,22 +133,6 @@ class Rect():
         self.xywh[:] = list(map(float, xywh[:4]))
         return self
 
-    @classmethod
-    def fromCorners(cls, c0, c1):
-        self = cls()
-        self.xywh[0] = float(min(c0[0], c1[0]))
-        self.xywh[1] = float(min(c0[1], c1[1]))
-        self.xywh[2] = float(max(c0[0], c1[0])) - self.xywh[0]
-        self.xywh[3] = float(max(c0[1], c1[1])) - self.xywh[1]
-        return self
-
-    def scaledAndBiased(self, sxy, txy):
-        ret = self.__class__()
-        for c in range(2):
-            ret.xywh[c] = sxy[c] * self.xywh[c] + txy[c]
-            ret.xywh[c + 2] = sxy[c] * self.xywh[c + 2]
-        return ret
-
     def _splitAlongY(self, y):
         bottom = self.__class__()
         top = self.__class__()
@@ -181,290 +165,96 @@ class Rect():
             return [right]
         #check y
         if xywh[1] > self.xywh[1]:
-            #keep bottom, check top
-            bottom, top = self._splitAlongY(xywh[1])
-            return [bottom] + top.difference(xywh)
+            #keep top, check bottom
+            top, bottom = self._splitAlongY(xywh[1])
+            return [top] + bottom.difference(xywh)
         if (xywh[1] + xywh[3]) < (self.xywh[1] + self.xywh[3]):
-            #keep top
-            bottom, top = self._splitAlongY(xywh[1] + xywh[3])
-            return [top]
+            #keep bottom
+            top, bottom = self._splitAlongY(xywh[1] + xywh[3])
+            return [bottom]
         return []
 
 
-class OutlineRect(Rect):
-    _glslProgram = None
-    _vbo = 0
-    _vao = 0
+class Outline():
     def __init__(self):
-        Rect.__init__(self)
+        self._outlinePen = QtGui.QPen(QtGui.QColor(0, 0, 0))
+        self._outlinePen.setWidth(1)
+        self._rect = QtCore.QRectF()
 
-    @classmethod
-    def compileProgram(self):
-        if self._glslProgram:
-            return self._glslProgram
-        from OpenGL import GL
-        import ctypes
+    def updatePrims(self, croppedViewportQRect, qglwidget):
+        self._rect = croppedViewportQRect
 
-        # prep a quad line vbo
-        self._vbo = GL.glGenBuffers(1)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._vbo)
-        st = [0, 0, 1, 0, 1, 1, 0, 1]
-        GL.glBufferData(GL.GL_ARRAY_BUFFER, len(st)*4,
-                        (ctypes.c_float*len(st))(*st), GL.GL_STATIC_DRAW)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+    def draw(self, painter):
+        painter.setPen(self._outlinePen)
+        painter.drawRect(self._rect)
 
-        self._glslProgram = GLSLProgram(
-            # for OpenGL 3.1 or later
-            """#version 140
-               uniform vec4 rect;
-               in vec2 st;
-               void main() {
-                 gl_Position = vec4(rect.x + rect.z*st.x,
-                                    rect.y + rect.w*st.y, 0, 1); }""",
-            """#version 140
-               out vec4 fragColor;
-               uniform vec4 color;
-              void main() { fragColor = color; }""",
-            # for OpenGL 2.1 (osx compatibility profile)
-            """#version 120
-               uniform vec4 rect;
-               attribute vec2 st;
-               void main() {
-                 gl_Position = vec4(rect.x + rect.z*st.x,
-                                    rect.y + rect.w*st.y, 0, 1); }""",
-            """#version 120
-               uniform vec4 color;
-               void main() { gl_FragColor = color; }""",
-            ["rect", "color"])
-
-        return self._glslProgram
-
-    def glDraw(self, color):
-        from OpenGL import GL
-
-        cls = self.__class__
-
-        program = cls.compileProgram()
-        if program.program == 0:
-            return
-
-        GL.glUseProgram(program.program)
-
-        if program.useSampleAlphaToCoverage:
-            GL.glDisable(GL.GL_SAMPLE_ALPHA_TO_COVERAGE)
-
-        if program.useVAO:
-            if (cls._vao == 0):
-                cls._vao = GL.glGenVertexArrays(1)
-            GL.glBindVertexArray(cls._vao)
-
-        # for some reason, we need to bind at least 1 vertex attrib (is OSX)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, cls._vbo)
-        GL.glEnableVertexAttribArray(0)
-        GL.glVertexAttribPointer(0, 2, GL.GL_FLOAT, False, 0, None)
-
-        program.uniform4f("color", *color)
-        program.uniform4f("rect", *self.xywh)
-        GL.glDrawArrays(GL.GL_LINE_LOOP, 0, 4)
-
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-        GL.glDisableVertexAttribArray(0)
-        if program.useVAO:
-            GL.glBindVertexArray(0)
-
-        GL.glUseProgram(0)
-
-class FilledRect(Rect):
-    _glslProgram = None
-    _vbo = 0
-    _vao = 0
+class Reticles():
     def __init__(self):
-        Rect.__init__(self)
-
-    @classmethod
-    def compileProgram(self):
-        if self._glslProgram:
-            return self._glslProgram
-        from OpenGL import GL
-        import ctypes
-
-        # prep a quad line vbo
-        self._vbo = GL.glGenBuffers(1)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._vbo)
-        st = [0, 0, 1, 0, 0, 1, 1, 1]
-        GL.glBufferData(GL.GL_ARRAY_BUFFER, len(st)*4,
-                        (ctypes.c_float*len(st))(*st), GL.GL_STATIC_DRAW)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-
-        self._glslProgram = GLSLProgram(
-            # for OpenGL 3.1 or later
-            """#version 140
-               uniform vec4 rect;
-               in vec2 st;
-               void main() {
-                 gl_Position = vec4(rect.x + rect.z*st.x,
-                                    rect.y + rect.w*st.y, 0, 1); }""",
-            """#version 140
-               out vec4 fragColor;
-               uniform vec4 color;
-              void main() { fragColor = color; }""",
-            # for OpenGL 2.1 (osx compatibility profile)
-            """#version 120
-               uniform vec4 rect;
-               attribute vec2 st;
-               void main() {
-                 gl_Position = vec4(rect.x + rect.z*st.x,
-                                    rect.y + rect.w*st.y, 0, 1); }""",
-            """#version 120
-               uniform vec4 color;
-               void main() { gl_FragColor = color; }""",
-            ["rect", "color"])
-
-        return self._glslProgram
-
-    def glDraw(self, color):
-        #don't draw if too small
-        if self.xywh[2] < 0.001 or self.xywh[3] < 0.001:
-            return
-
-        from OpenGL import GL
-
-        cls = self.__class__
-
-        program = cls.compileProgram()
-        if program.program == 0:
-            return
-
-        GL.glUseProgram(program.program)
-
-        if program.useSampleAlphaToCoverage:
-            GL.glDisable(GL.GL_SAMPLE_ALPHA_TO_COVERAGE)
-
-        if program.useVAO:
-            if (cls._vao == 0):
-                cls._vao = GL.glGenVertexArrays(1)
-            GL.glBindVertexArray(cls._vao)
-
-        # for some reason, we need to bind at least 1 vertex attrib (is OSX)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, cls._vbo)
-        GL.glEnableVertexAttribArray(0)
-        GL.glVertexAttribPointer(0, 2, GL.GL_FLOAT, False, 0, None)
-
-        program.uniform4f("color", *color)
-        program.uniform4f("rect", *self.xywh)
-        GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4)
-
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-        GL.glDisableVertexAttribArray(0)
-        if program.useVAO:
-            GL.glBindVertexArray(0)
-
-        GL.glUseProgram(0)
-
-class Prim2DSetupTask():
-    def __init__(self, viewport):
-        self._viewport = viewport[:]
-
-    def Sync(self, ctx):
-        pass
-
-    def Execute(self, ctx):
-        from OpenGL import GL
-        GL.glViewport(*self._viewport)
-        GL.glDisable(GL.GL_DEPTH_TEST)
-        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
-        GL.glEnable(GL.GL_BLEND)
-
-class Prim2DDrawTask():
-    def __init__(self):
-        self._prims = []
-        self._colors = []
-
-
-    def Sync(self, ctx):
-        for prim in self._prims:
-            prim.__class__.compileProgram()
-
-    def Execute(self, ctx):
-        for prim, color in zip(self._prims, self._colors):
-            prim.glDraw(color)
-
-class Outline(Prim2DDrawTask):
-    def __init__(self):
-        Prim2DDrawTask.__init__(self)
-        self._outlineColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(0.0, 0.0, 0.0, 1.0))
-
-    def updatePrims(self, croppedViewport, qglwidget):
-        pixelRatio = qglwidget.devicePixelRatioF()
-        width = float(qglwidget.width()) * pixelRatio
-        height = float(qglwidget.height()) * pixelRatio
-
-        prims = [ OutlineRect.fromXYWH(croppedViewport) ]
-        self._prims = [p.scaledAndBiased((2.0 / width, 2.0 / height), (-1, -1))
-                for p in prims]
-        self._colors = [ self._outlineColor ]
-
-class Reticles(Prim2DDrawTask):
-    def __init__(self):
-        Prim2DDrawTask.__init__(self)
-        self._outlineColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(0.0, 0.7, 1.0, 0.9))
+        self._outlineColor = (0.0, 0.7, 1.0, 0.9)
+        self._rects = []
 
     def updateColor(self, color):
-        self._outlineColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(*color))
+        self._outlineColor = tuple(Gf.ConvertDisplayToLinear(Gf.Vec4f(*color)))
 
-    def updatePrims(self, croppedViewport, qglwidget, inside, outside):
-        pixelRatio = qglwidget.devicePixelRatioF()
-        width = float(qglwidget.width()) * pixelRatio
-        height = float(qglwidget.height()) * pixelRatio
-
-        prims = [ ]
+    def updatePrims(self, croppedViewportQRect, qglwidget, inside, outside):
         ascenders = [0, 0]
         descenders = [0, 0]
         if inside:
             descenders = [7, 15]
         if outside:
             ascenders = [7, 15]
-        # vertical reticles on the top and bottom
+
+        left = croppedViewportQRect.left()
+        right = croppedViewportQRect.right()
+        top = croppedViewportQRect.top()
+        bottom = croppedViewportQRect.bottom()
+        width = croppedViewportQRect.width()
+        height = croppedViewportQRect.height()
+
+        rects = []
+        # vertical reticles straddling the top and bottom edges
         for i in range(5):
             w = 2.6
             h = ascenders[i & 1] + descenders[i & 1]
-            x = croppedViewport[0] - (w // 2) + ((i + 1) * croppedViewport[2]) // 6
-            bottomY = croppedViewport[1] - ascenders[i & 1]
-            topY = croppedViewport[1] + croppedViewport[3] - descenders[i & 1]
-            prims.append(FilledRect.fromXYWH((x, bottomY, w, h)))
-            prims.append(FilledRect.fromXYWH((x, topY, w, h)))
-        # horizontal reticles on the left and right
+            x = left - (w // 2) + ((i + 1) * width) // 6
+            rects.append(QtCore.QRectF(x, top - ascenders[i & 1], w, h))
+            rects.append(QtCore.QRectF(x, bottom - descenders[i & 1], w, h))
+        # horizontal reticles straddling the left and right edges
         for i in range(5):
             w = ascenders[i & 1] + descenders[i & 1]
             h = 2.6
-            leftX = croppedViewport[0] - ascenders[i & 1]
-            rightX = croppedViewport[0] + croppedViewport[2] - descenders[i & 1]
-            y = croppedViewport[1] - (h // 2) + ((i + 1) * croppedViewport[3]) // 6
-            prims.append(FilledRect.fromXYWH((leftX, y, w, h)))
-            prims.append(FilledRect.fromXYWH((rightX, y, w, h)))
+            y = bottom - (h // 2) - ((i + 1) * height) // 6
+            rects.append(QtCore.QRectF(left - ascenders[i & 1], y, w, h))
+            rects.append(QtCore.QRectF(right - descenders[i & 1], y, w, h))
 
-        self._prims = [p.scaledAndBiased((2.0 / width, 2.0 / height), (-1, -1))
-                for p in prims]
-        self._colors = [ self._outlineColor ] * len(self._prims)
+        self._rects = rects
 
-class Mask(Prim2DDrawTask):
+    def draw(self, painter):
+        color = QtGui.QColor()
+        color.setRgbF(*self._outlineColor)
+        for rect in self._rects:
+            painter.fillRect(rect, color)
+
+class Mask():
     def __init__(self):
-        Prim2DDrawTask.__init__(self)
-        self._maskColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(0.0, 0.0, 0.0, 1.0))
+        self._maskColor = (0.0, 0.0, 0.0, 1.0)
+        self._rects = []
 
     def updateColor(self, color):
-        self._maskColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(*color))
+        self._maskColor = tuple(Gf.ConvertDisplayToLinear(Gf.Vec4f(*color)))
 
-    def updatePrims(self, croppedViewport, qglwidget):
-        pixelRatio = qglwidget.devicePixelRatioF()
-        width = float(qglwidget.width()) * pixelRatio
-        height = float(qglwidget.height()) * pixelRatio
-        
-        rect = FilledRect.fromXYWH((0, 0, width, height))
-        prims = rect.difference(croppedViewport)
-        self._prims = [p.scaledAndBiased((2.0 / width, 2.0 / height), (-1, -1))
-                for p in prims]
-        self._colors = [ self._maskColor ] * 2
+    def updatePrims(self, croppedViewportQRect, qglwidget):
+        fullRect = Rect.fromXYWH((0, 0, qglwidget.width(), qglwidget.height()))
+        cropped = (croppedViewportQRect.left(), croppedViewportQRect.top(),
+                   croppedViewportQRect.width(), croppedViewportQRect.height())
+        self._rects = [QtCore.QRectF(*r.xywh)
+                for r in fullRect.difference(cropped)]
+
+    def draw(self, painter):
+        color = QtGui.QColor()
+        color.setRgbF(*self._maskColor)
+        for rect in self._rects:
+            painter.fillRect(rect, color)
 
 class HUD():
     class Group():
@@ -473,76 +263,22 @@ class HUD():
             self.y = 0
             self.w = w
             self.h = h
-            pixelRatio = QtWidgets.QApplication.instance().devicePixelRatio()
-            imageW = w * pixelRatio
-            imageH = h * pixelRatio
-            self.qimage = QtGui.QImage(imageW, imageH, QtGui.QImage.Format.Format_ARGB32)
-            self.qimage.fill(QtGui.QColor(0, 0, 0, 0))
-            self.painter = QtGui.QPainter()
+            self.color = Gf.Vec3f(0, 0, 0)
+            self.lines = []
 
     def __init__(self):
-        self._pixelRatio = QtWidgets.QApplication.instance().devicePixelRatio()
         self._HUDLineSpacing = 15
-        self._HUDFont = QtGui.QFont(DefaultFontFamily.MONOSPACE_FONT_FAMILY, 
-                9*self._pixelRatio)
+        self._HUDFont = QtGui.QFont(DefaultFontFamily.MONOSPACE_FONT_FAMILY, 9)
         self._groups = {}
-        self._glslProgram = None
-        self._vao = 0
-
-    def compileProgram(self):
-        from OpenGL import GL
-        import ctypes
-
-        # prep a quad vbo
-        self._vbo = GL.glGenBuffers(1)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._vbo)
-        st = [0, 0, 1, 0, 0, 1, 1, 1]
-        GL.glBufferData(GL.GL_ARRAY_BUFFER, len(st)*4,
-                        (ctypes.c_float*len(st))(*st), GL.GL_STATIC_DRAW)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-
-        self._glslProgram = GLSLProgram(
-            # for OpenGL 3.1 or later
-            """#version 140
-               uniform vec4 rect;
-               in vec2 st;
-               out vec2 uv;
-               void main() {
-                 gl_Position = vec4(rect.x + rect.z*st.x,
-                                    rect.y + rect.w*st.y, 0, 1);
-                 uv          = vec2(st.x, 1 - st.y); }""",
-            """#version 140
-               in vec2 uv;
-               out vec4 color;
-               uniform sampler2D tex;
-              void main() { color = texture(tex, uv); }""",
-            # for OpenGL 2.1 (osx compatibility profile)
-            """#version 120
-               uniform vec4 rect;
-               attribute vec2 st;
-               varying vec2 uv;
-               void main() {
-                 gl_Position = vec4(rect.x + rect.z*st.x,
-                                    rect.y + rect.w*st.y, 0, 1);
-                 uv          = vec2(st.x, 1 - st.y); }""",
-            """#version 120
-               varying vec2 uv;
-               uniform sampler2D tex;
-               void main() { gl_FragColor = texture2D(tex, uv); }""",
-            ["rect", "tex"])
-
-        return True
 
     def addGroup(self, name, w, h):
         self._groups[name] = self.Group(name, w, h)
 
     def updateGroup(self, name, x, y, col, dic, keys = None):
         group = self._groups[name]
-        group.qimage.fill(QtGui.QColor(0, 0, 0, 0))
         group.x = x
         group.y = y
-        painter = group.painter
-        painter.begin(group.qimage)
+        group.color = col
 
         from .prettyPrint import prettyPrint
         if keys is None:
@@ -553,81 +289,33 @@ class HUD():
         longestKeyLen = max([len(k) for k in dic.keys()]+[0])
         margin = int(longestKeyLen*1.4)
 
-        painter.setFont(self._HUDFont)
-        color = QtGui.QColor()
-        yy = 10 * self._pixelRatio
-        lineSpacing = self._HUDLineSpacing * self._pixelRatio
+        group.lines = []
+        yy = 10
+        lineSpacing = self._HUDLineSpacing
         for key in keys:
             if key not in dic:
                 continue
             line = key.rjust(margin) + ": " + str(prettyPrint(dic[key]))
-            # Shadow of text
-            shadow = Gf.ConvertDisplayToLinear(Gf.Vec3f(.2, .2, .2))
-            color.setRgbF(shadow[0], shadow[1], shadow[2])
-            painter.setPen(color)
-            painter.drawText(1, yy+1, line)
-
-            # Colored text
-            color.setRgbF(col[0], col[1], col[2])
-            painter.setPen(color)
-            painter.drawText(0, yy, line)
-
+            group.lines.append((yy, line))
             yy += lineSpacing
 
-        painter.end()
         return y + lineSpacing
 
-    def draw(self, qglwidget):
-        from OpenGL import GL
+    def draw(self, painter):
+        painter.setFont(self._HUDFont)
+        color = QtGui.QColor()
+        shadow = Gf.ConvertDisplayToLinear(Gf.Vec3f(.2, .2, .2))
+        for group in self._groups.values():
+            for yy, line in group.lines:
+                # Shadow of text
+                color.setRgbF(shadow[0], shadow[1], shadow[2])
+                painter.setPen(color)
+                painter.drawText(group.x + 1, group.y + yy + 1, line)
 
-        if (self._glslProgram == None):
-            self.compileProgram()
-
-        if (self._glslProgram.program == 0):
-            return
-
-        GL.glUseProgram(self._glslProgram.program)
-
-        width = float(qglwidget.width())
-        height = float(qglwidget.height())
-
-        if self._glslProgram.useSampleAlphaToCoverage:
-            GL.glDisable(GL.GL_SAMPLE_ALPHA_TO_COVERAGE)
-
-        if self._glslProgram.useVAO:
-            if (self._vao == 0):
-                self._vao = GL.glGenVertexArrays(1)
-            GL.glBindVertexArray(self._vao)
-
-        # for some reason, we need to bind at least 1 vertex attrib (is OSX)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._vbo)
-        GL.glEnableVertexAttribArray(0)
-        GL.glVertexAttribPointer(0, 2, GL.GL_FLOAT, False, 0, None)
-
-        # seems like a bug in Qt4.8/CoreProfile on OSX that GL_UNPACK_ROW_LENGTH has changed.
-        GL.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, 0)
-
-        for name in self._groups:
-            group = self._groups[name]
-            tex = qglwidget.BindTexture(group.qimage)
-            GL.glUniform4f(self._glslProgram.uniformLocations["rect"],
-                           2*group.x/width - 1,
-                           1 - 2*group.y/height - 2*group.h/height,
-                           2*group.w/width,
-                           2*group.h/height)
-            GL.glUniform1i(self._glslProgram.uniformLocations["tex"], 0)
-            GL.glActiveTexture(GL.GL_TEXTURE0)
-            GL.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4)
-            qglwidget.ReleaseTexture(tex)
-
-        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
-        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-        GL.glDisableVertexAttribArray(0)
-
-        if self._glslProgram.useVAO:
-            GL.glBindVertexArray(0)
-
-        GL.glUseProgram(0)
+                # Colored text
+                color.setRgbF(group.color[0], group.color[1], group.color[2])
+                painter.setPen(color)
+                painter.drawText(group.x, group.y + yy, line)
 
 def _ComputeCameraFraming(viewport, renderBufferSize):
     x, y, w, h = viewport
@@ -1645,6 +1333,19 @@ class StageView(QGLWidget):
 
         return viewport
 
+    def _cameraViewportToQRect(self, viewport):
+        """Converts a viewport rect (x, y, w, h) in the physical-pixel,
+        y-Up coordinate system used for GL viewports/camera framing into
+        a QRectF in the top-left-origin, logical-pixel coordinate system
+        QPainter uses when drawing directly on this widget."""
+        x, y, w, h = viewport
+        physicalHeight = self.GetPhysicalWindowSize()[1]
+        pixelRatio = self.devicePixelRatioF()
+        return QtCore.QRectF(x / pixelRatio,
+                              (physicalHeight - y - h) / pixelRatio,
+                              w / pixelRatio,
+                              h / pixelRatio)
+
     def copyViewState(self):
         """Returns a copy of this StageView's view-affecting state,
         which can be used later to restore the view via restoreViewState().
@@ -1839,8 +1540,18 @@ class StageView(QGLWidget):
             self._glPrimitiveGeneratedQuery.End()
             self._glTimeElapsedQuery.End()
 
-        # reset the viewport for 2D and HUD drawing
-        uiTasks = [ Prim2DSetupTask(self.computeWindowViewport()) ]
+        # check current state of renderer -- (not IsConverged()) means renderer is running
+        if self._renderStopState and (not renderer.IsConverged()):
+            self._renderStopState = False
+
+        if (not self._dataModel.playing) & (not renderer.IsConverged()):
+            QtCore.QTimer.singleShot(5, self.update)
+
+    def _drawMaskAndReticles(self, painter):
+        (_, cameraAspect) = self.resolveCamera()
+        cameraViewportQRect = self._cameraViewportToQRect(
+                self.computeCameraViewport(cameraAspect))
+
         if self._dataModel.viewSettings.showMask:
             color = self._dataModel.viewSettings.cameraMaskColor
             if self._dataModel.viewSettings.showMask_Opaque:
@@ -1848,34 +1559,18 @@ class StageView(QGLWidget):
             else:
                 color = color[0:3] + (color[3] * 0.45,)
             self._mask.updateColor(color)
-            self._mask.updatePrims(cameraViewport, self)
-            uiTasks.append(self._mask)
+            self._mask.updatePrims(cameraViewportQRect, self)
+            self._mask.draw(painter)
         if self._dataModel.viewSettings.showMask_Outline:
-            self._maskOutline.updatePrims(cameraViewport, self)
-            uiTasks.append(self._maskOutline)
+            self._maskOutline.updatePrims(cameraViewportQRect, self)
+            self._maskOutline.draw(painter)
         if self.showReticles:
             color = self._dataModel.viewSettings.cameraReticlesColor
             color = color[0:3] + (color[3] * 0.85,)
             self._reticles.updateColor(color)
-            self._reticles.updatePrims(cameraViewport, self,
+            self._reticles.updatePrims(cameraViewportQRect, self,
                     self._dataModel.viewSettings.showReticles_Inside, self._dataModel.viewSettings.showReticles_Outside)
-            uiTasks.append(self._reticles)
-
-        for task in uiTasks:
-            task.Sync(None)
-        for task in uiTasks:
-            task.Execute(None)
-
-        # check current state of renderer -- (not IsConverged()) means renderer is running
-        if self._renderStopState and (not renderer.IsConverged()):
-            self._renderStopState = False
-
-        # ### DRAW HUD ### #
-        if self._dataModel.viewSettings.showHUD:
-            self.drawHUD(renderer)
-
-        if (not self._dataModel.playing) & (not renderer.IsConverged()):
-            QtCore.QTimer.singleShot(5, self.update)
+            self._reticles.draw(painter)
 
     @Tf.CatchAndRepostErrors()
     def paintGL(self):
@@ -1894,8 +1589,20 @@ class StageView(QGLWidget):
                 # the true "time to first image" for non-progressive renderers
                 # like Storm.
                 self._isFirstImage = False
+
                 self._paintGLWithRenderer(renderer)
- 
+
+                # GL state reset
+                from OpenGL import GL
+                GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 4)
+
+                # 2d content
+                painter = QtGui.QPainter(self)
+                painter.setRenderHint(QtGui.QPainter.Antialiasing, True)
+                self._drawMaskAndReticles(painter)
+                self._drawHUD(renderer, painter)
+                painter.end()
+
             self._renderTime = t.interval
 
         except Exception as e:
@@ -1913,7 +1620,9 @@ class StageView(QGLWidget):
             # Make sure not to leak a reference to the renderer
             renderer = None
 
-    def drawHUD(self, renderer):
+    def _drawHUD(self, renderer, painter):
+        if not self._dataModel.viewSettings.showHUD:
+            return
         # compute the time it took to render this frame,
         # so we can display it in the HUD
         ms = self._renderTime * 1000.
@@ -2004,7 +1713,7 @@ class StageView(QGLWidget):
                               col, toPrint, toPrint.keys())
 
         # draw HUD
-        self._hud.draw(self)
+        self._hud.draw(painter)
 
     def grabFrameBuffer(self, cropToAspectRatio=False):
         """
