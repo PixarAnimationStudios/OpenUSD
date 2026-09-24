@@ -32,6 +32,13 @@ TF_DEFINE_PUBLIC_TOKENS(HdCapsuleSchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
+HdBoolDataSourceHandle
+HdCapsuleSchema::GetDoubleSided() const
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        HdCapsuleSchemaTokens->doubleSided);
+}
+
 HdDoubleDataSourceHandle
 HdCapsuleSchema::GetHeight() const
 {
@@ -70,6 +77,7 @@ HdCapsuleSchema::GetAxis() const
 /*static*/
 HdContainerDataSourceHandle
 HdCapsuleSchema::BuildRetained(
+        const HdBoolDataSourceHandle &doubleSided,
         const HdDoubleDataSourceHandle &height,
         const HdDoubleDataSourceHandle &radius,
         const HdDoubleDataSourceHandle &radiusTop,
@@ -77,10 +85,15 @@ HdCapsuleSchema::BuildRetained(
         const HdTokenDataSourceHandle &axis
 )
 {
-    TfToken _names[5];
-    HdDataSourceBaseHandle _values[5];
+    TfToken _names[6];
+    HdDataSourceBaseHandle _values[6];
 
     size_t _count = 0;
+
+    if (doubleSided) {
+        _names[_count] = HdCapsuleSchemaTokens->doubleSided;
+        _values[_count++] = doubleSided;
+    }
 
     if (height) {
         _names[_count] = HdCapsuleSchemaTokens->height;
@@ -107,6 +120,14 @@ HdCapsuleSchema::BuildRetained(
         _values[_count++] = axis;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
+}
+
+HdCapsuleSchema::Builder &
+HdCapsuleSchema::Builder::SetDoubleSided(
+    const HdBoolDataSourceHandle &doubleSided)
+{
+    _doubleSided = doubleSided;
+    return *this;
 }
 
 HdCapsuleSchema::Builder &
@@ -153,6 +174,7 @@ HdContainerDataSourceHandle
 HdCapsuleSchema::Builder::Build()
 {
     return HdCapsuleSchema::BuildRetained(
+        _doubleSided,
         _height,
         _radius,
         _radiusTop,
