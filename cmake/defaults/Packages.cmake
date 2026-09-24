@@ -207,11 +207,7 @@ if (PXR_BUILD_IMAGING)
     endif()
     # --OpenGL
     if (PXR_ENABLE_GL_SUPPORT AND NOT PXR_APPLE_EMBEDDED)
-        # Prefer legacy GL library over GLVND libraries if both
-        # are installed.
-        if (POLICY CMP0072)
-            cmake_policy(SET CMP0072 OLD)
-        endif()
+        set(OpenGL_GL_PREFERENCE GLVND)
         find_package(OpenGL REQUIRED)
         add_definitions(-DPXR_GL_SUPPORT_ENABLED)
     endif()
