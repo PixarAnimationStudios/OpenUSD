@@ -321,8 +321,9 @@ My_TestGLDrawing::OffscreenTest()
         _driver->WriteToFile("color", "color10_tet1_pick_prims.png");
         HdSelection::PrimSelectionState const* selState =
             selection->GetPrimSelectionState(mode, SdfPath("/tet1"));
-        TF_VERIFY(selState);
-        TF_VERIFY(selState->fullySelected);
+        if (TF_VERIFY(selState)) {
+            TF_VERIFY(selState->fullySelected);
+        }
     }
 
     //---------------------------- face picking --------------------------------
@@ -335,10 +336,10 @@ My_TestGLDrawing::OffscreenTest()
         _driver->WriteToFile("color", "color2_cube0_pick_face.png");
         HdSelection::PrimSelectionState const* selState =
             selection->GetPrimSelectionState(mode, SdfPath("/cube0"));
-        TF_VERIFY(selState);
-        TF_VERIFY(selState->elementIndices.size() == 1);
-        VtIntArray const& facesSelected = selState->elementIndices[0];
-        TF_VERIFY(facesSelected.size() == 1 && facesSelected[0] == 3);
+        if (TF_VERIFY(selState) && TF_VERIFY(selState->elementIndices.size() == 1)) {
+            VtIntArray const& facesSelected = selState->elementIndices[0];
+            TF_VERIFY(facesSelected.size() == 1 && facesSelected[0] == 3);
+        }
     }
     
     // select faces 3 & 5 of tet1.
@@ -351,10 +352,10 @@ My_TestGLDrawing::OffscreenTest()
         _driver->WriteToFile("color", "color3_tet1_pick_faces.png");
         HdSelection::PrimSelectionState const* selState =
             selection->GetPrimSelectionState(mode, SdfPath("/tet1"));
-        TF_VERIFY(selState);
-        TF_VERIFY(selState->elementIndices.size() == 1);
-        VtIntArray const& facesSelected = selState->elementIndices[0];
-        TF_VERIFY(facesSelected.size() == 2);
+        if (TF_VERIFY(selState) && TF_VERIFY(selState->elementIndices.size() == 1)) {
+            VtIntArray const& facesSelected = selState->elementIndices[0];
+            TF_VERIFY(facesSelected.size() == 2);
+        }
     }
 
     // test wireframe face highlighting
@@ -369,10 +370,10 @@ My_TestGLDrawing::OffscreenTest()
         _driver->WriteToFile("color", "color9_cube0_wire_pick_face.png");
         HdSelection::PrimSelectionState const* selState =
             selection->GetPrimSelectionState(mode, SdfPath("/cube0"));
-        TF_VERIFY(selState);
-        TF_VERIFY(selState->elementIndices.size() == 1);
-        VtIntArray const& facesSelected = selState->elementIndices[0];
-        TF_VERIFY(facesSelected.size() == 2);
+        if (TF_VERIFY(selState) && TF_VERIFY(selState->elementIndices.size() == 1)) {
+            VtIntArray const& facesSelected = selState->elementIndices[0];
+            TF_VERIFY(facesSelected.size() == 2);
+        }
     }
     //---------------------------- edge picking --------------------------------
     // Picking or highlighting edges requires the GS stage, so use a repr that
@@ -396,11 +397,11 @@ My_TestGLDrawing::OffscreenTest()
         SdfPath meshPath("/tet0");
         HdSelection::PrimSelectionState const* selState =
             selection->GetPrimSelectionState(mode, meshPath);
-        TF_VERIFY(selState);
-        TF_VERIFY(selState->edgeIndices.size() == 1);
-        VtIntArray const& edgeIndicesSelected = selState->edgeIndices[0];
-        MeshEdges edgesSelected = _GetMeshEdges(meshPath, edgeIndicesSelected);
-        TF_VERIFY(edgesSelected.size() == 1);
+        if (TF_VERIFY(selState) && TF_VERIFY(selState->edgeIndices.size() == 1)) {
+            VtIntArray const& edgeIndicesSelected = selState->edgeIndices[0];
+            MeshEdges edgesSelected = _GetMeshEdges(meshPath, edgeIndicesSelected);
+            TF_VERIFY(edgesSelected.size() == 1);
+        }
     }
 
     // select edges of cube1
@@ -414,11 +415,11 @@ My_TestGLDrawing::OffscreenTest()
         SdfPath meshPath("/cube1");
         HdSelection::PrimSelectionState const* selState =
             selection->GetPrimSelectionState(mode, meshPath);
-        TF_VERIFY(selState);
-        TF_VERIFY(selState->edgeIndices.size() == 1);
-        VtIntArray const& edgeIndicesSelected = selState->edgeIndices[0];
-        MeshEdges edgesSelected = _GetMeshEdges(meshPath, edgeIndicesSelected);
-        TF_VERIFY(edgesSelected.size() == 2);
+        if (TF_VERIFY(selState) && TF_VERIFY(selState->edgeIndices.size() == 1)) {
+            VtIntArray const& edgeIndicesSelected = selState->edgeIndices[0];
+            MeshEdges edgesSelected = _GetMeshEdges(meshPath, edgeIndicesSelected);
+            TF_VERIFY(edgesSelected.size() == 2);
+        }
     }
 
     //---------------------------- point picking -------------------------------
@@ -441,10 +442,10 @@ My_TestGLDrawing::OffscreenTest()
         _driver->WriteToFile("color", "color6_cube1_pick_points.png");
         HdSelection::PrimSelectionState const* selState =
             selection->GetPrimSelectionState(mode, SdfPath("/cube1"));
-        TF_VERIFY(selState);
-        TF_VERIFY(selState->pointIndices.size() == 1);
-        VtIntArray const& pointsSelected = selState->pointIndices[0];
-        TF_VERIFY(pointsSelected.size() == 4);
+        if (TF_VERIFY(selState) && TF_VERIFY(selState->pointIndices.size() == 1)) {
+            VtIntArray const& pointsSelected = selState->pointIndices[0];
+            TF_VERIFY(pointsSelected.size() == 4);
+        }
     }
 
     {
@@ -461,10 +462,10 @@ My_TestGLDrawing::OffscreenTest()
         _driver->WriteToFile("color", "color7_cube1_pick_points_pick_through.png");
         HdSelection::PrimSelectionState const* selState =
             selection->GetPrimSelectionState(mode, SdfPath("/cube1"));
-        TF_VERIFY(selState);
-        TF_VERIFY(selState->pointIndices.size() == 1);
-        VtIntArray const& pointsSelected = selState->pointIndices[0];
-        TF_VERIFY(pointsSelected.size() == 5);
+        if (TF_VERIFY(selState) && TF_VERIFY(selState->pointIndices.size() == 1)) {
+            VtIntArray const& pointsSelected = selState->pointIndices[0];
+            TF_VERIFY(pointsSelected.size() == 5);
+        }
     }
 
     // manually verify if specifying a color for a set of points works.

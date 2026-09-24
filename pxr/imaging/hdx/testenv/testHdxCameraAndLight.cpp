@@ -47,7 +47,9 @@ static void CameraAndLightTest()
     HdStRenderDelegate renderDelegate;
     std::unique_ptr<HdRenderIndex> index(
         HdRenderIndex::New(&renderDelegate, {&driver}));
-    TF_VERIFY(index);
+    if (!index) {
+        TF_FATAL_ERROR("Failed to create HdRenderIndex");
+    }
     std::unique_ptr<Hdx_UnitTestDelegate> delegate(
                                          new Hdx_UnitTestDelegate(index.get()));
 
@@ -156,4 +158,3 @@ int main()
         return EXIT_FAILURE;
     }
 }
-

@@ -372,9 +372,10 @@ My_TestGLDrawing::OffscreenTest()
             HdxPickTokens->resolveNearestToCamera,
             &allHits);
         TF_VERIFY(allHits.size() == 1);
-        TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
-        TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] ==
-                 SdfPath("/protoTop"));
+        if (TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1)) {
+            TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0] ==
+                    SdfPath("/protoTop"));
+        }
     }
 
     // 2. Nearest to center (of pick region)
@@ -385,9 +386,10 @@ My_TestGLDrawing::OffscreenTest()
             HdxPickTokens->resolveNearestToCenter,
             &allHits);
         TF_VERIFY(allHits.size() == 1);
-        TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1);
-        TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0]
-                  == SdfPath("/protoBottom"));
+        if (TF_VERIFY(selection->GetSelectedPrimPaths(mode).size() == 1)) {
+            TF_VERIFY(selection->GetSelectedPrimPaths(mode)[0]
+                    == SdfPath("/protoBottom"));
+        }
     }
 
     // 3. Unique
@@ -537,4 +539,3 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 }
-
