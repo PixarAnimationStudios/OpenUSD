@@ -74,8 +74,11 @@ jobs:
           #
           # Note in the latter case, we do not use the --tests argument to avoid building extra dependencies
           # that aren't needed for headless tests.
+          #
+          # XXX: Ignore OpenJPEG library installed on runner when building OIIO since it appears to be broken.
+          # See https://bugs.launchpad.net/ubuntu/+source/openjpeg2/+bug/2060106
           if [ "$GITHUB_EVENT_NAME" == "push" ]; then
-            python3 build_scripts/build_usd.py --tests --no-materialx --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_HEADLESS_TEST_MODE=OFF" -v
+            python3 build_scripts/build_usd.py --tests --no-materialx --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_HEADLESS_TEST_MODE=OFF" OPENIMAGEIO,"-DUSE_OpenJPEG=OFF" -v
           else
             python3 build_scripts/build_usd.py --no-materialx --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_HEADLESS_TEST_MODE=ON -DPXR_BUILD_TESTS=ON" -v
           fi
