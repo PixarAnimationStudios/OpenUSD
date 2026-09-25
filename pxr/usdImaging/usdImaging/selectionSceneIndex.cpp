@@ -26,6 +26,7 @@
 
 #include "pxr/usd/sdf/path.h"
 
+#include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/work/loops.h"
@@ -1115,6 +1116,8 @@ UsdImagingSelectionSceneIndex::AddSelection(
     const SdfPath &usdPath)
 {
     TRACE_FUNCTION();
+
+    TF_DESCRIBE_SCOPE("Selecting prims under %s", usdPath.GetText());
 
     TF_DEBUG(USDIMAGING_SELECTION).Msg(
         "UsdImagingSelectionSceneInedx::AddSelection(usdPath = %s)\n",
