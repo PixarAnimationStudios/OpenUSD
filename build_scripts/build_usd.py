@@ -1350,13 +1350,14 @@ PNG = Dependency("PNG", InstallPNG, "include/png.h")
 ############################################################
 # IlmBase/OpenEXR
 
-OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v3.1.13.zip"
+OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v3.3.6.zip"
 
 def InstallOpenEXR(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OPENEXR_URL, context, force)):
         RunCMake(context, force, 
                  ['-DOPENEXR_INSTALL_TOOLS=OFF',
-                  '-DOPENEXR_INSTALL_EXAMPLES=OFF',
+                  '-DOPENEXR_BUILD_TOOLS=OFF',
+                  '-DOPENEXR_BUILD_EXAMPLES=OFF',
 
                   # Force OpenEXR to build and use a separate Imath library
                   # instead of looking for one externally. This ensures that
@@ -2625,7 +2626,7 @@ if context.buildOneTBB or context.targetWasm:
 requiredDependencies = [TBB]
 
 if context.buildAlembic:
-    requiredDependencies += [ZLIB, OPENEXR, ALEMBIC]
+    requiredDependencies += [OPENEXR, ALEMBIC]
 
 if context.buildDraco:
     requiredDependencies += [DRACO]

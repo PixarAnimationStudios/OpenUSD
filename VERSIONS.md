@@ -29,7 +29,7 @@ Our test machines have the following software versions installed.
 | Embree         | 4.3.3                | 4.3.3                        | 4.3.3                          |
 | RenderMan      | 26.3, 27.0           | 26.3, 27.0                   | 26.3, 27.0                     |
 | Alembic        | 1.8.10               | 1.8.10                       | 1.8.10                         |
-| OpenEXR        | 3.1.13               | 3.1.13                       | 3.1.13                         |
+| OpenEXR        | 3.3.6                | 3.3.6                        | 3.3.6                          |
 | MaterialX      | 1.39.5               | 1.39.5                       | 1.39.5                         |
 | Jinja2         | 3.1.2                |                              |                                |
 | Flex           | 2.5.39               |                              |                                |
