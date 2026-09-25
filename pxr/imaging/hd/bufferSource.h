@@ -38,7 +38,11 @@ using HdBufferSourceWeakPtr = std::weak_ptr<HdBufferSource>;
 class HdBufferSource 
 {
 public:
-    HdBufferSource() : _state(UNRESOLVED) { }
+    HdBufferSource()
+        // No need for atomic init since _TryLock() will do the acquire
+        : _state(UNRESOLVED)
+    {
+    }
 
     HD_API
     virtual ~HdBufferSource();
@@ -77,13 +81,21 @@ public:
     virtual size_t GetNumElements() const = 0;
 
     /// Returns true it this computation has already been resolved.
+    /// It's critical to call this from a thread checking the computation
+    /// result of producing thread, as it acquires the necessary load/store
+    /// fence. Failing to call this before accessing results can lead to
+    /// invalid values being observed from the consuming thread.
     bool IsResolved() const {
-        return _state >= RESOLVED;
+        return _state.load(std::memory_order_acquire) >= RESOLVED;
     }
 
     /// Returns true if an error occurred during resolve.
+    /// It's critical to call this from a thread checking the computation
+    /// result of producing thread, as it acquires the necessary load/store
+    /// fence. Failing to call this before accessing results can lead to
+    /// invalid values being observed from the consuming thread.
     bool HasResolveError() const {
-        return _state == RESOLVE_ERROR;
+        return _state.load(std::memory_order_acquire) == RESOLVE_ERROR;
     }
 
     /// \name Chained Buffers
@@ -127,11 +139,12 @@ public:
     bool IsValid() const;
 
 protected:
-    /// Marks this buffer source as resolved. It has to be called
-    /// at the end of Resolve on concrete implementations.
+    /// Marks this buffer source as resolved. It has to be called  at the end of
+    /// Resolve() on concrete implementations. This also releases the necessary
+    /// load/store fence for the consuming thread.
     void _SetResolved() {
-        TF_VERIFY(_state == BEING_RESOLVED);
-        _state = RESOLVED;
+        TF_VERIFY(_state.load(std::memory_order_relaxed) == BEING_RESOLVED);
+        _state.store(RESOLVED, std::memory_order_release);
     }
 
     /// Called during Resolve() to indicate an unrecoverable failure occurred
@@ -143,9 +156,12 @@ protected:
     ///
     /// This is also later in the pipeline than IsValid, which checks
     /// that the buffer is setup such that Resolve() can be successful.
+    ///
+    /// This also releases the necessary load/store fence for the consuming
+    /// thread.
     void _SetResolveError() {
-        TF_VERIFY(_state == BEING_RESOLVED);
-        _state = RESOLVE_ERROR;
+        TF_VERIFY(_state.load(std::memory_order_relaxed) == BEING_RESOLVED);
+        _state.store(RESOLVE_ERROR, std::memory_order_release);
     }
 
     /// Non-blocking lock acquisition.
@@ -153,9 +169,12 @@ protected:
     /// In that case the caller needs to call _SetResolved at the end
     /// of computation.
     /// It returns false if anyone else has already acquired lock.
+    /// This also acquires the necessary load/store fence for the producing
+    /// thread.
     bool _TryLock() {
         State oldState = UNRESOLVED;
-        return _state.compare_exchange_strong(oldState, BEING_RESOLVED);
+        return _state.compare_exchange_strong(oldState, BEING_RESOLVED,
+            std::memory_order_acquire);
     }
 
     /// Checks the validity of the source buffer.
