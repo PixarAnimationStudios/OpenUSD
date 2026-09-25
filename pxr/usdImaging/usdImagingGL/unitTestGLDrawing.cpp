@@ -9,9 +9,6 @@
 #include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
-#include "pxr/imaging/glf/contextCaps.h"
-#include "pxr/imaging/glf/diagnostic.h"
-#include "pxr/imaging/glf/drawTarget.h"
 #include "pxr/imaging/garch/glDebugWindow.h"
 
 #include "pxr/imaging/hdSt/textureUtils.h"
@@ -31,6 +28,7 @@
 #include <stdarg.h>
 
 #include <fstream>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -49,6 +47,99 @@ static void UsdImagingGL_UnitTestHelper_InitPlugins()
 
 ////////////////////////////////////////////////////////////
 
+// Minimal raw-GL offscreen render target for the client-framebuffer
+// present-output modes (-presentComposite / -presentDisabled).
+class _OffscreenFramebuffer
+{
+public:
+    _OffscreenFramebuffer()
+        : _fbo(0), _colorTexture(0), _depthTexture(0)
+        , _restoreReadFramebuffer(0), _restoreDrawFramebuffer(0)
+    {}
+
+    void Create(int width, int height) {
+        _size = GfVec2i(width, height);
+
+        glGenFramebuffers(1, &_fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+
+        glGenTextures(1, &_colorTexture);
+        glBindTexture(GL_TEXTURE_2D, _colorTexture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _size[0], _size[1], 0,
+                     GL_RGBA, GL_FLOAT, nullptr);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                               GL_TEXTURE_2D, _colorTexture, 0);
+
+        glGenTextures(1, &_depthTexture);
+        glBindTexture(GL_TEXTURE_2D, _depthTexture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
+                     _size[0], _size[1], 0, GL_DEPTH_COMPONENT, GL_FLOAT,
+                     nullptr);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                               GL_TEXTURE_2D, _depthTexture, 0);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    void Destroy() {
+        glDeleteTextures(1, &_colorTexture);
+        glDeleteTextures(1, &_depthTexture);
+        glDeleteFramebuffers(1, &_fbo);
+        _colorTexture = _depthTexture = _fbo = 0;
+    }
+
+    void Resize(int width, int height) {
+        if (GfVec2i(width, height) == _size) {
+            return;
+        }
+        _size = GfVec2i(width, height);
+
+        glBindTexture(GL_TEXTURE_2D, _colorTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _size[0], _size[1], 0,
+                     GL_RGBA, GL_FLOAT, nullptr);
+
+        glBindTexture(GL_TEXTURE_2D, _depthTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F,
+                     _size[0], _size[1], 0, GL_DEPTH_COMPONENT, GL_FLOAT,
+                     nullptr);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
+    void Bind() {
+        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &_restoreReadFramebuffer);
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &_restoreDrawFramebuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+    }
+
+    void Unbind() {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, _restoreReadFramebuffer);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _restoreDrawFramebuffer);
+    }
+
+    GLuint   GetFbo()  const { return _fbo; }
+    GfVec2i  GetSize() const { return _size; }
+
+private:
+    GLuint  _fbo;
+    GLuint  _colorTexture;
+    GLuint  _depthTexture;
+    GfVec2i _size;
+    GLint   _restoreReadFramebuffer;
+    GLint   _restoreDrawFramebuffer;
+};
+
+////////////////////////////////////////////////////////////
+
 class UsdImagingGL_UnitTestWindow : public GarchGLDebugWindow
 {
 public:
@@ -58,7 +149,7 @@ public:
 
     void DrawOffscreen();
 
-    bool WriteToFile(std::string const & attachment, 
+    bool WriteToFile(std::string const & attachment,
                      std::string const & filename);
 
     void OnInitializeGL() override;
@@ -73,7 +164,7 @@ private:
     void _ClearPresentationOutput();
 
     UsdImagingGL_UnitTestGLDrawing *_unitTest;
-    GlfDrawTargetRefPtr _drawTarget;
+    _OffscreenFramebuffer _offscreenFbo;
     bool _clearedOnce;
 };
 
@@ -106,25 +197,20 @@ void
 UsdImagingGL_UnitTestWindow::OnInitializeGL()
 {
     GarchGLApiLoad();
-    GlfRegisterDefaultDebugOutputMessageCallback();
-    GlfContextCaps::InitInstance();
 
     if (_unitTest->IsEnabledTestPresentOutput()) {
         //
-        // Create an offscreen draw target which is the same size as this
-        // widget and initialize the unit test with the draw target bound.
+        // Create an offscreen framebuffer which is the same size as this
+        // widget and initialize the unit test with the framebuffer bound.
         //
-        _drawTarget = GlfDrawTarget::New(GfVec2i(GetWidth(), GetHeight()));
-        _drawTarget->Bind();
-        _drawTarget->AddAttachment("color", GL_RGBA, GL_FLOAT, GL_RGBA);
-        _drawTarget->AddAttachment("depth", GL_DEPTH_COMPONENT, GL_FLOAT,
-                                            GL_DEPTH_COMPONENT);
+        _offscreenFbo.Create(GetWidth(), GetHeight());
+        _offscreenFbo.Bind();
     }
 
     _unitTest->InitTest();
 
     if (_unitTest->IsEnabledTestPresentOutput()) {
-        _drawTarget->Unbind();
+        _offscreenFbo.Unbind();
     }
 }
 
@@ -133,7 +219,7 @@ void
 UsdImagingGL_UnitTestWindow::OnUninitializeGL()
 {
     if (_unitTest->IsEnabledTestPresentOutput()) {
-        _drawTarget = GlfDrawTargetRefPtr();
+        _offscreenFbo.Destroy();
     }
 
     _unitTest->ShutdownTest();
@@ -144,15 +230,15 @@ void
 UsdImagingGL_UnitTestWindow::OnPaintGL()
 {
     //
-    // Update the draw target's size and execute the unit test with
-    // the draw target bound.
+    // Update the framebuffer's size and execute the unit test with
+    // the framebuffer bound.
     //
     int width = GetWidth();
     int height = GetHeight();
 
     if (_unitTest->IsEnabledTestPresentOutput()) {
-        _drawTarget->Bind();
-        _drawTarget->SetSize(GfVec2i(width, height));
+        _offscreenFbo.Bind();
+        _offscreenFbo.Resize(width, height);
     }
 
     _ClearPresentationOutput();
@@ -160,14 +246,14 @@ UsdImagingGL_UnitTestWindow::OnPaintGL()
     _unitTest->DrawTest(false);
 
     if (_unitTest->IsEnabledTestPresentOutput()) {
-        _drawTarget->Unbind();
+        _offscreenFbo.Unbind();
 
         //
         // Blit the resulting color buffer to the window (this is a noop
         // if we're drawing offscreen).
         //
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, _drawTarget->GetFramebufferId());
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, _offscreenFbo.GetFbo());
 
         glBlitFramebuffer(0, 0, width, height,
                           0, 0, width, height,
@@ -183,8 +269,8 @@ void
 UsdImagingGL_UnitTestWindow::DrawOffscreen()
 {
     if (_unitTest->IsEnabledTestPresentOutput()) {
-        _drawTarget->Bind();
-        _drawTarget->SetSize(GfVec2i(GetWidth(), GetHeight()));
+        _offscreenFbo.Bind();
+        _offscreenFbo.Resize(GetWidth(), GetHeight());
     }
 
     _ClearPresentationOutput();
@@ -192,7 +278,7 @@ UsdImagingGL_UnitTestWindow::DrawOffscreen()
     _unitTest->DrawTest(true);
 
     if (_unitTest->IsEnabledTestPresentOutput()) {
-        _drawTarget->Unbind();
+        _offscreenFbo.Unbind();
     }
 }
 
@@ -200,17 +286,48 @@ bool
 UsdImagingGL_UnitTestWindow::WriteToFile(std::string const & attachment,
         std::string const & filename)
 {
-    // We need to unbind the draw target before writing to file to be sure the
-    // attachment is in a good state.
-    bool isBound = _drawTarget->IsBound();
-    if (isBound)
-        _drawTarget->Unbind();
+    if (attachment != "color") {
+        TF_CODING_ERROR(
+            "\"%s\" is not a valid attachment name for this framebuffer",
+            attachment.c_str());
+        return false;
+    }
 
-    bool result = _drawTarget->WriteToFile(attachment, filename);
+    GLint restoreReadFramebuffer;
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &restoreReadFramebuffer);
+    GLint restorePackAlignment;
+    glGetIntegerv(GL_PACK_ALIGNMENT, &restorePackAlignment);
 
-    if (isBound)
-        _drawTarget->Bind();
-    return result;
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, _offscreenFbo.GetFbo());
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+
+    GfVec2i const fboSize = _offscreenFbo.GetSize();
+    size_t const bufferSize =
+        (size_t)fboSize[0] * (size_t)fboSize[1] * 4 * sizeof(float);
+    std::unique_ptr<char[]> buffer(new char[bufferSize]);
+    glReadPixels(0, 0, fboSize[0], fboSize[1], GL_RGBA, GL_FLOAT,
+                 buffer.get());
+
+    glPixelStorei(GL_PACK_ALIGNMENT, restorePackAlignment);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, restoreReadFramebuffer);
+
+    HioImage::StorageSpec storage;
+    storage.width = fboSize[0];
+    storage.height = fboSize[1];
+    storage.format = HioFormatFloat32Vec4;
+    storage.flipped = true;
+    storage.data = buffer.get();
+
+    HioImageSharedPtr const image = HioImage::OpenForWriting(filename);
+    bool const writeSuccess = image && image->Write(storage);
+
+    if (!writeSuccess) {
+        TF_RUNTIME_ERROR("Failed to write image to %s", filename.c_str());
+        return false;
+    }
+
+    return true;
 }
 
 /* virtual */
