@@ -11,7 +11,8 @@
 #include <cstddef>
 
 #include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/vtBufferSource.h"
+#include "pxr/imaging/hd/types.h"
+#include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/matrix4f.h"
@@ -68,10 +69,32 @@ HdEmbreeTypeHelper::GetTupleType<T>() { return HdTupleType{type, 1}; }
     TYPE_HELPER(GfQuath, HdTypeHalfFloatVec4)
 #undef TYPE_HELPER
 
+/// \class HdEmbreeBufferData
+///
+/// Holds a VtValue of data, along with the extracted type and shape
+/// of the buffer, and a pointer to its base address.
+struct HdEmbreeBufferData {
+    VtValue value;
+    const uint8_t *dataPtr;
+    HdTupleType tupleType;
+    size_t numElements;
+
+    HdEmbreeBufferData() : tupleType{HdTypeInvalid, 0}, numElements(0) {}
+
+    explicit HdEmbreeBufferData(VtValue const& v) {
+        value = v;
+        dataPtr = static_cast<const uint8_t*>(HdGetValueData(value));
+        tupleType = HdGetValueTupleType(value);
+        // HdEmbree does not support array-valued primvars.  Instead of
+        // an N-tuple, interpet the buffer as an N-element array of 1-tuples.
+        numElements = tupleType.count;
+        tupleType.count = 1;
+    }
+};
+
 /// \class HdEmbreeBufferSampler
 ///
-/// A utility class that knows how to sample an element from a type-tagged
-/// buffer (like HdVtBufferSource).
+/// A utility class that knows how to sample an element from a VtValue.
 ///
 /// This class provides templated accessors to let the caller directly get the
 /// final sample type; it also does bounds checks and type checks.
@@ -82,8 +105,7 @@ public:
     /// owned externally; the caller is responsible for ensuring the buffer
     /// is alive while Sample() is being called.
     /// \param buffer The buffer being sampled.
-    HdEmbreeBufferSampler(HdVtBufferSource const& buffer)
-        : _buffer(buffer) {}
+    HdEmbreeBufferSampler(VtValue const& value) : _buffer(value) {}
 
     /// Sample the buffer at element index \p index, and write the sample to
     /// \p value. Interpret \p value as having arity \p numComponents, each of
@@ -107,7 +129,7 @@ public:
     }
 
 private:
-    HdVtBufferSource const& _buffer;
+    HdEmbreeBufferData _buffer;
 };
 
 /// \class HdEmbreePrimvarSampler

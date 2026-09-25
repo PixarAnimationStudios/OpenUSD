@@ -10,8 +10,6 @@
 #include "pxr/pxr.h"
 
 #include "pxr/imaging/hd/instancer.h"
-#include "pxr/imaging/hd/vtBufferSource.h"
-
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/token.h"
 
@@ -67,9 +65,7 @@ private:
     // Map of the latest primvar data for this instancer, keyed by
     // primvar name. Primvar values are VtValue, an any-type; they are
     // interpreted at consumption time (here, in ComputeInstanceTransforms).
-    TfHashMap<TfToken,
-              HdVtBufferSource*,
-              TfToken::HashFunctor> _primvarMap;
+    TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _primvarMap;
 
     bool _visible;
 };

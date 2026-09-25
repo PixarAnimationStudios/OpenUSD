@@ -12,6 +12,7 @@
 #include "pxr/imaging/plugin/hdEmbree/sampler.h"
 
 #include "pxr/base/gf/matrix4f.h"
+#include "pxr/base/tf/hashmap.h"
 #include "pxr/base/vt/array.h"
 
 #include <embree4/rtcore.h>

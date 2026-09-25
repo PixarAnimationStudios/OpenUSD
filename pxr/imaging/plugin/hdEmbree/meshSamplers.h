@@ -71,8 +71,7 @@ public:
     /// \param value The buffer data for the primvar.
     HdEmbreeConstantSampler(TfToken const& name,
                             VtValue const& value)
-        : _buffer(name, value)
-        , _sampler(_buffer) {}
+        : _sampler(value) {}
 
     /// Sample the primvar at an (element, u, v) location. For constant
     /// primvars, the buffer only contains one item, so we always return
@@ -87,7 +86,6 @@ public:
                         HdTupleType dataType) const;
 
 private:
-    HdVtBufferSource const _buffer;
     HdEmbreeBufferSampler const _sampler;
 };
 
@@ -110,8 +108,7 @@ public:
     HdEmbreeUniformSampler(TfToken const& name,
                            VtValue const& value,
                            VtIntArray const& primitiveParams)
-        : _buffer(name, value)
-        , _sampler(_buffer)
+        : _sampler(value)
         , _primitiveParams(primitiveParams) {}
 
     /// Constructor.
@@ -119,13 +116,12 @@ public:
     /// \param value The buffer data for the primvar.
     HdEmbreeUniformSampler(TfToken const& name,
                            VtValue const& value)
-        : _buffer(name, value)
-        , _sampler(_buffer) {}
+        : _sampler(value) {}
 
     /// Sample the primvar at an (element, u, v) location. For uniform
     /// primvars, optionally look up the authored face index in
     /// _primitiveParams[element] (which is stored encoded); then return
-    /// _buffer[element].
+    /// value[element].
     ///
     /// \param element The element index to sample.
     /// \param u The u coordinate to sample.
@@ -137,7 +133,6 @@ public:
                         HdTupleType dataType) const;
 
 private:
-    HdVtBufferSource const _buffer;
     HdEmbreeBufferSampler const _sampler;
     VtIntArray const _primitiveParams;
 };
@@ -160,8 +155,7 @@ public:
     HdEmbreeTriangleVertexSampler(TfToken const& name,
                                   VtValue const& value,
                                   VtVec3iArray const& indices)
-        : _buffer(name, value)
-        , _sampler(_buffer)
+        : _sampler(value)
         , _indices(indices) {}
 
     /// Sample the primvar at an (element, u, v) location. For vertex primvars,
@@ -180,7 +174,6 @@ public:
                         HdTupleType dataType) const;
 
 private:
-    HdVtBufferSource const _buffer;
     HdEmbreeBufferSampler const _sampler;
     VtVec3iArray const _indices;
 };
@@ -211,8 +204,7 @@ public:
     HdEmbreeTriangleFaceVaryingSampler(TfToken const& name,
                                        VtValue const& value,
                                        HdMeshUtil &meshUtil)
-        : _buffer(name, _Triangulate(name, value, meshUtil))
-        , _sampler(_buffer) {}
+        : _sampler(_Triangulate(name, value, meshUtil)) {}
 
     /// Sample the primvar at an (element, u, v) location. For face varying
     /// primvars, the vertex indices are simply (element * 3 + 0->2), since
@@ -231,7 +223,6 @@ public:
                         HdTupleType dataType) const;
     
 private:
-    HdVtBufferSource const _buffer;
     HdEmbreeBufferSampler const _sampler;
 
     // Pass the "value" parameter through HdMeshUtils'
@@ -286,7 +277,7 @@ public:
 
 private:
     int _embreeBufferId;
-    HdVtBufferSource const _buffer;
+    HdEmbreeBufferData const _buffer;
     RTCScene _meshScene;
     unsigned _meshId;
     HdEmbreeRTCBufferAllocator *_allocator;

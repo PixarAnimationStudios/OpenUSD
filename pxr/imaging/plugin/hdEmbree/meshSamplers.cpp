@@ -7,7 +7,6 @@
 #include "pxr/imaging/plugin/hdEmbree/meshSamplers.h"
 
 #include "pxr/imaging/hd/meshUtil.h"
-#include "pxr/imaging/hd/vtBufferSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -124,13 +123,13 @@ HdEmbreeTriangleFaceVaryingSampler::Sample(unsigned int element, float u,
 HdEmbreeTriangleFaceVaryingSampler::_Triangulate(TfToken const& name,
     VtValue const& value, HdMeshUtil &meshUtil)
 {
-    HdVtBufferSource buffer(name, value);
+    HdEmbreeBufferData buffer(value);
     VtValue triangulated;
     const HdMeshComputationResult status =
         meshUtil.ComputeTriangulatedFaceVaryingPrimvar(
-            buffer.GetData(),
-            buffer.GetNumElements(),
-            buffer.GetTupleType().type,
+            buffer.dataPtr,
+            buffer.numElements,
+            buffer.tupleType.type,
             &triangulated);
     switch (status) {
     case HdMeshComputationResult::Error:
@@ -151,20 +150,20 @@ HdEmbreeSubdivVertexSampler::HdEmbreeSubdivVertexSampler(TfToken const& name,
     VtValue const& value, RTCScene meshScene, unsigned meshId,
     HdEmbreeRTCBufferAllocator *allocator)
     : _embreeBufferId(-1)
-    , _buffer(name, value)
+    , _buffer(value)
     , _meshScene(meshScene)
     , _meshId(meshId)
     , _allocator(allocator)
 {
-    // Arrays are not supported
-    if (_buffer.GetTupleType().count != 1) {
+    // Arrays (multiple tuple values per element) are not supported
+    if (_buffer.tupleType.count != 1) {
         TF_WARN("Unsupported array size for vertex primvar");
         return;
     }
 
     // The embree API only supports float-component primvars.
     RTCFormat format = RTC_FORMAT_FLOAT;
-    switch (HdGetComponentType(_buffer.GetTupleType().type)) {
+    switch (HdGetComponentType(_buffer.tupleType.type)) {
         case HdTypeFloat:
             format = RTC_FORMAT_FLOAT;
             break;
@@ -203,16 +202,16 @@ HdEmbreeSubdivVertexSampler::HdEmbreeSubdivVertexSampler(TfToken const& name,
     // `rtcSetGeometryBuffer` function will fail. Pretty sure we are interpolating
     // floats, so this will be ok, but this is possibly not robust. Not sure
     // that it will be easy to enforce this alignment on the data
-    // that is gotten from the HdVtBufferSource
+    // that is gotten from the HdEmbreeBufferData
     rtcSetSharedGeometryBuffer(
         rtcGetGeometry(_meshScene,_meshId), /* RTCGeometry geometry */
         RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, /*enum RTCBufferType type */
         static_cast<size_t>(_embreeBufferId), /* unsigned int slot */
         format, /*enum RTCFormat format */
-        _buffer.GetData(), /* const void* ptr */
+        _buffer.dataPtr, /* const void* ptr */
         0, /*size_t byteOffset */
-        HdDataSizeOfTupleType(_buffer.GetTupleType()), /* size_t byteStride */
-        _buffer.GetNumElements() /* size_t itemCount */);
+        HdDataSizeOfTupleType(_buffer.tupleType), /* size_t byteStride */
+        _buffer.numElements /* size_t itemCount */);
 }
 
 HdEmbreeSubdivVertexSampler::~HdEmbreeSubdivVertexSampler()
@@ -227,7 +226,7 @@ HdEmbreeSubdivVertexSampler::Sample(unsigned int element, float u, float v,
     void* value, HdTupleType dataType) const
 {
     // Make sure the buffer type and sample type have the same arity.
-    if (_embreeBufferId == -1 || dataType != _buffer.GetTupleType()) {
+    if (_embreeBufferId == -1 || dataType != _buffer.tupleType) {
         return false;
     }
 
