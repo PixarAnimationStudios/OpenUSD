@@ -47,7 +47,7 @@ def Xform "Model"
                 uniform token info:id = "HwUvTexture_1"
                 uniform asset inputs:file = @basicDrawing/textureChannels1.png@
                 float2 uv
-                add uniform float2 inputs:uv.connect = </Model/Mesh1/TextureChannels1/TextureCoord.outputs:result>
+                append uniform float2 inputs:uv.connect = </Model/Mesh1/TextureChannels1/TextureCoord.outputs:result>
                 float4 outputs:color
             }
 
@@ -84,7 +84,7 @@ def Xform "Model"
                 uniform token info:id = "HwUvTexture_1"
                 uniform asset inputs:file = @basicDrawing/textureChannels2.png@
                 float2 uv
-                add uniform float2 inputs:uv.connect = </Model/Mesh2/TextureChannels2/TextureCoord.outputs:result>
+                append uniform float2 inputs:uv.connect = </Model/Mesh2/TextureChannels2/TextureCoord.outputs:result>
                 float4 outputs:color
             }
 
@@ -121,7 +121,7 @@ def Xform "Model"
                 uniform token info:id = "HwUvTexture_1"
                 uniform asset inputs:file = @basicDrawing/textureChannels3.png@
                 float2 uv
-                add uniform float2 inputs:uv.connect = </Model/Mesh3/TextureChannels3/TextureCoord.outputs:result>
+                append uniform float2 inputs:uv.connect = </Model/Mesh3/TextureChannels3/TextureCoord.outputs:result>
                 float4 outputs:color
             }
 
@@ -158,7 +158,7 @@ def Xform "Model"
                 uniform token info:id = "HwUvTexture_1"
                 uniform asset inputs:file = @basicDrawing/textureChannels4.png@
                 float2 uv
-                add uniform float2 inputs:uv.connect = </Model/Mesh4/TextureChannels4/TextureCoord.outputs:result>
+                append uniform float2 inputs:uv.connect = </Model/Mesh4/TextureChannels4/TextureCoord.outputs:result>
                 float4 outputs:color
             }
 

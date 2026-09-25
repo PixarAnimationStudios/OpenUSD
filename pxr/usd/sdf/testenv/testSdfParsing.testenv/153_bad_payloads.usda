@@ -5,13 +5,13 @@
 )
 
 def MfScope "TestPrim1" (
-    add payload = None
+    append payload = None
 )
 {
 }
 
 def MfScope "TestPrim2" (
-    add payload = @///test/layer.usda@</Prim>
+    append payload = @///test/layer.usda@</Prim>
 )
 {
 }

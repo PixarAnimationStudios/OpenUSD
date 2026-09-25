@@ -106,13 +106,13 @@ def "Root" (
 class "_X"
 {
     class "_Y" (
-        add references = @ref.usda@</Ref>
+        append references = @ref.usda@</Ref>
     )
     {
     }
 
     def "B" (
-        add inherits = <../_Y>
+        append inherits = <../_Y>
     )
     {
     }

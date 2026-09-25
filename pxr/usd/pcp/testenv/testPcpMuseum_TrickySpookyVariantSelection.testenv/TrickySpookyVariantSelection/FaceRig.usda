@@ -14,7 +14,7 @@ def Scope "FaceRig"
 
     def Scope "Rig" {
         def Scope "LipRig" (
-            add references = @./LipRig.usda@</LipRig>
+            append references = @./LipRig.usda@</LipRig>
         )
         {
         }

@@ -16,14 +16,14 @@ def "Root" (
     marked private in A.usda. This should also result in 
     permission errors, and the opinions should be ignored.
     """
-    add references = @./A.usda@</A>
+    append references = @./A.usda@</A>
 )
 {
     custom double attr = 2
     custom double localAttr = 3
 
-    add rel privateRel = </Root.localAttr>
-    add rel publicRel = </Root.A_attr>
+    append rel privateRel = </Root.localAttr>
+    append rel publicRel = </Root.A_attr>
 }
 
 def "Parent" (
@@ -31,7 +31,7 @@ def "Parent" (
     Parent has a reference to A.usda, where Child is
     private. This results in a prim permission error.
     """
-    add references = @./A.usda@</Parent>
+    append references = @./A.usda@</Parent>
 )
 {
     over "Child" 
@@ -51,7 +51,7 @@ def "Model" (
     Model inherits from _PrivateClass. Since _PrivateClass is
     private, this will result in an arc permission error.
     """
-    add inherits = </_PrivateClass>
+    append inherits = </_PrivateClass>
 )
 {
     custom double attr = 0

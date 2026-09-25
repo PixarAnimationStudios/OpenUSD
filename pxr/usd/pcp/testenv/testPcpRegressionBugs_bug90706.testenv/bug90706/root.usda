@@ -4,7 +4,7 @@ def "Sarah" (
     variants = {
         string displayColor = "red"
     }
-    add variantSets = "displayColor"
+    append variantSets = "displayColor"
 )
 {
     def Scope "EmptyPrim"

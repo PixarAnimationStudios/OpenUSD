@@ -12,7 +12,7 @@
 )
 
 def "Model_1" (
-    add references = @./model.usda@</Model>
+    append references = @./model.usda@</Model>
 )
 {
 }

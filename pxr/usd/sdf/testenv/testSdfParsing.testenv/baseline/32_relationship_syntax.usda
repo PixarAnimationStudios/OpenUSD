@@ -30,7 +30,7 @@ def MfScope "foo"
         </foo>,
         </bar>,
     ]
-    add rel rel_list_editing = [
+    append rel rel_list_editing = [
         </baz>,
         </boom>,
     ]
@@ -39,7 +39,7 @@ def MfScope "foo"
         </baz>,
         </whatever>,
     ]
-    add rel rel_list_editing2 = [
+    append rel rel_list_editing2 = [
         </baz>,
         </boom>,
     ]
@@ -52,7 +52,7 @@ def MfScope "foo"
         </foo>,
         </bar>,
     ]
-    add rel rel_list_editing_doubles = [
+    append rel rel_list_editing_doubles = [
         </baz>,
         </boom>,
     ]
@@ -97,7 +97,7 @@ def MfScope "customFoo"
         </foo>,
         </bar>,
     ]
-    add rel rel_list_editing = [
+    append rel rel_list_editing = [
         </baz>,
         </boom>,
     ]
@@ -107,7 +107,7 @@ def MfScope "customFoo"
         </whatever>,
     ]
     custom rel rel_list_editing2
-    add rel rel_list_editing2 = [
+    append rel rel_list_editing2 = [
         </baz>,
         </boom>,
     ]
@@ -122,7 +122,7 @@ def MfScope "customFoo"
         </foo>,
         </bar>,
     ]
-    add rel rel_list_editing_doubles = [
+    append rel rel_list_editing_doubles = [
         </baz>,
         </boom>,
     ]

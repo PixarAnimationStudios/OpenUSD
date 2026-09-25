@@ -24,7 +24,7 @@ def "ConnectionToLocalClass" (
     class "LocalClass"
     {
          double x
-         add double x.connect = [
+         append double x.connect = [
              </ConnectionToLocalClass/Instance_1.y>,
              </ConnectionToLocalClass/Instance_2.y>
          ]
@@ -33,13 +33,13 @@ def "ConnectionToLocalClass" (
     }
 
     def "Instance_1" (
-        add inherits = </ConnectionToLocalClass/LocalClass>
+        append inherits = </ConnectionToLocalClass/LocalClass>
     )
     {
     }
 
     def "Instance_2" (
-        add inherits = </ConnectionToLocalClass/LocalClass>
+        append inherits = </ConnectionToLocalClass/LocalClass>
     )
     {
     }

@@ -13,7 +13,7 @@
 )
 
 def Scope "Model" (
-    add references = @./model.usda@</Model>
+    append references = @./model.usda@</Model>
     variants = {
         string complexity = "high"
     }

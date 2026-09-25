@@ -9,7 +9,7 @@ def "RefRoot"
             # reference. The important thing about this reference is that
             # single arc will be added as a two node subtree because of 
             # the ancestral reference.
-            add references = @ref2.usda@</Ref2RootRef/Ref2Child>
+            append references = @ref2.usda@</Ref2RootRef/Ref2Child>
         )
         {
         }

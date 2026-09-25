@@ -15,7 +15,7 @@
 reorder rootPrims = ["Group", "Model_Renamed", "Rig", "RigClass"]
 
 def Scope "Group" (
-    add references = @./group.usda@</Group>
+    append references = @./group.usda@</Group>
 )
 {
     over "Model"
@@ -46,7 +46,7 @@ over "Model_Renamed"
 }
 
 def Scope "Rig" (
-    add references = @./rig.usda@</Rig>
+    append references = @./rig.usda@</Rig>
 )
 {
     over "RigClass"
@@ -57,13 +57,13 @@ def Scope "Rig" (
     def Scope "Anim"
     {
         def Scope "RigInstance" (
-            add inherits = </RigClass>
+            append inherits = </RigClass>
         )
         {
         }
 
         def Scope "BadRigInstance" (
-            add inherits = </Rig/RigClass>
+            append inherits = </Rig/RigClass>
         )
         {
         }

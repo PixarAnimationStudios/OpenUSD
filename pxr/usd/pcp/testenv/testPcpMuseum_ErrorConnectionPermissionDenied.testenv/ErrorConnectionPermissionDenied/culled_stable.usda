@@ -5,7 +5,7 @@ def Scope "CulledModel" (
 )
 {
     custom rel colliders (permission = public)
-    add rel colliders = [
+    append rel colliders = [
         </CulledModel/sim/CollisionRig/FiztCollBody>
     ]
 }

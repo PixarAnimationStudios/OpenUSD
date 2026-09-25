@@ -3,7 +3,7 @@
 def Scope "A" 
 {
     def Scope "B" (
-        add variantSets = "deformable"
+        append variantSets = "deformable"
         variants = {
             string deformable = "off"
         }

@@ -6,7 +6,7 @@ class "_class_Model"
 
 def "Model" (
     instanceable = True
-    add specializes = </_class_Model>
+    append specializes = </_class_Model>
 )
 {
 }

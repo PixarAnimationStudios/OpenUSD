@@ -49,9 +49,9 @@ def Scope "P"
     custom double x
 
     custom rel j
-    add rel j = </S.j>
+    append rel j = </S.j>
     custom rel k
-    add rel k = </P.j>
+    append rel k = </P.j>
 }
 def Scope "Q"
 {

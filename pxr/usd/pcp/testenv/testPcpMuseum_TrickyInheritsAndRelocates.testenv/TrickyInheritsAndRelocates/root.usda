@@ -26,7 +26,7 @@
 )
 
 def Scope "Group" (
-    add references = @./group.usda@</Group>
+    append references = @./group.usda@</Group>
 )
 {
     over "Model_Renamed"
@@ -57,7 +57,7 @@ def Scope "Group" (
 }
 
 def Scope "Rig" (
-    add references = @./rig.usda@</Rig>
+    append references = @./rig.usda@</Rig>
 )
 {
     over "RigClass"
@@ -73,13 +73,13 @@ def Scope "Rig" (
         }
 
         def Scope "RigInstance" (
-            add inherits = </Rig/Anim/RigClass>
+            append inherits = </Rig/Anim/RigClass>
         )
         {
         }
 
         def Scope "BadRigInstance" (
-            add inherits = </Rig/RigClass>
+            append inherits = </Rig/RigClass>
         )
         {
         }

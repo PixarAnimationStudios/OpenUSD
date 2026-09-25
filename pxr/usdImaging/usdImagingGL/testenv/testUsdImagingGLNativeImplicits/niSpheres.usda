@@ -26,7 +26,7 @@ def Xform "world"
     {
         def Xform "I1" (
             instanceable = true
-            add references = </Prototypes/L2>
+            append references = </Prototypes/L2>
         )
         {
             matrix4d xformOp:transform:L1 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,-17,1))
@@ -36,7 +36,7 @@ def Xform "world"
 
         def Xform "I2" (
             instanceable = true
-            add references = </Prototypes/L2>
+            append references = </Prototypes/L2>
         )
         {
             matrix4d xformOp:transform:L1 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
@@ -46,7 +46,7 @@ def Xform "world"
 
         def Xform "I3" (
             instanceable = true
-            add references = </Prototypes/L2>
+            append references = </Prototypes/L2>
         )
         {
             matrix4d xformOp:transform:L1 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,17,1))
@@ -65,7 +65,7 @@ def Scope "Prototypes"(
     {
         def Xform "I1" (
             instanceable = true
-            add references = </Prototypes/L3>
+            append references = </Prototypes/L3>
         )
         {
             matrix4d xformOp:transform:L2 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,-17,0,1))
@@ -75,7 +75,7 @@ def Scope "Prototypes"(
 
         def Xform "I2" (
             instanceable = true
-            add references = </Prototypes/L3>
+            append references = </Prototypes/L3>
         )
         {
             matrix4d xformOp:transform:L2 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
@@ -85,7 +85,7 @@ def Scope "Prototypes"(
 
         def Xform "I3" (
             instanceable = true
-            add references = </Prototypes/L3>
+            append references = </Prototypes/L3>
         )
         {
             matrix4d xformOp:transform:L2 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,17,0,1))
@@ -98,7 +98,7 @@ def Scope "Prototypes"(
     {
         def Xform "I1" (
             instanceable = true
-            add references = </Prototypes/L4>
+            append references = </Prototypes/L4>
         )
         {
             matrix4d xformOp:transform:L3 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(-17,0,0,1))
@@ -108,7 +108,7 @@ def Scope "Prototypes"(
 
         def Xform "I2" (
             instanceable = true
-            add references = </Prototypes/L4>
+            append references = </Prototypes/L4>
         )
         {
             matrix4d xformOp:transform:L3 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
@@ -118,7 +118,7 @@ def Scope "Prototypes"(
 
         def Xform "I3" (
             instanceable = true
-            add references = </Prototypes/L4>
+            append references = </Prototypes/L4>
         )
         {
             matrix4d xformOp:transform:L3 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(17,0,0,1))
@@ -131,7 +131,7 @@ def Scope "Prototypes"(
     {
         def Xform "I1" (
             instanceable = true
-            add references = </Prototypes/L5>
+            append references = </Prototypes/L5>
         )
         {
             matrix4d xformOp:transform:L4 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,-6,1))
@@ -141,7 +141,7 @@ def Scope "Prototypes"(
 
         def Xform "I2" (
             instanceable = true
-            add references = </Prototypes/L5>
+            append references = </Prototypes/L5>
         )
         {
             matrix4d xformOp:transform:L4 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,-3,1))
@@ -151,7 +151,7 @@ def Scope "Prototypes"(
 
         def Xform "I3" (
             instanceable = true
-            add references = </Prototypes/L5>
+            append references = </Prototypes/L5>
         )
         {
             matrix4d xformOp:transform:L4 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
@@ -161,7 +161,7 @@ def Scope "Prototypes"(
 
         def Xform "I4" (
             instanceable = true
-            add references = </Prototypes/L5>
+            append references = </Prototypes/L5>
         )
         {
             matrix4d xformOp:transform:L4 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,3,1))
@@ -171,7 +171,7 @@ def Scope "Prototypes"(
 
         def Xform "I5" (
             instanceable = true
-            add references = </Prototypes/L5>
+            append references = </Prototypes/L5>
         )
         {
             matrix4d xformOp:transform:L4 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,6,1))
@@ -184,7 +184,7 @@ def Scope "Prototypes"(
     {
         def Xform "I1" (
             instanceable = true
-            add references = </Prototypes/L6>
+            append references = </Prototypes/L6>
         )
         {
             matrix4d xformOp:transform:L5 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,-6,0,1))
@@ -194,7 +194,7 @@ def Scope "Prototypes"(
 
         def Xform "I2" (
             instanceable = true
-            add references = </Prototypes/L6>
+            append references = </Prototypes/L6>
         )
         {
             matrix4d xformOp:transform:L5 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,-3,0,1))
@@ -204,7 +204,7 @@ def Scope "Prototypes"(
 
         def Xform "I3" (
             instanceable = true
-            add references = </Prototypes/L6>
+            append references = </Prototypes/L6>
         )
         {
             matrix4d xformOp:transform:L5 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
@@ -214,7 +214,7 @@ def Scope "Prototypes"(
 
         def Xform "I4" (
             instanceable = true
-            add references = </Prototypes/L6>
+            append references = </Prototypes/L6>
         )
         {
             matrix4d xformOp:transform:L5 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,3,0,1))
@@ -224,7 +224,7 @@ def Scope "Prototypes"(
 
         def Xform "I5" (
             instanceable = true
-            add references = </Prototypes/L6>
+            append references = </Prototypes/L6>
         )
         {
             matrix4d xformOp:transform:L5 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,6,0,1))
@@ -237,7 +237,7 @@ def Scope "Prototypes"(
     {
         def Xform "I1" (
             instanceable = true
-            add references = </Prototypes/Ball>
+            append references = </Prototypes/Ball>
         )
         {
             matrix4d xformOp:transform:L6 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(-6,0,0,1))
@@ -247,7 +247,7 @@ def Scope "Prototypes"(
 
         def Xform "I2" (
             instanceable = true
-            add references = </Prototypes/Sphere>
+            append references = </Prototypes/Sphere>
         )
         {
             matrix4d xformOp:transform:L6 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(-3,0,0,1))
@@ -258,7 +258,7 @@ def Scope "Prototypes"(
 
         def Xform "I3" (
             instanceable = true
-            add references = </Prototypes/Ball>
+            append references = </Prototypes/Ball>
         )
         {
             matrix4d xformOp:transform:L6 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0,0,0,1))
@@ -268,7 +268,7 @@ def Scope "Prototypes"(
 
         def Xform "I4" (
             instanceable = true
-            add references = </Prototypes/Sphere>
+            append references = </Prototypes/Sphere>
         )
         {
             matrix4d xformOp:transform:L6 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(3,0,0,1))
@@ -278,7 +278,7 @@ def Scope "Prototypes"(
 
         def Xform "I5" (
             instanceable = true
-            add references = </Prototypes/Ball>
+            append references = </Prototypes/Ball>
         )
         {
             matrix4d xformOp:transform:L6 = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(6,0,0,1))

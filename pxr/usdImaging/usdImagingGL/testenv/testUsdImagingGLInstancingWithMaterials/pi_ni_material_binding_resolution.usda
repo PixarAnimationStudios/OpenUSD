@@ -37,7 +37,7 @@ over "scene_proto"
 
     def Scope "materials" (
         instanceable = true
-        add references = </materials_proto>
+        append references = </materials_proto>
     )
     {
     }
@@ -55,7 +55,7 @@ def PointInstancer "pointinstancer"
     {
         def Xform "scene" (
             instanceable = true
-            add references = </scene_proto>
+            append references = </scene_proto>
         )
         {
         }

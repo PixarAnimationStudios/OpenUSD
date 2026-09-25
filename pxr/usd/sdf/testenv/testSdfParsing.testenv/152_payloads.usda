@@ -56,7 +56,7 @@ def MfScope "TestPrim6" (
 
 def MfScope "TestPrim7" (
     delete payload = @///test/layer.usda@</Prim>
-    add payload = [
+    append payload = [
         @///test/layer.usda@</Prim>,
         @///test/layer2.usda@</Prim2>
     ]
@@ -121,7 +121,7 @@ def MfScope "TestFile6" (
 
 def MfScope "TestFile7" (
     delete payload = @///test/layer.usda@
-    add payload = [
+    append payload = [
         @///test/layer.usda@,
         @///test/layer2.usda@
     ]
@@ -186,7 +186,7 @@ def MfScope "TestPrimOnly6" (
 
 def MfScope "TestPrimOnly7" (
     delete payload = </Test>
-    add payload = [
+    append payload = [
         </Test>,
         </Test2>
     ]
@@ -246,7 +246,7 @@ def MfScope "TestSelfDefault6" (
 
 def MfScope "TestSelfDefault7" (
     delete payload = <>
-    add payload = [
+    append payload = [
         <>
     ]
     reorder payload = [
@@ -339,7 +339,7 @@ def MfScope "TestSubrootPrim6" (
 
 def MfScope "TestSubrootPrim7" (
     delete payload = @///test/layer.usda@</Prim/Child>
-    add payload = [
+    append payload = [
         @///test/layer.usda@</Prim/Child>,
         @///test/layer2.usda@</Prim2/Child>
     ]
@@ -404,7 +404,7 @@ def MfScope "TestSubrootPrimOnly6" (
 
 def MfScope "TestSubrootPrimOnly7" (
     delete payload = </Test/Child>
-    add payload = [
+    append payload = [
         </Test/Child>,
         </Test2/Child>
     ]

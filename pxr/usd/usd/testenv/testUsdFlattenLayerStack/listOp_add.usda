@@ -5,7 +5,7 @@ def Scope "A" {
 
 def Scope "B" {
     # Adds flatten into appends
-    add rel test = </A>
+    append rel test = </A>
 }
 
 def Scope "C" {

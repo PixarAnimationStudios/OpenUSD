@@ -4,7 +4,7 @@
 )
 
 def Xform "Implicits" (
-    add variantSets = "shapeVariant"
+    append variantSets = "shapeVariant"
 )
 {
     variantSet "shapeVariant" = {
@@ -39,7 +39,7 @@ def Xform "Implicits" (
     
     float connAttr = 5.5
 
-    add float connAttr.connect = [
+    append float connAttr.connect = [
         </foo.bar>,
         </foo.baz>,
         </foo.qux>,

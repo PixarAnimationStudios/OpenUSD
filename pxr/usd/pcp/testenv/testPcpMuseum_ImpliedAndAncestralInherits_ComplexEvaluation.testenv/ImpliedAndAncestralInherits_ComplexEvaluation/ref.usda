@@ -6,7 +6,7 @@ def "Ref"
 {
     # Child prim with a global inherit
     def "C" (
-        add inherits = </_G>
+        append inherits = </_G>
     )
     {
         # Local class
@@ -17,7 +17,7 @@ def "Ref"
 
         # Grandchild prim with local inherit
         def "D" (
-            add inherits = <../_Z>
+            append inherits = <../_Z>
         )
         {
             string prop = "ref:strong"

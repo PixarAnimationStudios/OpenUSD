@@ -27,7 +27,7 @@ def Prim "CharRig"
     def Scope "Rig"
     {
         def Scope "PathRig" (
-            add references = @./pathRig.usda@</PathRig>
+            append references = @./pathRig.usda@</PathRig>
         )
         {
             rel relationshipToPathAvar2 = [<Path/Anim.track>] (

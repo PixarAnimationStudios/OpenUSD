@@ -19,7 +19,7 @@ def "ShinyPlasticLook"
 def "ShaderBindings_defaultShadingVariant"
 {
     def "ShinyPlastic" (
-        add references = </ShinyPlasticLook>
+        append references = </ShinyPlasticLook>
     )
     {
     }

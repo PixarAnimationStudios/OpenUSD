@@ -42,7 +42,7 @@ def "Set_1"
 {
     def "InstancedProp" (
         instanceable = true
-        add references = </Flattened_Prototype_1>
+        append references = </Flattened_Prototype_1>
     )
     {
         double a = 3

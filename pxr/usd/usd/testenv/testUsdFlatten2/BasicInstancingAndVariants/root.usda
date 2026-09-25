@@ -9,7 +9,7 @@
 def "InstancedModel" (
     instanceable = True
     references = @./ref.usda@</Model>
-    add variantSets = ["x"]
+    append variantSets = ["x"]
     variants = {
         string x = "a"
         string y = "a"
@@ -47,7 +47,7 @@ def "InstancedModel" (
 def "UninstancedModel" (
     instanceable = False
     references = @./ref.usda@</Model>
-    add variantSets = ["x"]
+    append variantSets = ["x"]
     variants = {
         string x = "b"
         string y = "b"

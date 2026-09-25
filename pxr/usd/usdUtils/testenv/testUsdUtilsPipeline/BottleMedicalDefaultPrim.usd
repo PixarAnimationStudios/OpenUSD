@@ -10,7 +10,7 @@ def Xform "BottleMedical" (
         string modelingVariant = "LiquidBottleLg"
         string shadingComplexity = "full"
     }
-    add variantSets = ["modelingVariant", "shadingComplexity"]
+    append variantSets = ["modelingVariant", "shadingComplexity"]
 )
 {
     variantSet "modelingVariant" = {

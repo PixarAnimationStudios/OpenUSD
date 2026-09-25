@@ -5,7 +5,7 @@ def Model "FergusCloak"
     def Scope "rig"
     {
         def Scope "LEdgeRig" (
-            add references = @./CurveTrackRig.usda@</CurveTrackRig>
+            append references = @./CurveTrackRig.usda@</CurveTrackRig>
         )
         {
         }

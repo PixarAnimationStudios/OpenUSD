@@ -13,7 +13,7 @@ def Scope "Prim"
     double foo:argle = 3.4
     double foo:argle.connect = </Prim.foo:baz>
     delete double foo:bargle.connect = </Prim.foo:argle>
-    add double foo:bargle.connect = </Prim.foo:argle>
+    append double foo:bargle.connect = </Prim.foo:argle>
     reorder double foo:bargle.connect = </Prim.foo:argle>
     double bar:baz = 1.2
     double bar:argle = 3.4
@@ -23,7 +23,7 @@ def Scope "Prim"
     }
     rel argle:bargle = </Prim/Child>
     delete varying rel a:b:d = </Prim/Child>
-    add varying rel a:b:d = [
+    append varying rel a:b:d = [
         </Prim>,
         </Prim/Child>,
     ]

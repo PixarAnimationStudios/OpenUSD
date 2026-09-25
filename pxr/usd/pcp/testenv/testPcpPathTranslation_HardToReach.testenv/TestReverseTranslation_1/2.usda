@@ -1,7 +1,7 @@
 #usda 1.0
 
 def __AnyType__ "M_2" (
-    add references = @./3.usda@</M_3>
+    append references = @./3.usda@</M_3>
 )
 {
     over "B"

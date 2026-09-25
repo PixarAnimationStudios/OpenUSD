@@ -19,7 +19,7 @@
 # composition error and the relocation is ignored.
 #
 def "Model_1" (
-    add references = @./model.usda@</Model>
+    append references = @./model.usda@</Model>
 )
 {
     over "LocalClass"
@@ -41,7 +41,7 @@ def "Model_1" (
 # This is a composition error and the relocation is ignored.
 #
 def "Model_2" (
-    add references = @./model.usda@</Model>
+    append references = @./model.usda@</Model>
 )
 {
     over "LocalClass"
@@ -62,7 +62,7 @@ def "Model_2" (
 # This is a composition error and the relocation is ignored.
 #
 def "Model_3" (
-    add references = @./model.usda@</Model>
+    append references = @./model.usda@</Model>
 )
 {
     over "LocalClass"
@@ -84,7 +84,7 @@ def "Model_3" (
 # This is a composition error and the relocation is ignored.
 #
 def "Model_4" (
-    add references = @./model.usda@</Model>
+    append references = @./model.usda@</Model>
 )
 {
     over "LocalClass"

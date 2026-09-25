@@ -17,7 +17,7 @@ def "Group" (
     references strongly "encapsulate" the strength of their 
     contents, including any internal opinions about classes.
     """
-    add references = @./group.usda@</Group>
+    append references = @./group.usda@</Group>
 )
 {
     over "Model_2"
@@ -70,7 +70,7 @@ def "InheritsOrder2" (
 }
 
 def Prim "ModelWithVariant" (
-    add variantSets = ["vset"]
+    append variantSets = ["vset"]
     variants = {
         string vset = "vsel"
     }

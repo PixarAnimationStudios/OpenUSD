@@ -7,13 +7,13 @@ def Model "Model"
     }
 
     class Scope "B" (
-        add inherits = </Model/A>
+        append inherits = </Model/A>
     )
     {
     }
 
     def Scope "Scope" (
-        add inherits = </Model/B>
+        append inherits = </Model/B>
     )
     {
     }

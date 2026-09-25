@@ -1,7 +1,7 @@
 #usda 1.0
 
 def Scope "SlugJ" (
-    add references = [
+    append references = [
         @./SlugJ_shaderDisplayDefs.usda@</ShaderBindingVariants>
     ]
 )
@@ -15,7 +15,7 @@ def Scope "SlugJ" (
 }
 
 def Scope "ShaderBindingVariants" (
-    add variantSets = "shaderBindingVariant"
+    append variantSets = "shaderBindingVariant"
 )
 {
     variantSet "shaderBindingVariant" = {

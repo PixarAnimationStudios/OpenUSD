@@ -8,7 +8,7 @@ def "Foo" (references = @./ref.usd@</Bar>) {
 
     uniform int uniformInt = 1
 
-    add rel relToOther = [</Qux>]
+    append rel relToOther = [</Qux>]
     rel simple = [</Bar>]
     rel fwdRel = [</Bar.toOther>]
 }

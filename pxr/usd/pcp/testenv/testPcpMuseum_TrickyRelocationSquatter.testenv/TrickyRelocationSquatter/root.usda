@@ -21,8 +21,8 @@
 )
 
 def "X" (
-    add references = @./rig.usda@</Y>
-    add inherits = </_Class_X>
+    append references = @./rig.usda@</Y>
+    append inherits = </_Class_X>
 )
 {
     over "A2"

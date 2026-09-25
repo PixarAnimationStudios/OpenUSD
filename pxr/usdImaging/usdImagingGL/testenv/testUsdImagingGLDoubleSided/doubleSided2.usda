@@ -13,7 +13,7 @@ def Xform "Meshes"
 
     def "SingleSided" (
         kind = "model"
-        add references = @./Ring.usda@</mesh>
+        append references = @./Ring.usda@</mesh>
     )
     {
         custom matrix4d xformOp:transform = ( (0, 0, -1, 0), (0, 1, 0, 0), (1, 0, 0, 0), (3, 0, 0, 1) )
@@ -22,7 +22,7 @@ def Xform "Meshes"
 
     def "DoubleSided" (
         kind = "model"
-        add references = @./Ring.usda@</mesh>
+        append references = @./Ring.usda@</mesh>
     )
     {
         bool doubleSided = 1
@@ -32,7 +32,7 @@ def Xform "Meshes"
 
     def "SingleSidedLeftHanded" (
         kind = "model"
-        add references = @./Ring.usda@</mesh>
+        append references = @./Ring.usda@</mesh>
     )
     {
         uniform token orientation = "leftHanded"
@@ -42,7 +42,7 @@ def Xform "Meshes"
 
     def "DoubleSidedLeftHanded" (
         kind = "model"
-        add references = @./Ring.usda@</mesh>
+        append references = @./Ring.usda@</mesh>
     )
     {
         bool doubleSided = 1
@@ -59,7 +59,7 @@ def Xform "FlippedMeshes"
 
     def "SingleSided" (
         kind = "model"
-        add references = @./Ring.usda@</mesh>
+        append references = @./Ring.usda@</mesh>
     )
     {
         custom matrix4d xformOp:transform = ( (0, 0, -1, 0), (0, 1, 0, 0), (1, 0, 0, 0), (-3, 0, 0, 1) )
@@ -68,7 +68,7 @@ def Xform "FlippedMeshes"
 
     def "DoubleSided" (
         kind = "model"
-        add references = @./Ring.usda@</mesh>
+        append references = @./Ring.usda@</mesh>
     )
     {
         bool doubleSided = 1
@@ -78,7 +78,7 @@ def Xform "FlippedMeshes"
 
     def "SingleSidedLeftHanded" (
         kind = "model"
-        add references = @./Ring.usda@</mesh>
+        append references = @./Ring.usda@</mesh>
     )
     {
         uniform token orientation = "leftHanded"
@@ -88,7 +88,7 @@ def Xform "FlippedMeshes"
 
     def "DoubleSidedLeftHanded" (
         kind = "model"
-        add references = @./Ring.usda@</mesh>
+        append references = @./Ring.usda@</mesh>
     )
     {
         bool doubleSided = 1

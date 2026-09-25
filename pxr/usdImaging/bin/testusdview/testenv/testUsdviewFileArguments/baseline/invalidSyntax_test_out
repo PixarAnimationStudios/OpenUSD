@@ -1,2 +1,2 @@
 Error: Unable to open stage 'invalidSyntax.usda'
-invalidSyntax.usda:11:23: Expected None or [ at '@HelloWorld.usda@' in </refSphere2>
+invalidSyntax.usda:11:26: Expected None or [ at '@HelloWorld.usda@' in </refSphere2>

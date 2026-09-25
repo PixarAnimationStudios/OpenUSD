@@ -10,7 +10,7 @@
 )
 
 def "Sullivan_1" (
-    add references = @./Sullivan.usda@</Sullivan>
+    append references = @./Sullivan.usda@</Sullivan>
 )
 {
 }

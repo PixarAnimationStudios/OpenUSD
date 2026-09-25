@@ -17,7 +17,7 @@ def Xform "Model" (
 }
 
 def Xform "Variants" (
-    add variantSets = "standin"
+    append variantSets = "standin"
 )
 {
     variantSet "standin" = {

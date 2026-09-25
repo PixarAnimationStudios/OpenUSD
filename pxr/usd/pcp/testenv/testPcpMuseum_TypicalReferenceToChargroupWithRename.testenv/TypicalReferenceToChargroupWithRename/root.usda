@@ -13,7 +13,7 @@
 )
 
 def "Group_1" (
-    add references = @./group.usda@</Group>
+    append references = @./group.usda@</Group>
 )
 {
     over "Model_1"

@@ -6,7 +6,7 @@ def Prim "ArmRig"
     {
         def Mover "Some_Internal_Rig_Prim"
         {
-            add double bendAmount.connect = </ArmRig/Anim.bendAmount>
+            append double bendAmount.connect = </ArmRig/Anim.bendAmount>
         }
     }
 

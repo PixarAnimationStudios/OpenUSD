@@ -125,7 +125,7 @@ def "CollectionTest" (
 
         def "Box" (
             instanceable = true
-            add references = @./Cube.usda@</Cube>
+            append references = @./Cube.usda@</Cube>
         )
         {
         }

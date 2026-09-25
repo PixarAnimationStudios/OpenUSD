@@ -16,7 +16,7 @@ def Scope "Materials"
             uniform asset info:glslfx:sourceAsset = @basicDrawing/shaders-surface.glslfx@
             uniform token info:implementationSource = "sourceAsset"
             uniform float3 inputs:diffuseColor = (1, 0, 1)
-            add uniform float3 inputs:diffuseColor.connect = </Materials/UvMat/Tex.outputs:color>
+            append uniform float3 inputs:diffuseColor.connect = </Materials/UvMat/Tex.outputs:color>
             token outputs:surface
         }
 
@@ -24,7 +24,7 @@ def Scope "Materials"
         {
             uniform token info:id = "HwUvTexture_1"
             uniform asset inputs:file = @basicDrawing/tiledGradient.png@
-            add uniform float2 inputs:uv.connect = </Materials/UvMat/Primvar.outputs:result>
+            append uniform float2 inputs:uv.connect = </Materials/UvMat/Primvar.outputs:result>
             float3 outputs:color
         }
 
@@ -45,7 +45,7 @@ def Scope "Materials"
             uniform asset info:glslfx:sourceAsset = @basicDrawing/shaders-surface.glslfx@
             uniform token info:implementationSource = "sourceAsset"
             uniform float3 inputs:diffuseColor = (0.07, 0.521, 0.8)
-            add uniform float3 inputs:diffuseColor.connect = </Materials/PrimvarMat/Primvar.outputs:result>
+            append uniform float3 inputs:diffuseColor.connect = </Materials/PrimvarMat/Primvar.outputs:result>
             token outputs:surface
         }
 
@@ -79,7 +79,7 @@ def Scope "Materials"
             uniform asset info:glslfx:sourceAsset = @basicDrawing/shaders-surface.glslfx@
             uniform token info:implementationSource = "sourceAsset"
             uniform float3 inputs:diffuseColor = (1, 0, 1)
-            add uniform float3 inputs:diffuseColor.connect = </Materials/PtexMat/Tex.outputs:color>
+            append uniform float3 inputs:diffuseColor.connect = </Materials/PtexMat/Tex.outputs:color>
             token outputs:surface
         }
 

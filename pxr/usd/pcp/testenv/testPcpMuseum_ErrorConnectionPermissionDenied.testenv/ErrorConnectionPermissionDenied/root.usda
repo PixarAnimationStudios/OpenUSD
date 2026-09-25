@@ -9,7 +9,7 @@
 )
 
 def Scope "PermissionsAcrossReferences" (
-    add references = @./ref.usda@</Reference>
+    append references = @./ref.usda@</Reference>
 )
 {
     custom double privateAttrFromRoot (permission = private)
@@ -42,7 +42,7 @@ def Scope "PermissionsAcrossReferences" (
 }    
 
 def Scope "PermissionsAcrossInherits" (
-    add references = @./ref.usda@</ReferenceWithLocalClass>
+    append references = @./ref.usda@</ReferenceWithLocalClass>
 )
 {
     over "Instance"
@@ -72,7 +72,7 @@ def Scope "CulledPermissions_2" (
 }
 
 def Scope "CulledPermissions_3" (
-    add variantSets = ["pin"]
+    append variantSets = ["pin"]
     variants = {
         string pin = "stable"
     }

@@ -42,7 +42,7 @@ def Scope "HumanRig"
                     {
                         over "Mover"
                         {
-                            add double bar.connect = </HumanRig/rig/Face/rig/SymEyeRig/Anim.baz>
+                            append double bar.connect = </HumanRig/rig/Face/rig/SymEyeRig/Anim.baz>
                         }
                     }
                 }

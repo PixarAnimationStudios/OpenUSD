@@ -1,7 +1,7 @@
 #usda 1.0
 
 over "Sarah_Ref" (
-    add inherits = </_class_Sarah_Ref_Sub1>
+    append inherits = </_class_Sarah_Ref_Sub1>
 )
 {
 }

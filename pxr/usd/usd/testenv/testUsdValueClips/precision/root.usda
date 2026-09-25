@@ -5,7 +5,7 @@
 )
 
 def "World" (
-    add references = @./root.topology.usda@</World>
+    append references = @./root.topology.usda@</World>
 )
 {
     over "fx"

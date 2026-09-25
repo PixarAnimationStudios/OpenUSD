@@ -10,7 +10,7 @@ def "foo" (
         string set2 = "B"
         string set3 = "D"
     }
-    add variantSets = ["set2", "set3"]
+    append variantSets = ["set2", "set3"]
 )
 {
     def Material "material"

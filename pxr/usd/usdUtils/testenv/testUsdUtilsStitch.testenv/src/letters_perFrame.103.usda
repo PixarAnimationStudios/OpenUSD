@@ -9,7 +9,7 @@ def Xform "World" (
         bool zUp = 1
     }
     kind = "group"
-    add references = @./letters_perFrame.protos.usda@</World>
+    append references = @./letters_perFrame.protos.usda@</World>
 )
 {
     def Xform "fx" (

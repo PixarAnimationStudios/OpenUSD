@@ -5,7 +5,7 @@
 def Prim "Model"
 {
     def Scope "LArm" (
-        add inherits = </Model/SymArm>
+        append inherits = </Model/SymArm>
     )
     {
     }

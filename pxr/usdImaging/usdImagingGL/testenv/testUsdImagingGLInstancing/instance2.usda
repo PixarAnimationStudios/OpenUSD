@@ -170,7 +170,7 @@ def Xform "Parent" (
                 uniform asset info:glslfx:sourceAsset = @shaders-surface.glslfx@
                 uniform token info:implementationSource = "sourceAsset"
                 uniform color3f inputs:diffuseColor = (1, 0, 1)
-                add uniform color3f inputs:diffuseColor.connect = </Parent/Materials/UvMat/Tex.outputs:color>
+                append uniform color3f inputs:diffuseColor.connect = </Parent/Materials/UvMat/Tex.outputs:color>
                 token outputs:surface
             }
 
@@ -178,7 +178,7 @@ def Xform "Parent" (
             {
                 uniform token info:id = "HwUvTexture_1"
                 uniform asset inputs:file = @tiledGradient.png@
-                add uniform float2 inputs:uv.connect = </Parent/Materials/UvMat/Primvar.outputs:result>
+                append uniform float2 inputs:uv.connect = </Parent/Materials/UvMat/Primvar.outputs:result>
                 float3 outputs:color
             }
 
@@ -199,7 +199,7 @@ def Xform "Parent" (
                 uniform asset info:glslfx:sourceAsset = @shaders-surface.glslfx@
                 uniform token info:implementationSource = "sourceAsset"
                 uniform color3f inputs:diffuseColor = (0.07, 0.521, 0.8)
-                add uniform color3f inputs:diffuseColor.connect = </Parent/Materials/PrimvarMat/Primvar.outputs:result>
+                append uniform color3f inputs:diffuseColor.connect = </Parent/Materials/PrimvarMat/Primvar.outputs:result>
                 token outputs:surface
             }
 
@@ -233,7 +233,7 @@ def Xform "Parent" (
                 uniform asset info:glslfx:sourceAsset = @shaders-surface.glslfx@
                 uniform token info:implementationSource = "sourceAsset"
                 uniform color3f inputs:diffuseColor = (1, 0, 1)
-                add uniform color3f inputs:diffuseColor.connect = </Parent/Materials/PtexMat/Tex.outputs:color>
+                append uniform color3f inputs:diffuseColor.connect = </Parent/Materials/PtexMat/Tex.outputs:color>
                 token outputs:surface
             }
 

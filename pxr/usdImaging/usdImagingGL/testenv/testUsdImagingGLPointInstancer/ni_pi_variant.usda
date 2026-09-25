@@ -7,7 +7,7 @@ def Xform "Root" (
     variants = {
         string modelingVariant = "VAR_S"
     }
-    add variantSets = "modelingVariant"
+    append variantSets = "modelingVariant"
 )
 {
     def Xform "Geom"

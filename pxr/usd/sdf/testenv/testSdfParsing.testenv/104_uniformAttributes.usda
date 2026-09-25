@@ -9,7 +9,7 @@ def MfScope "bool_tests"
 {
     custom uniform double foo = 0
     delete uniform double foo.connect = </bool_tests/Foo/Blah.blah>
-    add uniform double foo.connect = </bool_tests/Foo/Blah.blah>
+    append uniform double foo.connect = </bool_tests/Foo/Blah.blah>
     reorder uniform double foo.connect = [
         </bool_tests/Foo/Blah.blah>,
         </bool_tests/Foo/Bar.blah>,

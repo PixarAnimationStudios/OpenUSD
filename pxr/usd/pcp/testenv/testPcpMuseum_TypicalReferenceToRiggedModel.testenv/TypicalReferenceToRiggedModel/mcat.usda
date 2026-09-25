@@ -1,8 +1,8 @@
 #usda 1.0
 
 def "Model" (
-    add inherits = </Class>
-    add variantSets = "pin"
+    append inherits = </Class>
+    append variantSets = "pin"
     variants = {
         string pin = "stable"
     }

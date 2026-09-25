@@ -7,7 +7,7 @@ def Scope "World"
         def Scope "chars"
         {
             def Scope "JoyGroup" (
-                add references = @./JoyGroup.usda@</JoyGroup>
+                append references = @./JoyGroup.usda@</JoyGroup>
             )
             {
             }

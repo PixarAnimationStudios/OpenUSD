@@ -11,7 +11,7 @@ over "Flattened_Prototype_1"
 {
     def "PropInstance_1" (
         instanceable = true
-        add references = </Flattened_Prototype_2>
+        append references = </Flattened_Prototype_2>
     )
     {
         int foo = 1
@@ -30,7 +30,7 @@ over "Flattened_Prototype_1"
 
     def "PropInstance_2" (
         instanceable = true
-        add references = </Flattened_Prototype_2>
+        append references = </Flattened_Prototype_2>
     )
     {
         int foo = 1
@@ -69,7 +69,7 @@ over "Flattened_Prototype_2"
 
 def "Set_1" (
     instanceable = true
-    add references = </Flattened_Prototype_1>
+    append references = </Flattened_Prototype_1>
 )
 {
     int setAttr.connect = [

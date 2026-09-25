@@ -26,7 +26,7 @@ over "_shared_HumanHair"
 }
 
 def "HumanMaleStdHair" (
-    add references = @./ref.usda@</HumanMaleStdHair>
+    append references = @./ref.usda@</HumanMaleStdHair>
 )
 {
     over "Hair_Chiang_Head_Chiang_Hair"

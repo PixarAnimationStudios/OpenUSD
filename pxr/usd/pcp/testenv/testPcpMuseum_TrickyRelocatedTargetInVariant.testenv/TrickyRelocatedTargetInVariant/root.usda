@@ -24,7 +24,7 @@ def "Root" (
     }
 )
 {
-    add rel myRel = </Root/Anim/Child>
+    append rel myRel = </Root/Anim/Child>
 
     def "Anim"
     {
@@ -35,7 +35,7 @@ def "Root" (
 
     variantSet "v" = {
         "a" {
-            add rel myRel = </Root/Anim/Child2>
+            append rel myRel = </Root/Anim/Child2>
             def "Rig" (
                 references = @./ref.usda@</Ref>
             )

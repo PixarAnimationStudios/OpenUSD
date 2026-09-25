@@ -9,7 +9,7 @@
 )
 
 def "A" (
-    add variantSets = ["vset1", "vset2"]
+    append variantSets = ["vset1", "vset2"]
 )
 {
     variantSet "vset1" = {
@@ -37,7 +37,7 @@ def "A_Ancestral" (
 }
 
 def "B" (
-    add variantSets = ["vset2", "vset1"]
+    append variantSets = ["vset2", "vset1"]
 )
 {
     variantSet "vset1" = {

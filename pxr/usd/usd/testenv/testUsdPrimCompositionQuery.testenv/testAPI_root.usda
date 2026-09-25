@@ -7,7 +7,7 @@
 )
 
 def "Sarah_Ref" (
-    add inherits = </_class_Sarah_Ref>
+    append inherits = </_class_Sarah_Ref>
 )
 {
     custom color3d color = (1, 1, 1)

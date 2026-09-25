@@ -14,7 +14,7 @@ def Model "Model"
     }
 
     def Scope "Rig" (
-        add references = @./rig.usda@</Rig>
+        append references = @./rig.usda@</Rig>
     )
     {
     }

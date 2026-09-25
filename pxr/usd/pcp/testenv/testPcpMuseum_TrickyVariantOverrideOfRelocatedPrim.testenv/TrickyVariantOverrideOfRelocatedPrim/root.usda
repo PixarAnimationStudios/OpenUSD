@@ -17,8 +17,8 @@
 
 
 def Scope "Model" (
-    add references = @./model.usda@</Model>
-    add variantSets = "vset"
+    append references = @./model.usda@</Model>
+    append variantSets = "vset"
     variants = {
         string vset = "vsel"
     }

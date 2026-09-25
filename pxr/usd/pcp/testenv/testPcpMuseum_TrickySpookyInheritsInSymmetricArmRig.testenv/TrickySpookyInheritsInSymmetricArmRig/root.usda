@@ -6,7 +6,7 @@
 )
 
 def "CharRig" (
-    add references = @./humanRig.usda@</HumanRig>
+    append references = @./humanRig.usda@</HumanRig>
 )
 {
     over "Anim"

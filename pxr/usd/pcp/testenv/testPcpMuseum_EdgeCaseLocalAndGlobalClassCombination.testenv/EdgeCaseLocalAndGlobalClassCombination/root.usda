@@ -28,7 +28,7 @@
 # This references /Model so the implied nested class under 
 # /Model can map to this namespace.
 def "Model_1" (
-    add references = @model.usda@</Model>
+    append references = @model.usda@</Model>
 )
 {
     over "Instance" {
@@ -42,7 +42,7 @@ def "Model_1" (
 # This references /OtherModel so the implied nested class under 
 # /Model does not map to this namespace.
 def "OtherModel_1" (
-    add references = @model.usda@</OtherModel>
+    append references = @model.usda@</OtherModel>
 )
 {
     over "Instance" {

@@ -9,7 +9,7 @@ def "Ref"
 }
 
 def "World" (
-    add references = </Ref>
+    append references = </Ref>
 )
 {
     over "points" (

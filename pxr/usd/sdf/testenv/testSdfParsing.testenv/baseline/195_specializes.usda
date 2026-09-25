@@ -23,13 +23,13 @@ def "Specializes_3" (
 }
 
 def "Specializes_4" (
-    add specializes = </foo>
+    append specializes = </foo>
 )
 {
 }
 
 def "Specializes_5" (
-    add specializes = [
+    append specializes = [
         </foo>,
         </bar>,
         </rel>
@@ -76,7 +76,7 @@ def "Specializes_10" (
         </bar>,
         </rel>
     ]
-    add specializes = [
+    append specializes = [
         </baz>,
         </boom>,
         </rel>

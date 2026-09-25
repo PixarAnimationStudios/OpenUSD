@@ -14,7 +14,7 @@ def Xform "reduced_SardineGroup_OceanA" (
     custom bool important = 0
 
     def Xform "Sardine_OceanA" (
-        add references = @ref.usda@</reduced_SardineGroup_OceanA__Sardine_OceanA>
+        append references = @ref.usda@</reduced_SardineGroup_OceanA__Sardine_OceanA>
     )
     {
     }
@@ -30,7 +30,7 @@ def Xform "SardineGroup_OceanA" (
     uniform bool important = 0
 
     def "Sardine_OceanA" (
-        add references = @ref.usda@</SardineGroup_OceanA__Sardine_OceanA>
+        append references = @ref.usda@</SardineGroup_OceanA__Sardine_OceanA>
     )
     {
         custom matrix4d constraintTargets:Anim:Body:FishBottomSpace
@@ -1414,7 +1414,7 @@ def Xform "SardineGroup_OceanA" (
 def "metadata"
 {
     def Scope "modelInfo" (
-        add references = @ref.usda@</metadata__modelInfo>
+        append references = @ref.usda@</metadata__modelInfo>
     )
     {
     }

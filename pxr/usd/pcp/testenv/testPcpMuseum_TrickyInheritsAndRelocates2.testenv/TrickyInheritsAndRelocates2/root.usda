@@ -16,7 +16,7 @@
 )
 
 def "Group" (
-    add references = @./b.usda@</Group>
+    append references = @./b.usda@</Group>
 )
 {
 }

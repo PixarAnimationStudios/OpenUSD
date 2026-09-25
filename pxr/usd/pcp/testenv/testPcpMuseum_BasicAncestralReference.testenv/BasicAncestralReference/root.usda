@@ -9,11 +9,11 @@
 )
 
 def "A" (
-    add references = @./A.usda@</A>
+    append references = @./A.usda@</A>
 )
 {
     over "B" (
-        add references = @./B.usda@</B>
+        append references = @./B.usda@</B>
     )
     {
     }

@@ -115,7 +115,7 @@ def Xform "reduced_SardineGroup_OceanA__Sardine_OceanA" (
 }
 
 def "SardineGroup_OceanA__Sardine_OceanA" (
-    add references = @Sardine/usd/Sardine.usd@</Sardine>
+    append references = @Sardine/usd/Sardine.usd@</Sardine>
     variants = {
         string shadingVariant = "OceanA"
     }

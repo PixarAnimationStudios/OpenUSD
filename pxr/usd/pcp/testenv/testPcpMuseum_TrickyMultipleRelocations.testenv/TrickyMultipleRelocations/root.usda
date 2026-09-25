@@ -22,7 +22,7 @@
 )
 
 def "Char" (
-    add references = @./rig.usda@</CharRig>
+    append references = @./rig.usda@</CharRig>
 )
 {
     over "Anim2"

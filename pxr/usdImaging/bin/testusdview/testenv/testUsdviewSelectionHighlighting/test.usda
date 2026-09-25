@@ -26,7 +26,7 @@ def Xform "ProtoGreen"
 }
 
 def Xform "Implicits" (
-    add variantSets = "shapeVariant"
+    append variantSets = "shapeVariant"
 )
 {
     variantSet "shapeVariant" = {

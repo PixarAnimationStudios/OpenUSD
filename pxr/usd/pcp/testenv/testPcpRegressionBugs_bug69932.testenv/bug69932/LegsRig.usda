@@ -3,7 +3,7 @@
 def Scope "LegsRig"
 {
     def Scope "LLegRig" (
-        add inherits = </LegsRig/_Class_LegRig>
+        append inherits = </LegsRig/_Class_LegRig>
     )
     {
         over "Toes"

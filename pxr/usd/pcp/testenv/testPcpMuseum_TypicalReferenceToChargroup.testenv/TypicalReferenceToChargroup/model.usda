@@ -3,7 +3,7 @@
 )
 
 def Prim "Model" (
-    add variantSets = ["standin"]
+    append variantSets = ["standin"]
 )
 {
     variantSet "standin" = {

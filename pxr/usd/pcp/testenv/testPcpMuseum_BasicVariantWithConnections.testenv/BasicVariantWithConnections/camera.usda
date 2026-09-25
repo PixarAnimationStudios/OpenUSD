@@ -1,7 +1,7 @@
 #usda 1.0
 
 def "camera" (
-    add variantSets = ["projection"]
+    append variantSets = ["projection"]
     variants = {
         string projection = "perspective"
     }
@@ -24,9 +24,9 @@ def "camera" (
 
             over "Rig"
             {
-                add double focalLength.connect = </camera/Lens.focalLength>
-                add double breathingScale.connect = </camera/Lens.breathingScale>
-                add rel controls = </camera/Lens.focalLength>
+                append double focalLength.connect = </camera/Lens.focalLength>
+                append double breathingScale.connect = </camera/Lens.breathingScale>
+                append rel controls = </camera/Lens.focalLength>
             }
         }
     }

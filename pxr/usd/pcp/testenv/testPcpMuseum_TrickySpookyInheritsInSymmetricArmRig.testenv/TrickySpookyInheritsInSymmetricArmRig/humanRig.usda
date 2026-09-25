@@ -19,13 +19,13 @@ def Prim "HumanRig"
     def Scope "Rig"
     {
         class Scope "SymArm" (
-            add references = @./armRig.usda@</ArmRig>
+            append references = @./armRig.usda@</ArmRig>
         )
         {
         }
 
         def Scope "LArm" (
-            add inherits = <../SymArm>
+            append inherits = <../SymArm>
         )
         {
         }

@@ -13,7 +13,7 @@ def Xform "Cube" (
     variants = {
         string pointVariant = "Default"
     }
-    add variantSets = "pointVariant"
+    append variantSets = "pointVariant"
 )
 {
     def Xform "Geom"

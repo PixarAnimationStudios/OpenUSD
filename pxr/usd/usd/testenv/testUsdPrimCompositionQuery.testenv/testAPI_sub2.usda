@@ -7,7 +7,7 @@ over "Sarah"
 }
 
 def "Sarah_Payload" (
-    add specializes = </Sarah_Container/_class_Sarah_Specialized>
+    append specializes = </Sarah_Container/_class_Sarah_Specialized>
 )
 {
 }

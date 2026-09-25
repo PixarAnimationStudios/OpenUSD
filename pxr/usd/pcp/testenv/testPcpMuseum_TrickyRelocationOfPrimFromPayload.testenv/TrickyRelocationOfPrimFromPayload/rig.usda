@@ -11,13 +11,13 @@ def Scope "Rig"
     }
 
     def Scope "SymRig" (
-        add inherits = </Rig/SymRigBase>
+        append inherits = </Rig/SymRigBase>
     )
     {
     }
 
     def Scope "LRig" (
-        add inherits = </Rig/SymRig>
+        append inherits = </Rig/SymRig>
     )
     {
     }

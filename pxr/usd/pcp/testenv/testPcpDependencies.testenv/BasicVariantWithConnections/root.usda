@@ -13,7 +13,7 @@
 )
 
 def "main_cam" (
-    add references = @./camera.usda@</camera>
+    append references = @./camera.usda@</camera>
 )
 {
 }

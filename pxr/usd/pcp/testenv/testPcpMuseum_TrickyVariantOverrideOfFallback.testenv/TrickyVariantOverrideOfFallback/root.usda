@@ -8,7 +8,7 @@
 )
 
 def "A" (
-    add variantSets = ["vset1"]
+    append variantSets = ["vset1"]
     references = [ </B> ]
 )
 {
@@ -44,7 +44,7 @@ def "A" (
 }
 
 def "B" (
-    add variantSets = ["vset2"]
+    append variantSets = ["vset2"]
     variants = {
         string vset2 = "selection"
     }

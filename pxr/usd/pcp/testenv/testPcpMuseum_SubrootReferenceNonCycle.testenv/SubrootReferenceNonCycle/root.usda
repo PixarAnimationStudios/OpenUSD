@@ -16,7 +16,7 @@ def "ImplNoCycle" (
         # No cycle as this references a sibling of us in the prim
         # that reference us.
         def "D" (
-            add references = </PrimNoCycle/A/B>
+            append references = </PrimNoCycle/A/B>
         )
         {
         }
@@ -45,7 +45,7 @@ def "ImplCycle" (
         # This is a cycle as this references our parent in the prim that
         # references us.
         def "D" (
-            add references = </PrimCycle/A>
+            append references = </PrimCycle/A>
         )
         {
         }

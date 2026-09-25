@@ -5,7 +5,7 @@
 )
 
 def Model "FergusCloak" (
-    add variantSets = "standin"
+    append variantSets = "standin"
 )
 {
     variantSet "standin" = {

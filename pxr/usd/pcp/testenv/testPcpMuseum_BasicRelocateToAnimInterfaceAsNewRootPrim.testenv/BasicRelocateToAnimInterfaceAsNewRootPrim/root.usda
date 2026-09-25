@@ -12,13 +12,13 @@
 )
 
 def "Model" (
-    add references = @./charRig.usda@</CharRig>
+    append references = @./charRig.usda@</CharRig>
 )
 {
     over "Anim"
     {
         over "Path" (
-            add references = @./charRig.usda@</Path>
+            append references = @./charRig.usda@</Path>
         )
         {
             over "AnimScope"

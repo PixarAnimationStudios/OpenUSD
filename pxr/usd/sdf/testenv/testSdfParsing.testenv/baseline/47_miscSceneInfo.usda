@@ -36,7 +36,7 @@ def MfScope "Bar3" (
 
 def MfScope "Bar4" (
     delete inherits = </foo>
-    add inherits = [
+    append inherits = [
         </baz>,
         </boom>,
         </rel>
@@ -63,7 +63,7 @@ def MfScope "Bar6" (
         </bar>,
         </rel>
     ]
-    add inherits = [
+    append inherits = [
         </baz>,
         </boom>,
         </rel>
@@ -121,7 +121,7 @@ def MfScope "Bar11" (
 }
 
 def MfScope "Bar12" (
-    add inherits = [
+    append inherits = [
         </foo>,
         </bar>,
         </rel>
@@ -156,7 +156,7 @@ over "Prototype"
 }
 
 def Xform "Inst" (
-    add inherits = </Prototype>
+    append inherits = </Prototype>
 )
 {
     rel someRel = </P2>

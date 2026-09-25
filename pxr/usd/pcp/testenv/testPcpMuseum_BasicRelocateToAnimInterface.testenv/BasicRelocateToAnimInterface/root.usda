@@ -6,7 +6,7 @@
 )
 
 def "Model" (
-    add references = @./charRig.usda@</CharRig>
+    append references = @./charRig.usda@</CharRig>
 )
 {
     over "Anim"

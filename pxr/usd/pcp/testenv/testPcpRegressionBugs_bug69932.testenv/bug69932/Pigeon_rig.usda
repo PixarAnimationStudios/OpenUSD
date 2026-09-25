@@ -36,7 +36,7 @@ def Scope "Pigeon" (
 }
 
 class Scope "_class_CharRig" (
-    add references = @./Pigeon_bodyrig.usda@</CharRig>
+    append references = @./Pigeon_bodyrig.usda@</CharRig>
 )
 {
     over "Anim"

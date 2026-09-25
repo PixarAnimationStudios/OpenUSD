@@ -1,7 +1,7 @@
 #usda 1.0
 
 def Xform "Shapes" (
-    add variantSets = ["a_shapeVariant", "b_shapeVariant"]
+    append variantSets = ["a_shapeVariant", "b_shapeVariant"]
 )
 {
     variantSet "a_shapeVariant" = {
@@ -71,7 +71,7 @@ def Xform "Shapes" (
 
 
 def Xform "Implicits" (
-    add variantSets = "shapeVariant"
+    append variantSets = "shapeVariant"
 )
 {
     variantSet "shapeVariant" = {

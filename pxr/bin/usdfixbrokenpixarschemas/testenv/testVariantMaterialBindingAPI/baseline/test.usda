@@ -10,7 +10,7 @@ def Xform "World" (
         string modeling = "X"
         string shading = "A"
     }
-    add variantSets = ["shading", "modeling"]
+    append variantSets = ["shading", "modeling"]
 )
 {
     def Scope "Looks"

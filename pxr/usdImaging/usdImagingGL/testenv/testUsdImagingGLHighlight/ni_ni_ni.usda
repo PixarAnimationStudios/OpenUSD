@@ -48,7 +48,7 @@ over "NestedPrototype"
 
     def Xform "Cube0" (
         instanceable = true
-        add references = </NestedNestedPrototype>
+        append references = </NestedNestedPrototype>
     )
     {
         double3 xformOp:translate = (0, 0, 0)
@@ -56,7 +56,7 @@ over "NestedPrototype"
 
     def Xform "Cube1" (
         instanceable = true
-        add references = </NestedNestedPrototype>
+        append references = </NestedNestedPrototype>
     )
     {
         double3 xformOp:translate = (5, 0, 0)
@@ -64,7 +64,7 @@ over "NestedPrototype"
 
     def Xform "Cube2" (
         instanceable = true
-        add references = </NestedNestedPrototype>
+        append references = </NestedNestedPrototype>
     )
     {
         double3 xformOp:translate = (10, 0, 0)
@@ -72,7 +72,7 @@ over "NestedPrototype"
 
     def Xform "Cube3" (
         instanceable = true
-        add references = </NestedNestedPrototype>
+        append references = </NestedNestedPrototype>
     )
     {
         double3 xformOp:translate = (15, 0, 0)
@@ -80,7 +80,7 @@ over "NestedPrototype"
 
     def Xform "Cube4" (
         instanceable = true
-        add references = </NestedNestedPrototype>
+        append references = </NestedNestedPrototype>
     )
     {
         double3 xformOp:translate = (20, 0, 0)
@@ -92,7 +92,7 @@ over "Prototype" {
 
     def Xform "Cubes0" (
         instanceable = true
-        add references = </NestedPrototype>
+        append references = </NestedPrototype>
     )
     {
         double3 xformOp:translate = (0, 0, 0)
@@ -100,7 +100,7 @@ over "Prototype" {
 
     def Xform "Cubes1" (
         instanceable = true
-        add references = </NestedPrototype>
+        append references = </NestedPrototype>
     )
     {
         double3 xformOp:translate = (0, 5, 0)
@@ -108,7 +108,7 @@ over "Prototype" {
 
     def Xform "Cubes2" (
         instanceable = true
-        add references = </NestedPrototype>
+        append references = </NestedPrototype>
     )
     {
         double3 xformOp:translate = (0, 10, 0)
@@ -119,7 +119,7 @@ def Xform "World"
 {
     def Xform "CubePlane0" (
         instanceable = true
-        add references = </Prototype>
+        append references = </Prototype>
     )
     {
         double3 xformOp:translate = (0, 0, 0)
@@ -127,7 +127,7 @@ def Xform "World"
 
     def Xform "CubePlane1" (
         instanceable = true
-        add references = </Prototype>
+        append references = </Prototype>
     )
     {
         double3 xformOp:translate = (0, 0, 5)

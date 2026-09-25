@@ -13,8 +13,8 @@
 )
 
 def Model "Model" (
-    add references = @./model.usda@</Model>
-    add variantSets = "costume"
+    append references = @./model.usda@</Model>
+    append variantSets = "costume"
     variants = {
         string costume = "basicCostume"
     }

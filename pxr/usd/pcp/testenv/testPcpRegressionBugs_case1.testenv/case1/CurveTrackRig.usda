@@ -13,14 +13,14 @@ def Scope "CurveTrackRig"
                 }
 
                 def Scope "Patch0_math" (
-                    add inherits = </CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math>
+                    append inherits = </CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math>
                 )
                 {
                 }
             }
 
             def Scope "SimPatchWeights" (
-                add inherits = </CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass>
+                append inherits = </CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass>
             )
             {
             }

@@ -7,7 +7,7 @@ def Model "KiltRig" (
     over "rig"
     {
         def "KiltHemRig" (
-            add references = @./ClothHemRig.usda@</ClothHemRig>
+            append references = @./ClothHemRig.usda@</ClothHemRig>
         )
         {
         }

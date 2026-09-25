@@ -4,7 +4,7 @@
 )
 
 def Xform "Shapes" (
-    add variantSets = ["a_shapeVariant", "b_shapeVariant"]
+    append variantSets = ["a_shapeVariant", "b_shapeVariant"]
 )
 {
     variantSet "a_shapeVariant" = {

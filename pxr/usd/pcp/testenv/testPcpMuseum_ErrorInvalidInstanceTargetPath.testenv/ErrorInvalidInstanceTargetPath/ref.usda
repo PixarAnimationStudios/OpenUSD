@@ -13,7 +13,7 @@ def "BrowRig"
         def "BrowInnUDPosBrowInnUDNeg_sculpt"
         {
             double amount = 0.001
-            add double amount.connect = [
+            append double amount.connect = [
                 </BrowRig/Anim/RBrow.InnUD>,
                 </BrowRig/Anim/LBrow.InnUD>,
             ]

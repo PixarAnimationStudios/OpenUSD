@@ -4,11 +4,11 @@ def "Ref"
 {
     def "Child"
     {
-        add rel sibling = </Ref/Child2>
+        append rel sibling = </Ref/Child2>
     }
 
     def "Child2"
     {
-        add rel sibling = </Ref/Child>
+        append rel sibling = </Ref/Child>
     }
 }

@@ -6,7 +6,7 @@
 )
 
 def __AnyType__ "M_3" (
-    add references = @./4.usda@</M_4>
+    append references = @./4.usda@</M_4>
 )
 {
     over "B"

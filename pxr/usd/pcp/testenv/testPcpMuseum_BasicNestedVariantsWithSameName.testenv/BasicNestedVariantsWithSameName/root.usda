@@ -13,11 +13,11 @@ over "foo" (
     variants = {
         string commonName = "c"
     }
-    add variantSets = "commonName"
+    append variantSets = "commonName"
 )
 {
     over "bar" (
-        add variantSets = "commonName"
+        append variantSets = "commonName"
     )
     {
         custom int value

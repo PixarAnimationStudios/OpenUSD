@@ -9,7 +9,7 @@
 )
 
 class "_class_geotype" (
-    add variantSets = ["geotype_selector", "geotype"]
+    append variantSets = ["geotype_selector", "geotype"]
 )
 {
     variantSet "geotype_selector" = {
@@ -31,11 +31,11 @@ class "_class_geotype" (
 }
 
 def "bob" (
-    add inherits = </_class_geotype>
+    append inherits = </_class_geotype>
     variants = {
         string geotype_selector = "select_cube"
     }
-    add variantSets = "geotype"
+    append variantSets = "geotype"
 )
 {
     variantSet "geotype" = {

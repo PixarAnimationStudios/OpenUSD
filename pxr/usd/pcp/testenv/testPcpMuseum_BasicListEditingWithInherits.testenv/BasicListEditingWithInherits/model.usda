@@ -15,7 +15,7 @@ def "Model"
     }
 
     def Scope "LeftRig" (
-        add inherits = </Model/SymRig>
+        append inherits = </Model/SymRig>
     )
     {
         reorder nameChildren = ["C1", "C2"]

@@ -20,7 +20,7 @@ over "Flattened_Prototype_1"
 
 def "InstancedModel" (
     instanceable = true
-    add references = </Flattened_Prototype_1>
+    append references = </Flattened_Prototype_1>
 )
 {
     double x = 1

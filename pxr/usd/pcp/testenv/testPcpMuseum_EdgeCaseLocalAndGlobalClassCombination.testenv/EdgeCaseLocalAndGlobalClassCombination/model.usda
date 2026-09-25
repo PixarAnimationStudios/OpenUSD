@@ -1,7 +1,7 @@
 #usda 1.0
 
 def "Model" (
-    add inherits = </GlobalParent>
+    append inherits = </GlobalParent>
 ) {
     over "Instance" {    
     }
@@ -14,7 +14,7 @@ def "Model" (
 class Prim "GlobalParent"
 {
     over "Instance" (
-        add inherits = </GlobalParent/_class_InGlobal>
+        append inherits = </GlobalParent/_class_InGlobal>
     ) {
     }
     over "_class_InGlobal" (
@@ -27,7 +27,7 @@ class Prim "GlobalParent"
 }
 
 def "OtherModel" (
-    add inherits = </GlobalParent>
+    append inherits = </GlobalParent>
 ) {
     over "Instance" {    
     }

@@ -16,7 +16,7 @@ def Scope "Model_source"
 }
 
 over "Model_overrides" (
-    add references = </Model_source>
+    append references = </Model_source>
 )
 {
     over "Looks" (
@@ -31,13 +31,13 @@ over "Model_overrides" (
 }
 
 over "Model_A" (
-    add references = </Model_overrides>
+    append references = </Model_overrides>
 )
 {
 }
 
 over "Model_B" (
-    add references = </Model_overrides>
+    append references = </Model_overrides>
 )
 {
      over "Looks"
@@ -46,7 +46,7 @@ over "Model_B" (
 }
 
 over "Model_C" (
-    add references = </Model_B>
+    append references = </Model_B>
 )
 {
 }

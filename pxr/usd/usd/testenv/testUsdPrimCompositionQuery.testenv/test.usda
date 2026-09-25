@@ -11,12 +11,12 @@ class "_class_Sarah"
 }
 
 def "Sarah" (
-    add references = [@test.usda@</Sarah_Defaults>,
+    append references = [@test.usda@</Sarah_Defaults>,
                       @testAPI_root.usda@</Sarah_Ref>]
-    add payload = [</Sarah_Internal_Payload>, 
+    append payload = [</Sarah_Internal_Payload>, 
                     @testAPI_root.usda@</Sarah_Payload>]
-    add variantSets = ["displayColor", "standin"]
-    add inherits = </_class_Sarah>
+    append variantSets = ["displayColor", "standin"]
+    append inherits = </_class_Sarah>
     variants = {
         string displayColor = "red"
         string lod = "full"
@@ -38,7 +38,7 @@ def "Sarah" (
         "anim" {
         }
         "render" (
-            add variantSets = ["lod"]
+            append variantSets = ["lod"]
         ) {
             variantSet "lod" = {
                 "full" {
@@ -59,7 +59,7 @@ def "Sarah" (
 }
 
 def "Sarah_Defaults" (
-    add references = [@test.usda@</Sarah_Base>,
+    append references = [@test.usda@</Sarah_Base>,
                       @test.usda@</Sarah_Base> (offset = 10)]
 )
 {
@@ -67,7 +67,7 @@ def "Sarah_Defaults" (
 }
 
 def Scope "Sarah_Base" (
-    add variantSets = "displayColor"
+    append variantSets = "displayColor"
     variants = {
         string displayColor = "red"
     }
@@ -88,7 +88,7 @@ def "Sarah_Internal_Payload"
 }
 
 def "Sarah_Container" (
-    add references = [@testAPI_root.usda@</Sarah_Container_Ref>]
+    append references = [@testAPI_root.usda@</Sarah_Container_Ref>]
 )
 {
     over "_class_Sarah_Specialized" (

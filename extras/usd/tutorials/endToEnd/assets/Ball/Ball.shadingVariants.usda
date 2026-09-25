@@ -7,7 +7,7 @@ over "Ball" (
     variants = {
         string shadingVariant = "Cue"
     }
-    add variantSets = "shadingVariant"
+    append variantSets = "shadingVariant"
 )
 {
     over "mesh"

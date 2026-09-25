@@ -9,7 +9,7 @@ def Xform "MilkCartonA" (
         string modelingVariant = "Carton_Opened"
         string shadingComplexity = "full"
     }
-    add variantSets = ["modelingVariant", "shadingComplexity"]
+    append variantSets = ["modelingVariant", "shadingComplexity"]
 )
 {
     variantSet "modelingVariant" = {

@@ -2,7 +2,7 @@
 
 def "main_cam" (
     references = @./unit_main_cam_defs.usda@</main_cam>
-    add variantSets = ["lenses"]
+    append variantSets = ["lenses"]
     variants = {
         string lenses = "Cooke_S4"
     }

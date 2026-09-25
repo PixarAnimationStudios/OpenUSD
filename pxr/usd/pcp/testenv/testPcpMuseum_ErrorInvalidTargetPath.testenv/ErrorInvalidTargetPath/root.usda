@@ -8,21 +8,21 @@
 )
 
 def "Root" (
-    add references = @./A.usda@</A>
-    add inherits = </_Class1>
+    append references = @./A.usda@</A>
+    append inherits = </_Class1>
 )
 {
     double x
 }
 
 def "SubrootRef" (
-    add references = @./A.usda@</B/C>
+    append references = @./A.usda@</B/C>
 )
 {
 }
 
 def "RootWithReferenceUnderVariant" (
-    add variantSets = "standin"
+    append variantSets = "standin"
     variants = {
         string standin = "anim"
     }
@@ -30,7 +30,7 @@ def "RootWithReferenceUnderVariant" (
 {
     variantSet "standin" = {
         "anim" (
-            add references = @./A.usda@</A>
+            append references = @./A.usda@</A>
         ) {
         }
     }
@@ -47,5 +47,5 @@ class "_Class1" (
 )
 {
     double prohibitedConnectionToInstance = 123
-    add double prohibitedConnectionToInstance.connect = </Root.x>
+    append double prohibitedConnectionToInstance.connect = </Root.x>
 }

@@ -69,7 +69,7 @@ def MfScope "TestPrim6" (
 
 def MfScope "TestPrim7" (
     delete references = @///test/layer.usda@</Prim>
-    add references = [
+    append references = [
         @///test/layer.usda@</Prim>,
         @///test/layer2.usda@</Prim2>
     ]
@@ -146,7 +146,7 @@ def MfScope "TestFile6" (
 
 def MfScope "TestFile7" (
     delete references = @///test/layer.usda@
-    add references = [
+    append references = [
         @///test/layer.usda@,
         @///test/layer2.usda@
     ]
@@ -223,7 +223,7 @@ def MfScope "TestPrimOnly6" (
 
 def MfScope "TestPrimOnly7" (
     delete references = </Test>
-    add references = [
+    append references = [
         </Test>,
         </Test2>
     ]
@@ -291,7 +291,7 @@ def MfScope "TestSelfDefault6" (
 
 def MfScope "TestSelfDefault7" (
     delete references = <>
-    add references = [
+    append references = [
         <>
     ]
     reorder references = [
@@ -396,7 +396,7 @@ def MfScope "TestSubrootPrim6" (
 
 def MfScope "TestSubrootPrim7" (
     delete references = @///test/layer.usda@</Prim/Child>
-    add references = [
+    append references = [
         @///test/layer.usda@</Prim/Child>,
         @///test/layer2.usda@</Prim2/Child>
     ]
@@ -473,7 +473,7 @@ def MfScope "TestSubrootPrimOnly6" (
 
 def MfScope "TestSubrootPrimOnly7" (
     delete references = </Test/Child>
-    add references = [
+    append references = [
         </Test/Child>,
         </Test2/Child>
     ]

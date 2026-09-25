@@ -8,7 +8,7 @@
 )
 
 def "Group" (
-    add references = @./group.usda@</Group>
+    append references = @./group.usda@</Group>
     variants = {
         string standin = "sim"
     }

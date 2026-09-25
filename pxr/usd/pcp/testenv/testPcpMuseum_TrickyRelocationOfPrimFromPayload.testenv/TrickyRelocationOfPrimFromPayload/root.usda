@@ -34,7 +34,7 @@ def "PayloadedModel" (
 }
 
 def "ReferencePayloadedModel" (
-    add references = @./model.usda@</Model>
+    append references = @./model.usda@</Model>
 )
 {
 }

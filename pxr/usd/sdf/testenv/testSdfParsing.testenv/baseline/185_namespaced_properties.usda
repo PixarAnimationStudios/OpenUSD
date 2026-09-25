@@ -10,7 +10,7 @@ def Scope "Prim"
 {
     reorder properties = ["bar:baz", "foo:baz", "foo:argle", "bar:argle"]
     delete varying rel a:b:d = </Prim/Child>
-    add varying rel a:b:d = [
+    append varying rel a:b:d = [
         </Prim>,
         </Prim/Child>,
     ]
@@ -30,7 +30,7 @@ def Scope "Prim"
     double foo:argle = 3.4
     double foo:argle.connect = </Prim.foo:baz>
     delete double foo:bargle.connect = </Prim.foo:argle>
-    add double foo:bargle.connect = </Prim.foo:argle>
+    append double foo:bargle.connect = </Prim.foo:argle>
     reorder double foo:bargle.connect = </Prim.foo:argle>
     custom double foo:baz = 1.2
 

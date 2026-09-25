@@ -27,7 +27,7 @@ def "GuitarRig"
     def "Rig"
     {
         def "StringsRig" (
-            add references = @./strings_rig.usda@</StringsRig>
+            append references = @./strings_rig.usda@</StringsRig>
         )
         {
             def Scope "String1Rig" (

@@ -14,14 +14,14 @@ def MfScope "A" (
     variantSet "v1" = {
         "x" ( add references = [ @./ref.usda@</RAx> ] ) {
             over "B" (
-                add variantSets = ["v2"]
+                append variantSets = ["v2"]
                 variants = { string v2 = "y" }
             )
             {
                 variantSet "v2" = {
                     "y" ( add references = [ @./ref.usda@</RBxy> ] ) {
                         over "C" (
-                            add variantSets = ["v3"]
+                            append variantSets = ["v3"]
                             variants = { string v3 = "z" }
                         )
                         {

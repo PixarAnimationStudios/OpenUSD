@@ -17,7 +17,7 @@ def Scope "SubRig"
         def Scope "RigScope"
         {
             custom double x = 0
-            add double x.connect = </SubRig/Anim/AnimScope.x>
+            append double x.connect = </SubRig/Anim/AnimScope.x>
         }
     }
 

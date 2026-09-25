@@ -7,7 +7,7 @@ def "Model"
 def "Model_LocalVariants_1" (
     instanceable = true
     references = </Model>
-    add variantSets = ["type"]
+    append variantSets = ["type"]
     variants = {
         string type = "a"
     }
@@ -25,7 +25,7 @@ def "Model_LocalVariants_1" (
 def "Model_LocalVariants_2" (
     instanceable = true
     references = </Model>
-    add variantSets = ["type"]
+    append variantSets = ["type"]
     variants = {
         string type = "a"
     }

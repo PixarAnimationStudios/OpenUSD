@@ -290,12 +290,12 @@ Test_PcpDynamicFileFormatPlugin_FileFormat::Read(
     // recursively generated payloads below can reference in generated layers.
     genLayer->SetDefaultPrim(rootSpec->GetNameToken());
 
-    // Add a "geom" reference to this layer. References don't generate dynamic 
+    // Append a "geom" reference to this layer. References don't generate dynamic 
     // file format arguments so the original contents of the layer will be 
     // referenced if this layer has a default prim specified.
     SdfPrimSpecHandle geomSpec = SdfPrimSpec::New(
         rootSpec, std::string("geom"), SdfSpecifierDef);
-    geomSpec->GetReferenceList().Add(SdfReference(resolvedPath, SdfPath()));
+    geomSpec->GetReferenceList().Append(SdfReference(resolvedPath, SdfPath()));
 
     // Generate the ring of dynamic prims
     if (depth > 1) {
@@ -360,15 +360,15 @@ Test_PcpDynamicFileFormatPlugin_FileFormat::Read(
                 Test_PcpDynamicFileFormatPlugin_FileFormatTokens->Radius, 
                 radius / 2.0);
 
-            // Add the payload to this asset and use the default prim. This 
+            // Append the payload to this asset and use the default prim. This 
             // will generate a new layer since the file format arguments will
             // be different.
             if (payloadId.empty()) {
-                xformSpec->GetPayloadList().Add(SdfPayload(resolvedPath, SdfPath()));
+                xformSpec->GetPayloadList().Append(SdfPayload(resolvedPath, SdfPath()));
             } else {
                 FileFormatArguments newArgs;
                 newArgs[Test_PcpDynamicFileFormatPlugin_FileFormatTokens->PayloadId] = payloadId;
-                xformSpec->GetPayloadList().Add(SdfPayload(
+                xformSpec->GetPayloadList().Append(SdfPayload(
                     SdfLayer::CreateIdentifier(resolvedPath, newArgs), 
                     SdfPath()));
             }

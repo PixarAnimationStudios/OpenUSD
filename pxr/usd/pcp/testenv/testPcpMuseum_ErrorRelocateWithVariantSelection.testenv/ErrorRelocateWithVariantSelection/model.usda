@@ -1,7 +1,7 @@
 #usda 1.0
 
 def Prim "Model" (
-    add variantSets = ["vset"]
+    append variantSets = ["vset"]
     variants = {
         string vset = "vsel"
     }

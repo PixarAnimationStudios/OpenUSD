@@ -1,7 +1,7 @@
 #usda 1.0
 
 def "Model" (
-    add inherits = </Class>
+    append inherits = </Class>
 )
 {
 }

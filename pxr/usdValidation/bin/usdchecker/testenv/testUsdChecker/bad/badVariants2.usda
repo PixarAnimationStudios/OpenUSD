@@ -10,7 +10,7 @@ def "World" (
         string testSet = "test1"
         string testSet2 = "test2A"
     }
-    add variantSets = ["testSet", "testSet2"]
+    append variantSets = ["testSet", "testSet2"]
 )
 {
     def Material "material"

@@ -9,7 +9,7 @@ def "World" (
     variants = {
         string set1 = "ref1"
     }
-    add variantSets = ["set1"]
+    append variantSets = ["set1"]
 )
 {
     variantSet "set1" = {

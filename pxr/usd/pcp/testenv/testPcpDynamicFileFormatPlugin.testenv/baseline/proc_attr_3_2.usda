@@ -6,13 +6,13 @@
 def Xform "Root"
 {
     def "geom" (
-        add references = @placeholder.usda@
+        append references = @placeholder.usda@
     )
     {
     }
 
     def Xform "Xform__2_0" (
-        add payload = @placeholder.usda@
+        append payload = @placeholder.usda@
     )
     {
         custom uniform int TestPcp_depth = 2
@@ -24,7 +24,7 @@ def Xform "Root"
     }
 
     def Xform "Xform__2_1" (
-        add payload = @placeholder.usda@
+        append payload = @placeholder.usda@
     )
     {
         custom uniform int TestPcp_depth = 2

@@ -7,7 +7,7 @@ def Prim "Model"
     }
 
     def Prim "Instance" (
-        add inherits = </Model/LocalClass>
+        append inherits = </Model/LocalClass>
     )
     {
     }

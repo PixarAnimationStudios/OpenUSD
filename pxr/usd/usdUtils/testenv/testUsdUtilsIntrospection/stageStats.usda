@@ -22,7 +22,7 @@ def Xform "Cube" (
 }
 
 def "Cube_instanced" (
-    add references = </Cube>
+    append references = </Cube>
     instanceable = true
 )
 {
@@ -30,7 +30,7 @@ def "Cube_instanced" (
 }
 
 def "Cube_uninstanced" (
-    add references = </Cube>
+    append references = </Cube>
     instanceable = false
 )
 {

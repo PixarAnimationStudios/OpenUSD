@@ -6,5 +6,5 @@
 over Prim "Foo"
 {
     # Invalid empty list for add.
-    add rel x5 = [ ]
+    append rel x5 = [ ]
 }

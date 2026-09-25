@@ -55,7 +55,7 @@ def Scope "ReferenceWithLocalClass"
     }
 
     def Scope "Instance" (
-        add inherits = </ReferenceWithLocalClass/Class>
+        append inherits = </ReferenceWithLocalClass/Class>
     )
     {
         custom rel relInInstance = [

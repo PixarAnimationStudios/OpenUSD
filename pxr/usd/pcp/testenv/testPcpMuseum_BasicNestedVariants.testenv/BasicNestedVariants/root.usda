@@ -7,7 +7,7 @@
 )
 
 def StdAvarsModel "Foo" (
-    add variantSets = "which"
+    append variantSets = "which"
     variants = {
         string which = "A"
     }
@@ -18,7 +18,7 @@ def StdAvarsModel "Foo" (
             def GprimPivot "A" 
             {
                 def GprimPivot "Number" (
-                    add variantSets = "count"
+                    append variantSets = "count"
                     variants = {
                         string count = "one"
                     }
@@ -49,7 +49,7 @@ def StdAvarsModel "Foo" (
 }
 
 def Scope "DirectlyNestedVariants" (
-    add variantSets = ['standin']
+    append variantSets = ['standin']
     variants = {
         string shadingVariant = "spooky"
         string standin = "anim"
@@ -58,7 +58,7 @@ def Scope "DirectlyNestedVariants" (
 {
     variantSet "standin" = {
         "anim" (
-            add variantSets = ['shadingVariant']
+            append variantSets = ['shadingVariant']
         ) {
             variantSet "shadingVariant" = {
                 "default" {
@@ -67,7 +67,7 @@ def Scope "DirectlyNestedVariants" (
                     }
                 }
                 "spooky" (
-                    add variantSets = ['standin']
+                    append variantSets = ['standin']
                 ) {
                     def Sphere "anim_spooky_sphere"
                     {
@@ -83,7 +83,7 @@ def Scope "DirectlyNestedVariants" (
             }
         }
         "render" (
-            add variantSets = ['shadingVariant']
+            append variantSets = ['shadingVariant']
         ) {
             variantSet "shadingVariant" = {
                 "default" {

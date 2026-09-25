@@ -40,7 +40,7 @@ def "Model_4" (
 def "Model_5" (
     instanceable = True
     references = @./ref.usda@</Model>
-    add variantSets = ["x"]
+    append variantSets = ["x"]
     variants = {
         string x = "b"
         string y = "b"
@@ -60,7 +60,7 @@ def "Model_5" (
 def "Model_6" (
     instanceable = True
     references = @./ref.usda@</Model>
-    add variantSets = ["x"]
+    append variantSets = ["x"]
     variants = {
         string x = "b"
         string y = "b"

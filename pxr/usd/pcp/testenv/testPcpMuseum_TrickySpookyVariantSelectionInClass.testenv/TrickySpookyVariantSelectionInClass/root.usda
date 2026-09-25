@@ -22,7 +22,7 @@
 )
 
 def Scope "Char" (
-    add references = @./CharRig.usda@</CharRig>
+    append references = @./CharRig.usda@</CharRig>
 )
 {
     over "Rig" {

@@ -13,7 +13,7 @@
 )
 
 def "Sullivan" (
-    add references = @./sequence.usda@</Sullivan>
+    append references = @./sequence.usda@</Sullivan>
 )
 {
 }

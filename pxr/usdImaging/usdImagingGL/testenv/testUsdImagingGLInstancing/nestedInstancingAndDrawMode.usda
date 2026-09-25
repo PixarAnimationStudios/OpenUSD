@@ -33,7 +33,7 @@ def Xform "Set" (
             apiSchemas = ["GeomModelAPI"]
             instanceable = true
             kind = "prop"
-            add references = </SpherePrototype>
+            append references = </SpherePrototype>
         )
         {
             # This prim draws independently as a sphere.
@@ -76,7 +76,7 @@ def Xform "Set" (
                     apiSchemas = ["GeomModelAPI"]
                     instanceable = true
                     kind = "prop"
-                    add references = </SpherePrototype>
+                    append references = </SpherePrototype>
                 )
                 {
                     # Kind "prop" is-a component. This can can be

@@ -10,7 +10,7 @@ def Scope "CharRig"
     def Scope "Rig"
     {
         def Scope "LegsRig" (
-            add references = @./LegsRig.usda@</LegsRig>
+            append references = @./LegsRig.usda@</LegsRig>
         )
         {
             over "LLegRig"

@@ -1,7 +1,7 @@
 #usda 1.0
 
 def __AnyType__ "Model" (
-    add references = @./mcat.usda@</Model>
+    append references = @./mcat.usda@</Model>
 )
 {
     custom double a

@@ -10,7 +10,7 @@ def Xform "MilkCartonA" (
         string shadingComplexity = "full"
         string localDanglingVariant = "local"
     }
-    add variantSets = ["modelingVariant", "shadingComplexity"]
+    append variantSets = ["modelingVariant", "shadingComplexity"]
     references = </VariantSelRef>
 )
 {

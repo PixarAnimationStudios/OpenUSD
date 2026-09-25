@@ -77,7 +77,7 @@ over MfScope "Comp2" (
 
 over MfScope "Comp3" (
     delete variantSets = "bad"
-    add variantSets = "good"
+    append variantSets = "good"
     reorder variantSets = "good"
 )
 {
@@ -94,7 +94,7 @@ over MfScope "Comp3" (
 
 over MfScope "Comp3_5" (
     delete variantSets = "bad"
-    add variantSets = "good"
+    append variantSets = "good"
     reorder variantSets = "good"
 )
 {
@@ -111,7 +111,7 @@ over MfScope "Comp3_5" (
 
 over MfScope "Comp4" (
     delete variantSets = ["bad", "ugly"]
-    add variantSets = ["good", "great"]
+    append variantSets = ["good", "great"]
     reorder variantSets = ["great", "good"]
 )
 {

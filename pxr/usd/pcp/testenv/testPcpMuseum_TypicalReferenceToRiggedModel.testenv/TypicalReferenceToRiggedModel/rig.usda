@@ -9,6 +9,6 @@ def Prim "Rig"
 
     def Prim "Mover"
     {
-        add double Tx.connect = </Rig/Anim.Tx>
+        append double Tx.connect = </Rig/Anim.Tx>
     }
 }

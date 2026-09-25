@@ -1,7 +1,7 @@
 #usda 1.0
 
 def "Sarah" (
-    add variantSets = "displayColor"
+    append variantSets = "displayColor"
 )
 {
     def Scope "EmptyPrim"
@@ -23,7 +23,7 @@ def "Sarah" (
 
 
 def "Sarah_ref" (
-    add references = @./testAPI_var.usda@</Sarah>
+    append references = @./testAPI_var.usda@</Sarah>
 )
 {
 }

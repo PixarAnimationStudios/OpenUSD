@@ -10,7 +10,7 @@ def Xform "Cube" (
         string name = "Cube"
     }
     kind = "component"
-    add variantSets = "pointVariant"
+    append variantSets = "pointVariant"
     variants = {
         string pointVariant = "Default"
     }

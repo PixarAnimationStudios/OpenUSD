@@ -1,14 +1,14 @@
 #usda 1.0
 
 over "refSphere" (
-    add references = @HelloWorld.usda@
+    append references = @HelloWorld.usda@
 )
 {
     uniform token[] xformOpOrder = []
 }
 
 over "refSphere2" (
-    add reeferences = @HelloWorld.usda@
+    append reeferences = @HelloWorld.usda@
 )
 {
     over "world"

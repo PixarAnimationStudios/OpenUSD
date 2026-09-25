@@ -26,7 +26,7 @@ def "camera" (
 
     def Scope "Rig"
     {
-        add rel controls = </camera/Lens.focus>
-        add double focusDistance.connect = </camera/Lens.focus>
+        append rel controls = </camera/Lens.focus>
+        append double focusDistance.connect = </camera/Lens.focus>
     }
 }

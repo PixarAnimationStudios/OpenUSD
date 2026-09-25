@@ -344,7 +344,7 @@ def Xform "InstancedVolumes" (
     uniform token[] xformOpOrder = ["xformOp:translate"]
 
     def Xform "One" (
-        add inherits = </Master>
+        append inherits = </Master>
     )
     {
         double3 xformOp:scale = (0.25, 0.5, 0.5)
@@ -353,7 +353,7 @@ def Xform "InstancedVolumes" (
     }
 
     def Xform "Two" (
-        add inherits = </Master>
+        append inherits = </Master>
     )
     {
         double3 xformOp:scale = (0.5, 0.5, 0.5)
@@ -368,7 +368,7 @@ over "RecursiveMaster" (
 )
 {
     def Xform "M1" (
-        add inherits = </Master>
+        append inherits = </Master>
     )
     {
         double3 xformOp:translate = (0, 0, 0)
@@ -376,7 +376,7 @@ over "RecursiveMaster" (
     }
 
     def Xform "M2" (
-        add inherits = </Master>
+        append inherits = </Master>
     )
     {
         double3 xformOp:translate = (5, 0, 0)
@@ -394,7 +394,7 @@ def Xform "RecursivelyInstancedVolumes" (
     token[] xformOpOrder = ["xformOp:translate"]
 
     def Xform "One" (
-        add inherits = </RecursiveMaster>
+        append inherits = </RecursiveMaster>
     )
     {
         rel material:binding = </VolumeShapeMaterial>
@@ -404,7 +404,7 @@ def Xform "RecursivelyInstancedVolumes" (
     }
 
     def Xform "Two" (
-        add inherits = </RecursiveMaster>
+        append inherits = </RecursiveMaster>
     )
     {
         double3 xformOp:scale = (0.5, 0.5, 0.5)

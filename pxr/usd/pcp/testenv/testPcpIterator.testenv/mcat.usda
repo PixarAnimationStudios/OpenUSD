@@ -1,9 +1,9 @@
 #usda 1.0
 
 def "Model" (
-    add inherits = </Class>
-    add specializes = </Specializes>
-    add variantSets = "pin"
+    append inherits = </Class>
+    append specializes = </Specializes>
+    append variantSets = "pin"
     variants = {
         string pin = "stable"
     }

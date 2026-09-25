@@ -13,7 +13,7 @@ def Xform "Cube" (
     variants = {
         string shadingVariant = "Default"
     }
-    add variantSets = "shadingVariant"
+    append variantSets = "shadingVariant"
 )
 {
     def Xform "Geom"

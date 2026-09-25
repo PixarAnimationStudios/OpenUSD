@@ -2,7 +2,7 @@
 
 def Model "Model" (
     doc = "The latest built version of this model."
-    add variantSets = "standin"
+    append variantSets = "standin"
     payload = @./model_latest_payload.usda@</Model>
 )
 {

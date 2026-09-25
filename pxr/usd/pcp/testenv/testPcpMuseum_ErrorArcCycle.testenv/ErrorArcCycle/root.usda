@@ -23,19 +23,19 @@
 )
 
 def "GroupRoot" (
-    add references = @./A.usda@</GroupA>
+    append references = @./A.usda@</GroupA>
 )
 {
 }
 def "Parent" 
 {
     over "Child1" (
-        add inherits = </Parent/Child2>
+        append inherits = </Parent/Child2>
     )
     {
     }
     over "Child2" (
-        add inherits = </Parent/Child1>
+        append inherits = </Parent/Child1>
     )
     {
     }
@@ -43,7 +43,7 @@ def "Parent"
 def "AnotherParent" 
 {
     over "AnotherChild" (
-        add references = @./model.usda@</Model>
+        append references = @./model.usda@</Model>
     )
     {
     }
@@ -52,7 +52,7 @@ def "AnotherParent"
 def "YetAnotherParent" 
 {
     over "Child" (
-        add inherits = </YetAnotherParent>
+        append inherits = </YetAnotherParent>
     )
     {
     }
@@ -61,7 +61,7 @@ def "YetAnotherParent"
 def "CoRecursiveParent1" 
 {
     over "Child1" (
-        add inherits = </CoRecursiveParent2>
+        append inherits = </CoRecursiveParent2>
     )
     {
     }
@@ -69,14 +69,14 @@ def "CoRecursiveParent1"
 def "CoRecursiveParent2" 
 {
     over "Child2" (
-        add inherits = </CoRecursiveParent1>
+        append inherits = </CoRecursiveParent1>
     )
     {
     }
 }
 
 def "InheritOfChild" (
-    add inherits = <Child>
+    append inherits = <Child>
 )
 {
     class "Child"

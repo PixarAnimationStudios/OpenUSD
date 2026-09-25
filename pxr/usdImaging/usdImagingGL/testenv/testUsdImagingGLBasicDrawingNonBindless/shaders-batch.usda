@@ -16,7 +16,7 @@ def Scope "Looks"
             uniform asset info:glslfx:sourceAsset = @shader1.glslfx@
             uniform token info:implementationSource = "sourceAsset"
             uniform color3f inputs:diffuseColor = (1, 0, 1)
-            add uniform color3f inputs:diffuseColor.connect = </Looks/UvLook1/Tex.outputs:color>
+            append uniform color3f inputs:diffuseColor.connect = </Looks/UvLook1/Tex.outputs:color>
             token outputs:surface
         }
 
@@ -24,7 +24,7 @@ def Scope "Looks"
         {
             uniform token info:id = "HwUvTexture_1"
             uniform asset inputs:file = @tiledGradient.png@
-            add uniform float2 inputs:uv.connect = </Looks/UvLook1/Primvar.outputs:result>
+            append uniform float2 inputs:uv.connect = </Looks/UvLook1/Primvar.outputs:result>
             float3 outputs:color
         }
 
@@ -45,7 +45,7 @@ def Scope "Looks"
             uniform asset info:glslfx:sourceAsset = @shader1.glslfx@
             uniform token info:implementationSource = "sourceAsset"
             uniform color3f inputs:diffuseColor = (1, 0, 1)
-            add uniform color3f inputs:diffuseColor.connect = </Looks/UvLook2/Tex.outputs:color>
+            append uniform color3f inputs:diffuseColor.connect = </Looks/UvLook2/Tex.outputs:color>
             token outputs:surface
         }
 
@@ -53,7 +53,7 @@ def Scope "Looks"
         {
             uniform token info:id = "HwUvTexture_1"
             uniform asset inputs:file = @grid_rotated.png@
-            add uniform float2 inputs:uv.connect = </Looks/UvLook2/Primvar.outputs:result>
+            append uniform float2 inputs:uv.connect = </Looks/UvLook2/Primvar.outputs:result>
             float3 outputs:color
         }
 
@@ -74,7 +74,7 @@ def Scope "Looks"
             uniform asset info:glslfx:sourceAsset = @shader1.glslfx@
             uniform token info:implementationSource = "sourceAsset"
             uniform color3f inputs:diffuseColor = (1, 0, 1)
-            add uniform color3f inputs:diffuseColor.connect = </Looks/UvLook3/Tex.outputs:color>
+            append uniform color3f inputs:diffuseColor.connect = </Looks/UvLook3/Tex.outputs:color>
             token outputs:surface
         }
 
@@ -82,7 +82,7 @@ def Scope "Looks"
         {
             uniform token info:id = "HwUvTexture_1"
             uniform asset inputs:file = @grid.png@
-            add uniform float2 inputs:uv.connect = </Looks/UvLook3/Primvar.outputs:result>
+            append uniform float2 inputs:uv.connect = </Looks/UvLook3/Primvar.outputs:result>
             float3 outputs:color
         }
 

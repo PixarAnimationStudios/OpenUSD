@@ -26,12 +26,12 @@ def "CharRig" (
     def Scope "Rig"
     {
         def Scope "PathRig" (
-            add references = @./pathRig.usda@</PathRig>
+            append references = @./pathRig.usda@</PathRig>
         )
         {
             over "Path" (
                 doc = "This opinion is prohibited, and should cause and error."
-                add references = @./bogus.usda@</Bogus>
+                append references = @./bogus.usda@</Bogus>
             )
             {
             }

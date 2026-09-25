@@ -16,7 +16,7 @@ def Scope "CharRig"
     )
     {
         def "SubRig" (
-            add references = @./subrig.usda@</SubRig>
+            append references = @./subrig.usda@</SubRig>
         )
         {
         }

@@ -54,7 +54,7 @@ over "Row" (
 )
 {
     def Mesh "Plane0" (
-        add inherits = </Plane>
+        append inherits = </Plane>
     )
     {
         double3 xformOp:translate = (-10, 0, 0)
@@ -62,7 +62,7 @@ over "Row" (
     }
 
     def Mesh "Plane1" (
-        add inherits = </Plane>
+        append inherits = </Plane>
     )
     {
         double3 xformOp:translate = (-5, 0, 0)
@@ -70,7 +70,7 @@ over "Row" (
     }
 
     def Mesh "Plane2" (
-        add inherits = </Plane>
+        append inherits = </Plane>
     )
     {
         double3 xformOp:translate = (0, 0, 0)
@@ -78,7 +78,7 @@ over "Row" (
     }
 
     def Mesh "Plane3" (
-        add inherits = </Plane>
+        append inherits = </Plane>
     )
     {
         double3 xformOp:translate = (5, 0, 0)
@@ -86,7 +86,7 @@ over "Row" (
     }
 
     def Mesh "Plane4" (
-        add inherits = </Plane>
+        append inherits = </Plane>
     )
     {
         double3 xformOp:translate = (10, 0, 0)
@@ -95,7 +95,7 @@ over "Row" (
 }
 
 def Xform "Row0" (
-    add inherits = </Row>
+    append inherits = </Row>
 )
 {
     double3 xformOp:translate = (0, -10, 0)
@@ -103,7 +103,7 @@ def Xform "Row0" (
 }
 
 def Xform "Row1" (
-    add inherits = </Row>
+    append inherits = </Row>
 )
 {
     double3 xformOp:translate = (0, -5, 0)
@@ -111,7 +111,7 @@ def Xform "Row1" (
 }
 
 def Xform "Row2" (
-    add inherits = </Row>
+    append inherits = </Row>
 )
 {
     double3 xformOp:translate = (0, 0, 0)
@@ -119,7 +119,7 @@ def Xform "Row2" (
 }
 
 def Xform "Row3" (
-    add inherits = </Row>
+    append inherits = </Row>
 )
 {
     double3 xformOp:translate = (0, 5, 0)
@@ -127,7 +127,7 @@ def Xform "Row3" (
 }
 
 def Xform "Row4" (
-    add inherits = </Row>
+    append inherits = </Row>
 )
 {
     double3 xformOp:translate = (0, 10, 0)

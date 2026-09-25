@@ -21,7 +21,7 @@ def "FergusCloak"
     def "rig"
     {
         def "LArmRig" (
-            add references = @./CurveTrackRig.usda@</CurveTrackRig>
+            append references = @./CurveTrackRig.usda@</CurveTrackRig>
         )
         {
         }

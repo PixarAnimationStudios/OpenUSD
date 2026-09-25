@@ -1,7 +1,7 @@
 #usda 1.0
 
 def Scope "SlugJ" (
-    add variantSets = ["shaderBindingVariant", "shadingVariant"]
+    append variantSets = ["shaderBindingVariant", "shadingVariant"]
     variants = {
         string shadingVariant = "Axel"
     }

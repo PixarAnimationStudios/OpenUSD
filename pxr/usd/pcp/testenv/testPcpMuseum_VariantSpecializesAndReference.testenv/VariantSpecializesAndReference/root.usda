@@ -33,12 +33,12 @@ def Xform "Model" (
     variants = {
         string shadingVariant = "New_Shading_Variant"
     }
-    add variantSets = "shadingVariant"
+    append variantSets = "shadingVariant"
 )
 {
     variantSet "shadingVariant" = {
         "New_Shading_Variant" (
-            add references = </New_Shading_Variant>
+            append references = </New_Shading_Variant>
         ) {
 
         }

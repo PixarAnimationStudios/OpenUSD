@@ -6,7 +6,7 @@
 
 def "Sullivan" (
     variantSets = ["pin", "shade"]
-    add inherits = [</_pinclass_Sullivan>, </_shadeclass_Sullivan>]
+    append inherits = [</_pinclass_Sullivan>, </_shadeclass_Sullivan>]
     references = @./model-pin.usda@</SullivanNoPin>
 )
 {
@@ -17,7 +17,7 @@ def "Sullivan" (
         }
         "ShotPin" (
             references = @./model-pin.usda@</SullivanShotPin>
-            add inherits = </_extraclass_Sullivan>
+            append inherits = </_extraclass_Sullivan>
             reorder inherits = [</_extraclass_Sullivan>, </_shadeclass_Sullivan>]
         ) {
         }

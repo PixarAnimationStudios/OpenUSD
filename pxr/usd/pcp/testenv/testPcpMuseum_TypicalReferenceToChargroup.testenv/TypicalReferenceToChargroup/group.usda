@@ -1,7 +1,7 @@
 #usda 1.0
 
 def Prim "Group" (
-    add variantSets = "standin"
+    append variantSets = "standin"
 )
 {
     variantSet "standin" = {
@@ -30,7 +30,7 @@ def Prim "Group" (
     }
 
     def "Model" (
-        add references = @./model.usda@</Model>
+        append references = @./model.usda@</Model>
     )
     {
     }

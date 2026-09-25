@@ -54,7 +54,7 @@ def Scope "BasisCurves"
 
         def "Trunk" (
             kind = "model"
-            add references = @./BasisCurves1.usda@</px_basisCurves1>
+            append references = @./BasisCurves1.usda@</px_basisCurves1>
         )
         {
             custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
@@ -64,7 +64,7 @@ def Scope "BasisCurves"
         def "Branches" (
             active = false
             kind = "model"
-            add references = @./BasisCurves2.usda@</px_basisCurves2>
+            append references = @./BasisCurves2.usda@</px_basisCurves2>
         )
         {
             custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -10, 0, 1) )
@@ -74,7 +74,7 @@ def Scope "BasisCurves"
         def "Twigs" (
             active = false
             kind = "model"
-            add references = @./BasisCurves3.usda@</px_basisCurves3>
+            append references = @./BasisCurves3.usda@</px_basisCurves3>
         )
         {
             custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -20, 0, 1) )
@@ -89,7 +89,7 @@ def Scope "BasisCurves"
 
         def "Trunk2" (
             kind = "model"
-            add references = @./BasisCurves1.usda@</px_basisCurves1>
+            append references = @./BasisCurves1.usda@</px_basisCurves1>
         )
         {
             custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
@@ -99,7 +99,7 @@ def Scope "BasisCurves"
         def "Branches2" (
             active = false
             kind = "model"
-            add references = @./BasisCurves2.usda@</px_basisCurves2>
+            append references = @./BasisCurves2.usda@</px_basisCurves2>
         )
         {
             custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -10, 0, 1) )
@@ -109,7 +109,7 @@ def Scope "BasisCurves"
         def "Twigs2" (
             active = false
             kind = "model"
-            add references = @./BasisCurves3.usda@</px_basisCurves3>
+            append references = @./BasisCurves3.usda@</px_basisCurves3>
         )
         {
             custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -20, 0, 1) )

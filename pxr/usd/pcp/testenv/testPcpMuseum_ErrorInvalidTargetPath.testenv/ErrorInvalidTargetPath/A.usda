@@ -3,7 +3,7 @@
 def Prim "A" 
 {
     double A
-    add double A.connect = </PrimOutsideReferenceRoot.A>
+    append double A.connect = </PrimOutsideReferenceRoot.A>
     custom rel B = </PrimOutsideReferenceRoot>
 }
 

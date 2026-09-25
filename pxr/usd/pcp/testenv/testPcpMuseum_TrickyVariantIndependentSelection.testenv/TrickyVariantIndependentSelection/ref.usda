@@ -1,7 +1,7 @@
 #usda 1.0
 
 def Scope "Model_1" (
-    add variantSets = ["transformVariant", "pin"]
+    append variantSets = ["transformVariant", "pin"]
     variants = {
         string transformVariant = "a"
         string pin = "stable"
@@ -46,7 +46,7 @@ def Scope "Model_1" (
 }
 
 def Scope "Model_2" (
-    add variantSets = ["transformVariant", "pin"]
+    append variantSets = ["transformVariant", "pin"]
     variants = {
         string transformVariant = "b"
         string pin = "test"
@@ -91,7 +91,7 @@ def Scope "Model_2" (
 }
 
 def Scope "Model_3" (
-    add variantSets = ["transformVariant", "pin"]
+    append variantSets = ["transformVariant", "pin"]
     variants = {
         string transformVariant = "c"
         string pin = "qa"

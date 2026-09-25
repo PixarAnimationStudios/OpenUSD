@@ -15,7 +15,7 @@ def Scope "Materials"
             uniform token info:implementationSource = "sourceAsset"
             # Declare diffuse color parameter with fallback default value
             uniform float4 inputs:diffuseColor = (1, 0, 0, 1)
-            add uniform float4 inputs:diffuseColor.connect = </Materials/MyMaterial/MyTexture.outputs:color>
+            append uniform float4 inputs:diffuseColor.connect = </Materials/MyMaterial/MyTexture.outputs:color>
             token outputs:surface
         }
 
@@ -24,7 +24,7 @@ def Scope "Materials"
         {
             uniform token info:id = "HwUvTexture_1"
             uniform asset inputs:file = @texture1.jpg@
-            add uniform float2 inputs:uv.connect = </Materials/MyMaterial/MyPrimvar.outputs:result>
+            append uniform float2 inputs:uv.connect = </Materials/MyMaterial/MyPrimvar.outputs:result>
             float4 outputs:color
         }
 

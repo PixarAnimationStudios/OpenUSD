@@ -6,7 +6,7 @@ class "_class_Model"
 
 def "Model" (
     instanceable = True
-    add inherits = </_class_Model>
+    append inherits = </_class_Model>
 )
 {
 }

@@ -1,7 +1,7 @@
 #usda 1.0
 
 def DifferentPrimType "B" (
-    add payload = @./C.usda@</C>
+    append payload = @./C.usda@</C>
 )
 {
     custom double B_attr

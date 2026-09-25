@@ -1,19 +1,19 @@
 #usda 1.0
 
 def Model "Sullivan" (
-    add inherits = </_Class_Sullivan>
+    append inherits = </_Class_Sullivan>
 )
 {
 }
 
 class Scope "_Class_Sullivan" (
-    add inherits = </_Class_Char>
+    append inherits = </_Class_Char>
 )
 {
 }
 
 class Scope "_Class_Char" (
-    add inherits = </_Class_Model>
+    append inherits = </_Class_Model>
 )
 {
 }
