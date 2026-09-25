@@ -5,31 +5,31 @@
 
 class "Imageable" (
     customData = {
-        string userDocBrief = """Base class for all prims that may require rendering or 
-    visualization of some sort."""
+        string userDocBrief = """Base class for all prims that can be rendered 
+or displayed in a 3D scene."""
     }
 )
 {
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
 }
@@ -74,289 +74,271 @@ class "PrimvarsAPI" (
 
 class "Xformable" (
     customData = {
-        string userDocBrief = """Base class for all transformable prims, which allows arbitrary
-    sequences of component affine transformations to be encoded."""
+        string userDocBrief = """Base class to endow a prim with a configurable 
+affine transformation (e.g. translate, rotate, scale, etc.)."""
     }
 )
 {
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class Scope "Scope" (
     customData = {
-        string userDocBrief = """Scope is the simplest grouping primitive, and does not carry the
-    baggage of transformability."""
+        string userDocBrief = """Base class for all prims that can be rendered 
+or displayed in a 3D scene."""
     }
 )
 {
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
 }
 
 class Xform "Xform" (
     customData = {
-        string userDocBrief = "Concrete prim schema for a transform, which implements Xformable."
+        string userDocBrief = """Base class to endow a prim with a configurable 
+affine transformation (e.g. translate, rotate, scale, etc.)."""
     }
 )
 {
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class "Boundable" (
     customData = {
-        string userDocBrief = """Boundable introduces the ability for a prim to persistently
-    cache a rectilinear, local-space, extent."""
+        string userDocBrief = """Base class for prims that can have 
+rectilinear, local-space extents calculated and cached."""
     }
 )
 {
     float3[] extent (
         customData = {
-            string userDocBrief = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class "Gprim" (
     customData = {
-        string userDocBrief = "Base class for all geometric primitives."
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent (
         customData = {
-            string userDocBrief = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class Cube "Cube" (
     customData = {
-        string userDocBrief = "Defines a primitive rectilinear cube centered at the origin."
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent = [(-1, -1, -1), (1, 1, 1)] (
         customData = {
-            string userDocBrief = "Extent is re-defined on Cube only to provide a fallback value."
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     double size = 2 (
@@ -367,105 +349,94 @@ class Cube "Cube" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class Sphere "Sphere" (
     customData = {
-        string userDocBrief = "Defines a primitive sphere centered at the origin."
+        string userDocBrief = "A spherical primitive centered at the origin."
     }
 )
 {
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent = [(-1, -1, -1), (1, 1, 1)] (
         customData = {
-            string userDocBrief = """Extent is re-defined on Sphere only to provide a fallback
-        value."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     double radius = 1 (
         customData = {
-            string userDocBrief = "Indicates the sphere's radius."
+            string userDocBrief = "Specifies the radius of the sphere."
         }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class Cylinder "Cylinder" (
     customData = {
-        string userDocBrief = """Defines a primitive cylinder with closed ends, centered at the 
-    origin, whose spine is along the specified axis."""
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
@@ -477,18 +448,14 @@ class Cylinder "Cylinder" (
     )
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent = [(-1, -1, -1), (1, 1, 1)] (
         customData = {
-            string userDocBrief = """Extent is re-defined on Cylinder only to provide a fallback
-        value."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     double height = 2 (
@@ -500,38 +467,35 @@ class Cylinder "Cylinder" (
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     double radius = 1 (
@@ -542,23 +506,22 @@ class Cylinder "Cylinder" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class Capsule "Capsule" (
     customData = {
-        string userDocBrief = "Defines a primitive capsule, i.e."
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
@@ -570,18 +533,14 @@ class Capsule "Capsule" (
     )
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent = [(-0.5, -0.5, -1), (0.5, 0.5, 1)] (
         customData = {
-            string userDocBrief = """Extent is re-defined on Capsule only to provide a fallback
-        value."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     double height = 1 (
@@ -593,38 +552,35 @@ class Capsule "Capsule" (
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     double radius = 0.5 (
@@ -635,25 +591,22 @@ class Capsule "Capsule" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class Cone "Cone" (
     customData = {
-        string userDocBrief = """Defines a primitive cone, centered at the origin, whose spine
-    is along the specified axis, with the apex of the cone pointing
-    in the direction of the positive axis."""
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
@@ -665,18 +618,14 @@ class Cone "Cone" (
     )
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent = [(-1, -1, -1), (1, 1, 1)] (
         customData = {
-            string userDocBrief = """Extent is re-defined on Cone only to provide a fallback
-        value."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     double height = 2 (
@@ -688,38 +637,35 @@ class Cone "Cone" (
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     double radius = 1 (
@@ -730,25 +676,22 @@ class Cone "Cone" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class Cylinder_1 "Cylinder_1" (
     customData = {
-        string userDocBrief = """Defines a primitive cylinder with closed ends, centered at the
-    origin, whose spine is along the specified axis, with a pair of radii
-    describing the size of the end points."""
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
@@ -760,18 +703,14 @@ class Cylinder_1 "Cylinder_1" (
     )
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent = [(-1, -1, -1), (1, 1, 1)] (
         customData = {
-            string userDocBrief = """Extent is re-defined on Cylinder only to provide a fallback
-        value."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     double height = 2 (
@@ -783,38 +722,35 @@ class Cylinder_1 "Cylinder_1" (
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     double radiusBottom = 1 (
@@ -830,23 +766,22 @@ class Cylinder_1 "Cylinder_1" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class Capsule_1 "Capsule_1" (
     customData = {
-        string userDocBrief = "Defines a primitive capsule, i.e."
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
@@ -858,18 +793,14 @@ class Capsule_1 "Capsule_1" (
     )
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent = [(-0.5, -0.5, -1), (0.5, 0.5, 1)] (
         customData = {
-            string userDocBrief = """Extent is re-defined on Capsule only to provide a fallback
-        value."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     double height = 1 (
@@ -881,38 +812,35 @@ class Capsule_1 "Capsule_1" (
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     double radiusBottom = 0.5 (
@@ -930,24 +858,22 @@ class Capsule_1 "Capsule_1" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class Plane "Plane" (
     customData = {
-        string userDocBrief = """Defines a primitive plane, centered at the origin, and is defined by
-    a cardinal axis, width, and length."""
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
@@ -959,13 +885,14 @@ class Plane "Plane" (
     )
     uniform bool doubleSided = 1 (
         customData = {
-            string userDocBrief = "Planes are double-sided by default."
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent = [(-1, -1, 0), (1, 1, 0)] (
         customData = {
-            string userDocBrief = """Extent is re-defined on Plane only to provide a fallback
-        value."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     double length = 2 (
@@ -977,45 +904,42 @@ class Plane "Plane" (
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     double width = 2 (
@@ -1026,18 +950,16 @@ class Plane "Plane" (
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class "PointBased" (
     customData = {
-        string userDocBrief = """Base class for all UsdGeomGprims that possess points,
-    providing common attributes such as normals and velocities."""
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
@@ -1051,18 +973,14 @@ class "PointBased" (
     )
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent (
         customData = {
-            string userDocBrief = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     normal3f[] normals (
@@ -1075,8 +993,8 @@ class "PointBased" (
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     point3f[] points (
@@ -1087,32 +1005,29 @@ class "PointBased" (
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     vector3f[] velocities (
@@ -1126,23 +1041,22 @@ class "PointBased" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class Mesh "Mesh" (
     customData = {
-        string userDocBrief = "Encodes a mesh with optional subdivision properties and features."
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
@@ -1187,18 +1101,14 @@ class Mesh "Mesh" (
     )
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent (
         customData = {
-            string userDocBrief = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     token faceVaryingLinearInterpolation = "cornersPlus1" (
@@ -1244,8 +1154,8 @@ class Mesh "Mesh" (
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     point3f[] points (
@@ -1256,32 +1166,29 @@ class Mesh "Mesh" (
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     uniform token subdivisionScheme = "catmullClark" (
@@ -1309,23 +1216,22 @@ class Mesh "Mesh" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class TetMesh "TetMesh" (
     customData = {
-        string userDocBrief = "Encodes a tetrahedral mesh."
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
@@ -1339,18 +1245,14 @@ class TetMesh "TetMesh" (
     )
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent (
         customData = {
-            string userDocBrief = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     normal3f[] normals (
@@ -1363,8 +1265,8 @@ class TetMesh "TetMesh" (
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     point3f[] points (
@@ -1375,32 +1277,29 @@ class TetMesh "TetMesh" (
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     int3[] surfaceFaceVertexIndices (
@@ -1426,16 +1325,14 @@ class TetMesh "TetMesh" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
@@ -1467,8 +1364,8 @@ class GeomSubset "GeomSubset" (
 
 class NurbsPatch "NurbsPatch" (
     customData = {
-        string userDocBrief = """Encodes a rational or polynomial non-uniform B-spline
-    surface, with optional trim curves."""
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
@@ -1482,18 +1379,14 @@ class NurbsPatch "NurbsPatch" (
     )
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent (
         customData = {
-            string userDocBrief = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     normal3f[] normals (
@@ -1506,8 +1399,8 @@ class NurbsPatch "NurbsPatch" (
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     point3f[] points (
@@ -1524,32 +1417,29 @@ class NurbsPatch "NurbsPatch" (
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     int[] trimCurve:counts (
@@ -1636,8 +1526,8 @@ class NurbsPatch "NurbsPatch" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     double[] vKnots (
@@ -1663,18 +1553,16 @@ class NurbsPatch "NurbsPatch" (
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class "Curves" (
     customData = {
-        string userDocBrief = """Base class for UsdGeomBasisCurves, UsdGeomNurbsCurves, and
-             UsdGeomHermiteCurves."""
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
@@ -1694,18 +1582,14 @@ class "Curves" (
     )
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent (
         customData = {
-            string userDocBrief = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     normal3f[] normals (
@@ -1718,8 +1602,8 @@ class "Curves" (
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     point3f[] points (
@@ -1730,32 +1614,29 @@ class "Curves" (
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     vector3f[] velocities (
@@ -1769,8 +1650,8 @@ class "Curves" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     float[] widths (
@@ -1783,18 +1664,16 @@ class "Curves" (
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class BasisCurves "BasisCurves" (
     customData = {
-        string userDocBrief = """BasisCurves are a batched curve representation analogous to the
-    classic RIB definition via Basis and Curves statements."""
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
@@ -1821,18 +1700,14 @@ class BasisCurves "BasisCurves" (
     )
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent (
         customData = {
-            string userDocBrief = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     normal3f[] normals (
@@ -1845,8 +1720,8 @@ class BasisCurves "BasisCurves" (
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     point3f[] points (
@@ -1857,32 +1732,29 @@ class BasisCurves "BasisCurves" (
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     uniform token type = "cubic" (
@@ -1902,8 +1774,8 @@ class BasisCurves "BasisCurves" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     float[] widths (
@@ -1924,18 +1796,16 @@ class BasisCurves "BasisCurves" (
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class NurbsCurves "NurbsCurves" (
     customData = {
-        string userDocBrief = """This schema is analagous to NURBS Curves in packages like Maya
-    and Houdini, often used for interchange of rigging and modeling curves."""
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
@@ -1955,18 +1825,14 @@ class NurbsCurves "NurbsCurves" (
     )
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent (
         customData = {
-            string userDocBrief = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     double[] knots (
@@ -1989,8 +1855,8 @@ class NurbsCurves "NurbsCurves" (
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     point3f[] points (
@@ -2007,32 +1873,29 @@ class NurbsCurves "NurbsCurves" (
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     double2[] ranges (
@@ -2052,8 +1915,8 @@ class NurbsCurves "NurbsCurves" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     float[] widths (
@@ -2066,17 +1929,16 @@ class NurbsCurves "NurbsCurves" (
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class Points "Points" (
     customData = {
-        string userDocBrief = 'Points are analogous to the <A HREF="https://renderman.pixar.com/resources/RenderMan_20/appnote.18.html">RiPoints spec</A>.'
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
@@ -2090,18 +1952,14 @@ class Points "Points" (
     )
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent (
         customData = {
-            string userDocBrief = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     int64[] ids (
@@ -2121,8 +1979,8 @@ class Points "Points" (
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     point3f[] points (
@@ -2133,32 +1991,29 @@ class Points "Points" (
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     vector3f[] velocities (
@@ -2172,8 +2027,8 @@ class Points "Points" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     float[] widths (
@@ -2184,19 +2039,16 @@ class Points "Points" (
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class PointInstancer "PointInstancer" (
     customData = {
-        string userDocBrief = """Encodes vectorized instancing of multiple, potentially
-    animated, prototypes (object/instance masters), which can be arbitrary
-    prims/subtrees on a UsdStage."""
+        string userDocBrief = """Base class for prims that can have 
+rectilinear, local-space extents calculated and cached."""
     }
 )
 {
@@ -2216,8 +2068,8 @@ class PointInstancer "PointInstancer" (
     )
     float3[] extent (
         customData = {
-            string userDocBrief = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     int64[] ids (
@@ -2263,17 +2115,17 @@ class PointInstancer "PointInstancer" (
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     float3[] scales (
@@ -2292,23 +2144,22 @@ class PointInstancer "PointInstancer" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
 
 class Camera "Camera" (
     customData = {
-        string userDocBrief = "Transformable camera."
+        string userDocBrief = """Base class to endow a prim with a configurable 
+affine transformation (e.g. translate, rotate, scale, etc.)."""
     }
 )
 {
@@ -2383,17 +2234,17 @@ class Camera "Camera" (
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     double shutter:close = 0 (
@@ -2431,16 +2282,14 @@ class Camera "Camera" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }
@@ -2572,8 +2421,8 @@ class "XformCommonAPI" (
 
 class HermiteCurves "HermiteCurves" (
     customData = {
-        string userDocBrief = """This schema specifies a cubic hermite interpolated curve batch as
-    sometimes used for defining guides for animation."""
+        string userDocBrief = """Base schema for all geometric primitives that 
+directly define renderable shapes."""
     }
 )
 {
@@ -2593,18 +2442,14 @@ class HermiteCurves "HermiteCurves" (
     )
     uniform bool doubleSided = 0 (
         customData = {
-            string userDocBrief = """Although some renderers treat all parametric or polygonal
-        surfaces as if they were effectively laminae with outward-facing
-        normals on both sides, some renderers derive significant optimizations
-        by considering these surfaces to have only a single outward side,
-        typically determined by control-point winding order and/or 
-        orientation."""
+            string userDocBrief = """Controls whether the surface should be 
+rendered from both sides."""
         }
     )
     float3[] extent (
         customData = {
-            string userDocBrief = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e."""
+            string userDocBrief = """Specifies the bounding box of the prim in 
+local space."""
         }
     )
     normal3f[] normals (
@@ -2617,8 +2462,8 @@ class HermiteCurves "HermiteCurves" (
     uniform token orientation = "rightHanded" (
         allowedTokens = ["rightHanded", "leftHanded"]
         customData = {
-            string userDocBrief = """Orientation specifies whether the gprim's surface normal 
-        should be computed using the right hand rule, or the left hand rule."""
+            string userDocBrief = """Specifies the winding order for surface 
+normal computation."""
         }
     )
     point3f[] points (
@@ -2629,32 +2474,29 @@ class HermiteCurves "HermiteCurves" (
     )
     color3f[] primvars:displayColor (
         customData = {
-            string userDocBrief = '''It is useful to have an "official" colorSet that can be used
-        as a display or modeling color, even in the absence of any specified
-        shader for a gprim.'''
+            string userDocBrief = """Specifies a color for display and modeling 
+purposes. Consumed by shaders that specifically look for a displayColor primvar."""
         }
     )
     float[] primvars:displayOpacity (
         customData = {
-            string userDocBrief = """Companion to displayColor that specifies opacity, broken
-        out as an independent attribute rather than an rgba color, both so that
-        each can be independently overridden, and because shaders rarely consume
-        rgba parameters."""
+            string userDocBrief = """Companion to displayColor that specifies 
+opacity independently."""
         }
     )
     rel proxyPrim (
         customData = {
-            string userDocBrief = '''The proxyPrim relationship allows us to link a
-        prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.'''
+            string userDocBrief = """Links a render prim to its proxy 
+representation."""
         }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
         customData = {
-            string userDocBrief = """Purpose is a classification of geometry into categories that 
-        can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals."""
+            string userDocBrief = """Classifies geometry into categories 
+that describe why a prim may be rendered. Used for selective inclusion in 
+traversals of prims on a stage, such as rendering or bounding-box computation 
+traversals."""
         }
     )
     vector3f[] tangents = [] (
@@ -2673,8 +2515,8 @@ class HermiteCurves "HermiteCurves" (
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
         customData = {
-            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.'''
+            string userDocBrief = """Controls whether the prim and its subtree 
+should be rendered."""
         }
     )
     float[] widths (
@@ -2687,10 +2529,8 @@ class HermiteCurves "HermiteCurves" (
     )
     uniform token[] xformOpOrder (
         customData = {
-            string userDocBrief = """Encodes the sequence of transformation operations in the
-        order in which they should be pushed onto a transform stack while
-        visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims."""
+            string userDocBrief = """Encodes the sequence of transformation 
+operations in the order they should be applied."""
         }
     )
 }

@@ -1,5 +1,7 @@
 .. include:: ../rolesAndUtils.rst
 
+.. _rendering_with_usd:
+
 ##################
 Rendering with USD
 ##################
@@ -39,6 +41,8 @@ spheres, cubes, and cylinders.
 
 See `UsdGeom <https://openusd.org/release/api/usd_geom_page_front.html>`__ for more 
 details on Xformable prims and geometric prims.
+
+.. _render_configuring_stage_coordinates:
 
 Configuring the Stage Coordinate System
 =======================================
@@ -261,6 +265,8 @@ In the following example, purpose is defined on the prims as follows:
         }
     }
 
+.. _render_purpose_standin:
+
 Using Purpose for Stand-in Data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -465,6 +471,8 @@ objects are affected by CylinderLight.
 
 A similar collection, :usda:`collection:shadowLink`, exists for specifying which 
 objects will cast shadows from a particular light that uses the ShadowAPI schema. 
+
+.. _render_working_with_materials:
 
 **********************
 Working with Materials
