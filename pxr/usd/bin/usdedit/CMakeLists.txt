@@ -34,7 +34,7 @@ else()
         TESTENV testenv/testUsdEditFilePermissions
         EXPECTED_RETURN_CODE 1 
         ENV
-          USD_EDITOR="${HEADBIN}"
+          "USD_EDITOR=${HEADBIN}"
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
@@ -46,7 +46,7 @@ else()
         TESTENV testenv/testUsdEditFilePermissions
         EXPECTED_RETURN_CODE 0
         ENV
-          USD_EDITOR="${HEADBIN}"
+          "USD_EDITOR=${HEADBIN}"
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
@@ -58,7 +58,7 @@ else()
         TESTENV testenv/testUsdEditFilePermissions
         EXPECTED_RETURN_CODE 0
         ENV
-          USD_EDITOR="${HEADBIN}"
+          "USD_EDITOR=${HEADBIN}"
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
@@ -72,7 +72,7 @@ else()
         EXPECTED_RETURN_CODE 0
         DIFF_COMPARE ascii_output.txt
         ENV
-          USD_EDITOR="sed -i 's/hello/goodbye/g'"
+          "USD_EDITOR=sed -i 's/hello/goodbye/g'"
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
@@ -86,7 +86,7 @@ else()
         EXPECTED_RETURN_CODE 0
         DIFF_COMPARE crate_output.txt
         ENV
-          USD_EDITOR="sed -i 's/hello/goodbye/g'"
+          "USD_EDITOR=sed -i 's/hello/goodbye/g'"
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
@@ -97,7 +97,7 @@ else()
         TESTENV testenv/testUsdEditPackageFile    
         EXPECTED_RETURN_CODE 0
         ENV
-          USD_EDITOR="sed -i 's/Sphere/Sphere2/g'"
+          "USD_EDITOR=sed -i 's/Sphere/Sphere2/g'"
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
@@ -108,7 +108,7 @@ else()
         TESTENV testenv/testUsdEditPackageFile    
         EXPECTED_RETURN_CODE 0
         ENV
-          USD_EDITOR="sed -i 's/Sphere/Sphere2/g'"
+          "USD_EDITOR=sed -i 's/Sphere/Sphere2/g'"
         PRE_PATH
             ${CMAKE_INSTALL_PREFIX}/bin
     )
