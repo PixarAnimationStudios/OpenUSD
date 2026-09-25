@@ -181,31 +181,31 @@ UsdProperty::_GetTargets(SdfSpecType specType, SdfPathVector *out,
 
     UsdStage *stage = _GetStage();
     PcpErrorVector pcpErrors;
-    PcpTargetIndex targetIndex;
+    SdfPathVector targetPaths;
+    bool hasTargetOpinions = false;
     {
         // Our intention is that the following code requires read-only
         // access to the PcpCache, so use a const-ref.
         const PcpCache& pcpCache(*stage->_GetPcpCache());
-        // In USD mode, Pcp does not cache property indexes, so we
-        // compute one here ourselves and use that.  First, we need
-        // to get the prim index of the owning prim.
+        // In USD mode, Pcp does not cache property indexes, so we compose the
+        // target paths directly from the owning prim's prim index.  This skips
+        // building an intermediate PcpPropertyIndex, whose spec handles would
+        // be discarded immediately but which must each be registered in a
+        // per-layer identity registry first.
         const PcpPrimIndex &primIndex = _Prim()->GetPrimIndex();
         // PERFORMANCE: Here we can't avoid constructing the full property path
         // without changing the Pcp API.  We're about to do serious
         // composition/indexing, though, so the added expense may be neglible.
-        const PcpSite propSite(pcpCache.GetLayerStackIdentifier(), GetPath());
-        PcpPropertyIndex propIndex;
-        PcpBuildPrimPropertyIndex(propSite.path, pcpCache, primIndex,
-                                  &propIndex, &pcpErrors);
-        PcpBuildTargetIndex(propSite, propIndex, specType,
-                            &targetIndex, &pcpErrors);
+        PcpComposeTargetPaths(pcpCache.GetLayerStackIdentifier(), GetPath(),
+                              primIndex, specType, &targetPaths,
+                              &hasTargetOpinions, &pcpErrors);
     }
 
-    if (!targetIndex.paths.empty() && _Prim()->IsInPrototype()) {
+    if (!targetPaths.empty() && _Prim()->IsInPrototype()) {
         UsdPrim::_ProtoToInstancePathMap pathMap =
             GetPrim()._GetProtoToInstancePathMap();
         // Now map the targets.
-        for (SdfPath const &target : targetIndex.paths) {
+        for (SdfPath const &target : targetPaths) {
             out->push_back(pathMap.MapProtoToInstance(target));
             if (out->back().IsEmpty()) {
                 out->pop_back();
@@ -213,7 +213,7 @@ UsdProperty::_GetTargets(SdfSpecType specType, SdfPathVector *out,
         }
     }
     else {
-        out->swap(targetIndex.paths);
+        out->swap(targetPaths);
     }
 
     // TODO: handle errors
@@ -229,7 +229,7 @@ UsdProperty::_GetTargets(SdfSpecType specType, SdfPathVector *out,
         }
     }
 
-    return isClean && targetIndex.hasTargetOpinions;
+    return isClean && hasTargetOpinions;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

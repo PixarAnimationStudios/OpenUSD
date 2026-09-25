@@ -14,12 +14,14 @@
 #include "pxr/usd/pcp/primIndex.h"
 #include "pxr/usd/pcp/propertyIndex.h"
 
+#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/listOp.h"
-#include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/sdf/types.h"
 
+#include "pxr/base/tf/smallVector.h"
 #include "pxr/base/trace/trace.h"
 
+#include <cstddef>
 #include <functional>
 #include <optional>
 
@@ -525,6 +527,236 @@ PcpBuildFilteredTargetIndex(
     targetIndex->paths.swap(paths);
     targetIndex->localErrors.swap(targetPathErrors);
     targetIndex->hasTargetOpinions = hasTargetOpinions;
+}
+
+void
+PcpComposeTargetPaths(
+    const PcpLayerStackIdentifier &layerStackId,
+    const SdfPath &propPath,
+    const PcpPrimIndex &primIndex,
+    const SdfSpecType relOrAttrType,
+    SdfPathVector *paths,
+    bool *hasTargetOpinions,
+    PcpErrorVector *allErrors)
+{
+    TRACE_FUNCTION();
+
+    // This function composes only what USD mode composes.  A non-USD prim index
+    // would additionally need permission enforcement and attribute type
+    // consistency checks.
+    if (!primIndex.IsUsd()) {
+        TF_CODING_ERROR("primIndex must be USD-mode; "
+                        "composing targets for <%s>", propPath.GetText());
+        return;
+    }
+
+    if (!(relOrAttrType == SdfSpecTypeRelationship ||
+          relOrAttrType == SdfSpecTypeAttribute)) {
+        TF_CODING_ERROR("relOrAttrType must be either SdfSpecTypeRelationship"
+                        " or SdfSpecTypeAttribute");
+        return;
+    }
+
+    const TfToken &propName   = propPath.GetNameToken();
+    const TfToken &fieldName  = relOrAttrType == SdfSpecTypeAttribute
+        ? SdfFieldKeys->ConnectionPaths
+        : SdfFieldKeys->TargetPaths;
+
+    // A list op opinion with its source layer and node.
+    //
+    // The layer is held raw rather than as an SdfLayerRefPtr to avoid
+    // refcounting.  The input primIndex owns the layer stacks that own these
+    // layers and outlives the call, so the pointers stay valid.  This is the
+    // same lifetime assumption the equivalent loop in
+    // Pcp_PropertyIndexer::GatherPropertySpecs relies on.
+    struct _Opinion {
+        SdfLayer   *layer;
+        PcpNodeRef  node;
+        VtValue     listOpValue;
+    };
+
+    // Often properties have only a few opinions so avoid a heap allocation in
+    // the common case.
+    using _OpinionVec = TfSmallVector<_Opinion, 8>;
+    
+    // Gather the contributing specs strong-to-weak, matching the order
+    // Pcp_PropertyIndexer::GatherPropertySpecs produces.  The gather direction
+    // determines which spec is reported as "defining" in a type mismatch, and
+    // it is the opposite of the fold direction below, so the two passes cannot
+    // be merged into one.  Return early on error, stop once we find an explicit
+    // list op.
+    _OpinionVec  opinions;
+    SdfSpecType  propType      = SdfSpecTypeUnknown;
+    SdfLayer    *definingLayer = nullptr;
+    SdfPath      definingPath;
+    
+    for (const PcpNodeRef &node: primIndex.GetNodeRange()) {
+        if (!node.CanContributeSpecs()) {
+            continue;
+        }
+        const SdfPath &nodePath = node.GetPath();
+        // Computed once per node rather than once per layer; every layer in
+        // this node's stack shares it.
+        const SdfPath propPathInNode = nodePath.AppendProperty(propName);
+        if (propPathInNode.IsEmpty()) {
+            continue;
+        }
+
+        for (const SdfLayerRefPtr &lRef: node.GetLayerStack()->GetLayers()) {
+            SdfLayer *layer = get_pointer(lRef);
+
+            // GetSpecType answers both "is there a spec" and "what type is it".
+            const SdfSpecType specType = layer->GetSpecType(propPathInNode);
+            if (specType == SdfSpecTypeUnknown) {
+                continue;
+            }
+
+            // Record the first spec as the defining one.
+            if (propType == SdfSpecTypeUnknown) {
+                propType      = specType;
+                definingLayer = layer;
+                definingPath  = propPathInNode;
+                // Verify the defining property is the type the caller expected.
+                if (propType != relOrAttrType) {
+                    TF_RUNTIME_ERROR("@%s@<%s> is not %s",
+                                     layer->GetIdentifier().c_str(),
+                                     propPathInNode.GetAsString().c_str(),
+                                     relOrAttrType == SdfSpecTypeAttribute ?
+                                     "an attribute" : "a relationship");
+                    return;
+                }
+            }
+            else if (propType != specType) {
+                // This spec's type disagrees with the defining prop type.
+                PcpErrorInconsistentPropertyTypePtr e =
+                    PcpErrorInconsistentPropertyType::New();
+                e->rootSite                   = PcpSite(layerStackId, propPath);
+                e->definingLayerIdentifier    = definingLayer->GetIdentifier();
+                e->definingSpecPath           = definingPath;
+                e->definingSpecType           = propType;
+                e->conflictingLayerIdentifier = layer->GetIdentifier();
+                e->conflictingSpecPath        = propPathInNode;
+                e->conflictingSpecType        = specType;
+                allErrors->push_back(std::move(e));
+                continue;
+            }
+
+            // Read the list ops strong-to-weak, stopping once one is explicit.
+            VtValue listOpVal = layer->GetField(propPathInNode, fieldName);
+            if (listOpVal.IsEmpty()) {
+                continue;
+            }
+            if (!listOpVal.IsHolding<SdfPathListOp>()) {
+                TF_RUNTIME_ERROR("@%s@<%s> field '%s' is not a path list-op",
+                                 layer->GetIdentifier().c_str(),
+                                 propPathInNode.GetAsString().c_str(),
+                                 fieldName.GetText());
+                return;
+            }
+            SdfPathListOp const &listOp =
+                listOpVal.UncheckedGet<SdfPathListOp>();
+
+            if (!listOp.HasKeys()) {
+                continue;
+            }
+
+            const bool isExplicit = listOp.IsExplicit();
+
+            opinions.push_back(
+                { layer, std::move(node), std::move(listOpVal) });
+
+            // Explicit lists block the influence of all weaker opinions, so we
+            // can stop the gather when we find one.
+            if (isExplicit) {
+                break;
+            }
+        }
+    }
+
+    // Early-out with no opinions.
+    if (opinions.empty()) {
+        return;
+    }
+    *hasTargetOpinions = true;
+
+    SdfPathVector  composedPaths;
+    PcpErrorVector targetPathErrors;
+
+    // Apply the list ops weak-to-strong, i.e. in reverse of the gather order,
+    // matching PcpBuildFilteredTargetIndex's TF_REVERSE_FOR_ALL over the
+    // property range.
+    for (auto iter = opinions.crbegin(); iter != opinions.crend(); ++iter) {
+        _Opinion const &opinion = *iter;
+
+        const SdfPathListOp &listOp =
+            opinion.listOpValue.UncheckedGet<SdfPathListOp>();
+
+        // An explicit list op replaces everything composed so far, so any
+        // accumulated target path errors no longer apply.  The gather above
+        // currently stops on an explicit op so in practice there is nothing yet
+        // to clear.  But we still do clear here since by not assuming
+        // stop-on-explicit we reduce coupling between the fold and the the
+        // gather, and there's no cost to keeping it.
+        if (listOp.IsExplicit()) {
+            targetPathErrors.clear();
+        }
+        
+        listOp.ApplyOperations(&composedPaths,
+            [&](SdfListOpType opType, const SdfPath &inPath)
+            -> std::optional<SdfPath>
+            {
+                bool pathIsMappable = false;
+                const SdfPath translatedPath =
+                    PcpTranslatePathFromNodeToRoot(
+                        opinion.node, inPath, &pathIsMappable);
+
+                // A deleted path needs no validation: it is being removed from
+                // the composed result, so drop any errors recorded for it as
+                // well.
+                if (opType == SdfListOpTypeDeleted) {
+                    if (pathIsMappable && !translatedPath.IsEmpty()) {
+                        _RemoveTargetPathErrorsForPath(
+                            translatedPath, &targetPathErrors);
+                        return translatedPath;
+                    }
+                    return std::nullopt;
+                }
+
+                if (!pathIsMappable) {
+                    PcpErrorInvalidExternalTargetPathPtr err =
+                        PcpErrorInvalidExternalTargetPath::New();
+                    // The site is built only here, on the error path, so that
+                    // successful composition does not pay for it.
+                    err->rootSite           = PcpSite(layerStackId, propPath);
+                    err->targetPath         = inPath;
+                    err->owningPath         =
+                        opinion.node.GetPath().AppendProperty(propName);
+                    err->ownerSpecType      = relOrAttrType;
+                    err->ownerArcType       = opinion.node.GetArcType();
+                    err->ownerIntroPath     = opinion.node.GetIntroPath();
+                    err->layer              =
+                        SdfCreateNonConstHandle(opinion.layer);
+                    err->composedTargetPath = SdfPath();
+                    targetPathErrors.push_back(err);
+                    return std::nullopt;
+                }
+
+                if (translatedPath.IsEmpty()) {
+                    return std::nullopt;
+                }
+
+                // The remaining checks in _PathTranslateCallback all require a
+                // cache for validation, which this path does not take:
+                // _TargetInClassAndTargetsInstance needs one, and
+                // _TargetIsPermitted is USD-disabled besides.
+                return translatedPath;
+            });
+    }
+
+    allErrors->insert(
+        allErrors->end(), targetPathErrors.begin(), targetPathErrors.end());
+
+    paths->swap(composedPaths);
 }
 
 void

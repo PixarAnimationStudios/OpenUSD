@@ -17,6 +17,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfSpec);
 class PcpCache;
+class PcpLayerStackIdentifier;
+class PcpPrimIndex;
 class PcpPropertyIndex;
 
 /// \class PcpTargetIndex
@@ -84,6 +86,44 @@ PcpBuildFilteredTargetIndex(
     PcpCache *cacheForValidation,
     PcpTargetIndex *targetIndex,
     SdfPathVector *deletedPaths,
+    PcpErrorVector *allErrors);
+
+/// Compose the target paths of the relationship or attribute at \p propPath
+/// directly from \p primIndex, without building an intermediate
+/// PcpPropertyIndex.
+///
+/// This is equivalent to PcpBuildPrimPropertyIndex followed by
+/// PcpBuildTargetIndex, but reads layer fields directly instead of creating an
+/// SdfPropertySpecHandle per contributing spec.  Those handles require an entry
+/// in each layer's identity registry, which is guarded by a per-layer lock.
+/// This function avoids those costs which matters for callers who compose
+/// targets concurrently.
+///
+/// \p primIndex must be a USD-mode prim index; see PcpPrimIndex::IsUsd().
+/// Non-USD composition enforces permissions and attribute type consistency,
+/// neither of which this function implements.  Passing a non-USD prim index
+/// is a coding error.
+///
+/// \p relOrAttrType indicates whether the property is a relationship or an
+/// attribute.
+///
+/// \p paths is filled with the composed target paths.
+///
+/// \p hasTargetOpinions is set to true if any contributing spec expressed an
+/// opinion about the target paths, even if the composed result is empty.  It is
+/// left alone otherwise.
+///
+/// \p allErrors will contain any errors encountered while performing this
+/// operation.
+PCP_API
+void
+PcpComposeTargetPaths(
+    const PcpLayerStackIdentifier &layerStackId,
+    const SdfPath &propPath,
+    const PcpPrimIndex &primIndex,
+    SdfSpecType relOrAttrType,
+    SdfPathVector *paths,
+    bool *hasTargetOpinions,
     PcpErrorVector *allErrors);
 
 PXR_NAMESPACE_CLOSE_SCOPE
