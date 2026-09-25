@@ -260,6 +260,107 @@ class TestUsdGeomExtentTransform(unittest.TestCase):
              (6.875462031959634, 7.484937740208365, 4.736589506702502)],
             STRANGE_TRANSFORM)
 
+    def test_Capsule_1(self):
+        stage = Usd.Stage.CreateInMemory()
+
+        # Test the extent computation for radiusTop < radiusBottom.
+        capsule1 = UsdGeom.Capsule_1.Define(stage, "/Foo")
+        capsule1.CreateHeightAttr(4.0)
+        capsule1.CreateRadiusTopAttr(2.0)
+        capsule1.CreateRadiusBottomAttr(5.0)
+        capsule1.CreateAxisAttr("X")
+
+        # Verify the extent computation when no transform matrix is given.
+        self.verifyExtent(capsule1, [(-12.0, -6.25, -6.25), (3.0, 6.25, 6.25)])
+
+        # Apply the identity matrix. This should be identical to the extent
+        # computed with no transform.
+        self.verifyExtent(capsule1,
+                          [(-12.0, -6.25, -6.25),
+                           (3.0, 6.25, 6.25)],
+                           Gf.Matrix4d(1.0))
+
+        # Apply an arbitrary transform matrix.
+        self.verifyExtent(capsule1,
+            [(-13.759958267211914, -11.041522026062012, -3.0616047382354736),
+             (8.517316818237305, 10.488607406616211, 7.459382057189941)],
+            STRANGE_TRANSFORM)
+
+        # Test that the extent computation changes correctly when the height
+        # changes and when radiusTop == radiusBottom.
+        symmetricCapsule1 = UsdGeom.Capsule_1.Define(stage, "/Foo")
+        symmetricCapsule1.CreateHeightAttr(2.0)
+        symmetricCapsule1.CreateRadiusTopAttr(4.0)
+        symmetricCapsule1.CreateRadiusBottomAttr(4.0)
+        symmetricCapsule1.CreateAxisAttr("X")
+
+        # Verify the extent computation when no transform matrix is given.
+        self.verifyExtent(symmetricCapsule1, [(-5, -4, -4), (5, 4, 4)])
+
+        # Apply the identity matrix. This should be identical to the extent
+        # computed with no transform.
+        self.verifyExtent(symmetricCapsule1,
+                          [(-5, -4, -4),
+                           (5, 4, 4)],
+                           Gf.Matrix4d(1.0))
+
+        # Apply an arbitrary transform matrix.
+        self.verifyExtent(symmetricCapsule1,
+            [(-6.289675712585449, -4.990817070007324, -1.8977774381637573),
+             (8.28967571258545, 8.990817070007324, 4.897777557373047)],
+            STRANGE_TRANSFORM)
+
+        # Test that the extent computation changes correctly when the axis
+        # changes and when radiusTop > radiusBottom.
+        invertedCapsule1Z = UsdGeom.Capsule_1.Define(stage, "/Foo")
+        invertedCapsule1Z.CreateHeightAttr(8.0)
+        invertedCapsule1Z.CreateRadiusTopAttr(9.0)
+        invertedCapsule1Z.CreateRadiusBottomAttr(3.0)
+        invertedCapsule1Z.CreateAxisAttr("Z")
+
+        # Verify the extent computation when no transform matrix is given.
+        self.verifyExtent(invertedCapsule1Z,
+                          [(-11.25, -11.25, -5.5),
+                           (11.25, 11.25, 22.0)])
+
+        # Apply the identity matrix. This should be identical to the extent
+        # computed with no transform.
+        self.verifyExtent(invertedCapsule1Z,
+                          [(-11.25, -11.25, -5.5),
+                           (11.25, 11.25, 22.0)],
+                           Gf.Matrix4d(1.0))
+
+        # Apply an arbitrary transform matrix.
+        self.verifyExtent(invertedCapsule1Z,
+            [(-14.33008098602295, -19.578022003173828, -5.305822372436523),
+             (24.67708969116211, 18.452838897705078, 14.944910049438477)],
+            STRANGE_TRANSFORM)
+
+        # Test that the extent computation changes correctly when height == 0
+        degenerateCapsule1 = UsdGeom.Capsule_1.Define(stage, "/Foo")
+        degenerateCapsule1.CreateHeightAttr(0.0)
+        degenerateCapsule1.CreateRadiusTopAttr(1.0)
+        degenerateCapsule1.CreateRadiusBottomAttr(2.0)
+        degenerateCapsule1.CreateAxisAttr("Z")
+
+        # Verify the extent computation when no transform matrix is given.
+        self.verifyExtent(degenerateCapsule1,
+                          [(-2, -2, -2),
+                           (2, 2, 1)])
+
+        # Apply the identity matrix. This should be identical to the extent
+        # computed with no transform.
+        self.verifyExtent(degenerateCapsule1,
+                          [(-2, -2, -2),
+                           (2, 2, 1)],
+                           Gf.Matrix4d(1.0))
+
+        # Apply an arbitrary transform matrix.
+        self.verifyExtent(degenerateCapsule1,
+            [(-2.24246883392334, -0.9318516254425049, -0.12123443186283112),
+             (3.7365894317626953, 5.24246883392334, 2.718865394592285)],
+            STRANGE_TRANSFORM)
+
     def test_PointInstancer(self):
         stage = Usd.Stage.Open("testPointInstancer.usda")
 

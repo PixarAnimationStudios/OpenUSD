@@ -223,20 +223,66 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static bool
 _ComputeExtentMax(double height, double radiusTop, double radiusBottom, 
-    const TfToken &axis, GfVec3f *max)
+    const TfToken &axis, GfVec3f *min, GfVec3f *max)
 {
-    const double radiusForBox = std::max(radiusTop, radiusBottom);
+    if (height < 0.0 || radiusTop < 0.0 || radiusBottom < 0.0) {
+        return false;
+    }
 
-    // The height is increased by the capsule's radius from the hemispheres on
-    // either side of the capsule.
-    const float halfHeightWithCap = height * 0.5 + radiusForBox;
+    const double halfH = 0.5 * height;
+
+    // In order to create a continuous surface, the slant line of the conical
+    // frustum of the capsule must be tangent to the radii of the end spheres
+    // at height/2 and -height/2.
+    // Consider the triangle formed by the following points:
+        // (assume axis = Y and radiusBottom > radiusTop)
+            // A: (-radiusTop, height / 2, 0),
+            // B: (-radiusTop, -height / 2, 0),
+            // C: (-radiusBottom, -height / 2, 0).
+        // This is a similar triangle to
+            // A: (-radiusTop, height / 2, 0),
+            // D: (0, height / 2, 0),
+            // E: (0, topSphereCenter.y, 0).
+        // Let topSphereCenter.y = height / 2 - offsetTop.
+    // We therefore get the equation:
+        // BC/AB = DE/AD
+        // => (radiusBottom - radiusTop) / height = offsetTop / radiusTop
+    // Similarly, we can derive the following equation for radiusBottom:
+        // (radiusBottom - radiusTop) / height = offsetBottom / radiusBottom
+    // We can similarly derive the same equations for radiusTop >= radiusBottom
+        // and for axis = X or Z.
+    const double slope = height > 0.0 ? (radiusBottom - radiusTop) / height : 0.0;
+    const double offsetTop = slope * radiusTop;
+    const double offsetBottom = slope * radiusBottom;
+
+    // sec^2(theta) = tan^2(theta) + 1,
+        // where theta = 90deg - the base angle of the conical frustum.
+        // In the example above,
+            // theta = angle between AB and AC = angle between AD and AE.
+    const double secant = GfSqrt(GfSqr(slope) + 1);
+
+    // Simplified form of sphereTopRadius^2 = offsetTop^2 + radiusTop^2
+    const double sphereTopRadius = radiusTop * secant;
+    const double sphereTopCenterCoord = halfH - offsetTop;
+
+    const double sphereBottomRadius = radiusBottom * secant;
+    const double sphereBottomCenterCoord = -halfH - offsetBottom;
+    
+    // sphereRadius >= offset => the absolute value of these is always >= halfH
+    const double maxHCoord = sphereTopCenterCoord + sphereTopRadius;
+    const double minHCoord = sphereBottomCenterCoord - sphereBottomRadius;
+
+    const double radiusForBox = std::max(sphereTopRadius, sphereBottomRadius);
 
     if (axis == UsdGeomTokens->x) {
-        *max = GfVec3f(halfHeightWithCap, radiusForBox, radiusForBox);
+        *max = GfVec3f(maxHCoord, radiusForBox, radiusForBox);
+        *min = GfVec3f(minHCoord, -radiusForBox, -radiusForBox);
     } else if (axis == UsdGeomTokens->y) {
-        *max = GfVec3f(radiusForBox, halfHeightWithCap, radiusForBox);
+        *max = GfVec3f(radiusForBox, maxHCoord, radiusForBox);
+        *min = GfVec3f(-radiusForBox, minHCoord, -radiusForBox);
     } else if (axis == UsdGeomTokens->z) {
-        *max = GfVec3f(radiusForBox, radiusForBox, halfHeightWithCap);
+        *max = GfVec3f(radiusForBox, radiusForBox, maxHCoord);
+        *min = GfVec3f(-radiusForBox, -radiusForBox, minHCoord);
     } else {
       return false; // invalid axis
     }
@@ -252,11 +298,12 @@ UsdGeomCapsule_1::ComputeExtent(double height, double radiusTop,
     extent->resize(2);
 
     GfVec3f max;
-    if (!_ComputeExtentMax(height, radiusTop, radiusBottom, axis, &max)) {
+    GfVec3f min;
+    if (!_ComputeExtentMax(height, radiusTop, radiusBottom, axis, &min, &max)) {
         return false;
     }
 
-    (*extent)[0] = -max;
+    (*extent)[0] = min;
     (*extent)[1] = max;
 
     return true;
@@ -271,11 +318,12 @@ UsdGeomCapsule_1::ComputeExtent(double height, double radiusTop,
     extent->resize(2);
 
     GfVec3f max;
-    if (!_ComputeExtentMax(height, radiusTop, radiusBottom, axis, &max)) {
+    GfVec3f min;
+    if (!_ComputeExtentMax(height, radiusTop, radiusBottom, axis, &min, &max)) {
         return false;
     }
 
-    GfBBox3d bbox = GfBBox3d(GfRange3d(-max, max), transform);
+    GfBBox3d bbox = GfBBox3d(GfRange3d(min, max), transform);
     GfRange3d range = bbox.ComputeAlignedRange();
     (*extent)[0] = GfVec3f(range.GetMin());
     (*extent)[1] = GfVec3f(range.GetMax());

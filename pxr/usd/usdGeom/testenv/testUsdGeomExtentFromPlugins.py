@@ -9,12 +9,14 @@ from pxr import Gf, Vt, Usd, UsdGeom
 import unittest
 
 class TestUsdGeomExtentFromPlugins(unittest.TestCase):
-    primpaths = [ '/capsule', '/cone', '/cube', '/cylinder', '/sphere' ]
+    primpaths = [ '/capsule', '/capsule_1', '/cone', '/cube', '/cylinder', '/sphere' ]
 
     def test_Default(self):
         extents = {
             '/capsule' :  Vt.Vec3fArray(2, (Gf.Vec3f(-2.0, -2.0, -3.0),
                                             Gf.Vec3f(2.0, 2.0, 3.0))),
+            '/capsule_1': Vt.Vec3fArray(2, (Gf.Vec3f(-8.75, -8.75, -18.0),
+                                             Gf.Vec3f(8.75, 8.75, 4.5))),
             '/cone' :     Vt.Vec3fArray(2, (Gf.Vec3f(-2.0, -2.0, -2.0),
                                             Gf.Vec3f(2.0, 2.0, 2.0))),
             '/cube' :     Vt.Vec3fArray(2, (Gf.Vec3f(-2.0, -2.0, -2.0),
@@ -37,6 +39,8 @@ class TestUsdGeomExtentFromPlugins(unittest.TestCase):
         extents = {
             '/capsule' :  Vt.Vec3fArray(2, (Gf.Vec3f(-4.0, -4.0, -6.0),
                                             Gf.Vec3f(4.0, 4.0, 6.0))),
+            '/capsule_1': Vt.Vec3fArray(2, (Gf.Vec3f(-7.5, -7.5, -14.0),
+                                             Gf.Vec3f(7.5, 7.5, 3.5))),
             '/cone' :     Vt.Vec3fArray(2, (Gf.Vec3f(-4.0, -4.0, -3.0),
                                             Gf.Vec3f(4.0, 4.0, 3.0))),
             '/cube' :     Vt.Vec3fArray(2, (Gf.Vec3f(-3.0, -3.0, -3.0),
