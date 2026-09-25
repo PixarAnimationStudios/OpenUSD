@@ -316,6 +316,10 @@ if(PXR_ENABLE_OSL_SUPPORT)
     add_definitions(-DPXR_OSL_SUPPORT_ENABLED)
 endif()
 
+if (PXR_BUILD_PMC_PLUGIN)
+    find_package(Pmc REQUIRED)
+endif()
+
 # Try and find Imath
 # Use ImathConfig.cmake
 if(REQUIRES_Imath)

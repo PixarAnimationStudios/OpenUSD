@@ -7,6 +7,7 @@
 
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/tf/pathUtils.h"
+#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/usd/editContext.h"
 #include "pxr/usd/usd/variantSets.h"
 #include "pxr/usd/usdShade/shader.h"
@@ -166,6 +167,32 @@ TestFileExtensionValidator()
 
     // Verify no errors occur with all valid extensions included
     TF_AXIOM(errors.empty());
+
+    // XXX: This portion of the test is gated on whether we can find the UsdPmc
+    // plugin.  We would like to rework this validator such that it is able to
+    // perform the validation when the plugin is not present
+    
+    // Test that files requiring optional plugins produce a warning
+    const std::set<std::string> fileFormatExtensions = 
+        SdfFileFormat::FindAllFileFormatExtensions();
+    
+    if (fileFormatExtensions.count("pmc")) {
+        const UsdStageRefPtr& pmcStage = UsdStage::Open("pmcwarning.usdz");
+        errors = validator->Validate(pmcStage);
+        TF_AXIOM(errors.size() == 1u);
+
+        const std::string expectedWarningMsg =
+            "This package contains a file with the 'pmc' extension. The UsdPmc "
+            "plugin is required in order to read files of this type. This "
+            "plugin is not part of the default USD build and therefore a "
+            "client may not be able to read it.";
+
+        const TfToken expectedWarningIdentifier(
+            "usdUtilsValidators:FileExtensionValidator.ContainsPmcFile");
+
+        ValidateError(errors[0], expectedWarningMsg, expectedWarningIdentifier, 
+            UsdValidationErrorType::Warn);
+    } 
 }
 
 static void

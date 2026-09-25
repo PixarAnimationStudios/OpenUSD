@@ -36,9 +36,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((invalidLayerInPackage, "InvalidLayerInPackage"))                         \
     ((unsupportedFileExtensionInPackage,                                       \
         "UnsupportedFileExtensionInPackage"))                                  \
-    ((unresolvableDependency, "UnresolvableDependency"))		               \
+    ((unresolvableDependency, "UnresolvableDependency"))		                   \
     ((compressionDetected, "CompressionDetected"))                             \
-    ((byteMisalignment, "ByteMisalignment"))
+    ((byteMisalignment, "ByteMisalignment"))                                   \
+    ((containsPmcFile, "ContainsPmcFile"))
 
 ///\def
 /// Tokens representing validator names. Note that for plugin provided

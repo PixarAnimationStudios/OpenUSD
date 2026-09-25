@@ -121,14 +121,35 @@ _FileExtensionValidator(const UsdStagePtr& usdStage,
     const std::vector<std::string> fileNames =
         std::vector<std::string>(zipFile.begin(), zipFile.end());
 
+    bool didWarnAboutUsdPmc = false;
+
     for (const std::string& fileName : fileNames)
     {
         const std::string extension = ArGetResolver().GetExtension(fileName);
 
-        if (std::find(validExtensions.begin(), validExtensions.end(),
-            extension) == validExtensions.end())
+        if (extension == "pmc") {
+            if (didWarnAboutUsdPmc) {
+                continue;
+            }
+
+            errors.emplace_back(
+                UsdValidationError {
+                    UsdUtilsValidationErrorNameTokens->containsPmcFile,
+                    UsdValidationErrorType::Warn,
+                    UsdValidationErrorSites {
+                        UsdValidationErrorSite(
+                                rootLayer, SdfPath(rootLayer->GetIdentifier()))
+                    },
+                    "This package contains a file with the 'pmc' extension. "
+                    "The UsdPmc plugin is required in order to read files of "
+                    "this type. This plugin is not part of the default USD "
+                    "build and therefore a client may not be able to read it."
+                });
+            didWarnAboutUsdPmc = true;
+        } else if (std::find(validExtensions.begin(), validExtensions.end(),
+            extension) == validExtensions.end()) 
         {
-            return {
+            errors.emplace_back(
                 UsdValidationError {
                     UsdUtilsValidationErrorNameTokens->
                     unsupportedFileExtensionInPackage,
@@ -142,8 +163,7 @@ _FileExtensionValidator(const UsdStagePtr& usdStage,
                                    fileName.c_str(),
                                    rootLayer->GetIdentifier().c_str(),
                                    extension.c_str())
-                }
-            };
+                });
         }
     }
 
