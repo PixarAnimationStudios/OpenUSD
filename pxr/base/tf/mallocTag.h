@@ -9,6 +9,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
+#include "pxr/base/tf/diagnosticLite.h"
+#include "pxr/base/tf/eternalString.h"
 #include "pxr/base/arch/hints.h"
 
 #include <atomic>
@@ -17,6 +19,8 @@
 #include <iosfwd>
 #include <new>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -33,6 +37,13 @@ struct Tf_MallocPathNode;
 ///
 /// See \ref page_tf_MallocTag for a detailed description.
 class TfMallocTag {
+
+    // Wrapper-type marking a tag name whose characters are immortal, so that
+    // TfMallocTag may key on their address and adopt them without copying.
+    struct _ImmortalName {
+        char const *str;
+    };
+    
 public:
     struct CallStackInfo;
 
@@ -172,52 +183,99 @@ public:
 
     /// Initialize the memory tagging system.
     ///
-    /// This function returns \c true if the memory tagging system can be
-    /// successfully initialized or it has already been initialized. Otherwise,
-    /// \p *errMsg is set with an explanation for the failure.
+    /// This function returns \c true if the memory tagging system is
+    /// initialized successfully, either by this call or a prior
+    /// call. Otherwise, it returns \c false and \p *errMsg is set with an
+    /// explanation for the failure if \p errMsg is not null.
     ///
-    /// Until the system is initialized, the various memory reporting calls
-    /// will indicate that no memory has been allocated.  Note also that
-    /// memory allocated prior to calling \c Initialize() is not tracked i.e.
-    /// all data refers to allocations that happen subsequent to calling \c
-    /// Initialize().
-    TF_API static bool Initialize(std::string* errMsg);
+    /// Until the system is initialized, the various memory reporting calls will
+    /// indicate that no memory has been allocated.  Note also that memory
+    /// allocated prior to calling \c Initialize() is not tracked i.e.  all data
+    /// refers to allocations that happen subsequent to calling \c Initialize().
+    TF_API static bool Initialize(std::string* errMsg = nullptr);
+
+    /// Shutdown the memory tagging system.
+    ///
+    /// If the system is not initialized, do nothing and return.  Otherwise shut
+    /// down the malloc tagging system.  Clear all recorded events and discard
+    /// any in-flight event data.  After Shutdown(), performance overhead
+    /// associated with the system returns to the lowest possible level and
+    /// should be negligible.  After a call to Shutdown(), call Initialize() to
+    /// begin tracking allocations again.
+    TF_API static void Shutdown();
 
     /// Return true if the tagging system is active.
     ///
     /// If \c Initialize() has been successfully called, this function returns
-    /// \c true.
-    static bool IsInitialized() {
-        return TfMallocTag::_isInitialized;
+    /// \c true.  Note that racing calls to Shutdown() or Initialize() can
+    /// immediately obsolete the returned result.
+    static inline bool IsInitialized() {
+        return TfMallocTag::_initState
+            .load(std::memory_order_acquire) == _Initialized;
     }
+
+    /// Clear all recorded allocation events, in-flight events from all threads,
+    /// and reset the total bytes and max total bytes counters.  Note that due
+    /// to concurrent activity, by the time this function returns new allocation
+    /// and free activity may have already occurred.
+    TF_API static void Clear();
 
     /// Return total number of allocated bytes.
     ///
     /// The current total memory that has been allocated and not freed is
     /// returned. Memory allocated before calling \c Initialize() is not
     /// accounted for.
+    ///
+    /// This call brings accounting fully up to date first, which requires
+    /// briefly stopping every thread that is recording allocations.  It is not
+    /// a lightweight query; do not poll it.
     TF_API static size_t GetTotalBytes();
 
-    /// Return the maximum total number of bytes that have ever been allocated
-    /// at one time.
+    /// Return an estimate of the maximum total number of bytes that have ever
+    /// been allocated at one time.
     ///
-    /// This is simply the maximum value of GetTotalBytes() since Initialize()
-    /// was called.
+    /// This is a high-water mark sampled during internal event consolidation
+    /// and also at a regular timer interval as a backstop during periods of low
+    /// allocator activity.  A background thread consolidates on every thread
+    /// event buffer spill, so an actively-allocating thread's usage is
+    /// reflected promptly.  A less-actively-allocating thread is sampled at
+    /// regular intervals defined by the PXR_TF_MALLOC_TAG_CONSOLIDATE_PERIOD_MS
+    /// env setting.  Change this value to increase or decrease the sampling
+    /// interval.
+    ///
+    /// The value is fundamentally an estimate.  It can be either an
+    /// underestimate or an overestimate.  A peak is captured only when the
+    /// allocations composing it reach the background baseline together.  The
+    /// residual limit is a peak that both forms and dissolves within a single
+    /// sampling inteval.  Even without sampling, there is no global total
+    /// ordering of heap allocations in a multithreaded program in general, so
+    /// therefore there is no well-defined high-water mark in general either.
+    ///
+    /// Carries the same cost as GetTotalBytes().  Do not poll.
     TF_API static size_t GetMaxTotalBytes();
 
     /// Return a snapshot of memory usage.
     ///
-    /// Returns a snapshot by writing into \c *tree.  See the \c C *tree
-    /// structure for documentation.  If \c Initialize() has not been called,
-    /// \ *tree is set to a rather blank structure (empty vectors, empty
-    /// strings, zero in all integral fields) and \c false is returned;
-    /// otherwise, \p *tree is set with the contents of the current memory
-    /// snapshot and \c true is returned. It is fine to call this function on
-    /// the same \p *tree instance; each call simply overwrites the data from
-    /// the last call. If /p skipRepeated is \c true, then any repeated
-    /// callsite is skipped. See the \c CallTree documentation for more
-    /// details.
+    /// Returns a snapshot by writing into \c *tree.  See the \c CallTree
+    /// structure for documentation.  If \c Initialize() has not been called, \p
+    /// *tree is set to a rather blank structure (empty vectors, empty strings,
+    /// zero in all integral fields) and \c false is returned; otherwise, \p
+    /// *tree is set with the contents of the current memory snapshot and \c
+    /// true is returned. It is fine to call this function on the same \p *tree
+    /// instance; each call simply overwrites the data from the last call. If \p
+    /// skipRepeated is \c true, then any repeated callsite is skipped. See the
+    /// \c CallTree documentation for more details.
+    ///
+    /// Like GetTotalBytes(), this brings accounting fully up to date first,
+    /// which requires briefly stopping every thread that is recording
+    /// allocations, and then builds the tree.  Treat it as a profiling
+    /// operation rather than a query.
     TF_API static bool GetCallTree(CallTree* tree, bool skipRepeated = true);
+
+    /// Return a report of diagnostic information related to the performance of
+    /// the TfMallocTag tracking internals.  This is likely only to be of
+    /// interest to TfMallocTag's developers.
+    TF_API static std::string GetPerfStats(bool includePerThread=false);
 
 private:
 
@@ -243,11 +301,12 @@ public:
     /// TfMallocTag::Initialize() has not been called: an inline read of a
     /// global variable and a branch.  If tagging has been initialized, then
     /// there is a small cost associated with pushing and popping memory tags on
-    /// the local stack.  Most of the cost is taking a shared/read lock on a
-    /// mutex and looking up the tag data structures in hash tables.  Pushing or
+    /// the local stack.  Pushing a name whose characters are immortal, like a
+    /// string literal or a \c TfEternalString, normally takes no lock at all.
+    /// Pushing and popping a tag without allocating anything under it does no
+    /// table lookup whatsoever.  Popping never takes a lock.  Pushing or
     /// popping the call stack does not actually cause any memory allocation
-    /// unless this is the first time that the given named tag has been
-    /// encountered.
+    /// unless this is the first time that the given named tag is encountered.
     class Auto {
     public:
         Auto(const Auto &) = delete;
@@ -257,16 +316,19 @@ public:
         Auto& operator=(Auto &&) = delete;
 
         /// Push one or more memory tags onto the local-call stack with names \p
-        /// name1 ... \p nameN.  The passed names should be either string
-        /// literals, const char pointers, or std::strings.
+        /// name1 ... \p nameN.  The passed names should be string literals, \c
+        /// TfEternalString objects, const char pointers, or std::strings.  A \c
+        /// TfEternalString (as \c TF_FUNC_NAME() returns) is treated exactly as
+        /// a string literal is, since its characters are immortal too.
         ///
         /// If \c TfMallocTag::Initialize() has not been called, this
         /// constructor does essentially no work, assuming the names are string
-        /// literals or a pointer to an existing c-string.  However if any of
-        /// the names are expressions that evaluate to \c std::string objects,
-        /// the work done constructing those strings will still be incurred.  If
-        /// this is an issue, you can query \c TfMallocTag::IsInitialized() to
-        /// avoid unneeded work when tagging is inactive.
+        /// literals, \c TfEternalStrings, or a pointer to an existing c-string.
+        /// However if any of the names are expressions that evaluate to \c
+        /// std::string objects, the work done constructing those strings will
+        /// still be incurred.  If this is an issue, you can query \c
+        /// TfMallocTag::IsInitialized() to avoid unneeded work when tagging is
+        /// inactive.
         ///
         /// Objects of this class should only be created as local variables;
         /// never as member variables, global variables, or via \c new.  If
@@ -275,11 +337,15 @@ public:
         /// though you should do this only as a last resort.
         template <class Str, class... Strs>
         explicit Auto(Str &&name1, Strs &&... nameN)
-            : _threadData(TfMallocTag::_Push(_CStr(std::forward<Str>(name1))))
-            , _nTags(_threadData ? 1 + sizeof...(Strs) : 0) {
+            : _threadData(
+                TfMallocTag::_Push(_TagName(std::forward<Str>(name1))))
+            , _nTags(0) {
             if (_threadData) {
-                (..., TfMallocTag::_Begin(
-                    _CStr(std::forward<Strs>(nameN)), _threadData));
+                // Accumulate _nTags; _Begin will not push null or empty tags.
+                _nTags = 1;
+                (..., (_nTags += (TfMallocTag::_Begin(
+                                      _TagName(std::forward<Strs>(nameN)),
+                                      _threadData) ? 1 : 0)));
             }
         }
 
@@ -311,8 +377,48 @@ public:
 
     private:
 
-        char const *_CStr(char const *cstr) const { return cstr; }
-        char const *_CStr(std::string const &str) const { return str.c_str(); }
+        // Is this tag argument a char array whose address we may treat as
+        // immortal -- a string literal, or a static const char array?
+        //
+        // What we can actually test for is a const char array lvalue.  It is as
+        // narrow as we can make it and deliberately not "any char array".
+        // Unfortunately this can still accept objects that are not literals --
+        // a `const char buf[N]` on the stack also passes, and no C++17
+        // construct can tell that from a literal.  So this is the best we can
+        // do, and remains a contract on callers rather than a check: a name
+        // passed as a const char array must live as long as the program.
+        template <class Str>
+        static constexpr bool _IsImmortalCharArray =
+            std::is_lvalue_reference_v<Str> &&
+            std::is_array_v<std::remove_reference_t<Str>> &&
+            std::is_const_v<
+                std::remove_extent_t<std::remove_reference_t<Str>>>;
+
+        template <class Str>
+        static auto _TagName(Str &&name) {
+            if constexpr (_IsImmortalCharArray<Str &&>) {
+                return _ImmortalName { name };
+            }
+            else {
+                return _TagNameNotArray(std::forward<Str>(name));
+            }
+        }
+        // A TfEternalString's characters are immortal (and content-unique) so
+        // route it exactly as a literal.  This exact match beats the
+        // std::string const & overload below, which TfEternalString's implicit
+        // conversion would otherwise reach.
+        static _ImmortalName _TagNameNotArray(TfEternalString s) {
+            return _ImmortalName { s.c_str() };
+        }
+        static char const *_TagNameNotArray(char const *cstr) { return cstr; }
+        static char const *_TagNameNotArray(std::string const &str) {
+            // Borrowed, not owned.  `str` may be a temporary in which case this
+            // reference dangles and the c_str() pointer is invalidated at the
+            // end of the full-expression that called us.  Both callers above
+            // resolve the tag within that same full-expression, which makes
+            // this safe.
+            return str.c_str();
+        }
 
         _ThreadData* _threadData;
         int _nTags;
@@ -320,9 +426,9 @@ public:
         friend class TfMallocTag;
     };
 
-    // An historical compatibility: before Auto could accept only one argument,
-    // so Auto2 existed to handle two arguments.  Now Auto can accept any number
-    // of arguments, so Auto2 is just an alias for Auto.
+    // An historical compatibility: in prior versions, Auto could accept only
+    // one argument, so Auto2 existed to handle two arguments.  Now Auto can
+    // accept any number of arguments, so Auto2 is just an alias for Auto.
     using Auto2 = Auto;
 
     // fwd for friendship.
@@ -357,7 +463,7 @@ public:
     /// For example, a call site that spawns parallel tasks may capture its own
     /// tag stack state and pass it to the parallel tasks, that then use a
     /// StackOverride to ensure that memory allocations are billed to the same
-    /// tags as the spawning thread.  When StackOverride object is destroyed,
+    /// tags as the spawning thread.  When a StackOverride object is destroyed,
     /// the thread's previous tag stack is restored.
     class StackOverride {
     public:
@@ -385,6 +491,126 @@ public:
         friend class TfMallocTag;
     };
 
+    /// \class TfMallocTag::PauseControl
+    ///
+    /// Debugging-oriented RAII object that pauses malloc tag collection for
+    /// either the current thread or all threads.  Construct via the TfMallocTag
+    /// factory functions PauseThisThread(), PauseAllThreads(), or
+    /// DeferredPause().  Pausing nests and a nested PauseControl cannot
+    /// override a pause established by an enclosing one.
+    ///
+    /// A PauseControl that is paused records allocations with size=0 so they do
+    /// not contribute to reported memory usage.
+    ///
+    /// A PauseControl object must be unpaused by the same thread that paused
+    /// it.
+    ///
+    /// \note Use this only to limit collection to areas of interest for
+    /// debugging and investigation.  Committed code that pauses memory tracking
+    /// forever hides its allocations from TfMallocTag's view.
+    ///
+    class PauseControl {
+    public:
+        PauseControl(PauseControl const &) = delete;
+        PauseControl &operator=(PauseControl const &) = delete;
+
+        /// Move-construct from `other`, adopting its pause state and leaving it
+        /// unpaused.
+        PauseControl(PauseControl &&other) noexcept
+            : _td(std::exchange(other._td, nullptr))
+            , _scope(std::exchange(other._scope, _NotPaused)) {}
+
+        /// Move-assign from `other`, adopting its pause state and leaving it
+        /// unpaused.
+        PauseControl &operator=(PauseControl &&other) noexcept {
+            if (this != &other) {
+                if (IsPaused()) {
+                    Unpause();
+                }
+                _td = std::exchange(other._td, nullptr);
+                _scope = std::exchange(other._scope, _NotPaused);
+            }
+            return *this;
+        }
+
+        /// Unpause if paused.
+        ~PauseControl() {
+            Unpause();
+        }
+
+        /// Pause collection on the current thread.  If this PauseControl
+        /// IsPaused(), do nothing.
+        void PauseThisThread() {
+            if (IsPaused()) {
+                return;
+            }
+            _Pause(_ThisThread);
+        }
+
+        /// Pause collection on all threads.  If this PauseControl IsPaused(),
+        /// do nothing.
+        void PauseAllThreads() {
+            if (IsPaused()) {
+                return;
+            }
+            _Pause(_AllThreads);
+        }
+
+        /// Resume collection.  This PauseControl must currently be paused.
+        void Unpause() {
+            if (IsPaused()) {
+                _Unpause();
+            }
+        }
+
+        /// Return true if this PauseControl is currently paused.
+        bool IsPaused() const {
+            return _scope != _NotPaused;
+        }
+
+    private:
+        enum _Scope {
+            _NotPaused, _ThisThread, _AllThreads
+        };
+
+        // Only constructible via TfMallocTag factory functions.
+        explicit PauseControl(_Scope desired) {
+            if (desired != _NotPaused) {
+                _Pause(desired);
+            }
+        }
+
+        TF_API
+        void _Pause(_Scope desired);
+
+        TF_API
+        void _Unpause();
+
+        _ThreadData *_td    = nullptr;
+        _Scope       _scope = _NotPaused;
+
+        friend class TfMallocTag;
+    };
+        
+    /// Return a PauseControl that immediately pauses collection for the
+    /// calling thread.
+    [[nodiscard]] static PauseControl PauseThisThread() {
+        return PauseControl(PauseControl::_ThisThread);
+    }
+
+    /// Return a PauseControl that immediately pauses collection for all
+    /// threads.
+    [[nodiscard]] static PauseControl PauseAllThreads() {
+        return PauseControl(PauseControl::_AllThreads);
+    }
+
+    /// Return a PauseControl in the unpaused state, for later manual
+    /// control via PauseThisThread() or PauseAllThreads().
+    [[nodiscard]] static PauseControl DeferredPause() {
+        return PauseControl(PauseControl::_NotPaused);
+    }    
+    
+
     /// Capture the current thread's TfMallocTag stack state and return it.
     /// Later, construct a TfMallocTag::StackOverride with a
     /// TfMallocTag::StackState to temporarily override the current thread's tag
@@ -392,7 +618,7 @@ public:
     /// bridge allocations in scoped parallel tasks (that may be executed by
     /// worker threads) back to the initiating context.
     static StackState GetCurrentStackState() {
-        return ARCH_UNLIKELY(TfMallocTag::_isInitialized)
+        return ARCH_UNLIKELY(TfMallocTag::IsInitialized())
             ? _GetCurrentStackState() : StackState {};
     }
 
@@ -414,23 +640,32 @@ public:
         _Push(name);
     }
 
+    /// \overload
+    static void Push(TfEternalString name) {
+        _Push(_ImmortalName { name.c_str() });
+    }
+
     /// Manually pop a tag from the stack.
     ///
     /// This call has the same effect as the destructor for \c
     /// TfMallocTag::Auto; it must properly nest with a matching call to \c
     /// Push(), of course.
+    ///
+    /// Note that unlike \c TfAutoMallocTag, this API cannot automatically
+    /// ensure that a matching \c Push() occurred, so an unbalanced \c Pop()
+    /// issues a coding error.
     static void Pop() {
-        if (TfMallocTag::_isInitialized) {
-            _End();
+        if (TfMallocTag::IsInitialized()) {
+            _PopChecked();
         }
     }
 
     /// Sets the tags to trap in the debugger.
     ///
-    /// When memory is allocated or freed for any tag that matches \p
-    /// matchList the debugger trap is invoked. If a debugger is attached the
-    /// program will stop in the debugger, otherwise the program will continue
-    /// to run. See \c ArchDebuggerTrap() and \c ArchDebuggerWait().
+    /// When memory is allocated for any tag that matches \p matchList the
+    /// debugger trap is invoked. If a debugger is attached the program will
+    /// stop in the debugger, otherwise the program will continue to run. See \c
+    /// ArchDebuggerTrap() and \c ArchDebuggerWait().
     ///
     /// \p matchList is a comma, tab or newline separated list of malloc tag
     /// names. The names can have internal spaces but leading and trailing
@@ -476,22 +711,47 @@ public:
     TF_API static std::vector<std::vector<uintptr_t> > GetCapturedMallocStacks();
 
 private:
+    // Atomic initialization state -- valid transitions are from N -> N+1
+    // cyclically, and from _Initializing -> _NotInitialized if initialization
+    // fails.
+    enum _InitState {
+        _NotInitialized,
+        _Initializing,
+        _Initialized,
+        _ShuttingDown
+    };
+    
     friend struct _TemporaryDisabler;
 
     friend struct Tf_MallocGlobalData;
 
-    static bool _Initialize(std::string* errMsg);
-
     static inline _ThreadData *_Push(char const *name) {
-        if (TfMallocTag::_isInitialized) {
+        if (TfMallocTag::IsInitialized()) {
+            return _Begin(name);
+        }
+        return nullptr;
+    }
+    static inline _ThreadData *_Push(_ImmortalName name) {
+        if (TfMallocTag::IsInitialized()) {
             return _Begin(name);
         }
         return nullptr;
     }
 
-    TF_API static _ThreadData *_Begin(char const *name,
-                                      _ThreadData *threadData = nullptr);
-    TF_API static void _End(int nTags = 1, _ThreadData *threadData = nullptr);
+    TF_API static _ThreadData *
+    _Begin(char const *name, _ThreadData *threadData = nullptr);
+
+    TF_API static _ThreadData *
+    _Begin(_ImmortalName name, _ThreadData *threadData = nullptr);
+    
+    // The Auto/StackOverride exit path.  `threadData` must be non-null and
+    // `nTags` must match the number of pushes that were actually performed;
+    // both hold by construction at the only call site (Auto::Release()).
+    TF_API static void _End(int nTags, _ThreadData *threadData);
+
+    // The manual Pop() path, which tolerates an unbalanced pop.  Kept separate
+    // from _End() so that the Auto path pays nothing for the check.
+    TF_API static void _PopChecked();
 
     TF_API static StackState _GetCurrentStackState();
     
@@ -503,7 +763,7 @@ private:
     friend class TfMallocTag::Auto;
     class Tls;
     friend class TfMallocTag::Tls;
-    TF_API static std::atomic<bool> _isInitialized;
+    TF_API static std::atomic<_InitState> _initState;
 };
 
 /// Top-down memory tagging system.
@@ -515,9 +775,9 @@ using TfAutoMallocTag2 = TfMallocTag::Auto;
 /// Enable lib/tf memory management.
 ///
 /// Invoking this macro inside a class body causes the class operator \c new to
-/// push two \c TfAutoMallocTag objects onto the stack before actually
-/// allocating memory for the class.  The names passed into the tag are used for
-/// the two tags; pass NULL if you don't need the second tag.  For example,
+/// push malloc tags onto the stack before actually allocating memory for the
+/// class.  You can pass as many tags as you like: they forward to the
+/// TfAutoMallocTag constructor.  For example,
 /// \code
 /// class MyBigMeshVertex {
 /// public:
@@ -525,42 +785,40 @@ using TfAutoMallocTag2 = TfMallocTag::Auto;
 ///     ...
 /// }
 /// \endcode
-/// will cause dynamic allocations of \c MyBigMeshVertex to be grouped under
-/// the tag \c Vertex which is in turn grouped under \c MyBigMesh.  However,
+/// will cause dynamic allocations of \c MyBigMeshVertex to be billed to the tag
+/// \c Vertex which grouped under \c MyBigMesh.  However,
 /// \code
 /// class MyBigMesh {
 /// public:
-///     TF_MALLOC_TAG_NEW("MyBigMesh", NULL);
+///     TF_MALLOC_TAG_NEW("MyBigMesh");
 ///     ...
 /// }
 /// \endcode
-/// specifies \c NULL for the second tag because the first tag is sufficient.
+/// specifies only the single tag \c MyBigMesh.
 ///
 /// Normally, this macro should be placed in the public section of a class.
-/// Note that you cannot specify both this and \c TF_FIXED_SIZE_ALLOCATOR()
-/// for the same class.
 ///
-/// Also, note that allocations of a class inside an STL datastructure will
-/// not be grouped under the indicated tags.
+/// Also, note that instances of such a class created inside an STL data
+/// structure may not be grouped under the indicated tags.
 /// \remark Placed in .h files.
 ///
 /// \hideinitializer
 //
 PXR_NAMESPACE_CLOSE_SCOPE                                                 
 
-#define TF_MALLOC_TAG_NEW(name1, name2)                                       \
+#define TF_MALLOC_TAG_NEW(...)                                                \
     /* this is for STL purposes */                                            \
     ARCH_ALWAYS_INLINE inline void* operator new(::std::size_t, void* ptr) {  \
         return ptr;                                                           \
     }                                                                         \
                                                                               \
     ARCH_ALWAYS_INLINE inline void* operator new(::std::size_t s) {           \
-        PXR_NS::TfAutoMallocTag tag(name1, name2);                            \
+        PXR_NS::TfAutoMallocTag tag(__VA_ARGS__);                             \
         return ::operator new(s, std::nothrow);                               \
     }                                                                         \
                                                                               \
     ARCH_ALWAYS_INLINE inline void* operator new[](::std::size_t s) {         \
-        PXR_NS::TfAutoMallocTag tag(name1, name2);                            \
+        PXR_NS::TfAutoMallocTag tag(__VA_ARGS__);                             \
         return ::operator new[](s, std::nothrow);                             \
     }                                                                         \
                                                                               \

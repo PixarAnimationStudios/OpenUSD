@@ -17,6 +17,7 @@
 #include "pxr/base/arch/symbols.h"
 
 #include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/manage_new_object.hpp"
 #include "pxr/external/boost/python/scope.hpp"
 
 #include <iostream>
@@ -41,17 +42,6 @@ _Initialize()
     return TfMallocTag::Initialize(&reason);
 }
 
-static bool
-_Initialize2(const std::string& captureTag)
-{
-    string reason;
-    bool result = TfMallocTag::Initialize(&reason);
-    if (result) {
-        TfMallocTag::SetCapturedMallocStacksMatchList(captureTag);
-    }
-    return result;
-}
-
 static TfMallocTag::CallTree
 _GetCallTree(const bool skipRepeated)
 {
@@ -74,7 +64,7 @@ _GetCallStacks()
             std::string& name = functionNames[*func];
             if (name.empty()) {
                 ArchGetAddressInfo(reinterpret_cast<void*>(*func),
-                                   NULL, NULL, &name, NULL);
+                                   nullptr, nullptr, &name, nullptr);
                 if (name.empty()) {
                     name = "<unknown>";
                 }
@@ -172,26 +162,64 @@ _LogReport(
     return tmpFile;
 }
 
+struct Tf_PyMallocTagPauseControl
+{
+public:
+    using CreateFn = TfMallocTag::PauseControl (*)();
+    
+    explicit Tf_PyMallocTagPauseControl(CreateFn create) : _create(create) {}
+    
+    TfMallocTag::PauseControl &__enter__() {
+        _ctrl.reset(new TfMallocTag::PauseControl { _create() });
+        return *_ctrl;
+    }
+
+    void __exit__(object, object, object) {
+        _ctrl->Unpause();
+    }
+private:
+    std::unique_ptr<TfMallocTag::PauseControl> _ctrl;
+    CreateFn _create;
+};
+
 } // anonymous namespace 
 
 void wrapMallocTag()
 {
     typedef TfMallocTag This;
+
+    return_value_policy<manage_new_object> mngNewObj;
     
     scope mallocTag = class_<This>("MallocTag", no_init)
-        .def("Initialize", _Initialize)
-        .def("Initialize", _Initialize2)
-            // Note: Both Initialize overloads are made static by this single
-            // registration.
-            .staticmethod("Initialize")
-        .def("IsInitialized", This::IsInitialized)
-            .staticmethod("IsInitialized")
-        .def("GetTotalBytes", This::GetTotalBytes)
-            .staticmethod("GetTotalBytes")
+
+        .def("Initialize",    _Initialize)        .staticmethod("Initialize")
+        .def("IsInitialized", This::IsInitialized).staticmethod("IsInitialized")
+        .def("Shutdown",      This::Shutdown)     .staticmethod("Shutdown")
+        .def("Clear",         This::Clear)        .staticmethod("Clear")
+        
+        .def("PauseThisThread", +[]() {
+            return new Tf_PyMallocTagPauseControl([]() {
+                return TfMallocTag::PauseThisThread();
+            });
+        }, mngNewObj).staticmethod("PauseThisThread")
+        .def("PauseAllThreads", +[]() {
+            return new Tf_PyMallocTagPauseControl([]() {
+                return TfMallocTag::PauseAllThreads();
+            });
+        }, mngNewObj).staticmethod("PauseAllThreads")
+        .def("DeferredPause", +[]() {
+            return new Tf_PyMallocTagPauseControl([]() {
+                return TfMallocTag::DeferredPause();
+            });
+        }, mngNewObj).staticmethod("DeferredPause")
+
+        .def("GetTotalBytes", This::GetTotalBytes).staticmethod("GetTotalBytes")
         .def("GetMaxTotalBytes", This::GetMaxTotalBytes)
-            .staticmethod("GetMaxTotalBytes")
+        .staticmethod("GetMaxTotalBytes")
         .def("GetCallTree", _GetCallTree, (arg("skipRepeated")=true))
-            .staticmethod("GetCallTree")
+        .staticmethod("GetCallTree")
+        .def("GetPerfStats", This::GetPerfStats, arg("includePerThread")=false)
+        .staticmethod("GetPerfStats")
 
         .def("SetCapturedMallocStacksMatchList",
              This::SetCapturedMallocStacksMatchList)
@@ -199,40 +227,55 @@ void wrapMallocTag()
         .def("GetCallStacks", _GetCallStacks,
              return_value_policy<TfPySequenceToList>())
             .staticmethod("GetCallStacks")
-
+        
         .def("SetDebugMatchList", This::SetDebugMatchList)
             .staticmethod("SetDebugMatchList")
         ;
 
     {
-    scope callTree = class_<This::CallTree>("CallTree")
-        .def("GetPrettyPrintString", _GetPrettyPrintString)
-        .def("GetCallSites", _GetCallSites,
-             return_value_policy<TfPySequenceToList>())
-        .def("GetRoot", _GetRoot)
-        .def("Report", _Report,
-            (arg("rootName")=std::string()))
-        .def("Report", _ReportToFile,
-             (arg("fileName"), arg("rootName")=std::string()))
-        .def("LoadReport", _LoadReport,
-             (arg("fileName")))
-        .def("LogReport", _LogReport,
-             (arg("rootName")=std::string()))
-        ;
-
-    class_<This::CallTree::PathNode>("PathNode", no_init)
-        .def_readonly("nBytes", &This::CallTree::PathNode::nBytes)
-        .def_readonly("nBytesDirect", &This::CallTree::PathNode::nBytesDirect)
-        .def_readonly("nAllocations", &This::CallTree::PathNode::nAllocations)
-        .def_readonly("siteName", &This::CallTree::PathNode::siteName)
-        .def("GetChildren", _GetChildren,
-             return_value_policy<TfPySequenceToList>())
-        ;
-
-    class_<This::CallTree::CallSite>("CallSite", no_init)
-        .def_readonly("name", &This::CallTree::CallSite::name)
-        .def_readonly("nBytes", &This::CallTree::CallSite::nBytes)
-        ;
+        using This = TfMallocTag::PauseControl;
+        class_<This, noncopyable>("_PauseCtrlCtx", no_init)
+            .def("PauseThisThread", &This::PauseThisThread)
+            .def("PauseAllThreads", &This::PauseAllThreads)
+            .def("Unpause",         &This::Unpause)
+            .def("IsPaused",        &This::IsPaused)
+            ;
     }
-
+    {
+        using This = Tf_PyMallocTagPauseControl;
+        class_<This, noncopyable>("PauseControl", no_init)
+            .def("__enter__", &This::__enter__, return_internal_reference<>())
+            .def("__exit__",  &This::__exit__)
+            ;
+    }
+    {
+        scope callTree = class_<This::CallTree>("CallTree")
+            .def("GetPrettyPrintString", _GetPrettyPrintString)
+            .def("GetCallSites", _GetCallSites,
+                 return_value_policy<TfPySequenceToList>())
+            .def("GetRoot",    _GetRoot)
+            .def("Report",     _Report,       (arg("rootName")=std::string()))
+            .def("Report",     _ReportToFile, (arg("fileName"),
+                                               arg("rootName")=std::string()))
+            .def("LoadReport", _LoadReport,   (arg("fileName")))
+            .def("LogReport",  _LogReport,    (arg("rootName")=std::string()))
+            ;
+        
+        class_<This::CallTree::PathNode>("PathNode", no_init)
+            .def_readonly("nBytes", &This::CallTree::PathNode::nBytes)
+            .def_readonly("nBytesDirect",
+                          &This::CallTree::PathNode::nBytesDirect)
+            .def_readonly("nAllocations",
+                          &This::CallTree::PathNode::nAllocations)
+            .def_readonly("siteName", &This::CallTree::PathNode::siteName)
+            .def("GetChildren", _GetChildren,
+                 return_value_policy<TfPySequenceToList>())
+            ;
+        
+        class_<This::CallTree::CallSite>("CallSite", no_init)
+            .def_readonly("name", &This::CallTree::CallSite::name)
+            .def_readonly("nBytes", &This::CallTree::CallSite::nBytes)
+            ;
+    }
+    
 }
