@@ -85,15 +85,15 @@ _LogShaderCacheLookupForDrawBatch(
     return false;
 }
 
+}
+
 bool
-_LogShaderCacheLookup()
+HdSt_DrawBatch::_LogShaderCacheLookup() const
 {
-    return TfDebug::IsEnabled(HDST_LOG_DRAWING_SHADER_PROGRAM_MISSES) ||
-           TfDebug::IsEnabled(HDST_LOG_DRAWING_SHADER_PROGRAM_HITS);
+    return (TfDebug::IsEnabled(HDST_LOG_DRAWING_SHADER_PROGRAM_MISSES) ||
+            TfDebug::IsEnabled(HDST_LOG_DRAWING_SHADER_PROGRAM_HITS)) &&
+        _LogShaderCacheLookupForDrawBatch(_drawItemInstances);
 }
-
-}
-
 
 HdSt_DrawBatch::HdSt_DrawBatch(
     HdStDrawItemInstance * drawItemInstance,
@@ -371,9 +371,7 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
         
         _program.SetMaterialNetworkShader(materialNetworkShader);
 
-        const bool logCacheLookup =
-            _LogShaderCacheLookup() &&
-            _LogShaderCacheLookupForDrawBatch(_drawItemInstances);
+        const bool logCacheLookup = _LogShaderCacheLookup();
 
         // Try to compile the shader and if it fails to compile we go back
         // to use the specified fallback material network shader.

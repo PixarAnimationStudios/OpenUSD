@@ -1682,7 +1682,8 @@ HdSt_IndirectDrawBatch::_GetCullingProgram(
         _cullingProgram.SetGeometricShader(cullShader);
 
         _cullingProgram.CompileShader(_drawItemInstances.front()->GetDrawItem(),
-                                       resourceRegistry);
+                                      resourceRegistry,
+                                      _LogShaderCacheLookup());
 
         _dirtyCullingProgram = false;
     }

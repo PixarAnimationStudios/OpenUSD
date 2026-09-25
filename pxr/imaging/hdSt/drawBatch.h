@@ -238,6 +238,9 @@ protected:
 
     bool const _allowTextureResourceRebinding;
 
+    HDST_API
+    bool _LogShaderCacheLookup() const;
+
 private:
     HDST_API
     static
