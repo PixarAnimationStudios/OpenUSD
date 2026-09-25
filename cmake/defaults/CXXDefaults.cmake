@@ -95,6 +95,13 @@ else()
    set(PXR_ARCH_PREFER_TSC_TIMING "0")
 endif()
 
+# Set ArchMallocHook and TfMallocTag configuration.
+if (PXR_ARCH_SUPPORT_MALLOC_HOOKS)
+   set(PXR_ARCH_SUPPORT_MALLOC_HOOKS "1")
+else()
+   set(PXR_ARCH_SUPPORT_MALLOC_HOOKS "0")
+endif()
+
 # Setup CCache for C/C++ compilation
 if(PXR_ENABLE_COMPILER_CACHE)
     find_program(COMPILER_CACHE_PROGRAM ${PXR_COMPILER_CACHE_NAME})
