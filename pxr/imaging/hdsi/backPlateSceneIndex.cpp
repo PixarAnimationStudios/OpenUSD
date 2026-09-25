@@ -1057,9 +1057,13 @@ HdsiBackPlateSceneIndex::_PrimsAdded(
         _RemoveBackPlateChildren(
             entry.primPath,
             isObserved ? &removedBackPlatePrims : nullptr);
-        _AddBackPlateChildren(
-            entry.primPath,
-            isObserved ? &addedBackPlatePrims : nullptr);
+        // Check if camera is entry prim to avoid querying GetPrim() on input 
+        // scene index.
+        if (entry.primType == HdPrimTypeTokens->camera){
+            _AddBackPlateChildren(
+                entry.primPath,
+                isObserved ? &addedBackPlatePrims : nullptr);
+        }
     }
     if (!isObserved) {
         return;
