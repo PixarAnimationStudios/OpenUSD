@@ -8,7 +8,9 @@
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/relationship.h"
+#include "pxr/usd/sdf/types.h"
 
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -376,38 +378,25 @@ UsdGeomPrimvar::ComputeFlattened(
     }
 
     // Handle all known supported array value types.
-    bool foundSupportedType =
-        _ComputeFlattenedArray<VtVec2fArray>(attrVal, indices, elementSize, value, errStr) ||
-        _ComputeFlattenedArray<VtVec2dArray>(attrVal, indices, elementSize, value, errStr) ||
-        _ComputeFlattenedArray<VtVec2iArray>(attrVal, indices, elementSize, value, errStr) ||
-        _ComputeFlattenedArray<VtVec2hArray>(attrVal, indices, elementSize, value, errStr) ||
-        _ComputeFlattenedArray<VtVec3fArray>(attrVal, indices, elementSize, value, errStr) ||
-        _ComputeFlattenedArray<VtVec3dArray>(attrVal, indices, elementSize, value, errStr) ||
-        _ComputeFlattenedArray<VtVec3iArray>(attrVal, indices, elementSize, value, errStr) ||
-        _ComputeFlattenedArray<VtVec3hArray>(attrVal, indices, elementSize, value, errStr) ||
-        _ComputeFlattenedArray<VtVec4fArray>(attrVal, indices, elementSize, value, errStr) ||
-        _ComputeFlattenedArray<VtVec4dArray>(attrVal, indices, elementSize, value, errStr) ||
-        _ComputeFlattenedArray<VtVec4iArray>(attrVal, indices, elementSize, value, errStr) ||
-        _ComputeFlattenedArray<VtVec4hArray>(attrVal, indices, elementSize, value, errStr) ||
-        _ComputeFlattenedArray<VtMatrix3dArray>(attrVal, indices, elementSize, value, 
-                errStr)    ||
-        _ComputeFlattenedArray<VtMatrix4dArray>(attrVal, indices, elementSize, value, 
-                errStr)    ||
-        _ComputeFlattenedArray<VtStringArray>(attrVal, indices, elementSize, value, errStr)||
-        _ComputeFlattenedArray<VtDoubleArray>(attrVal, indices, elementSize, value, errStr)||
-        _ComputeFlattenedArray<VtIntArray>(attrVal, indices, elementSize, value, errStr)   ||
-        _ComputeFlattenedArray<VtUIntArray>(attrVal, indices, elementSize, value, errStr)  ||
-        _ComputeFlattenedArray<VtFloatArray>(attrVal, indices, elementSize, value, errStr) ||
-        _ComputeFlattenedArray<VtHalfArray>(attrVal, indices, elementSize, value, errStr);
+#define USDGEOM_TRY_FLATTEN_TYPE(unused, elem)                                 \
+    if (_ComputeFlattenedArray<SDF_VALUE_CPP_ARRAY_TYPE(elem)>(                \
+            attrVal, indices, elementSize, value, errStr)) {                   \
+        return true;                                                           \
+    }
 
-    if (!foundSupportedType && errStr) {
+    TF_PP_SEQ_FOR_EACH(USDGEOM_TRY_FLATTEN_TYPE, ~, SDF_VALUE_TYPES);
+
+#undef USDGEOM_TRY_FLATTEN_TYPE
+
+    // If we reached here, the value is not a supported type.
+    if (errStr) {
         std::string thisErr = TfStringPrintf(
             "Unsupported indexed primvar value type %s.", 
             attrVal.GetTypeName().c_str());
         *errStr = errStr->empty() ? thisErr : *errStr + "\n" + thisErr;
     }
 
-    return !value->IsEmpty();
+    return false;
 }
 
 UsdGeomPrimvar::UsdGeomPrimvar(const UsdPrim& prim, 
