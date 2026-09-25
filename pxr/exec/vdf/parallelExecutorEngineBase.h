@@ -703,9 +703,7 @@ VdfParallelExecutorEngineBase<Derived, DataManager>::RunSchedule(
 
         // Now, wait for all the tasks to complete.
         {
-            TRACE_SCOPE(
-                "VdfParallelExecutorEngineBase::RunSchedule "
-                "(wait for parallel tasks)");
+            TRACE_FUNCTION_SCOPE("wait for parallel tasks");
             engine->_taskGraph.Wait();
         }
     });

@@ -191,7 +191,7 @@ VdfDynamicTopologicalSorter<Vertex>::AddEdge(
     // We only need to do anything if adding the edge violates the existing
     // topological ordering.
     if (sourcePriority > targetPriority) {
-        TRACE_SCOPE("VdfDynamicTopologicalSorter::AddEdge -- reordering");
+        TRACE_FUNCTION_SCOPE("reordering");
 
         // "Forward search" -- traverse in the outgoing (_Outgoing) direction
         // from target, using source's priority as an upper bound to guide the
