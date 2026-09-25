@@ -62,6 +62,7 @@ private:
     TfToken _shadowLink;
     SdfPathVector _lightFilterPaths;
     std::vector<TfToken> _lightFilterLinks;
+    std::vector<riley::CoordinateSystemId> _lightFilterCoordSysIds;
     riley::CoordinateSystemId _lightFilterParentCoordSysId;
 
     // state for mesh light change tracking

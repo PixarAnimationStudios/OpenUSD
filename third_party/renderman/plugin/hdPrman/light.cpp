@@ -99,6 +99,9 @@ HdPrmanLight::Finalize(HdRenderParam *renderParam)
         }
         _lightFilterLinks.clear();
     }
+    // Coordinate system IDs owned by HdPrmanLightFilter sprims. Clear the
+    // cached vector here; do not delete the riley coordinate systems.
+    _lightFilterCoordSysIds.clear();
 #if HD_API_VERSION >= 49
     // delete instances owned by the instancer.
     if (HdPrmanInstancer* instancer = param->GetInstancer(
@@ -390,8 +393,6 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     // Light shader nodes will go here, whether we calculate them early during
     // change tracking or later during shader update.
     std::vector<riley::ShadingNode> lightNodes;
-    // Any coordinate system ID's used will go here.
-    std::vector<riley::CoordinateSystemId> coordSysIds;
 
     // XXX: HdLight::GetInstancerId() and _UpdateInstancer entered hd between
     // HD_API_VERSION 48 and 49
@@ -874,14 +875,12 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
                     rileyXf, attrs);
         }
 
-        // _PopulateLightFilterNodes also gives us the coordinate systems.
-        // We store them so we can have them on later calls where only the
-        // light instance is dirty. Note above that dirty light filters mean
-        // dirty shader *and* dirty instance; the coordinate systems are why,
-        // and are the only piece of derived state that needs to be shared by
-        // both the shader and instance update branches.
+        // Cache per-filter coordinate system IDs for instance-only syncs
+        // that recompose the full list below. Clear before calling
+        // _PopulateLightFilterNodes, which only appends.
+        _lightFilterCoordSysIds.clear();
         _PopulateLightFilterNodes(id, _lightShaderType, filters, sceneDelegate, renderParam,
-            riley, &filterNodes, &coordSysIds, &_lightFilterLinks);
+            riley, &filterNodes, &_lightFilterCoordSysIds, &_lightFilterLinks);
 
         const riley::ShadingNetwork light {
             static_cast<uint32_t>(lightNodes.size()),
@@ -902,10 +901,6 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
             TRACE_SCOPE("riley::ModifyLightShader");
             riley->ModifyLightShader(_shaderId, &light, &filter);
         }
-    }
-
-    if (_lightFilterParentCoordSysId != riley::CoordinateSystemId::InvalidId()) {
-        coordSysIds.push_back(_lightFilterParentCoordSysId);
     }
 
     if (dirtyLightInstance) {
@@ -1009,7 +1004,13 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         TF_DEBUG(HDPRMAN_LIGHT_LINKING).Msg("HdPrman: Light <%s> grouping "
             "membership '%s'\n", id.GetText(), membership.c_str());
 
-        // Convert coordinate system ids to list
+        // Recompose per-filter and parent coordinate system IDs so a
+        // transform-only sync still provides the full list to Riley.
+        std::vector<riley::CoordinateSystemId> coordSysIds =
+            _lightFilterCoordSysIds;
+        if (_lightFilterParentCoordSysId != riley::CoordinateSystemId::InvalidId()) {
+            coordSysIds.push_back(_lightFilterParentCoordSysId);
+        }
         const riley::CoordinateSystemList coordSysList = {
             unsigned(coordSysIds.size()), coordSysIds.data()
         };
