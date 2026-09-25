@@ -114,10 +114,12 @@ class Pcp_PropertyIndexer
 {
 public:
     Pcp_PropertyIndexer(PcpPropertyIndex *propIndex,
-                        PcpSite propSite,
+                        const PcpLayerStackIdentifier &layerStackId,
+                        const SdfPath &propPath,
                         PcpErrorVector *allErrors)
         : _propIndex(propIndex),
-          _propSite(propSite),
+          _layerStackId(layerStackId),
+          _propPath(propPath),
           _allErrors(allErrors),
           _var(SdfVariabilityVarying),
           _propType(SdfSpecTypeUnknown)
@@ -161,7 +163,7 @@ private:
             // specs previously seen.
             PcpErrorInconsistentPropertyTypePtr e =
                 PcpErrorInconsistentPropertyType::New();
-            e->rootSite = _propSite;
+            e->rootSite = _GetPropSite();
             e->definingLayerIdentifier = 
                 _firstSpec->GetLayer()->GetIdentifier();
             e->definingSpecPath = _firstSpec->GetPath();
@@ -234,7 +236,7 @@ private:
         if (_valueType != valueType) {
             PcpErrorInconsistentAttributeTypePtr e =
                 PcpErrorInconsistentAttributeType::New();
-            e->rootSite = _propSite;
+            e->rootSite = _GetPropSite();
             e->definingLayerIdentifier = 
                 _firstSpec->GetLayer()->GetIdentifier();
             e->definingSpecPath = _firstSpec->GetPath();
@@ -249,7 +251,7 @@ private:
         if (_var != var) {
             PcpErrorInconsistentAttributeVariabilityPtr e =
                 PcpErrorInconsistentAttributeVariability::New();
-            e->rootSite = _propSite;
+            e->rootSite = _GetPropSite();
             e->definingLayerIdentifier = 
                 _firstSpec->GetLayer()->GetIdentifier();
             e->definingSpecPath = _firstSpec->GetPath();
@@ -262,6 +264,15 @@ private:
         }
 
         return true;
+    }
+
+    // Returns the site of the property being indexed, for use in populating
+    // error records.  Constructing a PcpSite copies a
+    // PcpLayerStackIdentifier, which in turn copies an SdfLayerHandle and an
+    // ArResolverContext; that is a measurable cost in the common error-free
+    // case, so the site is built only when an error is actually recorded.
+    PcpSite _GetPropSite() const {
+        return PcpSite(_layerStackId, _propPath);
     }
 
     // Convenience function to record an error both in this property
@@ -283,7 +294,8 @@ private:
 private: // data
 
     PcpPropertyIndex *_propIndex;
-    const PcpSite _propSite;
+    const PcpLayerStackIdentifier &_layerStackId;
+    const SdfPath &_propPath;
     PcpErrorVector *_allErrors;
     SdfPropertySpecHandle _firstSpec;
     TfToken _valueType;
@@ -309,7 +321,7 @@ Pcp_PropertyIndexer::_AddPropertySpecIfPermitted(
         // node also has an opinion about it. This is illegal.
         PcpErrorPropertyPermissionDeniedPtr err =
             PcpErrorPropertyPermissionDenied::New();
-        err->rootSite = _propSite;
+        err->rootSite = _GetPropSite();
         err->propPath = propSpec->GetPath();
         err->propType = propSpec->GetSpecType();
         err->layerPath = propSpec->GetLayer()->GetIdentifier();
@@ -321,7 +333,7 @@ void
 Pcp_PropertyIndexer::GatherPropertySpecs(const PcpPrimIndex& primIndex,
                                          bool usd)
 {
-    const TfToken &name = _propSite.path.GetNameToken();
+    const TfToken &name = _propPath.GetNameToken();
 
     // Add properties in reverse strength order (weak-to-strong).
     std::vector<Pcp_PropertyInfo> propertyInfo;
@@ -376,7 +388,7 @@ void
 Pcp_PropertyIndexer::GatherRelationalAttributeSpecs(
     const PcpPropertyIndex& relIndex, bool usd)
 {
-    const SdfPath& relAttrPath = _propSite.path;
+    const SdfPath& relAttrPath = _propPath;
     TF_VERIFY(relAttrPath.IsRelationalAttributePath());
 
     // Add relational attributes in reverse strength order (weak-to-strong).
@@ -461,8 +473,9 @@ void PcpBuildPropertyIndex( const SdfPath &propertyPath,
             allErrors);
     }
     else if (parentPath.IsPrimPropertyPath()) {
-        const PcpSite propSite(cache->GetLayerStackIdentifier(), propertyPath);
-        Pcp_PropertyIndexer indexer(propertyIndex, propSite, allErrors);
+        Pcp_PropertyIndexer indexer(
+            propertyIndex, cache->GetLayerStackIdentifier(), propertyPath,
+            allErrors);
         // In USD mode, the PcpCache will not supply any property indexes,
         // so we need to specifically compute one ourselves and use that.
         //
@@ -499,8 +512,9 @@ PcpBuildPrimPropertyIndex( const SdfPath& propertyPath,
                            PcpPropertyIndex *propertyIndex,
                            PcpErrorVector *allErrors )
 {
-    const PcpSite propSite(cache.GetLayerStackIdentifier(), propertyPath);
-    Pcp_PropertyIndexer indexer(propertyIndex, propSite, allErrors);
+    Pcp_PropertyIndexer indexer(
+        propertyIndex, cache.GetLayerStackIdentifier(), propertyPath,
+        allErrors);
     indexer.GatherPropertySpecs(primIndex, cache.IsUsd());
 }
 
