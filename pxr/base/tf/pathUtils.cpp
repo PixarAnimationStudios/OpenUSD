@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cctype>
 #include <errno.h>
+#include <filesystem>
 #include <limits.h>
 #include <string>
 #include <sys/stat.h>
@@ -110,38 +111,17 @@ TfRealPath(string const& path, bool allowInaccessibleSuffix, string* error)
     if (path.empty())
         return string();
 
-    string suffix, prefix = path;
-
-    if (allowInaccessibleSuffix) {
-        string::size_type split = TfFindLongestAccessiblePrefix(path, error);
-        if (!error->empty())
-            return string();
-
-        prefix = string(path, 0, split);
-        suffix = string(path, split);
+    const std::filesystem::path filesystemPath{path};
+    std::error_code errorCode;
+    if (const auto realPath = allowInaccessibleSuffix ?
+        std::filesystem::weakly_canonical(filesystemPath, errorCode) :
+        std::filesystem::canonical(filesystemPath, errorCode); !errorCode) {
+        // weakly_canonical is not guaranteed to return an absolute path, TfAbsPath
+        // is run on the result
+        return TfAbsPath(realPath.string());
     }
-
-    if (prefix.empty()) {
-        return TfAbsPath(suffix);
-    }
-
-#if defined(ARCH_OS_WINDOWS)
-    // Expand all symbolic links.
-    if (!TfPathExists(prefix)) {
-        *error = "the named file does not exist";
-        return string();
-    }
-    std::string resolved = _ExpandSymlinks(prefix);
-
-    return TfAbsPath(resolved + suffix);
-#else
-    char resolved[ARCH_PATH_MAX];
-    if (!realpath(prefix.c_str(), resolved)) {
-        *error = ArchStrerror(errno);
-        return string();
-    }
-    return TfAbsPath(resolved + suffix);
-#endif
+    *error = errorCode.message();
+    return string{};
 }
 
 string::size_type
