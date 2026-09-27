@@ -45,6 +45,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sphereVertex,             "ImplicitSurface.Vertex.Sphere"))
     ((sphereFragment,           "ImplicitSurface.Fragment.Sphere"))
 
+    ((capsuleTypeDef,           "ImplicitSurface.TypeDef.Capsule"))
+    ((capsuleBounds,            "ImplicitSurface.Bounds.Capsule"))
+    ((capsuleIntersection,      "ImplicitSurface.Intersection.Capsule"))
+    ((capsuleVertex,            "ImplicitSurface.Vertex.Capsule"))
+    ((capsuleFragment,          "ImplicitSurface.Fragment.Capsule"))
+
     // main for all the shader stages
     ((mainVS,                   "ImplicitSurface.Vertex"))
     ((mainFS,                   "ImplicitSurface.Fragment"))
@@ -108,7 +114,13 @@ const _ShapeSections &_GetShapeSections(TfToken const &primType)
             _tokens->sphereBounds,
             _tokens->sphereIntersection,
             _tokens->sphereVertex,
-            _tokens->sphereFragment } }
+            _tokens->sphereFragment } },
+        { HdPrimTypeTokens->capsule,
+          { _tokens->capsuleTypeDef,
+            _tokens->capsuleBounds,
+            _tokens->capsuleIntersection,
+            _tokens->capsuleVertex,
+            _tokens->capsuleFragment } }
     };
 
     for (auto const &entry : shapeTable) {

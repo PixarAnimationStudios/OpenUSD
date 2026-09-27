@@ -160,6 +160,9 @@ public:
 
     HDST_API
     static bool IsEnabledNativeSphereRenderingSupport();
+
+    HDST_API
+    static bool IsEnabledNativeCapsuleRenderingSupport();
     
 private:
     void _ApplyTextureSettings();

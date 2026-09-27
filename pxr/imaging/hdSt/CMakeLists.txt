@@ -66,6 +66,7 @@ pxr_library(hdSt
         commandBuffer
         computation
         copyComputation
+        capsule
         debugCodes
         dependencyForwardingSceneIndexPlugin
         dependencySceneIndexPlugin
@@ -191,6 +192,7 @@ pxr_library(hdSt
     RESOURCE_FILES
         plugInfo.json
         shaders/basisCurves.glslfx
+        shaders/capsule.glslfx
         shaders/compute.glslfx
         shaders/coordUtils.glslfx
         shaders/domeLight.glslfx

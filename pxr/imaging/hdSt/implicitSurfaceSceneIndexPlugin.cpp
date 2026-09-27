@@ -51,8 +51,8 @@ const HdContainerDataSourceHandle _LocalInputArgs()
 {
     // Configure the scene index to generate meshes for implicit primitives
     // that are not natively supported by Storm. With
-    // HDST_ENABLE_NATIVE_SPHERES enabled, spheres can be rendered natively,
-    // so we avoid converting them to meshes here.
+    // When native implicit rendering is enabled for a prim type, avoid
+    // converting that type to a mesh here.
     HdDataSourceBaseHandle const toMeshSrc =
     HdRetainedTypedSampledDataSource<TfToken>::New(
         HdsiImplicitSurfaceSceneIndexTokens->toMesh);
@@ -61,12 +61,14 @@ const HdContainerDataSourceHandle _LocalInputArgs()
         HdPrimTypeTokens->cube,
         HdPrimTypeTokens->cone,
         HdPrimTypeTokens->cylinder,
-        HdPrimTypeTokens->capsule,
         HdPrimTypeTokens->plane
     };
 
     if (!HdStRenderDelegate::IsEnabledNativeSphereRenderingSupport()) {
         names.emplace_back(HdPrimTypeTokens->sphere);
+    }
+    if (!HdStRenderDelegate::IsEnabledNativeCapsuleRenderingSupport()) {
+        names.emplace_back(HdPrimTypeTokens->capsule);
     }
 
     std::vector<HdDataSourceBaseHandle> values(names.size(), toMeshSrc);

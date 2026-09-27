@@ -19,6 +19,7 @@
 #import $TOOLS/hdSt/shaders/pointId.glslfx
 
 #import $TOOLS/hdSt/shaders/sphere.glslfx
+#import $TOOLS/hdSt/shaders/capsule.glslfx
 
 
 --- --------------------------------------------------------------------------
