@@ -21,7 +21,7 @@ class TestPathUtils(unittest.TestCase):
         if not os.path.isdir('subdir/e'):
             os.makedirs('subdir/e')
         self.log.info('no symlinks')
-        self.assertEqual(os.path.abspath('subdir'), Tf.RealPath('subdir', True))
+        self.assertEqual(os.path.realpath('subdir'), Tf.RealPath('subdir', True))
 
         if hasattr(os, 'symlink'):
             try:
@@ -39,21 +39,23 @@ class TestPathUtils(unittest.TestCase):
                     os.symlink('f', 'g')
 
                 self.log.info('leaf dir is symlink')
-                self.assertEqual(os.path.abspath('subdir'),
+                self.assertEqual(os.path.realpath('subdir'),
                              Tf.RealPath('d', True))
                 self.log.info('symlinks through to dir')
-                self.assertEqual(os.path.abspath('subdir/e'),
+                self.assertEqual(os.path.realpath('subdir/e'),
                              Tf.RealPath('d/e', True))
                 self.log.info('symlinks through to nonexistent dirs')
-                self.assertEqual(os.path.abspath('subdir/e/f/g/h'),
+                self.assertEqual(os.path.realpath('subdir/e/f/g/h'),
                              Tf.RealPath('d/e/f/g/h', True))
                 self.log.info('symlinks through to broken link')
-                self.assertEqual('', Tf.RealPath('g', True))
-
-                self.log.info('symlinks through to broken link, '
-                              'raiseOnError=True')
+                # Note that Tf.RealPath differs in behavior from realpath in
+                # that considers a broken symlink to be inaccessible and will
+                # not resolve it.
+                self.assertEqual(os.path.join(os.path.abspath(os.getcwd()), 'g'),
+                                 Tf.RealPath('g', True))
+                self.log.info('child of broken symlink, raiseOnError=True')
                 with self.assertRaises(RuntimeError):
-                    Tf.RealPath('g', True, raiseOnError=True)
+                    Tf.RealPath('g', False, raiseOnError=True)
 
                 if platform.system() == 'Windows':
                     try:
@@ -66,7 +68,7 @@ class TestPathUtils(unittest.TestCase):
                             cwd = os.getcwd()
                             try:
                                 os.chdir(r'C:/symlink-test-link')
-                                self.assertEqual(os.path.abspath('C:/symlink-test'),
+                                self.assertEqual(os.path.realpath('C:/symlink-test'),
                                              Tf.RealPath(r'C:/symlink-test-link'))
                             finally:
                                 # Restore cwd before trying to remove the test
