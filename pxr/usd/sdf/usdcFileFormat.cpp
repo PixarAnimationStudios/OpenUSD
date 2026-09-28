@@ -133,6 +133,33 @@ SdfUsdcFileFormat::_ReadHelper(
     return true;
 }
 
+static
+Sdf_CrateData *
+_GetCrateData(SdfAbstractDataConstPtr const &dataSource)
+{
+    // XXX: WBN to avoid const-cast.
+    if (auto const *constCrateData =
+        dynamic_cast<Sdf_CrateData const *>(get_pointer(dataSource))) {
+        return const_cast<Sdf_CrateData *>(constCrateData);
+    }
+    return nullptr;
+}
+
+static
+Sdf_CrateData *
+_RequireCrateData(const SdfAbstractDataConstPtr &dataSource,
+                  const SdfLayer &layer,
+                  char const *fname)
+{
+    if (Sdf_CrateData *crateData = _GetCrateData(dataSource)) {
+        return crateData;
+    }
+    TF_CODING_ERROR("Called SdfUsdcFileFormat::%s with "
+                    "non-Crate-backed layer @%s@",
+                    fname, layer.GetIdentifier().c_str());
+    return nullptr;
+}
+
 bool
 SdfUsdcFileFormat::WriteToFile(const SdfLayer& layer,
                                const std::string& filePath,
@@ -141,10 +168,7 @@ SdfUsdcFileFormat::WriteToFile(const SdfLayer& layer,
 {
     SdfAbstractDataConstPtr dataSource = _GetLayerData(layer);
 
-    // XXX: WBN to avoid const-cast -- saving can't be non-mutating in general.
-    if (auto const *constCrateData =
-        dynamic_cast<Sdf_CrateData const *>(get_pointer(dataSource))) {
-        auto *crateData = const_cast<Sdf_CrateData *>(constCrateData);
+    if (Sdf_CrateData *crateData = _GetCrateData(_GetLayerData(layer))) {
         return crateData->Export(filePath);
     }
 
@@ -158,24 +182,33 @@ SdfUsdcFileFormat::WriteToFile(const SdfLayer& layer,
     return false;
 }
 
+// Crate distinguishes a save from an export -- hence this override rather than
+// falling back on WriteToFile -- because a save may reuse the bytes already in
+// the asset we read from, and because it leaves this layer's data attached to
+// wherever it wrote, while Export() (WriteToFile above) leaves the data attached
+// to the asset it was already backed by.
 bool
 SdfUsdcFileFormat::SaveToFile(const SdfLayer& layer,
                               const std::string& filePath,
                               const std::string& comment,
                               const FileFormatArguments& args) const
 {
-    SdfAbstractDataConstPtr dataSource = _GetLayerData(layer);
-
-    // XXX: WBN to avoid const-cast -- saving can't be non-mutating in general.
-    if (auto const *constCrateData =
-        dynamic_cast<Sdf_CrateData const *>(get_pointer(dataSource))) {
-        auto *crateData = const_cast<Sdf_CrateData *>(constCrateData);
-        return crateData->Save(filePath);
+    if (auto *crateData = _RequireCrateData(
+            _GetLayerData(layer), layer, "SaveToFile")) {
+        // Values we have not read since opening are still held as byte offsets
+        // into the asset we opened, so we can only rewrite that asset
+        // incrementally -- writing anywhere else means writing a complete file.
+        // SetIdentifier() and UpdateAssetInfo() can move the destination
+        // without re-reading, so these need not agree.
+        //
+        // The comparison is by string.  Different strings may name the same
+        // asset, in which case we forgo the incremental path needlessly and pay
+        // a full write -- always safe.  Identical strings name the same asset
+        // by the ar contract.
+        return crateData->GetAssetPath() == filePath
+            ? crateData->SaveToBackingAsset(filePath)
+            : crateData->SaveToNewAsset(filePath);
     }
-
-    TF_CODING_ERROR("Called SdfUsdcFileFormat::SaveToFile with "
-                    "non-Crate-backed layer @%s@",
-                    layer.GetIdentifier().c_str());
     return false;
 }
 

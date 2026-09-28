@@ -2700,6 +2700,11 @@ CrateFile::~CrateFile()
 CrateFile::Packer
 CrateFile::StartPacking(string const &fileName)
 {
+    // If we have a backing asset, we are updating it in place: fileName must
+    // name that same asset.  Held ValueReps are byte offsets into it and are
+    // written back unchanged, and _PackingContext only rewrites the sections
+    // above _toc.GetMinimumSectionStart().  See the comment on
+    // Sdf_CrateDataImpl::SaveInPlace.
     auto out = ArGetResolver().OpenAssetForWrite(
         ArResolvedPath(fileName), 
         _assetPath.empty() ? 

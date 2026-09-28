@@ -19,6 +19,7 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/declarePtrs.h"
 
+#include <string>
 #include <vector>
 #include <type_traits>
 

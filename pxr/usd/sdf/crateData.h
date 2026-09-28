@@ -37,7 +37,18 @@ public:
     static bool CanRead(const std::string &assetPath,
                         const std::shared_ptr<ArAsset> &asset);
 
-    bool Save(const std::string &fileName);
+    /// Returns the asset this object reads serialized data from, or the empty
+    /// string if it does not read from an asset.
+    const std::string &GetAssetPath() const;
+
+    /// Update the asset this object is backed by, in place.  \p fileName must
+    /// name that asset; see GetAssetPath().
+    bool SaveToBackingAsset(const std::string &fileName);
+
+    /// Write a complete new file at \p fileName and adopt it as the asset this
+    /// object is backed by.  \p fileName may name any asset, including the one
+    /// we are already backed by.
+    bool SaveToNewAsset(const std::string &fileName);
 
     bool Export(const std::string &fileName);
 
@@ -48,7 +59,7 @@ public:
               bool detached);
 
     virtual bool StreamsData() const;
-    virtual void CreateSpec(const SdfPath &path, 
+    virtual void CreateSpec(const SdfPath &path,
                             SdfSpecType specType);
     virtual bool HasSpec(const SdfPath &path) const;
     virtual void EraseSpec(const SdfPath &path);

@@ -312,7 +312,10 @@ public:
     /// \note If the layer is a USD text or binary file, its existing file
     /// version is preserved unless the saved content requires newer versions to
     /// represent, in which case it is automatically upgraded to the required
-    /// version.
+    /// version.  If SetIdentifier() or UpdateAssetInfo() has changed where the
+    /// layer will be written, a complete new file is written: a text layer still
+    /// preserves its version, but a binary layer is written at the current
+    /// version for newly created files, as Export() does.
     SDF_API
     bool Save(bool force = false) const;
 
@@ -496,9 +499,34 @@ public:
     SDF_API
     const std::string& GetIdentifier() const;
 
-    /// Sets the layer identifier. 
+    /// Sets the layer identifier.
     /// Note that the new identifier must have the same arguments (if any)
     /// as the old identifier.
+    ///
+    /// This does not change the layer's file format, so the new identifier must
+    /// not name something that would be read as a different format than this
+    /// layer is written in; doing so posts an error and leaves the layer
+    /// unchanged.  Retargeting a \c .usda layer to \c .usdc, for instance, is
+    /// rejected, while retargeting either to \c .usd is allowed because \c .usd
+    /// is read as whichever format it contains.  Use Export() to write a layer
+    /// in a different format.
+    ///
+    /// For a layer with no resolved path -- an anonymous layer being given a
+    /// real identifier -- there is no file to examine, so this check compares
+    /// the formats' file extensions instead.  That is conservative: naming an
+    /// anonymous layer \c .usd is rejected even though writing it would have
+    /// succeeded.  Export() is unaffected.
+    ///
+    /// This detaches the layer from the asset it was read from and associates
+    /// it with the asset the new identifier resolves to: a subsequent Save()
+    /// writes the layer's current content there, and a subsequent Reload()
+    /// reads from there.
+    ///
+    /// If the layer streams its data (see StreamsData(); binary \c .usdc and \c
+    /// .usd files for example), content continues to be read from the original
+    /// asset.  Call Save() or Reload() to complete the move to the new
+    /// identifer.  The original asset must remain intact until the move is
+    /// completed.
     SDF_API
     void SetIdentifier(const std::string& identifier);
 
@@ -506,6 +534,9 @@ public:
     /// layer identifier, which updates asset information such as the layer's
     /// resolved path and other asset info. This may be used to update the
     /// layer after external changes to the underlying asset system.
+    ///
+    /// Note that if the layer's resolved path changes, streaming layers may
+    /// still read from the original asset.  See notes in SetIdentifier().
     SDF_API
     void UpdateAssetInfo();
 

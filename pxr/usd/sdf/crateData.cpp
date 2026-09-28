@@ -10,6 +10,7 @@
 #include "crateFile.h"
 
 #include "pxr/base/tf/bitUtils.h"
+#include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -106,11 +107,36 @@ public:
 
     string const &GetAssetPath() const { return _crateFile->GetAssetPath(); }
 
-    bool Save(string const &fileName) {
-        TfAutoMallocTag tag("Sdf_CrateDataImpl::Save");
+    // Rewrite the asset this object is currently backed by, in place.
+    //
+    // Precondition: \p fileName must name the same asset as GetAssetPath(),
+    // unless GetAssetPath() is empty.  This is not a "write my content to that
+    // file" operation.  This data object still holds ValueReps pointing into
+    // the backing asset and are written back out as-is, and only the structural
+    // sections above _toc.GetMinimumSectionStart() are fully rewritten.
+    // Everything before that offset is assumed to be present in the output
+    // already.  Saving to a different asset therefore would either fail to open
+    // (the file does not exist, since a non-empty asset path selects
+    // ArResolver::WriteMode::Update) or silently produce a corrupt file whose
+    // value offsets index into the wrong bytes.
+    //
+    // Sdf_CrateData::SaveToNewAsset is the entry point for the other case: it
+    // materializes our content into a fresh crate, writes a complete new file,
+    // and adopts it.
+    bool SaveInPlace(string const &fileName) {
+        TfAutoMallocTag tag("Sdf_CrateDataImpl::SaveInPlace");
+
+        // Writing anywhere but our own asset corrupts unread values, as above.
+        // A mismatch here is a caller bug; refuse rather than write the file.
+        if (!TF_VERIFY(GetAssetPath().empty() || GetAssetPath() == fileName,
+                       "Asked to rewrite backing asset @%s@ in place, but the "
+                       "destination is @%s@",
+                       GetAssetPath().c_str(), fileName.c_str())) {
+            return false;
+        }
 
         TF_DESCRIBE_SCOPE("Saving usd binary file @%s@", fileName.c_str());
-        
+
         // Sort by path for better namespace-grouped data layout.
         vector<SdfPath> sortedPaths;
         sortedPaths.reserve(_data.size());
@@ -169,6 +195,10 @@ public:
 
     inline bool StreamsData() const {
         return _crateFile && !_crateFile->IsDetached();
+    }
+
+    inline bool IsDetached() const {
+        return _crateFile && _crateFile->IsDetached();
     }
 
     // Return either TargetPaths or ConnectionPaths as a VtValue.  If
@@ -1223,15 +1253,70 @@ Sdf_CrateData::CanRead(string const &assetPath,
     return CrateFile::CanRead(assetPath, asset);
 }
 
+string const &
+Sdf_CrateData::GetAssetPath() const
+{
+    // Truthful by construction: the only writes to CrateFile::_assetPath are in
+    // CrateFile::Open and Packer::Close, which set it to the asset just read or
+    // just written.  CopyFrom resolves to SdfAbstractData::CopyFrom, a VisitSpecs
+    // copy that never touches _crateFile.
+    return _impl->GetAssetPath();
+}
+
 bool
-Sdf_CrateData::Save(string const &fileName)
+Sdf_CrateData::SaveToBackingAsset(string const &fileName)
 {
     if (fileName.empty()) {
         TF_CODING_ERROR("Tried to save to empty fileName");
         return false;
     }
 
-    return _impl->Save(fileName);
+    // SaveInPlace checks its own precondition that fileName names the asset we
+    // are backed by.  SaveToNewAsset is the entry point for the other case.
+    return _impl->SaveInPlace(fileName);
+}
+
+bool
+Sdf_CrateData::SaveToNewAsset(string const &fileName)
+{
+    if (fileName.empty()) {
+        TF_CODING_ERROR("Tried to save to empty fileName");
+        return false;
+    }
+
+    // With no backing asset, writing directly produces a complete file.  This
+    // is the common create-then-save case; materializing a copy first would
+    // only add a full CopyFrom of content nothing depends on.
+    string const &assetPath = _impl->GetAssetPath();
+    if (assetPath.empty()) {
+        return _impl->SaveInPlace(fileName);
+    }
+
+    // Copy our content into a fresh crate and write a complete new file, as
+    // Export() does, then adopt it as our backing store.  Unlike Export() we
+    // preserve our detachedness so StreamsData() / IsDetached() are stable
+    // across the save.
+    //
+    // Reading our own values can fail, so guard with an error mark and leave
+    // this object untouched and still backed by its old asset if anything goes
+    // wrong.  Our old backing store stays alive until the new file has been
+    // written: the old _impl, its CrateFile / mmap / ArAsset are released by
+    // the assignment below, which only happens on success.
+    TfErrorMark m;
+    Sdf_CrateData tmp(/* detached = */ _impl->IsDetached());
+    tmp.CopyFrom(SdfAbstractDataConstPtr(this));
+    if (!m.IsClean() || !tmp._impl->SaveInPlace(fileName)) {
+        // We failed to materialize our content or failed to save.
+        return false;
+    }
+
+    // tmp's SaveInPlace ends in _PopulateFromCrateFile(), so tmp is properly
+    // backed by the new file.  Swapping only _impl leaves this Sdf_CrateData
+    // object -- and so SdfLayer's _data refptr -- valid, and requires no
+    // layer-level change notification: the content is identical, only the
+    // backing store moved.
+    _impl = std::move(tmp._impl);
+    return true;
 }
 
 bool
@@ -1250,7 +1335,7 @@ Sdf_CrateData::Export(string const &fileName)
     // to avoid any expense associated with detaching from the asset.
     Sdf_CrateData tmp(/* detached = */ false);
     tmp.CopyFrom(SdfAbstractDataConstPtr(this));
-    return tmp.Save(fileName);
+    return tmp.SaveToNewAsset(fileName);
 }
 
 bool

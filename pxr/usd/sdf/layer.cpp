@@ -2692,9 +2692,51 @@ SdfLayer::SetIdentifier(const string &identifier)
         return;
     }
 
+    // Changing the identifier does not change the layer's file format, so a
+    // subsequent Save() writes this layer's current format to the new asset.
+    // Reopening the new identifier, however, selects a format from its
+    // extension.  If that format cannot read what we write, Save() silently
+    // produces a file that cannot be reopened, since the write succeeds.
+    // Reject that here rather than at Save() time.  Export() is the way to
+    // write a layer in a different format.
+    //
+    // Check the asset content itself rather than comparing extensions.  Formats
+    // are not in general one-per-extension: .usd reads both text and crate, so
+    // moving a .usda layer to .usd is fine even though neither format lists the
+    // other's extension, and a .usd layer written as text can become .usda but
+    // not .usdc.  An extension we find no format for is not rejected.  Callers
+    // do write layers to arbitrary names so follow suit with Export() and fall
+    // back to the layer's current format instead of treating it as an error.
+    //
+    // With no resolved path (an anonymous layer being given a real identifier)
+    // there is no content to check, so fall back to asking whether the new
+    // format could read anything this one writes, via the extensions it claims.
+    // That rejects retargeting an anonymous layer to .usd, which would in fact
+    // work.  Erring toward rejection is the safe direction and the caller can
+    // Export() instead.
+    const string newExt = Sdf_GetExtension(newLayerPath);
+    const SdfFileFormatConstPtr newFormat =
+        newExt.empty() ? TfNullPtr : SdfFileFormat::FindByExtension(newExt);
+    if (newFormat && newFormat != GetFileFormat()) {
+        const string currentPath = GetResolvedPath().GetPathString();
+        const bool readable = currentPath.empty()
+            ? newFormat->IsSupportedExtension(
+                  GetFileFormat()->GetPrimaryFileExtension())
+            : newFormat->CanRead(currentPath);
+        if (!readable) {
+            TF_CODING_ERROR(
+                "Cannot change identifier of @%s@ to '%s': this layer is "
+                "written in the %s format, which cannot read '%s' files.  "
+                "Use Export() to write the layer with a different format.",
+                GetIdentifier().c_str(), identifier.c_str(),
+                GetFileFormat()->GetFormatId().GetText(), newExt.c_str());
+            return;
+        }
+    }
+
     string whyNot;
     if (!Sdf_CanCreateNewLayerWithIdentifier(newLayerPath, &whyNot)) {
-        TF_CODING_ERROR("Cannot change identifier to '%s': %s", 
+        TF_CODING_ERROR("Cannot change identifier to '%s': %s",
             identifier.c_str(), whyNot.c_str());
         return;
     }
@@ -5300,6 +5342,11 @@ SdfLayer::_Save(bool force) const
     // If the layer is muted, temporarily restore its contents during save.
     _TemporaryUnmuter unmuter(_GetMutedPath(), &_data);
 
+    // Note that path need not be the asset this layer's data reads from:
+    // SetIdentifier() and UpdateAssetInfo() can change where we will be written
+    // without re-reading.  A format that saves by updating its own asset
+    // incrementally is responsible for recognizing that case; see
+    // SdfFileFormat::SaveToFile().
     if (!GetFileFormat()->SaveToFile(
             *this, path, /*comment=*/{}, GetFileFormatArguments())) {
         return false;

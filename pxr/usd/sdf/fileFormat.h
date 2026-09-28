@@ -192,12 +192,12 @@ public:
     /// returns false.
     ///
     /// This member function makes no distinction between a "Save" operation
-    /// that updates the backing store for the \p layer itself and an "Export"
+    /// that writes \p layer back to where it will be backed and an "Export"
     /// operation that writes the \p layer data to a distinct asset.  For file
     /// formats that retain all data in memory this is typically fine.  But for
     /// file formats that handle data requests by reading from the backing
     /// store, this distinction can be important.  In that case, additionally
-    /// override the member function SaveToFile() to take different action.
+    /// override SaveToFile().
     SDF_API
     virtual bool WriteToFile(
         const SdfLayer& layer,
@@ -205,18 +205,29 @@ public:
         const std::string& comment = std::string(),
         const FileFormatArguments& args = FileFormatArguments()) const;
 
-    /// Write the content in \p layer to the file at \p filePath, which is the
-    /// backing store for \p layer itself.  If the content is successfully
-    /// written, this method returns true. Otherwise, false is returned and
-    /// errors are posted. The default implementation just calls WriteToFile()
-    /// passing all the same arguments.
+    /// Write the content in \p layer to the file at \p filePath as a "Save"
+    /// operation.  If the content is successfully written, this method returns
+    /// true. Otherwise, false is returned and errors are posted. The default
+    /// implementation just calls WriteToFile() passing the same arguments.
     ///
-    /// The purpose of this member function is to provide a distinction between
-    /// a "Save" operation that updates the backing store for the \p layer
-    /// itself and an "Export" operation that writes the \p layer data to a
-    /// distinct asset.  File formats that retain all data in memory can
-    /// typically override only WriteToFile(), but formats that do not may need
-    /// to take different action on "Save" vs "Export".
+    /// This member function exists so that a "Save" can preserve properties of
+    /// what \p layer already is where an "Export" would not -- for instance the
+    /// file version it was read at, or which underlying format a .usd layer is
+    /// encoded in.  Formats with no such policy need only override
+    /// WriteToFile().
+    ///
+    /// \p filePath may not be the asset \p layer was read from: SdfLayer::
+    /// SetIdentifier() and SdfLayer::UpdateAssetInfo() can change where a layer
+    /// will be written without re-reading it.  So an implementation that
+    /// rewrites only what changed rather than a complete file (worthwhile when
+    /// a complete rewrite is substantially more expensive than the edit) must
+    /// first establish that \p filePath names the asset that \p layer's data
+    /// currently reads from.  That is a question for the format and its data
+    /// object, which know how they are backed.
+    ///
+    /// A format whose data streams (see SdfAbstractData::StreamsData()) must
+    /// also re-associate \p layer's data with \p filePath on success, since
+    /// that is where the layer is backed once this call returns.
     SDF_API
     virtual bool SaveToFile(
         const SdfLayer& layer,

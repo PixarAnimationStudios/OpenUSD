@@ -19,7 +19,7 @@ Ar.SetPreferredResolver(preferredResolver)
 
 # Import other modules from pxr after Ar to ensure we don't pull on Ar
 # before the preferred resolver has been specified.
-from pxr import Sdf, Tf, Plug
+from pxr import Sdf, Tf, Plug, Vt
 
 class TestSdfLayer(unittest.TestCase):
     @classmethod
@@ -878,47 +878,337 @@ def "Root"
         self.assertTrue(prim)
 
     def test_DirtinessAfterSetIdentifier(self):
-        for filename in ['TestDirtinessAfterSetIdentifier.usda',
-                         'TestDirtinessAfterSetIdentifier-renamed.usda']:
+        for ext in ['usda', 'usdc']:
+            origName = 'TestDirtinessAfterSetIdentifier.' + ext
+            newName = 'TestDirtinessAfterSetIdentifier-renamed.' + ext
+
+            for filename in [origName, newName]:
+                if os.path.isfile(filename):
+                    os.remove(filename)
+
+            def _TestWithPrim(primPath):
+                # Create a new layer with the specified prim and verify that we
+                # can save it out to disk.
+                layer = Sdf.Layer.CreateNew(origName)
+                prim = Sdf.CreatePrimInLayer(layer, primPath)
+                self.assertTrue(layer.Save())
+                self.assertTrue(os.path.exists(origName))
+                self.assertFalse(layer.dirty)
+
+                # Now change the layer's identifier and verify that we can
+                # save it out to its new location even though the contents have
+                # not changed.
+                layer.identifier = newName
+                self.assertTrue(layer.dirty)
+                self.assertTrue(layer.Save())
+                self.assertTrue(os.path.exists(newName))
+
+                self.assertEqual(
+                    layer.ExportToString(),
+                    Sdf.Layer.OpenAsAnonymous(newName).ExportToString())
+
+            # This function will create a layer with the specified prim, change
+            # its identifier, then write the layer out to the new location.
+            # The first time through, there will be no file on disk at the
+            # new location.
+            _TestWithPrim('/test')
+
+            # The layer written out at the new location now exists for the
+            # second time through. This verifies that saving the layer still
+            # works as expected even if a file already exists at intended
+            # location.
+            _TestWithPrim('/test_2')
+
+    def test_SaveUnreadContentAfterSetIdentifier(self):
+        # A layer whose data streams -- in practice a crate layer -- holds
+        # values it has not read yet as offsets into the asset it was opened
+        # from. Saving after SetIdentifier() must write those values to the new
+        # asset rather than assume the new asset already contains them.
+        #
+        # The values must be arrays: small scalars and strings are rewritten
+        # from memory regardless, so a test using only those passes even when
+        # saving is broken.
+        arrayValue = Vt.FloatArray([float(1000 + i) for i in range(4000)])
+        sampleValue = Vt.FloatArray([float(5000 + i) for i in range(4000)])
+
+        origName = 'TestSaveUnreadContentAfterSetIdentifier.usdc'
+        newName = 'TestSaveUnreadContentAfterSetIdentifier-renamed.usdc'
+
+        def _Author(path, primPath, value, sample):
+            layer = Sdf.Layer.CreateNew(path)
+            prim = Sdf.CreatePrimInLayer(layer, primPath)
+            prim.specifier = Sdf.SpecifierDef
+            attr = Sdf.AttributeSpec(prim, 'points', Sdf.ValueTypeNames.FloatArray)
+            attr.default = value
+            if sample is not None:
+                layer.SetTimeSample(attr.path, 2.0, sample)
+            self.assertTrue(layer.Save())
+            del layer
+
+        def _TestWithPrim(primPath, createTarget):
+            for filename in [origName, newName]:
+                if os.path.isfile(filename):
+                    os.remove(filename)
+
+            _Author(origName, primPath, arrayValue, sampleValue)
+
+            if createTarget:
+                # Author the target with a much smaller value region, so that
+                # saving the offsets from origName into it would read the wrong
+                # bytes rather than happening to land on equivalent ones.
+                _Author(newName, '/other',
+                        Vt.FloatArray([float(7 + i) for i in range(8)]), None)
+
+            # Open the layer fresh so that no value has been read; each is
+            # still just an offset into origName.
+            layer = Sdf.Layer.FindOrOpen(origName)
+            self.assertTrue(layer)
+            streamsData = layer.StreamsData()
+            isDetached = layer.IsDetached()
+
+            layer.identifier = newName
+            self.assertTrue(layer.Save())
+            self.assertTrue(os.path.exists(newName))
+            self.assertFalse(layer.dirty)
+
+            # Saving moves the backing store but must not change whether the
+            # layer streams or is detached.
+            self.assertEqual(layer.StreamsData(), streamsData)
+            self.assertEqual(layer.IsDetached(), isDetached)
+
+            # Verify the content that landed on disk, reading it through a
+            # separate layer so we do not see this layer's in-memory state.
+            onDisk = Sdf.Layer.OpenAsAnonymous(newName)
+            attrPath = Sdf.Path(primPath).AppendProperty('points')
+            self.assertEqual(onDisk.GetAttributeAtPath(attrPath).default,
+                             arrayValue)
+            self.assertEqual(onDisk.QueryTimeSample(attrPath, 2.0), sampleValue)
+
+        # Nothing exists at the new location.
+        _TestWithPrim('/test', createTarget=False)
+
+        # A different layer already exists at the new location. Saving must
+        # replace it wholesale rather than write only part of the layer over it.
+        _TestWithPrim('/test_2', createTarget=True)
+
+    # Saving a crate layer back to the asset it was read from updates that asset
+    # in place, which the filesystem resolver implements by reopening the file
+    # "rb+" (TfSafeOutputFile::Update) rather than writing a sibling temporary
+    # file and renaming it over the destination (TfSafeOutputFile::Replace).  So
+    # the destination's inode is preserved by an incremental save and replaced by
+    # a complete rewrite, which is the only externally visible difference between
+    # the two -- both produce correct content.
+    #
+    # This couples the test to the resolver's write modes, so it is only run for
+    # a filesystem-backed resolver on a platform where inodes are meaningful.
+    @unittest.skipIf(platform.system() == 'Windows', 'inodes are POSIX-specific')
+    def test_SaveToBackingAssetIsIncremental(self):
+        arrayValue = Vt.FloatArray([float(1000 + i) for i in range(4000)])
+
+        # Both extensions must be covered: a .usd layer reaches crate through
+        # SdfUsdFileFormat, which has to forward the in-place save on rather than
+        # fall back to writing a complete file.
+        for ext in ['usdc', 'usd']:
+            path = 'TestSaveToBackingAssetIsIncremental.' + ext
+            if os.path.isfile(path):
+                os.remove(path)
+
+            layer = Sdf.Layer.CreateNew(path)
+            prim = Sdf.CreatePrimInLayer(layer, '/test')
+            prim.specifier = Sdf.SpecifierDef
+            attr = Sdf.AttributeSpec(prim, 'points',
+                                     Sdf.ValueTypeNames.FloatArray)
+            attr.default = arrayValue
+            self.assertTrue(layer.Save())
+            del layer, prim, attr
+
+            # Reopen so the array is still an offset into the file rather than a
+            # value we hold in memory, then dirty the layer and save it back to
+            # the same asset.
+            layer = Sdf.Layer.FindOrOpen(path)
+            self.assertTrue(layer)
+            inodeBefore = os.stat(path).st_ino
+
+            Sdf.CreatePrimInLayer(layer, '/test2').specifier = Sdf.SpecifierDef
+            self.assertTrue(layer.dirty)
+            self.assertTrue(layer.Save())
+            self.assertFalse(layer.dirty)
+
+            self.assertEqual(os.stat(path).st_ino, inodeBefore,
+                             'saving %s back to its own asset rewrote the whole '
+                             'file instead of updating it in place' % path)
+
+            # The incremental save must still produce correct content.
+            del layer
+            onDisk = Sdf.Layer.OpenAsAnonymous(path)
+            self.assertTrue(onDisk.GetPrimAtPath('/test2'))
+            self.assertEqual(
+                onDisk.GetAttributeAtPath('/test.points').default, arrayValue)
+
+    @unittest.skipIf(platform.system() == 'Windows', 'inodes are POSIX-specific')
+    def test_SaveAfterSetIdentifierIsCompleteRewrite(self):
+        # The complement of test_SaveToBackingAssetIsIncremental: once
+        # SetIdentifier has moved the destination away from the asset the layer
+        # reads from, the save must write a complete new file. See the comment
+        # there for why the inode is what distinguishes the two.
+        arrayValue = Vt.FloatArray([float(1000 + i) for i in range(4000)])
+
+        origName = 'TestSaveAfterSetIdentifierRewrite.usdc'
+        newName = 'TestSaveAfterSetIdentifierRewrite-renamed.usdc'
+        for filename in [origName, newName]:
             if os.path.isfile(filename):
                 os.remove(filename)
 
-        def _TestWithPrim(primPath):
-            # Create a new layer with the specified prim and verify that we
-            # can save it out to disk.
-            layer = Sdf.Layer.CreateNew('TestDirtinessAfterSetIdentifier.usda')
+        def _Author(path, primPath, value):
+            layer = Sdf.Layer.CreateNew(path)
             prim = Sdf.CreatePrimInLayer(layer, primPath)
+            prim.specifier = Sdf.SpecifierDef
+            attr = Sdf.AttributeSpec(prim, 'points',
+                                     Sdf.ValueTypeNames.FloatArray)
+            attr.default = value
             self.assertTrue(layer.Save())
-            self.assertTrue(os.path.exists(
-                'TestDirtinessAfterSetIdentifier.usda'))
-            self.assertFalse(layer.dirty)
 
-            # Now change the layer's identifier and verify that we can
-            # save it out to its new location even though the contents have
-            # not changed.
-            layer.identifier = 'TestDirtinessAfterSetIdentifier-renamed.usda'
-            self.assertTrue(layer.dirty)
+        _Author(origName, '/test', arrayValue)
+
+        # Pre-create the destination with a much smaller value region. Without
+        # this, offsets written from origName could land on equivalent bytes and
+        # the content check below would pass even for an in-place save.
+        _Author(newName, '/other',
+                Vt.FloatArray([float(7 + i) for i in range(8)]))
+
+        layer = Sdf.Layer.FindOrOpen(origName)
+        self.assertTrue(layer)
+        inodeBefore = os.stat(newName).st_ino
+
+        layer.identifier = newName
+        self.assertTrue(layer.Save())
+
+        self.assertNotEqual(os.stat(newName).st_ino, inodeBefore,
+                            'saving to a renamed layer updated the destination '
+                            'in place instead of replacing it')
+
+        del layer
+        onDisk = Sdf.Layer.OpenAsAnonymous(newName)
+        self.assertTrue(onDisk.GetPrimAtPath('/test'))
+        self.assertFalse(onDisk.GetPrimAtPath('/other'))
+        self.assertEqual(
+            onDisk.GetAttributeAtPath('/test.points').default, arrayValue)
+
+    def test_SaveStreamingFormatWithoutSaveToFile(self):
+        # A streaming format that overrides only WriteToFile inherits
+        # SdfFileFormat::SaveToFile, which forwards there, so it writes a
+        # complete file on every save. That is correct whether or not the
+        # destination is where the layer was read from; only a format that
+        # reuses bytes already at the destination has to tell those apart.
+        path = 'TestSaveStreamingFormat.test_streaming_format'
+        if os.path.isfile(path):
+            os.remove(path)
+
+        layer = Sdf.Layer.CreateNew(path)
+        self.assertTrue(layer)
+        self.assertTrue(layer.StreamsData())
+        self.assertTrue(layer.Save(force=True))
+        self.assertTrue(os.path.exists(path))
+
+        # Same again once the layer has been read rather than created, and with
+        # the destination moved out from under it.
+        del layer
+        layer = Sdf.Layer.FindOrOpen(path)
+        self.assertTrue(layer)
+
+        renamed = 'TestSaveStreamingFormat-renamed.test_streaming_format'
+        if os.path.isfile(renamed):
+            os.remove(renamed)
+        layer.identifier = renamed
+        self.assertTrue(layer.Save())
+        self.assertTrue(os.path.exists(renamed))
+
+    def test_SetIdentifierCannotChangeFileFormat(self):
+        # SetIdentifier does not change the layer's file format, so a Save()
+        # afterwards writes the layer's current format under the new name. If
+        # the new name would be read as a different format, that file could not
+        # be read back, so SetIdentifier rejects it. Export() is the way to
+        # write a layer in a different format.
+        def _Author(path, args=None):
+            layer = (Sdf.Layer.CreateNew(path, args) if args
+                     else Sdf.Layer.CreateNew(path))
+            Sdf.CreatePrimInLayer(layer, '/test').specifier = Sdf.SpecifierDef
             self.assertTrue(layer.Save())
-            self.assertTrue(os.path.exists(
-                'TestDirtinessAfterSetIdentifier-renamed.usda'))
+            return layer
 
-            self.assertEqual(
-                layer.ExportToString(),
-                Sdf.Layer.OpenAsAnonymous(
-                    'TestDirtinessAfterSetIdentifier-renamed.usda')
-                    .ExportToString())
+        def _Cleanup(*paths):
+            for path in paths:
+                if os.path.isfile(path):
+                    os.remove(path)
 
-        # This function will create a layer with the specified prim, change
-        # its identifier, then write the layer out to the new location.
-        # The first time through, there will be no file on disk at the
-        # new location.
-        _TestWithPrim('/test')
+        def _HasTestPrim(path):
+            # Hold the layer while querying it: spec handles go dormant once
+            # their layer is destroyed, so chaining off OpenAsAnonymous() would
+            # report a missing prim even when the file is correct.
+            onDisk = Sdf.Layer.OpenAsAnonymous(path)
+            return bool(onDisk) and bool(onDisk.GetPrimAtPath('/test'))
 
-        # The layer written out at the new location now exists for the
-        # second time through. This verifies that saving the layer still
-        # works as expected even if a file already exists at intended
-        # location.
-        _TestWithPrim('/test_2')
+        # Text and crate cannot be renamed to each other's extension.
+        for fromExt, toExt in [('usda', 'usdc'), ('usdc', 'usda')]:
+            src = 'TestSetIdentifierFormat.' + fromExt
+            dst = 'TestSetIdentifierFormat-renamed.' + toExt
+            _Cleanup(src, dst)
+
+            layer = _Author(src)
+            originalIdentifier = layer.identifier
+            with self.assertRaises(Tf.ErrorException):
+                layer.identifier = dst
+
+            # The layer is unchanged and still saveable under its own name.
+            self.assertEqual(layer.identifier, originalIdentifier)
+            self.assertEqual(layer.GetFileFormat().formatId, fromExt)
+            self.assertTrue(layer.Save(force=True))
+            self.assertFalse(os.path.exists(dst))
+            del layer
+
+        # .usd reads both text and crate, so retargeting to .usd is allowed in
+        # either direction, and the result must be readable.
+        for fromExt in ['usda', 'usdc']:
+            src = 'TestSetIdentifierToUsd.' + fromExt
+            dst = 'TestSetIdentifierToUsd-renamed.usd'
+            _Cleanup(src, dst)
+
+            layer = _Author(src)
+            layer.identifier = dst
+            self.assertTrue(layer.Save())
+            self.assertTrue(_HasTestPrim(dst))
+            del layer
+
+        # A .usd layer written as text may be retargeted to .usda, but not to
+        # .usdc: what matters is the encoding on disk, not the extension.
+        src = 'TestSetIdentifierUsdAsText.usd'
+        _Cleanup(src, 'TestSetIdentifierUsdAsText-renamed.usda',
+                 'TestSetIdentifierUsdAsText-renamed.usdc')
+
+        layer = _Author(src, {'format': 'usda'})
+        with self.assertRaises(Tf.ErrorException):
+            layer.identifier = 'TestSetIdentifierUsdAsText-renamed.usdc'
+        layer.identifier = 'TestSetIdentifierUsdAsText-renamed.usda'
+        self.assertTrue(layer.Save())
+        self.assertTrue(_HasTestPrim('TestSetIdentifierUsdAsText-renamed.usda'))
+
+        # An anonymous layer has no file to inspect, so the check falls back to
+        # the formats' claimed extensions. Giving an anonymous crate layer a
+        # .usda identifier would otherwise write crate content to a .usda file
+        # and report success.
+        _Cleanup('TestSetIdentifierAnonCrate.usda')
+        anon = Sdf.Layer.CreateAnonymous('.usdc')
+        Sdf.CreatePrimInLayer(anon, '/test').specifier = Sdf.SpecifierDef
+        with self.assertRaises(Tf.ErrorException):
+            anon.identifier = 'TestSetIdentifierAnonCrate.usda'
+        self.assertFalse(os.path.exists('TestSetIdentifierAnonCrate.usda'))
+
+        # Same format is still fine, which is the common case for naming an
+        # anonymous layer (see test_SetIdentifierAnonymousLayer).
+        _Cleanup('TestSetIdentifierAnonCrate.usdc')
+        anon.identifier = 'TestSetIdentifierAnonCrate.usdc'
+        self.assertTrue(anon.Save())
+        self.assertTrue(_HasTestPrim('TestSetIdentifierAnonCrate.usdc'))
 
     def test_VariantInertness(self):
         layer = Sdf.Layer.CreateAnonymous(".usda")
