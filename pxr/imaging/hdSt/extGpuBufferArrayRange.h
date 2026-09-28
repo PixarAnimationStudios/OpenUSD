@@ -67,14 +67,23 @@ public:
     /// Rebind \p sources in place, reusing the existing HdStBufferResource
     /// objects so that draw batches are not invalidated.
     ///
-    /// Updates a resource whose name is already bound and appends one that is
-    /// not, leaving bound resources absent from \p sources alone. Returns
-    /// false when a source cannot be applied in place at all -- an immutable
-    /// property such as the tuple type or the element offset changed -- in
-    /// which case the caller rebuilds the range from scratch.
+    /// Updates resources whose names are already bound, leaving bound
+    /// resources absent from \p sources alone. Returns false, changing
+    /// nothing, when a source cannot be applied in place: its name is not
+    /// bound yet, or an immutable property such as the tuple type or the
+    /// element offset changed. Either one changes what the shader binds, which
+    /// only a new range -- and the batch rebuild it triggers -- picks up.
     HDST_API
     bool UpdateExternalResources(
         HdBufferSourceSharedPtrVector const &sources);
+
+    /// Bind every resource of \p other not named in \p excludedNames, under
+    /// the same name and to the same buffer. Used to carry the resources a
+    /// sync did not touch over to the range that replaces \p other.
+    HDST_API
+    void AdoptResources(
+        HdStExtGpuBufferArrayRange const &other,
+        TfTokenVector const &excludedNames);
 
     /// The distinct arenas the currently bound buffers came from, appended to
     /// \p arenas. Storm brackets its access to these with the arenas'

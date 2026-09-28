@@ -95,6 +95,10 @@ public:
         return _bufferId;
     }
 
+protected:
+    HGIGL_API
+    void _ReleaseResources() override;
+
 private:
     friend class HgiGLExternalBufferArena;
 

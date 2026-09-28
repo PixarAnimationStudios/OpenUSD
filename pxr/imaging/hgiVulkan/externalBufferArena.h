@@ -208,6 +208,10 @@ protected:
     HGIVULKAN_API
     bool _IsSubmissionRetired(uint64_t stamp) override;
 
+    HGIVULKAN_API
+    void _AcquireBuffersWithoutWait(
+        std::vector<HgiExternalBuffer *> const &buffers) override;
+
 private:
     HgiVulkanExternalBufferArena() = delete;
     HgiVulkanExternalBufferArena(

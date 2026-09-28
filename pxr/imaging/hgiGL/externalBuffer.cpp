@@ -40,6 +40,16 @@ HgiGLExternalBuffer::HgiGLExternalBuffer(
 
 HgiGLExternalBuffer::~HgiGLExternalBuffer()
 {
+    _ReleaseResources();
+}
+
+void
+HgiGLExternalBuffer::_ReleaseResources()
+{
+    if (!_buffer && !_bufferId && !_memoryObjectId) {
+        return;
+    }
+
     // Tear the consumer-facing wrapper down first: nothing may name the GL
     // objects after this point.
     if (HgiGLBuffer *buffer =
@@ -131,6 +141,10 @@ HgiGLExternalBuffer::_CreateImported(
         return nullptr;
     }
 
+    // The import entry points return nothing and report failure only through
+    // the error queue, so start from an empty one.
+    HGIGL_POST_PENDING_GL_ERRORS();
+
     GLuint memoryObjectId = 0;
     glCreateMemoryObjectsEXT(1, &memoryObjectId);
     if (!memoryObjectId) {
@@ -177,8 +191,9 @@ HgiGLExternalBuffer::_CreateImported(
         break;
     }
 
-    if (!imported) {
+    if (!imported || glGetError() != GL_NO_ERROR) {
         glDeleteMemoryObjectsEXT(1, &memoryObjectId);
+        HGIGL_POST_PENDING_GL_ERRORS();
         return nullptr;
     }
 
@@ -190,6 +205,25 @@ HgiGLExternalBuffer::_CreateImported(
     }
     glNamedBufferStorageMemEXT(
         bufferId, desc.byteSize, memoryObjectId, desc.memoryOffset);
+
+    // A failed storage call leaves a buffer with no storage behind it, which
+    // would otherwise be handed out as if the import had worked.
+    GLint immutable = GL_FALSE;
+    GLint64 storageSize = 0;
+    const bool storageFailed = glGetError() != GL_NO_ERROR;
+    if (!storageFailed) {
+        glGetNamedBufferParameteriv(
+            bufferId, GL_BUFFER_IMMUTABLE_STORAGE, &immutable);
+        glGetNamedBufferParameteri64v(
+            bufferId, GL_BUFFER_SIZE, &storageSize);
+    }
+    if (storageFailed || immutable != GL_TRUE ||
+            storageSize != static_cast<GLint64>(desc.byteSize)) {
+        glDeleteBuffers(1, &bufferId);
+        glDeleteMemoryObjectsEXT(1, &memoryObjectId);
+        HGIGL_POST_PENDING_GL_ERRORS();
+        return nullptr;
+    }
 
     if (!desc.debugName.empty()) {
         HgiGLObjectLabel(GL_BUFFER, bufferId, desc.debugName);

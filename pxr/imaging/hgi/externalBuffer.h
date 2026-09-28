@@ -153,7 +153,18 @@ protected:
     HGI_API
     HgiExternalBuffer(HgiExternalBufferArena *arena, size_t byteSize);
 
+    /// Destroy the backend objects now, leaving GetBuffer() empty.
+    /// HgiExternalBufferArena calls this when its Hgi is torn down while the
+    /// buffer is still referenced: the last reference would otherwise destroy
+    /// them later, through a device that no longer exists.  Called only once
+    /// the device is idle.  Must be idempotent; the destructor may call it
+    /// again.  Default: nothing to release.
+    HGI_API
+    virtual void _ReleaseResources();
+
 private:
+    friend class HgiExternalBufferArena;
+
     HgiExternalBuffer() = delete;
     HgiExternalBuffer(const HgiExternalBuffer &) = delete;
     HgiExternalBuffer & operator=(const HgiExternalBuffer &) = delete;

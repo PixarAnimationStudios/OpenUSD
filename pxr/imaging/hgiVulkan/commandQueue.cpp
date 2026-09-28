@@ -12,6 +12,8 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/smallVector.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 static HgiVulkanCommandQueue::HgiVulkan_CommandPool*
@@ -102,6 +104,9 @@ HgiVulkanCommandQueue::HgiVulkanCommandQueue(HgiVulkanDevice* device)
 
 HgiVulkanCommandQueue::~HgiVulkanCommandQueue()
 {
+    // The device has been idled by its destructor before the queue goes.
+    _DestroyRetiredSemaphores(/*all*/ true);
+
     for (auto const& it : _commandPools) {
         _DestroyCommandPool(_device, it.second);
     }
@@ -229,17 +234,108 @@ HgiVulkanCommandQueue::GetVulkanGraphicsQueue() const
 void
 HgiVulkanCommandQueue::ResetConsumedCommandBuffers(HgiSubmitWaitType wait)
 {
-    // Lock the command pool map from concurrent access since we may insert.
-    std::lock_guard<std::mutex> guard(_commandPoolsMutex);
+    {
+        // Lock the command pool map from concurrent access since we may insert.
+        std::lock_guard<std::mutex> guard(_commandPoolsMutex);
 
-    // Loop all pools and reset any command buffers that have been consumed.
-    for (auto it : _commandPools) {
-        HgiVulkan_CommandPool* pool = it.second;
-        for (HgiVulkanCommandBuffer* cb : pool->commandBuffers) {
-            if (cb->ResetIfConsumedByGPU(wait)) {
-                _ReleaseInflightBit(cb->GetInflightId());
+        // Loop all pools and reset any command buffers that have been consumed.
+        for (auto it : _commandPools) {
+            HgiVulkan_CommandPool* pool = it.second;
+            for (HgiVulkanCommandBuffer* cb : pool->commandBuffers) {
+                if (cb->ResetIfConsumedByGPU(wait)) {
+                    _ReleaseInflightBit(cb->GetInflightId());
+                }
             }
         }
+    }
+
+    // The in-flight bits were just cleared, so this is where deferred
+    // semaphores become destroyable.
+    _DestroyRetiredSemaphores(/*all*/ false);
+}
+
+/* Multi threaded */
+void
+HgiVulkanCommandQueue::CancelPendingQueueFamilyTransfers(VkBuffer buffer)
+{
+    if (buffer == VK_NULL_HANDLE) {
+        return;
+    }
+    {
+        std::lock_guard<std::mutex> lock(_pendingQueueFamilyAcquiresMutex);
+        _pendingQueueFamilyAcquires.erase(
+            std::remove(_pendingQueueFamilyAcquires.begin(),
+                        _pendingQueueFamilyAcquires.end(), buffer),
+            _pendingQueueFamilyAcquires.end());
+    }
+    {
+        std::lock_guard<std::mutex> lock(_pendingQueueFamilyReleasesMutex);
+        _pendingQueueFamilyReleases.erase(
+            std::remove(_pendingQueueFamilyReleases.begin(),
+                        _pendingQueueFamilyReleases.end(), buffer),
+            _pendingQueueFamilyReleases.end());
+    }
+}
+
+/* Multi threaded */
+void
+HgiVulkanCommandQueue::RemovePendingSemaphore(VkSemaphore semaphore)
+{
+    if (semaphore == VK_NULL_HANDLE) {
+        return;
+    }
+    {
+        std::lock_guard<std::mutex> lock(_pendingWaitSemaphoresMutex);
+        _pendingWaitSemaphores.erase(
+            std::remove(_pendingWaitSemaphores.begin(),
+                        _pendingWaitSemaphores.end(), semaphore),
+            _pendingWaitSemaphores.end());
+    }
+    {
+        std::lock_guard<std::mutex> lock(_pendingSignalSemaphoresMutex);
+        _pendingSignalSemaphores.erase(
+            std::remove(_pendingSignalSemaphores.begin(),
+                        _pendingSignalSemaphores.end(), semaphore),
+            _pendingSignalSemaphores.end());
+    }
+}
+
+/* Multi threaded */
+void
+HgiVulkanCommandQueue::DestroySemaphoreDeferred(VkSemaphore semaphore)
+{
+    if (semaphore == VK_NULL_HANDLE) {
+        return;
+    }
+    const uint64_t inflightBits = GetInflightCommandBuffersBits();
+    std::lock_guard<std::mutex> lock(_deferredSemaphoresMutex);
+    _deferredSemaphores.emplace_back(semaphore, inflightBits);
+}
+
+/* Single threaded */
+void
+HgiVulkanCommandQueue::_DestroyRetiredSemaphores(bool all)
+{
+    std::vector<VkSemaphore> destroy;
+    {
+        std::lock_guard<std::mutex> lock(_deferredSemaphoresMutex);
+        if (_deferredSemaphores.empty()) {
+            return;
+        }
+        const uint64_t inflight = GetInflightCommandBuffersBits();
+        auto it = _deferredSemaphores.begin();
+        while (it != _deferredSemaphores.end()) {
+            if (all || (it->second & inflight) == 0) {
+                destroy.push_back(it->first);
+                it = _deferredSemaphores.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+    for (VkSemaphore semaphore : destroy) {
+        vkDestroySemaphore(
+            _device->GetVulkanDevice(), semaphore, HgiVulkanAllocator());
     }
 }
 
@@ -308,6 +404,58 @@ HgiVulkanCommandQueue::_FlushPendingQueueFamilyAcquires()
         0, nullptr);
 }
 
+/* Multi threaded */
+void
+HgiVulkanCommandQueue::AddPendingQueueFamilyRelease(VkBuffer buffer)
+{
+    std::lock_guard<std::mutex> lock(_pendingQueueFamilyReleasesMutex);
+    _pendingQueueFamilyReleases.push_back(buffer);
+}
+
+/* Single threaded */
+void
+HgiVulkanCommandQueue::_FlushPendingQueueFamilyReleases()
+{
+    std::vector<VkBuffer> buffers;
+    {
+        std::lock_guard<std::mutex> lock(_pendingQueueFamilyReleasesMutex);
+        if (_pendingQueueFamilyReleases.empty()) {
+            return;
+        }
+        buffers.swap(_pendingQueueFamilyReleases);
+    }
+
+    HgiVulkanCommandBuffer* cb = AcquireResourceCommandBuffer();
+
+    TfSmallVector<VkBufferMemoryBarrier, 4> releases;
+    releases.reserve(buffers.size());
+    for (VkBuffer buffer : buffers) {
+        VkBufferMemoryBarrier release =
+            { VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER };
+        release.srcAccessMask =
+            VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+        release.dstAccessMask = 0;  // ownership release: no destination access
+        release.srcQueueFamilyIndex = _device->GetGfxQueueFamilyIndex();
+        release.dstQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL;
+        release.buffer = buffer;
+        release.offset = 0;
+        release.size = VK_WHOLE_SIZE;
+        releases.push_back(release);
+    }
+
+    // ALL_COMMANDS as the first scope: that scope covers every command
+    // submitted earlier on this queue, so the release follows all of the
+    // frame's reads, including those in earlier submissions.
+    vkCmdPipelineBarrier(
+        cb->GetVulkanCommandBuffer(),
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        0,
+        0, nullptr,
+        static_cast<uint32_t>(releases.size()), releases.data(),
+        0, nullptr);
+}
+
 /* Single threaded */
 void
 HgiVulkanCommandQueue::Flush(
@@ -320,6 +468,10 @@ HgiVulkanCommandQueue::Flush(
     // because every queued command buffer already drained this list on its way
     // in, so whatever is left belongs to a buffer nothing queued reads yet.
     _FlushPendingQueueFamilyAcquires();
+
+    // After the acquires, so a buffer imported and handed back within one
+    // submission is acquired before it is released.
+    _FlushPendingQueueFamilyReleases();
 
     _FlushResourceCommandBuffer();
 

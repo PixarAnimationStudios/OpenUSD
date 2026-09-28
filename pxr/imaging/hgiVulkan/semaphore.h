@@ -38,11 +38,6 @@ class HgiVulkanDevice;
 class HgiVulkanSemaphore final : public HgiSemaphore
 {
 public:
-    /// Create a semaphore on \p device whose signal state is EXPORTABLE to
-    /// another API, so an application can import it and synchronize against
-    /// Hgi. Returns null when the device has no external-semaphore support.
-    /// GetExternalHandle() is the OS handle to hand the other API.
-    HGIVULKAN_API
     /// Create a semaphore for use on \p device only.
     ///
     /// Nothing crosses a device or API boundary, so this needs no external
@@ -99,6 +94,10 @@ public:
     uint64_t GetExternalHandle() const {
         return _externalHandle;
     }
+
+protected:
+    HGIVULKAN_API
+    void _ReleaseResources() override;
 
 private:
     HgiVulkanSemaphore(

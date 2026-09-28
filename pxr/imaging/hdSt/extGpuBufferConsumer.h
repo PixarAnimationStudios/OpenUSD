@@ -12,6 +12,7 @@
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSource.h"
+#include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/extGpuBufferSchema.h"
 
 #include "pxr/usd/sdf/path.h"
@@ -27,6 +28,12 @@ class HdStResourceRegistry;
 /// Storm-internal helpers, shared by HdStMesh / HdStPoints / HdStBasisCurves,
 /// that turn a producer-published HdExtGpuBufferSchema on a primvar into a
 /// Storm buffer source, and a set of such sources into a zero-copy range.
+
+/// True when \p registry's Hgi has at least one external buffer arena, i.e.
+/// when any prim could be carrying an external GPU buffer.
+HDST_API
+bool
+HdSt_HasExtGpuBufferArenas(HdStResourceRegistry *registry);
 
 /// Resolve the prim \p id's container data source from the terminal scene
 /// index. Hoist this out of per-primvar loops -- it does the one scene-index
@@ -66,9 +73,6 @@ HdSt_GetExtGpuBufferSchema(
 /// schema is incomplete, when the producer has withdrawn the buffer, when the
 /// buffer belongs to another Hgi, or when it does not fit the described
 /// layout. All of those are ordinary, expected outcomes rather than errors.
-///
-/// Also records the buffer's arena with \p registry, so the commit that reads
-/// it is bracketed by that arena's synchronization.
 HDST_API
 HdBufferSourceSharedPtr
 HdSt_TryCreateExtGpuBufferSource(
@@ -80,14 +84,38 @@ HdSt_TryCreateExtGpuBufferSource(
 /// binding directly, return a zero-copy range over them; otherwise nullptr, so
 /// the caller aggregates through a memory manager as usual.
 ///
-/// When \p existingBar is already an external-buffer range it is rebound in
-/// place and returned (the same pointer), so draw batches are not invalidated.
+/// \p sources holds only what changed this sync, and \p removedSpecs the
+/// primvars the prim no longer has. The resources of \p existingBar named in
+/// neither stay bound: when \p existingBar is an ordinary range still holding
+/// any, this returns nullptr so they are kept on the aggregation path.
+///
+/// With empty \p sources and an external-buffer \p existingBar, the existing
+/// range is returned unchanged, or a copy of it without the removed primvars,
+/// so a descriptor-only sync does not migrate it into a copied range.
+///
+/// When \p existingBar is already an external-buffer range binding the same
+/// names, it is rebound in place and returned (the same pointer), so draw
+/// batches are not invalidated. Otherwise a new range is returned, carrying
+/// over the resources of \p existingBar that were neither replaced nor
+/// removed.
+///
+/// \p primId only labels the HDST_EXT_GPU_BUFFER diagnostics.
 HDST_API
 HdBufferArrayRangeSharedPtr
 HdSt_TryCreateExtGpuBufferAliasBAR(
     HdBufferSourceSharedPtrVector const &sources,
     HdStResourceRegistry *registry,
-    HdBufferArrayRangeSharedPtr const &existingBar = nullptr);
+    HdBufferArrayRangeSharedPtr const &existingBar = nullptr,
+    HdBufferSpecVector const &removedSpecs = HdBufferSpecVector(),
+    SdfPath const &primId = SdfPath());
+
+/// Report under HDST_EXT_GPU_BUFFER that the external sources in \p sources
+/// are copied because GPU computations are queued against the same range.
+HDST_API
+void
+HdSt_ReportExtGpuBufferCopiedForComputations(
+    HdBufferSourceSharedPtrVector const &sources,
+    SdfPath const &primId);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

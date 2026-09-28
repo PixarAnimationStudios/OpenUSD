@@ -117,6 +117,11 @@ public:
     HDST_API
     VtDictionary GetRenderStats() const override;
 
+    /// Reports consumeExtGpuBuffer when the Hgi Storm was given has an
+    /// external buffer arena type (OpenGL, Vulkan).
+    HDST_API
+    HdContainerDataSourceHandle GetCapabilities() const override;
+
     HDST_API
     HdAovDescriptor
         GetDefaultAovDescriptor(TfToken const& name) const override;

@@ -138,6 +138,16 @@ private:
     // (Vulkan SDK 1.4.304.0+)
     std::mutex _vmaInteropWin32HandleLock;
     std::unordered_map<VkDeviceMemory, HANDLE> _vmaInteropWin32HandleForMemory;
+
+    // VMA's pfnFree hook. A freed VkDeviceMemory value can be handed out
+    // again for a new block, and a cached handle still names the old payload,
+    // so the entry has to go when VMA frees the memory.
+    static void VKAPI_PTR _OnVmaFreeDeviceMemory(
+        VmaAllocator allocator,
+        uint32_t memoryType,
+        VkDeviceMemory memory,
+        VkDeviceSize size,
+        void *userData);
 #endif
     uint32_t _vkGfxsQueueFamilyIndex;
     HgiVulkanCommandQueue* _commandQueue;

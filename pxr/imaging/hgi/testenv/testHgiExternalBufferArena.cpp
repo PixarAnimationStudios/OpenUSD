@@ -662,6 +662,34 @@ _TestPublishedValuesAreCarried()
     return true;
 }
 
+// An arena with an hgi-done semaphore and no app-done one still signals once
+// per publish. The application orders its own writes, but it still needs to
+// know when Hgi has finished reading, and the signal is keyed on the epoch the
+// wait records -- so the wait has to record it even with nothing to wait on.
+bool
+_TestHgiDoneOnlySignalsOncePerPublish()
+{
+    _StubArena arena;
+
+    auto hgiDone = std::make_shared<_StubSemaphore>();
+    arena.SetSemaphoresForTest(nullptr, hgiDone);
+
+    // Idle frames signal nothing.
+    arena.EncodeAppDoneWait();
+    TF_AXIOM(!arena.EncodeHgiDoneSignal());
+
+    for (int i = 0; i < 3; ++i) {
+        arena.NotifyAppDone();
+        arena.EncodeAppDoneWait();
+        TF_AXIOM(arena.EncodeHgiDoneSignal());
+        TF_AXIOM(!arena.EncodeHgiDoneSignal());
+    }
+
+    TF_AXIOM(hgiDone->numSignals == 3);
+
+    return true;
+}
+
 } // anonymous namespace
 
 int
@@ -683,6 +711,7 @@ main(int /*argc*/, char ** /*argv*/)
     success = success && _TestSignalRequiresAPrecedingWait();
     success = success && _TestPublishAfterWaitSlipsOneFrame();
     success = success && _TestPublishedValuesAreCarried();
+    success = success && _TestHgiDoneOnlySignalsOncePerPublish();
 
     TF_VERIFY(mark.IsClean());
 

@@ -15,4 +15,9 @@ HgiSemaphore::HgiSemaphore(HgiSemaphoreKind kind)
 
 HgiSemaphore::~HgiSemaphore() = default;
 
+void
+HgiSemaphore::_ReleaseResources()
+{
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

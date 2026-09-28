@@ -55,10 +55,11 @@ enum HgiSemaphoreKind
 /// The buffer list exists because GL needs it: glWaitSemaphoreEXT and
 /// glSignalSemaphoreEXT take explicit buffer and texture barrier arrays, and
 /// that is how the external-object extension establishes memory coherency for
-/// the imported objects.  Vulkan ignores the list -- its memory visibility
-/// comes from the semaphore alone.  Callers pass the external buffers whose
-/// memory the wait or signal must cover; HgiExternalBufferArena does this for
-/// its own buffers.
+/// the imported objects.  Vulkan's memory visibility comes from the semaphore
+/// alone, but it uses the list to transfer queue-family ownership of imported
+/// buffers to and from VK_QUEUE_FAMILY_EXTERNAL.  Callers pass the external
+/// buffers whose memory the wait or signal must cover; HgiExternalBufferArena
+/// does this for its own buffers.
 ///
 class HgiSemaphore
 {
@@ -97,7 +98,18 @@ protected:
     HGI_API
     explicit HgiSemaphore(HgiSemaphoreKind kind);
 
+    /// Destroy the backend object now, leaving a semaphore whose encodes do
+    /// nothing.  HgiExternalBufferArena calls this when its Hgi is torn down:
+    /// a reference the application still holds would otherwise destroy the
+    /// object later, through a device that no longer exists.  Must be
+    /// idempotent; the destructor may call it again.  Default: nothing to
+    /// release.
+    HGI_API
+    virtual void _ReleaseResources();
+
 private:
+    friend class HgiExternalBufferArena;
+
     HgiSemaphore() = delete;
     HgiSemaphore(const HgiSemaphore &) = delete;
     HgiSemaphore & operator=(const HgiSemaphore &) = delete;

@@ -8,8 +8,10 @@
 
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdSt/copyComputation.h"
+#include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
 #include "pxr/imaging/hdSt/extBufferDesc.h"
+#include "pxr/imaging/hdSt/extGpuBufferArrayRange.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
@@ -1292,6 +1294,13 @@ HdStResourceRegistry::_UpdateBufferArrayRange(
             !HdBufferSpec::IsSubset(updatedOrAddedSpecs, curBufferSpecs);
 
         if (!needsMigration) {
+            if (TfDebug::IsEnabled(HDST_EXT_GPU_BUFFER) &&
+                    dynamic_cast<HdStExtGpuBufferArrayRange *>(curRange.get())) {
+                TF_DEBUG(HDST_EXT_GPU_BUFFER).Msg(
+                    "[ExtGpuBuffer] direct range %p reused for copied "
+                    "updates; it owns no storage, so they will fail\n",
+                    static_cast<void *>(curRange.get()));
+            }
             // The existing BAR can be used to queue any updates.
             return curRange;
         }
@@ -1322,6 +1331,20 @@ HdStResourceRegistry::_UpdateBufferArrayRange(
     // (skip the dirty sources, since new data needs to be copied over)
     HdBufferSpecVector migrateSpecs = HdBufferSpec::ComputeDifference(
         newBufferSpecs, updatedOrAddedSpecs);
+    if (TfDebug::IsEnabled(HDST_EXT_GPU_BUFFER) &&
+            dynamic_cast<HdStExtGpuBufferArrayRange *>(curRange.get())) {
+        std::string snapshotNames;
+        for (const auto& spec : migrateSpecs) {
+            snapshotNames += snapshotNames.empty() ? "" : ", ";
+            snapshotNames += spec.name.GetString();
+        }
+        TfDebug::Helper().Msg(
+            "[ExtGpuBuffer] direct range %p migrated to copied range %p; "
+            "snapshotting [%s] -- later writes to those external buffers "
+            "are not seen until they are dirtied\n",
+            static_cast<void *>(curRange.get()),
+            static_cast<void *>(newRange.get()), snapshotNames.c_str());
+    }
     for (const auto& spec : migrateSpecs) {
         AddComputation(/*dstRange*/newRange,
                        std::make_shared<HdStCopyComputationGPU>(

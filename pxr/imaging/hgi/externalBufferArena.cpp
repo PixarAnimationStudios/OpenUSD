@@ -80,7 +80,11 @@ HgiExternalBufferArena::_GetBufferBarrierList() const
 void
 HgiExternalBufferArena::EncodeAppDoneWait()
 {
-    if (!_appDoneSemaphore) {
+    // Without an app-done semaphore there is nothing to wait on, but the epoch
+    // bookkeeping below still has to run: EncodeHgiDoneSignal() only signals
+    // for an epoch recorded here, and an arena configured with hgi-done alone
+    // would otherwise never signal.
+    if (!_appDoneSemaphore && !_hgiDoneSemaphore) {
         return;
     }
 
@@ -119,7 +123,17 @@ HgiExternalBufferArena::EncodeAppDoneWait()
                 "wait without having done so. Warned once per arena.");
     }
 
-    _appDoneSemaphore->EncodeWait(value, _GetBufferBarrierList());
+    if (_appDoneSemaphore) {
+        _appDoneSemaphore->EncodeWait(value, _GetBufferBarrierList());
+    } else {
+        _AcquireBuffersWithoutWait(_GetBufferBarrierList());
+    }
+}
+
+void
+HgiExternalBufferArena::_AcquireBuffersWithoutWait(
+    std::vector<HgiExternalBuffer *> const &)
+{
 }
 
 bool
@@ -202,6 +216,56 @@ HgiExternalBufferArena::GarbageCollect()
     }
 
     destroy.clear();
+}
+
+void
+HgiExternalBufferArena::_Shutdown()
+{
+    std::vector<HgiExternalBufferSharedPtr> buffers;
+    {
+        std::lock_guard<std::mutex> lock(_buffersMutex);
+        buffers.swap(_buffers);
+        for (_PendingDestroyBatch &batch : _pendingDestroy) {
+            for (HgiExternalBufferSharedPtr &buffer : batch.buffers) {
+                buffers.push_back(std::move(buffer));
+            }
+        }
+        _pendingDestroy.clear();
+    }
+
+    size_t numBuffersStillReferenced = 0;
+    for (HgiExternalBufferSharedPtr const &buffer : buffers) {
+        if (buffer.use_count() > 1) {
+            ++numBuffersStillReferenced;
+        }
+        buffer->_ReleaseResources();
+        buffer->_arena = nullptr;
+    }
+    buffers.clear();
+
+    size_t numSemaphoresStillReferenced = 0;
+    for (HgiSemaphoreSharedPtr *semaphore :
+            { &_appDoneSemaphore, &_hgiDoneSemaphore }) {
+        if (*semaphore) {
+            if (semaphore->use_count() > 1) {
+                ++numSemaphoresStillReferenced;
+            }
+            (*semaphore)->_ReleaseResources();
+            semaphore->reset();
+        }
+    }
+
+    _hgi = nullptr;
+
+    if (numBuffersStillReferenced || numSemaphoresStillReferenced) {
+        TF_CODING_ERROR("Hgi was destroyed while %zu external buffer(s) and "
+                        "%zu semaphore(s) from its arena were still "
+                        "referenced. Their GPU resources have been released; "
+                        "release every buffer and semaphore before "
+                        "destroying Hgi.",
+                        numBuffersStillReferenced,
+                        numSemaphoresStillReferenced);
+    }
 }
 
 HgiExternalBufferArenaUsage

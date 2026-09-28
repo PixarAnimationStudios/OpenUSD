@@ -171,6 +171,7 @@ HgiVulkanBuffer::HgiVulkanBuffer(
     , _cpuStagingAddress(nullptr)
     , _mappable(false)
     , _isExternal(false)          // owning: we allocated the memory
+    , _isExported(true)
 {
     HgiVulkanDevice* device = hgi->GetPrimaryDevice();
     VmaAllocator vma = device->GetVulkanMemoryAllocator();
@@ -199,10 +200,11 @@ HgiVulkanBuffer::HgiVulkanBuffer(
     _descriptor.initialData = nullptr;
 }
 
-// Picks a memory type that the buffer accepts and that is device local. For
-// imported memory this must be a type the exporting allocation also used;
-// requesting DEVICE_LOCAL matches how the exportable allocation is made
-// (VMA_MEMORY_USAGE_GPU_ONLY), so the compatible-type sets intersect.
+// Picks a memory type that the buffer accepts and that is device local. Only
+// a fallback for an import whose exporter did not report its memory type:
+// the import must use the exporter's type, and DEVICE_LOCAL matches how the
+// exportable allocation is made (VMA_MEMORY_USAGE_GPU_ONLY) often enough to
+// be worth trying.
 static uint32_t
 _SelectDeviceLocalMemoryType(HgiVulkanDevice* device, uint32_t typeBits)
 {
@@ -269,10 +271,41 @@ HgiVulkanBuffer::HgiVulkanBuffer(
     VkMemoryRequirements memReqs;
     vkGetBufferMemoryRequirements(vkDevice, _vkBuffer, &memReqs);
 
-    const uint32_t memoryTypeIndex =
-        _SelectDeviceLocalMemoryType(device, memReqs.memoryTypeBits);
+    // The import has to use the exporter's memory type. Only guess when the
+    // producer could not say which it was.
+    uint32_t memoryTypeIndex = desc.memoryTypeIndex;
+    if (memoryTypeIndex == UINT32_MAX) {
+        memoryTypeIndex =
+            _SelectDeviceLocalMemoryType(device, memReqs.memoryTypeBits);
+    } else if (memoryTypeIndex >= VK_MAX_MEMORY_TYPES ||
+               !(memReqs.memoryTypeBits & (1u << memoryTypeIndex))) {
+        TF_WARN("The imported interop buffer does not accept the exporter's "
+                "memory type %u (accepted types 0x%x)",
+                memoryTypeIndex, memReqs.memoryTypeBits);
+        memoryTypeIndex = UINT32_MAX;
+    }
     if (memoryTypeIndex == UINT32_MAX) {
         TF_WARN("No memory type accepts the imported interop buffer");
+        vkDestroyBuffer(vkDevice, _vkBuffer, HgiVulkanAllocator());
+        _vkBuffer = nullptr;
+        return;
+    }
+
+    // Checked before importing anything: an unaligned or out-of-range bind is
+    // invalid usage that drivers often accept and corrupt memory with later.
+    const bool dedicatedOk = !desc.dedicated || desc.memoryOffset == 0;
+    const bool aligned = memReqs.alignment == 0 ||
+        desc.memoryOffset % memReqs.alignment == 0;
+    const bool fits = desc.memoryOffset <= desc.memoryBlockSize &&
+        memReqs.size <= desc.memoryBlockSize - desc.memoryOffset;
+    if (!dedicatedOk || !aligned || !fits) {
+        TF_WARN("Imported interop buffer cannot be bound: offset %zu, "
+                "alignment %llu, needs %llu bytes of a %zu-byte block%s",
+                desc.memoryOffset,
+                static_cast<unsigned long long>(memReqs.alignment),
+                static_cast<unsigned long long>(memReqs.size),
+                desc.memoryBlockSize,
+                dedicatedOk ? "" : " (a dedicated allocation binds at 0)");
         vkDestroyBuffer(vkDevice, _vkBuffer, HgiVulkanAllocator());
         _vkBuffer = nullptr;
         return;
@@ -345,21 +378,44 @@ HgiVulkanBuffer::HgiVulkanBuffer(
     // The memory was last written outside this device's queue family, and the
     // buffer is VK_SHARING_MODE_EXCLUSIVE, so ownership has to be acquired from
     // VK_QUEUE_FAMILY_EXTERNAL before first use. Skipping this is the classic
-    // "works on one vendor, corrupts on another" interop bug. One acquire per
-    // import suffices: the producer re-releases to EXTERNAL each time it writes
-    // (for a GL producer, glSignalSemaphoreEXT's buffer list does that).
-    //
+    // "works on one vendor, corrupts on another" interop bug. This covers the
+    // first use only: every later hand-over is a release at hgi-done and an
+    // acquire at app-done, encoded by HgiVulkanSemaphore, because the producer
+    // re-acquires to write and re-releases each time it publishes.
+    AcquireExternalOwnership();
+}
+
+void
+HgiVulkanBuffer::AcquireExternalOwnership()
+{
+    if (!SharesQueueFamilyExternal() || _ownedByGfxQueue.exchange(true)) {
+        return;
+    }
     // Queued rather than recorded here. Recording needs the resource command
     // buffer, which is main-thread only, and a consumer imports during its Sync,
     // which runs in parallel -- so recording inline fails the queue's thread
     // check on whichever prims a worker thread happens to pick up.
-    device->GetCommandQueue()->AddPendingQueueFamilyAcquire(_vkBuffer);
+    GetDevice()->GetCommandQueue()->AddPendingQueueFamilyAcquire(_vkBuffer);
+}
+
+void
+HgiVulkanBuffer::ReleaseExternalOwnership()
+{
+    if (!SharesQueueFamilyExternal() || !_ownedByGfxQueue.exchange(false)) {
+        return;
+    }
+    GetDevice()->GetCommandQueue()->AddPendingQueueFamilyRelease(_vkBuffer);
 }
 
 HgiVulkanBuffer::~HgiVulkanBuffer()
 {
     _cpuStagingAddress = nullptr;
     _stagingBuffer = nullptr;
+
+    if (SharesQueueFamilyExternal()) {
+        GetDevice()->GetCommandQueue()->CancelPendingQueueFamilyTransfers(
+            _vkBuffer);
+    }
 
     // Adopted (external) buffers are non-owning: never free the producer's
     // VkBuffer/memory.

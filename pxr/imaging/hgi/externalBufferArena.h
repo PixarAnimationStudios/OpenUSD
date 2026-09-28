@@ -305,6 +305,14 @@ protected:
     HGI_API
     virtual bool _IsSubmissionRetired(uint64_t stamp) = 0;
 
+    /// Take back from the application whatever the app-done wait would have,
+    /// for an arena that has an hgi-done semaphore but no app-done one: the
+    /// hgi-done signal hands \p buffers back each frame, so something has to
+    /// reclaim them before the next read.  Default: nothing to reclaim.
+    HGI_API
+    virtual void _AcquireBuffersWithoutWait(
+        std::vector<HgiExternalBuffer *> const &buffers);
+
 private:
     // Encodes the bracket from StartFrame/EndFrame. The reverse friendship
     // already exists in hgi.h, so the two classes were coupled before this.
@@ -318,6 +326,14 @@ private:
     // The external buffers whose memory the arena's waits and signals must
     // cover. GL needs these listed explicitly; see HgiSemaphore.
     std::vector<HgiExternalBuffer *> _GetBufferBarrierList() const;
+
+    // Called by Hgi at teardown, once the device is idle. Destroys the backend
+    // objects of every buffer and semaphore -- including ones the application
+    // still references, which would otherwise be destroyed later through a
+    // device that no longer exists -- and detaches the arena from its Hgi, so
+    // that GetHgi() returns null and a backend's entry points refuse further
+    // work. The arena object itself lives on for as long as it is referenced.
+    void _Shutdown();
 
     // The buffers one GarbageCollect() pass stopped counting as live, and the
     // stamp naming the GPU work that could still have been reading them at

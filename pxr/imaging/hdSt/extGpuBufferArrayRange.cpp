@@ -6,7 +6,6 @@
 //
 #include "pxr/imaging/hdSt/extGpuBufferArrayRange.h"
 
-#include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/extGpuBufferSource.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/tokens.h"
@@ -52,6 +51,10 @@ HdStExtGpuBufferArrayRange::SetExternalResource(
     TfToken const &name,
     HdStExtGpuBufferDesc const &desc)
 {
+    TF_VERIFY(desc.IsDirectBindable(),
+        "Stream '%s' cannot be bound in place (offset %zu, stride %zu)",
+        name.GetText(), desc.byteOffset, desc.byteStride);
+
     const int stride =
         static_cast<int>(HdDataSizeOfTupleType(desc.tupleType));
 
@@ -123,37 +126,58 @@ HdStExtGpuBufferArrayRange::UpdateExternalResources(
     for (HdBufferSourceSharedPtr const &source : sources) {
         HdStExtGpuBufferSource const *extSource =
             HdSt_GetExtGpuBufferSource(source);
-        if (!extSource) {
+        if (!extSource || !extSource->GetDescriptor().IsDirectBindable()) {
             return false;
         }
         const int index = _FindResource(source->GetName());
-        if (index >= 0) {
-            HdStBufferResourceSharedPtr const &resource =
-                _resources[index].second;
-            HdStExtGpuBufferDesc const &desc = extSource->GetDescriptor();
-            if (desc.tupleType != resource->GetTupleType() ||
-                    static_cast<int>(desc.byteOffset) !=
-                        resource->GetOffset()) {
-                return false;
-            }
+        if (index < 0) {
+            return false;
+        }
+        HdStBufferResourceSharedPtr const &resource = _resources[index].second;
+        HdStExtGpuBufferDesc const &desc = extSource->GetDescriptor();
+        if (desc.tupleType != resource->GetTupleType() ||
+                static_cast<int>(desc.byteOffset) != resource->GetOffset()) {
+            return false;
         }
         extSources.push_back(extSource);
     }
 
     for (HdStExtGpuBufferSource const *extSource : extSources) {
-        HdStExtGpuBufferDesc const &desc = extSource->GetDescriptor();
         const int index = _FindResource(extSource->GetName());
-        if (index >= 0) {
-            // Checked above, so this cannot fail now.
-            _UpdateResource(static_cast<size_t>(index), desc);
-        } else {
-            SetExternalResource(extSource->GetName(), desc);
-        }
+        // Checked above, so this cannot fail now.
+        _UpdateResource(static_cast<size_t>(index),
+                        extSource->GetDescriptor());
     }
 
     _valid = !_resources.empty();
     IncrementVersion();
     return true;
+}
+
+void
+HdStExtGpuBufferArrayRange::AdoptResources(
+    HdStExtGpuBufferArrayRange const &other,
+    TfTokenVector const &excludedNames)
+{
+    for (size_t i = 0; i < other._resources.size(); ++i) {
+        TfToken const &name = other._resources[i].first;
+        if (std::find(excludedNames.begin(), excludedNames.end(), name) !=
+                excludedNames.end()) {
+            continue;
+        }
+        // A fresh resource object rather than a shared one: a later in-place
+        // rebind of this range must not rewrite the range it replaced.
+        HdStBufferResourceSharedPtr const &src = other._resources[i].second;
+        auto resource = std::make_shared<HdStBufferResource>(
+            src->GetRole(), src->GetTupleType(), src->GetOffset(),
+            src->GetStride());
+        resource->SetAllocation(src->GetHandle(), src->GetSize());
+
+        _resources.push_back(std::make_pair(name, resource));
+        _externalBuffers.push_back(other._externalBuffers[i]);
+        _numElements = other._numElements;
+        _valid = true;
+    }
 }
 
 void
@@ -336,30 +360,13 @@ HdStExtGpuBufferArrayRange::GetResources() const
 const void *
 HdStExtGpuBufferArrayRange::_GetAggregation() const
 {
-    // Two alias ranges aggregate when they bind the same buffer. The first
-    // buffer stands for the set: a producer builds its ranges with the same
-    // ordered layout (positions, normals, uv, ...) every time, so agreeing on
-    // the first implies agreeing on all of them.
-    //
-    // The buffer's address is the key, which is sound because this range holds
-    // a strong reference -- the object cannot be destroyed and another land at
-    // the same address while it is bound here. Reading the native handle
-    // instead would be wrong: a producer that recycles an allocation hands out
-    // the same handle for what is, to Storm, a different buffer.
-    if (_externalBuffers.empty() || !_externalBuffers.front()) {
-        // An empty range is its own aggregation island.
-        return this;
-    }
-
-    HgiExternalBuffer const *buffer = _externalBuffers.front().get();
-    TF_DEBUG(HDST_DRAW).Msg(
-        "[ExternalGpuBAR] aggregation key: buffer=%p, resources=%zu, "
-        "first=%s\n",
-        static_cast<const void *>(buffer),
-        _resources.size(),
-        _resources.empty() ? "<none>" : _resources.front().first.GetText());
-
-    return buffer;
+    // Every alias range is its own aggregation island. A draw batch binds the
+    // resources of its first item and tells the others apart only by element
+    // offset, which is always zero here, so two alias ranges can share a batch
+    // only if they bind identical data. Keying on the range also keeps the key
+    // stable across an in-place rebind, which would otherwise mark every draw
+    // batch dirty.
+    return this;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

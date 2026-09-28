@@ -1717,6 +1717,7 @@
         SCHEMA_NAME = 'RenderCapabilities',
         MEMBERS = [
             ('motionBlur', T_BOOL, {}),
+            ('consumeExtGpuBuffer', T_BOOL, {}),
         ],
     ),
 

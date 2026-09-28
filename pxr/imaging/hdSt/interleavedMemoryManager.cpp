@@ -747,7 +747,9 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
         HgiBlitCmds *blitCmds =
             GetResourceRegistry()->GetGlobalBlitCmds();
 
-        for (size_t i = 0; i < _numElements; ++i) {
+        size_t const numElems =
+            std::min(_numElements, bufferSource->GetNumElements());
+        for (size_t i = 0; i < numElems; ++i) {
             HgiBufferGpuToGpuOp copyOp;
             copyOp.gpuSourceBuffer      = desc.GetHandle();
             copyOp.sourceByteOffset     = desc.byteOffset + i * srcStride;
@@ -759,10 +761,10 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
         }
 
         HD_PERF_COUNTER_ADD(HdStPerfTokens->copyBufferGpuToGpu,
-                            (double)_numElements);
+                            (double)numElems);
         HD_PERF_COUNTER_INCR(HdStPerfTokens->extGpuBufferCopyCount);
         HD_PERF_COUNTER_ADD(HdStPerfTokens->extGpuBufferCopyBytes,
-                            (double)(_numElements * elemSize));
+                            (double)(numElems * elemSize));
         return;
     }
 

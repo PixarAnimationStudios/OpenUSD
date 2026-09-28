@@ -1272,6 +1272,24 @@ _RefineOrQuadrangulateOrTriangulateFaceVaryingPrimvar(
     return source;
 }
 
+// True when face-varying triangulation leaves the data unchanged (see
+// HdMeshUtil::ComputeTriangulatedFaceVaryingPrimvar), so the authored
+// face-varying layout is the one the shader indexes.
+static bool
+_IsFaceVaryingTriangulationIdentity(HdSt_MeshTopologySharedPtr const &topology)
+{
+    if (topology->GetOrientation() != HdTokens->rightHanded ||
+        !topology->GetHoleIndices().empty()) {
+        return false;
+    }
+    for (int numVerts : topology->GetFaceVertexCounts()) {
+        if (numVerts != 3) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static bool
 _GetDoubleSupport(
     const HdStResourceRegistrySharedPtr& resourceRegistry)
@@ -1478,34 +1496,27 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             // TODO: We don't need to pull primvar metadata every time a
             // value changes, but we need support from the delegate.
 
-            VtValue value = GetPrimvar(sceneDelegate, primvar.name);
-
             // --- External GPU buffer fast path ---
-            if (HdBufferSourceSharedPtr extSource =
-                    HdSt_TryCreateExtGpuBufferSource(
-                        primvar.name,
-                        HdSt_GetExtGpuBufferSchema(extPrimDs, primvar.name),
-                        resourceRegistry.get())) {
-                if (primvar.name == HdTokens->points) {
-                    _pointsDataType = extSource->GetTupleType().type;
-                } else if (primvar.name == HdTokens->normals) {
-                    _sceneNormalsInterpolation =
-                        isVarying ? HdInterpolationVarying
-                                  : HdInterpolationVertex;
-                    _sceneNormalsFromPrimvars = true;
-                }
-                sources.push_back(std::move(extSource));
-                continue;
-            }
-
-            if (!HdStIsPrimvarValidForDrawItem(drawItem, primvar.name, value)) {
-                zeroElementPrimvars.push_back(primvar);
-                continue;
-            }
-
+            // Checked before pulling the CPU value, which may be a lazy data
+            // source that is expensive to evaluate.
             HdBufferSourceSharedPtr source =
-                std::make_shared<HdVtBufferSource>(primvar.name, value, 1,
-                                                   doublesSupported);
+                HdSt_TryCreateExtGpuBufferSource(
+                    primvar.name,
+                    HdSt_GetExtGpuBufferSchema(extPrimDs, primvar.name),
+                    resourceRegistry.get());
+
+            if (!source) {
+                VtValue value = GetPrimvar(sceneDelegate, primvar.name);
+
+                if (!HdStIsPrimvarValidForDrawItem(
+                        drawItem, primvar.name, value)) {
+                    zeroElementPrimvars.push_back(primvar);
+                    continue;
+                }
+
+                source = std::make_shared<HdVtBufferSource>(
+                    primvar.name, value, 1, doublesSupported);
+            }
 
             if (source->GetNumElements() == 0 &&
                 primvar.name != HdTokens->points) {
@@ -1555,9 +1566,12 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
                 // If the primvar has more data than needed, we issue a warning,
                 // but don't skip the primvar update. Truncate the buffer to
-                // the expected length.
-                std::static_pointer_cast<HdVtBufferSource>(source)
-                    ->Truncate(numPoints);
+                // the expected length. An external GPU buffer can't be
+                // truncated; the surplus elements are simply not indexed.
+                if (!source->IsGpuBacked()) {
+                    std::static_pointer_cast<HdVtBufferSource>(source)
+                        ->Truncate(numPoints);
+                }
             }
 
             if (primvar.name == HdTokens->normals) {
@@ -1677,26 +1691,30 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 HdPrimvarDescriptorFromSchema(
                     HdTokens->points, pointsSchema);
             primvars.push_back(pd);
-            VtValue value;
-            HdSampledDataSourceHandle valueDs =
-                pointsSchema.GetPrimvarValue();
-            if (valueDs) {
-                value = valueDs->GetValue(0.0f);
-            }
             // --- External GPU buffer fast path ---
             // When the producer publishes an external GPU buffer for points,
-            // use it directly (the CPU value is intentionally empty in that
-            // mode); otherwise fall back to the authored CPU array.  The
+            // use it directly; otherwise fall back to the authored CPU array.
+            // The CPU value is only pulled in the fallback, since it may be a
+            // lazy data source that is expensive to evaluate. The
             // element-count guards below apply equally to the external source.
-            HdBufferSourceSharedPtr source =
-                HdSt_TryCreateExtGpuBufferSource(
+            HdBufferSourceSharedPtr source;
+            if (HdSt_HasExtGpuBufferArenas(resourceRegistry.get())) {
+                source = HdSt_TryCreateExtGpuBufferSource(
                     HdTokens->points,
                     HdSt_GetExtGpuBufferSchema(prim.dataSource, HdTokens->points),
                     resourceRegistry.get());
-            if (!source && HdStIsPrimvarValidForDrawItem(
-                drawItem, HdTokens->points, value)) {
-                source = std::make_shared<HdVtBufferSource>(HdTokens->points,
-                    value, 1, doublesSupported);
+            }
+            if (!source) {
+                VtValue value;
+                if (HdSampledDataSourceHandle valueDs =
+                        pointsSchema.GetPrimvarValue()) {
+                    value = valueDs->GetValue(0.0f);
+                }
+                if (HdStIsPrimvarValidForDrawItem(
+                        drawItem, HdTokens->points, value)) {
+                    source = std::make_shared<HdVtBufferSource>(
+                        HdTokens->points, value, 1, doublesSupported);
+                }
             }
 
             if (source == nullptr) {
@@ -1870,7 +1888,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     // updated in-place, avoiding draw-batch invalidation.
     if (computations.empty()) {
         if (HdBufferArrayRangeSharedPtr aliasBAR =
-                HdSt_TryCreateExtGpuBufferAliasBAR(sources, resourceRegistry.get(), bar)) {
+                HdSt_TryCreateExtGpuBufferAliasBAR(
+                    sources, resourceRegistry.get(), bar, removedSpecs, id)) {
             range = aliasBAR;
             HdStUpdateDrawItemBAR(
                 range,
@@ -1880,6 +1899,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 &(renderIndex.GetChangeTracker()));
             return;
         }
+    } else {
+        HdSt_ReportExtGpuBufferCopiedForComputations(sources, id);
     }
 
     if (HdStIsEnabledSharedVertexPrimvar()) {
@@ -2144,6 +2165,12 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
     // primvar name.
     const HdContainerDataSourceHandle extPrimDs =
         HdSt_GetPrimDataSource(sceneDelegate, id, resourceRegistry.get());
+    // An external GPU buffer is bound as authored: face-varying refinement,
+    // quadrangulation and triangulation only run on CPU data. So it is only
+    // usable when none of them would change the layout.
+    const bool extFaceVaryingLayoutUsable =
+        extPrimDs && !doRefine && !doQuadrangulate &&
+        _IsFaceVaryingTriangulationIdentity(_topology);
     for (HdPrimvarDescriptor const& primvar: primvars) {
         if (primvar.name == HdTokens->points) {
             HF_VALIDATION_WARN(id, "facevarying-interpolation points!");
@@ -2154,6 +2181,46 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
             continue;
         }
 
+        // --- External GPU buffer fast path ---
+        // Checked before pulling the CPU value, which may be a lazy data
+        // source that is expensive to evaluate.
+        if (HdBufferSourceSharedPtr extSource =
+                HdSt_TryCreateExtGpuBufferSource(
+                    primvar.name,
+                    HdSt_GetExtGpuBufferSchema(extPrimDs, primvar.name),
+                    resourceRegistry.get())) {
+            if (!extFaceVaryingLayoutUsable) {
+                HF_VALIDATION_WARN(id,
+                    "External GPU buffer for face-varying primvar %s can't "
+                    "be used: the mesh needs its face-varying data refined, "
+                    "quadrangulated or triangulated. Falling back to the CPU "
+                    "value.",
+                    primvar.name.GetText());
+            } else if ((int)extSource->GetNumElements() != numFaceVaryings) {
+                HF_VALIDATION_WARN(id,
+                    "# of facevaryings mismatch (%d != %d) for external GPU "
+                    "buffer of primvar %s. Falling back to the CPU value.",
+                    (int)extSource->GetNumElements(), numFaceVaryings,
+                    primvar.name.GetText());
+            } else if (extSource->GetName() == HdTokens->normals &&
+                       isNormalsComputedPrimvar) {
+                HF_VALIDATION_WARN(id,
+                    "'normals' specified as both computed and authored "
+                    "primvar. Skipping authored value.");
+                continue;
+            } else {
+                if (extSource->GetName() == HdTokens->normals) {
+                    _sceneNormalsInterpolation = HdInterpolationFaceVarying;
+                    _sceneNormalsFromPrimvars = true;
+                } else if (extSource->GetName() ==
+                           HdTokens->displayOpacity) {
+                    _displayOpacityFromPrimvars = true;
+                }
+                sources.push_back(std::move(extSource));
+                continue;
+            }
+        }
+
         VtValue value;
         // If refining and primvar is indexed, get unflattened primvar
         const bool useUnflattendPrimvar = doRefine && primvar.indexed;
@@ -2162,20 +2229,6 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
             value = GetIndexedPrimvar(sceneDelegate, primvar.name, &indices);
         } else {
             value = GetPrimvar(sceneDelegate, primvar.name);
-        }
-
-        // --- External GPU buffer fast path ---
-        if (HdBufferSourceSharedPtr extSource =
-                HdSt_TryCreateExtGpuBufferSource(
-                    primvar.name,
-                    HdSt_GetExtGpuBufferSchema(extPrimDs, primvar.name),
-                    resourceRegistry.get())) {
-            if (extSource->GetName() == HdTokens->normals) {
-                _sceneNormalsInterpolation = HdInterpolationFaceVarying;
-                _sceneNormalsFromPrimvars = true;
-            }
-            sources.push_back(std::move(extSource));
-            continue;
         }
 
         if (!HdStIsPrimvarValidForDrawItem(drawItem, primvar.name, value)) {
@@ -2271,7 +2324,8 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
     // --- Zero-copy direct-bind path ---
     if (computations.empty()) {
         if (HdBufferArrayRangeSharedPtr aliasBAR =
-                HdSt_TryCreateExtGpuBufferAliasBAR(sources, resourceRegistry.get(), bar)) {
+                HdSt_TryCreateExtGpuBufferAliasBAR(
+                    sources, resourceRegistry.get(), bar, removedSpecs, id)) {
             HdStUpdateDrawItemBAR(
                 aliasBAR,
                 drawItem->GetDrawingCoord()->GetFaceVaryingPrimvarIndex(),
@@ -2381,21 +2435,35 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
             if (!HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name))
                 continue;
 
-            VtValue value = GetPrimvar(sceneDelegate, primvar.name);
-
             // --- External GPU buffer fast path ---
+            // Checked before pulling the CPU value, which may be a lazy data
+            // source that is expensive to evaluate.
             if (HdBufferSourceSharedPtr extSource =
                     HdSt_TryCreateExtGpuBufferSource(
                         primvar.name,
                         HdSt_GetExtGpuBufferSchema(extPrimDs, primvar.name),
                         resourceRegistry.get())) {
-                if (extSource->GetName() == HdTokens->normals) {
-                    _sceneNormalsInterpolation = HdInterpolationUniform;
-                    _sceneNormalsFromPrimvars = true;
+                if ((int)extSource->GetNumElements() != numFaces) {
+                    HF_VALIDATION_WARN(id,
+                        "# of faces mismatch (%d != %d) for external GPU "
+                        "buffer of uniform primvar %s. Falling back to the "
+                        "CPU value.",
+                        (int)extSource->GetNumElements(), numFaces,
+                        primvar.name.GetText());
+                } else {
+                    if (extSource->GetName() == HdTokens->normals) {
+                        _sceneNormalsInterpolation = HdInterpolationUniform;
+                        _sceneNormalsFromPrimvars = true;
+                    } else if (extSource->GetName() ==
+                               HdTokens->displayOpacity) {
+                        _displayOpacityFromPrimvars = true;
+                    }
+                    sources.push_back(std::move(extSource));
+                    continue;
                 }
-                sources.push_back(std::move(extSource));
-                continue;
             }
+
+            VtValue value = GetPrimvar(sceneDelegate, primvar.name);
 
             if (!HdStIsPrimvarValidForDrawItem(drawItem, primvar.name, value)) {
                 zeroElementPrimvars.push_back(primvar);
@@ -2501,7 +2569,8 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
     // --- Zero-copy direct-bind path ---
     if (computations.empty()) {
         if (HdBufferArrayRangeSharedPtr aliasBAR =
-                HdSt_TryCreateExtGpuBufferAliasBAR(sources, resourceRegistry.get(), bar)) {
+                HdSt_TryCreateExtGpuBufferAliasBAR(
+                    sources, resourceRegistry.get(), bar, removedSpecs, id)) {
             HdStUpdateDrawItemBAR(
                 aliasBAR,
                 drawItem->GetDrawingCoord()->GetElementPrimvarIndex(),

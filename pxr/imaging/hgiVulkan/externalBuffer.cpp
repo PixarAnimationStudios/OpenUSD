@@ -29,6 +29,12 @@ HgiVulkanExternalBuffer::HgiVulkanExternalBuffer(
 
 HgiVulkanExternalBuffer::~HgiVulkanExternalBuffer()
 {
+    _ReleaseResources();
+}
+
+void
+HgiVulkanExternalBuffer::_ReleaseResources()
+{
     HgiVulkanBuffer *buffer =
         static_cast<HgiVulkanBuffer *>(_buffer.Get());
     if (!buffer) {
@@ -116,6 +122,7 @@ HgiVulkanExternalBuffer::_CreateAllocated(
     info.memoryBlockSize = allocInfo.blockSize;
     info.memoryOffset = allocInfo.allocationInfo.offset;
     info.dedicated = allocInfo.dedicatedMemory;
+    info.memoryTypeIndex = allocInfo.allocationInfo.memoryType;
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
     info.handleType = HgiExternalHandleTypeOpaqueWin32;
     info.externalHandle = static_cast<uint64_t>(

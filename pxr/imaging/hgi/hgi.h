@@ -453,9 +453,12 @@ protected:
     HGI_API
     void _GarbageCollectExternalBufferArenas();
 
-    /// Destroy every external buffer arena. Backends call this while their
+    /// Destroy every external buffer arena, releasing its buffers and
+    /// semaphores immediately, including ones an application still holds.
+    /// Backends call this once no submitted work can still reference those
+    /// resources (for Vulkan, after the device is idle), and while their
     /// device -- and, for OpenGL, the context that owns the interop objects --
-    /// is still current, since an arena's teardown releases GPU resources.
+    /// still exists and is current.
     HGI_API
     void _DestroyExternalBufferArenas();
 

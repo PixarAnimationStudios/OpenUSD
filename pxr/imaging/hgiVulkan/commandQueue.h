@@ -125,8 +125,9 @@ public:
 
     /// Record, at the next submission, a queue-family ownership acquire that
     /// transfers \p buffer from VK_QUEUE_FAMILY_EXTERNAL to this device's
-    /// graphics family. Required before first use of a buffer bound to memory
-    /// another device wrote, since interop buffers are VK_SHARING_MODE_EXCLUSIVE.
+    /// graphics family. Required before each use of a buffer bound to memory
+    /// another device wrote since the last release, since interop buffers are
+    /// VK_SHARING_MODE_EXCLUSIVE; see HgiVulkanBuffer::AcquireExternalOwnership.
     ///
     /// Thread safety: This call is thread safe, which is the reason it exists.
     /// Recording the barrier needs the resource command buffer and therefore the
@@ -134,6 +135,39 @@ public:
     /// which runs in parallel -- so the buffer cannot record its own barrier.
     HGIVULKAN_API
     void AddPendingQueueFamilyAcquire(VkBuffer buffer);
+
+    /// Record, at the next Flush, a queue-family ownership release that
+    /// transfers \p buffer from this device's graphics family to
+    /// VK_QUEUE_FAMILY_EXTERNAL, so the producer can acquire it and write.
+    /// Drained only by Flush -- not by SubmitToQueue -- so that the release
+    /// rides the submission that signals hgi-done, after all of the frame's
+    /// reads.
+    ///
+    /// Thread safety: This call is thread safe.
+    HGIVULKAN_API
+    void AddPendingQueueFamilyRelease(VkBuffer buffer);
+
+    /// Drop any acquire or release still queued for \p buffer, which is about
+    /// to be destroyed; the barriers would otherwise name a dead handle.
+    ///
+    /// Thread safety: This call is thread safe.
+    HGIVULKAN_API
+    void CancelPendingQueueFamilyTransfers(VkBuffer buffer);
+
+    /// Drop \p semaphore from the pending wait and signal lists, so no later
+    /// submission names it.
+    ///
+    /// Thread safety: This call is thread safe.
+    HGIVULKAN_API
+    void RemovePendingSemaphore(VkSemaphore semaphore);
+
+    /// Destroy \p semaphore once the command buffers in flight now have
+    /// retired. Call RemovePendingSemaphore first: a wait or signal that has
+    /// not been submitted yet is not covered by the in-flight bits.
+    ///
+    /// Thread safety: This call is thread safe.
+    HGIVULKAN_API
+    void DestroySemaphoreDeferred(VkSemaphore semaphore);
 
     /// Checks if the timeline semaphore has passed the desiredValue,
     /// and can optionally force a wait on this. This may cause a flush.
@@ -160,6 +194,15 @@ private:
     // and before the command buffer that reads the imported buffers is queued --
     // see the call sites.
     void _FlushPendingQueueFamilyAcquires();
+
+    // Records the barriers queued by AddPendingQueueFamilyRelease into the
+    // resource command buffer and clears the queue. Main thread only.
+    void _FlushPendingQueueFamilyReleases();
+
+    // Destroys the semaphores from DestroySemaphoreDeferred whose command
+    // buffers have retired. Main thread only; \p all destroys every one,
+    // for teardown after the device is idle.
+    void _DestroyRetiredSemaphores(bool all);
 
     // Returns an id-bit that uniquely identifies the cmd buffer amongst all
     // in-flight cmd buffers. Returns an empty result if all bits have been
@@ -204,6 +247,16 @@ private:
     // ownership acquire recorded; drained at the next submission.
     std::vector<VkBuffer> _pendingQueueFamilyAcquires;
     std::mutex _pendingQueueFamilyAcquiresMutex;
+
+    // Imported buffers to hand back to VK_QUEUE_FAMILY_EXTERNAL; drained at
+    // the next Flush.
+    std::vector<VkBuffer> _pendingQueueFamilyReleases;
+    std::mutex _pendingQueueFamilyReleasesMutex;
+
+    // Semaphores waiting for the command buffers that were in flight when
+    // they were released (the bits) to retire.
+    std::vector<std::pair<VkSemaphore, uint64_t>> _deferredSemaphores;
+    std::mutex _deferredSemaphoresMutex;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

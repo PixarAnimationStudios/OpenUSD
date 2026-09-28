@@ -297,11 +297,10 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             continue;
         }
 
-        VtValue value = GetPrimvar(sceneDelegate, primvar.name);
-
         // External GPU buffer fast path: consume the shared handle directly
-        // (the CPU value is intentionally empty in that mode) and skip the CPU
-        // read + validity check.
+        // and skip the CPU read + validity check. Checked before pulling the
+        // CPU value, which may be a lazy data source that is expensive to
+        // evaluate.
         if (HdBufferSourceSharedPtr ext = HdSt_TryCreateExtGpuBufferSource(
                 primvar.name,
                 HdSt_GetExtGpuBufferSchema(extPrimDs, primvar.name),
@@ -312,6 +311,8 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             }
             continue;
         }
+
+        VtValue value = GetPrimvar(sceneDelegate, primvar.name);
 
         if (!HdStIsPrimvarValidForDrawItem(drawItem, primvar.name, value)) {
             continue;
@@ -352,7 +353,7 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     if (computations.empty()) {
         if (HdBufferArrayRangeSharedPtr aliasBAR =
                 HdSt_TryCreateExtGpuBufferAliasBAR(
-                    sources, resourceRegistry.get(), bar)) {
+                    sources, resourceRegistry.get(), bar, removedSpecs, id)) {
             HdStUpdateDrawItemBAR(
                 aliasBAR,
                 drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(),
@@ -361,6 +362,8 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                 &(sceneDelegate->GetRenderIndex().GetChangeTracker()));
             return;
         }
+    } else {
+        HdSt_ReportExtGpuBufferCopiedForComputations(sources, id);
     }
 
     HdBufferSpecVector bufferSpecs;

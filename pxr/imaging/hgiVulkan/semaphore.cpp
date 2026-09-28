@@ -4,6 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
+#include "pxr/imaging/hgiVulkan/buffer.h"
 #include "pxr/imaging/hgiVulkan/capabilities.h"
 #include "pxr/imaging/hgiVulkan/commandQueue.h"
 #include "pxr/imaging/hgiVulkan/device.h"
@@ -219,28 +220,58 @@ HgiVulkanSemaphore::HgiVulkanSemaphore(
 
 HgiVulkanSemaphore::~HgiVulkanSemaphore()
 {
+    _ReleaseResources();
+}
+
+void
+HgiVulkanSemaphore::_ReleaseResources()
+{
     if (_vkSemaphore == VK_NULL_HANDLE) {
         return;
     }
-    // A semaphore may still be referenced by a submission in flight, and
-    // unlike a buffer there is no per-object trash list to defer it through.
-    // The arena only destroys these at teardown, so idling the device here is
-    // the cost of being certain rather than a per-frame cost.
-    _device->WaitForIdle();
-    vkDestroySemaphore(_device->GetVulkanDevice(), _vkSemaphore,
-        HgiVulkanAllocator());
+    // Not destroyed here: this runs on whichever thread drops the last
+    // reference (ImportSemaphores replacing a pair, say), and a submission in
+    // flight may still name the semaphore. The queue destroys it on the main
+    // thread once those command buffers retire, or at device teardown.
+    HgiVulkanCommandQueue *queue = _device->GetCommandQueue();
+    queue->RemovePendingSemaphore(_vkSemaphore);
+    queue->DestroySemaphoreDeferred(_vkSemaphore);
     _vkSemaphore = VK_NULL_HANDLE;
+}
+
+// The Vulkan buffer behind \p buffer, or null for one that needs no
+// queue-family ownership transfer: registered and adopted buffers never leave
+// this device, so only imported and exportable ones pass through
+// VK_QUEUE_FAMILY_EXTERNAL.
+static HgiVulkanBuffer *
+_GetExternallySharedVulkanBuffer(HgiExternalBuffer *buffer)
+{
+    if (!buffer) {
+        return nullptr;
+    }
+    HgiVulkanBuffer *vkBuffer =
+        static_cast<HgiVulkanBuffer *>(buffer->GetBuffer().Get());
+    return vkBuffer && vkBuffer->SharesQueueFamilyExternal()
+        ? vkBuffer : nullptr;
 }
 
 void
 HgiVulkanSemaphore::EncodeWait(
     uint64_t /*value*/,
-    std::vector<HgiExternalBuffer *> const & /*buffers*/)
+    std::vector<HgiExternalBuffer *> const &buffers)
 {
-    // Vulkan needs no buffer list: the semaphore establishes the memory
-    // dependency on its own.
     if (_vkSemaphore == VK_NULL_HANDLE) {
         return;
+    }
+    // The semaphore supplies the memory dependency. Ownership of a shared
+    // buffer is separate: the producer released it to VK_QUEUE_FAMILY_EXTERNAL
+    // when it published, so take it back. The acquires are recorded into the
+    // same submission that waits, which orders them after the wait.
+    for (HgiExternalBuffer *buffer : buffers) {
+        if (HgiVulkanBuffer *vkBuffer =
+                _GetExternallySharedVulkanBuffer(buffer)) {
+            vkBuffer->AcquireExternalOwnership();
+        }
     }
     _device->GetCommandQueue()->AddPendingWaitSemaphore(_vkSemaphore);
 }
@@ -248,10 +279,19 @@ HgiVulkanSemaphore::EncodeWait(
 void
 HgiVulkanSemaphore::EncodeSignal(
     uint64_t /*value*/,
-    std::vector<HgiExternalBuffer *> const & /*buffers*/)
+    std::vector<HgiExternalBuffer *> const &buffers)
 {
     if (_vkSemaphore == VK_NULL_HANDLE) {
         return;
+    }
+    // Hand shared buffers back before signalling, so the producer can
+    // acquire them once it has waited. The releases are drained by the Flush
+    // that carries this signal.
+    for (HgiExternalBuffer *buffer : buffers) {
+        if (HgiVulkanBuffer *vkBuffer =
+                _GetExternallySharedVulkanBuffer(buffer)) {
+            vkBuffer->ReleaseExternalOwnership();
+        }
     }
     _device->GetCommandQueue()->AddPendingSignalSemaphore(_vkSemaphore);
 }

@@ -201,20 +201,6 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
     if (!HdStCanSkipBARAllocationOrUpdate(
          sources, _instancePrimvarRange, *dirtyBits)) {
 
-        // Zero-copy direct-bind path: if every source is a direct-bindable
-        // external GPU buffer, alias the external handles in place instead of
-        // allocating/uploading a range. Reusing the existing range pointer
-        // avoids the instance-index rebuild + draw-batch invalidation that a
-        // pointer swap would trigger in HdStUpdateInstancerData. Batch-mode /
-        // mixed / CPU sources fall through to the normal path below, where the
-        // aggregation strategy's CopyData blits any external sources.
-        if (HdBufferArrayRangeSharedPtr aliasBAR =
-                HdSt_TryCreateExtGpuBufferAliasBAR(
-                    sources, resourceRegistry.get(), _instancePrimvarRange)) {
-            _instancePrimvarRange = aliasBAR;
-            return;
-        }
-
         // XXX: This should be based off the DirtyPrimvarDesc bit.
         bool hasDirtyPrimvarDesc = (*dirtyBits & HdChangeTracker::DirtyPrimvar);
         HdBufferSpecVector bufferSpecs;
@@ -226,6 +212,21 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
             removedSpecs = HdStGetRemovedOrReplacedPrimvarBufferSpecs(
                 _instancePrimvarRange, primvars,
                 internallyGeneratedPrimvars, bufferSpecs, instancerId);
+        }
+
+        // Zero-copy direct-bind path: if every source is a direct-bindable
+        // external GPU buffer, alias the external handles in place instead of
+        // allocating/uploading a range. Reusing the existing range pointer
+        // avoids the instance-index rebuild + draw-batch invalidation that a
+        // pointer swap would trigger in HdStUpdateInstancerData. Batch-mode /
+        // mixed / CPU sources fall through to the normal path below, where the
+        // aggregation strategy's CopyData blits any external sources.
+        if (HdBufferArrayRangeSharedPtr aliasBAR =
+                HdSt_TryCreateExtGpuBufferAliasBAR(
+                    sources, resourceRegistry.get(), _instancePrimvarRange,
+                    removedSpecs, instancerId)) {
+            _instancePrimvarRange = aliasBAR;
+            return;
         }
         
         // Update local primvar range.

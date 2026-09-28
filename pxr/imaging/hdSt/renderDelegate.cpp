@@ -34,8 +34,10 @@
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/imageShader.h"
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/renderCapabilitiesSchema.h"
 #include "pxr/imaging/hd/renderDelegateInfo.h"
 #include "pxr/imaging/hd/rendererCreateArgsSchema.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hgi/hgi.h"
@@ -275,6 +277,21 @@ HdStRenderDelegate::GetRenderStats() const
     }
 
     return ra;
+}
+
+HdContainerDataSourceHandle
+HdStRenderDelegate::GetCapabilities() const
+{
+    // The Hgi is only known once SetDrivers has run, so this is not cached.
+    Hgi *hgi = _resourceRegistry ? _resourceRegistry->GetHgi() : nullptr;
+    const TfToken apiName = hgi ? hgi->GetAPIName() : TfToken();
+    const bool consumeExtGpuBuffer =
+        apiName == HgiTokens->OpenGL || apiName == HgiTokens->Vulkan;
+
+    return HdRenderCapabilitiesSchema::Builder()
+        .SetConsumeExtGpuBuffer(
+            HdRetainedTypedSampledDataSource<bool>::New(consumeExtGpuBuffer))
+        .Build();
 }
 
 bool

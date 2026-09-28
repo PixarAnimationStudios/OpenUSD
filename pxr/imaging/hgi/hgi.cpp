@@ -467,10 +467,11 @@ Hgi::_DestroyExternalBufferArenas()
         arenas.swap(_externalBufferArenas);
         _hasExternalBufferArenas.store(false, std::memory_order_release);
     }
-    // One last sweep each, so buffers whose work has retired are released
-    // through the normal path before the arena takes the rest down with it.
+    // Release every buffer and semaphore now, rather than when the last
+    // reference drops: an application that still holds the arena, or one of
+    // its buffers, would otherwise destroy them after the device is gone.
     for (auto const& entry : arenas) {
-        entry.second->GarbageCollect();
+        entry.second->_Shutdown();
     }
 }
 

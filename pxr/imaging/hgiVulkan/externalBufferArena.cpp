@@ -4,6 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
+#include "pxr/imaging/hgiVulkan/buffer.h"
 #include "pxr/imaging/hgiVulkan/capabilities.h"
 #include "pxr/imaging/hgiVulkan/commandQueue.h"
 #include "pxr/imaging/hgiVulkan/device.h"
@@ -42,7 +43,9 @@ HgiVulkanExternalBufferArena::~HgiVulkanExternalBufferArena() = default;
 HgiVulkanDevice *
 HgiVulkanExternalBufferArena::_GetDevice() const
 {
-    return static_cast<HgiVulkan *>(GetHgi())->GetPrimaryDevice();
+    // Null once Hgi has been torn down; see HgiExternalBufferArena::_Shutdown.
+    Hgi *hgi = GetHgi();
+    return hgi ? static_cast<HgiVulkan *>(hgi)->GetPrimaryDevice() : nullptr;
 }
 
 HgiExternalBufferSharedPtr
@@ -51,6 +54,9 @@ HgiVulkanExternalBufferArena::AllocateBuffer(
     HgiBufferUsage usage,
     std::string const &debugName)
 {
+    if (!_GetDevice()) {
+        return nullptr;
+    }
     return _Register(HgiVulkanExternalBuffer::_CreateAllocated(
         this, _GetNextBufferHandleId(), byteSize, usage, debugName));
 }
@@ -61,6 +67,9 @@ HgiVulkanExternalBufferArena::RegisterBuffer(
     size_t byteSize,
     HgiBufferUsage usage)
 {
+    if (!_GetDevice()) {
+        return nullptr;
+    }
     return _Register(HgiVulkanExternalBuffer::_CreateAdopted(
         this, _GetNextBufferHandleId(), vkBuffer, byteSize, usage,
         /*takeOwnership*/ false));
@@ -72,6 +81,9 @@ HgiVulkanExternalBufferArena::AdoptBuffer(
     size_t byteSize,
     HgiBufferUsage usage)
 {
+    if (!_GetDevice()) {
+        return nullptr;
+    }
     return _Register(HgiVulkanExternalBuffer::_CreateAdopted(
         this, _GetNextBufferHandleId(), vkBuffer, byteSize, usage,
         /*takeOwnership*/ true));
@@ -81,6 +93,9 @@ HgiExternalBufferSharedPtr
 HgiVulkanExternalBufferArena::ImportBuffer(
     HgiVulkanImportBufferDesc const &desc)
 {
+    if (!_GetDevice()) {
+        return nullptr;
+    }
     return _Register(HgiVulkanExternalBuffer::_CreateImported(
         this, _GetNextBufferHandleId(), desc));
 }
@@ -135,6 +150,9 @@ HgiVulkanExternalBufferArena::_CreateSemaphorePair(
     }
 
     HgiVulkanDevice *device = _GetDevice();
+    if (!device) {
+        return false;
+    }
     auto make = [device, kind, exportable]() {
         return exportable
             ? HgiVulkanSemaphore::CreateExportable(device, kind)
@@ -192,6 +210,9 @@ HgiVulkanExternalBufferArena::ImportSemaphores(
     HgiSemaphoreKind kind)
 {
     HgiVulkanDevice *device = _GetDevice();
+    if (!device) {
+        return false;
+    }
 
     HgiSemaphoreSharedPtr appDone;
     HgiSemaphoreSharedPtr hgiDone;
@@ -229,7 +250,9 @@ HgiVulkanExternalBufferArena::_CaptureSubmissionStamp()
     // resource, rather than on a second mechanism that has to agree with it.
     //
     // 0 when nothing is in flight, which retires immediately.
-    return _GetDevice()->GetCommandQueue()->GetInflightCommandBuffersBits();
+    HgiVulkanDevice *device = _GetDevice();
+    return device
+        ? device->GetCommandQueue()->GetInflightCommandBuffersBits() : 0;
 }
 
 bool
@@ -238,9 +261,34 @@ HgiVulkanExternalBufferArena::_IsSubmissionRetired(uint64_t stamp)
     // Retired once none of the command buffers that were in flight at stamp
     // time still are. The bits clear as command buffers are consumed and
     // reset, so this needs no waiting and no submission of its own.
+    HgiVulkanDevice *device = _GetDevice();
+    if (!device) {
+        return true;
+    }
     const uint64_t inflight =
-        _GetDevice()->GetCommandQueue()->GetInflightCommandBuffersBits();
+        device->GetCommandQueue()->GetInflightCommandBuffersBits();
     return (inflight & stamp) == 0;
+}
+
+void
+HgiVulkanExternalBufferArena::_AcquireBuffersWithoutWait(
+    std::vector<HgiExternalBuffer *> const &buffers)
+{
+    if (!_GetDevice()) {
+        return;
+    }
+    // The acquire half of what the hgi-done signal releases. With no app-done
+    // semaphore the application orders its own writes, and ownership is all
+    // there is to take back.
+    for (HgiExternalBuffer *buffer : buffers) {
+        if (!buffer) {
+            continue;
+        }
+        if (HgiVulkanBuffer *vkBuffer =
+                static_cast<HgiVulkanBuffer *>(buffer->GetBuffer().Get())) {
+            vkBuffer->AcquireExternalOwnership();
+        }
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

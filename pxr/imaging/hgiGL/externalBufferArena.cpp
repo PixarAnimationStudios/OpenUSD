@@ -37,6 +37,10 @@ HgiGLExternalBufferArena::AllocateBuffer(
     HgiBufferUsage usage,
     std::string const &debugName)
 {
+    // Null once Hgi has been torn down; see HgiExternalBufferArena::_Shutdown.
+    if (!GetHgi()) {
+        return nullptr;
+    }
     return _Register(HgiGLExternalBuffer::_CreateAllocated(
         this, _GetNextBufferHandleId(), byteSize, usage, debugName));
 }
@@ -47,6 +51,9 @@ HgiGLExternalBufferArena::RegisterBuffer(
     size_t byteSize,
     HgiBufferUsage usage)
 {
+    if (!GetHgi()) {
+        return nullptr;
+    }
     return _Register(HgiGLExternalBuffer::_CreateAdopted(
         this, _GetNextBufferHandleId(), bufferId, byteSize, usage,
         /*takeOwnership*/ false));
@@ -58,6 +65,9 @@ HgiGLExternalBufferArena::AdoptBuffer(
     size_t byteSize,
     HgiBufferUsage usage)
 {
+    if (!GetHgi()) {
+        return nullptr;
+    }
     return _Register(HgiGLExternalBuffer::_CreateAdopted(
         this, _GetNextBufferHandleId(), bufferId, byteSize, usage,
         /*takeOwnership*/ true));
@@ -67,6 +77,9 @@ HgiExternalBufferSharedPtr
 HgiGLExternalBufferArena::ImportBuffer(
     HgiGLImportBufferDesc const &desc)
 {
+    if (!GetHgi()) {
+        return nullptr;
+    }
     return _Register(HgiGLExternalBuffer::_CreateImported(
         this, _GetNextBufferHandleId(), desc));
 }
@@ -78,6 +91,10 @@ HgiGLExternalBufferArena::ImportSemaphores(
     HgiExternalHandleType handleType,
     HgiSemaphoreKind kind)
 {
+    if (!GetHgi()) {
+        return false;
+    }
+
     HgiSemaphoreSharedPtr appDone;
     HgiSemaphoreSharedPtr hgiDone;
 

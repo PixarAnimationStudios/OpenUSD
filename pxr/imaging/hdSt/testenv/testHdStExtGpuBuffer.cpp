@@ -898,6 +898,7 @@ My_TestGLDrawing::_MakeInteropBuffer(HdSt_TestDriver *driver,
         importDesc.memoryOffset = info.memoryOffset;
         importDesc.byteSize = byteSize;
         importDesc.dedicated = info.dedicated;
+        importDesc.memoryTypeIndex = info.memoryTypeIndex;
         importDesc.usage = HgiBufferUsageVertex | HgiBufferUsageStorage;
         importDesc.debugName = "interop consumer";
 

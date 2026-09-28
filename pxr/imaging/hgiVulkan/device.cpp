@@ -452,6 +452,14 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
     }
 
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    // VMA copies the callbacks at creation, so a local is enough.
+    VmaDeviceMemoryCallbacks memoryCallbacks = {};
+    memoryCallbacks.pfnFree = &HgiVulkanDevice::_OnVmaFreeDeviceMemory;
+    memoryCallbacks.pUserData = this;
+    allocatorInfo.pDeviceMemoryCallbacks = &memoryCallbacks;
+#endif
+
     HGIVULKAN_VERIFY_VK_RESULT(
         vmaCreateAllocator(&allocatorInfo, &_vmaAllocator)
     );
@@ -483,6 +491,16 @@ HgiVulkanDevice::~HgiVulkanDevice()
     {
         vmaDestroyPool(_vmaAllocator, entry.second);
     }
+
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    {
+        std::lock_guard<std::mutex> handleLock(_vmaInteropWin32HandleLock);
+        for (auto const& entry : _vmaInteropWin32HandleForMemory) {
+            CloseHandle(entry.second);
+        }
+        _vmaInteropWin32HandleForMemory.clear();
+    }
+#endif
 
     delete _pipelineCache;
     delete _commandQueue;
@@ -600,6 +618,27 @@ HgiVulkanDevice::GetWin32HandleForMemory(VkDeviceMemory memory)
         TF_CODING_ERROR("Couldn't duplicate Windows Handle!");
     }
     return duplicateHandle;
+}
+
+/* static */
+void VKAPI_PTR
+HgiVulkanDevice::_OnVmaFreeDeviceMemory(
+    VmaAllocator /*allocator*/,
+    uint32_t /*memoryType*/,
+    VkDeviceMemory memory,
+    VkDeviceSize /*size*/,
+    void *userData)
+{
+    HgiVulkanDevice *device = static_cast<HgiVulkanDevice *>(userData);
+    if (!device) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(device->_vmaInteropWin32HandleLock);
+    auto iter = device->_vmaInteropWin32HandleForMemory.find(memory);
+    if (iter != device->_vmaInteropWin32HandleForMemory.end()) {
+        CloseHandle(iter->second);
+        device->_vmaInteropWin32HandleForMemory.erase(iter);
+    }
 }
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
 int

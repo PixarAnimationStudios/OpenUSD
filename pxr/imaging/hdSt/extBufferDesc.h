@@ -16,6 +16,7 @@
 #include "pxr/imaging/hgi/externalBufferArena.h"
 
 #include <cstddef>
+#include <limits>
 #include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -69,6 +70,19 @@ struct HdStExtGpuBufferDesc
     HgiExternalBufferArena *GetArena() const
     {
         return externalBuffer ? externalBuffer->GetArena() : nullptr;
+    }
+
+    /// Whether Storm may bind this stream in place: the producer permits it,
+    /// and the layout is what Storm's own buffers look like -- tightly packed
+    /// and starting at the head of the buffer. Storm binds storage buffers
+    /// whole at offset zero and indexes them as packed arrays, and applies a
+    /// vertex resource's offset as both attribute and binding offset, so any
+    /// other layout has to be copied.
+    bool IsDirectBindable() const
+    {
+        const size_t elemSize = HdDataSizeOfTupleType(tupleType);
+        return allowDirectBind && elemSize > 0 && byteOffset == 0 &&
+            (byteStride == 0 || byteStride == elemSize);
     }
 
     /// Decode the renderer-agnostic HdExtGpuBufferSchema for a consumer
@@ -129,11 +143,29 @@ struct HdStExtGpuBufferDesc
         // Bounds check now, before anything is committed to it: the producer
         // told us how big the buffer is by way of the resource itself, so this
         // no longer depends on an optional schema member being present.
+        // Every value here comes from the producer, so the arithmetic is
+        // checked for overflow, and the last element is charged its own size
+        // rather than a full stride. A stride narrower than the element would
+        // overlap elements, and the copy paths treat it as tightly packed.
         const size_t elemSize = HdDataSizeOfTupleType(d.tupleType);
-        const size_t stride = d.byteStride > 0 ? d.byteStride : elemSize;
-        if (d.byteOffset + d.numElements * stride >
-                d.externalBuffer->GetByteSize()) {
+        if (elemSize == 0 ||
+                (d.byteStride != 0 && d.byteStride < elemSize)) {
             return std::nullopt;
+        }
+        const size_t stride = d.byteStride > 0 ? d.byteStride : elemSize;
+        const size_t bufferSize = d.externalBuffer->GetByteSize();
+        if (d.byteOffset > bufferSize) {
+            return std::nullopt;
+        }
+        if (d.numElements > 0) {
+            const size_t maxSize = (std::numeric_limits<size_t>::max)();
+            if (d.numElements - 1 > (maxSize - elemSize) / stride) {
+                return std::nullopt;
+            }
+            const size_t extent = (d.numElements - 1) * stride + elemSize;
+            if (extent > bufferSize - d.byteOffset) {
+                return std::nullopt;
+            }
         }
 
         return d;

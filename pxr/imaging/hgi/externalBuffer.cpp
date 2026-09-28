@@ -19,6 +19,11 @@ HgiExternalBuffer::HgiExternalBuffer(
 
 HgiExternalBuffer::~HgiExternalBuffer() = default;
 
+void
+HgiExternalBuffer::_ReleaseResources()
+{
+}
+
 Hgi *
 HgiExternalBuffer::GetHgi() const
 {

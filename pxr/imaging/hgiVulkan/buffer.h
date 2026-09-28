@@ -13,6 +13,9 @@
 #include "pxr/imaging/hgiVulkan/api.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 
+#include <atomic>
+#include <cstdint>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \struct HgiVulkanImportBufferDesc
@@ -50,6 +53,12 @@ struct HgiVulkanImportBufferDesc
     /// Whether the producer made a dedicated allocation. Must match, or the
     /// import fails.
     bool dedicated = false;
+
+    /// The exporter's memory type index, which the import has to use; opaque
+    /// handles cannot be queried for it. Only meaningful on the same physical
+    /// device. UINT32_MAX when unknown, in which case a device-local type the
+    /// buffer accepts is guessed.
+    uint32_t memoryTypeIndex = UINT32_MAX;
 
     /// What the consumer may bind the resulting buffer for.
     HgiBufferUsage usage = 0;
@@ -156,6 +165,37 @@ public:
         VkAccessFlags srcAccess,
         VkAccessFlags dstAccess) const;
 
+    /// Whether this buffer is bound to memory imported from another device or
+    /// API, and so changes hands through VK_QUEUE_FAMILY_EXTERNAL.
+    bool IsImported() const {
+        return _vkImportedMemory != VK_NULL_HANDLE;
+    }
+
+    /// Whether another device or API also accesses this buffer's memory --
+    /// imported here, or allocated exportable for someone else to import --
+    /// so its ownership moves through VK_QUEUE_FAMILY_EXTERNAL.
+    bool SharesQueueFamilyExternal() const {
+        return IsImported() || _isExported;
+    }
+
+    /// For a buffer shared with VK_QUEUE_FAMILY_EXTERNAL (see
+    /// SharesQueueFamilyExternal) that this device's queue does not own:
+    /// queue an ownership acquire from VK_QUEUE_FAMILY_EXTERNAL, recorded at
+    /// the next submission. Must pair with a release by the producer.
+    ///
+    /// Thread safety: This call is thread safe.
+    HGIVULKAN_API
+    void AcquireExternalOwnership();
+
+    /// For a buffer shared with VK_QUEUE_FAMILY_EXTERNAL that this device's
+    /// queue currently owns: queue an ownership release to
+    /// VK_QUEUE_FAMILY_EXTERNAL, recorded at the next Flush. Must pair with an
+    /// acquire by the producer before it writes.
+    ///
+    /// Thread safety: This call is thread safe.
+    HGIVULKAN_API
+    void ReleaseExternalOwnership();
+
 protected:
     friend class HgiVulkan;
     // Builds the register/import/exportable variants below on behalf of
@@ -214,6 +254,13 @@ private:
     // with an import chain rather than by VMA, so it must be released with
     // vkFreeMemory instead of vmaDestroyBuffer.
     VkDeviceMemory _vkImportedMemory = VK_NULL_HANDLE;
+    // True for the exportable interop allocation: another API writes this
+    // memory, so it changes hands like an imported buffer does.
+    bool _isExported = false;
+    // Whether this device's graphics queue family currently owns a buffer
+    // shared with VK_QUEUE_FAMILY_EXTERNAL, so that acquires and releases stay
+    // paired however often the frame hooks run.
+    std::atomic<bool> _ownedByGfxQueue{false};
 };
 
 

@@ -72,6 +72,10 @@ public:
         return _semaphoreId;
     }
 
+protected:
+    HGIGL_API
+    void _ReleaseResources() override;
+
 private:
     explicit HgiGLImportedSemaphore(uint32_t semaphoreId);
 

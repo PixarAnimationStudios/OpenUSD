@@ -487,7 +487,8 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
                                 (double)srcSize);
             blitCmds->CopyBufferGpuToGpu(copyOp);
         } else {
-            size_t const numElems = bufferSource->GetNumElements();
+            // srcSize is already clamped to the range.
+            size_t const numElems = srcSize / elemSize;
             size_t const totalCopy = numElems * elemSize;
             HD_PERF_COUNTER_ADD(HdStPerfTokens->extGpuBufferCopyBytes,
                                 (double)totalCopy);

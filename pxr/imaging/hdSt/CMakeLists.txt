@@ -675,28 +675,16 @@ pxr_register_test(testHdStQualifiers
 # (the GarchGLDebugWindow harness has a Win32 backend). These are self-comparing
 # (CPU vs GPU-shared, in-process) so they need no baseline/IMAGE_DIFF_COMPARE.
 #
-# On Windows the spawned test exe needs the USD DLLs and the Python runtime
-# (python313.dll, next to the interpreter) on PATH, or it fails to load
-# (0xC0000135). PRE_PATH is prepended to PATH by the test wrapper.
-get_filename_component(_hdSt_pyRuntimeDir "${Python3_EXECUTABLE}" DIRECTORY)
 # Registered on Linux (X11) and Windows only, matching the build gate above; macOS
 # is excluded because the external-GPU-buffer path is not yet supported there.
 if (X11_FOUND OR WIN32)
 pxr_register_test(testHdStExtGpuBuffer_GL_GL
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen"
     EXPECTED_RETURN_CODE 0
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/lib
-        ${CMAKE_INSTALL_PREFIX}/bin
-        ${_hdSt_pyRuntimeDir}
 )
 pxr_register_test(testHdStExtGpuBuffer_GL_GL_Instancing
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --instancing"
     EXPECTED_RETURN_CODE 0
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/lib
-        ${CMAKE_INSTALL_PREFIX}/bin
-        ${_hdSt_pyRuntimeDir}
 )
 # GL producer, GL consumer, but allowDirectBind=false: Storm blits the shared
 # buffer into its aggregated VBO instead of binding it. The source of that blit
@@ -707,10 +695,6 @@ pxr_register_test(testHdStExtGpuBuffer_GL_GL_Instancing
 pxr_register_test(testHdStExtGpuBuffer_GL_GL_Copy
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --copy"
     EXPECTED_RETURN_CODE 0
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/lib
-        ${CMAKE_INSTALL_PREFIX}/bin
-        ${_hdSt_pyRuntimeDir}
 )
 
 # Vulkan cases. Only meaningful when Vulkan is actually built (else
@@ -743,10 +727,6 @@ if (PXR_ENABLE_VULKAN_SUPPORT)
 pxr_register_test(testHdStExtGpuBuffer_VK_VK
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --vulkanSync"
     EXPECTED_RETURN_CODE 0
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/lib
-        ${CMAKE_INSTALL_PREFIX}/bin
-        ${_hdSt_pyRuntimeDir}
     ENV
         HGI_ENABLE_VULKAN=1
 )
@@ -758,10 +738,6 @@ pxr_register_test(testHdStExtGpuBuffer_VK_VK
 pxr_register_test(testHdStExtGpuBuffer_VK_VK_Copy
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --vulkanSync --copy"
     EXPECTED_RETURN_CODE 0
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/lib
-        ${CMAKE_INSTALL_PREFIX}/bin
-        ${_hdSt_pyRuntimeDir}
     ENV
         HGI_ENABLE_VULKAN=1
 )
@@ -789,10 +765,6 @@ pxr_register_test(testHdStExtGpuBuffer_VK_VK_Copy
 pxr_register_test(testHdStExtGpuBuffer_VK_VK_Import
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --vulkanInterop"
     EXPECTED_RETURN_CODE 0
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/lib
-        ${CMAKE_INSTALL_PREFIX}/bin
-        ${_hdSt_pyRuntimeDir}
     ENV
         HGI_ENABLE_VULKAN=1
 )
@@ -803,10 +775,6 @@ pxr_register_test(testHdStExtGpuBuffer_VK_VK_Import
 pxr_register_test(testHdStExtGpuBuffer_VK_VK_Import_Copy
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --vulkanInterop --copy"
     EXPECTED_RETURN_CODE 0
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/lib
-        ${CMAKE_INSTALL_PREFIX}/bin
-        ${_hdSt_pyRuntimeDir}
     ENV
         HGI_ENABLE_VULKAN=1
 )
@@ -820,10 +788,6 @@ pxr_register_test(testHdStExtGpuBuffer_VK_VK_Import_Copy
 pxr_register_test(testHdStExtGpuBuffer_VK_GL
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --vulkanInterop"
     EXPECTED_RETURN_CODE 0
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/lib
-        ${CMAKE_INSTALL_PREFIX}/bin
-        ${_hdSt_pyRuntimeDir}
 )
 # The VK-to-GL import, copied rather than bound: a GL buffer over imported
 # Vulkan memory as the blit source. This is the combination a GL-based viewport
@@ -831,10 +795,6 @@ pxr_register_test(testHdStExtGpuBuffer_VK_GL
 pxr_register_test(testHdStExtGpuBuffer_VK_GL_Copy
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStExtGpuBuffer --offscreen --vulkanInterop --copy"
     EXPECTED_RETURN_CODE 0
-    PRE_PATH
-        ${CMAKE_INSTALL_PREFIX}/lib
-        ${CMAKE_INSTALL_PREFIX}/bin
-        ${_hdSt_pyRuntimeDir}
 )
 endif()
 endif()

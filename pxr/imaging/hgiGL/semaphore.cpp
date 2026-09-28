@@ -95,11 +95,20 @@ HgiGLImportedSemaphore::HgiGLImportedSemaphore(uint32_t semaphoreId)
 
 HgiGLImportedSemaphore::~HgiGLImportedSemaphore()
 {
-    if (_semaphoreId && glDeleteSemaphoresEXT) {
+    _ReleaseResources();
+}
+
+void
+HgiGLImportedSemaphore::_ReleaseResources()
+{
+    if (!_semaphoreId) {
+        return;
+    }
+    if (glDeleteSemaphoresEXT) {
         GLuint semaphoreId = _semaphoreId;
         glDeleteSemaphoresEXT(1, &semaphoreId);
-        _semaphoreId = 0;
     }
+    _semaphoreId = 0;
     HGIGL_POST_PENDING_GL_ERRORS();
 }
 

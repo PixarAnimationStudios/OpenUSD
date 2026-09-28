@@ -52,18 +52,24 @@ HgiVulkan::HgiVulkan()
 
 HgiVulkan::~HgiVulkan()
 {
-    // Before the device idles and goes: an arena owns Vulkan objects, and its
-    // teardown wants a live device to destroy them through.
-    _DestroyExternalBufferArenas();
-
-    if (HgiVulkanCommandQueue* queue = _device->GetCommandQueue()) {
+    HgiVulkanCommandQueue* queue = _device->GetCommandQueue();
+    if (queue) {
         // Wait for command buffers to complete, then reset command buffers for
         // each device's queue.
         queue->ResetConsumedCommandBuffers(
             HgiSubmitWaitTypeWaitUntilCompleted);
 
-        // Wait for all devices and perform final garbage collection.
+        // Wait for all devices.
         _device->WaitForIdle();
+    }
+
+    // After the device idles, since an arena destroys its buffers immediately
+    // and in-flight work may still read them; before the device goes, since
+    // they are destroyed through it.
+    _DestroyExternalBufferArenas();
+
+    if (queue) {
+        // Final garbage collection.
         _garbageCollector->PerformGarbageCollection(_device);
     }
 

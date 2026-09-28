@@ -48,6 +48,10 @@ struct HgiVulkanExternalBufferExportInfo
 
     /// Whether this is a dedicated allocation; the importer has to match it.
     bool dedicated = false;
+
+    /// The allocation's memory type index; a Vulkan importer has to use the
+    /// same one. UINT32_MAX when not exportable.
+    uint32_t memoryTypeIndex = UINT32_MAX;
 };
 
 /// \class HgiVulkanExternalBuffer
@@ -88,6 +92,10 @@ public:
     HgiVulkanExternalBufferExportInfo const &GetExportInfo() const {
         return _exportInfo;
     }
+
+protected:
+    HGIVULKAN_API
+    void _ReleaseResources() override;
 
 private:
     friend class HgiVulkanExternalBufferArena;
