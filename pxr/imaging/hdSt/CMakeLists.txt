@@ -66,6 +66,7 @@ pxr_library(hdSt
         commandBuffer
         computation
         copyComputation
+        cylinder
         debugCodes
         dependencyForwardingSceneIndexPlugin
         dependencySceneIndexPlugin
@@ -193,6 +194,7 @@ pxr_library(hdSt
         shaders/basisCurves.glslfx
         shaders/compute.glslfx
         shaders/coordUtils.glslfx
+        shaders/cylinder.glslfx
         shaders/domeLight.glslfx
         shaders/edgeId.glslfx
         shaders/fallbackLighting.glslfx
