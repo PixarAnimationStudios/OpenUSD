@@ -57,6 +57,29 @@ TestErrorCases()
         wrapper.GetStream() << "Into the bit bucket..." << endl;
         TF_AXIOM(!wrapper.GetStream().good());
     }
+
+    // Can't open files beneath a broken symlink
+    {
+        if (TfPathExists("broken_symlink")) {
+            TF_AXIOM(ArchUnlinkFile("broken_symlink") == 0);
+        }
+        if (TfPathExists("dir-does-not-exist")) {
+            TF_AXIOM(ArchRmDir("dir-does-not-exist") == 0);
+        }
+
+        TF_AXIOM(TfMakeDir("dir-does-not-exist"));
+        TF_AXIOM(TfSymlink("dir-does-not-exist", "broken_symlink"));
+        TF_AXIOM(ArchRmDir("dir-does-not-exist") == 0);
+
+        {
+            std::string error;
+            TfAtomicOfstreamWrapper wrapper("broken_symlink/foo.txt");
+            const bool openedBrokenSymlink = wrapper.Open(&error);
+
+            fprintf(stderr, "Expected error: %s\n", error.c_str());
+            TF_AXIOM(!openedBrokenSymlink);
+        }
+    }
 }
 
 static void

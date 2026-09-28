@@ -233,9 +233,16 @@ Tf_CreateSiblingTempFile(std::string fileName,
 
     if (TfGetEnvSetting(TF_REQUIRE_FILESYSTEM_WRITE_PERMISSION)) {
         if (ArchFileAccess(dirPath.c_str(), W_OK) != 0) {
-            *error = TfStringPrintf(
-                "Insufficient permissions to write to destination "
-                "directory '%s'", dirPath.c_str());
+            if (errno == ENOENT) {
+                *error = TfStringPrintf(
+                    "Destination directory '%s' does not exist",
+                    dirPath.c_str());
+            }
+            else {
+                *error = TfStringPrintf(
+                    "Insufficient permissions to write to destination "
+                    "directory '%s'", dirPath.c_str());
+            }
             return result;
         }
 
@@ -258,8 +265,8 @@ Tf_CreateSiblingTempFile(std::string fileName,
     std::string tmpFN;
     result = ArchMakeTmpFile(dirPath, tmpFilePrefix, &tmpFN);
     if (result == -1) {
-        *error = TfStringPrintf("Unable to create temporary file '%s': %s",
-                                tmpFN.c_str(),
+        *error = TfStringPrintf("Unable to create temporary file in '%s': %s",
+                                dirPath.c_str(),
                                 ArchStrerror(errno).c_str());
         return result;
     }
