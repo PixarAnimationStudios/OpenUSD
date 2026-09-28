@@ -20,6 +20,20 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         UsdGeom.SetStageUpAxis(stage, "Z")
         UsdGeom.SetStageMetersPerUnit(stage, 1.0)
 
+    def assertQuatClose(self, actual, expected, eps=1e-5):
+        """Assert two quaternions represent the same rotation. q and -q are the
+        same rotation, so compare by |dot| ~ 1 rather than component-wise; a
+        component compare spuriously fails when a platform returns the negated
+        (but equivalent) quaternion.
+        """
+        actual = Gf.Quatf(actual).GetNormalized()
+        expected = Gf.Quatf(expected).GetNormalized()
+        dot = (actual.real * expected.real
+               + Gf.Dot(actual.imaginary, expected.imaginary))
+        self.assertTrue(abs(dot) > 1.0 - eps,
+                        "%s not the same rotation as %s (|dot|=%r)"
+                        % (actual, expected, abs(dot)))
+
     def test_get_body_resolves_to_owning_body(self):
         self.setup_scene()
 
@@ -172,7 +186,7 @@ class TestUsdPhysicsJoint(unittest.TestCase):
     def test_get_local_pose_resolution_and_scale(self):
         """GetLocalPose resolves the attachment frame and bakes its scale: a
         collider resolves to its owning body; a target with no enclosing body is
-        anchored to directly.
+        owned by the world and its pose is rebased into world frame.
         """
         stage = Usd.Stage.CreateInMemory()
         UsdPhysics.Scene.Define(stage, "/scene")
@@ -190,9 +204,10 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
 
         # body1 -> a non-body anchor root. With no enclosing body the joint is
-        # anchored directly to the anchor prim: the authored pose is already in
-        # its frame, so only the anchor's 3x scale is baked, giving (3,0,0). The
-        # anchor's translation is not applied (we do not rebase into world).
+        # owned by the world (a static collider). The authored
+        # pose is expressed against the anchor prim, so it is rebased into world
+        # frame: the anchor's translation and scale both apply. Anchor is at
+        # (10,0,0) with 3x scale, authored local (1,0,0) -> 10 + 1*3 = (13,0,0).
         anchor = UsdGeom.Xform.Define(stage, "/anchor")
         anchor.AddTranslateOp().Set(Gf.Vec3d(10.0, 0.0, 0.0))
         anchor.AddScaleOp().Set(Gf.Vec3f(3.0, 3.0, 3.0))
@@ -210,9 +225,11 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         pos0, _ = joint.GetLocalPose0()
         pos1, _ = joint.GetLocalPose1()
         # body0 goes through the body-frame rebasing path; allow for float
-        # round-off. body1 is a direct scale-only bake and is exact.
+        # round-off. body1 has no enclosing body, so its pose is rebased into
+        # world frame: the anchor's translation (10) plus the scaled authored
+        # offset (1*3) give (13,0,0).
         self.assertTrue(Gf.IsClose(pos0, Gf.Vec3f(2.0, 0.0, 0.0), 1e-5))
-        self.assertEqual(pos1, Gf.Vec3f(3.0, 0.0, 0.0))
+        self.assertTrue(Gf.IsClose(pos1, Gf.Vec3f(13.0, 0.0, 0.0), 1e-5))
 
         # An optional UsdGeomXformCache does not change the result on an
         # unchanged stage.
@@ -270,6 +287,59 @@ class TestUsdPhysicsJoint(unittest.TestCase):
         cache.Clear()
         cleared, _ = joint.GetLocalPose0(cache)
         self.assertEqual(cleared, Gf.Vec3f(10.0, 0.0, 0.0))
+
+    def test_get_local_pose_world_owned_preserves_target_frame(self):
+        """A joint side whose target has no enclosing enabled body is owned by
+        the world (a static collider). Its authored pose is
+        expressed against the target prim, so it must be rebased into world
+        frame: the target's full placement (translation and rotation), not just
+        its scale, has to survive or the joint is anchored in the wrong place.
+        """
+        self.setup_scene()
+
+        # A standalone collider (CollisionAPI, no RigidBodyAPI) offset from the
+        # world origin and rotated 90 degrees about X.
+        collider = UsdGeom.Cube.Define(self.stage, "/collider")
+        xform = collider.AddTransformOp()
+        m = Gf.Matrix4d(1.0)
+        m.SetRotateOnly(Gf.Rotation(Gf.Vec3d(1.0, 0.0, 0.0), 90.0))
+        m.SetTranslateOnly(Gf.Vec3d(0.0, 0.0, 10.0))
+        xform.Set(m)
+        UsdPhysics.CollisionAPI.Apply(collider.GetPrim())
+
+        joint = UsdPhysics.Joint.Define(self.stage, "/joint")
+        joint.CreateBody0Rel().SetTargets([collider.GetPrim().GetPath()])
+        # Authored local pose is identity: the resolved pose is then exactly the
+        # collider's own world placement.
+        joint.CreateLocalPos0Attr().Set(Gf.Vec3f(0.0, 0.0, 0.0))
+        joint.CreateLocalRot0Attr().Set(Gf.Quatf(1.0))
+
+        # No enclosing enabled body -> world-owned.
+        self.assertFalse(joint.GetBody0())
+
+        pose0 = joint.GetLocalPose0()
+        self.assertTrue(pose0)
+        position0, orientation0 = pose0
+        # The collider's translation (0,0,10) and its 90-degree-about-X rotation
+        # are both preserved, not dropped.
+        self.assertTrue(Gf.IsClose(position0, Gf.Vec3f(0.0, 0.0, 10.0), 1e-5))
+        expected_rot = Gf.Quatf(0.70710678, Gf.Vec3f(0.70710678, 0.0, 0.0))
+        self.assertQuatClose(orientation0, expected_rot)
+
+        # A non-identity authored offset composes on top of the collider
+        # frame, in both position and rotation. Authored pose is (0,1,0) with a
+        # 90-degree-about-Z rotation. The (0,1,0) offset, rotated by the
+        # collider's 90-about-X, maps +Y onto +Z, landing one unit above the
+        # collider origin -> (0, 0, 11). The resolved rotation is the collider's
+        # 90-about-X composed with the authored 90-about-Z.
+        authored_rot = Gf.Quatf(Gf.Rotation(Gf.Vec3d(0, 0, 1), 90.0).GetQuat())
+        joint.CreateLocalPos0Attr().Set(Gf.Vec3f(0.0, 1.0, 0.0))
+        joint.CreateLocalRot0Attr().Set(authored_rot)
+        position0, orientation0 = joint.GetLocalPose0()
+        self.assertTrue(Gf.IsClose(position0, Gf.Vec3f(0.0, 0.0, 11.0), 1e-5))
+        collider_rot = Gf.Quatf(Gf.Rotation(Gf.Vec3d(1, 0, 0), 90.0).GetQuat())
+        expected_composed = collider_rot * authored_rot
+        self.assertQuatClose(orientation0, expected_composed)
 
 
 if __name__ == "__main__":

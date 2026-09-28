@@ -440,16 +440,24 @@ _ComputeJointLocalPose(const UsdRelationship& bodyRel,
 
     // Resolve the nearest enclosing enabled body. When one exists and it is a
     // proper ancestor of the target, the authored pose is expressed against the
-    // target and must be rebased into the body's frame. Otherwise (no enclosing
-    // body, or the target is itself the body) the authored pose is already in
-    // the right frame and only that frame's scale is baked.
+    // target and must be rebased into the body's frame. When no enclosing body
+    // exists the target is owned by the world (a static collider): the
+    // authored pose is still expressed against the target, so it must be
+    // rebased into the world frame rather than passed through, or the
+    // target's own placement is lost. Only when the target is itself the body
+    // is the authored pose already in the right frame and just scaled.
     const UsdPrim body = _FindEnclosingBody(relPrim);
 
     GfVec3f scale;
-    if (body && body != relPrim)
+    if (body != relPrim)
     {
+        // body is either a proper ancestor of the target, or invalid (the
+        // world). Rebase the authored anchor from the target frame into the
+        // owning body's frame; the world body is identity, so its inverse is
+        // identity and the anchor stays in world.
         const GfMatrix4d worldRel = _LocalToWorld(relPrim, cache);
-        const GfMatrix4d bodyMat = _LocalToWorld(body, cache);
+        const GfMatrix4d bodyMat =
+            body ? _LocalToWorld(body, cache) : GfMatrix4d(1.0);
 
         GfMatrix4d localAnchor;
         localAnchor.SetIdentity();
