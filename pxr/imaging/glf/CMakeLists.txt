@@ -23,10 +23,8 @@ pxr_library(glf
         sdf
 
     PUBLIC_CLASSES
-        bindingMap
         contextCaps
         diagnostic
-        drawTarget
         glContext
         glRawContext
         info
@@ -35,9 +33,6 @@ pxr_library(glf
         simpleMaterial
         simpleShadowArray
         testGLContext
-        texture
-        uniformBlock
-        utils
         ${optionalPublicClasses}
 
     PRIVATE_CLASSES
@@ -50,10 +45,8 @@ pxr_library(glf
     PYMODULE_CPPFILES
         module.cpp
         wrapDiagnostic.cpp
-        wrapDrawTarget.cpp
         wrapSimpleLight.cpp
         wrapSimpleMaterial.cpp
-        wrapTexture.cpp
 
     PYMODULE_FILES
         __init__.py
