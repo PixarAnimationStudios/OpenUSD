@@ -705,6 +705,8 @@ public:
 private:
     using _SlotTable = std::unordered_map<TfToken, int32_t, TfHash>;
 
+    // Note: if the resource doesn't exist in resource binder, this will
+    // return -1, in which case calling code shouldn't bind the resource.
     int32_t _GetLocation(
         HioGlslfxResourceLayout::Element const &element,
         HdSt_ResourceBinder::MetaData const & metaData)
@@ -718,6 +720,12 @@ private:
             }
         }
 
+        return -1;
+    }
+
+    // Returns a monotonically increasing counter for output location slots.
+    int32_t _GetNextOutputLocation()
+    {
         return _nextOutputLocation++;
     }
 
@@ -850,12 +858,14 @@ _ResourceGenerator::_GenerateHgiResources(
                     HgiShaderFunctionParamDesc param;
                     param.nameInShader = element.name;
                     param.type = element.dataType;
-                    param.location = _GetLocation(element, metaData);
                     if (shaderStage == HdShaderTokens->postTessControlShader ||
                         shaderStage == HdShaderTokens->postTessVertexShader) {
                         param.arraySize = "VERTEX_CONTROL_POINTS_PER_PATCH";
                     }
-                    HgiShaderFunctionAddStageInput(funcDesc, param);
+                    param.location = _GetLocation(element, metaData);
+                    if (param.location != -1) {
+                        HgiShaderFunctionAddStageInput(funcDesc, param);
+                    }
                 } else {
                     HgiShaderFunctionParamDesc param;
                     param.nameInShader = element.name;
@@ -1020,21 +1030,24 @@ _ResourceGenerator::_GenerateHgiResources(
                     (element.arraySize.IsEmpty() ? 0 :
                         static_cast<uint32_t>(std::stoi(element.arraySize)));
 
-                if (arraySize > 0) {
-                    HgiShaderFunctionAddBuffer(
-                        funcDesc,
-                        /*name=*/member.name,
-                        /*type=*/_ConvertBoolType(member.dataType),
-                        /*bindIndex=*/_GetLocation(element, metaData),
-                        /*binding=*/HgiBindingTypeUniformArray,
-                        /*arraySize=*/arraySize);
-                } else {
-                    HgiShaderFunctionAddBuffer(
-                        funcDesc,
-                        /*name=*/member.name,
-                        /*type=*/_ConvertBoolType(member.dataType),
-                        /*bindIndex=*/_GetLocation(element, metaData),
-                        /*binding=*/HgiBindingTypeUniformValue);
+                int32_t const loc = _GetLocation(element, metaData);
+                if (loc != -1) {
+                    if (arraySize > 0) {
+                        HgiShaderFunctionAddBuffer(
+                            funcDesc,
+                            /*name=*/member.name,
+                            /*type=*/_ConvertBoolType(member.dataType),
+                            /*bindIndex=*/loc,
+                            /*binding=*/HgiBindingTypeUniformArray,
+                            /*arraySize=*/arraySize);
+                    } else {
+                        HgiShaderFunctionAddBuffer(
+                            funcDesc,
+                            /*name=*/member.name,
+                            /*type=*/_ConvertBoolType(member.dataType),
+                            /*bindIndex=*/loc,
+                            /*binding=*/HgiBindingTypeUniformValue);
+                    }
                 }
             }
         } else if (element.kind == Kind::UNIFORM_BLOCK_CONSTANT_PARAMS) {
@@ -1047,21 +1060,27 @@ _ResourceGenerator::_GenerateHgiResources(
         } else if (element.kind == Kind::BUFFER_READ_ONLY) {
             if (TF_VERIFY(element.members.size() == 1)) {
                 auto const & member = element.members.front();
-                HgiShaderFunctionAddBuffer(
-                    funcDesc,
-                    /*name=*/member.name,
-                    /*type=*/_ConvertBoolType(member.dataType),
-                    /*bindIndex=*/_GetLocation(element, metaData),
-                    /*binding=*/HgiBindingTypePointer);
+                int32_t const loc = _GetLocation(element, metaData);
+                if (loc != -1) {
+                    HgiShaderFunctionAddBuffer(
+                        funcDesc,
+                        /*name=*/member.name,
+                        /*type=*/_ConvertBoolType(member.dataType),
+                        /*bindIndex=*/loc,
+                        /*binding=*/HgiBindingTypePointer);
+                }
             }
         } else if (element.kind == Kind::BUFFER_READ_WRITE) {
             if (TF_VERIFY(element.members.size() == 1)) {
                 auto const & member = element.members.front();
-                HgiShaderFunctionAddWritableBuffer(
-                    funcDesc,
-                    /*name=*/member.name,
-                    /*type=*/_ConvertBoolType(member.dataType),
-                    /*bindIndex=*/_GetLocation(element, metaData));
+                int32_t const loc = _GetLocation(element, metaData);
+                if (loc != -1) {
+                    HgiShaderFunctionAddWritableBuffer(
+                        funcDesc,
+                        /*name=*/member.name,
+                        /*type=*/_ConvertBoolType(member.dataType),
+                        /*bindIndex=*/loc);
+                }
             }
         }
     }
@@ -1136,25 +1155,25 @@ _ResourceGenerator::_GenerateGLSLResources(
     for (auto const & element : elements) {
         switch (element.kind) {
             case HioGlslfxResourceLayout::Kind::VALUE:
-                switch (element.inOut) {
-                    case HioGlslfxResourceLayout::InOut::STAGE_IN:
-                        if (shaderStage == HdShaderTokens->vertexShader) {
-                            str << "layout (location = "
-                                << _GetLocation(element, metaData) << ") ";
+                if (element.inOut == HioGlslfxResourceLayout::InOut::STAGE_IN) {
+                    if (shaderStage == HdShaderTokens->vertexShader) {
+                        int32_t const location = _GetLocation(element, metaData);
+                        if (location == -1) {
+                            break;
                         }
-                        str << "in ";
-                        break;
-                    case HioGlslfxResourceLayout::InOut::STAGE_OUT:
-                        if (shaderStage == HdShaderTokens->fragmentShader) {
-                            str << "layout (location = "
-                                << _GetLocation(element, metaData) << ") ";
+                        str << "layout (location = " << location << ") ";
+                    }
+                    str << "in ";
+                } else if (
+                    element.inOut == HioGlslfxResourceLayout::InOut::STAGE_OUT){
+                    if (shaderStage == HdShaderTokens->fragmentShader) {
+                        int32_t location = _GetLocation(element, metaData);
+                        if (location == -1) {
+                            location = _GetNextOutputLocation();
                         }
-                        str << "out ";
-                        break;
-                    case HioGlslfxResourceLayout::InOut::NONE:
-                        break;
-                    default:
-                        break;
+                        str << "layout (location = " << location << ") ";
+                    }
+                    str << "out ";
                 }
                 if (element.qualifiers == _tokens->flat) {
                     str << "flat ";
@@ -1308,48 +1327,62 @@ _ResourceGenerator::_GenerateGLSLResources(
                 }
                 break;
             case HioGlslfxResourceLayout::Kind::UNIFORM_VALUE:
-                str << "layout(location = " <<
-                        _GetLocation(element, metaData)
-                    << ") uniform "
-                    << element.dataType << " *" << element.name;
-                if (!element.arraySize.IsEmpty()) {
-                    str << "[" << element.arraySize << "]";
+                {
+                int32_t const location = _GetLocation(element, metaData);
+                if (location != -1) {
+                    str << "layout(location = " << location
+                        << ") uniform "
+                        << element.dataType << " *" << element.name;
+                    if (!element.arraySize.IsEmpty()) {
+                        str << "[" << element.arraySize << "]";
+                    }
+                    str << ";\n";
                 }
-                str << ";\n";
+                }
                 break;
             case HioGlslfxResourceLayout::Kind::UNIFORM_BLOCK:
-                str << "layout(std140, binding = " <<
-                        _GetLocation(element, metaData)
-                    << ") uniform ubo_" << element.name
-                    << " {\n"
-                    << "    " << element.dataType << " "
-                    << element.name;
-                if (!element.arraySize.IsEmpty()) {
-                    str << "[" << element.arraySize << "]";
+                {
+                int32_t const location = _GetLocation(element, metaData);
+                if (location != -1) {
+                    str << "layout(std140, binding = " << location
+                        << ") uniform ubo_" << element.name
+                        << " {\n"
+                        << "    " << element.dataType << " "
+                        << element.name;
+                    if (!element.arraySize.IsEmpty()) {
+                        str << "[" << element.arraySize << "]";
+                    }
+                    str << ";\n};\n";
                 }
-                str << ";\n};\n";
+                }
                 break;
             case HioGlslfxResourceLayout::Kind::UNIFORM_BLOCK_CONSTANT_PARAMS:
-                str << "layout(std140, binding = " <<
-                        _GetLocation(element, metaData)
-                    << ") uniform ubo_" << element.name
-                    << " {\n";
-                for (auto const & member : element.members) {
-                    str << member.dataType << " " << member.name << ";\n";
+                {
+                int32_t const location = _GetLocation(element, metaData);
+                if (location != -1) {
+                    str << "layout(std140, binding = " << location
+                        << ") uniform ubo_" << element.name
+                        << " {\n";
+                    for (auto const & member : element.members) {
+                        str << member.dataType << " " << member.name << ";\n";
+                    }
+                    str << "};\n";
                 }
-                str << "};\n";
+                }
                 break;
             case HioGlslfxResourceLayout::Kind::BUFFER_READ_ONLY:
             case HioGlslfxResourceLayout::Kind::BUFFER_READ_WRITE:
                 {
                 auto const & member = element.members.front();
-                uint32_t location = _GetLocation(element, metaData);
-                str << "layout(std430, binding = " << location
-                    << ") buffer ssbo_" << location
-                    << " {\n"
-                    << "    " << member.dataType << " "
-                    << member.name << "[];\n"
-                    << "};\n";
+                int32_t const location = _GetLocation(element, metaData);
+                if (location != -1) {
+                    str << "layout(std430, binding = " << location
+                        << ") buffer ssbo_" << location
+                        << " {\n"
+                        << "    " << member.dataType << " "
+                        << member.name << "[];\n"
+                        << "};\n";
+                }
                 }
                 break;
             default:

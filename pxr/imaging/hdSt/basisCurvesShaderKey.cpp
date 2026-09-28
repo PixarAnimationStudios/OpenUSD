@@ -190,12 +190,13 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
 
     bool oriented = normalStyle == HdSt_BasisCurvesShaderKey::ORIENTED;
 
-    // skip Metal tessellation for linear points and wire curves.
-    bool const skipTessLinear =
-            linear && (drawStyle == HdSt_BasisCurvesShaderKey::POINTS ||
-                       drawStyle == HdSt_BasisCurvesShaderKey::WIRE);
+    // Skip Metal tessellation for points (of any basis) and for linear wire
+    // curves.
+    bool const skipTess =
+            (drawStyle == HdSt_BasisCurvesShaderKey::POINTS) ||
+            (linear && drawStyle == HdSt_BasisCurvesShaderKey::WIRE);
 
-    useMetalTessellation = hasMetalTessellation && !(skipTessLinear);
+    useMetalTessellation = hasMetalTessellation && !(skipTess);
 
     uint8_t vsIndex = 0;
 

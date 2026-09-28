@@ -420,7 +420,7 @@ void main(void)
     vec4 viewport = HdGet_viewport();
     vec2 screen_size = vec2(viewport.z, viewport.w);
 
-    CurveData vertexData = PopulatePeyeAndNeye(Peye, Neye);
+    CurveData vertexData = PopulatePeyeAndNeye();
     vec2 v0 = projectToScreen(projMat, vertexData.Peye[0], screen_size);
     vec2 v1 = projectToScreen(projMat, vertexData.Peye[1], screen_size);
     vec2 v2 = projectToScreen(projMat, vertexData.Peye[2], screen_size);
@@ -1187,7 +1187,8 @@ Coeffs evaluateBasis(float u, const vec4 cv[NUM_CURVE_CONTROL_VERTS])
   tangent_basis[3] = dP23[1]*P123[1]*P0123[1] + 
     P23[1]*dP123[1]*P0123[1] + P23[1]*P123[1]*dP0123[1];
 
-  return Coeffs(basis, tangent_basis);
+  Coeffs coeffs = { basis, tangent_basis };
+  return coeffs;
 }
 
 --- --------------------------------------------------------------------------
