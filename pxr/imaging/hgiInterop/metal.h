@@ -13,6 +13,7 @@
 #include <AppKit/AppKit.h>
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/hgiInterop/api.h"
@@ -44,7 +45,8 @@ public:
         HgiTextureHandle const &color,
         HgiTextureHandle const &depth,
         VtValue const &framebuffer,
-        GfVec4i const &compRegion);
+        GfVec4i const &compRegion,
+        GfVec4f const &normalizedSrcRegion = GfVec4f(0.0F, 0.0F, 1.0F, 1.0F));
 
 private:
     HgiInteropMetal() = delete;
@@ -65,6 +67,7 @@ private:
         int32_t samplerColorLoc;
         int32_t samplerDepthLoc;
         uint32_t blitTexSizeUniform;
+        int32_t srcRegionUniform;
     };
 
     struct VertexAttribState {
@@ -77,8 +80,8 @@ private:
         void* pointer;
     };
 
-    void _BlitToOpenGL(VtValue const &framebuffer, GfVec4i const& compRegion,
-                       int shaderIndex);
+    void _BlitToOpenGL(VtValue const &framebuffer, GfVec4i const &compRegion,
+                       GfVec4f const &srcRegion, int shaderIndex);
     void _FreeTransientTextureCacheRefs();
     void _CaptureOpenGlState();
     void _RestoreOpenGlState();

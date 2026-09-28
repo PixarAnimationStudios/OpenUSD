@@ -9,6 +9,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgiInterop/api.h"
 #include "pxr/imaging/hgi/texture.h"
@@ -59,16 +60,23 @@ public:
     /// `dstRegion`:
     ///     Subrect region of the framebuffer over which to composite.
     ///     Coordinates are (left, BOTTOM, width, height) which is the same
-    ///     convention as OpenGL viewport coordinates.
+    ///     convention as OpenGL viewport coordinates. Note this is specified
+    ///     in *pixel* coordinates.
+    ///
+    /// `normalizedSrcRegion`:
+    ///     Normalized [0,1] sub-rectangle of the source textures to sample.
+    ///     Coordinates are (left, bottom, width, height). Identity is
+    ///     (0, 0, 1, 1) which samples the entire texture. Note this is
+    ///     specified in *normalized* coordinates.
     ///
     /// Note:
-    /// To composite correctly, blending is enabled. 
+    /// To composite correctly, blending is enabled.
     /// If `srcDepth` is provided, depth testing is enabled.
     /// As a result, the contents of the application framebuffer matter.
     /// In order to use the contents of `srcColor` and `srcDepth` as-is
     /// (i.e., blit), the color attachment should be cleared to (0,0,0,0) and
     /// the depth attachment needs to be cleared to 1.
-    /// 
+    ///
     HGIINTEROP_API
     void TransferToApp(
         Hgi *srcHgi,
@@ -76,7 +84,8 @@ public:
         HgiTextureHandle const &srcDepth,
         TfToken const &dstApi,
         VtValue const &dstFramebuffer,
-        GfVec4i const &dstRegion);
+        GfVec4i const &dstRegion,
+        GfVec4f const &normalizedSrcRegion = GfVec4f(0.0F, 0.0F, 1.0F, 1.0F));
 
 private:
     HgiInterop & operator=(const HgiInterop&) = delete;

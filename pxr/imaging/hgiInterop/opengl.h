@@ -8,6 +8,7 @@
 #define PXR_IMAGING_HGIINTEROP_HGIINTEROPOPENGL_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/hgiInterop/api.h"
@@ -37,7 +38,8 @@ public:
         HgiTextureHandle const &color,
         HgiTextureHandle const &depth,
         VtValue const &framebuffer,
-        GfVec4i const& viewport);
+        GfVec4i const &viewport,
+        GfVec4f const &normalizedSrcRegion = GfVec4f(0.0F, 0.0F, 1.0F, 1.0F));
 
 private:
     uint32_t _vs;

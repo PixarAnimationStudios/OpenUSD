@@ -144,6 +144,7 @@ HgiInteropMetal::_CreateShaderContext(
     shader.samplerColorLoc = glGetUniformLocation(program, "interopTexture");
     shader.samplerDepthLoc = glGetUniformLocation(program, "depthTexture");
     shader.blitTexSizeUniform = glGetUniformLocation(program, "texSize");
+    shader.srcRegionUniform = glGetUniformLocation(program, "srcRegion");
 
     shader.vao = 0;
     glGenVertexArrays(1, &shader.vao);
@@ -239,10 +240,14 @@ HgiInteropMetal::HgiInteropMetal(Hgi* hgi)
         // a GL_TEXTURE_RECTANGLE are in pixels,
         // rather than the usual normalised 0..1 range.
         "uniform vec2 texSize;\n"
+        // Normalized [0,1] (left, bottom, width, height) sub-rect to sample.
+        "uniform vec4 srcRegion;\n"
         "\n"
         "void main(void)\n"
         "{\n"
-        "    vec2 uv = vec2(texCoord.x, 1.0 - texCoord.y) * texSize;\n"
+        "    vec2 uv = vec2(srcRegion.x + texCoord.x * srcRegion.z,\n"
+        "                  srcRegion.y + (1.0 - texCoord.y) * srcRegion.w)\n"
+        "              * texSize;\n"
         "#if __VERSION__ >= 140\n"
         "    fragColor = texture(interopTexture, uv.st);\n"
         "#else\n"
@@ -266,10 +271,14 @@ HgiInteropMetal::HgiInteropMetal(Hgi* hgi)
         // a GL_TEXTURE_RECTANGLE are in pixels,
         // rather than the usual normalised 0..1 range.
         "uniform vec2 texSize;\n"
+        // Normalized [0,1] (left, bottom, width, height) sub-rect to sample.
+        "uniform vec4 srcRegion;\n"
         "\n"
         "void main(void)\n"
         "{\n"
-        "    vec2 uv = vec2(texCoord.x, 1.0 - texCoord.y) * texSize;\n"
+        "    vec2 uv = vec2(srcRegion.x + texCoord.x * srcRegion.z,\n"
+        "                  srcRegion.y + (1.0 - texCoord.y) * srcRegion.w)\n"
+        "              * texSize;\n"
         "#if __VERSION__ >= 140\n"
         "    vec4 encodedDepth = texture(depthTexture, uv.st);\n"
         "#else\n"
@@ -681,6 +690,7 @@ HgiInteropMetal::_RestoreOpenGlState()
 void
 HgiInteropMetal::_BlitToOpenGL(VtValue const &framebuffer,
                                GfVec4i const &compRegion,
+                               GfVec4f const &srcRegion,
                                int shaderIndex)
 {
     // Clear GL error state
@@ -750,7 +760,9 @@ HgiInteropMetal::_BlitToOpenGL(VtValue const &framebuffer,
     glUniform2f(shader.blitTexSizeUniform,
                 _mtlAliasedColorTexture.width,
                 _mtlAliasedColorTexture.height);
-    
+    glUniform4f(shader.srcRegionUniform,
+                srcRegion[0], srcRegion[1], srcRegion[2], srcRegion[3]);
+
     // Region of the framebuffer over which to composite.
     glViewport(compRegion[0], compRegion[1], compRegion[2], compRegion[3]);
 
@@ -765,7 +777,8 @@ HgiInteropMetal::CompositeToInterop(
     HgiTextureHandle const &color,
     HgiTextureHandle const &depth,
     VtValue const &framebuffer,
-    GfVec4i const &compRegion)
+    GfVec4i const &compRegion,
+    GfVec4f const &normalizedSrcRegion)
 {
     if (!ARCH_UNLIKELY(color)) {
         TF_CODING_ERROR("No valid color texture provided");
@@ -875,7 +888,8 @@ HgiInteropMetal::CompositeToInterop(
         HgiMetal::CommitCommandBuffer_WaitUntilScheduled);
 
     if (glShaderIndex != -1) {
-        _BlitToOpenGL(framebuffer, compRegion, glShaderIndex);
+        _BlitToOpenGL(framebuffer, compRegion,
+                      normalizedSrcRegion, glShaderIndex);
 
         _ProcessGLErrors();
     }

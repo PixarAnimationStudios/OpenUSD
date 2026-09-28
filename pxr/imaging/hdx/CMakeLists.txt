@@ -144,9 +144,7 @@ pxr_build_test(testHdxNoResourceBindings
     CPPFILES
         testenv/testHdxNoResourceBindings.cpp
 )
-endif()
 
-if (X11_FOUND OR APPLE)
 pxr_build_test(testHdxIdRender
     LIBRARIES
         hdx
@@ -227,6 +225,32 @@ pxr_build_test(testHdxPickResolveMode
         unitTestUtils.cpp
         testenv/testHdxPickResolveMode.cpp
 )
+pxr_build_test(testHdxPresentTask
+    LIBRARIES
+        hdx
+        hd
+        hdSt
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        testenv/testHdxPresentTask.cpp
+)
+pxr_build_test(testHdxOitShaderRetention
+    LIBRARIES
+        hdx
+        hd
+        hdSt
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        testenv/testHdxOitShaderRetention.cpp
+)
 endif()
 
 if (${PXR_HEADLESS_TEST_MODE})
@@ -257,6 +281,10 @@ pxr_register_test(testHdxIdRender_Refined
     EXPECTED_RETURN_CODE 0
 )
 if (NOT APPLE)
+pxr_register_test(testHdxPresentTask
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxPresentTask"
+    EXPECTED_RETURN_CODE 0
+)
 pxr_register_test(testHdxLightAndShadow
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxLightAndShadow"
     TESTENV testenv/testHdxLightAndShadow
@@ -272,8 +300,6 @@ pxr_register_test(testHdxLightAndShadow
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
-endif()
-if (NOT APPLE)
 pxr_register_test(testHdxPickResolveMode
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxPickResolveMode --offscreen"
     EXPECTED_RETURN_CODE 0
@@ -330,20 +356,6 @@ pxr_register_test(testHdxRenderTask
     PERCEPTUAL
     ENV
         TF_DEBUG=HD_SAFE_MODE
-)
-
-pxr_build_test(testHdxOitShaderRetention
-    LIBRARIES
-        hdx
-        hd
-        hdSt
-        sdf
-        glf
-        garch
-        arch
-        tf
-    CPPFILES
-        testenv/testHdxOitShaderRetention.cpp
 )
 pxr_register_test(testHdxOitShaderRetention
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxOitShaderRetention"

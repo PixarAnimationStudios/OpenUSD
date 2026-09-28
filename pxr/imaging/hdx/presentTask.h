@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/task.h"
+#include "pxr/base/gf/vec4f.h"
 #include "pxr/imaging/hgi/tokens.h"
 #include "pxr/imaging/hgi/types.h"
 #include "pxr/imaging/hgiInterop/hgiInterop.h"
@@ -22,9 +23,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 struct HdxPresentTaskParams
 {
-    HdxPresentTaskParams() 
+    HdxPresentTaskParams()
         : dstApi(HgiTokens->OpenGL)
         , dstRegion(0)
+        , normalizedSrcRegion(0.0F, 0.0F, 1.0F, 1.0F)
         , enabled(true)
     {}
 
@@ -42,8 +44,16 @@ struct HdxPresentTaskParams
     VtValue dstFramebuffer;
 
     // Subrectangular region of the framebuffer over which to composite aov
-    // contents. Coordinates are (left, BOTTOM, width, height).
+    // contents. Coordinates are (left, BOTTOM, width, height), which is the
+    // same convention as OpenGL viewport coordinates. Note that this
+    // is specified in *pixel* coordinates.
     GfVec4i dstRegion;
+
+    // Normalized [0,1] sub-rectangle of the source AOV textures to sample.
+    // Coordinates are (left, bottom, width, height). Identity is (0,0,1,1)
+    // which samples the entire texture. Note this is specified in *normalized*
+    // coordinates.
+    GfVec4f normalizedSrcRegion;
 
     // When not enabled, present task does not execute, but still calls
     // Hgi::EndFrame.
