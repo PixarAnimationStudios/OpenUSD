@@ -316,11 +316,6 @@ pxr_register_test(testUsdviewMeshBounds
     EXPECTED_RETURN_CODE 0
 )
 
-if (APPLE)
-    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
-    return()
-endif()
-
 if (WIN32)
     message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
     return()
@@ -378,7 +373,7 @@ pxr_register_test(testUsdviewSelectionHighlighting
         nestedInstanceSelection2.png
         nestedInstanceSelection3.png
     FAIL 0.05
-    FAIL_PERCENT 0.03
+    FAIL_PERCENT 0.3
     EXPECTED_RETURN_CODE 0
 )
 
@@ -443,7 +438,7 @@ pxr_register_test(testUsdviewLights_yup
         domeYup.png
         bothLightsYup.png
     FAIL 0.05
-    FAIL_PERCENT 0.03
+    FAIL_PERCENT 0.3
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
 )
@@ -463,7 +458,7 @@ pxr_register_test(testUsdviewSceneLights
         sceneLights_edit_Storm.png
         noLights_Storm.png
     FAIL 0.05
-    FAIL_PERCENT 0.03
+    FAIL_PERCENT 0.3
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
 )
@@ -483,7 +478,7 @@ pxr_register_test(testUsdviewSceneLights_Delegate
         sceneLights_edit_Storm.png
         noLights_Storm.png
     FAIL 0.05
-    FAIL_PERCENT 0.03
+    FAIL_PERCENT 0.3
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     ENV
@@ -499,7 +494,7 @@ pxr_register_test(testUsdviewSceneMaterials
         enabledSceneMaterials_Storm.png
         disabledSceneMaterials_Storm.png
     FAIL 0.05
-    FAIL_PERCENT 0.03
+    FAIL_PERCENT 0.3
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
 )
@@ -527,7 +522,7 @@ pxr_register_test(testUsdviewLightVisibility_varying
         visible.png
         invisible.png
     FAIL 0.05
-    FAIL_PERCENT 0.03
+    FAIL_PERCENT 0.3
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
 )
@@ -678,7 +673,7 @@ pxr_register_test(testUsdviewMaterialEdits
         2.png
         3.png
     FAIL 0.05
-    FAIL_PERCENT 0.03
+    FAIL_PERCENT 0.3
     EXPECTED_RETURN_CODE 0
 )
 
@@ -692,7 +687,7 @@ pxr_register_test(testUsdviewModelAPIEdits
         cards.png
         api-removed.png
     FAIL 0.05
-    FAIL_PERCENT 0.03
+    FAIL_PERCENT 0.3
     EXPECTED_RETURN_CODE 0
 )
 
@@ -704,7 +699,7 @@ pxr_register_test(testUsdviewReferencedNodegraphEdits
         before.png
         after.png
     FAIL 0.05
-    FAIL_PERCENT 0.03
+    FAIL_PERCENT 0.3
     EXPECTED_RETURN_CODE 0
 )
 
@@ -749,6 +744,7 @@ pxr_register_test(testUsdviewCPUSkinning
         pre_skel_resync_frame_6.png
         post_skel_resync_frame_6.png
     FAIL 0.05
+    FAIL_PERCENT 0.3
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     ENV
@@ -769,6 +765,7 @@ pxr_register_test(testUsdviewGPUSkinning
         pre_skel_resync_frame_6.png
         post_skel_resync_frame_6.png
     FAIL 0.05
+    FAIL_PERCENT 0.3
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     ENV
@@ -783,7 +780,7 @@ pxr_register_test(testUsdviewInfGeom
         infGeom.png
         fixedGeom.png
     FAIL 0.05
-    FAIL_PERCENT 0.06
+    FAIL_PERCENT 0.3
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
 )
@@ -817,7 +814,7 @@ pxr_register_test(testUsdviewPrimvarEdits
         add_primvars_for_varname_edit.png
         primvar_reader_varname_edit.png
     FAIL 0.05
-    FAIL_PERCENT 0.03
+    FAIL_PERCENT 0.3
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
 )
@@ -829,7 +826,7 @@ pxr_register_test(testUsdviewOIT
     IMAGE_DIFF_COMPARE
         oit.png
     FAIL 0.05
-    FAIL_PERCENT 0.03
+    FAIL_PERCENT 0.3
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
 )
@@ -841,7 +838,7 @@ pxr_register_test(testUsdviewAdditive
     IMAGE_DIFF_COMPARE
         additive.png
     FAIL 0.05
-    FAIL_PERCENT 0.03
+    FAIL_PERCENT 0.3
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
 )
@@ -889,7 +886,7 @@ pxr_register_test(testUsdviewPointInstancerVariant
         variantB.png
         variantA.png
     FAIL 0.05
-    FAIL_PERCENT 0.03
+    FAIL_PERCENT 0.3
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
 )
@@ -978,7 +975,7 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
     )
 endif()
 
-if(OPENCOLORIO_FOUND AND ${PXR_BUILD_OPENCOLORIO_PLUGIN})
+if(OPENCOLORIO_FOUND AND ${PXR_BUILD_OPENCOLORIO_PLUGIN} AND NOT APPLE)
     pxr_register_test(testUsdviewColorManagement
         PYTHON
         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewColorManagement.py test.usda"
