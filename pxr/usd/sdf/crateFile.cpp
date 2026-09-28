@@ -3458,6 +3458,8 @@ CrateFile::_ReadStructuralSections(Reader reader, int64_t fileSize)
     TfErrorMark m;
     try {
         _boot = _ReadBootStrap(reader.src, fileSize);
+        // Reject unsupported versions before reading anything else.
+        if (m.IsClean()) _CheckFileVersion();
         if (m.IsClean()) _toc = _ReadTOC(reader, _boot);
         if (m.IsClean()) _PrefetchStructuralSections(reader);
         if (m.IsClean()) _ReadTokens(reader);
@@ -3472,35 +3474,6 @@ CrateFile::_ReadStructuralSections(Reader reader, int64_t fileSize)
         _specs.clear();
         _fieldSets.clear();
         _fields.clear();
-    }
-
-    const Version assetVersion(_boot.version);
-
-    // Disallow loading unsupported versions.
-    static Version oldestSupportedVersion =
-        Version::FromString(OLDEST_SUPPORTED_VERSION);
-    if (assetVersion < oldestSupportedVersion) {
-        TF_RUNTIME_ERROR(
-            "Cannot read asset @%s@ with obsolete version %s. The oldest "
-            "version this software supports is " OLDEST_SUPPORTED_VERSION ". "
-            "See the OpenUSD FAQ for information about handling obsolete "
-            "assets. https://openusd.org/release/usdfaq.html",
-            _assetPath.c_str(), assetVersion.AsFullString().c_str());
-        return;
-    }
-    
-    // Warn if the version is less than the deprecated version.
-    static Version oldestCurrentVersion =
-        Version::FromString(OLDEST_CURRENT_VERSION);
-    if (assetVersion < oldestCurrentVersion &&
-        TfGetEnvSetting(PXR_USDC_EMIT_DEPRECATION_WARNINGS)) {
-        TF_WARN(
-            "Asset @%s@ has deprecated version %s. Future versions of USD "
-            "will not be able to read it. See the OpenUSD FAQ for information "
-            "about handling deprecated assets. "
-            "https://openusd.org/release/usdfaq.html  Disable this warning by "
-            "setting PXR_USDC_EMIT_DEPRECATION_WARNINGS=0 in the environment.",
-            _assetPath.c_str(), assetVersion.AsFullString().c_str());
     }
 
     if constexpr (SafetyOverSpeed) {
@@ -3584,6 +3557,39 @@ CrateFile::_ReadBootStrap(ByteStream src, int64_t fileSize)
             b.tocOffset, fileSize);
     }
     return b;
+}
+
+void
+CrateFile::_CheckFileVersion() const
+{
+    const Version assetVersion(_boot.version);
+
+    // Disallow loading unsupported versions.
+    static Version oldestSupportedVersion =
+        Version::FromString(OLDEST_SUPPORTED_VERSION);
+    if (assetVersion < oldestSupportedVersion) {
+        TF_RUNTIME_ERROR(
+            "Cannot read asset @%s@ with obsolete version %s. The oldest "
+            "version this software supports is " OLDEST_SUPPORTED_VERSION ". "
+            "See the OpenUSD FAQ for information about handling obsolete "
+            "assets. https://openusd.org/release/usdfaq.html",
+            _assetPath.c_str(), assetVersion.AsFullString().c_str());
+        return;
+    }
+
+    // Warn if the version is less than the deprecated version.
+    static Version oldestCurrentVersion =
+        Version::FromString(OLDEST_CURRENT_VERSION);
+    if (assetVersion < oldestCurrentVersion &&
+        TfGetEnvSetting(PXR_USDC_EMIT_DEPRECATION_WARNINGS)) {
+        TF_WARN(
+            "Asset @%s@ has deprecated version %s. Future versions of USD "
+            "will not be able to read it. See the OpenUSD FAQ for information "
+            "about handling deprecated assets. "
+            "https://openusd.org/release/usdfaq.html  Disable this warning by "
+            "setting PXR_USDC_EMIT_DEPRECATION_WARNINGS=0 in the environment.",
+            _assetPath.c_str(), assetVersion.AsFullString().c_str());
+    }
 }
 
 template <class Reader>

@@ -15,12 +15,16 @@
 //   bad_overflow_size.usdc        -- half2[] count = 2^64-1
 //   bad_moderate_oversize.usdc    -- half2[] count = 5000
 //   bad_str_oversize.usdc         -- string[] count = 100000
+//   bad_obsolete_version.usdc     -- 96 bytes: a bootstrap with version 0.0.0
+//                                    and tocOffset 88, followed by a TOC
+//                                    section count of 2^64-1
 //
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/setenv.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/layer.h"
@@ -63,11 +67,39 @@ _Test(char const *layerPath, SdfPath const &attrPath, bool expectError)
     mark->Clear();
 }
 
+// Open `layerPath`, which has an obsolete version and a malformed table of
+// contents.  The open should fail with exactly one error, the obsolete version
+// error, showing that nothing past the bootstrap was read.
+static void
+_TestObsolete(char const *layerPath)
+{
+    std::optional<TfErrorMark> mark;
+    mark.emplace();
+    SdfLayerRefPtr layer = SdfLayer::FindOrOpen(layerPath);
+    size_t numErrors = 0;
+    bool foundObsolete = false;
+    for (TfError const &err: *mark) {
+        ++numErrors;
+        foundObsolete |= TfStringContains(
+            err.GetCommentary(), "obsolete version");
+    }
+    if (layer || numErrors != 1 || !foundObsolete) {
+        mark.reset(); // destroy mark to report errors.
+        TF_FATAL_ERROR(
+            "Failed -- expected only an obsolete version error "
+            "opening %s, got layer=%s and %zu error(s):\n", layerPath,
+            layer ? "valid" : "null", numErrors);
+    }
+    mark->Clear();
+}
+
 int
 main()
 {    
     _Test("baseline.usdc",
           SdfPath("/Root.zcPoints"), /*error=*/false);
+
+    _TestObsolete("bad_obsolete_version.usdc");
 
 #ifdef PXR_PREFER_SAFETY_OVER_SPEED
     // These tests rely on safety checks that only exist when

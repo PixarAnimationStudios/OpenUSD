@@ -843,6 +843,8 @@ private:
     template <class ByteStream>
     static _BootStrap _ReadBootStrap(ByteStream src, int64_t fileSize);
 
+    void _CheckFileVersion() const;
+
     template <class Reader>
     _TableOfContents _ReadTOC(Reader src, _BootStrap const &b) const;
 
