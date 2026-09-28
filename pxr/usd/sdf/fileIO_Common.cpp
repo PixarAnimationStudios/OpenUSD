@@ -793,6 +793,10 @@ Sdf_FileIOUtility::WriteSpline(
     _WriteSplineExtrapolation(
         out, indent, "post", spline.GetPostExtrapolation());
 
+    // Do not generate compiler warnings for the deprecated inner looping
+    // methods
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_DEPRECATED
     // Inner loop params, if present.
     if (spline.GetInnerLoopParams() != TsLoopParams()) {
         const TsLoopParams lp = spline.GetInnerLoopParams();
@@ -803,6 +807,7 @@ Sdf_FileIOUtility::WriteSpline(
             lp.numPostLoops,
             TfStringify(lp.valueOffset).c_str());
     }
+    ARCH_PRAGMA_POP
 
     // Knots.
     TsDispatchToValueTypeTemplate<_SplineKnotWriter>(

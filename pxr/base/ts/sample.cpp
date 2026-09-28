@@ -716,7 +716,7 @@ Ts_SplineData* Ts_Bake(
     if (data->times.empty()) {
         // Nothing to bake, just reset the inner loop params. Baked data no
         // longer has inner loops.
-        bakedData->loopParams = TsLoopParams();
+        bakedData->loopParams = Ts_LoopParams();
         return bakedData;
     }
 
@@ -793,7 +793,7 @@ Ts_SplineData* Ts_Bake(
     }
 
     // reset the inner loop params. Baked data no longer has inner loops.
-    bakedData->loopParams = TsLoopParams();
+    bakedData->loopParams = Ts_LoopParams();
 
     return bakedData;
 }
@@ -889,7 +889,7 @@ Ts_Truncate(
         TF_VERIFY(false, "Ts_Truncate failed bake of input spline data");
         return nullptr;
     }
-    resultData->loopParams = TsLoopParams();
+    resultData->loopParams = Ts_LoopParams();
 
     // Write back simplified extrapolation. This ensures we don't
     // breakdown in a looped section that actually behaves like held

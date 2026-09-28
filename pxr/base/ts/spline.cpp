@@ -146,7 +146,7 @@ void TsSpline::SetPreExtrapolation(
 {
     _PrepareForWrite();
     if (extrap.IsLooping() && extrap.loopBoundaryTime.has_value() &&
-        _data->loopParams != TsLoopParams())
+        _data->loopParams != Ts_LoopParams())
     {
         TF_CODING_ERROR("Cannot set extrapolation looping with a non-null "
                         "loopBoundaryTime when inner loops are possibly "
@@ -166,7 +166,7 @@ void TsSpline::SetPostExtrapolation(
 {
     _PrepareForWrite();
     if (extrap.IsLooping() && extrap.loopBoundaryTime.has_value() &&
-        _data->loopParams != TsLoopParams())
+        _data->loopParams != Ts_LoopParams())
     {
         TF_CODING_ERROR("Cannot set extrapolation looping with a non-null "
                         "loopBoundaryTime when inner loops are possibly "
@@ -213,13 +213,24 @@ TsSpline::IsPostExtrapolationValid() const
 // Inner Loops
 
 void TsSpline::SetInnerLoopParams(
-    const TsLoopParams &params)
+    const Ts_LoopParams &params)
+{
+    static std::atomic_flag warned = ATOMIC_FLAG_INIT;
+    if (!warned.test_and_set()) {
+        TF_WARN("TsSpline inner looping is deprecated.");
+    }
+
+    _SetInnerLoopParams(params);
+}
+                               
+void TsSpline::_SetInnerLoopParams(
+    const Ts_LoopParams &params)
 {
     _PrepareForWrite();
 
     // Don't set inner looping if it causes non-default inner looping and
     // extrapolation looping with loopBoundaryTime to be active simultaneously.
-    if (params != TsLoopParams()) {
+    if (params != Ts_LoopParams()) {
         const TsExtrapolation& preExtrap = GetPreExtrapolation();
         const TsExtrapolation& postExtrap = GetPostExtrapolation();
         if ((preExtrap.IsLooping() && preExtrap.loopBoundaryTime.has_value()) ||
@@ -246,7 +257,17 @@ void TsSpline::SetInnerLoopParams(
     }
 }
 
-TsLoopParams TsSpline::GetInnerLoopParams() const
+Ts_LoopParams TsSpline::GetInnerLoopParams() const
+{
+    static std::atomic_flag warned = ATOMIC_FLAG_INIT;
+    if (!warned.test_and_set()) {
+        TF_WARN("TsSpline inner looping is deprecated.");
+    }
+
+    return _GetInnerLoopParams();
+}
+
+Ts_LoopParams TsSpline::_GetInnerLoopParams() const
 {
     return _GetData()->loopParams;
 }
@@ -393,6 +414,16 @@ void TsSpline::RemoveKnot(
 
 bool TsSpline::BakeInnerLoops()
 {
+    static std::atomic_flag warned = ATOMIC_FLAG_INIT;
+    if (!warned.test_and_set()) {
+        TF_WARN("TsSpline inner looping is deprecated.");
+    }
+
+    return _BakeInnerLoops();
+}
+
+bool TsSpline::_BakeInnerLoops()
+{
     if (!_data || !_data->HasInnerLoops()) {
         // No inner loops to bake, we're done.
         return true;
@@ -417,6 +448,16 @@ bool TsSpline::BakeInnerLoops()
 }
 
 TsKnotMap TsSpline::GetKnotsWithInnerLoopsBaked() const
+{
+    static std::atomic_flag warned = ATOMIC_FLAG_INIT;
+    if (!warned.test_and_set()) {
+        TF_WARN("TsSpline inner looping is deprecated.");
+    }
+
+    return _GetKnotsWithInnerLoopsBaked();
+}
+
+TsKnotMap TsSpline::_GetKnotsWithInnerLoopsBaked() const
 {
     TsKnotMap result;
 
@@ -611,7 +652,7 @@ TsSpline::GetTimeScaled(double timeScale, double timeOffset) const
     }
 
     Ts_SplineData* scaledData;
-    if (timeScale < 0 && HasInnerLoops()) {
+    if (timeScale < 0 && _HasInnerLoops()) {
         scaledData = Ts_Bake(_GetData(), GfInterval::GetFullInterval(),
                              /* includeExtrapLoops */ false);
     } else {
@@ -667,7 +708,7 @@ TsSpline::Concatenate(const std::vector<TsSpline>& splines)
             return TsSpline();
         }
 
-        if (spline.HasInnerLoops()) {
+        if (spline._HasInnerLoops()) {
             TF_CODING_ERROR("Concatenation of splines with inner loops is "
                             "not supported, returning empty spline.");
             return TsSpline();
@@ -766,10 +807,20 @@ bool TsSpline::HasValueBlocks() const
 
 bool TsSpline::HasLoops() const
 {
-    return HasInnerLoops() || HasExtrapolatingLoops();
+    return _HasInnerLoops() || HasExtrapolatingLoops();
 }
 
 bool TsSpline::HasInnerLoops() const
+{
+    static std::atomic_flag warned = ATOMIC_FLAG_INIT;
+    if (!warned.test_and_set()) {
+        TF_WARN("TsSpline inner looping is deprecated.");
+    }
+
+    return _HasInnerLoops();
+}
+
+bool TsSpline::_HasInnerLoops() const
 {
     return _GetData()->HasInnerLoops();
 }
@@ -823,9 +874,9 @@ std::ostream& operator<<(std::ostream& out, const TsSpline &spline)
         << "  post extrap "
         << _ExtrapDesc(spline.GetPostExtrapolation()) << std::endl;
 
-    if (spline.HasInnerLoops())
+    if (spline._HasInnerLoops())
     {
-        const TsLoopParams lp = spline.GetInnerLoopParams();
+        const Ts_LoopParams lp = spline._GetInnerLoopParams();
         out << "Loop:" << std::endl
             << "  start " << TfStringify(lp.protoStart)
             << ", end " << TfStringify(lp.protoEnd)

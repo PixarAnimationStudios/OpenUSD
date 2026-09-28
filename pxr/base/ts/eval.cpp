@@ -820,7 +820,7 @@ void _LoopResolver::_ResolveInner()
         _data->loopParams.numPostLoops,
         _data->loopParams.valueOffset);
 
-    const TsLoopParams &lp = _data->loopParams;
+    const Ts_LoopParams &lp = _data->loopParams;
     const GfInterval loopedInterval = lp.GetLoopedInterval();
     const GfInterval protoInterval = lp.GetPrototypeInterval();
 
@@ -1162,7 +1162,7 @@ void _LoopResolver::_ComputeExtrapValueOffset(
     const bool isPre)
 {
     const auto &times = _data->times;
-    const TsLoopParams &lp = _data->loopParams;
+    const Ts_LoopParams &lp = _data->loopParams;
 
     double firstValue;
     if (extrapLoopStart != _firstTime)
@@ -1242,7 +1242,7 @@ void _LoopResolver::ReplaceBoundaryKnots(
     bool* generatedPrev /* = nullptr */,
     bool* generatedNext /* = nullptr */) const
 {
-    const TsLoopParams &lp = _data->loopParams;
+    const Ts_LoopParams &lp = _data->loopParams;
 
     if (generatedPrev) {
         *generatedPrev = false;
@@ -1333,7 +1333,7 @@ _LoopResolver::_CopyProtoKnotData(
     const size_t index,
     const int shiftIters) const
 {
-    const TsLoopParams &lp = _data->loopParams;
+    const Ts_LoopParams &lp = _data->loopParams;
     const TsTime protoSpan = lp.GetPrototypeInterval().GetSize();
 
     // Copy the knot.

@@ -54,6 +54,9 @@
     #define ARCH_PRAGMA_ARRAY_BOUNDS \
         _Pragma("GCC diagnostic ignored \"-Warray-bounds\"")
 
+    #define ARCH_PRAGMA_DEPRECATED \
+        _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
+
     #if ARCH_COMPILER_GCC_MAJOR >= 13
         #define ARCH_PRAGMA_SELF_MOVE \
             _Pragma("GCC diagnostic ignored \"-Wself-move\"")
@@ -101,6 +104,9 @@
 
     #define ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED \
         _Pragma("clang diagnostic ignored \"-Wself-assign-overloaded\"")
+
+    #define ARCH_PRAGMA_DEPRECATED \
+        _Pragma("clang diagnostic ignored \"-Wdeprecated-declarations\"")
 
 #elif defined(ARCH_COMPILER_MSVC)
 

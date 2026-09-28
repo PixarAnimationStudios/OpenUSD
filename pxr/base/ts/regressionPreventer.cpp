@@ -247,9 +247,9 @@ TsRegressionPreventer::TsRegressionPreventer(
     }
 
     // Make sure the active knot isn't an echoed knot.
-    if (_spline->HasInnerLoops())
+    if (_spline->_HasInnerLoops())
     {
-        const TsLoopParams lp = _spline->GetInnerLoopParams();
+        const Ts_LoopParams lp = _spline->_GetInnerLoopParams();
         if (lp.GetLoopedInterval().Contains(activeKnotTime)
             && !lp.GetPrototypeInterval().Contains(activeKnotTime))
         {

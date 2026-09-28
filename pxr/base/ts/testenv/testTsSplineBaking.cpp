@@ -74,9 +74,12 @@ public:
             const TsKnotMap knots = spline.GetKnots();
             GfInterval knotInterval = knots.GetTimeSpan();
 
+            ARCH_PRAGMA_PUSH
+            ARCH_PRAGMA_DEPRECATED
             if (spline.HasInnerLoops()) {
                 knotInterval |= spline.GetInnerLoopParams().GetLoopedInterval();
             }
+            ARCH_PRAGMA_POP
 
             _splines[name] = spline;
             _timeIntervals[name] = knotInterval;
@@ -211,6 +214,10 @@ public:
         return result;
     }
 
+    // Inner looping has been deprecated. Turn off deprecation warnings for the
+    // next two tests.
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_DEPRECATED
     bool TestBakeInnerLoops()
     {
         // These variables are used by TEST_ASSERT
@@ -354,6 +361,7 @@ public:
 
         return result;
     }
+    ARCH_PRAGMA_POP
 
     bool TestGetKnotsWithLoopsBaked()
     {

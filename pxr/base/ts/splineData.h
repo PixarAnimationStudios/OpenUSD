@@ -156,7 +156,7 @@ public:
     TfType valueType;
     TsExtrapolation preExtrapolation;
     TsExtrapolation postExtrapolation;
-    TsLoopParams loopParams;
+    Ts_LoopParams loopParams;
 
     // A duplicate of the knot times, so that we can maximize locality while
     // performing binary searches for knots.  This is part of the evaluation hot

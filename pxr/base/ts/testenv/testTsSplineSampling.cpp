@@ -543,10 +543,14 @@ void DoTest(std::ostream& out, const std::string& sampleFunc)
         GfInterval knotSpan = knots.GetTimeSpan();
 
         // Check for inner looping
-        if (spline.HasInnerLoops()) {
+    
+        ARCH_PRAGMA_PUSH
+        ARCH_PRAGMA_DEPRECATED
+        if (spline._HasInnerLoops()) {
             // The looped interval may or may not expand knotSpan
             knotSpan |= spline.GetInnerLoopParams().GetLoopedInterval();
         }
+        ARCH_PRAGMA_POP
         double knotSpanSize = knotSpan.GetSize();
 
         // Calculate an extended time range that will include at least one

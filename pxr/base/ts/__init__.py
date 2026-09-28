@@ -16,3 +16,11 @@ try:
     from .TsTest_Comparator import TsTest_Comparator
 except ImportError:
     pass
+
+# The Ts.LoopParams class is deprecated
+import warnings
+class LoopParams(_LoopParams):
+    def __init__(self, *args, **kw):
+        warnings.warn("Ts.Spline inner looping is deprecated.",
+                      FutureWarning)
+        super().__init__(*args, **kw)

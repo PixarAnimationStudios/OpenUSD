@@ -131,7 +131,11 @@ void InitTestCases()
     // LongLoop has inner looping that extends before and after the first and
     // last knot. The first and last knot are also shadowed by the looping.
     longLoop = simpleSpline;
+    
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_DEPRECATED
     longLoop.SetInnerLoopParams(TsLoopParams{1.0, 3.0, 2, 2, 2.0});
+    ARCH_PRAGMA_POP
 
     // ================ ExtrapLinearSimple ================
     // Clone simpleSpline but add linear extrapolation
@@ -214,6 +218,9 @@ bool TestKnotDiffs()
     return true;
 }
 
+    
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_DEPRECATED
 static
 bool TestLoopedDiffs()
 {
@@ -282,6 +289,7 @@ bool TestLoopedDiffs()
 
     return true;
 }
+ARCH_PRAGMA_POP
 
 static
 bool TestExtrapDiffs()
@@ -417,7 +425,12 @@ bool TestEdgeCases()
     TEST_EMPTY(copy.Diff(spline));
 
     // Looping and extrapolation parameters still leave it empty
+    
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_DEPRECATED
     copy.SetInnerLoopParams(TsLoopParams{1.0, 2.0, 3, 4, 5.0});
+    ARCH_PRAGMA_POP
+
     copy.SetPreExtrapolation(TsExtrapLoopRepeat);
     copy.SetPostExtrapolation(TsExtrapLoopReset);
 

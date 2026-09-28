@@ -269,7 +269,7 @@ static Ts_TypedSplineData<double> _SimpleInnerLoop()
     knot5.preTanSlope = -9.0;
     knot5.preTanWidth = 2.0;
 
-    TsLoopParams lp;
+    Ts_LoopParams lp;
     lp.protoStart = 137.0;
     lp.protoEnd = 155.0;
     lp.numPreLoops = 1;
@@ -323,7 +323,7 @@ static Ts_TypedSplineData<double> _InnerLoop2and2()
     knot2.preTanWidth = 2.5;
     knot2.postTanWidth = 2.5;
 
-    TsLoopParams lp;
+    Ts_LoopParams lp;
     lp.protoStart = 100.0;
     lp.protoEnd = 110.0;
     lp.numPreLoops = 2;
@@ -395,7 +395,7 @@ static Ts_TypedSplineData<double> _InnerLoopPre()
     knot5.preTanSlope = -4.0;
     knot5.preTanWidth = 3.0;
 
-    TsLoopParams lp;
+    Ts_LoopParams lp;
     lp.protoStart = 100.0;
     lp.protoEnd = 110.0;
     lp.numPreLoops = 2;
@@ -470,7 +470,7 @@ static Ts_TypedSplineData<double> _InnerLoopPost()
     knot5.preTanSlope = -4.0;
     knot5.preTanWidth = 3.0;
 
-    TsLoopParams lp;
+    Ts_LoopParams lp;
     lp.protoStart = 100.0;
     lp.protoEnd = 110.0;
     lp.numPreLoops = 0;
@@ -842,7 +842,7 @@ static Ts_TypedSplineData<double> _InnerAndExtrapLoops()
     knot2.preTanWidth = 2.5;
     knot2.postTanWidth = 2.5;
 
-    TsLoopParams lp;
+    Ts_LoopParams lp;
     lp.protoStart = 100.0;
     lp.protoEnd = 110.0;
     lp.numPreLoops = 2;
@@ -1559,7 +1559,7 @@ TsTest_Museum::_SplineDataToSpline(
     spline.SetCurveType(data.curveType);
     spline.SetPreExtrapolation(data.preExtrapolation);
     spline.SetPostExtrapolation(data.postExtrapolation);
-    spline.SetInnerLoopParams(data.loopParams);
+    spline._SetInnerLoopParams(data.loopParams);
 
     // Don't de-regress.  If the SplineData is regressive, the Spline should be
     // too.

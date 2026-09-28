@@ -197,7 +197,7 @@ void Ts_BinaryDataAccess::GetBinaryData(
 
     const Ts_SplineData &data = *(spline._data.get());
     TfType valueType = spline.GetValueType();
-    const bool hasLoops = (spline.GetInnerLoopParams() != TsLoopParams());
+    const bool hasLoops = (spline._GetInnerLoopParams() != Ts_LoopParams());
     const bool isHermite = (spline.GetCurveType() == TsCurveTypeHermite);
 
     // Buffer size:
@@ -208,7 +208,7 @@ void Ts_BinaryDataAccess::GetBinaryData(
     const size_t bufSize =
         2
         + 2 * sizeof(double)
-        + sizeof(TsLoopParams)
+        + sizeof(Ts_LoopParams)
         + data.times.size() * data.GetKnotStructSize();
     buf->reserve(bufSize);
 
@@ -286,7 +286,7 @@ void Ts_BinaryDataAccess::GetBinaryData(
     // Write inner loop params, if applicable.
     if (hasLoops)
     {
-        const TsLoopParams &lp = data.loopParams;
+        const Ts_LoopParams &lp = data.loopParams;
         _WriteBytes<double>(buf, lp.protoStart);
         _WriteBytes<double>(buf, lp.protoEnd);
         _WriteBytes<int32_t>(buf, lp.numPreLoops);
@@ -488,7 +488,7 @@ TsSpline Ts_BinaryDataAccess::_ParseV1_4(
     // Read inner loop params, if present.
     if (hasLoops)
     {
-        TsLoopParams* const lp = &(data->loopParams);
+        Ts_LoopParams* const lp = &(data->loopParams);
         READ(&(lp->protoStart));
         READ(&(lp->protoEnd));
         READ(&(lp->numPreLoops));

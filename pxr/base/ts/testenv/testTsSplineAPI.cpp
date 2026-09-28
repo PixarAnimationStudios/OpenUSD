@@ -144,7 +144,12 @@ void TestSplineIO()
     TF_AXIOM(spline.IsEmpty());
     TF_AXIOM(!spline.HasValueBlocks());
     TF_AXIOM(!spline.HasLoops());
-    TF_AXIOM(!spline.HasInnerLoops());
+    
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_DEPRECATED
+    TF_AXIOM(!spline._HasInnerLoops());
+    ARCH_PRAGMA_PUSH
+
     TF_AXIOM(!spline.HasExtrapolatingLoops());
     TF_AXIOM(!spline.HasValueBlockAtTime(0));
 

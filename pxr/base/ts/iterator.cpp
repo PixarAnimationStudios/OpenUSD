@@ -21,11 +21,11 @@ constexpr bool OPEN = false;
 constexpr bool CLOSED = true;
 
 // Get a looped interval that's open on the right-hand end. The one returned by
-// TsLoopParams::GetLoopedInterval() is closed on the right and changing that
+// Ts_LoopParams::GetLoopedInterval() is closed on the right and changing that
 // breaks a couple of existing tests.
-// XXX: Revisit the possibility of changing TsLoopParams::GetLoopedInterval() once
+// XXX: Revisit the possibility of changing Ts_LoopParams::GetLoopedInterval() once
 // our baking and sampling code has been converted to use these iterators.
-GfInterval _GetOpenLoopedInterval(const TsLoopParams& lp)
+GfInterval _GetOpenLoopedInterval(const Ts_LoopParams& lp)
 {
     GfInterval result = lp.GetLoopedInterval();
     result.SetMax(result.GetMax(), OPEN);
@@ -265,7 +265,7 @@ Ts_SegmentLoopIterator::Ts_SegmentLoopIterator(
         return;
     }
 
-    const TsLoopParams& lp = _data->loopParams;
+    const Ts_LoopParams& lp = _data->loopParams;
 
     const GfInterval loopedInterval = _GetOpenLoopedInterval(lp);
     GfInterval iterInterval = _interval & loopedInterval;

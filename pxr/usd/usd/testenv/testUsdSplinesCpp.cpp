@@ -387,6 +387,11 @@ TestSerializationLoops()
     knot1.SetPostTanSlope(1.0);
     spline.SetKnot(knot1);
 
+    // Do not generate compiler warnings for the deprecated inner looping
+    // methods
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_DEPRECATED
+
     TsLoopParams lp;
     lp.protoStart = 1;
     lp.protoEnd = 10;
@@ -399,6 +404,8 @@ TestSerializationLoops()
     // anyway.
     lp.protoStart = 2;
     spline.SetInnerLoopParams(lp);
+    ARCH_PRAGMA_POP
+
     _DoSerializationTest("Loops.Invalid", spline);
 }
 

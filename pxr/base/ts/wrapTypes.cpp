@@ -83,22 +83,22 @@ void wrapTypes()
     TfPyWrapEnum<TsSplineSampleSource>();
     TfPyWrapEnum<TsTangentAlgorithm>();
 
-    class_<TsLoopParams>("LoopParams")
+    class_<Ts_LoopParams>("_LoopParams")
 
         // Default init is not suppressed, so automatically generated.
 
-        .def(init<const TsLoopParams &>())
+        .def(init<const Ts_LoopParams &>())
         .def(self == self)
         .def(self != self)
 
-        .def_readwrite("protoStart", &TsLoopParams::protoStart)
-        .def_readwrite("protoEnd", &TsLoopParams::protoEnd)
-        .def_readwrite("numPreLoops", &TsLoopParams::numPreLoops)
-        .def_readwrite("numPostLoops", &TsLoopParams::numPostLoops)
-        .def_readwrite("valueOffset", &TsLoopParams::valueOffset)
+        .def_readwrite("protoStart", &Ts_LoopParams::protoStart)
+        .def_readwrite("protoEnd", &Ts_LoopParams::protoEnd)
+        .def_readwrite("numPreLoops", &Ts_LoopParams::numPreLoops)
+        .def_readwrite("numPostLoops", &Ts_LoopParams::numPostLoops)
+        .def_readwrite("valueOffset", &Ts_LoopParams::valueOffset)
 
-        .def("GetPrototypeInterval", &TsLoopParams::GetPrototypeInterval)
-        .def("GetLoopedInterval", &TsLoopParams::GetLoopedInterval)
+        .def("GetPrototypeInterval", &Ts_LoopParams::GetPrototypeInterval)
+        .def("GetLoopedInterval", &Ts_LoopParams::GetLoopedInterval)
 
         ;
 

@@ -52,7 +52,7 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(TsTangentAlgorithmAutoEase, "Auto Ease");
 }
 
-bool TsLoopParams::operator==(const TsLoopParams &other) const
+bool Ts_LoopParams::operator==(const Ts_LoopParams &other) const
 {
     return
         protoStart == other.protoStart
@@ -62,12 +62,12 @@ bool TsLoopParams::operator==(const TsLoopParams &other) const
         && valueOffset == other.valueOffset;
 }
 
-bool TsLoopParams::operator!=(const TsLoopParams &other) const
+bool Ts_LoopParams::operator!=(const Ts_LoopParams &other) const
 {
     return !(*this == other);
 }
 
-GfInterval TsLoopParams::GetPrototypeInterval() const
+GfInterval Ts_LoopParams::GetPrototypeInterval() const
 {
     if (protoEnd > protoStart && (numPreLoops > 0 || numPostLoops > 0)) {
         return GfInterval(
@@ -80,7 +80,7 @@ GfInterval TsLoopParams::GetPrototypeInterval() const
     return GfInterval();
 }
 
-GfInterval TsLoopParams::GetLoopedInterval() const
+GfInterval Ts_LoopParams::GetLoopedInterval() const
 {
     if (protoEnd > protoStart && (numPreLoops > 0 || numPostLoops > 0)) {
         const TsTime protoSpan = protoEnd - protoStart;

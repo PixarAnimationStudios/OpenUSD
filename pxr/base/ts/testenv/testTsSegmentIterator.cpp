@@ -7,6 +7,12 @@
 
 // Test the internal Ts_SegmentIterator
 
+// Note: Inner looping has been deprecated. Other tests are disabling the
+// compile time deprecation warnings and using the public interface, but
+// since this test is already testing an internal class, we're just going
+// to use the internal, non-warning inner looping methods instead of the
+// public API.
+
 #include "pxr/pxr.h"
 #include "pxr/base/ts/iterator.h"
 #include "pxr/base/ts/spline.h"
@@ -368,8 +374,8 @@ void InitTestCases()
             K(155, 20.2,  0.7, -15.7,  0.8, -15.7,  TsInterpCurve),
             K(181, 38.2,  2.0,  -9.0,  0.0,   0.0,  TsInterpCurve)
         });
-    simpleInnerLoop.spline.SetInnerLoopParams(
-        TsLoopParams{137, 155, 1, 1, 20.2});
+    simpleInnerLoop.spline._SetInnerLoopParams(
+        Ts_LoopParams{137, 155, 1, 1, 20.2});
 
     // The segments are kind of a pain to compute by hand. Other
     // splines have easier values.
@@ -532,7 +538,7 @@ void InitTestCases()
     // last knot. The first and last knot are also shadowed by the looping.
     longLoop = simpleSpline;
     longLoop.name = "LongLoop";
-    longLoop.spline.SetInnerLoopParams(TsLoopParams{1.0, 3.0, 2, 2, 2.0});
+    longLoop.spline._SetInnerLoopParams(Ts_LoopParams{1.0, 3.0, 2, 2, 2.0});
 
     longLoop.segments =
         {
@@ -1005,7 +1011,7 @@ bool ProtoTest(const TestCase& testCase,
                                   CLOSED, OPEN);
 
     // The domain is the inner loop prototype.
-    const TsLoopParams lp = testCase.spline.GetInnerLoopParams();
+    const Ts_LoopParams lp = testCase.spline._GetInnerLoopParams();
     const GfInterval domainInterval = lp.GetPrototypeInterval();
 
     return DoOneTest<Ts_SegmentPrototypeIterator>(
@@ -1023,7 +1029,7 @@ bool LoopTest(const TestCase& testCase,
                                   CLOSED, OPEN);
 
     // The domain is limited to the inner looped interval.
-    const TsLoopParams lp = testCase.spline.GetInnerLoopParams();
+    const Ts_LoopParams lp = testCase.spline._GetInnerLoopParams();
     GfInterval domainInterval = lp.GetLoopedInterval();
 
     // GetLoopedInterval() returns a closed interval, but we
@@ -1050,7 +1056,7 @@ bool KnotTest(const TestCase& testCase,
     //
     // Note that both GetLoopedInterval() and GetTimeSpan() return closed
     // intervals, but we need them to be open.
-    const TsLoopParams lp = testCase.spline.GetInnerLoopParams();
+    const Ts_LoopParams lp = testCase.spline._GetInnerLoopParams();
     GfInterval domainInterval = lp.GetLoopedInterval();
     domainInterval.SetMax(domainInterval.GetMax(), OPEN);
 
