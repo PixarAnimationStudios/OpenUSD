@@ -1915,28 +1915,6 @@ private:
     // Metadata Resolution
     // --------------------------------------------------------------------- //
 
-public:
-    // Trait that allows us to call the correct version of _GetMetadata for 
-    // types that require type specific value resolution as opposed to just
-    // strongest opinion. These types also use type specific resolution 
-    // in _GetValue.
-    template <class T>
-    struct _HasTypeSpecificResolution {
-        static const bool value =
-            std::is_same_v<T, SdfAssetPath> ||
-            std::is_same_v<T, VtArray<SdfAssetPath>> ||
-            std::is_same_v<T, GfTimeCode> ||
-            std::is_same_v<T, VtArray<GfTimeCode>> ||
-            std::is_same_v<T, GfDuration> ||
-            std::is_same_v<T, VtArray<GfDuration>> ||
-            std::is_same_v<T, SdfPathExpression> ||
-            std::is_same_v<T, VtArray<SdfPathExpression>> ||
-            std::is_same_v<T, SdfTimeSampleMap> ||
-            std::is_same_v<T, TsSpline> ||
-            std::is_same_v<T, VtDictionary>;
-    };
-
-private:
     // Get metadata as a dynamically typed VtValue. Will perform type specific
     // value resolution if the returned held type requires it.
     USD_API
