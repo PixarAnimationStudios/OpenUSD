@@ -103,15 +103,15 @@ struct UsdRiTokensType {
     const TfToken values;
     /// \brief "RiMaterialAPI"
     /// 
-    /// Schema identifer and family for UsdRiMaterialAPI
+    /// Schema identifier and family for UsdRiMaterialAPI
     const TfToken RiMaterialAPI;
     /// \brief "RiSplineAPI"
     /// 
-    /// Schema identifer and family for UsdRiSplineAPI
+    /// Schema identifier and family for UsdRiSplineAPI
     const TfToken RiSplineAPI;
     /// \brief "StatementsAPI"
     /// 
-    /// Schema identifer and family for UsdRiStatementsAPI
+    /// Schema identifier and family for UsdRiStatementsAPI
     const TfToken StatementsAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

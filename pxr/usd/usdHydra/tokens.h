@@ -171,15 +171,15 @@ struct UsdHydraTokensType {
     const TfToken wrapT;
     /// \brief "HydraGenerativeProceduralAPI"
     /// 
-    /// Schema identifer and family for UsdHydraGenerativeProceduralAPI
+    /// Schema identifier and family for UsdHydraGenerativeProceduralAPI
     const TfToken HydraGenerativeProceduralAPI;
     /// \brief "HydraPrimAPI"
     /// 
-    /// Schema identifer and family for UsdHydraPrimAPI
+    /// Schema identifier and family for UsdHydraPrimAPI
     const TfToken HydraPrimAPI;
     /// \brief "HydraRenderPassAPI"
     /// 
-    /// Schema identifer and family for UsdHydraRenderPassAPI
+    /// Schema identifier and family for UsdHydraRenderPassAPI
     const TfToken HydraRenderPassAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

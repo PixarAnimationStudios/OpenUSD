@@ -55,7 +55,7 @@ struct UsdSemanticsTokensType {
     const TfToken semanticsLabels_MultipleApplyTemplate_;
     /// \brief "SemanticsLabelsAPI"
     /// 
-    /// Schema identifer and family for UsdSemanticsLabelsAPI
+    /// Schema identifier and family for UsdSemanticsLabelsAPI
     const TfToken SemanticsLabelsAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

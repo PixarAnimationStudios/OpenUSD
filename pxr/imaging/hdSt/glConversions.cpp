@@ -346,7 +346,7 @@ HdStGLConversions::GetGLSLIdentifier(TfToken const& identifier)
 {
     std::string const& in = identifier.GetString();
     // Avoid allocating a string and constructing a token for the general case,
-    // wherein identifers conform to the naming rules.
+    // wherein identifiers conform to the naming rules.
     if (_IsIdentiferGLSLCompatible(in)) {
         return identifier;
     }

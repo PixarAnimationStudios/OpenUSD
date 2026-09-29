@@ -1051,7 +1051,7 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
         auto reRoot = args.find("abcReRoot");
         if (reRoot != args.end()) {
             if (!TfIsValidIdentifier(reRoot->second)) {
-                TF_WARN("[usdAbc] Ignoring re-root because identifer '%s' is"
+                TF_WARN("[usdAbc] Ignoring re-root because identifier '%s' is"
                         " not valid (%s).", reRoot->second.c_str(),
                         filePath.c_str());
             } else

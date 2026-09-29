@@ -267,83 +267,83 @@ struct UsdVolTokensType {
     const TfToken zDepth;
     /// \brief "Field3DAsset"
     /// 
-    /// Schema identifer and family for UsdVolField3DAsset
+    /// Schema identifier and family for UsdVolField3DAsset
     const TfToken Field3DAsset;
     /// \brief "FieldAsset"
     /// 
-    /// Schema identifer and family for UsdVolFieldAsset
+    /// Schema identifier and family for UsdVolFieldAsset
     const TfToken FieldAsset;
     /// \brief "FieldBase"
     /// 
-    /// Schema identifer and family for UsdVolFieldBase
+    /// Schema identifier and family for UsdVolFieldBase
     const TfToken FieldBase;
     /// \brief "OpenVDBAsset"
     /// 
-    /// Schema identifer and family for UsdVolOpenVDBAsset
+    /// Schema identifier and family for UsdVolOpenVDBAsset
     const TfToken OpenVDBAsset;
     /// \brief "ParticleField"
     /// 
-    /// Schema identifer and family for UsdVolParticleField
+    /// Schema identifier and family for UsdVolParticleField
     const TfToken ParticleField;
     /// \brief "ParticleField3DGaussianSplat"
     /// 
-    /// Schema identifer and family for UsdVolParticleField3DGaussianSplat
+    /// Schema identifier and family for UsdVolParticleField3DGaussianSplat
     const TfToken ParticleField3DGaussianSplat;
     /// \brief "ParticleFieldKernelBaseAPI"
     /// 
-    /// Schema identifer and family for UsdVolParticleFieldKernelBaseAPI
+    /// Schema identifier and family for UsdVolParticleFieldKernelBaseAPI
     const TfToken ParticleFieldKernelBaseAPI;
     /// \brief "ParticleFieldKernelConstantSurfletAPI"
     /// 
-    /// Schema identifer and family for UsdVolParticleFieldKernelConstantSurfletAPI
+    /// Schema identifier and family for UsdVolParticleFieldKernelConstantSurfletAPI
     const TfToken ParticleFieldKernelConstantSurfletAPI;
     /// \brief "ParticleFieldKernelGaussianEllipsoidAPI"
     /// 
-    /// Schema identifer and family for UsdVolParticleFieldKernelGaussianEllipsoidAPI
+    /// Schema identifier and family for UsdVolParticleFieldKernelGaussianEllipsoidAPI
     const TfToken ParticleFieldKernelGaussianEllipsoidAPI;
     /// \brief "ParticleFieldKernelGaussianSurfletAPI"
     /// 
-    /// Schema identifer and family for UsdVolParticleFieldKernelGaussianSurfletAPI
+    /// Schema identifier and family for UsdVolParticleFieldKernelGaussianSurfletAPI
     const TfToken ParticleFieldKernelGaussianSurfletAPI;
     /// \brief "ParticleFieldOpacityAttributeAPI"
     /// 
-    /// Schema identifer and family for UsdVolParticleFieldOpacityAttributeAPI
+    /// Schema identifier and family for UsdVolParticleFieldOpacityAttributeAPI
     const TfToken ParticleFieldOpacityAttributeAPI;
     /// \brief "ParticleFieldOrientationAttributeAPI"
     /// 
-    /// Schema identifer and family for UsdVolParticleFieldOrientationAttributeAPI
+    /// Schema identifier and family for UsdVolParticleFieldOrientationAttributeAPI
     const TfToken ParticleFieldOrientationAttributeAPI;
     /// \brief "ParticleFieldPositionAttributeAPI"
     /// 
-    /// Schema identifer and family for UsdVolParticleFieldPositionAttributeAPI
+    /// Schema identifier and family for UsdVolParticleFieldPositionAttributeAPI
     const TfToken ParticleFieldPositionAttributeAPI;
     /// \brief "ParticleFieldPositionBaseAPI"
     /// 
-    /// Schema identifer and family for UsdVolParticleFieldPositionBaseAPI
+    /// Schema identifier and family for UsdVolParticleFieldPositionBaseAPI
     const TfToken ParticleFieldPositionBaseAPI;
     /// \brief "ParticleFieldRadianceBaseAPI"
     /// 
-    /// Schema identifer and family for UsdVolParticleFieldRadianceBaseAPI
+    /// Schema identifier and family for UsdVolParticleFieldRadianceBaseAPI
     const TfToken ParticleFieldRadianceBaseAPI;
     /// \brief "ParticleFieldScaleAttributeAPI"
     /// 
-    /// Schema identifer and family for UsdVolParticleFieldScaleAttributeAPI
+    /// Schema identifier and family for UsdVolParticleFieldScaleAttributeAPI
     const TfToken ParticleFieldScaleAttributeAPI;
     /// \brief "ParticleFieldSphericalHarmonicsAttributeAPI"
     /// 
-    /// Schema identifer and family for UsdVolParticleFieldSphericalHarmonicsAttributeAPI
+    /// Schema identifier and family for UsdVolParticleFieldSphericalHarmonicsAttributeAPI
     const TfToken ParticleFieldSphericalHarmonicsAttributeAPI;
     /// \brief "Volume"
     /// 
-    /// Schema identifer and family for UsdVolVolume
+    /// Schema identifier and family for UsdVolVolume
     const TfToken Volume;
     /// \brief "VolumeFieldAsset"
     /// 
-    /// Schema identifer and family for UsdVolVolumeFieldAsset
+    /// Schema identifier and family for UsdVolVolumeFieldAsset
     const TfToken VolumeFieldAsset;
     /// \brief "VolumeFieldBase"
     /// 
-    /// Schema identifer and family for UsdVolVolumeFieldBase
+    /// Schema identifier and family for UsdVolVolumeFieldBase
     const TfToken VolumeFieldBase;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

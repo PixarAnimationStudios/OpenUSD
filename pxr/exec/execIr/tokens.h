@@ -267,23 +267,23 @@ struct ExecIrTokensType {
     const TfToken ZYX;
     /// \brief "IrController"
     /// 
-    /// Schema identifer and family for ExecIrController
+    /// Schema identifier and family for ExecIrController
     const TfToken IrController;
     /// \brief "IrFkController"
     /// 
-    /// Schema identifer and family for ExecIrFkController
+    /// Schema identifier and family for ExecIrFkController
     const TfToken IrFkController;
     /// \brief "IrJointScope"
     /// 
-    /// Schema identifer and family for ExecIrJointScope
+    /// Schema identifier and family for ExecIrJointScope
     const TfToken IrJointScope;
     /// \brief "IrSwitchController"
     /// 
-    /// Schema identifer and family for ExecIrSwitchController
+    /// Schema identifier and family for ExecIrSwitchController
     const TfToken IrSwitchController;
     /// \brief "IrXformable"
     /// 
-    /// Schema identifer and family for ExecIrXformable
+    /// Schema identifier and family for ExecIrXformable
     const TfToken IrXformable;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

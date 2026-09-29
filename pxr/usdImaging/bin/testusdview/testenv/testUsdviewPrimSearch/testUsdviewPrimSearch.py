@@ -61,7 +61,7 @@ def _testSearchNoPrimDisplayName(appController):
     Performs a test of the search capability of usdview
     without the default "Show Prim Display Names" on.
     Without this option on, search will only look at
-    prim identifers and will not consider the display
+    prim identifiers and will not consider the display
     name metadata.
     """
     # this searches specifically for a known display name

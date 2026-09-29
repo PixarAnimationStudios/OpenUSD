@@ -171,31 +171,31 @@ struct UsdShadeTokensType {
     const TfToken weakerThanDescendants;
     /// \brief "ConnectableAPI"
     /// 
-    /// Schema identifer and family for UsdShadeConnectableAPI
+    /// Schema identifier and family for UsdShadeConnectableAPI
     const TfToken ConnectableAPI;
     /// \brief "CoordSysAPI"
     /// 
-    /// Schema identifer and family for UsdShadeCoordSysAPI
+    /// Schema identifier and family for UsdShadeCoordSysAPI
     const TfToken CoordSysAPI;
     /// \brief "Material"
     /// 
-    /// Schema identifer and family for UsdShadeMaterial
+    /// Schema identifier and family for UsdShadeMaterial
     const TfToken Material;
     /// \brief "MaterialBindingAPI"
     /// 
-    /// Schema identifer and family for UsdShadeMaterialBindingAPI
+    /// Schema identifier and family for UsdShadeMaterialBindingAPI
     const TfToken MaterialBindingAPI;
     /// \brief "NodeDefAPI"
     /// 
-    /// Schema identifer and family for UsdShadeNodeDefAPI
+    /// Schema identifier and family for UsdShadeNodeDefAPI
     const TfToken NodeDefAPI;
     /// \brief "NodeGraph"
     /// 
-    /// Schema identifer and family for UsdShadeNodeGraph
+    /// Schema identifier and family for UsdShadeNodeGraph
     const TfToken NodeGraph;
     /// \brief "Shader"
     /// 
-    /// Schema identifer and family for UsdShadeShader
+    /// Schema identifier and family for UsdShadeShader
     const TfToken Shader;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

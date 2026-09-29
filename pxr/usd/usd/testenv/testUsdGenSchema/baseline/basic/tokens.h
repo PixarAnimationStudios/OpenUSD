@@ -647,43 +647,43 @@ struct UsdContrivedTokensType {
     const TfToken vector3hArray;
     /// \brief "Base"
     /// 
-    /// Schema identifer and family for UsdContrivedBase
+    /// Schema identifier and family for UsdContrivedBase
     const TfToken Base;
     /// \brief "Derived"
     /// 
-    /// Schema identifer and family for UsdContrivedDerived
+    /// Schema identifier and family for UsdContrivedDerived
     const TfToken Derived;
     /// \brief "DerivedNonAppliedAPI"
     /// 
-    /// Schema identifer and family for UsdContrivedDerivedNonAppliedAPI
+    /// Schema identifier and family for UsdContrivedDerivedNonAppliedAPI
     const TfToken DerivedNonAppliedAPI;
     /// \brief "EmptyMultipleApplyAPI"
     /// 
-    /// Schema identifer and family for UsdContrivedEmptyMultipleApplyAPI
+    /// Schema identifier and family for UsdContrivedEmptyMultipleApplyAPI
     const TfToken EmptyMultipleApplyAPI;
     /// \brief "MultipleApplyAPI"
     /// 
-    /// Schema identifer and family for UsdContrivedMultipleApplyAPI, Schema family for UsdContrivedMultipleApplyAPI_1
+    /// Schema identifier and family for UsdContrivedMultipleApplyAPI, Schema family for UsdContrivedMultipleApplyAPI_1
     const TfToken MultipleApplyAPI;
     /// \brief "MultipleApplyAPI_1"
     /// 
-    /// Schema identifer for UsdContrivedMultipleApplyAPI_1
+    /// Schema identifier for UsdContrivedMultipleApplyAPI_1
     const TfToken MultipleApplyAPI_1;
     /// \brief "NonAppliedAPI"
     /// 
-    /// Schema identifer and family for UsdContrivedNonAppliedAPI
+    /// Schema identifier and family for UsdContrivedNonAppliedAPI
     const TfToken NonAppliedAPI;
     /// \brief "PublicMultipleApplyAPI"
     /// 
-    /// Schema identifer and family for UsdContrivedPublicMultipleApplyAPI
+    /// Schema identifier and family for UsdContrivedPublicMultipleApplyAPI
     const TfToken PublicMultipleApplyAPI;
     /// \brief "SingleApplyAPI"
     /// 
-    /// Schema identifer and family for UsdContrivedSingleApplyAPI, Schema family for UsdContrivedSingleApplyAPI_1
+    /// Schema identifier and family for UsdContrivedSingleApplyAPI, Schema family for UsdContrivedSingleApplyAPI_1
     const TfToken SingleApplyAPI;
     /// \brief "SingleApplyAPI_1"
     /// 
-    /// Schema identifer for UsdContrivedSingleApplyAPI_1
+    /// Schema identifier for UsdContrivedSingleApplyAPI_1
     const TfToken SingleApplyAPI_1;
     /// \brief "TestNoVersion0"
     /// 
@@ -691,43 +691,43 @@ struct UsdContrivedTokensType {
     const TfToken TestNoVersion0;
     /// \brief "TestNoVersion0_2"
     /// 
-    /// Schema identifer for UsdContrivedTestNoVersion0_2
+    /// Schema identifier for UsdContrivedTestNoVersion0_2
     const TfToken TestNoVersion0_2;
     /// \brief "TestPropertyOrderSingleApplyAPI"
     /// 
-    /// Schema identifer and family for UsdContrivedTestPropertyOrderSingleApplyAPI
+    /// Schema identifier and family for UsdContrivedTestPropertyOrderSingleApplyAPI
     const TfToken TestPropertyOrderSingleApplyAPI;
     /// \brief "TestPropertyOrderTyped"
     /// 
-    /// Schema identifer and family for UsdContrivedTestPropertyOrderTyped
+    /// Schema identifier and family for UsdContrivedTestPropertyOrderTyped
     const TfToken TestPropertyOrderTyped;
     /// \brief "TestPxHairman"
     /// 
-    /// Schema identifer and family for UsdContrivedTestHairman, Schema family for UsdContrivedTestHairman_1
+    /// Schema identifier and family for UsdContrivedTestHairman, Schema family for UsdContrivedTestHairman_1
     const TfToken TestPxHairman;
     /// \brief "TestPxHairman_1"
     /// 
-    /// Schema identifer for UsdContrivedTestHairman_1
+    /// Schema identifier for UsdContrivedTestHairman_1
     const TfToken TestPxHairman_1;
     /// \brief "TestReflectedAPIBase"
     /// 
-    /// Schema identifer and family for UsdContrivedTestReflectedAPIBase
+    /// Schema identifier and family for UsdContrivedTestReflectedAPIBase
     const TfToken TestReflectedAPIBase;
     /// \brief "TestReflectedExternalAPI"
     /// 
-    /// Schema identifer and family for UsdTestReflectedExternalAPI
+    /// Schema identifier and family for UsdTestReflectedExternalAPI
     const TfToken TestReflectedExternalAPI;
     /// \brief "TestReflectedInternalAPI"
     /// 
-    /// Schema identifer and family for UsdContrivedTestReflectedInternalAPI
+    /// Schema identifier and family for UsdContrivedTestReflectedInternalAPI
     const TfToken TestReflectedInternalAPI;
     /// \brief "TestReflectedMultipleAPI"
     /// 
-    /// Schema identifer and family for UsdContrivedTestReflectedMultipleAPI
+    /// Schema identifier and family for UsdContrivedTestReflectedMultipleAPI
     const TfToken TestReflectedMultipleAPI;
     /// \brief "UsdContrivedNoAlias"
     /// 
-    /// Schema identifer and family for UsdContrivedNoAlias
+    /// Schema identifier and family for UsdContrivedNoAlias
     const TfToken UsdContrivedNoAlias;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

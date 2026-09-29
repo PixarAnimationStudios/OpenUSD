@@ -1243,12 +1243,12 @@ def GatherTokens(classes, libName, libTokens,
                 # For version 0, the identifier and family will be the same.
                 _AddToken(schemaIdentifierTokensDict, None, 
                     cls.usdPrimTypeName, cls.usdPrimTypeName, 
-                    'Schema identifer and family for {}'.format(cls.cppClassName), 
+                    'Schema identifier and family for {}'.format(cls.cppClassName), 
                     useLiteralIdentifier=True)
             else:
                 _AddToken(schemaIdentifierTokensDict, None, 
                     cls.usdPrimTypeName, cls.usdPrimTypeName, 
-                    'Schema identifer for {}'.format(cls.cppClassName), 
+                    'Schema identifier for {}'.format(cls.cppClassName), 
                     useLiteralIdentifier=True)
                 _AddToken(schemaIdentifierTokensDict, None, 
                     cls.family, cls.family, 

@@ -521,7 +521,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
     schemaName = sdrNodeMetadata[SchemaDefiningKeys.SCHEMA_NAME]
     if not Tf.IsValidIdentifier(schemaName):
         Tf.RaiseRuntimeError("schemaName (%s) is an invalid identifier; "
-                "Provide a valid USD identifer for schemaName, example (%s) "
+                "Provide a valid USD identifier for schemaName, example (%s) "
                 %(schemaName, Tf.MakeValidIdentifier(schemaName)))
 
     tfTypeNameSuffix = None

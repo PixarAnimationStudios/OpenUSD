@@ -55,7 +55,7 @@ struct UsdMtlxTokensType {
     const TfToken DefaultOutputName;
     /// \brief "MaterialXConfigAPI"
     /// 
-    /// Schema identifer and family for UsdMtlxMaterialXConfigAPI
+    /// Schema identifier and family for UsdMtlxMaterialXConfigAPI
     const TfToken MaterialXConfigAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

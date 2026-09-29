@@ -143,19 +143,19 @@ struct UsdUITokensType {
     const TfToken uiNodegraphNodeStackingOrder;
     /// \brief "AccessibilityAPI"
     /// 
-    /// Schema identifer and family for UsdUIAccessibilityAPI
+    /// Schema identifier and family for UsdUIAccessibilityAPI
     const TfToken AccessibilityAPI;
     /// \brief "Backdrop"
     /// 
-    /// Schema identifer and family for UsdUIBackdrop
+    /// Schema identifier and family for UsdUIBackdrop
     const TfToken Backdrop;
     /// \brief "NodeGraphNodeAPI"
     /// 
-    /// Schema identifer and family for UsdUINodeGraphNodeAPI
+    /// Schema identifier and family for UsdUINodeGraphNodeAPI
     const TfToken NodeGraphNodeAPI;
     /// \brief "SceneGraphPrimAPI"
     /// 
-    /// Schema identifer and family for UsdUISceneGraphPrimAPI
+    /// Schema identifier and family for UsdUISceneGraphPrimAPI
     const TfToken SceneGraphPrimAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

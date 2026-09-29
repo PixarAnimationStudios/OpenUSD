@@ -525,7 +525,7 @@ public:
     /// If the layer streams its data (see StreamsData(); binary \c .usdc and \c
     /// .usd files for example), content continues to be read from the original
     /// asset.  Call Save() or Reload() to complete the move to the new
-    /// identifer.  The original asset must remain intact until the move is
+    /// identifier.  The original asset must remain intact until the move is
     /// completed.
     SDF_API
     void SetIdentifier(const std::string& identifier);

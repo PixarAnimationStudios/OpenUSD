@@ -51,7 +51,7 @@ struct UsdProcTokensType {
     const TfToken proceduralSystem;
     /// \brief "GenerativeProcedural"
     /// 
-    /// Schema identifer and family for UsdProcGenerativeProcedural
+    /// Schema identifier and family for UsdProcGenerativeProcedural
     const TfToken GenerativeProcedural;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

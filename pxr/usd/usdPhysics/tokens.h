@@ -331,71 +331,71 @@ struct UsdPhysicsTokensType {
     const TfToken z;
     /// \brief "PhysicsArticulationRootAPI"
     /// 
-    /// Schema identifer and family for UsdPhysicsArticulationRootAPI
+    /// Schema identifier and family for UsdPhysicsArticulationRootAPI
     const TfToken PhysicsArticulationRootAPI;
     /// \brief "PhysicsCollisionAPI"
     /// 
-    /// Schema identifer and family for UsdPhysicsCollisionAPI
+    /// Schema identifier and family for UsdPhysicsCollisionAPI
     const TfToken PhysicsCollisionAPI;
     /// \brief "PhysicsCollisionGroup"
     /// 
-    /// Schema identifer and family for UsdPhysicsCollisionGroup
+    /// Schema identifier and family for UsdPhysicsCollisionGroup
     const TfToken PhysicsCollisionGroup;
     /// \brief "PhysicsDistanceJoint"
     /// 
-    /// Schema identifer and family for UsdPhysicsDistanceJoint
+    /// Schema identifier and family for UsdPhysicsDistanceJoint
     const TfToken PhysicsDistanceJoint;
     /// \brief "PhysicsDriveAPI"
     /// 
-    /// Schema identifer and family for UsdPhysicsDriveAPI
+    /// Schema identifier and family for UsdPhysicsDriveAPI
     const TfToken PhysicsDriveAPI;
     /// \brief "PhysicsFilteredPairsAPI"
     /// 
-    /// Schema identifer and family for UsdPhysicsFilteredPairsAPI
+    /// Schema identifier and family for UsdPhysicsFilteredPairsAPI
     const TfToken PhysicsFilteredPairsAPI;
     /// \brief "PhysicsFixedJoint"
     /// 
-    /// Schema identifer and family for UsdPhysicsFixedJoint
+    /// Schema identifier and family for UsdPhysicsFixedJoint
     const TfToken PhysicsFixedJoint;
     /// \brief "PhysicsJoint"
     /// 
-    /// Schema identifer and family for UsdPhysicsJoint
+    /// Schema identifier and family for UsdPhysicsJoint
     const TfToken PhysicsJoint;
     /// \brief "PhysicsLimitAPI"
     /// 
-    /// Schema identifer and family for UsdPhysicsLimitAPI
+    /// Schema identifier and family for UsdPhysicsLimitAPI
     const TfToken PhysicsLimitAPI;
     /// \brief "PhysicsMassAPI"
     /// 
-    /// Schema identifer and family for UsdPhysicsMassAPI
+    /// Schema identifier and family for UsdPhysicsMassAPI
     const TfToken PhysicsMassAPI;
     /// \brief "PhysicsMaterialAPI"
     /// 
-    /// Schema identifer and family for UsdPhysicsMaterialAPI
+    /// Schema identifier and family for UsdPhysicsMaterialAPI
     const TfToken PhysicsMaterialAPI;
     /// \brief "PhysicsMeshCollisionAPI"
     /// 
-    /// Schema identifer and family for UsdPhysicsMeshCollisionAPI
+    /// Schema identifier and family for UsdPhysicsMeshCollisionAPI
     const TfToken PhysicsMeshCollisionAPI;
     /// \brief "PhysicsPrismaticJoint"
     /// 
-    /// Schema identifer and family for UsdPhysicsPrismaticJoint
+    /// Schema identifier and family for UsdPhysicsPrismaticJoint
     const TfToken PhysicsPrismaticJoint;
     /// \brief "PhysicsRevoluteJoint"
     /// 
-    /// Schema identifer and family for UsdPhysicsRevoluteJoint
+    /// Schema identifier and family for UsdPhysicsRevoluteJoint
     const TfToken PhysicsRevoluteJoint;
     /// \brief "PhysicsRigidBodyAPI"
     /// 
-    /// Schema identifer and family for UsdPhysicsRigidBodyAPI
+    /// Schema identifier and family for UsdPhysicsRigidBodyAPI
     const TfToken PhysicsRigidBodyAPI;
     /// \brief "PhysicsScene"
     /// 
-    /// Schema identifer and family for UsdPhysicsScene
+    /// Schema identifier and family for UsdPhysicsScene
     const TfToken PhysicsScene;
     /// \brief "PhysicsSphericalJoint"
     /// 
-    /// Schema identifer and family for UsdPhysicsSphericalJoint
+    /// Schema identifier and family for UsdPhysicsSphericalJoint
     const TfToken PhysicsSphericalJoint;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

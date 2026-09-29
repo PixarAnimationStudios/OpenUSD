@@ -131,23 +131,23 @@ struct UsdLodTokensType {
     const TfToken thresholds;
     /// \brief "LODDistanceHeuristic"
     /// 
-    /// Schema identifer and family for UsdLodDistanceHeuristic
+    /// Schema identifier and family for UsdLodDistanceHeuristic
     const TfToken LODDistanceHeuristic;
     /// \brief "LODHeuristic"
     /// 
-    /// Schema identifer and family for UsdLodHeuristic
+    /// Schema identifier and family for UsdLodHeuristic
     const TfToken LODHeuristic;
     /// \brief "LODOverrideAPI"
     /// 
-    /// Schema identifer and family for UsdLodOverrideAPI
+    /// Schema identifier and family for UsdLodOverrideAPI
     const TfToken LODOverrideAPI;
     /// \brief "LODRootAPI"
     /// 
-    /// Schema identifer and family for UsdLodRootAPI
+    /// Schema identifier and family for UsdLodRootAPI
     const TfToken LODRootAPI;
     /// \brief "LODScreenSizeHeuristic"
     /// 
-    /// Schema identifer and family for UsdLodScreenSizeHeuristic
+    /// Schema identifier and family for UsdLodScreenSizeHeuristic
     const TfToken LODScreenSizeHeuristic;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;

@@ -135,11 +135,11 @@ struct UsdContrivedTokensType {
     const TfToken VariableTokenDefault;
     /// \brief "Base"
     /// 
-    /// Schema identifer and family for UsdContrivedBase
+    /// Schema identifier and family for UsdContrivedBase
     const TfToken Base;
     /// \brief "SingleApplyAPI"
     /// 
-    /// Schema identifer and family for UsdContrivedSingleApplyAPI
+    /// Schema identifier and family for UsdContrivedSingleApplyAPI
     const TfToken SingleApplyAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
