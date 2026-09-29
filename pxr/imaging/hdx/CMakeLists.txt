@@ -363,7 +363,6 @@ pxr_register_test(testHdxOitShaderRetention
     ENV
         HDX_ENABLE_OIT=1
 )
-if (NOT APPLE)
 pxr_register_test(testHdxUnpickablesAsOccluders
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxUnpickablesAsOccluders --offscreen"
     TESTENV testenv/testHdxUnpickablesAsOccluders
@@ -376,7 +375,6 @@ pxr_register_test(testHdxUnpickablesAsOccluders
     FAIL_PERCENT 1
     PERCEPTUAL
 )
-endif()
 pxr_register_test(testHdxNoResourceBindings
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxNoResourceBindings"
     TESTENV testenv/testHdxNoResourceBindings
