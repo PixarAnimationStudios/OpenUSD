@@ -889,10 +889,11 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
     , _sessionLayer(sessionLayer)
     , _editTarget(_rootLayer)
     , _editTargetIsLocalLayer(true)
-    , _cache(new PcpCache(PcpLayerStackIdentifier(
-                              _rootLayer, _sessionLayer, pathResolverContext),
-                          /*fileFormatTarget=*/std::string(),
-                          /*usdMode=*/true))
+    , _cache(new PcpCache(
+            PcpLayerStackIdentifier(
+                _rootLayer, _sessionLayer, pathResolverContext),
+            /*fileFormatTarget=*/_rootLayer->GetFileFormat()->GetTarget(),
+            /*usdMode=*/true))
     , _clipCache(new Usd_ClipCache)
     , _instanceCache(new Usd_InstanceCache)
     , _usedLayersRevision(0)
