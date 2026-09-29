@@ -167,7 +167,9 @@
 // 104 -> 105: Added HdLegacyRenderControlInterface::RemoveTaskContextData and
 //             ClearTaskContextData().
 // 105 -> 106: Add HdCachingSampledDataSource and HdCachingTypedSampledDataSource
-#define HD_API_VERSION 106
+// 106 -> 107: HdStRenderDelegate::IsEnabledNativeSphereRenderingSupport renamed
+//             to IsEnabledNativeImplicitsRenderingSupport.
+#define HD_API_VERSION 107
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 // 2  ->  3: Use GetLightCount() instead of NUM_LIGHTS to get light count.

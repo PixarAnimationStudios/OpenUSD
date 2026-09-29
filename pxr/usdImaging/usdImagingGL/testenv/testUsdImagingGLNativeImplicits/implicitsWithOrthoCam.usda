@@ -32,7 +32,7 @@ def Xform "Lights"
     }
 }
 
-def Scope "Spheres"
+def Scope "Implicits"
 {
     def Sphere "TopRight"
     {
@@ -114,31 +114,34 @@ def Scope "Spheres"
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Sphere "A"
+    def Cylinder_1 "A"
     {
-        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
-        double size = 1
-        color3f[] primvars:displayColor (interpolation = "constant")
+        uniform token axis = "X"
+        double height = 1.5
+        double radiusTop = 0.3
+        double radiusBottom = 0.6
         color3f[] primvars:displayColor = [(0,1,0)]
         double3 xformOp:translate = (-0.5, -4.5, -0.5)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Sphere "B"
+    def Cylinder_1 "B"
     {
-        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
-        double size = 1
-        color3f[] primvars:displayColor (interpolation = "constant")
+        uniform token axis = "X"
+        double height = 1.5
+        double radiusTop = 0.0
+        double radiusBottom = 0.6
         color3f[] primvars:displayColor = [(1,1,0)]
         double3 xformOp:translate = (-2.5, -0.5, -0.5)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Sphere "C"
+    def Cylinder_1 "C"
     {
-        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
-        double size = 1
-        color3f[] primvars:displayColor (interpolation = "constant")
+        uniform token axis = "X"
+        double height = 1.5
+        double radiusTop = 0.6
+        double radiusBottom = 0.6
         color3f[] primvars:displayColor = [(0,0,1)]
         double3 xformOp:translate = (3.5, -3.5, -0.5)
         uniform token[] xformOpOrder = ["xformOp:translate"]

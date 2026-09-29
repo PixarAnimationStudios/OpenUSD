@@ -71,28 +71,76 @@ def Xform "world"
                         rel prototypes = [
                             </world/L1/L2/L3/L4/L5/L6>
                         ]
-                        
+
                         def PointInstancer "L6"
                         {
                             float3[] extent = [(-7, -1, -1), (7, 1, 1)]
                             point3f[] positions = [(-6, 0, 0), (-3, 0, 0), (0, 0, 0), (3, 0, 0), (6, 0, 0)]
-                            int[] protoIndices = [0, 0, 0, 0, 0]
+                            int[] protoIndices = [0, 1, 2, 3, 4]
                             float[] primvars:level6 = [0, 0.25, 0.5, 0.75, 1] ( interpolation = "varying" )
                             rel prototypes = [
-                                </world/L1/L2/L3/L4/L5/L6/Ball>
+                                </world/L1/L2/L3/L4/L5/L6/Cyl>,
+                                </world/L1/L2/L3/L4/L5/L6/CylX>,
+                                </world/L1/L2/L3/L4/L5/L6/ConePrim>,
+                                </world/L1/L2/L3/L4/L5/L6/CylinderPrim>,
+                                </world/L1/L2/L3/L4/L5/L6/CylY>
                             ]
 
-                            def "Ball"
+                            def "CylX"
                             {
-                                def Sphere "BallGeom"
+                                def Cylinder_1 "CylXGeom"
                                 {
+                                    uniform token axis = "X"
+                                    double height = 1.2
+                                    double radiusTop = 0.5
+                                    double radiusBottom = 0.5
                                 }
                             }
-                        }   
+
+                            def "CylY"
+                            {
+                                def Cylinder_1 "CylYGeom"
+                                {
+                                    uniform token axis = "Y"
+                                    double height = 1.2
+                                    double radiusTop = 0.5
+                                    double radiusBottom = 0.5
+                                }
+                            }
+
+                            def "Cyl"
+                            {
+                                def Cylinder_1 "CylGeom"
+                                {
+                                    double height = 1.2
+                                    double radiusTop = 0.5
+                                    double radiusBottom = 0.5
+                                }
+                            }
+
+                            def "ConePrim"
+                            {
+                                def Cone "ConeGeom"
+                                {
+                                    uniform token axis = "X"
+                                    double height = 1.2
+                                    double radius = 0.6
+                                }
+                            }
+
+                            def "CylinderPrim"
+                            {
+                                def Cylinder "CylinderGeom"
+                                {
+                                    uniform token axis = "Y"
+                                    double height = 1.2
+                                    double radius = 0.5
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
-

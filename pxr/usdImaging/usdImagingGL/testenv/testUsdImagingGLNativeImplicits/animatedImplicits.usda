@@ -41,4 +41,18 @@ def Xform "world"
             3: 4.5
         }
     }
+
+    def Cylinder_1 "conic"
+    {
+        uniform token axis = "Z"
+        double height = 4.0
+        double radiusTop.timeSamples = {
+            1: 1.0,
+            3: 0.0
+        }
+        double radiusBottom = 2.5
+        color3f[] primvars:displayColor = [(0.8, 0.2, 0.1)]
+        double3 xformOp:translate = (7, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
 }

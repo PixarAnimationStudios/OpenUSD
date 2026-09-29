@@ -20,20 +20,49 @@ struct Sphere
 };
 
 --- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Common.Sphere
+
+#define MAX_HITS (2)
+
+struct Shape
+{
+    Sphere sphere;
+};
+
+Shape ConstructShape()
+{
+    Shape shape;
+    shape.sphere.center = vec3(0.0);
+    shape.sphere.radius = HdGet_sphereRadius();
+
+    return shape;
+}
+
+MAT4 GetShapeToObjMatrix(const Shape shape)
+{
+    return MAT4(1.0);
+}
+
+MAT4 GetObjToShapeMatrix(const Shape shape)
+{
+    return MAT4(1.0);
+}
+
+--- --------------------------------------------------------------------------
 -- glsl ImplicitSurface.Bounds.Sphere
 
 // Computes the min and max bounds for the given sphere in eye space.
-Bbox ComputeSphereBboxEye(const Sphere sphere, const MAT4 instanceModelView)
+Bbox ComputeSphereBboxEye(const Sphere sphere, const MAT4 shapeToEye)
 {
-    const vec3 objectCenterEye = TransformPoint(instanceModelView, sphere.center);
+    const vec3 shapeCenterEye = TransformPoint(shapeToEye, sphere.center);
 
     // Get max x, y, and z radii for the sphere's bounding box in eye space
     const vec3 bboxSizeEye = sphere.radius *
-                             rowLengths(Mat4ToMat3(instanceModelView));
+                             RowLengths(Mat4ToMat3(shapeToEye));
 
     Bbox bboxEye;
-    bboxEye.minBound = objectCenterEye - bboxSizeEye;
-    bboxEye.maxBound = objectCenterEye + bboxSizeEye;
+    bboxEye.minBound = shapeCenterEye - bboxSizeEye;
+    bboxEye.maxBound = shapeCenterEye + bboxSizeEye;
 
     return bboxEye;
 }
@@ -42,86 +71,62 @@ Bbox ComputeSphereBboxEye(const Sphere sphere, const MAT4 instanceModelView)
 -- glsl ImplicitSurface.Vertex.Sphere
 
 // Computes the min and max bounds for the sphere in eye space.
-Bbox ComputeBboxEye()
+Bbox ComputeBboxEye(const Shape shape, const MAT4 shapeToEye)
 {
-    const MAT4 transform  = ApplyInstanceTransform(HdGet_transform());
-    const MAT4 viewMat = GetWorldToViewMatrix();
-
-    const MAT4 instanceModelView = viewMat * transform;
-    
-    Sphere sphere;
-    sphere.center = vec3(0.0);
-    sphere.radius = HdGet_radius();
-
-    return ComputeSphereBboxEye(sphere, instanceModelView);
+    return ComputeSphereBboxEye(shape.sphere, shapeToEye);
 }
 
 --- --------------------------------------------------------------------------
 -- glsl ImplicitSurface.Intersection.Sphere
 
-// Computes the near/far hit distances in object space for a ray intersecting
+// Computes the near/far hit distances in shape space for a ray intersecting
 // the given sphere.
-// The ray direction need not be normalized.
-vec2 ComputeSphereHitDists(const Sphere sphere, const Ray rayObj)
+// rayShape.dir need not be normalized.
+vec2 ComputeSphereRoots(const Sphere sphere, const Ray rayShape)
 {
     // Coeffs for the quadratic equation for the sphere
-    const float a = dot(rayObj.dir, rayObj.dir);
-    const float halfB = dot(rayObj.origin - sphere.center, rayObj.dir);
-    const float c = dot(rayObj.origin, rayObj.origin) 
-                    + dot(sphere.center, sphere.center - 2 * rayObj.origin)
+    const float a = dot(rayShape.dir, rayShape.dir);
+    const float halfB = dot(rayShape.origin - sphere.center, rayShape.dir);
+    const float c = dot(rayShape.origin, rayShape.origin)
+                    + dot(sphere.center, sphere.center - 2 * rayShape.origin)
                     - sphere.radius * sphere.radius;
 
     return ComputeRoots(a, halfB, c);
 }
 
 // Computes the (unnormalized) normal direction for the point on the
-// given sphere in object space.
-// It is assumed that Pobj is a point on the surface of the sphere.
-vec3 ComputeSphereNormal(const Sphere sphere, const vec3 Pobj)
+// given sphere in shape space.
+// Pshape is assumed to lie on the surface of the sphere.
+vec3 ComputeSphereNormal(const Sphere sphere, const vec3 Pshape)
 {
-    return Pobj - sphere.center;
+    return Pshape - sphere.center;
 }
 
 --- --------------------------------------------------------------------------
 -- glsl ImplicitSurface.Fragment.Sphere
 
-// Computes the near/far hit points in object space for a ray intersecting
+const uint SPHERE_SEG_SURFACE = 0u;
+
+// Computes the sorted hit points in shape space for a ray intersecting
 // the sphere.
-// The ray direction need not be normalized.
-HitPoints ComputeHitPointsObj(Ray rayObj)
+// rayShape.dir need not be normalized.
+SortedHits ComputeHitsShape(const Shape shape, const Ray rayShape)
 {
-    Sphere sphere;
-    sphere.center = vec3(0.0);
-    sphere.radius = HdGet_radius();
+    const vec2 roots = ComputeSphereRoots(shape.sphere, rayShape);
 
-    const vec2 dists = ComputeSphereHitDists(sphere, rayObj);
+    SortedHits result;
 
-    HitPoints hits;
-
-    hits.near.visible = dists.x >= 0.0;
-    hits.far.visible = dists.y >= 0.0;
-
-    // The sphere has a single analytic surface, so segment is unused.
-    if (hits.near.visible) {
-        hits.near.point.position = rayObj.origin + dists.x * rayObj.dir;
-        hits.near.point.segment = 0;
+    for (int i = 0; i < 2; i++) {
+        result.hits[i].t = roots[i];
+        result.hits[i].segment = SPHERE_SEG_SURFACE;
     }
 
-    if (hits.far.visible) {
-        hits.far.point.position = rayObj.origin + dists.y * rayObj.dir;
-        hits.far.point.segment = 0;
-    }
-
-    return hits;
+    return result;
 }
 
-// Computes the (unnormalized) object-space normal at the given point on the
+// Computes the (unnormalized) shape-space normal at the given point on the
 // sphere.
-vec3 ComputeNormalObj(const Point point)
+vec3 ComputeNormalShape(const Shape shape, const Point pointShape)
 {
-    Sphere sphere;
-    sphere.center = vec3(0.0);
-    sphere.radius = HdGet_radius();
-
-    return ComputeSphereNormal(sphere, point.position);
+    return ComputeSphereNormal(shape.sphere, pointShape.position);
 }

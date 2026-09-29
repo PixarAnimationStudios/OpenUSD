@@ -1,0 +1,291 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2026 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/conicalFrustum.glslfx
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.TypeDef.ConicalFrustum
+
+// Generalized conical frustum encompassing cones and cylinders.
+// Radius varies linearly from radiusBot at -height/2 along the Z axis to
+// radiusTop at +height/2.
+// Supports double cones when the radii have opposite signs.
+struct ConicalFrustum
+{
+    float radiusTop;
+    float radiusBot;
+    float height;
+};
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Common.ConicalFrustum
+
+#define MAX_HITS (4)
+
+const uint CONICAL_FRUSTUM_AXIS_X = 0u;
+const uint CONICAL_FRUSTUM_AXIS_Y = 1u;
+const uint CONICAL_FRUSTUM_AXIS_Z = 2u;
+
+struct Shape
+{
+    ConicalFrustum conicalFrustum;
+    uint axis;
+};
+
+Shape ConstructShape()
+{
+    Shape shape;
+
+    shape.conicalFrustum.radiusTop = HdGet_conicalFrustumRadiusTop();
+    shape.conicalFrustum.radiusBot = HdGet_conicalFrustumRadiusBot();
+    shape.conicalFrustum.height = HdGet_conicalFrustumHeight();
+
+    shape.axis = HdGet_conicalFrustumAxis();
+
+    return shape;
+}
+
+// Permutes axes so that shape-space +Z (the spine) maps to the object-space
+// axis direction.
+MAT4 GetShapeToObjMatrix(const Shape shape)
+{
+    if (shape.axis == CONICAL_FRUSTUM_AXIS_X) {
+        return MAT4(0,1,0,0,
+                    0,0,1,0,
+                    1,0,0,0,
+                    0,0,0,1);
+    }
+
+    if (shape.axis == CONICAL_FRUSTUM_AXIS_Y) {
+        return MAT4(1,0,0,0,
+                    0,0,1,0,
+                    0,1,0,0,
+                    0,0,0,1);
+    }
+
+    return MAT4(1.0);
+}
+
+// Inverse of GetShapeToObjMatrix.
+// Maps object space to Z-aligned conical frustum space.
+MAT4 GetObjToShapeMatrix(const Shape shape)
+{
+    // The inverse of a pure rotational matrix equals its transpose.
+    return transpose(GetShapeToObjMatrix(shape));
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Bounds.ConicalFrustum
+
+// Computes the min and max bounds for the given conical frustum in eye space.
+Bbox ComputeConicalFrustumBboxEye(const ConicalFrustum conicalFrustum,
+                                  const MAT4 shapeToEye)
+{
+    const vec3 shapeCenterEye = TransformPoint(shapeToEye, vec3(0.0));
+    const mat3 shapeToEyeM3 = Mat4ToMat3(shapeToEye);
+
+    // Z column is the spine direction in eye space.
+    // Times half-height gives cap center offset.
+    const vec3 halfAxisEye  = 0.5 * conicalFrustum.height * shapeToEyeM3[2];
+    const vec3 topCenterEye = shapeCenterEye + halfAxisEye;
+    const vec3 botCenterEye = shapeCenterEye - halfAxisEye;
+
+    // Radial extents of the top and bottom discs in eye space.
+    const vec3 planarLengths = PlanarRowLengths(shapeToEyeM3);
+
+    const vec3 topSizeEye = abs(conicalFrustum.radiusTop) * planarLengths;
+    const vec3 botSizeEye = abs(conicalFrustum.radiusBot) * planarLengths;
+
+    Bbox bboxEye;
+    bboxEye.minBound = min(topCenterEye - topSizeEye, botCenterEye - botSizeEye);
+    bboxEye.maxBound = max(topCenterEye + topSizeEye, botCenterEye + botSizeEye);
+
+    return bboxEye;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Vertex.ConicalFrustum
+
+// Computes the min and max bounds for the conical frustum in eye space.
+Bbox ComputeBboxEye(const Shape shape, const MAT4 shapeToEye)
+{
+    return ComputeConicalFrustumBboxEye(shape.conicalFrustum, shapeToEye);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Intersection.ConicalFrustum
+
+// Dot product of a and b with the Z axis component weighted by k instead of 1.
+float ComputeWeightedDot(const vec3 a, const vec3 b, const float k)
+{
+    vec3 w = vec3(1.0, 1.0, k);
+    return dot(a * b, w);
+}
+
+// The generalized conic surface satisfies:
+//   |P.xy|^2 = radius^2, where
+//   radius = slope * P.z + interceptRadius,
+//   slope = (radiusTop - radiusBot) / height,
+//   interceptRadius = (radiusTop + radiusBot) / 2.
+// This subsumes the standard cylinder (slope = 0) and cone (one radius zero).
+// rayShape.dir need not be normalized.
+vec2 ComputeConicalFrustumLateralRoots(const ConicalFrustum conicalFrustum,
+                                       const Ray rayShape)
+{
+    const float invHeight = abs(conicalFrustum.height) > EPS
+                            ? 1.0 / conicalFrustum.height
+                            : 0.0;
+    const float slope = (conicalFrustum.radiusTop - conicalFrustum.radiusBot) * invHeight;
+    const float negSlopeSq = -slope * slope;
+    const float interceptRadius = 0.5 * (conicalFrustum.radiusTop + conicalFrustum.radiusBot);
+    const float slopeInterceptRadius = slope * interceptRadius;
+
+    const float a = ComputeWeightedDot(rayShape.dir, rayShape.dir, negSlopeSq);
+
+    const float halfB = ComputeWeightedDot(rayShape.origin, rayShape.dir, negSlopeSq)
+                            - slopeInterceptRadius * rayShape.dir.z;
+
+    const float c = ComputeWeightedDot(rayShape.origin, rayShape.origin, negSlopeSq)
+                        - 2.0 * slopeInterceptRadius * rayShape.origin.z
+                        - interceptRadius * interceptRadius;
+
+    return ComputeRoots(a, halfB, c);
+}
+
+// Computes the (unnormalized) normal direction for the point on the
+// given conical frustum in shape space.
+// Pshape is assumed to lie on the lateral surface of the conical frustum.
+vec3 ComputeConicalFrustumNormal(const ConicalFrustum conicalFrustum,
+                                 const vec3 Pshape)
+{
+    const float invHeight = abs(conicalFrustum.height) > EPS
+                            ? 1.0 / conicalFrustum.height
+                            : 0.0;
+    const float slope = (conicalFrustum.radiusTop - conicalFrustum.radiusBot) * invHeight;
+    const float interceptRadius = 0.5 * (conicalFrustum.radiusTop + conicalFrustum.radiusBot);
+
+    // The surface is
+    //  F = |P.xy|^2 = radius^2, where
+    //  radius = slope * P.z + interceptRadius
+    //  => |P.xy|^2 - (slope * P.z + interceptRadius)^2 = 0.
+    // Gradient = 2 * (P.xy, -(slope * P.z + interceptRadius) * slope).
+    //  Gradient is the direction of steepest ascent = normal direction.
+    return vec3(Pshape.xy, -slope * (slope * Pshape.z + interceptRadius));
+}
+
+// Checks if a hit is valid for the clipped conical frustum.
+bool IsValidConicalFrustumHit(const float t,
+                              const float rayShapeOriginZ,
+                              const float rayShapeDirZ,
+                              const float height)
+{
+    return IsValidHit(t) &&
+            abs(rayShapeOriginZ + t * rayShapeDirZ) < 0.5 * height;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Fragment.ConicalFrustum
+
+const uint CONICAL_FRUSTUM_SEG_LATERAL = 0u;
+const uint CONICAL_FRUSTUM_SEG_TOP_CAP = 1u;
+const uint CONICAL_FRUSTUM_SEG_BOT_CAP = 2u;
+
+// Checks if a hit intersects a cap of the conical frustum.
+bool IsValidCapHit(const float t, const float radius, const Ray rayShape)
+{
+    // Intersection points projected onto the cap planes
+    const vec2 pXY = rayShape.origin.xy + t * rayShape.dir.xy;
+
+    // Disc intersections: |Point - DiscCenter|^2 <= radius^2
+    return dot(pXY, pXY) <= radius * radius;
+}
+
+// Computes sorted hit points in shape space for a ray intersecting the
+// conical frustum, including its top and bottom caps.
+// rayShape.dir need not be normalized.
+SortedHits ComputeHitsShape(const Shape shape, const Ray rayShape)
+{
+    SortedHits result = CreateDefaultHits();
+    int numInserted = 0;
+
+    // Lateral surface checks.
+    const vec2 lateralRoots = ComputeConicalFrustumLateralRoots(shape.conicalFrustum,
+                                                                rayShape);
+
+    for (int i = 0; i < 2; i++) {
+        ConditionalInsertHit(result,
+                             numInserted,
+                             lateralRoots[i],
+                             CONICAL_FRUSTUM_SEG_LATERAL,
+                             IsValidConicalFrustumHit(
+                                lateralRoots[i],
+                                rayShape.origin.z,
+                                rayShape.dir.z,
+                                shape.conicalFrustum.height));
+    }
+
+    // Cap checks.
+    const bool rayNotParallelToCaps = abs(rayShape.dir.z) > EPS;
+    const float invRayDirZ = rayNotParallelToCaps
+                             ? 1.0 / rayShape.dir.z
+                             : 0.0;
+
+    // rayOrigin.z + t * rayDir.z = capZ
+    // => t = (capZ - rayOrigin.z) / rayDir.z
+    const float tTop = (+0.5 * shape.conicalFrustum.height - rayShape.origin.z)
+                        * invRayDirZ;
+
+    ConditionalInsertHit(result,
+                         numInserted,
+                         tTop,
+                         CONICAL_FRUSTUM_SEG_TOP_CAP,
+                         rayNotParallelToCaps &&
+                            IsValidCapHit(tTop,
+                                        shape.conicalFrustum.radiusTop,
+                                        rayShape));
+
+    const float tBot = (-0.5 * shape.conicalFrustum.height - rayShape.origin.z)
+                        * invRayDirZ;
+
+    ConditionalInsertHit(result,
+                         numInserted,
+                         tBot,
+                         CONICAL_FRUSTUM_SEG_BOT_CAP,
+                         rayNotParallelToCaps &&
+                            IsValidCapHit(tBot,
+                                        shape.conicalFrustum.radiusBot,
+                                        rayShape));
+
+    // Sort hits in ascending order by t using
+    // Batcher's optimal 5-compare network.
+    SortHits(result.hits[0], result.hits[2]);
+    SortHits(result.hits[1], result.hits[3]);
+    SortHits(result.hits[0], result.hits[1]);
+    SortHits(result.hits[2], result.hits[3]);
+    SortHits(result.hits[1], result.hits[2]);
+
+    return result;
+}
+
+// Computes the (unnormalized) shape space normal at the given point on the
+// conical frustum.
+vec3 ComputeNormalShape(const Shape shape, const Point pointShape)
+{
+    if (pointShape.segment == CONICAL_FRUSTUM_SEG_TOP_CAP) {
+        // +Z
+        return vec3(0.0, 0.0, 1.0);
+    }
+    if (pointShape.segment == CONICAL_FRUSTUM_SEG_BOT_CAP) {
+        // -Z
+        return vec3(0.0, 0.0, -1.0);
+    }
+
+    return ComputeConicalFrustumNormal(shape.conicalFrustum, pointShape.position);
+}

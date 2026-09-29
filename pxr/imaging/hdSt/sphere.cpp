@@ -9,12 +9,12 @@
 #include "pxr/imaging/hdSt/sphere.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+#include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/sceneIndexAdapterSceneDelegate.h"
 #include "pxr/imaging/hd/sphereSchema.h"
-#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/base/vt/value.h"
@@ -25,8 +25,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdStSphere::HdStSphere(SdfPath const &id)
   : HdStImplicitSurface(
         id,
-        HdPrimTypeTokens->sphere,
-        HdBufferSpecVector{HdBufferSpec(HdSphereSchemaTokens->radius,
+        HdStNativeImplicitsTokens->sphere,
+        HdBufferSpecVector{HdBufferSpec(HdStNativeImplicitsTokens->sphereRadius,
                                         HdTupleType{HdTypeFloat, 1})})
 {
 }
@@ -40,17 +40,17 @@ HdStSphere::_PopulateCustomConstantPrimvars(HdSceneDelegate *sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
 
     HdStResourceRegistrySharedPtr resourceRegistry =
-    std::static_pointer_cast<HdStResourceRegistry>(
-        sceneDelegate->GetRenderIndex().GetResourceRegistry());
+        std::static_pointer_cast<HdStResourceRegistry>(
+            sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
     HdBufferArrayRangeSharedPtr const& bar = drawItem->GetConstantPrimvarRange();
 
-    float radius = sceneDelegate->Get(GetId(),
-                    HdSphereSchemaTokens->radius).Get<double>();
+    const float radius = static_cast<float>(sceneDelegate->Get(GetId(),
+                            HdSphereSchemaTokens->radius).Get<double>());
 
     HdBufferSourceSharedPtrVector sources = {
         std::make_shared<HdVtBufferSource>(
-            HdSphereSchemaTokens->radius, VtValue(radius))
+            HdStNativeImplicitsTokens->sphereRadius, VtValue(radius))
     };
 
     resourceRegistry->AddSources(bar, std::move(sources));

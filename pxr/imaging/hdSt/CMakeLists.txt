@@ -65,6 +65,7 @@ pxr_library(hdSt
         bufferArrayRegistry
         commandBuffer
         computation
+        conicalFrustum
         copyComputation
         debugCodes
         dependencyForwardingSceneIndexPlugin
@@ -192,6 +193,7 @@ pxr_library(hdSt
         plugInfo.json
         shaders/basisCurves.glslfx
         shaders/compute.glslfx
+        shaders/conicalFrustum.glslfx
         shaders/coordUtils.glslfx
         shaders/domeLight.glslfx
         shaders/edgeId.glslfx

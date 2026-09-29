@@ -8,6 +8,7 @@
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
 #include "pxr/imaging/hdSt/basisCurves.h"
+#include "pxr/imaging/hdSt/conicalFrustum.h"
 #include "pxr/imaging/hdSt/drawItemsCache.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
 #include "pxr/imaging/hdSt/extComputation.h"
@@ -60,9 +61,10 @@ TF_DEFINE_ENV_SETTING(HDST_DOME_LIGHT_CUBEMAP_TARGET_MEMORY_MB, 0,
                       "Maximum memory target in MB for the cubemap computed "
                       "from the latlong texture for the dome light.");
 
-TF_DEFINE_ENV_SETTING(HDST_ENABLE_NATIVE_SPHERES, false,
-    "Enable native rendering of sphere primitives in Storm instead of "
-    "converting them to meshes via the implicit surface scene index.");
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_NATIVE_IMPLICITS, false,
+    "Enable native rendering of all implicit surface primitives supported "
+    "by Storm (e.g., spheres, cones) instead of converting them to meshes "
+    "via the implicit surface scene index.");
 
 namespace {
 const TfTokenVector _SupportedRprimTypes()
@@ -74,8 +76,10 @@ const TfTokenVector _SupportedRprimTypes()
         HdPrimTypeTokens->volume
     };
 
-    if (TfGetEnvSetting(HDST_ENABLE_NATIVE_SPHERES)) {
+    if (HdStRenderDelegate::IsEnabledNativeImplicitsRenderingSupport()) {
         supportedTypes.emplace_back(HdPrimTypeTokens->sphere);
+        supportedTypes.emplace_back(HdPrimTypeTokens->cone);
+        supportedTypes.emplace_back(HdPrimTypeTokens->cylinder);
     }
 
     return supportedTypes;
@@ -434,6 +438,10 @@ HdStRenderDelegate::CreateRprim(TfToken const& typeId,
         return new HdStVolume(rprimId);
     } else  if (typeId == HdPrimTypeTokens->sphere) {
         return new HdStSphere(rprimId);
+    } else  if (typeId == HdPrimTypeTokens->cone) {
+        return new HdStConicalFrustum</*IsCone=*/true>(rprimId);
+    } else  if (typeId == HdPrimTypeTokens->cylinder) {
+        return new HdStConicalFrustum</*IsCone=*/false>(rprimId);
     } else {
         TF_CODING_ERROR("Unknown Rprim Type %s", typeId.GetText());
     }
@@ -729,9 +737,9 @@ HdStRenderDelegate::GetRenderDelegateInfo()
 }
 
 bool
-HdStRenderDelegate::IsEnabledNativeSphereRenderingSupport()
+HdStRenderDelegate::IsEnabledNativeImplicitsRenderingSupport()
 {
-    return TfGetEnvSetting(HDST_ENABLE_NATIVE_SPHERES);
+    return TfGetEnvSetting(HDST_ENABLE_NATIVE_IMPLICITS);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

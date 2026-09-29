@@ -59,8 +59,8 @@ struct HdSt_ImplicitSurfaceShaderKey : public HdSt_ShaderKey
     TfToken const *GetFS() const override { return FS.data(); }
 
     TfToken glslfx;
-    TfSmallVector<TfToken, 11> VS;
-    TfSmallVector<TfToken, 18> FS;
+    TfSmallVector<TfToken, 13> VS;
+    TfSmallVector<TfToken, 20> FS;
 };
 
 

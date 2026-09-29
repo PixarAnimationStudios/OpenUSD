@@ -18,21 +18,46 @@
 #import $TOOLS/hdSt/shaders/edgeId.glslfx
 #import $TOOLS/hdSt/shaders/pointId.glslfx
 
+#import $TOOLS/hdSt/shaders/conicalFrustum.glslfx
 #import $TOOLS/hdSt/shaders/sphere.glslfx
 
 
 --- --------------------------------------------------------------------------
---- Shape contract: every shape module (e.g., sphere.glslfx, cone.glslfx) must
---- define the following, using ImplicitSurface.TypeDef.<Shape> for any
---- shape-specific struct(s):
+--- Shape contract: every shape module (e.g., sphere.glslfx, conicalFrustum.glslfx)
+--- must define the following sections:
+---
+---   -- glsl ImplicitSurface.Common.<Shape>
+---   // The maximum number of hits possible for the shape.
+---   #define MAX_HITS (<NUM>)
+---   // Holds all attributes for the shape.
+---   struct Shape;
+---   // Constructs a Shape by reading its constant primvar values.
+---   Shape ConstructShape();
+---   // Transforms from shape space to object space. E.g., transforming axes
+---   // for conicalFrustum.glslfx.
+---   MAT4 GetShapeToObjMatrix(const Shape shape);
+---   // Inverse of GetShapeToObjMatrix().
+---   MAT4 GetObjToShapeMatrix(const Shape shape);
 ---
 ---   -- glsl ImplicitSurface.Vertex.<Shape>
----   Bbox ComputeBboxEye();
+---   // Eye-space bounding box used to size the rasterized billboard.
+---   Bbox ComputeBboxEye(const Shape shape, const MAT4 shapeToEye);
 ---
 ---   -- glsl ImplicitSurface.Fragment.<Shape>
----   HitPoints ComputeHitPointsObj(Ray rayObj);
----   vec3 ComputeNormalObj(Point point);
+---   // Sorted hits in shape space, nearest first.
+---   // Set t = INF for invalid hits.
+---   SortedHits ComputeHitsShape(const Shape shape, const Ray rayShape);
+---   // Unnormalized outward normal in shape space at the given point.
+---   vec3 ComputeNormalShape(const Shape shape, const Point pointShape);
 --- --------------------------------------------------------------------------
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Common.Constants
+
+// Epsilon for checking values that are close to 0.
+const float EPS = 1e-5;
+// Sentinel for invalid hits.
+const float INF = 1e+37;
 
 --- --------------------------------------------------------------------------
 -- layout ImplicitSurface.Vertex
@@ -44,7 +69,7 @@
 ]
 
 --- --------------------------------------------------------------------------
--- glsl ImplicitSurface.TypeDef
+-- glsl ImplicitSurface.Vertex.TypeDef
 
 struct Bbox
 {
@@ -52,31 +77,34 @@ struct Bbox
     vec3 maxBound;
 };
 
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Fragment.TypeDef
+
 struct Ray
 {
     vec3 origin;
     vec3 dir;
-}; 
+};
 
 struct Point
 {
     vec3 position;
     // Which analytic component of the shape this point lies on (e.g., for
-    // a cone: lateral surface vs. base disc).
+    // a cylinder: lateral surface vs. top or bottom cap).
     // Shape-Defined.
     uint segment;
 };
 
 struct Hit
 {
-    Point point;
-    bool visible;
+    float t;
+    uint segment;
 };
 
-struct HitPoints
+struct SortedHits
 {
-    Hit near;
-    Hit far;
+    // Set t = INF for invalid hits.
+    Hit hits[MAX_HITS];
 };
 
 --- --------------------------------------------------------------------------
@@ -84,31 +112,57 @@ struct HitPoints
 
 // Lengths of the column vectors of a 3x3 matrix.
 vec3
-columnLengths(const mat3 m)
+ColumnLengths(const mat3 m)
 {
     return vec3(length(m[0]), length(m[1]), length(m[2]));
 }
 
 // Lengths of the row vectors of a 3x3 matrix.
 vec3
-rowLengths(const mat3 m)
+RowLengths(const mat3 m)
 {
-    return columnLengths(transpose(m));
+    return ColumnLengths(transpose(m));
+}
+
+// Lengths of the column vectors of a 3x3 matrix, ignoring their z components.
+vec3
+PlanarColumnLengths(const mat3 m)
+{
+    return vec3(length(m[0].xy), length(m[1].xy), length(m[2].xy));
+}
+
+// Lengths of the row vectors of a 3x3 matrix, ignoring their z components.
+vec3
+PlanarRowLengths(const mat3 m)
+{
+    return PlanarColumnLengths(transpose(m));
 }
 
 --- --------------------------------------------------------------------------
 -- glsl ImplicitSurface.Fragment.Utils
 
-// Compute the roots of a quadratic equation given its coefficients.
-// Returns -1.0 for imaginary roots.
+// Computes the roots of a quadratic equation given its coefficients.
+// Returns roots in ascending order, using INF for invalid roots.
 vec2
 ComputeRoots(const float a, const float halfB, const float c)
 {
+    if (abs(a * c) <= halfB * halfB * EPS) {
+        // Infinite solution/no solution
+        if (abs(halfB) == 0.0) {
+            return vec2(INF);
+        }
+
+        // Linear equation
+        // bx + c = 0 => x = -c/b
+        float root = -c/(2.0 * halfB);
+        return vec2(root, INF);
+    }
+
     // Discriminant
     const float quarterH = halfB * halfB - a * c;
 
     if (quarterH < 0.0) {
-        return vec2(-1.0);
+        return vec2(INF);
     }
 
     const float sqrtQuarterH = sqrt(quarterH);
@@ -119,6 +173,55 @@ ComputeRoots(const float a, const float halfB, const float c)
     return vec2(t1, t2)/a;
 }
 
+// Checks if the ray parameter for a hit is valid.
+bool
+IsValidHit(const float t)
+{
+    return t < INF;
+}
+
+// Sorts hits in ascending order by t. Invalid (INF) values sort to the end.
+void
+SortHits(REF(thread, Hit) a, REF(thread, Hit) b)
+{
+    if (b.t < a.t) {
+        Hit tmp = a;
+        a = b;
+        b = tmp;
+    }
+}
+
+// Creates a SortedHits struct and sets all t values to INF.
+SortedHits
+CreateDefaultHits()
+{
+    SortedHits result;
+
+    for (int i = 0; i < MAX_HITS; i++) {
+        result.hits[i].t = INF;
+    }
+
+    return result;
+}
+
+// Conditionally inserts a hit at the end if it is valid and
+// the hits array has space.
+void
+ConditionalInsertHit(REF(thread, SortedHits) shapeHits,
+                     REF(thread, int) numInserted,
+                     const float t,
+                     const uint segment,
+                     const bool valid)
+{
+    if (!valid || numInserted >= MAX_HITS) {
+        return;
+    }
+
+    shapeHits.hits[numInserted].t = t;
+    shapeHits.hits[numInserted].segment = segment;
+    numInserted++;
+}
+
 --- --------------------------------------------------------------------------
 -- glsl ImplicitSurface.Vertex
 
@@ -126,8 +229,14 @@ void main(void)
 {
     ProcessPrimvarsIn();
 
+    const Shape shape = ConstructShape();
+
+    const MAT4 shapeToEye = GetWorldToViewMatrix() *
+                            ApplyInstanceTransform(HdGet_transform()) *
+                            GetShapeToObjMatrix(shape);
+
     // Get bounds for the surface in eye space
-    const Bbox bboxEye = ComputeBboxEye();
+    const Bbox bboxEye = ComputeBboxEye(shape, shapeToEye);
 
     const MAT4 projMat = GetProjectionMatrix();
 
@@ -222,9 +331,8 @@ void main(void)
 
     // When calculating Peye, push the billboard slightly away from the surface,
     // because the FS uses Peye as rayOrigin
-    const float epsilon = 1e-5;
     outData.Peye = TransformPoint(GetProjectionInverseMatrix(),
-                                  vec3(xyNDC, zmin - epsilon));
+                                  vec3(xyNDC, zmin - EPS));
 }
 
 --- --------------------------------------------------------------------------
@@ -254,73 +362,74 @@ bool ShouldDiscardByClipPlanes(vec3 Peye)
 
 void main(void)
 {
-    const MAT4 instanceModelView = GetWorldToViewMatrix() *
-                                    ApplyInstanceTransform(HdGet_transform());
+    const Shape shape = ConstructShape();
 
-    const MAT4 instanceModelViewInverse = ApplyInstanceTransformInverse(
-                                            HdGet_transformInverse()) *
-                                          GetWorldToViewInverseMatrix();
+    const MAT4 shapeToEye = GetWorldToViewMatrix() *
+                            ApplyInstanceTransform(HdGet_transform()) *
+                            GetShapeToObjMatrix(shape);
+
+    const MAT4 eyeToShape = GetObjToShapeMatrix(shape) *
+                            ApplyInstanceTransformInverse(
+                                HdGet_transformInverse()) *
+                            GetWorldToViewInverseMatrix();
 
     const vec3 rayDirEye = ComputeRayDirectionEye(inData.Peye);
 
-    Ray rayObj;
-    rayObj.origin = TransformPoint(instanceModelViewInverse, inData.Peye);
-    rayObj.dir = TransformDir(instanceModelViewInverse, rayDirEye);
+    Ray rayShape;
+    rayShape.origin = TransformPoint(eyeToShape, inData.Peye);
+    rayShape.dir = TransformDir(eyeToShape, rayDirEye);
 
-    const HitPoints hits = ComputeHitPointsObj(rayObj);
+    const SortedHits shapeHits = ComputeHitsShape(shape, rayShape);
 
-    if (!hits.far.visible) {
-        discard;
-        // Explicit return needed for MSL version < 2.4
-        return;
-    }
-
+    // Iterate over the sorted hits and choose the first one not clipped away
     bool frontFacing;
     vec3 Peye;
+    Point pointShape;
 
-    if (!hits.near.visible) {
-        frontFacing = false;
-    } else {
-        Peye = TransformPoint(instanceModelView, hits.near.point.position);
-        frontFacing = !ShouldDiscardByClipPlanes(Peye);
-    }
+    int chosenIdx = -1;
+    for (int i = 0; i < MAX_HITS; i++) {
+        // Invalids sort to the end
+        if (!IsValidHit(shapeHits.hits[i].t)) {
+            break;
+        }
 
-    // If the front-facing intersection is clipped away by a user-defined
-    // clip plane (or the near plane), check the back-face
-    if (!frontFacing) {
-        Peye = TransformPoint(instanceModelView, hits.far.point.position);
+        // Skip hits that are behind the ray origin
+        if (shapeHits.hits[i].t < 0.0) {
+            continue;
+        }
 
-        if (ShouldDiscardByClipPlanes(Peye)) {
-            discard;
-            return;
+        pointShape.position = rayShape.origin + shapeHits.hits[i].t * rayShape.dir;
+        Peye = TransformPoint(shapeToEye, pointShape.position);
+
+        if (!ShouldDiscardByClipPlanes(Peye)) {
+            // Hits at even indices are marked as frontFacing
+            frontFacing = (i % 2) == 0;
+            pointShape.segment = shapeHits.hits[i].segment;
+
+            chosenIdx = i;
+
+            break;
         }
     }
 
-    const Hit hit = frontFacing ? hits.near : hits.far;
-
-    DiscardBasedOnShading(frontFacing);
-
-    const mat3 matrixForNormal = transpose(Mat4ToMat3(instanceModelViewInverse));
-
-    const vec3 Nobj = ComputeNormalObj(hit.point);
-
-    // We get -Neye if this is a backface and the surface is double-sided
-    const vec3 Neye = GetShadingNormal(
-                        normalize(matrixForNormal * Nobj), frontFacing);
-
-    const vec3 ndc = TransformPoint(GetProjectionMatrix(), Peye);
-
-    const float depth = NDCToWindowDepth(ndc.z);
-
-    // We need to manually discard if both intersections are before the near
-    // plane because of the depth_greater qualifier
-    if (depth < 0.0) {
+    if (chosenIdx < 0) {
         discard;
-        // Explicit return needed for MSL version < 2.4
         return;
     }
 
-    gl_FragDepth = depth;
+    DiscardBasedOnShading(frontFacing);
+
+    const mat3 matrixForNormal = transpose(Mat4ToMat3(eyeToShape));
+
+    const vec3 Nshape = ComputeNormalShape(shape, pointShape);
+
+    // We get -Neye if this is a backface and the surface is double-sided
+    const vec3 Neye = GetShadingNormal(
+                        normalize(matrixForNormal * Nshape), frontFacing);
+
+    const vec3 ndc = TransformPoint(GetProjectionMatrix(), Peye);
+
+    gl_FragDepth = NDCToWindowDepth(ndc.z);
 
     vec4 color = vec4(0.5, 0.5, 0.5, 1);
 #ifdef HD_HAS_displayColor

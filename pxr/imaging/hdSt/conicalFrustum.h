@@ -4,27 +4,29 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef PXR_IMAGING_HD_ST_SPHERE_H
-#define PXR_IMAGING_HD_ST_SPHERE_H
+#ifndef PXR_IMAGING_HD_ST_CONICAL_FRUSTUM_H
+#define PXR_IMAGING_HD_ST_CONICAL_FRUSTUM_H
 
 #include "pxr/imaging/hdSt/implicitSurface.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class HdStSphere
+/// \class HdStConicalFrustum
 ///
-/// Represents a sphere prim that can be rendered natively by Storm.
+/// Represents a conical frustum (including cylinders and cones) that
+/// can be rendered natively by Storm.
 ///
-class HdStSphere final : public HdStImplicitSurface
+template <bool IsCone>
+class HdStConicalFrustum final : public HdStImplicitSurface
 {
 public:
-    HF_MALLOC_TAG_NEW("new HdStSphere");
+    HF_MALLOC_TAG_NEW("new HdStConicalFrustum");
 
     HDST_API
-    explicit HdStSphere(SdfPath const &id);
+    explicit HdStConicalFrustum(SdfPath const &id);
 
     HDST_API
-    ~HdStSphere() override = default;
+    ~HdStConicalFrustum() override = default;
 
 protected:
     HDST_API
@@ -36,4 +38,4 @@ protected:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_IMAGING_HD_ST_SPHERE_H
+#endif // PXR_IMAGING_HD_ST_CONICAL_FRUSTUM_H
