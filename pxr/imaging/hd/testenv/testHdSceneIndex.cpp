@@ -516,7 +516,16 @@ TestPrefixingSceneIndex()
                         SdfPath("F/G")),
                 TfToken("pathArray"),
                 HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
-                        {SdfPath("/A/B/C/D"), SdfPath("/A/B")})
+                        {SdfPath("/A/B/C/D"), SdfPath("/A/B")}),
+                TfToken("pathExpression"),
+                HdRetainedTypedSampledDataSource<SdfPathExpression>::New(
+                        SdfPathExpression("/A/B")),
+                TfToken("relativePathExpression"),
+                HdRetainedTypedSampledDataSource<SdfPathExpression>::New(
+                        SdfPathExpression("F/G")),
+                TfToken("membershipExpression"),
+                HdRetainedTypedSampledDataSource<SdfPathExpression>::New(
+                        SdfPathExpression("/A// - %/A:shadowLink"))
             )
         )}}
     );
@@ -569,6 +578,39 @@ TestPrefixingSceneIndex()
             VtArray<SdfPath>{
                 SdfPath("/E/F/G/A/B/C/D"),
                 SdfPath("/E/F/G/A/B")})) {
+        return false;
+    }
+
+    if (!_CompareValue("COMPARING NESTED ABSOLUTE PATH EXPRESSION",
+            GetTypedValueFromScene<SdfPathExpression>(
+                    prefixingSceneIndex,
+                    SdfPath("/E/F/G/A/C"),
+                    HdDataSourceLocator(
+                            TfToken("someContainer"),
+                            TfToken("pathExpression"))),
+            SdfPathExpression("/E/F/G/A/B"))) {
+        return false;
+    }
+
+    if (!_CompareValue("COMPARING NESTED RELATIVE PATH EXPRESSION",
+            GetTypedValueFromScene<SdfPathExpression>(
+                    prefixingSceneIndex,
+                    SdfPath("/E/F/G/A/C"),
+                    HdDataSourceLocator(
+                            TfToken("someContainer"),
+                            TfToken("relativePathExpression"))),
+            SdfPathExpression("F/G"))) {
+        return false;
+    }
+
+    if (!_CompareValue("COMPARING NESTED MEMBERSHIP EXPRESSION",
+            GetTypedValueFromScene<SdfPathExpression>(
+                    prefixingSceneIndex,
+                    SdfPath("/E/F/G/A/C"),
+                    HdDataSourceLocator(
+                            TfToken("someContainer"),
+                            TfToken("membershipExpression"))),
+            SdfPathExpression("/E/F/G/A// - %/E/F/G/A:shadowLink"))) {
         return false;
     }
 

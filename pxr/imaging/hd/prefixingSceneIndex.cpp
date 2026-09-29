@@ -125,6 +125,59 @@ private:
 
 // ----------------------------------------------------------------------------
 
+class Hd_PrefixingSceneIndexPathExpressionDataSource
+    : public HdTypedSampledDataSource<SdfPathExpression>
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_PrefixingSceneIndexPathExpressionDataSource)
+
+    Hd_PrefixingSceneIndexPathExpressionDataSource(
+            const HdPrefixingSceneIndex &si,
+            HdPathExpressionDataSourceHandle inputDataSource)
+        : _si(si)
+        , _inputDataSource(inputDataSource)
+    {
+    }
+
+    VtValue GetValue(Time shutterOffset) override
+    {
+        return VtValue(GetTypedValue(shutterOffset));
+    }
+
+    bool GetContributingSampleTimesForInterval(
+        Time startTime, Time endTime,
+        std::vector<Time> *outSampleTimes) override
+    {
+        if (_inputDataSource) {
+            return _inputDataSource->GetContributingSampleTimesForInterval(
+                    startTime, endTime, outSampleTimes);
+        }
+
+        return false;
+    }
+
+    SdfPathExpression GetTypedValue(Time shutterOffset) override
+    {
+        if (!_inputDataSource) {
+            return SdfPathExpression();
+        }
+
+        SdfPathExpression result =
+            _inputDataSource->GetTypedValue(shutterOffset);
+
+        return result.ReplacePrefix(
+            SdfPath::AbsoluteRootPath(),
+            _si.AddPrefix(SdfPath::AbsoluteRootPath()));
+    }
+
+private:
+
+    const HdPrefixingSceneIndex &_si;
+    const HdPathExpressionDataSourceHandle _inputDataSource;
+};
+
+// ----------------------------------------------------------------------------
+
 HdDataSourceBaseHandle
 Hd_PrefixingSceneIndexCreateDataSource(
     const HdPrefixingSceneIndex &si,
@@ -226,6 +279,12 @@ Hd_PrefixingSceneIndexCreateDataSource(
             HdTypedSampledDataSource<VtArray<SdfPath>>::Cast(inputDataSource)) {
         return Hd_PrefixingSceneIndexPathArrayDataSource::New(
             si, pathArrayDataSource);
+    }
+
+    if (auto pathExpressionDataSource =
+            HdPathExpressionDataSource::Cast(inputDataSource)) {
+        return Hd_PrefixingSceneIndexPathExpressionDataSource::New(
+            si, pathExpressionDataSource);
     }
 
     return inputDataSource;
