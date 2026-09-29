@@ -5,7 +5,7 @@
 // https://openusd.org/license.
 //
 
-#include "pxr/imaging/glf/testGLContext.h"
+#include "pxr/imaging/garch/glDebugWindow.h"
 #include "pxr/base/gf/frustum.h"
 
 #include "pxr/imaging/hd/driver.h"
@@ -46,9 +46,8 @@ int main(int argc, char *argv[])
     HdPerfLog& perfLog = HdPerfLog::GetInstance();
     perfLog.Enable();
 
-    // prepare GL context
-    GlfTestGLContext::RegisterGLContextCallbacks();
-    GlfSharedGLContextScopeHolder sharedContext;
+    GarchGLDebugWindow window("Hd Test", 512, 512);
+    window.Init();
 
     // Hgi and HdDriver should be constructed before HdEngine to ensure they
     // are destructed last. Hgi may be used during engine/delegate destruction.

@@ -5,8 +5,7 @@
 // https://openusd.org/license.
 //
 
-#include "pxr/imaging/glf/glContext.h"
-#include "pxr/imaging/glf/testGLContext.h"
+#include "pxr/imaging/garch/glDebugWindow.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/driver.h"
@@ -141,8 +140,8 @@ int main()
 {
     TfErrorMark mark;
 
-    GlfTestGLContext::RegisterGLContextCallbacks();
-    GlfSharedGLContextScopeHolder sharedContext;
+    GarchGLDebugWindow window("Hd Test", 512, 512);
+    window.Init();
 
     CameraAndLightTest();
 
