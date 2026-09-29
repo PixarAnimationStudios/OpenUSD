@@ -15,17 +15,16 @@ def Xform "Set" (
     uniform string authorship:worldgen:created = "2025-02-16T12:03:17+01:00"
 
     def Mesh "Bunny" (
-        prepend apiSchemas = ["AuthorshipAPI:hunyuan3d", "AuthorshipAPI:blender"]
+        prepend apiSchemas = ["AuthorshipAPI:mymodel", "AuthorshipAPI:blender"]
     )
     {
-        uniform string authorship:hunyuan3d:softwarePackage = "net.trellis3d.hunyuan3d"
-        uniform string authorship:hunyuan3d:softwareVersion = "2.1"
-        uniform string authorship:hunyuan3d:digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"
-        uniform string[] authorship:hunyuan3d:creator = ["Trellis Hunyuan 3D", "John Doe"]
-        uniform string[] authorship:hunyuan3d:inputNames = ["prompt", "image", "seed"]
-        uniform string[] authorship:hunyuan3d:inputValues = ["A fluffy bunny", "./refs/bunny_front.png", "1234567"]
-        uniform string authorship:hunyuan3d:instanceID = "6530a534-ca8f-487c-8968-0fecd8e717a6"
-        uniform string authorship:hunyuan3d:usageTerms = "CC-BY-SA-4.0"
+        uniform string authorship:mymodel:softwarePackage = "com.example.mymodel"
+        uniform string authorship:mymodel:softwareVersion = "2.1"
+        uniform string authorship:mymodel:digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"
+        uniform string[] authorship:mymodel:creator = ["My Model", "John Doe"]
+        uniform string[] authorship:mymodel:inputs = ["prompt", "A fluffy bunny", "image", "./refs/bunny_front.png", "seed", "1234567"]
+        uniform string authorship:mymodel:instanceID = "6530a534-ca8f-487c-8968-0fecd8e717a6"
+        uniform string authorship:mymodel:usageTerms = "CC-BY-SA-4.0"
 
         uniform string authorship:blender:softwarePackage = "org.blender"
         uniform string authorship:blender:softwareVersion = "4.2"
@@ -63,13 +62,11 @@ def Mesh "Malformed" (
     prepend apiSchemas = ["AuthorshipAPI:brokentool"]
 )
 {
-    # inputNames and inputValues must be index-matched. They are
-    # not here, so the record should be reported as malformed rather than
-    # mispaired.
+    # inputs must be (name, value) pairs. This has an odd length, so the record
+    # should be reported as malformed rather than mispaired.
     uniform string authorship:brokentool:softwarePackage = "com.example.brokentool"
     uniform string authorship:brokentool:softwareVersion = "0.1"
-    uniform string[] authorship:brokentool:inputNames = ["prompt", "seed"]
-    uniform string[] authorship:brokentool:inputValues = ["A fluffy bunny"]
+    uniform string[] authorship:brokentool:inputs = ["prompt", "A fluffy bunny", "seed"]
 }
 
 def Mesh "OlderBlender" (

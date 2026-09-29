@@ -21,59 +21,58 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         prim = UsdGeom.Mesh.Define(stage, '/World/Bunny').GetPrim()
 
         # Not applied yet.
-        self.assertFalse(UsdMedia.AuthorshipAPI(prim, 'hunyuan3d'))
-        self.assertFalse(prim.HasAPI(UsdMedia.AuthorshipAPI, 'hunyuan3d'))
+        self.assertFalse(UsdMedia.AuthorshipAPI(prim, 'mymodel'))
+        self.assertFalse(prim.HasAPI(UsdMedia.AuthorshipAPI, 'mymodel'))
 
-        api = UsdMedia.AuthorshipAPI.Apply(prim, 'hunyuan3d')
+        api = UsdMedia.AuthorshipAPI.Apply(prim, 'mymodel')
         self.assertTrue(api)
-        self.assertEqual(api.GetName(), 'hunyuan3d')
-        self.assertTrue(prim.HasAPI(UsdMedia.AuthorshipAPI, 'hunyuan3d'))
-        self.assertEqual(prim.GetAppliedSchemas(), ['AuthorshipAPI:hunyuan3d'])
+        self.assertEqual(api.GetName(), 'mymodel')
+        self.assertTrue(prim.HasAPI(UsdMedia.AuthorshipAPI, 'mymodel'))
+        self.assertEqual(prim.GetAppliedSchemas(), ['AuthorshipAPI:mymodel'])
 
     def test_PropertyNamespacing(self):
         """Property names are the interop contract."""
         stage = Usd.Stage.CreateInMemory()
         prim = UsdGeom.Mesh.Define(stage, '/World/Bunny').GetPrim()
-        api = UsdMedia.AuthorshipAPI.Apply(prim, 'hunyuan3d')
+        api = UsdMedia.AuthorshipAPI.Apply(prim, 'mymodel')
 
-        api.CreateSoftwarePackageAttr('net.trellis3d.hunyuan3d')
+        api.CreateSoftwarePackageAttr('com.example.mymodel')
         self.assertEqual(api.GetSoftwarePackageAttr().GetName(),
-                         'authorship:hunyuan3d:softwarePackage')
+                         'authorship:mymodel:softwarePackage')
 
         expected = set([
-            'authorship:hunyuan3d:softwarePackage',
-            'authorship:hunyuan3d:softwareVersion',
-            'authorship:hunyuan3d:digitalSourceType',
-            'authorship:hunyuan3d:creator',
-            'authorship:hunyuan3d:description',
-            'authorship:hunyuan3d:inputNames',
-            'authorship:hunyuan3d:inputValues',
-            'authorship:hunyuan3d:created',
-            'authorship:hunyuan3d:instanceID',
-            'authorship:hunyuan3d:usageTerms',
-            'authorship:hunyuan3d:copyrightOwner',
-            'authorship:hunyuan3d:contact',
+            'authorship:mymodel:softwarePackage',
+            'authorship:mymodel:softwareVersion',
+            'authorship:mymodel:digitalSourceType',
+            'authorship:mymodel:creator',
+            'authorship:mymodel:description',
+            'authorship:mymodel:inputs',
+            'authorship:mymodel:created',
+            'authorship:mymodel:instanceID',
+            'authorship:mymodel:usageTerms',
+            'authorship:mymodel:copyrightOwner',
+            'authorship:mymodel:contact',
         ])
         self.assertEqual(
             set(UsdMedia.AuthorshipAPI.GetSchemaAttributeNames(
-                False, 'hunyuan3d')),
+                False, 'mymodel')),
             expected)
 
     def test_RoundTripAllFields(self):
         stage = Usd.Stage.CreateInMemory()
         prim = UsdGeom.Mesh.Define(stage, '/World/Bunny').GetPrim()
-        api = UsdMedia.AuthorshipAPI.Apply(prim, 'hunyuan3d')
+        api = UsdMedia.AuthorshipAPI.Apply(prim, 'mymodel')
 
-        api.CreateSoftwarePackageAttr('net.trellis3d.hunyuan3d')
+        api.CreateSoftwarePackageAttr('com.example.mymodel')
         api.CreateSoftwareVersionAttr('2.1')
         api.CreateDigitalSourceTypeAttr(
             'http://cv.iptc.org/newscodes/digitalsourcetype/'
             'trainedAlgorithmicMedia')
-        api.CreateCreatorAttr(['Trellis Hunyuan 3D', 'John Doe'])
+        api.CreateCreatorAttr(['My Model', 'John Doe'])
         api.CreateDescriptionAttr('Generated, then decimated.')
-        api.CreateInputNamesAttr(['prompt', 'image', 'seed'])
-        api.CreateInputValuesAttr(
-            ['A fluffy bunny', './refs/bunny_front.png', '1234567'])
+        api.CreateInputsAttr(['prompt', 'A fluffy bunny',
+                              'image', './refs/bunny_front.png',
+                              'seed', '1234567'])
         api.CreateCreatedAttr('2025-02-16T12:03:17+01:00')
         api.CreateInstanceIDAttr('6530a534-ca8f-487c-8968-0fecd8e717a6')
         api.CreateUsageTermsAttr('CC-BY-SA-4.0')
@@ -81,21 +80,22 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         api.CreateContactAttr(['johndoe@sample.com'])
 
         self.assertEqual(api.GetSoftwarePackageAttr().Get(),
-                         'net.trellis3d.hunyuan3d')
+                         'com.example.mymodel')
         self.assertEqual(api.GetSoftwareVersionAttr().Get(), '2.1')
         self.assertEqual(
             api.GetDigitalSourceTypeAttr().Get(),
             'http://cv.iptc.org/newscodes/digitalsourcetype/'
             'trainedAlgorithmicMedia')
         self.assertEqual(list(api.GetCreatorAttr().Get()),
-                         ['Trellis Hunyuan 3D', 'John Doe'])
+                         ['My Model', 'John Doe'])
         self.assertEqual(api.GetDescriptionAttr().Get(),
                          'Generated, then decimated.')
-        self.assertEqual(list(api.GetInputNamesAttr().Get()),
-                         ['prompt', 'image', 'seed'])
-        self.assertEqual(list(api.GetInputValuesAttr().Get()),
-                         ['A fluffy bunny', './refs/bunny_front.png',
-                          '1234567'])
+        self.assertEqual(list(api.GetInputsAttr().Get()),
+                         ['prompt', 'A fluffy bunny',
+                          'image', './refs/bunny_front.png',
+                          'seed', '1234567'])
+        # Flattened (name, value) pairs.
+        self.assertEqual(api.GetInputsAttr().GetArraySizeConstraint(), -2)
         self.assertEqual(api.GetCreatedAttr().Get(),
                          '2025-02-16T12:03:17+01:00')
         self.assertEqual(api.GetInstanceIDAttr().Get(),
@@ -118,16 +118,16 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
         stage = Usd.Stage.CreateInMemory()
         prim = UsdGeom.Mesh.Define(stage, '/World/Bunny').GetPrim()
 
-        ai = UsdMedia.AuthorshipAPI.Apply(prim, 'hunyuan3d')
-        ai.CreateSoftwarePackageAttr('net.trellis3d.hunyuan3d')
+        ai = UsdMedia.AuthorshipAPI.Apply(prim, 'mymodel')
+        ai.CreateSoftwarePackageAttr('com.example.mymodel')
         human = UsdMedia.AuthorshipAPI.Apply(prim, 'blender')
         human.CreateSoftwarePackageAttr('org.blender')
 
-        self.assertEqual(ai.GetSoftwarePackageAttr().Get(), 'net.trellis3d.hunyuan3d')
+        self.assertEqual(ai.GetSoftwarePackageAttr().Get(), 'com.example.mymodel')
         self.assertEqual(human.GetSoftwarePackageAttr().Get(), 'org.blender')
         self.assertEqual(
             sorted(r.GetName() for r in UsdMedia.AuthorshipAPI.GetAll(prim)),
-            ['blender', 'hunyuan3d'])
+            ['blender', 'mymodel'])
 
     def test_RecordsComposeFromSeparateLayers(self):
         strong = Sdf.Layer.CreateAnonymous('strong.usda')
@@ -135,8 +135,8 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
 
         weakStage = Usd.Stage.Open(weak)
         weakPrim = weakStage.DefinePrim('/Bunny', 'Mesh')
-        UsdMedia.AuthorshipAPI.Apply(weakPrim, 'hunyuan3d') \
-            .CreateSoftwarePackageAttr('net.trellis3d.hunyuan3d')
+        UsdMedia.AuthorshipAPI.Apply(weakPrim, 'mymodel') \
+            .CreateSoftwarePackageAttr('com.example.mymodel')
 
         strong.subLayerPaths.append(weak.identifier)
         stage = Usd.Stage.Open(strong)
@@ -146,10 +146,10 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
 
         self.assertEqual(
             sorted(r.GetName() for r in UsdMedia.AuthorshipAPI.GetAll(prim)),
-            ['blender', 'hunyuan3d'])
+            ['blender', 'mymodel'])
         self.assertEqual(
-            UsdMedia.AuthorshipAPI(prim, 'hunyuan3d').GetSoftwarePackageAttr().Get(),
-            'net.trellis3d.hunyuan3d')
+            UsdMedia.AuthorshipAPI(prim, 'mymodel').GetSoftwarePackageAttr().Get(),
+            'com.example.mymodel')
 
     def test_GetAllOnStageSorted(self):
         stage = Usd.Stage.CreateInMemory()
@@ -253,8 +253,8 @@ class TestUsdMediaAuthorshipAPI(unittest.TestCase):
     def test_SingleApplicationIsNotDuplicate(self):
         stage = Usd.Stage.CreateInMemory()
         prim = stage.DefinePrim('/World/Bunny', 'Mesh')
-        UsdMedia.AuthorshipAPI.Apply(prim, 'hunyuan3d') \
-            .CreateSoftwarePackageAttr('net.trellis3d.hunyuan3d')
+        UsdMedia.AuthorshipAPI.Apply(prim, 'mymodel') \
+            .CreateSoftwarePackageAttr('com.example.mymodel')
 
         self.assertEqual(UsdMedia.AuthorshipAPI.GetDuplicates(prim), [])
         self.assertEqual(UsdMedia.AuthorshipAPI.GetShadowed(prim), [])

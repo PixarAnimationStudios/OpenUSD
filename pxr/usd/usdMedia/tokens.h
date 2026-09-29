@@ -77,14 +77,10 @@ struct UsdMediaTokensType {
     /// 
     /// UsdMediaAuthorshipAPI
     const TfToken authorship_MultipleApplyTemplate_DigitalSourceType;
-    /// \brief "authorship:__INSTANCE_NAME__:inputNames"
+    /// \brief "authorship:__INSTANCE_NAME__:inputs"
     /// 
     /// UsdMediaAuthorshipAPI
-    const TfToken authorship_MultipleApplyTemplate_InputNames;
-    /// \brief "authorship:__INSTANCE_NAME__:inputValues"
-    /// 
-    /// UsdMediaAuthorshipAPI
-    const TfToken authorship_MultipleApplyTemplate_InputValues;
+    const TfToken authorship_MultipleApplyTemplate_Inputs;
     /// \brief "authorship:__INSTANCE_NAME__:instanceID"
     /// 
     /// UsdMediaAuthorshipAPI

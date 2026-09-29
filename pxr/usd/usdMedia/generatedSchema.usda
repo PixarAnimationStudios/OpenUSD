@@ -135,16 +135,11 @@ class "AuthorshipAPI" (
         as whether the content is human-made or AI-generated."""
         }
     )
-    uniform string[] authorship:__INSTANCE_NAME__:inputNames (
+    uniform string[] authorship:__INSTANCE_NAME__:inputs (
+        arraySizeConstraint = -2
         customData = {
-            string userDocBrief = """Names of the inputs that shaped this authoring step, e.g.,
-        `prompt`, `seed`, `guidance`, or `referenceImage`."""
-        }
-    )
-    uniform string[] authorship:__INSTANCE_NAME__:inputValues (
-        customData = {
-            string userDocBrief = """Values for the inputs named in `inputNames`,
-        matched by index."""
+            string userDocBrief = """The inputs that shaped this authoring step, as flattened
+        (name, value) pairs."""
         }
     )
     uniform string authorship:__INSTANCE_NAME__:instanceID (

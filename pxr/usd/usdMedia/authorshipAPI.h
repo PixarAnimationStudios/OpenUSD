@@ -230,7 +230,7 @@ public:
     /// script, the softwarePackage would be `OpenUSD`.
     /// 
     /// Reverse domain notation is recommended (e.g.,
-    /// `net.trellis3d.hunyuan3d`) to minimize name conflicts. Values are
+    /// `com.example.mymodel`) to minimize name conflicts. Values are
     /// unvalidated and compared case-insensitively.
     ///
     /// | ||
@@ -336,8 +336,7 @@ public:
     // --------------------------------------------------------------------- //
     /// Free-form description of how the prim was created. Better
     /// suited to technique notes, reference material, or history. For
-    /// specific, itemized inputs, prefer `inputNames` and `inputValues`
-    /// instead.
+    /// specific, itemized inputs, prefer `inputs` instead.
     ///
     /// | ||
     /// | -- | -- |
@@ -358,60 +357,35 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
-    // INPUTNAMES 
+    // INPUTS 
     // --------------------------------------------------------------------- //
-    /// Names of the inputs that shaped this authoring step, e.g.,
-    /// `prompt`, `seed`, `guidance`, or `referenceImage`. Not specific to
-    /// generative AI; a human authoring step can record its reference
-    /// art, schematics, or design specs the same way.
+    /// The inputs that shaped this authoring step, as flattened
+    /// (name, value) pairs. For example, `["prompt", "A fluffy bunny",
+    /// "seed", "1234567"]`. Not specific to generative AI; a human
+    /// authoring step can record its reference art, schematics, or design
+    /// specs the same way.
     /// 
-    /// Must be index-matched with `inputValues` and authored in the same
-    /// layer to ensure composition aligns them correctly. Length
-    /// mismatches invalidate the record; readers should not attempt to
-    /// guess the pairing.
+    /// The array length must be a multiple of 2; an odd length makes the
+    /// record malformed. Values are plain strings rather than `asset`
+    /// paths so that reference images or local files aren't resolved or
+    /// packaged with the asset.
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `uniform string[] inputNames` |
+    /// | Declaration | `uniform string[] inputs` |
     /// | C++ Type | VtArray<std::string> |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->StringArray |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDMEDIA_API
-    UsdAttribute GetInputNamesAttr() const;
+    UsdAttribute GetInputsAttr() const;
 
-    /// See GetInputNamesAttr(), and also 
+    /// See GetInputsAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDMEDIA_API
-    UsdAttribute CreateInputNamesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // INPUTVALUES 
-    // --------------------------------------------------------------------- //
-    /// Values for the inputs named in `inputNames`,
-    /// matched by index. Authored as plain strings rather than `asset`
-    /// paths to prevent reference images or local files from being
-    /// resolved or packaged with the asset.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `uniform string[] inputValues` |
-    /// | C++ Type | VtArray<std::string> |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->StringArray |
-    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    USDMEDIA_API
-    UsdAttribute GetInputValuesAttr() const;
-
-    /// See GetInputValuesAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDMEDIA_API
-    UsdAttribute CreateInputValuesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateInputsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

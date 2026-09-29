@@ -19,10 +19,10 @@ instance name and lives in its own property namespace:
 
 Example, recording a generative step driven by an artist:
 
-    usdApplyAuthorship scene.usda --prim /World/Bunny --instance hunyuan3d \\
-        --software-package net.trellis3d.hunyuan3d --software-version 2.1 \\
+    usdApplyAuthorship scene.usda --prim /World/Bunny --instance mymodel \\
+        --software-package com.example.mymodel --software-version 2.1 \\
         --digital-source-type trainedAlgorithmicMedia \\
-        --creator "Trellis Hunyuan 3D" --creator "John Doe" \\
+        --creator "My Model" --creator "John Doe" \\
         --input prompt="A fluffy bunny" --input image=./refs/bunny.png \\
         --usage-terms CC-BY-SA-4.0
 
@@ -70,8 +70,8 @@ def ResolveDigitalSourceType(value):
 def ParseInput(text):
     """Parses a --input name=value pair, splitting on the first '=' only.
 
-    Values are stored in the index-matched inputNames and
-    inputValues arrays, not as 'name=value' strings.
+    Pairs are stored flattened in the inputs array, not as 'name=value'
+    strings.
     """
     name, separator, value = text.partition('=')
     if not separator or not name:
@@ -109,7 +109,7 @@ def GetArgs():
                              'each other.')
     record.add_argument('--software-package', default=None,
                         help='Identifier for the tool or system that wrote the '
-                             'data, e.g. net.trellis3d.hunyuan3d. Reverse '
+                             'data, e.g. com.example.mymodel. Reverse '
                              'domain style is recommended but not required.')
     record.add_argument('--software-version', default=None,
                         help='Version of the softwarePackage, e.g. 2.1.')
@@ -126,8 +126,8 @@ def GetArgs():
                         type=ParseInput, metavar='NAME=VALUE',
                         help='An input that shaped this step, e.g. '
                              'prompt="A fluffy bunny" or seed=1234567. '
-                             'Repeatable. Stored as index-matched '
-                             'inputNames and inputValues arrays.')
+                             'Repeatable. Stored as flattened (name, value) '
+                             'pairs in the inputs array.')
     record.add_argument('--usage-terms', default=None,
                         help='License or usage terms. An SPDX identifier such '
                              'as CC-BY-SA-4.0 is preferred, else a URL, else '
@@ -210,9 +210,7 @@ def ApplyRecord(prim, args, created, instanceId):
     if args.description:
         api.CreateDescriptionAttr(args.description)
     if args.input:
-        # Index-matched, so always authored together and in the same layer.
-        api.CreateInputNamesAttr([name for name, _ in args.input])
-        api.CreateInputValuesAttr([value for _, value in args.input])
+        api.CreateInputsAttr([item for pair in args.input for item in pair])
     if created:
         api.CreateCreatedAttr(created)
     if instanceId:

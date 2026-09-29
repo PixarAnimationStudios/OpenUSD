@@ -79,9 +79,7 @@ UsdMediaAuthorshipAPI::IsSchemaPropertyBaseName(const TfToken &baseName)
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
             UsdMediaTokens->authorship_MultipleApplyTemplate_Description),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
-            UsdMediaTokens->authorship_MultipleApplyTemplate_InputNames),
-        UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
-            UsdMediaTokens->authorship_MultipleApplyTemplate_InputValues),
+            UsdMediaTokens->authorship_MultipleApplyTemplate_Inputs),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
             UsdMediaTokens->authorship_MultipleApplyTemplate_Created),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
@@ -301,44 +299,21 @@ UsdMediaAuthorshipAPI::CreateDescriptionAttr(VtValue const &defaultValue, bool w
 }
 
 UsdAttribute
-UsdMediaAuthorshipAPI::GetInputNamesAttr() const
+UsdMediaAuthorshipAPI::GetInputsAttr() const
 {
     return GetPrim().GetAttribute(
         _GetNamespacedPropertyName(
             GetName(),
-            UsdMediaTokens->authorship_MultipleApplyTemplate_InputNames));
+            UsdMediaTokens->authorship_MultipleApplyTemplate_Inputs));
 }
 
 UsdAttribute
-UsdMediaAuthorshipAPI::CreateInputNamesAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdMediaAuthorshipAPI::CreateInputsAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
     return UsdSchemaBase::_CreateAttr(
                        _GetNamespacedPropertyName(
                             GetName(),
-                           UsdMediaTokens->authorship_MultipleApplyTemplate_InputNames),
-                       SdfValueTypeNames->StringArray,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
-}
-
-UsdAttribute
-UsdMediaAuthorshipAPI::GetInputValuesAttr() const
-{
-    return GetPrim().GetAttribute(
-        _GetNamespacedPropertyName(
-            GetName(),
-            UsdMediaTokens->authorship_MultipleApplyTemplate_InputValues));
-}
-
-UsdAttribute
-UsdMediaAuthorshipAPI::CreateInputValuesAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(
-                       _GetNamespacedPropertyName(
-                            GetName(),
-                           UsdMediaTokens->authorship_MultipleApplyTemplate_InputValues),
+                           UsdMediaTokens->authorship_MultipleApplyTemplate_Inputs),
                        SdfValueTypeNames->StringArray,
                        /* custom = */ false,
                        SdfVariabilityUniform,
@@ -483,8 +458,7 @@ UsdMediaAuthorshipAPI::GetSchemaAttributeNames(bool includeInherited)
         UsdMediaTokens->authorship_MultipleApplyTemplate_DigitalSourceType,
         UsdMediaTokens->authorship_MultipleApplyTemplate_Creator,
         UsdMediaTokens->authorship_MultipleApplyTemplate_Description,
-        UsdMediaTokens->authorship_MultipleApplyTemplate_InputNames,
-        UsdMediaTokens->authorship_MultipleApplyTemplate_InputValues,
+        UsdMediaTokens->authorship_MultipleApplyTemplate_Inputs,
         UsdMediaTokens->authorship_MultipleApplyTemplate_Created,
         UsdMediaTokens->authorship_MultipleApplyTemplate_InstanceID,
         UsdMediaTokens->authorship_MultipleApplyTemplate_UsageTerms,
@@ -555,7 +529,7 @@ _GetSchemaIdentifier()
     return identifier;
 }
 
-// Instance name from e.g. "AuthorshipAPI:hunyuan3d", or empty if not this
+// Instance name from e.g. "AuthorshipAPI:mymodel", or empty if not this
 // schema.
 static TfToken
 _GetInstanceNameFromAPISchemaName(const TfToken &apiSchemaName)

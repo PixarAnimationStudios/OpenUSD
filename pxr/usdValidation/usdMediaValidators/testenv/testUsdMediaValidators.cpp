@@ -71,7 +71,7 @@ TestShadowedOrDuplicateCleanPrim()
 
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     UsdPrim prim = stage->DefinePrim(SdfPath("/Bunny"));
-    UsdMediaAuthorshipAPI::Apply(prim, TfToken("hunyuan3d"));
+    UsdMediaAuthorshipAPI::Apply(prim, TfToken("mymodel"));
 
     TF_AXIOM(validator->Validate(prim).empty());
 }
@@ -139,69 +139,34 @@ TestInputsPaired()
 {
     const UsdValidationValidator *validator = _GetValidator(
         UsdMediaValidatorNameTokens->authorshipInputsPaired);
-    const TfToken &name = UsdMediaValidatorNameTokens->authorshipInputsPaired;
 
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     UsdPrim prim = stage->DefinePrim(SdfPath("/Bunny"));
     UsdMediaAuthorshipAPI record =
         UsdMediaAuthorshipAPI::Apply(prim, TfToken("gen"));
 
-    // Neither authored.
+    // The schema declares (name, value) pairs.
+    TF_AXIOM(record.GetInputsAttr().GetArraySizeConstraint() == -2);
+
+    // Unauthored.
     TF_AXIOM(validator->Validate(prim).empty());
 
-    // Names without values.
-    record.CreateInputNamesAttr(VtValue(VtStringArray({"prompt", "seed"})));
+    // Odd length.
+    record.CreateInputsAttr(
+        VtValue(VtStringArray({"prompt", "A fluffy bunny", "seed"})));
     {
         const UsdValidationErrorVector errors = validator->Validate(prim);
         TF_AXIOM(errors.size() == 1u);
-        TF_AXIOM(errors[0].GetIdentifier() == _ErrorId(name,
+        TF_AXIOM(errors[0].GetIdentifier() == _ErrorId(
+            UsdMediaValidatorNameTokens->authorshipInputsPaired,
             UsdMediaValidationErrorNameTokens->unpairedAuthorshipInputs));
         TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
     }
 
-    // Mismatched lengths.
-    record.CreateInputValuesAttr(VtValue(VtStringArray({"A fluffy bunny"})));
-    {
-        const UsdValidationErrorVector errors = validator->Validate(prim);
-        TF_AXIOM(errors.size() == 1u);
-        TF_AXIOM(errors[0].GetIdentifier() == _ErrorId(name,
-            UsdMediaValidationErrorNameTokens->mismatchedAuthorshipInputs));
-    }
-
-    // Matched, in the same spec.
-    record.GetInputValuesAttr().Set(
-        VtStringArray({"A fluffy bunny", "1234"}));
+    // Complete pairs.
+    record.GetInputsAttr().Set(
+        VtStringArray({"prompt", "A fluffy bunny", "seed", "1234"}));
     TF_AXIOM(validator->Validate(prim).empty());
-}
-
-// Matching lengths resolved from different layers can still be misaligned.
-void
-TestInputsFromDifferentLayers()
-{
-    const UsdValidationValidator *validator = _GetValidator(
-        UsdMediaValidatorNameTokens->authorshipInputsPaired);
-
-    SdfLayerRefPtr weak = SdfLayer::CreateAnonymous("weak.usda");
-    UsdStageRefPtr weakStage = UsdStage::Open(weak);
-    UsdMediaAuthorshipAPI weakRecord = UsdMediaAuthorshipAPI::Apply(
-        weakStage->DefinePrim(SdfPath("/Bunny")), TfToken("gen"));
-    weakRecord.CreateInputNamesAttr(VtValue(VtStringArray({"prompt"})));
-    weakRecord.CreateInputValuesAttr(VtValue(VtStringArray({"a bunny"})));
-
-    SdfLayerRefPtr strong = SdfLayer::CreateAnonymous("strong.usda");
-    strong->InsertSubLayerPath(weak->GetIdentifier());
-    UsdStageRefPtr stage = UsdStage::Open(strong);
-    UsdPrim prim = stage->GetPrimAtPath(SdfPath("/Bunny"));
-    UsdMediaAuthorshipAPI(prim, TfToken("gen"))
-        .CreateInputNamesAttr(VtValue(VtStringArray({"seed"})));
-
-    const UsdValidationErrorVector errors = validator->Validate(prim);
-    TF_AXIOM(errors.size() == 1u);
-    TF_AXIOM(errors[0].GetIdentifier() == _ErrorId(
-        UsdMediaValidatorNameTokens->authorshipInputsPaired,
-        UsdMediaValidationErrorNameTokens
-            ->authorshipInputsFromDifferentSpecs));
-    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Warn);
 }
 
 int
@@ -212,7 +177,6 @@ main()
     TestShadowedApplicationIsFlagged();
     TestDuplicateApplicationIsFlagged();
     TestInputsPaired();
-    TestInputsFromDifferentLayers();
 
     return EXIT_SUCCESS;
 }

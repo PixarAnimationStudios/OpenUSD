@@ -110,33 +110,23 @@ GetStringArray(const UsdAttribute &attr)
     return array;
 }
 
-// Pairs the index-matched names and values. A length mismatch means the
-// record is malformed, so say so rather than mispairing.
+// Pairs up the flattened (name, value) inputs. An odd length means the record
+// is malformed, so say so rather than mispairing.
 std::string
-GetDisplayInputs(const VtArray<std::string> &names,
-                 const VtArray<std::string> &values)
+GetDisplayInputs(const VtArray<std::string> &inputs)
 {
-    if (names.size() != values.size()) {
+    if (inputs.size() % 2 != 0) {
         return TfStringPrintf(
-            "(malformed: %zu name(s) but %zu value(s)) names=%s values=%s",
-            names.size(), values.size(),
-            GetDisplayValue(VtValue(names)).c_str(),
-            GetDisplayValue(VtValue(values)).c_str());
+            "(malformed: %zu element(s), expected (name, value) pairs) %s",
+            inputs.size(), GetDisplayValue(VtValue(inputs)).c_str());
     }
 
     std::vector<std::string> pairs;
-    pairs.reserve(names.size());
-    for (size_t i = 0; i < names.size(); ++i) {
-        pairs.push_back(names[i] + "=\"" + values[i] + "\"");
+    pairs.reserve(inputs.size() / 2);
+    for (size_t i = 0; i < inputs.size(); i += 2) {
+        pairs.push_back(inputs[i] + "=\"" + inputs[i + 1] + "\"");
     }
     return TfStringJoin(pairs, ", ");
-}
-
-std::string
-GetDisplayInputs(const UsdMediaAuthorshipAPI &record)
-{
-    return GetDisplayInputs(GetStringArray(record.GetInputNamesAttr()),
-                            GetStringArray(record.GetInputValuesAttr()));
 }
 
 // The authored fields of one record. Read generically from the property
@@ -165,22 +155,16 @@ GetAuthoredFields(const UsdMediaAuthorshipAPI &record)
             continue;
         }
 
-        // The two input arrays are reported together, below.
-        if (baseName == "inputNames" ||
-                baseName == "inputValues") {
+        if (!attr.HasAuthoredValue()) {
             continue;
         }
 
-        const std::string value = GetDisplayValue(attr);
-        if (value.empty()) {
-            continue;
+        if (baseName == "inputs") {
+            fields.emplace_back(baseName.GetString(),
+                                GetDisplayInputs(GetStringArray(attr)));
+        } else {
+            fields.emplace_back(baseName.GetString(), GetDisplayValue(attr));
         }
-        fields.emplace_back(baseName.GetString(), value);
-    }
-
-    if (record.GetInputNamesAttr().HasAuthoredValue() ||
-            record.GetInputValuesAttr().HasAuthoredValue()) {
-        fields.emplace_back("inputs", GetDisplayInputs(record));
     }
 
     std::sort(fields.begin(), fields.end());
@@ -310,7 +294,6 @@ GetAuthoredFieldsInLayer(const SdfLayerHandle &layer,
                          const TfToken &instanceName)
 {
     std::vector<std::pair<std::string, std::string>> fields;
-    VtArray<std::string> inputNames, inputValues;
 
     for (const TfToken &propertyName :
             UsdMediaAuthorshipAPI::GetSchemaAttributeNames(false,
@@ -328,22 +311,12 @@ GetAuthoredFieldsInLayer(const SdfLayerHandle &layer,
                 SdfPath::JoinIdentifier(
                     UsdMediaTokens->authorship, instanceName)).first;
 
-        if (baseName == "inputNames") {
-            if (value.IsHolding<VtArray<std::string>>()) {
-                inputNames = value.UncheckedGet<VtArray<std::string>>();
-            }
-        } else if (baseName == "inputValues") {
-            if (value.IsHolding<VtArray<std::string>>()) {
-                inputValues = value.UncheckedGet<VtArray<std::string>>();
-            }
+        if (baseName == "inputs" && value.IsHolding<VtArray<std::string>>()) {
+            fields.emplace_back(baseName, GetDisplayInputs(
+                value.UncheckedGet<VtArray<std::string>>()));
         } else {
             fields.emplace_back(baseName, GetDisplayValue(value));
         }
-    }
-
-    if (!inputNames.empty() || !inputValues.empty()) {
-        fields.emplace_back("inputs",
-                            GetDisplayInputs(inputNames, inputValues));
     }
 
     std::sort(fields.begin(), fields.end());

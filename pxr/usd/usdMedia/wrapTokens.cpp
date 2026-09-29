@@ -25,8 +25,7 @@ void wrapUsdMediaTokens()
     _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_Creator);
     _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_Description);
     _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_DigitalSourceType);
-    _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_InputNames);
-    _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_InputValues);
+    _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_Inputs);
     _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_InstanceID);
     _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_SoftwarePackage);
     _ADD_TOKEN(cls, authorship_MultipleApplyTemplate_SoftwareVersion);

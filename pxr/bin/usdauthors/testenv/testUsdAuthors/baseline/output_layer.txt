@@ -1,6 +1,6 @@
 /Malformed
   brokentool
-      inputs          = (malformed: 2 name(s) but 1 value(s)) names=["prompt", "seed"] values=["A fluffy bunny"]
+      inputs          = (malformed: 3 element(s), expected (name, value) pairs) ["prompt", "A fluffy bunny", "seed"]
       softwarePackage = "com.example.brokentool"
       softwareVersion = "0.1"
 
@@ -32,12 +32,12 @@
       digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/digitalCreation"
       softwarePackage   = "org.blender"
       softwareVersion   = "4.2"
-  hunyuan3d
-      creator           = ["Trellis Hunyuan 3D", "John Doe"]
+  mymodel
+      creator           = ["My Model", "John Doe"]
       digitalSourceType = "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"
       inputs            = prompt="A fluffy bunny", image="./refs/bunny_front.png", seed="1234567"
       instanceID        = "6530a534-ca8f-487c-8968-0fecd8e717a6"
-      softwarePackage   = "net.trellis3d.hunyuan3d"
+      softwarePackage   = "com.example.mymodel"
       softwareVersion   = "2.1"
       usageTerms        = "CC-BY-SA-4.0"
 

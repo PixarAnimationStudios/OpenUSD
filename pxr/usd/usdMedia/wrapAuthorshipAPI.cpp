@@ -69,16 +69,9 @@ _CreateDescriptionAttr(UsdMediaAuthorshipAPI &self,
 }
         
 static UsdAttribute
-_CreateInputNamesAttr(UsdMediaAuthorshipAPI &self,
+_CreateInputsAttr(UsdMediaAuthorshipAPI &self,
                                       object defaultVal, bool writeSparsely) {
-    return self.CreateInputNamesAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->StringArray), writeSparsely);
-}
-        
-static UsdAttribute
-_CreateInputValuesAttr(UsdMediaAuthorshipAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateInputValuesAttr(
+    return self.CreateInputsAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->StringArray), writeSparsely);
 }
         
@@ -244,17 +237,10 @@ void wrapUsdMediaAuthorshipAPI()
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
-        .def("GetInputNamesAttr",
-             &This::GetInputNamesAttr)
-        .def("CreateInputNamesAttr",
-             &_CreateInputNamesAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetInputValuesAttr",
-             &This::GetInputValuesAttr)
-        .def("CreateInputValuesAttr",
-             &_CreateInputValuesAttr,
+        .def("GetInputsAttr",
+             &This::GetInputsAttr)
+        .def("CreateInputsAttr",
+             &_CreateInputsAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         

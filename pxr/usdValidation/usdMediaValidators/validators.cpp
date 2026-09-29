@@ -7,9 +7,7 @@
 
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
-#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
-#include "pxr/usd/sdf/propertySpec.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usdMedia/authorshipAPI.h"
@@ -58,18 +56,8 @@ _ShadowedOrDuplicateAuthorshipValidator(
     return errors;
 }
 
-// The strongest spec providing a value for \p attr, or null.
-static SdfPropertySpecHandle
-_GetStrongestValueSpec(const UsdAttribute &attr)
-{
-    for (const SdfPropertySpecHandle &spec : attr.GetPropertyStack()) {
-        if (spec && spec->HasDefaultValue()) {
-            return spec;
-        }
-    }
-    return SdfPropertySpecHandle();
-}
-
+// The array length must be a multiple of the tuple-length that the schema's
+// arraySizeConstraint declares for inputs.
 static UsdValidationErrorVector
 _AuthorshipInputsPairedValidator(
     const UsdPrim &prim,
@@ -79,68 +67,28 @@ _AuthorshipInputsPairedValidator(
 
     for (const UsdMediaAuthorshipAPI &record :
             UsdMediaAuthorshipAPI::GetAll(prim)) {
-        const UsdAttribute namesAttr = record.GetInputNamesAttr();
-        const UsdAttribute valuesAttr = record.GetInputValuesAttr();
-        const bool hasNames = namesAttr && namesAttr.HasAuthoredValue();
-        const bool hasValues = valuesAttr && valuesAttr.HasAuthoredValue();
-        if (!hasNames && !hasValues) {
+        const UsdAttribute attr = record.GetInputsAttr();
+        if (!attr || !attr.HasAuthoredValue()) {
             continue;
         }
 
-        const UsdAttribute &present = hasNames ? namesAttr : valuesAttr;
-        const UsdValidationErrorSites sites = {
-            UsdValidationErrorSite(prim.GetStage(), present.GetPath()) };
-
-        if (hasNames != hasValues) {
-            errors.emplace_back(
-                UsdMediaValidationErrorNameTokens->unpairedAuthorshipInputs,
-                UsdValidationErrorType::Error, sites,
-                TfStringPrintf(
-                    "AuthorshipAPI:%s on <%s> authors %s without %s.",
-                    record.GetName().GetText(), prim.GetPath().GetText(),
-                    hasNames ? "inputNames" : "inputValues",
-                    hasNames ? "inputValues" : "inputNames"));
+        const int64_t tupleLength = -attr.GetArraySizeConstraint();
+        VtArray<std::string> inputs;
+        if (tupleLength <= 0 || !attr.Get(&inputs) ||
+            inputs.size() % static_cast<size_t>(tupleLength) == 0) {
             continue;
         }
 
-        VtArray<std::string> names, values;
-        namesAttr.Get(&names);
-        valuesAttr.Get(&values);
-        if (names.size() != values.size()) {
-            errors.emplace_back(
-                UsdMediaValidationErrorNameTokens->mismatchedAuthorshipInputs,
-                UsdValidationErrorType::Error, sites,
-                TfStringPrintf(
-                    "AuthorshipAPI:%s on <%s> has %zu inputNames but %zu "
-                    "inputValues.",
-                    record.GetName().GetText(), prim.GetPath().GetText(),
-                    names.size(), values.size()));
-            continue;
-        }
-
-        // Values resolved from different specs can be out of alignment even
-        // when the lengths agree.
-        const SdfPropertySpecHandle namesSpec =
-            _GetStrongestValueSpec(namesAttr);
-        const SdfPropertySpecHandle valuesSpec =
-            _GetStrongestValueSpec(valuesAttr);
-        if (namesSpec && valuesSpec &&
-            (namesSpec->GetLayer() != valuesSpec->GetLayer() ||
-             namesSpec->GetPath().GetPrimOrPrimVariantSelectionPath() !=
-             valuesSpec->GetPath().GetPrimOrPrimVariantSelectionPath())) {
-            errors.emplace_back(
-                UsdMediaValidationErrorNameTokens
-                    ->authorshipInputsFromDifferentSpecs,
-                UsdValidationErrorType::Warn, sites,
-                TfStringPrintf(
-                    "AuthorshipAPI:%s on <%s> resolves inputNames from "
-                    "@%s@<%s> but inputValues from @%s@<%s>.",
-                    record.GetName().GetText(), prim.GetPath().GetText(),
-                    namesSpec->GetLayer()->GetIdentifier().c_str(),
-                    namesSpec->GetPath().GetText(),
-                    valuesSpec->GetLayer()->GetIdentifier().c_str(),
-                    valuesSpec->GetPath().GetText()));
-        }
+        errors.emplace_back(
+            UsdMediaValidationErrorNameTokens->unpairedAuthorshipInputs,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites {
+                UsdValidationErrorSite(prim.GetStage(), attr.GetPath()) },
+            TfStringPrintf(
+                "<%s> has %zu element(s), which is not a multiple of its "
+                "tuple-length %lld.",
+                attr.GetPath().GetText(), inputs.size(),
+                static_cast<long long>(tupleLength)));
     }
 
     return errors;

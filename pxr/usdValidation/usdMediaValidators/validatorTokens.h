@@ -27,10 +27,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define USD_MEDIA_VALIDATION_ERROR_NAME_TOKENS                               \
     ((shadowedAuthorshipApplication, "ShadowedAuthorshipApplication"))       \
     ((duplicateAuthorshipApplication, "DuplicateAuthorshipApplication"))     \
-    ((unpairedAuthorshipInputs, "UnpairedAuthorshipInputs"))                 \
-    ((mismatchedAuthorshipInputs, "MismatchedAuthorshipInputs"))             \
-    ((authorshipInputsFromDifferentSpecs,                                    \
-      "AuthorshipInputsFromDifferentSpecs"))
+    ((unpairedAuthorshipInputs, "UnpairedAuthorshipInputs"))
 
 /// \def USD_MEDIA_VALIDATOR_NAME_TOKENS
 /// Tokens for validator names. Note that for plugin-provided validators,
