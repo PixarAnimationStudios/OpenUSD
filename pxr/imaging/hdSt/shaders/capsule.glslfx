@@ -1,0 +1,279 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2026 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/capsule.glslfx
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Common.Capsule
+
+// In the general case, a capsule will have at most 2 hits.
+// However, in the case of height = 0 with unequal radii, a ray can traverse
+// the small dome entirely (2 top-cap hits), cross the equatorial disc,
+// then exit through the large dome (1 bot-cap hit), for a total of 4 hits.
+#define MAX_HITS (4)
+
+const uint CAPSULE_AXIS_X = 0u;
+const uint CAPSULE_AXIS_Y = 1u;
+const uint CAPSULE_AXIS_Z = 2u;
+
+// A tapered capsule composed of a conical frustum and two sphere caps. 
+struct Shape
+{
+    Sphere sphereTop;
+    Sphere sphereBot;
+    ConicalFrustum conicalFrustum;
+    uint axis;
+};
+
+Shape ConstructShape()
+{
+    Shape shape;
+
+    shape.conicalFrustum.radiusTop = HdGet_capsuleRadiusTop();
+    shape.conicalFrustum.radiusBot = HdGet_capsuleRadiusBot();
+    shape.conicalFrustum.height = HdGet_capsuleHeight();
+
+    // In order to create a continuous surface, the slant line of the conical
+    // frustum of the capsule must be tangent to the radii of the end spheres
+    // at height/2 and -height/2.
+    // Consider the triangle formed by the following points:
+        // (assume axis = Y and radiusBottom > radiusTop)
+            // A: (-radiusTop, height / 2, 0),
+            // B: (-radiusTop, -height / 2, 0),
+            // C: (-radiusBottom, -height / 2, 0).
+        // This is a similar triangle to
+            // A: (-radiusTop, height / 2, 0),
+            // D: (0, height / 2, 0),
+            // E: (0, topSphereCenter.y, 0).
+        // Let topSphereCenter.y = height / 2 - offsetTop.
+    // We therefore get the equation:
+        // BC/AB = DE/AD
+        // => (radiusBottom - radiusTop) / height = offsetTop / radiusTop
+    // Similarly, we can derive the following equation for radiusBottom:
+        // (radiusBottom - radiusTop) / height = offsetBottom / radiusBottom
+    // We can similarly derive the same equations for radiusTop >= radiusBottom
+        // and for axis = X or Z.
+    const float invHeight = abs(shape.conicalFrustum.height) > EPS
+                            ? 1.0 / shape.conicalFrustum.height
+                            : 0.0;
+    const float slope = (shape.conicalFrustum.radiusTop - shape.conicalFrustum.radiusBot)
+                        * invHeight;
+    const float offsetTop = -slope * shape.conicalFrustum.radiusTop;
+    const float offsetBot = -slope * shape.conicalFrustum.radiusBot;
+
+    // sec^2(theta) = tan^2(theta) + 1,
+        // where theta = 90deg - the base angle of the conical frustum.
+        // In the example above,
+            // theta = angle between AB and AC = angle between AD and AE.
+    const float secant = sqrt(slope * slope + 1);
+
+    // Simplified form of sphereTopRadius^2 = offsetTop^2 + radiusTop^2
+    shape.sphereTop.radius = shape.conicalFrustum.radiusTop * secant;
+    shape.sphereTop.center = vec3(0.0,
+                                  0.0,
+                                  +0.5 * shape.conicalFrustum.height - offsetTop);
+
+    shape.sphereBot.radius = shape.conicalFrustum.radiusBot * secant;
+    shape.sphereBot.center = vec3(0.0,
+                                  0.0,
+                                  -0.5 * shape.conicalFrustum.height - offsetBot);
+
+    shape.axis = HdGet_capsuleAxis();
+
+    return shape;
+}
+
+// Permutes axes so that shape-space +Z (the spine) maps to the object-space
+// axis direction.
+MAT4 GetShapeToObjMatrix(const Shape shape)
+{
+    if (shape.axis == CAPSULE_AXIS_X) {
+        return MAT4(0,1,0,0,
+                    0,0,1,0,
+                    1,0,0,0,
+                    0,0,0,1);
+    }
+
+    if (shape.axis == CAPSULE_AXIS_Y) {
+        return MAT4(1,0,0,0,
+                    0,0,1,0,
+                    0,1,0,0,
+                    0,0,0,1);
+    }
+
+    return MAT4(1.0);
+}
+
+// Inverse of GetShapeToObjMatrix.
+// Maps object space to Z-aligned capsule space.
+MAT4 GetObjToShapeMatrix(const Shape shape)
+{
+    // The inverse of a pure rotational matrix equals its transpose.
+    return transpose(GetShapeToObjMatrix(shape));
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Vertex.Capsule
+
+// Computes the min and max bounds for the capsule in eye space.
+Bbox ComputeBboxEye(const Shape shape, const MAT4 shapeToEye)
+{
+    Bbox bboxEyeSphereTop = ComputeSphereBboxEye(shape.sphereTop, shapeToEye);
+    Bbox bboxEyeSphereBot = ComputeSphereBboxEye(shape.sphereBot, shapeToEye);
+
+    Bbox bboxEye;
+    bboxEye.minBound = min(bboxEyeSphereTop.minBound, bboxEyeSphereBot.minBound);
+    bboxEye.maxBound = max(bboxEyeSphereTop.maxBound, bboxEyeSphereBot.maxBound);
+
+    return bboxEye;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl ImplicitSurface.Fragment.Capsule
+
+const uint CAPSULE_SEG_LATERAL = 0u;
+const uint CAPSULE_SEG_TOP_CAP = 1u;
+const uint CAPSULE_SEG_BOT_CAP = 2u;
+const uint CAPSULE_SEG_DISC = 3u; // For the degenerate case of height = 0
+
+// Checks if a hit lies above the conical frustum of the capsule.
+bool IsValidTopSphereCapHit(const float t,
+                            const float rayShapeOriginZ,
+                            const float rayShapeDirZ,
+                            const float height)
+{
+    return IsValidHit(t) &&
+           (rayShapeOriginZ + t * rayShapeDirZ >= +0.5 * height);
+}
+
+// Checks if a hit lies below the conical frustum of the capsule.
+bool IsValidBotSphereCapHit(const float t,
+                            const float rayShapeOriginZ,
+                            const float rayShapeDirZ,
+                            const float height)
+{
+    return IsValidHit(t) &&
+           (rayShapeOriginZ + t * rayShapeDirZ <= -0.5 * height);
+}
+
+// Checks if a hit lies on the annular disc between rMin and rMax.
+bool IsValidDiscHit(const float t, const float rMin, const float rMax,
+                    const Ray rayShape)
+{
+    const vec2 pXY = rayShape.origin.xy + t * rayShape.dir.xy;
+    const float rSq = dot(pXY, pXY);
+    return rSq >= rMin * rMin && rSq <= rMax * rMax;
+}
+
+SortedHits ComputeHitsShape(const Shape shape, const Ray rayShape)
+{
+    SortedHits result = CreateDefaultHits();
+    int numInserted = 0;
+
+    // Conical frustum hits
+    const vec2 lateralRoots = ComputeConicalFrustumLateralRoots(shape.conicalFrustum,
+                                                                rayShape);
+
+    for (int i = 0; i < 2; i++) {
+        ConditionalInsertHit(result,
+                             numInserted,
+                             lateralRoots[i],
+                             CAPSULE_SEG_LATERAL,
+                             IsValidConicalFrustumHit(
+                                lateralRoots[i],
+                                rayShape.origin.z,
+                                rayShape.dir.z,
+                                shape.conicalFrustum.height));
+    }
+
+    // Top sphere cap hits
+    const vec2 topSphereRoots = ComputeSphereRoots(shape.sphereTop, rayShape);
+
+    for (int i = 0; i < 2; i++) {
+        ConditionalInsertHit(result,
+                             numInserted,
+                             topSphereRoots[i],
+                             CAPSULE_SEG_TOP_CAP,
+                             IsValidTopSphereCapHit(
+                                topSphereRoots[i],
+                                rayShape.origin.z,
+                                rayShape.dir.z,
+                                shape.conicalFrustum.height));
+    }
+
+    // Bottom sphere cap hits
+    const vec2 botSphereRoots = ComputeSphereRoots(shape.sphereBot, rayShape);
+
+    for (int i = 0; i < 2; i++) {
+        ConditionalInsertHit(result,
+                             numInserted,
+                             botSphereRoots[i],
+                             CAPSULE_SEG_BOT_CAP,
+                             IsValidBotSphereCapHit(
+                                botSphereRoots[i],
+                                rayShape.origin.z,
+                                rayShape.dir.z,
+                                shape.conicalFrustum.height));
+    }
+
+    // When height == 0 and the radii differ, the two sphere caps share a center
+    // but have different radii.
+    // As a result, we get an annular disc that must be hit-tested explicitly.
+    if (abs(shape.conicalFrustum.height) <= EPS &&
+        abs(shape.conicalFrustum.radiusTop - shape.conicalFrustum.radiusBot) > EPS) {
+
+        const bool rayNotParallelToDisc = abs(rayShape.dir.z) > EPS;
+        const float invRayDirZ = rayNotParallelToDisc
+                                 ? 1.0 / rayShape.dir.z
+                                 : 0.0;
+        const float tDisc = -rayShape.origin.z * invRayDirZ;
+        const float rMin = min(shape.conicalFrustum.radiusTop,
+                               shape.conicalFrustum.radiusBot);
+        const float rMax = max(shape.conicalFrustum.radiusTop,
+                               shape.conicalFrustum.radiusBot);
+
+        ConditionalInsertHit(result, numInserted, tDisc, CAPSULE_SEG_DISC,
+                             rayNotParallelToDisc &&
+                             IsValidDiscHit(tDisc, rMin, rMax, rayShape));
+    }
+
+    // Sort hits in ascending order by t using
+    // Batcher's optimal 5-compare network.
+    SortHits(result.hits[0], result.hits[2]);
+    SortHits(result.hits[1], result.hits[3]);
+    SortHits(result.hits[0], result.hits[1]);
+    SortHits(result.hits[2], result.hits[3]);
+    SortHits(result.hits[1], result.hits[2]);
+
+    return result;
+}
+
+// Computes the (unnormalized) shape space normal at the given point on the
+// capsule.
+vec3 ComputeNormalShape(const Shape shape, const Point pointShape)
+{
+    if (pointShape.segment == CAPSULE_SEG_TOP_CAP) {
+        return ComputeSphereNormal(shape.sphereTop, pointShape.position);
+    }
+
+    if (pointShape.segment == CAPSULE_SEG_BOT_CAP) {
+        return ComputeSphereNormal(shape.sphereBot, pointShape.position);
+    }
+
+    if (pointShape.segment == CAPSULE_SEG_DISC) {
+        // Orient the normal toward the end with the smaller radius.
+        const float normalZ = shape.conicalFrustum.radiusBot > shape.conicalFrustum.radiusTop
+                              ? 1.0
+                              : -1.0;
+        return vec3(0.0, 0.0, normalZ);
+    }
+
+    return ComputeConicalFrustumNormal(shape.conicalFrustum, pointShape.position);
+}

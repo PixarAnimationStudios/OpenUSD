@@ -8,6 +8,7 @@
 #include "pxr/imaging/hdSt/renderDelegate.h"
 
 #include "pxr/imaging/hdSt/basisCurves.h"
+#include "pxr/imaging/hdSt/capsule.h"
 #include "pxr/imaging/hdSt/conicalFrustum.h"
 #include "pxr/imaging/hdSt/drawItemsCache.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
@@ -80,6 +81,7 @@ const TfTokenVector _SupportedRprimTypes()
         supportedTypes.emplace_back(HdPrimTypeTokens->sphere);
         supportedTypes.emplace_back(HdPrimTypeTokens->cone);
         supportedTypes.emplace_back(HdPrimTypeTokens->cylinder);
+        supportedTypes.emplace_back(HdPrimTypeTokens->capsule);
     }
 
     return supportedTypes;
@@ -442,6 +444,8 @@ HdStRenderDelegate::CreateRprim(TfToken const& typeId,
         return new HdStConicalFrustum</*IsCone=*/true>(rprimId);
     } else  if (typeId == HdPrimTypeTokens->cylinder) {
         return new HdStConicalFrustum</*IsCone=*/false>(rprimId);
+    } else  if (typeId == HdPrimTypeTokens->capsule) {
+        return new HdStCapsule(rprimId);
     } else {
         TF_CODING_ERROR("Unknown Rprim Type %s", typeId.GetText());
     }

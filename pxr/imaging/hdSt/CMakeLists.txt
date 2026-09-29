@@ -63,6 +63,7 @@ pxr_library(hdSt
         bufferArrayRange
         bufferResource
         bufferArrayRegistry
+        capsule
         commandBuffer
         computation
         conicalFrustum
@@ -192,6 +193,7 @@ pxr_library(hdSt
     RESOURCE_FILES
         plugInfo.json
         shaders/basisCurves.glslfx
+        shaders/capsule.glslfx
         shaders/compute.glslfx
         shaders/conicalFrustum.glslfx
         shaders/coordUtils.glslfx

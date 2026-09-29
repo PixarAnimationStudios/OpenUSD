@@ -856,6 +856,87 @@ pxr_register_test(testUsdImagingGLNativeImplicits_simpleConicalFrustums
         HDST_ENABLE_NATIVE_IMPLICITS=1
 )
 
+pxr_register_test(testUsdImagingGLNativeImplicits_simpleCapsules
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage simpleCapsules.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_simpleCapsules.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_simpleCapsules.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_clippedCapsule
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -times 1 2 3 4 5 -stage clippedCapsule.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_clippedCapsule.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_clippedCapsule_001.png
+        testUsdImagingGLNativeImplicits_clippedCapsule_002.png
+        testUsdImagingGLNativeImplicits_clippedCapsule_003.png
+        testUsdImagingGLNativeImplicits_clippedCapsule_004.png
+        testUsdImagingGLNativeImplicits_clippedCapsule_005.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_capsuleInsideCapsule
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage capsuleInsideCapsule.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_capsuleInsideCapsule.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_capsuleInsideCapsule.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_capsuleBackfaceCull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -cullStyle back -offscreen -lighting -stage capsuleInsideCapsule.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_capsuleBackfaceCull.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_capsuleBackfaceCull.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_capsuleFrontfaceCull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -cullStyle front -offscreen -lighting -stage capsuleInsideCapsule.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_capsuleFrontfaceCull.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_capsuleFrontfaceCull.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_piCapsules
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage piCapsules.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_piCapsules.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_piCapsules.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
+pxr_register_test(testUsdImagingGLNativeImplicits_niCapsules
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage niCapsules.usda -camera /main_cam -write testUsdImagingGLNativeImplicits_niCapsules.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLNativeImplicits_niCapsules.png
+    FAIL_PERCENT 0.05
+    FAIL 0.2
+    TESTENV testenv/testUsdImagingGLNativeImplicits
+    ENV
+        HDST_ENABLE_NATIVE_IMPLICITS=1
+)
+
 pxr_register_test(testUsdImagingGLHoleFaces
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage holeFaces.usda -write testUsdImagingGLHoleFaces.png"
     IMAGE_DIFF_COMPARE

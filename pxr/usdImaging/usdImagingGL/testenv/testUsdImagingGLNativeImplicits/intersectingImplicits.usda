@@ -132,6 +132,45 @@ def Xform "world"
         }
     }
 
+    def Xform "capsule1Xform"
+    {
+        double3 xformOp:translate = (27, 2, 3)
+        double3 xformOp:rotateXYZ = (30, 45, 0)
+        double3 xformOp:scale = (2, 4, 2)
+        uniform token[] xformOpOrder = [
+            "xformOp:translate",
+            "xformOp:rotateXYZ",
+            "xformOp:scale"
+        ]
+
+        def Capsule_1 "capsule1"
+        {
+            uniform token axis = "Z"
+            double height = 5.0
+            double radiusTop = 1.2
+            double radiusBottom = 2.5
+            color3f[] primvars:displayColor = [(0.3, 0.7, 0.9)]
+        }
+    }
+
+    def Xform "capsule2Xform"
+    {
+        double3 xformOp:translate = (5, 2, 3)
+        double3 xformOp:scale = (0.8, 0.8, 0.8)
+        uniform token[] xformOpOrder = [
+            "xformOp:translate",
+            "xformOp:scale"
+        ]
+
+        def Capsule "capsule2"
+        {
+            uniform token axis = "X"
+            double height = 12.0
+            double radius = 2.5
+            color3f[] primvars:displayColor = [(0.9, 0.3, 0.5)]
+        }
+    }
+
     def Cube "cube1"
     {
         double size = 5.0

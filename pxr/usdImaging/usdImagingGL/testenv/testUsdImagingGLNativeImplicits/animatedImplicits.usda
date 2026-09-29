@@ -55,4 +55,18 @@ def Xform "world"
         double3 xformOp:translate = (7, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
+
+    def Capsule_1 "capsule"
+    {
+        uniform token axis = "Z"
+        double height = 4.0
+        double radiusTop.timeSamples = {
+            1: 1.0,
+            3: 0.0
+        }
+        double radiusBottom = 2.5
+        color3f[] primvars:displayColor = [(0.2, 0.8, 0.4)]
+        double3 xformOp:translate = (-7, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
 }

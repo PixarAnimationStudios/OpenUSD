@@ -1,0 +1,39 @@
+#usda 1.0
+(
+    defaultPrim = "world"
+    upAxis = "Z"
+)
+
+def Camera "main_cam"
+{
+    float4[] clippingPlanes.timeSamples = {
+        1: [(0, 0, -1, -30)],
+        2: [(1, 0, 0, 0)],
+        3: [(0, 1, 0, 0)],
+        4: [(1, 0, 0, 2), (0, 0, -1, -28)],
+        5: [(1, 0, 0, 0), (0, -1, 0, 0)],
+    }
+    float2 clippingRange = (1, 2000000)
+    float focalLength = 34.2608
+    float focusDistance = 30
+    float fStop = 0
+    float horizontalAperture = 20.377293
+    float horizontalApertureOffset = 0
+    token projection = "perspective"
+    float verticalAperture = 20.955
+    float verticalApertureOffset = 0
+    double3 xformOp:translate = (0, 0, 30)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "world"
+{
+    def Capsule_1 "capsule"
+    {
+        uniform token axis = "X"
+        double height = 10.0
+        double radiusTop = 5.0
+        double radiusBottom = 2.0
+        color3f[] primvars:displayColor = [(0.0, 0.7, 0.8)]
+    }
+}

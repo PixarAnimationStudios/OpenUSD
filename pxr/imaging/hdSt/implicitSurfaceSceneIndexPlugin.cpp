@@ -59,7 +59,6 @@ const HdContainerDataSourceHandle _LocalInputArgs()
 
     TfTokenVector names = {
         HdPrimTypeTokens->cube,
-        HdPrimTypeTokens->capsule,
         HdPrimTypeTokens->plane
     };
 
@@ -67,6 +66,7 @@ const HdContainerDataSourceHandle _LocalInputArgs()
         names.emplace_back(HdPrimTypeTokens->sphere);
         names.emplace_back(HdPrimTypeTokens->cone);
         names.emplace_back(HdPrimTypeTokens->cylinder);
+        names.emplace_back(HdPrimTypeTokens->capsule);
     }
 
     std::vector<HdDataSourceBaseHandle> values(names.size(), toMeshSrc);

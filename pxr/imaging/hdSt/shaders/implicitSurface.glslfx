@@ -18,6 +18,7 @@
 #import $TOOLS/hdSt/shaders/edgeId.glslfx
 #import $TOOLS/hdSt/shaders/pointId.glslfx
 
+#import $TOOLS/hdSt/shaders/capsule.glslfx
 #import $TOOLS/hdSt/shaders/conicalFrustum.glslfx
 #import $TOOLS/hdSt/shaders/sphere.glslfx
 

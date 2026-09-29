@@ -105,6 +105,54 @@ def Cylinder_1 "conic4" (
     uniform token[] xformOpOrder = ["xformOp:translate"]
 }
 
+def Capsule_1 "capsule1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/USD_Default_Green>
+    uniform token axis = "X"
+    double height = 1.5
+    double radiusTop = 0.6
+    double radiusBottom = 0.6
+    double3 xformOp:translate = (-4.5, 4.5, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+def Capsule_1 "capsule2" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/USD_Gold>
+    uniform token axis = "X"
+    double height = 1.5
+    double radiusTop = 0.2
+    double radiusBottom = 0.5
+    double3 xformOp:translate = (-1.5, 4.5, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+def Capsule_1 "capsule3" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/USD_Plastic>
+    uniform token axis = "X"
+    double height = 1.5
+    double radiusTop = 0.5
+    double radiusBottom = 0.2
+    double3 xformOp:translate = (1.5, 4.5, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+def Capsule "capsule4" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/USD_Plastic_Rough>
+    uniform token axis = "X"
+    double height = 1.5
+    double radius = 0.6
+    double3 xformOp:translate = (4.5, 4.5, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
 def Scope "Materials" {
     def "MaterialX" (
         references = [

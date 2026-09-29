@@ -49,12 +49,16 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sphereVertex,             "ImplicitSurface.Vertex.Sphere"))
     ((sphereFragment,           "ImplicitSurface.Fragment.Sphere"))
 
-    ((conicalFrustumTypeDef,        "ImplicitSurface.TypeDef.ConicalFrustum"))
-    ((conicalFrustumCommon,         "ImplicitSurface.Common.ConicalFrustum"))
-    ((conicalFrustumBounds,         "ImplicitSurface.Bounds.ConicalFrustum"))
-    ((conicalFrustumIntersection,   "ImplicitSurface.Intersection.ConicalFrustum"))
-    ((conicalFrustumVertex,         "ImplicitSurface.Vertex.ConicalFrustum"))
-    ((conicalFrustumFragment,       "ImplicitSurface.Fragment.ConicalFrustum"))
+    ((conicalTypeDef,           "ImplicitSurface.TypeDef.ConicalFrustum"))
+    ((conicalCommon,            "ImplicitSurface.Common.ConicalFrustum"))
+    ((conicalBounds,            "ImplicitSurface.Bounds.ConicalFrustum"))
+    ((conicalIntersection,      "ImplicitSurface.Intersection.ConicalFrustum"))
+    ((conicalVertex,            "ImplicitSurface.Vertex.ConicalFrustum"))
+    ((conicalFragment,          "ImplicitSurface.Fragment.ConicalFrustum"))
+
+    ((capsuleCommon,            "ImplicitSurface.Common.Capsule"))
+    ((capsuleVertex,            "ImplicitSurface.Vertex.Capsule"))
+    ((capsuleFragment,          "ImplicitSurface.Fragment.Capsule"))
 
     // main for all the shader stages
     ((mainVS,                   "ImplicitSurface.Vertex"))
@@ -135,12 +139,21 @@ const _ShapeSections &_GetShapeSections(TfToken const &primType)
             { _tokens->sphereIntersection },
             _tokens->sphereFragment } },
         { HdStNativeImplicitsTokens->conicalFrustum,
-          { { _tokens->conicalFrustumTypeDef },
-            _tokens->conicalFrustumCommon,
-            { _tokens->conicalFrustumBounds },
-            _tokens->conicalFrustumVertex,
-            { _tokens->conicalFrustumIntersection },
-            _tokens->conicalFrustumFragment } },
+          { { _tokens->conicalTypeDef },
+            _tokens->conicalCommon,
+            { _tokens->conicalBounds },
+            _tokens->conicalVertex,
+            { _tokens->conicalIntersection },
+            _tokens->conicalFragment } },
+        { HdStNativeImplicitsTokens->capsule,
+          { { _tokens->conicalTypeDef,
+              _tokens->sphereTypeDef   },
+            _tokens->capsuleCommon,
+            { _tokens->sphereBounds },
+            _tokens->capsuleVertex,
+            { _tokens->conicalIntersection,
+              _tokens->sphereIntersection },
+            _tokens->capsuleFragment } },
     };
 
     auto it = shapeMap.find(primType);

@@ -133,7 +133,12 @@ PXR_NAMESPACE_OPEN_SCOPE
     (conicalFrustumRadiusTop)                   \
     (conicalFrustumRadiusBot)                   \
     (conicalFrustumHeight)                      \
-    (conicalFrustumAxis)
+    (conicalFrustumAxis)                        \
+    (capsule)                                   \
+    (capsuleRadiusTop)                          \
+    (capsuleRadiusBot)                          \
+    (capsuleHeight)                             \
+    (capsuleAxis)
 
 TF_DECLARE_PUBLIC_TOKENS(HdStGLSLProgramTokens, HDST_API,
                          HDST_GLSL_PROGRAM_TOKENS);
