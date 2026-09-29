@@ -12,7 +12,6 @@ pxr_plugin(${PXR_PACKAGE}
         ${PRMAN_LIBRARY}
 
     INCLUDE_DIRS
-        ${GLEW_INCLUDE_DIR}    
         ${RENDERMAN_INCLUDE_DIR}
 
     CPPFILES
