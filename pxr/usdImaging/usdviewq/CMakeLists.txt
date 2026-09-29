@@ -94,6 +94,7 @@ pxr_test_scripts(
     testenv/testUsdviewqSelectionDataModel.py
     testenv/testUsdviewqLauncher.py
     testenv/testUsdviewqViewSettingsDataModel.py
+    testenv/testUsdviewqToolSpawn.py
 )
 
 pxr_register_test(testUsdviewqSettings
@@ -124,6 +125,12 @@ pxr_register_test(testUsdviewqLauncher
 pxr_register_test(testUsdviewqViewSettingsDataModel
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqViewSettingsDataModel"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewqToolSpawn
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdviewqToolSpawn"
     EXPECTED_RETURN_CODE 0
 )
 

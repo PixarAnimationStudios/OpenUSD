@@ -8,8 +8,7 @@ from __future__ import print_function
 
 from .qt import QtGui, QtWidgets
 from .usdviewContextMenuItem import UsdviewContextMenuItem
-import os
-import sys
+from .common import SpawnUsdTool
 
 #
 # Edit the following to alter the per-prim context menu.
@@ -321,48 +320,6 @@ class CopyModelPathMenuItem(PrimContextMenuItem):
 
 
 #
-# Copies the current prim and subtree to a file of the user's choosing
-# XXX This is not used, and does not work. Leaving code in for now for
-# future reference/inspiration
-#
-class IsolateCopyPrimMenuItem(PrimContextMenuItem):
-
-    def GetText(self):
-        return "Isolate Copy of Prim..."
-
-    def RunCommand(self):
-        focusPrim = self._selectionDataModel.getFocusPrim()
-
-        inFile = focusPrim.GetScene().GetUsdFile()
-
-        guessOutFile = os.getcwd() + "/" + focusPrim.GetName() + "_copy.usd"
-        (outFile, _) = QtWidgets.QFileDialog.getSaveFileName(None,
-            "Specify the Usd file to create", guessOutFile, 'Usd files (*.usd)')
-        if (outFile.rsplit('.')[-1] != 'usd'):
-            outFile += '.usd'
-
-        if inFile == outFile:
-            sys.stderr.write( "Cannot isolate a copy to the source usd!\n" )
-            return
-
-        sys.stdout.write( "Writing copy to new file '%s' ... " % outFile )
-        sys.stdout.flush()
-
-        os.system( 'usdcopy -inUsd ' + inFile +
-                ' -outUsd ' + outFile + ' ' +
-                ' -sourcePath ' + focusPrim.GetPath() + '; ' +
-                'usdview ' + outFile + ' &')
-
-        sys.stdout.write( "Done!\n" )
-
-    def IsEnabled(self):
-        numSelectedPrims = len(self._selectionDataModel.getPrims())
-        focusPrimActive = self._selectionDataModel.getFocusPrim().GetActive()
-
-        return numSelectedPrims == 1 and focusPrimActive
-
-
-#
 # Launches usdview on the asset instantiated at the selected prim, as
 # defined by USD assetInfo present on the prim
 #
@@ -395,8 +352,7 @@ class IsolateAssetMenuItem(PrimContextMenuItem):
         return "usdview asset%s" % name
 
     def RunCommand(self):
-        print("Spawning usdview %s" % self._filePath)
-        os.system("usdview %s &" % self._filePath)
+        SpawnUsdTool('usdview', [self._filePath])
 
 #
 # If the selected prim is a camera and not the currently active camera, display

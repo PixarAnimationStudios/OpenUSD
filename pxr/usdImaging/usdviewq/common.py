@@ -212,6 +212,35 @@ def PrintWarning(title, description):
     print(description, file=msg)
     print("------------------------------------------------------------", file=msg)
 
+def SpawnUsdTool(name, paths, options=()):
+    """Spawns a USD tool in the background on the given paths, reporting any
+    failure to the user as a warning. Returns True if the tool was started.
+
+    Paths passed here may be derived from the content of an opened layer, so
+    they are forwarded as separate arguments rather than interpolated into a
+    command line. See pxr.UsdUtils.toolPaths.RunUsdBinary.
+    """
+    from pxr.UsdUtils.toolPaths import RunUsdBinary
+
+    # A path is only allowed if it can possibly identify something. Sdf reports
+    # an empty realPath for layers with no backing file, such as anonymous
+    # layers, and usdview substitutes 'unknown' when a muted layer's identifier
+    # cannot be resolved.
+    if not all(p and p != 'unknown' for p in paths):
+        PrintWarning("Cannot run %s" % name,
+                     "Invalid or unknown path provided.")
+        return False
+
+    print("Spawning %s %s" % (name, " ".join(paths)))
+
+    try:
+        RunUsdBinary(name, options=options, paths=paths)
+    except (RuntimeError, OSError) as e:
+        PrintWarning("Failed to run %s" % name, str(e))
+        return False
+
+    return True
+
 def GetValueAndDisplayString(prop, time):
     """If `prop` is a timeSampled Sdf.AttributeSpec, compute a string specifying
     how many timeSamples it possesses.  Otherwise, compute the single default

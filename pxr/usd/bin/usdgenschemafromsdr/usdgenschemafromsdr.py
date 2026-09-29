@@ -31,10 +31,9 @@ This script will run usdGenSchema on the auto populated schema.usda.
 from argparse import ArgumentParser, RawTextHelpFormatter
 from textwrap import dedent
 import os, sys, json
-from subprocess import call
 from pxr import Sdf, Tf, UsdUtils, Sdr
 from pxr.UsdUtils.constantsGroup import ConstantsGroup
-from pxr.UsdUtils.toolPaths import FindUsdBinary
+from pxr.UsdUtils.toolPaths import RunUsdBinary
 
 class SchemaConfigConstants(ConstantsGroup):
     SDR_NODES = "sdrNodes"
@@ -297,13 +296,13 @@ if __name__ == '__main__':
         UsdUtils.UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext,
                 assetPathIdentifier)
 
-    usdGenSchemaCmd = FindUsdBinary(MiscConstants.USD_GEN_SCHEMA)
     usdGenSchemaArgs = ["--validate"] if validate else []
-    if not usdGenSchemaCmd:
-        Tf.RaiseRuntimeError("%s not found. Make sure %s is in the PATH." \
-                %(MiscConstants.USD_GEN_SCHEMA))
-
-    call([usdGenSchemaCmd] + usdGenSchemaArgs, cwd=schemaGenerationPath)
+    try:
+        RunUsdBinary(MiscConstants.USD_GEN_SCHEMA, options=usdGenSchemaArgs,
+                     wait=True, cwd=schemaGenerationPath)
+    except (RuntimeError, OSError) as e:
+        Tf.RaiseRuntimeError("Failed to run %s: %s. Make sure it is in the "
+                "PATH." % (MiscConstants.USD_GEN_SCHEMA, e))
 
     if writeReadme:
         readMeFile = os.path.join(schemaGenerationPath,

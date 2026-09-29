@@ -8,9 +8,9 @@ from __future__ import print_function
 
 from .qt import QtCore, QtGui, QtWidgets
 from .usdviewContextMenuItem import UsdviewContextMenuItem
-import os, subprocess, sys
+import os
 from pxr import Ar
-from pxr.UsdUtils.toolPaths import FindUsdBinary
+from .common import SpawnUsdTool
 
 #
 # Specialized context menu for running commands in the layer stack view.
@@ -92,16 +92,7 @@ class OpenLayerMenuItem(LayerStackContextMenuItem):
         
         layerName += ".tmp"
 
-        usdeditExe = FindUsdBinary('usdedit')
-        if not usdeditExe:
-            print("Warning: Could not find 'usdedit', expected it to be in PATH.")
-            return
-
-        print("Opening file: %s" % layerPath)
-
-        command =  [usdeditExe,'-n',layerPath,'-p',layerName]
-
-        subprocess.Popen(command, close_fds=True)
+        SpawnUsdTool('usdedit', [layerPath], options=['-n', '-p', layerName])
 
 #
 # Opens the layer using usdview.
@@ -123,8 +114,7 @@ class UsdviewLayerMenuItem(LayerStackContextMenuItem):
         if not layerPath:
             return
 
-        print("Spawning usdview %s" % layerPath)
-        os.system("usdview %s &" % layerPath)
+        SpawnUsdTool('usdview', [layerPath])
 
 #
 # Copy the layer path to clipboard
