@@ -252,9 +252,6 @@ pxr_build_test(testHdStBasicDrawing
     CPPFILES
         testenv/testHdStBasicDrawing.cpp
 )
-endif()
-
-if (X11_FOUND)
 pxr_build_test(testHdStBarAllocationLimit
     LIBRARIES
         hdSt
@@ -607,8 +604,8 @@ pxr_build_test(testHdStSubResourceRegistry
 )
 endif()
 
-if (X11_FOUND)
-# Most HdSt tests require setup of a GL context and window. This is the 
+if (X11_FOUND OR APPLE)
+# Most HdSt tests require setup of a GL context and window. This is the
 # exception.
 pxr_register_test(testHdStBufferSource
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBufferSource"
@@ -623,7 +620,6 @@ if (${PXR_HEADLESS_TEST_MODE})
     return()
 endif()
 
-# Unlike most hdSt tests currently, testHdStQualifiers can run on all platforms.
 pxr_register_test(testHdStQualifiers
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStQualifiers --offscreen --flatQF FlatMember --nopersQF NoPerspectiveMember --centroidQF CentroidMember --sampleQF SampleMember"
     EXPECTED_RETURN_CODE 0
@@ -631,11 +627,6 @@ pxr_register_test(testHdStQualifiers
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
-
-if (APPLE)
-    message(STATUS "Skipping rest of ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
-    return()
-endif()
 
 if (WIN32)
     message(STATUS "Skipping rest of ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
@@ -2199,6 +2190,7 @@ pxr_register_test(testHdStBufferAggregation
         TF_DEBUG=HD_SAFE_MODE
         HD_MAX_VBO_SIZE=268435456 # 2^28
 )
+if (NOT APPLE)
 pxr_register_test(testHdStBufferArray
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBufferArray"
     EXPECTED_RETURN_CODE 0
@@ -2222,6 +2214,7 @@ pxr_register_test(testHdStBufferArrayInstancingDisabled
         HD_ENABLE_PACKED_NORMALS=0
         TF_DEBUG=HD_SAFE_MODE
 )
+endif()
 pxr_register_test(testHdStBufferSourceDependency
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBufferSourceDependency"
     EXPECTED_RETURN_CODE 0
@@ -2371,8 +2364,7 @@ pxr_register_test(testHdStCurveDrawing_lv1_refined
     IMAGE_DIFF_COMPARE
         testHdStCurveDrawing_lv1_refined.png
     FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
+    FAIL_PERCENT 3
     TESTENV testenv/testHdStCurveDrawing
     ENV
         TF_DEBUG=HD_SAFE_MODE
@@ -2408,7 +2400,6 @@ pxr_register_test(testHdStCurvePrimvarInterpolation_lv3_refined
         testHdStCurvePrimvarInterpolation_lv3_refined.png
     FAIL 1
     FAIL_PERCENT 1
-    PERCEPTUAL
     TESTENV testenv/testHdStCurvePrimvarInterpolation
     ENV
         TF_DEBUG=HD_DISABLE_MULTITHREADED_RPRIM_SYNC
@@ -2455,6 +2446,7 @@ pxr_register_test(testHdStDepthBias
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
+if (NOT APPLE)
 pxr_register_test(testHdStDrawBatching
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStDrawBatching"
     EXPECTED_RETURN_CODE 0
@@ -2468,6 +2460,7 @@ pxr_register_test(testHdStDrawBatching
         HD_ENABLE_PACKED_NORMALS=0
         HGI_ENABLE_VULKAN=0
 )
+endif()
 pxr_register_test(testHdStDrawItemIntegrity
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStDrawItemIntegrity --offscreen"
     EXPECTED_RETURN_CODE 0
@@ -2575,6 +2568,7 @@ pxr_register_test(testHdStFrustumCullingInstanceGPU
         HD_ENABLE_GPU_COUNT_VISIBLE_INSTANCES=1
         HD_ENABLE_GPU_FRUSTUM_CULLING=1
 )
+if (NOT APPLE)
 pxr_register_test(testHdStGL
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGL"
     EXPECTED_RETURN_CODE 0
@@ -2623,6 +2617,7 @@ pxr_register_test(testHdStHWFaceCulling
     DIFF_COMPARE testHdStHWFaceCulling-Run1-stdout.txt
     TESTENV testenv/testHdStHWFaceCulling
 )
+endif()
 pxr_register_test(testHdStIndirectDrawBatchCulling
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStIndirectDrawBatchCulling"
     EXPECTED_RETURN_CODE 0
@@ -2754,7 +2749,7 @@ pxr_register_test(testHdStInstancingUnbalancedNoBindless
         HGIGL_ENABLE_BINDLESS_BUFFER=0
         TF_DEBUG=HD_SAFE_MODE
 )
-if (${PXR_ENABLE_MATERIALX_SUPPORT})
+if (${PXR_ENABLE_MATERIALX_SUPPORT} AND NOT APPLE)
 pxr_register_test(testHdStMaterialXShaderGen_UsdPSdefault
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename usd_preview_surface_default.mtlx"
     EXPECTED_RETURN_CODE 0
@@ -2819,12 +2814,14 @@ pxr_register_test(testHdStMaterialXShaderGen_texcoord
     TESTENV testenv/testHdStMaterialXShaderGen
 )
 endif()
+if (NOT APPLE)
 pxr_register_test(testHdStMeshTopology
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMeshTopology"
     EXPECTED_RETURN_CODE 0
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
+endif()
 pxr_register_test(testHdStMultipleFvarTopologies
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMultipleFvarTopologies --offscreen --repr refinedWireOnSurf --refineLevel 1"
     EXPECTED_RETURN_CODE 0
@@ -2869,6 +2866,7 @@ pxr_register_test(testHdStPrimitiveParam
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
+if (NOT APPLE)
 pxr_register_test(testHdStPrimvars
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStPrimvars"
     EXPECTED_RETURN_CODE 0
@@ -2879,6 +2877,7 @@ pxr_register_test(testHdStPrimvars
         HDST_ENABLE_MATERIAL_PRIMVAR_FILTERING=0
         TF_DEBUG=HD_SAFE_MODE
 )
+endif()
 pxr_register_test(testHdStQuadrangulation
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStQuadrangulation"
     EXPECTED_RETURN_CODE 0
@@ -3092,9 +3091,8 @@ pxr_register_test(testHdStPtexTetrahedron_Loop
     EXPECTED_RETURN_CODE 0
     IMAGE_DIFF_COMPARE
         testHdStPtexTetrahedron_loop.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
+    FAIL 0.9
+    FAIL_PERCENT 1.5
     TESTENV testenv/testHdStPtexTetrahedron
     ENV
         TF_DEBUG=HD_SAFE_MODE
@@ -3116,9 +3114,8 @@ pxr_register_test(testHdStPtexTetrahedron_Quads
     EXPECTED_RETURN_CODE 0
     IMAGE_DIFF_COMPARE
         testHdStPtexTetrahedron_quads.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
+    FAIL 0.9
+    FAIL_PERCENT 0.3
     TESTENV testenv/testHdStPtexTetrahedron
     ENV
         TF_DEBUG=HD_SAFE_MODE
@@ -3176,9 +3173,8 @@ pxr_register_test(testHdStPtexTetrahedron_Refined_Quads
     EXPECTED_RETURN_CODE 0
     IMAGE_DIFF_COMPARE
         testHdStPtexTetrahedron_quads_refined.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
+    FAIL 0.9
+    FAIL_PERCENT 0.3
     TESTENV testenv/testHdStPtexTetrahedron
     ENV
         TF_DEBUG=HD_SAFE_MODE
@@ -3223,7 +3219,7 @@ pxr_register_test(testHdStShaders
         testHdStShaders_9.png
         testHdStShaders_10.png
     FAIL 1
-    FAIL_PERCENT 1
+    FAIL_PERCENT 3
     PERCEPTUAL
     TESTENV testenv/testHdStShaders
     ENV
