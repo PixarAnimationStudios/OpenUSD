@@ -1191,13 +1191,16 @@ _FromPickHitWithCache(HdSceneIndexBaseRefPtr const &sceneIndex,
         const size_t i = instanceIndex % n;
         instanceIndex /= n;
 
-        ctx.instanceId = instanceInfo.instanceIndices[i];
+        // Use cdata() to make sure we don't run the non-const data() code
+        // path which could trigger a copy-on-write of the instanceIndices or
+        // instanceLocations arrays.
+        ctx.instanceId = instanceInfo.instanceIndices.cdata()[i];
 
         if (ctx.instanceId >= 0 &&
             ctx.instanceId < static_cast<int>(
                 instanceInfo.instanceLocations.size())) {
             ctx.instanceSceneIndexPath = 
-                instanceInfo.instanceLocations[ctx.instanceId];
+                instanceInfo.instanceLocations.cdata()[ctx.instanceId];
 
             HdPrimOriginSchema schema =
                 HdPrimOriginSchema::GetFromParent(
