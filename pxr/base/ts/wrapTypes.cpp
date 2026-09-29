@@ -113,7 +113,17 @@ void wrapTypes()
 
         .def_readwrite("mode", &TsExtrapolation::mode)
         .def_readwrite("slope", &TsExtrapolation::slope)
-        .def_readwrite("loopBoundaryTime", &TsExtrapolation::loopBoundaryTime)
+
+        // def_readwrite expects a registered Python class for the member's
+        // type to return a reference on read, but loopBoundaryTime is an
+        // optional. So we manually register the read/write.
+        .add_property("loopBoundaryTime",
+            +[](const TsExtrapolation& self) {
+                return self.loopBoundaryTime;
+            },
+            +[](TsExtrapolation& self, const std::optional<double>& value) {
+                self.loopBoundaryTime = value;
+            })
 
         .def("IsLooping", &TsExtrapolation::IsLooping)
 
