@@ -1,0 +1,24 @@
+#usda 1.0
+(
+    """The record below lives inside a variant that is not selected, so no
+    composed stage reports it. --layer finds it."""
+)
+
+def Xform "Prim" (
+    variants = {
+        string v = "off"
+    }
+    prepend variantSets = "v"
+)
+{
+    variantSet "v" = {
+        "off" {
+        }
+        "on" (
+            prepend apiSchemas = ["AuthorshipAPI:invariant"]
+        ) {
+            uniform string authorship:invariant:softwarePackage = "com.example.variant"
+            uniform string authorship:invariant:softwareVersion = "1.0"
+        }
+    }
+}

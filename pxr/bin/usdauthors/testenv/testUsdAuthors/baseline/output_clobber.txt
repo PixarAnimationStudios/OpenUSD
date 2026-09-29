@@ -1,0 +1,4 @@
+/Bunny
+  blender  (applied in more than one prim spec; only the strongest opinion for each field survives composition)
+      softwarePackage = "org.blender"
+      softwareVersion = "4.2"

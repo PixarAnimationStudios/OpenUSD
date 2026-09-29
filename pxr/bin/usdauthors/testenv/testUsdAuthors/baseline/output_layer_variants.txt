@@ -1,0 +1,4 @@
+/Prim{v=on}
+  invariant
+      softwarePackage = "com.example.variant"
+      softwareVersion = "1.0"

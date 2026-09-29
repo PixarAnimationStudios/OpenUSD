@@ -1,0 +1,13 @@
+#usda 1.0
+(
+    defaultPrim = "TeaCupSource"
+)
+
+def Mesh "TeaCupSource" (
+    prepend apiSchemas = ["AuthorshipAPI:jane"]
+)
+{
+    uniform string authorship:jane:softwarePackage = "org.blender"
+    uniform string authorship:jane:softwareVersion = "4.2"
+    uniform string[] authorship:jane:creator = ["Jane Doe"]
+}
