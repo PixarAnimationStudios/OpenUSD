@@ -383,14 +383,16 @@ VdfDynamicTopologicalSorter<Vertex>::_Reorder(
     for (const _PrioritizedVertex &v : *deltaBackward) {
         availablePriorities.push_back(v.priority);
     }
-    // Stash away an iterator that partitions availablePriorities by
-    // (deltaBackward, deltaForward).
-    std::vector<int>::iterator mid = availablePriorities.end();
     // Sort the forward-set into topological order.
     std::sort(deltaForward->begin(), deltaForward->end());
     for (const _PrioritizedVertex &v : *deltaForward) {
         availablePriorities.push_back(v.priority);
     }
+
+    // Construct an iterator that partitions availablePriorities by
+    // (deltaBackward, deltaForward).
+    const auto mid = availablePriorities.begin() + deltaBackward->size();
+
     // Now merge the pool of available priorities into increasing order.
     // Because each of delta{Backward,Forward} were sorted by priority,
     // the correspond sections of availablePriorities are already sorted
