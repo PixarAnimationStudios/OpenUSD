@@ -24,8 +24,8 @@
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/primOriginSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
-#include "pxr/imaging/hd/sceneIndexObserver.h" 
-#include "pxr/imaging/hd/tokens.h" 
+#include "pxr/imaging/hd/sceneIndexObserver.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vectorSchema.h"
 #include "pxr/imaging/hd/vectorSchemaTypeDefs.h"
 
@@ -90,7 +90,7 @@ struct VtHasher
             return false;
         }
 
-        *_hash = 
+        *_hash =
             ArchHash64((const char*)&value, sizeof(T), *_hash);
         return true;
     }
@@ -98,7 +98,7 @@ struct VtHasher
 
 using TfTokenSet = std::unordered_set<TfToken, TfToken::HashFunctor>;
 using TfTokenMap = std::unordered_map<TfToken, TfToken, TfToken::HashFunctor>;
-using NestedTfTokenMap = 
+using NestedTfTokenMap =
     std::unordered_map<TfToken, TfTokenMap, TfToken::HashFunctor>;
 using NestedTfTokenMapPtr = std::shared_ptr<NestedTfTokenMap>;
 
@@ -129,11 +129,11 @@ public:
         const TfTokenSet overrideNames = _GetOverrideNames();
 
         for (const TfToken& overrideName : overrideNames) {
-            if (std::find(names.begin(), names.end(), overrideName) 
-                == names.end()) 
+            if (std::find(names.begin(), names.end(), overrideName)
+                == names.end())
             {
                 names.emplace_back(overrideName);
-            }   
+            }
         }
 
         return names;
@@ -149,20 +149,20 @@ public:
 
         // Get the override ds if there is one.  If there is no override, this
         // gets an empty container.
-        const HdContainerDataSourceHandle overrideContainerDs = 
+        const HdContainerDataSourceHandle overrideContainerDs =
             _GetOverrideContainerDataSource(name);
 
         // Overlay the overridingDs onto the originalDs. If there is no
         // originalDs, overlays on a default empty container.
         return HdCreateOverlayContainerDataSource(
             overrideContainerDs,
-            HdContainerDataSource::Cast(result)); 
+            HdContainerDataSource::Cast(result));
     }
 
 private:
-    // If the current _nodePath has any publicUI or parameter edit overrides, 
+    // If the current _nodePath has any publicUI or parameter edit overrides,
     // return the names of the material network parameters that have overrides.
-    TfTokenSet 
+    TfTokenSet
     _GetOverrideNames()
     {
         TfTokenSet overrideNames;
@@ -175,30 +175,30 @@ private:
         }
 
         // 1. Check for parameter edits.
-        // Get the parameterValues data source and check if there are any 
+        // Get the parameterValues data source and check if there are any
         // parameter edits affecting the shader node at _nodePath.
         const HdNodeToInputToMaterialNodeParameterSchema parameterValuesSchema =
             matOverSchema.GetParameterValues();
         if (parameterValuesSchema) {
-            HdMaterialNodeParameterContainerSchema nodeNameSchema = 
+            HdMaterialNodeParameterContainerSchema nodeNameSchema =
                 parameterValuesSchema.Get(_nodePath);
             if (nodeNameSchema) {
                 for (const TfToken& paramName : nodeNameSchema.GetNames()) {
                     // If we found a shader parameter override then we should
                     // add its name to GetNames()
                     overrideNames.insert(paramName);
-                }                
+                }
             }
         }
 
         // 2. Check if our nodePath has interface mappings. If there are
-        // no interface mappings, then there are no additional public UI 
+        // no interface mappings, then there are no additional public UI
         // override names to consider.
         if (!_reverseInterfaceMappingsPtr) {
             return overrideNames;
         }
 
-        const auto searchParamsMap = 
+        const auto searchParamsMap =
             _reverseInterfaceMappingsPtr->find(_nodePath);
         if (searchParamsMap == _reverseInterfaceMappingsPtr->end()) {
             return overrideNames;
@@ -206,8 +206,8 @@ private:
 
         // 3. From the MaterialOverrides, check if we have an overridingDs
         // for the publicUI name
-        HdMaterialNodeParameterContainerSchema 
-            interfaceValuesContainerSchema = 
+        HdMaterialNodeParameterContainerSchema
+            interfaceValuesContainerSchema =
             matOverSchema.GetInterfaceValues();
         if (!interfaceValuesContainerSchema) {
             return overrideNames;
@@ -227,7 +227,7 @@ private:
     }
 
     // Given 'name' of a material network parameter, return the overriding
-    // data source (ie. the publicUI or parameter edit data source) if there is 
+    // data source (ie. the publicUI or parameter edit data source) if there is
     // one specified.
     // Note that if both a publicUI and a parameter edit overrides for the same
     // data source exit, the public UI override takes precedence and will be
@@ -250,7 +250,7 @@ private:
         // To enforce this requirement, process overrides to the PublicUI first,
         // and if one is found targeting the current parameter, return its data
         // source without bothering to look for a parameter edit.
-        HdContainerDataSourceHandle overriddeContainerDs = 
+        HdContainerDataSourceHandle overriddeContainerDs =
             _GetPublicUIDataSource(name);
         if (overriddeContainerDs) {
             return overriddeContainerDs;
@@ -272,14 +272,14 @@ private:
     {
         const HdContainerDataSourceHandle emptyOverrideDs;
 
-        // 1. Look up the MaterialNodeParameter from our 
+        // 1. Look up the MaterialNodeParameter from our
         // reverseInterfaceMappingsPtr to see if it has a publicUI name
         // ie. nodePath -> (name -> publicUIName)
         if (!_reverseInterfaceMappingsPtr) {
             return emptyOverrideDs;
         }
 
-        const auto searchParamsMap = 
+        const auto searchParamsMap =
             _reverseInterfaceMappingsPtr->find(_nodePath);
         if (searchParamsMap == _reverseInterfaceMappingsPtr->end()) {
             return emptyOverrideDs;
@@ -301,8 +301,8 @@ private:
             return emptyOverrideDs;
         }
 
-        HdMaterialNodeParameterContainerSchema 
-            interfaceValuesContainerSchema = 
+        HdMaterialNodeParameterContainerSchema
+            interfaceValuesContainerSchema =
                 matOverSchema.GetInterfaceValues();
         if (!interfaceValuesContainerSchema) {
             return emptyOverrideDs;
@@ -314,14 +314,14 @@ private:
             return emptyOverrideDs;
         }
 
-        return overrideNodeParameterSchema.GetContainer();    
+        return overrideNodeParameterSchema.GetContainer();
     }
 
-    // Given 'name' of a material network parameter, return its Parameter Edit 
+    // Given 'name' of a material network parameter, return its Parameter Edit
     // data source, if one is specified.
     HdContainerDataSourceHandle
     _GetParameterEditDataSource(const TfToken& name)
-    {   
+    {
         const HdContainerDataSourceHandle emptyOverrideDs;
 
         const HdMaterialOverrideSchema matOverSchema(
@@ -336,14 +336,14 @@ private:
             return emptyOverrideDs;
         }
 
-        return overrideNodeParameterSchema.GetContainer();  
+        return overrideNodeParameterSchema.GetContainer();
     }
-     
+
 private:
     HdContainerDataSourceHandle _parametersDsContainer;
     HdContainerDataSourceHandle _materialOverrideDsContainer;
 
-    // Maps material node parameters to their public UI name.  
+    // Maps material node parameters to their public UI name.
     // Ie. nodePath -> (inputName -> publicUIName)
     NestedTfTokenMapPtr _reverseInterfaceMappingsPtr;
 
@@ -376,7 +376,7 @@ public:
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
     {
-        const HdDataSourceBaseHandle result = 
+        const HdDataSourceBaseHandle result =
             _materialNodeDsContainer->Get(name);
 
         // Only do work if our material node has 'parameters'
@@ -391,7 +391,7 @@ public:
         }
 
         return _ParametersContainerDataSource::New(
-            resultContainer, 
+            resultContainer,
             _materialOverrideDsContainer,
             _reverseInterfaceMappingsPtr,
             _nodePath
@@ -402,7 +402,7 @@ private:
     HdContainerDataSourceHandle _materialNodeDsContainer;
     HdContainerDataSourceHandle _materialOverrideDsContainer;
 
-    // Maps material node parameters to their public UI name.  
+    // Maps material node parameters to their public UI name.
     // Ie. nodePath -> (inputName -> publicUIName)
     NestedTfTokenMapPtr _reverseInterfaceMappingsPtr;
 
@@ -443,7 +443,7 @@ public:
 
         // Members of the 'nodes' data source are only material nodes
         return _MaterialNodeContainerDataSource::New(
-            resultContainer, 
+            resultContainer,
             _materialOverrideDsContainer,
             _reverseInterfaceMappingsPtr,
             name);
@@ -453,7 +453,7 @@ private:
     HdContainerDataSourceHandle _nodesDsContainer;
     HdContainerDataSourceHandle _materialOverrideDsContainer;
 
-    // Maps material node parameters to their public UI name.  
+    // Maps material node parameters to their public UI name.
     // Ie. nodePath -> (inputName -> publicUIName)
     NestedTfTokenMapPtr _reverseInterfaceMappingsPtr;
 };
@@ -481,7 +481,7 @@ public:
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
     {
-        const HdDataSourceBaseHandle result = 
+        const HdDataSourceBaseHandle result =
             _materialNetworkDsContainer->Get(name);
 
         // Only do work if our material network has 'nodes'
@@ -496,7 +496,7 @@ public:
         }
 
         return _NodesContainerDataSource::New(
-            resultContainer, 
+            resultContainer,
             _materialOverrideDsContainer,
             _reverseInterfaceMappingsPtr);
     }
@@ -505,7 +505,7 @@ private:
     HdContainerDataSourceHandle _materialNetworkDsContainer;
     HdContainerDataSourceHandle _materialOverrideDsContainer;
 
-    // Maps material node parameters to their public UI name.  
+    // Maps material node parameters to their public UI name.
     // Ie. nodePath -> (inputName -> publicUIName)
     NestedTfTokenMapPtr _reverseInterfaceMappingsPtr;
 };
@@ -546,7 +546,7 @@ public:
         }
 
         // Only do work if we have material overrides
-        const HdMaterialOverrideSchema matOverSchema = 
+        const HdMaterialOverrideSchema matOverSchema =
             HdMaterialOverrideSchema::GetFromParent(_inputDsContainer);
         if (!matOverSchema) {
             return result;
@@ -559,10 +559,10 @@ public:
         std::shared_ptr<NestedTfTokenMap> reverseInterfaceMappingsPtr = nullptr;
         if (interfaceSchema) {
             // Build a reverse look-up for interface mappings which is keyed by
-            // the material node parameter locations, which will be more 
-            // efficient for look-ups when we later override the material node 
+            // the material node parameter locations, which will be more
+            // efficient for look-ups when we later override the material node
             // parameter
-            reverseInterfaceMappingsPtr = 
+            reverseInterfaceMappingsPtr =
                 std::make_shared<NestedTfTokenMap>(
                     interfaceSchema.GetReverseInterfaceMappings());
         }
@@ -588,7 +588,7 @@ public:
         const SdfPath& primPath)
     : _inputDsContainer(inputDsContainer),
       _primPath(primPath)
-    {   
+    {
     }
 
     // HdContainerDataSource overrides
@@ -596,7 +596,7 @@ public:
     {
         TfTokenVector names = _inputDsContainer->GetNames();
 
-        if (std::find(names.begin(), names.end(), 
+        if (std::find(names.begin(), names.end(),
                 HdDependenciesSchema::GetSchemaToken()) == names.end()) {
             names.push_back(HdDependenciesSchema::GetSchemaToken());
         }
@@ -608,7 +608,7 @@ public:
     {
         const HdDataSourceBaseHandle result = _inputDsContainer->Get(name);
 
-        const HdContainerDataSourceHandle resultContainer = 
+        const HdContainerDataSourceHandle resultContainer =
             HdContainerDataSource::Cast(result);
         if (!resultContainer) {
             return result;
@@ -617,24 +617,24 @@ public:
         if (name == HdMaterialSchema::GetSchemaToken()) {
             // Do work if we find 'material'
             return _MaterialContainerDataSource::New(
-                _inputDsContainer, resultContainer); 
+                _inputDsContainer, resultContainer);
         } else if (name == HdDependenciesSchema::GetSchemaToken()) {
             // Instead of implementing
-            // HdsiMaterialOverrideResolvingSceneIndex::_PrimsDirtied(), we use 
+            // HdsiMaterialOverrideResolvingSceneIndex::_PrimsDirtied(), we use
             // the dependencies schema. The 'material' data source should depend
             // on changes to the 'materialOverride' data source.
             //
-            // XXX: This coarse dependency between 'material' and 
+            // XXX: This coarse dependency between 'material' and
             // 'materialOverride' will over-invalidate the material.
             // In the future, we can make the invalidation more fine-grained
             // by declaring the following dependencies:
             // * Each specific material node parameter of the material network
-            //   should depend on its corresponding overriding material node 
-            //   parameter from the material overrides. 
-            //   Ie. If a specific material override gets updated, we only want 
+            //   should depend on its corresponding overriding material node
+            //   parameter from the material overrides.
+            //   Ie. If a specific material override gets updated, we only want
             //   to replace that specific parameter in the network.
-            // * Each specific material override should depend on its 
-            //   corresponding interface mapping. 
+            // * Each specific material override should depend on its
+            //   corresponding interface mapping.
             //   Ie. If the mapping itself changes and maps to a new network
             //   material node parameter, then that new material node parameter
             //   should receive the override.
@@ -642,7 +642,7 @@ public:
             //   if a publicUI is renamed, the corresponding material override
             //   also needs to be renamed.
             // * 'material' should depend on 'interfaceMappings' because if
-            //   a mapping changes or is renamed, this affects the network 
+            //   a mapping changes or is renamed, this affects the network
             //   material node parameters.
             static HdLocatorDataSourceHandle const materialOverrideDsLocator =
                 HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
@@ -650,7 +650,7 @@ public:
             static HdLocatorDataSourceHandle const materialDsLocator =
                 HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
                     HdMaterialSchema::GetDefaultLocator());
-                    
+
             // Overlay the material override dependency over any possible
             // existing dependencies
             return HdOverlayContainerDataSource::New(
@@ -662,8 +662,8 @@ public:
                             _primPath))
                     .SetDependedOnDataSourceLocator(materialOverrideDsLocator)
                     .SetAffectedDataSourceLocator(materialDsLocator)
-                    .Build()), 
-                resultContainer);  
+                    .Build()),
+                resultContainer);
         }
 
         return result;
@@ -686,7 +686,7 @@ public:
         const SdfPath& newBinding)
     : _inputDsContainer(inputDsContainer),
       _newBinding(newBinding)
-    {   
+    {
     }
 
     // HdContainerDataSource overrides
@@ -699,25 +699,25 @@ public:
     {
         const HdDataSourceBaseHandle result = _inputDsContainer->Get(name);
 
-        const HdContainerDataSourceHandle resultContainer = 
+        const HdContainerDataSourceHandle resultContainer =
             HdContainerDataSource::Cast(result);
         if (!resultContainer) {
             return result;
         }
 
-        static const TfTokenSet purposes = 
+        static const TfTokenSet purposes =
         {
             UsdShadeTokens->full,
             HdMaterialBindingsSchemaTokens->allPurpose,
         };
 
         // If the locator name matches one of the purposes listed above,
-        // replace the materialBinding data source with one that uses 
+        // replace the materialBinding data source with one that uses
         // _newBinding for its path.
         if (purposes.count(name) > 0) {
-            const HdContainerDataSourceHandle overrideDs = 
+            const HdContainerDataSourceHandle overrideDs =
                 HdRetainedContainerDataSource::New(
-                    HdMaterialBindingSchemaTokens->path, 
+                    HdMaterialBindingSchemaTokens->path,
                     HdRetainedTypedSampledDataSource<SdfPath>::New(_newBinding));
             return HdCreateOverlayContainerDataSource(
                 overrideDs, HdContainerDataSource::Cast(result));
@@ -756,7 +756,7 @@ public:
     {
         const HdDataSourceBaseHandle result = _inputDsContainer->Get(name);
 
-        const HdContainerDataSourceHandle resultContainer = 
+        const HdContainerDataSourceHandle resultContainer =
             HdContainerDataSource::Cast(result);
         if (!resultContainer) {
             return result;
@@ -764,7 +764,7 @@ public:
 
         if (name == HdMaterialBindingsSchema::GetSchemaToken()) {
             return _MaterialBindingsContainerDataSource::New(
-                resultContainer, _newBinding); 
+                resultContainer, _newBinding);
         }
 
         return result;
@@ -795,7 +795,7 @@ HdsiMaterialOverrideResolvingSceneIndex::GetPrim(const SdfPath &primPath) const
     // generated materials won't have a data source until after
     // _CreateGeneratedMaterialDataSource is called.
     if (_IsGeneratedMaterial(primPath)) {
-        // If processing a generated material, create its data source as a copy 
+        // If processing a generated material, create its data source as a copy
         // of the material it was generated from
         _CreateGeneratedMaterialDataSource(prim, primPath);
     }
@@ -805,10 +805,10 @@ HdsiMaterialOverrideResolvingSceneIndex::GetPrim(const SdfPath &primPath) const
     }
 
     if (prim.primType == HdPrimTypeTokens->material) {
-        // When processing a material, replace its data source with a wrapped 
-        // data source, which will do the actual work of applying the override 
+        // When processing a material, replace its data source with a wrapped
+        // data source, which will do the actual work of applying the override
         // values to the correct material node parameters.
-        prim.dataSource = 
+        prim.dataSource =
             _MaterialPrimContainerDataSource::New(prim.dataSource, primPath);
     } else {
         auto it = _primData.find(primPath);
@@ -816,11 +816,11 @@ HdsiMaterialOverrideResolvingSceneIndex::GetPrim(const SdfPath &primPath) const
             return prim;
         }
 
-        // When processing a geom with a materialOverride data source, replace 
-        // its data source with a wrapped data source which will change its 
-        // materialBindings to point to the generated material which contains 
+        // When processing a geom with a materialOverride data source, replace
+        // its data source with a wrapped data source which will change its
+        // materialBindings to point to the generated material which contains
         // the desired overrides
-        prim.dataSource = 
+        prim.dataSource =
             _BindablePrimContainerDataSource::New(
                 prim.dataSource, it->second.generatedMaterialPath);
     }
@@ -832,15 +832,15 @@ SdfPathVector
 HdsiMaterialOverrideResolvingSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
-    SdfPathVector childPrimPaths = 
+    SdfPathVector childPrimPaths =
         _GetInputSceneIndex()->GetChildPrimPaths(primPath);
-    
+
     // Add any generated materials
-    const PathSet generatedChildPrimPaths = 
+    const PathSet generatedChildPrimPaths =
         _GetGeneratedMaterials(primPath);
     childPrimPaths.insert(
-        childPrimPaths.end(), 
-        generatedChildPrimPaths.begin(), 
+        childPrimPaths.end(),
+        generatedChildPrimPaths.begin(),
         generatedChildPrimPaths.end());
 
     return childPrimPaths;
@@ -851,6 +851,7 @@ HdsiMaterialOverrideResolvingSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
     _SendPrimsAdded(_AddGeneratedMaterials(entries));
 }
 
@@ -859,6 +860,7 @@ HdsiMaterialOverrideResolvingSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
     _SendPrimsDirtied(_DirtyGeneratedMaterials(entries));
 }
 
@@ -894,9 +896,9 @@ HdsiMaterialOverrideResolvingSceneIndex::_AddGeneratedMaterial(
         return {};
     }
 
-    // If this geom prim does not have material overrides, 
+    // If this geom prim does not have material overrides,
     // no further processing is required
-    const HdMaterialOverrideSchema matOverrideSchema = 
+    const HdMaterialOverrideSchema matOverrideSchema =
         _GetMaterialOverrides(primPath);
     if (!matOverrideSchema.IsDefined()) {
         return {};
@@ -922,7 +924,7 @@ HdsiMaterialOverrideResolvingSceneIndex::_AddGeneratedMaterial(
     }
 
     TF_DEBUG(HDSI_MATERIAL_OVERRIDES).Msg(
-        "\tThis prim uses a the following base material: %s\n", 
+        "\tThis prim uses a the following base material: %s\n",
         materialPath.GetText());
 
     auto hashIt = _materialHashMap.find(materialPath);
@@ -944,7 +946,7 @@ HdsiMaterialOverrideResolvingSceneIndex::_AddGeneratedMaterial(
                     ": %s\n", generatedMaterialPath.GetText());
                 return {};
             }
-            
+
             if (materialDataIt->second.originalMaterialPath.IsEmpty()) {
                 TF_DEBUG(HDSI_MATERIAL_OVERRIDES).Msg(
                     "\t!ERROR! _materialData does not have an "
@@ -952,30 +954,30 @@ HdsiMaterialOverrideResolvingSceneIndex::_AddGeneratedMaterial(
                     ": %s\n", generatedMaterialPath.GetText());
                 return {};
             }
-            
+
             _primData[primPath] = {generatedMaterialPath, matOverHash};
             _materialData[generatedMaterialPath].boundPrims.insert(primPath);
             return generatedMaterialPath;
         }
     }
 
-    // Working with a geom, with material overrides, and a 
+    // Working with a geom, with material overrides, and a
     // material bound to it.
     // A new material will need to be generated from the bound material.
     // This new generated material will need to be bound to this prim.
-    // This is done so that overrides applied to the generated material do 
+    // This is done so that overrides applied to the generated material do
     // not spill to other prims bound to the original material.
     //
     // Example:
-    // Given a prim with a material /World/.../Asset/Looks/Material bound 
+    // Given a prim with a material /World/.../Asset/Looks/Material bound
     // to it, the following values will be generated below:
     // - materialPath /World/.../Asset/Looks/Material
     // - materialScopePath: /World/.../Asset/Looks
     // - newMaterialPath: /World/.../Asset/Looks/__MOR_Material_primName
-    const std::string newMaterialName = "__MOR_" + materialPath.GetName() 
+    const std::string newMaterialName = "__MOR_" + materialPath.GetName()
         + "_" + primPath.GetName();
     const SdfPath materialScopePath = materialPath.GetParentPath();
-    SdfPath newMaterialPath = 
+    SdfPath newMaterialPath =
         materialScopePath.AppendChild(TfToken(newMaterialName));
 
     // Make sure this name is unique
@@ -996,13 +998,13 @@ HdsiMaterialOverrideResolvingSceneIndex::_AddGeneratedMaterial(
     return newMaterialPath;
 }
 
-HdSceneIndexObserver::AddedPrimEntries 
+HdSceneIndexObserver::AddedPrimEntries
 HdsiMaterialOverrideResolvingSceneIndex::_AddGeneratedMaterials(
     const HdSceneIndexObserver::AddedPrimEntries& entries)
 {
     HdSceneIndexObserver::AddedPrimEntries newEntries(entries);
     for (const HdSceneIndexObserver::AddedPrimEntry& entry : entries) {
-        const SdfPath newMaterialPath = 
+        const SdfPath newMaterialPath =
             _AddGeneratedMaterial(entry.primType, entry.primPath);
         if (newMaterialPath.IsEmpty()) {
             continue;
@@ -1039,17 +1041,17 @@ HdsiMaterialOverrideResolvingSceneIndex::_DirtyGeneratedMaterials(
 
         if (materialIt != _oldToNewMaterialPaths.end()) {
             processedPrimsSet.insert(entry.primPath);
-            _DirtyBaseMaterial(entry.primPath, materialIt->second, 
+            _DirtyBaseMaterial(entry.primPath, materialIt->second,
                 &dirtiedEntriesSet);
         } else if (primIt != _primData.end()) {
             processedPrimsSet.insert(entry.primPath);
-            _DirtyGeometry(entry, inputScene, primIt->second, 
-                &processedPrimsSet, &addedEntriesSet, &dirtiedEntriesSet, 
+            _DirtyGeometry(entry, inputScene, primIt->second,
+                &processedPrimsSet, &addedEntriesSet, &dirtiedEntriesSet,
                 &removedEntriesSet);
         } else if (entry.dirtyLocators.Intersects(
             HdMaterialOverrideSchema::GetDefaultLocator())) {
             processedPrimsSet.insert(entry.primPath);
-            _DirtyMaterialOverrideLocator(entry.primPath, inputScene, 
+            _DirtyMaterialOverrideLocator(entry.primPath, inputScene,
                 &addedEntriesSet, &dirtiedEntriesSet);
         }
     }
@@ -1070,31 +1072,31 @@ HdsiMaterialOverrideResolvingSceneIndex::_DirtyGeneratedMaterials(
     for (const SdfPath& dirtiedPath : dirtiedEntriesSet) {
         static const HdDataSourceLocator containerLocator(
             HdDataSourceLocatorSentinelTokens->container);
-            
+
         static const HdDataSourceLocatorSet locators {
             containerLocator,
-            {HdMaterialSchema::GetSchemaToken(), 
+            {HdMaterialSchema::GetSchemaToken(),
                 HdDataSourceLocatorSentinelTokens->container},
-            {HdMaterialBindingsSchema::GetSchemaToken(), 
+            {HdMaterialBindingsSchema::GetSchemaToken(),
                 HdDataSourceLocatorSentinelTokens->container}};
         newEntries.emplace_back(dirtiedPath, locators);
     }
 
-    if (TfDebug::IsEnabled(HDSI_MATERIAL_OVERRIDES) && 
+    if (TfDebug::IsEnabled(HDSI_MATERIAL_OVERRIDES) &&
         // Only print if there are generated materials
         !_scopeToNewMaterialPaths.empty() &&
             // Only print if this dirty function did some work
-            (!dirtiedEntriesSet.empty() || !addedEntriesSet.empty() || 
+            (!dirtiedEntriesSet.empty() || !addedEntriesSet.empty() ||
             !removedEntriesSet.empty())) {
 
         fprintf(stdout, "Current list of generated materials:\n");
-        for (const auto& [materialScope, materialList] : 
+        for (const auto& [materialScope, materialList] :
             _scopeToNewMaterialPaths) {
             fprintf(stdout, "\t%s\n", materialScope.GetText());
             for (const SdfPath& materialPath : materialList) {
                 fprintf(stdout, "\t\t%s\n", materialPath.GetText());
             }
-        } 
+        }
     }
 
     return newEntries;
@@ -1123,12 +1125,12 @@ HdsiMaterialOverrideResolvingSceneIndex::_DirtyBaseMaterial(
     // From a user standpoint, generated materials should be transparent.
     // If the material they were generated from changes, the changes
     // should be reflected in them.
-    // Therefore, If a material used to generate other materials is 
+    // Therefore, If a material used to generate other materials is
     // dirtied, add the generated materials to the list of dirtied prims.
     for (const SdfPath& newMaterialPath : generatedMaterials) {
         TF_DEBUG(HDSI_MATERIAL_OVERRIDES).Msg(
             "\t\t%s\n", newMaterialPath.GetText());
-        dirtiedPaths->insert(newMaterialPath);    
+        dirtiedPaths->insert(newMaterialPath);
     }
 }
 
@@ -1159,7 +1161,7 @@ HdsiMaterialOverrideResolvingSceneIndex::_DirtyGeometry(
     if (!prim) {
         return;
     }
-    
+
     // Sanity check: if prim data is available for this entry, then data
     // about its generated material should also be available.
     const SdfPath genMaterialPath = primData.generatedMaterialPath;
@@ -1173,7 +1175,7 @@ HdsiMaterialOverrideResolvingSceneIndex::_DirtyGeometry(
         return;
     }
 
-    // Processing a geometry prim which had previously received a 
+    // Processing a geometry prim which had previously received a
     // generated material to express its material overrides.
     // The material overrides have now changed.
     TF_DEBUG(HDSI_MATERIAL_OVERRIDES).Msg(
@@ -1188,11 +1190,11 @@ HdsiMaterialOverrideResolvingSceneIndex::_DirtyGeometry(
     std::vector<std::pair<TfToken, SdfPath>> primsToProcess;
     primsToProcess.push_back({prim.primType, entry.primPath});
 
-    // Other prims that shared the same generated material with 
+    // Other prims that shared the same generated material with
     // entry.primPath prior to that prim changing its material overrides
     // might need to have their generated materials adjusted.
     // This is needed, for example, in the case where multiple prims
-    // shared the same generated material and only one of them 
+    // shared the same generated material and only one of them
     // received new material overrides
     auto primPathsIt = _materialData.find(genMaterialPath);
     if (primPathsIt != _materialData.end()) {
@@ -1201,7 +1203,7 @@ HdsiMaterialOverrideResolvingSceneIndex::_DirtyGeometry(
                 continue;
             }
 
-            const HdSceneIndexPrim associatedPrim = 
+            const HdSceneIndexPrim associatedPrim =
                 inputScene->GetPrim(primPath);
             if (!associatedPrim) {
                 continue;
@@ -1228,7 +1230,7 @@ HdsiMaterialOverrideResolvingSceneIndex::_DirtyGeometry(
     // Figure out what the new material to express the new material
     // overrides would be. This could result in a cache hit.
     for (const auto& [primType, primPath] : primsToProcess) {
-        const SdfPath newGeneratedMaterialPath = 
+        const SdfPath newGeneratedMaterialPath =
             _AddGeneratedMaterial(primType, primPath);
         // Adding primPath to the dirty pool to express
         // that its material bindings have changed (either because they
@@ -1260,15 +1262,15 @@ HdsiMaterialOverrideResolvingSceneIndex::_DirtyMaterialOverrideLocator(
         "\tThis prim is receiving a material override for the first "
         "time.\n");
 
-    // A prim which did not use to have a material override now 
-    // received one. Add a generated material to account for this 
+    // A prim which did not use to have a material override now
+    // received one. Add a generated material to account for this
     // override if necessary
     const HdSceneIndexPrim prim = inputScene->GetPrim(primPath);
     if (!prim) {
         return;
     }
 
-    const SdfPath newMatPath = 
+    const SdfPath newMatPath =
         _AddGeneratedMaterial(prim.primType, primPath);
     if (!newMatPath.IsEmpty()) {
         // Adding again to dirty its material binding
@@ -1313,12 +1315,12 @@ HdsiMaterialOverrideResolvingSceneIndex::_CreateGeneratedMaterialDataSource(
     }
 
     if (materialIt->second.boundPrims.empty()) {
-        return;    
+        return;
     }
 
     // Make a copy of the original material
     const HdSceneIndexBaseRefPtr& inputScene = _GetInputSceneIndex();
-    const HdSceneIndexPrim originalMaterialPrim = 
+    const HdSceneIndexPrim originalMaterialPrim =
         inputScene->GetPrim(materialIt->second.originalMaterialPath);
     prim.dataSource = HdMakeStaticCopy(originalMaterialPrim.dataSource);
 
@@ -1326,8 +1328,8 @@ HdsiMaterialOverrideResolvingSceneIndex::_CreateGeneratedMaterialDataSource(
     // material to be generated
     const SdfPath materialOverridePath = *materialIt->second.boundPrims.begin();
     const HdSceneIndexPrim materialOverrideSourcePrim =
-        inputScene->GetPrim(materialOverridePath);       
-    const HdContainerDataSourceHandle materialOver = 
+        inputScene->GetPrim(materialOverridePath);
+    const HdContainerDataSourceHandle materialOver =
         materialOverrideSourcePrim.dataSource ?
             HdContainerDataSource::Cast(
                 materialOverrideSourcePrim.dataSource->Get(
@@ -1335,18 +1337,18 @@ HdsiMaterialOverrideResolvingSceneIndex::_CreateGeneratedMaterialDataSource(
             emptyHandle;
 
     // Get the materialOverride data source from the original material, if any.
-    // Overlay materialOverride data source from the geom on top of the 
+    // Overlay materialOverride data source from the geom on top of the
     // materialOverrides from the original material
-    const HdDataSourceBaseHandle originalMaterialOverrides = 
+    const HdDataSourceBaseHandle originalMaterialOverrides =
         prim.dataSource->Get(HdMaterialOverrideSchema::GetSchemaToken());
-    const HdContainerDataSourceHandle overlayedMaterialOverrides = 
+    const HdContainerDataSourceHandle overlayedMaterialOverrides =
         HdCreateOverlayContainerDataSource(
-            materialOver, 
+            materialOver,
             HdContainerDataSource::Cast(originalMaterialOverrides));
 
     // Overlay the fully resolved materialOverride data source on top of the
     // data source for the generated material
-    prim.dataSource = 
+    prim.dataSource =
         HdCreateOverlayContainerDataSource(
             HdRetainedContainerDataSource::New(
                 HdMaterialOverrideSchema::GetSchemaToken(),
@@ -1361,15 +1363,15 @@ HdsiMaterialOverrideResolvingSceneIndex::_GetHash(
     const HdMaterialOverrideSchema& materialOverrides) const
 {
     uint64_t hash = 0;
-    static const std::string interfaceValuesStr = 
+    static const std::string interfaceValuesStr =
         HdMaterialOverrideSchemaTokens->interfaceValues.GetString();
-    static const std::string parameterValuesStr = 
+    static const std::string parameterValuesStr =
         HdMaterialOverrideSchemaTokens->parameterValues.GetString();
 
-    auto hashNodeParameterContainer = 
+    auto hashNodeParameterContainer =
         [&hash](
             const HdMaterialNodeParameterContainerSchema& schema,
-            const std::string& prefix) 
+            const std::string& prefix)
     {
         for (const TfToken& overrideValue : schema.GetNames()) {
             // Hash interface name
@@ -1377,7 +1379,7 @@ HdsiMaterialOverrideResolvingSceneIndex::_GetHash(
             hash = ArchHash64((const char *)name.c_str(), name.size(), hash);
 
             // Hash the interface value
-            const HdMaterialNodeParameterSchema nodeParamSchema = 
+            const HdMaterialNodeParameterSchema nodeParamSchema =
                 schema.Get(overrideValue);
             const VtValue value = nodeParamSchema.GetValue()->GetValue(0.0);
             VtVisitValue(value, VtHasher(&hash));
@@ -1385,17 +1387,17 @@ HdsiMaterialOverrideResolvingSceneIndex::_GetHash(
     };
 
     // Hash interfaceValues
-    const HdMaterialNodeParameterContainerSchema interfaceValuesSchema = 
+    const HdMaterialNodeParameterContainerSchema interfaceValuesSchema =
         materialOverrides.GetInterfaceValues();
     hashNodeParameterContainer(interfaceValuesSchema, interfaceValuesStr);
 
     // Hash parameterValues
-    const HdNodeToInputToMaterialNodeParameterSchema paramValuesSchema = 
+    const HdNodeToInputToMaterialNodeParameterSchema paramValuesSchema =
         materialOverrides.GetParameterValues();
     for (const TfToken& nodeName : paramValuesSchema.GetNames()) {
         const HdMaterialNodeParameterContainerSchema paramValueNodeSchema =
             paramValuesSchema.Get(nodeName);
-        hashNodeParameterContainer(paramValueNodeSchema, 
+        hashNodeParameterContainer(paramValueNodeSchema,
             parameterValuesStr + nodeName.GetString());
     }
 
@@ -1426,7 +1428,7 @@ HdsiMaterialOverrideResolvingSceneIndex::_InvalidateMaps(const SdfPath& primPath
     const SdfPath materialScopePath = originalMaterialPath.GetParentPath();
     _scopeToNewMaterialPaths[materialScopePath].erase(generatedMaterialPath);
     _oldToNewMaterialPaths[originalMaterialPath].erase(generatedMaterialPath);
-    for (const SdfPath& boundPrimPath : 
+    for (const SdfPath& boundPrimPath :
             _materialData[generatedMaterialPath].boundPrims) {
         _primData.erase(boundPrimPath);
     }

@@ -1201,6 +1201,7 @@ void
 _InstanceObserver::PrimsAdded(const HdSceneIndexBase &sender,
                               const AddedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
     _RetainedSceneIndexOperations
         retainedSceneIndexOperations(_retainedSceneIndex);
 
@@ -1241,6 +1242,8 @@ _InstanceObserver::PrimsDirtied(const HdSceneIndexBase &sender,
     if (_instanceToInfo.empty()) {
         return;
     }
+
+    TRACE_FUNCTION();
 
     _RetainedSceneIndexOperations
         retainedSceneIndexOperations(_retainedSceneIndex);
@@ -1314,6 +1317,8 @@ _InstanceObserver::PrimsRemoved(const HdSceneIndexBase &sender,
     if (_instanceToInfo.empty()) {
         return;
     }
+
+    TRACE_FUNCTION();
 
     for (const RemovedPrimEntry &entry : entries) {
         const SdfPath &path = entry.primPath;

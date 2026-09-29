@@ -24,7 +24,7 @@
 #include "pxr/imaging/hd/sceneGlobalsSchema.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
-#include "pxr/imaging/hd/schema.h" 
+#include "pxr/imaging/hd/schema.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hdsi/utils.h"
@@ -367,7 +367,7 @@ _IsPrototype(HdSceneIndexPrim const& prim)
     return false;
 }
 
-HdSceneIndexPrim 
+HdSceneIndexPrim
 _RenderPassVisibilitySceneIndex::GetPrim(
     const SdfPath &primPath) const
 {
@@ -395,7 +395,7 @@ _RenderPassVisibilitySceneIndex::GetPrim(
     return prim;
 }
 
-SdfPathVector 
+SdfPathVector
 _RenderPassVisibilitySceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
@@ -446,6 +446,8 @@ _RenderPassVisibilitySceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::DirtiedPrimEntries extraDirtyEntries;
 
     // Check if any entry could affect the active render pass.
@@ -464,11 +466,13 @@ _RenderPassVisibilitySceneIndex::_PrimsAdded(
     _SendPrimsDirtied(extraDirtyEntries);
 }
 
-void 
+void
 _RenderPassVisibilitySceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::DirtiedPrimEntries extraDirtyEntries;
 
     // Check if any entry could affect the active render pass.
@@ -485,6 +489,8 @@ _RenderPassVisibilitySceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::DirtiedPrimEntries extraDirtyEntries;
 
     // Check if any entry could affect the active render pass.

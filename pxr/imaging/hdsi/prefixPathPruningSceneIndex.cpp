@@ -66,12 +66,12 @@ _IsPrunedImpl(
     // With the default std::less_than comparator,
     // lower_bound gives us the first element that is not less than
     // (i.e. greater-than-or-equal-to) primPath, and
-    // upper_bound gives us the first element that is greater than 
+    // upper_bound gives us the first element that is greater than
     // (i.e. not less-than-or-equal-to) primPath.
-    // 
+    //
     // We would need to inspect the element(s) before the returned iterator
     // to determine if primPath is pruned.
-    // 
+    //
     // Using lower_bound with reverse iterators and the std::greater_than
     // comparator gives us the first element that is not greater than
     // (i.e. less-than-or-equal-to) primPath, which is what we want.
@@ -157,7 +157,7 @@ HdsiPrefixPathPruningSceneIndex::SetExcludePathPrefixes(
 
     SdfPathVector newPrefixes(std::move(paths));
     SdfPath::RemoveDescendentPaths(&newPrefixes);
-    
+
     if (newPrefixes == _sortedExcludePaths) {
         return;
     }
@@ -181,12 +181,12 @@ HdsiPrefixPathPruningSceneIndex::SetExcludePathPrefixes(
     // Add all the prims in each prefix's subtree. Note that this may include
     // descendent prims that are pruned by the new prefixes. We send the added
     // notices first and then the removed notices to address this.
-    // 
+    //
     HdSceneIndexObserver::AddedPrimEntries addedEntries;
     for (const SdfPath &prefix : noLongerPrunedPrefixes) {
 
         for (const SdfPath &primPath : HdSceneIndexPrimView(inputSi, prefix)) {
-            
+
             addedEntries.emplace_back(
                 primPath, inputSi->GetPrim(primPath).primType);
         }
@@ -201,7 +201,7 @@ HdsiPrefixPathPruningSceneIndex::SetExcludePathPrefixes(
         newPrefixes.begin(), newPrefixes.end(),
         oldPrefixes.begin(), oldPrefixes.end(),
         std::back_inserter(newlyPrunedPrefixes));
-    
+
     HdSceneIndexObserver::RemovedPrimEntries removedEntries;
     for (const SdfPath &prefix : newlyPrunedPrefixes) {
         removedEntries.emplace_back(prefix);
@@ -231,7 +231,7 @@ _RemovePrunedNoticeEntries(
         [&sortedExcludePaths](const auto &entry) {
             return !_IsPrunedImpl(entry.primPath, sortedExcludePaths);
         });
-    
+
     if (filteredEntries->empty()) {
         return inputEntries;
     }
@@ -251,6 +251,8 @@ HdsiPrefixPathPruningSceneIndex::_PrimsAdded(
         _SendPrimsAdded(entries);
         return;
     }
+
+    TRACE_FUNCTION();
 
     HdSceneIndexObserver::AddedPrimEntries filteredEntries;
     _SendPrimsAdded(
@@ -272,6 +274,8 @@ HdsiPrefixPathPruningSceneIndex::_PrimsRemoved(
         return;
     }
 
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::RemovedPrimEntries filteredEntries;
     _SendPrimsRemoved(
         _RemovePrunedNoticeEntries(
@@ -291,6 +295,8 @@ HdsiPrefixPathPruningSceneIndex::_PrimsDirtied(
         _SendPrimsDirtied(entries);
         return;
     }
+
+    TRACE_FUNCTION();
 
     HdSceneIndexObserver::DirtiedPrimEntries filteredEntries;
     _SendPrimsDirtied(
@@ -330,7 +336,7 @@ HdsiPrefixPathPruningSceneIndex::_RemovePrunedChildren(
     if (childPaths->empty()) {
         return;
     }
-    
+
     childPaths->erase(
         std::remove_if(
             childPaths->begin(), childPaths->end(),

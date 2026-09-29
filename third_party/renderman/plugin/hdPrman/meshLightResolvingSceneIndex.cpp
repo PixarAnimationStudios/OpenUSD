@@ -1350,6 +1350,7 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
 
     HdSceneIndexObserver::RemovedPrimEntries removed;
 
@@ -1371,6 +1372,8 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     // Dependency Forwarding Scene Index will take care of most everything, but
     // we do still need to add/remove the stripped-down origin prim when
     // materialSyncMode changes from/to noMaterialResponse.

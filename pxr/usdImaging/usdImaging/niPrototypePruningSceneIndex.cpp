@@ -10,6 +10,8 @@
 
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 
+#include "pxr/base/trace/trace.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -163,6 +165,8 @@ UsdImaging_NiPrototypePruningSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     _FilteredEntries<HdSceneIndexObserver::AddedPrimEntries> newEntries(
         entries,
         [this](const SdfPath &primPath) {

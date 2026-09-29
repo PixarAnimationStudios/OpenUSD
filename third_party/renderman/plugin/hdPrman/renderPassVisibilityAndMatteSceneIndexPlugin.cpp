@@ -13,7 +13,7 @@
 #include "pxr/imaging/hd/version.h"
 
 // There was no hdsi/version.h before this HD_API_VERSION.
-#if HD_API_VERSION >= 58 
+#if HD_API_VERSION >= 58
 #include "pxr/imaging/hdsi/version.h"
 
 #if HDSI_API_VERSION >= 21
@@ -37,7 +37,7 @@
 #include "pxr/imaging/hd/sceneGlobalsSchema.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
-#include "pxr/imaging/hd/schema.h" 
+#include "pxr/imaging/hd/schema.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hdsi/utils.h"
@@ -666,7 +666,7 @@ _IsPrototype(HdSceneIndexPrim const& prim)
     return false;
 }
 
-HdSceneIndexPrim 
+HdSceneIndexPrim
 _RenderPassVisibilityAndMatteSceneIndex::GetPrim(
     const SdfPath &primPath) const
 {
@@ -686,7 +686,7 @@ _RenderPassVisibilityAndMatteSceneIndex::GetPrim(
     return prim;
 }
 
-SdfPathVector 
+SdfPathVector
 _RenderPassVisibilityAndMatteSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
@@ -737,6 +737,8 @@ _RenderPassVisibilityAndMatteSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::DirtiedPrimEntries extraDirtyEntries;
 
     // Check if any entry could affect the active render pass.
@@ -755,11 +757,13 @@ _RenderPassVisibilityAndMatteSceneIndex::_PrimsAdded(
     _SendPrimsDirtied(extraDirtyEntries);
 }
 
-void 
+void
 _RenderPassVisibilityAndMatteSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::DirtiedPrimEntries extraDirtyEntries;
 
     // Check if any entry could affect the active render pass.
@@ -776,6 +780,8 @@ _RenderPassVisibilityAndMatteSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::DirtiedPrimEntries extraDirtyEntries;
 
     // Check if any entry could affect the active render pass.
