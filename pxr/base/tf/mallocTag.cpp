@@ -8,51 +8,23 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include "pxr/base/tf/bigRWMutex.h"
-#include "pxr/base/tf/buffer.h"
-#include "pxr/base/tf/debug.h"
+// Needed by the report printing and parsing code, which is compiled in both
+// builds.  See the note on the collection gate below.
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/iterator.h"
-#include "pxr/base/tf/pointerAndBits.h"
-#include "pxr/base/tf/pxrTslExt.h"
-#include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
-#include "pxr/base/tf/spinMutex.h"
-#include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/tf.h"
 
-#include "pxr/base/arch/align.h"
-#include "pxr/base/arch/attributes.h"
-#include "pxr/base/arch/debugger.h"
-#include "pxr/base/arch/hash.h"
-#include "pxr/base/arch/mallocHook.h"
-#include "pxr/base/arch/math.h"
-#include "pxr/base/arch/prefetch.h"
 #include "pxr/base/arch/stackTrace.h"
-#include "pxr/base/arch/threads.h"
-#include "pxr/base/arch/virtualMemory.h"
-
-#include <tbb/concurrent_hash_map.h>
-#include <tbb/concurrent_unordered_set.h>
 
 #include <algorithm>
-#include <atomic>
-#include <cmath>
-#include <condition_variable>
-#include <cstdlib>
-#include <cstring>
 #include <deque>
-#include <iostream>
 #include <istream>
-#include <mutex>
+#include <map>
 #include <ostream>
 #include <regex>
 #include <stack>
 #include <string>
-#include <chrono>
-#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -61,6 +33,53 @@ using std::make_pair;
 using std::pair;
 using std::string;
 using std::vector;
+
+// Without ArchMallocHook support there is no way to observe allocations, so the
+// entire collection implementation is omitted.  What remains is the handful of
+// stub entry points that report an uninitializable system, plus the report
+// printing and parsing code, which operates purely on the public CallTree
+// structure and is therefore useful in either build.  See the comment at the
+// top of mallocTag.h.
+//
+// The gate closes again further down, just before the report generation
+// section.  Two pieces of the collection implementation sit inside that later
+// section because they belong to it topically -- _BuildUniqueMallocStacks() and
+// Tf_MallocPathNode::_BuildTree() -- and each carries its own gate.
+#ifdef PXR_ARCH_SUPPORT_MALLOC_HOOKS
+
+#include "pxr/base/tf/bigRWMutex.h"
+#include "pxr/base/tf/buffer.h"
+#include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/pointerAndBits.h"
+#include "pxr/base/tf/pxrTslExt.h"
+#include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
+#include "pxr/base/tf/spinMutex.h"
+#include "pxr/base/tf/stl.h"
+
+#include "pxr/base/arch/align.h"
+#include "pxr/base/arch/attributes.h"
+#include "pxr/base/arch/debugger.h"
+#include "pxr/base/arch/hash.h"
+#include "pxr/base/arch/mallocHook.h"
+#include "pxr/base/arch/math.h"
+#include "pxr/base/arch/prefetch.h"
+#include "pxr/base/arch/threads.h"
+#include "pxr/base/arch/virtualMemory.h"
+
+#include <tbb/concurrent_hash_map.h>
+#include <tbb/concurrent_unordered_set.h>
+
+#include <atomic>
+#include <chrono>
+#include <cmath>
+#include <condition_variable>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <mutex>
+#include <thread>
 
 // TfMallocTag Implementation
 // ============================================================================
@@ -389,9 +408,6 @@ struct Tf_MallocGlobalData;
 // Constants and configuration
 
 namespace {
-
-// The max number of captured unique malloc stacks printed in a report.
-static constexpr size_t _MaxReportedMallocStacks = 100;
 
 // The max number of call stack frames stored when malloc stack capturing is
 // enabled.  Note that two malloc stacks are considered identical if all their
@@ -4990,20 +5006,155 @@ TfMallocTag::PauseControl::_Unpause()
     _td = nullptr;
 }
 
+#else // !PXR_ARCH_SUPPORT_MALLOC_HOOKS
+
+////////////////////////////////////////////////////////////////////////
+// Stub implementation
+//
+// Collection is impossible in this build, so these present a system that can
+// never be initialized.  IsInitialized() is constant false in the header, which
+// folds away the inline callers -- Auto, Pop(), GetCurrentStackState(),
+// StackOverride and PauseControl -- so nothing here is on a hot path.  These
+// remain out-of-line definitions purely to align with the hook-enabled build.
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+/* static */ bool
+TfMallocTag::Initialize(string *errMsg)
+{
+    if (errMsg) {
+        *errMsg = "TfMallocTag support disabled at compile time "
+            "(PXR_ARCH_SUPPORT_MALLOC_HOOKS not defined)";
+    }
+    return false;
+}
+
+/* static */ void
+TfMallocTag::Shutdown()
+{
+}
+
+/* static */ void
+TfMallocTag::Clear()
+{
+}
+
+/* static */ size_t
+TfMallocTag::GetTotalBytes()
+{
+    return 0;
+}
+
+/* static */ size_t
+TfMallocTag::GetMaxTotalBytes()
+{
+    return 0;
+}
+
+/* static */ std::string
+TfMallocTag::GetPerfStats(bool /* showPerThread */)
+{
+    return "TfMallocTag support disabled at compile time\n";
+}
+
+// Matches the uninitialized behavior of the collecting build: blank the tree
+// out and report that nothing was captured.
+/* static */ bool
+TfMallocTag::GetCallTree(CallTree *tree, bool /* skipRepeated */)
+{
+    tree->callSites.clear();
+    tree->root.nBytes = tree->root.nBytesDirect = 0;
+    tree->root.nAllocations = 0;
+    tree->root.siteName.clear();
+    tree->root.children.clear();
+    tree->capturedCallStacks.clear();
+    return false;
+}
+
+/* static */ void
+TfMallocTag::SetDebugMatchList(const std::string & /* matchList */)
+{
+}
+
+/* static */ void
+TfMallocTag::SetCapturedMallocStacksMatchList(
+    const std::string & /* matchList */)
+{
+}
+
+/* static */ vector<vector<uintptr_t>>
+TfMallocTag::GetCapturedMallocStacks()
+{
+    return {};
+}
+
+// The tag stack entry points.  Returning null tells Auto that no tag was
+// pushed, so its destructor does nothing.  These are unreachable in practice:
+// every caller is guarded by IsInitialized(), which is constant false here.
+// They exist to satisfy the declarations in the header.
+
+/* static */ TfMallocTag::_ThreadData *
+TfMallocTag::_Begin(const char * /* name */, _ThreadData * /* threadData */)
+{
+    return nullptr;
+}
+
+/* static */ TfMallocTag::_ThreadData *
+TfMallocTag::_Begin(_ImmortalName /* name */, _ThreadData * /* threadData */)
+{
+    return nullptr;
+}
+
+/* static */ void
+TfMallocTag::_End(int /* nTags */, _ThreadData * /* threadData */)
+{
+}
+
+/* static */ void
+TfMallocTag::_PopChecked()
+{
+}
+
+/* static */ TfMallocTag::StackState
+TfMallocTag::_GetCurrentStackState()
+{
+    return StackState {};
+}
+
+TfMallocTag::_ThreadData *
+TfMallocTag::StackOverride::_Push() const
+{
+    return nullptr;
+}
+
+void
+TfMallocTag::StackOverride::_Pop() const
+{
+}
+
+void
+TfMallocTag::PauseControl::_Pause(_Scope /* desired */)
+{
+}
+
+void
+TfMallocTag::PauseControl::_Unpause()
+{
+}
+
+#endif // PXR_ARCH_SUPPORT_MALLOC_HOOKS
+
 ////////////////////////////////////////////////////////////////////////
 // Report generation
+//
+// Everything from here to the end of the file is compiled in both builds,
+// except where individually gated.  It reads and writes the public CallTree
+// structure and never touches the collection machinery, so a captured report
+// remains loadable and printable everywhere.
+
+#ifdef PXR_ARCH_SUPPORT_MALLOC_HOOKS
 
 namespace {
-// Hash functor for a malloc stack.
-//
-struct _HashMallocStack
-{
-    size_t operator()(const vector<uintptr_t> &stack) const {
-        return ArchHash(
-            (const char *)&stack[0], sizeof(uintptr_t) * stack.size());
-    }
-};
-
 // The data associated with a malloc stack (a pointer to the malloc stack
 // itself, and the allocation size and number of allocations).
 //
@@ -5069,6 +5220,8 @@ Tf_MallocGlobalData::_BuildUniqueMallocStacks(TfMallocTag::CallTree *tree)
         info.numAllocations = data.numAllocations;
     }
 }
+
+#endif // PXR_ARCH_SUPPORT_MALLOC_HOOKS
 
 
 // Returns the given number as a string with commas used as thousands
@@ -5297,6 +5450,9 @@ _ReportMallocNode(
     }
 }
 
+// The max number of captured unique malloc stacks printed in a report.
+static constexpr size_t _MaxReportedMallocStacks = 100;
+
 static void
 _ReportCapturedMallocStacks(
     std::ostream &out,
@@ -5524,6 +5680,8 @@ TfMallocTag::CallTree::LoadReport(
     return true;
 }
 
+#ifdef PXR_ARCH_SUPPORT_MALLOC_HOOKS
+
 TfMallocTag::CallTree::PathNode
 Tf_MallocPathNode::_BuildTree(Tf_PathNodeChildrenTable const &pathNodeChildren,
                               Tf_PathNodeCountsTable const &nodeCounts,
@@ -5652,5 +5810,7 @@ Tf_MallocPathNode::_BuildTree(Tf_PathNodeChildrenTable const &pathNodeChildren,
     }
     return ret;
 }
+
+#endif // PXR_ARCH_SUPPORT_MALLOC_HOOKS
 
 PXR_NAMESPACE_CLOSE_SCOPE

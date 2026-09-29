@@ -209,6 +209,13 @@ Programs that have tags but have never called Initialize() have no measurable
 increase in running time: pushing and popping a tag is an inline read of a
 global and a branch.
 
+Collection works by interposing the allocator, which requires ArchMallocHook.
+When unavailable, PXR_ARCH_SUPPORT_MALLOC_HOOKS is left undefined and
+TfMallocTag compiles as stubs: Initialize() always fails, the queries report no
+memory, and a tag scope compiles to nothing.  Calling code needs no changes, and
+reports captured elsewhere can still be loaded and printed with
+CallTree::LoadReport() and CallTree::Report().
+
 With tagging active, the system intercepts every malloc() and free() in the
 process, so the cost lands on whatever code is allocating.  For typical
 workloads, measured overhead has been around 10 percent of total wall-time.  A

@@ -26,17 +26,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// The old glibc malloc hooks were removed in glibc 2.34.  So we only
-// auto-enable support for the ArchMallocHook if we're compiling on that version
-// or older.  If you have a different allocator that supports the old hook
-// variables, you can -DPXR_ARCH_SUPPORT_MALLOC_HOOKS when compiling to manually
-// enable support.  This code will then try to dlsym() the hooks at runtime,
-// when initialized.
-#if !defined(PXR_ARCH_SUPPORT_MALLOC_HOOKS) &&                          \
-    defined(ARCH_OS_LINUX) &&                                           \
-    defined(__GLIBC__) && __GLIBC__ <= 2 && __GLIBC_MINOR__ < 34
-#define PXR_ARCH_SUPPORT_MALLOC_HOOKS
-#endif
+// The old glibc malloc hooks were removed in glibc 2.34, so support for
+// ArchMallocHook must be manually enabled by arranging for
+// PXR_ARCH_SUPPORT_MALLOC_HOOKS to be defined in pxr/pxr.h.  This code will
+// then try to dlsym() the hooks at runtime, when initialized.
 
 using std::string;
 

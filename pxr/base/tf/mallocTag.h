@@ -28,6 +28,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \file tf/mallocTag.h
 /// \ingroup group_tf_MallocTag
 
+// TfMallocTag collects by interposing the allocator via ArchMallocHook, which
+// requires the old glibc-style hook variables.  When
+// PXR_ARCH_SUPPORT_MALLOC_HOOKS is not defined (see pxr/pxr.h), no
+// interposition is possible, so the entire collection implementation is omitted
+// and this API compiles to minimal stubs.
+//
+// Callers need not care which build they are in.  The stub build behaves as a
+// full build would where Initialize() fails.  Initialize() reports failure,
+// IsInitialized() is always false, the queries report no memory, and tag
+// push/pop compiles away.  Only report parsing and printing --
+// CallTree::LoadReport(), Report(), and GetPrettyPrintString() -- remain fully
+// functional, so a report captured elsewhere can still be read.
+
 struct Tf_MallocPathNode;
 
 /// \class TfMallocTag
@@ -192,6 +205,10 @@ public:
     /// indicate that no memory has been allocated.  Note also that memory
     /// allocated prior to calling \c Initialize() is not tracked i.e.  all data
     /// refers to allocations that happen subsequent to calling \c Initialize().
+    ///
+    /// When \c PXR_ARCH_SUPPORT_MALLOC_HOOKS is not defined, allocation cannot
+    /// be observed at all, so this always fails and the system can never become
+    /// initialized.
     TF_API static bool Initialize(std::string* errMsg = nullptr);
 
     /// Shutdown the memory tagging system.
@@ -210,8 +227,15 @@ public:
     /// \c true.  Note that racing calls to Shutdown() or Initialize() can
     /// immediately obsolete the returned result.
     static inline bool IsInitialized() {
+#ifdef PXR_ARCH_SUPPORT_MALLOC_HOOKS
         return TfMallocTag::_initState
             .load(std::memory_order_acquire) == _Initialized;
+#else
+        // Constant false, so every caller below -- Auto, Pop,
+        // GetCurrentStackState, StackOverride, PauseControl -- folds away
+        // entirely rather than testing a variable at runtime.
+        return false;
+#endif
     }
 
     /// Clear all recorded allocation events, in-flight events from all threads,
@@ -299,14 +323,16 @@ public:
     ///
     /// There is very little cost to creating or destroying memory tags if \c
     /// TfMallocTag::Initialize() has not been called: an inline read of a
-    /// global variable and a branch.  If tagging has been initialized, then
-    /// there is a small cost associated with pushing and popping memory tags on
-    /// the local stack.  Pushing a name whose characters are immortal, like a
-    /// string literal or a \c TfEternalString, normally takes no lock at all.
-    /// Pushing and popping a tag without allocating anything under it does no
-    /// table lookup whatsoever.  Popping never takes a lock.  Pushing or
-    /// popping the call stack does not actually cause any memory allocation
-    /// unless this is the first time that the given named tag is encountered.
+    /// global variable and a branch.  If \c PXR_ARCH_SUPPORT_MALLOC_HOOKS is
+    /// not defined there is no cost at all: the compiler emits no instructions.
+    /// If tagging has been initialized, then there is a small cost associated
+    /// with pushing and popping memory tags on the local stack.  Pushing a name
+    /// whose characters are immortal, like a string literal or a \c
+    /// TfEternalString, normally takes no lock at all.  Pushing and popping a
+    /// tag without allocating anything under it does no table lookup
+    /// whatsoever.  Popping never takes a lock.  Pushing or popping the call
+    /// stack does not actually cause any memory allocation unless this is the
+    /// first time that the given named tag is encountered.
     class Auto {
     public:
         Auto(const Auto &) = delete;
@@ -711,6 +737,7 @@ public:
     TF_API static std::vector<std::vector<uintptr_t> > GetCapturedMallocStacks();
 
 private:
+#ifdef PXR_ARCH_SUPPORT_MALLOC_HOOKS
     // Atomic initialization state -- valid transitions are from N -> N+1
     // cyclically, and from _Initializing -> _NotInitialized if initialization
     // fails.
@@ -720,7 +747,8 @@ private:
         _Initialized,
         _ShuttingDown
     };
-    
+#endif
+
     friend struct _TemporaryDisabler;
 
     friend struct Tf_MallocGlobalData;
@@ -763,7 +791,9 @@ private:
     friend class TfMallocTag::Auto;
     class Tls;
     friend class TfMallocTag::Tls;
+#ifdef PXR_ARCH_SUPPORT_MALLOC_HOOKS
     TF_API static std::atomic<_InitState> _initState;
+#endif
 };
 
 /// Top-down memory tagging system.

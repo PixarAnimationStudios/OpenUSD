@@ -22,9 +22,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-// TfMallocTag intercepts malloc and free through ArchMallocHook, which is only
-// wired up on Linux, so this test is built there only.
-#if defined(ARCH_OS_LINUX)
+// Only build the test if malloc hooks and TfMallocTag are available.
+#if defined(PXR_ARCH_SUPPORT_MALLOC_HOOKS)
 
 constexpr size_t Unit = 10000000;
 
@@ -1779,6 +1778,15 @@ Test_TfMallocTag()
     return true;
 }
 
-TF_ADD_REGTEST(TfMallocTag);
+#else // !PXR_ARCH_SUPPORT_MALLOC_HOOKS
 
-#endif
+static bool
+Test_TfMallocTag()
+{
+    printf("Test disabled, PXR_ARCH_SUPPORT_MALLOC_HOOKS not defined\n");
+    return true;
+}
+
+#endif // PXR_ARCH_SUPPORT_MALLOC_HOOKS
+
+TF_ADD_REGTEST(TfMallocTag);
