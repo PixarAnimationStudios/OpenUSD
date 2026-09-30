@@ -389,7 +389,14 @@ private:
     HdStTextureUtils::AlignedBuffer<T>
     _ReadAovBuffer(TfToken const & aovName) const;
 
-    HdRenderBuffer const * _FindAovBuffer(TfToken const & aovName) const;
+    template<typename T>
+    HdStTextureUtils::AlignedBuffer<T>
+    _ReadAovBuffer(TfToken const & aovName,
+                   HdRenderPassAovBindingVector const & bindings) const;
+
+    HdRenderBuffer const * _FindAovBuffer(
+        TfToken const & aovName,
+        HdRenderPassAovBindingVector const & bindings) const;
 
     // Create a shared render pass each for pickables, unpickables, and 
     // items in overlay (which may draw on top even when occluded).
@@ -411,6 +418,7 @@ private:
     size_t _pickableDepthIndex;
     TfToken _depthToken;
     std::unique_ptr<HdStRenderBuffer> _overlayDepthStencilBuffer;
+    std::vector<std::unique_ptr<HdStRenderBuffer>> _overlayAovBuffers;
     HdRenderPassAovBindingVector _overlayAovBindings;
 
     // pick buffer used for deep selection

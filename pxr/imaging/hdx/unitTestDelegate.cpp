@@ -824,6 +824,15 @@ Hdx_UnitTestDelegate::SetRefineLevel(SdfPath const &id, int level)
         id, HdChangeTracker::DirtyDisplayStyle);
 }
 
+void
+Hdx_UnitTestDelegate::SetDisplayInOverlay(
+    SdfPath const &id, bool displayInOverlay)
+{
+    _displayInOverlay[id] = displayInOverlay;
+    GetRenderIndex().GetChangeTracker().MarkRprimDirty(
+        id, HdChangeTracker::DirtyDisplayStyle);
+}
+
 HdReprSelector
 Hdx_UnitTestDelegate::GetReprSelector(SdfPath const &id)
 {
@@ -982,10 +991,20 @@ Hdx_UnitTestDelegate::GetInstancerTransform(SdfPath const& instancerId)
 HdDisplayStyle
 Hdx_UnitTestDelegate::GetDisplayStyle(SdfPath const& id)
 {
+    int refineLevel = _refineLevel;
     if (_refineLevels.find(id) != _refineLevels.end()) {
-        return HdDisplayStyle(_refineLevels[id]);
+        refineLevel = _refineLevels[id];
     }
-    return HdDisplayStyle(_refineLevel);
+
+    bool displayInOverlay = false;
+    if (_displayInOverlay.find(id) != _displayInOverlay.end()) {
+        displayInOverlay = _displayInOverlay[id];
+    }
+
+    return HdDisplayStyle(refineLevel,
+                          /*flatShading=*/false,
+                          /*displacement=*/true,
+                          displayInOverlay);
 }
 
 HdPrimvarDescriptorVector

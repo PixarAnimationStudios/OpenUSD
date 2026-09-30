@@ -99,10 +99,32 @@ _IsStormRenderer(HdRenderDelegate *renderDelegate)
     return true;
 }
 
-static SdfPath 
+// Shared between HdxPickTask::Execute's overlay-into-pickable merge and
+// HdxPickResult's own resolve methods (see definition below), so that both
+// agree on what counts as a hit for a given pickTarget.
+static bool
+_IsValidPickHit(
+    int const* primIds,
+    int const* instanceIds,
+    int const* elementIds,
+    int const* edgeIds,
+    int const* pointIds,
+    int index,
+    TfToken const& pickTarget,
+    HdRenderIndex const* renderIndex);
+
+static SdfPath
 _GetAovPath(TfToken const& aovName)
 {
     std::string identifier = std::string("aov_pickTask_") +
+        TfMakeValidIdentifier(aovName.GetString());
+    return SdfPath(identifier);
+}
+
+static SdfPath
+_GetOverlayAovPath(TfToken const& aovName)
+{
+    std::string identifier = std::string("aov_pickTask_overlay_") +
         TfMakeValidIdentifier(aovName.GetString());
     return SdfPath(identifier);
 }
@@ -243,11 +265,43 @@ HdxPickTask::_CreateAovBindings()
         }
     }
 
+    // Set up the overlay render pass's own ID AOVs, distinct from the
+    // pickable pass's, so that a fragment written by an overlay prim can be
+    // compared against what the pickable pass wrote at that pixel instead of
+    // overwriting it outright.  These clear to the AOVs' normal (unset)
+    // values, which is what makes "did the overlay pass write this pixel?"
+    // answerable in Execute().
+    for (TfToken const & aovOutput : _aovOutputs) {
+        if (HdAovHasDepthSemantic(aovOutput) ||
+            HdAovHasDepthStencilSemantic(aovOutput)) {
+            continue;
+        }
+
+        SdfPath const aovId = _GetOverlayAovPath(aovOutput);
+
+        _overlayAovBuffers.push_back(
+            std::make_unique<HdStRenderBuffer>(
+                hdStResourceRegistry.get(), aovId));
+
+        HdAovDescriptor aovDesc = renderDelegate->
+            GetDefaultAovDescriptor(aovOutput);
+
+        HdRenderPassAovBinding binding;
+        binding.aovName = aovOutput;
+        binding.renderBufferId = aovId;
+        binding.aovSettings = aovDesc.aovSettings;
+        binding.renderBuffer = _overlayAovBuffers.back().get();
+        binding.clearValue = aovDesc.clearValue;
+
+        _overlayAovBindings.push_back(binding);
+    }
+
     // Set up overlay render pass depth binding, a fresh empty depthStencil
     // buffer, so that inter-item overlay occlusion is correct while overlay
-    // items all draw in front of any previously-drawn items.  While writing to
-    // other AOVs, don't clear them at all, so that previously-drawn items are
-    // retained.
+    // items all draw in front of any previously-drawn items.  This depth
+    // buffer is deliberately never merged into the pickable pass's, so the
+    // pick depth buffer continues to exclude overlay items (see
+    // HdxPickHit::normalizedDepth).
     {
         _overlayDepthStencilBuffer = std::make_unique<HdStRenderBuffer>(
             hdStResourceRegistry.get(),
@@ -256,11 +310,6 @@ HdxPickTask::_CreateAovBindings()
         HdAovDescriptor depthDesc = renderDelegate->GetDefaultAovDescriptor(
             _depthToken);
 
-        _overlayAovBindings = _pickableAovBindings;
-        for (auto& binding : _overlayAovBindings) {
-            binding.clearValue = VtValue();
-        }
-
         HdRenderPassAovBinding overlayDepthBinding;
         overlayDepthBinding.aovName = _tokens->overlayDepthStencil;
         overlayDepthBinding.renderBufferId = _GetAovPath(
@@ -268,7 +317,7 @@ HdxPickTask::_CreateAovBindings()
         overlayDepthBinding.aovSettings = depthDesc.aovSettings;
         overlayDepthBinding.renderBuffer = _overlayDepthStencilBuffer.get();
         overlayDepthBinding.clearValue = VtValue(GfVec4f(1));
-        _overlayAovBindings.back() = overlayDepthBinding;
+        _overlayAovBindings.push_back(overlayDepthBinding);
     }
 }
 
@@ -281,10 +330,15 @@ HdxPickTask::_CleanupAovBindings()
         for (auto const & aovBuffer : _pickableAovBuffers) {
             aovBuffer->Finalize(renderParam);
         }
+        for (auto const & aovBuffer : _overlayAovBuffers) {
+            aovBuffer->Finalize(renderParam);
+        }
         _overlayDepthStencilBuffer->Finalize(renderParam);
     }
     _pickableAovBuffers.clear();
     _pickableAovBindings.clear();
+    _overlayAovBuffers.clear();
+    _overlayAovBindings.clear();
 }
 
 void
@@ -425,7 +479,19 @@ template<typename T>
 HdStTextureUtils::AlignedBuffer<T>
 HdxPickTask::_ReadAovBuffer(TfToken const & aovName) const
 {
-    HdRenderBuffer const * renderBuffer = _FindAovBuffer(aovName);
+    return _ReadAovBuffer<T>(aovName, _pickableAovBindings);
+}
+
+template<typename T>
+HdStTextureUtils::AlignedBuffer<T>
+HdxPickTask::_ReadAovBuffer(
+    TfToken const & aovName,
+    HdRenderPassAovBindingVector const & bindings) const
+{
+    HdRenderBuffer const * renderBuffer = _FindAovBuffer(aovName, bindings);
+    if (!renderBuffer) {
+        return HdStTextureUtils::AlignedBuffer<T>();
+    }
 
     VtValue aov = renderBuffer->GetResource(false);
     if (aov.IsHolding<HgiTextureHandle>()) {
@@ -442,15 +508,17 @@ HdxPickTask::_ReadAovBuffer(TfToken const & aovName) const
 }
 
 HdRenderBuffer const *
-HdxPickTask::_FindAovBuffer(TfToken const & aovName) const
+HdxPickTask::_FindAovBuffer(
+    TfToken const & aovName,
+    HdRenderPassAovBindingVector const & bindings) const
 {
     HdRenderPassAovBindingVector::const_iterator bindingIt =
-        std::find_if(_pickableAovBindings.begin(), _pickableAovBindings.end(),
+        std::find_if(bindings.begin(), bindings.end(),
             [&aovName](HdRenderPassAovBinding const & binding) {
                 return binding.aovName == aovName;
             });
 
-    if (!TF_VERIFY(bindingIt != _pickableAovBindings.end())) {
+    if (!TF_VERIFY(bindingIt != bindings.end())) {
         return nullptr;
     }
 
@@ -585,21 +653,23 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     // Update the collections
     //
     // The picking operation is composed of one or more conceptual passes:
-    // (i) [optional] depth-only pass for "unpickable" prims: This ensures 
-    // that occlusion stemming for unpickable prims is honored during 
-    // picking.
+    // (i) [optional] depth-only pass for "unpickable" prims, so their
+    // occlusion is honored during picking.
     //
-    // (ii) [mandatory] id render for "pickable" prims: This writes out the
-    // various id's for prims that pass the depth test.
+    // (ii) [mandatory] id render for "pickable" prims: writes out the ids
+    // for prims that pass the depth test.
     //
-    // (iii) [optional] id render for "overlay" prims.  This pass, along with
-    // bound color and depth input AOVs, allows overlay materials the choice of 
-    // drawing always-on-top, blending to show through occluders, or being
-    // occluded as normal, depending on their shader behavior.  Note this 
-    // drawing scheme leaves overlay items out of the shared depth buffer for 
-    // simplicity.  Also note that the "overlay" prims will be drawn twice
-    // since they will be included in the other passes, since we can only cull
-    // by renderTag and not materialTag.
+    // (iii) [optional] id render for "overlay" prims, into their own set of
+    // ID AOVs. Overlay materials can then draw always-on-top, blend through
+    // occluders, or be occluded normally. Execute() composites an overlay
+    // hit into the pickable pass's ID buffers per pixel, letting a valid
+    // overlay hit win over a pickable hit regardless of depth, while an
+    // invalid overlay fragment (e.g. under a point/edge target) does not
+    // clobber a valid pickable hit. The depth AOV is never merged, so pick
+    // depth stays exclusive to non-overlay items (see
+    // HdxPickHit::normalizedDepth). Overlay prims are also drawn in the
+    // other passes and so get drawn twice, since we can only cull by
+    // renderTag, not materialTag.
     if (_UseOcclusionPass()) {
         // Pass (i) from above
         HdRprimCollection occluderCol =
@@ -825,6 +895,66 @@ HdxPickTask::Execute(HdTaskContext* ctx)
         _ReadAovBuffer<int>(HdAovTokens->Neye);
     HdStTextureUtils::AlignedBuffer<float> depths =
         _ReadAovBuffer<float>(_depthToken);
+
+    // Merge the overlay pass's ID buffers into the pickable pass's, per
+    // pixel, wherever the overlay fragment is itself a valid hit for the
+    // active pickTarget. This lets an overlay prim (e.g. a joint guide)
+    // win over a pickable prim when the overlay fragment is a valid hit,
+    // without letting an overlay fragment that is not a valid hit under
+    // the pick target (e.g. a surface fragment under a point/edge target)
+    // destroy a valid pickable hit (e.g. a mesh point). Depth is never
+    // merged, so the pick depth buffer continues to exclude overlay
+    // items.
+    if (_UseOverlayPass()) {
+        HdStTextureUtils::AlignedBuffer<int> overlayPrimIds =
+            _ReadAovBuffer<int>(HdAovTokens->primId, _overlayAovBindings);
+        HdStTextureUtils::AlignedBuffer<int> overlayInstanceIds =
+            _ReadAovBuffer<int>(HdAovTokens->instanceId, _overlayAovBindings);
+        HdStTextureUtils::AlignedBuffer<int> overlayElementIds =
+            _ReadAovBuffer<int>(HdAovTokens->elementId, _overlayAovBindings);
+        HdStTextureUtils::AlignedBuffer<int> overlayEdgeIds =
+            _ReadAovBuffer<int>(HdAovTokens->edgeId, _overlayAovBindings);
+        HdStTextureUtils::AlignedBuffer<int> overlayPointIds =
+            _ReadAovBuffer<int>(HdAovTokens->pointId, _overlayAovBindings);
+        HdStTextureUtils::AlignedBuffer<int> overlayNeyes =
+            _ReadAovBuffer<int>(HdAovTokens->Neye, _overlayAovBindings);
+
+        // HdxPickResult is constructed below with subRect == the full
+        // [0, 0, dimensions] viewport (see the 'viewport' passed to it
+        // further down), so the merge loop covers the same region as the
+        // resolve without needing a separate clamp.
+        int const* overlayPrimIdsPtr = overlayPrimIds.get();
+        int const* overlayInstanceIdsPtr = overlayInstanceIds.get();
+        int const* overlayElementIdsPtr = overlayElementIds.get();
+        int const* overlayEdgeIdsPtr = overlayEdgeIds.get();
+        int const* overlayPointIdsPtr = overlayPointIds.get();
+        int const* overlayNeyesPtr = overlayNeyes.get();
+        int* primIdsPtr = primIds.get();
+        int* instanceIdsPtr = instanceIds.get();
+        int* elementIdsPtr = elementIds.get();
+        int* edgeIdsPtr = edgeIds.get();
+        int* pointIdsPtr = pointIds.get();
+        int* neyesPtr = neyes.get();
+
+        size_t const numPixels =
+            (size_t)dimensions[0] * (size_t)dimensions[1];
+        for (size_t i = 0; i < numPixels; ++i) {
+            if (_IsValidPickHit(
+                    overlayPrimIdsPtr, overlayInstanceIdsPtr,
+                    overlayElementIdsPtr, overlayEdgeIdsPtr,
+                    overlayPointIdsPtr, (int)i, _contextParams.pickTarget,
+                    _index)) {
+                primIdsPtr[i] = overlayPrimIdsPtr[i];
+                instanceIdsPtr[i] = overlayInstanceIdsPtr[i];
+                elementIdsPtr[i] = overlayElementIdsPtr[i];
+                edgeIdsPtr[i] = overlayEdgeIdsPtr[i];
+                pointIdsPtr[i] = overlayPointIdsPtr[i];
+                if (neyesPtr && overlayNeyesPtr) {
+                    neyesPtr[i] = overlayNeyesPtr[i];
+                }
+            }
+        }
+    }
 
     // For un-projection, get the depth range at time of drawing.
     GfVec2f depthRange(0, 1);
@@ -1366,34 +1496,52 @@ HdxPickResult::_GetHash(int index) const
     return hash;
 }
 
-bool
-HdxPickResult::_IsValidHit(int index) const
+// Inspect the id buffers to determine if the pixel index is a valid hit
+// by accounting for the pick target when picking points and edges.
+// This allows the hit(s) returned to be relevant.
+//
+// Shared between HdxPickResult's own resolve methods and HdxPickTask::
+// Execute's overlay-into-pickable merge, so that both agree on what counts
+// as a hit for a given pickTarget.
+//
+// Null buffers are tolerated, but 'index' is not bounds-checked against
+// the buffers; callers must guarantee it is within [0, width * height) of
+// every non-null buffer passed in.
+static bool
+_IsValidPickHit(
+    int const* primIds,
+    int const* instanceIds,
+    int const* elementIds,
+    int const* edgeIds,
+    int const* pointIds,
+    int index,
+    TfToken const& pickTarget,
+    HdRenderIndex const* renderIndex)
 {
-    // Inspect the id buffers to determine if the pixel index is a valid hit
-    // by accounting for the pick target when picking points and edges.
-    // This allows the hit(s) returned to be relevant.
-    if (_GetPrimId(index) == -1) {
+    const int primId = primIds ? primIds[index] : -1;
+    if (primId == -1) {
         return false;
     }
-    if (_pickTarget == HdxPickTokens->pickEdges) {
-        return (_GetEdgeId(index) != -1);
-    } else if (_pickTarget == HdxPickTokens->pickPoints) {
-        return (_GetPointId(index) != -1);
-    } else if (_pickTarget == HdxPickTokens->pickPointsAndInstances) {
-        if (_GetPointId(index) != -1) {
+    if (pickTarget == HdxPickTokens->pickEdges) {
+        return (edgeIds ? edgeIds[index] : -1) != -1;
+    } else if (pickTarget == HdxPickTokens->pickPoints) {
+        return (pointIds ? pointIds[index] : -1) != -1;
+    } else if (pickTarget == HdxPickTokens->pickPointsAndInstances) {
+        if ((pointIds ? pointIds[index] : -1) != -1) {
             return true;
         }
-        if (_GetInstanceId(index) != -1) {
-            SdfPath const primId =
-                _index->GetRprimPathFromPrimId(_GetPrimId(index));
-            if (!primId.IsEmpty()) {
+        const int instanceId = instanceIds ? instanceIds[index] : -1;
+        if (instanceId != -1) {
+            SdfPath const primPath =
+                renderIndex->GetRprimPathFromPrimId(primId);
+            if (!primPath.IsEmpty()) {
                 SdfPath delegateId;
                 SdfPath instancerId;
-                _index->GetSceneDelegateAndInstancerIds(
-                    primId,
+                renderIndex->GetSceneDelegateAndInstancerIds(
+                    primPath,
                     &delegateId,
                     &instancerId);
-            
+
                 if (!instancerId.IsEmpty()) {
                     return true;
                 }
@@ -1403,6 +1551,14 @@ HdxPickResult::_IsValidHit(int index) const
     }
 
     return true;
+}
+
+bool
+HdxPickResult::_IsValidHit(int index) const
+{
+    return _IsValidPickHit(
+        _primIds, _instanceIds, _elementIds, _edgeIds, _pointIds,
+        index, _pickTarget, _index);
 }
 
 void
