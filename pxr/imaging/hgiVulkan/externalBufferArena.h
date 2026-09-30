@@ -155,7 +155,7 @@ public:
     bool CreateExportableSemaphores(
         HgiSemaphoreKind kind,
         uint64_t *outAppDoneHandle,
-        uint64_t *outHgiDoneHandle);
+        uint64_t *outHgiDoneHandle) override;
 
     /// Import the application's exported semaphore pair, replacing whatever
     /// this arena was using. Either handle may be 0 for "none". Returns false,

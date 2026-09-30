@@ -24,6 +24,12 @@ HgiExternalBuffer::_ReleaseResources()
 {
 }
 
+bool
+HgiExternalBuffer::GetExportDesc(HgiExternalBufferExportDesc *) const
+{
+    return false;
+}
+
 Hgi *
 HgiExternalBuffer::GetHgi() const
 {

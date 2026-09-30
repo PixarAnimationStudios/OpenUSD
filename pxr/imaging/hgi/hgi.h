@@ -381,6 +381,30 @@ public:
         return arena;
     }
 
+    /// The arena this Hgi allocates exportable memory from, created on
+    /// demand, or null when this backend cannot export an allocation for
+    /// another API to import.
+    ///
+    /// The backend-agnostic way in, for the one interop flavour that does not
+    /// need a type to describe it.  GetExternalBufferArena's template
+    /// parameter is the request wherever the application supplies the memory:
+    /// naming HgiGLExternalBufferArena says "I have GL buffers to register",
+    /// and RegisterBuffer takes a GL name because there is no other way to
+    /// spell one.  Asking Hgi to allocate carries no such argument, and has
+    /// exactly one right answer per Hgi, so requiring a type there only
+    /// couples the caller to a backend it otherwise never mentions.
+    ///
+    /// Pair with HgiExternalBuffer::GetExportDesc and
+    /// HgiExternalBufferArena::CreateExportableSemaphores, which describe the
+    /// allocation and synchronize access to it in the same generic terms. A
+    /// producer in another API needs all three and nothing else.
+    ///
+    /// Default: unsupported.
+    ///
+    /// Thread safety: This call is thread safe.
+    HGI_API
+    virtual HgiExternalBufferArenaSharedPtr GetExportingBufferArena();
+
     /// True once any external buffer arena has been created through
     /// GetExternalBufferArena, and until this Hgi is torn down.
     ///

@@ -173,6 +173,34 @@ public:
         return _hgiDoneSemaphore;
     }
 
+    /// Create a semaphore pair Hgi owns and the application imports,
+    /// replacing whatever this arena was using, and report OS-shareable
+    /// handles to both.
+    ///
+    /// The mirror of ImportSemaphores, and not redundant with it: which side
+    /// creates the pair is not a preference but a property of the APIs
+    /// involved.  An application on an API that cannot export a semaphore has
+    /// no way to supply one -- OpenGL is the case in point, where
+    /// GL_EXT_semaphore imports only, exactly as GL_EXT_memory_object does --
+    /// so for those producers the pair has to originate here or there is no
+    /// synchronization to be had.
+    ///
+    /// Handle ownership follows the platform convention: the caller closes a
+    /// Win32 handle once it has imported it, while an fd is consumed by the
+    /// import.  Either way the handles are the caller's to dispose of.
+    ///
+    /// Returns false -- and leaves the arena unsynchronized -- when this
+    /// backend cannot export semaphores, or cannot export the requested kind;
+    /// see HgiSemaphoreKind.  A caller that cannot proceed unsynchronized
+    /// should read false as "copy instead".
+    ///
+    /// Default: unsupported.
+    HGI_API
+    virtual bool CreateExportableSemaphores(
+        HgiSemaphoreKind kind,
+        uint64_t *outAppDoneHandle,
+        uint64_t *outHgiDoneHandle);
+
     /// Import the application's exported semaphore pair, replacing whatever
     /// this arena was using. \p appDoneHandle is signalled by the application
     /// when its writes are done, \p hgiDoneHandle by Hgi when its reads are;

@@ -121,6 +121,10 @@ HgiVulkanExternalBuffer::_CreateAllocated(
     HgiVulkanExternalBufferExportInfo &info = external->_exportInfo;
     info.memoryBlockSize = allocInfo.blockSize;
     info.memoryOffset = allocInfo.allocationInfo.offset;
+    // The block itself, so an importer can recognise two allocations out of
+    // one block and import it once. The handle below cannot answer that: it
+    // is minted per call and names the block, not the buffer.
+    info.memoryBlockId = (uint64_t)allocInfo.allocationInfo.deviceMemory;
     info.dedicated = allocInfo.dedicatedMemory;
     info.memoryTypeIndex = allocInfo.allocationInfo.memoryType;
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
@@ -135,6 +139,24 @@ HgiVulkanExternalBuffer::_CreateAllocated(
 #endif
 
     return external;
+}
+
+bool
+HgiVulkanExternalBuffer::GetExportDesc(
+    HgiExternalBufferExportDesc *outDesc) const
+{
+    // Zero means this buffer was registered, adopted or imported rather than
+    // allocated here, so there is no allocation of Hgi's to hand out.
+    if (!outDesc || _exportInfo.externalHandle == 0) {
+        return false;
+    }
+    outDesc->externalHandle = _exportInfo.externalHandle;
+    outDesc->handleType = _exportInfo.handleType;
+    outDesc->memoryBlockSize = _exportInfo.memoryBlockSize;
+    outDesc->memoryOffset = _exportInfo.memoryOffset;
+    outDesc->memoryBlockId = _exportInfo.memoryBlockId;
+    outDesc->dedicated = _exportInfo.dedicated;
+    return true;
 }
 
 HgiExternalBufferSharedPtr

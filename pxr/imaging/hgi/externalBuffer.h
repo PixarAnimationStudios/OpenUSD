@@ -56,6 +56,58 @@ HgiGetPlatformExternalHandleType()
 #endif
 }
 
+/// \struct HgiExternalBufferExportDesc
+///
+/// Describes the memory behind a buffer Hgi allocated, so an application in
+/// another API can import and alias the same memory.  The counterpart of a
+/// backend's own import descriptor, from the other side, and the generic form
+/// of it: every field here is either an OS handle or a plain size, so an
+/// importer needs to know nothing about the backend that produced it.
+///
+/// Filled by HgiExternalBuffer::GetExportDesc, and meaningful only for a
+/// buffer from HgiExternalBufferArena::AllocateBuffer -- the arena allocates
+/// those exportable precisely so they can be handed out.  A registered,
+/// adopted or imported buffer has nothing to export: its memory came from
+/// somewhere else.
+///
+struct HgiExternalBufferExportDesc
+{
+    /// OS-shareable handle naming the memory, or 0 when the buffer cannot be
+    /// exported.  On Windows the recipient closes it when done; on Linux the
+    /// importing call consumes it.
+    uint64_t externalHandle = 0;
+
+    /// How to interpret externalHandle.
+    HgiExternalHandleType handleType = HgiGetPlatformExternalHandleType();
+
+    /// Size of the whole memory block, and the buffer's offset within it.
+    ///
+    /// Both matter, because backends suballocate: an importer that allocates
+    /// only the buffer's size gets a different allocation rather than this
+    /// one.  The importer aliases memoryBlockSize bytes and binds its own
+    /// buffer at memoryOffset.
+    size_t memoryBlockSize = 0;
+    size_t memoryOffset = 0;
+
+    /// Identifies the block this allocation was suballocated from.  Two
+    /// descriptors carrying the same value name the same memory.
+    ///
+    /// An importer needs this, because externalHandle names the BLOCK rather
+    /// than the buffer: importing per buffer imports the whole block once per
+    /// buffer, which for a few dozen buffers sharing one block is enough to
+    /// exhaust the importing API.  Nothing else here distinguishes two blocks
+    /// -- sizes collide freely, and the handle is a fresh value on every call
+    /// -- and comparing handles is not portable.
+    ///
+    /// Opaque, comparable only among descriptors from one arena, and 0 when
+    /// the buffer cannot be exported.
+    uint64_t memoryBlockId = 0;
+
+    /// Whether this is a dedicated allocation.  The importer has to match it;
+    /// the parameter is not advisory, and mismatching it fails the import.
+    bool dedicated = false;
+};
+
 /// \class HgiExternalBuffer
 ///
 /// An object that produces an HgiBuffer on demand for memory the application
@@ -106,6 +158,24 @@ public:
     size_t GetByteSize() const {
         return _byteSize;
     }
+
+    /// Describe this buffer's memory so an application in another API can
+    /// import and alias it, and return whether it can be exported at all.
+    ///
+    /// True only for a buffer from HgiExternalBufferArena::AllocateBuffer, on
+    /// a backend that can export: those are allocated exportable for exactly
+    /// this purpose.  A registered, adopted or imported buffer returns false,
+    /// because its memory came from somewhere else and is not Hgi's to hand
+    /// out.  False leaves \p outDesc untouched.
+    ///
+    /// This is the generic half of interop, and the direction a producer in
+    /// another API needs.  A backend may also describe the same allocation in
+    /// its own type system, where an importer on the same API can use it
+    /// directly; this one is for code that must stay backend-agnostic.
+    ///
+    /// Default: unsupported.
+    HGI_API
+    virtual bool GetExportDesc(HgiExternalBufferExportDesc *outDesc) const;
 
     /// The arena that created this buffer.  A consumer must check this before
     /// binding: several Hgi instances can consume one scene index (two

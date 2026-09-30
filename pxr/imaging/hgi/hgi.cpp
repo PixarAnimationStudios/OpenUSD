@@ -439,6 +439,12 @@ Hgi::_FlushSemaphoreSignals()
 {
 }
 
+HgiExternalBufferArenaSharedPtr
+Hgi::GetExportingBufferArena()
+{
+    return nullptr;
+}
+
 void
 Hgi::_GarbageCollectExternalBufferArenas()
 {

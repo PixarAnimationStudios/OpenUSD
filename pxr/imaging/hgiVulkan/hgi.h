@@ -125,6 +125,12 @@ public:
     HGIVULKAN_API
     void GarbageCollect() override;
 
+    /// The HgiVulkanExternalBufferArena, which allocates exportable memory an
+    /// application in another API can import. Null when this device has no
+    /// native interop support.
+    HGIVULKAN_API
+    HgiExternalBufferArenaSharedPtr GetExportingBufferArena() override;
+
     //
     // HgiVulkan specific
     //

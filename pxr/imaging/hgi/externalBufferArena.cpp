@@ -48,6 +48,21 @@ HgiExternalBufferArena::_SetSemaphores(
 }
 
 bool
+HgiExternalBufferArena::CreateExportableSemaphores(
+    HgiSemaphoreKind /*kind*/,
+    uint64_t *outAppDoneHandle,
+    uint64_t *outHgiDoneHandle)
+{
+    if (outAppDoneHandle) {
+        *outAppDoneHandle = 0;
+    }
+    if (outHgiDoneHandle) {
+        *outHgiDoneHandle = 0;
+    }
+    return false;
+}
+
+bool
 HgiExternalBufferArena::ImportSemaphores(
     uint64_t /*appDoneHandle*/,
     uint64_t /*hgiDoneHandle*/,

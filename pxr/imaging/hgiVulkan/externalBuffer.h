@@ -46,6 +46,20 @@ struct HgiVulkanExternalBufferExportInfo
     size_t memoryBlockSize = 0;
     size_t memoryOffset = 0;
 
+    /// Identifies the block this allocation was suballocated from. Two infos
+    /// carrying the same value name the same memory.
+    ///
+    /// An importer needs this, because externalHandle names the BLOCK rather
+    /// than the buffer: importing per buffer imports the whole block once per
+    /// buffer, which for a few dozen buffers sharing one block is enough to
+    /// exhaust the importing API. Nothing else here distinguishes two blocks
+    /// -- size and memory type collide freely, and the handle is a fresh
+    /// value on every call -- and comparing handles is not portable.
+    ///
+    /// Opaque, comparable only among infos from the same arena, and 0 when
+    /// the buffer is not exportable.
+    uint64_t memoryBlockId = 0;
+
     /// Whether this is a dedicated allocation; the importer has to match it.
     bool dedicated = false;
 
@@ -89,9 +103,15 @@ public:
 
     /// How an application in another API can import this buffer's memory.
     /// Meaningful only for an allocated buffer; see the struct.
+    ///
+    /// Carries one field the generic GetExportDesc does not, memoryTypeIndex,
+    /// which only a Vulkan importer can use.
     HgiVulkanExternalBufferExportInfo const &GetExportInfo() const {
         return _exportInfo;
     }
+
+    HGIVULKAN_API
+    bool GetExportDesc(HgiExternalBufferExportDesc *outDesc) const override;
 
 protected:
     HGIVULKAN_API

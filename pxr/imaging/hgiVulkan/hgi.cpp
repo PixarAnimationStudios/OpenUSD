@@ -14,6 +14,7 @@
 #include "pxr/imaging/hgiVulkan/computePipeline.h"
 #include "pxr/imaging/hgiVulkan/device.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
+#include "pxr/imaging/hgiVulkan/externalBufferArena.h"
 #include "pxr/imaging/hgiVulkan/garbageCollector.h"
 #include "pxr/imaging/hgiVulkan/graphicsCmds.h"
 #include "pxr/imaging/hgiVulkan/graphicsPipeline.h"
@@ -368,6 +369,15 @@ HgiVulkan::GarbageCollect()
     // External buffers nobody references any more, once the GPU has retired
     // the work that named them.
     _GarbageCollectExternalBufferArenas();
+}
+
+HgiExternalBufferArenaSharedPtr
+HgiVulkan::GetExportingBufferArena()
+{
+    // Get-or-create, and null when this device has no interop support: the
+    // same negotiation GetExternalBufferArena performs, reached without the
+    // caller naming a backend.
+    return GetExternalBufferArena<HgiVulkanExternalBufferArena>();
 }
 
 /* Multi threaded */
