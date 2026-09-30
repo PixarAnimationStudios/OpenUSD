@@ -8,6 +8,7 @@
 
 #include "pxr/imaging/garch/glDebugWindow.h"
 
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/meshUtil.h"
 
 #include "pxr/imaging/hdSt/mesh.h"
@@ -19,6 +20,10 @@
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/unitTestDelegate.h"
 #include "pxr/imaging/hdx/unitTestUtils.h"
+
+#include "pxr/imaging/hio/glslfx.h"
+
+#include "pxr/usd/sdr/registry.h"
 
 #include "pxr/base/tf/errorMark.h"
 
@@ -230,6 +235,43 @@ _GetTransform(GfRotation rot, GfVec3d translate)
     xform.SetTranslateOnly(translate);
 
     return xform;
+}
+
+// Builds an inline glslfx surface shader tagged with the given materialTag,
+// registering its technique under a tag-specific name so that shaders with
+// different tags don't collide in the Sdr registry.
+static SdrShaderNodeConstPtr
+_GetSurfaceShaderNode(std::string const &materialTag)
+{
+    std::string const techniqueName =
+        "testHdxPickTarget.Surface." + materialTag;
+    std::string const source =
+        "-- glslfx version 0.1 \n"
+        "-- configuration \n"
+        "{\n"
+            "\"metadata\": {\n"
+            "    \"materialTag\": \"" + materialTag + "\"\n"
+            "},\n"
+            "\"techniques\": {\n"
+            "    \"default\": {\n"
+            "        \"surfaceShader\": {\n"
+            "            \"source\": [ \"" + techniqueName + "\" ]\n"
+            "        }\n"
+            "    }\n"
+            "}\n\n"
+        "}\n"
+
+        "-- glsl " + techniqueName + " \n\n"
+
+        "vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord) {\n"
+        "    return vec4(FallbackLighting(Peye.xyz, Neye, color.rgb), color.a);\n"
+        "}\n";
+
+    SdrRegistry &shaderReg = SdrRegistry::GetInstance();
+    return shaderReg.GetShaderNodeFromSourceCode(
+        source,
+        HioGlslfxTokens->glslfx,
+        SdrTokenMap()); // metadata
 }
 
 My_TestGLDrawing::MeshEdges
@@ -491,6 +533,98 @@ My_TestGLDrawing::OffscreenTest()
         _selTracker->SetSelection(selection);
         DrawScene();
         _driver->WriteToFile("color", "color8_points_with_color.png");
+    }
+
+    //------------------- transparent occluder face picking --------------------
+    // PRES-102831: a fully transparent prim tagged 'translucent' must not
+    // steal a face pick from the (visible) geometry it happens to enclose.
+    // A zero-displayOpacity prim with no material would instead get the
+    // 'masked' material tag and already be discarded today; binding an
+    // explicit translucent-tagged material is what reproduces the bug.
+    {
+        // Restore the repr selectors used by the original face-pick case
+        // above; later blocks (edge/point picking) left them pointing at
+        // wireOnSurf/meshPoints reprs with no drawn faces.
+        _driver->SetSceneColReprSelector(HdReprSelector(HdReprTokens->hull));
+        _driver->SetPickablesColReprSelector(
+            HdReprSelector(HdReprTokens->refined));
+
+        Hdx_UnitTestDelegate &delegate = _driver->GetDelegate();
+
+        // Adds a material whose surface shader carries the given materialTag.
+        auto addMaterial = [&delegate](SdfPath const &materialId,
+                                       std::string const &materialTag) {
+            HdMaterialNetworkMap material;
+            HdMaterialNetwork& network =
+                material.map[HdMaterialTerminalTokens->surface];
+            HdMaterialNode terminal;
+            terminal.path = materialId.AppendPath(SdfPath("Shader"));
+            terminal.identifier =
+                _GetSurfaceShaderNode(materialTag)->GetIdentifier();
+            material.terminals.push_back(terminal.path);
+            network.nodes.push_back(std::move(terminal)); // must be last
+            delegate.AddMaterialResource(materialId, VtValue(material));
+        };
+
+        // Encloses /cube0 with a larger copy at the same transform, so the
+        // shell wins the depth test at every pixel covering /cube0. Each
+        // case below removes its shell afterwards, so the cases differ only
+        // in opacity and material tag.
+        GfRotation rot(/*axis*/GfVec3d(1,0,1), /*angle*/30);
+        GfMatrix4d shellXform =
+            GfMatrix4d(1.0).SetScale(1.5) * _GetTransform(rot, GfVec3d(0,0,0));
+        auto addShell = [&delegate, &shellXform](SdfPath const &shellId,
+                                                 float opacity,
+                                                 SdfPath const &materialId) {
+            delegate.AddCube(shellId, shellXform, /*guide=*/false,
+                              /*instancerId=*/SdfPath(),
+                              PxOsdOpenSubdivTokens->catmullClark,
+                              /*color=*/VtValue(GfVec3f(1,1,1)),
+                              HdInterpolationConstant,
+                              /*opacity=*/VtValue(opacity),
+                              HdInterpolationConstant);
+            delegate.BindMaterial(shellId, materialId);
+        };
+
+        SdfPath translucentMaterialId("/translucentMaterial");
+        addMaterial(translucentMaterialId, "translucent");
+        SdfPath additiveMaterialId("/additiveMaterial");
+        addMaterial(additiveMaterialId, "additive");
+
+        // Same pick as the "select face 3 of cube0" case above: the shell
+        // must not be picked, and /cube0 face 3 must still be selected.
+        SdfPath shellId("/transparentShell");
+        addShell(shellId, 0.0f, translucentMaterialId);
+        HdSelectionSharedPtr selection = _Pick(
+            GfVec2i(179,407), GfVec2i(179,407), HdxPickTokens->pickFaces);
+        TF_VERIFY(!selection->GetPrimSelectionState(mode, shellId));
+        HdSelection::PrimSelectionState const* selState =
+            selection->GetPrimSelectionState(mode, SdfPath("/cube0"));
+        TF_VERIFY(selState);
+        TF_VERIFY(selState->elementIndices.size() == 1);
+        VtIntArray const& facesSelected = selState->elementIndices[0];
+        TF_VERIFY(facesSelected.size() == 1 && facesSelected[0] == 3);
+        delegate.Remove(shellId);
+
+        // Semi-transparent-but-visible translucent geometry, with opacity
+        // well above alphaThreshold, must stay pickable.
+        SdfPath semiShellId("/semiTransparentShell");
+        addShell(semiShellId, 0.5f, translucentMaterialId);
+        selection = _Pick(
+            GfVec2i(179,407), GfVec2i(179,407), HdxPickTokens->pickFaces);
+        TF_VERIFY(selection->GetPrimSelectionState(mode, semiShellId));
+        delegate.Remove(semiShellId);
+
+        // The pick alpha test applies only to 'translucent'-tagged geometry.
+        // Additive is emissive with alpha == 0 by design yet fully visible,
+        // so a zero-opacity additive shell must still be picked. This fails
+        // if the gate is ever widened beyond 'translucent'.
+        SdfPath additiveShellId("/additiveShell");
+        addShell(additiveShellId, 0.0f, additiveMaterialId);
+        selection = _Pick(
+            GfVec2i(179,407), GfVec2i(179,407), HdxPickTokens->pickFaces);
+        TF_VERIFY(selection->GetPrimSelectionState(mode, additiveShellId));
+        delegate.Remove(additiveShellId);
     }
 }
 

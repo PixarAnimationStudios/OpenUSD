@@ -150,6 +150,9 @@ public:
                  bool guide=false, SdfPath const &instancerId=SdfPath(),
                  TfToken const &scheme=PxOsdOpenSubdivTokens->catmullClark);
 
+    /// Remove a prim
+    void Remove(SdfPath const &id);
+
     void SetRefineLevel(SdfPath const &id, int level);
 
     void SetReprName(SdfPath const &id, TfToken const &reprName);

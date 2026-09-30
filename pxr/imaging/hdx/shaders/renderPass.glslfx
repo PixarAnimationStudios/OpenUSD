@@ -202,6 +202,7 @@ vec4 IntToVec4(int id)
 FORWARD_DECL(int GetElementID()); // generated via codeGen
 FORWARD_DECL(int GetPrimitiveEdgeId()); // defined in edgeId.glslfx, or generated via codeGen
 FORWARD_DECL(int GetPointId()); // defined in pointId.glslfx
+FORWARD_DECL(bool ShouldDiscardByAlpha(vec4 color)); // defined in hdSt/shaders/renderPass.glslfx
 
 // Declared below.
 #if defined(HD_HAS_PickBuffer)
@@ -210,6 +211,16 @@ FORWARD_DECL(void RenderDeepPicks(int primId, int instanceId, int elementId, int
 
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
+    // The pick pass draws without blending, so fully transparent translucent
+    // geometry would still write a prim id and occlude what is behind it.
+    // Discard such fragments by alpha.
+#if defined(HD_MATERIAL_TAG_TRANSLUCENT)
+    if (ShouldDiscardByAlpha(color)) {
+        discard;
+        return;
+    }
+#endif
+
     primIdOut = HdGet_primID();
 
     // instanceIndex is a tuple of integers (num nested levels).

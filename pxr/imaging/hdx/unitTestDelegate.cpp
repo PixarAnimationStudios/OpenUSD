@@ -811,6 +811,12 @@ Hdx_UnitTestDelegate::AddTet(SdfPath const &id, GfMatrix4d const &transform,
 }
 
 void
+Hdx_UnitTestDelegate::Remove(SdfPath const &id)
+{
+    GetRenderIndex().RemoveRprim(id);
+}
+
+void
 Hdx_UnitTestDelegate::SetRefineLevel(SdfPath const &id, int level)
 {
     _refineLevels[id] = level;
