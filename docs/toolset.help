@@ -404,6 +404,29 @@ Options:
 
 ==== usdtree end ====
 
+==== usdauthors start ====
+usdauthors : Lists authorship records in a USD file, grouped by
+prim. Each record represents a single authoring step (e.g.,
+generation, export, or manual cleanup).
+
+Records are read from the composed stage. Use --debug to also flag
+records hidden or collapsed by composition, or --layer to report
+only what a single layer authors.
+
+Usage: usdauthors [OPTIONS] inputPath
+
+Positionals:
+  inputPath TEXT REQUIRED     The input file to process
+
+Options:
+  -h,--help                   Print this help message and exit
+  -d,--debug                  Also examine every prim spec contributing to each prim, flagging records shadowed by an explicit apiSchemas list in a stronger layer and records applied in more than one prim spec. Slower; for debugging.
+  --unloaded                  Do not load payloads.
+  -s,--summary                Prints a summary of found records, including software package and digital source type tallies.
+  -l,--layer                  Inspects a single layer without composition. Reaches specs unreachable via composed stages, such as those inside unselected variants. Ignores --debug and --unloaded, which are about composition.
+
+==== usdauthors end ====
+
 ==== usdzip start ====
 Utility for creating a .usdz file containing USD assets and for inspecting existing .usdz files.
 Usage: usdzip [OPTIONS] [usdzFile] [inputFiles...]
@@ -782,10 +805,11 @@ usage: usdgenschemafromsdr [-h] [--noreadme] [-v]
 
     overrideIdentifier parameter is the identifier which should be used when 
     the identifier of the node being processed differs from the one Sdr will 
-    discover at runtime, such as when this function is def a node constructed 
-    from an explicit asset path. This should only be used when clients know the 
-    identifier being passed is the true identifier which sdr Runtime will 
-    provide when querying using GetShaderNodeByIdentifierAndType, etc.
+    discover at runtime, such as when this function is called on a node 
+    constructed from an explicit asset path. This should only be used when 
+    clients know the identifier being passed is the true identifier which sdr 
+    Runtime will provide when querying using GetShaderNodeByIdentifierAndType, 
+    etc.
 
     It consumes the following attributes (that manifest as Sdr 
     metadata) in addition to many of the standard Sdr metadata
@@ -952,12 +976,13 @@ optional arguments:
 ==== usdInitSchema end ====
 
 ==== usdupdatecrate start ====
-usage: usdupdatecrate [-h] [--root DIR] [--olderThan VERSION] [--exclude PATTERN]
-                      [--output FILE] [--saveWorkList FILE] [--fromWorkList FILE]
+usage: usdupdatecrate [-h] [--root DIR] [--olderThan VERSION]
+                      [--exclude PATTERN] [--output FILE]
+                      [--saveWorkList FILE] [--fromWorkList FILE]
                       [--update | --cleanup] [--noCleanup]
-                      [--preserveAttrs | --noPreserveAttrs] [--workers N]
-                      [--batchSize N] [--walkThreads N] [--quiescenceTimeout SECONDS]
-                      [--perFileTimeout SECONDS]
+                      [--preserveAttrs | --noPreserveAttrs] [--preserveOwner]
+                      [--workers N] [--batchSize N] [--walkThreads N]
+                      [--quiescenceTimeout SECONDS] [--perFileTimeout SECONDS]
 
 Find and optionally update Pixar USD crate (.usd/.usdc) files older than a
 given version.
@@ -976,51 +1001,87 @@ continue to refer to the unchanged inode and so retain the old content.
 
 optional arguments:
   -h, --help            show this help message and exit
-  --root DIR            Root directory to search (default: current working directory).
+  --root DIR            Root directory to search (default: current working
+                        directory).
   --olderThan VERSION   Identify crate files with version older than this
                         (major.minor.patch, default: 0.8.0).
-  --exclude PATTERN     Exclude files whose path relative to --root matches this
-                        fnmatch pattern. May be specified multiple times. Excluded
-                        subdirectories are pruned before descent.
+  --exclude PATTERN     Exclude files whose path relative to --root matches
+                        this fnmatch pattern. May be specified multiple times.
+                        Excluded subdirectories are pruned before descent.
   --output FILE         Write matching file list to FILE instead of stdout.
-  --saveWorkList FILE   Save the deduplicated to-update file list to FILE before any
-                        update runs. Useful as a manual two-step staging point or for
-                        crash recovery.
-  --fromWorkList FILE   Read candidate files from FILE instead of walking --root.
-                        --root, --exclude, and --walkThreads are ignored when this is
-                        set.
-  --update              Update matched files by re-exporting them via Sdf.Layer.
+  --saveWorkList FILE   Save the deduplicated to-update file list to FILE
+                        before any update runs. Useful as a manual two-step
+                        staging point or for crash recovery.
+  --fromWorkList FILE   Read candidate files from FILE instead of walking
+                        --root. --root, --exclude, and --walkThreads are
+                        ignored when this is set.
+  --update              Update matched files by re-exporting them via
+                        Sdf.Layer.
   --cleanup             Standalone mode: walk --root and remove stale
-                        *.usdupdatecrate.*.tmp.* files left behind by crashed or
-                        killed prior runs, then exit. Honors --exclude and
+                        *.usdupdatecrate.*.tmp.* files left behind by crashed
+                        or killed prior runs, then exit. Honors --exclude and
                         --walkThreads.
-  --noCleanup           During an --update run, skip the implicit removal of stale
-                        temp files discovered by the walk. Has no effect in --cleanup
-                        mode (which is itself a cleanup).
-  --preserveAttrs       Preserve the original file's mode and ownership on the updated
-                        file. If the mode or ownership cannot be matched (e.g.
-                        insufficient privilege to chown), the update for that file is
-                        treated as failed and the original is left untouched. Default:
-                        on (POSIX), unsupported (Windows).
-  --noPreserveAttrs     Disable preservation of original mode and ownership. Updated
-                        files take on the running user's uid/gid and umask-respecting
-                        mode.
-  --workers N           Explicit number of worker processes. Overrides --batchSize.
-  --batchSize N         Number of files per pool task (default: 16). Files are split
-                        into batches of this size and dispatched across workers via
-                        imap_unordered. Smaller is safer (smaller crash blast radius,
-                        better work-stealing); larger amortizes per-task overhead.
-                        Ignored if --workers is given.
-  --walkThreads N       Number of threads for parallel directory enumeration (default:
-                        32). Set to 1 to use a single-threaded os.walk() instead.
+  --noCleanup           During an --update run, skip the implicit removal of
+                        stale temp files discovered by the walk. Has no effect
+                        in --cleanup mode (which is itself a cleanup).
+  --preserveAttrs       Preserve the original file's mode and group on the
+                        updated file. If either cannot be matched (e.g. you
+                        are not a member of the original's group), the update
+                        for that file is treated as failed and the original is
+                        left untouched. The owner is not preserved unless
+                        --preserveOwner is also given. Default: on (POSIX),
+                        unsupported (Windows).
+  --noPreserveAttrs     Disable preservation of the original mode and group.
+                        Updated files take on the running user's primary group
+                        (or the directory's group, if it is setgid) and a
+                        umask-respecting mode.
+  --preserveOwner       Also preserve the original file's owner. Off by
+                        default because changing a file's owner requires root;
+                        without it, updated files are owned by the running
+                        user. A file whose owner cannot be set is treated as
+                        failed and left untouched. POSIX only.
+  --workers N           Explicit number of worker processes. Overrides
+                        --batchSize.
+  --batchSize N         Number of files per pool task (default: 16). Files are
+                        split into batches of this size and dispatched across
+                        workers via imap_unordered. Smaller is safer (smaller
+                        crash blast radius, better work-stealing); larger
+                        amortizes per-task overhead. Ignored if --workers is
+                        given.
+  --walkThreads N       Number of threads for parallel directory enumeration
+                        (default: 32). Set to 1 to use a single-threaded
+                        os.walk() instead.
   --quiescenceTimeout SECONDS
-                        Update pool driver: if no chunk-result arrives for this many
-                        seconds, treat any not-yet-completed chunks as crashed/hung
-                        and recover them via per-file subprocess isolation (default:
-                        120). Raise this if you have legitimately long-running chunks.
+                        Update pool driver: if no chunk-result arrives for
+                        this many seconds, treat any not-yet-completed chunks
+                        as crashed/hung and recover them via per-file
+                        subprocess isolation (default: 120). Raise this if you
+                        have legitimately long-running chunks.
   --perFileTimeout SECONDS
-                        Recovery: hard cap on a single file's isolated subprocess
-                        (default: 60). If exceeded, the subprocess is terminated and
-                        the file recorded as an ERROR_CRASH.
+                        Recovery: hard cap on a single file's isolated
+                        subprocess (default: 60). If exceeded, the subprocess
+                        is terminated and the file recorded as an ERROR_CRASH.
 
 ==== usdupdatecrate end ====
+
+==== usdcrush start ====
+Reduce the size of the source USD file by applying PMC compression to meshes.
+Usage: usdcrush [OPTIONS] inputFile
+
+Positionals:
+  inputFile TEXT REQUIRED     The input USD file to process.
+
+Options:
+  -h,--help                   Print this help message and exit
+  -o,--out TEXT REQUIRED      The output USD file to write to.
+  --mesh-qbits [TEXT,INT] ... Number of bits for named mesh attribute quantizer.
+                              Format: --mesh-qbits <attribute_name> <bits>
+                              Common attribute names: points, normals, uv, st, displayColor, velocities, accelerations
+                              Use '*' as attribute name to set default for all attributes.
+                              Default: 10 fractional bits, 14 max significant bits
+                              Examples:
+                                --mesh-qbits '*' 12                             # 12 bits for all attributes
+                                --mesh-qbits points 14                          # 14 bits for vertex positions
+                                --mesh-qbits points 14 --mesh-qbits normals 10  # Mixed precision
+
+==== usdcrush end ====

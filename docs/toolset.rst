@@ -509,3 +509,63 @@ and Obsolete USD Assets?" in the :doc:`usdfaq` for examples using
    :language: none
    :start-after: ==== usdupdatecrate start ====
    :end-before: ==== usdupdatecrate end ====
+
+********
+usdcrush
+********
+
+:program:`usdcrush` is a command-line utility for reducing the size of USD
+files by applying AOMedia Polygonal Mesh Coding compression to meshes.
+It accepts any USD-readable input format. When writing to a non-USDZ output
+file, compressed PMC data is placed in a :filename:`pmcCodec/` directory 
+alongside the output file.
+
+.. literalinclude:: toolset.help
+   :language: none
+   :start-after: ==== usdcrush start ====
+   :end-before: ==== usdcrush end ====
+
+**********
+usdauthors
+**********
+
+Lists authorship records in a USD file, grouped by prim. Each record represents
+an applied instance of :usdcpp:`UsdMediaAuthorshipAPI`, documenting an
+authoring step (e.g., generation, export, or manual cleanup).
+
+.. literalinclude:: toolset.help
+   :language: none
+   :start-after: ==== usdauthors start ====
+   :end-before: ==== usdauthors end ====
+
+**Notes:**
+
+    * Records are read from the composed stage. The :option:`--debug` option
+      instead gathers them from every prim spec contributing to each prim,
+      which finds one thing the composed prim cannot report: an application
+      shadowed by an explicit :code:`apiSchemas` list in a stronger layer.
+      Such a record is marked in the output, and its values are still
+      readable because the properties compose normally. Records inside
+      unselected variants are not found either way, since those specs are
+      not part of a prim's PrimStack (see :usdcpp:`UsdPrim::GetPrimStack`).
+
+    * :option:`--debug` also reveals clobbering. Nothing is deduplicated, so a
+      record whose instance name was authored in several layers is reported once
+      per contributing spec, and the output notes how many. Composition keeps
+      only the strongest opinion for each field, so this is the only way to see
+      that weaker values were dropped.
+
+    * :option:`--layer` reads the input as a single layer and composes nothing,
+      reporting only what that layer authors rather than what a stage built from
+      it resolves to. This is the way to check what a particular layer
+      contributes on its own; there is no guarantee of correspondence with what
+      a composed stage using this layer would report, since that layer may
+      reference, or be referenced by, others with records of their own. It is
+      also the only mode that reaches records inside variants that are not
+      selected.
+
+    * :option:`--summary` tallies software packages and digital source types
+      across all records instead of listing them. Software packages are
+      counted per :code:`softwareVersion`, since two versions of one tool can
+      produce very different results. The tally counts records rather than
+      prims, so a prim carrying two records contributes twice.

@@ -45,7 +45,8 @@ progAndArgList = [("usdedit", "-h"),
 ("usdGenSchema", "-h"),
 ("usdgenschemafromsdr", "-h"),
 ("usdInitSchema", "-h"),
-("usdupdatecrate", "-h")
+("usdupdatecrate", "-h"),
+("usdcrush", "-h")
 ]
 
 #------------------------------------------------------------------------------#
