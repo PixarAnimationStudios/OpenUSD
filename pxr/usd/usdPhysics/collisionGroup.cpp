@@ -261,18 +261,18 @@ UsdPhysicsCollisionGroup::ComputeCollisionGroupTable(const UsdStage& stage)
     for (const UsdPhysicsCollisionGroup& collisionGroup : allSceneGroups)
     {
         UsdAttribute mergeGroupAttr = collisionGroup.GetMergeGroupNameAttr();
+        std::string mergeGroupName;
+        mergeGroupAttr.Get(&mergeGroupName);
 
-        // If the group doesn't have a merge group, we can just add it to the 
-        // table:
-        if (!mergeGroupAttr.IsAuthored())
+        // If the group doesn't have a non-empty merge group name, we can just
+        // add it to the table:
+        if (mergeGroupName.empty())
         {
             primPathToIndex[collisionGroup.GetPath()] = nextPrimId;
             nextPrimId++;
         }
         else
         {
-            std::string mergeGroupName;
-            mergeGroupAttr.Get(&mergeGroupName);
             auto foundGroup = mergeGroupNameToIndex.find(mergeGroupName);
             if (foundGroup != mergeGroupNameToIndex.end())
             {
