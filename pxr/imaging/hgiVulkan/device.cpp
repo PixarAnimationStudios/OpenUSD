@@ -412,12 +412,19 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
 
         vkGetSemaphoreWin32HandleKHR = (PFN_vkGetSemaphoreWin32HandleKHR)
             vkGetDeviceProcAddr(_vkDevice, "vkGetSemaphoreWin32HandleKHR");
+
+        vkImportSemaphoreWin32HandleKHR =
+            (PFN_vkImportSemaphoreWin32HandleKHR)vkGetDeviceProcAddr(
+                _vkDevice, "vkImportSemaphoreWin32HandleKHR");
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
         vkGetMemoryFdKHR = (PFN_vkGetMemoryFdKHR)
             vkGetDeviceProcAddr(_vkDevice, "vkGetMemoryFdKHR");
 
         vkGetSemaphoreFdKHR = (PFN_vkGetSemaphoreFdKHR)
             vkGetDeviceProcAddr(_vkDevice, "vkGetSemaphoreFdKHR");
+
+        vkImportSemaphoreFdKHR = (PFN_vkImportSemaphoreFdKHR)
+            vkGetDeviceProcAddr(_vkDevice, "vkImportSemaphoreFdKHR");
 #elif defined(VK_USE_PLATFORM_METAL_EXT)
 #endif
     }
@@ -444,6 +451,14 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     if (supportsMemExtension) {
         allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
     }
+
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    // VMA copies the callbacks at creation, so a local is enough.
+    VmaDeviceMemoryCallbacks memoryCallbacks = {};
+    memoryCallbacks.pfnFree = &HgiVulkanDevice::_OnVmaFreeDeviceMemory;
+    memoryCallbacks.pUserData = this;
+    allocatorInfo.pDeviceMemoryCallbacks = &memoryCallbacks;
+#endif
 
     HGIVULKAN_VERIFY_VK_RESULT(
         vmaCreateAllocator(&allocatorInfo, &_vmaAllocator)
@@ -476,6 +491,16 @@ HgiVulkanDevice::~HgiVulkanDevice()
     {
         vmaDestroyPool(_vmaAllocator, entry.second);
     }
+
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    {
+        std::lock_guard<std::mutex> handleLock(_vmaInteropWin32HandleLock);
+        for (auto const& entry : _vmaInteropWin32HandleForMemory) {
+            CloseHandle(entry.second);
+        }
+        _vmaInteropWin32HandleForMemory.clear();
+    }
+#endif
 
     delete _pipelineCache;
     delete _commandQueue;
@@ -523,7 +548,41 @@ HgiVulkanDevice::GetVMAPoolForInterop(VkImageCreateInfo imageInfo)
         HGIVULKAN_VERIFY_VK_RESULT(
             vmaCreatePool(
                 _vmaAllocator,
-                &poolInfo, 
+                &poolInfo,
+                &pool));
+        iter = _vmaInteropPoolsForMemoryType.insert({ memoryTypeIndex, pool }).first;
+    }
+    return iter->second;
+}
+
+VmaPool
+HgiVulkanDevice::GetVMAPoolForInterop(VkBufferCreateInfo bufferInfo)
+{
+    TF_VERIFY(_capabilities->supportsNativeInterop,
+        "Device doesn't support native interop!");
+    VmaAllocationCreateInfo allocInfo = {};
+    allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+    uint32_t memoryTypeIndex;
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vmaFindMemoryTypeIndexForBufferInfo(
+        GetVulkanMemoryAllocator(),
+        &bufferInfo,
+        &allocInfo,
+        &memoryTypeIndex));
+
+    std::lock_guard<std::mutex> lock(_vmaInteropPoolsLock);
+    auto iter = _vmaInteropPoolsForMemoryType.find(memoryTypeIndex);
+    if (iter == _vmaInteropPoolsForMemoryType.end()) {
+        VmaPoolCreateInfo poolInfo = {};
+        poolInfo.pMemoryAllocateNext = &_exportInfo;
+        poolInfo.memoryTypeIndex = memoryTypeIndex;
+
+        VmaPool pool;
+        HGIVULKAN_VERIFY_VK_RESULT(
+            vmaCreatePool(
+                _vmaAllocator,
+                &poolInfo,
                 &pool));
         iter = _vmaInteropPoolsForMemoryType.insert({ memoryTypeIndex, pool }).first;
     }
@@ -559,6 +618,45 @@ HgiVulkanDevice::GetWin32HandleForMemory(VkDeviceMemory memory)
         TF_CODING_ERROR("Couldn't duplicate Windows Handle!");
     }
     return duplicateHandle;
+}
+
+/* static */
+void VKAPI_PTR
+HgiVulkanDevice::_OnVmaFreeDeviceMemory(
+    VmaAllocator /*allocator*/,
+    uint32_t /*memoryType*/,
+    VkDeviceMemory memory,
+    VkDeviceSize /*size*/,
+    void *userData)
+{
+    HgiVulkanDevice *device = static_cast<HgiVulkanDevice *>(userData);
+    if (!device) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(device->_vmaInteropWin32HandleLock);
+    auto iter = device->_vmaInteropWin32HandleForMemory.find(memory);
+    if (iter != device->_vmaInteropWin32HandleForMemory.end()) {
+        CloseHandle(iter->second);
+        device->_vmaInteropWin32HandleForMemory.erase(iter);
+    }
+}
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
+int
+HgiVulkanDevice::GetFdForMemory(VkDeviceMemory memory)
+{
+    if (!vkGetMemoryFdKHR) {
+        return -1;
+    }
+    VkMemoryGetFdInfoKHR getInfo { VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR };
+    getInfo.memory = memory;
+    getInfo.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;
+
+    // Unlike the Win32 handle, an exported fd is a fresh reference every call,
+    // so there is nothing to cache and nothing to duplicate.
+    int fd = -1;
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vkGetMemoryFdKHR(GetVulkanDevice(), &getInfo, &fd));
+    return fd;
 }
 #endif
 

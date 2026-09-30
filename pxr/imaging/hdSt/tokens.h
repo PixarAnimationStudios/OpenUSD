@@ -121,6 +121,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDST_PERF_TOKENS                        \
     (copyBufferGpuToGpu)                        \
     (copyBufferCpuToGpu)                        \
+    (extGpuBufferCopyBytes)                     \
+    (extGpuBufferCopyCount)                     \
+    (extGpuBufferFallbackCount)                 \
+    (extGpuBufferAliasCount)                    \
     (drawItemsCacheHit)                         \
     (drawItemsCacheMiss)                        \
     (drawItemsCacheStale)                       \

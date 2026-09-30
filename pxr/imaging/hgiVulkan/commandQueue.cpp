@@ -12,6 +12,8 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/smallVector.h"
 
+#include <algorithm>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 static HgiVulkanCommandQueue::HgiVulkan_CommandPool*
@@ -102,6 +104,9 @@ HgiVulkanCommandQueue::HgiVulkanCommandQueue(HgiVulkanDevice* device)
 
 HgiVulkanCommandQueue::~HgiVulkanCommandQueue()
 {
+    // The device has been idled by its destructor before the queue goes.
+    _DestroyRetiredSemaphores(/*all*/ true);
+
     for (auto const& it : _commandPools) {
         _DestroyCommandPool(_device, it.second);
     }
@@ -119,6 +124,12 @@ HgiVulkanCommandQueue::SubmitToQueue(
     HgiVulkanCommandBuffer* cb,
     HgiSubmitWaitType wait)
 {
+    // Before _FlushResourceCommandBuffer, and before cb is queued below: that
+    // ordering is what makes the acquire barriers execute ahead of the commands
+    // that read the imported buffers, since _FlushResourceCommandBuffer appends
+    // the resource command buffer to _queuedBuffers and cb goes in after it.
+    _FlushPendingQueueFamilyAcquires();
+
     _FlushResourceCommandBuffer();
 
     // XXX Ideally EndCommandBuffer is called on the thread that used it since
@@ -223,18 +234,226 @@ HgiVulkanCommandQueue::GetVulkanGraphicsQueue() const
 void
 HgiVulkanCommandQueue::ResetConsumedCommandBuffers(HgiSubmitWaitType wait)
 {
-    // Lock the command pool map from concurrent access since we may insert.
-    std::lock_guard<std::mutex> guard(_commandPoolsMutex);
+    {
+        // Lock the command pool map from concurrent access since we may insert.
+        std::lock_guard<std::mutex> guard(_commandPoolsMutex);
 
-    // Loop all pools and reset any command buffers that have been consumed.
-    for (auto it : _commandPools) {
-        HgiVulkan_CommandPool* pool = it.second;
-        for (HgiVulkanCommandBuffer* cb : pool->commandBuffers) {
-            if (cb->ResetIfConsumedByGPU(wait)) {
-                _ReleaseInflightBit(cb->GetInflightId());
+        // Loop all pools and reset any command buffers that have been consumed.
+        for (auto it : _commandPools) {
+            HgiVulkan_CommandPool* pool = it.second;
+            for (HgiVulkanCommandBuffer* cb : pool->commandBuffers) {
+                if (cb->ResetIfConsumedByGPU(wait)) {
+                    _ReleaseInflightBit(cb->GetInflightId());
+                }
             }
         }
     }
+
+    // The in-flight bits were just cleared, so this is where deferred
+    // semaphores become destroyable.
+    _DestroyRetiredSemaphores(/*all*/ false);
+}
+
+/* Multi threaded */
+void
+HgiVulkanCommandQueue::CancelPendingQueueFamilyTransfers(VkBuffer buffer)
+{
+    if (buffer == VK_NULL_HANDLE) {
+        return;
+    }
+    {
+        std::lock_guard<std::mutex> lock(_pendingQueueFamilyAcquiresMutex);
+        _pendingQueueFamilyAcquires.erase(
+            std::remove(_pendingQueueFamilyAcquires.begin(),
+                        _pendingQueueFamilyAcquires.end(), buffer),
+            _pendingQueueFamilyAcquires.end());
+    }
+    {
+        std::lock_guard<std::mutex> lock(_pendingQueueFamilyReleasesMutex);
+        _pendingQueueFamilyReleases.erase(
+            std::remove(_pendingQueueFamilyReleases.begin(),
+                        _pendingQueueFamilyReleases.end(), buffer),
+            _pendingQueueFamilyReleases.end());
+    }
+}
+
+/* Multi threaded */
+void
+HgiVulkanCommandQueue::RemovePendingSemaphore(VkSemaphore semaphore)
+{
+    if (semaphore == VK_NULL_HANDLE) {
+        return;
+    }
+    {
+        std::lock_guard<std::mutex> lock(_pendingWaitSemaphoresMutex);
+        _pendingWaitSemaphores.erase(
+            std::remove(_pendingWaitSemaphores.begin(),
+                        _pendingWaitSemaphores.end(), semaphore),
+            _pendingWaitSemaphores.end());
+    }
+    {
+        std::lock_guard<std::mutex> lock(_pendingSignalSemaphoresMutex);
+        _pendingSignalSemaphores.erase(
+            std::remove(_pendingSignalSemaphores.begin(),
+                        _pendingSignalSemaphores.end(), semaphore),
+            _pendingSignalSemaphores.end());
+    }
+}
+
+/* Multi threaded */
+void
+HgiVulkanCommandQueue::DestroySemaphoreDeferred(VkSemaphore semaphore)
+{
+    if (semaphore == VK_NULL_HANDLE) {
+        return;
+    }
+    const uint64_t inflightBits = GetInflightCommandBuffersBits();
+    std::lock_guard<std::mutex> lock(_deferredSemaphoresMutex);
+    _deferredSemaphores.emplace_back(semaphore, inflightBits);
+}
+
+/* Single threaded */
+void
+HgiVulkanCommandQueue::_DestroyRetiredSemaphores(bool all)
+{
+    std::vector<VkSemaphore> destroy;
+    {
+        std::lock_guard<std::mutex> lock(_deferredSemaphoresMutex);
+        if (_deferredSemaphores.empty()) {
+            return;
+        }
+        const uint64_t inflight = GetInflightCommandBuffersBits();
+        auto it = _deferredSemaphores.begin();
+        while (it != _deferredSemaphores.end()) {
+            if (all || (it->second & inflight) == 0) {
+                destroy.push_back(it->first);
+                it = _deferredSemaphores.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+    for (VkSemaphore semaphore : destroy) {
+        vkDestroySemaphore(
+            _device->GetVulkanDevice(), semaphore, HgiVulkanAllocator());
+    }
+}
+
+void
+HgiVulkanCommandQueue::AddPendingWaitSemaphore(VkSemaphore semaphore)
+{
+    std::lock_guard<std::mutex> lock(_pendingWaitSemaphoresMutex);
+    _pendingWaitSemaphores.push_back(semaphore);
+}
+
+void
+HgiVulkanCommandQueue::AddPendingSignalSemaphore(VkSemaphore semaphore)
+{
+    std::lock_guard<std::mutex> lock(_pendingSignalSemaphoresMutex);
+    _pendingSignalSemaphores.push_back(semaphore);
+}
+
+/* Multi threaded */
+void
+HgiVulkanCommandQueue::AddPendingQueueFamilyAcquire(VkBuffer buffer)
+{
+    std::lock_guard<std::mutex> lock(_pendingQueueFamilyAcquiresMutex);
+    _pendingQueueFamilyAcquires.push_back(buffer);
+}
+
+/* Single threaded */
+void
+HgiVulkanCommandQueue::_FlushPendingQueueFamilyAcquires()
+{
+    std::vector<VkBuffer> buffers;
+    {
+        std::lock_guard<std::mutex> lock(_pendingQueueFamilyAcquiresMutex);
+        if (_pendingQueueFamilyAcquires.empty()) {
+            // Nothing to do, and taking the resource command buffer when there
+            // is nothing to record would submit an empty one every frame.
+            return;
+        }
+        buffers.swap(_pendingQueueFamilyAcquires);
+    }
+
+    HgiVulkanCommandBuffer* cb = AcquireResourceCommandBuffer();
+
+    TfSmallVector<VkBufferMemoryBarrier, 4> acquires;
+    acquires.reserve(buffers.size());
+    for (VkBuffer buffer : buffers) {
+        VkBufferMemoryBarrier acquire =
+            { VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER };
+        acquire.srcAccessMask = 0;  // ownership acquire: no source access
+        acquire.dstAccessMask =
+            VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+        acquire.srcQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL;
+        acquire.dstQueueFamilyIndex = _device->GetGfxQueueFamilyIndex();
+        acquire.buffer = buffer;
+        acquire.offset = 0;
+        acquire.size = VK_WHOLE_SIZE;
+        acquires.push_back(acquire);
+    }
+
+    vkCmdPipelineBarrier(
+        cb->GetVulkanCommandBuffer(),
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        0,
+        0, nullptr,
+        static_cast<uint32_t>(acquires.size()), acquires.data(),
+        0, nullptr);
+}
+
+/* Multi threaded */
+void
+HgiVulkanCommandQueue::AddPendingQueueFamilyRelease(VkBuffer buffer)
+{
+    std::lock_guard<std::mutex> lock(_pendingQueueFamilyReleasesMutex);
+    _pendingQueueFamilyReleases.push_back(buffer);
+}
+
+/* Single threaded */
+void
+HgiVulkanCommandQueue::_FlushPendingQueueFamilyReleases()
+{
+    std::vector<VkBuffer> buffers;
+    {
+        std::lock_guard<std::mutex> lock(_pendingQueueFamilyReleasesMutex);
+        if (_pendingQueueFamilyReleases.empty()) {
+            return;
+        }
+        buffers.swap(_pendingQueueFamilyReleases);
+    }
+
+    HgiVulkanCommandBuffer* cb = AcquireResourceCommandBuffer();
+
+    TfSmallVector<VkBufferMemoryBarrier, 4> releases;
+    releases.reserve(buffers.size());
+    for (VkBuffer buffer : buffers) {
+        VkBufferMemoryBarrier release =
+            { VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER };
+        release.srcAccessMask =
+            VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+        release.dstAccessMask = 0;  // ownership release: no destination access
+        release.srcQueueFamilyIndex = _device->GetGfxQueueFamilyIndex();
+        release.dstQueueFamilyIndex = VK_QUEUE_FAMILY_EXTERNAL;
+        release.buffer = buffer;
+        release.offset = 0;
+        release.size = VK_WHOLE_SIZE;
+        releases.push_back(release);
+    }
+
+    // ALL_COMMANDS as the first scope: that scope covers every command
+    // submitted earlier on this queue, so the release follows all of the
+    // frame's reads, including those in earlier submissions.
+    vkCmdPipelineBarrier(
+        cb->GetVulkanCommandBuffer(),
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        0,
+        0, nullptr,
+        static_cast<uint32_t>(releases.size()), releases.data(),
+        0, nullptr);
 }
 
 /* Single threaded */
@@ -243,6 +462,17 @@ HgiVulkanCommandQueue::Flush(
     HgiSubmitWaitType wait,
     TfSpan<const std::pair<VkSemaphore, uint64_t>> signalSemaphores)
 {
+    // Catches imports that happened after the last SubmitToQueue. Here the
+    // resource command buffer is appended after anything already queued, so a
+    // barrier drained now would execute after those commands -- harmless,
+    // because every queued command buffer already drained this list on its way
+    // in, so whatever is left belongs to a buffer nothing queued reads yet.
+    _FlushPendingQueueFamilyAcquires();
+
+    // After the acquires, so a buffer imported and handed back within one
+    // submission is acquired before it is released.
+    _FlushPendingQueueFamilyReleases();
+
     _FlushResourceCommandBuffer();
 
     std::vector<VkCommandBuffer> commandBuffers;
@@ -251,31 +481,63 @@ HgiVulkanCommandQueue::Flush(
         commandBuffers.push_back(buffer->GetVulkanCommandBuffer());
     }
 
-    const uint32_t semaphoreSignalCount = signalSemaphores.size() + 1;
-
     TfSmallVector<VkSemaphore, 3> parsedSignalSemaphores;
     TfSmallVector<uint64_t, 3> parsedSignalValues;
     for (const std::pair<VkSemaphore, uint64_t>& signal : signalSemaphores) {
         parsedSignalSemaphores.push_back(signal.first);
         parsedSignalValues.push_back(signal.second);
     }
+    // Consume pending external (interop) signal semaphores (binary, value 0):
+    // the consuming draw signals these when it completes so a producer in
+    // another API may wait on them before overwriting the shared buffer (WAR).
+    {
+        std::lock_guard<std::mutex> lock(_pendingSignalSemaphoresMutex);
+        for (VkSemaphore sem : _pendingSignalSemaphores) {
+            parsedSignalSemaphores.push_back(sem);
+            parsedSignalValues.push_back(0);
+        }
+        _pendingSignalSemaphores.clear();
+    }
     parsedSignalSemaphores.push_back(_timelineSemaphore);
     parsedSignalValues.push_back(_timelineNextVal);
+
+    const uint32_t semaphoreSignalCount = parsedSignalSemaphores.size();
+
+    // Consume any pending external (interop) wait semaphores. These are binary
+    // semaphores a producer in another API signalled; this submission must wait
+    // on them before executing so a draw does not read a not-yet-written shared
+    // buffer (RAW). Binary waits carry a dummy value (0) in the timeline info.
+    TfSmallVector<VkSemaphore, 3> parsedWaitSemaphores;
+    TfSmallVector<uint64_t, 3> parsedWaitValues;
+    TfSmallVector<VkPipelineStageFlags, 3> parsedWaitStages;
+    {
+        std::lock_guard<std::mutex> lock(_pendingWaitSemaphoresMutex);
+        for (VkSemaphore sem : _pendingWaitSemaphores) {
+            parsedWaitSemaphores.push_back(sem);
+            parsedWaitValues.push_back(0);
+            parsedWaitStages.push_back(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+        }
+        _pendingWaitSemaphores.clear();
+    }
+    const uint32_t semaphoreWaitCount = parsedWaitSemaphores.size();
 
     VkTimelineSemaphoreSubmitInfo timelineInfo;
     timelineInfo.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
     timelineInfo.pNext = NULL;
-    timelineInfo.waitSemaphoreValueCount = 0;
-    timelineInfo.pWaitSemaphoreValues = nullptr;
+    timelineInfo.waitSemaphoreValueCount = semaphoreWaitCount;
+    timelineInfo.pWaitSemaphoreValues =
+        semaphoreWaitCount ? parsedWaitValues.data() : nullptr;
     timelineInfo.signalSemaphoreValueCount = semaphoreSignalCount;
     timelineInfo.pSignalSemaphoreValues = parsedSignalValues.data();
 
     VkSubmitInfo workInfo;
     workInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     workInfo.pNext = &timelineInfo;
-    workInfo.pWaitDstStageMask = 0;
-    workInfo.waitSemaphoreCount = 0;
-    workInfo.pWaitSemaphores = nullptr;
+    workInfo.pWaitDstStageMask =
+        semaphoreWaitCount ? parsedWaitStages.data() : nullptr;
+    workInfo.waitSemaphoreCount = semaphoreWaitCount;
+    workInfo.pWaitSemaphores =
+        semaphoreWaitCount ? parsedWaitSemaphores.data() : nullptr;
     workInfo.commandBufferCount = commandBuffers.size();
     workInfo.pCommandBuffers = commandBuffers.data();
     workInfo.signalSemaphoreCount = semaphoreSignalCount;

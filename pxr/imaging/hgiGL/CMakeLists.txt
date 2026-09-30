@@ -32,6 +32,8 @@ pxr_library(hgiGL
         contextArena
         debugCodes
         device
+        externalBuffer
+        externalBufferArena
         garbageCollector
         graphicsCmds
         graphicsPipeline
@@ -39,6 +41,7 @@ pxr_library(hgiGL
         ops
         resourceBindings
         sampler
+        semaphore
         shaderFunction
         shaderProgram
         texture

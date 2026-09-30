@@ -125,6 +125,12 @@ public:
     HGIVULKAN_API
     void GarbageCollect() override;
 
+    /// The HgiVulkanExternalBufferArena, which allocates exportable memory an
+    /// application in another API can import. Null when this device has no
+    /// native interop support.
+    HGIVULKAN_API
+    HgiExternalBufferArenaSharedPtr GetExportingBufferArena() override;
+
     //
     // HgiVulkan specific
     //
@@ -186,6 +192,10 @@ private:
     // Perform low frequency actions, such as garbage collection.
     // Thread safety: No. Must be called from main thread.
     void _EndFrameSync();
+
+    /// Force pending signal semaphores onto the queue; see
+    /// Hgi::_FlushSemaphoreSignals.
+    void _FlushSemaphoreSignals() override;
 
     HgiVulkanInstance* _instance;
     HgiVulkanDevice* _device;
