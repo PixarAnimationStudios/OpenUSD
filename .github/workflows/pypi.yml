@@ -1,6 +1,6 @@
 name: PyPiPackaging
 
-# Trigger this build whenever the dev or release branches are updated
+# Trigger this build whenever the dev or vYY.MM release branches are updated
 # or on-demand.
 #
 # Ideally we'd run this pipeline for all pull requests, but doing so consumes
@@ -14,7 +14,7 @@ on:
   push:
     branches:
       - dev
-      - release
+      - 'v[0-9][0-9].[0-9][0-9]'
   workflow_dispatch:
     inputs:
       post_release_tag:

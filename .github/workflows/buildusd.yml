@@ -7,10 +7,11 @@ on:
   push:
     branches:
       - dev
-      - release
+      - 'v[0-9][0-9].[0-9][0-9]'
   pull_request:
     branches:
       - dev
+      - 'v[0-9][0-9].[0-9][0-9]'
     paths:
       - '**'
       - '!.github/workflows/**'
