@@ -1,0 +1,72 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {"major": 3, "minor": 26, "patch": 0},
+    "configurePresets": [
+        {
+            "name": "default",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "installDir": "${sourceDir}/install/${presetName}",
+            "cacheVariables": {
+                "PXR_ALLOW_FETCH_CONTENT": true
+            }
+        },
+        {
+            "name": "shared",
+            "hidden": true,
+            "cacheVariables": {
+                "BUILD_SHARED_LIBS": true
+            }
+        },
+        {
+            "name": "minimal",
+            "hidden": true,
+            "cacheVariables": {
+                "PXR_PREFER_SAFETY_OVER_SPEED": true,
+                "PXR_BUILD_USD_VALIDATION": true,
+                "PXR_FIND_TBB_IN_CONFIG": true,
+                "PXR_ENABLE_PYTHON_SUPPORT": false,
+                "PXR_BUILD_MONOLITHIC": false,
+                "PXR_BUILD_EXAMPLES": false,
+                "PXR_BUILD_TUTORIALS": false,
+                "PXR_BUILD_IMAGING": false,
+                "PXR_BUILD_DRACO_PLUGIN": false,
+                "PXR_BUILD_ALEMBIC_PLUGIN": false,
+                "PXR_BUILD_USDVIEW": false
+            }
+        }
+    ],
+    "buildPresets" : [
+        {
+            "name": "default",
+            "hidden": true,
+            "targets": "install"
+        }
+    ],
+    "testPresets" : [
+        {
+            "name": "default",
+            "hidden": true,
+            "environment": {
+                "PATH": "${sourceDir}/install/${presetName}${pathListSep}$penv{PATH}"
+            }
+        },
+        {
+            "name": "stable",
+            "hidden": true,
+            "filter": {
+                "exclude": {"label": "flaky"}
+            }
+        },
+        {
+            "name": "flaky",
+            "hidden": true,
+            "filter": {
+                "include": {"label": "flaky"}
+            },
+            "execution": {
+                "repeat" : {"mode": "until-pass", "count": 3}
+            }
+        }
+    ]
+}
