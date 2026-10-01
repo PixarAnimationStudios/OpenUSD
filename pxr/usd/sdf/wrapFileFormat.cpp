@@ -9,6 +9,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/fileFormat.h"
+#include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/pyCall.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyStaticTokens.h"
@@ -52,7 +53,16 @@ private:
 };
 
 
-} // anonymous namespace 
+static bool
+_CanRead(const SdfFileFormatPtr& fmt, const std::string& resolvedPath)
+{
+    TfErrorMark m;
+    bool result = fmt->CanRead(resolvedPath);
+    m.Clear();
+    return result;
+}
+
+} // anonymous namespace
 
 void wrapFileFormat()
 {
@@ -84,7 +94,7 @@ void wrapFileFormat()
 
         .def("IsPackage", &This::IsPackage)
 
-        .def("CanRead", &This::CanRead)
+        .def("CanRead", &_CanRead)
 
         .def("GetFileExtension", &This::GetFileExtension)
         .staticmethod("GetFileExtension")
