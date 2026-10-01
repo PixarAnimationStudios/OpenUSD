@@ -149,11 +149,11 @@ class Interpreter(InteractiveInterpreter):
         self._outputBrush = None
 
     # overridden
-    def showsyntaxerror(self, filename = None):
+    def showsyntaxerror(self, filename = None, **kwargs):
         self._outputBrush = QtGui.QBrush(QtGui.QColor('#ffcc63'))
 
         try:
-            InteractiveInterpreter.showsyntaxerror(self, filename)
+            InteractiveInterpreter.showsyntaxerror(self, filename, **kwargs)
         finally:
             self._outputBrush = None
 
