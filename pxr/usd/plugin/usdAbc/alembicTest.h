@@ -18,11 +18,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 USDABC_API
 bool UsdAbc_TestAlembic(const std::string& pathname);
 
-/// Read Usd file from \p srcPathname and write as Alembic to \p dstPathname.
-USDABC_API
-bool UsdAbc_WriteAlembic(const std::string& srcPathname,
-                         const std::string& dstPathname);
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
