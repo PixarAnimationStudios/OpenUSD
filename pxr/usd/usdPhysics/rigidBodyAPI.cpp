@@ -277,15 +277,14 @@ _MassApiData _ParseMassApi(const UsdPrim& usdPrim)
         densityAttribute.Get(&result.density);
 
         float m;
-        massAttribute.Get(&m);
-        if (m > 0.0f)
+        if (massAttribute.Get(&m) && m > 0.0f)
         {
             result.mass = m;
         }
 
         GfVec3f dg;
-        diagonalInertia.Get(&dg);        
-        if (!GfIsClose(dg, GfVec3f(0.0f), COMPARE_TOLERANCE))
+        if (diagonalInertia.Get(&dg) &&
+            !GfIsClose(dg, GfVec3f(0.0f), COMPARE_TOLERANCE))
         {
             result.hasInertia = true;
             result.diagonalInertia = dg;
@@ -293,8 +292,9 @@ _MassApiData _ParseMassApi(const UsdPrim& usdPrim)
         
         // 0 0 0 0 is the sentinel value
         GfQuatf pa;
-        principalAxes.Get(&pa);
-        if (!GfIsClose(pa.GetImaginary(), GfVec3f(0.0f), COMPARE_TOLERANCE) || fabsf(pa.GetReal()) > COMPARE_TOLERANCE)
+        if (principalAxes.Get(&pa) &&
+            (!GfIsClose(pa.GetImaginary(), GfVec3f(0.0f), COMPARE_TOLERANCE) ||
+             fabsf(pa.GetReal()) > COMPARE_TOLERANCE))
         {
             result.hasPa = true;
             result.principalAxes = pa;            
@@ -314,10 +314,10 @@ bool _GetCoM(const UsdPrim& usdPrim, GfVec3f* com, UsdGeomXformCache* xfCache)
         const UsdAttribute comAttribute = massAPI.GetCenterOfMassAttr();
 
         GfVec3f v;
-        comAttribute.Get(&v);        
 
         // -inf -inf -inf is the sentinel value, though any inf works
-        if (isfinite(v[0]) && isfinite(v[1]) && isfinite(v[2]))
+        if (comAttribute.Get(&v) &&
+            isfinite(v[0]) && isfinite(v[1]) && isfinite(v[2]))
         {
             // need to extract scale as physics in general does not support scale, 
             //we need to scale the com
