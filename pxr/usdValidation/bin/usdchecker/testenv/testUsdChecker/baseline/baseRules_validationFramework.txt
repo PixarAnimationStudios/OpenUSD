@@ -114,6 +114,10 @@
 	Doc: Validator that checks for attribute type mismatch with the schema definition.
 	Keywords: UsdCoreValidators
 	isSuite: False
+[usdValidation:AttributeValueTypeMismatch]:
+	Doc: Authored default and time sample values of an attribute must hold the value type declared by that attribute's typeName.
+	Keywords: UsdCoreValidators
+	isSuite: False
 [usdValidation:CompositionErrorTest]:
 	Doc: Validator aims at providing all composition errors, which were generated while composing the stage.
 	Keywords: UsdCoreValidators
