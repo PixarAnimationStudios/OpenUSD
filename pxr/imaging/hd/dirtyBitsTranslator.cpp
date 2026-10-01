@@ -84,6 +84,8 @@ static TfStaticData<_SToBMap> Hd_SPrimSToBFncs;
 static TfStaticData<_BToSMap> Hd_SPrimBToSFncs;
 static TfStaticData<_SToBMap> Hd_RPrimSToBFncs;
 static TfStaticData<_BToSMap> Hd_RPrimBToSFncs;
+static TfStaticData<_SToBMap> Hd_BPrimSToBFncs;
+static TfStaticData<_BToSMap> Hd_BPrimBToSFncs;
 
 static
 const HdDataSourceLocator &
@@ -517,6 +519,17 @@ HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(TfToken const& primType,
             set->append(HdVolumeFieldSchema::GetDefaultLocator());
         }
         // XXX: DirtyTransform seems unused...
+    } else {
+        const auto fncIt = Hd_BPrimBToSFncs->find(primType);
+        if (fncIt == Hd_BPrimBToSFncs->end()) {
+            // unknown prim type, use AllDirty for anything
+            if (bits) {
+                set->append(HdDataSourceLocator());
+            }
+        } else {
+            // call custom handler registered for this type
+            fncIt->second(bits, set);
+        }
     }
 }
 
@@ -1322,6 +1335,17 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
         if (_FindLocator(HdVolumeFieldSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdField::DirtyParams;
         }
+    } else {
+        const auto fncIt = Hd_BPrimSToBFncs->find(primType);
+        if (fncIt == Hd_BPrimSToBFncs->end()) {
+            // unknown prim type, use AllDirty for anything
+            if (_FindLocator(HdDataSourceLocator(), end, &it)) {
+                bits |= HdChangeTracker::AllDirty;
+            }
+        } else {
+            // call custom handler registered for this type
+            fncIt->second(set, &bits);
+        }
     }
 
     return bits;
@@ -1346,6 +1370,17 @@ HdDirtyBitsTranslator::RegisterTranslatorsForCustomRprimType(
 {
     Hd_RPrimSToBFncs->insert({primType, sToBFnc});
     Hd_RPrimBToSFncs->insert({primType, bToSFnc});
+}
+
+/*static*/
+void
+HdDirtyBitsTranslator::RegisterTranslatorsForCustomBprimType(
+    TfToken const& primType,
+    LocatorSetToDirtyBitsFnc sToBFnc,
+    DirtyBitsToLocatorSetFnc bToSFnc)
+{
+    Hd_BPrimSToBFncs->insert({primType, sToBFnc});
+    Hd_BPrimBToSFncs->insert({primType, bToSFnc});
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
