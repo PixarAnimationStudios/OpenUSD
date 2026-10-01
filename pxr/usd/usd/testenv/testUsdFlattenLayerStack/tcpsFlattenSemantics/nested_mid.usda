@@ -1,0 +1,8 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    subLayers = [
+        @./nested_leaf.usda@ (offset = 7; scale = 0.5)
+    ]
+    timeCodesPerSecond = 24
+)
