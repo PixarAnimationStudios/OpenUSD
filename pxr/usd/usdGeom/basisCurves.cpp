@@ -385,13 +385,13 @@ UsdGeomBasisCurves::ComputeSegmentCounts(
             if (wrap == UsdGeomTokens->periodic) {
                 // Cubic, bezier, periodic
                 std::transform(curveVertexCounts.cbegin(), curveVertexCounts.cend(), 
-                    segmentCounts.begin(), [vstep](int n) { return n / vstep; });
+                    segmentCounts.begin(), [](int n) { return n / vstep; });
                 isValid = true;
             } else if (wrap == UsdGeomTokens->nonperiodic || 
                     wrap == UsdGeomTokens->pinned) {
                 // Cubic, bezier, nonperiodic/pinned
                 std::transform(curveVertexCounts.cbegin(), curveVertexCounts.cend(), 
-                    segmentCounts.begin(), [vstep](int n) { return (n - 4) / vstep + 1; });
+                    segmentCounts.begin(), [](int n) { return (n - 4) / vstep + 1; });
                 isValid = true;
             }
         } else if (basis == UsdGeomTokens->bspline ||
