@@ -17,7 +17,12 @@ set(DIRS
 # TODO: Hidden symbol visibility breaks the monolithic build on Linux. For now,
 # we skip setting hidden symbol visibility in that case. This can be addressed
 # and re-enabled in the future.
-if(UNIX AND NOT APPLE AND NOT PXR_BUILD_MONOLITHIC)
+#
+# With clang, ARCH_EXPORT_TYPE is type_visibility("default"), which does not
+# export the members of the explicitly instantiated class templates (e.g.
+# Vdf_VectorImplEmpty<T>), so the other libraries fail to link against them.
+if(UNIX AND NOT APPLE AND NOT PXR_BUILD_MONOLITHIC AND
+        NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 endif()
 

@@ -37,12 +37,18 @@
 #include <Windows.h>
 #include <WinIoCtl.h>
 #else
+#if !defined(ARCH_OS_FREEBSD)
 #include <alloca.h>
+#endif
 #include <sys/mman.h>
 #include <sys/file.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <utime.h>
+#endif
+
+#if defined(ARCH_OS_FREEBSD)
+#include <sys/user.h>
 #endif
 
 #if defined(ARCH_OS_DARWIN)
@@ -273,7 +279,7 @@ bool
 ArchStatIsWritable(const ArchStatType *st)
 {
 #if defined(ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN) || \
-    defined(ARCH_OS_WASM_VM)
+    defined(ARCH_OS_WASM_VM) || defined(ARCH_OS_FREEBSD)
     if (st) {
         return (st->st_mode & S_IWOTH) ||
             ((getegid() == st->st_gid) && (st->st_mode & S_IWGRP)) ||
@@ -310,7 +316,8 @@ ArchGetModificationTime(const char* pathname, double* time)
 double
 ArchGetModificationTime(const ArchStatType& st)
 {
-#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_WASM_VM)
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_FREEBSD) || \
+    defined(ARCH_OS_WASM_VM)
     return st.st_mtim.tv_sec + 1e-9*st.st_mtim.tv_nsec;
 #elif defined(ARCH_OS_DARWIN)
     return st.st_mtimespec.tv_sec + 1e-9*st.st_mtimespec.tv_nsec;
@@ -553,7 +560,8 @@ ArchGetStatMode(const char *pathname, int *mode)
 double
 ArchGetAccessTime(const struct stat& st)
 {
-#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_WASM_VM)
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_FREEBSD) || \
+    defined(ARCH_OS_WASM_VM)
     return st.st_atim.tv_sec + 1e-9*st.st_atim.tv_nsec;
 #elif defined(ARCH_OS_DARWIN)
     return st.st_atimespec.tv_sec + 1e-9*st.st_atimespec.tv_nsec;
@@ -568,7 +576,8 @@ ArchGetAccessTime(const struct stat& st)
 double
 ArchGetStatusChangeTime(const struct stat& st)
 {
-#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_WASM_VM)
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_FREEBSD) || \
+    defined(ARCH_OS_WASM_VM)
     return st.st_ctim.tv_sec + 1e-9*st.st_ctim.tv_nsec;
 #elif defined(ARCH_OS_DARWIN)
     return st.st_ctimespec.tv_sec + 1e-9*st.st_ctimespec.tv_nsec;
@@ -599,7 +608,7 @@ ArchGetFileLength(FILE *file)
     if (!file)
         return -1;
 #if defined (ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN) || \
-    defined(ARCH_OS_WASM_VM)
+    defined(ARCH_OS_WASM_VM) || defined(ARCH_OS_FREEBSD)
     struct stat buf;
     return fstat(fileno(file), &buf) < 0 ? -1 :
         static_cast<int64_t>(buf.st_size);
@@ -614,7 +623,7 @@ int64_t
 ArchGetFileLength(const char* fileName)
 {
 #if defined (ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN) || \
-    defined(ARCH_OS_WASM_VM)
+    defined(ARCH_OS_WASM_VM) || defined(ARCH_OS_FREEBSD)
     struct stat buf;
     return stat(fileName, &buf) < 0 ? -1 : static_cast<int64_t>(buf.st_size);
 #elif defined (ARCH_OS_WINDOWS)
@@ -653,6 +662,15 @@ ArchGetFileName(FILE *file)
     char buf[MAXPATHLEN];
     if (fcntl(fileno(file), F_GETPATH, buf) != -1) {
         result = buf;
+    }
+    return result;
+#elif defined (ARCH_OS_FREEBSD)
+    // F_KINFO does not need procfs (unlike /proc/self/fd on Linux).
+    string result;
+    struct kinfo_file kif;
+    kif.kf_structsize = sizeof(kif);
+    if (fcntl(fileno(file), F_KINFO, &kif) != -1) {
+        result = kif.kf_path;
     }
     return result;
 #elif defined (ARCH_OS_WINDOWS)
@@ -1044,6 +1062,10 @@ ArchQueryMappedMemoryResidency(
     int ret = mincore(
         reinterpret_cast<caddr_t>(const_cast<void *>(addr)), len,
         reinterpret_cast<char *>(pageMap));
+    return ret == 0;
+#elif defined (ARCH_OS_FREEBSD)
+    // On FreeBSD the vec param is 'char *'.
+    int ret = mincore(addr, len, reinterpret_cast<char *>(pageMap));
     return ret == 0;
 #endif
     // XXX: Not implemented for other platforms yet.
