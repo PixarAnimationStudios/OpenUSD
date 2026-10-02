@@ -12,6 +12,9 @@
 #include "pxr/imaging/hgiGL/shaderFunction.h"
 #include "pxr/imaging/hgiGL/shaderGenerator.h"
 
+#include <string>
+#include <sstream>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HgiGLShaderFunction::HgiGLShaderFunction(
@@ -44,9 +47,26 @@ HgiGLShaderFunction::HgiGLShaderFunction(
     if (status != GL_TRUE) {
         int logSize = 0;
         glGetShaderiv(_shaderId, GL_INFO_LOG_LENGTH, &logSize);
-        _errors.resize(logSize+1);
-        glGetShaderInfoLog(_shaderId, logSize, NULL, &_errors[0]);
+
+        std::string errors;
+        errors.resize(logSize+1);
+        glGetShaderInfoLog(_shaderId, logSize, NULL, &errors[0]);
         glDeleteShader(_shaderId);
+
+        _errors = "#### Source\n";
+        {
+            std::stringstream stream(shaderCode);
+            size_t indexLine = 1;
+
+            std::string line;
+            while(std::getline(stream, line)) {
+                _errors += std::to_string(indexLine) + ":" + line + "\n";
+                indexLine += 1;
+            }
+        }
+        _errors += "#### Errors\n";
+        _errors += errors;
+
         _shaderId = 0;
     }
 
