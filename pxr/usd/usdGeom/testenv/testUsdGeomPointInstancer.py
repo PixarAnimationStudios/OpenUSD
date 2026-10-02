@@ -400,6 +400,27 @@ class TestUsdGeomPointInstancer(unittest.TestCase):
         instancer.InvisId(1, Usd.TimeCode.Default())
         self.assertEqual(stage.GetRootLayer().GetAttributeAtPath(
             '/Instance.invisibleIds').default, [1])
-        
+
+    def test_ExtentWithOverPrototypes(self):
+        stage = Usd.Stage.Open('instancerOverProtos.usda')
+        instancer = UsdGeom.PointInstancer.Get(stage, '/Instancer')
+        expectedExtent = [
+            Gf.Vec3f(-2.5, -2.5, -2.5),
+            Gf.Vec3f(2.5, 2.5, 2.5),
+        ]
+        self._ValidateExtent(instancer, expectedExtent)
+
+        expectedRange = [
+            Gf.Vec3d(-2.5, -2.5, -2.5),
+            Gf.Vec3d(2.5, 2.5, 2.5),
+        ]
+        bboxCache = UsdGeom.BBoxCache(
+            Usd.TimeCode.Default(), includedPurposes=[UsdGeom.Tokens.default_])
+        bbox = bboxCache.ComputeUntransformedBound(instancer.GetPrim())
+        range = bbox.ComputeAlignedRange()
+        self.assertTrue(Gf.IsClose(range.GetMin(), expectedRange[0], 1e-6))
+        self.assertTrue(Gf.IsClose(range.GetMax(), expectedRange[1], 1e-6))
+
+
 if __name__ == '__main__':
     unittest.main()
