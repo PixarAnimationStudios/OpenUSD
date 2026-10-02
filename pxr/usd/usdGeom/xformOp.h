@@ -146,8 +146,9 @@ public:
     // Default constructor returns an invalid XformOp.  Exists for 
     // container classes
     UsdGeomXformOp()
+        : _opType(TypeInvalid)
+        , _isInverseOp(false)
     {
-        /* NOTHING */
     }
     
     /// Speculative constructor that will produce a valid UsdGeomXformOp when
