@@ -113,6 +113,9 @@ the ability to relax this constraint in the future, but consider it unlikely.
     aggregate an arbitrary composition's worth of usd files into a single file,
     without removing any composition features from the scene.
 
+Additionally, USDZ files must be Zip32 documents. OpenUSD does not support Zip64.
+As such, the total file size of a USDZ must be under 4GB.
+
 Layout
 ------
 
