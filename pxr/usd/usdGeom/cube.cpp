@@ -137,6 +137,7 @@ const TfTokenVector&
 UsdGeomCube::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdGeomTokens->doubleSided,
         UsdGeomTokens->size,
         UsdGeomTokens->extent,
     };

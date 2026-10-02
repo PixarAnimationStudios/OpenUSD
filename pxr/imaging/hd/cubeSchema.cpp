@@ -32,6 +32,13 @@ TF_DEFINE_PUBLIC_TOKENS(HdCubeSchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
+HdBoolDataSourceHandle
+HdCubeSchema::GetDoubleSided() const
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        HdCubeSchemaTokens->doubleSided);
+}
+
 HdDoubleDataSourceHandle
 HdCubeSchema::GetSize() const
 {
@@ -42,19 +49,33 @@ HdCubeSchema::GetSize() const
 /*static*/
 HdContainerDataSourceHandle
 HdCubeSchema::BuildRetained(
+        const HdBoolDataSourceHandle &doubleSided,
         const HdDoubleDataSourceHandle &size
 )
 {
-    TfToken _names[1];
-    HdDataSourceBaseHandle _values[1];
+    TfToken _names[2];
+    HdDataSourceBaseHandle _values[2];
 
     size_t _count = 0;
+
+    if (doubleSided) {
+        _names[_count] = HdCubeSchemaTokens->doubleSided;
+        _values[_count++] = doubleSided;
+    }
 
     if (size) {
         _names[_count] = HdCubeSchemaTokens->size;
         _values[_count++] = size;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
+}
+
+HdCubeSchema::Builder &
+HdCubeSchema::Builder::SetDoubleSided(
+    const HdBoolDataSourceHandle &doubleSided)
+{
+    _doubleSided = doubleSided;
+    return *this;
 }
 
 HdCubeSchema::Builder &
@@ -69,6 +90,7 @@ HdContainerDataSourceHandle
 HdCubeSchema::Builder::Build()
 {
     return HdCubeSchema::BuildRetained(
+        _doubleSided,
         _size
     );
 }
