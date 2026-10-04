@@ -5,6 +5,8 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
+#include "pxr/usd/usd/timeCode.h"
+
 #include "pxr/usd/usdGeom/bboxCache.h"
 
 #include "pxr/usd/kind/registry.h"
@@ -303,6 +305,16 @@ UsdGeomBBoxCache::UsdGeomBBoxCache(UsdGeomBBoxCache const &other)
     , _bboxCache(other._bboxCache)
     , _useExtentsHint(other._useExtentsHint)
     , _ignoreVisibility(other._ignoreVisibility)
+{
+}
+
+UsdGeomBBoxCache::UsdGeomBBoxCache()
+    : _time(UsdTimeCode::Default())
+    , _includedPurposes()
+    , _ctmCache(UsdTimeCode::Default())
+    , _bboxCache()
+    , _useExtentsHint(false)
+    , _ignoreVisibility(false)
 {
 }
 
