@@ -215,14 +215,7 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
         }
     }
     
-    _enableParallelEncoder = _hgi->GetCapabilities()->useParallelEncoder;
-    
-    if (_enableParallelEncoder) {
-        _maxNumEncoders = WorkGetPhysicalConcurrencyLimit() / 2;
-    }
-    else {
-        _maxNumEncoders = 1;
-    }
+    EnableParallelEncoder(_hgi->GetCapabilities()->useParallelEncoder);
     
     if (hasClear) {
         GetEncoder();
@@ -244,6 +237,12 @@ void
 HgiMetalGraphicsCmds::EnableParallelEncoder(bool enable)
 {
     _enableParallelEncoder = enable;
+    if (_enableParallelEncoder) {
+        _maxNumEncoders = WorkGetPhysicalConcurrencyLimit() / 2;
+    }
+    else {
+        _maxNumEncoders = 1;
+    }
 }
 
 void

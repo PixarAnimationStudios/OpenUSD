@@ -12,4 +12,7 @@ HgiGraphicsCmds::HgiGraphicsCmds() = default;
 
 HgiGraphicsCmds::~HgiGraphicsCmds() = default;
 
+void HgiGraphicsCmds::EnableParallelEncoder(bool enable) {
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
