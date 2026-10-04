@@ -167,8 +167,12 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
 
     if (_restoreDepthBias) {
         glEnable(GL_POLYGON_OFFSET_FILL);
+        glEnable(GL_POLYGON_OFFSET_LINE);
+        glEnable(GL_POLYGON_OFFSET_POINT);
     } else {
         glDisable(GL_POLYGON_OFFSET_FILL);
+        glDisable(GL_POLYGON_OFFSET_LINE);
+        glDisable(GL_POLYGON_OFFSET_POINT);
     }
     glPolygonOffset(_restoreDepthBiasSlopeFactor,
                     _restoreDepthBiasConstantFactor);
