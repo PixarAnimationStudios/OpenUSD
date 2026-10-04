@@ -223,6 +223,23 @@ UsdGeomCamera::CreateClippingPlanesAttr(VtValue const &defaultValue, bool writeS
 }
 
 UsdAttribute
+UsdGeomCamera::GetUnitsAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->units);
+}
+
+UsdAttribute
+UsdGeomCamera::CreateUnitsAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->units,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdGeomCamera::GetFStopAttr() const
 {
     return GetPrim().GetAttribute(UsdGeomTokens->fStop);
@@ -417,6 +434,7 @@ UsdGeomCamera::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->focalLength,
         UsdGeomTokens->clippingRange,
         UsdGeomTokens->clippingPlanes,
+        UsdGeomTokens->units,
         UsdGeomTokens->fStop,
         UsdGeomTokens->focusDistance,
         UsdGeomTokens->stereoRole,
