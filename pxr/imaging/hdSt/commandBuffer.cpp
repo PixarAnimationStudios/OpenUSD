@@ -156,14 +156,17 @@ _InsertDrawItemInstance(
 
     // The draw item instances in a batch need to have compatible
     // pipeline configurations and resource allocations.
-    // Currently, draw items with distinct geometric shader hashes
-    // or buffer array hashes can never be part of the same batch.
-    // We combine these two hashes into a key that can be used to to
+    // Currently, draw items with distinct geometric shader hashes,
+    // materialNetwork shader hashes, buffer array hashes or material
+    // tag hashes can never be part of the same batch.
+    // We combine these four hashes into a key that can be used to to
     // reduce the number of batches which need to be considered
     // as candidate batches.
     size_t key = TfHash::Combine(
         drawItem->GetGeometricShader()->ComputeHash(),
-        drawItem->GetBufferArraysHash()
+        drawItem->GetMaterialNetworkShader()->ComputeHash(),
+        drawItem->GetBufferArraysHash(),
+        drawItem->GetMaterialTag().Hash()
     );
 
     // When we're not allowing texture resource rebinding within a
