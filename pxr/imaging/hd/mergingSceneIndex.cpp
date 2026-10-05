@@ -11,6 +11,7 @@
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
 
 #include "pxr/base/tf/denseHashSet.h"
+#include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/dispatcher.h"
 
@@ -447,6 +448,7 @@ HdMergingSceneIndex::_PrimsAdded(
     }
 
     TRACE_FUNCTION();
+    TF_DESCRIBE_SCOPE("Merging Input Scenes");
 
     // Confirm that the type here is not masked by a stronger contributing
     // input. We still send it along as an add because a weaker input providing
@@ -529,6 +531,8 @@ HdMergingSceneIndex::_PrimsRemoved(
         _SendPrimsRemoved(entries);
         return;
     }
+
+    TF_DESCRIBE_SCOPE("Merging Input Scenes");
 
     // Note: if a prim is removed from an input scene, but exists in another
     // input scene, we trigger that as a resync (signaled by PrimsAdded).
