@@ -385,6 +385,16 @@ pxr_build_test(testVdfRequest
         testenv/testVdfRequest.cpp
 )
 
+pxr_build_test(testVdfScheduling_Perf
+    LIBRARIES
+        tf
+        trace
+        vdf
+
+    CPPFILES
+        testenv/testVdfScheduling_Perf.cpp
+)
+
 pxr_build_test(testVdfSparseInputPathFinder
     LIBRARIES
         vdf
@@ -601,6 +611,11 @@ pxr_register_test(testVdfExecutionStats
 
 pxr_register_test(testVdfRequest
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVdfRequest"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testVdfScheduling_PerfPerf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVdfScheduling_Perf"
     EXPECTED_RETURN_CODE 0
 )
 

@@ -739,8 +739,6 @@ _ComputeInvocationBitsets(
     const VdfScheduleTaskNum invocationNum,
     _Invocations *invocations)
 {
-    TRACE_FUNCTION();
-
     // Iterate over all partitions to check for overlap with the masks.
     uint32_t offset = 0;
     for (uint32_t i = 0; i < numPartitions; ++i) {
@@ -2596,6 +2594,8 @@ _TopologicallySort(
     const VdfRequest &request,
     VdfSchedule *schedule)
 {
+    TRACE_FUNCTION();
+
     // Prime the working stack with the given requested outputs.
     std::vector<std::pair<const VdfOutput *, bool>> stack;
     stack.reserve(request.GetSize());
