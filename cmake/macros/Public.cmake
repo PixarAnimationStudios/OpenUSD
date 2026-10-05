@@ -285,47 +285,14 @@ function(pxr_library NAME)
             ${filePath}
         )
 
-        # Read the generated classes
-        file(STRINGS ${filePath} fileContents)
+        _pxr_parse_generated_schema_classes("${filePath}"
+            OUT_PUBLIC_CLASSES generatedPublicClasses
+            OUT_PYTHON_MODULE_FILES generatedPymoduleFiles
+            OUT_RESOURCE_FILES generatedResourceFiles)
 
-        # fileType potential values:
-        # -1: Skip line
-        # 0: Public Classes
-        # 1: Python Module Files
-        # 2: Resource Files
-        set(fileType -1)
-
-        foreach(line ${fileContents})
-            # Determine which section of the generated file we are in.
-            if (${fileType} EQUAL -1)
-                string(FIND ${line} "# Public Classes" found)
-                if (NOT ${found} EQUAL -1)
-                    set(fileType 0)
-                    continue()
-                endif()
-            elseif(${fileType} EQUAL 0)
-                string(FIND ${line} "# Python Module Files" found)
-                if (NOT ${found} EQUAL -1)
-                    set(fileType 1)
-                    continue()
-                endif()
-            elseif(${fileType} EQUAL 1)
-                string(FIND ${line} "# Resource Files" found)
-                if (NOT ${found} EQUAL -1)
-                    set(fileType 2)
-                    continue()
-                endif()
-            endif()
-
-            # Depending on the file type, append to the appropriate list.
-            if (${fileType} EQUAL 0)
-                list(APPEND args_PUBLIC_CLASSES ${line})
-            elseif(${fileType} EQUAL 1)
-                list(APPEND args_PYMODULE_CPPFILES ${line})
-            elseif(${fileType} EQUAL 2)
-                list(APPEND args_RESOURCE_FILES ${line})
-            endif()
-        endforeach()
+        list(APPEND args_PUBLIC_CLASSES ${generatedPublicClasses})
+        list(APPEND args_PYMODULE_CPPFILES ${generatedPymoduleFiles})
+        list(APPEND args_RESOURCE_FILES ${generatedResourceFiles})
     endif()
 
     # Collect libraries.
@@ -592,24 +559,10 @@ function(pxr_build_test_plugin LIBRARY_NAME)
     set(testPlugInfoSrcPath ${bt_SOURCE_DIR}/${LIBRARY_NAME}_plugInfo.json)
 
     if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${testPlugInfoSrcPath}")
-        set(TEST_PLUG_INFO_RESOURCE_PATH "Resources")
-        set(TEST_PLUG_INFO_ROOT "..")
-        set(LIBRARY_FILE "${CMAKE_SHARED_LIBRARY_PREFIX}${LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
-
-        set(testPlugInfoLibDir "tests/${bt_INSTALL_PREFIX}/lib/${LIBRARY_NAME}")
-        set(testPlugInfoResourceDir "${testPlugInfoLibDir}/${TEST_PLUG_INFO_RESOURCE_PATH}")
-        set(testPlugInfoPath "${PROJECT_BINARY_DIR}/${testPlugInfoResourceDir}/plugInfo.json")
-
-        file(RELATIVE_PATH 
-            TEST_PLUG_INFO_LIBRARY_PATH
-            "${CMAKE_INSTALL_PREFIX}/${testPlugInfoLibDir}"
-            "${CMAKE_INSTALL_PREFIX}/tests/lib/${LIBRARY_FILE}")
-
-        configure_file("${testPlugInfoSrcPath}" "${testPlugInfoPath}")
         # XXX -- We shouldn't have to install to run tests.
-        install(
-            FILES ${testPlugInfoPath}
-            DESTINATION ${testPlugInfoResourceDir})
+        _install_test_resource_files(${LIBRARY_NAME}
+            INSTALL_PREFIX ${bt_INSTALL_PREFIX}
+            FILES "${CMAKE_CURRENT_SOURCE_DIR}/${testPlugInfoSrcPath}")
     endif()
 
     # We always want this test to build after the package it's under, even if
@@ -636,19 +589,51 @@ endfunction() # pxr_build_test_plugin
 # executables. Those executables can consume public headers from the test-only
 # library.
 function(pxr_build_test_library LIBRARY_NAME)
+    set(options
+        INCLUDE_SCHEMA_FILES)
+    set(oneValueArgs
+        INSTALL_PREFIX)
     set(multiValueArgs
         LIBRARIES
         CPPFILES
         PUBLIC_HEADERS
         PRIVATE_HEADERS
         PUBLIC_CLASSES
-        PRIVATE_CLASSES)
+        PRIVATE_CLASSES
+        RESOURCE_FILES)
     cmake_parse_arguments(args
         "${options}"
         "${oneValueArgs}"
         "${multiValueArgs}"
         ${ARGN}
     )
+
+    # Inject files listed in generatedSchema.classes.txt into the corresponding
+    # function arguments.
+    if(args_INCLUDE_SCHEMA_FILES)
+        set(filePath "generatedSchema.classes.txt")
+
+        # Register a dependency so that cmake will regenerate the build
+        # system if generatedSchema.classes.txt changes
+        set_property(
+            DIRECTORY 
+            APPEND 
+            PROPERTY CMAKE_CONFIGURE_DEPENDS 
+            ${filePath}
+        )
+
+        # TODO: Resource files listed in generatedSchema.classes.txt include
+        # a resource file named "schema.usda:pluginName/schema.usda". For
+        # simplicity, we skip installing files with overridden installation
+        # paths, but we can revisit this in the future.
+        _pxr_parse_generated_schema_classes("${filePath}"
+            SKIP_INSTALL_PATHS
+            OUT_PUBLIC_CLASSES generatedPublicClasses
+            OUT_RESOURCE_FILES generatedResourceFiles)
+
+        list(APPEND args_PUBLIC_CLASSES ${generatedPublicClasses})
+        list(APPEND args_RESOURCE_FILES ${generatedResourceFiles})
+    endif()
 
     # Get list of cpp files
     set(cppFiles ${args_CPPFILES})
@@ -710,6 +695,13 @@ function(pxr_build_test_library LIBRARY_NAME)
         ARCHIVE DESTINATION "tests/lib"
         RUNTIME DESTINATION "tests/lib"
     )
+
+    if(args_RESOURCE_FILES)
+        # XXX -- We shouldn't have to install to run tests.
+        _install_test_resource_files(${LIBRARY_NAME}
+            INSTALL_PREFIX ${args_INSTALL_PREFIX}
+            FILES ${args_RESOURCE_FILES})
+    endif()
 endfunction() # pxr_build_test_library
 
 function(pxr_build_test TEST_NAME)
