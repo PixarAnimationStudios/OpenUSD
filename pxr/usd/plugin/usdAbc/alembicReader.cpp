@@ -3526,6 +3526,9 @@ _ReadCurves(_PrimReaderContext* context)
         SdfValueTypeNames->FloatArray,
         _CopyGeneric<IFloatGeomParam, float>(
             context->ExtractSchema("width")));
+
+    // Read texture coordinates
+    _ReadProperty<IV2fGeomParam, GfVec2f>(context, "uv", _GetUVPropertyName(), _GetUVTypeName());
 }
 
 static
