@@ -212,7 +212,7 @@ Pcp_IsPropagatedSpecializesNode(
 {
     return (PcpIsSpecializeArc(node._graph->GetArcType(node._nodeIdx)) &&
             node.GetParentNode() == node.GetRootNode() &&
-            node.GetSite() == node.GetOriginNode().GetSite());
+            node.HasSameSiteAs(node.GetOriginNode()));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

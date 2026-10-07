@@ -233,6 +233,11 @@ public:
     PCP_API
     PcpLayerStackSite GetSite() const;
 
+    /// Equivalent to comparing `this->GetSite() == node.GetSite()` but without
+    /// constructing a PcpLayerStackSite.
+    PCP_API
+    bool HasSameSiteAs(const PcpNodeRef &node) const;
+
     /// Returns the path for the site this node represents.
     PCP_API
     const SdfPath& GetPath() const;
