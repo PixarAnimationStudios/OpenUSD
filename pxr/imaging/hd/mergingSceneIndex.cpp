@@ -8,9 +8,13 @@
 
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
 
+#include "pxr/usd/sdf/path.h"
+
 #include "pxr/base/tf/denseHashSet.h"
+#include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/dispatcher.h"
@@ -516,6 +520,23 @@ HdMergingSceneIndex::_PrimsAdded(
     }
 }
 
+bool
+HdMergingSceneIndex::_HasOtherInputForPath(
+    const HdSceneIndexBase& sender,
+    const SdfPath& path) const
+{
+    if (_inputsPathTable.find(path) != _inputsPathTable.end()) {
+        return true;
+    }
+    for (const _InputEntry& entry : _GetInputEntriesByPath(path)) {
+        if (get_pointer(entry.sceneIndex) != &sender &&
+            path.HasPrefix(entry.sceneRoot)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void
 HdMergingSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
@@ -539,6 +560,10 @@ HdMergingSceneIndex::_PrimsRemoved(
     HdSceneIndexObserver::AddedPrimEntries addedEntries;
 
     for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
+        if (!_HasOtherInputForPath(sender, entry.primPath)) {
+            continue;
+        }
+
         const HdSceneIndexPrim prim = GetPrim(entry.primPath);
         if (!prim) {
             continue;

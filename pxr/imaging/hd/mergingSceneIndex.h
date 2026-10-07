@@ -9,6 +9,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
+#include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/usd/sdf/pathTable.h"
 #include "pxr/base/tf/smallVector.h"
 
@@ -123,6 +124,9 @@ private:
         HdSceneIndexObserver::AddedPrimEntries * addedEntries);
 
     bool _HasPrim(const SdfPath &path);
+
+    bool _HasOtherInputForPath(
+        const HdSceneIndexBase& sender, const SdfPath& path) const;
 
     class _Observer : public HdSceneIndexObserver
     {

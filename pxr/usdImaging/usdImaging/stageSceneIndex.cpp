@@ -17,7 +17,7 @@
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
-#include "pxr/base/tf/hash.h"
+#include "pxr/usd/ar/resolverScopedCache.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/primFlags.h"
@@ -25,6 +25,7 @@
 #include "pxr/usd/usdHydra/primAPI.h"
 
 #include "pxr/base/tf/denseHashSet.h"
+#include "pxr/base/tf/hash.h"
 
 #include <deque>
 #include <iterator>
@@ -402,6 +403,8 @@ void UsdImagingStageSceneIndex::SetStage(UsdStageRefPtr stage)
     }
 
     TRACE_FUNCTION();
+
+    ArResolverScopedCache resolverCache;
 
     if (_stage) {
         TF_DEBUG(USDIMAGING_POPULATION).Msg("[Population] Removing </>\n");
@@ -887,6 +890,8 @@ UsdImagingStageSceneIndex::ApplyPendingUpdates()
     }
 
     TRACE_FUNCTION();
+
+    ArResolverScopedCache resolverCache;
 
     _ApplyPendingResyncs();
 
