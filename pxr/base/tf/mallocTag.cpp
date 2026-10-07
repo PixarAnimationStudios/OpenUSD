@@ -4727,8 +4727,14 @@ TfMallocTag::Initialize(string *errMsgIn)
 
     // Start the periodic-wake consolidator now, rather than waiting for the
     // first spill or demand so we don't miss allocation peaks before the first
-    // buffer spill or demand consolidation.
-    _mallocGlobalData->_EnsureConsolidatorRunning();
+    // buffer spill or demand consolidation.  Tagging is live by now, so disable
+    // it here: starting the worker thread allocates (std::thread state, the new
+    // thread's TLS), and those blocks would otherwise be billed to this
+    // thread's current tag.
+    {
+        _TemporaryDisabler disable;
+        _mallocGlobalData->_EnsureConsolidatorRunning();
+    }
     return true;
 }
 
@@ -4848,7 +4854,13 @@ TfMallocTag::GetCapturedMallocStacks()
         return result;
     }
 
-    _mallocGlobalData->_DemandConsolidate();
+    // Disabled for the same reason as in _GetTotalBytes(): this may start the
+    // worker thread, which allocates.  Scoped so that it ends before the tag
+    // push below since disablers do not nest.
+    {
+        _TemporaryDisabler disable;
+        _mallocGlobalData->_DemandConsolidate();
+    }
 
     // Push some malloc tags so what we do here doesn't pollute the results.
     TfAutoMallocTag tag("Tf", "TfMallocTag::GetCapturedMallocStacks");
