@@ -601,7 +601,6 @@ public:
     /// Convenience type accessor to underlying type \c T for template code.
     typedef T DataType;
 
-
     template <class U> struct Rebind {
         typedef TfRefPtr<U> Type;
     };
@@ -1092,6 +1091,9 @@ private:
 
     void _RemoveRef(const TfRefBase* ptr) const {
         if (_Counter::RemoveRef(ptr)) {
+            // Synchronize with the release decrements of all other owners so
+            // their prior accesses to *ptr happen-before its destruction.
+            std::atomic_thread_fence(std::memory_order_acquire);
             Tf_RefPtrTracker_LastRef(this, ptr, _NullT);
             delete ptr;
         }
