@@ -199,6 +199,12 @@ public:
         return _renderIndex->GetRprimPathFromPrimId(primIdx);
     }
 
+    void AddCollection(const TfToken &name) override {
+        HdChangeTracker &tracker = _renderIndex->GetChangeTracker();
+        tracker.AddCollection(name);
+        tracker.MarkCollectionDirty(name);
+    }
+    
 private:
     HdRenderDelegate * const _renderDelegate;
     HdRenderIndex * const _renderIndex;
