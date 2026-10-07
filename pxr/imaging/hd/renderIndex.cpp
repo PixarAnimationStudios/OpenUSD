@@ -1930,11 +1930,13 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
     }
 
     // f. Rprim Sync
+    size_t numRprimsSynced = 0;
     WorkWithScopedParallelism([&]() {
         WorkDispatcher dispatcher;
         for (auto &entry : sdRprimSyncMap) {
             HdSceneDelegate* sceneDelegate = entry.first;
             _RprimSyncRequestVector& r = entry.second;
+            numRprimsSynced += r.rprims.size();
 
             {
                 _SyncRPrims workerState(
@@ -1964,6 +1966,9 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
             }
         }
     });
+
+    TF_DEBUG(HD_SYNC_ALL).Msg("[Rprims] Total number of prims synced: %zu\n",
+        numRprimsSynced);
 
     {
         HF_TRACE_FUNCTION_SCOPE("Clean Up");
