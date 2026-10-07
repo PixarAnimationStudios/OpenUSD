@@ -28,7 +28,8 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
+    // HdGpSceneIndexPlugin::GetInsertionPhase() + 1 = 3
+    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 3;
 
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
         _pluginDisplayName,
