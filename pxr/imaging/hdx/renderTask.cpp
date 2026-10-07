@@ -15,6 +15,7 @@
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/rprimCollection.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/sceneGlobalsSchema.h"
 
 #include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
@@ -125,6 +126,23 @@ HdxRenderTask::Prepare(HdTaskContext* ctx,
     }
 }
 
+static
+HdRenderParam * _GetRenderParam(HdRenderPassSharedPtr const &pass)
+{
+    if (!pass) {
+        return nullptr;
+    }
+    HdRenderIndex * const renderIndex = pass->GetRenderIndex();
+    if (!renderIndex) {
+        return nullptr;
+    }
+    HdRenderDelegate * const renderDelegate = renderIndex->GetRenderDelegate();
+    if (!renderDelegate) {
+        return nullptr;
+    }
+    return renderDelegate->GetRenderParam();
+}
+
 void
 HdxRenderTask::Execute(HdTaskContext* ctx)
 {
@@ -149,6 +167,17 @@ HdxRenderTask::Execute(HdTaskContext* ctx)
     // Render geometry with the rendertags (if any)
     if (_pass) {
         _pass->Execute(renderPassState, GetRenderTags());
+
+        // Copy scene state id from render param to task context.
+        //
+        // This allows clients to use the
+        // existing HdLegacyRenderControlInterface::GetTaskContextData
+        // to retrieve it.
+        if (HdRenderParam * const renderParam = _GetRenderParam(_pass)) {
+            (*ctx)[HdSceneGlobalsSchemaTokens->sceneStateId] =
+                renderParam->GetArbitraryValue(
+                    HdSceneGlobalsSchemaTokens->sceneStateId);
+        }
     }
 }
 
