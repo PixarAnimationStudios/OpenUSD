@@ -200,7 +200,7 @@ _GetExecTimes(
     const double compileTime = _GetInclusiveTimeInSeconds(compileNode);
 
     const TraceAggregateNodePtr scheduleNode =
-        _FindTraceNode(prepareNode, "VdfScheduler::Schedule");
+        _FindTraceNode(prepareNode, "VdfScheduler::CreateSchedule");
     TF_AXIOM(scheduleNode);
     const double scheduleTime = _GetInclusiveTimeInSeconds(scheduleNode);
 

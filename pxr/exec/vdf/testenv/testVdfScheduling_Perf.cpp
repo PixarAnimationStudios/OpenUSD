@@ -251,7 +251,8 @@ private:
         TF_AXIOM(rootNode);
 
         _WriteStat(
-            _GetTraceNode(rootNode, "Main Thread", "*VdfScheduler::Schedule"),
+            _GetTraceNode(
+                rootNode, "Main Thread", "*VdfScheduler::CreateSchedule"),
             "scheduling_time",
             &statsFile);
     }

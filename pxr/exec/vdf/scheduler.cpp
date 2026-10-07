@@ -166,6 +166,15 @@ struct _NodeDependencies {
 
 }
 
+// Returns true if the the optional interruptionFlag indicates that scheduling
+// has been interrupted.
+static inline bool
+_HasBeenInterrupted(const std::atomic_bool *const interruptionFlag)
+{
+    return interruptionFlag &&
+        interruptionFlag->load(std::memory_order_relaxed);
+}
+
 static inline void
 _AppendToMask(VdfMask::Bits *out, const VdfMask::Bits &in) {
     if (out->GetSize() == 0) {
@@ -399,7 +408,7 @@ _SetBufferPassDataForOutputs(
     }
 }
 
-void 
+bool
 VdfScheduler::_ScheduleBufferPasses(
     const VdfRequest &request,
     VdfSchedule *schedule)
@@ -408,11 +417,19 @@ VdfScheduler::_ScheduleBufferPasses(
 
     // Make sure that all read/writes on each scheduled node are requested
     TF_FOR_ALL (node, schedule->GetScheduleNodeVector()) {
+        if (_HasBeenInterrupted()) {
+            return false;
+        }
+
         _ScheduleUnrequestedReadWrites(*node, schedule);
     }
 
     // Make sure that information for buffer passing and keeping is set up
     TF_FOR_ALL(node, schedule->GetScheduleNodeVector()) {
+        if (_HasBeenInterrupted()) {
+            return false;
+        }
+
         _SetBufferPassDataForOutputs(&(*node), *schedule);
     }
 
@@ -425,6 +442,10 @@ VdfScheduler::_ScheduleBufferPasses(
     // the same output again, keeping the whole request mask increases our
     // chances of being able to re-use that output cache!
     TF_FOR_ALL(i, request) {
+        if (_HasBeenInterrupted()) {
+            return false;
+        }
+
         const VdfSchedule::OutputId &outputId = 
             schedule->GetOutputId(*(i->GetOutput()));
         TF_DEV_AXIOM(outputId.IsValid());
@@ -432,9 +453,11 @@ VdfScheduler::_ScheduleBufferPasses(
     }
 
     // Dump statistics about the number of copies scheduled
-    #if 0    
+#if 0    
     schedule->DumpBufferCopyStats();
-    #endif
+#endif
+
+    return true;
 }
 
 
@@ -610,7 +633,7 @@ _SchedulePassThroughForOutput(
 // Schedule the outputs from which buffers should be passed. This helps ensure
 // that potentially large portions of the network that won't have any effect in
 // this schedule are skipped when passing buffers.
-void
+bool
 VdfScheduler::_ScheduleForPassThroughs(
     const VdfRequest& request,
     VdfSchedule *schedule,
@@ -629,6 +652,10 @@ VdfScheduler::_ScheduleForPassThroughs(
     // output (which has the greatest pool chain index; pool outputs must
     // already be sorted!)
     TF_FOR_ALL(i, sortedPoolOutputs) {
+        if (_HasBeenInterrupted()) {
+            return false;
+        }
+
         const VdfOutput *output = i->second;
 
         // Schedule pass throughs for the point pool branch as identified by
@@ -637,6 +664,8 @@ VdfScheduler::_ScheduleForPassThroughs(
         // pass throughs.
         _SchedulePassThroughForOutput(output, &visitedOutputs, schedule);
     }
+
+    return true;
 }
 
 // Produces a compressed bitset from an input bitset, by simple leaving bits
@@ -826,6 +855,7 @@ _FindNextPoolOutput(
 //
 static void
 _CreatePoolInvocations(
+    const std::atomic_bool *const interruptionFlag,
     const VdfOutput *output,
     const VdfSchedule *schedule,
     std::atomic<bool> visitedNodes[],
@@ -884,6 +914,9 @@ _CreatePoolInvocations(
     // Visit every output in the pool chain, in order to determine the
     // partitioning of the data vectors.
     while (output) {
+        if (_HasBeenInterrupted(interruptionFlag)) {
+            return;
+        }
 
         // All nodes in the pool chain should only have one output, and
         // that output should be a pool output.
@@ -987,6 +1020,7 @@ _CreatePoolInvocations(
 //
 static void
 _CreateInvocationTasks(
+    const std::atomic_bool *const interruptionFlag,
     const _Invocations &invocations,
     VdfScheduleTaskIndex offsetNodeIndex,
     VdfScheduleTaskIndex offsetInvocationIndex,
@@ -1002,6 +1036,9 @@ _CreateInvocationTasks(
 
     // For each node, generate tasks.
     for (size_t i = f; i != l; ++i) {
+        if (_HasBeenInterrupted(interruptionFlag)) {
+            return;
+        }
 
         // Schedule node index.
         uint32_t scheduleNodeIndex = invocations.nodes[i].scheduleNodeIndex;
@@ -1084,6 +1121,7 @@ _CreateInvocationTasks(
 //
 static void
 _CreateInvocations(
+    const std::atomic_bool *const interruptionFlag,
     const _Invocations &invocations,
     const size_t offsetInvocationIndex,
     Vdf_DefaultInitVector<VdfScheduleNodeInvocation> *nodeInvocations)
@@ -1097,6 +1135,9 @@ _CreateInvocations(
     //      on a global lock.
     //
     for (size_t i = 0; i < invocations.bitsets.size(); ++i) {
+        if (_HasBeenInterrupted(interruptionFlag)) {
+            return;
+        }
 
         // Obtains the bitset corresponding to this invocation.
         const _InvocationBitsets &bitsets = invocations.bitsets[i];
@@ -1127,6 +1168,7 @@ _CreateInvocations(
 //
 static void
 _CreateInvocationsAndTasks(
+    const std::atomic_bool *const interruptionFlag,
     const _Invocations &invocations,
     VdfScheduleTaskIndex offsetNodeIndex,
     VdfScheduleTaskIndex offsetInvocationIndex,
@@ -1144,6 +1186,7 @@ _CreateInvocationsAndTasks(
     dispatcher->Run(
         std::bind(
             &_CreateInvocations,
+            interruptionFlag,
             std::cref(invocations),
             offsetInvocationIndex,
             nodeInvocations));
@@ -1152,6 +1195,7 @@ _CreateInvocationsAndTasks(
     WorkParallelForN(invocations.nodes.size(), 
         std::bind(
             &_CreateInvocationTasks,
+            interruptionFlag,
             std::cref(invocations),
             offsetNodeIndex,
             offsetInvocationIndex,
@@ -1216,6 +1260,7 @@ _HasPrereqsAndReads(const VdfSchedule &schedule, const VdfNode &node)
 //
 static void
 _CreateSingularTasks(
+    const std::atomic_bool *const interruptionFlag,
     const VdfSchedule &schedule,
     const std::vector<uint8_t> &hasInvocations,
     VdfScheduleTaskIndex offsetComputeTaskIndex,
@@ -1230,6 +1275,9 @@ _CreateSingularTasks(
         schedule.GetScheduleNodeVector();
 
     for (size_t i = 0; i < scheduleNodes.size(); ++i) {
+        if (_HasBeenInterrupted(interruptionFlag)) {
+            return;
+        }
 
         // Ignore nodes with multiple invocations.
         if (hasInvocations[i] > 0) {
@@ -1347,6 +1395,7 @@ _GatherNodeDependencies(
 //
 static void
 _GatherNodeDependenciesInRange(
+    const std::atomic_bool *const interruptionFlag,
     const VdfSchedule &schedule,
     std::vector<_NodeDependencies> *nodeToDependencies,
     size_t f,
@@ -1356,6 +1405,10 @@ _GatherNodeDependenciesInRange(
         schedule.GetScheduleNodeVector(); 
 
     for (size_t i = f; i != l; ++i) {
+        if (_HasBeenInterrupted(interruptionFlag)) {
+            return;
+        }
+
         _NodeDependencies *dependencies = &(*nodeToDependencies)[i];
         _GatherNodeDependencies(schedule, nodes[i], dependencies);
     }
@@ -1365,6 +1418,7 @@ _GatherNodeDependenciesInRange(
 //
 static void
 _GatherAllNodeDependencies(
+    const std::atomic_bool *const interruptionFlag,
     const VdfSchedule &schedule,
     std::vector<_NodeDependencies> *nodeToDependencies)
 {
@@ -1379,6 +1433,7 @@ _GatherAllNodeDependencies(
         numScheduledNodes,
         std::bind(
             &_GatherNodeDependenciesInRange,
+            interruptionFlag,
             std::cref(schedule),
             nodeToDependencies,
             std::placeholders::_1,
@@ -1399,8 +1454,12 @@ _GetOrCreateUniqueInputDependencyIndex(
 
 // Establish task dependencies for a single scheduled source output.
 //
-static void
+// Returns false if scheduling interruption is detected, if interruption is
+// supported.
+//
+static bool
 _EstablishTaskDependency(
+    const std::atomic_bool *const interruptionFlag,
     const VdfSchedule &schedule,
     const VdfSchedule::OutputId fromOutputId,
     const bool isPassTo,
@@ -1420,7 +1479,7 @@ _EstablishTaskDependency(
         const VdfMask &keepMask = schedule.GetKeepMask(fromOutputId);
         if (!keepMask.IsEmpty()) {
             if (!keepMask.Overlaps(dependencyMask)) {
-                return;
+                return true;
             }
 
             const VdfScheduleTaskIndex keepTaskIndex =
@@ -1440,7 +1499,7 @@ _EstablishTaskDependency(
                         keepTaskIndex,
                         0
                     });
-                return;
+                return true;
             }
         }
     }
@@ -1477,6 +1536,10 @@ _EstablishTaskDependency(
     TF_VERIFY(computeTaskId < end);
 
     for (; computeTaskId < end; computeTaskId++) {
+        if (_HasBeenInterrupted(interruptionFlag)) {
+            return false;
+        }
+
         // Get the compute task for this computeTaskId.
         const VdfScheduleComputeTask &computeTask = 
             schedule.GetComputeTask(computeTaskId);
@@ -1527,12 +1590,15 @@ _EstablishTaskDependency(
             computeTaskBegin,
             computeTaskEnd - computeTaskBegin + 1
         });
+
+    return true;
 }
 
 // Establish input dependencies for read/write connections.
 //
 static std::pair<VdfScheduleTaskIndex, VdfScheduleTaskNum>
 _EstablishReadWriteDependencies(
+    const std::atomic_bool *const interruptionFlag,
     const VdfSchedule &schedule,
     const VdfScheduleTaskIndex invocationIndex,
     const std::vector<const VdfScheduleInput *>::const_iterator begin,
@@ -1580,14 +1646,17 @@ _EstablishReadWriteDependencies(
                 : schedule.GetRequestMask(aoid);
 
         // Establish the task dependency.
-        _EstablishTaskDependency(
-            schedule,
-            sourceId,
-            isPassTo,
-            requestMask,
-            inputDependencies,
-            uniqueIndices,
-            startHint);
+        if (!_EstablishTaskDependency(
+                interruptionFlag,
+                schedule,
+                sourceId,
+                isPassTo,
+                requestMask,
+                inputDependencies,
+                uniqueIndices,
+                startHint)) {
+            return {};
+        }
     }
 
     const VdfScheduleTaskNum num = inputDependencies->size() - index;
@@ -1598,6 +1667,7 @@ _EstablishReadWriteDependencies(
 //
 static std::pair<VdfScheduleTaskIndex, VdfScheduleTaskNum>
 _EstablishReadDependencies(
+    const std::atomic_bool *const interruptionFlag,
     const VdfSchedule &schedule,
     const std::vector<const VdfScheduleInput *>::const_iterator begin,
     const std::vector<const VdfScheduleInput *>::const_iterator end,
@@ -1619,14 +1689,17 @@ _EstablishReadDependencies(
         VdfScheduleTaskIndex startHint = 0;
 
         // Establish the task dependency.
-        _EstablishTaskDependency(
+        if (!_EstablishTaskDependency(
+            interruptionFlag,
             schedule,
             sourceId,
             /* isPassTo = */ false,
             scheduleInput->mask,
             inputDependencies,
             uniqueIndices,
-            &startHint);
+            &startHint)) {
+            return {};
+        }
     }
 
     const VdfScheduleTaskNum num = inputDependencies->size() - index;
@@ -1637,6 +1710,7 @@ _EstablishReadDependencies(
 //
 static size_t
 _InsertInputDependencies(
+    const std::atomic_bool *const interruptionFlag,
     VdfSchedule *schedule,
     const std::vector<_NodeDependencies> &nodeToDependencies,
     Vdf_DefaultInitVector<VdfScheduleComputeTask> *computeTasks,
@@ -1656,6 +1730,9 @@ _InsertInputDependencies(
     VdfSchedule::ScheduleNodeVector &scheduleNodes =
         schedule->GetScheduleNodeVector();
     for (size_t i = 0; i < scheduleNodes.size(); ++i) {
+        if (_HasBeenInterrupted(interruptionFlag)) {
+            return 0;
+        }
 
         // The schedule node and VdfNode.
         const VdfScheduleNode &scheduleNode = scheduleNodes[i];
@@ -1693,6 +1770,7 @@ _InsertInputDependencies(
             // Insert the read/write dependencies.
             std::pair<VdfScheduleTaskIndex, VdfScheduleTaskNum> rwIndices =
                 _EstablishReadWriteDependencies(
+                    interruptionFlag,
                     *schedule,
                     computeTask->invocationIndex,
                     nodeDependencies.rws.begin(),
@@ -1700,6 +1778,10 @@ _InsertInputDependencies(
                     inputDependencies,
                     &uniqueIndices,
                     &startHint);
+
+            if (_HasBeenInterrupted(interruptionFlag)) {
+                return 0;
+            }
 
             // Read/writes are always required.
             computeTask->requiredsIndex = rwIndices.first;
@@ -1722,20 +1804,30 @@ _InsertInputDependencies(
         // Insert input dependencies for prereqs.
         std::pair<VdfScheduleTaskIndex, VdfScheduleTaskNum> prereqIndices =
             _EstablishReadDependencies(
+                interruptionFlag,
                 *schedule,
                 nodeDependencies.prereqs.begin(),
                 nodeDependencies.prereqs.end(),
                 inputDependencies,
                 &uniqueIndices);
 
+        if (_HasBeenInterrupted(interruptionFlag)) {
+            return 0;
+        }
+
         // Insert input dependencies for reads.
         std::pair<VdfScheduleTaskIndex, VdfScheduleTaskNum> readIndices =
             _EstablishReadDependencies(
+                interruptionFlag,
                 *schedule,
                 nodeDependencies.reads.begin(),
                 nodeDependencies.reads.end(),
                 inputDependencies,
                 &uniqueIndices);
+
+        if (_HasBeenInterrupted(interruptionFlag)) {
+            return 0;
+        }
 
         // If there is an inputs task, synchronize it on the prereqs and reads.
         // We consider all the reads optional, i.e. dependent on the values of
@@ -1762,6 +1854,10 @@ _InsertInputDependencies(
 
     // Assign the unique indices to all scheduled output.
     for (size_t i = 0; i < scheduleNodes.size(); ++i) {
+        if (_HasBeenInterrupted(interruptionFlag)) {
+            return 0;
+        }
+
         for (VdfScheduleOutput &scheduleOutput : scheduleNodes[i].outputs) {
             // We currently only read the unique index when passing buffers, so
             // we can avoid a bunch of work if the output does not pass its
@@ -1834,6 +1930,10 @@ VdfScheduler::_GenerateTasks(
     for (size_t i = 0; i < sortedPoolOutputs.size(); ++i) {
         const VdfOutput &output = *sortedPoolOutputs[i].second;
 
+        if (_HasBeenInterrupted()) {
+            return;
+        }
+
         // Is this output at the end of a pool chain? If not, skip ahead
         // to the next output.
         const VdfSchedule::OutputId oid = schedule->GetOutputId(output);
@@ -1848,6 +1948,7 @@ VdfScheduler::_GenerateTasks(
             dispatcher.Run(
                 std::bind(
                     &_CreatePoolInvocations,
+                    _interruptionFlag,
                     from,
                     schedule,
                     visitedNodes.get(),
@@ -1867,8 +1968,16 @@ VdfScheduler::_GenerateTasks(
     schedule->_nodesToKeepTasks.resize(
         numScheduledNodes, VdfScheduleTaskInvalid);
 
+    if (_HasBeenInterrupted()) {
+        return;
+    }
+
     // Before proceeding, Wait until all pool chains have been processed.
     dispatcher.Wait();
+
+    if (_HasBeenInterrupted()) {
+        return;
+    }
 
     // Make sure that the arrays in the schedule are properly sized.
     const size_t numScheduleComputeTasks =
@@ -1886,9 +1995,14 @@ VdfScheduler::_GenerateTasks(
     VdfScheduleTaskIndex offsetInputsTaskIndex = 0;
     VdfScheduleTaskIndex offsetKeepTaskIndex = 0;
     for (const _Invocations &invocations : allInvocations) {
+        if (_HasBeenInterrupted()) {
+            return;
+        }
+
         dispatcher.Run(
             std::bind(
                 &_CreateInvocationsAndTasks,
+                _interruptionFlag,
                 std::cref(invocations),
                 offsetNodeIndex,
                 offsetInvocationIndex,
@@ -1907,11 +2021,16 @@ VdfScheduler::_GenerateTasks(
         offsetKeepTaskIndex += invocations.numKeepTasks;
     }
 
+    if (_HasBeenInterrupted()) {
+        return;
+    }
+
     // Create tasks for all nodes with singular invocations.
     VdfScheduleTaskNum numInputsTasks = 0;
     dispatcher.Run(
         std::bind(
             &_CreateSingularTasks,
+            _interruptionFlag,
             std::cref(*schedule),
             std::cref(hasInvocations),
             offsetInvocationIndex,
@@ -1920,8 +2039,16 @@ VdfScheduler::_GenerateTasks(
             &schedule->_computeTasks,
             &numInputsTasks));
 
+    if (_HasBeenInterrupted()) {
+        return;
+    }
+
     // Make sure that all tasks and invocations have been created.
     dispatcher.Wait();
+
+    if (_HasBeenInterrupted()) {
+        return;
+    }
 
     // Resize the inputs tasks array to fit the number of inputs tasks created.
     // We may end up creating a smaller number of tasks than initially assumed.
@@ -1932,7 +2059,7 @@ VdfScheduler::_GenerateTasks(
 // Schedule the task graph by producing invocations, tasks and dependencies
 // between tasks.
 //
-void
+bool
 VdfScheduler::_ScheduleTaskGraph(
     VdfSchedule *schedule,
     const PoolPriorityVector &sortedPoolOutputs)
@@ -1941,29 +2068,41 @@ VdfScheduler::_ScheduleTaskGraph(
 
     // An isolated work dispatcher for doing some of the task graph
     // generation in parallel.
-    WorkWithScopedParallelism([&]() {
+    WorkWithScopedParallelism(
+        [this, interruptionFlag=_interruptionFlag,
+         schedule, &sortedPoolOutputs]() {
             WorkDispatcher dispatcher;
 
             // Generate compute, input and keep tasks for all the scheduled
             // nodes.
             dispatcher.Run(
-                std::bind(&_GenerateTasks,
-                          schedule, std::cref(sortedPoolOutputs)));
+                std::bind(&VdfScheduler::_GenerateTasks,
+                          this, schedule, std::cref(sortedPoolOutputs)));
 
             // Gather dependencies for all scheduled nodes.
             std::vector<_NodeDependencies> nodeToDependencies;
             dispatcher.Run(
                 std::bind(
                     &_GatherAllNodeDependencies,
+                    _interruptionFlag,
                     std::cref(*schedule),
                     &nodeToDependencies));
+
+            if (_HasBeenInterrupted()) {
+                return;
+            }
             
             // Wait until all tasks have been created, and all dependencies
             // have been gathered.
             dispatcher.Wait();
 
+            if (_HasBeenInterrupted()) {
+                return;
+            }
+
             // Insert all the input dependencies into the schedule.
             const size_t numUniqueInputDeps = _InsertInputDependencies(
+                _interruptionFlag,
                 schedule,
                 nodeToDependencies,
                 &schedule->_computeTasks,
@@ -1974,6 +2113,8 @@ VdfScheduler::_ScheduleTaskGraph(
             schedule->_numUniqueInputDeps = numUniqueInputDeps;
             
         });
+
+    return !_HasBeenInterrupted();
 }
 
 static bool
@@ -2075,14 +2216,20 @@ VdfScheduler::_ComputeLockMasks(
     schedule->SetHasSMBL(enableSMBL);
 }
 
-void 
+bool
 VdfScheduler::_ApplyAffectsMasks(VdfSchedule *schedule)
 {
     TRACE_FUNCTION();
 
     for (VdfScheduleNode &so : schedule->GetScheduleNodeVector()) {
+        if (_HasBeenInterrupted()) {
+            return false;
+        }
+
         _ApplyAffectsMasksForNode(&so);
     }
+
+    return true;
 }
 
 bool
@@ -2332,13 +2479,14 @@ _SetRequestMask(
     return addedNewBits;
 }
 
-static void 
+static bool
 _ProcessImmediateStack(
-   std::vector<VdfMaskedOutput> *stack,
-   VdfSchedule *schedule,
-   _IndexToMaskedOutputMap *poolOutputQueue,
-   VdfScheduler::PoolPriorityVector *poolOutputs,
-   VdfScheduler::NodeToRequestMap *deferredInputsToAdd)
+    const std::atomic_bool *const interruptionFlag,
+    std::vector<VdfMaskedOutput> *stack,
+    VdfSchedule *schedule,
+    _IndexToMaskedOutputMap *poolOutputQueue,
+    VdfScheduler::PoolPriorityVector *poolOutputs,
+    VdfScheduler::NodeToRequestMap *deferredInputsToAdd)
 {
     TF_DEV_AXIOM(deferredInputsToAdd);
 
@@ -2346,6 +2494,9 @@ _ProcessImmediateStack(
     // pool).
     //
     while (!stack->empty()) {
+        if (_HasBeenInterrupted(interruptionFlag)) {
+            return false;
+        }
 
         VdfMaskedOutput maskedOutput = std::move(stack->back());
         stack->pop_back();
@@ -2437,6 +2588,8 @@ _ProcessImmediateStack(
             }
         }
     }
+
+    return true;
 }
 
 
@@ -2448,7 +2601,7 @@ _PoolChainIndexGreaterThan(
     return lhs.first > rhs.first;
 }
 
-void
+bool
 VdfScheduler::_InitializeRequestMasks(
     const VdfRequest &request,
     VdfSchedule *schedule,
@@ -2457,7 +2610,7 @@ VdfScheduler::_InitializeRequestMasks(
     TRACE_FUNCTION();
 
     if (!TF_VERIFY(!request.IsEmpty())) {
-        return;
+        return false;
     }
 
     // Stack to contain the outputs that need processing before the outputs
@@ -2475,8 +2628,11 @@ VdfScheduler::_InitializeRequestMasks(
     // requested outputs come from the same network.
     const VdfNetwork *network = request.GetNetwork();
     TF_FOR_ALL(i, request) {
-        if (TF_VERIFY(&i->GetOutput()->GetNode().GetNetwork() == network)) {
+        if (_HasBeenInterrupted()) {
+            return false;
+        }
 
+        if (TF_VERIFY(&i->GetOutput()->GetNode().GetNetwork() == network)) {
             stack.push_back(*i);
         }
     }
@@ -2487,12 +2643,19 @@ VdfScheduler::_InitializeRequestMasks(
 
     // Now process all the remaining outputs before we process another
     // output with an affects mask.
-    _ProcessImmediateStack(
-        &stack, schedule, &poolOutputQueue, poolOutputs, &deferredInputsToAdd);
+    if (!_ProcessImmediateStack(
+            _interruptionFlag,
+            &stack, schedule, &poolOutputQueue, poolOutputs,
+            &deferredInputsToAdd)) {
+        return false;
+    }
 
     while (!deferredInputsToAdd.empty() || !poolOutputQueue.empty()) {
 
         while (!poolOutputQueue.empty()) {
+            if (_HasBeenInterrupted()) {
+                return false;
+            }
     
             // Get the first item of the poolOutputQueue which will be the item
             // with the lowest point pool index.
@@ -2527,9 +2690,12 @@ VdfScheduler::_InitializeRequestMasks(
 
             // Now process all the remaining outputs before we process another
             // output with an affects mask.
-            _ProcessImmediateStack(
-                &stack, schedule, &poolOutputQueue, poolOutputs,
-                &deferredInputsToAdd);
+            if (!_ProcessImmediateStack(
+                    _interruptionFlag,
+                    &stack, schedule, &poolOutputQueue, poolOutputs,
+                    &deferredInputsToAdd)) {
+                return false;
+            }
         }
 
         if (!deferredInputsToAdd.empty()) {
@@ -2540,15 +2706,22 @@ VdfScheduler::_InitializeRequestMasks(
             // (like the Mf_ExecSharingNode).
 
             for (const auto &e : deferredInputsToAdd) {
+                if (_HasBeenInterrupted()) {
+                    return false;
+                }
+
                 _AddInputs(_FindInputs(e.second), schedule, &stack);
             }
             deferredInputsToAdd.clear();
 
             // Now process all the remaining outputs before we process another
             // node with multiple outputs.
-            _ProcessImmediateStack(
-                &stack, schedule, &poolOutputQueue, poolOutputs,
-                &deferredInputsToAdd);
+            if (!_ProcessImmediateStack(
+                    _interruptionFlag,
+                    &stack, schedule, &poolOutputQueue, poolOutputs,
+                    &deferredInputsToAdd)) {
+                return false;
+            }
         }
     }
 
@@ -2569,6 +2742,8 @@ VdfScheduler::_InitializeRequestMasks(
     poolOutputs->erase(
         std::unique(poolOutputs->begin(), poolOutputs->end()),
         poolOutputs->end());
+
+    return true;
 }
 
 void
@@ -2589,8 +2764,12 @@ VdfScheduler::_MarkSmallSchedule(VdfSchedule *schedule)
     }
 }
 
-static void
+// Returns false if scheduling interruption is detected, if interruption is
+// supported.
+//
+static bool
 _TopologicallySort(
+    const std::atomic_bool *const interruptionFlag,
     const VdfRequest &request,
     VdfSchedule *schedule)
 {
@@ -2605,6 +2784,10 @@ _TopologicallySort(
 
     // Process the stack.
     while (!stack.empty()) {
+        if (_HasBeenInterrupted(interruptionFlag)) {
+            return false;
+        }
+
         const VdfOutput &output = *stack.back().first;
         const VdfNode &node = output.GetNode();
         bool *addSelf = &stack.back().second;
@@ -2638,10 +2821,25 @@ _TopologicallySort(
             }
         }
     }
+
+    return true;
+}
+
+VdfScheduler::VdfScheduler(const std::atomic_bool *const interruptionFlag)
+    : _interruptionFlag(interruptionFlag)
+{
 }
 
 void
 VdfScheduler::Schedule(
+    const VdfRequest &request, VdfSchedule *schedule, bool topologicallySort)
+{
+    VdfScheduler scheduler(/* interruptionFlag */ nullptr);
+    scheduler.CreateSchedule(request, schedule, topologicallySort);
+}
+
+bool
+VdfScheduler::CreateSchedule(
     const VdfRequest &request, VdfSchedule *schedule, bool topologicallySort)
 {
     TRACE_FUNCTION();
@@ -2653,7 +2851,7 @@ VdfScheduler::Schedule(
     // It's a valid schedule, it's just empty.
     if (request.IsEmpty()) {
         _SetScheduleValid(schedule, nullptr);
-        return;
+        return true;
     }
 
     // Initialize the size of the network we're dealing with.
@@ -2663,29 +2861,41 @@ VdfScheduler::Schedule(
     // If we've been asked to schedule in topological order, sort  the nodes
     // before we start scheduling.
     if (topologicallySort) {
-        _TopologicallySort(request, schedule);
+        if (!_TopologicallySort(_interruptionFlag, request, schedule)) {
+            return false;
+        }
     }
 
     // Initialize all the request masks.
     PoolPriorityVector poolOutputs;
-    _InitializeRequestMasks(request, schedule, &poolOutputs);
+    if (!_InitializeRequestMasks(request, schedule, &poolOutputs)) {
+        return false;
+    }
 
     // Schedule the buffer-passing.
-    _ScheduleBufferPasses(request, schedule);
+    if (!_ScheduleBufferPasses(request, schedule)) {
+        return false;
+    }
 
     // Set the affects masks so that they only affect the things in the
     // request.
-    _ApplyAffectsMasks(schedule);
+    if (!_ApplyAffectsMasks(schedule)) {
+        return false;
+    }
 
     // This call fills in the passToOutput to speed up the passing of
     // buffers by skipping all the outputs in between that have no effect.
     // This needs to happen AFTER all the keep masks have been set up
     // correctly.
-    _ScheduleForPassThroughs(request, schedule, poolOutputs);
+    if (!_ScheduleForPassThroughs(request, schedule, poolOutputs)) {
+        return false;
+    }
 
     // Schedule node tasks.
     if (VdfIsParallelEvaluationEnabled()) {
-        _ScheduleTaskGraph(schedule, poolOutputs);
+        if (!_ScheduleTaskGraph(schedule, poolOutputs)) {
+            return false;
+        }
     }
 
     // Determine if this is a small schedule.
@@ -2696,6 +2906,8 @@ VdfScheduler::Schedule(
 
     // The schedule is done and is now valid.
     _SetScheduleValid(schedule, network);
+
+    return false;
 }
 
 bool
