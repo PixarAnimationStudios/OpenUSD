@@ -3295,8 +3295,9 @@ _AddClassBasedArc(
     if (PcpNodeRef child = findMatchingChild()) {
         PCP_INDEXING_MSG(
             indexer, parent, child,
+            "A%s %s arc to <%s> already exists. Skipping.",
+            arcType == PcpArcTypeInherit ? "n" : "",
             TfEnum::GetDisplayName(arcType).c_str(),
-            "A %s arc to <%s> already exists. Skipping.",
             inheritPath.GetText());
 
         // TODO Need some policy to resolve multiple arcs.  Existing Csd
@@ -3874,7 +3875,7 @@ _IsRelocatesPlaceholderImpliedArc(
     const bool nodeIsRelocatesPlaceholder =
         parentNode != node.GetOriginNode() && 
         parentNode.GetArcType() == PcpArcTypeRelocate &&
-        parentNode.GetSite() == node.GetSite();
+        parentNode.HasSameSiteAs(node);
     return nodeIsRelocatesPlaceholder;
 }
 
