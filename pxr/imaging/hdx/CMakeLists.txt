@@ -448,4 +448,28 @@ pxr_register_test(testHdxPickAndHighlight
     PERCEPTUAL
 )
 
+# testHdxPickTransparentOccluder needs SdrGlslfxParserPlugin
+pxr_build_test(testHdxPickTransparentOccluder
+    LIBRARIES
+        hdx
+        hd
+        hdSt
+        hio
+        sdr
+        sdf
+        glf
+        garch
+        arch
+        tf
+    CPPFILES
+        unitTestUtils.cpp
+        testenv/testHdxPickTransparentOccluder.cpp
+)
+pxr_register_test(testHdxPickTransparentOccluder
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxPickTransparentOccluder --offscreen"
+    EXPECTED_RETURN_CODE 0
+    ENV
+        TF_DEBUG="HDX_SELECTION_SETUP HD_SELECTION_UPDATE"
+)
+
 endif() # TARGET shared_libs
