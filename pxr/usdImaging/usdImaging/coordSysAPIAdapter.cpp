@@ -29,6 +29,49 @@ TF_REGISTRY_FUNCTION(TfType)
 
 // ----------------------------------------------------------------------------
 
+namespace
+{
+
+// Container with the binding for a single coord sys name. The binding is
+// resolved on each query (rather than when the data source is created) so
+// that edits to the binding relationship's targets are picked up after the
+// coordSysBinding locator is dirtied, even by clients (such as the
+// flattening scene index) that hold on to the prim's data source.
+class _CoordSysBindingDataSource : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_CoordSysBindingDataSource);
+
+    _CoordSysBindingDataSource(const UsdPrim &prim, const TfToken &name)
+    : _api(prim, name) {
+    }
+
+    TfTokenVector GetNames() override {
+        if (_api.GetLocalBinding().name.IsEmpty()) {
+            return {};
+        }
+        return { _api.GetName() };
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override {
+        if (name != _api.GetName()) {
+            return nullptr;
+        }
+        const UsdShadeCoordSysAPI::Binding binding = _api.GetLocalBinding();
+        if (binding.name.IsEmpty()) {
+            return nullptr;
+        }
+        return HdRetainedTypedSampledDataSource<SdfPath>::New(
+            binding.coordSysPrimPath);
+    }
+
+private:
+    const UsdShadeCoordSysAPI _api;
+};
+HD_DECLARE_DATASOURCE_HANDLES(_CoordSysBindingDataSource);
+
+} // anonymous namespace
+
 HdContainerDataSourceHandle
 UsdImagingCoordSysAPIAdapter::GetImagingSubprimData(
     UsdPrim const& prim,
@@ -41,18 +84,9 @@ UsdImagingCoordSysAPIAdapter::GetImagingSubprimData(
     }
 
     if (subprim.IsEmpty()) {
-        UsdShadeCoordSysAPI::Binding binding =
-            UsdShadeCoordSysAPI(prim, appliedInstanceName).GetLocalBinding();
-        if (binding.name.IsEmpty()) {
-            return nullptr;
-        }
-
         return HdRetainedContainerDataSource::New(
             HdCoordSysBindingSchemaTokens->coordSysBinding,
-            HdRetainedContainerDataSource::New(
-                appliedInstanceName,
-                HdRetainedTypedSampledDataSource<SdfPath>::New(
-                    binding.coordSysPrimPath)));
+            _CoordSysBindingDataSource::New(prim, appliedInstanceName));
     }
 
     return nullptr;

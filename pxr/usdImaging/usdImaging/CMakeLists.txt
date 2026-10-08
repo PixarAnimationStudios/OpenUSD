@@ -179,6 +179,16 @@ pxr_library(usdImaging
 )
 
 # Build tests
+pxr_build_test(testUsdImagingCoordSysBindingEdits
+    LIBRARIES
+        usdImaging
+        hd
+        usd
+        sdf
+        tf
+    CPPFILES
+        testenv/testUsdImagingCoordSysBindingEdits.cpp
+)
 pxr_build_test(testUsdImagingDataSourceAttribute
     LIBRARIES
         usdImaging
@@ -350,6 +360,10 @@ pxr_build_test(testUsdImagingCollectionPredicateLibrary
 )
 
 # Register tests to be run
+pxr_register_test(testUsdImagingCoordSysBindingEdits
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingCoordSysBindingEdits"
+    EXPECTED_RETURN_CODE 0
+)
 pxr_register_test(testUsdImagingDataSourceAttribute
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingDataSourceAttribute"
     EXPECTED_RETURN_CODE 0
