@@ -33,9 +33,6 @@ if(EMSCRIPTEN)
     add_link_options("SHELL:${EMSCRIPTEN_COMPILE_FLAGS} -sALLOW_MEMORY_GROWTH=1")
 endif()
 
-# Allow local includes from source directory.
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 # Turn on folder usage
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
