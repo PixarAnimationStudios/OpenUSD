@@ -174,9 +174,11 @@ HdxRenderTask::Execute(HdTaskContext* ctx)
         // existing HdLegacyRenderControlInterface::GetTaskContextData
         // to retrieve it.
         if (HdRenderParam * const renderParam = _GetRenderParam(_pass)) {
-            (*ctx)[HdSceneGlobalsSchemaTokens->sceneStateId] =
-                renderParam->GetArbitraryValue(
-                    HdSceneGlobalsSchemaTokens->sceneStateId);
+            static const TfToken &key =
+                HdSceneGlobalsSchemaTokens->sceneStateId;
+            if (renderParam->HasArbitraryValue(key)) {
+                (*ctx)[key] = renderParam->GetArbitraryValue(key);
+            }
         }
     }
 }
