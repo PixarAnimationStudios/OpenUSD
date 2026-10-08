@@ -15,10 +15,11 @@
 #include "pxr/base/tf/api.h"
 
 #include <cstring>
-#include <string>
 #include <map>
 #include <memory>
 #include <set>
+#include <string>
+#include <string_view>
 #include <tuple>
 #include <typeindex>
 #include <type_traits>
@@ -130,6 +131,14 @@ inline void
 TfHashAppend(HashState &h, const std::string& s)
 {
     return h.AppendContiguous(s.c_str(), s.length());
+}
+
+// Support for hashing std::string_view
+template <class HashState>
+inline void
+TfHashAppend(HashState& h, const std::string_view& sv)
+{
+    return h.AppendContiguous(sv.data(), sv.size());
 }
 
 // Support for hashing pointers, but we explicitly delete the version for
