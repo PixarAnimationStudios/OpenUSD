@@ -245,3 +245,167 @@ support different qualities or styles of thumbnails if desired.
 )
 {
 }
+
+over "AuthorshipAPI" (
+    customData = {
+        string userDocBrief = """Records who or what authored a prim."""
+        string userDoc = """Provides a standardized record of authorship for a 
+prim. 
+
+Each record describes one authoring step, such as a generative AI run,
+an export from a DCC, or a manual cleanup session. A prim can carry
+its full history of contributors, provided that each step is recorded
+with a unique-to-the-prim schema instance name.
+
+The schema may also be applied to any of a prim's ancestors.
+Authorship aggregates down the namespace hierarchy. A prim's own
+records add to, rather than override, its ancestors' records.
+
+Note that this record is considered unverified. It is not treated as any sort
+of cryptographic signature, and the `copyrightOwner` attribute represents a 
+claim, but not a legal guarantee.
+"""
+    }
+)
+{
+    uniform string softwarePackage (
+        customData = {
+            string userDocBrief = """The tool or system that most directly wrote
+the USD data for this prim."""
+            string userDoc = """The tool or system that most directly wrote 
+the USD data for this prim. Must be a tool or system (e.g., `org.blender`), not 
+a person; human contributors belong in `creator`. If an AI model
+runs inside a host application, name the model itself. If someone
+authored the data directly with the OpenUSD API in an unnamed
+script, the softwarePackage would be `OpenUSD`.
+
+Reverse domain notation is recommended (e.g.,
+`com.example.mymodel`) to minimize name conflicts. Values are
+unvalidated and compared case-insensitively."""
+        }
+    )
+
+    uniform string softwareVersion (
+        customData = {
+            string userDocBrief = """The version of the softwarePackage that
+created this record."""
+            string userDoc = """The version of the softwarePackage that created 
+this record, not the version of the asset. If a hosted service provides no 
+stable version, use the provided build label or hash, and rely on `created` to 
+pin down the iteration's ordering."""        
+        }
+    )
+
+    uniform string digitalSourceType (
+        customData = {
+            string userDocBrief = """A URI describing the nature of the creative
+process, such as whether the content is human-made or AI-generated."""
+            string userDoc = """A URI describing the nature of the creative 
+process, such as whether the content is human-made or AI-generated.
+
+The IPTC Digital Source Type vocabulary is recommended (e.g.,
+`trainedAlgorithmicMedia`). Tools evaluating AI content should
+check this field across the prim's accumulated ancestry and default
+to assuming non-AI generation if an AI source type is absent."""        
+        }
+    )
+
+    uniform string[] creator (
+        customData = {
+            string userDocBrief = """Human-readable names of the artists,
+studios, or services that contributed to this authoring step."""
+            string userDoc = """Human-readable names of the artists, studios, or
+services that contributed to this authoring step. Intended for display. 
+Corresponds to `dc:creator`."""
+        }
+    )
+
+    uniform string description (
+        customData = {
+            string userDocBrief = """Free-form description of how the prim was
+created."""
+            string userDoc = """Free-form description of how the prim was 
+created. Better suited to technique notes, reference material, or history. For
+specific, itemized inputs, prefer `inputs` instead."""
+        }
+    )
+
+    uniform string[] inputs (
+        customData = {
+            string userDocBrief = """The inputs that shaped this authoring step,
+as flattened (name, value) pairs."""
+            string userDoc = """The inputs that shaped this authoring step, as 
+flattened (name, value) pairs. For example, `["prompt", "A fluffy bunny",
+"seed", "1234567"]`. Not specific to generative AI; a human
+authoring step can record its reference art, schematics, or design
+specs the same way.
+
+The array length must be a multiple of 2; an odd length makes the
+record malformed. Values are plain strings rather than `asset`
+paths so that reference images or local files aren't resolved or
+packaged with the asset."""
+        }
+    )
+
+    uniform string created (
+        customData = {
+            string userDocBrief = """An ISO 8601 timestamp indicating when this
+authoring step occurred (e.g., `2025-02-16T12:03:17+01:00`)."""
+            string userDoc = """An ISO 8601 timestamp indicating when this 
+authoring step occurred (e.g., `2025-02-16T12:03:17+01:00`), which may differ 
+from the original creation time of the asset."""
+        }
+    )
+
+    uniform string instanceID (
+        customData = {        
+            string userDocBrief = """A unique identifier for this run's output,
+such as a single generative AI result."""
+            string userDoc = """A unique identifier for this run's output, such 
+as a single generative AI result. A UUID4 is recommended. Do not encode
+personal author information.
+
+Unrelated to USD native instancing and unrelated to this schema's
+applied instance name.
+
+Identifies an output, not a reproducible recipe; identical inputs
+do not guarantee identical results. Uniqueness is not guaranteed
+across external pipelines. Named after `xmpMM:InstanceID` but
+identifies an authoring step's output (which may span several
+prims) rather than a single resource rendition. Not directly
+equivalent when round-tripping."""
+        }
+    )
+
+    uniform string usageTerms (
+        customData = {
+            string userDocBrief = """The license or usage terms for this
+asset."""
+            string userDoc = """The license or usage terms for this asset.
+SPDX identifiers are preferred (e.g., `CC-BY-4.0` or `MIT`) to
+allow programmatic evaluation. Otherwise, provide a URL to the
+license text, or the full text as a fallback. If unauthored, no
+specific license or rights should be assumed. Corresponds to
+`xmpRights:UsageTerms`."""
+        }
+    )
+
+    uniform string[] copyrightOwner (
+        customData = {
+            string userDocBrief = """The list of entities holding copyright in
+this content."""
+            string userDoc = """Entities holding copyright in this content, 
+which may differ from `creator` (e.g., a studio owning an artist's work).
+Corresponds to `xmpRights:Owner`."""
+        }
+    )
+
+    uniform string[] contact (
+        customData = {
+            string userDocBrief = """Contact information for inquiries about
+this asset, such as an email address, support URL, or licensing page."""
+            string userDoc = """Contact information for inquiries about this 
+asset, such as an email address, support URL, or licensing page."""
+        }
+    )
+}

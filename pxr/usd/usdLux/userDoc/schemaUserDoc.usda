@@ -89,7 +89,7 @@ shader ID is not available.
 
 For intrinsic lights (RectLight, DistantLight, etc.), the shader ID is by
 default set to the light's type name. USD will also register a Sdr shader node
-with a matching identifier and the source type "USD" to correspond to the 
+with a matching identifier and the shading system "USD" to correspond to the 
 light's inputs.
 ."""
         }
@@ -961,7 +961,7 @@ Example RenderMan output for this layer:
 ("DistantLight"). """
             string userDoc = """The shader ID for a DistantLight. 
 USD will also register a Sdr shader node with a "DistantLight" identifier and 
-the source type "USD" to correspond to the light's inputs
+the shading system "USD" to correspond to the light's inputs.
 """
         }
     )
@@ -1093,7 +1093,7 @@ Example RenderMan output for this layer:
 ("DiskLight"). """
             string userDoc = """The shader ID for a DiskLight. 
 USD will also register a Sdr shader node with a "DiskLight" identifier and 
-the source type "USD" to correspond to the light's inputs
+the shading system "USD" to correspond to the light's inputs.
 """
         }
     )
@@ -1192,7 +1192,7 @@ Example RenderMan output for this layer:
 ("RectLight"). """
             string userDoc = """The shader ID for a RectLight. 
 USD will also register a Sdr shader node with a "RectLight" identifier and 
-the source type "USD" to correspond to the light's inputs
+the shading system "USD" to correspond to the light's inputs.
 """
         }   
     )
@@ -1303,7 +1303,7 @@ Example RenderMan output for this layer (compare with the output for the
 ("SphereLight"). """
             string userDoc = """The shader ID for a SphereLight. 
 USD will also register a Sdr shader node with a "SphereLight" identifier and 
-the source type "USD" to correspond to the light's inputs
+the shading system "USD" to correspond to the light's inputs.
 """
         }
     )
@@ -1408,7 +1408,7 @@ Example RenderMan output for this layer:
 ("CylinderLight"). """
             string userDoc = """The shader ID for a CylinderLight. 
 USD will also register a Sdr shader node with a "CylinderLight" identifier and 
-the source type "USD" to correspond to the light's inputs
+the shading system "USD" to correspond to the light's inputs.
 """
         }
     )
@@ -1466,7 +1466,7 @@ light source.
 ("GeometryLight"). """
             string userDoc = """The shader ID for a GeometryLight. 
 USD will also register a Sdr shader node with a "GeometryLight" identifier and 
-the source type "USD" to correspond to the light's inputs
+the shading system "USD" to correspond to the light's inputs.
 """
         }
     )
@@ -1568,7 +1568,7 @@ Example RenderMan output for this layer:
 ("DomeLight"). """
             string userDoc = """The shader ID for a DomeLight. 
 USD will also register a Sdr shader node with a "DomeLight" identifier and 
-the source type "USD" to correspond to the light's inputs
+the shading system "USD" to correspond to the light's inputs.
 """
         }
     )
@@ -1674,7 +1674,7 @@ See also the alternative {ref}`DomeLight` version.
 ("DomeLight"). """
             string userDoc = """The shader ID for a DomeLight_1. 
 USD will also register a Sdr shader node with a "DomeLight" identifier and 
-the source type "USD" to correspond to the light's inputs
+the shading system "USD" to correspond to the light's inputs.
 """
         }
     )
@@ -1763,7 +1763,7 @@ The rectangle is 1 unit in length.
 ("PortalLight"). """
             string userDoc = """The shader ID for a PortalLight. 
 USD will also register a Sdr shader node with a "PortalLight" identifier and 
-the source type "USD" to correspond to the light's inputs
+the shading system "USD" to correspond to the light's inputs.
 """
         }
     )
