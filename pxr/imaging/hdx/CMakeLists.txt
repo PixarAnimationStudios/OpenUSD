@@ -106,7 +106,7 @@ pxr_library(hdx
         overview.dox
 )
 
-if (X11_FOUND OR APPLE)
+if (X11_FOUND OR APPLE OR WIN32)
 pxr_build_test(testHdxRenderTask
     LIBRARIES
         hdx
@@ -255,11 +255,6 @@ endif()
 
 if (${PXR_HEADLESS_TEST_MODE})
     message(STATUS "Skipping ${PXR_PACKAGE} tests because PXR_HEADLESS_TEST_MODE is ON")
-    return()
-endif()
-
-if (WIN32)
-    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
     return()
 endif()
 

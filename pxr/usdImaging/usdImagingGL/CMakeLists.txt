@@ -158,11 +158,6 @@ if (${PXR_HEADLESS_TEST_MODE})
     return()
 endif()
 
-if (WIN32)
-    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
-    return()
-endif()
-
 # usdImagingGL tests require plugin mechanism to find different renderer
 # plugins, which we do not support for static build configurations due to
 # potential conflict in client applications linking against static build USD
@@ -4819,6 +4814,7 @@ pxr_register_test(testUsdImagingGLMaterialsAndInstancers_materialAsNiInstance
         FAIL_PERCENT 0.001
     TESTENV testenv/testUsdImagingGLMaterialsAndInstancers)
 
+if (NOT WIN32)
 pxr_register_test(testUsdImagingGLUsdRenderPass_prune
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --renderer HdStormRendererPlugin --renderPassPrimPath /Render/Passes/nospheres input.usda nospheres.exr"
@@ -4884,6 +4880,7 @@ pxr_register_test(testUsdImagingGLUsdRenderPassWithInstances_renderVisibility_te
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLUsdRenderPass)
+endif()
 
 pxr_register_test(testUsdImagingGLTextureResync
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLTextureResync --stage testUsdImagingGLTextureResync.usda --deactivate /Scene/Looks/Material1/Texture --deactivate /Scene/Looks/Material2/Texture --write testUsdImagingGLTextureResync.png"
@@ -5376,6 +5373,7 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
     )
     endif()
 
+    if (NOT WIN32)
     pxr_register_test(testUsdImagingGLMaterialXLibraryCustomNodes_colorNode
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage colorNode.usda -write colorNode.png"
         IMAGE_DIFF_COMPARE
@@ -5389,6 +5387,7 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         ENV
             PXR_MTLX_PLUGIN_SEARCH_PATHS=./libraryNodes
     )
+    endif()
 
     pxr_register_test(testUsdImagingGLMaterialXLibraryCustomNodes_nestedNodes
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage nestedNodes.usda -write nestedNodes.png"
