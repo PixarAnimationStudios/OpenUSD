@@ -1166,19 +1166,6 @@ pxr_register_test(testUsdImagingGLShadeMaterial
     TESTENV testenv/testUsdImagingGLShadeMaterial
 )
 
-pxr_register_test(testUsdImagingGLShadeMaterial_Delegate
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage coloredCubes.usda -write testUsdImagingGLShadeMaterial.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLShadeMaterial.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testenv/testUsdImagingGLShadeMaterial_Delegate
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=false
-)
-
 pxr_register_test(testUsdImagingGLSphere
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage sphere.usda -camera /main_cam -times 1 6 10 -write testUsdImagingGLSphere.png"
     IMAGE_DIFF_COMPARE
@@ -1200,23 +1187,6 @@ pxr_register_test(testUsdImagingGLSphere_transformed
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLSphere
-)
-
-# There is a bug for sphere with float radius:
-# authoring a float radius doesn't actually pick up the authored float radius but the schema default value.
-# In the test, the attribute has animation and at frame 6, the value is the schema default value.
-# Thus, the test is passing exactly for frame 6.
-pxr_register_test(testUsdImagingGLSphereWithFloatRadius
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage sphereWithFloatRadius.usda -camera /main_cam -times 1 6 10 -write testUsdImagingGLSphere.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLSphere_006.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testenv/testUsdImagingGLSphere
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=false
 )
 
 pxr_register_test(testUsdImagingGLNurbsCurves
@@ -1472,22 +1442,6 @@ pxr_register_test(testUsdImagingGLInstancing_SceneIndex_pi_outside
 #)
 
 if (NOT APPLE)
-pxr_register_test(testUsdImagingGLPickAndHighlight
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPickAndHighlight -offscreen -frameAll -stage instance.usda -write testUsdImagingGLPickAndHighlight.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLPickAndHighlight_000.png
-        testUsdImagingGLPickAndHighlight_001.png
-        testUsdImagingGLPickAndHighlight_002.png
-        testUsdImagingGLPickAndHighlight_003.png
-        testUsdImagingGLPickAndHighlight_004.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testenv/testUsdImagingGLPickAndHighlight
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=false
-)
 
 pxr_register_test(testUsdImagingGLPickAndHighlight_SceneIndex
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPickAndHighlight -offscreen -frameAll -stage instance.usda -write testUsdImagingGLPickAndHighlight.png"
@@ -2350,20 +2304,6 @@ pxr_register_test(testUsdImagingGLPrimvarSharing_refined_colors
         HDST_ENABLE_SHARED_VERTEX_PRIMVAR=1
 )
 
-pxr_register_test(testUsdImagingGLColorOpacityPrimvar
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -translate -5 -2 -25 -times 0 1 -stage color_opacity_primvar.usda -write color_opacity_primvar.png"
-    IMAGE_DIFF_COMPARE
-        color_opacity_primvar_000.png
-        color_opacity_primvar_001.png
-    FAIL 0.1
-    FAIL_PERCENT 0.15
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testenv/testUsdImagingGLColorOpacityPrimvar
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=false
-)
-
 pxr_register_test(testUsdImagingGLTriangleSubdivisionRuleOsd3
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -complexity 1.5 -stage catmark_and_smooth_tris.usda -write testUsdImagingGLTriangleSubdivisionRuleOsd3.png"
     IMAGE_DIFF_COMPARE
@@ -2384,63 +2324,6 @@ pxr_register_test(testUsdImagingGLWireframeOpacity
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLWireframeOpacity
-)
-
-pxr_register_test(testUsdImagingGLCards
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage testCards.usda -write testCards.png"
-    IMAGE_DIFF_COMPARE
-        testCards.png
-    FAIL 0.01
-    FAIL_PERCENT 0.2
-    WARN 0.02
-    WARN_PERCENT 0.05
-    EXPECTED_RETURN_CODE 0
-    TESTENV testenv/testUsdImagingGLCards
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=false
-)
-
-pxr_register_test(testUsdImagingGLCards_anim
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage testAnim.usda -times 1 2 -write testAnim.png"
-    IMAGE_DIFF_COMPARE
-        testAnim_001.png
-        testAnim_002.png
-    FAIL 0.02
-    FAIL_PERCENT 0.2
-    WARN 0.03
-    WARN_PERCENT 0.05
-    EXPECTED_RETURN_CODE 0
-    TESTENV testenv/testUsdImagingGLCards
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=false
-)
-
-pxr_register_test(testUsdImagingGLCards_bounds
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -unloadedAsBounds -offscreen -lighting -shading smooth -frameAll -stage testUnloadedAsBounds.usda -write testUnloadedAsBounds.png"
-    IMAGE_DIFF_COMPARE
-        testUnloadedAsBounds.png
-    FAIL 0.01
-    FAIL_PERCENT 0.1
-    WARN 0.02
-    WARN_PERCENT 0.05
-    EXPECTED_RETURN_CODE 0
-    TESTENV testenv/testUsdImagingGLCards
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=false
-)
-
-pxr_register_test(testUsdImagingGLCards_basic
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage testCardsBasic.usda -camera /MainCamera -write testCardsBasic.png"
-    IMAGE_DIFF_COMPARE
-        testCardsBasic.png
-    FAIL 0.1
-    FAIL_PERCENT 0.1
-    WARN 0.2
-    WARN_PERCENT 0.05
-    EXPECTED_RETURN_CODE 0
-    TESTENV testenv/testUsdImagingGLCards
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=false
 )
 
 # XXX: Commenting out while failures are being investigated.
@@ -4217,20 +4100,6 @@ pxr_register_test(testUsdImagingGLInheritedPurpose_Instanced_all
     FAIL_PERCENT 0.4
     EXPECTED_RETURN_CODE 0
     TESTENV testenv/testUsdImagingGLInheritedPurpose
-)
-
-# Note that in the UsdImagingDelegate, the displayColor authored on a material is stronger than the one authored as primvar on a prim using that material.
-pxr_register_test(testUsdImagingGLInvalidUniversalSurface
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -frameAll -stage invalid_universal_surface.usda -write testUsdImagingGLInvalidUniversalSurface.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInvalidUniversalSurface.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testenv/testUsdImagingGLInvalidUniversalSurface
-    ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=false
 )
 
 # Note that in the stage scene index, the displayColor authored on a material is ignored if there is a displayColor primvar authored on the prim using that material.
