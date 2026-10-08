@@ -24,6 +24,7 @@
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
 #include "pxr/usdImaging/usdImaging/materialBindingsSchema.h"
 
+#include "pxr/imaging/hd/coordSysBindingSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/noticeBatchingSceneIndex.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
@@ -146,6 +147,7 @@ _InstanceDataSourceNames()
     // to the underlying USD stage prototypes.
     TfTokenVector result = {
         UsdImagingMaterialBindingsSchema::GetSchemaToken(),
+        HdCoordSysBindingSchema::GetSchemaToken(),
         HdPurposeSchema::GetSchemaToken(),
         UsdImagingGeomModelSchema::GetSchemaToken(),
         // We include the model schema in order to aggregate scene indices by
