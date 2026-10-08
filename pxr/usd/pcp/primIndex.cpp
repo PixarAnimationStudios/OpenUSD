@@ -515,7 +515,11 @@ _GetPropagatedSpecializesNode(
             break;
         }
 
-        if (rootChild.GetOriginNode() == node &&
+        // Match by site rather than by origin.  _PropagateNodeToRoot reuses an
+        // existing propagated node for the same site, so several placeholders
+        // may share one propagated node whose origin is only the first of them.
+        // See the SpecializesAndDuplicateArcs2 museum case.
+        if (rootChild.HasSameSiteAs(node) &&
             Pcp_IsPropagatedSpecializesNode(rootChild)) {
             return rootChild;
         }

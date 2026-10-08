@@ -701,6 +701,14 @@ pxr_register_test(testPcpMuseum_SpecializesAndDuplicateArcs
     DIFF_COMPARE compositionResults_SpecializesAndDuplicateArcs.txt
 )
 
+pxr_register_test(testPcpMuseum_SpecializesAndDuplicateArcs2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd SpecializesAndDuplicateArcs2/root.usda"
+    TESTENV testenv/testPcpMuseum_SpecializesAndDuplicateArcs2.testenv
+    STDOUT_REDIRECT compositionResults_SpecializesAndDuplicateArcs2.txt
+    DIFF_COMPARE compositionResults_SpecializesAndDuplicateArcs2.txt
+)
+
 pxr_register_test(testPcpMuseum_SpecializesAndVariants
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd SpecializesAndVariants/root.usda" 
