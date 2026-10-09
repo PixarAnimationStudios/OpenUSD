@@ -80,7 +80,7 @@ _Repr(const UsdCollectionAPI &self)
     std::string primRepr = TfPyRepr(self.GetPrim());
     std::string instanceName = TfPyRepr(self.GetName());
     return TfStringPrintf(
-        "Usd.CollectionAPI(%s, '%s')",
+        "Usd.CollectionAPI(%s, %s)",
         primRepr.c_str(), instanceName.c_str());
 }
 
