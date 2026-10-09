@@ -17,6 +17,7 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/safeOutputFile.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <ctime>
 #include <mutex>
@@ -57,16 +58,8 @@ static inline int64_t Sdf_GetMaxZipFileSize() {
 
 // Metafunction that determines if a T instance can be read/written by simple
 // bitwise copy.
-//
-// XXX: This could be std::is_trivially_copyable, but that isn't implemented in
-//      older versions of gcc.
 template <class T>
-struct _IsBitwiseReadWrite {
-    static const bool value =
-        std::is_enum<T>::value ||
-        std::is_arithmetic<T>::value ||
-        std::is_trivial<T>::value;
-};
+using _IsBitwiseReadWrite = std::is_trivially_copyable<T>;
 
 struct _InputStream {
     _InputStream(const char* buffer, size_t size, size_t offset = 0)
@@ -1040,7 +1033,18 @@ SdfZipFileWriter::AddFile(
     _LocalFileHeader h;
     h.f.signature = _LocalFileHeader::Signature;
     h.f.versionForExtract = 10; // Default value
-    h.f.bits = 0;
+
+    // Per the ZIP specification (PKWARE APPNOTE.TXT section 4.4.4), bit 11
+    // of the General Purpose Bit Flag indicates that the filename and comment
+    // fields are encoded using UTF-8. Set this flag whenever the filename
+    // contains any non-ASCII bytes so that ZIP tools correctly display
+    // filenames containing Unicode characters (e.g. Chinese, Japanese, Korean).
+    static constexpr uint16_t _Utf8Flag = 0x0800;
+    const bool hasNonAscii = std::any_of(
+        zipFilePath.begin(), zipFilePath.end(),
+        [](unsigned char c) { return c > 127; });
+    h.f.bits = hasNonAscii ? _Utf8Flag : 0;
+
     h.f.compressionMethod = 0; // No compression
     std::tie(h.f.lastModTime, h.f.lastModDate) = _ModTimeAndDate(filePath);
     h.f.crc32 = _Crc32(mapping);
