@@ -21,6 +21,8 @@ except ImportError:
 import warnings
 class LoopParams(_LoopParams):
     def __init__(self, *args, **kw):
-        warnings.warn("Ts.Spline inner looping is deprecated.",
-                      FutureWarning)
+        from pxr import Tf
+        if not Tf.GetEnvSetting("PXR_DISABLE_INNER_LOOPING_WARNINGS"):
+            warnings.warn("Ts.Spline inner looping is deprecated.",
+                          FutureWarning)
         super().__init__(*args, **kw)
