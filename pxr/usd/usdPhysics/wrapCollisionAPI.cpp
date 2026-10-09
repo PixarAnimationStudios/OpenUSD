@@ -143,6 +143,9 @@ void wrapUsdPhysicsCollisionAPI()
 namespace {
 
 WRAP_CUSTOM {
+    _class
+        .def("GetBody", &UsdPhysicsCollisionAPI::GetBody)
+    ;
 }
 
 }
