@@ -27,6 +27,13 @@ bool HgiVulkanIsDebugEnabled();
 HGIVULKAN_API
 bool HgiVulkanIsValidationEnabled();
 
+/// Returns true if validation should use syncval_shader_accesses_heuristic.
+/// Not enabled by default since it can produce false positives, but useful for
+/// debugging suspected synchronization issues. See:
+/// https://vulkan.lunarg.com/doc/view/1.4.321.0/linux/khronos_validation_layer.html#shader-accesses-heuristic
+HGIVULKAN_API
+bool HgiVulkanIsSyncvalShaderAccessesEnabled();
+
 /// Setup vulkan debug callbacks
 HGIVULKAN_API
 void HgiVulkanCreateDebug(HgiVulkanInstance* instance);
