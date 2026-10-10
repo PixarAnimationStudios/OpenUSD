@@ -57,6 +57,7 @@ pxr_plugin(usdAbc
 
 pxr_test_scripts(
     testenv/testUsdAbcAlembicData.py
+    testenv/testUsdAbcArrayExtent.py
     testenv/testUsdAbcBugs.py
     testenv/testUsdAbcCamera.py
     testenv/testUsdAbcConversionBasisCurves.py
@@ -79,6 +80,13 @@ pxr_register_test(testUsdAbcAlembicData
     EXPECTED_RETURN_CODE 0
     ENV 
         USD_ABC_NUM_OGAWA_STREAMS=2
+)
+
+pxr_register_test(testUsdAbcArrayExtent
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcArrayExtent"
+    TESTENV testenv/testUsdAbcArrayExtent
+    EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdAbcBugs
