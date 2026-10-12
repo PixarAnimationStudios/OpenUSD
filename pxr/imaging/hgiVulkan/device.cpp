@@ -320,6 +320,9 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     // Needed for gl_primtiveID
     features2.features.geometryShader =
         _capabilities->vkDeviceFeatures2.features.geometryShader;
+    // Needed for per-attachment blend state
+    features2.features.independentBlend =
+        _capabilities->vkDeviceFeatures2.features.independentBlend;
 
     VkPhysicalDeviceVulkan11Features vulkan11Features =
         {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
