@@ -145,11 +145,7 @@ public:
 
     // Default constructor returns an invalid XformOp.  Exists for 
     // container classes
-    UsdGeomXformOp()
-        : _opType(TypeInvalid)
-        , _isInverseOp(false)
-    {
-    }
+    UsdGeomXformOp() = default;
     
     /// Speculative constructor that will produce a valid UsdGeomXformOp when
     /// \p attr already represents an attribute that is XformOp, and
@@ -493,8 +489,8 @@ private:
     // 
     mutable std::variant<UsdAttribute, UsdAttributeQuery> _attr;
 
-    Type _opType;
-    bool _isInverseOp;
+    Type _opType = TypeInvalid;
+    bool _isInverseOp = false;
 
     // Visitor for getting xformOp value.
     template <class T>
