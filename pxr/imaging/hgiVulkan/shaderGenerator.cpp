@@ -10,6 +10,7 @@
 #include "pxr/imaging/hgiVulkan/descriptorSetLayouts.h"
 #include "pxr/imaging/hgiVulkan/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
+#include "pxr/base/tf/diagnostic.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -47,7 +48,6 @@ HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
     const HgiShaderFunctionDesc &descriptor)
   : HgiShaderGenerator(descriptor)
   , _hgi(hgi)
-  , _textureBindIndexStart(0)
   , _inLocationIndex(0)
   , _outLocationIndex(0)
   , _descriptorSetLayoutsAdded(false)
@@ -272,10 +272,13 @@ HgiVulkanShaderGenerator::_WriteTextures(
     const HgiShaderFunctionTextureDescVector& textures)
 {
     for (const HgiShaderFunctionTextureDesc& desc : textures) {
+        const uint32_t textureBindIndex =
+            HgiVulkanTextureBindIndexBase + desc.bindIndex;
+
         HgiShaderSectionAttributeVector attrs = {
             HgiShaderSectionAttribute{
                 "binding",
-                std::to_string(_textureBindIndexStart + desc.bindIndex)}};
+                std::to_string(textureBindIndex)}};
 
         if (desc.writable) {
             attrs.insert(attrs.begin(), HgiShaderSectionAttribute{
@@ -283,9 +286,6 @@ HgiVulkanShaderGenerator::_WriteTextures(
                     desc.format), 
                 ""});
         }
-
-        const uint32_t textureBindIndex =
-            _textureBindIndexStart + desc.bindIndex;
 
         CreateShaderSection<HgiVulkanTextureShaderSection>(
             desc.nameInShader,
@@ -360,11 +360,9 @@ HgiVulkanShaderGenerator::_WriteBuffers(
                 attrs);
         }
 
-        // In Vulkan, buffers and textures cannot have the same binding index.
-        // Start textures right after the last buffer. 
-        // See HgiVulkanResourceBindings for details.
-        _textureBindIndexStart =
-            std::max(_textureBindIndexStart, bindIndex + 1);
+        TF_VERIFY(bindIndex < HgiVulkanTextureBindIndexBase,
+            "Buffer binding index %u overlaps the texture binding range",
+            bindIndex);
 
         const VkDescriptorType descriptorType =
             isUniformBufferBinding
