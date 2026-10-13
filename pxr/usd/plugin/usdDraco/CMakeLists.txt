@@ -13,10 +13,7 @@ pxr_plugin(${PXR_PACKAGE}
         sdf
         usd
         usdGeom
-        ${DRACO_LIBRARY}
-
-    INCLUDE_DIRS
-        ${DRACO_INCLUDES}
+        draco::draco
     
     PRIVATE_HEADERS
         exportAttribute.h
