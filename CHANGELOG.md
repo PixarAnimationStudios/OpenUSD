@@ -28,8 +28,8 @@
   Alembic, Qt, and OpenEXR versions were upgraded, and obsolete patches for past 
   dependency versions were dropped.
 
-- **Important**: PySide2 support is deprecated and will be removed in a future 
-  release.
+- **Important**: PySide2 support is deprecated and unsupported due to VFX 2025 
+  toolchain requirements and will be removed in a future release.
 
 - Dropped support for python39 and python310.
 
@@ -509,9 +509,9 @@
   requires calls to GarbageCollect, framebuffers are cleared on HgiGLTexture 
   deletion.
 
-- Added `GetDetailedResourceAllocation` to HdResourceRegistry, which can be 
-  implemented to return more detailed information than `GetResourceAllocation`. 
-  If unimplemented, returns the same information as `GetResourceAllocation`.
+- Added `GetDetailedResourceAllocation` to HdResourceRegistry, which derived 
+  classes can override to return detailed resource allocation information, 
+  otherwise returns the same information as `GetResourceAllocation`.
 
 - Fixed possible OOB shader access for basis curves when patch vertex count was 
   less than 4.
