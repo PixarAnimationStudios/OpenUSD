@@ -14,7 +14,7 @@
 
 #include "pxr/usd/usdGeom/backPlateAPI.h"
 
-#include <oneapi/tbb/concurrent_unordered_map.h>
+#include <tbb/concurrent_unordered_map.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
