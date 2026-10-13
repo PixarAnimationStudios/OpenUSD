@@ -98,6 +98,19 @@
     return entry;
   }
 
+  function is_newer_version(version, other_version) {
+    // Return true if version is "newer" than other_version, e.g. 
+    // is_newer_version("26.11", "26.08") == true.
+    var version_parts = version.split(".").map(Number);
+    var other_version_parts = other_version.split(".").map(Number);
+    if (version_parts[0] > other_version_parts[0] ||
+        (version_parts[0] == other_version_parts[0] && 
+         version_parts[1] > other_version_parts[1])) {
+      return true;
+    }
+    return false;
+  }
+
   $(document).ready(function() {
 
     // Dynamically build version selector from manifest of available versions
@@ -160,7 +173,8 @@
 
       if (DOCUMENTATION_OPTIONS.VERSION != release_version.version) {
         var warningMsg;
-        if (DOCUMENTATION_OPTIONS.VERSION == dev_version.version) {
+        if (DOCUMENTATION_OPTIONS.VERSION == dev_version.version || 
+            is_newer_version(DOCUMENTATION_OPTIONS.VERSION, release_version.version)) {
           warningMsg = "This document is for a version of USD that is under development."
         }
         else {
