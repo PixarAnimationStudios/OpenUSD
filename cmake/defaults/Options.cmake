@@ -39,6 +39,7 @@ option(PXR_ENABLE_NAMESPACES "Enable C++ namespaces." ON)
 option(PXR_PREFER_SAFETY_OVER_SPEED
        "Enable certain checks designed to avoid crashes or out-of-bounds memory reads with malformed input files.  These checks may negatively impact performance."
         ON)
+option(PXR_ALLOW_FETCH_CONTENT "(Experimental) Enable select dependency retrieval via CMake's FetchContent" OFF)
 
 if(APPLE)
     # Cross Compilation detection as defined in CMake docs
