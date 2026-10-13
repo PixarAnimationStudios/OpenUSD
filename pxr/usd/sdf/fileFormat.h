@@ -147,10 +147,15 @@ public:
     /// placeholder asset to exist just so Read can populate the layer.
     SDF_API bool ShouldReadAnonymousLayers() const;
 
-    /// Returns true if \p file can be read by this format.
+    /// Returns true if the asset at \p resolvedPath can be read by this
+    /// format.
+    ///
+    /// \p resolvedPath is expected to be a resolved asset path. Callers are
+    /// responsible for resolving the identifier before calling this method,
+    /// consistent with the expectation of \ref Read.
     SDF_API
     virtual bool CanRead(
-        const std::string& file) const = 0;
+        const std::string& resolvedPath) const = 0;
 
     /// Reads scene description from the asset specified by \p resolvedPath
     /// into the layer \p layer.
