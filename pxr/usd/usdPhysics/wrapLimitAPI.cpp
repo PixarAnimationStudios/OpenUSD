@@ -59,7 +59,7 @@ _Repr(const UsdPhysicsLimitAPI &self)
     std::string primRepr = TfPyRepr(self.GetPrim());
     std::string instanceName = TfPyRepr(self.GetName());
     return TfStringPrintf(
-        "UsdPhysics.LimitAPI(%s, '%s')",
+        "UsdPhysics.LimitAPI(%s, %s)",
         primRepr.c_str(), instanceName.c_str());
 }
 
