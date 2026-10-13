@@ -23,6 +23,7 @@
 #include <shared_mutex>
 #include <vector>
 #include <unordered_map>
+#include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -987,6 +988,13 @@ Sdf_CheckZipFileWriteOperation(const TfErrorMark& mark) {
     return true;
 }
 
+static bool
+_IsAscii(const std::string& s)
+{
+    return std::all_of(s.begin(), s.end(),
+        [](unsigned char c) { return c < 0x80; });
+}
+
 std::string
 SdfZipFileWriter::AddFile(
     const std::string& filePath,
@@ -1040,7 +1048,8 @@ SdfZipFileWriter::AddFile(
     _LocalFileHeader h;
     h.f.signature = _LocalFileHeader::Signature;
     h.f.versionForExtract = 10; // Default value
-    h.f.bits = 0;
+    // Per 4.4.4, bit 11 indicates the filename is encoded in UTF-8.
+    h.f.bits = _IsAscii(zipFilePath) ? 0 : 0x0800;
     h.f.compressionMethod = 0; // No compression
     std::tie(h.f.lastModTime, h.f.lastModDate) = _ModTimeAndDate(filePath);
     h.f.crc32 = _Crc32(mapping);
