@@ -836,20 +836,19 @@ HdStResourceRegistry::SubmitComputeWork(HgiSubmitWaitType wait)
 }
 
 void
-HdStResourceRegistry::_CommitTextures()
+HdStResourceRegistry::CommitTextures()
 {
     HdStShaderCode::ResourceContext ctx(this);
 
     const std::set<HdStShaderCodeSharedPtr> shaderCodes =
         _textureHandleRegistry->Commit();
 
-    // Give assoicated HdStShaderCode objects a chance to add buffer
+    // Give associated HdStShaderCode objects a chance to add buffer
     // sources that rely on texture sampler handles (bindless) or
     // texture metadata (e.g., sampling transform for volume fields).
     for (HdStShaderCodeSharedPtr const & shaderCode : shaderCodes) {
         shaderCode->AddResourcesFromTextures(ctx);
     }
-    _renderBufferPool.Commit();
 }
 
 void
@@ -866,7 +865,8 @@ HdStResourceRegistry::_Commit()
     // some computation buffer sources need meta-data from textures
     // (such as the grid transform for an OpenVDB file) or texture
     // handles (for bindless textures).
-    _CommitTextures();
+    CommitTextures();
+    _renderBufferPool.Commit();
 
     {
         HD_TRACE_SCOPE("Resolve");
