@@ -260,24 +260,33 @@ UsdImagingStageSceneIndex::GetPrim(const SdfPath &path) const
         return { TfToken(), UsdImagingDataSourceStage::New(_stage) };
     }
 
-    const SdfPath primPath = path.GetPrimPath();
+    UsdPrim prim = _stage->GetPrimAtPath(path);
+    TfToken subprim;
 
-    const UsdPrim prim = _stage->GetPrimAtPath(primPath);
+    // If the prim doesn't exist, see if it's a subprim, e.g.
+    // /usdPrim/__subprimName where /usdPrim is a valid path.
     if (!prim) {
-        return s_emptyPrim;
+        std::string nameToken = path.GetNameToken().GetString();
+        if (TfStringStartsWith(nameToken, "__")) {
+            subprim = TfToken(nameToken.substr(2));
+            prim = _stage->GetPrimAtPath(path.GetParentPath());
+        }
+
+        if (!prim) {
+            return s_emptyPrim;
+        }
     }
+
     if (prim.IsInstanceProxy()
         && !UsdHydraPrimAPI::ShouldExpandInstancesForPrim(prim)) {
         // Instance proxy prims are not reflected into the scene index
         // unless hydra:expandInstances=1 is set on an ancestor.
         return s_emptyPrim;
     }
+
     if (!_GetPrimPredicate()(prim)) {
         return s_emptyPrim;
     }
-
-    const TfToken subprim =
-        path.IsPropertyPath() ? path.GetNameToken() : TfToken();
 
     const AdapterEntries &entries =
         _adapterManager->LookupAdapters(prim).allAdapters;
@@ -309,7 +318,6 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
         return {};
     }
 
-    // If this is a subprim path, treat it as a leaf.
     if (!path.IsAbsoluteRootOrPrimPath()) {
         return {};
     }
@@ -360,7 +368,8 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
     for (const TfToken &subprim : _GetImagingSubprims(
              prim, entry.allAdapters)) {
         if (!subprim.IsEmpty()) {
-            result.push_back(primPath.AppendProperty(subprim));
+            result.push_back(primPath.AppendChild(
+                TfToken("__" + subprim.GetString())));
         }
     }
 
@@ -545,7 +554,10 @@ void UsdImagingStageSceneIndex::_PopulateSubtree(
 
         for (TfToken const& subprim : subprims) {
             const SdfPath subpath =
-                subprim.IsEmpty() ? primPath : primPath.AppendProperty(subprim);
+                subprim.IsEmpty() 
+                    ? primPath
+                    : primPath.AppendChild(
+                        TfToken("__" + subprim.GetString()));
 
             addedPrims->emplace_back(subpath,
                 _GetImagingSubprimType(entry.allAdapters, prim, subprim));
@@ -965,7 +977,8 @@ UsdImagingStageSceneIndex::_ComputeDirtiedEntries(
                     if (!dirtyLocators.IsEmpty()) {
                         const SdfPath path = subprim.IsEmpty()
                             ? parentPrim.GetPrimPath()
-                            : parentPrim.GetPrimPath().AppendProperty(subprim);
+                            : parentPrim.GetPrimPath().AppendChild(
+                                TfToken("__" + subprim.GetString()));
                         dirtiedPrims->emplace_back(path, dirtyLocators);
                     }
                 }
@@ -1001,7 +1014,8 @@ UsdImagingStageSceneIndex::_ComputeDirtiedEntries(
                     SdfPath const subpath =
                         subprim.IsEmpty()
                             ? primPath
-                            : primPath.AppendProperty(subprim);
+                            : primPath.AppendChild(
+                                TfToken("__" + subprim.GetString()));
                     dirtiedPrims->emplace_back(subpath, dirtyLocators);
                 }
             }
