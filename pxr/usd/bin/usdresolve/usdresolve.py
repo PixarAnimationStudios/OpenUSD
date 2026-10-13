@@ -106,12 +106,12 @@ def main():
     except Exception as e:
         _Err("Failed to resolve '%s' - %s" % (args.inputPath, e))
         exitCode = 1
-
-    if not resolved:
-        _Err("Failed to resolve '%s'" % args.inputPath)
-        exitCode = 1
     else:
-        print(resolved)
+        if not resolved:
+            _Err("Failed to resolve '%s'" % args.inputPath)
+            exitCode = 1
+        else:
+            print(resolved)
     
     return exitCode
 
