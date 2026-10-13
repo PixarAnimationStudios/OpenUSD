@@ -282,6 +282,16 @@ pxr_build_test(testUsdImagingNiAggregationNonDescendantPaths
     CPPFILES
         testenv/testUsdImagingNiAggregationNonDescendantPaths.cpp
 )
+pxr_build_test(testUsdImagingNiCoordSysBinding
+    LIBRARIES
+        usdImaging
+        hd
+        usd
+        sdf
+        tf
+    CPPFILES
+        testenv/testUsdImagingNiCoordSysBinding.cpp
+)
 pxr_build_test(testUsdImagingRootPrim
     LIBRARIES
         usdImaging
@@ -422,6 +432,10 @@ pxr_register_test(testUsdImagingNiAggregationNonDescendantPaths
     EXPECTED_RETURN_CODE 0
     ENV
         USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
+)
+pxr_register_test(testUsdImagingNiCoordSysBinding
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingNiCoordSysBinding"
+    EXPECTED_RETURN_CODE 0
 )
 pxr_register_test(testUsdImagingRootPrim
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingRootPrim"
