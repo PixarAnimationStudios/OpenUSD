@@ -38,8 +38,8 @@ def Mesh "hasColorSet"
     color3f[] primvars:colorSet.timeSamples = {
         0: [(1, 1, 1)],
     }
-    custom uint[] primvars:colorSet:indices
-    uint[] primvars:colorSet:indices.timeSamples = {
+    custom int[] primvars:colorSet:indices
+    int[] primvars:colorSet:indices.timeSamples = {
         0: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     }
     custom int[] primvars:rman_subdivFacevaryingInterp
@@ -171,8 +171,8 @@ def Mesh "hasColorSetCalledVals"
     color3f[] primvars:vals.timeSamples = {
         0: [(1, 1, 1)],
     }
-    custom uint[] primvars:vals:indices
-    uint[] primvars:vals:indices.timeSamples = {
+    custom int[] primvars:vals:indices
+    int[] primvars:vals:indices.timeSamples = {
         0: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     }
     custom color3f[] primvars:vary
