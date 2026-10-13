@@ -530,7 +530,8 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
                 /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 /*producerAccess*/VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
                 /*consumerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
-                /*producerStage*/VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                /*producerStage*/VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                    VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
                 /*consumerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT);
             
             vkCmdClearDepthStencilImage(
@@ -548,7 +549,8 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
                 /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
                 /*consumerAccess*/VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
                 /*producerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
-                /*consumerStage*/VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+                /*consumerStage*/VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                    VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
         }
 
         if (_descriptor.depthResolveTexture) {
@@ -573,7 +575,8 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
                 /*newLayout*/VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 /*producerAccess*/VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
                 /*consumerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
-                /*producerStage*/VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                /*producerStage*/VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                    VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
                 /*consumerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT);
             
             vkCmdClearDepthStencilImage(
@@ -591,7 +594,8 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
                 /*producerAccess*/VK_ACCESS_TRANSFER_WRITE_BIT,
                 /*consumerAccess*/VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
                 /*producerStage*/VK_PIPELINE_STAGE_TRANSFER_BIT,
-                /*consumerStage*/VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+                /*consumerStage*/VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                    VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
         }
     }
 }
