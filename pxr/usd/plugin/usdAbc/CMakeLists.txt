@@ -63,6 +63,7 @@ pxr_test_scripts(
     testenv/testUsdAbcConversionSubdiv.py
     testenv/testUsdAbcFaceset.py
     testenv/testUsdAbcIndexedProperties.py
+    testenv/testUsdAbcIndexedUvSets.py
     testenv/testUsdAbcInstancing.py
     testenv/testUsdAbcIsConstant.py
     testenv/testUsdAbcP_OldEncoding.py
@@ -133,6 +134,15 @@ pxr_register_test(testUsdAbcIndexedGeomArb
     EXPECTED_RETURN_CODE 0
     ENV
         USD_ABC_TESTSUFFIX=def
+)
+
+pxr_register_test(testUsdAbcIndexedUvSets
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcIndexedUvSets"
+    TESTENV testenv/testUsdAbcIndexedUvSets
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ABC_WRITE_UV_AS_ST_TEXCOORD2FARRAY=1
 )
 
 pxr_register_test(testUsdAbcInstancing
