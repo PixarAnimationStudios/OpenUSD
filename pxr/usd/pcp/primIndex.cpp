@@ -1801,7 +1801,11 @@ _AddArc(
         opts.skipDuplicateNodes |= indexer->previousFrame->skipDuplicateNodes;
     }
 
-    if (opts.skipDuplicateNodes) {
+    // A node that does not contribute specs cannot introduce duplicate
+    // opinions, so it is never skipped.  Such nodes are placeholders that keep
+    // class-based arcs present for propagation, and skipping one would stop
+    // that propagation.
+    if (opts.skipDuplicateNodes && opts.directNodeShouldContributeSpecs) {
         PcpLayerStackSite siteToAddInCurrentGraph = site;
 
         bool foundDuplicateNode = false;
@@ -3636,10 +3640,19 @@ _EvalImpliedClassTree(
         // We do NOT want to add an implied class arc directly
         // from otherNode to destNode.
         //
+        // The arc that continues the chain is introduced at srcNode's level of
+        // namespace or above.  It is above when it is an ancestral arc, for
+        // example when srcNode is /A/B and otherNode is reached from an arc
+        // authored on /A.  In that case srcChild is further below its
+        // introduction than srcNode is, so compare with >= rather than ==.
+        // Otherwise the chain is shortcut by an implied arc directly from
+        // otherNode to destNode, and for specializes that arc can take a
+        // stronger position than the chain it bypasses.  See the
+        // SpecializesAndAncestralArcs6 museum case.
         if (srcNodeIsStartOfTree
             && PcpIsClassBasedArc(srcNode.GetArcType())
-            && srcNode .GetDepthBelowIntroduction() ==
-               srcChild.GetDepthBelowIntroduction()) {
+            && srcChild.GetDepthBelowIntroduction() >=
+               srcNode .GetDepthBelowIntroduction()) {
 
             PCP_INDEXING_MSG(indexer, srcChild, destNode,
                              "Skipping ancestral class");

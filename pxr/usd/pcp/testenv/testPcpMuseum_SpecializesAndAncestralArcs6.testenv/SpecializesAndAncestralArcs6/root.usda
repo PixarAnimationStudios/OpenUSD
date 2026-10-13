@@ -1,0 +1,45 @@
+#usda 1.0
+(
+    """
+    In this museum case, /Model references asset.usda</Asset>, which
+    specializes /_class_Asset.  /Asset/Looks/Derived specializes
+    /Asset/Looks/Base, so /Model/Looks/Derived/Mat specializes
+    /Asset/Looks/Base/Mat, which in turn specializes
+    /_class_Asset/Looks/Base/Mat through the ancestral specializes on
+    /Asset:
+
+      Derived/Mat -> Base/Mat -> /_class_Asset/Looks/Base/Mat
+
+    /_class_Asset/Looks/Base/Mat is reached through Base/Mat, so its
+    opinions must be weaker than those from Base/Mat (and from
+    Base/MatBase, which Base/Mat specializes).
+
+    This was previously not the case.  Because the specializes to
+    /_class_Asset/Looks/Base/Mat is an ancestral arc of Base/Mat, it was
+    not recognized as the continuation of that chain, and was implied
+    directly to Derived/Mat, shortcutting the chain.  That implied arc was
+    then propagated to the root with a deeper namespace depth than
+    Base/Mat, so root.usda</_class_Asset/Looks/Base/Mat> became the
+    strongest specializes opinion.  We expect it to appear after
+    asset.usda</Asset/Looks/Base/MatBase>.
+    """
+)
+
+def "Model" (
+    references = @./asset.usda@</Asset>
+)
+{
+}
+
+over "_class_Asset"
+{
+    over "Looks"
+    {
+        over "Base"
+        {
+            over "Mat"
+            {
+            }
+        }
+    }
+}
