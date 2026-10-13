@@ -9,8 +9,6 @@
 # PXR_foo_LIBRARY   - Absolute path to individual libraries.
 # The preprocessor definition PXR_STATIC will be defined if appropriate
 
-get_filename_component(PXR_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-
 set(PXR_MAJOR_VERSION "@PXR_MAJOR_VERSION@")
 set(PXR_MINOR_VERSION "@PXR_MINOR_VERSION@")
 set(PXR_PATCH_VERSION "@PXR_PATCH_VERSION@")
@@ -112,14 +110,14 @@ if(NOT "@PXR_WORK_IMPL_PACKAGE@" STREQUAL "")
     find_dependency(@PXR_WORK_IMPL_PACKAGE@)
 endif()
 
-include("${PXR_CMAKE_DIR}/cmake/pxrTargets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/pxrTargets.cmake")
 if (TARGET usd_m)
     set(libs "usd_m")
 else()
     set(libs "@PXR_ALL_LIBS@")
 endif()
 set(PXR_LIBRARIES "")
-set(PXR_INCLUDE_DIRS "${PXR_CMAKE_DIR}/include")
+cmake_path(SET PXR_INCLUDE_DIRS NORMALIZE "${CMAKE_CURRENT_LIST_DIR}/../../../include")
 string(REPLACE " " ";" libs "${libs}")
 foreach(lib ${libs})
     get_target_property(location ${lib} LOCATION)
