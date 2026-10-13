@@ -113,8 +113,8 @@ Windows platforms (as described in :ref:`perf_environments`). Performance
 data from the four most recent releases is reported on a rolling basis.
 
 .. note::
-    A full historical rerun on linux was performed for the 26.03 release due
-    to changes in machine configuration.
+    In 26.1, the performance test environment's Python version was upgraded to
+    3.11. Prior tests were performed with Python 3.9.
 
     Interpret the metrics on this page with caution. Variation may arise from
     a variety of sources, including run-to-run inconsistency in how the GL
