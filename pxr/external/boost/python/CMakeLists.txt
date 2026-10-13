@@ -29,12 +29,6 @@ pxr_library(python
         # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP is respected.
         ${PYTHON_LIBRARIES}
 
-    INCLUDE_DIRS
-        # Specify PYTHON_INCLUDE_DIRS explicitly to ensure this library
-        # picks up Python headers when PXR_PY_UNDEFINED_DYNAMIC_LOOKUP
-        # is set.
-        ${PYTHON_INCLUDE_DIRS}
-
     PUBLIC_HEADERS
         arg_from_python.hpp
         args.hpp
