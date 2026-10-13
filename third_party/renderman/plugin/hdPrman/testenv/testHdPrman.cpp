@@ -78,9 +78,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((pixelFilterWidth, "ri:Ri:PixelFilterWidth"))
 );
 
-TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_ENABLE_SCENE_INDEX, true,
-                      "Use Scene Index API for testHdPrman.");
-
 TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_USE_RENDER_SETTINGS_PRIM, true,
                       "Use the Render Settings Prim instead of the "
                       "UsdRenderSpec for testHdPrman.");
@@ -745,7 +742,8 @@ HydraSetupAndRender(
 
     std::unique_ptr<UsdImagingDelegate> hdUsdFrontend;
 
-    if (TfGetEnvSetting(TEST_HD_PRMAN_ENABLE_SCENE_INDEX)) {
+    // Create scene indexes
+    {
         UsdImagingCreateSceneIndicesInfo createInfo;
         createInfo.stage = stage;
         UsdImagingSceneIndices sceneIndices =
@@ -764,33 +762,9 @@ HydraSetupAndRender(
             displayStyleSceneIndex->SetCullStyleFallback(TfToken(cullStyle));
         }
 
+        // Hydra 1.0 render index emulation, for now
         hdRenderIndex->InsertSceneIndex(
             sceneIndex, SdfPath::AbsoluteRootPath());
-    } else {
-        hdUsdFrontend = std::make_unique<UsdImagingDelegate>(
-            hdRenderIndex.get(),
-            SdfPath::AbsoluteRootPath());
-        hdUsdFrontend->Populate(stage->GetPseudoRoot());
-        hdUsdFrontend->SetTime(frameNum);
-        hdUsdFrontend->SetRefineLevelFallback(8); // max refinement
-        if (!cameraPath.IsEmpty()) {
-            hdUsdFrontend->SetCameraForSampling(cameraPath);
-        }
-        if (!cullStyle.empty()) {
-            if (cullStyle == "none") {
-                hdUsdFrontend->SetCullStyleFallback(HdCullStyleNothing);
-            } else if (cullStyle == "back") {
-                hdUsdFrontend->SetCullStyleFallback(HdCullStyleBack);
-            } else if (cullStyle == "front") {
-                hdUsdFrontend->SetCullStyleFallback(HdCullStyleFront);
-            } else if (cullStyle == "backUnlessDoubleSided") {
-                hdUsdFrontend->SetCullStyleFallback(
-                    HdCullStyleBackUnlessDoubleSided);
-            } else if (cullStyle == "frontUnlessDoubleSided") {
-                hdUsdFrontend->SetCullStyleFallback(
-                    HdCullStyleFrontUnlessDoubleSided);
-            }
-        }
     }
 
     // XXX
