@@ -113,8 +113,16 @@ Windows platforms (as described in :ref:`perf_environments`). Performance
 data from the four most recent releases is reported on a rolling basis.
 
 .. note::
-    In 26.1, the performance test environment's Python version was upgraded to
+    In 26.11, the performance test environment's Python version was upgraded to
     3.11. Prior tests were performed with Python 3.9.
+
+    As of 26.11, a regression on MacOS was observed in "shut_down_hydra" on
+    the Moore Lane and Alab assets with no obvious causes, which we're
+    currently investigating with the help of Apple.
+
+    As of 26.08, a regression on Windows was observed in "bring up the ui" on
+    all assets. We welcome assistance in investigating both this regression
+    and existing additional performance overhead on Windows vs other OSes.
 
     Interpret the metrics on this page with caution. Variation may arise from
     a variety of sources, including run-to-run inconsistency in how the GL
@@ -147,7 +155,7 @@ run; the primary intention is not necessarily to exercise specific renderers.
 
 The shader ball asset can be `downloaded here <https://github.com/usd-wg/assets/tree/main/full_assets/StandardShaderBall>`__.
 
-.. datatemplate:yaml:: performance/25.11_linux_shaderball.yaml
+.. datatemplate:yaml:: performance/26.11_linux_shaderball.yaml
    :template: perf_metric_shaderball_template.tmpl
 
 Kitchen Set
@@ -160,7 +168,7 @@ This asset provides a complex kitchen scene.
 
 The Kitchen Set asset can be `downloaded here <https://openusd.org/release/dl_kitchen_set.html>`__.
 
-.. datatemplate:yaml:: performance/25.11_linux_kitchenset.yaml
+.. datatemplate:yaml:: performance/26.11_linux_kitchenset.yaml
    :template: perf_metric_kitchenset_template.tmpl
 
 ALab
@@ -180,7 +188,7 @@ The metrics have been measured with the base asset merged with the additional
 
 The ALab asset can be `downloaded here <https://animallogic.com/technology/alab/>`__.
 
-.. datatemplate:yaml:: performance/25.11_linux_alab.yaml
+.. datatemplate:yaml:: performance/26.11_linux_alab.yaml
    :template: perf_metric_alab_template.tmpl
 
 Moore Lane
@@ -204,7 +212,7 @@ The metrics have been measured using the contained
 
 The Moore Lane asset can be `downloaded here <https://dpel.aswf.io/4004-moore-lane/>`__.
 
-.. datatemplate:yaml:: performance/25.11_linux_moorelane.yaml
+.. datatemplate:yaml:: performance/26.11_linux_moorelane.yaml
    :template: perf_metric_moorelane_template.tmpl
 
 ***********************************
