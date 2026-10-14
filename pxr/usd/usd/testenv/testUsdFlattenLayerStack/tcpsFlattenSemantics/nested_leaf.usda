@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    timeCodesPerSecond = 30
+)
+
+def Xform "World"
+{
+    def Xform "Reference" (
+        prepend references = @./nested_asset.usda@
+    )
+    {
+    }
+
+    def Xform "Payload" (
+        prepend payload = @./nested_asset.usda@
+    )
+    {
+    }
+}

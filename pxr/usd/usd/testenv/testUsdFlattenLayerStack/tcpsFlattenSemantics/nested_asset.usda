@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    defaultPrim = "Asset"
+    timeCodesPerSecond = 30
+)
+
+def Xform "Asset"
+{
+    double value.timeSamples = {
+        0: 0,
+        30: 30,
+        60: 60,
+    }
+}

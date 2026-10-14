@@ -1,0 +1,8 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    subLayers = [
+        @./nested_mid.usda@ (offset = 10; scale = 2)
+    ]
+    timeCodesPerSecond = 60
+)
