@@ -39,6 +39,8 @@ option(PXR_ENABLE_NAMESPACES "Enable C++ namespaces." ON)
 option(PXR_PREFER_SAFETY_OVER_SPEED
        "Enable certain checks designed to avoid crashes or out-of-bounds memory reads with malformed input files.  These checks may negatively impact performance."
         ON)
+option(PXR_INSTALL_DLL_IN_BIN
+       "By default, openusd on Windows installs .dll in install_prefix/lib, by enabling this option .dll are installed in bin." OFF)
 
 if(APPLE)
     # Cross Compilation detection as defined in CMake docs

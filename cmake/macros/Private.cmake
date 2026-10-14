@@ -262,6 +262,7 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
     #                     resourceFileC
     #                 ...
     #
+
     _get_resources_dir(${pluginInstallPrefix} ${NAME} resourcesPath)
 
     foreach(resourceFile ${ARGN})
@@ -1280,7 +1281,11 @@ function(_pxr_library NAME)
             _get_install_dir("plugin/usd" pluginInstallPrefix)
         endif()
     else()
-        _get_install_dir("lib/usd" pluginInstallPrefix)
+        if(PXR_INSTALL_DLL_IN_BIN AND WIN32)
+            _get_install_dir("bin/usd" pluginInstallPrefix)
+        else()
+            _get_install_dir("lib/usd" pluginInstallPrefix)
+        endif()
     endif()
     if(args_SUBDIR)
         set(pluginInstallPrefix "${pluginInstallPrefix}/${args_SUBDIR}")
@@ -1361,6 +1366,7 @@ function(_pxr_library NAME)
     _get_install_dir("include" headerInstallDir)
     _get_install_dir("include/${PXR_PREFIX}/${NAME}" headerInstallPrefix)
     _get_install_dir("lib" libInstallPrefix)
+    _get_install_dir("bin" binInstallPrefix)
     if(isPlugin)
         if(NOT isObject)
             # A plugin embedded in the monolithic library is found in
@@ -1408,10 +1414,15 @@ function(_pxr_library NAME)
     # pluginToLibraryPath empty.
     if(NOT args_TYPE STREQUAL "STATIC")
         if(NOT (";${PXR_CORE_LIBS};" MATCHES ";${NAME};" AND _building_monolithic))
+            if(PXR_INSTALL_DLL_IN_BIN AND WIN32 AND NOT isPlugin)
+                set(runtimeInstallPrefix "${binInstallPrefix}")
+            else()
+                set(runtimeInstallPrefix "${libInstallPrefix}")
+            endif()
             file(RELATIVE_PATH
                 pluginToLibraryPath
                 ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}
-                ${CMAKE_INSTALL_PREFIX}/${libInstallPrefix}/${libraryFilename})
+                ${CMAKE_INSTALL_PREFIX}/${runtimeInstallPrefix}/${libraryFilename})
         endif()
     endif()
 
@@ -1547,6 +1558,11 @@ function(_pxr_library NAME)
             EXPORT pxrTargets
         )
     else()
+        if(PXR_INSTALL_DLL_IN_BIN)
+            set(runtimeInstallPrefix "${binInstallPrefix}")
+        else()
+            set(runtimeInstallPrefix "${libInstallPrefix}")
+        endif()
         # Do not include plugins libs in externally linkable targets
         if(isPlugin)
             install(
@@ -1568,13 +1584,13 @@ function(_pxr_library NAME)
                 EXPORT pxrTargets
                 LIBRARY DESTINATION ${libInstallPrefix}
                 ARCHIVE DESTINATION ${libInstallPrefix}
-                RUNTIME DESTINATION ${libInstallPrefix}
+                RUNTIME DESTINATION ${runtimeInstallPrefix}
             )
             if(WIN32)
                 install(
                     FILES $<TARGET_PDB_FILE:${NAME}>
                     EXPORT pxrTargets
-                    DESTINATION ${libInstallPrefix}
+                    DESTINATION ${runtimeInstallPrefix}
                     OPTIONAL
                 )
             endif()
@@ -1584,7 +1600,7 @@ function(_pxr_library NAME)
                 EXPORT pxrTargets
                 LIBRARY DESTINATION ${libInstallPrefix}
                 ARCHIVE DESTINATION ${libInstallPrefix}
-                RUNTIME DESTINATION ${libInstallPrefix}
+                RUNTIME DESTINATION ${runtimeInstallPrefix}
             )
         endif()
     
