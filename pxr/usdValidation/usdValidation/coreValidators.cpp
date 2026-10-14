@@ -11,7 +11,13 @@
 #include "pxr/usdValidation/usdValidation/validator.h"
 #include "pxr/usdValidation/usdValidation/validatorTokens.h"
 
+#include "pxr/usd/sdf/attributeSpec.h"
+#include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/schema.h"
+#include "pxr/usd/sdf/types.h"
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/base/tf/safeTypeCompare.h"
+#include "pxr/base/tf/stringUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -78,6 +84,81 @@ _GetAttributeTypeMismatchErrors(const UsdPrim &usdPrim,
     return errors;
 }
 
+// Return true if a value of type \p valueType needs no further checking on an
+// attribute declared as \p typeName, i.e. if it is:
+//  - exactly the declared type,
+//  - void, meaning no value is authored (e.g. no default),
+//  - a value block, or
+//  - an animation block.
+// This only needs the value's typeid, which crate files provide without
+// unpacking the value.
+static bool
+_IsTriviallyValidValueType(const SdfValueTypeName &typeName,
+                           const std::type_info &valueType)
+{
+    return TfSafeTypeCompare(valueType, typeName.GetType().GetTypeid()) ||
+        TfSafeTypeCompare(valueType, typeid(void)) ||
+        TfSafeTypeCompare(valueType, typeid(SdfValueBlock)) ||
+        TfSafeTypeCompare(valueType, typeid(SdfAnimationBlock));
+}
+
+static UsdValidationErrorVector
+_GetAttributeValueTypeMismatchErrors(const SdfLayerHandle &layer)
+{
+    UsdValidationErrorVector errors;
+
+    auto addError = [&errors, &layer](const SdfAttributeSpecHandle &attr,
+                                      const VtValue &value,
+                                      const std::string &where) {
+        errors.emplace_back(
+            UsdValidationErrorNameTokens->attributeValueTypeMismatch,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites {
+                UsdValidationErrorSite(layer, attr->GetPath()) },
+            TfStringPrintf("Attribute <%s> is declared as '%s' (%s) in "
+                           "layer <%s>, but its authored %s holds a value of "
+                           "type '%s'.",
+                           attr->GetPath().GetText(),
+                           attr->GetTypeName().GetAsToken().GetText(),
+                           attr->GetTypeName().GetType().GetTypeName().c_str(),
+                           layer->GetIdentifier().c_str(),
+                           where.c_str(),
+                           value.GetTypeName().c_str()));
+    };
+
+    // Only when _IsTriviallyValidValueType can't vouch for a value do we fetch
+    // it in full and defer to CanRepresent.
+    layer->Traverse(SdfPath::AbsoluteRootPath(), [&](const SdfPath &path) {
+        const SdfAttributeSpecHandle attr = layer->GetAttributeAtPath(path);
+        if (!attr || !attr->GetTypeName()) {
+            return;
+        }
+        const SdfValueTypeName typeName = attr->GetTypeName();
+
+        if (!_IsTriviallyValidValueType(typeName,
+                layer->GetFieldTypeid(path, SdfFieldKeys->Default))) {
+            const VtValue value = attr->GetDefaultValue();
+            if (!typeName.CanRepresent(value)) {
+                addError(attr, value, "default value");
+            }
+        }
+
+        for (const double time : layer->ListTimeSamplesForPath(path)) {
+            if (_IsTriviallyValidValueType(typeName,
+                    layer->QueryTimeSampleTypeid(path, time))) {
+                continue;
+            }
+            VtValue value;
+            layer->QueryTimeSample(path, time, &value);
+            if (!typeName.CanRepresent(value)) {
+                addError(attr, value, TfStringPrintf(
+                    "time sample at %s", TfStringify(time).c_str()));
+            }
+        }
+    });
+    return errors;
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
@@ -88,6 +169,9 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     registry.RegisterPluginValidator(
         UsdValidatorNameTokens->attributeTypeMismatch, 
         _GetAttributeTypeMismatchErrors);
+    registry.RegisterPluginValidator(
+        UsdValidatorNameTokens->attributeValueTypeMismatch,
+        _GetAttributeValueTypeMismatchErrors);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
