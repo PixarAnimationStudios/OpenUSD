@@ -370,10 +370,6 @@ pxr_build_test(testUsdImagingCollectionPredicateLibrary
 )
 
 # Register tests to be run
-pxr_register_test(testUsdImagingCoordSysBindingEdits
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingCoordSysBindingEdits"
-    EXPECTED_RETURN_CODE 0
-)
 pxr_register_test(testUsdImagingDataSourceAttribute
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingDataSourceAttribute"
     EXPECTED_RETURN_CODE 0
@@ -392,6 +388,7 @@ pxr_register_test(testUsdImagingExcluded
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingExcluded"
     EXPECTED_RETURN_CODE 0
 )
+
 # Tests that rely on plugins aren't currently supported in static builds.
 if (BUILD_SHARED_LIBS)
     pxr_register_test(testUsdImagingMaterialBinding
@@ -411,7 +408,16 @@ if (BUILD_SHARED_LIBS)
         TESTENV testenv/testUsdImagingColorSpace
         EXPECTED_RETURN_CODE 0
     )
-endif()
+    pxr_register_test(testUsdImagingNiCoordSysBinding
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingNiCoordSysBinding"
+        EXPECTED_RETURN_CODE 0
+    )
+    pxr_register_test(testUsdImagingCoordSysBindingEdits
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingCoordSysBindingEdits"
+        EXPECTED_RETURN_CODE 0
+    )
+endif() # BUILD_SHARED_LIBS
+
 pxr_register_test(testUsdImagingNestedInstancingCategories
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingNestedInstancingCategories"
     TESTENV testenv/testUsdImagingNestedInstancingCategories
@@ -432,10 +438,6 @@ pxr_register_test(testUsdImagingNiAggregationNonDescendantPaths
     EXPECTED_RETURN_CODE 0
     ENV
         USD_ASSIGN_PROTOTYPES_DETERMINISTICALLY=1
-)
-pxr_register_test(testUsdImagingNiCoordSysBinding
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingNiCoordSysBinding"
-    EXPECTED_RETURN_CODE 0
 )
 pxr_register_test(testUsdImagingRootPrim
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingRootPrim"
