@@ -12,11 +12,21 @@
 
 #include <vector>
 #include <algorithm>
+#include <cstring>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static
+namespace
+{
+
+bool
+_ContainsName(const std::vector<const char*>& names, const char* name)
+{
+    return std::any_of(names.begin(), names.end(),
+        [name](const char* n) { return strcmp(n, name) == 0; });
+}
+
 std::vector<const char*>
 _RemoveUnsupportedInstanceLayers(
     const std::vector<const char*>& desiredLayers)
@@ -56,20 +66,32 @@ _RemoveUnsupportedInstanceLayers(
     return layers;
 }
 
-static
+void
+_AppendInstanceExtensions(
+    const char* layerName,
+    std::vector<VkExtensionProperties>* extensions)
+{
+    uint32_t count = 0u;
+    HGIVULKAN_VERIFY_VK_RESULT(vkEnumerateInstanceExtensionProperties(
+        layerName, &count, nullptr));
+    const size_t offset = extensions->size();
+    extensions->resize(offset + count);
+    HGIVULKAN_VERIFY_VK_RESULT(vkEnumerateInstanceExtensionProperties(
+        layerName, &count, extensions->data() + offset));
+    extensions->resize(offset + count);
+}
+
 std::vector<const char*>
 _RemoveUnsupportedInstanceExtensions(
-    const std::vector<const char*>& desiredExtensions)
+    const std::vector<const char*>& desiredExtensions,
+    const std::vector<const char*>& enabledLayers)
 {
     // Determine available instance extensions.
-    uint32_t numAvailableExtensions = 0u;
-    HGIVULKAN_VERIFY_VK_RESULT(vkEnumerateInstanceExtensionProperties(
-        nullptr, &numAvailableExtensions, nullptr));
     std::vector<VkExtensionProperties> availableExtensions;
-    availableExtensions.resize(numAvailableExtensions);
-    HGIVULKAN_VERIFY_VK_RESULT(vkEnumerateInstanceExtensionProperties(
-        nullptr, &numAvailableExtensions,
-        availableExtensions.data()));
+    _AppendInstanceExtensions(nullptr, &availableExtensions);
+    for (const char* layer : enabledLayers) {
+        _AppendInstanceExtensions(layer, &availableExtensions);
+    }
 
     std::vector<const char*> extensions;
 
@@ -86,6 +108,8 @@ _RemoveUnsupportedInstanceExtensions(
     }
 
     return extensions;
+}
+
 }
 
 HgiVulkanInstance::HgiVulkanInstance()
@@ -129,11 +153,17 @@ HgiVulkanInstance::HgiVulkanInstance()
 
     // Additional validation layer settings.
     const VkBool32 layerSettingVal = VK_TRUE;
-    const std::vector<VkLayerSettingEXT> layerSettings {
+    std::vector<VkLayerSettingEXT> layerSettings{
         // Turn on synchronization validation
         { "VK_LAYER_KHRONOS_validation", "validate_sync",
           VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &layerSettingVal },
     };
+    if (HgiVulkanIsSyncvalShaderAccessesEnabled()) {
+        layerSettings.push_back(
+            { "VK_LAYER_KHRONOS_validation",
+              "syncval_shader_accesses_heuristic",
+              VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &layerSettingVal });
+    }
     VkLayerSettingsCreateInfoEXT layerSettingsCreateInfo {
         VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT,
         nullptr,
@@ -147,16 +177,19 @@ HgiVulkanInstance::HgiVulkanInstance()
 
     if (HgiVulkanIsValidationEnabled()) {
         layers.push_back("VK_LAYER_KHRONOS_validation");
-        createInfo.pNext = &layerSettingsCreateInfo;
+        extensions.push_back(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
     }
 
     layers = _RemoveUnsupportedInstanceLayers(layers);
-    extensions = _RemoveUnsupportedInstanceExtensions(extensions);
+    extensions =
+        _RemoveUnsupportedInstanceExtensions(extensions, layers);
 
-    _hasPresentation = std::any_of(extensions.begin(), extensions.end(),
-        [](const char* extensionName) {
-            return strcmp(extensionName, VK_KHR_SURFACE_EXTENSION_NAME) == 0;
-        });
+    if (_ContainsName(extensions, VK_EXT_LAYER_SETTINGS_EXTENSION_NAME)) {
+        createInfo.pNext = &layerSettingsCreateInfo;
+    }
+
+    _hasPresentation =
+        _ContainsName(extensions, VK_KHR_SURFACE_EXTENSION_NAME);
 
     createInfo.ppEnabledLayerNames = layers.data();
     createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
@@ -165,9 +198,8 @@ HgiVulkanInstance::HgiVulkanInstance()
         static_cast<uint32_t>(extensions.size());
 
     #if defined(VK_USE_PLATFORM_METAL_EXT)
-        if (std::find(extensions.begin(), extensions.end(),
-                VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) !=
-                extensions.end()) {
+        if (_ContainsName(extensions,
+                VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME)) {
             createInfo.flags |=
                 VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
         }
