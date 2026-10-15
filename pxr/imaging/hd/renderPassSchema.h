@@ -37,6 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (renderPass) \
     (passType) \
     (renderSource) \
+    (namespacedSettings) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdRenderPassSchemaTokens, HD_API,
     HD_RENDER_PASS_SCHEMA_TOKENS);
@@ -76,7 +77,10 @@ public:
     HdTokenDataSourceHandle GetPassType() const;
 
     HD_API
-    HdPathDataSourceHandle GetRenderSource() const; 
+    HdPathDataSourceHandle GetRenderSource() const;
+
+    HD_API
+    HdSampledDataSourceContainerSchema GetNamespacedSettings() const; 
 
     /// @}
 
@@ -111,6 +115,10 @@ public:
     /// Prim-level relative data source locator to locate renderSource.
     HD_API
     static const HdDataSourceLocator &GetRenderSourceLocator();
+
+    /// Prim-level relative data source locator to locate namespacedSettings.
+    HD_API
+    static const HdDataSourceLocator &GetNamespacedSettingsLocator();
     /// @} 
 
     /// \name Schema construction
@@ -127,7 +135,8 @@ public:
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdTokenDataSourceHandle &passType,
-        const HdPathDataSourceHandle &renderSource
+        const HdPathDataSourceHandle &renderSource,
+        const HdContainerDataSourceHandle &namespacedSettings
     );
 
     /// \class HdRenderPassSchema::Builder
@@ -145,6 +154,9 @@ public:
         HD_API
         Builder &SetRenderSource(
             const HdPathDataSourceHandle &renderSource);
+        HD_API
+        Builder &SetNamespacedSettings(
+            const HdContainerDataSourceHandle &namespacedSettings);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -153,6 +165,7 @@ public:
     private:
         HdTokenDataSourceHandle _passType;
         HdPathDataSourceHandle _renderSource;
+        HdContainerDataSourceHandle _namespacedSettings;
 
     };
 
