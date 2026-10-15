@@ -459,6 +459,13 @@ pxr_register_test(testUsdImagingStageSceneIndexContents
     DIFF_COMPARE
         basic.txt
 )
+pxr_register_test(testUsdImagingStageSceneIndexContents_renderPass
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingStageSceneIndexContents renderPass.usda renderPass.txt"
+    TESTENV testenv/testUsdImagingStageSceneIndexContents
+    EXPECTED_RETURN_CODE 0
+    DIFF_COMPARE
+        renderPass.txt
+)
 pxr_register_test(testUsdImagingInstanceProxyTraversal_1
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingInstanceProxyTraversal 1_simple.usda"
     TESTENV testenv/testUsdImagingInstanceProxyTraversal
