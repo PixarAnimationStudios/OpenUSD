@@ -30,6 +30,7 @@ UsdImagingBackPlateAPIAdapter() = default;
 UsdImagingBackPlateAPIAdapter::
 ~UsdImagingBackPlateAPIAdapter() = default;
 
+namespace {
 using _PropertyMappingsUniquePtr = 
     std::unique_ptr<UsdImagingDataSourceMapped::PropertyMappings>;
 // Pairs of USD multi-apply template and Hydra back plate schema property 
@@ -99,6 +100,7 @@ _GetMappings(const TfToken &instanceName)
 
     return *(instanceToMappingsMap.emplace(
         instanceName, _GetMappingsUncached(instanceName)).first->second);
+}
 }
 
 HdContainerDataSourceHandle
