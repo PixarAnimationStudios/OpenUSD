@@ -38,8 +38,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace
 {
 
+const char * const _subprimPrefix = "__";
+    
 using AdapterEntry = UsdImaging_AdapterManager::AdapterEntry;
 using AdapterEntries = UsdImaging_AdapterManager::AdapterEntries;
+
+TfToken
+_AddSubprimPrefix(const TfToken &name)
+{
+    return TfToken(_subprimPrefix + name.GetString());
+}
+
+SdfPath
+_SubPrimPath(const SdfPath &path, const TfToken subprim)
+{
+    if (subprim.IsEmpty()) {
+        return path;
+    }
+    return path.AppendChild(_AddSubprimPrefix(subprim));
+}
 
 bool
 _Contains(const TfTokenVector &vec, const TfToken &t)
@@ -267,7 +284,7 @@ UsdImagingStageSceneIndex::GetPrim(const SdfPath &path) const
     // /usdPrim/__subprimName where /usdPrim is a valid path.
     if (!prim) {
         std::string nameToken = path.GetNameToken().GetString();
-        if (TfStringStartsWith(nameToken, "__")) {
+        if (TfStringStartsWith(nameToken, _subprimPrefix)) {
             subprim = TfToken(nameToken.substr(2));
             prim = _stage->GetPrimAtPath(path.GetParentPath());
         }
@@ -368,8 +385,9 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
     for (const TfToken &subprim : _GetImagingSubprims(
              prim, entry.allAdapters)) {
         if (!subprim.IsEmpty()) {
-            result.push_back(primPath.AppendChild(
-                TfToken("__" + subprim.GetString())));
+            result.push_back(
+                primPath.AppendChild(
+                    _AddSubprimPrefix(subprim)));
         }
     }
 
@@ -553,13 +571,8 @@ void UsdImagingStageSceneIndex::_PopulateSubtree(
             _GetImagingSubprims(prim, entry.allAdapters);
 
         for (TfToken const& subprim : subprims) {
-            const SdfPath subpath =
-                subprim.IsEmpty() 
-                    ? primPath
-                    : primPath.AppendChild(
-                        TfToken("__" + subprim.GetString()));
-
-            addedPrims->emplace_back(subpath,
+            addedPrims->emplace_back(
+                _SubPrimPath(primPath, subprim),
                 _GetImagingSubprimType(entry.allAdapters, prim, subprim));
         }
     }
@@ -975,11 +988,9 @@ UsdImagingStageSceneIndex::_ComputeDirtiedEntries(
                                 properties, invalidationType);
 
                     if (!dirtyLocators.IsEmpty()) {
-                        const SdfPath path = subprim.IsEmpty()
-                            ? parentPrim.GetPrimPath()
-                            : parentPrim.GetPrimPath().AppendChild(
-                                TfToken("__" + subprim.GetString()));
-                        dirtiedPrims->emplace_back(path, dirtyLocators);
+                        dirtiedPrims->emplace_back(
+                            _SubPrimPath(parentPrim.GetPrimPath(), subprim),
+                            dirtyLocators);
                     }
                 }
             }
@@ -1011,12 +1022,9 @@ UsdImagingStageSceneIndex::_ComputeDirtiedEntries(
                 if (dirtyLocators.Contains(repopulateLocator)) {
                     primPathsToResync->push_back(primPath);
                 } else {
-                    SdfPath const subpath =
-                        subprim.IsEmpty()
-                            ? primPath
-                            : primPath.AppendChild(
-                                TfToken("__" + subprim.GetString()));
-                    dirtiedPrims->emplace_back(subpath, dirtyLocators);
+                    dirtiedPrims->emplace_back(
+                        _SubPrimPath(primPath, subprim),
+                        dirtyLocators);
                 }
             }
         }
