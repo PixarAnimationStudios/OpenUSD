@@ -9,6 +9,8 @@
  
 #include "pxr/imaging/hdsi/api.h"
 #include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/backPlateSchema.h"
+#include "pxr/imaging/hd/cameraSchema.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
 #include <unordered_set>
@@ -23,17 +25,10 @@ TF_DECLARE_WEAK_AND_REF_PTRS(HdsiBackPlateSceneIndex);
 /// prims that align with the specifications outlined in:
 /// https://github.com/PixarAnimationStudios/OpenUSD-proposals/tree/main/proposals/back-plates
 /// 
-/// TODO: Add support for opacity, depth maps, color-grading, and animated
-/// materials.
-/// 
 class HdsiBackPlateSceneIndex :
     public HdSingleInputFilteringSceneIndexBase
 {
 public:
-    HDSI_API
-    static HdsiBackPlateSceneIndexRefPtr
-    New(const HdSceneIndexBaseRefPtr &inputSceneIndex);
- 
     HDSI_API
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override final;
  
@@ -41,6 +36,23 @@ public:
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override final;
  
 protected:
+    HDSI_API
+    virtual HdContainerDataSourceHandle
+    _BuildMeshPrimDataSource(
+        const SdfPath &platePath,
+        const TfToken &instanceName,
+        const HdContainerDataSourceHandle &primDataSource) const = 0;
+
+    HDSI_API
+    virtual HdContainerDataSourceHandle
+    _BuildMaterialDataSource(
+        const TfToken &instanceName,
+        const HdContainerDataSourceHandle &primDataSource) const = 0;
+    
+    HDSI_API
+    virtual HdDataSourceLocatorSet
+    _GetAdditionalDirtyLocators() const;
+    
     HDSI_API
     void _PrimsAdded(
         const HdSceneIndexBase &sender,
@@ -55,6 +67,41 @@ protected:
     void _PrimsDirtied(
         const HdSceneIndexBase &sender,
         const HdSceneIndexObserver::DirtiedPrimEntries &entries) override final;
+
+    static HdBackPlateSchema 
+    _GetBackPlateSchema(TfToken const &instanceName, 
+                        HdContainerDataSourceHandle const &primDataSource)
+    {
+        HdCameraSchema cam = HdCameraSchema::GetFromParent(primDataSource);
+        HdBackPlateSchema backplate = cam.GetBackPlate().Get(instanceName);
+        return backplate;
+    }
+
+    template <typename DataSourceHandle, typename T>
+    static bool
+    _GetDefaultTypedValue(const DataSourceHandle &dataSource, 
+                        HdSampledDataSource::Time const shutterOffset,
+                        T* result)
+    {
+        if (!dataSource || !result) {
+            return false;
+        }
+        *result = dataSource->GetTypedValue(shutterOffset);
+        return true;
+    }
+
+    HDSI_API
+    static GfVec2f
+    _ComputeEffectiveDimensions(
+        TfToken const &instanceName,
+        HdContainerDataSourceHandle const &primDataSource,
+        HdSampledDataSource::Time const shutterOffset) ;
+
+    HDSI_API
+    static GfMatrix4d 
+    _ComputeLocalXform(HdContainerDataSourceHandle const &primDataSource,
+        TfToken const &instanceName,
+        HdSampledDataSource::Time const shutterOffset);
  
     HDSI_API
     HdsiBackPlateSceneIndex(

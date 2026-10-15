@@ -192,6 +192,7 @@ pxr_library(hdSt
 
     RESOURCE_FILES
         plugInfo.json
+        shaders/backPlateSurface.glslfx
         shaders/basisCurves.glslfx
         shaders/capsule.glslfx
         shaders/compute.glslfx
