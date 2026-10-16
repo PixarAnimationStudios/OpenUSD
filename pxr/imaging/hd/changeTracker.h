@@ -668,9 +668,7 @@ private:
     // Does not take ownership. The HdRenderIndex manages the lifetime of this
     // scene index.
     HdRetainedSceneIndex * _emulationSceneIndex;
-    bool _disableEmulationAPI;
     void _SetTargetSceneIndex(HdRetainedSceneIndex *emulationSceneIndex);
-    void _SetDisableEmulationAPI(bool);
 
     // Private methods which implement the behaviors of their public
     // equivalents. The public versions check to see if legacy emulation is

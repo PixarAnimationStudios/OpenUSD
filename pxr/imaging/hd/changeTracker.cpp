@@ -49,7 +49,6 @@ HdChangeTracker::HdChangeTracker()
     , _rprimRenderTagVersion(1)
     , _taskRenderTagsVersion(1)
     , _emulationSceneIndex(nullptr)
-    , _disableEmulationAPI(false)
 {
     /*NOTHING*/
 }
@@ -110,10 +109,6 @@ HdChangeTracker::MarkRprimDirty(SdfPath const& id, HdDirtyBits bits)
             _emulationSceneIndex->DirtyPrims({{id, locators}});
         }
     } else {
-        if (_disableEmulationAPI) {
-            TF_CODING_ERROR(
-                "Calling method on HdChangeTracker that requires emulation.");
-        }
         // XXX: During the migration, "DirtyPrimvar" implies DirtyPoints/etc.
         if (bits & DirtyPrimvar) {
             bits |= DirtyPoints | DirtyNormals | DirtyWidths;
@@ -410,10 +405,6 @@ HdChangeTracker::MarkTaskDirty(SdfPath const& id, HdDirtyBits bits)
             _emulationSceneIndex->DirtyPrims({{id, locators}});
         }
     } else {
-        if (_disableEmulationAPI) {
-            TF_CODING_ERROR(
-                "Calling method on HdChangeTracker that requires emulation.");
-        }
         _MarkTaskDirty(id, bits);
     }
 }
@@ -501,10 +492,6 @@ HdChangeTracker::MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
             _emulationSceneIndex->DirtyPrims({{id, locators}});
         }
     } else {
-        if (_disableEmulationAPI) {
-            TF_CODING_ERROR(
-                "Calling method on HdChangeTracker that requires emulation.");
-        }
         _MarkInstancerDirty(id, bits);
     }
 }
@@ -632,10 +619,6 @@ HdChangeTracker::MarkSprimDirty(SdfPath const& id, HdDirtyBits bits)
             _emulationSceneIndex->DirtyPrims({{id, locators}});
         }
     } else {
-        if (_disableEmulationAPI) {
-            TF_CODING_ERROR(
-                "Calling method on HdChangeTracker that requires emulation.");
-        }
         _MarkSprimDirty(id, bits);
     }
 }
@@ -738,10 +721,6 @@ HdChangeTracker::MarkBprimDirty(SdfPath const& id, HdDirtyBits bits)
             _emulationSceneIndex->DirtyPrims({{id, locators}});
         }
     } else {
-        if (_disableEmulationAPI) {
-            TF_CODING_ERROR(
-                "Calling method on HdChangeTracker that requires emulation.");
-        }
         _MarkBprimDirty(id, bits);
     }
 }
@@ -1013,11 +992,6 @@ HdChangeTracker::MarkAllRprimsDirty(HdDirtyBits bits)
             MarkRprimDirty(it->first, bits);
         }
         return;
-    }
-
-    if (_disableEmulationAPI) {
-        TF_CODING_ERROR(
-            "Calling method on HdChangeTracker that requires emulation.");
     }
 
     //
@@ -1311,12 +1285,6 @@ void
 HdChangeTracker::_SetTargetSceneIndex(HdRetainedSceneIndex *emulationSceneIndex)
 {
     _emulationSceneIndex = emulationSceneIndex;
-}
-
-void
-HdChangeTracker::_SetDisableEmulationAPI(bool disable)
-{
-    _disableEmulationAPI = disable;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

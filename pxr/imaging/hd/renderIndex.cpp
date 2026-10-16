@@ -193,8 +193,6 @@ HdRenderIndex::HdRenderIndex(
 
     if (terminalSceneIndex) {
         _terminalSceneIndex = terminalSceneIndex;
-
-        _tracker._SetDisableEmulationAPI(true);
     } else {
         _emulationSceneIndex = HdLegacyPrimSceneIndex::New();
 
