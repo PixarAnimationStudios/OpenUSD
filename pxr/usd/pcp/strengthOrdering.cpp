@@ -11,6 +11,9 @@
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/pcp/node_Iterator.h"
 #include "pxr/usd/pcp/utils.h"
+#include "pxr/base/tf/smallVector.h"
+
+#include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -49,24 +52,44 @@ _GetOriginRootNode(const PcpNodeRef& node)
     return result;
 }
 
-// Return true if node a is a descendent of node b or vice-versa.
-static bool
-_OriginsAreNestedArcs(const PcpNodeRef& a, const PcpNodeRef& b)
+// Return the namespace depth that orders the specializes node n against its
+// siblings.  This is the namespace depth of n's anchor: the outermost
+// specializes sibling of n whose origin root is reached by walking up the
+// graph from n's origin root, following propagated specializes nodes to
+// their origins.  If no such sibling is found, n is its own anchor.
+//
+// n's opinions must be weaker than those of the siblings found by this walk.
+// Ordering by the anchor's namespace depth keeps n behind all of them,
+// regardless of n's own namespace depth.
+static int
+_GetAnchorNamespaceDepth(const PcpNodeRef& n, const PcpNodeRef& originRoot)
 {
-    auto isNestedUnder = [](const PcpNodeRef& x, const PcpNodeRef& y)
-     {
-         for (PcpNodeRef n = x; n;) {
-             if (n == y) {
-                 return true;
-             }
+    // Collect the origin roots of the specializes siblings, including n.
+    TfSmallVector<std::pair<PcpNodeRef, int>, /*LocalCap=*/16> siblingRoots;
+    for (const PcpNodeRef& s : Pcp_GetChildren(n.GetParentNode())) {
+        if (PcpIsSpecializeArc(s.GetArcType())) {
+            siblingRoots.emplace_back(
+                _GetOriginRootNode(s).first, s.GetNamespaceDepth());
+        }
+    }
 
-             n = Pcp_IsPropagatedSpecializesNode(n) ?
-                 n.GetOriginNode() : n.GetParentNode();
-         }
-         return false;
-    };
-
-    return isNestedUnder(a, b) || isNestedUnder(b, a);
+    int depth = n.GetNamespaceDepth();
+    for (PcpNodeRef x = originRoot; x; ) {
+        bool found = false;
+        int minDepth = 0;
+        for (const auto& [root, d] : siblingRoots) {
+            if (root == x && (!found || d < minDepth)) {
+                found = true;
+                minDepth = d;
+            }
+        }
+        if (found) {
+            depth = minDepth;
+        }
+        x = Pcp_IsPropagatedSpecializesNode(x) ?
+            x.GetOriginNode() : x.GetParentNode();
+    }
+    return depth;
 }
 
 // Returns the namespace depth of the node that inherits or specializes
@@ -84,7 +107,12 @@ _GetNamespaceDepthForClassHierarchy(const PcpNodeRef& n)
         instanceNode = instanceNode.GetParentNode();
     }
 
-    return instanceNode.GetNamespaceDepth();
+    // Use the namespace depth of the instance node's origin root.  An
+    // implied instance node's own namespace depth depends on culling: if the
+    // ancestral prim index's copy was culled, the arc is implied again at a
+    // deeper level of namespace and gets a greater depth.  The origin root
+    // is the same in both cases.
+    return _GetOriginRootNode(instanceNode).first.GetNamespaceDepth();
 }
 
 int 
@@ -113,18 +141,20 @@ PcpCompareSiblingNodeStrength(
         const std::pair<PcpNodeRef, size_t> aOriginRoot = _GetOriginRootNode(a);
         const std::pair<PcpNodeRef, size_t> bOriginRoot = _GetOriginRootNode(b);
 
-        // Origin namespace depth.
-        // Higher values (deeper opinions) are stronger, in general. However,
-        // if one of the origin roots is somewhere beneath the other in the
-        // graph, there must be a specializes arc somewhere between the two.
-        // Specializes means that opinions for the source of the arc must be
-        // weaker than the target, regardless of the namespace depth.
-        if (!_OriginsAreNestedArcs(aOriginRoot.first, bOriginRoot.first)) {
-            if (a.GetNamespaceDepth() > b.GetNamespaceDepth())
-                return -1;
-            if (a.GetNamespaceDepth() < b.GetNamespaceDepth())
-                return 1;
-        }
+        // Anchor namespace depth.
+        // Higher values (deeper opinions) are stronger, in general. However, a
+        // specializes node whose origin is reached through other specializes
+        // nodes must be weaker than those nodes, regardless of its own
+        // namespace depth. So compare the namespace depth of the outermost such
+        // node instead. See _GetAnchorNamespaceDepth.
+        const int aDepth =
+            _GetAnchorNamespaceDepth(a, aOriginRoot.first);
+        const int bDepth =
+            _GetAnchorNamespaceDepth(b, bOriginRoot.first);
+        if (aDepth > bDepth)
+            return -1;
+        if (aDepth < bDepth)
+            return 1;
         
         // Origin strength.
         const PcpNodeRef aOrigin = a.GetOriginNode();
@@ -192,15 +222,15 @@ PcpCompareSiblingNodeStrength(
             // is a member of. This accounts for specializes arcs that have
             // been implied to to ancestral hierarchies. This shows up in
             // the museum test case SpecializesAndAncestralArcs2.
-            const int aDepth = aIsAuthoredArc ? 
+            const int aClassDepth = aIsAuthoredArc ? 
                 0 : _GetNamespaceDepthForClassHierarchy(aOrigin);
-            const int bDepth = bIsAuthoredArc ?
+            const int bClassDepth = bIsAuthoredArc ?
                 0 : _GetNamespaceDepthForClassHierarchy(bOrigin);
 
-            if (aDepth < bDepth) {
+            if (aClassDepth < bClassDepth) {
                 return -1;
             }
-            else if (bDepth < aDepth) {
+            else if (bClassDepth < aClassDepth) {
                 return 1;
             }
 
