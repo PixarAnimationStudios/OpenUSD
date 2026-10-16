@@ -526,8 +526,8 @@ transformations when combining assets from different sources:
 ```{code-block} usda
 #usda 1.0
 (
-    metersPerUnit = 0.01   # 1 unit = 1 centimeter (Maya default)
-    # metersPerUnit = 1.0  # 1 unit = 1 meter (OpenUSD default)
+    metersPerUnit = 0.01   # 1 unit = 1 centimeter (OpenUSD default)
+    # metersPerUnit = 1.0  # 1 unit = 1 meter
 )
 ```
 
