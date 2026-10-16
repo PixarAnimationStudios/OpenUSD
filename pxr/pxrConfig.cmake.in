@@ -70,8 +70,11 @@ else()
     _add_property(IMPORTED_LOCATION "@tbb_IMPORTED_LOCATION@")
 endif()
 
-if (@PXR_BUILD_IMAGING@) # if PXR_BUILD_IMAGING
+if (@PXR_BUILD_IMAGING@) # if (PXR_BUILD_IMAGING)
     find_dependency(OpenSubdiv @OpenSubdiv_VERSION@ CONFIG)
+    if (@PXR_BUILD_OPENCOLORIO_PLUGIN@) # if (PXR_BUILD_OPENCOLORIO_PLUGIN)
+        find_dependency(OpenColorIO @OpenColorIO_VERSION@ CONFIG)
+    endif()
 endif()
 
 # If MaterialX support was enabled for this USD build, try to find the
